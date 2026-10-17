@@ -4,9 +4,9 @@ Documents scanned for citations: 16 (01_game_modes.md, 02_units_and_entities.md,
 
 Manifest entries: 6189; live source files: 761; data files: 2332
 
-Distinct manifest files cited: 2947; directories cited: 75
+Distinct manifest files cited: 2948; directories cited: 80
 
-Evidence tags in documents: {'[C]': 4246, '[I]': 487, '[U]': 80}
+Evidence tags in documents: {'[C]': 4255, '[I]': 489, '[U]': 80}
 
 World-object classes found in code/worldobject/*.h: 159
 
@@ -79,7 +79,7 @@ World-object classes found in code/worldobject/*.h: 159
 - contrib/systemiv/lib/tosser/sorting_hash_table.h
 - contrib/systemiv/lib/unicode/unicode_text_stream_reader.h
 
-### (b) data files never cited — 718
+### (b) data files never cited — 717
 - data/Untitled Gradients.grd
 - data/animations/armour.bmp
 - data/animations/cloudyglow.bmp
@@ -388,7 +388,6 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/GDSpeech7.ogg
 - data/mwsounds/GDSpeech8.ogg
 - data/mwsounds/GDSpeech9.ogg
-- data/mwsounds/GameOver1.ogg
 - data/mwsounds/GameOver2.ogg
 - data/mwsounds/High1.ogg
 - data/mwsounds/High2.ogg
@@ -480,7 +479,8 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/MultiLobbyAmb1.ogg
 - data/mwsounds/MultiLobbyAmb10.ogg
 - data/mwsounds/MultiLobbyAmb2.ogg
-- … 318 more (see JSON)
+- data/mwsounds/MultiLobbyAmb3.ogg
+- … 317 more (see JSON)
 
 ### (c) data formats without a grammar — 44
 - format without grammar: level-enum
@@ -689,7 +689,7 @@ World-object classes found in code/worldobject/*.h: 159
 - WorldObjectId (code/worldobject/worldobject.h) spec=Y diagram=N
 - Zombie (code/worldobject/souldestroyer.h) spec=Y diagram=N
 
-### (e) assets without a catalogue entry — 2131
+### (e) assets without a catalogue entry — 2130
 - data/animations/armour.bmp
 - data/animations/assault_defend.anim
 - data/animations/blitz.anim
@@ -1090,9 +1090,9 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/GDSpeech7.ogg
 - data/mwsounds/GDSpeech8.ogg
 - data/mwsounds/GDSpeech9.ogg
-- … 1731 more (see JSON)
+- … 1730 more (see JSON)
 
-### Cited paths that do not exist in the manifest (possible errors) — 99
+### Cited paths that do not exist in the manifest (possible errors) — 95
 - code/interface/pokey_window  ← 31_platform_build_and_tools.md
 - code/interface/pokey_window.{cpp,h}  ← 31_platform_build_and_tools.md
 - code/lib/command_buffer  ← 31_platform_build_and_tools.md
@@ -1134,7 +1134,6 @@ World-object classes found in code/worldobject/*.h: 159
 - code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp  ← 24_rendering.md
 - code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp  ← 24_rendering.md
 - contrib/binreloc  ← 31_platform_build_and_tools.md
-- contrib/loki_setup*/  ← 20_architecture.md
 - contrib/netclass  ← 31_platform_build_and_tools.md
 - contrib/oggvorbis/lib  ← 31_platform_build_and_tools.md
 - contrib/steam  ← 31_platform_build_and_tools.md
@@ -1142,13 +1141,10 @@ World-object classes found in code/worldobject/*.h: 159
 - contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}  ← 28_ui_framework.md
 - contrib/systemiv/lib/crypticon/ccrypticon  ← 31_platform_build_and_tools.md
 - contrib/systemiv/lib/crypticon/ccrypticon.{cpp,h}  ← 31_platform_build_and_tools.md
-- contrib/systemiv/lib/metaserver/steamauth_  ← 20_architecture.md
 - contrib/systemiv/lib/x.h  ← 31_platform_build_and_tools.md
 - contrib/systemiv/lib/{debug_utils, memory_leak, network_stream, profiler, string_utils, filesys/*, netlib/*, metaserver/{authentication, matchmaker, metaserver}, math/{filecrc, hash, math_stubs, random_number}, tosser/*, unicode/*}  ← 28_ui_framework.md
-- contrib/systemiv/lib/{eclipse,gucci,render,resource,sound}  ← 20_architecture.md
 - contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*  ← 31_platform_build_and_tools.md
 - contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}  ← 31_platform_build_and_tools.md
-- contrib/systemiv/lib/{resource,render,sound,gucci}  ← 20_architecture.md
 - data/<dir>  ← 31_platform_build_and_tools.md
 - data/<name>  ← 31_platform_build_and_tools.md
 - data/animations/{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp  ← 31_platform_build_and_tools.md

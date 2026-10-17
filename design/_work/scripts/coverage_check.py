@@ -124,7 +124,9 @@ def justification(p):
     return ''
 
 def is_live_source(r):
-    return r['type'].startswith('source/') and r['vcproj_build'] and r['vcproj_build'] != 'Debug;Release;DebugDirect3D;ReleaseDirect3D'
+    if not r['type'].startswith('source/'): return False
+    if r.get('included_by_live'): return True   # not in the project but #included by a live file (possibly under a platform #ifdef)
+    return bool(r['vcproj_build']) and r['vcproj_build'] != 'Debug;Release;DebugDirect3D;ReleaseDirect3D'
 
 # ---------- (a) live source never cited ----------
 gap_a = [r['path'] for r in manifest if is_live_source(r) and r['path'].lower() not in cited_files and not justification(r['path'].lower())]

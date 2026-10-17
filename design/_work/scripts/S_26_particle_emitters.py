@@ -7,6 +7,15 @@ fnre = re.compile(r'^[A-Za-z_][\w\s\*&<>:,]*?([A-Za-z_]\w*::~?[A-Za-z_]\w*)\s*\(
 typere = re.compile(r'Particle::(Type\w+)')
 sync = re.compile(r'\b(syncfrand|syncsfrand|syncrand|FRAND|SFRAND)\s*\(')
 unsync = re.compile(r'(?<![\w])(frand|sfrand|AppRandom|rand)\s*\(')
+TAGS_FILE = {'shaman.cpp': '[B:LEGACY]', 'lander.cpp': '[B:LEGACY]', 'tentacle.cpp': '[B:DEBUG]', 'portal.cpp': '[B:DEBUG]',
+             'taskmanager_interface_gestures.cpp': '[B:LEGACY]', 'taskmanager_interface_icons.cpp': '[B:LEGACY]',
+             'incubator.cpp': '[B:FULL] (no shipped map)', 'controltower.cpp': '[B:FULL] (no shipped map)', 'safearea.cpp': '[B:LEGACY]'}
+TAGS_FN = {'Darwinian::AdvanceSacraficing': '[B:LEGACY]', 'ControllerGrenade::Advance': '[B:LEGACY]',
+           'Missile::Advance': '[B:DEBUG] (Tank only)', 'Missile::Render': '[B:DEBUG] (Tank only)',
+           'GameCursor::Render': '[B:LEGACY] (SP cursor branch)'}
+def tag(rel, fn):
+    if fn in TAGS_FN: return TAGS_FN[fn]
+    return TAGS_FILE.get(os.path.basename(rel), '[B:FULL]')
 rows = []
 for rel in sys.argv[2:]:
     path = os.path.join(root, rel)
@@ -68,9 +77,9 @@ for rel in sys.argv[2:]:
             if sync.search(ctx): rng.append('synced')
             if unsync.search(ctx): rng.append('unsynced')
             pathk = 'per frame (render)' if 'Render' in cur.split('::')[-1] else 'sim/event'
-            rows.append((f"`{rel}:{i+1}`", f"`{cur}`", pathk, ', '.join(f"`{t}`" for t in types) or '?', f"`{size}`" if size else '', f"`{colour}`" if colour else '', '/'.join(rng) or '–'))
-print('| Site | Function | Path | Particle type | Size arg | Colour arg | RNG within 8 lines |')
-print('|---|---|---|---|---|---|---|')
+            rows.append((f"`{rel}:{cur}`", f"L{i+1}", tag(rel, cur), pathk, ', '.join(f"`{t}`" for t in types) or '?', f"`{size}`" if size else '', f"`{colour}`" if colour else '', '/'.join(rng) or '–'))
+print('| Site (`path:Symbol`) | Line | Build | Path | Particle type | Size arg | Colour arg | RNG within 8 lines |')
+print('|---|---|---|---|---|---|---|---|')
 for r in rows:
     print('| ' + ' | '.join(r) + ' |')
 print(f"\n{len(rows)} call sites.")

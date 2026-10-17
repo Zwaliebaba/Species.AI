@@ -159,3 +159,9 @@
 
 ## S03 (03_buildings_and_world_objects.md) — done, 326 KB, 25 diagrams, checks pass
 - 34 of 75 building types live in MW. 11 contradictions resolved: GetNetworkTime == game timer; 8 dev maps not 9; Portal debug-only; port occupancy/lifter counting; walls only destroyable by WallBuster breach + defender scuttle; NO MW map has a FenceSwitch → local-input switch path unreachable (closes P01 desync concern); rocket damage/decay; Bridges unreachable (needs Engineer research 5, max 4). 33 defects/hazards listed. 17 open items.
+
+## S06 (06_player_control_and_input.md) — done, ~348 KB, checks pass
+- 11 contradictions resolved: Darwinia control scheme NOT selectable (PrefsManager::Load forces MultiwiniaControlMethod = 1); key rebinding unreachable (opening button commented out); "C" on selected officer kills it (not demote); armour right-click / Shift+right-click semantics pinned. icons/compass_empty.bmp missing (also X2a). All 164 control types in §12 with "used in match" flag + reverse index. 06-U1..U12.
+## S30 (30_scripting_tutorial_and_cutscenes.md) — done, ~189 KB, checks pass
+- 7 contradictions: scripts 37 LEGACY + 5 DEAD (not 39+3); radar dish 4 becomes player's when ≥3 units occupy ControlStation 51; tutorial map CRCs match mapcrc.h; phrase variants by input mode; music event names case-insensitive. New: Tutorial 2 checks ownership vs hard-coded team 0; scripted camera moves overshoot mount by 4–8 % uncorrected; CameraAnimations blocks not written on map save; script triggers T3–T5 debug-only. 30-U1..U8.
+## Coordinator: manifest gained included_by_live column (18 non-project files compiled via #include); build_matrix §6 corrected; coverage checker treats them as live.

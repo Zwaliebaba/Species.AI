@@ -68,9 +68,20 @@ for dp, dns, fns in os.walk(root):
         rows.append([rel, a, t, size, loc, nb, inproj])
 
 rows.sort()
+# Files not listed in the project but #included (by basename) from a project file are compiled when the include is
+# reached; record the including files so the build matrix and coverage check can treat them as conditionally live.
+live_set = [r[0] for r in rows if r[2].startswith('source/') and r[6] and r[6] != 'Debug;Release;DebugDirect3D;ReleaseDirect3D']
+inc_by = {}
+for lp in live_set:
+    with open(os.path.join(root, lp), 'rb') as fh:
+        txt = fh.read().decode('latin-1')
+    for m in re.finditer(r'#\s*include\s+"([^"]+)"', txt):
+        inc_by.setdefault(os.path.basename(m.group(1)).lower(), set()).add(lp)
+for r in rows:
+    r.append(';'.join(sorted(inc_by.get(os.path.basename(r[0]).lower(), set()))[:5]) if (r[2].startswith('source/') and not r[6] and r[1] == 'code') else '')
 with open(out, 'w', newline='') as fh:
     w = csv.writer(fh)
-    w.writerow(['path', 'area', 'type', 'bytes', 'lines', 'nonblank_lines', 'vcproj_build'])
+    w.writerow(['path', 'area', 'type', 'bytes', 'lines', 'nonblank_lines', 'vcproj_build', 'included_by_live'])
     w.writerows(rows)
 missing = [k for k in vcmap if not os.path.exists(os.path.join(root, k)) and not any(r[0].lower() == k for r in rows)]
 print('rows', len(rows), 'vcproj entries', len(vcmap), 'vcproj entries not on disk', len(missing))

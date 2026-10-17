@@ -2058,3 +2058,390 @@ Findings [C data; I effect]:
 For `chinese-trad`, `chinese-simp`, `korean` and `japanese` all three fonts become the `square` atlas with glyph width 1.0·size (Latin characters below U+3000 stay at 0.6·size). No Chinese language file ships although the code path exists. Rendering limits: fixed-advance cells, no kerning, shaping or BiDi, Basic Multilingual Plane only (surrogate decoding is wrong and stored back into 16 bits), word-wrap breaks at spaces or after CJK characters (U+3000–U+D7FF) [C] `code/lib/language_table.cpp:WordWrapText`, `code/lib/text_renderer.cpp:TextRenderer::DrawText2DSimple`. Narrow-string conversions (`UnicodeString → const char*`) turn non-Latin-1 characters into `?` where translated text is passed through `char*` APIs (editor value labels and drop-down options) [C].
 
 ---
+## 11 Preferences and every user option
+
+### 11.1 Preference storage and lifecycle
+
+File grammar in [29 §29.P](29_data_formats_reference.md); behaviour [C] `code/lib/preferences.cpp:PrefsManager`, `code/app.cpp`:
+
+| Aspect | Behaviour | Evidence |
+|---|---|---|
+| Singleton | `PrefsManager *g_prefsManager`, created in `App::App` right after `init.dat` is parsed and before the renderer: `new PrefsManager(App::GetPreferencesPath())`, then `SetPreferenceOverrides()` | [C] `code/app.cpp:App::App` (L215–220) |
+| File path (Win32, non-debug, Windows 2000+) | `SHGetFolderPath(CSIDL_LOCAL_APPDATA)` + `\Introversion\Multiwinia\preferences.txt` (directories created on demand) | [C] `App::GetProfileDirectory`, `App::GetPreferencesPath` |
+| File path (TARGET_DEBUG or pre-2000) | `preferences.txt` in the current directory | [C] same |
+| File path (Mac) | `$HOME/Library/Preferences/uk.co.introversion.Multiwinia.txt` | [C] same (platform appendix in [31](31_platform_build_and_tools.md)) |
+| Load | `PrefsManager::Load`: read as UTF-16 if the file is Unicode, else as 8-bit; every line → `AddLine` | [C] `PrefsManager::Load` |
+| First run | if the file cannot be opened → `CreateDefaultValues()` (built-in defaults §11.2, then `default_preferences.txt` lines with overwrite enabled) | [C] `PrefsManager::CreateDefaultValues` |
+| Corruption check | only the first line: from the start until the first `' '` or `'='`, any character outside `L'A'..L'z'` marks the file corrupt → `CreateDefaultValues()` + `Save()` immediately | [C] `PrefsManager::Load` |
+| Forced value after every load | `SetInt("MultiwiniaControlMethod", 1)` ("Hack by Chris to disable old-style control") | [C] `PrefsManager::Load` |
+| Constructor fix-up | if `GetInt("ControlMethod") == -1` (missing or non-int) → `AddLine("ControlMethod = 1")` | [C] `PrefsManager::PrefsManager` |
+| Line syntax | `Key = value`; key = the first run of alphanumerics (`iswalnum`; `_` **not** allowed) after leading non-alphanumerics; value starts after any whitespace / `=` | [C] `PrefsItem::PrefsItem(UnicodeString)` |
+| Typing rule | value beginning with `-` or a digit → count `.`: 0 → Int (`wtoi`), 1 → Float (`wtof`), ≥ 2 → String (so `127.0.0.1` is a String); anything else → String | [C] `PrefsItem::PrefsItem` |
+| Comments / blank | a line is "empty" if `#` appears before any alphanumeric, or it has no alphanumeric; kept verbatim for re-saving, not parsed | [C] `PrefsManager::IsLineEmpty` |
+| Duplicate keys | normal load: first occurrence wins ("Duplicate preference item … Ignoring"); with `s_overwrite` (default-file merge) later replaces earlier | [C] `PrefsManager::AddLine` |
+| Typed getters | `GetInt(key, default = -1)`, `GetFloat(key, default = -1.0f)`, `GetString(key, default = NULL)`, `GetUnicodeString(key, default)`; if the key is missing **or the stored type differs** the default is returned (e.g. `RenderWaterDetail = 1.0` is a Float, so `GetInt` returns the caller's default) | [C] `PrefsManager::GetInt` |
+| Setters | `SetInt` / `SetFloat` / `SetString` update in place (changing the type) or create | [C] |
+| Save | re-emits the originally loaded text line by line as a template: comment / blank lines verbatim; each key line replaced by the current item (`%ls = %d`, `%ls = %.2f`, `%ls = %ls`), each item at most once; then appends every item not yet written; silently does nothing if the file cannot be opened | [C] `PrefsManager::Save`, `SaveItem` |
+| Who saves | every options Apply; `PlayerNameString::Set` (every name change and every `GameMenuWindow` construction); `App::SetProfileName`; `Renderer::Initialise` (always, after the mode set); `SetWindowed(…, permanent)`; `SaveFiltersButton`; `ApplyNameButton`; master-volume slider release | [C] respective symbols |
+
+### 11.2 First-run default set (built-in, before `default_preferences.txt`)
+
+Order and values exactly as `PrefsManager::CreateDefaultValues` emits them in the baseline (`DEMOBUILD` undefined, not Mac/Linux, `HAVE_DSOUND` defined) [C] `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`, `GetDefaultHelpEnabled`, `GetDefaultSoundLibrary`, `GetDefaultSoundChannels`, `GetDefaultSoundDSP`, `GetDefaultGraphicsDetail`, `GetDefaultPixelShader`:
+
+| # | Key | Built-in first-run value | Notes |
+|---|---|---|---|
+| 1 | ServerAddress | `127.0.0.1` (String) | no live reader |
+| 2 | BypassNetwork | `0` | no live reader |
+| 3 | ServerPort | `4000` | no live reader |
+| 4 | TextLanguage | `unknown` | |
+| 5 | TextSpeed | `15` | Sepulveda only |
+| 6 | HelpEnabled | `1` (0 only under `DEMOBUILD`) | |
+| 7 | SoundLibrary | `dsound` | |
+| 8 | SoundMixFreq | `22050` (44100 on Mac) | |
+| 9 | SoundMasterVolume | `255` | |
+| 10 | SoundChannels | `32` (16 on slow Macs) | |
+| 11 | SoundHW3D | `0` | |
+| 12 | SoundSwapStereo | `0` | |
+| 13 | SoundMemoryUsage | `1` | |
+| 14 | SoundBufferSize | `512` ("Must be a power of 2 for Linux") | runtime readers default to 2000 |
+| 15 | SoundDSP | `0` (Mac: 1 unless slow CPU) | |
+| 16 | RenderLandscapeDetail | `1` | no effect (§11.6) |
+| 17 | RenderWaterDetail | `1` | |
+| 18 | RenderBuildingDetail | `1` | |
+| 19 | RenderEntityDetail | `1` | |
+| 20 | RenderCloudDetail | `1` | |
+| 21 | RenderPixelShader | `1` (Mac may give 0) | |
+| 22 | DarwinianScaleFactor | `2.00` (Float) | |
+| 23 | ControlMouseButtons | `3` (1 on Mac) | |
+| 24 | ControlMethod | `1` | |
+| 25 | MultiwiniaControlMethod | `1` | |
+| (Linux/Mac only) | RenderLandscapeMode, ManuallyScaleTextures | `2`, `0` | [B:DEAD] on PC |
+| 26 | BootLoader | `firsttime` | (`DEMOBUILD`: StartMap / UserProfile / RenderSpecialLighting variants instead, [B:DEAD]) |
+| 27 | UserProfile | `AccessAllAreas` | |
+| 28 | ScreenOverscan | `0` | |
+| 29 | RenderSpecialLighting | `0` | |
+| 30 | Difficulty | `1` (`OTHER_DIFFICULTY`) | |
+
+Then every line of `default_preferences.txt` is added with overwrite (§11.11) — but only if `g_app->m_resource` can open it at that moment; then `Load` forces `MultiwiniaControlMethod = 1`; then `Renderer::Initialise` writes the screen keys and saves (§11.5). Keys **not** in the first-run set (e.g. `ScreenWidth`, `LargeMenus`, `AutomaticCamera`, `NetworkUsePortForwarding`, `PlayerName`) take the per-call-site default until first written — and those defaults are not always consistent (§11.13).
+
+`default_preferences.txt` availability [C build lists; I effect]: the prefs manager is created when only `init.dat` has been parsed (`code/app.cpp:App::App` L217–219), and `tools/init.list` does not contain `default_preferences.txt` (it holds shaders, `sprites/darwinian.bmp`, `textures/xboxlivearcade.bmp`, `textures/ivlogo.bmp`); the file is in `main.dat`, parsed later (L337). In a packaged install the data-file overrides are therefore probably **not** applied on first run unless a loose `data/default_preferences.txt` exists — the built-in values above apply instead (e.g. `WaitVerticalRetrace` absent, `NetworkServerPort` absent → call-site defaults). 09-U4.
+
+### 11.3 Related stores (not `preferences.txt`)
+
+| Store | Path | Written by | Evidence |
+|---|---|---|---|
+| Authentication key | `<profile dir>authkey.dev` (read at start-up; written by Paste and Play Demo) and `<profile dir>authkey` (written by typing) | §6.4 | [C] `code/app.cpp:App::InitMetaServer`, `code/UI/AuthInputField.h` |
+| User key bindings | `<profile dir>user_input_preferences.txt` (own `PrefsManager` instance) | `ApplyKeybindingsButton::MouseUp` (unreachable window) | [C] `code/lib/input/file_paths.cpp:InputPrefs::GetUserPrefsPath`, `code/interface/prefs_keybindings_window.cpp` |
+| System bindings | `data/input/input_preferences.txt` (MultiwiniaControlMethod = 1) or `input_preferences_darwinia.txt` (= 0); per-keyboard overrides `data/input/keyboards/<layout>.txt` (`de_DE`, `fr_FR`) | data files ([06](06_player_control_and_input.md)) | [C] `InputPrefs::GetSystemPrefsPath`, `code/main.cpp:ReadInputPreferences` |
+| Darwinia user profile | `<profile dir>users/<name>/` (global world `game.txt` + mission files) | `App::SaveProfile` — returns false unless full version **and** `IsSinglePlayer()` (Campaign / Prologue) and name not `none` / `AccessAllAreas` / `AttractMode` → never saves in Multiwinia | [C] `code/app.cpp:App::SaveProfile` |
+| Distributor origin tag | `origin` (one line, e.g. `buka` for the Russian SKU) | build script | [C] `code/app.cpp:App::Initialise`, `tools/build_multiwinia_retail_russian.bat` |
+| Server history (dev) | `serverHistory.dat` | pref `RecordDemo` = 1 | [C] `code/app.cpp:App::ShutdownCurrentGame` |
+
+### 11.4 Navigation: Help and Options → Settings (`OptionsMenuWindow`)
+
+`OptionsMenuWindow` (title "Settings") lists in order: **Screen Options**, **Graphics Options**, **Sound Options**, **Other Options**, then **Back** [C] `code/interface/mainmenus.cpp:OptionsMenuWindow::Create`. A fifth button "Control Options" (`KeybindingsOptionsButton`) is commented out. All four live windows share one pattern: controls edit *copies* held in the window object; an **Apply** button (greyed / inactive while every copy equals the stored prefs) writes the prefs, `Save()`s and applies; **Back** (`MenuCloseButton`) discards. Reachable from the front end (Main → Help and Options) and in game (Esc → Help and Options).
+
+### 11.5 Screen Options (`PrefsScreenWindow`) [B:FULL]
+
+Window members initialised in the constructor from prefs [C] `code/interface/prefs_screen_window.cpp:PrefsScreenWindow::PrefsScreenWindow` (L320–334). On-screen order = `m_buttonOrder`: Resolution, Windowed, Refresh Rate, Colour Depth, Z Buffer Depth, Apply, Back.
+
+| # | Control (label id → English) | Widget | Pref key | Window default if missing | Choices / range | What it changes in the engine |
+|---|---|---|---|---|---|---|
+| 1 | `dialog_resolution` "Resolution" | `ScreenResDropDownMenu` (full-screen option list) | `ScreenWidth` + `ScreenHeight` (two ints; the window holds `m_resId`) | `GetResolutionId(ScreenWidth, ScreenHeight)`; **`AppReleaseAssert` if −1** | every distinct W × H reported by `EnumDisplaySettings` with bpp ≥ 15, W ≥ 640, H ≥ 480, in enumeration order; caption `"%d x %d"` | window / back-buffer size passed to `WindowManagerWin32::CreateWin`; all UI layout is proportional to it. Selecting a resolution (including the initial `RegisterInt`, which calls `SelectOption`) repopulates the Refresh list with that mode's rates (`"%d Hz"`) and re-selects `m_refreshRate`; if that rate is not offered the caption falls back to the label and the stored value is kept [C] `ScreenResDropDownMenu::SelectOption`, `code/interface/drop_down_menu.cpp:DropDownMenu::RegisterInt` |
+| 2 | `dialog_windowed` "Windowed" | `GameMenuCheckBox` (int) | `ScreenWindowed` | 0 | 0 / 1 | windowed: `WS_POPUPWINDOW` + `WS_CAPTION` + `WS_MINIMIZEBOX` + `WS_MAXIMIZEBOX`, centred on the desktop, fails if larger than the desktop; full screen: `ChangeDisplaySettings(CDS_FULLSCREEN)` with bpp / W / H / refresh, `WS_POPUP` at 0, 0 [C] `code/lib/window_manager_win32.cpp:WindowManagerWin32::CreateWin` |
+| 3 | `dialog_refreshrate` "Refresh Rate" (`#ifdef HAVE_REFRESH_RATES`, defined for `TARGET_MSVC` at the top of the file) | `FullscreenRequiredMenu`, cycle mode | `ScreenRefresh` | 60 | the selected resolution's refresh list | `dmDisplayFrequency` of the full-screen mode; disabled (drawn grey with "(windowed mode)") while Windowed is ticked [C] `FullscreenRequiredMenu::Render`, `MouseUp` |
+| 4 | `dialog_colourdepth` "Colour Depth" | `FullscreenRequiredMenu`, cycle mode | `ScreenColourDepth` | 16 | 16 / 24 / 32 ("16 bit", "24 bit", "32 bit") | `dmBitsPerPel` for full screen and the pixel-format colour bits (`EnableOpenGL(colourDepth, zDepth)`); disabled when windowed |
+| 5 | `dialog_zbufferdepth` "Z Buffer Depth" | `GameMenuDropDown`, cycle mode | `ScreenZDepth` | 24 | 16 / 24 (labels reuse "16 bit" / "24 bit") | depth-buffer bits of the GL pixel format / D3D device |
+| — | (not shown) | — | `ScreenOverscan` | 0 (read into `m_overscan`, never used) | — | none: `Renderer::Initialise` hard-codes `overscan = 0` and writes it back; the only other reader is inside `#if 0` [C] `code/renderer.cpp:Renderer::Initialise`, `Renderer::RenderMenuTransition` |
+| 6 | `dialog_apply` "Apply" | `SetScreenButton` | — | — | inactive when W, H, refresh, windowed, colour, z all equal the stored prefs | apply flow below |
+| 7 | "Back" | `MenuCloseButton` | — | — | — | close (no save) |
+
+**Apply flow** [C] `SetScreenButton::MouseUp`, `RestartWindowManagerAndRenderer`, `AdjustWindowPositions`:
+1. Write `ScreenWidth`, `ScreenHeight` (from `GetResolution(m_resId)`), `ScreenRefresh`, `ScreenWindowed`, `ScreenColourDepth`, `ScreenZDepth`.
+2. `RestartWindowManagerAndRenderer()`: remember old W/H; `hack = !currentlyWindowed && !pref ScreenWindowed` (full screen → full screen). `DestroyWin()`, delete renderer. If `hack`: temporarily set prefs to windowed 640 × 480, create + initialise a throw-away `Renderer`, destroy it, restore prefs — forces a real display-mode switch. Then `new Renderer(); Initialise();`, `Resource::FlushOpenGlState(); RegenerateOpenGlState();` (all textures and display lists rebuilt), `glClear`. Then `AdjustWindowPositions`: if the size changed, `EclInitialise(newW, newH)` and every Eclipse window is moved so its centre keeps the same proportional position (`newCentre = oldCentre × new/old`).
+3. `Save()`; re-read the prefs into the window (asserting the resolution id exists); remove **all** windows; at the main menu `GameMenu::DestroyMenu()` + `CreateMenu()`, else register a new `LocationWindow`; then register a fresh `OptionsMenuWindow` and `PrefsScreenWindow` (the user lands back on Screen Options at the new resolution).
+
+What `Renderer::Initialise` does with these keys [C] `code/renderer.cpp:Renderer::Initialise`:
+
+| Key | Call-site default | Use |
+|---|---|---|
+| ScreenWidth / ScreenHeight | 0 / 0 → if both 0: `SuggestDefaultRes` = desktop W, H, refresh, colour depth (also written to prefs) | then `GetClosestResolution(&w, &h, &refresh)` |
+| ScreenWindowed | 0 | |
+| ScreenColourDepth | 32 | |
+| ScreenRefresh | 75 | |
+| ScreenZDepth | 24 | |
+| WaitVerticalRetrace | 1 | passed only to the 3rd/4th fallback `CreateWin` calls (the first two pass literal `true`). `WindowManagerWin32::CreateWin` (OpenGL baseline) ignores `_waitVRT` and `_antiAlias` → **no vsync control in the GL build** [C]. Under `USE_DIRECT3D`, `WindowManagerDirectX::CreateWin` passes `_waitVRT` to `Direct3DInit` [B:D3D] [C] `code/lib/window_manager_directx.cpp` |
+
+Fallback chain on `CreateWin` failure: (a) `MessageDialog` "Failed to set requested screen resolution of …" at (100, 100), retry with the desktop default resolution, z 24, waitVRT 0; (b) retry 800 × 600 windowed, 16-bit colour, z 16, 60 Hz; (c) the same with z 24; (d) `AppReleaseAssert("Failed to set screen mode")`. Afterwards W, H, windowed, colour, z, refresh, `WaitVerticalRetrace`, `ScreenOverscan` (= 0) are written back and saved [C].
+
+Other writers of screen keys [C]: `UnlockFullGameButton` (buy-now) forces windowed 1024 × 768 (§6.6); `WebsiteButton` (legacy) forces windowed 800 × 600; `SetWindowed()` helper used by the unreachable debug full-screen toggle.
+
+### 11.6 Graphics Options (`PrefsGraphicsWindow`) [B:FULL]
+
+[C] `code/interface/prefs_graphics_window.cpp:PrefsGraphicsWindow::Create` (window defaults L107–112). Shown controls in order: Water Detail, Sky Detail, Building Detail, Entity Detail, Apply, Back. All four drop-downs are `GameMenuDropDown` in **cycle mode** (click advances to the next option, wrapping) with `dialog_high` = 1 "High", `dialog_medium` = 2 "Medium", `dialog_low` = 3 "Low". Two further controls exist only as commented-out code: Landscape Detail (High 1 / Medium 2 / Low 3 / "I need to upgrade" 4) and Pixel Effect (checkbox).
+
+| Control | Pref key (`#define`) | Window default | Range | Engine effect (followed to readers) |
+|---|---|---|---|---|
+| Water Detail | `RenderWaterDetail` (`GRAPHICS_WATERDETAIL`) | 1 | 1–3 | `Water::Water`: `detail = GetInt("RenderWaterDetail")` (**no default → −1 if missing**). If `detail > 0`: `m_cellSize = detail × max(worldSizeX, worldSizeZ)/100` — dynamic-water grid cell = 1 %, 2 %, 3 % of the larger world dimension for High / Medium / Low; colour table, triangle strips and wave tables built. `Water::Render` / `Advance`: `> 0` → flat water + animated dynamic water; else flat only [C] `code/water.cpp:Water::Water`, `Water::Render`, `Water::Advance`. Takes effect when `Water` is re-created (Apply does this if a location is loaded) |
+| Sky Detail | `RenderCloudDetail` (`GRAPHICS_CLOUDDETAIL`) | 1 | 1–3 | `Clouds::RenderBlobby` (3 textured quads at heights 1200, 1000, 800): 1 → all three; 2 → first two; 3 → only the 1000 layer. `Clouds::RenderFlat` (heights 1200 then 1000): 1 → both, alpha 0.3; 2 → only 1200, alpha 0.3; 3 → only 1200, alpha 0.5 [C] `code/clouds.cpp:Clouds::RenderBlobby`, `Clouds::RenderFlat`. Read every frame; clouds are drawn in game and as the front-end background |
+| Building Detail | `RenderBuildingDetail` (`GRAPHICS_BUILDINGDETAIL`) | 1 | 1–3 | read every frame by the render sites in table 11.6a |
+| Entity Detail | `RenderEntityDetail` (`GRAPHICS_ENTITYDETAIL`) | 1 | 1–3 | units: `Team::RenderDarwinians` computes `H = 99999.9` (detail ≤ 1), `1000` (2), `500` (≥ 3); per unit `highDetail = clamp(1 − d²/H², 0, 1)` with d = camera distance; `Darwinian::Render` uses `highDetail > 0` to enable terrain-snapped prediction (also needs d < 1300) and ground shadows (alpha `150 × highDetail`, × 0.3 for monsters, needs d < 2000) and dish shadows [C] `code/team.cpp:Team::RenderDarwinians`, `code/worldobject/darwinian.cpp:Darwinian::Render`. Virii (`Team::RenderVirii`): level 1 by default; entity 1 & d > 1000 → 2; entity 2 & d > 1000 → 3, & d > 500 → 2; entity 3 & d > 1000 → 4, > 600 → 3, > 300 → 2. `Virii::Render`: level 1 → ground-snapped position and land normal; level > 1 → tail shortened by `0.25 × min(level − 1, 2)`; level < 4 → glow quads [C] `code/worldobject/virii.cpp:Virii::Render` (`ViriiUnit::Render` uses entity 3 → level 4 always) |
+| Apply | — | — | inactive when all six window values equal the stored prefs | writes all six keys (Landscape and PixelShader written back unchanged), `Save()`, and if `g_app->m_location`: `m_landscape.Init(levelFile->m_landscape)` and delete / re-create `m_water` [C] `ApplyGraphicsButton::MouseUp`. Out of game, apply only stores the prefs (render-time readers pick them up; `Water` reads at construction) |
+| Back | — | — | — | close |
+
+Table 11.6a — `RenderBuildingDetail` readers (values 1 High, 2 Medium, 3 Low) [C]:
+
+| Reader | Effect by detail |
+|---|---|
+| `code/worldobject/building.cpp:Building::RenderPorts` | per-port extra render only if `< 3` (no default arg → −1 if missing, which counts as `< 3`) |
+| `code/worldobject/constructionyard.cpp:ConstructionYard::RenderAlphas` | max glow blobs 50 / 25 / 10 |
+| `code/worldobject/goddish.cpp:GodDish::RenderAlphas` | 50 / 25 / 10 |
+| `code/worldobject/portal.cpp:Portal::RenderExplosionBuildup` | 50 / 25 / 10 |
+| `code/worldobject/rocket.cpp:EscapeRocket::RenderAlphas` | 50 / 20 / 10 |
+| `code/worldobject/rocket.cpp:FuelBuilding::RenderAlphas` | fuel-pipe loops `clamp(4 − detail, 1, 3)` = 3 / 2 / 1 (no default arg) |
+| `code/worldobject/pulsebomb.cpp:PulseBomb::RenderAlphas` | 20 / 10 / 2 |
+| `code/worldobject/researchitem.cpp:ResearchItem::RenderAlphas` | 20 / 10 / 0 |
+| `code/worldobject/spam.cpp:Spam::RenderAlphas` | 20 / 10 / 0 |
+| `code/worldobject/spawnpoint.cpp:SpawnPoint::RenderAlphas` | 20 / 10 / 3 |
+| `code/worldobject/spawnpoint.cpp:SpawnBuilding::RenderAlphas` | extra branch only at 1 |
+| `code/worldobject/crate.cpp:Crate::RenderGlow` | stars 10 / 5 / 2; blobs (default) / 10 / 0 |
+| `code/worldobject/laserfence.cpp:LaserFence::RenderAlphas` | extra effect only if `< 3` |
+| `code/worldobject/mine.cpp:MineBuilding::RenderAlphas`, `MineBuilding::RenderCart` | track size 1.0 when `> 1`; extra branch at 1; cart extra if `< 3` |
+| `code/worldobject/spiritreceiver.cpp` (`ReceiverBuilding::RenderAlphas` ×2, `BeginRenderUnprocessedSpirits`, `RenderUnprocessedSpirit`, `SpiritProcessor::RenderAlphas`, `UnprocessedSpirit::Render`) | textured glow variants only at 1 (Darwinia buildings, blocked in Multiwinia [I] via `BLOCK_OLD_DARWINIA_OBJECTS`) |
+| `code/worldobject/tree.cpp:Tree::Advance` | burning-tree fire particles `numFire /= detail` |
+| `code/water_reflection.cpp:WaterReflectionEffect::PreRenderWaterReflection` | [B:D3D] forced to 3 during the reflection pass, then restored |
+
+The exact visual change of the `== 1` / `< 3` branches in `Building::RenderPorts`, `LaserFence::RenderAlphas`, `MineBuilding::*`, `SpawnBuilding::RenderAlphas` was not traced (09-U10).
+
+Hidden (no UI) graphics keys:
+
+| Key | Default at readers | Effect |
+|---|---|---|
+| `RenderLandscapeDetail` | 1 | **none in the baseline**: both readers are commented out and replaced by the constant 1 (`Landscape::Init`: `detailScaleFactor = 1`, cell size ×`(1 + (f − 1)×0.5)`; `LandscapeRenderer::Render`: overlay drawn if `landscapeDetail < 4`). The D3D water-reflection pass sets it to 3 and the restore line is commented out [B:D3D] [C] `code/landscape.cpp:Landscape::Init`, `code/landscape_renderer.cpp:LandscapeRenderer::Render`, `code/water_reflection.cpp:WaterReflectionEffect::PreRenderWaterReflection` |
+| `RenderPixelShader` | none in `Renderer::RenderFrame` (−1 if missing); first-run 1 | `Renderer::RenderFrame`: the Darwinia full-screen pixel effect runs only if `> 0 && !g_app->Multiplayer()`; `App::Multiplayer()` is true for **every** Multiwinia game → never runs [B:LEGACY] [C] `code/renderer.cpp:Renderer::RenderFrame`, `code/app.cpp:App::Multiplayer`. Also gates the D3D water reflection (`m_renderWaterEffect = RenderWaterEffect > 0 && RenderPixelShader > 0`) [B:D3D] |
+| `RenderWaterEffect` | 1 | D3D water reflection only [B:D3D] |
+| `RenderTreeDetail` | 1 | `Tree::Generate`: if > 1, leaf alpha ×`1.3^detail`, capped 255 [C] `code/worldobject/tree.cpp:Tree::Generate` |
+| `RenderLandscapeMode` | −1 | OpenGL only: −1 → VBO if `GL_ARB_vertex_buffer_object` is "perfectly supported", else display lists; an explicit value overrides; D3D always VBO [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer` |
+| `RenderSpecialLighting` | none (−1) | `Location::RenderBuildings`: `== 1` forces `SetupSpecialLights()` (also forced for Rocket Riot, level effect SpecialLighting, Prologue) [C] `code/location.cpp:Location::RenderBuildings` |
+| `RenderNegative` | 0 | `App::Initialise`: negative renderer, background white instead of black [C] |
+| `RenderPosterResolution` | 1 | poster / screenshot tiling multiplier (`PosterMaker`, `Renderer::Render`, `SetupProjMatrixFor3D`) — [24](24_rendering.md) |
+| `ManuallyScaleTextures` | 0 | OpenGL: force power-of-two texture rescale [C] `code/lib/bitmap.cpp:BitmapRGBA::ConvertToTexture` |
+| `RenderFog` | 1 | read only under `FOG_LOGGING` / `FOG_PREFERENCE`, neither defined → no effect [C] `code/main.cpp:SetPreferenceOverrides` |
+| `DarwinianScaleFactor` | none (−1.0) | §11.11 line 16 |
+
+### 11.7 Sound Options (`PrefsSoundWindow`) [B:FULL]
+
+[C] `code/interface/prefs_sound_window.cpp`, `code/sound/soundsystem.cpp:SoundSystem::RestartSoundLibraryInternal`; engine effects in [27](27_audio_engine.md). Window name `dialog_soundoptions` (a full-screen `GameOptionsWindow`, title `multiwinia_mainmenu_title`). Controls in on-screen order:
+
+| # | Control (string id) | Pref key | Values | Default (first-run / code fallback) | Applied | Effect | Build |
+|---|---|---|---|---|---|---|---|
+| 1 | drop-down `dialog_soundlibrary` | `SoundLibrary` | option list contains **only** `dialog_directsound` (= 1) under `HAVE_DSOUND` (`dialog_softwaresound` (= 0) otherwise); Apply writes `"dsound"` (1) or `"software"` (0) | `dsound` / `dsound` | Apply → library restart | back-end selection; a hand-edited `"none"` disables audio | [B:FULL] |
+| 2 | drop-down (cycle) `dialog_mixfrequency` | `SoundMixFreq` | `dialog_11khz` 11025, `dialog_22khz` 22050, `dialog_44khz` 44100 | 22050 / 22050 (2D waveOut fallback 44100) | Apply → restart | primary-buffer / mixer output rate | [B:FULL] |
+| 3 | slider `volume` (caption hard-coded English **"Master Volume"**) | `SoundMasterVolume` | 0–255 (slider fraction × 255, truncated; track spans 50 %–95 % of the button width) | 255 / 255 | **immediately** on mouse-down (`SetMasterVolume`, forces all channel volumes to refresh); written + `Save()` on mouse-up; independent of Apply | global attenuation `(255 − m)×0.32 dB` for all sounds and music | [B:FULL] |
+| 4 | drop-down (cycle) `dialog_numchannels` | `SoundChannels` | `dialog_8channels` 8, `dialog_16channels` 16, `dialog_32channels` 32, `dialog_64channels` 64 (a 48 option is commented out: the software mixer needs powers of 2) | 32 / 32 in the sound system, but the window's `ReadValues` fallback is **16** | Apply → restart | voice count (N − 1 effect voices + music) | [B:FULL] |
+| 5 | check box `dialog_swapstereo` | `SoundSwapStereo` | 0 / 1 | 0 / 0 | Apply (read every sound tick) | 0 = listener up vector negated (normal orientation for DirectSound's handedness [I]); 1 = left/right swapped | [B:FULL] |
+| 6 | drop-down `dialog_memoryusage` | `SoundMemoryUsage` | `dialog_high` 1, `dialog_medium` 2, `dialog_low` 3 | 1 / 1 | Apply → `EmptyCache()` and reopen every stream | limits random choice to the first 100 % / 50 % / 25 % of each sample group; still honoured at run time if hand-edited | UI [B:DEAD] (`USE_SOUND_MEMORY`) |
+| 7 | check box `dialog_hw3dsound` (`HW3DDropDownMenu`; shows `dialog_unavailable` without hardware support) | `SoundHW3D` | 0 / 1 | 0 / 0 | Apply → restart | requests `DSBCAPS_LOCHARDWARE` buffers; on init failure: message box "Failed to set requested sound settings" (English literal), pref reset to 0, retry | UI [B:DEAD] (`USE_SOUND_HW3D`); pref read in baseline |
+| 8 | check box `dialog_realtimeeffects` | `SoundDSP` | 0 / 1 | 0 / 0 | Apply → `PropagateBlueprints()` (on) or `StopAllDSPEffects()` (off) | per-sound DSP chains ([10](10_audio_design.md)) | UI [B:DEAD] (`USE_SOUND_DSPEFFECTS`); pref read in baseline |
+| — | button `dialog_apply` (`RestartSoundButton`) | — | — | — | — | greyed while every control equals the stored prefs (compares with fallbacks 22050 / 16 / 0 / 0 / 1 and a library match where a missing / empty `SoundLibrary` counts as matching either choice — so with `SoundChannels` missing the button appears active). On click: write prefs, `SoundSystem::RestartSoundLibrary()`, cache / DSP handling as above, `Save()`, `RefreshValues()` | [B:FULL] |
+| — | button `dialog_close` captioned `multiwinia_menu_back` (`MenuCloseButton`) | — | — | — | — | Back | [B:FULL] |
+
+So the player sees: Sound Library (one choice), Mix Frequency, Master Volume, Channels, Swap Stereo, Apply, Back. Hidden prefs [C]: `SoundBufferSize` (waveOut buffer length in stereo samples for the software path; first-run 512, code fallback 2000), `Sound` (SDL only, [B:DEAD]). Library restart semantics [C] `RestartSoundLibraryInternal`: deletes the channel table and both devices and recreates them; live `SoundInstance`s survive but lose their channels (looping sounds re-queue and restart from the beginning of their sample; one-shots expire after 3 ticks); the music instance keeps its read position [I]. `PrefsSoundWindow::Render` returns right after `GameOptionsWindow::Render`; the code after the `return` (device name, sound CPU % with red text above 15 %, sample-cache memory) is unreachable [C]. `code/UI/soundsliderbutton.h` (another master-volume writer) is not in the vcproj and not included anywhere → dead [C].
+
+### 11.8 Other Options (`PrefsOtherWindow`) [B:FULL]
+
+[C] `code/interface/prefs_other_window.cpp:PrefsOtherWindow::Create`, `code/interface/prefs_other_window.h` (`#define`s). Shown controls in order: Help System, Port Forwarding, Server Port, Client Port, Language (not on Mac), Apply, Back.
+
+| Control (id → English) | Widget | Pref key (`#define`) | Window default | Range / choices | Engine effect |
+|---|---|---|---|---|---|
+| `dialog_helpsystem` "Help System" | `GameMenuCheckBox` | `HelpEnabled` (`OTHER_HELPENABLED`) | 1 | 0 / 1 | in-game contextual hints H3–H7 (§8.2); also read with no remaining effect in `TaskManagerInterfaceMultiwinia::Advance` and `LocationInput::AdvanceTeamControl` |
+| `dialog_useportforwarding` "Port Forwarding" | `GameMenuCheckBox` | `NetworkUsePortForwarding` (`PREFS_NETWORKUSEPORTFORWARDING`) | 0 | 0 / 1 | disabled while hosting (`g_app->m_server != NULL`). When 1: the client reports its local listener port instead of the hole-punched port (`ClientToServer::Advance`) and the server advertises its local port (`Server::Advertise`) [C] |
+| `dialog_serverport` "Server Port" | `GameMenuInputField` showing an int as a string (`NetworkIntAsString(LocalInt)`, bounds 0 – 65535.1) | `NetworkServerPort` (`PREFS_NETWORKSERVERPORT`) | 4000 | 0–65535 | UDP listen port of a hosted server (`Server::Initialise` → `NetSocketListener(ourPort)`) and default port of manual `ServerN` entries [C] `code/network/server.cpp:Server::Initialise`, `GameMenuWindow::UpdateJoinGamePage`. Disabled while hosting |
+| `dialog_clientport` "Client Port" | as above | `NetworkClientPort` (`PREFS_NETWORKCLIENTPORT`) | 4001 | 0–65535 | client listener port; if the bind fails and port ≠ 0, retried with port 0 (any) [C] `code/network/clienttoserver.cpp:ClientToServer::OpenConnections`. Disabled while hosting |
+| `dialog_language` "Language" (`#ifndef TARGET_OS_MACOSX`) | `GameMenuDropDown` (full-screen list) | `TextLanguage` (`OTHER_LANGUAGE`) | index of the file whose base name equals the pref (case-insensitive), else −1 | one entry per file in `language/` (base name before `.`): english, french, german, italian, japanese, korean, portuguese, russian, spanish (in a packaged build: those in `language.dat`, §10.3). Caption `language_<name>` if that phrase exists, else the raw name | `App::SetLanguage(name, false)` (§10.1); then all windows are removed and the menu rebuilt |
+| Apply | `ApplyOtherButton` | — | — | inactive when Help, Language, PortForwarding, ServerPort, ClientPort all match the stored prefs (does **not** compare the hidden keys below) | apply flow below |
+| Back | `MenuCloseButton` | — | — | — | close |
+
+Hidden members that Apply also writes (no visible control in Multiwinia; values round-trip from what the constructor read) [C] `ApplyOtherButton::MouseUp`, `PrefsOtherWindow::PrefsOtherWindow`:
+
+| Member | Pref key | Constructor read (default) | What Apply writes | Engine effect |
+|---|---|---|---|---|
+| `m_controlHelpEnabled` | `ControlHelpEnabled` (`OTHER_CONTROLHELPENABLED`) | 1 | same value | gamepad button-prompt overlays: `ControlHelpSystem::Advance` / `Render` only run in gamepad mode **and** pref ≠ 0; `TaskManagerInterfaceIcons::Render*` draw pad prompts under the same condition [C] `code/control_help.cpp:ControlHelpSystem::Advance`, `code/taskmanager_interface_icons.cpp` |
+| `m_difficulty` | `Difficulty` (`OTHER_DIFFICULTY`) | at top level (`m_locationId == -1`): `GetInt(…, 1) − 1`, clamped ≥ 0; else `g_app->m_difficultyLevel` | only at top level: pref = `m_difficulty + 1`, `g_app->m_difficultyLevel = m_difficulty` | Darwinia campaign difficulty; `App::UpdateDifficultyFromPreferences` body commented out [B:LEGACY] |
+| `m_bootLoader` | `BootLoader` (`OTHER_BOOTLOADER`) | string, default `"random"`: `none` → 0, `random` → 1, anything else → 2 | 0 → `"none"`, 1 → `"random"`, 2 → `"firsttime"` | `RunBootloader` only `#ifdef USE_LOADERS` → no effect [B:DEAD] |
+| `m_automaticCamera` | `AutomaticCamera` (`OTHER_AUTOMATICCAM`) | 0 | same | `Camera::UpdateEntityTrackingMode`: 1 = off, 2 = on, anything else = auto (on iff gamepad input mode); `SwitchEntityTracking(on)` (suppressed while free-look is held). `Task::TargetSquad`: if 0 and gamepad → 2; if 2 the camera tracks the newly spawned squad [C] `code/camera.cpp:Camera::UpdateEntityTrackingMode`, `code/taskmanager.cpp:Task::TargetSquad` — the closest thing to "auto camera" in the game |
+| `m_largeMenus` | `LargeMenus` (`OTHER_LARGEMENUS`) | 0 | same; `g_app->m_largeMenus = (value == 2)` (Vista media-centre branch dead) | "ten-foot" UI scale for `DarwiniaWindow::GetMenuSize` / `SetMenuSize`: `scale = 0.96 × screenH / 460` [C] `code/interface/darwinia_window.cpp:DarwiniaWindow::GetMenuSize`; also applied at start-up in `App::Initialise`; full-screen `GameOptionsWindow`s use screen fractions, so it only affects small legacy-style windows |
+| `m_christmas` | `ChristmasEnabled` (`OTHER_CHRISTMASENABLED`) | 1 | **not written** | none (Christmas mode §5.16 ignores it) |
+
+Apply flow [C] `ApplyOtherButton::MouseUp`: (1) write HelpEnabled, ControlHelpEnabled; (2) Difficulty (top level only); (3) BootLoader string; (4) if a location is loaded: `Landscape::Init` + re-create `Water` (copied from the graphics apply, harmless); (5) if any of PortForwarding / ServerPort / ClientPort changed → write them and `g_app->m_clientToServer->OpenConnections()` (re-binds the client listener immediately, even when not hosting); (6) if the language changed → `SetString(TextLanguage)`, `App::SetLanguage`, `removeWindows = true`; (7) AutomaticCamera; (8) LargeMenus, `removeWindows |= (largeMenus changed)`; (9) if `removeWindows`: `RemoveAllWindows()` then at the main menu `GameMenu::CreateMenu()` else `EclRegisterWindow(new LocationWindow())`; (10) `Save()`.
+
+Edge cases [C]: if `TextLanguage` matches no file, `m_language = -1`; Apply indexes `m_languages[-1]`, which `LList::GetItem` returns as NULL, then `stricmp(NULL, …)` — undefined behaviour (crash) [C] `contrib/systemiv/lib/tosser/llist.cpp:LList::GetItem`. [I] In practice `App::InitLanguage` always stores a language that loaded, so a match exists. `PrefsOtherWindow::Render` returns right after `GameOptionsWindow::Render`; the unreachable rest would label the Darwinia window's extra rows (Help System, Control Pad Help, Boot Loaders, Language, Difficulty, Large Menus, Automatic Camera, version string) [C]. Same pattern in `PrefsGraphicsWindow::Render` (dead FPS readout).
+
+### 11.9 Control Options (`PrefsKeybindingsWindow`) [B:LEGACY — unreachable]
+
+[C] `code/interface/prefs_keybindings_window.cpp:PrefsKeybindingsWindow::Create`. A small centred `DarwiniaWindow` (380 × (125 + 25 × 13) before large-menu scaling).
+
+| Control | Pref / store | Choices | Effect |
+|---|---|---|---|
+| `newcontrols_prefsoption` "Control Mode" (`ControlMethodDropDownMenu`) | `ControlMethod` (read with no default) | 0 `newcontrols_prefs_gestures` "Gesture based", 1 `newcontrols_prefs_icons` "Icon based" | changing it rebuilds the window with the matching control list. Engine readers: `TaskManagerInterface::CreateTaskManager` — gesture interface only if not gamepad **and** `IsSinglePlayer()` **and** `ControlMethod == 0` (Multiwinia always gets `TaskManagerInterfaceMultiwinia`); `Camera::ChatLogVisible`: 1 → `ControlIconsChatLog`, 0 → `ControlGesturesChatLog`; `TaskManagerInterface::AdvanceTab`: gestures-switch-unit only if 0 [C] `code/taskmanager_interface.cpp`, `code/camera.cpp` |
+| one `ChangeKeybindingButton` per control (list below) | `user_input_preferences.txt` | any input the InputManager can describe | click toggles "listening"; while listening the caption blinks at 3 Hz (`(int)(g_gameTime×3) & 1`) and the first active input (`getFirstActiveInput(spec, instant)`) becomes the new binding. Apply writes each control's string to the user input prefs and `replacePrimaryBinding`; if `IconsTaskManagerDisplay` was bound to "…down", `IconsTaskManagerHide` is bound to the same input with "up" |
+| mouse buttons (`#ifdef TARGET_OS_MACOSX`) | `ControlMouseButtons` | 1 / 3 | read by `SendTeamControlsToNetwork` (default 3) |
+| `dialog_restoredefaults` "Restore Defaults" | — | — | `g_inputManager->Clear()` + re-parse the system prefs; re-read ControlMouseButtons |
+| `dialog_close` "Close", `dialog_apply` "Apply" | — | — | Apply also: `SetInt(ControlMouseButtons)`, `SetInt(ControlMethod)`, `TaskManagerInterface::CreateTaskManager()`, `Save()` both stores, `LangTable::RebuildTables()` |
+
+Bindable controls (`s_controls`, label id → English; `instant` flag): 0 CameraLeft "Left"; 1 CameraRight "Right"; 2 CameraForwards "Forwards"; 3 CameraBackwards "Backwards"; 4 CameraUp "Up"; 5 CameraDown "Down"; 6 CameraZoom "Zoom"; 7 UnitDeselect "Deselect" (instant); 8 SkipMessage "Skip Message" (instant); 9 GesturesChatLog "Chat Log" (instant); 10 IconsChatLog "Chat Log" (instant); 11 IconsTaskManagerDisplay "Display Task Manager" (instant); 12 IconsTaskManagerEndTask "End Task" (instant). Gesture mode shows indices 0–9; icon mode shows 0–8, 10, 11, 12. Players of the shipped game cannot rebind keys except by editing files ([06](06_player_control_and_input.md)).
+
+### 11.10 Front-end settings persisted as preferences
+
+| Key | Type | Default | Written by | Read by |
+|---|---|---|---|---|
+| `PlayerName` | String | phrase `multiwina_playername_default` → "NewPlayer" (`GameMenuWindow`); `"NewServer"` in `Server::Advertise` | `PlayerNameString::Set` (name field, chat `/name`, every `GameMenuWindow` construction), `ApplyNameButton` | `GameMenuWindow::GameMenuWindow`, `Server::Advertise` (default server name) |
+| `PlayerPreferedColour` | Int | −1 | `FancyColourButton::MouseUp` (outside Assault / co-op) | `GameMenuWindow::SetupMultiplayerPage`, `SetTeamNameAndColour` |
+| `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowPassworded`, `FilterShowCustomMaps` | Int | 1 each | `SaveFiltersButton` (Filters Back) | `GameMenuWindow::GameMenuWindow` |
+| `Server1` … `Server30` | String `"<host> <port> <name>"` | — | hand-edited only | `GameMenuWindow::UpdateJoinGamePage` (§5.8.3) |
+| `ServerName` | String | value of `PlayerName` (else `"NewServer"`) | hand-edited only | `Server::Advertise` |
+
+[C] `code/UI/GameMenuWindow.cpp`, `code/UI/FancyColourButton.h`, `code/UI/FinishMultiwiniaButton.h`, `code/UI/ApplyNameButton.h`, `code/game_menu.cpp:PlayerNameString::Set`, `code/network/server.cpp:Server::Advertise`.
+
+### 11.11 Every key in `data/default_preferences.txt`
+
+One row per line (17 lines, CRLF) [C] `data/default_preferences.txt`. Consulted **only on first run** (or after the corruption reset), each line added with `s_overwrite = true`, so its values replace the built-in first-run values; an existing `preferences.txt` is never merged with it [C] `PrefsManager::CreateDefaultValues` — and possibly not at all in packaged installs (§11.2, 09-U4).
+
+| Line | Key = value | Type as parsed | Meaning | Live reader(s) | Effective? |
+|---|---|---|---|---|---|
+| 1 | `NetworkServerPort = 4000` | Int | UDP port the hosted server listens on | `code/network/server.cpp:Server::Initialise` (default 4000); `PrefsOtherWindow` + `ApplyOtherButton`; `GameMenuWindow::UpdateJoinGamePage` (default port of manual `ServerN` lines) | yes [B:FULL] |
+| 2 | `NetworkClientPort = 4001` | Int | UDP port the client listener binds (falls back to 0) | `code/network/clienttoserver.cpp:ClientToServer::OpenConnections` (default 4001); Other Options | yes |
+| 3 | (blank) | — | — | — | — |
+| 4 | `ServerAddress = 127.0.0.1` | String (3 dots) | Darwinia-era direct-connect address | **none** in `code/` (only the `AddLine` in `CreateDefaultValues`) [C grep] | no — legacy |
+| 5 | `BypassNetwork = 0` | Int | Darwinia-era network bypass flag | **none** [C] | no — legacy |
+| 6 | `ServerPort = 4000` | Int | old name of the server port | **none** [C] (superseded by `NetworkServerPort`) | no — legacy |
+| 7 | (blank) | — | — | — | — |
+| 8 | `#TextLanguage = english` | comment (`#` before the first alphanumeric) | would force English | — (built-in `TextLanguage = unknown` stays; `App::InitLanguage` then tries `unknown` → OS locale language → `english` → first file, storing the first that loads) | no (commented) [C] `code/app.cpp:App::InitLanguage`, `App::TrySetLanguage` |
+| 9 | (blank) | — | — | — | — |
+| 10 | `TextSpeed = 15` | Int | Sepulveda text speed (characters/s) | `code/sepulveda.cpp:Sepulveda::CalculateTextTime`, `CalculatePauseTime` — inside `USE_SEPULVEDA_HELP_TUTORIAL` | no — [B:DEAD] |
+| 11 | (blank) | — | — | — | — |
+| 12 | `ControlMethod = 1` | Int | 0 = Darwinia gesture control, 1 = icon control | `TaskManagerInterface::CreateTaskManager` (gesture UI only in single-player Darwinia), `TaskManagerInterface::AdvanceTab`, `Camera::ChatLogVisible`; legacy keybindings window | partly: in Multiwinia only the chat-log binding choice (`IconsChatLog` vs `GesturesChatLog`, both "key l pressed") |
+| 13 | (blank) | — | — | — | — |
+| 14 | (blank) | — | — | — | — |
+| 15 | `WaitVerticalRetrace = 0` | Int | v-sync request | `Renderer::Initialise` (default 1; only the fallback `CreateWin` calls; ignored by the GL Win32 window manager; written back) | no in the GL baseline; partly in [B:D3D] |
+| 16 | `DarwinianScaleFactor = 2.0` | Float (one dot) | distance-based enlargement of unit sprites for readability | `code/worldobject/darwinian.cpp:Darwinian::Begin` (cached in `m_scaleFactor`; `Darwinian::Render`: if > 0 and camera distance d > 100, `size = 3.0 × (1 + k × (d − 100)/1000)`; beyond d = 300 the sprite's up vector blends to camera-up by `clamp((d − 300)/1000, 0, 1)`), `code/worldobject/officer.cpp:Officer::RenderShape`, `Officer::CalculateBoundingSphere` (`× (1 + k(d − 100)/1000)`), `Officer::RenderFlag` (multiplayer: `× (1 + k(d − 100)/1500)`), `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::RenderBlitzkrieg` (`× (1 + k(d − 100)/1500)`) | yes (no UI). Written as an int (`= 2`) `GetFloat` returns −1.0 → scaling disabled |
+| 17 | `MultiwiniaControlMethod = 1` | Int | 1 = Multiwinia RTS controls (`input_preferences.txt`), 0 = Darwinia-style (`input_preferences_darwinia.txt`, click-on-nothing = move order) | `code/lib/input/file_paths.cpp:InputPrefs::GetSystemPrefsPath`; `code/location_input.cpp:LocationInput::SelectObjectUnderMouse`, `LocationInput::AdvanceTeamControl` (×2) | fixed at 1: `PrefsManager::Load` forces it on every load |
+
+### 11.12 Full code-side preference-key register
+
+Every key read or written by compiled code (76 distinct literal keys from the access census `_work/drafts/P17b_prefs_accesses.csv`, cross-checked with `_work/drafts/P14_platform_lib_pref_keys.csv`, plus the dynamic keys). **FR** = first-run value (§11.2 / §11.11); **site** = per-call default argument (several when call sites disagree). "UI" = where a player can change it in the shipped build.
+
+| Key | Type | FR default | Site default(s) | UI | Readers → effect | Tag |
+|---|---|---|---|---|---|---|
+| `AccessAllAreasUnlocked` | Int | — | −1 | — | `UserProfileWindow::Create`: == 1 shows an "Access All Areas" button | [B:LEGACY] |
+| `AIInfoTeam` | Int | — | 1 | — | `AITarget::Render`: team whose AI debug info is drawn | debug render |
+| `AutomaticCamera` | Int | — | 0 | hidden (round-tripped by Other Options) | §11.8 | [B:FULL] |
+| `AVIMotionBlurFactor` | Int | — | 1 | — | `AVIGenerator` (`AVI_GENERATOR` only) | [B:DEBUG] |
+| `AVIOptions` | — | — | (existence test) | — | `AVIGenerator` | [B:DEBUG] |
+| `BootLoader` | String | `firsttime` | `random` (Other Options), `none` (`RunBootloader`) | hidden | `RunBootloader` (`USE_LOADERS`, off); it would also rewrite it to `random` after the intro | [B:DEAD] |
+| `BypassNetwork` | Int | 0 | — | — | none | unused |
+| `ChristmasEnabled` | Int | — | 1 | — | read into `PrefsOtherWindow::m_christmas`, never used | unused |
+| `ControlHelpEnabled` | Int | — | 1 | hidden | §11.8 | [B:FULL] |
+| `ControlMethod` | Int | 1 | none (−1), 0 | legacy window | §11.9, §11.11 | [B:FULL] / [B:LEGACY] |
+| `ControlMouseButtons` | Int | 3 | 3 | legacy (Mac) | `code/main.cpp:SendTeamControlsToNetwork` (`numMouseButtons`) | [B:FULL] |
+| `ControlRemap` | Int | — | none (−1) | — | `LocationInput::SelectObjectUnderMouse`: if `== 0`, cannot select a new object while something is selected; default −1 → feature off | [B:FULL] |
+| `DarwinianScaleFactor` | Float | 2.00 → 2.0 | none (−1.0) | — | §11.11 | [B:FULL] |
+| `DemoFrameRate` | Int | — | 25 | — | `UpdateAdvanceTime`: fixed time step `1/DemoFrameRate` when `RecordDemo` is 1 or 2 | [B:FULL] (dev) |
+| `Difficulty` | Int | 1 | 1 | hidden | §11.8 (Darwinia) | [B:LEGACY] |
+| `FilterShowCustomMaps` | Int | — | 1 | — (no checkbox) | read and written, no filter | [B:FULL] (dead setting) |
+| `FilterShowDemos` | Int | — | 1 | Filters page | §5.8.6 | [B:FULL] |
+| `FilterShowFullGames` | Int | — | 1 | Filters page | §5.8.6 | [B:FULL] |
+| `FilterShowIncompatible` | Int | — | 1 | Filters page | §5.8.6 | [B:FULL] |
+| `FilterShowPassworded` | Int | — | 1 | Filters page | §5.8.6 ("dy" bug) | [B:FULL] |
+| `HelpEnabled` | Int | 1 | 1 (none in the apply-button compare) | Other Options | §11.8 | [B:FULL] |
+| `KeyboardLayout` | String | — | Windows keyboard-layout locale name via `data/input/locales.txt` | — | `InputPrefs::GetKeyboardLayout` → selects `input/keyboards/<layout>.txt` | [B:FULL] |
+| `LargeMenus` | Int | — | 0 | hidden | §11.8 | [B:FULL] |
+| `ManuallyScaleTextures` | Int | — (FR only Linux / Mac) | 0 | — | §11.6 hidden table | [B:FULL] GL |
+| `Mod` | String | — | `none` | — | mod system | [B:DEAD] |
+| `ModSystemEnabled` | Int | — | 0 | — | mod system | [B:DEAD] |
+| `MultiwiniaControlMethod` | Int | 1 (forced) | 1 | — | §11.11 | [B:FULL] |
+| `NetworkClientPort` | Int | 4001 (data file) | 4001 | Other Options | §11.8 | [B:FULL] |
+| `NetworkServerPort` | Int | 4000 (data file) | 4000 | Other Options | §11.8 | [B:FULL] |
+| `NetworkUsePortForwarding` | Int | — | 0 | Other Options | §11.8 | [B:FULL] |
+| `PlayerName` | String | — | phrase default / `"NewServer"` | PlayerOptions name field | §11.10 | [B:FULL] |
+| `PlayerPreferedColour` | Int | — | −1 | PlayerOptions colour rows | §11.10 | [B:FULL] |
+| `RecordDemo` | Int | — | none (−1) | — | 1 = record server history to `serverHistory.dat` at `App::ShutdownCurrentGame`; 2 = replay `ServerHistory.dat` at `DoEnterLocation`; both force a fixed time step | [B:FULL] (dev) |
+| `RenderAIInfo` | Int | — | 0 | — | AI debug overlays (`AITarget`, `AIObjective`) | debug render |
+| `RenderBuildingDetail` | Int | 1 | 1 / none | Graphics Options | table 11.6a | [B:FULL] |
+| `RenderCloudDetail` | Int | 1 | 1 | Graphics Options | §11.6 | [B:FULL] |
+| `RenderEntityDetail` | Int | 1 | 1 | Graphics Options | §11.6 | [B:FULL] |
+| `RenderFog` | Int | — | 1 | — | only under undefined macros | [B:DEAD] |
+| `RenderLandscapeDetail` | Int | 1 | 1 | commented-out control | none (§11.6) | no effect |
+| `RenderLandscapeMode` | Int | — (FR only Linux / Mac: 2) | −1 | — | §11.6 hidden table | [B:FULL] GL |
+| `RenderNegative` | Int | — | 0 | — | §11.6 hidden table | [B:FULL] |
+| `RenderPixelShader` | Int | 1 | none / 1 | commented-out control | §11.6 hidden table | [B:LEGACY] / [B:D3D] |
+| `RenderPosterResolution` | Int | — | 1 | — | poster tiling ([24](24_rendering.md)) | [B:FULL] |
+| `RenderSpecialLighting` | Int | 0 | none | — | §11.6 hidden table | [B:FULL] |
+| `RenderTreeDetail` | Int | — | 1 | — | §11.6 hidden table | [B:FULL] |
+| `RenderWaterDetail` | Int | 1 | **none (−1)** in `Water`; 1 in the window | Graphics Options | §11.6 | [B:FULL] |
+| `RenderWaterEffect` | Int | — | 1 | — | D3D reflection | [B:D3D] |
+| `ScreenColourDepth` | Int | — | 32 (renderer) / 16 (window) | Screen Options | §11.5 | [B:FULL] |
+| `ScreenHeight` | Int | — | 0 → desktop (renderer); none (window, asserts) | Screen Options | §11.5; forced to 768 by `UnlockFullGameButton`, 600 by `WebsiteButton` | [B:FULL] |
+| `ScreenOverscan` | Int | 0 | 0 | — | always rewritten 0 | no effect |
+| `ScreenRefresh` | Int | — | 75 (renderer) / 60 (window) | Screen Options | §11.5 | [B:FULL] |
+| `ScreenWidth` | Int | — | 0 → desktop (renderer); none (window, asserts) | Screen Options | §11.5; forced to 1024 / 800 as above | [B:FULL] |
+| `ScreenWindowed` | Int | — | 0 (renderer, window); 1 (`WebsiteButton`, `UnlockFullGameButton` read) | Screen Options | §11.5; `SetWindowed()` helper | [B:FULL] |
+| `ScreenZDepth` | Int | — | 24 | Screen Options | §11.5 | [B:FULL] |
+| `Server1` … `Server30` (dynamic `prefsName`) | String | — | NULL (existence test first) | hand-edited | §5.8.3 | [B:FULL] |
+| `ServerAddress` | String | `127.0.0.1` | — | — | none | unused |
+| `ServerName` | String | — | `PlayerName` → `"NewServer"` | — | `Server::Advertise` | [B:FULL] |
+| `ServerPort` | Int | 4000 | — | — | none | unused |
+| `Sound` | Int | — | 1 | — | SDL sound library only (not compiled) | [B:DEAD] |
+| `SoundBufferSize` | Int | 512 | 2000 | — | software / waveOut buffer length (§11.7) | [B:FULL] |
+| `SoundChannels` | Int | 32 | 32 (sound system) / 16 (window) | Sound Options | §11.7 | [B:FULL] |
+| `SoundDSP` | Int | 0 | 0 | UI dead | §11.7 | [B:FULL] pref / [B:DEAD] UI |
+| `SoundHW3D` | Int | 0 | 0 | UI dead | §11.7 | [B:FULL] pref / [B:DEAD] UI |
+| `SoundLibrary` | String | `dsound` | `dsound` | Sound Options | §11.7 | [B:FULL] |
+| `SoundMasterVolume` | Int | 255 | 255 | Sound Options slider | §11.7 | [B:FULL] |
+| `SoundMemoryUsage` | Int | 1 | 1 | UI dead | §11.7 | [B:FULL] pref / [B:DEAD] UI |
+| `SoundMixFreq` | Int | 22050 | 22050 (window) / 44100 (Win32 2D library readers) | Sound Options | §11.7 | [B:FULL] |
+| `SoundSwapStereo` | Int | 0 | 0 | Sound Options | §11.7 | [B:FULL] |
+| `StartMap` | String | — | none | — | `Initialise` (`code/main.cpp`): jump straight into a Darwinia location by name | [B:LEGACY] dev |
+| `TestHarness` | Int | — | — | — | `TEST_HARNESS_ENABLED` only | [B:DEAD] |
+| `TestbedServerName` | Unicode | — | — | — | `TESTBED_ENABLED` only | [B:DEAD] |
+| `TextLanguage` | String | `unknown` | `unknown` (InitLanguage), OS locale (`motdButton`), `english` (help / task-manager image selection) | Other Options | §10.1, §11.8; MOTD request language; localised control-help images (`MultiwiniaHelp::RenderControlHelp`, `TaskManagerInterfaceMultiwinia::RenderRecentRunTask`) | [B:FULL] |
+| `TextLanguageTest` | Int | — | 0 | — | `App::TrySetLanguage`: compare against English (missing-string report) | [B:FULL] dev |
+| `TextSpeed` | Int | 15 | 15 | — | Sepulveda only | [B:DEAD] |
+| `UserProfile` | String | `AccessAllAreas` | `none` | — | `App::Initialise` → `SetProfileName`; `App::SetProfileName` writes it (except `AttractMode`) | [B:LEGACY] |
+| `WaitVerticalRetrace` | Int | 0 (data file) | 1 | — | §11.5 | [B:D3D] effective only |
+| `XineramaHack` | Int | — | 1 | — | `code/lib/input_sdl.cpp` (not compiled) | [B:DEAD] |
+| any key named in a `pref <key>` input binding (dynamic `key` / `m_keys[...]`) | Int read as bool (> 0) | — | 0 | — | `PrefsInputDriver` ("Prefs" input driver, registered in `code/main.cpp` L866): a binding `pref [not] <key>` is true while the pref is > 0; **no shipped binding in `data/input/*.txt` uses it** [C] `code/lib/input/inputdriver_prefs.cpp` | [B:FULL] (unused) |
+
+### 11.13 Inconsistent call-site defaults (centralise defaults in the new game)
+
+| Key | Disagreeing defaults | Consequence |
+|---|---|---|
+| `ScreenRefresh` | 75 in `Renderer::Initialise`, 60 in `PrefsScreenWindow` | matters only before the first `Renderer::Initialise` save, which always writes the key |
+| `ScreenColourDepth` | 32 vs 16 | as above |
+| `RenderWaterDetail` | none (−1) in `Water` vs 1 in the window | if the key is missing or not an int, in-game water is flat-only while the window shows "High" |
+| `RenderPixelShader`, `RenderBuildingDetail` (two sites), `HelpEnabled` (apply compare) | no default vs 1 | missing key → −1 |
+| `BootLoader` | `random` vs `none` vs FR `firsttime` | no effect (loaders compiled out) |
+| `SoundBufferSize` | FR 512 vs readers 2000 | [27](27_audio_engine.md) |
+| `SoundMixFreq` | FR 22050 vs Win32 library readers 44100 | [27](27_audio_engine.md) |
+| `SoundChannels` | sound system 32 vs Sound Options window 16 | with the key missing the Apply button shows as active |
+
+### 11.14 Options a player might expect that do **not** exist
+
+Verified by grep over `code/` for the option names and for any preference key containing them [C] (`P17b_prefs_accesses.csv`):
+
+| Option | Status |
+|---|---|
+| Multisampling / anti-aliasing | no pref key is read; `CreateWin(..., _antiAlias)` is always passed `true` and `WindowManagerWin32::CreateWin` ignores it (`PREFS_SCREEN_ANTIALIAS "ScreenAntiAliasing"` exists only in the uncompiled `contrib/systemiv`) |
+| Gamma / brightness | no pref, no UI; `Renderer::SetScreenGamma` (D3D gamma ramp, `g = 2 − gamma`, `m_gamma` initial 1.2) exists only under `USE_DIRECT3D` and has **no caller** [C] `code/renderer.cpp:Renderer::SetScreenGamma` |
+| Invert mouse / invert Y | no pref, no UI; inversion is only expressible in the binding syntax via `InvertInputDriver`; no shipped binding uses it ([06](06_player_control_and_input.md)) |
+| Auto-zoom | none; the related setting is the hidden `AutomaticCamera` (§11.8) |
+| V-sync | `WaitVerticalRetrace` exists (data file sets 0) but has no UI and no effect in the OpenGL baseline (§11.5) |
+| Key rebinding | window exists but is unreachable (§11.9) |
+| Separate music / effects / voice volumes | only a master volume (§11.7) |
+| Subtitles / text size / colour-blind options | none (the only text-scale switch is the hidden `LargeMenus`, which does not affect full-screen menus) |
+| Mouse sensitivity / camera speed | none (camera speeds are binding/data constants, [06](06_player_control_and_input.md)) |
+| Multiwinia AI difficulty as a global option | not here — it is the per-game lobby drop-down (§4.3); `Difficulty` is Darwinia-only |
+| Network rate / bandwidth settings | none (only ports and port forwarding) |
+| Profile selection / save slots | none reachable (§1.2.2) |
+
+---

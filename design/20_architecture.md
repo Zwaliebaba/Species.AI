@@ -179,11 +179,11 @@ One row per top-level module/directory of the source tree. "Source files" counts
 | `contrib/systemiv/lib/math/` | RNG (`random_number`), `hash`, `filecrc`, `math_stubs` (`iv_*`), vectors/matrices | 30 (8 / 22) | 4 of 14 | [B:FULL] subset | 22, 29 |
 | `contrib/systemiv/lib/filesys/` | file utilities, text/binary readers and writers, `FileSystem` | 10 (10 / 0) | 5 of 5 | [B:FULL] (`FileSystem` compiled but unused) | 29, 31 |
 | `contrib/systemiv/lib/unicode/` | `UnicodeString` | 4 (4 / 0) | 2 of 2 | [B:FULL] | 29 |
-| `contrib/systemiv/lib/{eclipse,gucci,render,resource,sound}` and `contrib/systemiv` interface/template/tools/contrib | SystemIV's own UI, input, renderer, resource and sound layers | 6 + 12 + 6 + 8 + 30 + 821 (0 in vcproj) | 0 | **not compiled**; headers occasionally reached by include resolution (e.g. `contrib/systemiv/lib/render` from `code/animatedpanel.cpp`, `code/water.cpp`) | appendix |
+| `contrib/systemiv/lib/eclipse`, `contrib/systemiv/lib/gucci`, `contrib/systemiv/lib/render`, `contrib/systemiv/lib/resource`, `contrib/systemiv/lib/sound` and `contrib/systemiv/interface`, `contrib/systemiv/template`, `contrib/systemiv/tools`, `contrib/systemiv/contrib` | SystemIV's own UI, input, renderer, resource and sound layers | 6 + 12 + 6 + 8 + 30 + 821 (0 in vcproj) | 0 | **not compiled**; headers occasionally reached by include resolution (e.g. `contrib/systemiv/lib/render` from `code/animatedpanel.cpp`, `code/water.cpp`) | appendix |
 | `contrib/unrar/` | RAR decompression for `.dat` archives (`MemMappedFile`) | 114 (sub-project) | 55 | **linked** (`Unrar.vcproj`); "not thread safe" comment drives the sound-loading serialisation (§11) | 31 |
 | `contrib/libogg-1.1.3/`, `contrib/libvorbis-1.1.2/` | Ogg/Vorbis decoding for streamed samples | 6 + 85 | 3 + 40 | **linked** (`ogg_static`, `vorbis_static`, `vorbisfile_static`) | 27 |
 | `contrib/lpng1215/`, `contrib/zlib/` | PNG writing (thumbnails/screenshots) and zlib | 118 | 72 | **linked** (`libpng.vcproj`, `zlib.vcproj` under `contrib/lpng1215/projects/visualc71`) | 25 |
-| `contrib/XCrashReport/`, `contrib/linux/`, `contrib/macosx/`, `contrib/loki_setup*/`, `contrib/oggvorbis-macosx-libs-1.0/`, `contrib/GLEXT.h` | crash-report sample, Linux/Mac SDKs, Loki installer | 51 + 36 + 38 + 89 + 6 + 1 | — | not linked in the PC baseline | 31 |
+| `contrib/XCrashReport/`, `contrib/linux/`, `contrib/macosx/`, `contrib/loki_setup/`, `contrib/loki_setupdb/`, `contrib/oggvorbis-macosx-libs-1.0/`, `contrib/GLEXT.h` | crash-report sample, Linux/Mac SDKs, Loki installer | 51 + 36 + 38 + 89 + 6 + 1 | — | not linked in the PC baseline | 31 |
 | `targets/vs2005/` | solution, project, property sheets, resource script | — | — | build definition | 31 |
 
 ### 3.2 Compile-time include graph
@@ -542,7 +542,7 @@ The inner order of `Location::Advance` and of each container is specified in [21
 | DbgHelp | `dbghelp.lib` | `code/lib/exception_handler.cpp` (`RecordExceptionInfo`) | crash minidumps ([31](31_platform_build_and_tools.md)) | [C] |
 | Video for Windows | `vfw32.lib` | `code/lib/avi_generator.cpp` | AVI capture, [B:DEBUG] (`AVI_GENERATOR`) | [C] |
 | DirectX error/GUID | `dxerr9.lib`, `dxguid.lib` | sound and D3D paths | error strings, GUIDs | [C] |
-| Steam SDK | include path `..\..\contrib\steam\` only; directory absent; `steamauth_*.cpp` not compiled | — | [B:DEAD] | [C] `targets/vs2005/Common.vsprops` |
+| Steam SDK | include path `..\..\contrib\steam\` only; directory absent; `contrib/systemiv/lib/metaserver/steamauth_client.cpp` and `steamauth_server.cpp` not compiled | — | [B:DEAD] | [C] `targets/vs2005/Common.vsprops` |
 
 ## 4 The App class
 
@@ -810,7 +810,7 @@ Class statics survive from one match to the next; the column "Reset" says where 
 
 ### 5.4 Declared but not defined in the baseline
 
-Correction to P01's singleton list [C]: `g_log` (`DarwiniaLogBuffer`, `code/lib/debug_logging.cpp`) and `g_fogLogging`, `g_fogEnabled` (`code/lib/debug_fog_logging.cpp`) are declared in headers but defined only in files that `Darwinia.vcproj` does not build; they do not exist in the shipped executable. `g_sdlMouseDriver` (`code/lib/window_manager_sdl.h`) is Mac-only. Every SystemIV global declared under the non-compiled SystemIV layers (`g_resource`, `g_renderer`, `g_styleTable`, `g_soundSystem`, `g_soundSampleBank`, `g_preferences`, `g_languageTable`, SystemIV's own `g_inputManager`/`g_windowManager`/`g_keys`/`g_keyDeltas`/`g_keyDownTime`, `g_identityMatrix33`) is absent [C] `contrib/systemiv/lib/{resource,render,sound,gucci}`, build_matrix §6. The `TESTBED_ENABLED` globals in `code/UI/GameMenuWindow.cpp` (`g_vGameEntries`, `g_eTestBedProgression`, `g_vGameSequence`, `g_iGameSequenceIndex`, `g_CurrentGameSequence`, `g_iSelectedRandSeed`) and `g_saveFile`, `g_mediaCenter` (`TARGET_OS_VISTA`) are [B:DEAD].
+Correction to P01's singleton list [C]: `g_log` (`DarwiniaLogBuffer`, `code/lib/debug_logging.cpp`) and `g_fogLogging`, `g_fogEnabled` (`code/lib/debug_fog_logging.cpp`) are declared in headers but defined only in files that `Darwinia.vcproj` does not build; they do not exist in the shipped executable. `g_sdlMouseDriver` (`code/lib/window_manager_sdl.h`) is Mac-only. Every SystemIV global declared under the non-compiled SystemIV layers (`g_resource`, `g_renderer`, `g_styleTable`, `g_soundSystem`, `g_soundSampleBank`, `g_preferences`, `g_languageTable`, SystemIV's own `g_inputManager`/`g_windowManager`/`g_keys`/`g_keyDeltas`/`g_keyDownTime`, `g_identityMatrix33`) is absent [C] `contrib/systemiv/lib/resource`, `contrib/systemiv/lib/render`, `contrib/systemiv/lib/sound`, `contrib/systemiv/lib/gucci`, build_matrix §6. The `TESTBED_ENABLED` globals in `code/UI/GameMenuWindow.cpp` (`g_vGameEntries`, `g_eTestBedProgression`, `g_vGameSequence`, `g_iGameSequenceIndex`, `g_CurrentGameSequence`, `g_iSelectedRandSeed`) and `g_saveFile`, `g_mediaCenter` (`TARGET_OS_VISTA`) are [B:DEAD].
 
 ## 6 Start-up sequence
 
@@ -1502,7 +1502,7 @@ Resolved: the drafts disagreed on the number of threads (P14: "8 threads" includ
 | — | DirectSound internal threads | OS | — | — | — | — | — | [I] |
 | T12 [B:D3D] | D3D mip-map worker | first `Direct3DInit` → `s_workQueue = new WorkQueue` + `SetWorkingThreadProcessor` (`code/lib/opengl_directx.cpp`) | `MipMapTask::GenerateMipmaps` | process | `0x55` | 53-bit | `s_texturesToMipmapMutex` | tasks reaped by `GenerateMipmaps()` at the start of every `Direct3DSwapBuffers`; `GeneratingMipmaps()` keeps the loading screen up ([24](24_rendering.md)) |
 
-Not present in the baseline [C]: Mac sound preloader (`SoundSystem::m_PreloadQueue`, `BackgroundSoundLoad`), Steam threads (`SteamAuthenticationMainThread`, `SteamAPICallbacksThread` in `contrib/systemiv/lib/metaserver/steamauth_*.cpp`, not compiled), the D3D water update thread (`Water::UpdateWaterThread`, never started), the gesture-recording thread (`code/gesture_demo_win32.cpp`, `GESTURE_EDITOR` + `USE_SEPULVEDA_HELP_TUTORIAL`), SDL audio/recording threads (Mac/Linux).
+Not present in the baseline [C]: Mac sound preloader (`SoundSystem::m_PreloadQueue`, `BackgroundSoundLoad`), Steam threads (`SteamAuthenticationMainThread`, `SteamAPICallbacksThread` in `contrib/systemiv/lib/metaserver/steamauth_client.cpp` and `contrib/systemiv/lib/metaserver/steamauth_server.cpp`, not compiled), the D3D water update thread (`Water::UpdateWaterThread`, never started), the gesture-recording thread (`code/gesture_demo_win32.cpp`, `GESTURE_EDITOR` + `USE_SEPULVEDA_HELP_TUTORIAL`), SDL audio/recording threads (Mac/Linux).
 
 There is **no simulation, render, audio-mixing or network-send thread**. `docs/NetworkThreads.txt` describes dedicated server/client send threads; the code sends synchronously from the main thread (discrepancy table).
 
