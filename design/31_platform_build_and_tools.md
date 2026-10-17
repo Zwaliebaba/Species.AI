@@ -38,7 +38,7 @@ The shipped Multiwinia PC game is one Win32 executable built by Visual Studio 20
 | 1 | Product variants are selected by editing one `#define` in `code/lib/universal_include.h` (`TARGET_PC_FULLGAME` is the only uncommented one); VS configurations only select the renderer (OpenGL vs Direct3D 9) and debug/release | [C] | §7.6 |
 | 2 | `ReleaseDirect3D` very probably does **not compile** at this commit: four independent breakages (abstract `WindowManagerDirectX`, `D3DRS_LINEWIDTH`, Xbox-360 `Resolve()` in `code/deform.cpp`, `bmp.GetPixel` on a pointer in `code/water.cpp`) | [C] for the two provable from the tree alone, [I] (strong) for the two that depend on PC DirectX SDK headers | §7.9 |
 | 3 | GL and D3D builds differ in floating-point code generation (`/fp:precise` vs `/fp:fast`; D3D device created without `D3DCREATE_FPU_PRESERVE`), yet the lobby compatibility check is only the version string `"dev"` — mixing them in one lockstep game is a desync risk | [C] flags, [I] consequence | §7.10 |
-| 4 | Loose `data/<name>` always overrides archive entries; later archives override earlier ones; archives are unencrypted solid RARs decompressed wholly into memory | [C] | §8.7–§8.8 |
+| 4 | A loose file under `data/` always overrides the archive entry of the same name; later archives override earlier ones; archives are unencrypted solid RARs decompressed wholly into memory | [C] | §8.7–§8.8 |
 | 5 | `default_preferences.txt` is looked up **before** `main.dat` is mounted, so in a packaged install (no loose `data/`) first-run defaults come only from code | [C] order, [I] packaged effect | §8.9 |
 | 6 | Map identity is a CRC-32 (init 0, no final XOR) of the level file bytes plus one `0xFF`; `tools/MapCRC` regenerates `code/mapcrc.h` as a pre-build step; all 87 `MAPID_*` reproduce exactly | [C] | §10 |
 | 7 | Crash handling = SEH filter around the whole main thread → `ERRORLOG.TXT` + minidump → user-confirmed TCP upload by `MultiwiniaSupport.exe` (built from `contrib/XCrashReport`), plus a release-assert "black box" | [C] | §6 |
@@ -92,7 +92,7 @@ Platform identity strings [C] `code/lib/universal_include.h`: `APP_SYSTEM` = `"P
 | `code/sound/sound_library_2d_win32.cpp`, `code/sound/sound_library_2d_win32.h` | Win32 `waveOut` 2D mixer output | yes | **yes** | no | [27](27_audio_engine.md) |
 | `code/sound/sound_library_3d_dsound.cpp`, `.h` | DirectSound 3D (`HAVE_DSOUND`) | yes | **yes** | no | requires DirectX ≥ 9 (§6.7) |
 | `code/sound/sound_library_3d_xaudio.cpp`, `.h` | XAudio (`HAVE_XAUDIO`) | yes | no [B:DEAD] | no | |
-| `code/sound/sound_library_2d_sdl.cpp`, `code/sound/sound_library_2d_sdl.h` | SDL audio | no | no [B:DEAD] | yes | needs absent `code/sound/macosx/ASWSDLRingBuffer.*` |
+| `code/sound/sound_library_2d_sdl.cpp`, `code/sound/sound_library_2d_sdl.h` | SDL audio | no | no [B:DEAD] | yes | needs the absent `ASWSDLRingBuffer` sources (a `macosx/` sub-folder of `code/sound/` that is not in the tree) |
 | `code/sound/sound_library_3d_software.cpp`, `.h` | portable software mixer | yes | yes | yes | `INVOKE_CALLBACK_FROM_SOUND_THREAD` variant is Mac-only |
 | `code/unicode/sound_library_2d.cpp`, `.h`, `code/unicode/sound_library_2d_sdl.cpp`, `.h`, `code/unicode/sound_library_3d.cpp`, `.h` | stale copies | no | no [B:DEAD] | no | |
 | `code/gesture_demo_win32.cpp` | Win32 thread | yes | no (needs `GESTURE_EDITOR` + `USE_SEPULVEDA_HELP_TUTORIAL`) [B:DEAD] | no | |
@@ -138,16 +138,16 @@ Platform identity strings [C] `code/lib/universal_include.h`: `APP_SYSTEM` = `"P
 | Defines | Debug: `TARGET_OS_MACOSX`, `GUI`, `SILENT`, `PROFILER_ENABLED` (+ project-level `_DEBUG=1`); Release: `NO_DEBUG_OUTPUT`, `TARGET_OS_MACOSX`, `GUI`, `SILENT`, `PROFILER_ENABLED` |
 | Compiler flags | `-fno-builtin`; Release adds `-mfpmath=387` (i386) and `-mno-fused-madd` (ppc) — chosen to keep floating point bit-compatible with the x87 Windows build [I: purpose; C: flags] |
 | Frameworks | SDL (`contrib/macosx/SDL.framework`), Ambrosia `ASWAboutBox`, `ASWAppKit`, `ASWDebug`, `ASWFoundation`, `AmbrosiaTools`, `Sparkle` (all six absent from the tree), AppKit, Carbon, Cocoa, CoreFoundation, Foundation, IOKit, OpenGL |
-| Build phases | strip `PrivateHeaders` from embedded frameworks (Ruby); create a `data` symlink in the bundle Resources (`ln -sf "$SRCROOT/../../../data" .`); run `$SVNROOT/tools/macosx/add-appcast-url.rb` and `add-svn-revision.rb` (both absent) |
+| Build phases | strip `PrivateHeaders` from embedded frameworks (Ruby); create a `data` symlink in the bundle Resources (`ln -sf "$SRCROOT/../../../data" .`); run the Ruby scripts `add-appcast-url.rb` and `add-svn-revision.rb` from a `macosx/` sub-folder of `tools/` (both absent from the tree) |
 | Cocoa shell | `SDLMain.mm`: change directory to `Contents/Resources`, set `SDL_ENABLEAPPEVENTS=1` and `SDL_HAS3BUTTONMOUSE=1`, Sparkle update checks, sleep/wake notifications — on wake `Server::SkipToTime(GetHighResTime())` only when clients are connected (`MultiwiniaCocoaBridge.cpp:WindowManagerSDLAwakeFromSleep`), pause/fullscreen menu items |
-| Buildability from this tree | 936 file references resolve (case-insensitively, as on HFS+), **26 do not**: the six Ambrosia frameworks, `code/sound/macosx/{ASWSDLRingBuffer,CARingBuffer}.{cpp,h}`, `code/sound/macosx/CABitOperations.h`, `code/sound/pokey.{cpp,h}`, `code/interface/pokey_window.{cpp,h}`, `code/lib/command_buffer.{cpp,h}`, `code/lib/debug_xbox.{cpp,h}`, `contrib/systemIV/lib/Crypticon/CCrypticon.{cpp,h}`, five absent `code/UI/*.h` XBLA/PDLC headers [C scripted check] ⇒ not buildable as checked in [I] |
+| Buildability from this tree | 936 file references resolve (case-insensitively, as on HFS+), **26 do not**: the six Ambrosia frameworks; `ASWSDLRingBuffer.cpp`, `ASWSDLRingBuffer.h`, `CARingBuffer.cpp`, `CARingBuffer.h`, `CABitOperations.h` (a missing `macosx/` folder under `code/sound/`); `pokey.cpp`, `pokey.h` (under `code/sound/`); `pokey_window.cpp`, `pokey_window.h` (under `code/interface/`); `command_buffer.cpp`, `command_buffer.h`, `debug_xbox.cpp`, `debug_xbox.h` (under `code/lib/`); `CCrypticon.cpp`, `CCrypticon.h` (a missing `Crypticon/` folder under `contrib/systemiv/lib/`); five absent XBLA/PDLC headers under `code/UI/` [C scripted check] ⇒ not buildable as checked in [I] |
 
 Resolved: P14's note "1158 `.cpp` references" — the project has 384 distinct `.cpp` `PBXFileReference` entries; the higher number counted every occurrence (file reference + build-file + group lines) [C] grep of the project file.
 
 ### 2.5 Linux and Darwinia Mac targets [B:DEAD]
 
-* `targets/linux/Makefile` — Darwinia-era (`CXX=apg++` autopackage wrapper, `CXXFLAGS=-g -Os`, `-DTARGET_OS_LINUX -DHAVE_SOCKET -DHAVE_SELECT -DHAVE_GETHOSTBYNAME -DHAVE_INET_NTOA`, links SDL, GL, GLU, vorbisfile, vorbis, ogg; `DEMO_CPPFLAGS=-DTARGET_DEMOGAME=1`, `FULL_CPPFLAGS=-DTARGET_FULLGAME=1`). It lists 247 `code/`+`contrib/` sources of which 23 are absent (17 under `code/`, e.g. `code/lib/text_stream_readers.cpp`, `code/network/networkupdate.cpp`; 6 under `contrib/netclass/` and `contrib/binreloc/`) [C scripted]. Note that `TARGET_FULLGAME` is not one of the product macros summed by the `#error` check in `code/lib/universal_include.h`, so it would silently build `TARGET_PC_FULLGAME` [C]. Linux-only runtime paths in code: profile `~/.multiwinia/<gametype>/`, debug log `/tmp/`, `RestartWindowManagerAndRenderer` shows "Restart Required" instead of switching mode [C] `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer`.
-* `targets/linux/Makefile.keygen-1` — builds a Darwinia `keygen-1` from `code/keygen.cpp` + absent `tools/PasswordGenerator/main.cpp` and copies it to an Introversion server (Darwinia beta registration) [C].
+* `targets/linux/Makefile` — Darwinia-era (`CXX=apg++` autopackage wrapper, `CXXFLAGS=-g -Os`, `-DTARGET_OS_LINUX -DHAVE_SOCKET -DHAVE_SELECT -DHAVE_GETHOSTBYNAME -DHAVE_INET_NTOA`, links SDL, GL, GLU, vorbisfile, vorbis, ogg; `DEMO_CPPFLAGS=-DTARGET_DEMOGAME=1`, `FULL_CPPFLAGS=-DTARGET_FULLGAME=1`). It lists 247 `code/`+`contrib/` sources of which 23 are absent (17 under `code/`, e.g. `text_stream_readers.cpp` (under `code/lib/`) and `networkupdate.cpp` (under `code/network/`); 6 in the absent `netclass/` and `binreloc/` folders of `contrib/`) [C scripted]. Note that `TARGET_FULLGAME` is not one of the product macros summed by the `#error` check in `code/lib/universal_include.h`, so it would silently build `TARGET_PC_FULLGAME` [C]. Linux-only runtime paths in code: profile `~/.multiwinia/<gametype>/`, debug log `/tmp/`, `RestartWindowManagerAndRenderer` shows "Restart Required" instead of switching mode [C] `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer`.
+* `targets/linux/Makefile.keygen-1` — builds a Darwinia `keygen-1` from `code/keygen.cpp` + an absent `PasswordGenerator/main.cpp` under `tools/` and copies it to an Introversion server (Darwinia beta registration) [C].
 * `targets/macosx/Darwinia/*` — Darwinia Xcode 2 project and menu callbacks (debug menu, FPS, profiler, fullscreen, quit) [C] `targets/macosx/Darwinia/MainMenuCallbacks.cpp`.
 * `docs/sdl_problems.txt` records SDL limitations of the time (no mouse wheel, low-resolution timer) [C].
 
@@ -476,7 +476,7 @@ Keep one monotonic process-relative clock (`QueryPerformanceCounter` or `std::ch
 
 ### 5.1 Working directory and data directory [C]
 
-* All game data are opened **relative to the current working directory**: archives by bare name (`init.dat` …) in `code/lib/resource.cpp:Resource::ParseArchive` (`DoesFileExist(_dataFile)`), loose files as `data/<name>` in `GetTextReader`/`GetBinaryReader`, `origin` and `version` in the cwd.
+* All game data are opened **relative to the current working directory**: archives by bare name (`init.dat` …) in `code/lib/resource.cpp:Resource::ParseArchive` (`DoesFileExist(_dataFile)`), loose files under `data/` in `GetTextReader`/`GetBinaryReader`, `origin` and `version` in the cwd.
 * Development: README instructs setting the debugger working directory to `..\..` (the repository root, where the exe is also written, §7.3) [C] `README.TXT`.
 * Install: the exe sits next to the `.dat` files and every installer shortcut sets `WorkingDir: "{app}"` (§9.2). Shortcuts start `autopatch.exe`, which then starts the game [I] — the launcher is absent from the tree.
 
@@ -682,11 +682,11 @@ Solution configurations [C]: `Debug`, `DebugDirect3D`, `PC OpenGL (Debug)` (→ 
 
 | Sheet | Contents | Evidence |
 |---|---|---|
-| `Common.vsprops` | Include path **in this order**: `contrib/libogg-1.1.3/include`, `contrib/libvorbis-1.1.2/include`, `contrib/steam/` (absent from the tree), **`code`**, `contrib`, `contrib/unrar`, `.\`, **`contrib/SystemIV`**, `contrib/SystemIV/lib/netlib`, `contrib/eclipse`, four Windows SDK v6.0 locations, DirectX SDK include directories (June 2008, February 2007, December 2006 ×3, November 2007, unversioned, April 2007), `contrib/lpng1215`, `contrib/zlib`. Defines `WIN32;TARGET_MSVC;_CRT_SECURE_NO_DEPRECATE`. Links `vfw32.lib winmm.lib dxguid.lib dxerr9.lib dsound.lib wsock32.lib dbghelp.lib xinput.lib`; library paths include `contrib/oggvorbis/lib`, `contrib/unrar`, `contrib/eclipse` and the same SDK roots; **delay-loads `xinput1_3.dll`**. Resource compiler include adds `code` | `targets/vs2005/Common.vsprops` |
+| `Common.vsprops` | Include path **in this order**: `contrib/libogg-1.1.3/include`, `contrib/libvorbis-1.1.2/include`, `steam/` under `contrib/` (absent from the tree), **`code`**, `contrib`, `contrib/unrar`, `.\`, **`contrib/SystemIV`**, `contrib/SystemIV/lib/netlib`, `contrib/eclipse`, four Windows SDK v6.0 locations, DirectX SDK include directories (June 2008, February 2007, December 2006 ×3, November 2007, unversioned, April 2007), `contrib/lpng1215`, `contrib/zlib`. Defines `WIN32;TARGET_MSVC;_CRT_SECURE_NO_DEPRECATE`. Links `vfw32.lib winmm.lib dxguid.lib dxerr9.lib dsound.lib wsock32.lib dbghelp.lib xinput.lib`; library paths include an `oggvorbis/lib` folder under `contrib/` (absent; the Mac project uses `contrib/systemiv/contrib/oggvorbis`), `contrib/unrar`, `contrib/eclipse` and the same SDK roots; **delay-loads `xinput1_3.dll`**. Resource compiler include adds `code` | `targets/vs2005/Common.vsprops` |
 | `OpenGL.vsprops` | links `opengl32.lib glu32.lib`; user macro `GraphicsLibrary=OpenGL` | `targets/vs2005/OpenGL.vsprops` |
 | `Direct3D.vsprops` | defines `USE_DIRECT3D`; links `d3dxof.lib d3dx9.lib d3d9.lib`; `GraphicsLibrary=Direct3D` | `targets/vs2005/Direct3D.vsprops` |
 
-**Header shadowing rule (design-relevant).** Because `code` precedes `contrib/SystemIV` in the include path, every `#include "lib/X.h"` resolves to `code/lib/X.h` when it exists and to `contrib/systemiv/lib/X.h` otherwise [C] `targets/vs2005/Common.vsprops`. Hence the SystemIV duplicates `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}` are **not used** (not in the vcproj); Multiwinia uses `code/lib/{preferences,language_table,hi_res_time}`. Exception: files inside `contrib/systemiv/lib` that use a same-directory quoted include (e.g. `contrib/systemiv/lib/profiler.cpp` includes `"hi_res_time.h"`) pick up the SystemIV header first (MSVC searches the includer's directory first); that header declares the same `InitialiseHighResTime()`/`GetHighResTime()` prototypes, so it links against `code/lib/hi_res_time.cpp` [I: MSVC quoted-include order + identical prototypes]. Two classes named `Vector3` (`code/lib/vector3.h`, `contrib/systemiv/lib/math/vector3.h`) therefore coexist in one program with identical `double x, y, z` layouts (latent ODR hazard, [24](24_rendering.md)).
+**Header shadowing rule (design-relevant).** Because `code` precedes `contrib/SystemIV` in the include path, every `#include "lib/<name>.h"` resolves to the file of that name under `code/lib/` when it exists and under `contrib/systemiv/lib/` otherwise [C] `targets/vs2005/Common.vsprops`. Hence the SystemIV duplicates `contrib/systemiv/lib/preferences.cpp`, `contrib/systemiv/lib/preferences.h`, `contrib/systemiv/lib/language_table.cpp`, `contrib/systemiv/lib/language_table.h`, `contrib/systemiv/lib/hi_res_time.cpp`, `contrib/systemiv/lib/hi_res_time.h` are **not used** (not in the vcproj); Multiwinia uses `code/lib/preferences.cpp`, `code/lib/language_table.cpp` and `code/lib/hi_res_time.cpp`. Exception: files inside `contrib/systemiv/lib` that use a same-directory quoted include (e.g. `contrib/systemiv/lib/profiler.cpp` includes `"hi_res_time.h"`) pick up the SystemIV header first (MSVC searches the includer's directory first); that header declares the same `InitialiseHighResTime()`/`GetHighResTime()` prototypes, so it links against `code/lib/hi_res_time.cpp` [I: MSVC quoted-include order + identical prototypes]. Two classes named `Vector3` (`code/lib/vector3.h`, `contrib/systemiv/lib/math/vector3.h`) therefore coexist in one program with identical `double x, y, z` layouts (latent ODR hazard, [24](24_rendering.md)).
 
 ### 7.3 The four project configurations — complete compiler and linker settings [C] `targets/vs2005/Darwinia.vcproj` (Configurations block)
 
@@ -734,10 +734,10 @@ The output directory `$(OutDir)\..\..\..` resolves to the repository root, which
 |---|---|
 | `code/lib/universal_include.cpp` | `UsePrecompiledHeader=1` (creates the PCH; the file is a single `#include`) in all four configurations |
 | `code/lib/input/xbox_eventhandler.cpp` | `ExcludedFromBuild` in all four configurations |
-| `code/network/x360_qnet.cpp` | `ExcludedFromBuild` in all four configurations (file absent from the tree) |
+| `x360_qnet.cpp` (under `code/network/`) | `ExcludedFromBuild` in all four configurations (file absent from the tree) |
 | `contrib/systemiv/lib/unicode/unicode_string.cpp`, `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp` | object file renamed `$(InputName)1.obj` (avoids a clash with same-named objects) |
 
-Files referenced by the vcproj but absent from the tree (14) [C scripted]: `code/lib/window_manager_xbox.h`, `preferences.txt` (repository root), `code/network/Multiwinia.spa.h`, `code/network/x360_qnet.cpp`, `code/network/x360_qnet.h`, `code/UI/CustomGameTypeSelection.h`, `code/UI/DownloadPDLCButton.h`, `code/UI/InvitePlayersButton.h`, `code/UI/PDLCOptionsButton.h`, `code/UI/XBLASelectSessionType.h`, `targets/vs2005/invisible.cur`, `targets/vs2005/GDF/resource`, `targets/vs2005/resource1.h`, `targets/vs2005/version_resource.h` — Xbox Live Arcade / PDLC remnants and resource-editor leftovers; headers and non-source items do not break the build. 47 source files under `code/` exist but are not in the vcproj (§2.2 lists the platform ones; the full list is in `_work/manifest.csv`, rows with empty `vcproj_build`).
+Files referenced by the vcproj but absent from the tree (14) [C scripted]: `window_manager_xbox.h` (under `code/lib/`); `preferences.txt` (repository root); `Multiwinia.spa.h`, `x360_qnet.cpp`, `x360_qnet.h` (under `code/network/`); `CustomGameTypeSelection.h`, `DownloadPDLCButton.h`, `InvitePlayersButton.h`, `PDLCOptionsButton.h`, `XBLASelectSessionType.h` (under `code/UI/`); `invisible.cur`, `GDF\resource`, `resource1.h`, `version_resource.h` (under `targets/vs2005/`) — Xbox Live Arcade / PDLC remnants and resource-editor leftovers; headers and non-source items do not break the build. 47 source files under `code/` exist but are not in the vcproj (§2.2 lists the platform ones; the full list is in `_work/manifest.csv`, rows with empty `vcproj_build`).
 
 ### 7.5 Resource scripts compiled into the exe [C]
 
@@ -747,7 +747,7 @@ Files referenced by the vcproj but absent from the tree (14) [C scripted]: `code
 | `targets/vs2005/GDF/Darwinia.rc` | Windows **Game Explorer** resources: `ID_GDF_XML DATA` and `ID_GDF_THUMBNAIL DATA` per language (NEU, DEU, ENU, ESP, FRA, ITA) pointing at `<LANG>\Darwinia.gdf.xml` / `boxart_<LANG>.png`; `ID_ICON ICON "NEU\gameicon_NEU.ico"`. These are **Darwinia: Vista Edition** definitions (name "Darwinia", version 1.5.4.0, executable `darwinia.exe`, saved games `Darwinia\users`) still compiled into Multiwinia | `targets/vs2005/GDF/Darwinia.rc`, `targets/vs2005/GDF/NEU/Darwinia.gdf.xml` |
 | `targets/vs2005/resource.h` | 622 `#define`s: an accidental resource-editor dump of CRT and OpenGL constants plus `IDI_ICON1 101` ("Used by icon_resource.rc", file absent). Functionally only `IDI_ICON1=101` matters (the D3D window class loads icon 101) | `targets/vs2005/resource.h`, `code/lib/window_manager_directx.cpp:WindowManagerDirectX::CreateWin` |
 | `targets/vs2005/darwinia.ico` | 32×32 and 16×16 16-colour icon (also the installers' `SetupIconFile`) | file inspection |
-| `targets/vs2005/version_resource.h` | referenced by the vcproj, **absent** | vcproj file list |
+| `version_resource.h` (in `targets/vs2005/`) | referenced by the vcproj, **absent** | vcproj file list |
 
 The Win32 OpenGL window class uses `LoadIcon(NULL, IDI_APPLICATION)` (generic icon) [C] `code/lib/window_manager_win32.cpp:WindowManagerWin32::CreateWin`; the Explorer file icon comes from the only `ICON` resource, `ID_ICON` = `NEU\gameicon_NEU.ico` [I: Explorer uses the first icon resource].
 
@@ -888,7 +888,7 @@ flowchart LR
     SL["tools/sounds.txt (1297 Oggs)"]
     ML["tools/menu_sounds.txt (18 Oggs)"]
     EX["tools/multiwinia_exclusions*.txt"]
-    IN["tools/multiwinia_inclusions_*.txt"]
+    IN["six inclusion lists in tools"]
     IL["tools/init.list"]
     LL["tools/*language.list"]
   end
@@ -974,7 +974,7 @@ inclusion_file := { relpath EOL }               ; exact file paths relative to d
 
 Why these exclusions matter for the design set: the retail `main.dat` contains no `scripts/*`, no `levels/map_*` / `levels/mission_*` (Darwinia campaign) and none of the licensed retro music — corroborating that scripts and the campaign are unreachable in Multiwinia ([30](30_scripting_tutorial_and_cutscenes.md), [08](08_levels_and_level_design.md), [10](10_audio_design.md)).
 
-### 8.6 Inclusion lists and `PERMITTED_MAPS` [C] `tools/multiwinia_inclusions_*.txt`, `code/lib/universal_include.h`
+### 8.6 Inclusion lists and `PERMITTED_MAPS` [C] the six inclusion lists in `tools/` (table), `code/lib/universal_include.h`
 
 | List | Adds (level + thumbnail for each) | Matches the target's `PERMITTED_MAPS`? |
 |---|---|---|
@@ -1016,10 +1016,10 @@ Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`,
 * The table is a `HashTable<MemMappedFile*>` with a case-folding hash (`& 0xDF`) and `stricmp` comparison, and every access is under the resource `NetMutex` ⇒ archive lookups are **case-insensitive** and thread-safe. Resolved: P14 stated that callers must pass lower-case names; the hash table makes the case irrelevant [C].
 * Lookup for a resource name `N`:
   1. (`USE_DARWINIA_MOD_SYSTEM` only [B:DEAD]) `<P>mods/<mod>/N`, then (Vista) `mods/<mod>/N`;
-  2. **loose file `data/N`** relative to the working directory — text: UTF-16 BOM → `UnicodeTextFileReader`, else `TextFileReader`; binary → `BinaryFileReader`;
-  3. archive entry `data/N` — text: BOM → `UnicodeTextDataReader`, else `TextDataReader`; binary → `BinaryDataReader`;
-  4. not found → `NULL` (text lookups log `Failed to find text resource: data/N`).
-* `Resource::FileExists(N)` = `GetBinaryReader(N) != NULL`. `ListResources(dir, filter)` lists loose `data/<dir>` files and then merges matching archive entries (the language selector's fallback uses it, §12.1).
+  2. **loose file** `data/` + N relative to the working directory — text: UTF-16 BOM → `UnicodeTextFileReader`, else `TextFileReader`; binary → `BinaryFileReader`;
+  3. archive entry `data/` + N — text: BOM → `UnicodeTextDataReader`, else `TextDataReader`; binary → `BinaryDataReader`;
+  4. not found → `NULL` (text lookups log "Failed to find text resource: data/<N>").
+* `Resource::FileExists(N)` = `GetBinaryReader(N) != NULL`. `ListResources(dir, filter)` lists loose files under `data/` + dir and then merges matching archive entries (the language selector's fallback uses it, §12.1).
 * Consequence: loose `data/` always beats archives — the development tree runs with no archives at all, and users or patches can override any file by placing it under `data/` [C].
 
 ### 8.9 First-run defaults ordering [C] `code/app.cpp:App::App`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`
@@ -1038,18 +1038,18 @@ Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`,
 
 | Script | Data build call | Copies into `build\` | Post-processing |
 |---|---|---|---|
-| `tools/build_multiwinia.bat` | `build_multiwinia_data.bat` (no args → retail exclusions, **English-only** `language.dat`) | `darwinia_gl.exe` → `multiwinia.exe`, `contrib\systemIV\contrib\XCrashReport\dbghelp.dll` | `tools\upx --best build\multiwinia.exe` |
+| `tools/build_multiwinia.bat` | `build_multiwinia_data.bat` (no args → retail exclusions, **English-only** `language.dat`) | `darwinia_gl.exe` → `multiwinia.exe`, `contrib\systemIV\contrib\XCrashReport\dbghelp.dll` | `upx --best build\multiwinia.exe` (using `tools/upx.exe`) |
 | `tools/build_multiwinia_crashreporter.bat` | (no args) | exe, dbghelp, `MultiwiniaSupport.ini`, `MultiwiniaSupport.exe` (from the repository root — absent there) | none (UPX "causes problems with debugging tools") |
-| `tools/build_multiwinia_gold.bat` | (no args) | exe, dbghelp, `MultiwiniaSupport.ini`, `tools\multiwiniasupport\MultiwiniaSupport.exe`, `tools\autopatcher\autopatch.exe`, `tools\autopatcher\copy_assist.exe`, `tools\profilelocatorwin32\profilelocator.exe`, `docs\multiwinia_manual.pdf` → `manual.pdf` | none |
-| `tools/build_multiwinia_retail.bat [lang]` | `retail <lang>` (default `English`) | as gold, except `autopatch.exe` chosen per language: `autopatch_fr.exe` (french), `autopatch_it.exe` (italian), `autopatch_de.exe` (german), `autopatch_es.exe` (spanish), `autopatch.exe` for english/all/efigs/russian ("Use english autopatcher for now") | none |
+| `tools/build_multiwinia_gold.bat` | (no args) | exe, dbghelp, `MultiwiniaSupport.ini`, `tools\multiwiniasupport\MultiwiniaSupport.exe`, `autopatch.exe` and `copy_assist.exe` from an `autopatcher` folder of `tools\` and `profilelocator.exe` from a `profilelocatorwin32` folder of `tools\` (both folders absent), `docs\multiwinia_manual.pdf` → `manual.pdf` | none |
+| `tools/build_multiwinia_retail.bat` [lang] | `retail <lang>` (default `English`) | as gold, except `autopatch.exe` chosen per language: `autopatch_fr.exe` (french), `autopatch_it.exe` (italian), `autopatch_de.exe` (german), `autopatch_es.exe` (spanish), `autopatch.exe` for english/all/efigs/russian ("Use english autopatcher for now") | none |
 | `tools/build_multiwinia_retail_efigs.bat` | → `build_multiwinia_retail efigs` | | |
 | `tools/build_multiwinia_retail_russian.bat` | → `build_multiwinia_retail russian` | | first `perl subst.pl ..\darwinia_gl.exe retail\... retail.ru` (binary regex patch of the exe; no `retail.` string exists in this tree, so a no-op here [C grep]); afterwards `echo buka > ..\build\origin` (distributor tag) |
 | `tools/build_multiwinia_hwcompat.bat` | `pchwcompat` | exe, `ncftpput.exe` (absent) | UPX |
 | `tools/build_multiwinia_hwcompat_crashreporter.bat` | `pchwcompat` | exe, `ncftpput.exe`, `MultiwiniaSupport.ini/.exe` (root), dbghelp | none |
-| `tools/build_multiwinia_pc_preview.bat [lang]` | `pcpreview %1` (English-only `language.dat`) | exe only | none |
+| `tools/build_multiwinia_pc_preview.bat` [lang] | `pcpreview %1` (English-only `language.dat`) | exe only | none |
 | `tools/build_figs_languages.bat` | – | four standalone `language.dat` files under `build\french`, `build\italian`, `build\german`, `build\spanish` | – |
 
-Every Multiwinia script expects the baseline `Release|Win32` output `darwinia_gl.exe` in the repository root [C]. Inputs referenced but absent from the tree: `tools/autopatcher/*`, `tools/profilelocatorwin32/*`, root `MultiwiniaSupport.exe`, `ncftpput.exe`, `tools/build_ambx_dat.bat`, `tools/convert_bmp_to_tex.cmd`, `tools/multiwinia_exclusions_xbox.txt`, `tools/multiwinia_inclusions_ambx.txt` [C absence]. The scripts `cd` relative to `%~dp0`; `build_multiwinia_retail_russian.bat` uses relative `..\` paths and must be run from `tools\` [C].
+Every Multiwinia script expects the baseline `Release|Win32` output `darwinia_gl.exe` in the repository root [C]. Inputs referenced but absent from the tree: the `autopatcher` and `profilelocatorwin32` folders of `tools/`, root `MultiwiniaSupport.exe`, `ncftpput.exe`, and in `tools/` the files `build_ambx_dat.bat`, `convert_bmp_to_tex.cmd`, `multiwinia_exclusions_xbox.txt`, `multiwinia_inclusions_ambx.txt` [C absence]. The scripts `cd` relative to `%~dp0`; `build_multiwinia_retail_russian.bat` uses relative `..\` paths and must be run from `tools\` [C].
 
 Darwinia-era scripts `tools/build_demo.bat`, `tools/build_demo2.bat`, `tools/build_final.bat`, `tools/build_vista.bat`, `tools/build_tools.bat` use `rsx rar32`, `grep_dos`, `sed_dos`, `sort_dos` (absent) and package `darwinia.exe` (the `ReleaseDirect3D` output) [B:LEGACY] (§14.3).
 
@@ -1156,13 +1156,13 @@ A 3ds Max 5 SDK `SceneExport` plug-in (`ShapeExporter.dle`; extension `shp`; lon
 | Transform | local = `nodeTM × inverse(parentTM)` at time 0. **Axis conversion Max (x, y, z) → game (x, z, −y)** for positions and the right/up rows; the front row is converted as `(−f.x, −f.z, f.y)` for fragments but `(f.x, f.z, −f.y)` for markers (sign inconsistency); matrices normalised |
 | Vertex data | positions de-duplicated with squared-distance threshold `0.001² = 1e-6`; colours de-duplicated exactly on RGB (per-vertex colours ×255, else material diffuse, else node wire colour); vertices = unique (position id, colour id) pairs; triangles copied from Max faces (no stripping, although NvTriStrip is included) |
 | Output | `fopen(name, "w")` then the engine's own `Shape::WriteToFile` (text `.shp`, grammar in [29](29_data_formats_reference.md); exporter-only constructors under `EXPORTER_BUILD`, [25](25_textures_and_assets.md)) |
-| Buildability | the VC6 projects (`ShapeExporter.dsp`, `ShapeExporterDLL.dsp`) reference `code/lib/{debug_utils,text_stream_readers,…}.cpp`, which have since moved to SystemIV ⇒ cannot be rebuilt from this tree [C absence]; the prebuilt `tools/binaries/ShapeExporter.dle` remains |
+| Buildability | the VC6 projects (`ShapeExporter.dsp`, `ShapeExporterDLL.dsp`) reference library sources under `code/lib/` (for example `debug_utils.cpp` and `text_stream_readers.cpp`) that have since moved to SystemIV ⇒ cannot be rebuilt from this tree [C absence]; the prebuilt `tools/binaries/ShapeExporter.dle` remains |
 
 The 133 `.max` scenes in `data/shapes/source/` are its inputs and are excluded from every archive (§8.5).
 
 ### 11.2 3DGeometry [C] `tools/3DGeometry/main.cpp`, `tools/3DGeometry/3DGeometry.dsp`
 
-An Allegro/AllegroGL OpenGL sandbox (VC6 project with Allegro and fmod paths) linking `code/lib/{debug_utils,math_utils,matrix33,…}.cpp` to visualise ray/sphere/triangle intersection maths (`SphereTriangleIntersection` and related helpers of `code/lib/math_utils.cpp`); stale (references moved files), developer-only.
+An Allegro/AllegroGL OpenGL sandbox (VC6 project with Allegro and fmod paths) linking `code/lib/math_utils.cpp`, `code/lib/matrix33.cpp` and other library sources (some, such as `debug_utils.cpp`, since moved to SystemIV) to visualise ray/sphere/triangle intersection maths (`SphereTriangleIntersection` and related helpers of `code/lib/math_utils.cpp`); stale (references moved files), developer-only.
 
 ---
 
@@ -1256,7 +1256,7 @@ One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 in
 | 2 | `README.TXT` | Development readme: VS2008, solution in `targets\vs2005`, configuration→exe list, DirectX SDK requirement, optional Vista SDK for `TARGET_OS_VISTA`, set working dir to `..\..` | [C] |
 | 3 | `MultiwiniaSupport.ini` | Support-tool file list (§6.4) | [C] |
 | 4 | `animator.exe` | Introversion sprite-animation tool (PE32 GUI) [I: name + data] | [C] file type |
-| 5 | `animator.dat` | Solid RAR v4 data for animator.exe: 15 files `data\animations\{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp`, `data\fonts\verdana-bold.bmp`, `data\dialogs\{animator-controlpanel,animator-mainmenu,animator-panel,file-dialog,mainmenu}.txt`, `data\english.txt` | [C] `_work/scripts/P14_rar_list.py` header walk |
+| 5 | `animator.dat` | Solid RAR v4 data for animator.exe: 15 entries (paths inside the archive, below its own `data\` root, not files of this tree): animations `cloudyglow`, `darwinian`, `laser`, `plusone`, `spawnpoint`, `zone-back`, `zone-front`, `zone` (`.bmp`); font `verdana-bold.bmp`; dialogs `animator-controlpanel`, `animator-mainmenu`, `animator-panel`, `file-dialog`, `mainmenu` (`.txt`); `english.txt` | [C] `_work/scripts/P14_rar_list.py` header walk |
 | 6 | `darwinia.gdf` | Darwinia Vista Game Definition File (UTF-16; v1.5.4.0, release 2005-03-04, executable `darwinia.exe`) | [C] |
 | 7 | `darwinia.mcl` | Windows Media Center application descriptor for Darwinia (installed by the NSIS Vista installer) | [C] |
 | 8 | `darwinia.png` | 256×256 Media Center/box image (listed in the vcproj as a non-built file) | [C] |
@@ -1267,7 +1267,7 @@ One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 in
 
 | # | File | Role | Build tag |
 |---|---|---|---|
-| 1 | `targets/linux/Makefile` | Darwinia-era Linux makefile (`CXX=apg++`, `-g -Os`, `-DTARGET_OS_LINUX -DHAVE_SOCKET -DHAVE_SELECT -DHAVE_GETHOSTBYNAME -DHAVE_INET_NTOA`, SDL/GL/GLU/vorbisfile/vorbis/ogg, `TARGET_DEMOGAME`/`TARGET_FULLGAME` variants); 247 `code/`+`contrib/` sources listed, 23 absent (17 under `code/`, 6 under `contrib/netclass`/`contrib/binreloc`) | [B:DEAD] |
+| 1 | `targets/linux/Makefile` | Darwinia-era Linux makefile (`CXX=apg++`, `-g -Os`, `-DTARGET_OS_LINUX -DHAVE_SOCKET -DHAVE_SELECT -DHAVE_GETHOSTBYNAME -DHAVE_INET_NTOA`, SDL/GL/GLU/vorbisfile/vorbis/ogg, `TARGET_DEMOGAME`/`TARGET_FULLGAME` variants); 247 `code/`+`contrib/` sources listed, 23 absent (17 under `code/`, 6 in the absent `netclass`/`binreloc` folders of `contrib/`) | [B:DEAD] |
 | 2 | `targets/linux/Makefile.keygen-1` | Builds Darwinia `keygen-1` registration tool | [B:DEAD] |
 | 3 | `targets/macosx/Darwinia/Darwinia.xcode/project.pbxproj` | Darwinia Xcode 2 project | [B:DEAD] |
 | 4 | `targets/macosx/Darwinia/English.lproj/InfoPlist.strings` | Darwinia bundle strings | [B:DEAD] |
@@ -1292,7 +1292,7 @@ One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 in
 | 23 | `targets/macosx/Multiwinia/MainMenu.nib/info.nib` | legacy menu nib | [B:DEAD] |
 | 24 | `targets/macosx/Multiwinia/MainMenu.nib/objects.nib` | legacy menu nib | [B:DEAD] |
 | 25 | `targets/macosx/Multiwinia/Multiwinia.icns` | Mac icon (IP art) | [B:DEAD] |
-| 26 | `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj` | Multiwinia 1.3.1 Mac Xcode project: targets `Multiwinia` (app), `Generate Map CRCs` (builds `tools/MapCRC/main.cpp`, run as a build phase on `data/levels/` -> `code/mapcrc.h`) and `OggVorbis`; ppc+i386; defines in §7.8; 936 file references resolve, 26 do not (Ambrosia frameworks, `code/sound/macosx/*`, `pokey`, `command_buffer`, `debug_xbox`, `Crypticon`) | [B:DEAD] on PC |
+| 26 | `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj` | Multiwinia 1.3.1 Mac Xcode project: targets `Multiwinia` (app), `Generate Map CRCs` (builds `tools/MapCRC/main.cpp`, run as a build phase on `data/levels/` -> `code/mapcrc.h`) and `OggVorbis`; ppc+i386; defines in §7.8; 936 file references resolve, 26 do not (Ambrosia frameworks, Mac sound ring buffers, `pokey`, `command_buffer`, `debug_xbox`, `Crypticon`; §2.4) | [B:DEAD] on PC |
 | 27 | `targets/macosx/Multiwinia/MultiwiniaCocoaBridge.cpp` | Cocoa→game bridge (fullscreen, pause, wake skip) | [B:DEAD] |
 | 28 | `targets/macosx/Multiwinia/MultiwiniaCocoaBridge.h` | bridge prototypes | [B:DEAD] |
 | 29 | `targets/macosx/Multiwinia/SDLApp_Prefix.pch` | prefix header (SDL.h, Cocoa) | [B:DEAD] |
@@ -1404,7 +1404,7 @@ Status column: *live* = used for the Multiwinia PC build or release; *variant* =
 | 64 | `tools/ShapeExporter/resource.h` | ShapeExporter | Resource IDs for the plugin | authoring |
 | 65 | `tools/SlashSort.exe` | binary | [I] Console filter that groups the lines of a memory log by source file name: its only readable strings are the usage line `slashsort memory.log > output` and the banner `Filename groupings:` — most likely post-processing for `TRACK_MEMORY_LEAKS` output; referenced by no script | unreferenced |
 | 66 | `tools/binaries/ShapeExporter.dle` | binary | Prebuilt 3ds Max exporter plugin | authoring |
-| 67 | `tools/build-data-english.mk` | Darwinia localisation | Make rule producing data/english_demo.txt via copystrings.pl | legacy |
+| 67 | `tools/build-data-english.mk` | Darwinia localisation | Make rule producing `english_demo.txt` (a `data/` file absent from this tree) via copystrings.pl | legacy |
 | 68 | `tools/build_demo.bat` | Darwinia packaging | Darwinia demo 1 build (mine level only, english.txt truncated by copystrings.pl), rar32 via rsx | legacy |
 | 69 | `tools/build_demo2.bat` | Darwinia packaging | Darwinia demo 2 build (launchpad + purity placeholder maps) | legacy |
 | 70 | `tools/build_figs_languages.bat` | MW localisation | Builds four separate language.dat files (French, Italian, German, Spanish) into build\<lang>\ | live helper |
@@ -1413,7 +1413,7 @@ Status column: *live* = used for the Multiwinia PC build or release; *variant* =
 | 73 | `tools/build_multiwinia.bat` | MW packaging | Calls `build_multiwinia_data.bat` with **no arguments** (platform `plat`, retail exclusion list, and an **English-only** `language.dat`, because `build_language_dat.bat` honours the language only for platform `retail`); copies `darwinia_gl.exe` -> `build\multiwinia.exe` and `contrib\systemIV\contrib\XCrashReport\dbghelp.dll`; `upx --best` on the exe | live (plain) |
 | 74 | `tools/build_multiwinia_crashreporter.bat` | MW packaging | As `build_multiwinia.bat` (no-argument data build, English-only `language.dat`) plus `MultiwiniaSupport.ini` and `MultiwiniaSupport.exe` copied from the repository root (the exe is absent there); UPX lines commented out ("Cause problems with debugging tools") | live (refs absent file) |
 | 75 | `tools/build_multiwinia_data.bat` | MW data build | Master data build: assembles exclusion list (sounds.txt+menu_sounds.txt+per-target exclusions), builds language.dat (via build_language_dat), init.dat, main.dat, menusounds.dat, sounds.dat, sounds2.dat into %BUILD%; runs `darwinia_gl.exe --write-version`; saves symbols. Args: %1 platform (retail/pchwcompat/pcbetatest/pcpreview/pcassaultstress/ambx/xbox), %2 language | live (Multiwinia) |
-| 76 | `tools/build_multiwinia_gold.bat` | MW packaging | Gold-master package: no-argument data build (English-only `language.dat`) + exe + dbghelp + `MultiwiniaSupport.ini` + `tools\multiwiniasupport\MultiwiniaSupport.exe` + `tools\autopatcher\{autopatch,copy_assist}.exe` + `tools\profilelocatorwin32\profilelocator.exe` + `docs\multiwinia_manual.pdf` as `manual.pdf`; no UPX | live (autopatcher/profilelocator dirs absent) |
+| 76 | `tools/build_multiwinia_gold.bat` | MW packaging | Gold-master package: no-argument data build (English-only `language.dat`) + exe + dbghelp + `MultiwiniaSupport.ini` + `tools\multiwiniasupport\MultiwiniaSupport.exe` + `autopatch.exe` + `copy_assist.exe` (from an absent `autopatcher` folder of `tools\`) + `profilelocator.exe` (from an absent `profilelocatorwin32` folder) + `docs\multiwinia_manual.pdf` as `manual.pdf`; no UPX | live (autopatcher/profilelocator dirs absent) |
 | 77 | `tools/build_multiwinia_hwcompat.bat` | MW packaging | Hardware-compatibility test SKU: data build `pchwcompat`, exe + ncftpput.exe (benchmark upload), UPX | variant (TARGET_PC_HARDWARECOMPAT) |
 | 78 | `tools/build_multiwinia_hwcompat_crashreporter.bat` | MW packaging | As hwcompat + MultiwiniaSupport + dbghelp, no UPX | variant |
 | 79 | `tools/build_multiwinia_pc_preview.bat` | MW packaging | PC preview SKU: data build `pcpreview %1` (beta-test exclusions + `multiwinia_inclusions_previewcopy.txt`; English-only `language.dat` because the platform is not `retail`), exe only, UPX commented out | variant (TARGET_PC_PREVIEW) |
@@ -1542,7 +1542,7 @@ Status column: *live* = used for the Multiwinia PC build or release; *variant* =
 | 23 | `docs/Network.txt` | early design: server ticks 25 FPS, sends last 3 frames' updates via UDP, 1 s watchdog | stale: code ticks the server at 10 Hz (`SERVER_ADVANCE_PERIOD`, see [22](22_determinism_and_networking.md)) |
 | 24 | `docs/NetworkThreads.txt` | early design of send/receive threads and main loop | compare [20](20_architecture.md) (actual: dedicated listen threads, sends from main thread — [22](22_determinism_and_networking.md)) |
 | 25 | `docs/OpenGLState.txt` | assumed default GL state | [24](24_rendering.md)/[24](24_rendering.md) |
-| 26 | `docs/RussianFontRequest.txt` | says only Speccy has Cyrillic glyphs | data now has Cyrillic pages for editor/square too (`data/textures/unicode/{editor,square}.0410.042f.bmp`) — discrepancy (stale) |
+| 26 | `docs/RussianFontRequest.txt` | says only Speccy has Cyrillic glyphs | data now has Cyrillic pages for editor/square too (`data/textures/unicode/editor.0410.042f.bmp`, `data/textures/unicode/square.0410.042f.bmp`) — discrepancy (stale) |
 | 27 | `docs/ThoughtsOnSoundSystem.txt` | DirectSound filter notes | [27](27_audio_engine.md) |
 | 28 | `docs/World.jpg` | world sketch | Darwinia-era |
 | 29 | `docs/adsr.gif` | ADSR envelope diagram | [27](27_audio_engine.md) |
@@ -1620,7 +1620,7 @@ Detailed keep/adapt/replace verdicts are in [40](40_carry_forward_assessment.md)
 | 31-U3 | Exact x87 control word on the main thread after D3D9 `CreateDevice`/`Reset` in `[B:D3D]` (expected 24-bit precision) | [I] | read `_control87(0,0)` after device creation at run time |
 | 31-U4 | Behaviour of `throw;` with no active exception under the VS2008 static CRT inside `AppMain`'s `__try` (SEH 0xE06D7363 reaching `RecordExceptionInfo`, or `terminate()` → `abort()` bypassing it) | [U] | trigger an `AppReleaseAssert` in a Release build |
 | 31-U5 | Which authentication-key file the retail build read (`authkey.dev` here; installers and the support INI know only `authkey`), and whether retail used `metaserver-mwdev` or a production host | [U] | inspect a retail executable/install |
-| 31-U6 | Behaviour of the absent tools: `autopatch.exe`, `copy_assist.exe`, `ProfileLocator.exe`, `ncftpput.exe`, `tools/build_ambx_dat.bat`, `tools/convert_bmp_to_tex.cmd`, `tools/macosx/add-appcast-url.rb`, `tools/macosx/add-svn-revision.rb`, `tools/PasswordGenerator/main.cpp`; in particular whether the auto-patcher writes `userprefs.txt`, `game-history.txt`, `stdout.txt` and the `backup_*`/`revert_*` folders | [U] | obtain the release-branch `tools/` |
+| 31-U6 | Behaviour of the absent tools: `autopatch.exe`, `copy_assist.exe`, `ProfileLocator.exe`, `ncftpput.exe` and, under `tools/`, `build_ambx_dat.bat`, `convert_bmp_to_tex.cmd`, `macosx/add-appcast-url.rb`, `macosx/add-svn-revision.rb`, `PasswordGenerator/main.cpp`; in particular whether the auto-patcher writes `userprefs.txt`, `game-history.txt`, `stdout.txt` and the `backup_*`/`revert_*` folders | [U] | obtain the release-branch `tools/` |
 | 31-U7 | Contents and producers of `ambx.dat`, `branding.dat`, `patch.dat` | [U] | retail media / patch archives |
 | 31-U8 | Was `default_preferences.txt` ever shipped loose (or by a patch) so that first-run defaults applied in packaged installs (§8.9)? | [U] | retail install tree |
 | 31-U9 | Exact role of `tools/SlashSort.exe` | [I] | run it on a `TRACK_MEMORY_LEAKS` log |
@@ -1654,7 +1654,7 @@ Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one ga
 | `code/lib/window_manager_win32.cpp` comment | secondary GL context "for loading thread" | never made current; worker GL work is marshalled to the main thread |
 | `code/app.cpp` comments | affinity `0x02|0x8|0x20|0x80` "Even processors", `0x01|0x4|0x10|0x40` "Processor Number % 3 == 2" / "Odd processors" | the masks select CPUs 1,3,5,7 and 0,2,4,6 (0-based) respectively |
 | `tools/build_multiwinia_data.bat` echoes | sounds2 step prints "Making sounds.dat"; `ambx` platform prints "…hwcompat.txt" | builds `sounds2.dat`; appends the beta-test exclusion list |
-| `targets/vs2005/Common.vsprops` | include path `contrib/steam/` | directory absent from the tree |
+| `targets/vs2005/Common.vsprops` | include path `steam/` under `contrib/` | directory absent from the tree |
 | `_work/build_matrix.md` §3 (earlier phase note) | target table complete | omitted `LAN/WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `TARGET_BETATEST_GROUP`; corrected in §7.6 |
 
 ## IP items
@@ -1673,7 +1673,7 @@ Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one ga
 | Language/UI text tables | text | `data/language/*.txt` | new string table |
 | EULAs | text | `EULA.txt`, `docs/IntroversionEULA.txt`, `docs/Multiwinia-Buka-Russian-EULA.txt`, `tools/NSIS Installer/licence.txt` | own licence |
 | Personal data: beta-tester credit lists packed into retail `main.dat` (`data/betatesters.txt`, `data/multiwinia_betatesters.txt`), `docs/betatesters.txt` (handles and e-mail addresses), developer machine path in `targets/macosx/Multiwinia/data`, developer names in Mac credits and code headers | personal data / names | listed | never reproduce |
-| Map names in `MAPID_*` (87, e.g. `MAPID_MP_KOTH_2P_1`) and in inclusion lists | name (level names) | `code/mapcrc.h`, `tools/multiwinia_inclusions_*.txt` | new map names |
+| Map names in `MAPID_*` (87, e.g. `MAPID_MP_KOTH_2P_1`) and in inclusion lists | name (level names) | `code/mapcrc.h`, the six inclusion lists in `tools/` (§8.6) | new map names |
 | Third-party code: crash-report sample code (XCrashReport, public domain), `GetWinVer`/`MiniVersion` (public domain), unrar (RARLAB licence), `Rar.exe`, UPX, GnuWin32 grep/sed, 7-Zip, PuTTY `pscp`, NSIS SDK samples, Loki Setup, DirectX redistributable cabinets, AVIGenerator sample | third-party | `contrib/XCrashReport/*`, `code/lib/GetWinVer.cpp`, `contrib/unrar/*`, `tools/*.exe`, `tools/NSIS Installer/*`, `tools/loki/*`, `code/lib/avi_generator.cpp` | use the platform/standard equivalents named in §15; respect their licences |
 
 ## Source map
@@ -2067,13 +2067,13 @@ Code, contrib and data files that implement or feed this document's subject (gen
 | `Renderer::SetScreenGamma` | [B:D3D], no callers | §3.11 |
 | RDTSC timer path (`USE_PENTIUM_COUNTER 0`), `code/lib/hi_res_time_gcc.cpp`, `code/lib/hi_res_time_sdl.cpp` | [B:DEAD] | §4.3 |
 | `code/lib/window_manager_sdl.*`, `code/lib/ogl_extensions_sdl.cpp`, SDL input drivers, `code/sound/sound_library_2d_sdl.*`, `code/lib/system_info_macosx.cpp`, `code/lib/macosx_hardware_detect.*`, `code/interface/buynow_window.*`, `code/interface/updateavailable_window.*`, `code/gesture_demo_sdl.cpp`, Mac branches of `StandardiseCPUPrecision`, `debug_utils`, `unicode_string`, `network_stream`, `unicode_text_file_writer`, `contrib/systemiv/lib/tosser/hash_map_darwin.h` | [B:DEAD] on PC (Mac target only) | §2.2, §2.4 |
-| `code/lib/input_sdl.cpp`, `code/lib/debug_logging.*`, `code/lib/debug_fog_logging.cpp`, `code/lib/tri_tri.cpp`, `code/lib/mouse_cursor.*`, `code/lib/input/inputfilterspec.cpp`, `code/unicode/sound_library_*` | [B:DEAD] (not in the vcproj) | §2.2 |
+| `code/lib/input_sdl.cpp`, `code/lib/debug_logging.*`, `code/lib/debug_fog_logging.cpp`, `code/lib/tri_tri.cpp`, `code/lib/mouse_cursor.*`, `code/lib/input/inputfilterspec.cpp`, `code/unicode/sound_library_2d.cpp` and its five siblings in `code/unicode/` (§2.2) | [B:DEAD] (not in the vcproj) | §2.2 |
 | Xbox 360 remnants: `code/lib/input/xbox_eventhandler.*` (excluded), `code/sound/sound_library_3d_xaudio.*` (`HAVE_XAUDIO`), absent `x360_qnet.*`, `Multiwinia.spa.h`, `window_manager_xbox.h`, XBLA/PDLC UI headers; `platxbox` branches of the data build, `convert_bmp_to_tex.cmd`, DXT conversions, `textures/xboxlivearcade.bmp` in `tools/init.list`, `D3DRS_LINEWIDTH`, `Resolve()` | [B:DEAD] | §7.4, §7.9, §8.3 |
 | `code/gesture_demo_win32.cpp` | [B:DEAD] (`GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL`) | §2.2 |
 | `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem` | compiled, never instantiated | §8.10 |
-| `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*` | [B:DEAD] (shadowed by `code/lib`) | §7.2 |
+| `contrib/systemiv/lib/preferences.cpp`, `contrib/systemiv/lib/preferences.h`, `contrib/systemiv/lib/language_table.cpp`, `contrib/systemiv/lib/language_table.h`, `contrib/systemiv/lib/hi_res_time.cpp`, `contrib/systemiv/lib/hi_res_time.h` | [B:DEAD] (shadowed by `code/lib`) | §7.2 |
 | `contrib/systemiv/lib/gucci/*` window managers and input, `contrib/systemiv/lib/sound/*` | [B:DEAD] (not compiled) | §2.2 |
-| `contrib/systemiv/contrib/XCrashReport/client/{exception_handler,GetWinVer,MiniVersion}.*` | [B:DEAD] (SystemIV copies; `code/lib` versions are compiled) | §6 |
+| `contrib/systemiv/contrib/XCrashReport/client/exception_handler.cpp`, `contrib/systemiv/contrib/XCrashReport/client/exception_handler.h`, `contrib/systemiv/contrib/XCrashReport/client/GetWinVer.cpp`, `contrib/systemiv/contrib/XCrashReport/client/GetWinVer.h`, `contrib/systemiv/contrib/XCrashReport/client/MiniVersion.cpp`, `contrib/systemiv/contrib/XCrashReport/client/MiniVersion.h` | [B:DEAD] (SystemIV copies; `code/lib` versions are compiled) | §6 |
 | `code/keygen.cpp` (Darwinia registration key generator), `code/lib/user_info.cpp:GetUserInfoData` | [B:LEGACY] compiled, never called | [29](29_data_formats_reference.md), §6.6 |
 | `contrib/systemiv/lib/memory_leak.cpp` (`TRACK_MEMORY_LEAKS`), `tools/SlashSort.exe` | [B:DEAD] | [32](32_debug_test_and_performance.md) |
 | `TRACK_SYNC_RAND` log, `SINGLE_THREADED_PROFILER` | [B:DEBUG] / Mac only | [22](22_determinism_and_networking.md), [32](32_debug_test_and_performance.md) |

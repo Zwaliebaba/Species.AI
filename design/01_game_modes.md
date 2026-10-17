@@ -832,3 +832,232 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 
 **Level conventions** [C data]: exactly one team-owned `MultiwiniaZone` per start position = drop zone (radius 80, 100 or 109.27), plus 1–6 neutral zones = statue spawns (radius 40–75); spawn-point economy (1–3 per position, up to 8 neutral on `mp_cts_4P_1`); four maps set `instantspawnpointcapture`; 40 starting Darwinians per position. The unshipped `mp_cts_3p_3` uses trunk ports with `trunkportreinforcements 100` and `attackerreinforcementtype HotFeet` (in a non-Assault mode every team gets a Hot Feet task each wave).
 
+### 4.4 Assault (`GameTypeAssault`) [B:FULL]
+
+**Objective.** Attackers must capture **every** `ControlStation` linked to the defenders' `PulseBomb` (the "WMD") before its countdown ends; defenders must hold at least one until the bomb detonates [C] `code/multiwinia.cpp:Multiwinia::AdvanceAssault`, `Multiwinia::RecordDefenseTime`, `code/worldobject/pulsebomb.cpp:PulseBomb::Advance`, `code/worldobject/controlstation.cpp:ControlStation::RecalculateOwnership`.
+
+**Team structure.** Attacking **positions** come from the level's `AttackingTeams`; the rest defend. Shipped maps: 1 v 1 on the four 2-player maps (`mp_assault_3p_1` declares `NumPlayers 2` despite its name); 1 defender v 2 attackers on `mp_assault_3p_3` and `mp_assault_3P_2` (ForceCoop); 2 v 2 on `mp_assault_4P_1` and `mp_assault_4P_2` (ForceCoop). Players choose Random / Attackers / Defenders in the lobby (colour id −1 / 1 / 0); positions and random sides are resolved at load by `Location::SetupAssault` (§2.5.6). On `mp_assault_3p_1` 35 Darwinians are placed on team 5 (Futurewinians) [C data].
+
+**Mode-specific objects** ([03 §8.6–§8.7](03_buildings_and_world_objects.md#8-mode-objective-objects), [03 §10](03_buildings_and_world_objects.md#10-ai-marker-buildings)):
+- `PulseBomb` — one per map, owned by a defender position; level fields `<startTime> <linkId> …`. `Initialise` registers `s_pulseBombs[team]`, uses `Multiwinia::m_pulseTimer` as start time if > 0 (later rounds), records `s_defaultTime` once, and **sets `Multiwinia::m_timeRemaining = (int) m_startTime`** — the bomb timer is the match clock (900 s on seven maps, 1200 s on `mp_assault_4P_2`, = PlayTime × 60).
+- `ControlStation` — linked stations (3, or 4 on `mp_assault_4P_1`) are switched to the bomb model at load (`LinkToPulseBomb`; 3 ports). Ownership every tick from port occupants: a team needs **more than 1** occupant (≥ 2) when linked to a bomb (more than 2, i.e. ≥ 3, for an unlinked 5-port station); the first qualifying team wins, replaced by any later team with strictly more; nobody → station neutral [C] `ControlStation::RecalculateOwnership`. How Darwinians occupy ports: [03 §3.6](03_buildings_and_world_objects.md#3-building-base-class).
+- `TrunkPort` — the attackers' Darwinian source (3–6 per attacking position) and the defenders' (0–1).
+- Fortification kit (walls, laser fences, 7–40 neutral `GunTurret`s), `WallBuster` (`mp_assault_2P_1`), `AIObjective` chains and `AIObjectiveMarker`s for the CPU ([07 §11](07_ai.md#11-ai-objectives--assault-objective-chain-and-rocket-riot-markers)).
+
+**Options.** Handicap (ineffective — no spawn points), CrateDropRate. No TimeLimit, ScoreMode, SuddenDeath or RetributionMode (the latter reads −1 = on, but nobody is ever "eliminated" in Assault).
+
+**Initialisation** (first post-grace `AdvanceAssault`): `m_defendedAll = true`; for every pulse bomb append its link ids, then its own id, to `m_assaultObjectives` [C].
+
+**Per tick** [C]:
+1. If `GetHighResTime() > m_startTime + 10` — wall clock compared with a game-time stamp, effectively always true (§6 B6): `m_defendedAll &= IsDefending(owner)` for every objective (bomb and stations); neutral (255) is not defending.
+2. `PulseBomb::Advance` (inside the location advance): re-links stations; **all linked stations owned and none friendly to the bomb team** → `Destroy()` (explosion `Location::Bang(pos, 75, 5)`, message "WMD Destroyed!", every trunk port not owned by the defender set to 255) and `RecordDefenseTime(startTime − GetPreciseTimeRemaining(), bombTeam)`. At `m_timeRemaining ≤ 60` once → "One Minute to WMD Detonation!" (`dialog_oneminutewarning`). At `m_timeRemaining ≤ 0` and not yet detonated → `RecordDefenseTime(startTime, bombTeam)`, spawn a `PulseWave` (radius 200, ×1.03 per tick until ≥ world X size) owned by the bomb team that kills non-friendly Darwinians it reaches (Futurewinian-team map: converts them), and every trunk port not owned by the bomb team → 255 [C] `code/worldobject/pulsebomb.cpp`, `code/worldobject/weapons.cpp:PulseWave::Advance`, `code/worldobject/darwinian.cpp` ([04](04_crates_powerups_and_weapons.md)).
+3. `RecordDefenseTime`: `m_pulseTimer = min(m_pulseTimer, time)`, `m_pulseDetonated = true`, `m_victoryTimer = 10` (single round) or 15 (multi-round), `m_timeRecords[team] = time`.
+
+**Per mode second** [C]: `m_timer` reset; `--m_timeRemaining` only while `m_timeRemaining > 0` **and** `m_victoryTimer <= 0` (the clock stops at the round end). If `m_pulseDetonated`:
+- multi-round only: when `m_victoryTimer <= 1`, the fade is complete and rotations remain (`m_numRotations < NumPlayers − 1`) → `StartFadeOut()`;
+- when `m_victoryTimer <= 0` and no `PulseWave` is alive:
+  - single round, or the last rotation (`m_numRotations == NumPlayers − 1`) → choose the winner and `DeclareWinner`; if the local team is defending and `m_defendedAll` → `GiveAchievement(AggravatedAssault)`;
+  - otherwise `m_victoryTimer = −1`, `m_pulseDetonated = false`, `m_resetLevel = true` → `ResetLocation()` next frame (positions rotate one place; the new round's bomb timer is the best defence time so far).
+
+**Winner selection.**
+- **Single round (the only reachable case in FULL):** find the first team with a bomb (`s_pulseBombs[i] ≠ −1`); if that bomb is destroyed → winner = the **first slot index** (0 … NumPlayers−1) whose position is attacking, else the first slot whose position is defending. `DeclareWinner` receives one team id even for an alliance; the co-op overlay shows "Attackers Win!" / "Defenders Win!" by the winner's side [C].
+- **Multi-round [unreachable]:** winner = the slot with the largest `m_timeRecords` (`numFullDefenses` — teams whose time ≥ `s_defaultTime` — is computed but unused) [C].
+
+**Timeline** (single round): bomb destroyed or detonated → 10 game s victory delay (101 ticks), counted from the pulse wave's start but the result also waits for the wave to vanish → `DeclareWinner` on the next mode-second boundary after both [C code; tick count by replay].
+
+```mermaid
+stateDiagram-v2
+    [*] --> Holding : grace ends, bomb clock running
+    Holding --> Holding : stations change hands, clock counts down
+    Holding --> BombDestroyed : all linked stations held by non-friends of the bomb team
+    Holding --> Detonated : clock reaches 0, pulse wave released
+    BombDestroyed --> VictoryDelay : RecordDefenseTime, victory timer 10
+    Detonated --> VictoryDelay : RecordDefenseTime, victory timer 10
+    VictoryDelay --> AttackersWin : timer done, no pulse wave, bomb destroyed
+    VictoryDelay --> DefendersWin : timer done, no pulse wave, bomb intact
+    AttackersWin --> [*]
+    DefendersWin --> [*]
+```
+
+**Reinforcements** (trunk-port waves from `Multiwinia::Advance`, because every Assault map sets `trunkportreinforcements`): count per port per wave = level value (60–100) — attackers' and defenders' counts can be split with `attackerreinforcements` / `defenderreinforcements` (unused); period 60 mode s (66 game s; first wave on the first post-grace tick); armour only where the level sets `trunkportarmour` (`mp_assault_2P_2` cap 1, `mp_assault_2p_3` cap 3, `mp_assault_4P_2` cap 3); no turrets; `mp_assault_2p_3` gives each defending team an AirStrike task per wave (`defenderreinforcementtype AirStrike`) and then grants defender ports no armour [C] `Multiwinia::AdvanceTrunkPorts`; [05 §6.5](05_economy_and_population.md#6-reinforcement-systems).
+
+**Population cap.** Defenders `DefenderPopulationCap` each (200–350); attackers share `(PopulationCap − defenders × DefenderPopulationCap) / attackers` (550–1725); `mp_assault_2p_3` and `mp_assault_3p_3` set no defender cap → plain `PopulationCap / NumPlayers` for both sides [C] `code/worldobject/trunkport.cpp:TrunkPort::PopulationLocked`, map table.
+
+**Crates.** RocketTurret and SpaceShip rewards invalid in Assault; Harvester / Engineer / Spawn Mania invalid (no spawn points); Armour invalid on maps with `trunkportarmour`; plus each map's `InvalidCrates` [C] `Crate::IsValid`.
+
+**AI.** Objective chains (`AIObjective` / `AIObjectiveMarker`), diffusion priorities, attackers dispatch everyone every 3 s (Hard 1.1 s), no formation officers, WallBuster routing — [07 §11–§12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Scoreboard titled "OBJECTIVES", ordered by `m_timeRecords`. Defender line "Defend the WMD!" (`multiwinia_assault_holdtheline`); attacker line "Attack and destroy the WMD!" (`multiwinia_assault_ticktock`), or — once that slot has a time record — "defended for m:ss" (`multiwinia_defendedfor_score`). Round overlay after a round end: multi-round "*T defended for m:ss" in the defender colour and "NEXT ROUND IN: *S" when `m_victoryTimer < 11`; single round with a winner: "Attackers Win!" / "Defenders Win!" (co-op) or "*T Wins!" (`multiwinia_team_win`). Pulse bomb visuals: rising glow blobs, 3D countdown screen in the last 10 s [C] `Multiwinia::GetScoreLine`, `Render`, `PulseBomb::RenderAlphas`.
+
+**End of game.** §2.11; the game-over block shows only "GAME OVER" (no winner line or list for single round).
+
+**Achievement hook.** AggravatedAssault (defending side, every objective owned by a defender on every tick).
+
+**Maps.**
+
+@@MAPTABLE Assault@@
+
+**Per-map Assault configuration** (X4, re-checked against `mp_assault_4P_2.txt`) [C data]:
+
+| Map | Attacker positions | Defender positions | Bomb owner pos / timer (s) | Stations linked | Trunk ports (pos:n) | DefenderPopCap | Waves |
+|---|---|---|---|---|---|---|---|
+| mp_assault_2P_1 | 1 | 0 | 0 / 900 | 3 | 0:1 1:4 | 350 | 100 per port |
+| mp_assault_2P_2 | 1 | 0 | 0 / 900 | 3 | 0:1 1:5 | 275 | 100, armour cap 1 |
+| mp_assault_2p_3 | 0 | 1 | 1 / 900 | 3 (+2 stations controlling radar) | 0:3 | −1 | 100, armour cap 3, defender AirStrike task, `forceradarteammatch`, `noradarcontrol` |
+| mp_assault_3p_1 | 1 | 0 | 0 / 900 | 3 | 0:1 1:6 | 250 | 75 |
+| mp_assault_3P_2 | 1 2 | 0 | 0 / 900 | 3 | 0:1 1:4 2:4 | 250 | 75 |
+| mp_assault_3p_3 | 1 2 | 0 | 0 / 900 | 3 (stations start owned by pos 0) | 1:4 2:4 | −1 | 100 |
+| mp_assault_4P_1 | 0 1 | 2 3 | 2 / 900 | 4 | 0:3 1:3 2:1 3:1 | 200 | 75 |
+| mp_assault_4P_2 | 2 3 | 0 1 | 1 / 1200 | 3 | 0:1 1:1 2:4 3:4 | 200 | 60, armour cap 3 |
+| mp_assault_stress (`GameTypes none`) | 0 | 1 | 1 / 600 | 3 | 0:5 1:2 | — | 250, defender Armour task |
+
+**Level conventions** [C data]: attackers start with no Darwinians and live on reinforcements; defenders start with 63–325 Darwinians, walls/laser fences, neutral gun turrets (Flame turrets on `2p_3`, `3p_1`, `3p_3`), AIObjective chains (6–18) and markers (24–44). `InvalidCrates` removes `Armour` on `3p_1`, `3P_2`, `4P_1`, `4P_2` and `Squad Airstrike Nuke Meteor` on `2P_1`, `2p_3`.
+
+### 4.5 Rocket Riot (`GameTypeRocketRiot`) [B:FULL]
+
+**Objective.** Capture solar panels to power fuel generators, which pump fuel through pipes and fuel stations into your rocket; at ≥ 95 % fuel, load 100 Darwinians; the rocket then counts down and launches. The first rocket to climb above world height y = 600 wins [C] `code/multiwinia.cpp:Multiwinia::AdvanceRocketRiot`, `code/worldobject/rocket.cpp`.
+
+**Team structure.** Free-for-all 2–4 (no co-op map). Each position has its own rocket, three fuel stations, three generators, pipes and one trunk port; the solar-panel power grid is shared and contested.
+
+**Mode-specific objects** ([03 §8.8–§8.12](03_buildings_and_world_objects.md#8-mode-objective-objects); power grid [03 §6](03_buildings_and_world_objects.md#6-power-network)): chain `SolarPanel → PowerSplitter → Pylon … → PylonEnd → FuelGenerator → FuelPipe(s) → FuelStation → EscapeRocket`. Key rules [C] `code/worldobject/rocket.cpp`:
+- Refuel: `newRate = pipeCount × m_currentLevel × 0.4`; `m_refuelRate = 0.99 × rate + 0.01 × newRate` per tick; `fuel += rate × dt`, max 100. Maximum steady rate with three fed stations ≈ 1.2 %/game s (≈ 80 s from 0 to 95 plus the EMA lag) [I derived].
+- `EscapeRocket` states: Refueling (0) → Loading (1) at fuel ≥ 95 ("Your Rocket has been refueled!") → Ignition (2) at fuel > 95 and passengers ≥ 100 ("… preparing for launch!") → Ready (3) immediately in multiplayer (countdown forced 0, then 10, camera shake 5) → Countdown (4) when the Ready countdown of 10 (−dt per tick, **101 ticks**) ends → Flight (6) when the Countdown of 10 at half rate (−0.5 dt, **200 ticks**) reaches exactly 0. Any state except Exploding goes to Exploding (5) when damage > 100; Exploding returns to Refueling when damage reaches 0 (fuel burnt down to 50 % of its pre-explosion value, passengers ejected one per tick, 50 % on fire) [C].
+- Fuel stations recruit one random own-team idle Darwinian within 300 units per tick to board while the rocket is Loading [C] `FuelStation::Advance`.
+- Rockets attract enemy attackers (every 1–3 game s, enemies within 150 units, while fuel > 33 and not exploding); damage taken ×0.2, decays 0.33/game s [C] `EscapeRocket::SetupAttackers`, `EscapeRocket::Damage`.
+- Flight: `thrust = max(2 × √(y − ground), 0.1)`, `pos.y += thrust × dt`. Ticks from launch to y > 600: 248 (ground 0), 238 (50), 227 (100), 215 (150), 203 (200), 176 (300) [I replay of `AdvanceFlight`].
+
+**Options.** CrateDropRate, ReinforcementTimer (default 60), ReinforcementCount (40), MaxArmour (2), TurretFrequency (7), MaxTurrets (3). No time limit, no sudden death, no retribution effect.
+
+**Per mode second** [C]: `m_timer` reset; `if (m_timeRemaining > 0) --` (it is −1: unlimited); `BackupScores()`.
+1. For each non-special team with `m_rocketId == −1`: find the `TypeEscapeRocket` building owned by that team (last match in building order) → `m_rocketId`.
+2. For each non-special team: `score = 0`; if its rocket exists: `score = (int) fuel`, then `+= passengers`, then `+= (rocket.y − groundHeight)` (int truncation at each step). If the rocket is in Flight and `pos.y > 600` → `DeclareWinner(t)`; local winner with rocket damage ≤ 0.01 and no other used non-special team's rocket above 50 fuel → `GiveAchievement(UncladSkies)`; `break` — the lowest team index wins simultaneous launches.
+
+Every tick (outside the per-second block): `AdvanceTrunkPorts()` (§4.5 reinforcements).
+
+**Scoring formula.** Display/rank score `= ⌊fuel⌋ + passengers + ⌊height above ground⌋` (fuel 0–100, passengers 0–100). Victory is absolute world height 600, independent of score.
+
+**Win / lose / draw.** First rocket above y = 600 wins; there is no draw, no elimination, no time limit; a game in which no rocket launches never ends [C]. Launch timeline from boarding complete: ~1 tick Ignition + 101 Ready + 200 Countdown + 176–248 Flight + up to 11 ticks until the next mode-second check ≈ **49–56 game s** [I replay].
+
+**Reinforcements** [C] `Multiwinia::AdvanceTrunkPorts` ([05 §6](05_economy_and_population.md#6-reinforcement-systems)): every owned trunk port emits `ReinforcementCount` Darwinians per wave unless population-locked; wave period `ReinforcementTimer` mode s (60 → 660 ticks = 66 game s; first wave on the first post-grace tick, second after 649 ticks); per port an Armour task if `CountNumTasks(Armour) < MaxArmour`, targeted 75 units in front of the port; turret task on waves 1, 8, 15 … (`TurretFrequency` 7) while `CountNumTasks(GunTurret) < MaxTurrets`; `nogunturrets` (`mp_rocketriot_3P_3`) disables turrets. Trunk ports are the **only** Darwinian source (no spawn points owned by players; 8 starting Darwinians per position only on `3P_3`).
+
+**Population cap.** `PopulationCap / NumPlayers` (450–900), applied per port per wave.
+
+**Crates.** Armour crate invalid in Rocket Riot (armour comes from ports); Harvester / Engineer / Spawn Mania valid only on maps with (neutral) spawn points (`2P_2`, `4P_1`) [C] `Crate::IsValid`.
+
+**AI.** RocketRiot priority model plus marker pins on panel fields; armour ferries Darwinians; rocket defence turrets (not Easy); no formation officers — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Score line: "<name>  DMG d% fuel f% (+Npsi) passengers p/100" — DMG part only if damage > 0, psi part (`m_refuelRate × 100`) only if > 0, passengers only if > 0; during Countdown it alternates every 0.5 wall-clock s with "LIFTOFF IN *S" (`countdown + 1`). Scoreboard box 530 wide. **Rocket status panel** (top right, width 0.2 × ScreenH, height 1.5 × width): team-coloured fuel column, cracked overlay by damage, 10 × 10 passenger grid, engine flame in Ready/Countdown/Flight, captions in priority order "YOUR ROCKET IS UNDER ATTACK! DAMAGE n%", countdown number, "LIFTOFF!", "Your Rocket is on FIRE!", "Load your rocket with 100 Multiwinians", "Capture solar panels to begin refueling rocket", "Fuel nn.n%" [C] `code/rocket_status_panel.cpp`; full layout in [09](09_meta_systems.md). Game-over list: names only.
+
+**End of game.** §2.11.
+
+**Achievement hook.** UncladSkies.
+
+**Maps.**
+
+@@MAPTABLE RocketRiot@@
+
+**Level conventions** [C data]: per position 1 `EscapeRocket` (fields `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), 3 `FuelStation`s, 1 `TrunkPort`, 3 team-owned `Pylon`s, 3 `FuelGenerator`s (team-owned on `2P_2`, `2p_3`, `3p_1`; neutral on `2P_4`, `3P_2`, `3P_3`, `4P_1`), `FuelPipe` chains, shared neutral grid (15–24 `SolarPanel`, 3–5 `PowerSplitter`, 3 `PylonEnd` per position); `AIObjectiveMarker`s (6–21) for the CPU. No `LevelOptions` needed (waves are intrinsic to the mode); `3P_3` sets `nogunturrets` and has 6 neutral gun turrets; `2P_4` bans Armour crates.
+
+### 4.6 Blitzkrieg (`GameTypeBlitzkreig`) [B:FULL]
+
+**Objective.** Capture flags (`MultiwiniaZone`s linked into a graph). When a team's home flag is captured by an enemy **and** that enemy holds an unbroken chain of fully-owned flags from it back to the enemy's own home flag, the team is eliminated. Last team standing wins; at time-up, flags held + 10 × eliminations decide [C] `code/multiwinia.cpp:Multiwinia::AdvanceBlitkrieg`, `DoesBlitzkriegRouteExist`, `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_Blitzkrieg`, `MultiwiniaZone::IsBlitzkriegZoneLocked`, `MultiwiniaZone::GetBlitzkriegPriority`.
+
+**Team structure.** Free-for-all 2–4 (no co-op map).
+
+**Mode-specific objects** ([03 §8.1–§8.2](03_buildings_and_world_objects.md#8-mode-objective-objects)):
+- **Flags.** Level zones carry `<size> [<linkId> …]`. At load each team-owned zone becomes that team's **home flag** (`s_blitzkriegBaseZone[team] = id`) and is then set neutral — every flag starts neutral. On the first post-grace tick each zone is counted into `s_numMultiwiniaZones` (accumulating — §6 B4) and every link is made bidirectional (reverse link appended).
+- **Locking** (`IsBlitzkriegZoneLocked`, evaluated at each recount): a neutral home flag is unlocked; a partially owned flag (0 < ownership < 100) is unlocked; otherwise a flag is locked iff no linked flag is owned by a **different** team (neutral neighbours do not unlock). Capture therefore spreads outward from home flags along links; a neutral non-home flag whose neighbours are all neutral is locked.
+- **Capture** (each recount, every 1.0 game s = 10–11 ticks): if unlocked, count per used team its non-dead, non-burning, not-in-armour Darwinians within **40 units** (not `m_size`) → leader = strictly highest. If locked, counts are not refreshed and there is no leader. Ownership progress `m_blitzkriegOwnership ∈ [0, 100]` with a `m_blitzkriegCaptureTeam`:
+  - leader present: `change = 5 × top × (top / total)`; if the flag is owned, captureTeam = owner. Leader ≠ captureTeam → `ownership −= change × dt`, at ≤ 0 → flag neutral, captureTeam = leader. Leader = captureTeam → `ownership += change × dt`, at ≥ 100 → flag owned by the leader.
+  - no leader: neutral flag → `ownership −= 10 × dt` (at ≤ 0 captureTeam = 255); owned flag → unchanged.
+  - Because the update runs once per recount but scales by one tick's dt, the effective rate is `0.5 × top² / total` points per recount: 20 uncontested Darwinians capture a neutral flag (0 → 100) in 10 recounts ≈ 10.5 game s; an enemy flag must first be driven to 0 and then to 100, i.e. twice as long [C code; I arithmetic].
+  - `m_blitzkriegUpOrDown` = sign of the last change (flag icon up / down / level; "locked" icon when locked).
+- **Base-under-attack message** "Your Base Is Under Attack!" (`dialog_baseunderattack`) for the local team's own home flag when enemies are within `m_size`; throttle `m_blitzkriegUnderAttackMessageTimer = 20.0`, but it is decremented by dt **once per recount**, so the real throttle is 200 recounts ≈ 210 game s, not 20 s. Resolved: P02 said "at most every 20 game s"; the decrement sits inside the recount block [C] `MultiwiniaZone::Advance_Blitzkrieg`.
+- **AI pins.** Each recount the nearest `AITarget` gets per-team priority `GetBlitzkriegPriority` (Standard/Hard) or 1.0 (Easy) — [07 §12](07_ai.md#12-per-mode-strategies).
+- Trunk ports (one per position; neutral extra on `2P_3`, `2P_4`).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral : all flags start neutral
+    Neutral --> Capturing : unlocked and a leader present, progress rises
+    Capturing --> Neutral : no Darwinians, progress decays to 0
+    Capturing --> Capturing : a different leader drives progress down then takes over at 0
+    Capturing --> Owned : progress reaches 100
+    Owned --> Locked : no linked flag owned by another team
+    Locked --> Owned : a linked flag becomes enemy owned
+    Owned --> Contested : enemy leader, progress falls
+    Contested --> Owned : owner leads again, progress rises
+    Contested --> Neutral : progress reaches 0
+```
+
+**Options.** TimeLimit 0–60 (default 15, 0 = unlimited), CrateDropRate, ReinforcementTimer (60), ReinforcementCount (40), MaxArmour (2), TurretFrequency (2), RetributionMode, SuddenDeath, MaxTurrets (2).
+
+**Per tick:** `AdvanceTrunkPorts()` (before the per-second block), and a second time from `Multiwinia::Advance` on the three maps with `trunkportreinforcements` (§6 B3).
+
+**Per mode second** [C]:
+1. `if (m_timeRemaining > 0) --`; `BackupScores()`.
+2. **Elimination:** for each live, used, non-special team t whose home flag is owned by another team A (not 255): if `DoesBlitzkriegRouteExist(home_t, A, ∅)` → `EliminateTeam(t)`, `Team::Eliminate()`, `score(t) = g_gameTimer.GetGameTime()` (seconds survived), `++m_numEliminations[A]`.
+   - `DoesBlitzkriegRouteExist(zone, A, visited)`: false if visited; false if the zone is not owned by A; false if `ownership < 100` and `UpOrDown < 0` (being recaptured breaks the chain); mark visited; true if the zone is A's home flag; else depth-first over its links with backtracking [C].
+3. **Status score** for each live used non-special team by its home flag: neutral → 10003 (shown "Under Threat"); enemy-owned → 10001 "ENEMY OCCUPIED"; own and unlocked → 10004 "Under Threat"; own and locked → 10005 "Safe". (10002 "Under Attack" is never assigned.)
+4. `winningTeam` = the only live used non-special team if exactly one remains, −2 if several, −1 if none.
+5. **Time-up** (`m_timeRemaining <= 0 && !m_unlimitedTime`): `realScore(i) = flagsOwned(i) + 10 × m_numEliminations(i)` for every slot 0–5 that is not `m_eliminated` (unused slots and special teams included); highest wins; equal → 255 (so all-zero → draw).
+6. If draw and SuddenDeath = 1: first time → `Team::Eliminate()` every used non-special team whose realScore ≠ highscore, sudden death on, "Sudden Death!"; later seconds re-evaluate (time stays up) — the next flag change that breaks the tie ends the game. Else if `winningTeam >= 0` (a team, or 255 with SuddenDeath off) → `DeclareWinner`; local winner and `m_startTime <= m_timeRemaining + 300` → `GiveAchievement(BlitzMaster)` (§6 B9, B11).
+
+**Scoring formula.** While playing: status codes 10001–10005; eliminated teams: game time of elimination (< 10000). Time-up decider: `flags owned + 10 × eliminations scored`.
+
+**Win / lose / draw.** Last live non-special team; else time-up decider; tie → sudden death or draw. Special teams can hold flags and are counted in the time-up decider (a Futurewinian team owning most flags would win) but never in "last team standing" [C code; I gameplay].
+
+**Reinforcements** [C] `Multiwinia::AdvanceTrunkPorts`: options as Rocket Riot but turret cadence every 2nd wave (waves 1, 3, 5 …) and cap 2; the turret award becomes an **AirStrike** task when the team owns ≥ `(s_numMultiwiniaZones + 1) / 2` flags (integer division) or more than the level's `airstrikecapturezones` flags (3 on `3P_1`, `3P_2`, `4P_2`). On the three maps with `trunkportreinforcements 100 trunkportarmour 3` (`2p_1`, `2P_3`, `2p_2`) the mode options still win (40 per port, armour cap 2 — the level values are ignored), but the waves run twice per tick: every 330 ticks (33 game s) instead of 660 [C code; tick count by replay; agrees with [05 §6.4](05_economy_and_population.md#6-reinforcement-systems)].
+
+**Population cap.** `PopulationCap / NumPlayers` (350–1000).
+
+**Crates.** Armour crate invalid on the three `trunkportarmour` maps; Harvester / Engineer / Spawn Mania only where spawn points exist.
+
+**AI.** Assault-style diffusion seeded by zone pins; armour zone assaults and turret rushes; no formation officers — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Per team status text: "Eliminated" / "ENEMY OCCUPIED" / "Under Threat" / "Safe" (both `unoccupied` and `underattack` strings also read "Under Threat"); no numeric scores; game-over list not drawn. Flag rendering: cloth `Flag` on a pole at the zone, raised by `100 − ownership` units when partially owned, textures `icons/flag.bmp`, `flag_up.bmp`, `flag_down.bmp`, `flag_locked.bmp` recoloured per team; ring segments: owned fraction in the owner's/capturer's colour, remainder grey [C] `MultiwiniaZone::RenderBlitzkrieg`, `RenderAlphas`.
+
+**End of game.** §2.11.
+
+**Achievement hook.** BlitzMaster (condition effectively always true on a win).
+
+**Maps.**
+
+@@MAPTABLE Blitzkrieg@@
+
+**Flag graphs** (id : owner position → links as written in the file; made bidirectional at start) [C data, X4]:
+
+| Map | Flags |
+|---|---|
+| mp_blitzkrieg_2p_1 | 4:255→6; 5:p0→4; 6:p1→— |
+| mp_blitzkrieg_2p_2 | 0:p0→—; 1:255→0; 2:255→1; 3:p1→4; 4:255→2 |
+| mp_blitzkrieg_2P_3 | 0:255→1; 1:p0→—; 2:p1→0 |
+| mp_blitzkrieg_2P_4 | 0:p0→2,4; 1:p1→—; 2:255→3; 3:255→1; 4:255→5; 5:255→1 |
+| mp_blitzkrieg_3P_1 | 0:p0→4; 1:p1→5; 2:p2→5,3; 3:255→0; 4:255→1; 5:255→6; 6:255→4,3 |
+| mp_blitzkrieg_3P_2 | 0:p0→2,3,1; 1:255→6; 2:255→6; 3:255→4; 4:p1→2,5; 5:255→6; 6:p2→— |
+| mp_blitzkrieg_4P_2 | 1:p1→8,11; 2:p0→10; 4:p2→—; 6:p3→9; 8:255→4; 9:255→4; 10:255→6; 11:255→2; 12:255→10,9,8,11 |
+
+**Level conventions** [C data]: one team-owned zone per position = home flag, 1–5 neutral flags, radius 100 (75 on `3P_2`); one trunk port per position on all seven maps; the 2-player maps also carry spawn points (`2p_2`: 2 per position + 2 neutral; others 1–4 neutral); 2-player maps use `trunkportreinforcements 100 trunkportarmour 3` except `2P_4` (`nogunturrets`); 3- and 4-player maps use `airstrikecapturezones 3`. Blitzkrieg is the only mode in which idle Darwinians also search for flags (`Darwinian::SearchForFlags`, range `BLITZKRIEG_FLAGCAPTURE_RANGE` = 20) [C] `code/worldobject/darwinian.cpp`, `code/worldobject/multiwiniazone.h`.
+
+### 4.7 Tank Battle (`GameTypeTankBattle`) [B:DEBUG]
+
+Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`); invisible and unpermitted in FULL (§1.2) [C] `code/multiwinia.cpp:Multiwinia::AdvanceTankBattle`.
+
+| Template item | Specification |
+|---|---|
+| Objective | keep a tank alive; each team has `NumTanks` lives |
+| Team structure | free-for-all 2–4 (arena 4P flagged CoopMode) |
+| Objects | none of its own; one `Tank` instant unit per position ([02 §25](02_units_and_entities.md#25-tank)); trees |
+| Options | `NumTanks` 3–10 (default 3) |
+| Timers | none (no time limit) |
+| Per mode second | for each used non-special slot: `score = NumTanks − m_tankDeaths[t]`, `BackupScores()`; if not eliminated and the team has no `Entity::TypeTank` in `Team::m_specials` → `++m_tankDeaths[t]`; at ≥ NumTanks → `EliminateTeam(t)`; else message "*T loses a Tank!" (`multiwinia_tankloss`) and a new `GlobalResearch::TypeTank` task targeted at that team's instant-unit tank position. Then if `totalTeams − 1 == numEliminated` → `DeclareWinner(notEliminated)` |
+| Scoring | tanks remaining |
+| Win / lose / draw | last team with tanks; no draw path |
+| Population cap | none (`PopulationCap −1`) |
+| AI | `Tank::RunTankBattleAI` ([07 §10.6](07_ai.md#10-unit-level-ai-hooks-runai)) |
+| HUD | "*X Tanks" (`multiwinia_numtanks`); no game-over list |
+| End of game | §2.11 |
+
+@@MAPTABLE TankBattle@@
+
+---

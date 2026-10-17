@@ -1093,7 +1093,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/GDSpeech9.ogg
 - … 1730 more (see JSON)
 
-### Cited paths that do not exist in the manifest (possible errors) — 96
+### Cited paths that do not exist in the manifest (possible errors) — 95
 - code/interface/pokey_window  ← 31_platform_build_and_tools.md
 - code/interface/pokey_window.{cpp,h}  ← 31_platform_build_and_tools.md
 - code/lib/command_buffer  ← 31_platform_build_and_tools.md
@@ -1156,8 +1156,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/icons/mouse_  ← 24_rendering.md
 - data/input/keyboards/<layout>.txt  ← 09_meta_systems.md
 - data/levels/map_  ← 23_terrain_and_landscape.md
-- data/levels/mp_  ← 01_game_modes.md, 02_units_and_entities.md, 07_ai.md, 23_terrain_and_landscape.md, 24_rendering.md
-- data/levels/mp_assault_  ← 02_units_and_entities.md
+- data/levels/mp_  ← 01_game_modes.md, 07_ai.md, 23_terrain_and_landscape.md, 24_rendering.md
 - data/n  ← 31_platform_build_and_tools.md
 - data/sepulveda/sepulveda1..5.bmp  ← 24_rendering.md
 - data/shaders/fixedfunc  ← 24_rendering.md

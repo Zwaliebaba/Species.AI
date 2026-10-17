@@ -2445,3 +2445,111 @@ Verified by grep over `code/` for the option names and for any preference key co
 | Profile selection / save slots | none reachable (§1.2.2) |
 
 ---
+## 12 Constants
+
+Kind: `#define` = preprocessor; literal = inline constant; static = function-static; data = from `data/`; pref = preference. Loader / credits-roll / benchmark constants are in Appendix A.1–A.3.
+
+| Subsystem | Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|---|
+| Front end | page slots (`NumPages`) | 38 (18 live) | — | enum | `code/UI/GameMenuWindow.h` |
+| Front end | `SERVERS_ON_SCREEN` | 13 | rows | `#define` | `code/game_menu.h` |
+| Front end | `MAX_GAME_TYPES` | 7 | — | `#define` | `code/game_menu.h` |
+| Front end | `GAMETYPE_PROLOGUE` / `GAMETYPE_CAMPAIGN` | 254 / 255 | — | `#define` | `code/game_menu.h` |
+| Front end | menu fade-in on `CreateMenu` | 0.25 | s | literal | `GameMenu::CreateMenu` |
+| Front end | menu transition | 1.0 | s | literal | `GameMenuButton::MouseUp` |
+| Front end | front-end camera target / front | (−900, 3000, 3970) / (0, 0.5, −1) | world units | literal | `GameMenu::CreateMenu` |
+| Front end | backdrop eye / rotations | (0, 600, 0); −1.899 rad about Y, −1.079 rad about Z; FOV 90 | — | literal | `GameMenu::Render` |
+| Layout | horizSplit / vertSplit / gap | 0.26·H / 0.6·W / 0.03·W | px | literal | `code/game_menu.cpp:GetPositions` |
+| Layout | widescreen threshold / inset | W/H > 1.4 / 0.08·W each side | — | literal | same |
+| Layout | fonts large / med / small | 0.095·H / 0.04·H / 0.022·H | px | literal | `GetFontSizes` |
+| Layout | button w / h / gap | 0.9·leftW / 0.052·H / 0.004·H | px | literal | `GetButtonSizes` |
+| Background | mascot centre / half-size / echoes | (0.75·W, 0.7·H) / 0.3·W + 5·sin t / 10 × 1.02 | px | literal | `GameMenuWindow::RenderBigDarwinian` |
+| Background | gear half-size / spin / copies | 0.6·W / 0.2 rad/s / 10 × 0.02 rad, alpha 0.06 | — | literal | same |
+| Background | low / high detail fps hysteresis | < 20 / ≥ 60 fps, smoothing k = 0.5·dt | — | literal | same |
+| Blink effects | "requesting list" / "loading achievements" | alpha 1.0 for 0.5 s then 0.5 per second | — | literal | `RenderRequestingEffect`, `RenderLoadingAchievementsEffect` |
+| Map list | row height / step | 0.7·bh / 0.7·(bh + gap) | px | literal | `SetupMapSelectPage` |
+| Map list | slide-in delay | 1.0·rowY/H | s | literal | `LevelSelectButtonBase::RenderMapName` |
+| Lobby | gamer-tag colour flash | 1.0 | s | literal | `GamertagButton::Render` |
+| Lobby | name / password length | 16 / 16 | chars | literal | `PlayerNameString`, `ServerPasswordString` |
+| Lobby | chat rename buffer | 16 (15 usable) | chars | literal | `ChatInputField::Keypress` |
+| Lobby | chat message buffer | 255 | chars | literal | `ChatInputWindow::Create` |
+| Lobby | client "not lagging" test before leave-while-ready | last server letter < 5.0 | s | literal | `FinishMultiwiniaButton` |
+| Browser | list rebuild / empty-list rebuild / WAN re-request | 2.0 / 1.0 / 10.0 | s | literal | `UpdateJoinGamePage` |
+| Browser | server TTL (client list purge) | 30 | s | literal | `contrib/systemiv/lib/metaserver/metaserver.cpp` |
+| Browser | manual server entries | `Server1` … `Server30` | — | literal | `UpdateJoinGamePage` |
+| Browser | scroll-bar window size | 10 (for 13 rows) | rows | literal | `SetupJoinGamePage` |
+| Quick match | list rebuild / WAN re-request | 1.0 / 10.0 | s | literal | `UpdateQuickMatchGamePage` |
+| Connecting | dot animation | one step per 0.5 s, 0–3 dots | — | literal | `WaitingButton` |
+| Connecting | timeout | none ([B:FULL]); 10 s under `TESTBED_ENABLED` | s | literal | `UpdateGameConnectingPage` |
+| Metaserver | metaserver / matchmaker port | 5113 | UDP | `#define PORT_METASERVER_LISTEN` | `metaserver_defines.h` |
+| Metaserver | client listener / LAN broadcast port | 5009 | UDP | `#define PORT_METASERVER_CLIENT_LISTEN` | same |
+| Metaserver | LAN REGISTER period | 5 | s | literal | `metaserver.cpp` |
+| Metaserver | WAN REGISTER period | ServerTTL/3 ± 1.5 (TTL default 60, min 10) | s | literal / data | same |
+| Metaserver | identity request period | 10 | s | literal | `matchmaker.cpp` |
+| Metaserver | REQUEST_CONNECT period while connecting | 1 | s | literal | same |
+| Metaserver | data request retry | 1 s (60 s after > 10 failures); first request ≥ 1 s after first call | s | literal | `MetaServer_RequestData` |
+| Network | default server / client ports | 4000 / 4001 | UDP | pref | `Server::Initialise`, `ClientToServer::OpenConnections` |
+| Auth | key length | 31 chars + NUL (`AUTHENTICATION_KEYLEN` 32) | chars | `#define` | `authentication.h` |
+| Auth | auto-hyphen positions | after 6, 13, 20, 27 chars | — | literal | `AuthInputField::Keypress` |
+| Auth | auth thread period / max tries | 2 s / 5 | — | literal | `authentication.cpp` |
+| Auth | status-box "recently changed" window | 2.0 | s | literal | `GameMenuWindow::ShowAuthBox` |
+| Demo | default limits | max game 4, max demo players 4, demo servers allowed, modes 0x16, 5 map CRCs | — | literal | `DemoLimitations::Initialise` |
+| MOTD | scroll start delay | 5.0 | s | literal | `MOTDButton::Render` |
+| Buy now | forced window size | 1024 × 768 windowed | px | literal | `UnlockFullGameButton` |
+| Achievements | `MAX_LEVEL_ID` / `VALID_ACHIEVEMENT_LEVELS` | 49 / 49 (41 without Assault) | level ids | `#define` | `code/achievement_tracker.cpp` |
+| Achievements | `VIRAL_MASTER_ACHIEVEMENT_MASK` | 0x01 | bit | `#define` | `code/achievement_tracker.h` |
+| Achievements | Hoarder / HailToTheKing / UncladSkies / Carnage / WrongGame / Genocide thresholds | 2× and > 3 / 1.5× / damage ≤ 0.01, others' fuel ≤ 50 / 2000 kills / 120 units / 1 000 000 kills | — | literal | §7.1 |
+| Grace | `GRACE_TIME` | 3.0 (20.0 under `TESTBED_ENABLED`) | s | `#define` | `code/lib/universal_include.h` |
+| Grace | countdown decrement | 0.1 per server tick | s | literal | `Multiwinia::AdvanceGracePeriod` |
+| Loading screen | frame budget | 1/60 | s | literal | `LoadingScreen::Render` |
+| Loading screen | worker / main affinity masks | 0x55 (CPUs 0, 2, 4, 6) / 0xAA (1, 3, 5, 7) | — | literal | `SetWorkingThreadProcessor`, `App::App` |
+| Loading screen | logo fade in / out | 1.0 / 1.0 | s | literal | `RenderFrame` |
+| Loading screen | logo size | 500·ScreenH/1024 | px | literal | `RenderIVLogo` |
+| Loading screen | rating notice y / size / alpha | 0.95·H / 0.02·H / logoAlpha − 0.5 | — | literal | `RenderIVLogo` |
+| Loading screen | spinner size / centre / colour / rate | 100 × 100 / (W − 100, H − 100) / (0.2, 0.8, 0.2, 1) / 90 °/s | — | literal | `RenderSpinningDarwinian` |
+| Loading screen | Mac platform-logo duration | 5.0 | s | literal [B:DEAD] | `RenderFrame` |
+| Animated panel | defaults width / height / start / stop | 600 / 300 / 0 / 30 | units, s | literal | `AnimatedPanel::AnimatedPanel` |
+| Animated panel | keyframe defaults x, y, scale, angle, alpha, image | 100, 100, 0.3, 0, 255, `darwinian.bmp` | — | literal | `AnimatedPanelKeyframe::AnimatedPanelKeyframe` |
+| Animated panel | coincident-key threshold | 0.01 | s | literal | `CalculateObjectProperties` |
+| Animated panel | placement scale / bottom offset | ScreenH/1300 / 1.15·height·scale | — | literal | `InitialiseAnimatedPanel` |
+| Animated panel | border / title / caption heights | 5 / 25 / 15 | px | literal | same |
+| Animated panel | background alpha (outer / inner lines) | 0.9 (0.45 / 0.225) | — | literal | `RenderBackground` |
+| Animated panel | title / caption font | 30 (`g_titleFont`) / 18 (`g_editorFont`, wrap 18/1.7) | px | literal | `RenderTitle`, `RenderCaption` |
+| Help pages | general pages `MAX_PAGES` | 5 | pages | `#define` | `code/interface/helpandoptions_windows.cpp` |
+| Help pages | image side | leftBoxH/3.5 | px | literal | `GeneralHelpWindow::Create`, `GameTypeHelpWindow::Create` |
+| Crate help | row slide speed | 750 | px/s | literal [B:DEBUG] | `CrateHelpWindow` |
+| In-game help | message box w / font / y | 0.35·H (0.55·H oversize) / 0.02·H / 0.78·H | px | literal | `RenderHelpMessage` |
+| In-game help | deselect hint | +1.0 (cap 3.0) while showing; −0.75 per stray click; show if < −1.0; 3.0 s; decay 0.33/s | s | literal | `ShowSpaceDeselectHelp` |
+| In-game help | shift hint | forward held > 4.0 s; shown 3.0 s | s | literal | `code/camera.cpp` |
+| Tutorial | tab gap / breathers | 0.5 s / 10 s (movement) / 20 s (airstrike) | s | literal | `RunTutorialHelp` |
+| Tutorial | T1 scores window / T2 end-tab lifetime / T2 frozen timer | 40 s / 20 s / 300 s | s | literal | `AttachTutorialTo3d`, `AttachTutorial2To3d` |
+| Tutorial | tab width | 8 × 35 = 280 px × (1 + 0.02·sin 8t) | px | literal | `RenderTab3d` |
+| Chat (in game) | font / box | 0.015·H / (0.25·W, 1.5·font) at (10·s, H − 10·s − 1.5·font) | px | literal | `ChatInputWindow::ChatInputWindow` |
+| Chat | caret blink | 0.5 on / 0.5 off | s | literal | `ChatInputField::Render` |
+| Christmas mode | active dates | 24–26 December (local time) | — | literal | `App::UseChristmasMode` |
+| Christmas mode | initial snow / spawn period / spawn height | 150 / 0.1 s / 700 + syncfrand(300) | — | literal | `Location::AdvanceChristmas` |
+| Graphics | water cell size | detail × max(worldX, worldZ)/100 | units | literal | `Water::Water` |
+| Graphics | entity-detail distance H | 99999.9 / 1000 / 500 | units | literal | `Team::RenderDarwinians` |
+| Graphics | `DarwinianScaleFactor` | 2.0 | — | data / pref | `data/default_preferences.txt` |
+| UI scale | large-menu scale | 0.96·screenH/460 | — | literal | `DarwiniaWindow::GetMenuSize` |
+| Prefs | `BootLoader` values | `none` / `random` / `firsttime` / loader name | — | pref | `RunBootloader`, `prefs_other_window.cpp` |
+
+---
+
+## 13 Design notes for the new game
+
+Non-normative [I] recommendations derived from the findings above; carry-forward decisions belong in [40](40_carry_forward_assessment.md).
+
+1. **Keep** the single-window, data-driven front end with one lobby page for single player, host and client; the "everything is a sequenced lobby command" model gives late-join and replay for free. **But** validate every lobby command on the server (sender is host; team ids belong to the sender; start only from the host) — the original enforces nothing (§4.4).
+2. Send map + time limit (and every option change) as one atomic, versioned lobby state update from the host instead of per-option version counters derived from local mirrors (§4.5).
+3. One namespaced key registry for network / directory fields; the `"dy"` collision silently broke the password filter (§5.8.6).
+4. Replace metaserver keys with platform entitlement / matchmaking services; implement quick match properly (skill, region, ping) or not at all; add browser sorting by column and a ping column.
+5. Achievements, statistics and leaderboards need a platform back end and persistence; the original's 12 conditions (§7.1) are a usable design list once the comment/code threshold mismatches are decided.
+6. Keep the contextual-help hint design (stray-click suspicion counter, shift-to-speed-up) and the animated mode explainers during ready-up; revive or drop the cut objective cards deliberately.
+7. Tutorials should drive their side effects through the authoritative simulation (scripted server-side events) rather than client-side mutation (§8.4).
+8. Loading: keep the background loader + main-thread GPU job queue + network keep-alive; add progress reporting; use DX12 copy queues.
+9. Options: centralise defaults (§11.13); add the commonly expected options missing here (§11.14): v-sync, anti-aliasing, gamma, separate volumes, key rebinding, mouse inversion, UI scale, subtitles.
+10. Localisation: per-key fallback to the base language instead of showing ids; complete or remove partial languages; use a proper glyph cache with shaping (§10).
+11. Store the authentication / entitlement token in one place (§6.4 key-file split).
+
+---
