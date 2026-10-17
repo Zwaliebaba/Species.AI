@@ -1668,9 +1668,73 @@ Brief per-component guidance; the full keep/adapt/replace assessment is in [40](
 
 ## Open questions and unknowns
 
+| # | Item | Tag | What would resolve it |
+|---|---|---|---|
+| 24-U1 | Does `ReleaseDirect3D` compile? B1 (`water.cpp:119`) and B2 (`WindowManagerDirectX::CreateWin` signature) are ill-formed C++; B3 (`IDirect3DDevice9::Resolve`, `D3DRESOLVE_RENDERTARGET0`) and B4 (`D3DRS_LINEWIDTH`) depend on the SDK headers | [I] | build the configuration with the DirectX SDK named in `targets/vs2005/Direct3D.vsprops`; inspect `d3d9.h`/`d3d9types.h` |
+| 24-U2 | What D3D players saw on dynamic water in Multiwinia (the `water-meshwaves` shader samples a reflection target that is never rendered because the pre-pass is single-player-only) | [U] | run a D3D build in a match and capture the frame |
+| 24-U3 | Register allocation of FixedFunc/deform/water uniforms without `register()` and of samplers `map0`/`map1` | [U] | disassemble with `fxc /Fc` for the profile returned by `D3DXGetVertexShaderProfile` |
+| 24-U4 | Whether D3D9 exposes > 1 mip level for `D3DUSAGE_AUTOGENMIPMAP` managed textures (does `MipMapTask` do any work?) | [I] | runtime `GetLevelCount()` on target hardware |
+| 24-U5 | Whether `gluPerspective`'s `_43 *= 2` (effective near/far doubled under D3D) was intended | [U] | compare GL and D3D builds near the near plane; author intent unavailable |
+| 24-U6 | Real per-frame cost, draw-call count and fill rate of the shipped build (no budgets are encoded) | [U] | profile `multiwinia.exe` with the built-in profiler and a GPU capture tool on a 4-player map |
+| 24-U7 | Actual swap interval of the GL build (no `wglSwapIntervalEXT` call; driver default) | [U] | runtime observation on target drivers |
+| 24-U8 | Which texture flags win for textures requested with different flags (texture cache keyed by name only): `textures/clouds.bmp` (blobby: no mip; flat: default mip), `textures/laser.bmp` (sky: mip; lasers: no mip) — first requester fixes mip-mapping and masking for the session | [I] | log `Resource::GetTextureWithFlags` call order at start-up (owner [25](25_textures_and_assets.md)) |
+| 24-U9 | Whether the `docs/HardwareComplianceIssues.txt` "mouse pointer background not transparent" issue still applies (Linux only; Win32 cursors are additive so black is invisible) | [I] | test on a driver without multitexture/alpha support |
+| 24-U10 | Visible difference of flat-shaded colours between GL (last provoking vertex) and D3D (Gouraud for unconverted triangles, first vertex for D3D flat shading) | [I] | side-by-side capture of explosions and shapes in both builds |
+| 24-U11 | Hangul atlas `square.bb00.bfff.bmp` claims U+BB00–BFFF; U+BC00–BFFF may sample outside the atlas depending on the previous character | [I] | render a Korean string containing U+BC00–BFFF characters |
+| 24-U12 | [B:D3D] `DeformEffect::Stop` never restores render target 0 before the full-screen composite — composite would go into the deform texture | [I] | moot unless the D3D build is revived; trace with PIX |
+| 24-U13 | [B:D3D] x87 precision after `CreateDevice` without `D3DCREATE_FPU_PRESERVE` (24-bit) and its effect on lockstep between GL and D3D clients | [I] | `_control87(0,0)` readback after `Direct3DInit` (owner [22](22_determinism_and_networking.md)) |
+| 24-U14 | Lights specified before the camera matrix each frame — magnitude of the one-frame lag in light direction during fast camera turns | [I] | capture a fast camera rotation; compare with lights set after `SetupMatricesFor3D` |
+| 24-U15 | Design intent of `textures/triangleOutline.bmp` (2×2 sub-cells, three diagonals) mapped once per height-map cell versus the actual triangle edges of the strip | [I] | visual check in a running build (owner [23](23_terrain_and_landscape.md)) |
+
+Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_koth_3P_1`, §5.5); `g_predictionTime` semantics (§2.4); background/fog colour (constant black, §3.2); landscape D3D path does not restore the emulator vertex declaration — `Water::RenderFlatWater` works around it by resetting `s_pCustomVertexDecl` [C] (§4.2); visual content of `StartSequence` is moot (never instantiated, §3.2); `sprites/viriifull.bmp` is generated at run time (§4.9).
+
 ## Docs-vs-code discrepancies
 
+| Doc / comment | Says | Code does | Ref |
+|---|---|---|---|
+| `docs/OpenGLState.txt` | fog start 800, end 2000 | start `fogEnd/3`, end `max(4000, worldSizeX+1000, worldSizeZ+1000)`; `CheckOpenGLState` asserts end ≥ 4000 | `code/location.cpp:Location::SetupFog`, `code/renderer.cpp:Renderer::CheckOpenGLState` |
+| `docs/OpenGLState.txt` | fog colour `g_app->m_world->m_backgroundColour` | `g_app->m_backgroundColour` (constant black, alpha 0); the D3D path ignores fog colour entirely | `Location::SetupFog`, `code/lib/opengl_directx.cpp:glFogfv` |
+| `docs/OpenGLState.txt` | lights from `g_app->m_world->m_lights[x]` with ambient/diffuse/position/specular | `Location::SetupLights` (or `GlobalWorld::SetupLights`): direction + colour, ambient (0,0,0,1), LIGHT1 zeroed first, only LIGHT0/1 ever enabled | `code/location.cpp:Location::SetupLights` |
+| `docs/OpenGLState.txt` | `glTexEnvf(GL_TEXTURE_ENV_MODE, GL_MODULATE)` | `glTexEnvi(…MODULATE)` plus `glTexEnviv(GL_TEXTURE_ENV_COLOR, {0,0,0,0})` | `Renderer::SetOpenGLState` |
+| `docs/OpenGLState.txt` | lists `GL_TEXTURE_MAG_FILTER` twice "undefined" (MIN missing) | neither filter is part of the default state; every textured pass sets its own; uploads default LINEAR / LINEAR_MIPMAP_LINEAR | §3.2 |
+| `docs/OpenGLState.txt` | no mention of `GL_NORMALIZE`, `GL_LIGHT_MODEL_AMBIENT`, `GL_SCISSOR_TEST`, lights 2–7 | code disables NORMALIZE, sets light-model ambient (0,0,0,0), disables scissor and all 8 lights | `Renderer::SetOpenGLState` |
+| `docs/OpenGLState.txt` | trailing `glMaterialfv(GL_FRONT, …)` and `allegro_gl_set_texture_format(GL_INTENSITY8)` | no Allegro anywhere in `code/`; materials set by `Renderer::SetObjectLighting` (specular 0, diffuse 1, ambient 0, shininess 127) | `Renderer::SetObjectLighting` |
+| `docs/OpenGLState.txt` (implied contract) | the documented state is the API contract | under [B:D3D] shade model, line/point smooth, fog colour/density, light-model ambient and material state are not emulated | §1.5.4 |
+| `docs/HardwareComplianceIssues.txt` | "Multitexturing ARB not supported" on a Linux test machine | no Win32 fallback: `gglActiveTextureARB` / `gglMultiTexCoord2fARB` are called unguarded (flat water, fences, radar dish) | `code/lib/ogl_extensions.cpp`, `code/water.cpp:Water::RenderFlatWater` |
+| `docs/HardwareComplianceIssues.txt` | "Mouse pointer background not transparent" | no explicit fix; Win32 cursors are drawn additively by the game (24-U9) | `code/gamecursor.cpp:MouseCursor::Render` |
+| `docs/landscape lightmap.txt` | `Landscape::GenerateLightMap/ApplyLightmap/DeleteLightMap`: ray-cast shadows from a point light at (700,200,100), shade 255/50, optional 5×5 filter | none of these exist; terrain is only GL vertex-lit; the only "lightmap" is the water shore mask; orphan `LIGHTMAP_SCALEFACTOR` remains | `code/landscape.h`, `code/water.cpp:Water::GenerateLightMap` |
+| `docs/sphere world.txt`, `docs/top level map.txt` | the sphere world is the hub between islands | present and built at start-up but unreachable in Multiwinia; the menu shows only clouds | `code/main.cpp:GlobalWorldGameLoop`, `code/game_menu.cpp:GameMenu::Render` |
+| `code/water.h` header comment | sea plane twice the land size; depth darkens and shrinks waves | matches; additionally deep water is not drawn at all | `code/water.cpp` |
+| comment in `code/lib/render_utils.h` | split quads are needed for Radeon fog artefacts | `RenderSplitUpQuad*` have no callers (clouds subdivide inline) | `code/lib/render_utils.cpp`, `code/clouds.cpp:Clouds::RenderQuad` |
+| comment in `Renderer::ApplyPixelEffect` | pass 4 "Additive smooth" | uses NEAREST (blocky) | `code/renderer.cpp:Renderer::ApplyPixelEffect` |
+| comment on `ParticleType::m_spin` | spin in rad/s; fade-in/out times | `m_spin`, `m_fadeInTime`, `m_fadeOutTime` never read; render fade hard-coded | `code/particle_system.cpp` |
+| signature `DeformEffect::AddPunch(Vector3 pos, float range)` | takes a range | argument ignored (`m_range = 1`) | `code/deform.cpp:DeformEffect::AddPunch` |
+| comment in `WindowManagerWin32::EnableOpenGL` | secondary GL context "for loading thread" | never made current; no loading-thread GL use | `code/lib/window_manager_win32.cpp` |
+| comment in `App::UseChristmasMode` | "Also allow user to disable if he wishes" | the `ChristmasEnabled` preference is not consulted | `code/app.cpp:App::UseChristmasMode`, `code/interface/prefs_other_window.cpp` |
+| graphics menu (`dialog_landscapedetail`, `dialog_pixeleffect` strings) | landscape detail and pixel effect are user options | both controls are commented out; `RenderLandscapeDetail` has no effect | `code/interface/prefs_graphics_window.cpp` |
+| `Renderer::Initialise` reads `WaitVerticalRetrace` | vsync is configurable | first two `CreateWin` attempts pass literal `true`; the GL window manager ignores the argument entirely | `code/renderer.cpp:Renderer::Initialise`, `code/lib/window_manager_win32.cpp:CreateWin` |
+
 ## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" window title and window-class name (`APP_NAME_W`) | brand | `code/lib/universal_include.h`, `code/renderer.cpp:Renderer::Initialise` | `<GAME_TITLE>` |
+| "Darwinian" sprite and shape (`data/sprites/darwinian.bmp`, `data/shapes/darwinian.shp`), `sprites/darwinian_ouch*.bmp`, `sprites/futurewinian.bmp`, loading-screen spinning Darwinian | name / art | `code/team.cpp:Team::RenderDarwinians`, `code/worldobject/darwinian.cpp`, `code/loading_screen.cpp` | `unit_basic` sprite set |
+| Virii, Spirit, Soul Destroyer, Centipede, Spider, Squadie / Insertion Squad, Shaman, Officer, Armour, Triffid, Harvester (names in render code) | names | §4.9, §4.13, §4.14 | role names: swarm, soul orb, devourer, segmented crawler, leaper, squad, summoner, commander, transport, spore pod, collector |
+| Sprite/texture art: `data/textures/particle.bmp`, `shapewireframe.bmp`, `triangleoutline.bmp`, `laser.bmp`, `clouds.bmp`, `starburst.bmp`, `glow.bmp`, `cloudyglow.bmp`, `tree.bmp`, `laserfence.bmp`, `laserfence2.bmp`, `lightning.bmp`, `subversion.bmp`, `radarsignal.bmp`, `godray.bmp`, `deform1c.bmp`, `deform3.bmp`, `deform36c.bmp`, `interface_red.bmp`; `data/sprites/virii.bmp`, `santahat.bmp`, `subshadow.bmp` | art | catalogue in [25](25_textures_and_assets.md) | regenerate procedurally / new art with the same roles |
+| Terrain ramps, water textures and wave tables (`data/terrain/landscape_*.bmp`, `water_*.bmp`, `waves_*.bmp`) | art | §4.1, §4.2 | new ramps `ramp_<theme>`, tileable water, 1-D gradients |
+| 139 `.shp` meshes (`data/shapes/*.shp`) | art | `_work/drafts/P12_shapes.csv` | new meshes |
+| Font atlases `speccy`, `editor`, `square` (`data/textures/unicode/*.bmp`, 138 files incl. CJK/Hangul glyph art) and legacy `editor_font*.bmp`, `speccy_font*.bmp` | art (font) | §4.22 | licensed open fonts (an OFL pixel font + Noto CJK) in a glyph cache |
+| Cursor and HUD icons (`data/icons/mouse_*.bmp`, `marker_*.bmp`, `compass*.bmp`, `icon_*.bmp`, `widearrow.bmp`, `thickarrow.bmp`, `target.bmp`, `selectionarrow.bmp`) | art | §4.18–§4.20 | new icon set |
+| Dr Sepulveda face in the clouds (`data/sepulveda/sepulveda1..5.bmp`, `Clouds::RenderFace`, `ShowDrSFace`) | character / art | §4.4 | drop |
+| "Darwin Research Associates" logo (`data/icons/darwin_research_associates.bmp`) and caption `launchpad_logo_1`; publisher logo on the loading screen (`RenderIVLogo`) | brand / art / text | §2.6, §4.25 | omit / studio placeholder |
+| `privatedemo1/2` strings and `textures/privatedemo.bmp` | text / art | `Renderer::RenderLogo` [B:DEAD] | omit |
+| UI text keys `multiwinia_error_syncerror`, `multiwinia_error_lostconnection`, `multiwinia_presstotalk`; hard-coded "PAUSED" | text | §3.2 | `err_desync`, `err_connection_lost`, `hint_chat`, localised `ui_paused` |
+| Team colour names green/red/yellow/blue/orange/purple/cyan/pink (`multiwinia_team_*`) | text | `code/team.cpp:Team::GetTeamName` | generic colour names, new keys |
+| Christmas theme (Santa hats, ice ramps) | concept / art | §5.5 | optional seasonal theme with new art |
+| Shader sources `data/shaders/*` (14 files) | code (licence) | §6 | re-author in HLSL SM6 |
+| Global-world shapes `globalworld_outer/middle/inner.shp`, global-internet visuals | art / concept | §4.24 | drop (legacy) |
+| Third-party note: none of the renderer code is third-party (AVIGenerator, MT19937 are listed in [31](31_platform_build_and_tools.md)/[22](22_determinism_and_networking.md)) | — | — | — |
 
 ## Source map
 

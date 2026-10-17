@@ -102,7 +102,7 @@ flowchart TB
 | `ScrollBar` | `code/interface/scrollbar.*` | Yes | Yes — only on the `GameMenuWindow` server browser (`SetupJoinGamePage`) in FULL; also `SetupAchievementsPage` (unreachable), `CrateHelpWindow` ([B:DEBUG]), `SoundStatsWindow` and the sound editor ([B:DEBUG], `SOUND_EDITOR`), `FileDialog`/`MultiwiniaFileDialog` (editor) [C] grep `new ScrollBar`. Resolved: P17a listed `HelpAndOptions` and `SoundStatsWindow` as FULL users; the help-window user is `CrateHelpWindow::Create` (inside `INCLUDE_CRATE_HELP_WINDOW`, TARGET_DEBUG) and `soundstats_window.cpp` is wrapped in `#ifdef SOUND_EDITOR`. | [B:FULL] |
 | `CheckBox` | `code/interface/checkbox.*` | Yes | Yes (`GameMenuCheckBox`) | [B:FULL] |
 | `DropDownMenu` | `code/interface/drop_down_menu.*` | Yes | Yes (`GameMenuDropDown`; `ControlMethodDropDownMenu` is in the unreachable key-bindings window) | [B:FULL] |
-| `MessageDialog` | `code/interface/message_dialog.*` | Yes | Yes — screen-mode failure (`code/renderer.cpp:Renderer::Initialise`) and hardware-3D-sound failure (`code/sound/soundsystem.cpp`) [C]. Resolved: P17a also listed the "Restart Required" dialog of `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer`; that call is inside `#ifdef TARGET_OS_LINUX` → [B:DEAD] on PC [C]. Other callers are editor/sound-editor windows. | [B:FULL] |
+| `MessageDialog` | `code/interface/message_dialog.*` | Yes | Yes — screen-mode failure (`code/renderer.cpp:Renderer::Initialise`) [C]; hardware-3D-sound failure (`code/sound/soundsystem.cpp`) only if pref `SoundHW3D` = 1, which no shipped control sets (the Hardware-3D control is inside `#ifdef USE_SOUND_HW3D`, off) [C]. Resolved: P17a also listed the "Restart Required" dialog of `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer`; that call is inside `#ifdef TARGET_OS_LINUX` → [B:DEAD] on PC [C]. Other callers are editor/sound-editor windows. | [B:FULL] |
 | `FileDialog` | `code/interface/filedialog.*` | Yes | Only from editor landscape window and sound editor | compiled, tool-only |
 | `MultiwiniaFileDialog`, `MultiwiniaWindow`, `NewMapWindow` | `multiwinia_filedialog.*`, `multiwinia_window.*` | Yes (no `#ifdef`) | No (opened by `MultiwiniaEditorButton` under `LOCATION_EDITOR` and by the dead Darwinia `MainMenuWindow`) | [B:EDITOR] |
 | Map-editor windows | `location_editor.*`, `editor_window.*`, `buildings_window.*`, `camera_anim_window.*`, `camera_mount_window.*`, `landscape_window.*`, `lights_window.*`, `instant_unit_window.*`, `tree_window.*` | Bodies inside `#ifdef LOCATION_EDITOR` | No | [B:EDITOR] |
@@ -2206,7 +2206,7 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 227 | `SetScreenButton` | `GameMenuButton` | `code/interface/prefs_screen_window.cpp:SetScreenButton` | live in the shipped build | [B:FULL] |
 | 228 | `PrefsScreenWindow` | `GameOptionsWindow` | `code/interface/prefs_screen_window.h:PrefsScreenWindow` | live in the shipped build | [B:FULL] |
 | 229 | `RestartSoundButton` | `GameMenuButton` | `code/interface/prefs_sound_window.cpp:RestartSoundButton` | live in the shipped build | [B:FULL] |
-| 230 | `HW3DDropDownMenu` | `GameMenuCheckBox` | `code/interface/prefs_sound_window.cpp:HW3DDropDownMenu` | live in the shipped build | [B:FULL] |
+| 230 | `HW3DDropDownMenu` | `GameMenuCheckBox` | `code/interface/prefs_sound_window.cpp:HW3DDropDownMenu` | not compiled in any PC configuration | [B:DEAD] |
 | 231 | `PrefsSoundWindow` | `GameOptionsWindow` | `code/interface/prefs_sound_window.h:PrefsSoundWindow` | live in the shipped build | [B:FULL] |
 | 232 | `ProfilerButton` | `DarwiniaButton` | `code/interface/profilewindow.cpp:ProfilerButton` | TARGET_DEBUG builds only | [B:DEBUG] |
 | 233 | `ProfileWindow` | `DarwiniaWindow` | `code/interface/profilewindow.h:ProfileWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
@@ -2362,7 +2362,7 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 383 | `BackPageButton` | `GameMenuButton` | `code/game_menu.h:BackPageButton` | live in the shipped build | [B:FULL] |
 | 384 | `GameMenuCheckBox` | `CheckBox` | `code/game_menu.h:GameMenuCheckBox` | live in the shipped build | [B:FULL] |
 
-Totals: not compiled in any PC configuration = 32; TARGET_DEBUG builds only = 73; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 76; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 120; other product target / platform only = 2; compiled into FULL, never reached = 74; all declarations = 384.
+Totals: not compiled in any PC configuration = 33; TARGET_DEBUG builds only = 73; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 76; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 119; other product target / platform only = 2; compiled into FULL, never reached = 74; all declarations = 384.
 
 ---
 

@@ -125,3 +125,8 @@
 - 16 contradictions resolved against code. Behaviour-changing: **Retribution IS live** (Multiwinia::Advance calls AdvanceRetribution when RetributionMode option set — verified by coordinator; P08 was wrong) → RunForest reachable; WallBuster AITarget doesn't exist (creation commented out); monster + Futurewinian teams always get AI entity; AI entity spawns at (20,0,20) clamped; Assault armour "mobile bomb" never runs; spawn-point Goto officers created in every mode + tutorials; timer periods 11/101/200 ticks not 1/10/20 s.
 - New: officer promotion stalls when CPU team has selection (orphaned Officer tasks fill 6 slots); initial node graph built before walls/fences known; IsWalkable measures slope vs start point not per step. 12 open items.
 - Corrections relayed to S04 and S01.
+
+## S05 (05_economy_and_population.md) — done, ~131 KB
+- 8 contradictions resolved: Retribution runs (absent option reads −1 → counts as on); destroyed ant hills release no spirits (monster-team spirits never created); spore generators spirit only when player-owned; handicap divides by count incl. monster+Futurewinian teams (only helps single-spawn team); spawn link 11 ticks first hop, 10 thereafter; doubled Blitzkrieg waves every 330 ticks; Engineer spirit collection + egg fertilisation LIVE in FULL; Harvester any-team souls confirmed.
+- New: Harvester deliveries ignore pop cap and 30 s activation delay; AntHill ants not counted against monster cap. 05-U1..U12. Script scripts/S_05_economy_tables.py.
+- Relayed to S01, S04, S02.

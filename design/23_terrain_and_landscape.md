@@ -358,7 +358,7 @@ For a pass with step s, the sequence of writes is: for x = 0, s, 2s, …: for z 
 | 4 | 15 × 15 | 450 | 2^(k−4) |
 | 5 | 31 × 31 | 1 922 | 2^(k−5) |
 
-(String lengths confirmed in every shipped file [C] `scripts/P11_levelstats.py`; editor range 0 – 5 [C] `code/interface/landscape_window.cpp:LandscapeGuideGridWindow::Create`.)
+(String lengths confirmed in every shipped file [C] `_work/scripts/P11_levelstats.py`; editor range 0 – 5 [C] `code/interface/landscape_window.cpp:LandscapeGuideGridWindow::Create`.)
 
 **Cell order.** Row-major with **z outer, x inner**: cell (x, z) is at character offset 2·(z·r + x).
 

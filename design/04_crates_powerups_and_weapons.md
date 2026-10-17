@@ -22,7 +22,7 @@
 Conventions used throughout this document:
 
 - **Tick.** One simulation tick = `SERVER_ADVANCE_PERIOD` = `0.1 × m_gameSpeed` game-seconds; the server issues ticks at a fixed 10 Hz of real time, so at normal speed a tick is 0.1 s [C] `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`, see [20](20_architecture.md) / [22](22_determinism_and_networking.md). Each tick is executed as 10 slices (`NUM_SLICES_PER_FRAME`); every building and effect object is advanced once per tick in one of the slices; `Location::AdvanceCrates` runs at slice 8 [C] `code/location.cpp:Location::Advance`. "Per second" values below are game-seconds at speed 1.0 unless stated.
-- **World units (wu).** The code calls them metres in `data/stats.txt` comments; maps are 1 400–6 000 wu across.
+- **World units (wu).** The code calls them metres in `data/stats.txt` comments; shipped multiplayer maps are 2 000–7 000 wu across (`worldSizeX`, §3.5).
 - **RNG.** `syncrand()`/`syncfrand(x)` ∈ [0, x)/`syncsfrand(x)` ∈ (−x/2, +x/2) are the shared lock-step Mersenne-Twister stream; `FRAND`/`SFRAND` are the same stream with left-to-right evaluation order inside `Vector3` constructors; `frand`/`sfrand`/`AppRandom`/`rand()` are **unsynced** local generators that may only be used for cosmetics [C] `contrib/systemiv/lib/math/random_number.cpp:_syncfrand`, `code/lib/vector3.cpp`. Note `syncsfrand(x)` spans ±x/2, so `pos + syncsfrand(200)` means ±100.
 - **Teams.** `NUM_TEAMS = 6` [C] `code/globals.h`; player teams 0–3, the **Monster team = 4** ("Evilinians", colour (10,10,10)) and the **Futurewinian team = 5** (colour (200,200,200)); both are initialised as CPU teams in every multiplayer game by `Location::Init` [C] `code/location.cpp:Location::GetMonsterTeamId`, `Location::InitMonsterTeam`, `Location::InitFuturewinianTeam`. Team id 255 = neutral.
 - **Research levels.** `Location::Init` forces every research type to level 3 in multiplayer, then sets Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4 [C] `code/location.cpp:Location::Init`. All research-indexed tables below quote the Multiwinia value; other levels are Darwinia-only [B:LEGACY].
@@ -494,7 +494,7 @@ for every task of the team except TypeShaman: m_startTimer = 30.0   # tasks unus
 
 ### 4.4 Retribution (eliminated-team grants)
 
-[C] `code/multiwinia.cpp:Multiwinia::AdvanceRetribution`, called every tick from `Multiwinia::Advance` (after the grace period, not while paused) whenever `GetGameOption("RetributionMode")` is non-zero (default 1; −1 in Assault/RocketRiot also counts as on):
+**[B:FULL], option-gated** (`RetributionMode`, default on). [C] `code/multiwinia.cpp:Multiwinia::AdvanceRetribution`, called every tick from `Multiwinia::Advance` (after the grace period, not while paused) whenever `GetGameOption("RetributionMode")` is non-zero (default 1; −1 in Assault/RocketRiot also counts as on):
 
 ```
 for each used team t that is not the Monster or Futurewinian team:
@@ -515,6 +515,8 @@ for each used team t that is not the Monster or Futurewinian team:
 - First grant 45 game-seconds after the team becomes eliminated (the timer is held at 45 while not eliminated; the initial value 5 from `Multiwinia::Reset` only matters for a team eliminated before its first post-grace tick), then every 45 s while it has a free slot [C].
 - Retribution `Forest` is a **task** (`TypeMagicalForest`), unlike the crate version, which is immediate [C] `Crate::CaptureCrate(int,int)`.
 - HUD: `multiwinia_retribution_timer` "Retribution in *S" (red) for the eliminated local team outside the grace period [C] `code/multiwinia.cpp` (HUD render).
+- What it spawns: nothing directly — it hands the eliminated team a **task** (Airstrike 33.3 %, Meteor, Magical Forest, Dark Forest, Eggs 16.7 % each; Airstrike only with Basic Crates Only), which the team then targets like any crate task (§5.5, §5.18, §5.13, §5.19, §5.17). For a CPU team the AI uses the same handlers; Retribution is the only live source of a `TypeMagicalForest` task, which makes `AI::RunForest` reachable ([07](07_ai.md)) [C].
+- Counters: `Multiwinia::m_eliminationBonusTimer[NUM_TEAMS]` (45 s period, initial 5 from `Multiwinia::Reset`); the eliminated-team task capacity of 2 (`TaskManager::Capacity`); `TaskManager::NotifyRecentTaskSource(2)` tags the task as "retribution" for the task-popup UI [C].
 - See [01](01_game_modes.md) for elimination rules per mode.
 
 ### 4.5 Basic vs advanced crates

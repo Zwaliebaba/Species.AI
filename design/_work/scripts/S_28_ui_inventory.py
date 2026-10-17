@@ -94,6 +94,8 @@ CLASS_STATUS = {
     "MainMenuUserProfileButton": "UNREACH", "ModsButton": "DEAD", "MultiwiniaButton": "UNREACH",
     "KeybindingsOptionsButton": "UNREACH", "ResetLevelButton": "UNREACH", "WebsiteButton": "UNREACH",
     "ResetLocationButton": "UNREACH",
+    # prefs_sound_window.cpp: class body inside #ifdef USE_SOUND_HW3D (commented out in universal_include.h)
+    "HW3DDropDownMenu": "DEAD",
     # code/UI (P18 inventory, verified by include/instantiation grep)
     "AnyLevelSelectButton": "UNREACH", "HelpImageButton": "UNREACH", "NextHelpButton": "UNREACH",
     "PrevHelpButton": "UNREACH", "CampaignButton": "DEBUG", "PrologueButton": "DEBUG",
