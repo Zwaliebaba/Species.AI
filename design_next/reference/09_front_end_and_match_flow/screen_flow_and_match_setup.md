@@ -63,7 +63,7 @@ The order of this table carries no meaning.
 
 ### 2.2 Front-end lifecycle
 
-**R-META-005** (MUST) The front-end controller (`FrontEndController`) lives for the process ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) §2.1). It is not a window. It owns the map catalogue ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-011), the 3-D backdrop (R-META-024) and the creation and destruction of the one front-end screen (`FrontEndScreen`). Every page, every page transition and the logic of the match setup page belong to the front-end screen. How the application composes its services and states is DEC-221; the screen-level flow of diagram 3-A is reference behaviour.
+**R-META-005** (MUST) The front-end controller (`FrontEndController`) lives for the process ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) §2.1). It is not a window. It owns the map catalogue ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-011), the 3-D backdrop ([front_end_presentation.md](front_end_presentation.md) R-META-024) and the creation and destruction of the one front-end screen (`FrontEndScreen`). Every page, every page transition and the logic of the match setup page belong to the front-end screen. How the application composes its services and states is DEC-221; the screen-level flow of diagram 3-A is reference behaviour.
 
 **R-META-006** (MUST) While the application is at the front end, the front-end loop creates the menu whenever the menu does not exist and the screen fade has completed.
 
@@ -79,60 +79,17 @@ The order of this table carries no meaning.
 8. clear the returning-from-tutorial flag;
 9. mark the menu as created.
 
-**R-META-008** (MUST) A new front-end screen covers the whole screen, (0, 0) to (W, H), and cannot be resized, moved or closed. Its current page is none and its requested page is the title page, unless step 7 of R-META-007 applies. It reads the player name from the player-name setting ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)), whose default is `ui.player.default_name`, replaces every `%` character of it with a space and stores the result through the name rule (R-META-075). No credential or entitlement check runs at any point of the front end (DEC-248).
+**R-META-008** (MUST) A new front-end screen covers the whole screen, (0, 0) to (W, H), and cannot be resized, moved or closed. Its current page is none and its requested page is the title page, unless step 7 of R-META-007 applies. It reads the player name from the player-name setting ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)), whose default is `ui.player.default_name`, replaces every `%` character of it with a space and stores the result through the name rule (R-META-063). No credential or entitlement check runs at any point of the front end (DEC-248).
 
 **R-META-009** (MUST) On its first update the front-end screen sets up its requested page. On the first update after the audio engine is ready, it starts the lobby ambience (R-META-030).
 
 **R-META-010** (MUST) When the match-start command executes (`StartMatch`, [reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-460), the participant sets its match-loading flag, requests the match, sets the game mode to match, leaves the front end, shows the interface, clears its at-match-setup flag and resets the game timer. The front-end loop then exits, stops the lobby ambience and destroys the menu: the front-end screen is removed and the screen fades out.
 
-**R-META-011** (MUST) The in-match leave action (R-META-113) clears the requested match and returns the application to the front end. The front-end loop then builds a fresh front-end screen at the title page, or at the tutorials page after a tutorial. No match setup state survives a match; only the settings store persists ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-031).
+**R-META-011** (MUST) The in-match leave action (R-META-076) clears the requested match and returns the application to the front end. The front-end loop then builds a fresh front-end screen at the title page, or at the tutorials page after a tutorial. No match setup state survives a match; only the settings store persists ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-031).
 
 **R-META-012** (MUST) The front end has no results page. A match result is shown only by the game-over overlay of the match HUD ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-035, R-MODE-068); its hooks are §2.31 (DEC-048).
 
-**R-META-013** (MUST) After game over the only way out of a match is the in-match menu's leave action, which in a finished match leaves without a confirmation (R-META-111). The ready action has no effect at game over. The game-over prompt `match.game_over.leave_prompt_keyboard` or `match.game_over.leave_prompt_pad` names this path ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-068).
-
-### 2.3 Shared page layout
-
-**R-META-014** (MUST) Every front-end page and every options screen (`OptionsScreen`) uses one layout, computed from W and H:
-
-| Quantity | Formula |
-|---|---|
-| horizontal split | `ref.meta.layout.horizontal_split` (0.26) × H |
-| vertical split | `ref.meta.layout.vertical_split` (0.6) × W |
-| gap | `ref.meta.layout.gap` (0.05) × vertical split, that is 0.03 × W |
-| outer edges | left = top = gap; right = W − gap; bottom = H − gap. On a wide screen, W ÷ H > `ref.meta.layout.widescreen_aspect` (1.4): left += `ref.meta.layout.widescreen_inset` (0.08) × W and right −= `ref.meta.layout.widescreen_inset` × W |
-| title bar | x = left; y = top; width = right − left; height = horizontal split − gap ÷ 2 − top |
-| left box | x = left; y = horizontal split + gap ÷ 2; width = vertical split − gap ÷ 2 − left; height = bottom − y |
-| right box | x = vertical split + gap ÷ 2; y = horizontal split + gap ÷ 2; width = right − x; height = bottom − y |
-| fonts | large = `ref.meta.layout.font_large` (0.095) × H; medium = `ref.meta.layout.font_medium` (0.04) × H; small = `ref.meta.layout.font_small` (0.022) × H |
-| standard button | width bw = `ref.meta.layout.button_width` (0.9) × lW; height bh = `ref.meta.layout.button_height` (1.3) × medium, that is 0.052 × H; button gap = `ref.meta.layout.button_gap` (0.1) × medium, that is 0.004 × H |
-
-**R-META-015** (MUST) The standard page skeleton places its buttons centred in the left box at bx = lX + (lW − bw) ÷ 2. The page title sits at (lX + `ref.meta.layout.title_inset` (10 px), lY + 10 px, lW − 2 × 10 px, `ref.meta.layout.title_height` (1.5) × bh) in the medium font; it is drawn upper-cased, shrunk to fit, over the highlight beam (`ui.menu_highlight`). The first stacked button sits at y = lY + `ref.meta.layout.first_button_offset` (0.5 × bh + 1.3 × bh + one button step), where one button step is bh + button gap, and each further button one button step lower. The Back button sits at y = lY + lH − `ref.meta.layout.back_offset` (2) × bh. The right box carries an information panel (a picture, a description or the chat), which is outside the navigation order.
-
-**R-META-016** (MUST) Page building, page transitions, the Back semantics and controller navigation follow the UI framework ([pages and screen recipes](../../architecture/components/ui_framework/pages_and_screen_recipes.md)). A Back button marked "previous page" returns to whichever page was showing before the current one.
-
-**R-META-017** (MUST) The widgets of these pages (page buttons, page titles, text fields with their increase and decrease glyphs, drop-down lists in cycle mode or as a full-screen list, check boxes, Back and close buttons, text labels, scrolling text and pictures) render, take their palette and handle input as the UI framework specifies ([core and widgets](../../architecture/components/ui_framework/core_and_widgets.md)).
-
-### 2.4 Persistent background
-
-**R-META-018** (MUST) Every frame the front-end screen draws, in this order: the backdrop figure layer (R-META-019); the title bar (R-META-021); the content boxes of the current page (R-META-022); the page overlays (R-META-023); the widgets. While a drop-down list is open, only the widget that owns the list is drawn of the page's widgets.
-
-**R-META-019** (MUST) The backdrop figure layer, which the options screens and the drop-down menus also draw, consists of:
-
-1. a full-screen additive quad, black at three corners and `ref.meta.backdrop.glow_colour` (RGB 1.0, 0.5, 0.1) at the bottom-left corner, smoothly shaded;
-2. the giant Worker figure, `sprite.worker.front`, with nearest filtering and tint `ref.meta.backdrop.figure_tint` (RGBA 1, 0, 0, 1), centred at `ref.meta.backdrop.figure_centre` (0.75 × W, 0.7 × H), of half-size `ref.meta.backdrop.figure_half_size` (0.3 × W) + `ref.meta.backdrop.figure_breath` (5 px) × sin(t), so that it breathes, and rotated by `ref.meta.backdrop.figure_angle` (0.2 rad);
-3. in high detail only, `ref.meta.backdrop.echo_count` (10) echo copies of the figure, copy i from 0 to 9: each copy's size is the previous size × `ref.meta.backdrop.echo_scale` (1.02) and its centre the previous centre shifted by `ref.meta.backdrop.echo_offset` (−6, −6) px, tinted `ref.meta.backdrop.echo_tint` (RGB 1, 0.2, 0.2) at alpha `ref.meta.backdrop.echo_alpha` (0.2) × (1 − i ÷ 10);
-4. the wheel, `ui.backdrop_wheel`, of half-size `ref.meta.backdrop.wheel_half_size` (0.6 × W), centred on the screen, at angle `ref.meta.backdrop.wheel_spin` (0.2 rad per second) × t, additive white at alpha `ref.meta.backdrop.wheel_alpha` (0.06), drawn `ref.meta.backdrop.wheel_copies` (10) times in high detail, each copy rotated a further `ref.meta.backdrop.wheel_copy_step` (0.02 rad), and not at all in low detail.
-
-**R-META-020** (MUST) The detail level of R-META-019 changes only while the participant is at the front end. Each frame the smoothed frame rate becomes smoothed × (1 − k) + rate × k, with k = frame advance time × `ref.meta.backdrop.fps_smoothing` (0.5). The layer switches to low detail when the smoothed rate falls below `ref.meta.backdrop.low_detail_fps` (20) and back to high detail when it reaches `ref.meta.backdrop.high_detail_fps` (60). The smoothed rate starts at `ref.meta.backdrop.initial_fps` (60).
-
-**R-META-021** (MUST) The title bar is a fill box. When the title string `ui.title.game_name` of the current language is the unchanged game name, the title wordmark `ui.title_wordmark` is drawn: its width is the width of that many characters of the title font at the large size × `ref.meta.title.wordmark_width_factor` (1.1), its height is that width ÷ `ref.meta.title.wordmark_aspect` (5.4), and its top is at the title bar's y + `ref.meta.title.wordmark_top` (0.1) × the title bar's height. Otherwise the title text is drawn with an outline. The tagline `ui.title.tagline` is drawn at the medium size, one large-font line below. The logo emblem `ui.logo_emblem`, of aspect `ref.meta.title.emblem_aspect` (277 ÷ 194) and height `ref.meta.title.emblem_height` (0.8) × the title bar's height, is drawn at x = the title bar's x + `ref.meta.title.emblem_inset` (0.05) × its width, and mirrored at the right end.
-
-**R-META-022** (MUST) The content boxes are shadowed fill boxes (`ui.fill_blur`, `fx.glow_cloudy`; [pages and screen recipes](../../architecture/components/ui_framework/pages_and_screen_recipes.md)), by page: the match setup page has the left and the right box; the session browser page has one box of the title bar's width; the connecting page has the left box; the mode-select, map-select and advanced options pages have the left and the right box; every other page, the title page included, has the left box only.
-
-**R-META-023** (MUST) The page overlays are: on the session browser page with an empty list, the blinking caption `ui.browser.requesting` while the list is being requested and `ui.browser.none_found` when no session was found (DEC-245). A blinking caption has alpha `ref.meta.blink.on_alpha` (1.0) for the first `ref.meta.blink.on_time` (0.5 s) of each second and `ref.meta.blink.off_alpha` (0.5) for the rest.
-
-**R-META-024** (MUST) The 3-D backdrop behind the screen is drawn by the front-end controller whenever the participant is at the front end and the menu exists, and also by the loading view (R-META-171). It advances the camera, places it at the origin with a field of view of `ref.meta.backdrop.camera_fov` (90°), and builds the view from the eye `ref.meta.backdrop.camera_eye` (0, 600, 0) wu, the front (0, 0, 1) and the up vector (0, 1, 0), each rotated about the y axis by `ref.meta.backdrop.camera_yaw` (−1.899 rad) and then about the z axis by `ref.meta.backdrop.camera_roll` (−1.079 rad); the focus point is eye + front × `ref.meta.backdrop.camera_focus_distance` (100 wu). It then draws the sky and its cloud layers (`fx.sky_cloud`; the sky renderer `SkyRenderer`, [world renderers](../../architecture/components/renderer/world_renderers.md)) at the time −(real time), so the clouds drift backwards; the sky-detail setting applies ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)).
+**R-META-013** (MUST) After game over the only way out of a match is the in-match menu's leave action, which in a finished match leaves without a confirmation (R-META-074). The ready action has no effect at game over. The game-over prompt `match.game_over.leave_prompt_keyboard` or `match.game_over.leave_prompt_pad` names this path ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-068).
 
 ### 2.5 Navigation, Back and the front-end sound cues
 
@@ -158,7 +115,7 @@ The order of this table carries no meaning.
 
 ### 2.6 Page specification conventions
 
-**R-META-031** (MUST) Every widget of a page has a widget id that is unique within the page. The help text of a focused option control is keyed by its option (R-META-071).
+**R-META-031** (MUST) Every widget of a page has a widget id that is unique within the page. The help text of a focused option control is keyed by its option (R-META-061).
 
 **R-META-032** (MUST) Every caption is a string id. A string that the current language lacks falls back to the base language, so no page shows a string id as text (DEC-099; [options_localisation_and_hooks.md](options_localisation_and_hooks.md)).
 
@@ -220,15 +177,15 @@ The order of this table carries no meaning.
 |---|---|---|---|
 | — | title | `ui.mode_select.title` | |
 | 1–6 | mode buttons | `mode.<mode>.name` | R-META-041, R-META-042 |
-| 7 | Back | `ui.common.back` | → title page in single player, else → host-or-join page; ends the local session (R-META-150) |
-| — | mode card | — | in the right box at (rX + `ref.meta.mode_select.card_inset` (0.1) × rW, rY + 0.1 × rW), `ref.meta.mode_select.card_width` (0.8) × rW wide and `ref.meta.mode_select.card_aspect` (2 ÷ 3) of that width high: the `help.mode_card` of the highlighted mode at alpha `ref.meta.mode_select.card_alpha` (0.8), with an outline at alpha `ref.meta.mode_select.card_outline_alpha` (0.5) |
+| 7 | Back | `ui.common.back` | → title page in single player, else → host-or-join page; ends the local session (R-META-104) |
+| — | mode card | — | in the right box at (rX + `ref.meta.layout.picture_inset` (0.1) × rW, rY + 0.1 × rW), `ref.meta.mode_select.card_width` (0.8) × rW wide and `ref.meta.mode_select.card_aspect` (2 ÷ 3) of that width high: the `help.mode_card` of the highlighted mode at alpha `ref.meta.mode_select.card_alpha` (0.8), with an outline at alpha `ref.meta.mode_select.card_outline_alpha` (0.5) |
 | — | mode description | — | below the card, `ref.meta.mode_select.info_height` (0.85) × rH − the card height high, in the small font: the highlighted mode's `mode.<mode>.objective`, scrolling automatically |
 
 **R-META-044** (MUST) The page loads every mode card at set-up, so a focus change never waits for a load.
 
 ### 2.11 Map-select page
 
-**R-META-045** (MUST) Setting up the map-select page loads the thumbnails of the current mode's maps. The reference loads them on the loading view's loader, with the loading view's spinner drawn over the menu while they load (R-META-171); in Species previews load in the background (DEC-226 item 9).
+**R-META-045** (MUST) Setting up the map-select page loads the thumbnails of the current mode's maps. The reference loads them on the loading view's loader, with the loading view's spinner drawn over the menu while they load ([front_end_presentation.md](front_end_presentation.md) R-META-123); in Species previews load in the background (DEC-226 item 9).
 
 **R-META-046** (MUST) While a mode press is pending and the match setup's mode differs from the pressed mode, setting up the page builds an empty page, and the page is set up again every frame until the two match.
 
@@ -242,7 +199,7 @@ The order of this table carries no meaning.
 | — | column header | `ui.map_select.column.name`, `ui.map_select.column.play_time`, `ui.map_select.column.players` | a strip at (bx, lY + `ref.meta.map_select.header_offset` (10 px + 1.8 × bh), bw, 0.7 × bh), black at alpha `ref.meta.map_select.header_alpha` (0.5), its captions in grey `ref.meta.map_select.header_grey` (0.6) at the row columns (R-META-049) |
 | 1 to n | map rows | R-META-049 | |
 | n + 1 | Back | `ui.common.back` | → mode-select page |
-| — | thumbnail | — | in the right box at (rX + 0.1 × rW, rY + 0.1 × rW), of the size of [reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-022 (`ref.map.thumbnail.width_fraction` × rW wide, `ref.map.thumbnail.aspect` of that width high) |
+| — | thumbnail | — | in the right box at (rX + `ref.meta.layout.picture_inset` (0.1) × rW, rY + 0.1 × rW), of the size of [reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-022 (`ref.map.thumbnail.width_fraction` × rW wide, `ref.map.thumbnail.aspect` of that width high) |
 | — | map description | — | below the thumbnail, `ref.meta.mode_select.info_height` × rH − the thumbnail height high, in the small font × `ref.meta.map_select.info_font_scale` (1.1) |
 
 **R-META-049** (MUST) A map row shows three columns, at x + `ref.meta.map_select.column_name` (0.025) × w, x + `ref.meta.map_select.column_play_time` (0.65) × w and x + `ref.meta.map_select.column_players` (0.83) × w, w the row width:
@@ -282,15 +239,15 @@ The match setup page is one page for single-player set-up, the host's lobby and 
 | 2 | advanced options | `ui.lobby.advanced_options` | the host | `ref.meta.setup.small_control_height` (0.66) × bh high | base press; → advanced options page |
 | 3 | bot difficulty | `match.options.bot_difficulty`, values `match.options.bot_difficulty.easy`, `.standard`, `.hard` | the host | 0.66 × bh high; no background; cycle mode, in which left and right step through the values | the values 0, 1 and 2 are `BotDifficulty::Easy`, `BotDifficulty::Standard` and `BotDifficulty::Hard`, bound to the match setup's bot difficulty ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-082); only these values are accepted (DEC-077) |
 | 4 onwards | player slot rows, one per player slot of the map | §2.23 | everyone | a column at (bx, lY + `ref.meta.setup.slot_column_y` (6) × bh), each row `ref.meta.setup.slot_width` (0.45) × bw wide and `ref.meta.setup.slot_height` (0.75) × bh high, rows `ref.meta.setup.slot_step` (1.125) × bh apart | the player's own row: base press, → player options page; any other row: no action |
-| beside the rows | slot control: kick, or open and close | — | the host (§2.24) | at (bx + `ref.meta.setup.slot_control_x` (1.05) × 0.45 × bw, the row's y), `ref.meta.setup.slot_control_size` (0.75) × bh square | R-META-142, R-META-144 |
+| beside the rows | slot control: kick, or open and close | — | the host (§2.24) | at (bx + `ref.meta.setup.slot_control_x` (1.05) × 0.45 × bw, the row's y), `ref.meta.setup.slot_control_size` (0.75) × bh square | R-META-100, R-META-101 |
 | last | Back | `ui.common.back` | everyone | (bx, lY + lH − 2 × bh) | §2.25 |
 | — | mode card | — | everyone | (lX + lW − 0.45 × bw − (lW − bw) ÷ 2, lY + 6 × bh), 0.45 × bw wide and `ref.meta.setup.mode_card_height` (0.3) × bw high, beside the slot rows | the mode's `help.mode_card` |
 | — | thumbnail | — | everyone | as on the map-select page (R-META-048) | the chosen map's thumbnail |
 | — | map name | — | everyone | under the thumbnail, 0.66 × bh high, small font, over the highlight beam | the chosen map's name; a press does nothing, because the map cannot change on this page |
 | — | map description or chat log | — | everyone | under the map name, rH − the thumbnail height − small ÷ 2 − 2 × one button step − button gap high | single player: the map description; multiplayer: the chat log in the small font × `ref.meta.chat.log_font_scale` (0.8) (§2.26) |
-| — | chat input | — | multiplayer | (rX + 0.1 × rW, rY + `ref.meta.chat.input_y` (0.95) × rH, 0.8 × rW, `ref.meta.chat.input_height` (1.2) × small) | §2.26 |
+| — | chat input | — | multiplayer | (rX + `ref.meta.layout.picture_inset` (0.1) × rW, rY + `ref.meta.chat.input_y` (0.95) × rH, `ref.meta.chat.input_width` (0.8) × rW, `ref.meta.chat.input_height` (1.2) × small) | §2.26 |
 
-**R-META-056** (MUST) No spectator control and no add-bot control exists on the page: bots fill the empty open slots when the match starts (R-META-140), and no player-facing path makes a participant a spectator (R-META-146).
+**R-META-056** (MUST) No spectator control and no add-bot control exists on the page: bots fill the empty open slots when the match starts (R-META-099), and no player-facing path makes a participant a spectator (R-META-102).
 
 ### 2.13 Advanced options page
 
@@ -352,7 +309,7 @@ When the player chose a session in the browser, a details block follows at `ref.
 
 **R-META-067** (MUST) The connecting page goes to the match setup page once the state is connected and the match setup's mode is known; the match setup page may then wait for a team slot (R-META-054 step 2). The page has no timeout: it waits until the player presses Back or the participant is removed (DEC-205).
 
-**R-META-068** (MUST) The wait-for-start page is an empty page with the default left box. The host shows it from the moment it issues `StartMatch` until the match-start command executes, so that the automatic start (R-META-139) issues the command only once.
+**R-META-068** (MUST) The wait-for-start page is an empty page with the default left box. The host shows it from the moment it issues `StartMatch` until the match-start command executes, so that the automatic start (R-META-098) issues the command only once.
 
 **R-META-069** (MUST) Creating an error stores its message and its back page (by default the title page), requests the error page, clears the at-match-setup flag and clears the chat log. The error page holds the title `ui.error.title`, the message in the small font, centred, at y = lY + `ref.meta.error.message_y` (0.5 × bh + 2 × bh), and a Back button to the stored back page. The stored back page is cleared once the page is built.
 
@@ -374,11 +331,11 @@ When the player chose a session in the browser, a details block follows at `ref.
 
 ### 2.16 Credits page
 
-**R-META-071** (MUST) The credits page holds the title `ui.credits.title`, one scrolling text widget in the small font at (bx, lY + 1.8 × bh), bw wide and lH − 1.5 × bh − 1.3 × bh − bh − 2 × button gap high, and a Back button to the previous page. The text is the strings `ui.credits.line_1`, `ui.credits.line_2` and onwards, each followed by a space and a line break, up to the first index that has no string. A line that starts with "-" is a section heading, drawn `ref.meta.credits.heading_scale` (1.25) × larger without the dash. The scrolling follows the UI framework's scrolling text widget. The credit text is new (`ui.credits`).
+**R-META-071** (MUST) The credits page holds the title `ui.credits.title`, one scrolling text widget in the small font, placed by `ref.meta.credits.text_box`: at (bx, lY + 1.8 × bh), bw wide and lH − 1.5 × bh − 1.3 × bh − bh − 2 × button gap high, and a Back button to the previous page. The text is the strings `ui.credits.line_1`, `ui.credits.line_2` and onwards, each followed by a space and a line break, up to the first index that has no string. A line that starts with "-" is a section heading, drawn `ref.meta.credits.heading_scale` (1.25) × larger without the dash. The scrolling follows the UI framework's scrolling text widget. The credit text is new (`ui.credits`).
 
 ### 2.17 Help-and-options branch
 
-**R-META-072** (MUST) The windows of this branch are full-screen options screens laid out in the left box (R-META-014), with their buttons from top to bottom and Back at y = lY + lH − 2 × bh:
+**R-META-072** (MUST) The windows of this branch are full-screen options screens laid out in the left box ([front_end_presentation.md](front_end_presentation.md) R-META-014), with their buttons from top to bottom and Back at y = lY + lH − 2 × bh:
 
 | Window | Content |
 |---|---|
@@ -436,9 +393,9 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | single-round Siege | no control | on (DEC-066) | nobody |
 | map | map-select page; it cannot change on the match setup page | the maps listed for the mode | the host |
 | mode | mode-select page | the six modes | the host |
-| player name | player options page; the chat rename (R-META-157) | at most 16 characters, at most `ref.meta.chat.rename_max_length` (15) through the chat | each player |
+| player name | player options page; the chat rename (R-META-112) | at most 16 characters, at most `ref.meta.chat.rename_max_length` (15) through the chat | each player |
 | colour or side | player options page | the eight colours, or random, attackers and defenders in Siege (§2.23) | each player |
-| open or closed slot | match setup page slot control (R-META-144) | open by default (DEC-079) | the host |
+| open or closed slot | match setup page slot control (R-META-101) | open by default (DEC-079) | the host |
 | seasonal theme | no control (§2.27) | the host's date rule (DEC-101) | nobody |
 | research levels | no page | overwritten at every match start (DEC-115) | nobody |
 
@@ -457,7 +414,7 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | open or closed slots | the slot controls | not created |
 | ready | yes, and the host must also ready up | yes |
 | kick | yes | no |
-| start | automatic once every human is ready (R-META-139) | no |
+| start | automatic once every human is ready (R-META-098) | no |
 
 **R-META-083** (MUST) Under the reference default the restriction of R-META-082 lies in the user interface only: every participant applies every match-setup change, start and ready command that any participant issues, and only kicking acts through the host alone. Which participant may change each setting, and how the authority validates each command, are DEC-243 and DEC-202.
 
@@ -478,7 +435,7 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | player name | at most 16 characters | the player-name setting |
 | session password | at most 16 characters | empty |
 | waiting-for-team flag, waiting mode | the match setup page is deferred until a team slot arrives | clear, none |
-| leaving-while-ready flag | the player is leaving while ready and waits until readiness is withdrawn (R-META-150) | clear |
+| leaving-while-ready flag | the player is leaving while ready and waits until readiness is withdrawn (R-META-103) | clear |
 | chat log, current chat line, chat-toggled-this-update flag | §2.26 | empty |
 | error message, error back page | §2.15 | none, none |
 | session browser state | DEC-245 | — |
@@ -498,6 +455,538 @@ Siege has no time limit, so a map's play time does not apply to it; its player o
 | bot difficulty and advanced options | yes | yes | no |
 | slot controls | open and close | kick, open and close | no |
 | chat | no; the map description instead | yes | yes |
-| Back goes to | the map-select page, and the session stays up | the mode-select page; the session ends and every joined player is dropped | the host-or-join page, or the title page when leaving while ready (R-META-150) |
+| Back goes to | the map-select page, and the session stays up | the mode-select page; the session ends and every joined player is dropped | the host-or-join page, or the title page when leaving while ready (R-META-103) |
 
 **R-META-088** (MUST) The host cannot change the map or the mode without ending its session, which drops every joined player.
+
+### 2.23 Player slots, names, colours and sides
+
+**R-META-089** (MUST) A player slot row's caption is the first of these that applies:
+
+1. the slot has a non-empty name: the name, or `ui.lobby.slot.ready_name` with the name while the slot is ready;
+2. otherwise by the slot's kind ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-395): local player `ui.lobby.slot.local_player`; remote player `ui.lobby.slot.remote_player`; bot `ui.lobby.slot.bot`; spectator `ui.lobby.slot.spectator`; an unused slot that is closed `ui.lobby.slot.closed`; an unused open slot `ui.lobby.slot.bot` in single player and `ui.lobby.slot.open` in multiplayer;
+3. while focus is on this slot's kick control and the pointer is over it, `ui.lobby.kick_hint` replaces the caption; while focus is on its open-and-close control, `ui.lobby.slot.close_hint` or `ui.lobby.slot.open_hint` does.
+
+**R-META-090** (MUST) Bot rows and unused rows are inactive, so focus skips them, and are drawn with their colour × `ref.meta.slot.inactive_factor` (0.25) and their border at alpha `ref.meta.slot.inactive_border_alpha` (0.3). A slot whose colour id is none, for example in Siege or co-op before a side or alliance is chosen, is drawn in grey `ref.meta.slot.no_colour_grey` (0.7). The row background is a horizontal gradient from the slot colour at the left to black at the right, or, while focused, to `ref.meta.slot.focus_blend` (50 %) slot colour and 50 % white. When a slot's kind changes, its colour flashes from white back to the slot colour over `ref.meta.slot.flash_time` (1.0 s), linearly, except for the change from unused to bot. The text is white while the row is inactive, `ref.meta.slot.focus_text` (RGB 1, 0.3, 0.3) while it is focused and `ref.meta.slot.text` (RGB 0.6, 1, 0.4) otherwise.
+
+**R-META-091** (MUST) The colours offered are colour ids 0 to 7 of the colour table ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-415, `ref.sim.team.player_colour_count`). A colour or side row is **taken** when:
+
+1. **Siege:** count the slots already on that side, counting the local slot when the row is pressed and not counting it when the row is drawn. On a 3-player map the defender side is taken at a count of at least `ref.match.colour.siege_3p_defender_limit` (1) and the attacker side at a count of `ref.match.colour.siege_3p_attacker_limit` (2); on any other map a side is taken at a count of at least player count ÷ `ref.match.colour.siege_side_divisor` (2). The random row is never taken.
+2. **Co-op:** the colour is not a valid co-op colour ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-015).
+3. **Otherwise:** a slot already holds the colour, a slot other than the local one when the row is drawn.
+
+A taken row is inactive and drawn with a grey swatch of `ref.meta.colour_row.taken_grey` (0.5) and its caption in the inactive grey. The row of the local slot's current colour is drawn pressed, its caption in red.
+
+**R-META-092** (MUST) Pressing a free colour or side row sets the requested colour to its colour id and, outside Siege and co-op, stores it in the preferred-colour setting; it then plays a backwards transition and returns to the match setup page.
+
+**R-META-093** (MUST) Every frame on the match setup, map-select, mode-select and player options pages the front end keeps its colour request current. When the local participant holds a team slot, a colour is requested, it differs from the slot's colour and another slot already holds it, outside co-op and Siege, the request falls back to the preferred-colour setting when that colour is free, and else to the next available colour. On the match setup and player options pages, and while a tutorial is starting, the front end then issues `SetColour` (R-SIM-451) when the request is not none, or in co-op, or in Siege; and it issues `SetTeamName` once when the name has not been sent yet. The authority accepts or refuses each colour request by [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-014.
+
+**R-META-094** (MUST) A colour or side row has a background of white at alpha `ref.meta.colour_row.background_alpha` (0.1), or `ref.meta.colour_row.focus_background` (RGBA 0.75, 0.75, 1, 0.5) while focused or pressed; its caption starts at `ref.meta.colour_row.caption_x` (0.05) × w; its colour swatch fills the right quarter, starting at x = `ref.meta.colour_row.swatch_x` (3 ÷ 4) × w, `ref.meta.colour_row.swatch_width` (0.95) × w ÷ 4 wide and `ref.meta.colour_row.swatch_height` (0.8) × h high, with a gradient from the colour at the left to black at the right. Moving focus onto a row plays the menu-hover cue.
+
+**R-META-095** (MUST) The colours of bot slots and unused slots are assigned when the match world initialises, not on this page ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-016; DEC-450).
+
+### 2.24 Ready, start, kick, bots and open or closed slots
+
+**R-META-096** (MUST) In single player, pressing Play does nothing while the local map choice differs from the match setup's map, because the map choice has not been applied yet. Otherwise the front end waits until the audio engine is ready, requests a bot team for every unused open slot below the map's player count, keeps its colour request current (R-META-093) and issues `StartMatch` (R-SIM-460).
+
+**R-META-097** (MUST) In multiplayer, pressing Ready issues `ToggleReady` for the player's own slot (R-SIM-459). The host must ready up too.
+
+**R-META-098** (MUST) Every frame on the host, in single player and multiplayer alike, the front end tests readiness: a slot whose kind is neither unused nor bot and that is not ready makes the match not ready. When every such slot is ready and the mode and the map are valid, the host waits until the audio engine is ready, requests a bot team for every unused open slot below the map's player count, keeps its colour request current, issues `StartMatch` and goes to the wait-for-start page (R-META-068). In single player the local slot is never ready, so only Play starts the match. The match starts when the match-start command executes (R-META-010).
+
+**R-META-099** (MUST) Bots fill the match: at match start every empty open slot below the map's player count holds a bot team ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-006, [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-010; DEC-079). There is no add-bot control. The number of player slots is the map's player count.
+
+**R-META-100** (MUST) In multiplayer the host has a kick control beside each slot row from slot 1 upwards, shown only while the slot holds a remote human. Pressing it removes that participant from the session, unless it has already disconnected; the removed participant sees the error page with `ui.error.kicked` and returns to the title page (R-META-070). A remote human in slot 0 has no kick control, so the host cannot remove it. The kick control shows `cursor.unavailable`.
+
+**R-META-101** (MUST) Before the match starts the host has an open-and-close control beside each slot row that holds no human (DEC-079). Every such slot is open by default. Closing a slot makes it unused for the whole match: it is never filled with a bot, it is not offered to a joining player, and the session counts as full once every open slot is held (DEC-244). A slot that a human holds cannot be closed, and at least `ref.map.players.min` (2) slots stay open ([reference/08](../08_maps_and_level_design/rules_and_conventions.md)). The control shows `ui.lobby.slot.close_hint` or `ui.lobby.slot.open_hint`, and the change is a match-setup change under DEC-243. The per-team population cap counts the open slots ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-087).
+
+**R-META-102** (MUST) No player-facing path makes a participant a spectator: the match setup page has no spectator control, a full session refuses a joining player instead of seating it as a spectator, and the reference advertises `ref.meta.setup.max_spectators` (0) spectator places (DEC-244 item 7). The spectator team kind exists only for the test configuration (DEC-050).
+
+### 2.25 Leaving the match setup page
+
+**R-META-103** (MUST) The Back button of a joining player whose slot is ready, while its session is not lagging, with the last message from the host less than `ref.meta.setup.leave_lag_threshold` (5.0 s) ago, does not leave at once. It sets the leaving-while-ready flag and withdraws readiness (`ToggleReady`). Every frame the page then waits until some used slot and the local slot are not ready, and then ends the participant's session, clears the at-match-setup flag and the chosen map, goes to the title page, not to the Back button's page, and clears the chat log and the password.
+
+**R-META-104** (MUST) Any other multiplayer Back ends the session at once: a joining player leaves it, and on the host the session ends for everyone. It then clears the at-match-setup flag and the chosen map, goes to its page with the menu-back cue and a backwards transition, and clears the chat log and the password.
+
+**R-META-105** (MUST) The single-player Back clears the co-op flag and the basic-crates-only flag locally, requests the colour none, sets every slot's colour id to none, and returns to the map-select page while the private session stays up. It clears the chat log and the password.
+
+### 2.26 Chat
+
+**R-META-106** (MUST) The match setup page has a chat only in multiplayer, in the right box under the map name. `action.match.chat` (Enter), while the chat field is not being edited, starts editing it and clears its text. While the chat field is visible, the page navigation is suspended.
+
+**R-META-107** (MUST) When a `Chat` command (R-SIM-450) executes while the participant is at the front end, the line is inserted at the front of the chat log with its arrival time, and with the sender's name and colour taken from the slot that the sender's participant owns; the chat-message cue plays. The join notice `ui.lobby.player_joined` is added when a name arrives for a slot whose name was empty (R-SIM-451), and the leave notice `ui.lobby.player_left` when a participant leaves (R-MODE-070); neither plays the cue.
+
+**R-META-108** (MUST) The chat log is a black box at alpha `ref.meta.chat.log_alpha` (200 ÷ 255) with a white outline at alpha `ref.meta.chat.log_outline_alpha` (0.5), its height the widget height − `ref.meta.chat.log_height_reduction` (1.5) × the font. The newest line is at the bottom and older lines go upwards. For every line the sender's current slot is looked up again each frame for the name and colour; when it has none the name is `ui.lobby.chat.sender_fallback` in grey `ref.meta.chat.fallback_grey` (RGB 150, 150, 150). A join notice shows `ui.lobby.player_joined`, a leave notice `ui.lobby.player_left`, and any other line `ui.lobby.chat.line` with the name and the text. Lines are word-wrapped at `ref.meta.chat.wrap_factor` (1.75) × the widget width, drawn in the sender's colour with an outline, and stop `ref.meta.chat.top_margin` (5 %) below the top of the box. Lines never expire; the log is cleared when the player leaves the match setup page, on an error and by every Back button of the session pages. The page shows no "press to talk" hint.
+
+**R-META-109** (MUST) In a match, `action.match.chat` opens the chat input when the chat input is not visible, was not toggled in this update, the input mode is not gamepad and no UI window is open; opening it sets the chat-toggled-this-update flag. Switching the input mode to gamepad while it is open closes it ([reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) row M2).
+
+**R-META-110** (MUST) The in-match chat input is a window with a font of `ref.meta.chat.match_font` (0.015) × H and a scale of W ÷ `ref.meta.chat.scale_reference_width` (1280), or W ÷ `ref.meta.chat.scale_small_width` (1024) when W ≤ `ref.meta.chat.small_screen_width` (800), or `ref.meta.chat.scale_tiny` (0.75) when W ≤ `ref.meta.chat.tiny_screen_width` (640). It sits at (`ref.meta.chat.margin` (10) × scale, H − 10 × scale − `ref.meta.chat.input_line_height` (1.5) × the font), `ref.meta.chat.match_width` (0.25) × W wide and 1.5 × the font high. It holds one text field of at most `ref.meta.chat.max_length` (255) characters, which in a match starts editing at once.
+
+**R-META-111** (MUST) The chat field is drawn as a black box at alpha `ref.meta.chat.input_alpha` (0.5) with a white outline `ref.meta.chat.input_outline` (2 px) wide; its text is `ref.meta.chat.text_height` (0.75) × its height high. While it is not being edited it shows `ui.chat.prompt` in grey `ref.meta.chat.prompt_grey` (0.4). Text wider than the box scrolls so that its end stays visible, and the caret blinks `ref.meta.chat.caret_period` (0.5 s) on and 0.5 s off. In a match the window closes as soon as it loses focus.
+
+**R-META-112** (MUST) Submitting the chat field (Enter, not in the update in which the chat opened) with a non-empty text does this:
+
+1. When the text does not contain "//" and contains "/rename ", the characters from index `ref.meta.chat.rename_long_offset` (8) on become the new name; when it contains "/name ", the characters from index `ref.meta.chat.rename_short_offset` (6) on do. The new name has at most `ref.meta.chat.rename_max_length` (15) characters. On the match setup page it goes through the name rule (R-META-063) and the name and colour are sent; in a match the front end issues `SetTeamName` (R-SIM-451). The command is found anywhere in the text but the name is always taken from the fixed index, so "hi /name x" makes the text from index 6 the name.
+2. Otherwise the front end issues `Chat` with the text (R-SIM-450).
+
+The field is then cleared; on the match setup page editing starts again, and in a match the window closes. The in-match chat log display is [reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) row A8 and the renderer.
+
+### 2.27 Seasonal theme at match setup
+
+**R-META-113** (MUST) The seasonal state is part of the match setup: it is decided once before match start, recorded with the setup and identical for every participant, and nothing changes it during the match (DEC-118). Until the design phase decides who chooses it (DEC-101), the host's match setup applies the reference date rule once, from the host's local date: the theme is on from `ref.meta.seasonal.first_day` (24) to `ref.meta.seasonal.last_day` (26) of month `ref.meta.seasonal.month` (12), December, and never while editing a map. The host records it with `SetSeasonalTheme` (R-SIM-451).
+
+**R-META-114** (MUST) In a match with the seasonal theme on, snow falls ([reference/12](../12_simulation_model/04_containers_and_update_order.md), `ref.sim.weather.snow_*`, drawn from the presentation generator, DEC-118), and Workers and the terrain take the seasonal look ([animation and VFX](../../architecture/components/animation_and_vfx.md)). No setting lets a player opt out; the seasonal setting of the other options has no effect ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)).
+
+### 2.31 Results-screen hooks
+
+The reference has no results screen; the library records its hooks and does not design it (DEC-048).
+
+**R-META-139** (MUST) The match itself supplies the part of the flow from the end of the grace period to the result; the front end adds nothing to it. What the player sees ([reference/01](../01_skirmish_rules_and_modes/README.md)):
+
+| Phase | What the player sees | Ends when | Rules |
+|---|---|---|---|
+| grace, not every human ready | the ready prompt, or the waiting count once ready, blinking; `match.grace_period.ready` in the scoreboard rows of bots and of ready humans; the explainer panel, or the camera-controls picture in a tutorial | every counted team is ready | R-MODE-039 to R-MODE-043, [front_end_presentation.md](front_end_presentation.md) R-META-127 |
+| countdown | `match.grace_period.countdown` at `ref.match.grace_overlay.countdown_scale` (125 %) size, solid; the countdown-tick cues | the countdown reaches 0 | R-MODE-040, R-MODE-042 |
+| running | the scoreboard, the match clock, the reinforcement and Comeback countdowns, the Spawn Surge and Frenzy timers, the Launch Race status panel | a result is declared | R-MODE-062 to R-MODE-067 |
+| game over | time slows to a halt and stays locked; the game-over cue, then the victory or defeat cue; `match.game_over.title`; `match.game_over.winner` or `match.game_over.draw`; the final score list; the blinking leave prompt | the player opens the in-match menu and leaves (R-META-074, R-META-076) | R-MODE-057, R-MODE-060, R-MODE-068 |
+
+In a co-op match the game-over line shows the declared result, draws included (DEC-069).
+
+**R-META-140** (MUST) The hooks of a results screen are:
+
+1. **Entry point.** The result declaration of [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-057, at the tick where the match becomes over, and the score report `ReportScores` with the six scores and the winning team, which every participant ignores ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-451).
+2. **Data available at match end.** The declared result (a team or a draw), the six scores and previous scores, the local team's kill total and the statistics counters ([options_localisation_and_hooks.md](options_localisation_and_hooks.md)), the elimination times, the bot takeover times of departed players ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-398), the Siege defence times and the match start tick (R-MODE-071), and the map and mode of the match setup.
+3. **Exit.** The leave action rebuilds the front end at the title page, or at the tutorials page after a tutorial (R-META-011); a rematch goes back through the match setup and opens a new session ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-003).
+4. **Decision.** Whether Species adds a results screen with a rematch is DEC-048; the achievement, statistics and leaderboard hooks that such a screen would show are DEC-047.
+
+## 3 States and flows
+
+Diagram 3-A: the full screen flow, from start-up through the match setup and the match back to the front end (R-META-003 to R-META-013, R-META-033 to R-META-077). Edge labels are the pressed widget or the condition; double-bordered nodes are windows over the page beneath.
+
+```mermaid
+flowchart TD
+    BOOT(["Start-up: loading view with the studio mark"]) --> CREATE
+    CREATE(["Front-end loop: menu created, new front-end screen"]) --> RET{"Returning from a tutorial?"}
+    RET -- "no" --> MAIN["Title page"]
+    RET -- "yes" --> TUT["Tutorials page"]
+    MAIN -- "single player" --> MSP["Mode-select page, private local session"]
+    MAIN -- "multiplayer" --> HOJ["Host-or-join page"]
+    MAIN -- "tutorials" --> TUT
+    MAIN -- "help and options" --> HO[["Help and options"]]
+    MAIN -- "credits" --> CRED["Credits page"]
+    MAIN -- "quit" --> QUIT(["Quit requested"])
+    HO -- "how to play" --> HS[["Help selection"]]
+    HS -- "general help" --> GH[["General help, 5 pages"]]
+    HS -- "one button per mode" --> MH[["Mode help"]]
+    HO -- "settings" --> SET[["Settings: screen, graphics, sound and other options"]]
+    TUT -- "tutorial 1 or 2" --> QS[["Quick start: private session, Zone Control, Easy bots, match start"]]
+    TUT -- "back" --> MAIN
+    HOJ -- "host" --> MSH["Mode-select page, hosted session"]
+    HOJ -- "join" --> BROW["Session browser page"]
+    HOJ -- "back" --> MAIN
+    MSP -- "mode" --> MAP["Map-select page"]
+    MSH -- "mode" --> MAP
+    MSP -- "back, session ends" --> MAIN
+    MSH -- "back, session ends" --> HOJ
+    MAP -- "map row" --> SETUP["Match setup page"]
+    MAP -- "back" --> MSANY["Mode-select page"]
+    SETUP -- "advanced options, host" --> ADV["Advanced options page"]
+    ADV -- "back" --> SETUP
+    SETUP -- "own slot row" --> PO["Player options page"]
+    PO -- "colour or side row" --> SETUP
+    PO -- "back, name applied" --> SETUP
+    SETUP -- "play, single player" --> LOAD
+    SETUP -- "ready, a toggle" --> SETUP
+    SETUP -- "host: every human ready" --> WAIT["Wait-for-start page"]
+    WAIT -- "match-start command" --> LOAD
+    SETUP -- "joining player: match-start command" --> LOAD
+    SETUP -- "back, single player" --> MAP
+    SETUP -- "back, host" --> MSANY
+    SETUP -- "back, joining player" --> HOJ
+    BROW -- "row: joinable, no password" --> CONN["Connecting page"]
+    BROW -- "row: protected" --> PASS["Password page"]
+    BROW -- "row: incompatible, full or map missing" --> ERR["Error page"]
+    BROW -- "filters" --> FILT["Browser filter page"]
+    BROW -- "back" --> HOJ
+    FILT -- "back, filters saved" --> BROW
+    PASS -- "connect, password not empty" --> CONN
+    PASS -- "back" --> BROW
+    CONN -- "connected and mode known" --> SETUP
+    CONN -- "back, came from the browser" --> BROW
+    CONN -- "back, came from elsewhere" --> HOJ
+    CONN -- "removed: full or wrong password" --> ERR
+    CONN -- "removed: kicked, duplicate identity, connection error" --> ERR
+    ERR -- "back, stored page" --> BROW
+    ERR -- "back, stored page" --> MAIN
+    CRED -- "back" --> MAIN
+    QS --> LOAD
+    LOAD[["Loading view: the match loads on the loader"]] --> GRACE["Match: ready-up with the explainer panel, then the countdown"]
+    GRACE --> PLAY["Match running"]
+    PLAY -- "menu action" --> MM[["In-match menu"]]
+    MM -- "help and options" --> HO
+    MM -- "back" --> PLAY
+    MM -- "leave, match not over" --> CONF[["Leave confirmation"]]
+    CONF -- "no" --> MM
+    CONF -- "yes, leave action" --> CREATE
+    PLAY -- "result declared" --> OVER["Match: game-over overlay"]
+    OVER -- "menu action, then leave" --> CREATE
+    PLAY -- "chat action" --> CHAT[["Chat input"]]
+    CHAT -- "submitted or focus lost" --> PLAY
+```
+
+Notes to diagram 3-A: the three mode-select nodes are one page, which the single-player flag distinguishes. The error page returns to the back page that its trigger stored (R-META-070); a removal reason without a message leads straight to the title page. After an option screen's apply action the player lands where [options_localisation_and_hooks.md](options_localisation_and_hooks.md) states. The gamepad-disconnected dialog can open over any node (R-META-077).
+
+Diagram 3-B: the life of the front-end screen (R-META-005 to R-META-011).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Boot : application start
+    Boot --> MenuCreated : loading view done, fade complete, menu created
+    MenuCreated --> PageShown : first update, requested page set up, lobby bed starts
+    PageShown --> PageShown : page change, window opened or closed
+    PageShown --> Destroyed : match-start command, front-end loop exits, lobby bed stops
+    Destroyed --> InMatch : loading view, match
+    InMatch --> MenuCreated : leave action, fresh screen at the title or tutorials page
+    PageShown --> [*] : quit
+```
+
+Diagram 3-C: starting a single-player match against bots (R-META-033, R-META-040 to R-META-054, R-META-096).
+
+```mermaid
+sequenceDiagram
+    participant P as Player
+    participant S as Front-end screen
+    participant M as Match setup
+    P->>S: title page, single player
+    S->>S: single-player flag set, mode-select page
+    S->>M: start the private local session, join it
+    M-->>S: the local player holds a team slot, the mode buttons appear
+    P->>S: mode button
+    S->>M: set the mode, every option to its default
+    M-->>S: mode applied, the map-select page builds
+    P->>S: map row
+    S->>M: set the map, the host applies its defaults once
+    S->>S: match setup page
+    P->>S: player options, optional: name, colour or side
+    P->>S: play
+    S->>M: a bot team for every unused open slot below the player count
+    S->>M: StartMatch
+    M-->>S: match-start command executes, menu destroyed, loading view
+```
+
+Diagram 3-D: hosting a multiplayer match (R-META-038, R-META-040, R-META-097, R-META-098).
+
+```mermaid
+sequenceDiagram
+    participant H as Host
+    participant S as Host's front-end screen
+    participant M as Match setup
+    participant J as Joining players
+    H->>S: multiplayer, host
+    S->>M: start the hosted session, not listed until a map is chosen
+    H->>S: mode, then map
+    S->>M: mode and defaults, then map and its defaults, and the session is listed
+    J->>M: join, take open slots
+    H->>S: bot difficulty, advanced options, slot open or closed
+    H->>M: ready
+    J->>M: ready
+    S->>S: every human ready, the mode and map valid
+    S->>M: bot teams for the unused open slots, StartMatch
+    S->>S: wait-for-start page
+    M-->>S: match-start command executes, loading view
+```
+
+Diagram 3-E: joining a multiplayer match, as the joining player sees it (R-META-064 to R-META-067, R-META-097).
+
+```mermaid
+sequenceDiagram
+    participant P as Player
+    participant S as Front-end screen
+    participant H as Host's session
+    P->>S: multiplayer, join
+    S->>S: session browser page (DEC-245)
+    P->>S: choose a row
+    S->>S: error page, password page or connecting page, by the first rule that applies
+    S->>H: connect
+    S->>S: connecting page: attempts, then the catching-up share
+    H-->>S: connected and the mode known
+    S->>S: match setup page, deferred until a team slot arrives
+    P->>S: ready, a toggle
+    H-->>S: match-start command from the host, loading view
+```
+
+Diagram 3-F: a tutorial launch (R-META-034, R-META-036, R-META-037).
+
+```mermaid
+flowchart TD
+    A["Tutorials page: tutorial 1 or 2 pressed"] --> B["single-player, quick-start and tutorial flags set, tutorial type stored, navigation locked"]
+    B --> C["next frames: the title-page update starts the private local session"]
+    C --> D["session exists: tutorial set-up of R-MODE-083, tutorial marked as starting, screen fades out"]
+    D --> E{"Local team slot arrived and audio engine ready?"}
+    E -- "no" --> E
+    E -- "yes" --> F["send the name and colour; request player count - 1 bot teams; StartMatch; quick-start flag cleared"]
+    F --> G["loading view, tutorial match"]
+    G --> H["leave action: front end rebuilt at the tutorials page"]
+```
+
+Diagram 3-G: setting up the match setup page (R-META-054).
+
+```mermaid
+flowchart TD
+    A["Set up the match setup page"] --> B{"Mode set?"}
+    B -- "no" --> Z["Build nothing"]
+    B -- "yes" --> C{"Map known and a team slot or spectator flag held?"}
+    C -- "no" --> W["Waiting-for-team flag, mode remembered, empty page; set up again when the slot arrives"]
+    C -- "yes" --> D{"Entered from map select with a stale mode?"}
+    D -- "yes" --> MS["Build the map-select page again"]
+    D -- "no" --> E{"Entered from another page than map select, advanced options or player options?"}
+    E -- "yes" --> F["Record the mode; on the host choose the first map"]
+    E -- "no" --> G["At-match-setup flag set"]
+    F --> G
+    G --> H["Empty name after player options: default name"]
+    H --> I{"Entered from player options or advanced options?"}
+    I -- "yes" --> K["Build the widgets"]
+    I -- "no" --> J["Initialise the colour request; on the host, every option to its default, keeping the play-time limit"]
+    J --> K
+```
+
+Diagram 3-H: leaving the match setup page (R-META-103 to R-META-105).
+
+```mermaid
+flowchart TD
+    A["Back pressed on the match setup page"] --> B{"Single player?"}
+    B -- "yes" --> SP["Clear co-op and basic crates, colour requests to none, back to map select; the session stays up"]
+    B -- "no" --> C{"Joining player, ready, and the host heard from within 5.0 s?"}
+    C -- "yes" --> D["Leaving-while-ready flag; withdraw readiness"]
+    D --> E{"Some used slot and the local slot not ready?"}
+    E -- "no" --> E
+    E -- "yes" --> F["End the session; to the title page; clear chat and password"]
+    C -- "no" --> G["End the session at once; to the Back button's page with the menu-back cue; clear chat and password"]
+```
+
+Diagram 3-I: the status widget of the connecting page (R-META-066, R-META-067).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Connecting : row chosen or password given
+    Connecting --> Connecting : attempts counted, dots cycle every 0.5 s
+    Connecting --> Handshaking : participant id assigned
+    Handshaking --> Connected : caught up, team requests allowed
+    Connected --> MatchSetupPage : mode known
+    Connecting --> Disconnected : removed or back
+    Handshaking --> Disconnected : removed or back
+    Disconnected --> [*]
+```
+
+## 4 Tuning table
+
+### 4.1 Keys owned by this document
+
+Every value is presentation unless the notes say otherwise; real-time values are seconds of the presentation clock. The key families of this document are `ref.meta.front_end`, `ref.meta.nav`, `ref.meta.mode_select`, `ref.meta.map_select`, `ref.meta.setup`, `ref.meta.options`, `ref.meta.player`, `ref.meta.connect`, `ref.meta.error`, `ref.meta.credits`, `ref.meta.help`, `ref.meta.slot`, `ref.meta.colour_row`, `ref.meta.chat` and `ref.meta.seasonal`; [front_end_presentation.md](front_end_presentation.md) owns `ref.meta.layout`, `ref.meta.backdrop`, `ref.meta.title`, `ref.meta.blink`, `ref.meta.loading` and `ref.meta.explainer`.
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.meta.front_end.live_pages` | 18 | pages | the live pages of the reference front end | R-META-003 | DEC-026 |
+| `ref.meta.front_end.specified_pages` | 15 | pages | the pages that this document specifies | R-META-003 | DEC-333 |
+| `ref.meta.front_end.fade_in` | 0.25 | s | screen fade-in when the menu is created | R-META-007 | — |
+| `ref.meta.nav.transition_time` | 1.0 | s | one menu transition | R-META-027 | — |
+| `ref.meta.mode_select.badge_size` | 0.1 by 0.05 | × the button width | the complexity badge, width by height | R-META-041 | — |
+| `ref.meta.mode_select.card_width` | 0.8 | × rW | the mode card | R-META-043 | — |
+| `ref.meta.mode_select.card_aspect` | 2 ÷ 3 | height ÷ width | the mode card | R-META-043 | — |
+| `ref.meta.mode_select.card_alpha` | 0.8 | alpha | | R-META-043 | — |
+| `ref.meta.mode_select.card_outline_alpha` | 0.5 | alpha | | R-META-043 | — |
+| `ref.meta.mode_select.info_height` | 0.85 | × rH, less the picture height | the mode and map descriptions | R-META-043, R-META-048 | — |
+| `ref.meta.map_select.row_height` | 0.7 | × bh | also the row step, 0.7 × one button step | R-META-047 | — |
+| `ref.meta.map_select.header_offset` | 10 px + 1.8 × bh | below lY | the column header strip | R-META-048 | — |
+| `ref.meta.map_select.header_alpha` | 0.5 | alpha | black strip | R-META-048 | — |
+| `ref.meta.map_select.header_grey` | 0.6 | grey level, 0 to 1 | header captions | R-META-048 | — |
+| `ref.meta.map_select.info_font_scale` | 1.1 | × the small font | the map description | R-META-048 | — |
+| `ref.meta.map_select.column_name` | 0.025 | × the row width | | R-META-049 | — |
+| `ref.meta.map_select.column_play_time` | 0.65 | × the row width | | R-META-049 | — |
+| `ref.meta.map_select.column_players` | 0.83 | × the row width | | R-META-049 | — |
+| `ref.meta.map_select.name_colour` | 0.65, 1, 0.4 | RGB, 0 to 1 | | R-META-049 | — |
+| `ref.meta.map_select.name_focus_colour` | 1, 0.3, 0.3 | RGB, 0 to 1 | | R-META-049 | — |
+| `ref.meta.map_select.badge_height` | 0.9 | × the row height | Worker badges | R-META-049 | — |
+| `ref.meta.map_select.badge_spacing` | 0.55 | × the badge width | | R-META-049 | — |
+| `ref.meta.map_select.badge_angle` | −π ÷ 8 | rad | | R-META-049 | — |
+| `ref.meta.map_select.slide_delay` | 1.0 | s per screen height | a row appears after 1.0 s × its y ÷ H | R-META-050 | — |
+| `ref.meta.map_select.slide_distance` | 0.1 | × W per remaining second | | R-META-050 | — |
+| `ref.meta.setup.primary_offset` | 1.8 | × bh, below lY + bh | the primary button | R-META-055 | — |
+| `ref.meta.setup.small_control_height` | 0.66 | × bh | advanced options button, bot difficulty, map name | R-META-055 | — |
+| `ref.meta.setup.slot_column_y` | 6 | × bh, below lY | the slot rows and the mode card | R-META-055 | — |
+| `ref.meta.setup.slot_width` | 0.45 | × bw | | R-META-055 | — |
+| `ref.meta.setup.slot_height` | 0.75 | × bh | | R-META-055 | — |
+| `ref.meta.setup.slot_step` | 1.125 | × bh | | R-META-055 | — |
+| `ref.meta.setup.slot_control_x` | 1.05 | × the slot width, right of bx | kick and open-and-close controls | R-META-055 | DEC-079 |
+| `ref.meta.setup.slot_control_size` | 0.75 | × bh, square | | R-META-055 | — |
+| `ref.meta.setup.mode_card_height` | 0.3 | × bw | | R-META-055 | — |
+| `ref.meta.setup.mode_option_slots` | 64 | entries | the reference array of mode options | R-META-078 | DEC-243 |
+| `ref.meta.setup.max_spectators` | 0 | places | advertised spectator places | R-META-102 | DEC-244 |
+| `ref.meta.setup.leave_lag_threshold` | 5.0 | s of real time since the host's last message | below it, a ready joining player leaves by withdrawing readiness first | R-META-103 | DEC-205 |
+| `ref.meta.options.control_height` | 0.65 | × bh | advanced options and player options pages | R-META-057, R-META-062 | — |
+| `ref.meta.options.details_inset` | 5 | % of the right box | the option details panel | R-META-057 | — |
+| `ref.meta.options.details_size` | 90 | % of the right box | | R-META-057 | — |
+| `ref.meta.options.repeat_period` | 0.1 | s | a held spinner glyph repeats | R-META-058 | — |
+| `ref.meta.options.repeat_speedup` | 5 | × | while the scroll speed-up action is held | R-META-058 | — |
+| `ref.meta.player.name_max_length` | 16 | characters | the player name | R-META-062, R-META-063 | — |
+| `ref.meta.connect.second_line_scale` | 0.6 | × the font | | R-META-066 | — |
+| `ref.meta.connect.max_dots` | 3 | dots | | R-META-066 | — |
+| `ref.meta.connect.dot_period` | 0.5 | s | one more dot per period, cycling 0 to 3 | R-META-066 | — |
+| `ref.meta.connect.details_scale` | 0.5 | × the font | | R-META-066 | — |
+| `ref.meta.connect.details_row_step` | 0.7 | × the font | | R-META-066 | — |
+| `ref.meta.connect.details_value_x` | 200 | px | right of the labels | R-META-066 | — |
+| `ref.meta.error.message_y` | 0.5 × bh + 2 × bh | below lY | the error message | R-META-069 | — |
+| `ref.meta.credits.text_box` | (bx, lY + 1.8 × bh), bw by lH − 1.5 × bh − 1.3 × bh − bh − 2 × button gap | px | the scrolling credits | R-META-071 | — |
+| `ref.meta.credits.heading_scale` | 1.25 | × the small font | section headings | R-META-071 | — |
+| `ref.meta.help.general_pages` | 5 | pages | general help | R-META-072 | — |
+| `ref.meta.slot.inactive_factor` | 0.25 | × the slot colour | bot and unused rows | R-META-090 | — |
+| `ref.meta.slot.inactive_border_alpha` | 0.3 | alpha | | R-META-090 | — |
+| `ref.meta.slot.no_colour_grey` | 0.7 | grey level | a slot without a colour id | R-META-090 | — |
+| `ref.meta.slot.focus_blend` | 50 | % of the slot colour, the rest white | gradient end while focused | R-META-090 | — |
+| `ref.meta.slot.flash_time` | 1.0 | s | white flash when the slot kind changes | R-META-090 | — |
+| `ref.meta.slot.focus_text` | 1, 0.3, 0.3 | RGB, 0 to 1 | | R-META-090 | — |
+| `ref.meta.slot.text` | 0.6, 1, 0.4 | RGB, 0 to 1 | | R-META-090 | — |
+| `ref.meta.colour_row.taken_grey` | 0.5 | grey level | swatch of a taken row | R-META-091 | — |
+| `ref.meta.colour_row.background_alpha` | 0.1 | alpha of white | | R-META-094 | — |
+| `ref.meta.colour_row.focus_background` | 0.75, 0.75, 1, 0.5 | RGBA, 0 to 1 | focused or pressed | R-META-094 | — |
+| `ref.meta.colour_row.caption_x` | 0.05 | × the row width | | R-META-094 | — |
+| `ref.meta.colour_row.swatch_x` | 3 ÷ 4 | × the row width | | R-META-094 | — |
+| `ref.meta.colour_row.swatch_width` | 0.95 | × a quarter of the row width | | R-META-094 | — |
+| `ref.meta.colour_row.swatch_height` | 0.8 | × the row height | | R-META-094 | — |
+| `ref.meta.chat.log_font_scale` | 0.8 | × the small font | match setup chat log | R-META-055 | — |
+| `ref.meta.chat.input_y` | 0.95 | × rH, below rY | match setup chat input | R-META-055 | — |
+| `ref.meta.chat.input_width` | 0.8 | × rW | | R-META-055 | — |
+| `ref.meta.chat.input_height` | 1.2 | × the small font | | R-META-055 | — |
+| `ref.meta.chat.log_alpha` | 200 ÷ 255 | alpha | black log box | R-META-108 | — |
+| `ref.meta.chat.log_outline_alpha` | 0.5 | alpha | white outline | R-META-108 | — |
+| `ref.meta.chat.log_height_reduction` | 1.5 | × the font | | R-META-108 | — |
+| `ref.meta.chat.fallback_grey` | 150, 150, 150 | RGB8 | sender without a slot | R-META-108 | — |
+| `ref.meta.chat.wrap_factor` | 1.75 | × the widget width | word-wrap width | R-META-108 | — |
+| `ref.meta.chat.top_margin` | 5 | % of the box height | lines stop below the top | R-META-108 | — |
+| `ref.meta.chat.match_font` | 0.015 | × H | in-match chat input | R-META-110 | — |
+| `ref.meta.chat.scale_reference_width` | 1280 | px | scale = W ÷ 1280 | R-META-110 | — |
+| `ref.meta.chat.scale_small_width` | 1024 | px | scale = W ÷ 1024 at W ≤ 800 | R-META-110 | — |
+| `ref.meta.chat.small_screen_width` | 800 | px | | R-META-110 | — |
+| `ref.meta.chat.scale_tiny` | 0.75 | scale | at W ≤ 640 | R-META-110 | — |
+| `ref.meta.chat.tiny_screen_width` | 640 | px | | R-META-110 | — |
+| `ref.meta.chat.margin` | 10 | px × scale | left and bottom margin | R-META-110 | — |
+| `ref.meta.chat.input_line_height` | 1.5 | × the font | window height | R-META-110 | — |
+| `ref.meta.chat.match_width` | 0.25 | × W | | R-META-110 | — |
+| `ref.meta.chat.max_length` | 255 | characters | one chat line | R-META-110 | — |
+| `ref.meta.chat.input_alpha` | 0.5 | alpha | black box | R-META-111 | — |
+| `ref.meta.chat.input_outline` | 2 | px | white outline | R-META-111 | — |
+| `ref.meta.chat.text_height` | 0.75 | × the field height | | R-META-111 | — |
+| `ref.meta.chat.prompt_grey` | 0.4 | grey level | | R-META-111 | — |
+| `ref.meta.chat.caret_period` | 0.5 | s on, then 0.5 s off | | R-META-111 | — |
+| `ref.meta.chat.rename_long_offset` | 8 | characters | the name starts at this index after "/rename " | R-META-112 | DEC-006 |
+| `ref.meta.chat.rename_short_offset` | 6 | characters | the name starts at this index after "/name " | R-META-112 | DEC-006 |
+| `ref.meta.chat.rename_max_length` | 15 | characters | a name set through the chat | R-META-080, R-META-112 | — |
+| `ref.meta.seasonal.first_day` | 24 | day of the month | host's local date | R-META-113 | DEC-101 |
+| `ref.meta.seasonal.last_day` | 26 | day of the month | inclusive | R-META-113 | DEC-101 |
+| `ref.meta.seasonal.month` | 12 | month | December | R-META-113 | DEC-101 |
+
+### 4.2 String table
+
+New text for the string ids that this document defines; a word in braces, such as `{name}`, marks a value inserted at run time.
+
+| String id | Text |
+|---|---|
+| `ui.player.default_name` | Unnamed player |
+| `ui.common.back` | Back |
+| `ui.main.title` | Main menu |
+| `ui.main.single_player` | Solo match against bots |
+| `ui.main.multiplayer` | Play with others |
+| `ui.main.tutorials` | Learn to play |
+| `ui.main.help_and_options` | Help and settings |
+| `ui.main.credits` | Credits |
+| `ui.main.quit` | Exit to desktop |
+| `ui.tutorials.title` | Learn to play |
+| `ui.tutorials.part_1` | Lesson 1: first steps |
+| `ui.tutorials.part_2` | Lesson 2: going further |
+| `ui.host_or_join.title` | Play with others |
+| `ui.host_or_join.host` | Start a match |
+| `ui.host_or_join.join` | Find a match |
+| `ui.mode_select.title` | Choose a mode |
+| `ui.map_select.column.name`, `ui.map_select.column.play_time`, `ui.map_select.column.players` | Map · Time · Players |
+| `ui.map_select.play_time` | 0:{minutes} |
+| `ui.map_select.no_play_time` | - |
+| `ui.lobby.ready` | Ready |
+| `ui.lobby.play` | Start match |
+| `ui.lobby.advanced_options` | More settings |
+| `ui.lobby.slot.local_player` | You |
+| `ui.lobby.slot.remote_player` | Human player |
+| `ui.lobby.slot.bot` | Bot |
+| `ui.lobby.slot.spectator` | Watching |
+| `ui.lobby.slot.open` | Open: a bot will play |
+| `ui.lobby.slot.closed` | Closed |
+| `ui.lobby.slot.ready_name` | {name} (Ready) |
+| `ui.lobby.slot.close_hint` | Close this slot |
+| `ui.lobby.slot.open_hint` | Open this slot |
+| `ui.lobby.kick_hint` | Remove this player |
+| `ui.lobby.chat.sender_fallback` | Someone |
+| `ui.lobby.chat.line` | {name}: {text} |
+| `ui.advanced_options.title` | More settings |
+| `ui.advanced_options.help.score_mode` | How the mode turns what you hold into points. |
+| `ui.advanced_options.help.time_limit` | How long the match runs before the scores decide it. |
+| `ui.advanced_options.help.catch_up_bonus` | Extra Worker output for a team far behind on Spawn Nodes. |
+| `ui.advanced_options.help.crate_drop_period` | The average time between Supply crate drops. |
+| `ui.advanced_options.help.starting_powers` | Powers each team holds when the match begins. |
+| `ui.advanced_options.help.comeback_bonus` | A knocked-out team keeps receiving powers so it can fight on. |
+| `ui.advanced_options.help.sudden_death` | A tie at the time limit is played out instead of drawn. |
+| `ui.advanced_options.help.crate_placement` | Where Supply crates land: anywhere, or near the teams that trail. |
+| `ui.advanced_options.help.reinforcement_interval` | The time between reinforcement waves through the Transit Gates. |
+| `ui.advanced_options.help.reinforcement_count` | Workers that each Transit Gate sends per wave. |
+| `ui.advanced_options.help.transport_cap` | The most Transport powers a team can hold from the waves. |
+| `ui.advanced_options.help.turret_frequency` | A turret power arrives every this many waves. |
+| `ui.advanced_options.help.turret_cap` | The most turret powers a team can hold from the waves. |
+| `ui.advanced_options.help.basic_crates` | Supply crates hold only the basic outcomes. |
+| `ui.advanced_options.help.coop` | Players pair up into two alliances. |
+| `ui.advanced_options.help.password` | Players need this word to join your match. |
+| `ui.player_options.title` | Your name and colour |
+| `ui.player_options.name` | Name |
+| `ui.player_options.side.random` | Either side |
+| `ui.player_options.side.attackers` | Attack |
+| `ui.player_options.side.defenders` | Defend |
+| `ui.connecting.title` | Joining a match |
+| `ui.connecting.connecting` | Contacting the host |
+| `ui.connecting.attempts` | Attempt {count} |
+| `ui.connecting.connected` | Connected |
+| `ui.connecting.catching_up` | Catching up: {percent} % |
+| `ui.connecting.host`, `ui.connecting.address`, `ui.connecting.mode`, `ui.connecting.map`, `ui.connecting.players` | Match · Address · Mode · Map · Players |
+| `ui.connecting.address_value` | {address}, port {port} |
+| `ui.error.title` | Cannot continue |
+| `ui.error.incompatible` | This match runs a different version of the game. |
+| `ui.error.session_full` | This match has no free place for you. |
+| `ui.error.map_missing` | This match uses a map that you do not have. |
+| `ui.error.wrong_password` | The password was not accepted. |
+| `ui.error.kicked` | The host removed you from the match. |
+| `ui.error.duplicate_identity` | Your account is already taking part in this match. |
+| `ui.error.connection` | The connection to the host failed. |
+| `ui.credits.title` | Credits |
+| `ui.credits.line_<n>` | the credit lines, numbered from 1; new text |
+| `ui.help_and_options.title` | Help and settings |
+| `ui.help_and_options.how_to_play` | How the modes work |
+| `ui.help_and_options.settings` | Settings |
+| `ui.help_select.title` | How to play |
+| `ui.help_select.general` | The basics |
+| `ui.help.previous`, `ui.help.next` | Previous · Next |
+| `ui.match_menu.title` | Match menu |
+| `ui.match_menu.help_and_options` | Help and settings |
+| `ui.match_menu.leave` | Leave the match |
+| `ui.match_menu.back` | Return to the match |
+| `ui.confirm_leave.title` | Leave this match? |
+| `ui.confirm_leave.yes`, `ui.confirm_leave.no` | Leave · Stay |
+| `ui.chat.prompt` | Press {chat_key} to chat |
+| `ui.dialog.pad_disconnected` | Your gamepad is disconnected. Reconnect it, or press {menu_key} to carry on. |
+
+String ids cited from other documents: `mode.<mode>.name`, `mode.<mode>.objective`, `mode.complexity.simple`, `mode.complexity.medium`, `mode.complexity.hard`, the `match.options.*` labels and values, `match.grace_period.*`, `match.game_over.*` and `ui.lobby.player_left` ([reference/01](../01_skirmish_rules_and_modes/README.md)); `team.colour.*` and `ui.lobby.player_joined` ([reference/12](../12_simulation_model/06_teams_and_player_commands.md)); `map.<map id>.name` and `map.<map id>.description` ([reference/08](../08_maps_and_level_design/rules_and_conventions.md)); the help-page strings ([reference/11](../11_tutorial_and_help.md)).
+
+### 4.3 Keys cited here and defined elsewhere
+
+| key | owner |
+|---|---|
+| `ref.sim.lifetime.front_end_camera_position`, `ref.sim.lifetime.front_end_camera_direction` | [reference/12 match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) |
+| `ref.sim.team.player_slots`, `ref.sim.team.player_colour_count`, `ref.sim.team.siege_attacker_colour_id`, `ref.sim.team.siege_defender_colour_id` | [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md) |
+| `ref.match.grace_period`, `ref.match.grace_overlay.countdown_scale`, `ref.match.option.password_max_length`, `ref.match.colour.siege_3p_defender_limit`, `ref.match.colour.siege_3p_attacker_limit`, `ref.match.colour.siege_side_divisor`, and the option keys of R-MODE-074 (`ref.mode.<mode>.option.*`, `ref.match.option.*`, `ref.econ.catch_up.option_percent`, `ref.econ.crate.drop_rate_s`, `ref.econ.start.powers`, `ref.econ.gate.*`) | [reference/01](../01_skirmish_rules_and_modes/README.md) and the documents it names |
+| `ref.map.players.min`, `ref.map.thumbnail.width_fraction`, `ref.map.thumbnail.aspect` | [reference/08](../08_maps_and_level_design/rules_and_conventions.md) |
+| `ref.sim.weather.snow_*` | [reference/12 containers and update order](../12_simulation_model/04_containers_and_update_order.md) |
+| `ref.meta.layout.*` (`ref.meta.layout.picture_inset` among them) | [front_end_presentation.md](front_end_presentation.md) |

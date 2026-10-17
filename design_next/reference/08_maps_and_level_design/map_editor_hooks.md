@@ -15,7 +15,7 @@ The verdict on the editor is that it is designed fresh (DEC-045): the Species de
 - **Units.** Distances are in wu. The editor runs no simulation, so its operations are counted per rendered frame, per press of a control or per pixel of pointer movement, never in ticks. A map field in ticks or in mode seconds keeps the unit of its owning document; camera-animation durations are seconds of the presentation clock (DEC-024), as in rules and conventions §1.1. Screen sizes are in pixels (px).
 - **Map values.** Every per-map value that a map tool writes takes one of the forms of DEC-120: absent, 0 or a number, and for a limit also unlimited (rules and conventions R-MAP-006).
 - **Input ranges.** "Range a to b, step s" is the reference editor's input range of a field and the change per press of the field's increment or decrement control. An input range is a property of the reference editor; the limits that the content build enforces are those of the field's owning document (§5 lists where the two differ).
-- **Panels.** The editor's windows are named here by their role: the main editor window, the mode panels (the terrain panel, the lights panel, the structure palette, the starting-forces palette, the camera-view panel, the map-options panel and the excluded-outcomes panel), the selection panels (the tile panel, the flatten-area panel, the structure panel and the record panel), the tree panel, the guide-grid painter, the camera-animation panels and the pickers.
+- **Panels.** The editor's windows are named here by their role: the main editor window, the mode panels (the terrain panel, the lights panel, the structure palette, the starting-forces palette, the camera-view panel, the map-options panel and the excluded-outcomes panel), the selection panels (the tile panel, the flatten-area panel, the structure panel and the record panel), the tree panel, the guide-grid painter and the two camera-animation panels: 16 panels in all. The map-editor hub page, the new-map page, the pickers and the colour editor come in addition.
 - **Text.** Author-facing text is new text under the string ids of §2.17.
 
 ## 2 Rules
@@ -99,8 +99,8 @@ Table 2.4-A Terrain-panel operations.
 | Operation | Effect | Input range |
 |---|---|---|
 | regenerate | regenerates, and the sea | — |
-| new tile | appends a terrain tile (R-MAP-326); regenerates, without the sea | — |
-| new flatten area | appends a flatten area (R-MAP-327); regenerates | — |
+| add tile | appends a terrain tile (R-MAP-326); regenerates, without the sea | — |
+| add flatten area | appends a flatten area (R-MAP-327); regenerates | — |
 | scale down, scale up | rescales the map (R-MAP-328) | `ref.map.editor.terrain.scale_factors` |
 | outside height | sets the terrain definition's outside height; regenerates, and the sea | `ref.map.editor.terrain.outside_height_range` |
 | cell size | sets the cell size; regenerates, and the sea | `ref.map.editor.terrain.cell_size_range` |
@@ -111,9 +111,9 @@ Table 2.4-A Terrain-panel operations.
 | shore-wave gradient | lists the files of `terrain.shore_wave_gradient` and sets the map's shore-wave gradient; rebuilds the sea | — |
 | sea tile | lists the files of `terrain.sea_tile` and sets the map's sea tile; rebuilds nothing | — |
 
-**R-MAP-326** (MUST) **New tile.** A new terrain tile has the size `ref.map.editor.new_tile.size` (384 wu), its origin (position x, position z) at the crosshair point minus half its size on both axes, position y 0, and these field values: fractal dimension `ref.map.editor.new_tile.fractal_dimension` (1.2), height scale `ref.map.editor.new_tile.height_scale` (1.0), desired height `ref.map.editor.new_tile.desired_height` (200 wu), generation method `ref.map.editor.new_tile.generation_method` (1), seed `ref.map.editor.new_tile.seed` (1), lowland smoothing factor `ref.map.editor.new_tile.lowland_smoothing` (1.0) and guide-grid power `ref.map.editor.new_tile.guide_grid_power` (0, no guide grid). The fields are those of rules and conventions R-MAP-081.
+**R-MAP-326** (MUST) **Add tile.** A terrain tile that add tile appends has the size `ref.map.editor.new_tile.size` (384 wu), its origin (position x, position z) at the crosshair point minus half its size on both axes, position y 0, and these field values: fractal dimension `ref.map.editor.new_tile.fractal_dimension` (1.2), height scale `ref.map.editor.new_tile.height_scale` (1.0), desired height `ref.map.editor.new_tile.desired_height` (200 wu), generation method `ref.map.editor.new_tile.generation_method` (1), seed `ref.map.editor.new_tile.seed` (1), lowland smoothing factor `ref.map.editor.new_tile.lowland_smoothing` (1.0) and guide-grid power `ref.map.editor.new_tile.guide_grid_power` (0, no guide grid). The fields are those of rules and conventions R-MAP-081.
 
-**R-MAP-327** (MUST) **New flatten area.** A new flatten area has its centre at the crosshair point, the point's height included as centre y, the size `ref.map.editor.new_flatten_area.size` (40 wu), the flatten type Absolute and the threshold `ref.map.terrain.flatten_threshold_default` of rules and conventions R-MAP-083.
+**R-MAP-327** (MUST) **Add flatten area.** A flatten area that add flatten area appends has its centre at the crosshair point, the point's height included as centre y, the size `ref.map.editor.new_flatten_area.size` (40 wu), the flatten type Absolute and the threshold `ref.map.terrain.flatten_threshold_default` of rules and conventions R-MAP-083.
 
 **R-MAP-328** (MUST) **Scale.** Scale down and scale up multiply the horizontal coordinates of the map by the two factors of `ref.map.editor.terrain.scale_factors` (0.95 and 1.05): each terrain tile's position x, position z and size, and the world size x and z, which are whole numbers and are truncated; each structure record's x and z; each starting-forces record's x, z and spread; and each camera view's x and z. Scaling then regenerates. It scales no height (no tile position y, desired height or maximum height), no flatten area, no map light and no route, so flatten areas and routes no longer lie on the features they were placed on.
 
@@ -206,7 +206,7 @@ Painting with the primary button is continuous and depends on the frame rate; th
 
 ### 2.5 Map lights
 
-**R-MAP-340** (MUST) The **lights panel** edits the map lights of the match world that the editor has open, not records of the map definition; the text writer writes the lights of that match world (R-MAP-386). Its operations are those of table 2.5-A. It offers no operation that deletes a light.
+**R-MAP-340** (MUST) The **lights panel** edits the map lights of the match world that the editor has open, not records of the map definition; the text writer writes the lights of that match world (R-MAP-386). Its operations are those of table 2.5-A, which edit raw colour multipliers and directions, light by light; whether maps select named lighting presets instead is DEC-562. It offers no operation that deletes a light.
 
 Table 2.5-A Lights-panel operations.
 
@@ -223,7 +223,7 @@ Table 2.5-A Lights-panel operations.
 
 ### 2.6 Structure placement and links
 
-**R-MAP-345** (MUST) **Structure palette.** In the structures mode the structure palette lists every structure kind that the build allows, sorted by display name, and holds a chosen kind, initially the first. **Create** appends a structure record of the chosen kind at the crosshair point, with a new unique structure id, no team and the kind's record defaults; the record is not initialised. The kinds that a map may hold are those of rules and conventions R-MAP-101; a kind that the palette offers and the content build rejects is rejected when the map is saved (R-MAP-400).
+**R-MAP-345** (MUST) **Structure palette.** In the structures mode the structure palette lists every structure kind that the build allows, sorted by display name, and holds a chosen kind, which initially names no valid kind until the author chooses one. **Create** appends a structure record of the chosen kind at the crosshair point, with a new unique structure id, no team and the kind's record defaults; the record is not initialised. The kinds that a map may hold are those of rules and conventions R-MAP-101; a kind that the palette offers and the content build rejects is rejected when the map is saved (R-MAP-400).
 
 **R-MAP-346** (MUST) **Structures mode.** Each frame the mode runs this operation:
 
@@ -311,14 +311,14 @@ Table 2.6-B Kind-specific operations of the structure panel.
 
 - **regenerate:** generates the tree's geometry again (R-BLDG-603 to R-BLDG-606);
 - **randomise:** draws a new seed uniformly over the seed range of R-BLDG-601 and regenerates;
-- **clone similar:** appends a tree at the crosshair point, initialised from the source's record, at render-detail level 1, with a new unique structure id, a seed drawn as randomise draws it, and the height of the source × (1 + `FxRng::NextSigned`(`ref.map.editor.tree.clone_height_variance`)), so 0.85 to 1.15 times the source's height; then generates it;
+- **clone with variation:** appends a tree at the crosshair point, initialised from the source's record, at render-detail level 1, with a new unique structure id, a seed drawn as randomise draws it, and the height of the source × (1 + `FxRng::NextSigned`(`ref.map.editor.tree.clone_height_variance`)), so 0.85 to 1.15 times the source's height; then generates it;
 - **branch colour, leaf colour:** each opens the colour editor, which edits an RGBA8 colour; a change does not regenerate;
 - **height, leaf drop rate, essence drop rate, blight flag:** a change does not regenerate;
 - **leaf width, push up, push out, iterations, seed:** a change regenerates.
 
 The tree panel closes when the editor ends, when the selection changes or when the selected record is no longer a tree. It takes no part in gamepad navigation.
 
-**R-MAP-356** (MUST) The reference randomise and clone-similar operations draw from the shared presentation generator, and clone similar first re-seeds that generator from the wall-clock time (table 2.16-A item 8). A map tool draws its editor randomness from a presentation generator instance of its own and never re-seeds a generator that another consumer draws from ([reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-607, R-SIM-608; DEC-013).
+**R-MAP-356** (MUST) The reference randomise and clone-with-variation operations draw from the shared presentation generator, and clone with variation first re-seeds that generator from the wall-clock time (table 2.16-A item 8). A map tool draws its editor randomness from a presentation generator instance of its own and never re-seeds a generator that another consumer draws from ([reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-607, R-SIM-608; DEC-013).
 
 ### 2.8 Starting forces
 
@@ -362,10 +362,10 @@ Table 2.10-A Camera-view panel operations.
 **R-MAP-371** (MUST) The **camera-animation panels** exist in editor builds but are never opened: the operations that would open them are not created. Their specified behaviour is:
 
 - **animation list:** create appends a camera animation named with a placeholder that ends in a presentation-generator integer limited to 0 to `ref.map.editor.camera_animation.name_number_max` (1,023); per animation a name field, delete, and select, which makes it the selected animation;
-- **node panel** (at the bottom right): **add link** arms and disarms the adding of nodes, and while armed its label blinks on and off at `ref.map.editor.camera_animation.armed_blink_hz` (1 Hz) of game time; **previous view** appends a node that names `previous_view` (rules and conventions R-MAP-126) while armed; **preview** plays the selected animation; **stop** stops it; and per node a transition choice (move or cut), a duration with the range `ref.map.editor.camera_animation.duration_range`, the name of its camera view and delete, which removes the first node that names that view;
+- **node panel** (at the bottom right): **arm** switches the adding of nodes on and off, and while it is on its label blinks on and off at `ref.map.editor.camera_animation.armed_blink_hz` (1 Hz) of game time; **previous view** appends a node that names `previous_view` (rules and conventions R-MAP-126) while adding is on; **preview** plays the selected animation; **stop** stops it; and per node a transition choice (move or cut), a duration with the range `ref.map.editor.camera_animation.duration_range`, the name of its camera view and delete, which removes the first node that names that view;
 - a new node takes the transition `ref.map.editor.camera_animation.node_default_transition` (move) and the duration `ref.map.editor.camera_animation.node_default_duration_s` (1.0 s); a node made by previous view holds a constant text as its view name, which destroying the node releases (table 2.16-A item 9).
 
-**R-MAP-373** (MUST) In the camera-views mode a select on a camera view appends a node naming that view to the selected animation, only while the node panel is open and armed. Nothing opens the node panel, so the operation is unreachable. Camera animations exist in the map format with no content that uses them (rules and conventions R-MAP-127; DEC-803), and a map tool writes every camera animation that the loaded map holds (DEC-800, R-MAP-388).
+**R-MAP-373** (MUST) In the camera-views mode a select on a camera view appends a node naming that view to the selected animation, only while the node panel is open and adding is on. Nothing opens the node panel, so the operation is unreachable. Camera animations exist in the map format with no content that uses them (rules and conventions R-MAP-127; DEC-803), and a map tool writes every camera animation that the loaded map holds (DEC-800, R-MAP-388).
 
 ### 2.11 Map options and excluded outcomes
 
@@ -463,7 +463,7 @@ The camera-view marker mesh, which the drawing and the picking test of table 2.3
 3. **Atomic replacement.** The writer writes a complete new file beside the old one, flushes it and then replaces the old file in one step. A failed write leaves the previous file intact and is reported to the author and in the log.
 4. **Values are data.** A text value is written literally; no character in it is interpreted as a formatting directive.
 
-**R-MAP-389** (MUST) A map tool keeps the form of every per-map value (DEC-120; rules and conventions R-MAP-006): an absent value is written as absent; 0 is written as 0, never dropped; and unlimited is written as the explicit unlimited value, never as 0 or as a negative number. A map tool lets the author choose each of these forms where the field has them, so that the population cap, which a map states explicitly (rules and conventions table 2.6-A), can be set to unlimited.
+**R-MAP-389** (MUST) A map tool keeps the form of every per-map value (DEC-120; rules and conventions R-MAP-006, and R-MAP-075 for the match options): an absent value is written as absent; 0 is written as 0, never dropped; and unlimited is written as the explicit unlimited value, never as 0 or as a negative number. A map tool lets the author choose each of these forms where the field has them, so that the population cap, which a map states explicitly (rules and conventions table 2.6-A), can be set to unlimited.
 
 **R-MAP-390** (MUST) A map tool writes each field once and every list as an explicit array, and it enforces the maximum length of every text field and id that the schema declares: a longer value is refused with its field, never truncated silently (DEC-801; rules and conventions R-MAP-004, R-MAP-005).
 
@@ -513,7 +513,7 @@ Table 2.16-A Defects and gaps of the reference editor.
 | 5 | Terrain tiles, flatten areas, starting-forces records, map lights and camera animations are selected by list index, and a deletion shifts the indices of the later entries. | R-MAP-319 | — |
 | 6 | The terrain regenerates on every value change, and on every frame while a decimal control is held. | R-MAP-325 | — |
 | 7 | Scaling truncates the whole-number tile coordinates and does not scale flatten areas, map lights or routes. | R-MAP-328 | — |
-| 8 | Clone similar of a tree re-seeds the shared presentation generator from the wall-clock time. | R-MAP-355, R-MAP-356 | DEC-013 (R-SIM-608) |
+| 8 | Clone with variation of a tree re-seeds the shared presentation generator from the wall-clock time. | R-MAP-355, R-MAP-356 | DEC-013 (R-SIM-608) |
 | 9 | A camera-animation node made by previous view holds a constant text as its view name, which destroying the node releases: an invalid release. | R-MAP-371 | — |
 | 10 | A per-kind control of a campaign kind has a step of 0 and inverted bounds, so its value can only be typed. | R-MAP-348 | DEC-052 |
 | 11 | The clear-links operation of a campaign kind does nothing; a control type for the global flag is defined and never used; the create tool is never used; and the per-kind operations of campaign kinds can never be shown. | R-MAP-320, R-MAP-348 | DEC-052 |
@@ -551,3 +551,328 @@ Table 2.17-A String ids of the map editor.
 | `ui.map_editor.publish` | Publish |
 | `ui.map_editor.delete_confirm` | Confirm delete |
 
+## 3 States and flows
+
+### 3.1 Entry and exit
+
+```mermaid
+sequenceDiagram
+  participant MM as Main menu
+  participant HP as Map editor hub page
+  participant FP as Map file picker
+  participant NP as New-map page
+  participant ML as Main loop
+  participant ED as Map editor
+  MM->>HP: map-editor entry chosen
+  alt edit an existing map
+    HP->>FP: list the containers of the player map folder
+    FP->>HP: confirm or double activation sets the chosen map
+    HP->>ML: next update sets the requested map, no mission, the editing state and the custom-map world id, and closes every window
+  else create a new map
+    HP->>NP: new map
+    NP->>NP: create writes a default text map, or refuses an existing name
+  end
+  ML->>ML: the main-menu loop ends with the editing state set
+  ML->>ED: match entry without map-placed structures, free developer camera, editor loop
+  loop every rendered frame until menu back
+    ML->>ED: input, camera, editor advance, sound, map-editor frame
+  end
+  ML->>ML: close every window, re-register the custom map, destroy the editor and the match world, back to the main menu
+```
+
+Caption: Figure 3.1, entering and leaving the map editor (R-MAP-305 to R-MAP-311).
+
+### 3.2 Editing modes
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoMode
+  NoMode --> Structures: click hits a structure record
+  NoMode --> StartingForces: click hits a starting-forces record
+  NoMode --> CameraViews: click hits a camera view
+  NoMode --> TerrainTiles: click inside a terrain tile or a flatten area
+  NoMode --> AnyMode: entry of the main editor window
+  AnyMode --> NoMode: mode panel closed, except map options and excluded outcomes
+  Structures --> NoMode: mode panel closed
+  StartingForces --> NoMode: mode panel closed
+  CameraViews --> NoMode: mode panel closed
+  TerrainTiles --> NoMode: mode panel closed
+```
+
+Caption: Figure 3.2, the editing modes; AnyMode stands for each of the eight modes that the main editor window lists, and every mode change clears the selection (R-MAP-315 to R-MAP-318).
+
+### 3.3 Selecting and dragging a terrain tile
+
+```mermaid
+stateDiagram-v2
+  [*] --> NoTile
+  NoTile --> Selected: select inside a tile, tile panel opens, tool move, release swallowed
+  Selected --> Dragging: select on the selected tile, grab offset recorded
+  Dragging --> Dragging: drag, pending origin follows the pointer in whole numbers
+  Dragging --> Selected: drop, the tile and the enclosed structure records move, regenerate
+  Selected --> NoTile: select elsewhere, tile panel and guide-grid painter close
+  Selected --> NoTile: tile panel closed
+  Dragging --> NoTile: tile panel closed
+```
+
+Caption: Figure 3.3, the terrain-tiles mode (R-MAP-329, R-MAP-330).
+
+### 3.4 Saving, publishing and loading a custom map
+
+```mermaid
+flowchart TD
+  A[Edited map definition] --> B{Main editor window entry}
+  B -->|Save, development builds| C[Text writer]
+  B -->|Publish| D[Container writer]
+  C --> E[Text map in the content maps folder or the player map folder]
+  D --> F[Map text from the text writer]
+  F --> G[Embed custom terrain images and a non-default thumbnail]
+  G --> H[Compress behind a stored length]
+  H --> I[Container in the player map folder]
+  I --> J[Custom-map loader reads the length and decompresses]
+  J --> K[Register the embedded images under their resource names]
+  K --> L[Parse the map text]
+```
+
+Caption: Figure 3.4, the two writers and the custom-map container (R-MAP-385 to R-MAP-393).
+
+## 4 Tuning table
+
+Every value is a reference tuning value that Species may adopt as its baseline (DEC-004). The editor runs no simulation, so no value is in ticks except the Spitter Plant reload, a map field. Values owned by another document are cited in the rules by that document's key and are not repeated here: `ref.map.terrain.world_size_default`, `ref.map.terrain.flatten_threshold_default`, `ref.map.starting_forces.spread_default`, `ref.map.header.description_max_chars`, `ref.map.header.name_max_chars`, `ref.map.camera.view_name_max_chars`, `ref.map.camera.animation_duration_max_s`, `ref.map.players.min` (rules and conventions); `ref.sim.init.power_level_default`, `ref.sim.team.player_slots`, `ref.sim.tick_period` (reference/12); `ref.match.option.time_limit_unit` (reference/01); `ref.econ.cap.editor_range`, `ref.econ.cap.defender_editor_range` (reference/05); `ref.crate.outcome.count` (reference/04); `ref.bldg.hive.map_ants_max` (reference/03); `ref.bot.link.range` (reference/07); `rnd.light.default_colour`, `rnd.light.default_front` (renderer).
+
+### 4.1 Input, picking and panels
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.map.editor.crosshair_half_px` | 30 | px | half-length of the screen-centre crosshair; white lines | R-MAP-321, R-MAP-380 | DEC-045 |
+| `ref.map.editor.starting_forces.marker_factor` | 6.0 | wu | picking and selection sphere radius = √count × factor | R-MAP-322, R-MAP-380 | DEC-045 |
+| `ref.map.editor.panel.main` | 150 × 140 | px | top right; mode entries 135 px wide, 18 px apart; grows downwards | R-MAP-316, R-MAP-323 | DEC-045 |
+| `ref.map.editor.panel.mode` | width 220, 300 or 320; height 100 | px | 220 for the terrain panel, lights panel, structure palette and starting-forces palette; 300 for the map-options and excluded-outcomes panels; 320 for the camera-view panel; bottom left, grows upwards | R-MAP-317, R-MAP-323 | DEC-045 |
+| `ref.map.editor.panel.selection` | width of its mode panel; height 150, 100, 140 or 160 | px | tile panel 150, flatten-area panel 100, structure panel 140, record panel 160; 10 px above the mode panel | R-MAP-323 | DEC-045 |
+| `ref.map.editor.panel.tree` | 220 × 230 | px | above the structure panel | R-MAP-323, R-MAP-355 | DEC-045 |
+| `ref.map.editor.panel.guide_grid` | 300 × 330 | px | 10 px right of the tile panel; canvas (width − 80) × (height − 100), 220 × 230 | R-MAP-323, R-MAP-333 | DEC-045 |
+| `ref.map.editor.panel.asset_picker` | 300 × 300 | px | the land colour ramp, shore-wave gradient and sea tile pickers, at the top left | R-MAP-323 | DEC-045 |
+| `ref.map.editor.panel.colour_editor` | 200 × 100 | px | near the panel that opens it | R-MAP-323, R-MAP-355 | DEC-045 |
+| `ref.map.editor.panel.animation_nodes` | 310 × 100 | px | camera-animation node panel, bottom right | R-MAP-323, R-MAP-371 | DEC-803 |
+
+### 4.2 Terrain authoring
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.map.editor.terrain.scale_factors` | 0.95, 1.05 | factor | scale down, scale up | R-MAP-325, R-MAP-328 | DEC-045 |
+| `ref.map.editor.terrain.outside_height_range` | −100 to 100 | wu | step 1.0 | R-MAP-325 | — |
+| `ref.map.editor.terrain.cell_size_range` | 1 to 100 | wu | step 1 | R-MAP-325 | — |
+| `ref.map.editor.terrain.world_size_range` | 1 to 1,000,000 | wu | step 10; x and z | R-MAP-325 | — |
+| `ref.map.editor.terrain.max_height_range` | 0 to 2,000 | wu | step 1.0 | R-MAP-325 | — |
+| `ref.map.editor.terrain.move_structures_default` | 1 | flag | on: a dragged tile carries its structure records | R-MAP-325, R-MAP-329 | — |
+| `ref.map.editor.new_tile.size` | 384 | wu | origin = crosshair point − size ÷ 2 | R-MAP-326 | — |
+| `ref.map.editor.new_tile.fractal_dimension` | 1.2 | — | | R-MAP-326 | DEC-324 |
+| `ref.map.editor.new_tile.height_scale` | 1.0 | — | | R-MAP-326 | DEC-324 |
+| `ref.map.editor.new_tile.desired_height` | 200 | wu | | R-MAP-326 | — |
+| `ref.map.editor.new_tile.generation_method` | 1 | method | | R-MAP-326 | DEC-324 |
+| `ref.map.editor.new_tile.seed` | 1 | seed | | R-MAP-326 | DEC-246 |
+| `ref.map.editor.new_tile.lowland_smoothing` | 1.0 | — | | R-MAP-326 | — |
+| `ref.map.editor.new_tile.guide_grid_power` | 0 | power | no guide grid | R-MAP-326 | — |
+| `ref.map.editor.new_flatten_area.size` | 40 | wu | half-extent | R-MAP-327 | — |
+| `ref.map.editor.tile.fractal_dimension_range` | 0 to 10 | — | step 0.01 | R-MAP-330 | DEC-324 |
+| `ref.map.editor.tile.height_scale_range` | 0 to 10 | — | step 0.02 | R-MAP-330 | DEC-324 |
+| `ref.map.editor.tile.desired_height_range` | 0 to 1,000 | wu | step 5.0 | R-MAP-330 | — |
+| `ref.map.editor.tile.generation_method_range` | 0 to 2 | method | step 1 | R-MAP-330 | DEC-324 |
+| `ref.map.editor.tile.lowland_smoothing_range` | 0 to 3 | — | step 0.02 | R-MAP-330 | — |
+| `ref.map.editor.tile.position_xz_range` | −10,000 to 10,000 | wu | step: the whole part of the cell size | R-MAP-330 | — |
+| `ref.map.editor.tile.position_y_range` | −1,000 to 1,000 | wu | step 0.5 | R-MAP-330 | — |
+| `ref.map.editor.tile.size_range` | 0 to 10,000 | wu | step 10 | R-MAP-330 | — |
+| `ref.map.editor.tile.seed_range` | 0 to 10,000,000,000 | seed | step 1; the upper bound exceeds the seed's 32-bit integer type (§5) | R-MAP-330 | DEC-246 |
+| `ref.map.editor.flatten_area.size_range` | 0 to 1,000 | wu | step 1; half-extent | R-MAP-332 | — |
+| `ref.map.editor.flatten_area.height_range` | −1,000 to 1,000 | wu | step 1; centre y | R-MAP-332 | — |
+| `ref.map.editor.flatten_area.threshold_range` | 0 to 1,000 | wu | step 1 | R-MAP-332 | DEC-324 |
+| `ref.map.editor.guide_grid.power_range` | 0 to 5 | power | step 1 | R-MAP-333 | — |
+| `ref.map.editor.guide_grid.brush_size_range` | 1 to 40 | samples | step 1; initially 1; brush diameter | R-MAP-333, R-MAP-334 | — |
+| `ref.map.editor.guide_grid.write_multiplier_range` | 0 to 1 | factor | step 0.01; initially 1.0 | R-MAP-333, R-MAP-334 | — |
+| `ref.map.editor.guide_grid.sample_max` | 255 | value | painted sample values 0 to 255, one byte | R-MAP-333, R-MAP-334, R-MAP-380 | — |
+| `ref.map.editor.guide_grid.flatten_target` | 20 | value | the value the flatten brush pulls towards | R-MAP-334 | — |
+| `ref.map.editor.guide_grid.canvas_style` | grey by value; centre lines (0, 0, 0.8); white border; yellow brush outline | colour | additive; outline strength = brush effect | R-MAP-333 | — |
+
+### 4.3 Lights, structures, trees and starting forces
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.map.editor.light.brightness_factors` | 0.9, 1.1 | factor | darker, brighter; applied to red, green and blue | R-MAP-340 | DEC-562 |
+| `ref.map.editor.light.front_y_range` | −20 to 20 | — | step 0.01; written without normalising | R-MAP-340 | — |
+| `ref.map.editor.light.colour_range` | 0 to 5 | multiplier | step 0.02; red, green, blue | R-MAP-340 | DEC-562 |
+| `ref.map.editor.light.rotate_rad_per_px` | 0.05 | rad per pixel | horizontal pointer movement | R-MAP-341 | — |
+| `ref.map.editor.structure.rotate_rad_per_px` | 0.01 | rad per pixel | horizontal pointer movement | R-MAP-346 | — |
+| `ref.map.editor.position_selector.inactive_rgb` | 100, 100, 100 | RGB8 | the no-team swatch; inactive start positions | R-MAP-347, R-MAP-375 | — |
+| `ref.map.editor.field.barrier_emitter.scale` | 0 to 100 | factor | step 0.01 | R-MAP-348 | — |
+| `ref.map.editor.field.hive.ants_inside` | 0 to 1,000 | ants | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.size` | 0 to 50 | factor | step 0.1 | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.pitch` | −π to π | rad | step 0.1 | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.force` | 0 to 1,000 | wu/s | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.variance` | 0 to π | rad | step 0.01 | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.reload` | 0 to 10,000 | ticks | step 10 ticks; edited in whole seconds, 0 to 1,000 s in steps of 1 s, at `ref.sim.tick_period` | R-MAP-348 | DEC-002 |
+| `ref.map.editor.field.spitter_plant.trigger_offset` | −10,000 to 10,000 | wu | step 1; trigger x and trigger z | R-MAP-348 | — |
+| `ref.map.editor.field.spitter_plant.trigger_radius` | 0 to 1,000 | wu | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.population_limiter.search_radius` | 0 to 10,000 | wu | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.population_limiter.max_population` | 0 to 10,000 | bodies | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.scenery_mesh.scale` | 0 to 100 | factor | step 0.1 | R-MAP-348 | — |
+| `ref.map.editor.field.launch_vessel.fuel` | 0 to 100 | fuel | step 0.1 | R-MAP-348 | — |
+| `ref.map.editor.field.launch_vessel.passengers` | 0 to 100 | Workers | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.launch_vessel.linked_id` | 0 to 9,999 | structure id | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.control_zone.size` | 0 to 1,000 | wu | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.bot_nav_node.priority_modifier` | −1 to 1 | — | step 0.05 | R-MAP-348 | — |
+| `ref.map.editor.field.core_device.countdown` | 300 to 1,800 | mode seconds | step 60; the play-time range × `ref.match.option.time_limit_unit` | R-MAP-348 | DEC-561 |
+| `ref.map.editor.field.exclusion_zone.size` | 0 to 10,000 | wu | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.turret.mortar_target_offset` | −10,000 to 10,000 | wu | step 1; mortar target x and z | R-MAP-348 | — |
+| `ref.map.editor.field.turret.mortar_radius_force` | 0 to 1,000 | wu; force | step 1; mortar target radius and mortar force | R-MAP-348 | — |
+| `ref.map.editor.field.jump_pad.angle` | −π to π | rad | step 0.1 | R-MAP-348 | — |
+| `ref.map.editor.field.jump_pad.force` | 0 to 1,000 | wu/s | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.bot_objective_marker.scan_range` | 1 to 500 | wu | step 1 | R-MAP-348 | — |
+| `ref.map.editor.field.bot_objective_marker.pickup_only` | −1 to 1 | — | step 1 | R-MAP-348 | — |
+| `ref.map.editor.tree.clone_height_variance` | 0.3 | fraction | `FxRng::NextSigned` range: a height factor of 0.85 to 1.15 | R-MAP-355 | DEC-013 |
+| `ref.map.editor.starting_forces.new_count` | 40 | actors | count of a new record | R-MAP-360 | — |
+| `ref.map.editor.starting_forces.count_range` | 1 to 1,000 | actors | step 1 | R-MAP-362 | — |
+| `ref.map.editor.starting_forces.spread_range` | 0 to 1,000 | wu | step 1; spread radius | R-MAP-362 | — |
+
+### 4.4 Camera views, map options and drawing
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.map.editor.camera_view.name_field_chars` | 63 | characters | one more than `ref.map.camera.view_name_max_chars` of rules and conventions (§5) | R-MAP-370 | DEC-801 |
+| `ref.map.editor.camera_view.marker_skip_wu` | 20 | wu | a view this close to the camera is not drawn | R-MAP-380 | — |
+| `ref.map.editor.camera_animation.name_number_max` | 1,023 | — | the placeholder number of a new animation is 0 to 1,023 | R-MAP-371 | DEC-803 |
+| `ref.map.editor.camera_animation.armed_blink_hz` | 1 | Hz | 0.5 s on and 0.5 s off, of game time | R-MAP-371 | DEC-803 |
+| `ref.map.editor.camera_animation.duration_range` | 0.1 to 100 | s | step 0.5; presentation seconds (§5) | R-MAP-371 | DEC-803 |
+| `ref.map.editor.camera_animation.node_default_transition` | move | transition | move or cut | R-MAP-371 | DEC-803 |
+| `ref.map.editor.camera_animation.node_default_duration_s` | 1.0 | s | presentation seconds | R-MAP-371 | DEC-803 |
+| `ref.map.editor.options.name_field_chars` | 32 | characters | display-name field (§5) | R-MAP-375 | DEC-801 |
+| `ref.map.editor.options.player_count_range` | 1 to 4 | start positions | step 1 (§5) | R-MAP-375 | — |
+| `ref.map.editor.options.play_time_range` | 5 to 30 | minutes | step 1 | R-MAP-375 | — |
+| `ref.map.editor.options.coop_group_max` | 2 | start positions | per co-op group | R-MAP-375 | — |
+| `ref.map.editor.options.attackers_max` | 2 | start positions | Siege attacking positions | R-MAP-375 | — |
+| `ref.map.editor.option.reinforcement_count_range` | 0 to 300 | Workers | step 10; Transit Gate, attacker and defender reinforcement counts | R-MAP-375 | DEC-120 |
+| `ref.map.editor.option.transport_cap_range` | 0 to 5 | Transports | step 1 | R-MAP-375 | DEC-120 |
+| `ref.map.editor.option.airstrike_threshold_range` | 0 to 20 | Flag posts | step 1 | R-MAP-375 | — |
+| `ref.map.editor.option.visitor_position_range` | 0 to 3 | start position | step 1 | R-MAP-375 | — |
+| `ref.map.editor.option.power_kind_count` | 16 | power kinds | entries of each reinforcement-power list | R-MAP-376 | — |
+| `ref.map.editor.gizmo.bot_nav_node_rgb` | 255, 100, 100 | RGB8 | | R-MAP-380 | — |
+| `ref.map.editor.gizmo.bot_objective_radius` | 50 | wu | red; blue for a defence objective | R-MAP-380 | — |
+| `ref.map.editor.gizmo.bot_objective_selected_radius` | 60 | wu | red | R-MAP-380 | — |
+| `ref.map.editor.gizmo.marker_radius` | 30 | wu | volcano vent, jump pad, exclusion zone, smoke column | R-MAP-380 | — |
+| `ref.map.editor.gizmo.volcano_vent_selected_radius` | 35 | wu | | R-MAP-380 | — |
+| `ref.map.editor.gizmo.mortar_circle` | 20 segments at terrain height + 10 wu | — | red | R-MAP-380 | — |
+| `ref.map.editor.starting_forces.label` | terrain height + 15 wu; text size 15 | — | | R-MAP-380 | — |
+| `ref.map.editor.starting_forces.dot_grid` | pitch 10 wu; dot half-size 5 wu at terrain height + 2 wu; alpha 200 of 255 | — | camera-facing quads; additive, no depth write, no culling | R-MAP-380 | — |
+| `ref.map.editor.starting_forces.spread_circle` | 30 segments at terrain height + 10 wu, at least 2 wu; alpha 100 of 255; line width 2 px | — | | R-MAP-380 | — |
+| `ref.map.editor.overlay.pending_move_height` | 1.0 | wu | height of the pending-move outline | R-MAP-380 | — |
+| `ref.map.editor.overlay.tiles` | other tiles (128, 255, 128, 99); selected (128, 255, 128) opaque; pending move (0, 0, 255) | RGBA8 | guide-grid cells in two passes: no depth test, line width 1, colour (1, 0, 0, 0.2); depth test, line width 3, colour (1, 0, 0, 0.8) | R-MAP-380 | — |
+| `ref.map.editor.overlay.flatten_box_extra_height` | 20 | wu | box height = centre y + this | R-MAP-380 | — |
+| `ref.map.editor.overlay.flatten_areas` | alpha 99 of 255; selected 255 | — | | R-MAP-380 | — |
+| `ref.map.editor.overlay.link_line_raise` | 10 | wu | start of the link line above the structure's position | R-MAP-380 | — |
+| `ref.map.editor.overlay.link_line` | arrowhead strokes from 10 % of the line back from its end, ±3 wu up; colour (1, 0.5, 0.5) | — | no depth test | R-MAP-380 | — |
+| `ref.map.editor.overlay.animation_arrows` | selected animation (255, 255, 0); others (90, 90, 0) | RGB8 | | R-MAP-380 | DEC-803 |
+| `ref.map.editor.overlay.world_axes` | x arrow (10, 200, 0) to (world size x ÷ 2, 200, 0); z arrow (0, 200, 10) to (0, 200, world size z ÷ 2); line width 4 | wu | each arrow ends in a letter glyph of two lines, 90 wu wide and from 150 to 250 wu high, beyond the arrow's end | R-MAP-380 | — |
+
+## 5 Edge cases and interactions
+
+1. **Input ranges that differ from the content-build limits.** The reference editor accepts values that the content build rejects, and it cannot enter some values that maps use:
+   - the player count accepts 1, below `ref.map.players.min` (2) of rules and conventions; a map tool rejects a 1-player map when it saves (R-MAP-375, R-MAP-400);
+   - a camera-view name field accepts `ref.map.editor.camera_view.name_field_chars` (63) characters, one more than `ref.map.camera.view_name_max_chars` (62); under DEC-801 the longer name is refused, never truncated (R-MAP-370, R-MAP-390);
+   - the display-name field accepts only `ref.map.editor.options.name_field_chars` (32) characters, far fewer than `ref.map.header.name_max_chars` (511) of a custom map's display name (R-MAP-375);
+   - a camera-animation node accepts durations up to 100 s, while rules and conventions R-MAP-127 requires each duration to stay below `ref.map.camera.animation_duration_max_s` (60 s) (R-MAP-371);
+   - the scan range of a bot objective marker starts at 1 wu, so the editor cannot enter the scan range 0, which has its own meaning in reference/07 table 2.1-B (R-MAP-348);
+   - ants inside reach 1,000 in the editor, while a Hive record loads values up to `ref.bldg.hive.map_ants_max` (10,000, R-BLDG-633);
+   - the tile seed's upper bound, 10,000,000,000, is larger than a 32-bit integer seed can hold (R-MAP-330);
+   - the population-cap and Transport-cap controls offer only numbers, so the reference editor cannot write unlimited, and because the header writer drops 0-valued map options it cannot write 0 for a map option either (R-MAP-387). A map tool keeps all forms of DEC-120 (R-MAP-389).
+2. **Core Device countdown and play time.** The countdown range, 300 to 1,800 mode seconds in steps of 60, equals the play-time range of 5 to 30 minutes × `ref.match.option.time_limit_unit`; the Siege rule that the countdown equals the time limit (rules and conventions R-MAP-166) is checked only when a map tool saves (R-MAP-400).
+3. **Kinds that the content build rejects.** The structure palette and the starting-forces palette list what the build allows, which can include structure kinds and actor kinds that a map may not hold (R-MAP-101, R-MAP-131). The record is created and saved by the reference editor and rejected by a map tool (R-MAP-345, R-MAP-360, R-MAP-400).
+4. **One mode per map.** The mode control writes exactly one mode, while the header's mode list may hold several (rules and conventions R-MAP-013); a map listed under several modes cannot be made with the reference editor (R-MAP-375).
+5. **Reinforcement option values.** The entries airstrike and gun turret write the same option value, and so do firebomb run and rocket turret; the value means what the configured power kind reads from it, so an option chosen for one power kind and kept after the power kind is changed takes the meaning of the new kind (R-MAP-376).
+6. **Reinforcement power kinds.** The editor offers 16 power kinds. Other Power kinds that rules and conventions R-MAP-072 accepts, such as Swarm or the rocket and flame turrets as power kinds of their own, are not offered by name; the turret types are reached through the gun turret with a turret-type option (R-MAP-376).
+7. **Lights from the match world.** The lights panel edits the open match world's lights, and the text writer writes those lights. A map written while no match world exists, such as a new map, holds no light; the front y written by the editor is not normalised, and the load normalises it, so a reloaded light can point differently from what the panel showed (R-MAP-307, R-MAP-340, R-MAP-341, R-MAP-386).
+8. **Moving structures with a tile.** The enclosure test is inclusive on both sides, so a structure record on the shared edge of two adjacent tiles moves with whichever of them is dragged; structures outside every tile never move with terrain (R-MAP-329).
+9. **Scaling.** Flatten areas, routes and lights keep their coordinates, and tile coordinates are truncated at every scale step, so scaling down and then up does not restore the map (R-MAP-328).
+10. **Deleting by index.** Deleting a terrain tile, flatten area, starting-forces record or camera view shifts the indices of later entries; a selection held by index in another panel can then name a different entry (R-MAP-319).
+11. **Campaign flag.** Setting a structure's campaign flag removes the structure from the next save without any warning (R-MAP-347, R-MAP-386).
+12. **Names containing `null`.** The text writer writes nothing for a map whose file name contains `null`, and it reports nothing (R-MAP-385).
+13. **Short container names.** Publish replaces the last four characters of the file name with the container's extension; for a file name of four characters or fewer the result is not specified (R-MAP-392).
+14. **Regeneration cost.** Each value change regenerates the whole terrain, and a held decimal control regenerates on every frame, so the editor's frame time follows the generator's cost (R-MAP-325; [terrain](../../architecture/components/terrain.md)).
+15. **Links can only grow.** A wrong Flag post link or a wrong Command Console of a Core Device can be removed only by deleting the record (R-MAP-349).
+16. **Tree height.** Changing a tree's height does not regenerate its geometry, because the height is a uniform scale (R-BLDG-601); the crown hit volume follows the height at its next use (R-MAP-355).
+17. **Create before a kind is chosen.** The structure palette's chosen kind names no valid kind until the author picks one, so create on a fresh palette names no kind; what it then creates is not specified (R-MAP-345).
+18. **No play test.** Because the simulation never advances in the editor, no Spawn Node, Transit Gate, bot or mode rule can be observed while editing; the map must be played as a match (R-MAP-305, R-MAP-309).
+
+## 6 Acceptance criteria
+
+The criteria apply to a map tool that adopts the hooks, and to the reference behaviour where a criterion names the reference editor.
+
+**AC-MEH-01 Not reachable** (R-MAP-301). Given a player build, then no main-menu entry, key binding or developer menu opens the map editor; match setup lists no custom map; and a request to enter the editor loads the requested map for play.
+
+**AC-MEH-02 Lossless round trip** (R-MAP-388, R-MAP-389). Given a map with a structure record at x = 1,234.5678 wu, a tile desired height of 200.4 wu, a flatten-area threshold of 12.345 wu, a light colour of 1.2345, a guide grid, two camera views, a camera animation of two nodes, a route of three route points, a starting-forces record with the run-as-power flag set, the Transit Gate Transport cap set to 0 and the population cap set to unlimited, when a map tool loads and saves it, then every value reads back identical, the camera animation and the route are present, the Transport cap reads 0 and not absent, the population cap reads unlimited, and saving the unchanged map again gives the same content hash.
+
+**AC-MEH-03 Atomic save** (R-MAP-388). Given a save that fails after half of the file is written, then the previous file is unchanged, and the failure is reported to the author and in the log.
+
+**AC-MEH-04 Per-mode validation** (R-MAP-400). Given a map listed under Relic Run with two Relic Bases for start position 0, when a map tool saves it, then it is rejected with a diagnostic that names the Relic Run rule; given a Flag Chain map whose Flag post graph has two components, a Siege map whose Core Device lists two Command Consoles, and a Launch Race map with two fuel depots for one start position, then each is rejected likewise.
+
+**AC-MEH-05 Typed links** (R-MAP-349, R-MAP-400). Given a Barrier Emitter record whose link names a turret, when a map tool saves the map, then it is rejected; given a Relay whose links form a cycle, then it is rejected.
+
+**AC-MEH-06 Container robustness** (R-MAP-393). Given a container whose stored length is larger than its stream, one that is cut short, one with bytes after its stream, and a text map stored under the container's extension, when the custom-map loader reads each, then each is rejected with a diagnostic and the program continues.
+
+**AC-MEH-07 New map** (R-MAP-307). Given a name that exists in the player's map folder, then create refuses it with `ui.map_editor.map_exists`; given a new name, then the written map has a world size of 2,000 wu on both axes and no terrain tile, flatten area, map light, structure record, camera view or starting-forces record.
+
+**AC-MEH-08 Picking** (R-MAP-322). Given tile A with origin (0, 0) and size 1,000 and tile B with origin (100, 100) and size 200, then a select at (150, 150) picks B, a select at (100, 150) picks A, and a select at (0, 500) picks none; given two structure records hit by one pick ray, then the one earlier in record order is picked.
+
+**AC-MEH-09 Dragging a tile** (R-MAP-329). Given a tile with origin (100, 100) and size 384 and structure records at (100, 100), (484, 300) and (485, 300), with move structures with tiles on, when the tile is dragged and dropped at the origin (200, 100), then the first two records move to (200, 100) and (584, 300), the third stays, and the terrain and the sea are rebuilt once.
+
+**AC-MEH-10 Scaling** (R-MAP-328). Given a tile with position x 101 and size 384, a world size of 3,000 wu, a structure record at x 1,000 and a flatten area at centre x 500, when scale up is applied, then the tile's position x is 106, its size 403, the world size 3,150 wu, the structure's x 1,050 and the flatten area's centre x still 500.
+
+**AC-MEH-11 Painting the guide grid** (R-MAP-334). Given brush size 1, write multiplier 1 and the pointer on a sample of value 100, then one frame of freehand with the primary button gives 101; the flatten brush gives 29 from 30 and 11 from 10; one press of the secondary button with the binary brush gives 0; and with write multiplier 0.5 one frame of the binary brush with the primary button gives 127.
+
+**AC-MEH-12 Clone with variation** (R-MAP-355, R-MAP-356). Given a tree of height 100 wu, when clone with variation is applied 1,000 times, then every clone's height lies from 85 to 115 wu and its seed within the seed range of R-BLDG-601; in a map tool, the simulation generator and every other consumer's presentation generator are unchanged by the operation.
+
+**AC-MEH-13 Reinforcement options** (R-MAP-376). Given the attacker reinforcement power option list, then choosing airstrike and choosing gun turret write the same value, and choosing firebomb run and choosing rocket turret write the same value.
+
+**AC-MEH-14 Excluded outcomes** (R-MAP-377). Given the excluded-outcomes panel, then it shows 31 flags in the canonical outcome order; setting the Transport flag makes the Transport outcome a member of the header's excluded outcomes.
+
+**AC-MEH-15 Leaving the editor** (R-MAP-311). Given unsaved edits, when the menu-back action is used, then the main menu shows without a save prompt, and the map catalogue holds the custom map's header as last written.
+
+**AC-MEH-16 Reference text writer** (R-MAP-385, R-MAP-386, R-MAP-387). Given the reference text writer, a map named `null_test` writes no file; a structure at x = 1,234.5678 wu is written as 1,234.57 wu; a map option of value 0 is not written; and no camera animation or route is written.
+
+**AC-MEH-17 Lights** (R-MAP-340, R-MAP-341). Given a light of colour (1.0, 0.5, 0.2), when brighter is pressed once, then its colour is (1.1, 0.55, 0.22); when the light is selected and the pointer is dragged 10 px horizontally, then its front turns by 0.5 rad about the vertical axis.
+
+**AC-MEH-18 New starting-forces record** (R-MAP-360). Given the starting-forces palette, when a Worker entry is chosen, then a record of 40 Workers at start position 0 with the in-group flag off, a spread of 200 wu and no route is appended at the crosshair point, selected, with its record panel open.
+
+## 7 Dependencies
+
+- **Reference documents:** [README](README.md) and [rules and conventions](rules_and_conventions.md) (the map definition, its blocks and fields, the map catalogue, custom maps, start positions, map options, map effects, the per-mode validation rules); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) (structure kinds, record fields, behaviour hooks and link-set rules, hit tests), [defences and props](../03_buildings_and_world_objects/defences_and_props.md), [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [mode objects](../03_buildings_and_world_objects/mode_objects.md) and [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) (the fields that the structure panel and the tree panel edit); [02 Units](../02_units/README.md) (actor kinds of starting forces); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the outcome catalogue, excluded outcomes, power kinds); [05 Population flow](../05_population_flow.md) (the cap input ranges, reinforcement powers and their options); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the main-menu entry's label, the camera modes); [07 Bots](../07_bots/README.md) (navigation nodes, objectives, objective markers, the bot controller marker); [12 Simulation model](../12_simulation_model/README.md) (match entry and match-world initialisation in the editor, the presentation generators).
+- **Engine components:** [terrain](../../architecture/components/terrain.md) (the generator that the editor runs, the guide-grid encoding); [renderer](../../architecture/components/renderer/README.md) (the map-editor frame RND-078, the editor's sea RND-148, map-light defaults RND-012); [data schemas](../../architecture/components/data_schemas.md) (the map-definition schema family and the custom-map container); [camera and sequences](../../architecture/components/camera_and_sequences.md) (camera views, camera-animation playback); [UI framework](../../architecture/components/ui_framework/README.md) (panels, value controls, pickers); [build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) (the content build, map-editor tooling). ADR-0056 (products and build flavours), ADR-0059 (content build and validators), ADR-0060 (content identity by hash), ADR-0061 (data schemas and versioning), ADR-0063 (localisation), ADR-0071 (user data folders).
+- **Assets:** `terrain.ramp`, `terrain.shore_wave_gradient` and `terrain.sea_tile` (the terrain pickers). The camera-view marker mesh that the editor draws and picks is not in the asset manifest.
+
+## 8 Open decisions
+
+Each default is the behaviour that §2 specifies.
+
+- DEC-045 — the map editor: the reference has no reachable editor, and this document records its hooks only (R-MAP-301, R-MAP-302 and every requirement of §2).
+- DEC-204 — content and version identity: how custom maps are identified, listed and verified (R-MAP-387, R-MAP-394).
+- DEC-207 — transport and message format: the custom-map container and custom-map transfer (R-MAP-391, R-MAP-394).
+- DEC-246 — terrain runtime model: whether a map tool bakes the height field into the map asset (R-MAP-335).
+- DEC-324 — terrain generator parameter semantics and biases: unbiased variants as editor choices (R-MAP-335).
+- DEC-562 — map lighting presets: the raw light values that the lights panel edits (R-MAP-340).
+- DEC-803 — camera animations without content: the unreachable camera-animation authoring (R-MAP-303, R-MAP-371, R-MAP-373).
+
+Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-013, DEC-015, DEC-024, DEC-120, DEC-457, DEC-560, DEC-561, DEC-563, DEC-800 and DEC-801. Dropped entries applied: DEC-052 (campaign missions, campaign structure kinds and the campaign world editor).
+
+### 8.1 Design-phase inputs
+
+These are the open items of the map editor that the design phase decides under DEC-045; the hooks above are their inputs.
+
+1. Whether Species has a map editor, in which product (ADR-0056), and for whom: the team only, or players too.
+2. Undo, unsaved-change tracking and the save prompt (table 2.16-A item 14).
+3. Selection by stable id instead of list index, and picking of the nearest object (table 2.16-A items 2, 3 and 5).
+4. Play test of the real simulation from the editor (table 2.16-A item 14).
+5. Route and route-point authoring (R-MAP-365), and camera-animation authoring (R-MAP-371, DEC-803).
+6. Link tools with removal and per-kind link checks, for Flag post adjacency and Command Console lists (R-MAP-349).
+7. Whether the editor regenerates the terrain on every change or on demand, and whether it bakes the height field (R-MAP-325, DEC-246), with unbiased generator variants (DEC-324).
+8. Whether a map tool can keep an unfinished map that fails the validation of R-MAP-400.
+9. The custom-map container, its identity, listing, transfer and the player's map folder (R-MAP-391 to R-MAP-394; DEC-204, DEC-207; ADR-0071), and a custom map's thumbnail (R-MAP-392).
+10. Input ranges aligned with the content-build limits (§5 item 1), and a map with more than one mode (§5 item 4).
+11. The camera-view marker mesh and the editor's drawing style (R-MAP-380).
