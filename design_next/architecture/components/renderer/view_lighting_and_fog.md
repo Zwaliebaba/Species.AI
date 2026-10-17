@@ -91,7 +91,7 @@ struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and am
 
 ### 4.4 Lighting
 
-**RND-226** (MUST) Every frame, light 0 and light 1 of the per-frame constants are the map's first two lights (RND-013), each with a unit direction towards the light and a colour that is both its diffuse and its specular colour. A map with one light leaves light 1 black, with the direction `rnd.lighting.unused_light_direction` (0, 0, −1); lights beyond the second are not used. There is no ambient term: the global and per-light ambient colours are 0. Light colours above 1 (up to 2.0 per channel in the reference maps) over-brighten facets.
+**RND-226** (MUST) Every frame, light 0 and light 1 of the per-frame constants are the map's first two lights (RND-013), each with a unit direction towards the light and a colour that is both its diffuse and its specular colour. A map with one light leaves light 1 black, with the direction `rnd.lighting.unused_light_direction` (0, 0, −1); lights beyond the second are not used; every reference map defines exactly two lights. There is no ambient term: the global and per-light ambient colours are 0. Light colours above 1 (up to 2.0 per channel in the reference maps) over-brighten facets.
 
 **RND-227** (MUST) Map lights are applied before the camera transform of each frame, so their directions lag the view by one frame during camera turns (see DEC-325): the world-space direction passed for frame *j* is *R*ⱼ⁻¹ × *R*ⱼ₋₁ × the light's direction, where *R* is the rotation part of a frame's view matrix and *R*₋₁ of the renderer's first frame is the identity. With a still camera this is the light's own direction. Under option B of DEC-325 the light's own direction is passed.
 
@@ -177,7 +177,7 @@ A development view shows the light directions, the fog range and the culling cou
 | T4 projection helper | unit | known points map to known pixels; a point behind the camera returns no position | RND-216, RND-218 |
 | T5 depth bias | golden-image | a decal and a laser bolt coplanar with terrain win the depth tie at 50, 500 and 5000 wu, and lose against geometry 1 wu in front of them | RND-219, RND-220 |
 | T6 fog ramp | golden-image | a flat terrain strip from 0 to 8000 wu reproduces the linear ramp to black between *e* ÷ 3 and *e* | RND-222, RND-223 |
-| T7 lighting | golden-image | over-bright lights (colour 2.0), one-light maps, the special rig with specular highlights and the grid specular term | RND-226, RND-228 to RND-230, RND-233 |
+| T7 lighting | golden-image | a reference two-light rig, (0.07, 0.35, 0.93) with colour (1, 1, 1) and (−0.04, 0.43, 0.90) with colour (2.0, 1.0, 0.4); over-bright lights (colour 2.0), one-light maps, the special rig with specular highlights and the grid specular term | RND-226, RND-228 to RND-230, RND-233 |
 | T8 light lag | unit | after a 90° camera turn between two frames, the passed direction equals *R*ⱼ⁻¹ *R*ⱼ₋₁ × the light direction; with option B it equals the light direction | RND-227 |
 | T9 view tests | property | the cone and sphere tests of RND-234 against recorded camera paths; the GPU cull never rejects an object that intersects the frustum | RND-234 to RND-236 |
 | T10 shadows | golden-image | both decal kinds on flat and sloped terrain, and an icon shadow under its icon | RND-240 to RND-243 |

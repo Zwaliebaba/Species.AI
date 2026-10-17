@@ -125,7 +125,11 @@ public:
 
 ### 4.4 Meshes and team tint
 
-**RND-157** (MUST) A cooked mesh (`MeshAsset`, ADR-0019) is a hierarchy of mesh nodes (`MeshNode`) under an implicit root node with the identity transform and no geometry. Each node has a rest transform relative to its parent, a draw range, per-triangle facet colours and facet normals, an axis-aligned bounding box, and a bounding sphere whose centre is the box centre and whose radius is the largest distance from that centre to any of the node's vertices. Each socket (`MeshSocket`, ADR-0021) names its parent node and keeps the chain of nodes from the root to that parent.
+**RND-156** (MUST) The cooked mesh format and the renderer support at least `rnd.mesh.max_nodes` (100) nodes and `rnd.mesh.max_sockets` (100) sockets per mesh.
+
+For budgeting, the reference mesh set has 139 meshes with up to 20 nodes per mesh (440 in total), a hierarchy depth of up to 6, up to 38 sockets per mesh (425 in total), and 150 820 triangles in total, with up to 24 366 and a mean of 1085 per mesh; two of its meshes carry sockets only.
+
+**RND-157** (MUST) A cooked mesh (`MeshAsset`, ADR-0019) is a hierarchy of mesh nodes (`MeshNode`) under an implicit root node with the identity transform and no geometry. Each node has a rest transform relative to its parent, a draw range, per-triangle facet colours and facet normals, an axis-aligned bounding box, its vertical extent (lowest and highest *y*), and a bounding sphere whose centre is the box centre and whose radius is the largest distance from that centre to any of the node's vertices. Each socket (`MeshSocket`, ADR-0021) names its parent node and keeps the chain of nodes from the root to that parent.
 
 **RND-158** (MUST) Transforms use row vectors (ADR-0016): a node's world transform is its local transform × its parent's world transform, and a socket's world transform is its own transform × the transforms of its parent chain from the deepest node up to the root × the instance transform.
 
@@ -135,7 +139,7 @@ public:
 
 **RND-161** (MUST) One cooked mesh serves every team: instances carry a team palette index (RND-016), and the material shader tints by the facet's tint weight *w* (ADR-0020). With the team colour *T* and the facet colour *c* (both in 0 to 1), the tinted colour is *T* × (*c.r* + *c.g* + *c.b*) ÷ (*T.r* + *T.g* + *T.b*) × `rnd.tint.factor` (0.7), which keeps the facet's brightness; on a mesh marked convert-all it is *T* × `rnd.tint.factor`. The drawn colour is *c* + *w* × (tinted − *c*), clamped to [0, 1]. Instances of no team are never tinted. Only the root node and its direct children are tinted; deeper nodes keep their facet colours.
 
-**RND-162** (MUST) These meshes follow special tint rules: on the Worker figure `mesh.unit.worker_figure`, the colour of palette entry 0 is multiplied by `rnd.tint.worker_figure_entry0_factor` (0.5) before tinting; the Leader figure `mesh.unit.leader_figure` is convert-all; the Transport hull `mesh.unit.transport_hull` replaces every facet colour by the team colour (its co-op shade where the team has one, R-SIM-421) × `rnd.tint.transport_factor` (0.1); turret heads `mesh.structure.turret_head` tint with the team colour and co-op shade; the Beam Dish `mesh.structure.beam_dish` re-tints when its team changes. Meshes authored in the reference style mark team regions with key colours whose red channel exceeds twice each of the other two channels; the mesh cooker converts those facets to tint weight 1 and every other facet to weight 0.
+**RND-162** (MUST) These meshes follow special tint rules: on the Worker figure `mesh.unit.worker_figure`, the colour of palette entry 0 is multiplied by `rnd.tint.worker_figure_entry0_factor` (0.5) before tinting; the Leader figure `mesh.unit.leader_figure` is convert-all; the Transport hull `mesh.unit.transport_hull` replaces every facet colour by the team colour (its co-op shade where the team has one, R-SIM-421) × `rnd.tint.transport_factor` (0.1); turret heads `mesh.structure.turret_head` tint with the team colour and co-op shade; the Beam Dish `mesh.structure.beam_dish` re-tints when its team changes. The team-tinted meshes are those of centipede segments `mesh.creature.centipede_segment`, ants `mesh.creature.ant_body`, the Leader, the Reaper Serpent, turrets, the Beam Dish, the Transport and every actor that draws a team mesh ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)). Meshes authored in the reference style mark team regions with key colours whose red channel exceeds twice each of the other two channels; the mesh cooker converts those facets to tint weight 1 and every other facet to weight 0.
 
 Mesh queries used by the simulation are not renderer functions (RND-004). For the collision assets that serve them, the reference query contract is:
 
@@ -340,6 +344,8 @@ Branch(from, to, n, pass):
 | `rnd.sky.layer1_repeats` | 9 | repeats | blobby 1, flat 1 | RND-153 | |
 | `rnd.sky.layer2_repeats` | 4.5 | repeats | blobby 2, flat 2 | RND-153 | |
 | `rnd.sky.layer3_repeats` | 1.8 | repeats | blobby 3 | RND-153 | |
+| `rnd.mesh.max_nodes` | 100 | nodes per mesh | minimum supported | RND-156 | |
+| `rnd.mesh.max_sockets` | 100 | sockets per mesh | minimum supported | RND-156 | |
 | `rnd.mesh.colour_attenuation` | 0.85 | × | applied by the mesh cooker | RND-160 | |
 | `rnd.tint.factor` | 0.7 | × | tinted colour scale | RND-161 | |
 | `rnd.tint.transport_factor` | 0.1 | × team colour | Transport hull | RND-162 | |
