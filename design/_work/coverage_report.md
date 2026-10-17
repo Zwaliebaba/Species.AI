@@ -4,15 +4,14 @@ Documents scanned for citations: 23 (01_game_modes.md, 02_units_and_entities.md,
 
 Manifest entries: 6189; live source files: 776; data files: 2332
 
-Distinct manifest files cited: 3748; directories cited: 75
+Distinct manifest files cited: 3750; directories cited: 75
 
-Evidence tags in documents: {'[C]': 5553, '[I]': 686, '[U]': 142}
+Evidence tags in documents: {'[C]': 5717, '[I]': 704, '[U]': 144}
 
 World-object classes found in code/worldobject/*.h: 159
 
-### (a) live source files never cited — 6
+### (a) live source files never cited — 5
 - code/keygen.h
-- code/lib/plane.cpp
 - code/mapfile.h
 - code/network/generic.h
 - code/network/servertoclient.cpp
@@ -20,12 +19,7 @@ World-object classes found in code/worldobject/*.h: 159
 
 ### (b) data files never cited — 0
 
-### (c) data formats without a grammar — 36
-- format without grammar: betatesters
-- format without grammar: preferences
-- format without grammar: input-bindings
-- format without grammar: keyboard-layout
-- format without grammar: locales
+### (c) data formats without a grammar — 31
 - format without grammar: language
 - format without grammar: script
 - format without grammar: purity-misc
@@ -62,19 +56,9 @@ World-object classes found in code/worldobject/*.h: 159
 
 ### (e) assets without a catalogue entry — 0
 
-### Cited paths that do not exist in the manifest (possible errors) — 13
+### Cited paths that do not exist in the manifest (possible errors) — 3
 - code/data  ← 22_determinism_and_networking.md
-- data/icons]  ← 25_textures_and_assets.md
-- data/mwsounds]  ← 25_textures_and_assets.md
-- data/n  ← 25_textures_and_assets.md, 29_data_formats_reference.md
-- data/name  ← 25_textures_and_assets.md
-- data/name?  ← 25_textures_and_assets.md
+- data/n  ← 29_data_formats_reference.md
 - data/scripts/name  ← 29_data_formats_reference.md
-- data/sepulveda/sepulveda1–5.bmp  ← 25_textures_and_assets.md
-- data/sepulveda]  ← 25_textures_and_assets.md
-- data/shapes/carrybillboard_pcg/_tpcg/_xfire/_zone.shp  ← 25_textures_and_assets.md
-- data/sounds]  ← 25_textures_and_assets.md
-- data/sprites]  ← 25_textures_and_assets.md
-- data/thumbnails]  ← 25_textures_and_assets.md
 
 ### Verbatim excerpts over 15 lines — 0

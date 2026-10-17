@@ -89,7 +89,7 @@ Columns: *Defined in* = where the macro is set (all in `code/lib/universal_inclu
 | `INCLUDE_CRATE_HELP_WINDOW` | `TARGET_DEBUG` | off | debug | 1 | crate help list on the Help & Options page (`code/interface/helpandoptions_windows.cpp`) | [B:DEBUG] |
 | `INCLUDE_THEBEAST` | `code/worldobject/crate.h` inside `#ifdef TARGET_DEBUG` | off | debug | 3 | crate reward "The Beast" (changes `Crate::NumCrateRewards`, so DEBUG and FULL peers disagree on reward ids) ([04 §5.30](04_crates_powerups_and_weapons.md#530-the-beast-bdebug)) | [B:DEBUG] |
 | `TRACK_MEMORY_LEAKS` | commented out inside `TARGET_DEBUG` | off | none | 4 | CRT debug-heap `new`, `leaks.txt` report on quit (§10.6) | [B:DEAD] |
-| `SPECTATOR_ONLY` | PC_HARDWARECOMPAT, ASSAULT_STRESSTEST (commented in DEBUG) | off | hwcompat, stress | 3 | `App::m_spectator = true` at start; hides Advanced Options in the lobby; game cursor early-outs | hwcompat/stress SKUs |
+| `SPECTATOR_ONLY` | PC_HARDWARECOMPAT, ASSAULT_STRESSTEST (commented in DEBUG) | off | hwcompat, stress | 3 | `App::m_spectator = true` at start (`code/app.cpp:App::App`); hides Advanced Options in the lobby; keeps the game cursor rendering when the local player has no team (`code/gamecursor.cpp`) | hwcompat/stress SKUs |
 | `PERMITTED_MAPS` | PC_PREVIEW, PC_HARDWARECOMPAT (`MAPID_MP_KOTH_2P_1`, `MAPID_MP_BENCHMARK_1`, `MAPID_MP_KOTH_4P_1`), ASSAULT_STRESSTEST (`MAPID_MP_ASSAULT_STRESS`), beta groups | off | as listed | 4 | map whitelist | SKU-specific |
 
 ### 2.2 Automated-test and benchmark switches
@@ -301,7 +301,7 @@ Up to **6** client rows (`maxClients = 6` hard-coded; slots ≥ 6 are never show
 Empty slots print "Empty" at alpha 50.
 
 **Client block** (whenever `App::m_clientToServer` exists):
-- If `g_lastProcessedSequenceId ≥ 0`: caption (size 13) "Sequence messages in queue. Ideal is 0 or 1 filled, no gaps." at `m_y + m_h − 50`, then a strip at `m_y + m_h − 25`: label "SeqID %d" (last processed id), then 10 boxes for ids last+1 … last+10, each `(m_w − 120)/10` = 48 px wide minus a 20 % gap, 20 px high, background (20,20,50), filled green (0,255,0) when `ClientToServer::IsSequenceIdInQueue(id)`, frame (255,255,255,100).
+- If `g_lastProcessedSequenceId ≥ 0`: caption (size 13) "Sequence messages in queue. Ideal is 0 or 1 filled, no gaps." at `m_y + m_h − 50`, then a strip whose label "SeqID %d" sits at `m_y + m_h − 25` (the last processed id) and whose boxes start at `m_y + m_h − 30`: 10 boxes for ids last+1 … last+10, each `(m_w − 120)/10` = 48 px wide minus a 20 % gap, 20 px high, background (20,20,50), filled green (0,255,0) when `ClientToServer::IsSequenceIdInQueue(id)`, frame (255,255,255,100).
 - Non-host clients add "Server Known     SeqID   %d" (`m_serverSequenceId`), "Server Estimated SeqID   %d" (`GetEstimatedServerSeqId()`) and a centred size-15 "Estimated Latency : %2.1 secs" (`GetEstimatedLatency()`, same broken format).
 - Right column at x + 250 from the top: "Client SEQID       %d" (`m_lastValidSequenceIdFromServer`), "Client Send … Kb/sec", "Client Receive … Kb/sec" (`m_sendRate`, `m_receiveRate`, same broken format).
 
@@ -537,20 +537,20 @@ So the intended "benchmark run" was [I]: a tester installs the hwcompat build, w
 sequenceDiagram
     participant App as App constructor
     participant DX as dxdiag.exe
-    participant Loop as Location loop
+    participant LG as Location loop
     participant BM as BenchMark
     participant FTP as ncftpput.exe
-    App->>BM: new BenchMark, RequestDXDiag
+    App->>BM: new BenchMark and RequestDXDiag
     BM->>DX: ShellExecute open dxdiag.exe /t profile dxdiag.txt
-    Loop->>BM: Begin before LocationGameLoop
-    BM->>BM: create benchmarks folder, parse dxdiag.txt, Multiwinia only, write header
+    LG->>BM: Begin before LocationGameLoop
+    BM->>BM: create benchmarks folder then parse dxdiag.txt then write header if Multiwinia
     loop every frame of the match
-        Loop->>BM: Advance
-        BM->>BM: retry Begin if not recording, else one sample per second
+        LG->>BM: Advance
+        BM->>BM: if not recording retry Begin otherwise append one sample per second
     end
-    Loop->>BM: End after LocationGameLoop, append marker line
-    Loop->>BM: Upload
-    BM->>FTP: ShellExecute hidden, 60 s timeout, upload file
+    LG->>BM: End after LocationGameLoop and append marker line
+    LG->>BM: Upload
+    BM->>FTP: hidden ShellExecute with 60 s timeout uploads the file
 ```
 
 1. **Construction** (`App::App`): `m_benchMark = new BenchMark(); RequestDXDiag()` → `ShellExecute("open", "dxdiag.exe", "/t <profile>dxdiag.txt", SW_SHOWNORMAL)` inside SEH `__try/__except` (failures swallowed); dxdiag writes its report asynchronously.
@@ -715,7 +715,7 @@ Tags: sections in `code/deform.cpp` and `code/water_reflection.cpp` exist only i
 | `AppDebugOut(fmt, …)` | `vsprintf` into a 10240-byte stack buffer (no bound check); with a redirect: lock a global `NetMutex`, open the file in append mode, write, **close** (one open/close per call); without: `OutputDebugString`. On open failure the redirect is dropped and the message goes to `OutputDebugString` (the follow-up "Failed to open %s" prints a NULL name). Compiled out only with `NO_DEBUG_OUTPUT` (not on PC) |
 | `AppDebugOutData(ptr, len)` | hex dump 16 bytes per line (`int*` overload: decimal) |
 
-Volume: 656 `AppDebugOut(` call sites across `code/`, `contrib/systemiv/lib` and `contrib/eclipse` [C grep]. Recurring content in FULL: start-up banner, the 60-s memory line (§9.4), network connection, sync and disconnect events ("CLIENT: Server informed us that client %d is out of sync at seq id %d", …), every FTP block event (`FTP_MANAGER_VERBOSE_DEBUG` is defined), sound and resource loading notes, and — while the Dr S face cheat runs — one line per frame. Because every call re-opens the file, high-frequency logging is itself a performance hazard (§12.3).
+Volume: 656 `AppDebugOut(` call lines in the `.cpp` files of `code/`, `contrib/systemiv/lib` and `contrib/eclipse` (compiled and uncompiled) [C grep]. Recurring content in FULL: start-up banner, the 60-s memory line (§9.4), network connection, sync and disconnect events ("CLIENT: Server informed us that client %d is out of sync at seq id %d", …), every FTP block event (`FTP_MANAGER_VERBOSE_DEBUG` is defined), sound and resource loading notes, and — while the Dr S face cheat runs — one line per frame. Because every call re-opens the file, high-frequency logging is itself a performance hazard (§12.3).
 
 Input-preference parse errors go to `inputprefs_debug.txt` in the profile directory only on Mac and TARGET_DEBUG; in FULL they go to `cout`, which a Windows GUI process discards [C] `code/lib/input/input.cpp:InputManager::parseInputPrefs`.
 
@@ -995,3 +995,150 @@ In FULL steps 2–3 are inert: no snapshot exists and frames are matched by `Seq
 | Stress maps "Stress Test" (+ description) and "Assault Stress Test" | level / text | `data/levels/mp_benchmark_1.txt`, `data/levels/mp_assault_stress.txt`, `data/language/english.txt` | `stress_test_01`, `stress_test_assault_01` |
 | Third-party code: exception handler (Bruce Dawson, modified by Hans Dietrich) and XCrashReport; `AVIGenerator` (Jonathan de Halleux); NcFTP's `ncftpput`; MT19937 (Matsumoto–Nishimura) | third-party licence | `code/lib/exception_handler.cpp`, `contrib/XCrashReport/XCrashReport.cpp`, `code/lib/avi_generator.cpp`, `tools/build_multiwinia_hwcompat.bat`, `contrib/systemiv/lib/math/random_number.cpp` | platform crash APIs / own implementations |
 
+## Source map
+
+| File | Role in this document |
+|---|---|
+| `code/lib/universal_include.h` | product targets and every debug / test / profiling macro (§2) |
+| `code/interface/debugmenu.h` | `DebugKeyBindings` declarations (18 entry points), `DebugMenu` class |
+| `code/interface/debugmenu.cpp` | Tools Menu, entry-point implementations (§3.2–3.3) |
+| `code/user_input.cpp` | F9 / F11 handlers, commented hot-keys, top-level-menu removal (§3.1) |
+| `data/input/input_preferences.txt` | default bindings of every debug control (§3.1) |
+| `code/camera.cpp` | debug camera sub-mode, `CameraDebugRotate`, `DebugCameraFixUp` (§3.4) |
+| `code/camera.h` | `DebugModeNever/Always/Auto` enumeration |
+| `code/renderer.cpp` | FPS overlay, profiler render brackets, screenshot/poster key, debug-renderer pass, sync banners (§3.5, §11) |
+| `code/interface/prefs_graphics_window.cpp` | dead FPS / CPU-usage display (§3.5) |
+| `code/interface/prefs_sound_window.cpp` | dead sound CPU-share display (§12.2) |
+| `code/interface/cheat_window.cpp` | the 23 cheats (§4) |
+| `code/interface/cheat_window.h` | `CheatWindow` class |
+| `code/location.cpp` | special-lighting cheat keys, `SpawnEntities` / `SpawnSpirit`, `DumpWorldToSyncLog`, entity watch list, sync-rand annotations, testbed render gate, container sizes, grid construction (§4, §10.4, §12, §13.3) |
+| `code/worldobject/mine.cpp` | refinery speed cheat; `TrackJunction::RenderLink` debug arrows |
+| `code/worldobject/rocket.cpp` | rocket fuel cheat |
+| `code/taskmanager.cpp` | `IsValidTargetArea` / `m_verifyTargetting` (cheat 11) |
+| `code/global_world.cpp` | `GlobalResearch` (cheat 15), `GenerateBuildingId`, test-harness event logging |
+| `code/worldobject/crate.cpp` | cheat crate reward semantics; `Crate::LogState` |
+| `code/worldobject/crate.h` | `INCLUDE_THEBEAST` (debug-only reward) |
+| `code/clouds.cpp` | Dr S face cheat render and per-frame log |
+| `code/lib/resource.cpp` | `FlushOpenGlState` / `RegenerateOpenGlState` (cheat 16); display-list job queue |
+| `code/interface/network_window.cpp` | F9 network statistics window (§5.1) |
+| `code/network/bandwidth.cpp` | 5-second bandwidth averages shown by the window and the benchmark |
+| `code/network/server.cpp` | sync comparison, testbed seed override / spectator registration / throttle, client timeouts, history save/load, debug datagram log |
+| `code/network/server.h` | testbed seed-override fields |
+| `code/network/clienttoserver.cpp` | sync-error handling, sync file names, IFrame upload, catch-up pacing, packet-drop key, network-quality hook, `DecodeCmd` |
+| `code/network/clienttoserver.h` | `CTOS_MAX_CONNECTION_ATTEMPTS` |
+| `code/network/iframe.cpp` | per-build sync value, snapshots, diff (§13) |
+| `code/network/syncdiff.cpp` | sync-difference markers |
+| `code/network/syncdiff.h` | `SyncDiff` record |
+| `code/network/ftp_manager.cpp` | IFrame transfer, verbose FTP logging |
+| `code/network/network_quality.cpp` | link simulator (§13.5) |
+| `code/interface/profilewindow.cpp` | Profiler window (§9.2) |
+| `contrib/systemiv/lib/profiler.h` | `START_PROFILE` macros, `Profiler`, `ProfiledElement` |
+| `contrib/systemiv/lib/profiler.cpp` | profiler implementation (§9.1) |
+| `code/main.cpp` | main loops, `UpdateAdvanceTime`, debug-log redirect, memory report, test-harness / benchmark / attract hooks, crash wrapper, command-line switches |
+| `code/startsequence.cpp` | additional `Profiler::Advance` caller |
+| `code/gametimer.h` | `SERVER_ADVANCE_PERIOD` |
+| `code/globals.h` | `NUM_SLICES_PER_FRAME`, `IAMALIVE_PERIOD` |
+| `code/interface/grabber_window.cpp` | AVI capture window (§5.4) |
+| `code/lib/avi_generator.cpp` | AVI writer (never fed) |
+| `code/lib/hi_res_time.cpp` | fake-time mode |
+| `code/interface/gesture_window.cpp` | gesture editor (§5.5) |
+| `code/gesture_demo_win32.cpp` | gesture demo recorder thread |
+| `code/interface/soundstats_window.cpp` | Sound Stats tool (pointer to 27) |
+| `code/interface/soundeditor_window.cpp` | Sound Editor tool (pointer to 27) |
+| `code/interface/sound_profile_window.cpp` | Sound Profile tool (pointer to 27) |
+| `code/effect_processor.cpp` | Pokey envelope processor (`SOUND_EDITOR`) |
+| `code/interface/helpandoptions_windows.cpp` | debug-only crate help entry (§5.7) |
+| `code/UI/GameMenuWindow.cpp` | testbed driver, game table, config reader, lobby network-status overlay, fake servers (§5.6, §6) |
+| `code/UI/TestBedButtons.h` | testbed start buttons |
+| `code/UI/GameServerButton.h` | testbed server-full bypass |
+| `code/app.h` | testbed enumerations and state, `m_testHarness`, `m_aviGenerator` |
+| `code/app.cpp` | testbed accessors, `TestBedLogWrite`, profile directory, benchmark construction, thread affinity, `RecordDemo` save |
+| `code/location_input.cpp` | testbed in-match automation, team-control gating by open windows |
+| `code/multiwinia.cpp` | testbed blueprint file switch |
+| `data/multiwinia-testbed.txt` | testbed game-option blueprints |
+| `data/multiwinia.txt` | normal game-option blueprints (diff base) |
+| `code/explosion.cpp` | testbed render gate; explosion cost |
+| `code/particle_system.cpp` | testbed render gate; particle pool and advance (H6) |
+| `code/sound/soundsystem.cpp` | testbed mute; sound profilers |
+| `code/testharness.cpp` | campaign test harness (§7.1) |
+| `code/testharness.h` | `TestHarness` class |
+| `code/script.cpp` | script test and error routing (§7.2) |
+| `code/benchmark.cpp` | benchmark recorder (§8) |
+| `code/benchmark.h` | `BenchMark` class |
+| `data/levels/mp_benchmark_1.txt` | stress-test map |
+| `data/levels/mp_assault_stress.txt` | assault stress map |
+| `data/language/english.txt` | stress-map names, testbed captions |
+| `code/mapcrc.h` | `MAPID_MP_BENCHMARK_1` |
+| `tools/build_multiwinia_hwcompat.bat` | hwcompat packaging (copies `ncftpput.exe`) |
+| `tools/multiwinia_inclusions_hwcompat.txt` | hwcompat data whitelist incl. the stress map |
+| `contrib/systemiv/lib/debug_utils.cpp` | `AppDebugOut`, asserts, black box, `HashDouble` (§10.1–10.2) |
+| `contrib/systemiv/lib/debug_utils.h` | assert macros |
+| `code/lib/exception_handler.cpp` | SEH crash report and minidump (§10.3) |
+| `contrib/XCrashReport/CrashFileNames.h` | crash file and support-tool names |
+| `contrib/XCrashReport/EmailDefines.h` | crash-support contact (IP item) |
+| `contrib/XCrashReport/RegistryDefines.h` | registry key (IP item) |
+| `contrib/XCrashReport/XCrashReport.cpp` | support tool source (pointer to 31) |
+| `tools/multiwiniasupport/MultiwiniaSupport.exe` | shipped support tool |
+| `contrib/systemiv/lib/math/random_number.h` | `TRACK_SYNC_RAND` macro switch |
+| `contrib/systemiv/lib/math/random_number.cpp` | sync-RNG log (§13.3) |
+| `code/lib/vector3.h` | `FRAND` / `SFRAND` tracked variants |
+| `code/lib/vector3.cpp` | `RandomFloat` / `SymmetricRandomFloat` wrappers |
+| `code/team.cpp` | entity advance annotations, `RenderSyncErrors`, Darwinian render loop (H8) |
+| `code/unit.cpp` | watch-list hook, per-type profile node |
+| `code/worldobject/entity.cpp` | `TrackEntity` / `UntrackEntity` hooks, `Entity::LogState`, `s_entityPopulation` |
+| `code/worldobject/worldobject.cpp` | `WorldObject::LogState` |
+| `code/worldobject/building.cpp` | `Building::LogState`, hit-check and editor debug renders |
+| `code/worldobject/darwinian.cpp` | `Darwinian::LogState`, `BoxKite::LogState`, search timers and profile nodes (H2) |
+| `code/worldobject/officer.cpp` | `Officer::LogState` |
+| `code/worldobject/tree.cpp` | `Tree::LogState`, tree regeneration and hit-check render |
+| `code/worldobject/spirit.cpp` | `#undef TRACK_SYNC_RAND`; spirit cost (H4) |
+| `code/worldobject/snow.cpp` | `#undef TRACK_SYNC_RAND` |
+| `contrib/systemiv/lib/memory_leak.h` | leak-tracking `new` macro |
+| `contrib/systemiv/lib/memory_leak.cpp` | leak report (§10.6) |
+| `contrib/systemiv/lib/string_utils.h` | tracked `newStr` |
+| `code/lib/debug_render.cpp` | debug primitives (§11.1) |
+| `code/lib/debug_render.h` | debug primitive declarations |
+| `code/lib/persisting_debug_render.cpp` | `g_debugRenderer` |
+| `code/lib/persisting_debug_render.h` | `PersistingDebugRenderer` |
+| `code/lib/sphere_renderer.cpp` | icosphere used by debug spheres |
+| `code/lib/shape.cpp` | shape hit-check / marker renders, display lists |
+| `code/worldobject/ai.cpp` | `RenderAIInfo` overlays, `AISpawnPoint` overlay, AI placement loops (H14) |
+| `code/worldobject/aiobjective.cpp` | editor-only AI objective overlays |
+| `code/worldobject/switch.cpp` | `FenceSwitch::RenderLink` |
+| `code/location_editor.cpp` | only caller of hit-check / link renders |
+| `code/routing_system.cpp` | `RenderNodes` (call commented out) |
+| `code/entity_grid.cpp` | grid queries, `DEBUG_ENTITY_GRID` |
+| `code/entity_grid.h` | grid and cache classes |
+| `code/lib/input/input.cpp` | `inputprefs_debug.txt` |
+| `code/lib/language_table.cpp` | `TestAgainstEnglish` (`language_errors.txt`) |
+| `code/landscape_renderer.cpp` | landscape render modes (H10) |
+| `code/water.cpp` | dynamic water cost and GL-only profile wrapper (H11) |
+| `code/lib/opengl_directx.cpp` | inert `FRAMES_PER_SECOND_COUNTER` [B:D3D] |
+| `code/lib/poster_maker.cpp` | tiled poster screenshots |
+| `code/worldobject/virii.cpp` | Virii profile nodes (H13) |
+| `code/worldobject/tank.cpp` | commented debug arrows |
+| `code/worldobject/armour.cpp` | commented debug arrows |
+| `code/worldobject/airstrike.cpp` | commented debug arrows |
+| `code/worldobject/anthill.cpp` | commented debug text |
+| `code/taskmanager_interface_icons.cpp` | per-frame bitmap/texture sections (legacy) |
+| `code/attract.cpp` | attract mode ([B:DEAD]) |
+| `docs/cpu cycles.txt` | cross-checked: gameplay design, no performance data (§12.1) |
+| `docs/IntroversionEULA.txt` | minimum hardware claim |
+| `docs/changes.txt` | Darwinia performance notes (combat, spirits, lasers, landscape modes) |
+| `docs/betachanges.txt` | population lowered for performance |
+| `docs/multiwiniachanges-beta.txt` | Multiwinia beta frame-rate issue |
+| `docs/multiwiniareleasenotes-beta.txt` | beta benchmark upload, sync-tracking note |
+| `docs/newdemo.txt` | particle-density lag |
+| `docs/todo.txt` | memory / D3D resource leaks |
+| `docs/Network.txt` | 25 FPS claim |
+| `docs/NetworkThreads.txt` | send-thread claim |
+| `docs/multiwinia_todo.txt` | planned debug tools |
+| `docs/detailed schedule.txt` | untranslated debug windows |
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] not in the project**: `code/lib/debug_logging.h` / `code/lib/debug_logging.cpp` (`DarwiniaLogBuffer` / `DarwiniaLogMsg`, a 100-message ring buffer), `code/lib/debug_fog_logging.cpp` (`FOG_LOGGING`), `code/gesture_demo_sdl.cpp`, `code/unicode/sound_library_3d.cpp`, `contrib/systemiv/interface/soundsystem/*` (SystemIV copies of the sound tools), `contrib/systemiv/contrib/XCrashReport/client/exception_handler.cpp`, `contrib/systemiv/lib/language_table.cpp` (`TRACK_LANGUAGEPHRASE_ERRORS`), the SDL window managers' `DUMP_DEBUG_LOG` redirect (`code/lib/window_manager_sdl.cpp`).
+- **[B:DEAD] macro never defined**: testbed (§6), test harness and script test (§7), benchmark recorder (§8), attract mode (`code/attract.cpp`, [09](09_meta_systems.md)), network-quality simulator (§13.5), memory-leak tracker (§10.6), `FAKE_SERVERS` (100 random browser entries), `CHECK_IFRAME_SERIALISATION`, `DEBUG_ENTITY_GRID`, `SOUNDSYSTEM_VERIFY`, `VERBOSE_DEBUG`, `AUDIO_DEBUGGING` (Xbox 360 XAudio), `RENDER_CURSOR_3D`, `PROFILER_ENABLED`, gesture editor (`GESTURE_EDITOR` needs `USE_SEPULVEDA_HELP_TUTORIAL`).
+- **[B:DEBUG]**: cheat window and its hooks (§4), sound tools ([27 §13](27_audio_engine.md#13-profiles-statistics-debug-and-editor-tooling)), Grabber / `AVIGenerator` (never fed), `TRACK_SYNC_RAND`, full IFrame snapshots (also beta groups), lobby network-status overlay, crate help window, The Beast reward, packet-drop key, duplicate-key check bypass, working-directory profile.
+- **Compiled into FULL but unreachable**: the Tools Menu, the Profiler window and `g_profiler` (186 dormant sites), the FPS overlay, `DebugKeyBindings::ReallyQuitButton` / `ToggleFullscreenButton` on Win32, the three unregistered option buttons of the debug menu, `RenderCPUUsage` in the graphics options, editor-only debug renders (§11.2), `CheatWindow` (empty body).
+- **[B:LEGACY]**: cheats 12–14 (Darwinia global world), the campaign speed cheats (refinery, rocket fuel), `DebugCameraFixUp` (global-world cameras, `_DEBUG` only), the test harness's campaign content.

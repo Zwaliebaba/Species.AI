@@ -1,7 +1,6 @@
 {
  "a": [
   "code/keygen.h",
-  "code/lib/plane.cpp",
   "code/mapfile.h",
   "code/network/generic.h",
   "code/network/servertoclient.cpp",
@@ -9,11 +8,6 @@
  ],
  "b": [],
  "c": [
-  "format without grammar: betatesters",
-  "format without grammar: preferences",
-  "format without grammar: input-bindings",
-  "format without grammar: keyboard-layout",
-  "format without grammar: locales",
   "format without grammar: language",
   "format without grammar: script",
   "format without grammar: purity-misc",
@@ -52,49 +46,18 @@
   "code/data": [
    "22_determinism_and_networking.md"
   ],
-  "data/sepulveda]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/icons]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/name?": [
-   "25_textures_and_assets.md"
-  ],
-  "data/mwsounds]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/sounds]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/sepulveda/sepulveda1\u20135.bmp": [
-   "25_textures_and_assets.md"
-  ],
-  "data/n": [
-   "25_textures_and_assets.md",
+  "data/scripts/name": [
    "29_data_formats_reference.md"
   ],
-  "data/shapes/carrybillboard_pcg/_tpcg/_xfire/_zone.shp": [
-   "25_textures_and_assets.md"
-  ],
-  "data/thumbnails]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/sprites]": [
-   "25_textures_and_assets.md"
-  ],
-  "data/name": [
-   "25_textures_and_assets.md"
-  ],
-  "data/scripts/name": [
+  "data/n": [
    "29_data_formats_reference.md"
   ]
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 5553,
-  "[I]": 686,
-  "[U]": 142
+  "[C]": 5717,
+  "[I]": 704,
+  "[U]": 144
  },
  "classes": {
   "AI": [

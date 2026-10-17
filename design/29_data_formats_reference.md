@@ -1136,3 +1136,267 @@ SANITISED   = upper-case file name without ".txt", with '.', '-' and ' ' replace
 **Minimal valid example.** A 2-byte file `AB` hashes the 3 bytes `41 42 FF` with init 0, no final XOR; the header line would be `#define   MAPID_EXAMPLE` + padding + ` 0x<crc>`.
 
 **Discrepancies.** Peers start a match by map *file name* only; no CRC is exchanged before the simulation starts, so a locally modified map desyncs instead of being rejected [I] ([22](22_determinism_and_networking.md)).
+
+---
+
+## 5 Configuration, input and credit lists
+
+<a id="fmt-preferences"></a>
+### 5.1 Preferences (`preferences.txt`, `default_preferences.txt`)
+
+**Purpose.** Typed key/value user settings [C] `code/lib/preferences.cpp:PrefsManager` (`g_prefsManager`), `PrefsItem::PrefsItem(UnicodeString)`, `PrefsManager::Load`, `AddLine`, `IsLineEmpty`, `CreateDefaultValues`, `Save`, `SaveItem`. The key register (≈ 75 keys with call-site defaults) is in [09](09_meta_systems.md) (`_work/drafts/P17b_prefs_accesses.csv`, `_work/drafts/P14_platform_lib_pref_keys.csv`).
+
+**Files**
+
+| File | Role | Read by | Written by | Encoding |
+|---|---|---|---|---|
+| `<P>preferences.txt` (`<P>` = `%LOCALAPPDATA%\Introversion\Multiwinia\`, or the working directory with `--NoProfile`; [31 §5](31_platform_build_and_tools.md)) | user settings | `PrefsManager::Load` (UTF-16 if BOM, else bytes) | `PrefsManager::Save` (13 call sites) | written **UTF-16LE with BOM**, CRLF (`UnicodeTextFileWriter`, `_O_U16TEXT`) [C] `code/unicode/unicode_text_file_writer.cpp` |
+| `data/default_preferences.txt` | overrides of the hard-coded first-run defaults | `CreateDefaultValues` via `Resource::GetTextReader` | never | ASCII |
+| `<P>user_input_preferences.txt` | user key bindings — same writer format, different reader ([fmt-input-bindings](#fmt-input-bindings)) | `InputManager::parseInputPrefs` | a second `PrefsManager` in `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp` | UTF-16LE with BOM |
+
+Life cycle [C] `code/app.cpp:App::App`, `PrefsManager::PrefsManager`, `PrefsManager::Load`: `App::App` parses `init.dat`, then constructs `PrefsManager(GetPreferencesPath())`. `Load` clears, opens the file (UTF-16, else 8-bit); if it cannot be opened → `CreateDefaultValues()`. Otherwise each line's `GetRestOfUnicodeLine()` goes to `AddLine`, except that the **first line** is validated: every character before the first blank or `=` must lie in `L'A'…L'z'` (code points 65–122; digits fail) — if not, nothing is added, defaults are recreated and saved immediately. Then, unconditionally, `SetInt("MultiwiniaControlMethod", 1)` ("Hack by Chris to disable old-style control"); the constructor adds `ControlMethod = 1` if `GetInt("ControlMethod")` returns −1. `App::SetPreferenceOverrides()` runs right after construction ([09](09_meta_systems.md)).
+
+**Grammar (reader)** — each physical line is cleaned by the tokeniser (§3.1: `#` comment, CR/LF), reduced by `GetRestOfUnicodeLine()` (leading blank/`:`/`,` stripped), then parsed by `PrefsItem::PrefsItem`:
+
+```ebnf
+prefs_file = { line } ;
+line       = empty_line | item_line ;
+empty_line = text with no alphanumeric character before an optional '#' ;      (* IsLineEmpty *)
+item_line  = { non_alnum } , KEY , SEPCHAR , { WS | '=' } , VALUE ;
+KEY        = 1*ALNUM ;                (* iswalnum; '_' or '.' END the key; case-SENSITIVE (std::map ordered by wcscmp) *)
+SEPCHAR    = any one character ;      (* overwritten by NUL and skipped unconditionally - normally ' ' or '=' *)
+VALUE      = rest of the line, verbatim (trailing blanks kept; never contains '#') ;
+```
+
+**Value typing** [C] `PrefsItem::PrefsItem`:
+
+| Condition on `VALUE` | Stored type | Conversion |
+|---|---|---|
+| first char `-` or a digit, no `.` | `TypeInt` | `wistringstream >> int` (leading number; `"1024x768"` → 1024; failure → 0) |
+| first char `-` or a digit, exactly one `.` | `TypeFloat` | `wistringstream >> float` |
+| first char `-` or a digit, two or more `.` | `TypeString` | e.g. `127.0.0.1` |
+| anything else (incl. empty) | `TypeString` | verbatim |
+
+**Field table**
+
+| Element | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| key | ALNUM run | – | case-sensitive | item identity | `PrefsItem::PrefsItem` |
+| value | int / float / string by the rule above | caller's default at each `Get*` site when absent | – | lookup is **type-strict**: `GetInt` on a float or string item, `GetFloat` on an int item (e.g. `DarwinianScaleFactor = 2`), `GetString` on a number → caller's default | `PrefsManager::GetInt`, `GetFloat`, `GetString`, `GetUnicodeString` |
+| duplicate key | – | – | – | while loading a file: **first occurrence wins** (`"Duplicate preference item %s. Ignoring"`); during the `default_preferences.txt` pass (`s_overwrite = true`) the new value replaces the old | `PrefsManager::AddLine` |
+
+**First-run defaults** [C] `PrefsManager::CreateDefaultValues` (order of `AddLine` calls; blank `"\n"` lines omitted): `ServerAddress = 127.0.0.1`, `BypassNetwork = 0`, `ServerPort = 4000`, `TextLanguage = unknown`, `TextSpeed = 15`, `HelpEnabled = 1`, `SoundLibrary = dsound`, `SoundMixFreq = 22050` (44100 Mac), `SoundMasterVolume = 255`, `SoundChannels = 32` (16 on slow Macs), `SoundHW3D = 0`, `SoundSwapStereo = 0`, `SoundMemoryUsage = 1`, `SoundBufferSize = 512`, `SoundDSP = 0`, `RenderLandscapeDetail = 1`, `RenderWaterDetail = 1`, `RenderBuildingDetail = 1`, `RenderEntityDetail = 1`, `RenderCloudDetail = 1`, `RenderPixelShader = 1`, `DarwinianScaleFactor = 2.00`, `ControlMouseButtons = 3` (1 Mac), `ControlMethod = 1`, `MultiwiniaControlMethod = 1`, (Linux/Mac only: `RenderLandscapeMode = 2`, `ManuallyScaleTextures = 0`), `BootLoader = firsttime`, `UserProfile = AccessAllAreas`, `ScreenOverscan = 0`, `RenderSpecialLighting = 0`, `Difficulty = 1` (`OTHER_DIFFICULTY`). `DEMOBUILD` variants (`StartMap`, `UserProfile = DemoUser`) are [B:DEAD]. Then each line of resource `default_preferences.txt` is added with `s_overwrite = true`. Shipped `data/default_preferences.txt` (17 lines) sets: `NetworkServerPort = 4000`, `NetworkClientPort = 4001`, `ServerAddress = 127.0.0.1`, `BypassNetwork = 0`, `ServerPort = 4000`, `TextSpeed = 15`, `ControlMethod = 1`, `WaitVerticalRetrace = 0`, `DarwinianScaleFactor = 2.0`, `MultiwiniaControlMethod = 1`, `#TextLanguage = english` (a comment) [C] file.
+
+**Writer** [C] `PrefsManager::Save`, `SaveItem`:
+
+1. Clear every item's `m_hasBeenWritten`; open `UnicodeTextFileWriter(m_filename, encrypt = false, assertOnFail = false)` (silently return if it cannot be opened); BOM U+FEFF.
+2. For each remembered template line (`m_fileText`, load order): an empty line is written verbatim **without adding a newline** — blank lines and comments read from disk were reduced to empty strings, so they vanish; only the literal `"\n"` lines from `CreateDefaultValues` survive. For an item line the key is re-extracted by scanning to the first `=`: it starts at the first alphanumeric character and ends at the **last non-alphanumeric character before `=`**; the current item is written once as `KEY = VALUE\n` with `%ls = %d`, `%ls = %.2f` or `%ls = %ls`.
+3. Items not yet written are appended in `std::map` (`wcscmp`) order.
+
+**Verification.** Re-read for this document: `PrefsItem::PrefsItem(UnicodeString)`, `PrefsManager::Load`, `AddLine`, `IsLineEmpty`, `Save`, `SaveItem`. Data: `data/default_preferences.txt` (17 lines, 10 items, 1 commented) parses to the items listed; no shipped `preferences.txt` exists (runtime file).
+
+**Minimal valid example** (shown as text; the game writes UTF-16LE):
+
+```text
+TextLanguage = german
+ScreenWidth = 1600
+ScreenHeight = 900
+SoundMasterVolume = 200
+DarwinianScaleFactor = 1.50
+```
+
+**Discrepancies and hazards** [C]:
+
+* `ServerAddress`, `ServerPort`, `BypassNetwork` are written by both default sources but never read (live ports are `NetworkServerPort`/`NetworkClientPort`, `code/network/network_defines.h`).
+* `WaitVerticalRetrace` defaults to **1** in `code/renderer.cpp` but `default_preferences.txt` sets 0; because `PrefsManager` is constructed before `main.dat` is mounted, a packaged install does not find `default_preferences.txt` unless it is loose, so first-run defaults come only from code [C structure; 31 §8.9] — whether any release shipped it loose is **29-U2**.
+* Writer hazards: a template line `Key=1` (nothing between key and `=`) has no detectable key end and is copied verbatim **without a newline**, gluing it to the next line (the next key is lost on the following load) and the item is appended again at the end; `Key  = 1` (two blanks) yields the key `"Key "` and inserts a bogus empty item; a non-blank template line without `=` makes the key scan run past the end of the string; floats are rounded to 2 decimals; values pass through `vswprintf` as part of the format string, so `%` in a value is interpreted. Resolved: P14 and X1a each described part of the `Key=1` case; both effects occur.
+* Reader edge cases: a key that runs to the end of the line makes the value pointer start one past the terminator (out-of-bounds read); the value-skip loop's `value == L'\0'` test compares a pointer, not a character (harmless).
+* In the `s_overwrite` pass an existing key's template line is appended a second time (the second copy is skipped on save because the item is already written).
+
+<a id="fmt-input-bindings"></a>
+### 5.2 Input binding files
+
+**Purpose.** Map the 164 game controls to keyboard, mouse and XInput inputs through a chain of parser drivers [C] `code/lib/input/input.cpp:InputManager::parseInputPrefs`, `parseInputSpecString`, `code/lib/input/inputspec.cpp:InputSpecTokens`, `code/main.cpp:InitialiseInputManager`, `ReadInputPreferences`, each `code/lib/input/inputdriver_*.cpp:parseInputSpecification`. Run-time meaning of every driver and condition, and the full default binding table: [06](06_player_control_and_input.md).
+
+**Files and layering** [C] `code/main.cpp:ReadInputPreferences`, `code/lib/input/file_paths.cpp`:
+
+| Layer | Path | Reader | `replace` | Selection |
+|---|---|---|---|---|
+| 1 system | `data/input/input_preferences.txt` (Win32); `input_preferences_mac.txt` (Mac); `input_preferences_darwinia.txt` (only if pref `MultiwiniaControlMethod` == 0, which `PrefsManager::Load` forces to 1 → unreachable) | `Resource::GetTextReader` | false (append) | `InputPrefs::GetSystemPrefsPath` |
+| 2 keyboard layout | `data/input/keyboards/<layout>.txt` ([fmt-keyboard-layout](#fmt-keyboard-layout)) | `Resource::GetTextReader` (missing → skipped) | true | `InputPrefs::GetKeyboardLayout` |
+| 3 user | `<P>user_input_preferences.txt` | `UnicodeTextFileReader`, else `TextFileReader` | true | `InputPrefs::GetUserPrefsPath` |
+
+`replace = true` replaces the control's primary (first) binding instead of appending [C] `ControlBindings::bind`.
+
+**Encoding.** Shipped files ASCII, CRLF; the user file is UTF-16LE with BOM (written by `PrefsManager`).
+
+**Line grammar** [C] `InputManager::parseInputPrefs`:
+
+```ebnf
+binding_file = { line } ;
+line         = blank
+             | CONTROL '=' SPEC EOL            (* binding line *)
+             | CONTROL '~' ICONPATH EOL        (* icon line *)
+             | other EOL ;                     (* "Assignment not found." - parsing continues *)
+CONTROL      = control name, case-insensitive (164 names of code/lib/input/control_types.inc) ;
+(* '=' and '~' must each be the whole SECOND token (default separators): "Ctl=key a" is rejected *)
+SPEC         = REST, re-split on WHITESPACE ONLY (istringstream >> string): ':' and ',' are ordinary characters here ;
+ICONPATH     = REST with a trailing LF and/or CR removed ;   (* stored by ControlBindings::setIcon; last wins *)
+```
+
+An unknown `CONTROL` ("Control ID not found."), an unparsable spec ("Parse failed - <err> (state = n)") or a refused bind ("Binding failed.") only print a message to `cout` (to `<P>inputprefs_debug.txt` on Mac or `TARGET_DEBUG`) — parsing never aborts [C].
+
+**Spec grammar (driver chain).** The token list is offered to the drivers in registration order; the first that returns a success state wins, otherwise the error of the driver that got furthest is reported. Registration order [C] `InitialiseInputManager`: `Conjoin`, `Chord`, `Invert`, `Idle`, `W32` (keyboard/mouse), `XInput` (only when `XINPUT1_3.dll` loads), `Prefs`, `Value`, `Alias`. Hence `&&` binds loosest, then `++`, then `not`.
+
+```ebnf
+spec    = conj ;
+conj    = part , { '&&' , part } ;                    (* this driver needs >= 1 '&&'; at most one part may be non-BOOL *)
+part    = chord | unary ;                             (* each part is re-parsed by the whole chain *)
+chord   = leafnc , '++' , leafnc , { '++' , leafnc } ;   (* expands to N conjunctions: part i "down", others "pressed"; BOOL only *)
+unary   = ( 'not' | '!' ) , unary | leaf ;            (* 'not' case-insensitive; operand must be BOOL *)
+leaf    = 'key' KEYNAME BCOND
+        | 'mouse' MBUTTON BCOND
+        | 'mouse' ( 'axes' | 'wheel' ) ACOND
+        | 'XInput' XBUTTON ( BCOND | 'repeat' )
+        | 'XInput' XANALOG ACOND [ 'with' 'sensitivity' N ]   (* N integer 1..200, default 100 *)
+        | 'XInput' XDIR ( BCOND | 'repeat' )                  (* sensitivity fixed at 100 *)
+        | 'idle' ( 'atleast' | 'reaches' ) SECONDS             (* 'idle' case-insensitive; SECONDS integer > 0 *)
+        | 'idle' 'no' 'longer'                                 (* 'longer' case-insensitive *)
+        | 'pref' [ 'not' | '!' ] PREFKEY | 'pref' '!'PREFKEY   (* key must EXIST in g_prefsManager at parse time *)
+        | 'value' ( 'Pecan' | 'Hummingbird' )
+        | 'alias' CONTROL ;
+leafnc  = leaf without its trailing condition word ;           (* the chord driver appends it *)
+BCOND   = 'down' | 'up' | 'pressed' ;
+ACOND   = 'release' | 'position' | 'move' | 'zero' | 'read' ;
+MBUTTON = 'left' | 'right' | 'middle' | 'any' ;
+XBUTTON = 'leftbumper' | 'rightbumper' | 'dpadleft' | 'dpadright' | 'dpadup' | 'dpaddown' | 'a' | 'b' | 'x' | 'y'
+        | 'start' | 'back' | 'plug' | 'lefttriggerb' | 'righttriggerb'          (* BOOL *)
+        | 'leftthumbstick' | 'rightthumbstick' ;                                 (* 2D|BOOL: click with BCOND *)
+XANALOG = 'lefttrigger' | 'righttrigger'                                         (* 1D *)
+        | 'leftthumbstick' | 'rightthumbstick' ;                                 (* 2D|BOOL: axes with ACOND *)
+XDIR    = 'leftthumbstickleft' | 'leftthumbstickright' | 'leftthumbstickup' | 'leftthumbstickdown'
+        | 'rightthumbstickleft' | 'rightthumbstickright' | 'rightthumbstickup' | 'rightthumbstickdown' ;
+KEYNAME = case-insensitive entry of getKeyNames()[0 .. KEY_TILDE = 223] or 'any' (KEY_ANY = 255) ;
+```
+
+`KEYNAME` values [C] `code/lib/input/keynames.cpp` (via `W32InputDriver::getKeyId`): `BACKSPACE`, `TAB`, `ENTER`, `SHIFT`, `CONTROL`, `ALT`, `PAUSE`, `CAPSLOCK`, `ESC`, `SPACE`, `PGUP`, `PGDN`, `END`, `HOME`, `LEFT`, `UP`, `RIGHT`, `DOWN`, `INSERT`, `DEL`, `0`…`9`, `A`…`Z`, `0_PAD`…`9_PAD`, `ASTERISK`, `PLUS_PAD`, `MINUS_PAD`, `DEL_PAD`, `SLASH_PAD`, `F1`…`F12`, `NUMLOCK`, `SCRLOCK`, `COLON`, `EQUALS`, `COMMA`, `MINUS`, `STOP`, `SLASH`, `AT`, `OPENBRACE`, `BACKSLASH`, `CLOSEBRACE`, `QUOTE`, `TILDE`, plus `Unknown` (index 109); key names containing a blank (`unknown 0` …) cannot be written because specs are whitespace-split; `META` (index 224 > `KEY_TILDE`) is unreachable.
+
+**Field table**
+
+| Element | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| driver words `key`, `mouse`, `XInput`, `pref`, `value`, `alias`, mouse/XInput control names, condition words, `with`, `sensitivity`, `atleast`, `reaches`, `no` | word (cs, `std::string ==`) | – | as listed | – | `W32InputDriver::acceptDriver`, `XInputDriver::acceptDriver`, `XInputDriver::getControlID`, `IdleInputDriver::acceptDriver` |
+| `idle`, `not`, `longer`, key names, control names | word (case-insensitive) | – | – | – | `IdleInputDriver::getConditionID`, `W32InputDriver::getKeyId`, `ControlBindings::getControlID` |
+| condition word | word | **unknown or type-mismatched → `COND_DOWN` with spec type 0** (the scan stops on the NULL terminator, index 8 < `NumInputConditions` 10) | 8 table entries: `down`, `up`, `pressed` (BOOL); `release`, `position`, `move`, `zero`, `read` (ANALOG) | trigger condition | `code/lib/input/inputdriver.cpp:InputDriver::getDefaultConditionID` |
+| `with sensitivity N` | integer | 100 | 1…200 | analogue scaling | `XInputDriver::parseInputSpecification` |
+| `SECONDS` | integer | – | > 0 | idle threshold | `IdleInputDriver::parseInputSpecification` |
+| parser state | enum `InputParserState` | – | `STATE_ERROR`, `STATE_WANT_DRIVER`, `STATE_WANT_CONTROL`, `STATE_WANT_COND`, `STATE_WANT_MODIFIER`, `STATE_WANT_OPTIONAL`, `STATE_BAD_EXTRA`, then success states `STATE_DONE`, `STATE_OVERSTEP`, `STATE_CONJ_ERROR` (`PARSE_SUCCESS(state)`) | a surplus token yields `STATE_OVERSTEP` for single-word drivers (`alias`, `pref`, `value`) | `code/lib/input/inputdriver.h` |
+
+**Verification.** Re-read for this document: `InputManager::parseInputPrefs`, the driver registration in `InitialiseInputManager`, `InputDriver::getDefaultConditionID` and its condition table. Survey `X1a_input_lines.py` re-run over the 5 shipped files:
+
+| File | binding lines | icon lines | rejected | spec heads |
+|---|---|---|---|---|
+| `data/input/input_preferences.txt` | 224 | 18 | 2: `UnitPrimaryFireDirected ~ …` (unknown control), `TaskManagerSwitchTask INPUT_TYPE_BOOL` (no `=`) | `key` 94, `XInput` 88, `mouse` 32, `SpaceNav` 4 (no such driver → parse failed), conjunctions 4, chord 1, `idle` 1 |
+| `data/input/input_preferences_darwinia.txt` | 220 | 18 | same 2 | `key` 97, `XInput` 87, `mouse` 30, conjunctions 4, chord 1, `idle` 1 |
+| `data/input/input_preferences_mac.txt` | 231 | 18 | same 2 | `key` 94, `XInput` 88, `mouse` 32, `SpaceNav` 4, conjunctions 11, chord 1, `idle` 1 |
+| `data/input/keyboards/de_DE.txt` | 8 | 0 | 0 | `key` 8 |
+| `data/input/keyboards/fr_FR.txt` | 8 | 0 | 0 | `key` 8 |
+
+`_work/scripts/P10_bindings.py` (P10) independently re-implements the spec parser and decodes every line (`_work/drafts/P10_input_camera_preflines.csv`). Shipped specs `XInput lefttrigger repeat` and `XInput righttrigger repeat` (analogue + `repeat`) parse as "down" through the fallback above [C].
+
+**User file** [C] `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp`: written by a dedicated `PrefsManager(GetUserPrefsPath())` that is `Clear()`ed, filled with `SetString(<control>, <binding string>)` for each user-rebindable control (plus the derived `IconsTaskManagerHide` = the Display binding with `down` → `up`) and `Save()`d — §5.1 writer format, one `Control = spec` line per control in `wcscmp` order; `=` is a separate token as `parseInputPrefs` requires. Because the narrow mirror of a UTF-16 disk file is not comment/CR-stripped (§3.1), `parseInputPrefs` trims a trailing LF/CR from icon paths explicitly; specs are immune (whitespace split). The constructor's `Load()` of a not-yet-existing file runs `CreateDefaultValues()` before `Clear()` discards them [C].
+
+**Minimal valid example**
+
+```text
+# pan with WASD, select with left mouse, pad A confirms
+CameraForwards  = key w pressed
+CameraLeft      = key a pressed
+CameraBackwards = key s pressed
+CameraRight     = key d pressed
+UnitSelect      = mouse left down
+MenuActivate    = XInput a down
+MenuActivate    ~ icons/button_a.bmp
+```
+
+**Discrepancies** (docs-vs-code, see the table at the end): `docs/input_preferences_syntax.txt` omits `~` icon lines, the `value` and `alias` drivers, `repeat`, `key any`/`mouse any`, the XInput direction controls and `lefttriggerb`/`righttriggerb`, and claims that a missing preference makes `pref X` false, whereas the code **rejects the binding at parse time** (`PrefsInputDriver::parseInputSpecification` returns `STATE_WANT_CONTROL`) [C].
+
+<a id="fmt-keyboard-layout"></a>
+### 5.3 Keyboard-layout override files
+
+**Purpose.** Re-bind layout-dependent keys (camera movement) for non-QWERTY keyboards [C] `code/main.cpp:ReadInputPreferences`, `code/lib/input/file_paths.cpp:InputPrefs::GetKeyboardLayout`, `InputPrefs::IsKeyboardFrenchLocale`.
+
+**Files.** `data/input/keyboards/de_DE.txt` (QWERTZ, e.g. `CameraZoom = key y pressed`), `data/input/keyboards/fr_FR.txt` (AZERTY: Left `q`, Up `a`, Forwards `z`, Zoom `w`); 8 camera bindings each. `<layout>` = pref `KeyboardLayout`, default = the [fmt-locales](#fmt-locales) entry for `GetKeyboardLayout(0) & 0xFFFF` (Win32 LANGID); empty on Mac. A layout without a file (e.g. `en_US`) is silently skipped [C].
+
+**Encoding / grammar.** Exactly the [fmt-input-bindings](#fmt-input-bindings) line grammar, applied with `replace = true`.
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| binding line | as §5.2 | – | – | replaces the control's primary binding | `InputManager::parseInputPrefs` |
+| file name | `<layout>.txt` | – | must match a `LAYOUTNAME` | `IsKeyboardFrenchLocale()` (layout == `fr_FR`) also switches a help image ([fmt-mwhelp](#fmt-mwhelp)) | `InputPrefs::IsKeyboardFrenchLocale` |
+
+**Verification.** `X1a_input_lines.py`: both files 8 binding lines, 1 comment, 0 rejected.
+
+**Minimal valid example** (`keyboards/xx_XX.txt`)
+
+```text
+# Dvorak-style camera keys
+CameraForwards  = key comma pressed
+CameraBackwards = key o pressed
+```
+
+**Discrepancies.** The layout path is cached on first use; "Restore defaults" in Options does not re-apply this layer ([06](06_player_control_and_input.md)) [C].
+
+<a id="fmt-locales"></a>
+### 5.4 `locales.txt` — Windows LANGID → keyboard layout
+
+**Purpose / files.** `data/input/locales.txt`, read by `code/lib/input/file_paths.cpp:readLocaleNames`; consulted on Windows only, when pref `KeyboardLayout` is absent [C] `InputPrefs::GetKeyboardLayout`.
+
+```ebnf
+locales_file = { blank | LANGID LAYOUTNAME EOL } ;     (* LANGID = atoi(first token); LAYOUTNAME = REST verbatim *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| `LANGID` | INT | – | Win32 LANGID | key (`std::map::insert` — later duplicates ignored) | `readLocaleNames` |
+| `LAYOUTNAME` | REST | – | trailing blanks become part of the file name | `keyboards/<LAYOUTNAME>.txt` | same |
+
+**Verification.** Shipped entries: `1031 de_DE`, `1033 en_US`, `1036 fr_FR`, `2057 en_UK`, `4105 en_CA` (first line blank) [C] file.
+
+**Minimal valid example**
+
+```text
+1043 nl_NL
+```
+
+**Discrepancies.** None found.
+
+<a id="fmt-betatesters"></a>
+### 5.5 Credit name lists (`betatesters.txt`, `multiwinia_betatesters.txt`)
+
+**Purpose.** Free-text name lists merged into the credits [C] `code/UI/GameMenuWindow.cpp:ReadMultiwiniaBetaTesters`, `ReadCredits`, `code/loaders/credits_loader.cpp:CreditsLoader::GenerateBetaTesterList`.
+
+| File | Parser | Rule | Tag |
+|---|---|---|---|
+| `data/multiwinia_betatesters.txt` (69 lines, 3 Latin-1 names) | `ReadMultiwiniaBetaTesters` | every physical line → `GetRestOfUnicodeLine()` + `" \n"`; empty lines give empty entries; the concatenation replaces the credits phrase whose text is exactly `*BETATESTERS` (`multiwinia_credits_55`) in `ReadCredits` | [B:FULL] (Credits page) |
+| `data/betatesters.txt` (38 lines, 1 Latin-1 name) | `CreditsLoader::GenerateBetaTesterList` | `GetRestOfLine()`; lines with `strlen > 1` become names, laid out in 2 columns; **an empty line returns NULL and `strlen(NULL)` crashes** (the shipped file has none) | [B:LEGACY] (reached only via script `RunCredits` and the Darwinia sphere-world camera; `RunBootloader` is `USE_LOADERS`-only) |
+
+```ebnf
+name_list = { name_line } ;
+name_line = REST EOL ;      (* leading blank, TAB, ':' or ',' stripped; '#' starts a comment *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| name | REST, single byte (Latin-1 widened byte-for-byte) | – | no leading `:`/`,`, no `#` | one credited person | as above |
+
+**Verification.** Both parsers from X1a's reading [C]; files surveyed (CRLF, Latin-1 bytes, no blank line in `betatesters.txt`) [C] `X1a_text_survey.py`.
+
+**Minimal valid example**
+
+```text
+A. Tester
+B. "Nick" Example
+```
+
+**Discrepancies.** A name beginning with `:` or `,` loses that character; a name containing `#` is truncated [C].

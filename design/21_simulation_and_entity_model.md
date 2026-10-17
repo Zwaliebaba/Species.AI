@@ -1540,3 +1540,165 @@ All of this consumes the synced RNG during `Location::Init` in team-index order,
 | `m_directUnitTargetDx/Dy` (short) | — | right-stick target vector; also steers `camera->m_wantedTargetVector` |
 
 Flags are ORed over all frames between sends and cleared after each send. Wire format (`Pack`/`Unpack`): `uint16 flags`; if `directUnitMove`: `int16 dx, int16 dy`; if `targetDirected` or `secondaryFireDirected`: `int16 tdx, int16 tdy`; then `Vector3 m_mousePos` [C] `TeamControls::Pack`. `Location::UpdateTeam` ignores all controls while `GamePaused()` or after `GameOver()` in Multiplayer [C]. Control semantics: [06](06_player_control_and_input.md); message layout: [22](22_determinism_and_networking.md).
+
+## 10 Simulated state versus render state
+
+Network topology, the sync byte, RNG discipline and float determinism are specified in [22](22_determinism_and_networking.md); this section classifies the state of the object model.
+
+### 10.1 Classification of every major subsystem
+
+"Simulated" = must be bit-identical on all peers; changed only inside `ProcessAllServerLetters` (commands + slices). "Cosmetic" = local, may differ freely, must never be read by simulated code. "Sim-resident cosmetic" = stored in a simulated object but only written and read by presentation (a re-implementation should move it to a view model).
+
+| Subsystem / state | Class | Evidence |
+|---|---|---|
+| Entities (`Team::m_units[].m_entities`, `Team::m_others`) — positions, velocities, fronts, health, states, timers, orders | **simulated** | [C] `Team::Advance`, `Unit::AdvanceEntities`; hashed by the debug IFrame |
+| Buildings (`Location::m_buildings`) incl. ownership, capture, ports, spawn timers | **simulated** | [C] `Location::AdvanceBuildings` |
+| Lasers (`m_lasers`), effects (`m_effects`: grenades, rockets, shells, airstrike markers and bombs, shockwaves, fireballs, pulse wave, spam infections, zombies, snow, dust balls, lightning, muzzle flashes) | **simulated** — some (snow, zombies, muzzle flashes, empty shells) are purely decorative but live in the simulated list, take unique ids and draw synced RNG | [C] `Location::AdvanceWeapons`; `code/worldobject/worldobject.h` effect enum |
+| Spirits (`m_spirits`) | **simulated** (not hashed even by the debug IFrame) | [C] `Location::AdvanceSpirits`, `code/network/iframe.cpp:IFrame::Generate` |
+| Crates (spawn, fall, capture, reward) | **simulated** | [C] `Location::AdvanceCrates` ([04](04_crates_powerups_and_weapons.md)) |
+| Crate orientation `m_front`/`m_up`, `m_centrePos`, bubble timer | **sim-resident cosmetic**: `Crate::Render` rotates `m_front`/`m_up` by wall-clock `g_advanceTime`; `m_centrePos` is recomputed in the simulation from that orientation but only read by the renderer; crate hit tests are disabled (`DoesSphereHit/ShapeHit/RayHit` return false) and the debug IFrame writes zero vectors for crates | [C] `code/worldobject/crate.cpp:Crate::Render`, `Crate::DoesSphereHit`; `code/network/iframe.cpp` |
+| AI (one `Entity::TypeAI` per CPU team) | **simulated** on every peer | [C] `Location::InitialiseTeam`; [07](07_ai.md) |
+| Task-manager tasks | **simulated**; `m_recentTasks`, `m_mostRecentTaskIdTimer`, `TaskSource::m_timer` use the wall clock — sim-resident cosmetic | [C] `code/taskmanager.cpp` ([06](06_player_control_and_input.md)) |
+| Game timer `m_gameTime`, `m_gameSpeed`, speed requests | **simulated**; `m_lastClientAdvance`, `m_accurateTime`, `m_estimatedServerStartTime`, prediction are local | [C] `code/gametimer.cpp` |
+| Multiwinia rules state (scores, timers, eliminations, statue/rocket/zone state) | **simulated**; messages, achievements and help notifications keyed on `m_myTeamId` are local side effects | [C] `code/multiwinia.cpp` |
+| Lobby/game options, team names/colours, ready flags | **synchronised** through the sequenced stream | [C] `ClientToServer::ProcessServerUpdates` |
+| Terrain height map, normal map, obstruction grid, routing node tables | **simulated static data** (deterministic generation from the level file; private per-tile LCG for terrain) | [C] `code/landscape.cpp` ([23](23_terrain_and_landscape.md)) |
+| Entity grid, entity-grid cache | **simulated derived structures** (query results, order and staleness matter) | [C] §6 |
+| Routes: contents | **simulated** | [C] §7.4 |
+| Routes: slot ids, `m_alpha`, `m_walkableRoute` | ids **peer-local** (§7.6); alpha and walkable flag cosmetic | [C] §7.6–7.7 |
+| Trees: fire, spread, spirit drops, corruption, offspring | **simulated**; the crown hit sphere is simulated but computed by the display-list generator with the shared non-synced LCG (§10.3, [22](22_determinism_and_networking.md)); colours and sway cosmetic | [C] `code/worldobject/tree.cpp:Tree::Generate`, `Tree::RenderAlphas` |
+| Clouds offset | cosmetic, advanced inside the step (slice 3) without RNG | [C] `code/clouds.cpp:Clouds::Advance` |
+| Weather spawn (snow, soul rain, dust storm, lightning) | **simulated** (the dust-ball vortex and lightning strikes affect units; snow is decoration on the synced stream) | [C] `Location::AdvanceChristmas`, `AdvanceDustWind`, `AdvanceLightning` |
+| Particles (`ParticleSystem`) | **cosmetic**: advanced inside the slice loop but only with unsynced RNG; `CreateParticle` returns void, nothing reads particles | [C] `code/particle_system.cpp` |
+| Explosions (shape shatter, `g_explosionManager`) | cosmetic; wall-clock lifetimes; advanced per render frame | [C] `code/explosion.cpp`, `code/main.cpp:LocationGameLoop` |
+| Sound | cosmetic (never writes simulated state) | [C] ([27](27_audio_engine.md)) |
+| Camera, `LocationInput`, `GameCursor`, `TaskManagerInterface`, markers, `MultiwiniaHelp`, chat, HUD | local; leaks in §10.4 | [C] `code/main.cpp:LocationGameLoop` |
+| Water (`Water::Advance` per render frame), landscape colours, lights, fog, deform and pixel effects | cosmetic | [C] `LocationGameLoop` ([23](23_terrain_and_landscape.md), [24](24_rendering.md)) |
+| Entity legs (`EntityLeg`: Spider, Tripod) | sim-resident cosmetic for Spider (foot swing timed with wall-clock `g_gameTime`; only leg rendering, foot-fall sounds and `m_nextLegMoveTime` depend on it; body height comes from the terrain, not the feet); Tripod uses the wall clock for gameplay [B:LEGACY] | [C] `code/worldobject/entity_leg.cpp:EntityLeg::Advance`, `code/worldobject/spider.cpp:Spider::Advance` |
+| `m_renderDamaged` flags (Entity, AntHill, Centipede, Triffid) | sim-resident cosmetic (unsynced `frand` and wall clock inside `Advance`) | [C] `Entity::Advance` |
+| Soul Destroyer captured-spirit trail | sim-resident cosmetic (wall-clock birth times, `AppRandom` slot) | [C] `code/worldobject/souldestroyer.cpp:SoulDestroyer::Attack` |
+| `Officer::CalculateBoundingSphere` | local (camera-distance and `DarwinianScaleFactor` scaled); used only by mouse picking | [C] `code/worldobject/officer.cpp`, `Location::GetEntityId` |
+| Achievements, statistics, profile | local | [C] ([09](09_meta_systems.md)) |
+
+### 10.2 Prediction time: extrapolation, not interpolation
+
+- `GameTimer::GetPredictionTime() = min(now − m_lastClientAdvance, 1.0) × m_gameSpeed`, 0 while paused; `m_lastClientAdvance` is the wall-clock time at which the current tick's letter was taken (before its slices ran) [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::GetPredictionTime`.
+- Renderers receive it as a function argument and draw `pos + vel × t` (fragments also `angVel × t`); objects in slots not yet advanced in the current tick get `t + SERVER_ADVANCE_PERIOD` (§4.6). There is no previous-state copy anywhere; when a new tick is taken the prediction drops to 0, so extrapolation errors (turns, stops, collisions) show as small snaps; the 1.0 s clamp bounds runaway extrapolation when updates stop [C]/[I] ([20 §10.6](20_architecture.md#106-prediction-render-time-extrapolation)).
+- Prediction is never stored into simulated state [C] scripted scan of `*Render*` functions in `code/worldobject` and the core simulation files (X3; §10.3).
+
+### 10.3 Render functions that write fields of simulated objects
+
+Scan: every assignment to an `m_…` member inside a function whose name contains `Render`, in `code/worldobject/*.cpp`, `location.cpp`, `team.cpp`, `unit.cpp`, `taskmanager.cpp`, `multiwinia.cpp`, `routing_system.cpp` (94 lines) [C] `_work/scripts/X3_local_state_sites.py`.
+
+| Writer | Field(s) | Read by simulation? | Verdict |
+|---|---|---|---|
+| `Tree::RenderAlphas` → `Generate()` when the display lists are missing (after `Location::FlushOpenGlState`) | `m_hitcheckCentre`, `m_hitcheckRadius` (accumulated while compiling the leaf display list), colour arrays | **yes** (fire spread `theirRadius + ourRadius ≥ distance`, obstruction) | recomputes the same values from `m_seed` with `AppSeedRandom(m_seed)` (idempotent) — unless another thread draws from the shared non-synced LCG between the reseed and the end of the pass ([22](22_determinism_and_networking.md)); colours cosmetic [C] `code/worldobject/tree.cpp:Tree::Generate`, `Tree::GenerateLeaves` |
+| `LaserFence::RenderAlphas` | `m_nextLaserFenceId = −1` if the linked id is missing or not a LaserFence | **yes** (`LaserFence::Advance` branches on −1), and the call is camera-culled | latent desync; shipped data has 0 dangling links among 703 fences in the 57 `mp_*` maps [C] `_work/scripts/X3_fence_links.py`; fences are never destroyed [C] |
+| `RadarDish::RenderAlphas` | `m_range`, `m_receiverId` | yes | saved and restored around the link drawing (single-threaded) → safe [C] |
+| `GunTurret::Render` | `m_turretFront = m_front` | yes (aim) | only when `g_app->m_editing` [B:EDITOR]; `m_actualTargetPos` render-only [C] |
+| `Crate::Render`, `Crate::RenderBubble` | `m_front`, `m_up`, `m_bubbleTimer` | no (§10.1) | sim-resident cosmetic |
+| `ThrowableWeapon::Render` | `m_up`, `m_front` (tumble per render frame), `m_numFlashes` | no (only the constructor and renderer use them) [C] grep | sim-resident cosmetic |
+| `TurretEmptyShell::Render`, `Missile::Render` (`m_fire`), `Armour::Render` (`m_smooth*`), `Darwinian::Render` (`m_colourTimer`, `m_shadowBuildingId`), `FuelGenerator::Render` (`m_pumpMovement`), `Flag::Render`, `MultiwiniaZone::RenderBlitzkrieg` (creates `m_blitzkriegFlag`), `ConstructionYard::RenderAlphas` [B:LEGACY], `LaserTrooper::Render` (`m_justFired`) | presentation fields | no [I] names and grep of readers | cosmetic |
+| `SolarPanel::Render`, `DynamicNode::Render` [B:LEGACY], `SpiritReceiver::Render` [B:LEGACY] | `m_up`, `m_front` from the terrain normal | yes (shape hit transform) | idempotent: `SolarPanel::Initialise` sets the same values [C] |
+| `BlueprintRelay::Render` | `m_pos.y` | — | [B:LEGACY] |
+| `Location::RenderBuildingAlphas` (sort buffer), `RenderCurrentMessage`, `RoutingSystem::Render` (`m_alpha`, `m_walkableRoute`), `Multiwinia::RenderRocketStatusPanel` | UI state | no | cosmetic |
+| `GameCursor::RenderCrosshair` (`code/gamecursor.cpp`) | **`building->m_type = Building::TypeRadarDish`** (`=` typo for `==`) for the local team's selected non-turret building | yes (type!) | confirmed; dormant because only RadarDish and GunTurret can be selected in Multiwinia ([06](06_player_control_and_input.md)) |
+
+### 10.4 Local-only state leaking into the simulation
+
+| # | Leak | Reachable in MW? | Severity | Ref |
+|---|---|---|---|---|
+| L1 | `InsertionSquad::DirectControl`, executed on every peer from `Location::UpdateTeam` for the team's selected squad, returns early only if **neither** the sender's `m_cameraEntityTracking` **nor the local camera's `m_camLookAround`** is set. `m_camLookAround` = local control `CameraFreeMovement` held (default F2, gamepad right-stick click). On any peer whose player holds it, the squad receives `SetWayPoint(pointMan->m_pos)` while moving (with the left button held, `SetWayPoint(point + Dx/Dy)`) plus an extra `Attack(...)` when the sender fires → that squad diverges on that peer only | **yes** (Squad crate; any player holding free-look while an opponent's selected squad moves) [C] code; [I] frequency | **High** | [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`, `code/location.cpp:Location::UpdateTeam`, `code/camera.cpp:Camera::SwitchEntityTracking`, `data/input/input_preferences.txt` (`CameraFreeMovement`) |
+| L2 | `GameCursor::RenderCrosshair` type-assignment typo | dormant | medium (latent) | §10.3 |
+| L3 | `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = −1` on the owning client only, after a wall-clock delay; the simulation reads it right after successful `RunTask` calls | safe today (reads follow a successful `RunTask` in the same tick) | medium (latent) | [C] `code/taskmanager_interface_multiwinia.cpp` (≈L287) |
+| L4 | `TaskManagerInterfaceMultiwinia::RunScreenZone("DeleteTask")` calls `TaskManager::TerminateTask` directly (no network); same in the Icons/Gestures interfaces | dormant in MP (zone not drawn / control unbound) | medium (latent) | [C] `code/taskmanager_interface_multiwinia.cpp` (≈L865) |
+| L5 | `MultiwiniaHelp::AttachTutorialTo3d` / `AttachTutorial2To3d` (render-frame loop, wall-clock timers) insert crates into `m_buildings` with `GenerateBuildingId` and change game options | single-player tutorial only | low (breaks replay determinism) | [C] `code/multiwiniahelp.cpp` ([30](30_scripting_tutorial_and_cutscenes.md)) |
+| L6 | `LocationInput` allocates and frees preview routes in the simulated `RoutingSystem::m_routes` | yes; ids never transmitted | low | §7.6 |
+| L7 | Presentation calls guarded by `m_myTeamId` inside simulated code: `Location::UpdateTeam` (cursor marker), `Team::SelectUnit` (selection arrows, sounds, turret-aim camera), `Location::SelectDarwinians` (sound), `Location::IssueDarwinianOrders` (route highlight, cursor marker), `Location::PromoteDarwinian` (officer marker), `Officer::Advance`/`SetOrders`/`SetFormation` (route highlight), `Crate::CaptureCrate`/`AdvanceOnGround` (messages, help), `MultiwiniaZone`, `Statue`, `EscapeRocket`, `Nuke` (messages, achievements), `Task::*`/`TaskManager::*` (interface messages, camera) | yes; presentation only | low (an event queue is the right design) | [C] |
+| L8 | `Officer::CalculateBoundingSphere` scales by local camera distance and pref `DarwinianScaleFactor` | used only by local mouse picking | none | [C] `code/worldobject/officer.cpp`, `Location::GetEntityId` |
+| L9 | `Darwinian::AdvanceWatchingSpectacle` faces a wall-clock-wobbled target | `EscapeRocket::IsSpectacle` returns false in Multiplayer; GodDish blocked | none in MW [B:LEGACY] | [C] `code/worldobject/darwinian.cpp`, `code/worldobject/rocket.cpp:EscapeRocket::IsSpectacle` |
+| L10 | `Tripod::*` mode timers and turn rate use the wall clock | Tripod blocked | none in MW [B:LEGACY] | [C] `code/worldobject/tripod.cpp` |
+| L11 | Armour direct `SetOrders` from local input | only in the `!Multiplayer()` branch | none in MW [B:LEGACY] | [C] `code/location_input.cpp` (≈L1054) |
+| L12 | `Multiwinia::AdvanceAssault` compares wall clock `GetHighResTime()` with game-time `m_startTime` | only feeds the local "defended all" achievement flag | none | [C] `code/multiwinia.cpp` (≈L1752) |
+| L13 | `FenceSwitch::Switch()` runs from local input (`LocationInput::SelectObjectUnderMouse`) without a network message | FenceSwitch is blocked and appears in no shipped map | none in MW [B:LEGACY] | [C] `code/location_input.cpp`; [03 §12.37](03_buildings_and_world_objects.md#1237-fenceswitch) |
+
+Resolved: P01 listed the `FenceSwitch` local switch as a possible desync pending a level census; the census in 03 §2.1 shows 0 FenceSwitch lines in every map and the type is blocked, so it is [B:LEGACY] (L13).
+
+### 10.5 Rules the object model must state (carried into the new design)
+
+1. Simulated objects live in match-owned containers with stable ids and a documented iteration order (§5.3–5.5).
+2. Every simulated object advances exactly once per tick; whether an object created during a tick is advanced in that tick must be an explicit rule (the original's slot/capacity behaviour is incidental, §5.4).
+3. Simulated objects hold no presentation fields; presentation state is keyed by entity id in the client (§10.1, §10.3).
+4. Hit volumes used by gameplay are data or simulation-computed, never by-products of rendering (Tree crowns, §10.3).
+5. The only time source is the tick counter; the only randomness is the simulation RNG ([22](22_determinism_and_networking.md)).
+6. Client-local helpers (previews, cursor markers) never allocate from simulation containers (§7.6).
+
+## 11 Guidance for the new engine's entity model
+
+Brief; the carry-forward decision per subsystem is in [40](40_carry_forward_assessment.md) [I] (design recommendations, not code facts).
+
+| Topic | Original | Recommended for C++23 / DirectX 12 / multiplayer |
+|---|---|---|
+| Identity | `WorldObjectId(team, unit, index, uid)`; spirits and lasers unchecked; buildings found by linear scan | one 64-bit generational handle (`{index:32, generation:32}`) per pool, checked on every dereference for **every** kind (including spirits and projectiles); a dense id → slot map for buildings |
+| Ownership | entity team fixed by the container; conversion = respawn | keep "conversion = destroy + spawn" (it makes ownership changes explicit events), but store the team as a component, not as the container |
+| Containers | `SliceDArray` slot pools with LIFO re-use, capacity-based slicing | fixed-capacity pools with a documented re-use policy (FIFO or lowest-index) and **one** policy for all simulation pools; deterministic iteration in slot order; spread work over frames with explicit scheduling instead of capacity slices |
+| Update order | teams → weapons → buildings → spirits, per slice; units before loose entities | keep a fixed, documented system order; make same-tick creation visibility explicit (e.g. spawned objects start advancing next tick) |
+| Advance contract | `bool Advance()` = "delete me" | return an explicit result enum or set a `pendingDestroy` flag processed at a defined point; destruction emits events (spirit release, grid removal, AI-link rebuild) |
+| Spatial grid | per-team 32-unit cells, approximate count/presence queries, 1-s cache | per-team uniform grid (or one grid with team masks) with exact queries; if the approximate behaviour is wanted as gameplay, specify it as such; drop the cache or make it an explicit per-tick memo |
+| Obstruction grid | full rebuild on every building change; edge-cell leak | incremental per-building update of the affected cells; clamp to the map; precise tests stay on the building |
+| Routing | static distance-vector tables over AI-target nodes, 3-lane corridor test, symmetric walkability cache | keep the node-graph idea (cheap and deterministic) but rebuild affected edges when walls fall; make walkability symmetric or cache directionally; keep UI previews in a separate store |
+| Physics | per-tick Euler, terrain clamp, push-out loops | same approach is adequate; bound every push loop, guard zero-length vectors, express all constants per second |
+| Sim vs render | extrapolation by prediction time; some render writes to simulated fields | separate simulation state from a per-entity view model (interpolation between the last two ticks if smoother motion is wanted); forbid render-side writes to simulation memory (const access) |
+| Threading | single-threaded simulation (OpenMP pragma inert) | keep the simulation single-threaded or partition with per-job RNG and scratch buffers; static scratch vectors (`s_neighbours`) must become per-call or per-thread |
+
+## 12 Constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `NUM_TEAMS` | 6 | `#define` | `code/globals.h` |
+| `NUM_SLICES_PER_FRAME` | 10 | `#define` | `code/globals.h` |
+| Server tick | 0.1 s real time; `SERVER_ADVANCE_PERIOD` = 0.1 × gameSpeed | code | `code/network/server.cpp:Server::AdvanceIfNecessary`, `code/gametimer.cpp` |
+| `UNIT_BUILDINGS` / `UNIT_SPIRITS` / `UNIT_LASERS` / `UNIT_EFFECTS` | −100 / −101 / −102 / −103 | `#define` | `code/worldobject/worldobject.h` |
+| `ID_MAXTEAMS` / `ID_MAXUNITS` / `ID_MAXTROOPS` | 256 / 65536 / 65536 (debug asserts) | `#define` | `code/worldobject/worldobject.cpp` |
+| `COEF_OF_RESTITUTION` | 0.85 | `#define` | `code/worldobject/worldobject.cpp` |
+| Monster / Futurewinian team id | 4 / 5 | literal | `code/location.cpp:GetMonsterTeamId`, `GetFuturewinianTeamId` |
+| Monster / Futurewinian colour | (10,10,10) id 8 / (200,200,200) id 9 | literal | `Location::InitMonsterTeam`, `InitFuturewinianTeam` |
+| `MULTIWINIA_NUM_TEAMCOLOURS` | 8 | `#define` | `code/multiwinia.h` |
+| Container steps | buildings 10; spirits size 100, step 100; lasers 100; effects 100; `m_others` 100; `m_units` 5; unit members 100 (presized to count); lights 1 | literal | `Location::Location`, `Team::Team`, `Unit::Unit` |
+| Entity grid cell | 32 × 32; cells per axis `int(size/32) + 1` | ctor arg | `Location::Init`, `EntityGrid::EntityGrid` |
+| `END_OF_LIST` | −100000 | `#define` | `code/entity_grid.cpp` |
+| `INITIAL_OBJECT_ID_ARRAY_SIZE` | 0 (then 2, ×2) | `#define` | `code/entity_grid.cpp` |
+| Grid insertion footprint | square of half-width r/2 | literal | `EntityGrid::AddObject` |
+| Neighbour buffer growth | +100 (or + requested) | literal | `EntityGrid::EnsureMaxNeighbours` |
+| `ENTITYGRIDCACHE_MAXAGE` | 1.0 s | `#define` | `code/entity_grid_cache.h` |
+| Cache hit radius | half the cached range | literal | `EntityGridCache::GetEnemies` |
+| Cache container | size 20, step 20 | literal | `EntityGridCache::EntityGridCache` |
+| Obstruction grid cell | 64 (single-player) / 32 (multiplayer); cells per axis `ceil(size/cell)` | ctor arg | `Location::Init`, `SurfaceMap2D::Initialise` |
+| Obstruction cell test sphere | cellSize / 2 at cell centre on terrain | literal | `ObstructionGrid::CalculateBuildingArea` |
+| Route graph edge limit | 600 | literal | `LandRoutingSystem::Initialise`, `SeaRoutingSystem::Initialise` |
+| Corridor half-width | 40 | literal | `RoutingSystem::GenerateRoute` |
+| Smoothing step / merge distance | 50 / 50 | literal | `RoutingSystem::GenerateRoute` |
+| Max route waypoints | 100 | literal | `RoutingSystem::GenerateRoute` |
+| Route performance warning | 10 ms | literal | `RoutingSystem::GenerateRoute` |
+| Route fade | 0.25 per second | literal | `RoutingSystem::Render` |
+| Route waypoint reached | 10.0 (`m_routeTriggerDistance`) | member default | `Entity::Entity`, `Unit::FollowRoute` |
+| IsWalkable step / water / slope / normal / wall / fence | 20 / 40 / 2.4 (vs start) / 0.8 / 13.2 / 10 | literal | `Location::IsWalkable` |
+| GetWalkingDistance step / water / obstacle / uphill factor | 40 / 40 / 20 / 1.5 | literal | `Location::GetWalkingDistance` |
+| Gravity (entities) | 15 units/s² | literal | `Entity::AdvanceInAir` |
+| Gravity (throwables) | 9.8 × gameSpeed per tick (98 units/s²) | literal | `ThrowableWeapon::Advance` |
+| Landing epsilon | ground + 0.1, placed at + 0.2 | literal | `Entity::AdvanceInAir` |
+| Drown time / swim speed / bob | 10 s / 5 units/s / `−sin(3t) − 4` | literal | `Entity::AdvanceInWater` |
+| Death fade | −40·dt on ground, −20·dt in air, from 100 | literal | `Entity::AdvanceDead` |
+| Water push | y ≤ 1.0; spiral 0–50 step 1; dry if height > 1.0 | literal | `Entity::PushFromObstructions` |
+| Building push | hit sphere 1.0 (sprites, Officer); loop while sphere 2.0 hits; step 4.0 | literal | `Entity::PushFromObstructions` |
+| `PushFromBuilding` step | 2.0 | literal | `Building::PushFromBuilding` |
+| Cliff push | slope > 1.0; spiral 0–50 step 0.2 | literal | `Entity::PushFromCliffs` |
+| Separation | radius 2.0, force 0.1/d | literal | `Entity::PushFromEachOther` |
+| Teleport entry | RadarDish 15 (entrance), Bridge 25 (position) | literal | `Entity::EnterTeleports` |
+| Sprite pick sphere | 5.0 | literal | `Entity::RayHit` |
+| Spawn search | 10 tries; fallback clamp 20 from the edges | literal | `Location::FindValidSpawnPosition` |
+| Prediction clamp | 1.0 s | literal | `GameTimer::GetPredictionTime` |
+| Weather timers | snow 0.1 s (first burst 150); soul rain 1.0 s; dust vortex 15 + U[0,15) s, p = 1/10, radius 50, burst 300, 2 per 0.1 s; lightning U[0,15) s at y 1200 | literal | `Location::AdvanceChristmas`, `AdvanceSoulRain`, `AdvanceDustWind`, `AdvanceLightning` |
+| Formation spacing | rectangle 4.0; airstrike 24 / 12 / 24; jitter table 100 | literal | `Unit::GetFormationOffset` |
+| Kill milestones | 500, 1000, 2000, 3000, 4000, 5000 | literal | `Team::Advance` |
+| Evolution defaults | formation size 90, rockets 0 | literal | `Team::Team` |

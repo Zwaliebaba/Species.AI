@@ -122,9 +122,9 @@ flowchart TD
     CACHE -- yes --> ID["return GL id (flags of the first request)"]
     CACHE -- no --> STORE{"m_bitmaps hit? (registered or GetBitmap-cached bitmap, case-insensitive)"}
     STORE -- yes --> PROC["ProcessBmp: mask -> ConvertPinkToTransparent; alpha -> ConvertColourToAlpha (mutates the stored bitmap)"]
-    STORE -- no --> LOW["lower-case the name"] --> LOOSE{"loose file data/name exists?"}
+    STORE -- no --> LOW["lower-case the name"] --> LOOSE{"loose file under data folder exists?"}
     LOOSE -- yes --> READ["BinaryFileReader"]
-    LOOSE -- no --> ARCH{"archive entry data/name? (case-insensitive HashTable)"}
+    LOOSE -- no --> ARCH{"archive entry for the data path? (case-insensitive HashTable)"}
     ARCH -- yes --> READM["BinaryDataReader over the in-RAM entry"]
     ARCH -- no --> FAIL["AppReleaseAssert: Failed to load texture (fatal)"]
     READ --> DEC["BitmapRGBA::LoadBmp -> RGBA8, bottom-up rows"]
@@ -189,7 +189,7 @@ Output paths [C]: `SaveBmp`/`WriteBmp` write 24-bit Windows BMPs at 2835 px/m; `
 | Magenta colour key | default `GetTexture(name)` (`mask = true`) | exact (255,0,255) → (128,128,128,0); drawn with alpha blending or alpha test | 16 files contain key pixels: `data/sprites/darwinian.bmp`, `darwinian_ouch1–4.bmp`, `brainwaves.bmp`, `santahat.bmp`, `lasertrooper.bmp` (unused), `sound.bmp` (debug); `data/textures/clouds.bmp`, `shapewireframe.bmp`, `dmacrew.bmp`, `program_darwinia.bmp`, `speccy_screen.bmp` (last three dead); `data/animations/darwinian.bmp`, `darwinian_ouch4.bmp`. Every other masked request is a no-op |
 | Green channel as alpha | `GetTextureWithAlpha(name)` = `WithAlpha | WithMipmaps` (no mask) | RGB white, A = green; tinted by `glColor` | `data/textures/tree.bmp`, `data/icons/compass_shadow.bmp`, `marker_shadow.bmp`, `marker_colour.bmp` |
 | True alpha | 32-bit BGRA file | A as authored, `SRC_ALPHA, ONE_MINUS_SRC_ALPHA` | 49 files (§3 Alpha column: "A8 …") |
-| Additive black | art on black, `SRC_ALPHA, ONE` | black adds nothing; alpha from `glColor` | glows, beams, lasers, particles, font atlases (text is additive, [24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk)) |
+| Additive black | art on black, `SRC_ALPHA, ONE` | black adds nothing; alpha from `glColor` | glows, beams, lasers, particles, font atlases (text is additive, [24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk-c-codelibtext_renderercpp-codeappcppappsetlanguage)) |
 | Darken by texel | `SRC_ALPHA, ONE_MINUS_SRC_COLOR` with colour (a,a,a,0) | destination darkened by texel brightness | blurred `shadow_*` copies, `icon_shadow.bmp`, `*_shadow.bmp` button art, text outline pass |
 | Alpha test | `GL_ALPHA_TEST GREATER 0.04` (Darwinians) / 0.02 (units) | hard cut-out of keyed pixels | `data/sprites/darwinian*.bmp`, `futurewinian.bmp` |
 
@@ -293,8 +293,8 @@ Mount semantics [C]:
 
 File look-up for a resource name *N* (`GetTextReader`, `GetBinaryReader`) [C]:
 1. [B:DEAD] mod directories (`USE_DARWINIA_MOD_SYSTEM` undefined; `Resource::LoadMod` body compiled out).
-2. **Loose file `data/N`** (relative to the working directory; `fopen`, case-insensitive on Windows). Text: UTF-16 BOM → `UnicodeTextFileReader`, else `TextFileReader`; binary → `BinaryFileReader`.
-3. Archive entry `data/N` (text: BOM → `UnicodeTextDataReader`, else `TextDataReader`; binary → `BinaryDataReader`).
+2. **Loose file `data/` + *N*** (relative to the working directory; `fopen`, case-insensitive on Windows). Text: UTF-16 BOM → `UnicodeTextFileReader`, else `TextFileReader`; binary → `BinaryFileReader`.
+3. Archive entry `data/` + *N* (text: BOM → `UnicodeTextDataReader`, else `TextDataReader`; binary → `BinaryDataReader`).
 4. Not found → `NULL` (text look-ups log "Failed to find text resource"). Texture, bitmap and shape look-ups lower-case *N* first; `GetTextReader`/`GetBinaryReader` do not (harmless because of the case-insensitive table).
 
 So **loose files always override archives** — the development tree runs with no archives at all, and a user or patch can override any asset by placing a file under `data/`. `ListResources(dir, filter, long)` lists loose `data/<dir>` files, then merges every archive entry whose directory part equals `data/<dir>` (`stricmp`) and whose file part matches the wildcard (`*`, `?`, `WildCmp`), by ordered insert (alphabetical; used for font atlases and the level list). Sounds: `SoundExists(name)` checks `sounds/<name>.ogg` then `mwsounds/<name>.ogg`; `GetSoundStreamDecoder(name)` opens `<name>.ogg` (§5.1). `GetBaseDirectory()` = `"data/"`; `GetTextFileWriter(name)` writes `data/<name>` (editor saves).
@@ -353,13 +353,13 @@ Names registered with `Resource::AddBitmap` behave exactly like files for `GetTe
 
 ### 2.15 Fonts and atlases
 
-- **Live fonts** [C] `code/app.cpp:App::SetLanguage`: `g_gameFont = "speccy"`, `g_editorFont = "editor"`, `g_titleFont = "square"`; each is the set of atlases `data/textures/unicode/<font>.<lo>.<hi>.bmp` discovered with `Resource::ListResources("textures/unicode/", "<font>.*.*.bmp", false)` and loaded with default flags (mip-mapped, magenta-keyed); `GetTextureInfo` supplies the source size used for the row count. Glyph metrics, UV formulae, the CJK font swap and drawing modes are in [24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk).
+- **Live fonts** [C] `code/app.cpp:App::SetLanguage`: `g_gameFont = "speccy"`, `g_editorFont = "editor"`, `g_titleFont = "square"`; each is the set of atlases `data/textures/unicode/<font>.<lo>.<hi>.bmp` discovered with `Resource::ListResources("textures/unicode/", "<font>.*.*.bmp", false)` and loaded with default flags (mip-mapped, magenta-keyed); `GetTextureInfo` supplies the source size used for the row count. Glyph metrics, UV formulae, the CJK font swap and drawing modes are in [24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk-c-codelibtext_renderercpp-codeappcppappsetlanguage).
 - **Atlas inventory** (generated; each atlas is 16 glyph cells wide, one row per 16 code points):
 
 <!-- GEN:font_inventory -->
 
 - **What ships** [C] `tools/language.list`, `tools/englishlanguage.list`, `tools/russianlanguage.list`: the all-language retail `language.dat` holds Latin-1 for all three fonts, Cyrillic **only for `speccy`**, and every kana/CJK/Hangul atlas for `square`; the Russian build adds Cyrillic for `editor` and `square`; an English-only build holds only the three Latin-1 atlases. The three currency atlases (U+20A0–20AF, including €) are in **no** list, so a packed build cannot draw those characters; characters without an atlas are skipped (`TextRenderer::GetTextureID` finds no range) [I]. Which list each retail SKU used is [U] (25-U2).
-- **Anomaly**: the Hangul atlas for U+BB00 is named `square.bb00.bfff.bmp` (claims U+BB00–BFFF); the first-match look-up can map U+BC00–BFFF to it and sample outside the image [I] ([24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk)).
+- **Anomaly**: the Hangul atlas for U+BB00 is named `square.bb00.bfff.bmp` (claims U+BB00–BFFF); the first-match look-up can map U+BC00–BFFF to it and sample outside the image [I] ([24 §4.22](24_rendering.md#422-text-rendering-and-font-atlases-incl-unicodecjk-c-codelibtext_renderercpp-codeappcppappsetlanguage)).
 - **Legacy single-bitmap fonts** `data/textures/editor_font_*.bmp` (6) and `data/textures/speccy_font_*.bmp` (4): no compiled code requests them (only a commented `GetTexture("textures/editor_font_normal.bmp")` in `code/app.cpp:App::Initialise`), and `tools/multiwinia_exclusions.txt` keeps them out of every archive [C]; `TextRenderer::BuildOpenGlState` (2× nearest up-scale) is used only for font names ending in `.bmp`, which no caller passes.
 - **For the new engine**: replace with a run-time glyph cache over licensed fonts (one body face, one display face, one CJK-capable face), keep the additive text + darkening outline look, and include U+20A0–20AF.
 
@@ -383,45 +383,45 @@ Generated from `_work/drafts/X2a_textures.csv` (file properties, computed by par
 | Packed | archive receiving the file in the retail all-language build; `language.dat[lists]` names the per-language lists that contain the atlas (all are also in `tools/language.list` unless marked "NOT in the all-language list") |
 | Status | §1.3 |
 
-### 3.1 data/textures (excluding font atlases)
+### 3.1 `data/textures` (excluding font atlases)
 
 <!-- GEN:tex:textures -->
 
-### 3.2 data/textures/unicode (font atlases)
+### 3.2 `data/textures/unicode` (font atlases)
 
 <!-- GEN:tex:textures/unicode -->
 
-### 3.3 data/sprites
+### 3.3 `data/sprites`
 
 <!-- GEN:tex:sprites -->
 
-### 3.4 data/animations (bitmaps and .anim panel scripts)
+### 3.4 `data/animations` (bitmaps and .anim panel scripts)
 
 <!-- GEN:tex:animations -->
 
-### 3.5 data/terrain (colour ramps, water tiles and wave tables)
+### 3.5 `data/terrain` (colour ramps, water tiles and wave tables)
 
 Semantics [C] ([23 §11](23_terrain_and_landscape.md#11-colour-ramp-application-dataterrainlandscape_bmp), [29](29_data_formats_reference.md)): `landscape_*.bmp` (64×64) is a 2-D CPU look-up — column = slope (left flat, right vertical, `u = (1 − normal.y)^0.4`), row = height (top row of the picture = sea level, bottom = highest point of the map, with a per-triangle jitter); `waves_*.bmp` (400×10) — only row y = 1 is read, as a 1-D colour table indexed by wave brightness (x = 0 calm open water, higher x crest/foam); `water_*.bmp` (128×128, 8-bit) is the only uploaded terrain image — a seamless tile repeated 30× across the sea plane and scrolled by 1/30 tile per second, multiplied by `water_lightmap`. The ramp file names come from each level's `landColourFile`, `wavesColourFile`, `waterColourFile`; the Christmas mode forces `landscape_icecaps`, `waves_earth`, `water_icecaps` [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/water.cpp:Water::Water`.
 
 <!-- GEN:tex:terrain -->
 
-### 3.6 data/icons
+### 3.6 `data/icons`
 
 <!-- GEN:tex:icons -->
 
-### 3.7 data/thumbnails
+### 3.7 `data/thumbnails`
 
 <!-- GEN:tex:thumbnails -->
 
-### 3.8 data/mwhelp (help images)
+### 3.8 `data/mwhelp` (help images)
 
 <!-- GEN:tex:mwhelp -->
 
-### 3.9 data/sepulveda
+### 3.9 `data/sepulveda`
 
 <!-- GEN:tex:sepulveda -->
 
-### 3.10 data/shaders (HLSL, Direct3D build only)
+### 3.10 `data/shaders` (HLSL, Direct3D build only)
 
 All 14 files are loaded only under `USE_DIRECT3D` [B:D3D]; file conventions (entry points `vs_main`/`ps_main`, profiles, the `globals.h` include) are in [29](29_data_formats_reference.md) and their behaviour in [24 §6](24_rendering.md#6-shaders-datashaders--all-bd3d). The deform and water-reflection effects never run in a Multiwinia match ([24 §4.13](24_rendering.md#413-deform-effect-screen-space-distortion-bd3d-c-codedeformh-codedeformcpp)).
 
@@ -508,13 +508,13 @@ Status vocabulary: **live** = bound to at least one event fired by reachable FUL
 
 <!-- GEN:audio_stats -->
 
-### 5.3 data/sounds
+### 5.3 `data/sounds`
 
 Generated; one row per file (duration from the last Ogg granule position; KiB = 1024 bytes; full metadata including decoded PCM size in `_work/drafts/X2b_samples.csv`).
 
 <!-- GEN:audio:sounds -->
 
-### 5.4 data/mwsounds
+### 5.4 `data/mwsounds`
 
 <!-- GEN:audio:mwsounds -->
 
@@ -643,9 +643,9 @@ All shipped art, meshes, animation scripts, fonts, shaders, sounds and file name
 | Item | Kind | Ref | Neutral placeholder |
 |---|---|---|---|
 | Darwinian / Multiwinian / Futurewinian sprites (`data/sprites/darwinian*.bmp`, `futurewinian.bmp`, `ghost.bmp`, `santahat.bmp`, `lasertrooper.bmp`, `egg.bmp`, `virii.bmp`, `brainwaves.bmp`, `nuke.bmp`, `sub*.bmp`, `sound.bmp`; `data/animations/darwinian*.bmp`; `data/textures/darwinian.bmp`) | art + character names | §3.3, §3.4 | `unit_basic`, `unit_hurt_1..4`, `unit_side`, `unit_alt`, `ghost_fx`, `hat_seasonal`, `creature_tail` |
-| Dr Sepulveda portrait frames (`data/sepulveda/sepulveda1–5.bmp`) | character art | §3.9 | `advisor_face_idle_1..3`, `_blink`, `_talk` (or drop the feature) |
+| Dr Sepulveda portrait frames (`data/sepulveda/sepulveda{1,2,3,4,5}.bmp`) | character art | §3.9 | `advisor_face_idle_1..3`, `_blink`, `_talk` (or drop the feature) |
 | Studio and game logos/titles (`data/textures/ivlogo.bmp`, `data/icons/mwlogo.bmp`, `data/textures/mwtitle.bmp`, `data/textures/multiwinia.bmp`, `data/textures/plusmenu/*`, `data/icons/darwin_research_associates.bmp` — in-fiction "Darwin Research Associates", `data/textures/program_darwinia.bmp`) | brand | §3.1, §3.6 | `studio_logo_placeholder`, `game_title_wordmark`, `in_fiction_corp_logo` |
-| Third-party brands: `data/textures/xboxlivearcade.bmp` (Microsoft), `data/mwhelp/360_controller.bmp` and `data/icons/button_*.bmp` (Xbox 360 trade dress), `data/textures/ambrosia_logo.bmp`, `prices_ambrosia.bmp` (Ambrosia Software), `prices_steam.bmp` (Valve), `msn_oberon_combosplash.bmp` (MSN/Oberon), `data/shapes/carrybillboard_pcg/_tpcg/_xfire/_zone.shp` and their `.max` sources (magazine/service names [I] from suffixes), `data/textures/dmacrew.bmp`, `speccy_screen.bmp` (demo-scene / ZX Spectrum homage) | third-party brand | §3, §4 | do not recreate; `input_glyph_<button>`, no store or magazine branding |
+| Third-party brands: `data/textures/xboxlivearcade.bmp` (Microsoft), `data/mwhelp/360_controller.bmp` and `data/icons/button_*.bmp` (Xbox 360 trade dress), `data/textures/ambrosia_logo.bmp`, `prices_ambrosia.bmp` (Ambrosia Software), `prices_steam.bmp` (Valve), `msn_oberon_combosplash.bmp` (MSN/Oberon), `data/shapes/carrybillboard_{pcg,tpcg,xfire,zone}.shp` and their `.max` sources (magazine/service names [I] from suffixes), `data/textures/dmacrew.bmp`, `speccy_screen.bmp` (demo-scene / ZX Spectrum homage) | third-party brand | §3, §4 | do not recreate; `input_glyph_<button>`, no store or magazine branding |
 | All 139 meshes and 133 `.max` sources (names such as `souldestroyer*`, `darwinian.shp`, `officer.shp`, `trunkport*`, `spiritreceiver*`, `masterspawnpoint.shp`) | 3-D art + names | §4 | role-named meshes (§7.3) |
 | Map thumbnails and map names (`data/thumbnails/mp_*.bmp`) | level art + names | §3.7 | `map_<mode>_<players>p_<n>_thumb` |
 | Help illustrations, mode pictures and panel animations (`data/mwhelp/*.bmp`, `data/animations/*`) | art + layout | §3.4, §3.8 | `help_<mode>_<page>`, `mode_<mode>` |

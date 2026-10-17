@@ -4,6 +4,7 @@ every code/worldobject class + a table of all classes with build tag and behavio
 
 Usage:
   python3 -I S_21_classdiagram.py gen    <class_assignment.csv> <DESIGN_DIR> <out_fragment.md>
+  python3 -I S_21_classdiagram.py sourcemap <class_assignment.csv> <manifest.csv> <out_table.md>
   python3 -I S_21_classdiagram.py verify <class_assignment.csv> <DESIGN_DIR>/21_simulation_and_entity_model.md
                                          [<SRC_ROOT>]   (optional: also re-extract the class list from the headers
                                                           with the coverage checker's regex and compare)
@@ -274,8 +275,118 @@ def verify(csv_path, doc_path, src=None):
     return 0 if not miss else 1
 
 
+# ---------------------------------------------------------------- source map (core files + every worldobject header)
+CORE = [
+    ('code/location.h', 'Location: members, containers, API declarations'),
+    ('code/location.cpp', 'Location: Init order, containers, per-slice Advance, Spawn*/Get* resolvers, IsWalkable, GetWalkingDistance, IsFriend, weather, Bang, teams/colours/positions'),
+    ('code/team.h', 'Team, LobbyTeam, TeamControls declarations; team types'),
+    ('code/team.cpp', 'Team::Advance order, NewUnit/NewEntity, selection, Eliminate, TeamControls pack/sample'),
+    ('code/unit.h', 'Unit declaration (base of InsertionSquad, AirstrikeUnit, ViriiUnit)'),
+    ('code/unit.cpp', 'Unit::AdvanceEntities, Advance, formation offsets, FollowRoute, destructor'),
+    ('code/globals.h', 'NUM_TEAMS, NUM_SLICES_PER_FRAME'),
+    ('code/entity_grid.h', 'EntityGrid declaration'),
+    ('code/entity_grid.cpp', 'EntityGrid cells, footprint, exact and approximate queries'),
+    ('code/entity_grid_cache.h', 'EntityGridCacheElement, ENTITYGRIDCACHE_MAXAGE'),
+    ('code/entity_grid_cache.cpp', 'cache hit rule, eviction'),
+    ('code/obstruction_grid.h', 'ObstructionGrid declaration'),
+    ('code/obstruction_grid.cpp', 'CalculateAll, CalculateBuildingArea (fence rasterising), GetBuildings'),
+    ('code/routing_system.h', 'RoutingSystem, Land/Sea, RouteNode, RoutingTableEntry, WayPoint, Route'),
+    ('code/routing_system.cpp', 'graph construction, GenerateRoute, route rendering'),
+    ('code/lib/matrix_cache.h', 'SymmetricMatrixCache used by the routing walkability caches'),
+    ('code/lib/slice_darray.h', 'SliceDArray declaration'),
+    ('code/lib/slice_darray.cpp', 'GetNextSliceBounds'),
+    ('code/lib/2d_array.h', 'Array2D declaration'),
+    ('code/lib/2d_array.cpp', 'Array2D accessors, outside value'),
+    ('code/lib/2d_surface_map.h', 'SurfaceMap2D declaration'),
+    ('code/lib/2d_surface_map.cpp', 'SurfaceMap2D indexing (nearest, bilinear)'),
+    ('code/lib/auto_vector.h', 'auto_vector container'),
+    ('contrib/systemiv/lib/tosser/llist.h', 'LList declaration'),
+    ('contrib/systemiv/lib/tosser/llist.cpp', 'LList semantics'),
+    ('contrib/systemiv/lib/tosser/darray.h', 'DArray declaration'),
+    ('contrib/systemiv/lib/tosser/darray.cpp', 'DArray lowest-free-slot policy'),
+    ('contrib/systemiv/lib/tosser/fast_darray.h', 'FastDArray declaration'),
+    ('contrib/systemiv/lib/tosser/fast_darray.cpp', 'FastDArray LIFO free list, growth copy'),
+    ('contrib/systemiv/lib/tosser/bounded_array.h', 'BoundedArray'),
+    ('contrib/systemiv/lib/tosser/bounded_array.cpp', 'BoundedArray bodies'),
+    ('contrib/systemiv/lib/tosser/btree.h', 'BTree declaration'),
+    ('contrib/systemiv/lib/tosser/btree.cpp', 'BTree pre-order conversion'),
+    ('contrib/systemiv/lib/tosser/hash_table.h', 'HashTable declaration'),
+    ('contrib/systemiv/lib/tosser/hash_table.cpp', 'HashTable probing, hash function'),
+    ('contrib/systemiv/lib/tosser/sorting_hash_table.h', 'SortingHashTable declaration'),
+    ('contrib/systemiv/lib/tosser/sorting_hash_table.cpp', 'SortingHashTable ordered walk'),
+    ('contrib/systemiv/lib/tosser/directory.h', 'Directory container'),
+    ('contrib/systemiv/lib/tosser/directory.cpp', 'Directory bodies'),
+    ('code/worldobject/worldobject.cpp', 'WorldObjectId (allocation, comparison), WorldObject base, BounceOffLandscape, Light'),
+    ('code/worldobject/entity.cpp', 'Entity factory, base Advance, AdvanceInAir/InWater/Dead, PushFromObstructions, EnterTeleports, FollowRoute, RayHit'),
+    ('code/worldobject/building.cpp', 'Building base Advance, Initialise, PushFromBuilding, CreateBuilding'),
+    ('code/worldobject/weapons.cpp', 'Laser conversion (destroy + respawn), throwable gravity'),
+    ('code/worldobject/tree.cpp', 'Tree::Generate hit sphere from render-time generation; CalculateAll caller'),
+    ('code/worldobject/crate.cpp', 'Crate render-side orientation; CalculateAll callers; runtime building ids'),
+    ('code/worldobject/radardish.cpp', 'teleport disable/enable and grid re-insertion'),
+    ('code/worldobject/teleport.cpp', 'teleport entry disables entities'),
+    ('code/worldobject/insertion_squad.cpp', 'InsertionSquad::DirectControl local-state leak L1'),
+    ('code/worldobject/darwinian.cpp', 'SearchForThreats (cache user), approximate count users, unique-id gameplay uses'),
+    ('code/worldobject/spawnpoint.cpp', 'SpawnPopulationLock approximate count user'),
+    ('code/worldobject/officer.cpp', 'route generation callers; CalculateBoundingSphere (local)'),
+    ('code/worldobject/armour.cpp', 'sea routing user; approximate count users'),
+    ('code/worldobject/statue.cpp', 'route generation caller; runtime AI target id'),
+    ('code/worldobject/wallbuster.cpp', 'route generation caller'),
+    ('code/worldobject/gunturret.cpp', 'approximate query users; render writes'),
+    ('code/worldobject/laserfence.cpp', 'render-side link reset'),
+    ('code/worldobject/entity_leg.cpp', 'wall-clock leg timing (sim-resident cosmetic)'),
+    ('code/gametimer.h', 'g_predictionTime, SERVER_ADVANCE_PERIOD macros'),
+    ('code/gametimer.cpp', 'GetPredictionTime, server advance period'),
+    ('code/network/clienttoserver.cpp', 'ProcessAllServerLetters: the only caller of Location::Advance; command application'),
+    ('code/network/server.cpp', '10 Hz server tick'),
+    ('code/network/iframe.cpp', 'debug state hash (what is and is not hashed)'),
+    ('code/main.cpp', 'DoEnterLocation: ResetUniqueIdSeed before new Location; LocationGameLoop render-frame calls'),
+    ('code/global_world.cpp', 'GenerateBuildingId'),
+    ('code/level_file.cpp', 'building and instant-unit parsing (owners by position, route columns), level effects'),
+    ('code/location_input.cpp', 'local preview routes (slot sharing), FenceSwitch local switch'),
+    ('code/gamecursor.cpp', 'RenderCrosshair type-assignment typo; m_walkableRoute reader'),
+    ('code/particle_system.h', 'ParticleSystem container'),
+    ('code/particle_system.cpp', 'cosmetic particle advance'),
+    ('code/multiwinia.h', 'MULTIWINIA_NUM_TEAMCOLOURS'),
+    ('code/multiwinia.cpp', 'colour tables, InitialiseTeam, Multiwinia::Advance at slice 8'),
+    ('code/multiwiniahelp.cpp', 'tutorial director inserting crates from the render loop (leak L5)'),
+    ('code/taskmanager_interface_multiwinia.cpp', 'local-state leaks L3, L4'),
+    ('code/camera.cpp', 'free-look flag read by L1'),
+    ('data/stats.txt', 'entity stat rows loaded by EntityBlueprint (positional)'),
+    ('data/input/input_preferences.txt', 'CameraFreeMovement binding (L1 trigger)'),
+    ('data/levels/mp_*.txt', 'level buildings, instant units, effects (scanned for route ids and soulrain)'),
+]
+
+
+def sourcemap(csv_path, manifest_path, out_path):
+    rows = load(csv_path)
+    man = {r['path'].lower() for r in csv.DictReader(open(manifest_path, encoding='utf-8'))}
+    import fnmatch
+    by_hdr = collections.defaultdict(list)
+    for c, r in rows.items():
+        by_hdr[r['header']].append(c)
+    out = ['| File | Role in this document |', '|---|---|']
+    bad = []
+    seen = set()
+    for path, role in CORE:
+        ok = any(fnmatch.fnmatchcase(m, path.lower()) for m in man) if '*' in path else path.lower() in man
+        if not ok:
+            bad.append(path)
+        seen.add(path)
+        out.append(f'| `{path}` | {role} |')
+    for h in sorted(by_hdr):
+        if h in seen:
+            continue
+        if h.lower() not in man:
+            bad.append(h)
+        out.append(f'| `{h}` | declares {", ".join("`" + c + "`" for c in sorted(by_hdr[h]))} (class diagram §2) |')
+    open(out_path, 'w', encoding='utf-8').write('\n'.join(out) + '\n')
+    print(len(out) - 2, 'rows; not in manifest:', bad)
+
+
 if __name__ == '__main__':
     if sys.argv[1] == 'gen':
         gen(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif sys.argv[1] == 'sourcemap':
+        sourcemap(sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         sys.exit(verify(sys.argv[2], sys.argv[3], sys.argv[4] if len(sys.argv) > 4 else None))

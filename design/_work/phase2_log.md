@@ -188,3 +188,6 @@
 
 ## S26 (26_animation_and_vfx.md) — done, ~161 KB, checks pass
 - No skeletal animation (legs, trails, cloth flags all procedural). All 6 .anim files object by object (scripts/S_26_anim_tracks.py); 19 particle types + 98 live emitter sites (scripts/S_26_particle_emitters.py). 8 contradictions: Spider uses EntityLeg; Darwinian cards blend to billboards with distance; spider ≤1 regular foot lift/tick + emergency lifts; shattering ≤502 tris/fragment; debris spin ±2 rad/s; gesture trail fades continuously; effects.txt configures only audio DSP filters (inactive unless hidden pref) — EffectProcessor unrelated; particles can't affect sim except via shared synced RNG draws at spawn. 26-U1..U9.
+
+## S32 (32_debug_test_and_performance.md) — done, ~148 KB, checks pass
+- 8 contradictions: 18 debug entry points (not 17); debug menu + profiler unreachable in FULL; syncerror-*.txt world dump written in FULL too (only preceding RNG-call log debug-only); benchmark bandwidth bytes/s averaged 5 s; cheat crate reward −1 → normal random reward; testbed "10× faster" server not implemented. docs/cpu cycles.txt is a gameplay design note (no perf data) → hotspots built from code (186 profiled call sites). No measured frame times anywhere (32-U2). FTP credentials deliberately omitted. 32-U1..U8 + 32-I1..I3. scripts/S_32_profile_sections.py.

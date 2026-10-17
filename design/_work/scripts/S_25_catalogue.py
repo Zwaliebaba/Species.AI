@@ -688,6 +688,26 @@ GEN['font_inventory'] = '\n'.join(out)
 COMPASS_NOTE = ('compiled in FULL but **unreachable** [C]: the only callers pass `lineNormal` from `code/markersystem.cpp:MarkerSystem::Render`, '
                 'which is (0,−1) on screen or a normalised vector off screen; `code/lib/vector2.cpp:Vector2::Normalise` maps a zero vector to (0,1), '
                 'so the `_screenDX == 0 && _screenDY == 0` branch never runs; `RenderCompassEmpty` has no caller')
+MISSING_NOTE = {   # reachability of each requesting site (checked in code; see §1.3 overrides)
+    'MultiwiniaHelp::LoadIcons': '[B:LEGACY] `HelpDarwinians` tab: its "appropriate" test is hard-coded false, so the icon is never bound',
+    'MultiwiniaHelp::RenderCurrentUnitHelp': '[B:LEGACY] no live caller (the calls in `code/taskmanager_interface_multiwinia.cpp` are commented out)',
+    'MultiwiniaHelp::RenderBasicControlHelp': '[B:LEGACY] no live caller (the calls in `code/taskmanager_interface_multiwinia.cpp` are commented out)',
+    'Renderer::RenderFlatTexture': '[B:LEGACY] its only call is commented out',
+    'Renderer::RenderLogo': '[B:DEAD] its only call is inside `#ifdef PROMOTIONAL_BUILD` (never defined)',
+    'code/shaman_interface.cpp': '[B:LEGACY] ShamanInterface is shown only from `TaskManagerInterfaceIcons` (single-player)',
+    'HelpImageButton::Render': '[B:LEGACY] `PageHelp` has no live entry; guarded by `DoesTextureExist` (pattern `mwhelp/helppage_%d_%d.bmp` matches no file)',
+    'NextHelpButton::MouseUp': '[B:LEGACY] `PageHelp` only; guarded by `DoesTextureExist`',
+    'PrevHelpButton::MouseUp': '[B:LEGACY] `PageHelp` only; guarded by `DoesTextureExist`',
+    'MapDetailsButton::Render': '[B:FULL] guarded by `DoesTextureExist` → silently not drawn (pattern `icons/menu_%dplayer.bmp` matches no file)',
+    'TaskManagerInterfaceMultiwinia::TaskManagerInterfaceMultiwinia': '[B:FULL] pre-load loop guarded by `DoesTextureExist` → skipped (only 8 gesture icons exist)',
+    'TaskManagerInterfaceIcons::TaskManagerInterfaceIcons': '[B:FULL] pre-load loop guarded by `DoesTextureExist` (and the `GetTexture` is commented out)',
+    'TaskManagerInterfaceGestures::TaskManagerInterfaceGestures': '[B:LEGACY] single-player keyboard `ControlMethod` 0 only; guarded by `DoesTextureExist`',
+    'TaskManagerInterfaceGestures::RenderResearch': '[B:LEGACY] single-player keyboard `ControlMethod` 0 only',
+    'Render': '[B:DEAD] `GestureWindow` body under `GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL`; created only by the debug menu',
+    'Team::Initialise': 'not missing: run-time bitmap registered with `AddBitmap` (§2.13)',
+    'Team::RenderVirii': 'not missing: run-time bitmap (§2.13)',
+    'ViriiUnit::Render': 'not missing: run-time bitmap (§2.13)',
+}
 grp = collections.OrderedDict()
 for r in missing:
     nm = r['requested_name']
@@ -701,9 +721,15 @@ for nm, rows in grp.items():
         s = '`%s:%s` L%s' % (f, sym or '?', ln)
         if s not in sites: sites.append(s)
         if r['build'] not in builds: builds.append(r['build'])
-        n = r['condition']
+        n = ''
         if 'compass_empty' in nm:
             n = COMPASS_NOTE
+        elif sym in MISSING_NOTE:
+            n = MISSING_NOTE[sym]
+        elif f in MISSING_NOTE:
+            n = MISSING_NOTE[f]
+        elif r['condition']:
+            n = 'compiled only when ' + r['condition']
         if n and n not in notes: notes.append(n)
         if r['how'] and r['how'] not in hows: hows.append(r['how'])
     shown = nm.replace(', ', '`, `')
