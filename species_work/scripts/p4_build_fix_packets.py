@@ -74,6 +74,30 @@ def fx_of_file(path):
     return best
 
 
+# requirement id -> defining file, and bare file name -> full path (when unique)
+REQ_FILE, BASE = {}, {}
+for path in glob.glob(os.path.join(REPO, 'design_next', '**', '*.md'), recursive=True):
+    rel = os.path.relpath(path, os.path.join(REPO, 'design_next')).replace(os.sep, '/')
+    BASE.setdefault(os.path.basename(rel), []).append(rel)
+    for rid in re.findall(r'\*\*((?:R-)?[A-Z]{2,6}-\d{3})\*\*', open(path, encoding='utf-8').read()):
+        REQ_FILE.setdefault(rid, rel)
+
+
+def files_in(text):
+    """Design files named in free text: by requirement id, by full path, or by a unique bare file name."""
+    out = []
+    for rid in re.findall(r'(?<![\w-])((?:R-)?[A-Z]{2,6}-\d{3})(?!\d)', text):
+        if rid in REQ_FILE:
+            out.append(REQ_FILE[rid])
+    for f in re.findall(r'[\w./-]+\.md', text):
+        f = norm(f)
+        if '/' in f:
+            out.append(f)
+        elif len(BASE.get(f, [])) == 1:
+            out.append(BASE[f][0])
+    return out
+
+
 packets = {fx: dict(id=fx, phase=4, wave='B', packages=GROUPS[fx], owns=sorted(OWN[fx]),
                     id_ranges={pid: PKG[pid].get('id_ranges', {}) for pid in GROUPS[fx]},
                     gate_failures=[], routes=[], dec_citations=[], document_fixes=[], new_assets=[],
@@ -106,14 +130,12 @@ for p in sorted(glob.glob(os.path.join(WORK, 'p4_dec_triage_*.csv'))):
         dec = (r.get('dec_id') or '').strip()
         cite = r.get('cite_in') or ''
         fix = r.get('document_fix') or ''
-        for target in re.findall(r'[\w./-]+\.md', cite):
-            fx = fx_of_file(target)
-            if fx and dec:
+        if dec and (r.get('outcome', '') in ('new', 'amend')):
+            for fx in {fx_of_file(f) for f in files_in(cite)} - {None}:
                 packets[fx]['dec_citations'].append({'dec': dec, 'cite_in': cite, 'outcome': r.get('outcome', ''),
                                                      'source': r.get('source', '')})
-                break
         if fix.strip():
-            files = re.findall(r'[\w./-]+\.md', fix) or re.findall(r'[\w./-]+\.md', cite)
+            files = files_in(fix) or files_in(cite)
             for fx in {fx_of_file(f) for f in files} - {None}:
                 packets[fx]['document_fixes'].append({'dec': dec, 'fix': fix, 'source': r.get('source', '')})
 
