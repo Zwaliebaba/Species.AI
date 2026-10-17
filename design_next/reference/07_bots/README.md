@@ -63,17 +63,17 @@ Table 2.2-A The mechanisms of a bot.
 
 **R-BOT-008** (MUST) The bot controller is placed inside the map, not at its corner (DEC-087): at match-world initialisation it is created at its team's start position for a player slot, and at the centre of the map, (world size x ÷ 2, terrain height, world size z ÷ 2), for the Rogue and Visitor factions and for a team whose slot has no start position. The placement makes no spawn-position search and no draw. The bot controller never moves, never runs the base actor advance and receives no world clamp (R-SIM-366); its only body effects are those of R-BOT-010.
 
-**R-BOT-009** (MUST) In the initialisation step that creates the bot controller (DEC-652), its state takes the initial values of table 2.3-A, with exactly two draws in this order: the Beam Dish phase, `NextUnit(ref.bot.dish.phase_ticks)` (R-BOT-152), and then the main-cycle phase, `NextUnit` of `ref.bot.cycle.phase_easy` (200 ticks), `ref.bot.cycle.phase_standard` (100 ticks) or `ref.bot.cycle.phase_hard` (10 ticks) for the easy, standard or hard bot. A phase p becomes a first countdown of max(1, ⌈p⌉) ticks, so bots of the same difficulty think on different ticks. The controller registers itself in the per-match bot registry under its team slot, which every node, marker and Leader rule uses to find a team's bot.
+**R-BOT-009** (MUST) In the initialisation step that creates the bot controller (DEC-652), its state takes the initial values of table 2.3-A, with exactly two draws in this order: the Beam Dish phase, `NextUnit(ref.bot.dish.phase_ticks)` (100 ticks; R-BOT-174), and then the main-cycle phase, `NextUnit` of `ref.bot.cycle.phase_easy` (200 ticks), `ref.bot.cycle.phase_standard` (100 ticks) or `ref.bot.cycle.phase_hard` (10 ticks) for the easy, standard or hard bot. A phase p becomes a first countdown of max(1, ⌈p⌉) ticks, so bots of the same difficulty think on different ticks. The controller registers itself in the per-match bot registry under its team slot, which every node, marker and Leader rule uses to find a team's bot.
 
 Table 2.3-A State of a bot controller.
 
 | Field | Initial value | Meaning |
 |---|---|---|
 | main-cycle countdown | the main-cycle phase (R-BOT-009) | ticks to the next main cycle ([03](03_decision_loop_and_leaders.md) R-BOT-148) |
-| Beam Dish countdown | the Beam Dish phase (R-BOT-009) | ticks to the next Beam Dish decision, never below 0 ([03](03_decision_loop_and_leaders.md) R-BOT-176) |
+| Beam Dish countdown | the Beam Dish phase (R-BOT-009) | ticks to the next Beam Dish decision, never below 0 ([03](03_decision_loop_and_leaders.md) R-BOT-174) |
 | current objective | none | Siege: the bot objective this team works on ([05](05_mode_strategies_and_tutorials.md)) |
 | Solar Array field list | empty | Launch Race: one entry per bot objective marker of the team (marker position, Solar Array count, the marker, its scan range), filled once ([05](05_mode_strategies_and_tutorials.md) R-BOT-262) |
-| tutorial centre latch | false | first tutorial: set once its centre Control Zone has an owner ([05](05_mode_strategies_and_tutorials.md) R-BOT-282) |
+| tutorial centre latch | false | first tutorial: set once its centre Control Zone has an owner ([05](05_mode_strategies_and_tutorials.md) R-BOT-280) |
 
 **R-BOT-010** (MUST) A bot controller never dies: every health change is refused and its advance never requests its removal. It is not counted by the match's actor population counter (R-SIM table 2.5-A), but it is one of its team's ungrouped actors, so it counts towards its team's population (DEC-079, R-ECON-107). It stands in the actor grid at its position: node recounts count it like any actor (R-BOT-073), and enemy target searches may select it; the nearest-enemy query and the turret searches skip it, the Worker threat search and the creature searches do not, and the rule for all searches is the Open DEC-311.
 

@@ -178,7 +178,7 @@ A map-placed starting unit that runs as a Power (the Siege defenders' Transports
 
 ### 2.10 Targeting
 
-**R-CTRL-191** (MUST) Executing `PlayerCommand::TargetPower(team, id, position)`: if the target-area test of R-CTRL-192 passes, the Power is targeted at the position. The Power is then looked up again, because targeting may have ended it; if it still exists, has a tracked object and is not a turret Power, a presentation event registers its world marker (<<powermarker>>). A failed test does nothing on any participant.
+**R-CTRL-191** (MUST) Executing `PlayerCommand::TargetPower(team, id, position)`: if the target-area test of R-CTRL-192 passes, the Power is targeted at the position. The Power is then looked up again, because targeting may have ended it; if it still exists, has a tracked object and is not a turret Power, a presentation event registers its world marker ([cursor and markers](cursor_and_markers.md) R-CTRL-381). A failed test does nothing on any participant.
 
 **R-CTRL-192** (MUST) The target-area test, in this order:
 
@@ -200,11 +200,11 @@ Table 2.10-A Target areas.
 
 **R-CTRL-193** (MUST) Targeting the Leader Power is refused while the team has an actor group, an actor or a structure selected. Otherwise the nearest Worker of exactly the team within `ref.ctrl.promote_radius` of the point (by squared distance) is promoted (R-UNIT-153); the Power ends itself; the new Leader is selected; the most recent Leader becomes it; and the local team sees the placement message and hears `power_input.confirm`.
 
-**R-CTRL-194** (MUST) When a Strike team is placed for the local team, the camera is asked to track it when the automatic-camera setting is "always", or "automatic" while the input mode is gamepad ([camera](camera.md) <<autotrack>>). Placing a Strike team, a Transport or a Collector plays the outcome's placement sound ([Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); targeting any other kind plays `power_input.confirm`.
+**R-CTRL-194** (MUST) When a Strike team is placed for the local team, the camera is asked to track it when the automatic-camera setting is "always", or "automatic" while the input mode is gamepad ([camera](camera.md) R-CTRL-480). Placing a Strike team, a Transport or a Collector plays the outcome's placement sound ([Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); targeting any other kind plays `power_input.confirm`.
 
 ### 2.11 Selection and cycling
 
-**R-CTRL-200** (MUST) Executing `PlayerCommand::SelectPower(team, id)`: the current Power becomes id; when id is not none, the previous Power becomes id; when no Power has that id, nothing further happens; otherwise the selection switch of R-CTRL-201 runs, and a presentation event boosts the world cursor's selection arrows (<<arrowboost>>).
+**R-CTRL-200** (MUST) Executing `PlayerCommand::SelectPower(team, id)`: the current Power becomes id; when id is not none, the previous Power becomes id; when no Power has that id, nothing further happens; otherwise the selection switch of R-CTRL-201 runs, and a presentation event boosts the world cursor's selection arrows ([cursor and markers](cursor_and_markers.md) R-CTRL-375).
 
 **R-CTRL-201** (MUST) The selection switch of a Power: for the local team, a camera in Beam Dish aim or turret aim returns to free movement (presentation). Then, inside the step, by kind: a Strike team selects its group; a Builder, Transport or Collector selects its actor; a Leader Power clears the selection; a Shield, Speed Boost, Convert or Fury Power, for a team that is not a bot team, sets the under-control flag on every Worker tagged with this Power and then clears the selection. Clearing releases a Worker group only while the latched count is above 0 (R-CTRL-161), so with no group selected before, the tagged Workers stay controlled and become a group that the player can order; with a group selected before, every Worker, the newly tagged ones included, is released. Every other kind clears the selection, so the next place action targets the Power.
 
@@ -261,7 +261,7 @@ Table 2.10-A Target areas.
 
 The discard button `icon.hud.slot_discard` belongs to the overlay screen, so a match never draws it.
 
-**R-CTRL-232** (MUST) The extra information of a slot, relative to the icon centre, with the positions and text sizes of `ref.ctrl.bar.extra_info` (also used by the Power's world marker, <<powermarker>>):
+**R-CTRL-232** (MUST) The extra information of a slot, relative to the icon centre, with the positions and text sizes of `ref.ctrl.bar.extra_info` (also used by the Power's world marker, [cursor and markers](cursor_and_markers.md) R-CTRL-381):
 
 | Condition | Shown | Position | Text size |
 |---|---|---|---|

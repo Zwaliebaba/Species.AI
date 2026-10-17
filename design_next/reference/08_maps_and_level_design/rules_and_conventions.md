@@ -392,3 +392,127 @@ On 9 reference maps the opening army is the first Transit Gate wave alone, with 
 **R-MAP-141** (MUST) The power and research items (`PowerLevels`) that hold a level are, in this order: Worker, Leader, Strike team, laser, grenade, rocket, airstrike, Transport, Power slots, Builder, Collector, Missile Barrage, Convert, Shield, Speed Boost, gun turret, Swarm, Essence Grove, Blight Grove, Hive, Sickness, Brood, meteor shower and Fury. The items of campaign and debug content that the reference enumeration also holds are not specified (DEC-052, DEC-062). The level progression of campaign research does not exist in a match.
 
 **R-MAP-142** (MUST) A map definition cannot express: a music track; sky or cloud settings; fog; a per-map bot difficulty; the Supply crate drop period or any outcome probability (only excluded outcomes); research levels; team colours; a time of day; scripted events or a win condition for a mode; or a per-map ambient sound. These come from the mode's options, the match setup or fixed rules ([reference/01](../01_skirmish_rules_and_modes/README.md), [reference/04](../04_supply_crates_powers_and_weapons/README.md), [reference/09](../09_front_end_and_match_flow/README.md), [reference/10](../10_audio_design.md)).
+
+### 2.16 Spawn Control maps
+
+**R-MAP-150** (MUST) A Spawn Control map is a spawn economy and nothing else: 1 to 3 Spawn Nodes per start position, 3 to 9 Spawn Nodes with no team between them, one Source Node and a tree of Relays (R-MAP-108); it places no Control Zone. The mode rules are [reference/01 Spawn Control](../01_skirmish_rules_and_modes/spawn_control.md) and the network rules [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md).
+
+**R-MAP-151** (MUST) The Spawn Control maps vary the economy with these additions: one 2-player map adds 6 Beam Dishes and one Transit Gate, all with no team; one 4-player map adds 8 Beam Dishes; one other 2-player map adds one Transit Gate with no team; one 3-player map adds 18 jump pads, 6 turrets with no team and 95 Barrier Emitters, and has no Relay, its Source Node linking straight to every Spawn Node. A Transit Gate with no team never reinforces (R-ECON-089), and no Spawn Control map sets a map option that starts waves.
+
+**R-MAP-152** (MUST) Four Spawn Control maps are twin terrains of Zone Control maps (§2.22): the Spawn Control twin replaces the Control Zones with extra Spawn Nodes with no team. Table 2.16-A gives the Spawn Control maps per player count.
+
+Table 2.16-A Spawn Control maps.
+
+| Players | Maps | Difficulty | Play time | Population cap → per team | Co-op | Spawn Nodes: per position; with no team | World size (wu) |
+|---|---|---|---|---|---|---|---|
+| 2 | 5 | basic 2, intermediate 3 | 10 min on 2 maps | 2,000 → 1,000 on 3; 1,800 → 900; 1,500 → 750 | none | 1 on 3 maps, 2 on 1, 3 on 1; 3 to 8 | 2,000 to 2,754 |
+| 3 | 2 | basic 1, advanced 1 | 10 min on 1 map | 1,800 → 600 on both | none | 2 on both; 4 and 9 | 2,345 and 6,000 |
+| 4 | 2 | intermediate 1, advanced 1 | 15 and 10 min | 2,000 → 500; unlimited | allowed on both; fixed groups (0, 2 against 1, 3) on the map without a cap | 1 and 2; 6 and 4 | 3,000 on both |
+
+### 2.17 Zone Control maps
+
+**R-MAP-155** (MUST) Zone Control's hills are Control Zones, 1 to 15 per map, almost all with no team, with radii from 50 to 555.24 wu. Every Zone Control map except one has a spawn economy; the exception is a 3-player map with no Spawn Node, 2 Transit Gates per start position, the Transit Gate reinforcement count 100, 6 turrets with no team and a single central Control Zone of radius 86.2 wu. The mode rules are [reference/01 Zone Control](../01_skirmish_rules_and_modes/zone_control.md).
+
+**R-MAP-156** (MUST) **Concentric Control Zones** are several Control Zones whose centres lie within 10 wu of each other, with different radii, so that the centre counts as two or three zones, each of which scores separately. Four Zone Control maps use them: on a 3-player map one pair (radii 101.17 and 140 wu); on the 4-player maps one triple (200, 125 and 50 wu) with four pairs (100 and 50 wu); two large zones (233.01 and 220 wu) that each contain three zones of 90 wu, with two pairs (100 and 50 wu); and one central triple (555.24, 193.87 and 50 wu) with four pairs (122 and 50 wu) and four single zones of 50 wu. The pattern is a level-design tool (DEC-315).
+
+**R-MAP-157** (MUST) One 3-player Zone Control map gives three Control Zones of radius 150 wu the start positions 0, 1 and 2 as their team, so at load each becomes the team at that position (R-MAP-044) and those hills start owned; ownership then follows occupancy (DEC-315).
+
+**R-MAP-158** (MUST) The Zone Control maps vary the economy with these additions: one 3-player map adds 12 Beam Dishes, 6 Command Consoles that control them and one Transit Gate, all with no team; another 3-player map adds one Transit Gate with no team; one 4-player map adds 4 Transit Gates with no team; one 4-player map adds 8 Beam Dishes with no team. Two Zone Control maps host the two tutorials, `map_zone_control_2p_01` the first and `map_zone_control_3p_01` the second ([reference/11](../11_tutorial_and_help.md)). Table 2.17-A gives the Zone Control maps per player count.
+
+Table 2.17-A Zone Control maps.
+
+| Players | Maps | Difficulty | Play time | Population cap → per team | Co-op | Spawn Nodes: per position; with no team | Control Zones (radii in wu) | World size (wu) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | 2 | basic 1, intermediate 1 | 10 min on 1 map | 2,000 → 1,000; 1,500 → 750 | none | 1 and 2; 4 and 6 | 3 (150) and 4 (100) | 2,700 and 2,754 |
+| 3 | 4 | basic 1, intermediate 3 | 5 min on 1 map, 10 min on 3 | 1,800 → 600 on all | none | 2, 1, 2 and none; 3, 6 and 3 | 4 (80); 4 (80 and 160); 5 (3 owned of 150, and 101.17 and 140); 1 (86.2) | 2,345 to 3,000 |
+| 4 | 3 | basic 1, intermediate 1, advanced 1 | 10 min on 2 maps | 2,000 → 500 on 2; unlimited on 1 | allowed on all 3; fixed groups (0, 2 against 1, 3) on the map without a cap | 3, 1 and 2; none, 6 and 4 | 15 (50 to 555.24); 11 (50 to 200); 12 (50 to 233.01) | 3,000 on all |
+
+### 2.18 Relic Run maps
+
+**R-MAP-160** (MUST) A Relic Run map places exactly one Control Zone owned by each start position, which is that position's Relic Base, and 1 to 6 Control Zones with no team, which are the Relic Spawn Zones. On the reference maps a Relic Base has a radius of 80, 100 or 109.27 wu and a Relic Spawn Zone a radius from 40 to 75 wu. A map never places a Relic: the Relic Run rules create Relics at the Relic Spawn Zones ([reference/01 Relic Run](../01_skirmish_rules_and_modes/relic_run.md); R-MAP-101).
+
+**R-MAP-161** (MUST) The content build rejects a Relic Run map that does not have exactly one Relic Base per start position and at least one Relic Spawn Zone (DEC-561; R-BLDG-261).
+
+**R-MAP-162** (MUST) Several Relic Spawn Zones may share one place: two reference maps (one 2-player, one 4-player) each place two Relic Spawn Zones at identical coordinates, which weights the choice of that place. The pattern is a level-design tool (DEC-315).
+
+**R-MAP-163** (MUST) Every Relic Run map has a spawn economy with 1 to 3 Spawn Nodes per start position and up to 8 with no team; four maps set instant Spawn Node capture; every start position starts with 40 Workers. Table 2.18-A gives the Relic Run maps per player count.
+
+Table 2.18-A Relic Run maps.
+
+| Players | Maps | Difficulty | Population cap → per team | Co-op | Spawn Nodes: per position; with no team | Relic Spawn Zones per map | Instant capture | World size (wu) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | 4 | basic 2, intermediate 2 | 2,000 → 1,000 on all | none | 2 on 3 maps, 1 on 1; none on 2 maps, 2 on 2 | 2, 1, 2 and 2 | 1 map | 2,000 to 2,332 |
+| 3 | 2 | intermediate 2 | 1,800 → 600; 1,500 → 500 | none | 2 and 3; none | 3 and 5 | both | 2,999 and 3,000 |
+| 4 | 3 | advanced 3 | 2,000 → 500 on all | allowed on 1 map | 1, 2 and 2; 8, none and none | 3, 6 and 3 | 1 map | 2,720 to 3,428 |
+
+No Relic Run map sets a play time.
+
+### 2.19 Siege maps
+
+**R-MAP-165** (MUST) Siege sides are start positions: the attacking positions are listed by the map (R-MAP-042), and every other position below the player count defends. Match setup assigns the teams to free attacking and defending positions with simulation draws (R-SIM-419), and in co-op the map's group positions fix the alliances ([reference/01 Siege](../01_skirmish_rules_and_modes/siege.md)).
+
+**R-MAP-166** (MUST) The content build rejects a Siege map that does not have one Core Device owned by a defending start position, at least three Command Consoles linked to it, a Core Device countdown equal to the match time limit, and every defence bot objective marker that has a scan range bound to a structure (DEC-561; R-BLDG-317). A Core Device with no linked Command Console therefore never reaches a match; the rule that destroys such a Core Device on its first advance is the reference default of DEC-459.
+
+**R-MAP-167** (MUST) Every reference Siege map places one Core Device, owned by a defending position, whose record lists 3 Command Consoles (4 on one 4-player map), which match-world initialisation binds to it (R-MAP-047). The Core Device countdown equals the map's play time × `ref.match.option.time_limit_unit` (60 mode seconds): 900 mode seconds on 7 maps (play time 15 minutes) and 1,200 on the 4-player map with a play time of 20 minutes. On one 2-player map two further Command Consoles control Beam Dishes instead of the Core Device, and on one 3-player map the three linked Command Consoles start owned by the defending position.
+
+**R-MAP-168** (MUST) The Siege maps follow these conventions:
+
+1. **Attackers live on reinforcements.** Each attacking position owns 3 to 6 Transit Gates and each defending position 0 or 1. Attacking positions start with no Workers, except on one 2-player map where the attacking position starts with 8.
+2. **Defenders hold a fortress.** Defending positions start with 63 to 325 Workers, and on four maps with one or two Transport Powers (R-MAP-133). They have the fortification kit: walls and Barrier Emitters owned by defending positions or with no team, 7 to 40 turrets with no team (flame turrets among them on 3 maps), and 6 to 18 chained bot objectives with 24 to 44 bot objective markers for the bots ([reference/07](../07_bots.md)).
+3. **No Spawn Nodes.** No Siege map places a Spawn Node, so the Collector, Builder and Spawn Surge outcomes are never valid on a Siege map (R-CRATE-125).
+4. **Exclusion zones block Powers.** Every exclusion zone of a Siege map has the Power-blocking flag set (§2.23).
+5. **Visitor faction.** One 2-player map places 35 starting Workers at position 5, the Visitor faction's position (R-MAP-045), which match-world initialisation always sets up ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A step 10).
+
+Table 2.19-A Siege maps.
+
+| Players | Maps | Difficulty | Attackers : defenders | Population cap; defender cap → attacker share | Co-op | Transit Gates per attacking position; per defending position | Bot objectives; markers | World size (wu) |
+|---|---|---|---|---|---|---|---|---|
+| 2 | 4 | basic 1, intermediate 1, advanced 2 | 1 : 1 | 2,000; 350 → 1,650. 2,000; 275 → 1,725. 1,600; 250 → 1,350. 2,000; none → 1,000 each | none | 4, 3, 5 and 6; 1, 0, 1 and 1 | 12, 11, 9 and 10; 36, 25, 28 and 27 | 2,991 to 5,143 |
+| 3 | 2 | intermediate 1, advanced 1 | 2 : 1 | 1,800; none → 600 each. 1,500; 250 → 625 | forced on both, groups (0 against 1, 2) | 4 on both; 0 and 1 | 6 and 12; 29 and 27 | 2,549 and 5,000 |
+| 4 | 2 | advanced 2 | 2 : 2 | 1,600; 200 → 600. 1,500; 200 → 550 | forced on both, groups (0, 1 against 2, 3) | 3 and 4; 1 on both | 14 and 18; 24 and 44 | 4,070 and 7,000 |
+
+Every Siege map sets a play time of 15 minutes, except the 4-player map with 20.
+
+### 2.20 Launch Race maps
+
+**R-MAP-170** (MUST) The content build rejects a Launch Race map that does not have, for each start position, one Launch Vessel, three fuel depots and one Transit Gate for reinforcements (DEC-561; R-BLDG-340).
+
+**R-MAP-171** (MUST) Every Launch Race map places, per start position: one Launch Vessel, whose record holds no fuel link, starting fuel 0 and no passengers; three fuel depots; one Transit Gate; three grid pylons owned by the position; and three fuel pumps, owned by the position on 3 maps and with no team on the other 4. Fuel-line chains join the pumps to the depots, and a shared energy grid with no team feeds them: 15 to 24 Solar Arrays, 3 to 5 grid splitters, 3 grid terminals per position and grid pylons with no team. Every Solar Array, grid terminal and grid splitter record has no team, except one grid splitter owned by position 0 on one 3-player map. Each map also places 6 to 21 bot objective markers for the bots ([reference/07](../07_bots.md)).
+
+**R-MAP-172** (MUST) The Transit Gate is the main source of Workers; only one 3-player map gives each position starting Workers (8). Two maps carry a spawn network with no team (2 and 12 Spawn Nodes). A Launch Race map needs no map option, because the mode's options run the reinforcement waves ([reference/05](../05_population_flow.md) R-ECON-088); one 3-player map sets "no gun turrets" and places 6 turrets with no team, and one 2-player map excludes the Transport outcome, which Launch Race makes invalid anyway (R-CRATE-125). Every Launch Race match uses the special lighting for structures (R-MAP-091). Table 2.20-A gives the Launch Race maps per player count.
+
+Table 2.20-A Launch Race maps.
+
+| Players | Maps | Difficulty | Population cap → per team | Spawn Nodes with no team | Bot objective markers | World size (wu) |
+|---|---|---|---|---|---|---|
+| 2 | 3 | basic 1, intermediate 2 | 1,500 → 750 on 2; 1,800 → 900 | 2 on 1 map | 6, 10 and 6 | 2,000, 3,756 and 5,000 |
+| 3 | 3 | basic 1, intermediate 1, advanced 1 | 1,800 → 600 on all | none | 15, 21 and 15 | 4,285 to 5,000 |
+| 4 | 1 | advanced | 1,800 → 450 | 12 | 17 | 4,186 |
+
+No Launch Race map sets a play time or allows co-op.
+
+### 2.21 Flag Chain maps
+
+**R-MAP-175** (MUST) Flag posts are Control Zones whose record ends with an adjacency list: the ids of the Flag posts it links to. Each start position owns one Control Zone, its Home post; 1 to 5 further Flag posts have no team. The adjacency is stored as one two-way relation: a link written on either post joins both ([reference/01 Flag Chain](../01_skirmish_rules_and_modes/flag_chain.md); DEC-561). On the reference maps every Flag post has a radius of 100 wu, except on one 3-player map with 75 wu.
+
+**R-MAP-176** (MUST) The content build rejects a Flag Chain map that does not have one Home post per start position and a connected Flag post graph (DEC-561; R-BLDG-270).
+
+**R-MAP-177** (MUST) The Flag post graphs of the reference maps have these shapes:
+
+| Players | Shapes |
+|---|---|
+| 2 | a chain of 3 (Home post, post, Home post) on two maps; a chain of 5 on one map; a ring of 6, two routes of two posts each between the Home posts, on one map |
+| 3 | a ring of 6 that alternates Home posts and posts, with a central post linked to the three posts of the ring; a ring of 6 that alternates Home posts and posts, with a central post linked to the three Home posts |
+| 4 | a ring of 8 that alternates Home posts and posts, with a central post linked to the four posts of the ring |
+
+**R-MAP-178** (MUST) Every Flag Chain map places one Transit Gate per start position, and two 2-player maps one more with no team. The 2-player maps also place Spawn Nodes: one map 2 per position and 2 with no team, the others 1 to 4 with no team. Three 2-player maps set the Transit Gate reinforcement count 100 and the Transit Gate Transport cap 3; the fourth sets "no gun turrets". The 3-player and 4-player maps set the airstrike threshold 3. Flag Chain is the only mode in which idle Workers also look for Flag posts (R-ECON-105). Table 2.21-A gives the Flag Chain maps per player count.
+
+Table 2.21-A Flag Chain maps.
+
+| Players | Maps | Difficulty | Population cap → per team | Flag posts (with no team) | Spawn Nodes | Starting Workers per position | World size (wu) |
+|---|---|---|---|---|---|---|---|
+| 2 | 4 | basic 1, intermediate 1, advanced 2 | 1,500 → 750; 2,000 → 1,000 on 2; 1,800 → 900 | 3 (1), 3 (1), 5 (3) and 6 (4) | 1, 4, 6 and 3 | 40, none, 8 and 36 | 3,000 to 4,000 |
+| 3 | 2 | basic 1, intermediate 1 | 2,000 → 666; 1,500 → 500 | 7 (4) on both | none | none and 15 | 2,938 and 4,000 |
+| 4 | 1 | advanced | 1,400 → 350 | 9 (5) | none | none | 4,000 |
+
+No Flag Chain map sets a play time or allows co-op.

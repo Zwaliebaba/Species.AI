@@ -84,7 +84,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 **R-CTRL-023** (MUST) The route preview line is generated in every frame and discarded in the next. Its routes live in a store of the presentation, separate from the simulation's route storage, and never take an entry or an id from it (DEC-095).
 
-**R-CTRL-024** (MUST) No simulation rule reads the camera, the pointer, a device, a UI window or a preference of any participant (DEC-008). The sender converts every camera-relative quantity of direct control to world space before it enters the team command state (R-SIM-440), and folds its camera's look-around state into the `camera_tracking` field ([actions and bindings](actions_and_bindings.md) <<camtrack>>).
+**R-CTRL-024** (MUST) No simulation rule reads the camera, the pointer, a device, a UI window or a preference of any participant (DEC-008). The sender converts every camera-relative quantity of direct control to world space before it enters the team command state (R-SIM-440), and folds its camera's look-around state into the `camera_tracking` field ([actions and bindings](actions_and_bindings.md) R-CTRL-103).
 
 
 **R-CTRL-025** (MUST) The rules of the sub-files apply together: an action table names the command; the command's effect when it executes is the catalogue entry of [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-450 to R-SIM-452 and the unit rules of [reference/02_units](../02_units/README.md); the feedback that the participant sees is the cursor, marker, panel and camera rules of this folder.

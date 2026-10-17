@@ -69,7 +69,7 @@ Table 2.4-A Default bindings of the match control scheme.
 | `action.direct.secondary_fire_directed` | unbound | unbound | D3 |
 | `action.direct.set_target` | secondary button, held | west face button, held | D4, D5 |
 | `action.direct.set_target_end` | secondary button, up | west face button, up | D1 |
-| `action.direct.move_direction_change` | the binding of the input component's control catalogue | the binding of the input component's control catalogue | <<ctrlvec>> |
+| `action.direct.move_direction_change` | the binding of the input component's control catalogue | the binding of the input component's control catalogue | [camera](camera.md) R-CTRL-487 |
 | `action.match.ready` | Space, down | south or east face button, down | M1 |
 | `action.match.chat` | Enter, down | — | M2 |
 | `action.match.pause` | Pause, down | — | M3 |
@@ -96,13 +96,13 @@ Table 2.4-A Default bindings of the match control scheme.
 
 | Row | Actions | Context and conditions | Effect |
 |---|---|---|---|
-| A1 | `action.camera.pan_left`, `action.camera.pan_right`, `action.camera.pan_forward`, `action.camera.pan_back`, `action.camera.pan_stick` | free-movement camera | moves the camera target along the horizontal camera basis (<<pan>>) |
-| A2 | `action.camera.fast_pan` | with the A1 keys | multiplies the key pan speed (<<pan>>); the stick pan ignores it |
-| A3 | `action.camera.raise`, `action.camera.lower`, `action.camera.height_wheel` | no UI window open; raise and lower are ignored while a Beam Dish or a turret is aimed | changes the camera height (<<height>>) |
-| A4 | `action.camera.aim`, `action.camera.aim_stick` | free movement, Beam Dish aim and turret aim; the stick only while no UI window is open; not while the chat log is held | the camera turns to face the ground point under the pointer, and the pointer stays on that ground point (<<mouselook>>, <<cursorlock>>) |
-| A5 | `action.camera.zoom` | no UI window open; not in tracking, where it re-centres the camera behind the Strike team (<<trackdist>>) | divides the field-of-view target while held (<<zoom>>) |
-| A6 | `action.camera.look_around` | ignored while `action.direct.fire` is held | freezes the camera position and suspends tracking; the orientation still follows the pointer (<<lookaround>>) |
-| A7 | `action.camera.track_closer`, `action.camera.track_farther` | tracking camera | changes the tracking distance (<<trackdist>>) |
+| A1 | `action.camera.pan_left`, `action.camera.pan_right`, `action.camera.pan_forward`, `action.camera.pan_back`, `action.camera.pan_stick` | free-movement camera | moves the camera target along the horizontal camera basis ([camera](camera.md) R-CTRL-471) |
+| A2 | `action.camera.fast_pan` | with the A1 keys | multiplies the key pan speed ([camera](camera.md) R-CTRL-471); the stick pan ignores it |
+| A3 | `action.camera.raise`, `action.camera.lower`, `action.camera.height_wheel` | no UI window open; raise and lower are ignored while a Beam Dish or a turret is aimed | changes the camera height ([camera](camera.md) R-CTRL-461) |
+| A4 | `action.camera.aim`, `action.camera.aim_stick` | free movement, Beam Dish aim and turret aim; the stick only while no UI window is open; not while the chat log is held | the camera turns to face the ground point under the pointer, and the pointer stays on that ground point ([camera](camera.md) R-CTRL-471, [camera](camera.md) R-CTRL-464) |
+| A5 | `action.camera.zoom` | no UI window open; not in tracking, where it re-centres the camera behind the Strike team ([camera](camera.md) R-CTRL-484) | divides the field-of-view target while held ([camera](camera.md) R-CTRL-460) |
+| A6 | `action.camera.look_around` | ignored while `action.direct.fire` is held | freezes the camera position and suspends tracking; the orientation still follows the pointer ([camera](camera.md) R-CTRL-472) |
+| A7 | `action.camera.track_closer`, `action.camera.track_farther` | tracking camera | changes the tracking distance ([camera](camera.md) R-CTRL-484) |
 | A8 | `action.view.chat_log` | no UI window open | shows the chat log; mouse-look is frozen, the match input pump issues no team action, and the team command state is sent with every flag cleared (R-CTRL-021) |
 | A9 | `action.view.hide_interface` | — | toggles the hidden-interface flag: the HUD, the world markers, the Power slots panel and the cursor effects are hidden |
 | A10 | `action.view.screenshot` | no UI window open | renders and saves a screenshot, tiled when the poster-resolution setting is above 1 ([renderer view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-214, ADR-0076) |
@@ -112,27 +112,27 @@ Table 2.4-A Default bindings of the match control scheme.
 
 | Row | Actions | Context and conditions | Effect | Command |
 |---|---|---|---|---|
-| S1 | `action.select.pick` while something is selected, `action.select.pick_idle` while nothing is selected | G-match; the object under the pointer (R-CTRL-055) | an own Beam Dish: select it and enter Beam Dish aim, unless the map disables Beam Dish control; an own turret: select it and enter turret aim; an own selectable actor or actor group: select it; the selection sound (<<selsound>>) | `PlayerCommand::Select` |
+| S1 | `action.select.pick` while something is selected, `action.select.pick_idle` while nothing is selected | G-match; the object under the pointer (R-CTRL-055) | an own Beam Dish: select it and enter Beam Dish aim, unless the map disables Beam Dish control; an own turret: select it and enter turret aim; an own selectable actor or actor group: select it; the selection sound ([selection and Power slots](selection_and_power_slots.md) R-CTRL-154) | `PlayerCommand::Select` |
 | S2 | `action.select.pick` on empty ground | something selected; not placing; no Strike team selected; not a Leader or Transport selected in gamepad mode; `action.direct.set_target` not held | the error sound `match_ui.error` and the deselect hint ([Tutorial and help](../11_tutorial_and_help.md)) | none |
-| S3 | `action.select.clear` | G-match | clears the selection and releases the Worker group; the camera returns to free movement; the cycling anchor is cleared (<<anchor>>) | `PlayerCommand::Select` with none, none, none |
-| S4 | `action.select.circle_begin` | G-match; nothing selected; no Workers selected; not placing; no circle active; no Leader under the pointer; not in the grace period; the pointer is not over a structure or an own selectable actor or group | starts the local selection circle at the pointer ground point with radius 0; sound `match_ui.selection_circle` (<<circbegin>>) | none |
-| S5 | `action.select.circle_grow` | as S4, while no Workers are selected yet | grows the circle and adds the Workers inside it (<<circgrow>>) | `PlayerCommand::SelectWorkers` |
-| S6 | `action.select.circle_end` | G-match | ends the circle and resets the crowd-order time (<<circend>>) | none |
-| S7 | `action.power.next` | — | selects the next Power (<<cycle>>) | `PlayerCommand::SelectPower` |
-| S8 | `action.power.previous` | — | selects the previous Power (<<cycle>>) | `PlayerCommand::SelectPower` |
-| S9 | `action.power.slot_1` to `action.power.slot_9` | the slot holds a Power that is not locked | selects the Power in that slot position (<<slotkeys>>) | `PlayerCommand::SelectPower` |
+| S3 | `action.select.clear` | G-match | clears the selection and releases the Worker group; the camera returns to free movement; the cycling anchor is cleared ([selection and Power slots](selection_and_power_slots.md) R-CTRL-204) | `PlayerCommand::Select` with none, none, none |
+| S4 | `action.select.circle_begin` | G-match; nothing selected; no Workers selected; not placing; no circle active; no Leader under the pointer; not in the grace period; the pointer is not over a structure or an own selectable actor or group | starts the local selection circle at the pointer ground point with radius 0; sound `match_ui.selection_circle` ([selection and Power slots](selection_and_power_slots.md) R-CTRL-155) | none |
+| S5 | `action.select.circle_grow` | as S4, while no Workers are selected yet | grows the circle and adds the Workers inside it ([selection and Power slots](selection_and_power_slots.md) R-CTRL-156) | `PlayerCommand::SelectWorkers` |
+| S6 | `action.select.circle_end` | G-match | ends the circle and resets the crowd-order time ([selection and Power slots](selection_and_power_slots.md) R-CTRL-157) | none |
+| S7 | `action.power.next` | — | selects the next Power ([selection and Power slots](selection_and_power_slots.md) R-CTRL-203) | `PlayerCommand::SelectPower` |
+| S8 | `action.power.previous` | — | selects the previous Power ([selection and Power slots](selection_and_power_slots.md) R-CTRL-203) | `PlayerCommand::SelectPower` |
+| S9 | `action.power.slot_1` to `action.power.slot_9` | the slot holds a Power that is not locked | selects the Power in that slot position ([selection and Power slots](selection_and_power_slots.md) R-CTRL-205) | `PlayerCommand::SelectPower` |
 | S10 | S1 on a Power's unit | — | the `Select` handler also selects the Power bound to the named actor group or actor (R-SIM-450) | `PlayerCommand::Select` |
-| S11 | `action.power.activate_slot` over a slot of the power bar | the slot holds a Power that is not locked | selects that Power, as S9 (DEC-083, <<clickbar>>) | `PlayerCommand::SelectPower` |
+| S11 | `action.power.activate_slot` over a slot of the power bar | the slot holds a Power that is not locked | selects that Power, as S9 (DEC-083, [selection and Power slots](selection_and_power_slots.md) R-CTRL-226) | `PlayerCommand::SelectPower` |
 
 **R-CTRL-042** (MUST) The order actions are:
 
 | Row | Actions | Context and conditions | Effect | Command |
 |---|---|---|---|---|
-| O1 | `action.order.crowd`; `action.order.straight_route` held gives a straight route | G-match; nothing selected; Workers selected; no circle active; not placing; at least `ref.ctrl.order.crowd_interval_ticks` of match time since the team's last crowd order; the target lies on the map | the crowd order of <<crowd>> | `PlayerCommand::OrderWorkers` |
+| O1 | `action.order.crowd`; `action.order.straight_route` held gives a straight route | G-match; nothing selected; Workers selected; no circle active; not placing; at least `ref.ctrl.order.crowd_interval_ticks` of match time since the team's last crowd order; the target lies on the map | the crowd order of [selection and Power slots](selection_and_power_slots.md) R-CTRL-160 | `PlayerCommand::OrderWorkers` |
 | O2 | `action.order.promote` near an own Worker | G-match; nothing selected; no Workers selected; not placing; G-play; the nearest own selectable Worker lies within `ref.ctrl.promote_radius` of the pointer ground point; the press is not an O3, O4 or O5 | promotes the Worker; the new Leader is selected in the same step (R-UNIT-153); the tutorial notification of [Tutorial and help](../11_tutorial_and_help.md) | `PlayerCommand::PromoteWorker` |
 | O3 | `action.order.promote` on an own Leader | as O2, except that nothing is selected or this Leader is the selected actor | a Leader in formation mode or with a waypoint order cancels its orders; any other enters formation facing forward and is selected in the same step (R-UNIT-175, R-SIM-454); sound `match_ui.toggle_state` | `PlayerCommand::ToggleUnit`, secondary flag clear |
 | O4 | `action.order.promote` on an own Transport | as O3 | toggles the Transport's loading ([Transport](../02_units/transport.md) R-UNIT-390); sound `match_ui.toggle_state` | `PlayerCommand::ToggleUnit`, secondary flag clear |
-| O5 | `action.order.promote` on a Transport's order marker | as O3; the pointer is over the order marker (<<ordermarker>>) | cycles the Transport's arrival action, and the Transport is deselected (R-UNIT-391) | `PlayerCommand::ToggleUnit`, secondary flag set |
+| O5 | `action.order.promote` on a Transport's order marker | as O3; the pointer is over the order marker ([cursor and markers](cursor_and_markers.md) R-CTRL-387) | cycles the Transport's arrival action, and the Transport is deselected (R-UNIT-391) | `PlayerCommand::ToggleUnit`, secondary flag set |
 | O6 | `action.order.special` or `action.order.move_modifier` (R-CTRL-043); `action.order.straight_route` held gives a straight route | a Leader selected | a waypoint order or a formation move (R-UNIT-171); the team's selection is cleared in the same step | `PlayerCommand::OrderUnit`, move-only clear |
 | O7 | as O6 (R-CTRL-043) | a Leader selected | the Leader itself walks to the point (R-UNIT-169) | `PlayerCommand::OrderUnit`, move-only set |
 | O8 | as O6 (R-CTRL-043) | a Transport selected; the target lies on the map | a move order (R-UNIT-387); the land route is highlighted; sound `transport.ordered` | `PlayerCommand::OrderUnit`, move-only set, straight set |
@@ -214,7 +214,7 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 **R-CTRL-055** (MUST) Every frame, the match input pump resolves the object under the pointer for the local team as follows:
 
 1. There is none while the participant has no team, or while its team's selection is a turret, so that nothing snaps while a turret is aimed.
-2. A world marker under the pointer wins (<<markerhover>>).
+2. A world marker under the pointer wins ([cursor and markers](cursor_and_markers.md) R-CTRL-387).
 3. Otherwise the click ray through the pointer is tested against three kinds, and each kind gives its best candidate. The score of a candidate is not its depth along the ray: for each object whose test volume the ray hits, the score is the screen-space distance in pixels between the projected centre of that volume and the projected hit point on it, so it measures how close the pointer is to the object's centre on screen. Within each kind the smallest score wins; on equal scores the earlier object in container order wins.
    - **Structures** of the team or of no team, in structure order: a Beam Dish or a turret that its exact ray test hits is returned at once with score 0 (the first such structure); every other structure is tested as a sphere of `ref.sim.query.structure_pick_fraction` × its radius at its centre ([Containers and update order](../12_simulation_model/04_containers_and_update_order.md) table 2.10-A). Without a hit the score is the largest finite score.
    - **Actor groups** of the team: a group with live members is pre-tested as a sphere of `ref.sim.query.group_pick_factor` × its radius at its centre, then each live member as a sphere of the same factor × its radius; the group of the best-scoring member wins.
@@ -233,15 +233,15 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 
 ### 2.5 Selecting with the pointer
 
-**R-CTRL-062** (MUST) Row S1 obeys these restrictions: nothing new can be selected while a Beam Dish or a turret is selected (the player deselects first, rows S3 and T6); an actor that is already selected is ignored; a Worker is never selected singly (<<selectable>>). No other rule forbids selecting a new object while another is selected.
+**R-CTRL-062** (MUST) Row S1 obeys these restrictions: nothing new can be selected while a Beam Dish or a turret is selected (the player deselects first, rows S3 and T6); an actor that is already selected is ignored; a Worker is never selected singly ([selection and Power slots](selection_and_power_slots.md) R-CTRL-153). No other rule forbids selecting a new object while another is selected.
 
 **R-CTRL-063** (MUST) An own Beam Dish is selectable unless the map's option disables Beam Dish control ([Maps](../08_maps_and_level_design/README.md)); with the option set, row S1 does not select it.
 
 ### 2.6 Leaders as signposts and formations
 
-**R-CTRL-070** (MUST) Leaders are created only by promotion. The player promotes with row O2 (`PlayerCommand::PromoteWorker`); a bot promotes through the Leader Power (<<leaderpower>>). A Burning Worker is not promoted, and the new Leader is selected in the same step ([Leader and formations](../02_units/leader_and_formations.md) R-UNIT-153, R-SIM-454). In every match the team's Leader power level is 3, so a Leader can follow and form up (R-UNIT-174).
+**R-CTRL-070** (MUST) Leaders are created only by promotion. The player promotes with row O2 (`PlayerCommand::PromoteWorker`); a bot promotes through the Leader Power ([selection and Power slots](selection_and_power_slots.md) R-CTRL-193). A Burning Worker is not promoted, and the new Leader is selected in the same step ([Leader and formations](../02_units/leader_and_formations.md) R-UNIT-153, R-SIM-454). In every match the team's Leader power level is 3, so a Leader can follow and form up (R-UNIT-174).
 
-**R-CTRL-071** (MUST) Promotion shows a control flash at the new Leader: `ref.ctrl.promote.flash_count` particles, each with a velocity drawn from `ref.ctrl.promote.flash_velocity`, from the presentation generator (presentation, DEC-007). For the local team, promotion also registers a Leader marker (<<leadermarker>>).
+**R-CTRL-071** (MUST) Promotion shows a control flash at the new Leader: `ref.ctrl.promote.flash_count` particles, each with a velocity drawn from `ref.ctrl.promote.flash_velocity`, from the presentation generator (presentation, DEC-007). For the local team, promotion also registers a Leader marker ([cursor and markers](cursor_and_markers.md) R-CTRL-381).
 
 **R-CTRL-072** (MUST) The player demotes a selected Leader with row T5 (`PlayerCommand::DemoteLeader`), which turns it back into one Worker without releasing an Essence orb (R-UNIT-154, DEC-086).
 
@@ -257,13 +257,13 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 
 **R-CTRL-074** (MUST) A Leader under a waypoint order is a **Waypoint beacon**: every idle Worker of its team that passes within `ref.unit.worker.leader_signpost_range` takes the order and walks the order route, which turns the output of a Spawn Node into a conveyor. A Leader in formation mode gathers the Workers within `ref.unit.worker.leader_follow_range` into a block in front of it, up to `ref.sim.team.formation_size_upgrade` members ([Worker](../02_units/worker.md) R-UNIT-096, DEC-031).
 
-**R-CTRL-075** (MUST) The player sees a Leader's orders through these elements: the formation preview of the world cursor while a Leader is selected, and the route and preview of a hovered Leader that walks in formation (<<formpreview>>); the order trail marks that a waypoint order lays along its route (R-UNIT-185, R-UNIT-186, `marker.order_trail`); the Leader's banner, which shows its order and which the world markers draw for the local team (R-UNIT-191, <<leadermarker>>); and the terminate hint shown while the pointer hovers a Leader with no order ([Tutorial and help](../11_tutorial_and_help.md)).
+**R-CTRL-075** (MUST) The player sees a Leader's orders through these elements: the formation preview of the world cursor while a Leader is selected, and the route and preview of a hovered Leader that walks in formation ([cursor and markers](cursor_and_markers.md) R-CTRL-356); the order trail marks that a waypoint order lays along its route (R-UNIT-185, R-UNIT-186, `marker.order_trail`); the Leader's banner, which shows its order and which the world markers draw for the local team (R-UNIT-191, [cursor and markers](cursor_and_markers.md) R-CTRL-381); and the terminate hint shown while the pointer hovers a Leader with no order ([Tutorial and help](../11_tutorial_and_help.md)).
 
 ### 2.7 Transport orders
 
 **R-CTRL-080** (MUST) The player commands a Transport with rows O4, O5, O8 and O9 and with crowd orders; the Transport has no continuous control. The order operations are those of [Transport](../02_units/transport.md) R-UNIT-387 to R-UNIT-391 and R-UNIT-401: a move order clears the arrival action and turns Loading into Idle; a deploy order closer than `ref.unit.transport.deploy_min_distance` does nothing, and a farther one drives there and, within `ref.unit.transport.arrival_distance` of the point, starts Unloading when the Transport carries passengers and Loading when it is empty.
 
-**R-CTRL-081** (MUST) An order to a Transport (O8, O9) highlights its land route for the local team and emits an order-marker presentation event for every viewer whose team is a friend of the commanding team (R-SIM-450); the world markers then show the order marker (<<ordermarkertype>>). Clicking that marker with the promote action toggles the Transport's arrival action (O5).
+**R-CTRL-081** (MUST) An order to a Transport (O8, O9) highlights its land route for the local team and emits an order-marker presentation event for every viewer whose team is a friend of the commanding team (R-SIM-450); the world markers then show the order marker ([cursor and markers](cursor_and_markers.md) R-CTRL-381). Clicking that marker with the promote action toggles the Transport's arrival action (O5).
 
 **R-CTRL-082** (MUST) A deploy order, or an unload toggle, given while the Transport is over sea is not registered, and the Transport falls back to its idle state ([Transport](../02_units/transport.md); see DEC-302).
 
@@ -283,16 +283,16 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 | `secondary_fire` | `action.direct.secondary_fire` fires |
 | `target_directed` | `action.camera.aim_stick` or `action.direct.aim_stick` gives a vector |
 | `secondary_fire_directed` | `action.direct.secondary_fire_directed` fires |
-| `camera_tracking` | the camera is in tracking mode, or the camera is looking around (<<camtrack>>) |
+| `camera_tracking` | the camera is in tracking mode, or the camera is looking around (R-CTRL-103) |
 | `special_orders` | `action.order.special` fires (R-CTRL-051) |
 | `end_set_target` | `action.direct.set_target_end` fires |
 | `gamepad` | the input mode is gamepad |
 | `primary_held` | `action.direct.move_hold` is held |
 | `pointer_position` | the pointer ground point, replaced at send time by R-CTRL-059 |
-| `direct_move_vector` | the movement stick converted to world space by R-SIM-440, with the camera's control vector (<<ctrlvec>>) |
+| `direct_move_vector` | the movement stick converted to world space by R-SIM-440, with the camera's control vector ([camera](camera.md) R-CTRL-487) |
 | `direct_target_vector` | the aiming stick converted to world space; while the camera tracks a Strike team, the absolute target lead Trooper position + the camera's aim vector (R-CTRL-102) |
 
-**R-CTRL-102** (MUST) The aiming stick also steers the sender's camera aim vector, which is presentation: the wanted aim vector moves towards the stick vector with the acceleration `ref.ctrl.direct.aim_accel`, or `ref.ctrl.direct.aim_accel_fast` when the squared change exceeds `ref.ctrl.direct.aim_fast_threshold_sq`; its length is clamped to `ref.ctrl.direct.aim_max_length` when its squared length exceeds the square of that length. Each frame the camera aim vector moves a quarter of the way to the wanted aim vector (<<aimvec>>).
+**R-CTRL-102** (MUST) The aiming stick also steers the sender's camera aim vector, which is presentation: the wanted aim vector moves towards the stick vector with the acceleration `ref.ctrl.direct.aim_accel`, or `ref.ctrl.direct.aim_accel_fast` when the squared change exceeds `ref.ctrl.direct.aim_fast_threshold_sq`; its length is clamped to `ref.ctrl.direct.aim_max_length` when its squared length exceeds the square of that length. Each frame the camera aim vector moves a quarter of the way to the wanted aim vector ([camera](camera.md) R-CTRL-483).
 
 **R-CTRL-103** (MUST) The sender sets `camera_tracking` when its camera tracks the selected unit or when the player holds `action.camera.look_around`, so the Strike team's direct-control rule reads the sender's state and never a camera (DEC-008, [Strike team](../02_units/strike_team.md) R-UNIT-358).
 
@@ -316,7 +316,7 @@ For the local team, `end_set_target` after a move registers a move marker at the
 
 **R-CTRL-108** (MUST) A Beam Dish is controlled while it is the team's selection, with the camera in Beam Dish aim: row O10 aims it, and Workers are sent through it by a crowd order onto its entrance (R-CTRL-057).
 
-**R-CTRL-109** (MUST) When the team's selected actor group, actor or structure is no longer valid for the local participant (it is dead or removed, or it is a turret that now belongs to another team), the match input pump issues `PlayerCommand::Select` with none, none, none, and the camera returns to free movement. Executing it releases the Worker group as every `Select` does (<<release>>).
+**R-CTRL-109** (MUST) When the team's selected actor group, actor or structure is no longer valid for the local participant (it is dead or removed, or it is a turret that now belongs to another team), the match input pump issues `PlayerCommand::Select` with none, none, none, and the camera returns to free movement. Executing it releases the Worker group as every `Select` does ([selection and Power slots](selection_and_power_slots.md) R-CTRL-161).
 
 ## 3 States and flows
 

@@ -48,3 +48,6 @@
 | 44 | G03a | — | missing asset: the Launch Vessel fuelling-loop sample group; wrong role: `mesh.structure.structure_default` is the port pad; fuel-chain consumer paths need correcting | X-AST pass 2 |
 | 45 | G03b split | — | the folder README (G03a) must list `trees_and_crate_structures.md` and repoint the tree, Hive, Spitter Plant and Allegiance Scrambler rows | update the README |
 | 46 | G03b vs G04 | — | blight-tree keys duplicated, with three differences (reach, which tree is corrupted, 100 vs 101 ticks); G04's R-CRATE-181 states the uncorrected turret LOS | G04 told while running; verify in Phase 4 |
+| 47 | G04 | DEC-465 vs DEC-653 item 7 | zero-score weighted drop; G04 followed DEC-465 | reconcile; DEC-550's airstrike wording also needs aligning |
+| 48 | G04 vs G03b/G02a2/G02b | — | wrong list of whole-map Powers (R-BLDG-464); rocket-turret life 10 vs 11 ticks; a cancelled Transport; Strike team life 600 vs 601; a bad-pool airstrike that cannot occur (G02b) | decide from ORIG; fix the losing documents |
+| 49 | G04 | — | G04's report asks G03b to cite G04's tree, Hive and Spitter Plant keys, but the coordinator assigned them to G03b; check whether resumed G04 dropped its duplicates | Phase 4 key dedup: structure keys owned by G03b |
