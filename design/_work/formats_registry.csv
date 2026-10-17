@@ -1,0 +1,28 @@
+format_id,name,patterns
+level-file,Level files (map_/mission_/mp_ text definitions),data/levels/*.txt;data/purity/map_*.txt;data/purity/mission_*.txt
+game-txt,Game definition files (game*.txt),data/game.txt;data/game_demo.txt;data/game_demo2.txt;data/game_unlockall.txt;data/purity/game.txt
+locations-txt,Global-world locations file,data/locations.txt
+multiwinia-txt,Multiwinia configuration files,data/multiwinia.txt;data/multiwinia-testbed.txt
+betatesters,Beta-tester lists,data/betatesters.txt;data/multiwinia_betatesters.txt
+preferences,Preferences file,data/default_preferences.txt
+input-bindings,Input binding preference files,data/input/input_preferences*.txt
+keyboard-layout,Keyboard layout files,data/input/keyboards/*.txt
+locales,Input locale map,data/input/locales.txt
+language,Language phrase tables,data/language/*.txt
+script,Script files,data/scripts/*.txt
+purity-misc,Purity-control text files,data/purity/buyme.txt
+shp,Shape meshes (.shp),data/shapes/*.shp
+max,3ds Max shape sources (.max),data/shapes/*.max
+bmp,Bitmap textures/sprites/icons (.bmp),data/textures/*.bmp;data/sprites/*.bmp;data/icons/*.bmp;data/animations/*.bmp;data/thumbnails/*.bmp;data/mwhelp/*.bmp;data/sepulveda/*.bmp
+colour-ramp,Terrain/water/wave colour ramps,data/terrain/*.bmp
+anim,Animated-panel scripts (.anim),data/animations/*.anim
+gestures,Gesture definitions,data/gestures.txt
+gesture-demo,Gesture demo recordings,data/gesture_demos/*.txt
+effects-txt,Effects definitions,data/effects.txt
+stats-txt,Entity stats table,data/stats.txt
+sounds-txt,Sound event blueprints,data/sounds.txt
+ogg,Ogg Vorbis samples and streams,data/sounds/*.ogg;data/mwsounds/*.ogg
+shader,HLSL shaders (vs/ps/ps3 + globals.h),data/shaders/*
+dat-archive,Packed .dat (RAR) archives built from data/,
+psp,Paint Shop Pro source image,data/icons/*.psp
+grd,Photoshop gradient,data/untitled gradients.grd

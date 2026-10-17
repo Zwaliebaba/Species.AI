@@ -1,0 +1,28 @@
+pattern,justification
+contrib/libogg-1.1.3/*,Third-party library linked statically (ogg_static); used only via its public API at the Ogg decoder call site (27). Internals out of scope.
+contrib/libvorbis-1.1.2/*,Third-party library linked statically (vorbis_static/vorbisfile_static); used only via its public API (27). Internals out of scope.
+contrib/lpng1215/*,Third-party libpng linked statically; used only via its public API where PNG is loaded (25/29). Internals out of scope.
+contrib/zlib/*,Third-party zlib linked statically; dependency of libpng/unrar. Internals out of scope.
+contrib/unrar/*,Third-party unrar linked statically; used only via its API to read .dat archives (29/31). Internals out of scope.
+contrib/xcrashreport/*,Third-party crash-report client; not a sub-project of Darwinia.sln (crash handling documented in 31 via code/lib/exception_handler).
+contrib/linux/*,Prebuilt Linux libraries for the unmaintained Darwinia Linux target; not used by the Multiwinia PC build.
+contrib/macosx/*,Prebuilt macOS SDL framework for the unmaintained Mac target; not used by the Multiwinia PC build.
+contrib/oggvorbis-macosx-libs-1.0/*,Prebuilt macOS Ogg/Vorbis libraries; not used by the Multiwinia PC build.
+contrib/loki_setup/*,Loki installer toolkit for Linux; not part of the Multiwinia PC build.
+contrib/loki_setupdb/*,Loki installer database; not part of the Multiwinia PC build.
+contrib/systemiv/contrib/*,Third-party libraries vendored inside SystemIV; not compiled into Multiwinia (build_matrix §6).
+contrib/systemiv/interface/*,SystemIV interface layer not compiled into Multiwinia; Multiwinia uses code/interface + contrib/eclipse (build_matrix §6).
+contrib/systemiv/template/*,SystemIV project template; not compiled.
+contrib/systemiv/tools/*,SystemIV font-extract tool; not part of the Multiwinia build.
+contrib/systemiv/todo.txt,SystemIV developer todo note; no design content for Multiwinia.
+contrib/systemiv/lib/eclipse/*,SystemIV copy of Eclipse not compiled; the linked copy is contrib/eclipse (28).
+contrib/systemiv/lib/gucci/*,SystemIV Gucci window manager not compiled into Multiwinia.
+contrib/systemiv/lib/render/*,SystemIV renderer not compiled into Multiwinia (Multiwinia renderer is code/renderer + code/lib).
+contrib/systemiv/lib/resource/*,SystemIV resource manager not compiled into Multiwinia (code/lib/resource is used).
+contrib/systemiv/lib/sound/*,SystemIV sound system not compiled into Multiwinia (code/sound is used).
+contrib/systemiv/lib/hash.h,SystemIV header not included by the Multiwinia project.
+contrib/systemiv/lib/hi_res_time.*,SystemIV duplicate not compiled; code/lib/hi_res_time is used (31).
+contrib/systemiv/lib/language_table.*,SystemIV duplicate not compiled; code/lib/language_table is used (29).
+contrib/systemiv/lib/map_utils.h,SystemIV header not included by the Multiwinia project.
+contrib/systemiv/lib/network_stream_inlines.cpp,SystemIV inline helper not listed in Darwinia.vcproj.
+contrib/systemiv/lib/preferences.*,SystemIV duplicate not compiled; code/lib/preferences is used (29).
