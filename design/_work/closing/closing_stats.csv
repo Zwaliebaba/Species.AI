@@ -1,0 +1,16 @@
+doc,unknown_rows,discrepancy_rows,ip_rows,U_tags,I_tags,C_tags
+01_game_modes.md,,,,2,4,113
+02_units_and_entities.md,-2,-2,-2,2,36,682
+03_buildings_and_world_objects.md,17,13,15,15,49,642
+04_crates_powerups_and_weapons.md,12,15,15,5,35,288
+05_economy_and_population.md,12,14,14,5,32,205
+06_player_control_and_input.md,12,18,17,8,21,457
+07_ai.md,12,8,10,7,23,119
+09_meta_systems.md,,,,1,14,300
+20_architecture.md,-2,-2,-2,1,35,140
+23_terrain_and_landscape.md,-2,9,10,7,41,150
+24_rendering.md,15,21,17,6,60,192
+27_audio_engine.md,14,16,11,3,33,165
+28_ui_framework.md,9,5,13,3,15,228
+30_scripting_tutorial_and_cutscenes.md,,,,2,23,284
+31_platform_build_and_tools.md,15,19,14,9,43,188

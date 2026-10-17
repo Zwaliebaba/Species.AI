@@ -554,6 +554,55 @@ Shapes and markers used by the live set [C] `data/shapes/*.shp` (P06 `scripts/P0
 
 Base list: `Create`, `Reprogramming`, `ReprogramComplete`, `ChangeTeam`, `Damage`; `Explode` is triggered by `Building::Destroy` without being listed in the base list. Each class adds its own events (listed per section). Bindings to samples live in `data/sounds.txt` → [10](10_audio_design.md). [C] `Building::ListSoundEvents`, `Building::Destroy`.
 
+### 3.16 Level-file parameter quick reference
+
+Tokens after the 8 base fields (`Type id x z tm rx rz isGlobal`); `*` = repeated to end of line; `[opt]` = read only if a token is available (nested: each optional field requires the previous one). Details and defaults in each class section. [C] each class's `Read`/`Write`.
+
+| Level-file type | Extra tokens (order) | Section |
+|---|---|---|
+| `SpawnPoint`, `SpawnLink`, `SpawnPointMaster` | `linkId*` | §4.2 |
+| `SpawnPopulationLock` | `searchRadius maxPopulation` | §4.6 |
+| `GunTurret` | [opt] `state` [opt] `targetX targetZ targetRadius targetForce` | §5.1 |
+| `RadarDish` (isGlobal 1) | [opt] `forceConnection` [opt] `autoConnectAtStart` `validLinkId*` | §5.3 |
+| `ControlStation` | `controlBuildingId` | §5.4 |
+| `JumpPad` | `force angle` | §5.5 |
+| `SolarPanel`, `Pylon`, `PylonEnd` | `powerLink` | §6 |
+| `PowerSplitter` | `powerLink linkId*` | §6.5 |
+| `LaserFence` | `nextLaserFenceId` [opt] `scale` [opt] `mode` | §7.1 |
+| `Wall` | [opt] `objectiveLink` | §7.2 |
+| `Tree` | `height budsize pushOut pushUp iterations seed branchColour leafColour` [opt] `leafDropRate` [opt] `spiritDropRate` [opt] `evil` | §7.3 |
+| `StaticShape` | `scale shapeName` | §7.4 |
+| `RestrictionZone` | `size` [opt] `blockPowerups` | §7.5 |
+| `SmokeMarker`, `EruptionMarker` | none | §7.6, §7.7 |
+| `MultiwiniaZone` | `size linkId*` | §8.1 |
+| `WallBuster` | none | §8.5 |
+| `TrunkPort` (isGlobal 1) | [opt] `targetLocationId` | §8.6 |
+| `PulseBomb` | `startTime linkId*` | §8.7 |
+| `FuelGenerator`, `FuelPipe`, `FuelStation` | `fuelLink` | §8.8 |
+| `EscapeRocket` | `fuelLink fuel passengers spawnBuildingId spawnCompleted` | §8.12 |
+| `AntHill` | `numAntsInside` | §9.1 |
+| `Triffid` | `size pitch force variance reloadTime useTrigger triggerX triggerZ triggerRadius` then up to 10 × [opt] `spawnFlag` | §9.2 |
+| `AITarget` | [opt] `linkId` [opt] `priorityModifier` [opt] `checkCliffs` | §10.1 |
+| `AIObjective` | `nextObjective` | §10.2 |
+| `AIObjectiveMarker` | `scanRange objectiveId` [opt] `armourObjective` [opt] `pickupOnly` | §10.3 |
+| `ControlTower` (isGlobal 1) | `controlBuildingId` | §11.1 |
+| `Incubator` (isGlobal 1), `CloneLab` | [opt] `numStartingSpirits` | §11.2, §11.3 |
+| blocked (dropped at load): `AISpawnPoint` | `activatorId entityType count period` [opt] `spawnLimit` [opt] `routeId` | §10.4 |
+| blocked: `Generator`, `PylonStart`, `Powerstation` | `powerLink` / `powerLink reqBuildingId` / `linkedBuildingId` | §6.6–§6.8 |
+| blocked: `SpiritReceiver`, `ReceiverLink`, `SpiritSpawner`, `SpiritProcessor` | `spiritLink` | §12.3–§12.7 |
+| blocked: `Factory` | `initialCapacity` | §12.10 |
+| blocked: `BlueprintStore` / `BlueprintConsole` / `BlueprintRelay` | `buildingLink` / `buildingLink segment` / `buildingLink altitude` | §12.11–§12.14 |
+| blocked: `Bridge` | `nextBridgeId bridgeType` | §12.15 |
+| blocked: `ChessBase` | `width depth` | §12.17 |
+| blocked: `FeedingTube` | `receiverId` | §12.19 |
+| blocked: `DynamicHub` / `DynamicNode` | `buildingLink shapeName requiredScore currentScore minActiveLinks` / `buildingLink shapeName scoreValue scoreSupplied` | §12.21, §12.22 |
+| blocked: `ResearchItem` | `researchType` [opt] `level` | §12.26 |
+| blocked: `TrackLink`, `Refinery`, `Mine` / `TrackJunction` / `TrackStart`, `TrackEnd` | `trackLink` / `trackLink linkId*` / `trackLink reqBuildingId` | §12.27–§12.34 |
+| blocked: `SafeArea` | `size entitiesRequired entityTypeRequired` | §12.35 |
+| blocked: `ScriptTrigger` | `linkId range scriptFilename entityType` | §12.36 |
+| blocked: `FenceSwitch` (isGlobal 1) | `linkedBuildingId linkedBuildingId2 switchValue lockable script` [opt] `locked` | §12.37 |
+| blocked: `Cave`, `Yard`, `DisplayScreen`, `GodDish`, `Spam`, `Library`, `UpgradePort`, `PrimaryUpgrade`, `Portal`, `Crate`, `Statue`, `ChessPiece` | none of their own (Crate: see [04](04_crates_powerups_and_weapons.md)) | §12, §9.3, §8.4 |
+
 ## 4 Spawn network
 
 Source: `code/worldobject/spawnpoint.{h,cpp}`. Build tag **[B:FULL]** for all five classes; single-player branches are [B:LEGACY]. The economic consequences (burst/pause throughput, population caps, handicap, comparison with trunk ports and engineers/harvesters) are specified in [05](05_economy_and_population.md); this section is the building-level specification.

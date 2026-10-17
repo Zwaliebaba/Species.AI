@@ -1274,3 +1274,252 @@ flowchart LR
 | Skip key | `SkipTutorial = key t pressed` | binding | [C] `data/input/input_preferences.txt` L293 |
 
 ---
+## Open questions and unknowns
+
+| Id | Item | Class | Why it matters | What would resolve it |
+|---|---|---|---|---|
+| 30-U1 | Whether newly spawned, uninstructed player Darwinians wander into port range of ControlStation 51 (224.6 wu from spawn 3) so that radar dish 4 becomes player-owned and Tutorial 2 can start showing tabs (§3.9 a) | [I] design-critical | If they do not, Tutorial 2 shows nothing at the start and the player must discover the station unaided | Runtime observation of Tutorial 2, or a simulation of Darwinian idle wandering (`Darwinian::SearchForRandomPosition`, `SearchForPorts`) from spawn 3 |
+| 30-U2 | Whether CPU team 2 reliably captures spawn 83 before the player in Tutorial 2 (§3.9 b) | [I] design-critical | Decides whether the formation-attack and break-formation lessons are ever shown | Repeated runtime observation of Tutorial 2 |
+| 30-U3 | Whether `RecordDemo = 1` / `2` reproduces a Multiwinia match (history includes the lobby; team/client layout, sync seed and live client commands must match) (§7.1) | [U] | Determines whether a replay feature can be built on the existing history format unchanged | Record a local match with `RecordDemo 1`, replay with `RecordDemo 2`, compare per-frame sync bytes and final scores |
+| 30-U4 | Behaviour when a script omits a mandatory 2nd–4th argument: `GetNextToken()` returns NULL and is passed to `iv_atof`/`atoi`/`stricmp` (§2.2) | [I] (likely access violation) | Robustness of authored scripts | Run a script with a truncated `CamMove` line under the original build |
+| 30-U5 | The local player is team 0 in both tutorials (Tutorial 2 hard-codes team 0) (§3.6) | [I] strong (the local client requests its team before any CPU team; the server assigns the first free slot) | A different assignment would make Tutorial 2 test the wrong team | Trace `Server` team-slot assignment ([22](22_determinism_and_networking.md)) during a tutorial start |
+| 30-U6 | `GlobalWorldGameLoop` (where `Script::Advance` is also called) exits immediately in Multiwinia because `m_atMainMenu` is set (§2.1) | [I] | Confirms the second tick site is inert | [20](20_architecture.md) main-loop analysis |
+| 30-U7 | Duration of a late-join catch-up replay (≈ 10 min for a 20-min match at +20 frames/s) (§7.2) | [I] | Join-in-progress UX | [22](22_determinism_and_networking.md) measurement |
+| 30-U8 | Whether `GL_BLEND` is enabled when the credits loader (script op `RunCredits`, outro camera) draws its fading clear quad | [U] | Visual only, legacy path | GL state trace at `Script::RunCommand_RunCredits` ([09](09_meta_systems.md)) |
+
+Resolved during synthesis (not counted): P19 U1 (music event names are matched with `stricmp`), U2 (map CRCs reproduce), U3 (dish 4 is captured through ControlStation 51 — mechanism; the residual question is 30-U1), U4 (`_kbd`/`_xin` resolution, see [29](29_data_formats_reference.md)).
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code | Ref |
+|---|---|---|---|
+| `docs/help system.txt` | A Sepulveda context-help design with F1 to request help, "fixed messages" (BuildingCaptured, BuildingOnline, NewGestureAvailable, objective complete…), "failure help" (SquadCreationOutOfBounds…) and action items GestureBasics, ThrowAirstrike, FireRocket, Persuadatron, EngineerBuildBridge, EngineerHarvestSpirits, EngineerCaptureBuilding, AimRadarDish, PopulateWithDarwinians | Key is `SepulvedaHelp = key h`; the enum has the 20 items listed in [09](09_meta_systems.md); no fixed-message or failure-help classes exist; the whole system is compiled out of Multiwinia | [C] `code/helpsystem.h`; `data/input/input_preferences.txt` L255 |
+| `docs/changes.txt` L82–84 | "Show First Time Intro" makes the intro play "the next time you start Darwinia" | The intro runs only from `RunBootloader` when the Campaign is launched (and only with `USE_LOADERS`); the option row is not built in the Multiwinia options UI | [C] `code/main.cpp:RunBootloader`; `code/interface/prefs_other_window.cpp` (see [09](09_meta_systems.md)) |
+| `docs/detailed schedule.txt` (CUTSCENES) | "Intro cutscene should always play when a new profile is created" | The trigger is the `BootLoader = firsttime` preference written for a fresh preferences file, not per profile; never reachable in Multiwinia | [C] `code/lib/preferences.cpp` (L377); `RunBootloader` |
+| `docs/detailed schedule.txt` L19 | "(OPTIONAL) Intro bootloaders" planned | Implemented, then compiled out (`//#define USE_LOADERS`) | [C] `code/lib/universal_include.h` |
+| `docs/multiwinia-changes.txt` L53, `docs/multiwiniachanges-beta.txt` L16 | "Power-ups in the Advanced Tutorial will now terminate correctly upon use" | Consistent only after Tutorial 2's End step: `TaskManager::TerminateTask` is refused while `!m_tutorial2AICanSpawn`, and armour can never be stopped in a tutorial | [C] `code/taskmanager.cpp:TaskManager::TerminateTask`, `Task::Stop` |
+| `docs/multiwiniachanges-beta.txt` L111, L330; `docs/multiwiniareleasenotes-beta.txt` L87, L346 | A "quick tutorial" and an "Advanced Concepts tutorial" | Match Tutorial 1 and Tutorial 2 — no discrepancy | [C] §3 |
+| `docs/betachanges.txt` L34 | "The final Fence Switch has been made Once Only, preventing constant cutscene triggering" | Darwinia content: `FenceSwitch` (trigger T2) is a blocked building in Multiwinia; the `lockable` field implements "once only" | [C] `code/worldobject/switch.cpp`; `code/worldobject/building.cpp:Building::BuildingIsBlocked` |
+| `docs/possible removals.txt` | "Cutscene 5" listed as a possible removal | `music5.txt` and the `Cutscene5` music event still exist (Darwinia campaign) | [C] `data/scripts/music5.txt`; `data/sounds.txt` |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)` returns −range < x < range | Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects the demo-end sprite spreads in §5.3) | [C] `contrib/systemiv/lib/math/random_number.cpp:sfrand` |
+| `docs/multiwiniareleasenotes-beta.txt` L35 | The beta records benchmarks and uploads them by FTP "when you exit" | Compiled out in every target here; when enabled, upload happens at the end of each match | [C] `code/benchmark.cpp`; `code/main.cpp:EnterLocation` (see [32](32_debug_test_and_performance.md)) |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| Dr Sepulveda (narrator name, persona, `sepulveda_*` phrase ids, `SepulvedaHelp` control) | name / character | `code/sepulveda.*`; `data/input/input_preferences.txt` L255 | "Advisor"; `AdvisorHelp` |
+| Sepulveda portraits `sepulveda1..5.bmp` (256 × 256, 8-bit) | art | `data/sepulveda/` | placeholder advisor portrait set (3 neutral, eyes shut, mouth open) |
+| All narrator/cutscene dialogue: 267 script `Say` lines, `tutorial_*`, `launchpad_tutorial_*`, `help_*`, `research_explanation_*`, `outro_*`, `yardend_*`, `temple_*`, `containment*`, `pixelmines_*`, `launchpad_success_*`, `launchpad_middemo_*`, `tutorial_skipped`, `dialog_skiptutorial`, `sepulveda_pressreturn*`, `help_pressh` | text | `data/language/english.txt`; `data/scripts/*` | rewrite all narration |
+| The 42 cutscene scripts and their camera choreography | text / data | `data/scripts/*` | author new scripts |
+| Darwinia location names used by scripts: biosphere, containment, generator, mine, yard, receiver, pattern_buffer, temple, launchpad, garden, escort, labs, "heaven" | name | `data/scripts/*`; `data/game*.txt` | generic sector names |
+| Darwinia camera mount names (`gamestart`, `tutorial1..7`, `incubator1..3`, `attack6`, `attack7`, `attack7b`, `wherenext1`, `booster1`, `booster2`, `launch1`, `launch2`, `lastshot`, `lastshot2`, `attract1..6`) and the conventions `player0..3`, `start`, `CamPosBefore` | level data / names | `data/levels/*.txt`; `code/level_file.h` | `spawn_view_<n>`, `default_view`, `previous_view` |
+| Multiwinia tutorial and help text: `multiwinia_help_*`, `multiwinia_help_title_*`, `crate_drop`, `multiwinia_menu_tutorial_short`, `multiwinia_menu_tutorial1/2` ("Part 1: The Basics", "Part 2: Advanced Concepts") | text | `data/language/english.txt` | rewrite; own titles |
+| "Darwinian", "Multiwinian", "Multiwinia", "Darwinia" inside help strings | brand / name | `multiwinia_help_*` phrases | "unit" / product placeholder |
+| Tutorial camera-controls picture `control_camera.bmp`, `control_camera_french.bmp` | art | `data/mwhelp/` | new control diagram |
+| Tutorial map layouts `mp_koth_2P_1`, `mp_koth_3P_1` and their hard-coded building ids | level / name | `data/levels/`; `code/multiwiniahelp.cpp` | new tutorial maps with tagged objects |
+| Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character name) | text / character | `data/language/english.txt` L1412–1421 | new intro text |
+| Logo splash texture `icons/darwin_research_associates.bmp` and sound `ShowLogo` | brand / art / audio | `code/renderer.cpp`; `code/script.cpp` | product logo placeholder |
+| Demo-end prompts `multiwinia_spacetoexit`, `multiwinia_atoexit`; ghost and creature sprites `sprites/ghost.bmp`, `sprites/darwinian.bmp` | text / art | `code/demoendsequence.cpp` | new text and sprites |
+| Music cues `Cutscene1..5`, `EndSequence`, `Demo2Intro`, `Demo2Mid`, `StartSequence` and their samples (third-party chiptune artists for `StartSequence`) | audio | `data/sounds.txt`; `data/sounds/*.ogg` | licensed/commissioned score; events `cue_<n>`, `intro` |
+| Narrator UI sounds `Appear`, `Disappear`, `TextAppear` | audio | `code/sepulveda.cpp` | new SFX |
+| God-ray beam texture `textures/godray.bmp` | art | `SepulvedaHighlight::Render` | generic beam |
+| Gesture demos `squad.txt`, `engineer.txt`, `officer.txt`, `armour.txt`, `airstrike.txt`, `controller.txt`, `grenade.txt`, `rocket.txt` | data | `data/gesture_demos/` | not needed |
+| Profile / cheat names `AccessAllAreas`, `AttractMode`, `game_unlockall.txt`; `PurityControl` kill switch and buy-now URL | name / behaviour | `code/script.cpp`; `code/app.cpp` | drop |
+
+## Source map
+
+One row per source or data file that implements or feeds this document's subject.
+
+| File | Role |
+|---|---|
+| `code/script.h` | `Script` class: 43-opcode enum, wait-state members |
+| `code/script.cpp` | Interpreter: `RunScript`, `Advance`, `AdvanceScript`, every `RunCommand_*`, `g_opCodeNames`, dead `TestScript` |
+| `code/multiwiniahelp.h` | Help-tab enum (49 ids), tutorial state members |
+| `code/multiwiniahelp.cpp` | Live tutorials: `AttachTutorialTo3d`, `AttachTutorial2To3d`, `RunTutorialHelp`, `RenderTab3d`, `RenderTutorialHelp`, `RenderGracePeriodHelp`, helper counters, `Reset` |
+| `code/UI/GameMenuWindow.cpp` | Tutorials page, `SetupTutorial`, `SetupTutorial2`, quick-start flow |
+| `code/UI/TutorialButton.h` | `TutorialPageButton`, `TutorialButton` |
+| `code/game_menu.cpp` | Return to the Tutorials page after a tutorial match |
+| `code/app.h` | Tutorial enums/flags, gated narrator/tutorial/demo-end members, `m_startSequence` |
+| `code/app.cpp` | Construction of `Script`; bare `GlobalWorld` (no events); AI override skip; `RecordDemo` save; dead tutorial construction |
+| `code/main.cpp` | Script tick sites, ESC routing, `UpdateAdvanceTime` (RecordDemo timing), level-start mounts, `RunBootloader`, `LoadHistory` |
+| `code/camera.h` | Camera modes, animation cursor members |
+| `code/camera.cpp` | `PlayAnimation`, `AdvanceAnim`, `StopAnimation`, `IsAnimPlaying`, `SetTarget` (3 forms), `CutToTarget`, `AdvanceMoveToTargetMode`, `AdvanceBuildingFocusMode`, `AdvanceComponentZoom`, sphere-world scripted/intro/outro/focus modes |
+| `code/level_file.h` | `CameraMount`, `CamAnimNode`, `CameraAnimation`, name limits, `CamPosBefore` |
+| `code/level_file.cpp` | `ParseCameraMounts`, `ParseCameraAnims`, writers, `SaveMapFile` (animations not written), lookups |
+| `code/lib/math_utils.cpp` | `RampUpAndDown` easing |
+| `code/renderer.cpp` | Start-sequence overlay hook, logo splash, dead narrator render hook |
+| `code/startsequence.h` | `StartSequence`, `StartSequenceCaption` |
+| `code/startsequence.cpp` | Intro driver, captions, typewriter, cursor, fades, grid |
+| `code/demoendsequence.h` | `DemoEndSequence` [B:DEAD] |
+| `code/demoendsequence.cpp` | Demo-end fade, ghost sprites, exit prompt [B:DEAD] |
+| `code/interface/demoend_window.cpp` | Demo-end UI window [B:DEAD] |
+| `code/sepulveda.h` | Narrator data model [B:DEAD] |
+| `code/sepulveda.cpp` | Narrator queue, timing, layouts, portrait, highlights, gesture replay [B:DEAD] |
+| `code/sepulveda_strings.cpp` | Caption-parser remnants [B:DEAD] |
+| `code/tutorial.h` | `Tutorial` base [B:DEAD] |
+| `code/tutorial.cpp` | Chapter/timer/repeat mechanics [B:DEAD] |
+| `code/tutorial_demo1.cpp` | Demo 1 chapters [B:DEAD] |
+| `code/tutorial_demo2.cpp` | Demo 2 chapters, `IsPlayerBusy` [B:DEAD] |
+| `code/helpsystem.h` | Darwinia context help (narrator consumer) [B:DEAD] |
+| `code/helpsystem.cpp` | same [B:DEAD] |
+| `code/gesture_demo.h` | Recorded mouse-path replay [B:DEAD] |
+| `code/gesture_demo.cpp` | same [B:DEAD] |
+| `code/attract.h` | Attract mode (script consumer) [B:DEAD] |
+| `code/attract.cpp` | Trigger T6 [B:DEAD] |
+| `code/global_world.cpp` | Trigger T3 (`GlobalEventAction::Execute`), events suspended during scripts |
+| `code/worldobject/scripttrigger.h` | Trigger mode codes |
+| `code/worldobject/scripttrigger.cpp` | Trigger T1 reference design |
+| `code/worldobject/switch.cpp` | Trigger T2 |
+| `code/worldobject/rocket.cpp` | Trigger T5; `EscapeRocket::GetStateId` for `WaitRocket` |
+| `code/worldobject/building.cpp` | Block list that disables T1/T2; `CreateBuilding` by name vs by id |
+| `code/worldobject/goddish.cpp` | Targets of the five GodDish script ops [B:LEGACY] |
+| `code/worldobject/controlstation.cpp` | Station → linked dish ownership (Tutorial 2 dish 4) |
+| `code/worldobject/radardish.cpp` | Link list parsing; dish 11 receiver block in tutorials |
+| `code/worldobject/ai.cpp` | Tutorial AI restrictions, AITarget 92 priority |
+| `code/worldobject/spawnpoint.cpp` | Tutorial 2 spawn lock |
+| `code/worldobject/crate.cpp` | Tutorial crate decay and 10 airstrike markers |
+| `code/worldobject/officer.cpp` | Formations disabled in Tutorial 1 |
+| `code/worldobject/darwinian.cpp` | Grenades disabled in Tutorial 2; port search; order persistence |
+| `code/worldobject/darwinian.h` | `DARWINIAN_SEARCHRANGE_PORTS` |
+| `code/taskmanager.cpp` | Task termination and armour stop blocked in tutorials |
+| `code/taskmanager_interface_multiwinia.cpp` | Trigger T4 (objective click) |
+| `code/taskmanager_interface_icons.cpp` | Trigger T4 (icons interface) |
+| `code/taskmanager_interface_gestures.cpp` | Trigger T4 (gestures interface) |
+| `code/control_help.cpp` | Control hints suppressed while a script runs; Demo 2 on-screen aids |
+| `code/location.cpp` | Tutorial crates off, fixed team positions, CPU colours |
+| `code/multiwinia.cpp` | Score box and time display in tutorials; `SetGameOption`; blueprint loading |
+| `code/mapcrc.h` | Tutorial map ids |
+| `code/sound/soundsystem.cpp` | Case-insensitive music event lookup for `TriggerSound`/`StopSound` |
+| `code/loaders/loader.cpp` | `GetLoaderIndex("credits")` for `RunCredits` |
+| `code/loaders/credits_loader.cpp` | Credits run by `RunCredits` / outro [B:LEGACY] |
+| `code/lib/hi_res_time.cpp` | Fake-time mode for demo/AVI capture |
+| `code/lib/preferences.cpp` | `BootLoader = firsttime`, `TextSpeed` defaults |
+| `code/lib/language_table.cpp` | Phrase lookup and input-mode suffixes |
+| `code/lib/universal_include.h` | `INCLUDE_TUTORIAL`, `USE_LOADERS`, `AVI_GENERATOR`, `GRACE_TIME` |
+| `code/lib/avi_generator.cpp` | AVI capture [B:DEBUG] |
+| `code/interface/grabber_window.cpp` | Record start/stop with fake time [B:DEBUG] |
+| `code/interface/camera_anim_window.cpp` | Animation editor [B:EDITOR] |
+| `code/interface/camera_mount_window.cpp` | Mount editor [B:EDITOR] |
+| `code/lib/input_sdl.cpp` | Input/camera log and replay [B:DEAD] |
+| `code/network/server.cpp` | `SaveHistory`, `LoadHistory`, history streaming |
+| `code/network/clienttoserver.cpp` | Late-join replay processing |
+| `code/benchmark.cpp` | Benchmark telemetry recorder [B:DEAD] |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` | Script tokeniser (`CleanLine`, `GetNextToken`) |
+| `contrib/systemiv/lib/math/math_stubs.cpp` | `iv_atof` used for script numbers |
+| `data/levels/mp_koth_2P_1.txt` | Tutorial 1 map |
+| `data/levels/mp_koth_3P_1.txt` | Tutorial 2 map |
+| `data/multiwinia.txt` | KOTH defaults applied to tutorials |
+| `data/input/input_preferences.txt` | `SkipCutscene`, `SkipMessage`, `SkipTutorial`, attract bindings |
+| `data/language/english.txt` | Tutorial tab, intro, narrator and demo-end phrases |
+| `data/default_preferences.txt` | `TextSpeed` default |
+| `data/sounds.txt` | Script music events, narrator sounds, `StartSequence` music |
+| `data/mwhelp/control_camera.bmp` | Tutorial grace-period picture |
+| `data/mwhelp/control_camera_french.bmp` | same, French keyboard |
+| `data/icons/darwin_research_associates.bmp` | Logo splash texture [B:LEGACY] |
+| `data/icons/mouse_main.bmp` | Narrator gesture-demo cursor [B:DEAD] |
+| `data/textures/godray.bmp` | Narrator highlight beam [B:DEAD] |
+| `data/sprites/ghost.bmp` | Demo-end sprite [B:DEAD] |
+| `data/sprites/darwinian.bmp` | Demo-end sprite [B:DEAD] |
+| `data/sepulveda/sepulveda1.bmp` | Narrator portrait frame (neutral) [B:DEAD] |
+| `data/sepulveda/sepulveda2.bmp` | Narrator portrait frame (neutral) [B:DEAD] |
+| `data/sepulveda/sepulveda3.bmp` | Narrator portrait frame (neutral) [B:DEAD] |
+| `data/sepulveda/sepulveda4.bmp` | Narrator portrait frame (eyes shut) [B:DEAD] |
+| `data/sepulveda/sepulveda5.bmp` | Narrator portrait frame (mouth open) [B:DEAD] |
+| `data/gesture_demos/airstrike.txt` | Gesture demo path [B:DEAD] |
+| `data/gesture_demos/armour.txt` | Gesture demo path (`yard_armour.txt`) [B:DEAD] |
+| `data/gesture_demos/controller.txt` | Gesture demo path [B:DEAD] |
+| `data/gesture_demos/engineer.txt` | Gesture demo path (Demo 1) [B:DEAD] |
+| `data/gesture_demos/grenade.txt` | Gesture demo path [B:DEAD] |
+| `data/gesture_demos/officer.txt` | Gesture demo path (`containment_officer.txt`, Demo 1) [B:DEAD] |
+| `data/gesture_demos/rocket.txt` | Gesture demo path [B:DEAD] |
+| `data/gesture_demos/squad.txt` | Gesture demo path (Demo 1) [B:DEAD] |
+| `data/game.txt` | Trigger T3 events (Darwinia campaign) |
+| `data/game_demo.txt` | Demo 1 world (mine) [B:DEAD] |
+| `data/game_demo2.txt` | Demo 2 / Prologue world; T3 `launchpad_finalisland.txt` |
+| `data/game_unlockall.txt` | T3 events for the attract/unlock-all profile |
+| `data/purity/game.txt` | T3 events (purity build data, excluded from the archive) |
+| `data/levels/mission_biosphere_attract.txt` | T4 objective cutscene |
+| `data/levels/mission_biosphere_recapture.txt` | T1 trigger, T4 objective |
+| `data/levels/mission_containment_enable.txt` | T1, T4 |
+| `data/levels/mission_escort_escort.txt` | T1, T4 |
+| `data/levels/mission_garden_liberate.txt` | T1 ×2 |
+| `data/levels/mission_generator_enable.txt` | T4 |
+| `data/levels/mission_launchpad.txt` | T1, T4 ×4, commented `launchpad_purpose` trigger; Demo 2 level |
+| `data/levels/mission_mine_attract.txt` | T4; attract mounts |
+| `data/levels/mission_mine_demo.txt` | T1 ×2, T4; Demo 1 level |
+| `data/levels/mission_mine_enable.txt` | T1, T4 |
+| `data/levels/mission_pattern_buffer_attract.txt` | T4; attract mounts |
+| `data/levels/mission_pattern_buffer_recapture.txt` | T4 |
+| `data/levels/mission_receiver_recapture.txt` | T4 |
+| `data/levels/mission_temple_cutscene.txt` | T1 (`temple_intro.txt`) |
+| `data/levels/mission_temple_recapture.txt` | T4 ×3 |
+| `data/levels/mission_yard_enable.txt` | T1, T4 ×3 |
+| `data/levels/map_mine.txt` | Demo 1 map, mounts `gamestart`, `tutorial1..7` [B:DEAD] |
+| `data/levels/map_launchpad.txt` | Demo 2 map, mounts [B:DEAD] |
+| `data/scripts/attractmode.txt` | Cutscene script [B:DEAD] (§2.6) |
+| `data/scripts/biosphere_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/biospherealpha_primary.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/containment_end.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/containment_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/containment_officer.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/containment_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/endattract.txt` | Cutscene script [B:DEAD] (§2.6) |
+| `data/scripts/gameover.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/gamestart.txt` | Cutscene script [B:DEAD] (§2.6) |
+| `data/scripts/garden_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/garden_opentrunkport.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/generator_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_finalisland.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_primary2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_primary3.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_primary_rocket.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/launchpad_purpose.txt` | Cutscene script [B:DEAD] (§2.6) |
+| `data/scripts/launchpad_victory.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/mine_demo_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/mine_minehelp.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/mine_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/mine_primary2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/music1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/music2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/music3.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/music4.txt` | Cutscene script [B:DEAD] (§2.6) |
+| `data/scripts/music5.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/patternbuffer_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/patternbuffer_primary2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/receiver_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/receiver_primary2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/temple_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/temple_primary.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_armour.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_end.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_intro.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_primary1.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_primary2.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `data/scripts/yard_primary3.txt` | Cutscene script [B:LEGACY] (§2.6) |
+| `tools/multiwinia_exclusions.txt` | Excludes `scripts/*`, `levels/map_*`, `levels/mission_*`, `gesture_demos/*` from the PC archive |
+| `docs/help system.txt` | Stale narrator help design (discrepancy) |
+| `docs/changes.txt` | First-time intro option note (discrepancy) |
+| `docs/detailed schedule.txt` | Intro / bootloader plans (discrepancy) |
+| `docs/multiwinia-changes.txt` | Advanced tutorial power-up note |
+| `docs/multiwiniachanges-beta.txt` | Tutorial history notes |
+| `docs/multiwiniareleasenotes-beta.txt` | Tutorial and benchmark notes |
+| `docs/betachanges.txt` | Fence-switch cutscene note |
+| `docs/possible removals.txt` | "Cutscene 5" note |
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] `USE_SEPULVEDA_HELP_TUTORIAL` family:** `code/sepulveda.*`, `code/sepulveda_strings.cpp` (§6), `code/tutorial.*`, `code/tutorial_demo1.cpp`, `code/tutorial_demo2.cpp` (§9), `code/helpsystem.*` ([09](09_meta_systems.md)), `code/demoendsequence.*` (§5.3), `code/gesture_demo.*` and the Win32 gesture recorder `code/gesture_demo_win32.cpp` (also needs `GESTURE_EDITOR`); the script ops `Say`, `ShutUp`, `Highlight`, `ClearHighlights`, `DemoGesture`, `SetCutsceneMode`, `ShowDemoEndSequence` and the `WaitSay`/`WaitPlayerNotBusy` checks; `ScriptTrigger` phrase sequencing; `RunScript` phrase-dump form; `GlobalWorld::WriteTutorial` body. [C]
+- **[B:DEAD] `SCRIPT_TEST_ENABLED`:** `Script::TestScript`, `Script::ReportError` — offline validator for mount names, location names, phrase ids, building ids, `CamMove`/`Wait` durations 0.01–20 s, routing errors to `TestHarness::PrintError` when a harness exists. [C] `code/script.cpp`.
+- **[B:DEAD] `USE_LOADERS`:** `RunBootloader` (the only constructor of `StartSequence`, which is therefore [B:LEGACY] compiled-but-unreachable). [C] `code/main.cpp`.
+- **[B:DEAD] `ATTRACTMODE_ENABLED`:** attract mode and trigger T6 (`attractmode.txt`, `endattract.txt`). [C] `code/attract.cpp`, `code/main.cpp`.
+- **[B:DEAD] `DEMOBUILD` / `DEMO2`:** tutorial instantiation, `DemoEndWindow` and its buttons. [C] `code/app.cpp`; `code/interface/demoend_window.cpp`.
+- **[B:DEAD] `BENCHMARK_AND_FTP`:** `BenchMark` (§7.4). [C] `code/benchmark.cpp`.
+- **[B:DEAD] SDL input/camera logging and replay** (`code/lib/input_sdl.cpp`, not in the PC project) and camera mode `ModeReplay` (no advancer). [C]
+- **[B:DEBUG] `AVI_GENERATOR`:** `GrabberWindow`, `AVIGenerator` fake-time capture (§7.3). [C]
+- **[B:EDITOR] `LOCATION_EDITOR`:** camera mount and animation editor windows (§4.6) and the editor loop's `RecordDemo` history save. [C]
+- **[B:LEGACY] (compiled into FULL, unreachable in Multiwinia):** all script content (§2.6) and triggers T1–T5 (§2.5); GodDish ops; `CamLocationFocus`, `CamGlobalWorldFocus`, `EnterLocation`, `ExitLocation`, `SetMission`, `GameOver`, `GiveResearch`, `ResetResearch`, `RestoreResearch`, `RunCredits`, `PurityControl`, `ShowDarwinLogo`; camera modes BuildingFocus, MoveToTarget (outside animations), SphereWorldScripted/Intro/Outro/Focus and the animation player (§4.3–§4.4); `StartSequence` (§5.1); the logo splash (§5.2); the Darwinia Prologue/Campaign menu entries that could reach T3–T5 are [B:DEBUG]. [C]
+- **Compiled in FULL but dead in effect:** `HelpTutorialDismissInfoBox` (callers commented out), the "scores" layout branch of `RenderTab3d` (only zero-vector caller commented out), the commented "draw his attention to the scores" rule at the end of `AttachTutorialTo3d`, the commented "formation terminated → go back" branch of Tutorial 2. [C] `code/multiwiniahelp.cpp`.
+- **Platform:** `_mac` phrase variants (`multiwinia_help_movetospawnpoint_mac`) and Mac `part_leftclick` narrator defines — `TARGET_OS_MACOSX` only. [C]

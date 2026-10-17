@@ -1756,14 +1756,14 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-  participant Loop as Main loop per render frame
+  participant ML as Main loop per render frame
   participant UI as UserInput Advance
   participant IM as InputManager
   participant D as Drivers in order
   participant TC as TargetCursor
   participant G as Game code
-  Loop->>IM: PollForEvents, n times, pumps the Win32 queue
-  Loop->>UI: Advance
+  ML->>IM: PollForEvents, n times, pumps the Win32 queue
+  ML->>UI: Advance
   UI->>IM: Advance
   IM->>IM: clear suppress flags
   loop each driver

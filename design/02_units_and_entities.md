@@ -1143,14 +1143,14 @@ stateDiagram-v2
     [*] --> Birth: SpawnSpirit on a death
     Birth --> Floating: 6 s and at most 10 above ground
     Floating --> Death: 30-50 s in MP, 90-150 s in SP
-    Floating --> Harvested: Harvester::Harvest
+    Floating --> Harvested: Harvester harvests
     Harvested --> Collected: reaches the collector
     Collected --> Floating: harvester gone
     Collected --> [*]: delivered, new Darwinian
     Floating --> Attached: CollectorArrives by Engineer, ArmyAnt or Virii
     Attached --> Floating: CollectorDrops
     Attached --> [*]: stored in an ant hill or put in an egg
-    Floating --> InEgg: Egg::Fertilise
+    Floating --> InEgg: Egg fertilised
     InEgg --> Floating: EggDestroyed
     InEgg --> [*]: egg hatches
     Floating --> [*]: eaten by Centipede, deleted by SpamInfection or SoulDestroyer
@@ -1460,7 +1460,7 @@ stateDiagram-v2
   ToSpawnPoint --> Idle : no own SpawnPoint
   ToIncubator --> Idle : no friendly Incubator
   Harvesting --> Destroyed : a sucked-up grenade reaches it
-  Idle --> Destroyed : Task::Stop
+  Idle --> Destroyed : task stopped
   Destroyed --> [*]
 ```
 
