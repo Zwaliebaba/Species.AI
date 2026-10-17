@@ -266,7 +266,7 @@ Table 3.2-A Camera state.
 | tracking | tracking distance, the last and wanted positions, the 10-sample history, the camera target, the orbit centre, the reset flag | R-CTRL-482 to R-CTRL-488, CAM-038 |
 | map camera data | the views, animations and start views of the match, and the name index | CAM-014, CAM-121 |
 
-**CAM-024** (MUST) The match camera lives as long as the process ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md), the process row of its lifetime table). The map camera data and the scripted-move, animation, structure-focus and timeline state belong to one match: `EnterMatch` replaces them and `LeaveMatch` clears them, so none of them survives a match. The pose, the field of view, the mode and the camera clock persist until something sets them.
+**CAM-024** (MUST) The match camera lives as long as the process ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md), the process row of its lifetime table). The map camera data and the scripted-move, animation, structure-focus and timeline state belong to one match: `EnterMatch` replaces them and `LeaveMatch` clears them, so none of them survives a match. The pose, the field of view and the mode persist until something sets them, and the camera clock is never reset.
 
 ### 3.3 Presentation timelines
 
@@ -301,7 +301,7 @@ Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carr
 
 **CAM-031** (MUST) The camera clock advances only when the camera advances. While the window has no focus, or while the camera is not advanced (the front end), neither the clock nor any camera timer moves, and a scripted move, a camera animation or a timeline resumes where it stood. The first step after such a gap is the clamped frame step, never the length of the gap.
 
-**CAM-032** (MUST) `Advance` runs once per rendered frame, only while the application window has focus and, in gamepad mode, while the gamepad is connected (R-CTRL-453): in the match loop at step 11.9 of R-SIM-581, and in the map-editor loop at its camera step (R-MAP-309). The camera is not advanced in the front end.
+**CAM-032** (MUST) `Advance` runs once per rendered frame, only while the application window has focus and, in gamepad mode, while the gamepad is connected (R-CTRL-453): in the match loop at step 11.9 of R-SIM-581, and in the map-editor loop at its camera step (R-MAP-309). The camera is not advanced in the front end (R-CTRL-453): there the backdrop of R-META-210 sets the camera's view directly in every frame, and replaces whatever pose an advance would produce.
 
 **CAM-033** (MUST) Each advance runs the steps of R-CTRL-456 in that order. Within them:
 

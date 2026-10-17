@@ -99,3 +99,5 @@
 | 95 | C-INP | ADR-0028 | GameInput for gamepads only, per ADR-0028 (the coordinator's brief said all devices; the ADR is authoritative and C-INP followed it); both back-ends sit behind one interface | none (note only) |
 | 96 | C-INP vs C-UI-a | — | 14 `action.menu.*` ids in input.md (including C-UI-a's nine) while C-UI's docs carry their own binding table | merge into one binding table, owned by input.md; C-UI cites it |
 | 97 | C-INP | new | 7 DEC requests; missing glyph assets `glyph.pad.stick_left`, `glyph.pad.stick_right`, `glyph.pad.dpad_horizontal` | DEC triage; X-AST pass 2 |
+| 98 | C-UI-b | DEC-102, ADR-0032 | R-META-080 (colour-row availability) and R-CTRL-223 (zones built while drawing) disagree with DEC-102 or ADR-0032; R-META-044 vs C-UI-a on drop-down left/right; R-META-406 is missing the colour-row settings save | fix G09a, G06 and G09b |
+| 99 | C-UI-b | new | 4 DEC requests (scrolling-text margin quirk, Back closing an open drop-down, edge scrolling of the session list, colour-picker availability rule) | DEC triage |

@@ -82,20 +82,20 @@ MATCH = [
 ]
 
 MENU = [
-    ('action.menu.left', 'Boolean', ['key:left:repeat'], ['pad:dpad_left:repeat', 'pad:stick_left_left:repeat', 'pad:stick_right_left:repeat'], 'd-pad left and right (no asset)', 'moves the cursor left; numeric text fields'),
-    ('action.menu.right', 'Boolean', ['key:right:repeat'], ['pad:dpad_right:repeat', 'pad:stick_left_right:repeat', 'pad:stick_right_right:repeat'], '', 'moves the cursor right; numeric text fields'),
-    ('action.menu.up', 'Boolean', ['key:up:repeat'], ['pad:dpad_up:repeat', 'pad:stick_left_up:repeat', 'pad:stick_right_up:repeat'], '', 'moves the cursor up'),
-    ('action.menu.down', 'Boolean', ['key:down:repeat'], ['pad:dpad_down:repeat', 'pad:stick_left_down:repeat', 'pad:stick_right_down:repeat'], '', 'moves the cursor down'),
-    ('action.menu.activate', 'Boolean', ['key:enter:down'], ['pad:face_south:down'], '`glyph.pad.face_south`', 'clicks the cursor\'s widget'),
-    ('action.menu.front_end_activate', 'Boolean', [], ['pad:menu:down'], '', 'as activate, while at the front end'),
-    ('action.menu.close', 'Boolean', ['key:escape:down'], ['pad:view:down', 'pad:face_east:down'], '', 'the back action; Escape outside a match only'),
-    ('action.menu.dismiss', 'Boolean', ['mouse:primary:down', 'key:space:down', 'key:enter:down', 'key:escape:down'], ['pad:face_south:down'], '', 'dismisses an in-page dialog and the gamepad-disconnected dialog'),
-    ('action.menu.scroll_speedup', 'Boolean', ['key:shift:held'], [], '', 'speeds up a held increment button'),
-    ('action.menu.cycle_up', 'Boolean', [], ['pad:shoulder_left:repeat'], '', '`PadMenuCycleUp`: previous board on the leaderboard page'),
-    ('action.menu.cycle_down', 'Boolean', [], ['pad:shoulder_right:repeat'], '', '`PadMenuCycleDown`: next board on the leaderboard page'),
-    ('action.menu.select_previous', 'Boolean', [], ['pad:trigger_left:down'], '', 'previous view on the leaderboard page'),
-    ('action.menu.select_next', 'Boolean', [], ['pad:trigger_right:down'], '', 'next view on the leaderboard page'),
-    ('action.menu.toggle_period', 'Boolean', [], ['pad:face_north:down'], '', 'period toggle on the leaderboard page'),
+    ('action.menu.left', 'Boolean', ['key:left:repeat'], ['pad:dpad_left:repeat', 'pad:stick_left_left:repeat', 'pad:stick_right_left:repeat'], 'd-pad left and right (no asset)', 'UI-203, UI-204'),
+    ('action.menu.right', 'Boolean', ['key:right:repeat'], ['pad:dpad_right:repeat', 'pad:stick_left_right:repeat', 'pad:stick_right_right:repeat'], '', 'UI-203, UI-204'),
+    ('action.menu.up', 'Boolean', ['key:up:repeat'], ['pad:dpad_up:repeat', 'pad:stick_left_up:repeat', 'pad:stick_right_up:repeat'], '', 'UI-203, UI-204'),
+    ('action.menu.down', 'Boolean', ['key:down:repeat'], ['pad:dpad_down:repeat', 'pad:stick_left_down:repeat', 'pad:stick_right_down:repeat'], '', 'UI-203, UI-204'),
+    ('action.menu.activate', 'Boolean', ['key:enter:down'], ['pad:face_south:down'], '`glyph.pad.face_south`', 'UI-203, UI-204'),
+    ('action.menu.front_end_activate', 'Boolean', [], ['pad:menu:down'], '', 'UI-203, UI-204'),
+    ('action.menu.close', 'Boolean', ['key:escape:down'], ['pad:view:down', 'pad:face_east:down'], '', 'UI-203, UI-204'),
+    ('action.menu.dismiss', 'Boolean', ['mouse:primary:down', 'key:space:down', 'key:enter:down', 'key:escape:down'], ['pad:face_south:down'], '', 'UI-203, UI-204'),
+    ('action.menu.scroll_speedup', 'Boolean', ['key:shift:held'], [], '', 'UI-203, UI-204'),
+    ('action.menu.cycle_up', 'Boolean', [], ['pad:shoulder_left:repeat'], '', 'R-META-500 (`PadMenuCycleUp`)'),
+    ('action.menu.cycle_down', 'Boolean', [], ['pad:shoulder_right:repeat'], '', 'R-META-500 (`PadMenuCycleDown`)'),
+    ('action.menu.select_previous', 'Boolean', [], ['pad:trigger_left:down'], '', 'R-META-501'),
+    ('action.menu.select_next', 'Boolean', [], ['pad:trigger_right:down'], '', 'R-META-501'),
+    ('action.menu.toggle_period', 'Boolean', [], ['pad:face_north:down'], '', 'R-META-502'),
 ]
 
 LEAF = re.compile(r'(key|mouse|pad):([a-z0-9_]+):([a-z]+)')
@@ -114,7 +114,7 @@ def write_catalogue(path, rows, last_header):
 
 
 write_catalogue(os.path.join(out, 'catalogue_match.md'), MATCH, 'reference/06 row')
-write_catalogue(os.path.join(out, 'catalogue_menu.md'), MENU, 'Use')
+write_catalogue(os.path.join(out, 'catalogue_menu.md'), MENU, 'Defined by')
 
 # reverse index: physical control -> actions (condition), operands of all() marked
 index = {}
