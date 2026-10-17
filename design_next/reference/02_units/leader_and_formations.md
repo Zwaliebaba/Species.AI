@@ -101,17 +101,17 @@ Table 2.3-A Leader state.
 
 ### 2.5 Orders and formation operations
 
-**R-UNIT-169** (MUST) `AssignWaypoint(target)`: the Leader becomes ToWaypoint with the target as its waypoint. In formation mode it clears the formation angle, so the formation turns before it moves, unless the target is its own position. A connected Beam Dish whose entrance lies within `ref.unit.leader.beam_dish_radius` (5 wu) of the target becomes its waypoint teleport.
+**R-UNIT-169** (MUST) `AssignWaypoint(_target)`: the Leader becomes ToWaypoint with the target as its waypoint. In formation mode it clears the formation angle, so the formation turns before it moves, unless the target is its own position. A connected Beam Dish whose entrance lies within `ref.unit.leader.beam_dish_radius` (5 wu) of the target becomes its waypoint teleport.
 
 **R-UNIT-170** (MUST) A click is a **formation toggle** exactly when the match is not the first tutorial ([reference/11](../11_tutorial_and_help.md)), the Leader's no-formations flag is clear, no Beam Dish entrance lies within √`ref.unit.leader.toggle_teleport_radius_sq` (√5 wu) of the click, and the click is closer than `ref.unit.leader.formation_toggle_radius` (50 wu) to the Leader.
 
-**R-UNIT-171** (MUST) `AssignOrders(target, straight)` acts in this order:
+**R-UNIT-171** (MUST) `AssignOrders(_target, _straight)` acts in this order:
 
 1. **Formation move.** If the Leader is already in formation mode: for a toggle click it moves one unit length towards the click, otherwise to the click; it runs `AssignWaypoint` and `FormUp` with that point, and the team's selection is cleared.
 2. **Entering formation.** Otherwise, for a toggle click, it runs `AssignWaypoint(position + d)` and `FormUp(position + d)`, with d the unit vector towards the click.
 3. **Waypoint order.** Otherwise its order position becomes the target and its order Waypoint; formation mode is switched off; its order route becomes a new land route from its position to the target, straight when the order says so, highlighted for the local team ([reference/12](../12_simulation_model/05_space_routing_and_physics.md)); a Beam Dish entrance within √5 wu of the target becomes its order structure and the order position becomes that entrance, and otherwise the order position is passed through the obstacle push; it raises `leader.order_waypoint`; and the team's selection is cleared. The Leader itself does not walk on a waypoint order: it stays and redirects the Workers that pass it.
 
-**R-UNIT-172** (MUST) `FormUp(target)` does nothing in the first tutorial. Otherwise, the first time it is called for the current formation, it clears the order position and turns the Leader to face the target; when the Leader is already in formation mode, the order position becomes the target. It sets the order Follow and the formation flag, and clears the formation angle. For the local team it shows a preview route from the Leader to the target, a local-only route that never enters the simulation (DEC-095), and two muzzle-flash particles of size `ref.unit.leader.preview_flash_size` (40) at each of the formation-size slot positions (presentation); it raises `leader.order_formation`.
+**R-UNIT-172** (MUST) `FormUp(_target)` does nothing in the first tutorial. Otherwise, the first time it is called for the current formation, it clears the order position and turns the Leader to face the target; when the Leader is already in formation mode, the order position becomes the target. It sets the order Follow and the formation flag, and clears the formation angle. For the local team it shows a preview route from the Leader to the target, a local-only route that never enters the simulation (DEC-095), and two muzzle-flash particles of size `ref.unit.leader.preview_flash_size` (40) at each of the formation-size slot positions (presentation); it raises `leader.order_formation`.
 
 **R-UNIT-173** (MUST) `ClearOrders()` sets the order None, switches formation mode off and sets the waypoint to the Leader's position.
 
@@ -127,21 +127,21 @@ Table 2.3-A Leader state.
 
 **R-UNIT-178** (MUST) **Formation upkeep**, each tick while the formation flag is set: every slot's timer is counted down by one tick, and a slot whose timer is at or below 0 is emptied. Then a gap count adds, for every run of consecutive empty slots, the run's length minus 1; if the gap count is above `ref.unit.leader.gap_rule_fraction` (0.5) × the array size, every slot is emptied, and the members re-join on the next tick with new indices.
 
-**R-UNIT-179** (MUST) `RefreshSlot(member)` adds one tick to the member's slot timer. A member registers every tick in which it is FollowingLeader or Fighting in the formation, so its timer stays constant while it stays, and a member that stops registering drops out after its timer has run down.
+**R-UNIT-179** (MUST) `RefreshSlot(_member)` adds one tick to the member's slot timer. A member registers every tick in which it is FollowingLeader or Fighting in the formation, so its timer stays constant while it stays, and a member that stops registering drops out after its timer has run down.
 
-**R-UNIT-180** (MUST) `SlotPositionFor(member)` returns the position of the member's slot when it holds one. Otherwise, when the formation is not full, it creates a slot for the member in the first empty index, with the timer `ref.unit.leader.slot_timer_ticks` (51 ticks, nominal 5.0 s), and returns its position. When the formation is full it returns the zero vector.
+**R-UNIT-180** (MUST) `SlotPositionFor(_member)` returns the position of the member's slot when it holds one. Otherwise, when the formation is not full, it creates a slot for the member in the first empty index, with the timer `ref.unit.leader.slot_timer_ticks` (51 ticks, nominal 5.0 s), and returns its position. When the formation is full it returns the zero vector.
 
 **R-UNIT-181** (MUST) A formation is **full** when its number of occupied slots is at least the team's formation size (R-UNIT-162). In the first tutorial every formation counts as full.
 
 **R-UNIT-182** (MUST) The position of formation index i, for a Leader at position p with front f, is:
 
 ```
-FormationSlotPosition(p, i, f, arraySize):          # arraySize counts gaps
-    rowSize := row size of table 2.6-A for arraySize
-    column := i mod rowSize
-    row := i div rowSize
-    right := normalise(f x up)
-    q := p + f * (ref.unit.leader.slot_spacing * row + ref.unit.leader.first_rank_offset)
+FormationSlotPosition(_p, _i, _f, _arraySize):      # _arraySize counts gaps
+    rowSize := row size of table 2.6-A for _arraySize
+    column := _i mod rowSize
+    row := _i div rowSize
+    right := normalise(_f x up)
+    q := _p + _f * (ref.unit.leader.slot_spacing * row + ref.unit.leader.first_rank_offset)
            + right * (ref.unit.leader.slot_spacing * column - ref.unit.leader.lateral_offset_factor * rowSize)
     q.y := terrain height at q
     return q

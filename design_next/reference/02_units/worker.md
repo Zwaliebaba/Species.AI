@@ -260,7 +260,7 @@ MoveToWaypoint():
     dir := normalise(front * (1 - ref.unit.worker.turn_blend) + unit(waypoint - position) * ref.unit.worker.turn_blend)
     speed *= slope factor (README table 2.11-A)
     if d < ref.unit.worker.arrival_slow_radius: speed *= d / ref.unit.worker.arrival_slow_radius
-    newPos := WorkerPush(position + dir * speed * dt, kill = true)
+    newPos := WorkerPush(position + dir * speed * dt, _kill = true)
     clamp newPos - position to length speed * dt
     velocity := (newPos - position) / dt
     front := normalise(newPos - position)
@@ -283,16 +283,16 @@ The turn blend `ref.unit.worker.turn_blend` (0.4) is 4 × dt. A Worker never pus
 **R-UNIT-111** (MUST) **Waypoint order.** Giving a Worker a waypoint order with a target and a route (or none):
 
 ```
-GiveWaypointOrder(target, route = none):
-    pendingOrder.position := target; pendingOrder.set := true; pendingOrder.structure := none
+GiveWaypointOrder(_target, _route = none):
+    pendingOrder.position := _target; pendingOrder.set := true; pendingOrder.structure := none
     if state == Carrying:
-        pass target and route to the carryable (a Breach Charge always takes a straight route); return   # state unchanged
-    if a Beam Dish stands within ref.unit.worker.beam_dish_order_radius (5 wu) of target:
+        pass _target and _route to the carryable (a Breach Charge always takes a straight route); return   # state unchanged
+    if a Beam Dish stands within ref.unit.worker.beam_dish_order_radius (5 wu) of _target:
         pendingOrder.structure := that Beam Dish; pendingOrder.position := its entrance
         waypoint := its entrance                                         # no jitter
     else:
-        waypoint := WorkerPush(target + random point of a disc of radius ref.unit.worker.order_disc_radius, kill = false)
-    route := route; routeWaypoint := before the start
+        waypoint := WorkerPush(_target + random point of a disc of radius ref.unit.worker.order_disc_radius, _kill = false)
+    route := _route; routeWaypoint := before the start
     state := OnWaypointOrder
 ```
 
@@ -300,7 +300,7 @@ The disc point draws its radius `NextUnit(20)` and then its angle `NextUnit(2π)
 
 ### 2.10 Terrain and obstacles
 
-**R-UNIT-112** (MUST) A Worker replaces the obstacle push of [reference/12](../12_simulation_model/05_space_routing_and_physics.md) with its own `WorkerPush(candidate, kill = true)`, which returns the position the Worker may take:
+**R-UNIT-112** (MUST) A Worker replaces the obstacle push of [reference/12](../12_simulation_model/05_space_routing_and_physics.md) with its own `WorkerPush(_candidate, _kill = true)`, which returns the position the Worker may take:
 
 1. If the Worker is on the ground, the candidate's y becomes the terrain height.
 2. **Water.** If the candidate's y is at or below `ref.unit.worker.shore_height` (1 wu), the Worker draws a = `NextSigned(1)`; for d = `ref.unit.worker.shore_search_start` (40 wu) to `ref.unit.worker.shore_search_end` (95 wu) in steps of `ref.unit.worker.shore_search_step` (5 wu), the point at distance d in the direction of angle d × a × π is sampled, and the first point whose terrain height is above the shore height becomes the candidate. A Worker therefore never walks into the sea of its own accord; only falling or being flung into it kills it.

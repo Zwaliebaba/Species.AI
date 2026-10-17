@@ -272,7 +272,7 @@ Table 2.10-A Match-world operations.
 | throw a weapon; fire a rocket; fire a turret round; launch a fireball; fire a laser; create a shockwave; area damage | [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); [05](05_space_routing_and_physics.md) R-SIM-388 |
 | select Workers; give crowd orders; promote a Worker; demote a Leader; apply a team's control state | command execution ([06](06_teams_and_player_commands.md)) |
 | friendship; Rogue faction team; Visitor faction team; faction set-up; start positions; team from a start position; position rotation; attacker and defender tests; co-op and Siege set-up; group colours | [06](06_teams_and_player_commands.md) |
-| recompute the bot navigation links | every live bot navigation node recomputes its neighbours, and then the links are culled ([bots](../07_bots/README.md)) |
+| recompute the bot navigation links | every live bot navigation node recomputes its neighbours, and then the links are culled by the ratio `ref.bot.link.cull_ratio` (0.8) ([bots](../07_bots/01_navigation_graph.md) R-BOT-034) |
 | viable position | true when the position is walkable to at least one bot navigation node ([05](05_space_routing_and_physics.md)) |
 | local team; local Power slots (local) | the team and Power slots of the local team id; "none" when the local team id is "none" |
 | rendering, messages, chat, burn patches, fog and lights (local) | presentation ([renderer](../../architecture/components/renderer/README.md)) |
@@ -389,7 +389,7 @@ Caption: Diagram 3-C, the life of a slot of a last-freed-first pool (R-SIM-207, 
 | `ref.sim.query.actor_pick_factor` | 1.0 | × radius | local actor picking | R-SIM-240 | — |
 | `ref.sim.query.visibility_offset` | 20 | wu | start offset and end margin of the visibility test | R-SIM-240 | — |
 
-The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.map_effects`, `ref.sim.slice.supply_crates` and `ref.sim.slice.match_rules`, and `ref.sim.update_slices`, are defined in [01](01_tick_timing_and_main_loop.md); the grid-cache slice `ref.sim.grid_cache.evict_slice` and the grid cell sizes `ref.sim.actor_grid.cell_size` and `ref.sim.obstacle_grid.cell_size` in [05](05_space_routing_and_physics.md). Every value is a reference value adopted as the Species starting value (DEC-004).
+The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.map_effects`, `ref.sim.slice.supply_crates` and `ref.sim.slice.match_rules`, and `ref.sim.update_slices`, are defined in [01](01_tick_timing_and_main_loop.md); the grid-cache slice `ref.sim.grid_cache.evict_slice` and the grid cell sizes `ref.sim.actor_grid.cell_size` and `ref.sim.obstacle_grid.cell_size` in [05](05_space_routing_and_physics.md); the link cull ratio `ref.bot.link.cull_ratio` in [bots](../07_bots/01_navigation_graph.md). Every value is a reference value adopted as the Species starting value (DEC-004).
 
 ## 5 Edge cases and interactions
 

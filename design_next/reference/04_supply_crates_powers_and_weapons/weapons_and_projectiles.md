@@ -32,7 +32,7 @@ Weapons are where the crowd battle becomes visible. Workers trade team-coloured 
 | fire a rocket | position, target, team, life (the rocket level's), source structure (none), spiral flag (false) | a rocket (R-CRATE-430) for the team; a life given by the caller replaces the level's; spawn event; muzzle flash as for a throw |
 | fire a turret round | position, velocity, team, source structure | a turret round (R-CRATE-450) with the match lifetime; muzzle flash at position + velocity × dt ÷ 2, size `ref.weapon.muzzle_flash.round_size` (60), life `ref.weapon.muzzle_flash.round_life` (2), with no team |
 | launch a fireball | position, velocity, life (`ref.bldg.turret.flame.fireball_life_ticks`), source structure (none) | a fireball (R-CRATE-460) with **no team**, so it harms every team |
-| fire a laser | position, velocity, team, converting (false) | a laser bolt (R-CRATE-440) with the lifetime of the team's laser level, × `ref.unit.worker.convert_life_factor` (2) for a Convert bolt; muzzle flash of size `ref.weapon.muzzle_flash.laser_size_factor` (25) × the bolt's lifetime in seconds and life `ref.weapon.muzzle_flash.laser_life` (1.5) |
+| fire a laser | position, velocity, team, converting (false) | a laser bolt (R-CRATE-440) with the lifetime of the team's laser level, × `ref.unit.worker.convert_life_factor` (2) for a Convert bolt; its spawn event, bound to `sfx.weapon.laser_bolt.spawn` (DEC-564); muzzle flash of size `ref.weapon.muzzle_flash.laser_size_factor` (25) × the bolt's lifetime in seconds and life `ref.weapon.muzzle_flash.laser_life` (1.5) |
 | create a shockwave ring | position, size, team (no team), source structure (none) | a shockwave ring (R-CRATE-470); a team value outside the team slots means no team |
 
 ### 2.3 Explosion parameters
@@ -71,11 +71,11 @@ The radii are derived from R-CRATE-406 (DEC-093); the tuning of every explosive 
 ```
 v.y -= ref.sim.physics.thrown_gravity * dt
 p += v * dt
-if p.y < terrainHeight(p) + ref.weapon.thrown.bounce_clearance:          # 1 wu
+if p.y < TerrainHeight(p) + ref.weapon.thrown.bounce_clearance:          # 1 wu
     Bounce()                                                              # R-SIM-385, restitution 0.85
     f *= ref.weapon.thrown.bounce_force_factor                            # 0.75
     v *= f
-    p.y = max(p.y, terrainHeight(p) + ref.weapon.thrown.bounce_clearance)
+    p.y = max(p.y, TerrainHeight(p) + ref.weapon.thrown.bounce_clearance)
     emit the bounce sound event
 ```
 
@@ -121,7 +121,7 @@ Workers throw only at targets beyond their grenade minimum distance and flee eve
 
 1. every Worker of any team within power × `ref.weapon.firebomb.ignite_factor` (1.25), that is 62.5 wu horizontally, is set on fire by [worker.md](../02_units/worker.md) R-UNIT-121, which refuses a Worker with a Shield, inside a Transport or of the Rogue faction;
 2. every tree and every Spitter Plant whose centre lies within power × `ref.weapon.firebomb.structure_reach_factor` (2), that is 100 wu, takes structure damage of −power × `ref.weapon.firebomb.structure_damage_factor` (4), that is −200, with no falloff, which sets trees alight;
-3. it shows `ref.weapon.firebomb.burst_particles` (80) particles, 51 fireball, 20 fire and 9 trail, of size 150 to 250 (presentation);
+3. it shows `ref.weapon.firebomb.burst_particles` (80) particles, split `vfx.emit.firebomb.split` (51 fireball flames, 20 fire, 9 missile trails), of size `vfx.emit.firebomb.size` (150 to 250), the `FirebombBurst` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation);
 4. it is removed.
 
 ### 2.7 Airstrike target marker
@@ -145,7 +145,7 @@ Workers throw only at targets beyond their grenade minimum distance and flee eve
 
 **R-CRATE-432** (MUST) A rocket explodes with `Explode(position, ref.weapon.rocket.range (15 wu), ref.weapon.rocket.damage (25), its team, its source structure)`; a source turret is credited with the returned kill count. A spiralling rocket adds explosion cores in a random colour (presentation). It emits `sfx.weapon.rocket.spawn` and the presence loop `sfx.weapon.rocket.presence_loop` from its creation, stops the loop when it explodes and emits `sfx.weapon.rocket.explode`.
 
-**R-CRATE-433** (MUST) Presentation: a rocket emits a fire particle on a tick with presentation probability `ref.weapon.rocket.trail_chance` (0.8) and `ref.weapon.rocket.render_trail_particles` (5) missile-fire particles per rendered frame.
+**R-CRATE-433** (MUST) Presentation: a rocket emits a fire particle on a tick with presentation probability `ref.weapon.rocket.trail_chance` (0.8) and `ref.weapon.rocket.render_trail_particles` (5) missile-fire particles per step of the fixed presentation step rate `vfx.emit.step_rate`, which stands for one reference frame ([animation and VFX](../../architecture/components/animation_and_vfx/README.md) VFX-018; DEC-960).
 
 **R-CRATE-434** (MUST) A rocket of life 8 makes 8 moves after its creation tick, plus one more when it also advances in its creation tick (R-CRATE-401): 8 moves cover 95.4 wu (60 + 72 + 86.4 + 103.7 + 124.4 + 149.3 + 179.2 + 179.2 = 954 wu/s × 0.1 s) and a 9th adds 17.9 wu, so a Worker's rocket reaches about 95 or 113 wu. A rocket of life 11 makes 11 or 12 moves, about 149 or 167 wu. Both cases occur in normal play. These reaches are derived (DEC-111, DEC-455).
 
@@ -169,16 +169,16 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 3. it moves by v × dt;
 4. **terrain:** on its first contact with the terrain it ricochets: a ray from its previous position finds the terrain hit, its velocity is reflected about the terrain normal there, and it continues the rest of its step from the hit point; on its second contact it is removed;
 5. outside the map bounds it is removed;
-6. **structures:** when its step's ray meets a structure of its obstacle-grid cell, it shows a spark, emits the structure-hit sound and is removed; it deals **no structure damage**;
+6. **structures:** when its step's ray meets a structure of its obstacle-grid cell, it shows a spark, emits the structure-hit sound `sfx.weapon.laser_bolt.hit_structure` (DEC-564) and is removed; it deals **no structure damage**;
 7. **actors**, while it is not harmless: the candidates are the enemies of its team within 2 × the length of half its step; an actor is hit when its height differs from the bolt's by less than `ref.weapon.laser.hit_height` (5 wu) and the 2-D distance from the actor to the segment position ± half the step is below `ref.weapon.laser.hit_radius` (5 wu).
 
 **R-CRATE-442** (MUST) A hit by a **Convert bolt** on a Worker spawns a Worker of the bolt's team at the victim's position and velocity, with the victim's team recorded as its previous team and its colour cross-fading over `ref.unit.worker.convert_fade` (4 s, presentation); the victim is removed without an Essence orb. A Convert bolt that hits any other actor deals the ordinary laser damage of R-CRATE-443.
 
-**R-CRATE-443** (MUST) Any other hit is a health change of −⌊`ref.weapon.laser.damage_base` (20) + `SimRng::NextUnit`(`ref.weapon.laser.damage_spread` (20))⌋ of the laser kind, 20 to 39. On a kill of a Worker, the bolt's team's kill counter rises by 1 and the kill sound plays; a surviving Worker emits its hurt bark (`sfx.weapon.laser_bolt.hit_bark`). When the health change returned true, the victim is pushed: push = the bolt's direction × `SimRng::NextUnit`(`ref.weapon.laser.push_spread` (10)) with y = `ref.weapon.laser.push_lift_base` (7) + `SimRng::NextUnit`(`ref.weapon.laser.push_lift_spread` (5)); the push sets the victim's front, except for a Trooper or a Crawler, and is added to its velocity, except for a Crawler.
+**R-CRATE-443** (MUST) Any other hit is a health change of −⌊`ref.weapon.laser.damage_base` (20) + `SimRng::NextUnit`(`ref.weapon.laser.damage_spread` (20))⌋ of the laser kind, 20 to 39. On a kill of a Worker, the bolt's team's kill counter rises by 1 and the kill sound `sfx.weapon.laser_bolt.kill` plays (DEC-564); a surviving Worker emits its hurt bark (`sfx.weapon.laser_bolt.hit_bark`). When the health change returned true, the victim is pushed: push = the bolt's direction × `SimRng::NextUnit`(`ref.weapon.laser.push_spread` (10)) with y = `ref.weapon.laser.push_lift_base` (7) + `SimRng::NextUnit`(`ref.weapon.laser.push_lift_spread` (5)); the push sets the victim's front, except for a Trooper or a Crawler, and is added to its velocity, except for a Crawler.
 
 **R-CRATE-444** (MUST) After its first hit a bolt is **harmless**: it keeps flying and drawing but cannot hit again. Laser bolts never hit friends. A Worker of 50 health dies to 2 or 3 hits.
 
-**R-CRATE-445** (MUST) Presentation: a bolt is drawn as a team-coloured billboard of `fx.beam_short`, `ref.weapon.laser.billboard_length` (10 wu) long, white for the Rogue faction; a Convert bolt uses `fx.convert_beam` at `ref.weapon.laser.convert_width_factor` (2) × the width. A bolt passing within √`ref.weapon.laser.shake_range_sq` (√200, about 14 wu) of the camera shakes it by `ref.weapon.laser.shake` (0.5).
+**R-CRATE-445** (MUST) Presentation: a bolt is drawn as a team-coloured billboard of `fx.beam_short`, `ref.weapon.laser.billboard_length` (10 wu) long, in `rnd.laser.rogue_colour` (white) for the Rogue faction ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-339); a Convert bolt uses `fx.convert_beam` at `ref.weapon.laser.convert_width_factor` (2) × the width. A bolt passing within √`ref.weapon.laser.shake_range_sq` (√200, about 14 wu) of the camera shakes it by `ref.weapon.laser.shake` (0.5).
 
 ### 2.10 Turret round
 
@@ -187,10 +187,10 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 **R-CRATE-451** (MUST) Each tick its life counts down by one tick and it moves by v × dt. Then:
 
 1. **actors:** every enemy of its team within the step's length of the step's midpoint is tested with the actor ray hit of [reference/12](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-387 along the step; **every** actor hit in this tick takes a health change of −`ref.weapon.turret_round.damage` (15) of the turret-round kind, so the round pierces;
-2. **kill credit:** a kill plays the kill sound and counts 1, plus the passengers when the victim is a Transport, or 0 when the victim is a Worker that was already burning; the count is added to the round's team's kill counter, and a source turret is credited with it;
+2. **kill credit:** a kill plays the kill sound `sfx.weapon.laser_bolt.kill` (DEC-564) and counts 1, plus the passengers when the victim is a Transport, or 0 when the victim is a Worker that was already burning; the count is added to the round's team's kill counter, and a source turret is credited with it;
 3. **knock-back:** an actor on the ground is pushed away from the round, plus `SimRng::NextSigned`(`ref.weapon.turret_round.push_jitter` (3)) per axis, to a push of length `ref.weapon.turret_round.push` (20), and becomes airborne;
-4. **structures:** when the step's ray meets a structure, three sparks show; a tree, a Hive or a Spitter Plant takes structure damage of −`ref.weapon.turret_round.structure_damage` (2); the round shatters by `ref.weapon.turret_round.shatter_hit` (0.1) and is removed;
-5. **terrain:** when the end point or the midpoint of the step is below the terrain, dust shows at the ray's terrain hit, the round shatters by `ref.weapon.turret_round.shatter_end` (0.2) and is removed;
+4. **structures:** when the step's ray meets a structure, `vfx.emit.round_hit.structure_count` (3) particles show, the `RoundHitStructure` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A; a tree, a Hive or a Spitter Plant takes structure damage of −`ref.weapon.turret_round.structure_damage` (2); the round shatters by `ref.weapon.turret_round.shatter_hit` (0.1) and is removed;
+5. **terrain:** when the end point or the midpoint of the step is below the terrain, `vfx.emit.round_hit.terrain_count` (1) particle shows at the ray's terrain hit, the `RoundHitTerrain` effect of table 4.7-A, the round shatters by `ref.weapon.turret_round.shatter_end` (0.2) and is removed;
 6. **expiry:** when its life is at or below 0 it shatters by 0.2 and is removed; outside the map it is removed.
 
 **R-CRATE-452** (MUST) A turret round reaches about 250 to 300 wu, 5 or 6 moves of 50 wu, depending on its start half a tick behind the muzzle and on whether it advances in its creation tick (R-CRATE-401). This reach is derived (DEC-111). Turret rounds never hit friends; they are the only weapon that hurts a Bomber, and one round kills it.
@@ -205,9 +205,9 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.12 Fireball
 
-**R-CRATE-460** (MUST) A **fireball** (`FireballProjectile`) is launched by a flame turret with velocity barrel front × `ref.bldg.turret.flame.fireball_speed` (100 wu/s), life `ref.bldg.turret.flame.fireball_life_ticks` (10 ticks, 1.0 s) and **no team**, and starts with radius `ref.weapon.fireball.start_radius` (3 wu). On its first tick it shows 80 fireball particles (presentation).
+**R-CRATE-460** (MUST) A **fireball** (`FireballProjectile`) is launched by a flame turret with velocity barrel front × `ref.bldg.turret.flame.fireball_speed` (100 wu/s), life `ref.bldg.turret.flame.fireball_life_ticks` (11 ticks, nominal 1.0 s) and **no team**, and starts with radius `ref.weapon.fireball.start_radius` (3 wu). On its first tick it shows `vfx.emit.fireball.count` (80) fireball-flame particles, the `FireballLaunched` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation).
 
-**R-CRATE-461** (MUST) Each tick its life counts down by one tick, it moves by v × dt, and its radius becomes `ref.weapon.fireball.max_radius` (20 wu) × min(1, k ÷ `ref.bldg.turret.flame.fireball_life_ticks`) after k ticks, growing by 2 wu per tick from 2 to 20 wu. Then:
+**R-CRATE-461** (MUST) Each tick its life counts down by one tick, it moves by v × dt, and its radius becomes min(`ref.weapon.fireball.max_radius` (20 wu), `ref.weapon.fireball.growth_per_tick` × k) after k ticks, growing by 2 wu per tick from 2 to 20 wu. Then:
 
 1. every **Worker** of any team within the radius that this fireball has not yet damaged takes fire damage of `ref.weapon.fireball.damage_factor` (30) × radius ÷ max(1, d), with d its distance, and is remembered, so a fireball damages each Worker once. Fire damage accumulates on the Worker and sets it on fire at `ref.unit.worker.fire_ignition` (100), except with a Shield ([worker.md](../02_units/worker.md) R-UNIT-119); a Worker that this damage sets on fire is credited to the source turret;
 2. every tree of its obstacle-grid cell takes structure damage of −`ref.weapon.fireball.tree_damage` (100) per tick;
@@ -218,7 +218,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 ### 2.13 Shockwave ring
 
-**R-CRATE-470** (MUST) A **shockwave ring** (`ShockwaveRing`) of size s seconds is created by every explosion, with s = r ÷ `ref.weapon.shockwave.size_divisor` (20). It is active on ticks k = 1 to A after its creation, with A = ⌈10 × s⌉ − 1 (6 for a grenade, 12 for an airstrike bomb, 7 for a rocket, 24 for a meteor or a barrage missile), and is removed on tick A + 1. On active tick k its radius is r_k = `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu/s) × k × dt, so 39 wu on the first tick and 4 wu more on each, and its strength is f_k = 1 − k × dt ÷ s.
+**R-CRATE-470** (MUST) A **shockwave ring** (`ShockwaveRing`) of size s seconds is created by every explosion, with s = r ÷ `ref.weapon.shockwave.size_divisor` (20). It is active on ticks k = 1 to A after its creation, with A = ⌈10 × s⌉ − 1 (6 for a grenade, 12 for an airstrike bomb, 7 for a rocket, 24 for a meteor or a barrage missile; see DEC-859), and is removed on tick A + 1. On active tick k its radius is r_k = `ref.weapon.shockwave.start_radius` (35 wu) + `ref.weapon.shockwave.growth` (40 wu/s) × k × dt, so 39 wu on the first tick and 4 wu more on each, and its strength is f_k = 1 − k × dt ÷ s.
 
 **R-CRATE-471** (MUST) On each active tick, the candidates are the actors of every team at a horizontal distance below r_k (actor-grid query); a candidate is hit when its 3-D distance d satisfies |d − r_k| < `ref.weapon.shockwave.band` (10 wu), effectively a band 10 wu wide just inside the ring for ground units. For a hit:
 
@@ -241,7 +241,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 **R-CRATE-481** (MUST) Each tick its radius grows by `ref.weapon.pulse_wave.growth_per_tick` (0.03) × its radius, 3 % per tick, and it is removed once its radius reaches the map's world size x: from 200 wu to 3,000 wu in about 92 ticks.
 
-**R-CRATE-482** (MUST) In Siege, every Worker that is not a friend of the pulse wave's team and lies within its radius is affected in the Worker's own advance: when the map's Visitor-team option names the start position of the pulse wave's team ([reference/08](../08_maps_and_level_design/README.md)), the Worker is converted into a Worker of the pulse wave's team; otherwise it is pushed outward at `ref.weapon.pulse_wave.push_speed` (20 wu/s) and takes an unresistable health change of −`ref.weapon.pulse_wave.kill_damage` (1000), which a Shield does not stop.
+**R-CRATE-482** (MUST) In Siege, every Worker that is not a friend of the pulse wave's team and lies within its radius is affected in the Worker's own advance: when the map option `MapOption::VisitorFactionPosition` names the start position of the pulse wave's team ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) table 2.7-A, row 13), the Worker is converted into a Worker of the pulse wave's team; otherwise it is pushed outward at `ref.weapon.pulse_wave.push_speed` (20 wu/s) and takes an unresistable health change of −`ref.weapon.pulse_wave.kill_damage` (1000), which a Shield does not stop.
 
 **R-CRATE-483** (MUST) Presentation: a full-screen white flash for its first `ref.weapon.pulse_wave.flash_time` (0.3 s) with a camera shake, and three team-coloured animated cylinders at its radius: a ground outline `ref.weapon.pulse_wave.outline_height` (200 wu) high, a glow tube of `fx.beam_long` `ref.weapon.pulse_wave.tube_height` (400 wu) high and a faint sky tube `ref.weapon.pulse_wave.sky_height` (1000 wu) high, each at alpha × (1 − radius ÷ world size x).
 
@@ -255,7 +255,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 **R-CRATE-488** (MUST) Each tick it steers: v = v × (1 − dt ÷ 2) + normalise(target − p) × `ref.weapon.swarm_streak.homing_speed` (200) × dt ÷ 2, and p += v × dt. It arrives within `ref.weapon.swarm_streak.arrival` (20 wu) of its target.
 
-**R-CRATE-489** (MUST) In AttackingActor, a target that is dead, gone or a Collector is dropped and the streak returns to Idle. On arrival at a target of another team: when the Worker research level is above 2 (it is 4 in a match) and `SimRng::NextUnit(10)` < `ref.weapon.swarm_streak.convert_threshold` (5), with probability 50 %, a Worker of the Rogue faction is spawned at the target and the target is removed without an Essence orb, whatever its actor kind; otherwise the target takes an unresistable health change of −`ref.weapon.swarm_streak.kill_damage` (999). The hit shows 5 to 9 fire bursts (presentation), adds the hit bonus to its life and returns it to Idle.
+**R-CRATE-489** (MUST) In AttackingActor, a target that is dead, gone or a Collector is dropped and the streak returns to Idle. On arrival at a target of another team: when the Worker research level is above 2 (it is 4 in a match) and `SimRng::NextUnit(10)` < `ref.weapon.swarm_streak.convert_threshold` (5), with probability 50 %, a Worker of the Rogue faction is spawned at the target and the target is removed without an Essence orb, whatever its actor kind; otherwise the target takes an unresistable health change of −`ref.weapon.swarm_streak.kill_damage` (999). The hit shows `vfx.emit.swarm_hit.count` (5 to 9) fire particles, the `SwarmHit` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation), adds the hit bonus to its life and returns it to Idle.
 
 **R-CRATE-490** (MUST) In AttackingOrb, an orb that is gone or no longer Floating is dropped. On arrival the orb is removed and one Rogue faction creature is spawned with roam range `ref.weapon.swarm_streak.creature_roam_range` (200 wu): a spider when `SimRng::NextUnit(20)` < `ref.weapon.swarm_streak.spider_threshold` (1), with probability 5 %, and otherwise a Crawler, which is not spawned when the Rogue faction already has `ref.unit.crawler.team_limit` (250) Crawlers or more ([creatures](../02_units/creatures.md) R-UNIT-529, R-UNIT-570). The hit adds the hit bonus and returns it to Idle.
 
@@ -267,7 +267,7 @@ The base attack's aim jitter and muzzle height are reference/02's (R-UNIT-052).
 
 **R-CRATE-496** (MUST) Each strike sets on fire every Worker of any team within `ref.weapon.lightning.ignite_radius` (30 wu) horizontally of the cloud, by [worker.md](../02_units/worker.md) R-UNIT-121 (a Worker with a Shield or of the Rogue faction is refused), and deals structure damage of −`ref.weapon.lightning.tree_damage` (100) to every tree of the obstacle-grid cell under it.
 
-**R-CRATE-497** (MUST) Presentation: idle, the cloud is a pulsing `fx.glow_round` of `ref.weapon.lightning.glow_size` (200 wu) at alpha |sin 2t|; striking, it draws three stacked bolt quads of `fx.lightning_strip` from the cloud to the ground, each `ref.weapon.lightning.bolt_width` (30 wu) × 1.2 wider than the last, with halving alpha, and shows 5 debris particles of size 150 to 250 and 10 fire particles of size 160 to 280 at the ground. A lightning strike has no sound.
+**R-CRATE-497** (MUST) Presentation: idle, the cloud is a pulsing `fx.glow_round` of `ref.weapon.lightning.glow_size` (200 wu) at alpha |sin(`rnd.lightning.cloud_pulse_rate` × t)| (2 rad/s); striking, it draws `rnd.lightning.bolt_layers` (3) stacked bolt quads of `fx.lightning_strip` from the cloud to the ground, the first `ref.weapon.lightning.bolt_width` (30 wu) wide and each further one `rnd.lightning.bolt_width_growth` (1.2) × wider, each with the previous alpha × `rnd.lightning.bolt_alpha_falloff` (0.5) ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-336, RND-337); and it shows at the ground `vfx.emit.lightning.debris_count` (5) debris particles of size `vfx.emit.lightning.debris_size` (150 to 250) and `vfx.emit.lightning.fire_count` (10) fire particles of size `vfx.emit.lightning.fire_size` (160 to 280), the `LightningStrike` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A. A lightning strike has no sound.
 
 ### 2.18 Snowflake
 
@@ -300,7 +300,7 @@ Table 2.21-A Weapon summary.
 | firebomb canister | sets on fire | Workers within 62.5 wu; trees and Spitter Plants within 100 wu take 200 | the Bomber's | 15-tick fuse | fire | yes | R-CRATE-421 |
 | rocket | 25 | full within 22.5 wu, 0 at 30 wu | 50 rising to 179.2 wu/s | 8 ticks (rocket turret: its own) | explosive | yes | R-CRATE-430 to R-CRATE-434 |
 | turret round | 15 per actor, piercing | ray | 500 wu/s | 6 ticks | turret round | no | R-CRATE-450 to R-CRATE-452 |
-| fireball | 30 × radius ÷ max(1, d), once per Worker | radius grows from 2 to 20 wu | 100 wu/s | 10 ticks | fire | yes (no team) | R-CRATE-460 to R-CRATE-462 |
+| fireball | 30 × radius ÷ max(1, d), once per Worker | radius grows from 2 to 20 wu | 100 wu/s | 11 ticks | fire | yes (no team) | R-CRATE-460 to R-CRATE-462 |
 | shockwave ring | 40 × strength per hit tick | band about 10 wu inside a ring growing 4 wu per tick from 39 wu | — | r ÷ 20 s | explosive | yes | R-CRATE-470 to R-CRATE-472 |
 | meteor, barrage missile | 100 | full within 75 wu, 0 at 100 wu | 350 / 50 to 100 wu/s | — | explosive | yes | table 2.3-A |
 | Swarm streak | −999 or conversion | contact within 20 wu | homing at 200 wu/s | 101 ticks + 10 per hit | unresistable | only the Rogue faction is spared | R-CRATE-485 to R-CRATE-491 |
@@ -461,7 +461,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.rocket.range` | 15 | wu | explosion range | R-CRATE-432, R-CRATE-407 | DEC-093 |
 | `ref.weapon.rocket.damage` | 25 | damage | | R-CRATE-432, R-CRATE-407 | — |
 | `ref.weapon.rocket.trail_chance` | 0.8 | per tick | presentation | R-CRATE-433 | DEC-013 |
-| `ref.weapon.rocket.render_trail_particles` | 5 | per rendered frame | presentation | R-CRATE-433 | — |
+| `ref.weapon.rocket.render_trail_particles` | 5 | per presentation step | presentation; one step of `vfx.emit.step_rate` stands for one reference frame | R-CRATE-433 | DEC-960 |
 | `ref.weapon.laser.life_ticks` | 2, 4, 6, 8, 10 | ticks (moves) | by laser level 0 to 4; 6 in a match, × 2 for Convert bolts | R-CRATE-440 | DEC-002, DEC-115 |
 | `ref.weapon.laser.hit_height` | 5 | wu | strict | R-CRATE-441 | — |
 | `ref.weapon.laser.hit_radius` | 5 | wu | 2-D, strict | R-CRATE-441 | — |
@@ -491,6 +491,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | `ref.weapon.shell_casing.bounce_factor` | 0.5 | × force | presentation | R-CRATE-456 | — |
 | `ref.weapon.fireball.start_radius` | 3 | wu | | R-CRATE-460 | — |
 | `ref.weapon.fireball.max_radius` | 20 | wu | | R-CRATE-461 | — |
+| `ref.weapon.fireball.growth_per_tick` | 2 | wu per tick | the radius reaches 20 wu after 10 ticks | R-CRATE-461 | — |
 | `ref.weapon.fireball.damage_factor` | 30 | fire damage | × radius ÷ max(1, d) | R-CRATE-461 | — |
 | `ref.weapon.fireball.tree_damage` | 100 | structure health per tick | | R-CRATE-461 | DEC-092 |
 
@@ -591,6 +592,9 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 | [hazards and projectiles](../02_units/hazards_and_projectiles.md) | `ref.hazard.airstrike.marker_summon_delay`, `ref.hazard.airstrike.marker_rest_force` |
 | [defences and props](../03_buildings_and_world_objects/defences_and_props.md) | `ref.bldg.turret.gun.round_speed`, `ref.bldg.turret.rocket.life_ticks`, `ref.bldg.turret.flame.fireball_speed`, `ref.bldg.turret.flame.fireball_life_ticks`, `ref.bldg.turret.convert.bolt_speed` |
 | [mode objects](../03_buildings_and_world_objects/mode_objects.md) | `ref.bldg.core_device.pulse_radius_wu` |
+| [renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) | `rnd.laser.rogue_colour`, `rnd.lightning.cloud_pulse_rate`, `rnd.lightning.bolt_layers`, `rnd.lightning.bolt_width_growth`, `rnd.lightning.bolt_alpha_falloff` |
+| [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) | `vfx.emit.firebomb.split`, `vfx.emit.firebomb.size`, `vfx.emit.round_hit.structure_count`, `vfx.emit.round_hit.terrain_count`, `vfx.emit.fireball.count`, `vfx.emit.swarm_hit.count`, `vfx.emit.lightning.debris_count`, `vfx.emit.lightning.debris_size`, `vfx.emit.lightning.fire_count`, `vfx.emit.lightning.fire_size`; `vfx.emit.step_rate` ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)) |
+| [reference/08 rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) | the map option `MapOption::VisitorFactionPosition` |
 
 ## 5 Edge cases and interactions
 
@@ -637,7 +641,7 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 
 - **Reference documents:** [README](README.md); [crates and powers](crates_and_powers.md) (the outcomes that create airstrike markers, bombs, canisters, Swarm streaks); [units README](../02_units/README.md) (damage kinds, resistances, the base attack, explosion presentation R-UNIT-195); [worker.md](../02_units/worker.md) (fire, threats, Shield, Convert, Sickness, vortex); [strike_team.md](../02_units/strike_team.md); [transport.md](../02_units/transport.md); [collector.md](../02_units/collector.md); [creatures](../02_units/creatures.md); [hazards and projectiles](../02_units/hazards_and_projectiles.md) (Bombers, barrage missiles, meteors); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (turrets, trees, Hives, Spitter Plants, the turret aim marker); [mode objects](../03_buildings_and_world_objects/mode_objects.md) (the Core Device); [reference/08](../08_maps_and_level_design/README.md) (map effects, the Visitor-team option); [reference/10](../10_audio_design/README.md); [reference/12](../12_simulation_model/README.md) (effect pool, update order, explosion primitive, gravity, bounce, weather spawners, draws).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (billboards, ribbons, discs, tracers, full-screen flashes); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (particles, shatter effects, camera shake); [audio engine](../../architecture/components/audio_engine.md).
-- **Assets:** `mesh.projectile.thrown_weapon`, `mesh.projectile.turret_round`, `mesh.projectile.shell_casing`, `fx.beam_short`, `fx.beam_long`, `fx.convert_beam`, `fx.muzzle_flash`, `fx.starburst`, `fx.glow_round`, `fx.glow_cloudy`, `fx.lightning_strip`; `sfx.weapon.grenade.spawn`, `sfx.weapon.grenade.bounce`, `sfx.weapon.grenade.fuse_blink`, `sfx.weapon.grenade.explode`, `sfx.weapon.airstrike_bomb.explode`, `sfx.weapon.rocket.spawn`, `sfx.weapon.rocket.presence_loop`, `sfx.weapon.rocket.explode`, `sfx.weapon.laser_bolt.hit_bark`.
+- **Assets:** `mesh.projectile.thrown_weapon`, `mesh.projectile.turret_round`, `mesh.projectile.shell_casing`, `fx.beam_short`, `fx.beam_long`, `fx.convert_beam`, `fx.muzzle_flash`, `fx.starburst`, `fx.glow_round`, `fx.glow_cloudy`, `fx.lightning_strip`; `sfx.weapon.grenade.spawn`, `sfx.weapon.grenade.bounce`, `sfx.weapon.grenade.fuse_blink`, `sfx.weapon.grenade.explode`, `sfx.weapon.airstrike_bomb.explode`, `sfx.weapon.rocket.spawn`, `sfx.weapon.rocket.presence_loop`, `sfx.weapon.rocket.explode`, `sfx.weapon.laser_bolt.spawn`, `sfx.weapon.laser_bolt.hit_structure`, `sfx.weapon.laser_bolt.kill`, `sfx.weapon.laser_bolt.hit_bark`.
 
 ## 8 Open decisions
 
@@ -645,5 +649,6 @@ Caption: Figure 3-5, an explosion and its shockwave ring (R-CRATE-406, R-CRATE-4
 - DEC-455 — Same-tick advance of objects created during a tick (R-CRATE-401, R-CRATE-434, R-CRATE-452).
 - DEC-115 — Fixed match research levels (R-CRATE-412, R-CRATE-431, R-CRATE-440).
 - DEC-303 — Missile Barrage arrival spread ([crates and powers](crates_and_powers.md) R-CRATE-163; the barrage missile itself is [hazards and projectiles](../02_units/hazards_and_projectiles.md)).
+- DEC-859 — Tick counts chosen for reference durations: the active ticks of a shockwave ring (R-CRATE-470).
 
-Resolved decisions applied here: DEC-002, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-092, DEC-093, DEC-118, DEC-222 (cosmetic draws), DEC-241, DEC-461, DEC-652, DEC-653.
+Resolved decisions applied here: DEC-002, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-092, DEC-093, DEC-118, DEC-222 (cosmetic draws), DEC-241, DEC-461, DEC-564 (laser-bolt sounds), DEC-652, DEC-653, DEC-960 (effects in fixed steps).

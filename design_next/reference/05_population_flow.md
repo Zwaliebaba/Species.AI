@@ -133,9 +133,9 @@ if occupied:
 timer ← timer − 1
 if timer ≤ 0 or spawnSurgeActive:                  # spawnSurgeActive: R-ECON-045
     request one transit orb from the Source Node, addressed to this node
-    timer ← request_interval                       # ref.econ.spawn_node.request_interval_ticks = 2
+    timer ← requestInterval                        # ref.econ.spawn_node.request_interval_ticks = 2
     counter ← counter + 1
-    if counter ≥ ⌊burst_base × H⌋:                 # ref.econ.spawn_node.burst_base = 20
+    if counter ≥ ⌊burstBase × H⌋:                  # ref.econ.spawn_node.burst_base = 20
         counter ← 0
         timer ← U{101..150}                        # ref.econ.spawn_node.pause_ticks
 ```

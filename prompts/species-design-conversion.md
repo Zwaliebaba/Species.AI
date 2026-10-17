@@ -457,6 +457,9 @@ Output: `TOOLS/` (`$REPO/Tools/DesignCheck/`), which survives the cutover and se
 - `ip_denylist.sha256`: one SHA-256 hash per normalised token and per n-gram of 1–5 words from `WORK/ip_tokens.txt`. Hash the n-grams of the scanned text the same way. The repository never holds the names in plain text, and the scan still catches them.
 - `mermaid_check.js` and `README.md` (usage, and how to extend the patterns). The README says only that the denylist covers "names of the reference product and its IP".
 - `selftest.py`: before the cutover, prove that the hashed scan finds every token in `WORK/ip_tokens.txt`, and that it finds nothing in a clean sample paragraph made of Species terms.
+
+CLI and CI contract (owner decision O27): `python3 Tools/DesignCheck/CheckDesign.py <design root>` runs every gate with the patterns and the denylist kept beside it, exits non-zero on any failure and prints the per-gate table; the Mermaid gate finds `node_modules/mermaid/dist/mermaid.min.js` under `Tools/DesignCheck/` (installed by `npm ci --prefix Tools/DesignCheck` from a committed `package.json` and `package-lock.json` pinning mermaid 11.4.1 and Playwright) and Chromium through Playwright, and fails, never skips, when they are missing unless `--skip-mermaid` is passed. The `design` job of `.github/workflows/build.yml` runs exactly that. Python file names follow `AGENTS.md` (`CheckDesign.py`, `SelfTest.py`); `node_modules/` is never committed.
+
 Run `TOOLS` against `NEXT/`. Its results must equal those of `check_design.py`.
 
 ### 9.5 Phase 5 review briefs

@@ -60,6 +60,8 @@ Caption: One tick of the reference simulation, from the command frame to the ren
 | DEC-016 | Resolved | every order-dependent outcome is an explicit rule over a stable key (04, 05) |
 | DEC-028 | Resolved | the object model, the update order, the grids and the router are kept; every object kind has generational handles; scratch storage is per call (03, 04, 05) |
 | DEC-654 | Resolved | gameplay is computed only by the CPU simulation |
+| DEC-260, DEC-261, DEC-262 | Resolved | the gap rules of [simulation gap rules](../../decisions/simulation_gap_rules.md): order within an actor-grid cell by actor serial (05); the multi-round rebuild at a tick boundary (02); generations of laser-bolt and Essence-orb handles and the generational team selection (03, 06) |
+| DEC-263, DEC-264, DEC-265, DEC-266 | Open | route and actor-group edge cases (05, 06); what runs at game speed 0 and the real length of the speed-crate holds (01); decorative objects in the simulated pools (03, 07) |
 | DEC-106 | Open | the performance envelope at the population cap |
 | DEC-240 | Open | the simulation numeric model and its determinism scope |
 | DEC-250, DEC-251 | Open | persisted data; world-state persistence |

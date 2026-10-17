@@ -45,11 +45,11 @@ This document specifies the Strike team (`StrikeTeam`, an actor group) and its m
 **R-UNIT-346** (MUST) The Strike team gives each Trooper its target position. The lead Trooper heads straight for the waypoint. The Trooper with formation index i > 0 heads for TargetAt(`ref.unit.strike_team.trooper_spacing` × i), that is 10 wu × i along the path behind the lead:
 
 ```
-TargetAt(d):
-    if d <= 0 or the Strike team has a teleport target: return waypoint
+TargetAt(_d):
+    if _d <= 0 or the Strike team has a teleport target: return waypoint
     path := [lead position, trail[0], trail[1], ..., trail[last]]      # newest trail point first
     walk along path from its start, summing segment lengths
-    return the point at path distance d; if the path is shorter than d, return trail[last]
+    return the point at path distance _d; if the path is shorter than _d, return trail[last]
 ```
 
 The Troopers therefore walk in single file in the lead Trooper's footsteps, and each turns where the lead turned when the order was given.
@@ -70,13 +70,13 @@ The Troopers therefore walk in single file in the lead Trooper's footsteps, and 
 
 ### 2.5 Combat
 
-**R-UNIT-352** (MUST) **Primary fire.** `Attack(position, withGrenade)` on a Strike team runs the primary fire every time, and the secondary fire (R-UNIT-355) as well when withGrenade is set. The primary fire takes as candidates the alive, enabled Troopers that are not reloading (every live Trooper, by R-UNIT-341), with N their number. The fire accumulator grows by `ref.sim.tick_period` ÷ (`ref.unit.trooper.rate` ÷ N), that is 0.2 × N per tick; while the accumulator is at least 1, it is reduced by 1 and one candidate, chosen by a simulation draw from the candidates not yet chosen in this call, fires a single shot (R-UNIT-354) at the position. A full Strike team therefore fires 6 shots per second, 2 per Trooper, spread evenly over the ticks. With no candidate, no Trooper fires and no draw is made ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-428).
+**R-UNIT-352** (MUST) **Primary fire.** `Attack(_position, _withGrenade)` on a Strike team ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-428) runs the primary fire every time, and the secondary fire (R-UNIT-355) as well when `_withGrenade` is set. The primary fire takes as candidates the alive, enabled Troopers that are not reloading (every live Trooper, by R-UNIT-341), with N their number. The fire accumulator grows by `ref.sim.tick_period` ÷ (`ref.unit.trooper.rate` ÷ N), that is 0.2 × N per tick; while the accumulator is at least 1, it is reduced by 1 and one candidate, chosen by a simulation draw from the candidates not yet chosen in this call, fires a single shot (R-UNIT-354) at the position. A full Strike team therefore fires 6 shots per second, 2 per Trooper, spread evenly over the ticks. With no candidate, no Trooper fires and no draw is made ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-428).
 
 **R-UNIT-353** (MUST) **Autonomous behaviour.** A Trooper whose Strike team is not its team's current selection chooses its own enemy: every `ref.unit.trooper.target_interval_ticks` (11 ticks, nominal 1.0 s) it sets its current enemy to `NearestEnemy(x, z, 0, ref.unit.trooper.target_range, team)` (100 wu, [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-311). Each tick in which it has a live current enemy at distance d, it draws a value from U[0, d × `ref.unit.trooper.auto_fire_scale`) (d ÷ 2) and fires a single shot at the enemy when the draw is below `ref.unit.trooper.auto_fire_threshold` (2): a chance of min(1, 4 ÷ d) per tick, for example 10 % per tick at 40 wu and every tick within 4 wu.
 
 **R-UNIT-354** (MUST) **Single shot.** A Trooper's shot fires one laser bolt from the world position of its `muzzle` socket at `ref.unit.trooper.laser_speed` (200 wu/s) towards the target position displaced by two draws from `ref.unit.trooper.aim_jitter` (U[−3.5, 3.5] wu), first on x, then on z. The bolt's lifetime, damage and ricochet are those of the laser bolt ([weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), which give the Trooper a reach of `ref.unit.trooper.laser_range` (120 wu). The shot also ejects a shell casing from the `casing_eject` socket with velocity front × (`ref.unit.trooper.casing_speed_base` (5) + U[0, `ref.unit.trooper.casing_speed_range`) (10)) + U[−2.5, 2.5] wu/s on each axis; the casing's draws are presentation draws ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-622). The shot raises the attack and fire-laser sound events (R-UNIT-366).
 
-**R-UNIT-355** (MUST) **Secondary fire.** With withGrenade set, the alive, enabled Trooper nearest the target position whose secondary cooldown has expired throws the Strike team's secondary weapon at the position, provided the team's power level for that weapon is above 0. Its secondary cooldown is then `ref.unit.trooper.grenade_cooldown_ticks` (40 ticks, nominal 4.0 s); when the cooldown expires the Trooper raises the weapon-ready sound event (R-UNIT-366). Each Trooper has its own cooldown, so one Trooper throws per call at most.
+**R-UNIT-355** (MUST) **Secondary fire.** With `_withGrenade` set, the alive, enabled Trooper nearest the target position whose secondary cooldown has expired throws the Strike team's secondary weapon at the position, provided the team's power level for that weapon is above 0. Its secondary cooldown is then `ref.unit.trooper.grenade_cooldown_ticks` (40 ticks, nominal 4.0 s); when the cooldown expires the Trooper raises the weapon-ready sound event (R-UNIT-366). Each Trooper has its own cooldown, so one Trooper throws per call at most.
 
 **R-UNIT-356** (MUST) In a match a Strike team's secondary weapon is always the grenade: weapon cycling is not available in matches and no map sets another weapon (DEC-117). The grenade is thrown from the `muzzle` socket at the target position by the thrown-weapon rules, with the grenade's maximum throw force, fuse, explosion radius and damage at the grenade power level `ref.sim.init.power_level.grenade` ([weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)).
 
@@ -107,7 +107,7 @@ A handle found in the obstacle cell of a point off the map is resolved like ever
 
 **R-UNIT-360** (MUST) Every `ref.unit.strike_team.bot_scan_ticks` (11 ticks), the bot Strike team takes the enemies within `ref.unit.strike_team.bot_scan_range` (500 wu) of its centre in the result order of the actor-grid query ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md)), keeping a running nearest distance, and picks the first enemy that is nearer than every enemy before it and has at least `ref.unit.strike_team.bot_cluster_min` (20) enemies within `ref.unit.strike_team.bot_cluster_radius` (75 wu), counted with the cell-granular count `CountEnemiesInCells` (R-SIM-313, DEC-094); the scan stops at that enemy. With such an enemy at direction dir from the centre, it orders a move to the enemy's position − `ref.unit.strike_team.bot_standoff_factor` (0.8) × the engagement range × dir, so it stands about 204 wu short of the cluster. Otherwise it orders a move to the walkable neighbour, with the highest priority for its team, of the bot navigation node nearest its centre, or to that node itself ([bots](../07_bots/README.md)).
 
-**R-UNIT-361** (MUST) Every tick, when enemies lie within the engagement range of its centre, the bot Strike team aims at their centroid displaced by two draws from `ref.unit.strike_team.bot_aim_jitter` (U[−15, 15] wu), first on x, then on z; if that point is within the engagement range, it calls `Attack(point, withGrenade)` with withGrenade true when a simulation integer draw modulo `ref.unit.strike_team.bot_grenade_modulus` (5) is 0, a chance of 20 % per tick that the grenade cooldown still gates (R-UNIT-355).
+**R-UNIT-361** (MUST) Every tick, when enemies lie within the engagement range of its centre, the bot Strike team aims at their centroid displaced by two draws from `ref.unit.strike_team.bot_aim_jitter` (U[−15, 15] wu), first on x, then on z; if that point is within the engagement range, it calls `Attack` on that point, with `_withGrenade` true when a simulation integer draw modulo `ref.unit.strike_team.bot_grenade_modulus` (5) is 0, a chance of 20 % per tick that the grenade cooldown still gates (R-UNIT-355).
 
 ### 2.8 Death and presentation
 
@@ -154,14 +154,14 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A["Attack(position, withGrenade)"] --> B["Candidates: alive, enabled Troopers; N = count"]
+    A["Attack(_position, _withGrenade)"] --> B["Candidates: alive, enabled Troopers; N = count"]
     B --> C{"N > 0?"}
     C -- no --> G
     C -- yes --> D["accumulator += tick period ÷ (0.5 s ÷ N)"]
     D --> E{"accumulator ≥ 1?"}
     E -- yes --> F["accumulator −= 1; draw one candidate not yet chosen; it fires a single shot"]
     F --> E
-    E -- no --> G{"withGrenade?"}
+    E -- no --> G{"_withGrenade?"}
     G -- yes --> H["Nearest Trooper with expired cooldown throws a grenade; cooldown 40 ticks"]
     G -- no --> I["done"]
     H --> I

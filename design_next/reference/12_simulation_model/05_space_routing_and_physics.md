@@ -70,7 +70,7 @@ for cellX ascending, then cellZ ascending:
     for team 0 .. MAX_TEAMS-1 with _teamMask[team]:
         for each handle h of that cell and layer, in ascending actor serial (R-SIM-137; DEC-260):
             skip h if h is already in result         # an actor with a hit shape sits in several cells
-            a := resolve(h); skip h if it resolves to nothing
+            a := Resolve(h); skip h if it resolves to nothing
             if (a.x - _x)^2 + (a.z - _z)^2 < _r^2: append h to result
 return result
 ```
@@ -409,7 +409,7 @@ result := _candidate
 if onGround: result.y := terrain height at result
 shore search on result (R-SIM-379)
 for each handle in ObstacleGrid.StructuresAt(result), in cell order:
-    b := resolve(handle); skip it if it resolves to nothing
+    b := Resolve(handle); skip it if it resolves to nothing
     hit := (actor has a hit shape and b.MeshHits(actor shape, transform(front, up, result)))
         or ((actor has no hit shape or actor is a Leader) and b.SphereHits(result, ref.sim.push.contact_radius))
     if not hit:

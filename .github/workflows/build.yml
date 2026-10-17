@@ -155,6 +155,16 @@ jobs:
         shell: pwsh
         run: python Build\CheckProjectFiles.py
 
+      # The three NuGet packages AGENTS.md R14 allows, restored before the build. Guarded on a
+      # packages.config existing anywhere in the tree, so it starts running the day the first
+      # project references a package.
+      - name: Restore the NuGet packages
+        if: steps.solution.outputs.path != '' && hashFiles('**/packages.config') != ''
+        shell: pwsh
+        run: |
+          msbuild "${{ steps.solution.outputs.path }}" /t:Restore /p:RestorePackagesConfig=true `
+            /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /nologo /v:minimal
+
       # /warnaserror covers MSBuild's own warnings; /WX for the compiler is set in the projects.
       - name: Build
         if: steps.solution.outputs.path != ''
@@ -233,3 +243,25 @@ jobs:
       - name: Check formatting
         if: hashFiles('Build/CheckFormat.py') != ''
         run: python3 Build/CheckFormat.py --clang-format clang-format-18
+
+  design:
+    name: Design checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # The design gates of AGENTS.md §6 over Design/: links, requirement ids, DEC and ADR references,
+    # asset ids, tuning keys, sizes, templates, banned terms and every Mermaid diagram. Guarded on
+    # the checker and on Design/ existing, like every other gate here. The Mermaid check runs a
+    # pinned mermaid build in headless Chromium; both are pinned in Tools/DesignCheck/package.json.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the pinned Mermaid checker
+        if: hashFiles('Tools/DesignCheck/CheckDesign.py') != '' && hashFiles('Design/README.md') != ''
+        run: |
+          npm ci --prefix Tools/DesignCheck
+          npx --prefix Tools/DesignCheck playwright install --with-deps chromium
+
+      - name: Check the design
+        if: hashFiles('Tools/DesignCheck/CheckDesign.py') != '' && hashFiles('Design/README.md') != ''
+        run: python3 Tools/DesignCheck/CheckDesign.py Design

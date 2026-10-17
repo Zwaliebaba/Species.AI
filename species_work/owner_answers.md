@@ -33,3 +33,7 @@ The owner added `AGENTS.md`, `.clang-format`, `.clang-tidy`, `.editorconfig`, `.
 | O22 | ADR home | **`Design/ADR/ADR-NNN-<slug>.md`**, three-digit ids keeping the numbers; library root `Design/` at the cutover | coordinator renames and rewrites every citation; prompt §8.2 cutover target `Design/` |
 | O23 | Code naming in the design | **Convert now** to AGENTS.md naming (`Engine` and `Species` namespaces; American spelling in identifiers; prose British) | wave B fixers; FX-12 rewrites CONVENTIONS §8 |
 | O24 | AGENTS.md scope | **Status and authority**; R18+ reserved for the design phase, with candidates listed | AGENTS.md updated by the coordinator |
+
+| O25 | Shader files (X-ADR-P4 proposals 1, 2) | **Add `CS` and permutation files** (`<Shader><Permutation><Stage>.hlsl`, shared `<Shader>.hlsli`) | AGENTS.md §2, .editorconfig |
+| O26 | Content build tool's BC7 encoder (proposal 4) | **Separate tools solution under `Tools/`**, may use pinned third-party code with an ADR and licence | AGENTS.md §2 and R14 |
+| O27 | Housekeeping (proposals 3, 5, 6 and a design-check job) | **CI NuGet restore step and CI design-check job** only; no fuzz-project rule, no `ENGINE_DEVELOPMENT` rule | build.yml; X-TOOLS brief |

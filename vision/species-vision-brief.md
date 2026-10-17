@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O24 when the code standards (`AGENTS.md`) were adopted)
+## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O27 when the code standards (`AGENTS.md`) were adopted)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -45,6 +45,9 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O22 | ADR home | Architecture decision records live in **`Design/ADR/` as `ADR-NNN-<slug>.md`** (three-digit ids, MADR 4 content). The design library becomes **`Design/`** at the cutover. | The baseline ADRs keep their numbers (ADR-050 becomes ADR-050); new ADRs continue from the highest id. |
 | O23 | Code naming in the design | The C++ sketches, type, file and macro names in the design follow the `AGENTS.md` naming rules now: PascalCase types, functions, namespaces and files, `_camelCase` parameters, `m_` members, `UPPER_CASE` constants, American spelling in identifiers, namespace `Engine` for engine code and `Species` for game code. Prose stays British English. | Every component sketch is rewritten; CONVENTIONS §8 follows `AGENTS.md`. |
 | O24 | AGENTS.md scope | `AGENTS.md` states the repository's current status and which document decides what. **R18 onwards stays reserved** for conformance rules that the Species design phase derives from the Species design. | The design phase proposes R18+ rules (candidates: presentation never writes simulation state; the determinism rules of the simulation core; tuning values in data, never in code). |
+| O25 | Shader files | `AGENTS.md` §2 gains the compute stage suffix `CS`; a permutation is its own file `<Shader><Permutation><Stage>.hlsl`; a shader's shared code lives in one `<Shader>.hlsli` in the same `Shader/` folder. | The renderer and VFX specifications name their shaders this way. |
+| O26 | Development-tool dependencies | C++ development tools (the content build tool and its importers) live under `Tools/` in a **separate solution**, which may use pinned third-party code (for example a BC7 texture encoder), each recorded in an ADR with its licence. The game's solution stays at the Windows SDK, the MSVC standard library and the three allow-listed packages. | ADR-017, ADR-055 and ADR-059 follow it. |
+| O27 | CI additions | `build.yml` gains a guarded NuGet restore step and a guarded design-check job (`Tools/DesignCheck/CheckDesign.py Design`). Fuzz projects and an `ENGINE_DEVELOPMENT` macro rule are **not** added to `AGENTS.md`. | X-TOOLS delivers `Tools/DesignCheck/` with the CLI and the pinned `package.json` the job uses. |
 
 ## 4 What carries over from the reference library
 

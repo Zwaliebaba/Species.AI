@@ -31,7 +31,7 @@ When it opens, nine times in ten the opening team receives a good outcome: a Pow
 
 ### 2.2 Drop timer
 
-**R-CRATE-102** (MUST) The drop rule runs once per world tick in update slice `ref.sim.slice.supply_crates` (8). It does nothing during the first tutorial, and during the second tutorial until its bot is released ([reference/11](../11_tutorial_and_help.md)). It is not gated by the grace period; it runs on every tick on which the world runs, and no world tick runs while the world is held ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-550). Drops that the grace period does not stop are the reference default of DEC-116.
+**R-CRATE-102** (MUST) The drop rule runs once per world tick in update slice `ref.sim.slice.supply_crates` (8). It does nothing during the first tutorial, and during the second tutorial until its bot is released ([reference/11](../11_tutorial_and_help.md)). It has no grace-period gate of its own; it runs on every tick on which the world runs, and no world tick runs while the world is held for the grace period or paused, so no Supply crate drops before the grace period is over ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-550; DEC-116).
 
 **R-CRATE-103** (MUST) Each run of the drop rule:
 
@@ -86,16 +86,16 @@ The first accepted candidate is the drop point. When none of the 100 is accepted
 **R-CRATE-110** (MUST) Each tick while a Supply crate is not on the ground:
 
 ```
-if p.y <= terrainHeight(p.x, p.z) + ref.crate.fall.land_clearance:         # 20 wu
+if p.y <= TerrainHeight(p.x, p.z) + ref.crate.fall.land_clearance:         # 20 wu
     v := 0; onGround := true; stop the falling loop; emit the land sound
     return
 t := match time in game seconds + crate serial * ref.crate.fall.sway_phase_step    # 20
 sway := ref.crate.fall.sway_amplitude * p.y / ref.crate.drop.start_height         # 300 wu at 1300 wu up
-target := (p.x + cos(t) * sway, terrainHeight(p.x + cos(t) * sway, p.z), p.z)    # sway on x only
+target := (p.x + cos(t) * sway, TerrainHeight(p.x + cos(t) * sway, p.z), p.z)    # sway on x only
 target := PushFromObstacles(target)
 step := normalise(target - p) * ref.crate.fall.speed                             # 40 wu/s
 newP := PushFromObstacles(p + step)
-newP := p + clampLength(newP - p, ref.crate.fall.speed * dt)                      # at most 4 wu per tick
+newP := p + ClampLength(newP - p, ref.crate.fall.speed * dt)                      # at most 4 wu per tick
 v := (newP - p) / dt                                                              # read only by presentation
 p := newP
 ```
@@ -120,23 +120,23 @@ The crate therefore descends at 40 wu per game second along a swaying, mostly ve
 
 A crate with no owner and a majority team therefore becomes owned on the same tick, and a challenger must first drain the previous owner's progress before its own progress starts.
 
-**R-CRATE-115** (MUST) Progress is an integer number of units. A Worker contributes one unit per tick, so the opening rate is n units per tick, capped at 50 units per tick: a crate opens after ⌊2500 ÷ min(n, 50)⌋ + 1 ticks of an unbroken majority. With 50 or more Workers that is 51 ticks (5.1 s) at every game speed, the reference minimum (DEC-021); with 25 Workers 101 ticks; with 10 Workers 251 ticks; with 1 Worker 2501 ticks. A full bar drains in 25 ticks (2.5 s). The cap is a per-second rate scheduled in ticks, so it scales with game speed like every other rule (DEC-092).
+**R-CRATE-115** (MUST) Progress is an integer number of units. A Worker contributes one unit per tick, so the opening rate is n units per tick, capped at 50 units per tick: a crate opens after ⌊2500 ÷ min(n, 50)⌋ + 1 ticks of an unbroken majority. With 50 or more Workers that is 51 ticks (5.1 s) at every game speed, the reference minimum (DEC-021); with 25 Workers 101 ticks; with 10 Workers 251 ticks; with 1 Worker 2501 ticks. A full bar drains in 25 ticks (2.5 s). The cap is a per-second rate scheduled in ticks, so it scales with game speed like every other rule (DEC-092). These are integer tick counts (DEC-002; see DEC-859).
 
 **R-CRATE-116** (MUST) The **opening fraction** of a crate is min(1, progress ÷ `ref.crate.open.full_progress`) while it has an owner and 0 otherwise. It fills the crate's marker ring (R-CRATE-144).
 
-**R-CRATE-117** (MUST) While the owner holds the majority, whenever the progress bucket b = ⌊5 × progress ÷ `ref.crate.open.full_progress`⌋ changes to a value from 0 to 4, the previous progress sound stops and the progress sound of bucket b plays (`sfx.crate.supply_crate.capture_progress_00`, `_20`, `_40`, `_60` or `_80`). While progress drains, no progress sound plays.
+**R-CRATE-117** (MUST) While the owner holds the majority, whenever the progress bucket b = ⌊5 × progress ÷ `ref.crate.open.full_progress`⌋ changes to a value from 0 to 4, the previous progress sound stops and the progress sound of bucket b plays (`sfx.crate.supply_crate.capture_progress_00`, `sfx.crate.supply_crate.capture_progress_20`, `sfx.crate.supply_crate.capture_progress_40`, `sfx.crate.supply_crate.capture_progress_60` or `sfx.crate.supply_crate.capture_progress_80`). While progress drains, the tones play downwards by the same rule: whenever the bucket changes, the previous progress sound stops and the sound of the new bucket plays ([reference/10](../10_audio_design/event_model_and_sound_data.md) R-AUD-031; DEC-097).
 
 **R-CRATE-118** (MUST) Idle Workers search for Supply crates on the ground within their crate search range and walk to a scatter point around them ([worker.md](../02_units/worker.md) R-UNIT-078, R-UNIT-094); a Worker leaves that state as soon as the crate no longer exists. Players steer Workers to crates with Leaders and orders ([reference/06](../06_controls_camera_and_commands/README.md)).
 
 ### 2.8 Lifetime and expiry
 
-**R-CRATE-119** (MUST) A Supply crate's life starts at `ref.crate.lifetime.neutral_ticks` (600 ticks, 60 s). It counts down by one tick per tick only while the crate is on the ground and has no owner, and not during the first tutorial or the second tutorial before its bot is released. It is reset to 600 ticks on every tick on which the owner holds the majority (R-CRATE-114 step 2), and it does not count while a crate with an owner drains.
+**R-CRATE-119** (MUST) A Supply crate's life starts at `ref.crate.lifetime.neutral_ticks` (600 ticks, 60 s). It counts down by one tick per tick only while the crate is on the ground and has no owner, and not during the first tutorial or the second tutorial before its bot is released. It is reset to 600 ticks on every tick on which the owner holds the majority (R-CRATE-114 step 2), and it does not count while a crate with an owner drains. The 600 ticks are the count of a 60 s countdown (DEC-002; see DEC-859).
 
 **R-CRATE-120** (MUST) When its life is at or below 0 and its progress is at or below 0, the crate is removed with no outcome: its bot navigation node is destroyed (R-CRATE-113) and the expiry presentation event is emitted, which no sound is bound to (DEC-565). Opening and expiry both show the shatter effect of `mesh.structure.supply_crate` (presentation).
 
 ### 2.9 Resolution on opening
 
-**R-CRATE-121** (MUST) On the tick a crate opens, with T its owner:
+**R-CRATE-121** (MUST) On the tick a crate opens, with T its owner, it resolves as follows; a forced outcome makes no draw (DEC-652), and an empty candidate list delivers nothing (see DEC-858):
 
 ```
 if crate has a forced outcome:  GoodBranch(forced outcome)          # no draw (DEC-652)
@@ -147,7 +147,7 @@ else:
     else:                             BadBranch(DrawBad())             # 0.1
 remove the crate; stop the progress sounds and the capture-begin loop; emit the captured sound
 destroy its bot navigation node and recalculate the bot navigation links
-if T is the local team: notify the hint overlay (presentation, reference/11)
+if T is the local team: notify the objective-card hook (presentation, R-CRATE-146)
 ```
 
 `GoodBranch(o)` delivers outcome o to T by the delivery of [README](README.md) table 2.2-A. `BadBranch(o)` creates outcome o at the crate's position for the Rogue faction, or for the Visitor faction when o is the Abductor (R-CRATE-012), hostile to every team, T included. When the drawn candidate list is empty, the branch delivers nothing (R-CRATE-003).
@@ -158,7 +158,7 @@ if T is the local team: notify the hint overlay (presentation, reference/11)
 
 ### 2.10 Outcome selection and validity
 
-**R-CRATE-124** (MUST) `DrawGood()` builds the good candidate list: every outcome of the catalogue, in catalogue order, that is marked "Good" in table 2.2-A (every outcome except the Swarm, the Allegiance Scrambler, the Sickness, the Abductor and the Spitter Plants) and that is valid by R-CRATE-125. It draws `SimRng::NextUint` mod (list length) and returns that entry, so every valid good outcome has the same probability. An empty list returns nothing.
+**R-CRATE-124** (MUST) `DrawGood()` builds the good candidate list: every outcome of the catalogue, in catalogue order, that is marked "Good" in table 2.2-A (every outcome except the Swarm, the Allegiance Scrambler, the Sickness, the Abductor and the Spitter Plants) and that is valid by R-CRATE-125. It draws `SimRng::NextUint` mod (list length) and returns that entry, so every valid good outcome has the same probability. An empty list returns nothing, and the crate opens and delivers nothing (see DEC-858).
 
 **R-CRATE-125** (MUST) An outcome is **valid** unless one of these holds, tested in this order:
 
@@ -171,7 +171,7 @@ if T is the local team: notify the hint overlay (presentation, reference/11)
 7. it is the Hive and the number of Hives on the map + `ref.crate.hive.pending_weight` (2) × the number of Hive Powers held in the Power slots of every used team is at least `ref.crate.hive.limit` (4);
 8. the map excludes it ([README](README.md) R-CRATE-030).
 
-**R-CRATE-126** (MUST) `DrawBad()` returns nothing when basic outcomes only is on. Otherwise it builds the bad candidate list in catalogue order: the Swarm, the Allegiance Scrambler, the Hive, the Sickness, the Blight Grove, the Abductor while it has not appeared in this match and the mode is not Siege, and the Spitter Plants; it removes every outcome that the map excludes (DEC-107); it draws `SimRng::NextUint` mod (list length) and returns that entry. The other validity rules of R-CRATE-125 do not apply to the bad pool: in particular the Hive limit does not. An empty list returns nothing.
+**R-CRATE-126** (MUST) `DrawBad()` returns nothing when basic outcomes only is on. Otherwise it builds the bad candidate list in catalogue order: the Swarm, the Allegiance Scrambler, the Hive, the Sickness, the Blight Grove, the Abductor while it has not appeared in this match and the mode is not Siege, and the Spitter Plants; it removes every outcome that the map excludes (DEC-107); it draws `SimRng::NextUint` mod (list length) and returns that entry. The other validity rules of R-CRATE-125 do not apply to the bad pool: in particular the Hive limit does not. An empty list returns nothing, and the crate opens and delivers nothing (see DEC-858).
 
 **R-CRATE-127** (MUST) The Hive and the Blight Grove belong to both pools. Drawn by the good branch, each is a Power of the opening team; drawn by the bad branch, each is immediate, at the crate, for the Rogue faction.
 
@@ -228,9 +228,9 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 **R-CRATE-139** (MUST) A Supply crate is drawn as `mesh.structure.supply_crate`, tumbling: its orientation is the up axis rotated about x by the presentation time × `ref.crate.render.tumble_rate_x` (1.0 rad/s) and about z by the presentation time × `ref.crate.render.tumble_rate_z` (0.7 rad/s), at its extrapolated position ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-560). A crate has no team colour on its mesh.
 
-**R-CRATE-140** (MUST) While it falls, a crate is drawn inside a camera-facing bubble card `fx.bubble_sphere`, white with alpha `ref.crate.render.bubble_alpha` (150) and half-size 2 × the crate's radius, and the landing marker `marker.crate_landing` lies on the terrain under it, rotating at `ref.crate.render.landing_marker_spin` (−0.3 rad/s), additive with alpha `ref.crate.render.landing_marker_alpha` (180), over a shadow of the same symbol blurred with radius `ref.crate.render.landing_marker_blur` (10 px). Players can therefore position Workers before the crate lands.
+**R-CRATE-140** (MUST) While it falls, a crate is drawn inside a camera-facing bubble card `fx.bubble_sphere`, white with alpha `ref.crate.render.bubble_alpha` (150) and half-size 2 × the crate's radius, and the landing marker `marker.crate_landing` lies on the terrain under it, rotating at `ref.crate.render.landing_marker_spin` (−0.3 rad/s), additive with alpha `ref.crate.render.landing_marker_alpha` (180), over its shadow `marker.crate_landing.shadow`, the same symbol blurred with radius `ref.crate.render.landing_marker_blur` (10 px). Players can therefore position Workers before the crate lands.
 
-**R-CRATE-141** (MUST) When the crate lands, its bubble pops: the bubble splits into three quarter cards that drift apart while the bubble timer, starting at `ref.crate.render.bubble_timer_start` (100), falls by `ref.crate.render.bubble_pop_per_frame` (4) per rendered frame; afterwards only the glow is drawn.
+**R-CRATE-141** (MUST) When the crate lands, its bubble pops: the bubble splits into three quarter cards that drift apart while the bubble timer, starting at `ref.crate.render.bubble_timer_start` (100), falls by `ref.crate.render.bubble_pop_per_frame` (4) per step of the fixed presentation step rate `vfx.emit.step_rate` (60 per second), which stands for one reference frame (DEC-960); afterwards only the glow is drawn.
 
 **R-CRATE-142** (MUST) The crate's glow is:
 
@@ -243,11 +243,11 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 **R-CRATE-145** (MUST) A Supply crate emits these sound events ([reference/10](../10_audio_design/README.md)): the falling loop `sfx.crate.supply_crate.falling` from its drop until it lands; `sfx.crate.supply_crate.land`; the capture-begin loop, the three layers `sfx.crate.supply_crate.capture_begin`, `sfx.crate.supply_crate.capture_begin_b` and `sfx.crate.supply_crate.capture_begin_c`; the progress sounds `sfx.crate.supply_crate.capture_progress_00` to `sfx.crate.supply_crate.capture_progress_80` (R-CRATE-117); `sfx.crate.supply_crate.captured` on opening; `sfx.crate.supply_crate.capture_lost` when the owner becomes none; and the expiry event, unbound (DEC-565). A weapon hit raises only the crate's damaged event.
 
-**R-CRATE-146** (MUST) The hint overlay shows its Supply crate hint `help.hint.supply_crates` while a Supply crate exists, also during the grace period, and is notified when the local team opens one ([reference/11](../11_tutorial_and_help.md)).
+**R-CRATE-146** (MUST) Supply crates raise two hint notifications: one while a Supply crate exists, also during the grace period, and one when the local team opens a crate (R-CRATE-121). Both feed the objective-card hook, which draws nothing in a match, so the objective-card picture `help.hint.supply_crates` is drawn by no rule ([reference/11](../11_tutorial_and_help.md) R-TUT-013; DEC-050).
 
 ### 2.15 Effect of each outcome
 
-**R-CRATE-150** (MUST) The effect of each outcome is specified below. For a Power, "on targeting" means the tick on which the Power is targeted at the point P ([README](README.md) R-CRATE-025); for an immediate outcome, P is the crate's position. Every outcome emits the feedback of [README](README.md) table 2.6-A at that tick. A one-shot Power stops on the targeting tick (README R-CRATE-017). The units and objects that an outcome creates are specified in the documents named; this section states what the outcome creates, where, for whom and with which outcome-set values.
+**R-CRATE-150** (MUST) The effect of each outcome is specified below. For a Power, "on targeting" means the tick on which the Power is targeted at the point P ([README](README.md) R-CRATE-025); for an immediate outcome, P is the crate's position. Every outcome emits the feedback of [README](README.md) table 2.6-A at that tick. A one-shot Power stops on the targeting tick (README R-CRATE-017). The units and objects that an outcome creates are specified in the documents named; this section states what the outcome creates, where, for whom and with which outcome-set values. The catalogue data of each outcome, its delivery included, is DAT-264 of the [data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md).
 
 #### 2.15.1 Strike team
 
@@ -306,7 +306,7 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 #### 2.15.8 Shield
 
-**R-CRATE-167** (MUST) **Delivery:** a Shield Power; target rule "at least one actor of the owner's team within `ref.power.effect_range`". **On targeting:** every Worker of the owner's team within `ref.power.effect_range` (70 wu, horizontal) of P, except a Worker inside a Transport, takes the Power's Shield link; the Power stays Running and becomes the team's selected Power. Each linked Worker shows 20 team-coloured fire particles (presentation).
+**R-CRATE-167** (MUST) **Delivery:** a Shield Power; target rule "at least one actor of the owner's team within `ref.power.effect_range`". **On targeting:** every Worker of the owner's team within `ref.power.effect_range` (70 wu, horizontal) of P, except a Worker inside a Transport, takes the Power's Shield link; the Power stays Running and becomes the team's selected Power. Each linked Worker shows `vfx.emit.power_reached.count` (20) team-coloured Worker-fire particles, the `PowerReachedWorker` effect of [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) table 4.7-A (presentation).
 
 **R-CRATE-168** (MUST) A Worker with a Shield link ([worker.md](../02_units/worker.md) R-UNIT-122):
 
@@ -469,13 +469,13 @@ Every rule of this section is presentation: it reads simulation state and never 
 
 #### 2.15.28 Time Dilation
 
-**R-CRATE-226** (MUST) **Delivery:** immediate, global; it does nothing once the match is won, because the tick clock is then locked. The outcome requests the game speed `ref.sim.speed.time_dilation_min` (0.2) + `SimRng::NextUnit`(`ref.sim.speed.time_dilation_spread` (0.2)) at the blend rate `ref.sim.speed.crate_rate` (0.05) with the hold `ref.sim.speed.crate_hold` (150 ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-545, R-SIM-556). The speed approaches its target by 5 % of the gap per tick, snaps within 0.01, holds, and then returns to 1.0 at the same rate with no hold; a newer request (another speed outcome or a meteor) replaces it.
+**R-CRATE-226** (MUST) **Delivery:** immediate, global; it does nothing once the match is won, because the tick clock is then locked. The outcome requests the game speed `ref.sim.speed.time_dilation_min` (0.2) + `SimRng::NextUnit`(`ref.sim.speed.time_dilation_spread` (0.2)) at the blend rate `ref.sim.speed.crate_rate` (0.05) with the hold `ref.sim.speed.crate_hold` (150 ticks) ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-545, R-SIM-556). The speed approaches its target by 5 % of the gap per tick, snaps within 0.01, holds, and then returns to 1.0 at the same rate with no hold; a newer request (another speed outcome or a meteor) replaces it. The hold counts world ticks, so its real duration depends on the speed it holds: 37.5 s of real time at 0.4 × to 75 s at 0.2 × (see DEC-265).
 
 **R-CRATE-227** (MUST) Under tick scheduling every game-time quantity slows with the speed, Supply crate drops, crate opening and the lightning roll included (DEC-039, DEC-092). The announcement shows; no sound and no map marker.
 
 #### 2.15.29 Time Rush
 
-**R-CRATE-228** (MUST) **Delivery:** immediate, global; it does nothing once the match is won. The outcome requests the game speed `ref.sim.speed.time_rush_min` (1.3) + `SimRng::NextUnit`(`ref.sim.speed.time_rush_spread` (0.7)), a target from 1.3 to 2.0, at the blend rate `ref.sim.speed.crate_rate` with the hold `ref.sim.speed.crate_hold`, by the same speed law as R-CRATE-226.
+**R-CRATE-228** (MUST) **Delivery:** immediate, global; it does nothing once the match is won. The outcome requests the game speed `ref.sim.speed.time_rush_min` (1.3) + `SimRng::NextUnit`(`ref.sim.speed.time_rush_spread` (0.7)), a target from 1.3 to 2.0, at the blend rate `ref.sim.speed.crate_rate` with the hold `ref.sim.speed.crate_hold`, by the same speed law as R-CRATE-226. Its hold of 150 world ticks lasts from 7.5 s of real time at 2.0 × to about 11.5 s at 1.3 × (see DEC-265).
 
 **R-CRATE-229** (MUST) Every game-time quantity runs 1.3 to 2 times faster during the request (DEC-039, DEC-092). The announcement shows; no sound and no map marker. The real-time lengths of the speed ramps are those of [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-557.
 
@@ -602,11 +602,11 @@ Caption: Figure 3-4, from a majority of Workers to a placed Power (R-CRATE-114, 
 | `ref.crate.fall.push_min_terrain` | 10 | wu | a push onto terrain at or below this is discarded | R-CRATE-111 | — |
 | `ref.crate.bot.priority_modifier` | 0.5 | × priority | of the crate's bot navigation node | R-CRATE-113 | — |
 | `ref.crate.open.scan_range` | 35 | wu | horizontal, strict, exact | R-CRATE-114 | DEC-021 |
-| `ref.crate.open.full_progress` | 2500 | progress units | 2.5 game seconds × 1000; opens when exceeded | R-CRATE-114, R-CRATE-115 | DEC-002, DEC-021 |
-| `ref.crate.open.max_progress_per_tick` | 50 | progress units | 1 unit per counted Worker per tick, capped; 51 ticks at 50 or more Workers | R-CRATE-114, R-CRATE-115 | DEC-021, DEC-092 |
+| `ref.crate.open.full_progress` | 2500 | progress units | 2.5 game seconds × 1000; opens when exceeded | R-CRATE-114, R-CRATE-115 | DEC-002, DEC-021, DEC-859 |
+| `ref.crate.open.max_progress_per_tick` | 50 | progress units | 1 unit per counted Worker per tick, capped; 51 ticks at 50 or more Workers | R-CRATE-114, R-CRATE-115 | DEC-021, DEC-092, DEC-859 |
 | `ref.crate.open.drain_per_tick` | 100 | progress units | a full bar drains in 25 ticks | R-CRATE-114 | — |
 | `ref.crate.open.good_share` | 0.9 | probability | the bad share is 0.1 | R-CRATE-121, R-CRATE-128 | DEC-021 |
-| `ref.crate.lifetime.neutral_ticks` | 600 | ticks | 60 s; counts only on the ground with no owner | R-CRATE-114, R-CRATE-119 | DEC-002, DEC-021 |
+| `ref.crate.lifetime.neutral_ticks` | 600 | ticks | 60 s; counts only on the ground with no owner | R-CRATE-114, R-CRATE-119 | DEC-002, DEC-021, DEC-859 |
 
 ### 4.2 Validity and pools
 
@@ -688,7 +688,7 @@ Caption: Figure 3-4, from a majority of Workers to a placed Power (R-CRATE-114, 
 | `ref.crate.render.landing_marker_alpha` | 180 | alpha (0–255) | additive | R-CRATE-140 | — |
 | `ref.crate.render.landing_marker_blur` | 10 | px | blur radius of the shadow | R-CRATE-140 | — |
 | `ref.crate.render.bubble_timer_start` | 100 | — | | R-CRATE-141 | DEC-007 |
-| `ref.crate.render.bubble_pop_per_frame` | 4 | per rendered frame | | R-CRATE-141 | DEC-007 |
+| `ref.crate.render.bubble_pop_per_frame` | 4 | per presentation step | one step of `vfx.emit.step_rate` stands for one reference frame | R-CRATE-141 | DEC-007, DEC-960 |
 | `ref.crate.render.trail_cards` | 10, 5, 2 | cards | structure-detail settings 1, 2, 3 | R-CRATE-142 | — |
 | `ref.crate.render.trail_colour` | 1.0, 0.4, 0.2 | RGB | | R-CRATE-142 | — |
 | `ref.crate.render.trail_alpha` | 0.6 | × height ÷ start height | | R-CRATE-142 | — |
@@ -820,13 +820,16 @@ The README's string table holds the announcement texts of every outcome.
 
 - **Reference documents:** [README](README.md) (the catalogue, delivery modes, Power slots, targeting, feedback, exclusions); [weapons and projectiles](weapons_and_projectiles.md) (airstrike bombs, firebomb canisters, airstrike target markers, rockets, Convert laser bolts, Swarm streaks); [reference/01](../01_skirmish_rules_and_modes/README.md) (crate options, Comeback step, HUD timers, mode validity summaries); [units README](../02_units/README.md), [worker.md](../02_units/worker.md) (crate search, Power links, Sickness), [strike_team.md](../02_units/strike_team.md), [transport.md](../02_units/transport.md), [collector.md](../02_units/collector.md), [builder.md](../02_units/builder.md), [creatures](../02_units/creatures.md) (Seed Pods, ants, Wisps, Crawlers, spiders), [hazards and projectiles](../02_units/hazards_and_projectiles.md) (Abductor, Bombers, barrage missiles, meteors); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (turrets, their line of sight, exclusion zones); [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) (trees, Hives, Spitter Plants, the Allegiance Scrambler effect); [mode objects](../03_buildings_and_world_objects/mode_objects.md) (Relic carrying); [reference/05](../05_population_flow.md) (Spawn Node counts, Spawn Surge production, Essence orb rain, population caps, starting-powers option, Comeback timers); [reference/06](../06_controls_camera_and_commands/README.md) (aiming, markers); [reference/07](../07_bots/README.md) (crate priority, bot Power handlers); [reference/08](../08_maps_and_level_design/README.md) (which maps match the probability contexts); [reference/10](../10_audio_design/README.md); [reference/11](../11_tutorial_and_help.md) (tutorial crates, drop suppression, hint overlay); [reference/12](../12_simulation_model/README.md) (slices, speed requests, draws, containers).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (crate, bubble, glow and landing marker drawing); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter effects, particles); [audio engine](../../architecture/components/audio_engine.md).
-- **Assets:** `mesh.structure.supply_crate`, `fx.bubble_sphere`, `fx.glow_cloudy`, `fx.starburst`, `marker.crate_landing`, `marker.supply_crate`, `marker.barrage_target`, `mesh.creature.abductor_hull`, `mesh.projectile.meteor_rock`, `mesh.unit.bomber_body`, `mesh.structure.hive_mound`, `mesh.structure.spitter_plant_head`, `mesh.structure.turret_head`, `sprite.missile_barrage.launcher`, `sprite.missile_barrage.launcher_shadow`, `sprite.missile_barrage.missile`, `sprite.visitor.front`, `fx.convert_beam`, `help.hint.supply_crates`, `help.hint.reinforcements`; the sounds `sfx.crate.supply_crate.falling`, `sfx.crate.supply_crate.land`, `sfx.crate.supply_crate.capture_begin`, `sfx.crate.supply_crate.capture_begin_b`, `sfx.crate.supply_crate.capture_begin_c`, `sfx.crate.supply_crate.capture_progress_00`, `sfx.crate.supply_crate.capture_progress_20`, `sfx.crate.supply_crate.capture_progress_40`, `sfx.crate.supply_crate.capture_progress_60`, `sfx.crate.supply_crate.capture_progress_80`, `sfx.crate.supply_crate.captured`, `sfx.crate.supply_crate.capture_lost`, `sfx.creature.abductor.presence_loop`, `sfx.creature.abductor.presence_loop_b`, `sfx.creature.abductor.presence_loop_c`, `sfx.creature.abductor.tractor_beam`, `sfx.unit.bomber.presence_loop`, `sfx.unit.bomber.drop_bomb`, `sfx.weapon.airstrike_bomb.explode`, `sfx.weapon.barrage_missile.presence_loop`, `sfx.weapon.barrage_missile.explode`, `sfx.weapon.barrage_missile.explode_b`, `sfx.weapon.meteor.presence_loop`, `sfx.weapon.meteor.land`, `sfx.weapon.meteor.land_b`, `sfx.building.hive.damaged`, `sfx.building.spitter_plant.burning`; the outcome icons and sounds of [README](README.md) table 2.6-A.
+- **Assets:** `mesh.structure.supply_crate`, `fx.bubble_sphere`, `fx.glow_cloudy`, `fx.starburst`, `marker.crate_landing`, `marker.crate_landing.shadow`, `marker.supply_crate`, `marker.barrage_target`, `mesh.creature.abductor_hull`, `mesh.projectile.meteor_rock`, `mesh.unit.bomber_body`, `mesh.structure.hive_mound`, `mesh.structure.spitter_plant_head`, `mesh.structure.turret_head`, `sprite.missile_barrage.launcher`, `sprite.missile_barrage.launcher_shadow`, `sprite.missile_barrage.missile`, `sprite.visitor.front`, `fx.convert_beam`, `help.hint.supply_crates`, `help.hint.reinforcements`; the sounds `sfx.crate.supply_crate.falling`, `sfx.crate.supply_crate.land`, `sfx.crate.supply_crate.capture_begin`, `sfx.crate.supply_crate.capture_begin_b`, `sfx.crate.supply_crate.capture_begin_c`, `sfx.crate.supply_crate.capture_progress_00`, `sfx.crate.supply_crate.capture_progress_20`, `sfx.crate.supply_crate.capture_progress_40`, `sfx.crate.supply_crate.capture_progress_60`, `sfx.crate.supply_crate.capture_progress_80`, `sfx.crate.supply_crate.captured`, `sfx.crate.supply_crate.capture_lost`, `sfx.creature.abductor.presence_loop`, `sfx.creature.abductor.presence_loop_b`, `sfx.creature.abductor.presence_loop_c`, `sfx.creature.abductor.tractor_beam`, `sfx.unit.bomber.presence_loop`, `sfx.unit.bomber.drop_bomb`, `sfx.weapon.airstrike_bomb.explode`, `sfx.weapon.barrage_missile.presence_loop`, `sfx.weapon.barrage_missile.explode`, `sfx.weapon.barrage_missile.explode_b`, `sfx.weapon.meteor.presence_loop`, `sfx.weapon.meteor.land`, `sfx.weapon.meteor.land_b`, `sfx.building.hive.damaged`, `sfx.building.spitter_plant.burning`; the outcome icons and sounds of [README](README.md) table 2.6-A.
 
 ## 8 Open decisions
 
 - DEC-114 — Position of score-weighted crate drops (R-CRATE-106).
-- DEC-116 — Supply crates during the grace period (R-CRATE-102).
 - DEC-121 — Ownership of Brood creatures (R-CRATE-198).
+- DEC-265 — Real duration of the speed-crate holds (R-CRATE-226, R-CRATE-228).
+- DEC-858 — Empty outcome lists (R-CRATE-121, R-CRATE-124, R-CRATE-126).
+- DEC-859 — Tick counts chosen for reference durations: crate opening and the neutral crate life (R-CRATE-115, R-CRATE-119).
+- DEC-050 — Front-end features that exist only as hooks: the objective cards that Supply crates notify (R-CRATE-146).
 - DEC-303 — Missile Barrage arrival spread (R-CRATE-163).
 - DEC-304 — Spawn Surge request count (R-CRATE-211).
 - DEC-305 — Essence Grove orbs of team slots not in play (R-CRATE-189, R-CRATE-192).
@@ -836,4 +839,4 @@ The README's string table holds the announcement texts of every outcome.
 - DEC-111 — Values derived from flat-terrain calculation (R-CRATE-112, R-CRATE-160, R-CRATE-163, R-CRATE-216).
 - DEC-550, DEC-551, DEC-556 — Power slot rules, see the [README](README.md).
 
-Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-015, DEC-016, DEC-088 (turret line of sight), DEC-021 (the starting-power exclusions name the Essence Grove), DEC-033, DEC-039, DEC-073, DEC-092, DEC-093, DEC-107, DEC-120, DEC-331, DEC-465, DEC-652, DEC-653. Dropped: DEC-057.
+Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-015, DEC-016, DEC-088 (turret line of sight), DEC-021 (the starting-power exclusions name the Essence Grove), DEC-033, DEC-039, DEC-073, DEC-092, DEC-093, DEC-097, DEC-107, DEC-116 (no drop while the world is held for the grace period), DEC-120, DEC-331, DEC-465, DEC-652, DEC-653, DEC-960. Dropped: DEC-057.

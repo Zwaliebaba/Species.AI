@@ -169,18 +169,18 @@ A kind that never runs the base advance gets no world clamp, no reload countdown
 **R-UNIT-026** (MUST) The amount of a health change is an integer; a fractional damage value is truncated toward zero before it is applied (DEC-241). The base health change ignores the damage kind and runs:
 
 ```
-ApplyHealthChange(amount, kind = unresistable):     # base rule; kind is ignored here
+ApplyHealthChange(_amount, _damageKind = unresistable):   # base rule; the damage kind is ignored here
     if not dead:
-        if amount < 0: emit presentation event <kind>.hurt
-        if health + amount <= 0:
+        if _amount < 0: emit presentation event <kind>.hurt
+        if health + _amount <= 0:
             health := ref.unit.corpse.fade_start            # the health field becomes the fade counter
             dead := true
             emit presentation event <kind>.die
             release one Essence orb (R-UNIT-038)
-        else if health + amount > ref.unit.health_max:
+        else if health + _amount > ref.unit.health_max:
             health := ref.unit.health_max
         else:
-            health := health + amount
+            health := health + _amount
     return true                                         # true = the hit registered
 ```
 
@@ -315,9 +315,9 @@ Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Br
 **R-UNIT-052** (MUST) The base attack of an actor fires a laser bolt at a target point:
 
 ```
-FireAtPoint(target):
+FireAtPoint(_target):
     if reload > 0: return                                         # no shot
-    aim := target + (NextSigned(ref.unit.attack.aim_jitter), 0, NextSigned(ref.unit.attack.aim_jitter))
+    aim := _target + (NextSigned(ref.unit.attack.aim_jitter), 0, NextSigned(ref.unit.attack.aim_jitter))
                                                                    # each component in (-7.5, 7.5)
     from := position + (0, ref.unit.attack.muzzle_height, 0)
     fire a laser bolt from `from` with velocity (aim - from) scaled to ref.unit.attack.laser_speed, for the actor's team

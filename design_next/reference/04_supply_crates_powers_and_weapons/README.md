@@ -6,7 +6,7 @@ This folder specifies the Supply crate, the 31 outcomes it can yield, the Powers
 
 | File | Content | Requirement ids |
 |---|---|---|
-| [README.md](README.md) | conventions; the outcome catalogue; delivery modes; Power slots and the Power life cycle; Power targeting; feedback conventions; excluded outcomes; basic outcomes only; exclusion zones; bot use of Powers | R-CRATE-001 to R-CRATE-035 (numbers 001 to 099 reserved) |
+| [README.md](README.md) | conventions; the outcome catalogue; delivery modes; Power slots and the Power life cycle; Power targeting; feedback conventions; excluded outcomes; basic outcomes only; exclusion zones; bot use of Powers | R-CRATE-001 to R-CRATE-036 (numbers 001 to 099 reserved) |
 | [crates_and_powers.md](crates_and_powers.md) | Supply crate options, drop timer, placement, falling, opening, expiry and resolution; outcome selection, validity and probabilities; starting powers; Comeback Bonus grants; the effect of every outcome; the counters matrix | R-CRATE-100 to R-CRATE-231 (numbers 100 to 399 reserved) |
 | [weapons_and_projectiles.md](weapons_and_projectiles.md) | effect kinds, damage kinds and shot helpers; the explosion parameters; thrown weapons, grenades, firebomb canisters, airstrike target markers, rockets, laser bolts, turret rounds, shell casings, fireballs, shockwave rings, muzzle flashes, the Core Device pulse wave, Swarm streaks, lightning strikes, snowflakes, dust objects and the turret aim marker; the weapon summary | R-CRATE-400 to R-CRATE-511 (numbers 400 to 599 reserved) |
 
@@ -35,7 +35,7 @@ The weapons of this folder are the shared combat toolkit of units, turrets and o
 
 **R-CRATE-002** (MUST) Every Supply crate, Power and weapon rule draws only from the simulation generator for a gameplay decision and only from a presentation generator for a cosmetic effect (DEC-013). No object of this folder draws while it is constructed: every draw that initialises a new object is made once, in the explicit spawn step of the rule that creates it (DEC-652). A draw whose occurrence depends on a condition is its own statement inside that condition, and the owning rule states the condition.
 
-**R-CRATE-003** (MUST) Every rejection loop and search of this folder has a capped number of attempts and a deterministic fallback; every outcome draw is a single draw over an explicit candidate list (DEC-014, DEC-021). When a candidate list is empty, the rule that draws from it grants nothing, and states so.
+**R-CRATE-003** (MUST) Every rejection loop and search of this folder has a capped number of attempts and a deterministic fallback; every outcome draw is a single draw over an explicit candidate list (DEC-014, DEC-021). When a candidate list is empty, the rule that draws from it grants nothing, and states so (see DEC-858).
 
 **R-CRATE-004** (MUST) No rule of this folder stores a non-finite value: every division has an explicit guard, and the guarded sites keep the reference result wherever it is defined (DEC-653).
 
@@ -45,7 +45,7 @@ The weapons of this folder are the shared combat toolkit of units, turrets and o
 
 ### 2.2 The outcome catalogue
 
-**R-CRATE-007** (MUST) A Supply crate yields one of the `ref.crate.outcome.count` (31) outcomes of table 2.2-A. The order of the table is the canonical outcome order: it is the order of every explicit candidate list that this folder builds (R-CRATE-003), the order of the map's exclusion list in the map editor, and the order of the outcome identifiers in the map schema. The outcome identifiers are those of the `CrateOutcome` enumeration ([CONVENTIONS](../../CONVENTIONS.md) §8.7); Species defines its own enumerator values, and no rule depends on them.
+**R-CRATE-007** (MUST) A Supply crate yields one of the `ref.crate.outcome.count` (31) outcomes of table 2.2-A. The order of the table is the canonical outcome order: it is the order of every explicit candidate list that this folder builds (R-CRATE-003), the order of the map's exclusion list in the map editor, and the order of the outcome identifiers in the map schema. The outcome identifiers are those of the `CrateOutcome` enumeration ([CONVENTIONS](../../CONVENTIONS.md) §8.7); Species defines its own enumerator values, and no rule depends on them. The outcome catalogue is data: one entry per row of table 2.2-A, keyed by its identifier, with the fields of the catalogue schema ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-264).
 
 Table 2.2-A The outcome catalogue. "Good", "Bad", "Start" and "Comeback" give membership of the good pool (§2.10 of [crates and powers](crates_and_powers.md)), the bad pool, the starting-powers pool and the Comeback pool. "Power" delivery holds the outcome as a Power until its owner aims it; "immediate" applies it on the opening tick.
 
@@ -89,7 +89,7 @@ Table 2.2-A The outcome catalogue. "Good", "Bad", "Start" and "Comeback" give me
 
 **R-CRATE-010** (MUST) A **forced outcome** replaces the outcome draw of one Supply crate. Only a tutorial step forces an outcome ([reference/11](../11_tutorial_and_help.md)); its forced outcomes are the airstrike and the Transport. A forced outcome is always delivered as a good outcome to the opening team, by the delivery of table 2.2-A, also for an outcome outside the good pool. The Sickness outcome has no good delivery, and the content build rejects a tutorial step that forces it (DEC-015).
 
-**R-CRATE-011** (MUST) Each outcome has a string id prefix `crate.<outcome>` (CONVENTIONS §8.7), whose `.name` entry is its display name; an announcement id and a map-marker icon where table 2.6-A gives them; and an outcome sound `sfx.crate.outcome.<outcome>` where table 2.6-A gives one. The outcome identifier, never the display name, is the key of the map's exclusion list and of every data file.
+**R-CRATE-011** (MUST) Each outcome has a string id prefix `crate.<outcome>` (CONVENTIONS §8.7), whose `.name` entry is its display name; an announcement id and a map-marker icon where table 2.6-A gives them; an outcome sound `sfx.crate.outcome.<outcome>` where table 2.6-A gives one; and, for each of the 20 outcomes that table 2.2-A can deliver as a Power, a Power help text `crate.<outcome>.tooltip` (string table §4.2), which the Power help tooltip shows while the Power is Waiting ([reference/06](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-236). The outcome identifier, never the display name, is the key of the map's exclusion list and of every data file.
 
 ### 2.3 Delivery modes
 
@@ -98,13 +98,15 @@ Table 2.2-A The outcome catalogue. "Good", "Bad", "Start" and "Comeback" give me
 1. **Power (deferred).** The outcome is added to the receiving team's Power slots as a Power of the kind of table 2.2-A (§2.4). Its owner aims it later at a point (players: [reference/06](../06_controls_camera_and_commands/README.md); bots: [reference/07](../07_bots/README.md)), and the effect runs there. The turret Power and the airstrike Power carry an option set at grant time: the turret type (gun, rocket or flame) and the bomb kind (standard or firebomb canisters).
 2. **Immediate.** The effect is applied at the Supply crate's position, or across the whole map, on the opening tick.
 
+The catalogue records the delivery of each outcome as a good outcome in its `delivery` field, one of `power`, `at_crate`, `global`, `opening_team` and `none`: the "Delivery as a good outcome" column of table 2.2-A ([data schemas](../../architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md) DAT-264).
+
 A good outcome is delivered to the opening team. A bad outcome is always immediate, at the crate's position, and every object it creates belongs to the Rogue faction, or to the Visitor faction for the Abductor, whichever team opened the crate; it threatens every team, the opening team included.
 
 **R-CRATE-013** (MUST) When a team receives a Power from a Supply crate and the team is not the local team, every other participant shows the notice `crate.opened_by_team` with the team's name. The local opening team sees the received-Power pop-up of the Power slots panel instead ([reference/06](../06_controls_camera_and_commands/README.md)). An immediate outcome shows its own announcement (table 2.6-A) and no `crate.opened_by_team` notice.
 
 ### 2.4 Power slots
 
-**R-CRATE-014** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, and `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated for the Comeback Bonus ([reference/05](../05_population_flow.md) R-ECON-113). In a match the capacity ignores every research level (DEC-033). Every Power in the Idle, Waiting or Running state occupies one slot.
+**R-CRATE-014** (MUST) Each team has `ref.power.slots.capacity` (6) Power slots, and `ref.power.slots.capacity_eliminated` (2) while it counts as eliminated for the Comeback Bonus ([reference/05](../05_population_flow.md) R-ECON-113). In a match the capacity ignores every research level (DEC-033), so the research-level icons `icon.power.slots_upgrade` (the Power-slots level) and `icon.power.laser` (the laser level) are drawn by no rule of a match (DEC-115). Every Power in the Idle, Waiting or Running state occupies one slot, the bot-only promotion Power included (R-CRATE-036).
 
 **R-CRATE-015** (MUST) A Power granted while every slot is occupied is lost, and the owning player sees the no-overwrite message `ui.power_slots.full`. The same message is also shown when a grant fills the last free slot. A Comeback grant with no free slot is not made at all (R-CRATE-138).
 
@@ -117,7 +119,7 @@ A good outcome is delivered to the opening team. A bad outcome is always immedia
 3. **Running**: targeted, its effect placed or active;
 4. **Stopping**: ended; it is removed from its slot.
 
-A Power whose effect fires once (the airstrike in both bomb kinds, the Missile Barrage, the meteor shower, the Swarm, the Essence Grove, the Blight Grove, the Hive and the Brood) is stopped on the tick it is targeted, and in modes without the turret-cap option so is the turret Power (R-CRATE-024).
+A Power whose effect fires once (the airstrike in both bomb kinds, the Missile Barrage, the meteor shower, the Swarm, the Essence Grove, the Blight Grove, the Hive and the Brood) is stopped on the tick it is targeted, and in modes without the turret-cap option so is the turret Power (R-CRATE-024). In the blocked tutorial phases a one-shot Power stays Waiting instead, and the airstrike Power stays Running until its effect is gone (R-CRATE-021, see DEC-550).
 
 **R-CRATE-018** (MUST) A Power with a start lock above 0 refuses to be targeted. The lock counts down by one tick per tick in the Power's advance. Only the starting powers set a lock: every Power the team holds after the starting-powers grant is locked for `ref.econ.start.power_lock_ticks` (300 ticks, 30.0 s, [reference/05](../05_population_flow.md)), and the Power slots panel shows the countdown (DEC-021).
 
@@ -146,11 +148,11 @@ A life limit counts down by one tick per tick while it is above 0, and the Power
 
 Stopping always frees the Power's slot, even when the unit or the turret survives the stop; such a unit or turret stays in the world with no slot. This is the reference default of DEC-551.
 
-**R-CRATE-021** (MUST) During the first tutorial, and during the second tutorial until its bot is allowed to spawn, no Power can be stopped. A one-shot Power then stays Running after it fires and can be fired again; the airstrike Power is unaffected by the block. This is the reference default of DEC-550.
+**R-CRATE-021** (MUST) During the first tutorial, and during the second tutorial until its bot is allowed to spawn, no Power can be stopped. A one-shot Power whose effect ends it at once (Missile Barrage, Swarm, Essence Grove, Blight Grove, Hive, Brood and meteor shower) therefore stays Waiting after it fires and can be fired again; the airstrike Power (both bomb kinds) is unaffected by the block, because it becomes Running when it fires and ends when its effect is gone ([reference/06](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-210). This is the reference default of DEC-550.
 
 **R-CRATE-022** (MUST) A Strike team that leaves through a Beam Dish is registered again as a new Power, with a new Power id and the last slot position; if the registration fails because the team's slots have dropped to two on elimination, the Strike team carries on with no Power ([strike_team.md](../02_units/strike_team.md) R-UNIT-339, DEC-551).
 
-**R-CRATE-023** (MUST) A team's most recent Power id is simulation state, set when a Power is granted; the Power slots panel uses it for the received-Power pop-up, and a grant also records its source (Supply crate, starting powers or Comeback Bonus) for that pop-up ([reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-663).
+**R-CRATE-023** (MUST) A team's most recent Power id is simulation state, set when a Power is granted; the Power slots panel uses it for the received-Power pop-up, and a grant also records its source (a Supply crate, a reinforcement or the Comeback Bonus; a starting power records the Supply crate source) for that pop-up ([reference/06](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-186; [reference/12](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-663).
 
 **R-CRATE-024** (MUST) A turret Power that places its turret in a mode with the turret-cap option (Launch Race and Flag Chain) stays Running: it keeps its slot and counts toward the mode's turret cap while its turret exists ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-077). While it runs, a turret that a team other than no team and other than the Power's team captures is destroyed by structure damage of −`ref.bldg.turret.self_destruct_damage` (1000), and the Power ends ([defences and props](../03_buildings_and_world_objects/defences_and_props.md) R-BLDG-424). In every other mode the turret Power is stopped when it places the turret, and the turret is an ordinary neutral turret (DEC-033).
 
@@ -177,7 +179,7 @@ Table 2.5-A Valid target points.
 **R-CRATE-028** (MUST) An outcome's feedback consists of three presentation events, emitted at the tick where the outcome's rule fires (DEC-007):
 
 1. **Announcement**: a centre-screen message of the outcome's announcement id, shown for `ref.sim.world.message_expiry` (3.0 s of real time, [reference/12](../12_simulation_model/04_containers_and_update_order.md)); a message flagged no-overwrite suppresses later messages while it shows. An announcement that names a team shows to every participant; a global outcome names no team.
-2. **Map marker**: a fixed marker at the effect's position with the outcome's icon, in the colour of the team the effect belongs to; it disappears `ref.power.marker.lifetime_s` (8 s of real time) after the local player first sees it ([reference/06](../06_controls_camera_and_commands/README.md)).
+2. **Map marker**: a fixed marker at the effect's position with the outcome's icon, in the colour of the team the effect belongs to; it is removed when its accumulated on-screen time for the local player reaches `ref.power.marker.lifetime_s` (8 s of real time), tested once the player has seen it, so time off screen does not count ([reference/06](../06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-381).
 3. **Outcome sound**: the outcome's sound at the effect's position, for the effect's team, or for no team for a global outcome ([reference/10](../10_audio_design/README.md)).
 
 Table 2.6-A gives each outcome's events; "—" means none.
@@ -224,7 +226,7 @@ The Rogue-faction column applies when the Rogue faction is the team the effect b
 
 **R-CRATE-030** (MUST) An excluded outcome is never drawn by the good pool, by the bad pool or by the starting-powers draw: every Supply crate outcome, the bad outcomes included, respects the list (DEC-107). The Comeback pool ignores the list; this is the reference default of DEC-452.
 
-**R-CRATE-031** (MUST) The match option **basic outcomes only** (`match.options.basic_crates`, default off, [reference/01](../01_skirmish_rules_and_modes/README.md)) has the effects of table 2.7-A. It is part of the match setup and is the same for every participant. It does not carry over: it is reset to off at the end of every match and when the lobby is left; the second tutorial switches it on when its bot phase starts ([reference/11](../11_tutorial_and_help.md)).
+**R-CRATE-031** (MUST) The match option **basic outcomes only** (`match.options.basic_crates`, default off, [reference/01](../01_skirmish_rules_and_modes/README.md)) has the effects of table 2.7-A. It is part of the match setup and is the same for every participant. It does not carry over: it is reset to off at the end of every match and when the lobby is left; the second tutorial switches it on at its end step, the same step that releases its bots ([reference/11](../11_tutorial_and_help.md) R-TUT-117).
 
 Table 2.7-A Basic outcomes only.
 
@@ -243,7 +245,9 @@ Table 2.7-A Basic outcomes only.
 
 ### 2.8 Bots and Powers
 
-**R-CRATE-035** (MUST) A bot uses its Powers through one handler per Power kind ([reference/07](../07_bots/README.md)): Strike team, Collector, Builder, Transport, airstrike (both bomb kinds), Missile Barrage, the buff Powers (one handler shared by the Shield, Convert, Speed Boost and Fury), turret (every type), Swarm (reached only by a forced outcome), Essence Grove (reached only by a Comeback grant), Hive, Brood, meteor shower and Blight Grove. The immediate outcomes need no handler, and no handler exists for the Sickness.
+**R-CRATE-035** (MUST) A bot uses its Powers through one handler per Power kind ([reference/07](../07_bots/README.md)): Strike team, Collector, Builder, Transport, airstrike (both bomb kinds), Missile Barrage, the buff Powers (one handler shared by the Shield, Convert, Speed Boost and Fury), turret (every type), Essence Grove (reached only by a Comeback grant), Hive, Brood, meteor shower and Blight Grove. The immediate outcomes need no handler, and no handler exists for the Sickness or for the Swarm: the only forced outcomes are a tutorial's, which go to the tutorial player, so no source gives a bot a Swarm Power ([reference/07](../07_bots/04_powers_and_unit_policies.md) R-BOT-101).
+
+**R-CRATE-036** (MUST) A bot can also start the bot-only promotion Power, which occupies a free Power slot like every other Power while it is Waiting and fails with no message when every slot is occupied ([reference/07](../07_bots/04_powers_and_unit_policies.md) R-BOT-107). The Powers that place units (Strike team, Collector, Builder and Transport) mark the actor group they create as under player control only for a team that is not a bot team ([reference/07](../07_bots/README.md) R-BOT-019).
 
 ## 3 States and flows
 
@@ -298,13 +302,13 @@ Caption: Figure 3-2, from grant to slot release (R-CRATE-015 to R-CRATE-020).
 | `ref.power.target.turret_clearance` | 10 | wu | sphere radius at the target point | R-CRATE-025 | — |
 | `ref.power.target.turret_gate_clearance` | 400 | wu | from a Transit Gate of a team that is not friendly | R-CRATE-025 | — |
 | `ref.power.target.turret_node_clearance` | 200 | wu | from a Spawn Node of a team that is not friendly | R-CRATE-025 | — |
-| `ref.power.marker.lifetime_s` | 8 | s of real time | presentation; from the first time the local player sees the marker | R-CRATE-028 | DEC-007 |
+| `ref.power.marker.lifetime_s` | 8 | s of real time | presentation; accumulated on-screen time, tested once the local player has seen the marker | R-CRATE-028 | DEC-007 |
 
 The starting-powers and Comeback pools (`ref.power.start.pool`, `ref.power.start.excluded`, `ref.power.comeback.pool`, `ref.power.comeback.pool_basic`) and the good share `ref.crate.open.good_share` are owned by [crates and powers](crates_and_powers.md) §4.
 
 ### 4.2 String table
 
-New player-facing text of this folder. `{team}` is the team's name and `{turret}` the turret type's name. The text of each outcome name `crate.<outcome>.name` (R-CRATE-011) is the outcome's Species term of table 2.2-A without the "(outcome)" suffix; for example `crate.time_rush.name` is "Time Rush" and `crate.turret_gun.name` is "gun turret".
+New player-facing text of this folder. `{team}` is the team's name and `{turret}` the turret type's name. The `crate.<outcome>.tooltip` texts are the Power help texts of R-CRATE-011. The text of each outcome name `crate.<outcome>.name` (R-CRATE-011) is the outcome's Species term of table 2.2-A without the "(outcome)" suffix; for example `crate.time_rush.name` is "Time Rush" and `crate.turret_gun.name` is "gun turret".
 
 | String id | Text |
 |---|---|
@@ -342,6 +346,26 @@ New player-facing text of this folder. `{team}` is the team's name and `{turret}
 | `crate.firebomb_run.announce_rogue` | Firebombs incoming |
 | `crate.time_dilation.announce` | Time slows down |
 | `crate.time_rush.announce` | Time speeds up |
+| `crate.strike_team.tooltip` | Strike team: drop three Troopers next to a friendly Spawn Node, turret, zone or Transit Gate. |
+| `crate.collector.tooltip` | Collector: place a flying Collector near one of your Strike teams or Builders. It gathers Essence orbs for your Spawn Nodes. |
+| `crate.builder.tooltip` | Builder: place a Builder drone near one of your Strike teams or Builders. It tows Essence orbs to your Spawn Nodes. |
+| `crate.transport.tooltip` | Transport: drop a Transport next to a friendly Spawn Node, turret, zone or Transit Gate. It carries up to 100 Workers. |
+| `crate.airstrike.tooltip` | Airstrike: pick a target point. Bombers drop bombs on the markers thrown there. |
+| `crate.missile_barrage.tooltip` | Missile Barrage: pick a target point. Ten missiles strike around it, hurting every team. |
+| `crate.shield.tooltip` | Shield: target your Workers. Each one blocks damage until an explosion breaks its Shield. |
+| `crate.convert.tooltip` | Convert: target your Workers. Their laser bolts turn enemy Workers to your side. |
+| `crate.speed_boost.tooltip` | Speed Boost: target your Workers. They run twice as fast and set trees alight. |
+| `crate.turret_gun.tooltip` | Gun turret: place a turret. Man its ports with Workers to fire it. |
+| `crate.swarm.tooltip` | Swarm: pick a target point. A swarm attacks every team except the Rogue faction. |
+| `crate.essence_grove.tooltip` | Essence Grove: plant trees that drop Essence orbs. |
+| `crate.hive.tooltip` | Hive: place two Rogue faction Hives whose ants attack every other team, yours included. |
+| `crate.brood.tooltip` | Brood: launch Seed Pods that burst into creatures fighting for you. |
+| `crate.meteor_shower.tooltip` | Meteor shower: pick a target area. Meteors hit every team in it. |
+| `crate.blight_grove.tooltip` | Blight Grove: plant blight trees that kill nearby Workers of every team except the Rogue faction. |
+| `crate.fury.tooltip` | Fury: target your Workers. They move faster, take less damage and fire non-stop. |
+| `crate.turret_rocket.tooltip` | Rocket turret: place a turret. Man its ports with Workers to fire rockets. |
+| `crate.turret_flame.tooltip` | Flame turret: place a turret. Man its ports with Workers to fire fireballs. |
+| `crate.firebomb_run.tooltip` | Firebomb Run: pick a target point. Bombers drop firebombs that set Workers and trees alight. |
 
 The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`, `ui.power_slots.cancelled`, `ui.power_slots.unlocked`, `ui.power_slots.improved`, `ui.power_slots.full` and `ui.power_slots.comeback_full` (CONVENTIONS §8.10) are shown by the Power slots panel ([reference/06](../06_controls_camera_and_commands/README.md)); this folder fires `ui.power_slots.full` (R-CRATE-015) and `ui.power_slots.comeback_full` (R-CRATE-138).
 
@@ -392,7 +416,7 @@ The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`,
 ## 7 Dependencies
 
 - **Reference documents:** [crates and powers](crates_and_powers.md); [weapons and projectiles](weapons_and_projectiles.md); [reference/01](../01_skirmish_rules_and_modes/README.md) (the basic-outcomes option, the turret-cap rule R-MODE-077, the HUD timers); [reference/02 units](../02_units/README.md), [strike_team.md](../02_units/strike_team.md), [transport.md](../02_units/transport.md), [collector.md](../02_units/collector.md), [builder.md](../02_units/builder.md), [worker.md](../02_units/worker.md) (the units and Worker links that Powers create); [hazards and projectiles](../02_units/hazards_and_projectiles.md); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (exclusion zones, turrets); [reference/05](../05_population_flow.md) (elimination for the Comeback Bonus, starting-power lock, map starting units as Powers); [reference/06](../06_controls_camera_and_commands/README.md) (the Power slots panel, markers, aiming and cancelling); [reference/07](../07_bots/README.md) (bot use of Powers); [reference/08](../08_maps_and_level_design/README.md) (the exclusion list in the map schema and editor); [reference/10](../10_audio_design/README.md) (outcome sounds); [reference/11](../11_tutorial_and_help.md) (forced outcomes); [reference/12](../12_simulation_model/README.md) (slices, draws, match state).
-- **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (the map's excluded outcomes); [UI framework](../../architecture/components/ui_framework/README.md) (the Power slots panel, ADR-032); [audio engine](../../architecture/components/audio_engine.md).
+- **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (the map's excluded outcomes; the outcome catalogue, DAT-264); [UI framework](../../architecture/components/ui_framework/README.md) (the Power slots panel, ADR-032); [audio engine](../../architecture/components/audio_engine.md).
 - **Assets:** the outcome icons `icon.power.strike_team`, `icon.power.collector`, `icon.power.builder`, `icon.power.transport`, `icon.power.airstrike`, `icon.power.missile_barrage`, `icon.power.workers`, `icon.power.shield`, `icon.power.convert`, `icon.power.speed_boost`, `icon.power.gun_turret`, `icon.power.swarm`, `icon.power.essence_grove`, `icon.power.allegiance_scrambler`, `icon.power.hive`, `icon.power.sickness`, `icon.power.brood`, `icon.power.meteor_shower`, `icon.power.blight_grove`, `icon.power.fury`, `icon.power.spitter_plants`; the Power slots panel art `icon.hud.slot_empty`, `icon.hud.slot_discard`, `icon.hud.icon_halo`, `icon.hud.transport_state`, `icon.power.slots_upgrade`, `icon.power.leader`, `icon.power.grenade`, `icon.power.rocket`, `icon.power.laser`, `marker.team_disc`, `uitex.panel_accent`, `uitex.panel_neutral`, `glyph.key.tab`, `glyph.pad.shoulder_left`; the cursors `cursor.select`, `cursor.highlight`, `cursor.place`; the outcome sounds of table 2.6-A; the Power slots sounds `sfx.ui.power_input.begin`, `sfx.ui.power_input.confirm`, `sfx.ui.power_slots.discard`, `sfx.ui.power_slots.icon_hover`.
 
 ## 8 Open decisions
@@ -401,5 +425,7 @@ The Power slots messages `ui.power_slots.ready`, `ui.power_slots.not_available`,
 - DEC-551 — Units that outlive their Power slot (R-CRATE-020, R-CRATE-022).
 - DEC-556 — Power slot order (R-CRATE-016).
 - DEC-452 — Comeback Bonus pool and the map's excluded outcomes (R-CRATE-030).
+- DEC-858 — Empty outcome lists: an empty draw grants nothing (R-CRATE-003).
+- DEC-115 — Fixed match research levels: no research-level icon is drawn in a match (R-CRATE-014).
 
 Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-011, DEC-013, DEC-014, DEC-015, DEC-021, DEC-033, DEC-039, DEC-092, DEC-107, DEC-652, DEC-653. Dropped: DEC-057, DEC-552.
