@@ -87,6 +87,11 @@ def strip_code_spans(line):
     return re.sub(r'`[^`]*`', ' ', line)
 
 
+def cells_of(line):
+    """Split a Markdown table row on unescaped pipes."""
+    return [c.strip() for c in re.split(r'(?<!\\)\|', line.strip().strip('|'))]
+
+
 def prose_text(text):
     return '\n'.join(l for _, l in prose_lines(text))
 
@@ -118,13 +123,13 @@ def allowed_terms():
     lines = [l for l in sec.group(1).split('\n') if l.startswith('|')]
     if not lines:
         return rows
-    head = [c.strip().lower() for c in lines[0].strip('|').split('|')]
+    head = [c.lower() for c in cells_of(lines[0])]
     if 'paths' not in head:
         fail(2, 'CONVENTIONS.md §9 table has no "Paths" column')
         return rows
     pi = head.index('paths')
     for l in lines[2:]:
-        cells = [c.strip() for c in l.strip('|').split('|')]
+        cells = cells_of(l)
         rows.append((cells[0].lower(), re.findall(r'`([^`]+)`', cells[pi])))
     return rows
 
@@ -310,7 +315,7 @@ for f, t in TEXT.items():
     cols = None
     for i, line in enumerate(lines):
         if line.startswith('|') and i + 1 < len(lines) and re.match(r'^\|\s*:?-{3,}', lines[i + 1]):
-            head = [c.strip().lower() for c in line.strip().strip('|').split('|')]
+            head = [c.lower() for c in cells_of(line)]
             cols = head if head[:2] == ['key', 'value'] else None
             continue
         if cols is None:
@@ -320,7 +325,7 @@ for f, t in TEXT.items():
             continue
         if re.match(r'^\|\s*:?-{3,}', line):
             continue
-        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        cells = cells_of(line)
         m = re.match(r'^`([^`]+)`$', cells[0])
         if not m:
             fail(8, f'{f}:{i + 1} tuning row without a single backticked key: {cells[0][:60]}')
@@ -367,7 +372,7 @@ for line in conv.split('\n'):
     if not line.startswith('|'):
         col = None
         continue
-    cells = [c.strip() for c in line.strip().strip('|').split('|')]
+    cells = cells_of(line)
     if 'String-id prefix' in cells:
         col = cells.index('String-id prefix')
     elif col is not None and col < len(cells) and not cells[0].startswith('---'):

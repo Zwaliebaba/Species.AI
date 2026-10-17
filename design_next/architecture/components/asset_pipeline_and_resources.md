@@ -85,7 +85,7 @@ enum class ContentType : std::uint8_t {
   Texture, CpuTable, Mesh, Collision, SimRecord, Record, Map, MapIndex,
   StringTable, Font, ResidentSound, SoundStream, ExplainerScript, Shader, AssetIndex };
 
-// ---- import records (schemas owned by data_schemas.md, ADR-0061) ---------
+// ---- import records (schemas owned by data_schemas/, ADR-0061) ---------
 enum class TextureKind : std::uint8_t { Colour, Ui, Normal, Mask, ExactData, CpuTable };
 enum class ColourSpace : std::uint8_t { Srgb, Linear };
 enum class AlphaMode   : std::uint8_t { Opaque, Straight, Premultiplied, Additive, Cutout };

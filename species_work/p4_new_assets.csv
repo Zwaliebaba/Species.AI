@@ -1,0 +1,173 @@
+asset_id,consumer_file,cited_by_request
+cursor.enter.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.enter.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.enter.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.enter.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.highlight.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.highlight.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.highlight.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.highlight.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.move_target.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.move_target.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.move_target.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.move_target.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.place.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.place.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.place.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.place.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.select.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.select.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.select.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.select.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.unavailable.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.unavailable.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.unavailable.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.unavailable.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.world.shadow,reference/06_controls_camera_and_commands/cursor_and_markers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.world.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.world.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+cursor.world.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+fx.abductor_beam_ring,reference/02_units/hazards_and_projectiles.md,G02b missing assets 1; item 35
+fx.abductor_beam_ring,architecture/components/renderer/entity_and_overlay_renderers.md,G02b missing assets 1; item 35
+fx.abductor_beam_ring,architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md,G02b missing assets 1; item 35
+glyph.pad.dpad_horizontal,architecture/components/input.md,C-INP missing assets; item 97
+glyph.pad.dpad_horizontal_shadow,architecture/components/input.md,C-INP missing assets (a shadow each); item 97
+glyph.pad.stick_left,architecture/components/input.md,C-INP missing assets; item 97
+glyph.pad.stick_left_shadow,architecture/components/input.md,C-INP missing assets (a shadow each); item 97
+glyph.pad.stick_right,architecture/components/input.md,C-INP missing assets; item 97
+glyph.pad.stick_right_shadow,architecture/components/input.md,C-INP missing assets (a shadow each); item 97
+marker.barrage_target.shadow,reference/02_units/hazards_and_projectiles.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.barrage_target.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.barrage_target.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.barrage_target.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.crate_landing.shadow,reference/04_supply_crates_powers_and_weapons/crates_and_powers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.crate_landing.shadow,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.crate_landing.shadow,architecture/components/renderer/visual_language.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.crate_landing.shadow,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 4; item 86
+marker.edge_compass_empty,architecture/components/renderer/entity_and_overlay_renderers.md,C-RND-b missing assets 2; item 66
+marker.flag_post_state_tint,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 2; item 83; item 86
+marker.flag_post_state_tint,reference/01_skirmish_rules_and_modes/flag_chain.md,C-AST missing assets 2; item 83; item 86
+marker.flag_post_state_tint,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 2; item 83; item 86
+marker.leader_banner_tint,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 2; item 83; item 86
+marker.leader_banner_tint,reference/02_units/leader_and_formations.md,C-AST missing assets 2; item 83; item 86
+marker.route_arrow,architecture/components/renderer/entity_and_overlay_renderers.md,C-RND-b missing assets 1; item 66
+mesh.collision.abductor_hull,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.abductor_hull,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.abductor_hull,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.abductor_hull,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.barrier_emitter,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.barrier_emitter,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.barrier_emitter,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.barrier_emitter,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.beam_dish,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.beam_dish,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.beam_dish,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.beam_dish,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.command_console,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.command_console,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.command_console,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.command_console,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.command_console_linked,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.command_console_linked,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.command_console_linked,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.command_console_linked,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.core_device,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.core_device,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.core_device,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.core_device,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_depot,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_depot,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_depot,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_depot,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_line_foot,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_line_foot,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_line_foot,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_line_foot,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_pump_housing,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_pump_housing,reference/03_buildings_and_world_objects/mode_objects.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_pump_housing,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.fuel_pump_housing,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.grid_pylon,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.grid_pylon,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.grid_pylon,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.grid_pylon,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.hive_mound,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.hive_mound,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.hive_mound,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.hive_mound,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.relay_mast,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.relay_mast,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.relay_mast,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.relay_mast,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.scenery_prop,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.scenery_prop,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.scenery_prop,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.scenery_prop,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.solar_array,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.solar_array,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.solar_array,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.solar_array,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.source_node,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.source_node,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.source_node,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.source_node,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node_alt,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node_alt,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node_alt,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.spawn_node_alt,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.spitter_plant_head,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.spitter_plant_head,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.spitter_plant_head,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.spitter_plant_head,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate_alt,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate_alt,reference/03_buildings_and_world_objects/economy_and_spawn_objects.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate_alt,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.transit_gate_alt,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.turret_barrel,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.turret_barrel,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.turret_barrel,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.turret_barrel,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.turret_head,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.turret_head,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.turret_head,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.turret_head,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.collision.wall_section,reference/03_buildings_and_world_objects/README.md,C-AST missing assets 3; item 86
+mesh.collision.wall_section,reference/03_buildings_and_world_objects/defences_and_props.md,C-AST missing assets 3; item 86
+mesh.collision.wall_section,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 3; item 86
+mesh.collision.wall_section,architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md,C-AST missing assets 3; item 86
+mesh.dev.camera_view,reference/08_maps_and_level_design/map_editor_hooks.md,G08b missing assets
+sfx.ui.match_ui.game_over,reference/10_audio_design/front_end_hud_voice_and_ambience.md,"G01 missing assets 1; G10 assets; items 23, 82; DEC-097"
+sfx.ui.match_ui.game_over,reference/10_audio_design/event_catalogue.md,"G01 missing assets 1; G10 assets; items 23, 82; DEC-097"
+sfx.ui.match_ui.game_over,reference/10_audio_design/music_hooks_and_sound_design_brief.md,"G01 missing assets 1; G10 assets; items 23, 82; DEC-097"
+sfx.ui.match_ui.game_over,reference/01_skirmish_rules_and_modes/README.md,"G01 missing assets 1; G10 assets; items 23, 82; DEC-097"
+sfx.ui.match_ui.game_over,architecture/components/audio_engine.md,"G01 missing assets 1; G10 assets; items 23, 82; DEC-097"
+sfx.unit.trooper.throw_grenade,reference/10_audio_design/event_catalogue.md,G10 assets; item 82; DEC-097
+sfx.unit.trooper.throw_grenade,reference/10_audio_design/music_hooks_and_sound_design_brief.md,G10 assets; item 82; DEC-097
+sfx.unit.trooper.throw_grenade,reference/02_units/strike_team.md,G10 assets; item 82; DEC-097
+sfx.unit.trooper.throw_grenade,architecture/components/audio_engine.md,G10 assets; item 82; DEC-097
+sfx.weapon.laser_bolt.hit_structure,reference/10_audio_design/event_catalogue.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.hit_structure,reference/10_audio_design/music_hooks_and_sound_design_brief.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.hit_structure,reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.hit_structure,architecture/components/audio_engine.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.kill,reference/10_audio_design/event_catalogue.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.kill,reference/10_audio_design/music_hooks_and_sound_design_brief.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.kill,reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.kill,reference/03_buildings_and_world_objects/defences_and_props.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.kill,architecture/components/audio_engine.md,G10 assets; item 82; G04 missing assets 2; DEC-564
+sfx.weapon.laser_bolt.spawn,reference/10_audio_design/event_catalogue.md,G10 assets; item 82; DEC-564
+sfx.weapon.laser_bolt.spawn,reference/10_audio_design/music_hooks_and_sound_design_brief.md,G10 assets; item 82; DEC-564
+sfx.weapon.laser_bolt.spawn,reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md,G10 assets; item 82; DEC-564
+sfx.weapon.laser_bolt.spawn,architecture/components/audio_engine.md,G10 assets; item 82; DEC-564
+sprite.crawler.segment.trail,architecture/components/renderer/entity_and_overlay_renderers.md,C-AST missing assets 1; C-RND-b missing assets 3; item 66; item 86
+sprite.crawler.segment.trail,architecture/components/asset_pipeline_and_resources.md,C-AST missing assets 1; C-RND-b missing assets 3; item 66; item 86
+sprite.crawler.segment.trail,reference/02_units/creatures.md,C-AST missing assets 1; C-RND-b missing assets 3; item 66; item 86
+strings.dev_en_gb,architecture/components/diagnostics_test_and_performance.md,C-DBG missing assets (development string table)
+uitex.app_icon,architecture/components/platform_layer.md,C-PLT missing assets 1; item 117

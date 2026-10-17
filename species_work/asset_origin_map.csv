@@ -1723,24 +1723,24 @@ content/strings/ko_kr.json,strings.ko_kr,,0,
 (not created: bound only to sound events that never fire),,data/sounds/incubator_birth4.ogg,1,audio
 (not created: bound only to sound events that never fire),,data/sounds/incubator_birth5.ogg,1,audio
 (not created: bound only to sound events that never fire),,data/sounds/incubator_birth6.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building10.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building2.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building3.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building4.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building5.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building6.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building7.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building8.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hit_building9.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent1.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent2.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent3.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent4.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent5.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent6.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent7.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/sounds/laser_hitent8.ogg,1,audio
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_01.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_10.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building10.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_02.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building2.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_03.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building3.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_04.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building4.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_05.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building5.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_06.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building6.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_07.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building7.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_08.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building8.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_hit_structure_09.wav,sfx.weapon.laser_bolt.hit_structure,data/sounds/laser_hit_building9.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_01.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent1.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_02.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent2.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_03.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent3.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_04.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent4.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_05.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent5.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_06.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent6.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_07.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent7.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_kill_08.wav,sfx.weapon.laser_bolt.kill,data/sounds/laser_hitent8.ogg,1,unbound take
 (not created: unused (bound to no sound event)),,data/sounds/laser_hitgnd.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/sounds/laser_hitgnd2.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/sounds/laser_hitgnd3.ogg,1,audio
@@ -2011,18 +2011,18 @@ content/strings/ko_kr.json,strings.ko_kr,,0,
 (not created: unused (bound to no sound event)),,data/mwsounds/FlameTurretLoop1.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/mwsounds/Formation1.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/mwsounds/Formation2.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/GameOver1.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/GameOver2.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock1.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock10.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock2.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock3.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock4.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock5.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock6.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock7.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock8.ogg,1,audio
-(not created: unused (bound to no sound event)),,data/mwsounds/Laser_Cock9.ogg,1,audio
+content/audio/ui/ui_game_over_01.wav,sfx.ui.match_ui.game_over,data/mwsounds/GameOver1.ogg,1,unbound take
+content/audio/ui/ui_game_over_02.wav,sfx.ui.match_ui.game_over,data/mwsounds/GameOver2.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_01.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock1.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_10.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock10.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_02.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock2.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_03.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock3.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_04.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock4.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_05.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock5.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_06.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock6.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_07.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock7.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_08.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock8.ogg,1,unbound take
+content/audio/sfx/laser_bolt/laser_bolt_spawn_09.wav,sfx.weapon.laser_bolt.spawn,data/mwsounds/Laser_Cock9.ogg,1,unbound take
 (not created: unused (bound to no sound event)),,data/mwsounds/LaserHitDarwinian13.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/mwsounds/LaserHitDarwinian14.ogg,1,audio
 (not created: unused (bound to no sound event)),,data/mwsounds/LaserHitDarwinian15.ogg,1,audio
@@ -2155,3 +2155,74 @@ content/strings/en_gb.json,strings.en_gb,reference text entries: text and number
 (not created: dropped feature (user profiles)),,reference text entries,9,string
 (not created: dropped feature (mods)),,reference text entries,8,string
 (not created: editor only (map editor windows)),,reference text entries,164,string
+content/audio/sfx/trooper/trooper_throw_grenade_01.wav,sfx.unit.trooper.throw_grenade,,0,
+content/audio/sfx/trooper/trooper_throw_grenade_02.wav,sfx.unit.trooper.throw_grenade,,0,
+content/audio/sfx/trooper/trooper_throw_grenade_03.wav,sfx.unit.trooper.throw_grenade,,0,
+content/audio/sfx/trooper/trooper_throw_grenade_04.wav,sfx.unit.trooper.throw_grenade,,0,
+content/textures/ui/ui_app_icon_01.png,uitex.app_icon,,0,
+content/textures/ui/ui_app_icon_02.png,uitex.app_icon,,0,
+content/textures/ui/ui_app_icon_03.png,uitex.app_icon,,0,
+content/textures/ui/ui_app_icon_04.png,uitex.app_icon,,0,
+content/textures/ui/ui_app_icon_05.png,uitex.app_icon,,0,
+content/textures/ui/ui_app_icon_06.png,uitex.app_icon,,0,
+content/textures/icons/input/glyph_pad_stick_left.png,glyph.pad.stick_left,,0,
+content/textures/icons/input/glyph_pad_stick_left_shadow.png,glyph.pad.stick_left_shadow,,0,
+content/textures/icons/input/glyph_pad_stick_right.png,glyph.pad.stick_right,,0,
+content/textures/icons/input/glyph_pad_stick_right_shadow.png,glyph.pad.stick_right_shadow,,0,
+content/textures/icons/input/glyph_pad_dpad_horizontal.png,glyph.pad.dpad_horizontal,,0,
+content/textures/icons/input/glyph_pad_dpad_horizontal_shadow.png,glyph.pad.dpad_horizontal_shadow,,0,
+content/textures/icons/markers/marker_route_arrow.png,marker.route_arrow,,0,
+content/textures/icons/markers/marker_edge_compass_empty.png,marker.edge_compass_empty,,0,
+content/textures/fx/fx_abductor_beam_ring.png,fx.abductor_beam_ring,,0,
+content/textures/icons/cursors/cursor_world@shadow,cursor.world.shadow,,0,
+content/textures/icons/cursors/cursor_place@shadow,cursor.place.shadow,,0,
+content/textures/icons/cursors/cursor_unavailable@shadow,cursor.unavailable.shadow,,0,
+content/textures/icons/cursors/cursor_move_target@shadow,cursor.move_target.shadow,,0,
+content/textures/icons/cursors/cursor_highlight@shadow,cursor.highlight.shadow,,0,
+content/textures/icons/cursors/cursor_select@shadow,cursor.select.shadow,,0,
+content/textures/icons/cursors/cursor_enter@shadow,cursor.enter.shadow,,0,
+content/textures/icons/markers/marker_crate_landing@shadow,marker.crate_landing.shadow,,0,
+content/textures/icons/markers/marker_barrage_target@shadow,marker.barrage_target.shadow,,0,
+content/sprites/crawler_segment@trail,sprite.crawler.segment.trail,,0,
+content/textures/icons/markers/leader_banner_idle_tint.png,marker.leader_banner_tint,,0,
+content/textures/icons/markers/leader_banner_follow_tint.png,marker.leader_banner_tint,,0,
+content/textures/icons/markers/leader_banner_formation_tint.png,marker.leader_banner_tint,,0,
+content/textures/icons/markers/leader_banner_gather_tint.png,marker.leader_banner_tint,,0,
+content/textures/icons/markers/flag_post_neutral_tint.png,marker.flag_post_state_tint,,0,
+content/textures/icons/markers/flag_post_lowered_tint.png,marker.flag_post_state_tint,,0,
+content/textures/icons/markers/flag_post_locked_tint.png,marker.flag_post_state_tint,,0,
+content/textures/icons/markers/flag_post_raised_tint.png,marker.flag_post_state_tint,,0,
+content/meshes/dev/camera_view.glb,mesh.dev.camera_view,,0,
+content/meshes/collision/spawn_node.glb,mesh.collision.spawn_node,,0,
+content/meshes/collision/spawn_node_alt.glb,mesh.collision.spawn_node_alt,,0,
+content/meshes/collision/source_node.glb,mesh.collision.source_node,,0,
+content/meshes/collision/relay_mast.glb,mesh.collision.relay_mast,,0,
+content/meshes/collision/transit_gate.glb,mesh.collision.transit_gate,,0,
+content/meshes/collision/transit_gate_alt.glb,mesh.collision.transit_gate_alt,,0,
+content/meshes/collision/command_console.glb,mesh.collision.command_console,,0,
+content/meshes/collision/command_console_linked.glb,mesh.collision.command_console_linked,,0,
+content/meshes/collision/core_device.glb,mesh.collision.core_device,,0,
+content/meshes/collision/fuel_pump_housing.glb,mesh.collision.fuel_pump_housing,,0,
+content/meshes/collision/fuel_line_foot.glb,mesh.collision.fuel_line_foot,,0,
+content/meshes/collision/fuel_depot.glb,mesh.collision.fuel_depot,,0,
+content/meshes/collision/solar_array.glb,mesh.collision.solar_array,,0,
+content/meshes/collision/grid_pylon.glb,mesh.collision.grid_pylon,,0,
+content/meshes/collision/beam_dish.glb,mesh.collision.beam_dish,,0,
+content/meshes/collision/barrier_emitter.glb,mesh.collision.barrier_emitter,,0,
+content/meshes/collision/turret_head.glb,mesh.collision.turret_head,,0,
+content/meshes/collision/turret_barrel_01.glb,mesh.collision.turret_barrel,,0,
+content/meshes/collision/turret_barrel_02.glb,mesh.collision.turret_barrel,,0,
+content/meshes/collision/turret_barrel_03.glb,mesh.collision.turret_barrel,,0,
+content/meshes/collision/turret_barrel_04.glb,mesh.collision.turret_barrel,,0,
+content/meshes/collision/wall_section.glb,mesh.collision.wall_section,,0,
+content/meshes/collision/hive_mound.glb,mesh.collision.hive_mound,,0,
+content/meshes/collision/spitter_plant_head.glb,mesh.collision.spitter_plant_head,,0,
+content/meshes/collision/scenery_prop_01.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_02.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_03.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_04.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_05.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_06.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/scenery_prop_07.glb,mesh.collision.scenery_prop,,0,
+content/meshes/collision/abductor_hull.glb,mesh.collision.abductor_hull,,0,
+content/strings/dev_en_gb.json,strings.dev_en_gb,,0,
