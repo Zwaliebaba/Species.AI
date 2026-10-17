@@ -236,8 +236,8 @@ stateDiagram-v2
     Bouncing --> Burst: now > timer
     Flying --> Dead: health <= 0 (non-laser damage)
     Bouncing --> Dead: health <= 0
-    Burst --> [*]: Spawn(type); removed
-    Dead --> [*]: spirit + explosion; removed on the next Advance (no fade)
+    Burst --> [*]: Spawn(type), removed
+    Dead --> [*]: spirit + explosion, removed on the next Advance (no fade)
 ```
 
 ## [→ 02_units_and_entities] Egg (Virii egg) — spirit-fertilised hatchery
@@ -258,13 +258,13 @@ Small sprite egg that, when a spirit is placed inside it, hatches 4 Virii after 
 ```mermaid
 stateDiagram-v2
     [*] --> Dormant
-    Dormant --> Dormant: timer += dt; health capped to 10*(1 - timer/120) (decays to 0 at 120 s)
+    Dormant --> Dormant: timer += dt, health capped to 10*(1 - timer/120) (decays to 0 at 120 s)
     Dormant --> Fertilised: Egg::Fertilise(spiritId) (spirit -> StateInEgg, health reset 10, timer 0)
     Fertilised --> Dormant: held spirit index no longer valid
     Fertilised --> [*]: timer >= 15 -> spirit removed, 4 Virii spawned (if pop < 250), egg removed
     Dormant --> Dead: health < 0 / falls below y=0 (ChangeHealth -500)
     Fertilised --> Dead: health < 0
-    Dead --> [*]: held spirit -> Spirit::EggDestroyed (floating again); fade 2.5 s
+    Dead --> [*]: held spirit -> Spirit::EggDestroyed (floating again), fade 2.5 s
 ```
 - `StateOpen` is declared but never entered. [C] `code/worldobject/egg.h`, `Egg::Advance`.
 - **Death override**: `Egg::ChangeHealth` kills only when `health + amount < 0` (strictly), does **not** spawn a spirit and plays no sound (unlike `Entity::ChangeHealth`). [C] `Egg::ChangeHealth`.
@@ -357,7 +357,7 @@ stateDiagram-v2
     [*] --> Idle
     Idle --> EggLaying: retarget(6s) & floating spirit within 200m with <3 nearby eggs and y>0 (target = spirit +/-30m, 20m up)
     Idle --> EggLaying: random retarget & lay-chance roll
-    Idle --> Idle: random retarget (200m box or 200m back toward spawn; 100m*(1+-0.15) up)
+    Idle --> Idle: random retarget (200m box or 200m back toward spawn, 100m*(1+-0.15) up)
     EggLaying --> EggLaying: within 50m: lay egg every 2-3 s
     EggLaying --> EggLaying: arrived(<10m) -> SearchForSpirits / SearchForRandomPos
     EggLaying --> Idle: arrived & random pos chosen without lay roll
@@ -408,7 +408,7 @@ stateDiagram-v2
     [*] --> Roam
     Roam --> Hunt: arrived/no target & GetBestEnemy(75*size..150*size) found (sound EnemySighted)
     Roam --> SeekSpirit: no enemy & floating spirit at 75..150m & size<=20
-    Roam --> Roam: else SearchForRandomPosition (100m step; return to spawn with chance d/roamRange)
+    Roam --> Roam: else SearchForRandomPosition (100m step, return to spawn with chance d/roamRange)
     Hunt --> Hunt: target pos refreshed each tick (ground height)
     Hunt --> Roam: target gone / arrived (re-search)
     SeekSpirit --> Roam: arrived
@@ -456,7 +456,7 @@ stateDiagram-v2
     Idle --> Idle: retarget & random reachable point within roamRange of spawn
     EggLaying --> Attack: retarget(5s) & enemy found
     EggLaying --> Idle: arrived (<5m) -> lay one Egg (sound LayEgg)
-    Attack --> Attack: turn to face; if >150m walk toward
+    Attack --> Attack: turn to face, if >150m walk toward
     Attack --> Pouncing: facing & <=150m (sounds Attack, Pounce)
     Pouncing --> Idle: lands (y < ground+1): squash, sound PounceLand
 ```
@@ -712,7 +712,7 @@ A large UFO that descends, abducts non-Futurewinian Darwinians with a tractor be
 stateDiagram-v2
     [*] --> Idle: spawned at y=5000
     Idle --> Abducting: reached first target (sound TractorBeam)
-    Abducting --> Abducting: arrived/no waypoint -> FindNewTarget (keeps roaming); every tick abduct Darwinians in beam
+    Abducting --> Abducting: arrived/no waypoint -> FindNewTarget (keeps roaming), every tick abduct Darwinians in beam
     Abducting --> Waiting: abduction timer <= 0 and at target
     Waiting --> Dropping: 5 s
     Dropping --> Dropping: spawn 1 Futurewinian Darwinian per tick while abductees > 0

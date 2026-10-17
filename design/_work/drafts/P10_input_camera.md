@@ -929,3 +929,100 @@ Layout: d-pad icon (`icons/button_dpad.bmp` + `icons/button_control_shadow.bmp`,
 
 On-screen aids (disabled, §4.1): centred text at `(W/2, H/3)` with a `W/40`-sized icon pair to its left, alpha 0.8 fading 1/s after the aid's control fires (or its `CheckRunner` predicate, e.g. `BoolChecker<ControlHelpSystem>(&HasSquadRunning)`), removed 1 s after completion. Text ids passed by the dead tutorial: `control_help_cameramove` (CameraMove), `control_help_cameraturn` (TargetMoveSecondary), `control_help_cameraup` (CameraUp), `control_help_cameradown` (CameraDown), `control_help_quickunitstart` (IconsTaskManagerDisplayPressed), `control_help_quickunitcreate` (UnitCreate / HasSquadRunning), `control_help_quickunitplace` (UnitCreate), `control_help_move` (UnitMove), `control_help_camerarotateleft` (CameraRotateLeft), `control_help_camerarotateright` (CameraRotateRight), `darwinia_tutorial_engineer` (MenuDown), `darwinia_tutorial_grenade` (UnitPrimaryFireTarget), `darwinia_tutorial_taskmanager` (IconsTaskManagerDisplayPressed), `darwinia_tutorial_createunit` (UnitCreate) [C] `code/tutorial_demo2.cpp` [B:DEAD].
 
+## [→ 06_player_control_and_input] 5. Constants
+
+Kind: `#define` (D), `static const` / class constant (S), literal in code (L), data file (F), preference (P).
+
+### 5.1 Input
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `NumControlTypes` | 165 (164 controls + `ControlNull`) | enum | `code/lib/input/control_types.h` |
+| `KEY_MAX` | 256 | D | `code/lib/input/keydefs.h` |
+| `KEY_ANY` | 255 (never set) | D | same |
+| `KEY_TILDE` (last bindable index) | 223 | D | same; `inputdriver_win32.cpp:getKeyId` |
+| `NUM_MB` / `NUM_AXES` | 3 / 3 | D | `code/lib/input/inputdriver_win32.h` |
+| Wheel notch | `HIWORD(wParam)/120` (integer) | L | `inputdriver_win32.cpp:WndProc` |
+| `SCALE_JOYSTICK_L` | 3.4 (curve gain; also press threshold for stick buttons and the `move` threshold) | S | `inputdriver_xinput.cpp` |
+| `SCALE_JOYSTICK_R` | 2.7 | S | same |
+| `SCALE_TRIGGER` | 6.3 | S | same |
+| `REPEAT_FREQ` | 0.3 s | S | same |
+| `XINPUT_GAMEPAD_THUMB_MAX` | 32768 | D | same |
+| `XINPUT_GAMEPAD_TRIGGER_MAX` | 255 (unused) | D | same |
+| `MaxControllers` | 4 | S | `inputdriver_xinput.h` |
+| Controller mask default | `0x0F` | L | `XInputDriver::XInputDriver` |
+| Default sensitivity / range | 100 % / 1–200 | L | `XInputDriver::writeExtraSpecInfo`, `parseExtraToken` |
+| Thumb / trigger dead zones | `XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE`, `…_RIGHT_THUMB_DEADZONE`, `XINPUT_GAMEPAD_TRIGGER_THRESHOLD` ([I] SDK values 7849, 8689, 30) | SDK | `Controller::correctDeadZones` |
+| Stick output range at sens 100 | left ±39 (3.4³), right ±19 (2.7³); Y inverted | derived | `Controller::scaleInputs` |
+| XInput DLL | `XINPUT1_3` (`LoadLibrary`) | L | `code/main.cpp:InitialiseInputManager` |
+| Input data dir / files | `input/`, `input_preferences.txt`, `input_preferences_darwinia.txt`, `input_preferences_mac.txt`, `user_input_preferences.txt`, `locales.txt`, `keyboards/<layout>.txt` | S | `code/lib/input/file_paths.cpp` |
+| Preference keys | `MultiwiniaControlMethod` (default 1), `KeyboardLayout` (default from locale), `ControlMethod` (default 1), `ControlMouseButtons` (default 3), `AutomaticCamera` (default 0), `ControlHelpEnabled` (default 1), `Hummingbird` (value driver) | P | `file_paths.cpp`, `prefs_keybindings_window.cpp`, `prefs_other_window.h`, `inputdriver_values.inc` |
+
+### 5.2 Camera
+
+| Constant | Value | Kind | Ref (`code/camera.cpp:` unless noted) |
+|---|---|---|---|
+| `MIN_GROUND_CLEARANCE` | 10 | D | file scope |
+| `MIN_HEIGHT` (above sea level) | 10 | D | file scope |
+| `MAX_HEIGHT` | 5000 | D | file scope |
+| `MIN_TRACKING_HEIGHT` | 200 (unused path) | D | file scope |
+| Initial fov / height / pos / front | 60° / 50 / (1000,500,1000) / norm(0,−0.5,−1) | L | `Camera::Camera` |
+| Free-move key speed | 250 u/s; ×4 with `CameraSpeedup` | L | `AdvanceFreeMovementMode` |
+| Free-move stick gain | ×10 per stick unit (≤ ≈393 u/s) | L | same |
+| Free-move dt clamp | 1.0 s | L | same |
+| Free-move position smoothing | 4 /s | L | same |
+| Mouse-look rate | `min(1, √dt)` × misalignment | L | same |
+| Cliff probe | 100 u, 40 samples; slow band 30–100 u | L | `AdvanceFreeMovementMode`, `DistanceToBlockage` |
+| Ground sample offsets | ±10 u (5 samples) | L | `AdvanceFreeMovementMode` |
+| Shift-help trigger | Forwards alone held > 4 s | L | same |
+| Zoom FOV divisor / rate | ÷4; change 100 (zooming), 30 (normal), 10 (sphere-scripted), 1 (move/do-nothing/building); factor `dt·change·0.1` | L | `AdvanceComponentZoom` |
+| Height key rate | 7 per s (in wheel-notch units) | L | `AdvanceComponentMouseWheelHeight` |
+| Height scale (location) | `2·√|h − land|` per unit | L | same |
+| Height scale (global) | `0.1·h + 5` per unit; clamp [0.1, 1000] | L | same |
+| Turret / radar height clamp | [10, 50] / [50, 120] | L | same |
+| Radar aim height / back-off | 80 / 1.5·h; smoothing 4 /s | L | `RequestRadarAimMode`, `AdvanceRadarAimMode` |
+| Turret aim height / back-off / lift / FOV | 20 / 0.8·h / +20 / 50° | L | `RequestTurretAimMode`, `AdvanceTurretAimMode` |
+| Entity-track distance | 250 default; squad zoom ±10/s clamp [50, 500] (int truncation) | L | `RequestEntityTrackMode`, `AdvanceAutomaticTracking` |
+| Entity-track smoothing | 4 /s (×3 while resetting), clamp 1 | L | `AdvanceAutomaticTracking` |
+| Move-behind | min move² 10; toward-camera cos > 0.5; 10-sample history | L | `AdvanceCameraMoveBehind` |
+| Reset complete | < 5 u per axis (signed) | L | `AdvanceAutomaticTracking` |
+| Rotate-towards factor | `2·dt + |screenOffset|/10`, clamp 1 | L | `RotateTowardsEntity` |
+| Control-vector threshold | 0.98 | S | `UpdateControlVector` |
+| Targeting cone | cos 20° = 0.939692621; range 225 u (unused) | L | `Camera::Camera`, `TargetEntity` |
+| Building focus | orbit −0.15 rad/s; height ×(1+0.5 sin 0.3t); range ×(1+0.3 sin 0.3t); ramp 1/s; lift 0.75·d·(2−t) ≤ y 1000 for 2 s; floor land+10 | L | `AdvanceBuildingFocusMode` |
+| MoveToTarget | min time fraction 0.2; `vmax = 2·dist/duration`; restore duration 3 s | L | `AdvanceMoveToTargetMode`, `RestoreCameraPosition` |
+| Camera-anim node duration | 0 ≤ d < 60 s (asserted at load) | L | `code/level_file.cpp:LevelFile::ParseCameraAnims` |
+| Shake | yaw ±0.05·s rad, roll ±0.3·s rad, decay 1/s | L | `Camera::Advance` |
+| Best-building | speed gate 5 u/s; recompute 1.0 s; reach 200 u | L | `GetBestBuildingInView` |
+| `PosInViewFrustum` tolerance | 0.2 (on cosine) | L | `PosInViewFrustum` |
+| Debug fly | worldSize/30 u/s; ×10 / ×0.1; rotate 0.005 rad/px | L | `AdvanceDebugMode` |
+| Debug-advancer grace | first 2 frames after any mode request | L | `Camera::Advance` |
+| Level bounds (stored, unused) | −200 … sizeX+200 on both axes | L | `code/main.cpp:DoEnterLocation` |
+| Sphere world | fov 100; ideal 30000 (≤ 35000); focus y −400·h | L | `AdvanceSphereWorldMode` |
+| Intro / outro | fov 70; 30 s phase; outro credits after 70 s; speed ×62 | L | `AdvanceSphereWorldIntroMode`, `AdvanceSphereWorldOutroMode` |
+| First person (unreachable) | speed 100 (unused), fire period 0.1 s, laser speed 200, damping 0.9993/frame, eye land+3 | L | `AdvanceFirstPersonMode` |
+| Entity follow (unreachable) | dist clamp [15, 5000]; smoothing 5 /s | L | `AdvanceEntityFollowMode` |
+
+### 5.3 Projection (renderer)
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Near/far (location) | 5 / 15000 | L | `code/renderer.cpp:Renderer::RenderFrame` |
+| Near/far (no location) | 50 / 10 000 000 | L | same |
+| Near/far (initial) | 5 / 150000 | L | `Renderer::Renderer` |
+| Poster FOV divisor | 78 | L | `Renderer::SetupProjMatrixFor3D` |
+| FOV clamp | [1°, 180°] | L | `Camera::SetupProjectionMatrix` |
+
+### 5.4 Control help
+
+| Constant | Value | Ref (`code/control_help.cpp:`) |
+|---|---|---|
+| `NUM_ON_SCREEN_AIDS` | 16 (unused) | `control_help.h` |
+| `MaxSets` / icon count | 4 / 11 | `control_help.h` |
+| Icon size / gap / font | 50 / 10 / 12 px | `HelpIcon::Render` |
+| Blink | 1.5 s, `0.75 + 0.25 sin 8t` | `HelpIcon::Render` |
+| Set fade | 1.0 s | `HelpIconSet::Render` |
+| Panel box | `w = 0.15H`, `h = 0.3w`, base `0.75H`, side offset `W/6`, highlight decay 0.5/s | `RenderControlHelp` |
+| Aid fade | alpha 0.8, −1/s after done, removal +1 s | `RenderOnScreenAids`, `Advance` |
+| Officer follow-vs-order radius | 50 u (MagSquared < 2500) | `RenderHelp` |
+

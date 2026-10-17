@@ -1243,3 +1243,143 @@ classDiagram
     CarryableBuilding <|-- WallBuster
 ```
 
+## [→ 22_determinism_and_networking] Determinism notes for X3 (P03 files)
+
+### Synchronised RNG call sites (consume the shared Mersenne-Twister stream) [C]
+Ranges: `syncfrand(x)` ∈ [0,x), `syncsfrand(x)` ∈ [−x/2, x/2), `syncrand()` 32-bit, `FRAND/SFRAND` = synced wrappers.
+| File:function | Calls (per invocation) | When |
+|---|---|---|
+| `entity.cpp:Entity::SetType` | `syncfrand(Rate)` | every spawn — **twice for Darwinians** (ctor `SetType` + `SpawnEntities → SetType`) |
+| `entity.cpp:Entity::Attack` | `syncsfrand(15)` ×2 | each shot |
+| `entity.cpp:Entity::PushFromObstructions` | `syncsfrand(1)` | when `y ≤ 1` |
+| `location.cpp:Location::SpawnEntities / FindValidSpawnPosition` (P01, context) | `syncfrand(spread)`, `syncfrand(2π)` per try (≤10); Darwinian front `SFRAND(1)` ×2 | spawn |
+| `darwinian.cpp:Darwinian::Darwinian` | `syncfrand(5)`, `syncfrand(60)` | ctor |
+| `Darwinian::Advance` | `syncfrand(1)` | every re-target (1–2 s) |
+| `Darwinian::AdvanceIdle` | `syncfrand(60)`, `syncfrand(40)`, `syncfrand(2π)` | dead path in MP |
+| `AdvanceWatchingSpectacle` | `syncfrand(min/2)` | too close to rocket |
+| `AdvanceApproachingCarriableBuilding` | `syncfrand(2π)` | waypoint far |
+| `AdvanceInsideArmour` | `SFRAND(1)` ×2, `syncfrand(20)` (armour destroyed); `syncsfrand(π/2)`, `syncfrand(10)` (unload) | events |
+| `AdvanceCombat` | `syncsfrand(π/2)` (every tick, movement), `syncfrand(20)` (approach), `syncrand()` (fire roll, non-formation), `syncsfrand(60)` ×2 (rage), `syncfrand(8)` (grenade timer), `syncfrand(4)` ×2 (insane rocket) | every combat tick |
+| `AdvanceUnderControl` | `syncfrand(0.5)`, `syncfrand(numControlled)`, `syncfrand(2π)` | 0.5–1 s |
+| `AdvanceFollowingOrders` | `syncfrand(10)`, `syncfrand(2π)` | teleport wiggle |
+| `AdvanceFollowingShaman` / `AdvanceFollowingOfficer` | `syncfrand(r)`, `syncfrand(2π)` | 5 s re-target / arrival |
+| `AdvanceAttackingBuilding` | `syncfrand(50)` | every tick |
+| `SearchForRandomPosition` | `syncfrand(1)`, then `syncsfrand(2π)` (70 %) | idle |
+| `SearchForCrates` | `syncfrand(2·35/3)`, `syncfrand(2π)`, `syncfrand(35/3)` | found crate |
+| `SearchForFlags` | `SFRAND(20)` ×2 | found zone |
+| `SearchForArmour` / `SearchForOfficers` / `SearchForPorts` (×2) / `SearchForCarryableBuilding` | `syncrand()` | candidates exist |
+| `SearchForOfficers`, `GiveOrders`, `FollowRoute`, `SearchForShamans` | `syncfrand(r)`, `syncfrand(2π)` | |
+| `SearchForSpirits` | `syncrand()` | SP only |
+| `SearchForThreats` | `syncrand()` (ant-nest 1/500) | every search past the tree check |
+| `BeginVictoryDance` | `syncfrand(5)` (team 0 only), `syncfrand(15)` | Idle re-target |
+| `AdvanceToTargetPosition` | `syncrand()` | infected, every tick |
+| `Darwinian::PushFromObstructions` | `syncsfrand(1)` | `y ≤ 1` |
+| `AdvanceOnFire` | `SFRAND(100)` ×2, `syncfrand(10)` | every burning tick |
+| `AdvanceSacraficing` | `syncsfrand(1)`, `syncfrand(20)` | legacy |
+| `AdvanceBeingAbducted` | `syncfrand(1)` (cosmetic spark!) | every abducted tick |
+| `AdvanceInfection` | `syncfrand(5)`, `syncrand()` per neighbour, `syncrand()`, `syncfrand(10)` | every 5–10 s |
+| `Sacrafice`, `Infect` | `syncfrand(2.5)`, `syncfrand(10)` | events |
+| `FireSubversion` | `syncsfrand(15)` ×2 | each shot |
+| `BoxKite::BoxKite / Advance` | `syncsfrand(1)`; `syncfrand(2)` (released), `syncfrand(0.5)` **every tick (cosmetic brightness)** | SP |
+| `officer.cpp:Officer::ChangeHealth` | `SFRAND(40)` ×2 per shield spirit | |
+| `Officer::SearchForRandomPosition` | `syncsfrand(2π)` | (no caller found in this file) |
+| `Officer::Advance` | `syncfrand(1)` | SP Goto, every tick |
+| `Officer::RunAI` | `syncfrand(20)`, `syncfrand(2π)` | AI re-order |
+| `spirit.cpp:Spirit::Begin` | `syncfrand(10)`, `syncfrand(2)` ×3 | spawn |
+| `Spirit::Advance` | `syncsfrand(1)` ×3 every tick (+ `syncfrand(0.5)` Birth, `syncfrand(10)` Birth-high, `syncsfrand(60)` Birth→Floating, `syncfrand(2)` Death) | **every spirit, every tick** |
+| `Spirit::BreakSpirit` | `FRAND(5)` ×3 ×5 (cosmetic particles) | once |
+`routing_system.cpp`, `entity_grid*.cpp`, `obstruction_grid.cpp`, `worldobject.cpp`, `entity_leg.cpp`: **no RNG** [C].
+
+### Unsynchronised RNG (cosmetic; must never influence sim) [C]
+`frand`/`sfrand`/`AppRandom`/`rand()`: `Entity::Advance` (`m_renderDamaged`), Darwinian particles (`TakeControl`, `LoseControl`, `AdvanceOnFire`, `AdvanceSacraficing`, `AdvanceHotFeet`, `AdvanceInfection` (`rand()`), `AdvanceOpeningCrate`, `SetBooster`, `GiveHotFeet`, `GiveMindControl`, `GiveRage`), "OnFire" sound rolls, `SearchForThreats` attack-horn roll `frand(200)`, `Officer::RenderShape` flicker, `Location::PromoteDarwinian/DemoteOfficer` flashes (P01). All verified to affect only particles, sounds or render flags.
+
+### Wall-clock / local state leaking into simulation (desync hazards)
+1. **`g_gameTime` is wall-clock** (`g_gameTime = GetHighResTime()` every frame, `code/main.cpp`; comment in `code/main.h`). `Darwinian::AdvanceWatchingSpectacle` derives `m_front` from it (GodDish always; EscapeRocket on arrival). `m_front` is sim state (turn blending in `AdvanceToTargetPosition`, shape transforms, `LogState`). Rocket Riot launches put Darwinians into this state ⇒ **[I] probable desync source** after a rocket launch (if the match continues). Fix: use game time.
+2. `EntityLeg` swing timing on `g_gameTime` (Tripod, legacy only).
+3. `GetCrateOffset` uses `g_gameTime` — particles only (safe).
+4. `Officer::SetOrders` writes `m_lastOrdersSet` only on the local team's peer (read only in SP code) — safe in MP but fragile.
+5. Route ids are peer-local (UI previews share `m_routes`) — safe while ids are never compared across peers.
+6. Render mutating state: `Darwinian::Render` decrements `m_colourTimer`, clears `m_shadowBuildingId`; positions BoxKites — render-only consumers today.
+7. `SearchForThreats` function-static `lastAttackHorn` (shared across all Darwinians and matches) — sound only.
+
+### Float / ordering issues
+- `EntityGridCache` stores positions/ranges as **float** and answers queries within half the cached range regardless of the requested range; `Advance` ages entries on slice 7 only. Deterministic given identical inputs, but the coarse reuse affects behaviour.
+- Formation volley uses `fmodf(float(gameTime×10 + idx), size/4)` — single-precision, compiler/FPU-mode sensitive.
+- `m_threatRange` exponential relaxation, spirit hover random walk, slope factors — double precision accumulations; depend on `iv_*` math wrappers (low-nibble truncation, X3).
+- Byte stats: `m_stats` are `unsigned char`; speed multipliers (`×2`, `×1.5`, `×0.75`, `/2`) truncate; out-of-range blueprint values (350, 500) are UB.
+- Entity-grid neighbour order = cell x-major → z → team 0..5 → slot order (free-list reuse); "nearest" selections use strict `<` so the first-found wins ties ⇒ order matters and is history-dependent but deterministic.
+- `WorldObjectId::s_nextUniqueId` is global and also consumed by effects (BoxKite, Zombie, OfficerOrders, MultiwiniaOfficerOrders every 2 s, OfficerOrderTrail every 0.2 s per active order effect); unique ids feed gameplay (`uid % 20` worship range, `uid % 10` fence clearance, abduction blend, render variation) ⇒ every peer must create exactly the same effects in the same order.
+- Advance slicing: units/others/spirits are advanced in `NUM_SLICES_PER_FRAME` slices (P01); per-tick constants above assume one `Advance` per entity per server tick.
+
+## Constants table (P03 scope)
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Server tick | 0.1 s × gameSpeed | code | `gametimer.cpp:GetServerAdvancePeriod` |
+| `COEF_OF_RESTITUTION` | 0.85 | #define | `worldobject.cpp` |
+| `ID_MAXTEAMS / ID_MAXUNITS / ID_MAXTROOPS` | 256 / 65536 / 65536 | #define (debug asserts) | `worldobject.cpp` |
+| `UNIT_BUILDINGS/SPIRITS/LASERS/EFFECTS` | −100/−101/−102/−103 | #define | `worldobject.h` |
+| Gravity (Entity in air) | 15 u/s² | literal | `Entity::AdvanceInAir` |
+| Landing epsilon | ground + 0.1 (+0.1) | literal | `Entity::AdvanceInAir` |
+| Drown time (Entity) | 10 s (Officer effectively 5 s) | literal | `Entity::AdvanceInWater`, `Officer::Advance` |
+| Swim speed | 5 u/s; bob `−sin(3t) − 4` | literal | `Entity::AdvanceInWater` |
+| Death fade | −40·dt on ground, −20·dt in air from 100 | literal | `Entity::AdvanceDead` |
+| Laser speed / aim jitter / muzzle height | 150 / ±7.5 / +3 | literal | `Entity::Attack` |
+| Teleport entry range | RadarDish 15 (to entrance), Bridge 25 (to pos) | literal | `Entity::EnterTeleports` |
+| Cliff gradient limit | 1.0 (search 0..50 step 0.2) | literal | `Entity::PushFromCliffs` |
+| Water push spiral | Entity 0..50 step 1; Darwinian 40..95 step 5; dry if height > 1 | literal | `PushFromObstructions` |
+| Building push | Entity 4.0 steps while sphere(2.0); Darwinian: other 30 trigger / 4 step / 2 test; wall 4 trigger / 5 step / 1 test; fence `5 + uid%10` / 20 step | literal | `PushFromObstructions` |
+| Separation | radius 2.0, force 0.1/d | literal | `Entity::PushFromEachOther` |
+| Ray-pick sphere (sprites) | 5.0 | literal | `Entity::RayHit` |
+| Shape colour scale | ×0.7; darwinian.shp colourId 0 ×0.5; "red" test r > 2g & r > 2b | literal | `Entity::ConvertFragmentColours` |
+| `m_routeTriggerDistance` | 10.0 | member default | `Entity::Entity` |
+| Entity grid cell | 32 × 32 | ctor arg | `Location::Init` |
+| Obstruction grid cell | 64 (SP) / 32 (MP) | ctor arg | `Location::Init` |
+| `END_OF_LIST` | −100000 | #define | `entity_grid.cpp` |
+| `INITIAL_OBJECT_ID_ARRAY_SIZE` | 0 (then 2, ×2) | #define | `entity_grid.cpp` |
+| `ENTITYGRIDCACHE_MAXAGE` | 1.0 s | #define | `entity_grid_cache.h` |
+| Cache container | size 20, step 20 | literal | `EntityGridCache::EntityGridCache` |
+| Route graph edge max | 600 | literal | `LandRoutingSystem::Initialise` |
+| Corridor half-width | 40 | literal | `RoutingSystem::GenerateRoute` |
+| Smoothing step / merge distance | 50 / 50 | literal | `GenerateRoute` |
+| Max route waypoints | 100 | literal | `GenerateRoute` |
+| Route fade | 0.25 /s | literal | `RoutingSystem::Render` |
+| IsWalkable step / water / slope / normal | 20 / 40 / 2.4 / 0.8 | literal | `Location::IsWalkable` (P01) |
+| GetWalkingDistance step / uphill factor | 40 / 1.5 | literal | `Location::GetWalkingDistance` (P01) |
+| Darwinian ranges | see `#define` table | #define | `darwinian.h` |
+| Darwinian speed factors | Idle 0.2, UnderControl 1.75, slope [0.3, 2.0], arrival < 10 | literal | `Darwinian::AdvanceToTargetPosition` |
+| Darwinian turn blend | 0.4 per tick (`dt × 4`) | literal | same |
+| Retarget interval | 1 + U[0,1) s | literal | `Darwinian::Advance` |
+| Attack-rate divisor | 10 / 7 booster / 3 futurewinian | literal | `AdvanceCombat` |
+| Grenade timer | 12 + U[0,8) s (first U[0,5)) | literal | `AdvanceCombat`, ctor |
+| Grenade conditions | dist > 75, normals > 0.7, heightDiff > −50, target < 40 above ground, enemies > 5 & friends < 2 within 50 | literal | `AdvanceCombat` |
+| Combat keep-distance | 20 + U[0,20); retreat inside 100 unless 25 below; flee step 30 ±45° | literal | `AdvanceCombat` |
+| Fear | scared if > 5 enemies & no friends; forget beyond 200 | literal | `SearchForThreats`, `AdvanceCombat` |
+| Burn damage | −2 hp with p = 0.2/gameSpeed per tick | literal | `AdvanceOnFire` |
+| Fire-damage ignition | 100 accumulated | literal | `FireDamage` |
+| Explosive damage in formation | ×0.6; rage ×0.75; futurewinian ×2 | literal | `ChangeHealth` |
+| Power-up speed caps | hot feet ×2 if ratio < 3.5; rage ×1.5 if < 3; plague ×0.75, /2 | literal | `GiveHotFeet`, `GiveRage`, `Infect`, `AdvanceInfection` |
+| Plague | interval 5 + U[0,5); spread 30, 50 %; outcomes 1/20 each (0–4), 2/20 immune | literal | `AdvanceInfection` |
+| Paralysis | 5 + U[0,10) s | literal | `AdvanceInfection` |
+| Port operator limit per team | SP 20 / MP 1 | literal | `SearchForPorts` |
+| Carry lifting tolerance | 20 × gameSpeed × speedRatio | literal | `AdvanceCarryingBuilding` |
+| Armour boarding | range 150, board < 20; eject `20 + U[0,20)`; unload `dir×10`, `vy 5 + U[0,10)` | literal | `AdvanceApproachingArmour`, `AdvanceInsideArmour` |
+| Spectacle distance | 200 SP / 100 MP (+ U[0, min/2)) | literal | `AdvanceWatchingSpectacle` |
+| Rocket passengers max | 100 | literal | `AdvanceBoardingRocket` |
+| Vortex | speed max(100·y/1000, 30), radius 300·y/1000, max height 500 + 5·(uid%100), fling 50 | literal | `AdvanceInVortex` |
+| Abduction | toward-ship 2×speed, tangent 50, blend 0.25·dt + (uid%10)·0.1·dt, capture < 20 | literal | `AdvanceBeingAbducted` |
+| Officer orders effect cadence | MP 2.0 s; SP 5 %/tick | literal | `Officer::Advance` |
+| Formation toggle radius | 50 | literal | `Officer::IsFormationToggle` |
+| Formation slot keep-alive | 5.0 s initial, +dt per register | literal | `GetFormationPosition`, `RegisterWithFormation` |
+| Formation spacing / first rank | 6 × 6 / 12 ahead | literal | `GetFormationPositionFromIndex` |
+| Formation max size | 90 (`Team::m_evolutions[EvolutionFormationSize]`) | team default | `code/team.cpp:Team::Team` |
+| Officer speed factors | Idle 0.2, formation 0.4, slope [0.1, 2.0] | literal | `Officer::AdvanceToTargetPosition` |
+| Officer route rebuild | > 50 from route start | literal | `Officer::Advance` |
+| Officer AI | think 1 s / 10 s (Goto); re-order if > 60; threat 270, > 10 enemies | literal | `Officer::RunAI` |
+| Spirit timings | Birth 6 s; Floating 120 ± 30 s (MP ÷3); Death 180 s (MP ÷2) | literal | `Spirit::Begin/Advance` |
+| Spirit motion | drag (1 − dt)/tick; hover rates [0,2]; floor ground+2; building push sphere 5, speed ≤ 10 | literal | `Spirit::Advance`, `PushFromBuildings` |
+| `SPIRIT_MAXNEARBYEGGS` | 8 | #define | `spirit.h` |
+| Spirit render | inner 1.0/255, outer 3.0/100 (MP halved) | literal | `Spirit::RenderWithoutGlBegin` |
+| `OFFICER_ATTACKRANGE` / `OFFICER_ABSORBRANGE` | 10 / 10 | #define | `officer.h` |
+| MP research levels | all 3; Squad 1; Laser 2; Grenade 2; Rocket 2; AirStrike 2; Darwinian 4 | code | `Location::Init` (P01) |
+| Laser life by level | 0.2/0.4/0.6/0.8/1.0 s (×2 subversion) | code | `Location::FireLaser` (P01) |
+

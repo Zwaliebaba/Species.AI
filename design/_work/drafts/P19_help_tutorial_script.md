@@ -269,7 +269,7 @@ Opening `PageTutorials` resets `m_currentTutorialHelp = -1`. [C] `SetupTutorialP
 Per frame, `MultiwiniaHelp::Advance` (only when `g_app->Multiplayer()`) [C]:
 1. Sets `m_appropriate = false` for every tutorial tab, except `HelpTutorialScores` and `HelpTutorial2End`, which stay set while they are `m_currentTutorialHelp`. [C] `Advance` switch (L1190–1218).
 2. Calls `AttachTutorialTo3d()` (T1) or `AttachTutorial2To3d()` (T2), which call `RunTutorialHelp(helpId, worldPos, offset)` for the chosen instruction.
-3. `MultiwiniaHelp::Render` draws, **after** the grace period only, every tab with `m_appropriate` via `RenderTutorialHelp` → `RenderTab3d(worldPos + up·offset, 8, title, message)`.
+3. `MultiwiniaHelp::Render` draws, **after** the grace period only, every tab with `m_appropriate` via `RenderTutorialHelp` → `RenderTab3d(worldPos + up·offset, 8, title, message)`. On a KOTH map after the grace period none of the 18 non-tutorial tabs can be appropriate (they require the grace period or another mode / wall busters), so only tutorial tabs are drawn. [C] `Advance` switch (L1127–1182).
 
 `RunTutorialHelp` rate limiter [C] `MultiwiniaHelp::RunTutorialHelp`:
 ```

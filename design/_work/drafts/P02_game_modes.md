@@ -301,7 +301,7 @@ Single instance `g_app->m_multiwinia`, created in `App` construction (constructo
 | Method | Behaviour |
 |---|---|
 | `Multiwinia()` / `~Multiwinia()` | init as §3.3, `LoadBlueprints`, `Reset`; dtor deletes blueprints |
-| `Reset()` | §3.3 Reset column; called on construction, `App::ShutdownCurrentGame`, `game_menu.cpp`, and on `NET_DARWINIA_…` server-reset in `clienttoserver.cpp` (L~2203) |
+| `Reset()` | §3.3 Reset column; called on construction, `App::ShutdownCurrentGame`, `GameMenu::CreateMenu` (`code/game_menu.cpp`), and when the client receives the server's welcome letter carrying the sync random seed (`clienttoserver.cpp` L~2203, right after `syncrandseed`) |
 | `ResetLocation()` | Assault multi-round: clear colourIds, `++m_numRotations`, `Location::RotatePositions()`, remember positions (monster/futurewinian set -1), mark those two LobbyTeams Unused, delete & re-create `Location`, restore positions and last processed slice, `Init(requestedMission, requestedMap)`, 1 s fade-in, `g_gameTimer.Reset()`, clear `m_resetLevel`, reinforcement timers, re-arm grace period. Triggered from main loop when `m_resetLevel` [C] `code/main.cpp` (L~534) |
 | `InitialiseTeam(teamId, teamType, clientId)` | zero achievement mask; set client/team/type; `m_demoPlayer=false`; if not co-op and not Assault → `m_colourId = teamId`; local player → `m_globalWorld->m_myTeamId`; non-CPU → `m_disconnected=false`; if the location already initialised teams → `Location::InitialiseTeam(teamId)` (late join) |
 | `RemoveTeams(clientId)` | for every non-CPU team of that client: in lobby → slot Unused, colour -1, name "", disconnected, "PLAYERLEAVE" chat; in game → message `multiwinia_player_left` ("*T left the game!"), team type becomes `TeamTypeCPU`, spawns an `Entity::TypeAI` at (-100,0,-100) for that team (AI takes over), records `m_accurateCPUTakeOverTime` |
@@ -433,7 +433,7 @@ Skipped when `g_app->m_hideInterface`. `scale = ScreenH/800`.
 - **Retribution** "Retribution in *S" (red) when the local team `IsEliminated` and RetributionMode.
 - **Crate timers**: "SPAWN MANIA: *T" (`Location::m_spawnManiaTimer`), "MEGA RAGE: *T" (`Location::m_bitzkreigTimer`) centred, 50×scale font, red when < 2 (owned by crates, P08).
 - **Assault round overlay**: multi-round → "*T defended for m:ss" (defender colour) and "NEXT ROUND IN: *S" when `m_victoryTimer < 11`; single round with winner → "Attackers Win!"/"Defenders Win!" (co-op) or "*T Wins!".
-- **Game over**: "GAME OVER" (70×scale, y=180×scale), then winner line "*T is the WINNER" in the winner's colour or "It's a DRAW!" (co-op: group with greatest total among group1, group2, Evilinians, Futurewinians); final score list centred at 73% screen height (not for TankBattle, Blitzkrieg, single-round Assault; Blitzkrieg uses status lines); blinking "Press ESC to Exit"/"Press START to Exit" at the bottom.
+- **Game over**: "GAME OVER" (70×scale, y=180×scale), then winner line "*T is the WINNER" in the winner's colour or "It's a DRAW!" (co-op: group with greatest total among group1, group2, Evilinians, Futurewinians); final score list centred at 73% screen height, 30×scale font, in team colours: Domination/CTS/KOTH "name score", Rocket Riot name only, multi-round Assault "*T defended for m:ss", co-op group totals (not drawn — nor its background box — for TankBattle, Blitzkrieg or single-round Assault; the Blitzkrieg case inside that list is unreachable); blinking "Press ESC to Exit"/"Press START to Exit" at the bottom.
 - Rocket Riot: `RenderRocketStatusPanel()` every frame (§7.3).
 
 ---
