@@ -101,3 +101,26 @@ Triage outcomes, grouping, arbitration, owner decisions and outputs as for X-DEC
 5. Consumers stay document paths in this pass; part b (after the document fixes) replaces them with requirement ids.
 
 **Output:** the asset files and `species_work/p4_new_assets.csv` (`asset_id,consumer_file,cited_by_request`) so the document fixers know which new ids to cite.
+
+---
+
+## Wave B — Document fix agents FX-01 to FX-12
+
+You are one document-fix agent. Your packet is `species_work/packages/<FX-ID>.json`. It is authoritative for the files you own (`owns`: files, and folders ending in `/`), the Phase 3 packages whose documents you now maintain (`packages`, with their `id_ranges`), and your work lists. Each list item is one change to make in a file you own:
+
+- `gate_failures`: structural failures from `species_work/gate_report.md` (undefined citations, duplicated or uncited tuning keys, missing headings).
+- `routes`: cross-document requests routed to you (instruction is self-contained; `source` names the report or item it came from).
+- `arbitration`: ids of entries in `species_work/p4_arbitration.md` that name your files. Apply the verdict's replacement statement where it names your file; where the verdict keeps your statement, change nothing.
+- `dec_citations`: decisions that a requirement of yours must cite (every Open DEC needs at least one citing requirement). Add the citation to the requirement that states the behaviour, in the form "(see DEC-NNN)". If the DEC changed a rule, state the rule as the DEC now states it.
+- `document_fixes`: changes the decision triage asks of your documents.
+- `new_assets`: asset ids that X-AST-2a added for your documents. Cite each where the rule uses it ("uses `uitex.app_icon`").
+
+Also read `species_work/reports/X-ADR-P4.md` and apply every "component fix needed" (or equivalent) line that names one of your files, and read the decision files X-DEC-P4a and X-DEC-P4b wrote (`decisions/*gap_rules.md`, `decisions/verdicts_and_fixes_2.md`) for entries whose "Affects" names your files.
+
+**Rules for wave B (in addition to §2):**
+- Change only the files in `owns`. A change that belongs elsewhere goes in your report under "Cross-document requests".
+- Keep every requirement id, tuning key, heading text and anchor that exists, because other documents cite them. A new requirement takes the next free number inside your package's range. A tuning key you remove (a duplicate) is replaced by a citation of the owner's key.
+- Faithfulness first: a route or fix that would contradict the reference without a DEC or an arbitration verdict behind it is not applied; report it.
+- **Sizes:** if a file you own would exceed 120 KB, split it into a folder named after the file (for example `terrain.md` → `terrain/README.md` plus sub-topic files), keep every requirement id, key and heading text, and list the new files and which headings moved where in your report; the coordinator repoints the links of other documents. FX-11 splits `diagnostics_test_and_performance.md` this way **before** any other change to it (item 113).
+- Run before you finish: the two pattern scans on your files, and `python3 -I species_work/scripts/check_design.py --root design_next --repo . --hard species_work/forbidden_patterns.tsv --soft species_work/soft_patterns.tsv --scanner species_work/scripts/scan_patterns.py --skip-mermaid --report species_work/gate_report_<FX-ID>.md` and confirm that no failure names one of your files (other agents' failures may still be present; ignore those, and ignore the gate 4 "skipped" line). If you edit a Mermaid block, check it parses: `NODE_PATH=/opt/node22/lib/node_modules node species_work/scripts/mermaid_check.js <your folder or a copy> /tmp/claude-0/-home-user-Species-AI/9acb53a3-7b66-5d13-a311-016ffcefc843/scratchpad/mm/node_modules/mermaid/dist/mermaid.min.js`.
+- **Report** `species_work/reports/<FX-ID>.md`: per list item, one line (`id → done / not applied: reason`); files changed with sizes; new requirement ids and keys; splits; cross-document requests that remain.
