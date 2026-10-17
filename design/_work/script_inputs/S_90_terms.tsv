@@ -1,0 +1,149 @@
+# S90 curated glossary terms. Columns (TAB-separated): Term, Kind, Definition, Link specs (NN:section; ...), IP
+# Rendered by _work/scripts/S_90_terms.py render. Lines starting with # are comments.
+# ---- Evidence tags ----
+[C]	evidence tag	Confirmed: the statement was read directly in code or `data/` at commit `f909630` and is cited as `path:Symbol`.	00:Open questions and unknowns;29:1.4	no
+[I]	evidence tag	Inferred: derived from confirmed facts by stated reasoning (arithmetic, absence of callers, reachability); never presented as read directly.	00:Open questions and unknowns	no
+[U]	evidence tag	Unknown: the source tree cannot settle the point; every such item is numbered NN-U<n> in its document's "Open questions and unknowns" with what would resolve it.	00:Open questions and unknowns	no
+# ---- Build tags ----
+[B:FULL]	build tag	Present and reachable in the baseline build: `Release|Win32` (OpenGL) with `TARGET_PC_FULLGAME`, shipped as `multiwinia.exe`.	31:7.6;20:1	no
+[B:D3D]	build tag	Only in the secondary `ReleaseDirect3D` configuration (`USE_DIRECT3D`), where a Direct3D 9 layer emulates the OpenGL API; [I] probably does not compile at this commit.	24:1.5;31:7.9	no
+[B:DEBUG]	build tag	Only under `TARGET_DEBUG` (cheat menu, sound and gesture editors, `TRACK_SYNC_RAND`, Tank Battle, The Beast crate).	32:2;31:7.6	no
+[B:EDITOR]	build tag	Only under `LOCATION_EDITOR`, which every shipped target leaves commented out: the in-game map editor and its windows.	08:8	no
+[B:DEMO]	build tag	Restricted by the demo gate: either the runtime check `IS_DEMO` (no valid full-version key) inside the full build, or the separate `TARGET_MULTIWINIA_DEMOONLY` product target; each use states which.	09:6	no
+[B:LEGACY]	build tag	Compiled into the full build but unreachable in Multiwinia: Darwinia campaign code, objects blocked by `BLOCK_OLD_DARWINIA_OBJECTS`, single-player-only branches.	03:12;21:2.8	no
+[B:DEAD]	build tag	Not compiled in any PC configuration (macro never defined, file excluded, or platform-only); documented only in appendices.	31:2.5;32:2	no
+# ---- Build configurations, targets and macros ----
+Release|Win32	engine (build macro)	The baseline Visual Studio 2005 configuration: OpenGL renderer, `NDEBUG`, output `darwinia_gl.exe`, renamed to `multiwinia.exe` by every Multiwinia packaging script.	31:7.3	no
+ReleaseDirect3D	engine (build macro)	The secondary Visual Studio configuration that defines `USE_DIRECT3D`, links Direct3D 9 and emits `darwinia.exe`; only Darwinia-era scripts package it. See [B:D3D].	31:7.3;24:1.2	no
+Debug / DebugDirect3D	engine (build macro)	The two developer configurations (`darwinia_d_gl.exe`, `darwinia_d.exe`); unrelated to the `TARGET_DEBUG` product target, which is a separate source switch.	31:7.3	no
+TARGET_PC_FULLGAME	engine (build macro)	The single active product target in `code/lib/universal_include.h`; it enables LAN/WAN play, all six shipped modes, basic and advanced crates, the tutorial and `BLOCK_OLD_DARWINIA_OBJECTS`.	31:7.6	no
+TARGET_DEBUG	engine (build macro)	Developer product target: adds Tank Battle, Prologue/Campaign menu entries, the cheat menu, sound and gesture editors, AVI capture, `TRACK_SYNC_RAND` and The Beast crate. Source of [B:DEBUG].	31:7.6;32:2.1	no
+TARGET_MULTIWINIA_DEMOONLY	engine (build macro)	Commented-out product target for a stand-alone demo executable (single-player only, KOTH and CTS, basic crates). Distinct from the runtime `IS_DEMO` gate.	31:7.6;09:6.1	no
+Other product targets	engine (build macro)	`TARGET_PC_PREVIEW`, `TARGET_PC_HARDWARECOMPAT`, `TARGET_ASSAULT_STRESSTEST`, `TARGET_BETATEST_GROUP_ALL`, `TARGET_BETATEST_GROUP_A/B/C`: commented-out targets that restrict modes, crates and `PERMITTED_MAPS` for previews, hardware tests, stress tests and beta groups.	31:7.6	no
+INCLUDEGAMEMODE_*	engine (build macro)	One macro per mode (`_DOMINATION`, `_KOTH`, `_CTS`, `_ROCKET`, `_ASSAULT`, `_BLITZ`, `_TANKBATTLE`, `_PROLOGUE`, `_CAMPAIGN`) that compiles that mode's code; FULLGAME defines the first six.	01:1.2;31:7.6	no
+INCLUDE_CRATES_BASIC / INCLUDE_CRATES_ADVANCED	engine (build macro)	Compile the 7 basic crate outcomes and the 24 advanced ones respectively; both are on in FULLGAME.	04:1.1	no
+INCLUDE_TUTORIAL	engine (build macro)	Compiles the two live Multiwinia tutorials and the Tutorials page; on in FULLGAME.	30:3.1	no
+INCLUDE_THEBEAST	engine (build macro)	Defined inside `code/worldobject/crate.h` only under `TARGET_DEBUG`; compiles The Beast crate outcome, which makes it [B:DEBUG].	04:5.30	no
+BLOCK_OLD_DARWINIA_OBJECTS	engine (build macro)	On in FULLGAME: `Building::BuildingIsBlocked` and `Entity::EntityIsBlocked` refuse level-file placement of Darwinia-only types (39 building types, the blocked entity types). Code can still create them at run time.	03:3.12;02:1.1	no
+LOCATION_EDITOR	engine (build macro)	Compiles the in-game map editor (`LocationEditor` and the editor windows); commented out in every target, hence [B:EDITOR].	08:8.1	no
+USE_DIRECT3D	engine (build macro)	Set by `Direct3D.vsprops`; replaces native OpenGL with the `code/lib/opengl_directx*` emulation layer over Direct3D 9.	24:1.1	no
+USE_SEPULVEDA_HELP_TUTORIAL	engine (build macro)	Never defined: gates the Darwinia mentor, help system and tutorial code (49 files), all [B:DEAD].	30:6.1	no
+TESTBED_ENABLED	engine (build macro)	Never defined: automated two-machine test bed with `testbedconfig.txt`; also stretches `GRACE_TIME` to 20 s.	32:6	no
+TRACK_SYNC_RAND	engine (build macro)	[B:DEBUG] switch that logs every synced random draw with file and line for desync forensics; its tracked `syncsfrand` is not bit-identical to the untracked one.	32:13.3;22:14.2	no
+DEBUG_RENDER_ENABLED	engine (build macro)	Defined globally, so the debug drawing primitives and overlays are compiled into the shipped executable.	32:11.1	no
+CHEATMENU_ENABLED	engine (build macro)	[B:DEBUG] switch for the cheat window and its 23 cheats.	32:4	no
+SOUND_EDITOR	engine (build macro)	[B:DEBUG] switch for the sound editor, sound statistics, profile windows and the POKEY `EffectProcessor`.	27:13.2	no
+GESTURE_EDITOR / AVI_GENERATOR	engine (build macro)	[B:DEBUG] switches for the gesture training window and the AVI video grabber.	32:5.4;32:5.5	no
+LAN_PLAY_ENABLED / WAN_PLAY_ENABLED / MULTIPLAYER_DISABLED	engine (build macro)	Product-target switches for LAN browsing, Internet (metaserver) play, or no multiplayer at all; FULLGAME enables LAN and WAN.	31:7.6;09:1.1	no
+PERMITTED_MAPS	engine (build macro)	Optional whitelist of map ids for restricted targets (preview, hardware-compat, stress, beta groups); undefined in FULLGAME, so every map is allowed.	08:2.4;31:8.6	no
+IS_DEMO	engine (build macro)	Macro for `!g_app->IsFullVersion()`: the runtime demo gate based on the authentication key, applied inside the full build.	09:6.2	no
+GRACE_TIME	engine (build macro)	`#define` of 3.0 s: length of the all-ready countdown that ends the grace period (20.0 s under `TESTBED_ENABLED`).	01:2.4	no
+FLOAT_NUMERICS	engine (build macro)	Global switch that makes SystemIV's `Fixed` numeric type a wrapper around `double`; the fixed-point alternatives `USE_FIXED` and `FIXED64_NUMERICS` are never defined.	22:14.8	no
+USE_CRASHREPORTING / DUMP_DEBUG_LOG	engine (build macro)	Global crash-report hook (structured-exception report and support tool) and the switch that writes `debug.txt`; DUMP_DEBUG_LOG is on in FULLGAME.	31:6;32:10.1	no
+USE_DISPLAY_LISTS	engine (build macro)	Enables OpenGL display lists for shapes, trees and the global internet; emulated under Direct3D by `opengl_directx_dlist*`.	24:4.5;25:2.11	no
+USE_LOADERS	engine (build macro)	Commented out: gates the boot-loader mini-programs and the first-time start sequence, so they are [B:DEAD].	09:A.1	no
+AUTHENTICATION_LEVEL	engine (build macro)	Set to 1 in FULLGAME: the server removes any remote client whose authentication-key check fails (`Server::AuthenticateClients`).	22:12.5	no
+STRETCH_RECT	engine (build macro)	Defined in `code/deform.cpp`; selects the StretchRect capture path of the [B:D3D] deform effect, which makes its pre-render `Start()` a no-op (source comment: it "should make FSAA possible").	24:4.13	no
+# ---- Abbreviations ----
+ADSR	abbreviation	Attack, Decay, Sustain, Release: the four-stage volume envelope a sound instance applies over its playback.	27:6.3	no
+AI	abbreviation	Artificial intelligence; in this set usually the CPU player, which is the entity class `AI` (one per CPU team) driving that team's officers, tasks and crowds. See also `AI` (class).	07:1	no
+ALIVE_DATA	abbreviation	Network data-field code `dg` carrying a packed `TeamControls` record, the continuous per-team input sent every frame.	22:5.2;29:11.7	no
+API	abbreviation	Application programming interface.	20:3.4	no
+ARB / WGL / GLU	abbreviation	OpenGL extension-family prefix (Architecture Review Board), the Windows OpenGL binding layer, and the OpenGL utility library; all three are used by the native renderer.	24:1.3	no
+ASCII	abbreviation	7-bit character encoding; most data text files are ASCII or 8-bit, widened byte-for-byte to Unicode on load.	29:3.1	no
+ASLT / DOM / RR / BLITZ / TANK	abbreviation	Short mode tokens used in tables: Assault, Domination, Rocket Riot, Blitzkrieg, Tank Battle (with KOTH and CTS).	08:3.1;01:1.1	yes → Siege, Spawn Control, Launch Race, Flag Chain, Armour Duel
+AVI	abbreviation	Audio Video Interleave video file; written only by the [B:DEBUG] grabber (`AVIGenerator`).	31:3.12	no
+BGR24 / BGRA32 / P4 / P8 / RLE8	abbreviation	Bitmap pixel layouts found in the shipped `.bmp` files: 24-bit and 32-bit direct colour, 16- and 256-entry palettised, and run-length-encoded 8-bit (one file, which the decoder cannot read). All decode to RGBA8.	25:2.2;29:8.3	no
+BMP	abbreviation	Windows bitmap; the only texture, sprite, icon and colour-ramp file format the game loads (`TEXTURE_EXTENSION` = "bmp").	29:8.3;25:2.2	no
+BOM	abbreviation	Byte-order mark; no shipped text file has one, and a UTF-8 BOM would be read as part of the first token.	29:3.1	no
+CJK	abbreviation	Chinese, Japanese and Korean scripts; served by bitmap font atlases under `data/textures/unicode/`.	25:2.15;28:10.5	no
+CPU (player)	abbreviation	Computer-controlled team that fills an empty lobby slot (team type `TeamTypeCPU`), steered by an `AI` entity; also used for the processor in performance sections.	07:2.3;09:5.12	no
+CRC	abbreviation	Cyclic redundancy check; map identity uses a 32-bit file CRC per level (`code/mapcrc.h`, tool `tools/MapCRC`).	31:10.2;29:4.6	no
+CRLF / LF	abbreviation	Line-ending conventions (carriage return plus line feed, or line feed only); the text reader accepts both.	29:3.1	no
+CRT	abbreviation	The C run-time library (MSVC static multithreaded); its `rand()` and maths functions matter for determinism.	22:14.8;23:17.2	no
+CSV	abbreviation	Comma-separated values; used for generated tables under `_work/drafts/`.	99:	no
+CTS	abbreviation	Capture the Statue, game type `GameTypeCaptureTheStatue`.	01:4.3	yes → Relic Run
+D3D / D3D9 / D3DX	abbreviation	Direct3D, Microsoft's 3-D API; version 9 is the [B:D3D] back-end, D3DX its helper library.	24:1.5	no
+DLL	abbreviation	Windows dynamic-link library (for example the delay-loaded `xinput1_3.dll`).	06:11.6.6	no
+DSP	abbreviation	Digital signal processing; the audio filter chain configured by `effects.txt`, compiled but off in the shipped build (`USE_SOUND_DSPEFFECTS` commented out).	27:12;10:10	no
+dt	abbreviation	The time step of one simulation update: `SERVER_ADVANCE_PERIOD` = 0.1 s of game time (scaled by game speed) for every slice-advanced object.	20:10.3;21:8.1	no
+DX12	abbreviation	DirectX 12, the target graphics API of the new game.	24:9;40:3	no
+EBNF	abbreviation	Extended Backus-Naur form, the grammar notation used in 29.	29:1.2	no
+EMA	abbreviation	Exponential moving average, as in fuel and power throughput smoothing `t = 0.8·t + 0.2·n`.	03:6.6	no
+EOF	abbreviation	End of file.	29:3.1	no
+EULA	abbreviation	End-user licence agreement (root `EULA.txt`); Introversion text, not to be reused.	31:14.1	yes → own licence
+FIFO / LIFO	abbreviation	First-in-first-out and last-in-first-out ordering, used when describing queues and lists.	21:5.3	no
+FOV	abbreviation	Field of view of the camera projection.	24:5.1;06:9.4	no
+FP / FPU / x87	abbreviation	Floating point, the floating-point unit, and the x87 instruction set the shipped Win32 build uses (53-bit precision control, no SSE2).	22:14.8	no
+FPS	abbreviation	Frames per second (render rate), distinct from the 10 Hz simulation tick.	20:10.5;32:3.5	no
+FSAA / MSAA	abbreviation	Full-scene and multisample anti-aliasing; the window can request multisampling, and a source comment ties the D3D deform path to FSAA.	31:3.11;24:8.1	no
+FTP	abbreviation	File Transfer Protocol; the dead benchmark upload, and the name of the in-game `FTPManager` blob transfer over the letter channel.	22:11.4;32:8	no
+GDF	abbreviation	Windows Vista Game Definition File compiled into the executable for Game Explorer ([B:DEAD] Vista integration).	31:7.5	yes → own ids
+GL	abbreviation	OpenGL, the baseline renderer API (fixed-function pipeline, display lists).	24:1.3	no
+GOTO (order)	abbreviation	The officer order that turns an officer into a signpost redirecting idle Darwinians; network command `NET_DARWINIA_SETOFFICERORDERS` with the goto state.	06:5.2;02:5.5	yes → Waypoint beacon
+GPU	abbreviation	Graphics processing unit.	26:13	no
+HLSL	abbreviation	High Level Shading Language; the 14 files in `data/shaders/` used only by the [B:D3D] path.	24:6;29:9.1	no
+HP	abbreviation	Health points, the unit of `m_stats[Health]` and of damage.	02:2.6	no
+HUD	abbreviation	Heads-up display: the in-match overlay with scores, timers, task slots and messages.	01:2.12	no
+HW3D	abbreviation	Hardware 3-D sound mixing (DirectSound hardware buffers); an option exists but `USE_SOUND_HW3D` is off.	27:11.2	no
+IEEE 754 / binary32	abbreviation	The floating-point standard; binary32 is single precision, to which every `iv_*` maths result is rounded.	22:14.8	no
+IK	abbreviation	Inverse kinematics; the two-bone leg solver of `EntityLeg`.	26:5.1	no
+IME	abbreviation	Input method editor for typing non-Latin text.	28:10.6	no
+INI	abbreviation	Key-value configuration file (`MultiwiniaSupport.ini`).	29:11.14	no
+IP (network)	abbreviation	Internet Protocol address; the server stamps `FROMIP`/`FROMPORT` on every received letter.	22:5	no
+IP (rights)	abbreviation	Intellectual property; every Introversion name, text, art and audio asset is listed for replacement (see §3 and "IP items").	40:6	no
+KOTH	abbreviation	King of the Hill, game type `GameTypeKingOfTheHill`.	01:4.2	yes → Zone Control
+LAN / WAN	abbreviation	Local-area network (broadcast discovery on UDP 5009) and wide-area network (Internet play through the metaserver).	22:12;09:5.2	no
+LCG	abbreviation	Linear congruential generator; the unsynced `AppRandom` family (`holdrand × 214013 + 2531011`) and the per-tile landscape generator use one.	22:14.2;23:5.1	no
+LMB / RMB	abbreviation	Left and right mouse button.	06:12.2	no
+LOD	abbreviation	Level of detail: distance-based render simplification, used in render code only.	24:5.3	no
+LRU	abbreviation	Least recently used, the eviction rule of the sound sample cache.	27:9	no
+LT / RT / LB / RB	abbreviation	Gamepad left and right triggers and shoulder buttons (XInput).	06:12.2	no
+MAG / MIN / LML / L	abbreviation	Texture filter shorthand in asset tables: magnification and minification filters, `LINEAR_MIPMAP_LINEAR` and `LINEAR`.	25:3.0	no
+MOTD	abbreviation	Message of the day, a text item fetched from the metaserver and shown in the main-menu information box.	09:5.15	no
+MP / SP	abbreviation	Multiplayer and single-player. In code `App::Multiplayer()` is true for every Multiwinia match (including vs-CPU); SP branches are mostly Darwinia legacy.	20:4.5;21:10.4	no
+MSVC / VS2005	abbreviation	Microsoft Visual C++ and Visual Studio 2005, the shipped toolchain (`targets/vs2005/`).	31:7.1	no
+MT19937	abbreviation	Mersenne Twister generator (Matsumoto–Nishimura); the algorithm behind the synced `syncrand` stream.	22:14.2	yes → `std::mt19937` or own generator (attribution if reference code is copied)
+MW	abbreviation	Multiwinia, used as a prefix in tables and asset names (`mwhelp`, `mwsounds`, `mwtitle`).	25:1.1	yes → `<GAME_TITLE>`
+NAT	abbreviation	Network address translation; the matchmaker helps peers behind NAT routers connect (hole punching).	22:12.4	no
+NN-U<n>	abbreviation	Identifier of an unknown or design-critical inference in document NN (for example 05-U5), listed in that document's "Open questions and unknowns".	41:	no
+NPOT / POT	abbreviation	Non-power-of-two and power-of-two texture dimensions.	25:2.8	no
+NSIS / Inno Setup	abbreviation	Windows installer generators; the Multiwinia installer scripts use Inno Setup (`tools/InstallerScript.iss`).	31:9.2	no
+OS	abbreviation	Operating system.	31:2	no
+P01–P20, X1a–X4, S<nn>	abbreviation	Identifiers of the analysis agents whose drafts were merged (partition agents, cross-cutting agents, synthesis agents); they appear in "Sources merged" headers and "Resolved:" notes.	20:1	no
+PCM	abbreviation	Pulse-code modulation: uncompressed sample data delivered to the sound back-end.	27:6.4	no
+PDLC	abbreviation	Premium downloadable content; map ids 50–59 in `level_enum.txt` reserved for two absent map packs.	08:7.3	yes → new map names
+PNG	abbreviation	Portable Network Graphics; written for screenshots and thumbnails via libpng, never read as game data.	29:8.4	no
+POKEY	abbreviation	Atari sound chip whose envelope sequencer `EffectProcessor` emulates in the [B:DEBUG] sound editor; unrelated to `effects.txt` visuals.	26:9.5;27:13	yes → drop
+PSO	abbreviation	Pipeline state object (Direct3D 12); the render-pass table in 24 is written so it maps onto a PSO catalogue.	24:9	no
+QPC	abbreviation	`QueryPerformanceCounter`, the Win32 high-resolution clock behind `GetHighResTime`.	31:4.1	no
+RAR	abbreviation	The archive format of the `.dat` data packs, read by the linked `contrib/unrar` library.	29:10.1	no
+RGB / RGBA / RGBA8	abbreviation	Colour channel orders; RGBA8 (8 bits per channel) is the in-memory format of every decoded bitmap.	25:2.3	no
+RNG	abbreviation	Random number generator; synced (`syncrand` family, identical on all peers) versus unsynced (`AppRandom`, `frand`, CRT `rand`) generators are the key determinism distinction.	22:14.2	no
+RTS	abbreviation	Real-time strategy, the genre.	00:1	no
+RTT	abbreviation	Round-trip time of a network message.	22:2.5	no
+SDK	abbreviation	Software development kit.	20:3.4	no
+SDL	abbreviation	Simple DirectMedia Layer; used only by the Mac/Linux targets, [B:DEAD] on PC.	31:2.2	no
+SEH	abbreviation	Windows structured exception handling; the crash handler writes `ERRORLOG.TXT` and `CRASH.DMP`.	31:6.2	no
+SEQID	abbreviation	Sequence id of a server letter (`NET_DARWINIA_SEQID`); clients execute letters strictly in sequence order, `−1` marks unsequenced letters.	22:6	no
+SFX	abbreviation	Sound effects.	10:7	no
+SHA-1	abbreviation	Hash function (from the bundled unrar sources) used for the server seed and the debug snapshot hash of an IFrame.	22:14.2;22:7.1	yes → any public-domain hash
+SKU	abbreviation	Stock-keeping unit: one retail edition of the product, chosen at data-build time (language set, exclusion list, distributor `origin` tag).	31:8.2;09:10.3	no
+SSE2	abbreviation	x86 SIMD instruction set; not enabled in the shipped build (`/arch:SSE2` absent).	22:14.8	no
+TCP / UDP	abbreviation	Transport protocols; the game uses only UDP (game ports 4000/4001, metaserver 5113, LAN 5009).	22:3	no
+TM	abbreviation	Task manager, the slot list of granted powers.	06:3	yes → Power slots
+TTL	abbreviation	Time to live (expiry of a cached server listing or packet).	22:12.6	no
+UI / UX	abbreviation	User interface; user experience (tables use UX for a player-facing quirk).	28:1	no
+URL	abbreviation	Web address; store, metaserver and crash-report URLs are Introversion endpoints.	22:12.1	yes → own endpoints
+UTF-8 / UTF-16	abbreviation	Unicode encodings; language files for CJK and Cyrillic are UTF-16 or UTF-8, others 8-bit.	31:12.3	no
+UV	abbreviation	Texture coordinates.	24:4.5	no
+VBO	abbreviation	OpenGL vertex buffer object.	24:4.1	no
+VFX	abbreviation	Visual effects: particles, beams, explosions, weather.	26:1	no
+VK	abbreviation	Windows virtual-key code.	06:11.6.5	no
+VS / PS	abbreviation	Vertex shader and pixel shader (HLSL, [B:D3D]); also Visual Studio.	24:6	no
+WAV	abbreviation	Uncompressed audio container, supported by the stream decoder alongside Ogg Vorbis.	27:10	no
+WMD	abbreviation	"Weapon of mass destruction": the player-facing name of the Assault pulse bomb.	03:8.7;01:4.4	yes → Core Device
+wu / u	abbreviation	World units, the length unit of the simulation (about one metre); speeds are wu per second.	21:8.1	no
+XBLA / Xbox 360	abbreviation	Xbox Live Arcade; remnants of the console version (session pages, glyphs, `_xbox` phrase suffixes) are compiled out or unused on PC.	31:2.2;09:A.9	yes → platform-neutral glyphs
+XInput	abbreviation	Microsoft gamepad API, delay-loaded from `xinput1_3.dll`; input driver 5.	06:11.6.6	no
+XOR	abbreviation	Exclusive or (bitwise).	22:14.2	no

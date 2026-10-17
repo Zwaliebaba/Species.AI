@@ -1,10 +1,42 @@
 [
  {
+  "file": "00_overview.md",
+  "index": 0,
+  "line": 113,
+  "ok": true,
+  "error": null,
+  "head": "flowchart LR"
+ },
+ {
+  "file": "00_overview.md",
+  "index": 1,
+  "line": 239,
+  "ok": true,
+  "error": null,
+  "head": "flowchart TD"
+ },
+ {
   "file": "01_game_modes.md",
   "index": 0,
-  "line": 122,
-  "ok": false,
-  "error": "Parse error on line 2:\n...App start / GameMenu::CreateMenu → Multi\n-----------------------^\nExpecting 'SPACE', 'NL', 'HIDE_EMPTY', 'scale', 'COMPOSIT_STATE', 'STRUCT_STOP', 'STATE_DESCR', 'ID', 'FORK', 'JOIN', 'CHOICE', 'CONCURRENT', 'note', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'classDef', 'style', 'class', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', 'EDGE_STA",
+  "line": 123,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "01_game_modes.md",
+  "index": 1,
+  "line": 908,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "01_game_modes.md",
+  "index": 2,
+  "line": 1042,
+  "ok": true,
+  "error": null,
   "head": "stateDiagram-v2"
  },
  {
@@ -43,8 +75,8 @@
   "file": "02_units_and_entities.md",
   "index": 4,
   "line": 1141,
-  "ok": false,
-  "error": "Parse error on line 5:\n...Harvested: Harvester::Harvest    Harves\n-----------------------^\nExpecting 'SPACE', 'NL', 'HIDE_EMPTY', 'scale', 'COMPOSIT_STATE', 'STRUCT_STOP', 'STATE_DESCR', 'ID', 'FORK', 'JOIN', 'CHOICE', 'CONCURRENT', 'note', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'classDef', 'style', 'class', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', 'EDGE_STAT",
+  "ok": true,
+  "error": null,
   "head": "stateDiagram-v2"
  },
  {
@@ -67,8 +99,8 @@
   "file": "02_units_and_entities.md",
   "index": 7,
   "line": 1447,
-  "ok": false,
-  "error": "Parse error on line 16:\n...--> Destroyed : Task::Stop  Destroyed -\n-----------------------^\nExpecting 'SPACE', 'NL', 'HIDE_EMPTY', 'scale', 'COMPOSIT_STATE', 'STRUCT_STOP', 'STATE_DESCR', 'ID', 'FORK', 'JOIN', 'CHOICE', 'CONCURRENT', 'note', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'classDef', 'style', 'class', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', 'EDGE_STA",
+  "ok": true,
+  "error": null,
   "head": "stateDiagram-v2"
  },
  {
@@ -202,7 +234,7 @@
  {
   "file": "02_units_and_entities.md",
   "index": 24,
-  "line": 2537,
+  "line": 2541,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -226,7 +258,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 2,
-  "line": 565,
+  "line": 614,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -234,7 +266,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 3,
-  "line": 699,
+  "line": 748,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -242,7 +274,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 4,
-  "line": 826,
+  "line": 875,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -250,7 +282,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 5,
-  "line": 910,
+  "line": 959,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -258,7 +290,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 6,
-  "line": 946,
+  "line": 995,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -266,7 +298,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 7,
-  "line": 982,
+  "line": 1031,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
@@ -274,7 +306,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 8,
-  "line": 1019,
+  "line": 1068,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -282,7 +314,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 9,
-  "line": 1123,
+  "line": 1172,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -290,7 +322,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 10,
-  "line": 1199,
+  "line": 1248,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -298,7 +330,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 11,
-  "line": 1314,
+  "line": 1363,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -306,7 +338,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 12,
-  "line": 1397,
+  "line": 1461,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -314,7 +346,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 13,
-  "line": 1452,
+  "line": 1516,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -322,7 +354,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 14,
-  "line": 1515,
+  "line": 1579,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -330,7 +362,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 15,
-  "line": 1567,
+  "line": 1631,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -338,7 +370,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 16,
-  "line": 1643,
+  "line": 1707,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -346,7 +378,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 17,
-  "line": 1657,
+  "line": 1721,
   "ok": true,
   "error": null,
   "head": "classDiagram"
@@ -354,7 +386,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 18,
-  "line": 1769,
+  "line": 1833,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -362,7 +394,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 19,
-  "line": 1843,
+  "line": 1907,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -370,22 +402,6 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 20,
-  "line": 1894,
-  "ok": true,
-  "error": null,
-  "head": "stateDiagram-v2"
- },
- {
-  "file": "03_buildings_and_world_objects.md",
-  "index": 21,
-  "line": 1934,
-  "ok": true,
-  "error": null,
-  "head": "stateDiagram-v2"
- },
- {
-  "file": "03_buildings_and_world_objects.md",
-  "index": 22,
   "line": 1958,
   "ok": true,
   "error": null,
@@ -393,8 +409,24 @@
  },
  {
   "file": "03_buildings_and_world_objects.md",
+  "index": 21,
+  "line": 1998,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "03_buildings_and_world_objects.md",
+  "index": 22,
+  "line": 2022,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "03_buildings_and_world_objects.md",
   "index": 23,
-  "line": 2078,
+  "line": 2142,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -402,7 +434,7 @@
  {
   "file": "03_buildings_and_world_objects.md",
   "index": 24,
-  "line": 2126,
+  "line": 2190,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -523,8 +555,8 @@
   "file": "06_player_control_and_input.md",
   "index": 7,
   "line": 1757,
-  "ok": false,
-  "error": "Parse error on line 22:\n...: bool and details\n---------------------^\nExpecting 'SPACE', 'NEWLINE', 'create', 'box', 'end', 'autonumber', 'activate', 'deactivate', 'title', 'legacy_title', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'loop', 'rect', 'opt', 'alt', 'par', 'par_over', 'critical', 'break', 'participant', 'participant_actor', 'destroy', 'note', 'links', 'link', 'properties', '",
+  "ok": true,
+  "error": null,
   "head": "sequenceDiagram"
  },
  {
@@ -571,6 +603,30 @@
   "file": "07_ai.md",
   "index": 4,
   "line": 1058,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "08_levels_and_level_design.md",
+  "index": 0,
+  "line": 143,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "08_levels_and_level_design.md",
+  "index": 1,
+  "line": 1451,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "08_levels_and_level_design.md",
+  "index": 2,
+  "line": 1519,
   "ok": true,
   "error": null,
   "head": "stateDiagram-v2"
@@ -640,6 +696,14 @@
   "head": "stateDiagram-v2"
  },
  {
+  "file": "10_audio_design.md",
+  "index": 0,
+  "line": 109,
+  "ok": true,
+  "error": null,
+  "head": "flowchart LR"
+ },
+ {
   "file": "20_architecture.md",
   "index": 0,
   "line": 56,
@@ -704,6 +768,110 @@
   "head": "classDiagram"
  },
  {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 0,
+  "line": 40,
+  "ok": true,
+  "error": null,
+  "head": "flowchart TD"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 1,
+  "line": 65,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 2,
+  "line": 173,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 3,
+  "line": 213,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 4,
+  "line": 287,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 5,
+  "line": 350,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 6,
+  "line": 392,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 7,
+  "line": 993,
+  "ok": true,
+  "error": null,
+  "head": "flowchart LR"
+ },
+ {
+  "file": "21_simulation_and_entity_model.md",
+  "index": 8,
+  "line": 1328,
+  "ok": true,
+  "error": null,
+  "head": "classDiagram"
+ },
+ {
+  "file": "22_determinism_and_networking.md",
+  "index": 0,
+  "line": 614,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "22_determinism_and_networking.md",
+  "index": 1,
+  "line": 694,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "22_determinism_and_networking.md",
+  "index": 2,
+  "line": 716,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
+  "file": "22_determinism_and_networking.md",
+  "index": 3,
+  "line": 784,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
+ },
+ {
   "file": "23_terrain_and_landscape.md",
   "index": 0,
   "line": 62,
@@ -758,6 +926,30 @@
   "ok": true,
   "error": null,
   "head": "flowchart TD"
+ },
+ {
+  "file": "25_textures_and_assets.md",
+  "index": 0,
+  "line": 197,
+  "ok": true,
+  "error": null,
+  "head": "flowchart TD"
+ },
+ {
+  "file": "26_animation_and_vfx.md",
+  "index": 0,
+  "line": 146,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "26_animation_and_vfx.md",
+  "index": 1,
+  "line": 548,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
  },
  {
   "file": "27_audio_engine.md",
@@ -856,6 +1048,14 @@
   "head": "classDiagram"
  },
  {
+  "file": "29_data_formats_reference.md",
+  "index": 0,
+  "line": 151,
+  "ok": true,
+  "error": null,
+  "head": "flowchart TD"
+ },
+ {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 0,
   "line": 70,
@@ -867,16 +1067,16 @@
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 1,
   "line": 258,
-  "ok": false,
-  "error": "Parse error on line 4:\n... Loaded: \"next frame: ReadLine + execute...\n-----------------------^\nExpecting 'SPACE', 'NL', 'HIDE_EMPTY', 'scale', 'COMPOSIT_STATE', 'STRUCT_STOP', 'STATE_DESCR', 'ID', 'FORK', 'JOIN', 'CHOICE', 'CONCURRENT', 'note', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'classDef', 'style', 'class', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', 'EDGE_",
+  "ok": true,
+  "error": null,
   "head": "stateDiagram-v2"
  },
  {
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 2,
   "line": 405,
-  "ok": false,
-  "error": "Parse error on line 14:\n...AttachTutorial2To3d\"    H->>P: \"instruc\n-----------------------^\nExpecting 'SOLID_OPEN_ARROW', 'DOTTED_OPEN_ARROW', 'SOLID_ARROW', 'BIDIRECTIONAL_SOLID_ARROW', 'DOTTED_ARROW', 'BIDIRECTIONAL_DOTTED_ARROW', 'SOLID_CROSS', 'DOTTED_CROSS', 'SOLID_POINT', 'DOTTED_POINT', got 'NEWLINE'",
+  "ok": true,
+  "error": null,
   "head": "sequenceDiagram"
  },
  {
@@ -907,8 +1107,8 @@
   "file": "30_scripting_tutorial_and_cutscenes.md",
   "index": 6,
   "line": 864,
-  "ok": false,
-  "error": "Parse error on line 3:\n...tion, node 0 is Move: save pose and mode...\n-----------------------^\nExpecting 'SPACE', 'NL', 'HIDE_EMPTY', 'scale', 'COMPOSIT_STATE', 'STRUCT_STOP', 'STATE_DESCR', 'ID', 'FORK', 'JOIN', 'CHOICE', 'CONCURRENT', 'note', 'acc_title', 'acc_descr', 'acc_descr_multiline_value', 'classDef', 'style', 'class', 'direction_tb', 'direction_bt', 'direction_rl', 'direction_lr', 'EDGE_",
+  "ok": true,
+  "error": null,
   "head": "stateDiagram-v2"
  },
  {
@@ -986,9 +1186,33 @@
  {
   "file": "31_platform_build_and_tools.md",
   "index": 6,
-  "line": 884,
+  "line": 891,
   "ok": true,
   "error": null,
   "head": "flowchart LR"
+ },
+ {
+  "file": "32_debug_test_and_performance.md",
+  "index": 0,
+  "line": 385,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "32_debug_test_and_performance.md",
+  "index": 1,
+  "line": 420,
+  "ok": true,
+  "error": null,
+  "head": "stateDiagram-v2"
+ },
+ {
+  "file": "32_debug_test_and_performance.md",
+  "index": 2,
+  "line": 536,
+  "ok": true,
+  "error": null,
+  "head": "sequenceDiagram"
  }
 ]

@@ -146,7 +146,26 @@ Format ids added by this document (appended to `_work/formats_registry.csv`): `b
 | `UnicodeTextFileReader` | loose disk file, `fopen(path,"rb")` | UTF-16 by BOM `FF FE` (LE) or `FE FF` (BE); one code unit per character, no surrogate handling | disk file whose first two bytes are a BOM |
 | `UnicodeTextDataReader` | memory block | as above; BOM skipped (`m_offset = 2`) | archive entry beginning with a BOM |
 
-**Selection** [C] `code/lib/resource.cpp:Resource::GetTextReader`: for resource name `N` (relative to `data/`): (1) [B:DEAD] `USE_DARWINIA_MOD_SYSTEM` mod paths; (2) loose `data/N` relative to the working directory — `UnicodeTextFileReader`, replaced by `TextFileReader` if `IsUnicode()` is false; (3) archive key `data/N` — `UnicodeTextDataReader`, else `TextDataReader`; (4) `NULL` and debug log `Failed to find text resource: data/N`. The full path buffer is `char[256]` (a name longer than 250 characters overflows) [C]. A few callers bypass `Resource` and open a `TextFileReader`/`UnicodeTextFileReader` directly on a profile or working-directory path (preferences, user bindings, campaign saves, `testbedconfig.txt`, `origin`); those are named in their sections. Both file readers call `FindCaseInsensitive(path)` first (`contrib/systemiv/lib/filesys/filesys_utils.cpp`), which matters only on case-sensitive file systems [C]. `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem::GetTextReader` is compiled but `g_fileSystem` is never created by Multiwinia [C grep: no `new FileSystem` under `code/`].
+**Selection** [C] `code/lib/resource.cpp:Resource::GetTextReader`: for resource name `N` (relative to `data/`): (1) [B:DEAD] `USE_DARWINIA_MOD_SYSTEM` mod paths; (2) loose `data/` + N relative to the working directory — `UnicodeTextFileReader`, replaced by `TextFileReader` if `IsUnicode()` is false; (3) archive key `data/` + N — `UnicodeTextDataReader`, else `TextDataReader`; (4) `NULL` and debug log "Failed to find text resource: data/&lt;N&gt;". The full path buffer is `char[256]` (a name longer than 250 characters overflows) [C].
+
+```mermaid
+flowchart TD
+    REQ["resource name N relative to data/"] --> MOD{"mod system compiled in?"}
+    MOD -- "no, baseline" --> LOOSE{"loose file for N exists?"}
+    MOD -- "yes, dead" --> MODPATH["profile mods path"] --> LOOSE
+    LOOSE -- yes --> UFR["UnicodeTextFileReader"]
+    UFR --> BOM1{"BOM FF FE or FE FF?"}
+    BOM1 -- yes --> USE1["use UTF-16 file reader"]
+    BOM1 -- no --> TFR["TextFileReader 8-bit"]
+    LOOSE -- no --> ARC{"archive key for N present? case-insensitive hash"}
+    ARC -- yes --> UDR["UnicodeTextDataReader"]
+    UDR --> BOM2{"BOM?"}
+    BOM2 -- yes --> USE2["use UTF-16 data reader"]
+    BOM2 -- no --> TDR["TextDataReader 8-bit"]
+    ARC -- no --> NONE["NULL and debug log"]
+```
+
+A few callers bypass `Resource` and open a `TextFileReader`/`UnicodeTextFileReader` directly on a profile or working-directory path (preferences, user bindings, campaign saves, `testbedconfig.txt`, `origin`); those are named in their sections. Both file readers call `FindCaseInsensitive(path)` first (`contrib/systemiv/lib/filesys/filesys_utils.cpp`), which matters only on case-sensitive file systems [C]. `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem::GetTextReader` is compiled but `g_fileSystem` is never created by Multiwinia [C grep: no `new FileSystem` under `code/`].
 
 **Physical lines and end of file** [C] `TextFileReader::ReadLine`, `TextDataReader::ReadLine`, `UnicodeTextFileReader::ReadLine`, `UnicodeTextFileReader::ReadUnicodeLine`, `UnicodeTextDataReader::ReadLine`, `TextReader::DoubleMaxLineLen`:
 
@@ -262,7 +281,7 @@ Lights_EndDefinition
 
 **Purpose.** Light obfuscation of text written into the user profile by non-debug builds: campaign `game.txt` and mission saves ([fmt-profile-save](#fmt-profile-save)). Detection is automatic in `TextReader::CleanLine`, so any 8-bit text resource *could* be obfuscated; none under `data/` is [C] grep for `redshirt2` in `data/` = 0 hits; `X1a_text_survey.py` column `redshirt2` = 0 for 190 files.
 
-**Files.** Written by `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter::TextFileWriter(path, _encrypt = true)` from `code/global_world.cpp:GlobalWorld::SaveGame` and `code/level_file.cpp:LevelFile::SaveMissionFile` unless `TARGET_DEBUG`; a UTF-16 variant exists in `code/unicode/unicode_text_file_writer.cpp:UnicodeTextFileWriter` [C]. Preferences are written with `encrypt = false` [C] `code/lib/preferences.cpp:PrefsManager::Save`.
+**Files.** Written by `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter::TextFileWriter(path, _encrypt = true)` from `code/global_world.cpp:GlobalWorld::SaveGame` and `code/level_file.cpp:LevelFile::SaveMissionFile` unless `TARGET_DEBUG`; a UTF-16 variant exists in `code/unicode/unicode_text_file_writer.cpp:UnicodeTextFileWriter` (class in `code/unicode/unicode_text_file_writer.h`) [C]. Preferences are written with `encrypt = false` [C] `code/lib/preferences.cpp:PrefsManager::Save`.
 
 **Layout and algorithm** [C] `TextFileWriter::TextFileWriter`, `TextFileWriter::printf`, `TextReader::CleanLine`:
 
@@ -291,7 +310,7 @@ UTF-16 reader [C] `UnicodeTextReader::CleanLine`: it calls `m_unicodeline.StrOff
 <a id="fmt-binary-common"></a>
 ### 3.4 BinaryReader conventions
 
-**Purpose.** All binary assets (BMP, Ogg, CRC input) are read through one reader interface with a disk and a memory implementation [C] `contrib/systemiv/lib/filesys/binary_stream_readers.cpp`, chosen by `code/lib/resource.cpp:Resource::GetBinaryReader` (loose `data/N` first, then archive key `data/N`; mod paths [B:DEAD]).
+**Purpose.** All binary assets (BMP, Ogg, CRC input) are read through one reader interface with a disk and a memory implementation [C] `contrib/systemiv/lib/filesys/binary_stream_readers.cpp`, chosen by `code/lib/resource.cpp:Resource::GetBinaryReader` (loose `data/` + N first, then archive key `data/` + N; mod paths [B:DEAD]).
 
 | Operation | `BinaryFileReader` (disk) | `BinaryDataReader` (archive / memory) |
 |---|---|---|
@@ -1037,7 +1056,7 @@ All keywords case-insensitive; `:` and `,` are separators, so conditions are con
 | `Event` conditions | as §4.1.15; `LOCATIONNAME` resolved against locations loaded so far | – | – | – | conjunction: fires when all are true | `GlobalWorld::ParseEvents`, `GlobalEvent::Read` |
 | `Action` lines | – | – | – | – | executed **one per evaluation** in order; a first token other than `Action` is debug-asserted but parsed as an action; an unknown action word leaves `m_type` uninitialised → undefined on execute | `GlobalEventAction::Read` |
 | `SetMission LOC FILE` | WORD WORD | – | – | – | set the location's mission | same |
-| `RunScript NAME` | WORD | – | – | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/NAME`; otherwise a Sepulveda phrase sequence, **no-op in FULL** (e.g. `RunScript gardenfinished`) | same |
+| `RunScript NAME` | WORD | – | – | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/` + NAME; otherwise a Sepulveda phrase sequence, **no-op in FULL** (e.g. `RunScript gardenfinished`) | same |
 | `MakeAvailable LOC` | WORD | – | – | – | location becomes available | same |
 | `Tutorial` lines | WORD WORD INT | chapter | – | `-1` deletes | Darwinia demo tutorial chapter; whole section only under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] | `GlobalWorld::ParseTutorial` |
 | `LevelTimes INDEX VALUE` | INT INT | – | – | no bounds check | `m_spLevelTimes[INDEX] = VALUE` | `GlobalWorld::ParseLevelTimes` |
@@ -1493,7 +1512,7 @@ hint_score                *T scored *S points
 
 **Purpose.** One-command-per-line Darwinia cut-scene scripts [C] `code/script.cpp:Script::RunScript`, `Script::Advance`, `Script::AdvanceScript`, `Script::GetOpCode`, `g_opCodeNames`. Meaning of each command: [30](30_scripting_tutorial_and_cutscenes.md).
 
-**Files.** `data/scripts/*.txt` — 42 files, all Darwinia content; `scripts/*` is excluded from the retail `main.dat` [C] `tools/multiwinia_exclusions.txt`. `RunScript(name)`: a name containing `.txt` opens `data/scripts/<name>`; otherwise a Sepulveda phrase sequence (no-op in FULL); in a demo (`!IsFullVersion()`) names starting `launchpad_purpose` are refused [C]. No Multiwinia path ever starts a script ([30](30_scripting_tutorial_and_cutscenes.md)).
+**Files.** `data/scripts/*.txt` — 42 files, all Darwinia content; `scripts/*` is excluded from the retail `main.dat` [C] `tools/multiwinia_exclusions.txt`. `RunScript(name)`: a name containing `.txt` opens `data/scripts/` + name; otherwise a Sepulveda phrase sequence (no-op in FULL); in a demo (`!IsFullVersion()`) names starting `launchpad_purpose` are refused [C]. No Multiwinia path ever starts a script ([30](30_scripting_tutorial_and_cutscenes.md)).
 
 **Encoding.** ASCII, CRLF, newline-terminated (42/42) [C] survey.
 
@@ -1904,7 +1923,7 @@ Naming and placement [C]: a stem resolves to `sounds/<stem>.ogg` first, then `mw
 
 **Verification.** `_work/scripts/X1b_ogg_survey.py` (re-run) over all 1 332 files: every file mono; 1 330 at 44 100 Hz and 2 at 22 050 Hz (one per directory); nominal bit-rates `sounds/` 64 kbps ×862, 128 ×89, 32/60/80 ×1 each; `mwsounds/` 128 ×369, 96 ×8, 40 ×1; no blanks, no non-Ogg, no unreadable headers, no name in both directories [C]. Encoder/decoder binaries in tree: `tools/oggenc.exe`, `tools/oggdec.exe` (not read).
 
-**Minimal valid example.** A mono 44 100 Hz Ogg Vorbis I stream saved as `data/mwsounds/sample_ping1.ogg`, referenced from `sounds.txt` as `SOUNDNAME sample_ping1`.
+**Minimal valid example.** A mono 44 100 Hz Ogg Vorbis I stream saved as `mwsounds/sample_ping1.ogg` (under `data/`), referenced from `sounds.txt` as `SOUNDNAME sample_ping1`.
 
 **Discrepancies.** `code/sound/sample_cache.cpp` comment "Largest song takes 13 MB" — the largest shipped track decodes to 29.0 MiB (the whole PCM buffer is allocated on open) [C] ([27](27_audio_engine.md)).
 
@@ -2222,7 +2241,7 @@ Full algorithms: [23](23_terrain_and_landscape.md).
 <a id="fmt-anim"></a>
 ### 8.6 `.anim` — animated help panel
 
-**Purpose.** A short looping 2-D cartoon shown during a Multiwinia game's grace period explaining the mode [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; parser `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`; interpolation `AnimatedPanel::CalculateObjectProperties`, `CalculateRampUpAndDown`; renderer `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Authored with the external `animator.exe` (repository root; its data archive `animator.dat` holds `data/animations/*.bmp`, `data/fonts/verdana-bold.bmp`, `data/dialogs/animator-*.txt`) [C] strings, RAR listing via `_work/scripts/P14_rar_list.py`. `AnimatedPanel::Write` exists with no caller. Playback model: [26](26_animation_and_vfx.md). [B:FULL]
+**Purpose.** A short looping 2-D cartoon shown during a Multiwinia game's grace period explaining the mode [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; parser `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`; interpolation `AnimatedPanel::CalculateObjectProperties`, `CalculateRampUpAndDown`; renderer `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Authored with the external `animator.exe` (repository root; its data archive `animator.dat` holds `data/animations/*.bmp`, data\fonts\verdana-bold.bmp, data\dialogs\animator-*.txt (archive-internal names, not in the tree)) [C] strings, RAR listing via `_work/scripts/P14_rar_list.py`. `AnimatedPanel::Write` exists with no caller. Playback model: [26](26_animation_and_vfx.md). [B:FULL]
 
 **Files** [C] `InitialiseAnimatedPanel`, `X1b_anim_survey.py` (re-run):
 
@@ -2324,7 +2343,7 @@ icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'butto
 
 **Verification.** Literal grep + existence check by X1b [C]; catalogue per file: [25](25_textures_and_assets.md).
 
-**Minimal valid example.** `data/icons/icon_shield.bmp` — a 64×64 24-bit image with pink-key background, requested as `icons/icon_shield.bmp`.
+**Minimal valid example.** `icons/icon_shield.bmp` (under `data/`) — a 64×64 24-bit image with pink-key background, requested as `icons/icon_shield.bmp`.
 
 **Discrepancies.** Names referenced but absent from `data/icons/`: `menu_campaign.bmp`, `menu_prologue.bmp`, `menu_coop.bmp`, `menu_forcecoop.bmp`, `menu_<n>player.bmp`, `compass_empty.bmp`, `icon_enter.bmp`, `shaman_shadow.bmp` — fatal if requested without a `DoesTextureExist` guard [C]; reachability (e.g. `MarkerSystem::RenderCompass` → `compass_empty.bmp`) and whether `patch.dat` supplies them: [25](25_textures_and_assets.md).
 
@@ -2344,7 +2363,7 @@ icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'butto
 
 **Verification.** Literal grep + existence check by X1b [C].
 
-**Minimal valid example.** `data/mwhelp/help_0_2.bmp` (400×300 24-bit) would be shown as Domination help page 2 with text id `multiwinia_helppage_1_2`.
+**Minimal valid example.** `mwhelp/help_0_2.bmp` (under `data/`) (400×300 24-bit) would be shown as Domination help page 2 with text id `multiwinia_helppage_1_2`.
 
 **Discrepancies.** Referenced but absent: `mwhelp/helppage_<page>_<image>.bmp`, `basic_select[_xbox]`, `basic_promote[_xbox]`, `darwinian`, `officercontrol`, `darwiniancontrol` (Xbox/legacy help flows) [C]; `data/mwhelp/` contains no `.txt` files although earlier notes expected them [C].
 
@@ -2365,7 +2384,7 @@ thumbnail_name = 'thumbnails/' lower( MAPFILE without '.txt' ) '.bmp' ;     (* f
 
 **Verification.** X1b survey + `X4_thumbnails.csv` (X4 level catalogue) [C].
 
-**Minimal valid example.** `data/thumbnails/mp_example_2p.bmp`, 400×300 8-bit, for the map of §4.1.19.
+**Minimal valid example.** `thumbnails/mp_example_2p.bmp` (under `data/`), 400×300 8-bit, for the map of §4.1.19.
 
 **Discrepancies.** 5 thumbnails are excluded with their maps from retail (`mp_benchmark_*`, `mp_tankbattle_*`, `mp_cts_3p_3`) [C] `tools/multiwinia_exclusions.txt`.
 
@@ -2481,7 +2500,7 @@ void ps_main(in float4 c : COLOR, out float4 o : COLOR) { o = c * tint; }
 
 **Purpose.** Shipped data is packed into RAR archives that the game decompresses entirely into memory at start-up [C] `code/lib/resource.cpp:Resource::ParseArchive`, `GetUncompressedFile`, `GetTextReader`, `GetBinaryReader`, `ListResources`; `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `MemMappedFile::MemMappedFile`; `contrib/unrar/extract.cpp:CmdExtract::ExtractArchive` (modified to unpack into memory); `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `GetIndex`. Build pipeline and per-SKU contents: [31 §8](31_platform_build_and_tools.md).
 
-**Files.** Runtime archives (none committed): `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; `ambx.dat` is installed by the euro installer but never opened. The repository's `animator.dat` (tool data) is an example: archive flags 0x0008 (solid), file headers with unpack version 29, method 0x35 (best), names `data\animations\…` [C] RAR header walk.
+**Files.** Runtime archives (none committed): `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; `ambx.dat` is installed by the euro installer but never opened. The repository's `animator.dat` (tool data) is an example: archive flags 0x0008 (solid), file headers with unpack version 29, method 0x35 (best), names data\animations\… [C] RAR header walk.
 
 **Encoding / container.** Standard **RAR 4.x** (signature `52 61 72 21 1A 07 00` "Rar!"), produced by `tools/Rar.exe`, read by the bundled UnRAR 3.30 beta 1 source (`contrib/unrar/version.h`: 3.30 β1, 14 Nov 2003; unpack methods 1.5, 2.0/2.6, 2.9) [C]. **No encryption**: every `ParseArchive` call passes `password = NULL` and the build never uses `-p`/`-hp` [C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`, `tools/build_multiwinia_data.bat`. Entries may be any format of this document; text entries could in principle be "redshirt2"-obfuscated — none are.
 
@@ -2489,7 +2508,7 @@ void ps_main(in float4 c : COLOR, out float4 o : COLOR) { o = c * tint; }
 
 | Element | Rule | Ref |
 |---|---|---|
-| entry name | stored as `data\…` (rar `a -idp` from the repository root) or `data/…`; the loader converts `\` → `/` and lower-cases (`strlwr`) | `MemMappedFile::MemMappedFile`, `Resource::ParseArchive` |
+| entry name | stored as data\… (rar `a -idp` from the repository root) or data/…; the loader converts `\` → `/` and lower-cases (`strlwr`) | `MemMappedFile::MemMappedFile`, `Resource::ParseArchive` |
 | entry count | ≤ `MAX_FILES` = 16 384 per archive (excess makes `AllocNewFile` return NULL → crash in the modified extractor) | `contrib/unrar/unrar.h`, `contrib/unrar/unrar.cpp` |
 | zero-size entries and directories | dropped (and leaked) | `Resource::ParseArchive` (`m_size > 0`) |
 | duplicate names across archives | the later archive's entry replaces the earlier one | same |
@@ -2502,12 +2521,12 @@ Resolved: P14 stated callers must pass lower-case names (case-sensitive lookup);
 
 | Archive | RAR command | Entry names | Content rule |
 |---|---|---|---|
-| `init.dat` | `rar a -m5 -s -idp init.dat @list` | `data\…` | `tools/init.list`: 14 shaders, `sprites/darwinian.bmp`, `textures/ivlogo.bmp` |
-| `language.dat` | `rar a -m5 -s -idp` | `data\…` | `*.bmp *.dds *.tex *.txt` from the selected `tools/*language.list` |
-| `main.dat` | `rar a -m5 -s -idp` | `data\…` | all `data/` minus `completeExclusions`, minus any path containing `sounds/`, filtered to `*.tex *.bmp *.jpg *.shp *.txt *.vs *.ps *.ps3 *.h *.anim` (Xbox adds `*.wmv`) — `.max`, `.psp`, `.grd`, `.ogg` never enter it |
-| `menusounds.dat` | `rar a -m2 -s -idp` | `data/…` | `tools/menu_sounds.txt` |
-| `sounds.dat` | `rar a -m2 -s -idp` | `data/…` | `tools/sounds.txt` |
-| `sounds2.dat` | `rar a -m2 -s -idp` | `data/…` | every `.ogg` not in `completeExclusions` and not in the two sound lists |
+| `init.dat` | `rar a -m5 -s -idp init.dat @list` | data\… | `tools/init.list`: 14 shaders, `sprites/darwinian.bmp`, `textures/ivlogo.bmp` |
+| `language.dat` | `rar a -m5 -s -idp` | data\… | `*.bmp *.dds *.tex *.txt` from the selected `tools/*language.list` |
+| `main.dat` | `rar a -m5 -s -idp` | data\… | all `data/` minus `completeExclusions`, minus any path containing `sounds/`, filtered to `*.tex *.bmp *.jpg *.shp *.txt *.vs *.ps *.ps3 *.h *.anim` (Xbox adds `*.wmv`) — `.max`, `.psp`, `.grd`, `.ogg` never enter it |
+| `menusounds.dat` | `rar a -m2 -s -idp` | data/… | `tools/menu_sounds.txt` |
+| `sounds.dat` | `rar a -m2 -s -idp` | data/… | `tools/sounds.txt` |
+| `sounds2.dat` | `rar a -m2 -s -idp` | data/… | every `.ogg` not in `completeExclusions` and not in the two sound lists |
 | `patch.dat`, `branding.dat` | not built in tree | – | loaded if present |
 
 Switches [I, RAR CLI]: `a` add, `-m5` best / `-m2` fast (Ogg already compressed), `-s` solid, `-idp` no percentage display, `@file` list file.
@@ -2930,7 +2949,7 @@ ERROR : Failed to find translation for string ID 'menu_play'
 <a id="fmt-user-info"></a>
 ### 11.13 Registration system/user info texts [B:LEGACY]
 
-**Purpose.** Inputs of the Darwinia-era key generator, compiled into the exe but never called [C] `code/keygen.cpp:GenerateKey`, `code/lib/user_info.cpp:GetUserInfoData`; `targets/linux/Makefile.keygen-1` built it as a server tool.
+**Purpose.** Inputs of the Darwinia-era key generator, compiled into the exe but never called [C] `code/keygen.cpp:GenerateKey` (declared in `code/keygen.h`), `code/lib/user_info.cpp:GetUserInfoData`; `targets/linux/Makefile.keygen-1` built it as a server tool.
 
 ```ebnf
 sys_info  = 'SysInfoGenVersion' ... LF 'CpuVendor:' ... LF 'CpuModel:' ... LF 'Num Processors:' ... LF 'Country:' ... LF
@@ -3136,6 +3155,7 @@ Generated by `_work/scripts/S_29_source_map.py` from the paths cited above (ever
 | `code/gesture.h` | consumer, producer or sample of the formats listed | [fmt-gestures](#fmt-gestures) |
 | `code/gesture_demo.cpp` | gesture demo reader [B:DEAD] | [fmt-gesture-demo](#fmt-gesture-demo) |
 | `code/gesture_demo.h` | consumer, producer or sample of the formats listed | guidance / closing sections |
+| `code/gesture_demo_win32.cpp` | consumer, producer or sample of the formats listed | guidance / closing sections |
 | `code/global_world.cpp` | game.txt / locations.txt parser and writer, GlobalEventCondition | [fmt-game-txt](#fmt-game-txt), [fmt-level-file](#fmt-level-file), [fmt-locations-txt](#fmt-locations-txt), [fmt-profile-save](#fmt-profile-save), [fmt-redshirt](#fmt-redshirt), [fmt-text-common](#fmt-text-common) |
 | `code/globals.h` | consumer, producer or sample of the formats listed | [fmt-level-file](#fmt-level-file) |
 | `code/interface/gesture_window.cpp` | consumer, producer or sample of the formats listed | [fmt-gestures](#fmt-gestures) |
@@ -3144,6 +3164,7 @@ Generated by `_work/scripts/S_29_source_map.py` from the paths cited above (ever
 | `code/interface/prefs_keybindings_window.cpp` | consumer, producer or sample of the formats listed | [fmt-input-bindings](#fmt-input-bindings), [fmt-preferences](#fmt-preferences) |
 | `code/interface/soundeditor_window.cpp` | consumer, producer or sample of the formats listed | [fmt-effects-txt](#fmt-effects-txt) |
 | `code/keygen.cpp` | legacy key generator (user/system info texts) | [fmt-user-info](#fmt-user-info) |
+| `code/keygen.h` | consumer, producer or sample of the formats listed | [fmt-user-info](#fmt-user-info) |
 | `code/landscape.cpp` | consumer, producer or sample of the formats listed | [fmt-level-file](#fmt-level-file) |
 | `code/landscape_renderer.cpp` | landscape colour-ramp look-up | [fmt-colour-ramp](#fmt-colour-ramp) |
 | `code/level_file.cpp` | LevelFile parser and writer for map / mission files; map CRC | [fmt-colour-ramp](#fmt-colour-ramp), [fmt-level-file](#fmt-level-file), [fmt-map-crc](#fmt-map-crc), [fmt-mwm](#fmt-mwm), [fmt-profile-save](#fmt-profile-save), [fmt-redshirt](#fmt-redshirt), [fmt-text-common](#fmt-text-common) |
@@ -3213,6 +3234,7 @@ Generated by `_work/scripts/S_29_source_map.py` from the paths cited above (ever
 | `code/UI/MapImageButton.h` | consumer, producer or sample of the formats listed | [fmt-thumbnail](#fmt-thumbnail) |
 | `code/UI/PlayDemoAuthkeyButton.h` | consumer, producer or sample of the formats listed | [fmt-authkey](#fmt-authkey) |
 | `code/unicode/unicode_text_file_writer.cpp` | UnicodeTextFileWriter: UTF-16LE + BOM writer (preferences) | [fmt-preferences](#fmt-preferences), [fmt-redshirt](#fmt-redshirt) |
+| `code/unicode/unicode_text_file_writer.h` | consumer, producer or sample of the formats listed | [fmt-redshirt](#fmt-redshirt) |
 | `code/water.cpp` | water texture and wave ramp use | [fmt-colour-ramp](#fmt-colour-ramp) |
 | `code/water.h` | consumer, producer or sample of the formats listed | [fmt-colour-ramp](#fmt-colour-ramp) |
 | `code/water_reflection.cpp` | consumer, producer or sample of the formats listed | [fmt-shader](#fmt-shader) |

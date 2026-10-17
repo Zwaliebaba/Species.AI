@@ -4,15 +4,13 @@ Documents scanned for citations: 25 (00_overview.md, 01_game_modes.md, 02_units_
 
 Manifest entries: 6189; live source files: 776; data files: 2332
 
-Distinct manifest files cited: 3762; directories cited: 78
+Distinct manifest files cited: 3764; directories cited: 78
 
-Evidence tags in documents: {'[C]': 6299, '[I]': 769, '[U]': 179}
+Evidence tags in documents: {'[C]': 6319, '[I]': 776, '[U]': 189}
 
 World-object classes found in code/worldobject/*.h: 159
 
-### (a) live source files never cited — 2
-- code/keygen.h
-- code/unicode/unicode_text_file_writer.h
+### (a) live source files never cited — 0
 
 ### (b) data files never cited — 0
 
@@ -22,16 +20,6 @@ World-object classes found in code/worldobject/*.h: 159
 
 ### (e) assets without a catalogue entry — 0
 
-### Cited paths that do not exist in the manifest (possible errors) — 10
-- data/animations/…  ← 29_data_formats_reference.md
-- data/dialogs/animator-*.txt  ← 29_data_formats_reference.md
-- data/fonts/verdana-bold.bmp  ← 29_data_formats_reference.md
-- data/icons/icon_shield.bmp  ← 29_data_formats_reference.md
-- data/mwhelp/help_0_2.bmp  ← 29_data_formats_reference.md
-- data/mwsounds/sample_ping1.ogg  ← 29_data_formats_reference.md
-- data/n  ← 29_data_formats_reference.md
-- data/scripts/name  ← 29_data_formats_reference.md
-- data/thumbnails/mp_example_2p.bmp  ← 29_data_formats_reference.md
-- data/…  ← 29_data_formats_reference.md
+### Cited paths that do not exist in the manifest (possible errors) — 0
 
 ### Verbatim excerpts over 15 lines — 0
