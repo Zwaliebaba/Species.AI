@@ -244,5 +244,5 @@
 ## Review R6 (20, 21, 22) — done: 68 claims (56 C / 10 partly / 2 wrong); gaps 0 High, 6 Med, 13 Low; 9 cross-doc
 - Difficulty-pref desync (22 L13, §14.6/14.12/14.13) can't happen — coordinator VERIFIED: LevelFile ctor (level_file.cpp:1488) → UpdateDifficultyFromPreferences → m_difficultyLevel = 0 (pref read commented, app.cpp:632); Apply writes only when m_locationId == -1, MW matches use 999 (multiwinia_window.cpp). Armour weapon-toggle desync (22 L20) can't happen (NEXTWEAPON/PREVWEAPON send commented out, location_input.cpp:1054-1062); zone-counter half real. MasterSpawnPoint live (34/57 maps; 20 §5.3 tags legacy wrong); its id rewritten every tick. Undocumented: server keeps only latest input packet per client per tick (earlier click lost).
 
-## REVIEW TOTALS (R1–R8): 552 claims — 469 Correct (85.0 %), 72 Partly, 11 Wrong, 0 Unverifiable; gaps 2 High, 42 Med, 128 Low.
+## REVIEW TOTALS (R1–R8, recomputed): 562 claims — 462 Correct (82.2 %), 86 Partly, 14 Wrong, 0 Unverifiable; gaps 2 High, 42 Med, 118 Low. (An earlier line here mis-added the totals.)
 ## Fix pass launched: F1–F8 (review/FIX_BRIEF.md with coordinator verdicts V1–V12). F9 (Part C: 40/41/90/README/91) after 41 completes and F1–F8 land.
