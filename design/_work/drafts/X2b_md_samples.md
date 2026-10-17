@@ -65,16 +65,16 @@
 | `data/sounds/armour_to_turret4.ogg` | 6.803 | 52 | sounds | ref:live (GunTurret Create) |
 | `data/sounds/armour_to_turret5.ogg` | 5.132 | 39 | sounds | ref:live (GunTurret Create) |
 | `data/sounds/armour_to_turret6.ogg` | 5.875 | 46 | sounds | ref:live (GunTurret Create) |
-| `data/sounds/battle_cannon_damage.ogg` | 2.182 | 21 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage10.ogg` | 2.618 | 21 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage2.ogg` | 2.839 | 23 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage3.ogg` | 3.541 | 28 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage4.ogg` | 2.763 | 23 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage5.ogg` | 2.746 | 23 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage6.ogg` | 2.728 | 22 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage7.ogg` | 2.531 | 21 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage8.ogg` | 2.270 | 20 | sounds | ref:live (GunTurret Damage) |
-| `data/sounds/battle_cannon_damage9.ogg` | 2.670 | 22 | sounds | ref:live (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage.ogg` | 2.182 | 21 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage10.ogg` | 2.618 | 21 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage2.ogg` | 2.839 | 23 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage3.ogg` | 3.541 | 28 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage4.ogg` | 2.763 | 23 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage5.ogg` | 2.746 | 23 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage6.ogg` | 2.728 | 22 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage7.ogg` | 2.531 | 21 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage8.ogg` | 2.270 | 20 | sounds | ref:dead-data (GunTurret Damage) |
+| `data/sounds/battle_cannon_damage9.ogg` | 2.670 | 22 | sounds | ref:dead-data (GunTurret Damage) |
 | `data/sounds/bigmetal1.ogg` | 3.613 | 46 | sounds | ref:live (FuelGenerator PumpUp) |
 | `data/sounds/bigmetal2.ogg` | 3.680 | 37 | sounds | ref:live (FuelGenerator PumpUp) |
 | `data/sounds/bigmetal3.ogg` | 2.189 | 26 | sounds | ref:live (FuelGenerator PumpUp) |
@@ -204,13 +204,13 @@
 | `data/sounds/darwinian_threat_run9.ogg` | 0.697 | 8 | sounds | ref:live (Darwinian SeenThreatRunAway) |
 | `data/sounds/deselect1.ogg` | 2.508 | 38 | sounds | ref:live (Interface DeleteTask) |
 | `data/sounds/dma_sc-visitors_from_dreams.ogg` | 325.251 | 2285 | NOT-SHIPPED(sounds/dma_sc*) | ref:live (Music LoaderRaytrace, Music StartSequence) |
-| `data/sounds/eggsplat.ogg` | 2.485 | 23 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat2.ogg` | 2.194 | 21 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat3.ogg` | 1.962 | 19 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat4.ogg` | 2.241 | 21 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat5.ogg` | 2.305 | 22 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat6.ogg` | 2.136 | 20 | sounds | ref:live (Egg Die) |
-| `data/sounds/eggsplat7.ogg` | 2.489 | 24 | sounds | ref:live (Egg Die) |
+| `data/sounds/eggsplat.ogg` | 2.485 | 23 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat2.ogg` | 2.194 | 21 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat3.ogg` | 1.962 | 19 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat4.ogg` | 2.241 | 21 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat5.ogg` | 2.305 | 22 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat6.ogg` | 2.136 | 20 | sounds | ref:dead-data (Egg Die) |
+| `data/sounds/eggsplat7.ogg` | 2.489 | 24 | sounds | ref:dead-data (Egg Die) |
 | `data/sounds/elec_cackle.ogg` | 0.878 | 10 | sounds | ref:live (BlueprintStore Create, LaserFence Spark) |
 | `data/sounds/elec_cackle2.ogg` | 0.895 | 11 | sounds | ref:live (BlueprintStore Create, LaserFence Spark) |
 | `data/sounds/elec_cackle3.ogg` | 0.882 | 11 | sounds | ref:live (BlueprintStore Create, LaserFence Spark) |
@@ -297,7 +297,7 @@
 | `data/sounds/generator_burst3.ogg` | 0.740 | 9 | sounds | ref:live (Generator TriggerSurge) |
 | `data/sounds/generator_burst4.ogg` | 1.457 | 16 | sounds | ref:live (Generator TriggerSurge) |
 | `data/sounds/generator_burst5.ogg` | 0.996 | 12 | sounds | ref:live (Generator TriggerSurge) |
-| `data/sounds/generator_online.ogg` | 27.683 | 152 | sounds | ref:live (Generator ReprogramComplete) |
+| `data/sounds/generator_online.ogg` | 27.683 | 152 | sounds | ref:dead-data (Generator ReprogramComplete) |
 | `data/sounds/gesturefail.ogg` | 2.215 | 15 | sounds | ref:live (Gesture GestureFail) |
 | `data/sounds/gesturestart.ogg` | 5.754 | 44 | sounds | unused |
 | `data/sounds/gesturesuccess.ogg` | 2.215 | 16 | sounds | ref:live (Gesture GestureSuccess) |

@@ -349,6 +349,8 @@ def scan_code_file(path):
 
 
 FUNC_RE = re.compile(r'^[A-Za-z_][\w\s\*&:<>,]*?\b((?:\w+::)+~?\w+)\s*\(')
+FREE_FUNC_RE = re.compile(r'^(?:static\s+|inline\s+)*(?:const\s+)?[A-Za-z_][\w\*&<>]*(?:\s+[\*&]*[A-Za-z_][\w\*&<>]*)*?\s+[\*&]*(\w+)\s*\(')
+KEYWORDS = {'if', 'while', 'for', 'switch', 'return', 'else', 'case', 'sizeof', 'delete', 'new', 'do'}
 CLASS_RE = re.compile(r'^\s*(?:class|struct)\s+(\w+)\s*(?::\s*(?:public|protected|private)?\s*(\w+))?')
 CALL_RE = re.compile(r'(Trigger(?:Entity|Building|Other)Event)\s*\(')
 HDR_METHOD_RE = re.compile(r'^\s+(?:virtual\s+|static\s+|inline\s+)*[\w\*&<>:]+\s+[\*&]?(\w+)\s*\([^;]*$')
@@ -399,11 +401,15 @@ def find_callsites(src, files, vcproj):
                 fm = FUNC_RE.match(code)
                 if fm and not code.rstrip().endswith(';'):
                     func = fm.group(1)
+                else:
+                    ff = FREE_FUNC_RE.match(code)
+                    if ff and not code.rstrip().endswith(';') and ff.group(1) not in KEYWORDS and not code.startswith('#'):
+                        func = ff.group(1)
             cm = CLASS_RE.match(code)
             if cm and not code.rstrip().endswith(';'):
                 cls = cm.group(1)
             hm = HDR_METHOD_RE.match(code)
-            if hm and rel.endswith('.h'):
+            if hm and rel.endswith('.h') and hm.group(1) not in KEYWORDS and not re.match(r'^\s+(?:else|return|delete|new)\b', code):
                 hdr_method = hm.group(1)
             for m in CALL_RE.finditer(raw):
                 fn = m.group(1)
@@ -487,6 +493,49 @@ def ancestors(cls, parent):
         cls = parent[cls]
         out.append(cls)
     return out
+
+
+def method_bodies(src, files):
+    """(class, method) -> comment-stripped body text, for out-of-line definitions in compiled .cpp files."""
+    bodies = {}
+    for rel in files:
+        if not rel.endswith('.cpp'):
+            continue
+        txt = open(os.path.join(src, rel), encoding='latin-1').read()
+        txt = re.sub(r'/\*.*?\*/', ' ', txt, flags=re.S)
+        txt = re.sub(r'//[^\n]*', '', txt)
+        for m in re.finditer(r'^[A-Za-z_][^\n;]*?\b(\w+)::(~?\w+)\s*\([^;{]*?\)\s*(?:const\s*)?(?::[^{;]*)?\{', txt, re.M | re.S):
+            start = m.end() - 1
+            depth = 0
+            j = start
+            while j < len(txt):
+                if txt[j] == '{':
+                    depth += 1
+                elif txt[j] == '}':
+                    depth -= 1
+                    if depth == 0:
+                        break
+                j += 1
+            bodies.setdefault((m.group(1), m.group(2)), (rel, txt[start:j + 1]))
+    return bodies
+
+
+def base_site_applies(type_cls, site_cls, method, parent, bodies):
+    """True if a call inside site_cls::method is reached for objects of type_cls (no non-chaining override)."""
+    if type_cls == site_cls:
+        return True, ''
+    chain = [type_cls] + ancestors(type_cls, parent)
+    if site_cls not in chain:
+        return False, 'not a subclass'
+    for k in chain:
+        if k == site_cls:
+            return True, ''
+        if (k, method) in bodies:
+            body = bodies[(k, method)][1]
+            if re.search(r'\b\w+::%s\s*\(' % re.escape(method), body):
+                continue
+            return False, 'overridden by %s::%s without base call' % (k, method)
+    return False, 'chain broken'
 
 
 def list_sound_events(src):
@@ -682,6 +731,8 @@ def main():
     name_to_class, blocked, ent_enum, bld_enum = read_type_tables(src)
     parent = class_hierarchy(src)
     lse, lse_base = list_sound_events(src)
+    bodies = method_bodies(src, [f for f in code_files if vcproj.get(f)])
+    overridden_log = []
 
     def lse_for(cls):
         out = []
@@ -757,17 +808,21 @@ def main():
         else:
             grp = 'ENTITY' if s['call'] == 'TriggerEntityEvent' else 'BUILDING'
             if lit and s['obj'].strip() == 'this':
-                fcls = (s['func'] or '').split('::')[0]
+                fcls, _, meth = (s['func'] or '').partition('::')
                 for (g, t), c in all_types.items():
                     if g != grp or not c:
                         continue
-                    if c == fcls or fcls in ancestors(c, parent):
+                    ok, why = base_site_applies(c, fcls, meth, parent, bodies)
+                    if ok:
                         targets.append((g, t, lit))
+                    elif why.startswith('overridden'):
+                        overridden_log.append('%s:%d %s -> %s %s: %s' % (s['file'], s['line'], s['func'], g, t, why))
         s['targets'] = targets
         for tg in targets:
             pair_sites[tg].append((ref, st))
     for row in synth:
         pair_sites[(row[0], row[1], row[2])].append((row[3], row[4]))
+    summary.append('base-class sites suppressed by overrides: %s' % overridden_log)
 
     # ---------------- events table
     data_pairs = collections.OrderedDict()

@@ -665,3 +665,205 @@ for c in code_lits:
             missing.append(dict(name=L, **{k: v for k, v in common.items()}, how='pattern matches no file'))
 
 print('refs after literals', sum(len(v) for v in refs.values()), 'missing', len(missing))
+
+# ----------------------------------------------------------------------------------
+# 7. Data-file references (basename-with-extension tokens in data/**.txt and .anim)
+# ----------------------------------------------------------------------------------
+def level_class(rel):
+    b = rel.rsplit('/', 1)[-1].lower()
+    if rel.startswith('data/levels/old/'):
+        return 'dead', 'data/levels/old/ is never listed (ListResources is non-recursive; code/game_menu.cpp:GameMenu::CreateMapList)'
+    if rel.startswith('data/levels/mp_'):
+        txt = open(os.path.join(SRC, rel), encoding='latin-1').read()
+        m = re.search(r'GameTypes\s+(.*)', txt)
+        gt = (m.group(1).strip() if m else '')
+        if 'TankBattle' in gt:
+            return 'debug', 'TankBattle map: GameTypeTankBattle not permitted without INCLUDEGAMEMODE_TANKBATTLE (code/app.cpp:App::IsGameModePermitted)'
+        if gt.lower().startswith('none') or not gt:
+            return 'special', 'mp map with GameTypes none (sandbox/benchmark/stress; only special targets)'
+        return 'live', 'Multiwinia map listed by GameMenu::CreateMapList'
+    if rel.startswith('data/levels/'):
+        return 'legacy', 'Darwinia campaign map/mission file [B:LEGACY]'
+    return 'live', ''
+
+level_info = {}
+for root, dirs, files in os.walk(os.path.join(DATA, 'levels')):
+    for f in files:
+        rel = os.path.relpath(os.path.join(root, f), SRC).replace(os.sep, '/')
+        level_info[rel] = level_class(rel)
+
+DATA_SKIP = ('data/language/',)
+data_tok = re.compile(r'[A-Za-z0-9_\-\./]+\.(?:bmp|shp|anim)\b', re.I)
+for root, dirs, files in os.walk(DATA):
+    dirs.sort()
+    for f in sorted(files):
+        if not f.lower().endswith(('.txt', '.anim')):
+            continue
+        p = os.path.join(root, f)
+        rel = os.path.relpath(p, SRC).replace(os.sep, '/')
+        if rel.startswith(DATA_SKIP):
+            continue
+        for ln, line in enumerate(open(p, encoding='latin-1').read().split('\n'), 1):
+            for m in data_tok.finditer(line):
+                tok = m.group(0).lower().lstrip('./')
+                key = (line.strip().split() or [''])[0]
+                cls, why = level_info.get(rel, ('live', ''))
+                live = {'FULL': cls == 'live', 'D3D': cls == 'live', 'DEBUG': cls in ('live', 'debug'), 'EDITOR': cls == 'live'}
+                tgts = []
+                if tok in by_resname:
+                    tgts = [by_resname[tok]]
+                elif tok.endswith('.shp') and 'shapes/' + tok in by_resname:
+                    tgts = [by_resname['shapes/' + tok]]
+                elif rel.startswith('data/levels/') and key.lower() in ('landcolourfile', 'wavescolourfile', 'watercolourfile'):
+                    if 'terrain/' + tok in by_resname:
+                        tgts = [by_resname['terrain/' + tok]]
+                elif rel.startswith('data/animations/') and key.upper() == 'IMAGENAME':
+                    if 'animations/' + tok in by_resname:
+                        tgts = [by_resname['animations/' + tok]]
+                    else:
+                        missing.append(dict(name='animations/' + tok, where=rel, sym='IMAGENAME', ln=ln, cond='', live=live, built='data', how='anim keyframe image absent'))
+                elif tok in basename_idx:
+                    for t in basename_idx[tok]:
+                        add_ref(t, 'data-basename', rel, key, ln, why, live, 'data', 'bare name in data file (directory from consumer)', strength='I')
+                    continue
+                for t in tgts:
+                    add_ref(t, 'data', rel, key, ln, why, live, 'data', 'data key %s' % key)
+
+# ----------------------------------------------------------------------------------
+# 8. Rules: names built at run time (each rule = code site literal + value set) [C]
+# ----------------------------------------------------------------------------------
+def sites(file_, lit):
+    return [c for c in code_lits if c['file'] == file_ and c['lit'] == lit and not c['commented']]
+
+def apply_rule(rule_id, file_, lit, values, fmt, how, flags=''):
+    ss = sites(file_, lit)
+    if not ss:
+        print('WARN rule site not found', rule_id, file_, lit)
+    for c in ss:
+        for v in values:
+            name = (fmt % v).lower()
+            tgt = by_resname.get(name)
+            if tgt:
+                add_ref(tgt, 'rule:' + rule_id, c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
+                        how, flags=flags, state=site_state(c['file'], c['line']))
+            else:
+                missing.append(dict(name=name, where=c['file'], sym=c['sym'], ln=c['line'], cond=c['cond'],
+                                    live=c['live'], built=c['built'], how='rule %s value %s' % (rule_id, v)))
+
+def c_array(file_, func_marker, stop='};'):
+    txt = open(os.path.join(SRC, file_), encoding='latin-1').read()
+    i = txt.index(func_marker); j = txt.index(stop, i)
+    return re.findall(r'"([^"]+)"', txt[i:j])
+
+RESEARCH = c_array('code/global_world.cpp', 'char *GlobalResearch::GetTypeName')
+crtxt = open(os.path.join(SRC, 'code/worldobject/crate.cpp'), encoding='latin-1').read()
+ci = crtxt.index('char *Crate::GetName(int _type)'); cj = crtxt.index('\n}', ci)
+CRATES = [m.group(1) for m in re.finditer(r'^\s*case [^:]+:\s*return "([^"]+)";', crtxt[ci:cj], re.M)] + ['Crate']
+BLUEPRINTS = re.findall(r'^GAMETYPE\s+(\S+)', open(os.path.join(DATA, 'multiwinia.txt'), encoding='latin-1').read(), re.M)
+eng = open(os.path.join(DATA, 'language/english.txt'), encoding='latin-1').read()
+HELP_PAGES = sorted({(int(a) - 1, int(b)) for a, b in re.findall(r'^multiwinia_helppage_(\d)_(\d)\b', eng, re.M)})
+MP_MAPS = sorted(r for r, (cls, _) in level_info.items() if cls in ('live',) and r.startswith('data/levels/mp_'))
+TB_MAPS = sorted(r for r, (cls, _) in level_info.items() if cls == 'debug')
+
+R = []
+for f_ in ['code/taskmanager_interface_icons.cpp', 'code/taskmanager_interface_multiwinia.cpp',
+           'code/taskmanager_interface_gestures.cpp', 'code/markersystem.cpp', 'code/gamecursor.cpp']:
+    apply_rule('research-icon', f_, 'icons/icon_%s.bmp', RESEARCH, 'icons/icon_%s.bmp',
+               'icons/icon_<GlobalResearch::GetTypeName(i)|Task::GetTaskName(type)>.bmp')
+for f_ in ['code/taskmanager_interface_icons.cpp', 'code/taskmanager_interface_multiwinia.cpp',
+           'code/taskmanager_interface_gestures.cpp', 'code/interface/gesture_window.cpp']:
+    apply_rule('research-gesture', f_, 'icons/gesture_%s.bmp', RESEARCH, 'icons/gesture_%s.bmp',
+               'icons/gesture_<research/task name>.bmp')
+apply_rule('crate-icon', 'code/interface/helpandoptions_windows.cpp', 'icons/icon_%s.bmp', CRATES,
+           'icons/icon_%s.bmp', 'icons/icon_<Crate::GetName(n)>.bmp (CrateHelpWindow)')
+for f_ in ['code/UI/GameMenuWindow.cpp', 'code/UI/GameTypeImageButton.h']:
+    apply_rule('mode-image', f_, 'mwhelp/mode_%s.bmp', BLUEPRINTS, 'mwhelp/mode_%s.bmp',
+               'mwhelp/mode_<blueprint name from data/multiwinia.txt>.bmp, lower-cased', 'mip=false mask=false')
+apply_rule('help-general', 'code/interface/helpandoptions_windows.cpp', 'mwhelp/general%d.bmp', range(1, 6),
+           'mwhelp/general%d.bmp', 'GeneralHelpWindow page 1..MAX_PAGES(5) via ImageButton', 'mip=false mask=true')
+apply_rule('help-gametype', 'code/interface/helpandoptions_windows.cpp', 'mwhelp/help_%d_%d.bmp', HELP_PAGES,
+           'mwhelp/help_%d_%d.bmp', 'GameTypeHelpWindow page (t,p) exists iff phrase multiwinia_helppage_<t+1>_<p> exists', 'mip=false mask=true')
+for f_ in ['code/UI/MapImageButton.h', 'code/UI/GameMenuWindow.cpp']:
+    stems = [r.rsplit('/', 1)[-1][:-4] for r in MP_MAPS]
+    apply_rule('map-thumbnail', f_, 'thumbnails/%s', stems, 'thumbnails/%s.bmp',
+               'thumbnails/<level file stem>.bmp lower-cased, for each data/levels/mp_* map with a permitted GameTypes', 'mip=false mask=false')
+    stems_tb = [r.rsplit('/', 1)[-1][:-4] for r in TB_MAPS]
+    for c in sites(f_, 'thumbnails/%s'):
+        for st_ in stems_tb:
+            t = by_resname.get(('thumbnails/%s.bmp' % st_).lower())
+            if t:
+                add_ref(t, 'rule:map-thumbnail-tankbattle', c['file'], c['sym'], c['line'],
+                        'runtime: TankBattle not permitted in FULL', {'FULL': False, 'D3D': False, 'DEBUG': True, 'EDITOR': False},
+                        c['built'], 'thumbnail of a TankBattle map (game type selectable only in TARGET_DEBUG)', 'mip=false mask=false')
+apply_rule('cloud-face', 'code/clouds.cpp', 'sepulveda/sepulveda%d.bmp', range(1, 6), 'sepulveda/sepulveda%d.bmp',
+           'Clouds::RenderFace picIndex 1..3 random, 4 eyes shut, 5 mouth open', 'mip=true mask=false (current pic); default flags (fading previous pic)')
+apply_rule('darwinian-ouch', 'code/worldobject/darwinian.cpp', 'sprites/darwinian_ouch%d.bmp', range(1, 4),
+           'sprites/darwinian_ouch%d.bmp', 'dead airborne Darwinian: index 1 + uid%10 when uid%10 < 3')
+apply_rule('armyant-shape', 'code/worldobject/armyant.cpp', 'armyant%d.shp', [2, 3], 'shapes/armyant%d.shp',
+           'ArmyAnt::SetShape LOD shapes i=1,2 -> armyant2/3.shp')
+# unicode atlases: ListResources("textures/unicode/", "<font>.*.*.bmp") for each TextRenderer::Initialise name
+for c in sites('code/lib/text_renderer.cpp', 'textures/unicode/%s'):
+    for rel in assets:
+        rn = res_name(rel)
+        m = re.match(r'textures/unicode/(editor|speccy|square)\.([0-9a-f]+)\.([0-9a-f]+)\.bmp$', rn)
+        if m:
+            add_ref(rel, 'rule:font-atlas', c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
+                    'TextRenderer::BuildUnicodeArray lists textures/unicode/<font>.*.*.bmp for font %s (code/app.cpp:App::SetLanguage)' % m.group(1),
+                    flags='mip=true mask=true', state='MIN=LINEAR_MIPMAP_LINEAR MAG=LINEAR (set in DrawText*)')
+# animation .anim -> IMAGENAME bitmaps are handled by the data scan; .anim files by literals in multiwiniahelp.cpp
+# terrain: level-file keys handled by the data scan; defaults + fallback:
+for lit, why in [('landscape_default.bmp', 'LevelFile defaults (level_file.cpp) when no landColourFile'),
+                 ('waves_default.bmp', 'LevelFile defaults when no wavesColourFile'),
+                 ('water_default.bmp', 'LevelFile defaults when no waterColourFile')]:
+    for c in sites('code/level_file.cpp', lit):
+        add_ref(by_resname['terrain/' + lit], 'rule:terrain-default', c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
+                why + '; consumed as terrain/<name> by LandscapeRenderer/Water')
+print('refs after rules', sum(len(v) for v in refs.values()), 'missing', len(missing))
+
+# ----------------------------------------------------------------------------------
+# 9. Per-asset status
+# ----------------------------------------------------------------------------------
+STRONG = ('literal', 'literal+ext', 'shadow-derived', 'shape-name', 'data', 'manual')
+def ref_strong(r):
+    return r['strength'] == 'C' and (r['kind'] in STRONG or r['kind'].startswith('rule:'))
+
+def ref_build(r):
+    """Build tag of a single reference."""
+    if r['kind'] == 'commented-out':
+        return 'DEAD'
+    if r['built'] == '':
+        return 'DEAD'
+    lv = r['live']
+    if lv.get('FULL'):
+        return 'FULL'
+    if lv.get('D3D'):
+        return 'D3D'
+    if lv.get('DEBUG'):
+        return 'DEBUG'
+    if lv.get('EDITOR'):
+        return 'EDITOR'
+    return 'DEAD'
+
+def summarise(rel):
+    rs = refs.get(rel, [])
+    strong = [r for r in rs if ref_strong(r)]
+    tags = sorted({ref_build(r) for r in strong}, key=['FULL', 'D3D', 'DEBUG', 'EDITOR', 'DEAD'].index)
+    return rs, strong, tags
+
+if os.environ.get('X2A_REVIEW'):
+    want = os.environ['X2A_REVIEW']
+    for rel, a in assets.items():
+        rs, strong, tags = summarise(rel)
+        if want == 'weak' and (tags and tags[0] == 'FULL'):
+            continue
+        if want not in ('weak', 'all') and want not in rel:
+            continue
+        print('##', rel, tags)
+        seen = set()
+        for r in rs:
+            k = (r['kind'], r['file'], r['sym'])
+            if k in seen:
+                continue
+            seen.add(k)
+            print('   ', r['strength'], r['kind'], r['file'], r['line'], r['sym'], '|', r['cond'][:60], '|', ref_build(r), '|', r['how'][:70])
+    sys.exit(0)

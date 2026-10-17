@@ -200,6 +200,8 @@ Mac/Linux equivalents: §31.2.
 
 [C] `code/app.cpp` (`ParseArchive` calls at L217, L334–L340, L502–L503), `tools/build_multiwinia_data.bat`, `tools/init.list`, `tools/sounds.txt`, `tools/menu_sounds.txt`.
 
+Extension filter check against `data/` (outside `sounds/`/`mwsounds/`: 506 bmp, 200 txt, 139 shp, 133 max, 7 ps, 6 anim, 5 vs, 1 ps3, 1 h, 1 psp, 1 grd): everything the game loads is covered; the unmatched types are authoring files that are never packed — 133 `.max` 3ds Max scenes in `data/shapes/source/` (also excluded explicitly), `data/icons/banner_template.psp`, `data/Untitled Gradients.grd` [C] scripted count.
+
 RAR switches: `a` add, `-m5` best / `-m2` fast compression (Ogg is already compressed), `-s` **solid** archive, `-idp` no percentage output, `@file` list [C] scripts; [I] switch meanings from RAR CLI conventions. Paths are stored as `data\…` (the `sed "s_.*data\\_data\\_"` rewrite strips the absolute prefix) [C].
 
 ### 31.5.2 Archive semantics [C] `code/lib/resource.cpp:Resource::ParseArchive`, `contrib/unrar/unrar.cpp:MemMappedFile::MemMappedFile`, `contrib/unrar/unrar.h`
@@ -1031,6 +1033,7 @@ Usage volume in live code (for X3): 553 source lines calling `syncrand()/syncfra
 * `iv_trunc_low_nibble(double x)`: `volatile float f = (float)x; return f;` — rounds every transcendental/sqrt result to IEEE single precision so that last-bit differences between CRT implementations (or x87 vs SSE paths) are usually masked. Applied by the `iv_sin…iv_atan` macros and by `iv_atof(str)`, `iv_wtof(wstr)` (via `swscanf %lf`); `iv_wtoi` = `swscanf %d` else 0. `code/network/networkvalue.cpp` also truncates values with it (P15).
 * x87 precision control: `StandardiseCPUPrecision()` sets 53-bit mantissa (`_control87(_PC_53,_MCW_PC)`) on the main thread and on every `WorkQueue` thread [C] `code/main.cpp`, `code/lib/work_queue.cpp:RunThread`. Network/listen threads started with `NetStartThread` do not call it (they are not supposed to simulate) [C].
 * Build differences: GL baseline `/fp:precise`, D3D `/fp:fast` (§31.1.3); the D3D9 device is created without `D3DCREATE_FPU_PRESERVE` (`code/lib/opengl_directx.cpp` CreateDevice flags), and Direct3D 9 then switches the creating thread's x87 unit to 24-bit precision [I: documented D3D9 behaviour], overriding `_PC_53`. Hence `[B:D3D]` and `[B:FULL]` peers can desynchronise; the design must use one build per match (the lobby only checks `APP_VERSION` = "dev" for both) [I].
+* Fixed-point: `FLOAT_NUMERICS` is defined globally and `USE_FIXED`/`FIXED64_NUMERICS` nowhere, so the SystemIV fixed-point types (`contrib/systemiv/lib/math/fixed.h`, `fixed_64.*`, `fixed_float.*`, sine/asin tables) and the `DIRECTORY_TYPE_FIXED` payload are not compiled; only 8 of the 30 files in `contrib/systemiv/lib/math` are built (`filecrc`, `hash`, `math_stubs`, `random_number`, .cpp+.h) — the game's vector/matrix maths is `code/lib/{vector2,vector3,matrix33,matrix34,math_utils}` (P13) [C] `code/lib/universal_include.h`, `_work/build_matrix.md` §6, `targets/vs2005/Darwinia.vcproj`.
 * `HashDouble(v, buf)`: 16 lowercase hex nibbles of the IEEE-754 double **least-significant nibble first** (byte-reversed text); `HashVector3` = `(h,h,h)`; `HashMatrix34` = `((r),(u),(f),(pos))`. Used to print exact values into sync logs [C] `contrib/systemiv/lib/debug_utils.cpp`, `code/worldobject/tree.cpp`.
 
 ### 22.R.4 Container iteration orders that matter for determinism
@@ -1160,7 +1163,7 @@ Determinism notes: `DArray::PutData` (lowest free slot) and `FastDArray::PutData
 | 51 | `docs/multiwiniachanges-beta.txt` | beta changelog to 1.9.35 (sync fixes, Virii limits) | P15/X3 evidence |
 | 52 | `docs/multiwiniareleasenotes-beta.txt` | beta release notes to 1.9.31; asks users to send `syncerror-*.txt`, `debug.txt`, `dxdiag.txt`, `preferences.txt` | consistent with §31.4.2 |
 | 53 | `docs/network overview.txt` | lobby design (TCP lobby, UDP 4000/4001, broadcast discovery) | P15 (ports match prefs defaults 4000/4001) |
-| 54 | `docs/new building docs.txt` | Darwinia FenceSwitch etc. | Darwinia-era |
+| 54 | `docs/new building docs.txt` | Darwinia building notes (FenceSwitch linking order and behaviour, other Darwinia buildings) | Darwinia-era |
 | 55 | `docs/newdemo.txt` | 2005 demo schedule | Darwinia-era |
 | 56 | `docs/possible removals.txt` | Darwinia scope cuts | Darwinia-era |
 | 57 | `docs/research and development.txt` | Darwinia research list | Darwinia-era |
@@ -1236,6 +1239,7 @@ Determinism notes: `DArray::PutData` (lowest free slot) and `FastDArray::PutData
 * **P10 (input):** `docs/input_preferences_syntax.txt` `pref <name>` conditions depend on `PrefsManager::GetInt` typing rules (float-typed prefs read as false). Language captions call `g_inputManager->getControlID/getBoundInputDescription` for `[KEY…]` markers and `getInputMode()` for `_kbd`/`_xin` table selection (`code/lib/language_table.cpp`).
 * **P11 (terrain):** `SurfaceMap2D` interpolation details (wrap-to-zero at edges, `GetValueNearest` ignoring origin, double arithmetic) are determinism-relevant for height queries (§21.C).
 * **P12 (resources):** archive semantics (§31.5.2) and loose-file precedence; `Resource::GetTextReader` chooses UTF-16 vs 8-bit readers; text files packed in archives must end with a newline (§29.T.1).
+* **P13 (math):** `contrib/systemiv/lib/debug_utils.cpp` and `network_stream.h` include `lib/math/vector3.h`, which resolves to the SystemIV `Vector3` (no `code/lib/math/` exists), while game code uses `code/lib/vector3.h`; both declare `double x, y, z`, so layouts agree, but two classes named `Vector3` coexist in one program (latent ODR hazard) [C] include paths, `contrib/systemiv/lib/math/vector3.h`, `code/lib/vector3.h`.
 * **P13 (D3D backend):** device created without `D3DCREATE_FPU_PRESERVE` → x87 precision change in `[B:D3D]`; `ReleaseDirect3D` built with `/fp:fast`, `/Oy`, `/GS-`, linker `/PROFILE`.
 * **P15 (network):** `Directory` wire format (§29.D) incl. unchecked subdirectory count and VOID length; packed ints; sync seed via `syncrandseed`; `FlushSyncRandLog` on connect; `HashData` key hashing; `APP_VERSION` "dev" is the protocol version string.
 * **P16 (sound):** `SystemInfo::GetAudioDetails` preferred-device bug (always last device); `SoundBufferSize` default mismatch (prefs 512 vs call site 2000, see pref CSV); sound archives loaded on a dedicated serial queue.
@@ -1301,7 +1305,7 @@ Determinism notes: `DArray::PutData` (lowest free slot) and `FastDArray::PutData
 | Beta tester handles/e-mails | personal data | `docs/betatesters.txt` | never reproduce |
 | Developer names in credits/comments (Mac port credits, "Hack by Chris", Bruce Dawson/Hans Dietrich headers) | name | targets/macosx rtfs, code comments | omit |
 | Third-party code: MT19937 (BSD-style notice), XCrashReport/ExceptionHandler (public domain/Dawson), GetWinVer/MiniVersion (Dietrich, public domain), auto_vector (Reliable Software), unrar (RARLAB licence), NSIS samples, Loki Setup | third-party | files listed | use standard libraries (`std::mt19937`, `minidumpwriter`, `std::vector<std::unique_ptr>`) |
-| Map ID names (`MAPID_MP_KOTH_2P_1` etc.) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
+| Map ID names (all 87 `MAPID_*` in `code/mapcrc.h`, e.g. `MAPID_MP_KOTH_2P_1`) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
 
 ## Appendix — dead/legacy code (brief)
 

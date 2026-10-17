@@ -111,7 +111,7 @@ Compiled-in does not mean reachable. These runtime gates further restrict what a
 - `code/lib/input/xbox_eventhandler.cpp`: listed but `ExcludedFromBuild` in all four configurations.
 - 14 `.vcproj` entries refer to files absent from the tree (Xbox 360 `x360_qnet`, `multiwinia.spa.h`, XBLA UI buttons, `preferences.txt`, cursor/resource headers) — Xbox Live Arcade remnants.
 - `contrib/systemiv`: only `lib/{debug_utils,memory_leak,network_stream,profiler,string_utils}`, `lib/filesys`, `lib/math` (8 of 30 files), `lib/metaserver` (6 of 12), `lib/netlib` (16 of 20), `lib/tosser` (9 of 17), `lib/unicode` are compiled. `contrib/systemiv/interface`, `lib/eclipse`, `lib/gucci`, `lib/render`, `lib/resource`, `lib/sound`, `template`, `tools`, `contrib/*` are **not** compiled (Multiwinia uses its own `code/lib`, `code/sound`, `code/interface` and `contrib/eclipse` instead).
-- `targets/linux/Makefile` and `targets/macosx/*` still reference Darwinia (`TARGET_DEMOGAME`/`TARGET_FULLGAME`, `Darwinia.xcode`) and do not build Multiwinia [I] (not maintained for this tree). Platform appendix only.
+- `targets/linux/Makefile` and `targets/macosx/Darwinia` still reference Darwinia (`TARGET_DEMOGAME`/`TARGET_FULLGAME`, `Darwinia.xcode`) and do not build Multiwinia [I]. `targets/macosx/Multiwinia` **is** a maintained Multiwinia Mac (SDL/Cocoa, Xcode) project (corrected after P14 review; [C] `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj`). Both are outside the PC baseline — platform appendix in 31.
 
 ## 7. Tagging convention used across all documents
 

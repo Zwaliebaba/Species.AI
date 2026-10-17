@@ -424,3 +424,12 @@ code/level_file.cpp,skimmed,LevelFile::CalculeCRC only (owned by P11),31.9 MapCR
 code/interface/profilewindow.cpp,skimmed,profiler lifetime/output (owned by P17a),32.P Profiler
 code/network/server.cpp,skimmed,MakeRandom/GenSyncRandSeed only (owned by P15),22.R RNG and float discipline
 data/default_preferences.txt,full,first-run override file (format owned by X1a),29.P Preferences file
+data/language/english.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/french.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/german.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/italian.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/japanese.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/korean.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/portuguese.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/russian.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files
+data/language/spanish.txt,skimmed,encoding/BOM inspected only (content owned by X1a),31.11 Localisation build;29.L Language files

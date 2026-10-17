@@ -1,0 +1,207 @@
+block,field,detail,status,n_files_total,n_mp,n_map,n_mission,n_old,n_purity,occurrences,min_tokens,max_tokens,example_file
+(files),(files in set),,,118,57,12,17,30,2,,,,
+(top-level),GameTypes,,unknown-top-level,1,0,0,0,1,0,1,,,data/levels/old/mp_chess1.txt
+Buildings,(block),,parsed,118,57,12,17,30,2,196,,,data/levels/map_biosphere.txt
+Buildings,AIObjective,static,parsed,10,9,0,0,1,0,98,9,10,data/levels/mp_assault_2P_1.txt
+Buildings,AIObjectiveMarker,static,parsed,17,16,0,0,1,0,345,10,12,data/levels/mp_assault_2P_1.txt
+Buildings,AISpawnPoint,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),6,0,1,0,5,0,19,12,14,data/levels/map_pattern_buffer.txt
+Buildings,AITarget,static,parsed,81,53,4,0,24,0,1577,8,11,data/levels/map_biosphere.txt
+Buildings,AntHill,dynamic,parsed,2,0,0,2,0,0,13,9,9,data/levels/mission_receiver_recapture.txt
+Buildings,BlueprintConsole,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,4,10,10,data/levels/map_pattern_buffer.txt
+Buildings,BlueprintRelay,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,12,10,10,data/levels/map_pattern_buffer.txt
+Buildings,BlueprintStore,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,9,9,data/levels/map_pattern_buffer.txt
+Buildings,CarryableBuilding,,ignored-unknown-type,1,0,1,0,0,0,1,8,8,data/levels/map_sandbox.txt
+Buildings,ChessBase,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,0,0,1,0,2,10,10,data/levels/old/mp_chess1.txt
+Buildings,CloneLab,static,parsed,4,0,0,0,4,0,15,9,9,data/levels/old/mp_firetop.txt
+Buildings,ControlStation,static,parsed,13,10,0,0,3,0,54,9,9,data/levels/mp_assault_2P_1.txt
+Buildings,ControlTower,static,parsed,20,2,12,0,6,0,150,9,9,data/levels/map_biosphere.txt
+Buildings,EruptionMarker,static,parsed,1,1,0,0,0,0,1,8,8,data/levels/mp_blitzkrieg_3P_2.txt
+Buildings,EscapeRocket,dynamic,parsed,1,0,0,1,0,0,1,13,13,data/levels/mission_launchpad.txt
+Buildings,EscapeRocket,static,parsed,8,7,0,0,1,0,21,13,13,data/levels/mp_rocketriot_2P_2.txt
+Buildings,FuelGenerator,static,parsed,9,7,1,0,1,0,64,9,9,data/levels/map_launchpad.txt
+Buildings,FuelPipe,static,parsed,9,7,1,0,1,0,217,9,9,data/levels/map_launchpad.txt
+Buildings,FuelStation,static,parsed,9,7,1,0,1,0,64,9,9,data/levels/map_launchpad.txt
+Buildings,Generator,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,9,9,data/levels/map_generator.txt
+Buildings,GodDish,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),2,0,1,0,1,0,2,8,8,data/levels/map_temple.txt
+Buildings,GunTurret,dynamic,parsed,1,0,0,1,0,0,2,8,8,data/levels/mission_pattern_buffer_attract.txt
+Buildings,GunTurret,static,parsed,22,14,1,0,7,0,262,8,13,data/levels/map_temple.txt
+Buildings,Incubator,dynamic,parsed,13,0,0,13,0,0,38,9,9,data/levels/mission_containment_enable.txt
+Buildings,Incubator,static,parsed,17,2,1,0,14,0,58,9,9,data/levels/map_sandbox.txt
+Buildings,JumpPad,static,parsed,4,3,0,0,1,0,27,10,10,data/levels/mp_assault_2P_2.txt
+Buildings,LaserFence,static,parsed,17,15,1,0,1,0,764,11,11,data/levels/map_containment.txt
+Buildings,Mine,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,4,9,9,data/levels/map_mine.txt
+Buildings,MultiwiniaZone,static,parsed,29,27,1,0,1,0,182,9,13,data/levels/map_sandbox.txt
+Buildings,Portal,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),10,0,0,0,10,0,91,8,15,data/levels/old/mp_gateway.txt
+Buildings,PowerSplitter,static,parsed,8,7,0,0,1,0,27,11,13,data/levels/mp_rocketriot_2P_2.txt
+Buildings,PulseBomb,static,parsed,10,9,0,0,1,0,10,12,13,data/levels/mp_assault_2P_1.txt
+Buildings,Pylon,static,parsed,22,17,3,0,2,0,389,9,9,data/levels/map_generator.txt
+Buildings,PylonEnd,static,parsed,21,17,2,0,2,0,98,9,9,data/levels/map_launchpad.txt
+Buildings,PylonStart,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,10,10,data/levels/map_yard.txt
+Buildings,RadarDish,static,parsed,22,7,11,0,4,0,164,8,13,data/levels/map_biosphere.txt
+Buildings,ReceiverLink,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),2,0,2,0,0,0,83,9,9,data/levels/map_biosphere.txt
+Buildings,Refinery,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,9,9,data/levels/map_mine.txt
+Buildings,ResearchItem,dynamic,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),2,0,0,2,0,0,2,10,10,data/levels/mission_mine_demo.txt
+Buildings,ResearchItem,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),4,0,4,0,0,0,6,10,10,data/levels/map_containment.txt
+Buildings,RestrictionZone,static,parsed,14,14,0,0,0,0,35,10,10,data/levels/mp_assault_2P_2.txt
+Buildings,SafeArea,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),3,0,3,0,0,0,4,11,11,data/levels/map_containment.txt
+Buildings,ScriptTrigger,dynamic,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),10,0,0,10,0,0,24,12,12,data/levels/mission_biosphere_recapture.txt
+Buildings,ScriptTrigger,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,12,12,data/levels/map_biosphere.txt
+Buildings,SmokeMarker,static,parsed,2,1,0,0,1,0,9,8,8,data/levels/mp_assault_3p_1.txt
+Buildings,SolarPanel,static,parsed,21,17,2,0,2,0,274,9,9,data/levels/map_generator.txt
+Buildings,Spam,dynamic,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,0,1,0,0,3,8,8,data/levels/mission_temple_recapture.txt
+Buildings,SpawnLink,static,parsed,37,23,3,0,11,0,464,9,14,data/levels/map_biosphere.txt
+Buildings,SpawnPoint,static,parsed,55,34,3,0,18,0,471,8,10,data/levels/map_biosphere.txt
+Buildings,SpawnPointMaster,static,parsed,55,34,3,0,18,0,55,9,23,data/levels/map_biosphere.txt
+Buildings,SpawnPopulationLock,static,parsed,39,22,6,0,11,0,166,10,10,data/levels/map_biosphere.txt
+Buildings,SpiritProcessor,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,9,9,data/levels/map_receiver.txt
+Buildings,SpiritReceiver,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,49,9,9,data/levels/map_receiver.txt
+Buildings,SpiritSpawner,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,9,9,data/levels/map_biosphere.txt
+Buildings,StaticShape,static,parsed,30,19,2,0,9,0,257,10,10,data/levels/map_biosphere.txt
+Buildings,Statue,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,1,0,0,0,0,1,8,8,data/levels/mp_sandbox.txt
+Buildings,TrackEnd,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),2,0,2,0,0,0,2,10,10,data/levels/map_mine.txt
+Buildings,TrackJunction,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,3,11,11,data/levels/map_mine.txt
+Buildings,TrackLink,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),2,0,2,0,0,0,111,9,9,data/levels/map_mine.txt
+Buildings,TrackStart,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,10,10,data/levels/map_yard.txt
+Buildings,Tree,static,parsed,69,45,8,0,16,0,1041,16,19,data/levels/map_containment.txt
+Buildings,Triffid,dynamic,parsed,8,0,0,8,0,0,28,24,24,data/levels/mission_escort_escort.txt
+Buildings,Triffid,static,parsed,5,0,1,0,4,0,19,24,28,data/levels/map_sandbox.txt
+Buildings,TrunkPort,static,parsed,49,31,12,0,6,0,173,9,9,data/levels/map_biosphere.txt
+Buildings,Wall,static,parsed,12,11,0,0,1,0,374,8,9,data/levels/mp_assault_2P_1.txt
+Buildings,WallBuster,static,parsed,1,1,0,0,0,0,3,8,8,data/levels/mp_assault_2P_1.txt
+Buildings,Yard,static,blocked(BLOCK_OLD_DARWINIA_OBJECTS: line ignored),1,0,1,0,0,0,1,8,8,data/levels/map_yard.txt
+CameraAnimations,(block),,parsed,96,47,1,17,30,1,96,,,data/levels/map_sandbox.txt
+CameraMounts,(block),,parsed,106,57,1,17,30,1,106,,,data/levels/map_sandbox.txt
+CameraMounts,mount,,parsed,98,53,1,17,26,1,368,10,10,data/levels/map_sandbox.txt
+Difficulty,(block),,parsed,3,0,0,3,0,0,3,,,data/levels/mission_biosphere_attract.txt
+Difficulty,CreatedAsDifficulty,,parsed,3,0,0,3,0,0,3,2,2,data/levels/mission_biosphere_attract.txt
+InstantUnits,(block),,parsed,106,57,1,17,30,1,106,,,data/levels/map_sandbox.txt
+InstantUnits,AI,,blocked(EntityIsBlocked: line skipped),7,0,0,6,1,0,7,10,10,data/levels/mission_biosphere_attract.txt
+InstantUnits,Armour,,parsed,4,4,0,0,0,0,7,13,13,data/levels/mp_assault_2P_1.txt
+InstantUnits,ArmyAnt,,blocked(EntityIsBlocked: line skipped),1,0,0,1,0,0,1,10,10,data/levels/mission_yard_enable.txt
+InstantUnits,Centipede,,parsed,12,0,0,12,0,0,55,10,10,data/levels/mission_containment_enable.txt
+InstantUnits,Darwinian,,parsed,64,39,0,10,15,0,390,10,13,data/levels/mission_biosphere_attract.txt
+InstantUnits,Engineer,,parsed,1,0,0,0,1,0,3,12,12,data/levels/old/mp_sabrepoint.txt
+InstantUnits,Shaman,,blocked(EntityIsBlocked: line skipped),4,0,0,0,4,0,9,12,12,data/levels/old/mp_gateway.txt
+InstantUnits,SoulDestroyer,,parsed,6,0,0,6,0,0,8,10,10,data/levels/mission_biosphere_attract.txt
+InstantUnits,Spider,,parsed,12,0,0,12,0,0,45,10,10,data/levels/mission_biosphere_attract.txt
+InstantUnits,SporeGenerator,,parsed,11,0,0,11,0,0,26,10,10,data/levels/mission_containment_enable.txt
+InstantUnits,Tank,,parsed,3,3,0,0,0,0,9,13,13,data/levels/mp_tankbattle_2P.txt
+InstantUnits,Virii,,parsed,13,0,0,13,0,0,118,10,10,data/levels/mission_containment_enable.txt
+LandFlattenAreas,(block),,parsed,100,57,12,0,30,1,100,,,data/levels/map_biosphere.txt
+LandFlattenAreas,area,4 tokens,parsed,6,0,3,0,3,0,14,4,4,data/levels/map_generator.txt
+LandFlattenAreas,area,6 tokens,parsed,20,19,0,0,1,0,54,6,6,data/levels/mp_assault_2p_3.txt
+Landscape,(block),,parsed,100,57,12,0,30,1,100,,,data/levels/map_biosphere.txt
+Landscape,cellSize,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,landColourFile,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,maxHeight,,parsed,41,41,0,0,0,0,41,2,2,data/levels/mp_assault_2P_2.txt
+Landscape,outsideHeight,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,waterColourFile,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,wavesColourFile,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,worldSizeX,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+Landscape,worldSizeZ,,parsed,100,57,12,0,30,1,100,2,2,data/levels/map_biosphere.txt
+LandscapeTiles,(block),,parsed,100,57,12,0,30,1,100,,,data/levels/map_biosphere.txt
+LandscapeTiles,tile,guidePower=0,parsed,51,29,10,0,12,0,209,11,11,data/levels/map_biosphere.txt
+LandscapeTiles,tile,guidePower=1,parsed,11,7,1,0,3,0,41,12,12,data/levels/map_launchpad.txt
+LandscapeTiles,tile,guidePower=2,parsed,51,40,2,0,9,0,292,12,12,data/levels/map_launchpad.txt
+LandscapeTiles,tile,guidePower=3,parsed,19,14,3,0,2,0,40,12,12,data/levels/map_mine.txt
+LandscapeTiles,tile,guidePower=4,parsed,24,17,4,0,3,0,101,12,12,data/levels/map_escort.txt
+LandscapeTiles,tile,guidePower=5,parsed,21,9,3,0,8,1,46,12,12,data/levels/map_pattern_buffer.txt
+Lights,(block),,parsed,100,57,12,0,30,1,100,,,data/levels/map_biosphere.txt
+Lights,light,,parsed,100,57,12,0,30,1,198,6,6,data/levels/map_biosphere.txt
+MultiwiniaOptions,(block),,parsed,85,57,0,0,28,0,85,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,AttackingTeams,,parsed,11,10,0,0,1,0,11,2,3,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,AttackingTeams.value,0,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,AttackingTeams.value,0 1,parsed,2,1,0,0,1,0,2,,,data/levels/mp_assault_4P_1.txt
+MultiwiniaOptions,AttackingTeams.value,1,parsed,4,4,0,0,0,0,4,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,AttackingTeams.value,1 2,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,AttackingTeams.value,2 3,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_4P_2.txt
+MultiwiniaOptions,CoopGroup1Positions,,parsed,7,6,0,0,1,0,7,2,3,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,CoopGroup1Positions.value,0,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,CoopGroup1Positions.value,0 1,parsed,3,2,0,0,1,0,3,,,data/levels/mp_assault_4P_1.txt
+MultiwiniaOptions,CoopGroup1Positions.value,0 2,parsed,2,2,0,0,0,0,2,,,data/levels/mp_domination_4P_2.txt
+MultiwiniaOptions,CoopGroup2Positions,,parsed,7,6,0,0,1,0,7,2,3,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,CoopGroup2Positions.value,1 2,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,CoopGroup2Positions.value,1 3,parsed,2,2,0,0,0,0,2,,,data/levels/mp_domination_4P_2.txt
+MultiwiniaOptions,CoopGroup2Positions.value,2,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,CoopGroup2Positions.value,2 3,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_4P_1.txt
+MultiwiniaOptions,CoopMode,,parsed,8,8,0,0,0,0,8,1,1,data/levels/mp_benchmark_1.txt
+MultiwiniaOptions,DefenderPopulationCap,,parsed,41,41,0,0,0,0,41,2,2,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,DefenderPopulationCap.value,-1,parsed,35,35,0,0,0,0,35,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,DefenderPopulationCap.value,200,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_4P_1.txt
+MultiwiniaOptions,DefenderPopulationCap.value,250,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,DefenderPopulationCap.value,275,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2P_2.txt
+MultiwiniaOptions,DefenderPopulationCap.value,350,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,Difficulty,,parsed,57,55,0,0,2,0,57,2,2,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,Difficulty.value,advanced,parsed,18,17,0,0,1,0,18,,,data/levels/mp_assault_2P_2.txt
+MultiwiniaOptions,Difficulty.value,basic,parsed,17,17,0,0,0,0,17,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,Difficulty.value,intermediate,parsed,22,21,0,0,1,0,22,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,Effects,,parsed,12,10,0,0,2,0,12,2,3,data/levels/mp_assault_3p_3.txt
+MultiwiniaOptions,Effects.SpecialLighting,,parsed,3,3,0,0,0,0,3,,,data/levels/mp_koth_2P_3.txt
+MultiwiniaOptions,Effects.dustwind,,parsed,1,1,0,0,0,0,1,,,data/levels/mp_cts_3p_1.txt
+MultiwiniaOptions,Effects.lightning,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_blitzkrieg_3P_2.txt
+MultiwiniaOptions,Effects.snow,,parsed,8,6,0,0,2,0,8,,,data/levels/mp_assault_3p_3.txt
+MultiwiniaOptions,ForceCoop,,parsed,5,4,0,0,1,0,5,1,1,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,GameTypes,,parsed,85,57,0,0,28,0,85,1,3,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,GameTypes.Assault,,parsed,12,8,0,0,4,0,12,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,GameTypes.Blitzkrieg,,parsed,7,7,0,0,0,0,7,,,data/levels/mp_blitzkrieg_2P_3.txt
+MultiwiniaOptions,GameTypes.CaptureTheStatue,,parsed,10,10,0,0,0,0,10,,,data/levels/mp_cts_2p_1.txt
+MultiwiniaOptions,GameTypes.Domination,,parsed,9,9,0,0,0,0,9,,,data/levels/mp_domination_2P_1.txt
+MultiwiniaOptions,GameTypes.KingOfTheHill,,parsed,14,9,0,0,5,0,14,,,data/levels/mp_koth_2P_1.txt
+MultiwiniaOptions,GameTypes.RocketRiot,,parsed,8,7,0,0,1,0,8,,,data/levels/mp_rocketriot_2P_2.txt
+MultiwiniaOptions,GameTypes.Shaman,,ignored-unknown-gametype(case-sensitive strcmp),10,0,0,0,10,0,10,,,data/levels/old/mp_gateway.txt
+MultiwiniaOptions,GameTypes.Skirmish,,ignored-unknown-gametype(case-sensitive strcmp),6,0,0,0,6,0,6,,,data/levels/old/mp_hamburgerhill.txt
+MultiwiniaOptions,GameTypes.TankBattle,,parsed,3,3,0,0,0,0,3,,,data/levels/mp_tankbattle_2P.txt
+MultiwiniaOptions,GameTypes.none,,ignored-unknown-gametype(case-sensitive strcmp),10,4,0,0,6,0,10,,,data/levels/mp_assault_stress.txt
+MultiwiniaOptions,InvalidCrates,,parsed,8,7,0,0,1,0,8,2,5,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,InvalidCrates.Airstrike,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,InvalidCrates.Armour,,parsed,5,5,0,0,0,0,5,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,InvalidCrates.Meteor,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,InvalidCrates.Nuke,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,InvalidCrates.SpaceShip,,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,InvalidCrates.Squad,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,LevelOptions,,parsed,25,23,0,0,2,0,25,2,13,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,LevelOptions.airstrikecapturezones,3,parsed,3,3,0,0,0,0,3,,,data/levels/mp_blitzkrieg_3P_1.txt
+MultiwiniaOptions,LevelOptions.attackerreinforcementtype,AirStrike,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,LevelOptions.attackerreinforcementtype,HotFeet,parsed,1,1,0,0,0,0,1,,,data/levels/mp_cts_3p_3.txt
+MultiwiniaOptions,LevelOptions.attackreinforcementoption,1,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,LevelOptions.attackreinforcementoption,2,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,LevelOptions.defenderreinforcementtype,AirStrike,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,LevelOptions.defenderreinforcementtype,Armour,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_stress.txt
+MultiwiniaOptions,LevelOptions.defenderreinforcementtype,DropShip,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,LevelOptions.forceradarteammatch,,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,LevelOptions.futurewinianteam,2,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,LevelOptions.instantspawnpointcapture,,parsed,5,4,0,0,1,0,5,,,data/levels/mp_cts_2p_2.txt
+MultiwiniaOptions,LevelOptions.nogunturrets,,parsed,2,2,0,0,0,0,2,,,data/levels/mp_blitzkrieg_2P_4.txt
+MultiwiniaOptions,LevelOptions.nohandicap,,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_koth_2P_4.txt
+MultiwiniaOptions,LevelOptions.noradarcontrol,,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,LevelOptions.trunkportarmour,1,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_2P_2.txt
+MultiwiniaOptions,LevelOptions.trunkportarmour,3,parsed,5,5,0,0,0,0,5,,,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,LevelOptions.trunkportreinforcements,100,parsed,10,9,0,0,1,0,10,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,LevelOptions.trunkportreinforcements,250,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_stress.txt
+MultiwiniaOptions,LevelOptions.trunkportreinforcements,60,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_4P_2.txt
+MultiwiniaOptions,LevelOptions.trunkportreinforcements,75,parsed,3,3,0,0,0,0,3,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,Name,,parsed,10,10,0,0,0,0,10,2,2,data/levels/mp_assault_2p_3.txt
+MultiwiniaOptions,NumPlayers,,parsed,66,56,0,0,10,0,66,2,2,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,NumPlayers.value,2,parsed,31,25,0,0,6,0,31,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,NumPlayers.value,3,parsed,21,17,0,0,4,0,21,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,NumPlayers.value,4,parsed,14,14,0,0,0,0,14,,,data/levels/mp_assault_4P_1.txt
+MultiwiniaOptions,OfficialLevel,,parsed,54,52,0,0,2,0,54,1,1,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,PlayTime,,parsed,21,21,0,0,0,0,21,2,2,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,PlayTime.value,10,parsed,11,11,0,0,0,0,11,,,data/levels/mp_cts_3p_3.txt
+MultiwiniaOptions,PlayTime.value,15,parsed,8,8,0,0,0,0,8,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,PlayTime.value,20,parsed,1,1,0,0,0,0,1,,,data/levels/mp_assault_4P_2.txt
+MultiwiniaOptions,PlayTime.value,5,parsed,1,1,0,0,0,0,1,,,data/levels/mp_koth_3P_2.txt
+MultiwiniaOptions,PopulationCap,,parsed,85,57,0,0,28,0,86,2,2,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,PopulationCap.value,-1,parsed,27,8,0,0,19,0,27,,,data/levels/mp_benchmark_1.txt
+MultiwiniaOptions,PopulationCap.value,1000,parsed,4,0,0,0,4,0,4,,,data/levels/old/mp_assault_3P_1.txt
+MultiwiniaOptions,PopulationCap.value,1400,parsed,1,1,0,0,0,0,1,,,data/levels/mp_blitzkrieg_4P_2.txt
+MultiwiniaOptions,PopulationCap.value,1500,parsed,12,9,0,0,3,0,12,,,data/levels/mp_assault_3P_2.txt
+MultiwiniaOptions,PopulationCap.value,1600,parsed,2,2,0,0,0,0,2,,,data/levels/mp_assault_3p_1.txt
+MultiwiniaOptions,PopulationCap.value,1800,parsed,15,15,0,0,0,0,15,,,data/levels/mp_assault_3p_3.txt
+MultiwiniaOptions,PopulationCap.value,2000,parsed,23,22,0,0,1,0,23,,,data/levels/mp_assault_2P_1.txt
+MultiwiniaOptions,PopulationCap.value,2500,parsed,1,1,0,0,0,0,1,,,data/levels/mp_sandbox.txt
+MultiwiniaOptions,PopulationCap.value,800,parsed,1,0,0,0,1,0,1,,,data/levels/old/mp_cauldron.txt
+PrimaryObjectives,(block),,parsed,96,47,1,17,30,1,96,,,data/levels/map_sandbox.txt
+PrimaryObjectives,BuildingOnline,,parsed,19,2,1,16,0,0,44,3,5,data/levels/map_sandbox.txt
+PrimaryObjectives,NeverTrue,,parsed,77,45,0,1,30,1,77,1,3,data/levels/mission_temple_cutscene.txt
+PrimaryObjectives,ResearchOwned,,parsed,1,0,0,1,0,0,1,3,3,data/levels/mission_garden_liberate.txt

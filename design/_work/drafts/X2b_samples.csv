@@ -61,16 +61,16 @@ data/sounds/armour_to_turret3.ogg,sounds,armour_to_turret3,1,44100,6.548,50670,6
 data/sounds/armour_to_turret4.ogg,sounds,armour_to_turret4,1,44100,6.803,53144,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Create,armourtransform,,referenced,live,sounds.dat,,600064
 data/sounds/armour_to_turret5.ogg,sounds,armour_to_turret5,1,44100,5.132,39586,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Create,armourtransform,,referenced,live,sounds.dat,,452608
 data/sounds/armour_to_turret6.ogg,sounds,armour_to_turret6,1,44100,5.875,46885,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Create,armourtransform,,referenced,live,sounds.dat,,518144
-data/sounds/battle_cannon_damage.ogg,sounds,battle_cannon_damage,1,44100,2.182,21282,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,192484
-data/sounds/battle_cannon_damage10.ogg,sounds,battle_cannon_damage10,1,44100,2.618,22009,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,230912
-data/sounds/battle_cannon_damage2.ogg,sounds,battle_cannon_damage2,1,44100,2.839,23610,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,250368
-data/sounds/battle_cannon_damage3.ogg,sounds,battle_cannon_damage3,1,44100,3.541,28606,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,312320
-data/sounds/battle_cannon_damage4.ogg,sounds,battle_cannon_damage4,1,44100,2.763,23251,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,243712
-data/sounds/battle_cannon_damage5.ogg,sounds,battle_cannon_damage5,1,44100,2.746,23138,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,242176
-data/sounds/battle_cannon_damage6.ogg,sounds,battle_cannon_damage6,1,44100,2.728,22564,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,240640
-data/sounds/battle_cannon_damage7.ogg,sounds,battle_cannon_damage7,1,44100,2.531,21158,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,223232
-data/sounds/battle_cannon_damage8.ogg,sounds,battle_cannon_damage8,1,44100,2.270,20053,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,200192
-data/sounds/battle_cannon_damage9.ogg,sounds,battle_cannon_damage9,1,44100,2.670,22274,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,live,sounds.dat,,235520
+data/sounds/battle_cannon_damage.ogg,sounds,battle_cannon_damage,1,44100,2.182,21282,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,192484
+data/sounds/battle_cannon_damage10.ogg,sounds,battle_cannon_damage10,1,44100,2.618,22009,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,230912
+data/sounds/battle_cannon_damage2.ogg,sounds,battle_cannon_damage2,1,44100,2.839,23610,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,250368
+data/sounds/battle_cannon_damage3.ogg,sounds,battle_cannon_damage3,1,44100,3.541,28606,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,312320
+data/sounds/battle_cannon_damage4.ogg,sounds,battle_cannon_damage4,1,44100,2.763,23251,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,243712
+data/sounds/battle_cannon_damage5.ogg,sounds,battle_cannon_damage5,1,44100,2.746,23138,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,242176
+data/sounds/battle_cannon_damage6.ogg,sounds,battle_cannon_damage6,1,44100,2.728,22564,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,240640
+data/sounds/battle_cannon_damage7.ogg,sounds,battle_cannon_damage7,1,44100,2.531,21158,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,223232
+data/sounds/battle_cannon_damage8.ogg,sounds,battle_cannon_damage8,1,44100,2.270,20053,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,200192
+data/sounds/battle_cannon_damage9.ogg,sounds,battle_cannon_damage9,1,44100,2.670,22274,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,235520
 data/sounds/bigmetal1.ogg,sounds,bigmetal1,1,44100,3.613,47489,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,318656
 data/sounds/bigmetal2.ogg,sounds,bigmetal2,1,44100,3.680,38091,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,324552
 data/sounds/bigmetal3.ogg,sounds,bigmetal3,1,44100,2.189,26302,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,193032
@@ -200,13 +200,13 @@ data/sounds/darwinian_threat_run8.ogg,sounds,darwinian_threat_run8,1,44100,1.004
 data/sounds/darwinian_threat_run9.ogg,sounds,darwinian_threat_run9,1,44100,0.697,8336,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatRunAway,darwinrunaway,,referenced,live,sounds.dat,,61440
 data/sounds/deselect1.ogg,sounds,deselect1,1,44100,2.508,39339,128,Xiph.Org libVorbis I 20020717,,OTHER Interface DeleteTask,,,referenced,live,sounds.dat,,221184
 data/sounds/dma_sc-visitors_from_dreams.ogg,sounds,dma_sc-visitors_from_dreams,1,44100,325.251,2340073,65,Xiph.Org libVorbis I 20040920,,OTHER Music LoaderRaytrace;OTHER Music StartSequence,,,referenced,live,NOT-SHIPPED(sounds/dma_sc*),,28687104
-data/sounds/eggsplat.ogg,sounds,eggsplat,1,44100,2.485,23636,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,219136
-data/sounds/eggsplat2.ogg,sounds,eggsplat2,1,44100,2.194,21655,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,193536
-data/sounds/eggsplat3.ogg,sounds,eggsplat3,1,44100,1.962,19630,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,173056
-data/sounds/eggsplat4.ogg,sounds,eggsplat4,1,44100,2.241,21892,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,197632
-data/sounds/eggsplat5.ogg,sounds,eggsplat5,1,44100,2.305,22402,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,203264
-data/sounds/eggsplat6.ogg,sounds,eggsplat6,1,44100,2.136,20915,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,188416
-data/sounds/eggsplat7.ogg,sounds,eggsplat7,1,44100,2.489,24349,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,live,sounds.dat,,219534
+data/sounds/eggsplat.ogg,sounds,eggsplat,1,44100,2.485,23636,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,219136
+data/sounds/eggsplat2.ogg,sounds,eggsplat2,1,44100,2.194,21655,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,193536
+data/sounds/eggsplat3.ogg,sounds,eggsplat3,1,44100,1.962,19630,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,173056
+data/sounds/eggsplat4.ogg,sounds,eggsplat4,1,44100,2.241,21892,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,197632
+data/sounds/eggsplat5.ogg,sounds,eggsplat5,1,44100,2.305,22402,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,203264
+data/sounds/eggsplat6.ogg,sounds,eggsplat6,1,44100,2.136,20915,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,188416
+data/sounds/eggsplat7.ogg,sounds,eggsplat7,1,44100,2.489,24349,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,219534
 data/sounds/elec_cackle.ogg,sounds,elec_cackle,1,44100,0.878,10621,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,77438
 data/sounds/elec_cackle2.ogg,sounds,elec_cackle2,1,44100,0.895,11112,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,78974
 data/sounds/elec_cackle3.ogg,sounds,elec_cackle3,1,44100,0.882,11022,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,77824
@@ -293,7 +293,7 @@ data/sounds/generator_burst2.ogg,sounds,generator_burst2,1,44100,0.833,9760,65,X
 data/sounds/generator_burst3.ogg,sounds,generator_burst3,1,44100,0.740,9060,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,live,sounds.dat,,65280
 data/sounds/generator_burst4.ogg,sounds,generator_burst4,1,44100,1.457,16341,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,live,sounds.dat,,128512
 data/sounds/generator_burst5.ogg,sounds,generator_burst5,1,44100,0.996,12314,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,live,sounds.dat,,87808
-data/sounds/generator_online.ogg,sounds,generator_online,1,44100,27.683,156061,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator ReprogramComplete,,,referenced,live,sounds.dat,,2441684
+data/sounds/generator_online.ogg,sounds,generator_online,1,44100,27.683,156061,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator ReprogramComplete,,,referenced,dead-data,sounds.dat,,2441684
 data/sounds/gesturefail.ogg,sounds,gesturefail,1,44100,2.215,15139,65,Xiph.Org libVorbis I 20040920,,OTHER Gesture GestureFail,,,referenced,live,sounds.dat,,195384
 data/sounds/gesturestart.ogg,sounds,gesturestart,1,44100,5.754,45483,65,Xiph.Org libVorbis I 20040920,,,,,unused,,sounds.dat,listed,507494
 data/sounds/gesturesuccess.ogg,sounds,gesturesuccess,1,44100,2.215,16001,65,Xiph.Org libVorbis I 20040920,,OTHER Gesture GestureSuccess,,,referenced,live,sounds.dat,,195370

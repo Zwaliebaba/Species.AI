@@ -1,5 +1,5 @@
 file,line,function,call,object_arg,event_arg,other_type,team_arg,commented,pp_active,pp_conditions,vcproj_build
-code/UI/FancyColourButton.h,231,FancyColourButton::if,TriggerOtherEvent,NULL,"""MenuRollOver""",MultiwiniaInterface,,,yes,,all
+code/UI/FancyColourButton.h,231,FancyColourButton::Render,TriggerOtherEvent,NULL,"""MenuRollOver""",MultiwiniaInterface,,,yes,,all
 code/UI/GameMenuWindow.cpp,507,GameMenuWindow::Update,TriggerOtherEvent,NULL,"""LobbyAmbience""",MultiwiniaInterface,,,yes,,all
 code/UI/GameMenuWindow.cpp,1374,GameMenuWindow::NewChatMessage,TriggerOtherEvent,NULL,"""ChatMessage""",MultiwiniaInterface,,,yes,,all
 code/UI/LevelSelectButton.h,25,LevelSelectButton::MouseUp,TriggerOtherEvent,NULL,"""MenuSelect""",MultiwiniaInterface,,,yes,,all
@@ -49,9 +49,9 @@ code/location_input.cpp,832,LocationInput::AdvanceTeamControl,TriggerOtherEvent,
 code/location_input.cpp,1032,LocationInput::AdvanceTeamControl,TriggerEntityEvent,armour,"""SetOrders""",,,,yes,,all
 code/location_input.cpp,1137,LocationInput::AdvanceTeamControl,TriggerOtherEvent,NULL,"""GestureBegin""",Gesture,,yes,yes,,all
 code/location_input.cpp,1138,LocationInput::AdvanceTeamControl,TriggerOtherEvent,NULL,"""GestureSuccess""",Gesture,,yes,yes,,all
-code/main.cpp,424,,TriggerOtherEvent,NULL,"""EnterLocation""",Ambience,,,yes,,all
-code/main.cpp,609,,TriggerOtherEvent,NULL,"""ExitLocation""",Ambience,,,yes,,all
-code/main.cpp,705,,TriggerOtherEvent,NULL,"""EnterGlobalWorld""",Ambience,,,yes,,all
+code/main.cpp,424,LocationGameLoop,TriggerOtherEvent,NULL,"""EnterLocation""",Ambience,,,yes,,all
+code/main.cpp,609,LocationGameLoop,TriggerOtherEvent,NULL,"""ExitLocation""",Ambience,,,yes,,all
+code/main.cpp,705,GlobalWorldGameLoop,TriggerOtherEvent,NULL,"""EnterGlobalWorld""",Ambience,,,yes,,all
 code/multiwinia.cpp,2385,Multiwinia::AdvanceGracePeriod,TriggerOtherEvent,NULL,"""CountdownTick""",MultiwiniaInterface,,,yes,,all
 code/multiwinia.cpp,2399,Multiwinia::AdvanceGracePeriod,TriggerOtherEvent,NULL,"""CountdownTick""",MultiwiniaInterface,,,yes,,all
 code/multiwinia.cpp,2412,Multiwinia::AdvanceGracePeriod,TriggerOtherEvent,NULL,"""CountdownZeroTick""",MultiwiniaInterface,,,yes,,all

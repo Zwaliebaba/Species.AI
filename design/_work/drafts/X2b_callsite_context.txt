@@ -1,4 +1,4 @@
-=== code/UI/FancyColourButton.h:231 FancyColourButton::if TriggerOtherEvent(NULL, "MenuRollOver", SoundSourceBlueprint::TypeMultiwiniaInterface) commented=False active=True pp= vcproj=all
+=== code/UI/FancyColourButton.h:231 FancyColourButton::Render TriggerOtherEvent(NULL, "MenuRollOver", SoundSourceBlueprint::TypeMultiwiniaInterface) commented=False active=True pp= vcproj=all
             glBegin( GL_QUADS);
                 glVertex2f( boxX, boxY );
                 glVertex2f( boxX, boxY + boxH );
@@ -848,7 +848,7 @@
                             }
                         }
                     }
-=== code/main.cpp:424  TriggerOtherEvent(NULL, "EnterLocation", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
+=== code/main.cpp:424 LocationGameLoop TriggerOtherEvent(NULL, "EnterLocation", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
     	g_app->m_loadingLocation = false;
     	g_app->m_hideInterface = false;
     
@@ -865,7 +865,7 @@
     
     
         //
-=== code/main.cpp:609  TriggerOtherEvent(NULL, "ExitLocation", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
+=== code/main.cpp:609 LocationGameLoop TriggerOtherEvent(NULL, "ExitLocation", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
     
     			g_app->m_renderer->Render();
     
@@ -882,7 +882,7 @@
     	g_app->ShutdownCurrentGame();
     }
     
-=== code/main.cpp:705  TriggerOtherEvent(NULL, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
+=== code/main.cpp:705 GlobalWorldGameLoop TriggerOtherEvent(NULL, "EnterGlobalWorld", SoundSourceBlueprint::TypeAmbience) commented=False active=True pp= vcproj=all
             if( g_app->m_server ) g_app->m_server->SaveHistory( "serverHistory.dat" );
             //g_inputManager->StopLogging( "inputLog.dat" );
         }

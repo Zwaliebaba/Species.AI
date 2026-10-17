@@ -185,6 +185,15 @@ extra = [
  ('code/interface/profilewindow.cpp', 'skimmed', 'profiler lifetime/output (owned by P17a)', ['prof']),
  ('code/network/server.cpp', 'skimmed', 'MakeRandom/GenSyncRandSeed only (owned by P15)', ['rng']),
  ('data/default_preferences.txt', 'full', 'first-run override file (format owned by X1a)', ['prefs']),
+ ('data/language/english.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/french.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/german.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/italian.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/japanese.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/korean.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/portuguese.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/russian.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
+ ('data/language/spanish.txt', 'skimmed', 'encoding/BOM inspected only (content owned by X1a)', ['loc', 'lang']),
 ]
 for p, d, r_, secs in extra:
     if p not in rows:
