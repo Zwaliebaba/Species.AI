@@ -33,7 +33,7 @@ Format index (anchors used by the coordinator; IDs added beyond the requested li
 <a id="fmt-text-common"></a>
 ## [→ 29_data_formats_reference] 29.B1 Shared text-file conventions (`TextReader`)
 
-Every text format in this draft (`.shp`, `.anim`, `gestures.txt`, gesture demos, `effects.txt`, `stats.txt`, `sounds.txt`) is read through the SystemIV `TextReader` family [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken`, `TextFileReader::ReadLine`, `TextDataReader::ReadLine`; `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp`. Live in [B:FULL] (all files `vcproj_build=all` in `manifest.csv`).
+Every text format in this draft (`.shp`, `.anim`, `gestures.txt`, gesture demos, `effects.txt`, `stats.txt`, `sounds.txt`) is read through the SystemIV `TextReader` family [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken`, `TextFileReader::ReadLine`, `TextDataReader::ReadLine`; `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp:UnicodeTextFileReader::UnicodeTextFileReader`, `UnicodeTextReader::CleanLine`. Live in [B:FULL] (all files `vcproj_build=all` in `manifest.csv`).
 
 **Reader selection** [C] `code/lib/resource.cpp:Resource::GetTextReader`: for a resource name `N` the loose file `data/N` is tried first, then the archive entry `data/N` (§29.B16). In both cases a UTF-16 reader is constructed first; if the first two bytes are `FF FE` (UTF-16LE) or `FE FF` (UTF-16BE) the file is Unicode, otherwise it is re-opened as an 8-bit reader. All text files in this draft's scope are 8-bit ASCII with CRLF line ends (sole exception: `data/shapes/primaryupgradeport.shp`, LF-only) [C] `file(1)` survey.
 
@@ -58,7 +58,7 @@ Every text format in this draft (`.shp`, `.anim`, `gestures.txt`, gesture demos,
 <a id="fmt-redshirt"></a>
 ## [→ 29_data_formats_reference] 29.B2 "redshirt2" obfuscated text
 
-Purpose: light obfuscation of text files written into the user profile in non-debug builds (saved `game.txt` / mission files) [C] `code/level_file.cpp:LevelFile::SaveMissionFile`, `code/global_world.cpp` (writer `new TextFileWriter(path, true)` under `#ifndef TARGET_DEBUG`). No file under `data/` is obfuscated [C] grep for `redshirt2` in `data/` = 0 hits. Any text resource *may* be obfuscated because detection is automatic in `TextReader::CleanLine`.
+Purpose: light obfuscation of text files written into the user profile in non-debug builds (saved `game.txt` / mission files) [C] `code/level_file.cpp:LevelFile::SaveMissionFile`, `code/global_world.cpp:GlobalWorld::SaveGame` (writer `new TextFileWriter(path, true)` unless `TARGET_DEBUG`). No file under `data/` is obfuscated [C] grep for `redshirt2` in `data/` = 0 hits. Any text resource *may* be obfuscated because detection is automatic in `TextReader::CleanLine`.
 
 Encoding [C] `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter::TextFileWriter`, `TextFileWriter::printf`; decoding `text_stream_readers.cpp:TextReader::CleanLine`:
 
@@ -71,7 +71,7 @@ Encoding [C] `contrib/systemiv/lib/filesys/text_file_writer.cpp:TextFileWriter::
 | Encode | `e = p + s_offsets[k]; if (e >= 128) e -= 95` |
 | Decode | `p = e - s_offsets[k]; if (p < 33) p += 95` |
 
-Because the first offset used is `s_offsets[1] = 7`, a re-implementation must pre-increment. The scheme is a printable-range Vigenère; it offers no security. A new game should use a real format (e.g. a binary save with a version header) and need not keep this. A Unicode writer variant exists (`code/unicode/unicode_text_file_writer.cpp`) and the UTF-16 reader recognises `L"redshirt2"` [C] `unicode_text_stream_reader.cpp`.
+Because the first offset used is `s_offsets[1] = 7`, a re-implementation must pre-increment. Minimal example: the plaintext line `WIDTH 800` is stored as the physical line `redshirt2^RE_J =53` (the space passes through and does not advance `k`). The scheme is a printable-range Vigenère; it offers no security. A new game should use a real format (e.g. a binary save with a version header) and need not keep this. A Unicode writer variant exists (`code/unicode/unicode_text_file_writer.cpp:UnicodeTextFileWriter::UnicodeTextFileWriter`) and the UTF-16 reader recognises `L"redshirt2"` [C] `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp:UnicodeTextReader::CleanLine`.
 
 ---
 
@@ -156,7 +156,7 @@ Markers carry no data beyond a frame; meaning comes from the name the consuming 
 | prefix scan (`strstr`, case-sensitive) | `MarkerLight*` | `Building::SetShapeLights` | building signal-light positions |
 | prefix scan | `MarkerPort*` | `Building::SetShapePorts` | operator "ports" where Darwinians stand to man a building (position pushed 5 wu out from the building and dropped to the terrain) |
 | exact | `MarkerStatus` (+ `MarkerStatus0%d`) | `building.cpp` (control pad), `gunturret.cpp`, `generator.cpp`, `spiritreceiver.cpp` | status-light positions |
-| exact | `MarkerEnd` | `code/worldobject/entity_leg.cpp` | foot/tip of a leg segment shape (also appears as a marker *name* in `spider_leg_*.shp`, `tripod_leg_part.shp`) |
+| exact | `MarkerEnd` | `code/worldobject/entity_leg.cpp:EntityLeg::EntityLeg` | foot/tip of a leg segment shape (also appears as a marker *name* in `spider_leg_*.shp`, `tripod_leg_part.shp`) |
 | exact / `%d`-numbered | `MarkerBarrel`, `MarkerKills`, `MarkerBarrelEnd0%d`, `MarkerShells0%d` | `gunturret.cpp` | barrel mount, kill-counter, muzzle points, shell ejection |
 | exact | `MarkerTurret`, `MarkerEntrance`, `MarkerBarrelEnd` | `tank.cpp` | turret mount, unit entrance, muzzle |
 | exact | `MarkerEntrance`, `MarkerFlag` | `armour.cpp` | Darwinian load/unload point, team flag |
@@ -244,6 +244,8 @@ Marker: MarkerPort01
 
 **3DGeometry** [C] `tools/3DGeometry/main.cpp`, `3DGeometry.dsp`: an Allegro/AllegroGL test harness (camera fly-through with WASD/QE, grid, `DrawLine`, `DrawSphere`, `DrawTriPlane`) used to visualise ray–sphere / sphere–triangle intersection maths from `code/lib/math_utils` with hard-coded test vectors. Not a format and not a converter; [B:DEAD].
 
+No example is given for `.max` (proprietary Autodesk binary); the exporter's output contract is the `.shp` grammar of §29.B3.
+
 **Recommended new-engine stance** [I]: replace `.shp` with a modern interchange (glTF 2.0 with node hierarchy, per-vertex colour, no UVs, empties for markers); keep the semantics "fragment = node with local TRS, marker = named empty", the `(x,z,−y)` axis conversion only if importing old art.
 
 ---
@@ -294,14 +296,14 @@ Pixel row decoding:
 | 32 | B,G,R,A (alpha used as-is) | n/a | the only way to ship a real alpha channel |
 | other (1, 16) | — | — | debug assert; release leaves pixels uninitialised |
 
-`biCompression` must be `BI_RGB` (0) — debug assert only. **RLE4/RLE8 are not decoded**: in release `textures/shaman_background.bmp` (RLE8, 512×512, used by `code/shaman_interface.cpp`) would be read as raw indices, running past the data (`BinaryDataReader::ReadU8` returns 0xFF at EOF) → corrupt image [C] parser + survey. Whether a player can reach the Shaman interface in Multiwinia is owned by P09/P05 ([U] here).
+`biCompression` must be `BI_RGB` (0) — debug assert only. **RLE4/RLE8 are not decoded**: in release `textures/shaman_background.bmp` (RLE8, 512×512, used by `code/shaman_interface.cpp:ShamanInterface::RenderBackground`) would be read as raw indices, running past the data (`BinaryDataReader::ReadU8` returns 0xFF at EOF) → corrupt image [C] parser + survey. Whether a player can reach the Shaman interface in Multiwinia is owned by P09/P05 ([U] here).
 
 Extension rule: `BitmapRGBA::Initialise(reader, type)` asserts `type == "bmp"` (debug only) and always calls `LoadBmp` — `.jpg`, `.tex`, `.dds` (named in the archive `dir` filters for Xbox/legacy) cannot be decoded on PC [C].
 
 ### Texture pipeline rules (what a texture *name* means)
 [C] `code/lib/resource.cpp:Resource::GetTextureWithFlags`, `GetTexture`, `GetTextureWithAlpha`, `ProcessBmp`, `GetBitmap`, `DoesTextureExist`; `code/lib/bitmap.cpp:ConvertToTexture`.
-1. A texture name is a path **relative to `data/` including the extension** (e.g. `sprites/darwinian.bmp`, `terrain/water_default.bmp`). Code builds most names with literal `.bmp` or `"." TEXTURE_EXTENSION`, where `TEXTURE_EXTENSION` is `#define`d unconditionally as `"bmp"` [C] `code/lib/universal_include.h`; 33 uses (help images, thumbnails, mode images). [I] The macro exists so an Xbox build could switch to `tex` (DXT `.tex` files are produced only by the Xbox branch of the data script via `convert_bmp_to_tex.cmd`, which is absent from the tree).
-2. Lookup order: (a) texture cache `m_textures` keyed by the **exact name string** (case-sensitive `hash_map<std::string>`); (b) registered bitmap store `m_bitmaps` (run-time generated images such as `water_lightmap`, case-insensitive); (c) file: name lower-cased → `GetBinaryReader` → loose `data/<name>` then archive (§29.B16). Missing → `AppReleaseAssert("Failed to load texture %s")` (fatal) — callers that may miss guard with `DoesTextureExist` (e.g. thumbnails fall back to `thumbnails/default.bmp`, `code/UI/MapImageButton.h`).
+1. A texture name is a path **relative to `data/` including the extension** (e.g. `sprites/darwinian.bmp`, `terrain/water_default.bmp`). Code builds most names with literal `.bmp` or `"." TEXTURE_EXTENSION`, where `TEXTURE_EXTENSION` is `#define`d unconditionally as `"bmp"` [C] `code/lib/universal_include.h:TEXTURE_EXTENSION`; 33 uses (help images, thumbnails, mode images). [I] The macro exists so an Xbox build could switch to `tex` (DXT `.tex` files are produced only by the Xbox branch of the data script via `convert_bmp_to_tex.cmd`, which is absent from the tree).
+2. Lookup order: (a) texture cache `m_textures` keyed by the **exact name string** (case-sensitive `hash_map<std::string>`); (b) registered bitmap store `m_bitmaps` (run-time generated images such as `water_lightmap`, case-insensitive); (c) file: name lower-cased → `GetBinaryReader` → loose `data/<name>` then archive (§29.B16). Missing → `AppReleaseAssert("Failed to load texture %s")` (fatal) — callers that may miss guard with `DoesTextureExist` (e.g. thumbnails fall back to `thumbnails/default.bmp`, `code/UI/MapImageButton.h:MapImageButton::Render`).
 3. **Flags are not part of the cache key**: the first request for a name decides mask/alpha/mipmap processing for all later requests [C].
 4. Flags: `GetTexture(name, mipmapping=true, masked=true, compressed=false)` → `WithMipmaps|WithMask`. **Default is masked**, so every BMP requested through the default overload is colour-keyed.
 5. `WithMask` → `ConvertPinkToTransparent`: pixels exactly equal to RGBA (255,0,255,**255**) become (128,128,128,0) — the colour key. 24-bit and paletted files always have alpha 255 so the key works; a 32-bit pixel with RGB magenta and alpha ≠ 255 is not keyed.
@@ -310,7 +312,7 @@ Extension rule: `BitmapRGBA::Initialise(reader, type)` asserts `type == "bmp"` (
 8. `GetBitmap(name)` (CPU access, used by ramps, animation panel sizes, fonts) caches the decoded bitmap under `name`; a later `GetTexture` on the same name finds it in the bitmap store and **modifies it in place** (pink→transparent) [C].
 
 ### PNG
-No PNG reader. `WritePng`/`SavePng` (libpng, 8-bit RGB, rows flipped to top-down, `Z_BEST_SPEED`) are used for screenshots `screenshotN.png` [C] `code/lib/poster_maker.cpp` and the Vista game-explorer thumbnail [B:DEAD, `TARGET_OS_VISTA`] `code/app.cpp`. `SavePng` ignores its `_saveAlpha` argument [C]. `WriteBmp` writes 24-bit Windows BMPs (2835 px/m).
+No PNG reader. `WritePng`/`SavePng` (libpng, 8-bit RGB, rows flipped to top-down, `Z_BEST_SPEED`) are used for screenshots `screenshotN.png` [C] `code/lib/poster_maker.cpp:PosterMaker::SavePoster` and the Vista game-explorer thumbnail [B:DEAD, `TARGET_OS_VISTA`] `code/app.cpp:App::SaveRichHeader`. `SavePng` ignores its `_saveAlpha` argument [C]. `WriteBmp` writes 24-bit Windows BMPs (2835 px/m).
 
 ### Minimal valid example
 A 2×2 24-bit BMP (70 bytes): `42 4D 46 00 00 00 00 00 00 00 36 00 00 00` · `28 00 00 00 02 00 00 00 02 00 00 00 01 00 18 00 00 00 00 00 10 00 00 00 13 0B 00 00 13 0B 00 00 00 00 00 00 00 00 00 00` · bottom row `FF 00 FF  00 00 FF  00 00` (pink key, red, 2 pad bytes) · top row `00 FF 00  FF 00 00  00 00` (green, blue). Requested via `GetTexture`, the bottom-left pixel becomes transparent grey.
@@ -354,7 +356,7 @@ So an artist paints the ramp with the sea-level beach at the top, peaks at the b
 
 ### Discrepancies
 - 9 landscape ramps are not referenced by any level (`beach`, `containment`, `field`, `icecaps_peaked`, `marble2`, `mine2`, `ridges`, `volcanic`, `volcanicplain`) [C] P11 grep; `waves_*` usage is P11's to tabulate.
-- The D3D build path in `Water::Water` writes `bmp.GetPixel(x,1)` on a `const BitmapRGBA *` → would not compile under `USE_DIRECT3D` [C] `code/water.cpp` L119 (supports P13's doubt about D3D buildability).
+- The D3D build path in `Water::Water` writes `bmp.GetPixel(x,1)` on a `const BitmapRGBA *` → would not compile under `USE_DIRECT3D` [C] `code/water.cpp:Water::Water` L119 (supports P13's doubt about D3D buildability).
 
 ---
 
@@ -451,7 +453,7 @@ END
 <a id="fmt-gestures"></a>
 ## [→ 29_data_formats_reference] 29.B8 `data/gestures.txt` — gesture-classifier training set
 
-**Purpose.** Training vectors for the Rubine-style mouse-gesture recogniser (algorithm, symbol meaning and liveness: P09 §3). Loaded at start-up by `App::App` → `new Gesture("gestures.txt")` → `Gesture::LoadTrainingData` → `TrainSystem` [C] `code/app.cpp` L390, `code/gesture.cpp:Gesture::LoadTrainingData`. Written only by the gesture editor (`GESTURE_EDITOR`, [B:DEBUG]) via `Gesture::SaveTrainingData` [C] `code/interface/gesture_window.cpp`. Gestures are not used by Multiwinia play (P09) — the file is still parsed and is required (`AppReleaseAssert("Couldn't open Gesture data file")`).
+**Purpose.** Training vectors for the Rubine-style mouse-gesture recogniser (algorithm, symbol meaning and liveness: P09 §3). Loaded at start-up by `App::App` → `new Gesture("gestures.txt")` → `Gesture::LoadTrainingData` → `TrainSystem` [C] `code/app.cpp:App::App` L390, `code/gesture.cpp:Gesture::LoadTrainingData`. Written only by the gesture editor (`GESTURE_EDITOR`, [B:DEBUG]) via `Gesture::SaveTrainingData` [C] `code/interface/gesture_window.cpp:SaveDataButton::MouseUp`, `LoadDataButton::MouseUp`. Gestures are not used by Multiwinia play (P09) — the file is still parsed and is required (`AppReleaseAssert("Couldn't open Gesture data file")`).
 
 ### Grammar (strictly line-positional — no blank or comment lines allowed between records)
 ```ebnf
@@ -461,7 +463,7 @@ symbol        = trainer_count_line , [ vector_line ] ;   (* vector_line present 
 trainer_count_line = INT EOL ;                       (* trainerCount, must be ≤ 32 *)
 vector_line   = { F } EOL ;                          (* trainerCount × 14 floats on ONE line: f0..f13 per trainer *)
 ```
-Each `ReadLine()` is followed by unguarded `GetNextToken()` calls: a blank line, a comment-only line or a vector split over several lines makes `atoi/atof(NULL)` crash [C]. `trainerCount > 32` (`GESTURE_MAX_TRAINERS`) overflows `Classification::m_trainers[32]` (no check) [C] `code/gesture.h`.
+Each `ReadLine()` is followed by unguarded `GetNextToken()` calls: a blank line, a comment-only line or a vector split over several lines makes `atoi/atof(NULL)` crash [C]. `trainerCount > 32` (`GESTURE_MAX_TRAINERS`) overflows `Classification::m_trainers[32]` (no check) [C] `code/gesture.h:Classification`.
 
 | Field | Type | Range | Semantics |
 |---|---|---|---|
@@ -510,7 +512,7 @@ effects_file = { blank_or_comment | effect } ;
 effect       = "EFFECT" NAME EOL , { param_line } , "END" EOL ;
 param_line   = NAME F F F INT EOL ;      (* name min max default dataType *)
 ```
-Top level skips blank lines; any other first token is debug-asserted to be `EFFECT` and treated as one. Inside an effect, **the line after `EFFECT` and every following line must be non-blank** (`stricmp(NULL,"END")` crash) [C]. **Binding is positional**: effect index = order of `EFFECT` blocks = `SoundLibrary3d` filter enum (`code/sound/sound_library_3d.h`), parameter index = line order within the block; the effect *name* matters only for `sounds.txt` look-up (case-insensitive) and the editor; parameter names are labels only. A file with a different number/order of effects silently re-binds DSP types.
+Top level skips blank lines; any other first token is debug-asserted to be `EFFECT` and treated as one. Inside an effect, **the line after `EFFECT` and every following line must be non-blank** (`stricmp(NULL,"END")` crash) [C]. **Binding is positional**: effect index = order of `EFFECT` blocks = `SoundLibrary3d` filter enum (`code/sound/sound_library_3d.h:SoundLibrary3d` enum), parameter index = line order within the block; the effect *name* matters only for `sounds.txt` look-up (case-insensitive) and the editor; parameter names are labels only. A file with a different number/order of effects silently re-binds DSP types.
 
 | Index | EFFECT name (file) | Enum | Params (name min..max default, type) |
 |---|---|---|---|
@@ -536,7 +538,7 @@ Field semantics [C]:
 |---|---|---|
 | NAME | token ≤ 255 chars | label shown in editor; also used by `sounds.txt` `EFFECT` lookup |
 | min, max | float | editor slider limits only (not enforced at runtime) |
-| default | float | **not applied at runtime**: parameters omitted in a `sounds.txt` EFFECT block stay `SoundParameter()` = fixed 0.0. The sound editor's "add effect" seeds new effects through `GetParameter(i, &defaultVal)` which fills the **min** slot (argument-order bug), so editor-created effects start at their *minimum* [C] `code/interface/soundeditor_window.cpp` L551 |
+| default | float | **not applied at runtime**: parameters omitted in a `sounds.txt` EFFECT block stay `SoundParameter()` = fixed 0.0. The sound editor's "add effect" seeds new effects through `GetParameter(i, &defaultVal)` which fills the **min** slot (argument-order bug), so editor-created effects start at their *minimum* [C] `code/interface/soundeditor_window.cpp:DspEffectButton::MouseUp` L551 |
 | dataType | int 0/1 | at DSP update, value is passed as `float` (0) or `long` reinterpreted into the float array (1); any other value → `AppReleaseAssert("Unknown datatype")` [C] `DspHandle::Advance` |
 
 Hazard [C]: `DspHandle::Advance` loops over all `MAX_PARAMS = 13` slots and calls `GetParameter(i, …, &dataType)` even for slots beyond the blueprint's parameter count, leaving `dataType` uninitialised → possible spurious "Unknown datatype" assert. Only reached when pref `SoundDSP` ≠ 0 (default 0, P16).
@@ -599,10 +601,10 @@ stat_row   = NAME F F F EOL ;        (* name, health, speed, rate *)
 | Field | Type | Units (file header) | Semantics / quirks |
 |---|---|---|---|
 | HLTH | float | hit points | initial/maximum health |
-| SPED | float | "m/s" = world units per second | `GetStat(type, StatSpeed)` returns `SPED × (1 + m_difficultyLevel/10)` for every type except `SpaceInvader`; `App::m_difficultyLevel` is forced to 0 by `App::UpdateDifficultyFromPreferences` (preference read commented out); `Location::Init` copies a level file's explicit difficulty into it, or stores the current value (0) into a level that has none (−1) [C] `code/app.cpp` L632, `code/location.cpp` L347–L356 → in Multiwinia the factor is 1.0 unless a level file carries `CreatedAsDifficulty n` (`code/level_file.cpp:LevelFile::ParseDifficulty`; no `mp_*` level does, only 3 Darwinia-era files) [C] grep |
+| SPED | float | "m/s" = world units per second | `GetStat(type, StatSpeed)` returns `SPED × (1 + m_difficultyLevel/10)` for every type except `SpaceInvader`; `App::m_difficultyLevel` is forced to 0 by `App::UpdateDifficultyFromPreferences` (preference read commented out); `Location::Init` copies a level file's explicit difficulty into it, or stores the current value (0) into a level that has none (−1) [C] `code/app.cpp:App::UpdateDifficultyFromPreferences` L632, `code/location.cpp:Location::Init` L347–L356 → in Multiwinia the factor is 1.0 unless a level file carries `CreatedAsDifficulty n` (`code/level_file.cpp:LevelFile::ParseDifficulty`; no `mp_*` level does, only 3 Darwinia-era files) [C] grep |
 | RATE | float | seconds between shots | reload time |
 
-**Storage truncation** [C] `code/worldobject/entity.h` (`unsigned char m_stats[NumStats]`), `entity.cpp` L168: per-instance copies are `unsigned char` → fractional values truncate (Squadie RATE 0.5 → 0) and values > 255 wrap; code that reads `EntityBlueprint::GetStat` directly (e.g. `code/worldobject/insertion_squad.cpp` L347 reload) sees the double. A re-implementation must decide which to honour (the shipped balance was tuned against this behaviour — owned by P03/P04).
+**Storage truncation** [C] `code/worldobject/entity.h:Entity::m_stats` (`unsigned char m_stats[NumStats]`), `entity.cpp` L168: per-instance copies are `unsigned char` → fractional values truncate (Squadie RATE 0.5 → 0) and values > 255 wrap; code that reads `EntityBlueprint::GetStat` directly (e.g. `code/worldobject/insertion_squad.cpp:InsertionSquad` L347 reload) sees the double. A re-implementation must decide which to honour (the shipped balance was tuned against this behaviour — owned by P03/P04).
 
 Minimal valid example: 27 rows `Name h s r` in enum order, e.g. first two `Invalid 0 0 0` / `LaserTroop 20 15 1`.
 
@@ -740,6 +742,8 @@ Minimal example (`menu_sounds.txt`): `mwsounds/lobby1.ogg` ⏎ `sounds/click.ogg
 - `sounds/` = 954 files inherited from Darwinia, all lower-case; `mwsounds/` = 378 Multiwinia files, 359 with upper-case letters (e.g. `Attack44.ogg`, `CrateReward_Tank.ogg`) — works because Windows file lookup and the archive hash table are case-insensitive (§29.B16) [C] survey.
 - Debug-only authoring checks: sample names must not contain spaces and samples should be **mono** (`IsSoundSourceOK`, `_DEBUG`) [C] `code/sound/soundsystem.cpp:SoundSystem::IsSoundSourceOK`.
 
+Minimal valid example: a mono 44 100 Hz Ogg Vorbis I stream saved as `data/mwsounds/example1.ogg` and referenced from `sounds.txt` as `SOUNDNAME example1` (no directory, no extension; any case).
+
 **Shipped properties** [C] survey `X1b_ogg_survey.py`: all 1 332 files mono; 1 330 at 44 100 Hz, 2 at 22 050 Hz; nominal bit-rate `sounds/` 64 kbps ×862, 128 ×89, 32/60/80 ×1 each; `mwsounds/` 128 ×369, 96 ×8, 40 ×1. Encoder/decoder tools in tree: `tools/oggenc.exe`, `tools/oggdec.exe` (binaries, not read).
 
 ---
@@ -747,7 +751,7 @@ Minimal example (`menu_sounds.txt`): `mwsounds/lobby1.ogg` ⏎ `sounds/click.ogg
 <a id="fmt-shader"></a>
 ## [→ 29_data_formats_reference] 29.B15 HLSL shaders (`data/shaders/*`) — file-level conventions [B:D3D]
 
-[C] `code/lib/shader.cpp:Shader::Shader`, `Shader::Create`, `MemFile`, `MyD3DXInclude::Open`; users `code/lib/FixedPipeline.cpp` (L25–27), `code/deform.cpp` (L63–65), `code/water_reflection.cpp:WaterReflectionEffect::WaterReflectionEffect`. The whole of `shader.cpp` is inside `#ifdef USE_DIRECT3D` → the files are **unused in the baseline OpenGL build**, although they are packed into both `init.dat` (all 14 via `tools/init.list`) and `main.dat` (all except the six `FixedFunc*` files, which `multiwinia_exclusions.txt` removes) [C]. Semantics belong to P12/P13.
+[C] `code/lib/shader.cpp:Shader::Shader`, `Shader::Create`, `MemFile`, `MyD3DXInclude::Open`; users `code/lib/FixedPipeline.cpp:FixedPipeline::FixedPipeline` (L25–27), `code/deform.cpp:DeformEffect::DeformEffect` (L63–65), `code/water_reflection.cpp:WaterReflectionEffect::WaterReflectionEffect`. The whole of `shader.cpp` is inside `#ifdef USE_DIRECT3D` → the files are **unused in the baseline OpenGL build**, although they are packed into both `init.dat` (all 14 via `tools/init.list`) and `main.dat` (all except the six `FixedFunc*` files, which `multiwinia_exclusions.txt` removes) [C]. Semantics belong to P12/P13.
 
 | Convention | Rule |
 |---|---|
@@ -759,6 +763,17 @@ Minimal example (`menu_sounds.txt`): `mwsounds/lobby1.ogg` ⏎ `sounds/click.ogg
 | Pairing | a `Shader` object = one `.vs` + one `.ps` path; failure of either compile is debug-asserted; `Shader::Create` raises `AppReleaseAssert("Shader create error…")` if either object could not be created |
 | Constants | set by name through the D3DX constant tables of both stages (`SetFloat`, `SetUniform`, `SetMatrix`, `SetBool`, `SetInt`) |
 
+Minimal valid example (written for this design set; compiles with any `vs_2_0`/`ps_2_0` profile):
+```hlsl
+// example.vs
+float4x4 worldViewProj;
+void vs_main(in float4 iPos : POSITION, in float4 iCol : COLOR, out float4 oPos : POSITION, out float4 oCol : COLOR)
+{ oPos = mul(iPos, worldViewProj); oCol = iCol; }
+// example.ps
+#include "globals.h"
+void ps_main(in float4 iCol : COLOR, out float4 oCol : COLOR) { oCol = iCol; }
+```
+
 Pairs created [C]: `FixedFunc0.vs`+`FixedFunc0Maps.ps`, `FixedFunc1.vs`+`FixedFunc1Maps.ps`, `FixedFunc2.vs`+`FixedFunc2Maps.ps` (fixed-function emulation); `deform.vs` + `deformFullscreen.ps` / `deformSphere.ps` / `deformDiamond.ps`; `water-meshwaves.vs` + `water-meshwaves.ps3` or `.ps`. Line counts: FixedFunc0.vs 88, FixedFunc0Maps.ps 6, FixedFunc1.vs 28, FixedFunc1Maps.ps 9, FixedFunc2.vs 33, FixedFunc2Maps.ps 11, deform.vs 17, deformDiamond.ps 27, deformFullscreen.ps 21, deformSphere.ps 25, globals.h 4, water-meshwaves.ps 16, water-meshwaves.ps3 21, water-meshwaves.vs 23 [C].
 
 ---
@@ -766,9 +781,9 @@ Pairs created [C]: `FixedFunc0.vs`+`FixedFunc0Maps.ps`, `FixedFunc1.vs`+`FixedFu
 <a id="fmt-dat-archive"></a>
 ## [→ 29_data_formats_reference] 29.B16 `.dat` archives (RAR)
 
-**Container.** A `.dat` file is a standard **RAR 4.x archive** (signature `52 61 72 21 1A 07 00` "Rar!"), produced by `tools/Rar.exe` and read by the bundled UnRAR 3.30 beta 1 source (`contrib/unrar/version.h`: 3.30 β1, 14 Nov 2003; built as the `unrar` sub-project; supports unpack methods 1.5, 2.0/2.6 and 2.9) [C] `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `contrib/unrar/extract.cpp:CmdExtract::ExtractArchive` (modified to unpack into memory via `AllocNewFile` + `DataIO.SetUnpackToMemory`), `contrib/unrar/unpack.cpp:Unpack::DoUnpack`. The repository's `animator.dat` is an example: archive flags 0x0008 (solid), file headers unpack version 29, method 0x35 (best), names `data\animations\…` [C] RAR header walk. No runtime `.dat` is committed to the tree.
+**Container.** A `.dat` file is a standard **RAR 4.x archive** (signature `52 61 72 21 1A 07 00` "Rar!"), produced by `tools/Rar.exe` and read by the bundled UnRAR 3.30 beta 1 source (`contrib/unrar/version.h:RARVER_MAJOR/RARVER_MINOR/RARVER_BETA`: 3.30 β1, 14 Nov 2003; built as the `unrar` sub-project; supports unpack methods 1.5, 2.0/2.6 and 2.9) [C] `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `contrib/unrar/extract.cpp:CmdExtract::ExtractArchive` (modified to unpack into memory via `AllocNewFile` + `DataIO.SetUnpackToMemory`), `contrib/unrar/unpack.cpp:Unpack::DoUnpack`. The repository's `animator.dat` is an example: archive flags 0x0008 (solid), file headers unpack version 29, method 0x35 (best), names `data\animations\…` [C] RAR header walk. No runtime `.dat` is committed to the tree.
 
-**Encryption / obfuscation.** None: every `ParseArchive` call passes `password = NULL`, and the build script never uses `-p`/`-hp` [C] `code/app.cpp`, `tools/build_multiwinia_data.bat`. (UnRAR's password support is compiled in but unused.) Text files inside may in principle be "redshirt2"-obfuscated (§29.B2) — none are.
+**Encryption / obfuscation.** None: every `ParseArchive` call passes `password = NULL`, and the build script never uses `-p`/`-hp` [C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`, `tools/build_multiwinia_data.bat`. (UnRAR's password support is compiled in but unused.) Text files inside may in principle be "redshirt2"-obfuscated (§29.B2) — none are.
 
 **How archives are built** [C] `tools/build_multiwinia_data.bat`, `tools/build_language_dat.bat` (full step list in P14 §31.6):
 
@@ -786,12 +801,12 @@ Pairs created [C]: `FixedFunc0.vs`+`FixedFunc0Maps.ps`, `FixedFunc1.vs`+`FixedFu
 Switches [I, RAR CLI]: `a` add, `-m5` best / `-m2` fast (Ogg already compressed), `-s` solid, `-idp` no percentage display, `@file` list file.
 
 **How the runtime opens them** [C] `code/lib/resource.cpp:Resource::ParseArchive`, `GetUncompressedFile`, `GetTextReader`, `GetBinaryReader`, `GetShapeCopy`, `ListResources`; `contrib/unrar/unrar.cpp:MemMappedFile::MemMappedFile`; `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `GetIndex`.
-1. Load order: `init.dat` (in `App::App`, before preferences), then `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat` (`App::Initialise`), then `sounds.dat`, `sounds2.dat` (`App::LoadSounds`) [C] `code/app.cpp` L217, L334–L340, L502–L503. A missing file is skipped silently; an exception during extraction drops that archive.
+1. Load order: `init.dat` (in `App::App`, before preferences), then `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat` (`App::Initialise`), then `sounds.dat`, `sounds2.dat` (`App::LoadSounds`) [C] `code/app.cpp:App::App` L217, `App::Initialise` L334–L340, `App::LoadSounds` L502–L503. A missing file is skipped silently; an exception during extraction drops that archive.
 2. The **entire archive is decompressed into RAM** (`UncompressedArchive`, at most `MAX_FILES = 16384` entries; excess entries make `AllocNewFile` return NULL → crash in the modified extractor). Each entry becomes a `MemMappedFile {name, data, size}`; `\` → `/`; the name is `strlwr`-ed; **zero-size entries (and directory entries) are dropped** (and leaked).
 3. Entries go into one global `HashTable<MemMappedFile*>`; an entry whose name already exists replaces the old one → **later archives override earlier ones** (effective precedence sounds2 > sounds > branding > menusounds > patch > main > language > init).
 4. The table's hash masks the ASCII case bit (`& 0xDF`) and compares with `stricmp` → **archive look-ups are case-insensitive** regardless of the caller's spelling.
 5. Every resource request for `N` (relative to `data/`) tries, in order: the loose file `data/N` (relative to the working directory; on Win32 `fopen` is case-insensitive; on other OSes `FindCaseInsensitive` walks the directory tree), then the archive key `data/N`. **Loose files always win over archives** — patching/modding by dropping files into `data/` works; the Darwinia mod-directory step (`<profile>/mods/<mod>/N`) is compiled out (`USE_DARWINIA_MOD_SYSTEM` undefined) [C].
-6. `ListResources(dir, filter)` merges the loose directory listing with archive entries whose directory part equals `data/<dir>` (case-insensitive) and whose file part matches the wildcard filter (`*`, `?`; `Resource::WildCmp` is **case-sensitive**, archive names are lower case) [C]. Entries are inserted with `OrderedInsert` (`contrib/systemiv/lib/filesys/file_system.cpp`), which keeps case-sensitive `strcmp` order and skips exact duplicates **except against the last element** → a loose file and its archive twin can both appear (always when their case differs, e.g. loose `mp_koth_2P_1.txt` vs archive `mp_koth_2p_1.txt`) [C].
+6. `ListResources(dir, filter)` merges the loose directory listing with archive entries whose directory part equals `data/<dir>` (case-insensitive) and whose file part matches the wildcard filter (`*`, `?`; `Resource::WildCmp` is **case-sensitive**, archive names are lower case) [C]. Entries are inserted with `OrderedInsert` (`contrib/systemiv/lib/filesys/file_system.cpp:OrderedInsert`), which keeps case-sensitive `strcmp` order and skips exact duplicates **except against the last element** → a loose file and its archive twin can both appear (always when their case differs, e.g. loose `mp_koth_2P_1.txt` vs archive `mp_koth_2p_1.txt`) [C].
 
 **Minimal valid archive (for tests).** `rar a -m5 -s test.dat data\stats.txt` → loaded by `ParseArchive("test.dat", NULL)` it serves resource `stats.txt` unless a loose `data/stats.txt` exists.
 
@@ -814,7 +829,7 @@ One file, 244 bytes. Header [C] byte dump: `"8BGR"` signature, version 3, gradie
 ## [→ 29_data_formats_reference] 29.B19 Naming conventions and legacy content
 
 <a id="fmt-icons"></a>
-### `data/icons/` naming [C] `code/taskmanager_interface_icons.cpp`, `code/multiwiniahelp.cpp`, `code/interface/helpandoptions_windows.cpp`, `code/UI/mapDetailsButton.h`, grep of `"icons/` literals
+### `data/icons/` naming [C] `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::TaskManagerInterfaceIcons`, `code/multiwiniahelp.cpp:MultiwiniaHelp` (icon tabs), `code/interface/helpandoptions_windows.cpp:CrateButton::CrateButton`, `code/UI/mapDetailsButton.h` (inline `Render`), grep of `"icons/` literals
 | Pattern | Built from | Example |
 |---|---|---|
 | `icons/icon_<name>.bmp` | `GlobalResearch::GetTypeName(i)`, `Task::GetTaskName(type)`, or crate power-up name (`Crate::GetName`) | `icon_squad.bmp`, `icon_nuke.bmp`, `icon_hotfeet.bmp` |
@@ -828,7 +843,7 @@ One file, 244 bytes. Header [C] byte dump: `"8BGR"` signature, version 3, gradie
 Formats: 64×64 or 128×128 mostly; 4/8/24/32-bit (§29.B5). Referenced names absent from `data/icons/` (e.g. `menu_campaign.bmp`, `menu_prologue.bmp`, `menu_coop.bmp`, `menu_forcecoop.bmp`, `menu_<n>player.bmp`, `compass_empty.bmp`, `icon_enter.bmp`, `shaman_shadow.bmp`) would be fatal if requested without a `DoesTextureExist` guard — reachability is for the asset-catalogue agents [C] existence check.
 
 <a id="fmt-mwhelp"></a>
-### `data/mwhelp/` naming [C] `code/multiwiniahelp.cpp` (L72–89, L2590–2599, L2757–2759, L3392–3398), `code/interface/helpandoptions_windows.cpp` (L708, L849), `code/UI/GameTypeImageButton.h`, `code/UI/GameMenuWindow.cpp`, `code/UI/HelpImageButton.h`
+### `data/mwhelp/` naming [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::MultiwiniaHelp` (tab icons L72–89) and later help-render functions (L2590–2599, L2757–2759, L3392–3398), `code/interface/helpandoptions_windows.cpp` help-page window builders (L708, L849), `code/UI/GameTypeImageButton.h` (inline `Render`), `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`, `code/UI/HelpImageButton.h` (inline `Render`)
 | Pattern | Meaning |
 |---|---|
 | `mwhelp/general<page>.bmp` | general help pages (shipped 1–5) |
@@ -839,7 +854,7 @@ Formats: 64×64 or 128×128 mostly; 4/8/24/32-bit (§29.B5). Referenced names ab
 All names are built with `"." TEXTURE_EXTENSION` (= `.bmp`). Sizes: 150×150, 200×200, 300×200, 400×300, 512×128, 600×389, 426×406, 150×149 [C] survey.
 
 <a id="fmt-thumbnail"></a>
-### `data/thumbnails/` naming [C] `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp` L4327
+### `data/thumbnails/` naming [C] `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails` L4327
 `thumbnails/<level file name without ".txt">.bmp`, **lower-cased** before look-up (`strlwr`); if `DoesTextureExist` fails → `thumbnails/default.bmp`. Loaded with `GetTexture(name, mipmaps=false, masked=false)` and drawn with LINEAR min/mag. Shipped: 57 files, 400×300 (53 8-bit paletted, 4 24-bit), names keep mixed case on disk (e.g. `mp_koth_2P_1.bmp`) which works only because file and archive look-ups are case-insensitive [C].
 
 <a id="fmt-sepulveda"></a>
@@ -878,7 +893,7 @@ The complete `sounds.txt` grammar (every keyword, enumerator name and value doma
 ---
 
 ## Cross-partition notes
-- **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.
+- **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `HashTable::GetIndex`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.
 - **P12 (24.5/25.x)**: shipped shape count is 139 `.shp` (P12 text says 140; `P12_shapes.csv` has 139 data rows). Add: two marker-only shapes (`battlecannonbase.shp`, `portal.shp`); `m_positionsInWS` overrun cases (`carryweights.shp`, `sporegenerator.shp`); `carrycube.shp` duplicate fragment name.
 - **P11 (23.11/23.13)**: waves ramp uses only bitmap row y = 1 as a 1-D table indexed by wave brightness; water texture repeats 30× across the sea plane and scrolls 1/30 tile/s; D3D compile error in `Water::Water` (`bmp.GetPixel` on a pointer).
 - **P16 (10.x/27.x)**: see 10.X1b above.
@@ -904,13 +919,13 @@ The complete `sounds.txt` grammar (every keyword, enumerator name and value doma
 ## Docs-vs-code discrepancies
 | Doc / comment | Says | Code does | Ref |
 |---|---|---|---|
-| `code/lib/bitmap.h` comment on `ConvertColourToAlpha` | luminance → alpha | **green channel** → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
+| `code/lib/bitmap.h:BitmapRGBA::ConvertColourToAlpha` comment | luminance → alpha | **green channel** → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
 | `data/effects.txt` header | "Default: the starting value" | defaults are not applied to parameters omitted in `sounds.txt` (they are fixed 0); editor seeds with min | `soundsystem.cpp:ParseSoundEffect`, `soundeditor_window.cpp` |
 | `data/stats.txt` header | `SPED` in m/s, `NAME` = creature name | rows bound by position; speed × (1 + difficulty/10); instance copy truncated to `unsigned char` | `entity.cpp:EntityBlueprint::Initialise`, `GetStat`, `Entity::SetType` |
-| `docs/changes.txt` (Darwinia) | mods in `mods/<name>/`, "stats.txt reloaded when a mod is selected" | mod look-up compiled out in Multiwinia (`USE_DARWINIA_MOD_SYSTEM` undefined) | `code/lib/resource.cpp` |
-| `tools/ShapeExporter` description | "Futurewar Shape Format v1.0" | game-side parser has diverged (exporter no longer compiles against `shape.h`) | `ShapeExporter.cpp` vs `code/lib/shape.h` |
-| `code/lib/shape.cpp` `WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | `ShapeFragment::WriteToFile`, `ShapeMarker::WriteToFile` |
-| `code/gesture_demo.h` comment | "Returns a mouse pos scaled for the current screen resolution" | scales both axes by screen **height** only; interpolation weights swapped | `GestureDemo::GetCoords` |
+| `docs/changes.txt` (Darwinia) | mods in `mods/<name>/`, "stats.txt reloaded when a mod is selected" | mod look-up compiled out in Multiwinia (`USE_DARWINIA_MOD_SYSTEM` undefined) | `code/lib/resource.cpp:Resource::GetTextReader`, `GetBinaryReader`, `LoadMod` |
+| `tools/ShapeExporter` description | "Futurewar Shape Format v1.0" | game-side parser has diverged (exporter no longer compiles against `shape.h`) | `tools/ShapeExporter/ShapeExporter.cpp:ShapeExporter::BuildShapeFragment` vs `code/lib/shape.h:ShapeFragment` |
+| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | `ShapeFragment::WriteToFile`, `ShapeMarker::WriteToFile` |
+| `code/gesture_demo.h:GestureDemo::GetCoords` comment | "Returns a mouse pos scaled for the current screen resolution" | scales both axes by screen **height** only; interpolation weights swapped | `GestureDemo::GetCoords` |
 
 ## IP register
 | Item | Kind | Where (ref) | Neutral placeholder |

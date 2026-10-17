@@ -78,7 +78,7 @@ flowchart LR
     S -->|"birth or floating, any team"| E
     E -->|"only if a friendly incubator exists"| I
     I -->|"1 Darwinian per 0.2 s"| D
-    S -->|"various"| X
+    S -->|"virii ferry to eggs (1 to 4 virii), ants carry home (1 to 6 ants),<br/>centipede eats, soul destroyer and spam delete"| X
 ```
 
 [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance`, `MasterSpawnPoint::RequestSpirit`, `SpawnBuilding::Advance`, `SpawnPoint::TriggerSpirit`; `code/multiwinia.cpp:Multiwinia::AdvanceTrunkPorts`; `code/location.cpp:Location::InitialiseTeam`, `Location::SpawnSpirit`; `code/worldobject/entity.cpp:Entity::ChangeHealth`; `code/worldobject/spirit.cpp:Spirit::Advance`; `code/worldobject/harvester.cpp:Harvester::AdvanceHarvesting`, `Harvester::AdvanceToSpawnPoint`; `code/worldobject/engineer.cpp:Engineer::SearchForSpirits`; `code/worldobject/incubator.cpp:Incubator::Advance`. Rates [I] derived from these constants (§3.3, §6.4).
@@ -239,7 +239,7 @@ if m_activationTimer <= 0 and team != 255 and not PopulationLocked():
 | 3 | 4 | 8 | 16 | 20 |
 | 4 | 5 | 10 | 20 | 25 |
 
-[I] arithmetic from the [C] rule, assuming the special teams own no points. On the shipped maps (1–15 spawn points, §4.6) this means the handicap can only ever help a team holding **one** point, e.g. 1 vs 7 on the 8-point 2-player Domination maps or 1 vs 11 on the 12-point 4-player maps; it never triggers on 4-player maps with 10 points (1 + 9 → ⌊9/5⌋ = 1). Burst size *N* = `int(20·H)` — verified in IEEE double: h = 0, 10, 20, 30, 40, 50, 60, 70, 80, 90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 [C arithmetic].
+[I] arithmetic from the [C] rule, assuming the special teams own no points. On the shipped maps (1–15 spawn points, §4.6) this means the handicap can only ever help a team holding **one** point, and only on maps with at least 7 points (2 players), 9 points (3 players) or 11 points (4 players): e.g. 1 vs 7 on the 8-point `mp_domination_2P_1`/`2P_2`, 1 vs 8 on the 9-point 3-player KOTH maps, 1 vs 11 on the 12-point 4-player maps. It can never trigger on the 6-point `mp_koth_2P_1` (1 vs 5 → ⌊5/3⌋ = 1) or on 4-player maps with 10 points (1 vs 9 → ⌊9/5⌋ = 1); and since CTS, Rocket Riot and Blitzkrieg have no Handicap option and Assault maps have no spawn points, only Domination- and KOTH-typed games can use it at all. Burst size *N* = `int(20·H)` — verified in IEEE double: h = 0, 10, 20, 30, 40, 50, 60, 70, 80, 90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 [C arithmetic].
 
 ### 3.3 Per-spawn-point rate
 
@@ -331,7 +331,7 @@ currentPop(team) = Team::m_others.NumUsed() − Virii::s_viriiPopulation[team]
 4. **Fallback — SpawnPopulationLock** (only when no map cap, or not multiplayer): on first use the building caches the id of the **first** `SpawnPopulationLock` in building-list order whose `m_searchRadius` contains it (−2 = none); locked iff that lock's `m_teamCount[team] ≥ m_maxPopulation`. The cached id is only queried when `> 0`, so a lock whose unique id is 0 is ignored [C] `SpawnPoint::PopulationLocked`, `TrunkPort::PopulationLocked`. In MP every lock does nothing when the level sets `PopulationCap` (its `Advance` returns at once) [C] `SpawnPopulationLock::Advance`.
 5. Otherwise not locked.
 
-`AntHill::PopulationLocked` applies rule 3 only (then the lock fallback) to the monster team's ant hills [C] `code/worldobject/anthill.cpp:AntHill::PopulationLocked` — the monster team is capped like a player.
+`AntHill::PopulationLocked` applies rule 3 only (then the lock fallback) to the monster team's ant hills, gating each ant sortie (one ant per 0.2 s in MP) [C] `code/worldobject/anthill.cpp:AntHill::PopulationLocked`, `AntHill::Advance`. The ants a hill emits are created inside the hill's `Unit` (`SpawnEntities(…, m_unitId, …)` in `AntHill::SpawnAnt`) and so are **not** in `m_others`: the check only sees the monster team's other bodies (its AI entity, crate creatures, eggs) [C code; I consequence].
 
 `PopulationCap`, `DefenderPopulationCap` and `NumPlayers` come from the level's `MultiwiniaOptions` block; defaults −1; **the last `PopulationCap` line wins** (`mp_cts_4p_3` has `-1` then `2000`) [C] `code/level_file.cpp:LevelFile::ParseMultiwiniaOptions`, `LevelFile::LevelFile`. The editor exposes them as value controls (`editor_popcap` 1–5000 step 10, `editor_defenderpopcap` 50–5000) [B:EDITOR] `code/interface/multiwiniaoptions_window.cpp`.
 
@@ -345,7 +345,7 @@ The generic cap in `Location::SpawnEntities` (`Entity::s_entityPopulation ≥ m_
 |---|---|---|---|
 | SpawnPoint request | yes, before each request; spawn timer frozen while locked | per request (but spirits already in transit still land) | [C] `SpawnPoint::Advance` |
 | Trunk-port wave | yes, **once per port per wave** before spawning the whole `count` | per port-wave (overshoot ≤ count − 1 per port) | [C] `Multiwinia::AdvanceTrunkPorts` |
-| AntHill ant emission (monster team) | yes | per ant | [C] `AntHill::PopulationLocked` |
+| AntHill ant emission (monster team) | yes, but its own ants are unit members and not counted | per ant | [C] `AntHill::PopulationLocked`, `AntHill::SpawnAnt` |
 | Harvester delivery | **no** — `SpawnPoint::SpawnDarwinian` called directly; also bypasses the activation delay | — | [C] `Harvester::AdvanceToSpawnPoint` |
 | Incubator | no | — | [C] `Incubator::SpawnEntity` |
 | InstantUnits, port seeding | no | — | [C] `Location::InitialiseTeam` |
@@ -378,67 +378,67 @@ Because only the request is gated, a team can exceed its cap by [I]:
 
 ### 4.6 Per-map table (every `data/levels/mp_*.txt`)
 
-Columns: *Off.* = `OfficialLevel` flag; *PopulationCap* as parsed (last line wins); *Per-team cap* = PopulationCap / NumPlayers (integer); *Assault caps* = defender / attacker per team (rule 2); *SpawnPoints* = total with the count owned at start per level team **position** (`tN` = position N; positions are mapped to team ids at load); *Hops* = min–max links from the master to a spawn point (latency ≈ 1 s per hop, §3.4); *Pop-locks* = `SpawnPopulationLock` buildings (inert wherever PopulationCap ≠ −1); *TrunkPorts* = count with owners (`t255` = neutral, never reinforces); *InstantUnits Darwinians* and *Port-seeded Darwinians* (5 per owned SpawnPoint or SolarPanel) per position; *Other start units* (`(task)` = `runAsTask`, created as a task). Generated by `_work/scripts/S_05_economy_tables.py` (run with `python3 -I`) [C] data.
+Columns: *Off.* = `OfficialLevel` flag; *PopulationCap* as parsed (last line wins); *Per-team cap* = PopulationCap / NumPlayers (integer); *Assault caps* = defender / attacker per team (rule 2); *SpawnPoints* = total with the count owned at start per level team **position** (`tN` = position N; positions are mapped to team ids at load); *SpawnLinks* = relay nodes; *Hops* = min–max links from the master to a spawn point (latency ≈ 1 s per hop, §3.4); *Pop-locks* = `SpawnPopulationLock` buildings (inert wherever PopulationCap ≠ −1); *TrunkPorts* = count with owners (`t255` = neutral, never reinforces); *InstantUnits Darwinians* and *Port-seeded Darwinians* (5 per owned SpawnPoint or SolarPanel) per position; *Other start units* (`(task)` = `runAsTask`, created as a task). Generated by `_work/scripts/S_05_economy_tables.py` (run with `python3 -I`) [C] data.
 
-| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `mp_assault_2P_1` | Assault | Y | 2 | 2000 | 1000 | def 350 / att 1650 |  | trunkportreinforcements=100 | 0 |  | 1 | 5 (t0:1 t1:4) | t0:325 |  | Armour(task)×1@0; Armour(task)×1@0 |
-| `mp_assault_2P_2` | Assault | Y | 2 | 2000 | 1000 | def 275 / att 1725 |  | trunkportreinforcements=100 trunkportarmour=1 | 0 |  | 0 | 6 (t0:1 t1:5) | t0:209 | t0:50 |  |
-| `mp_assault_2p_3` | Assault | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | 0 |  | 0 | 3 (t0:3) | t0:8 t1:300 |  |  |
-| `mp_assault_3P_2` | Assault | Y | 3 | 1500 | 500 | def 250 / att 625 |  | trunkportreinforcements=75 | 0 |  | 1 | 9 (t0:1 t1:4 t2:4) | t0:180 | t0:60 | Armour(task)×1@0; Armour(task)×1@0 |
-| `mp_assault_3p_1` | Assault | Y | 2 | 1600 | 800 | def 250 / att 1350 |  | trunkportreinforcements=75 | 0 |  | 0 | 7 (t0:1 t1:6) | t0:103 t5:35 | t0:45 | Armour(task)×1@0 |
-| `mp_assault_3p_3` | Assault | Y | 3 | 1800 | 600 |  |  | trunkportreinforcements=100 | 0 |  | 0 | 8 (t1:4 t2:4) | t0:260 |  |  |
-| `mp_assault_4P_1` | Assault | Y | 4 | 1600 | 400 | def 200 / att 600 |  | trunkportreinforcements=75 | 0 |  | 0 | 8 (t0:3 t1:3 t2:1 t3:1) | t2:100 t3:68 | t3:30 | Armour(task)×1@2; Armour(task)×1@3 |
-| `mp_assault_4P_2` | Assault | Y | 4 | 1500 | 375 | def 200 / att 550 |  | trunkportreinforcements=60 trunkportarmour=3 | 0 |  | 0 | 10 (t0:1 t1:1 t2:4 t3:4) | t0:63 t1:95 | t0:60 t1:30 |  |
-| `mp_assault_stress` | none | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=250 defenderreinforcementtype=Armour | 0 |  | 0 | 7 (t0:5 t1:2) | t1:90 | t1:30 |  |
-| `mp_benchmark_1` | none | Y | 4 | -1 | none |  | Y |  | 24 (t0:5 t1:5 t2:5 t3:5) | 2–2 | 1 | 4 (t255:4) | t0:150 t1:150 t2:150 t3:150 | t0:25 t1:25 t2:25 t3:25 |  |
-| `mp_blitzkrieg_2P_3` | Blitzkrieg | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 4 | 3–8 | 0 | 3 (t0:1 t1:1 t255:1) |  |  |  |
-| `mp_blitzkrieg_2P_4` | Blitzkrieg | Y | 2 | 1800 | 900 |  |  | nogunturrets | 3 | 3–4 | 2 | 3 (t0:1 t1:1 t255:1) | t0:36 t1:36 |  |  |
-| `mp_blitzkrieg_2p_1` | Blitzkrieg | Y | 2 | 1500 | 750 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 1 | 1–1 | 0 | 2 (t0:1 t1:1) | t0:40 t1:40 | t0:15 t1:15 |  |
-| `mp_blitzkrieg_2p_2` | Blitzkrieg | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 6 (t0:2 t1:2) | 2–5 | 6 | 2 (t0:1 t1:1) | t0:8 t1:8 | t0:10 t1:10 |  |
-| `mp_blitzkrieg_3P_1` | Blitzkrieg | Y | 3 | 1500 | 500 |  |  | airstrikecapturezones=3 | 0 |  | 4 | 3 (t0:1 t1:1 t2:1) | t0:15 t1:15 t2:15 |  |  |
-| `mp_blitzkrieg_3P_2` | Blitzkrieg | Y | 3 | 2000 | 666 |  |  | airstrikecapturezones=3 | 0 |  | 7 | 3 (t0:1 t1:1 t2:1) |  |  |  |
-| `mp_blitzkrieg_4P_2` | Blitzkrieg | Y | 4 | 1400 | 350 |  |  | airstrikecapturezones=3 | 0 |  | 0 | 4 (t0:1 t1:1 t2:1 t3:1) |  | t0:15 t1:15 t2:15 t3:15 |  |
-| `mp_cts_2p_1` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 6 (t0:2 t1:2) | 1–1 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
-| `mp_cts_2p_2` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  | instantspawnpointcapture | 4 (t0:2 t1:2) | 1–1 | 2 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
-| `mp_cts_2p_3` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 4 (t0:1 t1:1) | 3–6 | 0 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
-| `mp_cts_2p_4` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 4 (t0:2 t1:2) | 1–1 | 5 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
-| `mp_cts_3P_2` | CaptureTheStatue | Y | 3 | 1500 | 500 |  |  | instantspawnpointcapture | 9 (t0:3 t1:3 t2:3) | 1–1 | 0 | 0 | t0:40 t1:40 t2:40 | t0:15 t1:15 t2:15 |  |
-| `mp_cts_3p_1` | CaptureTheStatue | Y | 3 | 1800 | 600 |  |  | instantspawnpointcapture | 6 (t0:2 t1:2 t2:2) | 1–1 | 6 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
-| `mp_cts_3p_3` | CaptureTheStatue | Y | 3 | 2000 | 666 |  |  | trunkportreinforcements=100 attackerreinforcementtype=HotFeet | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
-| `mp_cts_4P_1` | CaptureTheStatue | Y | 4 | 2000 | 500 |  |  |  | 12 (t0:1 t1:1 t2:1 t3:1) | 1–1 | 1 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
-| `mp_cts_4P_2` | CaptureTheStatue | Y | 4 | 2000 | 500 |  | Y | instantspawnpointcapture | 8 (t0:2 t1:2 t2:2 t3:2) | 1–1 | 9 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
-| `mp_cts_4p_3` | CaptureTheStatue | Y | 4 | 2000 (lines -1 2000) | 500 |  |  |  | 8 (t0:2 t1:2 t2:2 t3:2) | 3–9 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
-| `mp_domination_2P_1` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 8 (t0:1 t1:1) | 2–7 | 1 | 0 | t0:45 t1:45 | t0:20 t1:20 |  |
-| `mp_domination_2P_2` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 8 (t0:1 t1:1) | 2–5 | 0 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
-| `mp_domination_3P_1` | Domination | Y | 3 | 1800 | 600 |  |  |  | 10 (t0:2 t1:2 t2:2) | 4–9 | 0 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
-| `mp_domination_4P_1` | Domination | Y | 4 | 2000 | 500 |  | Y |  | 10 (t0:1 t1:1 t2:1 t3:1) | 2–10 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
-| `mp_domination_4P_2` | Domination | Y | 4 | -1 | none |  | Y |  | 12 (t0:2 t1:2 t2:2 t3:2) | 3–5 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
-| `mp_koth_2P_1` | KingOfTheHill | Y | 2 | 2000 | 1000 |  |  |  | 6 (t0:1 t1:1) | 3–5 | 4 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
-| `mp_koth_2P_2` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 9 (t0:3 t1:3) | 3–7 | 0 | 1 (t255:1) |  | t0:15 t1:15 |  |
-| `mp_koth_2P_3` | Domination | Y | 2 | 1500 | 750 |  |  |  | 10 (t0:2 t1:2) | 4–8 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
-| `mp_koth_2P_3b` | KingOfTheHill | Y | 2 | 1500 | 750 |  |  |  | 10 (t0:2 t1:2) | 2–6 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
-| `mp_koth_3P_1` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:1 t1:1 t2:1) | 3–8 | 7 | 1 (t255:1) | t0:45 t1:45 t2:45 | t0:5 t1:5 t2:5 |  |
-| `mp_koth_3P_2` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:2 t1:2 t2:2) | 4–9 | 1 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
-| `mp_koth_3P_3` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:2 t1:2 t2:2) | 5–6 | 7 | 1 (t255:1) | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
-| `mp_koth_3P_4` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  | trunkportreinforcements=100 | 0 |  | 0 | 6 (t0:2 t1:2 t2:2) |  |  |  |
-| `mp_koth_4P_1` | KingOfTheHill | Y | 4 | 2000 | 500 |  | Y |  | 10 (t0:1 t1:1 t2:1 t3:1) | 2–11 | 9 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
-| `mp_koth_4P_3` | KingOfTheHill | Y | 4 | -1 | none |  | Y |  | 12 (t0:2 t1:2 t2:2 t3:2) | 3–5 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
-| `mp_koth_4P_4` | KingOfTheHill | Y | 4 | 2000 | 500 |  | Y |  | 12 (t0:3 t1:3 t2:3 t3:3) | 2–2 | 1 | 4 (t255:4) | t0:40 t1:40 t2:40 t3:40 | t0:15 t1:15 t2:15 t3:15 |  |
-| `mp_rocketriot_2P_2` | RocketRiot | Y | 2 | 1500 | 750 |  |  |  | 2 | 1–1 | 0 | 2 (t0:1 t1:1) |  |  |  |
-| `mp_rocketriot_2P_4` | RocketRiot | Y | 2 | 1500 | 750 |  |  |  | 0 |  | 0 | 2 (t0:1 t1:1) |  |  |  |
-| `mp_rocketriot_2p_3` | RocketRiot | Y | 2 | 1800 | 900 |  |  |  | 0 |  | 0 | 2 (t0:1 t1:1) |  |  |  |
-| `mp_rocketriot_3P_2` | RocketRiot | Y | 3 | 1800 | 600 |  |  |  | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
-| `mp_rocketriot_3P_3` | RocketRiot | Y | 3 | 1800 | 600 |  |  | nogunturrets | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) | t0:8 t1:8 t2:8 |  |  |
-| `mp_rocketriot_3p_1` | RocketRiot | Y | 3 | 1800 | 600 |  |  |  | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
-| `mp_rocketriot_4P_1` | RocketRiot | Y | 4 | 1800 | 450 |  |  |  | 12 | 1–1 | 0 | 4 (t0:1 t1:1 t2:1 t3:1) |  |  |  |
-| `mp_sandbox` | none |  | 2 | 2500 | 1250 |  |  |  | 0 |  | 0 | 0 |  |  |  |
-| `mp_sandbox_all` | none |  | -1 | -1 | none |  |  |  | 4 (t1:4) | 5–8 | 0 | 0 |  | t1:20 |  |
-| `mp_skirmish_2p_4` | Domination | Y | 2 | 1800 | 900 |  |  |  | 10 (t0:1 t1:1) | 3–8 | 0 | 1 (t255:1) |  | t0:5 t1:5 |  |
-| `mp_skirmish_3P_1` | Domination | Y | 3 | 1800 | 600 |  |  |  | 15 (t0:2 t1:2 t2:2) | 1–1 | 0 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
-| `mp_tankbattle_2P` | TankBattle |  | 2 | -1 | none |  |  |  | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1 |
-| `mp_tankbattle_3P` | TankBattle |  | 3 | -1 | none |  |  |  | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1; Tank(task)×1@2 |
-| `mp_tankbattle_4P` | TankBattle |  | 4 | -1 | none |  | Y |  | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1; Tank(task)×1@3; Tank(task)×1@2 |
+| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | SpawnLinks | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `mp_assault_2P_1` | Assault | Y | 2 | 2000 | 1000 | def 350 / att 1650 |  | trunkportreinforcements=100 | 0 | 0 |  | 1 | 5 (t0:1 t1:4) | t0:325 |  | Armour(task)×1@0; Armour(task)×1@0 |
+| `mp_assault_2P_2` | Assault | Y | 2 | 2000 | 1000 | def 275 / att 1725 |  | trunkportreinforcements=100 trunkportarmour=1 | 0 | 0 |  | 0 | 6 (t0:1 t1:5) | t0:209 | t0:50 |  |
+| `mp_assault_2p_3` | Assault | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | 0 | 0 |  | 0 | 3 (t0:3) | t0:8 t1:300 |  |  |
+| `mp_assault_3P_2` | Assault | Y | 3 | 1500 | 500 | def 250 / att 625 |  | trunkportreinforcements=75 | 0 | 0 |  | 1 | 9 (t0:1 t1:4 t2:4) | t0:180 | t0:60 | Armour(task)×1@0; Armour(task)×1@0 |
+| `mp_assault_3p_1` | Assault | Y | 2 | 1600 | 800 | def 250 / att 1350 |  | trunkportreinforcements=75 | 0 | 0 |  | 0 | 7 (t0:1 t1:6) | t0:103 t5:35 | t0:45 | Armour(task)×1@0 |
+| `mp_assault_3p_3` | Assault | Y | 3 | 1800 | 600 |  |  | trunkportreinforcements=100 | 0 | 0 |  | 0 | 8 (t1:4 t2:4) | t0:260 |  |  |
+| `mp_assault_4P_1` | Assault | Y | 4 | 1600 | 400 | def 200 / att 600 |  | trunkportreinforcements=75 | 0 | 0 |  | 0 | 8 (t0:3 t1:3 t2:1 t3:1) | t2:100 t3:68 | t3:30 | Armour(task)×1@2; Armour(task)×1@3 |
+| `mp_assault_4P_2` | Assault | Y | 4 | 1500 | 375 | def 200 / att 550 |  | trunkportreinforcements=60 trunkportarmour=3 | 0 | 0 |  | 0 | 10 (t0:1 t1:1 t2:4 t3:4) | t0:63 t1:95 | t0:60 t1:30 |  |
+| `mp_assault_stress` | none | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=250 defenderreinforcementtype=Armour | 0 | 0 |  | 0 | 7 (t0:5 t1:2) | t1:90 | t1:30 |  |
+| `mp_benchmark_1` | none | Y | 4 | -1 | none |  | Y |  | 24 (t0:5 t1:5 t2:5 t3:5) | 4 | 2–2 | 1 | 4 (t255:4) | t0:150 t1:150 t2:150 t3:150 | t0:25 t1:25 t2:25 t3:25 |  |
+| `mp_blitzkrieg_2P_3` | Blitzkrieg | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 4 | 9 | 3–8 | 0 | 3 (t0:1 t1:1 t255:1) |  |  |  |
+| `mp_blitzkrieg_2P_4` | Blitzkrieg | Y | 2 | 1800 | 900 |  |  | nogunturrets | 3 | 7 | 3–4 | 2 | 3 (t0:1 t1:1 t255:1) | t0:36 t1:36 |  |  |
+| `mp_blitzkrieg_2p_1` | Blitzkrieg | Y | 2 | 1500 | 750 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 1 | 0 | 1–1 | 0 | 2 (t0:1 t1:1) | t0:40 t1:40 | t0:15 t1:15 |  |
+| `mp_blitzkrieg_2p_2` | Blitzkrieg | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 6 (t0:2 t1:2) | 8 | 2–5 | 6 | 2 (t0:1 t1:1) | t0:8 t1:8 | t0:10 t1:10 |  |
+| `mp_blitzkrieg_3P_1` | Blitzkrieg | Y | 3 | 1500 | 500 |  |  | airstrikecapturezones=3 | 0 | 0 |  | 4 | 3 (t0:1 t1:1 t2:1) | t0:15 t1:15 t2:15 |  |  |
+| `mp_blitzkrieg_3P_2` | Blitzkrieg | Y | 3 | 2000 | 666 |  |  | airstrikecapturezones=3 | 0 | 0 |  | 7 | 3 (t0:1 t1:1 t2:1) |  |  |  |
+| `mp_blitzkrieg_4P_2` | Blitzkrieg | Y | 4 | 1400 | 350 |  |  | airstrikecapturezones=3 | 0 | 0 |  | 0 | 4 (t0:1 t1:1 t2:1 t3:1) |  | t0:15 t1:15 t2:15 t3:15 |  |
+| `mp_cts_2p_1` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 6 (t0:2 t1:2) | 0 | 1–1 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
+| `mp_cts_2p_2` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  | instantspawnpointcapture | 4 (t0:2 t1:2) | 0 | 1–1 | 2 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
+| `mp_cts_2p_3` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 4 (t0:1 t1:1) | 6 | 3–6 | 0 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
+| `mp_cts_2p_4` | CaptureTheStatue | Y | 2 | 2000 | 1000 |  |  |  | 4 (t0:2 t1:2) | 0 | 1–1 | 5 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
+| `mp_cts_3P_2` | CaptureTheStatue | Y | 3 | 1500 | 500 |  |  | instantspawnpointcapture | 9 (t0:3 t1:3 t2:3) | 0 | 1–1 | 0 | 0 | t0:40 t1:40 t2:40 | t0:15 t1:15 t2:15 |  |
+| `mp_cts_3p_1` | CaptureTheStatue | Y | 3 | 1800 | 600 |  |  | instantspawnpointcapture | 6 (t0:2 t1:2 t2:2) | 0 | 1–1 | 6 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
+| `mp_cts_3p_3` | CaptureTheStatue | Y | 3 | 2000 | 666 |  |  | trunkportreinforcements=100 attackerreinforcementtype=HotFeet | 0 | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
+| `mp_cts_4P_1` | CaptureTheStatue | Y | 4 | 2000 | 500 |  |  |  | 12 (t0:1 t1:1 t2:1 t3:1) | 0 | 1–1 | 1 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
+| `mp_cts_4P_2` | CaptureTheStatue | Y | 4 | 2000 | 500 |  | Y | instantspawnpointcapture | 8 (t0:2 t1:2 t2:2 t3:2) | 0 | 1–1 | 9 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
+| `mp_cts_4p_3` | CaptureTheStatue | Y | 4 | 2000 (lines -1 2000) | 500 |  |  |  | 8 (t0:2 t1:2 t2:2 t3:2) | 17 | 3–9 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
+| `mp_domination_2P_1` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 8 (t0:1 t1:1) | 13 | 2–7 | 1 | 0 | t0:45 t1:45 | t0:20 t1:20 |  |
+| `mp_domination_2P_2` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 8 (t0:1 t1:1) | 7 | 2–5 | 0 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
+| `mp_domination_3P_1` | Domination | Y | 3 | 1800 | 600 |  |  |  | 10 (t0:2 t1:2 t2:2) | 14 | 4–9 | 0 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
+| `mp_domination_4P_1` | Domination | Y | 4 | 2000 | 500 |  | Y |  | 10 (t0:1 t1:1 t2:1 t3:1) | 18 | 2–10 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
+| `mp_domination_4P_2` | Domination | Y | 4 | -1 | none |  | Y |  | 12 (t0:2 t1:2 t2:2 t3:2) | 20 | 3–5 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
+| `mp_koth_2P_1` | KingOfTheHill | Y | 2 | 2000 | 1000 |  |  |  | 6 (t0:1 t1:1) | 7 | 3–5 | 4 | 0 | t0:40 t1:40 | t0:5 t1:5 |  |
+| `mp_koth_2P_2` | Domination | Y | 2 | 2000 | 1000 |  |  |  | 9 (t0:3 t1:3) | 10 | 3–7 | 0 | 1 (t255:1) |  | t0:15 t1:15 |  |
+| `mp_koth_2P_3` | Domination | Y | 2 | 1500 | 750 |  |  |  | 10 (t0:2 t1:2) | 11 | 4–8 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
+| `mp_koth_2P_3b` | KingOfTheHill | Y | 2 | 1500 | 750 |  |  |  | 10 (t0:2 t1:2) | 9 | 2–6 | 4 | 0 | t0:40 t1:40 | t0:10 t1:10 |  |
+| `mp_koth_3P_1` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:1 t1:1 t2:1) | 23 | 3–8 | 7 | 1 (t255:1) | t0:45 t1:45 t2:45 | t0:5 t1:5 t2:5 |  |
+| `mp_koth_3P_2` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:2 t1:2 t2:2) | 14 | 4–9 | 1 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
+| `mp_koth_3P_3` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  |  | 9 (t0:2 t1:2 t2:2) | 15 | 5–6 | 7 | 1 (t255:1) | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
+| `mp_koth_3P_4` | KingOfTheHill | Y | 3 | 1800 | 600 |  |  | trunkportreinforcements=100 | 0 | 0 |  | 0 | 6 (t0:2 t1:2 t2:2) |  |  |  |
+| `mp_koth_4P_1` | KingOfTheHill | Y | 4 | 2000 | 500 |  | Y |  | 10 (t0:1 t1:1 t2:1 t3:1) | 18 | 2–11 | 9 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:5 t1:5 t2:5 t3:5 |  |
+| `mp_koth_4P_3` | KingOfTheHill | Y | 4 | -1 | none |  | Y |  | 12 (t0:2 t1:2 t2:2 t3:2) | 20 | 3–5 | 0 | 0 | t0:40 t1:40 t2:40 t3:40 | t0:10 t1:10 t2:10 t3:10 |  |
+| `mp_koth_4P_4` | KingOfTheHill | Y | 4 | 2000 | 500 |  | Y |  | 12 (t0:3 t1:3 t2:3 t3:3) | 4 | 2–2 | 1 | 4 (t255:4) | t0:40 t1:40 t2:40 t3:40 | t0:15 t1:15 t2:15 t3:15 |  |
+| `mp_rocketriot_2P_2` | RocketRiot | Y | 2 | 1500 | 750 |  |  |  | 2 | 0 | 1–1 | 0 | 2 (t0:1 t1:1) |  |  |  |
+| `mp_rocketriot_2P_4` | RocketRiot | Y | 2 | 1500 | 750 |  |  |  | 0 | 0 |  | 0 | 2 (t0:1 t1:1) |  |  |  |
+| `mp_rocketriot_2p_3` | RocketRiot | Y | 2 | 1800 | 900 |  |  |  | 0 | 0 |  | 0 | 2 (t0:1 t1:1) |  |  |  |
+| `mp_rocketriot_3P_2` | RocketRiot | Y | 3 | 1800 | 600 |  |  |  | 0 | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
+| `mp_rocketriot_3P_3` | RocketRiot | Y | 3 | 1800 | 600 |  |  | nogunturrets | 0 | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) | t0:8 t1:8 t2:8 |  |  |
+| `mp_rocketriot_3p_1` | RocketRiot | Y | 3 | 1800 | 600 |  |  |  | 0 | 0 |  | 0 | 3 (t0:1 t1:1 t2:1) |  |  |  |
+| `mp_rocketriot_4P_1` | RocketRiot | Y | 4 | 1800 | 450 |  |  |  | 12 | 0 | 1–1 | 0 | 4 (t0:1 t1:1 t2:1 t3:1) |  |  |  |
+| `mp_sandbox` | none |  | 2 | 2500 | 1250 |  |  |  | 0 | 0 |  | 0 | 0 |  |  |  |
+| `mp_sandbox_all` | none |  | -1 | -1 | none |  |  |  | 4 (t1:4) | 11 | 5–8 | 0 | 0 |  | t1:20 |  |
+| `mp_skirmish_2p_4` | Domination | Y | 2 | 1800 | 900 |  |  |  | 10 (t0:1 t1:1) | 11 | 3–8 | 0 | 1 (t255:1) |  | t0:5 t1:5 |  |
+| `mp_skirmish_3P_1` | Domination | Y | 3 | 1800 | 600 |  |  |  | 15 (t0:2 t1:2 t2:2) | 0 | 1–1 | 0 | 0 | t0:40 t1:40 t2:40 | t0:10 t1:10 t2:10 |  |
+| `mp_tankbattle_2P` | TankBattle |  | 2 | -1 | none |  |  |  | 0 | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1 |
+| `mp_tankbattle_3P` | TankBattle |  | 3 | -1 | none |  |  |  | 0 | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1; Tank(task)×1@2 |
+| `mp_tankbattle_4P` | TankBattle |  | 4 | -1 | none |  | Y |  | 0 | 0 |  | 0 | 0 |  |  | Tank(task)×1@0; Tank(task)×1@1; Tank(task)×1@3; Tank(task)×1@2 |
 
 Observations from the table [C] data:
 - 32 official maps have spawn points: GameTypes Domination 9/9 (including `mp_koth_2P_2`, `mp_koth_2P_3`, `mp_skirmish_2p_4`, `mp_skirmish_3P_1`, whose GameTypes line says Domination), KingOfTheHill 8/9 (not `mp_koth_3P_4`), CaptureTheStatue 9/10 (not `mp_cts_3p_3`), Blitzkrieg 4/7, RocketRiot 2/7, Assault 0/8. `mp_benchmark_1` and `mp_sandbox_all` (GameTypes none) also have them.
@@ -455,7 +455,7 @@ Observations from the table [C] data:
 | Co-op teams | caps are per team, not per alliance: a 2-team alliance on a 4-player map gets 2 × PopulationCap/4 | [C] rule 3 |
 | Divisor = level NumPlayers | eliminated/disconnected teams' shares are not redistributed | [C] |
 | Every CPU team (and both special teams) owns an `AI` entity in `m_others` | CPU teams reach the cap one body earlier | [C] `Location::InitialiseTeam` |
-| Monster team (4) | capped by `AntHill::PopulationLocked` like a player (PopulationCap/NumPlayers); its deaths leave no spirits | [C] |
+| Monster team (4) | only its ant hills consult a cap (PopulationCap/NumPlayers against the team's non-unit bodies, which excludes the hills' own ants); all other monster spawns are uncapped; its deaths leave no spirits | [C] `AntHill::PopulationLocked`, `Location::SpawnSpirit` |
 | Futurewinian team (5) | its Darwinians count for team 5; `s_numSpawnPoints[6]` is never reset between games (§2.4) | [C] |
 | `mp_cts_4p_3` two `PopulationCap` lines | last one (2000) wins | [C] `LevelFile::ParseMultiwiniaOptions` |
 | Trunk-port armour reinforcement levels | the **Armour crate is invalid** on any level with `trunkportarmour` > 0 and in every Rocket Riot game | [C] `Crate::IsValid` |
@@ -646,7 +646,7 @@ The game clock is frozen during the grace period (`GameTimer` speed 0 until `Adv
 | 1 (normal) | tick 0 | tick 649 (64.9 s: 59 countdown steps × 11 ticks) | every **660 ticks (66.0 s)** for ReinforcementTimer 60 | waves 1, 3, 5, … / 1, 8, 15, … |
 | 2 (double-run maps, §6.6) | tick 0 | tick 324 (32.4 s) | every **330 ticks (33.0 s)** | same wave numbers, twice as often in time |
 
-[C] code; tick counts [I] from an exact replay of the countdown loop (one countdown step = 11 calls because 1.0 minus ten 0.1 steps is 1.4·10⁻¹⁶ > 0; with two calls per tick a step takes 5.5 ticks on average). **Resolved:** P02/meta D3 said "6-tick steps" for the double-run case; the replay gives 11 calls = 5.5 ticks per step, waves every 330 ticks. A general ReinforcementTimer value T gives waves every 11·T ticks (single call). The HUD shows `m_reinforcementCountdown` as the "seconds" to the next wave in Rocket Riot, ticking every 1.1 s [C] `Multiwinia::Render` (see [01](01_game_modes.md)).
+[C] code; tick counts [I] from an exact replay of the countdown loop (one countdown step = 11 calls because 1.0 minus ten 0.1 steps is 1.4·10⁻¹⁶ > 0; with two calls per tick a step takes 5.5 ticks on average). **Resolved:** P02/meta D3 said "6-tick steps" for the double-run case; the replay gives 11 calls = 5.5 ticks per step, waves every 330 ticks. A general ReinforcementTimer value T gives waves every 11·T ticks (single call). The HUD shows `m_reinforcementCountdown` (string `multiwinia_reinforcements`, red at ≤ 5) as the "seconds" to the next wave whenever it is non-zero and the local team is not eliminated — i.e. on every map where trunk-port waves run, not only Rocket Riot as the code comment says — and it ticks every 1.1 s [C] `Multiwinia::Render` (see [01](01_game_modes.md)).
 
 ### 6.5 Assault specifics
 
@@ -935,7 +935,8 @@ Contradictions resolved by re-reading code: (1) retribution called vs never call
 | `code/level_file.h` comment on `LevelOptionNoGunTurrets` | "disables GunTurret tasks from TrunkPorts on RocketRiot" | disables all turret-wave tasks (incl. Blitzkrieg AirStrike upgrades) in any mode (used on `mp_blitzkrieg_2P_4`) | `Multiwinia::AdvanceTrunkPorts` |
 | `code/level_file.h` comment on `LevelOptionTrunkPortReinforcements` | "activates the RocketRiot style trunk port reinforcements on a level" | in Rocket Riot/Blitzkrieg its count is ignored (game option wins) but it adds a second call per tick | `Multiwinia::Advance` |
 | `SpawnPoint::Advance` comment | instant activation for "our first (or last) spawn point" | triggers whenever the team owns exactly one point at that moment | `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance` |
-| `code/gametimer.h` header comment / mode code | "1-second" rule timers | fire every 11 ticks (1.1 s) | §8.2 |
+| UI "seconds" (time remaining, reinforcement countdown) driven by `m_timer = 1.0` / `m_reinforcementTimer = 1.0` resets | one game second per decrement | one decrement per 11 ticks = 1.1 s, so displayed seconds and wave timers run 10 % slow relative to game time | `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish`, `Multiwinia::AdvanceTrunkPorts`; §8.2 |
+| `Multiwinia::Render` comment `// Rocket Riot` on the reinforcement countdown | countdown is a Rocket Riot feature | drawn on every map where trunk-port waves run (Assault, Blitzkrieg, `mp_koth_3P_4`, `mp_cts_3p_3`) | `code/multiwinia.cpp:Multiwinia::Render` |
 
 ## IP items
 
@@ -949,7 +950,7 @@ Contradictions resolved by re-reading code: (1) retribution called vs never call
 | "Incubator" (`buildingname_incubator`) | name | `data/language/english.txt` | "Hatchery" |
 | "Harvester", "Engineer" (`cratename_harvester`) | name | `data/language/english.txt` | "Collector", "Builder" |
 | "Spawn Mania" (`cratename_spawnmania`), "Retribution" (`multiwinia_retribution_maxtasks`) | name / text | `data/language/english.txt` | "Spawn Surge", "Comeback Bonus" |
-| UI strings `crate_message_darwinians` ("*T receives Reinforcements!"), `multiwinia_reinforcementsgiven`, `multiwinia_skirmish_elimination_30`, `multiwinia_player_left`, `objective_redpopulation` | text | `data/language/english.txt` | own string table |
+| UI strings `crate_message_darwinians` ("*T receives Reinforcements!"), `multiwinia_reinforcements` (wave countdown), `multiwinia_reinforcementsgiven`, `multiwinia_skirmish_elimination_30`, `multiwinia_player_left`, `objective_redpopulation` | text | `data/language/english.txt` | own string table |
 | Shapes `spawnpointmultiwinia.shp`, `spawnpoint.shp`, `masterspawnpoint.shp`, `spawnlink.shp`, `trunkport_mp.shp`, `trunkport.shp`, `harvester.shp`, `incubator.shp`, `solarpanel.shp` | art | `data/shapes/` | new meshes |
 | Textures used by the spawn network and ports: `textures/laser.bmp` (link beams), `textures/cloudyglow.bmp` (activation glow), `textures/starburst.bmp` (port status stars) | art | `SpawnBuilding::RenderAlphas`, `SpawnPoint::RenderAlphas`, `SpawnPoint::RenderPorts` | new VFX textures |
 | Sound events `TurnOn`, `TurnOff` (spawn point), `DropSpirit` (harvester), `PickedUp` (spirit), `SpawnEntity` (incubator), `PowerUp` (trunk port) — the event names are generic, the samples bound to them in `data/sounds.txt` are IP | audio | [10](10_audio_design.md) | new samples |
@@ -1116,3 +1117,27 @@ Contradictions resolved by re-reading code: (1) retribution called vs never call
 | `data/levels/mp_tankbattle_2P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
 | `data/levels/mp_tankbattle_3P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
 | `data/levels/mp_tankbattle_4P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+
+## Appendix — dead/legacy code
+
+| Item | Tag | Ref |
+|---|---|---|
+| Single-player spawn formula (`2 + 5·(1 − fractionOccupied) − difficulty term + U[0,1)`), red-team speed-up | [B:LEGACY] | `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance` |
+| `MasterSpawnPoint` single-player branch: global master forces every Birth/Floating Spirit to `SkipStage()` ("accelerate spirits to heaven"); red population < 10 sets the global building online; `GetObjectiveCounter` "red population" | [B:LEGACY] | `MasterSpawnPoint::Advance`, `MasterSpawnPoint::GetObjectiveCounter` |
+| `SpawnPopulationLock` regional limiting with team-0 overpopulation feedback; team-1 lock limits scaled by difficulty at load | [B:LEGACY] (compiled, inert on every shipped MP map) | `SpawnPopulationLock::Advance`, `code/level_file.cpp:LevelFile::ParseBuildings` |
+| Incubator single-player timing `max(0.5, 5 − spirits/10)`; yellow incubators spawning green Darwinians; incubators/control towers only on `mp_sandbox`, `mp_sandbox_all` (GameTypes none) | [B:LEGACY] content | `code/worldobject/incubator.cpp` |
+| Spirit `AddToGlobalWorld` (SP spirits counted into the global world on ascent), `StateShaman`, `StateInStore` | [B:LEGACY] | `code/worldobject/spirit.cpp` |
+| Darwinian soul worship (`SearchForSpirits`, `StateWorshipSpirit`, BoxKites) | [B:LEGACY] in MP | `code/worldobject/darwinian.cpp` |
+| Officer absorb mode and shield spirits (team 0) — absorb not selectable in MP | [B:LEGACY] | `code/worldobject/officer.cpp:Officer::Absorb`, `Officer::ChangeHealth` |
+| Shaman sacrifice spirits and Portal summoning | [B:LEGACY] (Shaman self-deletes) | `code/worldobject/darwinian.cpp`, `code/worldobject/shaman.cpp` |
+| Spirit factory / SpiritStore; spirit-receiver network (`UnprocessedSpirit` rain from the `soulrain` level effect — used by no `mp_` map) | [B:LEGACY] | `code/worldobject/factory.cpp`, `code/worldobject/spiritstore.cpp`, `code/worldobject/spiritreceiver.cpp`, `code/location.cpp:Location::AdvanceSoulRain` |
+| DropShip as a reinforcement type (`defenderreinforcementtype DropShip` in an `old/` map) | [B:LEGACY] | `code/worldobject/dropship.cpp` |
+| `nohandicap` level option — used only by `data/levels/old/mp_koth_2P_4.txt` | [B:LEGACY] data | `code/level_file.cpp` |
+| Generic population cap in `Location::SpawnEntities` (commented out) | [B:DEAD] | `code/location.cpp:Location::SpawnEntities` |
+| Old retribution that spawned 25–34 Darwinians at a random high flat spot (commented out) | [B:DEAD] | `code/multiwinia.cpp` (block after `AdvanceRetribution`) |
+| Commented-out `AdvanceTrunkPorts()` call inside the old Blitzkrieg implementation | [B:DEAD] | `code/multiwinia.cpp` (commented old `AdvanceBlitkrieg`) |
+| Commented alternative team assignment in `RecalculateOwnership`; commented target-type check in `SpawnBuilding::SetBuildingLink`; "no partial control" `winningTeam = 255` line | [B:DEAD] | `code/worldobject/spawnpoint.cpp` |
+| `AdvanceTrunkPorts` body compiled out in the demo-only target | [B:DEMO] (`MULTIWINIA_DEMOONLY`, not baseline) | `code/multiwinia.cpp:Multiwinia::AdvanceTrunkPorts` |
+| Cheat window: spawn 20 Darwinians (spread 30), 20 monster Virii, 10 spirits of team 2, 3 Darwinians per port | [B:DEBUG] | `code/interface/cheat_window.cpp` |
+| Editor population-cap value controls and lock radius sphere | [B:EDITOR] | `code/interface/multiwiniaoptions_window.cpp`, `SpawnPopulationLock::RenderAlphas` |
+| `TheBeast` exclusion from starting powerups | [B:DEBUG] (`INCLUDE_THEBEAST` only under `TARGET_DEBUG`) | `code/location.cpp:Location::InitialiseTeam` |

@@ -814,15 +814,244 @@ Correction to P01's singleton list [C]: `g_log` (`DarwiniaLogBuffer`, `code/lib/
 
 ## 6 Start-up sequence
 
-<!-- S6 -->
+### 6.1 Numbered order
+
+Verified line by line against `code/lib/window_manager_win32.cpp:WinMain`, `code/main.cpp:AppMain`, `RunTheGame`, `Initialise`, `code/app.cpp:App::App`, `App::Initialise`, `code/loading_screen.cpp:LoadingScreen::LoadingScreen`, `LoadingScreen::Render` [C]. Thread in brackets.
+
+1. **`WinMain`** [Main] (`code/lib/window_manager_win32.cpp`, compiled when `USE_DIRECT3D` is not defined; the D3D build has its own `WinMain` in `code/lib/window_manager_directx.cpp`): store `g_hInstance`; `g_windowManager = new WindowManagerWin32()` (no window yet); `AppMain(cmdLine)`; return `WM_QUIT`.
+2. **`AppMain`** [Main]: whole body inside SEH `__try { … } __except(RecordExceptionInfo(GetExceptionInformation(), profile, "AppMain", "0B9432AF", DARWINIA_VERSION))` (`USE_CRASHREPORTING && TARGET_MSVC`). `--write-version` → write file `version` containing `DARWINIA_VERSION` and return. Copy `GetProfileDirectory()` into the crash handler's buffer. Call `RunTheGame(cmdLine)`.
+3. **`RunTheGame` → `Initialise(cmdLine)`** [Main]:
+   1. `--NoProfile` → `UseProfileDirectory(false)`. Resolve the profile directory; if non-empty create it recursively and set it as the debug-log path prefix (empty prefix when `--NoProfile`).
+   2. `DUMP_DEBUG_LOG` (defined in FULL) → `AppDebugOutRedirect("debug.txt")`; log `APP_NAME APP_VERSION built __DATE__`.
+   3. `StandardiseCPUPrecision()` → `_control87(_PC_53, _MCW_PC)`: x87 53-bit mantissa for the main thread (determinism, [22](22_determinism_and_networking.md)).
+   4. `g_systemInfo = new SystemInfo`; `InitialiseHighResTime()`.
+   5. `g_eventHandler = new W32EventHandler()`.
+   6. `g_loadingScreen = new LoadingScreen()` → `new WorkQueue` (**Load thread starts**) and queues `SetWorkingThreadProcessor` (affinity mask `0x01|0x04|0x10|0x40`, CPUs 0,2,4,6).
+   7. `InitialiseInputManager()` → `g_inputManager` with drivers in this order: `ConjoinInputDriver`, `ChordInputDriver`, `InvertInputDriver`, `IdleInputDriver`, `W32InputDriver`, `XInputDriver` (only if `LoadLibrary("XINPUT1_3")` succeeds; also stored in `g_xInputDriver`), `PrefsInputDriver`, `ValueInputDriver`, `AliasInputDriver` (semantics: [06](06_player_control_and_input.md)).
+   8. **`g_app = new App()`**:
+      1. member initialisers: `m_mainThreadId = NetGetCurrentThreadId()`; `m_soundsWorkQueue = new WorkQueue` (**SndL thread starts, idle**).
+      2. `g_app = this`; `m_netLib = new NetLib; m_netLib->Initialise()`.
+      3. `SetThreadAffinityMask(main, 0x02|0x08|0x20|0x80)` (CPUs 1,3,5,7).
+      4. `m_resource = new Resource; ParseArchive("init.dat")`.
+      5. `g_prefsManager = new PrefsManager(GetPreferencesPath())`; `SetPreferenceOverrides()` (no-op in FULL). Note: `default_preferences.txt` lives in `main.dat`, which is not loaded yet ([31](31_platform_build_and_tools.md)).
+      6. `m_renderer = new Renderer; Initialise()` (creates the window and the GL context on the main thread, with the resolution fallback chain of [24](24_rendering.md)); `SetOpenGLState()`.
+      7. `glGetIntegerv(GL_MAX_TEXTURE_SIZE)` → `BitmapRGBA::SetMaxTextureSize`.
+      8. `SPECTATOR_ONLY` → `m_spectator = true` (not in FULL).
+      9. `g_loadingScreen->m_workQueue->Add(&App::Initialise, this)` then **`g_loadingScreen->Render()`**: the main thread loops (§9.5) — publisher logo fades in over 1.0 s, GL jobs from the worker are executed, the network is pumped under `TryLock` — while the **Load thread runs `App::Initialise`**:
+         1. `m_requestedMission = m_requestedMap = "null"`; read the first line of file `origin` into `m_originVersion`.
+         2. `ParseArchive("language.dat")`; `InitLanguage()` → `SetLanguage` (language table; fonts `speccy`, `editor`, `square` initialised; their textures are uploaded through main-thread GL jobs).
+         3. `ParseArchive` `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`.
+         4. pref `RenderNegative` → `m_negativeRenderer`, `m_backgroundColour`; `UpdateDifficultyFromPreferences()`.
+         5. `new GameCursor`, `new MarkerSystem`, `new MultiwiniaHelp`, `new SoundSystem` (no device yet), `new ClientToServer`.
+         6. `InitMetaServer()` → `Authentication_RequestStatus` (**authentication thread starts**), `MetaServer_Initialise`, `MetaServer_Connect` (**metaserver listener thread starts**, UDP port 5009 or any free port), `MatchMaker_LocateService`.
+         7. `m_clientToServer->OpenConnections()` → bind the client UDP listener (pref `NetworkClientPort`, default 4001, else any free port) and queue `ListenThread` on a new `WorkQueue` (**client listener thread starts** and blocks in `NetSocketListener::StartListening`).
+         8. `new UserInput` (calls `EclInitialise(ScreenW, ScreenH)`), `new Camera`.
+         9. `m_gameDataFile = "game.txt"`; `SOUND_EDITOR` → `new EffectProcessor` [B:DEBUG].
+         10. `SetProfileName(pref UserProfile, default "none")` (saves preferences).
+         11. `new ParticleSystem`, `new Gesture("gestures.txt")`, `new Script`, `new ShamanInterface`, (`ATTRACTMODE_ENABLED`: `new AttractMode` [B:DEAD]), `new ControlHelpSystem`.
+         12. pref `OTHER_LARGEMENUS` == 2 → `m_largeMenus`.
+         13. `new AchievementTracker`, `new Multiwinia`, `new GameMenu`.
+         14. (`BENCHMARK_AND_FTP`: `new BenchMark` [B:DEAD]); (`USE_DARWINIA_MOD_SYSTEM`: load mod [B:DEAD]).
+         15. `m_globalWorld = new GlobalWorld`.
+         16. `TaskManagerInterface::CreateTaskManager()` (Icons variant, game mode is None).
+         17. `GameMenuWindow::PreloadTextures()`.
+      10. `Render()` returns when the Load queue is idle, no GL job is pending and the logo has faded out (1.0 s fade after the queue empties). `m_requireSoundsLoaded` is still false, so sounds are not awaited.
+      11. `m_soundsWorkQueue->Add(&SetWorkingThreadProcessor)`, `Add(&App::LoadSounds, this)` → the **SndL thread** parses `sounds.dat` then `sounds2.dat`, sets `m_soundsLoaded = true` and signals `SoundSystem::m_initializedEvent`. Queued only after `App::Initialise` finished so that two unrar decompressions never overlap ("unrar not thread safe" comment).
+   9. `ReadInputPreferences()` [Main]: system input prefs from resources (`AppReleaseAssert` that it opens), then the locale file (override), then the user file (Unicode reader, falling back to ANSI; override).
+   10. `TARGET_OS_VISTA` checks [B:DEAD].
+   11. `g_target = new TargetCursor()`; `EntityBlueprint::Initialise()` (entity stats); `g_windowManager->HideMousePointer()`.
+   12. pref `StartMap` → `m_requestedLocationId = GetLocationId(name)` and copy map/mission names [B:LEGACY developer path].
+   13. `m_renderer->SetOpenGLState()`.
+4. `g_loadingScreen->m_initialLoad = false`; (`TEST_HARNESS_ENABLED` branch [B:DEAD]); enter the outer loop (§9.1). The first `MainMenuLoop` iteration's `HandleCommonConditions` → `App::CheckSounds` opens the audio device on the main thread (`SoundSystem::Initialise`: `LoadEffects`, `LoadBlueprints`, `RestartSoundLibraryInternal`), usually **before** `sounds.dat` has finished loading; until `m_soundsLoaded` becomes true every game-sound trigger is dropped by `SoundSystem::NotReadyForGameSoundsYet` [C] `code/sound/soundsystem.cpp`.
+
+Resolved: P16 §27.3 states that the `App` constructor parses `menusounds.dat`, `main.dat`, `patch.dat`, `language.dat`, `branding.dat` on the main thread; the code shows these `ParseArchive` calls are in `App::Initialise`, which runs on the loading-screen worker thread [C] `code/app.cpp:App::Initialise`, `App::App`.
+
+### 6.2 Start-up sequence diagram
+
+```mermaid
+sequenceDiagram
+  participant M as Main thread
+  participant L as Load worker
+  participant S as SndL worker
+  participant N as Network threads
+  M->>M: WinMain, AppMain SEH, Initialise: profile dir, FPU 53-bit, SystemInfo, hi-res timer, W32EventHandler
+  M->>L: new LoadingScreen starts Load thread, queue SetWorkingThreadProcessor
+  M->>M: InitialiseInputManager
+  M->>S: App member init starts SndL thread, idle
+  M->>M: NetLib, affinity 0xAA, Resource + init.dat, PrefsManager, Renderer window + GL
+  M->>L: queue App::Initialise
+  M->>M: LoadingScreen::Render loop: logo, RunJobs, KeepAlive under TryLock
+  L->>L: language.dat, language, main.dat, patch.dat, menusounds.dat, branding.dat
+  L->>M: font and texture uploads as GL Jobs, worker blocks in Job::Wait
+  M-->>L: Job::Process on main, signal
+  L->>N: InitMetaServer: auth thread, metaserver listener
+  L->>N: OpenConnections: client listener thread
+  L->>L: UserInput, Camera, ParticleSystem, Gesture, Script, ControlHelp, AchievementTracker, Multiwinia, GameMenu, GlobalWorld, TaskManagerInterface, PreloadTextures
+  L-->>M: queue empty, no jobs, logo faded: Render returns
+  M->>S: queue SetWorkingThreadProcessor, LoadSounds
+  S->>S: sounds.dat, sounds2.dat, m_soundsLoaded = true
+  M->>M: ReadInputPreferences, TargetCursor, EntityBlueprint, SetOpenGLState
+  M->>M: RunTheGame outer loop, MainMenuLoop, first CheckSounds opens audio device
+```
 
 ## 7 Shutdown and teardown
 
-<!-- S7 -->
+### 7.1 Process shutdown (`Finalise`)
+
+The process ends only through `HandleCommonConditions` seeing `g_app->m_requestQuit` → `Finalise(); exit(0)` [C] `code/main.cpp:HandleCommonConditions`. `m_requestQuit` is set by: the `ControlGameDebugQuit` control (`code/main.cpp:HandleCommonConditions`), `WM_CLOSE` (`code/lib/input/win32_eventhandler.cpp:W32EventHandler::WndProc`), Alt+F4 (`code/lib/input/inputdriver_win32.cpp:W32InputDriver::WndProc`), the front-end quit buttons `QuitButton` and `QuitAuthKeyButton` (`code/UI/QuitButton.h`, `code/UI/QuitAuthKeyButton.h`), and `SaveOnQuitWindow` buttons (`code/interface/save_on_quit_window.cpp`, [B:LEGACY]) [C]. Because `HandleCommonConditions` is called from every loop (menu, match, global-world stub), a quit can happen mid-match. Paths that call `exit(0)` **without** `Finalise`: `RunAutoPatcherButton::MouseUp` (launches `autopatch.exe`, `code/UI/update_page_buttons.h`; reachability in [09](09_meta_systems.md)), the Vista check [B:DEAD], `DemoEndWindow` [B:DEAD], `Script` quit opcode [B:LEGACY] [C].
+
+`Finalise` order [C] `code/main.cpp:Finalise`:
+
+1. `m_clientToServer->ClientLeave()` — if connected: queue 3 `CLIENT_LEAVE` letters, lock `m_networkMutex`, `AdvanceSender()`, unlock, `NetSleep(100)` (the main thread blocks 100 ms); then reset the client's session state.
+2. `MetaServer_Disconnect()`.
+3. (macOS only: `Empty()`/`Wait()` the loading-screen queue and the sound preload queue.)
+4. If the sound system is initialised and `g_soundLibrary2d` exists: `g_soundLibrary2d->Stop()`; delete `g_soundLibrary3d`, `g_soundLibrary2d`; set both NULL.
+5. `EclShutdown()`.
+6. Fonts: `Shutdown()` of `g_gameFont` (or `g_oldGameFont` when CJK aliasing is active), `g_editorFont` (or `g_oldEditorFont`), `g_titleFont`.
+7. `delete g_windowManager` (destroys the window and GL context **before** the subsystems that own GL resources are deleted — their GL handles are simply abandoned) [C]/[I].
+8. `delete g_target`; `delete g_systemInfo`; **`delete g_app`** (§7.2).
+9. `g_cachedSampleManager.EmptyCache()`; `delete g_inputManager`; `delete g_eventHandler`; `Profiler::Stop()`.
+10. `exit(0)` (in the caller). `g_loadingScreen` is never deleted; its worker thread, the metaserver/authentication threads and (if a match was quit) the server listener thread are torn down by process exit [C] (no join code exists).
+
+### 7.2 `~App` deletion order
+
+[C] `code/app.cpp:App::~App`: `m_benchMark` ([B:DEAD]) → `m_gameMenu` → `m_multiwinia` → `m_globalWorld` → `m_langTable` → (`m_tutorial`, demo build only) → `m_taskManagerInterface` → `m_shamanInterface` → `m_controlHelpSystem` → (`m_attractMode`, [B:DEAD]) → `m_script` → (`m_sepulveda`, [B:DEAD]) → `m_gesture` → `m_particleSystem` → `m_markerSystem` → (`m_helpSystem`, [B:DEAD]) → `m_multiwiniaHelp` → (`m_effectProcessor`, [B:DEBUG]) → `m_camera` → `m_userInput` → `m_clientToServer` (busy-waits for an empty outbox, stops the listener, joins its work queue) → `m_soundSystem` → `m_gameCursor` → `m_renderer` → `g_prefsManager` → `m_soundsWorkQueue` (joins the SndL thread; it drains any queued item first) → `m_resource` → `m_netLib` → `m_achievementTracker`.
+
+`m_location`, `m_locationInput` and `m_server` are **not** deleted by `~App`; they are expected to be NULL. Quitting from inside a match (Alt+F4 / `WM_CLOSE`) therefore leaks the live `Location`, `LocationInput` and `Server` objects (the process exits immediately afterwards) [C] for the missing deletes / [I] for the practical effect.
+
+### 7.3 Per-match teardown (`App::ShutdownCurrentGame`)
+
+Called once at the end of `LocationGameLoop`, after the fade-out completed and the "Ambience EnterLocation" sounds were stopped and "ExitLocation" was triggered [C] `code/main.cpp:LocationGameLoop`. Order [C] `code/app.cpp:App::ShutdownCurrentGame`:
+
+1. `SaveProfile(false, true)` — no-op in Multiwinia.
+2. pref `RecordDemo` == 1 and hosting → `m_server->SaveHistory("serverHistory.dat")` (command-stream recording, [22](22_determinism_and_networking.md)).
+3. `g_explosionManager.Reset()`.
+4. if a location exists: `m_globalWorld->TransferSpirits(m_locationId)` [B:LEGACY semantics].
+5. `m_clientToServer->ClientLeave()` (3 × `CLIENT_LEAVE`, flush under `m_networkMutex`, `NetSleep(100)`, session state reset, `g_lastProcessedSequenceId = -2`, `m_globalWorld->m_myTeamId = 255`, `m_requestedMap = "null"`).
+6. `m_location->Empty()`.
+7. `m_particleSystem->Empty()`.
+8. `m_markerSystem->ClearAllMarkers()`.
+9. `m_multiwiniaHelp->Reset()`.
+10. `delete m_location; m_location = NULL; m_locationId = -1`.
+11. `delete m_locationInput; m_locationInput = NULL`.
+12. `delete m_server; m_server = NULL` (`~Server` stops LAN/WAN registration and matchmaker identification for its listener, stops the listener, empties history/clients/teams/inbox/outbox).
+13. `m_multiwinia->Reset()`.
+14. `m_globalWorld->m_myTeamId = 255`; `m_globalWorld->EvaluateEvents()`.
+15. `m_userRequestsPause = false`.
+16. `SaveProfile(true, false)` — no-op in Multiwinia.
+
+The network session is therefore strictly **one match long**: after a match every peer leaves and the host's `Server` is destroyed; a rematch goes back through the lobby and a new session (§8.6) [C].
 
 ## 8 Lifetimes: process, session, match
 
-<!-- S8 -->
+### 8.1 Lifetime classes
+
+| Lifetime | Begins | Ends | Objects [C] |
+|---|---|---|---|
+| **Process** | `WinMain` / `Initialise` / `App::Initialise` | `Finalise` / process exit | `g_app` and every member marked "process" in §4.2 (`Resource`, `Renderer`, `SoundSystem`, `ClientToServer` + client listener, `Camera`, `UserInput`, `ParticleSystem`, `GameMenu`, `Multiwinia` + `LobbyTeam[6]`, `GlobalWorld`, `MarkerSystem`, `MultiwiniaHelp`, `ControlHelpSystem`, `GameCursor`, `Gesture`, `Script`, `ShamanInterface`, `AchievementTracker`), all `g_*` globals of §5.1, metaserver and authentication threads, `g_loadingScreen` and its worker |
+| **Front-end visit** | `GameMenu::CreateMenu` (first `MainMenuLoop` iteration whose fade is complete) | `GameMenu::DestroyMenu` (exit of `MainMenuLoop`) | `GameMenuWindow` ("multiwinia_mainmenu_title") and its child pages; `m_gameMode = GameModeNone`; `Multiwinia::Reset()` on entry; camera in `ModeSphereWorldFocus` at (-900, 3000, 3970) looking (0, 0.5, -1) [C] `code/game_menu.cpp:GameMenu::CreateMenu` |
+| **Session** | host: `App::StartSinglePlayerServer` / `StartMultiPlayerServer` from the lobby UI (`GameMenuWindow::SetupGameSelectPage`, `UpdateMainPage`); joiner: `App::StartNetwork(false, ip, port)` from the join page (`code/UI/GameMenuWindow.cpp` L2039, L2083) → `ClientToServer::ClientJoin` | `App::ShutdownCurrentGame` — after a match, or when the player backs out of the lobby (`FinishMultiwiniaButton::MouseUp`, `GameMenuWindow::UpdateMultiplayerPage`) | `Server` + server listener thread (host), client connection state, client id, sync-RNG seed (`NET_DARWINIA_RANDSEED` delivered with CLIENTID), `m_iframeHistory`, `m_outOfSyncClients`, `g_lastProcessedSequenceId` (-1 at CLIENTID, -2 at leave), LAN/WAN registration threads (while advertised), matchmaker identity threads |
+| **Match** | START_GAME update (flags), `DoEnterLocation` (objects) | `ShutdownCurrentGame` | `Location` (and everything it owns: landscape, teams, units, all world objects, grids, routing, water, clouds), `LocationInput`, `Multiwinia` per-match state (reset by `Multiwinia::Reset`), class statics reset by `Location::Init` (§5.3), `GameTimer` state (reset at START_GAME) |
+| **Mode** | `TaskManagerInterface::CreateTaskManager` | next `CreateTaskManager` | `TaskManagerInterface*` variant (boot, `DoEnterLocation`, gamepad ↔ keyboard switch) |
+| **Load** | `g_loadingScreen->Render()` | queue idle and job list empty | loading-screen overlay, `IsRendering() == true` (sounds muted, `Resource` texture lookups locked) |
+| **Frame** | top of a loop iteration | bottom | `TeamControls` accumulation (sent every 0.1 s), Eclipse event processing, per-frame advance of UI/camera/sound |
+
+### 8.2 Program state machine
+
+Resolved: P01 §2.1 described the return from a match as "`m_requestedLocationId = -1` only, then `EnterGlobalWorld` → `GlobalWorldGameLoop` sets `m_atMainMenu = true`". The code shows the in-match exit button sets **both** `m_requestedLocationId = -1` and `m_atMainMenu = true` (`code/interface/mainmenus.cpp:ExitLevelButton::MouseUp`, used by `LocationWindow::Create` directly after game over and by `ConfirmExitWindow` before it), so the next outer-loop iteration goes straight to `MainMenuLoop`; the `GlobalWorldGameLoop` stub is reached only if something clears `m_requestedLocationId` without setting `m_atMainMenu` (no such path in a Multiwinia match) [C]. This also resolves P01 U7 ("who sets `m_requestedLocationId = -1`").
+
+```mermaid
+stateDiagram-v2
+  [*] --> Boot
+  Boot --> FrontEnd: Initialise done, m_atMainMenu true
+  state FrontEnd {
+    [*] --> Menus
+    Menus --> Lobby: game-select page creates Server, or join page ClientJoin
+    Lobby --> Menus: FinishMultiwiniaButton, ShutdownCurrentGame
+  }
+  FrontEnd --> Loading: START_GAME update - requestedLocationId 999, gameMode Multiwinia, loadingLocation true, GameTimer Reset, atMainMenu false
+  Loading --> InMatch: DoEnterLocation done on Load thread, LocationGameLoop starts, loadingLocation false
+  InMatch --> InMatch: Multiwinia ResetLocation - multi-round Assault, unreachable from UI
+  InMatch --> FadeOut: ExitLevelButton - requestedLocationId -1 and atMainMenu true
+  FadeOut --> Teardown: fade complete, ControlHelpSystem Shutdown
+  Teardown --> FrontEnd: ShutdownCurrentGame, outer loop sees atMainMenu
+  FrontEnd --> [*]: m_requestQuit, Finalise, exit 0
+  Loading --> [*]: m_requestQuit
+  InMatch --> [*]: m_requestQuit, leaks Location and Server
+```
+
+### 8.3 One match, end to end
+
+```mermaid
+sequenceDiagram
+  participant UI as Front end UI - Main
+  participant APP as App and loops - Main
+  participant SRV as Server - host only
+  participant C2S as ClientToServer
+  participant LD as Load worker
+  participant LOC as Location
+  UI->>APP: game-select page: StartSinglePlayerServer or StartMultiPlayerServer
+  APP->>SRV: new Server, Initialise: bind port 4000, start server listener thread, seed, next tick = now + 0.1
+  APP->>C2S: ClientJoin - loop-back for host, UDP for joiners
+  SRV-->>C2S: CLIENTID with RANDSEED, then TEAMASSIGN, game options, every 0.1 s an UPDATE
+  UI->>C2S: host presses start: START_GAME request
+  SRV-->>C2S: UPDATE n contains START_GAME
+  C2S->>APP: loadingLocation true, requestedLocationId 999, gameMode Multiwinia, GameTimer Reset speed 0, atMainMenu false
+  APP->>APP: MainMenuLoop exits: DestroyMenu, requireSoundsLoaded true
+  APP->>LD: EnterLocation queues DoEnterLocation, main renders loading screen
+  LD->>LD: CreateTaskManager, ResetUniqueIdSeed, new Location, new LocationInput
+  LD->>LOC: Location::Init - level load, AppSeedRandom 1, statics reset
+  LD->>APP: GL uploads and VBO binds as main-thread Jobs
+  Note over APP,SRV: meanwhile loading screen: KeepAlive every 1 s, host server keeps ticking at 10 Hz
+  LD-->>APP: done: GunTurret::SetupTeamShapes, locationId 999, camera bounds and mount start
+  APP->>APP: LocationGameLoop: fade-in 0.6 s, EnterLocation ambience
+  C2S->>LOC: catch up buffered updates, 20 slices per iteration, at most 0.3 s per frame
+  Note over LOC: grace period then RequestSpeedChange 1.0, game runs
+  LOC->>LOC: game over: RequestSpeedChange 0.0 rate 0.2 and LockSpeedChange
+  UI->>APP: Esc, LocationWindow, Leave game: requestedLocationId -1, atMainMenu true
+  APP->>APP: fade-out, ShutdownCurrentGame: ClientLeave, delete Location, LocationInput, Server, Multiwinia Reset
+  APP->>UI: MainMenuLoop, CreateMenu
+```
+
+### 8.4 Location, GlobalWorld and Multiwinia
+
+| Object | Created | Destroyed | Per-match behaviour [C] |
+|---|---|---|---|
+| `Location` | `DoEnterLocation` on the Load thread: `g_app->m_location = new Location()` is assigned **before** `Location::Init(m_requestedMission, m_requestedMap)` runs, so code called during `Init` can already reach the new location through `g_app->m_location` (resolves the `_meta_unknowns` question about monster/Futurewinian AI spawn ordering) | `ShutdownCurrentGame` (`Empty()` then `delete`); `~Location` also zeroes `Entity::s_entityPopulation` | `Location::Init` begins with `LoadLevel`, then `AppSeedRandom(1)` (the **unsynced** app RNG is reseeded identically every match) and resets the class statics listed in §5.3; level loading, container set-up and update order are in [21](21_simulation_and_entity_model.md) |
+| `Location` (rebuild) | `Multiwinia::ResetLocation` on the **main** thread, called from `LocationGameLoop` right after `AdvanceAndCatchUp` when `m_multiwinia->m_resetLevel` is set (multi-round Assault: set at the end of a round when further rounds remain, `code/multiwinia.cpp` L1862) | same | rotates team positions, `delete` + `new Location` + `Init`, restores the last processed slice index, `GameTimer::Reset()`, grace timer = `GRACE_TIME`; no loading screen and no `WorldObjectId::ResetUniqueIdSeed`. Because the flag is raised inside slice 8 but acted on only after `AdvanceAndCatchUp` returns, peers may have processed different numbers of further slices before the rebuild [I] → desync risk; unreachable from the shipped UI according to [01](01_game_modes.md) |
+| `GlobalWorld` | `App::Initialise` | `~App` | Darwinia's campaign world; in Multiwinia it only carries `m_myTeamId` (255 = none; set by `Multiwinia::InitialiseTeam`), research levels (forced in `Location::Init` for MP), `GenerateBuildingId`/`s_nextUniqueBuildingId`, and `EvaluateEvents()` (called every frame with a "DELETEME: debug" comment and after each match) |
+| `Multiwinia` | `App::Initialise` | `~App` | rules engine and `LobbyTeam m_teams[NUM_TEAMS]` (lobby-visible team data that `Team` objects reference); `Reset()` in `GameMenu::CreateMenu` and `ShutdownCurrentGame`; advanced at slice 8 of every tick, **even while paused** (`ClientToServer::ProcessAllServerLetters` calls it outside the `!GamePaused()` guard, but only when a location exists) |
+| `LocationInput` | `DoEnterLocation` | `ShutdownCurrentGame` | in-match discrete input → network requests ([06](06_player_control_and_input.md)) |
+| `ParticleSystem`, `MarkerSystem`, `MultiwiniaHelp`, `ExplosionManager` | process | process | emptied/reset in `ShutdownCurrentGame` (`Empty`, `ClearAllMarkers`, `Reset`, `g_explosionManager.Reset`) |
+
+### 8.5 UI layers
+
+| Layer | Created | Destroyed | Notes [C] |
+|---|---|---|---|
+| Eclipse window system | `EclInitialise(ScreenW, ScreenH)` in `UserInput::UserInput` (Load thread at boot); re-initialised on resolution change (`code/interface/prefs_screen_window.cpp`) | `EclShutdown()` in `Finalise` | windows are registered ad hoc with `EclRegisterWindow`, removed by name with `EclRemoveWindow`; `RemoveAllWindows()` (`code/main.cpp`) removes them all and re-centres the mouse when a location exists; pumped by `UserInput::Advance` (`EclUpdateMouse`, `EclUpdate`) and drawn by `UserInput::Render` (`EclRender`) ([28](28_ui_framework.md)) |
+| `GameMenu` | `App::Initialise` | `~App` | owns map lists `m_maps[gameType]` (process lifetime) |
+| `GameMenuWindow` (front end + lobby) | `GameMenu::CreateMenu` (after the fade completes; also `RemoveAllWindows()` and `Multiwinia::Reset()`) | `GameMenu::DestroyMenu` at `MainMenuLoop` exit (`EclRemoveWindow("multiwinia_mainmenu_title")`, `StartFadeOut()`) | page state machine: [09](09_meta_systems.md) |
+| `LocationWindow` (in-match menu) | `ControlMenuEscape` in `LocationGameLoop` when no window is open and the task manager is hidden (sets `m_hideInterface = true`, camera `DebugModeAuto`) | next `ControlMenuEscape` (`RemoveAllWindows`), its buttons, or `RemoveAllWindows` on match exit | contains `ExitLevelButton` (after game over) or `ConfirmExitButton` |
+| `ControllerUnpluggedWindow` | `HandleCommonConditions` on `ControlControllerUnplugged` | `EclRemoveWindow("controller_unplugged")` on `ControlControllerPlugged` | |
+| Chat input, debug and network windows | their key bindings | user | network stats window ships in FULL ([32](32_debug_test_and_performance.md)) |
+| HUD: `TaskManagerInterface*`, `GameCursor`, `MarkerSystem`, `MultiwiniaHelp`, `ControlHelpSystem`, `ShamanInterface` | §4.2 | §4.2 | advanced every in-match frame after the simulation step (§9.4); `m_hideInterface` hides them |
+| Loading-screen overlay | each `g_loadingScreen->Render()` | when its loop ends | on non-initial loads with `m_atMainMenu` still true (e.g. thumbnail preload) the menu is drawn under the spinner ([09](09_meta_systems.md)) |
+
+### 8.6 Network objects
+
+| Object | Lifetime | Created | Destroyed | Threads |
+|---|---|---|---|---|
+| `NetLib` (Winsock) | process | `App::App` | `~App` | — |
+| `ClientToServer` object, client listener socket and its `WorkQueue` thread | process | `App::Initialise`, `OpenConnections` | `~App` → `~ClientToServer` | CL (receive), Main |
+| client connection (`m_connectionState`, `m_clientId`, `m_sendSocket`, inbox/outbox contents, `m_iframeHistory`, `m_outOfSyncClients`) | session | `ClientJoin` (creates `m_sendSocket` only when not hosting — the host's client talks to its own `Server` without sockets) | `ClientLeave` | Main, CL |
+| `Server` object (history, clients, teams, inbox/outbox) | session (host only) | `StartNetwork(true, …)` | `ShutdownCurrentGame` | Main (all sequencing and sending), SL (receive) |
+| server listener thread | session (host only) | `Server::Initialise` → `NetStartThread(ListenThread)` (port pref `NetworkServerPort`, default 4000; a failed bind is not reported — TODO comment) | `~Server` → `m_listener->StopListening()` | SL |
+| LAN / WAN registration threads | while advertised | `Server::Advertise` (every server tick) starts `MetaServer_StartRegisteringOverLAN` / `MatchMaker_StartRequestingIdentity` + `MetaServer_StartRegisteringOverWAN` when permitted and not a single-player server | `Server::Advertise` stop calls, `~Server` | MS |
+| matchmaker identity thread | per identified listener | `MatchMaker_StartRequestingIdentity(listener)` (server: WAN advertising; client: `ClientToServer::StartIdentifying` from the join page) | `MatchMaker_StopRequestingIdentity` (`~Server`, `ClientLeave` → `StopIdentifying`) | MS |
+| metaserver connection and listener thread, authentication thread | process | `App::InitMetaServer` | `MetaServer_Disconnect` in `Finalise` (threads end with the process) | MS |
+| `FTPManager` (client) | process | `ClientToServer::ClientToServer` | `~ClientToServer`; `Reset()` in `ClientLeave` | Main |
+
+Protocol semantics of all of these are in [22](22_determinism_and_networking.md).
 
 ## 9 Main loops
 

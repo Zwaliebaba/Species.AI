@@ -438,6 +438,25 @@ All English strings behind the phrase ids below are Introversion text (`data/lan
 | `banner_template.psp` | art source | `data/icons/` | omit |
 | Third-party brands in formats: RAR/UnRAR (format licence), DirectSound effect names `DSound_*` (Microsoft), Paint Shop Pro, Photoshop `.grd`, amBX (`ambx.dat`) | third-party | as listed | avoid RAR; use generic effect names |
 
+<!-- from X2a_asset_catalogue_visual -->
+## IP register
+All shipped art, meshes, animation scripts, fonts, shaders and file names in scope are Introversion Software IP (or third-party brands). Nothing may be reused; the plan below gives each category a neutral, re-creatable placeholder and naming scheme so that the new team can build an asset list with the same technical roles.
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| Darwinian / Multiwinian / Futurewinian character sprites (`data/sprites/darwinian*.bmp`, `futurewinian.bmp`, `ghost.bmp`, `santahat.bmp`, `lasertrooper.bmp`, `egg.bmp`, `virii.bmp`, `brainwaves.bmp`, `nuke.bmp`, `sub*.bmp`, `sound.bmp`; `data/animations/darwinian*.bmp`; `data/textures/darwinian.bmp`) | art + character names | `code/worldobject/darwinian.cpp`, `team.cpp`, `souldestroyer.cpp`, `nuke.cpp` | `unit_basic.png`, `unit_hurt_1..4.png`, `unit_side.png`, `unit_alt.png`, `ghost_fx.png`, `hat_seasonal.png`, `creature_tail.png`; generic flat-colour stick-figure style produced in-house |
+| Dr Sepulveda portrait frames (`data/sepulveda/sepulveda1–5.bmp`) | character art | `code/clouds.cpp:Clouds::RenderFace` | `advisor_face_idle_1..3`, `_blink`, `_talk` (or drop the feature) |
+| Studio and game logos/titles: `data/textures/ivlogo.bmp`, `data/icons/mwlogo.bmp`, `data/textures/mwtitle.bmp`, `data/textures/multiwinia.bmp`, `data/textures/plusmenu/*`, `data/icons/darwin_research_associates.bmp` (in-fiction company "Darwin Research Associates"), `data/textures/program_darwinia.bmp` | brand | loading screen, front-end | `studio_logo_placeholder`, `game_title_wordmark`, `in_fiction_corp_logo` |
+| Third-party brands: `data/textures/xboxlivearcade.bmp` (Microsoft), `data/mwhelp/360_controller.bmp` and `data/icons/button_*.bmp` controller glyphs (Xbox 360 trade dress), `data/textures/ambrosia_logo.bmp`, `prices_ambrosia.bmp` (Ambrosia Software), `prices_steam.bmp` (Valve/Steam), `msn_oberon_combosplash.bmp` (MSN/Oberon), `data/shapes/carrybillboard_pcg/_tpcg/_xfire/_zone.shp` and `.max` sources (PC Gamer, XFire, Zone — [I] from the suffixes), `data/textures/dmacrew.bmp`, `speccy_screen.bmp` (demo-scene / ZX Spectrum homage) | third-party brand | various (mostly unused) | do not recreate; platform-neutral input glyphs (`input_glyph_<button>`), no store or magazine branding |
+| All 139 meshes and 133 `.max` sources (buildings, units, statues, world-map spheres; names such as `souldestroyer*`, `darwinian.shp`, `officer.shp`, `trunkport*`, `spiritreceiver*`, `masterspawnpoint.shp`) | 3D art + names | `data/shapes/**` | new low-poly flat-shaded meshes named by role: `bld_spawn_point`, `bld_capture_zone`, `bld_turret_base/barrel_<type>`, `unit_officer`, `unit_tank_body/turret`, `prop_statue_<n>`, `prop_obstacle_<n>`; keep the marker naming *pattern* (`Marker<Role><n>`) only if the new code needs named attachment points |
+| Map thumbnails and map file names (`data/thumbnails/mp_*.bmp`) | level design art + names | front-end | `map_<mode>_<players>p_<n>_thumb` generated from new maps |
+| Help illustrations and mode pictures (`data/mwhelp/*.bmp`), animated help panels (`data/animations/*.anim` + bitmaps) | art + layout | help windows, tutorial overlay | new diagrams per mode (`help_<mode>_<page>`, `mode_<mode>`); re-author panel scripts in a new format |
+| Terrain colour ramps, wave and water tables (`data/terrain/*.bmp`; names like `landscape_icecaps`, `launchpad`, `containment`, `stronghold`, `jailbreak`) | art (palette) + names | P11 | procedurally generated ramps `terrain_ramp_<theme>`, `water_<theme>`, `waves_<theme>` |
+| VFX and UI textures (`glow`, `starburst`, `cloudyglow`, `laser*`, `beam`, `bubble`, `lightning`, `particle`, `triangleoutline`, `shapewireframe`, `interface_*`, `menuhighlight`, cursor and marker icons, task/crate icons `icon_*.bmp`, `gesture_*.bmp`) | art | §25.5 | regenerate procedurally or redraw: `fx_glow_soft`, `fx_star`, `fx_beam`, `ui_panel_gradient`, `cursor_<state>`, `icon_<ability>` |
+| Bitmap fonts `speccy`, `editor`, `square` (all atlases and legacy font bitmaps) | typeface art | `data/textures/unicode/`, `data/textures/*font*` | licensed open-licence fonts rasterised at run time |
+| HLSL shaders (`data/shaders/*`) | code | D3D build | re-implement from the behavioural spec in 24_rendering |
+| In-asset text and names: file stems containing "darwinian", "multiwinia", "sepulveda", "futurewinian", "darwinia", "souldestroyer", "virii" | names | throughout | role-based names as above |
+
 <!-- from X2b_asset_catalogue_audio -->
 ## IP register
 

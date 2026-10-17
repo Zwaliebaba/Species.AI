@@ -26,3 +26,11 @@ shader,HLSL shaders (vs/ps/ps3 + globals.h),data/shaders/*
 dat-archive,Packed .dat (RAR) archives built from data/,
 psp,Paint Shop Pro source image,data/icons/*.psp
 grd,Photoshop gradient,data/untitled gradients.grd
+text-common,Common text tokenisation conventions for asset text files,
+redshirt,"redshirt2" obfuscated user save files (runtime-written),
+pack-list,Data-build inclusion/exclusion list files (tools/*.txt lists),
+icons,Icon naming convention (data/icons),
+mwhelp,Help-image naming convention (data/mwhelp),
+thumbnail,Map thumbnail naming convention (data/thumbnails),
+sepulveda,Sepulveda portrait images (data/sepulveda),
+purity,Purity-control data files (data/purity),

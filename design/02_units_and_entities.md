@@ -1577,23 +1577,318 @@ stateDiagram-v2
 
 ## 11 Airstrike
 
-_Pending — being written._
+Classes: `AirstrikeUnit : Unit` (one bomber flight) and `SpaceInvader : Entity` (one bomber, type `TypeSpaceInvader` = 10) [C] `code/worldobject/airstrike.h`, `code/worldobject/airstrike.cpp`; the smoke marker `AirStrikeMarker` and the bombs (`Grenade` typed `EffectThrowableAirstrikeBomb`, `FlameGrenade`) are projectiles specified in [04](04_crates_powerups_and_weapons.md). [B:FULL]. `TypeSpaceInvader` is in `EntityIsBlocked`, which only prevents level placement.
+
+### 11.1 AirstrikeUnit and SpaceInvader — role and acquisition
+
+- **Role**: a crate-delivered bombing run. Each smoke marker summons one flight of **2 bombers** (Airstrike research 2); each bomber drops one bomb on the marker. A strike throws 3–7 markers ⇒ 6–14 bombs [I] (arithmetic).
+- **Obtained by** [C] `code/worldobject/crate.cpp:Crate::CaptureCrate`, `Crate::RunUncapturedCrate`, `Crate::RunAirStrike`, `code/taskmanager.cpp:Task::TargetAirStrike`:
+
+| Trigger | Path | Napalm | Owner of the bombers |
+|---|---|---|---|
+| Captured crate *Airstrike* | `RunTask(TypeAirStrike)` → player targets a point → `Task::TargetAirStrike` → `Crate::RunAirStrike(pos, team, false)`; the task terminates immediately | no | capturing team |
+| Captured crate *Napalm Strike* | same with task `m_option = 1` | **yes** | capturing team |
+| Uncaptured crate *Airstrike* / *Napalm Strike* | `Crate::RunAirStrike(cratePos, monsterTeam[, true])` — fires at the crate's own position | per reward | Monster team (hostile to all) |
+| Squad secondary *AirStrike* [B:LEGACY] | one marker from a squaddie | no | squad's team |
+
+- `Crate::RunAirStrike`: `numMarkers = 3 + syncrand() % 5` (**3–7**; 10 in the Multiwinia tutorial); each marker is thrown **from the target point itself** to `pos + (SFRAND(100), 0, SFRAND(100))` (±50) with force `8·√dist` (≤ ≈67); `marker->m_naplamBombers = napalm`; message `crate_message_run_airstrike`/`_napalm` (or `_auto_` for the Monster team); fixed map marker `icons/icon_airstrike.bmp`; crate sound "Airstrike" [C] `Crate::RunAirStrike`.
+- `AirStrikeMarker::Advance`: emits a `TypeFire` smoke particle every tick (synced RNG); once ≥ 2.0 s old **and at rest** (`m_force ≤ 0.1`) it calls `team->NewUnit(TypeSpaceInvader, CurrentLevel(TypeAirStrike) = 2, …, markerPos)` (creating an `AirstrikeUnit`), stores the unit, `unit->m_effectId = marker index`, `unit->m_napalm = m_naplamBombers`; later it removes itself when the unit is gone or `StateLeaving` [C] `code/worldobject/weapons.cpp:AirStrikeMarker::Advance`.
+
+### 11.2 AirstrikeUnit — flight path
+
+Construction: `m_attackPosition = markerPos` with y = ground + 70; `m_speed = SpaceInvader speed × 10 = 400` [C] `AirstrikeUnit::AirstrikeUnit`.
+
+`Begin()`: four candidate corners at height **500**, inset **100** from the map edges: (100,500,100), (100,500,Z−100), (X−100,500,Z−100), (X−100,500,100). **Exit** = the corner nearest the attack position; **entry** = the second nearest. Waypoint starts at the entry; `m_front = normalise(mapCentre − entry)` (centre at y = 0, so it points down and inward). Spawns `numInvaders` SpaceInvaders at the entry [C] `AirstrikeUnit::Begin`.
+
+`Advance()` each tick: while the marker index is still valid, re-read the marker position (it may still roll) → `m_attackPosition = marker + 70` above ground. Then `AdvanceToTargetPosition(target)`:
+- `targetFront = normalise(target − waypoint)`; `front = normalise(front·(1 − a) + targetFront·a)`, `a = dt` (10 % per tick).
+- `desiredSpeed = 40`; × 10 = **400** if (Approaching and the waypoint is > 600 from the attack point) or (Leaving and > 100). `m_speed = m_speed·(1 − a) + desiredSpeed·a`.
+- `waypoint += front·m_speed·dt`; returns true within 10 of `target`.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Approaching : Begin at the entry corner
+  Approaching --> Leaving : waypoint within 10 of the attack position
+  Leaving --> [*] : no SpaceInvader left, all left the world or were shot down
+```
+
+In `StateLeaving` the "arrived" result is ignored; because the turn blend is only 10 %/tick at ~400 u/s, the flight overshoots the exit corner (100 from the edge) and crosses the world boundary, where every bomber deletes itself — there is no other despawn [I]. A re-implementation on flat terrain, maps 1500–3000 wide (`_work/scripts/P04_airstrike_sim.py`), gives: waypoint within 90 of the attack point ≈5.3–6.9 s after spawning, at ≈44 u/s (decelerated), leaving the world ≈13.5–15.4 s after spawning; bombs inherit ≈44 u/s from ≈70 above ground, fall ≈1.2 s (98 u/s²) and land ≈50 past the release point, i.e. close to the marker [I].
+
+### 11.3 SpaceInvader — stats
+
+| Stat | Value | Ref |
+|---|---|---|
+| Health | 10 | [C] `data/stats.txt` |
+| Speed | 40 (× 10 cruise = 400); **not** scaled by difficulty | [C] `code/worldobject/entity.cpp:EntityBlueprint::GetStat` |
+| Rate | 1 (unused) | |
+| Bombs | 1 per bomber (`m_armed` true → false); `m_napalmDrops = 30` is unused | [C] `SpaceInvader::SpaceInvader` |
+| Bomb release distance | 3-D distance to the attack position < **90** | [C] `SpaceInvader::Advance` |
+| Bomb | life 1.5 s, power 50 → Bang R 25 D 100 (napalm: ignite every Darwinian within 62.5, trees/triffids within 100 take −200) | [C] `SpaceInvader::Advance`, `code/worldobject/weapons.cpp:FlameGrenade::Advance` |
+| Shape | `spaceinvader.shp` rendered × 2; carried bomb `throwable.shp` 12 below while armed | [C] |
+| Lifetime | until it leaves the world | — |
+
+### 11.4 SpaceInvader — behaviour
+
+`SpaceInvader::Advance(unit)` [C]:
+1. `m_dead` → removed.
+2. Position = unit waypoint + `Unit::GetFormationOffset(FormationAirstrike, formationIndex)`: rows of 4: `x = (i%4 − 2)·24`, `y = −(⌊i/4⌋ − 2)·12`, `z = (⌊i/4⌋ − 2)·24`, each plus a per-index noise `s_offsets[i % 100] ∈ [0,1)` (spacedOut 4) [C] `code/unit.cpp:Unit::GetFormationOffset`. `Unit::s_offsets` is filled lazily from the synced RNG on first use and deleted in `Location::Empty`, so it is regenerated each match [C] `code/location.cpp:Location::Empty` (resolved: P04 stated it is never reset between games). Velocity = displacement/dt; `m_front` = unit front.
+3. Armed and within 90 of the attack position: create the bomb at `pos − 12·up` with velocity `front·|vel|`, register it in `m_effects` on the bomber's team, sound "DropGrenade", `m_armed = false` (bombs are not `Initialise`d, so they raise no "Create" event).
+4. Outside the world bounds → removed.
+
+There is no targeting (the attack point comes from the marker), no terrain interaction (flies at the waypoint height; bombs bounce off terrain) and no obstacle avoidance.
+
+### 11.5 SpaceInvader — damage, death, colour, control, sounds
+
+- `SpaceInvader::ChangeHealth`: **only `DamageTypeTurretShell` hurts** (lasers, explosions, fire ignored → false). Health 10, so one gun-turret shell (15) kills; dies when `health + amount < 0` (health 0), sound "Die", **no spirit**; while alive each hit spawns a `TypeMuzzleFlash` particle; a shape-fragment explosion when a 50-band is crossed or on death, fraction computed against the **Engineer**'s max health (copy-paste, visual only) [C].
+- Team colouring: none — `spaceinvader.shp` has a single fixed colour (128,128,128) and is never recoloured [C] `SpaceInvader::SpaceInvader`, `data/shapes/spaceinvader.shp`.
+- Control: none after launch; the player only aims the task (bindings in [06](06_player_control_and_input.md)). The CPU uses `AI::RunAirStrike` ([07](07_ai.md)).
+- Sounds: base list + "DropGrenade" [C] `SpaceInvader::ListSoundEvents`. Darwinians treat SpaceInvaders as scary threats (§4.6) and flee from airstrike markers of any team (§4.6 step 3).
+
+### 11.6 Airstrike — timeline
+
+```mermaid
+sequenceDiagram
+  participant P as Player
+  participant T as Task AirStrike
+  participant C as Crate RunAirStrike
+  participant M as AirStrikeMarker x3 to 7
+  participant U as AirstrikeUnit with 2 SpaceInvaders
+  participant B as Bomb
+  P->>T: target point
+  T->>C: RunAirStrike(pos, team, napalm)
+  T-->>T: TerminateTask
+  C->>M: ThrowWeapon from pos to pos plus or minus 50
+  M->>M: bounce until force at most 0.1, smoke every tick
+  M->>U: after 2 s and at rest, NewUnit(SpaceInvader, 2)
+  U->>U: fly entry corner to attack point at y+70, 400 to 40 u/s
+  U->>B: each bomber within 90 drops 1 bomb, life 1.5 s
+  B->>B: Bang R25 D100, napalm ignites Darwinians within 62.5
+  U->>M: state Leaving, marker removes itself
+  U->>U: fly to the exit corner, leave the world, despawn
+```
 
 ## 12 Nuke
 
-_Pending — being written._
+`class Nuke : Entity`, type `TypeNuke` (21) [C] `code/worldobject/nuke.h`, `code/worldobject/nuke.cpp`. [B:FULL] — created only by `Crate::RunNuke`, compiled under `INCLUDE_CRATES_ADVANCED` (defined in FULLGAME) [C] `code/worldobject/crate.cpp:Crate::RunNuke`. `TypeNuke` is in `EntityIsBlocked` (level placement only).
+
+### 12.1 Nuke — role and acquisition
+
+- **Role**: one of ten submarine-launched warheads of the *Nuke* crate reward: a sub surfaces at sea, waits, launches a lofted missile and the warhead explodes at its target. The first warhead lands exactly on the chosen point, nine scatter within ±150.
+- **Obtained by** the captured crate reward *Nuke* → `RunTask(TypeNuke)` → player targets a point → `Task::TargetNuke(pos)` → `Crate::RunNuke(pos, team)` and the task terminates [C] `code/taskmanager.cpp:Task::TargetNuke`. The uncaptured-crate Nuke is commented out [C] `Crate::RunUncapturedCrate`. CPU: `AI::RunNuke` ([07](07_ai.md)).
+- `Crate::RunNuke(pos, team)` [C]: spawns **10** Nukes; each starts at a random **sea** point `(FRAND(sizeX − 100), 0, FRAND(sizeZ − 100))`, re-rolled while terrain height > 0 (an unbounded loop — a map without sea would hang, 02-U12); target: nuke 0 → exactly `pos` with `m_renderMarker = true`; nukes 1–9 → `pos + (syncsfrand(300), 0, syncsfrand(300))` (±150); `target.y = ground − 5`. Message `crate_message_run_nuke` (`%T` team name) or `crate_message_auto_nuke`; map marker `icons/icon_nuke.bmp`; crate sound.
+
+### 12.2 Nuke — stats
+
+| Stat | Value | Ref |
+|---|---|---|
+| Health | 255 (no `ChangeHealth` override) | [C] `data/stats.txt` |
+| Speed | 100 → flight speed `SPD/2 + SPD/2·f²` = 50 → 100 u/s (integer halving of the byte, 100 → 50) | [C] `Nuke::AdvanceToTarget` |
+| `m_radius` | 5 | [C] `Nuke::Begin` |
+| Sub rise/sink | 1 unit per tick (10 u/s at speed 1) from y −30 to +30 (60 ticks = 6 s); sinks to −35 after the explosion | [C] `Nuke::AdvanceSub` |
+| Sub surfaced wait | `m_subTimer` = 2.5 s | [C] `Nuke::Nuke` |
+| Launch delay | `max(0, sizeX/100 − |subPos − target|/100)` s | [C] `Nuke::AdvanceSub` |
+| Explosion | `Bang(groundPos, R 50, D 100)`, teamId −1 ⇒ full 100 damage to every entity of every team within 75, linear to 0 at 100; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 (ring 35 → 135) | [C] `Nuke::AdvanceToTarget`, `code/location.cpp:Location::Bang` |
+| Post-explosion linger | `m_casualtyMessageTimer` = 5 s | [C] |
+| History trail sample | every 0.5 s | [C] `Nuke::AdvanceLaunched` |
+| Lifetime | removed when the 5 s casualty timer expires after impact (`AdvanceLaunched` returns true); the sub, sinking 1 unit per tick from +30, is then at ≈ −20 | [C] `Nuke::Advance`, `Nuke::AdvanceLaunched` |
+
+### 12.3 Nuke — state machine
+
+```mermaid
+stateDiagram-v2
+  [*] --> Surfacing : Begin, subPos = spawn with y -30
+  Surfacing --> Surfaced : subPos.y reaches 30 after 60 ticks
+  Surfaced --> LaunchCountdown : 2.5 s, launchTimer = max of 0 and sizeX/100 minus distance/100
+  LaunchCountdown --> InFlight : launchTimer reaches 0, Launch sets pos.y = 30
+  InFlight --> Exploded : within 5 times gameSpeed of the target, Bang
+  Exploded --> [*] : casualty timer 5 s over
+```
+
+- The countdown makes farther subs launch sooner (intent: simultaneous arrival). Because the lofted flight averages only ≈47 u/s, arrival is **not** simultaneous: total time after surfacing ≈ `2.5 + (sizeX − D)/100 + D/47` s, so nearer subs still hit first (sizeX 2000: D 500 → ≈28 s, D 1000 → ≈34 s, D 1500 → ≈39 s) [I] (re-implementation `_work/scripts/P04_nuke_sim.py`, flat terrain).
+- Flight `Nuke::AdvanceToTarget` per tick [C]: `f = 1 − remaining/totalDistance`; `heightFactor = |subPos − target|/3`; `fractionNorth = max(2, 5·pos.y/heightFactor)`; `front = normalise(target − pos)` rotated about `r = normalise(normalise(target − subPos) × up)` by `π/fractionNorth`, then by `−f·π/fractionNorth` ⇒ net pitch-**up** `(1 − f)·π/fractionNorth` (≤ 90°) decaying to 0 at the target (a lofted arc; at launch fractionNorth = 2 so the warhead initially climbs vertically). Sign verified from `Vector3::FastRotateAround` and the right-handed `operator^` [C] `code/lib/vector3.cpp`. Simulated apex ≈0.31·D, flight ≈D/47 s (D 300: 6.0 s, apex 94; 1000: 21.1 s, 310; 2000: 42.6 s, 620) [I]. `m_armed = true` above y 150 (never read).
+- Explosion: kills are counted for every team (teamId −1) and **all** of them — own units included — are added to the launching team's `m_teamKills` [C]. Sound "Explode". Co-op achievement: in co-op, for the local player's nuke, a **friendly** SpawnPoint within 120 of the target → `App::DarwiniaAchievementWrongGame` + message `dialog_wronggame` [C].
+- `Nuke::Advance` never checks `m_dead`; base `ChangeHealth` could mark it dead (spawning a spirit) if something reached it, but it would keep flying [I] (no override, low relevance). It never calls `Entity::Advance` (no world clamp).
+
+### 12.4 Nuke — targeting, terrain, control, colour, sounds, VFX
+
+- Targeting: fixed point chosen at launch; no tracking. Terrain: subs surface at sea; the warhead flies a ballistic-looking arc that ignores terrain until it is within 5 of the target.
+- Control: player aims the task only.
+- Team colouring and visuals [C] `Nuke::RenderSub`, `Nuke::Render`, `Nuke::RenderHistory`, `Nuke::RenderGroundMarker`: submarine = two camera-facing 100-unit billboards `sprites/subshadow.bmp` (subtractive) and `sprites/sub.bmp` in team colour, alpha `max(subPos.y, 0)/30`; warhead = additive billboard `sprites/nuke.bmp`, size `10·(1 + 0.03·((index·uid) % 10))`, team colour (Monster team: white, subtractive); trail = history samples drawn as triple-stacked `textures/laser.bmp` ribbons of width 10 with fading alpha; ground marker (nuke 0 only) = `icons/nukesymbol.bmp` red (200,20,20) pulsing `40 + 25·sin(realTime)` on the terrain plus a generated blurred `shadow_icons/nukesymbol.bmp` (`BitmapRGBA::ApplyBlurFilter(10)`). `Nuke::RenderDeaths` ("Darwinia Hit, %d Dead") exists but its call is commented out.
+- Sounds: base list + "Explode" [C] `Nuke::ListSoundEvents`.
 
 ## 13 ArmyAnt
 
-_Pending — being written._
+`class ArmyAnt : Entity`, type `TypeArmyAnt` (14) [C] `code/worldobject/armyant.h`, `code/worldobject/armyant.cpp`. [B:FULL] — `TypeArmyAnt` is in `EntityIsBlocked` (no level placement) but ants are created at runtime. The nest building `AntHill` (spawning, population lock, spirit → ant conversion, damage) is specified in [03](03_buildings_and_world_objects.md).
+
+### 13.1 ArmyAnt — role and acquisition
+
+- **Role**: a small, fast monster-team creature that leaves its hill on an objective, collects floating spirits and **captures Darwinians** (carried back and killed at the hill), and bites any other enemy it meets.
+- **Obtained by**: `AntHill::SpawnAnt` (each hill of the *Ant Nest* crate releases ants one by one into a shared ant `Unit`, `Team::NewUnit(TypeArmyAnt, m_numAntsInside, …)`, spread 10, `m_buildingId = hill`, orders ScoutArea toward an objective + `syncfrand(30)` offset); the single wake-up ant spawned by `Crate::RunAntNest` on the Monster team; `TriffidEgg::Spawn` case `SpawnAnts` (20–29 ants thrown up at `10 + syncfrand(20)`, no hill — they roam in `BaseDestroyed`) [C] `code/worldobject/anthill.cpp:AntHill::SpawnAnt`, `code/worldobject/crate.cpp:Crate::RunAntNest`, `code/worldobject/triffid.cpp:TriffidEgg::Spawn`. The Ant Nest hills always belong to the **Monster team (4)**, whoever triggered the crate [C] `Crate::RunAntNest`. Shaman summoning [B:LEGACY].
+
+### 13.2 ArmyAnt — stats
+
+| Stat | Value | Ref |
+|---|---|---|
+| Health | 20 | [C] `data/stats.txt` |
+| Speed | 25 u/s × `(1 + syncsfrand(0.4))` per ant (20–30, stored in the byte), × 2 while CollectEntity or AttackEnemy | [C] `ArmyAnt::Begin`, `ArmyAnt::AdvanceToTargetPosition` |
+| Rate | 0 (unused) | [C] |
+| Scale | `1.0 + syncsfrand(0.9)` (0.55–1.45; render and death explosion) | [C] `ArmyAnt::Begin` |
+| Self search range | `ARMYANT_SEARCHRANGE` = 10 (spirits and enemies met on the way) | [C] `armyant.h` |
+| Bite | `ChangeHealth(−1)` per tick while at the target (≈10 HP/s, per-tick constant) | [C] `ArmyAnt::AdvanceAttackEnemy` |
+| Stray return | `SearchForRandomPosition`: return-to-spawn chance `distance(spawnPoint)/400`; else a random 100-unit step | [C] `ArmyAnt::SearchForRandomPosition` |
+| New-base search | friendly AntHill within 500 | [C] `ArmyAnt::SearchForAntHill` |
+| Lifetime | until it gets home (stored back in the hill) or dies | [C] |
+
+### 13.3 ArmyAnt — state machine (`m_orders`)
+
+Orders: `NoOrders`, `ScoutArea`, `CollectSpirit`, `CollectEntity`, `AttackEnemy`, `ReturnToBase`, `BaseDestroyed` [C] `armyant.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoOrders
+    NoOrders --> ReturnToBase: hill exists or a friendly hill within 500 found
+    NoOrders --> BaseDestroyed: no hill
+    ScoutArea --> CollectEntity: arrived and the objective target is a Darwinian
+    ScoutArea --> AttackEnemy: arrived and the target is another entity
+    ScoutArea --> ReturnToBase: arrived and the target is gone
+    ScoutArea --> CollectSpirit: met a Birth or Floating spirit within 10
+    ScoutArea --> AttackEnemy: met a non-Darwinian non-Harvester enemy within 10
+    CollectSpirit --> ReturnToBase: arrived, spirit Attached, or spirit gone, dying, attached, in an egg
+    CollectEntity --> ReturnToBase: arrived, Darwinian captured, or target dead or already captured
+    AttackEnemy --> ReturnToBase: target dead or gone
+    AttackEnemy --> AttackEnemy: at the target, -1 HP, 3 muzzle flashes, sound Attack
+    ReturnToBase --> [*]: arrived at the hill, ant stored and removed
+    ReturnToBase --> BaseDestroyed: arrived, hill gone, no other hill
+    BaseDestroyed --> BaseDestroyed: arrived, new random position
+```
+
+- `SearchForTargets` (spirits first, then enemies) runs every tick while `!m_targetFound`; once a target is found it is not re-searched until a failure clears the flag. It can interrupt any order, including the trip home [C] `ArmyAnt::Advance`, `SearchForTargets`.
+- **Delivery at the hill** (`AdvanceReturnToBase`): `hill->m_numAntsInside++`; a carried spirit in `StateAttached` is removed from the world and `m_numSpiritsInside++`; a carried Darwinian in `StateCapturedByAnt` is killed with `ChangeHealth(−2 × health)` (its spirit spawns at the hill); the ant entity is removed (`Advance` returns true) [C].
+- **Carrying**: an attached spirit, and a captured Darwinian (`Darwinian::AdvanceCapturedByAnt`), are moved every tick to the ant's `MarkerCarry` marker; if the ant dies the Darwinian returns to Idle [C] `ArmyAnt::GetCarryMarker`, `Darwinian::AdvanceCapturedByAnt`.
+
+### 13.4 ArmyAnt — targeting, terrain and obstacles
+
+- Targets: objective targets chosen by the hill (nearest enemy Darwinian not already captured, any enemy entity, a spirit, or a scout point — [03](03_buildings_and_world_objects.md)); on the way, spirits within 10 (Birth/Floating) and `GetBestEnemy(pos, 0, 10)` excluding Darwinians and Harvesters [C] `ArmyAnt::SearchForSpirits`, `SearchForEnemies`.
+- Movement: straight line toward `m_wayPoint` at speed, y snapped to terrain, **no obstruction pushing while walking** (the call is commented out — ants walk through buildings), heading jittered by `syncsfrand(0.2)` rad per tick; arrival when the remaining distance < `|vel|·dt` or < 1. Ballistic fall when `!m_onGround` (thrown by triffid eggs). Engineers are attacked at ground height under them [C] `ArmyAnt::AdvanceToTargetPosition`, `AdvanceAttackEnemy`.
+- Darwinians do not run from ants (ArmyAnt is not on the "scary" list) and fight them normally; they also attack enemy AntHills via the 1/500 search (§4.6) [C].
+
+### 13.5 ArmyAnt — death, colour, control, sounds
+
+- Death: base `ChangeHealth` (spirit spawned — but Monster-team spirits are suppressed, so hill ants release none; ants of a player team from an Eggs-crate triffid egg do release spirits) + shape explosion scaled by `m_scale`; drops any attached spirit (`Spirit::CollectorDrops`, inheriting the ant velocity) [C] `ArmyAnt::ChangeHealth`.
+- Team colouring: three animation shapes `armyant.shp`, `armyant2.shp`, `armyant3.shp`, each copied and red-region recoloured per team colour/co-op group (cached `<shape>_<colourId>_<groupId>`). Every tick a **different** one of the three is chosen with `syncrand() % 3` (re-rolled until it differs — ≥ 1 synced draw per ant per tick for a purely visual leg animation) [C] `ArmyAnt::SetShape`, `ArmyAnt::Advance`.
+- Control: none (monster AI).
+- Sounds: "Attack" (bite) + base "LoseHealth", "Die", "Create". VFX: 3 `TypeMuzzleFlash` per bite (velocities from the synced RNG), shape explosion on death [C] `ArmyAnt::AdvanceAttackEnemy`.
 
 ## 14 TriffidEgg
 
-_Pending — being written._
+`class TriffidEgg : Entity`, type `TypeTriffidEgg` (17) [C] `code/worldobject/triffid.h`, `code/worldobject/triffid.cpp`. [B:FULL]. `TypeTriffidEgg` is in `EntityIsBlocked`. The launching plant `Triffid` is a building ([03](03_buildings_and_world_objects.md)).
+
+### 14.1 TriffidEgg — role and acquisition
+
+- **Role**: a timed monster egg that tumbles, bounces and bursts into a creature group of its `m_spawnType`.
+- **Obtained by** [C]:
+  - `Triffid::Launch` (Triffids crate, an *uncaptured-crate* outcome only): 1–3 Monster-team Triffids, each launching 3 eggs in MP then burning; spawn mask = every type except `SpawnSpirits` and `SpawnEggs`; egg velocity = launch-marker forward × `m_force × m_size × (1 + syncsfrand(0.2))`; egg `m_size = 1 + syncsfrand(0.3)`; burst timer `4 + syncfrand(4)` s in MP [C] `code/worldobject/crate.cpp:Crate::RunTriffids`, `Triffid::Launch`.
+  - `Crate::RunEggs(pos, team)` (Eggs crate task `GlobalResearch::TypeEggSpawn`, or AI `RunEggs`): `2 + syncrand() % 3` (2–4) eggs **owned by the task owner** (02-U2), start `pos + (0,20,0)`, velocity direction `(SFRAND(1), 4, SFRAND(1))` length `50 + syncfrand(50)`; type rolled with `syncrand() % NumSpawnTypes` until it is **not** Spirits, Eggs, SoulDestroyer, Ants or Darwinians → one of Virii, Centipede, Spider, TriffidEggs, SporeGenerator; burst `4 + syncfrand(4)` s; its `m_spawnPoint`/`m_roamRange` writes go to `TriffidEgg`'s own shadowing members and have no effect on the hatchlings [C] `Crate::RunEggs`, `code/worldobject/triffid.h:TriffidEgg`.
+  - `SpawnTriffidEggs` (nested): 2–4 eggs at speed `75 + syncfrand(50)` with type `syncrand() % 9` (never Darwinians); in MP a SoulDestroyer roll is re-rolled in Assault or when ≥ 2 exist; these keep the default 20–30 s timer [C] `TriffidEgg::Spawn`.
+
+### 14.2 TriffidEgg — stats
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 50 | [C] `data/stats.txt` |
+| Speed / Rate | 100 / 1 — unused | [C] |
+| Default burst timer | `m_life = 20 + syncfrand(10)` s set in `Begin` (the draw happens even when the timer is overridden), overridden to `4 + syncfrand(4)` by MP launches and `RunEggs` | [C] `TriffidEgg::Begin`, `Triffid::Launch`, `Crate::RunEggs` |
+| Gravity | `vel.y −= 9.8 × m_force` **per tick** (≈98 u/s² at force 1; per-tick constant, §2.1) | [C] `TriffidEgg::Advance` |
+| Bounce | below ground + 3: `BounceOffLandscape`, `m_force *= TRIFFIDEGG_BOUNCEFRICTION` (0.65), `vel *= m_force`, y ≥ ground + 3; sound "Bounce" while force > 0.1 | [C] `TriffidEgg::Advance`, `triffid.h` |
+| Tumble | `m_up` rotated about `(up × vel)` by `m_force² × 30 × dt`; self-rights when `up.y < 0.3` and force < 0.4 | [C] |
+| Damage | **immune to lasers**; otherwise base (spirit, unless Monster team) + shape explosion | [C] `TriffidEgg::ChangeHealth` |
+| Lifetime | burst timer | — |
+
+### 14.3 TriffidEgg — state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Flying: spawned with velocity
+    Flying --> Bouncing: below ground + 3, force times 0.65
+    Bouncing --> Flying: still moving
+    Flying --> Burst: network time passes the timer
+    Bouncing --> Burst: network time passes the timer
+    Flying --> Dead: health 0 from non-laser damage
+    Bouncing --> Dead: health 0
+    Burst --> [*]: shape explosion, Spawn, sound BurstOpen, removed
+    Dead --> [*]: spirit and explosion, removed next tick without fade
+```
+
+### 14.4 TriffidEgg — what `Spawn()` creates
+
+| # | `Triffid::Spawn*` | Creates (team = egg team unless noted) | SP count | MP count | spread, roam range |
+|---|---|---|---|---|---|
+| 0 | `SpawnVirii` | Virii | 5–9 | 20–39; **0 if the team already has ≥ 250 Virii** | 0, 100 |
+| 1 | `SpawnCentipede` | one Centipede unit of `size` segments | 5–9 | 5–14 | 0, 200 |
+| 2 | `SpawnSpider` | 1 Spider | 1 | 1 | 0, 150 |
+| 3 | `SpawnSpirits` | spirits, horizontal speed `20 + syncfrand(20)` | 5–9 | 5–9 | — |
+| 4 | `SpawnEggs` | Virii `Egg`s, velocity up + random, length `20 + syncfrand(20)` | 5–9 | 5–9 | 0, 0 |
+| 5 | `SpawnTriffidEggs` | 2–4 TriffidEggs (§14.1) | 2–4 | 2–4 | 0, 0 |
+| 6 | `SpawnAnts` | ArmyAnts thrown up, speed `10 + syncfrand(20)` | 20–29 | 20–29 | 0, 0 |
+| 7 | `SpawnSporeGenerator` | 1 SporeGenerator | 1 | 1 | 0, 200 |
+| 8 | `SpawnSoulDestroyer` | 1 SoulDestroyer, **on the Monster team in MP**; allowed if (not Assault and fewer than 2 alive) or single-player, otherwise **falls through to `SpawnVirii`** | 1 | 1 | 0, 200 |
+| 9 | `SpawnDarwinians` | Darwinians thrown up, speed `10 + syncfrand(20)` | 10–19 | 10–19 | 0, 0 |
+
+Counts use `syncrand()`. A commented-out `SpawnTripod` case exists. `Triffid::GetSpawnName` lists indices 6–9 in a different order from the enum (names only) [C] `TriffidEgg::Spawn`, `Triffid::GetSpawnName`.
+
+### 14.5 TriffidEgg — targeting, terrain, colour, control, sounds
+
+- No targeting; ballistic; bounces off terrain (not buildings); bursts wherever it lies. Darwinians regard it as a scary, grenade-worthy target (§4.6, §4.7).
+- Team colouring: `triffidegg.shp` fully team-coloured (`SetShape(…, true)` in `Begin`); pulsating size `m_size + |sin 2t|·(1 − age)·0.4`; shadow `size × 10` [C] `TriffidEgg::Begin`, `TriffidEgg::Render`.
+- Control: none (the player only aims the Eggs task).
+- Sounds: "Bounce", "BurstOpen" + base events [C].
 
 ## 15 Egg
 
-_Pending — being written._
+`class Egg : Entity`, type `TypeEgg` (5) [C] `code/worldobject/egg.h`, `code/worldobject/egg.cpp`. [B:FULL] (indirect). `TypeEgg` is in `EntityIsBlocked`.
+
+### 15.1 Egg — role and acquisition
+
+- **Role**: a small Virii egg that, once a spirit is placed inside it, hatches 4 Virii after 15 s — the creature-side "spirit economy".
+- **Obtained by**: laid by `SporeGenerator` (at its `MarkerEggs`, inheriting its velocity; 25 % pre-fertilised with a newly spawned spirit) and `Spider` (one egg 45 beyond a spirit); thrown by a `TriffidEgg` of type `SpawnEggs` (crate masks exclude it, so in MP only via nested `SpawnTriffidEggs`) [C] `code/worldobject/sporegenerator.cpp:SporeGenerator::AdvanceEggLaying`, `code/worldobject/spider.cpp:Spider::AdvanceEggLaying`, `code/worldobject/triffid.cpp:TriffidEgg::Spawn`.
+- **Fertilisers**: a Virii carrying a spirit (`Virii::AdvanceToEgg` → `Egg::Fertilise(spiritId)`), the SporeGenerator's pre-fertilised eggs; spirits cache nearby dormant eggs (`Spirit::NumNearbyEggs`, range 60) so Virii only fetch spirits that have an egg nearby [C].
+
+### 15.2 Egg — stats
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 10 | [C] `data/stats.txt` |
+| Speed / Rate | 0 / 0 | [C] |
+| `EGG_DORMANTLIFE` | 120 s (`#define`) — **ineffective**, see §15.3 | [C] `egg.h` |
+| Hatch time | 15.0 s after fertilisation | [C] `Egg::Advance` |
+| Hatch output | 4 Virii of the egg's team, spread 0, roam 200, only if that team has < 250 Virii (`VIRII_POPULATIONLIMIT`); the spirit is consumed either way | [C] `Egg::Advance` |
+| Lifetime | until hatched or destroyed | — |
+
+### 15.3 Egg — state machine
+
+States: `StateDormant`, `StateFertilised`, `StateOpen` (declared, never entered) [C] `egg.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Dormant
+    Dormant --> Fertilised: Fertilise, spirit to StateInEgg, timer 0
+    Fertilised --> Dormant: held spirit index no longer valid
+    Fertilised --> [*]: timer reaches 15 s, spirit removed, 4 Virii if below 250, egg removed
+    Dormant --> Dead: health below 0, or fell to y 0 or below
+    Fertilised --> Dead: health below 0
+    Dead --> [*]: held spirit released to Floating, fade 2.5 s
+```
+
+- Every tick, if `m_spiritId` is not a valid spirit slot the egg is forced to Dormant **and its timer reset to 0**; a dormant egg holds no spirit (`m_spiritId = −1`), so its timer never exceeds one tick and the intended decay `health ≤ 10·(1 − timer/120)` never bites ⇒ **dormant eggs persist indefinitely** [C] `Egg::Advance`, `contrib/systemiv/lib/tosser/darray.cpp:DArray::ValidIndex`. Resolved: P05 described a 120 s dormant decay; the reset branch makes it dead code.
+- While fertilised the spirit is pinned 3 above the egg each tick.
+- Physics: `AdvanceInAir` until grounded, then glued to the terrain (re-airborne if the ground drops away) and `pos += vel·dt`; `y ≤ 0` (water) → `ChangeHealth(−500)` [C].
+
+### 15.4 Egg — damage, death, targeting, colour, control, sounds
+
+- `Egg::ChangeHealth`: any damage; dies only when `health + amount < 0` (strict); **no spirit and no sound** (unlike the base). A held spirit returns to Floating (`Spirit::EggDestroyed`) [C].
+- Darwinians ignore eggs as threats (§4.6) — eggs are only destroyed incidentally by explosions.
+- Visual: camera-facing 8 × 8 (`size 4`) additive sprite `sprites/egg.bmp`, alpha = health/10 (min 0.1); fertilised eggs add two throbbing sprites growing over the 15 s; dead eggs break into 3 drifting quarter-sprite fragments. The team colour is fetched but the sprite is drawn **white** [C] `Egg::Render`.
+- Control: none. Sounds: base "Create" only ("Die" is bound in `data/sounds.txt` as `eggsplat` but never triggered) [C].
 
 ## 16 Virii
 

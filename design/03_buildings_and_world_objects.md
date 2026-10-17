@@ -1805,3 +1805,244 @@ Rocket Riot maps use `-1 0.00 0 -1 0`. [C] `EscapeRocket::Read/Write`, level fil
 | ControlStation | – | 1/9 (radar control) | – | 8/8 | – | – |
 | FuelGenerator, FuelPipe, FuelStation, EscapeRocket | – | – | – | – | 7/7 | – |
 
+## 9 Crate-spawned world objects
+
+These buildings appear in Multiwinia only as crate outcomes (selection rules, probabilities and messages in [04](04_crates_powerups_and_weapons.md)). The `Crate` building itself (enum 65) is specified in [04](04_crates_powerups_and_weapons.md).
+
+### 9.1 AntHill
+
+Source: `code/worldobject/anthill.{h,cpp}`. **[B:FULL]** live through the Ant Nest crate outcome (`CrateRewardAntNest`: player-placed task `GlobalResearch::TypeAntsNest` → `Task::TargetAntNest` → `Crate::RunAntNest`, or immediately at the crate when an uncaptured crate expires); level placement is legal (not blocked) but only Darwinia campaign maps do it (13 lines) → [B:LEGACY] content. The ArmyAnt entity is in [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunAntNest`, `Crate::RunUncapturedCrate`, `code/taskmanager.cpp:Task::TargetAntNest`, census.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | monster nest that sends ArmyAnts to capture Darwinians, collect spirits, attack enemies and scout; converts stored spirits into more ants | [C] |
+| Creation (crate) | `RunAntNest(pos, team)`: **2** hills, always owned by the **Monster team** (the triggering player only gets the marker/message); each at `pos + (syncsfrand(200), 0, syncsfrand(200))`, front = normalised `(syncsfrand(1), 0, syncsfrand(1))`, `m_numAntsInside = 75 − syncrand() % 25` (**51–75**), `SetDetail(1)`, new building id, build-in shape explosion; plus one ArmyAnt at `pos` to wake the Monster team; obstruction grid recalculated; marker `icons/icon_antnest.bmp`; message `crate_message_run_antnest`. Validity cap: invalid when `#AntHills + 2 × #queued AntsNest tasks ≥ 4` | [C] `Crate::RunAntNest`, `Crate::IsValid` |
+| Shape / health | `anthill.shp`; `m_health` 100 (int) | [C] ctor |
+| Activation | runs only when its team is `TeamTypeCPU` (the Monster team is CPU); first ant release `now + 5.0` s after `Initialise` | [C] `AntHill::Advance`, `Initialise` |
+| Population lock | MP with a level cap: locked when `team->m_others.NumUsed() − Virii::s_viriiPopulation[team] ≥ PopulationCap / NumPlayers` (team 255 never locked); otherwise nearest SpawnPopulationLock; locked hills neither create objectives nor release ants (spirit conversion continues) | [C] `AntHill::PopulationLocked` |
+| Objectives | cap: MP `m_numAntsInside / 10` clamped [1, 6] (SP 3); search interval `now + syncrand() % 2` s; MP picks one search with `syncrand() % 5`: 0, 1 → nearest-listed enemy Darwinian within `ANTHILL_SEARCHRANGE` 400 not captured/targeted; 2 → any enemy entity within 400 not targeted; 3 → a spirit in Birth/Floating within 400 not within 20 of an existing objective; 4 → scout point at radius `200 + syncfrand(200)`, random angle, accepted only if terrain height > 0. Ants per objective MP `int(int(5 + syncfrand(5)) + m_numAntsInside / 20.0)` | [C] `AntHill::Advance`, `SearchFor*` |
+| Release | one ant per 0.2 s (MP) to a random objective (`syncrand() % size`): reuse/create the hill's ant Unit, spawn at the hill (spread 10), orders ScoutArea, waypoint = objective pos + `syncfrand(30)` at a random angle, pushed from obstructions; `m_numAntsInside−−`, objective `m_numToSend−−` (deleted at 0) | [C] `AntHill::SpawnAnt` |
+| Inputs | returning ants (`m_numAntsInside++`), carried spirits (`m_numSpiritsInside++`), captured Darwinians (killed at the hill, their spirit spawns next to it) | [C] `code/worldobject/armyant.cpp:ArmyAnt::AdvanceReturnToBase` |
+| Spirit conversion | each conversion consumes 1 stored spirit: MP **+6 ants**, next after 1.0 s (SP +3, 5.0 s) | [C] |
+| Empty-hill decay (MP) | if `m_numAntsInside ≤ 0` for **30 consecutive ticks** → `m_numAntsInside = 10`, `Damage(−10)` | [C] |
+| Damage | `Damage(d)`: base sound; `m_health += d` (int); every crossing of a 20-HP band → partial shape explosion (fraction `1 − health/100`) and sound `Damage`; at ≤ 0: full explosion, **releases `m_numAntsInside + m_numSpiritsInside` spirits** (hill team) in a 20 disc with speed `syncfrand(50)`, sound `Explode`; `Advance` returns true. `Destroy(i)` sets health 0 then `Building::Destroy`. Sources: explosions (§3.8), TurretShell −2, burning trees | [C] `AntHill::Damage`, `Destroy` |
+| Burning | `AntHill::Burn()` (called each tick by burning Trees within `100 + treeCrown`): 30% chance of `Damage(−1)` and **always** releases one ant towards a random point 200 away (even with 0 ants inside, driving the count negative until the empty-hill rule refills it) | [C] `AntHill::Burn`, `Tree::Advance` |
+| Threat to Darwinians | Darwinians treat enemy AntHills/Triffids as attack targets with probability 1/500 per threat search, but the code passes the obstruction-cell **list index** instead of the building id to `AttackBuilding` → they attack whichever building has that small unique id (defect) | [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` |
+| Rendering | damaged flicker with unsynced `frand` (render only) | [C] |
+| Sounds | base + `Explode` | [C] |
+| Mode usage | any mode where the crate is valid; not level-placed in MP | [C] |
+
+| # | Field | Type | Default | Meaning |
+|---|---|---|---|---|
+| 8 | numAntsInside | int, mandatory | 0 | starting ants; values outside [0, 10000] reset to 0 |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Dormant : created, release timer 5 s
+    Dormant --> Active : team is CPU and timer elapsed
+    Active --> Active : search objective, release one ant per 0.2 s
+    Active --> Locked : PopulationLocked
+    Locked --> Active : unlocked
+    Active --> Refill : no ants for 30 ticks, ants 10, Damage -10
+    Refill --> Active
+    Active --> Dead : health 0, releases ants plus spirits as spirits
+    Locked --> Dead : health 0
+    Dead --> [*]
+```
+
+### 9.2 Triffid
+
+Source: `code/worldobject/triffid.{h,cpp}`. **[B:FULL]** live through the Triffids crate outcome (`CrateRewardTriffids`, reachable only as an *uncaptured-crate* outcome: `Crate::CaptureCrate` re-rolls it); Darwinia maps place 30 → [B:LEGACY] content. Not blocked. TriffidEgg (entity) → [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunTriffids`, `Crate::RunUncapturedCrate`.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | rooted plant that periodically lobs TriffidEggs; each egg bursts after a timer and releases a creature group | [C] |
+| Creation (crate) | `RunTriffids(pos, team)`: `1 + syncrand() % 3` (**1–3**) Triffids owned by the **Monster team** at `pos + (syncsfrand(50), 0, syncsfrand(50))`, front away from `pos`; per triffid `m_pitch = 0.6 + syncfrand(0.6)`, `m_force = 60 + syncfrand(60)`, `m_variance = syncfrand(0.5)`, `m_reloadTime = 40 + syncfrand(60)` s, `m_size` 1.0, `m_useTrigger` 0; spawn mask = all types except `SpawnSpirits` and `SpawnEggs`; message `multiwinia_exclamation`; marker `icons/icon_triffid.bmp` | [C] `Crate::RunTriffids` |
+| Shape | `triffidhead.shp` (`MarkerLaunchPoint`, `MarkerTriffidStem`) | [C] |
+| Ownership | fixed (creator / level); never captured | [C] |
+| Timer | initial `m_timerSync = now + (syncrand() % int(m_reloadTime)) + 10`; trigger check timer starts at `syncfrand(5)` | [C] `Triffid::Initialise`, ctor |
+| Arming | armed if `m_useTrigger == 0` or burning; else every 5 s armed = `EntityGrid::AreEnemiesPresent(pos + triggerLocation, triggerRadius, team)`; on unarmed → armed the timer is re-randomised as above | [C] `Triffid::Advance` |
+| Launch | when armed and `now > m_timerSync`: MP only while `m_numEggs > 0` (budget **3**); each launch decrements it and at 0 calls `Damage(−100)` (sets itself on fire); SP forever; next timer `now + reload × (1 + syncsfrand(0.1))` | [C] |
+| `Launch()` | uniform choice among enabled spawn types (`syncrand() % count`; nothing if none); egg velocity = launch-marker forward × `m_force × m_size × (1 + syncsfrand(0.2))`; egg `m_size = 1 + syncsfrand(0.3)`, `m_spawnPoint = pos + triggerLocation`, `m_roamRange = triggerRadius`; MP burst timer `4 + syncfrand(4)` s; sound `LaunchEgg` | [C] `Triffid::Launch` |
+| Head pose | `GetHead` from game time (deterministic): head at `pos + up × 30 × size`, pitched by `m_pitch × 0.5 × (1 + 0.1 sin t)`, bob `(4 sin(t/1.3), sin(t/1.5), 3 sin(t/1.2))`, recoil `−front × 10 × ((timer − now)/reload)^5`, scale `size × (1 + 0.1 sin t)`, `t = now + uniqueId × 10`; burning: thrashes (`front` rotated by `sin(5t) × variance`) | [C] `Triffid::GetHead` |
+| Damage / burning | `Damage(d)` adds `d` to `m_damage` (50); first ≤ 0 → sound `Burn`; while burning every tick: two `TypeFire` particles (size `100 + syncsfrand(100 × size)`), 10% (unsynced) debris, `m_size −= 0.006`, `m_timerSync −= 0.5`; at `m_size ≤ 0.3` the head explodes and the building is removed (≈ 117 ticks ≈ 11.7 s from size 1.0). Fire sources: flame grenades within `2 × power`, turret shells (−2), explosions | [C] `Triffid::Damage`, `Advance` |
+| Outputs | TriffidEggs (spawn table in [02](02_units_and_entities.md)) | [C] `TriffidEgg::Spawn` |
+| Rendering | yellow stem lines, head shape, held egg drawn in the last 25% of the reload; editor trajectory preview [B:EDITOR] | [C] |
+| Mode usage | any mode where the crate outcome is valid; not level-placed in MP | [C] |
+
+Spawn types (`Triffid::Spawn*`, level flags in this order): 0 `SpawnVirii`, 1 `SpawnCentipede`, 2 `SpawnSpider`, 3 `SpawnSpirits`, 4 `SpawnEggs`, 5 `SpawnTriffidEggs`, 6 `SpawnAnts`, 7 `SpawnSporeGenerator`, 8 `SpawnSoulDestroyer`, 9 `SpawnDarwinians`. [C] `code/worldobject/triffid.h`.
+
+| # | Field | Type | Default | Crate value | Meaning |
+|---|---|---|---|---|---|
+| 8 | size | float | 1.0 | 1.0 | head/launch scale |
+| 9 | pitch | float | 0.6 | 0.6–1.2 | launch pitch |
+| 10 | force | float | 250.0 | 60–120 | launch speed |
+| 11 | variance | float | π/8 | 0–0.5 | aim variance / thrash amplitude |
+| 12 | reloadTime | float | 60.0 | 40–100 | seconds between launches |
+| 13 | useTrigger | int | 0 | 0 | 0 = always armed; else require enemies in the trigger circle |
+| 14 | triggerX | float | 0 | 0 | trigger circle offset x |
+| 15 | triggerZ | float | 0 | 0 | trigger circle offset z |
+| 16 | triggerRadius | float | 100.0 | 100.0 | trigger radius; also egg roam range |
+| 17–26 | spawn[0…9] | int (== 1 → true), optional each | false | see creation | enabled spawn types in enum order |
+
+[C] `Triffid::Read/Write`, ctor. Members not in the level file: `m_damage` 50.0, `m_numEggs` 3.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Waiting : timer = now + rand(reload) + 10
+    Waiting --> Armed : useTrigger 0, or enemies in trigger circle (checked every 5 s)
+    Armed --> Waiting : trigger circle empty
+    Armed --> Launching : now passes timer and eggs remain (MP budget 3)
+    Launching --> Armed : egg launched, timer reset
+    Launching --> Burning : MP egg budget exhausted, Damage -100
+    Armed --> Burning : damage meter 0 or less
+    Waiting --> Burning : damage meter 0 or less
+    Burning --> Removed : size shrinks to 0.3
+    Removed --> [*]
+```
+
+### 9.3 Portal
+
+Source: `code/worldobject/portal.{h,cpp}`. **[B:DEBUG]** — created only by the "The Beast" crate outcome (`Crate::RunTheBeast`), whose callers are compiled only when `INCLUDE_THEBEAST` is defined, which `code/worldobject/crate.h` does only under `TARGET_DEBUG`. Blocked from level files (10 lines in `data/levels/old/*` prototype maps are dropped). `SpecialSummon` (Shaman) is [B:LEGACY]. Resolved: P06 tagged Portal [B:FULL]; corrected to [B:DEBUG] per the build matrix and `crate.h`. [C] `code/worldobject/crate.cpp:Crate::RunTheBeast`, `code/worldobject/crate.h`.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Creation | `RunTheBeast(pos)`: template at the crate position → `CreateBuilding(TypePortal)` → `Initialise` → id `(monsterTeam, UNIT_BUILDINGS, −1, newBuildingId)` → `SetDetail(1)`; message `crate_message_thebeast` | [C] |
+| Shape / collision | none (shape line commented out); no sphere/shape collision; ray test = sphere r 13 | [C] |
+| Ownership | Monster team, fixed | [C] |
+| Damage aura | in every state after Lowering: **every Darwinian within `m_portalRadius`** of the centre is `SetFire()`d each tick (all teams) | [C] `Portal::Advance` |
+| On removal | `Location::AddBurnPatch(pos, 2 × radius)` | [C] |
+| Damageability | none | [C] |
+| Rendering | unsynced `rand()`/`frand()` fire particles (`Particle::TypePortalFire`), full-screen white flash and camera shake at the end | [C] `Portal::RenderAlphas` |
+
+| State (value) | Duration / exit | Actions |
+|---|---|---|
+| `SummonStateInactive` (0) | never advanced | — |
+| `SummonStateLoweringPortal` (1) | body commented out | — |
+| `SummonStatePortalExpand` (2, constructor state) | radius +1.0 **per tick** until ≥ 100 (10 s at normal speed) | on exit: `explosionTimer = 45`; spawn **6** (`NUM_TENTACLES`) Tentacle units × 12 entities for the Monster team at angles −π/2 + i·2π/6, radius 90 from the centre; each tentacle `SetPortalId`, explosion effect |
+| `SummonStateThrash` (3) | 45 s | — |
+| `SummonStateExplode` (4) | 10 s | on exit: `Location::Bang(centre, 200, 255, team)`; `explosionTimer = 1` |
+| `SummonStateCoolDown` (5) | 1 s | then `m_destroyed = true` |
+| `SummonStateFinished` (6) | — | — |
+
+[C] `Portal::Advance*`. No level fields beyond the base 8.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PortalExpand : created by The Beast crate
+    PortalExpand --> Thrash : radius 100 after 100 ticks, 6 x 12 tentacles
+    Thrash --> Explode : 45 s
+    Explode --> CoolDown : 10 s, Bang 200 255
+    CoolDown --> [*] : 1 s, removed, burn patch
+    note right of PortalExpand : every tick in every state Darwinians within the radius catch fire
+```
+
+### 9.4 Randomiser
+
+Source: `code/worldobject/randomiser.{h,cpp}`. **[B:FULL]**: not a Building but a `WorldObject` effect (`EffectRandomiser`) in `Location::m_effects`, created by the Randomiser crate outcome `Crate::RunRandomiser` (compiled under `INCLUDE_CRATES_ADVANCED`, defined in FULLGAME). No level-file presence. [C] `code/worldobject/crate.cpp:Crate::RunRandomiser`, `code/lib/universal_include.h`.
+
+| Parameter | Value | Kind |
+|---|---|---|
+| `RANDOMISER_RANGE` | 100.0 world units | `#define` |
+| lifetime `m_life` | 15.0 s | ctor literal |
+| pulse interval | first pulse on the first tick (`m_timer` starts 0), then `0.5 + syncfrand(2.5)` s (0.5–3.0) | literal, synced |
+
+**Pulse** [C] `Randomiser::Advance`: for every entity within 100 (all teams) that is a Darwinian not in `StateInsideArmour`: spawn one new Darwinian at its position with its velocity for team `syncrand() % levelFile->m_numPlayers` (team indices 0…NumPlayers−1; the original team is possible), then mark the original `m_destroyed`. Ownership: the crate's team only receives the message and a fixed map marker `icons/icon_randomizer.bmp`. Inputs: Darwinians in range; outputs: re-teamed Darwinians (their state, orders and health are reset because they are new entities [I]). Hazard [I]: a slot index < `NumPlayers` may belong to a team that is not playing (e.g. a 4-position map played by 2 teams), handing Darwinians to an unused team (03-U10).
+
+**Rendering** [C] `Randomiser::Render`: each frame two `Particle::TypeMuzzleFlash` particles (size 60) on opposite ends of a 100-radius arm rotating at 3 rad/s of render time, 5 above ground, each in a random team colour (CRT `rand() % NUM_TEAMS`, unsynced; particles spawned from the render path).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pulsing : crate opened, life 15 s, first pulse immediately
+    Pulsing --> Pulsing : every 0.5 to 3 s re-team every Darwinian within 100
+    Pulsing --> [*] : life reaches 0
+```
+
+## 10 AI marker buildings
+
+These buildings are invisible scaffolding for CPU players; the AI that consumes them is specified in [07](07_ai.md). Brief specification here.
+
+### 10.1 AITarget
+
+Source: `code/worldobject/ai.{h,cpp}`. **[B:FULL]** (level-placed and runtime-created).
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | node of the AI's navigation/priority graph: links to neighbours within `AITARGET_LINKRANGE` 600 (or the manual link) that are walkable (or radar/water targets), records crossed laser fences, counts friends/enemies per team and holds per-team priorities | [C] `AITarget::RecalculateNeighbours`, `Location::RecalculateAITargets` |
+| Ownership | logical owner for the AI only: every 2.0 s (random phase) `RecalculatePriority`, `RecountTeams` (entities within range: SP 100, MP 200, or the tagged score zone's size), `RecalculateOwnership` (strictly highest friend count > 0, else 255) | [C] `AITarget::Advance` |
+| Inputs / outputs | none to the economy; outputs priorities to `AI` and `Darwinian::m_closestAITarget` | [C] |
+| Runtime creators | Crate (on landing, modifier 0.5, `m_crateTarget`), RadarDish (connected, `m_radarTarget`), Statue (modifier 1.0, `m_statueTarget`), GunTurret (`m_turretTarget`), FuelStation (while loading, modifier 1.0), CloneLab (legacy); WallBuster's creator is commented out | [C] |
+| Removal | removal of an AITarget (or a Wall) triggers `RecalculateAITargets()` | [C] `Location::AdvanceBuildings` |
+| Collision / visibility | sphere/shape false; `aitarget.shp` drawn only while editing or with the `RenderAIInfo` preference | [C] `AITarget::DoesSphereHit`, `RenderAlphas` |
+| Damage | indestructible | [C] |
+| Mode usage | all 49 official maps (1029 official + 83 dev lines) | [C] census |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | linkId | int, optional | −1 | forced neighbour regardless of distance | `%-6d` |
+| 9 | priorityModifier | float, optional | 0.0 | added to every computed priority | `%-1.2f ` |
+| 10 | checkCliffs | int, optional | 1 | 0 = ignore cliffs when testing walkability | `%-6d` |
+
+[C] `AITarget::Read/Write`; `m_waterTarget = (pos.y ≤ 0)` set in `Initialise`. Priority formulas per mode → [07](07_ai.md).
+
+### 10.2 AIObjective
+
+Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | Assault (and Rocket Riot marker) objective chain node: groups AIObjectiveMarkers; active objectives direct attacking/defending AIs; on completion activates `m_nextObjective` | [C] |
+| Initialisation | first objective Advance (`InitialiseObjectives`, flag reset in `Location::Init`/`Empty`): every objective referenced as some objective's next is set inactive (chain heads start active); objectives with an armour marker go into `Armour::s_armourObjectives`; an objective owned by a defending team becomes a defence objective and propagates `m_defenseObjective` down the chain | [C] `AIObjective::InitialiseObjectives` |
+| Advance | every 5.0 s: **standard** — if every registered marker with `m_armourObjective == 0` is owned by a non-neutral attacking team → deactivate, activate next, set `m_pickupAvailable` on its armour markers with `m_pickupOnly ≠ −1`; **defensive** — if any marker is owned by a non-neutral non-defending team → deactivate and activate next (fall back) | [C] `AIObjective::Advance` |
+| Ownership | team from the level (attacking or defending position) | [C] |
+| Links | `m_nextObjective`; `m_wallTarget` (written by Walls, never read) | [C] |
+| Collision / damage | none (sphere/shape false, ray only in the editor); indestructible | [C] |
+| Mode usage | Assault 8/8 (92 lines) | [C] census |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | nextObjective | int, mandatory | −1 | next objective in the chain | `%4d` |
+
+### 10.3 AIObjectiveMarker
+
+Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | point of interest belonging to an AIObjective; its ownership decides objective completion and it boosts nearby AITarget priorities for the relevant teams | [C] |
+| Behaviour | waits for `s_objectivesInitialised` in Assault; first run registers with its objective (as an armour marker if `armourObjective == 1 && pickupOnly ≠ 1`), inherits the defence flag, stores its level team as `m_defaultTeam` and becomes neutral, and binds to a building within 20 (excluding markers, AITargets, walls, laser fences, static shapes) as `m_objectiveBuildingId`; then every 2.0 s: standard — team = bound building's team (a solar panel with 0 ports unbinds), else `scanRange == 0` → `m_defaultTeam`, else the ×4-majority count of non-monster/non-Futurewinian entities within scanRange (winner replaced when `count[i] > 4 × count[winner]` while `count[winner] < 10`); attacking AIs get `p = 1.0` on the nearest AITarget; defensive and Rocket Riot variants in [07](07_ai.md) | [C] `AIObjectiveMarker::Advance` |
+| Collision / damage | none; indestructible | [C] |
+| Mode usage | Assault 8/8, Rocket Riot 7/7 (330 lines) | [C] census |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | scanRange | float, mandatory | — | radius for the entity-majority rule (0 = use default team) | `%2.2f ` |
+| 9 | objectiveId | int, mandatory | −1 | owning AIObjective (−1 = none) | `%4d` |
+| 10 | armourObjective | int, optional | 0 | 1 = armour drop/pickup marker | `%4d` |
+| 11 | pickupOnly | int, optional | ctor value ([07](07_ai.md)) | armour pickup flag (−1 / 0 / 1) | `%4d` |
+
+[C] `AIObjectiveMarker::Read/Write`.
+
+### 10.4 AISpawnPoint
+
+Source: `code/worldobject/ai.{h,cpp}`. **[B:LEGACY]** (blocked; 3 campaign lines, 5 old maps).
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | Darwinia scripted enemy spawner: emits batches of `m_count` entities of `m_entityType` | [C] |
+| Activation | `m_online` once its activator is satisfied: a BlueprintStore with < 4 clean segments and ≤ 2 infected; a BlueprintConsole owned by team 0; otherwise a GlobalBuilding that is absent or online | [C] `AISpawnPoint::Advance` |
+| Spawning | while online, primary objectives not all met, not `PopulationLocked()` and `m_spawnLimit ≠ 0`: between batches count down `m_timer`; during a batch spawn one entity per tick (`SpawnEntities(pos, team, −1, type, 1, 0, spread 20, range 100, routeId)`); after `m_count` → `m_timer = m_period + syncsfrand(m_period/3)`, `m_spawnLimit−−` | [C] |
+| Ownership / damage | team from level / indestructible; non-colliding | [C] |
+| Defaults | `m_count` 20, `m_period` 60, `m_spawnLimit` −1 (unlimited), `m_routeId` −1 | [C] ctor (P08) |
+
+| # | Field | Type | Meaning |
+|---|---|---|---|
+| 8 | activatorId | int | activator building / GlobalBuilding id |
+| 9 | entityType | int | `Entity::Type*` value |
+| 10 | count | int | entities per batch |
+| 11 | period | int | seconds between batches (÷ difficulty factor for team 1, §3.4) |
+| 12 | spawnLimit | int, optional | number of batches (−1 unlimited) |
+| 13 | routeId | int, optional | route for spawned entities |
+
+[C] `AISpawnPoint::Read`.
+

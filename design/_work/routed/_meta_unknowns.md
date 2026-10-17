@@ -240,7 +240,15 @@
 3. Whether data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`, …) are looked up via a `sprintf` pattern not caught by the literal grep — resolve with a full call-graph search of `LookupMarker` arguments.
 4. `animator.exe` behaviour (key editing, any fields it writes beyond `AnimatedPanel::Write`) — no source in tree; resolve by running the tool.
 5. `.psp` / `.grd` internal block contents beyond the header (irrelevant to the game).
-6. Content equality of duplicated images (`animations/flag*.bmp` vs `icons/flag*.bmp`, `animations/darwinian.bmp` vs `sprites/darwinian.bmp`) — resolve by hashing.
+
+<!-- from X2a_asset_catalogue_visual -->
+## [U] Unknowns
+- U1: Contents of `patch.dat` and `branding.dat` (e.g. whether `carryspecialshape.shp`, `icons/compass_empty.bmp` or replacement art were delivered there). Resolve: inspect shipped archives of a retail install.
+- U2: Whether shipped retail builds used `build_multiwinia_retail.bat` with or without a language argument (decides which unicode atlases each SKU contains). Resolve: release logs or archive listings.
+- U3: Exact visual role of the 18 shrinking Virii copies inside `sprites/viriifull.bmp` (UV mapping lives in `Team::RenderVirii`, owned by the worldobject partition). Resolve: read the UV code there.
+- U4: Whether GL drivers of the period treated the no-mip textures left with MIN = `LINEAR_MIPMAP_LINEAR` as complete (affects only the `laser.bmp` no-mip callers after a context flush). Resolve: run on period hardware or a strict GL implementation.
+
+- U5: Which of the 52 FULL-referenced assets whose consumers have no placement in live MP maps are actually instantiated at run time (game-mode or crate spawning) — owned by the building/entity partitions (P06/P07/P08). Resolve: cross-reference their spawn analysis; until then treat Darwinia-only building meshes as optional.
 
 <!-- from X2b_asset_catalogue_audio -->
 ## [U] Unknowns

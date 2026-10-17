@@ -1185,7 +1185,7 @@ There are **no keyboard bindings for `MenuUp/Down/Left/Right/Activate/Close`** i
 7. **Text entry** is modal per window: while `m_currentTextEdit ≠ "None"` every `WM_CHAR` goes to that field; navigation keeps running (pad buttons are not characters), and `GameMenuInputField` sets `m_skipUpdate` on Enter so Enter does not also activate [C] §4.1, §5.6.
 8. **Locks**: `m_lockMenu` freezes navigation (error dialogues, tutorial launch); `m_skipUpdate` skips exactly one update [C].
 9. **Open drop-down**: the full-screen list window is front-most and focused; its own `m_buttonOrder` holds the options with the current value as the cursor; choosing an option closes it [C] §5.5.
-10. **Input mode** (P10): `INPUT_MODE_KEYBOARD` (1) or `INPUT_MODE_GAMEPAD` (2), chosen by the most recently active driver with the gamepad preferred; it controls hover-to-focus, the B-glyph hints, the `_kbd`/`_xin` phrase variants (§10.2) and the controller-unplugged dialogue [C] `code/lib/input/input.cpp` ([06](06_player_control_and_input.md)).
+10. **Input mode** (P10): `INPUT_MODE_KEYBOARD` (1) or `INPUT_MODE_GAMEPAD` (2), chosen by the most recently active driver with the gamepad preferred; it controls hover-to-focus, the B-glyph hints, the `_kbd`/`_xin` phrase variants (§10.2) and the controller-unplugged dialogue [C] `code/lib/input/input.cpp:InputManager::getInputMode` ([06](06_player_control_and_input.md)).
 
 ---
 ## 10 Localisation integration
@@ -2366,3 +2366,602 @@ Totals: not compiled in any PC configuration = 32; TARGET_DEBUG builds only = 73
 
 ---
 
+## 13 Framework defects and edge cases (do not carry forward)
+
+Eclipse-level quirks Q1–Q10 are in §2.13. Darwinia/front-end defects [C] unless marked:
+
+| # | Defect | Effect | Ref |
+|---|---|---|---|
+| F1 | `InputField::RegisterBool` sets `m_type = TypeChar`; `InputScroller` then casts the `LocalBool` to `NetworkChar*` | works only because both adaptors have the same layout [I]; bool increments unbounded | `code/interface/input_field.cpp:InputField::RegisterBool`, `InputScroller::CheckInput` |
+| F2 | `TypeChar` scroller ignores bounds | colour bytes wrap 255 → 0 | `InputScroller::CheckInput` |
+| F3 | Esc commits instead of cancelling | no way to abandon an edit | `InputField::Keypress` |
+| F4 | Typed numbers not clamped | out-of-range values reach data (local adaptors) | `NetworkValue::FromUnicodeString` |
+| F5 | `DarwiniaWindow::Update` asks `m_buttons[m_currentButton]` (registration list) for `SpecialScroll` | wrong widget gets the scroll hook | `DarwiniaWindow::Update` |
+| F6 | `MenuUp` loop never increments its counter | hang if every navigation entry is inactive | `DarwiniaWindow::Update` |
+| F7 | Darwinia window title always "MULTIWINIA" | `m_title` / window phrase never shown | `DarwiniaWindow::Render` |
+| F8 | `BorderlessButton::Render` calls `SetCurrentButton` | render-order-dependent focus | `BorderlessButton::Render` |
+| F9 | `MessageDialog` fixed 20-line array | buffer overflow on longer messages | `MessageDialog::MessageDialog` |
+| F10 | `MessageDialog` not controller-dismissable | pad soft-lock until a mouse is used | §4.7 |
+| F11 | Darwinia drop-down open list shows raw phrase keys | untranslated list items | `DropDownMenu::CreateMenu` |
+| F12 | `ScrollChangeButton` leaves additive blend and re-enables depth writes | later UI drawn additive until a text draw resets it | `ScrollChangeButton::Render` |
+| F13 | Scroll repeat and float scrollers are frame-rate dependent | inconsistent feel | §4.2, §4.4 |
+| F14 | `ScrollBarButton::Render` divides by `m_numRows` (0 for an empty list) | degenerate thumb | `ScrollBarButton::Render` |
+| F15 | `SetMenuSize(screenW, screenH)` under large menus scales full-screen pages beyond the screen (then clamped to a negative origin) | page partly off-screen | `DarwiniaWindow::SetMenuSize`, `GameOptionsWindow::GameOptionsWindow` |
+| F16 | `GameMenuInputField` roll-over guard compares with `"none"` (sentinel is `"None"`) | input fields never play `MenuRollOver` | `code/game_menu.cpp:GameMenuInputField::Render` |
+| F17 | `m_disabled` is ignored by `GameMenuButton` (render and click) | e.g. "Host" stays clickable when hosting is not permitted [I consequence] | `GameMenuButton::Render`, `code/UI/NewServerButton.h`, `GameMenuWindow::SetupNewOrJoinPage` |
+| F18 | `FancyColourButton` computes "taken" differently in `MouseUp` (counts unused slots and the local team) and `Render` (excludes them) and sets `m_inactive` from `Render` | clicking one's own current colour does nothing; navigation skips depend on the last rendered frame | `code/UI/FancyColourButton.h` |
+| F19 | Pad Back of `GameMenuWindow` pages is polled inside `BackPageButton::Render` | Back does nothing whenever that button is not rendered (unfocused window, open drop-down) and lags one frame | `code/game_menu.cpp:BackPageButton::Render` |
+| F20 | `GameServerButton::SpecialScroll` writes `m_scrollBar->m_currentValue` directly | bypasses clamping and dirtying | `code/UI/GameServerButton.h:GameServerButton::SpecialScroll` |
+| F21 | Server rows inserted into `m_buttonOrder` at `Size()−1` but removed at `m_serverButtonOrderStartIndex + row` | wrong entries (possibly Back) removed when the list shrinks [I consequence] | `GameMenuWindow::UpdateJoinGamePage` |
+| F22 | Browser scroll bar window size 10 for a 13-row list | paging/thumb proportions off by 3 rows | `GameMenuWindow::SetupJoinGamePage` |
+| F23 | `AuthInputField::Render` draws its background at window-relative `m_x, m_y` | correct only because the front-end window is at (0,0) | `code/UI/AuthInputField.h` |
+| F24 | `GameMenuDropDownMenuOption` caption x = `realX + realX × 0.05` | indent depends on screen position | `code/game_menu.cpp:GameMenuDropDownMenuOption::Render` |
+| F25 | `DropDownWindow` registered before it is sized | no on-screen clamp for the list; inherited close box at x = −12 | `DropDownMenu::CreateMenu` |
+| F26 | `MessageDialog` draws message lines through printf-style `DrawText2D` | `%` in a message is interpreted as a format directive | `MessageDialog::Render` |
+| F27 | `TextButton(UnicodeString)` constructor leaves members uninitialised | garbage flags if ever used | `code/interface/helpandoptions_windows.cpp:TextButton::TextButton` |
+| F28 | Missing-phrase results share one `m_notFound` buffer | the reference returned by one miss is overwritten by the next; not thread-safe | `LangTable::LookupPhrase` |
+| F29 | `CheckBox::MouseUp` toggles without checking `m_disabled`/`m_inactive` | "inactive" check boxes still toggle | `CheckBox::MouseUp` |
+| F30 | `SetupNewPage` indexes `s_pageNames[_page]` before validating `_page` | out-of-bounds read before the release assert | `GameMenuWindow::SetupNewPage` |
+| F31 | `MultiwiniaFileDialog` constructor creates a `ScrollBar` that `Create` replaces | leak [B:EDITOR] | `MultiwiniaFileDialog::MultiwiniaFileDialog` |
+| F32 | `DropDownMenu::GetSelectionName` bounds check uses `>` | off-by-one read | `DropDownMenu::GetSelectionName` |
+| F33 | Window drag stops for any frame in which the cursor passes over a button (that button receives `MouseDown` instead) | jerky window drags over dense windows | `EclUpdateMouse` |
+
+---
+
+## 14 Constants table
+
+All values [C] at the cited symbol.
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `SIZE_ECLWINDOW_NAME`, `SIZE_ECLWINDOW_TITLE`, `SIZE_ECLBUTTON_NAME` | 256 | `#define` | `contrib/eclipse/eclwindow.h`, `contrib/eclipse/eclbutton.h` |
+| Tooltip delay | 1000 ms | literal | `contrib/eclipse/eclipse.cpp:EclUpdateMouse` |
+| Resize grab band | ±4 px (exclusive) around bottom/right edge | literal | `EclUpdateMouse` |
+| Minimum window size on drag-resize | 60 × 40 px | literal | `EclUpdateMouse` |
+| Auto-grow margin | 10 px below the lowest button | literal | `EclWindow::RegisterButton` |
+| `APP_RAND_MAX` (child placement) | 32767 | `#define` | `contrib/systemiv/lib/math/random_number.h` |
+| Default button font size | 11.0 | ctor | `DarwiniaButton::DarwiniaButton` |
+| Auto button size | `chars × 7 + 9` px wide, 15 px high | literal | `DarwiniaButton::SetShortProperties` |
+| Title-bar height | `GetMenuSize(15)` px | literal | `DarwiniaWindow::GetClientRectY1` |
+| Close box | 10 × 10 at `(w − 12, 2)` | literal | `DarwiniaWindow::Create` |
+| Large-menu scale | `0.96 × screenH / 460` | literal | `DarwiniaWindow::GetMenuSize` |
+| Large-menu preference | `LargeMenus == 2` | pref | `code/app.cpp:App::Initialise`, `code/interface/prefs_other_window.h:OTHER_LARGEMENUS` |
+| Window body tint alpha | 0.96 | literal | `DarwiniaWindow::Render` |
+| Body texture repeat | s × 8 (assumes 512×64) | literal | `DarwiniaWindow::Render` |
+| Darwinia title text size / baseline | `GetMenuSize(12)` / `y + 9` | literal | `DarwiniaWindow::Render` |
+| Value-control field width | `w − 37` (numeric); scrollers 15×15 at +5 and +22 | literal | `DarwiniaWindow::CreateValueControl` |
+| `PIXELS_PER_CHAR` (Darwinia) | 7 | `#define` | `code/interface/input_field.cpp` |
+| `PIXELS_PER_CHAR` (front end) | 25 | `#define` | `code/game_menu.cpp` |
+| Input box width | `len × PIXELS_PER_CHAR + 7` | literal | `InputField::Keypress`, `InputField::Render` |
+| Edit well | right 40 % of the field | literal | `InputField::Render` |
+| Caret blink | 1 Hz, 50 % duty | literal | `InputField::Render`, `GameMenuInputField::Render`, `ChatInputField::Render`, `AuthInputField::Render` |
+| `INTEGER_INCREMENT_PERIOD` | 0.1 s (10 steps/s) | `#define` | `code/interface/input_field.cpp`, `code/game_menu.cpp` |
+| Float scroller rate | `change × elapsed × 0.2` per frame | literal | `InputScroller::CheckInput` |
+| Scroll speed-up | × 5 (Shift) | literal | `InputScroller::CheckInput` |
+| Default numeric bounds | [0, 1.0e4] | default args | `InputField::Register*` (`code/interface/input_field.h`) |
+| `DEF_FONT_SIZE` | 12.0 | `#define` | `code/lib/text_renderer.h` |
+| `GetTextWidth` default size | 13.0; horizontal scale 0.6 (CJK 1.0) | default arg / `App::SetLanguage` | `code/lib/text_renderer.h`, `code/app.cpp` |
+| Font spacing factors | editor 0.91, square 1.03, speccy 1.0 | literal | `code/app.cpp:App::SetLanguage` |
+| Text 2D offset | ortho −0.325 px; `DrawText2DSimple` x −3, y −7 | literal | `code/lib/text_renderer.cpp` |
+| Scroll-bar arrow height | 18 px | literal | `ScrollBar::Create` |
+| Drop-down column threshold (Darwinia) | `0.8 × screenH` | literal | `DropDownMenu::CreateMenu` |
+| Drop-down column budget (front end) | `leftH − 3.3 × bH` | literal | `GameMenuDropDown::CreateMenu` |
+| Drop-down option pitch (front end) | `1.05 × m_h`, width `0.95 × buttonW/columns` | literal | `GameMenuDropDown::CreateMenu` |
+| `MessageDialog` | ≤ 20 lines; `w ≥ 100`; `h = 65 + 12·lines ≥ 85`; button 40×18 at `h − 30` | literal | `code/interface/message_dialog.cpp` |
+| `FileDialog` rows | 13 px pitch, 12 px high; `rows = (h − 60)/13` | literal | `FileDialog::Create` |
+| Double-click window | 0.2 s | literal | `code/interface/filedialog.cpp`, `code/interface/multiwinia_filedialog.cpp` |
+| `MultiwiniaFileDialog` rows | 10, height `0.65 × bH` | literal | `MultiwiniaFileDialog::Create` |
+| Check-box geometry | box `0.75 h`, tick inset `0.05 h`, tick `0.65 h`, box at `right − 1.5 h` | literal | `CheckBox::Render`, `GameMenuCheckBox::Render` |
+| Layout fractions | `0.26 H`, `0.6 W`, gap `0.05 × vertSplit`, widescreen `W/H > 1.4` → `±0.08 W` | literal | `code/game_menu.cpp:GetPositions` |
+| Front-end fonts | large `0.095 H`, med `0.04 H`, small `0.022 H` | literal | `code/game_menu.cpp:GetFontSizes` |
+| Front-end buttons | `w = 0.9 × leftW`, `h = 1.3 × med`, `gap = 0.1 × med` | literal | `code/game_menu.cpp:GetButtonSizes` |
+| Compact rows | `0.65 × bH` (options, advanced, player, filters, password); `0.66 × bH` (lobby small controls); `0.6 × bH` (browser rows) | literal | setup functions |
+| `CreateMenuControl` field height | 30 (callers override) | literal | `GameOptionsWindow::CreateMenuControl` |
+| Fill-box shadow width | `0.01 W` | literal | `code/game_menu.cpp:DrawFillBox` |
+| Fill-box inner outline inset | 3 px | literal | `DrawFillBox` |
+| Logo | aspect 277/194, height `0.8 titleH`, inset `0.05 titleW` | literal | `GameOptionsWindow::Render`, `GameMenuWindow::Render` |
+| Title bitmap | width = text width × 1.1, aspect 5.4:1, top at `titleY + 0.1 titleH` | literal | `GameMenuWindow::Render` |
+| Error dialogue | `W/3 × H/3`, wrap `1.5 × boxW` | literal | `GameOptionsWindow::RenderErrorDialogue` |
+| Menu transition | duration 1.0 s, direction ±1; `fraction = 3.6 f`; inset `0.2 × fraction`; slide `fraction⁶ × W`; alpha `1 − 0.2 × fraction`; edge strip 20 px | literal | `code/renderer.cpp:Renderer::RenderMenuTransition`, `code/game_menu.cpp:GameMenuButton::MouseUp` |
+| Front-end fade-in | 0.25 s | literal | `code/game_menu.cpp:GameMenu::CreateMenu` |
+| Button birth cascade | slide until `0.6 × y/H` s; flash until `(5/numButtons) × y/H` s; slide `0.1 W` per remaining second; flash alpha ≤ 0.9; pop 0.1 s; ghost 1.3× | literal | `GameMenuButton::Render` |
+| Level-row cascade | `1.0 × y/H` s, slide `0.1 W` per remaining second | literal | `code/UI/LevelSelectButtonBase.h:LevelSelectButtonBase::RenderMapName` |
+| Scrolling text | hold 1.5 s; 30 px/s; gap `1.2 × font`; heading `1.25×`; MOTD extra hold 5.0 s | literal / member default | `code/UI/ScrollingTextButton.h`, `code/UI/motdButton.h` |
+| Backdrop | sprite centre `(0.75 W, 0.7 H)`, half-size `0.3 W + 5 sin t`, rotation 0.2 rad, 10 echoes ×1.02 and (−6,−6) px with alpha `0.2(1 − i/10)`; gear half-size `0.6 W`, `0.2 rad/s`, alpha 0.06, 10 copies +0.02 rad; detail low < 20 fps, high ≥ 60 fps, `k = advanceTime × 0.5`, start 60 | literal | `GameMenuWindow::RenderBigDarwinian` |
+| Blink | period 1.0 s, 50 % duty (alpha 1.0 / 0.5) | literal | `code/UI/GameMenuWindow.cpp:RenderRequestingEffect`, `code/UI/GameMenuWindow.cpp:RenderLoadingAchievementsEffect` |
+| Connecting dots | 2 steps/s, 0–3 dots | literal | `code/UI/WaitingButton.h` |
+| Gamer-tag flash | 1.0 s | literal | `code/UI/GamerTagButton.h` |
+| `SERVERS_ON_SCREEN` | 13 | `#define` | `code/game_menu.h` |
+| `MAX_GAME_TYPES` | 7 | `#define` | `code/game_menu.h` |
+| `GAMETYPE_PROLOGUE`, `GAMETYPE_CAMPAIGN` | 254, 255 | `#define` | `code/game_menu.h` |
+| `NumPages` | 38 | enum | `code/UI/GameMenuWindow.h` |
+| `AUTHENTICATION_KEYLEN` | 32 (31 visible; dashes after 6, 13, 20, 27) | `#define` | `contrib/systemiv/lib/metaserver/authentication.h`, `code/UI/AuthInputField.h` |
+| Player name / server password max | 16 characters | ctor default | `code/game_menu.h:PlayerNameString`, `code/UI/GameMenuWindow.h:ServerPasswordString` |
+| Chat message buffer / rename | 255 / ≤ 15 characters | literal | `code/interface/chatinput_window.cpp` |
+| In-game chat box | font `0.015 H`; width `0.25 W`; scale `W/1280` (`W/1024` at ≤ 800, 0.75 at ≤ 640) | literal | `ChatInputWindow::ChatInputWindow` |
+| Language-table limits | 1024 output chars; 64 marker key; 96 final key | `#define` | `code/lib/language_table.cpp` |
+| Old language table lifetime | 5 main-loop iterations | literal | `code/app.cpp:App::SetLanguage` |
+
+---
+
+## Open questions and unknowns
+
+| # | Item | Kind | What would resolve it |
+|---|---|---|---|
+| 28-U1 | Exact on-screen look of "ink" text (`SRC_ALPHA, ONE_MINUS_SRC_COLOR`) over the Darwinia highlight gradient and the fill boxes | [I] (blend arithmetic only) | render a captured frame on the target build (or run the GL path in a reference renderer) |
+| 28-U2 | Content of the frame captured by `InitialiseMenuTransition` (`glCopyTexImage2D` from the read buffer during the update phase, i.e. after the previous `Flip`): previous frame or undefined back-buffer contents depending on the driver's swap behaviour | [U] | test on several GL drivers / read `WindowManagerWin32::Flip` pixel-format flags (swap copy vs exchange) |
+| 28-U3 | Whether the shipped SKUs include the partial `japanese`/`korean`/`portuguese` language files (161–221 keys each); if they do, choosing them shows raw phrase ids for most of the UI | [I] design-critical for localisation QA | inspect the retail `language.dat` per SKU (`tools/build_language_dat.bat` + `tools/*language.list`, [31](31_platform_build_and_tools.md)) |
+| 28-U4 | Whether committed IME text reaches `InputField` as `WM_CHAR` units (no `WM_IME_*` handling exists) | [I] | run the game with a Japanese/Korean IME |
+| 28-U5 | Whether the server rejects lobby option requests from non-host clients (the UI only hides controls, §4.12) | [U] (shared with 09/22) | `code/network/server.cpp` handlers for `NET_DARWINIA_SETGAMEOPTION*` |
+| 28-U6 | Consequence of F21 (server-row navigation entries removed at the wrong index) in real browsing sessions | [I] | instrument `UpdateJoinGamePage` or step through with a shrinking list |
+| 28-U7 | Whether `EclUpdate` skipping a window when another window is removed during the same iteration (§2.9) ever drops a frame of navigation in practice | [I] | trace `EclUpdate` with drop-down windows that self-remove in `DropDownWindow::Update` |
+| 28-U8 | Whether any window in a shipped flow is opened while the Eclipse screen size is stale (screen size is only refreshed in `AdjustWindowPositions`) | [I] | audit every screen-mode change path (`RestartWindowManagerAndRenderer`, `UnlockFullGameButton`, `SetWindowed`) |
+
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | Ref |
+|---|---|---|---|
+| `docs/multiwiniachanges-beta.txt` (Issue 650, listed as fixed) | "Game Menu: X360 B button in menus doesn't always go back" | Structural cases remain where B does nothing: pages without a `BackPageButton` (Main, AuthKeyEntry), any frame in which the `BackPageButton` is not rendered (drop-down list open, window unfocused), and `MessageDialog` (no back button) [C mechanism; I that these were the reported cases] | `code/game_menu.cpp:BackPageButton::Render`, `code/interface/message_dialog.cpp` |
+| `docs/multiwiniachanges-beta.txt` (Issue 558, listed as fixed) | "Menu navigation in the pre-game with controller" | consistent: the lobby builds `m_buttonOrder` and starts the cursor on Play | `GameMenuWindow::SetupMultiplayerPage` |
+| `docs/detailed schedule.txt` "Translation System → Missed out" (Sound Stats/Parameter/Editor/Profile windows, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window) | these windows are untranslated | consistent: literal English captions (§10.3) | P17a strings table |
+| `docs/RussianFontRequest.txt` | only speccy had Cyrillic glyphs; they were copied to square and editor as a stop-gap | consistent: the three Cyrillic atlas pairs are byte-identical | `data/textures/unicode/*.0410.042f.bmp`, `*.0430.044f.bmp` |
+| `docs/sound changes.txt` | "Sound editor will now use a scrollbar if there are too many events to fit" | consistent (`SoundEditorWindow` creates a `ScrollBar`), but the sound editor is [B:DEBUG] only | `code/interface/soundeditor_window.cpp` |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Eclipse" library name and author credit ("Christopher Delay") | name | `contrib/eclipse/*`; control names `EclipseLMouseDown`, `EclipseLMousePressed`, `EclipseRMousePressed` (`data/input/input_preferences.txt`) | `ui-core`; `UiPointerDown`, `UiPointerHeld`, `UiAltPointerDown` |
+| Class/brand names `DarwiniaWindow`, `DarwiniaButton`, `GameMenuWindow::RenderBigDarwinian`, `MultiwiniaWindow`, `MultiwiniaFileDialog`, `MultiwiniaEditorButton`, `FinishMultiwiniaButton`, `dialog_multiwinia` | name | `code/interface/*`, `code/UI/*` | `UiWindow`, `UiButton`, `RenderBackdrop`, `MapEditorHubPage`, `MapFilePicker` |
+| Title "MULTIWINIA" (`multiwinia_mainmenu_title`), subtitle "Survival of the flattest" (`multiwinia_mainmenu_subtitle`), `textures/mwtitle.bmp`, `icons/mwlogo.bmp` | brand / text / art | `GameOptionsWindow::Render`, `GameMenuWindow::Render`, `DarwiniaWindow::Render` | `app.title`, `app.tagline`, new logotype and logo |
+| Backdrop art `sprites/darwinian.bmp` (giant Darwinian), `mwhelp/gear.bmp` | character art | `GameMenuWindow::RenderBigDarwinian` | own mascot / abstract backdrop |
+| UI textures `textures/interface_red.bmp`, `textures/interface_blur.bmp`, `textures/cloudyglow.bmp`, `textures/menuhighlight.bmp`, `icons/selectionarrow.bmp`, `icons/tick.bmp` | art | §8.4 | new UI texture set |
+| Controller glyphs `icons/button_a.bmp`, `icons/button_b.bmp`, `icons/button_lb.bmp`, `icons/button_rb.bmp`, `icons/button_lb_shadow.bmp`, `icons/button_rb_shadow.bmp` (Xbox 360 pad art) | third-party glyph art | `BackPageButton::Render`, `MenuCloseButton::Render`, `GameMenuWindow::PreloadTextures` | platform-guideline glyphs |
+| Fonts "speccy", "editor", "square" (`data/textures/unicode/*`, incl. CJK/Hangul glyph art) | art (font) | `code/app.cpp:App::SetLanguage` | licensed open fonts (e.g. an OFL UI font + Noto CJK) via a glyph cache |
+| Palettes (red glass panel + steel-blue highlight; green/red front-end captions on blue-glow boxes) | art direction | §8.3 | new palette (keep the token structure) |
+| UI sound events `MenuSelect`, `MenuCancel`, `MenuRollOver`, `LobbyAmbience`, `ChatMessage` (`SoundSourceBlueprint::TypeMultiwiniaInterface`) | audio | `code/game_menu.cpp`, `code/interface/mainmenus.h`, `code/UI/GameMenuWindow.cpp` | `ui.select`, `ui.back`, `ui.hover`, `ui.lobbyLoop`, `ui.chat` |
+| Framework phrase ids and their English text: `dialog_close`, `dialog_ok`, `dialog_cancel`, `dialog_back`, `dialog_multiplefiles`, `editor_coloureditor`, `editor_red`, `editor_green`, `editor_blue`, `editor_alpha`, `error`, `multiwinia_editor_success`, `multiwinia_editor_selectmap`, `multiwinia_menu_back`, `multiwinia_presstotalk`, `authentication_result`, `dialog_auth_status_demo_user` | text | `data/language/*.txt` | own string table (ids may be reused as neutral keys, texts not) |
+| Literal English captions in framework code: "Close", "Close this window", "Value left", "Value right", "New Window", "New Button", "New Scrollbar", "Failed to set requested screen resolution of …", "Failed to set requested sound settings", "Restart Required" / "Please restart Darwinia …" (Linux) | text | `code/interface/darwinia_window.cpp`, `code/interface/input_field.cpp`, `code/game_menu.cpp`, `contrib/eclipse/*`, `code/interface/scrollbar.cpp`, `code/renderer.cpp`, `code/sound/soundsystem.cpp`, `code/interface/prefs_screen_window.cpp` | rewrite |
+| Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP registers of [09](09_meta_systems.md) and `_work/drafts/P17b_strings.csv`, `_work/drafts/P17a_ui_framework_editor_ui_strings.csv` | own strings |
+
+## Source map
+
+UI framework and front-end sources (every file in `contrib/eclipse/`, `code/interface/`, `code/UI/`) plus the files that feed them. "Framework" rows are specified in this document; "screen" rows are windows built on the framework and specified in the document named.
+
+| File | Role |
+|---|---|
+| `contrib/eclipse/eclipse.h` | Eclipse public API (window management, focus, mouse/keyboard pump, dirty rects) — §2 |
+| `contrib/eclipse/eclipse.cpp` | Eclipse implementation (`EclUpdateMouse` state machine, z-order, popups, maximise, render order) — §2 |
+| `contrib/eclipse/eclwindow.h` | `EclWindow` class — §2.1 |
+| `contrib/eclipse/eclwindow.cpp` | `EclWindow` (button registry, auto-grow, render loop, keypress forwarding) — §2 |
+| `contrib/eclipse/eclbutton.h` | `EclButton` class — §2.1 |
+| `contrib/eclipse/eclbutton.cpp` | `EclButton` (properties, empty virtuals) — §2.1 |
+| `contrib/eclipse/eclipse.vcproj` | static-library project linked by `Darwinia.sln` (build evidence) — §1.2 |
+| `contrib/eclipse/eclipse.dsp` | VC6 project of the same library, not used by the VS2005 build — §1.2 |
+| `code/interface/darwinia_window.h` | `DarwiniaWindow`, `DarwiniaButton`, `BorderlessButton`, `CloseButton`, `GameExitButton`, `InvertedBox`, `LabelButton` — §3 |
+| `code/interface/darwinia_window.cpp` | Darwinia layer implementation (chrome, navigation, highlight, value controls, menu scaling) — §3 |
+| `code/interface/input_field.h` | `InputField`, `InputScroller`, `ColourWidget`, `ColourWindow` — §4.1–§4.3 |
+| `code/interface/input_field.cpp` | text input, validation, scrollers, colour picker — §4.1–§4.3 |
+| `code/interface/scrollbar.h` | `ScrollBar`, `ScrollBarButton`, `ScrollChangeButton` — §4.4 |
+| `code/interface/scrollbar.cpp` | scroll bar model, thumb drag, paging, arrows — §4.4 |
+| `code/interface/checkbox.h` | `CheckBox` — §4.5 |
+| `code/interface/checkbox.cpp` | check-box binding and render — §4.5 |
+| `code/interface/drop_down_menu.h` | `DropDownOptionData`, `DropDownWindow`, `DropDownMenu`, `DropDownMenuOption` — §4.6 |
+| `code/interface/drop_down_menu.cpp` | drop-down options, singleton list window — §4.6 |
+| `code/interface/message_dialog.h` | `MessageDialog` — §4.7 |
+| `code/interface/message_dialog.cpp` | message box and `OKButton` — §4.7 |
+| `code/interface/filedialog.h` | `FileDialog` — §4.8 |
+| `code/interface/filedialog.cpp` | file picker rows, selection, double-click — §4.8 |
+| `code/interface/multiwinia_filedialog.h` | `MultiwiniaFileDialog` [B:EDITOR] — §4.9 |
+| `code/interface/multiwinia_filedialog.cpp` | front-end-styled file picker [B:EDITOR] — §4.9 |
+| `code/interface/multiwinia_window.h` | `MultiwiniaWindow`, `NewMapWindow` [B:EDITOR] — §4.9 (functional: [08](08_levels_and_level_design.md)) |
+| `code/interface/multiwinia_window.cpp` | editor hub pages using the front-end style [B:EDITOR] — §4.9 |
+| `code/interface/mainmenus.h` | `GameOptionsWindow`, `MenuCloseButton`, `HelpAndOptionsButton`, legacy menu classes — §5 |
+| `code/interface/mainmenus.cpp` | `GameOptionsWindow` render/update/error dialogue/`CreateMenuControl`; in-game and legacy menus — §5 (functional: [09](09_meta_systems.md)) |
+| `code/interface/chatinput_window.h` | `ChatInputWindow`, `ChatInputField` — §4.10 |
+| `code/interface/chatinput_window.cpp` | chat text entry, `/name` command — §4.10 |
+| `code/interface/helpandoptions_windows.h` | help/option page windows, `TextButton`, `CrateButton` — §5.1, §6.11 (functional: [09](09_meta_systems.md)) |
+| `code/interface/helpandoptions_windows.cpp` | help and options pages — screen ([09](09_meta_systems.md)) |
+| `code/interface/prefs_screen_window.h` | `PrefsScreenWindow` — screen ([09](09_meta_systems.md)) |
+| `code/interface/prefs_screen_window.cpp` | screen options; `RestartWindowManagerAndRenderer`, `AdjustWindowPositions` (resolution change, §7.3) |
+| `code/interface/prefs_graphics_window.h` | `PrefsGraphicsWindow` — screen ([09](09_meta_systems.md)) |
+| `code/interface/prefs_graphics_window.cpp` | graphics options — screen ([09](09_meta_systems.md)) |
+| `code/interface/prefs_other_window.h` | `PrefsOtherWindow`, `OTHER_LARGEMENUS` etc. — §3.2, §10.7 |
+| `code/interface/prefs_other_window.cpp` | other options; language switch and large-menu apply — §10.7 |
+| `code/interface/prefs_sound_window.h` | `PrefsSoundWindow` — screen ([27](27_audio_engine.md)) |
+| `code/interface/prefs_sound_window.cpp` | sound options — screen ([27](27_audio_engine.md)) |
+| `code/interface/prefs_keybindings_window.h` | `PrefsKeybindingsWindow` [B:LEGACY] — screen ([09](09_meta_systems.md)) |
+| `code/interface/prefs_keybindings_window.cpp` | key-binding window, `ControlMethodDropDownMenu` [B:LEGACY] |
+| `code/interface/controllerunplugged_window.h` | `ControllerUnpluggedWindow` — screen ([06](06_player_control_and_input.md), [09](09_meta_systems.md)) |
+| `code/interface/controllerunplugged_window.cpp` | controller-unplugged page |
+| `code/interface/network_window.h` | `NetworkWindow` (F9) — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/network_window.cpp` | network statistics window (Darwinia style, uses `CloseButton`, `InvertedBox`) |
+| `code/interface/debugmenu.h` | `DebugMenu`, `DebugKeyBindings` — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/debugmenu.cpp` | debug "Tools Menu" (unreachable) and hot-key openers |
+| `code/interface/cheat_window.h` | `CheatWindow` [B:DEBUG] — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/cheat_window.cpp` | cheat buttons [B:DEBUG] |
+| `code/interface/profilewindow.h` | `ProfileWindow` [B:DEBUG] — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/profilewindow.cpp` | CPU profiler window [B:DEBUG] |
+| `code/interface/grabber_window.h` | `GrabberWindow` [B:DEBUG] — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/grabber_window.cpp` | AVI capture window [B:DEBUG] |
+| `code/interface/gesture_window.h` | `GestureWindow` [B:DEAD] |
+| `code/interface/gesture_window.cpp` | gesture editor [B:DEAD] |
+| `code/interface/soundeditor_window.h` | sound editor windows [B:DEBUG] — screen ([27](27_audio_engine.md)) |
+| `code/interface/soundeditor_window.cpp` | sound editor (uses `FileDialog`, `ScrollBar`, `DropDownMenu`) [B:DEBUG] |
+| `code/interface/soundparameter_window.h` | `SoundParameterEditor` [B:DEBUG] — screen ([27](27_audio_engine.md)) |
+| `code/interface/soundparameter_window.cpp` | sound parameter graph editor [B:DEBUG] |
+| `code/interface/soundstats_window.h` | `SoundStatsWindow` [B:DEBUG] — screen ([27](27_audio_engine.md)) |
+| `code/interface/soundstats_window.cpp` | sound statistics (uses `ScrollBar`) [B:DEBUG] |
+| `code/interface/sound_profile_window.h` | `SoundProfileWindow` [B:DEBUG] — screen ([27](27_audio_engine.md)) |
+| `code/interface/sound_profile_window.cpp` | sound profiler [B:DEBUG] |
+| `code/interface/editor_window.h` | `MainEditWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/editor_window.cpp` | editor main window [B:EDITOR] |
+| `code/interface/buildings_window.h` | building editor windows [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/buildings_window.cpp` | building editor controls [B:EDITOR] |
+| `code/interface/camera_anim_window.h` | camera-animation editor windows [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/camera_anim_window.cpp` | camera-animation editor [B:EDITOR] |
+| `code/interface/camera_mount_window.h` | `CameraMountEditWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/camera_mount_window.cpp` | camera-mount editor [B:EDITOR] |
+| `code/interface/landscape_window.h` | landscape editor windows [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/landscape_window.cpp` | landscape editor (file dialogs, guide grid) [B:EDITOR] |
+| `code/interface/lights_window.h` | `LightsEditWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/lights_window.cpp` | lights editor (`LabelButton`) [B:EDITOR] |
+| `code/interface/instant_unit_window.h` | instant-unit editor windows [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/instant_unit_window.cpp` | instant-unit editor [B:EDITOR] |
+| `code/interface/tree_window.h` | `TreeWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/tree_window.cpp` | tree editor [B:EDITOR] |
+| `code/interface/invalidcrates_window.h` | `InvalidCratesWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/invalidcrates_window.cpp` | invalid-crate editor [B:EDITOR] |
+| `code/interface/multiwiniaoptions_window.h` | `MultiwiniaOptionsWindow` [B:EDITOR] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/multiwiniaoptions_window.cpp` | editor map options [B:EDITOR] |
+| `code/interface/globalworldeditor_window.h` | `GlobalWorldEditorWindow` [B:LEGACY] — screen ([08](08_levels_and_level_design.md)) |
+| `code/interface/globalworldeditor_window.cpp` | Darwinia world editor [B:LEGACY] |
+| `code/interface/leaderboards_window.h` | leaderboard windows [B:LEGACY] — screen ([09](09_meta_systems.md)) |
+| `code/interface/leaderboards_window.cpp` | leaderboard stub [B:LEGACY] |
+| `code/interface/userprofile_window.h` | profile windows [B:LEGACY] — screen ([09](09_meta_systems.md)) |
+| `code/interface/userprofile_window.cpp` | profile windows [B:LEGACY] |
+| `code/interface/reallyquit_window.h` | `ReallyQuitWindow` [B:LEGACY] |
+| `code/interface/reallyquit_window.cpp` | quit confirmation (`GameExitButton`) [B:LEGACY] |
+| `code/interface/save_on_quit_window.h` | `SaveOnQuitWindow` [B:LEGACY] |
+| `code/interface/save_on_quit_window.cpp` | sound-editor save prompt [B:LEGACY] |
+| `code/interface/demoend_window.h` | `DemoEndWindow` [B:LEGACY] |
+| `code/interface/demoend_window.cpp` | Darwinia demo end page (needs `DEMO2`) [B:LEGACY] |
+| `code/interface/mods_window.h` | mod windows [B:DEAD] |
+| `code/interface/mods_window.cpp` | mod system UI (`USE_DARWINIA_MOD_SYSTEM`) [B:DEAD] |
+| `code/interface/buynow_window.h` | `BuyNowWindow` (not in project) [B:DEAD] |
+| `code/interface/buynow_window.cpp` | buy-now window (not in project) [B:DEAD] |
+| `code/interface/updateavailable_window.h` | `UpdateAvailableWindow` (not in project) [B:DEAD] |
+| `code/interface/updateavailable_window.cpp` | update window (not in project) [B:DEAD] |
+| `code/game_menu.h` | `GameMenu`, `PlayerNameString`, `GameMenu*` widgets, layout helper declarations, `IS_DEMO`, `SERVERS_ON_SCREEN` — §5, §7 |
+| `code/game_menu.cpp` | layout helpers, `DrawFillBox`, `RenderHighlightBeam`, `GameMenuButton`/`BackPageButton`/title/drop-down/input/check-box widgets, `s_pageNames`, `GameMenu` lifecycle — §5–§7 |
+| `code/UI/GameMenuWindow.h` | `GameMenuWindow` (page enum, members), `ServerPasswordString` — §6 |
+| `code/UI/GameMenuWindow.cpp` | page state machine, set-up/update/render of every page, `RenderBigDarwinian`, `GameMenuChatButton` — §6 (functional: [09](09_meta_systems.md)) |
+| `code/UI/ImageButton.h` | `ImageButton` — §6.9 |
+| `code/UI/ImageButton.cpp` | image widget render — §6.9 |
+| `code/UI/MapData.h` | `MapData` record — §6.12 ([09](09_meta_systems.md)) |
+| `code/UI/MapData.cpp` | `MapData` — §6.12 |
+| `code/UI/ScrollingTextButton.h` | scrolling text widget — §6.8 |
+| `code/UI/FancyColourButton.h` | colour/side picker — §6.10 |
+| `code/UI/AuthInputField.h` | key-entry field — §4.11 |
+| `code/UI/GameServerButton.h` | server-browser row, `SpecialScroll` — §6.11 |
+| `code/UI/LevelSelectButtonBase.h` | map-row base, cascade — §6.7, §6.11 |
+| `code/UI/LevelSelectButton.h` | map row — §6.12 |
+| `code/UI/AnyLevelSelectButton.h` | "any map" row (unreached) — §6.12 |
+| `code/UI/GamerTagButton.h` | lobby slot — §6.11 |
+| `code/UI/KickPlayerButton.h` | kick button — §6.11 |
+| `code/UI/WaitingButton.h` | connection status — §6.11 |
+| `code/UI/GameTypeImageButton.h` | mode picture — §6.9 |
+| `code/UI/MapImageButton.h` | map thumbnail — §6.9 |
+| `code/UI/HelpImageButton.h` | help picture (unreached) — §6.9 |
+| `code/UI/GameTypeInfoButton.h` | mode blurb (`ScrollingTextButton`) — §6.8 |
+| `code/UI/MapInfoButton.h` | map description (`ScrollingTextButton`) — §6.8 |
+| `code/UI/OptionDetailsButton.h` | option help (`ScrollingTextButton`) — §6.8 |
+| `code/UI/motdButton.h` | `MOTDButton` (`ScrollingTextButton`) — §6.8 |
+| `code/UI/MapListTitlesButton.h` | map-list header — §6.12 |
+| `code/UI/ServerTitleInfoButton.h` | browser header — §6.12 |
+| `code/UI/MapSelectModeButton.h` | lobby map name — §6.12 |
+| `code/UI/PlayGameButton.h` | Play/Ready — §6.12 |
+| `code/UI/GameTypeButton.h` | mode row — §6.12 |
+| `code/UI/AdvancedOptionsModeButton.h` | → AdvancedOptions — §6.12 |
+| `code/UI/ApplyNameButton.h` | save name, back — §6.12 |
+| `code/UI/AuthPageButton.h` | → AuthKeyEntry — §6.12 |
+| `code/UI/AuthStatusButton.h` | auth status box — §6.12 |
+| `code/UI/BuyNowModeButton.h` | → BuyMeNow — §6.12 |
+| `code/UI/BuyNowInfoButton.h` | upsell lines (unused) — §6.12 |
+| `code/UI/ConnectButton.h` | `ServerConnectButton` — §6.12 |
+| `code/UI/DarwiniaModeButton.h` | "Single Player" — §6.12 |
+| `code/UI/EnterAuthKeyButton.h` | auth Done — §6.12 |
+| `code/UI/FiltersPageButton.h` | → Filters — §6.12 |
+| `code/UI/FinishMultiwiniaButton.h` | `FinishMultiwiniaButton`, `FinishSinglePlayerButton`, `SaveFiltersButton` — §6.12 |
+| `code/UI/JoinGameButton.h` | → JoinGame — §6.12 |
+| `code/UI/NewOrJoinButton.h` | "Multiplayer" — §6.12 |
+| `code/UI/NewServerButton.h` | "Host" — §6.12 |
+| `code/UI/PasteKeyButton.h` | paste key — §6.12 |
+| `code/UI/PlayDemoAuthkeyButton.h` | demo key — §6.12 |
+| `code/UI/QuitButton.h` | quit — §6.12 |
+| `code/UI/TutorialButton.h` | `TutorialPageButton`, `TutorialButton` — §6.6, §6.12 |
+| `code/UI/UnlockFullGameButton.h` | open store — §6.12 |
+| `code/UI/credits_button.h` | → Credits — §6.12 |
+| `code/UI/update_page_buttons.h` | update-page buttons — §6.12 |
+| `code/UI/AchievementButton.h` | achievement row (unused) — §6.12 |
+| `code/UI/CSpectatorButton.h` | spectator request (unused, `TESTBED`) — §6.12 |
+| `code/UI/CampaignButton.h` | Darwinia campaign [B:DEBUG] — §6.12 |
+| `code/UI/PrologueButton.h` | Darwinia prologue [B:DEBUG] — §6.12 |
+| `code/UI/MultiwiniaVersusCpuButton.h` | versus CPU [B:DEBUG] — §6.12 |
+| `code/UI/MultiwiniaEditorButton.h` | open editor [B:EDITOR] — §6.12 |
+| `code/UI/DarwiniaPlusMPButton.h` | Darwinia+ MP (unused) — §6.12 |
+| `code/UI/DarwiniaPlusSPButton.h` | Darwinia+ SP (unused) — §6.12 |
+| `code/UI/GameTypeAnyButton.h` | "any mode" (unused) — §6.12 |
+| `code/UI/HelpSelectButton.h` | help select (unused) — §6.12 |
+| `code/UI/NextHelpButton.h` | next help image (unreached) — §6.12 |
+| `code/UI/PrevHelpButton.h` | previous help image (unreached) — §6.12 |
+| `code/UI/QuickMatchButton.h` | quick match (unused) — §6.12 |
+| `code/UI/QuitAuthKeyButton.h` | quit from key page (other targets) — §6.12 |
+| `code/UI/TestBedButtons.h` | `StartTestbedButton` [B:DEAD] — §6.12 |
+| `code/UI/GameMenuOptionsButton.h` | options button (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/HelpModeButton.h` | help mode (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/MultiwiniaModeButton.h` | multiplayer mode (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/QuickStartButton.h` | quick start (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/RequestAIButton.h` | add CPU (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/ResearchModeButton.h` | research (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/RollingDemoButton.h` | rolling demo (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/mapDetailsButton.h` | map details panel (uncompiled) [B:DEAD] — §6.12 |
+| `code/UI/ErrorDialog.h` | `ErrorDialog` (not in project) [B:DEAD] — §6.12 |
+| `code/UI/ErrorDialog.cpp` | `ErrorDialog` (not in project) [B:DEAD] — §6.12 |
+| `code/UI/soundsliderbutton.h` | `VolumeControl` (not in project) [B:DEAD] — §6.12 |
+| `code/user_input.h` | `UserInput` — §1.4 |
+| `code/user_input.cpp` | Eclipse pump (`AdvanceMenus`), UI render pass, F9/F11 openers — §1.4 |
+| `code/lib/input/inputdriver_win32.cpp` | `WM_CHAR` → `EclUpdateKeyboard` — §1.4 |
+| `code/lib/input/keydefs.h` | `KEY_BACKSPACE`, `KEY_ENTER`, `KEY_ESC`, `KEY_STOP`, `KEY_0..9`, `KEY_A..Z` used by text input — §4.1 |
+| `code/lib/input/file_paths.cpp` | input-preference file selection (`MultiwiniaControlMethod`) — §9.1 |
+| `code/lib/window_manager_win32.cpp` | Unicode window class (UTF-16 `WM_CHAR`) — §1.4 |
+| `code/lib/text_renderer.h` | `TextRenderer` API, `DEF_FONT_SIZE` — §8.2 |
+| `code/lib/text_renderer.cpp` | 2D ortho, text blend modes, width estimates — §8.2 |
+| `code/lib/language_table.h` | `LANGUAGEPHRASE`, `ISLANGUAGEPHRASE`, `RAWLANGUAGEPHRASE` — §10.1 |
+| `code/lib/language_table.cpp` | phrase lookup, key fallback, input-mode tables, markup — §10.1–§10.2 |
+| `code/app.cpp` | fonts per language, `SetLanguage`, `InitLanguage`, large-menu flag — §3.2, §10 |
+| `code/main.cpp` | `MainMenuLoop`, `RemoveAllWindows`, `WindowsOnScreen`, `Finalise` (`EclShutdown`) — §1.4, §6.1 |
+| `code/renderer.cpp` | UI pass position, menu transition, `Clip`/`EndClip`, resolution-failure `MessageDialog` — §1.4, §6.7 |
+| `code/network/networkvalue.h` | `NetworkValue` adaptor family — §4.12 |
+| `code/network/networkvalue.cpp` | text conversions, networked option `Set` — §4.12 |
+| `code/sound/soundsystem.cpp` | hardware-3D failure `MessageDialog` — §4.7 |
+| `contrib/systemiv/lib/tosser/llist.h` | `LList` used by every window/button list — §1.2 |
+| `contrib/systemiv/lib/tosser/llist.cpp` | `LList::GetItem` NULL on invalid index — §1.2 |
+| `contrib/systemiv/lib/unicode/unicode_string.h` | `UnicodeString` — §10.4 |
+| `contrib/systemiv/lib/unicode/unicode_string.cpp` | `Truncate`, `ReplaceStringFlag`, case mapping — §4.1, §10.4 |
+| `contrib/systemiv/lib/math/random_number.h` | `AppRandom`, `APP_RAND_MAX` (window placement) — §2.2 |
+| `contrib/systemiv/lib/math/random_number.cpp` | `AppRandom` implementation — §2.2 |
+| `contrib/systemiv/lib/metaserver/authentication.h` | `AUTHENTICATION_KEYLEN`, key status — §4.11 |
+| `contrib/systemiv/interface/components/checkbox.h` | SystemIV UI component — not compiled [B:DEAD] (§1.2) |
+| `contrib/systemiv/interface/components/checkbox.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/core.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/core.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/drop_down_menu.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/drop_down_menu.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/filedialog.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/filedialog.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/inputfield.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/inputfield.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/message_dialog.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/message_dialog.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/scrollbar.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/components/scrollbar.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/options/screenoptions_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/options/screenoptions_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/options/soundoptions_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/options/soundoptions_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundeditor_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundeditor_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundparameter_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundparameter_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundstats_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/soundsystem/soundstats_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/styleeditor_window.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/interface/styleeditor_window.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/lib/eclipse/eclipse.h` | SystemIV copy of Eclipse — not compiled [B:DEAD] (§1.2) |
+| `contrib/systemiv/lib/eclipse/eclipse.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/lib/eclipse/eclwindow.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/lib/eclipse/eclwindow.cpp` | not compiled [B:DEAD] |
+| `contrib/systemiv/lib/eclipse/eclbutton.h` | not compiled [B:DEAD] |
+| `contrib/systemiv/lib/eclipse/eclbutton.cpp` | not compiled [B:DEAD] |
+| `targets/vs2005/Darwinia.sln` | links the `eclipse` project — §1.2 |
+| `targets/vs2005/Darwinia.vcproj` | game project file list and include path (build evidence) — §1.2 |
+| `data/input/input_preferences.txt` | menu/Eclipse bindings — §9.1 |
+| `data/input/input_preferences_darwinia.txt` | alternative bindings with keyboard menu navigation (unused) — §9.1 |
+| `data/language/english.txt` | phrase table (2425 keys) — §10 |
+| `data/language/french.txt` | phrase table — §10.5 |
+| `data/language/german.txt` | phrase table — §10.5 |
+| `data/language/italian.txt` | phrase table — §10.5 |
+| `data/language/spanish.txt` | phrase table — §10.5 |
+| `data/language/russian.txt` | phrase table — §10.5 |
+| `data/language/japanese.txt` | partial phrase table (221 keys) — §10.5 |
+| `data/language/korean.txt` | partial phrase table (161 keys) — §10.5 |
+| `data/language/portuguese.txt` | partial phrase table (161 keys) — §10.5 |
+| `data/textures/interface_red.bmp` | Darwinia window body — §8.4 |
+| `data/textures/interface_blur.bmp` | fill-box body — §8.4 |
+| `data/textures/cloudyglow.bmp` | fill-box glow — §8.4 |
+| `data/textures/menuhighlight.bmp` | highlight beam — §8.4 |
+| `data/textures/mwtitle.bmp` | title bitmap — §8.4 |
+| `data/icons/mwlogo.bmp` | title-bar logo — §8.4 |
+| `data/icons/selectionarrow.bmp` | scroll arrows — §8.4 |
+| `data/icons/tick.bmp` | check-box tick — §8.4 |
+| `data/icons/button_a.bmp` | pad glyph (pre-loaded) — §8.4 |
+| `data/icons/button_b.bmp` | pad "B" back hint — §8.4 |
+| `data/icons/button_lb.bmp` | pad glyph (pre-loaded) — §6.1 |
+| `data/icons/button_rb.bmp` | pad glyph (pre-loaded) — §6.1 |
+| `data/icons/button_lb_shadow.bmp` | pad glyph shadow (pre-loaded) — §6.1 |
+| `data/icons/button_rb_shadow.bmp` | pad glyph shadow (pre-loaded) — §6.1 |
+| `data/sprites/darwinian.bmp` | backdrop sprite — §6.7 |
+| `data/mwhelp/gear.bmp` | backdrop gear — §6.7 |
+| `docs/RussianFontRequest.txt` | Cyrillic atlas note (evidence) — §10.5 |
+| `docs/multiwiniachanges-beta.txt` | menu-navigation change notes (evidence) — discrepancies |
+| `docs/detailed schedule.txt` | untranslated-window list (evidence) — discrepancies |
+
+Glyph atlases (`data/textures/unicode/*`, 138 files) feed all UI text; they are catalogued one row per file in [24](24_rendering.md) / [25](25_textures_and_assets.md) and are listed below for completeness:
+
+| File | Role |
+|---|---|
+| `data/textures/unicode/editor.0020.00ff.bmp` | glyph atlas `editor` U+0020–U+00FF |
+| `data/textures/unicode/editor.0410.042f.bmp` | glyph atlas `editor` U+0410–U+042F |
+| `data/textures/unicode/editor.0430.044f.bmp` | glyph atlas `editor` U+0430–U+044F |
+| `data/textures/unicode/editor.20a0.20af.bmp` | glyph atlas `editor` U+20A0–U+20AF |
+| `data/textures/unicode/speccy.0020.00ff.bmp` | glyph atlas `speccy` U+0020–U+00FF |
+| `data/textures/unicode/speccy.0410.042f.bmp` | glyph atlas `speccy` U+0410–U+042F |
+| `data/textures/unicode/speccy.0430.044f.bmp` | glyph atlas `speccy` U+0430–U+044F |
+| `data/textures/unicode/speccy.20a0.20af.bmp` | glyph atlas `speccy` U+20A0–U+20AF |
+| `data/textures/unicode/square.0020.00ff.bmp` | glyph atlas `square` U+0020–U+00FF |
+| `data/textures/unicode/square.0410.042f.bmp` | glyph atlas `square` U+0410–U+042F |
+| `data/textures/unicode/square.0430.044f.bmp` | glyph atlas `square` U+0430–U+044F |
+| `data/textures/unicode/square.20a0.20af.bmp` | glyph atlas `square` U+20A0–U+20AF |
+| `data/textures/unicode/square.3000.30ff.bmp` | glyph atlas `square` U+3000–U+30FF |
+| `data/textures/unicode/square.4e00.4eff.bmp` | glyph atlas `square` U+4E00–U+4EFF |
+| `data/textures/unicode/square.4f00.4fff.bmp` | glyph atlas `square` U+4F00–U+4FFF |
+| `data/textures/unicode/square.5000.50ff.bmp` | glyph atlas `square` U+5000–U+50FF |
+| `data/textures/unicode/square.5100.51ff.bmp` | glyph atlas `square` U+5100–U+51FF |
+| `data/textures/unicode/square.5200.52ff.bmp` | glyph atlas `square` U+5200–U+52FF |
+| `data/textures/unicode/square.5300.53ff.bmp` | glyph atlas `square` U+5300–U+53FF |
+| `data/textures/unicode/square.5400.54ff.bmp` | glyph atlas `square` U+5400–U+54FF |
+| `data/textures/unicode/square.5500.55ff.bmp` | glyph atlas `square` U+5500–U+55FF |
+| `data/textures/unicode/square.5600.56ff.bmp` | glyph atlas `square` U+5600–U+56FF |
+| `data/textures/unicode/square.5700.57ff.bmp` | glyph atlas `square` U+5700–U+57FF |
+| `data/textures/unicode/square.5800.58ff.bmp` | glyph atlas `square` U+5800–U+58FF |
+| `data/textures/unicode/square.5900.59ff.bmp` | glyph atlas `square` U+5900–U+59FF |
+| `data/textures/unicode/square.5a00.5aff.bmp` | glyph atlas `square` U+5A00–U+5AFF |
+| `data/textures/unicode/square.5b00.5bff.bmp` | glyph atlas `square` U+5B00–U+5BFF |
+| `data/textures/unicode/square.5c00.5cff.bmp` | glyph atlas `square` U+5C00–U+5CFF |
+| `data/textures/unicode/square.5d00.5dff.bmp` | glyph atlas `square` U+5D00–U+5DFF |
+| `data/textures/unicode/square.5e00.5eff.bmp` | glyph atlas `square` U+5E00–U+5EFF |
+| `data/textures/unicode/square.5f00.5fff.bmp` | glyph atlas `square` U+5F00–U+5FFF |
+| `data/textures/unicode/square.6000.60ff.bmp` | glyph atlas `square` U+6000–U+60FF |
+| `data/textures/unicode/square.6100.61ff.bmp` | glyph atlas `square` U+6100–U+61FF |
+| `data/textures/unicode/square.6200.62ff.bmp` | glyph atlas `square` U+6200–U+62FF |
+| `data/textures/unicode/square.6300.63ff.bmp` | glyph atlas `square` U+6300–U+63FF |
+| `data/textures/unicode/square.6400.64ff.bmp` | glyph atlas `square` U+6400–U+64FF |
+| `data/textures/unicode/square.6500.65ff.bmp` | glyph atlas `square` U+6500–U+65FF |
+| `data/textures/unicode/square.6600.66ff.bmp` | glyph atlas `square` U+6600–U+66FF |
+| `data/textures/unicode/square.6700.67ff.bmp` | glyph atlas `square` U+6700–U+67FF |
+| `data/textures/unicode/square.6800.68ff.bmp` | glyph atlas `square` U+6800–U+68FF |
+| `data/textures/unicode/square.6900.69ff.bmp` | glyph atlas `square` U+6900–U+69FF |
+| `data/textures/unicode/square.6a00.6aff.bmp` | glyph atlas `square` U+6A00–U+6AFF |
+| `data/textures/unicode/square.6b00.6bff.bmp` | glyph atlas `square` U+6B00–U+6BFF |
+| `data/textures/unicode/square.6c00.6cff.bmp` | glyph atlas `square` U+6C00–U+6CFF |
+| `data/textures/unicode/square.6d00.6dff.bmp` | glyph atlas `square` U+6D00–U+6DFF |
+| `data/textures/unicode/square.6e00.6eff.bmp` | glyph atlas `square` U+6E00–U+6EFF |
+| `data/textures/unicode/square.6f00.6fff.bmp` | glyph atlas `square` U+6F00–U+6FFF |
+| `data/textures/unicode/square.7000.70ff.bmp` | glyph atlas `square` U+7000–U+70FF |
+| `data/textures/unicode/square.7100.71ff.bmp` | glyph atlas `square` U+7100–U+71FF |
+| `data/textures/unicode/square.7200.72ff.bmp` | glyph atlas `square` U+7200–U+72FF |
+| `data/textures/unicode/square.7300.73ff.bmp` | glyph atlas `square` U+7300–U+73FF |
+| `data/textures/unicode/square.7400.74ff.bmp` | glyph atlas `square` U+7400–U+74FF |
+| `data/textures/unicode/square.7500.75ff.bmp` | glyph atlas `square` U+7500–U+75FF |
+| `data/textures/unicode/square.7600.76ff.bmp` | glyph atlas `square` U+7600–U+76FF |
+| `data/textures/unicode/square.7700.77ff.bmp` | glyph atlas `square` U+7700–U+77FF |
+| `data/textures/unicode/square.7800.78ff.bmp` | glyph atlas `square` U+7800–U+78FF |
+| `data/textures/unicode/square.7900.79ff.bmp` | glyph atlas `square` U+7900–U+79FF |
+| `data/textures/unicode/square.7a00.7aff.bmp` | glyph atlas `square` U+7A00–U+7AFF |
+| `data/textures/unicode/square.7b00.7bff.bmp` | glyph atlas `square` U+7B00–U+7BFF |
+| `data/textures/unicode/square.7c00.7cff.bmp` | glyph atlas `square` U+7C00–U+7CFF |
+| `data/textures/unicode/square.7d00.7dff.bmp` | glyph atlas `square` U+7D00–U+7DFF |
+| `data/textures/unicode/square.7e00.7eff.bmp` | glyph atlas `square` U+7E00–U+7EFF |
+| `data/textures/unicode/square.7f00.7fff.bmp` | glyph atlas `square` U+7F00–U+7FFF |
+| `data/textures/unicode/square.8000.80ff.bmp` | glyph atlas `square` U+8000–U+80FF |
+| `data/textures/unicode/square.8100.81ff.bmp` | glyph atlas `square` U+8100–U+81FF |
+| `data/textures/unicode/square.8200.82ff.bmp` | glyph atlas `square` U+8200–U+82FF |
+| `data/textures/unicode/square.8300.83ff.bmp` | glyph atlas `square` U+8300–U+83FF |
+| `data/textures/unicode/square.8400.84ff.bmp` | glyph atlas `square` U+8400–U+84FF |
+| `data/textures/unicode/square.8500.85ff.bmp` | glyph atlas `square` U+8500–U+85FF |
+| `data/textures/unicode/square.8600.86ff.bmp` | glyph atlas `square` U+8600–U+86FF |
+| `data/textures/unicode/square.8700.87ff.bmp` | glyph atlas `square` U+8700–U+87FF |
+| `data/textures/unicode/square.8800.88ff.bmp` | glyph atlas `square` U+8800–U+88FF |
+| `data/textures/unicode/square.8900.89ff.bmp` | glyph atlas `square` U+8900–U+89FF |
+| `data/textures/unicode/square.8a00.8aff.bmp` | glyph atlas `square` U+8A00–U+8AFF |
+| `data/textures/unicode/square.8b00.8bff.bmp` | glyph atlas `square` U+8B00–U+8BFF |
+| `data/textures/unicode/square.8c00.8cff.bmp` | glyph atlas `square` U+8C00–U+8CFF |
+| `data/textures/unicode/square.8d00.8dff.bmp` | glyph atlas `square` U+8D00–U+8DFF |
+| `data/textures/unicode/square.8e00.8eff.bmp` | glyph atlas `square` U+8E00–U+8EFF |
+| `data/textures/unicode/square.8f00.8fff.bmp` | glyph atlas `square` U+8F00–U+8FFF |
+| `data/textures/unicode/square.9000.90ff.bmp` | glyph atlas `square` U+9000–U+90FF |
+| `data/textures/unicode/square.9100.91ff.bmp` | glyph atlas `square` U+9100–U+91FF |
+| `data/textures/unicode/square.9200.92ff.bmp` | glyph atlas `square` U+9200–U+92FF |
+| `data/textures/unicode/square.9300.93ff.bmp` | glyph atlas `square` U+9300–U+93FF |
+| `data/textures/unicode/square.9400.94ff.bmp` | glyph atlas `square` U+9400–U+94FF |
+| `data/textures/unicode/square.9500.95ff.bmp` | glyph atlas `square` U+9500–U+95FF |
+| `data/textures/unicode/square.9600.96ff.bmp` | glyph atlas `square` U+9600–U+96FF |
+| `data/textures/unicode/square.9700.97ff.bmp` | glyph atlas `square` U+9700–U+97FF |
+| `data/textures/unicode/square.9800.98ff.bmp` | glyph atlas `square` U+9800–U+98FF |
+| `data/textures/unicode/square.9900.99ff.bmp` | glyph atlas `square` U+9900–U+99FF |
+| `data/textures/unicode/square.9a00.9aff.bmp` | glyph atlas `square` U+9A00–U+9AFF |
+| `data/textures/unicode/square.9b00.9bff.bmp` | glyph atlas `square` U+9B00–U+9BFF |
+| `data/textures/unicode/square.9c00.9cff.bmp` | glyph atlas `square` U+9C00–U+9CFF |
+| `data/textures/unicode/square.9d00.9dff.bmp` | glyph atlas `square` U+9D00–U+9DFF |
+| `data/textures/unicode/square.9e00.9eff.bmp` | glyph atlas `square` U+9E00–U+9EFF |
+| `data/textures/unicode/square.ac00.acff.bmp` | glyph atlas `square` U+AC00–U+ACFF |
+| `data/textures/unicode/square.ad00.adff.bmp` | glyph atlas `square` U+AD00–U+ADFF |
+| `data/textures/unicode/square.ae00.aeff.bmp` | glyph atlas `square` U+AE00–U+AEFF |
+| `data/textures/unicode/square.af00.afff.bmp` | glyph atlas `square` U+AF00–U+AFFF |
+| `data/textures/unicode/square.b000.b0ff.bmp` | glyph atlas `square` U+B000–U+B0FF |
+| `data/textures/unicode/square.b100.b1ff.bmp` | glyph atlas `square` U+B100–U+B1FF |
+| `data/textures/unicode/square.b200.b2ff.bmp` | glyph atlas `square` U+B200–U+B2FF |
+| `data/textures/unicode/square.b300.b3ff.bmp` | glyph atlas `square` U+B300–U+B3FF |
+| `data/textures/unicode/square.b400.b4ff.bmp` | glyph atlas `square` U+B400–U+B4FF |
+| `data/textures/unicode/square.b500.b5ff.bmp` | glyph atlas `square` U+B500–U+B5FF |
+| `data/textures/unicode/square.b600.b6ff.bmp` | glyph atlas `square` U+B600–U+B6FF |
+| `data/textures/unicode/square.b700.b7ff.bmp` | glyph atlas `square` U+B700–U+B7FF |
+| `data/textures/unicode/square.b800.b8ff.bmp` | glyph atlas `square` U+B800–U+B8FF |
+| `data/textures/unicode/square.b900.b9ff.bmp` | glyph atlas `square` U+B900–U+B9FF |
+| `data/textures/unicode/square.ba00.baff.bmp` | glyph atlas `square` U+BA00–U+BAFF |
+| `data/textures/unicode/square.bb00.bfff.bmp` | glyph atlas `square` U+BB00–U+BFFF |
+| `data/textures/unicode/square.bc00.bcff.bmp` | glyph atlas `square` U+BC00–U+BCFF |
+| `data/textures/unicode/square.bd00.bdff.bmp` | glyph atlas `square` U+BD00–U+BDFF |
+| `data/textures/unicode/square.be00.beff.bmp` | glyph atlas `square` U+BE00–U+BEFF |
+| `data/textures/unicode/square.bf00.bfff.bmp` | glyph atlas `square` U+BF00–U+BFFF |
+| `data/textures/unicode/square.c000.c0ff.bmp` | glyph atlas `square` U+C000–U+C0FF |
+| `data/textures/unicode/square.c100.c1ff.bmp` | glyph atlas `square` U+C100–U+C1FF |
+| `data/textures/unicode/square.c200.c2ff.bmp` | glyph atlas `square` U+C200–U+C2FF |
+| `data/textures/unicode/square.c300.c3ff.bmp` | glyph atlas `square` U+C300–U+C3FF |
+| `data/textures/unicode/square.c400.c4ff.bmp` | glyph atlas `square` U+C400–U+C4FF |
+| `data/textures/unicode/square.c500.c5ff.bmp` | glyph atlas `square` U+C500–U+C5FF |
+| `data/textures/unicode/square.c600.c6ff.bmp` | glyph atlas `square` U+C600–U+C6FF |
+| `data/textures/unicode/square.c700.c7ff.bmp` | glyph atlas `square` U+C700–U+C7FF |
+| `data/textures/unicode/square.c800.c8ff.bmp` | glyph atlas `square` U+C800–U+C8FF |
+| `data/textures/unicode/square.c900.c9ff.bmp` | glyph atlas `square` U+C900–U+C9FF |
+| `data/textures/unicode/square.ca00.caff.bmp` | glyph atlas `square` U+CA00–U+CAFF |
+| `data/textures/unicode/square.cb00.cbff.bmp` | glyph atlas `square` U+CB00–U+CBFF |
+| `data/textures/unicode/square.cc00.ccff.bmp` | glyph atlas `square` U+CC00–U+CCFF |
+| `data/textures/unicode/square.cd00.cdff.bmp` | glyph atlas `square` U+CD00–U+CDFF |
+| `data/textures/unicode/square.ce00.ceff.bmp` | glyph atlas `square` U+CE00–U+CEFF |
+| `data/textures/unicode/square.cf00.cfff.bmp` | glyph atlas `square` U+CF00–U+CFFF |
+| `data/textures/unicode/square.d000.d0ff.bmp` | glyph atlas `square` U+D000–U+D0FF |
+| `data/textures/unicode/square.d100.d1ff.bmp` | glyph atlas `square` U+D100–U+D1FF |
+| `data/textures/unicode/square.d200.d2ff.bmp` | glyph atlas `square` U+D200–U+D2FF |
+| `data/textures/unicode/square.d300.d3ff.bmp` | glyph atlas `square` U+D300–U+D3FF |
+| `data/textures/unicode/square.d400.d4ff.bmp` | glyph atlas `square` U+D400–U+D4FF |
+| `data/textures/unicode/square.d500.d5ff.bmp` | glyph atlas `square` U+D500–U+D5FF |
+| `data/textures/unicode/square.d600.d6ff.bmp` | glyph atlas `square` U+D600–U+D6FF |
+| `data/textures/unicode/square.d700.d7ff.bmp` | glyph atlas `square` U+D700–U+D7FF |
+
+(138 files.)
+
+## Appendix — dead/legacy code
+
+| Code | Why dead / legacy | Tag |
+|---|---|---|
+| `contrib/systemiv/interface/*` (SystemIV UI components, options and sound-editor windows, style editor) and `contrib/systemiv/lib/eclipse/*` (SystemIV copy of Eclipse) | not referenced by any project file; `eclipse.h` resolves to `contrib/eclipse` (§1.2) | [B:DEAD] |
+| Unused Eclipse API: `EclMaximiseWindow`/`EclUnMaximise`, `EclRegisterPopup`, `EclRegisterTooltipCallback`, `EclRegisterClearFunction`, `EclResetDirtyRectangles`, `EclGetDirtyRects`, `EclGenerateUniqueWindowName`, `EclGetCurrentButton`, `EclButton::MouseMove`; non-Win32 branch of `EclGetAccurateTime` | compiled, never called | [B:FULL] unused |
+| `GestureWindow` (`code/interface/gesture_window.*`) | needs `GESTURE_EDITOR` and `USE_SEPULVEDA_HELP_TUTORIAL` | [B:DEAD] |
+| `GrabberWindow` | `AVI_GENERATOR` (TARGET_DEBUG) and no caller of `DebugKeyBindings::GrabberButton` | [B:DEBUG] unreachable |
+| `DebugMenu` ("Tools Menu") | opener (F1) commented out | [B:LEGACY] |
+| `CheatWindow`, `ProfileWindow`, sound editor/stats/profile/parameter windows, `CrateHelpWindow` | `CHEATMENU_ENABLED` / `SOUND_EDITOR` / `INCLUDE_CRATE_HELP_WINDOW` (TARGET_DEBUG) | [B:DEBUG] |
+| Map-editor windows, `MultiwiniaWindow`, `NewMapWindow`, `MultiwiniaFileDialog`, `InvalidCratesWindow`, `MultiwiniaOptionsWindow`, `MultiwiniaEditorButton` | `LOCATION_EDITOR` or only reachable from editor code | [B:EDITOR] |
+| `MainMenuWindow` and its buttons, profiles, leaderboards, `ResetLocationWindow`, `PrefsKeybindingsWindow`, `ReallyQuitWindow` (with `GameExitButton`), `SaveOnQuitWindow`, `DemoEndWindow`, `GlobalWorldEditorWindow` | compiled; no reachable opener (P17a/P17b reachability tables) | [B:LEGACY] |
+| `ModsWindow`, `NewModWindow`, `AboutDarwiniaWindow` | `USE_DARWINIA_MOD_SYSTEM` / `OBERONBUILD` | [B:DEAD] |
+| `BuyNowWindow`, `UpdateAvailableWindow`, `code/UI/ErrorDialog.*`, `code/UI/soundsliderbutton.h` (`VolumeControl`) | not in `Darwinia.vcproj` | [B:DEAD] |
+| `code/UI` uncompiled headers: `GameMenuOptionsButton`, `HelpModeButton`, `MultiwiniaModeButton`, `QuickStartButton`, `RequestAIButton`, `ResearchModeButton`, `RollingDemoButton`, `MapDetailsButton` | header included nowhere | [B:DEAD] |
+| `code/UI` compiled but never instantiated: `AchievementButton`, `BuyNowInfoButton`, `CSpectatorButton` (`#ifdef TESTBED`), `DarwiniaPlusMPButton`, `DarwiniaPlusSPButton`, `GameTypeAnyButton`, `HelpSelectButton`, `QuickMatchButton` | creation commented out or behind undefined macros | [B:LEGACY] |
+| Unreachable pages 1, 5, 8, 10, 11, 14, 15, 17, 18, 35 and their widgets (`AnyLevelSelectButton`, `HelpImageButton`, `NextHelpButton`, `PrevHelpButton`, `CampaignButton`, `PrologueButton`, `MultiwiniaVersusCpuButton`) | no live code sets those `m_newPage` values in FULL | [B:LEGACY] / [B:DEBUG] |
+| Gap page slots 13, 19–22, 26–30 (Xbox Live Arcade, PDLC, Darwinia+) and the `.vcproj` entries for absent `UI/XBLASelectSessionType.h`, `UI/CustomGameTypeSelection.h`, `UI/InvitePlayersButton.h`, `UI/DownloadPDLCButton.h`, `UI/PDLCOptionsButton.h` | removed products | [B:DEAD] |
+| Test bed (`TESTBED_ENABLED`): `GameMenuWindow::UpdateTestBed/AdvanceTestBedGame/ReadTestBedConfig`, `StartTestbedButton` — automates the menus by calling buttons' `MouseUp` | macro never defined | [B:DEAD] |
+| `GameMenuWindow::RenderErrorDialogue` / `m_showingErrorDialogue` overlay (errors go to `PageError` instead), `m_reloadPage`, `m_setupNewPage` | never set / never read | [B:FULL] unused |
+| `RestartWindowManagerAndRenderer` Linux "Restart Required" `MessageDialog` | `TARGET_OS_LINUX` | [B:DEAD] platform |
+| macOS-only paste (`Cmd-V`), `RunSparkleButton`, Mac language/keybinding variants; `TARGET_OS_VISTA` media-centre large menus | platform macros | [B:DEAD] platform |
+| `MultiwiniaFileButton::SpecialScroll` (pad scrolling of file rows) | commented out | [B:EDITOR] dead |

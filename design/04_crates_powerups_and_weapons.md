@@ -556,7 +556,7 @@ Shipped zones [C] `data/levels/mp_*.txt`:
 | `mp_rocketriot_4P_1` | 122: (3700.06, 3684.50); 447.49; 0 · 125: (3732.86, 480.81); 447.49; 0 · 128: (617.96, 565.97); 447.49; 0 · 134: (545.83, 3744.85); 504.37; 0 |
 | `mp_skirmish_3P_1` | 186: (3206.92, 5242.61); 1012.96; 0 · 187: (5054.97, 1239.70); 1012.96; 0 · 188: (637.81, 745.57); 1012.96; 0 |
 
-Design reading [I]: the Assault zones (all `blockPowerups = 1`) protect the defenders' rear from crates **and** from power-up targeting; the RocketRiot/Blitzkrieg/KOTH/Domination zones protect home bases from crate drops only.
+Pattern [C data]: every Assault zone has `blockPowerups = 1` (no crate drops **and** no power-up/turret targeting inside), every zone on other modes has `blockPowerups = 0` (crate drops only). What each zone covers on the map (bases, trunk ports) is a level-design question for [08](08_levels_and_level_design.md).
 
 ## 5 Effect specification per outcome
 
@@ -1016,7 +1016,7 @@ classDiagram
 
 [C] `code/worldobject/weapons.cpp`, `code/location.cpp`, `code/worldobject/gunturret.cpp:GunTurret::PrimaryFire`, `code/worldobject/darwinian.cpp:Darwinian::AdvanceCombat`, `code/worldobject/insertion_squad.cpp`, `code/worldobject/tank.cpp`, `code/worldobject/armour.cpp`, `code/worldobject/pulsebomb.cpp`; "no caller" by grep of `code/` [C].
 
-**Damage types** `Entity::DamageType{ DamageTypeUnresistable = 0, DamageTypeLaser, DamageTypeExplosive, DamageTypeTurretShell, DamageTypeFire }`; `Entity::ChangeHealth(amount, type = Unresistable)`; per-class resistances are `ChangeHealth` overrides (Darwinian: shield, formation × 0.6 vs explosive, rage × 0.75, Futurewinian × 2; Armour: laser-immune, shells ÷ 3; SpaceInvader: shells only; SpaceShip: invulnerable) [C] `code/worldobject/entity.h`, `code/worldobject/darwinian.cpp:Darwinian::ChangeHealth`. Base `Entity::ChangeHealth`: if `health + amount ≤ 0` → dead, sound `Die`, **one spirit** spawned; plays `LoseHealth` on any negative amount [C per P04] `code/worldobject/entity.cpp:Entity::ChangeHealth`.
+**Damage types** `Entity::DamageType{ DamageTypeUnresistable = 0, DamageTypeLaser, DamageTypeExplosive, DamageTypeTurretShell, DamageTypeFire }`; `Entity::ChangeHealth(amount, type = Unresistable)`; per-class resistances are `ChangeHealth` overrides (Darwinian: shield, formation × 0.6 vs explosive, rage × 0.75, Futurewinian × 2; Armour: laser-immune, shells ÷ 3; SpaceInvader: shells only; SpaceShip: invulnerable) [C] `code/worldobject/entity.h`, `code/worldobject/darwinian.cpp:Darwinian::ChangeHealth`. Base `Entity::ChangeHealth`: ignores the damage type; plays `LoseHealth` on any negative amount; if `health + amount ≤ 0` → `m_dead`, sound `Die`, **one spirit** spawned at the body with half its velocity; health clamped to 255; always returns true [C] `code/worldobject/entity.cpp:Entity::ChangeHealth`.
 
 **Gravity.** Thrown objects do `vel.y −= 9.8 × gameSpeed` per tick; with the tick length `0.1 × gameSpeed` this is a constant **98 wu/s²** of game time [I arithmetic] `code/worldobject/weapons.cpp:ThrowableWeapon::Advance`.
 
@@ -1053,7 +1053,7 @@ classDiagram
 | Land mine [unreachable] | 20 | 20 | 30 | 40 | — | 60 | 1.0 | mine team |
 | Plague explosion | 5 | 25 | 7.5 | 10 | — | 15 | 0.25 | −1 |
 
-[C formula; I radii]. Resolved: `docs`-free; P04 and P05 agree with the code on the precedence bug.
+[C formula; I radii]. P04, P05 and the code agree on the precedence bug (designers balanced against the buggy falloff).
 
 ### 6.2 `ThrowableWeapon`
 
@@ -1436,3 +1436,255 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 - **Per-tick versus per-second rules** that do not scale with the speed crates: capture cap 0.05 per tick, lightning 1 % per tick, Dark Forest 2 % per tick, the `GameTimer` hold counters (0.1 per tick) [C].
 - **Float hazards:** NaN in weighted crate drops when the total score is 0 [I]; `iv_sin`/`iv_cos` (low-nibble truncated) are used in sim paths (crate sway, dust vortex), `sinf`/`cosf` only in render [C].
 
+## Open questions and unknowns
+
+| Id | Question | Status | What would resolve it |
+|---|---|---|---|
+| 04-U1 | Does any shipped map lack sea (terrain ≤ 0 inside `[0, X−100] × [0, Z−100]`)? `Crate::RunNuke` re-rolls forever there and would hang every peer. | [U] | Generate each level's heightmap with the landscape pipeline ([23](23_terrain_and_landscape.md)) and scan for sea cells; or play a Nuke on every map. |
+| 04-U2 | Weighted crate drops accept a position iff the terrain at z ∈ {0, 1} (the `pos.z > 20.0` bug) is non-zero. Which maps accept on the first try (sea-bed ≠ 0) and which always fall back to random (edge height exactly 0)? Weighted drops may also land in water and expire unreachable. | [I] mechanism, [U] per map | Heightmap scan of the z = 0/1 rows per level; instrument `Location::CreateRandomCrate`. |
+| 04-U3 | Edge cases at the (0,0) corner: random-mode crates start from the template position (0,0,0) and the Space Ship from (0,0,0); if that corner were land (≥ 20 resp. ≥ 10) and unrestricted, the crate / ship would spawn there at y = 0. | [I] | Heightmap value at (0,0) per level (expected sea). |
+| 04-U4 | Design intent of: bad outcomes ignoring `InvalidCrates` and the AntNest limit; Eggs creatures belonging to the task owner while every other monster outcome is Monster-team; Meteor and Plague hitting the user's own units; `InitMonsterTeam(capturer)` no-op. | [U] intent ([C] behaviour) | Designer notes or playtest of the shipped build; decide per item for the new game. |
+| 04-U5 | `Randomiser` assigns `syncrand() % levelFile.m_numPlayers` — on a 4-slot map played by 2–3 teams it can create Darwinians on a team id that is unused in this game. What do such Darwinians do (AI, scoring, crate capture)? Same question for magical-forest spirits of unused team ids. | [U] | Trace `Team`/`Location` handling of entities on `TeamTypeUnused` teams; playtest a Randomiser on a 4P map with 2 players. |
+| 04-U6 | Monster (4) and Futurewinian (5) Darwinians can capture crates (§1.7). Their teams receive the task rewards — does any AI entity drive those teams' task managers? | [U] | [07](07_ai.md) (AI instantiation for CPU-typed monster/Futurewinian teams, `Location::InitialiseTeam`). |
+| 04-U7 | Airstrike and nuke timings on real terrain (simulations assume flat ground). | [I] | Instrument `AirstrikeUnit::Advance` and `Nuke::AdvanceToTarget` in a build on shipped maps. |
+| 04-U8 | Real-time durations of Slow Down / Speed Up and the meteor slow-motion assume 10 Hz real-time server ticks; whether `GameTimer::Reset` clears a pending speed request between matches (the routed meta notes suggest `m_requestedSpeedLength` is not reset). | [I] | Read `code/gametimer.cpp:GameTimer::Reset` together with the server tick scheduler ([20](20_architecture.md)); measure in a build. |
+| 04-U9 | Are the `GameTypes none` levels (`mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress`) ever selectable in the FULL lobby (their crate rows in §3.5 would then apply with mode-defined options)? | [I] not selectable | Lobby map-list filter ([09](09_meta_systems.md), [08](08_levels_and_level_design.md)). |
+| 04-U10 | Can crates drop during the pre-game grace period? `Location::Advance` is not gated by the grace period. | [I] yes | Confirm the grace-period gating of `Location::Advance` in `code/network/clienttoserver.cpp` / [01](01_game_modes.md). |
+| 04-U11 | Grenade, rocket and shockwave effective ranges/hit counts (§6.3, §6.6, §6.11) are derived from re-implemented arithmetic on flat terrain. | [I] | Instrumented build; or adopt the formulas as the new game's spec. |
+| 04-U12 | Number of ticks a nuke/meteor shockwave stays alive (24 or 25) depends on floating-point residue of repeated `life −= 0.1`. | [I] | Bit-exact replay; irrelevant if the new game uses integer tick counters. |
+
+## Docs-vs-code discrepancies
+
+| Source | Says | Code / data does | Ref |
+|---|---|---|---|
+| `code/worldobject/crate.h` enum comments | SpawnMania "spawn constantly for 15 seconds" | 5.0 s | `Crate::RunSpawnMania` |
+| same | Bitzkreig "all Darwinians will always throw grenades for 10 seconds" | 15 s global rage (`HasRage`), lasers not grenades | `Crate::RunBitzkreig`, `Darwinian::HasRage` |
+| same | Forest "spawns 1–3 trees" | 1–2 trees | `Crate::GenerateTrees` |
+| same | Eggs "spawns between 1 and 3 eggs" | 2–4 eggs | `Crate::RunEggs` |
+| same | Rage "for 60 seconds" | 30 s task | `Task::Start` |
+| same | Booster "immune to laser fire" | immune to every resistible damage type (explosives pop it) | `Darwinian::ChangeHealth` |
+| same | Spam "spawns a Spam object" | 100 SpamInfections, no Spam building | `Crate::RunInfection` |
+| same | Tank "a bitchin tank for 30 seconds" | commented out | `Crate::CaptureCrate` |
+| `Crate::RunUncapturedCrate` (name) and `docs/sound changes.txt` "Expired (nobody captured the crate in time)" | suggest a bad effect for uncaptured crates | the function is the 10 % bad outcome of a **captured** crate; an expired crate does nothing (the call is commented out) and its `Expired` sound has no data block | `Crate::AdvanceOnGround`; `data/sounds.txt` |
+| `docs/sound changes.txt` CratePowerup list | events Squad … Bitzkreig | data adds FormationBooster, FireExtinguisher, Tank (never fired) and RocketTurret/FlameTurret/NapalmStrike/SlowDown/SpeedUp/Engineer/TheBeast are never fired as such (turrets fire `GunTurret`, napalm fires `Airstrike`, speed crates and Engineer fire none) | `Crate::TriggerSoundEvent` call sites; `data/sounds.txt` |
+| `data/language/english.txt` `crate_tooltip_squad` | "follow your every command for 60 seconds" | consistent (60 s, then the squad dies) | `Task::Start`, `Task::Stop` |
+| `docs/multiwinia_manual.pdf` (Retribution Mode) | eliminated players periodically receive a power-up | consistent — live in code (contradicting the P08 draft, see §1.2) | `Multiwinia::AdvanceRetribution` |
+| `docs/multiwinia_manual.pdf` (Crate Drop Mode) | Domination, KOTH, CTS only | consistent | `data/multiwinia.txt` |
+| `docs/multiwinia-changes.txt` | "Napalm Strikes will now set fire to trees much more reliably" | trees/triffids within 100 take a flat −200 (no falloff) | `FlameGrenade::Advance` |
+| `docs/multiwiniachanges-beta.txt` Issue 754 | "Permit crate/power-ups placement near trunk ports" (Assault) | only gun turrets are restricted (400 from enemy trunk ports, 200 from enemy spawn points); other power-ups are unrestricted there | `TaskManager::IsValidTargetArea` |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinians" / "Darwinians" (crate reward name and messages), "Evil Darwinians!" | name / text | `cratename_darwinians`, `crate_message_darwinians`, `Crate::RunDarwinians` | "Reinforcements", "Hostile reinforcements!" |
+| "Evilinians" (Monster team), "Futurewinians" (Space Ship team) | name | `crate_message_spaceship`, `crate_tooltip_infection` | "Corrupted", "Visitors" |
+| "Rocketwinians" | name | `cratename_rocketwinians`, `crate_message_rocketwinians` | "Rocket Troops" |
+| "Mega Rage" / key `Bitzkreig` | name | `cratename_bitzkreig`, `multiwinia_blitzkrieg_timer` | "Frenzy" |
+| Reward names: Crate Mania, Spawn Mania, Hot Feet, Personal Shield, Subversion, Infection, Magical Forest, Dark Forest, Ants Nest, Plague, Randomiser, Napalm Strike, Slow Down, Speed Up, The Beast, Space Ship, Gun/Rocket/Flame Turret, Airstrike, Nuke, Meteor, Eggs, Squad, Armour, Harvester, Engineer, Rage | names | `cratename_*` | descriptive generic names chosen by the new team (e.g. "Supply Storm", "Rapid Spawn", "Haste", "Shield", "Convert", "Swarm", "Grove", "Blight Grove", "Hive", "Sickness", "Scrambler", "Firebomb Run", "Time Dilation", "Time Rush", "Summoned Horror", "Abductor") |
+| "Triffids" | name (third-party literary IP, John Wyndham) | `cratename_triffids`, `Triffid` class | "Spitter Plants" |
+| "I love the smell of Napalm in the morning..." | text (third-party film quote) | `crate_message_run_napalm` | "Firebombs inbound!" |
+| All crate/power-up UI strings: `crate_drop`, `crate_enemycapture`, `crate_capture`, every `crate_message_*`, `crate_tooltip_*`, `crate_hint_*`, `dialog_powerup_limit`, `multiwinia_spawnmania_timer`, `multiwinia_blitzkrieg_timer`, `multiwinia_retribution_*`, `multiwinia_exclamation`, `multiwinia_param_basiccrates` | text | `data/language/english.txt` | rewrite all text |
+| Crate model `researchitem.shp`; weapon/effect models `throwable.shp`, `missile.shp`, `turretshell.shp`, `emptyshell.shp`, `flying_egg.shp`, `boxkite.shp`, `meteor.shp` | art (3-D) | `data/shapes/` | new meshes |
+| Textures `bubble.bmp`, `starburst.bmp`, `cloudyglow.bmp`, `laser.bmp`, `laser-long.bmp`, `muzzleflash.bmp`, `subversion.bmp`, `glow.bmp`, `lightning.bmp` | art | `data/textures/` | new VFX textures |
+| Icons `target.bmp`, `icon_crate.bmp`, `icon_squad.bmp`, `icon_airstrike.bmp`, `icon_nuke.bmp`, `icon_subversion.bmp`, `icon_personalshield.bmp`, `icon_hotfeet.bmp`, `icon_gunturret.bmp`, `icon_infection.bmp`, `icon_magicalforest.bmp`, `icon_darkforest.bmp`, `icon_antnest.bmp`, `icon_plague.bmp`, `icon_egg.bmp`, `icon_meteorshower.bmp`, `icon_darwinian.bmp`, `icon_randomizer.bmp`, `icon_rage.bmp`, `icon_triffid.bmp`, `nukesymbol.bmp` | art | `data/icons/` | new icon set |
+| Crate and power-up sound assets (`cratereward_*`, `crate_capture*`, `cratecapture_*`, `crateland1`, `cratefalling`, …) bound through `data/sounds.txt` | audio | `data/sounds.txt` | new audio; event names may be kept as neutral identifiers |
+| "SPAM" (legacy building / internal name of Infection) | name | `code/worldobject/spam.h` | "Swarm" |
+| Developer names in comments ("Chris", "Gary") | name | `crate.cpp`, `location.cpp`, `armour.cpp` | do not carry over |
+| Level names in the per-level tables (`mp_assault_2P_1`, …) | name | `data/levels/` | new map names |
+
+## Source map
+
+| File | Role |
+|---|---|
+| `code/worldobject/crate.h` | `Crate` class, reward enum, `INCLUDE_THEBEAST`, `CRATE_START_HEIGHT`, `CRATE_SCAN_RANGE` |
+| `code/worldobject/crate.cpp` | crate falling/capture/expiry, reward selection (`CaptureCrate`, `RunUncapturedCrate`, `IsValid`), every `Run*` effect, names, sounds, render |
+| `code/location.cpp` | `AdvanceCrates`, `CreateRandomCrate`, `InitialiseTeam` (StartingPowerups), `Init` (research levels, static resets), `Bang`, `ThrowWeapon`, `FireRocket`, `FireTurretShell`, `LaunchFireball`, `FireLaser`, `CreateShockwave`, `AdvanceLightning`, `AdvanceChristmas`, `AdvanceDustWind`, `SetCurrentMessage`, monster/Futurewinian team ids |
+| `code/location.h` | crate/spawn-mania/mega-rage timers, fire-helper signatures and defaults |
+| `code/taskmanager.cpp` | `Task` lifecycle, `Task::Target*` effect dispatch, capacity, insertion order, targeting rules, `Task::Stop` |
+| `code/taskmanager.h` | `POWERUP_EFFECT_RANGE`, `Task` fields (`m_lifeTimer`, `m_startTimer`, `m_option`), `TaskSource` |
+| `code/worldobject/weapons.h` | weapon/projectile/effect class declarations |
+| `code/worldobject/weapons.cpp` | ThrowableWeapon, Grenade, FlameGrenade, AirStrikeMarker, ControllerGrenade, Rocket, Laser, TurretShell, TurretEmptyShell, Fireball, Shockwave, MuzzleFlash, Missile, LandMine, PulseWave behaviour |
+| `code/worldobject/spam.h` | SpamInfection constants, legacy Spam building |
+| `code/worldobject/spam.cpp` | SpamInfection behaviour; legacy Spam |
+| `code/worldobject/lightning.h` | Lightning class |
+| `code/worldobject/lightning.cpp` | Lightning strikes |
+| `code/worldobject/snow.h` | Snow class |
+| `code/worldobject/snow.cpp` | Snow motion |
+| `code/worldobject/dustball.h` | DustBall class, vortex statics |
+| `code/worldobject/dustball.cpp` | DustBall motion, `DUSTBALL_SPEED` |
+| `code/worldobject/gunturret.h` | GunTurret types, GunTurretTarget class |
+| `code/worldobject/gunturret.cpp` | crate turret weapons, shell casings, subversion override, GunTurretTarget |
+| `code/worldobject/darwinian.h` | crate/grenade search ranges, BoxKite class, power-up task ids |
+| `code/worldobject/darwinian.cpp` | crate search/opening, power-up effects (shield, hot feet, subversion, rage, mega rage, rockets), plague, fire, threat avoidance, pulse-wave reaction, BoxKite |
+| `code/worldobject/meteor.h` | Meteor class |
+| `code/worldobject/meteor.cpp` | meteor flight, impact, slow motion |
+| `code/worldobject/randomiser.h` | Randomiser class |
+| `code/worldobject/randomiser.cpp` | Randomiser pulses (`RANDOMISER_RANGE`) |
+| `code/worldobject/airstrike.h` | AirstrikeUnit, SpaceInvader declarations |
+| `code/worldobject/airstrike.cpp` | bomber flight and bomb release |
+| `code/worldobject/nuke.h` | Nuke class |
+| `code/worldobject/nuke.cpp` | submarine launch, warhead flight, explosion |
+| `code/worldobject/tree.h` | Tree fields used by Magical/Dark Forest |
+| `code/worldobject/tree.cpp` | spirit drops, offspring, evil-tree kills and corruption |
+| `code/worldobject/anthill.h` | AntHill fields (`m_numAntsInside`) |
+| `code/worldobject/anthill.cpp` | AntHill behaviour (Ants Nest outcome) |
+| `code/worldobject/triffid.h` | Triffid spawn-type enum, TriffidEgg |
+| `code/worldobject/triffid.cpp` | Triffid defaults, `TriffidEgg::Spawn` (Eggs/Triffids outcomes) |
+| `code/worldobject/spaceship.h` | SpaceShip class |
+| `code/worldobject/spaceship.cpp` | SpaceShip constants and abduction |
+| `code/worldobject/portal.h` | Portal class (The Beast) |
+| `code/worldobject/portal.cpp` | Portal behaviour [B:DEBUG via crate] |
+| `code/worldobject/pulsebomb.h` | PulseBomb class |
+| `code/worldobject/pulsebomb.cpp` | PulseWave creation |
+| `code/worldobject/tank.h` | Tank class |
+| `code/worldobject/tank.cpp` | uncalled `LaunchMissile`/`DropMine`; tank rockets |
+| `code/worldobject/armour.h` | Armour constants |
+| `code/worldobject/armour.cpp` | Armour damage model; uncalled `LaunchMissile` |
+| `code/worldobject/insertion_squad.h` | squad classes |
+| `code/worldobject/insertion_squad.cpp` | squad lasers, grenades, rockets, controller grenade path |
+| `code/worldobject/harvester.cpp` | grenade capture (`m_collected`, `RemoveForce`) |
+| `code/worldobject/engineer.cpp` | Engineer entity delivered by the Engineer outcome (spec in 02) |
+| `code/worldobject/restrictionzone.h` | RestrictionZone class |
+| `code/worldobject/restrictionzone.cpp` | `IsRestricted`, `Read` (size, blockPowerups) |
+| `code/worldobject/spawnpoint.h` | `s_numSpawnPoints` |
+| `code/worldobject/spawnpoint.cpp` | spawn-point counting, Spawn Mania request rule |
+| `code/worldobject/worldobject.h` | `Effect*` type enum |
+| `code/worldobject/worldobject.cpp` | `BounceOffLandscape`, `COEF_OF_RESTITUTION`, default ids |
+| `code/worldobject/entity.h` | damage types, `ChangeHealth` default |
+| `code/worldobject/entity.cpp` | base `ChangeHealth`, `Attack` (laser speed 150) |
+| `code/worldobject/building.cpp` | `BuildingIsBlocked` (crates not level-placeable), `Building::Damage`, `Building::Initialise` |
+| `code/worldobject/ai.cpp` | CPU use of crate tasks (`AI::AdvanceCurrentTasks`) |
+| `code/worldobject/ai.h` | AITarget (`m_crateTarget`, priority modifier) |
+| `code/worldobject/souldestroyer.h` | Zombie / SoulDestroyer (Dark Forest ghosts, egg outcomes) |
+| `code/worldobject/virii.h` | `VIRII_POPULATIONLIMIT` (SpamInfection spirit conversion) |
+| `code/gametimer.h` | game speed, `SERVER_ADVANCE_PERIOD` |
+| `code/gametimer.cpp` | `RequestSpeedChange`, `Tick` speed law, `LockSpeedChange` |
+| `code/multiwinia.cpp` | `GetGameOption`, Retribution, `IsEliminated`, `m_basicCratesOnly`, spawn-mania/mega-rage/retribution HUD, turret reinforcements |
+| `code/multiwinia.h` | Multiwinia game state used by crates |
+| `code/multiwiniahelp.cpp` | tutorial crates, crate help tab, basic crates in tutorial 2 |
+| `code/markersystem.cpp` | crate, fixed and task markers |
+| `code/markersystem.h` | marker types |
+| `code/level_file.cpp` | `InvalidCrates` parse/write, level options, effects |
+| `code/level_file.h` | `m_invalidCrates`, level option ids |
+| `code/entity_grid.cpp` | `GetNeighbours` (exact XZ range), `GetBestEnemy` |
+| `code/globals.h` | `NUM_TEAMS` |
+| `code/explosion.cpp` | shape-shatter explosions for crates/shells |
+| `code/global_world.cpp` | research type names (task icons) |
+| `code/team.cpp` | team evolutions (Rocketwinians), unit creation |
+| `code/team.h` | `Team::EvolutionRockets`, task manager |
+| `code/interface/cheat_window.cpp` | debug crate spawner [B:DEBUG] |
+| `code/interface/invalidcrates_window.cpp` | InvalidCrates editor [B:EDITOR] |
+| `code/interface/helpandoptions_windows.cpp` | crate help window [B:DEBUG] |
+| `code/UI/GameMenuWindow.cpp` | Basic Crates Only checkbox |
+| `code/network/clienttoserver.cpp` | `GAMEOPTION_BASICCRATES`, research messages, tick driver |
+| `code/network/network_defines.h` | game option ids |
+| `code/network/iframe.cpp` | crate orientation zeroed in iframes |
+| `code/sound/soundsystem.cpp` | `TypeCratePowerup` event enumeration |
+| `code/lib/universal_include.h` | `INCLUDE_CRATES_BASIC/ADVANCED`, debug-only crate macros |
+| `code/lib/vector3.cpp` | `FRAND`/`SFRAND` ordering |
+| `contrib/systemiv/lib/math/random_number.cpp` | synced and unsynced RNG |
+| `data/multiwinia.txt` | crate options per mode |
+| `data/stats.txt` | Meteor, Darwinian, squad, armour, bomber stats |
+| `data/sounds.txt` | Crate and CratePowerup sound blocks |
+| `data/language/english.txt` | reward names, messages, tooltips |
+| `data/shapes/researchitem.shp` | crate model |
+| `data/shapes/throwable.shp` | grenade/marker/rocket model |
+| `data/shapes/missile.shp` | missile model |
+| `data/shapes/turretshell.shp` | turret shell model |
+| `data/shapes/emptyshell.shp` | shell casing model |
+| `data/shapes/flying_egg.shp` | land mine model |
+| `data/shapes/boxkite.shp` | box kite model |
+| `data/shapes/meteor.shp` | meteor model |
+| `data/textures/bubble.bmp` | crate bubble |
+| `data/textures/starburst.bmp` | crate trail, grenade flash, shockwave, snow, box kite |
+| `data/textures/cloudyglow.bmp` | crate glow, dust balls |
+| `data/textures/laser.bmp` | lasers, SpamInfection ribbon |
+| `data/textures/laser-long.bmp` | pulse-wave tube |
+| `data/textures/muzzleflash.bmp` | muzzle flashes |
+| `data/textures/subversion.bmp` | mind-control lasers |
+| `data/textures/glow.bmp` | shockwave, lightning cloud |
+| `data/textures/lightning.bmp` | lightning bolt |
+| `data/icons/target.bmp` | crate landing decal |
+| `data/icons/icon_crate.bmp` | crate marker |
+| `data/icons/icon_squad.bmp` | squad task marker |
+| `data/icons/icon_airstrike.bmp` | airstrike / napalm marker |
+| `data/icons/icon_nuke.bmp` | nuke marker |
+| `data/icons/nukesymbol.bmp` | nuke ground marker |
+| `data/icons/icon_subversion.bmp` | subversion marker |
+| `data/icons/icon_personalshield.bmp` | shield marker |
+| `data/icons/icon_hotfeet.bmp` | hot feet marker |
+| `data/icons/icon_gunturret.bmp` | turret marker |
+| `data/icons/icon_infection.bmp` | infection marker |
+| `data/icons/icon_magicalforest.bmp` | magical forest marker |
+| `data/icons/icon_darkforest.bmp` | dark forest marker |
+| `data/icons/icon_antnest.bmp` | ants nest marker |
+| `data/icons/icon_plague.bmp` | plague marker |
+| `data/icons/icon_egg.bmp` | eggs marker |
+| `data/icons/icon_meteorshower.bmp` | meteor marker |
+| `data/icons/icon_darwinian.bmp` | reinforcements marker |
+| `data/icons/icon_randomizer.bmp` | randomiser marker |
+| `data/icons/icon_rage.bmp` | rage marker |
+| `data/icons/icon_triffid.bmp` | triffids marker |
+| `docs/multiwinia_manual.pdf` | player-facing description of crates and options (supporting) |
+| `docs/multiwinia-changes.txt` | changelog (napalm, retribution, hot feet) |
+| `docs/multiwiniachanges-beta.txt` | beta changelog (placement issues) |
+| `docs/sound changes.txt` | crate sound event history |
+| `data/levels/old/mp_assault_3P_1.txt` | unused level with `InvalidCrates SpaceShip` |
+| `data/levels/mp_assault_2P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_2P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_2p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_3P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_3p_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_3p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_4P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_4P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_assault_stress.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_benchmark_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_2p_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_2p_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_2p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_2p_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_3P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_3p_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_3p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_4P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_4P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_cts_4p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_domination_2P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_domination_2P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_domination_3P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_domination_4P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_domination_4P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_2P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_2P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_2P_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_2P_3b.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_3P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_3P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_3P_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_3P_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_4P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_4P_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_koth_4P_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_2P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_2P_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_2p_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_3P_2.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_3P_3.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_3p_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_rocketriot_4P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_sandbox.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_sandbox_all.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_skirmish_2p_4.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_skirmish_3P_1.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_tankbattle_2P.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_tankbattle_3P.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |
+| `data/levels/mp_tankbattle_4P.txt` | crate inputs: GameTypes, world size (max crates), SpawnPoints, RestrictionZones, LevelOptions, InvalidCrates, Effects (§3.5, §4) |

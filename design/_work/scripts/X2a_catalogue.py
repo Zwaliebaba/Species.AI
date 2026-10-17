@@ -821,7 +821,15 @@ for c in sites('code/lib/text_renderer.cpp', 'textures/unicode/%s'):
             add_ref(rel, 'rule:font-atlas', c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
                     'TextRenderer::BuildUnicodeArray lists textures/unicode/<font>.*.*.bmp for font %s (code/app.cpp:App::SetLanguage)' % m.group(1),
                     flags='mip=true mask=true', state='MIN=LINEAR_MIPMAP_LINEAR MAG=LINEAR (set in DrawText*)')
-# animation .anim -> IMAGENAME bitmaps are handled by the data scan; .anim files by literals in multiwiniahelp.cpp
+# animation .anim -> IMAGENAME bitmaps: data scan gives the keyframe reference; the load itself happens in
+# AnimatedPanelRenderer::RenderObjects (GetBitmap + GetTexture default flags, drawn by ::Blit)
+anim_site = sites('code/animatedpanel_renderer.cpp', 'animations/%s')
+for rel in list(refs):
+    if rel.startswith('data/animations/') and rel.endswith('.bmp') and any(r['kind'] == 'data' and r['file'].startswith('data/animations/') for r in refs[rel]):
+        for c in anim_site:
+            add_ref(rel, 'rule:anim-image', c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
+                    'animations/<IMAGENAME> of a keyframe in a loaded .anim', flags='mip=true mask=true',
+                    state='Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]')
 # terrain: level-file keys handled by the data scan; defaults + fallback:
 for lit, why in [('landscape_default.bmp', 'LevelFile defaults (level_file.cpp) when no landColourFile'),
                  ('waves_default.bmp', 'LevelFile defaults when no wavesColourFile'),
@@ -908,6 +916,14 @@ REACH = [
      'Darwin logo overlay shown only via Script command (code/script.cpp sets m_renderDarwinLogo) - Darwinia cutscene scripts'),
     ('code/UI/GameTypeImageButton.h', r'GameTypeImageButton::Render', (20, 30), 'LEGACY',
      'GAMETYPE_PROLOGUE/GAMETYPE_CAMPAIGN are highlighted only by PrologueButton/CampaignButton on PageDarwinia, entered only from PageDemoSinglePlayer (code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupDarwiniaPage, P18)'),
+    ('code/renderer.cpp', r'Renderer::RenderLogo', None, 'LEGACY',
+     'its only call (code/renderer.cpp:Renderer::RenderFrame) is inside #ifdef PROMOTIONAL_BUILD, never defined'),
+    ('code/UI/HelpImageButton.h', r'.*', None, 'LEGACY',
+     'GameMenuWindow PageHelp has no live entry: HelpModeButton is never instantiated (P18 PageHelpMenu/PageHelp)'),
+    ('code/UI/NextHelpButton.h', r'.*', None, 'LEGACY', 'PageHelp only (no live entry, P18)'),
+    ('code/UI/PrevHelpButton.h', r'.*', None, 'LEGACY', 'PageHelp only (no live entry, P18)'),
+    ('code/multiwiniahelp.cpp', r'MultiwiniaHelp::LoadIcons', (89, 89), 'LEGACY',
+     'HelpDarwinians tab: its "appropriate" test is hard-coded false (P19), so the icon is never bound'),
     ('code/renderer.cpp', r'Renderer::RenderFlatTexture', None, 'LEGACY',
      'only call is commented out (code/renderer.cpp:Renderer::Render ~L659)'),
     ('code/interface/helpandoptions_windows.cpp', r'CrateButton::.*|CrateHelp.*', None, 'DEBUG',
@@ -1496,19 +1512,29 @@ W('')
 # missing names
 W('## [→ 25_textures_and_assets] 25.8 Names requested by code/data that have no file in `data/`\n')
 W('A request for a missing texture through `Resource::GetTexture*` is fatal (`AppReleaseAssert("Failed to load texture %s")`, `code/lib/resource.cpp:Resource::GetTextureWithFlags`) unless the call is guarded by `DoesTextureExist`; a missing shape is fatal in `Resource::GetShapeCopy`. Runtime-generated names (registered with `Resource::AddBitmap`) are listed in §25.10 and excluded here. [C] unless marked.\n')
-W('| Requested name | Site | Compiled in | Reachability note | How built |')
+W('| Requested name(s) | Site | Compiled in | Reachability note | How built |')
 W('|---|---|---|---|---|')
-seen_m = set()
+grp = OrderedDict()
 for m in missing:
     if m['name'] in ('sprites/viriifull.bmp',):
         continue
     b = 'DEAD' if m.get('built') == '' else next((t for t in ['FULL', 'D3D', 'DEBUG', 'EDITOR'] if m['live'].get(t)), 'DEAD')
     o = apply_reach({'built': m.get('built'), 'file': m['where'], 'sym': m.get('sym', ''), 'line': m['ln'] if isinstance(m['ln'], int) else 0})
-    key = (m['name'], b, m['where'])
-    if key in seen_m:
-        continue
-    seen_m.add(key)
-    W('| `%s` | `%s:%s` L%s | %s | %s | %s |' % (md(m['name']), m['where'], m.get('sym', '') or '?', m['ln'], b, md(o[1] if o else ''), md(m.get('how', ''))))
+    how = re.sub(r' value \S+$', '', m.get('how', '') or '')
+    key = ('%s:%s' % (m['where'], m.get('sym', '') or '?'), b, o[1] if o else '', how)
+    grp.setdefault(key, [])
+    if m['name'] not in grp[key]:
+        grp[key].append(m['name'])
+MISSING_NOTES = {
+    'icons/compass_empty.bmp': 'LIVE: bound when the marker direction is exactly (0,0); unguarded GetTexture -> fatal AppReleaseAssert unless an archive supplies the file [U]; RenderCompassEmpty itself has no caller',
+    'icons/menu_%dplayer.bmp': 'guarded by DoesTextureExist -> silently not drawn',
+    'mwhelp/helppage_%d_%d.bmp': 'guarded by DoesTextureExist',
+}
+for (site, b, note, how), names in grp.items():
+    extra = '; '.join(MISSING_NOTES[n] for n in names if n in MISSING_NOTES)
+    if extra:
+        note = (note + '; ' if note else '') + extra
+    W('| %s | `%s` | %s | %s | %s |' % (', '.join('`%s`' % md(n) for n in names), site, b, md(note), md(how)))
 W('')
 
 # ---- 25.9 unused / not-baseline list

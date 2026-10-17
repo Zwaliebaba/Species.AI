@@ -966,6 +966,7 @@ data/animations/armour.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1121,FU
 data/animations/armour.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1132,FULL,,,data key IMAGENAME,,
 data/animations/armour.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1143,FULL,,,data key IMAGENAME,,
 data/animations/armour.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1154,FULL,,,data key IMAGENAME,,
+data/animations/armour.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/assault_defend.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3483,FULL,,,GetTextReader,,
 data/animations/blitz.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3485,FULL,,,GetTextReader,,
 data/animations/cloudyglow.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L330,FULL,,,data key IMAGENAME,,
@@ -1040,6 +1041,7 @@ data/animations/cloudyglow.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L169
 data/animations/cloudyglow.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1707,FULL,,,data key IMAGENAME,,
 data/animations/cloudyglow.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1718,FULL,,,data key IMAGENAME,,
 data/animations/cloudyglow.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1729,FULL,,,data key IMAGENAME,,
+data/animations/cloudyglow.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/cts.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3482,FULL,,,GetTextReader,,
 data/animations/darwinian.bmp,basename,I,code/animatedpanel.cpp:AnimatedPanelKeyframe::AnimatedPanelKeyframe:L319,FULL,,,literal (bare file name; directory supplied elsewhere),,
 data/animations/darwinian.bmp,stem,I,code/global_world.cpp:?:L774,FULL,,,bare stem literal,,
@@ -1415,6 +1417,7 @@ data/animations/darwinian.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1870
 data/animations/darwinian.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1881,FULL,,,data key IMAGENAME,,
 data/animations/darwinian.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1892,FULL,,,data key IMAGENAME,,
 data/animations/darwinian.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1903,FULL,,,data key IMAGENAME,,
+data/animations/darwinian.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L388,FULL,,,data key IMAGENAME,,
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L399,FULL,,,data key IMAGENAME,,
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L446,FULL,,,data key IMAGENAME,,
@@ -1475,20 +1478,24 @@ data/animations/darwinian_ouch4.bmp,data,C,data/animations/koth.anim:IMAGENAME:L
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1104,FULL,,,data key IMAGENAME,,
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1198,FULL,,,data key IMAGENAME,,
 data/animations/darwinian_ouch4.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1209,FULL,,,data key IMAGENAME,,
+data/animations/darwinian_ouch4.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/domination.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3480,FULL,,,GetTextReader,,
 data/animations/domination.anim,stem,I,code/UI/GameMenuWindow.cpp:GameMenuWindow::UpdateTestBed:L862,DEAD,TESTBED_ENABLED,,bare stem literal,,
 data/animations/flag.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L526,FULL,,,data key IMAGENAME,,
 data/animations/flag.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L606,FULL,,,data key IMAGENAME,,
 data/animations/flag.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L945,FULL,,,data key IMAGENAME,,
 data/animations/flag.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1011,FULL,,,data key IMAGENAME,,
+data/animations/flag.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/flag_down.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L956,FULL,,,data key IMAGENAME,,
 data/animations/flag_down.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L967,FULL,,,data key IMAGENAME,,
 data/animations/flag_down.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L978,FULL,,,data key IMAGENAME,,
 data/animations/flag_down.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L989,FULL,,,data key IMAGENAME,,
 data/animations/flag_down.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1000,FULL,,,data key IMAGENAME,,
+data/animations/flag_down.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/flag_locked.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L537,FULL,,,data key IMAGENAME,,
 data/animations/flag_locked.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L617,FULL,,,data key IMAGENAME,,
 data/animations/flag_locked.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1077,FULL,,,data key IMAGENAME,,
+data/animations/flag_locked.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L471,FULL,,,data key IMAGENAME,,
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L482,FULL,,,data key IMAGENAME,,
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L493,FULL,,,data key IMAGENAME,,
@@ -1509,9 +1516,11 @@ data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1033,FU
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1044,FULL,,,data key IMAGENAME,,
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1055,FULL,,,data key IMAGENAME,,
 data/animations/flag_up.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L1066,FULL,,,data key IMAGENAME,,
+data/animations/flag_up.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/fuelpump.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L461,FULL,,,data key IMAGENAME,,
 data/animations/fuelpump.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L472,FULL,,,data key IMAGENAME,,
 data/animations/fuelpump.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L483,FULL,,,data key IMAGENAME,,
+data/animations/fuelpump.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/fuelpumper.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L277,FULL,,,data key IMAGENAME,,
 data/animations/fuelpumper.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L443,FULL,,,data key IMAGENAME,,
 data/animations/fuelpumper.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L457,FULL,,,data key IMAGENAME,,
@@ -1544,8 +1553,10 @@ data/animations/fuelpumper.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L287
 data/animations/fuelpumper.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L298,FULL,,,data key IMAGENAME,,
 data/animations/fuelpumper.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L309,FULL,,,data key IMAGENAME,,
 data/animations/fuelpumper.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L320,FULL,,,data key IMAGENAME,,
+data/animations/fuelpumper.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/island.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L599,FULL,,,data key IMAGENAME,,
 data/animations/island.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L613,FULL,,,data key IMAGENAME,,
+data/animations/island.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/koth.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3481,FULL,,,GetTextReader,,
 data/animations/laser.bmp,stem,I,code/global_world.cpp:?:L777,FULL,,,bare stem literal,,
 data/animations/laser.bmp,stem,I,code/network/iframe.cpp:IFrame::CalculateDiff:L717,FULL,,,bare stem literal,,
@@ -1614,6 +1625,7 @@ data/animations/laser.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L411,FULL
 data/animations/laser.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L422,FULL,,,data key IMAGENAME,,
 data/animations/laser.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L436,FULL,,,data key IMAGENAME,,
 data/animations/laser.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L447,FULL,,,data key IMAGENAME,,
+data/animations/laser.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/muzzleflash.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L587,FULL,,,data key IMAGENAME,,
 data/animations/muzzleflash.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L598,FULL,,,data key IMAGENAME,,
 data/animations/muzzleflash.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L609,FULL,,,data key IMAGENAME,,
@@ -1757,6 +1769,7 @@ data/animations/muzzleflash.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L19
 data/animations/muzzleflash.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1939,FULL,,,data key IMAGENAME,,
 data/animations/muzzleflash.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1950,FULL,,,data key IMAGENAME,,
 data/animations/muzzleflash.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L1961,FULL,,,data key IMAGENAME,,
+data/animations/muzzleflash.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/plusone.bmp,data,C,data/animations/cts.anim:IMAGENAME:L725,FULL,,,data key IMAGENAME,,
 data/animations/plusone.bmp,data,C,data/animations/cts.anim:IMAGENAME:L735,FULL,,,data key IMAGENAME,,
 data/animations/plusone.bmp,data,C,data/animations/koth.anim:IMAGENAME:L947,FULL,,,data key IMAGENAME,,
@@ -1771,6 +1784,7 @@ data/animations/plusone.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1035,FUL
 data/animations/plusone.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1046,FULL,,,data key IMAGENAME,,
 data/animations/plusone.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1057,FULL,,,data key IMAGENAME,,
 data/animations/plusone.bmp,data,C,data/animations/koth.anim:IMAGENAME:L1068,FULL,,,data key IMAGENAME,,
+data/animations/plusone.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/rocket.anim,stem,I,code/global_world.cpp:?:L779,FULL,,,bare stem literal,,
 data/animations/rocket.anim,literal,C,code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel:L3484,FULL,,,GetTextReader,,
 data/animations/rocket.anim,stem,I,code/sound/soundsystem.cpp:?:L150,FULL,,,bare stem literal,,
@@ -1779,25 +1793,30 @@ data/animations/rocket.bmp,stem,I,code/sound/soundsystem.cpp:?:L150,FULL,,,bare 
 data/animations/rocket.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L666,FULL,,,data key IMAGENAME,,
 data/animations/rocket.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L677,FULL,,,data key IMAGENAME,,
 data/animations/rocket.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L688,FULL,,,data key IMAGENAME,,
+data/animations/rocket.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/solarpanel.bmp,stem,I,code/worldobject/building.cpp:?:L963,FULL,,,bare stem literal,,
 data/animations/solarpanel.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L826,FULL,,,data key IMAGENAME,,
+data/animations/solarpanel.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/spawnpoint.bmp,stem,I,code/worldobject/building.cpp:?:L983,FULL,,,bare stem literal,,
 data/animations/spawnpoint.bmp,data,C,data/animations/cts.anim:IMAGENAME:L22,FULL,,,data key IMAGENAME,,
 data/animations/spawnpoint.bmp,data,C,data/animations/domination.anim:IMAGENAME:L9,FULL,,,data key IMAGENAME,,
 data/animations/spawnpoint.bmp,data,C,data/animations/domination.anim:IMAGENAME:L22,FULL,,,data key IMAGENAME,,
 data/animations/spawnpoint.bmp,data,C,data/animations/domination.anim:IMAGENAME:L35,FULL,,,data key IMAGENAME,,
 data/animations/spawnpoint.bmp,data,C,data/animations/koth.anim:IMAGENAME:L210,FULL,,,data key IMAGENAME,,
+data/animations/spawnpoint.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/statue.bmp,stem,I,code/worldobject/building.cpp:?:L1011,FULL,,,bare stem literal,,
 data/animations/statue.bmp,data,C,data/animations/cts.anim:IMAGENAME:L260,FULL,,,data key IMAGENAME,,
 data/animations/statue.bmp,data,C,data/animations/cts.anim:IMAGENAME:L270,FULL,,,data key IMAGENAME,,
 data/animations/statue.bmp,data,C,data/animations/cts.anim:IMAGENAME:L280,FULL,,,data key IMAGENAME,,
 data/animations/statue.bmp,data,C,data/animations/cts.anim:IMAGENAME:L290,FULL,,,data key IMAGENAME,,
 data/animations/statue.bmp,data,C,data/animations/cts.anim:IMAGENAME:L300,FULL,,,data key IMAGENAME,,
+data/animations/statue.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/trunkport.bmp,stem,I,code/worldobject/building.cpp:?:L956,FULL,,,bare stem literal,,
 data/animations/trunkport.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L142,FULL,,,data key IMAGENAME,,
 data/animations/trunkport.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L59,FULL,,,data key IMAGENAME,,
 data/animations/trunkport.bmp,data,C,data/animations/blitz.anim:IMAGENAME:L291,FULL,,,data key IMAGENAME,,
 data/animations/trunkport.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L652,FULL,,,data key IMAGENAME,,
+data/animations/trunkport.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L51,FULL,,,data key IMAGENAME,,
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L62,FULL,,,data key IMAGENAME,,
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L73,FULL,,,data key IMAGENAME,,
@@ -1806,7 +1825,9 @@ data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAG
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L106,FULL,,,data key IMAGENAME,,
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L117,FULL,,,data key IMAGENAME,,
 data/animations/turretbarrel.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L128,FULL,,,data key IMAGENAME,,
+data/animations/turretbarrel.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/turretbase.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L23,FULL,,,data key IMAGENAME,,
+data/animations/turretbase.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/water.bmp,stem,I,code/water_reflection.cpp:WaterReflectionEffect::Start:L141,D3D,USE_DIRECT3D,,bare stem literal,,
 data/animations/water.bmp,stem,I,code/water_reflection.cpp:WaterReflectionEffect::Stop:L197,D3D,USE_DIRECT3D,,bare stem literal,,
 data/animations/water.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L497,FULL,,,data key IMAGENAME,,
@@ -1818,7 +1839,9 @@ data/animations/water.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L552,FULL
 data/animations/water.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L563,FULL,,,data key IMAGENAME,,
 data/animations/water.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L574,FULL,,,data key IMAGENAME,,
 data/animations/water.bmp,data,C,data/animations/rocket.anim:IMAGENAME:L585,FULL,,,data key IMAGENAME,,
+data/animations/water.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/wmd.bmp,data,C,data/animations/assault_defend.anim:IMAGENAME:L9,FULL,,,data key IMAGENAME,,
+data/animations/wmd.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/zone-back.bmp,data,C,data/animations/cts.anim:IMAGENAME:L9,FULL,,,data key IMAGENAME,,
 data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L9,FULL,,,data key IMAGENAME,,
 data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L20,FULL,,,data key IMAGENAME,,
@@ -1838,6 +1861,7 @@ data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L163,FU
 data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L174,FULL,,,data key IMAGENAME,,
 data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L185,FULL,,,data key IMAGENAME,,
 data/animations/zone-back.bmp,data,C,data/animations/koth.anim:IMAGENAME:L196,FULL,,,data key IMAGENAME,,
+data/animations/zone-back.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/animations/zone-front.bmp,data,C,data/animations/cts.anim:IMAGENAME:L904,FULL,,,data key IMAGENAME,,
 data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L757,FULL,,,data key IMAGENAME,,
 data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L768,FULL,,,data key IMAGENAME,,
@@ -1856,6 +1880,7 @@ data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L900,F
 data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L911,FULL,,,data key IMAGENAME,,
 data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L922,FULL,,,data key IMAGENAME,,
 data/animations/zone-front.bmp,data,C,data/animations/koth.anim:IMAGENAME:L933,FULL,,,data key IMAGENAME,,
+data/animations/zone-front.bmp,rule:anim-image,C,code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects:L190,FULL,,,animations/<IMAGENAME> of a keyframe in a loaded .anim,mip=true mask=true,"Blit: WRAP_S/T=CLAMP MAG=LINEAR MIN=LINEAR_MIPMAP_LINEAR (AnimatedPanelRenderer::Blit); blend as left by RenderBackground (SRC_ALPHA,ONE_MINUS_SRC_ALPHA) [I]"
 data/terrain/landscape_containment.bmp,data,C,data/levels/old/mp_kingspass.txt:landColourFile:L11,DEAD,data/levels/old/ is never listed (ListResources is non-recursive; code/game_menu.cpp:GameMenu::CreateMapList),,data key landColourFile,,
 data/terrain/landscape_containment.bmp,data,C,data/levels/old/mp_shaman2.txt:landColourFile:L11,DEAD,data/levels/old/ is never listed (ListResources is non-recursive; code/game_menu.cpp:GameMenu::CreateMapList),,data key landColourFile,,
 data/terrain/landscape_dark.bmp,data,C,data/levels/mp_assault_2p_3.txt:landColourFile:L21,FULL,Multiwinia map listed by GameMenu::CreateMapList,,data key landColourFile,,

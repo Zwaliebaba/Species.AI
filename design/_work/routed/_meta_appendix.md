@@ -374,6 +374,16 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - `data/purity/*`, `data/gesture_demos/*`, `data/shapes/source/*.max`, `data/icons/banner_template.psp`, `data/Untitled Gradients.grd` — never packaged.
 - Writers used only by debug editors: `AnimatedPanel::Write` (no caller), `Gesture::SaveTrainingData` ([B:DEBUG] gesture editor), `SoundSystem::SaveBlueprints` ([B:DEBUG] sound editor), `Shape::WriteToFile` (broken).
 
+<!-- from X2a_asset_catalogue_visual -->
+## Appendix — dead/legacy code (visual assets)
+- `code/loaders/*` (`USE_LOADERS` off): `AmigaLoader` (`textures/dmacrew.bmp`), `SpeccyLoader` (`textures/program_darwinia.bmp`, `textures/speccy_screen.bmp`), `OberonLoader` (`textures/msn_oberon_combosplash.bmp`, `OBERONBUILD`), `EGamesLoader` — [B:DEAD].
+- `code/sepulveda.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`): `sepulveda/*`, `icons/mouse_main.bmp`, `icons/scrollbar.bmp`, `textures/godray.bmp` — [B:DEAD]; the cloud-face reuse of `sepulveda/*` is cheat-only [B:DEBUG].
+- `code/global_world.cpp` / `global_internet.cpp` Darwinia world map: `globalworld_*.shp`, `trunkport.shp` (there), `textures/glow.bmp`, `starburst.bmp`, `laserfence2.bmp`, `godray.bmp` (commented) — [B:LEGACY].
+- Single-player task managers and shaman interface (`code/taskmanager_interface_icons.cpp`, `_gestures.cpp`, `code/shaman_interface.cpp`), `ControlHelpSystem` — [B:LEGACY]; the shaman icons `icons/shaman_*.bmp` and `icons/shaman_shadow.bmp` they name do not exist.
+- `code/location_editor.cpp` (`LOCATION_EDITOR`): `shapes/camera.shp`; `code/interface/landscape_window.cpp` terrain file dialogs — [B:EDITOR].
+- `code/deform.cpp`, `code/water_reflection.cpp`, `code/lib/FixedPipeline.cpp`, `code/lib/shader.cpp`: all shaders and deform tables — [B:D3D], and the deform/reflection effects never run in a Multiwinia match (P12).
+- Dead help paths: `GameMenuWindow` `PageHelp` (`mwhelp/helppage_*`, no files), `MultiwiniaHelp::RenderBasicControlHelp` (`mwhelp/basic_*`, no files), `RenderCurrentUnitHelp` (`mwhelp/officercontrol*`, `mwhelp/darwiniancontrol*`, no files), `HelpDarwinians` tab icon `mwhelp/darwinian.bmp` (no file; tab never appropriate, P19).
+
 <!-- from X2b_asset_catalogue_audio -->
 ## Appendix — dead/legacy code
 

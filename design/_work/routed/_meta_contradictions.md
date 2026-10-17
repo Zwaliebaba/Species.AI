@@ -262,6 +262,15 @@
 3. `ShapeExporter` source vs shipped `.shp`: the in-tree exporter writes triangle lists and no `right:` lines, yet 39 shipped files are strip-encoded and 3 contain `right:` → files predate the current exporter [I].
 4. Marker `front` sign convention differs from fragments in the exporter (§29.B4) — interpretation [I]; a test export would confirm.
 
+<!-- from X2a_asset_catalogue_visual -->
+## Contradictions / open questions
+- `textures/laser.bmp` and `clouds.bmp` cache order: P12 inferred `RenderBlobby` loads clouds first (non-mip); code shows the start-up preload loads both with default flags first [C]. P12's conclusion for laser ("saved because RenderSky requests it mip-mapped earlier") is right in outcome but for a different reason.
+- `icons/compass_empty.bmp` is requested by live code (`MarkerSystem::RenderCompass` when `_screenDX == 0 && _screenDY == 0`, and unconditionally by `MarkerSystem::RenderCompassEmpty`) but the file does not exist in `data/`; `GetTexture` would raise the fatal "Failed to load texture" assert. `RenderCompassEmpty` has no caller [C grep], so only the zero-direction case is exposed.
+- `data/textures/shaman_background.bmp` is RLE8-compressed; the loader does not support RLE. Harmless only because ShamanInterface is unreachable in Multiwinia.
+- `data/icons/marker_colour.bmp` is processed differently depending on first requester (§25.2.4) — a latent visual inconsistency.
+- `data/shapes/carrycube.shp` declares fragment `Box04` twice (debug assert in `Shape::Load`; in release both attach, and `LookupFragment("Box04")` returns the first).
+- `data/thumbnails/mp_cts_3p_3.bmp` and the level `mp_cts_3p_3.txt` are both excluded from retail packing although the level is otherwise a normal CTS map — the map is effectively cut from the shipped game [C] `tools/multiwinia_exclusions.txt`.
+
 <!-- from X2b_asset_catalogue_audio -->
 ## Contradictions / open questions
 

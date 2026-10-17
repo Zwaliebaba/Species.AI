@@ -115,3 +115,8 @@
 - 10.A–K: method + P16 check (0 mismatches; corrections: officercreate defined twice in sounds.txt; music releases 3.3–20.7 s not 0); name resolution/packaging; full event table (256 data pairs); 213 events fired by code with no data; stop sites; music; UI; voice; stats; unused samples. 25.A pipeline, 25.B one row per file (1332). CSVs: X2b_samples.csv, X2b_sound_events.csv (469), X2b_callsites.csv (285), X2b_summary.txt. [U]=4.
 - Music NEVER heard in MW (triggers compiled out or Darwinia-only; all 11 tracks excluded from shipped archives; triggering would release-assert). 182/256 bound events live; 898 files can play; 192 unused (still shipped). Bugs: crate decay sound uses "%pc" format → silent; stationary loops (Assault pulse-bomb) never stopped. Match-end voice samples unbound.
 ## Phase 3 launched: S10
+
+## X1b_asset_formats — done
+- 19 format sections, 23 anchors (15 requested + text-common, redshirt, pack-list, icons, mwhelp, thumbnail, sepulveda, purity); EBNF/byte layouts verified against parsers + survey scripts (scripts/X1b_*.py). [U]=5.
+- Archive lookups case-insensitive (contradicts P14 "callers must pass lower-case"); loose files always override archives; no encryption of archives/data — only user saves use "redshirt2"; effects.txt and stats.txt bind by ROW POSITION not name; effects.txt "Default" column never applied; blank line inside sounds.txt EVENT/EFFECT/SAMPLEGROUP crashes loader; 11 Darwinia music/loader samples absent from retail archives → fatal if triggered; textures/shaman_background.bmp is RLE8 (undecodable); 4/8-bit row padding latent bug; two shapes overrun memory in accurate hit tests (more positions than vertices); in-tree exporter outdated vs engine headers.
+## Phase 3 launched: S26

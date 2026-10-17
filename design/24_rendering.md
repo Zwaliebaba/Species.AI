@@ -677,7 +677,7 @@ Comparison with `docs/OpenGLState.txt` (the documented contract): matches for ge
 
 ### 2.4 Render-time prediction convention [C]
 
-Every world container advanced in slices (`SliceDArray`/`FastDArray` with `GetLastUpdated()`) is drawn with an **extrapolation** time: objects at index ≤ `GetLastUpdated()` (already advanced this server tick) get `g_predictionTime`; objects beyond it get `g_predictionTime + SERVER_ADVANCE_PERIOD` [C] `code/location.cpp:Location::RenderBuildings`, `RenderBuildingAlphas`, `RenderWeapons`, `RenderSpirits`, `code/team.cpp:Team::RenderOthers`, `RenderVirii`, `RenderDarwinians`, `code/particle_system.cpp:ParticleSystem::Render`, `code/renderer.cpp:Renderer::PreRenderPixelEffect`. Clouds use `m_lastSliceProcessed >= 3` as the threshold (`Location::RenderClouds`). Renderers extrapolate `pos + vel·t` (and shape-fragment `angVel·t`); there is **no interpolation between two stored states**. Spirits subtract one `SERVER_ADVANCE_PERIOD` again inside `Spirit::RenderWithoutGlBegin`. `g_predictionTime` and the tick model are specified in [20](20_architecture.md).
+Every world container advanced in slices (`SliceDArray`/`FastDArray` with `GetLastUpdated()`) is drawn with an **extrapolation** time: objects at index ≤ `GetLastUpdated()` (already advanced this server tick) get `g_predictionTime`; objects beyond it get `g_predictionTime + SERVER_ADVANCE_PERIOD` [C] `code/location.cpp:Location::RenderBuildings`, `RenderBuildingAlphas`, `RenderWeapons`, `RenderSpirits`, `code/team.cpp:Team::RenderOthers`, `RenderVirii`, `RenderDarwinians`, `code/particle_system.cpp:ParticleSystem::Render`, `code/renderer.cpp:Renderer::PreRenderPixelEffect`. Clouds use `m_lastSliceProcessed >= 3` as the threshold (`Location::RenderClouds`). Renderers extrapolate `pos + vel·t` (and shape-fragment `angVel·t`); there is **no interpolation between two stored states**. Spirits subtract one `SERVER_ADVANCE_PERIOD` again inside `Spirit::RenderWithoutGlBegin`. `g_predictionTime` is a macro for `g_gameTimer.GetPredictionTime()` = `min(GetHighResTime() − m_lastClientAdvance, 1.0) × m_gameSpeed`, and 0 while the game is paused [C] `code/gametimer.h`, `code/gametimer.cpp:GameTimer::GetPredictionTime` — wall-clock extrapolation since the last processed server tick, so rendering never waits for the 10 Hz simulation (tick model in [20](20_architecture.md)).
 
 ### 2.5 Frame entry and screenshots — `Renderer::Render` [C]
 
@@ -1450,7 +1450,7 @@ Because the background is black, linear fog fades distant terrain and buildings 
 | Object lighting | `SetObjectLighting`: material specular (0,0,0,0), diffuse (1,1,1,1), ambient (0,0,0,1), shininess 127; enables lighting + LIGHT0 + LIGHT1; `UnsetObjectLighting` disables them |
 | Landscape materials | §4.1 (main: diffuse 1, shininess 100, no specular; overlay: diffuse 1.2, specular 0.5, shininess 40) |
 | Special lighting | `SetupSpecialLights`: one light `normalise(0, 1, 0.5)`, diffuse = specular (2.0, 1.5, 0.75, 1), ambient black; material specular (1,1,1,1), diffuse 1, shininess 10; LIGHT1 disabled. Used for buildings when pref `RenderSpecialLighting == 1`, **or** the game type is Rocket Riot, **or** the level has the `SpecialLighting` effect, **or** game mode Prologue [B:LEGACY]. Levels with `Effects … SpecialLighting`: `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_koth_3P_1` [C] (resolves P12-U7). Cheat keys under `CHEATMENU_ENABLED` toggle the pref [B:DEBUG] |
-| Christmas theme | `Location::m_christmasMode` (copied from `ClientToServer::m_christmasMode` at `Location::Init`): light colours forced to (1.3, 1.2, 1.2); terrain ramp `landscape_icecaps.bmp`; water `water_icecaps.bmp`; waves `waves_earth.bmp`; trees leafless brown; Santa hats on every 3rd Darwinian | `code/location.cpp`, `landscape_renderer.cpp`, `water.cpp`, `worldobject/tree.cpp`, `worldobject/darwinian.cpp` |
+| Christmas theme | `Location::m_christmasMode` (copied from `ClientToServer::m_christmasMode` at `Location::Init`; requested automatically on 24–26 December, `App::UseChristmasMode`): light colours forced to (1.3, 1.2, 1.2); terrain ramp `landscape_icecaps.bmp`; water `water_icecaps.bmp`; waves `waves_earth.bmp`; trees leafless brown; Santa hats on every 3rd Darwinian | `code/location.cpp`, `landscape_renderer.cpp`, `water.cpp`, `worldobject/tree.cpp`, `worldobject/darwinian.cpp` |
 | Default `Light` | colour (1.3,1.3,1.3,0), front (0,0,1) | `code/worldobject/worldobject.cpp:Light::Light` |
 | Unlit | water, clouds, sprites, particles, effects, UI | — |
 | Light-direction timing | specified before the camera matrix each frame (§2.3) [I] | `Renderer::SetOpenGLState` |
@@ -1565,9 +1565,106 @@ Palette conventions: world art is authored as greyscale or near-white textures t
 | Resolution change | renderer and window destroyed/recreated (fullscreen→fullscreen via a temporary 640×480 window), then `Resource::FlushOpenGlState` + `RegenerateOpenGlState` rebuild every texture and display list | `RestartWindowManagerAndRenderer` |
 | Off-screen render targets | pixel effect 256×256; [B:D3D] deform RT half resolution, reflection RT half resolution; captured frame = screen size (POT when required) | §4.13, §4.14, §2.6 |
 
-<!-- SECTION 8 options -->
+## 8 Graphics options, quality presets and performance budgets
 
-<!-- SECTION 9 d3d12 -->
+### 8.1 Every render-related preference [C]
+
+Defaults: all "detail" values come from `GetDefaultGraphicsDetail()` = 1 and `GetDefaultPixelShader()` = 1 on Windows [C] `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`; `data/default_preferences.txt` then overrides `WaitVerticalRetrace = 0` and `DarwinianScaleFactor = 2.0` (no `Render*` keys). Lower numbers = **higher** quality (1 = high, 2 = medium, 3 = low). Preference storage: [09](09_meta_systems.md), [31](31_platform_build_and_tools.md).
+
+| Pref key | Default | UI control | Values | What it changes | Ref |
+|---|---|---|---|---|---|
+| `ScreenWidth`, `ScreenHeight` | 0 → desktop | Screen options: Resolution | enumerated modes | back buffer size, aspect, all screen-scaled UI | `Renderer::Initialise`, `code/interface/prefs_screen_window.cpp` |
+| `ScreenWindowed` | 0 | Screen options: Windowed | 0/1 | window vs exclusive fullscreen; toggling recreates window and renderer and rebuilds all GL resources | `RestartWindowManagerAndRenderer` |
+| `ScreenRefresh` | 75 | Screen options: Refresh rate (`HAVE_REFRESH_RATES`, Win32) | per mode | GL fullscreen `dmDisplayFrequency`; ignored by D3D | `WindowManagerWin32::CreateWin` |
+| `ScreenColourDepth` | 32 | Screen options: Colour depth (fullscreen only) | 16/24/32 | `ChangeDisplaySettings` bpp + PFD colour bits | same |
+| `ScreenZDepth` | 24 | Screen options: Z-buffer depth | 16/24 | PFD depth bits | `EnableOpenGL` |
+| `WaitVerticalRetrace` | 1 (code), 0 (`default_preferences.txt`) | none | 0/1 | **no effect in GL** (no swap-interval call); D3D `PresentationInterval` (first two attempts pass literal true) | §1.3.3, §2.2 |
+| `ScreenOverscan` | 0 | none | — | forced 0 | `Renderer::Initialise` |
+| `RenderLandscapeDetail` | 1 | **commented out** of the graphics menu (options High/Medium/Low/"upgrade" 4) | 1–4 | none — reads replaced by literal 1 | `code/landscape.cpp`, `code/landscape_renderer.cpp` |
+| `RenderWaterDetail` | 1 | Graphics: Water detail | 1/2/3 | dynamic wave mesh cell size `detail × maxWorldSize/100` (1 = 200 cells across the 2× plane, 2 = 100, 3 = ≈ 67); 0 (not offered) = flat layer only | `code/water.cpp:Water::Water` |
+| `RenderCloudDetail` | 1 | Graphics: Sky detail | 1/2/3 | blobby layers 3 / 2 / 1; flat layers 2 / 1 / 1; flat alpha 0.3 / 0.3 / 0.5 | `code/clouds.cpp` |
+| `RenderBuildingDetail` | 1 | Graphics: Building detail | 1/2/3 | decorative counts at 1/2/3: spam blobs 20/10/0; spawn-point glow blobs 20/10/3; spawn-point spirit-link laser glow only at 1; crate stars 10/5/2; portal blobs 50/25/10; rocket blobs 50/20/10 and exhaust loops `clamp(4 − detail, 1, 3)` = 3/2/1; pulse-bomb blobs 20/10/2; tree fire particles `numFire /= detail`; port control-pad shapes and the laser-fence multitexture layer only when detail < 3; construction yard, god dish, research item, mine and spirit-receiver extras [B:LEGACY] | `code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp` |
+| `RenderEntityDetail` | 1 | Graphics: Entity detail | 1/2/3 | Darwinian high-detail distance 99 999.9 / 1000 / 500 (shadows, terrain-following, ouch sprites); Virii LOD thresholds (§4.9) | `code/team.cpp:RenderDarwinians`, `RenderVirii` |
+| `RenderPixelShader` | 1 | checkbox **commented out** | 0/1 | single-player pixel effect, [D3D] deform and reflection pre-pass; with `RenderWaterEffect` selects the D3D water shader | `Renderer::RenderFrame`, `Water::Render` |
+| `RenderWaterEffect` | 1 | none | 0/1 | [D3D] reflective water shader | `Water::Render`, `RenderFrame` |
+| `RenderSpecialLighting` | 0 | none (cheat keys `ControlRTLoaderPixelWaveIncrease/Decrease` under `CHEATMENU_ENABLED`) | 0/1 | warm single key light on buildings (§5.5) | `Location::RenderBuildings` |
+| `RenderTreeDetail` | 1 | none | ≥ 1 | leaf alpha ×1.3^detail at generation when > 1 | `code/worldobject/tree.cpp` |
+| `RenderPosterResolution` | 1 | none | N | screenshot = N×N tiles | `Renderer::Render`, `PosterMaker` |
+| `RenderNegative` | 0 | none | 0/1 | white background, darkening landscape/water blends | `App::App` |
+| `RenderLandscapeMode` | −1 (auto; Linux/Mac defaults write 2) | none | −1/0/1/2 | landscape VBO / display list / client arrays | `LandscapeRenderer::LandscapeRenderer` |
+| `ManuallyScaleTextures` | 0 | none | 0/1 | force power-of-two rescale in GL | `BitmapRGBA::ConvertToTexture` |
+| `DarwinianScaleFactor` | 2.0 | none | float | Darwinian sprite growth with camera distance (§4.9); also read by officers and zones | `code/worldobject/darwinian.cpp`, `officer.cpp`, `multiwiniazone.cpp` |
+| `RenderFog` | 1 | none | 0/1/2 | read only under `FOG_PREFERENCE`/`FOG_LOGGING` (never defined) → no effect | `code/main.cpp:SetPreferenceOverrides` |
+| `RenderAIInfo`, `AIInfoTeam` | 0, 1 | none | 0/1, team | AI-target debug overlay | `code/worldobject/ai.cpp`, `aiobjective.cpp` |
+| `ChristmasEnabled` | 1 (key `OTHER_CHRISTMASENABLED`) | read by the Other-options window only (its caption is commented out) | 0/1 | **no effect on the theme**: `App::UseChristmasMode()` returns true on 24–26 December (local clock, not while editing) regardless of this pref; the client then sends `RequestChristmasMode` at the main menu and the server's `NET_DARWINIA_CHRISTMASMODE` sets `ClientToServer::m_christmasMode`, copied to `Location::m_christmasMode` at `Location::Init` (§5.5) | `code/interface/prefs_other_window.cpp`, `code/app.cpp:App::UseChristmasMode`, `code/network/clienttoserver.cpp` |
+
+Applying graphics options (`ApplyGraphicsButton::MouseUp`) saves the prefs and, if a location is loaded, **re-runs `Landscape::Init` and rebuilds `Water`** (building `SetDetail` re-application is commented out) [C] `code/interface/prefs_graphics_window.cpp`. The graphics window shows exactly four drop-downs: Water, Sky, Building, Entity detail (each High/Medium/Low, `m_cycleMode`) plus Apply/Back; the landscape drop-down and pixel-effect checkbox are commented out [C].
+
+**Not present** [C grep]: anti-aliasing/MSAA (the SDL path requests 4× MSAA but is not compiled on Win32), anisotropic filtering, gamma/brightness (only the dead D3D `SetScreenGamma`), vsync toggle (no UI, no GL effect), resolution scaling, texture-quality setting, shadow quality, frame-rate cap.
+
+### 8.2 Quality presets
+
+There are **no named presets**; each of the four visible drop-downs is independent and every value defaults to 1 (High) on Windows [C]. A preset system for a new game can be derived directly from the detail table above:
+
+| Derived preset [I] | Water | Sky | Building | Entity |
+|---|---|---|---|---|
+| High (shipped default) | 1 | 1 | 1 | 1 |
+| Medium | 2 | 2 | 2 | 2 |
+| Low | 3 | 3 | 3 | 3 |
+
+### 8.3 Performance budgets (as coded) [C]
+
+No frame-time or draw-call budget is encoded; the following caps and costs exist:
+
+| Budget / cost | Value | Ref |
+|---|---|---|
+| Frame pacing | one `Renderer::Render` per `LocationGameLoop` iteration, uncapped; effective rate set by driver vsync | `code/main.cpp:LocationGameLoop` |
+| Slow-frame reaction | if `m_fps < 15` the sound system is advanced a second time after rendering | same |
+| Frame-time clamp | `g_advanceTime ≤ 0.25 s`; fade dt ≤ 0.05 s | `code/main.cpp:UpdateAdvanceTime`, `RenderFadeOut` |
+| `MINIMUM_RENDER_PERIOD` | 1.0 s ("render at least this frequently") | `code/globals.h` |
+| Terrain | one strip, 1 draw per pass, 2 passes, no LOD (≈ 2 triangles per height-map cell above water) | §4.1 |
+| Immediate mode | GL: driver-batched; [D3D]: one `DrawPrimitiveUP` + full constant upload per `glEnd` | §1.5.6 |
+| Particle array | 1500 initial, +200 growth, no cap | `ParticleSystem::ParticleSystem` |
+| Explosion triangles | ≤ ~501 source triangles scanned per fragment; perimeter < 6 skipped; 5 s life | `Explosion::Explosion` |
+| Shape file | ≤ 100 fragments and ≤ 100 markers (debug assert only) | `Shape::Load` |
+| Display lists | static shapes, trees, landscape (fallback), sphere, global internet; names must be < 20 chars | `Resource::GetDisplayList` |
+| Pixel effect | 256×256 capture, 16×16 grid, objects within 1000 units | §4.14 |
+| [D3D] render targets | deform half-res A8R8G8B8 + full-res screen copy; reflection half-res | §4.13, §4.3 |
+| Max texture size | `GL_MAX_TEXTURE_SIZE` (downscale only; lost when POT rescale also applies) | `App::App`, `BitmapRGBA::ConvertToTexture` |
+| Fonts | ≈ 138 atlas textures loaded at start-up | §4.22 |
+| Detail scaling | the four detail prefs (§8.1) are the only runtime quality knobs | — |
+| Profiling | `START_PROFILE/END_PROFILE` brackets per pass and per building type; `docs/cpu cycles.txt` is a design note on the Darwinia "CPU cycles" concept, not a performance budget | [32](32_debug_test_and_performance.md) |
+
+Measured per-frame cost and draw counts are unknown (24-U6).
+
+## 9 Direct3D 12 mapping notes per component
+
+Brief per-component guidance; the full keep/adapt/replace assessment is in [40](40_carry_forward_assessment.md).
+
+| Component | Original mechanism | D3D12 mapping | Note |
+|---|---|---|---|
+| Backend | GL 1.x immediate mode / D3D9 emulation | explicit renderer: per-frame upload ring buffer, batched draws, PSOs for each blend/depth/cull combination in §3.2 | the pass table is the PSO catalogue |
+| State contract | `SetOpenGLState` baseline + per-pass deltas | immutable PSOs + root signature (per-frame CBV: view, proj, fog, 2 lights; per-draw root constants: world matrix, tint) | do not replicate the emulator's silent state dropping |
+| Fixed function | GL lighting/fog; FixedFunc0/1/2 | 4–5 HLSL SM6 material shaders: unlit vertex-colour, 1 texture, 2 textures (with explicit combine modes), lit (2 directional lights, no ambient), lit + texture + DECAL edge mask | fix D1–D5 (lit+textured, fog colour, alpha) |
+| Flat shading | `GL_FLAT`, last provoking vertex | `nointerpolation` attributes with an explicit provoking-vertex convention, or per-triangle colour/normal via vertex duplication or `SV_PrimitiveID` lookup | bake one colour per triangle at build time |
+| Landscape | one strip, VBO, 2 passes | static index + vertex buffer in a default heap; pass 2 can be merged into pass 1 as an additive edge term from barycentrics; consider chunking for culling | §4.1 |
+| Water | client-memory strip rebuilt every frame on the CPU | dynamic upload buffer or a compute shader for wave heights/colours; flat layer as one draw with two SRVs | §4.2 |
+| Water reflection | half-res mirrored pass, never used in MW | optional planar reflection RT; drop unless wanted | §4.3 |
+| Sky/clouds | additive quads with black fog | single sky draw; fog in shader | §4.4 |
+| Shapes | hierarchical fragments, display lists | static buffers per shape + per-fragment transforms in a structured buffer; instancing for repeated buildings; team colours as a per-instance palette remap instead of per-colour shape copies | §4.5 |
+| Trees | procedural crossed quads in display lists, hit volume from compile | generate geometry and hit volume offline/at load as data; instanced draws | §4.7 |
+| Sprites, particles, spirits, Darwinians | CPU-built billboards in immediate mode | instanced quads expanded in the VS from per-instance data (pos, size, colour, orientation mode); two blend PSOs (additive, darkening) | §4.9, §4.11 |
+| Darkening blend | `SRC_ALPHA, ONE_MINUS_SRC_COLOR` with α = 0 | blend state `SrcBlend = ZERO`, `DestBlend = INV_SRC_COLOR` (equivalent when α = 0) | cleaner than relying on α = 0 |
+| Explosions | CPU-animated triangles, DECAL texture | compute or VS-animated shard buffer with barycentric edge mask | §4.12 |
+| Depth bias by near plane | re-set projection with near × k | PSO `DepthBias`/`SlopeScaledDepthBias` or a small view-space offset | §5.2 |
+| Text | 138 BMP atlases, fixed advances | glyph cache from licensed fonts (DirectWrite or a signed-distance-field atlas), shaping and kerning | §4.22 |
+| UI | Eclipse immediate mode | batched UI vertex buffer with alpha, additive and ink (darkening) PSOs | [28](28_ui_framework.md) |
+| Screen effects | fade quad, captured-frame transition | full-screen passes sampling an offscreen copy of the back buffer | §2.6 |
+| Pixel effect, deform | legacy / D3D-only | optional post-process passes (distortion via a displacement RT) | §4.13, §4.14 |
+| Shadows | decal blobs and flattened sprites | keep the decal look (instanced projected quads) or add shadow maps as a deliberate change | §5.6 |
+| Screenshots | `glReadPixels` tiles | `CopyTextureRegion` to a readback buffer | §2.5 |
+| Device loss | D3D9 reset loop | handle `DXGI_ERROR_DEVICE_REMOVED` by full device recreation | §1.5.11 |
+
 
 ## Open questions and unknowns
 

@@ -1438,3 +1438,455 @@ On-screen aids (disabled, §10.1): centred text at (W/2, H/3) with a W/40-sized 
 | MW deselect hint | +1.0 (cap 3.0) while showing; −0.75 per stray click; show if < −1.0; 3.0 s; decay 0.33/s | `code/multiwiniahelp.cpp:MultiwiniaHelp::ShowSpaceDeselectHelp` |
 | MW shift hint | forward held > 4.0 s; 3.0 s | `code/camera.cpp:Camera::AdvanceFreeMovementMode`; `MultiwiniaHelp::ShowShiftSpeedupHelp` |
 
+## 11 Input architecture
+
+### 11.1 Overview — a query-driven binding graph
+
+[C] `code/lib/input/input.h:InputManager`
+- Game code never reads hardware. It asks `g_inputManager->controlEvent(ControlX[, details])` — "did logical control X trigger this frame?" — and optionally receives an `InputDetails` payload (type + x/y integers + controller index).
+- Each logical control (`ControlType`, 164 values + `ControlNull`, §12) owns an ordered list of `InputSpec`s (its bindings). A spec is a compiled record: *which driver*, *which control inside the driver*, *which condition* (down/up/pressed/…), a driver-private *handler id*, an *output type*.
+- **Drivers** both *parse* binding strings (each recognises its own syntax) and *evaluate* specs. Leaf drivers read hardware or environment state (Win32 key/mouse, XInput pads, idle timer, preferences, constants). Composite drivers (`&&` conjunction, `++` chord, `not` inversion, `alias`) hold sub-spec lists and evaluate them by recursing into the manager — this recursion is what makes the system a graph.
+- Bindings come from text files (`data/input/*.txt`) loaded at start-up, then overridden by a keyboard-layout file and the user's file (§11.10).
+- Polling model: each frame the manager `Advance()`s every driver (snapshotting "this frame" vs "last frame"), then any number of `controlEvent` queries are answered from those snapshots. Queries are side-effect free except for XInput "repeat" timers (§11.6.6).
+
+### 11.2 Lifecycle and frame order [B:FULL]
+
+| Step | When | What | Ref |
+|---|---|---|---|
+| 1 | start-up, before `App` exists | `g_eventHandler = new W32EventHandler()` | [C] `code/main.cpp:AppMain` |
+| 2 | start-up | `InitialiseInputManager()` creates `g_inputManager` and registers drivers **in this order** (index = `InputSpec::driver`): 0 `ConjoinInputDriver`, 1 `ChordInputDriver`, 2 `InvertInputDriver`, 3 `IdleInputDriver`, 4 `W32InputDriver`, 5 `XInputDriver` *only if* `LoadLibrary("XINPUT1_3")` succeeds, then `PrefsInputDriver`, `ValueInputDriver`, `AliasInputDriver` (indices 6–8, or 5–7 without XInput). `PipeInputDriver` is **never registered** and `g_inputFilterManager` is never created | [C] `code/main.cpp:InitialiseInputManager` |
+| 3 | start-up, after `new App()` (which creates `g_prefsManager`, whose `Load` forces `MultiwiniaControlMethod = 1`) | `ReadInputPreferences()`: system file → keyboard-layout file (replace) → user file (replace) (§11.10) | [C] `code/main.cpp:ReadInputPreferences`, `code/app.cpp:App::App`, `code/lib/preferences.cpp:PrefsManager::Load` |
+| 4 | start-up | `g_target = new TargetCursor()` (virtual cursor fed by `TargetMove`/`TargetMoveSecondary`/`TargetMoveZ`) | [C] `code/main.cpp:AppMain`; `code/lib/targetcursor.cpp:TargetCursor::Advance` |
+| 5 | every render frame | `UserInput::Advance()` → `InputManager::Advance()`: (a) clear per-frame suppression flags; (b) for each driver in registration order `driver->Advance()`, accumulate idle and input mode; (c) `g_target->Advance()` | [C] `code/user_input.cpp:UserInput::Advance`; `code/lib/input/input.cpp:InputManager::Advance` |
+| 6 | many times per frame (loading screens, main loops, D3D present) | `InputManager::PollForEvents()` → each driver's `PollForEvents()`; W32 pumps the Win32 message queue (`g_windowManager->NastyPollForMessages()`) | [C] `InputManager::PollForEvents`; `code/lib/input/inputdriver_win32.cpp:W32InputDriver::PollForEvents` |
+| 7 | any time after step 5 | `controlEvent()` queries from game/UI code | — |
+
+`UserInput::Advance` runs once per frame normally and once more on a frame where `ControlMenuEscape` fires; `InputManager::Advance` is also called at the bottom of the top-level loop in `AppMain`, so it can run 2–3 times in one frame [C] `code/main.cpp`.
+
+`InputManager::Advance` derives two global facts [C]:
+- **idle** = every driver reports `isIdle()`; consumed by the Idle driver (§11.6.4).
+- **input mode** (`INPUT_MODE_KEYBOARD` = 1 or `INPUT_MODE_GAMEPAD` = 2): among non-idle drivers the highest `getInputMode()` wins ("prefers the gamepad"); if no driver was active the previous mode is kept; initial `INPUT_MODE_KEYBOARD`. W32 reports KEYBOARD, XInput GAMEPAD, all others NONE. The mode switches UI hints, language-phrase variants (`_kbd`/`_xin` suffix lookup [C] `code/lib/language_table.cpp:LangTable::RawDoesPhraseExist`), automatic camera tracking (§9.6), squad control (§6.3), chat availability (M2) and the task-manager interface variant (`SwitchTaskManagerForX360Controller`).
+
+### 11.3 Core data types and conditions
+
+`InputType` (bit flags) [C] `code/lib/input/input_types.h:InputType`:
+
+| Name | Value | Meaning |
+|---|---|---|
+| `INPUT_TYPE_FAIL` | 0 | details invalid |
+| `INPUT_TYPE_BOOL` | 1 | button-like |
+| `INPUT_TYPE_ANALOG` | 2 | carries axis data (bit shared by 1D/2D) |
+| `INPUT_TYPE_1D` | 6 | one axis in `x` (trigger, wheel, idle seconds); implies ANALOG |
+| `INPUT_TYPE_2D` | 10 | two axes in `x`, `y` (mouse, thumbstick); implies ANALOG |
+| `INPUT_TYPE_ANY` | 15 | wildcard (terminator row of the action table only) |
+
+`InputDetails {type, int x, int y, int controller = −1}` [C] `input_types.h:InputDetails` (`controller` set only by XInput, index 0–3). `InputSpec {unsigned driver; inputtype_t type; int control_id; int handler_id; int condition}` [C] `code/lib/input/inputspec.h:InputSpec` (`handler_id` is driver-private: W32 1 = key, 2 = mouse; XInput: sensitivity percent). `InputDescription {noun, verb, pref, translated}` — human-readable description used by the key-binding UI; `pref` is the re-serialised binding string; `translate()` replaces noun/verb with language phrases if they exist [C] `code/lib/input/input_types.cpp:InputDescription::translate`. `InputMode {NONE = 0, KEYBOARD = 1, GAMEPAD = 2}`.
+
+`InputCondition` [C] `code/lib/input/inputdriver.h:InputCondition`, shared word table `code/lib/input/inputdriver.cpp:s_conditions`:
+
+| Id | Enum | Word | Applies to | Semantics |
+|---|---|---|---|---|
+| 0 | `COND_DOWN` | `down` | BOOL | became pressed this frame (edge) |
+| 1 | `COND_UP` | `up` | BOOL | became released this frame (edge) |
+| 2 | `COND_PRESSED` | `pressed` | BOOL | currently held (level) |
+| 3 | `COND_REPEAT` | `repeat` (XInput BOOL controls only, not in the shared table) | BOOL | held: fires on the first frame and then every 0.3 s |
+| 4 | `COND_ACTION` | (`action` commented out) | — | unused |
+| 5 | `COND_RELEASED` | `release` | ANALOG | just returned to zero / dead zone |
+| 6 | `COND_NONZERO` | `position` | ANALOG | outside dead zone; returns absolute position |
+| 7 | `COND_MOVED` | `move` | ANALOG | changed since last frame; returns delta |
+| 8 | `COND_ZERO` | `zero` | ANALOG | inside dead zone |
+| 9 | `COND_READ` | `read` | ANALOG | always true; returns current value |
+
+**Condition lookup bug (design-relevant)** [C] `InputDriver::getDefaultConditionID`: the loop advances until a word matches *and* `(controlType & rowType) == rowType`; if nothing matches it stops on the NULL terminator row (index 8) and, because the guard is `i < NumInputConditions` (= 10) instead of "found", returns condition 0 (`COND_DOWN`) with type 0 (`INPUT_TYPE_FAIL`); type 0 passes every bind-acceptance test (§11.4). In shipped data this silently turns `XInput dpadleft donw` (typo), `XInput lefttrigger repeat`, `XInput righttrigger repeat` and `XInput lefttrigger down` (BOOL word on a 1D control) into "down" edges (§12.2). A new implementation must reject unknown conditions — and then deliberately map these four bindings to "down" to preserve behaviour.
+
+`InputParserState` (only `STATE_DONE` = success; when every driver fails the manager reports the error of the driver that progressed furthest, i.e. the highest state value) [C] `inputdriver.h:InputParserState`, `input.cpp:InputManager::parseInputSpecTokens`: `STATE_ERROR` 0, `STATE_WANT_DRIVER` 1, `STATE_WANT_CONTROL` 2, `STATE_WANT_COND` 3, `STATE_WANT_MODIFIER` 4, `STATE_WANT_OPTIONAL` 5, `STATE_BAD_EXTRA` 6, `STATE_OVERSTEP` 7, `STATE_CONJ_ERROR` 8, `STATE_DONE` 9. The per-driver error-string arrays (`inputdriver_simple.cpp`, `_alias.cpp`, `_prefs.cpp`, `_value.cpp`) have 9 entries ordered as if `STATE_WANT_OPTIONAL` did not exist, so messages for states ≥ 5 are off by one and state 9 indexes past the end [C] — cosmetic (stdout only).
+
+### 11.4 `ControlBindings` — storage and acceptance
+
+[C] `code/lib/input/control_bindings.{h,cpp}`
+- `bindings[NumControlTypes]`: per control an ordered owning list of `InputSpec`. Order = order of successful bind calls; **index 0 is the primary binding** (shown in the key-binding UI, replaced by layout/user files).
+- `icons[NumControlTypes]`: one icon path per control (`~` lines; last wins).
+- `suppressed[NumControlTypes]`: set by `InputManager::suppressEvent(type)`, cleared at the start of each `InputManager::Advance`; a suppressed control returns false for the rest of the frame (e.g. `EclipseLMouseDown` is suppressed when a window is under the cursor so the click does not reach the game [C] `code/user_input.cpp:UserInput::AdvanceMenus`).
+- `getControlID(name)`: case-insensitive (`stricmp`) linear search over names generated from `control_types.inc` (X-macro `DEF_CONTROL_TYPE(name, type)` → `"name"`) [C] `control_bindings.cpp:s_actions`.
+- **Type acceptance** `isAcceptibleInputType(control, specType)`: `valid = controlType; if (valid has BOOL) valid |= INPUT_TYPE_1D; accept iff (valid & specType) == specType`. Hence BOOL controls accept BOOL, 1D (triggers) and ANALOG specs; 1D controls accept 1D/ANALOG; 2D controls accept 2D/ANALOG but **not** BOOL; type-0 specs are accepted everywhere. The default condition lookup rewrites an analogue spec's type to `INPUT_TYPE_ANALOG` (2); the concrete 1D/2D distinction is restored only at evaluation time when the driver fills `details.type`.
+- `bind(type, spec, replace)`: if accepted, copy the spec; with `replace` and a non-empty list erase element 0 and insert the new spec at 0; otherwise append.
+- `code/lib/input/control_types.cpp` defines a second, unused `static s_actions` whose names are the literal string `"x"` (macro bug) [C] — dead.
+
+### 11.5 `InputManager` API semantics
+
+[C] `code/lib/input/input.cpp`
+
+| Method | Behaviour |
+|---|---|
+| `controlEvent(type, details)` | If `type` is not suppressed: iterate its specs **in order**; return true at the **first** spec whose driver's `getInput` returns true (details from that spec); otherwise `details.type = FAIL`, false. A control behaves as the logical OR of its bindings; the payload comes from the first satisfied binding |
+| `checkInput(spec, details)` | `drivers[spec.driver]->getInput(spec, details)`; on false sets `details.type = FAIL`. Used by composite drivers |
+| `parseInputPrefs(reader, replace)` | line parser (§11.11); with `replace` every successful line replaces the control's primary binding |
+| `parseInputSpecString/Tokens` | whitespace tokenisation (`istringstream >>`); offer the tokens to each driver in registration order; first `STATE_DONE` wins and sets `spec.driver` |
+| `replacePrimaryBinding(type, str)` | parse + `bind(type, spec, replace = true)`; silent on failure; used by the key-binding window |
+| `getFirstActiveInput(spec, instant)` | asks drivers in order; only W32 implements it: first VK `i` in 0..222 (< `KEY_TILDE`, so TILDE itself is excluded) with a down edge this frame whose key name contains no space → `key <name> down` if `instant` else `key <name> pressed`. Mouse capture is commented out → **only keyboard keys can be captured for rebinding** [C] `W32InputDriver::getFirstActiveInput` |
+| `getBoundInputDescription(type, desc)` | description of the first bound spec whose driver can describe it, then `translate()` |
+| `controlIcon(type)` | icon path |
+| `isIdle()`, `getInputMode()` | §11.2 |
+| `Clear()` | remove all bindings (icons kept) |
+| `printNumBindings()` | debug dump |
+
+### 11.6 Driver catalogue
+
+#### 11.6.0 `InputDriver` base and `SimpleInputDriver`
+
+[C] `code/lib/input/inputdriver.{h,cpp}`, `code/lib/input/inputdriver_simple.{h,cpp}`. Base virtuals: `parseInputSpecification` (pure), `getInput` (pure), `Advance` (pure), `getLastParseError` (pure), `isIdle` (default true), `getInputMode` (default NONE), `getFirstActiveInput` (default false), `PollForEvents` (default no-op), `getInputDescription` (default false), `getName`. Helpers: condition lookup (§11.3), `getDefaultPrefsString` (condition → word; the safe version that checks for the terminator), `getDefaultVerb` → `"control_verb_" + word` (no `control_verb_*` phrases exist in `data/language/english.txt` [C], so verbs stay raw ids; [I] the UI shows only nouns).
+
+`SimpleInputDriver` implements a 3-token state machine shared by Idle, W32 and XInput: `WANT_DRIVER —acceptDriver(tok)→ WANT_CONTROL —getControlID(tok) ≥ 0, type := getControlType→ WANT_COND —getConditionID(tok) ≥ 0→ writeExtraSpecInfo()`, which returns `DONE` or `WANT_OPTIONAL`/`WANT_MODIFIER`; optional tokens go to `parseExtraToken`. A token after `DONE` → `OVERSTEP` (fail). Ending in `WANT_OPTIONAL` counts as `DONE`. Any rejected token stops parsing with the current (non-DONE) state.
+
+#### 11.6.1 Conjoin (`&&`) — driver 0
+
+[C] `code/lib/input/inputdriver_conjoin.cpp`. Parse: no `&&` token → `STATE_ERROR` (not mine). Split at every `&&`; each part is parsed by the **full** manager (parts may be chords, inversions, aliases, leaf specs; an empty part fails). At most one part may have type > BOOL ("complex"); the conjunction's type = that part's type, else BOOL. Sub-specs stored in `m_specs`; `spec.control_id` = list index. Evaluate: all parts true (short-circuit on the first false); details = first part's, overridden by the complex part's if any. Description: noun/verb of the highest-typed part. Because Conjoin is driver 0, `&&` binds loosest: `a ++ b && c` = `(a ++ b) && c`.
+
+#### 11.6.2 Chord (`++`) — driver 1
+
+[C] `code/lib/input/inputdriver_chord.cpp`. Parse: no `++` → error. Split into N parts *without conditions* (e.g. `key control`, `key c`). Generate N conjunction strings; in string k part k gets ` down` and every other part ` pressed`: `key control ++ key c` → `key control down && key c pressed` and `key control pressed && key c down`. Each must parse to type BOOL. Evaluate: **OR** over the N conjunctions — "all parts held and at least one went down this frame" (order-independent chord edge). Description: nouns joined with `-` (e.g. `CTRL-C`).
+
+#### 11.6.3 Invert (`not` / `!`) — driver 2
+
+[C] `code/lib/input/inputdriver_invert.cpp`. Parse: first token `not` (case-insensitive) or `!`; remaining tokens parsed by the manager; must be exactly `INPUT_TYPE_BOOL` (type-0 fallback specs are rejected). Evaluate: logical NOT of the sub-spec. Description verb prefixed `not `. Unused in shipped data.
+
+#### 11.6.4 Idle — driver 3
+
+[C] `code/lib/input/inputdriver_idle.cpp`. Grammar `idle atleast <N>` | `idle reaches <N>` | `idle no longer` (N positive integer seconds, `istringstream >> int`).
+- State: `m_idleTime` (s), `m_oldIdleTime`, `m_lastChecked`. `Advance`: `old = idle; if manager.isIdle() idle += now − lastChecked else idle = 0; lastChecked = now` (wall clock). Idle's own `isIdle()` is the default true and the manager's idle flag is assigned only after the driver loop, so Idle reads the **previous frame's** combined flag [C] `InputManager::Advance`.
+- Evaluate: `atleast N`: `int(idle) >= N` (1D, x = idle seconds); `reaches N`: `old < N < idle` (one-frame edge); `no longer`: `idle == 0` (BOOL — true on every non-idle frame, not only on the transition).
+- `getControlID` scans a 3-entry table without a terminator → an unknown word reads past the array (undefined behaviour) [C].
+- Shipped use: `StopAttractMode = idle no longer`; `StartAttractMode = idle reaches 60` is commented out. Attract mode is `ATTRACTMODE_ENABLED`-gated → [B:DEAD].
+
+#### 11.6.5 W32 key/mouse — driver 4
+
+[C] `code/lib/input/inputdriver_win32.{h,cpp}`, `code/lib/input/keydefs.h`, `code/lib/input/keynames.cpp`. Grammar: `key <keyname> (down|up|pressed)` | `mouse (left|right|middle) (down|up|pressed)` | `mouse (axes|wheel) (move|read)` | `mouse any …` | `key any …`. Driver words case-sensitive (`key`, `mouse`); key names case-insensitive; mouse control words case-sensitive.
+
+State (key arrays are globals `g_keys[256]`, `g_keyDeltas[256]`, also read directly by legacy code):
+
+| Field | Written by | Meaning |
+|---|---|---|
+| `g_keys[vk]` | WndProc | 1 while held |
+| `m_keyNewDeltas[vk]` | WndProc | +1 on press / −1 on release since the last Advance (last event wins) |
+| `g_keyDeltas[vk]` | Advance (`= m_keyNewDeltas`, then new deltas zeroed) | this frame's edge |
+| `m_mb[3]` | WndProc (L = 0, R = 1, M = 2) | button held |
+| `m_mbDeltas[3]` | Advance: `m_mb − m_mbOld` | edge (+1/−1/0) |
+| `m_mousePos[3]` | WndProc (`WM_MOUSEMOVE` absolute x, y; wheel z += `(short)HIWORD(wParam)/120`, integer division) | |
+| `m_mouseVel[3]` | Advance: `pos − posOld` | per-frame delta |
+
+Windows messages (`W32InputDriver::WndProc`): `WM_[LMR]BUTTONDOWN/UP` (also capture/uncapture the mouse), `WM_MOUSEWHEEL` (0x020A), `WM_MOUSEMOVE`, `WM_HOTKEY` id 0 (Alt-Tab hot-key → synthesises a TAB press), `WM_SYSKEYDOWN` (ALT itself sets `g_keys[ALT]`; another key with `KF_ALTDOWN` sets a down edge and `g_keys`; **Alt+F4 sets `g_app->m_requestQuit`**), `WM_SYSKEYUP` (clears `g_keys`, no edge), `WM_KEYDOWN` (edge only if not already held — auto-repeat ignored), `WM_KEYUP`, `WM_CHAR` (forwarded to Eclipse text input `EclUpdateKeyboard` with shift/ctrl/alt state). Unhandled → −1 (next processor).
+
+Evaluation:
+- key: `down` ⇔ `g_keyDeltas == +1`, `up` ⇔ −1, `pressed` ⇔ `g_keys == 1`. A press + release inside one frame leaves delta −1 → the **down edge is lost** (only `up` is seen) [C].
+- ALT arrives as `WM_SYSKEYDOWN/UP`, which set/clear `g_keys[ALT]` **without deltas**, so `key alt down` / `key alt up` never fire (only `key alt pressed` works — the shipped `GesturesTaskManagerHide = key alt up` is inert); keys released while ALT is held (`WM_SYSKEYUP`) produce no up edge [C].
+- With ALT held, `WM_SYSKEYDOWN` sets a down edge on **every keyboard auto-repeat** (no "already held" check, unlike `WM_KEYDOWN`), so holding Alt+X re-toggles the interface at the OS repeat rate [C] `W32InputDriver::WndProc`.
+- F10 arrives as `WM_SYSKEYDOWN` without `KF_ALTDOWN` and is dropped by both branches — **F10 is unbindable** [C] (same).
+- mouse button: `down/up/pressed` from `m_mbDeltas`/`m_mb`; a click shorter than one frame is lost entirely [C].
+- `mouse axes move` → 2D, x, y = `m_mouseVel`, true if non-zero; `read` → always true. `mouse wheel move` → 1D x = wheel notches this frame. Other conditions on axes/wheel never fire.
+- `mouse any` and `key any` (VK 255, "TODO: Any key not implemented") parse but **never fire** [C].
+- `isIdle` = all key/delta arrays zero, no button held, zero mouse velocity (wheel included). `getInputMode` = KEYBOARD. `SetMousePosNoVelocity(x, y)` warps without generating velocity.
+
+Key-name table (`getKeyNames()`, index = Windows VK; only names without spaces are bindable; lookup scans indices 0…223, so **`META` (224) is unbindable** — the Mac file's `key meta` lines fail) [C] `code/lib/input/keynames.cpp:getKeyNames`, `W32InputDriver::getKeyId`: 8 = `BACKSPACE`, 9 = `TAB`, 13 = `ENTER`, 16 = `SHIFT`, 17 = `CONTROL`, 18 = `ALT`, 19 = `PAUSE`, 20 = `CAPSLOCK`, 27 = `ESC`, 32 = `SPACE`, 33 = `PGUP`, 34 = `PGDN`, 35 = `END`, 36 = `HOME`, 37 = `LEFT`, 38 = `UP`, 39 = `RIGHT`, 40 = `DOWN`, 45 = `INSERT`, 46 = `DEL`, 48–57 = `0`…`9`, 65–90 = `A`…`Z`, 96–105 = `0_PAD`…`9_PAD`, 106 = `ASTERISK`, 107 = `PLUS_PAD`, 108 = `MINUS_PAD`, 109 = `Unknown`, 110 = `DEL_PAD`, 111 = `SLASH_PAD`, 112–123 = `F1`…`F12`, 144 = `NUMLOCK`, 145 = `SCRLOCK`, 186 = `COLON`, 187 = `EQUALS`, 188 = `COMMA`, 189 = `MINUS`, 190 = `STOP`, 191 = `SLASH`, 192 = `AT`, 219 = `OPENBRACE`, 220 = `BACKSLASH`, 221 = `CLOSEBRACE`, 222 = `QUOTE`, 223 = `TILDE`, 224 = `META` (all other indices are `"unknown N"` / `"unknown 146-185"` / `"unknown 193-218"`).
+
+> **Table defect** [C]: `keydefs.h` defines `KEY_MINUS_PAD 109` (= `VK_SUBTRACT`) but the name table has `MINUS_PAD` at 108 (`VK_SEPARATOR`) and `Unknown` at 109; so `key minus_pad` binds the separator key and numpad-minus can only be named `key unknown`. A new game should derive names from one VK → name table.
+
+Description (`getInputDescription`) for the binding UI: noun = phrase `control_<KEYNAME>` if it exists (case-insensitive), else the raw key name; verb `control_verb_<cond>`; **`pref` is built from the *translated* noun** (`"key " + noun + " " + cond`). For keys whose English phrase differs from the bindable name (`control_control` = `CTRL`, `control_insert` = `Ins`, `control_equals` = `=`, `control_minus` = `-`, `control_slash` = `/`, `control_stop` = `.`, `control_asterisk` = `*`, `control_at` = `@`, `control_backslash` = `\`, `control_tilde` = `~`, `control_openbrace` = `{`, `control_closebrace` = `}`, `control_plus_pad` = `NUM_+`, `control_minus_pad` = `NUM_-`, `control_del_pad` = `NUM_DEL`, `control_slash_pad` = `NUM_/`) the re-serialised string cannot be parsed back, so **rebinding a control to one of these keys silently fails** (in-session via `replacePrimaryBinding` and on the next start via the user file) [C] `W32InputDriver::getInputDescription` → `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp`; phrases `data/language/english.txt`; [I] assumes the `UnicodeString` → `std::string` assignment yields ASCII (06-U3). Moot in FULL because the window is unreachable (§11.10). Mouse nouns: `control_mouse_left_button`, `control_mouse_right_button`, `control_mouse_mid_button`, `control_mouse_wheel` (verb `control_verb_scroll`), `control_mouse`, `control_mouse_unknown` — none exist in English data → raw ids.
+
+#### 11.6.6 XInput — driver 5 (present only if `xinput1_3.dll` loads)
+
+[C] `code/lib/input/inputdriver_xinput.{h,cpp}`. Grammar: `XInput <control> <cond> [with sensitivity <1..200>]` (driver word case-sensitive). Controls:
+
+| # | Name | Type | Evaluated as |
+|---|---|---|---|
+| 0 | `lefttrigger` | 1D | trigger value |
+| 1 | `righttrigger` | 1D | trigger value |
+| 2 | `leftbumper` | BOOL | LB |
+| 3 | `rightbumper` | BOOL | RB |
+| 4 | `leftthumbstick` | 2D\|BOOL | left stick (analogue conditions) / L3 click (BOOL conditions) |
+| 5 | `rightthumbstick` | 2D\|BOOL | right stick / R3 click |
+| 6–9 | `dpadleft`, `dpadright`, `dpadup`, `dpaddown` | BOOL | d-pad |
+| 10–13 | `a`, `b`, `x`, `y` | BOOL | face buttons |
+| 14 | `start` | BOOL | |
+| 15 | `back` | BOOL | |
+| 16 | `plug` | BOOL | controller connected (`down` = plugged this frame, `up` = unplugged this frame, `pressed` = connected) — evaluated even when disconnected |
+| 17–20 | `leftthumbstickleft/right/up/down` | BOOL | left stick as 4 virtual buttons |
+| 21–24 | `rightthumbstickleft/right/up/down` | BOOL | right stick as 4 virtual buttons |
+| 25 | `lefttriggerb` | BOOL | `bLeftTrigger != 0` (ignores the condition; leaves `details.type` unset) |
+| 26 | `righttriggerb` | BOOL | `bRightTrigger != 0` (same) |
+
+`with sensitivity N` is accepted only on controls 0, 1, 4, 5 (sets `handler_id = N`, default 100 → multiplier N/100) — also after BOOL conditions on those controls; directional stick buttons get sensitivity 100 and accept no extra tokens. `repeat` is accepted only for BOOL-typed controls (`lefttrigger repeat` therefore falls into the unknown-condition fallback = `down`).
+
+Per-frame acquisition, for each of 4 controllers (`MaxControllers = 4`; all polled; queried only if their bit is set in `m_controllerMask`, default `0x0F`): copy state → old; `XInputGetState(id)`; if connected: **dead zones** — if both stick axes are inside ±`XINPUT_GAMEPAD_LEFT/RIGHT_THUMB_DEADZONE` (square test) zero both; triggers below `XINPUT_GAMEPAD_TRIGGER_THRESHOLD` → 0 (SDK constants; [I] 7849 / 8689 / 30, 06-U1); then the **response curve** `v' = floor((raw·S/32768)³)` with S = 3.4 (left) / 2.7 (right), **Y negated** (up = negative, applied as `−floor(…)`), giving left x ∈ [−40, +39], left y ∈ [−39, +40], right x ∈ [−20, +19], right y ∈ [−19, +20] at sensitivity 100 (the floor makes the ranges asymmetric; drafts quoted ±39/±19); triggers `floor(raw·6.3)` stored back into a `BYTE` (values > 40 overflow — 06-U2; only zero/non-zero is robust) [C] `Controller::correctDeadZones`, `Controller::scaleInputs`, `Controller::Advance`.
+
+Evaluation rules [C] `Controller::getInput`, `getButtonInput`, `getThumbInput`, `getTriggerInput`, `getThumbDirection`:
+- Disconnected pad: false (except `plug`). If `dwPacketNumber` is unchanged since last frame, edge conditions (`down`, `up`, `release`, `move`) are false.
+- Buttons: `down` = now ∧ ¬before; `up`; `pressed`; `repeat` = now ∧ (¬before ∨ now ≥ nextRepeat[control]); on fire nextRepeat = now + **0.3 s** (`REPEAT_FREQ`). The repeat table `s_nextrepeat[27]` is **static, shared by all four controllers and mutated during queries** (two bindings on the same control share it).
+- Stick analogue: `position` (2D, x/y = round(v·sens), true if v ≠ 0); `move` (2D delta·sens, true if |dx| or |dy| > 3.4); `zero`; `release` (now zero, before non-zero); `read` (always).
+- Trigger analogue: `position` (1D x = round(v·sens), v ≠ 0), `zero`, `release`, `move` (1D delta), `down` (non-zero now, zero before), `read`, `pressed` (x = v > 0).
+- Stick-as-buttons: value = −y (up), y (down), x (right), −x (left), scaled by sensitivity; pressed ⇔ value > 3.4 (the left-stick constant is used for both sticks); `down/pressed/up/repeat` as buttons; the repeat timer is keyed by the **stick** id (shared by its four directions).
+- `getInput` over the masked controllers returns the first controller that satisfies the spec and stores its index in `details.controller` — **any of the four pads drives the single local player**. `isIdle` = every masked connected pad reads all-zero. `getInputMode` = GAMEPAD.
+- `setControllerMask(mask)` has no live caller (only an `extern` in `code/UI/GameMenuWindow.cpp`) [C] → all four pads are always active.
+- Description: noun `control_gamepad_<name>`, verb `control_verb_squeeze` for trigger position/move/read; no such phrases in English data.
+
+#### 11.6.7 Prefs (`pref [not|!] <key>` / `pref !<key>`)
+
+[C] `code/lib/input/inputdriver_prefs.cpp`: true iff `g_prefsManager->GetInt(key, 0) > 0` (or its negation). The key must exist at parse time. **Index bug**: `keyPosition` returns `m_keys.size()` (1-based) after appending a new key but `getInput` indexes 0-based and range-checks `< size`, so the first spec referencing each new key reads the wrong slot (never true for the last-added key). Double negation (`not !x`, `!!x`) rejected. Unused in shipped data.
+
+#### 11.6.8 Value (`value Pecan|Hummingbird`)
+
+[C] `code/lib/input/inputdriver_value.cpp`, `code/lib/input/inputdriver_values.inc`: constants `Pecan` = true; `Hummingbird` = pref `Hummingbird` > 0. The parser never sets `spec.type` (left uninitialised by the caller) → bind acceptance is undefined. Unused in shipped data.
+
+#### 11.6.9 Alias (`alias <ControlName>`)
+
+[C] `code/lib/input/inputdriver_alias.cpp`: BOOL spec whose evaluation is `controlEvent(otherControl, details)` (recursion; a self-referential alias would recurse without bound — no guard). Shipped use: `EclipseLMouseDown = alias ShowMouseCursor && XInput a down` and `EclipseLMousePressed = alias ShowMouseCursor && XInput a pressed` — holding LB turns the pad's A button into a UI left click.
+
+#### 11.6.10 Pipe (`[spec, spec, …] -> filter`) [B:LEGACY — compiled, never registered]
+
+[C] `code/lib/input/inputdriver_pipe.cpp`: intended to feed several sub-specs into an `InputFilter`. Never added to the manager; `g_inputFilterManager` is never instantiated (NULL dereference if it were). Its arrow search starts at `tokens[tokens.length()]`, which throws "Index out of bounds." Not part of the shipped grammar.
+
+### 11.7 Filters [B:LEGACY]
+
+[C] `code/lib/input/inputfilter*.{h,cpp}`, `code/lib/input/inputfilterspec.h`: `InputFilter` (abstract `filter`, `parseFilterSpecification`, `Advance`) → `InputFilterWithDelta` (registers per-spec current/old `InputDetails`, `getDelta` with appear/disappear semantics, `Advance` that swaps x and y by mistake) → `DirectionInputFilter` (`direction (up|down|left|right) (down|pressed)`; `filter()` returns false; `calcDetails` empty). `InputFilterManager` (list of filters, parse, apply) has its `Advance` body commented out. `InputFilterSpec {filter, id, type, min_inputs, max_inputs, mode, condition}`. The whole subsystem is a stub; `inputfilterspec.cpp` (`newFilterSpecID`) is not in the vcproj [B:DEAD].
+
+### 11.8 Helper abstractions
+
+[C]
+- `Movement2D`/`Movement3D` (integer velocity + sign helpers), `DPadMovement` (6 BOOL controls → `v = (pos − neg) × sensitivity` on X/Y/Z), `AnalogMovement2D` (2D control × sensitivity, zero if not 2D), `PriorityMovement2D` (first source unless zero) `code/lib/input/movement2d.{h,cpp}`. Live use: the camera debug mode's static `DPadMovement(CameraForwards, CameraBackwards, CameraLeft, CameraRight, CameraUp, CameraDown, 1)` `code/camera.cpp:Camera::AdvanceDebugMode`.
+- `InputTransform` / `ControlEventFunctor` / `ToggleInputTransform` (latch `state = (state ∧ ¬off) ∨ (¬state ∧ on)`, re-evaluated on every query) `code/lib/input/transform.{h,cpp}`. Only `ControlEventFunctor` is used outside the library (base of `KeyboardShortcut`, §4.2); `ToggleInputTransform`, `AnalogMovement2D`, `PriorityMovement2D` have no users.
+- `TargetCursor` (`g_target`) is the single source of "mouse position" for game code: per frame `TargetMove` (mouse delta) or — if no Eclipse window and the task manager is hidden — `TargetMoveSecondary` (right stick) 2D delta is added to the virtual cursor; `TargetMoveZ` (1D, disabled while windows or chat are open) accumulates wheel Z; `dX/dY/dZ` = this frame's deltas; moving it in free movement records `CondCameraAim` `code/lib/targetcursor.cpp:TargetCursor::Advance` ([24](24_rendering.md) for drawing).
+- `InputPrefs` (static paths/locale), §11.10.
+
+### 11.9 Event handling
+
+[C] `code/lib/input/eventhandler.{h,cpp}`, `win32_eventhandler.{h,cpp}`, `win32_eventproc.h`. `EventHandler` (abstract `WindowHasFocus`) ← `W32EventHandler` (also a `W32EventProcessor`). `W32EventHandler::WndProc` (called by the window manager for every message):
+1. Focus: `g_windowHasFocus = (GetForegroundWindow() == game window)`; when focus is lost (or was lost on the previous message) and ALT is held, force an ALT up (avoids a stuck ALT after Alt-Tab).
+2. Returns −1 (let Windows handle) for `WM_CREATE`, `WM_DESTROY`, `WM_SIZING`, `WM_WINDOWPOSCHANGING`, `WM_WINDOWPOSCHANGED`, `WM_COMMAND`, `WM_NCHITTEST`; `WM_SETCURSOR` hides the OS cursor over the client area and then (missing `break`) falls through to `WM_MOVE` handling (`WindowMoved()`, return −1); `WM_CANCELMODE` → 0; `WM_CLOSE` → `m_requestQuit = true`; `WM_INPUTLANGCHANGE` is only logged (bindings and locale are **not** reloaded on a layout change).
+3. Otherwise offers the message to the registered processors in order (only `W32InputDriver`) until one returns ≠ −1.
+
+`BindAltTab`/`UnbindAltTab` register hot-key id 0 = Alt+Tab; the only caller is commented out → Alt-Tab is never captured [C] `code/main.cpp`. `RemoveEventProcessor` uses `std::remove` without `erase` (no-op) [C]. The camera advances only while `g_eventHandler->WindowHasFocus()` [C] `code/main.cpp:LocationGameLoop`.
+
+### 11.10 Binding files, layering and locales
+
+[C] `code/lib/input/file_paths.cpp`, `code/main.cpp:ReadInputPreferences`
+
+| Layer | Path | Selection | Mode |
+|---|---|---|---|
+| System | `input/input_preferences.txt` | `InputPrefs::GetSystemPrefsPath`: pref `MultiwiniaControlMethod` 0 → `input/input_preferences_darwinia.txt`, else the main file (`input_preferences_mac.txt` replaces the main file under `TARGET_OS_MACOSX`). **In FULL the pref is always 1** because `PrefsManager::Load` ends with `SetInt("MultiwiniaControlMethod", 1)` ("Hack by Chris to disable old-style control") [C] `code/lib/preferences.cpp:PrefsManager::Load` | append |
+| Keyboard layout | `input/keyboards/<layout>.txt` | `<layout>` = pref `KeyboardLayout`, default = `locales.txt` lookup of `GetKeyboardLayout(0) & 0xFFFF` (LANGID); path cached on first call; missing file silently skipped | replace (primary) |
+| User | `<profile dir>/user_input_preferences.txt` | written by the key-binding window (`PrefsManager` key = control name, value = binding string) — **the window is unreachable in FULL**: its `KeybindingsOptionsButton` is commented out in `OptionsMenuWindow::Create` and no other menu creates it [C] `code/interface/mainmenus.cpp:OptionsMenuWindow::Create`; the file is still read if present (hand-edited) | replace (primary) |
+
+`data/input/locales.txt` [C]: 1031 → `de_DE`, 1033 → `en_US`, 1036 → `fr_FR`, 2057 → `en_UK`, 4105 → `en_CA`. Only `de_DE.txt` and `fr_FR.txt` exist; each re-states the primary camera keys (de: `CameraZoom = key y pressed`, QWERTZ swap; fr: AZERTY — `CameraLeft = key q`, `CameraUp = key a`, `CameraForwards = key z`, `CameraZoom = key w`, all `pressed`); the secondary arrow-key bindings remain. `InputPrefs::IsKeyboardFrenchLocale()` (layout == `fr_FR`) also swaps the tutorial camera-help image to `mwhelp/control_camera_french.bmp` [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::RenderGracePeriodHelp`.
+
+Replace semantics: each replace line removes element 0 of the control's list and inserts the new spec at 0, so several replace lines for the same control in one file overwrite each other (last wins) and never add bindings. "Restore defaults" (in the unreachable window) re-reads only the system file after `Clear()` — the locale layer is **not** re-applied [C] `code/interface/prefs_keybindings_window.cpp:RestoreDefaultsButton::MouseUp`. Controls the window would offer: CameraLeft, CameraRight, CameraForwards, CameraBackwards, CameraUp, CameraDown, CameraZoom, UnitDeselect, SkipMessage, GesturesChatLog, IconsChatLog, IconsTaskManagerDisplay (also rewrites IconsTaskManagerHide to the `up` form), IconsTaskManagerEndTask [C] same file ([09](09_meta_systems.md)).
+
+Control-scheme preferences [C]: `MultiwiniaControlMethod` (default 1, forced 1), `ControlMethod` (default 1; added as `ControlMethod = 1` by the `PrefsManager` constructor if missing; 0 = gestures-era chat/Tab controls), `ControlMouseButtons` (default 3, Mac 1), `ControlRemap` (absent → −1), `AutomaticCamera` (default 0), `ControlHelpEnabled` (default 1), `KeyboardLayout` — `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`, `data/default_preferences.txt`; and `HelpEnabled` (absent from both files; code default 1 in `code/multiwiniahelp.cpp:MultiwiniaHelp::Render`, gates the §10.4 hints). `ControlMouseButtons` is read into a local in `code/main.cpp:SendTeamControlsToNetwork` and never used.
+
+### 11.11 Binding-file grammar (formal)
+
+[C] `code/lib/input/input.cpp:InputManager::parseInputPrefs`, `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader` (full format reference in [29](29_data_formats_reference.md)).
+
+```
+file         := { line EOL }
+line         := [ binding | icon ] [ '#' comment ]          ; '#' to end of line removed by TextReader
+binding      := CONTROL sep '=' sep spec                     ; CONTROL: ControlType name, case-insensitive
+icon         := CONTROL sep '~' sep PATH                     ; sets the control's icon (last wins)
+sep          := one or more of  ' ' '\t' ':' ','              ; TextReader separators for the first two tokens
+spec         := conj                                          ; rest of line, re-tokenised on whitespace only
+conj         := chordOrUnary { '&&' chordOrUnary }           ; at most one complex (non-BOOL) operand
+chordOrUnary := chord | unary
+chord        := partial '++' partial { '++' partial }        ; partial = leaf spec without its condition word
+unary        := ('not' | '!') unary | leaf                    ; operand must be BOOL
+leaf         := 'key' KEYNAME BCOND
+              | 'mouse' ('left'|'right'|'middle'|'any') BCOND
+              | 'mouse' ('axes'|'wheel') ('move'|'read')
+              | 'XInput' XBUTTON (BCOND | 'repeat')
+              | 'XInput' XANALOG (ACOND | BCOND) [ 'with' 'sensitivity' INT1_200 ]
+              | 'idle' ('atleast'|'reaches') POSINT | 'idle' 'no' 'longer'
+              | 'pref' ['not'|'!'] ['!']PREFKEY
+              | 'value' ('Pecan'|'Hummingbird')
+              | 'alias' CONTROL
+BCOND        := 'down' | 'up' | 'pressed'
+ACOND        := 'position' | 'move' | 'release' | 'zero' | 'read'
+XBUTTON      := leftbumper | rightbumper | dpadleft | dpadright | dpadup | dpaddown | a | b | x | y
+              | start | back | plug | leftthumbstickleft | leftthumbstickright | leftthumbstickup
+              | leftthumbstickdown | rightthumbstickleft | rightthumbstickright | rightthumbstickup
+              | rightthumbstickdown | lefttriggerb | righttriggerb
+XANALOG      := lefttrigger | righttrigger | leftthumbstick | rightthumbstick
+KEYNAME      := any name of the key-name table (section 11.6.5) without a space, VK index 0..223
+```
+
+Unknown condition words are accepted as `down` (bug, §11.3). Lines whose second token is neither `=` nor `~` (e.g. `TaskManagerSwitchTask INPUT_TYPE_BOOL`), unknown control names (e.g. `UnitPrimaryFireDirected ~ …`) and unparsable specs (e.g. `SpaceNav …`) are skipped with a stdout message; parse failures never abort loading [C].
+
+### 11.12 Graph diagrams
+
+```mermaid
+flowchart LR
+  subgraph OS["Win32 / XInput"]
+    MSG["Window messages<br/>WM_KEY*, WM_*BUTTON*, WM_MOUSEMOVE,<br/>WM_MOUSEWHEEL, WM_CHAR, WM_HOTKEY"]
+    XGS["XInputGetState 0..3"]
+  end
+  MSG --> EH["W32EventHandler::WndProc<br/>focus, ALT fix, quit"] --> W32["W32InputDriver<br/>key/mouse state + deltas"]
+  MSG -. WM_CHAR .-> ECL["Eclipse text input"]
+  XGS --> XI["XInputDriver<br/>4 x Controller<br/>deadzone + cubic curve"]
+  IDLE["IdleInputDriver<br/>idle seconds"]
+  PREF["PrefsInputDriver"]
+  VAL["ValueInputDriver"]
+  subgraph IM["InputManager g_inputManager"]
+    CB["ControlBindings<br/>ControlType to InputSpec list, icon, suppress"]
+    CE["controlEvent ControlX, details<br/>first satisfied spec wins"]
+  end
+  CONJ["ConjoinInputDriver &&"]
+  CHORD["ChordInputDriver ++"]
+  INV["InvertInputDriver not / !"]
+  ALIAS["AliasInputDriver alias"]
+  PIPE["PipeInputDriver, not registered"]
+  GAME["Game and UI code<br/>UserInput, LocationInput, TeamControls,<br/>TaskManagerInterface, Camera, Eclipse"]
+  TC["TargetCursor g_target<br/>virtual cursor X/Y/Z"]
+  GAME -->|query| CE
+  CE --> CB
+  CB -->|spec.driver| W32 & XI & IDLE & PREF & VAL & CONJ & CHORD & INV & ALIAS
+  CONJ -->|"checkInput sub-spec"| CE
+  CHORD -->|"checkInput conjunctions"| CE
+  INV -->|checkInput| CE
+  ALIAS -->|"controlEvent other"| CE
+  TC -->|"TargetMove, TargetMoveSecondary, TargetMoveZ"| CE
+  GAME --> TC
+  PIPE -. dead .-> CE
+```
+
+```mermaid
+sequenceDiagram
+  participant Loop as Main loop per render frame
+  participant UI as UserInput Advance
+  participant IM as InputManager
+  participant D as Drivers in order
+  participant TC as TargetCursor
+  participant G as Game code
+  Loop->>IM: PollForEvents, n times, pumps the Win32 queue
+  Loop->>UI: Advance
+  UI->>IM: Advance
+  IM->>IM: clear suppress flags
+  loop each driver
+    IM->>D: Advance, snapshot current and old, deltas
+    IM->>D: isIdle, getInputMode
+  end
+  IM->>TC: Advance, queries TargetMove
+  G->>IM: controlEvent ControlX, details
+  IM->>D: getInput spec for each bound spec until true
+  D-->>IM: bool and details, composites recurse into IM
+  IM-->>G: bool and details
+```
+
+### 11.13 Class diagram
+
+```mermaid
+classDiagram
+  class InputManager{
+    -drivers : vector~InputDriver*~
+    -bindings : ControlBindings
+    -m_idle : bool
+    -m_inputMode : InputMode
+    +controlEvent(type, details) bool
+    +suppressEvent(type)
+    +Advance()
+    +PollForEvents()
+    +parseInputPrefs(reader, replace)
+    +checkInput(spec, details) bool
+    +getFirstActiveInput(spec, instant) bool
+    +replacePrimaryBinding(type, str)
+  }
+  class ControlBindings{
+    -bindings[NumControlTypes]
+    -icons[NumControlTypes]
+    -suppressed[NumControlTypes]
+    +bind(type, spec, replace) bool
+    +suppress(type)
+    +isActive(type) bool
+    +getControlID(name) int
+  }
+  class InputDriver{
+    <<abstract>>
+    +parseInputSpecification(tokens, spec) InputParserState
+    +getInput(spec, details) bool
+    +Advance()
+    +isIdle() bool
+    +getInputMode() InputMode
+    +getInputDescription(spec, desc) bool
+  }
+  class SimpleInputDriver{
+    <<abstract>>
+    #acceptDriver(name) bool
+    #getControlID(name) int
+    #getControlType(id) int
+    #writeExtraSpecInfo(spec) InputParserState
+    #parseExtraToken(token, spec) InputParserState
+  }
+  InputDriver <|-- SimpleInputDriver
+  SimpleInputDriver <|-- W32InputDriver
+  SimpleInputDriver <|-- XInputDriver
+  SimpleInputDriver <|-- IdleInputDriver
+  InputDriver <|-- ConjoinInputDriver
+  InputDriver <|-- ChordInputDriver
+  InputDriver <|-- InvertInputDriver
+  InputDriver <|-- AliasInputDriver
+  InputDriver <|-- PrefsInputDriver
+  InputDriver <|-- ValueInputDriver
+  InputDriver <|-- PipeInputDriver
+  W32EventProcessor <|-- W32InputDriver
+  EventHandler <|-- W32EventHandler
+  W32EventProcessor <|-- W32EventHandler
+  InputManager o-- InputDriver
+  InputManager *-- ControlBindings
+  class InputFilter{
+    <<abstract>>
+  }
+  InputFilter <|-- InputFilterWithDelta
+  InputFilterWithDelta <|-- DirectionInputFilter
+  InputFilterManager o-- InputFilter
+  PipeInputDriver ..> InputFilterManager
+  class Movement2D{
+    <<abstract>>
+  }
+  Movement2D <|-- Movement3D
+  Movement3D <|-- DPadMovement
+  Movement2D <|-- AnalogMovement2D
+  Movement2D <|-- PriorityMovement2D
+  InputTransform <|-- ControlEventFunctor
+  InputTransform <|-- ToggleInputTransform
+  ControlEventFunctor <|-- KeyboardShortcut
+```
+
+### 11.14 Input constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `NumControlTypes` | 165 (164 controls + `ControlNull`) | enum | `code/lib/input/control_types.h` |
+| `KEY_MAX` | 256 | `#define` | `code/lib/input/keydefs.h` |
+| `KEY_ANY` | 255 (never set) | `#define` | same |
+| `KEY_TILDE` (last bindable index) | 223 | `#define` | same; `W32InputDriver::getKeyId` |
+| `NUM_MB` / `NUM_AXES` | 3 / 3 | `#define` | `code/lib/input/inputdriver_win32.h` |
+| Wheel notch | `HIWORD(wParam)/120` (integer) | literal | `W32InputDriver::WndProc` |
+| `SCALE_JOYSTICK_L` | 3.4 (curve gain; also the press threshold for stick buttons and the `move` threshold) | class constant | `code/lib/input/inputdriver_xinput.cpp` |
+| `SCALE_JOYSTICK_R` | 2.7 | class constant | same |
+| `SCALE_TRIGGER` | 6.3 | class constant | same |
+| `REPEAT_FREQ` | 0.3 s | class constant | same |
+| `XINPUT_GAMEPAD_THUMB_MAX` | 32768 | `#define` | same |
+| `XINPUT_GAMEPAD_TRIGGER_MAX` | 255 (unused) | `#define` | same |
+| `MaxControllers` | 4 | class constant | `code/lib/input/inputdriver_xinput.h` |
+| Controller mask default | `0x0F` | literal | `XInputDriver::XInputDriver` |
+| Default sensitivity / range | 100 % / 1–200 | literal | `XInputDriver::writeExtraSpecInfo`, `parseExtraToken` |
+| Thumb / trigger dead zones | `XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE`, `…_RIGHT_THUMB_DEADZONE`, `XINPUT_GAMEPAD_TRIGGER_THRESHOLD` ([I] SDK values 7849, 8689, 30) | SDK | `Controller::correctDeadZones` |
+| Stick output range at sens 100 | left x [−40, 39], y [−39, 40]; right x [−20, 19], y [−19, 20]; Y inverted | derived | `Controller::scaleInputs` |
+| XInput DLL | `XINPUT1_3` (`LoadLibrary`) | literal | `code/main.cpp:InitialiseInputManager` |
+| `IAMALIVE_PERIOD` | 0.1 s (TeamControls send period) | `#define` | `code/globals.h` |
+| Input data dir / files | `input/`, `input_preferences.txt`, `input_preferences_darwinia.txt`, `input_preferences_mac.txt`, `user_input_preferences.txt`, `locales.txt`, `keyboards/<layout>.txt` | literal | `code/lib/input/file_paths.cpp` |
+| Preference keys | `MultiwiniaControlMethod` (default 1, forced 1), `KeyboardLayout` (default from locale), `ControlMethod` (default 1), `ControlMouseButtons` (default 3), `AutomaticCamera` (default 0), `ControlHelpEnabled` (default 1), `ControlRemap` (absent), `Hummingbird` (value driver) | preference | `file_paths.cpp`, `code/lib/preferences.cpp`, `code/interface/prefs_other_window.h`, `inputdriver_values.inc` |
+| Selection circle growth / max | +100 u/s (real time) / 100 u | literal | `code/location_input.cpp:LocationInput::AdvanceTeamControl` |
+| Darwinian order throttle | 1.0 s network time | literal | same |
+| Select-sound throttle | 0.5 s wall clock | literal | `LocationInput::SelectObjectUnderMouse` |
+| Promote search radius | 10 u | literal | `Task::FindDarwinian` |
+| WallBuster direct-route threshold | ≥ 25 % of selected Darwinians | literal | `LocationInput::AdvanceTeamControl` |
+| Armour boarding radius (group order) | 30 u | literal | `Location::IssueDarwinianOrders` |
+| Officer formation toggle radius | 50 u (teleport exclusion √5 u) | literal | `Officer::IsFormationToggle` |
+| Armour deploy minimum distance / arrival | > 50 u / < 15 u | literal | `Armour::SetOrders`, `Armour::Advance` |
+

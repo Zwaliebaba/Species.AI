@@ -437,7 +437,7 @@ node       := ('Move' | 'Cut') MOUNTNAME DURATION                   ; case-insen
 | `m_mountName` | WORD (`strdup`) | must name a mount defined **earlier** (in this file or the mission file parsed before) unless it is `CamPosBefore` | else release-assert "Bad camera animation mount name" — fatal |
 | `m_duration` | F32, seconds | 0.0 ≤ d < 60.0 | else release-assert "Bad camera animation transition time" — fatal |
 
-Shipped files: 96 blocks, all empty (no animation in any file) [C] survey; consumed only by `Script` `CamAnim` (§10) [B:LEGACY].
+Shipped files: 96 blocks, all empty (no animation in any file) [C] survey; consumed only by `Script` `CamAnim` (§9) [B:LEGACY].
 
 ### 2.12 `InstantUnits` block [C] `LevelFile::ParseInstantUnits`, `WriteInstantUnits`, `code/level_file.h:InstantUnit`
 
@@ -669,7 +669,7 @@ All keywords are case-insensitive. `:` and `,` are separators, which is why cond
 | `Event` conditions | §2.14 condition grammar; `LOCATIONNAME` resolved against the locations loaded so far (`GetLocationId`, −1 → debug assert) | conjunction: the event fires when all conditions are true |
 | `Action` lines | – | actions execute **one per evaluation** in order (`GlobalEvent::Execute` pops the first action); a first token other than `Action` is debug-asserted but still parsed as an action line; an unknown action word leaves `m_type` uninitialised (debug assert only) — undefined behaviour on execute |
 | `SetMission LOC FILE` | – | set the location's mission file |
-| `RunScript NAME` | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/NAME` (§10); a name without `.txt` is a phrase-sequence id handled only under `USE_SEPULVEDA_HELP_TUTORIAL` → **no-op in FULL** (e.g. `RunScript gardenfinished` in `game.txt`) |
+| `RunScript NAME` | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/NAME` (§9); a name without `.txt` is a phrase-sequence id handled only under `USE_SEPULVEDA_HELP_TUTORIAL` → **no-op in FULL** (e.g. `RunScript gardenfinished` in `game.txt`) |
 | `MakeAvailable LOC` | – | location becomes available |
 | `Tutorial` lines | 2nd token ignored, 3rd INT | chapter for the Darwinia demo tutorial; `-1` deletes it — whole section compiled only under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] |
 | `LevelTimes INDEX VALUE` | INT INT | `m_spLevelTimes[INDEX] = VALUE` — no bounds check |
@@ -898,10 +898,11 @@ leafnc      := a leaf without its trailing condition word (the chord driver appe
 BCOND       := 'down' | 'up' | 'pressed'
 ACOND       := 'release' | 'position' | 'move' | 'zero' | 'read'
 MBUTTON     := 'left' | 'right' | 'middle' | 'any'
-XBUTTON     := 'leftbumper' | 'rightbumper' | 'leftthumbstick' | 'rightthumbstick' (as buttons when used with BCOND only if
-               typed BOOL — see note) | 'dpadleft' | 'dpadright' | 'dpadup' | 'dpaddown' | 'a' | 'b' | 'x' | 'y'
-             | 'start' | 'back' | 'plug' | 'lefttriggerb' | 'righttriggerb'
-XANALOG     := 'lefttrigger' | 'righttrigger' (1D) | 'leftthumbstick' | 'rightthumbstick' (2D)
+XBUTTON     := 'leftbumper' | 'rightbumper' | 'dpadleft' | 'dpadright' | 'dpadup' | 'dpaddown' | 'a' | 'b' | 'x' | 'y'
+             | 'start' | 'back' | 'plug' | 'lefttriggerb' | 'righttriggerb'           (type BOOL)
+             | 'leftthumbstick' | 'rightthumbstick'                                  (type 2D|BOOL: click with BCOND)
+XANALOG     := 'lefttrigger' | 'righttrigger'                                        (type 1D)
+             | 'leftthumbstick' | 'rightthumbstick'                                  (type 2D|BOOL: axes with ACOND)
 XDIR        := 'leftthumbstickleft' | 'leftthumbstickright' | 'leftthumbstickup' | 'leftthumbstickdown'
              | 'rightthumbstickleft' | 'rightthumbstickright' | 'rightthumbstickup' | 'rightthumbstickdown'
 KEYNAME     := case-insensitive entry of getKeyNames()[0…KEY_TILDE=223] or 'any' (KEY_ANY=255): BACKSPACE TAB ENTER
@@ -959,4 +960,133 @@ locales_file := { blank | LANGID LAYOUTNAME }        ; LANGID = atoi(first token
 Shipped: `1031 de_DE`, `1033 en_US`, `1036 fr_FR`, `2057 en_UK`, `4105 en_CA` (first line blank). `LAYOUTNAME` keeps trailing blanks (they would become part of the file name `keyboards/<name>.txt`); later duplicates of an id are ignored (`std::map::insert`). Only consulted on Windows (`GetKeyboardLayout(0) & 0xFFFF`) when pref `KeyboardLayout` is absent [C] `InputPrefs::GetKeyboardLayout`.
 
 Docs-vs-code (input): `docs/input_preferences_syntax.txt` omits icon lines (`~`), the `value` and `alias` drivers, the `repeat` condition, `key any`/`mouse any`, the XInput direction controls and `lefttriggerb`/`righttriggerb`; it states that a missing preference makes `pref X` false, but the code **rejects the binding at parse time** when the key does not exist (`PrefsInputDriver::parseInputSpecification` returns `STATE_WANT_CONTROL`) [C].
+
+<a id="fmt-language"></a>
+## [→ 29_data_formats_reference] 8. Language files `data/language/<language>.txt` [B:FULL]
+
+### 8.1 Files, encoding, selection [C] `code/lib/language_table.cpp:LangTable::ParseLanguageFile`, `code/app.cpp:App::InitLanguage`, `App::TrySetLanguage`, `App::SetLanguage`
+
+| File | Encoding (survey) | Lines | Phrases | Notes |
+|---|---|---|---|---|
+| `english.txt` | single-byte (2 Latin-1 bytes) | 3120 | 2423 | reference set |
+| `french.txt` | UTF-16BE + BOM | 3219 | 2514 | 7 English ids missing, 98 extra |
+| `german.txt` | UTF-16BE + BOM | 3186 | 2487 | 8 missing, 72 extra; one literal `\N` |
+| `italian.txt` | UTF-16BE + BOM | 3035 | 2361 | 62 missing |
+| `spanish.txt` | UTF-16BE + BOM | 3219 | 2514 | 7 missing, 98 extra |
+| `russian.txt` | UTF-16LE + BOM | 2770 | 2141 | 282 missing |
+| `japanese.txt` | UTF-16LE + BOM, no final newline | 281 | 220 | partial (2205 ids missing) |
+| `korean.txt` | UTF-16BE + BOM, no final newline | 218 | 160 | partial (2265 missing) |
+| `portuguese.txt` | UTF-16BE + BOM, mixed CRLF/LF, no final newline | 218 | 160 | partial (2264 missing) |
+
+[C] `X1a_language_survey.py`. The language files are packed into `language.dat` (not `main.dat`; `language` is excluded from `main.dat`) by `tools/build_language_dat.bat` [C] `tools/multiwinia_exclusions.txt`; P14 §31.11.
+
+Selection: `InitLanguage` tries, in order, pref `TextLanguage` (default `"unknown"`; not on Mac), the OS language (`GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE)`, e.g. `German`), `english`, then the first file listed in `language/`; the first name for which `language/<lower(name)>.txt` exists is used and stored back into `TextLanguage` (failure of all four is fatal) [C] `App::InitLanguage`, `code/lib/system_info.cpp`. `SetLanguage(name)` then parses `language/<name>.txt` and, if present, a **mod overlay** `strings_<name>.txt` or else `strings_default.txt` from the `data/` root into the same table (later definitions override) [C] `App::SetLanguage`. `setlocale(LC_CTYPE, name)` is called; `chinese-trad`, `chinese-simp`, `korean`, `japanese` switch every font to the `square` title font with horizontal scale 1.0 (others 0.6) [C].
+
+### 8.2 Line grammar
+
+```
+lang_file   := { blank | phrase_line }
+phrase_line := KEY [ SEP TEXT ]
+KEY         := first token, narrow separator set " \t\n\r:,"; looked up case-INSENSITIVELY
+SEP         := 1*( ' ' | TAB | ':' | ',' | FF(UTF-16 only) )
+TEXT        := rest of line (GetRestOfUnicodeLine), after §1 cleaning — a '#' anywhere ends the text
+```
+
+Rules [C] `ParseLanguageFile`:
+
+1. Duplicate KEY (case-insensitive): **last definition wins** (old phrase deleted). Shipped duplicates: `buildingname_grenadeturret`, `multiwinia_help_title_crates` (all full files), plus `multiwinia_help_breakformation`, `multiwinia_help_clearinfo` in Italian.
+2. Escape: the two characters `\n` become **space + newline** (`" \n"`). No other escape exists; any other backslash sequence (e.g. `\N` in German) stays literal; there is no way to write `#`, a leading space/`:`/`,`, or a literal `[` … `]` pair (§8.3).
+3. Post-processing: if the last character is a newline it is removed; if the character before last is CR or FF it is replaced by NUL. An empty TEXT (key alone on the line) reads index −1 (UB; occurs once in French, German and Russian).
+4. Encoding: UTF-16 files are decoded unit-by-unit (no surrogate pairs); single-byte files are Latin-1 (§1.6). Narrow mirrors (used by legacy `char*` callers) turn code units > 255 into `?`.
+5. Unterminated last line: dropped for UTF-16 and archive files (§1.2) — `multiwinia_exclamation` is lost from `japanese.txt` and `korean.txt`, `multiwinia_option_5_5_1` from `portuguese.txt` [C] survey.
+
+### 8.3 Inline markup (expanded once per input mode when the tables are built) [C] `LangTable::RebuildTable`, `buildCaption`, `consumeMarker`, `consumeIfMarker`, `consumeKeyMarker`, `consumeOtherMarker`, `markerLength`
+
+```
+text      := { char | marker }
+marker    := '[IFMODE KEYBOARD]' | '[ELSE]' | '[ENDIF]'        ; nestable conditional; mode word compared case-insensitively
+           | '[KEY' CONTROLNAME ']'                           ; e.g. [KEYCAMERAFORWARDS]
+           | '[' PHRASEKEY ']' | '[ ' PHRASEKEY ']'            ; inline another phrase (leading space variant emits a space)
+```
+
+* `[IFMODE KEYBOARD]` … `[ELSE]` … `[ENDIF]`: text between is written only in keyboard mode / only in gamepad mode. Only the word `KEYBOARD` is understood; `[IFMODE GAMEPAD]` increments the nesting depth but falls through to the phrase-reference rule (consumed, writes nothing). No shipped phrase uses IFMODE [C] survey.
+* `[KEY<name>]`: `<name>` (1…63 chars) is looked up with `InputManager::getControlID` (case-insensitive) and replaced by the bound input's description noun (`getBoundInputDescription`). An unknown control or unbound control falls through to the phrase-reference rule and is removed. English uses 87 such markers [C].
+* `[<key>]`: `<key>` (1…63 chars, lower-cased) is replaced by the mode-specific raw phrase (`<key>_kbd`/`<key>_xin` preferred, else `<key>`), recursively expanded; an unknown key is removed. **Any `[…]` pair is therefore markup**: `multiwinia_notpermitted  [Not permitted]` (English) expands to an empty string [C] by code path; [I] visible effect.
+* Output is capped at `SEPULVEDA_MAX_PHRASE_LENGTH` = 1024 code units; marker contents ≥ 64 code units are removed unexpanded.
+* Hazard: an unterminated `[` makes `markerLength` return 0 and `consumeOtherMarker` move the read position back by one, so `buildCaption` **never terminates** [C]. No shipped phrase has one [C] survey.
+* Hazard: `consumeMarker`/`consume*Marker` copy the partially built caption through freshly allocated, uninitialised buffers (`UnicodeString::Resize` copies only `min(old,new)` units of an empty source); correct output depends on heap block reuse [I]. A re-implementation should simply append the expansion to the output buffer.
+
+### 8.4 Mode-specific keys and lookup [C] `RebuildTable`, `LookupPhrase`, `RawLookupPhrase`, `DoesPhraseExist`
+
+* Suffixes: `<key>_kbd` (keyboard/mouse) and `<key>_xin` (Xbox controller). Two hash tables are built, one per `InputMode` (`INPUT_MODE_KEYBOARD`, `INPUT_MODE_GAMEPAD`). For mode M the table key is the id without suffix; a suffixed variant for M wins over the plain id; an id existing only with the *other* suffix yields an empty string in M. Ids starting with `part_` are excluded from the tables (usable only inside markers). Shipped: 120 `_kbd` and 75 `_xin` ids in each full file, no `part_` ids [C] survey.
+* `LANGUAGEPHRASE(id)` → `LookupPhrase`: current-mode table; **a missing id returns the id string itself** (no fallback to English). `RawLookupPhrase` returns `ERROR (<id>)`. `ISLANGUAGEPHRASE(id)` tests the current-mode table [C]. With a partial language (Japanese, Korean, Portuguese) most UI text therefore shows raw ids [C] by code; [U] whether a retail edition shipped complete files for these languages (resolve: inspect the retail `language.dat`).
+* Phrase-id conventions derived by code (non-exhaustive list of generators): `multiwinia_gametype_<type>`, `multiwinia_param_<param>`, `buildingname_<Type>`, `entityname_<Type>`, `researchname_<Type>`, `cratename_<Name>`, `multiwinia_credits_<n>` (n = 1, 2, … until the first missing id), `bootloader_credits_<n>` [C] respective `GetNameTranslated`/`GetTypeNameTranslated`, `code/UI/GameMenuWindow.cpp:ReadCredits`.
+
+### 8.5 Runtime placeholders inside TEXT
+
+`*<letter>` is replaced at display time by `UnicodeString::ReplaceStringFlag(letter, value)` (every occurrence of `*` followed by that letter) [C] `contrib/systemiv/lib/unicode/unicode_string.cpp:UnicodeString::ReplaceStringFlag`. Letters substituted somewhere in `code/`: `F`, `G`, `H`, `P`, `R`, `S`, `T`, `U`, `X` (most common `*T` = team/player name or text, `*S` = seconds); English also contains `*K`, `*A` (leaderboard strings with no live substitution found) and the whole-phrase macro `*BETATESTERS` (§5) [C] grep. Phrases are never used as printf format strings (grep), so `%` is literal.
+
+### 8.6 Minimal example (written for this document)
+
+```
+# example.txt (UTF-16LE with BOM, or plain ASCII)
+menu_start                Start game
+menu_start_xin            Press START to begin
+help_zoom_kbd             Press [KEYCAMERAZOOM] to zoom.\nRelease to stop.
+example_teamwins          *T wins the match
+```
+
+<a id="fmt-script"></a>
+## [→ 29_data_formats_reference] [→ 30_scripting_tutorial_and_cutscenes] 9. Cutscene scripts `data/scripts/*.txt` [B:LEGACY]
+
+Lexical and syntactic grammar only; the meaning of each command is specified by P19 §1.3 [→ 30].
+
+### 9.1 Files and execution model [C] `code/script.cpp:Script::RunScript`, `Script::Advance`, `Script::AdvanceScript`, `Script::GetOpCode`
+
+* `RunScript(name)`: if `name` contains `.txt`, opens `data/scripts/<name>` through `Resource::GetTextReader`; otherwise it is a phrase-sequence id handled only under `USE_SEPULVEDA_HELP_TUTORIAL` (no-op in FULL). In a demo (`!IsFullVersion()`) names starting with `launchpad_purpose` are refused.
+* `Advance()` runs at most **one line per call** (once per rendered frame) and only when no wait condition is pending; a blank or comment line consumes a frame. End of file closes the script. `SkipCutscene` input ends waits and, after `PermitEscape`, aborts the script.
+* All 42 shipped scripts are Darwinia content; `scripts/*` is excluded from the retail `main.dat` [C] `tools/multiwinia_exclusions.txt`.
+
+### 9.2 Grammar
+
+```
+script     := { line }
+line       := [ command ] EOL                              ; after §1 cleaning ('#' comments)
+command    := OPCODE [ ARG1 [ ARG2 [ ARG3 [ ARG4 ] ] ] ] { ignored }
+OPCODE     := one of the 43 names of g_opCodeNames, case-insensitive; unknown → opcode −1 (debug assert), line ignored
+ARG1       := token, available both as text (nextWord) and as F32 (nextFloat = iv_atof(token), 0 if absent)
+ARGn (n>1) := token read on demand with GetNextToken() — MISSING ⇒ CRASH unless noted
+```
+
+Argument signatures (syntax only; R = required, O = optional, "w" = word, "f" = F32, "i" = INT):
+
+| Opcodes | Arguments |
+|---|---|
+| `CamCut`, `CamAnim`, `EnterLocation`, `Say`, `TriggerSound`, `StopSound`, `DemoGesture`, `GiveResearch` | ARG1 w (absent → NULL passed on; most handlers dereference it) |
+| `CamMove` | ARG1 w mount, ARG2 f duration (R) |
+| `CamFov` | ARG1 f fov, ARG2 i immediate (O, default true) |
+| `CamBuildingFocus` | ARG1 i building, ARG2 f range (R), ARG3 f height (R) |
+| `CamBuildingApproach` | ARG1 i building, ARG2 f range, ARG3 f height, ARG4 f duration (all R) |
+| `CamLocationFocus` | ARG1 w location, ARG2 f fov (R) |
+| `Wait` | ARG1 f seconds (absent → 0) |
+| `WaitRocket` | ARG1 i building, ARG2 w state (R), ARG3 i data (R) |
+| `Highlight` | ARG1 i building |
+| `SetMission` | ARG1 w location, ARG2 w mission file (R) |
+| `SetCutsceneMode` | ARG1 i (`atoi(nextWord)` — absent ⇒ CRASH; handler is Sepulveda-only) |
+| `DestroyBuilding` | ARG1 i building, ARG2 f intensity (R) |
+| `ActivateTrunkPort`, `ActivateTrunkPortFull` | ARG1 i building |
+| `CamGlobalWorldFocus`, `CamReset`, `ExitLocation`, `ShutUp`, `WaitSay`, `WaitCam`, `WaitFade`, `WaitPlayerNotBusy`, `ClearHighlights`, `GameOver`, `ResetResearch`, `RestoreResearch`, `RunCredits`, `GodDishActivate`, `GodDishDeactivate`, `GodDishSpawnSpam`, `GodDishSpawnResearch`, `TriggerSpam`, `PurityControl`, `ShowDarwinLogo`, `ShowDemoEndSequence`, `PermitEscape` | none (extra tokens ignored) |
+
+Shipped files: 42 (`attractmode.txt` … `yard_primary3.txt`), all single-byte ASCII, CRLF, terminated [C] survey. `SCRIPT_TEST_ENABLED` (`Script::TestScript`, a static checker of mount/animation names) is never defined [B:DEAD].
+
+Minimal example:
+
+```
+# intro.txt
+CamCut      start
+Wait        2.5
+CamMove     overview  4.0
+WaitCam
+TriggerSound cutscene1
+```
 

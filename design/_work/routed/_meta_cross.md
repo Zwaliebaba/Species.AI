@@ -313,7 +313,7 @@
 
 <!-- from X1b_asset_formats -->
 ## Cross-partition notes
-- **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.
+- **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `HashTable::GetIndex`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.
 - **P12 (24.5/25.x)**: shipped shape count is 139 `.shp` (P12 text says 140; `P12_shapes.csv` has 139 data rows). Add: two marker-only shapes (`battlecannonbase.shp`, `portal.shp`); `m_positionsInWS` overrun cases (`carryweights.shp`, `sporegenerator.shp`); `carrycube.shp` duplicate fragment name.
 - **P11 (23.11/23.13)**: waves ramp uses only bitmap row y = 1 as a 1-D table indexed by wave brightness; water texture repeats 30× across the sea plane and scrolls 1/30 tile/s; D3D compile error in `Water::Water` (`bmp.GetPixel` on a pointer).
 - **P16 (10.x/27.x)**: see 10.X1b above.
@@ -322,6 +322,15 @@
 - **P13**: shader file conventions (§29.B15) and the D3D-only status of `data/shaders`.
 - **P19**: `data/purity/buyme.txt` uses the cut-scene script grammar and the `PurityControl` opcode (deletes the profile's save files).
 - **Asset catalogue agents**: the BMP survey script `X1b_bmp_survey.py --detail <subdir>` prints per-file size/depth/pink/alpha usage; referenced-but-missing icons/mwhelp names listed in §29.B19.
+
+<!-- from X2a_asset_catalogue_visual -->
+## Cross-partition notes
+- **P12 / 24_rendering**: `ControlHelpSystem::Render` (P12 pass 25) returns immediately when `App::Multiplayer()` and `RenderHelp` requires `App::IsSinglePlayer()` — the pass is empty in every Multiwinia match [C] `code/control_help.cpp:ControlHelpSystem::Render`. The first-request-wins cache order for `textures/clouds.bmp` is the opposite of what P12 §25.3 assumed (the start-up `GameMenuWindow::PreloadTextures` loads it mip-mapped first) [C] `code/app.cpp:App::Initialise`.
+- **P17b/P18/P19 (UI)**: help pages and mode pictures confirmed; `TaskManagerInterfaceIcons` is constructed once at start-up (game mode None) and pre-loads textures, although never drawn in a match [C] `code/app.cpp:App::Initialise` → `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager`.
+- **P11 (terrain)**: terrain ramps are CPU-side lookup tables; unused ramps (`landscape_beach/field/icecaps_peaked/ridges/volcanic/volcanicplain`) and old-map-only ramps (`landscape_containment/marble2/mine2`, `waves_desert`) enumerated in §25.9.
+- **P14 / packaging docs (29/31)**: the archive composition table in §25.3 and the per-file Packed column are derived from `tools/build_multiwinia_data.bat` semantics; `patch.dat`/`branding.dat` have no build script in `tools/`.
+- **P08 (crates)**: crate outcome icons come from fixed literals in `code/worldobject/crate.cpp:Crate::Run*`; the `icon_<Crate::GetName>` pattern is used only by the debug-only crate help window.
+- **P15/P22 (determinism)**: `Statue::Initialise` mesh choice consumes `syncrand()` — mesh set must be identical on all peers.
 
 <!-- from X2b_asset_catalogue_audio -->
 ## Cross-partition notes

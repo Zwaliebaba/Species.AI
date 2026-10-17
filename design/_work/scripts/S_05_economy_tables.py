@@ -129,6 +129,7 @@ def main():
         sps = [b for b in L['buildings'] if b[0] == 'spawnpoint']
         tps = [b for b in L['buildings'] if b[0] == 'trunkport']
         locks = [b for b in L['buildings'] if b[0] == 'spawnpopulationlock']
+        links = [b for b in L['buildings'] if b[0] == 'spawnlink']
         n = L['numplayers']
         cap = L['popcap']
         per = (cap // n) if (cap != -1 and n > 0) else None
@@ -165,6 +166,7 @@ def main():
             options=' '.join(f"{k}={v}" if k in TAKES_ARG else k for k, v in opts.items()),
             effects=' '.join(L['effects']),
             spawnpoints=len(sps), sp_start=' '.join(f"t{k}:{v}" for k, v in sorted(sp_owned.items())),
+            spawnlinks=len(links),
             hops=f"{h[0]}–{h[1]}" if h else '',
             locks=len(locks),
             trunkports=len(tps), tp_owners=' '.join(f"t{k}:{v}" for k, v in sorted(tp_owned.items())),
@@ -176,10 +178,10 @@ def main():
         with open(csv_out, 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=keys); w.writeheader(); w.writerows(rows)
     # Table 1
-    print('| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |')
-    print('|' + '---|' * 16)
+    print('| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | SpawnLinks | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |')
+    print('|' + '---|' * 17)
     for r in rows:
-        print(f"| `{r['level']}` | {r['gametypes']} | {r['official']} | {r['numplayers']} | {r['popcap']} | {r['percap']} | {r['assault']} | {r['coop']} | {r['options']} | {r['spawnpoints']}{' (' + r['sp_start'] + ')' if r['sp_start'] else ''} | {r['hops']} | {r['locks']} | {r['trunkports']}{' (' + r['tp_owners'] + ')' if r['tp_owners'] else ''} | {r['darwinians']} | {r['seeded']} | {r['other_units']} |")
+        print(f"| `{r['level']}` | {r['gametypes']} | {r['official']} | {r['numplayers']} | {r['popcap']} | {r['percap']} | {r['assault']} | {r['coop']} | {r['options']} | {r['spawnpoints']}{' (' + r['sp_start'] + ')' if r['sp_start'] else ''} | {r['spawnlinks']} | {r['hops']} | {r['locks']} | {r['trunkports']}{' (' + r['tp_owners'] + ')' if r['tp_owners'] else ''} | {r['darwinians']} | {r['seeded']} | {r['other_units']} |")
     # Table 2: trunk-port configuration
     print()
     print('| Level | GameTypes | AdvanceTrunkPorts calls / tick | Darwinians per owned port per wave | Armour cap | Turrets | Side tasks per wave |')

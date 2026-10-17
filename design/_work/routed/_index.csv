@@ -453,39 +453,64 @@ P20_sequences_loaders_bench,Docs-vs-code discrepancies,meta:discrepancies,1669
 P20_sequences_loaders_bench,IP register,meta:ip,3803
 P20_sequences_loaders_bench,Appendix — dead/legacy code,meta:appendix,2286
 X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9684
-X1a_text_formats,"[→ 29_data_formats_reference] [→ 08_levels_and_level_design] 2. Level files (`map_*.txt`, `mp_*.txt`, `mission_*.txt`)",29,48883
-X1a_text_formats,[→ 29_data_formats_reference] 3. Campaign world files: `game.txt` family [B:LEGACY],29,8845
+X1a_text_formats,"[→ 29_data_formats_reference] [→ 08_levels_and_level_design] 2. Level files (`map_*.txt`, `mp_*.txt`, `mission_*.txt`)",29,48882
+X1a_text_formats,[→ 29_data_formats_reference] 3. Campaign world files: `game.txt` family [B:LEGACY],29,8844
 X1a_text_formats,[→ 29_data_formats_reference] 4. `data/multiwinia.txt` — game types and their parameters [B:FULL],29,4050
 X1a_text_formats,"[→ 29_data_formats_reference] 5. Credit name lists: `betatesters.txt`, `multiwinia_betatesters.txt`",29,1438
-X1a_text_formats,"[→ 29_data_formats_reference] 6. Preferences (`preferences.txt`, `data/default_preferences.txt`, `user_input_preferences.txt`) [B:FULL]",29,8281
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B1 Shared text-file conventions (`TextReader`),29,3727
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B2 ""redshirt2"" obfuscated text",29,1827
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B3 `.shp` — hierarchical flat-shaded mesh (""shape"")",29,16299
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B4 `.max` sources and the shape tool chain (`tools/ShapeExporter`, `tools/3DGeometry`)",29,3657
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B5 BMP bitmaps and textures (+ PNG output),29,8054
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B6 Terrain colour ramps (`data/terrain/landscape_*`, `water_*`, `waves_*`)",29,5085
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B7 `.anim` — animated help panel (2-D key-framed sprites),29,7290
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B8 `data/gestures.txt` — gesture-classifier training set,29,2560
+X1a_text_formats,"[→ 29_data_formats_reference] 6. Preferences (`preferences.txt`, `data/default_preferences.txt`, `user_input_preferences.txt`) [B:FULL]",29,8313
+X1a_text_formats,[→ 29_data_formats_reference] [→ 06_player_control_and_input] 7. Input binding files [B:FULL],29,11349
+X1a_text_formats,[→ 29_data_formats_reference] 8. Language files `data/language/<language>.txt` [B:FULL],29,8415
+X1a_text_formats,[→ 29_data_formats_reference] [→ 30_scripting_tutorial_and_cutscenes] 9. Cutscene scripts `data/scripts/*.txt` [B:LEGACY],29,3436
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B1 Shared text-file conventions (`TextReader`),29,3873
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B2 ""redshirt2"" obfuscated text",29,2098
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B3 `.shp` — hierarchical flat-shaded mesh (""shape"")",29,16320
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B4 `.max` sources and the shape tool chain (`tools/ShapeExporter`, `tools/3DGeometry`)",29,3784
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B5 BMP bitmaps and textures (+ PNG output),29,8173
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B6 Terrain colour ramps (`data/terrain/landscape_*`, `water_*`, `waves_*`)",29,5098
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B7 `.anim` — animated help panel (2-D key-framed sprites),29,7510
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B8 `data/gestures.txt` — gesture-classifier training set,29,2635
 X1b_asset_formats,[→ 29_data_formats_reference] 29.B9 `data/gesture_demos/*.txt` — recorded gesture strokes,29,1787
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B10 `data/effects.txt` — DSP filter blueprints (audio, not visual)",29,5116
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B11 `data/stats.txt` — per-entity-type base stats,29,3877
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B10 `data/effects.txt` — DSP filter blueprints (audio, not visual)",29,5161
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B11 `data/stats.txt` — per-entity-type base stats,29,3960
 X1b_asset_formats,[→ 29_data_formats_reference] 29.B12 `data/sounds.txt` — sound-event blueprints (full grammar),29,10659
 X1b_asset_formats,"[→ 29_data_formats_reference] 29.B13 Packaging lists (`tools/sounds.txt`, `tools/menu_sounds.txt`, exclusion/inclusion lists)",29,1882
-X1b_asset_formats,"[→ 29_data_formats_reference] 29.B14 Ogg Vorbis samples (`data/sounds/*.ogg`, `data/mwsounds/*.ogg`)",29,2448
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B15 HLSL shaders (`data/shaders/*`) — file-level conventions [B:D3D],29,2400
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B16 `.dat` archives (RAR),29,5708
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B14 Ogg Vorbis samples (`data/sounds/*.ogg`, `data/mwsounds/*.ogg`)",29,2644
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B15 HLSL shaders (`data/shaders/*`) — file-level conventions [B:D3D],29,2886
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B16 `.dat` archives (RAR),29,5852
 X1b_asset_formats,[→ 29_data_formats_reference] 29.B17 `.psp` — Paint Shop Pro image (`data/icons/banner_template.psp`),29,748
 X1b_asset_formats,[→ 29_data_formats_reference] 29.B18 `.grd` — Photoshop gradient (`data/Untitled Gradients.grd`),29,687
-X1b_asset_formats,[→ 29_data_formats_reference] 29.B19 Naming conventions and legacy content,29,5824
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B19 Naming conventions and legacy content,29,6151
 X1b_asset_formats,[→ 25_textures_and_assets] 25.X1b Asset-format rules the catalogue relies on (summary),25,998
 X1b_asset_formats,[→ 26_animation_and_vfx] 26.X1b `.anim` playback model (summary of §29.B7),26,730
 X1b_asset_formats,[→ 10_audio_design] 10.X1b Grammar cross-reference,10,571
-X1b_asset_formats,Cross-partition notes,meta:cross,1736
+X1b_asset_formats,Cross-partition notes,meta:cross,1779
 X1b_asset_formats,Contradictions / open questions,meta:contradictions,649
-X1b_asset_formats,[U] Unknowns,meta:unknowns,1124
-X1b_asset_formats,Docs-vs-code discrepancies,meta:discrepancies,1531
+X1b_asset_formats,[U] Unknowns,meta:unknowns,960
+X1b_asset_formats,Docs-vs-code discrepancies,meta:discrepancies,1696
 X1b_asset_formats,IP register,meta:ip,2194
 X1b_asset_formats,Appendix — dead/legacy code,meta:appendix,1210
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.0 Method and provenance,25,11482
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.1 Key findings,25,4530
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.2 Texture loading pipeline (verified against code; extends P12 §25.1–25.3),25,7269
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.3 Resource archives and their packing,25,3423
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.4 Per-directory summary (generated by `OUT/_work/scripts/X2a_catalogue.py`),25,2120
+X2a_asset_catalogue_visual,"[→ 25_textures_and_assets] 25.5 Per-file catalogue — bitmaps, animation scripts and shaders",25,164377
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.6 Per-file catalogue — shapes,25,45703
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.7 Shape hierarchies and markers (every .shp),25,28409
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.8 Names requested by code/data that have no file in `data/`,25,8393
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.9 Assets not used by a Multiwinia match in the baseline build (enumerated),25,25341
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.10 Run-time-generated textures and registered bitmaps,25,5143
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.11 Cross-check with `tools/FindUnusedResources.sh`,25,19279
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.12 Texture usage conventions (what an artist/engine must reproduce),25,4896
+X2a_asset_catalogue_visual,"[→ 25_textures_and_assets] 25.13 How mip-map, wrap and filter are chosen per load site",25,4074
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.14 Fonts and atlases,25,2073
+X2a_asset_catalogue_visual,[→ 25_textures_and_assets] 25.15 Shapes: conventions the catalogue relies on,25,2456
+X2a_asset_catalogue_visual,Cross-partition notes,meta:cross,1613
+X2a_asset_catalogue_visual,Contradictions / open questions,meta:contradictions,1440
+X2a_asset_catalogue_visual,[U] Unknowns,meta:unknowns,1207
+X2a_asset_catalogue_visual,Docs-vs-code discrepancies,meta:discrepancies,1097
+X2a_asset_catalogue_visual,IP register,meta:ip,4487
+X2a_asset_catalogue_visual,Appendix — dead/legacy code (visual assets),meta:appendix,1687
 X2b_asset_catalogue_audio,[→ 10_audio_design] 10.A Method and verification of P16,10,3204
 X2b_asset_catalogue_audio,"[→ 10_audio_design] 10.B How a sample name becomes a file (resolution, precedence, archives)",10,6945
 X2b_asset_catalogue_audio,[→ 10_audio_design] 10.C Complete event table — every object type × event bound in `data/sounds.txt`,10,80942
@@ -510,7 +535,10 @@ X3_determinism_sync,[→ 22_determinism_and_networking] 2. Random number sources
 X3_determinism_sync,[→ 22_determinism_and_networking] 3. Floating-point model,22,10451
 X3_determinism_sync,"[→ 22_determinism_and_networking] 4. Timestep, frame structure and update ordering",22,11419
 X3_determinism_sync,[→ 21_simulation_and_entity_model] 5. Simulated vs cosmetic state,21,12402
-X3_determinism_sync,"[→ 22_determinism_and_networking] 6. Sync checking, desync reaction and forensics",22,7491
+X3_determinism_sync,"[→ 22_determinism_and_networking] 6. Sync checking, desync reaction and forensics",22,7492
+X3_determinism_sync,[→ 22_determinism_and_networking] 7. Session-level preconditions and cross-match state,22,6360
+X3_determinism_sync,"[→ 22_determinism_and_networking] 8. Determinism risk register for the new game (Windows, C++23, DirectX 12, multiplayer)",22,7430
+X3_determinism_sync,[→ 21_simulation_and_entity_model] 9. Determinism rules a re-implementation must state in the entity model,21,744
 X4_level_catalogue,"[→ 08_levels_and_level_design] 1. Inventory, file kinds and how maps are found",08,7429
 X4_level_catalogue,"[→ 08_levels_and_level_design] 2. Master catalogue of the Multiwinia maps (`data/levels/mp_*.txt`, 57 files)",08,15465
 X4_level_catalogue,[→ 08_levels_and_level_design] 3. Availability per build target and runtime gate,08,5397
