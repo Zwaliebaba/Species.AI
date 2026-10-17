@@ -268,3 +268,6 @@
 
 ## Fix F4 (06, 08, 09) — done: 36 findings (31 accepted incl. 3 self-found, 1 rejected — R1 confirms 09 right); checks clean
 - R4 all 3 Med + 19 Low gaps fixed: click-pick metric, task-slot re-sort, control help dead in MW, NEXTWEAPON, compass texture (06-U12 closed), thumbnails (no default fallback), advertising gates; R7 tile merge per-sample max; R8 default_preferences tag; V1, V10. Self-found: Assault Armour + TankBattle Tank instant units use runAsTask; 08 neutral-start example wrong; _work CSV evidence replaced. S_08_tables.py, S_09_source_map.py re-run. Request: 26 L142 TankBattle "compiled out".
+
+## Fix F8 (25, 28, 29, 31, 32) — done: 41 findings (36 accepted incl. 2 self-found, 2 partly, 4 unchanged, 0 rejected); all 19 R8 gaps closed; checks clean
+- 25 regenerated (new §1.5 catalogue method replaces _work evidence; globalworld meshes FULL; MasterSpawnPoint 32 placements; CreditsLoader LEGACY; thumbnails/default.bmp LEGACY; 117 8-bit + 1 RLE8). 28 colour-request rule, loaded phrase counts, Grabber DEAD. 29 TankBattle compiled-in-not-permitted, ambx installers, commented-only icons, thumbnail fallback, _work refs removed. 31 47-file list inlined §7.4, Grabber DEAD, 31-U11 closed. 32 testbedconfig.txt ships (23 fields), H1/H18/slice formula. Requests for 09, 26, 41, 90, 23, 24 in F8.md.
