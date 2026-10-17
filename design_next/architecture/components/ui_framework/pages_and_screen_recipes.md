@@ -659,7 +659,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-466** (MUST) A HUD panel that a feature of DEC-050 adds, such as objective cards or on-screen control help for gamepad players, is built by this recipe; its content and its entry points are the design phase's.
 
-**UI-467** (MUST) The explainer panel shown while the players ready up is a HUD panel without zones of the hint overlay (`HintOverlay`, pass 17 of [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070). It plays the mode's explainer animation `anim.explainer` through the animation runtime ([animation_and_vfx.md](../animation_and_vfx.md), ADR-0035), and its creation, visibility and content are those of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220 to R-META-223 and [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020 (DEC-750).
+**UI-467** (MUST) The explainer panel shown while the players ready up is a HUD panel without zones of the hint overlay (`HintOverlay`, pass 17 of [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070). It plays the mode's explainer animation `anim.explainer` through the explainer player of the animation runtime ([explainers_sprites_and_procedural_animation.md](../animation_and_vfx/explainers_sprites_and_procedural_animation.md), ADR-0035), and its creation, visibility and content are those of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220 to R-META-223 and [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020 (DEC-750).
 
 ## 5 Concurrency and performance budget
 

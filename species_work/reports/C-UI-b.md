@@ -4,10 +4,10 @@
 
 | File | Size (bytes) | Content |
 |---|---|---|
-| `design_next/architecture/components/ui_framework/pages_and_screen_recipes.md` | 112 211 | component specification (template §6.4, plus a §9 tuning table as in the renderer files): page ids and page catalogue, page host and page stack, page state machine and per-frame order, applying a navigation request, widget registration, navigation on pages, rendering conventions, scrolling text, image widgets, colour and side picker, list and other front-end widgets, recipes A (tool window), B (options screen), C (front-end page) and D (HUD panel), page-level budget, failure modes, tests and the defect regression suite |
+| `design_next/architecture/components/ui_framework/pages_and_screen_recipes.md` | 112 654 | component specification (template §6.4, plus a §9 tuning table as in the renderer files): page ids and page catalogue, page host and page stack, page state machine and per-frame order, applying a navigation request, widget registration, navigation on pages, rendering conventions, scrolling text, image widgets, colour and side picker, list and other front-end widgets, recipes A (tool window), B (options screen), C (front-end page) and D (HUD panel), page-level budget, failure modes, tests and the defect regression suite |
 | `species_work/scripts/C-UI-b_check.py` | helper | self-check: ids, keys, sibling ids and keys, foreign keys, DEC/ADR/asset ids, `decs_to_cite`, `assets_for_you`, headings, truncation words, links, Mermaid captions, size |
 
-One file, under 120 KB (112.2 KB), so no split. Headroom is about 7 KB; a larger addition should split the defect suite (§7.2) into its own file.
+One file, under 120 KB (112.7 KB), so no split. Headroom is about 7 KB; a larger addition should split the defect suite (§7.2) into its own file.
 
 ## Counts
 
@@ -54,8 +54,7 @@ Asset ids cited: all 38 of `assets_for_you`, plus `sprite.worker.front`, `ui.bac
 5. **C-UI-a:**
    - Links to `../data_schemas.md` should be `../data_schemas/README.md` (C-DAT's target is a folder). The renderer README (C-RND-a) has the same link.
    - `core_and_widgets.md` UI-037: the front-end screen also draws while the chat input window is open (UI-337; the input's front-end render rule).
-   - README UI-014 cites UI-104 for "disabled widgets that never act"; UI-104 is the list of options screens; the page-button rule is UI-106.
-   - My defect tests DT-01 to DT-33 and several rules cite C-UI-a requirement ids as they stood at the end of my run; C-UI-a was still renumbering `layout_rendering_input_and_localisation.md` while I worked. If any id moves, the citations in `pages_and_screen_recipes.md` §4.4, §4.5, §4.6 and §7.2 need the new numbers (the check script lists every cited sibling id with its text).
+   - My rules and defect tests cite C-UI-a requirement ids. After C-UI-a finished (its report shifted its layout ids from UI-194 on by one), I re-checked every cited id against the final text of the three files and updated UI-381 (UI-210), UI-383 (UI-209), UI-390 (UI-195), UI-388 (UI-213), UI-384 (UI-215) and DT-28 (UI-219). If C-UI-a renumbers again in a fix round, `C-UI-b_check.py` lists every cited sibling id so the citations can be refreshed.
    - C-UI-a's own constants table (input §14) also lists the scrolling-text, level-row, browser-row-count and chat-log constants. I own the scrolling-text keys, `ui.pages.browser_visible_rows` and `ui.chat_log.line_step` (they come from my sections), and I cite reference/09 for the rest; C-UI-a should cite mine rather than define duplicates.
 6. **Decision register (coordinator).** Add `architecture/components/ui_framework/pages_and_screen_recipes.md` to the Affects of DEC-102 (the defect suite lives here, as C-UI-a's README UI-014 says) and of DEC-801 (duplicate widget ids are build errors, UI-372).
 7. **C-DAT (`data_schemas/`):** the page and options-screen layout record (UI-313, UI-370, UI-451: page id, debug name, fill boxes, initial focus, widget entries in registration order with kind, construction data, id, place, caption, tooltip, flags, binding, navigation entry and neighbours, back operation); the validations of UI-372; the preferences schema's apply-scope field (immediate, renderer reconfiguration, restart; UI-441).
@@ -63,7 +62,8 @@ Asset ids cited: all 38 of `assets_for_you`, plus `sprite.worker.front`, `ui.bac
 9. **C-DBG (`diagnostics_test_and_performance.md`):** the page fields of the diagnostics overlay (UI-482); tests T1–T37 and the defect suite DT-01 to DT-33 in the UI test harness, including the 30 and 144 frames-per-second repeat test (DT-13).
 10. **C-AEN (`audio_engine.md`):** the interface events that pages and HUD panels raise are those of UI-315 (R-AUD-300); none is played directly.
 11. **X-AST pass 2:** add `pages_and_screen_recipes.md` as a consumer of `sprite.worker.front`, `ui.backdrop_wheel`, `fx.beam_short`, `fx.sky_cloud`, `fx.glow_cloudy`, `help.mode_card`, `ui.difficulty_badge`, `cursor.unavailable`, `sfx.ui.power_slots.icon_hover`, `glyph.pad.face_west` and `glyph.pad.face_north`.
-12. **C-RND-a (`frame_graph_and_passes.md`):** nothing to change; RND-095's "duration of its page changes" is `ref.meta.nav.transition_time` (UI-391), and the page host calls `StartTransition` only when the state is `Waiting` (UI-360 step 7), so the development warning of a start in `Finished` never fires from the front end.
+12. **Coordinator, hint overlay.** C-UI-a's report says the hint overlay's line widths (pass 17) and the chat talk hint are in neither of our input ranges; my input does not hold them either, so reference/11 or the renderer should own them. The "38 page slots" figure is DEC-026's text; Species defines no slot count, only the 19 page ids of table 3.1-A.
+13. **C-RND-a (`frame_graph_and_passes.md`):** nothing to change; RND-095's "duration of its page changes" is `ref.meta.nav.transition_time` (UI-391), and the page host calls `StartTransition` only when the state is `Waiting` (UI-360 step 7), so the development warning of a start in `Finished` never fires from the front end.
 
 ## Page-id mapping to reference/09
 
@@ -71,7 +71,7 @@ Every one of the 15 specified pages of R-META-003 has a page id: `Title`, `Tutor
 
 ## Assumptions about C-UI-a's files
 
-C-UI-a's three files existed while I worked and I cite them by id. I rely on: the window navigation order, cursor, back action, skip-next-update and lock (UI-050, UI-051); the scroll hook (UI-052) and the clamped scroll setter (UI-075); the page Back button with a target (UI-111) and the base press (UI-106); the roll-over cue rule (UI-110); the options screen (UI-099 to UI-104); the page grid and conventions (UI-163, UI-164); the front-end frame composition (UI-176); batching, the scissor stack and no state leak (UI-179, UI-181, UI-183); the font roles caption, body and title and the palette tokens (UI-188 and the font-role rule); the actions `action.menu.up`, `.down`, `.left`, `.right`, `.activate`, `.front_end_activate`, `.close`, `.dismiss` and `.scroll_speedup` (the action table of the navigation section). These answer G09a's request for action ids.
+C-UI-a's three files and its report exist; I cite the files by id, never redefine their requirements or keys, and applied C-UI-a's two requests to me (the caption font role in UI-390, and the alternative-colour flag as a colour variant only). I rely on: the window navigation order, cursor, back action, skip-next-update and lock (UI-050, UI-051); the scroll hook (UI-052) and the clamped scroll setter (UI-075); the page Back button with a target (UI-111) and the base press (UI-106); the roll-over cue rule (UI-110); the options screen (UI-099 to UI-104); the page grid and conventions (UI-163, UI-164); the front-end frame composition (UI-176); batching, the scissor stack and no state leak (UI-179, UI-181, UI-183); the font roles caption, body and title and the palette tokens (UI-188 and the font-role rule); the actions `action.menu.up`, `.down`, `.left`, `.right`, `.activate`, `.front_end_activate`, `.close`, `.dismiss` and `.scroll_speedup` (the action table of the navigation section). These answer G09a's request for action ids.
 
 ## Names needed that are not in the ledger (proposals)
 

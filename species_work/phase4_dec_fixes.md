@@ -93,3 +93,6 @@
 | 89 | C-AEN | DEC-567 | an omitted DSP parameter takes its declared default, not 0.0; 21 of 63 parameters have ranges excluding 0.0 | confirm in DEC-567; C-DAT schema default |
 | 90 | C-VFX folder | — | 45 files still link to `animation_and_vfx.md`; the report maps each topic to its new file | global link update |
 | 91 | C-VFX | new | 10 DEC requests (explainer layout recomputed on resize, flicker evaluated every 0.1 s, per-frame effects as 60 Hz steps); camera shake applied as a view offset (C-CAM) | DEC triage; C-CAM alignment |
+| 92 | C-UI-a | ADR-0032 / new | keyboard defaults for the menu actions (arrows, Enter, Esc), required by ADR-0032 (keyboard-only operation); the reference binds them to the gamepad only | new Resolved DEC (accessibility requirement) |
+| 93 | C-UI-a | DEC-102 | the percent sign is an ordinary character in text fields (the reference rejects it) | confirm under DEC-102 |
+| 94 | C-UI-a | — | C-UI-b uses "compact" where it means the caption role; C-INP should adopt the nine `action.menu.*` ids; G09b to cite the large-menu, horizontal-scale and table hand-over keys; 7 minor DEC requests | C-UI-b and C-INP told; dedup and DEC triage |
