@@ -792,3 +792,208 @@ Cosmetic: `displayscreen.shp` with 3 ray markers projecting light rays onto a sl
 ### SpiritStore (helper, not a Building)
 A box-shaped container of `Spirit` objects: `Initialise(initial, max, pos, sx, sy, sz)` sets capacity (`max`, step `max/2`) and pre-fills `initial` team-0 spirits; `AddSpirit` copies a spirit to a synced-random position within ±0.75·size (syncsfrand(1.5·size)) and sets `StateInStore`, `m_numNearbyEggs = 0`; `RemoveSpirits(n)` removes the first *n*; `Advance` advances each; `Render` draws a translucent `triangleOutline.bmp` box plus the spirits. Only user: the Darwinia `Factory` building (member `m_spiritStore`, initialised with capacity 200 and box half-size 5×10×5 at marker `MarkerSpiritStore`; the factory consumes one stored spirit per produced unit via `RemoveSpirits(1)`) [C] `code/worldobject/factory.cpp:Factory::Factory/Advance`. `Factory` is blocked → **[B:LEGACY]**. [C] `spiritstore.cpp`.
 
+## [→ 05_economy_and_population] Spawn-point economy (territory → Darwinians)
+
+Sources: `code/worldobject/spawnpoint.cpp` (all functions), with supporting refs as cited. Build tag **[B:FULL]** unless marked. All times assume dt = 0.1 s (normal game speed).
+
+### 1. Overview
+
+In every Multiwinia mode that has spawn points (Domination, KOTH, CTS, 2-player Blitzkrieg maps, two Rocket Riot maps — see the SpawnPoint mode-usage row), **territory is the only steady source of new Darwinians from buildings**: each *owned and activated* SpawnPoint runs a burst/pause request cycle; each request becomes a virtual spirit that travels from the level's master spawn point along spawn links to that SpawnPoint and turns into one Darwinian for the SpawnPoint's *current* owner. The per-team population cap and the handicap modulate this. Other population sources (not in this partition): starting `InstantUnits` in the level file, trunk-port reinforcements (Assault/Rocket Riot/Blitzkrieg option `trunkportreinforcements`), crate rewards (e.g. *Darwinians*, *Spawn Mania*), Futurewinian/monster teams. [C] spawnpoint.cpp; [C] `data/levels/*` LevelOptions; [I] list of other sources from grep, owned by other agents.
+
+```mermaid
+sequenceDiagram
+    participant SP as SpawnPoint (owned, active)
+    participant M as MasterSpawnPoint
+    participant L as SpawnLink(s)
+    participant D as Darwinian
+    loop every 0.2 s during a burst (N requests), then pause 10–15 s
+        SP->>SP: PopulationLocked()? (skip whole cycle if yes)
+        SP->>M: RequestSpirit(SP.id)
+        M->>L: spirit on matching link (1 s per link)
+        L->>SP: TriggerSpirit (after h links = h seconds)
+        alt SP still owned
+            SP->>D: SpawnEntities(door, owner, Darwinian, 1, vel)
+        else SP neutral now
+            SP-->>SP: spirit discarded
+        end
+    end
+```
+
+### 2. Ownership acquisition (exact algorithm)
+
+`SpawnPoint::RecalculateOwnership()` runs when `m_evaluateTimer` ≤ 0; the timer starts at `syncfrand(2.0)` (ctor) and is reset to `2.0 + syncfrand(1.0)` (∈ [2, 3) s) after each run. Also run once at game start for team-owned points (§7). [C] `SpawnPoint::SpawnPoint/Advance`.
+
+```
+teamCount[t] = number of the 5 ports whose occupant is a Darwinian of team t   (§base 5)
+winner = 255; multiple = false
+for t in 0..NUM_TEAMS-1:
+    if teamCount[t] > 0 and winner == 255:              winner = t
+    elif winner != 255 and teamCount[t] > 2 and teamCount[t] > teamCount[winner]: winner = t
+    if winner != 255 and teamCount[t] > 0:               multiple = true   # also true for the winner itself
+    if winner != 255 and teamCount[winner] < 3:          winner = 255
+if multiple:
+    for t: if teamCount[t] > 0 and not IsFriend(t, winner): winner = 255; break
+if winner != current team: update s_numSpawnPoints (current+1 −−, winner+1 ++), play TurnOn/TurnOff
+if winner != current team: m_activationTimer = 30.0
+SetTeamId(winner)
+```
+[C] `SpawnPoint::RecalculateOwnership` (verbatim logic restated). Consequences:
+* **Capture needs ≥ 3 of the 5 ports** held by one team, and **no enemy Darwinian on any port** (an enemy on a single port neutralises the point at the next evaluation). [C].
+* Allies (`IsFriend`: same team, or same co-op group when `m_coopMode`) may share ports; the allied team with ≥ 3 (largest, later index wins only with > 2 and strictly more) becomes owner. Two allies with 2 + 2 → neutral. [C] `code/location.cpp:Location::IsFriend`.
+* Losing ports below 3 → neutral (not "keep until taken"). [C].
+* A direct owner swap A → B is possible if, at an evaluation instant, only B holds ≥ 3 ports. [C].
+* `IsFriend(t, 255)` is false, so `multiple` with no winner is harmless. [C].
+
+### 3. Activation delay
+
+When owned (`team ≠ 255`) and `m_activationTimer > 0`: `timer −= dt`, then forced to 0 if **any** of: the team now owns exactly one spawn point (`s_numSpawnPoints[team+1] == 1`, "first (or last) spawn point"), not Multiwinia, or level option `instantspawnpointcapture` (> 0); clamped ≥ 0. Spawning starts only when the timer is 0. Every ownership change (including to neutral) resets it to **30.0 s**. [C] `SpawnPoint::Advance`. Levels with `instantspawnpointcapture`: `mp_cts_2p_2`, `mp_cts_3P_2`, `mp_cts_3p_1`, `mp_cts_4P_2`. [C] data.
+
+### 4. Population caps (`SpawnPoint::PopulationLocked`)
+
+Evaluated every tick of an active, owned SpawnPoint before its spawn timer is decremented; when locked the timer is **frozen** (not decremented) and no request is made. Checks in order (first that applies decides) [C]:
+
+**4.1 Population count used.** `currentPop = team->m_others.NumUsed() − Virii::s_viriiPopulation[team]` — every non-unit entity the team owns (Darwinians and other "others" such as armour/engineers [I]) minus its Virii (Virii have their own limit). Spirits already in transit are **not** counted, so a team can overshoot by the spirits in flight (up to N per SpawnPoint, §5). [C] `PopulationLocked`; `code/team.cpp` (`m_others`); docs `multiwinia-changes.txt` ("Virii no longer count towards your population limit").
+
+**4.2 Tutorial 2** (`m_multiwiniaTutorial && type == MultiwiniaTutorial2 && !m_tutorial2AICanSpawn`): locked if this point has requested ≥ 100 spirits (`m_numSpawned`, only counted in this tutorial), or its team is not 0 (AI cannot spawn), or team 0 has > 200 entities. [C].
+
+**4.3 Assault with `DefenderPopulationCap` ≠ −1**: neutral → not locked; defending team (`Location::IsDefending`) locked iff `currentPop ≥ DefenderPopulationCap`; attacking team locked iff `currentPop ≥ (PopulationCap − numDefenders × DefenderPopulationCap) / numAttackers` (integer division), where `numDefenders = level NumPlayers − Location::GetNumAttackers()`. (No official Assault map has spawn points, so in practice this rule governs nothing in this partition [C] data; trunk ports apply the same formula [C] `code/worldobject/trunkport.cpp` ≈L370–390.)
+
+**4.4 Map cap `PopulationCap` ≠ −1** (MultiwiniaOptions block; the last `PopulationCap` line wins): neutral → not locked; else locked iff `currentPop ≥ PopulationCap / NumPlayers` (integer division by the **level's NumPlayers**, not by the number of teams actually playing). [C] `PopulationLocked`, `code/level_file.cpp:ParseMultiwiniaOptions`.
+
+**4.5 Fallback — SpawnPopulationLock buildings** (only reached if no map cap, or not Multiwinia): on first use the SpawnPoint caches the **first** lock in building-list order whose `m_searchRadius` contains it (`−2` = none found); locked iff `lock.m_teamCount[team] ≥ lock.m_maxPopulation`. Lock counts are regional recounts (see the SpawnPopulationLock spec). [C].
+
+**4.6 Otherwise** not locked — e.g. `mp_domination_4P_2` and `mp_koth_4P_3` (co-op 2v2, `PopulationCap -1`, no SpawnPopulationLock) have **no spawn-point population limit**. [C] data; [I] no other cap applies (the generic `Location::SpawnEntities` cap is commented out [C] `code/location.cpp` ≈L584).
+
+Per-level spawn economy (all 32 official MP levels with spawn points; per-team cap = PopulationCap / NumPlayers; hops = links from master to each SpawnPoint = spirit latency in seconds) [C] data via `scripts/P06_spawn_graph.py`:
+
+| Level | GameTypes | NumPlayers | PopulationCap | Per-team cap | SpawnPoints | SpawnLinks | Hops (s) | Instant capture |
+|---|---|---|---|---|---|---|---|---|
+| `mp_blitzkrieg_2P_3` | Blitzkrieg | 2 | 2000 | 1000 | 4 | 9 | 3–8 |  |
+| `mp_blitzkrieg_2P_4` | Blitzkrieg | 2 | 1800 | 900 | 3 | 7 | 3–4 |  |
+| `mp_blitzkrieg_2p_1` | Blitzkrieg | 2 | 1500 | 750 | 1 | 0 | 1–1 |  |
+| `mp_blitzkrieg_2p_2` | Blitzkrieg | 2 | 2000 | 1000 | 6 | 8 | 2–5 |  |
+| `mp_cts_2p_1` | CaptureTheStatue | 2 | 2000 | 1000 | 6 | 0 | 1–1 |  |
+| `mp_cts_2p_2` | CaptureTheStatue | 2 | 2000 | 1000 | 4 | 0 | 1–1 | yes |
+| `mp_cts_2p_3` | CaptureTheStatue | 2 | 2000 | 1000 | 4 | 6 | 3–6 |  |
+| `mp_cts_2p_4` | CaptureTheStatue | 2 | 2000 | 1000 | 4 | 0 | 1–1 |  |
+| `mp_cts_3P_2` | CaptureTheStatue | 3 | 1500 | 500 | 9 | 0 | 1–1 | yes |
+| `mp_cts_3p_1` | CaptureTheStatue | 3 | 1800 | 600 | 6 | 0 | 1–1 | yes |
+| `mp_cts_4P_1` | CaptureTheStatue | 4 | 2000 | 500 | 12 | 0 | 1–1 |  |
+| `mp_cts_4P_2` | CaptureTheStatue | 4 | 2000 | 500 | 8 | 0 | 1–1 | yes |
+| `mp_cts_4p_3` | CaptureTheStatue | 4 | 2000 (file has `-1` then `2000`; last wins) | 500 | 8 | 17 | 3–9 |  |
+| `mp_domination_2P_1` | Domination | 2 | 2000 | 1000 | 8 | 13 | 2–7 |  |
+| `mp_domination_2P_2` | Domination | 2 | 2000 | 1000 | 8 | 7 | 2–5 |  |
+| `mp_domination_3P_1` | Domination | 3 | 1800 | 600 | 10 | 14 | 4–9 |  |
+| `mp_domination_4P_1` | Domination | 4 | 2000 | 500 | 10 | 18 | 2–10 |  |
+| `mp_domination_4P_2` | Domination (co-op) | 4 | −1 | none | 12 | 20 | 3–5 |  |
+| `mp_koth_2P_1` | KingOfTheHill | 2 | 2000 | 1000 | 6 | 7 | 3–5 |  |
+| `mp_koth_2P_2` | Domination | 2 | 2000 | 1000 | 9 | 10 | 3–7 |  |
+| `mp_koth_2P_3` | Domination | 2 | 1500 | 750 | 10 | 11 | 4–8 |  |
+| `mp_koth_2P_3b` | KingOfTheHill | 2 | 1500 | 750 | 10 | 9 | 2–6 |  |
+| `mp_koth_3P_1` | KingOfTheHill | 3 | 1800 | 600 | 9 | 23 | 3–8 |  |
+| `mp_koth_3P_2` | KingOfTheHill | 3 | 1800 | 600 | 9 | 14 | 4–9 |  |
+| `mp_koth_3P_3` | KingOfTheHill | 3 | 1800 | 600 | 9 | 15 | 5–6 |  |
+| `mp_koth_4P_1` | KingOfTheHill | 4 | 2000 | 500 | 10 | 18 | 2–11 |  |
+| `mp_koth_4P_3` | KingOfTheHill (co-op) | 4 | −1 | none | 12 | 20 | 3–5 |  |
+| `mp_koth_4P_4` | KingOfTheHill | 4 | 2000 | 500 | 12 | 4 | 2–2 |  |
+| `mp_rocketriot_2P_2` | RocketRiot | 2 | 1500 | 750 | 2 | 0 | 1–1 |  |
+| `mp_rocketriot_4P_1` | RocketRiot | 4 | 1800 | 450 | 12 | 0 | 1–1 |  |
+| `mp_skirmish_2p_4` | Domination | 2 | 1800 | 900 | 10 | 11 | 3–8 |  |
+| `mp_skirmish_3P_1` | Domination | 3 | 1800 | 600 | 15 | 0 | 1–1 |  |
+
+All 32 graphs: one master, every SpawnPoint reachable, exactly one path each, no cycles, no self-links. [C] `drafts/P06_spawn_graph.csv`.
+
+### 5. Request cycle and spawn-rate formula (Multiwinia)
+
+State per SpawnPoint: `m_spawnTimer` (ctor: `2.0 + syncfrand(2.0)`), `m_spawnCounter` (0). **Neither is reset on capture or loss** — a new owner inherits a part-elapsed timer and part-used burst. [C] ctor/`Advance`.
+
+Each tick, if activated (`m_activationTimer ≤ 0`), owned, and not `PopulationLocked()`:
+```
+m_spawnTimer -= dt
+if m_spawnTimer <= 0 or Location.m_spawnManiaTimer > 0:
+    if master exists: master.RequestSpirit(this.id)            # (tutorial 2: m_numSpawned++)
+    m_spawnTimer = 0.2
+    m_spawnCounter += 1
+    if m_spawnCounter >= int(20 * CalculateHandicap(team)):
+        m_spawnCounter = 0
+        m_spawnTimer = 10 + syncfrand(5)                      # ∈ [10, 15) s
+```
+[C] `SpawnPoint::Advance`. (`fractionOccupied` is computed but unused in Multiwinia.)
+
+**Handicap H** = `SpawnPoint::CalculateHandicap(team)` [C]:
+1. level option `nohandicap` → 1.0; team 255 → 0.0; any **neutral** spawn point left on the map (`s_numSpawnPoints[0] > 0`) → 1.0;
+2. `h` = game option `Handicap` (Domination, KOTH, Assault: 0–90 step 10, **default 90**; CTS/Rocket Riot/Blitzkrieg have no such option → −1 → 1.0); `h ∈ {0, −1}` → 1.0 [C] `data/multiwinia.txt`, `Multiwinia::GetGameOption`;
+3. over used teams other than me: `others = Σ s_numSpawnPoints`, `n = count`; `n == 0` → 1.0;
+4. `average = others / n` — **integer division** (then converted to double);
+5. if `average > 1.5 × mine`: `factor = 1 − ((mine − 1) / total)` with integer division (total = all used teams' owned points incl. mine) — evaluates to **1** whenever mine ≥ 1 (always true when called from an owned SpawnPoint); return `1 + h/100 · factor`; else 1.0.
+
+So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer) average holding of the other teams exceeds 1.5 × yours; otherwise H = 1.** Burst size `N = int(20·H)`: h = 0…90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 (verified floating-point truncation). [C]+[I] arithmetic.
+
+**Timing per cycle** (in ticks of 0.1 s): emissions at ticks 0, 2, 4, …, 2(N−1) (0.2 s timer ⇒ exactly 2 ticks); then a pause of P = ⌈(10 + u)/0.1⌉ (+1 when float accumulation leaves a residue, e.g. 10.0 → 101 ticks), u ~ U[0,5). Cycle C = 2(N−1) + P ticks.
+
+| Quantity | Formula | N = 20 (H = 1) | N = 38 (H = 1.9) |
+|---|---|---|---|
+| Burst duration | (N−1)·0.2 s | 3.8 s | 7.4 s |
+| Pause | 10–15 s (mean ≈ 12.55 s) | | |
+| Cycle (mean) | (N−1)·0.2 + 12.55 s | ≈ 16.35 s | ≈ 19.95 s |
+| Darwinians per spawn point per second (mean) | N / cycle | **≈ 1.22 /s (≈ 73/min)** | **≈ 1.90 /s (≈ 114/min)** |
+| Range over u | | 1.45–1.06 /s | 2.28–1.69 /s |
+
+[I] derived from the [C] constants above.
+
+**Territory → throughput**: a team's spawn income ≈ `k × N / C` Darwinians/s for k owned, active, unlocked SpawnPoints — linear in territory, independent of how many ports are manned beyond the 3 needed to hold each point, delayed by the 30-s activation per newly captured point and by link latency (hops × 1 s), and clipped by the per-team cap. Example: 2-player KOTH `mp_koth_2P_1` (cap 2000/2 = 1000 per team; 40 starting Darwinians per team from `InstantUnits`): holding 3 points with H = 1 ≈ 3 × 1.22 ≈ 3.7 Darwinians/s ⇒ (1000 − 40)/3.7 ≈ 260 s ≈ 4.3 min to reach the cap with no losses. [I].
+
+**Spawn Mania** (crate reward, `INCLUDE_CRATES_ADVANCED`): sets `Location::m_spawnManiaTimer = 5.0`, decremented by dt in `Location::Advance` slice 8 (Multiwinia only). While > 0, every active unlocked SpawnPoint requests **every tick** (10/s, ignoring the timer; the counter/pause bookkeeping still runs) ⇒ ≈ 50 extra spirits per SpawnPoint. [C] `code/worldobject/crate.cpp:Crate::RunSpawnMania`, `code/location.cpp:Location::Advance`, `SpawnPoint::Advance`.
+
+**Darwinia formula** [B:LEGACY] (not Multiwinia): `spawnTimer = 2 + 5·(1 − fractionOccupied) − (team == 1 ? 1.0 : 0.5)·difficulty/10 + syncfrand(1)`. [C].
+
+### 6. Spirit transit and losses
+
+* Request → spirit on the master's matching link(s) at progress 0; +dt per tick; on arrival forwarded with the overshoot carried, so **latency = number of links on the path × 1.0 s**, independent of distance. [C] `SpawnBuilding::Advance/TriggerSpirit`.
+* At the target: spawn **only if the SpawnPoint is owned at arrival** (by whoever owns it then); otherwise the spirit is deleted. No population re-check at arrival. [C] `SpawnPoint::TriggerSpirit/SpawnDarwinian`.
+* Lost spirits: target unreachable from the master (no matching link), a link whose target id is not a spawn building, or the master absent (`GetMasterSpawnPoint()` NULL → nothing requested; the counter/timer still advance). [C].
+* Spawned Darwinian: `SpawnEntities(doorPos, owner, unit −1, TypeDarwinian, 1, vel, spread 0)` with `vel = (door.front + (syncsfrand(1), syncsfrand(1), syncsfrand(1))) × 10`, airborne. [C] `SpawnPoint::SpawnDarwinian`.
+
+### 7. Start-of-game seeding
+
+`Location::InitialiseTeam(team)` (Multiwinia): for every SpawnPoint and SolarPanel owned by the team at load, spawn one Darwinian **on each port** already in `StateOperatingPort` (5 per building), then `EvaluatePorts()` + `RecalculateOwnership()`; SpawnPoints also get `m_activationTimer = 0` (immediately productive). [C] `code/location.cpp:Location::InitialiseTeam`. `s_numSpawnPoints` is counted in `SpawnPoint::Initialise` from the (position-mapped) level team (index 0 = neutral) and zeroed in `Location::Init` for indices 0..5 only — **index 6 (team 5) is never reset between games**. [C] `SpawnPoint::Initialise`, `code/location.cpp:Location::Init` (loop `i < NUM_TEAMS`).
+
+### 8. Other population flows in this partition
+
+**Incubator** [B:FULL code / LEGACY content] — spirits in, Darwinians out [C] `incubator.cpp`:
+* Inputs: `m_numStartingSpirits` from the level (team = owner, or `syncfrand(NUM_TEAMS)` if neutral; positions centre ± SFRAND(20)); `AddSpirit(spirit)` from Engineers that collected spirits (copies team, `StateInStore`, beam effect from entrance `syncrand()%2`; sound `AddSpirit`) [C] `code/worldobject/engineer.cpp`.
+* Output: while owned and holding ≥ 1 spirit, `m_timer −= dt`; at ≤ 0 spawn one `m_troopType` (Darwinian) at MarkerExit and remove one spirit; next timer = **0.2 s in Multiwinia** (`INCUBATOR_PROCESSTIME_MULTIPLAYER`) or `max(0.5, 5.0 − spirits/10)` in Darwinia (`INCUBATOR_PROCESSTIME` 5.0). MP exit: pos + (0,20,0), vel = (exit.front + syncsfrand(0.2)·3 axes)×10. Darwinia: yellow (2) incubators spawn green (0) Darwinians. Spawn aborted if the team is invalid/unused. Uses unsynced `AppRandom`/`sfrand`/`frand` only for flash particles. No population-cap check. [C].
+* Stored spirits are advanced each tick (`Spirit::Advance`, other agent).
+
+**Spirit-receiver network** [B:LEGACY]: UnprocessedSpirits rain from the sky (150 + 5/s) → SpiritReceivers with manned ports attract and capture them within 200/10 units → ReceiverLinks relay at 1.25 s per link → SpiritProcessor counts throughput (online at > 50). No Darwinians produced. [C] `spiritreceiver.cpp`.
+
+**SpiritStore / Factory** [B:LEGACY]: factory consumes stored spirits to produce units. [C] `factory.cpp`.
+
+### 9. Transport of population (RadarDish / Teleport / JumpPad)
+
+| Mechanism | Entry | Capacity / throughput | Speed | Exit | Ref |
+|---|---|---|---|---|---|
+| RadarDish | entity within 15 of the entrance, facing into it, dish connected and `m_timeSync ≤ 0` | **1 entity per 0.1 s per dish (10/s)**, unlimited in transit; any team may use any connected dish (no team check at entry) | 50 u/s along the beam (time = range/50) | receiver's entrance, idle, orders cleared; units re-assembled via the teleport map | [C] `entity.cpp:EnterTeleports`, `radardish.cpp` |
+| Beam failure | dish loses its receiver or a PulseWave exists | — | — | every entity in transit −500 health | [C] |
+| JumpPad | Darwinian on ground within 40 | all eligible every 0.3 s | launch `force` along front pitched by `angle` | ballistic landing, idle | [C] `jumppad.cpp` |
+
+### 10. Economy-related constants (this partition)
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| SpawnPoint ports / capture threshold | 5 / ≥ 3 one team, no enemies | shape / literal | [C] |
+| Ownership evaluation period | first syncfrand(2.0) s, then 2.0 + syncfrand(1.0) s | literal | [C] |
+| Activation delay | 30.0 s | literal (`m_activationTimer`) | [C] |
+| Initial spawn timer | 2.0 + syncfrand(2.0) s | literal | [C] |
+| Burst interval | 0.2 s | literal | [C] |
+| Base burst size | 20 × H (int) | literal | [C] |
+| Pause | 10 + syncfrand(5) s | literal | [C] |
+| Handicap | 1 + Handicap/100 (option 0–90, default 90) under the condition of §5 | option | [C] |
+| Link traversal | 1.0 s per link | dt-driven | [C] |
+| Per-team cap | PopulationCap / NumPlayers | level data | [C] |
+| Tutorial-2 limits | 100 requests per point; team 0 > 200 | literal | [C] |
+| SpawnPopulationLock defaults | radius 500, max 100, recount 10 ± 1 s, overpopulation sampling 1.0 s, overpopulation halved | literal | [C] |
+| Spawn Mania | 5.0 s, request every tick | literal | [C] `crate.cpp` |
+| Incubator interval | 0.2 s MP / max(0.5, 5 − n/10) s SP | `#define` | [C] |
+| Darwinian exit speed | ×10 of (door front + jitter) | literal | [C] |
+

@@ -192,7 +192,7 @@ classDiagram
   class DisplayList{-IDirect3DVertexBuffer9* m_pVertexBuffer -Command** m_commands +Draw()}
   DisplayListDevice ..> DisplayList : Compile()
   DisplayList o-- Command
-  class FixedPipeline{+m_fogEnabled +m_fogStart +m_fogEnd +m_lighting +m_lightEnabled[2] +m_material*[] +State m_state +State m_oldState -Shader* m_fixedShader[3] -Shader* m_bound -m_enabled +Bind() +Unbind() +Disable() +Enable()}
+  class FixedPipeline{+m_fogEnabled +m_fogStart +m_fogEnd +m_lighting +m_lightEnabled[2] +m_materialDiffuse[4] +m_materialSpecular[4] +m_materialShininess +State m_state +State m_oldState -Shader* m_fixedShader[3] -Shader* m_bound -m_enabled +Bind() +Unbind() +Disable() +Enable()}
   FixedPipeline o-- Shader
 ```
 
@@ -413,7 +413,7 @@ sequenceDiagram
   participant Rec as DisplayListDevice
   participant DL as DisplayList
   Game->>Emu: glNewList(id, GL_COMPILE)  (via safeGlNewList: lock g_openGLMutex)
-  Emu->>Rec: new DisplayListDevice(id); MV/Proj stacks → MatrixStackDisplayList; g_pd3dDevice = Rec
+  Emu->>Rec: new DisplayListDevice(id), MV/Proj stacks → MatrixStackDisplayList, g_pd3dDevice = Rec
   Game->>Emu: glBegin/glVertex…/glEnd
   Emu->>Rec: DrawPrimitiveUP(type, count, verts)  [FixedPipeline::Bind skipped]
   Rec->>Rec: append verts, push CommandDrawPrimitive(type, start, count)
@@ -423,10 +423,10 @@ sequenceDiagram
   Emu->>Rec: SetRenderState → DLIST_DEV_NOT_IMPLEMENTED (debug assert, release no-op)
   Game->>Emu: glEndList()  (safeGlEndList: unlock)
   Emu->>DL: Compile(): VB (MANAGED, WRITEONLY) + NULL-terminated Command* array
-  Emu->>Emu: g_pd3dDevice = actual; restore stacks; s_displayLists[id] = DL
+  Emu->>Emu: g_pd3dDevice = actual, restore stacks, s_displayLists[id] = DL
   Game->>Emu: glCallList(id)
-  Emu->>DL: Draw(): SetStreamSource(0, VB, 0, 44); for each command Execute()
-  DL->>Emu: CommandDrawPrimitive: FixedPipeline::Bind(); DrawPrimitive(type, start, count)
+  Emu->>DL: Draw(): SetStreamSource(0, VB, 0, 44), for each command Execute()
+  DL->>Emu: CommandDrawPrimitive: FixedPipeline::Bind(), DrawPrimitive(type, start, count)
 ```
 
 What a list can contain and how it behaves:
@@ -458,7 +458,7 @@ GL VBO ids map to `IDirect3DVertexBuffer9*` in `std::map<unsigned, IDirect3DVert
    - fills level 0 with `D3DXLoadSurfaceFromMemory(src fmt D3DFMT_A8B8G8R8 (= R,G,B,A bytes), pitch w*4, D3DX_FILTER_NONE)` (on-the-fly DXT1 compression when `compressed`);
    - if `mipmapping`: wraps the texture in a `MipMapTask` (holds every level surface), **sets the GL slot to NULL** (texture invisible meanwhile), enqueues `MipMapTask::GenerateMipmaps` on `s_workQueue` (a `WorkQueue` thread whose first job pins it to CPUs 0,2,4,6: `SetThreadAffinityMask(0x01|0x04|0x10|0x40)`) and appends to `s_texturesToMipmap` under `s_texturesToMipmapMutex`;
    - finally calls `setupTexturing()` — the guard `if (s_currentAttribs.texturingEnabled)` tests an *array* (always true), so the active stage is always re-bound (D19).
-3. Worker: `GenerateMipmaps` box-filters level 0 into every level ≥ 1 with `D3DXLoadSurfaceFromSurface(…, D3DX_FILTER_TRIANGLE)`, then sets `m_complete = true` (plain `bool`, written outside the list mutex — benign race [I]).
+3. Worker: `GenerateMipmaps` resamples level 0 directly into every level ≥ 1 with `D3DXLoadSurfaceFromSurface(…, D3DX_FILTER_TRIANGLE)` (each level from level 0, not from the previous level), then sets `m_complete = true` (plain `bool`, written outside the list mutex — benign race [I]).
 4. Main thread: `GenerateMipmaps()` runs at the start of every `Direct3DSwapBuffers`; under the mutex it deletes completed tasks; `~MipMapTask` releases the surfaces and **restores the slot pointer**. `GeneratingMipmaps()` keeps `LoadingScreen` up while tasks are pending (P20).
 5. [I/U] With `D3DUSAGE_AUTOGENMIPMAP`, D3D9 exposes only level 0 (`GetLevelCount()` = 1), so the worker loop likely runs zero iterations and the runtime/driver generates mips itself; the asynchronous machinery then only delays visibility by ≥ 1 frame. Resolve by checking `GetLevelCount()` at runtime.
 
@@ -684,7 +684,7 @@ sequenceDiagram
   E->>D: Present(NULL,NULL,NULL,NULL)
   alt returns D3DERR_DEVICELOST
     E->>E: WaitAndResetDevice()
-    E->>E: ReleaseD3DPoolDefaultResources(): delete FixedPipeline, DeformEffect, WaterReflectionEffect; water & landscape default-pool; Release ALL GL-emulated textures
+    E->>E: ReleaseD3DPoolDefaultResources(): delete FixedPipeline, DeformEffect, WaterReflectionEffect, water & landscape default-pool, Release ALL GL-emulated textures
     loop every 100 ms
       E->>D: TestCooperativeLevel()
       alt D3DERR_DEVICENOTRESET
@@ -692,9 +692,9 @@ sequenceDiagram
       end
       E->>E: g_inputManager->PollForEvents() (keeps window responsive)
     end
-    E->>E: g_app->m_resource->FlushOpenGlState(); CreateD3dPoolDefaultResources(); RegenerateOpenGlState(); SetVertexDeclaration()
+    E->>E: g_app->m_resource->FlushOpenGlState(), CreateD3dPoolDefaultResources(), RegenerateOpenGlState(), SetVertexDeclaration()
   end
-  E->>D: SetVertexShaderConstantF(c0, identity,4); (c4, identity,4)
+  E->>D: SetVertexShaderConstantF(c0, identity,4), (c4, identity,4)
   E->>D: BeginScene()
 ```
 
@@ -1117,7 +1117,7 @@ Rows `Vector3 r, u, f` = the object's right, up and forward axes expressed in pa
 | Code comment `math_utils.h`: `Round` "may round up or down, depending on the current CPU rounding mode" | macro is `(int)(a)` = truncation (the rounding-mode-dependent asm is commented out) | `math_utils.h` |
 | `random_number.h` comment: `_syncsfrand` "-range < result < range" | returns `(syncfrand(1) − 0.5)·range` ∈ [−range/2, range/2) | `random_number.cpp:_syncsfrand` |
 | `Matrix33/34::DecomposeToYDR()` comment "x = dive, y = yaw, z = roll" | returns (yaw, dive, roll) | matrix files |
-| `ogl_extensions.cpp` comment: secondary GL context "for loading thread" | never made current; no loading-thread GL use | `WindowManagerWin32::EnableOpenGL` |
+| `window_manager_win32.cpp` comment: secondary GL context "for loading thread" | never made current; no loading-thread GL use | `code/lib/window_manager_win32.cpp:WindowManagerWin32::EnableOpenGL` |
 
 ## IP register
 

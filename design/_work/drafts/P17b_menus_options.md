@@ -159,13 +159,13 @@ Window members initialised in the constructor from prefs [C] `code/interface/pre
 | ScreenColourDepth | 32 | |
 | ScreenRefresh | 75 | |
 | ScreenZDepth | 24 | |
-| WaitVerticalRetrace | 1 | passed only to the 3rd/4th fallback `CreateWin` calls; the first two calls pass literal `true` for `_waitVRT`. `WindowManagerWin32::CreateWin` (OpenGL baseline) ignores `_waitVRT` and `_antiAlias` entirely → **no vsync control in the GL build** [C]. Under `USE_DIRECT3D`, `WindowManagerDirectX::CreateWin` stores `_waitVRT` and passes it to `Direct3DInit` [B:D3D] [C] `code/lib/window_manager_directx.cpp` |
+| WaitVerticalRetrace | 1 | passed only to the 3rd/4th fallback `CreateWin` calls; the first two calls pass literal `true` for `_waitVRT`. `WindowManagerWin32::CreateWin` (OpenGL baseline) ignores `_waitVRT` and `_antiAlias` entirely → **no vsync control in the GL build** [C]. Under `USE_DIRECT3D`, `WindowManagerDirectX::CreateWin` stores `_waitVRT` and passes it to `Direct3DInit` [B:D3D] [C] `code/lib/window_manager_directx.cpp:WindowManagerDirectX::CreateWin` |
 
 Fallback chain on `CreateWin` failure: (a) show `MessageDialog` "Failed to set requested screen resolution of …" at (100,100); retry with desktop default res, z=24, waitVRT=0; (b) retry 800×600 windowed, 16-bit colour, z16, 60 Hz; (c) same with z24; (d) `AppReleaseAssert("Failed to set screen mode")`. Afterwards all of W, H, windowed, colour, z, refresh, `WaitVerticalRetrace`, `ScreenOverscan`(=0) are written back and saved.
 
 ### 3.2 Graphics Options (`PrefsGraphicsWindow`) [B:FULL]
 
-[C] `code/interface/prefs_graphics_window.cpp`. Shown controls (in order): Water Detail, Sky Detail, Building Detail, Entity Detail, Apply, Back. All four drop-downs are `GameMenuDropDown` in **cycle mode** (click advances to next option, wrapping) with options `dialog_high`=1 "High", `dialog_medium`=2 "Medium", `dialog_low`=3 "Low". Two further controls exist only as commented-out code: Landscape Detail (options High 1 / Medium 2 / Low 3 / "I need to upgrade" 4) and Pixel Effect (checkbox).
+[C] `code/interface/prefs_graphics_window.cpp:PrefsGraphicsWindow::Create`. Shown controls (in order): Water Detail, Sky Detail, Building Detail, Entity Detail, Apply, Back. All four drop-downs are `GameMenuDropDown` in **cycle mode** (click advances to next option, wrapping) with options `dialog_high`=1 "High", `dialog_medium`=2 "Medium", `dialog_low`=3 "Low". Two further controls exist only as commented-out code: Landscape Detail (options High 1 / Medium 2 / Low 3 / "I need to upgrade" 4) and Pixel Effect (checkbox).
 
 | Control | Pref key (`#define`) | Window default | Range | Engine effect (followed to readers) |
 |---|---|---|---|---|
@@ -217,7 +217,7 @@ Table 3.2a — `RenderBuildingDetail` readers (all [C], values: 1 High, 2 Medium
 
 ### 3.4 Other Options (`PrefsOtherWindow`) [B:FULL]
 
-[C] `code/interface/prefs_other_window.cpp`. Shown controls in order: Help System, Port Forwarding, Server Port, Client Port, Language (not on Mac), Apply, Back.
+[C] `code/interface/prefs_other_window.cpp:PrefsOtherWindow::Create`. Shown controls in order: Help System, Port Forwarding, Server Port, Client Port, Language (not on Mac), Apply, Back.
 
 | Control (id → English) | Widget | Pref key (`#define` in `prefs_other_window.h`) | Window default | Range / choices | Engine effect |
 |---|---|---|---|---|---|
@@ -233,7 +233,7 @@ Hidden members that Apply also writes (no visible control in the Multiwinia buil
 
 | Member | Pref key | Constructor read (default) | What Apply writes | Engine effect |
 |---|---|---|---|---|
-| `m_controlHelpEnabled` | `ControlHelpEnabled` | 1 | same value | Gamepad button-prompt overlays: `ControlHelpSystem::Advance/Render` only run when input mode is gamepad **and** pref ≠ 0; `TaskManagerInterfaceIcons::Render*` draw 360-pad prompts under the same condition [C] `code/control_help.cpp`, `code/taskmanager_interface_icons.cpp` |
+| `m_controlHelpEnabled` | `ControlHelpEnabled` | 1 | same value | Gamepad button-prompt overlays: `ControlHelpSystem::Advance/Render` only run when input mode is gamepad **and** pref ≠ 0; `TaskManagerInterfaceIcons::Render*` draw 360-pad prompts under the same condition [C] `code/control_help.cpp:ControlHelpSystem::Advance`, `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::RenderTaskManager` |
 | `m_difficulty` | `Difficulty` | at top level (`m_locationId == -1`): `GetInt(…,1) − 1`, clamped ≥ 0; else `g_app->m_difficultyLevel` | only at top level: pref = `m_difficulty + 1` and `g_app->m_difficultyLevel = m_difficulty` | Darwinia campaign difficulty; `App::UpdateDifficultyFromPreferences` body is commented out [B:LEGACY] |
 | `m_bootLoader` | `BootLoader` | string, default `"random"`: `none`→0, `random`→1, anything else→2 | 0→`"none"`, 1→`"random"`, 2→`"firsttime"` | `RunBootloader` only `#ifdef USE_LOADERS` (off) → no effect [B:DEAD] |
 | `m_automaticCamera` | `AutomaticCamera` | 0 | same | `Camera::UpdateEntityTrackingMode`: value 1 = off, 2 = on, anything else = auto (on iff gamepad input mode); `SwitchEntityTracking(on)` (suppressed while free-look control held). `Task::TargetSquad`: if 0 and gamepad → 2; if 2, camera `RequestEntityTrackMode` on the newly spawned squad [C] `code/camera.cpp:Camera::UpdateEntityTrackingMode`, `code/taskmanager.cpp:Task::TargetSquad`. **This is the closest thing to "auto-zoom/auto-camera" in the game.** |
@@ -246,11 +246,11 @@ Edge cases: [C] If `TextLanguage` matches no file, `m_language = −1`; Apply in
 
 ### 3.5 Control Options (`PrefsKeybindingsWindow`) [B:LEGACY — unreachable]
 
-[C] `code/interface/prefs_keybindings_window.cpp`. A small centred `DarwiniaWindow` (380 × (125 + 25 × 13) before large-menu scaling). Controls:
+[C] `code/interface/prefs_keybindings_window.cpp:PrefsKeybindingsWindow::Create`. A small centred `DarwiniaWindow` (380 × (125 + 25 × 13) before large-menu scaling). Controls:
 
 | Control | Pref / store | Choices | Effect |
 |---|---|---|---|
-| `newcontrols_prefsoption` "Control Mode" (`ControlMethodDropDownMenu`) | `ControlMethod` (window reads `GetInt("ControlMethod")` with no default) | 0 `newcontrols_prefs_gestures` "Gesture based", 1 `newcontrols_prefs_icons` "Icon based" | Changing it rebuilds the window with the matching control list. Engine readers: `TaskManagerInterface::CreateTaskManager` — gesture interface only if not gamepad **and** `IsSinglePlayer()` **and** `ControlMethod == 0`; Multiwinia always gets `TaskManagerInterfaceMultiwinia`. `Camera::ChatLogVisible`: method 1 → `ControlIconsChatLog`, 0 → `ControlGesturesChatLog`. `TaskManagerInterface::AdvanceTab`: gestures-switch-unit only if 0 [C] `code/taskmanager_interface.cpp`, `code/camera.cpp:Camera::ChatLogVisible` |
+| `newcontrols_prefsoption` "Control Mode" (`ControlMethodDropDownMenu`) | `ControlMethod` (window reads `GetInt("ControlMethod")` with no default) | 0 `newcontrols_prefs_gestures` "Gesture based", 1 `newcontrols_prefs_icons` "Icon based" | Changing it rebuilds the window with the matching control list. Engine readers: `TaskManagerInterface::CreateTaskManager` — gesture interface only if not gamepad **and** `IsSinglePlayer()` **and** `ControlMethod == 0`; Multiwinia always gets `TaskManagerInterfaceMultiwinia`. `Camera::ChatLogVisible`: method 1 → `ControlIconsChatLog`, 0 → `ControlGesturesChatLog`. `TaskManagerInterface::AdvanceTab`: gestures-switch-unit only if 0 [C] `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager`, `code/camera.cpp:Camera::ChatLogVisible` |
 | One `ChangeKeybindingButton` per control (list below); click toggles "listening"; while listening the caption blinks at 3 Hz (`(int)(g_gameTime×3) & 1`) and the first active input (`getFirstActiveInput(spec, instant)`) becomes the new binding | `user_input_preferences.txt` | any input the InputManager can describe | Apply writes each control's string to the user input prefs file and `replacePrimaryBinding`; if `IconsTaskManagerDisplay` was bound to "…down", `IconsTaskManagerHide` is bound to the same input with "up" |
 | Mouse buttons (`#ifdef TARGET_OS_MACOSX`) | `ControlMouseButtons` | 1 / 3 | read by `SendTeamControlsToNetwork` (default 3) |
 | `dialog_restoredefaults` "Restore Defaults" | — | — | `g_inputManager->Clear()` + re-parse `InputPrefs::GetSystemPrefsPath()`; re-read ControlMouseButtons |
@@ -454,13 +454,13 @@ Back/Esc behaviour: every full-screen window registers a Back `MenuCloseButton` 
 | `CreateMenu()` | `Renderer::StartFadeIn(0.25)`; `RemoveAllWindows()`; `g_app->m_multiwinia->Reset()`; `EclRegisterWindow(new GameMenuWindow())`; camera `RequestMode(ModeSphereWorldFocus)`, `SetTarget((-900,3000,3970), front (0,0.5,−1))`, `CutToTarget()`, `SetDebugMode(0)`; `g_app->m_gameMode = GameModeNone`; if `g_app->m_multiwiniaTutorial` was set (returning from a tutorial) → `gmw->m_newPage = PageTutorials`; clear the flag; `m_menuCreated = true` | [C] `GameMenu::CreateMenu` |
 | `DestroyMenu()` | `m_menuCreated = false`; remove `"multiwinia_mainmenu_title"`; `StartFadeOut()` unless editing | [C] `GameMenu::DestroyMenu` |
 | Called from | `MainMenuLoop` creates the menu whenever `!m_menuCreated && IsFadeComplete()`; `MainMenuLoop` exit stops `"MultiwiniaInterface LobbyAmbience"` sounds and destroys it; Other/Screen-options apply and `UnlockFullGameButton` re-create it | [C] `code/main.cpp:MainMenuLoop` |
-| `Render()` | Front-end 3D background, called by `Renderer::RenderFrame` when `m_atMainMenu && m_menuCreated` and by the loading screen. `Camera::Advance`; camera pos = origin; FOV 90; look-at eye (0, 600, 0), front (0,0,1) and up (0,1,0) each rotated about Y by −1.899 rad then about Z by −1.079 rad; focus = eye + front×100; `m_clouds->Render(−GetHighResTime())` (sky grid + cloud layers; sky detail applies) | [C] `GameMenu::Render`; `code/renderer.cpp:Renderer::RenderFrame`; `code/loading_screen.cpp` |
+| `Render()` | Front-end 3D background, called by `Renderer::RenderFrame` when `m_atMainMenu && m_menuCreated` and by the loading screen. `Camera::Advance`; camera pos = origin; FOV 90; look-at eye (0, 600, 0), front (0,0,1) and up (0,1,0) each rotated about Y by −1.899 rad then about Z by −1.079 rad; focus = eye + front×100; `m_clouds->Render(−GetHighResTime())` (sky grid + cloud layers; sky detail applies) | [C] `GameMenu::Render`; `code/renderer.cpp:Renderer::RenderFrame`; `code/loading_screen.cpp:LoadingScreen::RenderFrame` |
 | `CreateMapList()` | see §5.3 | |
 | `GetNumPlayers()` | `m_maps[gmw->m_gameType][gmw->m_requestedMapId]->m_numPlayers`, −1 if invalid | [C] |
 | `GetMapIndex(gameMode, crc)`, `GetMapIndex(gameMode, filename)` (case-insensitive), `GetMap(...)`, `GetMapName(...)` (returns the string id `<file-without-.txt>_name`) | lookup helpers used by P18 buttons, `App`, `Multiwinia`, `Server`, `networkvalue` | [C] |
-| Free functions | `GetMapNameId(f)` → `"<f minus 4 chars>_name"`, `GetMapDescriptionId(f)` → `"…_description"` (static buffers); `GameTypeToCaption(t)` → blueprint `GetName()`; `GameTypeToShortCaption(t)` → `"multiwinia_gametypeshort_<blueprint m_name>"` (DOM, KOTH, CTS, ASLT, ROCKET, BLITZ); `GetTimeOption()` → index of the blueprint param named `TimeLimit` for the current (or custom) game type; `RemoveDelistedServers(list)` → delete entries carrying `NET_METASERVER_DELISTED`; `s_pageNames[38]` debug names of the `GameMenuWindow` pages (asserted equal to `NumPages`) | [C] `code/game_menu.cpp` |
-| `IS_DEMO` | `#define IS_DEMO !g_app->IsFullVersion()` — runtime authentication gate used across P18 | [C] `code/game_menu.h` |
-| Constants | `SERVERS_ON_SCREEN 13`, `MAX_GAME_TYPES 7`, `GAMETYPE_PROLOGUE 254`, `GAMETYPE_CAMPAIGN 255` | [C] `code/game_menu.h` |
+| Free functions | `GetMapNameId(f)` → `"<f minus 4 chars>_name"`, `GetMapDescriptionId(f)` → `"…_description"` (static buffers); `GameTypeToCaption(t)` → blueprint `GetName()`; `GameTypeToShortCaption(t)` → `"multiwinia_gametypeshort_<blueprint m_name>"` (DOM, KOTH, CTS, ASLT, ROCKET, BLITZ); `GetTimeOption()` → index of the blueprint param named `TimeLimit` for the current (or custom) game type; `RemoveDelistedServers(list)` → delete entries carrying `NET_METASERVER_DELISTED`; `s_pageNames[38]` debug names of the `GameMenuWindow` pages (asserted equal to `NumPages`) | [C] `code/game_menu.cpp:GameTypeToShortCaption`, `code/game_menu.cpp:GetTimeOption`, `code/game_menu.cpp:RemoveDelistedServers`, `code/game_menu.cpp:s_pageNames` |
+| `IS_DEMO` | `#define IS_DEMO !g_app->IsFullVersion()` — runtime authentication gate used across P18 | [C] `code/game_menu.h:IS_DEMO` |
+| Constants | `SERVERS_ON_SCREEN 13`, `MAX_GAME_TYPES 7`, `GAMETYPE_PROLOGUE 254`, `GAMETYPE_CAMPAIGN 255` | [C] `code/game_menu.h:SERVERS_ON_SCREEN` |
 | `PlayerNameString` (a `NetworkUnicodeString`) | max length 16 (constructor default). `Set(x)`: store `x` truncated to 16; persisted name = `x`, or the phrase `multiwina_playername_default` ("NewPlayer") if `x` is empty; `SetString("PlayerName")` + `Save()`; if connected → `ClientToServer::ReliableSetTeamName(name)` | [C] `PlayerNameString::Set` |
 
 Coordination note for P18: `GameMenuWindow` owns pages, page transitions and all lobby logic; `GameMenu` only owns the map catalogue, the background, and creation/destruction of the window. The widget classes in `game_menu.cpp` (§11) are the shared look of both `GameMenuWindow` pages and every `GameOptionsWindow`.
@@ -535,18 +535,18 @@ Chat *display* (chat log) is P10/P19/P15 territory (`Camera::ChatLogVisible`, `l
 
 ### 5.7 Controller unplugged (`ControllerUnpluggedWindow`) [B:FULL]
 
-`HandleCommonConditions` (every loop) on `ControlControllerUnplugged` (XInput "plug up") while the static flag `controllerPlugged` is true → register the window and clear the flag; on `ControlControllerPlugged` ("plug down") → remove `"controller_unplugged"` and set the flag. While unplugged **and** input mode is gamepad, the app treats the window as unfocused → `m_lostFocusPause = true` (pauses single-player only) [C] `code/main.cpp:HandleCommonConditions`, `code/app.cpp:App::GamePaused`. The window itself: on first `Update` `CreateErrorDialogue("dialog_unplugged_pc")` ("Your control pad has been unplugged. Please plug it back in or press Esc to continue."); removes itself when the dialogue is dismissed (`ControlCloseTaskHelp`: mouse-left/space/enter/esc/pad-A) or on `ControlMenuEscape`; renders only the dialogue box (no title/left box) [C] `code/interface/controllerunplugged_window.cpp`.
+`HandleCommonConditions` (every loop) on `ControlControllerUnplugged` (XInput "plug up") while the static flag `controllerPlugged` is true → register the window and clear the flag; on `ControlControllerPlugged` ("plug down") → remove `"controller_unplugged"` and set the flag. While unplugged **and** input mode is gamepad, the app treats the window as unfocused → `m_lostFocusPause = true` (pauses single-player only) [C] `code/main.cpp:HandleCommonConditions`, `code/app.cpp:App::GamePaused`. The window itself: on first `Update` `CreateErrorDialogue("dialog_unplugged_pc")` ("Your control pad has been unplugged. Please plug it back in or press Esc to continue."); removes itself when the dialogue is dismissed (`ControlCloseTaskHelp`: mouse-left/space/enter/esc/pad-A) or on `ControlMenuEscape`; renders only the dialogue box (no title/left box) [C] `code/interface/controllerunplugged_window.cpp:ControllerUnpluggedWindow::Update`.
 
 ### 5.8 Demo gating and the demo-end / buy-now window
 
 | Item | Status |
 |---|---|
 | Runtime gate | `IS_DEMO` = `!IsFullVersion()` (authentication key) [B:DEMO]; in scope it only affects `GameMenu::AddMap` demo-map counting. All demo UI (Buy-me-now page, unlock-full-game button, demo map/mode limits) is in `GameMenuWindow` and `UI/*` (P18) |
-| `DemoEndWindow` | [B:DEAD] Darwinia "Demo 2" end screen. 800×600 centred; background `textures/interface_red.bmp` tiled (u 0…8) fading in: `alpha = clamp((now − t0)/fadeIn, 0, 0.9)`; texts `launchpad_buyme_1..5` ("WANT MORE?", "Buy Darwinia online and", "DOWNLOAD THE GAME IMMEDIATELY!", "Just a 30Mb download stands", "between you and the full game.") at (centre+20, y+50, size 70) and size 20 lines at y+150/180/250/280; `BuyOnlineButton` 300×100 at (centre−150, 360) caption "BUY NOW" + URL; `ExitDemoButton` 140×40 at (centre−70, 520) "EXIT DEMO", usable only after 4 s (`ShowExitButton`, alpha ≤ 0.1 before). Buy: optional `SaveProfile(true,true)`, stop & delete sound libraries, delete resources, `OpenWebsite(App::GetBuyNowURL())` = `http://store.introversion.co.uk`, delete window manager, `exit(0)`. Exit: same without the website. Only creator is `ExitLevelButton` under `DEMO2` [C] `code/interface/demoend_window.cpp`, `code/app.cpp:App::GetBuyNowURL` |
+| `DemoEndWindow` | [B:DEAD] Darwinia "Demo 2" end screen. 800×600 centred; background `textures/interface_red.bmp` tiled (u 0…8) fading in: `alpha = clamp((now − t0)/fadeIn, 0, 0.9)`; texts `launchpad_buyme_1..5` ("WANT MORE?", "Buy Darwinia online and", "DOWNLOAD THE GAME IMMEDIATELY!", "Just a 30Mb download stands", "between you and the full game.") at (centre+20, y+50, size 70) and size 20 lines at y+150/180/250/280; `BuyOnlineButton` 300×100 at (centre−150, 360) caption "BUY NOW" + URL; `ExitDemoButton` 140×40 at (centre−70, 520) "EXIT DEMO", usable only after 4 s (`ShowExitButton`, alpha ≤ 0.1 before). Buy: optional `SaveProfile(true,true)`, stop & delete sound libraries, delete resources, `OpenWebsite(App::GetBuyNowURL())` = `http://store.introversion.co.uk`, delete window manager, `exit(0)`. Exit: same without the website. Only creator is `ExitLevelButton` under `DEMO2` [C] `code/interface/demoend_window.cpp:DemoEndWindow::Render`, `code/app.cpp:App::GetBuyNowURL` |
 
 ### 5.9 Leaderboards [B:LEGACY — Xbox Live Arcade remnant, no data source]
 
-`LeaderBoardButton` ("Leaderboards") appears only in the unreachable `MainMenuWindow` and is created `m_inactive = true`. `LeaderboardLoader` is a stub: `IsNewSearchNeeded()` → false, `ScrollUp/Down()` → false, `DoLeaderboardSearch()` empty, `GetRowsToShow()` → true without filling anything, `m_searchIndexOffset` never initialised; `LeaderboardWindow::Update()` is empty; `GameMenuWindow::SetupLeaderBoardSelectPage/SetupLeaderboardPage` are `return;` [C] `code/interface/leaderboards_window.cpp`, `code/UI/GameMenuWindow.cpp`. The UI that exists (useful only as a spec of intent):
+`LeaderBoardButton` ("Leaderboards") appears only in the unreachable `MainMenuWindow` and is created `m_inactive = true`. `LeaderboardLoader` is a stub: `IsNewSearchNeeded()` → false, `ScrollUp/Down()` → false, `DoLeaderboardSearch()` empty, `GetRowsToShow()` → true without filling anything, `m_searchIndexOffset` never initialised; `LeaderboardWindow::Update()` is empty; `GameMenuWindow::SetupLeaderBoardSelectPage/SetupLeaderboardPage` are `return;` [C] `code/interface/leaderboards_window.cpp:LeaderboardLoader::DoLeaderboardSearch`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupLeaderboardPage`. The UI that exists (useful only as a spec of intent):
 
 | Window | Content |
 |---|---|
@@ -568,7 +568,7 @@ Profiles are a Darwinia mechanism (campaign save directory). In Multiwinia: `App
 
 ### 5.11 Mods [B:DEAD]
 
-Everything is inside `#ifdef USE_DARWINIA_MOD_SYSTEM` (never defined) and additionally gated by pref `ModSystemEnabled`. `ModsWindow`: 300 × (210 + 30×mods), shows "Current Mod: <name|none>", one "Load Mod: '<name>'" button per subdirectory of `<profile dir>mods/` (`LoadModButton`: `Resource::LoadMod(name)`, `SetProfileName(name)`, `LoadProfile()`), "Unload Mod" (loads "none"), "Create New Mod" → `NewModWindow` (name default "MyNewMod"; Create: `LoadMod`, profile "none", new `GlobalWorld` with every research item at level 2, `SaveGame("game.txt")`, toggle editor), "Toggle Editor (F9)" (`m_requestToggleEditing`), Close [C] `code/interface/mods_window.cpp`.
+Everything is inside `#ifdef USE_DARWINIA_MOD_SYSTEM` (never defined) and additionally gated by pref `ModSystemEnabled`. `ModsWindow`: 300 × (210 + 30×mods), shows "Current Mod: <name|none>", one "Load Mod: '<name>'" button per subdirectory of `<profile dir>mods/` (`LoadModButton`: `Resource::LoadMod(name)`, `SetProfileName(name)`, `LoadProfile()`), "Unload Mod" (loads "none"), "Create New Mod" → `NewModWindow` (name default "MyNewMod"; Create: `LoadMod`, profile "none", new `GlobalWorld` with every research item at level 2, `SaveGame("game.txt")`, toggle editor), "Toggle Editor (F9)" (`m_requestToggleEditing`), Close [C] `code/interface/mods_window.cpp:ModsWindow::Create`.
 
 ### 5.12 Other in-scope windows
 
@@ -586,7 +586,7 @@ Everything is inside `#ifdef USE_DARWINIA_MOD_SYSTEM` (never defined) and additi
 
 ## [→ 08_levels_and_level_design] 10. Editor-only map options window (`MultiwiniaOptionsWindow`) [B:EDITOR]
 
-Whole file is `#ifdef LOCATION_EDITOR` (off in all shipped targets). Opened by `LocationEditor` in mode `ModeMultiwinia` with width 300 [C] `code/location_editor.cpp`. It edits the loaded level's `LevelFile` directly (no Apply). Row pitch 17 px, controls 15 px high, starting y = 5. `CreateValueControl(name, int*, y, change, min, max)` = numeric field with </> steppers.
+Whole file is `#ifdef LOCATION_EDITOR` (off in all shipped targets). Opened by `LocationEditor` in mode `ModeMultiwinia` with width 300 [C] `code/location_editor.cpp:LocationEditor::CreateEditWindowForMode`. It edits the loaded level's `LevelFile` directly (no Apply). Row pitch 17 px, controls 15 px high, starting y = 5. `CreateValueControl(name, int*, y, change, min, max)` = numeric field with </> steppers.
 
 | Section / control (label → English) | Bound field | Widget / range (change, min, max) |
 |---|---|---|
@@ -624,7 +624,7 @@ Level options (index, English label, control):
 | 13 | `LevelOptionAttackReinforcementMode` | Att. Reinforcement Mode | drop-down: AirStrike 0, Napalm Strike 1, FlameTurret `GunTurretTypeFlame`, RocketTurret `GunTurretTypeRocket`, GunTurret `GunTurretTypeStandard` |
 | 14 | `LevelOptionDefendReinforcementMode` | Def. Reinforcement Mode | same list |
 
-(Option semantics are documented by P11/P02 from `level_file.h` comments.) [C] `code/interface/multiwiniaoptions_window.cpp:MultiwiniaOptionsWindow::Create`, `code/level_file.h`.
+(Option semantics are documented by P11/P02 from `level_file.h` comments.) [C] `code/interface/multiwiniaoptions_window.cpp:MultiwiniaOptionsWindow::Create`, `code/level_file.h:LevelFile`.
 
 ---
 
@@ -634,7 +634,7 @@ Level options (index, English label, control):
 
 Every live menu/options screen is a `GameOptionsWindow` (subclass of `DarwiniaWindow`) sized to the whole screen at (0,0), not movable, not resizable [C] `code/interface/mainmenus.cpp:GameOptionsWindow::GameOptionsWindow`. Layout is computed from screen size W×H each `Create()` — no absolute pixels:
 
-| Helper | Formula [C] `code/game_menu.cpp` |
+| Helper | Formula [C] `code/game_menu.cpp:GetPositions`/`GetFontSizes`/`GetButtonSizes` |
 |---|---|
 | `GetPositions` | `horizSplit = 0.26 H`; `vertSplit = 0.6 W`; `gap = 0.05 × vertSplit = 0.03 W`; `left = top = gap`; `right = W − gap`; `bottom = H − gap`; if `W/H > 1.4` (widescreen): `left += 0.08 W`, `right −= 0.08 W` |
 | `GetPosition_TitleBar` | x = left, y = top, w = right − left, h = horizSplit − gap/2 − top |
@@ -689,14 +689,14 @@ Used by the legacy windows (keybindings, new profile, mods, really quit, save-on
 
 | Constant | Value | Kind | Where |
 |---|---|---|---|
-| `SERVERS_ON_SCREEN` | 13 | `#define` | `code/game_menu.h` |
-| `MAX_GAME_TYPES` | 7 | `#define` | `code/game_menu.h` |
-| `GAMETYPE_PROLOGUE`, `GAMETYPE_CAMPAIGN` | 254, 255 | `#define` | `code/game_menu.h` |
-| `PlayerNameString` max length | 16 chars | ctor default | `code/game_menu.h` |
+| `SERVERS_ON_SCREEN` | 13 | `#define` | `code/game_menu.h:SERVERS_ON_SCREEN` |
+| `MAX_GAME_TYPES` | 7 | `#define` | `code/game_menu.h:MAX_GAME_TYPES` |
+| `GAMETYPE_PROLOGUE`, `GAMETYPE_CAMPAIGN` | 254, 255 | `#define` | `code/game_menu.h:GAMETYPE_PROLOGUE` |
+| `PlayerNameString` max length | 16 chars | ctor default | `code/game_menu.h:PlayerNameString` |
 | Chat rename max | 15 chars (buffer 16) | literal | `ChatInputField::Keypress` |
 | Chat message buffer | 255 chars | literal | `ChatInputWindow::Create` |
-| `PIXELS_PER_CHAR` | 25 | `#define` | `code/game_menu.cpp` |
-| `INTEGER_INCREMENT_PERIOD` | 0.1 s | `#define` | `code/game_menu.cpp` |
+| `PIXELS_PER_CHAR` | 25 | `#define` | `code/game_menu.cpp:PIXELS_PER_CHAR` |
+| `INTEGER_INCREMENT_PERIOD` | 0.1 s | `#define` | `code/game_menu.cpp:INTEGER_INCREMENT_PERIOD` |
 | Menu fade-in on create | 0.25 s | literal | `GameMenu::CreateMenu` |
 | Menu transition | duration arg 1.0, direction ±1 | literal | `GameMenuButton::MouseUp` etc. |
 | Button cascade | 0.6 × y/H s slide; (5/numButtons) × y/H s flash; 0.1 s caption flash; slide distance 0.1 W per s | literals | `GameMenuButton::Render` |

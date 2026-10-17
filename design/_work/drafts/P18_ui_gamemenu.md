@@ -1173,3 +1173,149 @@ Totals: 77 rows = 74 widget classes + `GameMenuWindow` + `ServerPasswordString` 
 - Keep the split between *requested* (local) and *echoed* (server-confirmed) lobby values, but make the echo wait explicit (pending state) rather than empty pages.
 - Give navigation its own focus list object; do not index the registration list (`SpecialScroll` defect, §12.4).
 - Move all magic layout ratios into a layout table (see §13).
+
+---
+
+## [→ 28_ui_framework] 13. Constants table
+All values [C] at the cited symbol; "derived" = computed from screen size at run time.
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `SERVERS_ON_SCREEN` | 13 rows | `#define` | `code/game_menu.h` |
+| `MAX_GAME_TYPES` | 7 | `#define` | `code/game_menu.h` |
+| `GAMETYPE_PROLOGUE`, `GAMETYPE_CAMPAIGN` | 254, 255 (pseudo game types for preview panels) | `#define` | `code/game_menu.h` |
+| `IS_DEMO` | `!g_app->IsFullVersion()` | macro | `code/game_menu.h` |
+| `NumPages` | 38 | enum | `GameMenuWindow.h` |
+| `MULTIWINIA_MAXPARAMS` | 64 | `#define` | `code/multiwinia.h` |
+| `MULTIWINIA_NUM_TEAMCOLOURS` | 8 | `#define` | `code/multiwinia.h` |
+| `ASSAULT_ATTACKER_COLOURID` / `ASSAULT_DEFENDER_COLOURID` | 1 / 0 | `#define` | `code/multiwinia.h` |
+| `AUTHENTICATION_KEYLEN` | 32 (31 visible chars; dashes after 6, 13, 20, 27) | `#define` | `contrib/systemiv/lib/metaserver/authentication.h`, `AuthInputField::Keypress` |
+| Player name / server password max length | 16 chars each | ctor default | `code/game_menu.h:PlayerNameString`, `GameMenuWindow.h:ServerPasswordString` |
+| Chat `/name` length | ≤15 chars | literal | `code/interface/chatinput_window.cpp` |
+| Browser rebuild interval | 2.0 s (1.0 s when empty and WAN list received) | literal | `UpdateJoinGamePage` |
+| WAN list request interval | 10.0 s (browser and quick match) | literal | `UpdateJoinGamePage`, `UpdateQuickMatchGamePage` |
+| Quick-match rebuild interval | 1.0 s | literal | `UpdateQuickMatchGamePage` |
+| Manual server prefs | `Server1`…`Server30`; default port pref `NetworkServerPort` = 4000; synthetic max teams 4; mode `i mod 6` | literal | `UpdateJoinGamePage` |
+| Auth-box "recent change" window | 2.0 s | literal | `ShowAuthBox` |
+| Client lag threshold on leave | 5.0 s since last server letter | literal | `FinishMultiwiniaButton::MouseUp` |
+| Menu transition duration | 1.0 s (direction ±1) | literal | `code/game_menu.cpp:GameMenuButton::MouseUp`, many buttons |
+| Front-end fade-in | 0.25 s | literal | `code/game_menu.cpp:GameMenu::CreateMenu` |
+| Button birth cascade | slide until `0.6·y/H` s, flash until `(5/numButtons)·y/H` s, slide distance `0.1·W` per remaining second, flash α ≤ 0.9, pop 0.1 s, ghost 1.3× | literal | `GameMenuButton::Render` |
+| Level-row cascade | `1.0·y/H` s, slide `0.1·W` per remaining second | literal | `LevelSelectButtonBase::RenderMapName` |
+| Gamer-tag type-change flash | 1.0 s | literal | `GamertagButton::Render` |
+| Scrolling text | hold 1.5 s; 30 px/s; line gap 1.2·font; heading 1.25×; MOTD extra hold 5.0 s | literal / member default | `ScrollingTextButton.h`, `motdButton.h` |
+| Achievement row | height (H/16)·1.6 ("64 px images"); slide-in 750 px/s; 4 px per scroll step | literal | `SetupAchievementsPage`, `AchievementButton.h` |
+| Blink | period 1.0 s, 50 % duty (α 1.0 / 0.5) | literal | `RenderRequestingEffect`, `RenderLoadingAchievementsEffect`, `AuthInputField::Render` |
+| Connecting dots | 2 steps/s, 0–3 dots | literal | `WaitingButton::Render` |
+| Background detail switch | smoothed fps < 20 → low, ≥ 60 → high; k = advanceTime·0.5; start 60 | literal | `RenderBigDarwinian` |
+| Background sprite | centre (0.75W, 0.7H); half-size 0.3W + 5·sin t; 0.2 rad; 10 echoes ×1.02, (−6,−6) px, α 0.2·(1−i/10) | literal | `RenderBigDarwinian` |
+| Background gear | half-size 0.6W; 0.2 rad/s; α 0.06 additive; 10 copies +0.02 rad | literal | `RenderBigDarwinian` |
+| Title bitmap | width = textWidth·1.1, aspect 5.4:1 | literal | `Render` |
+| Logo | aspect 277/194, height 0.8·titleH, inset 0.05·titleW | literal | `Render` |
+| Layout ratios | §1.3 table (0.26H, 0.6W, 0.05, widescreen > 1.4 → ±0.08W, fonts 0.095/0.04/0.022 H, button 0.9·leftW × 1.3·med, gap 0.1·med) | literal | `code/game_menu.cpp` |
+| Compact control height | 0.65·bh (advanced, player options, filters, password) | literal | setup functions |
+| Lobby gamer-tag column | origin lY+6bh; w 0.45bw; h 0.75bh; step 1.5×h; kick at +1.05w | literal | `SetupMultiplayerPage` |
+| Lobby small controls | 0.66·bh (Advanced button, AI drop-down, map name) | literal | `SetupMultiplayerPage` |
+| Thumbnail | 0.8·rW × 0.6·rW (aspect 4:3); mode image 0.8·rW × (2/3)·0.8·rW | literal | `SetupMultiplayerPage`, `SetupGameSelectPage` |
+| Browser row | 0.6·bh high; 0.9·titleW wide; header 0.6bh | literal | `SetupJoinGamePage` |
+| Browser columns | host 0.05w, type 0.30w, map 0.40w, count 0.90w, header players right at 0.98w; player boxes from count−80 px, (0.66·(h−8)) × (h−8), 2 px gap | literal | `GameServerButton::Render`, `ServerTitleInfoButton::Render` |
+| Map-list columns | name 0.025w, time 0.65w, players 0.83w | literal | `LevelSelectButtonBase::GetColumnPositions` |
+| Chat box | fill α 200/255; wrap width 1.75·w; stop 5 % from top; line 1.1·font | literal | `GameMenuChatButton::Render` |
+| Buy-now art | prices 40/300 aspect at 0.6·bw; box art 149/394 at 0.8·rW | literal | `SetupBuyMePage` |
+| Windowed fallback for store | 1024 × 768 | literal | `UnlockFullGameButton::MouseUp` |
+| Store URL | `http://store.introversion.co.uk` | literal | `code/app.cpp:GetBuyNowURL` |
+| Error overlay (dead) | W/3 × H/3 centred | literal | `RenderErrorDialogue` |
+| Help image (dead) | 600 × 400 px | literal | `SetupHelpPage` |
+| Prefs read/written | `PlayerName`, `PlayerPreferedColour` (default −1), `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (default 1), `Server1..30`, `NetworkServerPort`, `TextLanguage`, `ScreenWindowed`, `ScreenWidth`, `ScreenHeight` | pref keys | various |
+| Files | `<profile>authkey`, `<profile>authkey.dev`, `multiwinia_betatesters.txt`, `autopatch.exe`; (dead) `testbedconfig.txt` | literal | `AuthInputField.h`, `PasteFromClipboard`, `PlayDemoAuthkeyButton.h`, `ReadMultiwiniaBetaTesters`, `update_page_buttons.h` |
+
+---
+
+## Cross-partition notes
+- **P17b (menus/options)**: owns `code/game_menu.cpp/.h` — `GameMenuButton` (sound + transition + birth animation), `BackPageButton` (gamepad B handling), `GameMenuTitleButton`, `GameMenuInputField/InputScroller/DropDown/CheckBox`, layout helpers (§1.3), `GameMenu::CreateMenu/DestroyMenu/CreateMapList/AddMap` (map header keys feed `MapData`), `s_pageNames`, `PlayerNameString::Set`, `GetTimeOption`, `GameTypeToCaption/ShortCaption`, `RemoveDelistedServers`. Also `HelpAndOptionsWindow` (hosts `AuthPageButton`, the live help entry), `TextButton`, `ChatInputField` (`/name`, `/rename`), `HelpAndOptionsButton`, in-game leave button that sets `m_atMainMenu`, the inactive `LeaderBoardButton` and handler-less `AchievementsButton`, `LeaderboardWindow` → `SetupNewPage(PageLeaderBoard)`.
+- **P17a (framework)**: `DarwiniaWindow::Update` navigation over `m_buttonOrder`, `SpecialScroll` looked up via `m_buttons[m_currentButton]` (index mismatch — Eclipse `RegisterButton` prepends, so the looked-up widget is unrelated to focus), `UpdateButtonHighlight`, `Remove()`, `InputField`, `DropDownMenu`, `CheckBox`, `ScrollBar(…, numRows, winSize)`; Eclipse duplicate-name behaviour.
+- **P15 (network)**: `ClientToServer` calls used here: `StartIdentifying/StopIdentifying/GetIdentity`, `RequestTeam`, `RequestStartGame`, `RequestToggleReady`, `ReliableSetTeamColour/Name`, `RequestSetGameOption*` (via `NetworkGameOption*`), `SendChatMessage`, `m_connectionState/m_connectionAttempts/m_serverSequenceId/m_password/m_lastServerLetterReceivedTime`, `GetDemoLimitations`, disconnect reasons → `CreateErrorDialogue`; `Server::KickClient`, `Get/SetPassword`, advertised keys (`NET_METASERVER_HASPASSWORD` "dI", `NET_METASERVER_DEMORESTRICTED` "demo", `NET_METASERVER_LANGAME` "lan", `NET_METASERVER_NUMHUMANTEAMS`); MetaServer API (`GetServerList`, `RequestServerListWAN`, `HasReceivedListWAN`, `RequestData` for `MOTD`, `LatestVersion`, `UpdateURL`, `Demo2Limits`); Authentication API. **Key collision**: `NET_DARWINIA_SERVER_PASSWORD` and `NET_METASERVER_GAMETIME` are both `"dy"`.
+- **P02 (game modes)**: `data/multiwinia.txt` semantics of every parameter in §8.2; colour helpers `IsColourTaken`, `IsValidCoopColour`, `GetNextAvailableColour`, `teamColours`; `RemoveTeams` posts `PLAYERLEAVE`; `GameInLobby`; end-of-game results screen; `m_assaultSingleRound` has no front-end control.
+- **P01 (app)**: permission predicates (§7.1), `StartNetwork/StartSinglePlayerServer/StartMultiPlayerServer/ShutdownCurrentGame`, `m_requestQuit`, `m_atMainMenu`, `m_atLobby`, `m_multiwiniaTutorial(Type)`, `MainMenuLoop`, `GameMenuWindow::PreloadTextures` call at start-up.
+- **P12 (render)**: `InitialiseMenuTransition/StartMenuTransition/IsMenuTransitionComplete`, `StartFadeIn/Out`, `Clip/EndClip`, fonts; `GameMenuWindow::RenderBigDarwinian` is reused by other menus.
+- **P16 (sound)**: interface events `LobbyAmbience`, `MenuSelect`, `MenuCancel`, `MenuRollOver`, `ChatMessage`.
+- **P19 (help/tutorial)**: tutorials 1 and 2 are KOTH games on `MAPID_MP_KOTH_2P_1` / `MAPID_MP_KOTH_3P_1` with Easy AI; `MultiwiniaHelp::m_currentTutorialHelp` reset on the Tutorials page.
+- **P20 (loaders)**: `g_loadingScreen->m_workQueue` used for thumbnail preload and Darwinia prologue/campaign loads.
+- **P11/29 (level format)**: header keys of `levels/mp_*.txt` → `MapData`; `LevelFile::CalculeCRC` = map identity; `mapcrc.h` `MAPID_*` constants.
+- **P14/31 (platform)**: Win32 clipboard (`CF_TEXT`), `WindowManager::OpenWebsite`, `autopatch.exe` launch + `exit(0)`, macOS Sparkle/pasteboard variants.
+
+## Contradictions / open questions
+1. **Map PlayTime is overwritten** (§8.4): the map click requests `TimeLimit = PlayTime`, then the host's lobby setup resets every parameter to defaults [C both calls; I outcome].
+2. **"Show passworded games" filter is ineffective**: it tests key `"dy"` (`NET_DARWINIA_SERVER_PASSWORD`), servers advertise `"dI"` (`NET_METASERVER_HASPASSWORD`); `"dy"` is also `NET_METASERVER_GAMETIME`, which nobody sets [C keys; I effect].
+3. **Manual server entries are unjoinable**: synthetic entries lack version/protocol and map CRC, so clicking reports "incompatible" [I].
+4. **Server-row bookkeeping**: rows are inserted into `m_buttonOrder` at `Size()−1` but removed at `m_serverButtonOrderStartIndex + row` (start index 0 = Back button's slot), so shrinking the list removes the wrong order entries (possibly the Back button) [C mechanics; I consequence].
+5. **`SpecialScroll` target** is fetched by focus index from the registration list (§12.4) [C].
+6. Colour button **names** for ids 5/6 swapped (cyan/purple) relative to colours and captions [C].
+7. Typed keys are saved to `<profile>authkey`, pasted and demo keys to `<profile>authkey.dev` [C].
+8. Kick buttons exist only for slots 1..n−1; a remote player occupying slot 0 cannot be kicked [C/I].
+9. Scroll bar created with window size 10 for a 13-row list [C].
+10. Phrase `Spectator` used by gamer tags does not exist in `english.txt`; drop-down captions use raw parameter names as phrase ids; Update button caption hard-coded "Update" [C].
+11. Leaving a multiplayer lobby as host always destroys the server (`ShutdownCurrentGame`) and returns to GameSelect — there is no way to change map/mode without dropping clients [C].
+12. No timeouts: Connecting page has none in FULL; a lobby waiting for a team id stays blank indefinitely [C/I].
+13. Constructor auth gate uses only the local algorithmic check; metaserver-rejected keys are only surfaced via the status box [C].
+14. `m_clickGameType` is not initialised in the constructor (commented out) though read in `SetupMapSelectPage` — always written by `GameTypeButton` before MapSelect is first reached [C/I].
+15. The single-player lobby's map-description widget is named `chat_button` (same name as the MP chat log) [C].
+
+## [U] Unknowns
+- U1: Does the server reject game-option requests from non-host clients? → read P15 `code/network/server.cpp` handlers for `NET_DARWINIA_SETGAMEOPTION*`.
+- U2: Which key file (`authkey` or `authkey.dev`) is loaded at start-up, and with what precedence? → P15 `Authentication_GetKey` / app initialisation.
+- U3: Could the metaserver inject key `"dy"` into listings (which would make the password filter hide those servers)? → metaserver protocol docs/P15.
+- U4: Meaning of the three boolean arguments of `MetaServer_GetServerList` (LAN/WAN/… selection) → P15 `contrib/systemiv/lib/metaserver/metaserver.cpp`.
+- U5: `LANGUAGEPHRASE` fallback for missing ids (raw parameter-name captions, `Spectator`) → P14 language table.
+- U6: Exact visual of the menu transition (slide vs fade, curve) → P12 `Renderer::RenderMenuTransition`.
+- U7: Are option requests applied strictly in arrival order (affects contradiction 1)? → P15 server letter processing.
+- U8: Semantic difference of Eclipse `m_disabled` vs Darwinia `m_inactive` for click handling → P17a.
+- U9: Visual appearance of art assets referenced (mode pictures, thumbnails, icons) → data partition (art not inspected by P18).
+
+## Docs-vs-code discrepancies
+- `docs/multiwinia-changes.txt` (v1.1.0) "Server filter settings are now saved": code saves the four visible checkboxes (plus the dead custom-maps flag) but **not** the game-type filter drop-down [C] `SaveFiltersButton::MouseUp`.
+- Same file: "Server hosts may now password their servers": hosting works, but the browser's "show passworded" filter does not detect passworded servers (contradiction 2).
+- `docs/multiwiniachanges-beta.txt` issue 264 text "Pressing back on the map selection screen takes you into the game lobby. Pressing back on that takes you back to game mode": in code MapSelect Back → GameSelect; lobby Back → GameSelect (host), MapSelect (single player), NewOrJoin (client) [C].
+- `docs/multiwiniachanges-beta.txt` issue 412 "Leaderboards and Achievements appear in the in-game menu": the front-end Achievements/Leaderboard pages exist in `GameMenuWindow` but are unreachable/empty; the in-game buttons (P17b) are inactive or handler-less [C].
+- `docs/multiwinia-changes.txt` v1.2.0 demo LAN rule ("join any LAN game on ANY map if hosted by a full-game player") is not implemented in P18 code; the client only reacts to the `demo` (demo-restricted) flag supplied by server/metaserver [I].
+
+## IP register
+All English strings behind the phrase ids below are Introversion text (`data/language/*.txt`); the ids themselves may be reused as neutral keys but the texts, names and art may not.
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "MULTIWINIA" title, `multiwinia_mainmenu_title`, `textures/mwtitle.bmp` | brand/text/art | `GameMenuWindow::Render` | "GAME TITLE" + new logotype |
+| Subtitle "Survival of the flattest" (`multiwinia_mainmenu_subtitle`) | brand text | `Render` | new tagline |
+| Logo `icons/mwlogo.bmp`, box art `textures/multiwinia.bmp`, price art `textures/prices.bmp` | art/brand | `Render`, `SetupBuyMePage` | new logo, store art |
+| Giant Darwinian sprite `sprites/darwinian.bmp`, player icons `textures/darwinian.bmp`, gear `mwhelp/gear.bmp` | character art | `RenderBigDarwinian`, `LevelSelectButton.h` | generic unit silhouette, abstract cog |
+| Darwinia / Darwinia+ / Prologue / Campaign / "launchpad" location, `game.txt`, `game_demo2.txt` | brand/level names | `PrologueButton.h`, `CampaignButton.h`, `DarwiniaPlus*Button.h` | omit |
+| Game-mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle (+ short forms DOM/KOTH/CTS/ASLT/ROCKET/BLITZ) | names/text | `multiwinia_gametype_*`, `multiwinia_gametypeshort_*` | Mode A…G / descriptive generic names |
+| Mode blurbs `multiwinia_help_<mode>`, `multiwinia_help_prologue`, `multiwinia_help_campaign` | text | `GameTypeInfoButton.h` | new copy |
+| Mode pictures `mwhelp/mode_*.bmp`, help images `mwhelp/helppage_*`, complexity icons `icons/menu_basic/intermediate/advanced.bmp`, padlock `icons/locked.bmp`, kick icon `icons/mouse_disabled.bmp` (+shadow) | art | §11.2 | new icon set |
+| Map names/descriptions `<mapfile>_name`, `<mapfile>_description`, thumbnails `thumbnails/*.bmp` | level names/text/art | `LevelSelectButton.h`, `MapInfoButton.h`, `MapImageButton.h` | new maps |
+| Credits `multiwinia_credits_1..N`, beta-tester list `multiwinia_betatesters.txt` (real people's names) | text/personal names | `ReadCredits` | own credits |
+| Store URL `http://store.introversion.co.uk`, UpdateURL, autopatch.exe | brand/URL/tool | `code/app.cpp:GetBuyNowURL`, `update_page_buttons.h` | own store/updater |
+| Controller glyphs `icons/button_a.bmp`, `button_b.bmp`, `button_lb/rb(_shadow).bmp` | third-party (console) glyph art | `PreloadTextures`, `BackPageButton::Render` | platform-neutral glyphs |
+| Interface sounds `LobbyAmbience`, `MenuSelect`, `MenuCancel`, `MenuRollOver`, `ChatMessage` (sample assets) | audio | §11.3 | new SFX |
+| Front-end UI phrase ids — titles: `multiwinia_menu_mainmenutitle`, `multiwinia_neworjoin_title`, `multiwinia_gameselect_title`, `multiwinia_join_game_title`, `multiwinia_menu_joining`, `multiwinia_setup_quick_match`, `multiwinia_singleplayer_title`, `multiwinia_menu_advanceoptions`, `multiwinia_playeroptions`, `multiwinia_menu_filters`, `multiwinia_enterpassword`, `multiwinia_enterauthkey`, `multiwinia_update_available`, `dialog_credits`, `multiwinia_menu_tutorial_short`, `multiwinia_menu_achievements`, `launchpad_buyme_1`, `error` | UI text | setup functions | own strings |
+| Buttons: `multiwinia_menu_singleplayergame`, `_multiplayergame`, `_helpandoptions`, `_buyfullgame`, `_quit`, `_hostgame`, `_joingame`, `_quickmatch`, `_quickstart`, `_back`, `_ready`, `_play`, `_aimode`, `_coop`, `_serverpassword`, `_connect`, `_paste`, `_paste_tooltip`, `_play_demo`, `_done`, `_tutorial1`, `_tutorial2`, `_versuscpu`, `_prologue`, `_campaign`, `_autopatch`, `_searching`, `_connecting`, `_connected`, `_attempts`, `_resyncing`, `_showdemogames`, `_showincompatible`, `_showfull`, `_showpasswords`; `dialog_visitwebsite`, `dialog_next`, `launchpad_button_buynow`, `taskmanager_mapeditor`, `start_testbed_server`, `start_testbed_client` | UI text | §4 | own strings |
+| Lobby/browser/status: `multiwinia_join_host`, `_join_type`, `_join_map`, `_join_players`, `_join_address`, `multiwinia_gametype`, `_gametype_any`, `multiwinia_mapname`, `_playtime`, `_players`, `_gamemode`, `_difficulty`, `_coop`, `multiwinia_ready`, `multiwinia_open_or_cpu`, `multiwinia_clicktokick`, `teamtype_0`, `teamtype_1`, `teamtype_2`, `teamtype_demo`, `Spectator`, `multiwinia_player_join`, `multiwinia_player_leave`, `multiwinia_lobbypresstotalk`, `multiwinia_player_name`, `multiwina_playername_default`, `multiwinia_attackers`, `multiwinia_defenders`, `multiwinia_colour_green/red/yellow/blue/orange/cyan/purple/pink`, `multiwinia_passwordrequired`, `multiwinia_buy_prices`, `multiwinia_buynow`, `multiwinia_buynow_1..5`, `dialog_fullonly`, `dialog_easy_difficulty`, `multiwinia_menu_normal`, `multiwinia_menu_hard`, `multiwinia_param_*`, `multiwinia_param_*_description[_<mode>]`, `multiwinia_menu_coop_description`, `multiwinia_menu_aimode_description`, `multiwinia_menu_serverpassword_description`, `multiwinia_option_<g>_<i>_<p>`, `multiwinia_complexity_basic/intermediate/advanced`, `multiwinia_level_any` | UI text | §4, §8 | own strings |
+| Errors/auth: `multiwinia_error_incompatible`, `_serverfull`, `_missingmap`, `_unknownmap`, `_requestinglist`, `_noserversfound`, `_loadingachievement`, `_kickedbyserver`, `_badpass`, `_connection`, `dialog_duplicate_key`, `authentication_demorestricted`, `authentication_result`, `dialog_auth_status`, `dialog_auth_status_demo_user`, `dialog_auth_*` status phrases (12) | UI text | §4.14, §4.15 | own strings |
+
+## Appendix — dead/legacy code
+- **Testbed** (`TESTBED_ENABLED`, never defined) `[B:DEAD]`: `GameMenuWindow::UpdateTestBed/AdvanceTestBedGame/ReadTestBedConfig`, `StartTestbedButton`. Automates the menus by calling buttons' `MouseUp` (server: Main → Multiplayer → Host → mode → map → register as spectator → wait for >1 clients → auto-ready; client: Main → Multiplayer → Join → pick the server named after the testbed → spectator). Game table = every (mode, map) pair except mode index 6. Progressions `LINEAR` / `RANDOM` / `SEQUENCE`. Config file `testbedconfig.txt` commands: `SetProgression LINEAR|RANDOM|SEQUENCE`, `SetRandSeed <n>`, `SetTestBedName <s>`, `AddSequenceItem <index> <seed>`, `SequenceIDToTerminateOn <n>`. Delays: server game-over 10 s, client game-over 40 s, server-pick poll 3 s, connecting timeout 10 s, option delay 5 sequence ids, spectator/play delays 10 sequence ids. Uses blueprint data file `multiwinia-testbed.txt`.
+- `#ifdef TESTBED` (a different, never-defined macro): `CSpectatorButton` column in the lobby `[B:DEAD]`.
+- `FAKE_SERVERS` (commented-out `#define`, `NUM_FAKE_SERVER 100`): fabricates random browser entries `[B:DEAD]`.
+- `TARGET_DEBUG` `RenderNetworkStatus`: 15 px, α 0.2 overlay on GameSetup/GameConnecting listing server clients "IP:Port [Sent/Known/CaughtUp]" and client connection state (Disconnected / Connecting (attempts) / Handshaking (processed/valid seq) / Connected) `[B:DEBUG]`.
+- Xbox Live Arcade remnants: page slots 13, 14, 19, 20; members `m_xbla*`, `m_showingDeviceSelector`; `.vcproj` lists `UI/XBLASelectSessionType.h`, `UI/CustomGameTypeSelection.h`, `UI/InvitePlayersButton.h` which are absent from the tree `[B:DEAD]`.
+- PDLC remnants: slots 21, 22; `.vcproj` lists absent `UI/DownloadPDLCButton.h`, `UI/PDLCOptionsButton.h`; comment in `SetupGameSelectPage` about showing PDLC/tank unlocks `[B:DEAD]`.
+- Darwinia+ remnants: slots 26–30; `m_darwiniaPlus*`; `DarwiniaPlusSPButton`, `DarwiniaPlusMPButton` `[B:LEGACY]`.
+- Darwinia single-player: `PageDarwinia`, `PageDemoSinglePlayer`, `PrologueButton` (`game_demo2.txt`, `GameModePrologue`, location `launchpad`, Sepulveda tutorial only under `USE_SEPULVEDA_HELP_TUTORIAL`), `CampaignButton` (`RequestBootloaderSequence`, `game.txt`, `GameModeCampaign`) `[B:DEBUG]`/`[B:LEGACY]`.
+- Research page and `ResearchModeButton` (Darwinia research levels 0–4) `[B:LEGACY]`.
+- Old help pages (`PageHelpMenu`, `PageHelp`, `HelpModeButton`, `HelpSelectButton`, `HelpImageButton`, `PrevHelpButton`, `NextHelpButton`) `[B:LEGACY]` — superseded by `HelpAndOptionsWindow`.
+- Achievements and leaderboard pages, `AchievementButton` `[B:LEGACY]`.
+- Quick match (`PageQuickMatchGame`, `QuickMatchButton`), quick start (`QuickStartButton`), rolling demo (`RollingDemoButton`), `MultiwiniaModeButton`, `RequestAIButton`, `GameMenuOptionsButton`, `MapDetailsButton`, `BuyNowInfoButton`, custom-game browsing (`AnyLevelSelectButton`, `GameTypeAnyButton`, `m_settingUpCustomGame`), `JoinServerAsSpectator`, `ApplyBetterSlowerServerListSort`, overlay error dialog (`RenderErrorDialogue`) `[B:LEGACY]`.
+- `HIDE_INVALID_GAMETYPES`, `SPECTATOR_ONLY`, `PERMITTED_MAPS`, `MULTIPLAYER_DISABLED`, `MULTIWINIA_DEMOONLY`, HWCOMPAT/BETATEST/ASSAULT_STRESSTEST layout of the auth page and `QuitAuthkeyButton`: other product targets only.
+- macOS: `RunSparkleButton`, pasteboard paste, Cmd-V in the key field.
+- `LOCATION_EDITOR`: `MultiwiniaEditorButton`, custom-map name column, custom-map request flag in `GameServerButton::MouseUp` `[B:EDITOR]`.
+- Files in `code/UI` outside the P18 list: `ErrorDialog.cpp/.h` (empty `DarwiniaWindow` subclass, not in the `.vcproj`) `[B:DEAD]`; `soundsliderbutton.h` (`VolumeControl` master-volume slider reading pref `SoundMasterVolume`, never included) `[B:DEAD]`.

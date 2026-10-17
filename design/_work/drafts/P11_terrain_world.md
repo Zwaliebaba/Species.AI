@@ -354,3 +354,191 @@ Source `scripts/P11_levelstats.py` (X4 owns the full catalogue). All `mp_*` maps
 | mp_rocketriot_2p_3 | 3756 | 27.08 | −26.13 | 15 | 0 | landscape_mine | waves_generator | water_default |
 | mp_blitzkrieg_4P_2 | 4000 | 20.00 | −10.00 | 25 | 0 | landscape_icecaps | waves_earth | water_icecaps |
 | mp_cts_3p_3 | 2570 | 12.00 | −10.00 | 5 | 0 | landscape_trippy (maxHeight 200) | waves_dull | water_icecaps |
+
+---
+
+## [→ 24_rendering] 24.1 Landscape renderer (`LandscapeRenderer`) [B:FULL]
+
+### Vertex format and mesh construction
+`LandVertex` = `FloatVector3 m_pos` (offset 0), `FloatVector3 m_norm` (12), `RGBAColour m_col` (24, 4×u8 RGBA; packed as `D3DCOLOR` ARGB under [B:D3D]), `TextureUV m_uv` (28, 2×float) → stride 36 bytes [C] `code/landscape_renderer.h`, `code/landscape_renderer.cpp:m_posOffset…m_uvOffset`.
+
+**One single triangle strip for the whole map**, built row by row with degenerate joins, culling quads that are fully under water [C] `BuildVertArrayAndTriStrip`:
+```
+highest = maxHeight > 0 ? maxHeight : heightMap.Highest()
+degen = 0
+for z in 0 .. rows-1:                    # NB: last row pairs z with z+1 = rows (outside value)
+    for x in 0 .. cols-1:
+        if any of h(x-1,z), h(x-1,z+1), h(x,z), h(x,z+1), h(x+1,z), h(x+1,z+1) > 0:
+            v1 = (x*cs, h(x,z), z*cs);  v2 = (x*cs, h(x,z+1), (z+1)*cs)
+            if v1.y < 0.3: v1.y = -10.0;  if v2.y < 0.3: v2.y = -10.0      # sink near-sea vertices
+            if degen == 1: emit v1, v1                                     # restart after a gap
+            degen = 2; emit v1, v2
+        elif degen == 2:
+            emit v2, v2 (last v2) ; degen = 1                              # close the run
+```
+- Vertices below 0.3 are pushed to −10 so the coastline is a crisp cliff into the water and never z-fights the sea plane [I].
+- No explicit join is inserted at the end of a row: if a row both ends and the next row starts above water, a long wrap-around triangle connects them [I] (shipped maps have water borders so this does not occur in practice).
+- `m_numTriangles = numVerts − 2`. No LOD and no chunking: the whole visible land is one draw call per pass [C]. The commented `RenderLandscapeDetail` preference is ignored (hard-coded 1) [C] `Render`, `Landscape::Init`.
+
+**Render normals (per triangle, flat shading)** [C] `BuildNormArray`: verts 0 and 1 get (0,1,0); for j = 0, 2, 4, … < numVerts−2 with `a,b,c,d = v_j..v_j+3`: `n(T_j) = normalise((c−b) × (a−b))` stored on v_j+2, `n(T_j+1) = normalise((d−b) × (c−b))` stored on v_j+3. Each vertex k ≥ 2 thus carries the normal (and colour, §23.11) of triangle (k−2, k−1, k); with `glShadeModel(GL_FLAT)` (global state, `code/renderer.cpp:Renderer::SetOpenGLState`) OpenGL uses the **last** vertex of each strip triangle, which is exactly that vertex. Degenerate triangles normalise a zero vector → (0,0,1) [C] `Vector3::Normalise`.
+
+**UVs** [C] `BuildUVArray`: `u = x / cellSize`, `v = z / cellSize` → one texture repeat per height-map cell.
+
+**[B:D3D] differences** [C] `BuildOpenGlState`: all normals negated; with `USE_DIRECT3D_TRILIST` (always on under D3D) the strip is expanded to a triangle list (3 verts per strip triangle including degenerates, winding fixed with `i%2`, all three carrying the provoking vertex's normal/colour) because D3D9 flat shading uses the first vertex.
+
+### Storage / draw path selection
+| Mode (enum value) | When | Draw |
+|---|---|---|
+| `RenderModeVertexArray` (0) | preference `RenderLandscapeMode = 0` | client-side arrays from `m_verts` |
+| `RenderModeDisplayList` (1) | preference 1, or auto-fallback | two display lists `"LandscapeMain"`, `"LandscapeOverlay"` compiled via `Resource::CreateDisplayListAsync` from `RenderMainSlow` / `RenderOverlaySlow` |
+| `RenderModeVertexBufferObject` (2) | default: preference absent/−1 ⇒ VBO if `IsOGLExtensionPerfectlySupported("GL_ARB_vertex_buffer_object")`, else display list; also falls back if `gglBindBufferARB` is NULL. Always under [B:D3D] | one static VBO (`GL_STATIC_DRAW_ARB`, uploads `m_verts.Size()` = **capacity** elements, i.e. includes unused tail [C]); if built off the main thread the upload is queued to the loading screen (`g_loadingScreen->QueueJob`) and waited for |
+| `RenderModeVertexBufferDirect3D` (3) | never assigned | – |
+[C] `LandscapeRenderer::LandscapeRenderer`, `BuildOpenGlState`, `DoBindBuffers`. Linux/Mac default preferences write `RenderLandscapeMode = 2` [C] `code/lib/preferences.cpp:CreateDefaultValues` (platform appendix).
+
+### Passes and render state (per frame, `LandscapeRenderer::Render`)
+Preceded by `Location::SetupFog()` + `glEnable(GL_FOG)`; followed by `glDisable(GL_FOG)` [C]. Both passes draw the identical strip.
+
+| State | Pass 1 "Main" (`RenderMainSlow`) | Pass 2 "Overlay" (`RenderOverlaySlow`) |
+|---|---|---|
+| Purpose | solid flat-shaded, vertex-lit terrain coloured by the ramp | additive glowing wireframe grid (texture `textures/triangleOutline.bmp`, a 128×128 8-bit image showing a 2×2 block of squares, three with a diagonal — ASCII preview via `scripts/P11_bmpascii.py`) |
+| Fog | ON, linear, colour = background, start = end/3, end = max(4000, size+1000) | ON (same) |
+| Lighting | ON, `GL_LIGHT0`, `GL_LIGHT1` (the first two level lights; §24.6) | ON, LIGHT0, LIGHT1 |
+| Material | specular (0,0,0,0), ambient+diffuse (1,1,1,0), shininess 100 | specular (0.5,0.5,0.5,1), ambient+diffuse (1.2,1.2,1.2,0), shininess 40 |
+| Colour material | ON (`GL_FRONT_AND_BACK`, `GL_AMBIENT_AND_DIFFUSE` — global) | ON |
+| Texture | OFF | `GL_TEXTURE_2D` ON; `GetTexture(name, mipmaps=true, masked=false)`; MAG `LINEAR`, MIN `LINEAR_MIPMAP_LINEAR`, wrap S/T `REPEAT`; env `MODULATE` (global) |
+| Blend | OFF (global default); negative renderer: ON `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` (left enabled) | ON `(SRC_ALPHA, ONE)` additive; negative renderer `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` |
+| Depth test / func | ON / `LEQUAL` (global) — lets pass 2 pass at equal depth | ON / LEQUAL |
+| Depth write | ON | **OFF** |
+| Cull | ON, front = CCW (global); strip faces up | ON |
+| Shade model | FLAT (global) | FLAT |
+| Arrays | vertex, normal, colour | vertex, normal, colour, texcoord |
+| Exit state | colour material OFF, lighting OFF, LIGHT0/1 OFF, VBO unbound | colour material, blend, texture, lighting, LIGHT0/1 OFF; depth write ON; blend func `(SRC_ALPHA, ONE_MINUS_SRC_ALPHA)`; wrap `CLAMP` |
+[C] `code/landscape_renderer.cpp:RenderMainSlow`, `RenderOverlaySlow`, `Render`; global defaults [C] `code/renderer.cpp:Renderer::SetOpenGLState`.
+Overlay specular uses the level lights' colour as `GL_SPECULAR` (set by `Location::SetupLights`) so grid lines catch highlights [I]. Under [B:D3D] each draw calls `g_fixedPipeline->Bind()` (FixedFunc shaders, P13) and uses a dedicated vertex declaration (POSITION f3, NORMAL f3, COLOR d3dcolor, TEXCOORD0 f2) [C].
+
+## [→ 24_rendering] 24.2 Water renderer (`Water`) [B:FULL]
+
+The sea is a plane twice the land size, from (−sizeX/2, −sizeZ/2) to (1.5·sizeX, 1.5·sizeZ), drawn as two layers: an **under-water flat textured layer** at y = −9 near land, and a **dynamic wave mesh** at y ≈ 0 that only exists near the coast [C] `code/water.h` header comment, `code/water.cpp`.
+
+### Construction (`Water::Water`)
+1. `GenerateLightMap()` — shore mask, depth map, flat-tile mask (§23.13).
+2. If `RenderWaterDetail` (preference; UI values 1 = high, 2 = medium, 3 = low; default 1 via `GetDefaultGraphicsDetail`) > 0 [C] `code/interface/prefs_graphics_window.cpp`, `code/lib/preferences.cpp`:
+   - `waterCell = detail × max(sizeX, sizeZ) / 100` (detail 1 ⇒ 200 cells across the 2× plane).
+   - Colour table = row **y = 1** (second row from the bottom of the image) of `terrain/<wavesColourFile>` (400×10, 24-bit [C] bmpinfo): `numColours = width = 400`, alpha forced to 255 (0 in negative-renderer mode).
+   - `BuildTriangleStrips()`: same single-strip/degenerate-join scheme as the landscape over the grid `xb ∈ [0, int(2·sizeX/waterCell))`, `zb` likewise, vertex pair at (fx, 0, fz) / (fx, 0, fz+cell) where `fx = −sizeX/2 + xb·cell`; a column is emitted if any of the 6 points (fx−cell…fx+cell, fz / fz+cell) `IsVertNeeded`. Then per vertex: `depth` (bilinear from the depth map), `shoreNoise = (s + sfrand(s)·0.25)·250`, `s = 1 − depth`. The depth map is freed afterwards.
+   - Wave tables sized `int(2·size/waterCell + 2)`.
+   - `UpdateDynamicWater()` once.
+3. If detail ≤ 0 only the flat layer exists.
+
+### Per-frame update (`Water::Advance` → `UpdateDynamicWater`)
+Called once per **rendered** frame from the client loop (`code/main.cpp:LocationGameLoop`, `g_app->m_location->m_water->Advance()`), not from the simulation [C]. Time = `g_gameTimer.GetAccurateTime()` [C]. Wave tables as §23.13. For each vertex pair (v1 at j, v2 at j+1, j stepping by 2):
+```
+ix = int((v1.x + sizeX/2)/cell + 0.1);  iz = int((v1.z + sizeZ/2)/cell + 0.1)
+v1.y = (waveX[ix] + waveZ[iz])   * depth[j]
+b1   = (prevH1 + prevH2 + v1.y) * 4.0 * (1 - depth[j])   + shoreNoise[j];   prevH1 = v1.y
+v2.y = (waveX[ix] + waveZ[iz+1]) * depth[j+1]
+b2   = (prevH2 + prevH1 + v2.y) * 4.0 * (1 - depth[j+1]) + shoreNoise[j+1]; prevH2 = v2.y
+v1.col = table[clamp(Round(0.7*b2 + 0.3*b1), 0, 399)]
+v2.col = table[clamp(Round(0.7*b1 + 0.3*b2), 0, 399)]          # cross-mix to soften flat-shading sawtooth
+v1.n = (-(waveX[ix+1]-waveX[ix-1])*depth[j],   v1.y, -(waveZ[iz+1]-waveZ[iz])*depth[j])     # unnormalised
+v2.n = (-(waveX[ix+1]-waveX[ix-1])*depth[j+1], v2.y, -(waveZ[iz+2]-waveZ[iz+1])*depth[j+1])
+degenerate-join fix-ups keep duplicated join vertices at equal heights (isIdentical on x,z)
+```
+`prevH1/prevH2` reset to 0 per strip (there is one strip). Brightness therefore = local wave slope proxy × "shoreness" + per-vertex shore whitening; deep water (depth ≈ 1) is dark, coast is bright [C]+[I]. Normals are only consumed by the D3D shader (§24.3); the GL path draws no normal array [C]. `waveX[ix−1]` is read out of bounds when `ix == 0` [I] (only if the very first water column is needed; not in practice). 4 constants: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, `scaleFactor = 7.0` [C] file-scope consts.
+
+Mac builds throttle the update to every other call and ≤ 15 Hz (`TARGET_OS_MACOSX`) — platform appendix [C].
+
+### Passes and render state (`Water::Render`, called from `Location::RenderWater`)
+`m_renderWaterEffect = RenderWaterEffect(1) > 0 && RenderPixelShader(1) > 0` (used by D3D only). If `m_editing`: editor grid quads (below). Then if detail > 0: flat layer + dynamic layer (dynamic skipped under D3D without hardware vertex processing), else flat layer only. Ends with `Location::SetupFog()` (which disables fog) [C].
+
+| State | Flat layer (`RenderFlatWater` → `RenderFlatWaterTiles`) | Dynamic layer (`RenderDynamicWater`) |
+|---|---|---|
+| Geometry | immediate-mode `GL_QUADS` on a 32×32 tile grid over the 2× plane at **y = −9.0**, skipping tiles flagged "all very deep"; positions run north (z = 1.5·sizeZ) → south (−0.5·sizeZ), east (x = −0.5·sizeX) → west (1.5·sizeX) | the strip from construction, `glDrawArrays(GL_TRIANGLE_STRIP)` from client memory (pos + colour arrays, stride = sizeof(WaterVertex) = 28) |
+| Texture unit 0 | `terrain/<waterColourFile>` (128×128 8-bit; `GetTexture(mip=true, masked=true)`), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, wrap REPEAT, env MODULATE (a `GL_COMBINE_RGB_EXT=REPLACE` parameter is also set but inert under MODULATE); UVs span 30 repeats across the plane and scroll by `t/30` in both axes (`timeFactor = GetAccurateTime()/30`) | none |
+| Texture unit 1 | `"water_lightmap"` (shore mask, default flags), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, env `GL_COMBINE_EXT` with `COMBINE_RGB = MODULATE` (default sources: texture × previous); UV 0→1 over the plane (v = 0 at north) | none |
+| Vertex colour | (255,255,255,255); negative renderer (255,255,255,0) | per-vertex from the waves table |
+| Blend | OFF; negative renderer ON `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` | ON `(SRC_ALPHA, ONE)` additive |
+| Depth write | **OFF** | ON (left as is) |
+| Depth test | ON (global) | ON |
+| Cull | **OFF** | ON |
+| Fog | ON (current Location fog params) | ON |
+| Lighting | OFF | OFF |
+| Exit | unit 1 texture OFF; unit 0 texture OFF, wrap CLAMP, env MODULATE; cull ON; blend OFF, func `(SRC_ALPHA, ONE_MINUS_SRC_ALPHA)`; fog OFF; depth write ON | fog OFF; blend func reset; blend OFF |
+[C] `code/water.cpp:RenderFlatWater`, `RenderFlatWaterTiles`, `RenderDynamicWater`, `Render`.
+
+Visual result: deep sea is not drawn at all (background colour + fog show through); near islands the textured, shore-masked under-layer glows; on top the additive wave mesh brightens toward the coast and with wave slope [I].
+
+**Editor water** [B:EDITOR] (`g_app->m_editing`): two `GL_QUADS` over the land rectangle at y = −10 — textured with `triangleOutline.bmp` (100 repeats, colour (250,250,250,100), blend ON) then untextured (alpha 30) [C] `Water::Render`.
+
+**[B:D3D] differences** [C]: per-vertex D3D colours; strip → list conversion that detects join triangles by perimeter > 20 units; 10 rotating dynamic vertex buffers (`NumVertexBuffers = 10`, `D3DUSAGE_DYNAMIC|WRITEONLY`, `D3DPOOL_DEFAULT`) guarded by a mutex, filled in `UpdateDynamicWater` and consumed in `RenderDynamicWater`; an `UpdateWaterThread` (120 Hz) exists but is **never started** (`m_updateWaterThread` is never assigned) [C]. The D3D branch of the constructor dereferences the bitmap pointer with `.` (`bmp.GetPixel`) where `bmp` is `const BitmapRGBA *` — this is ill-formed C++, so `water.cpp` cannot compile with `USE_DIRECT3D` at this commit [C] `code/water.cpp:Water::Water` (L119); therefore the `ReleaseDirect3D` configuration does not build as checked in [I].
+
+## [→ 24_rendering] 24.3 Water reflection (`WaterReflectionEffect`) [B:D3D] only
+
+The entire file is inside `#ifdef USE_DIRECT3D` [C] `code/water_reflection.{h,cpp}`. Created by `OpenGLD3D` device init (`code/lib/opengl_directx.cpp`, `WaterReflectionEffect::Create`) only if the device supports hardware vertex processing; needs a render-target texture of **half screen resolution** (back-buffer format) and shader `shaders/water-meshwaves.vs` + `water-meshwaves.ps3` (if pixel-shader profile ≥ ps_3) else `water-meshwaves.ps` [C].
+
+Pre-pass `PreRenderWaterReflection` (called from `Renderer::RenderFrame` **only when `RenderPixelShader > 0 && !g_app->Multiplayer()`**, i.e. never in a Multiwinia match because `Multiplayer()` ≡ `m_gameMode == GameModeMultiwinia`) [C] `code/renderer.cpp:RenderFrame`, `code/app.cpp:App::Multiplayer`:
+1. Save RT 0, bind the reflection texture, viewport = texture size, clear colour (0.3,0.3,0.3,0) + depth, restore clear colour (0,0,0,0).
+2. Mirror: `Camera::WaterReflect()`, `Location::WaterReflect()` (a no-op loop — light mirroring is commented out), `SetupLights`, `SetupMatricesFor3D`, `UpdateTotalMatrix`.
+3. User clip plane `GL_CLIP_PLANE2 = (0,1,0,0)` (planes 0/1 are used by the radar) ON; `Location::Render(false)` (no clouds, no water; spirit receivers skip themselves while `IsPrerendering()`); clip plane OFF.
+4. Un-mirror, restore matrices/lights, cull ON, restore RT and viewport.
+
+Water pass (`Start`/`Stop` around the dynamic water draw when `m_renderWaterEffect`): `g_fixedPipeline->Disable()`, bind shader; uniforms `time = ((GetTickCount() % 10000000)/1000, 0.001·1024/ScreenW)`, `worldViewProjMatrix = Renderer::GetTotalMatrix()`, sampler `water` = reflection texture with MAG/MIN LINEAR, MIP NONE. Shaders [C] `data/shaders/water-meshwaves.vs/.ps/.ps3`:
+- VS: `oPos = iPos·WVP`; `oReflCoord = (iPos + (iNorm,0))·WVP` (the unnormalised wave normal displaces the lookup); `oPosWorld = iPos`; colour passthrough.
+- PS (ps_2): `uv = 0.5·((1,1) − refl.xy/refl.w)`; `uv.y += 0.004` (seam fix); `out = 0.7·colour + 0.7·(colour.r+colour.g+colour.b)·tex(water, uv)`; `out.a = 0.7`.
+- PS (ps_3): as ps_2 plus small ripples `uv += time.y·sin((0.2·posWorld.yy + posWorld.xz)·0.25 + 4·time.x) / (|ddx(posWorld.x)| + |ddx(posWorld.z)|)`.
+In a Multiwinia match under D3D the water shader would therefore sample a reflection texture that was never rendered [I] (moot given the compile error of §24.2).
+
+## [→ 24_rendering] 24.4 Clouds and sky (`Clouds`) [B:FULL]
+
+Live in two places [C]: in-game (`Location::RenderClouds`, first thing drawn by `Location::Render(true)`) and as the **main-menu backdrop** (`code/game_menu.cpp:GameMenu::Render` creates its own `Clouds`, camera at (0,600,0), FOV 90, looking along (0,0,1) rotated by −1.899 rad about Y and −1.079 rad about Z, and renders with prediction time `−GetHighResTime()`, so the menu clouds drift with wall-clock time).
+
+State: `m_offset` (starts 0), `m_vel` (ctor (0.04,0,0); every `Advance` sets it to **(0.03, 0, −0.01)** then `m_offset += m_vel × SERVER_ADVANCE_PERIOD`) [C] `Clouds::Advance`. In-game `Advance` runs once per server tick from the simulation slice loop (`Location::AdvanceClouds`, slice 3) [C] `code/location.cpp`; render offset = `m_offset + m_vel × predictionTime` (`g_predictionTime`, plus one server period if slice < 3) [C] `Location::RenderClouds`. Clouds are cosmetic (not part of any sync check) [I].
+
+Order inside `Clouds::Render`: `RenderSky` → `RenderBlobby` → `RenderFlat` → optional `RenderFace` [C].
+
+`RenderQuad` = textured horizontal quad subdivided 4×4 (to avoid Radeon fog artefacts) [C].
+
+| Layer | Geometry | Texture / sampling | Colour (RGBA) | UV (offset `o`) | Notes |
+|---|---|---|---|---|---|
+| Sky grid (`RenderSky`) | `GL_QUADS` lines at y = 1200, every 80 units over [−4000, 6000]² (`r = 2`), each line 16 units wide (±8), both directions (125 + 125 quads) | `textures/laser.bmp` (128×32 8-bit) default flags | (0.5,0.5,1.0,0.3) | (0,0)…(1,1) across the line | fog black, start 2000, end 4000 |
+| Blobby layer 1 | quad [−8000, 9000]² (`r = 8`) at y = 1200 | `textures/clouds.bmp` (16×16 24-bit), `GetTexture(…, mip=false)`, MAG LINEAR, MIN NEAREST, REPEAT | (0.7,0.7,0.9,0.6) | z: o.z…o.z+9, x: o.x…o.x+9 | only if `RenderCloudDetail` ∈ {1,2} |
+| Blobby layer 2 | y = 1000 | same | same | o.x/2 … o.x/2+4.5 both axes | always |
+| Blobby layer 3 | y = 800 | same | same | x/z swapped: o.x…o.x+1.8, o.z…o.z+1.8 | only if detail = 1 |
+| Flat layer 1 | quad [−8000, 9000]² at y = 1200 | `textures/clouds.bmp` default flags, MAG/MIN NEAREST, REPEAT | (0.7,0.7,0.9,0.3); detail 3 → alpha 0.5 | o.z…o.z+9, o.x…o.x+9 | always |
+| Flat layer 2 | y = 1000 | same | same | o.x/2…o.x/2+4.5 | only if detail = 1 |
+| Dr S face (`RenderFace`) | quad 1600×1600 at y = 800 centred on (sizeX/2, sizeX/2) | `sepulveda/sepulveda{1..5}.bmp` (256×256 8-bit), cross-faded | white, alpha ramps 0→1 over 1 s after a 5 s delay, fades from 28 s, ends at 30 s | random zoom/offset, new picture every 0.4 s (index 5 with p≈1/10 "mouth open", 4 "eyes shut", else 1–3) | **[B:DEBUG]**: triggered only by `Clouds::ShowDrSFace` from `code/interface/cheat_window.cpp` (`CHEATMENU_ENABLED`); uses the global non-synced `frand/AppRandom` |
+
+Common state for sky/blobby/flat [C]: blend ON `(SRC_ALPHA, ONE)` additive; depth write OFF; depth test **OFF** for blobby and flat (sky grid leaves the depth test ON); fog ON with colour black (0,0,0,0) and the per-layer start/end (2000/4000 sky, 2000/5000 clouds); lighting OFF; line width 1.0 set but unused. Exit: `Location::SetupFog()` if a location exists (re-establishes level fog parameters and disables fog), depth test ON, depth write ON, blend OFF, func `(SRC_ALPHA, ONE_MINUS_SRC_ALPHA)`, texture OFF, wrap CLAMP. `RenderCloudDetail` UI values 1 = high, 2 = medium, 3 = low (default 1) [C] `prefs_graphics_window.cpp`.
+
+## [→ 24_rendering] 24.5 Global internet and sphere world renderers [B:LEGACY]
+
+`GlobalWorld::Render` → `GlobalInternet::Render` + `SphereWorld::Render` is reachable only from `Renderer::RenderFrame` when `m_locationId == −1` outside the main menu, i.e. in `GlobalWorldGameLoop`, which in this build sets `m_atMainMenu = true` and breaks out of its loop immediately; the editor variant (`GlobalWorldEditorLoop`) returns immediately (`if( true )`) [C] `code/main.cpp:GlobalWorldGameLoop`, `GlobalWorldEditorLoop`, `code/renderer.cpp:RenderFrame`. The Multiwinia main menu draws only clouds (§24.4) [C] `GameMenu::Render`. Nevertheless the **data is built at start-up** because `App` constructs `GlobalWorld` [C] `code/app.cpp` ("Inits 10"): `GlobalInternet` seeds the global RNG with `AppSeedRandom(1)` and generates its tree; `SphereWorld` loads `globalworld_outer/middle/inner.shp`.
+
+GlobalInternet generation [C] `code/global_internet.cpp:GenerateInternet`: recursive tree from centre (−797, 1949, −1135) with `size = GLOBALINTERNET_ITERATIONS = 7`; a node of size s spawns s children at offset `(sfrand(d), sfrand(d), sfrand(d))` (drawn in z, y, x order) with `d = 2·s⁴` and child size s−1; link width = parent size. Node count N(s) = 1 + s·N(s−1) ⇒ 13700, plus one node at the origin linked to the node nearest the origin ⇒ 13701 nodes (`MAXNODES`), 13700 links (`MAXLINKS`). Leaves = nodes with exactly one link.
+Render (scaled ×1000, fog linear 0…5 810 000, black; blend `(SRC_ALPHA, ONE)`; depth write OFF; cull OFF; texture ON): links as camera-independent ribbons facing the origin (`textures/laserfence2.bmp`, colour (0.25,0.25,0.5,0.8), width = link size), nodes as 20×20 quads facing the origin (`textures/glow.bmp`, (0.8,0.8,1.0,0.6)); both compiled once into display lists `"GlobalInternetLinks"`/`"GlobalInternetNodes"` (`USE_DISPLAY_LISTS` defined in this file). Packets: each frame with p = 11 % a random leaf bursts for 4 s, emitting packets that travel 1 link-length per second and hop to a random other link at each node; drawn as 60×60 camera billboards (`textures/starburst.bmp`, (0.25,0.25,0.5,0.8)) [C] `RenderPackets`, `TriggerPacket`.
+SphereWorld (Darwinia's island-selection globe, scale ×120): `RenderWorldShape` (3 nested shapes, lit by `GlobalWorld::SetupLights`: one directional light (0,1,0), colour (2.0,1.5,0.75), material spec 0.5/shininess 10), `RenderIslands` (starburst stacks, 5 or 10 redraws, location names via `g_gameFont`), `RenderTrunkLinks` (ribbons width 400 between trunk-port-linked locations, (0.4,0.3,1.0, 1.0 online / 0.4 offline)), `RenderSpirits` (spirits travelling along location→centre lines, receiver location reversed), `RenderHeaven` (50 glow sprites); skips the first 10 frames [C] `code/global_world.cpp:SphereWorld::*`. `GlobalWorld::SetupFog`: linear 0…19000, grey 0.1 [C].
+
+## [→ 24_rendering] 24.6 Lights and fog used by these passes
+
+| Item | Rule | Evidence |
+|---|---|---|
+| Level lights | `Lights_StartDefinition` lines `fx fy fz r g b`; front normalised, w = 0 (directional); colour[3] = 0. If the mission file already defined lights, map-file lights are ignored | [C] `code/level_file.cpp:ParseLights` |
+| GL binding | `Location::SetupLights`: LIGHT1 first set black (pos (0,0,−1,0)); then light i → `GL_LIGHT0+i` with POSITION = normalised front, DIFFUSE = SPECULAR = colour (values > 1 allowed, e.g. (2.0,1.0,0.4)), AMBIENT black; Christmas mode forces colour (1.3,1.2,1.2); lights left disabled. Global light-model ambient = 0 | [C] `code/location.cpp:SetupLights`, `code/renderer.cpp:SetOpenGLState` |
+| Landscape | enables LIGHT0 and LIGHT1 only → only the first two level lights shade terrain (every shipped map has exactly 2) | [C] `landscape_renderer.cpp`; survey |
+| Water, clouds | unlit | [C] |
+| Location fog | `GL_LINEAR`, density 1, colour = `g_app->m_backgroundColour`/255 with alpha 0, start = end/3, end = max(4000, sizeX+1000, sizeZ+1000), hint DONT_CARE; `SetupFog` leaves fog **disabled** — each pass enables it | [C] `Location::SetupFog` |
+| Default `Light` | colour (1.3,1.3,1.3,0), front (0,0,1) | [C] `code/worldobject/worldobject.cpp:Light::Light` |
+
+## [→ 24_rendering] 24.7 Pass list contributed by this partition (frame order inside `Location::Render(true)`)
+
+| # | Pass | Function | Blend | Depth test / write | Cull | Fog | Lighting | Textures |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Sky grid | `Clouds::RenderSky` | ON (SRC_ALPHA, ONE) | ON / OFF | ON | ON black 2000–4000 | OFF | laser.bmp |
+| 2 | Blobby clouds (1–3 layers) | `Clouds::RenderBlobby` | ON (SRC_ALPHA, ONE) | OFF / OFF | ON | ON black 2000–5000 | OFF | clouds.bmp (no mip, MAG linear) |
+| 3 | Flat clouds (1–2 layers) | `Clouds::RenderFlat` | ON (SRC_ALPHA, ONE) | OFF / OFF | ON | ON black 2000–5000 | OFF | clouds.bmp (nearest) |
+| 3b | Dr S face [B:DEBUG] | `Clouds::RenderFace` | ON (SRC_ALPHA, ONE) (inherited enable) | inherited / OFF | ON | inherited | OFF | sepulveda*.bmp |
+| 4 | Landscape main | `LandscapeRenderer::RenderMainSlow` | OFF | ON LEQUAL / ON | ON | ON level fog | ON L0+L1, colour material | – |
+| 5 | Landscape overlay | `LandscapeRenderer::RenderOverlaySlow` | ON (SRC_ALPHA, ONE) | ON / OFF | ON | ON | ON L0+L1 | triangleOutline (mip, repeat) |
+| 6 | Flat (under-)water | `Water::RenderFlatWater` | OFF | ON / OFF | OFF | ON | OFF | unit0 water_*.bmp (repeat, scrolling), unit1 water_lightmap (combine modulate) |
+| 7 | Dynamic water | `Water::RenderDynamicWater` | ON (SRC_ALPHA, ONE) | ON / ON | ON | ON | OFF | – ([B:D3D]: water-meshwaves shader) |
+(Then buildings, teams, alphas, particles, weapons, spirits — other partitions.) Negative-renderer mode (`g_app->m_negativeRenderer`) switches passes 4–6 to `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` with zero alpha [C]. Main-menu frame: only passes 1–3 (via `GameMenu::Render`) [C].
