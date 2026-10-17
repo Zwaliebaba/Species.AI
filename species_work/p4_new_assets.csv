@@ -171,3 +171,5 @@ sprite.crawler.segment.trail,architecture/components/asset_pipeline_and_resource
 sprite.crawler.segment.trail,reference/02_units/creatures.md,C-AST missing assets 1; C-RND-b missing assets 3; item 66; item 86
 strings.dev_en_gb,architecture/components/diagnostics_test_and_performance.md,C-DBG missing assets (development string table)
 uitex.app_icon,architecture/components/platform_layer.md,C-PLT missing assets 1; item 117
+fx.glow_round,reference/02_units/creatures.md,G02b missing assets 2: the Reaper Serpent eaten-orb card reuses this glow (R-UNIT-591; VFX-122 names no texture)
+fx.glow_round,architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md,G02b missing assets 2: the Reaper Serpent eaten-orb card reuses this glow (R-UNIT-591; VFX-122 names no texture)

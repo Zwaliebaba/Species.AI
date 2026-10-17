@@ -93,6 +93,7 @@ if '--markdown' in args:
           'faction.rogue.name', 'faction.visitor.name'], 'team, player and faction names and messages'),
         (['team.colour.green', 'team.colour.red', 'team.colour.yellow', 'team.colour.blue', 'team.colour.orange',
           'team.colour.purple', 'team.colour.cyan', 'team.colour.pink'], 'the eight team colour names'),
+        (['match.kill_milestone'], 'the kill-milestone message (proposed id; the owning match-rules document assigns it)'),
     ]
     L += ['', 'String ids named in pass 2a, with the documents that cite them:', '',
           '| String ids | Text | Main owner |', '|---|---|---|']
