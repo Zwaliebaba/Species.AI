@@ -318,7 +318,7 @@ Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carr
 
 ### 4.2 Modes
 
-**CAM-036** (MUST) The camera modes are those of table 4.2-A. The player modes are the live modes of R-CTRL-457; the scripted move, the structure focus and the developer fly mode are reachable only as the last column states.
+**CAM-036** (MUST) The camera modes are those of table 4.2-A. The first six are the live modes of R-CTRL-457, of which free movement, tracking, Beam Dish aim and turret aim are the player modes; this component adds the structure focus and the developer fly mode. The scripted move, the structure focus and the developer fly mode are reachable only as the last column states.
 
 Table 4.2-A Camera modes.
 
