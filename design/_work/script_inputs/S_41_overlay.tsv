@@ -45,7 +45,7 @@
 03-U4				02-U7
 03-U5	L — gameplay: subversion turret shots	Resolved	The Subversion crate task tags Darwinians (`Crate::RunSubversion`, task `TypeSubversion`, life 30 s, ends when no tagged Darwinian remains) ([06](06_player_control_and_input.md) §3 task table, [04](04_crates_powerups_and_weapons.md)) [C].	
 03-U6	L — gameplay: turret threat avoidance	Resolved	`EffectGunTurretTarget` threats are considered only in single-player; in MP Darwinians ignore them ([02](02_units_and_entities.md) docs-vs-code table, `Darwinian::SearchForThreats`) [C].	
-03-U7				29-U6
+03-U7	L — robustness: missing mandatory level-file token	Resolved	Crash: `TextReader::GetNextToken` returns NULL at the end of a line and the caller passes it straight to `atoi`/`iv_atof` (e.g. `Building::Read` subclasses such as `LaserFence::Read`); [29](29_data_formats_reference.md) §4.1 marks every required token "MISSING ⇒ CRASH" [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::GetNextToken` (Phase-5 review R3). The exact failure mode (access violation vs CRT termination) stays 29-U6.	30-U4
 03-U8	L — legacy coupling: Darwinia global-building records	Open	Inert for the new game (no campaign persistence).	
 03-U9	M — Assault map fidelity: invisible obstacles	Open		
 03-U10				04-U5
@@ -68,7 +68,7 @@
 04-U10	L — crate pacing in the grace period	Resolved	Yes [C]: `ClientToServer::AdvanceAndCatchUp` runs `Location::Advance` for every slice unless `App::GamePaused()`; `Location::AdvanceCrates` (slice 8, Multiplayer) is not gated by `Multiwinia::GameInGracePeriod` (`code/network/clienttoserver.cpp`, `code/location.cpp:Location::Advance`). Verified by this register.	
 04-U11	L — weapon ranges are derived arithmetic	Open	Adopt the formulas as the new spec or instrument a build.	
 04-U12	M — timer arithmetic	Resolved	IEEE-754 replay: 1.0 → 11 ticks, 2.5 → 25, 5.0 → 51, 15.0 → 151, 45.0 → 450, 60.0 → 600; float life timers 30 → 300, 60 → 601 ([04](04_crates_powerups_and_weapons.md)) [C]. The design choice remains 01-U2.	
-05-U1	H — capture rules: which Darwinian occupies a port	Resolved	Exact [C]: `Building::EvaluatePorts` calls `EntityGrid::GetNeighbours(…, 5.0, …)`, which tests `dx² + dz² < range²` for every candidate (only the count/presence helpers are cell-approximate) — `code/entity_grid.cpp:EntityGrid::GetNeighbours`. Verified by this register.	
+05-U1	H — capture rules: which Darwinian occupies a port	Resolved	Exact [C]: `Building::EvaluatePorts` calls `EntityGrid::GetNeighbours(…, 5.0, …)`, which tests `dx² + dz² < range²` for every candidate (only the count/presence helpers are cell-approximate) — `code/entity_grid.cpp:EntityGrid::GetNeighbours`. Verified by this register. Tie rule (Phase-5 review R1): the result order — cell x, then cell z, then team 0…5, then cell slot — decides which Darwinian is "first" at a port; the new game should define an explicit tie rule.	
 05-U2	L — spawn network latency per map	Open		
 05-U3	M — economy leak: spirits stuck in Harvested/Collected	Open		02-U9
 05-U4				22-U17
@@ -91,13 +91,13 @@
 06-U9	L — robustness: order with zero units (NaN start)	Open		
 06-U10	L — camera tracking edge case	Open		
 06-U11	L — documentation classification of legacy windows	Open		
-06-U12	L — missing icon	Resolved	`icons/compass_empty.bmp` can never be requested (`Vector2::Normalise` maps a zero vector to (0, 1)) ([25](25_textures_and_assets.md)) [C].	
-07-U1	M — AI quality: CPU teams lose crate rewards to orphaned Officer tasks	Open		
+06-U12	L — missing icon	Resolved	`icons/compass_empty.bmp` can never be requested (`Vector2::Normalise` maps a zero vector to (0, 1)) ([25](25_textures_and_assets.md)) [C]. If it were requested, `Resource::GetTextureWithFlags` would fail a fatal `AppReleaseAssert` (latent fatal, not live; Phase-5 review R4) [C] `code/lib/resource.cpp`.	
+07-U1	M — AI quality: CPU teams lose crate rewards to orphaned Officer tasks	Open	Narrowed by Phase-5 review R3: [07](07_ai.md) §7.4 lists too few selection-clearing calls — the AI's own Darwinian power-up placements (`Task::SwitchTo` via `Task::TargetBooster`, `TargetSubversion`, `TargetHotFeet`, `TargetRage`), `Officer::SetOrders` in formation mode and `TaskManager::AdvanceTasks` also call `SelectUnit(−1, −1, −1)` (`code/taskmanager.cpp`, `code/worldobject/officer.cpp`), so the stall is rarer than 07 predicts; the measurement is still needed to calibrate CPU strength.	
 07-U2	M — AI: stale task id may fire a power-up at own units	Open		
 07-U3				31-U14
 07-U4				04-U1
 07-U5	L — AI: fence/wall-blind initial graph	Open		
-07-U6	M — combat: does the officer facing steer formation fire	Open		
+07-U6	M — combat: does the officer facing steer formation fire	Resolved	Yes [C]: while the officer is not walking to a waypoint, `Officer::Advance` turns `m_front` toward `m_targetFront` by 0.06 per tick (`SERVER_ADVANCE_PERIOD · 3.0 · 0.2`); formation members copy the officer's `m_front` (`Darwinian::AdvanceFollowingOfficer`) and centre their threat search 0.66 × search range ahead of it (`Darwinian::SearchForThreats`: `searchPos += formationOfficer->m_front · searchRange · 0.66`) — so B15 (defenders facing away) does change which threats a formation engages (`code/worldobject/officer.cpp:Officer::Advance`, `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`). Verified by this register; Phase-5 review R3 flagged it as answerable.	
 07-U7	M — AI/combat: units locking onto the immortal AI entity at (20, 0, 20)	Open		02-U13
 07-U8	L — AI: NaN priorities on isolated nodes	Open		
 07-U9	M — retribution frequency	Resolved	Yes: `RetributionMode` is a check box on the host's Advanced Options page for Domination, KOTH, CTS and Blitzkrieg ([09](09_meta_systems.md) §4.2) [C]; absent (−1) counts as on ([01](01_game_modes.md) §2.9).	
@@ -240,7 +240,7 @@
 26-U7	L — render extrapolation semantics	Resolved	`g_predictionTime` semantics settled in [24](24_rendering.md) §2.4 and [20](20_architecture.md) §10.6 [C].	
 26-U8	L — bubble colours intent	Open		
 26-U9	L — DSP enabled for players?	Open		
-27-U1	L — DirectSound 3D panning/roll-off	Open		10-U7
+27-U1	L — DirectSound 3D panning/roll-off	Open	Or declare a normative replacement law (equal-power pan, `minDistance/d`, roll-off 1, explicit max distance) as the specification (Phase-5 review R5).	10-U7
 27-U2	M — audio: is music reachable in MW	Resolved	Never: every `TypeMusic` trigger is Darwinia script content or `USE_LOADERS` code, and all music is excluded from shipped archives ([10](10_audio_design.md) §6.4) [C].	
 27-U3	L — software mixer crash	Open		
 27-U4	L — software mixer restart silence	Open		
@@ -268,7 +268,7 @@
 29-U3				28-U3
 29-U4	L — marker name lookup	Open		25-U10
 29-U5	L — archive tool version	Open		25-U7
-29-U6	L — robustness: missing token behaviour	Open	Immaterial for a re-implementation (validate every token).	03-U7;30-U4
+29-U6	L — robustness: missing token behaviour	Open	Immaterial for a re-implementation (validate every token).	
 29-U7	L — crash tool provenance	Open		
 29-U8	L — panel animation tool	Open		26-U4
 29-U9				25-U1
@@ -281,7 +281,7 @@
 30-U1	M — tutorial design: Tutorial 2 start depends on idle wandering	Open		09-U15
 30-U2	M — tutorial design: CPU must take spawn 83 first	Open		
 30-U3				22-U20
-30-U4				29-U6
+30-U4				03-U7
 30-U5	L — tutorial: local team id	Resolved	Team ids are assigned as the first free slot (`Server::RegisterNewTeam`, [22](22_determinism_and_networking.md) §8.3) [C] and the local client requests its team before any CPU team [I] → team 0.	
 30-U6	L — inert loop	Resolved	`GlobalWorldGameLoop` sets `m_atMainMenu = true` and breaks on its first check ([20](20_architecture.md) §9.6) [C].	
 30-U7				22-U21
