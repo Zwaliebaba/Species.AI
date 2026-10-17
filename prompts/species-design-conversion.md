@@ -20,9 +20,9 @@ The owner fixed these values. Do not change them without asking the owner.
 |---|---|
 | `REPO` | repository root (the directory that holds `.git`) |
 | `ORIG` | `$REPO/design/`, the input corpus. It is **read-only** until the cutover (Phase 7). |
-| `NEXT` | `$REPO/design_next/`, the staging area for the new set. It becomes `$REPO/design/` at the cutover. |
+| `NEXT` | `$REPO/design_next/`, the staging area for the new set. It becomes `$REPO/Design/` at the cutover (owner decision O22). |
 | `WORK` | `$REPO/species_work/`, holding run files: ledger, plans, packages, reports, scripts and logs. It is committed during the run for crash safety and deleted at the cutover. |
-| `TOOLS` | `$REPO/tools/design-check/`, the retained gate tooling (brief X-TOOLS). It survives the cutover. |
+| `TOOLS` | `$REPO/Tools/DesignCheck/`, the retained gate tooling (brief X-TOOLS), named in the `AGENTS.md` style (`CheckDesign.py`). It survives the cutover. `$REPO/Tools/DesignModels/` holds the retained reference terrain generator and the design phase's models. |
 | `OUTBOX` | a directory outside the repository that the owner can open (your session's scratchpad or outputs directory). It holds the owner-only hand-over files of §8.3. |
 | `BRANCH` | the branch this session was given. Commit and push only there. |
 | `BASE_COMMIT` | `git rev-parse HEAD` at the start of the run, recorded in `WORK/RUN_LOG.md` |
@@ -35,7 +35,7 @@ The owner fixed these values. Do not change them without asking the owner.
 | Document standard | Reference specifications with `R-` requirement IDs (§6). Engine component specifications follow the arc42 level-3 template. Engine-technology decisions are **MADR 4** ADRs. Diagrams are Mermaid. |
 | Language | British English (en-GB), matching `ORIG` spelling. |
 | Max parallel agents | 6 per wave, unless the owner raises it |
-| Files kept at cutover | `vision/`, `prompts/species-design-phase.md`, `tools/design-check/`. This prompt is removed, because it necessarily names the original product. |
+| Files kept at cutover | `vision/`, `prompts/species-design-phase.md`, `Tools/DesignCheck/`, `Tools/DesignModels/`, `AGENTS.md`, the root configuration files and `.github/`. This prompt is removed, because it necessarily names the original product. |
 
 ---
 
@@ -45,7 +45,7 @@ The owner fixed these values. Do not change them without asking the owner.
 
 **Done means all of the following are true on `BRANCH`, and pushed:**
 
-1. `design/` holds only the reference library (structure in §5). The original documents, `design/_work/`, `species_work/` and this prompt are gone from the tree. `vision/`, `prompts/species-design-phase.md` and `tools/design-check/` remain.
+1. `Design/` holds only the reference library (structure in §5); the old `design/` is gone. The original documents, `design/_work/`, `species_work/` and this prompt are gone from the tree. `vision/`, `prompts/species-design-phase.md` and `tools/design-check/` remain.
 2. A repo-wide scan (excluding `.git/`) finds **zero** hard-fail patterns (§7.1), and every soft-flag hit (§7.2) is either fixed or listed with a one-line justification in `design/CONVENTIONS.md` §"Allowed terms".
 3. All gates of §7.3 pass. `TOOLS` reproduces them without naming the original product (brief X-TOOLS).
 4. The fidelity review (brief R1) shows **no** fact that went missing without a DEC entry recording why.
@@ -86,7 +86,7 @@ The corpus carries about 26,000 source citations (`code/…`, `data/…`), about
 |---|---|---|---|
 | 0 | Setup: branch check, `WORK/` and `NEXT/` skeleton, `RUN_LOG.md`, heading inventory script | coordinator | — |
 | 1 | Foundations: rename ledger, pattern lists and scanner, routing plan and work packages, standards baseline, `CONVENTIONS.md` | F1, F2a, F2b, F2c, F3 | **G1** coordinator review; owner questions batch 1 (name collisions only) |
-| 2 | Decisions: decision register (DEC-NNN) and engine ADRs (ADR-NNNN) | X-DEC, X-ADR | **G2** coordinator review; owner questions batch 2 (blocking ADRs only) |
+| 2 | Decisions: decision register (DEC-NNN) and engine ADRs (ADR-NNN) | X-DEC, X-ADR | **G2** coordinator review; owner questions batch 2 (blocking ADRs only) |
 | 3 | Rewrite: reference documents, engine components, asset manifest, glossary | G-*, C-*, X-AST, X-GLO (about 28 agents in waves of 6) | per-package acceptance (§9.0) |
 | 4 | Integration: gate script, X-AST pass 2, retained tooling | coordinator, X-AST, X-TOOLS | **G3** all automated gates pass |
 | 5 | Independent review: fidelity, cleanliness, adoptability, consistency | R1a, R1b, R2, R3, R4 | — |
@@ -119,7 +119,7 @@ Paste this section into every subagent brief.
 ## 5 Target structure of the new set
 
 ```
-design/                                   (built as NEXT/, renamed at cutover)
+Design/                                   (built as NEXT/, renamed at cutover; owner decision O22)
 ├── README.md                             what this library is (reference for the Species design phase), reading guide, document map, status
 ├── CONVENTIONS.md                        normative language, ID scheme and prefix registry, units, naming, diagram rules, allowed terms
 ├── REQUIREMENTS_INDEX.md                 generated: every requirement ID → file → one-line title
@@ -152,7 +152,7 @@ design/                                   (built as NEXT/, renamed at cutover)
 │       ├── platform_layer.md
 │       ├── build_tooling_and_distribution.md     toolchain, CI, content build, packaging, crash reporting
 │       └── diagnostics_test_and_performance.md
-├── adr/                                  README.md (index) + 0001-<slug>.md …   (MADR 4, engine technology only)
+├── ADR/                                  README.md (index) + ADR-001-<slug>.md …   (MADR 4, engine technology only; AGENTS.md §6)
 ├── decisions/
 │   ├── README.md                         generated index of every DEC (id, title, status, file)
 │   ├── verdicts_and_fixes.md, open_questions.md, <topic>.md …   DEC-NNN entries (§6.5), one file per package
@@ -183,7 +183,7 @@ Folder splits are allowed wherever §4 rule 9 needs them. Every folder has a `RE
 ### 6.2 What a clean Species document never contains
 
 - Any name from the hard-fail lists of §7.1: the original product, studio, characters, map names, UI strings, code identifiers or file names.
-- Source references of any form: `code/…`, `data/…`, `contrib/…`, `tools/…` (except the retained `tools/design-check/`), `targets/…`, `docs/…`, `path:Symbol`, `:L123`, links to `ORIG` files.
+- Source references of any form: `code/…`, `data/…`, `contrib/…`, `tools/…` (the retained tooling lives under `Tools/`, which this pattern does not match), `targets/…`, `docs/…`, `path:Symbol`, `:L123`, links to `ORIG` files.
 - Evidence tags `[C]`, `[I]`, `[U]`; build tags `[B:…]`; "Verbatim excerpt" blocks; the closing sections "Source map", "Docs-vs-code discrepancies", "IP items" and "Appendix — dead/legacy code"; coverage counts; review statistics.
 - Recovery and history narrative: "the original", "the shipped game", "recovered", "carry forward", "legacy", "port", "used to", "at this commit", "in the source", "was found to", "a bug in". A quirk that the reference keeps is stated as the rule. A quirk that is fixed is stated as the fixed rule, with its DEC ID. Documents may say "the reference game" or "the reference" where the context needs it.
 - Legacy technology, even as a contrast. Do not write "unlike OpenGL…" or "instead of DirectSound…". Specify the Species technology positively and leave the rationale to the ADR, which also never names the legacy technology (§9.2, brief X-ADR).
@@ -269,7 +269,7 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 3. Relative links resolve, and anchors exist (GitHub slug rules). No link points outside `NEXT/`, except to `vision/`.
 4. Mermaid: every block parses. Adapt `ORIG/_work/scripts/mermaid_check.js` by copying it to `WORK/scripts/`, making it recurse into sub-folders, and locating Chromium through `PLAYWRIGHT_BROWSERS_PATH`. Use a pinned mermaid 11 build.
 5. Requirement IDs: unique; prefix registered; each ID defined exactly once; every ID cited elsewhere exists.
-6. DEC and ADR references: every `DEC-NNN` and `ADR-NNNN` cited exists, and every Open DEC is cited by at least one requirement.
+6. DEC and ADR references: every `DEC-NNN` and `ADR-NNN` cited exists, and every Open DEC is cited by at least one requirement.
 7. Asset closure: every asset id cited in a reference document or a component exists in `assets/asset_manifest.csv`, and every manifest row names at least one consumer.
 8. Tuning keys: unique; each key is cited by at least one requirement.
 9. Truncation words (§4 rule 7) outside code blocks: zero.
@@ -314,9 +314,9 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 
 1. Re-run `check_design.py` on `NEXT/`. It must pass.
 2. Write the owner-only hand-over files to `OUTBOX` (§8.3). They may name the original product and its assets, which is why they never enter the repository.
-3. `git rm -r -q design`. Then delete any untracked leftovers under `design/` (`rm -rf design`) and confirm `design/` no longer exists. Only then run `git mv design_next design`; if `design/` still existed, `git mv` would nest the set as `design/design_next/`.
-4. `git rm -r -q species_work prompts/species-design-conversion.md`. Keep `prompts/species-design-phase.md`, `vision/` and `tools/design-check/`.
-5. Run the §7.1 scan over the whole repository, excluding `.git/`. This includes `.gitignore`, `.gitattributes`, `vision/`, `prompts/` and `tools/`. It must find zero hits. Then run `TOOLS` over `design/`. It must pass.
+3. `git rm -r -q design`. Then delete any untracked leftovers under `design/` (`rm -rf design`) and confirm `design/` no longer exists. Only then run `git mv design_next Design`; if `design/` or `Design/` still existed, `git mv` would nest the set inside it. Confirm that `Design/ADR/` holds the ADRs and that no path in the repository still names `design_next/`.
+4. Move the retained terrain generator to `Tools/DesignModels/TerrainGenerator.py` with a README (scan it first). Then `git rm -r -q species_work prompts/species-design-conversion.md`. Keep `prompts/species-design-phase.md`, `vision/`, `Tools/`, `AGENTS.md`, the root configuration files and `.github/`.
+5. Run the §7.1 scan over the whole repository, excluding `.git/`. This includes `.gitignore`, `.gitattributes`, `AGENTS.md`, `.github/`, `vision/`, `prompts/` and `Tools/`. It must find zero hits. Then run `TOOLS` over `design/`. It must pass.
 6. Commit `species: cut over to the Species reference library`, then push.
 
 ### 8.3 Final report to the owner
@@ -451,7 +451,7 @@ Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, tar
 
 **X-TOOLS — Retained gate tooling.**
 Inputs: `WORK/scripts/check_design.py`, `scan_patterns.py`, the adapted Mermaid checker, `WORK/forbidden_patterns.tsv`, `WORK/soft_patterns.tsv`, `WORK/ip_tokens.txt`.
-Output: `TOOLS/` (`$REPO/tools/design-check/`), which survives the cutover and serves the design phase and every later design change:
+Output: `TOOLS/` (`$REPO/Tools/DesignCheck/`), which survives the cutover and serves the design phase and every later design change:
 - `check_design.py`: the structural gates of §7.3 (items 3–11), generalised. It takes the design root as an argument, and its prefix registry is read from `CONVENTIONS.md`, so new prefixes need no code change.
 - `tech_patterns.tsv`: the provenance and legacy-technology patterns of §7.1 and §7.2 in plain text. They contain no product or studio names.
 - `ip_denylist.sha256`: one SHA-256 hash per normalised token and per n-gram of 1–5 words from `WORK/ip_tokens.txt`. Hash the n-grams of the scanned text the same way. The repository never holds the names in plain text, and the scan still catches them.
@@ -478,6 +478,6 @@ Ask the owner (`AskUserQuestion`, batched, at most four questions per call, with
 2. Proposed engine ADRs flagged `owner-decision: blocking` (batch 2, at G2);
 3. conflicting verdicts in `ORIG/40` that change scope, for example a feature that is both dropped and kept;
 4. a High adoptability gap that cannot be closed from `ORIG` without inventing game design;
-5. anything that would push to a branch other than `BRANCH`, or would delete anything outside `design/`, `species_work/` and this prompt.
+5. anything that would push to a branch other than `BRANCH`, or would delete anything outside `design/`, `design_next/` (moved, not deleted), `species_work/` and this prompt.
 
 Everything else is decided by these rules and logged in `RUN_LOG.md`. Never invent game design to close a gap. Record it as an Open DEC, with the most conservative default the corpus supports.
