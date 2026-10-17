@@ -8,11 +8,11 @@ This folder specifies the Species renderer: the Direct3D 12 component that turns
 
 | File | Holds | Requirement IDs |
 |---|---|---|
-| [README.md](README.md) (this file) | responsibilities and boundaries, interfaces, the renderer object and its data model, initialisation, resolution and aspect handling, the Direct3D 12 mapping per component | RND-001 to RND-049 |
-| [frame_graph_and_passes.md](frame_graph_and_passes.md) | the default pipeline state, the pipeline-state catalogue, the frame types, the ordered pass table of a match frame and its branches, render-time extrapolation, fades, the pause banner, the screen transition, the loading-view frame, screenshots and poster renders | RND-050 to RND-129 |
-| [world_renderers.md](world_renderers.md) | terrain, sea, sky and clouds, meshes and team tint, structures (solid and alpha passes, depth sort, lights and ports), trees, Barrier Emitters | RND-130 to RND-209 |
-| [view_lighting_and_fog.md](view_lighting_and_fog.md) | projection and view, the depth-bias variants, frustum tests, screen projection, fog, the two-light lighting model, decal shadows, screen-space effects | RND-210 to RND-259 |
-| [shaders.md](shaders.md) | the HLSL shader set derived from the pass table, with inputs, outputs, permutation axes, combine modes and the tint function | RND-260 to RND-299 |
+| [README.md](README.md) (this file) | responsibilities and boundaries, interfaces, the renderer object and its data model, initialisation, resolution and aspect handling, the Direct3D 12 mapping per component | RND-001 to RND-045 |
+| [frame_graph_and_passes.md](frame_graph_and_passes.md) | the default pipeline state, the pipeline-state catalogue, the frame types, the ordered pass table of a match frame and its branches, render-time extrapolation, fades, the pause banner, the screen transition, the loading-view frame, screenshots and poster renders | RND-050 to RND-120 |
+| [world_renderers.md](world_renderers.md) | terrain, sea, sky and clouds, meshes and team tint, structures (solid and alpha passes, depth sort, lights and ports), trees, Barrier Emitters | RND-130 to RND-205 |
+| [view_lighting_and_fog.md](view_lighting_and_fog.md) | projection and view, the depth-bias variants, frustum tests, screen projection, fog, the two-light lighting model, decal shadows, screen-space effects | RND-208 to RND-250 |
+| [shaders.md](shaders.md) | the HLSL shader set derived from the pass table, with inputs, outputs, permutation axes, combine modes and the tint function | RND-260 to RND-280 |
 | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | actors and crowds, sprite cards and billboards, laser bolts, beams, lightning and blasts, route lines, markers, the world cursor, the Power slots panel and HUD overlays | from RND-300 |
 | [visual_language.md](visual_language.md) | the look and feel to keep: palettes, blend modes, glow, the darkening layer, crowd rendering, the camera's sense of scale | from RND-300 |
 | [options_and_budgets.md](options_and_budgets.md) | every graphics option, the quality presets and the performance budgets | from RND-300 |
@@ -163,7 +163,7 @@ public:
 
 **RND-012** (MUST) A map light (`MapLight`) is a plain record, not a simulated object: a colour (three channels, values above 1 allowed) and a direction vector `front`. Every map light is directional, at an infinite distance. A light built without data has the colour `rnd.light.default_colour` (1.3, 1.3, 1.3) and the direction `rnd.light.default_front` (0, 0, 1). Setting a direction from a vector stores it as directional; normalising a light normalises its direction to unit length.
 
-**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [data_schemas/README.md](../data_schemas/README.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
+**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [data_schemas.md](../data_schemas.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
 
 ### 3.3 Per-frame and per-draw constants
 

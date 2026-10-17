@@ -34,3 +34,7 @@
 | 30 | G02a1 vs G00 | — | Worker task search 10–20 ticks (G00) or 11–20 (G02a1, from the source) | fix G00 |
 | 31 | G02a1 | new | Worker rules that divide by game speed under tick scheduling; the fire-damage kill over-count; Trooper per-unit fire rate under floating-point stats; range of the Worker's Hive and Spitter Plant check | four new DECs |
 | 32 | G02b | — | G02b split into `creatures.md` and `hazards_and_projectiles.md` | update the package targets, dec_map affects_files, the manifest consumers and the glossary links |
+| 33 | G02b | — | the per-kind stat keys, slope keys and `ref.unit.bomber.colour` stay in G02a1's README (G02b cites them) | keep; there are no `ref.unit.base.*` keys, and G02a2's guessed `ref.unit.base.*` keys must be remapped to `ref.unit.corpse.*` and `ref.unit.health_max` |
+| 34 | G02b | DEC-014 | search caps of 256 and 2000 attempts are G02b's own values, sized from DEC-014's acceptance rates | confirm in DEC-014, or flag as provisional |
+| 35 | G02b | new | seven DEC requests (the Crawler's 20-per-tick bite, the Abductor's double time step, others); missing assets: the Abductor beam ring and the Reaper Serpent eaten-orb card | DEC triage; X-AST pass 2 |
+| 36 | G02b split | — | links to `creatures_and_hazards.md` remain in decisions, the glossary, G00, `essence_orbs.md`, reference/12 and the manifest | global link update to the two new files |

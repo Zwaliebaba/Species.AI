@@ -75,7 +75,7 @@ for name in MINE:
     for a in set(re.findall(r'ADR-\d{4}', txt)):
         if a not in adr_files:
             problems.append(f'{name}: {a} does not exist')
-    for a in set(re.findall(r'`((?:fx|terrain|mesh|sprite|ui|marker|icon|help|sfx)\.[a-z0-9_.]+)`', txt)):
+    for a in set(re.findall(r'`((?:fx|terrain|mesh|sprite|ui(?!\.error|\.match)|marker|icon|help|sfx)\.[a-z0-9_.]+)`', txt)):
         if a not in assets:
             problems.append(f'{name}: asset {a} not in the manifest')
     body = re.sub(r'```.*?```', '', txt, flags=re.S)

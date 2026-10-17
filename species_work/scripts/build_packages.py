@@ -132,7 +132,8 @@ pkg('G02a1', 3, None, '§9.3', own('G02a', lambda r: r['target_file'] in G02A1_T
     notes='The worker state machine needs the largest ID block. Facts MERGEd from 41 §1.4 are stated as rules.')
 pkg('G02a2', 3, None, '§9.3', own('G02a', lambda r: r['target_file'] not in G02A1_T),
     ids={'R-UNIT': '300-499'})
-pkg('G02b', 3, None, '§9.3', own('G02b'), ids={'R-UNIT': '500-899'})
+pkg('G02b', 3, None, '§9.3', own('G02b'), ['reference/02_units/creatures.md', 'reference/02_units/hazards_and_projectiles.md'],
+    ids={'R-UNIT': '500-899'}, notes='Output split at Phase 3 (over 120 KB): creatures.md and hazards_and_projectiles.md.')
 pkg('G03a', 3, None, '§9.3', own('G03a'), ids={'R-BLDG': '001-399'})
 pkg('G03b', 3, None, '§9.3', own('G03b'), ids={'R-BLDG': '400-799'})
 pkg('G04', 3, None, '§9.3', own('G04'),

@@ -277,7 +277,7 @@ Both draws use the `transition` entry.
 
 **RND-110** (MUST) When the screenshot control fires and no UI window is open, the renderer takes the poster path with *N* = the poster-resolution setting ([options_and_budgets.md](options_and_budgets.md); 1 gives an ordinary screenshot). If *N* > 1 the poster state becomes `Tiling`. When a UI window is open, the control is ignored and an ordinary frame is drawn.
 
-**RND-111** (MUST) The poster path renders *N* × *N* complete frames in tile order *i* = 0 … *N*² − 1, each including every overlay pass, and each with the tile's sub-projection of [view_lighting_and_fog.md](view_lighting_and_fog.md) RND-214 while the state is `Tiling`. After each tile frame, the screenshot read-back copies `final_image`, the frame is presented, and the tile index increases. After the last tile the poster is saved and the state returns to `Inactive`.
+**RND-111** (MUST) The poster path renders *N* × *N* complete frames in tile order *i* = 0 to *N*² − 1, each including every overlay pass, and each with the tile's sub-projection of [view_lighting_and_fog.md](view_lighting_and_fog.md) RND-214 while the state is `Tiling`. After each tile frame, the screenshot read-back copies `final_image`, the frame is presented, and the tile index increases. After the last tile the poster is saved and the state returns to `Inactive`.
 
 **RND-112** (MUST) The read-back is a frame-graph copy of `final_image` into `screenshot_readback` after the last overlay pass and before the present copy; the CPU maps it only after the frame's fence has completed, on a worker thread (ADR-0004, ADR-0076).
 
