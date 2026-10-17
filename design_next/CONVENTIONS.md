@@ -100,8 +100,8 @@ Species names come from the rename ledger of the conversion run. A document uses
 - **Terms.** Proper Species terms are capitalised as listed (Worker, Spawn Node, Supply crate). Generic words (tree, wall, spider, turret) stay lower case in prose.
 - **Identifiers.** Types and enumerators are PascalCase (`SpawnNode`, `CrateOutcome::Shield`); files and ids are lower case (`species`, `map_siege_3p_01`). The game name is `Species` in types and namespaces and `species` in files and ids. A generic word used as a type name takes its kind as a suffix (`TreeObject`, `SpiderCreature`), and no Species identifier repeats an identifier of the reference implementation.
 - **String ids** are dotted, `<prefix>.<item>`, using the prefix listed (`unit.worker.name`, `mode.flag_chain.objective`, `ui.lobby.ready`). Player-facing text is always new text.
-- **Tuning keys** are `ref.` followed by the same prefix and a parameter (`ref.unit.worker.move_speed`, `ref.mode.spawn_control.match_length`).
-- **Asset ids** come from `assets/asset_manifest.csv`; the patterns below give only the stems that documents may cite.
+- **Tuning keys** in reference documents are `ref.` followed by the same prefix and a parameter (`ref.unit.worker.move_speed`, `ref.mode.spawn_control.match_length`); in engine components they are the component prefix in lower case followed by a topic and a parameter (`ter.generator.octaves`, `dbg.blackbox.check_message_max_chars`).
+- **Asset ids** are the `asset_id` values of `assets/asset_manifest.csv`, dotted, starting with one of these stems: `amb.`, `anim.`, `cursor.`, `font.`, `fx.`, `glyph.`, `help.`, `icon.`, `mapfile.`, `marker.`, `mesh.`, `music.`, `sfx.`, `sprite.`, `strings.`, `terrain.`, `thumb.`, `uitex.`. An asset stem is never also a string-id prefix or a tuning-key prefix, so a dotted id reads unambiguously as an asset, a string or a key; the gate checks this.
 
 ### 8.1 Game, studio and factions
 
@@ -283,7 +283,7 @@ Species names come from the rename ledger of the conversion run. A document uses
 | Improved | UI or text | — | `ui.power_slots.improved` |
 | map definition | UI or text | `MapDefinition` | `map` |
 | map id | UI or text | `MapId` | `map` |
-| match UI sound source | UI or text | `MatchUI` | `sfx.match_ui` |
+| match UI sound source | UI or text | `MatchUI` | — |
 | Not available | UI or text | — | `ui.power_slots.not_available` |
 | Objectives complete | UI or text | — | `ui.match.objectives_complete` |
 | Power slot | UI or text | `PowerSlot` | `ui.power_slots` |

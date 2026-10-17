@@ -1,6 +1,6 @@
 # Builder
 
-> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Essence orbs](essence_orbs.md) · [Collector](collector.md) · [Worker](worker.md) · [Population flow](../05_population_flow.md) · [Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) · [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) · [Bots](../07_bots.md)
+> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Essence orbs](essence_orbs.md) · [Collector](collector.md) · [Worker](worker.md) · [Population flow](../05_population_flow.md) · [Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) · [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) · [Bots](../07_bots/README.md)
 
 ## 1 Purpose and player experience
 
@@ -79,7 +79,7 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-463** (MUST) A player controls a Builder only by selecting it (`PlayerCommand::Select`) and giving it a move order: a team command state with `move_target` while the Builder is the team's selected actor ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-442) sets its waypoint to `pointer_position`, makes it ToWaypoint and clears the team's selection inside the same step. Secondary fire with a Builder selected has no effect. Cancelling its Power is R-UNIT-449.
 
-**R-UNIT-464** (MUST) A bot team's Builder thinks every `ref.unit.builder.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state ([bots](../07_bots.md)).
+**R-UNIT-464** (MUST) A bot team's Builder thinks every `ref.unit.builder.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state ([bots](../07_bots/README.md)).
 
 ### 2.8 Presentation and sound
 
@@ -184,8 +184,8 @@ Keys cited from other documents (their values are defined there):
 
 ## 7 Dependencies
 
-- **Reference documents:** [Units](README.md) (base advance); [essence_orbs.md](essence_orbs.md); [collector.md](collector.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.19 (Builder as an orb taker); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Builder outcome, its validity, Power stop); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (structure push of the delivery point); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-0020); [animation and VFX](../../architecture/components/animation_and_vfx.md) (debris, muzzle flash); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (status text).
+- **Reference documents:** [Units](README.md) (base advance); [essence_orbs.md](essence_orbs.md); [collector.md](collector.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.19 (Builder as an orb taker); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Builder outcome, its validity, Power stop); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (structure push of the delivery point); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-0020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (debris, muzzle flash); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (status text).
 - **Assets:** `mesh.unit.builder_body`; `icon.power.builder` (the Builder Power; also drawn over the Builder); `sfx.unit.builder.presence_loop`, `sfx.unit.builder.hurt`, `sfx.unit.builder.die`.
 
 ## 8 Open decisions

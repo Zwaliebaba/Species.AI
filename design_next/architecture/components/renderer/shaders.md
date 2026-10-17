@@ -62,7 +62,7 @@ struct DrawConstants {               // root constants
 | `sea_flat` | VS, PS | `INVERTED` (off, on) | `sea_flat`, `sea_flat_inverted` | 5a |
 | `sea_waves_update` | CS | none | — (compute) | 5b |
 | `sea_waves` | VS, PS | none | `sea_waves` | 5b |
-| `mesh_lit` | VS, PS | `FOG` (off, on); `EDGE_MASK` (off, on) | `mesh_lit_fog`, `port_pad`, the lit-mesh entries of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), the shatter-debris entry of [animation_and_vfx.md](../animation_and_vfx.md) | 6, 7b, 8, 14 |
+| `mesh_lit` | VS, PS | `FOG` (off, on); `EDGE_MASK` (off, on) | `mesh_lit_fog`, `port_pad`, the lit-mesh entries of [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), the shatter-debris entry of [README.md](../animation_and_vfx/README.md) | 6, 7b, 8, 14 |
 | `unlit_textured` | VS, PS | `FOG` (off, on); `CUTOUT` (off, on); `ALPHA_ONE` (off, on) | `glow_additive_fog`, `glow_additive_fog_nodepth`, `alpha_fog` and the textured sprite entries of the owner documents | 7a to 7d, 8, 10a, 16, 20, 23 |
 | `unlit_dual_texture` | VS, PS | `COMBINE` (`modulate`, `replace_then_modulate`); `CLIP_PLANES` (0, 2); `FOG` (off, on) | `dual_alpha_fog`, `dual_additive_clip_fog` | 8 |
 | `unlit_vertex_colour` | VS, PS | `FOG` (off, on) | the untextured quad entries of the owner documents; the map-editor sea fill | 11, map editor |
@@ -72,7 +72,7 @@ struct DrawConstants {               // root constants
 | `fullscreen_fade` | VS, PS | none | `fade` | 27 |
 | `screen_transition` | VS, PS | `EDGE_STRIP` (off, on) | `transition` | 34 |
 
-The remaining shaders of the frame belong to their owner documents and follow the same rules: the sprite-card and billboard shaders and the instance-culling compute shader ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), ADR-0009); the particle emit, simulate, compact and draw shaders and the shard update and draw shaders ([animation_and_vfx.md](../animation_and_vfx.md), ADR-0010); the UI batch and glyph shaders ([ui_framework/README.md](../ui_framework/README.md), ADR-0031, ADR-0034).
+The remaining shaders of the frame belong to their owner documents and follow the same rules: the sprite-card and billboard shaders and the instance-culling compute shader ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), ADR-0009); the particle emit, simulate, compact and draw shaders and the shard update and draw shaders ([README.md](../animation_and_vfx/README.md), ADR-0010); the UI batch and glyph shaders ([ui_framework/README.md](../ui_framework/README.md), ADR-0031, ADR-0034).
 
 **RND-264** (MUST) The material shaders of ADR-0003 map onto this list as follows: unlit vertex colour is `unlit_vertex_colour`; one texture modulated by the vertex colour is `unlit_textured`; two textures with an explicit combine mode is `unlit_dual_texture` (and `sea_flat`); lit by two directional lights with no ambient term is `mesh_lit`; lit with one texture and the wire-grid edge mask is `mesh_lit` with `EDGE_MASK` on and the `terrain` shader's grid term.
 

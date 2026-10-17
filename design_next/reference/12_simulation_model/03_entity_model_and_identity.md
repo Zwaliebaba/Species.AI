@@ -12,7 +12,7 @@ This document specifies the object model of a match as Species types:
 - the base contracts of each family: construction, initialisation, the per-tick advance, death and removal, freezing, ownership change, collision and the render hooks;
 - object identity: the handle, how every kind of object is identified and allocated, how a handle resolves to an object, and the rules for holding handles.
 
-Per-kind behaviour (state machines, stats, weapons) is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots.md). Containers and the order in which objects advance are [04](04_containers_and_update_order.md); spatial queries, movement and collision are [05](05_space_routing_and_physics.md); teams and ownership are [06](06_teams_and_player_commands.md).
+Per-kind behaviour (state machines, stats, weapons) is in [units](../02_units/README.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) and [bots](../07_bots/README.md). Containers and the order in which objects advance are [04](04_containers_and_update_order.md); spatial queries, movement and collision are [05](05_space_routing_and_physics.md); teams and ownership are [06](06_teams_and_player_commands.md).
 
 **Player experience.** The object model has no direct player-facing behaviour. It is what makes every Worker, structure, projectile and Essence orb behave the same way in every match and on every participant: each object has one identity, advances once per tick, and disappears through one removal path.
 
@@ -287,29 +287,29 @@ Table 2.2-G gives every type, its base, its family and the document that specifi
 | 2 | `SimObjectId` | — | helper | §2.4 |
 | 3 | `Actor` | `SimObject` | actor base | §2.3; [units](../02_units/README.md) |
 | 4 | `ActorStatTable` | — | helper | [units](../02_units/README.md) |
-| 5 | `BotController` | `Actor` | actor | [bots](../07_bots.md) |
+| 5 | `BotController` | `Actor` | actor | [bots](../07_bots/README.md) |
 | 6 | `Transport` | `Actor` | actor | [Transport](../02_units/transport.md) |
-| 7 | `AntCreature` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 8 | `CentipedeCreature` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 7 | `AntCreature` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
+| 8 | `CentipedeCreature` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
 | 9 | `Worker` | `Actor` | actor | [Worker](../02_units/worker.md) |
-| 10 | `CrawlerEgg` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 10 | `CrawlerEgg` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
 | 11 | `Builder` | `Actor` | actor | [Builder](../02_units/builder.md) |
 | 12 | `Collector` | `Actor` | actor | [Collector](../02_units/collector.md) |
 | 13 | `MeteorRock` | `Actor` | actor | [units](../02_units/README.md) |
 | 14 | `BarrageMissile` | `Actor` | actor | [units](../02_units/README.md) |
 | 15 | `Leader` | `Actor` | actor | [Leader and formations](../02_units/leader_and_formations.md) |
-| 16 | `ReaperSerpent` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 16 | `ReaperSerpent` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
 | 17 | `Bomber` | `Actor` | actor | [units](../02_units/README.md) |
 | 18 | `Abductor` | `Actor` | actor | [units](../02_units/README.md) |
-| 19 | `SpiderCreature` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 20 | `BroodDrifter` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 19 | `SpiderCreature` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
+| 20 | `BroodDrifter` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
 | 21 | `Trooper` | `Actor` | actor | [Strike team](../02_units/strike_team.md) |
-| 22 | `SeedPod` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 23 | `Crawler` | `Actor` | actor | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 22 | `SeedPod` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
+| 23 | `Crawler` | `Actor` | actor | [creatures and hazards](../02_units/README.md) |
 | 24 | `ActorGroup` | — | actor container | §2.3; [06](06_teams_and_player_commands.md) |
 | 25 | `StrikeTeam` | `ActorGroup` | actor container | [Strike team](../02_units/strike_team.md) |
 | 26 | `AirstrikeFlight` | `ActorGroup` | actor container | [units](../02_units/README.md) |
-| 27 | `CrawlerGroup` | `ActorGroup` | actor container | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 27 | `CrawlerGroup` | `ActorGroup` | actor container | [creatures and hazards](../02_units/README.md) |
 | 28 | `Structure` | `SimObject` | structure base | §2.3; [buildings and world objects](../03_buildings_and_world_objects/README.md) |
 | 29 | `StructurePort` | — | helper | [buildings and world objects](../03_buildings_and_world_objects/README.md) |
 | 30 | `CarryableStructure` | `Structure` | structure base | [buildings and world objects](../03_buildings_and_world_objects/README.md) |
@@ -333,9 +333,9 @@ Table 2.2-G gives every type, its base, its family and the document that specifi
 | 48 | `SpawnNode` | `SpawnStructure` | structure | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) |
 | 49 | `TeleportStructure` | `Structure` | structure base | [buildings and world objects](../03_buildings_and_world_objects/README.md) |
 | 50 | `BeamDish` | `TeleportStructure` | structure | [buildings and world objects](../03_buildings_and_world_objects/README.md) |
-| 51 | `BotObjective` | `Structure` | structure | [bots](../07_bots.md) |
-| 52 | `BotObjectiveMarker` | `Structure` | structure | [bots](../07_bots.md) |
-| 53 | `BotNavNode` | `Structure` | structure | [bots](../07_bots.md) |
+| 51 | `BotObjective` | `Structure` | structure | [bots](../07_bots/README.md) |
+| 52 | `BotObjectiveMarker` | `Structure` | structure | [bots](../07_bots/README.md) |
+| 53 | `BotNavNode` | `Structure` | structure | [bots](../07_bots/README.md) |
 | 54 | `Hive` | `Structure` | structure | [defences and props](../03_buildings_and_world_objects/defences_and_props.md) |
 | 55 | `CommandConsole` | `Structure` | structure | [mode objects](../03_buildings_and_world_objects/mode_objects.md) |
 | 56 | `SupplyCrate` | `Structure` | structure | [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
@@ -370,7 +370,7 @@ Table 2.2-G gives every type, its base, its family and the document that specifi
 | 85 | `OrderMarker` | `SimObject` | effect | [Leader and formations](../02_units/leader_and_formations.md) |
 | 86 | `OrderTrailMark` | `SimObject` | effect | [Leader and formations](../02_units/leader_and_formations.md) |
 | 87 | `EssenceOrb` | `SimObject` | effect (own pool) | [Essence orbs](../02_units/essence_orbs.md) |
-| 88 | `Wisp` | `SimObject` | effect | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 88 | `Wisp` | `SimObject` | effect | [creatures and hazards](../02_units/README.md) |
 | 89 | `SnowFlake` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | 90 | `DustVortex` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | 91 | `LightningStrike` | `SimObject` | effect | [04](04_containers_and_update_order.md) §2.8; [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
@@ -378,10 +378,10 @@ Table 2.2-G gives every type, its base, its family and the document that specifi
 | 93 | `FormationSlot` | — | helper | [Leader and formations](../02_units/leader_and_formations.md) |
 | 94 | `ClothFlag` | — | helper (presentation primitive) | [mode objects](../03_buildings_and_world_objects/mode_objects.md) |
 | 95 | `TrailPoint` | — | helper | [Strike team](../02_units/strike_team.md) |
-| 96 | `CrawlerTrailSample` | — | helper | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 97 | `SpiderGait` | — | helper | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 98 | `ProceduralLeg` | — | helper | [creatures and hazards](../02_units/creatures_and_hazards.md) |
-| 99 | `ProceduralFoot` | — | helper | [creatures and hazards](../02_units/creatures_and_hazards.md) |
+| 96 | `CrawlerTrailSample` | — | helper | [creatures and hazards](../02_units/README.md) |
+| 97 | `SpiderGait` | — | helper | [creatures and hazards](../02_units/README.md) |
+| 98 | `ProceduralLeg` | — | helper | [creatures and hazards](../02_units/README.md) |
+| 99 | `ProceduralFoot` | — | helper | [creatures and hazards](../02_units/README.md) |
 
 ### 2.3 Base contracts
 
@@ -440,9 +440,9 @@ Table 2.3-A Simulated-object contract.
 
 **R-SIM-120** (MUST) The base structure advance requests removal if the structure is destroyed; otherwise it evaluates the structure's ports and requests no removal. Every structure advances exactly once per tick (DEC-117).
 
-**R-SIM-121** (MUST) When a structure's advance requests removal, the structure pool removes and destroys it; if it was a bot navigation node (`BotNavNode`) or a wall (`WallObject`), the bot navigation links are recomputed at once ([bots](../07_bots.md)); the obstacle grid and the affected route-graph edges are updated (DEC-095, [04](04_containers_and_update_order.md) §2.6).
+**R-SIM-121** (MUST) When a structure's advance requests removal, the structure pool removes and destroys it; if it was a bot navigation node (`BotNavNode`) or a wall (`WallObject`), the bot navigation links are recomputed at once ([bots](../07_bots/README.md)); the obstacle grid and the affected route-graph edges are updated (DEC-095, [04](04_containers_and_update_order.md) §2.6).
 
-**R-SIM-122** (MUST) A structure changes team in place, through its team-assignment operation, which also emits the team-change sound event; only Control Zones and Relics bind a sound to it (DEC-117, [audio design](../10_audio_design.md)); the structure keeps its serial, so every handle to it stays valid. The ownership change paths are [buildings and world objects](../03_buildings_and_world_objects/README.md).
+**R-SIM-122** (MUST) A structure changes team in place, through its team-assignment operation, which also emits the team-change sound event; only Control Zones and Relics bind a sound to it (DEC-117, [audio design](../10_audio_design/README.md)); the structure keeps its serial, so every handle to it stays valid. The ownership change paths are [buildings and world objects](../03_buildings_and_world_objects/README.md).
 
 **R-SIM-123** (MUST) A structure's sphere, mesh and ray hit tests are delegated to its collision volume, which is map and asset data (DEC-012). The base structure is indestructible: damage to it only emits its damage sound event.
 
@@ -680,8 +680,8 @@ The keys `ref.sim.id.first_serial` and `ref.sim.id.structure_serial_start` are d
 
 ## 7 Dependencies
 
-- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md), [04 Containers and update order](04_containers_and_update_order.md), [05 Space, routing and physics](05_space_routing_and_physics.md), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md), [units](../02_units/README.md) and its kind documents, [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots.md), [maps and level design](../08_maps_and_level_design/rules_and_conventions.md), [audio design](../10_audio_design.md).
-- Engine components: [renderer](../../architecture/components/renderer/README.md) (the passes of table 2.3-C), [data schemas](../../architecture/components/data_schemas.md) (map records and the actor stat table), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (handle range and finiteness checks in test builds).
+- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md), [04 Containers and update order](04_containers_and_update_order.md), [05 Space, routing and physics](05_space_routing_and_physics.md), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md), [units](../02_units/README.md) and its kind documents, [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots/README.md), [maps and level design](../08_maps_and_level_design/rules_and_conventions.md), [audio design](../10_audio_design/README.md).
+- Engine components: [renderer](../../architecture/components/renderer/README.md) (the passes of table 2.3-C), [data schemas](../../architecture/components/data_schemas/README.md) (map records and the actor stat table), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (handle range and finiteness checks in test builds).
 - Assets: none.
 
 ## 8 Open decisions

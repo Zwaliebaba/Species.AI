@@ -1,6 +1,6 @@
 # Spawn Control
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [05 Population flow](../05_population_flow.md) · [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) · [07 Bots](../07_bots.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [05 Population flow](../05_population_flow.md) · [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) · [07 Bots](../07_bots/README.md)
 
 ## 1 Purpose and player experience
 
@@ -53,7 +53,7 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-209** (MUST) Supply crates follow the standard rules; the Collector, Builder and Spawn Surge outcomes are valid, because every Spawn Control map has Spawn Nodes ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-210** (MUST) Bots use the standard priority model, form Leader formations when they have enough friendly Workers and set Waypoint beacons at Spawn Nodes ([reference/07](../07_bots.md)).
+**R-MODE-210** (MUST) Bots use the standard priority model, form Leader formations when they have enough friendly Workers and set Waypoint beacons at Spawn Nodes ([reference/07](../07_bots/README.md)).
 
 ### 2.5 HUD and end of match
 
@@ -149,8 +149,8 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md) (shared skeleton); [05 Population flow](../05_population_flow.md) (Spawn Node production, Catch-up bonus, caps); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node capture); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots.md); [08 Maps](../08_maps_and_level_design/rules_and_conventions.md).
-- **Assets:** `mesh.structure.spawn_node`, `map.spawn_control`, `help.mode_card`, `help.mode_page`.
+- **Reference documents:** [README](README.md) (shared skeleton); [05 Population flow](../05_population_flow.md) (Spawn Node production, Catch-up bonus, caps); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node capture); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [08 Maps](../08_maps_and_level_design/rules_and_conventions.md).
+- **Assets:** `mesh.structure.spawn_node`, `mapfile.spawn_control`, `help.mode_card`, `help.mode_page`.
 
 ## 8 Open decisions
 

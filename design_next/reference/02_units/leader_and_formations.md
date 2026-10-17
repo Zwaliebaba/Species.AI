@@ -1,6 +1,6 @@
 # Leader and formations
 
-> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Worker](worker.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands.md) · [07 Bots](../07_bots.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Worker](worker.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) · [07 Bots](../07_bots/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 ## 1 Purpose and player experience
 
@@ -17,7 +17,7 @@ The Leader's stats are in the actor stat table of [README.md](README.md) §4.1: 
 
 **R-UNIT-152** (MUST) A Leader never attacks and never gives an order to an individual Worker. Its effect on Workers comes only from the Workers' Leader search ([worker.md](worker.md), R-UNIT-096) and from formation membership (§2.6) (DEC-031).
 
-**R-UNIT-153** (MUST) **Promotion.** `PlayerCommand::PromoteWorker(team, actor)` on a Worker of the team that is not Burning spawns a Leader of the team at the Worker's position with the Worker's velocity, emits control-flash particles (presentation), sets the Worker's promoted flag so that its next advance removes it without an Essence orb, registers a Leader marker for the local team in the world markers (presentation), and selects the new Leader in the same step ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), R-SIM-454). A bot promotes Workers through the same operation ([reference/07](../07_bots.md)).
+**R-UNIT-153** (MUST) **Promotion.** `PlayerCommand::PromoteWorker(team, actor)` on a Worker of the team that is not Burning spawns a Leader of the team at the Worker's position with the Worker's velocity, emits control-flash particles (presentation), sets the Worker's promoted flag so that its next advance removes it without an Essence orb, registers a Leader marker for the local team in the world markers (presentation), and selects the new Leader in the same step ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), R-SIM-454). A bot promotes Workers through the same operation ([reference/07](../07_bots/README.md)).
 
 **R-UNIT-154** (MUST) **Demotion.** `PlayerCommand::DemoteLeader(team, actor)` on a Leader of the team sets its demoted flag, so that its next advance removes it without an Essence orb, spawns one Worker of the same team at its position with its velocity, and clears the team's selection. Demotion and scrapping are separate actions; the cancel action never kills a Leader (DEC-086; scrapping is `PlayerCommand::ScrapActor` in [reference/12](../12_simulation_model/06_teams_and_player_commands.md)).
 
@@ -75,7 +75,7 @@ Table 2.3-A Leader state.
 | waypoint teleport | none | a teleport structure to enter at the waypoint |
 | bot target front, turn flag | zero vector, false | the facing that its bot hook sets; never reset to zero once set |
 | demoted flag | false | its next advance removes it |
-| no-formations flag | false | disables the formation toggle; set by the bot controller for some Leaders ([reference/07](../07_bots.md)) |
+| no-formations flag | false | disables the formation toggle; set by the bot controller for some Leaders ([reference/07](../07_bots/README.md)) |
 | order position | — | the destination of a waypoint order that it hands to Workers; in formation mode, the target it faces |
 | order structure | none | the teleport structure at the destination, and also the teleport structure it last used, which its followers take |
 | order route | none | the land route of a waypoint order |
@@ -97,7 +97,7 @@ Table 2.3-A Leader state.
 - **PrepareWaypoint:** if the team's selected actor is no longer this Leader, the order becomes None, and step 2 of R-UNIT-163 makes it PrepareWaypoint again on the next tick;
 - **Follow:** while its order position is not the zero vector, it turns towards the order position until front · direction > `ref.unit.leader.follow_face_tolerance` (0.99), then clears the order position.
 
-**R-UNIT-168** (MUST) A Leader that is the team's selected actor, has the order PrepareWaypoint and is not walking faces the team's current pointer position, as the team command state sets it ([reference/12](../12_simulation_model/06_teams_and_player_commands.md); the threshold for "not walking" is that of [reference/06](../06_controls_camera_and_commands.md)).
+**R-UNIT-168** (MUST) A Leader that is the team's selected actor, has the order PrepareWaypoint and is not walking faces the team's current pointer position, as the team command state sets it ([reference/12](../12_simulation_model/06_teams_and_player_commands.md); the threshold for "not walking" is that of [reference/06](../06_controls_camera_and_commands/README.md)).
 
 ### 2.5 Orders and formation operations
 
@@ -117,7 +117,7 @@ Table 2.3-A Leader state.
 
 **R-UNIT-174** (MUST) `EnterFollowMode()` sets the order Follow when the team's Leader research level is above `ref.unit.leader.follow_level` (2); the level is 3 in every match (README R-UNIT-009). Leader mode cycling (`PlayerCommand::NextMode`, `PlayerCommand::PreviousMode`) has no effect in a match ([reference/12](../12_simulation_model/06_teams_and_player_commands.md)).
 
-**R-UNIT-175** (MUST) The commands reach a Leader as [reference/12](../12_simulation_model/06_teams_and_player_commands.md) states: `PlayerCommand::OrderUnit` with the move-only flag runs `AssignWaypoint(position)`, and without it `AssignOrders(position, straight)`; `PlayerCommand::ToggleUnit` cancels the orders of a Leader that is in formation mode or holds a waypoint order, and otherwise gives it orders to the point `ref.sim.command.leader_toggle_offset` (1 wu) in front of it, which enters formation, and selects it in the same step (R-SIM-454). The bindings are in [reference/06](../06_controls_camera_and_commands.md).
+**R-UNIT-175** (MUST) The commands reach a Leader as [reference/12](../12_simulation_model/06_teams_and_player_commands.md) states: `PlayerCommand::OrderUnit` with the move-only flag runs `AssignWaypoint(position)`, and without it `AssignOrders(position, straight)`; `PlayerCommand::ToggleUnit` cancels the orders of a Leader that is in formation mode or holds a waypoint order, and otherwise gives it orders to the point `ref.sim.command.leader_toggle_offset` (1 wu) in front of it, which enters formation, and selects it in the same step (R-SIM-454). The bindings are in [reference/06](../06_controls_camera_and_commands/README.md).
 
 **R-UNIT-176** (MUST) The order state machine of diagram 3-B holds in a match: None becomes PrepareWaypoint on every tick; PrepareWaypoint becomes None when the Leader is no longer the team's selected actor; a far click from PrepareWaypoint, Waypoint or Follow-without-formation gives Waypoint with a new route; a toggle click gives Follow with formation mode; a click while in formation mode moves the formation and keeps Follow; entering a teleport at the waypoint turns Waypoint into None; and cancelling gives None.
 
@@ -173,7 +173,7 @@ Table 2.6-A Row size by slot-array size (`ref.unit.leader.row_size_table`).
 
 ### 2.8 Bot hook
 
-**R-UNIT-188** (MUST) The bot controller of the Leader's team runs the Leader's bot hook ([reference/07](../07_bots.md)) every `ref.unit.leader.bot_think_ticks` (11 ticks, nominal 1 s):
+**R-UNIT-188** (MUST) The bot controller of the Leader's team runs the Leader's bot hook ([reference/07](../07_bots/README.md)) every `ref.unit.leader.bot_think_ticks` (11 ticks, nominal 1 s):
 
 1. **Waypoint order.** The next think is set `ref.unit.leader.bot_waypoint_think_ticks` (101 ticks, nominal 10 s) ahead. The hook finds the bot navigation node nearest to the Leader and the target structure that node leads to for the team; if the chosen node is more than `ref.unit.leader.bot_reorder_distance` (60 wu) from the Leader's current order position, the Leader receives orders (`AssignOrders`) to the chosen node's position plus an offset of length `ref.unit.leader.bot_order_offset_base` + `NextUnit(ref.unit.leader.bot_order_offset_spread)` (20 + [0, 20) wu) at angle `NextUnit(2π)`; for a node that targets a Beam Dish, the order point is that Beam Dish's entrance. The hook then ends.
 2. **Otherwise** the hook makes sure the Leader is in formation, by `FormUp(position + front × ref.unit.leader.bot_formation_ahead)` (50 wu) when it is not. If more than `ref.unit.leader.bot_enemy_count` (10) enemies are within `ref.unit.leader.bot_enemy_range` (270 wu, 3 × 90), the Leader stops (`AssignWaypoint(position)`) and its bot target front turns towards the enemies' mean position. If the Leader is walking, the hook ends.
@@ -190,11 +190,11 @@ The rules of this section are presentation (DEC-007); their random choices draw 
 
 **R-UNIT-190** (MUST) A Leader is drawn with `mesh.unit.leader_figure` under the whole-model team tint (README R-UNIT-044), scaled with camera distance and turned towards the camera like a Worker card ([worker.md](worker.md), R-UNIT-142, with the player's distance scale factor), and with the damage flicker of README R-UNIT-051.
 
-**R-UNIT-191** (MUST) A Leader's banner is a cloth flag (`ClothFlag`) of size `ref.unit.leader.banner_size` (20) at the mesh's flag socket. Its size grows with camera distance d by the factor 1 + scale factor × (d − 100) ÷ `ref.unit.leader.banner_growth_divisor` (1500), and it turns towards the camera by d ÷ `ref.unit.leader.banner_face_divisor` (200). It waves while the order is not None. It shows `marker.leader_banner` in the variant of the order: idle for None, PrepareWaypoint and Waypoint; follow for Follow; formation in formation mode. A Waypoint banner carries the pointer `marker.flag_pointer`, aimed at the first route waypoint after the start of the order route. The world markers draw the local team's banners, and the Leader renderer draws every other team's ([reference/06](../06_controls_camera_and_commands.md)).
+**R-UNIT-191** (MUST) A Leader's banner is a cloth flag (`ClothFlag`) of size `ref.unit.leader.banner_size` (20) at the mesh's flag socket. Its size grows with camera distance d by the factor 1 + scale factor × (d − 100) ÷ `ref.unit.leader.banner_growth_divisor` (1500), and it turns towards the camera by d ÷ `ref.unit.leader.banner_face_divisor` (200). It waves while the order is not None. It shows `marker.leader_banner` in the variant of the order: idle for None, PrepareWaypoint and Waypoint; follow for Follow; formation in formation mode. A Waypoint banner carries the pointer `marker.flag_pointer`, aimed at the first route waypoint after the start of the order route. The world markers draw the local team's banners, and the Leader renderer draws every other team's ([reference/06](../06_controls_camera_and_commands/README.md)).
 
-**R-UNIT-192** (MUST) A Leader's picking volume is a sphere centred `ref.unit.leader.pick_centre_lift` (4 wu) above its centre, of radius `ref.unit.leader.pick_radius` (8 wu), scaled with camera distance. Picking is presentation and input ([reference/12](../12_simulation_model/05_space_routing_and_physics.md), R-SIM-387). The Leader cursor badge and promotion power icon `icon.power.leader` are drawn by [reference/06](../06_controls_camera_and_commands.md).
+**R-UNIT-192** (MUST) A Leader's picking volume is a sphere centred `ref.unit.leader.pick_centre_lift` (4 wu) above its centre, of radius `ref.unit.leader.pick_radius` (8 wu), scaled with camera distance. Picking is presentation and input ([reference/12](../12_simulation_model/05_space_routing_and_physics.md), R-SIM-387). The Leader cursor badge and promotion power icon `icon.power.leader` are drawn by [reference/06](../06_controls_camera_and_commands/README.md).
 
-**R-UNIT-193** (MUST) A Leader raises the presentation events of table 2.10-A ([reference/10](../10_audio_design.md)). Cancelling a Leader's orders stops all its order events.
+**R-UNIT-193** (MUST) A Leader raises the presentation events of table 2.10-A ([reference/10](../10_audio_design/README.md)). Cancelling a Leader's orders stops all its order events.
 
 Table 2.10-A Leader sound events.
 
@@ -378,8 +378,8 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 
 ## 7 Dependencies
 
-- **Reference documents:** [README.md](README.md) (stats, base advance, health change, team tint, flicker); [worker.md](worker.md) (Leader search, formation membership, volley rhythm); [reference/06](../06_controls_camera_and_commands.md) (bindings, world markers, Leader cursor badge, pointer facing); [reference/07](../07_bots.md) (bot navigation nodes, bot promotion); [reference/10](../10_audio_design.md) (sound events); [reference/11](../11_tutorial_and_help.md) (first tutorial); [reference/12](../12_simulation_model/README.md) (commands, team command state, routes, obstacle push, water step, effects).
-- **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Leader mesh, banner, trail marks), [../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md) (cloth flag, particles).
+- **Reference documents:** [README.md](README.md) (stats, base advance, health change, team tint, flicker); [worker.md](worker.md) (Leader search, formation membership, volley rhythm); [reference/06](../06_controls_camera_and_commands/README.md) (bindings, world markers, Leader cursor badge, pointer facing); [reference/07](../07_bots/README.md) (bot navigation nodes, bot promotion); [reference/10](../10_audio_design/README.md) (sound events); [reference/11](../11_tutorial_and_help.md) (first tutorial); [reference/12](../12_simulation_model/README.md) (commands, team command state, routes, obstacle push, water step, effects).
+- **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Leader mesh, banner, trail marks), [../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md) (cloth flag, particles).
 - **ADRs:** ADR-0020 (team tint), ADR-0021 (mesh socket schema: the flag socket).
 - **Assets:** `mesh.unit.leader_figure`, `marker.leader_banner`, `marker.flag_pointer`, `marker.order_trail`, `icon.power.leader`, `sfx.unit.leader.spawn`, `sfx.unit.leader.order_waypoint`, `sfx.unit.worker.hurt`, `sfx.unit.worker.die`, `sfx.unit.trooper.enter_gate`.
 

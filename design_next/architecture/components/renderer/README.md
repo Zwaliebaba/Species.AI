@@ -56,7 +56,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 | simulation (`reference/12_simulation_model/`) | the presentation snapshot, the extrapolation time, the last processed update slice, the number of the last command frame taken | write any field; draw from the simulation generator |
 | terrain component ([terrain.md](../terrain.md)) | the height field, the outside height, the cell size, the per-triangle colour-ramp look-up, the sea shore mask, the depth map, the flat-water tile mask, the coastline wave formulae | generate or modify terrain |
 | camera component ([camera_and_sequences.md](../camera_and_sequences.md)) | position, front and up vectors and the vertical field of view of the frame | move the camera |
-| animation and VFX ([animation_and_vfx.md](../animation_and_vfx.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-0010, ADR-0036) | emit particles on its own from simulation state |
+| animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-0010, ADR-0036) | emit particles on its own from simulation state |
 | UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-0031, ADR-0034) | lay out widgets |
 | asset pipeline ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)) | cooked meshes and textures, each texture keyed by (asset id, processing variant) (see DEC-098) | change another requester's texture processing |
 | platform layer ([platform_layer.md](../platform_layer.md)) | the window, its client-area size, resize, DPI and focus events, and the platform clock (ADR-0074, ADR-0075) | create or style the window |
@@ -163,7 +163,7 @@ public:
 
 **RND-012** (MUST) A map light (`MapLight`) is a plain record, not a simulated object: a colour (three channels, values above 1 allowed) and a direction vector `front`. Every map light is directional, at an infinite distance. A light built without data has the colour `rnd.light.default_colour` (1.3, 1.3, 1.3) and the direction `rnd.light.default_front` (0, 0, 1). Setting a direction from a vector stores it as directional; normalising a light normalises its direction to unit length.
 
-**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [data_schemas.md](../data_schemas.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
+**RND-013** (MUST) Maps supply their lights in their map data ([reference/08_maps_and_level_design/rules_and_conventions.md](../../../reference/08_maps_and_level_design/rules_and_conventions.md), [README.md](../data_schemas/README.md)). At match-world initialisation the renderer copies them, normalising each direction; every frame it passes the first two to the shaders as the two directional lights (RND-226). While the match's seasonal state is active (see DEC-118, DEC-101), every light colour is replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2). Whether maps keep per-map light values or select named lighting presets is decided by the design phase (see DEC-562).
 
 ### 3.3 Per-frame and per-draw constants
 
@@ -307,9 +307,9 @@ Diagnostics: PIX markers and GPU timestamps per pass (ADR-0068); the development
 | sky and clouds | one additive instanced draw with fog computed in the shader | ADR-0011 | [world_renderers.md](world_renderers.md) §4.3 |
 | meshes | static buffers per mesh, per-node transforms in a structured buffer, instancing for repeated structures, team colour from a per-instance palette index | ADR-0009, ADR-0019, ADR-0020 | [world_renderers.md](world_renderers.md) §4.4 |
 | trees | geometry generated at map load as data and drawn instanced; crown hit volumes baked by the content build | ADR-0009, DEC-012 | [world_renderers.md](world_renderers.md) §4.6 |
-| sprites, particles, Essence orbs, Workers | instanced quads expanded in the vertex shader from per-instance data with an orientation mode; additive and darkening catalogue entries | ADR-0009, ADR-0010 | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [animation_and_vfx.md](../animation_and_vfx.md) |
+| sprites, particles, Essence orbs, Workers | instanced quads expanded in the vertex shader from per-instance data with an orientation mode; additive and darkening catalogue entries | ADR-0009, ADR-0010 | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [README.md](../animation_and_vfx/README.md) |
 | darkening layers | the darkening blend (zero, inverse source colour) | ADR-0005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3.2 |
-| shatter debris | a shard buffer advanced on the GPU, with a barycentric edge mask | ADR-0010 | [animation_and_vfx.md](../animation_and_vfx.md) |
+| shatter debris | a shard buffer advanced on the GPU, with a barycentric edge mask | ADR-0010 | [README.md](../animation_and_vfx/README.md) |
 | depth offsets for coplanar layers | depth-biased catalogue variants | ADR-0005, ADR-0016 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.2 |
 | text | a glyph cache from licensed fonts with shaping and kerning | ADR-0034 | [ui_framework/README.md](../ui_framework/README.md) |
 | UI | a batched UI vertex stream with alpha, additive and ink catalogue entries | ADR-0031 | [ui_framework/README.md](../ui_framework/README.md) |

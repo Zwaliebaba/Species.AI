@@ -1,6 +1,6 @@
 # Units
 
-> Status: Reference · Prefix: R-UNIT · Related: [00 Reference overview](../00_reference_overview.md) · [05 Population flow](../05_population_flow.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-UNIT · Related: [00 Reference overview](../00_reference_overview.md) · [05 Population flow](../05_population_flow.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 This folder specifies every mobile actor of a reference match. This README is the folder index, the unit catalogue, the conventions that every unit document shares, and the base behaviour and stats of every actor kind.
 
@@ -51,7 +51,7 @@ Table 2.1-A Actor kinds.
 | ant | `AntCreature` | [creatures.md](creatures.md) | released by a Hive; one wake-up ant from the Hive outcome; Seed Pods of the ant kind | yes | not allowed |
 | Reaper Serpent | `ReaperSerpent` | [creatures.md](creatures.md) | Seed Pods of the Reaper Serpent kind, for the Rogue faction, with at most 2 alive and never in Siege | yes | allowed |
 | Seed Pod | `SeedPod` | [creatures.md](creatures.md) | launched by Spitter Plants; the Brood outcome; nested Seed Pods of the Seed Pod kind | yes | not allowed |
-| bot controller | `BotController` | [../07_bots.md](../07_bots.md) | one per bot team, including the Rogue and Visitor factions, created when the team is initialised in the match world | none: invulnerable | not allowed |
+| bot controller | `BotController` | [../07_bots/README.md](../07_bots/README.md) | one per bot team, including the Rogue and Visitor factions, created when the team is initialised in the match world | none: invulnerable | not allowed |
 
 **R-UNIT-002** (MUST) A map definition may place actors through its instant units only of the kinds marked "allowed" in table 2.1-A. A kind marked "not allowed" is never placed by a map but is still created at run time by the rules listed for it. An instant unit of a kind that a Power delivers (Transport, Builder) may be marked to arrive as a granted Power instead of as an actor. The reference maps place 269 Workers and 7 Transports, the Transports on four Siege maps and granted as Powers, and no instant unit of any other kind ([reference/08](../08_maps_and_level_design/README.md)).
 
@@ -300,11 +300,11 @@ Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Br
 
 ### 2.13 Presentation binding
 
-**R-UNIT-047** (MUST) Units raise sounds as presentation events named by source and event, for example `worker.attack` (DEC-007; [reference/10](../10_audio_design.md)). Every actor kind has the base events `<source>.spawn`, `<source>.attack`, `<source>.hurt`, `<source>.enter_gate`, `<source>.exit_gate`, `<source>.die` and `<source>.selected`. The base rules raise `spawn` in the spawn hook, `hurt` and `die` in the base health change, `attack` in the base attack and `enter_gate` on a successful teleport entry; the teleport raises `exit_gate`. Each unit document lists its further events and their triggers. A looping event is stopped by naming its source and event.
+**R-UNIT-047** (MUST) Units raise sounds as presentation events named by source and event, for example `worker.attack` (DEC-007; [reference/10](../10_audio_design/README.md)). Every actor kind has the base events `<source>.spawn`, `<source>.attack`, `<source>.hurt`, `<source>.enter_gate`, `<source>.exit_gate`, `<source>.die` and `<source>.selected`. The base rules raise `spawn` in the spawn hook, `hurt` and `die` in the base health change, `attack` in the base attack and `enter_gate` on a successful teleport entry; the teleport raises `exit_gate`. Each unit document lists its further events and their triggers. A looping event is stopped by naming its source and event.
 
-**R-UNIT-048** (MUST) Units create particles only as presentation, from the presentation generator (DEC-013). The particle roles that units use are: control flash, Worker fire, missile trail, Speed Boost trail, Sickness, blue spark, muzzle flash (`fx.muzzle_flash`), shell casing, fire, missile fire, rocket trail, explosion core, explosion debris and fireball ([../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md)).
+**R-UNIT-048** (MUST) Units create particles only as presentation, from the presentation generator (DEC-013). The particle roles that units use are: control flash, Worker fire, missile trail, Speed Boost trail, Sickness, blue spark, muzzle flash (`fx.muzzle_flash`), shell casing, fire, missile fire, rocket trail, explosion core, explosion debris and fireball ([../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md)).
 
-**R-UNIT-049** (MUST) A unit mesh that takes damage or dies may shatter: the shatter effects (`ShatterEffects`) release a share of the mesh's facets as debris, given by the fraction the caller passes ([../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md)).
+**R-UNIT-049** (MUST) A unit mesh that takes damage or dies may shatter: the shatter effects (`ShatterEffects`) release a share of the mesh's facets as debris, given by the fraction the caller passes ([../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md)).
 
 **R-UNIT-050** (MUST) A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured (0.6, 0.6, 0.6, 0) and blended with source factor source alpha and destination factor one minus source colour.
 
@@ -344,7 +344,7 @@ Table 2.14-A Weapons used by units. The values are summaries; the owning documen
 
 ### 2.15 Control model
 
-**R-UNIT-054** (MUST) The reference has no build queue and no per-unit command of the population. Every player action reaches the simulation as a player command ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), DEC-008), and each actor kind belongs to one control category of table 2.15-A. The input bindings are those of [reference/06](../06_controls_camera_and_commands.md).
+**R-UNIT-054** (MUST) The reference has no build queue and no per-unit command of the population. Every player action reaches the simulation as a player command ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), DEC-008), and each actor kind belongs to one control category of table 2.15-A. The input bindings are those of [reference/06](../06_controls_camera_and_commands/README.md).
 
 Table 2.15-A Control category per kind.
 
@@ -360,7 +360,7 @@ Table 2.15-A Control category per kind.
 | airstrike, Firebomb Run, Missile Barrage, meteor shower | targeted Power | the player chooses a target point once; the units then act on their own | [hazards_and_projectiles.md](hazards_and_projectiles.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | Brood, Hive, Swarm and Blight Grove outcomes | targeted Power | the player chooses a point; the creatures act on their own (Brood creatures belong to the placing team, DEC-107; Hive ants and Swarm creatures to the Rogue faction) | [creatures.md](creatures.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | creatures, Abductor, Wisp, Essence orb | none | — | [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md), [essence_orbs.md](essence_orbs.md) |
-| bot controller | bot player | issues the same unit operations as a player through the bot hooks of special units and through waypoint orders to Workers | [../07_bots.md](../07_bots.md) |
+| bot controller | bot player | issues the same unit operations as a player through the bot hooks of special units and through waypoint orders to Workers | [../07_bots/README.md](../07_bots/README.md) |
 
 **R-UNIT-055** (MUST) A command acts on the team it names and on that team's selected unit, and its handler first checks that a named actor exists, belongs to the team and is of the required kind; otherwise the command does nothing ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), R-SIM-453; DEC-202).
 
@@ -382,7 +382,7 @@ Table 2.17-A Actor hooks.
 | advance | the base actor advance (R-UNIT-024) | requests removal when the actor is to be destroyed |
 | dead advance | the corpse fade (R-UNIT-034) | |
 | airborne step, water step | [reference/12](../12_simulation_model/05_space_routing_and_physics.md) | |
-| bot hook | nothing | run by the team's bot controller for every special unit ([../07_bots.md](../07_bots.md)) |
+| bot hook | nothing | run by the team's bot controller for every special unit ([../07_bots/README.md](../07_bots/README.md)) |
 | health change | the base rule (R-UNIT-026) | returns whether the hit registered |
 | attack | the base attack (R-UNIT-052) | |
 | set waypoint | nothing | used by base route following |
@@ -391,7 +391,7 @@ Table 2.17-A Actor hooks.
 | selectable | false | R-UNIT-023 |
 | sound event list | the base events of R-UNIT-047 | each kind adds its own |
 | ray hit | the mesh at transform (front, up, position), or a sphere of `ref.sim.ray.sprite_radius` (5 wu) without a mesh | picking and turret rounds ([reference/12](../12_simulation_model/05_space_routing_and_physics.md)) |
-| camera focus point | position + velocity | the point the camera tracks ([reference/06](../06_controls_camera_and_commands.md)); presentation |
+| camera focus point | position + velocity | the point the camera tracks ([reference/06](../06_controls_camera_and_commands/README.md)); presentation |
 | render | nothing | presentation only (DEC-007) |
 
 ### 2.18 Explosion presentation and the shockwave ring
@@ -585,7 +585,7 @@ This index is informative and defines no tuning key. It lists the named constant
 | Reaper Serpent: most Essence orbs held | 50 | [creatures.md](creatures.md) |
 | Abductor: hover height | 500 wu | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | Abductor: abduction beam radius | 45 wu | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
-| bot navigation node: automatic link range | 600 wu | [../07_bots.md](../07_bots.md) |
+| bot navigation node: automatic link range | 600 wu | [../07_bots/README.md](../07_bots/README.md) |
 | bounce restitution | 0.85 | [reference/12](../12_simulation_model/05_space_routing_and_physics.md) (`ref.sim.physics.restitution`) |
 | handle limits: teams, groups, group members | 256, 65 536, 65 536 | [reference/12](../12_simulation_model/03_entity_model_and_identity.md) (`ref.sim.handle.*`) |
 
@@ -716,8 +716,8 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 
 ## 7 Dependencies
 
-- **Reference documents:** [worker.md](worker.md), [leader_and_formations.md](leader_and_formations.md), [essence_orbs.md](essence_orbs.md), [strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md), [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md); [reference/05](../05_population_flow.md) (Essence orb release, population cap); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (weapons, projectiles, Powers, conversions); [reference/06](../06_controls_camera_and_commands.md) (bindings); [reference/07](../07_bots.md) (bot controller, bot hooks); [reference/08](../08_maps_and_level_design/README.md) (instant units); [reference/09](../09_front_end_and_match_flow/README.md) (research settings of the match setup); [reference/10](../10_audio_design.md) (sound events); [reference/12](../12_simulation_model/README.md) (entity model, spawn order, base advance, actor grid, physics, explosions, team colours, commands).
-- **Engine components:** [../../architecture/components/data_schemas.md](../../architecture/components/data_schemas.md) (actor stat schema), [../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md) (particles, shatter effects), [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (unit rendering, shadows, flicker).
+- **Reference documents:** [worker.md](worker.md), [leader_and_formations.md](leader_and_formations.md), [essence_orbs.md](essence_orbs.md), [strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md), [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md); [reference/05](../05_population_flow.md) (Essence orb release, population cap); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (weapons, projectiles, Powers, conversions); [reference/06](../06_controls_camera_and_commands/README.md) (bindings); [reference/07](../07_bots/README.md) (bot controller, bot hooks); [reference/08](../08_maps_and_level_design/README.md) (instant units); [reference/09](../09_front_end_and_match_flow/README.md) (research settings of the match setup); [reference/10](../10_audio_design/README.md) (sound events); [reference/12](../12_simulation_model/README.md) (entity model, spawn order, base advance, actor grid, physics, explosions, team colours, commands).
+- **Engine components:** [../../architecture/components/data_schemas/README.md](../../architecture/components/data_schemas/README.md) (actor stat schema), [../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md) (particles, shatter effects), [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (unit rendering, shadows, flicker).
 - **ADRs:** ADR-0020 (flat shading and team tint), ADR-0021 (mesh socket schema).
 - **Assets:** `mesh.unit.worker_figure`, `mesh.unit.leader_figure`, `fx.glow_round`, `fx.muzzle_flash`.
 

@@ -1,6 +1,6 @@
 # Siege
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [03 Defences and props](../03_buildings_and_world_objects/defences_and_props.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [12 Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [03 Defences and props](../03_buildings_and_world_objects/defences_and_props.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [12 Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md)
 
 ## 1 Purpose and player experience
 
@@ -18,7 +18,7 @@ Siege is one-sided. The defenders own the Core Device, a bomb whose countdown is
 
 **R-MODE-353** (MUST) Transit Gates are the attackers' Worker source (3 to 6 per attacking position on the reference maps) and the defenders' (0 or 1).
 
-**R-MODE-354** (MUST) The defences are walls, which only a Breach Charge or their own team's scuttle destroys (DEC-043), Barrier Emitters, 7 to 40 neutral gun turrets per reference map, the Breach Charge (`mesh.structure.breach_charge`) on one map, and the bot objective chains and markers ([reference/03 defences](../03_buildings_and_world_objects/defences_and_props.md), [reference/07](../07_bots.md)).
+**R-MODE-354** (MUST) The defences are walls, which only a Breach Charge or their own team's scuttle destroys (DEC-043), Barrier Emitters, 7 to 40 neutral gun turrets per reference map, the Breach Charge (`mesh.structure.breach_charge`) on one map, and the bot objective chains and markers ([reference/03 defences](../03_buildings_and_world_objects/defences_and_props.md), [reference/07](../07_bots/README.md)).
 
 **R-MODE-355** (MUST) A Solar Array that is captured from the team that held it at match start is knocked out: it loses its ports for the rest of the match (DEC-301 is open on keeping this rule). An array that starts the match with no team has no starting team, so its first capture does not knock it out; the starting-team and current-team fields use one no-team value (DEC-464).
 
@@ -65,7 +65,7 @@ When the Core Device detonates, the Siege result is fixed and Command Console ca
 
 **R-MODE-370** (MUST) In Siege the rocket turret and Abductor outcomes are invalid; the Collector, Builder and Spawn Surge outcomes are invalid on maps without Spawn Nodes, which is every reference Siege map; the Transport outcome is invalid on a map with a Transport cap; and the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-371** (MUST) Bots follow the objective chains with diffusion priorities; attacking bots dispatch every Worker at a fixed interval that is shorter at Hard; bots form no Leader formations and route through Breach Charge gaps ([reference/07](../07_bots.md)).
+**R-MODE-371** (MUST) Bots follow the objective chains with diffusion priorities; attacking bots dispatch every Worker at a fixed interval that is shorter at Hard; bots form no Leader formations and route through Breach Charge gaps ([reference/07](../07_bots/README.md)).
 
 ### 2.4 HUD and end of match
 
@@ -153,8 +153,8 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Core Device, Command Console, Breach Charge, Transit Gate); [03 Defences and props](../03_buildings_and_world_objects/defences_and_props.md) (walls, Barrier Emitters, turrets); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Solar Array knock-out); [04 Weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (pulse wave); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots.md); [12 Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md).
-- **Assets:** `map.siege`, `mesh.structure.core_device`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.breach_charge`, `sfx.building.command_console.presence_loop`, `sfx.building.launch_vessel.flight`, `fx.beam_long`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_core_device`, `help.hint.siege_breach_charge`, `help.hint.siege_spawn_nodes`.
+- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Core Device, Command Console, Breach Charge, Transit Gate); [03 Defences and props](../03_buildings_and_world_objects/defences_and_props.md) (walls, Barrier Emitters, turrets); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Solar Array knock-out); [04 Weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (pulse wave); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots/README.md); [12 Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md).
+- **Assets:** `mapfile.siege`, `mesh.structure.core_device`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.breach_charge`, `sfx.building.command_console.presence_loop`, `sfx.building.launch_vessel.flight`, `fx.beam_long`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_core_device`, `help.hint.siege_breach_charge`, `help.hint.siege_spawn_nodes`.
 
 ## 8 Open decisions
 

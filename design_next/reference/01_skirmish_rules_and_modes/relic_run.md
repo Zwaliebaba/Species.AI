@@ -1,6 +1,6 @@
 # Relic Run
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [07 Bots](../07_bots.md) · [11 Tutorial and help](../11_tutorial_and_help.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [07 Bots](../07_bots/README.md) · [11 Tutorial and help](../11_tutorial_and_help.md)
 
 ## 1 Purpose and player experience
 
@@ -14,7 +14,7 @@ Relic Run is a carrying race. Relics appear at neutral Relic Spawn Zones; a crow
 
 **R-MODE-301** (MUST) Every Control Zone that the map gives to a start position is that team's **Relic Base**, with fixed ownership; every neutral Control Zone is a **Relic Spawn Zone**. The Zone Control occupancy recount does not run in Relic Run ([reference/03](../03_buildings_and_world_objects/mode_objects.md)).
 
-**R-MODE-302** (MUST) A **Relic** is a carryable structure that no map can place; only the match rules create it, with no team, a random facing and a mesh chosen by a simulation draw from the 8 variants of `mesh.relic.variant`, and with its off-screen marker `marker.relic`. Its lifting, carrying, ownership, self-routing and destruction rules are owned by [reference/03](../03_buildings_and_world_objects/mode_objects.md); in summary: 20 to 50 Workers lift it within a carry radius of 33 wu; every recount (`ref.mode.recount.one_second`, DEC-064) its owner becomes the team with the strictly highest count of live Workers within 50 wu, provided that count is at least 20, otherwise no team, and ownership does not change when the new owner is a friend of the old; while at least 20 lift it, it moves with a push of lifters ÷ 50 × 16 × the speed scale × |sin(game time)|; an owned Relic without a waypoint routes itself, at most once per game second, to its owner's nearest Relic Base, or to the nearest Relic Spawn Zone when a faction owns it; it is destroyed when it tilts (up component below 0.7) or goes under water (height below 0); and it carries a bot navigation node with priority modifier 1.0 that follows it ([reference/07](../07_bots.md)). Its sounds are `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed` and `sfx.building.relic.drop`, and a lifting Worker plays `sfx.unit.worker.lift_relic`.
+**R-MODE-302** (MUST) A **Relic** is a carryable structure that no map can place; only the match rules create it, with no team, a random facing and a mesh chosen by a simulation draw from the 8 variants of `mesh.relic.variant`, and with its off-screen marker `marker.relic`. Its lifting, carrying, ownership, self-routing and destruction rules are owned by [reference/03](../03_buildings_and_world_objects/mode_objects.md); in summary: 20 to 50 Workers lift it within a carry radius of 33 wu; every recount (`ref.mode.recount.one_second`, DEC-064) its owner becomes the team with the strictly highest count of live Workers within 50 wu, provided that count is at least 20, otherwise no team, and ownership does not change when the new owner is a friend of the old; while at least 20 lift it, it moves with a push of lifters ÷ 50 × 16 × the speed scale × |sin(game time)|; an owned Relic without a waypoint routes itself, at most once per game second, to its owner's nearest Relic Base, or to the nearest Relic Spawn Zone when a faction owns it; it is destroyed when it tilts (up component below 0.7) or goes under water (height below 0); and it carries a bot navigation node with priority modifier 1.0 that follows it ([reference/07](../07_bots/README.md)). Its sounds are `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed` and `sfx.building.relic.drop`, and a lifting Worker plays `sfx.unit.worker.lift_relic`.
 
 **R-MODE-303** (MUST) Each Relic Base checks for deliveries every `ref.mode.recount.two_second` (21 ticks, DEC-064): every Relic owned by the base's team within 30 wu of the base position (a three-dimensional distance, owned by reference/03) is destroyed, and the team is awarded `ref.mode.relic_run.points_per_delivery` (1) point (README R-MODE-045). The delivery emits `mode.relic_run.delivered`, the scored sound `sfx.building.control_zone.relic_scored` with its layers `sfx.building.control_zone.relic_scored_b` and `sfx.building.control_zone.relic_scored_c`, and a hint notification.
 
@@ -54,7 +54,7 @@ A Relic therefore appears ⌈countdown⌉ + 1 mode seconds after the countdown i
 
 **R-MODE-311** (MUST) Supply crates follow the standard rules ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-312** (MUST) Bots use the Relic priority model, in which Relic nodes weigh 1.0, free carried Relics that are stuck, and form Leader formations only with enough idle Workers ([reference/07](../07_bots.md)).
+**R-MODE-312** (MUST) Bots use the Relic priority model, in which Relic nodes weigh 1.0, free carried Relics that are stuck, and form Leader formations only with enough idle Workers ([reference/07](../07_bots/README.md)).
 
 **R-MODE-313** (MUST) The map schema and the rules accept duplicate Relic Spawn Zones at one place (DEC-315).
 
@@ -140,8 +140,8 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Relic, Relic Base, Relic Spawn Zone); [02 Worker](../02_units/worker.md) (lifting); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots.md); [11 Tutorial and help](../11_tutorial_and_help.md).
-- **Assets:** `map.relic_run`, `mesh.relic.variant`, `marker.relic`, `help.hint.relic_run_lift`, `help.hint.relic_run_capture`, `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed`, `sfx.building.relic.drop`, `sfx.building.control_zone.relic_scored`, `sfx.building.control_zone.relic_scored_b`, `sfx.building.control_zone.relic_scored_c`, `sfx.unit.worker.lift_relic`.
+- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Relic, Relic Base, Relic Spawn Zone); [02 Worker](../02_units/worker.md) (lifting); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [11 Tutorial and help](../11_tutorial_and_help.md).
+- **Assets:** `mapfile.relic_run`, `mesh.relic.variant`, `marker.relic`, `help.hint.relic_run_lift`, `help.hint.relic_run_capture`, `sfx.building.relic.spawn`, `sfx.building.relic.owner_changed`, `sfx.building.relic.drop`, `sfx.building.control_zone.relic_scored`, `sfx.building.control_zone.relic_scored_b`, `sfx.building.control_zone.relic_scored_c`, `sfx.unit.worker.lift_relic`.
 
 ## 8 Open decisions
 

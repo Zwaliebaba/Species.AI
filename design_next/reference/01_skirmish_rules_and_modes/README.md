@@ -1,6 +1,6 @@
 # Skirmish rules and modes
 
-> Status: Reference · Prefix: R-MODE · Related: [00 Reference overview](../00_reference_overview.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [08 Maps and level design](../08_maps_and_level_design/README.md) · [09 Front end and match flow](../09_front_end_and_match_flow/README.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-MODE · Related: [00 Reference overview](../00_reference_overview.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [08 Maps and level design](../08_maps_and_level_design/README.md) · [09 Front end and match flow](../09_front_end_and_match_flow/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 This folder specifies the skirmish match of the reference game: one shared match-rule skeleton (this file) and six modes that vary only the territory unit and the score.
 
@@ -61,7 +61,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 ### 2.2 Teams, factions and start positions
 
-**R-MODE-007** (MUST) Every match has the six team slots of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.max_teams`, R-SIM-392, R-SIM-393). Slots 0 to 3 are player positions. Slot 4 is the **Rogue faction** and slot 5 the **Visitor faction**. Both faction slots exist as bot teams in every match, and each always owns one bot controller, which runs the full bot controller of [reference/07](../07_bots.md) (DEC-558).
+**R-MODE-007** (MUST) Every match has the six team slots of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.max_teams`, R-SIM-392, R-SIM-393). Slots 0 to 3 are player positions. Slot 4 is the **Rogue faction** and slot 5 the **Visitor faction**. Both faction slots exist as bot teams in every match, and each always owns one bot controller, which runs the full bot controller of [reference/07](../07_bots/README.md) (DEC-558).
 
 **R-MODE-008** (MUST) The Rogue and Visitor factions are neutral-hostile in every mode: they never win a match and never block an elimination win. They can own Spawn Nodes, Control Zones, Flag posts and Relics, and they score where a mode file says so, but every winner, draw and last-team-standing test of every mode excludes them. Hostile Supply crate outcomes stay owned by the Rogue faction, and the Visitor faction still arrives with the Abductor (DEC-082). The hazard outcomes are team-blind (DEC-107), and the owner of Brood creatures is DEC-121.
 
@@ -152,16 +152,16 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 | Order | Enumerator | Name | Help text | Complexity label | Assets |
 |---|---|---|---|---|---|
-| 0 | `MatchMode::SpawnControl` | `mode.spawn_control.name` | `mode.spawn_control.objective` | `mode.complexity.simple` | `help.mode_card`, `help.mode_page` (1 page), `map.spawn_control` |
-| 1 | `MatchMode::ZoneControl` | `mode.zone_control.name` | `mode.zone_control.objective` | `mode.complexity.simple` | `help.mode_card`, `help.mode_page` (2 pages), `map.zone_control` |
-| 2 | `MatchMode::RelicRun` | `mode.relic_run.name` | `mode.relic_run.objective` | `mode.complexity.medium` | `help.mode_card`, `help.mode_page` (3 pages), `map.relic_run` |
-| 3 | `MatchMode::Siege` | `mode.siege.name` | `mode.siege.objective` | `mode.complexity.medium` | `help.mode_card`, `help.mode_page` (3 pages), `map.siege` |
-| 4 | `MatchMode::LaunchRace` | `mode.launch_race.name` | `mode.launch_race.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (4 pages), `map.launch_race` |
-| 5 | `MatchMode::FlagChain` | `mode.flag_chain.name` | `mode.flag_chain.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (3 pages), `map.flag_chain` |
+| 0 | `MatchMode::SpawnControl` | `mode.spawn_control.name` | `mode.spawn_control.objective` | `mode.complexity.simple` | `help.mode_card`, `help.mode_page` (1 page), `mapfile.spawn_control` |
+| 1 | `MatchMode::ZoneControl` | `mode.zone_control.name` | `mode.zone_control.objective` | `mode.complexity.simple` | `help.mode_card`, `help.mode_page` (2 pages), `mapfile.zone_control` |
+| 2 | `MatchMode::RelicRun` | `mode.relic_run.name` | `mode.relic_run.objective` | `mode.complexity.medium` | `help.mode_card`, `help.mode_page` (3 pages), `mapfile.relic_run` |
+| 3 | `MatchMode::Siege` | `mode.siege.name` | `mode.siege.objective` | `mode.complexity.medium` | `help.mode_card`, `help.mode_page` (3 pages), `mapfile.siege` |
+| 4 | `MatchMode::LaunchRace` | `mode.launch_race.name` | `mode.launch_race.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (4 pages), `mapfile.launch_race` |
+| 5 | `MatchMode::FlagChain` | `mode.flag_chain.name` | `mode.flag_chain.objective` | `mode.complexity.hard` | `help.mode_card`, `help.mode_page` (3 pages), `mapfile.flag_chain` |
 
-The complexity label is drawn with the badge `ui.difficulty_badge` on the mode buttons, and each mode has one explainer animation `anim.explainer` ([reference/11](../11_tutorial_and_help.md)). The debug-only mode of the reference is not an enumerator (DEC-058).
+The complexity label is drawn with the badge `uitex.difficulty_badge` on the mode buttons, and each mode has one explainer animation `anim.explainer` ([reference/11](../11_tutorial_and_help.md)). The debug-only mode of the reference is not an enumerator (DEC-058).
 
-**R-MODE-030** (MUST) One bot difficulty applies to every bot team of a match: `BotDifficulty::Easy`, `BotDifficulty::Standard` or `BotDifficulty::Hard`, default Standard; a tutorial starts with Easy (R-MODE-083). The difficulty parameters are in [reference/07](../07_bots.md).
+**R-MODE-030** (MUST) One bot difficulty applies to every bot team of a match: `BotDifficulty::Easy`, `BotDifficulty::Standard` or `BotDifficulty::Hard`, default Standard; a tutorial starts with Easy (R-MODE-083). The difficulty parameters are in [reference/07](../07_bots/README.md).
 
 **R-MODE-031** (MUST) Each mode is a typed ruleset on the shared skeleton of this file: a score function, an elimination predicate, a win predicate, a time-up decider, a sudden-death policy, a typed option schema and a HUD formatter (DEC-017). Each mode file states these for its mode.
 
@@ -208,7 +208,7 @@ The complexity label is drawn with the badge `ui.difficulty_badge` on the mode b
 
 The countdown sounds use `sfx.ui.match_ui.countdown_tick`. The world runs its first step on post-grace tick 0.
 
-**R-MODE-041** (MUST) A player toggles readiness with the Ready action ([reference/06](../06_controls_camera_and_commands.md)) during the grace period while no window is open; the action issues the `ToggleReady` command for the player's team, which flips the team's in-match ready flag on every participant (R-SIM-459). In the lobby the same command flips the lobby slot's ready flag.
+**R-MODE-041** (MUST) A player toggles readiness with the Ready action ([reference/06](../06_controls_camera_and_commands/README.md)) during the grace period while no window is open; the action issues the `ToggleReady` command for the player's team, which flips the team's in-match ready flag on every participant (R-SIM-459). In the lobby the same command flips the lobby slot's ready flag.
 
 **R-MODE-042** (MUST) The grace overlay is drawn at the top centre, in red, with a font height of `ref.match.grace_overlay.font_height` (4 % of the screen height). It shows, in this priority:
 
@@ -466,7 +466,7 @@ Declaring "none" runs steps 1 and 2 only.
 
 | Option | Control | Default | Effect |
 |---|---|---|---|
-| bot difficulty | lobby list `match.options.bot_difficulty`: `match.options.bot_difficulty.easy`, `match.options.bot_difficulty.standard`, `match.options.bot_difficulty.hard`; host only | Standard; a tutorial starts with Easy | every bot team ([reference/07](../07_bots.md)); only defined values are accepted (DEC-077) |
+| bot difficulty | lobby list `match.options.bot_difficulty`: `match.options.bot_difficulty.easy`, `match.options.bot_difficulty.standard`, `match.options.bot_difficulty.hard`; host only | Standard; a tutorial starts with Easy | every bot team ([reference/07](../07_bots/README.md)); only defined values are accepted (DEC-077) |
 | co-op | advanced-options switch `match.options.coop`, only on maps that allow co-op; set by maps that force it | off | §2.4 |
 | basic crates only | advanced-options switch `match.options.basic_crates` | off | restricts the Supply crate outcomes and the Comeback pool ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md), R-ECON-115) |
 | password | advanced-options text field `match.options.password`; host only, multiplayer only, at most `ref.match.option.password_max_length` (16) characters | empty | the join gate ([reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)) |
@@ -747,7 +747,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 | Mode objects | the spawn network | Control Zones | Relic Bases, Relic Spawn Zones, Relics | Core Device, Command Consoles, Transit Gates, bot objectives, Breach Charge | Launch Vessels, fuel depots, fuel pumps, fuel lines, the energy grid, Transit Gates | Flag posts, Home posts, Transit Gates |
 | Population cap | cap ÷ open slots | cap ÷ open slots | cap ÷ open slots | defender cap; the attackers share the rest | cap ÷ open slots | cap ÷ open slots |
 | Mode Supply crate rules | — | — | — | no rocket turret, no Abductor; no Collector, Builder or Spawn Surge; no Transport with a map Transport cap | no Transport | no Transport with a map Transport cap |
-| Bot priority model ([reference/07](../07_bots.md)) | standard | standard with the zone override | Relic | Siege diffusion and objectives | Launch Race with markers | Siege diffusion with Flag post pins |
+| Bot priority model ([reference/07](../07_bots/README.md)) | standard | standard with the zone override | Relic | Siege diffusion and objectives | Launch Race with markers | Siege diffusion with Flag post pins |
 | Bot formation Leaders | yes | yes | yes | no | no | no |
 | Rank announcements | yes | yes | yes | no | yes | no |
 | Game-over list | name and score | name and score | name and score | none in a single round | names | none |
@@ -786,9 +786,9 @@ The number of reference maps per mode and per player count is [reference/08](../
 
 ## 7 Dependencies
 
-- **Reference documents:** [00 Reference overview](../00_reference_overview.md) (core loop); [02 Units](../02_units/README.md) (Workers, Collectors, the Visitor faction's Workers); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) and [mode objects](../03_buildings_and_world_objects/mode_objects.md) (every mode object); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (crate drops, outcome validity, Power slots); [05 Population flow](../05_population_flow.md) (Catch-up bonus, Comeback Bonus, reinforcement waves, caps, starting powers); [06 Controls, camera and commands](../06_controls_camera_and_commands.md) (the Ready action); [07 Bots](../07_bots.md); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map options, per-mode validation); [09 Front end and match flow](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby, loading, achievement hooks); [10 Audio design](../10_audio_design.md) (match sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials, help pages, hints); [12 Simulation model](../12_simulation_model/README.md) (tick timing, teams, commands, match lifecycle).
+- **Reference documents:** [00 Reference overview](../00_reference_overview.md) (core loop); [02 Units](../02_units/README.md) (Workers, Collectors, the Visitor faction's Workers); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) and [mode objects](../03_buildings_and_world_objects/mode_objects.md) (every mode object); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (crate drops, outcome validity, Power slots); [05 Population flow](../05_population_flow.md) (Catch-up bonus, Comeback Bonus, reinforcement waves, caps, starting powers); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the Ready action); [07 Bots](../07_bots/README.md); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map options, per-mode validation); [09 Front end and match flow](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby, loading, achievement hooks); [10 Audio design](../10_audio_design/README.md) (match sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials, help pages, hints); [12 Simulation model](../12_simulation_model/README.md) (tick timing, teams, commands, match lifecycle).
 - **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) (HUD, lobby pages); [audio engine](../../architecture/components/audio_engine.md); [data schemas](../../architecture/components/data_schemas/README.md) (typed match options and map records).
-- **Assets:** `help.mode_card`, `help.mode_page`, `anim.explainer`, `ui.difficulty_badge`, `map.spawn_control`, `map.zone_control`, `map.relic_run`, `map.siege`, `map.launch_race`, `map.flag_chain`, `sfx.ui.match_ui.countdown_tick`, `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br`, `strings.ru_ru`.
+- **Assets:** `help.mode_card`, `help.mode_page`, `anim.explainer`, `uitex.difficulty_badge`, `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race`, `mapfile.flag_chain`, `sfx.ui.match_ui.countdown_tick`, `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br`, `strings.ru_ru`.
 
 ## 8 Open decisions
 

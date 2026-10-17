@@ -26,7 +26,7 @@ The reference map set has 49 match maps. Each is listed under exactly one mode a
 | Flag Chain | 4 | 2 | 1 | 7 |
 | **All modes** | **22** | **15** | **12** | **49** |
 
-The Species map slots that recreate this distribution are named `map_<mode>_<players>p_<nn>` (CONVENTIONS §8.11) and are listed in the asset manifest as `map.spawn_control`, `map.zone_control`, `map.relic_run`, `map.siege`, `map.launch_race` and `map.flag_chain`, each with its thumbnail `thumb.<mode>`. The content build renders every thumbnail with the engine and generates the map index, the list of map ids that the achievement hooks count (DEC-563). The rules that create this list and order it, including the tie order of DEC-314, are in [rules_and_conventions.md](rules_and_conventions.md) §2.2.
+The Species map slots that recreate this distribution are named `map_<mode>_<players>p_<nn>` (CONVENTIONS §8.11) and are listed in the asset manifest as `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race` and `mapfile.flag_chain`, each with its thumbnail `thumb.<mode>`. The content build renders every thumbnail with the engine and generates the map index, the list of map ids that the achievement hooks count (DEC-563). The rules that create this list and order it, including the tie order of DEC-314, are in [rules_and_conventions.md](rules_and_conventions.md) §2.2.
 
 Maps that declare no mode, such as development, test and benchmark maps, are never listed in match setup (DEC-802); the reference's own maps of that kind are not specified (DEC-334).
 
@@ -34,7 +34,7 @@ Maps that declare no mode, such as development, test and benchmark maps, are nev
 
 - **Map authors** start with [rules_and_conventions.md](rules_and_conventions.md) §2.4 (the map definition), §2.8 to §2.14 (what a map can express) and §2.16 to §2.21 (the conventions and the validation rules of each mode).
 - **Mode and economy designers** read §2.6 and §2.7 (the match options that a map sets, and how map values meet lobby defaults), then the mode documents of [reference/01](../01_skirmish_rules_and_modes/README.md) and the population rules of [reference/05](../05_population_flow.md).
-- **Tool builders** read [map_editor_hooks.md](map_editor_hooks.md) and the schema family of the map definition in [data schemas](../../architecture/components/data_schemas.md).
+- **Tool builders** read [map_editor_hooks.md](map_editor_hooks.md) and the schema family of the map definition in [data schemas](../../architecture/components/data_schemas/README.md).
 - **Terrain and rendering** use §2.8 to §2.10 for the authored inputs; the generator algorithm is [terrain](../../architecture/components/terrain.md) (DEC-025, DEC-246, DEC-247) and the lights and sea are [renderer](../../architecture/components/renderer/README.md).
 
 ## Decisions that shape this folder

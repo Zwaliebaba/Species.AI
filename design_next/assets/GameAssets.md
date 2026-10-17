@@ -79,7 +79,7 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 |---|---|---|
 | `sprite.` | sprite cards | `sprite.worker.front` |
 | `fx.` | VFX textures | `fx.glow_round` |
-| `ui.` | UI panels and title art | `ui.title_wordmark` |
+| `ui.` | UI panels and title art | `uitex.title_wordmark` |
 | `icon.power.`, `icon.hud.` | power and HUD icons | `icon.power.airstrike` |
 | `cursor.`, `marker.` | cursors and markers | `marker.edge_compass` |
 | `glyph.` | input glyphs | `glyph.pad.face_south` |
@@ -93,7 +93,7 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 | `music.` | music | `music.front_end.theme` |
 | `font.` | fonts | `font.ui.primary` |
 | `strings.` | string tables | `strings.en_gb` |
-| `map.`, `thumb.` | maps and thumbnails, one id per mode | `map.spawn_control` |
+| `map.`, `thumb.` | maps and thumbnails, one id per mode | `mapfile.spawn_control` |
 
 ### 2.4 Source and runtime formats
 
@@ -231,21 +231,21 @@ Front-end and window art. The palette is new; it keeps the token roles of the re
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/ui/ui_worker_badge.png` | `ui.worker_badge` | Worker badge on map-select buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x64 px display size; author at 2x (128x128) | single | launch | generated panel |
-| `content/textures/ui/ui_fill_blur.png` | `ui.fill_blur` | Blurred fill for front-end boxes | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x512 px display size; author at 2x (128x1024) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_panel_neutral.png` | `ui.panel_neutral` | Neutral panel strip: power-slot panel, Core Device countdown, fuel depot read-out | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x512 px display size; author at 2x (128x1024) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_panel_accent.png` | `ui.panel_accent` | Accent panel strip for windows and the power-slot panel (new palette, same token role) | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x510 px display size; author at 2x (128x1020) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_studio_splash.png` | `ui.studio_splash` | Studio mark on the loading view (placeholder until the studio mark exists) | PNG RGB8 → BC7 sRGB, no mips | 600x600 px display size; author at 2x (1200x1200) | single | launch | generated panel |
-| `content/textures/ui/ui_menu_highlight.png` | `ui.menu_highlight` | Highlight beam behind the focused menu item | PNG grey (additive) → BC4, mips | 256x64 px display size; author at 2x (512x128); wrap repeat | single | skirmish-first-playable | generated gradient |
-| `content/textures/ui/ui_logo_banner.png` | `ui.logo_banner` | Large title logo on the main menu | PNG RGB8 → BC7 sRGB, no mips | 394x149 px display size; author at 2x (788x298) | single | launch | generated panel |
-| `content/textures/ui/ui_title_wordmark.png` | `ui.title_wordmark` | Title wordmark (new logo) | PNG RGBA8 → BC7 sRGB, no mips | 659x122 px display size; author at 2x (1318x244) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_logo_emblem.png` | `ui.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 277x194 px display size; author at 2x (554x388); wrap repeat where tiled | single | launch | generated panel |
-| `content/textures/ui/ui_icon_locked.png` | `ui.icon_locked` | Lock icon on password-protected match entries | PNG RGBA8 → BC7 sRGB, no mips | 20x20 px display size; author at 2x (40x40) | single | launch | generated panel |
-| `content/textures/ui/ui_icon_check.png` | `ui.icon_check` | Check-box tick | PNG RGBA8 → BC7 sRGB, no mips | 50x50 px display size; author at 2x (100x100) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_difficulty_basic.png` | `ui.difficulty_badge` | Map difficulty badge (basic, intermediate, advanced) on mode and map buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 1 of 3 | launch | generated panel |
-| `content/textures/ui/ui_difficulty_intermediate.png` | `ui.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 2 of 3 | launch | generated panel |
-| `content/textures/ui/ui_difficulty_advanced.png` | `ui.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 3 of 3 | launch | generated panel |
-| `content/textures/ui/ui_backdrop_wheel.png` | `ui.backdrop_wheel` | Large decorative wheel behind the front-end backdrop figure (new presentation) | PNG RGB8 → BC7 sRGB, no mips | 426x406 px display size; author at 2x (852x812) | single | launch | generated panel |
+| `content/textures/ui/ui_worker_badge.png` | `uitex.worker_badge` | Worker badge on map-select buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x64 px display size; author at 2x (128x128) | single | launch | generated panel |
+| `content/textures/ui/ui_fill_blur.png` | `uitex.fill_blur` | Blurred fill for front-end boxes | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x512 px display size; author at 2x (128x1024) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_panel_neutral.png` | `uitex.panel_neutral` | Neutral panel strip: power-slot panel, Core Device countdown, fuel depot read-out | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x512 px display size; author at 2x (128x1024) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_panel_accent.png` | `uitex.panel_accent` | Accent panel strip for windows and the power-slot panel (new palette, same token role) | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x510 px display size; author at 2x (128x1020) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_studio_splash.png` | `uitex.studio_splash` | Studio mark on the loading view (placeholder until the studio mark exists) | PNG RGB8 → BC7 sRGB, no mips | 600x600 px display size; author at 2x (1200x1200) | single | launch | generated panel |
+| `content/textures/ui/ui_menu_highlight.png` | `uitex.menu_highlight` | Highlight beam behind the focused menu item | PNG grey (additive) → BC4, mips | 256x64 px display size; author at 2x (512x128); wrap repeat | single | skirmish-first-playable | generated gradient |
+| `content/textures/ui/ui_logo_banner.png` | `uitex.logo_banner` | Large title logo on the main menu | PNG RGB8 → BC7 sRGB, no mips | 394x149 px display size; author at 2x (788x298) | single | launch | generated panel |
+| `content/textures/ui/ui_title_wordmark.png` | `uitex.title_wordmark` | Title wordmark (new logo) | PNG RGBA8 → BC7 sRGB, no mips | 659x122 px display size; author at 2x (1318x244) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_logo_emblem.png` | `uitex.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 277x194 px display size; author at 2x (554x388); wrap repeat where tiled | single | launch | generated panel |
+| `content/textures/ui/ui_icon_locked.png` | `uitex.icon_locked` | Lock icon on password-protected match entries | PNG RGBA8 → BC7 sRGB, no mips | 20x20 px display size; author at 2x (40x40) | single | launch | generated panel |
+| `content/textures/ui/ui_icon_check.png` | `uitex.icon_check` | Check-box tick | PNG RGBA8 → BC7 sRGB, no mips | 50x50 px display size; author at 2x (100x100) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_difficulty_basic.png` | `uitex.difficulty_badge` | Map difficulty badge (basic, intermediate, advanced) on mode and map buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 1 of 3 | launch | generated panel |
+| `content/textures/ui/ui_difficulty_intermediate.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 2 of 3 | launch | generated panel |
+| `content/textures/ui/ui_difficulty_advanced.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 3 of 3 | launch | generated panel |
+| `content/textures/ui/ui_backdrop_wheel.png` | `uitex.backdrop_wheel` | Large decorative wheel behind the front-end backdrop figure (new presentation) | PNG RGB8 → BC7 sRGB, no mips | 426x406 px display size; author at 2x (852x812) | single | launch | generated panel |
 
 ## 7 HUD, supply-crate and power icons
 
@@ -517,7 +517,7 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 
 ## 13 Audio by source and event
 
-Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident (Opus stream for files over 20 s). Placeholder: synthesised tone (voice lines: text-to-speech line).
+Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident (Opus stream for files over 20 s). Placeholder: synthesised tone (voice lines: text-to-speech line).
 
 182 (source, event) bindings fire in a match and play these groups. A further 98 events fire with no bound sound; they stay silent in the reference, so the event table lists them and no file is needed.
 
@@ -989,24 +989,24 @@ Maps are new layouts. One map slot exists per reference map, following the refer
 
 | Mode | Players | Map files | Thumbnail files | Priority |
 |---|---|---|---|---|
-| Spawn Control (`map.spawn_control`, `thumb.spawn_control`) | 2 | `content/maps/map_spawn_control_2p_{01..05}.json` (5 files) | `content/thumbnails/map_spawn_control_2p_{01..05}_thumb.png` (5 files) | skirmish-first-playable: 2<br>launch: 3 |
-| Spawn Control (`map.spawn_control`, `thumb.spawn_control`) | 3 | `content/maps/map_spawn_control_3p_{01..02}.json` (2 files) | `content/thumbnails/map_spawn_control_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Spawn Control (`map.spawn_control`, `thumb.spawn_control`) | 4 | `content/maps/map_spawn_control_4p_{01..02}.json` (2 files) | `content/thumbnails/map_spawn_control_4p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Zone Control (`map.zone_control`, `thumb.zone_control`) | 2 | `content/maps/map_zone_control_2p_{01..02}.json` (2 files) | `content/thumbnails/map_zone_control_2p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Zone Control (`map.zone_control`, `thumb.zone_control`) | 3 | `content/maps/map_zone_control_3p_{01..04}.json` (4 files) | `content/thumbnails/map_zone_control_3p_{01..04}_thumb.png` (4 files) | launch: 4 |
-| Zone Control (`map.zone_control`, `thumb.zone_control`) | 4 | `content/maps/map_zone_control_4p_{01..03}.json` (3 files) | `content/thumbnails/map_zone_control_4p_{01..03}_thumb.png` (3 files) | launch: 3 |
-| Relic Run (`map.relic_run`, `thumb.relic_run`) | 2 | `content/maps/map_relic_run_2p_{01..04}.json` (4 files) | `content/thumbnails/map_relic_run_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
-| Relic Run (`map.relic_run`, `thumb.relic_run`) | 3 | `content/maps/map_relic_run_3p_{01..02}.json` (2 files) | `content/thumbnails/map_relic_run_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Relic Run (`map.relic_run`, `thumb.relic_run`) | 4 | `content/maps/map_relic_run_4p_{01..03}.json` (3 files) | `content/thumbnails/map_relic_run_4p_{01..03}_thumb.png` (3 files) | launch: 3 |
-| Siege (`map.siege`, `thumb.siege`) | 2 | `content/maps/map_siege_2p_{01..04}.json` (4 files) | `content/thumbnails/map_siege_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
-| Siege (`map.siege`, `thumb.siege`) | 3 | `content/maps/map_siege_3p_{01..02}.json` (2 files) | `content/thumbnails/map_siege_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Siege (`map.siege`, `thumb.siege`) | 4 | `content/maps/map_siege_4p_{01..02}.json` (2 files) | `content/thumbnails/map_siege_4p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Launch Race (`map.launch_race`, `thumb.launch_race`) | 2 | `content/maps/map_launch_race_2p_{01..03}.json` (3 files) | `content/thumbnails/map_launch_race_2p_{01..03}_thumb.png` (3 files) | launch: 3 |
-| Launch Race (`map.launch_race`, `thumb.launch_race`) | 3 | `content/maps/map_launch_race_3p_{01..03}.json` (3 files) | `content/thumbnails/map_launch_race_3p_{01..03}_thumb.png` (3 files) | launch: 3 |
-| Launch Race (`map.launch_race`, `thumb.launch_race`) | 4 | `content/maps/map_launch_race_4p_01.json` | `content/thumbnails/map_launch_race_4p_01_thumb.png` | launch: 1 |
-| Flag Chain (`map.flag_chain`, `thumb.flag_chain`) | 2 | `content/maps/map_flag_chain_2p_{01..04}.json` (4 files) | `content/thumbnails/map_flag_chain_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
-| Flag Chain (`map.flag_chain`, `thumb.flag_chain`) | 3 | `content/maps/map_flag_chain_3p_{01..02}.json` (2 files) | `content/thumbnails/map_flag_chain_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
-| Flag Chain (`map.flag_chain`, `thumb.flag_chain`) | 4 | `content/maps/map_flag_chain_4p_01.json` | `content/thumbnails/map_flag_chain_4p_01_thumb.png` | launch: 1 |
+| Spawn Control (`mapfile.spawn_control`, `thumb.spawn_control`) | 2 | `content/maps/map_spawn_control_2p_{01..05}.json` (5 files) | `content/thumbnails/map_spawn_control_2p_{01..05}_thumb.png` (5 files) | skirmish-first-playable: 2<br>launch: 3 |
+| Spawn Control (`mapfile.spawn_control`, `thumb.spawn_control`) | 3 | `content/maps/map_spawn_control_3p_{01..02}.json` (2 files) | `content/thumbnails/map_spawn_control_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Spawn Control (`mapfile.spawn_control`, `thumb.spawn_control`) | 4 | `content/maps/map_spawn_control_4p_{01..02}.json` (2 files) | `content/thumbnails/map_spawn_control_4p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Zone Control (`mapfile.zone_control`, `thumb.zone_control`) | 2 | `content/maps/map_zone_control_2p_{01..02}.json` (2 files) | `content/thumbnails/map_zone_control_2p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Zone Control (`mapfile.zone_control`, `thumb.zone_control`) | 3 | `content/maps/map_zone_control_3p_{01..04}.json` (4 files) | `content/thumbnails/map_zone_control_3p_{01..04}_thumb.png` (4 files) | launch: 4 |
+| Zone Control (`mapfile.zone_control`, `thumb.zone_control`) | 4 | `content/maps/map_zone_control_4p_{01..03}.json` (3 files) | `content/thumbnails/map_zone_control_4p_{01..03}_thumb.png` (3 files) | launch: 3 |
+| Relic Run (`mapfile.relic_run`, `thumb.relic_run`) | 2 | `content/maps/map_relic_run_2p_{01..04}.json` (4 files) | `content/thumbnails/map_relic_run_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
+| Relic Run (`mapfile.relic_run`, `thumb.relic_run`) | 3 | `content/maps/map_relic_run_3p_{01..02}.json` (2 files) | `content/thumbnails/map_relic_run_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Relic Run (`mapfile.relic_run`, `thumb.relic_run`) | 4 | `content/maps/map_relic_run_4p_{01..03}.json` (3 files) | `content/thumbnails/map_relic_run_4p_{01..03}_thumb.png` (3 files) | launch: 3 |
+| Siege (`mapfile.siege`, `thumb.siege`) | 2 | `content/maps/map_siege_2p_{01..04}.json` (4 files) | `content/thumbnails/map_siege_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
+| Siege (`mapfile.siege`, `thumb.siege`) | 3 | `content/maps/map_siege_3p_{01..02}.json` (2 files) | `content/thumbnails/map_siege_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Siege (`mapfile.siege`, `thumb.siege`) | 4 | `content/maps/map_siege_4p_{01..02}.json` (2 files) | `content/thumbnails/map_siege_4p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Launch Race (`mapfile.launch_race`, `thumb.launch_race`) | 2 | `content/maps/map_launch_race_2p_{01..03}.json` (3 files) | `content/thumbnails/map_launch_race_2p_{01..03}_thumb.png` (3 files) | launch: 3 |
+| Launch Race (`mapfile.launch_race`, `thumb.launch_race`) | 3 | `content/maps/map_launch_race_3p_{01..03}.json` (3 files) | `content/thumbnails/map_launch_race_3p_{01..03}_thumb.png` (3 files) | launch: 3 |
+| Launch Race (`mapfile.launch_race`, `thumb.launch_race`) | 4 | `content/maps/map_launch_race_4p_01.json` | `content/thumbnails/map_launch_race_4p_01_thumb.png` | launch: 1 |
+| Flag Chain (`mapfile.flag_chain`, `thumb.flag_chain`) | 2 | `content/maps/map_flag_chain_2p_{01..04}.json` (4 files) | `content/thumbnails/map_flag_chain_2p_{01..04}_thumb.png` (4 files) | launch: 4 |
+| Flag Chain (`mapfile.flag_chain`, `thumb.flag_chain`) | 3 | `content/maps/map_flag_chain_3p_{01..02}.json` (2 files) | `content/thumbnails/map_flag_chain_3p_{01..02}_thumb.png` (2 files) | launch: 2 |
+| Flag Chain (`mapfile.flag_chain`, `thumb.flag_chain`) | 4 | `content/maps/map_flag_chain_4p_01.json` | `content/thumbnails/map_flag_chain_4p_01_thumb.png` | launch: 1 |
 | **Total** | | **49 maps** | **49 thumbnails** | |
 
 ## 20 Not to be created

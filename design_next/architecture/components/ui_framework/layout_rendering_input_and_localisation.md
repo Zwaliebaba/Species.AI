@@ -255,7 +255,7 @@ The development windows and the message dialog use this layout; no options scree
 | highlight beam, top | `ui.palette.fe_beam_top` |
 | highlight beam, bottom | `ui.palette.fe_beam_bottom` |
 | highlight beam outline | `ui.palette.fe_beam_outline` |
-| fill-box body × `ui.fill_blur` | `ui.palette.fe_box_tint` |
+| fill-box body × `uitex.fill_blur` | `ui.palette.fe_box_tint` |
 | fill-box glow × `fx.glow_cloudy`, additive | `ui.palette.fe_box_glow` |
 | fill-box outline, additive | `ui.palette.fe_box_outline` |
 | alpha of the fill-box inner outline | `ui.palette.fe_box_inner_alpha` |
@@ -566,7 +566,7 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.budget.draws` | 32 | draw calls | UI pass, busiest screen; Species baseline | UI-240 | — |
 | `ui.budget.vertices` | 65 536 | vertices | busiest screen; Species baseline | UI-240 | — |
 | `ui.budget.cpu_ms` | 1.0 | ms per frame | update and stream build, minimum-specification CPU; Species baseline | UI-240 | — |
-| `ui.palette.window_body_tint` | 1, 1, 1, 0.96 | RGBA, 0 to 1 | × `ui.panel_accent`; window body | UI-187, UI-054 | — |
+| `ui.palette.window_body_tint` | 1, 1, 1, 0.96 | RGBA, 0 to 1 | × `uitex.panel_accent`; window body | UI-187, UI-054 | — |
 | `ui.palette.accent_light` | 199, 214, 220, 255 | RGBA8 | title-bar top, window border, button highlight top, check-box highlight | UI-187, UI-054, UI-057, UI-081 | — |
 | `ui.palette.accent_dark` | 112, 141, 168, 255 | RGBA8 | title-bar bottom, highlight bottom | UI-187, UI-054, UI-057 | — |
 | `ui.palette.accent_pressed_top` | 255, 255, 255, 255 | RGBA8 | pressed button, top | UI-187, UI-057 | — |
@@ -605,7 +605,7 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.palette.fe_beam_top` | 0.6, 1.0, 0.4, 0.8 | RGBA, 0 to 1 | highlight beam, top | UI-188, UI-114 | — |
 | `ui.palette.fe_beam_bottom` | 0.3, 0.5, 0.2, 0.7 | RGBA, 0 to 1 | highlight beam, bottom | UI-188, UI-114 | — |
 | `ui.palette.fe_beam_outline` | 0, 0, 0, 0.5 | RGBA, 0 to 1 | highlight beam outline | UI-188, UI-114 | — |
-| `ui.palette.fe_box_tint` | 0.8, 0.8, 1.0, 0.9 | RGBA, 0 to 1 | fill-box body × `ui.fill_blur` | UI-188, UI-115 | — |
+| `ui.palette.fe_box_tint` | 0.8, 0.8, 1.0, 0.9 | RGBA, 0 to 1 | fill-box body × `uitex.fill_blur` | UI-188, UI-115 | — |
 | `ui.palette.fe_box_glow` | 0.3, 0.6, 0.9, 0.4 | RGBA, 0 to 1 | fill-box glow × `fx.glow_cloudy`, additive | UI-188, UI-115 | — |
 | `ui.palette.fe_box_outline` | 0.8, 0.7, 1.0, 0.8 | RGBA, 0 to 1 | fill-box outline, additive | UI-188, UI-115 | — |
 | `ui.palette.fe_box_inner_alpha` | 0.4 | alpha | alpha of the fill-box inner outline | UI-188, UI-115 | — |
@@ -625,4 +625,4 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ui.chrome.title_height`, `ui.chrome.close_box`, `ui.button.auto_char_width`, `ui.button.auto_padding`, `ui.button.auto_height`, `ui.core.auto_grow_margin` | [core_and_widgets.md](core_and_widgets.md) §9 |
 | the repeat delay and rate of the menu directions | [input.md](../input.md) |
 
-String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `ui.panel_accent`, `ui.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.
+String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `uitex.panel_accent`, `uitex.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.

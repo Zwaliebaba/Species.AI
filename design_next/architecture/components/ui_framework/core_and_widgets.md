@@ -354,7 +354,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 | Step | Primitive | Look |
 |---|---|---|
-| 1 body | one quad over the whole rectangle with the accent panel strip `ui.panel_accent`, linear filtering, wrapping in both axes, u from 0 to `ui.chrome.body_repeat` (8) across the width and v from 0 to 1 down the height | `ui.palette.window_body_tint` (1, 1, 1, 0.96), alpha blend |
+| 1 body | one quad over the whole rectangle with the accent panel strip `uitex.panel_accent`, linear filtering, wrapping in both axes, u from 0 to `ui.chrome.body_repeat` (8) across the width and v from 0 to 1 down the height | `ui.palette.window_body_tint` (1, 1, 1, 0.96), alpha blend |
 | 2 title bar | a quad from y to y + *m*(`ui.chrome.title_height`), with a vertical gradient | `ui.palette.accent_light` at the top to `ui.palette.accent_dark` at the bottom |
 | 3 border | four lines of `ui.chrome.border_width` (2 px) on the edges of the rectangle | `ui.palette.accent_light` |
 | 4 outer frame | a 1 px line loop from (x − 2, y − 2) to (x + w + 1, y + h + 1), that is `ui.chrome.frame_offset` (2 px) outside the rectangle | `ui.palette.frame_outer` |
@@ -496,7 +496,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 1. highlighted: a quad of `ui.palette.accent_light` over its whole rectangle, alpha blend, and its caption in ink mode with colour alpha 0, so the glyphs darken the highlight; otherwise the caption in `ui.palette.text_normal`, additive;
 2. the caption at the draw point x + `ui.button.caption_inset`, in the text row convention of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-165;
 3. the box: side s = `ui.check.box_size` (0.75) × h, at x = the right edge − `ui.check.box_right` (1.5) × h and y = the top + (h − s) ÷ 2, filled with `ui.palette.check_box` and outlined in white, 1 px;
-4. when checked, the tick `ui.icon_check` tinted `ui.palette.check_tick`, inset `ui.check.tick_inset` (0.05) × h inside the box and `ui.check.tick_size` (0.65) × h square.
+4. when checked, the tick `uitex.icon_check` tinted `ui.palette.check_tick`, inset `ui.check.tick_inset` (0.05) × h inside the box and `ui.check.tick_size` (0.65) × h square.
 
 ### 4.20 Drop-down
 
@@ -570,7 +570,7 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 2. the title bar as a fill box (UI-115);
 3. the title `ui.title.game_name` at the large font, centred at the title bar's x + its width ÷ 2, at the draw point y = the title bar's y + `ui.options_screen.title_y` (0.2) × its height, first in the outline pass and then filled in `ui.palette.text_normal`;
 4. the tagline `ui.title.tagline` at the medium font, one large-font line below the title;
-5. the emblem `ui.logo_emblem` of aspect `ref.meta.title.emblem_aspect` and height `ref.meta.title.emblem_height` × the title bar's height, with its top at the title bar's y + `ui.options_screen.emblem_top` (0.1) × its height, at x = the title bar's x + `ref.meta.title.emblem_inset` × its width, and mirrored at the right end ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-207);
+5. the emblem `uitex.logo_emblem` of aspect `ref.meta.title.emblem_aspect` and height `ref.meta.title.emblem_height` × the title bar's height, with its top at the title bar's y + `ui.options_screen.emblem_top` (0.1) × its height, at x = the title bar's x + `ref.meta.title.emblem_inset` × its width, and mirrored at the right end ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-207);
 6. the content boxes: with one whole-width box, a fill box at (lX, lY) of the title bar's width and the left box's height; otherwise the left box, and the right box too when it is set;
 7. the widgets (UI-043);
 8. the dialog, when it is shown (UI-101).
@@ -603,12 +603,12 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 **UI-113** (MUST) A page title (`PageTitle`) draws the highlight beam (UI-114) behind it at (x, y + h ÷ 2, w, h), then its caption, upper-cased (UI-049), at `ui.page_title.size_factor` (1.5) × its font size, multiplied by w ÷ (the measured width × `ui.page_title.fit_margin` (1.05)) when the text is wider than w; first in the outline pass with `ui.palette.fe_title_outline`, then in ink mode with `ui.palette.fe_title_shadow`, centred, in the text row convention (UI-165). A page title is never in the navigation order.
 
-**UI-114** (MUST) The **highlight beam** at (x, centre y, w, h) is a quad of `ui.menu_highlight`, linearly filtered with mips and wrapping, w wide and h high around centre y, with the vertex colours `ui.palette.fe_beam_top` at the top and `ui.palette.fe_beam_bottom` at the bottom and the alpha blend, and an outline of `ui.palette.fe_beam_outline`.
+**UI-114** (MUST) The **highlight beam** at (x, centre y, w, h) is a quad of `uitex.menu_highlight`, linearly filtered with mips and wrapping, w wide and h high around centre y, with the vertex colours `ui.palette.fe_beam_top` at the top and `ui.palette.fe_beam_bottom` at the bottom and the alpha blend, and an outline of `ui.palette.fe_beam_outline`.
 
 **UI-115** (MUST) A **fill box** at (x, y, w, h) draws:
 
 1. a darkening halo: four gradient quads `ui.fill_box.shadow_width` (0.01 × W) wide around the box, from `ui.palette.fe_box_shadow_edge` at the box edge to transparent black outside, in the ink state with alpha 0, so the destination is multiplied by one minus the colour: black at the edge, fading to unchanged outside ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-058);
-2. `ui.fill_blur` tinted `ui.palette.fe_box_tint`, with u from 0 to w ÷ `ui.fill_box.blur_tile` (64 px) and v from 0 to 1, alpha blend;
+2. `uitex.fill_blur` tinted `ui.palette.fe_box_tint`, with u from 0 to w ÷ `ui.fill_box.blur_tile` (64 px) and v from 0 to 1, alpha blend;
 3. `fx.glow_cloudy`, additive, tinted `ui.palette.fe_box_glow`, with the texture origin (−0.01 × t, −0.02 × t) and the extent (w ÷ W + 0.01 × sin t, h ÷ H + 0.02 × sin t), where (0.01, 0.02) is `ui.fill_box.glow_motion` and t the presentation time in seconds, so the glow drifts slowly;
 4. an outline `ui.fill_box.outline_width` (2 px) wide in `ui.palette.fe_box_outline`, additive, and a 1 px inner outline `ui.fill_box.inner_inset` (3 px) inside it in the same colour at alpha `ui.palette.fe_box_inner_alpha`.
 
@@ -804,7 +804,7 @@ All values are presentation values. Lengths are pixels at a DPI scale of 1 and a
 | `ui.page_title.size_factor` | 1.5 | × the font size | | UI-113 | — |
 | `ui.page_title.fit_margin` | 1.05 | × the measured width | shrink-to-fit | UI-113 | — |
 | `ui.fill_box.shadow_width` | 0.01 | × W | darkening halo | UI-115 | — |
-| `ui.fill_box.blur_tile` | 64 | px per repeat of `ui.fill_blur` | | UI-115 | — |
+| `ui.fill_box.blur_tile` | 64 | px per repeat of `uitex.fill_blur` | | UI-115 | — |
 | `ui.fill_box.glow_motion` | 0.01, 0.02 | per second (drift) and amplitude (wobble), u and v | `fx.glow_cloudy` | UI-115 | — |
 | `ui.fill_box.outline_width` | 2 | px | | UI-115 | — |
 | `ui.fill_box.inner_inset` | 3 | px | 1 px inner outline | UI-115 | — |

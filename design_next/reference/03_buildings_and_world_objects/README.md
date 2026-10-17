@@ -1,6 +1,6 @@
 # Buildings and world objects
 
-> Status: Reference · Prefix: R-BLDG · Related: [00 Reference overview](../00_reference_overview.md) · [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) · [02 Units](../02_units/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [08 Maps and level design](../08_maps_and_level_design/README.md) · [10 Audio design](../10_audio_design.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-BLDG · Related: [00 Reference overview](../00_reference_overview.md) · [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) · [02 Units](../02_units/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [08 Maps and level design](../08_maps_and_level_design/README.md) · [10 Audio design](../10_audio_design/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 This folder specifies every structure of the reference game: the static and semi-static world objects that a map places or that a rule creates during a match. This README is the folder index and holds the rules that every structure shares: the time base, ownership, ports and capture, the lifecycle, damage, ownership changes, collision volumes, presentation and sound events. Each structure kind is specified in one of the files below.
 
@@ -31,7 +31,7 @@ The building layer of the reference game consists of these parts:
 4. **The energy grid**: discrete energy surges tagged with the team of the Solar Array that emitted them, Barrier Emitters powered only by friendly surges, and grid splitters that route surges by team.
 5. **Barriers**: Barrier Emitters (lethal and route-blocking), walls (destroyed only by a heavy single hit), trees (fire spread and regrowth), scenery meshes and invisible exclusion zones ([defences and props](defences_and_props.md)).
 6. **Mode objects**: Transit Gates, the Core Device and its Command Consoles, Relics, Breach Charges, the fuel chain and the Launch Vessel state machine.
-7. **Bot scaffolding**: bot navigation nodes, bot objectives and bot objective markers, which are structures that only bots read ([07 Bots](../07_bots.md)).
+7. **Bot scaffolding**: bot navigation nodes, bot objectives and bot objective markers, which are structures that only bots read ([07 Bots](../07_bots/README.md)).
 
 ### 1.1 Conventions used in this folder
 
@@ -111,9 +111,9 @@ Table 2.4-A Structure kinds. "Maps" counts the reference maps of each mode that 
 | Hive | `Hive` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [defences and props](defences_and_props.md) |
 | Spitter Plant | `SpitterPlant` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [defences and props](defences_and_props.md) |
 | Supply crate | `SupplyCrate` | rt | rt | rt | rt | rt | rt | 0 | [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| bot navigation node | `BotNavNode` | 9 + rt | 9 + rt | 9 + rt | 8 + rt | 7 + rt | 7 + rt | 1029 (49) | [07 Bots](../07_bots.md) |
-| bot objective | `BotObjective` | – | – | – | 8 | – | – | 92 (8) | [07 Bots](../07_bots.md) |
-| bot objective marker | `BotObjectiveMarker` | – | – | – | 8 | 7 | – | 330 (15) | [07 Bots](../07_bots.md) |
+| bot navigation node | `BotNavNode` | 9 + rt | 9 + rt | 9 + rt | 8 + rt | 7 + rt | 7 + rt | 1029 (49) | [07 Bots](../07_bots/README.md) |
+| bot objective | `BotObjective` | – | – | – | 8 | – | – | 92 (8) | [07 Bots](../07_bots/README.md) |
+| bot objective marker | `BotObjectiveMarker` | – | – | – | 8 | 7 | – | 330 (15) | [07 Bots](../07_bots/README.md) |
 
 **R-BLDG-013** (MUST) The objects of table 2.4-B serve structures but have no structure-kind value.
 
@@ -194,8 +194,8 @@ Table 2.7-A Capture model of every capturable kind.
 | Control Zone in Zone Control | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the strictly highest count of counted Workers within the zone's size (ties to the lowest team slot) | no team | [mode objects](mode_objects.md) R-BLDG-258 |
 | Flag post and Home post in Flag Chain | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | capture progress 0 to 100, accumulated by the leading team within 40 wu; owner at 100, no team at 0 | progress decays while no team leads | [mode objects](mode_objects.md) R-BLDG-262 |
 | Beam Dish | 0 | — | no rule of its own: a Command Console that controls it gives it its owner | — | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-152 |
-| bot navigation node | 0 | 21 ticks | the team with the strictly highest friend count within range; an owner for the bots only | no team | [07 Bots](../07_bots.md) |
-| bot objective marker | 0 | 21 ticks | the bound structure's team, or the majority in its scan range | no team | [07 Bots](../07_bots.md) |
+| bot navigation node | 0 | 21 ticks | the team with the strictly highest friend count within range; an owner for the bots only | no team | [07 Bots](../07_bots/README.md) |
+| bot objective marker | 0 | 21 ticks | the bound structure's team, or the majority in its scan range | no team | [07 Bots](../07_bots/README.md) |
 
 The Control Zone keeps its team in Relic Run, where its map team makes it a Relic Base or, with no team, a Relic Spawn Zone (R-BLDG-260). The Transit Gate is never captured; its team becomes no team only through the silent writes of R-BLDG-039 (R-ECON-089).
 
@@ -260,7 +260,7 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 
 ### 2.11 Ownership change paths
 
-**R-BLDG-038** (MUST) The team-assignment operation of a structure is its single mutation point for the owner: when the new team differs from the current one, it sets the team and emits `<source>.owner_changed` (R-SIM-122, R-SIM-410). Only the Control Zone and the Relic bind a sound to that event (DEC-117; [10 Audio design](../10_audio_design.md)). The structure keeps its serial, so every handle to it stays valid.
+**R-BLDG-038** (MUST) The team-assignment operation of a structure is its single mutation point for the owner: when the new team differs from the current one, it sets the team and emits `<source>.owner_changed` (R-SIM-122, R-SIM-410). Only the Control Zone and the Relic bind a sound to that event (DEC-117; [10 Audio design](../10_audio_design/README.md)). The structure keeps its serial, so every handle to it stays valid.
 
 **R-BLDG-039** (MUST) These paths write a structure's team directly, with no team-change event:
 
@@ -331,7 +331,7 @@ Table 2.12-B Structure meshes and their sockets (asset ids from `assets/asset_ma
 
 ### 2.14 Sound events
 
-**R-BLDG-049** (MUST) Structures raise sounds as presentation events named by source and event (DEC-007). The source of a structure is the stem of its kind's string-id prefix (for example `spawn_node` for `building.spawn_node`). Every structure kind has the base events of table 2.14-A, and each kind's file lists its further events and their triggers. A looping event is stopped by naming its source and event. The sample bindings are [10 Audio design](../10_audio_design.md).
+**R-BLDG-049** (MUST) Structures raise sounds as presentation events named by source and event (DEC-007). The source of a structure is the stem of its kind's string-id prefix (for example `spawn_node` for `building.spawn_node`). Every structure kind has the base events of table 2.14-A, and each kind's file lists its further events and their triggers. A looping event is stopped by naming its source and event. The sample bindings are [10 Audio design](../10_audio_design/README.md).
 
 Table 2.14-A Base sound events of every structure.
 
@@ -344,7 +344,7 @@ Table 2.14-A Base sound events of every structure.
 
 ### 2.15 Map records
 
-**R-BLDG-050** (MUST) Every map record of a structure gives, in this order of meaning: its structure id, its kind, its position (x, z), its team (a map position or no team), its facing (x, z) and its global flag, followed by the fields of its kind that its owning file lists. The typed record schema is [data schemas](../../architecture/components/data_schemas.md); the kind-specific fields keep the meanings and defaults that the owning files give.
+**R-BLDG-050** (MUST) Every map record of a structure gives, in this order of meaning: its structure id, its kind, its position (x, z), its team (a map position or no team), its facing (x, z) and its global flag, followed by the fields of its kind that its owning file lists. The typed record schema is [data schemas](../../architecture/components/data_schemas/README.md); the kind-specific fields keep the meanings and defaults that the owning files give.
 
 ## 3 States and flows
 
@@ -452,8 +452,8 @@ All criteria run headless at game speed 1 with a fixed seed.
 
 ## 7 Dependencies
 
-- **Reference documents:** [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (recount periods, elimination); [02 Units](../02_units/README.md) and [02 Worker](../02_units/worker.md) (the Worker's port search and operating state); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the Supply crate, weapon damage to structures); [05 Population flow](../05_population_flow.md) (Spawn Node capture, port keys, port seeding); [06 Controls, camera and commands](../06_controls_camera_and_commands.md) (orders to operating Workers); [07 Bots](../07_bots.md) (bot navigation nodes, objectives and markers); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records and validation); [10 Audio design](../10_audio_design.md) (sound bindings); [12 Simulation model](../12_simulation_model/README.md) (structure pool, slices, handles, the explosion primitive, the obstacle grid).
-- **Engine components:** [data schemas](../../architecture/components/data_schemas.md) (map records); [renderer](../../architecture/components/renderer/README.md) (structure drawing, detail levels); [animation and VFX](../../architecture/components/animation_and_vfx.md) (shatter effects, particles); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) (mesh and socket validation).
+- **Reference documents:** [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (recount periods, elimination); [02 Units](../02_units/README.md) and [02 Worker](../02_units/worker.md) (the Worker's port search and operating state); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the Supply crate, weapon damage to structures); [05 Population flow](../05_population_flow.md) (Spawn Node capture, port keys, port seeding); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (orders to operating Workers); [07 Bots](../07_bots/README.md) (bot navigation nodes, objectives and markers); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records and validation); [10 Audio design](../10_audio_design/README.md) (sound bindings); [12 Simulation model](../12_simulation_model/README.md) (structure pool, slices, handles, the explosion primitive, the obstacle grid).
+- **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (map records); [renderer](../../architecture/components/renderer/README.md) (structure drawing, detail levels); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter effects, particles); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) (mesh and socket validation).
 - **Assets:** `fx.starburst`, `mesh.structure.structure_default`, `sfx.building.command_console.presence_loop`, `sfx.building.control_zone.presence_loop`, and the structure meshes of table 2.12-B (`mesh.structure.spawn_node`, `mesh.structure.source_node`, `mesh.structure.relay_mast`, `mesh.structure.beam_dish`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.solar_array`, `mesh.structure.grid_pylon`, `mesh.structure.transit_gate`, `mesh.structure.core_device`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `mesh.structure.fuel_depot`, `mesh.structure.launch_vessel`, `mesh.structure.breach_charge`, `mesh.relic.variant`, `mesh.structure.turret_mount`).
 
 ## 8 Open decisions

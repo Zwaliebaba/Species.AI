@@ -88,7 +88,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 
 **RND-407** (MUST) The two factions have their own looks: the Rogue faction draws its laser bolts in white (`rnd.laser.rogue_colour`), its Crawlers, barrage missiles and any Essence orbs as darkening layers (RND-319, RND-324, RND-327), and its Workers with the hurt pose (R-UNIT-145); the Visitor faction draws its Workers with their own card and glow (RND-316) and takes the light grey of colour id 9 elsewhere.
 
-**RND-408** (MUST) The Shield bubble and the Visitor faction bubble take a saturated team colour: each channel of the team colour, read as an 8-bit value, is fully on when that value is at least 1 and fully off when it is 0, so most team colours draw a white bubble, orange (255, 150, 0) a yellow one and purple (150, 0, 255) a magenta one. This is the reference look and the default of the Open DEC-328 ([animation_and_vfx.md](../animation_and_vfx.md) draws the bubbles).
+**RND-408** (MUST) The Shield bubble and the Visitor faction bubble take a saturated team colour: each channel of the team colour, read as an 8-bit value, is fully on when that value is at least 1 and fully off when it is 0, so most team colours draw a white bubble, orange (255, 150, 0) a yellow one and purple (150, 0, 255) a magenta one. This is the reference look and the default of the Open DEC-328 ([README.md](../animation_and_vfx/README.md) draws the bubbles).
 
 **RND-409** (MUST) Colour is never the only team cue: the team palette index that selects the tint also selects any per-team pattern or marker shape that the accessibility rules add (ADR-0020, ADR-0064, XAG 103).
 
@@ -166,7 +166,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 **RND-427** (MUST) Meshes are low-poly, built from a few large shapes that read at a distance: the reference mesh set averages about 1,085 triangles per mesh (RND-156), and each mesh's budget is its manifest row ([asset_manifest.csv](../../../assets/asset_manifest.csv)). Authored colours are final colours as seen through the engine's attenuation (`rnd.mesh.colour_attenuation`), tint (`rnd.tint.factor`) and the Transport and Worker-figure factors (RND-160 to RND-162).
 
-**RND-428** (MUST) Thin bright lines carry the wire look: the terrain wire grid, one outline per height-field cell drawn additively over the lit terrain (RND-135, `fx.terrain_grid`); the edge lines of shatter shards ([animation_and_vfx.md](../animation_and_vfx.md), ADR-0010); and the Barrier Emitter's top edge line (RND-201).
+**RND-428** (MUST) Thin bright lines carry the wire look: the terrain wire grid, one outline per height-field cell drawn additively over the lit terrain (RND-135, `fx.terrain_grid`); the edge lines of shatter shards ([README.md](../animation_and_vfx/README.md), ADR-0010); and the Barrier Emitter's top edge line (RND-201).
 
 ### 4.8 Black world, fog and light
 
@@ -178,7 +178,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 ### 4.9 Deliberate crispness
 
-**RND-432** (MUST) World textures are filtered linearly through all their mip levels unless a rule names otherwise (RND-055). Point filtering is deliberate in exactly these places, for a blocky pixel look: the particle dot under magnification ([animation_and_vfx.md](../animation_and_vfx.md)), the flat cloud layers (RND-154), and the captured frame of the screen transition, which is sampled with the point clamp-to-edge sampler. Cloud layers and the views that the passes name read mip level 0 only.
+**RND-432** (MUST) World textures are filtered linearly through all their mip levels unless a rule names otherwise (RND-055). Point filtering is deliberate in exactly these places, for a blocky pixel look: the particle dot under magnification ([README.md](../animation_and_vfx/README.md)), the flat cloud layers (RND-154), and the captured frame of the screen transition, which is sampled with the point clamp-to-edge sampler. Cloud layers and the views that the passes name read mip level 0 only.
 
 **RND-433** (MUST) Multisampling follows ADR-0015, and its Off setting is the reference appearance of polygon edges; cut-out cards use alpha-to-coverage when multisampling is on (RND-060), so crowds keep their hard edges at every setting.
 

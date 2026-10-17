@@ -372,12 +372,15 @@ for line in conv.split('\n'):
         col = cells.index('String-id prefix')
     elif col is not None and col < len(cells) and not cells[0].startswith('---'):
         str_prefixes.update(re.findall(r'`([a-z_]+)(?:\.[a-z0-9_.]+)?`', cells[col]))
+key_prefixes = {k.split('.')[0] for k in key_defs}
+for c in sorted(set(cats) & key_prefixes):
+    fail(7, f'asset stem "{c}." is also a tuning-key prefix; asset ids and tuning keys must not share a stem')
 for c in sorted(set(cats) & str_prefixes):
     fail(7, f'asset stem "{c}." is also a string-id prefix (CONVENTIONS §8); asset ids and string ids must not share a stem')
 for r in manifest:
     if not r.get('consumers', '').strip():
         fail(7, f'manifest row {r["asset_id"]} names no consumer')
-info[7] = f'{len(asset_ids)} manifest rows, {n_asset_cites} asset citations in reference and component documents'
+info[7] = f'{len(asset_ids)} asset ids ({len(manifest)} manifest rows), {n_asset_cites} asset citations in reference and component documents'
 
 
 # ---------------------------------------------------------------- gate 9: truncation words

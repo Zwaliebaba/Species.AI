@@ -1,6 +1,6 @@
 # Essence orbs
 
-> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Collector](collector.md) · [Builder](builder.md) · [Worker](worker.md) · [Creatures and hazards](creatures_and_hazards.md) · [Population flow](../05_population_flow.md) · [Entity model](../12_simulation_model/03_entity_model_and_identity.md) · [Randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md)
+> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Collector](collector.md) · [Builder](builder.md) · [Worker](worker.md) · [Creatures and hazards](README.md) · [Population flow](../05_population_flow.md) · [Entity model](../12_simulation_model/03_entity_model_and_identity.md) · [Randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md)
 
 ## 1 Purpose and player experience
 
@@ -18,7 +18,7 @@ This document specifies the Essence orb object: its creation, its states and tim
 
 **R-UNIT-301** (MUST) An Essence orb (`EssenceOrb`) is a simulated object but not an actor. It is held by value in the match world's Essence-orb pool, which starts with `ref.sim.container.orb_presize` slots and grows by `ref.sim.container.orb_step` ([containers and update order](../12_simulation_model/04_containers_and_update_order.md)). Its handle carries its team, the pool marker, its slot and the slot's generation ([entity model](../12_simulation_model/03_entity_model_and_identity.md) R-SIM-126, R-SIM-127). Every live orb advances exactly once per tick, in world sub-step 3 (Essence orbs) of each update slice, in slot order ([tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-512). Orbs are never registered in the actor grid (R-SIM-303).
 
-**R-UNIT-302** (MUST) An Essence orb is the essence an actor releases when it dies through the standard damage path. It is the input of the population flow (DEC-018): a Collector collects floating orbs and converts each into one new Worker at a friendly Spawn Node ([collector.md](collector.md)); a Builder collects orbs and returns them to a friendly Spawn Node ([builder.md](builder.md)); Crawlers ferry orbs into Crawler eggs, centipedes eat them, ants carry them home, and a Reaper Serpent removes the orbs of the actors it kills ([creatures_and_hazards.md](creatures_and_hazards.md)). An orb that nothing takes ascends and is removed.
+**R-UNIT-302** (MUST) An Essence orb is the essence an actor releases when it dies through the standard damage path. It is the input of the population flow (DEC-018): a Collector collects floating orbs and converts each into one new Worker at a friendly Spawn Node ([collector.md](collector.md)); a Builder collects orbs and returns them to a friendly Spawn Node ([builder.md](builder.md)); Crawlers ferry orbs into Crawler eggs, centipedes eat them, ants carry them home, and a Reaper Serpent removes the orbs of the actors it kills ([README.md](README.md)). An orb that nothing takes ascends and is removed.
 
 ### 2.3 Creation
 
@@ -30,8 +30,8 @@ This document specifies the Essence orb object: its creation, its states and tim
 |---|---|---|
 | an actor that dies through the standard damage path, unless its kind or its team releases none | the corpse velocity × `ref.econ.orb.death_velocity_factor` (0.5) | [Units](README.md), [population flow](../05_population_flow.md) R-ECON-067 |
 | a tree of the Essence Grove outcome while it is healthy | as that rule states | [population flow](../05_population_flow.md) R-ECON-067, [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| a Brood Drifter laying a Crawler egg that it fertilises at once | as that rule states | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| a Seed Pod of the essence kind; no Supply crate outcome launches Seed Pods of that kind | as that rule states | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| a Brood Drifter laying a Crawler egg that it fertilises at once | as that rule states | [README.md](README.md) |
+| a Seed Pod of the essence kind; no Supply crate outcome launches Seed Pods of that kind | as that rule states | [README.md](README.md) |
 | a destroyed Hive, one orb per ant and per orb inside; a Hive always belongs to the Rogue faction, so this creates none | — | [defences and props](../03_buildings_and_world_objects/defences_and_props.md) |
 
 Troopers, Transports, Collectors and Builders release no Essence orb when they die ([strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md)).
@@ -61,7 +61,7 @@ Troopers, Transports, Collectors and Builders release no Essence orb when they d
 
 **R-UNIT-308** (MUST) An Essence orb carries a broken marker, unset at creation. The Collector and the Builder skip an orb whose marker is set when they search ([collector.md](collector.md), [builder.md](builder.md)). No rule in a match sets the marker, so every orb is unbroken and the test never excludes one.
 
-**R-UNIT-309** (MUST) An orb answers the question "which Crawler eggs are near me" from its nearby-egg list. When asked, it rebuilds the list if `ref.unit.essence_orb.egg_search_ticks` (30 ticks, nominal 3.0 s) have passed since its last rebuild, or if it has never built one: the list then holds up to `ref.econ.crawler.egg_cache_max` (8) dormant Crawler eggs that rest on the ground within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. Crawlers use the list to choose orbs ([creatures_and_hazards.md](creatures_and_hazards.md), [population flow](../05_population_flow.md) R-ECON-083).
+**R-UNIT-309** (MUST) An orb answers the question "which Crawler eggs are near me" from its nearby-egg list. When asked, it rebuilds the list if `ref.unit.essence_orb.egg_search_ticks` (30 ticks, nominal 3.0 s) have passed since its last rebuild, or if it has never built one: the list then holds up to `ref.econ.crawler.egg_cache_max` (8) dormant Crawler eggs that rest on the ground within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. Crawlers use the list to choose orbs ([README.md](README.md), [population flow](../05_population_flow.md) R-ECON-083).
 
 ### 2.5 States and timers
 
@@ -78,7 +78,7 @@ An orb therefore leaves Birth only on a tick on which it is no more than 10 wu a
 
 **R-UNIT-313** (MUST) **Attached.** A taker that carries the orb itself (a Builder, an ant or a Crawler) attaches it with the attach operation (R-UNIT-324): the orb becomes Attached and the collected sound plays (R-UNIT-333). An Attached orb has no timer, no wobble and no floor clamp; its carrier sets its position, and the structure push of R-UNIT-321 still applies while the orb's push is on. The drop operation returns it to Floating: the structure push is turned on again, its ground height becomes the terrain height under its current position, and its velocity and hover become zero. The timer keeps the value it had when the orb was attached, so an orb attached in Birth floats only for the rest of its birth time after it is dropped.
 
-**R-UNIT-314** (MUST) **InEgg.** An orb that fertilises a Crawler egg is InEgg: no timer, no wobble, no floor clamp. When the egg is destroyed, the orb returns to Floating with its timer unchanged; when the egg hatches, the egg removes the orb ([creatures_and_hazards.md](creatures_and_hazards.md)).
+**R-UNIT-314** (MUST) **InEgg.** An orb that fertilises a Crawler egg is InEgg: no timer, no wobble, no floor clamp. When the egg is destroyed, the orb returns to Floating with its timer unchanged; when the egg hatches, the egg removes the orb ([README.md](README.md)).
 
 **R-UNIT-315** (MUST) **Ascent.** Each tick the vertical hover becomes max(hover.y, `ref.unit.essence_orb.ascent_rise_min` (2 wu/s) + U[0, `ref.unit.essence_orb.ascent_rise_range`) (2 wu/s)), so the orb rises at 2 to 4 wu/s. When the timer is at or below 0, the orb's advance requests its removal. An Ascent orb has no structure push and no floor clamp, and no taker takes it (R-UNIT-326).
 
@@ -154,11 +154,11 @@ A live orb therefore makes 0, 3, 4 or 5 draws per tick, and the number of orbs i
 |---|---|---|---|
 | Collector | Floating | harvest, then remove on delivery | [collector.md](collector.md) |
 | Builder | Birth, Floating | attach; drop when it dies; remove on delivery | [builder.md](builder.md) |
-| Crawler | Birth, Floating, and only an orb whose nearby-egg list is not empty | attach, then place in an egg | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| ant | Birth, Floating | attach, then store in its Hive | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede | Floating | remove (eaten) | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| Crawler | Birth, Floating, and only an orb whose nearby-egg list is not empty | attach, then place in an egg | [README.md](README.md) |
+| ant | Birth, Floating | attach, then store in its Hive | [README.md](README.md) |
+| centipede | Floating | remove (eaten) | [README.md](README.md) |
 | Swarm streak | Floating | remove, and release a creature | [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Reaper Serpent | the orb of each actor it kills, found by the owner search | remove | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| Reaper Serpent | the orb of each actor it kills, found by the owner search | remove | [README.md](README.md) |
 
 **R-UNIT-327** (MUST) When a Collector is removed by a path that does not release its orbs (the end or cancellation of its power), its Collected orbs return to Floating by R-UNIT-317, and its Harvested orbs stay Harvested, with no timer and no holder, until the match ends (see DEC-307). When a Collector is destroyed by a grenade, it releases every orb it holds first ([collector.md](collector.md)).
 
@@ -290,8 +290,8 @@ Keys cited from other documents (their values are defined there):
 
 ## 7 Dependencies
 
-- **Reference documents:** [Units](README.md) (death path, kinds that release no orb); [collector.md](collector.md); [builder.md](builder.md); [creatures_and_hazards.md](creatures_and_hazards.md) (Crawler, Crawler egg, ant, centipede, Reaper Serpent, Brood Drifter, Seed Pod); [population flow](../05_population_flow.md) §2.15 to §2.20 (producers, timers, conversions); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Essence Grove, Swarm streak); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (Hive); [entity model](../12_simulation_model/03_entity_model_and_identity.md) (handles, owner search); [containers and update order](../12_simulation_model/04_containers_and_update_order.md) (the pool, sub-step order); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle grid); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) (draw discipline); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (camera-facing glow batches, team colours); [animation and VFX](../../architecture/components/animation_and_vfx.md); [audio engine](../../architecture/components/audio_engine.md).
+- **Reference documents:** [Units](README.md) (death path, kinds that release no orb); [collector.md](collector.md); [builder.md](builder.md); [README.md](README.md) (Crawler, Crawler egg, ant, centipede, Reaper Serpent, Brood Drifter, Seed Pod); [population flow](../05_population_flow.md) §2.15 to §2.20 (producers, timers, conversions); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Essence Grove, Swarm streak); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (Hive); [entity model](../12_simulation_model/03_entity_model_and_identity.md) (handles, owner search); [containers and update order](../12_simulation_model/04_containers_and_update_order.md) (the pool, sub-step order); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle grid); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) (draw discipline); reference/10 (audio events).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (camera-facing glow batches, team colours); [animation and VFX](../../architecture/components/animation_and_vfx/README.md); [audio engine](../../architecture/components/audio_engine.md).
 - **Assets:** `fx.glow_round` (the orb glow quads), `sfx.unit.essence_orb.collected` (the collected sound).
 
 ## 8 Open decisions

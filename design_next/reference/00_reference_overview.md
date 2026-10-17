@@ -1,6 +1,6 @@
 # Reference overview
 
-> Status: Reference · Prefix: R-VIS · Related: [Skirmish rules and modes](01_skirmish_rules_and_modes/README.md) · [Units](02_units/README.md) · [Buildings and world objects](03_buildings_and_world_objects/README.md) · [Supply crates, powers and weapons](04_supply_crates_powers_and_weapons/README.md) · [Population flow](05_population_flow.md) · [Controls, camera and commands](06_controls_camera_and_commands.md) · [Bots](07_bots.md) · [Maps and level design](08_maps_and_level_design/README.md) · [Front end and match flow](09_front_end_and_match_flow/README.md) · [Audio design](10_audio_design.md) · [Tutorial and help](11_tutorial_and_help.md) · [Simulation model](12_simulation_model/README.md) · [Decision register](../decisions/README.md)
+> Status: Reference · Prefix: R-VIS · Related: [Skirmish rules and modes](01_skirmish_rules_and_modes/README.md) · [Units](02_units/README.md) · [Buildings and world objects](03_buildings_and_world_objects/README.md) · [Supply crates, powers and weapons](04_supply_crates_powers_and_weapons/README.md) · [Population flow](05_population_flow.md) · [Controls, camera and commands](06_controls_camera_and_commands/README.md) · [Bots](07_bots/README.md) · [Maps and level design](08_maps_and_level_design/README.md) · [Front end and match flow](09_front_end_and_match_flow/README.md) · [Audio design](10_audio_design/README.md) · [Tutorial and help](11_tutorial_and_help.md) · [Simulation model](12_simulation_model/README.md) · [Decision register](../decisions/README.md)
 
 ## 1 Purpose and player experience
 
@@ -31,24 +31,24 @@ The table lists the mechanics that give the reference its character, with the ro
 | Activation delay | 300 ticks after an ownership change; skipped for a team's only Spawn Node and with the instant-capture map option | Prevents capture flip-flop farming and protects a team's last Spawn Node | [05](05_population_flow.md) |
 | Burst and pause production | One request every 2 ticks for int(20 × H) requests, then a pause of 101–150 ticks; transit orbs travel along Relays in at most 10h + 1 ticks for h hops (11 for the first hop, 10 for each further hop) and are discarded if the Spawn Node has turned neutral | A rhythmic, visible reinforcement flow | [05](05_population_flow.md) |
 | Autonomous Workers | Every Worker re-plans every 10–20 ticks among ports, Supply crates, Relics, Launch Vessels, Leaders and threats, and fights on its own | Crowds do useful local work without micro-management | [02](02_units/worker.md) |
-| Leaders | Promote a Worker; set it as a Waypoint beacon (a conveyor for idle Workers within 100 wu) or a formation (up to 90 Workers gathered within 150 wu) | The strategic verb set | [06](06_controls_camera_and_commands.md), [02](02_units/leader_and_formations.md) |
-| Selection circle and crowd orders | Hold the primary button to grow a circle of up to 100 wu at 100 wu/s; the secondary button gives the destination; at least 10 ticks between crowd orders | Simple, physical crowd control | [06](06_controls_camera_and_commands.md) |
-| Direct control only for special units | Strike team, Transport, Collector, Builder, turret and Beam Dish | Micro-management stays rare and meaningful | [06](06_controls_camera_and_commands.md) |
+| Leaders | Promote a Worker; set it as a Waypoint beacon (a conveyor for idle Workers within 100 wu) or a formation (up to 90 Workers gathered within 150 wu) | The strategic verb set | [06](06_controls_camera_and_commands/README.md), [02](02_units/leader_and_formations.md) |
+| Selection circle and crowd orders | Hold the primary button to grow a circle of up to 100 wu at 100 wu/s; the secondary button gives the destination; at least 10 ticks between crowd orders | Simple, physical crowd control | [06](06_controls_camera_and_commands/README.md) |
+| Direct control only for special units | Strike team, Transport, Collector, Builder, turret and Beam Dish | Micro-management stays rare and meaningful | [06](06_controls_camera_and_commands/README.md) |
 | Supply crate timing and catch-up placement | Drop interval U(0.5, 1.5] × the drop-rate option; at most one Supply crate per 500 wu of map width; placement weighted towards lower-scoring teams | A wildcard that also helps the trailing side | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | Opening by local majority | A strict majority within 35 wu; at least 51 ticks with 50 or more Workers; a neutral Supply crate expires after 600 ticks | Forces converging fights | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | 90/10 outcome split | Hostile outcomes are events against everyone, owned by the Rogue faction | Risk on every Supply crate | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Six Power slots, lost when full | 6 slots, 2 while eliminated; every pending, placed or running power occupies one | Hoarding tension | [06](06_controls_camera_and_commands.md), [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
+| Six Power slots, lost when full | 6 slots, 2 while eliminated; every pending, placed or running power occupies one | Hoarding tension | [06](06_controls_camera_and_commands/README.md), [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | Transit Gate reinforcement waves | Every 60 mode seconds; 40 Workers per owned Transit Gate in Launch Race and Flag Chain; Transport, turret and airstrike variants | Pacing in the objective modes | [05](05_population_flow.md) |
 | Essence loop | One Essence orb per death, collectable for 300–500 ticks; a Collector recycles orbs into its own team's Workers | Combat feeds the economy | [05](05_population_flow.md) |
 | One rules skeleton, six territory variants | Spawn Nodes, Control Zones, carried Relics, the Core Device with its Command Consoles, the Launch Vessel with its fuel chain, chains of Flag posts | Variety on one rule set | [01](01_skirmish_rules_and_modes/README.md) |
 | Ready-up barrier | World frozen; a 30-tick countdown once every human is ready, restarted if anyone withdraws readiness | Every participant starts from the same state | [01](01_skirmish_rules_and_modes/README.md) |
 | Leaver replaced by a bot | A human who leaves during a match is replaced by a bot at once | No slot goes dead | [01](01_skirmish_rules_and_modes/README.md) |
-| Bots | Node graph, priority fields, a dispatcher in which only friendly nodes release troops, Leader conveyors, one handler per power, one strategy per mode; difficulty is tempo (200, 101 or 11 ticks) and randomness (100 %, 50 % or 0 %); perfect information and no other advantage | Fair-feeling opponents | [07](07_bots.md) |
+| Bots | Node graph, priority fields, a dispatcher in which only friendly nodes release troops, Leader conveyors, one handler per power, one strategy per mode; difficulty is tempo (200, 101 or 11 ticks) and randomness (100 %, 50 % or 0 %); perfect information and no other advantage | Fair-feeling opponents | [07](07_bots/README.md) |
 | Lobby option set and per-map overrides | 39 option definitions; map options for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps | The tuning surface of every mode | [01](01_skirmish_rules_and_modes/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
 | Start positions remapped at load | A map's team column is a map position, remapped to the match teams at load; one map serves 2 to 4 players | Map reuse | [03](03_buildings_and_world_objects/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
-| Free camera | Cursor-follow pan at 250 wu/s (1,000 wu/s with the speed modifier); zoom narrows the field of view from 60° to 15°; one camera view per player slot at match start | A readable view of the crowd | [06](06_controls_camera_and_commands.md) |
+| Free camera | Cursor-follow pan at 250 wu/s (1,000 wu/s with the speed modifier); zoom narrows the field of view from 60° to 15°; one camera view per player slot at match start | A readable view of the crowd | [06](06_controls_camera_and_commands/README.md) |
 | Visual language | Flat facets, additive glow on black, darkening layers, black fog, 8 team colours, sprite cards scaled with distance | A distinctive look at crowd scale | [renderer visual language](../architecture/components/renderer/visual_language.md) |
-| Audio binding model | (source, event) pairs resolve to layered blocks with friend and foe variants, sample groups, generative loops and an altitude crossfade | Data-driven audio | [10](10_audio_design.md) |
+| Audio binding model | (source, event) pairs resolve to layered blocks with friend and foe variants, sample groups, generative loops and an altitude crossfade | Data-driven audio | [10](10_audio_design/README.md) |
 | Onboarding helpers | Contextual hints (a suspicion counter for stray clicks, a hint to hold the speed modifier while panning) and explainer animations during ready-up | Teaches the game without a campaign | [11](11_tutorial_and_help.md) |
 
 ### 1.4 Player-facing glossary
@@ -61,10 +61,10 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 |---|---|---|
 | Species | The game. Its tagline is new text (`ui.title.tagline`) | [09](09_front_end_and_match_flow/README.md) |
 | Worker | The basic unit: a small, flat soldier with a laser and grenades; 50 health, 20 wu/s; never built and never ordered one at a time | [02](02_units/worker.md) |
-| Leader | A Worker promoted by the player; never fights; acts as a Waypoint beacon or leads a formation | [02](02_units/leader_and_formations.md), [06](06_controls_camera_and_commands.md) |
-| Waypoint beacon | A Leader order that redirects every idle Worker of its team passing within 100 wu | [06](06_controls_camera_and_commands.md) |
-| formation | A block of up to 90 Workers marching in front of a Leader, in rows of 6 to 15 | [06](06_controls_camera_and_commands.md) |
-| selection circle | The growing circle, up to 100 wu, drawn with the primary button to gather Workers | [06](06_controls_camera_and_commands.md) |
+| Leader | A Worker promoted by the player; never fights; acts as a Waypoint beacon or leads a formation | [02](02_units/leader_and_formations.md), [06](06_controls_camera_and_commands/README.md) |
+| Waypoint beacon | A Leader order that redirects every idle Worker of its team passing within 100 wu | [06](06_controls_camera_and_commands/README.md) |
+| formation | A block of up to 90 Workers marching in front of a Leader, in rows of 6 to 15 | [06](06_controls_camera_and_commands/README.md) |
+| selection circle | The growing circle, up to 100 wu, drawn with the primary button to gather Workers | [06](06_controls_camera_and_commands/README.md) |
 | Essence orb | The green orb a dead unit leaves; floats for 300–500 ticks, can be collected by Collectors, then ascends | [02](02_units/essence_orbs.md), [05](05_population_flow.md) |
 | Spawn Node | The capturable structure with 5 ports that produces Workers for its owner | [03](03_buildings_and_world_objects/economy_and_spawn_objects.md), [05](05_population_flow.md) |
 | Source Node, Relays | The invisible source and the beam network of the spawn network, along which new Workers travel to the Spawn Nodes | [03](03_buildings_and_world_objects/economy_and_spawn_objects.md) |
@@ -75,8 +75,8 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 | Transit Gate | A fixed gate that releases reinforcement waves for its owner | [03](03_buildings_and_world_objects/mode_objects.md), [05](05_population_flow.md) |
 | reinforcement wave | A timed Transit Gate wave of Workers, Transports, turrets or airstrikes, with an on-screen countdown | [05](05_population_flow.md) |
 | Rogue faction | The hostile bot faction that owns the hostile Supply crate outcomes, Hives, Spitter Plants and hostile workers | [01](01_skirmish_rules_and_modes/README.md), [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Visitor faction | The faction that the Abductor outcome brings, in team slot 5 | [02](02_units/creatures_and_hazards.md) |
-| Bot | A computer opponent that fills an empty slot; one difficulty (easy, standard or hard) applies to all bots of a match | [07](07_bots.md) |
+| Visitor faction | The faction that the Abductor outcome brings, in team slot 5 | [02](02_units/README.md) |
+| Bot | A computer opponent that fills an empty slot; one difficulty (easy, standard or hard) applies to all bots of a match | [07](07_bots/README.md) |
 | co-op | Two alliances of two players sharing a colour family, on maps that allow it | [01](01_skirmish_rules_and_modes/README.md) |
 
 #### 1.4.2 Units and structures a player controls or fights over
@@ -111,8 +111,8 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 |---|---|---|
 | Supply crate | The falling, bubble-wrapped box that the local Worker majority opens; its arrival is announced with new text (`crate.drop_announce`) | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | beneficial and hostile outcome | 90 % of openings give the opener a useful reward; 10 % start a hostile event against everyone | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Power | A granted unit or ability waiting in a Power slot to be placed | [06](06_controls_camera_and_commands.md) |
-| Power slots | The 6 slots of a team, 2 while it is eliminated; a full set shows new text (`ui.power_slots.full`) | [06](06_controls_camera_and_commands.md) |
+| Power | A granted unit or ability waiting in a Power slot to be placed | [06](06_controls_camera_and_commands/README.md) |
+| Power slots | The 6 slots of a team, 2 while it is eliminated; a full set shows new text (`ui.power_slots.full`) | [06](06_controls_camera_and_commands/README.md) |
 | Comeback Bonus | Free random powers every 450 ticks for an eliminated team; full slots show new text (`ui.power_slots.comeback_full`) | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | starting powers | 0 to 3 random powers at match start, in Spawn Control and Zone Control | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | basic-crates option | A lobby option that limits Supply crates to the 7 basic outcomes and disables the hostile outcomes | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
@@ -783,15 +783,15 @@ Every value in this table restates a value of the document that owns the mechani
 |---|---|
 | Match skeleton, teams, timers, elimination, sudden death, scoring | [01_skirmish_rules_and_modes/README.md](01_skirmish_rules_and_modes/README.md) |
 | The six modes | [spawn_control.md](01_skirmish_rules_and_modes/spawn_control.md), [zone_control.md](01_skirmish_rules_and_modes/zone_control.md), [relic_run.md](01_skirmish_rules_and_modes/relic_run.md), [siege.md](01_skirmish_rules_and_modes/siege.md), [launch_race.md](01_skirmish_rules_and_modes/launch_race.md), [flag_chain.md](01_skirmish_rules_and_modes/flag_chain.md) |
-| Workers, Leaders and formations, Strike teams, Transports, Collectors, Builders, Essence orbs, creatures and hazards | [02_units/](02_units/README.md): [worker.md](02_units/worker.md), [leader_and_formations.md](02_units/leader_and_formations.md), [strike_team.md](02_units/strike_team.md), [transport.md](02_units/transport.md), [collector.md](02_units/collector.md), [builder.md](02_units/builder.md), [essence_orbs.md](02_units/essence_orbs.md), [creatures_and_hazards.md](02_units/creatures_and_hazards.md) |
+| Workers, Leaders and formations, Strike teams, Transports, Collectors, Builders, Essence orbs, creatures and hazards | [02_units/](02_units/README.md): [worker.md](02_units/worker.md), [leader_and_formations.md](02_units/leader_and_formations.md), [strike_team.md](02_units/strike_team.md), [transport.md](02_units/transport.md), [collector.md](02_units/collector.md), [builder.md](02_units/builder.md), [essence_orbs.md](02_units/essence_orbs.md), [README.md](02_units/README.md) |
 | Spawn network, mode objects, defences and props | [03_buildings_and_world_objects/](03_buildings_and_world_objects/README.md): [economy_and_spawn_objects.md](03_buildings_and_world_objects/economy_and_spawn_objects.md), [mode_objects.md](03_buildings_and_world_objects/mode_objects.md), [defences_and_props.md](03_buildings_and_world_objects/defences_and_props.md) |
 | Supply crate lifecycle, outcomes, pools, powers and weapons | [04_supply_crates_powers_and_weapons/](04_supply_crates_powers_and_weapons/README.md): [crates_and_powers.md](04_supply_crates_powers_and_weapons/crates_and_powers.md), [weapons_and_projectiles.md](04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | Capture, production, Catch-up bonus, transit, population cap, reinforcement waves, essence loop | [05_population_flow.md](05_population_flow.md) |
-| Controls, bindings, selection, orders, Power slots, direct control, camera | [06_controls_camera_and_commands.md](06_controls_camera_and_commands.md) |
-| Bots | [07_bots.md](07_bots.md) |
+| Controls, bindings, selection, orders, Power slots, direct control, camera | [06_controls_camera_and_commands/README.md](06_controls_camera_and_commands/README.md) |
+| Bots | [07_bots/README.md](07_bots/README.md) |
 | Map design rules, match options per map, map distribution, map-editor hooks | [08_maps_and_level_design/](08_maps_and_level_design/README.md): [rules_and_conventions.md](08_maps_and_level_design/rules_and_conventions.md), [map_editor_hooks.md](08_maps_and_level_design/map_editor_hooks.md) |
 | Screen flow, match setup, loading, options, achievement and leaderboard hooks | [09_front_end_and_match_flow/](09_front_end_and_match_flow/README.md): [screen_flow_and_match_setup.md](09_front_end_and_match_flow/screen_flow_and_match_setup.md), [options_localisation_and_hooks.md](09_front_end_and_match_flow/options_localisation_and_hooks.md) |
-| Audio events, mix and music hooks | [10_audio_design.md](10_audio_design.md) |
+| Audio events, mix and music hooks | [10_audio_design/README.md](10_audio_design/README.md) |
 | Tutorials, hints and explainer animations | [11_tutorial_and_help.md](11_tutorial_and_help.md) |
 | Tick rate, mode second, update order, teams and player commands | [12_simulation_model/](12_simulation_model/README.md): [01_tick_timing_and_main_loop.md](12_simulation_model/01_tick_timing_and_main_loop.md), [06_teams_and_player_commands.md](12_simulation_model/06_teams_and_player_commands.md) |
 

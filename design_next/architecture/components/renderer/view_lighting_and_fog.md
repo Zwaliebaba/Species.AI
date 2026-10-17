@@ -77,7 +77,7 @@ struct LitMaterial { Vec3 specular; float shininess; };        // diffuse and am
 
 **RND-220** (MUST) A raised near plane by the factor *k* makes a fragment's reversed-Z depth *k* times its unbiased depth, so the draw wins ties against surfaces drawn without bias. A variant with factor *k* sets `DepthBias` = round((*k* − 1) × `rnd.depth_bias.unit_scale` (2²⁴)), `SlopeScaledDepthBias` = 0 and `DepthBiasClamp` = 0. On the `D32_FLOAT` depth target this adds, towards the camera, between (*k* − 1) and 2 × (*k* − 1) times the depth of the primitive's nearest point, never less than the reference offset.
 
-**RND-221** (MUST) Workers and their ground shadows use no depth bias: the shadows lie slightly above the terrain instead ([animation_and_vfx.md](../animation_and_vfx.md)).
+**RND-221** (MUST) Workers and their ground shadows use no depth bias: the shadows lie slightly above the terrain instead ([README.md](../animation_and_vfx/README.md)).
 
 ### 4.3 Fog
 
@@ -129,7 +129,7 @@ Neither test rejects beyond the far plane; the far plane and the fog end bound w
 
 **RND-240** (MUST) The look has no shadow maps, no stencil shadows and no projected-geometry shadows. It has three kinds of decal shadow, each drawn as instanced quads that follow the terrain through `terrain_heights` (ADR-0009). Adding shadow maps is a change of the look and needs an ADR.
 
-**RND-241** (MUST) A **sprite ground shadow** is the actor's own sprite texture drawn as a black, flat quad lying on the terrain, offset along +*z* as if lit from a fixed direction, without depth write, with an alpha set by the actor's detail factor, skipped beyond a distance and while the actor is dead or abducted. The Worker's values are in [animation_and_vfx.md](../animation_and_vfx.md) and its pass is 7d.
+**RND-241** (MUST) A **sprite ground shadow** is the actor's own sprite texture drawn as a black, flat quad lying on the terrain, offset along +*z* as if lit from a fixed direction, without depth write, with an alpha set by the actor's detail factor, skipped beyond a distance and while the actor is dead or abducted. The Worker's values are in [README.md](../animation_and_vfx/README.md) and its pass is 7d.
 
 **RND-242** (MUST) A **blob shadow** is a quad of half-size *s* with `fx.glow_round`, drawn with the `Darkening` blend, no culling, no depth write and the `bias_blob_shadow` variant, following the terrain slightly above it and skipped when all its corners lie above the caster. Its colour, lift and per-actor sizes are in [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md); its users are Crawler eggs, Brood Drifters, Builders, Reaper Serpents (head and tail segments), Collectors and Spitter Plants.
 
@@ -145,8 +145,8 @@ Neither test rejects beyond the far plane; the far plane and the fog end bound w
 |---|---|---|
 | fade to and from black | a full-screen quad in pass 27 | [frame_graph_and_passes.md](frame_graph_and_passes.md) RND-085 |
 | screen transition | the captured-frame slide in pass 34 | [frame_graph_and_passes.md](frame_graph_and_passes.md) RND-095 |
-| shockwave flash | a full-screen additive white quad at the start of a shockwave | [animation_and_vfx.md](../animation_and_vfx.md), ADR-0036 |
-| camera shake | an additive rotation offset on the view, requested by laser bolts that pass near the camera and by shockwaves; local only | [animation_and_vfx.md](../animation_and_vfx.md), ADR-0036 |
+| shockwave flash | a full-screen additive white quad at the start of a shockwave | [README.md](../animation_and_vfx/README.md), ADR-0036 |
+| camera shake | an additive rotation offset on the view, requested by laser bolts that pass near the camera and by shockwaves; local only | [README.md](../animation_and_vfx/README.md), ADR-0036 |
 | brightness | a constant in the final pass; the system gamma ramp is never changed | ADR-0012 |
 
 **RND-247** (MUST NOT) The look has no bloom, no blur, no post-process anti-aliasing and no screen-space distortion. Multisampling follows ADR-0015, and its Off setting is the reference appearance of polygon edges.

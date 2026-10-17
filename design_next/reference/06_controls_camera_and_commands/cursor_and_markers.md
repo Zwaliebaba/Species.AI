@@ -263,7 +263,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 ## 7 Dependencies
 
 - **Reference documents:** [actions and bindings](actions_and_bindings.md) (the object under the pointer); [selection and Power slots](selection_and_power_slots.md) (Powers, the target-area test, the extra information); [Leader and formations](../02_units/leader_and_formations.md) (formation slots, banners); [Transport](../02_units/transport.md); [Relic Run](../01_skirmish_rules_and_modes/relic_run.md); [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-405, R-SIM-450); [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (extrapolation time).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (depth-biased variants, overlay drawing); [animation and VFX](../../architecture/components/animation_and_vfx.md) (control-flash and muzzle-flash particles).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (depth-biased variants, overlay drawing); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (control-flash and muzzle-flash particles).
 - **Assets:** `cursor.world`, `cursor.place`, `cursor.unavailable`, `cursor.move_target`, `cursor.highlight`, `cursor.turret_aim`, `cursor.select`, `cursor.enter`, `cursor.pointer`, `fx.particle_dot`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.supply_crate`, `marker.relic`, `icon.power.leader`, `icon.power.workers`, `mesh.structure.turret_head`, `mesh.structure.hive_mound`; sound event `match_ui.unit_highlight`.
 
 ## 8 Open decisions

@@ -1,6 +1,6 @@
 # Zone Control
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [11 Tutorial and help](../11_tutorial_and_help.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [11 Tutorial and help](../11_tutorial_and_help.md)
 
 ## 1 Purpose and player experience
 
@@ -45,7 +45,7 @@ Zone Control is a king-of-the-hill mode. The map has Control Zones, drawn as col
 
 **R-MODE-258** (MUST) The population cap per team is the map's cap ÷ the number of open slots, fixed for the match (DEC-079); the reference maps give 500 to 1,000 per team, and one co-op map is unlimited (DEC-120).
 
-**R-MODE-259** (MUST) Bots use the standard priority model with the Control Zone override and keep a garrison in held zones above the Easy difficulty ([reference/07](../07_bots.md)).
+**R-MODE-259** (MUST) Bots use the standard priority model with the Control Zone override and keep a garrison in held zones above the Easy difficulty ([reference/07](../07_bots/README.md)).
 
 ### 2.4 HUD and end of match
 
@@ -116,8 +116,8 @@ This file uses the string ids of the README (`match.sudden_death.start`, `match.
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Control Zones); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots.md); [11 Tutorial and help](../11_tutorial_and_help.md); [12 Space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (actor-grid counts).
-- **Assets:** `map.zone_control`, `help.hint.zone_control`, `fx.beam_long`, `sfx.building.control_zone.owner_changed`, `sfx.building.control_zone.owner_changed_b`, `sfx.building.control_zone.presence_loop`.
+- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Control Zones); [05 Population flow](../05_population_flow.md); [07 Bots](../07_bots/README.md); [11 Tutorial and help](../11_tutorial_and_help.md); [12 Space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (actor-grid counts).
+- **Assets:** `mapfile.zone_control`, `help.hint.zone_control`, `fx.beam_long`, `sfx.building.control_zone.owner_changed`, `sfx.building.control_zone.owner_changed_b`, `sfx.building.control_zone.presence_loop`.
 
 ## 8 Open decisions
 

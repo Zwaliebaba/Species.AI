@@ -1,6 +1,6 @@
 # Flag Chain
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [10 Audio design](../10_audio_design.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [10 Audio design](../10_audio_design/README.md)
 
 ## 1 Purpose and player experience
 
@@ -30,7 +30,7 @@ The update runs once per recount but scales by one tick's duration, so the progr
 
 **R-MODE-456** (MUST) While enemy Workers are within the radius of the local team's own Home post, the Home post emits `mode.flag_chain.base_under_attack` and sets its throttle to `ref.mode.flag_chain.under_attack_throttle` (200 recounts); the throttle falls by 1 per recount, so the announcement repeats at most every 200 recounts, 2,200 ticks (DEC-071 is open on a throttle of 200 ticks).
 
-**R-MODE-457** (MUST) At each recount the nearest bot navigation node receives a per-team priority from the Flag post, or 1.0 for an Easy bot ([reference/07](../07_bots.md)).
+**R-MODE-457** (MUST) At each recount the nearest bot navigation node receives a per-team priority from the Flag post, or 1.0 for an Easy bot ([reference/07](../07_bots/README.md)).
 
 **R-MODE-458** (MUST) The options are time limit (0 to 60 minutes, default `ref.mode.flag_chain.option.time_limit`, 15; 0 means none), crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency (default 2), Comeback Bonus, sudden death and turret cap (default 2) (README R-MODE-074).
 
@@ -81,7 +81,7 @@ The search is depth-first with backtracking, and the visited set bounds it by th
 
 **R-MODE-469** (MUST) The Transport outcome is invalid on a map with a Transport cap; the Collector, Builder and Spawn Surge outcomes are valid only where Spawn Nodes exist; the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-470** (MUST) Bots use Siege-style diffusion seeded by the Flag post pins, assault Flag posts with Transports, rush with turrets and form no Leader formations; idle Workers also look for nearby Flag posts ([reference/07](../07_bots.md), R-ECON-105).
+**R-MODE-470** (MUST) Bots use Siege-style diffusion seeded by the Flag post pins, assault Flag posts with Transports, rush with turrets and form no Leader formations; idle Workers also look for nearby Flag posts ([reference/07](../07_bots/README.md), R-ECON-105).
 
 ### 2.4 HUD and end of match
 
@@ -159,8 +159,8 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Flag post, Home post, Transit Gate); [05 Population flow](../05_population_flow.md) (waves, the airstrike rule); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots.md); [10 Audio design](../10_audio_design.md) (the announcement).
-- **Assets:** `map.flag_chain`, `marker.flag_post_state`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`.
+- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Flag post, Home post, Transit Gate); [05 Population flow](../05_population_flow.md) (waves, the airstrike rule); [04 Supply crates](../04_supply_crates_powers_and_weapons/crates_and_powers.md); [07 Bots](../07_bots/README.md); [10 Audio design](../10_audio_design/README.md) (the announcement).
+- **Assets:** `mapfile.flag_chain`, `marker.flag_post_state`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`.
 
 ## 8 Open decisions
 

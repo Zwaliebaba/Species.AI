@@ -1,6 +1,6 @@
 # Launch Race
 
-> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [10 Audio design](../10_audio_design.md)
+> Status: Reference · Prefix: R-MODE · Related: [Skirmish rules and modes](README.md) · [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [10 Audio design](../10_audio_design/README.md)
 
 ## 1 Purpose and player experience
 
@@ -22,7 +22,7 @@ Launch Race is a race to space. Each team has its own Launch Vessel, fed by its 
 
 **R-MODE-405** (MUST) While a vessel is Boarding, each of its fuel depots recruits one random idle Worker of its team within 300 wu per tick to board. A vessel with fuel above 33 that is not Wrecked attracts enemy attackers within 150 wu every 1 to 3 s; the damage it takes is scaled by 0.2 and decays at 0.33 per second; grenades thrown at it aim 50 wu above its base and their damage is measured to the base ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). How long a vessel survives an attack follows from these rules and is not a value of its own (DEC-108).
 
-**R-MODE-406** (MUST) The vessel's looping sounds are started and stopped by explicit events, never kept alive by polling, so a loop never runs twice for one vessel (DEC-323). The vessel uses `sfx.building.launch_vessel.hungry`, `sfx.building.launch_vessel.fuelled`, `sfx.building.launch_vessel.fuelled_b`, `sfx.building.launch_vessel.engine_burn`, `sfx.building.launch_vessel.engine_burn_b`, `sfx.building.launch_vessel.flight`, `sfx.building.launch_vessel.damaged`, `sfx.building.launch_vessel.malfunction` and `sfx.building.launch_vessel.explode`; the chain uses `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow` and `sfx.building.fuel_depot.load_passenger` ([reference/10](../10_audio_design.md)).
+**R-MODE-406** (MUST) The vessel's looping sounds are started and stopped by explicit events, never kept alive by polling, so a loop never runs twice for one vessel (DEC-323). The vessel uses `sfx.building.launch_vessel.hungry`, `sfx.building.launch_vessel.fuelled`, `sfx.building.launch_vessel.fuelled_b`, `sfx.building.launch_vessel.engine_burn`, `sfx.building.launch_vessel.engine_burn_b`, `sfx.building.launch_vessel.flight`, `sfx.building.launch_vessel.damaged`, `sfx.building.launch_vessel.malfunction` and `sfx.building.launch_vessel.explode`; the chain uses `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow` and `sfx.building.fuel_depot.load_passenger` ([reference/10](../10_audio_design/README.md)).
 
 **R-MODE-407** (MUST) The options are crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency and turret cap (README R-MODE-074). Launch Race has no time limit and no sudden death; the Comeback Bonus runs with its typed default and never grants (README R-MODE-055).
 
@@ -49,7 +49,7 @@ Launch Race is a race to space. Each team has its own Launch Vessel, fed by its 
 
 **R-MODE-415** (MUST) In Launch Race the Transport outcome is invalid, because Transports come from the gates; the Collector, Builder and Spawn Surge outcomes are valid only on maps that have Spawn Nodes, which are neutral; the map's excluded outcomes never drop (DEC-107; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-416** (MUST) Bots use the Launch Race priority model with marker pins on the Solar Array fields, ferry Workers with Transports, defend their vessel with turrets above the Easy difficulty and form no Leader formations ([reference/07](../07_bots.md)).
+**R-MODE-416** (MUST) Bots use the Launch Race priority model with marker pins on the Solar Array fields, ferry Workers with Transports, defend their vessel with turrets above the Easy difficulty and form no Leader formations ([reference/07](../07_bots/README.md)).
 
 ### 2.4 HUD and end of match
 
@@ -130,8 +130,8 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Launch Vessel, fuel chain, energy grid); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Solar Arrays); [05 Population flow](../05_population_flow.md) (waves, the released passengers); [07 Bots](../07_bots.md); [09 Front end](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (panel layout); [10 Audio design](../10_audio_design.md).
-- **Assets:** `map.launch_race`, `mesh.structure.launch_vessel`, `mesh.structure.fuel_depot`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `fx.fuel_flow`, `fx.beam_long`, `icon.hud.launch_panel`, `icon.hud.launch_panel_damaged`, `help.hint.launch_race_01`, `help.hint.launch_race_02`, `sfx.building.launch_vessel.hungry`, `sfx.building.launch_vessel.fuelled`, `sfx.building.launch_vessel.fuelled_b`, `sfx.building.launch_vessel.engine_burn`, `sfx.building.launch_vessel.engine_burn_b`, `sfx.building.launch_vessel.flight`, `sfx.building.launch_vessel.damaged`, `sfx.building.launch_vessel.malfunction`, `sfx.building.launch_vessel.explode`, `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow`, `sfx.building.fuel_depot.load_passenger`.
+- **Reference documents:** [README](README.md); [03 Mode objects](../03_buildings_and_world_objects/mode_objects.md) (Launch Vessel, fuel chain, energy grid); [03 Economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Solar Arrays); [05 Population flow](../05_population_flow.md) (waves, the released passengers); [07 Bots](../07_bots/README.md); [09 Front end](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (panel layout); [10 Audio design](../10_audio_design/README.md).
+- **Assets:** `mapfile.launch_race`, `mesh.structure.launch_vessel`, `mesh.structure.fuel_depot`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `fx.fuel_flow`, `fx.beam_long`, `icon.hud.launch_panel`, `icon.hud.launch_panel_damaged`, `help.hint.launch_race_01`, `help.hint.launch_race_02`, `sfx.building.launch_vessel.hungry`, `sfx.building.launch_vessel.fuelled`, `sfx.building.launch_vessel.fuelled_b`, `sfx.building.launch_vessel.engine_burn`, `sfx.building.launch_vessel.engine_burn_b`, `sfx.building.launch_vessel.flight`, `sfx.building.launch_vessel.damaged`, `sfx.building.launch_vessel.malfunction`, `sfx.building.launch_vessel.explode`, `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow`, `sfx.building.fuel_depot.load_passenger`.
 
 ## 8 Open decisions
 

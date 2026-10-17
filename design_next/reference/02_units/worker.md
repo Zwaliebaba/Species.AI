@@ -1,6 +1,6 @@
 # Worker
 
-> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Leader and formations](leader_and_formations.md) · [Transport](transport.md) · [Essence orbs](essence_orbs.md) · [05 Population flow](../05_population_flow.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-UNIT · Related: [Units](README.md) · [Leader and formations](leader_and_formations.md) · [Transport](transport.md) · [Essence orbs](essence_orbs.md) · [05 Population flow](../05_population_flow.md) · [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 ## 1 Purpose and player experience
 
@@ -60,7 +60,7 @@ Table 2.2-A Worker state.
 | fire damage | 0 | accumulated flame damage |
 | Visitor flag | R-UNIT-061 | Visitor faction behaviour |
 | threat-sound latch | false | set when a threat sound starts; cleared when the threat ends |
-| wall hits | 0 | wall collisions, read by the bot controller ([reference/07](../07_bots.md)) |
+| wall hits | 0 | wall collisions, read by the bot controller ([reference/07](../07_bots/README.md)) |
 | previous team, colour timer | none | presentation: the colour cross-fade after a conversion |
 | distance scale factor | the display setting | presentation |
 
@@ -200,7 +200,7 @@ Step 3 is the **signpost** mechanic: a Leader with a waypoint order redirects ev
 3. **Projectile threats** (skipped while the Worker has Fury). The nearest effect within `ref.unit.worker.projectile_threat_range` (60 wu) that is a grenade or an airstrike target marker of **any** team, its own included, or an enemy Swarm streak, becomes the threat: the Worker becomes Fighting, sets its scared flag, and raises `worker.flee_bark` when the threat changed. Workers have no threat reaction to turret aiming markers in a match (DEC-052).
 4. **Burning trees.** Any tree on fire within `ref.unit.worker.burning_tree_range_factor` × its burn range (2 × burn range) becomes the threat: the Worker becomes Fighting, sets its scared flag, raises `worker.flee_bark` when the threat changed, and clears its pending order, so it does not walk back into the fire.
 5. **Hive and Spitter Plant check.** The Worker draws `NextUint`; when it is divisible by `ref.unit.worker.structure_attack_odds` (500), an enemy Hive or Spitter Plant in the Worker's obstacle cell within its threat range is attacked: the Worker becomes AttackingStructure with that structure as its target (DEC-105). The draw is made at every search that reaches this step.
-6. **Bot census shortcut** (not in a formation). For each bot navigation node within the node's range of the Worker, if that node's enemy count for the Worker's team is 0, the search finds no threat ([reference/07](../07_bots.md)).
+6. **Bot census shortcut** (not in a formation). For each bot navigation node within the node's range of the Worker, if that node's enemy count for the Worker's team is 0, the search finds no threat ([reference/07](../07_bots/README.md)).
 7. **Search centre and range.** The centre is the Worker's position and the range is its threat range, with these adjustments: in Manning, the range × `ref.unit.worker.manning_range_factor` (0.5), and 0 when the port belongs to a turret; in a formation, the centre moves `ref.unit.worker.formation_search_offset` × range (0.66 × 90 = 59 wu) ahead along the Leader's front (DEC-031).
 8. **Enemy query.** If `EnemiesInCells(centre, range, team)` is true, the candidates are the result of `CachedEnemies(centre, range, team)` ([reference/12](../12_simulation_model/05_space_routing_and_physics.md); DEC-094). The filter keeps a candidate that is alive and is not a burning Worker, not a Crawler egg, not a Collector and not a Builder, and keeps a Transport only while its speed is below `ref.unit.worker.transport_threat_speed` (15 wu/s). The Worker counts the kept candidates as the enemy count and takes the one nearest to **its own position** as the threat. The bot controller is not excluded (DEC-311).
 9. **Threat found.** The Worker becomes Fighting. Its scared flag is set in this order: a non-soldier is scared; a soldier is scared when the enemy count is above `ref.unit.worker.scared_enemy_count` (5) and `FriendsInCells(position, range, team)` is false; the flag is cleared for a Worker with a Shield; then the flag is set whenever the threat is a Brood Drifter, a spider, a Reaper Serpent, a Seed Pod, a Trooper, a Transport or a Bomber. The combat step clears it again for a Worker with a Shield (R-UNIT-101). When the threat is new and the threat-sound latch is clear, it raises `worker.flee_bark` if scared and `worker.attack_bark` if brave; a brave Worker also raises `worker.attack_horn` when a presentation draw `NextUnit(ref.unit.worker.horn_odds)` is below 1 and at least `ref.unit.worker.horn_cooldown` (40 ticks of game time) have passed since any Worker of the match last raised it (a presentation-side timer). If its pending order is set, the Worker is within `ref.unit.worker.order_cancel_radius` (50 wu) of the order position and the order did not come from the player, the pending order is cleared. The threat range becomes the distance to the threat.
@@ -295,7 +295,7 @@ GiveWaypointOrder(target, route = none):
     state := OnWaypointOrder
 ```
 
-The disc point draws its radius `NextUnit(20)` and then its angle `NextUnit(2π)`. The callers are the crowd order (R-UNIT-140), the bot controller and its Leader logic ([reference/07](../07_bots.md)), and the map's instant units that start with a waypoint order.
+The disc point draws its radius `NextUnit(20)` and then its angle `NextUnit(2π)`. The callers are the crowd order (R-UNIT-140), the bot controller and its Leader logic ([reference/07](../07_bots/README.md)), and the map's instant units that start with a waypoint order.
 
 ### 2.10 Terrain and obstacles
 
@@ -312,7 +312,7 @@ The disc point draws its radius `NextUnit(20)` and then its angle `NextUnit(2π)
 
 A friendly or disabled emitter is passed through.
 
-**R-UNIT-114** (MUST) For a wall hit within `ref.unit.worker.wall_hit_radius` (4 wu), the candidate is pushed by `ref.unit.worker.wall_push_step` (5 wu) along the wall's front, towards the side of the wall the Worker is on, until a sphere of radius `ref.unit.worker.wall_clear_radius` (1 wu) no longer hits it, and the Worker's wall-hit count rises by 1. For any other structure whose centre is within `ref.unit.worker.structure_push_range` (30 wu), the candidate is pushed by `ref.unit.worker.structure_push_step` (4 wu) directly away from the structure's centre in the horizontal plane while a sphere of radius `ref.unit.worker.structure_clear_radius` (2 wu) at the candidate hits the structure, and its y is re-snapped to the terrain after each step. The bot controller resets a Worker with more than 10 wall hits to Idle ([reference/07](../07_bots.md)).
+**R-UNIT-114** (MUST) For a wall hit within `ref.unit.worker.wall_hit_radius` (4 wu), the candidate is pushed by `ref.unit.worker.wall_push_step` (5 wu) along the wall's front, towards the side of the wall the Worker is on, until a sphere of radius `ref.unit.worker.wall_clear_radius` (1 wu) no longer hits it, and the Worker's wall-hit count rises by 1. For any other structure whose centre is within `ref.unit.worker.structure_push_range` (30 wu), the candidate is pushed by `ref.unit.worker.structure_push_step` (4 wu) directly away from the structure's centre in the horizontal plane while a sphere of radius `ref.unit.worker.structure_clear_radius` (2 wu) at the candidate hits the structure, and its y is re-snapped to the terrain after each step. The bot controller resets a Worker with more than 10 wall hits to Idle ([reference/07](../07_bots/README.md)).
 
 **R-UNIT-115** (MUST) Rules that compute a waypoint for an order or a route call `WorkerPush` with kill clear, so that planning a path through a Barrier Emitter never sets a Worker on fire. Every push loop of R-UNIT-112 to R-UNIT-114 moves the candidate a fixed distance away from a finite hit volume or along a finite search, so it terminates; an implementation bounds each loop with a deterministic fallback that keeps the last candidate (DEC-014).
 
@@ -397,9 +397,9 @@ Table 2.12-A Worker deaths and removals.
 
 ### 2.13 Player control
 
-**R-UNIT-135** (MUST) Workers accept no per-unit command. The player influences them through the channels of this section; the bindings are in [reference/06](../06_controls_camera_and_commands.md).
+**R-UNIT-135** (MUST) Workers accept no per-unit command. The player influences them through the channels of this section; the bindings are in [reference/06](../06_controls_camera_and_commands/README.md).
 
-**R-UNIT-136** (MUST) **Crowd selection.** `PlayerCommand::SelectWorkers(team, centre, radius)` sets the under-control flag on every Worker of the team within the circle, found through the actor grid, that is not Manning, not Burning and not InTransport, and raises `worker.selected` for the local team only (DEC-564). The selection circle grows as [reference/06](../06_controls_camera_and_commands.md) states (DEC-032).
+**R-UNIT-136** (MUST) **Crowd selection.** `PlayerCommand::SelectWorkers(team, centre, radius)` sets the under-control flag on every Worker of the team within the circle, found through the actor grid, that is not Manning, not Burning and not InTransport, and raises `worker.selected` for the local team only (DEC-564). The selection circle grows as [reference/06](../06_controls_camera_and_commands/README.md) states (DEC-032).
 
 **R-UNIT-137** (MUST) **Selection clearing.** Any selection change of a team clears the under-control flag on every Worker of the team while the team has at least one Worker selected. A Worker that enters a teleport structure also clears its own flag.
 
@@ -415,7 +415,7 @@ Table 2.12-A Worker deaths and removals.
 4. otherwise every controlled Worker receives a waypoint order to the target along the route (R-UNIT-111) and sets its player-orders flag;
 5. `worker.ordered_by_player` is raised.
 
-With no controlled Worker left at the tick of execution, the order does nothing (DEC-555, DEC-653). A team issues crowd orders at most once per 1.0 s ([reference/06](../06_controls_camera_and_commands.md), DEC-032).
+With no controlled Worker left at the tick of execution, the order does nothing (DEC-555, DEC-653). A team issues crowd orders at most once per 1.0 s ([reference/06](../06_controls_camera_and_commands/README.md), DEC-032).
 
 **R-UNIT-141** (MUST) Leaders redirect and gather Workers by R-UNIT-096 ([leader_and_formations.md](leader_and_formations.md)); Transports load and unload them by R-UNIT-071 and R-UNIT-072 ([transport.md](transport.md)); and the Shield, Speed Boost, Fury and Convert Powers act on the Workers near the targeted point ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
@@ -443,7 +443,7 @@ The rules of this section are presentation: they never write simulation state (D
 
 ### 2.15 Sounds
 
-**R-UNIT-151** (MUST) A Worker raises the presentation events of table 2.15-A ([reference/10](../10_audio_design.md)). Its threat sounds (`worker.flee_bark`, `worker.attack_bark`, `worker.attack_horn`) are stopped when its threat ends. Worker creation and Worker attack sounds play only from their nearest emitter (DEC-109).
+**R-UNIT-151** (MUST) A Worker raises the presentation events of table 2.15-A ([reference/10](../10_audio_design/README.md)). Its threat sounds (`worker.flee_bark`, `worker.attack_bark`, `worker.attack_horn`) are stopped when its threat ends. Worker creation and Worker attack sounds play only from their nearest emitter (DEC-109).
 
 Table 2.15-A Worker sound events.
 
@@ -847,10 +847,10 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 
 ## 7 Dependencies
 
-- **Reference documents:** [README.md](README.md) (stats, damage model, death, slope factors, base attack, colouring); [leader_and_formations.md](leader_and_formations.md) (signposts, formations, formation positions); [transport.md](transport.md) (loading and unloading); [essence_orbs.md](essence_orbs.md); [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md) (ant capture, Abductor, Reaper Serpent, Crawler eggs); [reference/01 flag_chain.md](../01_skirmish_rules_and_modes/flag_chain.md) (Flag posts); [reference/03](../03_buildings_and_world_objects/README.md) (ports, Barrier Emitters, walls, trees, carryable structures, fuel depots, Launch Vessels, Core Device pulse wave, teleports); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (Supply crates, Powers, laser bolts, grenades, rockets, shockwave ring, Sickness outcome, Swarm streak); [reference/05](../05_population_flow.md) (port reservation, Spawn Node doors, Launch Vessel release); [reference/06](../06_controls_camera_and_commands.md) (selection circle and crowd-order bindings); [reference/07](../07_bots.md) (bot census, wall-hit reset, bot orders); [reference/08](../08_maps_and_level_design/README.md) (dust vortex, map options); [reference/10](../10_audio_design.md) (sound events); [reference/11](../11_tutorial_and_help.md) (second tutorial); [reference/12](../12_simulation_model/README.md) (actor grid and cache, routes, walkability, airborne step, commands).
-- **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Worker cards and overlays), [../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md) (particles), [../../architecture/components/audio_engine.md](../../architecture/components/audio_engine.md) (sound events).
+- **Reference documents:** [README.md](README.md) (stats, damage model, death, slope factors, base attack, colouring); [leader_and_formations.md](leader_and_formations.md) (signposts, formations, formation positions); [transport.md](transport.md) (loading and unloading); [essence_orbs.md](essence_orbs.md); [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md) (ant capture, Abductor, Reaper Serpent, Crawler eggs); [reference/01 flag_chain.md](../01_skirmish_rules_and_modes/flag_chain.md) (Flag posts); [reference/03](../03_buildings_and_world_objects/README.md) (ports, Barrier Emitters, walls, trees, carryable structures, fuel depots, Launch Vessels, Core Device pulse wave, teleports); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (Supply crates, Powers, laser bolts, grenades, rockets, shockwave ring, Sickness outcome, Swarm streak); [reference/05](../05_population_flow.md) (port reservation, Spawn Node doors, Launch Vessel release); [reference/06](../06_controls_camera_and_commands/README.md) (selection circle and crowd-order bindings); [reference/07](../07_bots/README.md) (bot census, wall-hit reset, bot orders); [reference/08](../08_maps_and_level_design/README.md) (dust vortex, map options); [reference/10](../10_audio_design/README.md) (sound events); [reference/11](../11_tutorial_and_help.md) (second tutorial); [reference/12](../12_simulation_model/README.md) (actor grid and cache, routes, walkability, airborne step, commands).
+- **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Worker cards and overlays), [../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md) (particles), [../../architecture/components/audio_engine.md](../../architecture/components/audio_engine.md) (sound events).
 - **ADRs:** ADR-0009 (instanced crowds, sprite cards and shadows), ADR-0020 (team tint).
-- **Assets:** `sprite.worker.front`, `sprite.worker.side`, `sprite.worker.hurt`, `sprite.worker.state_overlay`, `sprite.worker.seasonal_hat`, `sprite.visitor.front`, `mesh.unit.worker_figure`, `fx.glow_round`, `fx.bubble_sphere`, `fx.beam_short`, `icon.power.workers`, `sfx.unit.worker.spawn`, `sfx.unit.worker.attack`, `sfx.unit.worker.attack_b`, `sfx.unit.worker.hurt`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.unit.worker.selected`, `sfx.unit.worker.attack_bark`, `sfx.unit.worker.attack_horn`, `sfx.unit.worker.flee_bark`, `sfx.unit.worker.flee_bark_b`, `sfx.unit.worker.victory_jump`, `sfx.unit.worker.burning`, `sfx.unit.worker.lift_relic`, `sfx.unit.leader.spawn`. The selected-Workers cursor badge and power icon `icon.power.workers` is drawn by [reference/06](../06_controls_camera_and_commands.md).
+- **Assets:** `sprite.worker.front`, `sprite.worker.side`, `sprite.worker.hurt`, `sprite.worker.state_overlay`, `sprite.worker.seasonal_hat`, `sprite.visitor.front`, `mesh.unit.worker_figure`, `fx.glow_round`, `fx.bubble_sphere`, `fx.beam_short`, `icon.power.workers`, `sfx.unit.worker.spawn`, `sfx.unit.worker.attack`, `sfx.unit.worker.attack_b`, `sfx.unit.worker.hurt`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.unit.worker.selected`, `sfx.unit.worker.attack_bark`, `sfx.unit.worker.attack_horn`, `sfx.unit.worker.flee_bark`, `sfx.unit.worker.flee_bark_b`, `sfx.unit.worker.victory_jump`, `sfx.unit.worker.burning`, `sfx.unit.worker.lift_relic`, `sfx.unit.leader.spawn`. The selected-Workers cursor badge and power icon `icon.power.workers` is drawn by [reference/06](../06_controls_camera_and_commands/README.md).
 
 ## 8 Open decisions
 

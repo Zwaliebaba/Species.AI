@@ -1,6 +1,6 @@
 # Audio design: event model and sound data
 
-> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [audio engine](../../architecture/components/audio_engine.md) · [data schemas](../../architecture/components/data_schemas.md)
+> Status: Reference · Prefix: R-AUD · Related: [Folder index](README.md) · [Event catalogue](event_catalogue.md) · [Positional, priorities and mix](positional_priorities_and_mix.md) · [02 Units](../02_units/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [audio engine](../../architecture/components/audio_engine.md) · [data schemas](../../architecture/components/data_schemas/README.md)
 
 ## 1 Purpose and player experience
 
@@ -143,7 +143,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 | loop delay | a modulatable value, s, at most `ref.aud.layer.loop_delay_max` | 0 s | R-AUD-059, R-AUD-060 |
 | effects | zero or more effects of §2.11, each with its parameters | none | R-AUD-076 to R-AUD-082 |
 
-The reference sound data has no authored priority: a priority field, where present, is ignored. The schema of these fields, with its value domains, is [data schemas](../../architecture/components/data_schemas.md)'s.
+The reference sound data has no authored priority: a priority field, where present, is ignored. The schema of these fields, with its value domains, is [data schemas](../../architecture/components/data_schemas/README.md)'s.
 
 **R-AUD-050** (MUST) Effect parameters are matched to their effect's parameter list by position; a parameter that a layer's effect omits is 0.0, not its declared default, in the reference (DEC-567, R-AUD-078).
 
@@ -429,7 +429,7 @@ Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 cra
 ## 7 Dependencies
 
 - **Reference documents:** [event catalogue](event_catalogue.md) (the events and their layer data); [positional, priorities and mix](positional_priorities_and_mix.md) (position kinds, ranking, buses); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (note-loop beds); [02 Units](../02_units/README.md) R-UNIT-047 and [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) R-BLDG-049 (base events); [03 mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-337 (Launch Vessel loops); [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-117 and R-CRATE-145 (crate sounds); [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454 (effects setting); [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (audio update period).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-0022, ADR-0023, ADR-0024, ADR-0026); [data schemas](../../architecture/components/data_schemas.md) (the sound-event schema and its domains); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-0022, ADR-0023, ADR-0024, ADR-0026); [data schemas](../../architecture/components/data_schemas/README.md) (the sound-event schema and its domains); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
 - **Assets:** the groups named in R-AUD-067, `sfx.unit.worker.burning`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.creature.spider.pounce`, `sfx.creature.spider.die`, `sfx.creature.spider.hurt`; every other group is cited where it is bound in the [event catalogue](event_catalogue.md).
 
 ## 8 Open decisions

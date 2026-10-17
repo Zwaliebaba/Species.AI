@@ -209,7 +209,7 @@ Table 2.7-A Removal.
 | dead actor that is still fading | not removed | it stays in its container and in the actor grid, visible to grid queries; most queries skip dead actors explicitly ([05](05_space_routing_and_physics.md)) |
 | a whole team | the match rules eliminate it ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) | the elimination of [06](06_teams_and_player_commands.md) R-SIM-407 applies: every group member and ungrouped actor of the team receives a lethal health change, every Power of the team stops, and every Transit Gate it owns becomes neutral; removal then follows the normal death path |
 | actor group | its team, in slice `ref.sim.slice.group_advance`, when the group reports that no member slot is in use | destroying the group clears the team's selected group when it names this group |
-| structure | the structure pool (R-SIM-218 step 4) | when it is a bot navigation node or a wall, the bot navigation links are recomputed at once ([bots](../07_bots.md)); the obstacle grid is updated, and the affected route-graph edges are rebuilt (DEC-095) |
+| structure | the structure pool (R-SIM-218 step 4) | when it is a bot navigation node or a wall, the bot navigation links are recomputed at once ([bots](../07_bots/README.md)); the obstacle grid is updated, and the affected route-graph edges are rebuilt (DEC-095) |
 | effect, laser bolt, Essence orb | its pool (R-SIM-218 steps 3 and 5) | none |
 | route | route deletion only ([05](05_space_routing_and_physics.md), DEC-651) | none |
 | everything | emptying the match world (R-SIM-232) | — |
@@ -248,10 +248,10 @@ Table 2.9-A Order-dependent outcomes.
 | Population Limiter of a Spawn Node | the first Population Limiter in structure order | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) |
 | Beam Dish receiver | the nearest receiver by distance | [buildings](../03_buildings_and_world_objects/README.md) |
 | Command Console ownership | the first qualifying team in slot order; it changes only to a team with strictly more operators | [mode objects](../03_buildings_and_world_objects/mode_objects.md) |
-| bot structure choices | structures in structure order; the first found wins; comparisons are strict | [bots](../07_bots.md) |
+| bot structure choices | structures in structure order; the first found wins; comparisons are strict | [bots](../07_bots/README.md) |
 | area damage and its kill credit | actors in actor-grid result order | [05](05_space_routing_and_physics.md) R-SIM-389 |
 | nearest-actor selections | strict less-than comparisons, so the first actor found in result order wins a tie | [05](05_space_routing_and_physics.md) |
-| bot Leader orders after a refused promotion | the corrected ids of DEC-087 | [bots](../07_bots.md) |
+| bot Leader orders after a refused promotion | the corrected ids of DEC-087 | [bots](../07_bots/README.md) |
 
 ### 2.10 Match-world query and service operations
 
@@ -272,7 +272,7 @@ Table 2.10-A Match-world operations.
 | throw a weapon; fire a rocket; fire a turret round; launch a fireball; fire a laser; create a shockwave; area damage | [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); [05](05_space_routing_and_physics.md) R-SIM-388 |
 | select Workers; give crowd orders; promote a Worker; demote a Leader; apply a team's control state | command execution ([06](06_teams_and_player_commands.md)) |
 | friendship; Rogue faction team; Visitor faction team; faction set-up; start positions; team from a start position; position rotation; attacker and defender tests; co-op and Siege set-up; group colours | [06](06_teams_and_player_commands.md) |
-| recompute the bot navigation links | every live bot navigation node recomputes its neighbours, and then the links are culled ([bots](../07_bots.md)) |
+| recompute the bot navigation links | every live bot navigation node recomputes its neighbours, and then the links are culled ([bots](../07_bots/README.md)) |
 | viable position | true when the position is walkable to at least one bot navigation node ([05](05_space_routing_and_physics.md)) |
 | local team; local Power slots (local) | the team and Power slots of the local team id; "none" when the local team id is "none" |
 | rendering, messages, chat, burn patches, fog and lights (local) | presentation ([renderer](../../architecture/components/renderer/README.md)) |
@@ -427,7 +427,7 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 
 ## 7 Dependencies
 
-- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md) (tick structure, slice bounds, slice keys, same-tick rule, held world, extrapolation), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md) (initialisation steps, teardown), [03 Entity model and identity](03_entity_model_and_identity.md) (handles, contracts, effect kinds), [05 Space, routing and physics](05_space_routing_and_physics.md) (grids, routes, spawn-position search, ray tests, area damage), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md) (draw sites), [skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) and the mode documents, [Worker](../02_units/worker.md), [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots.md), [maps](../08_maps_and_level_design/rules_and_conventions.md).
+- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md) (tick structure, slice bounds, slice keys, same-tick rule, held world, extrapolation), [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md) (initialisation steps, teardown), [03 Entity model and identity](03_entity_model_and_identity.md) (handles, contracts, effect kinds), [05 Space, routing and physics](05_space_routing_and_physics.md) (grids, routes, spawn-position search, ray tests, area damage), [06 Teams and player commands](06_teams_and_player_commands.md), [07 Randomness and integrity](07_randomness_and_integrity.md) (draw sites), [skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) and the mode documents, [Worker](../02_units/worker.md), [buildings and world objects](../03_buildings_and_world_objects/README.md) and its kind documents, [supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md), [population flow](../05_population_flow.md), [bots](../07_bots/README.md), [maps](../08_maps_and_level_design/rules_and_conventions.md).
 - Engine components: [terrain](../../architecture/components/terrain.md), [renderer](../../architecture/components/renderer/README.md), [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (the slice-order check of R-SIM-214).
 - Assets: none.
 
