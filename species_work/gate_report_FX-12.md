@@ -4,13 +4,13 @@
 |---|---|---|---|
 | 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
 | 2 Soft-flag patterns | PASS | 0 | 35 soft hits, 35 allowed by CONVENTIONS §9, 0 not allowed |
-| 3 Links and anchors | PASS | 0 | 12912 relative links checked |
+| 3 Links and anchors | PASS | 0 | 12928 relative links checked |
 | 4 Mermaid | FAIL | 1 | SKIPPED (--skip-mermaid) |
-| 5 Requirement ids | FAIL | 1 | 4928 requirement ids defined, 27666 citations, 25 prefixes registered |
-| 6 DEC and ADR references | FAIL | 12 | 301 DECs (148 Open, 136 of them cited by a requirement), 64 ADRs |
+| 5 Requirement ids | FAIL | 1 | 4928 requirement ids defined, 27704 citations, 25 prefixes registered |
+| 6 DEC and ADR references | FAIL | 11 | 301 DECs (148 Open, 137 of them cited by a requirement), 64 ADRs |
 | 7 Asset closure | PASS | 0 | 453 asset ids (1412 manifest rows), 2469 asset citations in reference and component documents |
 | 8 Tuning keys | FAIL | 2 | 3739 tuning keys, 2 cited by no requirement |
-| 9 Truncation words | FAIL | 1 | 1 truncation words |
+| 9 Truncation words | PASS | 0 | 0 truncation words |
 | 10 Sizes, READMEs, templates | PASS | 0 | 208 documents, 76 checked for template headings |
 | 11 Requirements index | PASS | 0 | index not written (no --write-index) |
 
@@ -26,7 +26,6 @@
 
 - Open DEC-850 is not cited by any requirement
 - Open DEC-861 is not cited by any requirement
-- Open DEC-864 is not cited by any requirement
 - Open DEC-870 is not cited by any requirement
 - Open DEC-952 is not cited by any requirement
 - Open DEC-954 is not cited by any requirement
@@ -41,7 +40,3 @@
 
 - tuning key ref.bot.marker.phase_ticks (reference/07_bots/05_mode_strategies_and_tutorials.md:205) is cited by no requirement
 - tuning key ref.bot.marker.scan_range_default (reference/07_bots/05_mode_strategies_and_tutorials.md:206) is cited by no requirement
-
-## Gate 9 Truncation words
-
-- glossary/a_to_l.md:228 truncation word "and so on"

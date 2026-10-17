@@ -44,7 +44,7 @@ if A.taggedZone exists and the mode is Zone Control:
         p := ref.bot.priority.grab                                                # 0.95
 ```
 
-The Zone Control override reads the zone's own occupant counts ([zone_control.md](../01_skirmish_rules_and_modes/zone_control.md)): the zone's total count and team t's count. **Perfect information (PI-01, PI-03, PI-06).**
+The Zone Control override reads the zone's own occupant counts ([zone_control.md](../01_skirmish_rules_and_modes/zone_control.md)): the zone's total count and team t's count. On a node that t or an ally owns, a node with no usable link has a neighbour mean of 0, and the Beam Dish, link and modifier bonuses still apply (DEC-087; see DEC-862). **Perfect information (PI-01, PI-03, PI-06).**
 
 **R-BOT-061** (MUST) Consequences of R-BOT-060 that are part of the rule: an important structure that t does not hold is worth 0.95 before the bonuses, so a Supply crate node (modifier 0.5) is always worth 1.0; plain enemy and neutral nodes are worth 0.8, and 1.0 once t's bodies outnumber half the enemy's; t's own quiet nodes take half the mean of their usable neighbours; and a Control Zone node is worth 0.95 for every team that does not hold the zone, or holds it with more than 10 other bodies inside. A negative modifier can make a priority negative; nothing clamps it from below.
 
@@ -143,7 +143,7 @@ Table 2.6-B Flag post pin for team i at a standard or hard difficulty, applied i
 | any status | 0 for a Flag post that is not a Home post and that i owns |
 | otherwise | 0 |
 
-**R-BOT-070** (MUST) When several pin writers share one nearest node, the writer that advances last in the tick, in structure order within the structure step, decides the node's priority and flag for each team it writes (DEC-016).
+**R-BOT-070** (MUST) When several pin writers share one nearest node, the writer that advances last in the tick, in structure order within the structure step, decides the node's priority and flag for each team it writes (DEC-016; see DEC-862).
 
 **R-BOT-071** (MUST) The priority model never stores a value that is not finite (DEC-087, DEC-653 item 6): the standard mean over no usable link is 0 (R-BOT-060), the Relic Run sum clamps each term at 0 (R-BOT-062), and the diffusion and Launch Race formulas divide by at least 1. The diffusion formula has no clamp, so its values can exceed 1.0 or fall below 0 through modifiers (R-BOT-063); the standard, Relic Run and Launch Race formulas clamp only from above, at 1.0.
 
@@ -225,3 +225,4 @@ Keys cited here and defined elsewhere: `ref.mode.recount.one_second` ([reference
 |---|---|---|
 | DEC-094 | Exact or approximate actor-grid queries | the Zone Control override reads the zone's own counts (R-BOT-060) |
 | DEC-112 | Bot strength calibration | the priority constants of §4 are the reference starting values |
+| DEC-862 | Bot rule details | a neighbour mean of 0 with no usable link (R-BOT-060); the last pin writer decides a shared node (R-BOT-070) |

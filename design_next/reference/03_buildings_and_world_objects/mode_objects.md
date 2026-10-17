@@ -20,7 +20,7 @@ For the player, a Control Zone is a ring on the ground that belongs to whoever h
 
 ### 2.1 Control Zone
 
-**R-BLDG-250** (MUST) The Control Zone (`ControlZone`) is one structure kind, a circular zone whose meaning depends on the mode of the match: in Zone Control it is a **Control Zone**, recounted by occupancy (§2.2); in Relic Run it is a **Relic Base** (`RelicBase`) when it has a team and a **Relic Spawn Zone** (`RelicSpawnZone`) when it has none (§2.3); in Flag Chain it is a **Flag post** (`FlagPost`), and the Flag post that the map gives to a team is that team's **Home post** (`HomePost`) (§2.4). In Spawn Control, Siege and Launch Race its advance does nothing.
+**R-BLDG-250** (MUST) The Control Zone (`ControlZone`) is one structure kind, a circular zone whose meaning depends on the mode of the match: in Zone Control it is a **Control Zone**, recounted by occupancy (§2.2); in Relic Run it is a **Relic Base** (`RelicReceptacle`) when it has a team and a **Relic Spawn Zone** (`RelicSpawnZone`) when it has none (§2.3); in Flag Chain it is a **Flag post** (`FlagPost`), and the Flag post that the map gives to a team is that team's **Home post** (`HomePost`) (§2.4). In Spawn Control, Siege and Launch Race its advance does nothing.
 
 **R-BLDG-251** (MUST) A Control Zone holds the state of table 2.1-A.
 

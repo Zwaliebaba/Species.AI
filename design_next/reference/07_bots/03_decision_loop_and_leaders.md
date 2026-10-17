@@ -130,7 +130,7 @@ loop:
 return N
 ```
 
-Every linked node passes; none needs a priority above 0.
+Every linked node passes; none needs a priority above 0. Because a link stores its crossed emitter whatever the emitter's state (R-BOT-031), the selection draws again on a link that crosses an emitter of any other team, switched on or off (DEC-087; see DEC-862).
 
 **R-BOT-089** (MUST) The **best** selection:
 
@@ -170,7 +170,7 @@ The destination must be strictly better than the source, so a best-selecting arm
 
 ### 2.9 Beam Dish aiming
 
-**R-BOT-096** (MUST) Beam Dish aiming runs in every per-tick step and acts when the bot's Beam Dish countdown is 0; it then sets the countdown to `ref.bot.dish.period_ticks` (101 ticks). It never acts on a map whose "no Beam Dish control" option is set (one reference Siege map sets it; [reference/08](../08_maps_and_level_design/README.md)).
+**R-BOT-096** (MUST) Beam Dish aiming runs in every per-tick step and acts when the bot's Beam Dish countdown is 0; it then sets the countdown to `ref.bot.dish.period_ticks` (101 ticks). It never acts on a map that sets the option no Beam Dish aiming (`MapOption::NoBeamDishAiming`; one reference Siege map sets it, [rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) table 2.7-A row 11 and R-MAP-200).
 
 **R-BOT-097** (MUST) A Beam Dish of the bot's team is **busy** when more than `ref.bot.dish.busy_transit` (20) actors of the team are in transit in it; a busy dish is not re-aimed.
 
@@ -324,3 +324,4 @@ Keys cited here and defined elsewhere: the cycle keys `ref.bot.cycle.*` ([README
 | DEC-312 | Bot decisions and node recounts within a tick | the order that their slots give (R-BOT-073) |
 | DEC-557 | Bot troop movement between navigation nodes | straight lines to the order point (R-BOT-086) |
 | DEC-112 | Bot strength calibration | the thresholds of §4 and the periods of the README (R-BOT-075) |
+| DEC-862 | Bot rule details | the random selection draws again on a link that crosses another team's emitter, switched on or off (R-BOT-088) |

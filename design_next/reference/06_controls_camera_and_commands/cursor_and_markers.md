@@ -12,7 +12,7 @@ Everything in this file is presentation: it reads the simulation state and its p
 
 ### 2.1 The cursor set
 
-**R-CTRL-350** (MUST) The world cursor (`WorldCursor`) owns the cursors of table 2.1-A. A cursor is a textured quad in screen space with an optional darkening shadow, made from its image blurred with `ref.ctrl.cursor.shadow_blur`. A cursor's defaults are: size 20, hotspot (0, 0) (a fraction of the size, (0, 0) the top-left corner and (1, 1) the bottom-right), not animated, shadowed, additive, white. The hotspots, sizes and colours of the set are those of `ref.ctrl.cursor.set`.
+**R-CTRL-350** (MUST) The world cursor (`WorldCursor`) owns the cursors of table 2.1-A. A cursor is a textured quad in screen space with an optional darkening shadow, made from its image blurred with `ref.ctrl.cursor.shadow_blur`. The shadow of each shadowed cursor is a derived asset of its image: `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `cursor.move_target.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow` and `cursor.enter.shadow` ([entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-366). A cursor's defaults are: size 20, hotspot (0, 0) (a fraction of the size, (0, 0) the top-left corner and (1, 1) the bottom-right), not animated, shadowed, additive, white. The hotspots, sizes and colours of the set are those of `ref.ctrl.cursor.set`. Cursor sizes are physical pixels at every render size and every resolution (RND-367).
 
 Table 2.1-A The cursor set.
 
@@ -78,7 +78,7 @@ Each ring is a quad strip in the plane perpendicular to the ground normal at the
 
 ### 2.6 The selection circle
 
-**R-CTRL-370** (MUST) While the local selection circle exists, each frame creates `ref.ctrl.cursor.circle_particles` control-flash particles of size equal to the circle's radius, evenly spaced on the circle and turning at `ref.ctrl.cursor.circle_spin` (the angle offset is real time × that rate), `ref.ctrl.cursor.circle_lift` above the terrain.
+**R-CTRL-370** (MUST) While the local selection circle exists, each fixed effect step ([animation and VFX](../../architecture/components/animation_and_vfx/README.md) VFX-018; `vfx.emit.step_rate`, 60 steps per second) creates `ref.ctrl.cursor.circle_particles` control-flash particles, so the particle count does not depend on the frame rate (DEC-960); the particles are of size equal to the circle's radius, evenly spaced on the circle, turning at `ref.ctrl.cursor.circle_spin` (the angle offset is real time × that rate), `ref.ctrl.cursor.circle_lift` above the terrain.
 
 ### 2.7 The entering effect
 
@@ -104,7 +104,7 @@ The crosshair only reads the selected structure's kind and never changes it (DEC
 
 ### 2.10 Selection arrows and move markers
 
-**R-CTRL-375** (MUST) Executing `SelectPower` emits a presentation event that boosts the selection arrows by `ref.ctrl.cursor.selection_boost` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-405). A match draws neither the selection arrows (`cursor.pointer`) nor the move markers, so the boost and the move markers have no visible effect; the move-marker list is bounded (DEC-096).
+**R-CTRL-375** (MUST) Executing `Select` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-405) and executing `SelectPower` ([selection and Power slots](selection_and_power_slots.md) R-CTRL-200) each emit a presentation event that boosts the selection arrows by `ref.ctrl.cursor.selection_boost`. A match draws neither the selection arrows (`cursor.pointer`) nor the move markers, so the boost and the move markers have no visible effect; the move-marker list is bounded (DEC-096).
 
 ### 2.11 World markers
 
@@ -130,11 +130,17 @@ The spins, fills and sizes of this table are the constants of `ref.ctrl.marker.t
 
 **R-CTRL-383** (MUST) The markers are not drawn without a match world, in the map editor, or while the interface is hidden. A marker is on screen when it lies in front of the camera and inside the viewport. Otherwise the point `ref.ctrl.marker.edge_probe` from (camera position + front × `ref.ctrl.marker.edge_probe_ahead`) towards the target is projected, and the ray from the screen centre through it is intersected with the screen rectangle. An off-screen marker takes the direction from that edge point to the screen centre as its line normal; its icon is moved `ref.ctrl.marker.edge_inset` inwards along it, and its compass points along it.
 
-**R-CTRL-384** (MUST) A marker's alpha follows `ref.ctrl.marker.alpha_rules`: its on-screen time accumulates; it counts as seen after 1 s on screen; a seen marker fades out over 9 s once its on-screen time passes 6 s, but never below max((camera distance − 350) ÷ 500, 1 − its distance to the screen centre ÷ (0.5 × screen height)); a marker that is not persistent also fades over 2 s after 6 s; the local team's Power and order markers keep at least 0.75 while visible; an off-screen marker that may not show off screen has alpha 0.
+**R-CTRL-384** (MUST) A marker's alpha follows `ref.ctrl.marker.alpha_rules`, applied in this order:
+
+1. its on-screen time accumulates, and it counts as seen after 1 s on screen;
+2. a seen marker fades out over 9 s once its on-screen time passes 6 s, but never below the floor max((camera distance − 350) ÷ 500, 1 − its distance to the screen centre ÷ (0.5 × screen height));
+3. after the floor, a marker that is not persistent also fades over 2 s once its on-screen time passes 6 s, so a fixed marker reaches alpha 0 when its on-screen time reaches `ref.power.marker.lifetime_s` (8 s), the time at which it is removed (R-CTRL-381);
+4. the local team's Power and order markers keep at least 0.75 while visible;
+5. an off-screen marker that may not show off screen has alpha 0.
 
 **R-CTRL-385** (MUST) A marker's sizes follow `ref.ctrl.marker.size_rules`: icon = screen height ÷ 20; shadow = icon + 10; compass = icon + screen height ÷ 30; while it flashes, × 1.3 with its alpha alternating between 0.2 and 1.0 every 0.2 s for 3 s; × (2 − camera distance ÷ 500) while the camera is closer than 500 wu; × 1.2 with alpha 1 while it is hovered or selected; an on-screen icon is raised by 5 × screen height ÷ camera distance pixels.
 
-**R-CTRL-386** (MUST) A marker is drawn in these layers: the shadow `marker.team_disc_shadow` in black with alpha `ref.ctrl.marker.shadow_alpha`; the compass, `marker.edge_compass_shadow` then `marker.edge_compass` additive; the colour disc `marker.team_disc`, additive, filled to its fraction; the icon, additive, its texture coordinates rotated for the spin.
+**R-CTRL-386** (MUST) A marker is drawn in these layers: the shadow `marker.team_disc_shadow` in black with alpha `ref.ctrl.marker.shadow_alpha`; the compass, `marker.edge_compass_shadow` then `marker.edge_compass` additive, where a marker that is on screen draws the empty compass `marker.edge_compass_empty` instead of the compass arrow ([entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-357); the colour disc `marker.team_disc`, additive, filled to its fraction; the icon, additive, its texture coordinates rotated for the spin.
 
 **R-CTRL-387** (MUST) A marker whose icon box contains the pointer becomes the marker under the pointer at the end of the frame; a Transport order marker also sets the order marker under the pointer, which row O5 reads.
 
@@ -210,7 +216,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.unavailable_scale` | 1.2 | × half the icon size | | R-CTRL-366 | — |
 | `ref.ctrl.cursor.count_text` | size 15; outline, then white alpha 0.9; offset (2, 0.4 × size) | layout | | R-CTRL-366 | — |
 | `ref.ctrl.cursor.area_cylinder` | 100 sides; radius `ref.power.effect_range`, height 0.6 × radius; meteor shower radius × 4, height × 1; Missile Barrage radius × 3, height × 1 | layout | | R-CTRL-366 | — |
-| `ref.ctrl.cursor.circle_particles` | 30 | particles per frame | | R-CTRL-370 | — |
+| `ref.ctrl.cursor.circle_particles` | 30 | particles per effect step | `vfx.emit.step_rate` (60) effect steps per second | R-CTRL-370 | DEC-960 |
 | `ref.ctrl.cursor.circle_spin` | 0.5 | rad per real second | | R-CTRL-370 | — |
 | `ref.ctrl.cursor.circle_lift` | 10 | wu | above the terrain | R-CTRL-370 | — |
 | `ref.ctrl.cursor.crosshair_smoothing` | 10 | per second | exponential smoothing of the turret crosshair | R-CTRL-372 | — |
@@ -263,9 +269,9 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 ## 7 Dependencies
 
 - **Reference documents:** [actions and bindings](actions_and_bindings.md) (the object under the pointer); [selection and Power slots](selection_and_power_slots.md) (Powers, the target-area test, the extra information); [Leader and formations](../02_units/leader_and_formations.md) (formation slots, banners); [Transport](../02_units/transport.md); [Relic Run](../01_skirmish_rules_and_modes/relic_run.md); [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-405, R-SIM-450); [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (extrapolation time).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (depth-biased variants, overlay drawing); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (control-flash and muzzle-flash particles).
-- **Assets:** `cursor.world`, `cursor.place`, `cursor.unavailable`, `cursor.move_target`, `cursor.highlight`, `cursor.turret_aim`, `cursor.select`, `cursor.enter`, `cursor.pointer`, `fx.particle_dot`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.supply_crate`, `marker.relic`, `icon.power.leader`, `icon.power.workers`, `mesh.structure.turret_head`, `mesh.structure.hive_mound`; sound event `match_ui.unit_highlight`.
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (depth-biased variants, overlay drawing; the cursor and marker layers of [entity and overlay renderers](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-357, RND-366, RND-367); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (control-flash and muzzle-flash particles, the fixed effect step VFX-018).
+- **Assets:** `cursor.world`, `cursor.place`, `cursor.unavailable`, `cursor.move_target`, `cursor.highlight`, `cursor.turret_aim`, `cursor.select`, `cursor.enter`, `cursor.pointer`, `cursor.world.shadow`, `cursor.place.shadow`, `cursor.unavailable.shadow`, `cursor.move_target.shadow`, `cursor.highlight.shadow`, `cursor.select.shadow`, `cursor.enter.shadow`, `fx.particle_dot`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.edge_compass_empty`, `marker.supply_crate`, `marker.relic`, `icon.power.leader`, `icon.power.workers`, `mesh.structure.turret_head`, `mesh.structure.hive_mound`; sound event `match_ui.unit_highlight`.
 
 ## 8 Open decisions
 
-No Open decision concerns this file. Resolved decisions applied: DEC-007, DEC-096.
+No Open decision concerns this file. Resolved decisions applied: DEC-007, DEC-096, DEC-960.

@@ -10,7 +10,7 @@ A bot never path-finds over terrain. Its whole model of the map is a sparse, dir
 
 ### 2.1 The navigation node
 
-**R-BOT-025** (MUST) A **bot navigation node** (`BotNavNode`) is a structure that only bot rules and the Worker census shortcut (R-BOT-045) read. It is never hit by rays, spheres or weapons, cannot be damaged, has no ports, has no effect on the economy and is drawn only in the map editor and by the bot overlay of [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md). It holds the fields of table 2.1-A.
+**R-BOT-025** (MUST) A **bot navigation node** (`BotNavNode`) is a structure that only bot rules and the Worker census shortcut (R-BOT-045) read. It is never hit by rays, spheres or weapons, cannot be damaged, has no ports, has no effect on the economy and is drawn only in the map editor, with its marker mesh `mesh.structure.bot_nav_node`, and by the bot overlay of [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md); a match never draws it. It holds the fields of table 2.1-A.
 
 Table 2.1-A Fields of a navigation node.
 
@@ -36,7 +36,7 @@ Table 2.1-A Fields of a navigation node.
 
 **R-BOT-026** (MUST) A link record holds the node it leads to and the Barrier Emitter that the straight link crosses, or none (R-BOT-031).
 
-**R-BOT-027** (MUST) A map places a navigation node with the base fields of a structure record ([reference/03](../03_buildings_and_world_objects/README.md)) followed by three optional fields, each present only when the previous one is: the manual link (default none), the priority modifier (default 0.0) and the check-cliffs flag (1 or 0, default 1). The record's team is ignored, because ownership is recomputed at every recount. Initialisation copies the three fields and sets the sea flag. Every reference map places navigation nodes. Map authors bend the priority field with the modifier (the reference maps use values from −1.0 to 1.0), join distant nodes with manual links, and set check-cliffs to 0 for nodes on steep ground ([reference/08](../08_maps_and_level_design/README.md) holds the reference map census).
+**R-BOT-027** (MUST) A map places a navigation node with the base fields of a structure record ([reference/03](../03_buildings_and_world_objects/README.md)) followed by three optional fields, each present only when the previous one is: the manual link (default none), the priority modifier (default 0.0) and the check-cliffs flag (1 or 0, default 1). The record's team is ignored, because ownership is recomputed at every recount. Initialisation copies the three fields and sets the sea flag. Every reference map places navigation nodes ([rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-111 item 2: a link to another node, a priority modifier from −1 to 1 and a cliff-check flag). Map authors bend the priority field with the modifier (the reference maps use values from −1.0 to 1.0), join distant nodes with manual links, and set check-cliffs to 0 for nodes on steep ground; the census of record of the bot structures of the reference maps is R-MAP-200, table 2.11-B.
 
 **R-BOT-028** (MUST) Every navigation node, map-placed or created during the match, draws its recount phase once, in the step that creates it (DEC-652), so a node created at run time makes exactly one draw.
 
@@ -65,7 +65,7 @@ inRange    := distance(A, B) <= ref.bot.link.range           or  A.manualLink ==
 checkCliff := A.checkCliffs and B.checkCliffs
 if A.manualLink == B: checkCliff := false
 emitter    := none
-if inRange and ( IsPathClear(A, B, evaluateCliffs = checkCliff, permitSteepDownhill = false), recording emitter
+if inRange and ( IsPathClear(A, B, _evaluateCliffs = checkCliff, _permitSteepDownhill = false), recording emitter
                  or (A.beamDishFlag and B.beamDishFlag)
                  or A.seaFlag or B.seaFlag ):
     append link record { B, emitter } to A.links
@@ -104,7 +104,7 @@ for each node A, in structure order, skipping turret nodes:
 
 ### 2.5 Zone tagging
 
-**R-BOT-036** (MUST) While the link build of node A visits structures, it tags A in Relic Run and in Zone Control: a Relic Spawn Zone (Relic Run) or a Control Zone (Zone Control) that has no team at that moment and whose radius contains A becomes A's tagged zone; when several qualify, the last in structure order wins. No rule clears the tag, so a node keeps its tagged zone after the zone has been captured, and a later rebuild while the zone is owned leaves the tag unchanged. No other mode tags nodes. The tag sets the node's range (R-BOT-040), the Zone Control priority override ([02](02_priority_model.md)), the garrison rule and the defence test (R-BOT-051).
+**R-BOT-036** (MUST) While the link build of node A visits structures, it tags A in Relic Run and in Zone Control: a Relic Spawn Zone (Relic Run) or a Control Zone (Zone Control) that has no team at that moment and whose radius contains A becomes A's tagged zone; when several qualify, the last in structure order wins. No rule clears the tag, so a node keeps its tagged zone after the zone has been captured, and a later rebuild while the zone is owned leaves the tag unchanged (see DEC-861). No other mode tags nodes. The tag sets the node's range (R-BOT-040), the Zone Control priority override ([02](02_priority_model.md)), the garrison rule and the defence test (R-BOT-051).
 
 ### 2.6 Rebuilding the links
 
@@ -122,7 +122,7 @@ for each node A, in structure order, skipping turret nodes:
 
 **R-BOT-042** (MUST) A recount sets the three counts of every team to 0 and takes every actor of every team within the node's range, by the exact circular query `InRange(x, z, range)` of [reference/12](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-311, in result order: every kind of actor counts, bot controllers included. For each actor e of team te and each team slot t from 0 to 5: if te is t, t's friend count rises by 1; otherwise, if te is an enemy of t, t's enemy count rises by 1; an actor of an ally of t counts in neither. If e is an idle Worker, the idle count of te rises by 1. **Perfect information (PI-01).**
 
-**R-BOT-043** (MUST) Every Worker that a recount finds takes the node as its **nearest node** when it has none, or when this node is nearer to it than its current nearest node. A Worker's nearest node is a bot field of the Worker that only recounts write; nothing clears it, so a Worker that walks away keeps its old nearest node until a recount of a nearer node finds it. The dispatcher sends a Worker only from its nearest node ([03](03_decision_loop_and_leaders.md) R-BOT-085).
+**R-BOT-043** (MUST) Every Worker that a recount finds takes the node as its **nearest node** when it has none, or when this node is nearer to it than its current nearest node. A Worker's nearest node is a bot field of the Worker that only recounts write; nothing clears it, so a Worker that walks away keeps its old nearest node until a recount of a nearer node finds it (see DEC-861). The dispatcher sends a Worker only from its nearest node ([03](03_decision_loop_and_leaders.md) R-BOT-085).
 
 **R-BOT-044** (MUST) Counts are computed for all six team slots, human teams included; a human team's counts and priorities are read only by the Worker census shortcut (R-BOT-045) and by the bot overlay.
 
@@ -226,14 +226,15 @@ Keys cited here and defined elsewhere: `ref.sim.physics.sea_level` and `ref.sim.
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md); [02 Priority model](02_priority_model.md); [03 Decision loop and Leaders](03_decision_loop_and_leaders.md); [reference/03](../03_buildings_and_world_objects/README.md) (structure records, ports, removal), [mode_objects.md](../03_buildings_and_world_objects/mode_objects.md) (Relic node, Breach Charge), [economy_and_spawn_objects.md](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Beam Dish node, fuel depot node), [defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md) (turret node, Barrier Emitters, walls); [crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Supply crate node); [worker.md](../02_units/worker.md) (census shortcut, idle state); [reference/08](../08_maps_and_level_design/README.md) (map records and census); [reference/12](../12_simulation_model/README.md) (actor-grid queries R-SIM-311, walkability R-SIM-335 to R-SIM-337, initialisation order, update order R-SIM-224).
+- **Reference documents:** [README](README.md); [02 Priority model](02_priority_model.md); [03 Decision loop and Leaders](03_decision_loop_and_leaders.md); [reference/03](../03_buildings_and_world_objects/README.md) (structure records, ports, removal), [mode_objects.md](../03_buildings_and_world_objects/mode_objects.md) (Relic node, Breach Charge), [economy_and_spawn_objects.md](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Beam Dish node, fuel depot node), [defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md) (turret node, Barrier Emitters, walls); [crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Supply crate node); [worker.md](../02_units/worker.md) (census shortcut, idle state); [rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) (map records R-MAP-111, census R-MAP-200); [reference/12](../12_simulation_model/README.md) (actor-grid queries R-SIM-311, walkability R-SIM-335 to R-SIM-337, initialisation order, update order R-SIM-224).
 - **Engine components:** [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (bot overlay).
-- **Assets:** none.
+- **Assets:** `mesh.structure.bot_nav_node` (the map editor's marker mesh, R-BOT-025).
 
 ## 8 Open decisions
 
 | Decision | Title | Default stated here |
 |---|---|---|
 | DEC-312 | Bot decisions and node recounts within a tick | the order that their slots give (R-BOT-041) |
+| DEC-861 | Bot rule quirks | a tagged zone is never cleared (R-BOT-036); a Worker's nearest node is never cleared (R-BOT-043) |
 | DEC-557 | Bot troop movement between navigation nodes | Workers move in straight lines along links (§1; [03](03_decision_loop_and_leaders.md) R-BOT-086) |
 | DEC-094 | Exact or approximate actor-grid queries | the recount uses the exact query; the defence threshold reads recount counts (R-BOT-042, R-BOT-051) |

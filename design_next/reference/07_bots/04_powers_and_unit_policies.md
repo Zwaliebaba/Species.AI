@@ -32,17 +32,17 @@ Table 2.1-A Power handlers.
 
 **R-BOT-101** (MUST) The handlers of table 2.1-A cover every Power kind that a bot team can hold in a match. A bot team receives Powers from Supply crates it opens ([crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md)), from the starting powers, locked for `ref.econ.start.power_lock_ticks` (300 ticks) ([reference/05](../05_population_flow.md) R-ECON-110), and from the Comeback Bonus, the only source of the Essence Grove Power (R-ECON-113 to R-ECON-115, R-CRATE-138). The Transport Powers of Transit Gate waves and the units that a map places as Powers are targeted when they are created and never reach a handler (R-ECON-093, R-ECON-109); a forced outcome goes only to a tutorial player (R-CRATE-010). No source gives a bot a Swarm Power, so no handler exists for it.
 
-**R-BOT-102** (MUST) A handler targets a Power with `PlayerCommand::TargetPower(team, Power id, position)` (README R-BOT-014). The targeting succeeds only when the point satisfies the target rule of the Power's kind ([reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-025, table 2.5-A) and the Power is Waiting with no start lock; otherwise it is refused and the Power stays Waiting.
+**R-BOT-102** (MUST) A handler targets a Power with `PlayerCommand::TargetPower(team, powerId, position)` (README R-BOT-014). The targeting succeeds only when the point satisfies the target rule of the Power's kind ([reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-025, table 2.5-A) and the Power is Waiting with no start lock; otherwise it is refused and the Power stays Waiting.
 
 **R-BOT-103** (MUST) The handlers use the target areas of table 2.5-A of reference/04, as circles with a centre and a radius r: a **drop area** is the circle of `ref.power.target.unit_drop_radius` (75 wu) around each structure of a friendly team of kind Spawn Node, turret, Control Zone or a kind that shares its type (Relic Base, Relic Spawn Zone, Flag post, Home post), or Transit Gate; a **group area** is the circle of `ref.power.target.group_centre_radius` (100 wu) around the centre of each actor group of the team of the Strike team or Builder kind. The valid areas of the Strike team and Transport Powers are the drop areas; those of the Collector and Builder Powers are the group areas followed by the drop areas. A jittered point of an area is centre + (`NextSigned(r)`, 0, `NextSigned(r)`), the x draw first, so ±37.5 wu per axis for a drop area and ±50 wu for a group area. **Perfect information (PI-03)** wherever a handler reads enemy structures.
 
 **R-BOT-104** (MUST) In the handlers, a node or structure is **hostile** when its owner is hostile to the bot's team (README §1.1); **not Rogue** excludes the Rogue faction as owner; and "the most enemies" is the strictly greatest enemy count for the bot's team in structure order starting from 0, so it needs at least one enemy and keeps the first on a tie (DEC-016). A node is "in a valid area" when its position is a valid target point of the Power's kind.
 
-**R-BOT-105** (MUST) Every placement loop of a handler is bounded (DEC-014): when `ref.bot.power.placement_attempts` (100) points have been drawn without a valid one, the handler places nothing in this cycle and the Power stays Waiting.
+**R-BOT-105** (MUST) Every placement loop of a handler is bounded (DEC-014, DEC-857): when `ref.bot.power.placement_attempts` (100) points have been drawn without a valid one, the handler places nothing in this cycle and the Power stays Waiting.
 
 **R-BOT-106** (MUST) A handler that finds no acceptable target places nothing: the Power stays Waiting, keeps its Power slot (DEC-033) and is offered to its handler again in the next main cycle.
 
-**R-BOT-107** (MUST) The **promotion Power** is a Power kind that only bots start (README table 2.4-A). Starting one puts it into a free Power slot as Waiting, and fails with no message when every slot is occupied (R-CRATE-014). Its valid target point is one with a Worker of the bot's team within `ref.bot.power.promote_radius` (10 wu); targeting it promotes the nearest such Worker by the promotion operation of [leader_and_formations.md](../02_units/leader_and_formations.md) R-UNIT-153, which selects the new Leader, and ends the Power. A promotion Power that has not promoted a Worker by the end of the bot step that started it ends then, freeing its slot (DEC-087).
+**R-BOT-107** (MUST) The **promotion Power** is a Power kind that only bots start (README table 2.4-A). Starting one puts it into a free Power slot as Waiting, and fails with no message when every slot is occupied (R-CRATE-014). Its valid target point is one with a Worker of the bot's team within `ref.ctrl.promote_radius` (10 wu), the one nearest-Worker radius of the promote action and the Leader Power ([actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md)); targeting it promotes the nearest such Worker by the promotion operation of [leader_and_formations.md](../02_units/leader_and_formations.md) R-UNIT-153, which selects the new Leader, and ends the Power. A promotion Power that has not promoted a Worker by the end of the bot step that started it ends then, freeing its slot (DEC-087; see DEC-862).
 
 ### 2.2 The handlers
 
@@ -71,7 +71,7 @@ Table 2.1-A Power handlers.
 
 **R-BOT-117** (MUST) **Home post placement** (Flag Chain). With no Home post of its team, the bot waits. The turret limit is `ref.bot.power.flag_turrets_easy` (1) for an easy bot and `ref.bot.power.flag_turrets` (2) otherwise. The bot counts the turrets of every team within the Home post's size of it, remembering the last one found in structure order:
 
-1. when the count is below the limit, the point is a rim point of the Home post: its position + its front rotated about the vertical by `NextUnit(2π)` × its size, at the terrain height, pushed out of obstacles; when the count is not 0, the rotation is drawn again while the point lies within `ref.bot.power.flag_turret_spacing` (50 wu) of the last turret found, bounded by R-BOT-105;
+1. when the count is below the limit, the point is a rim point of the Home post: its position + its front rotated about the vertical by `NextUnit(2π)` × its size, at the terrain height, pushed out of obstacles; when the count is not 0, the rotation is drawn again while the point lies within `ref.bot.power.flag_turret_spacing` (50 wu) of the last turret found, bounded by R-BOT-105 (DEC-857);
 2. otherwise the point is a rim point, by the same construction with no spacing test, of another Flag post of its team chosen by `NextUint` mod their number; with no other Flag post, the bot waits.
 
 **R-BOT-118** (MUST) **Essence Grove.** The handler needs a Collector among its team's special units; without one, the bot waits, holding the Power and its slot until it has a Collector. With one, for every node owned by the team, in structure order, whose first linked node owned by the team exists, the bot targets the midpoint of the two nodes; only the first targeting can succeed, because the Power then runs. A special-unit handle that no longer resolves is skipped (DEC-028).
@@ -130,7 +130,6 @@ Caption: Figure 3-1, the Power handlers of a main cycle (R-BOT-100 to R-BOT-123)
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.bot.power.placement_attempts` | 100 | draws | cap of every handler placement loop; nothing placed after it | R-BOT-105 | DEC-014 |
-| `ref.bot.power.promote_radius` | 10 | wu | promotion Power target radius | R-BOT-107 | DEC-087 |
 | `ref.bot.power.turret_worker_radius` | 150 | wu | Worker centroid for turret points | R-BOT-114, R-BOT-116 | — |
 | `ref.bot.power.turret_push_step` | 10 | wu | | R-BOT-114 | — |
 | `ref.bot.power.turret_spacing` | 60 | wu | at least, from each turret, one pass | R-BOT-114, R-BOT-115 | — |
@@ -149,7 +148,7 @@ Caption: Figure 3-1, the Power handlers of a main cycle (R-BOT-100 to R-BOT-123)
 | `ref.bot.power.worker_power_friends` | 30 | actors | more than, at the fight node | R-BOT-122 | — |
 | `ref.bot.power.worker_power_radius` | 100 | wu | or the tagged zone size | R-BOT-122 | — |
 
-Keys cited here and defined elsewhere: `ref.power.target.unit_drop_radius`, `ref.power.target.group_centre_radius`, `ref.power.effect_range` and the slot keys `ref.power.slots.*` ([reference/04](../04_supply_crates_powers_and_weapons/README.md)); `ref.econ.start.power_lock_ticks` ([reference/05](../05_population_flow.md)); the unit policy keys of the documents named in R-BOT-125.
+Keys cited here and defined elsewhere: `ref.ctrl.promote_radius` ([actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md)), the promotion Power's target radius; `ref.power.target.unit_drop_radius`, `ref.power.target.group_centre_radius`, `ref.power.effect_range` and the slot keys `ref.power.slots.*` ([reference/04](../04_supply_crates_powers_and_weapons/README.md)); `ref.econ.start.power_lock_ticks` ([reference/05](../05_population_flow.md)); the unit policy keys of the documents named in R-BOT-125.
 
 ## 5 Edge cases and interactions
 
@@ -190,3 +189,4 @@ Keys cited here and defined elsewhere: `ref.power.target.unit_drop_radius`, `ref
 |---|---|---|
 | DEC-094 | Exact or approximate actor-grid queries | the meteor shower test uses the cell-granular counts (R-BOT-121) |
 | DEC-112 | Bot strength calibration | the handler thresholds of §4 |
+| DEC-862 | Bot rule details | a promotion Power that promotes nobody ends with the bot step that started it (R-BOT-107) |

@@ -101,7 +101,7 @@ Species names come from the rename ledger of the conversion run. A document uses
 - **Identifiers.** A code identifier (a type, enumerator, function, member, parameter, constant, macro, namespace or C++ source file), wherever a document writes it, in prose, a table, a diagram or an interface sketch, follows the naming convention of `AGENTS.md` §1, rules R1 to R11. The Identifier columns below are written to it. The design adds only these rules:
   - *Namespaces.* One namespace per layer (R9): `Engine` for engine code, which the components of `architecture/components/` specify, and `Species` for game code, which the reference documents and the simulation model specify. A test project's namespace is `<Project>Tests`. A type that has to know a game concept by name to do its job is game code, whichever document describes it. Engine macros are `ENGINE_*` (`ENGINE_ASSERT`, `ENGINE_PROFILE_SCOPE`). Because a layer has one namespace, a name is unique within its layer; when two documents need the same name, this section settles which one owns it (§8.12).
   - *Files.* A C++ source file is named for its primary type (R7, `BuildIdentity.h`). A shader name is PascalCase, because its source and compiled files carry it (`AGENTS.md` §2: `<Shader>VS.hlsl`, `<Shader>PS.hlsl`, and `CompiledShader/<Shader>VS.h` with the byte array `g_<Shader>VS`).
-  - *Words of a term.* A generic word used as a type name takes its kind as a suffix (`TreeObject`, `SpiderCreature`). A word that belongs to the Species term is part of the name, not an affix in the sense of R2: `RelicBase` names the Relic Base and is not a base class.
+  - *Words of a term.* A generic word used as a type name takes its kind as a suffix (`TreeObject`, `SpiderCreature`). A term whose last word is one of the affixes AGENTS.md R2 bans (`Base`, `Impl`, `Abstract`) takes a different identifier, so the repository checker never needs an exception: the Relic Base is `RelicReceptacle`.
   - *Spelling.* An identifier spells the words of its term in American English (R11), while the term itself and all prose stay British: Iron Defence is `Achievement::IronDefense`, an RGBA colour is `ColorRgba`, a centre is a `Center`. Identifiers of an SDK keep the SDK's spelling (R4).
   - *Constants.* A compile-time constant is `UPPER_CASE` with its unit in the name where it has one (R3, R6): `MAX_TEAMS`, `UPDATE_SLICES_PER_TICK`, `TICK_PERIOD_SECONDS`, `PRODUCT_NAME`. An enumerator is PascalCase (`MapEffect::Snow`).
   - *Originality.* No Species identifier repeats an identifier of the reference implementation.
@@ -210,7 +210,7 @@ Table 8-B Topics under the root `ui.`.
 | Population Limiter | world object | `PopulationLimiter` | `building.population_limiter` |
 | Relay | world object | `Relay` | `building.relay` |
 | Relic | world object | `Relic` | `building.relic` |
-| Relic Base | world object | `RelicBase` | `building.relic_base` |
+| Relic Base | world object | `RelicReceptacle` | `building.relic_base` |
 | Relic Spawn Zone | world object | `RelicSpawnZone` | `building.relic_spawn_zone` |
 | rocket turret | world object | `TurretType::Rocket` | `building.turret.rocket` |
 | Solar Array | world object | `SolarArray` | `building.solar_array` |
