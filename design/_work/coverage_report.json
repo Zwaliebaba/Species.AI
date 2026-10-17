@@ -8,20 +8,11 @@
  ],
  "b": [],
  "c": [
-  "format without grammar: language",
-  "format without grammar: script",
-  "format without grammar: purity-misc",
   "format without grammar: shp",
   "format without grammar: max",
   "format without grammar: bmp",
   "format without grammar: colour-ramp",
   "format without grammar: anim",
-  "format without grammar: gestures",
-  "format without grammar: gesture-demo",
-  "format without grammar: effects-txt",
-  "format without grammar: stats-txt",
-  "format without grammar: sounds-txt",
-  "format without grammar: ogg",
   "format without grammar: shader",
   "format without grammar: dat-archive",
   "format without grammar: psp",
@@ -31,7 +22,6 @@
   "format without grammar: mwhelp",
   "format without grammar: thumbnail",
   "format without grammar: sepulveda",
-  "format without grammar: purity",
   "format without grammar: authkey",
   "format without grammar: mwm",
   "format without grammar: profile-save",
@@ -49,15 +39,18 @@
   "data/scripts/name": [
    "29_data_formats_reference.md"
   ],
+  "data/mwsounds/sample_ping1.ogg": [
+   "29_data_formats_reference.md"
+  ],
   "data/n": [
    "29_data_formats_reference.md"
   ]
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 5717,
-  "[I]": 704,
-  "[U]": 144
+  "[C]": 6024,
+  "[I]": 731,
+  "[U]": 152
  },
  "classes": {
   "AI": [

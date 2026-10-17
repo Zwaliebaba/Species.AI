@@ -1572,3 +1572,338 @@ The `PurityControl` command (compiled into [B:FULL]) deletes every file in `user
 **Minimal valid example.** Not applicable (convention over other formats).
 
 **Discrepancies.** None.
+
+---
+
+## 7 Entity, gesture and audio tables
+
+<a id="fmt-stats-txt"></a>
+### 7.1 `stats.txt` — per-entity-type base stats
+
+**Purpose.** Health, speed and reload rate for every `Entity` type [C] `code/worldobject/entity.cpp:EntityBlueprint::Initialise`, `EntityBlueprint::GetStat`, `Entity::SetType`. Required: `AppReleaseAssert("Couldn't open stats.txt")`.
+
+**Files.** `data/stats.txt` (40 lines, 27 data rows). **Encoding.** ASCII, CRLF.
+
+```ebnf
+stats_file = { blank_or_comment | stat_row } ;
+stat_row   = NAME HLTH SPED RATE EOL ;       (* WORD F32 F32 F32, MISSING => CRASH *)
+```
+
+**Binding is positional**: the k-th non-blank row is entity type k (enum order of §4.1.13); `NAME` is stored (`EntityBlueprint::m_names`, `strdup`) but never used to bind. More than `NumEntityTypes` (27) rows → `AppReleaseAssert("Too many entity blueprints defined")` (fatal); fewer rows leave the rest 0 [C].
+
+| Field | Type | Units (file header) | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `NAME` | WORD | – | – | label only | name for debugging | `EntityBlueprint::Initialise` |
+| `HLTH` | F32 | hit points | 0 | 0…255 effective (instance copy is `unsigned char`) | initial / maximum health | same; `Entity::SetType` |
+| `SPED` | F32 | "m/s" = world units per second | 0 | – | `GetStat(type, StatSpeed)` returns `SPED × (1 + m_difficultyLevel/10)` for every type except `SpaceInvader`; `m_difficultyLevel` is 0 in Multiwinia unless a level carries `CreatedAsDifficulty` (only 3 Darwinia missions) → factor 1.0 [C] `code/app.cpp:App::UpdateDifficultyFromPreferences`, `code/location.cpp:Location::Init` | `EntityBlueprint::GetStat` |
+| `RATE` | F32 | seconds between shots | 0 | – | reload time | same |
+
+**Storage truncation** [C] `code/worldobject/entity.h:Entity::m_stats` (`unsigned char m_stats[NumStats]`): per-instance copies truncate fractions (Squadie RATE 0.5 → 0) and wrap values > 255 (SpaceShip SPED 500 → 244 on MSVC [I], [02](02_units_and_entities.md)); code reading `EntityBlueprint::GetStat` directly (e.g. `code/worldobject/insertion_squad.cpp`) sees the double.
+
+Shipped rows [C] `data/stats.txt`:
+
+| Row | Enum | NAME in file | HLTH | SPED | RATE |
+|---|---|---|---|---|---|
+| 0 | `TypeInvalid` | Invalid | 0 | 0 | 0 |
+| 1 | `TypeLaserTroop` | LaserTroop | 20 | 15 | 1 |
+| 2 | `TypeEngineer` | Engineer | 255 | 28 | 0 |
+| 3 | `TypeVirii` | Virii | 10 | 32 | 0 |
+| 4 | `TypeSquadie` | InsertionSquadie (label differs from `Entity::GetTypeName` "Squadie") | 75 | 30 | 0.5 |
+| 5 | `TypeEgg` | Egg | 10 | 0 | 0 |
+| 6 | `TypeSporeGenerator` | SporeGenerator | 200 | 20 | 10 |
+| 7 | `TypeLander` | Lander | 255 | 40 | 1 |
+| 8 | `TypeTripod` | Tripod | 155 | 20 | 1 |
+| 9 | `TypeCentipede` | Centipede | 255 | 80 | 1 |
+| 10 | `TypeSpaceInvader` | SpaceInvader | 10 | 40 | 1 |
+| 11 | `TypeSpider` | Spider | 200 | 50 | 1 |
+| 12 | `TypeDarwinian` | Darwinian | 50 | 20 | 3 |
+| 13 | `TypeOfficer` | Officer | 255 | 30 | 3 |
+| 14 | `TypeArmyAnt` | ArmyAnt | 20 | 25 | 0 |
+| 15 | `TypeArmour` | Armour | 200 | 60 | 5 |
+| 16 | `TypeSoulDestroyer` | SoulDestroyer | 255 | 150 | 1 |
+| 17 | `TypeTriffidEgg` | TriffidEgg | 50 | 100 | 1 |
+| 18 | `TypeAI` | AI | 255 | 255 | 255 |
+| 19 | `TypeShaman` | Shaman | 200 | 25 | 2 |
+| 20 | `TypeHarvester` | Harvester | 255 | 28 | 0 |
+| 21 | `TypeNuke` | Nuke | 255 | 100 | 0 |
+| 22 | `TypeTentacle` | Tentacle | 255 | 100 | 0 |
+| 23 | `TypeMeteor` | Meteor | 255 | 350 | 0 |
+| 24 | `TypeTank` | Tank | 150 | 50 | 2 |
+| 25 | `TypeSpaceShip` | SpaceShip | 255 | 500 | 0 |
+| 26 | `TypeDropShip` | DropShip | 255 | 255 | 0 |
+
+**Verification.** `EntityBlueprint::Initialise` and `GetStat` re-read for this document (positional `entityIndex`, `iv_atof` for the three numbers, `TokenAvailable` guard); `X1a_text_survey.py`: 27 non-empty token lines.
+
+**Minimal valid example** (a file may stop early — types without a row keep 0 stats; a real table needs all 27 rows in enum order):
+
+```text
+# NAME        HLTH  SPED  RATE
+None          0     0     0
+Trooper       25    18    1.5
+Builder       200   30    0
+```
+
+**Discrepancies.** `data/stats.txt` header says `SPED` in m/s and `NAME` = creature name; rows bind by position, speed is scaled by difficulty and instance copies are truncated to `unsigned char` [C].
+
+<a id="fmt-gestures"></a>
+### 7.2 `gestures.txt` — gesture-classifier training set
+
+**Purpose.** Training vectors for the Rubine-style gesture recogniser (algorithm and symbol meanings: [06](06_player_control_and_input.md)) [C] `code/app.cpp:App::App` (`new Gesture("gestures.txt")`), `code/gesture.cpp:Gesture::LoadTrainingData`, `TrainSystem`, `SaveTrainingData`. Required: `AppReleaseAssert("Couldn't open Gesture data file")`. Gestures are not used in Multiwinia play, but the file is parsed at start-up. Written only by the gesture editor (`GESTURE_EDITOR`, [B:DEBUG]) [C] `code/interface/gesture_window.cpp`.
+
+**Files.** `data/gestures.txt` (17 lines = 1 + 8 × 2). **Encoding.** ASCII, CRLF; longest line 2 767 characters.
+
+```ebnf
+gestures_file = count_line , { symbol } ;                (* exactly numSymbols symbol records *)
+count_line    = INT EOL ;                                (* numSymbols *)
+symbol        = trainer_count_line , [ vector_line ] ;   (* vector_line present iff trainerCount > 0 *)
+trainer_count_line = INT EOL ;                           (* trainerCount <= 32 *)
+vector_line   = { FLOAT } EOL ;                          (* trainerCount x 14 floats on ONE line: f0..f13 per trainer *)
+```
+
+Strictly line-positional: every `ReadLine()` is followed by unguarded `GetNextToken()` calls, so a blank line, a comment-only line or a vector split over two lines crashes (`atoi`/`atof(NULL)`) [C].
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `numSymbols` | INT | – | – | shipped 8 | number of symbol classes; symbol id = record order ([06](06_player_control_and_input.md)) | `Gesture::LoadTrainingData` |
+| `trainerCount` | INT | examples | – | 0…32 (`GESTURE_MAX_TRAINERS`; larger overflows `Classification::m_trainers[32]`, no check); shipped 20 each | training examples of this symbol | same |
+| `f0` | FLOAT (`atof`) | – | – | always 0.000000 | unused slot (features are numbered 1…`GESTURE_MAX_FEATURES` = 13) | same |
+| `f1`…`f13` | FLOAT | pixels, radians, px²/ms², ms per feature ([06](06_player_control_and_input.md)) | – | – | Rubine features of one stroke | same |
+
+**Verification.** `LoadTrainingData` re-read (loop `f = 0 … GESTURE_MAX_FEATURES` inclusive = 14 values per trainer); `code/gesture.h` constants re-read. Shipped file: 8 symbols × 20 trainers, each vector line 280 values + trailing blank [C].
+
+**Minimal valid example** (2 symbols; the second has no trainers; values illustrative)
+
+```text
+2
+1
+0.000000 0.250000 0.968246 95.000000 1.100000 60.000000 0.600000 0.800000 120.000000 0.200000 0.450000 0.010000 3.100000 350.000000
+0
+```
+
+**Discrepancies.** Writer asymmetry [C] `SaveTrainingData`: it writes `"%d\n"`, the vectors as `"%f "`, and **always** a trailing `"\n"` — for a symbol with 0 trainers this produces an empty line that `LoadTrainingData` then reads as the next trainer count (crash). The example above is hand-written without that empty line.
+
+<a id="fmt-gesture-demo"></a>
+### 7.3 `gesture_demos/*.txt` — recorded gesture strokes [B:DEAD]
+
+**Purpose.** Mouse-path recordings replayed by the Darwinia mentor tutorial [C] `code/gesture_demo.cpp:GestureDemo::GestureDemo`, `GetCoords`, `GetTotalDuration`; recorder `GestureRecordingThread` writes `gesture_demos/new_gesture_demo.txt`; loader `code/lib/resource.cpp:Resource::GetGestureDemo`. All of it is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` (never defined) and the files are excluded from packaging (`gesture_demos/*`) [C].
+
+**Files.** `data/gesture_demos/airstrike.txt` (59 samples), `armour.txt` (72), `controller.txt` (47), `engineer.txt` (39), `grenade.txt` (16), `officer.txt` (27), `rocket.txt` (45), `squad.txt` (36). **Encoding.** ASCII.
+
+```ebnf
+demo_file   = { sample_line } ;
+sample_line = X Y EOL ;            (* FLOAT FLOAT, written "%.3f %.3f"; every physical line is a sample - blank => atof(NULL) crash *)
+```
+
+| Field | Type | Units | Default | Range (shipped) | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `X` | FLOAT | screen heights | – | 0.271–0.971 | x / screen height at record time; origin left | `GestureDemo::GestureDemo` |
+| `Y` | FLOAT | screen heights | – | 0.091–0.645 | y / screen height; origin top | same |
+| sample period | constant | ms | 40 (`GESTURE_DEMO_SAMPLE_PERIOD`, 25 Hz) | – | duration = samples × 0.040 s | `GetTotalDuration` |
+
+Playback [C] `GetCoords`: `index = t · 25`, interpolate between the floor and ceil samples, multiply both coordinates by the current `ScreenH()`.
+
+**Verification.** From X1b's reading of `gesture_demo.cpp` [C]; sample counts and ranges from the X1b survey of all 8 files [C].
+
+**Minimal valid example**
+
+```text
+0.400 0.300
+0.450 0.350
+0.500 0.300
+```
+
+**Discrepancies.** Interpolation weights are swapped (`factor1 = frac` multiplies the lower sample), so motion between samples runs backwards within each 40 ms step; the header comment says positions are "scaled for the current screen resolution" but both axes are scaled by the height only [C].
+
+<a id="fmt-sounds-txt"></a>
+### 7.4 `sounds.txt` — sound-event blueprints
+
+**Purpose.** Binds every (sound source, event) to playback parameters, DSP effects and samples, and defines sample groups [C] `code/sound/soundsystem.cpp:SoundSystem::LoadBlueprints`, `ParseSoundEvent`, `ParseSoundEffect`, `ParseSampleGroup`, `NewSampleGroup`, `GetSampleGroup`; `code/sound/sound_parameter.cpp:SoundParameter::Read`, `GetParameterType`, `GetLinkType`, `GetUpdateType`; writer `SaveBlueprints`, `WriteSoundEvent`, `WriteSampleGroup`, `SoundParameter::Write` ([B:DEBUG] sound editor). Required: `AppReleaseAssert("Couldn't open sounds.txt")`. Runtime semantics: [10](10_audio_design.md), [27](27_audio_engine.md).
+
+**Files.** `data/sounds.txt` (5 450 lines, 162 804 bytes). **Encoding.** ASCII, CRLF.
+
+```ebnf
+sounds_file      = { blank_or_comment | source_block | samplegroup | ignored_top } ;
+source_block     = source_kind TYPENAME EOL , { blank_or_comment | event_block } , 'END' EOL ;
+source_kind      = 'ENTITY' | 'BUILDING' | 'OTHER' ;
+event_block      = 'EVENT' EVENTNAME EOL , { event_field } , 'END' EOL ;        (* NO blank/comment lines inside *)
+event_field      = 'SOUNDNAME' NAME EOL
+                 | 'SOURCETYPE' INT EOL | 'POSITIONTYPE' INT EOL | 'INSTANCETYPE' INT EOL
+                 | 'LOOPTYPE' INT EOL | 'TEAMMATCHTYPE' INT EOL | 'PRIORITY' INT EOL
+                 | 'MINDISTANCE' FLOAT EOL
+                 | param_field_name param_spec EOL
+                 | effect_block ;
+param_field_name = 'VOLUME' | 'FREQUENCY' | 'ATTACK' | 'SUSTAIN' | 'RELEASE' | 'LOOPDELAY' ;
+effect_block     = 'EFFECT' EFFECTNAME EOL , { PARAMLABEL param_spec EOL } , 'END' EOL ;   (* <= 13 params, positional; NO blank lines *)
+param_spec       = 'PARAMETER' ( fixed | ranged | linked ) [ update_type ] ;
+fixed            = 'TypeFixedValue'   FLOAT ;                       (* value *)
+ranged           = 'TypeRangedRandom' FLOAT FLOAT FLOAT ;           (* lower upper smooth *)
+linked           = 'TypeLinked'       FLOAT FLOAT FLOAT FLOAT FLOAT LINKNAME ;   (* inLower outLower inUpper outUpper smooth link *)
+LINKNAME         = 'Nothing' | 'HeightAboveGround' | 'Xpos' | 'Ypos' | 'Zpos' | 'Velocity' | 'CameraDistance' ;
+update_type      = 'UpdateConstantly' | 'UpdateOncePerLoop' ;        (* absent -> UpdateConstantly *)
+samplegroup      = 'SAMPLEGROUP' GROUPNAME EOL , { ANYWORD SAMPLENAME EOL } , 'END' EOL ;   (* NO blank lines *)
+ignored_top      = any other first token , EOL ;                       (* e.g. a stray END *)
+```
+
+All keywords and enumerator names are case-insensitive (`stricmp`); `#` comments are allowed only where blank lines are allowed.
+
+Parser-structure facts [C] (`LoadBlueprints`, `ParseSoundEvent`, `ParseSoundEffect`, `ParseSampleGroup` re-read for this document):
+
+* **Blank/comment lines** are allowed at top level and between `EVENT` blocks (those loops test `TokenAvailable`) and **crash** inside `EVENT`, `EFFECT` and `SAMPLEGROUP` bodies (`ReadLine(); GetNextToken(); stricmp(tok, "END")` → NULL).
+* Inside a source block any non-`END` line is treated as an `EVENT` header (debug assert) and its second token becomes the event name.
+* `TYPENAME` resolution (case-insensitive): `ENTITY` → `Entity::GetTypeId` over the 27 names of §4.1.13; `BUILDING` → `Building::GetTypeId` over the 75 names of §4.1.10; `OTHER` → `SoundSourceBlueprint::GetSoundSoundType` over `Laser`, `Grenade`, `Rocket`, `AirStrikeBomb`, `Spirit`, `Sepulveda`, `Gesture`, `Ambience`, `Music`, `Interface`, `CratePowerup`, `MultiwiniaInterface`. An unknown name returns −1 and is stored at index −1 (debug assert only → memory corruption in release). A duplicate source block for the same type replaces the earlier one (debug assert only; the old one leaks).
+* Event identifier = `"<TYPENAME> <EVENTNAME>"` with `TYPENAME` as written (≤ 127 chars; `"sample group"` for groups) [C] `SoundInstance::SetEventName`.
+* `SOUNDNAME` is lower-cased in place and its last `.extension` stripped (`RemoveExtension`) before storing (≤ 255 chars); with `SOURCETYPE 0` it names a sample stem, with `SOURCETYPE 1` a `SAMPLEGROUP` (looked up case-insensitively at play time; first match wins).
+* An unknown event field is a debug assert; release skips the line.
+* `SoundParameter::Read`: the word after the field name is only debug-asserted to be `PARAMETER`; an unknown type name gives `m_type = −1` and no values are read; after the type-specific values, *if a token remains* it is the update type (unknown → −1); further tokens ignored; `Recalculate()` is called immediately. Values are `atof` (not F32).
+* `EFFECT EFFECTNAME`: matched case-insensitively against [fmt-effects-txt](#fmt-effects-txt) names (unknown → debug assert, type −1 → crash when used). Each following line: first token = label (ignored), rest = `param_spec`; parameter *k* binds to blueprint parameter *k* by **position**, into `DspHandle::m_params[MAX_PARAMS = 13]` (no bounds check).
+* `SAMPLEGROUP`: the first token of each member line is ignored (shipped files write `SAMPLE`); member names are lower-cased and extension-stripped; group names stored as written (≤ 255); **duplicate group names are both kept**, look-ups return the first.
+
+**Field table (event fields)**
+
+| Field | Type | Units | Default (`SoundInstance` ctor) | Valid values | Semantics | Shipped usage (296 EVENT blocks) | Parser ref |
+|---|---|---|---|---|---|---|---|
+| `SOUNDNAME` | token | – | `"[???]"` | sample stem or group name | what to play | 296 (one literally `[???]`, `OTHER Sepulveda EVENT TextAppear`, dead source) | `ParseSoundEvent` |
+| `SOURCETYPE` | INT | enum | 0 | 0 Sample, 1 SampleGroupRandom | sample vs group | 0: 143, 1: 153 | same |
+| `POSITIONTYPE` | INT | enum | 2 | 0 Type2D, 1 Type3DStationary, 2 Type3DAttachedToObject, 3 TypeInEditor | positioning | 0: 83, 1: 42, 2: 169, 3: 2 | same |
+| `INSTANCETYPE` | INT | enum | 0 | 0 Polyphonic, 1 MonophonicRandom, 2 MonophonicNearest | voice policy | 0: 290, 1: 3, 2: 3 | same |
+| `LOOPTYPE` | INT | enum | 0 | 0 SinglePlay, 1 Looped, 2 LoopedADSR | looping | 0: 210, 1: 70, 2: 16 | same |
+| `TEAMMATCHTYPE` | INT | enum | 0 | 0 AllTeams, 1 MyTeamOnly, 2 EnemyTeamOnly | audibility filter | 0: 284, 1: 8, 2: 4 | same |
+| `PRIORITY` | INT | – | – | any | parsed and discarded (backwards compatibility) | 0 | same |
+| `MINDISTANCE` | FLOAT | world units | 100.0 | > 0 | 3-D attenuation start | 296 | same |
+| `VOLUME` | param | volume units 0–10 | fixed 7.0 | – | loudness | 296 | `SoundParameter::Read` |
+| `FREQUENCY` | param | multiplier | fixed 1.0 | – | pitch | 119 | same |
+| `ATTACK`, `SUSTAIN`, `RELEASE`, `LOOPDELAY` | param | seconds | fixed 0.0 | – | envelope / loop gap | 27 / 10 / 64 / 18 | same |
+| `EFFECT … END` | block | – | none | ≤ 13 params | DSP chain | 22 (Echo 12, DSound_Echo 5, Gargle 3, DSound_I3DL2Reverb 1, DSound_WavesReverb 1) | `ParseSoundEffect` |
+
+Parameter tokens in shipped data: `TypeFixedValue` 512, `TypeRangedRandom` 79, `TypeLinked` 30; links `Velocity` 16, `HeightAboveGround` 7, `CameraDistance` 4, `Ypos` 3; update types `UpdateConstantly` 509, `UpdateOncePerLoop` 112 (none omitted). Top level: 21 `ENTITY`, 35 `BUILDING`, 12 `OTHER` blocks, 131 `SAMPLEGROUP` blocks (130 distinct names, 1 126 member lines) [C] survey.
+
+**Sample resolution** [C] `code/sound/sample_cache.cpp:CachedSample::CachedSample`, `code/lib/resource.cpp:Resource::GetSoundStreamDecoder`, `Resource::SoundExists`: a stem `s` resolves to `sounds/s.ogg`, else `mwsounds/s.ogg` (loose, then archives); if neither exists, `AppReleaseAssert("Failed to open sound stream decoder")` — fatal.
+
+**Writer format** (editor output) [C] `WriteSoundEvent`, `SoundParameter::Write`: `\tEVENT %-20s`, then fixed-order fields `SOUNDNAME`, `SOURCETYPE`, `POSITIONTYPE`, `INSTANCETYPE`, `LOOPTYPE`, `TEAMMATCHTYPE`, `MINDISTANCE %2.2f`, `VOLUME` always, `FREQUENCY` only if not fixed 1.0, `ATTACK`/`SUSTAIN`/`RELEASE`/`LOOPDELAY` only if not fixed 0.0, each `%-18s PARAMETER %-18s` + `%8.2f` values (+ link name) + two blanks + update type; effects as `\t\tEFFECT %s` + one `\t\t\t` line per blueprint parameter + `\t\tEND`; `\tEND`. Sources are written in enum order preceded by a `# ====…` comment line and followed by `END` and two blank lines; groups as `\tSAMPLE  <name>`. Two decimals → an editor round trip quantises every parameter to 0.01.
+
+**Verification.** Parsers re-read as listed. `_work/scripts/X1b_sounds_grammar.py` (independent state machine, re-run) over `data/sounds.txt`: 0 blank-line hazards, 0 unknown sources, 0 duplicate source blocks, effect parameter counts equal to the blueprint counts in every block (Echo 3, DSound_Echo 5, Gargle 3, DSound_I3DL2Reverb 13, DSound_WavesReverb 4), 0 parameter-label mismatches against [fmt-effects-txt](#fmt-effects-txt) order; all 1 228 referenced sample files exist (only unresolved name `[???]`). P16's `P16_parse_sounds.py` produced the same event set (`_work/drafts/P16_sound_events.csv`).
+
+**Minimal valid example** (written for this document)
+
+```text
+SAMPLEGROUP crowd
+    SAMPLE  cheer1
+    SAMPLE  cheer2
+END
+
+OTHER Interface
+    EVENT ButtonPress
+        SOUNDNAME          click1.ogg
+        SOURCETYPE         0
+        POSITIONTYPE       0
+        INSTANCETYPE       0
+        LOOPTYPE           0
+        TEAMMATCHTYPE      0
+        MINDISTANCE        50.00
+        VOLUME             PARAMETER TypeFixedValue         8.00  UpdateConstantly
+        FREQUENCY          PARAMETER TypeRangedRandom       0.95     1.05     0.00  UpdateOncePerLoop
+    END
+    EVENT Crowd
+        SOUNDNAME          crowd
+        SOURCETYPE         1
+        POSITIONTYPE       0
+        INSTANCETYPE       1
+        LOOPTYPE           0
+        TEAMMATCHTYPE      0
+        MINDISTANCE        100.00
+        VOLUME             PARAMETER TypeFixedValue         6.00  UpdateConstantly
+        EFFECT             SimpleReverb
+            WetDryMix      PARAMETER TypeFixedValue        25.00  UpdateConstantly
+        END
+    END
+END
+```
+
+**Discrepancies** [C]:
+
+* `SAMPLEGROUP officercreate` is defined twice (identical; harmless).
+* `SOUNDNAME [???]` in a dead source.
+* 16 sample files referenced by `data/sounds.txt` are in neither `tools/sounds.txt` nor `tools/menu_sounds.txt`; five (`mwsounds/rollover1a`, `rollover1c`, `mouseclick1`, `chat`, `beep_harsh_malfunction`) reach `sounds2.dat` through the catch-all rule ([fmt-pack-list](#fmt-pack-list)); the other **11 are excluded from every archive** (`sounds/tresk*`, `trash80*`, `dma_sc*`, `twoataris*`, `pang*`, `speccyloader.ogg`, `matrix.ogg`, `fodder.ogg`) although `OTHER Music` events `Cutscene1`–`Cutscene5`, `LoaderRaytrace`, `LoaderFodder`, `LoaderSoul`, `LoaderSpeccy`, `LoaderAmiga`, `LoaderMatrix`, `LoaderGameOfLife`, `EndSequence`, `Credits`, `StartSequence` reference them → triggering any in a packaged build would hit the fatal `CachedSample` assert [C]; unreachable in Multiwinia [I] ([10](10_audio_design.md)).
+* Code fires events with no data block (e.g. CRATE `Expired`, match-end voice events) — silent [C] ([10](10_audio_design.md)).
+
+<a id="fmt-effects-txt"></a>
+### 7.5 `effects.txt` — DSP filter blueprints (audio)
+
+**Purpose.** Declares the 14 real-time audio filter types and their parameter ranges, used by `EFFECT` blocks of [fmt-sounds-txt](#fmt-sounds-txt) and the sound editor [C] `code/sound/soundsystem.cpp:SoundSystem::LoadEffects`, `DspBlueprint::GetParameter`; consumption `code/sound/sound_instance.cpp:DspHandle::Advance`. Despite its name the file is audio-only (the original spec listed it under animation/VFX). Required: `AppReleaseAssert("Couldn't load effects.txt")`.
+
+**Files.** `data/effects.txt` (115 lines). **Encoding.** ASCII, CRLF.
+
+```ebnf
+effects_file = { blank_or_comment | effect } ;
+effect       = 'EFFECT' NAME EOL , { param_line } , 'END' EOL ;   (* NO blank line after EFFECT or inside *)
+param_line   = NAME MIN MAX DEFAULT DATATYPE EOL ;                 (* WORD FLOAT FLOAT FLOAT INT, MISSING => CRASH *)
+```
+
+Top level skips blank lines; any other first token is only debug-asserted to be `EFFECT`. Inside an effect, `ReadLine(); GetNextToken(); stricmp(param, "END")` runs unguarded (blank line → crash). **Binding is positional**: effect index = order of blocks = `SoundLibrary3d` filter enum (`code/sound/sound_library_3d.h`), stored with `DArray::PutData` into an array pre-sized to `NUM_FILTERS`; parameter index = line order. The effect *name* matters only for `sounds.txt` look-up (case-insensitive) and the editor; parameter names are labels [C].
+
+| Index | `EFFECT` name | Enum | Parameters (name min..max default, type) |
+|---|---|---|---|
+| 0 | DSound_Chorus | `DSP_DSOUND_CHORUS` | WetDryMix 0..100 50 f; Depth 0..100 10 f; Feedback −99..99 25 f; Frequency 0..10 1.1 f; Waveform 0..1 1 L; Delay 0..20 16 f; Phase 0..4 3 L |
+| 1 | DSound_Compressor | `DSP_DSOUND_COMPRESSOR` | Gain −60..60 0 f; Attack 0.01..500 10 f; Release 50..3000 200 f; Threshold −60..0 −20 f; Ratio 1..100 3 f; PreDelay 0..4 4 f |
+| 2 | DSound_Distortion | `DSP_DSOUND_DISTORTION` | Gain −60..0 −18 f; Edge 0..100 15 f; PostEQCentreFreq 100..8000 2400 f; PostEQBandwidth 100..8000 2400 f; PreLowpassCutoff 100..8000 8000 f |
+| 3 | DSound_Echo | `DSP_DSOUND_ECHO` | WetDryMix 0..100 50 f; Feedback 0..100 50 f; LeftDelay 1..2000 500 f; RightDelay 1..2000 500 f; PanDelay 0..1 0 L |
+| 4 | DSound_Flanger | `DSP_DSOUND_FLANGER` | WetDryMix 0..100 50 f; Depth 0..100 100 f; Feedback −99..99 −50 f; Frequency 0..10 0.25 f; Waveform 0..1 1 L; Delay 0..4 2 f; Phase 0..4 2 L |
+| 5 | DSound_Gargle | `DSP_DSOUND_GARGLE` | RateHz 1..100 20 L; WaveShape 0..1 0 L |
+| 6 | DSound_I3DL2Reverb | `DSP_DSOUND_I3DL2REVERB` | Room −10000..0 −1000 L; RoomHF −10000..0 −100 L; RoomRolloffFactor 0..10 0 f; DecayTime 0.1..20 1.49 f; DecayHFRatio 0.1..2 0.83 f; Reflections −10000..1000 −2602 L; ReflectionsDelay 0..0.3 0.01 f; Reverb −10000..2000 200 L; ReverbDelay 0..0.1 0.01 f; Diffusion 0..100 100 f; Density 0..100 100 f; HFReference 20..20000 5000 f; Quality 0..3 2 L |
+| 7 | DSound_ParamEQ | `DSP_DSOUND_PARAMEQ` | Centre 80..16000 8000 f; Bandwidth 1..36 12 f; Gain −15..15 0 f |
+| 8 | DSound_WavesReverb | `DSP_DSOUND_WAVESREVERB` | InGain −96..0 0 f; ReverbMix −96..0 0 f; ReverbTime 0.01..3000 1000 f; HighFreqRTRatio 0.01..0.99 0.01 f |
+| 9 | ResonantLowPass | `DSP_RESONANTLOWPASS` | CutoffFrequency 100..20000 2500 f; Resonance 0.1..20 7 f; Gain 0..10 1 f |
+| 10 | BitCrusher | `DSP_BITCRUSHER` | BitRate 1..16 16 f |
+| 11 | Gargle | `DSP_GARGLE` | WetDryMix 0..100 50 f; RateHz 0.01..100 20 f; WaveShape 0..1 0 L |
+| 12 | Echo | `DSP_ECHO` | WetDryMix 0..100 50 f; Delay 1..3000 200 f; Attenuation 0..100 50 f |
+| 13 | SimpleReverb | `DSP_SIMPLE_REVERB` | WetDryMix 0..100 50 f |
+
+(f = data type 0, float; L = data type 1, `long`.) Filter maths: [27](27_audio_engine.md).
+
+| Field | Type | Units | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| effect `NAME` | WORD ≤ 255 | – | – | – | editor label; `sounds.txt` look-up key | `LoadEffects` |
+| parameter `NAME` | WORD ≤ 255 | – | – | – | editor label only | same |
+| `MIN`, `MAX` | FLOAT (`atof`) | per parameter (%, ms, dB, Hz) | – | – | editor slider limits only (not enforced at run time) | same |
+| `DEFAULT` | FLOAT | as above | – | – | **not applied at run time**: parameters omitted in a `sounds.txt` EFFECT block stay `SoundParameter()` = fixed 0.0; the editor's "add effect" seeds through `GetParameter(i, &defaultVal)` which fills the **min** slot (argument-order bug), so editor-created effects start at their minimum [C] `code/interface/soundeditor_window.cpp:DspEffectButton::MouseUp` | same |
+| `DATATYPE` | INT | – | – | 0 float, 1 long | value passed to the DSP as `float` (0) or as a `long` reinterpreted into the float array (1); any other → `AppReleaseAssert("Unknown datatype")` | `DspHandle::Advance` |
+
+**Verification.** `LoadEffects` re-read for this document (unguarded inner loop, positional `PutData`). Data: 14 blocks, 91 token lines [C] `X1a_text_survey.py`; `X1b_sounds_grammar.py` cross-check of every `sounds.txt` EFFECT block against this order (0 mismatches).
+
+**Minimal valid example** (as the 14th block it would bind to `DSP_SIMPLE_REVERB` whatever its name)
+
+```text
+EFFECT RoomVerb
+    WetDryMix   0   100   35   0
+END
+```
+
+**Discrepancies.** `data/effects.txt` header says "Default: the starting value" — not applied (above). Hazard: `DspHandle::Advance` loops over all 13 slots and calls `GetParameter(i, …, &dataType)` even beyond the blueprint's count, leaving `dataType` uninitialised → possible spurious "Unknown datatype" assert; reached only when pref `SoundDSP` ≠ 0 (default 0) [C]. A file with a different number or order of effects silently re-binds DSP types.
+
+<a id="fmt-ogg"></a>
+### 7.6 Ogg Vorbis samples
+
+**Purpose.** All sound samples and music [C] `code/sound/sound_stream_decoder.cpp:SoundStreamDecoder::ReadOggHeader`, `ReadOggData`, `ReadFunc`, `SeekFunc`, `TellFunc`; `code/sound/sample_cache.cpp:CachedSample::CachedSample`.
+
+**Files.** `data/sounds/*.ogg` (954, inherited from Darwinia, all lower-case names), `data/mwsounds/*.ogg` (378, Multiwinia; 359 with upper-case letters, e.g. `Attack44.ogg`, `CrateReward_Tank.ogg`) — 1 332 in total. Per-file catalogue: [10](10_audio_design.md).
+
+**Encoding / container.** Ogg Vorbis I, decoded with libvorbisfile through custom callbacks over `BinaryReader` (`ov_open_callbacks`; read/seek/tell map to the loose-file or in-memory archive reader; seek works for both). Output is always 16-bit signed native-endian PCM (`ov_read(…, 2, 1, …)`).
+
+| Field / check | Type | Units | Default | Valid range | Failure | Parser ref |
+|---|---|---|---|---|---|---|
+| stream open | – | – | – | `ov_open_callbacks == 0` | `AppReleaseAssert` (fatal) | `SoundStreamDecoder::ReadOggHeader` |
+| total length | frames | samples | – | `ov_pcm_total > 0`; cached samples 1…268 435 456 frames, ≤ 1 GiB of PCM | fatal | `ReadOggHeader`, `CachedSample::CachedSample` |
+| channels | int | – | – | 1…8 (debug authoring check: should be **mono**, `IsSoundSourceOK`) | fatal outside range | `CachedSample::CachedSample`, `code/sound/soundsystem.cpp:SoundSystem::IsSoundSourceOK` |
+| sample rate | int | Hz | – | 1…192 000 | fatal | `CachedSample::CachedSample` |
+| decode errors | – | – | – | no `OV_HOLE`/`OV_EBADLINK` | fatal | `ReadOggData` |
+| addressing | stem | – | – | no directory, no extension, any case; no blanks (debug check) | – | `CachedSample::CachedSample`, `Resource::SoundExists` |
+
+Naming and placement [C]: a stem resolves to `sounds/<stem>.ogg` first, then `mwsounds/<stem>.ogg`; no stem exists in both directories; variants are numbered suffixes grouped by `SAMPLEGROUP`; upper-case `mwsounds/` names work because Windows file look-up and the archive hash table are case-insensitive ([fmt-dat-archive](#fmt-dat-archive)).
+
+**WAV.** A RIFF/WAVE PCM reader (8/16-bit, mono/stereo, `fmt `/`data` chunks) exists (`SoundStreamDecoder::ReadWavHeader`, `ReadWavData`), selected by the reader's file extension, but `Resource::GetSoundStreamDecoder` always appends `.ogg`, so **WAV is unreachable** [C].
+
+**Verification.** `_work/scripts/X1b_ogg_survey.py` (re-run) over all 1 332 files: every file mono; 1 330 at 44 100 Hz and 2 at 22 050 Hz (one per directory); nominal bit-rates `sounds/` 64 kbps ×862, 128 ×89, 32/60/80 ×1 each; `mwsounds/` 128 ×369, 96 ×8, 40 ×1; no blanks, no non-Ogg, no unreadable headers, no name in both directories [C]. Encoder/decoder binaries in tree: `tools/oggenc.exe`, `tools/oggdec.exe` (not read).
+
+**Minimal valid example.** A mono 44 100 Hz Ogg Vorbis I stream saved as `data/mwsounds/sample_ping1.ogg`, referenced from `sounds.txt` as `SOUNDNAME sample_ping1`.
+
+**Discrepancies.** `code/sound/sample_cache.cpp` comment "Largest song takes 13 MB" — the largest shipped track decodes to 29.0 MiB (the whole PCM buffer is allocated on open) [C] ([27](27_audio_engine.md)).

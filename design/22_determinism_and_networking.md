@@ -1711,3 +1711,70 @@ Camera state is read by 73 `.cpp` files (calls to `m_camera->GetPos/GetFront/Get
 | `prediction` | 13 | 2 | 0 | 1 | 10 | 0 |
 | `raw-sqrt` | 3 | 0 | 0 | 1 | 2 | 0 |
 
+### 14.12 Static/global simulation state and its reset points
+
+**Reset at every level load** (`Location::Init`) [C] `code/location.cpp:Location::Init`, `Location::~Location`, `Location::Empty`, `code/main.cpp:DoEnterLocation`, `code/unit.cpp:Unit::GetFormationOffset`: `GlobalWorld::s_nextUniqueBuildingId`, `Crate::s_crates`, `Crate::s_spaceShipUsed`, `AIObjective::s_objectivesInitialised`, `Armour::s_armourObjectives`, `Engineer::s_buildingIds`, `Engineer::s_researchIds`, `SpawnPopulationLock::Reset()`, `SoulDestroyer::s_numSoulDestroyers`, `DustBall::s_vortexTimer`, `DustBall::s_vortexPos`, `Unit::s_offsets` (freed in `Init` and `Empty`; lazily refilled with 100 `syncfrand(1.0)` on the first `Unit::GetFormationOffset` call — Resolved: P04 said it is never reset between games; the code deletes it), per team i = 0…5 `AI::s_ai[i]`, `SpawnPoint::s_numSpawnPoints[i]`, `PulseBomb::s_pulseBombs[i]`, `MultiwiniaZone::s_blitzkriegBaseZone[i]`, `AppSeedRandom(1)`; `DoEnterLocation`: `WorldObjectId::ResetUniqueIdSeed()`; `~Location`: `Entity::s_entityPopulation = 0`.
+
+**Not reset** (survive into the next match of the same process):
+
+| Static | Read by sim? | Hazard | Ref |
+|---|---|---|---|
+| `Armour::SetDirectOrders` function-static `lastOrdersSet` (game time of the last toggle by **any** armour of **any** team) | yes: NEXTWEAPON/PREVWEAPON on a selected armour toggles loading only if `GetNetworkTime() > lastOrdersSet + 0.3` | game time restarts at 0 each match, so a peer that toggled late in a previous match ignores every toggle until the new match's clock passes that time, while a fresh peer applies them → **desync** for peers with different session histories; within a match one team's toggle blocks every other team's for 0.3 s | [C] `code/worldobject/armour.cpp:Armour::SetDirectOrders`; `ClientToServer::ProcessServerUpdates` (NEXTWEAPON/PREVWEAPON); `code/location_input.cpp` (sends NEXTWEAPON) |
+| File-static `s_numMultiwiniaZones` | yes (`Multiwinia::AdvanceTrunkPorts` reward choice: GunTurret vs AirStrike when `numZones >= (s_numMultiwiniaZones + 1)/2`; KOTH win test; a score term) | reset only by KOTH's per-second loop; Blitzkrieg's initialisation **adds** to it → its value depends on which games this process played before → **desync** for peers with different session histories | [C] `code/multiwinia.cpp` (`s_numMultiwiniaZones` definition and uses); [01](01_game_modes.md) |
+| `SpawnPoint::s_numSpawnPoints[6]` — the slot for team 5 (the array has `NUM_TEAMS + 1` = 7 entries, index 0 = neutral, index t + 1 = team t; `Location::Init` resets indices 0…5 only) | yes: `SpawnPoint::Advance` skips the 30-s activation delay when `s_numSpawnPoints[team + 1] == 1` ("first or last spawn point") | stale count for team 5 → different activation timing on a peer that played earlier matches where team 5 held spawn points [C code]; reachable only if team slot 5 ever owns spawn points (no shipped map has more than 4 player slots; slots 4–5 are the monster/Futurewinian teams) [I] → latent. Resolved: X3 listed `s_numSpawnPoints[i]` as fully reset; P06 was right that the team-5 slot is not | [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::Initialise`, `SpawnPoint::Advance`; `code/location.cpp:Location::Init` |
+| `MasterSpawnPoint::s_masterSpawnPointId` | cached building id (`GetBuilding` lookup each use) | overwritten when a master spawn point initialises; stale only if a map has none [I] | [C] `code/worldobject/spawnpoint.cpp` |
+| `Teleport::m_teleportMap` | yes | pruned only when units vanish | [C] P06 note 8 |
+| `ReceiverBuilding::GetSpiritProcessor` static id cache | [B:LEGACY] | — | [C] `code/worldobject/spiritreceiver.cpp` |
+| ControlTower render statics | render only | none | [C] P06 note 8 |
+| `Officer::SetNextMode/SetPreviousMode` statics | return early in Multiplayer | none in MW | [C] `code/worldobject/officer.cpp` |
+| `Location::UpdateTeam` static `unitMoved` (shared by all teams) | only gates the local cursor marker | none | [C] `code/location.cpp:Location::UpdateTeam` |
+| `Darwinian::SearchForThreats` static `lastAttackHorn`, `Multiwinia::AdvanceGracePeriod` statics | sound / presentation only | none | [C] |
+| `ClientToServer::KeepAlive` static `lastKeepAlive` | network timing | none | [C] |
+| Synced RNG state | re-seeded per session (§14.3) | none | [C] |
+| `g_app->m_difficultyLevel` | yes | L13 | [C] |
+
+### 14.13 Inputs that must match but are never verified — security and integrity gaps
+
+| Gap | Verification in code | Consequence | Ref |
+|---|---|---|---|
+| **Command sender owns the target team** | none — the relay filter only rejects TEAMID 255 from registered clients (§5.4) | any client can issue orders, run tasks, terminate entities, promote/demote, toggle ready or change game options for any team (the UI only offers host options to the host) | [C] `Server::Advance` |
+| **Data files** (`data/stats.txt`, level files, shapes used for hit tests, `data/game.txt` options) | none: no CRC/hash exchange; the map is chosen by **file-name string** (`GAMEOPTION_MAPNAME`); `mapcrc.h` ids serve only map lists, browser "missing map" filtering and demo permissions | modified or mismatched data desyncs silently (only detected if it changes the synced draw count) | [C] `ClientToServer::ProcessServerUpdates` (SETGAMEOPTIONSTRING), `code/level_file.cpp:LevelFile::CalculeCRC` callers (`code/UI/MapData.cpp`, `code/main.cpp:DoEnterLocation`) |
+| **Executable version** | only the **client-side** server browser filters on `GAMEVERSION == APP_VERSION` (or a metaserver PROTOCOLMATCH); the server accepts any CLIENT_JOIN and stores the joiner's version nowhere; `APP_VERSION` is `"dev"` in this tree for every build | mixed builds (GL vs D3D, debug vs release, PC vs Mac with the same version string) can join each other and desync (§14.8.4, §14.2) | [C] `code/UI/GameMenuWindow.cpp`, `Server::Advance`, `code/lib/universal_include.h` |
+| Simulation-relevant preferences | `m_difficultyLevel` (L13); other prefs read inside simulation code are cosmetic as implemented: `RenderBuildingDetail` (tree fire particle count only), `RenderTreeDetail` (leaf alpha only; `Tree::SetDetail` asserts 1), `RenderEntityDetail` (read by `Virii::RecordHistoryPosition` but unused — tail length is the constant 175), `DarwinianScaleFactor` (render/picking), `AutomaticCamera` (`Task::TargetSquad` camera only), `SoundMemoryUsage` (sound) | L13 desync; others none | [C] `code/worldobject/tree.cpp`, `code/worldobject/virii.cpp:Virii::RecordHistoryPosition`, `code/taskmanager.cpp:Task::TargetSquad` |
+| FPU state | per-thread `_PC_53` (§14.8.4) | D3D9 device creation silently changes it on the D3D build | §14.8.4 |
+| Password | sent in **clear text** in CLIENT_JOIN; compared exactly | sniffable | [C] §8.8 |
+| Host key | the host advertises its **full plaintext authentication key** to the metaserver and LAN | key theft by anyone on the LAN or with metaserver access [I] | [C] §12.3 |
+| Matchmaker input | any unrecognised `"match"` command ⇒ `AppAbort` | a single crafted UDP packet to a listener port crashes the game | [C] §12.2 |
+| Datagram size | > 1500 bytes dropped on receive | stall (§3) | [C]/[I] |
+| Message parsing | `Directory::Read` bounds field counts and string lengths but not subdirectory counts (the check re-tests the field count), and recursion depth is unbounded | malformed nested packets can exhaust memory/stack [I] | [C] `contrib/systemiv/lib/tosser/directory.cpp:Directory::Read` |
+| Sync-error identity | NETSYNCERROR carries an array index, not a client id | after a client leaves, the wrong client may be blamed/cleared | [C] §9.3 |
+| Key check algorithm | stripped from this release (`Authentication_SimpleKeyCheck` checks length only) | — | [C] §12.5 |
+
+### 14.14 Latent: the Assault multi-round level reset is applied at a peer-dependent point
+
+`Multiwinia::AdvanceAssault` (slice 8) sets `m_resetLevel = true` at round end; the reload itself (`Multiwinia::ResetLocation`: delete + `new Location` + `Init`, which draws synced RNG, and `g_gameTimer.Reset()`) runs from `LocationGameLoop` **after** `AdvanceAndCatchUp` returns. Between the flag and the reset each peer keeps advancing the old location for however many slices its pacing allows (`GetNumSlicesToAdvance`, catch-up loop), consuming synced draws, so the RNG position at the new `Location::Init` differs per peer [C code; I consequence]. Unreachable in the shipped game because `m_assaultSingleRound` is always true (no UI sets the option; [01](01_game_modes.md)). A re-implementation must apply such resets as a sequenced/simulated event at a fixed tick [C] `code/multiwinia.cpp:Multiwinia::AdvanceAssault`, `Multiwinia::ResetLocation`; `code/main.cpp:LocationGameLoop`.
+
+### 14.15 Further per-subsystem determinism notes
+
+| # | Note | Evidence | Tag |
+|---|---|---|---|
+| N1 | Game-speed blending is an exponential approach evaluated per tick (`speed += (target − speed) × rate`, snap within 0.01) with a duration counter decremented by 0.1 per tick — a port must keep the per-tick formula, not a frame-based one | `code/gametimer.cpp:GameTimer::Tick` | [C] |
+| N2 | `Multiwinia::Advance()` runs at slice 8 even when paused (outside the `!GamePaused()` check) — it drives the grace-period countdown and the un-pause | `ProcessAllServerLetters` | [C] |
+| N3 | `SliceDArray` partitioning uses array **capacity** and `int(Size()/10.0f)` (float division); slot reuse is LIFO — creation/deletion order fully determines which slot (and thus which slice and tick) a new object is advanced in | `code/lib/slice_darray.cpp`, `contrib/systemiv/lib/tosser/fast_darray.cpp` | [C] |
+| N4 | `Location::Bang` damage falloff `(_range*2.0 - d) / _range*2.0` (operator precedence makes it `((2r − d)/r)·2`) — a gameplay constant to reproduce exactly | `code/location.cpp:Location::Bang` | [C] |
+| N5 | Real time used only to decide *how many* slices run per frame (`GetNumSlicesToAdvance`, `AdvanceAndCatchUp`), UI throttles (`SetCurrentMessage`, `Team::m_lastOrdersSet`) — none affect simulation results | various | [C] |
+| N6 | Render extrapolation reads simulation state but never writes it (`g_predictionTime`) | `code/team.cpp`, `code/unit.cpp`, `code/location.cpp` render functions | [C] |
+| N7 | Formation volley uses `fmodf(float(gameTime × 10 + idx), size/4)` — single precision, compiler/FPU-mode sensitive (§14.8.3) | `Darwinian::AdvanceCombat` | [C] |
+| N8 | `m_threatRange` exponential relaxation, spirit hover random walk, slope factors — double accumulations that depend on the `iv_*` wrappers | P03 | [C] |
+| N9 | Mixed clocks: Assault `m_defendedAll` compares wall clock with game time (achievement only); rocket status panel and blink effects use the wall clock (render only); `Nuke::RenderGroundMarker`, Harvester/Engineer render paths use `GetHighResTime()`/`g_gameTime` (render only); `GetCrateOffset` uses `g_gameTime` (particles only) | P02 D6, P04 note 7, P03 | [C] |
+| N10 | Float → int truncations in scoring (`m_score = fuel; += passengers; += height`), integer divisions in handicap and population caps — rounding must be specified explicitly | P02 D8 | [C] |
+| N11 | `SERVER_ADVANCE_PERIOD` scales with game speed (speed crates, end-of-game slow-down) while the grace decrement is a literal 0.1 — "real tick" and "game dt" are distinct concepts | P02 D9 | [C] |
+| N12 | `m_rocketsFound` uninitialised but only read in dead code; `m_defendedAll`, `m_timeRemaining` uninitialised in the constructor until first use | `code/multiwinia.cpp` constructor | [C] |
+| N13 | Spawn-link pointer sharing in multi-path graphs would double-advance a spirit deterministically; shipped graphs are trees | P06 note 11 | [C]/[I] |
+| N14 | `GunTurret::Render` uses `acosf` (render only); `RadarDish::Advance` uses single-precision `fabsf/signf` (precision loss but deterministic for one binary) | P06 note 6 | [C] |
+| N15 | Byte stats and the SpaceShip speed overflow (§14.8.1); store stats as floats in a new engine | P05 | [C]/[I] |
+| N16 | Officer orders sending Darwinians into radar dishes was a fixed sync error (release notes); current code path `SearchForOfficers` copies `m_ordersBuildingId`; no residual issue identified | `docs/multiwinia-changes.txt` | [I] |
+| N17 | Sound must not affect the simulation and does not; audio uses the shared G6 on the main thread, so it perturbs any other G6 consumer (one of the concurrent users in §14.7) | [27](27_audio_engine.md) | [C] |
+| N18 | Gesture features use CRT `atan` and `iv_sqrt`/`iv_atan`; irrelevant to sync (local UI) | `code/gesture.cpp:Gesture::CalculateFeatureSet` | [C] |
+| N19 | Terrain recommendation: treat terrain generation as a pure function `bytes → heights`, ship a content hash in the lobby handshake, prefer baked height maps (or a fixed-point generator) over CRT transcendental functions | P11 D.11 | [I] |
+
