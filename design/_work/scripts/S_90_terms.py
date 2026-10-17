@@ -226,6 +226,11 @@ def resolve_link(spec, docs, heads_cache, design_dir):
     raise ValueError(f"heading {sec!r} not found in {fname}")
 
 
+def esc(cell):
+    """Escape table pipes (GFM honours \\| inside code spans in tables)."""
+    return cell.replace("|", "\\|")
+
+
 def sort_key(term):
     t = re.sub(r"^[^A-Za-z0-9]+", "", strip_md(term)).lower()
     return t
@@ -275,7 +280,8 @@ def render(design_dir, terms_tsv, out_md):
             out.write(f"### {l}\n\n")
             out.write("| Term | Kind | Definition | Primary document | IP? |\n|---|---|---|---|---|\n")
             for key, term, kind, definition, link, ip in groups[l]:
-                out.write(f"| {term} | {kind} | {definition} | {link} | {ip} |\n")
+                cells = [esc(c) for c in (term, kind, definition)] + [link, esc(ip)]
+                out.write("| " + " | ".join(cells) + " |\n")
             out.write("\n")
     kinds = Counter(r[2] for r in rows)
     print(f"rendered {len(rows)} terms; " + ", ".join(f"{k}={v}" for k, v in sorted(kinds.items())))

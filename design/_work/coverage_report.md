@@ -6,7 +6,7 @@ Manifest entries: 6189; live source files: 776; data files: 2332
 
 Distinct manifest files cited: 3764; directories cited: 78
 
-Evidence tags in documents: {'[C]': 6319, '[I]': 776, '[U]': 189}
+Evidence tags in documents: {'[C]': 6582, '[I]': 830, '[U]': 207}
 
 World-object classes found in code/worldobject/*.h: 159
 

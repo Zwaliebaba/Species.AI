@@ -1,0 +1,323 @@
+# id	impact	status	note	merge_into
+00-U1				09-U1
+00-U2				01-U2
+00-U3				05-U5
+00-U4				05-U6
+00-U5				01-U10
+00-U6				01-U11
+00-U7				22-U1
+00-U8				25-U1
+00-U9				09-U4
+00-U10				10-U12
+01-U1	L — UI: which TimeLimit a map pick produces	Open		
+01-U2	H — gameplay pacing: every per-second rule, timer and balance value was tuned under the 1.1 s "second"	Open	Design decision, not a code question: keep 11-tick periods (fidelity) or re-tune with integer 10-tick seconds. Arithmetic of the `x −= 0.1` timers is settled (04-U12, Resolved).	
+01-U3				03-U13
+01-U4				09-U1
+01-U5	L — robustness: out-of-bounds read only feeds a stub	Open	Do not port; bound-check team indices.	
+01-U6	M — Assault rules: last-second capture flips the result	Open		
+01-U7	M — Rocket Riot rules: whether flight is a safe state	Open		
+01-U8	L — scoring cadence: 10- vs 11-tick recount mix	Open		03-U15
+01-U9	L — Domination co-op win test	Open		
+01-U10	M — mode rules: role of the two special teams in win checks	Open		
+01-U11	L — Assault mode: multi-round variant unreachable in this tree	Open	Unreachable here ([C] `m_assaultSingleRound` fixed true); its determinism hazard is closed by 20-U4.	
+01-U12	L — Sudden death balance	Open		
+02-U1	M — gameplay: SpaceShip/Meteor speed depends on C++ UB	Open	New game: choose the value explicitly (500 vs 244).	
+02-U2				04-U4
+02-U3	H — determinism (was a suspected live desync)	Resolved	Not a desync: `EscapeRocket::IsSpectacle` returns false whenever `App::Multiplayer()` (always in MW), so the wall-clock facing path never runs; [22](22_determinism_and_networking.md) §14.11 L9 (coordinator-verified).	
+02-U4				04-U4
+02-U5	L — gameplay: abductor wander area	Resolved	Mechanism confirmed: `SFRAND(r)` ∈ [−r/2, r/2] and `SurfaceMap2D::GetValue` maps any out-of-range (negative) index to column/row 0 (sea), so only targets in [0, X/2) × [0, Z/2) are accepted [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue`, `code/worldobject/spaceship.cpp:SpaceShip::FindNewTarget`; the negative-double → `unsigned short` conversion is the MSVC behaviour assumed in 23-U4 [I]. Every shipped map has accepted targets (`_work/scripts/S_41_spaceship_land_check.py`).	
+02-U6	L — gameplay: squad secondary weapon	Resolved	Grenade only [C]: `InsertionSquad::InsertionSquad` defaults `m_weaponType` to `TypeGrenade`; the only changers are `InsertionSquad::CycleSecondary` (called solely inside the `IsSinglePlayer()` branch of `code/location.cpp:Location::UpdateTeam`) and `SetWeaponType` from level-file InstantUnits (no `mp_*` level declares squad instant units; grep of `data/levels/mp_*`); `ClientToServer::RequestNextWeapon` sends nothing useful ([06](06_player_control_and_input.md)). Verified by this register.	
+02-U7	L — gameplay: research levels in MP	Resolved	The fixed MP research table wins [C]: lobby `SETGAMEOPTION` research commands call `Multiwinia::SetGameResearch` before the match, then `code/location.cpp:Location::Init` (Multiplayer branch) overwrites every level (all 3; Squad 1; Laser, Grenade, Rocket, AirStrike 2; Darwinian 4). Verified by this register.	
+02-U8				21-U4
+02-U9				05-U3
+02-U10				05-U10
+02-U11				04-U7
+02-U12	M — robustness: unbounded re-roll loops (`Crate::RunSpaceShip` needs height ≥ 10, `SpaceShip::FindNewTarget` ≥ 30; `Crate::RunNuke` part → 04-U1)	Resolved	All 57 `mp_*` maps terminate [I] (terrain port, not bit-exact; margins large): `_work/scripts/S_41_spaceship_land_check.py` → `_work/drafts/S_41_spaceship_land_check.csv`; lowest acceptance probability per draw 0.76 % for the abductor target and 6.3 % for the crate (`mp_assault_2p_3`), i.e. ≈ 132 and ≈ 16 expected re-rolls. New game: bound every such loop and pre-compute candidate cells.	
+02-U13				07-U7
+02-U14				21-U6
+02-U15	M — gameplay: transport cannot unload at sea	Open		
+02-U16	M — gameplay: nuke warheads do not arrive together	Open	Run `_work/scripts/P04_nuke_sim.py` on real terrain or decide intended timing in the new design.	
+02-U17				03-U3
+02-U18				26-U5
+03-U1	H — economy: what counts against the population cap	Resolved	Composition of `Team::m_others` settled in [05](05_economy_and_population.md) §4.1 [C]; the CPU AI entity also counts (coordinator-verified, [00](00_overview.md) and [07](07_ai.md) §2).	
+03-U2	M — simulation order	Resolved	Yes — every building advances exactly once per 0.1 s tick ([05](05_economy_and_population.md) §8.1, [20](20_architecture.md) §10.3) [C].	
+03-U3	L — reachability of ControlTower/Incubator/sandbox maps	Resolved	Not selectable: `GameMenu::AddMap` discards `GameTypes none` maps and the retail exclusion list drops `levels/mp_sandbox*`, `mp_benchmark_*`, `mp_assault_stress` ([08](08_levels_and_level_design.md) §2.2, §3.4) [C]. ControlTower, Incubator and Research Items are therefore unreachable in shipped play.	
+03-U4				02-U7
+03-U5	L — gameplay: subversion turret shots	Resolved	The Subversion crate task tags Darwinians (`Crate::RunSubversion`, task `TypeSubversion`, life 30 s, ends when no tagged Darwinian remains) ([06](06_player_control_and_input.md) §3 task table, [04](04_crates_powerups_and_weapons.md)) [C].	
+03-U6	L — gameplay: turret threat avoidance	Resolved	`EffectGunTurretTarget` threats are considered only in single-player; in MP Darwinians ignore them ([02](02_units_and_entities.md) docs-vs-code table, `Darwinian::SearchForThreats`) [C].	
+03-U7				29-U6
+03-U8	L — legacy coupling: Darwinia global-building records	Open	Inert for the new game (no campaign persistence).	
+03-U9	M — Assault map fidelity: invisible obstacles	Open		
+03-U10				04-U5
+03-U11				05-U6
+03-U12	L — collision fidelity: tree crown sphere ignores rotation	Open	New game stores tree collision as data (26-I1).	
+03-U13	M — Rocket Riot balance: how fast attackers kill a rocket	Open		
+03-U14	L — audio: per-tick ChangeTeam spam	Resolved	Silent [C data]: `data/sounds.txt` binds `EVENT ChangeTeam` only under `BUILDING MultiwiniaZone` and `BUILDING Statue`; SolarPanel and generic buildings have no block (lookup is per object type [I], [10](10_audio_design.md)). Verified by this register.	
+03-U15				01-U8
+03-U16	L — Assault design intent	Open		
+03-U17	L — legacy flag on master spawn points	Open		
+04-U1	H — robustness: Nuke re-roll loop hangs on a map without sea	Resolved	No shipped map lacks sea (coordinator, `_work/scripts/C_nuke_sea_check.py`, min 26.2 % sea on `mp_assault_3p_3`) [I, large margin]; [23](23_terrain_and_landscape.md) confirms. Hazard remains for user maps → bound the loop.	
+04-U2	L — crate placement: weighted drops ignore terrain	Resolved	On every shipped map the tested edge height (z ∈ {0, 1}) is negative and never 0, so the first candidate (random building of the drop team ± 100) is always accepted — weighted crates can land in water or off-map [I] (`_work/scripts/S_41_crate_edge_check.py` → `_work/drafts/S_41_crate_edge_check.csv`, min −30, max −6.93). Mechanism [C] `code/location.cpp:Location::CreateRandomCrate`.	
+04-U3	L — crate placement: corner start position	Resolved	Height at (0, 0) is −10 (outside height) on all 57 `mp_*` maps [I] (`_work/drafts/S_41_spaceship_land_check.csv`, column h00) → loops never accept the start position.	
+04-U4	M — design intent of hostile crate outcomes (owner of Eggs creatures, no team filter on Meteor/Plague/Nuke, bad outcomes ignore `InvalidCrates`)	Open	Decide per outcome in the new design; behaviour is [C] in [04](04_crates_powerups_and_weapons.md).	
+04-U5	M — gameplay: team ids outside the playing set	Open	Narrowed: the Randomiser part is answered — the host fills every empty slot below the map's `NumPlayers` with a CPU team before START_GAME ([22](22_determinism_and_networking.md) §8.5, [01](01_game_modes.md)) [C], so `syncrand() % NumPlayers` always names a playing (human or CPU) team. Still open: magical-forest souls pick a uniform team 0–3 regardless of `NumPlayers` ([05](05_economy_and_population.md) docs-vs-code table), so on 2- and 3-player maps souls of unused team ids exist.	
+04-U6	M — AI: who drives special-team task managers	Resolved	Monster (4) and Futurewinian (5) teams always receive an AI entity ([07](07_ai.md) §2) [C].	
+04-U7	L — weapon timing on real terrain (flat-ground simulations)	Open		
+04-U8				20-U6
+04-U9				03-U3
+04-U10	L — crate pacing in the grace period	Resolved	Yes [C]: `ClientToServer::AdvanceAndCatchUp` runs `Location::Advance` for every slice unless `App::GamePaused()`; `Location::AdvanceCrates` (slice 8, Multiplayer) is not gated by `Multiwinia::GameInGracePeriod` (`code/network/clienttoserver.cpp`, `code/location.cpp:Location::Advance`). Verified by this register.	
+04-U11	L — weapon ranges are derived arithmetic	Open	Adopt the formulas as the new spec or instrument a build.	
+04-U12	M — timer arithmetic	Resolved	IEEE-754 replay: 1.0 → 11 ticks, 2.5 → 25, 5.0 → 51, 15.0 → 151, 45.0 → 450, 60.0 → 600; float life timers 30 → 300, 60 → 601 ([04](04_crates_powerups_and_weapons.md)) [C]. The design choice remains 01-U2.	
+05-U1	H — capture rules: which Darwinian occupies a port	Resolved	Exact [C]: `Building::EvaluatePorts` calls `EntityGrid::GetNeighbours(…, 5.0, …)`, which tests `dx² + dz² < range²` for every candidate (only the count/presence helpers are cell-approximate) — `code/entity_grid.cpp:EntityGrid::GetNeighbours`. Verified by this register.	
+05-U2	L — spawn network latency per map	Open		
+05-U3	M — economy leak: spirits stuck in Harvested/Collected	Open		02-U9
+05-U4				22-U17
+05-U5	M — balance: handicap intent	Open		
+05-U6	M — balance: per-team population cap divisor and two uncapped co-op maps	Open		
+05-U7	L — balance: doubled Blitzkrieg waves on three maps	Open		
+05-U8				21-U6
+05-U9	M — control: un-manning a captured point	Open		
+05-U10	L — static state between matches	Resolved	`Team::~Team` deletes `m_others` and `~Virii` decrements `s_viriiPopulation`, and every Virii is created through `Entity::NewEntity` + `SpawnEntities` [I] ([05](05_economy_and_population.md)); moot for the new game (all sim state inside a per-match object, [22](22_determinism_and_networking.md) D9).	
+05-U11	L — Spawn Mania exact count	Open		
+05-U12	L — Harvester throughput estimate	Open		
+06-U1	L — input: XInput dead zones	Open	Use platform-recommended values in the new game.	
+06-U2	L — input: trigger byte overflow	Open		
+06-U3	L — input: binding description strings	Open		
+06-U4				21-U4
+06-U5	H — determinism: camera state read by simulation code	Resolved	Only two simulation-side camera uses exist — L1 (squad direct control, live) and L18 (`ScriptTrigger`, blocked) — by the scripted classification of 1 941 local-state references ([22](22_determinism_and_networking.md) §14.11, `_work/drafts/X3_local_state_refs.csv`) [C grep + spot checks].	
+06-U6	L — input edge loss across loops	Open		
+06-U7				22-U8
+06-U8				02-U6
+06-U9	L — robustness: order with zero units (NaN start)	Open		
+06-U10	L — camera tracking edge case	Open		
+06-U11	L — documentation classification of legacy windows	Open		
+06-U12	L — missing icon	Resolved	`icons/compass_empty.bmp` can never be requested (`Vector2::Normalise` maps a zero vector to (0, 1)) ([25](25_textures_and_assets.md)) [C].	
+07-U1	M — AI quality: CPU teams lose crate rewards to orphaned Officer tasks	Open		
+07-U2	M — AI: stale task id may fire a power-up at own units	Open		
+07-U3				31-U14
+07-U4				04-U1
+07-U5	L — AI: fence/wall-blind initial graph	Open		
+07-U6	M — combat: does the officer facing steer formation fire	Open		
+07-U7	M — AI/combat: units locking onto the immortal AI entity at (20, 0, 20)	Open		02-U13
+07-U8	L — AI: NaN priorities on isolated nodes	Open		
+07-U9	M — retribution frequency	Resolved	Yes: `RetributionMode` is a check box on the host's Advanced Options page for Domination, KOTH, CTS and Blitzkrieg ([09](09_meta_systems.md) §4.2) [C]; absent (−1) counts as on ([01](01_game_modes.md) §2.9).	
+07-U10	M — Assault AI: defence markers falling back at once	Open		
+07-U11	M — robustness: `AI::RunForest` NULL dereference	Resolved	Not reachable as described: every special registers in `Begin` and unregisters in its destructor (`code/team.cpp:Team::RegisterSpecial`/`UnRegisterSpecial`; `Officer`, `Armour`, `Harvester`, `Engineer`, `Tank`, `Shaman` destructors) [C], so `m_specials` names only existing (possibly dead-flagged) entities and `GetEntity` cannot return NULL while that pairing holds [I]. Verified by this register.	
+07-U12	L — AI: one-tick ordering	Open		
+08-U1	L — achievements: level_enum.txt in retail	Open		29-U1
+08-U2				32-U3
+08-U3	L — packaging: missing amBX inclusion list	Open		
+08-U4	L — menu ordering ties	Open		
+08-U5	L — PDLC maps	Open	Moot for the new game.	
+08-U6	L — demo map list from metaserver	Open		
+08-U7	L — art pipeline: thumbnail tool	Open		
+08-U8	M — map pipeline: save/load round trip changes terrain and CRC	Open		
+08-U9	L — editor robustness	Open		
+08-U10	L — editor robustness (zlib)	Open		
+08-U11	L — beta packaging	Open		
+08-U12	L — level-design intent	Open		
+08-U13	L — robustness: CRC buffer overflow on >100 000-byte levels	Open	Avoid in the new design (hash streamed data).	
+09-U1	L — achievements: retail layer and persistence	Open	New game uses platform achievement services; the 12 rules are in [01](01_game_modes.md).	
+09-U2	L — packaging: which key file shipped	Open	Irrelevant once platform entitlements replace keys.	
+09-U3				01-U1
+09-U4	L — first-run defaults in packaged installs	Open		
+09-U5	L — server browser filter vs metaserver keys	Open		
+09-U6	L — UI: menu transition look	Resolved	Slide, 1.0 s, `fraction = 3.6 f`, slide `fraction⁶ × W`, alpha `1 − 0.2 × fraction` ([28](28_ui_framework.md) §6.7 and §14, `code/renderer.cpp:Renderer::RenderMenuTransition`) [C]; the captured frame content remains 28-U2.	
+09-U7	L — metaserver leaderboard data	Open		
+09-U8	L — unused art	Resolved	Unused: no string, rule or data reference ([25](25_textures_and_assets.md) catalogue row) [C].	
+09-U9	L — legacy credits rendering	Open		30-U8
+09-U10	L — render detail branches	Open		
+09-U11				22-U1
+09-U12				22-U2
+09-U13	L — LAN manual server entries	Open		
+09-U14				28-U3
+09-U15				30-U1
+09-U16	L — robustness: uninitialised flag	Open		
+09-U17	L — demo gating by the service	Open		
+10-U1	M — legal/localisation: voice content	Open		25-U9
+10-U2	L — data parity: retail sound archives	Open		25-U8
+10-U3	L — legal: sample provenance	Open	All samples are treated as IP regardless (§5).	
+10-U4	M — Assault audio: never-stopped pulse-bomb loop	Open		
+10-U5				27-U8
+10-U6				27-U5
+10-U7				27-U1
+10-U8	L — presentation: victory jumps	Resolved	No shipped map triggers victory jumps: `GenerateAutomaticObjectives` adds `NeverTrue` to an empty objective list and `BeginVictoryDance` needs every objective true ([08](08_levels_and_level_design.md) §2) [C].	
+10-U9	L — audio bug detail (moot)	Open	Moot: the event name never matches.	
+10-U10	L — audio: team 255 stings	Open		
+10-U11				27-U14
+10-U12	L — audio design: lobby music	Open	Moot for the new game.	
+10-U13				27-U10
+10-U14	L — render-rate dependence of flashes and timer ticks	Open		
+10-U15	L — audio intent during loading	Open		
+10-U16	L — audio character of game-over effect	Open		
+20-U1	M — pacing: host frame rate bounds the tick rate	Open		24-U7
+20-U2	M — pacing: slow host slows the session	Open		
+20-U3	L — pacing model assumptions	Open		
+20-U4	M — determinism: multi-round Assault reset	Resolved	Unreachable in the shipped game: no UI sets multiple rounds, `m_assaultSingleRound` is always true ([01](01_game_modes.md) 01-U11) [C]; hazard and fix in [22](22_determinism_and_networking.md) §14.14 / D15.	
+20-U5				22-U17
+20-U6	M — robustness/determinism: GameTimer residue across matches (speed → −∞/NaN)	Open	Also answers 04-U8: a pending speed request is not reset between matches. New game: reset all timer state per match.	04-U8
+20-U7				27-U13
+20-U8	L — shutdown race	Open		
+20-U9				22-U10
+20-U10	L — calling convention	Open		
+20-U11	L — OS audio threads	Open		
+20-U12	L — dead file-system object	Resolved	Never instantiated: no `new FileSystem` in `code/` ([31](31_platform_build_and_tools.md) §8) [C grep].	
+20-U13	L — static teleport map	Open	Narrowed: entries are pruned when the source unit no longer exists ([03](03_buildings_and_world_objects.md) Teleport, [22](22_determinism_and_networking.md) §14.12) [C]; no per-match clear.	
+20-U14	L — thread safety of texture lookups	Open		
+21-U1	M — determinism: tree hit-sphere race on the shared LCG	Open		22-U9
+21-U2	M — gameplay fidelity: grid-cache staleness intended?	Open		22-U14
+21-U3	L — robustness: far-edge obstruction cell	Open		
+21-U4	M — determinism: route ids differ between peers	Open	[22](22_determinism_and_networking.md) §14.11 L6 rates it low (ids never transmitted or hashed); confirm no equality/ordering use.	02-U8;06-U4
+21-U5				22-U8
+21-U6	M — robustness: spirit handles without generation check	Open		02-U14;05-U8
+21-U7	M — robustness: selection by raw slot index	Open		
+21-U8	L — robustness: unbounded push loop	Open		
+21-U9	M — balance: tuning against approximate counts	Open		
+21-U10	L — memory safety: pointer held across pool growth	Open		
+21-U11	L — dead airborne entities counted	Open		
+22-U1	M — services: metaserver/matchmaker server side (listing fields, demo rules, NAT relay, key validation)	Open	Only the client half exists in the tree; the new game uses platform or own services ([22](22_determinism_and_networking.md) N10).	00-U7;09-U11
+22-U2	L — key check algorithm (stubbed)	Open	Irrelevant for the new game (platform entitlements).	09-U12
+22-U3	H — network: datagrams > 1500 bytes stall the session	Open	New game: MTU budget and fragmentation ([22](22_determinism_and_networking.md) N2).	29-U12
+22-U4	L — intent of dead pacing branch	Open		
+22-U5	M — measured latency	Open		
+22-U6	M — design: join in progress intended	Open		
+22-U7	M — determinism: x87 CRT transcendental results across CPUs	Open		
+22-U8	H — determinism: frequency of the live L1 squad free-look desync	Open	Fixed by design in the new game (sim cannot read camera/input, [22](22_determinism_and_networking.md) D7); frequency only matters for judging the original.	06-U7;21-U5
+22-U9				21-U1
+22-U10	L — build flags assumed (`/fp:precise`, x87, OpenMP off)	Open		20-U9
+22-U11	L — `atof` rounding	Open		
+22-U12	M — terrain bit-exactness: CRT `pow/exp/log`	Open	Matters only if original maps are imported bit-exactly.	23-U2
+22-U13	L — PC–Mac lockstep	Open		23-U5;31-U15
+22-U14				21-U2
+22-U15	L — D3D clients in multiplayer	Open	GL/D3D mixing is a desync risk by FP mode (31-I1); the D3D build probably does not compile (24-U1).	31-I1
+22-U16				09-U2
+22-U17	L — latent stale spawn count for team 5	Open		05-U4;20-U5
+22-U18	L — rejoin into a full match	Open		
+22-U19	M — host quit mid-match	Open	New game: host migration or dedicated relay ([22](22_determinism_and_networking.md) N4).	
+22-U20	M — replay from command history	Open		29-U15;30-U3
+22-U21	M — late-join cost	Open		30-U7
+23-U1	H — terrain: the Python port is the reference for 69 landscapes	Open	Needed only if shipped terrains are reproduced; otherwise the generator spec stands.	
+23-U2				22-U12
+23-U3	L — cosmetic: terrain colours vary with AppRandom race	Open		
+23-U4	L — user maps: negative → unsigned short conversion	Open	Also underlies 02-U5.	
+23-U5				22-U13
+23-I1	M — determinism: x87 53-bit evaluation equals IEEE double	Open		
+23-I2				29-U14
+23-I3	L — terrain generator intent (roughness exponent)	Open		
+23-I4	L — terrain generator bias	Open		
+23-I5	L — edge wrap artefacts	Open		
+24-U1	L — D3D build compiles?	Open	Moot for the new DX12 renderer.	31-U1;31-U2
+24-U2	L — D3D water look	Open		
+24-U3	L — shader register allocation	Open		
+24-U4	L — D3D mip levels	Open		
+24-U5	L — D3D projection near/far intent	Open		
+24-U6				32-U2
+24-U7				20-U1
+24-U8	L — texture flags first requester	Resolved	`textures/clouds.bmp` and `textures/laser.bmp` are first loaded mip-mapped by the start-up preload ([25](25_textures_and_assets.md)) [C].	
+24-U9	L — Linux cursor transparency	Open		
+24-U10	L — flat-shade provoking vertex	Open		
+24-U11	L — Hangul atlas range	Open		
+24-U12	L — D3D deform target	Open		
+24-U13	L — D3D x87 precision	Open		31-U3
+24-U14	L — light lag	Open		
+24-U15	L — grid overlay intent	Open		
+25-U1	M — data parity: contents of `patch.dat` / `branding.dat` (may override shipped data)	Open		00-U8;29-U9;31-U7
+25-U2	L — fonts per SKU	Open		
+25-U3	L — run-time-only assets	Open		
+25-U4	L — period GL driver behaviour	Open		
+25-U5	M — robustness: heap overrun on accurate hit test of live CTS mesh	Open		
+25-U6	L — first-frame texture processing	Open		
+25-U7				29-U5
+25-U8				10-U2
+25-U9				10-U1
+25-U10				29-U4
+26-U1	L — what each mode animation shows	Open		
+26-U2	M — determinism: Christmas mode per-client date	Open		
+26-U3				32-U2
+26-U4				29-U8
+26-U5	L — cosmetic: spider foot positions not read by sim	Open		02-U18;26-I4
+26-U6	L — D3D VFX look	Open		
+26-U7	L — render extrapolation semantics	Resolved	`g_predictionTime` semantics settled in [24](24_rendering.md) §2.4 and [20](20_architecture.md) §10.6 [C].	
+26-U8	L — bubble colours intent	Open		
+26-U9	L — DSP enabled for players?	Open		
+27-U1	L — DirectSound 3D panning/roll-off	Open		10-U7
+27-U2	M — audio: is music reachable in MW	Resolved	Never: every `TypeMusic` trigger is Darwinia script content or `USE_LOADERS` code, and all music is excluded from shipped archives ([10](10_audio_design.md) §6.4) [C].	
+27-U3	L — software mixer crash	Open		
+27-U4	L — software mixer restart silence	Open		
+27-U5	M — audio design: attached sounds hard-cut at emitter removal	Open		10-U6
+27-U6	L — DSP quality parameter	Open		
+27-U7	L — DSP assert	Open		
+27-U8	M — audio design: crowd sounds culled beyond ≈ 316 wu	Open		10-U5
+27-U9	L — start latency	Open		
+27-U10	L — pitch compression intent	Open		10-U13
+27-U11	L — DSP time constants	Open		
+27-U12	L — sample-name case	Resolved	Archive lookups are case-insensitive (names lower-cased when indexed) ([31](31_platform_build_and_tools.md), [29](29_data_formats_reference.md), [08](08_levels_and_level_design.md)) [C].	
+27-U13	L — thread race in software path	Open		20-U7
+27-U14	M — Rocket Riot audio: duplicate loops	Open		10-U11
+28-U1	L — ink text look	Open		
+28-U2	L — menu transition captured frame	Open		
+28-U3	M — localisation QA: partial ja/ko/pt files with no fallback	Open		09-U14;29-U3
+28-U4	L — IME input	Open		
+28-U5	H — security: server accepts option changes from any client	Resolved	The server never checks the sender of option, start or ready commands ([09](09_meta_systems.md) §4.4, [22](22_determinism_and_networking.md) §14.13) [C]; fix in [22](22_determinism_and_networking.md) N1.	
+28-U6	L — server list navigation bug	Open		
+28-U7	L — window update skip	Open		
+28-U8	L — stale screen size	Open		
+28-U9	M — business rules: demo players can host	Open		
+29-U1				08-U1
+29-U2				09-U4
+29-U3				28-U3
+29-U4	L — marker name lookup	Open		25-U10
+29-U5	L — archive tool version	Open		25-U7
+29-U6	L — robustness: missing token behaviour	Open	Immaterial for a re-implementation (validate every token).	03-U7;30-U4
+29-U7	L — crash tool provenance	Open		
+29-U8	L — panel animation tool	Open		26-U4
+29-U9				25-U1
+29-U10	L — mount name termination	Open		
+29-U11	M — localisation tooling: hang on unterminated `[`	Open		
+29-U12				22-U3
+29-U13	L — exporter sign convention	Open		
+29-U14	H — integrity: modified map desyncs silently	Resolved	Mechanism confirmed: no map CRC/hash is exchanged; the map is chosen by file name only ([22](22_determinism_and_networking.md) §14.13) [C]; whether the desync is detected depends on the sync byte (22 §9.1). New game: exchange asset hashes (D10).	23-I2;31-I2
+29-U15				22-U20
+30-U1	M — tutorial design: Tutorial 2 start depends on idle wandering	Open		09-U15
+30-U2	M — tutorial design: CPU must take spawn 83 first	Open		
+30-U3				22-U20
+30-U4				29-U6
+30-U5	L — tutorial: local team id	Resolved	Team ids are assigned as the first free slot (`Server::RegisterNewTeam`, [22](22_determinism_and_networking.md) §8.3) [C] and the local client requests its team before any CPU team [I] → team 0.	
+30-U6	L — inert loop	Resolved	`GlobalWorldGameLoop` sets `m_atMainMenu = true` and breaks on its first check ([20](20_architecture.md) §9.6) [C].	
+30-U7				22-U21
+30-U8				09-U9
+31-U1				24-U1
+31-U2				24-U1
+31-U3				24-U13
+31-U4				32-U1
+31-U5				09-U2
+31-U6	L — absent tools (auto-patcher)	Open		
+31-U7				25-U1
+31-U8				09-U4
+31-U9	L — SlashSort tool	Open		
+31-U10	L — Russian build patch	Open		
+31-U11	L — debug menu reachable	Resolved	No: the only call of `DebugKeyBindings::DebugMenu` is commented out and no binding exists ([32](32_debug_test_and_performance.md) §1) [C].	
+31-U12	L — linker map name	Open		
+31-U13	L — QPC across cores	Open		
+31-U14	H — evidence base: was the shipped binary built from this commit	Open	Every [B:FULL] claim assumes it; also covers the AI parity question 07-U3.	07-U3
+31-U15				22-U13
+32-U1	L — crash path on release assert	Open		31-U4
+32-U2	H — performance: no measured frame times, draw calls or population limits	Open	Decides the new game's population caps and render budgets.	24-U6;26-U3
+32-U3	L — benchmark SKUs	Open		08-U2
+32-U4	L — dxdiag capture	Open		
+32-U5	L — black-box stack walk	Open		
+32-U6	L — malformed format strings	Open		
+32-U7	L — testbed build	Open		
+32-U8	L — beta sync-tracking build	Open		
+32-I1	M — network safety of debug cheats	Open	New game: cheats only as host-validated commands.	
+32-I2	M — pacing: catch-up spiral on slow clients	Open		
+32-I3	L — debug research cheat	Open		
+26-I1	H — determinism: tree hit volume is a by-product of render display-list compilation	Open	Must become level data in the new game; related 21-U1, 03-U12.	
+26-I2	M — determinism: synced RNG consumed by cosmetic particles and purely visual sim objects	Open	New game: separate FxRng ([22](22_determinism_and_networking.md) D3).	
+26-I3	M — determinism: unsynced global RNG inside sim code (particle counts) shared with audio and tree generation	Open		
+26-I4				26-U5
+31-I1				22-U15
+31-I2				29-U14
+31-I3	L — crash reporting: worker-thread crashes bypass the reporter	Open		
+31-I4				09-U2
+31-I5				09-U4
