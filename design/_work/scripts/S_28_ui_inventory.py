@@ -21,6 +21,9 @@ STATUS = {
     "DEBUG":   ("[B:DEBUG]", "TARGET_DEBUG builds only"),
     "OTHER":   ("[B:DEAD]", "other product target / platform only"),
     "DEAD":    ("[B:DEAD]", "not compiled in any PC configuration"),
+    # Phase-5 fix: compiled only in TARGET_DEBUG but never instantiated in any build
+    # (GrabberWindow: the only creator, DebugKeyBindings::GrabberButton, has no caller - code/interface/debugmenu.cpp)
+    "DEBUGDEAD": ("[B:DEAD]", "compiled only in TARGET_DEBUG builds, never instantiated (no caller)"),
 }
 
 # file-level default status
@@ -43,7 +46,7 @@ FILE_STATUS = {
     "code/interface/filedialog.cpp": "EDUSE", "code/interface/filedialog.h": "EDUSE",
     "code/interface/gesture_window.cpp": "DEAD", "code/interface/gesture_window.h": "DEAD",
     "code/interface/globalworldeditor_window.cpp": "UNREACH", "code/interface/globalworldeditor_window.h": "UNREACH",
-    "code/interface/grabber_window.cpp": "DEBUG", "code/interface/grabber_window.h": "DEBUG",
+    "code/interface/grabber_window.cpp": "DEBUGDEAD", "code/interface/grabber_window.h": "DEBUGDEAD",
     "code/interface/helpandoptions_windows.cpp": "LIVE", "code/interface/helpandoptions_windows.h": "LIVE",
     "code/interface/input_field.h": "LIVE",
     "code/interface/instant_unit_window.cpp": "EDITOR", "code/interface/instant_unit_window.h": "EDITOR",
@@ -166,7 +169,7 @@ def main():
             chosen.append(r)
             seen.add(r["class"])
     ann = {"LIVE": None, "EDUSE": "tooluse", "UNREACH": "legacy", "EDITOR": "editor",
-           "DEBUG": "debug", "OTHER": "othertarget", "DEAD": "dead"}
+           "DEBUG": "debug", "OTHER": "othertarget", "DEAD": "dead", "DEBUGDEAD": "dead"}
     lines = ["classDiagram", "  direction LR"]
     externals = set()
     for r in chosen:

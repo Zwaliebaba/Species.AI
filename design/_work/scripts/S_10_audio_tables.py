@@ -38,6 +38,23 @@ VARNAMES = {
     '_event': 'Grenade/AirStrikeBomb Create/Bounce/Flash/Explode (ThrowableWeapon::TriggerSoundEvent)',
 }
 
+# Corrections to X2b row texts established while writing 10 (re-read in code/multiwinia.cpp:Multiwinia::Render):
+# the zero tick for a timed game is nested inside 'if (m_timeRemaining > 0 ...)' and can never fire.
+ROW_FIX = {
+    ('OTHER', 'MultiwiniaInterface', 'CountdownZeroTick'): {
+        'gameplay_trigger': 'Grace period reaches 0 (game starts; Multiwinia::AdvanceGracePeriod). The Multiwinia::Render site meant for a timed game reaching 0 is unreachable: it tests m_timeRemaining == 0 inside the m_timeRemaining > 0 guard (10 §1.6 R6).',
+        'code_sites': 'code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod:L2412 [FULL] ; code/multiwinia.cpp:Multiwinia::Render:L3664 [UNREACHABLE(inside the m_timeRemaining > 0 guard)]',
+    },
+    # Phase-5 fix (R5): code/startsequence.cpp is compiled into FULL (no file gate, listed in
+    # targets/vs2005/Darwinia.vcproj); only RunBootloader (inside #ifdef USE_LOADERS) constructs
+    # StartSequence, so the trigger is LEGACY (compiled, unreachable), not DEAD.
+    ('OTHER', 'Music', 'StartSequence'): {
+        'fired_in_FULL': 'no(LEGACY)',
+        'gameplay_trigger': 'First-time intro (StartSequence is compiled, but only RunBootloader constructs it, under USE_LOADERS). Unreachable; not shipped.',
+        'code_sites': 'code/startsequence.cpp:StartSequence::Advance:L76 [LEGACY(compiled; StartSequence only built in RunBootloader under USE_LOADERS)]',
+    },
+}
+
 POS = {'0': '2D', '1': 'Stat', '2': 'Att', '3': 'Ed'}
 LOOP = {'0': 'Once', '1': 'Loop', '2': 'LoopADSR'}
 INST = {'0': 'Poly', '1': 'MonoRandom', '2': 'MonoNearest'}
@@ -396,7 +413,7 @@ def table_sourcemap(src, work):
             stops[rel] += txt.count('StopAllSounds(')
             queries[rel] += txt.count('NumInstances(') + txt.count('NumInstancesPlaying(')
     files = sorted(set(ev) | {k for k, v in stops.items() if v} | {k for k, v in queries.items() if v})
-    h = ['| File | Role (events fired with `Trigger*Event`; `StopAllSounds` / `NumInstances*` call counts) | In manifest |',
+    h = ['| File | Role (events fired with `Trigger*Event`; `StopAllSounds` / `NumInstances*` call counts) | Exists in tree |',
          '|---|---|---|']
     missing = []
     for f in files:
@@ -447,6 +464,8 @@ def main(src, work, target):
     fired = collections.Counter(r['fired_in_FULL'] for r in rows if r['in_data'] == 'yes')
     print('bound fired_in_FULL:', dict(fired))
     print('code-only fired_in_FULL:', dict(collections.Counter(r['fired_in_FULL'] for r in rows if r['in_data'] == 'no')))
+    for r in rows:
+        r.update(ROW_FIX.get((r['group'], r['object_type'], r['event']), {}))
     bound = [r for r in rows if r['in_data'] == 'yes']
     code = [r for r in rows if r['in_data'] == 'no']
     tables = {

@@ -95,7 +95,7 @@ Data products and who consumes them:
 | Product | Type / grid | Lifetime | Consumers | Sim or cosmetic |
 |---|---|---|---|---|
 | `Landscape::m_heightMap` | `SurfaceMap2D<double>`, cols × rows, cell `cellSize`, outside value `outsideHeight` | level | 394 `m_heightMap->GetValue` call sites (entities, buildings, physics, AI, camera, sound, water) | **simulation** |
-| `Landscape::m_normalMap` | `SurfaceMap2D<Vector3>`, same grid, outside value (0,1,0) | level | 57 `m_normalMap->GetValue/GetData` call sites (bounce physics, centipede, nuke, particles) | **simulation** (and cosmetic) |
+| `Landscape::m_normalMap` | `SurfaceMap2D<Vector3>`, same grid, outside value (0,1,0) | level | 57 `m_normalMap->GetValue/GetData` call sites, 56 of them outside `code/landscape.cpp` (bounce physics, centipede, nuke, particles) | **simulation** (and cosmetic) |
 | `Landscape::m_worldSizeX/Z` | double | level | `GetWorldSizeX/Z`, `IsInLandscape`, camera bounds, fog, water plane | **simulation** |
 | `LandscapeRenderer::m_verts` | one triangle strip, 36-byte vertices | renderer lifetime | landscape passes | cosmetic |
 | `"water_lightmap"` bitmap/texture | 128 × 128 grey | level | flat-water pass texture unit 1 | cosmetic |
@@ -114,13 +114,13 @@ The terrain is defined by these primitives as much as by the algorithm; an imple
 | `iv_atof(s)` | f32(`atof(s)`) | [C] `contrib/systemiv/lib/math/math_stubs.cpp:iv_atof` |
 | `iv_pow(x,y)`, `iv_exp(x)`, `iv_log(x)`, `iv_sqrt(x)`, `iv_sin(x)` | f32(CRT double function of the arguments converted to double) | [C] `code/lib/universal_include.h` (macros under `__cplusplus`) |
 | `Log2(x)` | `iv_log(x) * c` with `c = 1.0 / iv_log(2.0)` computed once (function-static) in double | [C] `code/lib/math_utils.cpp:Log2` |
-| `LandscapeTile::GetPowerOfTwo(x)` | `(int)ceil(Log2(x))`. Equal to the exact ⌈log₂ x⌉ for every integer 1 ≤ x < 70000 under float-rounded logs, including exact powers of two | [C] `code/landscape.cpp:LandscapeTile::GetPowerOfTwo`; [I] `_work/scripts/P11_log2check.py` reports 0 mismatches (assumes a correctly rounded `log`; the oracle found no `log` result near a float rounding boundary in any shipped tile, §17.2) |
+| `LandscapeTile::GetPowerOfTwo(x)` | `(int)ceil(Log2(x))`. Equal to the exact ⌈log₂ x⌉ for every integer 1 ≤ x < 70000 under float-rounded logs, including exact powers of two | [C] `code/landscape.cpp:LandscapeTile::GetPowerOfTwo`, `code/lib/math_utils.cpp:Log2`; [I] exhaustive evaluation of `ceil(f32(log x) · (1 / f32(log 2)))` against the exact ⌈log₂ x⌉ for x = 1 … 69 999 gives 0 mismatches (assumes a correctly rounded `log`; the oracle found no `log` result near a float rounding boundary in any shipped tile, §17.2; check script `_work/scripts/P11_log2check.py`) |
 | `fabsf(d)` on a double | converts d to float first (rounding), then absolute value | [C] use in `code/landscape.cpp:LandscapeTile::GenerateNoise` |
 | `Array2D<T>::GetData(x, y)` | indices are `unsigned short`; any index ≥ size (including negative ints, which wrap modulo 2¹⁶ to ≥ 65 536 − 32 768) returns the array's **outside value** | [C] `code/lib/2d_array.cpp:Array2D::GetData` |
 | `Array2D<T>::PutData`, `AddToData` | silently ignore out-of-range indices | [C] `code/lib/2d_array.cpp` |
 | `Array2D` constructor | allocates `new T[cols·rows]` **without initialising**; every caller in this pipeline calls `SetAll` or writes every element before reading | [C] `code/lib/2d_array.cpp:Array2D::Array2D` |
 | `SurfaceMap2D(w, h, x0, y0, cx, cy, outside)` | `cols = ceil(w / cx)`, `rows = ceil(h / cy)` converted to `unsigned short`; `invCellX = 1.0f / cx` (evaluated in double because `cx` is double) | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::SurfaceMap2D` |
-| `SurfaceMap2D::GetValue(x, y)` | `fx = (x − x0)·invX`; `x1 = (unsigned short)fx` (C++ truncation toward zero); `x2 = (unsigned short)(x1 + 1)`; `fx −= floor(fx)`; **then** `if x1 ≥ cols: x1 = 0`; `if x2 ≥ cols: x2 = 0` (same for y); result `v(x1,y1)·(1−fx)(1−fy) + v(x1,y2)·(1−fx)fy + v(x2,y1)·fx(1−fy) + v(x2,y2)·fx·fy`, summed in that order. Edge consequences are enumerated in §9.3 | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` |
+| `SurfaceMap2D::GetValue(x, y)` | `fx = (x − x0)·invX`; `x1 = (unsigned short)fx` (C++ truncation toward zero); `x2 = (unsigned short)(x1 + 1)`; `fx −= floor(fx)`; **then** `if x1 ≥ cols: x1 = 0`; `if x2 ≥ cols: x2 = 0` (same for y); then the four **weights are formed first**, each as one double product: `w11 = (1−fx)·(1−fy)`, `w12 = (1−fx)·fy`, `w21 = fx·(1−fy)`, `w22 = fx·fy`; result `((v(x1,y1)·w11 + v(x1,y2)·w12) + v(x2,y1)·w21) + v(x2,y2)·w22`, summed left to right. Evaluating `v·(1−fx)·(1−fy)` left to right instead rounds differently and changes every grid digest (e.g. `mp_koth_2P_1` would hash to `18ef1d7ee15d8c7f` instead of the §16.4 value). Edge consequences are enumerated in §9.3 | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` (locals `weight11` … `weight22`) |
 | `GetMapIndexX(r)` | `(int)((r − x0)·invX)` — truncation toward zero (so −0.5 → 0) | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetMapIndexX` |
 | `GetRealX(i)` | `i·cellSizeX + x0` (int parameter) | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetRealX` |
 | `GetHighestValue()` | starts at `GetData(0,0)`; scans `y < rows`, `x < rows` (rows used for both bounds — correct only for square maps; tiles are always square) | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetHighestValue` |
@@ -128,7 +128,7 @@ The terrain is defined by these primitives as much as by the algorithm; an imple
 | `Vector3::Normalise()` | `lenSqrd` held in a `volatile double`; if `lenSqrd > 1e-10` multiply by `1.0 / iv_sqrt(lenSqrd)`, else set to (0, 0, 1) | [C] `code/lib/vector3.h:Vector3::Normalise` |
 | `Vector3 a ^ b` | cross product `(a.y·b.z − a.z·b.y, a.z·b.x − a.x·b.z, a.x·b.y − a.y·b.x)` | [C] `code/lib/vector3.h:Vector3::operator^` |
 | Signed `long` LCG arithmetic | 32-bit `long` on Win32; overflow wraps (MSVC); `>> 16` of a negative value is arithmetic but bits 16–30 are then masked, so the result equals the unsigned computation | [C] `code/landscape.h:LandscapeTile::m_holdrand`; [I] wrap behaviour of MSVC |
-| Text tokens | separators `" \t\n\r:,"`; `#` starts a comment to end of line; a file whose first line starts with `redshirt2` is decrypted line by line first | [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken` (formal grammar in [29](29_data_formats_reference.md)) |
+| Text tokens | separators `" \t\n\r:,"`; `#` starts a comment to end of line; a file whose first line starts with `redshirt2` is decrypted line by line first (16-entry offset table and decode rule in [29 §3.3](29_data_formats_reference.md#fmt-redshirt); no shipped level file is obfuscated) | [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken` (formal grammar in [29](29_data_formats_reference.md)) |
 | Arithmetic precision | Release\|Win32 compiles x87 code with the default `/fp:precise` (no `FloatingPointModel` attribute) and the level-load thread runs with 53-bit x87 precision, so double expressions round like IEEE double | [C] `targets/vs2005/Darwinia.vcproj` (`Release\|Win32` block has no `FloatingPointModel`; `ReleaseDirect3D\|Win32` has `FloatingPointModel="2"` = `/fp:fast`); [I] equivalence of x87-PC53 to SSE2 double for these magnitudes (no denormals or overflow occur) |
 
 ## 4 Landscape definition data — every field
@@ -358,7 +358,7 @@ For a pass with step s, the sequence of writes is: for x = 0, s, 2s, …: for z 
 | 4 | 15 × 15 | 450 | 2^(k−4) |
 | 5 | 31 × 31 | 1 922 | 2^(k−5) |
 
-(String lengths confirmed in every shipped file [C] `_work/scripts/P11_levelstats.py`; editor range 0 – 5 [C] `code/interface/landscape_window.cpp:LandscapeGuideGridWindow::Create`.)
+(String lengths [C]: all 402 guide strings with p > 0 in the 69 `data/levels/{mp,map}_*.txt` files are exactly 2r² letters long (scan script `_work/scripts/P11_levelstats.py`); editor range 0 – 5 [C] `code/interface/landscape_window.cpp:LandscapeGuideGridWindow::Create`.)
 
 **Cell order.** Row-major with **z outer, x inner**: cell (x, z) is at character offset 2·(z·r + x).
 
@@ -463,10 +463,44 @@ Per sample, with `cur` = current height, `t` = `m_centre.y`, `T` = `m_heightThre
 | 0 | Absolute | `t` | 1 | 17 (pads levelled to t = −26.0 … 68.2) |
 | 1 | Add | `t + cur` | 1 | 1 (`mp_cts_4P_1`: +24.1) |
 | 2 | Subtract | `cur > T ? cur − t : cur` | 1 | 5 (e.g. `mp_skirmish_3P_1`: t = 886.2, T = 348.9 — cuts a pit to −537.05, below sea) |
-| 3 | Smooth | if `cur > T`: `v = cur·(t / cur)` (two roundings, ≈ t) `+ h(x−1,z) + h(x+1,z) + h(x,z+1) + h(x,z−1)` (added in that order), then `v = v / 6.0`; else `v = t`. Finally `v = min(v, cur)` | **2** (a loop flag runs the double loop twice) | 27 (T from −3.9 to 127.6; e.g. `mp_koth_3P_4`: t = 62.0, half-width 1000, T = 11.7) |
+| 3 | Smooth | if `cur > T`: `v = cur·(t / cur)` (two roundings, ≈ t), then `v += h(x−1,z)`, `v += h(x+1,z)`, `v += h(x,z+1)`, `v += h(x,z−1)` — **four separate additions starting from the centre term**, not `v + (sum of neighbours)` — then `v = v / 6.0`; else `v = t`. Finally `v = min(v, cur)` (pseudocode and test vector below) | **2** (a loop flag runs the double loop twice) | 27 (T from −3.9 to 127.6; e.g. `mp_koth_3P_4`: t = 62.0, half-width 1000, T = 11.7) |
 | 4 | Subtract2 | `cur < T ? cur − t : cur` | 1 | 3 (e.g. `mp_assault_4P_1`: t = 126.2, T = 118.4 — lowers everything below 118.4 by 126.2) |
 
 Behaviour of the smooth type [C]+[I]: it never raises terrain (`min(v, cur)`); samples at or below T are capped at t (so with t ≥ T they are unchanged); samples above T become (t + sum of four neighbours)/6 — five terms over a divisor of six — so a plateau of height H ≫ t is pulled down to about (t + 4H)/6 per pass (≈ 0.44·H plus t-terms after two passes) as well as smoothed. A commented-out block that would rescale the result by t/cur on the first pass is dead [C]. Designers used it to soften and lower hilltops above a threshold; a new tool should expose a true blur and a separate lower operation.
+
+Exact evaluation order of one area [C] `code/landscape.cpp:Landscape::FlattenArea` (all values double; `h(i, j)` = `GetData`, off-grid → `outsideHeight`):
+
+```
+passes = (type == 3) ? 2 : 1
+repeat passes times:
+    for z = z1 .. z2-1:                 # z outer
+        for x = x1 .. x2-1:             # x inner; writes are in place
+            cur = h(x, z) ; v = t
+            if   type == 1: v = t + cur
+            elif type == 2: v = (cur > T) ? cur - t : cur
+            elif type == 4: v = (cur < T) ? cur - t : cur
+            elif type == 3:
+                if cur > T:
+                    v = cur * (t / cur)     # t / cur first, then the product
+                    v += h(x - 1, z)        # one rounding per addition, in this order
+                    v += h(x + 1, z)
+                    v += h(x, z + 1)
+                    v += h(x, z - 1)
+                    v /= 6.0
+                if v > cur: v = cur
+            PutData(x, z, v)                # type 0 writes t
+```
+
+The association matters: `c + (((n0 + n1) + n2) + n3)` rounds differently from the sequential form. In `mp_koth_3P_4` (one smooth area, t = 62.0, T = 11.7, half-width 1000), 3 635 of the 28 660 above-threshold evaluations of the two passes give a different double, and the grid digest changes. Test vector (first above-threshold sample of pass 1, sample (168, 40); W and S were already rewritten earlier in the same pass, E and N still hold the merged tile heights) [I] (computed with the port, §17.5):
+
+| Quantity | Value |
+|---|---|
+| `cur` | 20.305899393655125 |
+| `v = cur·(t/cur)` | 61.99999999999999 |
+| neighbours W = h(167, 40), E = h(169, 40), N = h(168, 41), S = h(168, 39) | 6.921732493425324, 21.20888188060145, 27.02387309504114, 2.4006731601979148 |
+| running sum after each `+=` | 68.92173249342531 → 90.13061437402676 → 117.1544874690679 → 119.55516062926581 |
+| `/ 6.0` → written (below `cur`, so kept) | **19.925860104877636** |
+| neighbours-first result (wrong) | 19.92586010487764 |
 
 ## 9 World grid: cell size, world size, outside height and world-edge handling
 
@@ -505,9 +539,9 @@ The same table applies independently on the z axis (rows). So off-map reads retu
 
 ### 9.4 Sea level
 
-There is **no water-level parameter**: the sea surface is y = 0 everywhere [C]. Evidence: `Location::IsWalkable` uses a local `waterLevel = 0.0` and rejects paths with ≥ 40 units under water (sampled every 20 units) [C] `code/location.cpp:Location::IsWalkable`; the renderer culls quads whose six neighbouring samples are all ≤ 0 and sinks vertices below 0.3 to −10 [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildVertArrayAndTriStrip`; the shore mask treats height > 0 as land [C] `code/water.cpp:Water::GenerateLightMap`; the dynamic water mesh rests at y = 0 [C] `code/water.cpp:Water::BuildTriangleStrips`. Many entity rules test `y < 0` / `≤ 0` for "in water" (drowning, armour unloading, statue destruction) — see [02](02_units_and_entities.md) and [03](03_buildings_and_world_objects.md).
+There is **no water-level parameter**: the sea surface is y = 0 everywhere [C]. Evidence: `Location::IsWalkable` uses a local `waterLevel = 0.0`, rejects a path at once if either end point has y ≤ 0, and otherwise rejects it after ≥ 40 units under water (sampled every 20 units) [C] `code/location.cpp:Location::IsWalkable`; the renderer culls quads whose six neighbouring samples are all ≤ 0 and sinks vertices below 0.3 to −10 [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildVertArrayAndTriStrip`; the shore mask treats height > 0 as land [C] `code/water.cpp:Water::GenerateLightMap`; the dynamic water mesh rests at y = 0 [C] `code/water.cpp:Water::BuildTriangleStrips`. Many entity rules test `y < 0` / `≤ 0` for "in water" (drowning, armour unloading, statue destruction) — see [02](02_units_and_entities.md) and [03](03_buildings_and_world_objects.md).
 
-Every shipped map has sea: land (height > 0) covers 8.0 % – 70.1 % of the world samples of the 57 `mp_*` maps (mean 43.5 %), and the whole map border is under water in all 69 files [C] (`S_23_terrain_oracle.py`, columns `land_frac`, `edge_max`). This resolves the phase-2 open question "does any shipped map lack sea?" raised for `Crate::RunNuke`, which re-rolls random positions in [0, sizeX − 100) × [0, sizeZ − 100) until the height is ≤ 0 and would loop forever on a map without water: every shipped map has sea inside that range (at least 29.9 % sea samples and a submerged border), so the loop terminates (see [04](04_crates_powerups_and_weapons.md)).
+Every shipped map has sea: land (height > 0) covers 8.0 % – 70.1 % of the world samples of the 57 `mp_*` maps (mean 43.5 %), and the whole map border is under water in all 69 files [C] (`S_23_terrain_oracle.py`, columns `land_frac`, `edge_max`). This resolves the phase-2 open question "does any shipped map lack sea?" raised for `Crate::RunNuke`, which re-rolls random positions in [0, sizeX − 100) × [0, sizeZ − 100) until the height is ≤ 0 and would loop forever on a map without water: every shipped map has sea inside that range, so the loop terminates (see [04](04_crates_powerups_and_weapons.md)). At least 29.9 % of each map's world samples are sea, and the border is submerged; sampling the `RunNuke` rectangle itself on a 25-unit lattice gives at least 26.2 % sea (`mp_assault_3p_3`) [I] (port-generated heights; script `_work/scripts/C_nuke_sea_check.py`).
 
 ## 10 Normals — simulation versus render
 
@@ -532,7 +566,7 @@ for z in 0 .. rows-1:                          # z outer
 
 The neighbour labels do not match compass directions (the code's "W" is +x and "E" is −x), but for a plane h = a·x + b·z both half-normals equal (−a, 1, −b)/|…|, i.e. the result is the true upward normal, leaning downhill [I] (expansion of the cross products). Each half is normalised before summing, so on curved ground the result weights the (+x, −z) and (−x, +z) one-sided gradients equally regardless of their magnitude. An isolated spike or pit whose four neighbours are equal gets the up vector [C].
 
-Consumers read it with `GetValue` (bilinear, §9.3 edge rules) and receive a **non-normalised** blend of the four corner normals [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` (no renormalisation in the template). Callers (57 call sites in 27 files besides `code/landscape.cpp`) [C] grep: `code/location.cpp` (bounce physics), `code/multiwinia.cpp`, `code/particle_system.cpp`, `code/gamecursor.cpp`, and in `code/worldobject/`: `worldobject.cpp`, `darwinian.cpp`, `officer.cpp`, `armour.cpp`, `armyant.cpp`, `centipede.cpp`, `spider.cpp`, `virii.cpp`, `tentacle.cpp`, `entity_leg.cpp`, `insertion_squad.cpp`, `lasertrooper.cpp`, `tank.cpp`, `weapons.cpp`, `nuke.cpp`, `crate.cpp`, `statue.cpp`, `gunturret.cpp`, `generator.cpp`, `generichub.cpp`, `spiritreceiver.cpp`, `lander.cpp`, `carryablebuilding.cpp` (orientation of units, legs, buildings and props to the ground, bounces, effects [I]).
+Consumers read it with `GetValue` (bilinear, §9.3 edge rules) and receive a **non-normalised** blend of the four corner normals [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` (no renormalisation in the template). Callers (56 call sites in 27 files besides `code/landscape.cpp`, 57 in total with the debug `RenderHitNormals` read in `code/landscape.cpp`) [C] grep: `code/location.cpp` (bounce physics), `code/multiwinia.cpp`, `code/particle_system.cpp`, `code/gamecursor.cpp`, and in `code/worldobject/`: `worldobject.cpp`, `darwinian.cpp`, `officer.cpp`, `armour.cpp`, `armyant.cpp`, `centipede.cpp`, `spider.cpp`, `virii.cpp`, `tentacle.cpp`, `entity_leg.cpp`, `insertion_squad.cpp`, `lasertrooper.cpp`, `tank.cpp`, `weapons.cpp`, `nuke.cpp`, `crate.cpp`, `statue.cpp`, `gunturret.cpp`, `generator.cpp`, `generichub.cpp`, `spiritreceiver.cpp`, `lander.cpp`, `carryablebuilding.cpp` (orientation of units, legs, buildings and props to the ground, bounces, effects [I]).
 
 ### 10.2 Render normals (`LandscapeRenderer::BuildNormArray`)
 
@@ -551,7 +585,7 @@ Consumers read it with `GetValue` (bilinear, §9.3 edge rules) and receive a **n
 
 ### 11.1 Ramp asset format
 
-All 23 ramps are 64 × 64, 24-bit, uncompressed BMP (`BITMAPINFOHEADER`, size 40) [C] `_work/scripts/P11_bmpinfo.py`. `BitmapRGBA::LoadBmp` stores file rows in file order and BMPs with positive height are stored bottom-up, so **bitmap row y = 0 is the bottom row of the picture as viewed**; 24-bit pixels get alpha 255 [C] `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp`, `BitmapRGBA::Read24BitLine`. The ramp is loaded with `Resource::GetBitmap("terrain/<landColourFile>")` (name lower-cased, cached by name) [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/lib/resource.cpp:Resource::GetBitmap`. A missing file returns NULL and the renderer dereferences it (crash) [C].
+All 23 ramps are 64 × 64, 24-bit, uncompressed BMP (`BITMAPINFOHEADER`, size 40) [C] (headers of `data/terrain/landscape_*.bmp`; read with `_work/scripts/P11_bmpinfo.py`). `BitmapRGBA::LoadBmp` stores file rows in file order and BMPs with positive height are stored bottom-up, so **bitmap row y = 0 is the bottom row of the picture as viewed**; 24-bit pixels get alpha 255 [C] `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp`, `BitmapRGBA::Read24BitLine`. The ramp is loaded with `Resource::GetBitmap("terrain/<landColourFile>")` (name lower-cased, cached by name) [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/lib/resource.cpp:Resource::GetBitmap`. A missing file returns NULL and the renderer dereferences it (crash) [C].
 
 ### 11.2 Mesh the ramp is applied to
 
@@ -620,7 +654,7 @@ For every `Location::m_burnPatches` entry P with distance d = |centre − P.pos|
 
 The colours are cosmetic — they never feed the simulation (only `m_verts[].m_col`) [C]. Their reproducibility:
 
-- `Location::Init` calls `AppSeedRandom(1)` immediately after parsing, so on a clean first load the chain of step 5–6 starts from a known state [C] `code/location.cpp:Location::Init`.
+- `Location::Init` calls `AppSeedRandom(1)` immediately after parsing, so on a clean first load the chain of step 5–6 starts from a known state [C] `code/location.cpp:Location::Init`. On the load thread nothing between that reseed and `BuildColourArray` draws `AppRandom` [C] (grep of each callee): the static resets (`Crate`, `Armour::s_armourObjectives.Empty`, `Engineer` id lists, `SpawnPopulationLock::Reset`, `SoulDestroyer`, `DustBall`, `Unit::s_offsets`, per-team statics), `GetTeamPosition` (draws the **synchronised** `syncrand` only), the Christmas latch, `InitLights` (`new Light`, `SetColour`, `SetFront`), and inside `Landscape::Init`: `GenerateHeightMap` (private tile LCGs only), `GenerateNormals`, `LandscapeRenderer`'s ramp load (`Resource::GetBitmap`), `BuildVertArrayAndTriStrip` and `BuildNormArray`. The first global draw is therefore step 5 of the first strip triangle; `BuildUVArray` and `new Water()` (shore noise) follow it. Only the main thread's concurrent draws (next point) can break the chain.
 - The level load runs on the work-queue thread while the main thread keeps calling `SoundSystem::Advance`, whose sample selection draws `AppRandom()` (`code/sound/sound_instance.cpp`), so concurrent draws can perturb the chain and colours may differ between runs or peers [I] `code/loading_screen.cpp:LoadingScreen::Render` (23-U3).
 - Regeneration from the options screens re-runs the chain **without** reseeding (`code/interface/prefs_graphics_window.cpp`, `code/interface/prefs_other_window.cpp` call `Landscape::Init` directly), so colours change after "apply" while heights do not [C] (no `AppSeedRandom` on that path).
 
@@ -696,7 +730,7 @@ So waves are a sum of two travelling sinusoids per axis (peak amplitude 7·(1.2 
 
 ### 13.6 Water assets
 
-[C] `_work/scripts/P11_bmpinfo.py`, grep of `data/levels/*.txt`.
+[C] BMP headers of `data/terrain/waves_*.bmp` and `data/terrain/water_*.bmp` (all `BITMAPINFOHEADER`, uncompressed), grep of `data/levels/*.txt`.
 
 | File | Format | Role | `mp_*` uses | `map_*` uses |
 |---|---|---|---|---|
@@ -729,8 +763,9 @@ The wave table size is taken from the bitmap width (`m_numColours = width`), so 
 | `IsInLandscape(p)` | `0 ≤ x < sizeX'` and `0 ≤ z < sizeZ'` | — |
 | `RayHit(start, dir, *hit)` | normalises dir; if the start cell is inside (`0 ≤ x0 < cols` and `0 ≤ z0 ≤ rows` — note `≤` on z) calls `UnsafeRayHit`; otherwise intersects the 2-D ray with the two grid edges facing it (chosen by the signs of dir.x and dir.z) using `SegRayIntersection2D`, returns false if neither is hit, else restarts from the entry point with entry height `start.y + λ·dir.y`, λ = (entry.x − start.x)/dir.x | the source comment warns it may report hits behind the start; a ray with dir.x = 0 entering from outside divides by zero [I] |
 | `UnsafeRayHit` | grid walk: test `RayHitCell`; step in z if the ray crosses the cell's far z-edge segment, else step in x; stop when leaving the grid. Four quadrant variants; dir.x = 0 or dir.z = 0 falls into the last (south-east) branch | [I] for the zero-component case |
+| `Location::IsVisible(from, to)` | terrain line of sight: `dir = normalise(to − from)`; `RayHit(from + 20·dir, dir)`; no hit → visible; otherwise visible iff `|hit − from| > |to − from| + 20` (tolerance 20 at both ends). Used e.g. by radar-dish link tests ([03](03_buildings_and_world_objects.md), [07](07_ai.md)) [C] `code/location.cpp:Location::IsVisible` | inherits the `RayHit` edge cases; only the terrain is tested, not buildings |
 | `RayHitCell(x0, z0)` | two triangles per cell: (c00, c01, c10) then (c01, c10, c11) via `RayTriIntersection(…, 1e10)` — the same diagonal as the render mesh | — |
-| `SphereHit(c, r)` | debug-asserts 0 < r < 200; scans samples in the bounding box (indices clamped to [0, size]); returns the distance to the nearest **sample point** if ≤ r, else −1 | no caller outside `code/landscape.cpp` [C] grep — dead in practice |
+| `SphereHit(c, r)` | debug-asserts 0 < r < 200; scans samples in the bounding box (indices clamped to [0, size]); returns the distance to the nearest **sample point** if ≤ r, else −1 | **no caller anywhere** (the only other `SphereHit` symbols are `Shape::SphereHit`, `ShapeFragment::SphereHit` and `Building::DoesSphereHit`) [C] grep — dead |
 | `DeleteTile(id)` | removes a tile from the level's `LandscapeDef` and re-runs `Init` | [B:EDITOR] (`code/interface/landscape_window.cpp`) |
 | `RenderHitNormals()` | debug lines of normals × 20, colour (255, 90, 90) | no caller — dead |
 
@@ -747,7 +782,7 @@ The wave table size is taken from the bitmap width (`m_numColours = width`), so 
 | Editor tile / flatten edits, scaling (× 0.95 / × 1.05 of tile positions, sizes and world size, also moving buildings, units and camera mounts), "randomise" seed | `Landscape::Init` | [C] `code/interface/landscape_window.cpp:ScaleLandscapeButton::MouseUp`, `LandscapeTileButton::MouseUp` [B:EDITOR] |
 | Level unload | `Location::Empty` deletes the water; `Landscape::~Landscape` → `Empty` deletes renderer, height and normal maps | [C] `code/landscape.cpp:Landscape::Empty` |
 
-`Landscape::Init` reallocates the height and normal maps whenever the cell size changed **or** the stored world size differs from the requested one — the stored value is the snapped extent, so in practice it reallocates every time [C]. Regeneration is a pure function of `LandscapeDef`, so heights after an options "apply" are identical to the original ones and the simulation is unaffected, provided the regenerating thread uses the same FP environment (§17.3) [I].
+`Landscape::Init` allocates the height and normal maps when none exist and reallocates them whenever the cell size changed **or** the stored world size (`m_worldSizeX/Z`, the snapped extent `cellSize × cols`) differs from the requested integer `worldSizeX/Z`. A regeneration therefore reallocates unless the requested size is an exact multiple of the cell size, e.g. `mp_koth_3P_1` (3000 / 12 = 250) and `mp_assault_stress` (4000 / 20 = 200) keep their maps [C] `code/landscape.cpp:Landscape::Init`; either way `GenerateHeightMap` resets every sample, so the result is the same. Regeneration is a pure function of `LandscapeDef`, so heights after an options "apply" are identical to the original ones and the simulation is unaffected, provided the regenerating thread uses the same FP environment (§17.3) [I].
 
 ## 16 Worked example — `mp_koth_2P_1`
 
@@ -808,6 +843,35 @@ The whole tile makes 16 129 Square/Diamond calls — Σ(3c² − 2c) over c = 1,
 ### 16.4 Result
 
 World heights range −15.390000343322754 … 273.38014287056404; the peak is below tile 2's `desiredHeight` of 300 because no world sample coincides with tile sample (32, 32) (§7.2). Probe samples: h[0, 0] = −15.390000343322754, h[43, 43] = 64.11465376675797, h[86, 86] = 99.71780778328521, h[129, 57] = 80.84683847539341. All 48 building entries the oracle parses from the file stand above sea level. 259 tile-merge samples hit the (−1, 0) truncation case of §7.3. Grid digest (SHA-256 of the 172 × 172 little-endian float64 values, z outer, x inner, first 16 hex digits): **`bb4397625e5006a1`** — identical to `mp_domination_2P_2`, which reuses the same landscape blocks.
+
+### 16.5 Further unit-test vectors (methods 1 and 2; smooth flatten)
+
+These complete §16.3 so that every generation method and the order-sensitive flatten type can be tested without the helper scripts [I] (values printed by the port's `trace` mode, §17.5; RNG draws in call order, the choice draw before the noise draw).
+
+**Method 1** — `mp_koth_2P_1` tile 0 (seed 269491, n = 257, p = 2, guide points (64·i, 64·j) all 0, first step 64, h = 32). The nine guide pins are written first; then:
+
+| # | Call | Choice draw → base | Noise draw → noise | Written |
+|---|---|---|---|---|
+| 1 | Square(32, 32, 32) | 28114 (even → (B + C)/2 = (h(0,64) + h(64,0))/2) → −15.390000343322754 | 13609 → +7.16513913931825 | (32, 32) = −8.224861204004505 |
+| 2 | Square(32, 96, 32) | 12878 (even → (h(0,128) + h(64,64))/2) → −7.695000171661377 | 28951 → −16.901538996064705 | (32, 96) = −24.596539167726082 |
+| 3 | Diamond(32, 64, 32) | 17157 (odd → (W + E)/2 = (h(0,64) + h(64,64))/2) → −7.695000171661377 | 20365 → −5.354563557814331 | (32, 64) = −13.049563729475707 |
+| 4 | Square(32, 160, 32) | 23403 (odd → (A + D)/2 = (h(0,128) + h(64,192))/2) → −7.695000171661377 | 14881 → +2.020653458650265 | (32, 160) = −5.674346713011111 |
+
+The whole tile makes 1 044 457 traced events; its highest sample after the posY shift is 11.67633525289311 (§16.2).
+
+**Method 2** — `mp_rocketriot_2p_3` tile 5 (seed 1, size 344, n = 17, p = 2, fd = 5.0, hs = 1.0, ls = 1.0, outside −26.1299991607666; guide rows z = 4, 8, 12 = (0, 0, 255), (0, 255, 255), (0, 255, 0) at x = 4, 8, 12; first step 4, h = 2; comp = 1.6309778697705958e-13):
+
+| # | Call | Choice draw → parent | Noise draw → noise | Written |
+|---|---|---|---|---|
+| 1 | Square(2, 2, 2) | 41 (< 0x3FFF → A = h(0,0)) → −26.1299991607666 | 18467 → −0.10329567230285541 | (2, 2) = −26.233294833069458 |
+| 2 | Square(2, 6, 2) | 6334 (→ A = h(0,4)) → −26.1299991607666 | 26500 → −0.5015553966171525 | (2, 6) = −26.631554557383755 |
+| 3 | Diamond(2, 4, 2) | 19169 (0x3FFF ≤ r < 0x7FFF → E = h(4,4)) → 0.0 | 15724 → +0.0008134510092106354 | (2, 4) = 0.0008134510092106354 |
+| 4 | Square(2, 10, 2) | 11478 (→ A = h(0,8)) → −26.1299991607666 | 29358 → −0.6432491962051347 | (2, 10) = −26.773248356971735 |
+| 5 | Diamond(2, 8, 2) | 26962 (→ E = h(4,8)) → 0.0 | 24464 → −0.009966779196249498 | (2, 8) = −0.009966779196249498 |
+
+The tile makes 3 817 traced events (pins included); its highest sample after posY is 263.7423632514278 and its heightFactor is 1.4390076952556121.
+
+**Smooth flatten (type 3)** — the per-sample vector of §8 (`mp_koth_3P_4`, sample (168, 40)) and the grid digest `372ae83dac39cf0c` of §18 for that map.
 
 ## 17 Determinism and conformance
 
@@ -877,11 +941,13 @@ Files [C] (all run with `python3 -I`, paths as arguments):
 
 Evidence that the port reproduces the original [I]: it was written from the specification without access to a running binary; generating every shipped map puts **0** of 793 Trees, 321 SpawnPoints, 178 MultiwiniaZones, 156 TrunkPorts, 252 SolarPanels, 208 GunTurrets, 121 ControlTowers and 108 RadarDishes at or below sea level, whereas object types that legitimately stand in the sea do sit there (FuelGenerator 60 of 60, AIObjective 77 of 95, PylonEnd 65 of 92, SpawnPointMaster 20 of 37, LaserFence 79 of 756) (`P11_terrain_check.py`, re-run for this document). A transposed axis, a wrong origin, an off-by-one footprint or a wrong rescale would put many land-only buildings under water. Bit-equality with `multiwinia.exe` is **[U]** (23-U1).
 
+Resolved [C]: an earlier version of the port evaluated the smooth flatten as `c + (n0 + n1 + n2 + n3)` (neighbours summed first). The code adds the four neighbours one at a time to the centre term (`code/landscape.cpp:Landscape::FlattenArea`, §8), and the port now does the same. The fix changed the digests of the 11 `mp_*` maps whose smooth areas act on terrain above their threshold (`mp_assault_4P_1`, `mp_assault_4P_2`, `mp_blitzkrieg_2P_4`, `mp_blitzkrieg_2p_1`, `mp_blitzkrieg_2p_2`, `mp_blitzkrieg_3P_1`, `mp_cts_3P_2`, `mp_cts_4P_1`, `mp_koth_3P_1`, `mp_koth_3P_4`, `mp_rocketriot_3P_3`); grid size, minimum, maximum, land fraction and the building counts above did not change. A second, independent re-implementation written from the text of §3–§8 gives the same 69 digests [I].
+
 Conformance procedure for a new implementation:
 
 1. Implement generation as a pure function `level text → (cols, rows, cellSize, float64[rows][cols])`.
 2. Unit-test the primitives: the LCG vector of §5.1; f32 rounding; `GetValue` for each row of the §9.3 table; `GetPowerOfTwo` for 1 … 70 000.
-3. Unit-test one tile: the derived values of §16.2 and the event sequence of §16.3 (`trace` prints as many events as needed).
+3. Unit-test one tile per generation method and the smooth flatten: the derived values of §16.2, the event sequences of §16.3 (method 0) and §16.5 (methods 1 and 2), and the type-3 sample of §8 (`trace` prints as many events as needed).
 4. For every shipped map, hash the grid (SHA-256 over little-endian float64, z outer, x inner) and compare with §18; on a mismatch, `dump` both grids and locate the first differing sample, then re-run with one tile at a time to isolate the stage.
 5. Extend the same approach to the simulation normal map (§10.1) if the new engine keeps it (the port does not yet compute normals).
 6. To obtain ground truth from the original (resolves 23-U1): build or instrument the original executable to write `Landscape::m_heightMap` after `Landscape::Init`, and diff against `dump`.
@@ -897,7 +963,7 @@ Conformance procedure for a new implementation:
 
 ## 18 Shipped terrain survey and golden digests
 
-Generated by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> survey > survey.csv` followed by `python3 -I _work/scripts/S_23_terrain_oracle.py - table survey.csv`. "Extent" = cellSize × cols; "Land %" = share of samples above 0; the digest is the first 16 hex digits of SHA-256 over the grid as little-endian float64, z outer, x inner. These are digests of the **Python port's** output; they become golden values for the original game once 23-U1 is resolved [I].
+Generated by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> survey > survey.csv` followed by `python3 -I _work/scripts/S_23_terrain_oracle.py - table survey.csv`. "Extent" = cellSize × cols; "Land %" = share of samples above 0; the digest is the first 16 hex digits of SHA-256 over the grid as little-endian float64, z outer, x inner. These are digests of the **Python port's** output; they become golden values for the original game once 23-U1 is resolved [I]. The digests depend on the exact evaluation order of every expression in §3–§8; the two orders that are easy to get wrong are the weights-first bilinear sum of `GetValue` (§3) and the sequential smooth-flatten additions (§8), which affect 11 of these maps (§17.5).
 
 | Map file | Grid | cellSize (f32) | Extent | Tiles | Flatten | Min h | Max h | Land % | SHA-256/16 of grid |
 |---|---|---|---|---|---|---|---|---|---|
@@ -907,25 +973,25 @@ Generated by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> survey > sur
 | `mp_assault_3P_2` | 193×193 | 26 | 5018.000 | 1 | 0 | -10.000 | 271.572 | 42.7 | `93a59dcf8beb0a3b` |
 | `mp_assault_3p_1` | 225×225 | 22.32 | 5022.000 | 11 | 2 | -10.000 | 199.611 | 46.7 | `369e4a1e1b078c05` |
 | `mp_assault_3p_3` | 257×257 | 9.95 | 2557.150 | 7 | 1 | -10.000 | 175.167 | 68.0 | `acf803732b5ace17` |
-| `mp_assault_4P_1` | 204×204 | 20 | 4080.000 | 15 | 5 | -130.862 | 260.116 | 43.3 | `2be6ed0d2b3306b6` |
-| `mp_assault_4P_2` | 270×270 | 26 | 7020.000 | 19 | 5 | -10.000 | 293.340 | 17.4 | `a690b8a392e097f3` |
+| `mp_assault_4P_1` | 204×204 | 20 | 4080.000 | 15 | 5 | -130.862 | 260.116 | 43.3 | `da911c2111df9b66` |
+| `mp_assault_4P_2` | 270×270 | 26 | 7020.000 | 19 | 5 | -10.000 | 293.340 | 17.4 | `3f2c137292885109` |
 | `mp_assault_stress` | 200×200 | 20 | 4000.000 | 5 | 0 | -10.000 | 196.112 | 32.6 | `80c514cfd2e341bd` |
 | `mp_benchmark_1` | 167×167 | 18 | 3006.000 | 10 | 0 | -10.000 | 189.740 | 54.7 | `c0420f27cb4338a8` |
 | `mp_blitzkrieg_2P_3` | 188×188 | 16 | 3008.000 | 12 | 0 | -10.000 | 225.163 | 38.7 | `5f832c4f9679f19c` |
-| `mp_blitzkrieg_2P_4` | 150×150 | 20 | 3000.000 | 7 | 1 | -10.000 | 368.866 | 63.7 | `a81762bff5f8533b` |
-| `mp_blitzkrieg_2p_1` | 292×292 | 12 | 3504.000 | 6 | 2 | -10.000 | 272.846 | 18.9 | `94bfb67696d10cbd` |
-| `mp_blitzkrieg_2p_2` | 223×223 | 18 | 4014.000 | 8 | 4 | -10.000 | 412.568 | 45.7 | `6ec550608a0a3f39` |
-| `mp_blitzkrieg_3P_1` | 334×334 | 12 | 4008.000 | 7 | 1 | -10.000 | 291.922 | 27.6 | `1af680d81377952d` |
+| `mp_blitzkrieg_2P_4` | 150×150 | 20 | 3000.000 | 7 | 1 | -10.000 | 368.866 | 63.7 | `09af9da503d69476` |
+| `mp_blitzkrieg_2p_1` | 292×292 | 12 | 3504.000 | 6 | 2 | -10.000 | 272.846 | 18.9 | `f3148ab7617e5d56` |
+| `mp_blitzkrieg_2p_2` | 223×223 | 18 | 4014.000 | 8 | 4 | -10.000 | 412.568 | 45.7 | `eee85bdc8f5e9a33` |
+| `mp_blitzkrieg_3P_1` | 334×334 | 12 | 4008.000 | 7 | 1 | -10.000 | 291.922 | 27.6 | `738cab16a77d8805` |
 | `mp_blitzkrieg_3P_2` | 184×184 | 16 | 2944.000 | 9 | 0 | -10.000 | 199.725 | 34.8 | `f126882157bbae23` |
 | `mp_blitzkrieg_4P_2` | 200×200 | 20 | 4000.000 | 25 | 0 | -10.000 | 195.707 | 59.9 | `235125e8502b7709` |
 | `mp_cts_2p_1` | 148×148 | 15.76 | 2332.480 | 4 | 0 | -15.390 | 295.573 | 44.4 | `dcc2194219fe87d0` |
 | `mp_cts_2p_2` | 148×148 | 15.76 | 2332.480 | 1 | 0 | -15.390 | 200.993 | 44.9 | `42fcba41112b8c88` |
 | `mp_cts_2p_3` | 167×167 | 12 | 2004.000 | 5 | 0 | -10.000 | 285.057 | 41.9 | `bb15b115be06dd0c` |
 | `mp_cts_2p_4` | 223×223 | 9 | 2007.000 | 3 | 0 | -10.000 | 318.301 | 38.7 | `ad8d63c311a656dc` |
-| `mp_cts_3P_2` | 188×188 | 16 | 3008.000 | 17 | 6 | -38.218 | 417.119 | 40.0 | `274f0f3aceed27ac` |
+| `mp_cts_3P_2` | 188×188 | 16 | 3008.000 | 17 | 6 | -38.218 | 417.119 | 40.0 | `a64562a1e2c63c36` |
 | `mp_cts_3p_1` | 190×190 | 15.8 | 3002.000 | 5 | 0 | -10.000 | 301.872 | 49.3 | `b192100bde436e10` |
 | `mp_cts_3p_3` | 215×215 | 12 | 2580.000 | 5 | 0 | -10.000 | 237.999 | 42.1 | `df376686c08d3e64` |
-| `mp_cts_4P_1` | 188×188 | 16 | 3008.000 | 14 | 6 | -10.000 | 224.699 | 56.5 | `ce0250d7cfec8683` |
+| `mp_cts_4P_1` | 188×188 | 16 | 3008.000 | 14 | 6 | -10.000 | 224.699 | 56.5 | `2a940b49c3fb98dd` |
 | `mp_cts_4P_2` | 215×215 | 16 | 3440.000 | 18 | 0 | -21.050 | 229.521 | 32.0 | `2a2faa999f28781e` |
 | `mp_cts_4p_3` | 182×182 | 15 | 2730.000 | 7 | 0 | -26.130 | 317.978 | 55.4 | `660e73d70424a533` |
 | `mp_domination_2P_1` | 167×167 | 12 | 2004.000 | 8 | 0 | -10.000 | 282.971 | 63.8 | `811ee34920b9b56f` |
@@ -937,10 +1003,10 @@ Generated by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> survey > sur
 | `mp_koth_2P_2` | 192×192 | 14 | 2688.000 | 3 | 0 | -10.000 | 197.144 | 38.1 | `54ffc6ebb7977433` |
 | `mp_koth_2P_3` | 173×173 | 16 | 2768.000 | 10 | 0 | -10.000 | 189.639 | 40.9 | `49200a8a15b33761` |
 | `mp_koth_2P_3b` | 173×173 | 16 | 2768.000 | 11 | 4 | -10.000 | 189.639 | 44.0 | `cbd1cc94ad488cb9` |
-| `mp_koth_3P_1` | 250×250 | 12 | 3000.000 | 8 | 1 | -10.000 | 199.452 | 25.7 | `511cd807d8e8f666` |
+| `mp_koth_3P_1` | 250×250 | 12 | 3000.000 | 8 | 1 | -10.000 | 199.452 | 25.7 | `ae51144a7095893a` |
 | `mp_koth_3P_2` | 147×147 | 16 | 2352.000 | 1 | 0 | -10.000 | 189.331 | 51.3 | `b8cd1b3bd76c4edd` |
 | `mp_koth_3P_3` | 175×175 | 16 | 2800.000 | 8 | 3 | -18.320 | 181.052 | 36.9 | `40b1d32820118ff3` |
-| `mp_koth_3P_4` | 230×230 | 12 | 2760.000 | 3 | 1 | -10.000 | 215.014 | 27.9 | `21ad6d86923bac04` |
+| `mp_koth_3P_4` | 230×230 | 12 | 2760.000 | 3 | 1 | -10.000 | 215.014 | 27.9 | `372ae83dac39cf0c` |
 | `mp_koth_4P_1` | 188×188 | 16 | 3008.000 | 15 | 3 | -26.000 | 224.699 | 58.2 | `31946d503ad2498c` |
 | `mp_koth_4P_3` | 215×215 | 14 | 3010.000 | 5 | 0 | -30.000 | 197.130 | 34.7 | `fe6a500f29353bdc` |
 | `mp_koth_4P_4` | 167×167 | 18 | 3006.000 | 10 | 0 | -10.000 | 189.740 | 54.7 | `c0420f27cb4338a8` |
@@ -948,7 +1014,7 @@ Generated by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> survey > sur
 | `mp_rocketriot_2P_4` | 203×203 | 9.87 | 2003.610 | 1 | 0 | -10.000 | 191.066 | 53.9 | `353ffc89ba7919a8` |
 | `mp_rocketriot_2p_3` | 139×139 | 27.08 | 3764.120 | 15 | 0 | -26.130 | 542.917 | 38.9 | `417aee8b7b4659e2` |
 | `mp_rocketriot_3P_2` | 239×239 | 18 | 4302.000 | 22 | 0 | -26.130 | 289.242 | 34.5 | `9e8738cb1393281a` |
-| `mp_rocketriot_3P_3` | 282×282 | 16 | 4512.000 | 7 | 3 | -10.000 | 449.999 | 29.5 | `9579aec05284420a` |
+| `mp_rocketriot_3P_3` | 282×282 | 16 | 4512.000 | 7 | 3 | -10.000 | 449.999 | 29.5 | `d99d92353abbc4d1` |
 | `mp_rocketriot_3p_1` | 278×278 | 18 | 5004.000 | 7 | 0 | -15.390 | 224.076 | 29.4 | `eb90ae018edca369` |
 | `mp_rocketriot_4P_1` | 233×233 | 18 | 4194.000 | 17 | 0 | -10.000 | 255.042 | 42.2 | `413fa648c272ab7d` |
 | `mp_sandbox` | 162×162 | 20.35 | 3296.700 | 1 | 0 | -15.390 | 377.408 | 36.3 | `fab7562a1d82b423` |
@@ -1256,7 +1322,7 @@ Helper scripts (not source files of the game): `_work/scripts/P11_terrain_ref.py
 | `Landscape(double, int, int)` constructor, `LandscapeRenderer::Initialise`, `Water::RenderReflectiveWater` | declared, never defined or called | [C] grep of `code/` |
 | `LandscapeTile::Landscapefrand` | defined, never called | [C] grep |
 | `Landscape::RenderHitNormals` | defined, no caller | [C] grep |
-| `Landscape::SphereHit` | defined, no caller outside `code/landscape.cpp` | [C] grep |
+| `Landscape::SphereHit` | defined, no caller anywhere | [C] grep |
 | `LIGHTMAP_SCALEFACTOR` | defined, unused (remnant of the documented lightmap, §12) | [C] |
 | Landscape shadow lightmap of `docs/landscape lightmap.txt` | [B:DEAD] — not in the code | §12 |
 | `RenderLandscapeDetail` reads (cell scaling in `Landscape::Init`, overlay skip) | commented out; literal 1 | [C] `code/landscape.cpp:Landscape::Init`, `code/landscape_renderer.cpp` |

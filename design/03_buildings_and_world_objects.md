@@ -45,8 +45,8 @@ Owned elsewhere (linked, not repeated):
 
 - One simulation tick = `SERVER_ADVANCE_PERIOD` = `0.1 × GameTimer::m_gameSpeed` game seconds (0.1 s at normal speed; the Slow-down/Speed-up crates change `m_gameSpeed`). [C] `code/gametimer.h:SERVER_ADVANCE_PERIOD`, `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`.
 - `GetNetworkTime()` is a macro for `g_gameTimer.GetGameTime()`; both are the same synced game clock, advanced by `SERVER_ADVANCE_PERIOD` per tick in `GameTimer::Tick` unless paused. Resolved: P06 listed this as unknown (P06-U2); the code shows `#define GetNetworkTime g_gameTimer.GetGameTime`. [C] `code/gametimer.h`.
-- Buildings are advanced in `Location::AdvanceBuildings(slice)`; the building list is split into `NUM_SLICES_PER_FRAME` = 10 slices, so each building's `Advance()` runs once per tick, in one of the 10 slices. [C] `code/location.cpp:Location::AdvanceBuildings`, `code/globals.h:NUM_SLICES_PER_FRAME`; [I] "once per tick" assumes every slice 0–9 is processed each tick (see [21](21_simulation_and_entity_model.md)).
-- Timers written `if (GetNetworkTime() > m_timer) { …; m_timer = GetNetworkTime() + 1.0; }` fire after 10 or 11 ticks depending on floating-point accumulation of 0.1 (strict `>` on a summed double) — usually 11 ticks ≈ 1.1 s. Affects MultiwiniaZone recounts, CarryableBuilding ownership, SpawnPopulationLock overpopulation. [I] reasoning on IEEE double sums; the mode-level consequence is in [01](01_game_modes.md).
+- Buildings are advanced in `Location::AdvanceBuildings(slice)`; the building list is split into `NUM_SLICES_PER_FRAME` = 10 slices, so each building's `Advance()` runs exactly once per tick, in one of the 10 slices. A new server update is taken (and `GameTimer::Tick` run) only when `g_sliceNum == −1`, i.e. after slices 0–9 of the previous update have all been processed, and `SliceDArray::GetNextSliceBounds` makes the slices contiguous (slice *s* starts at the previous slice's upper bound + 1; slice 9 runs to `Size() − 1`). A building appended during a tick whose index falls in a later slice is therefore advanced in its creation tick. [C] `code/location.cpp:Location::AdvanceBuildings`, `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`, `code/lib/slice_darray.cpp:SliceDArray::GetNextSliceBounds`, `code/globals.h:NUM_SLICES_PER_FRAME` (see [21 §5.4](21_simulation_and_entity_model.md#54-slice-partitioning)). Resolved: 03-U2.
+- Timers written `if (GetNetworkTime() > m_timer) { …; m_timer = GetNetworkTime() + d; }` fire after 10·d or 10·d + 1 ticks: the clock is a double summed by `+= 0.1` from 0 at `GameTimer::Reset`, and the strict `>` compares two rounded sums. Exact replay at constant speed 1.0 (game time τ at which the timer is re-armed): for **d = 1.0** the period is **10 ticks** for τ ∈ [0.4, 3.0), [15.5, 63.2), [255.4, 1023.0) and ≥ 4095.5 s, and **11 ticks** for τ ∈ [0, 0.4), [3.0, 15.5), [63.2, 255.4), [1023.0, 4095.5) s; for **d = 2.0** it is 20 ticks for τ ∈ [0, 2.2), [14.7, 62.4), [254.6, 1022.2), ≥ 4094.7 s and 21 ticks otherwise. Measured in game time since `GameTimer::Reset`, the 1 s recounts therefore run at 10 ticks from ≈ 15 s to ≈ 63 s, at 11 ticks from ≈ 1 m 03 s to ≈ 4 m 15 s, and at 10 ticks again from ≈ 4 m 15 s to ≈ 17 m 03 s. Any game-speed change (speed crates, the Meteor-shower slow-down, pause ramps) changes the increments and shifts these windows. Affects MultiwiniaZone recounts, CarryableBuilding ownership, SpawnPopulationLock overpopulation and every other `GetNetworkTime() + d` timer. [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::Reset`; tick counts by exact IEEE-double replay. Resolved: 03-U15. The mode-level consequence is in [01](01_game_modes.md).
 - Logic expressed **per tick** (fixed probabilities, `+1 per tick` growth) does not scale with game speed, whereas logic using `SERVER_ADVANCE_PERIOD` does. Per-tick items are flagged in each section.
 
 ### 1.3 Teams, ownership and friendship
@@ -168,7 +168,7 @@ Notes on the table [C] unless stated:
 |---|---|---|---|---|---|---|
 | `Building` | abstract-in-practice base | `WorldObject` | `code/worldobject/building.h` | every building | [B:FULL] | [§3.1](#31-building) |
 | `BuildingPort` | plain struct | — | `code/worldobject/building.h` | every building with `MarkerPort*` shape markers | [B:FULL] | [§3.3](#33-buildingport) |
-| `SpawnBuilding` | abstract base | `Building` | `code/worldobject/spawnpoint.h` | SpawnLink, MasterSpawnPoint, SpawnPoint | [B:FULL] | [§4.2](#42-spawnbuilding) |
+| `SpawnBuilding` | base (abstract in practice; never constructed) | `Building` | `code/worldobject/spawnpoint.h` | SpawnLink, MasterSpawnPoint, SpawnPoint | [B:FULL] | [§4.2](#42-spawnbuilding) |
 | `SpawnBuildingLink` | plain struct | — | `code/worldobject/spawnpoint.h` | SpawnBuilding link list | [B:FULL] | [§4.2](#42-spawnbuilding) |
 | `SpawnBuildingSpirit` | plain struct (virtual spirit) | — | `code/worldobject/spawnpoint.h` | spirits in transit on spawn links | [B:FULL] | [§4.2](#42-spawnbuilding) |
 | `Teleport` | abstract base | `Building` | `code/worldobject/teleport.h` | RadarDish, Bridge | [B:FULL] | [§5.2](#52-teleport) |
@@ -398,7 +398,7 @@ stateDiagram-v2
 ### 3.6 Ports, occupancy and reservation
 
 - **Creation**: one `BuildingPort` per marker containing `MarkerPort`; position pushed 5.0 units clear of the building (`PushFromBuilding`, step 2.0), y on terrain; counters 0. Ports are rebuilt by every `SetDetail`. [C] `Building::SetShapePorts`, `Building::SetDetail`.
-- **Occupancy (every tick, `EvaluatePorts`)**: for each port, `m_occupant` is cleared, then the entity grid is queried within **5.0** units of the port position; the **first** entity found that is a `Darwinian` in `StateOperatingPort` becomes the occupant — any team, and without checking that the Darwinian is operating *this* building or *this* port. [C] `Building::EvaluatePorts`.
+- **Occupancy (every tick, `EvaluatePorts`)**: for each port, `m_occupant` is cleared, then the entity grid is queried within **5.0** units of the port position; the **first** entity found that is a `Darwinian` in `StateOperatingPort` becomes the occupant — any team, and without checking that the Darwinian is operating *this* building or *this* port. "First" is the entity-grid enumeration order of `EntityGrid::GetNeighbours`: cells by ascending cell x, then ascending cell z, then team 0…5, then the cell's slot order, duplicates removed (full rule in [21 §6.2](21_simulation_and_entity_model.md#62-entitygrid)). Two candidates in the same cell therefore resolve to the lower team index; a 5-unit query can span up to four cells, and then the lower cell x (then z) wins regardless of team. [C] `Building::EvaluatePorts`, `code/entity_grid.cpp:EntityGrid::GetNeighbours`.
 - **Reservation counters**: if the port is occupied all `m_counter[t] = 0`; otherwise every `m_counter[t] −= 4`, floored at 0. A Darwinian walking to a port calls `OperatePort(port, team)` every tick (+1, cap 50). [C] `Building::EvaluatePorts`, `Building::OperatePort`, `code/worldobject/darwinian.cpp:Darwinian::AdvanceApproachingPort`.
 - **Darwinian side** ([02](02_units_and_entities.md)): an idle (or worshipping / watching / following-orders / following-officer / approaching-armour) Darwinian calls `SearchForPorts()`. Candidates: buildings with ≥ 1 port, `|building.pos − pos| − building.radius < 100` (`DARWINIAN_SEARCHRANGE_PORTS`), at least one free port, and a walkable path. It takes the **nearest** candidate (a `syncrand() % n` pick is computed first and then overwritten by the nearest loop — the synced random number is still consumed), then picks uniformly (`syncrand()`) among ports with no occupant and `GetPortOperatorCount(p, team) < limit`, **limit = 1 in Multiwinia** (20 in Darwinia). On arrival → `StateOperatingPort`; the Darwinian leaves when `GetPortOccupant(port) != me` or the building disappears. [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForPorts`, `Darwinian::AdvanceOperatingPort`, `code/worldobject/darwinian.h:DARWINIAN_SEARCHRANGE_PORTS`.
 - **Net effect** [I]: a counter ≥ 1 means "a team-mate is already walking to this port", so at most one Darwinian per team heads for each free port; counters drain at 4/tick once nobody approaches. Different teams may race for the same port; the first Darwinian of any team in `StateOperatingPort` within 5 units is the occupant. Because the occupant search does not check the target building, two adjacent buildings whose ports lie within 5 units can share an occupant (no shipped case verified). Resolved: P02 listed "how Darwinians acquire/lose control-station ports" as unknown (P02-U1); the rule above is the general port mechanism used by ControlStation as well.
@@ -451,7 +451,7 @@ stateDiagram-v2
 | PulseBomb destroyed | 75 | 5 | 5 within 225 | `code/worldobject/pulsebomb.cpp:PulseBomb::Destroy` |
 | `Building::Destroy(i)` (scripts) | i | i/4 | i/4 within 3i | `Building::Destroy` |
 
-- Other direct damage: `TurretShell` hits deal `Damage(−2)` to Tree, AntHill and Triffid buildings only; `Fireball` deals `Damage(−100)` to trees; `FlameGrenade` deals `Damage(−4 × power)` to trees and triffids within `2 × power` (a computed falloff `fraction` is unused); `Lightning` deals `Damage(−100)` to trees in its cell; tasks call `GunTurret::Damage(−1000)` to self-destruct crate turrets; `WallBuster::BreakWalls` deals `Damage(−1000)` to every wall within 200. [C] `code/worldobject/weapons.cpp:TurretShell::Advance`, `Fireball::Advance`, `FlameGrenade::Advance`; `code/worldobject/lightning.cpp:Lightning::Advance`; `code/taskmanager.cpp`; `code/worldobject/wallbuster.cpp:WallBuster::BreakWalls`.
+- Other direct damage: `TurretShell` hits deal `Damage(−2)` to Tree, AntHill and Triffid buildings only; `Fireball` deals `Damage(−100)` to trees; `FlameGrenade` deals `Damage(−4 × power)` to trees and triffids within `2 × power` (a computed falloff `fraction` is unused); `Lightning` deals `Damage(−100)` to trees in its cell; in modes with a `MaxTurrets` option (Rocket Riot, Blitzkrieg) crate-turret tasks call `GunTurret::Damage(−1000)` to destroy their turret (§5.1); `WallBuster::BreakWalls` deals `Damage(−1000)` to every wall within 200. [C] `code/worldobject/weapons.cpp:TurretShell::Advance`, `Fireball::Advance`, `FlameGrenade::Advance`; `code/worldobject/lightning.cpp:Lightning::Advance`; `code/taskmanager.cpp`; `code/worldobject/wallbuster.cpp:WallBuster::BreakWalls`.
 - Damageable classes and their models: GunTurret (health 60), Wall (single hit ≤ −300), Tree (fire accumulator > 50 → burn), AntHill (health 100), Triffid (`m_damage` 50 → burns), EscapeRocket (damage meter > 100 → explodes); legacy Cave (never, §12.16) and Spam (100). Everything else — including Crate, whose lifetime rules are in [04](04_crates_powerups_and_weapons.md) — has no `Damage` override and is indestructible by weapons.
 
 ### 3.9 Ownership change paths
@@ -476,7 +476,7 @@ Header comment present in every level: `# Type id x z tm rx rz isGlobal`. Base f
 | 7 | isGlobal | `(bool)atoi` | §3.13 | `%-8d` |
 | 8… | subclass fields | per class `Read` | see each class's level-file table | per class |
 
-`m_id.Set(teamId, UNIT_BUILDINGS, −1, buildingId)`; `m_dynamic = dynamic`. Optional subclass fields are read only while `TokenAvailable()`; a missing mandatory token makes `GetNextToken` return an empty/NULL token (behaviour of `atoi` on it is [U], see 03-U7). [C] `Building::Read`; [I] token behaviour per [29](29_data_formats_reference.md).
+`m_id.Set(teamId, UNIT_BUILDINGS, −1, buildingId)`; `m_dynamic = dynamic`. Optional subclass fields are read only while `TokenAvailable()`. A missing mandatory token makes `GetNextToken` return **NULL** (it returns NULL at the end of the line and when only separators remain), and every `Read` passes that pointer straight to `atoi`/`iv_atof` (`atof`) without a check [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::GetNextToken`, `contrib/systemiv/lib/math/math_stubs.cpp:iv_atof`, `Building::Read`. `atoi(NULL)` is undefined behaviour; with the MSVC CRT it is a NULL dereference or an invalid-parameter abort, i.e. a crash at level load [I] (same conclusion as [29 §4.1](29_data_formats_reference.md), "MISSING ⇒ CRASH"). Resolved: 03-U7.
 
 ### 3.11 Factory, name table and type ids
 
@@ -609,61 +609,61 @@ Source: `code/worldobject/spawnpoint.h`, `code/worldobject/spawnpoint.cpp`. Buil
 
 ### 4.1 Overview
 
-A level's spawn network is a **directed tree of links** rooted at exactly one `SpawnPointMaster`, with `SpawnLink` relay nodes and `SpawnPoint` leaves (a SpawnPoint may also relay). When an owned, activated SpawnPoint wants a Darwinian it asks the master; the master emits a **virtual** spirit (`SpawnBuildingSpirit`, not a `Spirit` entity) that travels link by link, **exactly 1.0 game second per link regardless of link length**, to the requesting SpawnPoint, which then spawns one Darwinian at its door if it is still owned. [C] `MasterSpawnPoint::RequestSpirit`, `SpawnBuilding::TriggerSpirit`, `SpawnBuilding::Advance`, `SpawnPoint::TriggerSpirit`, `SpawnPoint::SpawnDarwinian`.
+A level's spawn network is a **directed tree of links** rooted at exactly one `SpawnPointMaster`, with `SpawnLink` relay nodes and `SpawnPoint` leaves (a SpawnPoint may also relay). When an owned, activated SpawnPoint wants a Darwinian it asks the master; the master emits a **virtual** spirit (`SpawnBuildingSpirit`, not a `Spirit` entity) that travels link by link to the requesting SpawnPoint, which then spawns one Darwinian at its door if it is still owned. Transit time is **independent of link length**: each link takes `progress += SERVER_ADVANCE_PERIOD` until `progress ≥ 1.0`, with the overshoot carried to the next link. Because ten additions of 0.1 sum to 0.9999999999999999 < 1.0 in IEEE double, the **first link takes 11 increments and every later link 10** (the carried overshoot is 0.0999…), so *h* hops need **10h + 1 increments** (≈ 1.1 s for one hop, ≈ h s for many). A hand-off to a building that is advanced later in the same tick (higher index in `Location::m_buildings`) receives its first increment in that same tick, so the wall-clock latency from the request is between 9h + 1 and 10h + 1 ticks depending on building order. [C] `MasterSpawnPoint::RequestSpirit`, `SpawnBuilding::TriggerSpirit`, `SpawnBuilding::Advance`, `SpawnPoint::TriggerSpirit`, `SpawnPoint::SpawnDarwinian`; increment counts by exact IEEE-double replay; same rule as [05 §3.4](05_economy_and_population.md#34-spirit-transit-through-the-spawn-network).
 
 ```mermaid
 flowchart LR
-    M["SpawnPointMaster (virtual source)"] -->|"link 1 s"| L1[SpawnLink]
-    L1 -->|"1 s"| SP1["SpawnPoint A"]
-    L1 -->|"1 s"| L2[SpawnLink]
-    L2 -->|"1 s"| SP2["SpawnPoint B"]
+    M["SpawnPointMaster (virtual source)"] -->|"first link 11 ticks"| L1[SpawnLink]
+    L1 -->|"10 ticks"| SP1["SpawnPoint A"]
+    L1 -->|"10 ticks"| L2[SpawnLink]
+    L2 -->|"10 ticks"| SP2["SpawnPoint B"]
     SP1 -.->|"RequestSpirit(A)"| M
     SP2 -.->|"RequestSpirit(B)"| M
     SP2 -->|"door marker"| D(("Darwinian"))
 ```
 
-Shipped topology [C] `_work/drafts/P06_spawn_graph.csv` (via `_work/scripts/P06_spawn_graph.py`): every official map with spawn points has exactly one master, no cycles, no self links, no unreachable SpawnPoint and exactly one path to each SpawnPoint. Delivery delay from request to spawn = number of hops × 1 s.
+Shipped topology [C] `data/levels/mp_*.txt` (the `linkId*` fields of every `SpawnPointMaster`, `SpawnLink` and `SpawnPoint` line, walked breadth-first from the master; table generated by `_work/scripts/P06_spawn_graph.py`): every official map with spawn points has exactly one master, no cycles, no self links, no unreachable SpawnPoint and exactly one path to each SpawnPoint. Transit from request to spawn = 10h + 1 increments for *h* hops (one increment per tick; up to h − 1 fewer ticks when hand-offs go to later-advanced buildings).
 
-| Official map | SpawnPoints | Link objects (SpawnLink) | Hops master→point (min–max) = delivery delay in s |
-|---|---|---|---|
-| `mp_blitzkrieg_2P_3` | 4 | 9 | 3–8 |
-| `mp_blitzkrieg_2P_4` | 3 | 7 | 3–4 |
-| `mp_blitzkrieg_2p_1` | 1 | 0 | 1–1 |
-| `mp_blitzkrieg_2p_2` | 6 | 8 | 2–5 |
-| `mp_cts_2p_1` | 6 | 0 | 1–1 |
-| `mp_cts_2p_2` | 4 | 0 | 1–1 |
-| `mp_cts_2p_3` | 4 | 6 | 3–6 |
-| `mp_cts_2p_4` | 4 | 0 | 1–1 |
-| `mp_cts_3P_2` | 9 | 0 | 1–1 |
-| `mp_cts_3p_1` | 6 | 0 | 1–1 |
-| `mp_cts_4P_1` | 12 | 0 | 1–1 |
-| `mp_cts_4P_2` | 8 | 0 | 1–1 |
-| `mp_cts_4p_3` | 8 | 17 | 3–9 |
-| `mp_domination_2P_1` | 8 | 13 | 2–7 |
-| `mp_domination_2P_2` | 8 | 7 | 2–5 |
-| `mp_domination_3P_1` | 10 | 14 | 4–9 |
-| `mp_domination_4P_1` | 10 | 18 | 2–10 |
-| `mp_domination_4P_2` | 12 | 20 | 3–5 |
-| `mp_koth_2P_1` | 6 | 7 | 3–5 |
-| `mp_koth_2P_2` | 9 | 10 | 3–7 |
-| `mp_koth_2P_3` | 10 | 11 | 4–8 |
-| `mp_koth_2P_3b` | 10 | 9 | 2–6 |
-| `mp_koth_3P_1` | 9 | 23 | 3–8 |
-| `mp_koth_3P_2` | 9 | 14 | 4–9 |
-| `mp_koth_3P_3` | 9 | 15 | 5–6 |
-| `mp_koth_4P_1` | 10 | 18 | 2–11 |
-| `mp_koth_4P_3` | 12 | 20 | 3–5 |
-| `mp_koth_4P_4` | 12 | 4 | 2–2 |
-| `mp_rocketriot_2P_2` | 2 | 0 | 1–1 |
-| `mp_rocketriot_4P_1` | 12 | 0 | 1–1 |
-| `mp_skirmish_2p_4` | 10 | 11 | 3–8 |
-| `mp_skirmish_3P_1` | 15 | 0 | 1–1 |
+| Official map | SpawnPoints | Link objects (SpawnLink) | Hops h master→point (min–max) | Transit increments 10h + 1 (min–max) |
+|---|---|---|---|---|
+| `mp_blitzkrieg_2P_3` | 4 | 9 | 3–8 | 31–81 |
+| `mp_blitzkrieg_2P_4` | 3 | 7 | 3–4 | 31–41 |
+| `mp_blitzkrieg_2p_1` | 1 | 0 | 1–1 | 11–11 |
+| `mp_blitzkrieg_2p_2` | 6 | 8 | 2–5 | 21–51 |
+| `mp_cts_2p_1` | 6 | 0 | 1–1 | 11–11 |
+| `mp_cts_2p_2` | 4 | 0 | 1–1 | 11–11 |
+| `mp_cts_2p_3` | 4 | 6 | 3–6 | 31–61 |
+| `mp_cts_2p_4` | 4 | 0 | 1–1 | 11–11 |
+| `mp_cts_3P_2` | 9 | 0 | 1–1 | 11–11 |
+| `mp_cts_3p_1` | 6 | 0 | 1–1 | 11–11 |
+| `mp_cts_4P_1` | 12 | 0 | 1–1 | 11–11 |
+| `mp_cts_4P_2` | 8 | 0 | 1–1 | 11–11 |
+| `mp_cts_4p_3` | 8 | 17 | 3–9 | 31–91 |
+| `mp_domination_2P_1` | 8 | 13 | 2–7 | 21–71 |
+| `mp_domination_2P_2` | 8 | 7 | 2–5 | 21–51 |
+| `mp_domination_3P_1` | 10 | 14 | 4–9 | 41–91 |
+| `mp_domination_4P_1` | 10 | 18 | 2–10 | 21–101 |
+| `mp_domination_4P_2` | 12 | 20 | 3–5 | 31–51 |
+| `mp_koth_2P_1` | 6 | 7 | 3–5 | 31–51 |
+| `mp_koth_2P_2` | 9 | 10 | 3–7 | 31–71 |
+| `mp_koth_2P_3` | 10 | 11 | 4–8 | 41–81 |
+| `mp_koth_2P_3b` | 10 | 9 | 2–6 | 21–61 |
+| `mp_koth_3P_1` | 9 | 23 | 3–8 | 31–81 |
+| `mp_koth_3P_2` | 9 | 14 | 4–9 | 41–91 |
+| `mp_koth_3P_3` | 9 | 15 | 5–6 | 51–61 |
+| `mp_koth_4P_1` | 10 | 18 | 2–11 | 21–111 |
+| `mp_koth_4P_3` | 12 | 20 | 3–5 | 31–51 |
+| `mp_koth_4P_4` | 12 | 4 | 2–2 | 21–21 |
+| `mp_rocketriot_2P_2` | 2 | 0 | 1–1 | 11–11 |
+| `mp_rocketriot_4P_1` | 12 | 0 | 1–1 | 11–11 |
+| `mp_skirmish_2p_4` | 10 | 11 | 3–8 | 31–81 |
+| `mp_skirmish_3P_1` | 15 | 0 | 1–1 | 11–11 |
 
-Official maps **without** a spawn network (17 of 49): all 8 Assault maps; Blitzkrieg `mp_blitzkrieg_3P_1`, `3P_2`, `4P_2`; Rocket Riot `mp_rocketriot_2p_3`, `2P_4`, `3p_1`, `3P_2`, `3P_3`; KOTH `mp_koth_3P_4`. Their Darwinian supply comes from trunk-port reinforcement waves and starting units ([05](05_economy_and_population.md)). SpawnPoint presence per mode: Domination 9/9, KOTH 8/9, CTS 9/9, Blitzkrieg 4/7, Rocket Riot 2/7, Assault 0/8. [C] census (`_work/scripts/S_03_building_census.py`), `_work/drafts/P06_spawn_graph.csv`.
+Official maps **without** a spawn network (17 of 49): all 8 Assault maps; Blitzkrieg `mp_blitzkrieg_3P_1`, `3P_2`, `4P_2`; Rocket Riot `mp_rocketriot_2p_3`, `2P_4`, `3p_1`, `3P_2`, `3P_3`; KOTH `mp_koth_3P_4`. Their Darwinian supply comes from trunk-port reinforcement waves and starting units ([05](05_economy_and_population.md)). SpawnPoint presence per mode: Domination 9/9, KOTH 8/9, CTS 9/9, Blitzkrieg 4/7, Rocket Riot 2/7, Assault 0/8. [C] census of `data/levels/mp_*.txt` (generated by `_work/scripts/S_03_building_census.py` and `_work/scripts/P06_spawn_graph.py`).
 
 ### 4.2 SpawnBuilding
 
-Abstract base of SpawnLink, MasterSpawnPoint and SpawnPoint. [C] `code/worldobject/spawnpoint.h:SpawnBuilding`.
+Common base of SpawnLink, MasterSpawnPoint and SpawnPoint. It is abstract only in practice: it declares no pure virtual function, but no `Building::Type*` value and no `CreateBuilding` case constructs it directly. [C] `code/worldobject/spawnpoint.h:SpawnBuilding`, `code/worldobject/building.cpp:Building::CreateBuilding`.
 
 | Member | Meaning | Ref |
 |---|---|---|
@@ -701,7 +701,7 @@ Level-file parameters (all three subclasses):
 | Function | pure relay node of the spawn tree | [C] `SpawnLink::SpawnLink` |
 | Shape | `spawnlink.shp` (no ports, no lights) | [C] |
 | Ownership / capture | none (team from level, irrelevant) | [C] |
-| Inputs / outputs | virtual spirits in, virtual spirits out (1 s per outgoing link) | [C] |
+| Inputs / outputs | virtual spirits in, virtual spirits out (10 increments per link, 11 on the first link from the master; §4.1) | [C] |
 | Damage | indestructible | [C] |
 | Level line | `SpawnLink id x z tm rx rz isGlobal linkId*` | [C] |
 | Mode usage | 21 official maps: Domination 8/9, KOTH 8/9, Blitzkrieg 3/7, CTS 2/9 (261 lines) | [C] census |
@@ -802,7 +802,7 @@ Source: `code/worldobject/gunturret.h`, `code/worldobject/gunturret.cpp`. Build 
 | 3 | Flame | `buildingname_flameturret` | `cannon_flame.shp` | `Location::LaunchFireball(barrelEnd, barrelFront·100, life 1.0, turretId)` (fireball has no team → hurts everyone) | 0.1 s | 10 | 150 | 2 |
 | 4 | Subversion | `buildingname_subversionturret` | `battlecannonbarrel.shp` | `Location::FireLaser(barrelEnd, barrelFront·500/4 = 125 u/s, team, mindControl = true)` | 0.5 s | 10 | 150 | 2 |
 
-Single-player always uses `battlecannonbarrel.shp`. A Standard turret fires a *subversion* laser instead of a shell from any barrel whose operating Darwinian has `m_subversionTaskId ≠ −1` (per-shot override; the origin of that task id is a crate/task feature, 03-U5). [C] `GunTurret::PrimaryFire`.
+Single-player always uses `battlecannonbarrel.shp`. A Standard turret fires a *subversion* laser instead of a shell from any barrel whose operating Darwinian has `m_subversionTaskId ≠ −1` (per-shot override). The id is set by the Subversion power-up: `Crate::RunSubversion` calls `Darwinian::GiveMindControl(taskId)` on own Darwinians within `POWERUP_EFFECT_RANGE` of the target point, and each Darwinian clears it once that task no longer exists [C] `code/worldobject/crate.cpp:Crate::RunSubversion`, `code/worldobject/darwinian.cpp:Darwinian::GiveMindControl`, `Darwinian::Advance`; task rules in [04](04_crates_powerups_and_weapons.md). Resolved: 03-U5. [C] `GunTurret::PrimaryFire`.
 
 Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02](02_units_and_entities.md); summarised) [C] `code/location.cpp:FireTurretShell`, `code/worldobject/weapons.cpp`:
 
@@ -812,9 +812,9 @@ Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02
 | Rocket | starts 50 u/s, ×1.2 per tick until ≥ 150 | 1.0 s or ground/building contact | `Bang(pos, 15, 25, team, turretId)` |
 | Grenade (mortar) | ballistic, level `force` | explodes on impact (life 1000) | power 25 → `Bang(pos, 12.5, 50, team)` |
 | Fireball | 100 u/s | 1.0 s; radius `20 · min(1, abs(1 − life))` | each Darwinian in radius once: `FireDamage(30 · radius/dist · max(1, life))` |
-| Subversion laser | 125 u/s | Darwinia laser-research lifetime (0.2, 0.4, 0.6, 0.8, 1.0 s for level 0–4) × 2 | mind-control laser (converts) — MP laser research level is [U] (03-U4) |
+| Subversion laser | 125 u/s | laser-research lifetime (0.2, 0.4, 0.6, 0.8, 1.0 s for level 0–4) × 2; in MP `Location::Init` sets `TypeLaser` research to 2 → **1.2 s (≈ 150 u)** | mind-control laser (converts). [C] `code/location.cpp:Location::FireLaser`, `Location::Init` (MP research table; it runs after the lobby's `Multiwinia::SetGameResearch`, see [41](41_risks_and_open_questions.md)). Resolved: 03-U4 |
 
-**Firing cadence.** Barrel *i* fires only if **port *i*** is occupied. `PrimaryFire` returns immediately while `m_fireTimer > 0`; otherwise it examines `m_nextBarrel` and the next one (one barrel for Rocket), firing each manned barrel, and sets `m_fireTimer = reload` after a shot (the second barrel in the same call still fires). `m_fireTimer` is decremented by `SERVER_ADVANCE_PERIOD` before `PrimaryFire` in the same tick. Every examined manned barrel consumes three synced random numbers (mortar scatter, computed for all types) plus the cartridge-ejection draws. [C] `GunTurret::Advance`, `GunTurret::PrimaryFire`.
+**Firing cadence.** Barrel *i* fires only if **port *i*** is occupied. `PrimaryFire` returns immediately while `m_fireTimer > 0`; otherwise it examines `m_nextBarrel` and the next one (one barrel for Rocket), firing each manned barrel, and sets `m_fireTimer = reload` after a shot (the second barrel in the same call still fires). `m_fireTimer` is decremented by `SERVER_ADVANCE_PERIOD` before `PrimaryFire` in the same tick. An examined barrel whose port is empty consumes no random number. Every examined **manned** barrel consumes exactly **7 synced draws**, in this order and for every turret type: (1) `syncsfrand(m_targetRadius)` and (2) `syncsfrand(m_targetRadius)` for the mortar target x/z, (3) `syncsfrand(0.1)` for the mortar force (all three computed even when the turret is not a mortar); the weapon call (`FireTurretShell`, `FireRocket`, `ThrowWeapon`, `LaunchFireball`, `FireLaser` and the projectile/muzzle-flash constructors) draws nothing; then the cartridge ejection: (4)–(6) `Vector3(SFRAND(0.5), SFRAND(0.5), SFRAND(0.5))`, evaluated x, y, z left to right through `FromRand` → `_syncsfrand`, and (7) `syncfrand(20)` for the ejection speed. The ejection draws happen whenever `m_shellEject[barrel]` exists, and only the `TurretEmptyShell` object is Standard-only. In Multiwinia the constructor looks up `MarkerBarrelEnd0n` and `MarkerShells0n` once, in the Standard model `cannon_bullets.shp` (which has all four shell markers), before the level type is known, and never re-looks them up when `m_barrel` is swapped to the type's model; so every MP turret has all four eject markers and fires from the `cannon_bullets.shp` barrel-end positions. In single-player the model is `battlecannonbarrel.shp`, which has no shell markers, so only draws (1)–(3) occur. [C] `GunTurret::GunTurret`, `GunTurret::Initialise`, `GunTurret::Advance`, `GunTurret::PrimaryFire`, `code/lib/vector3.h:SymmetricRandomFloat`, `code/lib/vector3.cpp:FromRand`; marker presence from `data/shapes/cannon_bullets.shp`, `cannon_rocket.shp`, `cannon_flame.shp`, `battlecannonbarrel.shp`.
 ⇒ Standard / Flame at 0.1 s ticks: 2 of the 4 barrels are examined per tick → **shots per second = 5 × (occupied ports)** (max 20 shells/s); Mortar: up to 2 grenades per volley, one volley per ≈ 4.0 s; Subversion: up to 2 lasers per ≈ 0.5 s; Rocket: 1 rocket per ≈ 1.5 s plus 0.1 s per skipped unmanned barrel. [I] arithmetic from the code.
 
 **Capture / ownership** [C] `GunTurret::RecalculateOwnership`:
@@ -826,8 +826,9 @@ Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02
 
 **Targeting and aiming** (per tick, while owned and not under player control) [C] `GunTurret::Advance`, `SearchForTargets`, `SearchForRandomPos`, `ClearLOS`:
 1. Every **1.0 s** in MP (`GUNTURRET_MULTIWINIA_RETARGETTIMER`; 3.0 s SP `GUNTURRET_RETARGETTIMER`) `SearchForTargets()`:
-   - Mortar: `EntityGrid::GetBestEnemy(pos + targetPos, 0, targetRadius, team)`; aim point forced to `pos + targetPos`.
-   - Others: all enemies within `GetMaxRange()`; skip `TypeAI`, `TypeHarvester` and dead entities; choose the **nearest** with `dist ≥ GetMinRange()` and clear line of sight (samples every 30 units from the target back towards the turret, ray-testing buildings in each obstruction cell). Sound `TargetSighted` on a new target.
+   - Mortar: `EntityGrid::GetBestEnemy(pos + targetPos, 0, targetRadius, team)` (nearest live enemy of a non-friendly team other than `TypeAI`, first found on ties; [21 §6.2](21_simulation_and_entity_model.md#62-entitygrid)); aim point forced to `pos + targetPos`.
+   - Others: all enemies within `GetMaxRange()` (`EntityGrid::GetEnemies`, entity-grid order); skip `TypeAI`, `TypeHarvester` and dead entities; choose the **nearest** (strict `<`, so the first found wins ties) with `dist ≥ GetMinRange()` and `ClearLOS(target)`. Sound `TargetSighted` on a new target.
+   - `ClearLOS(t)` [C] `GunTurret::ClearLOS`: `dist = |turret − t|`, `n = int(dist / 30)`, `diff = (t − turret) / n`; sample point `q` starts **at the target** and `q += diff` n times — i.e. it walks **away from the turret**, over the segment from t to t + (n − 1)/n·(t − turret) behind the target. For each building listed in the obstruction-grid cell of each `q`, `DoesRayHit(turretPos, norm(t − turret), dist)` blocks the shot. Obstacles between turret and target are therefore found only if they are also registered in a cell sampled behind the target; with `dist < 30` (`n = 0`) the loop does not run and LOS is always clear. Defect #34 in §15.
    - No target and owned → `SearchForRandomPos()` idle sweep: first time a random angle `syncfrand(2π)`, distance `200 + syncfrand(200)`, height `syncfrand(100)`; later rotate the current aim by `syncsfrand(π/2)` (±π/4) and height `syncsfrand(50)`.
 2. With a valid target: aim point = target position + wobble `(sin(3t)·20, |sin(2t)·10|, cos(3t)·20)` (t = game time); fire if the horizontal angle between aim and turret front < **0.3 rad** and no friendly-fire warning. `m_hadTargetTimer = now`; for **1.0 s** after the last target the turret keeps firing ("hosing").
 3. Aim points closer than **75** units are pushed out to 75. Turret yaw turns by `angle × 0.2` per tick towards the aim; barrel pitch blends `barrelUp = barrelUp·(1 − 2dt) + target·2dt`.
@@ -836,7 +837,7 @@ Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02
 
 **Player control.** The owner can select its turret (local input only if the turret's team is the local team) → `Team::m_currentBuildingId`; `Team::SelectUnit` sets `m_fireTimer = 0.5` and the camera enters `ModeTurretAim`. While selected, automatic targeting is off; team-controls processing sets the aim point to the networked mouse position and calls `PrimaryFire()` on move/fire/left-button. [C] `code/location_input.cpp`, `code/team.cpp:Team::SelectUnit`, `code/location.cpp:Location::UpdateTeam` (≈L4007–4024); input bindings in [06](06_player_control_and_input.md).
 
-**Health and damage.** `m_health = 60`; `Damage(d)` adds `d`; at ≤ 0 the turret and barrel shapes explode, `m_destroyed`, its AITarget is destroyed and `Advance` returns true. Sources: `Location::Bang` falloff (§3.8), task self-destruct (−1000) when a crate turret is captured by an enemy or its task ends. [C] `GunTurret::Damage`, `code/taskmanager.cpp`.
+**Health and damage.** `m_health = 60`; `Damage(d)` adds `d`; at ≤ 0 the turret and barrel shapes explode, `m_destroyed`, its AITarget is destroyed and `Advance` returns true. Sources: `Location::Bang` falloff (§3.8) and, for crate turrets in modes that define the `MaxTurrets` option (Rocket Riot, Blitzkrieg), the task rules of the next list. [C] `GunTurret::Damage`, `code/taskmanager.cpp:Task::Advance`, `Task::Stop`.
 
 **Companion objects.**
 - AITarget: on first Advance an `AITarget` building is created at the turret (`m_turretTarget = true`, new building id, `RecalculateAITargets`) so CPU players fight for it; destroyed with the turret. [C] `GunTurret::Advance`.
@@ -844,7 +845,7 @@ Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02
 
 #### GunTurretTarget
 
-`EffectGunTurretTarget` world object in `Location::m_effects` ("a GunTurret target that darwinians can run from"): every tick it moves to the turret's aim point if any port is manned, else to (0,0,0); in MP it adopts the turret's team for Standard turrets only; it removes itself when the turret is gone. Its consumer is Darwinian threat avoidance ([02](02_units_and_entities.md); exact reaction 03-U6). [C] `GunTurretTarget::Advance`.
+`EffectGunTurretTarget` world object in `Location::m_effects` ("a GunTurret target that darwinians can run from"): every tick it moves to the turret's aim point if any port is manned, else to (0,0,0); in MP it adopts the turret's team for Standard turrets only; it removes itself when the turret is gone. Its only consumer is Darwinian threat avoidance, and `Darwinian::SearchForThreats` considers it only when `!Multiplayer()`, so in Multiwinia Darwinians ignore it; the object still moves every tick but has no gameplay effect [C] `GunTurretTarget::Advance`, `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` ([02](02_units_and_entities.md)). Resolved: 03-U6.
 
 **Level-file parameters** [C] `GunTurret::Read/Write/Initialise`. The level front vector is **discarded**: `Initialise` forces `up = (0,1,0)`, `front = (1,0,0) × up = (0,0,1)`; centre = pos, radius 30.
 
@@ -888,16 +889,16 @@ stateDiagram-v2
         Engaging --> PlayerControlled : owner selects the turret
         PlayerControlled --> Sweeping : deselected
     }
-    Owned --> Destroyed : health 0, wrong-faction capture, or task end
+    Owned --> Destroyed : health 0, wrong-faction capture, or crate-task rule in MaxTurrets modes
     Neutral --> Destroyed : health 0
     Destroyed --> [*]
 ```
 
 **Mode usage and variants** [C] census, `code/worldobject/crate.cpp`, `code/multiwinia.cpp`:
 - Level-placed: 13 official maps — Assault 8/8 (12–40 per map), Blitzkrieg 2/7, Domination 1/9 (`mp_skirmish_3P_1`, 6), KOTH 1/9 (`mp_koth_3P_4`, 6), Rocket Riot 1/7 (`mp_rocketriot_3P_3`, 6); 200 official + 7 dev lines. All placed MP turrets start **neutral**; types used: Standard 196, Flame 11 (Assault `2p_3`, `3p_1`, `3p_3`); no level places Rocket, Mortar or Subversion.
-- Crate-delivered: rewards GunTurret / RocketTurret / FlameTurret start a `GlobalResearch::TypeGunTurret` task with `m_option` = Standard / Rocket / Flame; when the player targets a point, `Crate::RunGunTurret(pos, team, type)` builds a **neutral** turret from a template (must be manned), regenerates the obstruction grid, explodes its shapes as a build-in effect, registers map marker `icons/icon_gunturret.bmp` and shows `crate_message_run_gunturret`. The task self-destructs the turret if an enemy captures it. → [04](04_crates_powerups_and_weapons.md).
+- Crate-delivered: rewards GunTurret / RocketTurret / FlameTurret start a `GlobalResearch::TypeGunTurret` task with `m_option` = Standard / Rocket / Flame; when the player targets a point, `Crate::RunGunTurret(pos, team, type)` builds a **neutral** turret from a template (must be manned), regenerates the obstruction grid, explodes its shapes as a build-in effect, registers map marker `icons/icon_gunturret.bmp` and shows `crate_message_run_gunturret`. What happens next depends on the mode option `MaxTurrets` (`Task::TargetGunTurret`): where the mode does not define it (`GetGameOption` returns −1: Domination, KOTH, CTS, Assault) the task is terminated at once — the turret is still neutral, so `Task::Stop` does not destroy it — and it is an ordinary turret from then on. Where `MaxTurrets` exists (Rocket Riot, Blitzkrieg; `data/multiwinia.txt`) the task stays `StateRunning` and every tick `Task::Advance` destroys the turret (`Damage(−1000)`) as soon as it is owned by a team other than the task's team and not neutral; terminating the task destroys it if the task's team owns it at that moment, and `TaskManager::TerminateTask` refuses while another team holds it. [C] `code/taskmanager.cpp:Task::TargetGunTurret`, `Task::Advance`, `Task::Stop`, `TaskManager::TerminateTask`, `code/multiwinia.cpp:Multiwinia::GetGameOption`. → [04](04_crates_powerups_and_weapons.md).
 - Reinforcement turrets: Rocket Riot / Blitzkrieg (and trunk-port maps with `TurretFrequency`) periodically grant GunTurret tasks (`TurretFrequency`, `MaxTurrets`; Blitzkrieg swaps to AirStrike after enough zones; level option `nogunturrets` disables) → [05](05_economy_and_population.md).
-- Armour conversion: `Armour::ConvertToGunTurret` builds a turret from a dynamic template. [C] `code/worldobject/armour.cpp`.
+- Armour conversion [B:LEGACY] (unreachable in Multiwinia): `Armour::ConvertToGunTurret` builds a turret from a dynamic template, but it runs only when `m_awaitingDeployment` is set, and the only live setter is the `!Multiplayer()` branch of the armour input code; the other setter is inside a commented-out block of `Location::UpdateTeam`. [C] `code/worldobject/armour.cpp:Armour::ConvertToGunTurret`, `Armour::Advance`, `code/location_input.cpp:LocationInput::AdvanceTeamControl`, `code/location.cpp:Location::UpdateTeam`.
 
 Sounds: `TargetSighted`, `FireShell`, `FireFlame`, `FireGrenade`, `FireRocket`, `RegisterKill` (triggered) — the list function names it `RegisteredKill` (name mismatch, P06) + base. [C] `GunTurret::ListSoundEvents`.
 
@@ -1054,11 +1055,11 @@ flowchart LR
 |---|---|---|
 | Function | the capturable power source | [C] |
 | Shape | `solarpanel.shp`: **5 ports**, 5 status markers, 4 glow markers; orientation forced to the terrain normal, front = (1,0,0) × normal (computed on the template in `Initialise`) | [C] ctor, `SolarPanel::Initialise` |
-| Starting team | `m_startingTeam` = level team if ≠ 255 (else −1) | [C] `Initialise` |
+| Starting team | `m_startingTeam` (`int`, constructor default −1) = the instantiated team if ≠ 255; a panel that starts neutral (level team 255, or a map position that no lobby team occupies, §1.3) keeps −1 | [C] `SolarPanel::SolarPanel`, `SolarPanel::Initialise` |
 | Capture | MP: every tick (after the surge roll) `RecalculateOwnership()`: no ports → 255; else owner = team with the most port occupants (strict max, ties → lower index); zero occupants → 255. **Enemies may share the panel** | [C] `SolarPanel::RecalculateOwnership` |
 | Output | each tick, if `syncfrand(20) ≤ fractionOccupied` (fraction = occupied/ports) → `TriggerSurge(0, panelTeam)`. Per-tick probability = fraction/20 → at 10 ticks/s the expected rate is **0.5 × fraction surges/s** (0.5/s with all 5 ports manned, 0.1/s per manned port). The synced random draw happens **every tick for every panel**; per-tick, so it does not scale with game speed | [C] `SolarPanel::Advance`; [I] rate arithmetic |
 | Operating flag | `fraction > 0.6` → operating (sound `Operate` on the transition); `< 0.3` → not operating (sound stopped) — cosmetic / AI only | [C] |
-| Assault knock-out rule | in Assault, if the panel has a starting team and is now owned by a **different** team, all its ports are deleted → next evaluation sets it neutral and it never produces again (attackers permanently knock out defender panels) | [C] `SolarPanel::Advance`; [I] design intent |
+| Assault knock-out rule | in Assault, at the start of `Advance` (before the surge roll and the ownership update), if `m_startingTeam != 255 && team != 255 && m_startingTeam != team && ports > 0`, all its ports are deleted → the same tick's ownership update (no ports → 255) sets it neutral (that tick's surge roll still uses the fraction computed before the deletion) and it never produces again (attackers permanently knock out defender panels). Because `m_startingTeam` is −1, never 255, for a neutral-start panel, such a panel is also knocked out on the tick after its **first** capture by anyone. Latent in shipped data: every Assault `SolarPanel` line has team position 0, 1 or 3 (`mp_assault_*.txt`), so it is neutral at start only if that position has no lobby team | [C] `SolarPanel::Advance`, data; [I] design intent (03-U16) |
 | Start of game | `Location::InitialiseTeam` spawns one Darwinian per port on every SolarPanel owned by the team and evaluates ownership | [C] |
 | Defect | empty panels re-fire `ChangeTeam` every tick (§3.9) | [C] |
 | Rendering | status lights green/red; when occupied and owned, 4 glow quads (60 × 40) pulsing `0.5 + 0.5·abs(sin t)` in team colour (Darwinia blue (100,100,250)) | [C] `RenderPorts`, `RenderAlphas` |
@@ -1071,7 +1072,7 @@ stateDiagram-v2
     Neutral --> Owned : any occupant, plurality team T
     Owned --> Owned : plurality changes to U
     Owned --> Neutral : no occupants
-    Owned --> KnockedOut : Assault and owner differs from starting team, ports deleted
+    Owned --> KnockedOut : Assault and owner differs from starting team or panel started neutral, ports deleted
     KnockedOut --> [*] : permanently neutral, never emits
     state Owned {
         [*] --> Emitting
@@ -1490,7 +1491,7 @@ Source: `code/worldobject/multiwiniazone.h`, `code/worldobject/multiwiniazone.cp
 | `m_blitzkriegCaptureTeam` | int | 255 | team currently gaining/holding progress |
 | `m_blitzkriegUpOrDown` | int | 0 | −1 / 0 / +1 last change direction (flag icon) |
 | `m_blitzkriegLocked` | bool | true | locked flags cannot be contested |
-| `m_blitzkriegUnderAttackMessageTimer` | double | 0.0 | 20 s throttle for "base under attack" |
+| `m_blitzkriegUnderAttackMessageTimer` | double | 0.0 | throttle for "base under attack": set to 20.0, decremented by `SERVER_ADVANCE_PERIOD` once per recount → 200 recounts ≈ 200–220 game s |
 | static `s_blitzkriegBaseZone[6]` | int | reset to −1 at location init | home flag id per team |
 
 [C] `code/worldobject/multiwiniazone.h`, ctor.
@@ -1506,7 +1507,7 @@ Source: `code/worldobject/multiwiniazone.h`, `code/worldobject/multiwiniazone.cp
 2. If not locked: per used team, count Darwinians within **40** units (not `m_size`) that are not dead, not on fire, not in Armour; leader = strictly highest count. If locked, no counting happens (stale `m_teamCount`, leader = none).
 3. Leader present: `change = 5.0 × top × (top / total)`; if the zone is owned, `captureTeam = owner`; if leader ≠ captureTeam: `ownership −= change × dt`, at ≤ 0 → `SetTeamId(255)`, `captureTeam = leader`; else `ownership += change × dt`, at ≥ 100 → `SetTeamId(leader)`. Per recount (dt = 0.1) this is `0.5 × top × fraction` points.
 4. No leader: if neutral, `ownership −= 10 × dt` (1 point per recount); at ≤ 0 `captureTeam = 255`. Owned zones do not regenerate.
-5. Clamp to [0, 100]; set up/down indicator; "base under attack" message (`dialog_baseunderattack`) for the local owner of its base when enemies are within `m_size`, throttled to 20 s.
+5. Clamp to [0, 100]; set up/down indicator; "base under attack" message (`dialog_baseunderattack`) for the local owner of its base when enemies are within `m_size`. Throttle: after a message the timer is set to 20.0, but it is decremented by `SERVER_ADVANCE_PERIOD` (0.1) only inside this once-per-recount block, so it needs **200 recounts** (20.0 − 200 × 0.1 ≤ 0 in double) ≈ 200–220 game s (each recount is 10 or 11 ticks, §1.2), not 20 s. Local presentation only (no simulation effect). [C] `MultiwiniaZone::Advance_Blitzkrieg`; same value as [01](01_game_modes.md).
 6. The AITarget nearest the zone gets `m_priority[i] = 1.0` (Easy) or `GetBlitzkriegPriority(zone, i)` (Standard/Hard) and `m_aiObjectiveTarget[i] = (p > 0)` → [07](07_ai.md).
 
 `GetBlitzkriegPriority(zone, team)` by the team's Blitzkrieg status score: SAFE → 1.0 for zones not owned by the team; ENEMYOCCUPIED / UNDERATTACK / UNOCCUPIED → 1.0 for base zones owned by a live team; UNDERTHREAT → 1.0 for zones linked to the team's base and not owned by it; finally 0.0 for any non-base zone the team already owns. [C].
@@ -2078,18 +2079,18 @@ Source: `code/worldobject/aiobjective.h`, `code/worldobject/aiobjective.cpp`. **
 | Aspect | Specification | Ref |
 |---|---|---|
 | Function | point of interest belonging to an AIObjective; its ownership decides objective completion and it boosts nearby AITarget priorities for the relevant teams | [C] |
-| Behaviour | waits for `s_objectivesInitialised` in Assault; first run registers with its objective (as an armour marker if `armourObjective == 1 && pickupOnly ≠ 1`), inherits the defence flag, stores its level team as `m_defaultTeam` and becomes neutral, and binds to a building within 20 (excluding markers, AITargets, walls, laser fences, static shapes) as `m_objectiveBuildingId`; then every 2.0 s: standard — team = bound building's team (a solar panel with 0 ports unbinds), else `scanRange == 0` → `m_defaultTeam`, else the ×4-majority count of non-monster/non-Futurewinian entities within scanRange (winner replaced when `count[i] > 4 × count[winner]` while `count[winner] < 10`); attacking AIs get `p = 1.0` on the nearest AITarget; defensive and Rocket Riot variants in [07](07_ai.md) | [C] `AIObjectiveMarker::Advance` |
+| Behaviour | waits for `s_objectivesInitialised` in Assault; first run registers with its objective (as an armour marker if `armourObjective == 1 && pickupOnly ≠ 1`), inherits the defence flag, stores its level team as `m_defaultTeam` and becomes neutral, and binds to a building within 20 (excluding markers, AITargets, walls, laser fences, static shapes) as `m_objectiveBuildingId`; then every 2.0 s: standard — team = bound building's team (a solar panel with 0 ports unbinds), else `scanRange == 0` → `m_defaultTeam`, else the ×4-majority count of non-monster/non-Futurewinian entities within scanRange (winner starts at team 0 and is replaced when `count[i] > 4 × count[winner]` while `count[winner] < 10`; nobody in range → 255). Then, for the nearest AITarget and every attacking team *i* that has an `AI`: if that AI's current objective is this marker's objective, `armourObjective == 0` and the marker is not friendly to *i*, the node gets `p[i] = 1.0` and `m_aiObjectiveTarget[i] = true` (else the flag is cleared); for any other objective the pin applies only while `m_pickupAvailable`. Defensive and Rocket Riot variants and the full rule: [07 §5.6](07_ai.md#56-external-priority-overrides-c) | [C] `AIObjectiveMarker::Advance`, `AIObjectiveMarker::AdvanceStandard` |
 | Collision / damage | none; indestructible | [C] |
 | Mode usage | Assault 8/8, Rocket Riot 7/7 (330 lines) | [C] census |
 
 | # | Field | Type | Default | Meaning | Write |
 |---|---|---|---|---|---|
-| 8 | scanRange | float, mandatory | — | radius for the entity-majority rule (0 = use default team) | `%2.2f ` |
+| 8 | scanRange | float, mandatory | 100.0 (constructor) | radius for the entity-majority rule (0 = use default team) | `%2.2f ` |
 | 9 | objectiveId | int, mandatory | −1 | owning AIObjective (−1 = none) | `%4d` |
 | 10 | armourObjective | int, optional | 0 | 1 = armour drop/pickup marker | `%4d` |
-| 11 | pickupOnly | int, optional | ctor value ([07](07_ai.md)) | armour pickup flag (−1 / 0 / 1) | `%4d` |
+| 11 | pickupOnly | int, optional (only if 10 present) | 0 (constructor) | armour pickup flag (−1 / 0 / 1) | `%4d` |
 
-[C] `AIObjectiveMarker::Read/Write`.
+[C] `AIObjectiveMarker::Read/Write`, constructor `AIObjectiveMarker::AIObjectiveMarker` (`m_scanRange(100.0)`, `m_objectiveId(−1)`, `m_armourObjective(0)`, `m_pickupOnly(0)`, `m_timer = syncfrand(1.0)`).
 
 ### 10.4 AISpawnPoint
 
@@ -2292,7 +2293,14 @@ Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobje
 
 ### 12.20 DynamicBase
 
-Abstract base of a generic objective network (`code/worldobject/generichub.h`, `code/worldobject/generichub.cpp`; design notes in `docs/new building docs.txt`). Fields [8] buildingLink (int), [9] shapeName (token; "none" → debug sphere 40). Sound `TriggerSurge`. [C].
+Abstract base of a generic objective network (`code/worldobject/generichub.h`, `code/worldobject/generichub.cpp`; design notes in `docs/new building docs.txt`). Sound `TriggerSurge`. [C].
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | buildingLink | int, mandatory | −1 | linked building id | `%-8d` |
+| 9 | shapeName | token, mandatory | `none` | shape file; `none` → debug sphere of radius 40 | `%s  ` |
+
+[C] `DynamicBase::DynamicBase`, `DynamicBase::Read`, `DynamicBase::Write`, `DynamicBase::Render`.
 
 ### 12.21 DynamicHub
 
@@ -2445,7 +2453,7 @@ Live non-enum helpers: Building, BuildingPort, SpawnBuilding, SpawnBuildingLink,
 ### 13.3 What a new game minimally needs to reproduce Multiwinia's building layer [I]
 
 1. Port-operated capture (SpawnPoint ≥ 3/5 exclusive, GunTurret plurality-exclusive, SolarPanel plurality-shared, ControlStation threshold-majority).
-2. The spawn tree (virtual spirits, 1 s per hop) feeding owned spawn points with a 30 s activation delay.
+2. The spawn tree (virtual spirits, 10h + 1 ticks for h hops, i.e. ≈ 1 s per hop) feeding owned spawn points with a 30 s activation delay.
 3. Proximity capture (KOTH hill, Blitzkrieg progress flags, carryables).
 4. Surge-based power with team-tagged surges, friend-only fence powering, and splitter routing.
 5. Barriers: laser fences (lethal, route-blocking), walls (threshold destruction), trees (fire spread, regrowth), static meshes, invisible restriction zones.
@@ -2470,7 +2478,7 @@ All values [C] unless marked; "literal" = hard-coded number, `#define` = macro. 
 | Darwinian | port reservation limit | 1 (MP) / 20 (SP) per team | — | literal | `Darwinian::SearchForPorts` |
 | Darwinian | carryable search range | 150 (`DARWINIAN_SEARCHRANGE_CARRYABLE`) | wu | `#define` | `darwinian.h` |
 | Darwinian | carry-position tolerance | 20 × gameSpeed × speed ratio | wu | literal | `Darwinian::AdvanceCarryingBuilding` |
-| SpawnBuilding | time per link | 1.0 | s | derived (`progress += dt` until 1) | `SpawnBuilding::Advance` |
+| SpawnBuilding | time per link | 11 increments for the first link, 10 for each later link (10h + 1 for h hops; ≈ 1.0–1.1 s) | ticks | derived (`progress += dt` until ≥ 1.0, overshoot carried; IEEE-double replay) | `SpawnBuilding::Advance` |
 | SpawnPoint | ownership period | `2.0 + syncfrand(1.0)` (first `syncfrand(2.0)`) | s | literal | `SpawnPoint::Advance`, ctor |
 | SpawnPoint | capture threshold | ≥ 3 of 5 ports, no non-allied occupant | Darwinians | literal | `RecalculateOwnership` |
 | SpawnPoint | activation delay | 30.0 | s | literal | `RecalculateOwnership`, `Advance` |
@@ -2540,7 +2548,7 @@ All values [C] unless marked; "literal" = hard-coded number, `#define` = macro. 
 | MultiwiniaZone | Blitzkrieg count radius | 40 | wu | literal | `Advance_Blitzkrieg` |
 | MultiwiniaZone | Blitzkrieg gain | `5.0 × top × top/total × dt` per recount | points | literal | same |
 | MultiwiniaZone | Blitzkrieg neutral decay | `10 × dt` per recount | points | literal | same |
-| MultiwiniaZone | under-attack message throttle | 20.0 | s | literal | same |
+| MultiwiniaZone | under-attack message throttle | 20.0 decremented by 0.1 per recount → 200 recounts (≈ 200–220 s) | recounts | literal | same |
 | CarryableBuilding | ownership radius / period | 50 / 1.0 s | — | literal | `CalculateOwnership` |
 | CarryableBuilding | speed | `16 × (lifters/max) × speedScale × abs(sin t)` | u/s | literal | `Advance` |
 | CarryableBuilding | vote threshold / waypoint reach | > 0.66 × lifters / 10 | — / wu | literal | `Advance`, `FollowRoute` |
@@ -2618,7 +2626,7 @@ Numbered for reference from [22](22_determinism_and_networking.md) and [41](41_r
 | 21 | ChessBase reads nonexistent options `TotalSize`/`SizeVariance` → no pieces; `Write` uses malformed `%2.2` | no | [C] | — |
 | 22 | Randomiser team pick `syncrand() % NumPlayers` may choose an unused team slot | possibly | [C] code, [U] effect (03-U10) | pick from playing teams |
 | 23 | `Teleport::m_teleportMap` is process-static | latent | [C] | per-level state |
-| 24 | `GetNetworkTime() > t + 1.0` timers fire after 10 or 11 ticks | yes | [I] | integer tick counters |
+| 24 | `GetNetworkTime() > t + 1.0` timers fire after 10 or 11 ticks depending on the absolute game time (§1.2) | yes | [C] arithmetic | integer tick counters |
 | 25 | Per-tick probabilities/growth (SolarPanel surge, EruptionMarker, Portal radius, Tree drops, Triffid shrink, AntHill empty counter) ignore game speed | yes | [C] | express rates per second |
 | 26 | `Location::Init` calls `SetTeamId` on the **template** building, firing `ChangeTeam` sound events for templates at load | yes (audio at load) | [C] code, [I] audibility | remap teams without side effects |
 | 27 | AntHill `Burn()` releases an ant even when empty (count goes negative, then refilled to 10 by the empty rule) | yes (crate) | [C] | guard on count |
@@ -2628,18 +2636,21 @@ Numbered for reference from [22](22_determinism_and_networking.md) and [41](41_r
 | 31 | GunTurret discards the level front vector | yes | [C] | honour or drop the field |
 | 32 | Legacy null dereferences / division by zero: Powerstation link, TrackEnd building, DynamicHub `requiredScore/minActiveLinks` | no | [C] | — |
 | 33 | ResearchItem and Spam mutate orientation in `Render` (used by `Advance`) and use unsynced RNG in constructors | no | [C] | — |
+| 34 | `GunTurret::ClearLOS` samples obstruction cells from the target **away** from the turret (`pos = target; pos += (target − turret)/n`), so walls and buildings between turret and target block only if they also occupy a sampled cell behind the target; targets nearer than 30 always have LOS | yes | [C] `GunTurret::ClearLOS`; [I] effect | sample the segment turret → target |
+| 35 | GunTurret barrel-end and shell-eject markers are looked up once in the constructor from the Standard model (`cannon_bullets.shp`); Rocket/Flame/Subversion turrets fire from those positions and consume the 4 cartridge-ejection draws per shot | yes | [C] `GunTurret::GunTurret`, `PrimaryFire` | look up markers on the model actually used |
+| 36 | Assault SolarPanel knock-out compares the `int` `m_startingTeam` (−1 for a neutral start) with 255, so a neutral-start panel is knocked out on its first capture | latent (all shipped Assault panels start team-owned) | [C] `SolarPanel::Advance` | use one neutral sentinel |
 
 ## Open questions and unknowns
 
 | ID | Question | Tag | What would resolve it |
 |---|---|---|---|
-| 03-U1 | Exact composition of `Team::m_others` (which entity types count against the PopulationCap used by SpawnPoint, TrunkPort and AntHill `PopulationLocked`) | [U] | read `code/team.cpp` (`Team::NewEntity` / `m_others` insertion) — owned by [05](05_economy_and_population.md) |
-| 03-U2 | Whether every building is advanced exactly once per 0.1 s tick (all 10 slices of `NUM_SLICES_PER_FRAME` processed every tick) | [I] | `code/lib/slice_darray.h:GetNextSliceBounds` and the main-loop slice driver ([21](21_simulation_and_entity_model.md)) |
+| 03-U1 | Exact composition of `Team::m_others` (which entity types count against the PopulationCap used by SpawnPoint, TrunkPort and AntHill `PopulationLocked`) | **Resolved** [C] | `Team::NewEntity` puts every entity spawned with unit id −1 into `m_others` (Darwinians, officers, armour, engineers, harvesters, Virii, the CPU team's `AI` entity, …); entities created inside a `Unit` (squads, airstrike bombers, centipedes, hill ants, tentacles) are not in it. The population test subtracts `Virii::s_viriiPopulation`. `code/team.cpp:Team::NewEntity`; per-type list in [05 §4.1](05_economy_and_population.md#41-what-is-counted) |
+| 03-U2 | Whether every building is advanced exactly once per 0.1 s tick (all 10 slices of `NUM_SLICES_PER_FRAME` processed every tick) | **Resolved** [C] | yes: a new update is taken only after slices 0–9 have run, and the slice bounds are contiguous (§1.2). `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`, `code/lib/slice_darray.cpp:SliceDArray::GetNextSliceBounds`; also [21 §5.4](21_simulation_and_entity_model.md#54-slice-partitioning) |
 | 03-U3 | Whether the GameTypes-none dev maps (`mp_sandbox`, `mp_sandbox_all`) can be opened from the shipped UI, making ControlTower and Incubator reachable | [U] | map-list construction in the game menu ([09](09_meta_systems.md)) |
-| 03-U4 | Multiplayer research level of `TypeLaser` (subversion-laser lifetime) | [U] | callers of `Multiwinia::SetGameResearch` and the MP research table |
-| 03-U5 | Origin and lifetime of `Darwinian::m_subversionTaskId` (turns Standard turret shots into subversion lasers) | [U] | crate/task code ([04](04_crates_powerups_and_weapons.md)) |
-| 03-U6 | How Darwinians react to `GunTurretTarget` (flee radius and trigger) | [U] | `Darwinian::SearchForThreats` ([02](02_units_and_entities.md)) |
-| 03-U7 | Behaviour when a mandatory level-file token is missing (`GetNextToken` returning NULL/empty passed to `atoi`/`iv_atof`) | [U] | `TextReader::GetNextToken` ([29](29_data_formats_reference.md)) |
+| 03-U4 | Multiplayer research level of `TypeLaser` (subversion-laser lifetime) | **Resolved** [C] | `Location::Init` sets `TypeLaser` = 2 in every multiplayer level → subversion laser lifetime 1.2 s (§5.1). `code/location.cpp:Location::Init`; call order in [41](41_risks_and_open_questions.md) (02-U7) |
+| 03-U5 | Origin and lifetime of `Darwinian::m_subversionTaskId` (turns Standard turret shots into subversion lasers) | **Resolved** [C] | set by the Subversion power-up (`Crate::RunSubversion` → `Darwinian::GiveMindControl`) for own Darwinians within `POWERUP_EFFECT_RANGE`; cleared by `Darwinian::Advance` when the task is gone (§5.1, [04](04_crates_powerups_and_weapons.md)) |
+| 03-U6 | How Darwinians react to `GunTurretTarget` (flee radius and trigger) | **Resolved** [C] | not at all in Multiwinia: `Darwinian::SearchForThreats` tests `EffectGunTurretTarget` only when `!Multiplayer()` (§5.1) |
+| 03-U7 | Behaviour when a mandatory level-file token is missing (`GetNextToken` returning NULL/empty passed to `atoi`/`iv_atof`) | **Resolved** [C] NULL, [I] crash | `GetNextToken` returns NULL and the `Read` functions pass it unchecked to `atoi`/`atof` → crash at load (§3.10). `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::GetNextToken`; agrees with [29 §4.1](29_data_formats_reference.md) |
 | 03-U8 | Whether any `GlobalBuilding` records exist during Multiwinia matches (so that `m_isGlobal` touch points are truly inert) | [I] | `GlobalWorld` setup on Multiwinia start ([20](20_architecture.md)) |
 | 03-U9 | Whether the six SmokeMarkers of `mp_assault_3p_1` (invisible 13-unit obstacles) sit on walkable routes | [U] | plot marker positions against the map's AITargets/routes or run the map |
 | 03-U10 | Whether the Randomiser can hand Darwinians to an unused team slot (`syncrand() % NumPlayers`) and what `SpawnEntities` does for an unused team | [U] | `Location::SpawnEntities` and team initialisation for unused slots |
@@ -2647,7 +2658,7 @@ Numbered for reference from [22](22_determinism_and_networking.md) and [41](41_r
 | 03-U12 | Visual/collision impact of the unrotated tree crown sphere (hit centre ignores `m_front`) | [U] | reproduce the generator numerically for sample trees |
 | 03-U13 | Effective rocket damage per Darwinian attack (grenades aimed 50 above the rocket base but damage measured to the base) | [I] | simulate `Location::ThrowWeapon` ballistics with grenade bounces and fuse 3 s against the rocket position |
 | 03-U14 | Whether the per-tick `ChangeTeam` events of empty solar panels and of level templates are audible | [U] | `data/sounds.txt` bindings for `SolarPanel ChangeTeam` and generic building `ChangeTeam` ([10](10_audio_design.md)) |
-| 03-U15 | Exact 10-vs-11-tick pattern of the `GetNetworkTime() > t + 1.0` recount timers | [I] | replay the double accumulation of `m_gameTime += 0.1` |
+| 03-U15 | Exact 10-vs-11-tick pattern of the `GetNetworkTime() > t + 1.0` recount timers | **Resolved** [C arithmetic] | exact replay of `m_gameTime += 0.1` from 0 at speed 1.0: 10 ticks for re-arm times in [0.4, 3.0), [15.5, 63.2), [255.4, 1023.0) s and ≥ 4095.5 s, 11 ticks otherwise; 20/21 ticks for `+ 2.0` (§1.2). `code/gametimer.cpp:GameTimer::Tick` |
 | 03-U16 | Design intent of the Assault SolarPanel knock-out (ports deleted when captured from the starting team) | [I] | design documentation or play-testing; code behaviour is [C] |
 | 03-U17 | Whether shipped `isGlobal 1` MasterSpawnPoints (11 `mp_*` files, visible) differ in behaviour from `isGlobal 0` ones beyond rendering | [I] | `MasterSpawnPoint::Advance` shows the only global-specific branch is single-player; confirm no other reader of `m_isGlobal` for masters |
 
@@ -3071,6 +3082,7 @@ Generated by `_work/scripts/S_03_source_map.py` (every path checked against `_wo
 | Portal and the "The Beast" crate outcome | [B:DEBUG] | `INCLUDE_THEBEAST` only under `TARGET_DEBUG` | [C] `code/worldobject/crate.h` |
 | ControlTower, Incubator, CloneLab | [B:FULL] code, unused content | only dev/old maps | [C] census |
 | Darwinia single-player branches: SpawnPoint SP spawn formula, MasterSpawnPoint red-team objective and spirit acceleration, GunTurret SP control loss and green→yellow remap, Incubator SP timing, EscapeRocket SP refuel/ignition/script, FuelGenerator SP max surges, Tree SP regrow rate | [B:LEGACY] | `!Multiplayer()` / `IsSinglePlayer()` paths | [C] |
+| `Armour::ConvertToGunTurret` (armour deploys as a turret) | [B:LEGACY] | `m_awaitingDeployment` is set only in the single-player input branch; the MP setter is commented out (§5.1) | [C] `code/location_input.cpp:LocationInput::AdvanceTeamControl`, `code/location.cpp:Location::UpdateTeam` |
 | `Engineer::BeginBridge` (Bridge creation) | dead in every build | requires research ≥ 5 | [C] `code/worldobject/engineer.cpp` |
 | `Factory::RequestUnit` | dead | no caller | [C] grep |
 | `FenceSwitch::Switch` local-input path, `NET_DARWINIA_TOGGLELASERFENCE` handler | unreachable / dead | no FenceSwitch exists; no sender | [C] |

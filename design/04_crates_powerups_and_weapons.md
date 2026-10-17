@@ -107,7 +107,7 @@ AdvanceCrates():
    - For every team that is used and is neither the Monster nor the Futurewinian team: `score_i = Multiwinia::m_teams[i].m_score`; `total = Σ score`, `high = max`, `low = min` (`low` starts at `FLT_MAX`, `high` at 0).
    - `p = max(high/total, 1 − low/total)`; if `syncfrand(1) > p` → fall back to random placement.
    - Otherwise pick a team with probability `w_i / Σw`, where `w_i = total / score_i` (or `total` when `score_i == 0`), using one `syncfrand(1)` against cumulative odds — **lower-scoring teams are favoured**.
-   - Collect **every** building owned by that team (any type, including AI targets and turrets). Up to 1 000 tries: `b = list[syncrand() % n]`, `pos = b.pos + (syncsfrand(200), 0, syncsfrand(200))` (±100 wu). The acceptance test is buggy: `GetValue(pos.x, pos.z > 20.0)` passes the boolean `pos.z > 20` as the z coordinate, so it samples the heightmap at z ∈ {0, 1} and accepts whenever that height is non-zero [C code]. Consequence [I]: on maps whose z = 0/1 row is sea-bed (negative, non-zero) the first try is always accepted; if that row is exactly 0 every try fails and the drop falls back to random. The real terrain under the chosen point is never checked, so weighted drops can land in water (see 04-U2).
+   - Collect **every** building owned by that team (any type, including AI targets and turrets). Up to 1 000 tries: `b = list[syncrand() % n]`, `pos = b.pos + (syncsfrand(200), 0, syncsfrand(200))` (±100 wu). The acceptance test is buggy: `GetValue(pos.x, pos.z > 20.0)` passes the boolean `pos.z > 20` as the z coordinate, so it samples the heightmap at z ∈ {0, 1} and accepts whenever that height is non-zero [C code]. Consequence [I]: on no shipped `mp_*` map is the z = 0/1 row exactly 0 — the height grid starts at the level's `OutsideHeight` (−6.93 to −30 on the shipped maps) and tiles only raise cells, so the edge rows stay negative — hence the **first candidate is always accepted** (one `syncrand` and two `syncsfrand` draws) and the crate drops at the chosen building ± 100 wu whatever the terrain there: weighted drops can land in water, or just outside the map rectangle when the building is within 100 of an edge (04-U2, resolved). A new game must either replicate this literally (to match the original stream) or test the real terrain, presumably the intent (`GetValue(pos.x, pos.z) > 20`).
    - Crate start = `(pos.x, 1300 + syncfrand(200), pos.z)`.
    - No team chosen, no buildings, or no position accepted → random placement. With `total == 0` the divisions produce NaN/∞ and the cumulative pick fails → `dropTeam = −1` → random [I].
    - Weighted drops skip the restriction-zone and crate-spacing checks [C].
@@ -658,7 +658,7 @@ Bomber flight (entity specs in [02 §11](02_units_and_entities.md#11-airstrike))
 | Entry / exit | the four corners (100, 500, 100), (100, 500, Z−100), (X−100, 500, Z−100), (X−100, 500, 100); exit = corner nearest the attack point, entry = second nearest |
 | Speed | `m_speed` blends 10 %/tick toward the desired speed: 40 (SpaceInvader SPED), × 10 = 400 while approaching and > 600 from the attack point (or leaving and > 100); initial 400 |
 | Turn | `front = normalise(front·0.9 + toTarget·0.1)` per tick |
-| Formation | rows of 4: x = (i%4 − 2)·24, y = −(⌊i/4⌋ − 2)·12, z = (⌊i/4⌋ − 2)·24, plus synced per-index noise |
+| Formation | rows of 4, with o = the synced per-index noise `Unit::s_offsets[i % 100]` ∈ [0, 1): x = (i%4 − 2)·24 + o, y = −((⌊i/4⌋ − 2)·12 + o), z = (⌊i/4⌋ − 2)·24 + o — the noise is added before y is negated ([02 §11.4](02_units_and_entities.md#114-spaceinvader--behaviour)) |
 | Bomb release | each bomber, once, when within 90 (3-D) of the attack point: a bomb at `pos − 12·up` with velocity `front·len(vel)`, `m_life = 1.5`, `m_power = 50` — `Grenade` typed `EffectThrowableAirstrikeBomb` (standard) or `FlameGrenade` (napalm); sound `DropGrenade` |
 | Bomber damage model | only `DamageTypeTurretShell` hurts; HP 10 → one turret shell kills; no spirit on death |
 | Leaving | `StateLeaving` once the waypoint is within 10 of the attack point; bombers delete themselves on leaving the world rectangle |
@@ -671,16 +671,22 @@ Uncaptured (Monster-team) airstrikes exist in the code but are unreachable (§3.
 
 ### 5.6 Nuke
 
-Delivery: Task `TypeNuke`, target anywhere outside `blockPowerups` zones; `Task::TargetNuke` calls `Crate::RunNuke(pos, team)` and terminates the task [C] `code/taskmanager.cpp:Task::TargetNuke`.
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeNuke`, target anywhere outside `blockPowerups` zones; `Task::TargetNuke` calls `Crate::RunNuke(pos, team)` and **terminates the task at once** | [C] `code/taskmanager.cpp:Task::TargetNuke` |
+| Count | **10** `Nuke` entities of the user's team | [C] `code/worldobject/crate.cpp:Crate::RunNuke` |
+| Sub start | random **sea** point `(FRAND(int(worldX − 100)), 0, FRAND(int(worldZ − 100)))`, re-rolled while terrain height > 0 — an **unbounded loop that would hang the game on a map without water**; every shipped `mp_*` map has ≥ 26 % sea in the sampling rectangle, so it terminates in practice (04-U1, resolved [I]) | [C] `Crate::RunNuke` |
+| Targets | nuke 0 → exactly `pos`, `m_renderMarker = true` (ground marker `icons/nukesymbol.bmp`); nukes 1–9 → `pos + (syncsfrand(300), 0, syncsfrand(300))` (±150); `target.y = ground − 5` | [C] `Crate::RunNuke` |
+| Sub surfacing | rises from y −30 to +30 at 1 wu per tick (10 wu/s, 6 s), then waits `m_subTimer = 2.5` s | [C] `code/worldobject/nuke.cpp:Nuke::AdvanceSub` |
+| Launch countdown | `max(0, worldSizeX/100 − dist(sub, target)/100)` s — farther subs launch sooner | [C] `Nuke::AdvanceSub` |
+| Flight | lofted arc at 50 → 100 wu/s; explodes within `5 × gameSpeed` of the target | [C] `Nuke::AdvanceToTarget` |
+| Explosion | `Bang(groundPos, R 50, D 100, team −1)`: full 100 within 75, linear to 0 at 100 (lethal to a full-health Darwinian within 87.5) for **every** team; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 s (24 active ticks, ring radius 39 → 131, §6.11); all deaths (any team) are added to the launching team's `m_teamKills` | [C formula, I radii] `Nuke::AdvanceToTarget`, `code/location.cpp:Location::Bang` |
+| Message | `crate_message_run_nuke` "*T launches a Nuke Barrage!"; Monster-team user: `crate_message_auto_nuke` "Incoming Nuke Barrage!" | [C] `Crate::RunNuke`, `data/language/english.txt` |
+| Marker | fixed `icons/icon_nuke.bmp` at `pos` for the user's team | [C] `Crate::RunNuke` |
+| Sound | `Nuke` (`TypeCratePowerup`) | [C] `Crate::RunNuke` |
+| Entity spec | [02 §12](02_units_and_entities.md#12-nuke) | |
 
-`Crate::RunNuke` [C] `code/worldobject/crate.cpp:Crate::RunNuke`:
-1. Spawns **10** `Nuke` entities of the owner. Each at a random **sea** position `(FRAND(worldX − 100), 0, FRAND(worldZ − 100))`, re-rolled while terrain height > 0 — an **unbounded loop that would hang the game on a map without water**; every shipped `mp_*` map has ≥ 26 % sea in the sampling rectangle, so it terminates in practice (04-U1, resolved [I]).
-2. Target: nuke 0 → exactly `pos`, `m_renderMarker = true` (ground marker `icons/nukesymbol.bmp`); nukes 1–9 → `pos + (syncsfrand(300), 0, syncsfrand(300))` (±150). `target.y = ground − 5`.
-3. Message, marker `icons/icon_nuke.bmp`, sound `Nuke`.
-
-Per warhead (entity spec in [02 §12](02_units_and_entities.md#12-nuke)) [C] `code/worldobject/nuke.cpp`: submarine rises from y −30 to +30 at 10 wu/s (6 s), waits `m_subTimer = 2.5` s, then a launch countdown of `worldSizeX/100 − |sub − target|/100` s (farther subs launch sooner), then a lofted flight at 50 → 100 wu/s; explodes within `5 × gameSpeed` of the target with `Bang(groundPos, R 50, D 100, team −1)`; all deaths (any team) are added to the launching team's `m_teamKills`.
-
-Damage maths: full 100 within 75, linear to 0 at 100 (lethal to a full-health Darwinian within 87.5) for **every** team; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 s (24 active ticks, ring radius 39 → 131, §6.11) [C formula, I radii]. Ten warheads scattered ±150 around the point.
+Ten warheads therefore scatter ±150 around the point.
 
 Timing [I] (`_work/scripts/P04_nuke_sim.py`, flat terrain): ≈ 28 s (sub 500 away) to ≈ 39 s (1 500 away) from targeting to impact on a 2 000-wide map; arrival is not simultaneous — nearer subs still land first.
 
@@ -704,7 +710,7 @@ Co-op achievement hook: a local co-op nuke landing within 120 of a friendly Spaw
 | Delivery | Task `TypeBooster`; target needs ≥ 1 own entity within 70; `Task::TargetBooster` → `Crate::RunBooster(pos, team, taskId)` then the task stays `StateRunning` and is selected (`SwitchTo`) | [C] `Task::TargetBooster` |
 | Who | every Darwinian **of the owner's team** within 70 (XZ) of the point, except those inside an Armour: `Darwinian::SetBooster(taskId)` (20 team-coloured fire particles, unsynced) | [C] `Crate::RunBooster`, `Darwinian::SetBooster` |
 | Effect | `Darwinian::ChangeHealth` returns false (no damage) for every damage type except `DamageTypeUnresistable`; an **Explosive** hit removes the shield (sets `m_boosterTaskId = −1`) but that hit still deals no damage; `SetFire` is refused (fire-immune); `m_scared = false` in combat (does not flee); normal attack chance per tick 1/7 instead of 1/10 | [C] `Darwinian::ChangeHealth`, `Darwinian::SetFire`, `Darwinian::AdvanceCombat` |
-| Not protected against | unresistable damage: SpamInfection kills (−999), Dark Forest (−999), PulseWave (−1000), drowning, plague deaths | [C] `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingEntity`, `code/worldobject/tree.cpp:Tree::Advance` |
+| Not protected against | (a) every `DamageTypeUnresistable` hit: SpamInfection kills (−999), Dark Forest (−999), PulseWave (−1000), drowning, plague deaths, and **every creature contact attack**, because those call `ChangeHealth` without a damage type — Virii bite, ArmyAnt bite and the kill of a carried Darwinian at the hill, Centipede, SoulDestroyer and Tentacle contact, Spider squash; (b) **conversions**, which never call `ChangeHealth`: Subversion lasers, the SpamInfection conversion branch, the Randomiser ([02 §2.6](02_units_and_entities.md#26-damage-model)) | [C] `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingEntity`, `code/worldobject/tree.cpp:Tree::Advance`, `code/worldobject/weapons.cpp:Laser::Advance`, `code/worldobject/randomiser.cpp:Randomiser::Advance`, `code/worldobject/virii.cpp:Virii::AdvanceAttacking`, `code/worldobject/armyant.cpp:ArmyAnt::AdvanceAttackEnemy`, `ArmyAnt::AdvanceReturnToBase`, `code/worldobject/centipede.cpp:Centipede::Attack`, `code/worldobject/souldestroyer.cpp:SoulDestroyer::Attack`, `code/worldobject/spider.cpp:Spider::AdvancePouncing`, `code/worldobject/tentacle.cpp:Tentacle::Attack` |
 | Duration | task life 30 s; the task also ends early when no Darwinian still carries its id; Darwinians drop the effect on the tick after the task disappears | [C] `Task::Advance`, `Darwinian::Advance` |
 | Feedback | message `crate_message_run_personalshield`, marker `icons/icon_personalshield.bmp`, sound `PersonalShield`; the task marker follows the centroid of the shielded Darwinians | [C] |
 
@@ -743,7 +749,7 @@ Carried statues move faster with Hot Feet (changelog) — the carrying speed der
 | Weapons | Standard: turret shells 500 wu/s, 0.6 s, 15 damage, 0.1 s reload per barrel pair (§6.8); Rocket: rockets life 1.0 s, 1.5 s reload, one barrel per trigger (§6.6); Flame: fireballs 100 wu/s, life 1.0 (§6.10) | [C] `GunTurret::PrimaryFire` |
 | Validity | Rocket Turret invalid in Assault | [C] `Crate::IsValid` |
 | Feedback | `crate_message_run_gunturret` "*T places a *G" (*G = `buildingname_gunturret` / `buildingname_rocketturret` / `buildingname_flameturret`), marker `icons/icon_gunturret.bmp`, sound `GunTurret` for all three variants | [C] |
-| Full behaviour (ownership by port occupancy, targeting, ranges, player aiming) | [03](03_buildings_and_world_objects.md) (GunTurret) | |
+| Full behaviour (ownership by port occupancy, targeting, ranges, player aiming) | [03 §5.1](03_buildings_and_world_objects.md#51-gunturret) (GunTurret). Line of sight for automatic targeting is defective: `GunTurret::ClearLOS` samples obstruction-grid cells starting **at the target and stepping away from the turret** (30-unit steps), so a wall between turret and target blocks only if it is also registered in a cell sampled behind the target, and a target nearer than 30 always has LOS (03 §15 defect #34) | [C] `code/worldobject/gunturret.cpp:GunTurret::ClearLOS` |
 
 ### 5.12 Infection (`CrateRewardSpam`)
 
@@ -868,7 +874,7 @@ Resolved: the enum comment ("all Darwinians will always throw grenades for 10 se
 |---|---|---|
 | Delivery | **Immediate**, capturing team, **permanent** for the rest of the game | [C] `Crate::RunRocketDarwinians` |
 | Effect | `team->m_evolutions[Team::EvolutionRockets] = 1`. Wherever a Darwinian of that team would throw a grenade (its 12–20 s grenade timer, target > 75 away or insane, slopes OK) it instead calls `Location::FireRocket(pos, target + 10 y, team, life −1 → research default 0.75 s, building −1, firework = infected)` | [C] `Darwinian::AdvanceCombat` |
-| Consequence | a rocket (Bang R 15, D 25) flies 8 ticks ≈ 95 wu before expiring, so targets beyond ≈ 95 are hit short; grenades (Bang R 12.5, D 50) reach ≈ 170 [I] (§6.3, §6.6) | |
+| Consequence | a rocket (Bang R 15, D 25) makes 8 or 9 moves (≈ 95 or ≈ 113 wu, depending on its effect slot, §6.6) before expiring, so targets beyond ≈ 95–113 are hit short; grenades (Bang R 12.5, D 50) reach ≈ 170 [I] (§6.3, §6.6) | |
 | Feedback | `crate_message_rocketwinians` "*T gets Rocketwinians!", sound `Rocketwinians` | [C] |
 
 ### 5.24 Rage
@@ -904,10 +910,17 @@ Resolved: the enum comment says "for 60 seconds"; the task life is 30 s [C] `Tas
 ### 5.27 Napalm Strike
 
 As §5.5 with `special = true` [C] `Crate::CaptureCrate` (`m_option = 1`), `Task::TargetAirStrike`, `Crate::RunAirStrike`:
-- Every marker carries `m_naplamBombers = true`; its `AirstrikeUnit` gets `m_napalm = true`; each bomber drops a `FlameGrenade` (life 1.5, power 50) instead of a bomb.
-- Napalm bomb burst (§6.4): **no explosion damage**; every Darwinian of every team within `power × 1.25 = 62.5` → `Darwinian::SetFire()` (shielded and Monster Darwinians are immune); every `Tree` or `Triffid` building whose centre is within `power × 2 = 100` takes `Damage(−200)` (no falloff) — trees catch fire. A strike = 6–14 napalm bursts.
-- Burning Darwinians die and spread fire ([02 §4](02_units_and_entities.md#4-darwinian)).
-- Feedback: `crate_message_run_napalm` "I love the smell of Napalm in the morning..." (Monster: `crate_message_auto_napalm`), marker `icons/icon_airstrike.bmp`, sound `Airstrike`.
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | `CrateRewardNapalmStrike` → `RunTask(TypeAirStrike)`; the new task gets `m_option = 1`; `Task::TargetAirStrike` → `Crate::RunAirStrike(pos, team, special = true)` and the task terminates | [C] `Crate::CaptureCrate`, `code/taskmanager.cpp:Task::TargetAirStrike` |
+| Markers and bombers | as §5.5: 3–7 markers within ±50, each summoning one `AirstrikeUnit` of 2 bombers ⇒ 6–14 napalm bombs; every marker carries `m_naplamBombers = true`, and its `AirstrikeUnit` gets `m_napalm = true` | [C] `Crate::RunAirStrike` |
+| Bomb | each bomber drops a `FlameGrenade` (life 1.5, power 50) instead of a bomb | [C] `code/worldobject/airstrike.cpp:SpaceInvader::Advance` |
+| Burst (§6.4) | **no explosion damage**; every Darwinian of every team within `power × 1.25 = 62.5` → `Darwinian::SetFire()` (shielded and Monster Darwinians are immune); every `Tree` or `Triffid` building whose centre is within `power × 2 = 100` takes `Damage(−200)` (no falloff) — trees catch fire | [C] `code/worldobject/weapons.cpp:FlameGrenade::Advance` |
+| Consequence | burning Darwinians die and spread fire ([02 §4](02_units_and_entities.md#4-darwinian)) | |
+| Message | `crate_message_run_napalm` "I love the smell of Napalm in the morning..."; Monster-team user: `crate_message_auto_napalm` "Napalm. Lots and lots of Napalm" | [C] `Crate::RunAirStrike`, `data/language/english.txt` |
+| Marker | fixed `icons/icon_airstrike.bmp` at `pos` | [C] |
+| Sound | `Airstrike` (the `NapalmStrike` data block is never fired) | [C] `Crate::RunAirStrike` |
 
 ### 5.28 Slow Down
 
@@ -916,16 +929,31 @@ As §5.5 with `special = true` [C] `Crate::CaptureCrate` (`m_option = 1`), `Task
 | Delivery | **Immediate**, global; does nothing once the game is over | [C] `Crate::RunSlowDownTime` |
 | Effect | `g_gameTimer.RequestSpeedChange(0.2 + syncfrand(0.2), 0.05, 15.0)` | [C] |
 | Speed law | every `GameTimer::Tick` (one per server tick): `speed += (target − speed) × 0.05`; snaps when within 0.01; then the hold counter (15.0) decreases by 0.1 per tick (**151** ticks — the residue of 15.0 − 150 × 0.1 is positive); then the target becomes 1.0 at the same 5 % rate with no hold. Requests are refused after `LockSpeedChange` (game won); a new request (another speed crate or a meteor) overwrites the current one | [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange` |
-| Durations | ticks run at 10 Hz real time, so: approach 1.0 → 0.3 ≈ 83 ticks (8.3 s real), hold 15 s real, return ≈ 83 ticks — ≈ 32 s of real time in total, during which every game-time quantity (timers, speeds per tick, crate drops) slows [I] | |
+| Durations | ticks run at 10 Hz real time, so: approach 1.0 → 0.3 ≈ 83 ticks (8.3 s real), hold 151 ticks (15.1 s real), return ≈ 83 ticks — ≈ 32 s of real time in total, during which every game-time quantity (timers, speeds per tick, crate drops) slows [I] | |
 | Feedback | `crate_message_slowdown` "Sloooow Dooown..."; no sound, no marker | [C] |
 
 ### 5.29 Speed Up
 
-As §5.28 with target `1.3 + syncfrand(0.7)` → [1.3, 2.0); message `crate_message_speedup` "Speed up!!" [C] `Crate::RunSpeedUpTime`. Approach 1.0 → 1.65 ≈ 82 ticks [I]. Several game rules are per-tick rather than per-second and therefore do **not** scale with speed (crate capture cap 0.05/tick, the lightning 1 %/tick strike roll, egg/spider gravity) [C] — see [02](02_units_and_entities.md) and §7.
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, global; does nothing once the game is over | [C] `Crate::RunSpeedUpTime` |
+| Effect | `g_gameTimer.RequestSpeedChange(1.3 + syncfrand(0.7), 0.05, 15.0)` → target speed in [1.3, 2.0) | [C] |
+| Speed law | as §5.28: 5 % of the gap per `GameTimer::Tick`, snap within 0.01, then the 151-tick hold, then back to 1.0 at the same rate with no hold; refused after `LockSpeedChange`; overwritten by a newer request | [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange` |
+| Durations | approach 1.0 → 1.65 ≈ 82 ticks, hold 151 ticks (15.1 s real), return ≈ 82 ticks — ≈ 31.5 s of real time, during which every game-time quantity runs 1.3–2× faster | [I] |
+| Not scaled | per-tick rules keep their real-time rate: crate capture cap 0.05/tick, the lightning 1 %/tick strike roll, egg and spider gravity — see [02](02_units_and_entities.md) and §7 | [C] |
+| Message | `crate_message_speedup` "Speed up!!" | [C] `Crate::RunSpeedUpTime` |
+| Marker / sound | none | [C] |
 
 ### 5.30 The Beast [B:DEBUG]
 
-`Crate::RunTheBeast(pos)`: a `Portal` building of the Monster team at `pos` (`CreateBuilding(TypePortal)`, `SetDetail(1)`), message `crate_message_thebeast` "The Beast Cometh!"; the portal summons invulnerable Tentacles ([03](03_buildings_and_world_objects.md) Portal, [02 §30](02_units_and_entities.md#30-tentacle)). Only in `TARGET_DEBUG` builds (`INCLUDE_THEBEAST`) [C] `code/worldobject/crate.cpp:Crate::RunTheBeast`.
+| Item | Value | Ref |
+|---|---|---|
+| Build | only when `INCLUDE_THEBEAST` is defined, i.e. `TARGET_DEBUG` builds; there `CrateRewardTheBeast` is enum value 31 | [C] `code/worldobject/crate.h` |
+| Delivery | **bad pool** only (uncaptured crate, `Crate::RunUncapturedCrate`), immediate at the crate; excluded from the good pool; a forced `m_rewardId` also reaches it through `Crate::CaptureCrate` | [C] `code/worldobject/crate.cpp:Crate::RunUncapturedCrate`, `Crate::CaptureCrate` |
+| Effect | `Crate::RunTheBeast(pos)`: a `Portal` building created from a template at `pos` (`CreateBuilding(TypePortal)`, `Initialise`, stored in `m_buildings`), id `(Monster team, UNIT_BUILDINGS, −1, GenerateBuildingId())`, `SetDetail(1)` | [C] `Crate::RunTheBeast` |
+| Behaviour | the portal summons invulnerable Tentacles ([03](03_buildings_and_world_objects.md) Portal, [02 §30](02_units_and_entities.md#30-tentacle)) | |
+| Message | `crate_message_thebeast` "The Beast Cometh!" | [C] `Crate::RunTheBeast`, `data/language/english.txt` |
+| Marker / sound | none (no marker registration, no `TriggerSoundEvent`) | [C] `Crate::RunTheBeast` |
 
 ### 5.31 Counter-play and counters matrix
 
@@ -940,15 +968,15 @@ As §5.28 with target `1.3 + syncfrand(0.7)` → [1.3, 2.0); message `crate_mess
 | Airstrike / Napalm | 3–7 markers, 2 bombers each, bombers HP 10 | **gun-turret shells** are the only weapon that hurts bombers (one shell kills); spread out (lethal radius 43.75 per bomb); shields block bombs once and are immune to napalm fire [C] |
 | Nuke | 10 warheads, ±150 scatter; needs sea | move away from the marked point (≈ 28–40 s warning); shields absorb one blast but not the shockwave's later ticks [C/I] |
 | Meteor | 5–9 meteors in a 420 square, friendly fire | leave the area during the 0.4× slow-motion; owner should not target near own units |
-| Personal Shield | 30 s; popped by any explosive | grenades, airstrikes, shockwaves pop it; Infection, Dark Forest and Pulse waves ignore it [C] |
-| Subversion | 30 s; 90-range converting lasers | keep Darwinians > 90 away; use non-Darwinian units (converting lasers only convert Darwinians) |
+| Personal Shield | 30 s; popped by any explosive | grenades, airstrikes, shockwaves pop it; Infection, Dark Forest, Pulse waves, creature contact attacks (Virii, ants, Centipede, Spider, SoulDestroyer) and conversions (Subversion lasers, Randomiser) ignore it [C] |
+| Subversion | 30 s; 90-range converting lasers | keep Darwinians > 90 away; use non-Darwinian units (converting lasers only convert Darwinians); Personal Shields and Armour do not protect, because the conversion bypasses `ChangeHealth` [C] |
 | Hot Feet | 30 s; speed ≤ 3.5× blueprint | — (mobility buff); careful near trees (it can ignite them) |
 | Rage | 30 s; damage × 0.75 | volume of fire still kills; Rage Darwinians ignore grenade threats → grenades are effective |
 | Mega Rage | 15 s, global | affects everyone equally |
 | Gun / Rocket / Flame turret | neutral until manned; task limit in RocketRiot/Blitzkrieg | capture its ports (in RocketRiot/Blitzkrieg a captured crate turret self-destructs); explosives (turret HP 60) [C per P06] |
-| Infection | 100 swarm objects, 10 s + 1 s/hit | none effective (unresistable kills); stay > 200 away; Harvesters are ignored by it [C] |
+| Infection | 100 swarm objects, 10 s + 1 s/hit | none effective (unresistable kills or conversion — shields do not help); stay > 200 away; Harvesters are ignored by it [C] |
 | Plague | radius 70; spreads within 30 | separate infected Darwinians; 10 % of rolls cure (immune) |
-| Randomiser | 15 s, radius 100 | move Darwinians out of the 100 circle; Armour passengers are safe [C] |
+| Randomiser | 15 s, radius 100 | move Darwinians out of the 100 circle; Armour passengers are safe, shielded Darwinians are not [C] |
 | Ants Nest | ≤ 4 nests (good pool) | destroy the ant hills; ants hostile to all |
 | Dark Forest | 2 % per tick per tree kill chance within height/2 | burn the trees (napalm, lightning, fireballs, Hot Feet); keep Darwinians out |
 | Eggs | 2–4 eggs, hatch in 4–8 s | kill eggs before they hatch (eggs are entities, [02 §14](02_units_and_entities.md#14-triffidegg)) |
@@ -957,7 +985,7 @@ As §5.28 with target `1.3 + syncfrand(0.7)` → [1.3, 2.0); message `crate_mess
 | Crate Mania | `s_crates < 4` at capture | contest the extra crates |
 | Spawn Mania | 5 s, global | own more active spawn points |
 | Slow Down / Speed Up | 15 s hold; locked after game over | — |
-| Rocketwinians | permanent per team | engage at > 95 range where rockets fall short |
+| Rocketwinians | permanent per team | engage beyond ≈ 95–113 (8–9 rocket moves, §6.6), where rockets fall short |
 
 ## 6 Weapons, projectiles and effect objects
 
@@ -1145,9 +1173,9 @@ Smoke marker thrown by `Crate::RunAirStrike` (§5.5) [C] `code/worldobject/weapo
 | Explosion | `Bang(pos, 15, 25, team, fromBuilding)` (§6.1); firework: extra `TypeExplosionCore` particles in a random colour (unsynced); a GunTurret source gets `RegisterKill(255, numKills)` |
 | Sounds | `Create` / `Explode` (`TypeRocket`); stops the `Rocket Create` loop on explosion |
 | Trail | sim: `TypeFire` particle with probability `syncfrand(1) > 0.2` per tick; render: 5 `TypeMissileFire` per frame (unsynced) |
-| Range [I] | default life: 8 moves ≈ **95 wu** before expiring (60+72+86.4+103.7+124.4+149.3+179.2+179.2 = 954 × 0.1); turret life 1.0: 11 moves ≈ **149 wu** (the Rocket turret's 200 max range is therefore not reached in flight) |
+| Range [I] | default life 0.75 s: **8 or 9 moves** ≈ **95 or 113 wu** before expiring (8 moves: 60+72+86.4+103.7+124.4+149.3+179.2+179.2 = 954 × 0.1; a 9th adds 17.9); turret life 1.0: **11 or 12 moves** ≈ **149 or 167 wu** (the Rocket turret's 200 max range is not reached in flight either way). Which count applies depends on the effect-slot rule below |
 
-Resolved: P04 gave "≈ 77.5 u, or ≈ 95 u if an 8th tick runs"; the expiry test `now > m_timer + 0.75` is first true on the 8th tick after creation (0.8 > 0.75), and the move precedes the test, so 8 moves always happen — ≈ 95 wu [C code, I arithmetic].
+Resolved: P04 gave "≈ 77.5 u, or ≈ 95 u if an 8th tick runs". The expiry test `now > m_timer + 0.75` uses network time, which is constant within a tick, and is first true on the 8th tick after the creation tick N (0.8 > 0.75); the move precedes the test, so ticks N+1 … N+8 each move the rocket. Whether tick N moves it too depends on slicing [C]: `m_effects` is a `SliceDArray` whose slots are advanced one range per slice, serially after the teams of the same slice (`Location::Advance`: teams → weapons → buildings → spirits → clouds; the OpenMP pragma is inert in the baseline). A new effect takes the most recently freed slot (LIFO free list) or, when none is free, the first slot of a newly grown block of 100 (`FastDArray::PutData`). If that slot lies above the last slot already advanced in this tick — always true for a slot appended at the end, because the last slice runs to `Size() − 1` — the rocket is also advanced in tick N: **9 moves** (turret 12); otherwise **8** (turret 11). Both cases occur in normal play [I]. A new engine should fix one rule, e.g. never advance an effect in its creation tick [C] `code/lib/slice_darray.cpp:SliceDArray::GetNextSliceBounds`, `contrib/systemiv/lib/tosser/fast_darray.cpp:FastDArray::PutData`, `code/location.cpp:Location::Advance`, `Location::AdvanceWeapons`, `Location::FireRocket`.
 
 ### 6.7 `Laser`
 
@@ -1194,7 +1222,7 @@ Shell casing ejected by Standard turrets [C] `code/worldobject/weapons.cpp:Turre
 | Parameter | Value |
 |---|---|
 | Shape | `emptyshell.shp` |
-| Launch | from the barrel's shell-eject marker ± 2.5 sideways; velocity = eject direction + (0, 1, 0) + `SFRAND(0.5)` per axis, length `20 + syncfrand(20)` (4 synced draws per casing); `m_front = −eject right`, `m_force = 1` |
+| Launch | from the barrel's shell-eject marker, offset 2.5 along the marker's **up** axis — `−2.5·up` for barrels 0–1, `+2.5·up` for barrels 2–3; velocity = eject direction + (0, 1, 0) + `SFRAND(0.5)` per axis, length `20 + syncfrand(20)` (4 synced draws per casing); `m_front = −eject right`, `m_force = 1` |
 | Per tick (while `m_force > 0.2`) | gravity 98 wu/s²; spin about `front + (frac(id×0.1), frac(id×0.3), frac(id×0.7))` × `dt × force`; bounce: `BounceOffLandscape`, `m_force *= 0.5`, `vel *= m_force` |
 | Removal | as soon as `m_force ≤ 0.2` (after the 3rd bounce) |
 | Gameplay | none (cosmetic). `Render` rewrites `m_front`, which `Advance` reads for its spin axis — render state feeding a sim object; harmless because nothing reads the casing [C] |
@@ -1208,7 +1236,7 @@ Flame-turret projectile [C] `code/worldobject/weapons.cpp:Fireball::Advance`, `F
 | Defaults | `m_life = 1.0`, `m_radius = 3.0`; `LaunchFireball` sets pos, vel (100 wu/s from the turret), life, building; team −1 |
 | First tick | 80 `TypeFireball` particles (unsynced) |
 | Per tick | `life −= dt`; `pos += vel·dt`; `radius = 20 × min(1, abs(1 − life))` (grows 2 → 20 as life goes 0.9 → 0) |
-| Damage | every **Darwinian** (any team) within `radius` not already in `m_damaged`: `damage = 30 × (radius / max(1, d)) × max(1, life)` → `Darwinian::FireDamage(damage, −1)`; the id is remembered (each fireball damages a Darwinian once); a Darwinian that newly enters `StateOnFire` is credited to the source turret (`RegisterKill`) |
+| Damage | every **Darwinian** (any team) within `radius` not already in `m_damaged`: `damage = 30 × (radius / max(1, d)) × max(1, life)` → `Darwinian::FireDamage(damage, −1)` — the `max(1, life)` factor is always 1, because the only caller passes life 1.0 and life is decremented before the damage pass, so effectively `30 × radius / max(1, d)`; the id is remembered (each fireball damages a Darwinian once); a Darwinian that newly enters `StateOnFire` is credited to the source turret (`RegisterKill`) |
 | Fire threshold | `Darwinian::FireDamage` accumulates `m_fireDamage`; at ≥ 100 → `SetFire()` (refused while shielded) [C] `code/worldobject/darwinian.cpp:Darwinian::FireDamage` |
 | Trees | every `Tree` in the obstruction cell takes `Damage(−100)` **per tick** |
 | Other entities | ignored |
@@ -1226,10 +1254,10 @@ Expanding ring created by every `Bang` with `size = R/20`, `m_life = size` [C] `
 | Hit band | `abs(d − r) < 10` with d the 3-D distance → effectively a 10-wu band just inside the ring for ground units |
 | Damage | `fraction = life / size`; Darwinians: with probability `syncfrand(4) < 0.1` (**2.5 %** per tick) `SetFire()` instead of damage; otherwise (and for every non-Darwinian) `ChangeHealth(−40 × fraction, DamageTypeExplosive)` |
 | Kill credit | victim died and its team ≠ the shockwave's id team: Darwinian victims add to `teams[m_teamId].m_teamKills` when `m_teamId` is a valid team; a GunTurret source gets `RegisterKill` |
-| Knock-back | if on ground (not InsertionSquadie/Officer/Shaman): `push = normalise(victim − centre)`, `y = 3`, length `25 × fraction`, airborne |
+| Knock-back | only when `ChangeHealth` returned true and the victim is on the ground (not InsertionSquadie/Officer/Shaman): `push = normalise(victim − centre)`, `y = 3`, length `25 × fraction`, airborne — a Darwinian set on fire instead of damaged is not pushed |
 | Render | yellow→pink triangle-fan disc at y + 5, α `0.6 × life/size`; full-screen white flash for the first 0.1 s if on-screen, α `(1 − age/0.1) × max(0, 1 − dist/500)`, camera shake; `starburst.bmp` and `glow.bmp` billboards for the first 1 s |
 
-Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (24 active ticks, r 39 → 131) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks, taking `40 × fraction` each time [I].
+Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (24 active ticks, r 39 → 131) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks in the interior of the reach, taking `40 × fraction` each time; only once for 29 < d ≤ 33 and within 4 below the last ring; never for d ≤ 29 [I]. Per-explosion table: [02 §2.7](02_units_and_entities.md#27-explosions--locationbang-and-shockwave).
 
 Resolved: P04 described a 20-wide band hit for ≈ 5 ticks starting at radius 35; the code decrements life before computing the radius (first ring 39) and only considers entities with XZ distance below r, so the band is effectively 10 wide and a target is hit 2–3 times [C code, I count].
 
@@ -1416,7 +1444,7 @@ Single-player spirit-worship lantern [B:LEGACY] [C] `code/worldobject/darwinian.
 | Napalm bomb | ignite | Darwinians ≤ 62.5 set on fire; trees/triffids ≤ 100 take 200 | bomber velocity | 1.5 s | Fire (via `SetFire`) | yes |
 | Rocket | 25 | full ≤ 22.5, 0 at 30 | 50 → 179 | 0.75 s (turret 1.0) | Explosive | yes |
 | Turret shell | 15 per entity, pierces | ray | 500 | 0.6 s | TurretShell | no |
-| Fireball | `30 · r/d · max(1, life)` once per Darwinian | grows 2 → 20 | 100 | 1.0 s | Fire | yes (team −1) |
+| Fireball | `30 · r/max(1, d)` once per Darwinian (the code's `max(1, life)` factor is always 1) | grows 2 → 20 | 100 | 1.0 s | Fire | yes (team −1) |
 | Shockwave | `40 · life/size` per tick in band | band ≈ 10 inside a ring expanding 40 wu/s from 39 | — | R/20 s | Explosive | yes |
 | Meteor / Nuke warhead | 100 | full ≤ 75, 0 at 100 | 350 / 50 → 100 | — | Explosive | yes |
 | SpamInfection | kill (−999) or convert | contact < 20 | 200 | 10 s + 1 s/hit | Unresistable | Monster team only spared |
@@ -1436,23 +1464,24 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 - **Unsynced (cosmetic only):** `Location::Bang` particles, fireball/napalm/lightning particles, hit flashes, Randomiser colour particles, plague particles (`rand()`), Hot Feet particle counts (`AppRandom`) [C].
 - **Render code that writes object state:** `Crate::Render` (front/up), `Crate::RenderBubble` (`m_bubbleTimer` per frame), `ThrowableWeapon::Render` (front/up and the `Flash` sound), `TurretEmptyShell::Render` (front, read by `Advance`) — none of these values feed gameplay today; keep them out of synced state [C].
 - **Per-tick versus per-second rules** that do not scale with the speed crates: capture cap 0.05 per tick, lightning 1 % per tick, Dark Forest 2 % per tick, the `GameTimer` hold counters (0.1 per tick) [C].
+- **Effects created mid-tick:** an effect (`m_effects`) or laser (`m_lasers`, also a `SliceDArray`) created during a tick is advanced in that same tick iff its slot lies above the last slot already processed in this tick; free slots are reused last-freed-first and new slots are appended in blocks of 100 (§6.6). For objects with a per-`Advance` countdown (grenades, shells, fireballs, shockwaves) this only moves the whole life one tick earlier; for objects timed by network time it adds one physics step before an unchanged deadline — `Rocket` (one extra move, §6.6), `AirStrikeMarker` (2 s summon) and `ControllerGrenade` (3 s) [C] `code/lib/slice_darray.cpp:SliceDArray::GetNextSliceBounds`, `contrib/systemiv/lib/tosser/fast_darray.cpp:FastDArray::PutData`, `code/worldobject/weapons.cpp:Rocket::Advance`, `AirStrikeMarker::Advance`, `ControllerGrenade::Advance`. Deterministic across peers (same state, same slots), but a re-implementation that changes container order changes ranges.
 - **Float hazards:** NaN in weighted crate drops when the total score is 0 [I]; `iv_sin`/`iv_cos` (low-nibble truncated) are used in sim paths (crate sway, dust vortex), `sinf`/`cosf` only in render [C].
 
 ## Open questions and unknowns
 
 | Id | Question | Status | What would resolve it |
 |---|---|---|---|
-| 04-U1 | (resolved by coordinator) Does any shipped map lack sea inside the `Crate::RunNuke` sampling rectangle `[0, X−100) × [0, Z−100)`? **No.** Re-generating every `mp_*` heightmap with the P11 terrain port (`_work/scripts/C_nuke_sea_check.py`, 25-unit sampling grid; results in `_work/drafts/C_nuke_sea_check.csv`) gives a sea fraction between 26.2 % (`data/levels/mp_assault_3p_3.txt`) and the maximum for every map, so the expected number of re-rolls is ≤ 4 and the loop terminates on all shipped maps. The hazard remains for user/edited maps without water. | [I] (port is not bit-exact, but the margin is large) | Bit-exact height dump from a running build would make it [C]; the new game should bound the loop or pre-compute a sea-cell list. |
-| 04-U2 | Weighted crate drops accept a position iff the terrain at z ∈ {0, 1} (the `pos.z > 20.0` bug) is non-zero. Which maps accept on the first try (sea-bed ≠ 0) and which always fall back to random (edge height exactly 0)? Weighted drops may also land in water and expire unreachable. | [I] mechanism, [U] per map | Heightmap scan of the z = 0/1 rows per level; instrument `Location::CreateRandomCrate`. |
+| 04-U1 | (resolved by coordinator) Does any shipped map lack sea inside the `Crate::RunNuke` sampling rectangle `[0, X−100) × [0, Z−100)`? **No.** Re-generating every `mp_*` heightmap from its level file (`Landscape`, `LandscapeTiles` and `LandFlattenAreas` blocks, pipeline of [23](23_terrain_and_landscape.md)) and sampling the rectangle on a 25-unit grid gives a sea fraction of at least 26.2 % on every map (minimum `data/levels/mp_assault_3p_3.txt`; maximum 91.6 %, `data/levels/mp_assault_2p_3.txt`), so the expected number of re-rolls is ≤ 4 and the loop terminates on all shipped maps. The per-map sea and border statistics are specified in [23 §9.4](23_terrain_and_landscape.md#94-sea-level) (provenance: generated by `_work/scripts/C_nuke_sea_check.py`, re-run after the flatten-type-3 fix). The hazard remains for user/edited maps without water. | [I] (port is not bit-exact, but the margin is large) | Bit-exact height dump from a running build would make it [C]; the new game should bound the loop or pre-compute a sea-cell list. |
+| 04-U2 | (resolved) Weighted crate drops accept a position iff the terrain at z ∈ {0, 1} (the `pos.z > 20.0` bug) is non-zero. Which maps accept on the first try and which always fall back to random? **Every shipped map accepts on the first try.** Re-generating each `mp_*` heightmap from its level file (pipeline of [23](23_terrain_and_landscape.md)) gives z = 0/1 heights between −30 and −6.93 for x ∈ [−100, worldX + 100] on all 57 maps, never 0: the grid is initialised to `OutsideHeight` and tiles only raise cells (`Landscape::MergeTileIntoLandscape`) (computed by `_work/scripts/S_41_crate_edge_check.py`). Weighted drops therefore land at the chosen building ± 100 wu regardless of terrain and may land in water and expire unreachable (§1.4). | [I] (re-generation not bit-exact; margin ≥ 6.9 wu) [C] mechanism `code/location.cpp:Location::CreateRandomCrate`, `code/landscape.cpp:Landscape::GenerateHeightMap`, `Landscape::MergeTileIntoLandscape` | A bit-exact height dump from a running build would make it [C]; the new game must replicate the bug literally or test the real terrain. |
 | 04-U3 | Edge cases at the (0,0) corner: random-mode crates start from the template position (0,0,0) and the Space Ship from (0,0,0); if that corner were land (≥ 20 resp. ≥ 10) and unrestricted, the crate / ship would spawn there at y = 0. | [I] | Heightmap value at (0,0) per level (expected sea). |
 | 04-U4 | Design intent of: bad outcomes ignoring `InvalidCrates` and the AntNest limit; Eggs creatures belonging to the task owner while every other monster outcome is Monster-team; Meteor and Plague hitting the user's own units; `InitMonsterTeam(capturer)` no-op. | [U] intent ([C] behaviour) | Designer notes or playtest of the shipped build; decide per item for the new game. |
 | 04-U5 | `Randomiser` assigns `syncrand() % levelFile.m_numPlayers` — on a 4-slot map played by 2–3 teams it can create Darwinians on a team id that is unused in this game. What do such Darwinians do (AI, scoring, crate capture)? Same question for magical-forest spirits of unused team ids. | [U] | Trace `Team`/`Location` handling of entities on `TeamTypeUnused` teams; playtest a Randomiser on a 4P map with 2 players. |
-| 04-U6 | Monster (4) and Futurewinian (5) Darwinians can capture crates (§1.7). Their teams receive the task rewards — does any AI entity drive those teams' task managers? | [U] | [07](07_ai.md) (AI instantiation for CPU-typed monster/Futurewinian teams, `Location::InitialiseTeam`). |
+| 04-U6 | (resolved) Monster (4) and Futurewinian (5) Darwinians can capture crates (§1.7). Their teams receive the task rewards — does any AI entity drive those teams' task managers? **Yes.** In multiplayer `Location::Init` initialises both teams as CPU teams (`InitMonsterTeam` / `InitFuturewinianTeam` → `Multiwinia::InitialiseTeam`), which calls `Location::InitialiseTeam` because the teams are already initialised; that spawns one `AI` entity per CPU team, and its `AI::AdvanceCurrentTasks` runs (on the AI main timer) every startable task of its own team's task manager ([02 §24](02_units_and_entities.md#24-ai)) | [C] `code/location.cpp:Location::InitMonsterTeam`, `Location::InitFuturewinianTeam`, `Location::InitialiseTeam`, `code/multiwinia.cpp:Multiwinia::InitialiseTeam`, `code/worldobject/ai.cpp:AI::AdvanceCurrentTasks` | — |
 | 04-U7 | Airstrike and nuke timings on real terrain (simulations assume flat ground). | [I] | Instrument `AirstrikeUnit::Advance` and `Nuke::AdvanceToTarget` in a build on shipped maps. |
 | 04-U8 | Real-time durations of Slow Down / Speed Up and the meteor slow-motion assume 10 Hz real-time server ticks; whether `GameTimer::Reset` clears a pending speed request between matches (the routed meta notes suggest `m_requestedSpeedLength` is not reset). | [I] | Read `code/gametimer.cpp:GameTimer::Reset` together with the server tick scheduler ([20](20_architecture.md)); measure in a build. |
 | 04-U9 | Are the `GameTypes none` levels (`mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress`) ever selectable in the FULL lobby (their crate rows in §3.5 would then apply with mode-defined options)? | [I] not selectable | Lobby map-list filter ([09](09_meta_systems.md), [08](08_levels_and_level_design.md)). |
 | 04-U10 | Can crates drop during the pre-game grace period? `Location::Advance` is not gated by the grace period. | [I] yes | Confirm the grace-period gating of `Location::Advance` in `code/network/clienttoserver.cpp` / [01](01_game_modes.md). |
-| 04-U11 | Grenade, rocket and shockwave effective ranges/hit counts (§6.3, §6.6, §6.11) are derived from re-implemented arithmetic on flat terrain. | [I] | Instrumented build; or adopt the formulas as the new game's spec. |
+| 04-U11 | Grenade, rocket and shockwave effective ranges/hit counts (§6.3, §6.6, §6.11) are derived from re-implemented arithmetic on flat terrain; the rocket's 8-or-9-move outcome additionally depends on its effect slot (§6.6, §7). | [I] | Instrumented build; or adopt the formulas as the new game's spec. |
 | 04-U12 | (resolved) Tick counts of `x −= 0.1` timers: computed by S04 with IEEE-754 doubles — 1.0 → 11 ticks, 2.5 → 25 (24 active), 5.0 → 51, 15.0 → 151, 45.0 → 450, 60.0 → 600; float `Task::m_lifeTimer` 30 → 300, 60 → 601. Any new implementation should use integer tick counters and decide the intended values. | [C] arithmetic | — |
 
 ## Docs-vs-code discrepancies
@@ -1523,6 +1552,12 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 | `code/worldobject/meteor.cpp` | meteor flight, impact, slow motion |
 | `code/worldobject/randomiser.h` | Randomiser class |
 | `code/worldobject/randomiser.cpp` | Randomiser pulses (`RANDOMISER_RANGE`) |
+| `code/worldobject/virii.cpp` | Virii bite (Unresistable — not blocked by the Personal Shield, §5.8) |
+| `code/worldobject/armyant.cpp` | ArmyAnt bite and carried-Darwinian kill (Unresistable, §5.8) |
+| `code/worldobject/centipede.cpp` | Centipede contact damage (Unresistable, §5.8) |
+| `code/worldobject/souldestroyer.cpp` | SoulDestroyer contact damage (Unresistable, §5.8) |
+| `code/worldobject/spider.cpp` | Spider squash (Unresistable, §5.8) |
+| `code/worldobject/tentacle.cpp` | Tentacle contact damage (Unresistable, §5.8; The Beast) |
 | `code/worldobject/airstrike.h` | AirstrikeUnit, SpaceInvader declarations |
 | `code/worldobject/airstrike.cpp` | bomber flight and bomb release |
 | `code/worldobject/nuke.h` | Nuke class |
@@ -1588,6 +1623,9 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 | `code/lib/universal_include.h` | `INCLUDE_CRATES_BASIC/ADVANCED`, debug-only crate macros |
 | `code/lib/vector3.cpp` | `FRAND`/`SFRAND` ordering |
 | `contrib/systemiv/lib/math/random_number.cpp` | synced and unsynced RNG |
+| `code/lib/slice_darray.cpp` | per-slice slot ranges of `m_effects`/`m_lasers` — decides whether a new effect moves in its creation tick (§6.6, §7) |
+| `contrib/systemiv/lib/tosser/fast_darray.cpp` | slot reuse (LIFO free list, growth by 100) for new effects (§6.6) |
+| `code/landscape.cpp` | height grid initialised to `OutsideHeight`, tiles merged by maximum — the edge rows read by weighted drops (§1.4, 04-U2) and the sea test of `RunNuke` |
 | `data/multiwinia.txt` | crate options per mode |
 | `data/stats.txt` | Meteor, Darwinian, squad, armour, bomber stats |
 | `data/sounds.txt` | Crate and CratePowerup sound blocks |

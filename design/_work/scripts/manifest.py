@@ -71,14 +71,24 @@ rows.sort()
 # Files not listed in the project but #included (by basename) from a project file are compiled when the include is
 # reached; record the including files so the build matrix and coverage check can treat them as conditionally live.
 live_set = [r[0] for r in rows if r[2].startswith('source/') and r[6] and r[6] != 'Debug;Release;DebugDirect3D;ReleaseDirect3D']
+# Resolve each quoted include like the compiler: relative to the including file's directory first, then the project's
+# AdditionalIncludeDirectories (targets/vs2005/Common.vsprops: code, contrib, contrib/SystemIV, contrib/SystemIV/lib/netlib,
+# contrib/eclipse, contrib/unrar, ...). Basename-only matching was wrong (e.g. code/unicode vs code/sound headers).
+INC_DIRS = ['code', 'contrib', 'contrib/systemiv', 'contrib/systemiv/lib/netlib', 'contrib/eclipse', 'contrib/unrar',
+            'contrib/lpng1215', 'contrib/zlib', 'contrib/libogg-1.1.3/include', 'contrib/libvorbis-1.1.2/include', 'targets/vs2005']
+by_low = {r[0].lower(): r[0] for r in rows}
 inc_by = {}
 for lp in live_set:
     with open(os.path.join(root, lp), 'rb') as fh:
         txt = fh.read().decode('latin-1')
     for m in re.finditer(r'#\s*include\s+"([^"]+)"', txt):
-        inc_by.setdefault(os.path.basename(m.group(1)).lower(), set()).add(lp)
+        inc = m.group(1).replace('\\', '/')
+        for base in [os.path.dirname(lp)] + INC_DIRS:
+            cand = os.path.normpath(os.path.join(base, inc)).replace(os.sep, '/').lower()
+            if cand in by_low:
+                inc_by.setdefault(by_low[cand], set()).add(lp); break
 for r in rows:
-    r.append(';'.join(sorted(inc_by.get(os.path.basename(r[0]).lower(), set()))[:5]) if (r[2].startswith('source/') and not r[6] and r[1] == 'code') else '')
+    r.append(';'.join(sorted(inc_by.get(r[0], set()))[:5]) if (r[2].startswith('source/') and not r[6] and r[1] == 'code') else '')
 with open(out, 'w', newline='') as fh:
     w = csv.writer(fh)
     w.writerow(['path', 'area', 'type', 'bytes', 'lines', 'nonblank_lines', 'vcproj_build', 'included_by_live'])

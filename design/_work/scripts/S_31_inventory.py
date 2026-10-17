@@ -144,6 +144,10 @@ def agent_sub(m):
     return '[%s](%s.md)' % (d, DOCNAME[d])
 text = re.sub(r'\b(P17b|P0[1-9]|P1[0-9]|P20|X1a|X3)\b(?![_.])', lambda m: agent_sub(m) if m.group(0) in AGENT else m.group(0), text)
 text = text.replace('grammar owned by X1a/[09](09_meta_systems.md)', 'grammar in [29](29_data_formats_reference.md) and [32](32_debug_test_and_performance.md)')
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location('S_31_citation_fixes', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'S_31_citation_fixes.py'))
+_fx = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_fx)
+text, _n = _fx.apply(text)
 print(text)
 for p in problems:
     print('PROBLEM:', p, file=sys.stderr)

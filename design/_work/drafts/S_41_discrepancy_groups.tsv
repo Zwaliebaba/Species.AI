@@ -1,0 +1,306 @@
+G000	00	docs/multiwinia_manual.pdf	"Play then switches around and the attacker becomes the defender … winner is the player who successfully attac	single round only; attackers win iff the bomb is destroyed; rotation code unreac
+G000	01	docs/multiwinia_manual.pdf	Assault: "Play then switches around and the attacker becomes the defender … winner is the player who successfu	single round only; attackers win iff the bomb is destroyed; rotation code unreac
+G001	00	docs/multiwinia_manual.pdf	one point per second per zone	true for `ScoreMode` 0 only; three more score modes exist; a "second" is 1.1 gam
+G001	01	docs/multiwinia_manual.pdf	KOTH "scoring one point per second for every zone under their control" (also `multiwinia_help_scores`)	true for ScoreMode 0 only; three more score modes exist; a "second" is 1.1 game 
+G002	00	docs/multiwinia_manual.pdf	Handicap applies to "Domination, King of the Hill"	also an Assault option, inert there (no spawn points)
+G002	01	docs/multiwinia_manual.pdf	Handicap applies to "Domination, King of the Hill"	also an Assault option (where it has no effect on shipped maps)
+G002	05	docs/multiwinia_manual.pdf	Handicap applies to "Domination, King of the Hill"	also an Assault option (inert there: no Assault map has spawn points)
+G003	00	docs/spirit resource system.txt	a spirit "gradually floats away over the course of a minute"; "when your creatures die they die for good"	multiplayer spirits live ≈ 126–146 s; harvesters recycle spirits of every team
+G003	02	docs/spirit resource system.txt	spirits "gradually float away over the course of a minute"; garbage-collector units and factories need spirits	MP: 6 s birth + 30–50 s floating + 90 s ascent; SP 6 + 90–150 + 180 s; only Harv
+G003	05	docs/spirit resource system.txt	a spirit "gradually floats away over the course of a minute"	MP: Birth 6.1 s + Floating 30–50 s (collectable) + ascent 90.1 s ≈ 126–146 s
+G004	00	docs/Network.txt	"SERVER: Ticks at 25 FPS"	server ticks every 0.1 s (10 Hz)
+G004	31	docs/Network.txt	server ticks at 25 FPS	10 Hz in code ([22](22_determinism_and_networking.md))
+G004	20	docs/Network.txt	"SERVER: Ticks at 25 FPS"; server loop sleeps until `lastFrameTimeStamp + 1/25`	server ticks every 0.1 s (10 Hz) of real time, at most once per main-loop call, 
+G004	21	docs/Network.txt	the server sleeps until `lastFrameTimeStamp + 1/25`; the client "runs heavy weight physics at 25 fps"	the server ticks at 10 Hz (0.1 s real time) and each tick is executed as 10 slic
+G004	22	docs/Network.txt	the server ticks at **25 FPS**; the client "runs heavy weight physics at 25 fps"; the server sleeps until the 	server tick every 0.1 s (10 Hz) of real time, no sleep; each tick is executed as
+G004	32	docs/Network.txt	the network "Ticks at 25 FPS" and "Runs heavy weight physics at 25 fps"	server tick 10 Hz (`+= 0.1` s); 10 slices per tick
+G005	00	UI "seconds" (time remaining, reinforcement countdown)	one game second per decrement	one decrement per 11 ticks = 1.1 s
+G006	01	docs/multiwinia_manual.pdf	Assault: "sabotage the three control stations"	3 or 4 linked stations per map (`mp_assault_4P_1`: 4)
+G006	03	docs/multiwinia_manual.pdf	"sabotage the three control stations"	3–4 linked stations per official map
+G006	08	docs/multiwinia_manual.pdf	Assault: "sabotage the three control stations"	3 linked stations, 4 on `mp_assault_4P_1`
+G007	01	docs/multiwinia_manual.pdf	Blitzkrieg: "When a player loses their home flag, they are eliminated"	also requires the capturer to hold an unbroken, not-being-recaptured chain of it
+G008	01	docs/multiwinia_manual.pdf	CTS: a shattered statue "re-appears randomly in one of the Statue Zones"	respawns after a randomised ≥ 10-mode-second timer at the neutral zone farthest 
+G008	03	docs/multiwinia_manual.pdf	a shattered statue "re-appears randomly in one of the Statue Zones"	respawn after a randomised timer at the neutral zone farthest from existing stat
+G009	01	docs/multiwinia_manual.pdf	Rocket Riot: an explosion burns "all the fuel and all the Multiwinians inside, re-setting the rocket to its st	fuel burns down to 50 % of its pre-explosion value; passengers are ejected (50 %
+G009	03	docs/multiwinia_manual.pdf	an explosion burns "all the fuel and all the Multiwinians inside, re-setting the rocket to its starting point"	MP: fuel burns down to 50% of its pre-explosion value; passengers are ejected (5
+G010	01	docs/multiwinia_manual.pdf	Co-op "(4 players required) – Domination and King of the Hill"	any map flagged `CoopMode` / `ForceCoop`, incl. 3-player Assault maps, `mp_cts_4
+G010	08	docs/multiwinia_manual.pdf	co-op "(4 players required) – Domination and King of the Hill"	`CoopMode`/`ForceCoop` also on CTS `mp_cts_4P_2`, the 3-player Assault maps and 
+G011	01	data/language/english.txt	Option text "Crate drop … 50% deviation" (`english.txt`)	matches `rate × (1.5 − U(0,1))`
+G012	01	UI text "Press ESC to Exit"	On-screen "Press ESC to Exit"	correct for FULL (Esc opens the in-game menu); the code's direct ready-key exit 
+G013	02	docs/multiwinia_manual.pdf	"Right click on officer: set surrounding Multiwinians into formation"	formation toggles when the order point is < 50 from the officer and no radar-dis
+G013	06	docs/multiwinia_manual.pdf	"Right click on officer: set surrounding Multiwinians into formation"	consistent: RMB on an idle officer → `TOGGLEENTITY` → formation (§5.3); Darwinia
+G014	02	manual (tips)	"Multiwinians in Formation are very vulnerable from behind"	consistent: the formation threat search is centred 0.66 × range ahead and member
+G015	02	docs/changes.txt	"Un-occupied Battle Cannons will no longer scare Darwinians"	`EffectGunTurretTarget` threats are only considered in single-player; in MP they
+G016	02	docs/multiwinia-changes.txt	"Fixed: Sync error involving Officers sending Darwinians into a radar dish"	current path copies `m_ordersBuildingId` from the officer; no residual issue fou
+G016	22	docs/multiwinia-changes.txt	"Fixed: Sync error involving Officers sending Darwinians into a radar dish"	current path `SearchForOfficers` copies `m_ordersBuildingId`; no residual issue 
+G017	02	contrib/systemiv/lib/math/random_number.h	`sfrand`/`_syncsfrand`: "−range < result < range"	actual range (−range/2, +range/2)
+G017	03	contrib/systemiv/lib/math/random_number.h	`sfrand`: "−range < result < range"	returns [−range/2, range/2]
+G017	07	contrib/systemiv/lib/math/random_number.h	`_syncsfrand`: "−range < result < range"	returns `(U[0,1) − 0.5) × range`, i.e. ±range/2
+G017	09	contrib/systemiv/lib/math/random_number.h	`sfrand(range)` returns values in (−range, range)	implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects the dead Soul /
+G017	22	contrib/systemiv/lib/math/random_number.h	`AppRandom < APP_RAND_MAX`; `frand`: `0 ≤ r < range`; `sfrand`, `_syncsfrand`: `−range < r < range`	`AppRandom ≤ 32767` inclusive; `frand ∈ [0, range]`; `sfrand ∈ [−range/2, range/
+G017	23	contrib/systemiv/lib/math/random_number.h	"−range < result < range"	result is in [−range/2, +range/2] (same for `Landscapesfrand`)
+G017	27	contrib/systemiv/lib/math/random_number.h	`frand`: 0 ≤ result < range	Can return exactly `range` (`AppRandom` max 32767 / 32767)
+G017	30	contrib/systemiv/lib/math/random_number.h	`sfrand(range)` returns −range < x < range	Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects the demo-end sp
+G018	02	data/stats.txt	RATE = "secs to reload"	fractional rates truncate per entity (`unsigned char`); speeds scaled by difficu
+G018	29	data/stats.txt	`SPED` in m/s, `RATE` "secs to reload", `NAME` = creature name	rows bound by position; speed × (1 + difficulty/10); instance copies truncated t
+G019	02	manual (Armour)	"transport up to 100 Multiwinians … can go across water"; "Armours are vulnerable to attack"	capacity 100 and sea hovering confirmed; but **immune to lasers**, shells ÷ 3, a
+G020	02	manual (Squads)	"deadly units, but only as long as you control them"; grenade = hold right + left click	autonomous fire is probabilistic `min(1, 4/d)` per tick; `secondaryFire = primar
+G021	02	docs/multiwiniachanges-beta.txt	"Darwinians surviving armour explosions (Issue 710)" listed as an issue	passengers are now ejected burning
+G022	02	docs/multiwinia-changes.txt	"Napalm Strikes will now set fire to trees much more reliably"	trees/triffids within 100 take a flat −200 with no falloff
+G022	04	docs/multiwinia-changes.txt	"Napalm Strikes will now set fire to trees much more reliably"	trees/triffids within 100 take a flat −200 (no falloff)
+G023	02	code comment in Location::FireLaser	"subversion lasers are half speed"	speed is the caller's: subversion Darwinians fire at 75 (half of 150) but the su
+G024	02	docs/multiwinia_todo.txt	creatures such as Triffids should belong to "a generic non-player team… reserve team 0"	a dedicated Monster team (4) and Futurewinian team (5), created lazily or at MP 
+G025	02	docs/bad guys.txt	brainstorm: egg fields, mother wasps, flocking	implemented cycles: SporeGenerator/Spider → Egg → (spirit) → Virii; Triffid → Tr
+G026	02	docs/multiwinia-changes.txt	"Virii no longer count towards your population limit"	consistent: population counts subtract `Virii::s_viriiPopulation`
+G026	03	docs/multiwinia-changes.txt	"Virii no longer count towards your population limit"	consistent: population = `m_others.NumUsed() − Virii::s_viriiPopulation`
+G026	05	docs/multiwinia-changes.txt	"Virii no longer count towards your population limit, but have their own limit"	consistent (subtracted; 250 per team)
+G027	02	code/worldobject/egg.h	"total time alive while unfertilised" (120 s)	dormant eggs never decay (timer reset every tick)
+G028	03	docs/spirit resource system.txt	spirits of dead enemies are collected and used by factories to spawn units	Multiwinia spawn points use virtual master-emitted spirits; collected-spirit pro
+G029	03	docs/multiwiniachanges-beta.txt	"Gun turret/Incubators emplacements shared by friendly teams don't fire/spawn" (bug report)	GunTurret ownership explicitly allows allied co-occupation (`IsFriend` check); t
+G030	03	docs/game objects.txt	"acts as an obstacle to anything in the air, but can be walked through"	ground units are pushed out of the trunk and crown spheres — trees block walking
+G030	21	docs/game objects.txt	"Acts as an obstacle to anything in the air, but can be walked through"	trees are in the obstruction grid; ground units are pushed out of the trunk and 
+G031	03	docs/game objects.txt	"? spawn seeds which sprout into new trees ?" (speculative)	implemented (`CreateAnotherTree`) but only crate-created trees and their offspri
+G032	03	docs/game objects.txt	"can only be shut down by disconnecting / destroying power source"	in Multiwinia a fence keeps its level mode unless it is solar-linked (then it dr
+G033	03	docs/game objects.txt	"can be blown up with enough force"	matches: a single hit ≤ −300; in FULL only WallBuster paths reach it
+G034	03	docs/new building docs.txt	mentions "Pylon 1 / Pylon 2" values for passing on power surges	`FenceSwitch` has no pylon fields or surge handling (reads 2 fence links, switch
+G035	03	source comment in building.h	"When you add an entry here remember to update building.cpp"	consistent (75 names for 75 values)
+G036	04	code/worldobject/crate.h	SpawnMania "spawn constantly for 15 seconds"	5.0 s
+G037	04	code/worldobject/crate.h	Bitzkreig "all Darwinians will always throw grenades for 10 seconds"	15 s global rage (`HasRage`), lasers not grenades
+G038	04	code/worldobject/crate.h	Forest "spawns 1–3 trees"	1–2 trees
+G038	04	code/worldobject/crate.h	Eggs "spawns between 1 and 3 eggs"	2–4 eggs
+G039	04	code/worldobject/crate.h	Rage "for 60 seconds"	30 s task
+G039	04	code/worldobject/crate.h	Tank "a bitchin tank for 30 seconds"	commented out
+G040	04	code/worldobject/crate.h	Booster "immune to laser fire"	immune to every resistible damage type (explosives pop it)
+G041	04	code/worldobject/crate.h	Spam "spawns a Spam object"	100 SpamInfections, no Spam building
+G042	04	docs/sound changes.txt	suggest a bad effect for uncaptured crates	the function is the 10 % bad outcome of a **captured** crate; an expired crate d
+G042	10	docs/sound changes.txt	new crate event `Expired`	fired by code; no data → silent
+G043	04	docs/sound changes.txt	events Squad … Bitzkreig	data adds FormationBooster, FireExtinguisher, Tank (never fired) and RocketTurre
+G043	10	docs/sound changes.txt	`CratePowerup` event list (Squad … Bitzkreig, incl. PersonalShield, Infection)	data adds FireExtinguisher, FormationBooster, Tank (never fired) and FlameTurret
+G044	04	data/language/english.txt	"follow your every command for 60 seconds"	consistent (60 s, then the squad dies)
+G045	04	docs/multiwinia_manual.pdf	eliminated players periodically receive a power-up	consistent — live in code (contradicting the P08 draft, see §1.2)
+G046	04	docs/multiwinia_manual.pdf	Domination, KOTH, CTS only	consistent
+G047	04	docs/multiwiniachanges-beta.txt	"Permit crate/power-ups placement near trunk ports" (Assault)	only gun turrets are restricted (400 from enemy trunk ports, 200 from enemy spaw
+G048	05	docs/spirit resource system.txt	"When your creatures die they die for good and can not be respawned"	Harvesters recycle souls of every team, including your own
+G049	05	docs/spirit resource system.txt	garbage collectors grab "2 or 3 at a time", "if they die they will drop their spirits"; factories need spirits	Harvester capacity 100 and sucks every soul within 75; it dies only by sucking u
+G050	05	docs/multiwiniachanges-beta.txt	"Magical forests produce red souls only if red around"	tree souls pick a uniform random team 0–3 regardless of surroundings (may be an 
+G051	05	docs/multiwiniachanges-beta.txt	"Engineer gets stuck trying to offload souls"	consistent: in MP an engineer can only unload at an incubator; no shipped offici
+G052	05	docs/multiwiniachanges-beta.txt	Domination scores population	ScoreMode 0 → score = spawn points owned now; 1 → cumulative spawn points per mo
+G053	05	code/level_file.h	"replaces the TrunkPortArmour option (which must be active for this option to have effect)"	applied whenever `AdvanceTrunkPorts` runs (`trunkportreinforcements` alone suffi
+G054	05	code/level_file.h	"disables GunTurret tasks from TrunkPorts on RocketRiot"	disables all turret-wave tasks (incl. Blitzkrieg AirStrike upgrades) in any mode
+G055	05	code/level_file.h	"activates the RocketRiot style trunk port reinforcements on a level"	in Rocket Riot/Blitzkrieg its count is ignored (game option wins) but it adds a 
+G056	05	SpawnPoint::Advance comment	instant activation for "our first (or last) spawn point"	triggers whenever the team owns exactly one point at that moment
+G057	05	UI "seconds" (time remaining, reinforcement countdown) driven by m_timer = 1.0 / m_reinforcementTimer = 1.0 resets	one game second per decrement	one decrement per 11 ticks = 1.1 s, so displayed seconds and wave timers run 10 
+G058	05	Multiwinia::Render comment // Rocket Riot on the reinforcement countdown	countdown is a Rocket Riot feature	drawn on every map where trunk-port waves run (Assault, Blitzkrieg, `mp_koth_3P_
+G059	06	docs/input_preferences_syntax.txt	grammar lists no `repeat`, `~` icon lines, `alias`, `value`, `->` pipe, `mouse any`, `key any`	`repeat` exists for XInput BOOL controls; `~` sets icons; `alias`/`value` driver
+G059	29	docs/input_preferences_syntax.txt	grammar without `~` icon lines, `value`/`alias` drivers, `repeat`, `key any`/`mouse any`, thumbstick direction	all of these are accepted (§5.2)
+G060	06	docs/input_preferences_syntax.txt	`XInput <xinput_analog> <analog_cond> [with sensitivity <1-200>]`	sensitivity is also accepted after BOOL conditions on analogue controls and reje
+G061	06	docs/input_preferences_syntax.txt	"The user input preferences will override the FIRST binding"	true, and the keyboard-layout file does the same; repeated lines in one override
+G061	29	docs/input_preferences_syntax.txt	user prefs override the FIRST binding of the system file	true for each user line, but several user lines for one control overwrite each o
+G062	06	docs/input_preferences_syntax.txt	unknown/invalid specs implied to fail	unknown condition words are silently accepted as `down` [C] §11.3
+G063	06	docs/DarwiniaInput.rtf	action words include `moved`	the word is `move`; `moved` hits the fallback and acts as `down` [C]
+G064	06	docs/DarwiniaInput.rtf	`lib/input/transform.h` holds `Movement2D`	it is in `code/lib/input/movement2d.h` [C]
+G065	06	docs/DarwiniaInput.rtf	`g_controlBindings->ControlEvent(ControlBindings::ControlDeselect)` (old API)	current API is `g_inputManager->controlEvent(ControlUnitDeselect)`; no `ControlD
+G066	06	docs/betachanges.txt	fixes for "Gestures Mode", "Icons task manager used when use Xbox 360 controller", Tab in Icons mode	these concern the Darwinia(+) interfaces, which exist but are unreachable in Mul
+G067	06	docs/game objects.txt	power-ups "triggered by a gesture of some kind"	Multiwinia power-ups are placed by click, never by gesture [C] `TaskManagerInter
+G067	26	docs/game objects.txt	power-ups "triggered by a gesture of some kind"	Multiwinia power-ups are placed by click; gestures are SP-only
+G068	06	docs/todo.txt	key-binding window issues	the Controls options window is unreachable in the shipped build [C] `OptionsMenu
+G068	09	docs/todo.txt	key-bindings window issues	the Control Options window is unreachable in the shipped build
+G069	06	DebugMenu captions "(F2)…(F9)"	debug hot-keys	no such bindings; F1–F8 are legacy task-manager keys, F9 = network stats [C] `da
+G070	06	code/location_input.cpp	demote / terminate	the bound key is plain C; the officer is killed (`ChangeHealth(−999)`), the turr
+G071	06	code/camera.h	"Remember to update the static string table at the end of camera.cpp"	no mode-name table exists [C]
+G072	06	code/camera.cpp	"If there is no blockage FLT_MAX is returned"	returns `_maxDist`; FLT_MAX only when there is no location [C]
+G073	06	code/lib/input/keynames.cpp	`"QUOTE", //192`	QUOTE is index 222; MINUS_PAD/Unknown swapped vs `keydefs.h` [C]
+G074	06	code/lib/input/control_types.inc	`CameraRotate` "rotate the cam in entity track mode"; `WeaponCycle*` "cycle weapons"	no consumer in the FULL build [C]
+G075	06	code/lib/input/control_bindings.cpp	`ControlBindings::replacePrimaryBinding`	commented out; replace is a flag on `bind` [C]
+G076	07	docs/integrating virtual players into network system.txt	a client may play "with an AI running locally"	the AI is a simulation entity run identically on every peer; CPU teams produce n
+G076	22	docs/integrating virtual players into network system.txt	`ServerToClient` index = team id; proposes separate team and client arrays; a client may host "an AI running l	implemented as proposed (`m_teams` + `m_clients`); the AI is a simulation entity
+G077	07	docs/multiwinia_todo.txt	"Creating a CPU player should automatically spawn an AI entity" is outstanding	implemented: `Location::InitialiseTeam` and `Multiwinia::RemoveTeams` spawn one
+G078	07	code/worldobject/aiobjective.h	several unlinked start objectives → "one will be selected randomly"	all stay active; each AI picks one (random, or a defender waits for the first on
+G079	07	docs/multiwiniachanges-beta.txt	"Crash AI::RunForest (Issue 328)" fixed	`RunForest` still dereferences `GetEntity(specials[i])` without a NULL check (07
+G080	07	code/worldobject/ai.h	pass / always-update scheme for clustered targets	field never read or written
+G081	07	code/worldobject/armour.cpp	self-destruct at enemy spawn points is a shortcut	live AI-only behaviour (Standard armour)
+G082	07	docs/multiwiniachanges-beta.txt	fixed	consistent with code: `PushFromTurrets` + turret `DoesSphereHit(10)` validity; K
+G083	08	docs/changes.txt	moving a land tile moves its buildings; option "in the land tiles menu"	behaviour confirmed; the toggle `editor_movebuildings` is in the main Landscape 
+G084	08	docs/top level map.txt	"Each level file specifies a map file at the start"; static vs dynamic buildings per map/level	Darwinia pairing is given by `data/game.txt` `Locations` rows; Multiwinia maps a
+G084	29	docs/top level map.txt	each level file specifies a map file at the start; global data has an "X Z position" per map	map/mission pairing comes from `game.txt` `Locations` rows; `locations.txt` stor
+G085	08	docs/new building docs.txt	fence switches are placed and linked in the editor	`FenceSwitch` is a blocked type in FULL/editor builds and occurs in no level fil
+G086	08	code/level_file.cpp:ParseLights	mission-file lights take precedence over map lights	mission files cannot contain a `Lights` block
+G087	08	code/level_file.h	"Handicap is overridden to 0"	the handicap function returns a multiplier of 1.0 (no handicap)
+G088	08	code/level_file.h	"the team id specified here"	compared with the team's **start position**
+G089	09	docs/multiwinia-changes.txt	"Server filter settings are now saved"	the four visible checkboxes (plus the dead custom-maps flag) are saved; the **ga
+G090	09	docs/multiwinia-changes.txt	"Server hosts may now password their servers"	hosting with a password works, but the browser's "show passworded" filter cannot
+G091	09	docs/multiwinia-changes.txt	demo users may join any LAN game on any map if hosted by a full-game player	not implemented client-side; the client only reacts to the listing's demo-restri
+G092	09	docs/multiwinia-changes.txt	"Port forwarding configuration in Help and Options | Settings | Other Options"	matches (no discrepancy)
+G093	09	docs/multiwinia-changes.txt	power-ups in the Advanced Tutorial terminate correctly upon use	consistent only after the T2 end step (`TerminateTask` blocked while `!m_tutoria
+G093	30	docs/multiwinia-changes.txt	"Power-ups in the Advanced Tutorial will now terminate correctly upon use"	Consistent only after Tutorial 2's End step: `TaskManager::TerminateTask` is ref
+G094	09	docs/multiwiniachanges-beta.txt	Back on map select goes to the lobby; Back on the lobby goes to game mode	MapSelect Back → GameSelect; lobby Back → GameSelect (host), MapSelect (single p
+G095	09	docs/multiwiniachanges-beta.txt	"Leaderboards and Achievements appear in the in-game menu" (fixed)	the in-game `LocationWindow` has neither; the front-end pages exist but are unre
+G096	09	docs/todo.txt	"Leaderboards — DONE (?)"	no leaderboard backend; UI unreachable stub
+G097	09	docs/todo.txt	water reflection linked to the pixel-effect option	true only under D3D; the pixel-effect control itself is commented out
+G098	09	docs/help system.txt	Sepulveda context help with F1, fixed messages, failure help and action items (GestureBasics, ThrowAirstrike, 	key is `SepulvedaHelp = key h`; the enum has the 20 items of Appendix A.4; no fi
+G098	30	docs/help system.txt	A Sepulveda context-help design with F1 to request help, "fixed messages" (BuildingCaptured, BuildingOnline, N	Key is `SepulvedaHelp = key h`; the enum has the 20 items listed in [09](09_meta
+G099	09	docs/multiwiniareleasenotes-beta.txt	beta records benchmarks and uploads them via FTP "when you exit"	feature compiled out in every target (`//#define BENCHMARK_AND_FTP`); when enabl
+G099	30	docs/multiwiniareleasenotes-beta.txt	The beta records benchmarks and uploads them by FTP "when you exit"	Compiled out in every target here; when enabled, upload happens at the end of ea
+G099	32	docs/multiwiniareleasenotes-beta.txt	the beta records benchmarks and uploads them to the FTP server "when you exit"	recorder compiled out in every target here (`//#define BENCHMARK_AND_FTP`); when
+G100	09	docs/changes.txt	"Show First Time Intro" option replays the intro next time the game starts	the intro runs only from `RunBootloader` (Campaign launch, `USE_LOADERS`); the o
+G100	30	docs/changes.txt	"Show First Time Intro" makes the intro play "the next time you start Darwinia"	The intro runs only from `RunBootloader` when the Campaign is launched (and only
+G101	09	docs/detailed schedule.txt	"(OPTIONAL) Intro bootloaders" planned	implemented but compiled out (`USE_LOADERS`)
+G101	30	docs/detailed schedule.txt	"(OPTIONAL) Intro bootloaders" planned	Implemented, then compiled out (`//#define USE_LOADERS`)
+G102	09	docs/todo.txt	boot-loader issues (Game-of-Life glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen	loaders not compiled in Multiwinia; widescreen stretching is consistent with the
+G103	09	docs/detailed schedule.txt	the debug / sound / editor windows are untranslated	consistent — literal English captions
+G103	28	docs/detailed schedule.txt	these windows are untranslated	consistent: literal English captions (§10.3)
+G104	09	tools/language/README.txt	translation inputs must be UCS-2 BE	`data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts b
+G104	31	tools/language/README.txt	translation inputs must be UCS-2 BE	`data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts b
+G105	09	docs/RussianFontRequest.txt	only the Speccy font has Cyrillic	Cyrillic atlases exist for editor, speccy and square (but the "all" language lis
+G105	31	docs/RussianFontRequest.txt	only Speccy has Cyrillic glyphs	`data/textures/unicode/` has Cyrillic pages for `editor`, `speccy` and `square`;
+G105	25	docs/RussianFontRequest.txt	only Speccy has Cyrillic glyphs; Speccy was copied to Square and Editor	`data/textures/unicode/` holds distinct Cyrillic atlases for all three fonts, bu
+G105	28	docs/RussianFontRequest.txt	only speccy had Cyrillic glyphs; they were copied to square and editor as a stop-gap	consistent: the three Cyrillic atlas pairs are byte-identical
+G106	10	docs/sound changes.txt	carryable-building events `Lift`, `Carry (loop)`, `Drop`	all three fired; only `Statue Drop` is bound (`statuedrop3`; `StatueDrop`, `Stat
+G107	10	docs/sound changes.txt	microphone position; "drop all volumes to highlight a single sound event"; Darwinian orders spread over a seco	microphone and highlight not implemented; orders not spread; the lift-chant freq
+G107	27	docs/sound changes.txt	Microphone positioning; "drop all volumes to highlight a single sound event"	Not implemented (listener = camera; no ducking or buses)
+G108	10	docs/multiwinia audio.docx	Game Over / You've won / You've lost sounds; last-10-seconds timer; "Age of object" parameter link; Dark Fores	match-end events fired but unbound; last-10-s ticks implemented; no age link; no
+G109	10	docs/ThoughtsOnSoundSystem.txt	2D buffer fixed at 2000 samples; linear / log graph toggle wanted; "Sort out SetChannelVolume / SetChannel3dMo	buffer is pref `SoundBufferSize`; the toggle is commented out; both software-mix
+G109	27	docs/ThoughtsOnSoundSystem.txt	2D buffer fixed at 2000 samples "probably needs to be adjustable"; wants a linear/log toggle on the parameter 	Buffer is pref `SoundBufferSize` (512 generated / 2000 fallback); the graph draw
+G110	10	docs/adsr.gif	classic ADSR with a decay stage and a sustain level	no decay stage; SUSTAIN is a hold duration; sustain level = VOLUME
+G110	27	docs/adsr.gif	Classic ADSR: Attack → **Decay** → Sustain **level** → Release on key-off	No decay stage (`StateDecay` never entered); SUSTAIN is a hold **duration**; pea
+G111	10	docs/MinDistAndVolume.jpg	flat to the minimum distance, then fall-off	consistent (`min/d`)
+G111	27	docs/MinDistAndVolume.jpg	Flat to min distance, then fall-off	Consistent (inverse distance)
+G112	10	data/effects.txt	"Default: the starting value"	defaults are not applied to parameters omitted in `sounds.txt` (they are 0); the
+G112	26	data/effects.txt	"Default: the starting value"	defaults are never applied at runtime; editor seeds the minimum
+G112	29	data/effects.txt	"Default: the starting value"	defaults are not applied to parameters omitted in `sounds.txt` (they are fixed 0
+G113	10	code/sound/sample_cache.cpp	"Largest song takes 13 MB"	the largest track decodes to 30 389 760 bytes (29.0 MiB) but no music is shipped
+G113	25	code/sound/sample_cache.cpp	"Largest song takes 13 MB"	the largest track decodes to 30 389 760 bytes, but no music ships; the largest l
+G113	27	code/sound/sample_cache.cpp	"Largest song takes 13 MB"	Largest shipped track decodes to 29.0 MiB (`data/sounds/tresk_-_excuses.ogg`, 34
+G113	29	code/sound/sample_cache.cpp	"Largest song takes 13 MB"	the largest shipped track decodes to 29.0 MiB
+G114	10	code/sound/sound_instance.h	VOLUME 0.0 = "silence"	0.0 = −50 dB on DirectSound
+G114	27	code/sound/sound_instance.h	VOLUME 0.0 = "silence"	0.0 = −50 dB on DirectSound (−43.4 dB software); only master 0 + volume 0 approa
+G115	10	code/sound/soundsystem.h	"Full event name required"	substring match
+G115	27	code/sound/soundsystem.h	"Full event name required"	Substring match (`strstr`)
+G116	10	code/worldobject/gunturret.cpp	lists `RegisteredKill`	the code fires `RegisterKill` (bound in data)
+G117	10	code/sound/soundsystem.cpp	Music list without `LoaderAmiga`; MultiwiniaInterface list without `UnitHighlight`	both are bound in data and fired by code
+G118	10	tools/unused_samples.sh	"run this script from the Darwinia data directory" (helpers for finding unused samples)	they ignore `data/mwsounds/` and orphan-group membership; CRLF in `sounds.txt` b
+G118	25	tools/unused_samples.sh	"run from the Darwinia data directory"	ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison 
+G119	20	docs/Network.txt	"CLIENT: Runs heavy weight physics at 25 fps … as a separate thread (at least conceptually)"	10 ticks per second, each split into 10 slices, executed on the main thread inte
+G119	21	docs/Network.txt	heavy-weight physics "runs as a separate thread (at least conceptually)"	the simulation runs on the main thread interleaved with rendering; only the init
+G120	20	docs/NetworkThreads.txt	dedicated Server Send Thread and Client Send Thread that `Suspend()` when the queue is empty	sends happen synchronously on the main thread (`AdvanceSender` in `ClientToServe
+G120	22	docs/NetworkThreads.txt	separate client/server send threads that suspend when idle	sends happen synchronously on the main thread (`AdvanceSender` at the end of `Cl
+G120	32	docs/NetworkThreads.txt	dedicated send threads that sleep when queues are empty	sending is synchronous on the main thread
+G121	20	docs/NetworkThreads.txt	main thread runs "client heavy weight advance" when `time >= nextClientTimeSlice` and "light weight advance … 	heavy-weight work is metered by the 30 %-of-backlog rule every frame; the "light
+G121	22	docs/NetworkThreads.txt	the main thread runs the "client heavy weight advance" only when `time >= nextClientTimeSlice`, and a "light w	heavy-weight work is sliced (10 slices/tick) and interleaved with every rendered
+G122	20	docs/NetworkThreads.txt	light-weight advance extrapolates from the last received velocity	no state is received; rendering extrapolates the locally simulated state
+G123	20	code/gametimer.h	`GameTimer` "Replaces g_gameTime, GetNetworkTime, SERVER_ADVANCE_PERIOD etc"	`g_gameTime` still exists as a separate wall-clock variable; `GetNetworkTime`/`S
+G124	20	code/globals.h	`MINIMUM_RENDER_PERIOD` "Render at least this frequently"	unused
+G125	20	code/app.cpp	main-thread affinity `0x02|0x08|0x20|0x80` "Even processors"	zero-based CPUs 1, 3, 5, 7
+G125	20	code/app.cpp	worker affinity `0x01|0x04|0x10|0x40` "Processor Number % 3 == 2" / "Odd processors"	zero-based CPUs 0, 2, 4, 6
+G125	31	code/app.cpp	affinity `0x02|0x8|0x20|0x80` "Even processors", `0x01|0x4|0x10|0x40` "Processor Number % 3 == 2" / "Odd proce	the masks select CPUs 1,3,5,7 and 0,2,4,6 (0-based) respectively
+G126	20	code/network/clienttoserver.cpp	catch-up time limit "checked every 500 iterations"	checked every iteration
+G127	20	code/lib/window_manager_win32.cpp	secondary GL context created "for loading thread"	never made current on any thread; workers marshal GL work to the main thread
+G127	31	code/lib/window_manager_win32.cpp	secondary GL context "for loading thread"	never made current; worker GL work is marshalled to the main thread
+G128	21	code/routing_system.cpp	"Only check the surface normal if the gradient is sloping upwards"	the gradient is measured against the start point, not between samples
+G129	21	code/obstruction_grid.cpp:CalculateBuildingArea	fill the 4-neighbours only when a sample skipped diagonally	shadowed `oldCellX/oldCellY` make it fill them for every sample with non-zero ce
+G130	21	code/worldobject/worldobject.cpp:BounceOffLandscape	impact point = midpoint of last and current position	`lastPos = m_pos` (the velocity term is commented out): no midpoint
+G131	21	code/unit.h	"Takes into account formation AND obstructions"	obstructions ignored
+G132	21	code/team.h	"Officers and tanks for quick lookup"	also armour, harvesters, engineers, shamans
+G133	21	code/lib/slice_darray.h	constructor `(newstepsize, totalNumSlices)`	defined `(totalNumSlices, newstepsize)`
+G134	21	code/location.h:ChristmasModEnabled	"0 = unavailable, 1 = enabled, 2 = disabled"	returns a bool; callers compare `== 1`
+G135	22	docs/Network.txt	each chunk also sends copies of the previous two frames	at most one piggy-backed copy (oldest unacknowledged) + up to 3 letters per tick
+G136	22	docs/Network.txt	watchdog: a client is dead after 1.0 s of silence	20.0 s [C]
+G137	22	docs/Network.txt	the client sends a "ResyncMe" message on gaps; I'm-alive only when idle	no resync message — cumulative ack `LASTSEQID` on every letter; gaps are filled 
+G138	22	docs/network overview.txt	lobby over **TCP**, broadcast "Are you a server?" query, LOAD MAP + confirm handshake, then UDP 4000/4001	everything is UDP in one channel; servers broadcast REGISTER every 5 s (clients 
+G139	22	docs/network overview.txt	ports 4000 server / 4001 client	matches the defaults [C]
+G140	22	docs/multiwinia_todo.txt	"(DONE) … fix determinism; ensure floating point accuracy over multiple platforms"	implemented as `_PC_53` precision control plus binary32 rounding of transcendent
+G141	22	docs/multiwiniareleasenotes-beta.txt	beta builds enable debugging code to track rand sync errors	in this tree `TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`;
+G141	32	docs/multiwiniareleasenotes-beta.txt	"debugging code is enabled to track rand sync errors"	`TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`; beta groups 
+G142	22	code/lib/vector3.h	`operator==` uses FLT_EPSILON	absolute tolerance 1e-6 (`NearlyEquals`) [C]
+G143	22	code/lib/matrix33.h	`DecomposeToYDR()` returns "x = dive, y = yaw"	returns (yaw, dive, roll) in (x, y, z) [C]
+G144	22	code/network/clienttoserver.cpp	team requests are sent "once a second"	the gate fires every 0.1 s [C]
+G145	23	docs/landscape lightmap.txt	Landscape has `GenerateLightMap`, `ApplyLightmap`, `DeleteLightMap`: ray-cast shadows from a point light at (7	none of these functions or members exist; terrain is only GL vertex-lit by two l
+G145	24	docs/landscape lightmap.txt	`Landscape::GenerateLightMap/ApplyLightmap/DeleteLightMap`: ray-cast shadows from a point light at (700,200,10	none of these exist; terrain is only GL vertex-lit; the only "lightmap" is the w
+G145	25	docs/landscape lightmap.txt	`Landscape::ApplyLightmap` / `GenerateLightMap` with `m_lightMapTextureId`	the lightmap is the registered bitmap `water_lightmap` built by `Water::Generate
+G146	23	docs/OpenGLState.txt	fog start 800, end 2000	fog derived from world size: end = max(4000, size + 1000), start = end/3
+G146	24	docs/OpenGLState.txt	fog start 800, end 2000	start `fogEnd/3`, end `max(4000, worldSizeX+1000, worldSizeZ+1000)`; `CheckOpenG
+G147	23	code/landscape.h	"Log to the base 2 of the resolution of the guide grid"	resolution = 2^p − 1, so p = log₂(resolution + 1)
+G148	23	code/lib/math_utils.h	may round up or down depending on the CPU rounding mode	the active macro is `(int)(a)`: always truncates toward zero (the `fistp` versio
+G149	23	code/landscape.h	parameter order x1, x2, z1, z2	definition and call use (x1, z1, x2, z2); names only, behaviour consistent
+G150	23	Editor label editor_noiseperiod for m_fractalDimension; file header label "frac dim"	a period / a fractal dimension	the value is the exponent of the per-level amplitude law; larger means smoother 
+G151	23	code/water.h	sea plane twice the land size; depth modulates brightness, wave amplitude and colour	matches; additionally deep water is not drawn at all (flat tiles skipped where a
+G151	24	code/water.h	sea plane twice the land size; depth darkens and shrinks waves	matches; additionally deep water is not drawn at all
+G152	23	Phase-2 P12 render-pass draft (not a docs file; recorded for traceability)	flat-water texture unit 1 is the "landscape lightmap"	it is the water shore mask `"water_lightmap"`
+G153	24	docs/OpenGLState.txt	fog colour `g_app->m_world->m_backgroundColour`	`g_app->m_backgroundColour` (constant black, alpha 0); the D3D path ignores fog 
+G154	24	docs/OpenGLState.txt	lights from `g_app->m_world->m_lights[x]` with ambient/diffuse/position/specular	`Location::SetupLights` (or `GlobalWorld::SetupLights`): direction + colour, amb
+G155	24	docs/OpenGLState.txt	`glTexEnvf(GL_TEXTURE_ENV_MODE, GL_MODULATE)`	`glTexEnvi(…MODULATE)` plus `glTexEnviv(GL_TEXTURE_ENV_COLOR, {0,0,0,0})`
+G156	24	docs/OpenGLState.txt	lists `GL_TEXTURE_MAG_FILTER` twice "undefined" (MIN missing)	neither filter is part of the default state; every textured pass sets its own; u
+G156	25	docs/OpenGLState.txt	MAG/MIN filters "undefined" in the baseline texture state	every texture object is created with MAG LINEAR / MIN LINEAR_MIPMAP_LINEAR and C
+G157	24	docs/OpenGLState.txt	no mention of `GL_NORMALIZE`, `GL_LIGHT_MODEL_AMBIENT`, `GL_SCISSOR_TEST`, lights 2–7	code disables NORMALIZE, sets light-model ambient (0,0,0,0), disables scissor an
+G158	24	docs/OpenGLState.txt	trailing `glMaterialfv(GL_FRONT, …)` and `allegro_gl_set_texture_format(GL_INTENSITY8)`	no Allegro anywhere in `code/`; materials set by `Renderer::SetObjectLighting` (
+G159	24	docs/OpenGLState.txt	the documented state is the API contract	under [B:D3D] shade model, line/point smooth, fog colour/density, light-model am
+G160	24	docs/HardwareComplianceIssues.txt	"Multitexturing ARB not supported" on a Linux test machine	no Win32 fallback: `gglActiveTextureARB` / `gglMultiTexCoord2fARB` are called un
+G161	24	docs/HardwareComplianceIssues.txt	"Mouse pointer background not transparent"	no explicit fix; Win32 cursors are drawn additively by the game (24-U9)
+G162	24	docs/sphere world.txt	the sphere world is the hub between islands	present and built at start-up but unreachable in Multiwinia; the menu shows only
+G163	24	code/lib/render_utils.h	split quads are needed for Radeon fog artefacts	`RenderSplitUpQuad*` have no callers (clouds subdivide inline)
+G164	24	comment in Renderer::ApplyPixelEffect	pass 4 "Additive smooth"	uses NEAREST (blocky)
+G165	24	comment on ParticleType::m_spin	spin in rad/s; fade-in/out times	`m_spin`, `m_fadeInTime`, `m_fadeOutTime` never read; render fade hard-coded
+G166	24	signature DeformEffect::AddPunch(Vector3 pos, float range)	takes a range	argument ignored (`m_range = 1`)
+G167	24	comment in WindowManagerWin32::EnableOpenGL	secondary GL context "for loading thread"	never made current; no loading-thread GL use
+G168	24	comment in App::UseChristmasMode	"Also allow user to disable if he wishes"	the `ChristmasEnabled` preference is not consulted
+G169	24	graphics menu (dialog_landscapedetail, dialog_pixeleffect strings)	landscape detail and pixel effect are user options	both controls are commented out; `RenderLandscapeDetail` has no effect
+G170	24	Renderer::Initialise reads WaitVerticalRetrace	vsync is configurable	first two `CreateWin` attempts pass literal `true`; the GL window manager ignore
+G171	25	code/lib/bitmap.h	luminance → alpha	green channel → alpha, RGB := white
+G171	29	code/lib/bitmap.h	luminance → alpha	**green channel** → alpha, RGB := white
+G172	25	method name ApplyDilateFilter	dilate	8-neighbour mean (box blur without centre)
+G173	25	tools/FindUnusedResources.sh	lists unused resources	misses 380 used visual files and counts 21 unused ones as used (§6.4)
+G174	25	tools/ShapeExporter	"Futurewar Shape Format v1.0" exporter	no longer compiles against `code/lib/shape.h`; writes triangle lists only, while
+G174	29	tools/ShapeExporter	"Futurewar Shape Format v1.0" (the exporter writes loadable files)	the exporter no longer compiles against `code/lib/shape.h`; shipped strip-encode
+G175	25	code/lib/shape.cpp	writes a loadable `.shp`	broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled
+G175	29	code/lib/shape.cpp	writes a loadable `.shp`	broken `%5.2`/`%7.3`/`%6.3` formats; colours not un-scaled
+G176	26	Original specification §5 for this document	"effect definitions (`effects.txt`)" under animation/VFX	`effects.txt` holds audio DSP filter blueprints; no VFX reads it
+G177	26	code/particle_system.h:ParticleType	`m_spin` "rate of spin in radians per second", fade-in/out times	never read; fade is hard-coded 75 %/25 % and particles never spin
+G178	26	code/gesture_demo.h	"mouse pos scaled for the current screen resolution"	scales both axes by screen height; interpolation weights swapped
+G178	29	code/gesture_demo.h	returns a mouse position scaled for the current screen resolution	scales both axes by screen **height**; interpolation weights swapped
+G179	26	code/worldobject/entity_leg.h	`m_legLift` "in metres"	world units (the game has no metre scale)
+G180	26	code/worldobject/entity_leg.cpp	"cosTheta should never be greater than one, yet sometimes it is"	clamped to 1 — the IK is approximate (§5.1 step 7)
+G181	26	docs/donelist.txt	"made it possible to add new gestures from editor"	gesture editor compiled out (`GESTURE_EDITOR` debug-only, window under `USE_SEPU
+G182	27	docs/ImplementationNotes/SoundSystemSamplePath.jpg	Ogg **and WAV** files reach the sample cache from both the file system and RAR archives	`Resource::GetSoundStreamDecoder` only appends `.ogg`; WAV decoding is unreachab
+G183	27	docs/ImplementationNotes/SoundSystemData.jpg	Sound params include min **and max** distance, pan (non-3D), loop points; properties include angular velocity,	No max distance, pan or loop points; link inputs are only Nothing, HeightAboveGr
+G184	27	docs/ImplementationNotes/SoundSystemData2.jpg	`SoundFilterBlueprint` array indexed 0..12 (13 filters); class names `SoundFilterBlueprint` / `SoundFilterPara	14 filters (`NUM_FILTERS`, 0..13); classes `DspBlueprint` / `DspParameterBluepri
+G185	27	docs/ImplementationNotes/Sounds_DiskToSpeaker.gif	One `SoundSystem::SoundLibraryCallback()`; instance holds `SoundFilterHandle *m_filters`	Two callbacks (`SoundLibraryMainCallback`, `SoundLibraryMusicCallback`); filters
+G186	27	docs/ImplementationNotes/SoundEffectBlueprint2.jpg	Linked parameter graph flat outside the input range, linear between	Consistent
+G187	27	code/sound/sound_library_3d.h	"Currently two implementations"	Three plus a null device: DirectSound, software, XAudio (dead on PC), NoSound
+G188	27	code/sound/sound_library_3d_software.cpp	"prevents the volume ramping code from being used when a new sound first starts"	Ramping happens **only** when the flag is set (new sound)
+G189	27	code/interface/debugmenu.cpp	"Sound Stats (F7)", "Sound Editor (F8)", "Sound Profile (F9)" (button text "Sound Profile (F8)")	Hot-keys commented out; buttons never created (`modsEnabled` false)
+G190	28	docs/multiwiniachanges-beta.txt	"Game Menu: X360 B button in menus doesn't always go back"	Structural cases remain where B does nothing: pages without a `BackPageButton` (
+G191	28	docs/multiwiniachanges-beta.txt	"Menu navigation in the pre-game with controller"	consistent: the lobby builds `m_buttonOrder` and starts the cursor on Play
+G192	28	docs/sound changes.txt	"Sound editor will now use a scrollbar if there are too many events to fit"	consistent (`SoundEditorWindow` creates a `ScrollBar`), but the sound editor is 
+G193	29	docs/input_preferences_syntax.txt	"A preference value is always false if there is no corresponding preference manager entry"	`pref X` with a non-existent key **fails to parse** (binding rejected)
+G194	29	docs/changes.txt	default language read from `HKCU\software\valve\steam\language`	`GetLocaleInfo(LOCALE_SENGLANGUAGE)`; no registry read
+G195	29	docs/changes.txt	mods in `mods/<name>/`; "stats.txt reloaded when a mod is selected"	mod look-up compiled out (`USE_DARWINIA_MOD_SYSTEM` undefined)
+G196	29	data/multiwinia.txt	`Change: 0 = DropDownMenu, -1 = CheckBox`	consistent
+G197	29	data/language/english.txt	`*BETATESTERS` is replaced by all beta-tester names	consistent; the phrase must be exactly `*BETATESTERS`
+G198	29	code/level_file.cpp	mission lights override map lights	`ParseMissionFile` rejects `Lights` blocks; only a second `Lights` block in one 
+G199	29	code/team.h:TeamControls	update `NetworkUpdate::GetByteStream` when adding flags	that function no longer exists; packing is `TeamControls::Pack`
+G200	29	MultiwiniaSupport.ini	user files `userprefs.txt`, `authkey` in the install directory	the game writes `user_input_preferences.txt`, reads `authkey.dev`, under `<P>`
+G201	30	docs/detailed schedule.txt	"Intro cutscene should always play when a new profile is created"	The trigger is the `BootLoader = firsttime` preference written for a fresh prefe
+G202	30	docs/multiwiniachanges-beta.txt	A "quick tutorial" and an "Advanced Concepts tutorial"	Match Tutorial 1 and Tutorial 2 — no discrepancy
+G203	30	docs/betachanges.txt	"The final Fence Switch has been made Once Only, preventing constant cutscene triggering"	Darwinia content: `FenceSwitch` (trigger T2) is a blocked building in Multiwinia
+G204	30	docs/possible removals.txt	"Cutscene 5" listed as a possible removal	`music5.txt` and the `Cutscene5` music event still exist (Darwinia campaign)
+G205	31	README.TXT	"There are four possible build configurations" — then lists six, including "PC OpenGL (Release) produces darwi	the vcproj has four configurations; the solution adds `PC OpenGL (Debug)`/`(Rele
+G206	31	README.TXT	"Debug and Release build Darwinia…"	the product built is Multiwinia (`APP_NAME`)
+G207	31	tools/readme-linux.txt	preferences in `~/.darwinia/demo` or `~/.darwinia/full`	Multiwinia Linux path is `~/.multiwinia/<DARWINIA_GAMETYPE>/` [C] `code/app.cpp:
+G208	31	MultiwiniaSupport.ini	user files live in `{app}`	written to `%LOCALAPPDATA%\Introversion\Multiwinia\` on Windows 2000+ unless `--
+G209	31	MultiwiniaSupport.ini	files `userprefs.txt`, `game-history.txt`, `stdout.txt`; key file `authkey`	no code in `code/` or `contrib/systemiv/lib` writes the first three; the game re
+G210	31	Support-tool success message	"This reference is also recorded in errorlog.txt in your Multiwinia directory"	`ERRORLOG.TXT` is written to the profile directory, not the install directory [C
+G211	31	docs/vista installer check list.txt	`TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.ini/.exe`	`TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport.*`
+G212	31	tools/FindUnusedResources.sh	must run from a folder named `Darwinia`	repository folder is `multiwinia`
+G213	31	docs/cpu cycles.txt	(requested by the specification as performance notes)	a gameplay design note (task manager/gestures); no performance data
+G213	32	docs/cpu cycles.txt	named by the specification as the performance cross-check	a gameplay design note (CPU-cycle program economy, task switching, Debug Zeppeli
+G214	31	targets/vs2005/GDF/*.gdf.xml	"Darwinia" 1.5.4.0, `darwinia.exe`, saved games `Darwinia\users`	the product is Multiwinia / `multiwinia.exe`; Game Explorer metadata is stale
+G215	31	targets/vs2005/version.rc	6.0.0.0 vs 1.0.x–1.9.x vs "dev"	no single version source (§9.4)
+G216	31	tools/build_multiwinia_data.bat	sounds2 step prints "Making sounds.dat"; `ambx` platform prints "…hwcompat.txt"	builds `sounds2.dat`; appends the beta-test exclusion list
+G217	31	targets/vs2005/Common.vsprops	include path `steam/` under `contrib/`	directory absent from the tree
+G218	31	_work/build_matrix.md	target table complete	omitted `LAN/WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `TARGET_BETATEST_GROUP`; corre
+G219	32	docs/multiwinia_todo.txt	"Debug tools: Profile for network system, Bandwidth send / received, latency etc, Server logging"	partly implemented: bandwidth/latency in the F9 window, server sections in the C
+G220	32	docs/detailed schedule.txt	debug windows (Sound Stats/Parameter/Editor/Profile, Profile, Pokey, Network, Input Logger, Grabber, Gesture, 	consistent: all use literal English captions; the Input Logger has no implementa
+G221	32	Debug-menu captions	"Profile (F6)", "Display FPS (F5)", "Dbg Cam (F2)", "Toggle Editor (F3)", "Cheat Menu (F4)", "Sound Stats (F7)	none of these keys is bound to these actions (F1–F8 are task-manager keys; F9 = 
+G222	32	Code comment in Server::AdvanceIfNecessary	testbed server "Advance time 10 times faster than normal mode"	every branch adds 0.1 s — no speed-up
+G223	32	tools/build_multiwinia_hwcompat.bat	copies `ncftpput.exe` (the benchmark uploader) into the hwcompat build	`TARGET_PC_HARDWARECOMPAT` does not define `BENCHMARK_AND_FTP` in this tree, and
+G224	32	docs/changes.txt	`RenderLandscapeMode` default "set to 2 (Vertex Buffer Objects)"	default −1 = automatic: VBO when the extension is supported, else display lists 

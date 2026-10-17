@@ -42,7 +42,7 @@ Evidence: `code/lib/universal_include.h` (`#ifdef USE_DIRECT3D … #include "lib
 | `code/lib/ogl_extensions.cpp`, `code/lib/window_manager_win32.cpp` | `#if !defined USE_DIRECT3D` | live |
 | `code/lib/safegl.cpp` | unguarded; inner `#ifndef USE_DIRECT3D` | compiled, but `safeGlNewList/EndList` are **never reached** in baseline because the `#define glNewList safeGlNewList` lives in `safegl.h`, which is only included for D3D/Mac (§1.3.4) |
 | `code/lib/window_manager.cpp` | none | live (abstract base) |
-| `code/lib/avi_generator.cpp` | `#ifdef AVI_GENERATOR` (`TARGET_DEBUG` only) | empty in FULL ([B:DEBUG]) |
+| `code/lib/avi_generator.cpp` | `#ifdef AVI_GENERATOR` (`TARGET_DEBUG` only) | empty in FULL; in debug builds compiled but unreachable — its only user, `GrabberWindow`, is opened only by `DebugKeyBindings::GrabberButton`, which nothing calls ([B:DEAD]) |
 | `code/lib/avi_player.cpp` | `#ifdef EGAMESBUILD` (never defined) | empty ([B:DEAD]) |
 | `code/landscape_renderer.cpp`, `code/water.cpp`, `code/renderer.cpp`, `code/worldobject/radardish.cpp`, `code/lib/text_renderer.cpp` | inner `#ifdef USE_DIRECT3D` blocks | GL path live; D3D blocks call `OpenGLD3D::g_pd3dDevice` directly |
 | `code/lib/ogl_extensions_sdl.cpp`, `code/lib/window_manager_sdl.{cpp,h}` | not in the `.vcproj` | not built on Win32 (Appendix) |
@@ -64,7 +64,7 @@ flowchart TD
   G -.->|"direct device use under USE_DIRECT3D:<br/>landscape_renderer, water, water_reflection, deform, radardish, renderer, texture"| D3D
 ```
 
-**Which backend shipped.** Every Multiwinia packaging script copies `darwinia_gl.exe` (the `Release|Win32` OpenGL output) to `multiwinia.exe` [C] (see `_work/build_matrix.md` §1, `tools/build_multiwinia_retail.bat`). **The OpenGL path is the shipped renderer; the D3D9 path is a secondary configuration documented here for completeness and because it encodes a "GL-on-D3D" design** [C].
+**Which backend shipped.** Every Multiwinia packaging script copies `darwinia_gl.exe` (the `Release|Win32` OpenGL output) to `multiwinia.exe` [C] `tools/build_multiwinia_retail.bat` (packaging scripts compared in [31](31_platform_build_and_tools.md)). **The OpenGL path is the shipped renderer; the D3D9 path is a secondary configuration documented here for completeness and because it encodes a "GL-on-D3D" design** [C].
 
 ### 1.2 Is the D3D configuration buildable at this commit? [I]
 
@@ -732,14 +732,14 @@ stateDiagram-v2
 
 ### 3.2 Ordered pass table — one Multiwinia match frame [B:FULL]
 
-"Default" = the baseline of §2.3 (blend off with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`; depth test on `LEQUAL`, write on; cull on CCW; alpha test off `GREATER 0.01`; fog off; lighting off; texture off, `MODULATE`; shade `FLAT`; polygon `FILL`). Each cell gives the state the pass **sets**; "→ default" means the pass restores the default before exiting. Texture filters are written MAG/MIN; "obj" means the pass sets no filter and inherits the texture object's upload filters (LINEAR / LINEAR_MIPMAP_LINEAR for mip-mapped uploads, see [25](25_textures_and_assets.md)). Matrices are the 3D camera matrices unless stated. Order and calls [C] `code/renderer.cpp:Renderer::RenderFrame`, `code/location.cpp:Location::Render`.
+"Default" = the baseline of §2.3 (blend off with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`; depth test on `LEQUAL`, write on; cull on CCW; alpha test off `GREATER 0.01`; fog off; lighting off; texture off, `MODULATE`; shade `FLAT`; polygon `FILL`). Each cell gives the state the pass **sets**; "→ default" means the pass restores the default before exiting. Texture filters are written MAG/MIN; "obj" means the pass sets no filter and inherits the texture object's upload filters (LINEAR / LINEAR_MIPMAP_LINEAR for mip-mapped uploads, see [25](25_textures_and_assets.md)). Matrices are the 3D camera matrices unless stated. **"—"** means the pass does not set that state: it inherits whatever the previous pass left, which is the default unless a row above says it leaves something else on exit (or, for a pass that draws nothing, the state is irrelevant). Passes that leave non-default state behind [C]: 4a in negative mode leaves blend on (4b then disables it); 5a leaves texture unit 1 in `GL_COMBINE` mode (disabled); some 7b entities leave blend enabled (§4.9.1); `RenderArrow` (7e, 24) leaves the line width it set. Order and calls [C] `code/renderer.cpp:Renderer::RenderFrame`, `code/location.cpp:Location::Render`.
 
 | # | Pass | Function ref | What is drawn | Blend (src, dst) | Depth test / write | Cull | Alpha test | Fog | Lighting | Texture unit(s) · env · filter · wrap | Shade · poly · line · matrices |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 0 | State reset | `Renderer::SetOpenGLState` | — | sets default | on LEQUAL / on | on | off | params set, off | lights configured, off | off, MODULATE, CLAMP | FLAT, FILL |
 | 1 | Camera | `RenderFrame` → `FPSMeterAdvance`, `SetupMatricesFor3D` | — | — | — | — | — | — | — | — | `gluPerspective(fov, W/H, 5, 15000)`, `gluLookAt` |
 | 2 | Clear | `RenderFrame` | colour + depth clear; colour = `App::m_backgroundColour`/255 = **(0,0,0,0)** (white in negative mode); (0.05,0,0.05,0.1) with no location | — | — | — | — | — | — | — | — |
-| 3a | Sky grid | `Location::RenderClouds` → `Clouds::Render` → `Clouds::RenderSky` | 125 + 125 textured line quads at y = 1200 | on (`SRC_ALPHA, ONE`) | on / **off** | on (both quad windings face down) | off | **on**, colour (0,0,0,0), linear 2000→4000 | off | `textures/laser.bmp` · MODULATE · obj · CLAMP | colour (0.5,0.5,1.0,0.3); `glLineWidth(1)` unused; exit → default + `SetupFog` |
+| 3a | Sky grid | `Location::RenderClouds` → `Clouds::Render` → `Clouds::RenderSky` | 125 + 125 textured line quads at y = 1200 | on (`SRC_ALPHA, ONE`) | on / **off** | on (the cull disable is commented out). Both quad sets wind counter-clockwise seen from below (face normal −y), so they are front faces and drawn while the camera is below y = 1200, and culled from above | off | **on**, colour (0,0,0,0), linear 2000→4000 | off | `textures/laser.bmp` · MODULATE · obj · CLAMP | colour (0.5,0.5,1.0,0.3); `glLineWidth(1)` unused; exit → default + `SetupFog` |
 | 3b | Blobby clouds | `Clouds::RenderBlobby` | 1–3 huge textured quads (y = 1200/1000/800) by `RenderCloudDetail` | on (`SRC_ALPHA, ONE`) | **off / off** | on | off | on, black, 2000→5000 | off | `textures/clouds.bmp` (no mip) · MODULATE · LINEAR/NEAREST · REPEAT | colour (0.7,0.7,0.9,0.6); each quad split 4×4; exit → default, wrap CLAMP, `SetupFog` |
 | 3c | Flat clouds | `Clouds::RenderFlat` | 1–2 huge quads (y = 1200/1000) | on (`SRC_ALPHA, ONE`) | off / off | on | off | on, black, 2000→5000 | off | `textures/clouds.bmp` · MODULATE · NEAREST/NEAREST · REPEAT | colour (0.7,0.7,0.9,0.3), alpha 0.5 at detail 3; exit as 3b |
 | 3d | Sky face [B:DEBUG] | `Clouds::RenderFace` | cross-faded face images 5–30 s after the cheat | func `SRC_ALPHA, ONE` set but blend **disabled** (opaque) | on / off | on | off | off | off | `sepulveda/sepulveda1..5.bmp` (mip on the current; previous default) | cheat-window only (§4.4) |
@@ -749,10 +749,10 @@ stateDiagram-v2
 | 5b | Dynamic water | `Water::RenderDynamicWater` (if `RenderWaterDetail > 0`; [B:D3D] only with hardware vertex processing) | coastal wave mesh strip at y ≈ 0 with per-vertex colours | on (`SRC_ALPHA, ONE`) | on / on | on | off | on | off | none ([B:D3D]: `water-meshwaves` shader sampling the reflection target when `RenderWaterEffect && RenderPixelShader`) | arrays vertex/colour, `glDrawArrays(GL_TRIANGLE_STRIP)`; exit: `SetupFog` (fog off), blend off |
 | 6 | Buildings (solid) | `Location::RenderBuildings` → `Building::Render` → `Shape::Render` (+ subclass extras) | every in-view building's `.shp` mesh | off | on / on | on | off | **on**, level fog | `Renderer::SetObjectLighting` (lighting + LIGHT0 + LIGHT1, material diffuse (1,1,1,1), specular 0, ambient 0, shininess 127) **or** `Location::SetupSpecialLights` (§5.5); [B:D3D] FixedPipeline `m_specular = true` | off (subclasses may bind) | `GL_COLOR_MATERIAL` on inside `Shape::Render`; push / `glMultMatrixd` / pop per shape; display lists; exit: fog off, lighting off |
 | 7a | Units | `Location::RenderTeams` → `Team::Render` (×6 teams) → `Unit::Render` | every in-view `Team::m_units` entry (insertion-squad members) | on (default func) | on / on | on | **on, `GREATER 0.02`** | off | per unit | on · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR (applied to the bound texture) | → default, alpha ref back to 0.01 |
-| 7b | Other entities | `Team::RenderOthers` → `Entity::Render` | every in-view entity in `Team::m_others` whose type is neither Darwinian nor Virii (entity catalogue in [02](02_units_and_entities.md)) | per entity | per entity | per entity | per entity | per entity | per entity (shapes lit via `SetObjectLighting`) | per entity | blob shadows use near ×1.05 (§5.6) |
+| 7b | Other entities | `Team::RenderOthers` → `Entity::Render` | every in-view entity in `Team::m_others` whose type is neither Darwinian nor Virii (entity catalogue in [02](02_units_and_entities.md)) | entry: off (default func); per entity, §4.9.1 (shapes opaque; flicker `ONE, ONE`, Spider darkening; sprites/glows `SRC_ALPHA, ONE`; shadows `SRC_ALPHA, ONE_MINUS_SRC_COLOR`) | entry on / on; overlays, sprites and shadows write off; Meteor glow, SoulDestroyer souls and the Nuke ground marker test off | entry on; overlays, sprites, beams, flags and shadows off | off (7a exit, ref 0.01); no entity enables it | off | shapes: `SetObjectLighting` (SpaceShip: `SetupSpecialLights`; Shaman unlit), `GL_COLOR_MATERIAL` inside `Shape::Render`; everything else unlit | entry off; shapes untextured; sprites/shadows/beams bind their own (`textures/glow.bmp` shadows, LINEAR/LINEAR_MIPMAP_LINEAR) | FLAT (Officer and Meteor shapes SMOOTH + `GL_NORMALIZE`; SoulDestroyer and TriffidEgg `GL_NORMALIZE`); blob shadows use near ×1.05 (§5.6) |
 | 7c | Virii | `Team::RenderVirii` | tail-sprite strips per Virii, LOD 1–4 | on: `SRC_ALPHA, ONE`; **monster team `SRC_ALPHA, ONE_MINUS_SRC_COLOR`** | on / **off** | **off** | default (off) | off | off | `sprites/viriifull.bmp` · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR | projection near × **1.05**; exit → default, wrap CLAMP, near restored |
 | 7d | Darwinians | `Team::RenderDarwinians` → `Darwinian::Render` | facing-oriented sprite cards + flat black drop shadows (§4.9, §5.6) | on (default func) | on / on (shadow quads: write off) | **off** | **on, `GREATER 0.04`** | off | off | `sprites/darwinian.bmp` (and state variants) · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR | → default |
-| 7e | Sync-error markers | `Team::RenderSyncErrors` → `SyncDiff::Render` | 500-unit debug arrow + 3D text per recorded sync difference | per helper | per helper | — | — | — | — | font | only when `LobbyTeam::m_syncDifferences` is non-empty; hidden with the interface |
+| 7e | Sync-error markers | `Team::RenderSyncErrors` → `SyncDiff::Render` (body under `DEBUG_RENDER_ENABLED`, defined in every target) | 500-unit debug arrow + 3D text (name, description) per recorded sync difference | arrow: on only if its colour alpha ≠ 255 (default func), off at exit; text: white shadow pass `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, then the diff colour `SRC_ALPHA, ONE` | arrow on / on (inherited); text **off** / — | text off | — | — | text forces off | arrow none; text font atlas · LINEAR/LINEAR_MIPMAP_LINEAR | arrow `GL_LINES`, `glLineWidth(20/dist·len)` left set, line smooth off at exit; text state saved and restored by `SaveGLFontDrawAttributes`; only when `LobbyTeam::m_syncDifferences` is non-empty; hidden with the interface |
 | 8 | Building alphas | `Location::RenderBuildingAlphas` → `Building::RenderAlphas` | non-sorted buildings in index order, then buildings whose `PerformDepthSort` is true **far-to-near** by squared camera distance; default `RenderAlphas` = `RenderLights` + `RenderPorts` | per building; lights/ports `SRC_ALPHA, ONE` | on / lights+ports **off** | lights+ports off | off | **on** for the whole pass (level fog) | port pads lit with `SetObjectLighting` | lights/ports `textures/starburst.bmp` · LINEAR/LINEAR_MIPMAP_LINEAR | camera-facing quads; exit fog off |
 | 9 | Location particles | `Location::RenderParticles` | **empty function** | — | — | — | — | — | — | — | — |
 | 10a | Effects | `Location::RenderWeapons` (part 1) | every `Location::m_effects` object (22 types, §4.10), frustum-culled by `PosInViewFrustum` except `EffectPulseWave`, `EffectSpamInfection`, `EffectLightning` | on (`SRC_ALPHA, ONE`) set for the batch | on / **off** | **off** | default | off | off | per effect | some effects switch to smooth shading or 2D (shockwave flash) |
@@ -770,7 +770,7 @@ stateDiagram-v2
 | 21 | Chat | `Location::RenderChatMessages` (only when `renderChat`) | chat log, "press to talk" hint; 60 s life with 5 s fade from 55 s | text | 2D | off | — | — | off | font | `g_editorFont` |
 | 22 | Camera debug | `Camera::Render` | **empty** (arrow/sphere commented out) | — | — | — | — | — | — | — | — |
 | 23 | Task manager | `TaskManagerInterface::Render` (instance `TaskManagerInterfaceMultiwinia`) | target-area particles, power-up bar, pop-ups, messages | on | 2D | off | — | — | — | `icons/*` | `BeginText2D` |
-| 24 | Persistent debug | `g_debugRenderer.Render()` (`DEBUG_RENDER_ENABLED`, global) | queued debug squares/markers/spheres/vectors (normally empty) | per item | per item | — | — | — | — | — | §4.23 |
+| 24 | Persistent debug | `g_debugRenderer.Render()` (`DEBUG_RENDER_ENABLED`, global) | queued debug squares/markers/spheres/vectors — **always empty**: nothing in `code/` or `contrib/` queues an item, so the pass draws nothing | (if items existed: square and arrow blend on only for alpha ≠ 255) | (square: test off) | (square: off) | — | — | — | — | (sphere: `GL_LINE` polygon mode, width 1; square: own 2D ortho) — §4.23 |
 | 25 | Control help | `ControlHelpSystem::Render` | returns immediately when `g_app->Multiplayer()` → **draws nothing in Multiwinia** | — | — | — | — | — | — | — | [C] `code/control_help.cpp:ControlHelpSystem::Render` |
 | 26 | 2D block start | `g_editorFont.BeginText2D()` | — | on | off / off | off | — | — | off | — | ortho |
 | 27 | Fade | `Renderer::RenderFadeOut` | black quad | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA` | off / off | — | — | — | — | — | 2D |
@@ -1003,7 +1003,7 @@ Rendering of the menu clouds while a loading screen is up: `LoadingScreen::Rende
 
 ### 4.5 Shape rendering (`.shp` meshes) [C] `code/lib/shape.h`, `code/lib/shape.cpp`
 
-Every building, most units and all debris use `.shp` meshes. The per-file catalogue (fragments, depth, markers, triangle count, consuming class) is owned by [25](25_textures_and_assets.md); generated table `_work/drafts/P12_shapes.csv` (script `_work/scripts/P12_shapes.py`; the `code_refs` column is a string grep and is [I]). Aggregate statistics (`_work/scripts/S_24_shape_stats.py`):
+Every building, most units and all debris use `.shp` meshes. The per-file catalogue (fragments, depth, markers, triangle count, consuming class) is owned by [25](25_textures_and_assets.md). Aggregate statistics over the headers of the 139 files in `data/shapes/` (parsed as in §4.5; generated by `_work/scripts/S_24_shape_stats.py`):
 
 | Statistic | Value |
 |---|---|
@@ -1177,7 +1177,43 @@ Rendering [C] `Tree::RenderAlphas`, `Tree::Render`:
 
 **Spirits** [C] `Spirit::RenderWithoutGlBegin`: two camera-facing quads per spirit (inner size 1.0 alpha 255, outer 3.0 alpha 100; **halved in Multiwinia**), team colour (white for team 255; monster team (100,100,100,0) with alpha 0 drawn in the darkening batch); birth scales sizes by `min(1, 1.2 − timeSync/6)`; death scales alpha and size by `timeSync/totalLife` (180 s, 90 s in Multiwinia); position extrapolated with `predictionTime − SERVER_ADVANCE_PERIOD` plus hover.
 
-**Other entities** (pass 7b) render their own shapes or sprites (specified per entity in [02](02_units_and_entities.md)); team-coloured shapes come from §4.5.
+**Other entities** (pass 7b) render their own shapes or sprites (behaviour per entity in [02](02_units_and_entities.md)); team-coloured shapes come from §4.5. Their GL state is listed in §4.9.1.
+
+#### 4.9.1 Render state per entity type (passes 7a and 7b) [C]
+
+Entities that belong to a `Unit` (`Team::m_units`: insertion-squad Squadies, Centipede segments, airstrike SpaceInvaders, AntHill ant units, Tentacles, LaserTroopers) are drawn in pass 7a and enter with texture on, blend on (default func) and alpha test `GREATER 0.02`; `Unit::Render` re-enables cull after each unit. All other entities (`Team::m_others`, except Darwinians and Virii) are drawn in pass 7b — first those already advanced this tick, then those one tick behind with `predictionTime + 0.1` — and enter with the 7a exit state: blend off with the default func, texture off, alpha test off (ref 0.01), depth test and write on, cull on, lighting off, fog off, `FLAT`. Entities that set nothing inherit whatever the previous entity left. [C] `code/team.cpp:Team::Render`, `Team::RenderOthers`, `code/unit.cpp:Unit::Render`, and each class's `Render`.
+
+Building blocks used in the table:
+- **Lit shape**: `Renderer::SetObjectLighting` (lighting + `GL_LIGHT0` + `GL_LIGHT1`, material diffuse (1,1,1,1), specular 0, ambient 0, shininess 127) → `Shape::Render` (enables `GL_COLOR_MATERIAL` around its display list) → `UnsetObjectLighting`; texture off; depth test and write as inherited (on); cull as inherited (on).
+- **Blob shadow**: `Entity::BeginRenderShadow` (texture `textures/glow.bmp`, LINEAR/LINEAR_MIPMAP_LINEAR, cull off, depth write off, blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`), one ground quad of half-size s per call at terrain + 0.9 (at least y = 1.0; skipped when all four corners are above the entity), `EndRenderShadow` (default func, blend off, depth write on, cull on, texture off).
+- **Flicker**: the damage flicker of [26 §4.6](26_animation_and_vfx.md): one axis of the shape matrix scaled, blend enabled with `ONE, ONE` (Spider: `SRC_ALPHA, ONE_MINUS_SRC_COLOR`) for that draw.
+
+| Entity (pass) | Body | Extras, in draw order | Leaves behind |
+|---|---|---|---|
+| Squadie (7a) | lit shape, colour material on, texture off, blend off; flicker | — | blend on (default func), texture on — the 7a entry state |
+| Centipede segment (7a) | while alive and linked: texture off, lit shape scaled by `m_size` (no `GL_NORMALIZE`) | — | texture off |
+| SpaceInvader (7a) | texture off, lit shape, plus the bomb shape while armed | — | texture off |
+| ArmyAnt (7a in an AntHill unit; 7b when spawned singly) | lit shape scaled by `m_scale`, texture off | — | texture off |
+| Tentacle (7a) [B:DEBUG] | texture off, lit shape | — | texture off |
+| LaserTrooper (7a) [B:LEGACY] | textured sprite quads, then an additive (`SRC_ALPHA, ONE`) overlay quad | — | default func |
+| Officer (7b) | lit shape with `SMOOTH` + `GL_NORMALIZE`; flicker | `RenderShield` on every call: additive, cull off, depth write off, souls drawn only while `m_shield > 0` ([B:LEGACY]) with `textures/glow.bmp`, then blend off, depth write on, cull on; flag (`Flag::Render`, only for officers of other teams or with the interface hidden): cull off, alpha blend, texture, polygon offset for the arrow | blend off, texture off |
+| Armour (7b) | lit body; flicker (`ONE, ONE`, axis r or f) | — | blend off |
+| Engineer (7b) | lit shape (colour material, texture off, blend off) | blob shadow (size 10); while reprogramming/operating/researching: additive `textures/laser.bmp` control beams, depth write off | blend off, texture off |
+| Harvester (7b) | lit shape (as Engineer) | `textures/bubble.bmp` billboard, additive, depth write off, cull off; while harvesting: beam with blend on (default func), depth write off, cull off; blob shadow (size 10) | blend off (reset by the shadow) |
+| Spider (7b) | texture off, lit shape (flicker: darkening blend), then the 8 legs (two lit shapes each) | — | blend off |
+| SporeGenerator (7b) | lit shape, texture off, blend off (flicker `ONE, ONE`), then four team-coloured tail strips with colour material | blob shadow (size 20) | blend off |
+| SoulDestroyer (7b) | texture off, lit head and tail shapes with `GL_NORMALIZE` | blob shadows (head 50, tail segments); carried souls: additive quads with **depth test off**, depth write off, cull off | default state restored |
+| TriffidEgg (7b) | lit shape with `GL_NORMALIZE` | blob shadow | blend off |
+| Egg (7b) | `sprites/egg.bmp` billboard, additive, depth write off, cull off | blob shadow | default state restored |
+| Nuke (7b) | ground marker (`icons/nukesymbol.bmp` additive over its blurred shadow `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, depth test and write off); submarine billboards (same two blends, depth write off, cull off); in flight: `sprites/nuke.bmp` additive (monster team darkening), depth write off, then the trail in `textures/laser.bmp` | — | in flight: blend **on** with the warhead's func, texture off |
+| Meteor (7b) | lit shape, `SMOOTH` + `GL_NORMALIZE`, texture off | `textures/starburst.bmp` glow, additive, **depth test off**, depth write off, cull off | default state restored |
+| SpaceShip (7b) | shape lit by `Location::SetupSpecialLights` | while abducting or dropping: beam with blend on (default func), depth write off, cull off | blend **on** after a beam |
+| Tank (7b) [B:DEBUG] | lit body and turret, each with its own flicker | — | blend on if a flicker draw happened |
+| Lander, Tripod (with legs), DropShip (beam as SpaceShip) (7b) [B:LEGACY] | lit shapes | — | Lander: blend and texture on; DropShip: blend on after a beam |
+| Shaman (7b) [B:LEGACY] | **unlit** shape; flicker | sacrifice ring quad strip (blend on, cull off) | blend on |
+| AI (7b) | nothing outside the editor (editor: debug sphere and text) | — | — |
+
+A new renderer should give every draw its full state explicitly instead of relying on these inherited and leaked bits.
 
 **`Render3DSprite(pos, width, height, texId)`** [C] `code/lib/3d_sprite.cpp`: camera-facing quad anchored at the bottom centre: `right = (camUp × camFront)·(width/2)`, `up = camUp·height`; LINEAR / LINEAR_MIPMAP_LINEAR; cull off during the draw; blend and colour from the caller. UVs: top-left (1,1), top-right (0,1), bottom-right (0,0), bottom-left (1,0) (horizontally mirrored). Users: `code/worldobject/dustball.cpp` (`textures/cloudyglow.bmp`), `code/worldobject/mine.cpp` (`textures/glow.bmp`, 50×50), `code/worldobject/snow.cpp` (`textures/starburst.bmp`). Most other billboards (particles, spirits, building lights) are built inline from `Camera::GetRight/GetUp`.
 
@@ -1228,7 +1264,7 @@ The particle model (19 types `TypeRocketTrail` … `TypePortalFire`, their life/
 
 ### 4.12 Explosions — shape shattering (pass 14) → [26](26_animation_and_vfx.md)
 
-Debris generation and physics (5 s lifetime, 5 tumblers, ≤ 501 source triangles per fragment, perimeter < 6 skipped, gravity −10, no terrain collision, wall-clock time) are in [26](26_animation_and_vfx.md). Render contract [C] `code/explosion.cpp:ExplosionManager::Render`, `Explosion::Render`:
+Debris generation and physics (5 s lifetime, 5 tumblers, ≤ 502 kept triangles per fragment — indices 0–500 plus the first kept index > 500, perimeter < 6 skipped, gravity −10, no terrain collision, wall-clock time) are in [26](26_animation_and_vfx.md). Render contract [C] `code/explosion.cpp:ExplosionManager::Render`, `Explosion::Render`:
 - `textures/shapewireframe.bmp` (128×128, magenta background + white lines; pink-masked → lines opaque, background alpha 0), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, env **`GL_DECAL`**; `SetObjectLighting` + `GL_COLOR_MATERIAL`; cull off; blend on with the default func; depth test/write on.
 - Per triangle: `glColor4ub(r,g,b,(1−age)·255)` with `age = (5 + now − timeToDie)/5`; colour = the **first** vertex's colour; normal = `rotMat·norm`; vertices `rotMat·v + pos`; UVs (0,0),(0,1),(1,1). `GL_DECAL` gives `Cf·(1−At) + Ct·At`: each shard shows its lit facet colour with white edge lines and fades by vertex alpha. A new engine can reproduce this with a barycentric edge mask.
 - Exit: env MODULATE, lighting off, colour material off, cull on, blend off.
@@ -1661,7 +1697,7 @@ No frame-time or draw-call budget is encoded; the following caps and costs exist
 | Terrain | one strip, 1 draw per pass, 2 passes, no LOD (≈ 2 triangles per height-map cell above water) | §4.1 |
 | Immediate mode | GL: driver-batched; [D3D]: one `DrawPrimitiveUP` + full constant upload per `glEnd` | §1.5.6 |
 | Particle array | 1500 initial, +200 growth, no cap | `ParticleSystem::ParticleSystem` |
-| Explosion triangles | ≤ ~501 source triangles scanned per fragment; perimeter < 6 skipped; 5 s life | `Explosion::Explosion` |
+| Explosion triangles | ≤ 502 kept triangles per fragment (the loop stops after the first kept triangle with index > 500); perimeter < 6 skipped; 5 s life | `Explosion::Explosion` |
 | Shape file | ≤ 100 fragments and ≤ 100 markers (debug assert only) | `Shape::Load` |
 | Display lists | static shapes, trees, landscape (fallback), sphere, global internet; names must be < 20 chars | `Resource::GetDisplayList` |
 | Pixel effect | 256×256 capture, 16×16 grid, objects within 1000 units | §4.14 |
@@ -1759,7 +1795,7 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | Virii, Spirit, Soul Destroyer, Centipede, Spider, Squadie / Insertion Squad, Shaman, Officer, Armour, Triffid, Harvester (names in render code) | names | §4.9, §4.13, §4.14 | role names: swarm, soul orb, devourer, segmented crawler, leaper, squad, summoner, commander, transport, spore pod, collector |
 | Sprite/texture art: `data/textures/particle.bmp`, `shapewireframe.bmp`, `triangleoutline.bmp`, `laser.bmp`, `clouds.bmp`, `starburst.bmp`, `glow.bmp`, `cloudyglow.bmp`, `tree.bmp`, `laserfence.bmp`, `laserfence2.bmp`, `lightning.bmp`, `subversion.bmp`, `radarsignal.bmp`, `godray.bmp`, `deform1c.bmp`, `deform3.bmp`, `deform36c.bmp`, `interface_red.bmp`; `data/sprites/virii.bmp`, `santahat.bmp`, `subshadow.bmp` | art | catalogue in [25](25_textures_and_assets.md) | regenerate procedurally / new art with the same roles |
 | Terrain ramps, water textures and wave tables (`data/terrain/landscape_*.bmp`, `water_*.bmp`, `waves_*.bmp`) | art | §4.1, §4.2 | new ramps `ramp_<theme>`, tileable water, 1-D gradients |
-| 139 `.shp` meshes (`data/shapes/*.shp`) | art | `_work/drafts/P12_shapes.csv` | new meshes |
+| 139 `.shp` meshes (`data/shapes/*.shp`) | art | `data/shapes/*.shp`; per-file list in [25](25_textures_and_assets.md) | new meshes |
 | Font atlases `speccy`, `editor`, `square` (`data/textures/unicode/*.bmp`, 138 files incl. CJK/Hangul glyph art) and legacy `editor_font*.bmp`, `speccy_font*.bmp` | art (font) | §4.22 | licensed open fonts (an OFL pixel font + Noto CJK) in a glyph cache |
 | Cursor and HUD icons (`data/icons/mouse_*.bmp`, `marker_*.bmp`, `compass*.bmp`, `icon_*.bmp`, `widearrow.bmp`, `thickarrow.bmp`, `target.bmp`, `selectionarrow.bmp`) | art | §4.18–§4.20 | new icon set |
 | Dr Sepulveda face in the clouds (`data/sepulveda/sepulveda1..5.bmp`, `Clouds::RenderFace`, `ShowDrSFace`) | character / art | §4.4 | drop |
@@ -1769,7 +1805,7 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | Team colour names green/red/yellow/blue/orange/purple/cyan/pink (`multiwinia_team_*`) | text | `code/team.cpp:Team::GetTeamName` | generic colour names, new keys |
 | Christmas theme (Santa hats, ice ramps) | concept / art | §5.5 | optional seasonal theme with new art |
 | Shader sources `data/shaders/*` (14 files) | code (licence) | §6 | re-author in HLSL SM6 |
-| Global-world shapes `globalworld_outer/middle/inner.shp`, global-internet visuals | art / concept | §4.24 | drop (legacy) |
+| Global-world shapes `globalworld_outer/middle/inner.shp`, global-internet visuals | art / concept | §4.24. The shapes are **loaded at every start-up** ([B:FULL], load-only: `App::App` constructs `GlobalWorld`, whose `SphereWorld` constructor calls `GetShape` for all three) but never drawn in a match [C] `code/app.cpp:App::App`, `code/global_world.cpp:SphereWorld::SphereWorld` | drop (legacy); a new engine that drops them also drops the start-up load |
 | Third-party note: none of the renderer code is third-party (AVIGenerator, MT19937 are listed in [31](31_platform_build_and_tools.md)/[22](22_determinism_and_networking.md)) | — | — | — |
 
 ## Source map

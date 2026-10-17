@@ -212,8 +212,13 @@ def build(land, tiles, flats):
                     elif t == 4: h = cur - h if cur < a['thr'] else cur
                     elif t == 3:
                         if cur > a['thr']:
+                            # code/landscape.cpp:434-441: sequential += starting from the centre term
+                            # (NOT c + (n0+n1+n2+n3): the association changes the double result)
                             h = cur * (h / cur)
-                            h += W.get(x - 1, z) + W.get(x + 1, z) + W.get(x, z + 1) + W.get(x, z - 1)
+                            h += W.get(x - 1, z)
+                            h += W.get(x + 1, z)
+                            h += W.get(x, z + 1)
+                            h += W.get(x, z - 1)
                             h /= 6.0
                         if h > cur: h = cur
                     W.put(x, z, h)

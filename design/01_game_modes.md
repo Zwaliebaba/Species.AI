@@ -20,6 +20,7 @@
 5. [Cross-mode comparison](#5-cross-mode-comparison)
 6. [Known bugs that shape the shipped rules](#6-known-bugs-that-shape-the-shipped-rules)
 7. [Re-implementation notes for the new game](#7-re-implementation-notes-for-the-new-game)
+8. [Message and HUD string catalogue](#8-message-and-hud-string-catalogue-introversion-text--rewrite-all-copy)
 - [Open questions and unknowns](#open-questions-and-unknowns)
 - [Docs-vs-code discrepancies](#docs-vs-code-discrepancies)
 - [IP items](#ip-items)
@@ -35,9 +36,9 @@ Related documents: mode objects (zones, statues, flags, rockets and fuel chain, 
 | tick | one server advance: one call of `Multiwinia::Advance` (and of every building's `Advance`), nominally 0.1 s of game time | [C] `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp` |
 | dt (`SERVER_ADVANCE_PERIOD`) | `0.1 × g_gameTimer.m_gameSpeed` (double); 0.1 at normal speed, 0 while the game clock is frozen, scaled by speed-up/slow-down crates | [C] `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`, `code/gametimer.h` |
 | game second | one unit of `GetNetworkTime()` ≡ `g_gameTimer.GetGameTime()`, which advances by dt per tick | [C] `code/gametimer.cpp:GameTimer::Tick` |
-| **mode second** | one period of the rules object's 1.0-second countdowns (`m_timer`, `m_reinforcementTimer`, `m_positionTimer`). Each does `t −= dt; if (t <= 0) t = 1.0`. Because `1.0 − 10 × 0.1 = 1.39·10⁻¹⁶ > 0` in IEEE double, a mode second lasts **11 ticks = 1.1 game seconds** at normal speed | [C] code path; tick counts [C] by exact replay (`_work/scripts/S_07_timer_ticks.py`, re-run for this document) |
+| **mode second** | one period of the rules object's 1.0-second countdowns (`m_timer`, `m_reinforcementTimer`, `m_positionTimer`). Each does `t −= dt; if (t <= 0) t = 1.0`. Because ten successive subtractions of 0.1 from 1.0 leave 1.39·10⁻¹⁶ > 0 in IEEE double (the single expression `1.0 − 10 × 0.1` is exactly 0), a mode second lasts **11 ticks = 1.1 game seconds** at normal speed. Phase: all three timers start at 0.0 (constructor and `Reset()`), so the first period ends on the **first post-grace tick** and the d-th on post-grace tick 11(d − 1), counting the first post-grace tick as 0 | [C] `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish` (and every other `Advance*`), `Multiwinia::Reset`; tick counts by exact IEEE-double replay of the loop (replay script `_work/scripts/S_07_timer_ticks.py`, provenance; re-checked by an independent replay) |
 | "N-second" literal timers | a countdown of N decremented by dt per tick fires after: 3 → 30 ticks, 5 → 51, 10 → 101, 15 → 151, 20 → 200, 45 → 450 | [C] exact replay |
-| recount period ("every 1.0 / 2.0 game s") | `if (GetNetworkTime() > m_recountTimer) { …; m_recountTimer = now + 1.0 }` fires every 10 or 11 ticks (≈ 57 % of periods are 11 ticks); `+ 2.0` fires every 20 or 21 ticks | [I] replay of the accumulating double clock |
+| recount period ("every 1.0 / 2.0 game s") | `if (GetNetworkTime() > m_recountTimer) { …; m_recountTimer = now + 1.0 }` fires every 10 or 11 ticks, and which one depends on the game time τ at which the timer is re-armed (no fixed ratio). At speed 1.0 from `GameTimer::Reset`: 10 ticks for τ ∈ [0.4, 3.0), [15.5, 63.2), [255.4, 1023.0) and ≥ 4095.5 s, 11 ticks otherwise; `+ 2.0` fires every 20 ticks for τ ∈ [0, 2.2), [14.7, 62.4), [254.6, 1022.2) and ≥ 4094.7 s, 21 otherwise. Speed changes shift the windows ([03 §1.2](03_buildings_and_world_objects.md#12-time-base)) | [C arithmetic] exact IEEE-double replay of `m_gameTime += 0.1`; `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::Reset` |
 | team ids | `NUM_TEAMS = 6`; slots 0–3 are players; 4 = monster team ("Evilinians", `Location::GetMonsterTeamId`), 5 = Futurewinian team (`GetFuturewinianTeamId`); 255 = neutral. Both special teams are created as `TeamTypeCPU` lobby teams in **every** Multiwinia game and each always owns one `Entity::TypeAI` | [C] `code/globals.h`, `code/location.cpp:Location::Init`, `Location::InitMonsterTeam`, `Location::InitFuturewinianTeam`, `Location::InitialiseTeam` |
 | position | a start slot defined by the level (0 … `NumPlayers−1`); buildings and instant units in level files are owned by positions, remapped to team ids at load (`GetTeamFromPosition`) | [C] `code/location.cpp:Location::GetTeamPosition`, `Location::GetTeamFromPosition` |
 
@@ -91,10 +92,10 @@ Maps are listed under a mode when their `MultiwiniaOptions` block names the mode
 | Assault | 8 | **8** | 2P ×4 (incl. `mp_assault_3p_1`, which declares `NumPlayers 2`), 3P ×2, 4P ×2 | — (`mp_assault_stress.txt` has `GameTypes none`) |
 | Rocket Riot | 7 | **7** | 2P ×3, 3P ×3, 4P ×1 | — |
 | Blitzkrieg | 7 | **7** | 2P ×4, 3P ×2, 4P ×1 | — |
-| Tank Battle [B:DEBUG] | 3 | 0 (mode not compiled; arenas not in retail data) | — | all three |
+| Tank Battle [B:DEBUG] | 3 | 0 (mode not permitted in FULL; arenas not in retail data) | — | all three |
 | **Total** | 53 mode maps + 4 `GameTypes none` (`mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all`) = 57 `mp_*.txt` | **49** | | 8 |
 
-[C] `_work/drafts/X4_mode_maplists.csv`, `X4_levels.csv` (regenerated counts in `S_01_counts.txt`), `tools/multiwinia_exclusions.txt` via X4. Full per-mode tables (menu order, caps, options, objects) are in each mode section of §4. Two `mp_koth_*` files (`mp_koth_2P_2`, `mp_koth_2P_3`) are Domination maps by their `GameTypes` line [C].
+[C] the `GameTypes` and `NumPlayers` lines of the 57 `data/levels/mp_*.txt` files, `tools/multiwinia_exclusions.txt` (retail set) and `data/levels/level_enum.txt` (ids 1–49); counts regenerated by `_work/scripts/S_01_mode_tables.py` (provenance). Full per-mode tables (menu order, caps, options, objects) are in each mode section of §4. Two `mp_koth_*` files (`mp_koth_2P_2`, `mp_koth_2P_3`) are Domination maps by their `GameTypes` line [C].
 
 ### 1.4 The modes at a glance
 
@@ -103,7 +104,7 @@ Maps are listed under a mode when their `MultiwiniaOptions` block names the mode
 | Domination | own spawn points; a team owning none for 30 mode s is eliminated | last team standing; or score at time-up | option, 0–60 min (0 = unlimited) | free-for-all 2–4, co-op 2v2 on two maps |
 | King of the Hill | hold hill zones | score at time-up (never by elimination) | option, 1–60 min | free-for-all 2–4, co-op 2v2 on three maps |
 | Capture the Statue | carry statues into your own zone (1 point each) | score at time-up | option, 1–60 min | free-for-all 2–4, co-op on one map |
-| Assault | attackers capture every control station linked to the defenders' bomb before it detonates | bomb destroyed (attackers win) or detonation (defenders win) | the bomb's level timer (900 s / 1200 s) | 1v1, 1v2 (ForceCoop), 2v2 (ForceCoop) |
+| Assault | attackers capture every control station linked to the defenders' bomb before it detonates | bomb destroyed (attackers win) or detonation (defenders win) | the bomb's level timer, 900 / 1200 **mode** s (≈ 990 / 1320 game s) | 1v1, 1v2 (ForceCoop), 2v2 (ForceCoop) |
 | Rocket Riot | refuel your rocket via solar power, load 100 Darwinians, launch | first rocket above world height 600 | none | free-for-all 2–4 |
 | Blitzkrieg | capture a connected chain of flags into an enemy's home flag to eliminate it | last team standing; or flags + eliminations at time-up | option, 0–60 min (0 = unlimited) | free-for-all 2–4 |
 | Tank Battle [B:DEBUG] | destroy enemy tanks; each team has `NumTanks` lives | last team standing | none | free-for-all 2–4 |
@@ -148,7 +149,7 @@ The single-player (versus CPU) and multiplayer flows share this lifecycle; singl
 
 ### 2.3 Per-tick order
 
-Each server advance (10 per game second at normal speed) a client processes the server letter, calls `g_gameTimer.Tick()` (game time += dt; pending speed changes applied), then runs ten location slices; **after slice 8's location advance** it calls `Multiwinia::Advance()` [C] `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp`. `Location::Advance` (all buildings and entities, including zones, statues, rockets, bombs and stations) is skipped while `App::GamePaused()` — game speed < 0.01, any out-of-sync client, or (single-player only) lost focus — but `Multiwinia::Advance` is still called [C] `code/app.cpp:App::GamePaused`.
+Each server advance (10 per game second at normal speed) a client processes the server letter, calls `g_gameTimer.Tick()` (game time += dt; pending speed changes applied), then runs ten location slices; **after slice 8's location advance** it calls `Multiwinia::Advance()` [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters` (called from `ClientToServer::AdvanceAndCatchUp`). `Location::Advance` (all buildings and entities, including zones, statues, rockets, bombs and stations) is skipped while `App::GamePaused()` — game speed < 0.01, any out-of-sync client, or (single-player only) lost focus — but `Multiwinia::Advance` is still called [C] `code/app.cpp:App::GamePaused`.
 
 `Multiwinia::Advance()` [C] `code/multiwinia.cpp:Multiwinia::Advance`:
 
@@ -221,7 +222,7 @@ Each server advance (10 per game second at normal speed) a client processes the 
 | 8 | 10,10,10 | — | 10,10,10 | 10,10,10 | — |
 | 9 | 200,200,200 | — | 200,200,200 | 200,200,20 | — |
 
-`MULTIWINIA_NUM_TEAMCOLOURS = 8` selectable ids (0–7) [C] `code/multiwinia.h`. `GetGroupColour(member, −1)` returns `RGBAColour(0.6f, 0.6f, 0.6f, 1.0f)` [C]; whether that is 60 % grey or near-black depends on the float constructor — [U] 01-U5.
+`MULTIWINIA_NUM_TEAMCOLOURS = 8` selectable ids (0–7) [C] `code/multiwinia.h`. `GetGroupColour(member, −1)` returns `RGBAColour(0.6f, 0.6f, 0.6f, 1.0f)`; `RGBAColour` has only `(unsigned char ×4)` and `(int)` constructors, so the floats convert to bytes **0, 0, 0, 1** — black at alpha 1/255, not the evidently intended 60 % grey [C] `code/lib/rgb_colour.h`. Resolved: P02 left this open.
 
 #### 2.5.4 Colour rules [C] `code/multiwinia.cpp`, `code/location.cpp:Location::Init`
 
@@ -233,12 +234,43 @@ Each server advance (10 per game second at normal speed) a client processes the 
 | `IsColourTaken(id)` | number of used teams with that colour id |
 | `GetNextAvailableColour()` | lowest id 0–7 not taken, else −1 |
 | `GetCPUColour()` | `syncrand() % 4` re-drawn until it is not used by any team with colour id < 4. **Unbounded loop if 0–3 are all taken** (§6 B10). Called by `Location::Init` for every CPU slot below `NumPlayers` in non-co-op, non-Assault games (tutorials override with colour = slot) |
-| Unused slots (≥ NumPlayers, maps with < 4 players) | given a random unused colour 0–3 (`(syncrand() % 8) / 2`, re-drawn while used) so random-colour effects (magical forest, randomiser) have the full range [C] `Location::Init` |
+| Unused slots (≥ NumPlayers, maps with < 4 players) | given a random colour 0–3 not used by a player slot (`(syncrand() % 8) / 2`, re-drawn while used) so random-colour effects (magical forest, randomiser) have the full range; the ids drawn for unused slots are not added to the used list, so two unused slots can receive the same colour [C] `Location::Init` |
 
 #### 2.5.5 Co-op alliances [C] `code/location.cpp:Location::SetupCoop`, `SetCoopTeam`, `SetSoloTeam`, `IsFriend`
 
 - Co-op is on when the lobby's co-op flag is set: the checkbox appears only on maps with `CoopMode`; maps with `ForceCoop` switch it on when selected (and get no checkbox); picking a map without `CoopMode` clears it [C] `code/UI/LevelSelectButton.h`, `code/UI/GameMenuWindow.cpp:SetupAdvancedOptionsPage`. Enabling co-op resets every team colour to −1 [C] `code/network/clienttoserver.cpp` (`GAMEOPTION_COOPMODE` handler).
 - Players pick a colour per alliance (max two colours in use, two members each). At load `SetupCoop(t)` assigns each player slot to group 1 or 2: from `CoopGroup1Positions` / `CoopGroup2Positions` when the level defines them (moving a team to the other group's position when its group is full), else by matching colours (`SetCoopTeam`), with `SetSoloTeam` for a group that has a single position (it gets a random free colour 0–3 when none was chosen). `Location::m_coopGroups[t] ∈ {1, 2}`; each group has `m_groupColourId`; members get `groupColours1/2` shades by `m_coopGroupPosition`.
+  Exact procedure [C] `Location::Init` (co-op branch), `Location::SetupCoop`:
+
+  ```
+  for i in 0 .. NumPlayers-1, i not 4 or 5, m_coopGroups[i] == 0:  SetupCoop(i)   # Location::Init, co-op on, not Assault
+
+  SetupCoop(t):
+      pos   = GetTeamPosition(t)              # t's random start position, §2.5.2
+      n1/n2 = slots already in group 1 / group 2
+      solo1 = |CoopGroup1Positions| == 1;  solo2 = |CoopGroup2Positions| == 1
+      group = 0
+      if pos in CoopGroup1Positions:
+          group = 1
+          if n1 == 2 or (n1 == 1 and solo1):            # group 1 full: t moves to group 2
+              group = 2
+              pos = G2[0] if (GetTeamFromPosition(G2[0]) == 255 or solo2) else G2[1]
+              m_teamPosition[t] = pos
+      elif pos in CoopGroup2Positions:                  # mirror image: full -> group 1, G1[0] if free or solo1, else G1[1]
+          ...
+      for every other slot i < NumPlayers:              # evict whoever now shares t's position
+          if m_teamPosition[i] == m_teamPosition[t]:  m_teamPosition[i] = -1
+          GetTeamPosition(i)                            # an evicted slot re-draws a free position (syncrand)
+      if (group == 1 and solo1) or (group == 2 and solo2):  SetSoloTeam(t, group)
+      elif group == 0:                                       SetCoopTeam(t)          # level defines no groups
+      else:                                                  SetCoopTeam(t, group)   # fixed groups
+      if t is the local team:  ReliableSetTeamColour(t's colour id)
+  ```
+
+  - `SetSoloTeam(t, g)`: keeps t's colour, or draws `syncrand() % 4` until it differs from every used slot's colour; group g; position = the group's single position; `m_coopGroupPosition = 0` [C] `Location::SetSoloTeam`.
+  - `SetCoopTeam(t, g)` (fixed groups): t joins g with `m_coopGroupPosition` 1; its partner joins g with position 2 and is moved to the group's other position. Partner: if t chose a colour, the first other used slot with that colour, else the **last** used slot with no colour (which takes t's colour); if t chose none, the first other used slot without a colour, and both get a random colour `(syncrand() % 8) / 2` re-drawn while taken [C] `Location::SetCoopTeam( int, int )`.
+  - `SetCoopTeam(t)` (no level groups): pair t, in slot order, with a slot of the same colour (joining that slot's group, else group 1 if empty, else group 2), else with an uncoloured slot (t's colour, or a random free colour 0–3 — colour 0 without any draw when it is free), else, when t has no colour, with a coloured slot that has no partner (t takes its colour) [C] `Location::SetCoopTeam( int )`.
+  - Two coded fallbacks can never fire, because their "does this slot already have a partner?" test also compares the candidate with itself: in `SetCoopTeam(t, g)` pairing an uncoloured t with a coloured slot, and in `SetCoopTeam(t)` the final "force a random pair" step. A slot that matches no earlier rule therefore keeps `m_coopGroups = 0` [C code; I reachability with human colour choices].
 - `Location::IsFriend(a, b)` in co-op ≡ same group (special teams both have group 0, so the monster and Futurewinian teams are mutual "friends" in co-op); outside co-op ≡ `a == b`; 255 is nobody's friend [C].
 - Co-op scoring: per-mode rules (Domination §4.1, CTS §4.3); HUD group headers and game-over group winner (§2.12).
 
@@ -261,7 +293,7 @@ Two separate notions exist [C] `code/multiwinia.cpp:Multiwinia::EliminateTeam`, 
 | Concept | What it does | Used by |
 |---|---|---|
 | `Multiwinia::EliminateTeam(t)` (hard, rules flag) | `m_eliminated[t] = true`, `m_timeEliminated[t] = GetNetworkTime()` (written only), message "You are eliminated!" (`multiwinia_player_eliminated`) to that player or "*T is eliminated!" (`multiwinia_other_eliminated`) to others. Kills nothing | Domination, Blitzkrieg, TankBattle |
-| `Team::Eliminate()` (world wipe) | every unit member and every `m_others` entity of the team takes damage 2 × its max health (dies → spirits), `TaskManager::StopAllTasks()`, every trunk port owned by the team set to 255. Spawn points and other buildings keep their owner | called with `EliminateTeam` (Domination, Blitzkrieg) and alone on sudden-death losers (Domination, KOTH, CTS, Blitzkrieg) |
+| `Team::Eliminate()` (world wipe) | every unit member and every `m_others` entity of the team takes damage 2 × its **current** health, unresistable (dies → spirits); the team's Harvesters (damageable only while `m_vunerable`) and its AI entity (`AI::ChangeHealth` returns false) survive [C] `code/worldobject/harvester.cpp:Harvester::ChangeHealth`, `code/worldobject/ai.cpp:AI::ChangeHealth`; `TaskManager::StopAllTasks()`, every trunk port owned by the team set to 255. Spawn points and other buildings keep their owner | called with `EliminateTeam` (Domination, Blitzkrieg) and alone on sudden-death losers (Domination, KOTH, CTS, Blitzkrieg) |
 | `IsEliminated(t)` (query) | Skirmish, Blitzkrieg: `m_eliminated[t]`. KOTH, CTS (soft): the map has spawn points **and** the team owns none **and** it has fewer than 50 live Darwinians (`CountDarwinians` over `m_others`). Assault, Rocket Riot, TankBattle/default: false | retribution (§2.9), HUD retribution counter, CTS sudden-death tie-break |
 
 Sudden-death losers wiped with `Team::Eliminate()` are **not** flagged eliminated: they keep their spawn points, which keep producing Darwinians, so they can recover in principle [C code; I consequence].
@@ -299,7 +331,7 @@ for each team t with LobbyTeam type ≠ Unused, skipping the monster and Futurew
 ```
 
 - Probabilities (advanced crates allowed): Airstrike 2/6, Meteor shower 1/6, Forest 1/6, Dark forest 1/6, Eggs 1/6; basic-crates-only: Airstrike 1/1 [C]. Effects in [04](04_crates_powerups_and_weapons.md).
-- Timing: the timer is held at 45 while the team is not eliminated, so the first grant comes **450 ticks (45.0 game s)** after the team becomes eliminated, then every 450 ticks while it has a free task slot. The `Reset()` value 5 matters only for a team that is already "eliminated" on its first post-grace tick (possible in KOTH/CTS if a team starts with no spawn point and < 50 Darwinians) [C code; tick count by replay].
+- Timing: the timer is held at 45 while the team is not eliminated, so the first grant comes **450 ticks (45.0 game s)** after the team becomes eliminated, then every 450 ticks while it has a free task slot. The `Reset()` value 5 (51 ticks, 5.1 game s) matters only for a team that is already "eliminated" on its first post-grace tick (possible in KOTH/CTS if a team starts with no spawn point and < 50 Darwinians) [C code; tick count by replay].
 - HUD: while the local team `IsEliminated` and the option is non-zero and not in grace: "Retribution in *S" (`multiwinia_retribution_timer`, red), *S = `(int) m_eliminationBonusTimer` [C] `Multiwinia::Render`.
 
 **Real per-mode default** (verified per the coordinator's addendum) [C] `code/multiwinia.cpp:Multiwinia::GetGameOption` (returns −1 for a name the current blueprint lacks), `data/multiwinia.txt`:
@@ -307,7 +339,7 @@ for each team t with LobbyTeam type ≠ Unused, skipping the monster and Futurew
 | Mode | `RetributionMode` option | Value seen by `Advance` | Can a team be "eliminated" for retribution? | Retribution in practice |
 |---|---|---|---|---|
 | Domination | yes, check box, default 1 | 1 (0 if unticked) | yes — `m_eliminated` (after 30 mode s without spawn points) | **on by default** |
-| King of the Hill | yes, default 1 | 1 / 0 | soft: owns 0 spawn points and < 50 Darwinians on a map with spawn points (`mp_koth_3P_4` has none → never) | on by default |
+| King of the Hill | yes, default 1 | 1 / 0 | soft: owns 0 spawn points and < 50 Darwinians on a map with spawn points (`mp_koth_3P_4` has none → never in a fresh process; `CountSpawnPoints` sums all 7 counters, so a stale team-5 count left by an earlier match of the same process — [05 §8.4](05_economy_and_population.md#84-ordering-and-determinism-hazards-in-the-economy) E1 — would enable it) | on by default |
 | Capture the Statue | yes, default 1 | 1 / 0 | soft, as KOTH | on by default |
 | Assault | **absent** | −1 → true | never (`IsEliminated` false) | runs, never grants |
 | Rocket Riot | **absent** | −1 → true | never | runs, never grants |
@@ -357,7 +389,7 @@ Then the HUD shows the result (§2.12) until the player leaves via the in-game m
 
 ### 2.13 Players leaving
 
-`Multiwinia::RemoveTeams(clientId)` [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`: for every non-CPU team of that client — in the lobby: slot becomes Unused, colour −1, name "", disconnected, "PLAYERLEAVE" chat line; in a running game: message "*T left the game!" (`multiwinia_player_left`), the slot becomes `TeamTypeCPU`, an `Entity::TypeAI` is spawned for it at (−100, 0, −100) so the CPU takes over immediately, `m_accurateCPUTakeOverTime` = game time. The team keeps playing; no mode treats a leaver as eliminated.
+`Multiwinia::RemoveTeams(clientId)` [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`: for every non-CPU team of that client — in the lobby: slot becomes Unused, colour −1, name "", disconnected, "PLAYERLEAVE" chat line; in a running game: message "*T left the game!" (`multiwinia_player_left`), the slot becomes `TeamTypeCPU`, an `Entity::TypeAI` is spawned for it so the CPU takes over immediately — requested at (−100, 0, −100) with spread 0, it is stored at **(20, 0, 20)** after `Location::FindValidSpawnPosition` makes 10 off-map tries (2 synced draws each, 20 in all) and clamps the position into the map [C] `code/location.cpp:Location::SpawnEntities`, `Location::FindValidSpawnPosition` (the same holds for the AI entities created in `Location::InitialiseTeam`) — `m_accurateCPUTakeOverTime` = game time. The team keeps playing; no mode treats a leaver as eliminated.
 
 ### 2.14 `Multiwinia` data members and methods
 
@@ -479,7 +511,7 @@ Then the HUD shows the result (§2.12) until the player leaves via the in-game m
 
 File `data/multiwinia.txt` in every shipped target; `data/multiwinia-testbed.txt` only under `TESTBED_ENABLED` [B:DEAD] (identical except an extra RocketRiot parameter `TimeLimit 0 60 10 1`). A missing file is fatal (`AppReleaseAssert "Couldn't load multiwinia.txt"`) [C] `code/multiwinia.cpp:Multiwinia::LoadBlueprints`. (`data/multiwinia_betatesters.txt` is an unrelated credits list.)
 
-Grammar (line-based `TextReader`; blank lines and `#` comments skipped) [C] `Multiwinia::LoadBlueprints`:
+Grammar (line-based `TextReader`; `#` starts a comment; blank and comment-only lines are skipped **only between blocks**) [C] `Multiwinia::LoadBlueprints`, `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::GetNextToken`:
 
 ```
 file      := { gametype }
@@ -487,6 +519,7 @@ gametype  := "GAMETYPE" <BlueprintName> NEWLINE { param NEWLINE } "END" NEWLINE
 param     := <ParamName> <min:float> <max:float> <default:float> <change:int>
 ```
 
+- Inside a `GAMETYPE` block every line must be a parameter row or `END`: on a blank or comment-only line `GetNextToken()` returns NULL, which the loader passes straight to `stricmp` (undefined behaviour, normally a crash). The shipped file has no such line [C] `data/multiwinia.txt`.
 - Values are parsed with `iv_atof`/`atoi` into `MultiwiniaGameParameter::{m_min, m_max, m_default, m_change}`; the live value per game is `int Multiwinia::m_params[i]`, i = the parameter's index inside its block (the network element index of `GAMEOPTION_GAME_PARAM`) [C] `code/multiwinia.h`.
 - Name phrase ids: `multiwinia_param_<lower-case name>` (`GetNameTranslated` falls back to the raw name) [C] `MultiwiniaGameParameter`.
 - `change` selects the lobby control [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupAdvancedOptionsPage`:
@@ -637,14 +670,14 @@ Resolved: the brief quoted "34 parameter rows" from P18; counting `data/multiwin
 
 | Option | Storage | Network id | Control | Default | Effect |
 |---|---|---|---|---|---|
-| AI difficulty | `Multiwinia::m_aiType` | `GAMEOPTION_AIMODE` | lobby drop-down Easy / Normal / Hard (host, full key) | Standard (constructor, `Reset`, server start); tutorials force Easy | every CPU team ([07 §13](07_ai.md#13-difficulty-levels--every-parameter)) |
+| AI difficulty | `Multiwinia::m_aiType` | `GAMEOPTION_AIMODE` | lobby drop-down Easy / Normal / Hard (host, full key) | Standard (constructor, `Reset`, server start); tutorials start with Easy (Tutorial 2's last step switches to Standard, below) | every CPU team ([07 §13](07_ai.md#13-difficulty-levels--every-parameter)) |
 | Co-op | `m_coopMode` | `GAMEOPTION_COOPMODE` | Advanced Options check box "multiwinia_menu_coop", only on `CoopMode` maps (forced by `ForceCoop` maps) | false | §2.5.5; enabling resets every colour to −1 |
 | Basic crates only | `m_basicCratesOnly` | `GAMEOPTION_BASICCRATES` | check box "multiwinia_param_basiccrates" (compiled because `INCLUDE_CRATES_ADVANCED` is on in FULL) | false | restricts crate rewards and the retribution pool ([04 §4.5](04_crates_powerups_and_weapons.md#4-exclusion-lists-and-grant-options)) |
 | Server password | `GameMenuWindow::m_serverPassword` | string option | Advanced Options text field (host, multiplayer only, ≤ 16 chars) | empty | join gate ([09](09_meta_systems.md)) |
 | Single Assault round | `m_assaultSingleRound` | `GAMEOPTION_SINGLEASSAULT` | **none** — bound by `GameMenuWindow::m_singleAssaultRound` but never placed on a page, and no code sets it false | **true** (constructor only; `Reset` leaves it) | multi-round Assault unreachable [C] `code/UI/GameMenuWindow.cpp`, grep of `code/` |
 | Team status ×6 | `m_teamsStatus[6]` | `TEAMSSTATUS_LBOUND + i` | — | 0 | written on receipt, never read [C] |
 | Research levels | `GlobalResearch::m_researchLevel[]` | `GAME_RESEARCH_LEVEL` | none in FULL | — | overwritten by `Location::Init` in every Multiwinia game (all 3; Squad 1; Laser, Grenade, Rocket, AirStrike 2; Darwinian 4) — see [02 §2.3](02_units_and_entities.md#2-shared-conventions) [C] `code/location.cpp:Location::Init` |
-| Tutorial overrides | — | — | Tutorials 1 and 2 (KOTH maps `mp_koth_2P_1`, `mp_koth_3P_1`) | — | basic crates on, `SetGameOption(7, 0)` (KOTH CrateDropMode = Random), Easy AI, fixed positions and colours [C] `code/multiwiniahelp.cpp`, `code/location.cpp:Location::GetTeamPosition`; [30](30_scripting_tutorial_and_cutscenes.md) |
+| Tutorial overrides | — | — | Tutorials 1 and 2 (KOTH maps `mp_koth_2P_1`, `mp_koth_3P_1`) | — | **At setup:** KOTH with default parameters, the tutorial map, Easy AI, requested colour 0 (Tutorial 2 also sets slot colours 0, 1, 2) [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupTutorial`, `GameMenuWindow::SetupTutorial2`; positions = team ids and CPU colour = slot id [C] `code/location.cpp:Location::GetTeamPosition`, `Location::Init`. **Crates:** none in Tutorial 1; none in Tutorial 2 before its AI is released [C] `Location::AdvanceCrates`. **At Tutorial 2's End step:** basic crates on, `SetGameOption(7, 0)` (KOTH CrateDropMode = Random), AI switched to **Standard**, AI spawning released (`m_tutorial2AICanSpawn`) [C] `code/multiwiniahelp.cpp` (Tutorial 2 director, `HelpTutorial2End`); [30](30_scripting_tutorial_and_cutscenes.md) |
 
 ### 3.7 Level-file options that change mode rules
 
@@ -681,12 +714,12 @@ Keys of the level's `MultiwiniaOptions` block read by the rules (grammar in [29]
 ## 4 Per-mode specifications
 
 Common to every mode [C] `code/multiwinia.cpp`:
-- All per-second rule logic runs inside `m_timer −= dt; if (m_timer <= 0) { m_timer = 1.0; … }` → once per **mode second (11 ticks)**; `BackupScores()` is called at the start of each mode second (TankBattle: per team). `m_timeRemaining` counts mode seconds, so a "10-minute" game lasts 6,600 ticks = 660 game seconds.
+- All per-second rule logic runs inside `m_timer −= dt; if (m_timer <= 0) { m_timer = 1.0; … }` → once per **mode second (11 ticks)**; `BackupScores()` is called at the start of each mode second (TankBattle: per team). `m_timeRemaining` counts mode seconds and `m_timer` starts at 0, so the first decrement falls on the first post-grace tick: a "10-minute" game (600 mode s) reaches its time-up evaluation with the 600th decrement on post-grace tick 6 589 (counting the first as 0), ≈ 659 game seconds.
 - "Special teams" = monster (4) and Futurewinian (5). They exist in every game, are CPU-controlled, can own zones, flags, statues and spawn points, and are handled per mode as stated below.
 - Players: level `NumPlayers` (2–4); empty slots become CPU teams at start; co-op only on maps flagged `CoopMode` / `ForceCoop` (§2.5.5).
 - Population caps are per team from the level (§3.7, [05 §4](05_economy_and_population.md#4-the-population-cap)); the per-map value is in each map table ("PopCap → per team").
 - Crate drops follow the mode's `CrateDropRate` / `CrateDropMode`; mode-specific crate validity rules are listed per mode (from `code/worldobject/crate.cpp:Crate::IsValid`).
-- Map tables below are generated by `_work/scripts/S_01_mode_tables.py` from `X4_levels.csv` (itself parsed from `data/levels/mp_*.txt`); "SpawnPts" counts spawn points by owning position (255 = neutral); "TrunkPorts" by owning position; "Start units" = InstantUnits total; "Demo default" = map on the fallback demo list ([09](09_meta_systems.md)). Map names are Introversion IP.
+- Map tables below are generated by `_work/scripts/S_01_mode_tables.py` from `X4_levels.csv` (itself parsed from the 57 `mp_*.txt` level files in `data/levels/`, each listed in the Source map); "SpawnPts" counts spawn points by owning position (255 = neutral); "TrunkPorts" by owning position; "Start units" = InstantUnits total; "Demo default" = map on the fallback demo list ([09](09_meta_systems.md)). Map names are Introversion IP.
 
 ### 4.1 Domination (`GameTypeSkirmish`) [B:FULL]
 
@@ -708,7 +741,7 @@ Common to every mode [C] `code/multiwinia.cpp`:
    - `notEliminated = t`; `m_score[t] += SpawnPoint::s_numSpawnPoints[t+1]` (spawn points owned now).
    - If more than 30 game s have passed since start: a non-special team owning 0 spawn points → on the first such second (timer 30) message "You will be eliminated in 30 seconds!" (`multiwinia_skirmish_elimination_30`) to itself or "*T will be eliminated in 30 seconds!" to others; `--m_eliminationTimer[t]`; at ≤ 0 → `EliminateTeam(t)` + `Team::Eliminate()`. A team owning ≥ 1 spawn point → timer reset to 30. A team therefore dies on its 30th consecutive second without spawn points (≈ 33 game s).
    - Leader tracking: equal to `highScore` → `winningTeam = 255` (draw); greater → `winningTeam = t`. Because `highScore` starts at 0, a team scoring 0 marks a draw until someone scores more.
-3. If sudden death is active: if `winningTeam ≠ 255` → `DeclareWinner(winningTeam)`; return.
+3. If sudden death is active: if `winningTeam ≠ 255` → `DeclareWinner(winningTeam)` and return. While still tied there is **no return**: step 4 is skipped (it is the `else` branch) and evaluation continues with steps 5–6.
 4. Else if time is up (`m_timeRemaining <= 0 && !m_unlimitedTime`): draw and SuddenDeath = 1 → sudden death (§2.10: every used team whose score ≠ `highScore` gets `Team::Eliminate()`, flags not set, their spawn points keep producing); otherwise `DeclareWinner(winningTeam)` (255 = draw). Return.
 5. Co-op: `noWinner` if any slot index `i < totalTeams` (sic — iterates indices 0 … totalTeams−1, not all slots) is not eliminated and not a friend of `notEliminated` (special teams with ≤ 1 entity skipped). If none → `DeclareWinner(winningTeam)` (the higher-scoring member of the surviving alliance; 255 if the two allies tie).
 6. Non-co-op: if `totalTeams − 1 == numEliminated` → `DeclareWinner(notEliminated)`; local winner → `GiveAchievement(Dominator)`.
@@ -736,9 +769,22 @@ Common to every mode [C] `code/multiwinia.cpp`:
 
 **Maps.**
 
-@@MAPTABLE Domination@@
+*Map table — Domination (retail data set, 9 maps, menu order)*
 
-**Level conventions** (X4, re-checked against the table) [C data]: 1–3 spawn points per start position plus 3–9 neutral ones, one `SpawnPointMaster`, a `SpawnLink` tree (none on `mp_skirmish_3P_1`, whose master links directly to spawn points); no `MultiwiniaZone`. Four Domination maps are terrain twins of KOTH maps (`mp_domination_2P_2` ≡ `mp_koth_2P_1`, `mp_domination_3P_1` ≡ `mp_koth_3P_2`, `mp_domination_4P_1` ≡ `mp_koth_4P_1`, `mp_domination_4P_2` ≡ `mp_koth_4P_3`), replacing hill zones by extra neutral spawn points; `mp_koth_2P_2` and `mp_koth_2P_3` are Domination maps by their `GameTypes` line.
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_domination_2P_2.txt` | The Eternal Guardians | 2 | basic | - | 2000 → 1000 | - | - | - | 8 (0:1;1:1;255:6) | - | masters 1, links 7, radar 0 | 80 | - |
+| 1 | `mp_skirmish_2p_4.txt` | Hamburger Hill | 2 | basic | - | 1800 → 900 | - | - | - | 10 (0:1;1:1;255:8) | 255:1 | masters 1, links 11, radar 0 | 0 | - |
+| 2 | `mp_domination_2P_1.txt` | Barriers to Progress | 2 | intermediate | - | 2000 → 1000 | - | - | - | 8 (0:1;1:1;255:6) | - | masters 1, links 13, radar 0 | 90 | - |
+| 3 | `mp_koth_2P_2.txt` | Shrine of Memory | 2 | intermediate | 10 | 2000 → 1000 | - | - | - | 9 (0:3;1:3;255:3) | 255:1 | masters 1, links 10, radar 6 | 0 | - |
+| 4 | `mp_koth_2P_3.txt` | The Bitter Front | 2 | intermediate | 10 | 1500 → 750 | - | - | - | 10 (0:2;1:2;255:6) | - | masters 1, links 11, radar 0 | 80 | - |
+| 5 | `mp_domination_3P_1.txt` | Field of Unending Dawn | 3 | basic | 10 | 1800 → 600 | - | - | - | 10 (0:2;1:2;2:2;255:4) | - | masters 1, links 14, radar 0 | 120 | - |
+| 6 | `mp_skirmish_3P_1.txt` | Leap of Faith | 3 | advanced | - | 1800 → 600 | - | - | - | 15 (0:2;1:2;2:2;255:9) | - | masters 1, links 0, radar 0 | 120 | - |
+| 7 | `mp_domination_4P_1.txt` | The Holy Tree | 4 | intermediate | 15 | 2000 → 500 | CoopMode | - | - | 10 (0:1;1:1;2:1;3:1;255:6) | - | masters 1, links 18, radar 0 | 160 | - |
+| 8 | `mp_domination_4P_2.txt` | A Monument to the Heavens | 4 | advanced | 10 | -1 → none | CoopMode (G1 0 2 / G2 1 3) | - | - | 12 (0:2;1:2;2:2;3:2;255:4) | - | masters 1, links 20, radar 8 | 160 | - |
+
+**Level conventions** (re-checked against the level files) [C data]: 1–3 spawn points per start position plus 3–9 neutral ones, one `SpawnPointMaster`, a `SpawnLink` tree (none on `mp_skirmish_3P_1`, whose master links directly to spawn points); no `MultiwiniaZone`. Four Domination maps are terrain twins of KOTH maps (`mp_domination_2P_2` ≡ `mp_koth_2P_1`, `mp_domination_3P_1` ≡ `mp_koth_3P_2`, `mp_domination_4P_1` ≡ `mp_koth_4P_1`, `mp_domination_4P_2` ≡ `mp_koth_4P_3`), replacing hill zones by extra neutral spawn points; `mp_koth_2P_2` and `mp_koth_2P_3` are Domination maps by their `GameTypes` line.
 
 ### 4.2 King of the Hill (`GameTypeKingOfTheHill`) [B:FULL]
 
@@ -782,9 +828,22 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 
 **Maps.**
 
-@@MAPTABLE KingOfTheHill@@
+*Map table — KingOfTheHill (retail data set, 9 maps, menu order)*
 
-**Level conventions** [C data; I intent]: hills are `MultiwiniaZone` rows, 1–15 per map, almost always neutral (255), radii 50–555.24. **Concentric zones** (centres within 10 units, different radii) on `mp_koth_3P_3`, `mp_koth_4P_1` (one triple + four pairs), `mp_koth_4P_3` (two pairs), `mp_koth_4P_4` (one triple + four pairs). Only `mp_koth_3P_3` tags three 150-unit zones with positions 0/1/2 — they start owned by those players but ownership then follows occupancy. `mp_koth_3P_4` has no spawn points: 2 trunk ports per position with `trunkportreinforcements 100` (waves every 66 game s; no armour, no turrets) and 6 neutral gun turrets; KOTH soft elimination (and so retribution) can never happen there. `mp_koth_3P_1` adds 12 neutral radar dishes, 6 neutral `ControlStation`s controlling them, and a neutral trunk port.
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_koth_2P_1.txt` | The Eternal Guardians | 2 | basic | - | 2000 → 1000 | - | - | - | 6 (0:1;1:1;255:4) | - | zones 3 (255:3; r 150.00) | 80 | Y |
+| 1 | `mp_koth_2P_3b.txt` | The Bitter Front | 2 | intermediate | 10 | 1500 → 750 | - | - | - | 10 (0:2;1:2;255:6) | - | zones 4 (255:4; r 100.00) | 80 | - |
+| 2 | `mp_koth_3P_2.txt` | Field of Unending Dawn | 3 | basic | 5 | 1800 → 600 | - | - | - | 9 (0:2;1:2;2:2;255:3) | - | zones 4 (255:4; r 80.00) | 120 | - |
+| 3 | `mp_koth_3P_1.txt` | Pursuit of Victory | 3 | intermediate | 10 | 1800 → 600 | - | - | - | 9 (0:1;1:1;2:1;255:6) | 255:1 | zones 4 (255:4; r 160.00 80.00) | 135 | Y |
+| 4 | `mp_koth_3P_3.txt` | The Deceitful Vale | 3 | intermediate | 10 | 1800 → 600 | - | - | - | 9 (0:2;1:2;2:2;255:3) | 255:1 | zones 5 (0:1;1:1;2:1;255:2; r 101.17 140.00 150.00) | 120 | - |
+| 5 | `mp_koth_3P_4.txt` | The Walled Garden | 3 | intermediate | 10 | 1800 → 600 | - | trunkportreinforcements=100 | - | 0 (-) | 0:2;1:2;2:2 | zones 1 (255:1; r 86.20) | 0 | - |
+| 6 | `mp_koth_4P_4.txt` | Barbs of Madness | 4 | basic | - | 2000 → 500 | CoopMode | - | - | 12 (0:3;1:3;2:3;3:3) | 255:4 | zones 15 (255:15; r 122.00 122.63 193.87 50.00 555.24) | 160 | - |
+| 7 | `mp_koth_4P_1.txt` | The Holy Tree | 4 | intermediate | 10 | 2000 → 500 | CoopMode | - | - | 10 (0:1;1:1;2:1;3:1;255:6) | - | zones 11 (255:11; r 100.00 125.00 200.00 50.00) | 160 | Y |
+| 8 | `mp_koth_4P_3.txt` | A Monument to the Heavens | 4 | advanced | 10 | -1 → none | CoopMode (G1 0 2 / G2 1 3) | - | - | 12 (0:2;1:2;2:2;3:2;255:4) | - | zones 12 (255:12; r 100.00 220.00 233.01 50.00 90.00) | 160 | - |
+
+**Level conventions** [C data; I intent]: hills are `MultiwiniaZone` rows, 1–15 per map, almost always neutral (255), radii 50–555.24. **Concentric zones** (centres within 10 units, different radii) on `mp_koth_3P_3`, `mp_koth_4P_1` (one triple + four pairs), `mp_koth_4P_3` (two pairs), `mp_koth_4P_4` (one triple + four pairs). Only `mp_koth_3P_3` tags three 150-unit zones with positions 0/1/2 — they start owned by those players but ownership then follows occupancy. `mp_koth_3P_4` has no spawn points: 2 trunk ports per position with `trunkportreinforcements 100` (waves every 66 game s; no armour, no turrets) and 6 neutral gun turrets; KOTH soft elimination (and so retribution) can never happen there in a fresh process (§2.9, [05 §8.4](05_economy_and_population.md#84-ordering-and-determinism-hazards-in-the-economy) E1). `mp_koth_3P_1` adds 12 neutral radar dishes, 6 neutral `ControlStation`s controlling them, and a neutral trunk port.
 
 ### 4.3 Capture the Statue (`GameTypeCaptureTheStatue`) [B:FULL]
 
@@ -807,14 +866,14 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 1. Over used, non-special slots: leader/draw (`highScore` starts at −1, so 0-score teams compare properly); also the best among teams **not** `IsEliminated` (`notEliminatedWinner`; tie → 255).
 2. If draw and SuddenDeath = 1: if any tied top team `IsEliminated` (soft) → `winningTeam = notEliminatedWinner` (soft-eliminated teams lose ties).
 3. Co-op: sum scores of group 1 and group 2; equal → draw; else winner = the **last** slot index of the higher group (overrides steps 1–2).
-4. `winningTeam == −1` (no used teams): Futurewinians win if they have > 50 entities, else the monster team if > 50, else `DeclareWinner(255)`.
+4. `winningTeam == −1` — either no used non-special team exists, or step 2 replaced a tied top score with `notEliminatedWinner == −1` because **every** used non-special team is soft-eliminated (tied time-up with SuddenDeath on): Futurewinians win if they have > 50 entities, else the monster team if > 50, else `DeclareWinner(255)`.
 5. Else if sudden death is active: if not a draw → `DeclareWinner`; return.
 6. Else if draw and SuddenDeath = 1: non-co-op → `Team::Eliminate()` every used non-special team below the top score; sudden death on, "Sudden Death!" — the next delivered statue breaks the tie.
 7. Else `DeclareWinner(winningTeam)`; local winner with `highScore > 2 × secondHighest` and `highScore > 3` → `GiveAchievement(Hoarder)`; return.
 
 **Scoring formula.** `score(t) = number of statues delivered by t` (event-driven, +1 per delivery).
 
-**Win / lose / draw.** Highest score at time-up; tie → sudden death (next delivery wins) or draw. Special teams cannot win except in the "no used teams" fallback.
+**Win / lose / draw.** Highest score at time-up; tie → sudden death (next delivery wins) or draw. Special teams cannot win except in the `winningTeam == −1` fallback of step 4 (no used teams, or a tied time-up in which every team is soft-eliminated).
 
 **Population cap.** `PopulationCap / NumPlayers` (500–1000).
 
@@ -828,7 +887,707 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 
 **Maps.**
 
-@@MAPTABLE CaptureTheStatue@@
+*Map table — CaptureTheStatue (retail data set, 9 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_cts_2p_1.txt` | Mountain of Lost Souls | 2 | basic | - | 2000 → 1000 | - | - | - | 6 (0:2;1:2;255:2) | - | zones 4 (0:1;1:1;255:2; r 40.00 80.00) | 80 | Y |
+| 1 | `mp_cts_2p_4.txt` | The Unending Peaks | 2 | basic | - | 2000 → 1000 | - | - | - | 4 (0:2;1:2) | - | zones 3 (0:1;1:1;255:1; r 100.00 50.00) | 80 | - |
+| 2 | `mp_cts_2p_2.txt` | The Bloody Shrine | 2 | intermediate | - | 2000 → 1000 | - | instantspawnpointcapture | - | 4 (0:2;1:2) | - | zones 4 (0:1;1:1;255:2; r 69.80 80.00) | 80 | - |
+| 3 | `mp_cts_2p_3.txt` | Price of War | 2 | intermediate | - | 2000 → 1000 | - | - | - | 4 (0:1;1:1;255:2) | - | zones 4 (0:1;1:1;255:2; r 109.27 50.00) | 80 | - |
+| 4 | `mp_cts_3p_1.txt` | Melting Pot | 3 | intermediate | - | 1800 → 600 | - | instantspawnpointcapture | - | 6 (0:2;1:2;2:2) | - | zones 6 (0:1;1:1;2:1;255:3; r 100.00 50.00) | 120 | - |
+| 5 | `mp_cts_3P_2.txt` | The Tortured Expanse | 3 | intermediate | - | 1500 → 500 | - | instantspawnpointcapture | - | 9 (0:3;1:3;2:3) | - | zones 8 (0:1;1:1;2:1;255:5; r 100.00 50.00 60.00 60.54) | 120 | - |
+| 6 | `mp_cts_4P_1.txt` | Field of Unlife | 4 | advanced | - | 2000 → 500 | - | - | - | 12 (0:1;1:1;2:1;3:1;255:8) | - | zones 7 (0:1;1:1;2:1;3:1;255:3; r 100.00 60.00) | 160 | - |
+| 7 | `mp_cts_4P_2.txt` | Scorched Earth | 4 | advanced | - | 2000 → 500 | CoopMode | instantspawnpointcapture | - | 8 (0:2;1:2;2:2;3:2) | - | zones 10 (0:1;1:1;2:1;3:1;255:6; r 100.00 50.00 63.38) | 160 | - |
+| 8 | `mp_cts_4p_3.txt` | Maze of Despair | 4 | advanced | - | 2000 → 500 | - | - | - | 8 (0:2;1:2;2:2;3:2) | - | zones 7 (0:1;1:1;2:1;3:1;255:3; r 100.00 75.00) | 160 | - |
 
 **Level conventions** [C data]: exactly one team-owned `MultiwiniaZone` per start position = drop zone (radius 80, 100 or 109.27), plus 1–6 neutral zones = statue spawns (radius 40–75); spawn-point economy (1–3 per position, up to 8 neutral on `mp_cts_4P_1`); four maps set `instantspawnpointcapture`; 40 starting Darwinians per position. The unshipped `mp_cts_3p_3` uses trunk ports with `trunkportreinforcements 100` and `attackerreinforcementtype HotFeet` (in a non-Assault mode every team gets a Hot Feet task each wave).
 
+### 4.4 Assault (`GameTypeAssault`) [B:FULL]
+
+**Objective.** Attackers must capture **every** `ControlStation` linked to the defenders' `PulseBomb` (the "WMD") before its countdown ends; defenders must hold at least one until the bomb detonates [C] `code/multiwinia.cpp:Multiwinia::AdvanceAssault`, `Multiwinia::RecordDefenseTime`, `code/worldobject/pulsebomb.cpp:PulseBomb::Advance`, `code/worldobject/controlstation.cpp:ControlStation::RecalculateOwnership`.
+
+**Team structure.** Attacking **positions** come from the level's `AttackingTeams`; the rest defend. Shipped maps: 1 v 1 on the four 2-player maps (`mp_assault_3p_1` declares `NumPlayers 2` despite its name); 1 defender v 2 attackers on `mp_assault_3p_3` and `mp_assault_3P_2` (ForceCoop); 2 v 2 on `mp_assault_4P_1` and `mp_assault_4P_2` (ForceCoop). Players choose Random / Attackers / Defenders in the lobby (colour id −1 / 1 / 0); positions and random sides are resolved at load by `Location::SetupAssault` (§2.5.6). On `mp_assault_3p_1` 35 Darwinians are placed on team 5 (Futurewinians) [C data].
+
+**Mode-specific objects** ([03 §8.6–§8.7](03_buildings_and_world_objects.md#8-mode-objective-objects), [03 §10](03_buildings_and_world_objects.md#10-ai-marker-buildings)):
+- `PulseBomb` — one per map, owned by a defender position; level fields `<startTime> <linkId> …`. `Initialise` registers `s_pulseBombs[team]`, uses `Multiwinia::m_pulseTimer` as start time if > 0 (later rounds), records `s_defaultTime` once, and **sets `Multiwinia::m_timeRemaining = (int) m_startTime`** — the bomb timer is the match clock and counts **mode seconds**: 900 on seven maps, 1200 on `mp_assault_4P_2` (= PlayTime × 60). It is decremented once per mode second from the first post-grace tick, so it reaches 0 on post-grace tick 9 889 (≈ 989 game s; 1200 → tick 13 189, ≈ 1 319 game s) and the bomb detonates when its next advance sees that [C] `Multiwinia::AdvanceAssault`; tick counts by replay.
+- `ControlStation` — linked stations (3, or 4 on `mp_assault_4P_1`) are switched to the bomb model at load (`LinkToPulseBomb`; 3 ports). Ownership every tick from port occupants: a team needs **more than 1** occupant (≥ 2) when linked to a bomb (more than 2, i.e. ≥ 3, for an unlinked 5-port station); the first qualifying team wins, replaced by any later team with strictly more; nobody → station neutral [C] `ControlStation::RecalculateOwnership`. How Darwinians occupy ports: [03 §3.6](03_buildings_and_world_objects.md#3-building-base-class).
+- `TrunkPort` — the attackers' Darwinian source (3–6 per attacking position) and the defenders' (0–1).
+- Fortification kit (walls, laser fences, 7–40 neutral `GunTurret`s), `WallBuster` (`mp_assault_2P_1`), `AIObjective` chains and `AIObjectiveMarker`s for the CPU ([07 §11](07_ai.md#11-ai-objectives--assault-objective-chain-and-rocket-riot-markers)).
+
+**Options.** Handicap (ineffective — no spawn points), CrateDropRate. No TimeLimit, ScoreMode, SuddenDeath or RetributionMode (the latter reads −1 = on, but nobody is ever "eliminated" in Assault).
+
+**Initialisation** (first post-grace `AdvanceAssault`): `m_defendedAll = true`; for every pulse bomb append its link ids, then its own id, to `m_assaultObjectives` [C].
+
+**Per tick** [C]:
+1. If `GetHighResTime() > m_startTime + 10` — wall clock compared with a game-time stamp, effectively always true (§6 B6): `m_defendedAll &= IsDefending(owner)` for every objective (bomb and stations); neutral (255) is not defending.
+2. `PulseBomb::Advance` (inside the location advance): re-links stations; **all linked stations owned and none friendly to the bomb team** → `Destroy()` (explosion `Location::Bang(pos, 75, 5)`, message "WMD Destroyed!", every trunk port not owned by the defender set to 255) and `RecordDefenseTime(startTime − GetPreciseTimeRemaining(), bombTeam)`. At `m_timeRemaining ≤ 60` once → "One Minute to WMD Detonation!" (`dialog_oneminutewarning`). At `m_timeRemaining ≤ 0` and not yet detonated → `RecordDefenseTime(startTime, bombTeam)`, spawn a `PulseWave` (radius 200, ×1.03 per tick until ≥ world X size) owned by the bomb team that kills non-friendly Darwinians it reaches (Futurewinian-team map: converts them), and every trunk port not owned by the bomb team → 255 [C] `code/worldobject/pulsebomb.cpp`, `code/worldobject/weapons.cpp:PulseWave::Advance`, `code/worldobject/darwinian.cpp` ([04](04_crates_powerups_and_weapons.md)).
+3. `RecordDefenseTime`: `m_pulseTimer = min(m_pulseTimer, time)`, `m_pulseDetonated = true`, `m_victoryTimer = 10` (single round) or 15 (multi-round), `m_timeRecords[team] = time`. Recorded times are in **mode seconds** (`startTime − GetPreciseTimeRemaining()`), and so is every "defended for m:ss" display.
+
+**Per mode second** [C]: `m_timer` reset; `--m_timeRemaining` only while `m_timeRemaining > 0` **and** `m_victoryTimer <= 0` (the clock stops at the round end). If `m_pulseDetonated`:
+- multi-round only: when `m_victoryTimer <= 1`, the fade is complete and rotations remain (`m_numRotations < NumPlayers − 1`) → `StartFadeOut()`;
+- when `m_victoryTimer <= 0` and no `PulseWave` is alive:
+  - single round, or the last rotation (`m_numRotations == NumPlayers − 1`) → choose the winner and `DeclareWinner`; if the local team is defending and `m_defendedAll` → `GiveAchievement(AggravatedAssault)`;
+  - otherwise `m_victoryTimer = −1`, `m_pulseDetonated = false`, `m_resetLevel = true` → `ResetLocation()` next frame (positions rotate one place; the new round's bomb timer is the best defence time so far).
+
+**Winner selection.**
+- **Single round (the only reachable case in FULL):** find the first team with a bomb (`s_pulseBombs[i] ≠ −1`); if that bomb is destroyed → winner = the **first slot index** (0 … NumPlayers−1) whose position is attacking, else the first slot whose position is defending. `DeclareWinner` receives one team id even for an alliance; the co-op overlay shows "Attackers Win!" / "Defenders Win!" by the winner's side [C].
+- **Multi-round [unreachable]:** winner = the slot with the largest `m_timeRecords` (`numFullDefenses` — teams whose time ≥ `s_defaultTime` — is computed but unused) [C].
+
+**Timeline** (single round): bomb destroyed or detonated → 10 game s victory delay (101 ticks), counted from the pulse wave's start but the result also waits for the wave to vanish → `DeclareWinner` on the next mode-second boundary after both [C code; tick count by replay].
+
+```mermaid
+stateDiagram-v2
+    [*] --> Holding : grace ends, bomb clock running
+    Holding --> Holding : stations change hands, clock counts down
+    Holding --> BombDestroyed : all linked stations held by non-friends of the bomb team
+    Holding --> Detonated : clock reaches 0, pulse wave released
+    BombDestroyed --> VictoryDelay : RecordDefenseTime, victory timer 10
+    Detonated --> VictoryDelay : RecordDefenseTime, victory timer 10
+    VictoryDelay --> AttackersWin : timer done, no pulse wave, bomb destroyed
+    VictoryDelay --> DefendersWin : timer done, no pulse wave, bomb intact
+    AttackersWin --> [*]
+    DefendersWin --> [*]
+```
+
+**Reinforcements** (trunk-port waves from `Multiwinia::Advance`, because every Assault map sets `trunkportreinforcements`): count per port per wave = level value (60–100) — attackers' and defenders' counts can be split with `attackerreinforcements` / `defenderreinforcements` (unused); period 60 mode s (66 game s; first wave on the first post-grace tick); armour only where the level sets `trunkportarmour` (`mp_assault_2P_2` cap 1, `mp_assault_2p_3` cap 3, `mp_assault_4P_2` cap 3); no turrets; `mp_assault_2p_3` gives each defending team an AirStrike task per wave (`defenderreinforcementtype AirStrike`) and then grants defender ports no armour [C] `Multiwinia::AdvanceTrunkPorts`; [05 §6.5](05_economy_and_population.md#6-reinforcement-systems).
+
+**Population cap.** Defenders `DefenderPopulationCap` each (200–350); attackers share `(PopulationCap − defenders × DefenderPopulationCap) / attackers` (550–1725); `mp_assault_2p_3` and `mp_assault_3p_3` set no defender cap → plain `PopulationCap / NumPlayers` for both sides [C] `code/worldobject/trunkport.cpp:TrunkPort::PopulationLocked`, map table.
+
+**Crates.** RocketTurret and SpaceShip rewards invalid in Assault; Harvester / Engineer / Spawn Mania invalid (no spawn points); Armour invalid on maps with `trunkportarmour`; plus each map's `InvalidCrates` [C] `Crate::IsValid`.
+
+**AI.** Objective chains (`AIObjective` / `AIObjectiveMarker`), diffusion priorities, attackers dispatch everyone every 3 s (Hard 1.1 s), no formation officers, WallBuster routing — [07 §11–§12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Scoreboard titled "OBJECTIVES", ordered by `m_timeRecords`. Defender line "Defend the WMD!" (`multiwinia_assault_holdtheline`); attacker line "Attack and destroy the WMD!" (`multiwinia_assault_ticktock`), or — once that slot has a time record — "defended for m:ss" (`multiwinia_defendedfor_score`). Round overlay after a round end: multi-round "*T defended for m:ss" in the defender colour and "NEXT ROUND IN: *S" when `m_victoryTimer < 11`; single round with a winner: "Attackers Win!" / "Defenders Win!" (co-op) or "*T Wins!" (`multiwinia_team_win`). Pulse bomb visuals: rising glow blobs, 3D countdown screen in the last 10 s [C] `Multiwinia::GetScoreLine`, `Render`, `PulseBomb::RenderAlphas`.
+
+**End of game.** §2.11; the game-over block shows only "GAME OVER" (no winner line or list for single round).
+
+**Achievement hook.** AggravatedAssault (defending side, every objective owned by a defender on every tick).
+
+**Maps.**
+
+*Map table — Assault (retail data set, 8 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_assault_2P_1.txt` | Beneath the Baleful Eye | 2 | basic | 15 | 2000 → def 350 / att 1650 | - | trunkportreinforcements=100 | Squad Airstrike Nuke Meteor | 0 (-) | 0:1;1:4 | bomb 900.00 mode s, stations 255:3, attackers pos 1, AIObj 12/markers 36 | 327 | - |
+| 1 | `mp_assault_2p_3.txt` | Dog Green Sector | 2 | intermediate | 15 | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | Squad Airstrike Nuke Meteor | 0 (-) | 0:3 | bomb 900.00 mode s, stations 255:5, attackers pos 0, AIObj 11/markers 25 | 308 | - |
+| 2 | `mp_assault_2P_2.txt` | The Woeful Plateau | 2 | advanced | 15 | 2000 → def 275 / att 1725 | - | trunkportreinforcements=100 trunkportarmour=1 | - | 0 (-) | 0:1;1:5 | bomb 900.00 mode s, stations 255:3, attackers pos 1, AIObj 9/markers 28 | 209 | - |
+| 3 | `mp_assault_3p_1.txt` | The Third Kind | 2 | advanced | 15 | 1600 → def 250 / att 1350 | - | trunkportreinforcements=75 | Armour | 0 (-) | 0:1;1:6 | bomb 900.00 mode s, stations 255:3, attackers pos 1, AIObj 10/markers 27 | 139 | - |
+| 4 | `mp_assault_3p_3.txt` | Fort Zulu | 3 | intermediate | 15 | 1800 → 600 | ForceCoop (G1 0 / G2 1 2) | trunkportreinforcements=100 | - | 0 (-) | 1:4;2:4 | bomb 900.00 mode s, stations 0:3, attackers pos 1 2, AIObj 6/markers 29 | 260 | - |
+| 5 | `mp_assault_3P_2.txt` | The Hard Way | 3 | advanced | 15 | 1500 → def 250 / att 625 | ForceCoop (G1 0 / G2 1 2) | trunkportreinforcements=75 | Armour | 0 (-) | 0:1;1:4;2:4 | bomb 900.00 mode s, stations 255:3, attackers pos 1 2, AIObj 12/markers 27 | 182 | - |
+| 6 | `mp_assault_4P_1.txt` | Beyond the Pale | 4 | advanced | 15 | 1600 → def 200 / att 600 | ForceCoop (G1 0 1 / G2 2 3) | trunkportreinforcements=75 | Armour | 0 (-) | 0:3;1:3;2:1;3:1 | bomb 900.00 mode s, stations 255:4, attackers pos 0 1, AIObj 14/markers 24 | 170 | - |
+| 7 | `mp_assault_4P_2.txt` | The Last Stand | 4 | advanced | 20 | 1500 → def 200 / att 550 | ForceCoop (G1 0 1 / G2 2 3) | trunkportreinforcements=60 trunkportarmour=3 | Armour | 0 (-) | 0:1;1:1;2:4;3:4 | bomb 1200.00 mode s, stations 255:3, attackers pos 2 3, AIObj 18/markers 44 | 158 | - |
+
+**Per-map Assault configuration** (from the level files) [C data]:
+
+| Map | Attacker positions | Defender positions | Bomb owner pos / timer (mode s) | Stations linked | Trunk ports (pos:n) | DefenderPopCap | Waves |
+|---|---|---|---|---|---|---|---|
+| mp_assault_2P_1 | 1 | 0 | 0 / 900 | 3 | 0:1 1:4 | 350 | 100 per port |
+| mp_assault_2P_2 | 1 | 0 | 0 / 900 | 3 | 0:1 1:5 | 275 | 100, armour cap 1 |
+| mp_assault_2p_3 | 0 | 1 | 1 / 900 | 3 (+2 stations controlling radar) | 0:3 | −1 | 100, armour cap 3, defender AirStrike task, `forceradarteammatch`, `noradarcontrol` |
+| mp_assault_3p_1 | 1 | 0 | 0 / 900 | 3 | 0:1 1:6 | 250 | 75 |
+| mp_assault_3P_2 | 1 2 | 0 | 0 / 900 | 3 | 0:1 1:4 2:4 | 250 | 75 |
+| mp_assault_3p_3 | 1 2 | 0 | 0 / 900 | 3 (stations start owned by pos 0) | 1:4 2:4 | −1 | 100 |
+| mp_assault_4P_1 | 0 1 | 2 3 | 2 / 900 | 4 | 0:3 1:3 2:1 3:1 | 200 | 75 |
+| mp_assault_4P_2 | 2 3 | 0 1 | 1 / 1200 | 3 | 0:1 1:1 2:4 3:4 | 200 | 60, armour cap 3 |
+| mp_assault_stress (`GameTypes none`) | 0 | 1 | 1 / 600 | 3 | 0:5 1:2 | — | 250, defender Armour task |
+
+**Level conventions** [C data]: attackers start with no Darwinians and live on reinforcements; defenders start with 63–325 Darwinians, walls/laser fences, neutral gun turrets (Flame turrets on `2p_3`, `3p_1`, `3p_3`), AIObjective chains (6–18) and markers (24–44). `InvalidCrates` removes `Armour` on `3p_1`, `3P_2`, `4P_1`, `4P_2` and `Squad Airstrike Nuke Meteor` on `2P_1`, `2p_3`.
+
+### 4.5 Rocket Riot (`GameTypeRocketRiot`) [B:FULL]
+
+**Objective.** Capture solar panels to power fuel generators, which pump fuel through pipes and fuel stations into your rocket; at ≥ 95 % fuel, load 100 Darwinians; the rocket then counts down and launches. The first rocket to climb above world height y = 600 wins [C] `code/multiwinia.cpp:Multiwinia::AdvanceRocketRiot`, `code/worldobject/rocket.cpp`.
+
+**Team structure.** Free-for-all 2–4 (no co-op map). Each position has its own rocket, three fuel stations, three generators, pipes and one trunk port; the solar-panel power grid is shared and contested.
+
+**Mode-specific objects** ([03 §8.8–§8.12](03_buildings_and_world_objects.md#8-mode-objective-objects); power grid [03 §6](03_buildings_and_world_objects.md#6-power-network)): chain `SolarPanel → PowerSplitter → Pylon … → PylonEnd → FuelGenerator → FuelPipe(s) → FuelStation → EscapeRocket`. Key rules [C] `code/worldobject/rocket.cpp`:
+- Refuel: `newRate = pipeCount × m_currentLevel × 0.4`; `m_refuelRate = 0.99 × rate + 0.01 × newRate` per tick; `fuel += rate × dt`, max 100. Maximum steady rate with three fed stations ≈ 1.2 %/game s (≈ 80 s from 0 to 95 plus the EMA lag) [I derived].
+- `EscapeRocket` states: Refueling (0) → Loading (1) at fuel ≥ 95 ("Your Rocket has been refueled!") → Ignition (2) at fuel > 95 and passengers ≥ 100 ("… preparing for launch!") → Ready (3) immediately in multiplayer (countdown forced 0, then 10, camera shake 5) → Countdown (4) when the Ready countdown of 10 (−dt per tick, **101 ticks**) ends → Flight (6) when the Countdown of 10 at half rate (−0.5 dt, **200 ticks**) reaches exactly 0. Any state except Exploding goes to Exploding (5) when damage > 100; Exploding returns to Refueling when damage reaches 0 (fuel burnt down to 50 % of its pre-explosion value, passengers ejected one per tick, 50 % on fire) [C].
+- Fuel stations recruit one random own-team idle Darwinian within 300 units per tick to board while the rocket is Loading [C] `FuelStation::Advance`.
+- Rockets attract enemy attackers (every 1–3 game s, enemies within 150 units, while fuel > 33 and not exploding); damage taken ×0.2, decays 0.33/game s [C] `EscapeRocket::SetupAttackers`, `EscapeRocket::Damage`.
+- Flight: `thrust = max(2 × √(y − ground), 0.1)`, `pos.y += thrust × dt`. Ticks from launch to y > 600: 248 (ground 0), 238 (50), 227 (100), 215 (150), 203 (200), 176 (300) [I replay of `AdvanceFlight`].
+
+**Options.** CrateDropRate, ReinforcementTimer (default 60), ReinforcementCount (40), MaxArmour (2), TurretFrequency (7), MaxTurrets (3). No time limit, no sudden death, no retribution effect.
+
+**Per mode second** [C]: `m_timer` reset; `if (m_timeRemaining > 0) --` (it is −1: unlimited); `BackupScores()`.
+1. For each non-special team with `m_rocketId == −1`: find the `TypeEscapeRocket` building owned by that team (last match in building order) → `m_rocketId`.
+2. For each non-special team: `score = 0`; if its rocket exists: `score = (int) fuel`, then `+= passengers`, then `+= (rocket.y − groundHeight)` (int truncation at each step). If the rocket is in Flight and `pos.y > 600` → `DeclareWinner(t)`; local winner with rocket damage ≤ 0.01 and no other used non-special team's rocket above 50 fuel → `GiveAchievement(UncladSkies)`; `break` — the lowest team index wins simultaneous launches.
+
+Every tick (outside the per-second block): `AdvanceTrunkPorts()` (§4.5 reinforcements).
+
+**Scoring formula.** Display/rank score `= ⌊fuel⌋ + passengers + ⌊height above ground⌋` (fuel 0–100, passengers 0–100). Victory is absolute world height 600, independent of score.
+
+**Win / lose / draw.** First rocket above y = 600 wins; there is no draw, no elimination, no time limit; a game in which no rocket launches never ends [C]. Launch timeline from boarding complete: ~1 tick Ignition + 101 Ready + 200 Countdown + 176–248 Flight + up to 11 ticks until the next mode-second check ≈ **49–56 game s** [I replay].
+
+**Reinforcements** [C] `Multiwinia::AdvanceTrunkPorts` ([05 §6](05_economy_and_population.md#6-reinforcement-systems)): every owned trunk port emits `ReinforcementCount` Darwinians per wave unless population-locked; wave period `ReinforcementTimer` mode s (60 → 660 ticks = 66 game s; first wave on the first post-grace tick, second after 649 ticks); per port an Armour task if `CountNumTasks(Armour) < MaxArmour`, targeted 75 units in front of the port; turret task on waves 1, 8, 15 … (`TurretFrequency` 7) while `CountNumTasks(GunTurret) < MaxTurrets`; `nogunturrets` (`mp_rocketriot_3P_3`) disables turrets. Trunk ports are the **only** Darwinian source (no spawn points owned by players; 8 starting Darwinians per position only on `3P_3`).
+
+**Population cap.** `PopulationCap / NumPlayers` (450–900), applied per port per wave.
+
+**Crates.** Armour crate invalid in Rocket Riot (armour comes from ports); Harvester / Engineer / Spawn Mania valid only on maps with (neutral) spawn points (`2P_2`, `4P_1`) [C] `Crate::IsValid`.
+
+**AI.** RocketRiot priority model plus marker pins on panel fields; armour ferries Darwinians; rocket defence turrets (not Easy); no formation officers — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Score line: "<name>  DMG d% fuel f% (+Npsi) passengers p/100" — DMG part only if damage > 0, psi part (`m_refuelRate × 100`) only if > 0, passengers only if > 0; during Countdown it alternates every 0.5 wall-clock s with "LIFTOFF IN *S" (`countdown + 1`). Scoreboard box 530 wide. **Rocket status panel** (top right, width 0.2 × ScreenH, height 1.5 × width): team-coloured fuel column, cracked overlay by damage, 10 × 10 passenger grid, engine flame in Ready/Countdown/Flight, captions in priority order "YOUR ROCKET IS UNDER ATTACK! DAMAGE n%", countdown number, "LIFTOFF!", "Your Rocket is on FIRE!", "Load your rocket with 100 Multiwinians", "Capture solar panels to begin refueling rocket", "Fuel nn.n%" [C] `code/rocket_status_panel.cpp`; full layout in [09](09_meta_systems.md). Game-over list: names only.
+
+**End of game.** §2.11.
+
+**Achievement hook.** UncladSkies.
+
+**Maps.**
+
+*Map table — RocketRiot (retail data set, 7 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_rocketriot_2P_4.txt` | Bridge of Light | 2 | basic | - | 1500 → 750 | - | - | Armour | 0 (-) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 6 | 0 | - |
+| 1 | `mp_rocketriot_2P_2.txt` | Echoes of the Future | 2 | intermediate | - | 1500 → 750 | - | - | - | 2 (255:2) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 10 | 0 | - |
+| 2 | `mp_rocketriot_2p_3.txt` | Stairway to Heaven | 2 | intermediate | - | 1800 → 900 | - | - | - | 0 (-) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 6 | 0 | - |
+| 3 | `mp_rocketriot_3p_1.txt` | The Second Beginning | 3 | basic | - | 1800 → 600 | - | - | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 15 | 0 | Y |
+| 4 | `mp_rocketriot_3P_2.txt` | Wake of Eternity | 3 | intermediate | - | 1800 → 600 | - | - | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 21 | 0 | - |
+| 5 | `mp_rocketriot_3P_3.txt` | Heart of Chaos | 3 | advanced | - | 1800 → 600 | - | nogunturrets | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 15 | 24 | - |
+| 6 | `mp_rocketriot_4P_1.txt` | Threads of Fate | 4 | advanced | - | 1800 → 450 | - | - | - | 12 (255:12) | 0:1;1:1;2:1;3:1 | rockets 0:1;1:1;2:1;3:1, fuel stations 0:3;1:3;2:3;3:3, markers 17 | 0 | - |
+
+**Level conventions** [C data]: per position 1 `EscapeRocket` (fields `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), 3 `FuelStation`s, 1 `TrunkPort`, 3 team-owned `Pylon`s, 3 `FuelGenerator`s (team-owned on `2P_2`, `2p_3`, `3p_1`; neutral on `2P_4`, `3P_2`, `3P_3`, `4P_1`), `FuelPipe` chains, shared neutral grid (15–24 `SolarPanel`, 3–5 `PowerSplitter`, 3 `PylonEnd` per position); `AIObjectiveMarker`s (6–21) for the CPU. No `LevelOptions` needed (waves are intrinsic to the mode); `3P_3` sets `nogunturrets` and has 6 neutral gun turrets; `2P_4` bans Armour crates.
+
+### 4.6 Blitzkrieg (`GameTypeBlitzkreig`) [B:FULL]
+
+**Objective.** Capture flags (`MultiwiniaZone`s linked into a graph). When a team's home flag is captured by an enemy **and** that enemy holds an unbroken chain of fully-owned flags from it back to the enemy's own home flag, the team is eliminated. Last team standing wins; at time-up, flags held + 10 × eliminations decide [C] `code/multiwinia.cpp:Multiwinia::AdvanceBlitkrieg`, `DoesBlitzkriegRouteExist`, `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_Blitzkrieg`, `MultiwiniaZone::IsBlitzkriegZoneLocked`, `MultiwiniaZone::GetBlitzkriegPriority`.
+
+**Team structure.** Free-for-all 2–4 (no co-op map).
+
+**Mode-specific objects** ([03 §8.1–§8.2](03_buildings_and_world_objects.md#8-mode-objective-objects)):
+- **Flags.** Level zones carry `<size> [<linkId> …]`. At load each team-owned zone becomes that team's **home flag** (`s_blitzkriegBaseZone[team] = id`) and is then set neutral — every flag starts neutral. On the first post-grace tick each zone is counted into `s_numMultiwiniaZones` (accumulating — §6 B4) and every link is made bidirectional (reverse link appended).
+- **Initial state** of every flag (constructor): `m_blitzkriegOwnership = 0`, `m_blitzkriegCaptureTeam = 255`, `m_blitzkriegUpOrDown = 0`, `m_blitzkriegLocked = true`, `m_teamCount[]` all 0, `m_blitzkriegUnderAttackMessageTimer = 0`, `m_recountTimer = 0` — so the first recount (which first evaluates the lock) runs on the first post-grace tick, as soon as game time exceeds 0 [C] `MultiwiniaZone::MultiwiniaZone`, `MultiwiniaZone::Advance_Blitzkrieg`.
+- **Locking** (`IsBlitzkriegZoneLocked`, evaluated at each recount): a neutral home flag is unlocked; a partially owned flag (0 < ownership < 100) is unlocked; otherwise a flag is locked iff no linked flag is owned by a **different** team (neutral neighbours do not unlock). Capture therefore spreads outward from home flags along links; a neutral non-home flag whose neighbours are all neutral is locked.
+- **Capture** (each recount, every 1.0 game s = 10–11 ticks): if unlocked, count per used team its non-dead, non-burning, not-in-armour Darwinians within **40 units** (not `m_size`) → leader = strictly highest. If locked, counts are not refreshed and there is no leader. Ownership progress `m_blitzkriegOwnership ∈ [0, 100]` with a `m_blitzkriegCaptureTeam`:
+  - leader present: `change = 5 × top × (top / total)`; if the flag is owned, captureTeam = owner. Leader ≠ captureTeam → `ownership −= change × dt`, at ≤ 0 → flag neutral, captureTeam = leader. Leader = captureTeam → `ownership += change × dt`, at ≥ 100 → flag owned by the leader.
+  - no leader: neutral flag → `ownership −= 10 × dt` (at ≤ 0 captureTeam = 255); owned flag → unchanged.
+  - Because the update runs once per recount but scales by one tick's dt, the effective rate is `0.5 × top² / total` points per recount: 20 uncontested Darwinians capture a neutral flag (0 → 100) in 10 recounts ≈ 10.5 game s; an enemy flag must first be driven to 0 and then to 100, i.e. twice as long [C code; I arithmetic].
+  - `m_blitzkriegUpOrDown` = sign of the last change (flag icon up / down / level; "locked" icon when locked).
+- **Base-under-attack message** "Your Base Is Under Attack!" (`dialog_baseunderattack`) for the local team's own home flag when enemies are within `m_size`; throttle `m_blitzkriegUnderAttackMessageTimer = 20.0`, but it is decremented by dt **once per recount**, so the real throttle is 200 recounts ≈ 210 game s, not 20 s. Resolved: P02 said "at most every 20 game s"; the decrement sits inside the recount block [C] `MultiwiniaZone::Advance_Blitzkrieg`.
+- **AI pins.** Each recount the nearest `AITarget` gets per-team priority `GetBlitzkriegPriority` (Standard/Hard) or 1.0 (Easy) — [07 §12](07_ai.md#12-per-mode-strategies).
+- Trunk ports (one per position; neutral extra on `2P_3`, `2P_4`).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral : all flags start neutral
+    Neutral --> Capturing : unlocked and a leader present, progress rises
+    Capturing --> Neutral : no Darwinians, progress decays to 0
+    Capturing --> Capturing : a different leader drives progress down then takes over at 0
+    Capturing --> Owned : progress reaches 100
+    Owned --> Locked : no linked flag owned by another team
+    Locked --> Owned : a linked flag becomes enemy owned
+    Owned --> Contested : enemy leader, progress falls
+    Contested --> Owned : owner leads again, progress rises
+    Contested --> Neutral : progress reaches 0
+```
+
+**Options.** TimeLimit 0–60 (default 15, 0 = unlimited), CrateDropRate, ReinforcementTimer (60), ReinforcementCount (40), MaxArmour (2), TurretFrequency (2), RetributionMode, SuddenDeath, MaxTurrets (2).
+
+**Per tick:** `AdvanceTrunkPorts()` (before the per-second block), and a second time from `Multiwinia::Advance` on the three maps with `trunkportreinforcements` (§6 B3).
+
+**Per mode second** [C]:
+1. `if (m_timeRemaining > 0) --`; `BackupScores()`.
+2. **Elimination:** for each live, used, non-special team t whose home flag is owned by another team A (not 255): if `DoesBlitzkriegRouteExist(home_t, A, ∅)` → `EliminateTeam(t)`, `Team::Eliminate()`, `score(t) = g_gameTimer.GetGameTime()` (seconds survived), `++m_numEliminations[A]`.
+   - `DoesBlitzkriegRouteExist(zone, A, visited)`: false if visited; false if the zone is not owned by A; false if `ownership < 100` and `UpOrDown < 0` (being recaptured breaks the chain); mark visited; true if the zone is A's home flag; else depth-first over its links with backtracking [C].
+3. **Status score** for each live used non-special team by its home flag: neutral → 10003 (shown "Under Threat"); enemy-owned → 10001 "ENEMY OCCUPIED"; own and unlocked → 10004 "Under Threat"; own and locked → 10005 "Safe". (10002 "Under Attack" is never assigned.)
+4. `winningTeam` = the only live used non-special team if exactly one remains, −2 if several, −1 if none.
+5. **Time-up** (`m_timeRemaining <= 0 && !m_unlimitedTime`): `realScore(i) = flagsOwned(i) + 10 × m_numEliminations(i)` for every slot 0–5 that is not `m_eliminated` (unused slots and special teams included); highest wins; equal → 255 (so all-zero → draw).
+6. If draw and SuddenDeath = 1: first time → `Team::Eliminate()` every used non-special team whose realScore ≠ highscore, sudden death on, "Sudden Death!"; later seconds re-evaluate (time stays up) — the next flag change that breaks the tie ends the game. Else if `winningTeam >= 0` (a team, or 255 with SuddenDeath off) → `DeclareWinner`; local winner and `m_startTime <= m_timeRemaining + 300` → `GiveAchievement(BlitzMaster)` (§6 B9, B11).
+
+**Scoring formula.** While playing: status codes 10001–10005; eliminated teams: game time of elimination (< 10000). Time-up decider: `flags owned + 10 × eliminations scored`.
+
+**Win / lose / draw.** Last live non-special team; else time-up decider; tie → sudden death or draw. Special teams can hold flags and are counted in the time-up decider (a Futurewinian team owning most flags would win) but never in "last team standing" [C code; I gameplay].
+
+**Reinforcements** [C] `Multiwinia::AdvanceTrunkPorts`: options as Rocket Riot but turret cadence every 2nd wave (waves 1, 3, 5 …) and cap 2; the turret award becomes an **AirStrike** task when the team owns ≥ `(s_numMultiwiniaZones + 1) / 2` flags (integer division) or more than the level's `airstrikecapturezones` flags (3 on `3P_1`, `3P_2`, `4P_2`). On the three maps with `trunkportreinforcements 100 trunkportarmour 3` (`2p_1`, `2P_3`, `2p_2`) the mode options still win (40 per port, armour cap 2 — the level values are ignored), but the waves run twice per tick: every 330 ticks (33 game s) instead of 660 [C code; tick count by replay; agrees with [05 §6.4](05_economy_and_population.md#6-reinforcement-systems)].
+
+**Population cap.** `PopulationCap / NumPlayers` (350–1000).
+
+**Crates.** Armour crate invalid on the three `trunkportarmour` maps; Harvester / Engineer / Spawn Mania only where spawn points exist.
+
+**AI.** Assault-style diffusion seeded by zone pins; armour zone assaults and turret rushes; no formation officers — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD.** Per team status text: "Eliminated" / "ENEMY OCCUPIED" / "Under Threat" / "Safe" (both `unoccupied` and `underattack` strings also read "Under Threat"); no numeric scores; game-over list not drawn. Flag rendering: cloth `Flag` on a pole at the zone, raised by `100 − ownership` units when partially owned, textures `icons/flag.bmp`, `flag_up.bmp`, `flag_down.bmp`, `flag_locked.bmp` recoloured per team; ring segments: owned fraction in the owner's/capturer's colour, remainder grey [C] `MultiwiniaZone::RenderBlitzkrieg`, `RenderAlphas`.
+
+**End of game.** §2.11.
+
+**Achievement hook.** BlitzMaster (condition effectively always true on a win).
+
+**Maps.**
+
+*Map table — Blitzkrieg (retail data set, 7 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_blitzkrieg_2p_1.txt` | Confrontation Point | 2 | basic | - | 1500 → 750 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 1 (255:1) | 0:1;1:1 | flags 3 (0:1;1:1;255:1; r 100.00) | 80 | - |
+| 1 | `mp_blitzkrieg_2P_3.txt` | The Eye of the World | 2 | intermediate | - | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 4 (255:4) | 0:1;1:1;255:1 | flags 3 (0:1;1:1;255:1; r 100.00) | 0 | - |
+| 2 | `mp_blitzkrieg_2p_2.txt` | The Bleak Mountains | 2 | advanced | - | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 6 (0:2;1:2;255:2) | 0:1;1:1 | flags 5 (0:1;1:1;255:3; r 100.00) | 16 | - |
+| 3 | `mp_blitzkrieg_2P_4.txt` | The Apex of Infinity | 2 | advanced | - | 1800 → 900 | - | nogunturrets | - | 3 (255:3) | 0:1;1:1;255:1 | flags 6 (0:1;1:1;255:4; r 100.00) | 72 | - |
+| 4 | `mp_blitzkrieg_3P_2.txt` | The Wheel | 3 | basic | - | 2000 → 666 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1 | flags 7 (0:1;1:1;2:1;255:4; r 75.00) | 0 | - |
+| 5 | `mp_blitzkrieg_3P_1.txt` | Upon the Blazing Sea | 3 | intermediate | - | 1500 → 500 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1 | flags 7 (0:1;1:1;2:1;255:4; r 100.00) | 45 | - |
+| 6 | `mp_blitzkrieg_4P_2.txt` | Gridlock | 4 | advanced | - | 1400 → 350 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1;3:1 | flags 9 (0:1;1:1;2:1;3:1;255:5; r 100.00) | 0 | - |
+
+**Flag graphs** (id : owner position → links as written in the file; made bidirectional at start) [C data]:
+
+| Map | Flags |
+|---|---|
+| mp_blitzkrieg_2p_1 | 4:255→6; 5:p0→4; 6:p1→— |
+| mp_blitzkrieg_2p_2 | 0:p0→—; 1:255→0; 2:255→1; 3:p1→4; 4:255→2 |
+| mp_blitzkrieg_2P_3 | 0:255→1; 1:p0→—; 2:p1→0 |
+| mp_blitzkrieg_2P_4 | 0:p0→2,4; 1:p1→—; 2:255→3; 3:255→1; 4:255→5; 5:255→1 |
+| mp_blitzkrieg_3P_1 | 0:p0→4; 1:p1→5; 2:p2→5,3; 3:255→0; 4:255→1; 5:255→6; 6:255→4,3 |
+| mp_blitzkrieg_3P_2 | 0:p0→2,3,1; 1:255→6; 2:255→6; 3:255→4; 4:p1→2,5; 5:255→6; 6:p2→— |
+| mp_blitzkrieg_4P_2 | 1:p1→8,11; 2:p0→10; 4:p2→—; 6:p3→9; 8:255→4; 9:255→4; 10:255→6; 11:255→2; 12:255→10,9,8,11 |
+
+**Level conventions** [C data]: one team-owned zone per position = home flag, 1–5 neutral flags, radius 100 (75 on `3P_2`); one trunk port per position on all seven maps; the 2-player maps also carry spawn points (`2p_2`: 2 per position + 2 neutral; others 1–4 neutral); 2-player maps use `trunkportreinforcements 100 trunkportarmour 3` except `2P_4` (`nogunturrets`); 3- and 4-player maps use `airstrikecapturezones 3`. Blitzkrieg is the only mode in which idle Darwinians also search for flags (`Darwinian::SearchForFlags`, range `BLITZKRIEG_FLAGCAPTURE_RANGE` = 20) [C] `code/worldobject/darwinian.cpp`, `code/worldobject/multiwiniazone.h`.
+
+### 4.7 Tank Battle (`GameTypeTankBattle`) [B:DEBUG]
+
+Its rules body and its permission case are compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`); in FULL the blueprint, dispatch case and HUD branches are compiled, but the mode is invisible and unpermitted (§1.2) [C] `code/multiwinia.cpp:Multiwinia::AdvanceTankBattle`, `code/app.cpp:App::IsGameModePermitted`.
+
+| Template item | Specification |
+|---|---|
+| Objective | keep a tank alive; each team has `NumTanks` lives |
+| Team structure | free-for-all 2–4 (arena 4P flagged CoopMode) |
+| Objects | none of its own; one `Tank` instant unit per position ([02 §25](02_units_and_entities.md#25-tank)); trees |
+| Options | `NumTanks` 3–10 (default 3) |
+| Timers | none (no time limit) |
+| Per mode second | for each used non-special slot: `score = NumTanks − m_tankDeaths[t]`, `BackupScores()`; if not eliminated and the team has no `Entity::TypeTank` in `Team::m_specials` → `++m_tankDeaths[t]`; at ≥ NumTanks → `EliminateTeam(t)`; else message "*T loses a Tank!" (`multiwinia_tankloss`) and a new `GlobalResearch::TypeTank` task targeted at that team's instant-unit tank position. Then if `totalTeams − 1 == numEliminated` → `DeclareWinner(notEliminated)` |
+| Scoring | tanks remaining |
+| Win / lose / draw | last team with tanks; no draw path |
+| Population cap | none (`PopulationCap −1`) |
+| AI | `Tank::RunTankBattleAI` ([07 §10.6](07_ai.md#10-unit-level-ai-hooks-runai)) |
+| HUD | "*X Tanks" (`multiwinia_numtanks`); no game-over list |
+| End of game | §2.11 |
+
+*Map table — TankBattle (all_in_tree data set, 3 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_tankbattle_2P.txt` | 2P TankBattle Arena | 2 | basic | - | -1 → none | - | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 | 2 | - |
+| 1 | `mp_tankbattle_3P.txt` | 3P TankBattle Arena | 3 | basic | - | -1 → none | - | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 Tank@2x1 | 3 | - |
+| 2 | `mp_tankbattle_4P.txt` | 4P TankBattle Arena | 4 | basic | - | -1 → none | CoopMode | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 Tank@2x1 Tank@3x1 | 4 | - |
+
+---
+
+## 5 Cross-mode comparison
+
+| Aspect | Domination | King of the Hill | Capture the Statue | Assault | Rocket Riot | Blitzkrieg | Tank Battle [B:DEBUG] |
+|---|---|---|---|---|---|---|---|
+| Enum / token | 0 `GameTypeSkirmish` / `Domination` | 1 / `KingOfTheHill` | 2 / `CaptureTheStatue` | 3 / `Assault` | 4 / `RocketRiot` | 5 `GameTypeBlitzkreig` / `Blitzkrieg` | 6 / `TankBattle` |
+| Complexity label | Simple | Simple | Medium | Medium | Hard | Hard | Medium |
+| Retail maps | 9 | 9 | 9 | 8 | 7 | 7 | 0 |
+| Territory unit | spawn point | hill zone | statue delivered | control station | solar panel → fuel | flag | tank |
+| Score (per mode second unless stated) | owned spawn points (=, or += per s) | zones owned / zone population / final population / all-zones bonus | +1 per delivery (event) | defence time (mode s) | ⌊fuel⌋ + passengers + ⌊height⌋ | status code; time-up: flags + 10 × eliminations | tanks left |
+| Ends by | elimination of all others, or time-up | time-up | time-up | bomb destroyed or detonated | rocket above y 600 | elimination of all others, or time-up | elimination |
+| Time limit option (default) | 0–60 min (10), 0 = unlimited | 1–60 (5) | 1–60 (10) | none — bomb timer 900 / 1200 mode s (≈ 990 / 1320 game s) | none | 0–60 (15), 0 = unlimited | none |
+| Hard elimination | yes: 0 spawn points for 30 mode s (after 30 game s) | no | no | no | no | yes: home flag + connected chain | yes: NumTanks lost |
+| Soft "eliminated" (retribution) | = hard | 0 spawn points and < 50 Darwinians | same as KOTH | never | never | = hard | never |
+| Draw possible | yes (SuddenDeath off) | yes | yes | no | no | yes | no |
+| Sudden death | first single leader | +60 mode s extensions | next delivery | — | — | next tie-breaking capture | — |
+| Retribution (default) | on | on | on | runs, never grants | runs, never grants | on | runs, never grants |
+| Handicap option | yes | yes | no | yes (no effect: no spawn points) | no | no | no |
+| Starting powerups option | yes | yes | no | no | no | no | no |
+| Crate drop mode option | yes | yes | yes | no (random) | no (random) | no (random) | no |
+| Trunk-port waves | no | only `mp_koth_3P_4` (level option) | only unshipped `mp_cts_3p_3` | yes (level options) | yes (mode options) | yes (mode options; double on 3 maps) | no |
+| Mode objects | spawn network | `MultiwiniaZone` hills | `MultiwiniaZone` drop zones / spawns, `Statue` | `PulseBomb`, `ControlStation`, `TrunkPort`, AI objectives, `WallBuster` | `EscapeRocket`, `FuelStation`, `FuelGenerator`, `FuelPipe`, power grid, `TrunkPort` | `MultiwiniaZone` flags (+`Flag` cloth), `TrunkPort` | `Tank` |
+| Population cap | cap / NumPlayers | cap / NumPlayers | cap / NumPlayers | defender cap; attackers share remainder | cap / NumPlayers | cap / NumPlayers | none |
+| Mode crate rules | — | — | — | no RocketTurret, SpaceShip; no Harvester/Engineer/SpawnMania; no Armour with `trunkportarmour` | no Armour | no Armour with `trunkportarmour` | — |
+| Special teams in win check | block "last standing" while holding spawn points; can win on score | can win on score | only in the `winningTeam == −1` fallback (§4.3 step 4) | — | excluded | counted at time-up only | excluded |
+| Co-op maps | 2 | 3 | 1 | 4 (ForceCoop) | 0 | 0 | 1 |
+| AI priority model ([07 §12](07_ai.md#12-per-mode-strategies)) | Standard | Standard + hill override | CTS | Assault diffusion + objectives | RocketRiot + markers | Assault diffusion + zone pins | Standard |
+| CPU formation officers | yes (≥ 70) | yes | yes (≥ 150 idle) | no | no | no | yes |
+| Rank announcements | yes | yes | yes | no | yes | no | yes |
+| Game-over list | name score | name score | name score | none (single round) | names | none | none |
+| Achievement hook (stubbed) | Dominator | HailToTheKing | Hoarder | AggravatedAssault | UncladSkies | BlitzMaster | — |
+
+[C] §4 sections and cited code; co-op map counts [C] map tables.
+
+**Per-mode constants** (collected from §4 for implementers; each value is [C] at the function cited in its §4 section; "game s" = dt-accumulated time, "mode s" = 11 ticks):
+
+| Mode | Constant | Value |
+|---|---|---|
+| Domination | protection before elimination can start · elimination countdown | 30 game s after the first post-grace tick · 30 mode s without a spawn point |
+| King of the Hill | zone radius · recount · sudden-death extension · HailToTheKing margin | `m_size` (default 50) · every 1.0 game s · +60 mode s while tied · winner > 1.5 × second |
+| Capture the Statue | lifters (min / max) · carry radius · ownership radius and threshold · delivery check · statue spawner | 20 / 50 · 33 · 50 units, ≥ 20 Darwinians, every 1.0 game s · every 2.0 game s within 30 units · armed at `max = 60 × S / Z`, `max/2 + syncfrand(max/2)`, floor 10 mode s, new statue only > 30 units from every statue; destroyed at `up.y < 0.7` or `y < 0` |
+| Assault | station capture · victory delay · pulse wave · warnings | > 1 occupant on a bomb-linked station (> 2 unlinked) · 10 game s single round, 15 multi-round · radius 200, ×1.03 per tick · one-minute message at `m_timeRemaining ≤ 60`; bomb explosion `Bang(pos, 75, 5)` |
+| Rocket Riot | refuel · launch gates · countdowns · win · attack | `pipeCount × level × 0.4`, smoothed 0.99 / 0.01 per tick, fuel ≤ 100 · Loading at fuel ≥ 95, Ignition at > 95 and 100 passengers · Ready 10 (101 ticks), Countdown 10 at half rate (200 ticks) · `pos.y > 600` · attackers within 150 every 1–3 game s while fuel > 33; damage ×0.2, decay 0.33 per game s; explodes above damage 100, fuel falls to 50 %; fuel stations recruit within 300 |
+| Blitzkrieg | capture · neutral decay · elimination bonus · base-under-attack throttle · flag search | radius 40, `5 × top × (top / total) × dt` per recount · 10 × dt per recount · +10 per elimination at time-up · 20.0 decremented once per recount (≈ 210 game s) · Darwinians look for flags within 20 |
+
+---
+
+## 6 Known bugs that shape the shipped rules
+
+| # | Defect | Effect on shipped play | Evidence | Guidance for the new game |
+|---|---|---|---|---|
+| B1 | Every "1-second" rule countdown runs 11 ticks (ten successive subtractions of 0.1 from 1.0 leave 1.39·10⁻¹⁶ > 0) | clocks, elimination countdowns, statue timers, reinforcement waves, rank checks and the Assault bomb all run 10 % slow (a 10-minute game ≈ 659 game s; waves every 66 s; a 900 s bomb ≈ 989 game s) | [C] all `Advance*`; replay | use integer tick counters; decide explicitly whether to keep 1.1 s |
+| B2 | Recount timers (`now > last + 1.0`) run 10 or 11 ticks depending on the re-arm time (see 01-U8) | zone/flag/statue ownership cadence is irregular | [C arithmetic] exact replay ([03 §1.2](03_buildings_and_world_objects.md#12-time-base)) | integer periods |
+| B3 | `AdvanceTrunkPorts` runs twice per tick on `mp_blitzkrieg_2p_1`, `_2P_3`, `_2p_2` (level options + mode call) | waves and turret cadence twice as frequent (every 330 ticks); level `trunkportreinforcements 100` / `trunkportarmour 3` values are otherwise ignored because the mode options win; Armour crate invalid there | [C] `Multiwinia::Advance`, `AdvanceBlitkrieg`, `AdvanceTrunkPorts`, `Crate::IsValid` | call once; decide whether level or lobby values win |
+| B4 | File-static `s_numMultiwiniaZones` reset only by KOTH's per-second loop; Blitzkrieg initialisation adds to it | a second Blitzkrieg game in one process (without KOTH in between) raises the AirStrike threshold `(zones + 1)/2`; peers with different session histories compute different thresholds → turret vs AirStrike task divergence → **desync** | [C] `code/multiwinia.cpp` (`s_numMultiwiniaZones`, `AdvanceKingOfTheHill`, `AdvanceBlitkrieg`, `AdvanceTrunkPorts`) | per-match state, reset at match start |
+| B5 | Multi-round Assault (rotate positions; best defence time wins; later rounds timed by the best time) fully coded but `m_assaultSingleRound` is true forever (no UI, never set false) | Assault is always one round; attackers win iff the bomb is destroyed | [C] `code/UI/GameMenuWindow.cpp`, `code/network/clienttoserver.cpp`, grep | either expose or delete |
+| B6 | Assault `m_defendedAll` gate compares wall clock `GetHighResTime()` with game-time `m_startTime` | achievement-only; the intended 10 s grace for defenders does not exist; wall-clock read inside sim code | [C] `Multiwinia::AdvanceAssault` | never mix wall clock into simulation |
+| B7 | `App::GiveAchievement` / `EarnedAchievement` are stubs; tracker never persists | no achievement is ever awarded on PC | [C] `code/app.cpp`, `code/achievement_tracker.cpp` | — |
+| B8 | Map PlayTime vs default TimeLimit race (§3.5) | the lobby normally keeps PlayTime but may silently reset to the mode default | [C mechanism; I outcome] `LevelSelectButton::MouseUp`, `SetupMultiplayerPage`, option versions | apply map defaults server-side, once |
+| B9 | BlitzMaster tests `m_startTime <= m_timeRemaining + 300` (game-time stamp vs remaining mode seconds; original "won within 300 s" is commented out) | practically always true | [C] `AdvanceBlitkrieg` | — |
+| B10 | `GetCPUColour` re-draws `syncrand() % 4` until free — unbounded if colours 0–3 are all taken | potential hang and unbounded sync-RNG consumption if colours 0–3 were all held while a CPU slot is being coloured; with at most 4 player slots one of 0–3 is always free, so unreachable on shipped maps [I] | [C] `Multiwinia::GetCPUColour` | bounded search |
+| B11 | Blitzkrieg time-up draw with SuddenDeath off calls `DeclareWinner(255)` and then evaluates `m_teams[winningTeam]` with 255 | out-of-bounds read of the 6-element roster (undefined behaviour; only feeds the stubbed achievement) | [C] `AdvanceBlitkrieg` | validate indices |
+| B12 | Co-op game-over line names the group with the larger **score total**, not `m_winner`; exact ties name group 1 | a co-op draw is never displayed as a draw; a Domination co-op elimination win can display the other alliance if it out-scored | [C] `Multiwinia::Render` | display the declared result |
+| B13 | Domination co-op winner loop iterates `i < totalTeams` instead of all slots | with special teams counted or sparse slots, a surviving enemy in a high slot may be missed → premature win [I] | [C] `AdvanceSkirmish` | iterate all slots |
+| B14 | Blitzkrieg "base under attack" throttle decremented once per recount by dt | message at most every ≈ 210 game s instead of 20 s | [C] `MultiwiniaZone::Advance_Blitzkrieg` | per-tick timers |
+| B15 | `CountdownZeroTick` at time-up inside a `m_timeRemaining > 0` block | the zero tick never plays from the HUD | [C] `Multiwinia::Render` | — |
+| B16 | Server relays option letters from any client; only the UI restricts editing to the host | a modified client could change mode parameters in the lobby | [C] `code/network/server.cpp:Server::Advance` | authorise on the host |
+| B17 | `GetGameOption` returns −1 for absent options; `bool` conversion makes −1 true | retribution "runs" in Assault/Rocket Riot (harmless); any new boolean option would default on in modes lacking it | [C] `GetGameOption`, `Advance` | typed options with explicit per-mode defaults |
+| B18 | Rank messages use the team's own list index while ties are ordered by team id | the second member of a tie for first hears "tied for Second" | [C] `Multiwinia::Advance`; [I] intent | rank = number of strictly better teams + 1 |
+| B19 | `PulseBomb::Advance` keeps checking station capture after detonation | attackers who capture every station while the pulse wave expands would destroy the bomb and flip a defender win into an attacker win [I] | [C] `PulseBomb::Advance` | freeze the round result |
+| B20 | `EscapeRocket::Damage` excludes only Exploding | a rocket in Flight can still be destroyed and would "refuel" mid-air [I] | [C] `EscapeRocket::Damage` ([03 §8.12](03_buildings_and_world_objects.md#8-mode-objective-objects)) | make Flight invulnerable or terminal |
+| B21 | AI-mode range check `value > NumAITypes` | value 3 accepted (Hard everywhere except Blitzkrieg pins) | [C] `code/network/clienttoserver.cpp` | `>=` |
+| B22 | `GetGroupColour(m, −1)` float literals into a byte constructor | black, alpha 1/255 instead of grey | [C] `code/lib/rgb_colour.h` | — |
+| B23 | `BLITZKRIEGSCORE_UNDERATTACK` never assigned; neutral home flag reported as "Under Threat" | status display coarser than designed | [C] `AdvanceBlitkrieg`, `english.txt` | — |
+| B24 | Exit-after-game-over poll compiled only under `TESTBED_ENABLED` | players must use the in-game menu to leave | [C] `code/location_input.cpp` | — |
+| B25 | Presentation side effects (messages, sounds, help notifications, achievements, kill totals) are executed inside the lockstep rules step, keyed on the local team | harmless only while they never feed back into simulation state | [C] throughout `code/multiwinia.cpp` | keep observers out of the deterministic step |
+
+---
+
+## 7 Re-implementation notes for the new game
+
+Non-normative guidance derived from the specification above [I]:
+
+1. **Ruleset as data.** All six shipped modes share one skeleton: per-tick world update → per-second rule evaluation (score, elimination, time-up, sudden death) → declare result. Model each mode as a ruleset object with: score function, elimination predicate (hard / soft), win predicate, time-up decider, sudden-death policy, option schema (typed, with per-mode defaults instead of the "−1 = absent" convention), and HUD formatter.
+2. **One clock.** Run every rule timer as an integer tick counter; derive "seconds" for display. Keep the grace countdown in real ticks but specify it.
+3. **Explicit tie rules.** Every place where the original breaks ties by iteration order (zone owner = lowest team id, simultaneous launch = lowest id, single-round Assault winner = first slot of the side, CTS co-op winner = last slot of the group, statue spawn = first farthest zone, rocket lookup = last matching building) must be specified explicitly.
+4. **Per-match state only.** No static counters (B4); reset everything at match start; seed the synchronised RNG per match.
+5. **Special factions.** Decide whether neutral/monster factions may win or block "last team standing"; the original is inconsistent across modes (§5 row "Special teams in win check").
+6. **Authority.** Lobby options and game type must be validated by the host/server (B16); map defaults (PlayTime) applied once by the host.
+7. **Assault rotation.** If the multi-round design is wanted, expose it in the lobby; otherwise remove `ResetLocation` and the time-record winner path.
+
+---
+
+## 8 Message and HUD string catalogue (Introversion text — rewrite all copy)
+
+Every UI string id used by the mode code, with its first use at commit `f909630` and its English text, generated from `_work/drafts/P02_game_modes_strings.csv` by `S_01_mode_tables.py` [C] `data/language/english.txt`. The ids may be kept as neutral keys; the texts are IP.
+
+| # | String id | First use (file:line at f909630) | English text (IP — rewrite) |
+|---|---|---|---|
+| 1 | `multiwinia_skirmish_elimination_30` | `code/multiwinia.cpp`:L479 | You will be eliminated in 30 seconds! |
+| 2 | `multiwinia_other_elimination` | `code/multiwinia.cpp`:L483 | *T will be eliminated in 30 seconds! |
+| 3 | `multiwinia_suddendeath` | `code/multiwinia.cpp`:L527 | Sudden Death! |
+| 4 | `multiwinia_retribution` | `code/multiwinia.cpp`:L1222 | Retribution! |
+| 5 | `multiwinia_retribution_maxtasks` | `code/multiwinia.cpp`:L1229 | Retribution : Two powerups max |
+| 6 | `multiwinia_cts_newstatue` | `code/multiwinia.cpp`:L1630 | New Statue! |
+| 7 | `multiwinia_tankloss` | `code/multiwinia.cpp`:L1686 | *T loses a Tank! |
+| 8 | `dialog_oneminute` | `code/multiwinia.cpp`:L2482 | One Minute Remaining! |
+| 9 | `multiwinia_player_left` | `code/multiwinia.cpp`:L2704 | *T left the game! |
+| 10 | `multiwinia_player_eliminated` | `code/multiwinia.cpp`:L2737 | You are eliminated! |
+| 11 | `multiwinia_other_eliminated` | `code/multiwinia.cpp`:L2741 | *T is eliminated! |
+| 12 | `multiwinia_ready` | `code/multiwinia.cpp`:L2908 | READY |
+| 13 | `multiwinia_rr_passengers` | `code/multiwinia.cpp`:L2939 | passengers |
+| 14 | `multiwinia_rr_damage` | `code/multiwinia.cpp`:L2940 | DMG |
+| 15 | `multiwinia_rr_fuel` | `code/multiwinia.cpp`:L2945 | fuel |
+| 16 | `multiwinia_rr_liftoff` | `code/multiwinia.cpp`:L2951 | LIFTOFF IN *S |
+| 17 | `multiwinia_assault_holdtheline` | `code/multiwinia.cpp`:L2963 | Defend the WMD! |
+| 18 | `multiwinia_defendedfor_score` | `code/multiwinia.cpp`:L2979 | defended for *S |
+| 19 | `multiwinia_assault_ticktock` | `code/multiwinia.cpp`:L2987 | Attack and destroy the WMD! |
+| 20 | `multiwinia_numtanks` | `code/multiwinia.cpp`:L2994 | *X Tanks |
+| 21 | `multiwinia_dom_eliminatedin` | `code/multiwinia.cpp`:L3018 | Elimination in *S seconds |
+| 22 | `multiwinia_dom_eliminated` | `code/multiwinia.cpp`:L3034 | Eliminated |
+| 23 | `multiwinia_points` | `code/multiwinia.cpp`:L3039 | *X points |
+| 24 | `multiwinia_dom_spawnpoints` | `code/multiwinia.cpp`:L3050 | *X Spawn Points |
+| 25 | `multiwinia_blitzkrieg_eliminated` | `code/multiwinia.cpp`:L3065 | Eliminated |
+| 26 | `multiwinia_blitzkrieg_enemyoccupied` | `code/multiwinia.cpp`:L3071 | ENEMY OCCUPIED |
+| 27 | `multiwinia_blitzkrieg_underattack` | `code/multiwinia.cpp`:L3072 | Under Threat |
+| 28 | `multiwinia_blitzkrieg_unoccupied` | `code/multiwinia.cpp`:L3073 | Under Threat |
+| 29 | `multiwinia_blitzkrieg_underthreat` | `code/multiwinia.cpp`:L3074 | Under Threat |
+| 30 | `multiwinia_blitzkrieg_safe` | `code/multiwinia.cpp`:L3075 | Safe |
+| 31 | `multiwinia_teamscores` | `code/multiwinia.cpp`:L3279 | TEAM SCORES |
+| 32 | `multiwinia_teamscores_assault` | `code/multiwinia.cpp`:L3280 | OBJECTIVES |
+| 33 | `multiwinia_assault_unoccupied` | `code/multiwinia.cpp`:L3302 | . |
+| 34 | `multiwinia_assault_objcntrlstation` | `code/multiwinia.cpp`:L3307 | WMD Control Panel |
+| 35 | `multiwinia_assault_objpulsebomb` | `code/multiwinia.cpp`:L3311 | WEAPON OF MASS DESTRUCTION |
+| 36 | `multiwinia_assault_destroyed` | `code/multiwinia.cpp`:L3325 | DESTROYED |
+| 37 | `multiwinia_assault_defended` | `code/multiwinia.cpp`:L3329 | DEFENDED |
+| 38 | `multiwinia_assault_lost` | `code/multiwinia.cpp`:L3333 | OVERRUN |
+| 39 | `multiwinia_team_green` | `code/multiwinia.cpp`:L3381 | Green |
+| 40 | `multiwinia_team_red` | `code/multiwinia.cpp`:L3382 | Red |
+| 41 | `multiwinia_team_yellow` | `code/multiwinia.cpp`:L3383 | Yellow |
+| 42 | `multiwinia_team_blue` | `code/multiwinia.cpp`:L3384 | Blue |
+| 43 | `multiwinia_team_orange` | `code/multiwinia.cpp`:L3385 | Orange |
+| 44 | `multiwinia_team_purple` | `code/multiwinia.cpp`:L3386 | Purple |
+| 45 | `multiwinia_team_cyan` | `code/multiwinia.cpp`:L3387 | Cyan |
+| 46 | `multiwinia_team_pink` | `code/multiwinia.cpp`:L3388 | Pink |
+| 47 | `multiwinia_team_virus` | `code/multiwinia.cpp`:L3393 | Evilinians |
+| 48 | `multiwinia_team_future` | `code/multiwinia.cpp`:L3394 | Futurewinians |
+| 49 | `multiwinia_cooppoints` | `code/multiwinia.cpp`:L3398 | *T   *S points |
+| 50 | `multiwinia_defendedfor` | `code/multiwinia.cpp`:L3597 | *T defended for *S |
+| 51 | `multiwinia_reinforcements` | `code/multiwinia.cpp`:L3737 | Reinforcements in *S |
+| 52 | `multiwinia_retribution_timer` | `code/multiwinia.cpp`:L3765 | Retribution in *S |
+| 53 | `multiwinia_spawnmania_timer` | `code/multiwinia.cpp`:L3788 | SPAWN MANIA: *T |
+| 54 | `multiwinia_blitzkrieg_timer` | `code/multiwinia.cpp`:L3813 | MEGA RAGE: *T |
+| 55 | `multiwinia_nextroundin` | `code/multiwinia.cpp`:L3882 | NEXT ROUND IN: *S |
+| 56 | `multiwinia_attackers_win` | `code/multiwinia.cpp`:L3907 | Attackers Win! |
+| 57 | `multiwinia_defenders_win` | `code/multiwinia.cpp`:L3911 | Defenders Win! |
+| 58 | `multiwinia_team_win` | `code/multiwinia.cpp`:L3916 | *T Wins! |
+| 59 | `multiwinia_gameover` | `code/multiwinia.cpp`:L3954 | GAME OVER |
+| 60 | `multiwinia_isthewinner` | `code/multiwinia.cpp`:L4009 | *T is the WINNER |
+| 61 | `multiwinia_tiegame` | `code/multiwinia.cpp`:L4032 | It's a DRAW! |
+| 62 | `multiwinia_atoexit` | `code/multiwinia.cpp`:L4060 | Press START to Exit |
+| 63 | `multiwinia_spacetoexit` | `code/multiwinia.cpp`:L4064 | Press ESC to Exit |
+| 64 | `multiwinia_gamestarttimer` | `code/multiwinia.cpp`:L4146 | GAME STARTING IN *T |
+| 65 | `multiwinia_waitingforplayers` | `code/multiwinia.cpp`:L4156 | WAITING FOR PLAYERS |
+| 66 | `multiwinia_spacetostart` | `code/multiwinia.cpp`:L4160 | PRESS SPACE WHEN READY |
+| 67 | `multiwinia_atostart` | `code/multiwinia.cpp`:L4161 | PRESS A WHEN READY |
+| 68 | `multiwinia_rr_status_c` | `code/rocket_status_panel.cpp`:L299 | YOUR ROCKET IS\nUNDER ATTACK!\n\nDAMAGE *T |
+| 69 | `multiwinia_rr_status_d` | `code/rocket_status_panel.cpp`:L314 | LIFTOFF! |
+| 70 | `multiwinia_rr_status_e` | `code/rocket_status_panel.cpp`:L320 | Your Rocket\nis on\nFIRE! |
+| 71 | `multiwinia_rr_status_b` | `code/rocket_status_panel.cpp`:L325 | Load your rocket\nwith 100\nMultiwinians |
+| 72 | `multiwinia_rr_status_a` | `code/rocket_status_panel.cpp`:L330 | Capture solar\npanels to begin\nrefueling rocket |
+| 73 | `multiwinia_rr_status_f` | `code/rocket_status_panel.cpp`:L338 | Fuel *T |
+| 74 | `dialog_baseunderattack` | `code/worldobject/multiwiniazone.cpp`:L287 | Your Base Is Under Attack! |
+| 75 | `multiwinia_cts_statuecapture` | `code/worldobject/multiwiniazone.cpp`:L411 | *T captured a Statue! |
+| 76 | `objective_fuelpressure` | `code/worldobject/rocket.cpp`:L431 | Fuel Pressure |
+| 77 | `objective_fuel` | `code/worldobject/rocket.cpp`:L1013 | Fuel |
+| 78 | `objective_passengers` | `code/worldobject/rocket.cpp`:L1015 | Passengers |
+| 79 | `multiwinia_rr_refueled` | `code/worldobject/rocket.cpp`:L1129 | Your Rocket has been refueled! |
+| 80 | `multiwinia_rr_otherrefueled` | `code/worldobject/rocket.cpp`:L1133 | *T's Rocket has been refueled! |
+| 81 | `multiwinia_rr_launchprep` | `code/worldobject/rocket.cpp`:L1160 | Your Rocket is preparing for launch! |
+| 82 | `multiwinia_rr_launchprepother` | `code/worldobject/rocket.cpp`:L1164 | *T's Rocket is preparing for launch! |
+| 83 | `dialog_rocketunderattack` | `code/worldobject/rocket.cpp`:L1542 | Your Rocket is under attack! |
+| 84 | `dialog_rocketdestroyed` | `code/worldobject/rocket.cpp`:L1560 | Your Rocket is on fire! |
+| 85 | `location_unknown` | `code/worldobject/trunkport.cpp`:L140 | unknown location |
+| 86 | `dialog_oneminutewarning` | `code/worldobject/pulsebomb.cpp`:L129 | One Minute to WMD Detonation! |
+| 87 | `dialog_pulsebombdestroyed` | `code/worldobject/pulsebomb.cpp`:L387 | WMD Destroyed! |
+
+---
+
+## Open questions and unknowns
+
+| Id | Question | Status / current best reading | What would resolve it |
+|---|---|---|---|
+| 01-U1 | Does the lobby keep the map's PlayTime or the mode default TimeLimit (§3.5, B8)? | [I] usually PlayTime: the default re-request normally carries the same option version and is discarded; default wins only if the server echo arrives between the two frames | instrumented host session logging `GameOptionVersion` for `GAME_PARAM[TimeLimit]` around a map click |
+| 01-U2 | Is the 11-tick "second" (B1) intended pacing or an accident? | [I] accident of `t −= 0.1; if (t <= 0)` in double; but every shipped balance value was tuned under it | design decision for the new game (keep 1.1 s or re-tune) |
+| 01-U3 | How long does a besieged rocket survive (attackers throw grenades, damage ×0.2, decay 0.33/s)? | [U] needs grenade damage on buildings | combine [04](04_crates_powerups_and_weapons.md) grenade damage with [02 §4.4](02_units_and_entities.md#4-darwinian) AttackingBuilding rate; or measure |
+| 01-U4 | Did the retail (Steam) build have a real achievement layer replacing the stubs? | [U] not in this tree | retail binary / Steamworks integration |
+| 01-U5 | Effect of the out-of-bounds `m_teams[255]` read on a Blitzkrieg draw (B11) | [I] reads unrelated `Multiwinia` memory; result only feeds a stub | debugger on a Blitzkrieg draw with SuddenDeath off |
+| 01-U6 | Can attackers flip a detonation into a win by completing station capture during the pulse wave (B19)? | [I] code allows it; the wave kills non-friendly Darwinians, so rare | in-game test on a small Assault map |
+| 01-U7 | Can a rocket in Flight be destroyed by air strikes or nukes (B20)? | [I] code allows it | in-game test |
+| 01-U8 | Exact distribution of 10- vs 11-tick recount periods for zones, flags and statues | **Resolved** [C arithmetic]: the period depends on the re-arm time, not on a fixed ratio (10 ticks for τ ∈ [0.4, 3.0), [15.5, 63.2), [255.4, 1023.0), ≥ 4095.5 s at speed 1.0; 11 otherwise), see Conventions and [03 §1.2](03_buildings_and_world_objects.md#12-time-base) (03-U15) | — (exact replay of `code/gametimer.cpp:GameTimer::Tick`) |
+| 01-U9 | Whether the Domination co-op loop bound (B13) can end a game early on shipped co-op maps | [I] only if a hostile team sits in a slot ≥ totalTeams | enumerate slot layouts for `mp_domination_4P_1/4P_2` |
+| 01-U10 | Intended behaviour of special teams (monster, Futurewinian) in win checks — they block Domination's "last team standing" and can win KOTH and Blitzkrieg time-outs | [I] inconsistent by mode (§5) | design intent not recorded; play-test frequency of Futurewinian arrivals |
+| 01-U11 | Was multi-round Assault (manual: "play then switches around") ever enabled in a shipped patch? | [U] no control in this tree; `m_assaultSingleRound` fixed true | later source or patch notes |
+| 01-U12 | Do sudden-death losers (wiped by `Team::Eliminate`, spawn points kept) realistically recover before the tie breaks? | [I] possible in principle | play-test |
+
+Resolved during synthesis (no longer open): P02-U1 port occupancy → [03 §3.6](03_buildings_and_world_objects.md#3-building-base-class); P02-U4 capacity of an eliminated team = 2 ([06 §3.5](06_player_control_and_input.md#3-task-manager)); P02-U5 `RGBAColour` float constructor → bytes 0,0,0,1 (B22); P02-U7 PlayTime units = minutes (copied into TimeLimit); P18-U1 server does not check option senders (B16); P08 "retribution never called" → live (§2.9).
+
+## Docs-vs-code discrepancies
+
+| Doc statement (`docs/multiwinia_manual.pdf`, mode pages) | Code behaviour | Ref |
+|---|---|---|
+| Assault: "Play then switches around and the attacker becomes the defender … winner is the player who successfully attacks in the quickest time" | single round only; attackers win iff the bomb is destroyed; rotation code unreachable | `Multiwinia::AdvanceAssault`, §3.6 |
+| Assault: "sabotage the three control stations" | 3 or 4 linked stations per map (`mp_assault_4P_1`: 4) | level files |
+| Blitzkrieg: "When a player loses their home flag, they are eliminated" | also requires the capturer to hold an unbroken, not-being-recaptured chain of its flags back to its own home flag | `DoesBlitzkriegRouteExist` |
+| CTS: a shattered statue "re-appears randomly in one of the Statue Zones" | respawns after a randomised ≥ 10-mode-second timer at the neutral zone farthest from existing statues (random only when none exist) | `Multiwinia::AdvanceCaptureStatue` |
+| Rocket Riot: an explosion burns "all the fuel and all the Multiwinians inside, re-setting the rocket to its starting point" | fuel burns down to 50 % of its pre-explosion value; passengers are ejected (50 % on fire, the rest survive); rocket returns to Refueling | `EscapeRocket::AdvanceExploding` |
+| Handicap applies to "Domination, King of the Hill" | also an Assault option (where it has no effect on shipped maps) | `data/multiwinia.txt`, §2.8 |
+| Co-op "(4 players required) – Domination and King of the Hill" | any map flagged `CoopMode` / `ForceCoop`, incl. 3-player Assault maps, `mp_cts_4P_2`, `mp_tankbattle_4P` | level files |
+| KOTH "scoring one point per second for every zone under their control" (also `multiwinia_help_scores`) | true for ScoreMode 0 only; three more score modes exist; a "second" is 1.1 game s | §4.2, B1 |
+| Option text "Crate drop … 50% deviation" (`english.txt`) | matches `rate × (1.5 − U(0,1))` | `Location::AdvanceCrates` |
+| On-screen "Press ESC to Exit" | correct for FULL (Esc opens the in-game menu); the code's direct ready-key exit exists only in testbed builds | `code/location_input.cpp` |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Multiwinians", "Darwinian(s)" | brand / name | strings, class names | "the game", "units" |
+| Mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle (and "Skirmish") | name | `data/multiwinia.txt`, `multiwinia_gametype_*` | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain, Armour Duel |
+| "Evilinians", "Futurewinians" | names / characters | `multiwinia_team_virus`, `multiwinia_team_future` | Rogue faction, Future faction |
+| "WMD", "Pulse Bomb", "Trunk Port", "Retribution", "MEGA RAGE", "SPAWN MANIA", "Hot Feet", "Sudden Death" (generic) | names | strings §8, level options | Core Device, Warp Gate, Comeback Bonus, Frenzy, Spawn Surge, Speed Boost ("Sudden Death" is a generic term) |
+| Achievement names Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master of Multiwinia, Explorer, Carnage, BlitzMaster, Wrong Game, Genocide | names | `code/app.h` | Total Control, Collector, Crowned, Clean Launch, Iron Defence, Giant Slayer, Completionist, Tourist, Massacre, Lightning War, Friendly Fire, Annihilator |
+| All 87 mode UI strings (§8) and option labels/descriptions (`multiwinia_param_*`, `multiwinia_option_*`, `multiwinia_help_*`) | text | `data/language/*.txt` | rewrite all copy |
+| Map display names (49 retail + 8 unshipped, §4 map tables) and file names `mp_<mode>_<n>P_<k>` | names | the `mp_*.txt` level files (Source map), `data/language/english.txt` and the other eight language files | new map names |
+| Mode pictures `mwhelp/mode_*.bmp`, complexity icons `icons/menu_basic/intermediate/advanced.bmp`, flag textures `icons/flag*.bmp`, rocket panel art `icons/rocketstatuspanel.bmp`, `icons/rocketcracked.bmp` | art | §1.1, §2.12, §4.5–§4.6 | new art |
+| Statue shapes `carrystatue`, `carrysquaddie`, `carryglobe`, `carrytelescope`, `carryweights`, `carrycube`, `carryteapot`, `carrybillboard` (.shp); rocket, fuel, pulse-bomb and control-station shapes | art | [03 §8](03_buildings_and_world_objects.md#8-mode-objective-objects) | new models |
+| Interface sounds `CountdownTick`, `CountdownZeroTick`, `GameOver`, `YouWon`, `YouLost`, `CaptureStatue` and their samples | audio | `data/sounds.txt`, [10](10_audio_design.md) | new audio |
+| `data/multiwinia_betatesters.txt` (real people's names) | personal data | data file | do not ship |
+| Team colour palette and colour names | generic | §2.5.3 | free to reuse |
+
+## Source map
+
+| File | Role |
+|---|---|
+| `code/multiwinia.h` | `Multiwinia` rules class, game-type and AI enums, option blueprint classes, mode constants |
+| `code/multiwinia.cpp` | every mode's rules, grace period, colours, option access, retribution, trunk-port waves, HUD, ending |
+| `code/worldobject/multiwiniazone.h` | `MultiwiniaZone` class, `BLITZKRIEG_FLAGCAPTURE_RANGE` |
+| `code/worldobject/multiwiniazone.cpp` | KOTH hill ownership, CTS delivery, Blitzkrieg flag capture/locking/AI pins, zone rendering |
+| `code/worldobject/statue.h` | `Statue` class |
+| `code/worldobject/statue.cpp` | statue shapes, lifters, self-routing, destruction |
+| `code/worldobject/carryablebuilding.h` | carryable base class |
+| `code/worldobject/carryablebuilding.cpp` | statue ownership and carrying |
+| `code/worldobject/flag.h` | cloth flag class |
+| `code/worldobject/flag.cpp` | Blitzkrieg flag rendering |
+| `code/worldobject/pulsebomb.h` | `PulseBomb` class, statics |
+| `code/worldobject/pulsebomb.cpp` | Assault bomb timer, capture check, detonation, destruction |
+| `code/worldobject/controlstation.h` | `ControlStation` class |
+| `code/worldobject/controlstation.cpp` | station ownership thresholds, bomb linking |
+| `code/worldobject/rocket.h` | `EscapeRocket` and fuel-building classes, states |
+| `code/worldobject/rocket.cpp` | Rocket Riot refuel, loading, countdown, flight, explosion |
+| `code/worldobject/trunkport.h` | `TrunkPort` class |
+| `code/worldobject/trunkport.cpp` | trunk-port population lock |
+| `code/worldobject/spawnpoint.cpp` | spawn-point counters used by Domination/KOTH/CTS, handicap |
+| `code/worldobject/weapons.cpp` | `PulseWave` (Assault detonation) |
+| `code/worldobject/darwinian.cpp` | pulse-wave reaction, flag search, rocket boarding/attacking |
+| `code/worldobject/crate.cpp` | mode-specific crate validity, `CaptureCrate` used by retribution |
+| `code/worldobject/ai.cpp` | per-mode CPU branches (summary; [07](07_ai.md)) |
+| `code/worldobject/aiobjective.cpp` | Assault/Rocket Riot AI objectives (summary; [07](07_ai.md)) |
+| `code/worldobject/armour.cpp` | per-mode armour AI (summary; [07](07_ai.md)) |
+| `code/worldobject/tank.cpp` | Tank Battle tank AI [B:DEBUG] |
+| `code/worldobject/wallbuster.cpp` | Assault wall buster (object of `mp_assault_2P_1`) |
+| `code/worldobject/nuke.cpp` | co-op "Wrong Game" achievement hook |
+| `code/worldobject/building.cpp` | `BuildingIsBlocked` (Statue), `CreateBuilding` |
+| `code/gametimer.h` | `SERVER_ADVANCE_PERIOD` macro |
+| `code/gametimer.cpp` | game speed, freeze after a win, frozen clock during grace |
+| `code/team.h` | `LobbyTeam`, team types |
+| `code/team.cpp` | `Team::Eliminate` |
+| `code/globals.h` | `NUM_TEAMS` |
+| `code/location.cpp` | team positions, CPU colours, co-op groups, Assault sides, `IsFriend`, crate drops, research overwrite, `InitialiseTeam` |
+| `code/location_input.cpp` | ready toggle; testbed-only exit after game over |
+| `code/level_file.h` | `LevelOption*` enum |
+| `code/level_file.cpp` | `MultiwiniaOptions` parsing |
+| `code/game_menu.h` | `IS_DEMO` |
+| `code/game_menu.cpp` | map list per mode, map header parse, `CreateMenu` → `Reset` |
+| `code/app.h` | achievement enum, game modes |
+| `code/app.cpp` | `IsGameModePermitted`, `GamePaused`, `ToggleGamePaused`, achievement stubs, server start resets AI type |
+| `code/main.cpp` | Assault `m_resetLevel` hook |
+| `code/network/clienttoserver.h` | client-side option API |
+| `code/network/clienttoserver.cpp` | tick/slice loop calling `Multiwinia::Advance`, option letters, ready toggle, team scores |
+| `code/network/server.cpp` | relay of option letters without host check |
+| `code/network/networkvalue.cpp` | lobby option request path |
+| `code/network/network_defines.h` | `GAMEOPTION_*` ids |
+| `code/UI/GameMenuWindow.h` | lobby option bindings (`m_singleAssaultRound`) |
+| `code/UI/GameMenuWindow.cpp` | game-select, lobby, Advanced Options pages; param reset; SuddenDeath rule; host auto-start |
+| `code/UI/GameTypeButton.h` | mode buttons, default params on mode choice, complexity icons |
+| `code/UI/GameTypeImageButton.h` | mode pictures |
+| `code/UI/LevelSelectButton.h` | map choice: co-op flags, PlayTime → TimeLimit |
+| `code/UI/MapData.h` | map header record |
+| `code/UI/MapData.cpp` | map header defaults |
+| `code/UI/FancyColourButton.h` | colour / Assault side choice |
+| `code/UI/OptionDetailsButton.h` | option help text lookup |
+| `code/interface/mainmenus.cpp` | in-game Leave game buttons |
+| `code/rocket_status_panel.h` | Rocket Riot panel class |
+| `code/rocket_status_panel.cpp` | Rocket Riot panel rendering |
+| `code/achievement_tracker.h` | tracker class |
+| `code/achievement_tracker.cpp` | visited/won bitsets, kill totals (in memory) |
+| `code/multiwiniahelp.cpp` | tutorial option overrides, help notifications |
+| `code/markersystem.cpp` | statue markers |
+| `code/taskmanager.cpp` | task capacity (retribution), turret task semantics |
+| `code/lib/universal_include.h` | `INCLUDEGAMEMODE_*`, `GRACE_TIME` |
+| `code/lib/language_table.cpp` | missing phrase ids render as themselves |
+| `code/lib/rgb_colour.h` | `RGBAColour` constructors (B22) |
+| `contrib/systemiv/lib/tosser/directory.cpp` | default values of missing letter fields (server relay check) |
+| `data/multiwinia.txt` | option blueprints (shipped) |
+| `data/multiwinia-testbed.txt` | testbed blueprints [B:DEAD] |
+| `data/language/english.txt` | mode, option and HUD strings |
+| `data/language/french.txt` | translated mode strings |
+| `data/language/german.txt` | translated mode strings |
+| `data/language/italian.txt` | translated mode strings |
+| `data/language/japanese.txt` | translated mode strings |
+| `data/language/korean.txt` | translated mode strings |
+| `data/language/portuguese.txt` | translated mode strings |
+| `data/language/russian.txt` | translated mode strings |
+| `data/language/spanish.txt` | translated mode strings |
+| `data/levels/level_enum.txt` | achievement level ids 1–49 (the 49 retail maps; `mp_cts_3p_3` has none) and 50–59 (absent PDLC maps) |
+| `data/mwhelp/mode_domination.bmp` | mode picture |
+| `data/mwhelp/mode_kingofthehill.bmp` | mode picture |
+| `data/mwhelp/mode_capturethestatue.bmp` | mode picture |
+| `data/mwhelp/mode_assault.bmp` | mode picture |
+| `data/mwhelp/mode_rocketriot.bmp` | mode picture |
+| `data/mwhelp/mode_blitzkrieg.bmp` | mode picture |
+| `data/mwhelp/mode_tankbattle.bmp` | mode picture [B:DEBUG mode] |
+| `data/icons/menu_basic.bmp` | complexity icon |
+| `data/icons/menu_intermediate.bmp` | complexity icon |
+| `data/icons/menu_advanced.bmp` | complexity icon |
+| `data/icons/flag.bmp` | Blitzkrieg flag texture |
+| `data/icons/flag_up.bmp` | Blitzkrieg flag texture (gaining) |
+| `data/icons/flag_down.bmp` | Blitzkrieg flag texture (losing) |
+| `data/icons/flag_locked.bmp` | Blitzkrieg flag texture (locked) |
+| `data/icons/rocketstatuspanel.bmp` | Rocket Riot panel overlay |
+| `data/icons/rocketcracked.bmp` | Rocket Riot panel damage overlay |
+| `tools/multiwinia_exclusions.txt` | retail data exclusions (which maps ship) |
+| `docs/multiwinia_manual.pdf` | mode descriptions (docs-vs-code) |
+| `data/levels/mp_assault_2P_1.txt` | Assault map, 2 players (ships in retail data) |
+| `data/levels/mp_assault_2P_2.txt` | Assault map, 2 players (ships in retail data) |
+| `data/levels/mp_assault_2p_3.txt` | Assault map, 2 players (ships in retail data) |
+| `data/levels/mp_assault_3P_2.txt` | Assault map, 3 players (ships in retail data) |
+| `data/levels/mp_assault_3p_1.txt` | Assault map, 2 players (ships in retail data) |
+| `data/levels/mp_assault_3p_3.txt` | Assault map, 3 players (ships in retail data) |
+| `data/levels/mp_assault_4P_1.txt` | Assault map, 4 players (ships in retail data) |
+| `data/levels/mp_assault_4P_2.txt` | Assault map, 4 players (ships in retail data) |
+| `data/levels/mp_assault_stress.txt` | level with `GameTypes none` — never listed by the menu (not in retail data) |
+| `data/levels/mp_benchmark_1.txt` | level with `GameTypes none` — never listed by the menu (not in retail data) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | Blitzkrieg map, 2 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | Blitzkrieg map, 2 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | Blitzkrieg map, 2 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | Blitzkrieg map, 2 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | Blitzkrieg map, 3 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | Blitzkrieg map, 3 players (ships in retail data) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | Blitzkrieg map, 4 players (ships in retail data) |
+| `data/levels/mp_cts_2p_1.txt` | CaptureTheStatue map, 2 players (ships in retail data) |
+| `data/levels/mp_cts_2p_2.txt` | CaptureTheStatue map, 2 players (ships in retail data) |
+| `data/levels/mp_cts_2p_3.txt` | CaptureTheStatue map, 2 players (ships in retail data) |
+| `data/levels/mp_cts_2p_4.txt` | CaptureTheStatue map, 2 players (ships in retail data) |
+| `data/levels/mp_cts_3P_2.txt` | CaptureTheStatue map, 3 players (ships in retail data) |
+| `data/levels/mp_cts_3p_1.txt` | CaptureTheStatue map, 3 players (ships in retail data) |
+| `data/levels/mp_cts_3p_3.txt` | CaptureTheStatue map, 3 players (not in retail data) |
+| `data/levels/mp_cts_4P_1.txt` | CaptureTheStatue map, 4 players (ships in retail data) |
+| `data/levels/mp_cts_4P_2.txt` | CaptureTheStatue map, 4 players (ships in retail data) |
+| `data/levels/mp_cts_4p_3.txt` | CaptureTheStatue map, 4 players (ships in retail data) |
+| `data/levels/mp_domination_2P_1.txt` | Domination map, 2 players (ships in retail data) |
+| `data/levels/mp_domination_2P_2.txt` | Domination map, 2 players (ships in retail data) |
+| `data/levels/mp_domination_3P_1.txt` | Domination map, 3 players (ships in retail data) |
+| `data/levels/mp_domination_4P_1.txt` | Domination map, 4 players (ships in retail data) |
+| `data/levels/mp_domination_4P_2.txt` | Domination map, 4 players (ships in retail data) |
+| `data/levels/mp_koth_2P_1.txt` | KingOfTheHill map, 2 players (ships in retail data) |
+| `data/levels/mp_koth_2P_2.txt` | Domination map, 2 players (ships in retail data) |
+| `data/levels/mp_koth_2P_3.txt` | Domination map, 2 players (ships in retail data) |
+| `data/levels/mp_koth_2P_3b.txt` | KingOfTheHill map, 2 players (ships in retail data) |
+| `data/levels/mp_koth_3P_1.txt` | KingOfTheHill map, 3 players (ships in retail data) |
+| `data/levels/mp_koth_3P_2.txt` | KingOfTheHill map, 3 players (ships in retail data) |
+| `data/levels/mp_koth_3P_3.txt` | KingOfTheHill map, 3 players (ships in retail data) |
+| `data/levels/mp_koth_3P_4.txt` | KingOfTheHill map, 3 players (ships in retail data) |
+| `data/levels/mp_koth_4P_1.txt` | KingOfTheHill map, 4 players (ships in retail data) |
+| `data/levels/mp_koth_4P_3.txt` | KingOfTheHill map, 4 players (ships in retail data) |
+| `data/levels/mp_koth_4P_4.txt` | KingOfTheHill map, 4 players (ships in retail data) |
+| `data/levels/mp_rocketriot_2P_2.txt` | RocketRiot map, 2 players (ships in retail data) |
+| `data/levels/mp_rocketriot_2P_4.txt` | RocketRiot map, 2 players (ships in retail data) |
+| `data/levels/mp_rocketriot_2p_3.txt` | RocketRiot map, 2 players (ships in retail data) |
+| `data/levels/mp_rocketriot_3P_2.txt` | RocketRiot map, 3 players (ships in retail data) |
+| `data/levels/mp_rocketriot_3P_3.txt` | RocketRiot map, 3 players (ships in retail data) |
+| `data/levels/mp_rocketriot_3p_1.txt` | RocketRiot map, 3 players (ships in retail data) |
+| `data/levels/mp_rocketriot_4P_1.txt` | RocketRiot map, 4 players (ships in retail data) |
+| `data/levels/mp_sandbox.txt` | level with `GameTypes none` — never listed by the menu (not in retail data) |
+| `data/levels/mp_sandbox_all.txt` | level with `GameTypes none` — never listed by the menu (not in retail data) |
+| `data/levels/mp_skirmish_2p_4.txt` | Domination map, 2 players (ships in retail data) |
+| `data/levels/mp_skirmish_3P_1.txt` | Domination map, 3 players (ships in retail data) |
+| `data/levels/mp_tankbattle_2P.txt` | TankBattle arena [B:DEBUG] (mode not permitted in FULL; not in retail data) |
+| `data/levels/mp_tankbattle_3P.txt` | TankBattle arena [B:DEBUG] (mode not permitted in FULL; not in retail data) |
+| `data/levels/mp_tankbattle_4P.txt` | TankBattle arena [B:DEBUG] (mode not permitted in FULL; not in retail data) |
+
+## Appendix — dead/legacy code
+
+- `Multiwinia::AdvanceChess` (score backup only) and `Multiwinia::AdvanceShaman` (scores 200; portal scoring commented out) — never dispatched; `GameTypeShaman` case commented out [B:DEAD in effect] [C] `code/multiwinia.cpp`.
+- Commented-out older `AdvanceBlitkrieg` (win by locking all zones, squad-drop retribution at a random high flat spot, BlitzMaster within 300 s) [C] `code/multiwinia.cpp`.
+- Commented-out KOTH random zone spawner using non-existent options `NumberOfZones`, `ZoneSize`, `ZoneMoveFrequency` (and `MultiwiniaZone::m_life`) [C].
+- Commented-out retribution variant "spawn 25–34 Darwinians at a random spot" [C] `code/multiwinia.cpp` (after `AdvanceRetribution`).
+- `Multiwinia::GameOver()` tail after the first `return` (old per-mode end checks, 5 s victory timer, rocket check, `m_timeRemaining == 0`); `m_rocketsFound` used only there [C].
+- Commented-out Assault objectives HUD (`multiwinia_assault_obj*` strings) [C] `Multiwinia::Render`.
+- Multi-round Assault path (`ResetLocation`, time-record winner, "NEXT ROUND IN") — compiled, unreachable (B5).
+- Tank Battle mode [B:DEBUG] (`INCLUDEGAMEMODE_TANKBATTLE`).
+- `data/multiwinia-testbed.txt`, testbed auto-ready and game-over exit in `code/location_input.cpp` [B:DEAD] (`TESTBED_ENABLED`).
+- `MULTIWINIA_DEMOONLY` emptied mode bodies [B:DEMO-only target].
+- `MultiwiniaZone::m_aiTarget` priority code (never assigned), `m_numStandardLinks` (unused), `PulseBomb::m_active` (unused), `BLITZKRIEGSCORE_UNDERATTACK` (never assigned), `m_teamsStatus` (write-only), `GetMaxPointsAvail` result (never shown), `CheckMentorAchievement` (stub), `AchievementTracker::Load/Save` (stubs) [C].
+- Darwinia branches of the rocket and trunk port (`SafeToLaunch`, spectacle, 18 s ignition / 120 s ready with `launchpad_victory.txt`, scripted attacker spawns by building ids 18/51/52/54, destination labels, `ReprogramComplete`) [B:LEGACY] — see [03 §8](03_buildings_and_world_objects.md#8-mode-objective-objects).
+- `code/worldobject/chess.cpp` reads options `TotalSize` / `SizeVariance` that no blueprint defines (blocked old objects) [B:LEGACY].
