@@ -4,13 +4,13 @@ Documents scanned for citations: 21 (01_game_modes.md, 02_units_and_entities.md,
 
 Manifest entries: 6189; live source files: 776; data files: 2332
 
-Distinct manifest files cited: 3261; directories cited: 81
+Distinct manifest files cited: 3134; directories cited: 81
 
-Evidence tags in documents: {'[C]': 4623, '[I]': 567, '[U]': 112}
+Evidence tags in documents: {'[C]': 4809, '[I]': 592, '[U]': 117}
 
 World-object classes found in code/worldobject/*.h: 159
 
-### (a) live source files never cited — 47
+### (a) live source files never cited — 44
 - code/entity_grid_cache.h
 - code/keygen.h
 - code/lib/auto_vector.h
@@ -31,7 +31,6 @@ World-object classes found in code/worldobject/*.h: 159
 - code/network/network_quality.cpp
 - code/network/network_quality.h
 - code/network/servertoclient.cpp
-- code/network/servertoclientletter.h
 - code/network/syncdiff.h
 - code/obstruction_grid.h
 - code/routing_system.h
@@ -48,18 +47,16 @@ World-object classes found in code/worldobject/*.h: 159
 - contrib/systemiv/lib/netlib/net_socket_listener.h
 - contrib/systemiv/lib/netlib/net_socket_session.h
 - contrib/systemiv/lib/netlib/net_udp_packet.cpp
-- contrib/systemiv/lib/network_stream.h
 - contrib/systemiv/lib/string_utils.cpp
 - contrib/systemiv/lib/string_utils.h
 - contrib/systemiv/lib/tosser/bounded_array.h
 - contrib/systemiv/lib/tosser/btree.h
-- contrib/systemiv/lib/tosser/directory.h
 - contrib/systemiv/lib/tosser/fast_darray.h
 - contrib/systemiv/lib/tosser/hash_table.h
 - contrib/systemiv/lib/tosser/sorting_hash_table.h
 - contrib/systemiv/lib/unicode/unicode_text_stream_reader.h
 
-### (b) data files never cited — 435
+### (b) data files never cited — 568
 - data/Untitled Gradients.grd
 - data/icons/background.bmp
 - data/icons/banner_absorb.bmp
@@ -90,6 +87,43 @@ World-object classes found in code/worldobject/*.h: 159
 - data/icons/key_c.bmp
 - data/icons/scrollbar.bmp
 - data/locations.txt
+- data/mwsounds/Attack1.ogg
+- data/mwsounds/Attack10.ogg
+- data/mwsounds/Attack11.ogg
+- data/mwsounds/Attack12.ogg
+- data/mwsounds/Attack13.ogg
+- data/mwsounds/Attack14.ogg
+- data/mwsounds/Attack15.ogg
+- data/mwsounds/Attack16.ogg
+- data/mwsounds/Attack17.ogg
+- data/mwsounds/Attack18.ogg
+- data/mwsounds/Attack19.ogg
+- data/mwsounds/Attack2.ogg
+- data/mwsounds/Attack20.ogg
+- data/mwsounds/Attack21.ogg
+- data/mwsounds/Attack23.ogg
+- data/mwsounds/Attack3.ogg
+- data/mwsounds/Attack32.ogg
+- data/mwsounds/Attack33.ogg
+- data/mwsounds/Attack34.ogg
+- data/mwsounds/Attack35.ogg
+- data/mwsounds/Attack36.ogg
+- data/mwsounds/Attack37.ogg
+- data/mwsounds/Attack38.ogg
+- data/mwsounds/Attack39.ogg
+- data/mwsounds/Attack4.ogg
+- data/mwsounds/Attack40.ogg
+- data/mwsounds/Attack41.ogg
+- data/mwsounds/Attack42.ogg
+- data/mwsounds/Attack43.ogg
+- data/mwsounds/Attack44.ogg
+- data/mwsounds/Attack45.ogg
+- data/mwsounds/Attack46.ogg
+- data/mwsounds/Attack5.ogg
+- data/mwsounds/Attack6.ogg
+- data/mwsounds/Attack7.ogg
+- data/mwsounds/Attack8.ogg
+- data/mwsounds/Attack9.ogg
 - data/mwsounds/Attention1.ogg
 - data/mwsounds/Attention2.ogg
 - data/mwsounds/Attention3.ogg
@@ -123,15 +157,65 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/CrateFall6.ogg
 - data/mwsounds/CrateFall7.ogg
 - data/mwsounds/CrateLand1.ogg
+- data/mwsounds/CrateReward_Airstrike1.ogg
+- data/mwsounds/CrateReward_AntsNest1.ogg
+- data/mwsounds/CrateReward_Armour1.ogg
+- data/mwsounds/CrateReward_Armour2.ogg
+- data/mwsounds/CrateReward_Bitzkrieg.ogg
+- data/mwsounds/CrateReward_CrateMania1.ogg
+- data/mwsounds/CrateReward_CrateMania2.ogg
+- data/mwsounds/CrateReward_CrateMania3.ogg
+- data/mwsounds/CrateReward_DarkForest1.ogg
+- data/mwsounds/CrateReward_Egg1.ogg
+- data/mwsounds/CrateReward_Egg2.ogg
+- data/mwsounds/CrateReward_Egg3.ogg
+- data/mwsounds/CrateReward_Egg4.ogg
+- data/mwsounds/CrateReward_Extinguisher.ogg
+- data/mwsounds/CrateReward_Extinguisher2.ogg
+- data/mwsounds/CrateReward_Extinguisher3.ogg
+- data/mwsounds/CrateReward_Forest1.ogg
+- data/mwsounds/CrateReward_Forest2.ogg
+- data/mwsounds/CrateReward_Formation1.ogg
+- data/mwsounds/CrateReward_Formation2.ogg
+- data/mwsounds/CrateReward_Futurewinians.ogg
+- data/mwsounds/CrateReward_GunTurret1.ogg
+- data/mwsounds/CrateReward_Harvester1.ogg
+- data/mwsounds/CrateReward_Harvester2.ogg
+- data/mwsounds/CrateReward_Harvester3.ogg
+- data/mwsounds/CrateReward_HotFeet1.ogg
+- data/mwsounds/CrateReward_Meteor2.ogg
+- data/mwsounds/CrateReward_Meteor3.ogg
+- data/mwsounds/CrateReward_Meteor4.ogg
+- data/mwsounds/CrateReward_Nuke.ogg
+- data/mwsounds/CrateReward_OtherTeam.ogg
+- data/mwsounds/CrateReward_Plague.ogg
+- data/mwsounds/CrateReward_Rage1.ogg
+- data/mwsounds/CrateReward_Rage2.ogg
+- data/mwsounds/CrateReward_Rage3.ogg
+- data/mwsounds/CrateReward_Rage4.ogg
+- data/mwsounds/CrateReward_Randomiser.ogg
+- data/mwsounds/CrateReward_Rocketwinians.ogg
+- data/mwsounds/CrateReward_Shield.ogg
+- data/mwsounds/CrateReward_SpawnMania.ogg
+- data/mwsounds/CrateReward_SpawnMania2.ogg
+- data/mwsounds/CrateReward_Squaddies.ogg
+- data/mwsounds/CrateReward_Squaddies2.ogg
+- data/mwsounds/CrateReward_Squaddies3.ogg
+- data/mwsounds/CrateReward_Squaddies4.ogg
+- data/mwsounds/CrateReward_Subversion2.ogg
+- data/mwsounds/CrateReward_Tank.ogg
+- data/mwsounds/CrateReward_Triffid.ogg
 - data/mwsounds/CrateRewrad_Darwinians1.ogg
 - data/mwsounds/CrateRewrad_Darwinians2.ogg
 - data/mwsounds/Crate_CaptureMyTeam.ogg
 - data/mwsounds/Crate_CaptureOtherTeam.ogg
 - data/mwsounds/Crate_LostCapture.ogg
+- data/mwsounds/Cratereward_Infection.ogg
 - data/mwsounds/CreateReward_AntsNest1.ogg
 - data/mwsounds/CreateReward_Harvester1.ogg
 - data/mwsounds/CreateReward_Harvester2.ogg
 - data/mwsounds/CreateReward_Harvester3.ogg
+- data/mwsounds/DSelect1.ogg
 - data/mwsounds/DSelect10.ogg
 - data/mwsounds/DSelect2.ogg
 - data/mwsounds/DSelect3.ogg
@@ -179,13 +263,32 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/FlameTurretLoop1.ogg
 - data/mwsounds/Formation1.ogg
 - data/mwsounds/Formation2.ogg
+- data/mwsounds/GDSpeech10.ogg
+- data/mwsounds/GDSpeech11.ogg
+- data/mwsounds/GDSpeech12.ogg
+- data/mwsounds/GDSpeech13.ogg
+- data/mwsounds/GDSpeech14.ogg
+- data/mwsounds/GDSpeech15.ogg
+- data/mwsounds/GDSpeech16.ogg
+- data/mwsounds/GDSpeech17.ogg
+- data/mwsounds/GDSpeech18.ogg
+- data/mwsounds/GDSpeech2.ogg
+- data/mwsounds/GDSpeech3.ogg
+- data/mwsounds/GDSpeech4.ogg
+- data/mwsounds/GDSpeech5.ogg
+- data/mwsounds/GDSpeech6.ogg
+- data/mwsounds/GDSpeech7.ogg
+- data/mwsounds/GDSpeech8.ogg
+- data/mwsounds/GDSpeech9.ogg
 - data/mwsounds/GameOver2.ogg
+- data/mwsounds/High1.ogg
 - data/mwsounds/High2.ogg
 - data/mwsounds/High3.ogg
 - data/mwsounds/High4.ogg
 - data/mwsounds/High5.ogg
 - data/mwsounds/High6.ogg
 - data/mwsounds/High7.ogg
+- data/mwsounds/Hit1.ogg
 - data/mwsounds/Hit10.ogg
 - data/mwsounds/Hit11.ogg
 - data/mwsounds/Hit12.ogg
@@ -265,6 +368,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/Marching5.ogg
 - data/mwsounds/MeteorHitClose1.ogg
 - data/mwsounds/MeteorHitFar1.ogg
+- data/mwsounds/MultiLobbyAmb1.ogg
 - data/mwsounds/MultiLobbyAmb10.ogg
 - data/mwsounds/MultiLobbyAmb2.ogg
 - data/mwsounds/MultiLobbyAmb3.ogg
@@ -279,6 +383,32 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/PinkNoiseLoop.ogg
 - data/mwsounds/PlayerCaptureBugle5.ogg
 - data/mwsounds/Player_Capture_Statue.ogg
+- data/mwsounds/Retreat1.ogg
+- data/mwsounds/Retreat10.ogg
+- data/mwsounds/Retreat11.ogg
+- data/mwsounds/Retreat12.ogg
+- data/mwsounds/Retreat13.ogg
+- data/mwsounds/Retreat14.ogg
+- data/mwsounds/Retreat15.ogg
+- data/mwsounds/Retreat16.ogg
+- data/mwsounds/Retreat17.ogg
+- data/mwsounds/Retreat18.ogg
+- data/mwsounds/Retreat19.ogg
+- data/mwsounds/Retreat2.ogg
+- data/mwsounds/Retreat20.ogg
+- data/mwsounds/Retreat21.ogg
+- data/mwsounds/Retreat22.ogg
+- data/mwsounds/Retreat23.ogg
+- data/mwsounds/Retreat24.ogg
+- data/mwsounds/Retreat25.ogg
+- data/mwsounds/Retreat26.ogg
+- data/mwsounds/Retreat3.ogg
+- data/mwsounds/Retreat4.ogg
+- data/mwsounds/Retreat5.ogg
+- data/mwsounds/Retreat6.ogg
+- data/mwsounds/Retreat7.ogg
+- data/mwsounds/Retreat8.ogg
+- data/mwsounds/Retreat9.ogg
 - data/mwsounds/RocketThrust2Loop.ogg
 - data/mwsounds/RocketThrustLoop.ogg
 - data/mwsounds/Rumble2_Loop.ogg
@@ -327,140 +457,7 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/theramin7.ogg
 - data/mwsounds/theramin8.ogg
 - data/mwsounds/theramin9.ogg
-- data/purity/buyme.txt
-- data/purity/map_mine.txt
-- data/purity/mission_mine_enable.txt
-- data/shapes/source/AITarget.max
-- data/shapes/source/AntHill.max
-- data/shapes/source/AnthillNew.max
-- data/shapes/source/Ark.max
-- data/shapes/source/Armour.max
-- data/shapes/source/ArmyAnt.max
-- data/shapes/source/BattleCannon.max
-- data/shapes/source/BattleCannonBarrel.max
-- data/shapes/source/BattleCannonBase.max
-- data/shapes/source/BattleCannonFull.max
-- data/shapes/source/BattleCannonTurret.max
-- data/shapes/source/BeachHeadObstruction.max
-- data/shapes/source/BlueprintConsole.max
-- data/shapes/source/BlueprintRelay.max
-- data/shapes/source/BlueprintStore.max
-- data/shapes/source/BoxCart.max
-- data/shapes/source/BridgeEnd.max
-- data/shapes/source/BridgeTower.max
-- data/shapes/source/Cannon_Bullets.max
-- data/shapes/source/Cannon_Flame.max
-- data/shapes/source/Cannon_Rocket.max
-- data/shapes/source/CarryBillboard.max
-- data/shapes/source/CarryDollar.max
-- data/shapes/source/CarryGloby.max
-- data/shapes/source/CarryGun.max
-- data/shapes/source/CarryPortalCube.max
-- data/shapes/source/CarrySpider.max
-- data/shapes/source/CarryStatue.max
-- data/shapes/source/CarryTeaPot.max
-- data/shapes/source/CarryTelescope.max
-- data/shapes/source/Cave.max
-- data/shapes/source/Centipede.max
-- data/shapes/source/CentipedeHead.max
-- data/shapes/source/ChessPiece.max
-- data/shapes/source/ConstructionYard.max
-- data/shapes/source/ConstructionYardRung.max
-- data/shapes/source/ControlPad.max
-- data/shapes/source/ControlTower.max
-- data/shapes/source/ControlTowerDish.max
-- data/shapes/source/ControlTowerNew.max
-- data/shapes/source/DisplayScreen.max
-- data/shapes/source/DisplayScreenNew.max
-- data/shapes/source/Engineer.max
-- data/shapes/source/Factory.max
-- data/shapes/source/FeedingTube.max
-- data/shapes/source/FenceSwitch.max
-- data/shapes/source/FieldGun.max
-- data/shapes/source/FieldGun3.max
-- data/shapes/source/FlyingEgg.max
-- data/shapes/source/FuelGenerator.max
-- data/shapes/source/FuelGeneratorPump.max
-- data/shapes/source/FuelPipe.max
-- data/shapes/source/FuelPipeBase.max
-- data/shapes/source/FuelStation.max
-- data/shapes/source/GarbageCollector.max
-- data/shapes/source/Generator.max
-- data/shapes/source/GlobalWorld.max
-- data/shapes/source/GodDish.max
-- data/shapes/source/GoldenScroll.max
-- data/shapes/source/GunTurret.max
-- data/shapes/source/Harvester.max
-- data/shapes/source/Incubator.max
-- data/shapes/source/IncubatorNew.max
-- data/shapes/source/LaserFence.max
-- data/shapes/source/LaserTroop.max
-- data/shapes/source/LaserTroopSliced.max
-- data/shapes/source/Library.max
-- data/shapes/source/MasterSpawnPoint.max
-- data/shapes/source/Meteor.max
-- data/shapes/source/Mine.max
-- data/shapes/source/MineCart.max
-- data/shapes/source/MinePolygon1.max
-- data/shapes/source/MinePrimitive1.max
-- data/shapes/source/Missile.max
-- data/shapes/source/Officer.max
-- data/shapes/source/PerditionWeapon.max
-- data/shapes/source/Plant.max
-- data/shapes/source/PowerStation.max
-- data/shapes/source/PrimaryUpgradePort.max
-- data/shapes/source/PulseBombControlTower.max
-- data/shapes/source/Pylon.max
-- data/shapes/source/RadarDish.max
-- data/shapes/source/ReceiverLink.max
-- data/shapes/source/Refinery.max
-- data/shapes/source/ResearchItem.max
-- data/shapes/source/Rocket.max
-- data/shapes/source/SolarPanel.max
-- data/shapes/source/SolarPanelNew.max
-- data/shapes/source/SoulDestroyerHead.max
-- data/shapes/source/SoulDestroyerTail.max
-- data/shapes/source/SpaceInvader.max
-- data/shapes/source/Spam.max
-- data/shapes/source/SpawnLink.max
-- data/shapes/source/SpawnPoint.max
-- data/shapes/source/SpawnPointMultiwinia.max
-- data/shapes/source/SpawnPointNew.max
-- data/shapes/source/SpiderLegLower.max
-- data/shapes/source/SpiderLegPart.max
-- data/shapes/source/SpiderLegUpper.max
-- data/shapes/source/SpiritProcessor.max
-- data/shapes/source/SpiritReceiver.max
-- data/shapes/source/SpiritReceiverHead.max
-- data/shapes/source/SporeGenerator.max
-- data/shapes/source/Squad.max
-- data/shapes/source/Statue.max
-- data/shapes/source/Statue_squaddie.max
-- data/shapes/source/Statue_weights.max
-- data/shapes/source/Tank_Body.max
-- data/shapes/source/Tank_Turret.max
-- data/shapes/source/Temple1.max
-- data/shapes/source/Temple2.max
-- data/shapes/source/Temple3.max
-- data/shapes/source/TrackLink.max
-- data/shapes/source/TriffidEgg.max
-- data/shapes/source/TriffidHead.max
-- data/shapes/source/Tripod.max
-- data/shapes/source/TripodLegPart.max
-- data/shapes/source/TrunkPort.max
-- data/shapes/source/TurretBarrel.max
-- data/shapes/source/TurretBase.max
-- data/shapes/source/TurretShell.max
-- data/shapes/source/Wall.max
-- data/shapes/source/Wheel.max
-- data/shapes/source/camera.max
-- data/shapes/source/emptyshell.max
-- data/shapes/source/fieldgun_shell.max
-- data/shapes/source/help.max
-- data/shapes/source/lander.max
-- data/shapes/source/rockhead.max
-- data/shapes/source/spaceship.max
-- … 35 more (see JSON)
+- … 168 more (see JSON)
 
 ### (c) data formats without a grammar — 44
 - format without grammar: level-enum
@@ -510,7 +507,7 @@ World-object classes found in code/worldobject/*.h: 159
 
 ### (d) world-object classes without behaviour spec / diagram entry — 0
 
-### (e) assets without a catalogue entry — 2119
+### (e) assets without a catalogue entry — 2115
 - data/animations/armour.bmp
 - data/animations/assault_defend.anim
 - data/animations/blitz.anim
@@ -911,9 +908,9 @@ World-object classes found in code/worldobject/*.h: 159
 - data/mwsounds/GDSpeech9.ogg
 - data/mwsounds/GameOver2.ogg
 - data/mwsounds/High1.ogg
-- … 1719 more (see JSON)
+- … 1715 more (see JSON)
 
-### Cited paths that do not exist in the manifest (possible errors) — 27
+### Cited paths that do not exist in the manifest (possible errors) — 21
 - code/lib/fixedpipeline.{h,cpp}  ← 24_rendering.md
 - code/lib/opengl_directx_dlist.{h,cpp}  ← 24_rendering.md
 - code/lib/opengl_directx_dlist_dev.{h,cpp}  ← 24_rendering.md
@@ -927,19 +924,13 @@ World-object classes found in code/worldobject/*.h: 159
 - contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}  ← 28_ui_framework.md
 - contrib/systemiv/lib/{debug_utils, memory_leak, network_stream, profiler, string_utils, filesys/*, netlib/*, metaserver/{authentication, matchmaker, metaserver}, math/{filecrc, hash, math_stubs, random_number}, tosser/*, unicode/*}  ← 28_ui_framework.md
 - data/icons/mouse_  ← 24_rendering.md
-- data/input/keyboards/<layout>.txt  ← 09_meta_systems.md
 - data/levels/map_  ← 23_terrain_and_landscape.md
 - data/levels/mp_  ← 07_ai.md, 23_terrain_and_landscape.md, 24_rendering.md
-- data/mwsounds/attack  ← 10_audio_design.md
-- data/mwsounds/cratereward_  ← 10_audio_design.md
-- data/mwsounds/gdspeech  ← 10_audio_design.md
-- data/mwsounds/retreat  ← 10_audio_design.md
 - data/sepulveda/sepulveda1..5.bmp  ← 24_rendering.md
 - data/shaders/fixedfunc  ← 24_rendering.md
 - data/shapes/<lowercased name>  ← 24_rendering.md
 - data/terrain/landscape_  ← 23_terrain_and_landscape.md, 24_rendering.md
 - data/terrain/water_  ← 23_terrain_and_landscape.md
 - data/terrain/waves_  ← 23_terrain_and_landscape.md
-- tools/<lang>language.list  ← 09_meta_systems.md
 
 ### Verbatim excerpts over 15 lines — 0

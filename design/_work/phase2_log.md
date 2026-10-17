@@ -179,3 +179,6 @@
 
 ## S01 (01_game_modes.md) — done, ~180 KB, checks pass
 - 6 shipped modes + TankBattle (debug); 39 option definitions + lobby + level-file options; Retribution live, option-gated, absent → −1 → on. 8 contradictions: game-over exit key testbed-only (players leave via in-game menu); PlayTime overwrite is a timing race (usually survives); 38 shipped option rows not 34; Blitzkrieg "base under attack" throttle ~210 s not 20 s; no-team (−1) colour = black not grey; option changes not checked against host. New: on 3 double-wave Blitzkrieg maps lobby options override level reinforcement values. 12 open items; 25 known bugs B1–B25. scripts/S_01_mode_tables.py.
+
+## S09 (09_meta_systems.md) — done, ~390 KB, checks pass
+- 7 contradictions: server never checks sender of option/start/ready commands (lobby restrictions UI-only; modified client can change any setting or start game); post-match only Esc → Exit Game returns to menu ("press Ready" path test-build-only); PageDarwinia debug-only (P20 campaign fade bug not player-visible); PlayTime vs default TimeLimit race usually map wins; P17b duplicate help key wrong (two others duplicated); saved player name is truncated one; tutorial map CRCs match → tutorial buttons active. 09-U1..U17. scripts/S_09_lang_coverage.py, S_09_source_map.py.

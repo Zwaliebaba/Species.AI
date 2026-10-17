@@ -717,14 +717,14 @@ order = [('unused', 'Never named anywhere (unused)'), ('unused-dead', 'Named onl
 out = []
 for k, title in order:
     rows = [r for r in allrows if status_key(r) == k]
-    out.append('### %s — %d files\n' % (title, len(rows)))
+    out.append('#### %s — %d files\n' % (title, len(rows)))
     out.append('| Path | Packed | Evidence |\n|---|---|---|')
     for r in rows:
         ev = r['evidence']
         out.append('| `%s` | %s | %s |' % (r['path'], md(packed(r['archive'])), md(ev)))
     out.append('')
 auth = [r for r in allrows if status_key(r) == 'authoring']
-out.append('### Authoring sources (never read by the game) — %d files\n' % len(auth))
+out.append('#### Authoring sources (never read by the game) — %d files\n' % len(auth))
 out.append('The %d `.max` files are listed with their exported `.shp` in §4.7; the remaining authoring file is `%s` (%s).\n' % (
     sum(1 for r in auth if r['path'].endswith('.max')), [r['path'] for r in auth if not r['path'].endswith('.max')][0],
     md([r['evidence'] for r in auth if not r['path'].endswith('.max')][0])))
@@ -740,6 +740,85 @@ GEN['mp_unplaced_count'] = str(len(mp_unplaced))
 xa = open(os.path.join(D, 'X2a_asset_catalogue_visual.md'), encoding='utf-8').read()
 sec = xa.split('25.11 Cross-check with `tools/FindUnusedResources.sh`', 1)[1].split('\n## ', 1)[0]
 GEN['fur_table'] = '\n'.join(l for l in sec.splitlines() if l.startswith('|'))
+
+# source map: core implementation files (hand-written roles) + every file that names an asset (from X2a_refs.csv)
+CORE = collections.OrderedDict([
+    ('code/lib/bitmap.cpp', 'BMP decoder (`LoadBmp` and line readers), pixel operations, BMP/PNG writers, texture upload `ConvertToTexture(Async)`'),
+    ('code/lib/bitmap.h', '`BitmapRGBA` class, `RGBAColour` pixel layout, header structs'),
+    ('code/lib/resource.cpp', 'resource manager: archives, loose-file lookup, texture cache and flags, bitmap store, shapes, display lists, flush/regenerate, `ListResources`, sound look-up'),
+    ('code/lib/resource.h', 'resource manager declarations, flag values `WithMipmaps`/`WithMask`/`WithAlpha`/`WithCompression`, cache container types'),
+    ('code/lib/math_utils.cpp', '`RequirePowerOfTwoTextures`, `RequireSquareTextures`, `nearestPowerOfTwo`'),
+    ('code/lib/rgb_colour.cpp', '`RGBAColour` equality (colour key compares all four channels)'),
+    ('code/lib/rgb_colour.h', '`RGBAColour` constructor (alpha defaults to 255)'),
+    ('code/lib/vector2.cpp', '`Vector2::Normalise` (zero → (0,1)) — makes the `compass_empty` branch unreachable'),
+    ('code/lib/shape.cpp', '`.shp` parser, hierarchy build, strip conversion, display lists, hit tests'),
+    ('code/lib/shape.h', '`Shape`, `ShapeFragment`, `ShapeMarker` declarations'),
+    ('code/lib/texture.cpp', 'D3D9 `Texture` wrapper [B:D3D]'),
+    ('code/lib/texture.h', '`TextureParams`, `TF_*` flags [B:D3D]'),
+    ('code/lib/text_renderer.cpp', 'font atlas discovery (`BuildUnicodeArray`), legacy 2× up-scale (`BuildOpenGlState`), glyph look-up'),
+    ('code/lib/text_renderer.h', '`TextRenderer` declarations'),
+    ('code/lib/poster_maker.cpp', 'screenshot capture → PNG (only image writer path in FULL)'),
+    ('code/lib/universal_include.h', '`TEXTURE_EXTENSION` = "bmp"; build macros gating loaders'),
+    ('code/lib/shader.cpp', 'HLSL load + `#include` handler (`globals.h`) [B:D3D]'),
+    ('code/lib/FixedPipeline.cpp', 'loads `FixedFunc0–2` shader pairs [B:D3D]'),
+    ('code/lib/opengl_directx.cpp', 'D3D9 GL emulation: texture upload with `compressed` flag, device reset → `FlushOpenGlState` [B:D3D]'),
+    ('contrib/systemiv/lib/tosser/hash_table.cpp', 'case-folding `HashTable` used for archive entries, bitmap store, shapes, display lists'),
+    ('contrib/unrar/unrar.cpp', '`UncompressedArchive`: whole-archive RAR decompression into `MemMappedFile`s'),
+    ('code/app.cpp', 'archive mount order (`App::App`, `App::Initialise`, `App::LoadSounds`), `GL_MAX_TEXTURE_SIZE`, font selection (`App::SetLanguage`)'),
+    ('code/UI/GameMenuWindow.cpp', '`PreloadTextures` (first requester of `laser.bmp`/`clouds.bmp`), thumbnail and mode-image pre-loads'),
+    ('code/taskmanager_interface.cpp', '`CreateTaskManager` decides which task-manager (and so which icon pre-loads) exists'),
+    ('code/team.cpp', 'builds `sprites/viriifull.bmp`'),
+    ('code/water.cpp', 'water/waves ramps, `water_lightmap` generation'),
+    ('code/landscape_renderer.cpp', 'landscape colour ramp (CPU), grid overlay texture'),
+    ('code/mapfile.cpp', 'custom `.mwm` maps: embedded terrain bitmaps registered with `AddBitmap`'),
+    ('code/worldobject/flag.cpp', 'team-tinted flag/banner textures (`ConvertRedChannel`)'),
+    ('code/gamecursor.cpp', 'cursor bitmaps and blurred `shadow_*` copies'),
+    ('code/markersystem.cpp', 'marker icons, green→alpha masks, `compass_empty` request'),
+    ('code/worldobject/statue.cpp', 'Capture-the-Statue mesh choice via `syncrand() % 8`, optional `carryspecialshape.shp`'),
+    ('code/worldobject/entity.cpp', 'team-coloured shape copies (`SetupTeamShape`, `ConvertShapeColoursToTeam`)'),
+    ('code/sound/sample_cache.cpp', 'sample name → `sounds/` then `mwsounds/` look-up; mono check; LRU cache'),
+    ('code/sound/soundsystem.cpp', '`sounds.txt` blueprint parse (sample names lower-cased, extension stripped)'),
+    ('code/sound/sound_stream_decoder.cpp', 'Ogg Vorbis (and unreachable WAV) decoding'),
+    ('tools/build_multiwinia_data.bat', 'packs `data/` into the `.dat` archives'),
+    ('tools/listfiles.pl', 'exclusion-list expansion used by the data build'),
+    ('tools/copyfiles.pl', 'list-driven copy used by the data build'),
+    ('tools/init.list', 'contents of `init.dat`'),
+    ('tools/language.list', 'all-language `language.dat` contents (font atlases)'),
+    ('tools/englishlanguage.list', 'English-only `language.dat`'),
+    ('tools/russianlanguage.list', 'Russian `language.dat` (adds Cyrillic `editor`/`square` atlases)'),
+    ('tools/multiwinia_exclusions.txt', 'files never packed into `main.dat`/`sounds2.dat`'),
+    ('tools/sounds.txt', '`sounds.dat` manifest (also an exclusion list)'),
+    ('tools/menu_sounds.txt', '`menusounds.dat` manifest (also an exclusion list)'),
+    ('tools/FindUnusedResources.sh', 'Darwinia-era unused-asset finder (§6.4)'),
+    ('tools/FindUnusedResourcesExceptions.txt', 'its exception list'),
+    ('tools/unused_samples.sh', 'Darwinia-era unused-sample finder (§5)'),
+    ('tools/unused_sample_groups.sh', 'Darwinia-era unused-sample-group finder (§5)'),
+    ('tools/patch.full.list', 'Darwinia patch list (not used by Multiwinia builds)'),
+    ('data/sounds.txt', 'sound blueprints that bind the audio files (§5, [10](10_audio_design.md))'),
+    ('docs/OpenGLState.txt', 'stale texture-state notes (discrepancies)'),
+    ('docs/RussianFontRequest.txt', 'Cyrillic font history (discrepancies)'),
+    ('docs/landscape lightmap.txt', 'stale lightmap notes (discrepancies)'),
+])
+ref_files = collections.OrderedDict()
+for r in refs_all:
+    f = split_site(r['site'])[0]
+    ref_files.setdefault(f, collections.Counter())[r['build']] += 1
+out = ['| File | Role in this document |', '|---|---|']
+for f, role in CORE.items():
+    extra = ''
+    if f in ref_files:
+        extra = ' Also names assets: %s.' % ', '.join('%s %d' % kv for kv in sorted(ref_files[f].items()))
+    out.append('| `%s` | %s%s |' % (f, role, extra))
+for f in sorted(ref_files):
+    if f in CORE:
+        continue
+    c = ref_files[f]
+    kind = 'level file naming terrain ramps / static-shape meshes' if f.startswith('data/levels/') else (
+        'panel script naming animation bitmaps' if f.startswith('data/animations/') else (
+        'input bindings naming icons (never drawn)' if f.startswith('data/input/') else 'requests assets'))
+    out.append('| `%s` | %s (references by build: %s) |' % (f, kind, ', '.join('%s %d' % kv for kv in sorted(c.items()))))
+GEN['source_map'] = '\n'.join(out)
+GEN['source_map_count'] = str(len(out) - 2)
 
 # ------------------------------------------------------------------ assemble
 tpl = open(os.path.join(WORK, 'script_inputs', 'S_25_template.md'), encoding='utf-8').read()

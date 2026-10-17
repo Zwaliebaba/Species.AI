@@ -176,23 +176,23 @@ Every stop site outside `code/sound/` [C] (X2b §10.E, spot-checked in `crate.cp
 | `Ambience EnterGlobalWorld` | none | world loop exit / script [B:LEGACY] | `code/main.cpp:GlobalWorldGameLoop`, `code/script.cpp:Script::RunCommand_StopSound` |
 | `Music`, `Music <event>` | none | cutscene escape / script `StopSound` [B:LEGACY]; each loader stops its own track [B:DEAD]; `CreditsLoader` stops `Music Cutscene3` although it started `Credits` | `code/script.cpp:Script::RunCommand_StopSound`, `code/loaders/credits_loader.cpp:CreditsLoader::Run`, `code/startsequence.cpp:StartSequence::Advance` |
 | `Tree Burn` | tree | fire out / tree destroyed | `code/worldobject/tree.cpp:Tree::Advance` |
-| `RadarDish BeginRotation` | dish | before re-aiming; on alignment | `code/worldobject/radardish.cpp:RadarDish::Advance` |
+| `RadarDish BeginRotation` | dish | before re-aiming; on alignment | `code/worldobject/radardish.cpp:RadarDish::Advance`, `code/worldobject/radardish.cpp:RadarDish::Aim` |
 | `RadarDish ConnectionEstablished` | dish | link lost | `code/worldobject/radardish.cpp:RadarDish::Advance` |
 | `SolarPanel Operate` | panel | occupancy ≤ 60 % while operating | `code/worldobject/generator.cpp:SolarPanel::Advance` |
-| `SpaceShip TractorBeam` | ship | abduction ends | `code/worldobject/spaceship.cpp:SpaceShip::Advance` |
+| `SpaceShip TractorBeam` | ship | abduction ends | `code/worldobject/spaceship.cpp:SpaceShip::AdvanceDropping` |
 | `Officer SetOrderNone/Goto/Follow/Absorb/Formation` | officer | `Officer::CancelOrderSounds` before every new order sound | `code/worldobject/officer.cpp:Officer::CancelOrderSounds` |
-| `Crate Falling` | crate | lands | `code/worldobject/crate.cpp:Crate::Advance` |
+| `Crate Falling` | crate | lands | `code/worldobject/crate.cpp:Crate::AdvanceFloating` |
 | `Crate Capturing_` (all progress tones) | crate | `Crate::StopCaptureSounds` before each new tone, on capture and on loss | `code/worldobject/crate.cpp:Crate::StopCaptureSounds` |
 | `Crate BeginCapture` | crate | captured or lost | `code/worldobject/crate.cpp:Crate::AdvanceOnGround` |
-| `Engineer BeginReprogramming` | engineer | reprogramming ends [B:LEGACY] (7 sites) | `code/worldobject/engineer.cpp:Engineer::Advance` |
-| `GodDish ConnectToGod` | dish | deactivated [B:LEGACY] | `code/worldobject/goddish.cpp:GodDish::Deactivate` |
+| `Engineer BeginReprogramming` | engineer | reprogramming ends [B:LEGACY] (7 sites) | `code/worldobject/engineer.cpp:Engineer::Advance`, `code/worldobject/engineer.cpp:Engineer::AdvanceResearching`, `code/worldobject/engineer.cpp:Engineer::AdvanceReprogramming` |
+| `GodDish ConnectToGod` | dish | deactivated [B:LEGACY] | `code/worldobject/goddish.cpp:GodDish::DeActivate` |
 | `Spam Create` | spam | becomes research [B:LEGACY] | `code/worldobject/spam.cpp:Spam::Advance` |
-| `Rocket Create` | rocket | explodes | `code/worldobject/weapons.cpp:Rocket::Advance` |
-| `Darwinian SeenThreat` | Darwinian | threat cleared / state change | `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` |
+| `Rocket Create` | rocket | explodes | `code/worldobject/weapons.cpp:Rocket::Explode` |
+| `Darwinian SeenThreat` | Darwinian | threat cleared / state change | `code/worldobject/darwinian.cpp:Darwinian::AdvanceCombat`, `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats` |
 | `Darwinian TakenControl` | Darwinian | released (both unbound) | `code/worldobject/darwinian.cpp:Darwinian::LoseControl` |
 | `FuelPipe PumpFuel` | pipe | fuel level ≤ 0.2 | `code/worldobject/rocket.cpp:FuelPipe::Advance` |
 | `EscapeRocket Refueling/Happy/Unhappy/Malfunction/Flight` | rocket | the wrong state sound is playing | `code/worldobject/rocket.cpp:EscapeRocket::SetupSounds` |
-| `EscapeRocket EngineBurn` | rocket | engines off | `code/worldobject/rocket.cpp:EscapeRocket::Advance` |
+| `EscapeRocket EngineBurn` | rocket | engines off | `code/worldobject/rocket.cpp:EscapeRocket::SetupSounds` |
 | `Statue Carry` | statue | dropped (`Carry` is unbound) | `code/worldobject/carryablebuilding.cpp:CarryableBuilding::Advance` |
 | all sounds of the tank | tank | tank dies [B:DEBUG] | `code/worldobject/tank.cpp:Tank::ChangeHealth` |
 
@@ -1104,9 +1104,9 @@ Total 1702.0 s, 12 070 545 bytes [C].
 
 | Trigger site | Events | Reachability in FULL |
 |---|---|---|
-| Script op `TriggerSound <word>` → `Script::RunCommand_TriggerSound` (plays `Music <word>`); `StopSound <word>` → `Script::RunCommand_StopSound`; cutscene escape stops `"Music"` | the 13 Darwinia scripts listed in §6.2 use `cutscene1`–`cutscene5`, `endsequence`, `Demo2Intro`, `Demo2Mid` | [B:LEGACY]: no Multiwinia path runs a script and `data/scripts/*` is excluded from the PC data build ([30](30_scripting_tutorial_and_cutscenes.md)) |
+| Script op `TriggerSound <word>` → `Script::RunCommand_TriggerSound` (plays `Music <word>`); `StopSound <word>` → `Script::RunCommand_StopSound`; cutscene escape stops `"Music"` | the 13 Darwinia scripts listed in §6.2 use `cutscene1`–`cutscene5`, `endsequence`, `Demo2Intro`, `Demo2Mid` | [B:LEGACY]: no Multiwinia path runs a script and the `data/scripts/` directory is excluded from the PC data build ([30](30_scripting_tutorial_and_cutscenes.md)) |
 | `CreditsLoader::Run` | Credits (and it stops `Music Cutscene3`, apparently a bug) | [B:LEGACY]: compiled, but created only from `Camera::AdvanceSphereWorldOutroMode` and `Script::RunCommand_RunCredits` (Darwinia world-map outro and scripts) |
-| `code/loaders/*_loader.cpp` `Run` methods | LoaderSpeccy, LoaderAmiga, LoaderMatrix, LoaderRaytrace, LoaderGameOfLife, LoaderFodder, LoaderSoul | [B:DEAD]: `USE_LOADERS` off in every target |
+| the seven loader `Run` methods (`code/loaders/speccy_loader.cpp`, `amiga_loader.cpp`, `matrix_loader.cpp`, `raytrace_loader.cpp`, `gameoflife_loader.cpp`, `fodder_loader.cpp`, `soul_loader.cpp`) | LoaderSpeccy, LoaderAmiga, LoaderMatrix, LoaderRaytrace, LoaderGameOfLife, LoaderFodder, LoaderSoul | [B:DEAD]: `USE_LOADERS` off in every target |
 | `StartSequence::Advance` | StartSequence | [B:DEAD]: only constructed by `RunBootloader` under `USE_LOADERS` |
 
 ### 6.4 Why music is never heard in Multiwinia — and the assert
@@ -1184,17 +1184,17 @@ There is no dialogue system, no subtitles, no lip-sync and no localisation of au
 
 | Voice set | Files | Bound to (live unless tagged) |
 |---|---|---|
-| Darwinian spawn chatter | `data/sounds/darwin_create*.ogg` (15, group `darwiniancreate`) | `Darwinian Create` (one shared MonophonicNearest voice) |
-| Darwinian acknowledgement | `data/mwsounds/DSelect1`–`10.ogg` (group `dselect`) | `Darwinian Selected`, `Darwinian GivenOrdersFromPlayer` |
-| Darwinian battle cries | `data/mwsounds/Attack*.ogg` (37, `combatvoxattack`); `darwinian_threat_attack*.ogg` (3, `darwinseethreatattack`) | `Darwinian SeenThreatAttack`; `SeenThreatAttackHorn` (and the dead `Officer Attack`) |
-| Darwinian retreat | `data/mwsounds/Retreat*.ogg` (26, `combatvoxretreat`) + `data/sounds/darwinian_threat_run*.ogg` (10, `darwinrunaway`) | `Darwinian SeenThreatRunAway` (two layered blocks) |
-| Darwinian pain | `darwin_losehealth*.ogg` (18, `darwinianlosehealth`); `data/mwsounds/Hit1`–`36.ogg` (`combatvoxinjured`) | `Darwinian LoseHealth`, `Officer LoseHealth`; `Laser InjuredEntity` |
+| Darwinian spawn chatter | `darwin_create*.ogg` in `data/sounds/` (15, group `darwiniancreate`) | `Darwinian Create` (one shared MonophonicNearest voice) |
+| Darwinian acknowledgement | `DSelect1`–`DSelect10` in `data/mwsounds/` (group `dselect`) | `Darwinian Selected`, `Darwinian GivenOrdersFromPlayer` |
+| Darwinian battle cries | `Attack*.ogg` in `data/mwsounds/` (37, `combatvoxattack`); `darwinian_threat_attack*.ogg` (3, `darwinseethreatattack`) | `Darwinian SeenThreatAttack`; `SeenThreatAttackHorn` (and the dead `Officer Attack`) |
+| Darwinian retreat | `Retreat*.ogg` in `data/mwsounds/` (26, `combatvoxretreat`) + `darwinian_threat_run*.ogg` in `data/sounds/` (10, `darwinrunaway`) | `Darwinian SeenThreatRunAway` (two layered blocks) |
+| Darwinian pain | `darwin_losehealth*.ogg` (18, `darwinianlosehealth`); `Hit1`–`Hit36` in `data/mwsounds/` (`combatvoxinjured`) | `Darwinian LoseHealth`, `Officer LoseHealth`; `Laser InjuredEntity` |
 | Darwinian death | `darwin_death*.ogg` (8, `darwiniandie`); `LaserHitDarwinian1`–`12.ogg` (`laserhitdarwinian`); `darwin_burn_death1`–`6.ogg` + `silence1`–`7.ogg` (`darwinnianburncry`) | `Darwinian Die` (2 layers), `Officer Die`, legacy `LaserTroop Die`; `Darwinian OnFire` |
 | Darwinian effort / joy | `Carrying3a`–`3d.ogg` (`carrystatue`); `darwin_jump*.ogg` (9, `victoryjum`) | `Darwinian LiftBuilding`; `Darwinian VictoryJump` |
 | Officer voice | `officer_create4/5/6/9/10/11.ogg` (`officercreate`); `officer_order*.ogg` (17, `officerleftright`) | `Officer Create`, `Officer Selected`, `Darwinian GivenOrders`, owner confirmations of `SetOrderGoto` / `SetOrderFormation`; order loops |
 | Squad voice | `squaddie_chatter1`–`16`, `18`–`21` (20, `newsamplegroup1`), `squad_lose_health*.ogg`, `squad_death*.ogg` | `Squadie Create` (shared MonophonicRandom loop), `LoseHealth`, `Die` |
-| Evil-tree speech | `data/mwsounds/GDSpeech*.ogg` (17, `gdspeechgroup`) | `Tree CreateEvil` (Dark Forest crate) |
-| Announcer stings | `data/mwsounds/CrateReward_*.ogg`, `Crate_CaptureMyTeam.ogg`, `Crate_CaptureOtherTeam.ogg`, `Crate_LostCapture.ogg`, `Player_Capture_Statue.ogg`, `Enemy_Capture_Statue.ogg`, `KOH_Zone_Captured.ogg`, `KOH_Zone_Lost.ogg`, `SpawnPoint_PlayerTurnsOn2.ogg`, `SpawnPoint_PlayerTurnsOff2.ogg` | `CratePowerup *` (25 live; dead: FireExtinguisher, FormationBooster, Tank, FlameTurret), crate / statue / zone / spawn-point events |
+| Evil-tree speech | `GDSpeech*.ogg` in `data/mwsounds/` (17, `gdspeechgroup`) | `Tree CreateEvil` (Dark Forest crate) |
+| Announcer stings | `CrateReward_*.ogg` in `data/mwsounds/`, `Crate_CaptureMyTeam.ogg`, `Crate_CaptureOtherTeam.ogg`, `Crate_LostCapture.ogg`, `Player_Capture_Statue.ogg`, `Enemy_Capture_Statue.ogg`, `KOH_Zone_Captured.ogg`, `KOH_Zone_Lost.ogg`, `SpawnPoint_PlayerTurnsOn2.ogg`, `SpawnPoint_PlayerTurnsOff2.ogg` | `CratePowerup *` (25 live; dead: FireExtinguisher, FormationBooster, Tank, FlameTurret), crate / statue / zone / spawn-point events |
 | **Unbound** takes | `YesSir1`–`12` (orphan `officerselected`), `Aye1`–`9` (`aye`), `Attention1`–`4` (`officerabsorb`), `Formation1`–`2` (`officersetorderformation`), `Marching1`–`5` (`officersetorderfollow`), `DStrain1`–`17`, `GameOver1`–`2`, `YouWon`, `YouLost2`, `CrateReward_OtherTeam`, 25 alternate crate-reward takes | none — intended officer acknowledgements and match-end announcements never wired, although the matching events are fired (§5.2) |
 
 Behavioural voice rules worth keeping [C] `code/worldobject/darwinian.cpp`:
@@ -1213,8 +1213,8 @@ Behavioural voice rules worth keeping [C] `code/worldobject/darwinian.cpp`:
 
 | Bed | Fired by / stopped by | Blocks (all 2D) | Effect on the listener |
 |---|---|---|---|
-| `MultiwiniaInterface LobbyAmbience` | first `GameMenuWindow::Update` after the sound gate opens (a new `GameMenuWindow` is created each time the front end is built, so it restarts after every match [I from `code/game_menu.cpp:GameMenu::CreateMenu`]); stopped when `MainMenuLoop` exits | (a) group `newsamplegroup8` = `alien_lands3` (30.5 s), `rumble1` (22.1 s), `evil` (53.9 s): LoopADSR, vol 8.0, attack 9.29 s, sustain 10.65 s, release 10.84 s; (b) `shipheartbeat1` (1.4 s): Loop, vol 8.5, pitch 0.5, min distance 200.10; (c) group `multilobbyambiences` = `data/mwsounds/MultiLobbyAmb1`–`10.ogg` (19.4–36.0 s each): LoopADSR, vol 9.0, pitch random 0.67–1.01 per note, no attack, sustain 10.65 s, release 10.26 s | an endless generative pad: every ≈ 10.65 s a new random pad (random pitch) starts at full level while the previous fades over ≈ 10 s, over a slow drone and a half-speed heartbeat |
-| `Ambience EnterLocation` | `LocationGameLoop` start (every match); stopped when the loop exits, then `Ambience ExitLocation` (unbound) | (a) group `newsamplegroup8`: LoopADSR, attack 10.00 s, sustain 10.84 s, release 10.00 s, **volume linked to camera altitude** Ypos ≤ 232 → 9.58, ≥ 736 → 0.10; (b) `white_noise` (29.0 s): Loop, volume Ypos 0 → 992 ↦ 3.03 → 7.03, Echo (inactive), min distance 500; (c) group `highaltitude` = `data/mwsounds/High1`–`7.ogg` (15.3–39.6 s): LoopADSR, pitch random 0.75–1.35 per note (smoothing 0.66), attack 10.84 s, sustain random 1.94–16.45 s per note, release 10.45 s, volume Ypos 0 → 988 ↦ 0.06 → 5.97 | ground-level rumble fades out and a high-altitude wind/choir bed plus white noise fade in as the camera climbs — the only "zoom-dependent mix" in the game |
+| `MultiwiniaInterface LobbyAmbience` | first `GameMenuWindow::Update` after the sound gate opens (a new `GameMenuWindow` is created each time the front end is built, so it restarts after every match [I from `code/game_menu.cpp:GameMenu::CreateMenu`]); stopped when `MainMenuLoop` exits | (a) group `newsamplegroup8` = `alien_lands3` (30.5 s), `rumble1` (22.1 s), `evil` (53.9 s): LoopADSR, vol 8.0, attack 9.29 s, sustain 10.65 s, release 10.84 s; (b) `shipheartbeat1` (1.4 s): Loop, vol 8.5, pitch 0.5, min distance 200.10; (c) group `multilobbyambiences` = `MultiLobbyAmb1`–`MultiLobbyAmb10` in `data/mwsounds/` (19.4–36.0 s each): LoopADSR, vol 9.0, pitch random 0.67–1.01 per note, no attack, sustain 10.65 s, release 10.26 s | an endless generative pad: every ≈ 10.65 s a new random pad (random pitch) starts at full level while the previous fades over ≈ 10 s, over a slow drone and a half-speed heartbeat |
+| `Ambience EnterLocation` | `LocationGameLoop` start (every match); stopped when the loop exits, then `Ambience ExitLocation` (unbound) | (a) group `newsamplegroup8`: LoopADSR, attack 10.00 s, sustain 10.84 s, release 10.00 s, **volume linked to camera altitude** Ypos ≤ 232 → 9.58, ≥ 736 → 0.10; (b) `white_noise` (29.0 s): Loop, volume Ypos 0 → 992 ↦ 3.03 → 7.03, Echo (inactive), min distance 500; (c) group `highaltitude` = `High1`–`High7` in `data/mwsounds/` (15.3–39.6 s): LoopADSR, pitch random 0.75–1.35 per note (smoothing 0.66), attack 10.84 s, sustain random 1.94–16.45 s per note, release 10.45 s, volume Ypos 0 → 988 ↦ 0.06 → 5.97 | ground-level rumble fades out and a high-altitude wind/choir bed plus white noise fade in as the camera climbs — the only "zoom-dependent mix" in the game |
 | `Ambience EnterGlobalWorld` [B:LEGACY] | `GlobalWorldGameLoop` start; stopped on exit / script | 5 blocks: group `worldviewdry` (Loop, vol 6.84, release 8.32 s, loop delay random 0–2.71 s, Echo), group `worldviewwet` (Loop, vol 6.10, loop delay random 0.19–2.52 s), group `worldamb` (LoopADSR, vol 6.0, pitch 0.37, attack 9.68 s, sustain 0.97 s, release 11.03 s, loop delay 0.39 s, Echo), `altitude1` (Loop, vol 5.23, pitch 0.70, attack 6.19 s, release 11.23 s), `rumble1` (Loop, vol 7.74, pitch 0.60, attack 5.42 s, release 6.00 s) | Darwinia world-map beds; never heard in Multiwinia |
 
 There are **no per-level ambiences, no weather sounds, no positional ambient emitters** (the level file has no audio fields) [C] `code/level_file.cpp` (no sound keys; P11/X4 found none). Building hums (`MultiwiniaZone Create`, `ControlStation Create`, `LaserFence Create`, `Tree CreateNormal` / `CreateMagic` / `CreateEvil`, `Powerstation Create` [B:LEGACY]) act as the only local ambient emitters.

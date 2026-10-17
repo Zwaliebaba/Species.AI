@@ -2028,7 +2028,7 @@ Findings [C data; I effect]:
 
 - **Complete**: English, French, German, Spanish (≥ 99.5 % of the Multiwinia strings); Italian nearly complete (96.4 % of Multiwinia strings; crate tooltips partly missing).
 - **Partial**: Russian (75 % of Multiwinia strings, 88 % overall) — missing keys display as raw ids.
-- **Stubs**: Japanese, Korean and Portuguese contain only an early Xbox-era subset (team-type labels, menu titles, XBLA session/sign-in strings, PDLC upsell, leaderboard titles, some option labels — e.g. `multiwinia_session_type_xblas`, `multiwinia_signin_xbla`, `multiwinia_pdlc_1..4`, `multiwinia_mainmenu_title360`). With one of these selected about 90 % of the UI would show raw key ids [I]. Shipping-list evidence: these three have their own `tools/<lang>language.list`, but no retail script selects them (§10.3).
+- **Stubs**: Japanese, Korean and Portuguese contain only an early Xbox-era subset (team-type labels, menu titles, XBLA session/sign-in strings, PDLC upsell, leaderboard titles, some option labels — e.g. `multiwinia_session_type_xblas`, `multiwinia_signin_xbla`, `multiwinia_pdlc_1..4`, `multiwinia_mainmenu_title360`). With one of these selected about 90 % of the UI would show raw key ids [I]. Shipping-list evidence: these three have their own `tools/japaneselanguage.list`, `tools/koreanlanguage.list`, `tools/portugueselanguage.list`, but no retail script selects them (§10.3).
 - Duplicates [C]: English `buildingname_grenadeturret`, `multiwinia_help_title_crates` (later definition wins).
 - Code-side gaps that no translation can fix [C]: phrase `Spectator` and `multiwinia_gametype_tankbattle` exist in no file; drop-down captions use raw parameter names (`ScoreMode`, `CrateDropMode`); the Update button caption "Update", the Sound Options slider caption "Master Volume" and the sound-restart failure box are hard-coded English; the debug / editor / profiler windows use literal English ([28](28_ui_framework.md)).
 
@@ -2132,7 +2132,7 @@ Then every line of `default_preferences.txt` is added with overwrite (§11.11) �
 |---|---|---|---|
 | Authentication key | `<profile dir>authkey.dev` (read at start-up; written by Paste and Play Demo) and `<profile dir>authkey` (written by typing) | §6.4 | [C] `code/app.cpp:App::InitMetaServer`, `code/UI/AuthInputField.h` |
 | User key bindings | `<profile dir>user_input_preferences.txt` (own `PrefsManager` instance) | `ApplyKeybindingsButton::MouseUp` (unreachable window) | [C] `code/lib/input/file_paths.cpp:InputPrefs::GetUserPrefsPath`, `code/interface/prefs_keybindings_window.cpp` |
-| System bindings | `data/input/input_preferences.txt` (MultiwiniaControlMethod = 1) or `input_preferences_darwinia.txt` (= 0); per-keyboard overrides `data/input/keyboards/<layout>.txt` (`de_DE`, `fr_FR`) | data files ([06](06_player_control_and_input.md)) | [C] `InputPrefs::GetSystemPrefsPath`, `code/main.cpp:ReadInputPreferences` |
+| System bindings | `data/input/input_preferences.txt` (MultiwiniaControlMethod = 1) or `input_preferences_darwinia.txt` (= 0); per-keyboard overrides `data/input/keyboards/de_DE.txt`, `data/input/keyboards/fr_FR.txt` (selected by keyboard layout) | data files ([06](06_player_control_and_input.md)) | [C] `InputPrefs::GetSystemPrefsPath`, `code/main.cpp:ReadInputPreferences` |
 | Darwinia user profile | `<profile dir>users/<name>/` (global world `game.txt` + mission files) | `App::SaveProfile` — returns false unless full version **and** `IsSinglePlayer()` (Campaign / Prologue) and name not `none` / `AccessAllAreas` / `AttractMode` → never saves in Multiwinia | [C] `code/app.cpp:App::SaveProfile` |
 | Distributor origin tag | `origin` (one line, e.g. `buka` for the Russian SKU) | build script | [C] `code/app.cpp:App::Initialise`, `tools/build_multiwinia_retail_russian.bat` |
 | Server history (dev) | `serverHistory.dat` | pref `RecordDemo` = 1 | [C] `code/app.cpp:App::ShutdownCurrentGame` |
@@ -2354,7 +2354,7 @@ Every key read or written by compiled code (76 distinct literal keys from the ac
 | `FilterShowIncompatible` | Int | — | 1 | Filters page | §5.8.6 | [B:FULL] |
 | `FilterShowPassworded` | Int | — | 1 | Filters page | §5.8.6 ("dy" bug) | [B:FULL] |
 | `HelpEnabled` | Int | 1 | 1 (none in the apply-button compare) | Other Options | §11.8 | [B:FULL] |
-| `KeyboardLayout` | String | — | Windows keyboard-layout locale name via `data/input/locales.txt` | — | `InputPrefs::GetKeyboardLayout` → selects `input/keyboards/<layout>.txt` | [B:FULL] |
+| `KeyboardLayout` | String | — | Windows keyboard-layout locale name via `data/input/locales.txt` | — | `InputPrefs::GetKeyboardLayout` → selects the matching file in `data/input/keyboards/` (`de_DE.txt`, `fr_FR.txt`) | [B:FULL] |
 | `LargeMenus` | Int | — | 0 | hidden | §11.8 | [B:FULL] |
 | `ManuallyScaleTextures` | Int | — (FR only Linux / Mac) | 0 | — | §11.6 hidden table | [B:FULL] GL |
 | `Mod` | String | — | `none` | — | mod system | [B:DEAD] |
@@ -3221,7 +3221,7 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 
 ### A.4 Darwinia context-sensitive help (`HelpSystem`) [B:DEAD]
 
-All of `code/helpsystem.{h,cpp}` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; it is constructed in `App::App` only under it, and its `Advance` (`code/main.cpp` L557–559), `Render` (`code/renderer.cpp` L621–623) and `PlayerDoneAction` hooks (e.g. `code/location_input.cpp` ~L800) are wrapped; it also disables itself in multiplayer and while a `Tutorial` exists [C].
+All of `code/helpsystem.h` and `code/helpsystem.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; it is constructed in `App::App` only under it, and its `Advance` (`code/main.cpp` L557–559), `Render` (`code/renderer.cpp` L621–623) and `PlayerDoneAction` hooks (e.g. `code/location_input.cpp` ~L800) are wrapped; it also disables itself in multiplayer and while a `Tutorial` exists [C].
 
 Algorithm [C] `HelpSystem::Advance`: `m_helpEnabled` = pref `HelpEnabled` (default 1), forced false in multiplayer or when `g_app->m_tutorial` exists; clears `"HelpSystem"` highlights whenever Sepulveda is silent. If disabled: `ControlSepulvedaHelp` (key `h`, `data/input/input_preferences.txt` L255) with an interactive camera → `RunDefaultHelp()`. If enabled (in a location): the quiet timer `m_actionHelpTimer` resets to −1 while Sepulveda talks or the player fires a squad; pressing H shuts up, forces the timer to `now − 90 − 10` and marks help requested; when quiet for > `HELPSYSTEM_ACTIONHELP_INTERVAL` (**90 s**) in keyboard mode → give the first (enum order) action help with `!m_actionDone && IsActionAvailable()`; if not firing, silent and the camera is interactive → `RunHighlightedBuildingHelp()`; if H was pressed and nothing was given → `RunDefaultHelp()`. `Render`: blinking `help_pressh` at top centre (keyboard only).
 
@@ -3286,7 +3286,7 @@ Darwinia "Demo 2" end screen, created only by `ExitLevelButton` under `DEMO2` [C
 ### A.9 Other remnants
 
 - Xbox Live Arcade / PDLC / Darwinia+ page slots 13, 14, 19–22, 26–30 and the members `m_xbla*`, `m_darwiniaPlus*`, `m_showingDeviceSelector` (§1.2.1, §5.7); `code/UI/DarwiniaPlusMPButton.h`, `code/UI/DarwiniaPlusSPButton.h` unused.
-- `code/UI/ErrorDialog.cpp/.h` and `code/UI/soundsliderbutton.h` are not in the vcproj; `code/UI/GameMenuOptionsButton.h` is included nowhere; `code/UI/GameTypeAnyButton.h` is included but never instantiated [C].
+- `code/UI/ErrorDialog.cpp`, `code/UI/ErrorDialog.h` and `code/UI/soundsliderbutton.h` are not in the vcproj; `code/UI/GameMenuOptionsButton.h` is included nowhere; `code/UI/GameTypeAnyButton.h` is included but never instantiated [C].
 - Testbed: `StartTestbedButton`, `CSpectatorButton`, the 10 s connect timeout, `RequestSetTeamReady` auto-ready and the game-over auto-return are `TESTBED_ENABLED`-only [B:DEAD].
 - Vista Game Explorer thumbnail flag in `ExitLevelButton` and rich-presence headers (`TARGET_OS_VISTA`) [B:DEAD].
 - Steam authentication files `contrib/systemiv/lib/metaserver/steamauth_client.cpp`, `steamauth_server.cpp` are not compiled (STEAM_* messages) [B:DEAD].

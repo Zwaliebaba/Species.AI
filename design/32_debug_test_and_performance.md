@@ -515,3 +515,99 @@ When a script is started, `TestScript(file)` first parses it statically and repo
 
 `Script::IsRunningScript()` returns false whenever a harness exists [C]. Scripts cannot run in Multiwinia at all ([30](30_scripting_tutorial_and_cutscenes.md)).
 
+## 8 Benchmark mode
+
+### 8.1 What "benchmark mode" is in this code base
+
+There is **no benchmark scene, no scripted camera fly-through and no score** anywhere in the tree [C grep for benchmark/score paths]. "Benchmark" consists of three pieces:
+
+| Piece | What it is | Tag |
+|---|---|---|
+| `BenchMark` recorder (`code/benchmark.cpp`) | per-second telemetry logger active during every Multiwinia match, with a hardware header from DirectX Diagnostic and an FTP upload at match end | [B:DEAD] here (`BENCHMARK_AND_FTP` commented out) |
+| Stress-test maps `data/levels/mp_benchmark_1.txt` ("Stress Test") and `data/levels/mp_assault_stress.txt` ("Assault Stress Test") | content that loads the simulation heavily | data present; not selectable in FULL (§8.5) |
+| Hardware-compatibility SKU (`TARGET_PC_HARDWARECOMPAT`, `tools/build_multiwinia_hwcompat.bat`) | spectator-only, single-player-only build whitelisting `MAPID_MP_KOTH_2P_1`, `MAPID_MP_BENCHMARK_1`, `MAPID_MP_KOTH_4P_1`; its packaging copies `ncftpput.exe` (the benchmark uploader) next to the exe | SKU build [C]; that it shipped with `BENCHMARK_AND_FTP` enabled is [I] (32-U3) |
+
+So the intended "benchmark run" was [I]: a tester installs the hwcompat build, watches CPU teams play (spectator only) on two normal maps and the stress map, and the recorder uploads fps / bandwidth / latency / entity-count traces plus a hardware summary. `docs/multiwiniareleasenotes-beta.txt` describes the same recorder as active in a public beta (Docs-vs-code).
+
+### 8.2 Build tag and life cycle [C] `code/benchmark.cpp:BenchMark`, `code/app.cpp:App::App`, `code/main.cpp:EnterLocation`, `code/main.cpp:LocationGameLoop`
+
+`benchmark.cpp` is entirely inside `#ifdef BENCHMARK_AND_FTP`; the macro's only mention in `code/lib/universal_include.h` is the commented line inside the `TARGET_BETATEST_GROUP` block, so it is off in every target. `App::m_benchMark` and all call sites are gated.
+
+```mermaid
+sequenceDiagram
+    participant App as App constructor
+    participant DX as dxdiag.exe
+    participant Loop as Location loop
+    participant BM as BenchMark
+    participant FTP as ncftpput.exe
+    App->>BM: new BenchMark, RequestDXDiag
+    BM->>DX: ShellExecute open dxdiag.exe /t profile dxdiag.txt
+    Loop->>BM: Begin before LocationGameLoop
+    BM->>BM: create benchmarks folder, parse dxdiag.txt, Multiwinia only, write header
+    loop every frame of the match
+        Loop->>BM: Advance
+        BM->>BM: retry Begin if not recording, else one sample per second
+    end
+    Loop->>BM: End after LocationGameLoop, append marker line
+    Loop->>BM: Upload
+    BM->>FTP: ShellExecute hidden, 60 s timeout, upload file
+```
+
+1. **Construction** (`App::App`): `m_benchMark = new BenchMark(); RequestDXDiag()` → `ShellExecute("open", "dxdiag.exe", "/t <profile>dxdiag.txt", SW_SHOWNORMAL)` inside SEH `__try/__except` (failures swallowed); dxdiag writes its report asynchronously.
+2. **`Begin()`** — at every non-editor location entry (before `LocationGameLoop`) and retried from every `Advance()` while not recording: `CreateDirectory(<profile>benchmarks)`; `BuildDxDiag()` — return if `dxdiag.txt` cannot be opened yet; return unless `App::m_gameMode == GameModeMultiwinia`; `authKey = Authentication_GetKey`; `m_filename = "<profile>benchmarks/game <authKey> <timeIndex>.txt"` (newlines in the key are not stripped although a comment says they should be); return if the file exists; `m_recording = true`; write the header (§8.3).
+3. **`Advance()`** — every location-loop frame: if recording and `now ≥ m_timer` → `m_timer = now + 1.0`, append one sample line (file opened and closed per write).
+4. **`End()`** — after `LocationGameLoop` returns: append a line "@"; log "Benchmark stopped".
+5. **`Upload()`** — immediately after `End()`: if the file exists, `ShellExecute("open", "ncftpput.exe", "-t 60 -u <user> -p <password> <Introversion FTP host> . \"<file>\"", SW_HIDE)` and log "Uploading benchmark...result code %d". The account credentials are hard-coded in the source; they are deliberately **not reproduced** here and a new game must never embed credentials.
+
+### 8.3 Output file format [C] `code/benchmark.cpp:BenchMark::Begin`, `BenchMark::BuildBenchmark`, `BenchMark::BuildTimeIndex`, `BenchMark::BuildDxDiag`
+
+Header (comma-separated, label column padded):
+
+| Line | Content |
+|---|---|
+| `USR AuthKey             , <key>` | the player's authentication key |
+| `USR Build               , <DARWINIA_VERSION_STRING>` | `"<platform>-<gametype>-<version>"` |
+| `USR Game                , <name>` | current game blueprint name |
+| `USR Map                 , <file>` | `App::m_requestedMap` |
+| `USR Screen              , <W> x <H> <windowed\|fullscreen>, <bpp> bit Colour, <hz> hz, <z> zDepth` | prefs `ScreenWidth`, `ScreenHeight`, `ScreenWindowed`, `ScreenColourDepth`, `ScreenRefresh`, `ScreenZDepth` |
+| `<TAG> <identifier padded to 20>,<value>` | filtered dxdiag lines (below) |
+| (blank line) | |
+
+dxdiag filter: `dxdiag.txt` is read with `TextFileReader` (strips line terminators, truncates at `#`, and returns no rest-of-line for an empty line); the loop **stops at the first blank line** [C], so with dxdiag's usual layout only the first section is captured [I] (32-U4). Section headers switch the permitted fields; each field is accepted once per header; commas in values become spaces:
+
+| Header substring | Tag | Permitted identifiers (case-insensitive, text before the first `:`) |
+|---|---|---|
+| `System Information` | `SYS` | Operating System, Language, System Manufacturer, System Model, BIOS, Processor, Memory, DirectX Version |
+| `Display Devices` | `GFX` | Card name, Chip type, Display Memory, Driver Version, Driver Date/Size |
+| `Sound Devices` | `SND` | Description, Driver Version, Date and Size |
+
+Sample line, once per wall-clock second, format `"%s,%5d,%6d,%6d,%5d,%5d"`:
+
+| # | Field | Source | Unit |
+|---|---|---|---|
+| 1 | time index | `BuildTimeIndex()` = local time `YYYY-MM-DD hh.mm.ss` | wall clock |
+| 2 | frames rendered | `Renderer::m_fps` | frames in the last second |
+| 3 | bandwidth in | `Server::m_receiveRate` when hosting, else `ClientToServer::m_receiveRate` | bytes/s, 5-s average (resolved, §1) |
+| 4 | bandwidth out | `…m_sendRate` likewise | bytes/s, 5-s average |
+| 5 | latency | `ClientToServer::GetEstimatedLatency() × 1000` | ms |
+| 6 | entity count | `Entity::s_entityPopulation` (all live entities; AI entities excluded) | count |
+
+Final line "@" marks a cleanly ended match.
+
+### 8.4 Metrics and scoring
+
+Metrics: exactly the six sample columns plus the header. **Scoring: none** — no aggregate, threshold, pass/fail or comparison is computed client-side; analysis was presumably done offline on the uploaded files [I].
+
+### 8.5 The stress-test maps [C] `data/levels/mp_benchmark_1.txt`, `data/levels/mp_assault_stress.txt`, `data/language/english.txt`, `code/mapcrc.h`
+
+| Map | Options | Content | Purpose |
+|---|---|---|---|
+| `mp_benchmark_1` ("Stress Test"; description: designed to spawn units indefinitely "until your computer falls over") | `GameTypes none`, `PopulationCap -1` (no cap), `NumPlayers 4`; `MAPID_MP_BENCHMARK_1` = `0x49bda3c0` | 4 × 150 Darwinians at start; 24 SpawnPoint, 4 SpawnLink, 4 TrunkPort, 15 MultiwiniaZone, 13 AITarget, 18 Tree, 1 SpawnPopulationLock | unbounded population growth → finds the entity count at which a machine collapses |
+| `mp_assault_stress` ("Assault Stress Test") | `GameTypes none`, `PopulationCap 2000`, `NumPlayers 2`, `trunkportreinforcements 250`, defender reinforcement Armour, `AttackingTeams 0`, `OfficialLevel` | 90 Darwinians at start; 30 Wall, 30 AITarget, 26 LaserFence, 10 AIObjectiveMarker, 7 TrunkPort, 7 GunTurret, 6 SolarPanel, 5 Pylon | Assault-specific load (fences, turrets, large reinforcement waves) for the `TARGET_ASSAULT_STRESSTEST` SKU |
+
+`GameTypes none` matches no blueprint, so `GameMenu::AddMap` discards both maps and they cannot be chosen even in the SKUs that whitelist them (X4; [08](08_levels_and_level_design.md)); how those SKUs launched them is 32-U3.
+
+### 8.6 Re-implementation guidance
+
+Keep the idea (opt-in per-second telemetry: frame time, net in/out, latency, entity count, plus a hardware summary) but: query hardware in-process (DXGI adapter description, `GetSystemInfo`, `GlobalMemoryStatusEx`) instead of shelling out; record frame-time percentiles rather than an fps integer; upload over HTTPS with per-build tokens and explicit consent; and add a real deterministic benchmark scene (a recorded command stream replayed headless and rendered, §14).
+

@@ -20,7 +20,6 @@
   "code/network/network_quality.cpp",
   "code/network/network_quality.h",
   "code/network/servertoclient.cpp",
-  "code/network/servertoclientletter.h",
   "code/network/syncdiff.h",
   "code/obstruction_grid.h",
   "code/routing_system.h",
@@ -37,12 +36,10 @@
   "contrib/systemiv/lib/netlib/net_socket_listener.h",
   "contrib/systemiv/lib/netlib/net_socket_session.h",
   "contrib/systemiv/lib/netlib/net_udp_packet.cpp",
-  "contrib/systemiv/lib/network_stream.h",
   "contrib/systemiv/lib/string_utils.cpp",
   "contrib/systemiv/lib/string_utils.h",
   "contrib/systemiv/lib/tosser/bounded_array.h",
   "contrib/systemiv/lib/tosser/btree.h",
-  "contrib/systemiv/lib/tosser/directory.h",
   "contrib/systemiv/lib/tosser/fast_darray.h",
   "contrib/systemiv/lib/tosser/hash_table.h",
   "contrib/systemiv/lib/tosser/sorting_hash_table.h",
@@ -79,6 +76,43 @@
   "data/icons/key_c.bmp",
   "data/icons/scrollbar.bmp",
   "data/locations.txt",
+  "data/mwsounds/Attack1.ogg",
+  "data/mwsounds/Attack10.ogg",
+  "data/mwsounds/Attack11.ogg",
+  "data/mwsounds/Attack12.ogg",
+  "data/mwsounds/Attack13.ogg",
+  "data/mwsounds/Attack14.ogg",
+  "data/mwsounds/Attack15.ogg",
+  "data/mwsounds/Attack16.ogg",
+  "data/mwsounds/Attack17.ogg",
+  "data/mwsounds/Attack18.ogg",
+  "data/mwsounds/Attack19.ogg",
+  "data/mwsounds/Attack2.ogg",
+  "data/mwsounds/Attack20.ogg",
+  "data/mwsounds/Attack21.ogg",
+  "data/mwsounds/Attack23.ogg",
+  "data/mwsounds/Attack3.ogg",
+  "data/mwsounds/Attack32.ogg",
+  "data/mwsounds/Attack33.ogg",
+  "data/mwsounds/Attack34.ogg",
+  "data/mwsounds/Attack35.ogg",
+  "data/mwsounds/Attack36.ogg",
+  "data/mwsounds/Attack37.ogg",
+  "data/mwsounds/Attack38.ogg",
+  "data/mwsounds/Attack39.ogg",
+  "data/mwsounds/Attack4.ogg",
+  "data/mwsounds/Attack40.ogg",
+  "data/mwsounds/Attack41.ogg",
+  "data/mwsounds/Attack42.ogg",
+  "data/mwsounds/Attack43.ogg",
+  "data/mwsounds/Attack44.ogg",
+  "data/mwsounds/Attack45.ogg",
+  "data/mwsounds/Attack46.ogg",
+  "data/mwsounds/Attack5.ogg",
+  "data/mwsounds/Attack6.ogg",
+  "data/mwsounds/Attack7.ogg",
+  "data/mwsounds/Attack8.ogg",
+  "data/mwsounds/Attack9.ogg",
   "data/mwsounds/Attention1.ogg",
   "data/mwsounds/Attention2.ogg",
   "data/mwsounds/Attention3.ogg",
@@ -112,15 +146,65 @@
   "data/mwsounds/CrateFall6.ogg",
   "data/mwsounds/CrateFall7.ogg",
   "data/mwsounds/CrateLand1.ogg",
+  "data/mwsounds/CrateReward_Airstrike1.ogg",
+  "data/mwsounds/CrateReward_AntsNest1.ogg",
+  "data/mwsounds/CrateReward_Armour1.ogg",
+  "data/mwsounds/CrateReward_Armour2.ogg",
+  "data/mwsounds/CrateReward_Bitzkrieg.ogg",
+  "data/mwsounds/CrateReward_CrateMania1.ogg",
+  "data/mwsounds/CrateReward_CrateMania2.ogg",
+  "data/mwsounds/CrateReward_CrateMania3.ogg",
+  "data/mwsounds/CrateReward_DarkForest1.ogg",
+  "data/mwsounds/CrateReward_Egg1.ogg",
+  "data/mwsounds/CrateReward_Egg2.ogg",
+  "data/mwsounds/CrateReward_Egg3.ogg",
+  "data/mwsounds/CrateReward_Egg4.ogg",
+  "data/mwsounds/CrateReward_Extinguisher.ogg",
+  "data/mwsounds/CrateReward_Extinguisher2.ogg",
+  "data/mwsounds/CrateReward_Extinguisher3.ogg",
+  "data/mwsounds/CrateReward_Forest1.ogg",
+  "data/mwsounds/CrateReward_Forest2.ogg",
+  "data/mwsounds/CrateReward_Formation1.ogg",
+  "data/mwsounds/CrateReward_Formation2.ogg",
+  "data/mwsounds/CrateReward_Futurewinians.ogg",
+  "data/mwsounds/CrateReward_GunTurret1.ogg",
+  "data/mwsounds/CrateReward_Harvester1.ogg",
+  "data/mwsounds/CrateReward_Harvester2.ogg",
+  "data/mwsounds/CrateReward_Harvester3.ogg",
+  "data/mwsounds/CrateReward_HotFeet1.ogg",
+  "data/mwsounds/CrateReward_Meteor2.ogg",
+  "data/mwsounds/CrateReward_Meteor3.ogg",
+  "data/mwsounds/CrateReward_Meteor4.ogg",
+  "data/mwsounds/CrateReward_Nuke.ogg",
+  "data/mwsounds/CrateReward_OtherTeam.ogg",
+  "data/mwsounds/CrateReward_Plague.ogg",
+  "data/mwsounds/CrateReward_Rage1.ogg",
+  "data/mwsounds/CrateReward_Rage2.ogg",
+  "data/mwsounds/CrateReward_Rage3.ogg",
+  "data/mwsounds/CrateReward_Rage4.ogg",
+  "data/mwsounds/CrateReward_Randomiser.ogg",
+  "data/mwsounds/CrateReward_Rocketwinians.ogg",
+  "data/mwsounds/CrateReward_Shield.ogg",
+  "data/mwsounds/CrateReward_SpawnMania.ogg",
+  "data/mwsounds/CrateReward_SpawnMania2.ogg",
+  "data/mwsounds/CrateReward_Squaddies.ogg",
+  "data/mwsounds/CrateReward_Squaddies2.ogg",
+  "data/mwsounds/CrateReward_Squaddies3.ogg",
+  "data/mwsounds/CrateReward_Squaddies4.ogg",
+  "data/mwsounds/CrateReward_Subversion2.ogg",
+  "data/mwsounds/CrateReward_Tank.ogg",
+  "data/mwsounds/CrateReward_Triffid.ogg",
   "data/mwsounds/CrateRewrad_Darwinians1.ogg",
   "data/mwsounds/CrateRewrad_Darwinians2.ogg",
   "data/mwsounds/Crate_CaptureMyTeam.ogg",
   "data/mwsounds/Crate_CaptureOtherTeam.ogg",
   "data/mwsounds/Crate_LostCapture.ogg",
+  "data/mwsounds/Cratereward_Infection.ogg",
   "data/mwsounds/CreateReward_AntsNest1.ogg",
   "data/mwsounds/CreateReward_Harvester1.ogg",
   "data/mwsounds/CreateReward_Harvester2.ogg",
   "data/mwsounds/CreateReward_Harvester3.ogg",
+  "data/mwsounds/DSelect1.ogg",
   "data/mwsounds/DSelect10.ogg",
   "data/mwsounds/DSelect2.ogg",
   "data/mwsounds/DSelect3.ogg",
@@ -168,13 +252,32 @@
   "data/mwsounds/FlameTurretLoop1.ogg",
   "data/mwsounds/Formation1.ogg",
   "data/mwsounds/Formation2.ogg",
+  "data/mwsounds/GDSpeech10.ogg",
+  "data/mwsounds/GDSpeech11.ogg",
+  "data/mwsounds/GDSpeech12.ogg",
+  "data/mwsounds/GDSpeech13.ogg",
+  "data/mwsounds/GDSpeech14.ogg",
+  "data/mwsounds/GDSpeech15.ogg",
+  "data/mwsounds/GDSpeech16.ogg",
+  "data/mwsounds/GDSpeech17.ogg",
+  "data/mwsounds/GDSpeech18.ogg",
+  "data/mwsounds/GDSpeech2.ogg",
+  "data/mwsounds/GDSpeech3.ogg",
+  "data/mwsounds/GDSpeech4.ogg",
+  "data/mwsounds/GDSpeech5.ogg",
+  "data/mwsounds/GDSpeech6.ogg",
+  "data/mwsounds/GDSpeech7.ogg",
+  "data/mwsounds/GDSpeech8.ogg",
+  "data/mwsounds/GDSpeech9.ogg",
   "data/mwsounds/GameOver2.ogg",
+  "data/mwsounds/High1.ogg",
   "data/mwsounds/High2.ogg",
   "data/mwsounds/High3.ogg",
   "data/mwsounds/High4.ogg",
   "data/mwsounds/High5.ogg",
   "data/mwsounds/High6.ogg",
   "data/mwsounds/High7.ogg",
+  "data/mwsounds/Hit1.ogg",
   "data/mwsounds/Hit10.ogg",
   "data/mwsounds/Hit11.ogg",
   "data/mwsounds/Hit12.ogg",
@@ -254,6 +357,7 @@
   "data/mwsounds/Marching5.ogg",
   "data/mwsounds/MeteorHitClose1.ogg",
   "data/mwsounds/MeteorHitFar1.ogg",
+  "data/mwsounds/MultiLobbyAmb1.ogg",
   "data/mwsounds/MultiLobbyAmb10.ogg",
   "data/mwsounds/MultiLobbyAmb2.ogg",
   "data/mwsounds/MultiLobbyAmb3.ogg",
@@ -268,6 +372,32 @@
   "data/mwsounds/PinkNoiseLoop.ogg",
   "data/mwsounds/PlayerCaptureBugle5.ogg",
   "data/mwsounds/Player_Capture_Statue.ogg",
+  "data/mwsounds/Retreat1.ogg",
+  "data/mwsounds/Retreat10.ogg",
+  "data/mwsounds/Retreat11.ogg",
+  "data/mwsounds/Retreat12.ogg",
+  "data/mwsounds/Retreat13.ogg",
+  "data/mwsounds/Retreat14.ogg",
+  "data/mwsounds/Retreat15.ogg",
+  "data/mwsounds/Retreat16.ogg",
+  "data/mwsounds/Retreat17.ogg",
+  "data/mwsounds/Retreat18.ogg",
+  "data/mwsounds/Retreat19.ogg",
+  "data/mwsounds/Retreat2.ogg",
+  "data/mwsounds/Retreat20.ogg",
+  "data/mwsounds/Retreat21.ogg",
+  "data/mwsounds/Retreat22.ogg",
+  "data/mwsounds/Retreat23.ogg",
+  "data/mwsounds/Retreat24.ogg",
+  "data/mwsounds/Retreat25.ogg",
+  "data/mwsounds/Retreat26.ogg",
+  "data/mwsounds/Retreat3.ogg",
+  "data/mwsounds/Retreat4.ogg",
+  "data/mwsounds/Retreat5.ogg",
+  "data/mwsounds/Retreat6.ogg",
+  "data/mwsounds/Retreat7.ogg",
+  "data/mwsounds/Retreat8.ogg",
+  "data/mwsounds/Retreat9.ogg",
   "data/mwsounds/RocketThrust2Loop.ogg",
   "data/mwsounds/RocketThrustLoop.ogg",
   "data/mwsounds/Rumble2_Loop.ogg",
@@ -1410,7 +1540,6 @@
   "data/sounds/airstrike_hover2.ogg",
   "data/sounds/alien_lands1.ogg",
   "data/sounds/alien_lands3.ogg",
-  "data/sounds/altitude1.ogg",
   "data/sounds/ant_attack.ogg",
   "data/sounds/ant_attack2.ogg",
   "data/sounds/ant_attack3.ogg",
@@ -1638,7 +1767,6 @@
   "data/sounds/enter_teleport4.ogg",
   "data/sounds/enter_teleport5.ogg",
   "data/sounds/enter_teleport6.ogg",
-  "data/sounds/evil.ogg",
   "data/sounds/exit_teleport.ogg",
   "data/sounds/exit_teleport2.ogg",
   "data/sounds/exit_teleport3.ogg",
@@ -1674,7 +1802,6 @@
   "data/sounds/flag_wave7.ogg",
   "data/sounds/flag_wave8.ogg",
   "data/sounds/flag_wave9.ogg",
-  "data/sounds/fodder.ogg",
   "data/sounds/fuel_load_passenger.ogg",
   "data/sounds/fuel_load_passenger2.ogg",
   "data/sounds/fuel_load_passenger3.ogg",
@@ -2238,7 +2365,6 @@
   "data/sounds/tree_fire8.ogg",
   "data/sounds/tree_fire9.ogg",
   "data/sounds/tree_on_fire.ogg",
-  "data/sounds/tresk_-_excuses.ogg",
   "data/sounds/tresk_-_faces-of-a-fashion.ogg",
   "data/sounds/tresk_-_impact-of-silence.ogg",
   "data/sounds/tresk_-weeklies-_schroeders-failure.ogg",
@@ -2659,23 +2785,12 @@
    "23_terrain_and_landscape.md",
    "24_rendering.md"
   ],
-  "data/input/keyboards/<layout>.txt": [
-   "09_meta_systems.md"
+  "data/terrain/water_": [
+   "23_terrain_and_landscape.md"
   ],
-  "tools/<lang>language.list": [
-   "09_meta_systems.md"
-  ],
-  "data/mwsounds/attack": [
-   "10_audio_design.md"
-  ],
-  "data/mwsounds/gdspeech": [
-   "10_audio_design.md"
-  ],
-  "data/mwsounds/cratereward_": [
-   "10_audio_design.md"
-  ],
-  "data/mwsounds/retreat": [
-   "10_audio_design.md"
+  "data/terrain/landscape_": [
+   "23_terrain_and_landscape.md",
+   "24_rendering.md"
   ],
   "data/terrain/waves_": [
    "23_terrain_and_landscape.md"
@@ -2683,53 +2798,46 @@
   "data/levels/map_": [
    "23_terrain_and_landscape.md"
   ],
-  "data/terrain/landscape_": [
-   "23_terrain_and_landscape.md",
-   "24_rendering.md"
-  ],
-  "data/terrain/water_": [
-   "23_terrain_and_landscape.md"
-  ],
-  "code/lib/opengl_trace.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/texture.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "data/sepulveda/sepulveda1..5.bmp": [
-   "24_rendering.md"
-  ],
-  "code/lib/fixedpipeline.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_directx_dlist.{h,cpp}": [
+  "data/icons/mouse_": [
    "24_rendering.md"
   ],
   "data/shaders/fixedfunc": [
    "24_rendering.md"
   ],
-  "data/icons/mouse_": [
-   "24_rendering.md"
-  ],
-  "code/lib/window_manager_sdl.{cpp,h}": [
-   "24_rendering.md"
-  ],
-  "code/lib/shader.{h,cpp}": [
+  "code/lib/opengl_trace.{h,cpp}": [
    "24_rendering.md"
   ],
   "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
    "24_rendering.md"
   ],
+  "code/lib/texture.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
+   "24_rendering.md"
+  ],
   "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
    "24_rendering.md"
   ],
+  "data/sepulveda/sepulveda1..5.bmp": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_dlist.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/fixedpipeline.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
+   "24_rendering.md"
+  ],
   "data/shapes/<lowercased name>": [
+   "24_rendering.md"
+  ],
+  "code/lib/shader.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/window_manager_sdl.{cpp,h}": [
    "24_rendering.md"
   ],
   "contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}": [
@@ -2741,9 +2849,9 @@
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 4623,
-  "[I]": 567,
-  "[U]": 112
+  "[C]": 4809,
+  "[I]": 592,
+  "[U]": 117
  },
  "classes": {
   "AI": [
