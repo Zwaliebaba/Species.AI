@@ -1,0 +1,84 @@
+FILE 32_debug_test_and_performance.md
+TOP | DROP-PROVENANCE |  |  |  | DP-INDEX: H1 title and provenance banner (baseline build, evidence legend, sources merged)
+H2:Contents | DROP-PROVENANCE |  |  |  | DP-INDEX: contents list
+H2:1 Scope | KEEP | architecture/components/diagnostics_test_and_performance.md | §1 Responsibilities and boundaries — diagnostics present in a shipping build (network statistics window, debug log, asserts and assert record, crash log) | C-DBG | which facilities ship in the full build and how each is reached
+H2:2 Build-flag table | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: compile-time switch table of every debug and test feature; each kept feature is routed with its own section
+I2:3 Debug entry points | KEEP | architecture/components/diagnostics_test_and_performance.md | §2 Interfaces — debug entry points | C-DBG | section intro
+H3:3.1 Debug controls | KEEP | architecture/components/diagnostics_test_and_performance.md | §2 Interfaces — debug controls and default bindings (network statistics toggle, cheat window toggle) | C-DBG | Species action ids; the inert editor binding is dropped
+H3:3.2 `DebugKeyBindings` | DROP-LEGACY |  |  |  | DL-DEBUG: static entry points of the debug menu, no 40 keep verdict
+H3:3.3 The "Tools Menu" | DROP-LEGACY |  |  |  | DL-DEBUG: tools menu, compiled but unreachable in every build
+H3:3.4 Debug camera | DROP-LEGACY |  |  |  | DL-DEBUG: debug camera sub-modes (40 R8 drops the debug camera advancer)
+H3:3.5 FPS and entity-count | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — frame-rate and entity-count overlay | C-DBG | reference for the development overlay (40 T36 in-game overlay); off in the full build
+I2:4 Cheat window | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — cheat window | C-DBG | section intro
+H3:4.1 Build tag | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — cheat window opening and layout | C-DBG | 40 R27 and G61 keep the cheat window concept (Replace: sequenced debug commands)
+H3:4.2 Every cheat | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — the cheat set | C-DBG | match cheats kept as debug commands; package agent drops the campaign cheats (generator and mine, receiver and buffer, open all locations, give all research), the narrator face and the sound-editor buttons (DL-CAMPAIGN, DL-CUT, DL-DEBUG)
+H3:4.3 Network safety | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes — which cheats mutate simulation state | C-DBG | classification per cheat (32-I1)
+= | TO-DEC | decisions/decision_register.md | cheats act on the local simulation copy | X-DEC | every cheat mutates the local copy without a network message and desynchronises; Resolved (40 R27, G61): cheats are sequenced debug commands accepted only in cheat-flagged sessions
+H3:4.4 Other cheat hooks | DROP-LEGACY |  |  |  | DL-DEBUG: keyboard cheat hooks outside the window (special lighting toggle, single-player refinery and fuel multipliers)
+I2:5 Network statistics | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — debug windows | C-DBG | section intro
+H3:5.1 "Network Stats" | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — network statistics window (layout, host and client blocks) | C-DBG | 40 G60 Adapt: keep in development builds with correct units
+= | DEFER-DESIGN | decisions/decision_register.md | network statistics and bandwidth figures | X-DEC | DD-NET: the metrics shown are those of the lockstep transport (letters, sync, rates); the networking model decides the Species metric set; capture the bandwidth figures
+H3:5.2 Profiler window | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — profiler window | C-DBG | pointer to §9
+H3:5.3 Sound tools | DROP-LEGACY |  |  |  | DL-DEBUG: sound editor and stats windows
+H3:5.4 Grabber | DROP-LEGACY |  |  |  | DL-DEAD: video capture window that nothing opens
+H3:5.5 Gesture editor | DROP-LEGACY |  |  |  | DL-CUT: gesture editor
+H3:5.6 Lobby network-status | DROP-LEGACY |  |  |  | DL-DEBUG: lobby network-status overlay
+H3:5.7 Crate help window | DROP-LEGACY |  |  |  | DL-DEBUG: crate help window
+H3:5.8 Hidden preferences | KEEP | architecture/components/diagnostics_test_and_performance.md | §3 Data model — hidden debug preferences (bot info, debug drawing and the rest) | C-DBG | preference keys through the ledger; the record-and-replay key is KH-REPLAY
+I2:6 Testbed mode | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — soak test | C-DBG | section intro
+H3:6.1 Purpose | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — soak test purpose and activation | C-DBG | 40 R27 keeps the automated soak idea; G63 Drop (redesign): headless CI soak with AI teams
+H3:6.2 The game table | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — soak coverage (modes, maps, team counts, progressions) | C-DBG | 
+H3:6.3 `testbedconfig.txt` | DROP-LEGACY |  |  |  | DL-DEAD: test-bed configuration file format
+H3:6.4 Server automation | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — soak host automation steps | C-DBG | menu-driving steps restated as headless host steps
+H3:6.5 Client automation | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — soak client automation steps | C-DBG | 
+H3:6.6 In-match automation | KEEP | architecture/components/diagnostics_test_and_performance.md | §7 Acceptance tests — in-match automation and soak log | C-DBG | 
+H3:6.7 Engine changes | DROP-LEGACY |  |  |  | DL-DEAD: engine changes compiled only with the test bed
+H3:6.8 Defects to avoid | TO-DEC | decisions/decision_register.md | test-bed defects | X-DEC | wrong map-identity index, skipped first entry and out-of-range read, duplicate button names, float delays from clock deltas: Resolved, not replicated in the soak test
+L483-484 | DROP-LEGACY |  |  |  | DL-CAMPAIGN: section heading of the campaign test harness and script test
+H3:7.1 Campaign test harness | DROP-LEGACY |  |  |  | DL-CAMPAIGN: offline mission-graph explorer for the campaign global world
+H3:7.2 Script test | DROP-LEGACY |  |  |  | DL-CUT: cut-scene script checker (its build-time validation idea is carried by §14 item 9)
+L518-519 | DROP-LEGACY |  |  |  | DL-DEAD: section heading of the benchmark mode
+H3:8.1 What "benchmark mode" | DROP-LEGACY |  |  |  | DL-DEAD: benchmark mode
+H3:8.2 Build tag and life cycle | DROP-LEGACY |  |  |  | DL-DEAD: benchmark build tag and life cycle
+H3:8.3 Output file format | DROP-LEGACY |  |  |  | DL-DEAD: benchmark output and FTP upload
+H3:8.4 Metrics and scoring | DROP-LEGACY |  |  |  | DL-DEAD: benchmark metrics and scoring
+H3:8.5 The stress-test maps | DROP-LEGACY |  |  |  | DL-TESTMAPS: benchmark and stress maps (their start counts are cited by §12.4 as a stress-test size)
+H3:8.6 Re-implementation guidance | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes, diagnostics and telemetry — opt-in telemetry metric set | C-DBG | 40 G64 and T35: consented telemetry replaces the benchmark upload
+= | TO-ADR | adr/ | telemetry with consent | X-ADR | opt-in HTTPS telemetry (frame time, network in and out, latency, entity count, in-process hardware summary); no credentials in binaries
+I2:9 Profiler | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — profiler | C-DBG | section intro
+H3:9.1 Mechanism | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — per-system profile nodes | C-DBG | per-system profile nodes kept as a concept (40 R27)
+= | TO-ADR | adr/ | profiling (PIX markers, ETW events, GPU timestamps) | X-ADR | thread-safe scoped markers compatible with PIX and ETW, GPU timestamp queries, an in-game overlay, always available in development builds (40 T36)
+H3:9.2 Output | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — profiler view | C-DBG | 
+H3:9.3 Overhead | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: GL finish calls at section boundaries and their cost
+H3:9.4 Other profilers | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — subsystem profilers (audio) | C-DBG | 
+H3:9.5 Every instrumented | KEEP | architecture/components/diagnostics_test_and_performance.md | §3 Data model — profile marker catalogue (every instrumented section) | C-DBG | section names become Species marker names; campaign-only sections dropped
+I2:10 Logging | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes, diagnostics and telemetry | C-DBG | section intro
+H3:10.1 Debug output | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes, diagnostics and telemetry — debug log | C-DBG | 
+= | TO-ADR | adr/ | logging (ETW and TraceLogging) | X-ADR | asynchronous buffered logging with categories and levels, never opening a file per line (40 T37)
+H3:10.2 Asserts | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes — assert levels and the recent-assert record | C-DBG | shared with platform_layer.md (31 §6.5)
+H3:10.3 Crash logs | MERGE | architecture/components/platform_layer.md | §6 Failure modes — crash report contents | C-PLT | joins 31 §6.2
+H3:10.4 Sync logs | DEFER-DESIGN | decisions/decision_register.md | divergence logs | X-DEC | DD-NET: sync-error logs and world dumps (40 R27 keeps the concept as a debug tool; the networking model decides)
+H3:10.5 Every diagnostic file | KEEP | architecture/components/diagnostics_test_and_performance.md | §6 Failure modes, diagnostics and telemetry — diagnostic outputs | C-DBG | sync files dropped with §10.4
+H3:10.6 Memory-leak | DROP-LEGACY |  |  |  | DL-DEAD: memory-leak tracking, not compiled
+H2:11 Debug renderers | KEEP | architecture/components/diagnostics_test_and_performance.md | §4 Behaviour and algorithms — debug drawing primitives and where they appear | C-DBG | compiled into the full build; visibility per call site
+L823-824 | KEEP | architecture/components/diagnostics_test_and_performance.md | §5 Concurrency and performance budget | C-DBG | section heading
+H3:12.1 Cross-check | DROP-PROVENANCE |  |  |  | DP-METHOD: cross-check of a design note in the original docs folder; the no-measurement statement (32-U2) is carried by §12.4 and the open questions
+H3:12.2 Frame and tick structure | KEEP | architecture/components/diagnostics_test_and_performance.md | §5 Concurrency and performance budget — frame and tick time budget as specified | C-DBG | tick timing itself is reference/12 (C-SIM)
+= | TO-DEC | decisions/decision_register.md | catch-up spiral | X-DEC | design-critical (32-I2): a slow client spends up to 0.3 s per frame catching up, lowering the frame rate further; dead band for 1-3 pending slices; Resolved per 32 §12.4: bound catch-up per frame and show a catching-up state
+H3:12.3 Hotspot catalogue | KEEP | architecture/components/diagnostics_test_and_performance.md | §5 Concurrency and performance budget — reference performance figures (hotspots H1-H19: population per map, essence orbs, lasers, searches, draw submission) | C-DBG | every figure preserved; map names replaced by counts
+H3:12.4 Budget guidance | KEEP | architecture/components/diagnostics_test_and_performance.md | §5 Concurrency and performance budget — Species budget baseline (population, searches and grids, VFX pools, rendering, catch-up, logging) | C-DBG | 
+= | DEFER-DESIGN | decisions/decision_register.md | simulation tick rate and per-tick budget | X-DEC | DD-THREADS: tick-rate recommendation (20-30 Hz, hard per-tick CPU budget) and the 2x stress population; no measured frame times exist (32-U2), so tick-rate and population decisions need prototype measurements (40 R27)
+L891-894 | DEFER-DESIGN | decisions/decision_register.md | divergence detection tooling | X-DEC | DD-NET: section intro of the desync tooling
+H3:13.1 Detection | DEFER-DESIGN | decisions/decision_register.md | divergence detection tooling | X-DEC | DD-NET: per-build desync detection
+H3:13.2 Forensics | DEFER-DESIGN | decisions/decision_register.md | divergence detection tooling | X-DEC | DD-NET: forensics on desync (world dumps; 40 R27 keeps the concept)
+H3:13.3 Sync-RNG call | DEFER-DESIGN | decisions/decision_register.md | divergence detection tooling | X-DEC | DD-NET: per-call synchronised-RNG log for desync hunting; RNG draw discipline itself is kept in reference/12
+H3:13.4 Reproduction aids | DEFER-DESIGN | decisions/decision_register.md | divergence detection tooling | X-DEC | DD-NET: desync reproduction aids
+H3:13.5 Network-quality simulator | DROP-LEGACY |  |  |  | DL-DEAD: network-quality simulator, not compiled
+H2:14 Recommendations | KEEP | architecture/components/diagnostics_test_and_performance.md | §1 Responsibilities; §4 Behaviour; §7 Acceptance tests — Species debug and test baseline | C-DBG | items 1 (cheats as sequenced commands), 3 (deterministic replay as regression tool, a KH-REPLAY input), 4 (headless soak), 5 (profiling), 6 (development console), 7 (logging and crash), 8 (telemetry), 9 (data validators); item 2 (state hashing) goes to the DD-NET entry
+= | TO-ADR | adr/ | test framework and CI | X-ADR | headless soak in CI with AI teams, replay-based regression tests, data validators in the content build, crash handler on every thread
+H2:Open questions | DROP-PROVENANCE |  |  |  | DP-CLOSING: open questions and unknowns
+= | TO-DEC | decisions/decision_register.md | diagnostics open questions | X-DEC | in-scope items: 32-U2 no measured frame or per-system cost (prototype must measure), 32-I1 cheat safety, 32-I2 catch-up spiral; U1, U3-U8 and I3 concern the legacy runtime, benchmark, test bed and campaign research
+H2:Docs-vs-code | DROP-PROVENANCE |  |  |  | DP-CLOSING: docs-vs-code discrepancies
+H2:IP items | DROP-PROVENANCE |  |  |  | DP-CLOSING: IP items (F1 owns the rename ledger)
+H2:Source map | DROP-PROVENANCE |  |  |  | DP-CLOSING: source map
+H2:Appendix | DROP-PROVENANCE |  |  |  | DP-CLOSING: appendix of dead and legacy code
