@@ -353,3 +353,108 @@ The content build rejects a binding with more parameters than its kind has, and 
 
 **AEN-077** (MUST) In the reference model the sample-memory level restricts the choice of every group draw: level 2 draws among the first `aen.reference.sample_memory.level2_fraction` (½) of a group's members and level 3 among the first `aen.reference.sample_memory.level3_fraction` (¼), the member count truncated and at least 1, while level 1 uses all members; it is read at every draw and never changes the cache budget. In Species every draw uses all members (R-AUD-065, DEC-097), and the setting is read and ignored.
 
+## 4 Behaviour and algorithms
+
+### 4.1 Lifecycle
+
+**AEN-100** (MUST) The engine is created after the settings store ([options](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-402, R-META-478) and initialises in this order:
+
+1. load the cooked sound data: the 14 effect-kind definitions first, then the sound sources with their events, layers and groups; a source kind that has no definitions receives an empty definition, so every source index resolves;
+2. build the voice back-end: the XAudio2 engine, the mastering voice on the default device with the default format, the bus graph (§4.16) and the voice pools (AEN-142); if this fails, the engine runs on the silent device (AEN-321);
+3. start the update thread (AEN-120) and the decode task (AEN-302);
+4. request the interface bank (AEN-074) from the asset system, asynchronously;
+5. report each readiness point in the result queue (AEN-104).
+
+**AEN-101** (MUST) In the reference model the order is: the engine object is created on the loading worker after the base archives are read, with no device; the sample archives then load on a dedicated sound-loading thread once the boot work has finished, after which the sounds-loaded state is set; the device comes up on the main thread at the first front-end frame, which loads the 14 effect-kind definitions, then the sound definitions (filling missing sources with empty definitions), then the device, the channel table and the callbacks, without waiting for the samples, so triggers are dropped until the samples are loaded (AEN-110); from then on every frame runs the sample-cache clean-up (AEN-241). Before a match is launched, the front end waits until the engine is initialised, and the loading view also waits for the sounds when the front end has required it.
+
+**AEN-102** (MUST) A match load requests the match bank. The match loop starts only after the match bank and its stream heads are resident, so no match trigger is dropped for residency once the match runs; the wait is part of the load and is reported as load progress (DEC-226).
+
+**AEN-103** (MUST) The content build applies the reference loader's rules as validation (DEC-015, DEC-801, ADR-0059): sample names become asset ids; a priority field is ignored (R-AUD-049); an unknown effect kind, an unknown source, event or field, a duplicate key or group, a malformed block and a stray blank line inside a block are build errors with their location (R-AUD-068); effect parameters are taken by position, and a binding with more parameters than its kind is a build error (AEN-071). The reference loader resolves an unknown effect kind to an invalid index and only checks unknown sources and fields in development builds.
+
+**AEN-104** (MUST) The engine has three readiness points, each reported once in the result queue: **device ready** (the graph is built, or the silent device is in use), **interface ready** (the interface bank is resident) and **match ready** (the match bank is resident). A trigger issued before the readiness point of its group is dropped, not deferred (AEN-111).
+
+**AEN-106** (MUST) Teardown is the reverse of creation (DEC-221 item 3): stop accepting commands; stop and join the update thread; stop and join the decode task; stop every voice; destroy the source voices, the effect buses, the player buses, the pre-master bus and the mastering voice; release the XAudio2 engine; release the banks. Every wait is bounded by `aen.lifecycle.teardown_wait`, after which the remaining step is abandoned with a diagnostic (DEC-221 item 7).
+
+### 4.2 The trigger gate
+
+**AEN-110** (MUST) In the reference model a trigger returns at once, and is **dropped, not queued**, when: the engine has no channel table; the samples are not loaded yet, so not even the front-end sounds play before every archive is read; a loading view is showing; or the call comes from any thread other than the main thread. The lobby bed starts on the first front-end update at which the gate is open ([front end, HUD, voice and ambience](../../reference/10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-321).
+
+**AEN-111** (MUST) In Species a trigger is dropped, counted by reason, and never deferred, when: the bank or stream head of a group of its layers is not resident (AEN-104); the loading-view gate is set (`SetLoadingView(true)`), which drops every trigger (R-AUD-048, R-AUD-325, DEC-319); or the instance table is full (AEN-300). Stops, queries and every other command pass the gate.
+
+**AEN-112** (MUST) A trigger from any thread is accepted (AEN-020); the reference's main-thread-only contract is replaced by per-thread queues (ADR-0026, DEC-224 item 12).
+
+### 4.3 Where the audio update runs
+
+**AEN-115** (MUST) In the reference model the audio logic is advanced by the loops that draw frames: once per rendered frame in the match loop after the simulation step, and once more after rendering when the frame rate is below `ref.sim.frame.low_fps_audio_threshold` ([tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581); once per frame in the front-end loop; and once per loading frame in the loading view, whose frames last `ref.sim.frame.loading_frame_period`.
+
+**AEN-116** (MUST) In Species the update runs on the engine's own thread in every application state, at its own rate, whatever the frame rate; the application loops only send commands (AEN-043). The threading model that places this thread is DEC-224's.
+
+### 4.4 Update schedule and step order
+
+**AEN-120** (MUST) The engine runs one update every `aen.update.period` of audio time, equal to one XAudio2 processing quantum, so the changes of one update take effect within one quantum. Each update reads the audio clock once (T) and uses T, or the elapsed time Δt since the previous update, for every timed quantity. An update that starts late runs once; there are no catch-up updates, and lateness changes only granularity.
+
+**AEN-121** (MUST) In the reference model each advance adds the presentation frame delta (clamped to `ref.sim.frame.delta_clamp`) to an accumulator and runs exactly one audio update of `ref.sim.frame.audio_update_period` when the accumulator holds at least that much, keeping the surplus; there is no catch-up loop. While the game is paused the last frame delta keeps being added (R-SIM-571), and the command-stream recording hook drives a fixed capture rate (R-SIM-740). One update therefore runs per advance while frames are shorter than the update period; at or below 20 frames per second one runs per frame and the backlog grows; below the low-frame-rate threshold the second advance adds the frame delta again, so the time is counted twice. Envelopes and loop delays read the real clock, so the update rate changes only their granularity and the rate of voice starts. With no audio device, no update runs at all.
+
+**AEN-122** (MUST) The reference update runs these steps in order; the Species step of AEN-123 that replaces each is given:
+
+| # | Reference step | Species |
+|---|---|---|
+| 1 | advance the music instance; when it has finished, promote the pending music request (§8.2) | step 3 |
+| 2 | development step of the sound editor | none (§8.3) |
+| 3 | size a working array for the instance ids | none |
+| 4 | pass 1: expire one-shots out of patience; remove attached instances with no emitter, without release; compute every instance's audibility | steps 4 and 5 |
+| 5 | sort by audibility, loudest first | step 6 |
+| 6 | pass 2: priorities with the copy decay; remember the best instance with no voice and a priority above 0 | step 6 |
+| 7 | give that one instance a voice, evicting the lowest-ranked occupant (AEN-156) | step 6 |
+| 8 | advance every playing instance: envelope, pitch, effect parameters, position | steps 5 and 7 |
+| 9 | clear the flag that makes every voice re-send its volume once after a master-volume change | step 7 (every update sends every value) |
+| 10 | set the listener from the camera | step 1 |
+| 11 | device pump: apply deferred positioning and refill every voice's buffer, running the fill callbacks | steps 7 and 8 |
+
+**AEN-123** (MUST) The Species update runs these steps in order:
+
+1. drain the command queues (AEN-022): match state, listener, swap, volumes, effects switch, bank requests, emitter updates, then stops (AEN-134) and triggers (AEN-130) in issue order, then queries (AEN-136);
+2. advance the per-match pitch-bend state (AEN-197) and the ducking state (AEN-216);
+3. advance the music channel (§8.2);
+4. start the pending instances whose start time is at most T + `aen.update.period` (AEN-148); resolve each shared instance's emitter (AEN-157) and each attached instance's emitter (AEN-185); retire the instances due for retirement (AEN-146);
+5. for every started instance: evaluate its values (AEN-188), advance its envelope (AEN-166) and play position (AEN-173), and compute its distance gain and audibility (AEN-140, AEN-202);
+6. rank the instances and decide the real set (AEN-141 to AEN-147);
+7. for every real instance: compute and set its volume, frequency ratio, output matrix, filter and send levels (AEN-196, AEN-204, AEN-214, AEN-224) and submit its next buffers (AEN-174);
+8. apply every voice change of this update as one XAudio2 operation set, so they take effect at the same sample (ADR-0026);
+9. publish query answers, readiness changes, the tracked-emitter set (AEN-041) and statistics (AEN-137).
+
+```mermaid
+flowchart TD
+  A["update at audio time T"] --> Q["1 drain queues: state, listener, emitters, stops, triggers, queries"]
+  Q --> P["2 pitch-bend and ducking state"]
+  P --> M["3 music channel"]
+  M --> S["4 start pending instances due by T + period; resolve emitters; retire"]
+  S --> E["5 values, envelope, play position, distance gain, audibility"]
+  E --> R["6 rank by class and score; caps; steal with margin and hold"]
+  R --> V["7 real voices: volume, ratio, matrix, filter, sends, buffers"]
+  V --> O["8 one operation set for every voice change"]
+  O --> X["9 results and statistics"]
+```
+
+Diagram 4-A: one audio update (AEN-123).
+
+### 4.5 From a command to an instance
+
+**AEN-130** (MUST) A `Trigger` looks up its source and event (R-AUD-022). An event with no definition, or a source with none, does nothing (R-AUD-027). For every layer whose audience accepts the event on the local participant (R-AUD-024, R-AUD-025), evaluated once at the trigger with the local team of the latest match state, the engine creates one instance copied from the layer (AEN-067) with the trigger's position and velocity, records the trigger's emitter in its emitter set at once (R-AUD-038, DEC-323), and evaluates its six values once each (AEN-188). Outside a match, or with no local team, the own and enemy audiences never pass. An event of the `music` source raised with an object or none goes to the music channel instead (§8.2).
+
+**AEN-131** (MUST) A layer whose sharing is shared-random or shared-nearest merges into the live instance of the same full event id with the same kind of sharing, if one exists: the trigger's emitter is appended to that instance's emitter set and the new instance is discarded (R-AUD-029). The reference merges into any live shared instance of the same full event id.
+
+**AEN-132** (MUST) A new instance takes a free slot of the instance table and the next generation of that slot, the state `Pending` and the start time of AEN-024. In the reference the number of waiting instances is unbounded; in Species it is bounded by the table (AEN-300).
+
+**AEN-133** (MUST) A note re-trigger (AEN-178) creates a duplicate: a new instance copied from the live instance (its current values, position, velocity and emitter set), with the same layer as its definition, created by the same path as a trigger. A duplicate of a shared note layer therefore merges into its own original and plays no next note.
+
+**AEN-134** (MUST) A `Stop` selects instances by recorded emitter and by event as [event model](../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-036 specifies: a started instance (virtual or real) is released with a final release (AEN-169); a pending instance is retired at once. A stop that names no emitter acts only on instances raised with no emitter, and a stop reaches the music channel only when it names the `music` source (R-AUD-403). In the reference model a stop matches the emitter that an update has resolved, which two-dimensional and world-fixed instances never have, and an event name that contains the given text.
+
+**AEN-135** (MUST) Retiring an instance stops its voice, if it has one, and returns the voice to its pool with every per-voice setting reset (AEN-046), releases its stream, removes it from every count and frees its slot.
+
+**AEN-136** (MUST) `QueryCount` answers the number of live instances (states `Pending`, `Virtual` and `Real`) of the full event id whose emitter set holds the emitter, or of any emitter when the emitter is invalid; `QueryPlaying` answers whether any live instance's emitter set holds the emitter. Both are defined in every state of every slot and never fail (DEC-752, R-AUD-037), and a query is answered after the triggers and stops issued before it, so a query made right after a trigger finds its instances (DEC-323). In the reference model the count of playing instances fails as soon as it meets an empty voice when an emitter is given, and the count of all instances misses instances whose emitter an update has not yet resolved.
+
+**AEN-137** (MUST) The engine keeps these statistics per update: live instances, real instances, virtual instances, and real instances per bus. The reference keeps the live count, the occupied voice count and their difference.
+
+**AEN-138** (MUST) `Pause` stops the XAudio2 engine and freezes the advance of every instance; `Resume` restarts both, and every timer resumes where it stopped. The reference never pauses audio: during a paused match every sound keeps playing and the interface keeps raising its sounds, so no match pause issues `Pause` by default (§8.3).
+
