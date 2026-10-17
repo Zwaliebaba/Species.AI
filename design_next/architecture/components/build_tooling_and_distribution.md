@@ -1,62 +1,64 @@
 # Build tooling and distribution
 
-> Status: Engine baseline · Prefix: BLD · ADRs: [ADR-051](../../ADR/ADR-051-windows-toolchain-and-compiler-policy.md) · [ADR-052](../../ADR/ADR-052-cpp23-language-standard.md) · [ADR-053](../../ADR/ADR-053-modules-and-import-std.md) · [ADR-054](../../ADR/ADR-054-build-system-cmake-presets.md) · [ADR-055](../../ADR/ADR-055-dependencies-vcpkg-manifest-mode.md) · [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-057](../../ADR/ADR-057-version-identity.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-065](../../ADR/ADR-065-crash-reporting.md) · [ADR-070](../../ADR/ADR-070-continuous-integration.md) · [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · [ADR-072](../../ADR/ADR-072-distribution-channels-and-package-formats.md) · [ADR-073](../../ADR/ADR-073-code-signing.md) · also [ADR-001](../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md), [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-050](../../ADR/ADR-050-client-platform-and-minimum-os.md), [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md), [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-066](../../ADR/ADR-066-telemetry-with-consent.md), [ADR-067](../../ADR/ADR-067-logging.md), [ADR-068](../../ADR/ADR-068-profiling-and-gpu-timing.md), [ADR-069](../../ADR/ADR-069-test-framework.md) · Related: [Asset pipeline and resources](asset_pipeline_and_resources.md) · [Data schemas](data_schemas/README.md) · [Platform layer](platform_layer.md) · [Diagnostics, test and performance](diagnostics_test_and_performance/README.md) · [Maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [Game assets](../../assets/GameAssets.md)
+> Status: Engine baseline · Prefix: BLD · ADRs: [ADR-051](../../ADR/ADR-051-windows-toolchain-and-compiler-policy.md) · [ADR-052](../../ADR/ADR-052-cpp23-language-standard.md) · [ADR-053](../../ADR/ADR-053-modules-and-import-std.md) · [ADR-054](../../ADR/ADR-054-build-system-cmake-presets.md) · [ADR-055](../../ADR/ADR-055-dependencies-vcpkg-manifest-mode.md) · [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-057](../../ADR/ADR-057-version-identity.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-065](../../ADR/ADR-065-crash-reporting.md) · [ADR-070](../../ADR/ADR-070-continuous-integration.md) · [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · [ADR-072](../../ADR/ADR-072-distribution-channels-and-package-formats.md) · [ADR-073](../../ADR/ADR-073-code-signing.md) · also [ADR-001](../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md), [ADR-003](../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md), [ADR-017](../../ADR/ADR-017-texture-container-and-block-compression.md), [ADR-050](../../ADR/ADR-050-client-platform-and-minimum-os.md), [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md), [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md), [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../ADR/ADR-063-localisation.md), [ADR-066](../../ADR/ADR-066-telemetry-with-consent.md), [ADR-067](../../ADR/ADR-067-logging.md), [ADR-068](../../ADR/ADR-068-profiling-and-gpu-timing.md), [ADR-069](../../ADR/ADR-069-test-framework.md) · Related: [Asset pipeline and resources](asset_pipeline_and_resources.md) · [Data schemas](data_schemas/README.md) · [Platform layer](platform_layer.md) · [Diagnostics, test and performance](diagnostics_test_and_performance/README.md) · [Maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [Game assets](../../assets/GameAssets.md)
 
-This component specifies how Species is built, checked and delivered. It covers the toolchain and its pins; the build definition with its products, flavours and presets; the third-party dependencies; the generated build identity; the **content build** program, which runs the stages of the asset pipeline and the data schemas for each edition and adds its reports and the map-identity listing; the localisation build and the translation workflow; the hooks that a map tool uses; continuous integration; the client install directory, its packages and channel wrappers; code signing; and the build side of crash reporting. The rules of each content stage (import records, cookers, placeholders, validators, the pack format, entry hashes and the content manifest) belong to the [asset pipeline](asset_pipeline_and_resources.md) and the [data schemas](data_schemas/README.md); this document cites them and never restates them.
+This component specifies how Species is built, checked and delivered. It covers the toolchain and its pins; the build definition, which is one MSBuild solution of `.vcxproj` projects with the two configurations Debug and Release, and the separate tools solution; the three allow-listed NuGet packages; the shaders that the build compiles into the executable; the generated build identity; the **content build** program, which runs the stages of the asset pipeline and the data schemas for each edition and adds its reports and the map-identity listing; the localisation build and the translation workflow; the hooks that a map tool uses; continuous integration; the release build, the client install directory, its packages and channel wrappers; code signing; and the build side of crash reporting. The rules of each content stage (import records, cookers, placeholders, validators, the pack format, entry hashes and the content manifest) belong to the [asset pipeline](asset_pipeline_and_resources.md) and the [data schemas](data_schemas/README.md); this document cites them and never restates them. The repository's engineering rules (`AGENTS.md`) decide the build system, the configurations, the dependencies and the CI workflow (ADR-054, ADR-055, ADR-056, ADR-070); this document applies them to Species.
 
 Notation used throughout:
 
-- A **product** is one of the three programs of ADR-056: `client` (which can also host the integrated server), `server` (the headless dedicated server) and `tools` (the content build and the other tools).
-- A **flavour** is one of the four build configurations `Debug`, `Development`, `Profile` and `Shipping` (ADR-054, ADR-056).
+- A **product** is one of the programs of ADR-056, each built from one project: the **client** (`species.exe`, which can also host the integrated server) and the **server** (`species_server.exe`, the headless dedicated server), both projects of the game's solution; and the **content build tool** (`species-contentbuild.exe`), a development tool of the tools solution under `Tools/` (`AGENTS.md` §2). The test projects `<Project>Tests` are projects of the game's solution (ADR-069).
+- A **configuration** is `Debug|x64` or `Release|x64`, the only two (ADR-054). **Debug builds** compile the development facilities in; **Release builds** are what players and testers run (ADR-056).
 - An **edition** is one selection of content with its runtime feature flags, described by one **edition manifest** (ADR-056, ADR-059). An edition **marked for release** is one whose manifest sets the release flag (§3.2).
 - A **channel** is a distribution channel, and a **channel wrapper** is the package that one channel delivers (ADR-072).
-- The **repository layout** is that of ADR-054: `src/` (engine, game and server code), `content/` (the authoring sources of the content build), `tools/` (the content build and the other tools) and `documentation/`.
-- A **CI job** is one workflow preset that the continuous-integration service runs (ADR-054, ADR-070).
+- The **repository layout** is that of `AGENTS.md` §2 and ADR-054: the game's solution `<Solution>.slnx` at the repository root, with one flat folder per project and the shader subfolders `<Lib>/Shader/` and `<Lib>/CompiledShader/`; `content/`, the authoring sources of the content build (ADR-059); `Tools/`, the tools solution and the design tools; `Build/`, the checker scripts; and `.github/workflows/build.yml`, the CI workflow. The solution's name, its projects and the edges between them are settled when the first project is created and recorded in an ADR then (ADR-054).
+- A **CI job** is one job of the committed workflow `.github/workflows/build.yml`, or a job that an amendment of ADR-070 adds to it (ADR-070).
+- The **release procedure** is the Release build, the release checks, packaging, signing and symbol publication that whoever ships runs before a release, because CI builds Debug only (`AGENTS.md` §3, §6; §4.9).
 
 ## 1 Responsibilities and boundaries
 
-**BLD-001** (MUST) The build tooling owns: the toolchain definition and its pins (§4.1); the build definition, which is `CMakePresets.json`, the products, the flavours and their compile-time switches (§3.1, §4.2); the dependency manifest and the overlay triplets (§4.1); the edition-manifest semantics and the release flag (§3.2, §4.3); the build-identity generator (§3.3, §4.4); the content build program, which is its command line, its run modes, the order of its stages, its edition handling, its reports and the map-identity listing (§2.2, §4.5, §4.6); the localisation build and the translation export and import (§4.7); the build-side hooks of map tools (§4.8); the CI pipelines (§4.9); the install directory, the packages, the channel wrappers and the repair function (§4.10); code signing (§4.11); and symbol publication with the build side of crash reporting (§4.12).
+**BLD-001** (MUST) The build tooling owns: the toolchain definition and its pins (§4.1); the build definition, which is the game's solution and the tools solution with their projects, filters, configurations and compile-time switches (§2.1, §3.1, §4.2); the package list and its restore (§4.1); the shader compilation of the solution build (§4.1); the edition-manifest semantics and the release flag (§3.2, §4.3); the build-identity generator (§3.3, §4.4); the content build program, which is its command line, its run modes, the order of its stages, its edition handling, its reports and the map-identity listing (§2.2, §4.5, §4.6); the localisation build and the translation export and import (§4.7); the build-side hooks of map tools (§4.8); the CI workflow and its jobs (§4.9); the release procedure, the install directory, the packages, the channel wrappers and the repair function (§4.9, §4.10); code signing (§4.11); and symbol publication with the build side of crash reporting (§4.12).
 
 **BLD-002** (MUST NOT) The build tooling restates no rule of a content stage. The import records, cookers, derived variants, placeholders, asset validators, pack format, pack writer, entry hashes, content manifest and simulation content identity are the asset pipeline's (AST-001). The schemas, the authoring parser, the record validators, the cooked record format, the canonical writer and the schema migration are the data schemas' (DAT-001). The content build program runs those stages in the order of §4.5 and never changes what they produce.
 
-**BLD-003** (MUST NOT) No build is configured by editing a source file. The product, the flavour, the edition, the version and every pin come from the presets, the version file, the edition manifests and the dependency manifest (ADR-056, ADR-057). No number that identifies a build or a map is typed by hand in more than one place, and no source file holds a table of map identities (ADR-060).
+**BLD-003** (MUST NOT) No build is configured by editing a source file. The product is chosen by building its project, the configuration by the solution configuration, and the edition, the version and every pin come from the edition manifests, the version file, the project files and the `packages.config` files (ADR-054, ADR-056, ADR-057). No number that identifies a build or a map is typed by hand in more than one place, and no source file holds a table of map identities (ADR-060).
 
 **BLD-004** (MUST NOT) No build step writes into an install directory after packaging has finished, and no Species program writes into its own install directory at run time (ADR-071). The crash path itself is not part of this component: the [platform layer](platform_layer.md) installs the crash handlers and registers the files and memory that a crash report carries, and the [diagnostics](diagnostics_test_and_performance/README.md) component owns the contents of the black box, the soak-test harness, the test harness and the performance tests. This component provides the symbols, signatures, version resources and test-machine settings that make those reports usable (§4.12).
 
-**BLD-005** (MUST) The build produces the three products of ADR-056 from one build definition. The `server` product is headless and links no graphics, audio, input or text-rendering library (ADR-056, ADR-001). Which process roles the client and the server play is DEC-220; until it is decided, the build provides all three products, and the integrated server is the same library that the `server` product links (DEC-220 item 1).
+**BLD-005** (MUST) The build produces the products of ADR-056 from two solutions: the game's solution builds the client, the server, the libraries they link and the test projects; the tools solution under `Tools/` builds the content build tool. Nothing of the tools solution links into the executable, and the game's solution never references a project of the tools solution (`AGENTS.md` §2). The server is headless and links no graphics, audio, input or text-rendering library (ADR-056, ADR-001). Which process roles the client and the server play is DEC-220; until it is decided, the build provides both programs, and the integrated server is the same library that the server links (DEC-220 item 1).
 
 Table 1-A Boundaries.
 
 | Neighbour | Gives the build tooling | Takes from it |
 |---|---|---|
-| [asset pipeline](asset_pipeline_and_resources.md) (`AST`) | the content stages, the packs, the asset indexes, the mount manifests, the content manifest, the placeholder flags and the asset diagnostics | the edition manifests and their release flag, the products and flavours, the CI jobs that run the content build, the installation of the packs (AST-056) |
+| [asset pipeline](asset_pipeline_and_resources.md) (`AST`) | the content stages, the packs, the asset indexes, the mount manifests, the content manifest, the placeholder flags and the asset diagnostics | the edition manifests and their release flag, the products and configurations, the CI jobs that run the content build, the installation of the packs (AST-056) |
 | [data schemas](data_schemas/README.md) (`DAT`) | the edition-manifest schema, the record diagnostics (DAT-051), the canonical writer and the migration step | the content build program that runs them, CI |
 | [platform layer](platform_layer.md) (`PLT`) | the crash path and its registrations, the user-data folders, the start-up checks and the start-up message path | the build identity, the install layout, the channel tag, the test-machine dump settings |
 | [diagnostics](diagnostics_test_and_performance/README.md) (`DBG`) | the black box, the test harness, the soak harness, the performance tests and their budgets | the CI jobs and their artefacts, the build identity, the symbol store, the soak edition |
-| [renderer](renderer/README.md) (`RND`) | the use of the Agility SDK runtime and the version string drawn in the front end (RND-076) | the exported Agility SDK constants, generated from the package pin (§4.1) |
+| [renderer](renderer/README.md) (`RND`) | the use of the Agility SDK runtime, the shader sources and the version string drawn in the front end (RND-076) | the exported Agility SDK constants, taken from the package pin (§4.1); the compiled shader byte arrays (BLD-121) |
 | [UI framework](ui_framework/README.md) (`UI`) | the string-table merge (UI-222) and the caption markup (UI-223, UI-224) | the localisation report and the translation export (§4.7) |
 | maps ([reference/08](../../reference/08_maps_and_level_design/rules_and_conventions.md)) | the map id, the map catalogue, the per-mode map rules | the map-identity listing (§4.6), the validators that map tools call (§4.8) |
 | front end ([reference/09](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)) | the reference language set (R-META-461) and the language test (R-META-473) | the localisation report (§4.7) |
-| simulation ([reference/12](../../reference/12_simulation_model/README.md)) | none | the build settings of the simulation targets (§4.2) |
+| simulation ([reference/12](../../reference/12_simulation_model/README.md)) | none | the build settings of the simulation libraries (§4.1, §4.2) |
 
 ```mermaid
 flowchart LR
   subgraph Repo["Repository"]
-    SRC["src/: engine, game and server code"]
-    CNT["content/: authoring sources and edition manifests"]
-    PIN["presets, version file, dependency manifest"]
+    SLN["game solution: engine, game, server and test projects"]
+    TSL["Tools: the tools solution"]
+    CNT["content: authoring sources and edition manifests"]
+    PIN["project files, packages.config, version file"]
   end
-  PIN --> CFG["configure one product and flavour"]
-  SRC --> CFG
-  CFG --> CMP["compile and link with the pinned toolset"]
-  CMP --> TST["unit, property and golden-hash tests"]
-  CMP --> TOOL["tools product: the content build program"]
+  PIN --> RES["NuGet restore of the three packages"]
+  RES --> CMP["build Debug or Release through the solution"]
+  SLN --> CMP
+  CMP --> TST["test suites through vstest.console.exe"]
+  TSL --> TOOL["content build tool"]
   TOOL --> CB["content build per edition"]
   CNT --> CB
   CB --> PK["packs, mount manifest, content manifest, reports"]
   CMP --> ID["build identity"]
   PK --> ID
-  CMP --> INS["install directory"]
+  CMP --> INS["install directory from a Release build"]
   PK --> INS
   ID --> INS
   INS --> SIG["sign PE files and packages"]
@@ -64,42 +66,46 @@ flowchart LR
   CMP --> SYM["symbol store"]
 ```
 
-*Figure 1-A: from the repository to signed packages and the symbol store. CI runs configure, compile, tests and the content build on every change, and packaging, signing and symbol upload for release candidates (§4.9).*
+*Figure 1-A: from the repository to signed packages and the symbol store. CI builds `Debug|x64` and runs the checks and tests on every change; the content build, soak, fuzzing, GPU and performance jobs join it by amendment of ADR-070; the Release build, packaging, signing and symbol publication are the release procedure (§4.9).*
 
 ## 2 Interfaces
 
 ### 2.1 The build definition
 
-**BLD-006** (MUST) The build definition is one CMake project with a checked-in `CMakePresets.json` (ADR-054). Each configure preset selects exactly one operating system, compiler, flavour and product, and its name is `<os>-<compiler>-<flavour>` followed by `-<product>`; each configure preset has a build preset and a test preset of the same name, and each CI job is one workflow preset named `ci-<tier>-<job>` (§4.9). `CMakeUserPresets.json` is local and never checked in. The presets of the baseline are those of table 2.1-A.
+**BLD-006** (MUST) The build definition is one MSBuild solution `<Solution>.slnx` at the repository root, of `.vcxproj` projects with functional `.filters` files (ADR-054, `AGENTS.md` §2). The solution has exactly the two configurations of table 2.1-A and the platform x64; no project or solution has a Win32 platform or a third configuration. The solution is always built from the repository root through the solution file: one project is built with `/t:<ProjectName>` on the solution and never by building its `.vcxproj` directly, because output paths and cross-project include directories are anchored on `$(SolutionDir)`, which MSBuild defines only for a solution build (`AGENTS.md` §3). Build output goes to `x64\<Configuration>\`. The tools solution under `Tools/` follows the same rules, except R14 (BLD-043).
 
-Table 2.1-A Configure presets of the baseline. "Products" lists the products that have a preset of that row; the preset name ends with the product.
+Table 2.1-A Configurations of the solution.
 
-| Preset stem | Compiler | Flavour or configuration | Products | Use |
-|---|---|---|---|---|
-| `windows-msvc-debug` | MSVC | `Debug` | client, server, tools | developer debugging |
-| `windows-msvc-development` | MSVC | `Development` | client, server, tools | everyday development; required CI build |
-| `windows-msvc-profile` | MSVC | `Profile` | client, server | profiling captures (ADR-068) |
-| `windows-msvc-shipping` | MSVC | `Shipping` | client, server, tools | release candidates; required CI build |
-| `windows-clangcl-analysis` | clang-cl | `Development`, with static analysis | server, tools | portability and analysis build of the shared and server code; never distributed (ADR-051) |
-| `windows-msvc-asan` | MSVC | `Development`, with AddressSanitizer | client, server, tools | nightly sanitiser tests and fuzzing (ADR-069, ADR-070) |
-| `windows-msvc-analyze` | MSVC | `Development`, with `/analyze` | client, server, tools | nightly code analysis (ADR-070) |
+| Configuration | Use | Built by |
+|---|---|---|
+| `Debug\|x64` | developer debugging; every CI build and test run; the development facilities of ADR-056 compiled in | developers and CI (§4.9) |
+| `Release\|x64` | everything that players and testers run; optimised, with the development facilities compiled out | whoever ships, in the release procedure (BLD-122) |
 
-**BLD-007** (MUST) The cache variables of table 2.1-B are the only inputs that select what a configure produces. CI passes no `-D` option that its preset does not hold (ADR-054).
+**BLD-007** (MUST) A build is selected by exactly the inputs of table 2.1-B; no other property, environment variable or source edit changes what a project compiles (ADR-054). The commands of table 2.1-C are the build paths; Visual Studio opens the solution file itself.
 
-Table 2.1-B Cache variables.
+Table 2.1-B Inputs that select a build.
 
-| Variable | Values | Default | Set by | Meaning |
-|---|---|---|---|---|
-| `SPECIES_PRODUCT` | `client`, `server`, `tools` | none | the configure preset | the one product of this configure (ADR-056) |
-| `SPECIES_IMPORT_STD` | `ON`, `OFF` | `OFF` | the configure preset | `import std` in client-only targets (ADR-053) |
-| `SPECIES_BUILD_NUMBER` | an integer from 0 to `bld.version.part_max` | 0 | the CI service | the CI build number of the build identity (§4.4) |
-| `SPECIES_SOURCE_REVISION` | a source-control revision id | read from the working tree at configure | configure | the revision of the build identity, with the modified marker (§4.4) |
-| `VCPKG_TARGET_TRIPLET`, `VCPKG_HOST_TRIPLET` | `x64-windows-species` | `x64-windows-species` | the hidden base preset | the overlay triplet (ADR-055) |
-| `VCPKG_MANIFEST_DIR` | the repository root | the repository root | the hidden base preset | the dependency manifest (ADR-055) |
+| Input | Values | Set by | Meaning |
+|---|---|---|---|
+| `Configuration` | `Debug`, `Release` | the developer, CI (`Debug` only) or the release procedure | the configuration of table 2.1-A |
+| `Platform` | `x64` | always | the only platform |
+| `/t:<ProjectName>` | a project of the solution, or none | the developer | builds that project and what it references; none builds the whole solution |
+| `EngineBuildNumber` | an integer from 0 to `bld.version.part_max` | the CI service, once the workflow passes it (ADR-070); 0 in developer builds | the CI build number of the build identity (§4.4) |
+
+Table 2.1-C Build commands, from the repository root.
+
+| Purpose | Command |
+|---|---|
+| restore the allow-listed packages | `msbuild <Solution>.slnx /t:Restore /p:RestorePackagesConfig=true /nologo` |
+| build everything | `msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo` |
+| build one project | `msbuild <Solution>.slnx /t:<ProjectName> /p:Configuration=Debug /p:Platform=x64 /m /nologo` |
+| build Release | `msbuild <Solution>.slnx /p:Configuration=Release /p:Platform=x64 /m /v:minimal /nologo` |
+| run the tests | `vstest.console.exe` over every `<Project>Tests.dll` that the build produced (ADR-069) |
+| run the checkers | `python Build\CheckFormat.py`, `python Build\CheckProjectFiles.py`, `python Build\RunClangTidy.py` (ADR-070) |
 
 ### 2.2 The content build command line
 
-**BLD-008** (MUST) The content build is one command-line program of the `tools` product, `species-contentbuild` (ADR-059). It takes the commands of table 2.2-A, each with the options of table 2.2-B. Every path is a separate argument, and a path that contains spaces is valid.
+**BLD-008** (MUST) The content build is one command-line program, `species-contentbuild.exe`, the content build tool of the tools solution under `Tools/` (ADR-059, `AGENTS.md` §2). It takes the commands of table 2.2-A, each with the options of table 2.2-B. Every path is a separate argument, and a path that contains spaces is valid.
 
 Table 2.2-A Commands of the content build.
 
@@ -117,7 +123,7 @@ Table 2.2-B Options of the content build.
 |---|---|---|
 | `--edition <id>` (repeatable) or `--all-editions` | the editions to build or validate | every edition |
 | `--content-root <dir>` | the content root | `content/` of the checkout |
-| `--out <dir>` | the output directory (§3.4) | `out/content/` of the build tree |
+| `--out <dir>` | the output directory (§3.4) | `out\content\` under the repository root, which is build output |
 | `--clean` | removes the output directory first, so every output is rebuilt | off: incremental |
 | `--jobs <n>` | the number of worker threads | the hardware thread count |
 | `--language <tag>` (repeatable) | the languages of `strings-export` | every non-base language of the content set |
@@ -136,82 +142,10 @@ Table 2.2-C Exit codes of the content build.
 
 ### 2.3 Interface sketch
 
-The sketch is a C++23 declaration outline, not an implementation (ADR-052). Diagnostics are those of the data schemas (`species::data::Diagnostic`, DAT-051); packs and hashes are those of the asset pipeline (`species::assets`).
+The sketch is a C++23 declaration outline, not an implementation (ADR-052). Every type is in namespace `Engine`. Diagnostics are those of the data schemas (`Diagnostic`, DAT-051); packs and hashes are those of the asset pipeline (`Sha256Digest`).
 
 ```cpp
-namespace species::build {
-
-enum class Product : std::uint8_t { Client, Server, Tools };                    // ADR-056
-enum class Flavour : std::uint8_t { Debug, Development, Profile, Shipping };    // ADR-054
-
-struct SemanticVersion { std::uint16_t major, minor, patch; };
-
-struct BuildIdentity {                                   // ADR-057, §3.3
-  SemanticVersion version;
-  std::uint32_t   buildNumber;                           // CI build number, 0 for developer builds
-  std::string     sourceRevision;                        // source-control revision id
-  bool            modifiedTree;                          // built from a modified working tree
-  species::assets::Sha256Digest contentManifestHash;     // the content manifest of the mounted packs
-  Product         product;
-  Flavour         flavour;
-};
-
-const BuildIdentity& CurrentBuildIdentity() noexcept;   // code fields generated; content hash from the content manifest
-std::string DisplayVersion(const BuildIdentity&);       // "MAJOR.MINOR.PATCH+build.<number>"
-std::string FullIdentityText(const BuildIdentity&);     // build details screen, log header (§4.4)
-std::array<std::uint16_t, 4> VersionResourceQuad(const BuildIdentity&);   // MAJOR.MINOR.PATCH.build
-std::string_view ChannelTag() noexcept;                 // §3.3; "unknown" when no channel file exists
-
-}  // namespace species::build
-
-namespace species::contentbuild {
-
-using EditionId = std::string;                           // stable id of an edition manifest
-struct ToolError;                                        // stage, input and reason of a tool or I/O failure
-
-enum class Command : std::uint8_t { Build, Validate, Loose, StringsExport, StringsImport };   // table 2.2-A
-
-enum class Stage : std::uint8_t {                        // §4.5; the order carries meaning
-  ResolveEditions, ReadInputs, CheckSources, Cook, Derive, Placeholders, CookRecordsAndGenerate,
-  CheckReferences, SelectEditions, Localisation, MapIdentities, WritePacks, WriteManifestsAndReports };
-
-struct RunOptions {
-  std::vector<EditionId> editions;                       // empty: every edition
-  std::filesystem::path  contentRoot, outDir;
-  std::optional<std::filesystem::path> previousOutDir;
-  bool clean = false;
-  std::uint32_t jobs = 0;                                // 0: the hardware thread count
-};
-
-struct MapIdentityEntry {                                // §4.6
-  std::string mapId;                                     // map_<mode>_<players>p_<nn>
-  species::assets::Sha256Digest hash;                    // AST-099
-  std::vector<std::string> modes;                        // the header's mode list, in its order
-  std::uint8_t players;
-  std::string packId;
-};
-
-struct LanguageFindings {                                // §4.7
-  std::string tag;                                       // BCP 47
-  std::vector<std::string> missing, untranslated, unknown;
-  std::uint32_t baseIds, presentIds;
-};
-
-struct RunResult {
-  int exitCode;                                          // table 2.2-C
-  std::vector<species::data::Diagnostic> diagnostics;    // every diagnostic of the run, grouped by file
-  std::vector<MapIdentityEntry> mapIdentities;           // per edition
-  std::vector<LanguageFindings> localisation;            // per edition
-};
-
-class ContentBuild {
- public:
-  std::expected<RunResult, ToolError> Run(Command, const RunOptions&);   // table 2.2-A
-  // Map tools validate a map definition with the same code as the build (§4.8, R-MAP-400).
-  std::vector<species::data::Diagnostic> ValidateMapFile(const std::filesystem::path& authoringFile) const;
-};
-
-}  // namespace species::contentbuild
+@@SKETCH@@
 ```
 
 **BLD-010** (MUST) The interfaces are those above in substance. Every operation that can fail returns `std::expected` or a list of diagnostics, never a partial result without an error. `ContentBuild::ValidateMapFile` runs exactly the validators that the `validate` command runs on a map definition, so a map tool and the content build accept and reject the same maps (§4.8).
@@ -232,10 +166,11 @@ Table 2.4-A Outputs of the build.
 | map-identity listing | content build | this document (§4.6) | CI, the soak harness, release notes |
 | residency lists | content build | asset pipeline (AST-067) | the asset cache, the audio engine's budget check |
 | dependency graph | content build | this document (§4.5) | the next incremental run |
-| build identity: generated header and data file | configure and packaging | this document (§4.4) | every program, every package, the symbol store |
-| dependency licence list | configure | this document (§4.1) | packaging (the licence notices), release review |
+| compiled shader headers | the solution build (`FXCompile`) | this document (BLD-121) | the projects that bind pipeline states |
+| build identity: generated header and data file | a build step of the solution and packaging | this document (§4.4) | every program, every package, the symbol store |
+| licence notices | packaging | this document (§4.1) | the install directory, release review |
 | install directory, signed archive, channel wrappers | packaging | this document (§4.10) | testers, players, channels |
-| symbols | CI | this document (§4.12) | the symbol store, crash analysis |
+| symbols | the release procedure and CI (§4.12) | this document (§4.12) | the symbol store, crash analysis |
 
 ### 2.5 Threading contract
 
@@ -243,30 +178,34 @@ Table 2.4-A Outputs of the build.
 
 ## 3 Data model
 
-### 3.1 Products, flavours and compile-time switches
+<a id="31-products-flavours-and-compile-time-switches"></a>
 
-**BLD-013** (MUST) The products are those of table 3.1-A. Each is a separate set of CMake targets, named by `SPECIES_PRODUCT` (ADR-056).
+### 3.1 Products, configurations and compile-time switches
+
+**BLD-013** (MUST) The products are those of table 3.1-A. Each is built by building its project through its solution (`/t:<ProjectName>`); no property, macro or source file selects a product (ADR-056).
 
 Table 3.1-A Products.
 
-| Product | Programs | Links | Never links | Content it mounts |
-|---|---|---|---|---|
-| `client` | `species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, audio, input, the UI framework, the platform crash path | none of the tools | the packs of one client edition |
-| `server` | `species_server.exe`, the headless dedicated server | the engine core, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
-| `tools` | `species-contentbuild.exe` and the other content tools, including the schema code generator (ADR-062) | the engine core, the schema and record code of the data schemas, the cookers of the asset pipeline, a software or GPU renderer for thumbnails (AST-087) | no dependency beyond those it declares (BLD-041) | none: it reads authoring sources |
-
-**BLD-014** (MUST) The compile-time switches are those of table 3.1-B. Each is a CMake option derived from the flavour by the build definition; no preset, cache variable or source file sets one directly, and configure fails when one is set by hand (ADR-056). They exist only for code that must not be present in a binary.
-
-Table 3.1-B Compile-time switches by flavour.
-
-| Switch | `Debug` | `Development` | `Profile` | `Shipping` | Owner of the code |
+| Product | Solution | Programs | Links | Never links | Content it mounts |
 |---|---|---|---|---|---|
-| developer console and debug commands, including the cheats as sequenced debug commands and the network statistics window (DEC-041) | compiled in | compiled in | compiled out | compiled out | [diagnostics](diagnostics_test_and_performance/README.md) |
-| PIX markers (`SPECIES_PROFILE_SCOPE`) and `WinPixEventRuntime.dll` | compiled in | compiled in | compiled in | compiled out | diagnostics (ADR-068) |
-| loose-content mount, opt-in by a start-up option | compiled in | compiled in | compiled out | compiled out | asset pipeline (AST-105) |
-| test hooks | compiled in | compiled in | compiled out | compiled out | diagnostics |
-| assertions | all | all | release checks only | release checks only | diagnostics; `NDEBUG` is defined in `Profile` and `Shipping` only, and no development check depends on `NDEBUG` alone (ADR-051) |
-| optimisation | off | on | on | on | this document |
+| client | the game's solution | `species.exe`, the game client, which can host the integrated server | the engine, the game, the server library, the renderer, audio, input, the UI framework, the platform crash path, the three packages of table 4.1-A | anything of the tools solution | the packs of one client edition |
+| server | the game's solution | `species_server.exe`, the headless dedicated server | the engine core, the game rules, the server library, the platform layer without a window | `d3d12`, `dxgi`, any renderer, audio, input, UI or text-rendering code, the GameInput and Agility SDK packages (ADR-001, ADR-056) | the packs of one server edition: data records, maps, collision assets and simulation data records only (AST-007) |
+| content build tool | the tools solution under `Tools/` | `species-contentbuild.exe` and its importers, including the schema code generator (ADR-062) | the engine libraries it shares with the game (the schema and record code of the data schemas, the cookers of the asset pipeline), a software or GPU renderer for thumbnails (AST-087), and its own pinned dependencies (BLD-043) | nothing beyond what its project declares (BLD-041) | none: it reads authoring sources |
+| test projects | the game's solution | one `<Project>Tests.dll` per library, and `<Project>Fuzz` harnesses (ADR-069) | the library under test and the Microsoft C++ Unit Test Framework that ships with Visual Studio | any product's entry point | the test content the test names |
+
+**BLD-014** (MUST) The compile-time switches are those of table 3.1-B. One engine header derives the development switch `ENGINE_DEVELOPMENT` from `NDEBUG`: 1 when `NDEBUG` is not defined, which is Debug, and 0 otherwise, which is Release; every switch of the table except optimisation follows from it (ADR-056). No project, property or source file sets `ENGINE_DEVELOPMENT` or any other switch by hand, and `Build\CheckProjectFiles.py` fails a project that defines it. The switches exist only for code that must not be present in a binary.
+
+Table 3.1-B Compile-time switches by configuration.
+
+| Switch | `Debug` | `Release` | Owner of the code |
+|---|---|---|---|
+| developer console and debug commands, including the cheats as sequenced debug commands and the network statistics window (DEC-041); the development overlay, the development windows and development drawing | compiled in | compiled out | [diagnostics](diagnostics_test_and_performance/README.md) |
+| development checks (`ENGINE_ASSERT`) | compiled in | compiled out | diagnostics; release checks stay in both (DBG-070) |
+| debug-level and trace log records | compiled in | compiled out | diagnostics (ADR-067) |
+| PIX markers (`ENGINE_PROFILE_SCOPE`) and `WinPixEventRuntime.dll` | compiled in | compiled in | diagnostics (ADR-068) |
+| loose-content mount, opt-in by a start-up option | compiled in | compiled out | asset pipeline (AST-105) |
+| test hooks and hot reload of definitions | compiled in | compiled out | diagnostics and the owning components |
+| optimisation | off | on | this document (BLD-031) |
 
 ### 3.2 Edition manifests
 
@@ -304,13 +243,13 @@ Table 3.2-C Reference build behaviours that are not edition flags.
 
 | Reference behaviour | Value in the reference edition | Species home |
 |---|---|---|
-| network statistics window | present | the developer console of `Debug` and `Development` builds (table 3.1-B, DEC-041) |
-| debug log written to a file | on | the rotating log file of every flavour (ADR-067) |
-| developer tools: the cheat window, a sound editor, a gesture editor, a video generator, random-draw tracking and a Supply-crate help window | absent | the cheats are sequenced debug commands of `Debug` and `Development` builds (DEC-041); the other tools are not specified |
+| network statistics window | present | the developer console of Debug builds (table 3.1-B, DEC-041) |
+| debug log written to a file | on | the rotating log file of both configurations (ADR-067) |
+| developer tools: the cheat window, a sound editor, a gesture editor, a video generator, random-draw tracking and a Supply-crate help window | absent | the cheats are sequenced debug commands of Debug builds (DEC-041); the other tools are not specified |
 | object kinds that no match creates are refused | on | a build error (DEC-802, DAT-026) |
 | player authentication | required | entitlement and identity are DEC-248; until decided, no entitlement check applies |
 | permitted maps | every map of the edition | the `maps` field `all` (BLD-053) |
-| exactly one build target per build | enforced | exactly one product per configure (BLD-044) and exactly one edition per install directory (BLD-052) |
+| exactly one build target per build | enforced | one project per product, built through its solution (BLD-044), and exactly one edition per install directory (BLD-052) |
 
 **BLD-018** (MUST) The baseline editions are those of table 3.2-D. The design phase adds or replaces editions; every edition follows §4.3.
 
@@ -332,13 +271,13 @@ Table 3.3-A Build-identity fields.
 | Field | Source | Form |
 |---|---|---|
 | semantic version | the version file `species_version.json` at the repository root, changed only by release changes | `MAJOR.MINOR.PATCH`, each from 0 to `bld.version.part_max` |
-| build number | `SPECIES_BUILD_NUMBER`, set by the CI service; 0 in developer builds | 0 to `bld.version.part_max` |
-| source revision | the source-control revision id of the working tree, read at configure | the full revision id, followed by the modified marker `-modified` when the working tree differs from that revision |
+| build number | `EngineBuildNumber`, passed by the CI service (table 2.1-B); 0 in developer builds | 0 to `bld.version.part_max` |
+| source revision | the source-control revision id of the working tree, read by the build step of BLD-020 | the full revision id, followed by the modified marker `-modified` when the working tree differs from that revision |
 | content manifest hash | the SHA-256 of the content manifest of the packs built with it (AST-059) | 32 bytes; displayed as `ast.hash.display_hex_digits` hexadecimal digits |
-| product | `SPECIES_PRODUCT` | `client`, `server` or `tools` |
-| flavour | the configure preset | `Debug`, `Development`, `Profile` or `Shipping` |
+| product | the project being built | `client`, `server` or `contentbuild` |
+| configuration | the solution configuration | `Debug` or `Release` |
 
-**BLD-020** (MUST) Configure generates the header `species_build_identity.h` with every field except the content manifest hash, so that a content change never recompiles code. The packaging step of the build definition writes the data file `build_identity.json` into the install directory with every field, the content manifest hash included. At start-up the client and the server read the content manifest hash from the content manifest they mount, compose the full identity with the generated fields, and log a mismatch with `build_identity.json` as a modified installation (§6).
+**BLD-020** (MUST) A build step of each product's project generates the header `BuildIdentity.h` with every field except the content manifest hash, as constants of namespace `Engine`, so that a content change never recompiles code (ADR-057, `AGENTS.md` R7). The header is build output: never committed, never edited, and written where the first projects' layout puts generated files (ADR-054). The packaging step writes the data file `build_identity.json` into the install directory with every field, the content manifest hash included. At start-up the client and the server read the content manifest hash from the content manifest they mount, compose the full identity with the generated fields, and log a mismatch with `build_identity.json` as a modified installation (§6).
 
 **BLD-021** (MUST) The **channel tag** names the channel that delivered an install. A channel wrapper writes it as the first line of `channel_tag.txt` in the install directory: lower-case ASCII letters, digits, `_` and `-`, at most `bld.channel.tag_max_chars` characters. A missing file, an empty first line or a tag that breaks these rules reads as `unknown`. The tag is written into the log header next to the build identity (ADR-067); it never changes behaviour, and it is not a field of the build identity, because one build is wrapped for several channels. Whether it reaches an online service is a design-phase input (DEC-249).
 
@@ -359,72 +298,85 @@ Table 3.5-A Install-directory contents.
 
 | Path | Content | From | Present |
 |---|---|---|---|
-| `species.exe` | the client | the `client` product, `Shipping` flavour for every channel package | always |
-| first-party DLLs | the client's own libraries, if any | the `client` product | as built |
+| `species.exe` | the client, with its shaders compiled in (BLD-121) | the client project, Release configuration, for every channel package | always |
+| first-party DLLs | the client's own libraries, if any | the client project | as built |
+| `WinPixEventRuntime.dll` | the PIX event runtime, because the markers stay in Release (ADR-068) | the pinned `WinPixEventRuntime` package (BLD-038) | always |
 | `D3D12\D3D12Core.dll` | the Agility SDK runtime `bld.pin.agility_sdk` | the pinned Agility SDK package (BLD-042) | always |
 | `packs\` | the packs, the mount manifest and the content manifest of exactly one edition | the content build (BLD-022) | always |
 | `build_identity.json` | the full build identity | packaging (BLD-020) | always |
 | `channel_tag.txt` | the channel tag | the channel wrapper (BLD-021) | channel packages only |
-| `licences\` | the third-party licence notices of every distributed dependency | the dependency licence list (BLD-039) | always |
-| Visual C++ runtime DLLs | the runtime of the pinned toolset | the pinned Visual C++ redistributable | only for a channel that cannot run prerequisites (ADR-071) |
+| `licences\` | the licence notices of the three packages and of every licensed content file | packaging (BLD-039) | always |
+| Visual C++ runtime DLLs | the runtime of the toolset | the Visual C++ redistributable of the toolset | only for a channel that cannot run prerequisites (ADR-071) |
 
-**BLD-024** (MUST NOT) An install directory never holds: `D3D12SDKLayers.dll` or any file of a preview Agility SDK (ADR-001); the shader compiler or any of its libraries (ADR-003); `WinPixEventRuntime.dll` in a `Shipping` install (ADR-068); PDB files or other symbol files; a crash-dump helper library, a support or crash-upload tool, an updater, a copy helper or a profile locator (ADR-065, ADR-071, ADR-072); loose content files; any file that table 3.5-A does not list.
+**BLD-024** (MUST NOT) An install directory never holds: `D3D12SDKLayers.dll` or any file of a preview Agility SDK (ADR-001); a shader source, a compiled shader object, a compiled-shader header or a shader-compiler library, such as `dxcompiler.dll` or `d3dcompiler_47.dll` (ADR-003); the GameInput redistributable, which the installer runs as a prerequisite (BLD-099); PDB files or other symbol files; a crash-dump helper library, a support or crash-upload tool, an updater, a copy helper or a profile locator (ADR-065, ADR-071, ADR-072); loose content files; any file that table 3.5-A does not list.
 
 **BLD-025** (MUST) User data never lives in the install directory. Its folders are those of ADR-071 under `%LOCALAPPDATA%\<Studio>\Species\` (`settings\`, `logs\`, `crashes\`), resolved by the [platform layer](platform_layer.md) (PLT-016, PLT-017), which also holds the `diagnostics\` and `maps\` folders; `<Studio>` is the publisher-name parameter (CONVENTIONS §8.11).
 
 ### 3.6 The symbol store
 
-**BLD-026** (MUST) The symbol store holds, for every CI build, every PE file that the build produced for any product and the PDB of each, filed under the build identity and also indexed by the PE and PDB signatures that debuggers use (ADR-065). A publication is immutable: publishing the same build identity again with different files fails. How long the store keeps builds that were never release candidates is an infrastructure choice; release-candidate and release builds are kept permanently.
+**BLD-026** (MUST) The symbol store holds, for every Release build that the release procedure packages, and for every CI build once the workflow's symbol step is added by amendment of ADR-070, every PE file that the build produced for any product and the PDB of each, filed under the build identity and also indexed by the PE and PDB signatures that debuggers use (ADR-065). A publication is immutable: publishing the same build identity again with different files fails. How long the store keeps builds that were never release candidates is an infrastructure choice; release-candidate and release builds are kept permanently.
 
 ## 4 Behaviour and algorithms
 
 ### 4.1 Toolchain and dependencies
 
-**BLD-027** (MUST) Every distributed binary is compiled and linked by MSVC Build Tools at the pinned toolset `bld.pin.msvc_toolset` (14.51). Developers use Visual Studio 2026, version `bld.pin.visual_studio` (18.11) or later; CI agents use the Visual Studio Build Tools edition at the same toolset. The pin lives in one place, the hidden toolchain preset, and CI honours it through `VCToolsVersion`. Configure fails when `CMAKE_CXX_COMPILER_VERSION` does not belong to the pinned toolset (ADR-051).
+**BLD-027** (MUST) Every project names the platform toolset `bld.pin.msvc_toolset` (`v145`, Visual Studio 2026) as its `PlatformToolset`, for the platform x64 only (ADR-051, ADR-054). Developers use Visual Studio 2026, version `bld.pin.visual_studio` (18.11) or later; CI uses the Visual Studio of its runner image. The MSVC minor version under the toolset is not pinned: every CI run prints the toolchain it got (the runner image, Visual Studio, MSBuild and the checkers' versions), so that a pin can be taken from that record when one is needed, and a build error is never solved by changing the toolset (ADR-051, ADR-070).
 
-**BLD-028** (MUST) The toolset moves to `bld.pin.msvc_toolset_next` (14.52) in one reviewed change when that toolset becomes the default, and the language switch changes to `/std:c++23` in the same change (ADR-051, ADR-052). `bld.pin.msvc_toolset_fallback` (14.50, long-term support) is used only if a change of the C++23-preview ABI breaks the build.
+**BLD-028** (MUST) Every project compiles with the language switch `bld.pin.cxx_switch` (`/std:c++latest`), stated in the project file and identical in both configurations, and the code is written to C++23; a facility of a newer standard needs an amendment of ADR-052 before it is used. No extended floating-point type is used (ADR-052).
 
-**BLD-029** (MUST) One Windows SDK release, `bld.pin.windows_sdk`, is pinned in the toolchain preset: at least the release for Windows 11 version 24H2, the OS floor of ADR-050. The Agility SDK headers are included before the Windows SDK headers (ADR-051, ADR-001).
+**BLD-029** (MUST) One Windows SDK release, `bld.pin.windows_sdk` (10.0.26100.9457), the latest release of the 10.0.26100 series and therefore at least the release for Windows 11 version 24H2, the OS floor of ADR-050, is the SDK of every project; `WindowsTargetPlatformVersion` names it (technology baseline item 2.4, ADR-051). Its `dxc` compiles the shaders (BLD-121). The Agility SDK headers are included before the Windows SDK headers (ADR-051, ADR-001).
 
-**BLD-030** (MUST) The always-on compiler options are `/permissive-`, `/Zc:__cplusplus`, `/Zc:preprocessor`, `/utf-8`, `/W4`, `/EHsc`, `/Zi`, `/guard:cf`, `/GS` and `/MD`, with `/WX` on CI. The always-on linker options are `/DEBUG:FULL`, `/DYNAMICBASE`, `/HIGHENTROPYVA`, `/NXCOMPAT`, `/CETCOMPAT` and `/guard:cf`, with `/OPT:REF` and `/OPT:ICF` in the optimised flavours. Every configuration writes a PDB for every binary (ADR-051).
+**BLD-030** (MUST) The compiler settings of every project, identical in Debug and Release, are `/std:c++latest`, `/permissive-` (which gives `/Zc:strictStrings`), `/W4` with warnings as errors (`TreatWarningAsError`, `/WX`) in every build, `/fp:precise`, `/arch:AVX2`, `/Zc:__cplusplus`, `/Zc:preprocessor`, `/utf-8`, `/EHsc`, `/Zi` (never `/ZI`, which `/guard:cf` excludes), `/guard:cf`, `/GS` and one precompiled header `pch.h` per project; the runtime library is `/MDd` in Debug and `/MD` in Release. The linker settings of both configurations are `/DEBUG:FULL`, `/DYNAMICBASE`, `/HIGHENTROPYVA`, `/NXCOMPAT`, `/CETCOMPAT` and `/GUARD:CF`; Release adds `/OPT:REF`, `/OPT:ICF` and link-time code generation, and Debug links incrementally. Every configuration writes a PDB for every binary. No warning is silenced with a pragma (ADR-051, `AGENTS.md` §3, §4).
 
-**BLD-031** (MUST) The language switch is `bld.pin.cxx_switch`, set in one place. Configure fails when `/std:c++latest` appears in a `Profile` or `Shipping` configuration. No C++26 feature and no extended floating-point type is used in any code (ADR-052).
+**BLD-031** (MUST) Debug and Release differ in exactly the optimisation settings of `AGENTS.md` §3: `Optimization`, `_DEBUG` against `NDEBUG`, `FunctionLevelLinking` and `IntrinsicFunctions`, and the linker's folding and whole-program switches, spelled in MSBuild as `UseDebugLibraries`, `RuntimeLibrary`, `LinkIncremental`, `WholeProgramOptimization`, `EnableCOMDATFolding` and `OptimizeReferences`. Every other setting, among them the language standard, conformance, the warning level, the include directories, the precompiled header, the floating-point model, the instruction set and the shader compilation, reads identically in both. Because CI builds Debug only, `Build\CheckProjectFiles.py` checks this alignment statically on every change (ADR-054, ADR-070).
 
-**BLD-032** (MUST) While the preview switch is in use, every first-party target and every vcpkg dependency form one ABI unit: a toolset change rebuilds all of them, because the overlay triplet records the toolset version, and no C++23-mode binary built by one toolset is linked with code of another (ADR-052, ADR-055).
+**BLD-032** (MUST) Every first-party project is built from source in one solution with one toolset: no binary built by one toolset is linked with code built by another, so the lack of ABI stability of `/std:c++latest` never mixes binaries, and the only prebuilt binaries in the executable are those of the three packages of table 4.1-A (ADR-052, ADR-055).
 
-**BLD-033** (MUST) The shared and server targets, which are everything that the `server` product links, stay within the portable subset of ADR-052: they use no `std::stacktrace`, `std::generator`, `std::move_only_function` or constexpr `<cmath>`. A lint rule rejects these facilities in those targets, and the `windows-clangcl-analysis` presets compile them with clang-cl `bld.pin.clangcl_min` (19.1) or newer as a portability and static-analysis check (ADR-051). Client-only code may use the full MSVC C++23 library.
+**BLD-033** (SHOULD) The server project and every library it links stay within the portable subset of ADR-052, as guidance for a later dedicated server on another operating system: no `std::stacktrace`, `std::generator`, `std::move_only_function` or constexpr `<cmath>`. The subset is reviewed, not enforced by a build: the baseline has one compiler and no analysis build, and clang-tidy, at the version pinned in the CI workflow, parses the whole tree with Clang (ADR-051, ADR-070). Client-only code may use the full MSVC C++23 library.
 
-**BLD-034** (MUST) `SPECIES_IMPORT_STD` is `OFF` by default. When it is `ON`, client-only targets may `import std`. A translation unit uses either `import std;` or standard headers, never both, and a lint step rejects the mix; test translation units never import it; header units and first-party named modules are not used. The default is reviewed at the CMake 4.5 release (ADR-053, ADR-069).
+**BLD-034** (MUST NOT) No project uses C++ modules: there are no module interface units, no header units and no `import std`. Source files are `.h` and `.cpp` only, named for their primary type, and the standard headers are included by hand in the order of `AGENTS.md` §4 (ADR-053, which is Rejected; `AGENTS.md` R7).
 
-**BLD-035** (MUST) The project requires CMake `bld.pin.cmake_min` (4.4) or newer, presets schema `bld.pin.presets_schema` (10), and the Ninja Multi-Config generator with Ninja `bld.pin.ninja_min` (1.11) or newer for every command-line and CI build. Developers open the CMake folder directly in Visual Studio; generated solution files are not a build path. A check validates `CMakePresets.json` against the declared schema version (ADR-054).
+**BLD-035** (MUST) The solution is built by MSBuild `bld.pin.msbuild_min` (17.12) or later, the first version that builds the `.slnx` format. There is no CMake, no Ninja, no preset file and no generated solution: the checked-in `.slnx` and `.vcxproj` files are the build definition that Visual Studio, the command line and CI use alike (ADR-054).
 
-**BLD-036** (MUST) Third-party dependencies come from vcpkg in manifest mode: `vcpkg.json` and `vcpkg-configuration.json` at the repository root, a pinned `builtin-baseline` (the registry revision of release tag `bld.pin.vcpkg_registry_tag` at the baseline date), `overrides` for libraries that must not move with the baseline, and baseline moves only in a reviewed change. vcpkg itself is pinned, as a submodule or a pinned checkout on CI. Classic mode is never used; a CI check fails when `builtin-baseline` is missing or a classic-mode install is detected (ADR-055).
+**BLD-036** (MUST) The executable is built from the Windows SDK, the MSVC standard library and the three allow-listed packages of table 4.1-A, and nothing else (`AGENTS.md` R14, ADR-055). Each project that uses a package lists it, at its exact version, in a `packages.config` file in its project folder; `msbuild <Solution>.slnx /t:Restore /p:RestorePackagesConfig=true` restores the packages into `packages\` before the build. `packages\` is build output and is never committed. There is no other package manager, no vendored SDK and no submodule (`AGENTS.md` §2).
 
-**BLD-037** (MUST) The overlay triplet `x64-windows-species` builds static libraries with the dynamic CRT (`/MD`) and records the pinned toolset version; a CI check compares that version with the toolchain pin. The presets set `toolchainFile` to vcpkg's CMake toolchain file and set the triplet and manifest variables before the first `project()`. CI uses vcpkg binary caching keyed by vcpkg's ABI hash (ADR-055).
+Table 4.1-A The allow-listed packages.
 
-**BLD-038** (MUST) A vendor package comes from vcpkg where a port exists (for example `directx-headers`), and otherwise from the vendor's NuGet package at a pinned version: the Agility SDK `Microsoft.Direct3D.D3D12` at `bld.pin.agility_sdk` (1.619.6), WinPixEventRuntime at `bld.pin.pix_event_runtime` (1.0.240308001), and the GameInput package at the version that ADR-028 pins. Each version is pinned in exactly one file (ADR-055).
+| Package (NuGet) | What it provides | Pinned version | Decided in |
+|---|---|---|---|
+| `Microsoft.Direct3D.D3D12` (DirectX Agility SDK) | the Direct3D 12 runtime `D3D12Core.dll`, installed beside the executable, and its headers | `bld.pin.agility_sdk` | ADR-001 |
+| `Microsoft.GameInput` | the GameInput header and library, and `GameInputRedist.msi`, which the installer runs | `bld.pin.gameinput` | ADR-028 |
+| `WinPixEventRuntime` | `pix3.h` and `WinPixEventRuntime.dll`, the PIX markers | `bld.pin.pix_event_runtime` | ADR-068 |
 
-**BLD-039** (MUST) Configure writes the dependency licence list: every dependency with its version, its licence and whether it is distributed. Adding a dependency needs a licence review recorded in the list. Packaging writes the notices of every distributed dependency into `licences\`, and the list is an artefact of every release build (ADR-055). The GameInput redistributable's licence terms are read and recorded before the first external build (ADR-071).
+**BLD-037** (MUST) `Build\CheckProjectFiles.py` fails a change when a `packages.config` names a package outside table 4.1-A or a version other than its pin, when a `packages\` folder is committed, or when an include directory lies outside the Windows SDK, the toolset, `packages\` and the solution's own projects (ADR-055). Whatever a package carries beyond what the component specifications use stays out of the executable, and so does every library that R14 excludes: the `d3dx12.h` helpers, DirectX-Headers, DirectXTK12, DirectXTex, the DirectX Shader Compiler as a redistributable, and every third-party compression library, audio codec, JSON library, test framework, HTTP or TLS library and profiler. Resource barriers and heap descriptions are written by hand (`AGENTS.md` R14).
 
-**BLD-040** (MUST) The floating-point model is a per-target property of the build. Until the numeric model is decided (DEC-240), every target uses the compiler's default model, no target sets a fast or strict floating-point option, and the simulation targets carry the property explicitly, so that the decision changes the simulation targets alone (ADR-051).
+**BLD-038** (MUST) Each package version is pinned once, in the `packages.config` files of the projects that use it, and `Build\CheckProjectFiles.py` compares every pin with the technology baseline: `Microsoft.Direct3D.D3D12` at `bld.pin.agility_sdk` (1.619.6), `Microsoft.GameInput` at `bld.pin.gameinput` (3.5.283) and `WinPixEventRuntime` at `bld.pin.pix_event_runtime` (1.0.240308001) (ADR-055, ADR-001, ADR-028, ADR-068). A package moves to another version only in a reviewed change that also moves the baseline.
 
-**BLD-041** (MUST) The build enforces declared dependencies: each library target lists the libraries it links and whose headers it includes, and a link to an undeclared library fails the build. The simulation and server libraries never link the renderer, audio, input or UI libraries (ADR-056). The build also provides a per-target include allow-list that fails on a forbidden include; whether the simulation library uses it to enforce the simulation and presentation boundary is DEC-222 (item 3).
+**BLD-039** (MUST) Packaging writes into `licences\` the licence notices of the three packages, taken from the restored packages, and of every licensed content file, whose licence text travels with its bytes; a release is not packaged when the licence notices name anything else or lack one of these (ADR-055, ADR-071). Content under a licence lands only with the owner's approval (`AGENTS.md` R14). The GameInput redistributable's licence terms are read and recorded before the first external build (ADR-071).
 
-**BLD-042** (MUST) The Agility SDK is pinned once, as the package version `bld.pin.agility_sdk`. The constants that `species.exe` exports, `D3D12SDKVersion` = `bld.pin.d3d12_sdk_version` and `D3D12SDKPath` = `bld.pin.d3d12_sdk_path`, are generated from that package, and packaging copies its `D3D12Core.dll` into `D3D12\`. A build check fails when the exported version differs from the minor version of the packaged `D3D12Core.dll`. No preview SDK and no `D3D12SDKLayers.dll` is packaged; the debug layer runs in development and in the CI validation job only (ADR-001, ADR-071). The `server` product exports neither constant.
+**BLD-040** (MUST) Every project states `/fp:precise` and `/arch:AVX2` in its project file, identical in Debug and Release, and never inherits either from a compiler default (`AGENTS.md` R16, ADR-051). `/arch:AVX2` sets the CPU floor of ADR-050 and lets MSVC contract a·b + c into a fused multiply-add even under `/fp:precise`, which can contract differently at different optimisation levels; no code that must give bit-identical results across builds relies on float arithmetic that may be contracted. Whether the simulation core is deterministic, and its numeric model, are DEC-240 and DEC-241, recorded as an ADR when decided.
 
-**BLD-043** (MUST) The shader compiler and the texture library of the cookers are build-time tools of the asset pipeline, pinned through the dependency manifest at the releases that ADR-003 and ADR-017 name; neither is ever distributed (ADR-003). Authors export meshes as glTF 2.0 from their own content-creation tools (ADR-019), and Species ships no exporter plug-in. The geometry and maths code that the tools and the engine share is one library with its own unit tests (ADR-069).
+**BLD-041** (MUST) Each project lists the projects it references, and the build uses only declared references. A project includes the headers of another project only through `$(SolutionDir)<Project>` on its include path and never lists its own folder there (`AGENTS.md` §3). Edges run one way: engine projects never reference game projects, two libraries at one level share what is below them and never reference each other, and the simulation and server libraries never reference the renderer, audio, input or UI projects (`AGENTS.md` §2, ADR-056). `Build\CheckProjectFiles.py` can also check a project's includes against an allow-list; whether the simulation library uses one to enforce the simulation and presentation boundary is DEC-222 (item 3).
 
-### 4.2 Products, flavours and binary checks
+**BLD-042** (MUST) The Agility SDK is pinned once, as the package version `bld.pin.agility_sdk`. The constants that `species.exe` exports, `D3D12SDKVersion` = `bld.pin.d3d12_sdk_version` and `D3D12SDKPath` = `bld.pin.d3d12_sdk_path`, are taken from that package, and packaging copies its `D3D12Core.dll` into `D3D12\`. A build check fails when the exported version differs from the minor version of the packaged `D3D12Core.dll`. No preview SDK and no `D3D12SDKLayers.dll` is packaged; the debug layer runs in Debug builds, on developer machines and in the GPU validation job (ADR-001, ADR-068, ADR-071). The server exports neither constant.
 
-**BLD-044** (MUST) Configure fails unless `SPECIES_PRODUCT` is exactly one of `client`, `server` and `tools`: a configure with no product, with an unknown product or with two products produces nothing, and its message names the known products (ADR-056).
+**BLD-043** (MUST) The tools solution may use pinned third-party code that the executable may not, each dependency recorded with its licence in an ADR (`AGENTS.md` §2, R14): the content build tool's texture encoder is DirectXTex at the release of technology baseline item 5.2, restored by NuGet for the tools solution only and never linked into the executable (ADR-017, ADR-055). The content build tool needs no shader compiler, because the solution build compiles every shader (BLD-121). Authors export meshes as glTF 2.0 from their own content-creation tools (ADR-019), and Species ships no exporter plug-in. The geometry and maths code that the tool and the engine share is one library of the game's solution with its own `<Project>Tests` project; the tools solution builds it from the same project file (ADR-069).
 
-**BLD-045** (MUST) A CI check reads the link map of the `server` product and fails when it holds a `d3d12`, `dxgi`, renderer, audio, input, UI or text-rendering symbol (ADR-001, ADR-056).
+**BLD-121** (MUST) The solution build compiles the shaders into the executable (`AGENTS.md` §2, ADR-003). Each shader stage and permutation is one hand-written source `<Lib>/Shader/<Shader><Stage>.hlsl` (for example `SkyVS.hlsl`, `TerrainWireVS.hlsl`), and the code that a shader's stages and permutations share is one include file `<Lib>/Shader/<Shader>.hlsli`, never compiled on its own. Every `.hlsl` is an `FXCompile` item of its project, compiled by the `dxc` of the pinned Windows SDK (BLD-029) to Shader Model 6.6 with settings that are identical in Debug and Release, into the header `<Lib>/CompiledShader/<Shader><Stage>.h`, which declares the byte array `g_<Shader><Stage>`; the `.cpp` that binds the pipeline state includes it, and nothing else does. `CompiledShader/` is build output: listed in `.gitignore`, skipped by every checker, never edited and never committed. No `.cso` is written beside the executable, no shader is loaded from disk or compiled at run time, and a shader change is a rebuild.
 
-**BLD-046** (MUST) A CI check scans every `Shipping` binary and fails when it holds a developer-console, debug-command, loose-file-mount or test-hook symbol, imports the PIX event runtime, holds a profile-marker string, or embeds a key or token (ADR-056, ADR-066, ADR-068, AST-105). The same check runs on every `Profile` binary for the developer console, the debug commands, the loose-file mount and the test hooks.
+<a id="42-products-flavours-and-binary-checks"></a>
 
-**BLD-047** (MUST) A CI check reads every distributed PE file and fails when it lacks Control Flow Guard, CET shadow-stack compatibility, ASLR with high-entropy addresses or data-execution prevention, or when the symbol store holds no matching PDB (ADR-051).
+### 4.2 Products, configurations and binary checks
 
-**BLD-048** (MUST) The `server` product is built for Windows x64 with the same toolchain as the client. Because its code stays within the portable subset (BLD-033), a server build for another host operating system remains possible; presets, triplets and agents for such a build are added only when the design phase decides to build one (ADR-054, ADR-055, DEC-220).
+**BLD-044** (MUST) Each product is one project, built through its solution: `msbuild <Solution>.slnx /t:<ProjectName>` builds one product, and a build of the whole solution builds every product of the game's solution (table 2.1-C). No build selects a product by a property, a macro or a source edit, and building a `.vcxproj` on its own is not a build path (ADR-054, ADR-056).
+
+**BLD-045** (MUST) `Build\CheckProjectFiles.py` fails a change when the server project references, or lists among its linker inputs, `d3d12`, `dxgi`, a renderer, audio, input, UI or text-rendering project or library, or the GameInput or Agility SDK package (ADR-001, ADR-056).
+
+**BLD-046** (MUST) In the release procedure, a check scans every Release binary and fails when it holds a developer-console, debug-command, development-overlay, development-check, loose-file-mount or test-hook symbol, or embeds a key or token (ADR-056, ADR-066, AST-105). The PIX markers and their import of `WinPixEventRuntime.dll` are expected in Release (ADR-068).
+
+**BLD-047** (MUST) In the release procedure, a check reads every distributed PE file and fails when it lacks Control Flow Guard, CET shadow-stack compatibility, ASLR with high-entropy addresses or data-execution prevention, or when the symbol store holds no matching PDB (ADR-051).
+
+**BLD-048** (MUST) The server project is built for Windows x64 with the same toolset and settings as the client (ADR-051). A dedicated server for another host operating system needs a later ADR, which chooses its compiler, its build definition and its CI agents; the portable subset of BLD-033 is guidance for it (ADR-051, ADR-054, DEC-220).
 
 ### 4.3 Editions and runtime feature flags
 
@@ -438,9 +390,9 @@ Table 3.5-A Install-directory contents.
 
 **BLD-053** (MUST) The `maps` field fixes the **permitted maps** of an edition at build time: `all` permits every map of the edition, and a list permits only the listed map ids, each of which must be a map of the edition. A match-start command that names a map outside the permitted set does not start a match, and the refusal is logged with the map id. The permitted set is never changed or supplied at run time; trial and full access are separated by the platform entitlement, never by an in-game list of maps or modes (DEC-248 item 5). The reference edition permits every map it holds.
 
-**BLD-054** (MUST) An edition marked for release obeys these rules in addition, each a content error when broken: it holds no placeholder (AST-085); every asset it selects is referenced (AST-090); every language that it lists is complete, so that no listed language is withheld unnoticed (BLD-081); a package of it is made only from a CI build whose identity carries no modified marker; and every package of it is signed (§4.11). An edition not marked for release may hold placeholders and unreferenced assets, which its reports list (AST-090, DAT-032).
+**BLD-054** (MUST) An edition marked for release obeys these rules in addition, each a content error when broken: it holds no placeholder (AST-085); every asset it selects is referenced (AST-090); every language that it lists is complete, so that no listed language is withheld unnoticed (BLD-081); a package of it is made only from a Release build whose identity carries no modified marker; and every package of it is signed (§4.11). An edition not marked for release may hold placeholders and unreferenced assets, which its reports list (AST-090, DAT-032).
 
-**BLD-055** (MUST) The release flag of an edition, like the semantic version, changes only in a reviewed release change. CI builds and validates every edition on every change, whether or not it is marked for release (ADR-070), so the reports of an edition that is to be released show its remaining placeholders and fallback ids throughout production.
+**BLD-055** (MUST) The release flag of an edition, like the semantic version, changes only in a reviewed release change. The content build job, which an amendment of ADR-070 adds to CI, builds and validates every edition on every change, whether or not it is marked for release, so the reports of an edition that is to be released show its remaining placeholders and fallback ids throughout production.
 
 **BLD-056** (MUST) Every generated index ships in the same edition and pack as the data it indexes: the map index with the maps it lists (AST-086, DEC-563), and each asset index with its pack (AST-058). No edition holds an index without its data, or data without its index.
 
@@ -448,13 +400,13 @@ Table 3.5-A Install-directory contents.
 
 ### 4.4 Version identity
 
-**BLD-058** (MUST) Configure reads the version file, the build number, the source revision with its modified marker, the product and the flavour, and generates `species_build_identity.h`; no other source of any of these values exists, and no source file states a version number (ADR-057). A build from a modified working tree carries the marker in every artefact.
+**BLD-058** (MUST) The build step of BLD-020 reads the version file, the build number, the source revision with its modified marker, the product (the project being built) and the configuration, and generates `BuildIdentity.h`; no other source of any of these values exists, and no source file states a version number (ADR-057). A build from a modified working tree carries the marker in every artefact.
 
-**BLD-059** (MUST) Every distributed PE file carries a version resource generated from the identity: `FileVersion` and `ProductVersion` are the four parts `MAJOR.MINOR.PATCH.<build number>`, `ProductName` is the product name (`kProductName`, Species), and `FileDescription` names the program: the client, the dedicated server or the tool. Configure fails when a part exceeds `bld.version.part_max` (65535), the largest value of a version-resource part (ADR-057).
+**BLD-059** (MUST) Every distributed PE file carries a version resource generated from the identity: `FileVersion` and `ProductVersion` are the four parts `MAJOR.MINOR.PATCH.<build number>`, `ProductName` is the product name (`PRODUCT_NAME`, Species), and `FileDescription` names the program: the client, the dedicated server or the tool. The build step fails when a part exceeds `bld.version.part_max` (65535), the largest value of a version-resource part (ADR-057).
 
 **BLD-060** (MUST) Every version field of a package (the archive name, an MSIX identity version, an installer version, a depot build description) is generated from the same identity by a mapping that is unit-tested for each package format (ADR-057, ADR-072).
 
-**BLD-061** (MUST) The display form of the identity is `MAJOR.MINOR.PATCH+build.<number>` (ADR-057). The full identity text adds the source revision with its marker, the first `ast.hash.display_hex_digits` (16) hexadecimal digits of the content manifest hash, the product and the flavour. It is the first line of every log file (ADR-067), the build details of the options screen, and the version string that the front end draws (RND-076). Every comparison of two identities compares every field and all 32 bytes of the hash (AST-100).
+**BLD-061** (MUST) The display form of the identity is `MAJOR.MINOR.PATCH+build.<number>` (ADR-057). The full identity text adds the source revision with its marker, the first `ast.hash.display_hex_digits` (16) hexadecimal digits of the content manifest hash, the product and the configuration. It is the first line of every log file (ADR-067), the build details of the options screen, and the version string that the front end draws (RND-076). Every comparison of two identities compares every field and all 32 bytes of the hash (AST-100).
 
 **BLD-062** (MUST) The crash black box (ADR-065), the log header (ADR-067), telemetry submissions (ADR-066), the symbol store (§4.12), the soak log (DEC-804) and every package read the identity from the generated header or from `build_identity.json`; none of them keeps its own version number. Compatibility checks between a client and a server, and between stored data and a build, are design-phase decisions that read this identity and no other number (DEC-204).
 
@@ -509,7 +461,7 @@ Table 4.5-A Stage order of a content-build run.
 
 **BLD-066** (MUST) An incremental run keeps a dependency graph: each output records the hashes of its inputs, the content build's tool version and the hash of its cook options, and is rebuilt when any of them changes (ADR-059). An output whose new bytes equal its old bytes is not rewritten, so its dependants are not rebuilt and its file time does not change. A `--clean` run removes the output directory first. A clean run and an incremental run of the same inputs give byte-identical outputs.
 
-**BLD-067** (MUST) Identical inputs give byte-identical packs, manifests and reports on any build agent and with any `--jobs` value (AST-066, BLD-012). A nightly CI job builds one revision twice, on different agents and with clean output directories, and compares every output byte for byte (ADR-059).
+**BLD-067** (MUST) Identical inputs give byte-identical packs, manifests and reports on any build agent and with any `--jobs` value (AST-066, BLD-012). The reproducibility job, a scheduled CI job that an amendment of ADR-070 adds, builds one revision twice, on different agents and with clean output directories, and compares every output byte for byte (ADR-059).
 
 **BLD-068** (MUST) The content build runs every validator class of table 4.5-B. The document named owns the rule of each class; the content build reports every diagnostic in the validation report with its class, file, line, column and field (DAT-051), and each class has a failing fixture in the content build's test suite (AST-093, DAT-031).
 
@@ -530,7 +482,7 @@ Table 4.5-B Validator classes of the content build.
 | string coverage | base-language ids that a language lacks | listed; decides whether the language is offered | BLD-081, DEC-099 |
 | edition manifests | the errors of §4.3 | error | ADR-056, §4.3 |
 
-**BLD-069** (MUST) The missing-reference and unreferenced-asset checks work on the reference graph of the content, never on a text search of the code under `src/`: code names assets only through asset-id constants and enumeration tables, which the engine asset table carries into the graph (AST-017). Assets are compared by full canonical key and asset id, never by base file name, so two files of one name in different folders stay distinct. No list of exceptions exists: an asset that only a rule creates during a match counts as referenced through the record of its object (AST-090, DEC-329), and every other asset is referenced or reported. The validation report lists missing references and unreferenced assets separately, each with the referring file or the asset's manifest row.
+**BLD-069** (MUST) The missing-reference and unreferenced-asset checks work on the reference graph of the content, never on a text search of the code of the solution's projects: code names assets only through asset-id constants and enumeration tables, which the engine asset table carries into the graph (AST-017). Assets are compared by full canonical key and asset id, never by base file name, so two files of one name in different folders stay distinct. No list of exceptions exists: an asset that only a rule creates during a match counts as referenced through the record of its object (AST-090, DEC-329), and every other asset is referenced or reported. The validation report lists missing references and unreferenced assets separately, each with the referring file or the asset's manifest row.
 
 **BLD-070** (MUST) The content build applies the placeholder rule of the asset pipeline (AST-082 to AST-085; [assets README](../../assets/README.md)): it generates a placeholder for every manifest row that has no authored file, so that every edition builds and runs at every stage of production. The placeholder report lists the placeholders grouped by priority with their count per category, and the run's summary states the total.
 
@@ -596,7 +548,7 @@ Table 4.7-A Language groups.
 
 **BLD-081** (MUST) A language is offered in an edition only when its `missing` list for that edition is empty (DEC-099, R-META-463). A language that is not offered is left out of the edition's `locale` pack and is listed in the report as withheld. The report lists every id that would fall back to the base language at run time (R-META-464, ADR-063).
 
-**BLD-082** (MUST) The development setting language test (R-META-473, hidden from players by R-META-457) makes a `Debug` or `Development` client write, for each language it loads, the same three lists in the form of the localisation report to `language_report.json` in the user-data `diagnostics\` folder of the [platform layer](platform_layer.md) (PLT-017, ADR-071). The file is replaced at each language load; it is never written to the working directory or the install directory.
+**BLD-082** (MUST) The development setting language test (R-META-473, hidden from players by R-META-457) makes a Debug client write, for each language it loads, the same three lists in the form of the localisation report to `language_report.json` in the user-data `diagnostics\` folder of the [platform layer](platform_layer.md) (PLT-017, ADR-071). The file is replaced at each language load; it is never written to the working directory or the install directory.
 
 **BLD-083** (MUST) `strings-export` writes, for each named language, a translator pack holding: the language's current table; the base-language strings, each with its text expanded in each input mode (UI-223, UI-224), so that the translator sees what players read; and a change report against the base-language text of the language's last import. The change report classifies each id as inserted, deleted, changed or renamed:
 - an id is **renamed** when it disappears while a new id appears with the same base-language text; both ids are listed;
@@ -632,71 +584,87 @@ sequenceDiagram
 
 ### 4.8 Map-editor tooling hooks
 
-**BLD-086** (MUST) The map editor is designed fresh in the design phase (DEC-045), together with the product that carries it (R-MAP-302). Until then no player edition sets the `map_editor` flag (R-MAP-301), and the build provides the editor's hooks of this section in the `tools` product.
+**BLD-086** (MUST) The map editor is designed fresh in the design phase (DEC-045), together with the product that carries it (R-MAP-302). Until then no player edition sets the `map_editor` flag (R-MAP-301), and the content build tool provides the editor's hooks of this section.
 
 **BLD-087** (MUST) A map tool validates a map when it saves it with the content build's own validators, through `ContentBuild::ValidateMapFile`, and rejects the map with the diagnostics of the validation report (R-MAP-400, DEC-561, DEC-015). Whether a tool may keep an unfinished map that fails these rules is a design-phase input ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) §8).
 
 **BLD-088** (MUST) A map tool writes authoring files only, through the canonical writer with atomic replacement (DEC-800, DAT-040): under the content root of a development checkout, or into the player's map folder for a custom map (AST-106). It never writes a pack, a thumbnail, a map index or a map hash; the content build generates those (AST-086, AST-087, BLD-072).
 
-**BLD-089** (MUST) In a development checkout, a save followed by the `loose` command cooks the changed map and its dependants into the loose-content directory, which a `Debug` or `Development` client mounts last (AST-105) and reloads ([asset pipeline](asset_pipeline_and_resources.md) §4.14). A session that runs with loose content reports a modified content identity (AST-105). The round trip from a save to a reload needs no code build.
+**BLD-089** (MUST) In a development checkout, a save followed by the `loose` command cooks the changed map and its dependants into the loose-content directory, which a Debug client mounts last (AST-105) and reloads ([asset pipeline](asset_pipeline_and_resources.md) §4.14). A session that runs with loose content reports a modified content identity (AST-105). The round trip from a save to a reload needs no code build.
 
 ### 4.9 Continuous integration
 
-**BLD-090** (MUST) Every CI job is one workflow preset; a CI definition that runs a command outside the presets, or passes a `-D` option that its preset does not hold, fails its own check (ADR-054, ADR-070).
+**BLD-090** (MUST) CI is the committed workflow `.github/workflows/build.yml` (ADR-070, `AGENTS.md` §6). Every step that has something to run blocks, and no step is `continue-on-error`; a step whose input does not exist yet is guarded on the file it needs and is skipped with a notice, never faked. A guard is removed once its input is permanently present and is never added to get past a red build. Nothing is discovered by name: the solution is whatever single `.slnx` or `.sln` sits at the root, and the test suites are whatever `*Tests.vcxproj` projects the tree holds.
 
-**BLD-091** (MUST) CI runs the jobs of table 4.9-A. A change merges only when every per-change job passes; the nightly jobs run once a day on the head of the main branch; the release-candidate job runs on every build that is to be distributed outside the team (ADR-070).
+**BLD-091** (MUST) CI runs the jobs and steps of table 4.9-A on every push and pull request to `main` and on manual runs; a newer run of the same ref cancels an older one. A change merges only when every job passes (ADR-070).
 
-Table 4.9-A CI jobs.
+Table 4.9-A Jobs and steps of the committed workflow, in order.
 
-| Tier | Workflow preset | Runs | Requirements |
+| Job | Step | Guarded on | What it does | Requirements |
+|---|---|---|---|---|
+| Windows (`Debug\|x64`) | install the pinned clang-tidy and record the toolchain | — | installs clang-tidy `bld.pin.clang_tidy` (22.1.8) from pip and prints the runner image, Visual Studio, MSBuild, clang-tidy and Python | BLD-027 |
+| | locate the solution | — | exactly one `.slnx` or `.sln` at the root, or none while the tree is empty; two fail the job | BLD-006 |
+| | check the build shape and the project registries (`Build\CheckProjectFiles.py`) | the script | one solution; every file in its project and filters; functional filters; flat folders with the two shader subfolders; `v145` and x64 only; Debug and Release aligned; the package pins; the server's references; the R2, R7 and R11 rules | BLD-031, BLD-037, BLD-038, BLD-045 |
+| | restore the NuGet packages | the solution and a `packages.config` file | `/t:Restore /p:RestorePackagesConfig=true` | BLD-036 |
+| | build `Debug\|x64` through the solution | the solution | `/m`, with MSBuild warnings as errors (`/warnaserror`); the compiler's `/WX` is set in the projects; the build log is written | BLD-030, BLD-044, BLD-121 |
+| | run the tests | the solution | one suite per `*Tests.vcxproj`, each of whose DLLs must exist, run by `vstest.console.exe` with a `.trx` log | the tests of every component (ADR-069) |
+| | run clang-tidy (`Build\RunClangTidy.py`) | the script | the whole tree, after the build | BLD-033 |
+| | upload the build log and the test results | — | artefacts, also after a failure | BLD-092 |
+| Linux (clang-format) | check formatting (`Build/CheckFormat.py`) | the script | the layout of `.clang-format`, with clang-format `bld.pin.clang_format` (18, the Ubuntu package 18.1.3) | — |
+| Linux (design checks) | check the design (`Tools/DesignCheck/CheckDesign.py Design`) | the checker and the design library | links, requirement ids, DEC and ADR references, asset ids, tuning keys, sizes, templates, banned terms and every diagram, with the pinned diagram checker | — |
+
+**BLD-092** (MUST) Every job publishes its artefacts: the build log and the test results now; and the validation, placeholder, localisation and map-identity reports, the soak reports, the performance results and the crash dumps of test machines (ADR-065) with the jobs of table 4.9-B that produce them. A crash in the soak job opens a defect automatically once that job exists (ADR-070).
+
+**BLD-093** (MUST) The committed jobs run on the hosted runners. The Windows job builds with the Visual Studio and Windows SDK that the runner image provides, so the projects' toolset (BLD-027) and SDK (BLD-029) must be on the image; the toolchain record of every run names what it used. The golden-image and validation jobs and the content build's thumbnail rendering need an agent with a GPU, which the hosted runners do not provide; that agent is added with the first job that needs it, as an infrastructure choice (ADR-070, AST-087, ADR-059).
+
+**BLD-094** (MUST) The workflow runs from the first change of the repository, whatever build order the design phase chooses (DEC-229): its guards pass an empty tree and start gating each input the moment it lands, so in the reference work breakdown the first work package ends when CI builds an empty simulation library through the solution, runs its `SuiteSmoke` test project and checks its project files (DEC-229 item 6).
+
+**BLD-095** (MUST) Further CI jobs are added by amendment of ADR-070 and of the workflow, each guarded on the file it needs, in the order of table 4.9-B; none of them exists before its amendment lands, and none is faked meanwhile.
+
+Table 4.9-B CI jobs that amendments of ADR-070 add.
+
+| Job | Runs | Guarded on | Requirements |
 |---|---|---|---|
-| per change | `ci-change-build` | the `windows-msvc-development` and `windows-msvc-shipping` builds of every product, warnings as errors | BLD-030, BLD-044 |
-| per change | `ci-change-analysis` | the `windows-clangcl-analysis` builds of the server and tools products, with static analysis | BLD-033 |
-| per change | `ci-change-content` | `species-contentbuild build --all-editions`, incremental from the cached graph, with every validator | §4.5 |
-| per change | `ci-change-tests` | unit, property and golden-hash tests through CTest (ADR-069) | the tests of every component |
-| per change | `ci-change-binaries` | mitigation flags, symbols in the store, version resources, the server link map, the shipping and profile scans, the Agility SDK version | BLD-047, BLD-045, BLD-046, BLD-059, BLD-042 |
-| per change | `ci-change-lint` | the presets schema; the vcpkg baseline and classic mode; the triplet toolset; the portable subset; `import std` mixing; embedded map hashes; certificate and key files; test names that start with a requirement id (ADR-069) | BLD-035, BLD-036, BLD-037, BLD-033, BLD-034, BLD-076, BLD-107 |
-| nightly | `ci-nightly-soak` | the headless bot soak: the `server` product with the `soak` edition plays matches between bots on every mode and map at maximum speed, and reports crashes, assertion failures, update-time percentiles and peak population per match | DEC-804, DEC-220 item 3; the harness is the diagnostics component's |
-| nightly | `ci-nightly-golden-images` | the golden-image tests on the pinned reference GPU configuration | ADR-069 |
-| nightly | `ci-nightly-gpu-validation` | a client test pass with the Direct3D 12 debug layer and GPU-based validation | ADR-068 |
-| nightly | `ci-nightly-sanitisers` | the `windows-msvc-asan` and `windows-msvc-analyze` builds with their test runs | ADR-051 |
-| nightly | `ci-nightly-fuzz` | fuzzing of the pack reader, every record loader and the authoring parser | ADR-069 |
-| nightly | `ci-nightly-reproducibility` | two clean content builds of one revision on different agents, compared byte for byte | BLD-067 |
-| nightly | `ci-nightly-import-std` | the client built with `SPECIES_IMPORT_STD=ON` | BLD-034 |
-| nightly | `ci-nightly-performance` | the performance tests against the component budgets, and the budgets of §5 | BLD-117 |
-| release candidate | `ci-release-package` | packaging, signing, symbol upload, the install test and the signature check | §4.10 to §4.12 |
+| tools solution | build the tools solution under `Tools/` in Debug and run its test projects | the tools solution | BLD-005, BLD-043 |
+| content build | `species-contentbuild build --all-editions`, incremental from the kept graph, with every validator; it publishes the reports | the content build tool and `content/` | §4.5, BLD-055 |
+| reproducibility (scheduled) | two clean content builds of one revision on different agents, compared byte for byte | the content build job | BLD-067 |
+| soak (scheduled) | the headless bot soak: the server with the `soak` edition plays matches between bots on every mode and map at maximum speed, and reports crashes, assertion failures, update-time percentiles and peak population per match | the server project and the `soak` edition | DEC-804, DEC-220 item 3; the harness is the diagnostics component's (DBG-160) |
+| fuzzing (scheduled) | the `<Project>Fuzz` harnesses of the pack reader, every record loader and the authoring parser | a `<Project>Fuzz` project | ADR-069 |
+| performance (scheduled) | the performance tests in Release builds against the component budgets, and the budgets of §5 | the performance test projects | BLD-117, DBG-208 |
+| golden images and GPU validation, on a GPU agent | the golden-image tests on the pinned reference GPU configuration, and a Debug client test pass with the Direct3D 12 debug layer and GPU-based validation | the GPU agent and the renderer's test project | ADR-068, ADR-069 |
+| symbols | publish the PE files and PDBs of each CI build to the symbol store | the symbol store | BLD-026, BLD-111 |
+| replay regression | recorded matches replayed to compare their end-of-match state hashes | reproducible replays, once the design phase gives Species them (DEC-046) | ADR-070 |
 
-**BLD-092** (MUST) Every job publishes its artefacts: test reports; the validation, placeholder, localisation and map-identity reports; soak reports; performance results; crash dumps from test machines (ADR-065); and, for release builds, the dependency licence list (ADR-070). A crash in the nightly soak opens a defect automatically.
-
-**BLD-093** (MUST) Build agents run Windows with the Visual Studio Build Tools at the pinned toolset and the pinned Windows SDK. At least one agent has a GPU, for the golden-image and validation jobs and for thumbnail rendering (AST-087, ADR-059). The CI service, the agent hosting and the binary-cache host are infrastructure choices (ADR-070, ADR-055).
-
-**BLD-094** (MUST) The pipeline runs from the first change of the repository, whatever build order the design phase chooses (DEC-229): in the reference work breakdown, the first work package ends when CI builds an empty simulation library with its dependency checks active (DEC-229 item 6).
-
-**BLD-095** (MUST) The pipeline reserves a nightly job for replay regression tests that compare the end-of-match state hashes of recorded matches; it runs once the design phase gives Species reproducible replays (ADR-070).
+**BLD-122** (MUST) CI does not build Release (`AGENTS.md` §6, ADR-070). Before a release, whoever ships runs the release procedure: builds `Release|x64` of every product through its solution (table 2.1-C) and says so; runs the release checks of BLD-046, BLD-047 and BLD-059 on the binaries; packages the install directory and checks it (BLD-096, BLD-097); signs it (§4.11); publishes its symbols (§4.12); and tests the release-candidate archive (BLD-105). The static alignment check of BLD-031 stands in on every change for the Release build that CI does not run, and a change that could plausibly break only under optimisation is built in Release by its author.
 
 ```mermaid
 flowchart TD
-  CH["change proposed"] --> PC["per-change jobs: build, analysis, content, tests, binaries, lint"]
-  PC -- "all pass" --> MERGE["merge"]
-  PC -- "any fails" --> FIX["change rejected with the failing job's report"]
-  MERGE --> NIGHT["nightly jobs on the main branch: soak, golden images, GPU validation, sanitisers, fuzz, reproducibility, import std, performance"]
-  NIGHT -- "crash or regression" --> DEF["defect opened with artefacts"]
-  MERGE --> RC{"build to be distributed?"}
-  RC -- "yes" --> REL["release-candidate job: package, sign, publish symbols, install test, signature check"]
-  REL --> PUB["release candidate available"]
+  CH["change proposed"] --> WIN["Windows job: toolchain, solution, build shape, restore, Debug build, tests, clang-tidy"]
+  CH --> FMT["Linux job: clang-format"]
+  CH --> DES["Linux job: design checks"]
+  WIN -- "all pass" --> MERGE["merge"]
+  FMT -- "pass" --> MERGE
+  DES -- "pass" --> MERGE
+  WIN -- "any fails" --> FIX["change rejected with the failing step's log"]
+  FMT -- "fails" --> FIX
+  DES -- "fails" --> FIX
+  MERGE --> MORE["jobs added by amendment: tools solution, content build, reproducibility, soak, fuzzing, performance, GPU, symbols"]
+  MERGE --> REL{"release to be made?"}
+  REL -- "yes" --> RP["release procedure: Release build, release checks, package, sign, publish symbols, install test"]
+  RP --> PUB["release candidate available"]
 ```
 
-*Figure 4.9-A: the CI tiers.*
+*Figure 4.9-A: the committed CI jobs, the jobs that amendments add, and the release procedure.*
 
 ### 4.10 Client packaging and distribution
 
-**BLD-096** (MUST) Packaging assembles the install directory of table 3.5-A from the outputs of one `Shipping` build of the `client` product and the packs of one client edition, never from files of the repository checkout. Every input it declares must exist; a missing input fails packaging, and no input is skipped.
+**BLD-096** (MUST) Packaging assembles the install directory of table 3.5-A from the outputs of one Release build of the client project and the packs of one client edition, never from files of the repository checkout. Every input it declares must exist; a missing input fails packaging, and no input is skipped.
 
 **BLD-097** (MUST) Packaging then checks the directory, and fails on the first broken rule: every file is listed by table 3.5-A and none is forbidden by BLD-024; the Agility SDK check of BLD-042 passes; the output of `--write-build-identity` of every executable equals `build_identity.json` (BLD-063); the version resource of every PE file matches the identity (BLD-059); and the SHA-256 of the content manifest equals the hash in `build_identity.json`.
 
 **BLD-098** (MUST NOT) No executable is compressed, packed or patched after linking. The file that is signed and whose symbols are published is the file that the linker wrote, so that debuggers and crash dumps match it (ADR-065).
 
-**BLD-099** (MUST) The prerequisites are the GameInput redistributable of the pinned GameInput package, which never downgrades a newer installed runtime, and the Visual C++ redistributable of the pinned toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled, because Direct3D 12 and XAudio 2.9 are part of every supported Windows (ADR-071, ADR-050).
+**BLD-099** (MUST) The prerequisites are the GameInput redistributable `GameInputRedist.msi` of the pinned `Microsoft.GameInput` package (`bld.pin.gameinput`), which the installer or channel wrapper runs, never the game, and which never downgrades a newer installed runtime, and the Visual C++ redistributable of the toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled, because Direct3D 12 and XAudio 2.9 are part of every supported Windows (ADR-071, ADR-050).
 
 **BLD-100** (MUST) Packaging produces the packages of table 4.10-A, each a wrapper around the one install directory (ADR-072).
 
@@ -704,17 +672,17 @@ Table 4.10-A Packages.
 
 | Package | Built from | Contents | Signed | Use |
 |---|---|---|---|---|
-| developer install | any flavour and any client edition | the install directory; in `Debug` and `Development` builds the loose-content option is available (AST-105) | no, or self-signed | local testing |
-| release-candidate archive | a `Shipping` client and an edition marked for release | the install directory, a `prerequisites\` folder with the two prerequisites, and a setup script that runs them | the archive and every PE file (§4.11) | internal, QA and closed-test distribution |
+| developer install | either configuration and any client edition | the install directory; in Debug builds the loose-content option is available (AST-105) | no, or self-signed | local testing |
+| release-candidate archive | a Release client and an edition marked for release | the install directory, a `prerequisites\` folder with the two prerequisites, and a setup script that runs them | the archive and every PE file (§4.11) | internal, QA and closed-test distribution |
 | channel wrapper | one channel that the design phase chooses | generated from the same install directory: a storefront depot definition; an MSIX package, Store-signed, or publisher-signed with an `.appinstaller` update feed; or a signed offline MSI or EXE installer | per channel (§4.11) | players |
-| server archive | the `server` product and a server edition | a plain archive of the server program, its packs, `build_identity.json` and its licence notices | every PE file | community hosts; how hosts receive it is a design-phase decision (ADR-071) |
-| symbol package | every CI build | the PE files and PDBs of every product | never distributed | the symbol store (§4.12) |
+| server archive | a Release server and a server edition | a plain archive of the server program, its packs, `build_identity.json` and its licence notices | every PE file | community hosts; how hosts receive it is a design-phase decision (ADR-071) |
+| symbol package | every Release build that is packaged | the PE files and PDBs of every product | never distributed | the symbol store (§4.12) |
 
 **BLD-101** (MUST) The install directory stays compatible with MSIX: read-only at run time, with no registry writes, no service and no driver (ADR-071). Before the Microsoft Store MSIX channel is chosen, a test submission confirms that a package holding the Agility SDK runtime and the GameInput prerequisite passes Store certification (ADR-072).
 
 **BLD-102** (MUST) Updates are delivered by the channel: the storefront client, the Store's automatic update or the `.appinstaller` feed. Species has no first-party patcher and no launcher (ADR-072). An update replaces the packs of the install as one edition, so an install always holds the packs of exactly one edition (BLD-052).
 
-**BLD-103** (MUST) The client offers the **repair check** as the start-up switch `--verify-content`. It mounts the packs of the install directory, runs the asset pipeline's check of every entry of every pack (AST-107), writes the result to the log, shows the result through the platform message path with the texts of table 4.10-B, and ends with the normal exit code `plt.lifecycle.exit_code.normal` ([platform layer](platform_layer.md) PLT-042) when every pack passes and with `bld.repair.exit_failed` otherwise. It never writes to the install directory; restoring a failed pack is the channel's repair or update function (ADR-072). The start-up messages `ui.error.content_missing` and `ui.error.content_damaged` (AST-102) lead the player to this path.
+**BLD-103** (MUST) The client offers the **repair check** as the start-up switch `--verify-content`. It mounts the packs of the install directory, runs the asset pipeline's check of every entry of every pack (AST-107), writes the result to the log, shows the result through the platform message path with the texts of table 4.10-B, and ends with the normal exit code `plt.lifecycle.exit_code.normal` ([platform layer](platform_layer.md) PLT-044) when every pack passes and with `bld.repair.exit_failed` otherwise. It never writes to the install directory; restoring a failed pack is the channel's repair or update function (ADR-072). The start-up messages `ui.error.content_missing` and `ui.error.content_damaged` (AST-102) lead the player to this path.
 
 Table 4.10-B Repair-check texts. The texts are new English text in the base language.
 
@@ -725,15 +693,15 @@ Table 4.10-B Repair-check texts. The texts are new English text in the base lang
 
 **BLD-104** (MUST) Uninstalling removes the install directory only; user data stays unless the player chooses to delete it (ADR-071).
 
-**BLD-105** (MUST) CI tests every release-candidate archive on a clean image of a primary test target of ADR-050: it unpacks the archive, runs the setup script, starts the client as a standard user from a read-only directory, and checks that nothing is written outside the user-data folders (ADR-071, ADR-072). Each channel wrapper, once added, has its own install, update and uninstall test (ADR-072).
+**BLD-105** (MUST) Every release-candidate archive is tested on a clean image of a primary test target of ADR-050, in the release procedure or by a CI job that an amendment of ADR-070 adds: the test unpacks the archive, runs the setup script, starts the client as a standard user from a read-only directory, and checks that nothing is written outside the user-data folders (ADR-071, ADR-072). Each channel wrapper, once added, has its own install, update and uninstall test (ADR-072).
 
 ### 4.11 Code signing
 
 **BLD-106** (MUST) These files are signed: `species.exe`, `species_server.exe`, every first-party DLL, every tool executable that is distributed, every installer file of the release-candidate archive, and every publisher-signed package (ADR-073). The Microsoft Store signs its MSIX packages itself.
 
-**BLD-107** (MUST) Every signature uses SHA-256 with an RFC 3161 timestamp (`SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256`) and is made by the CI signing step on release-candidate and release builds only; development builds are unsigned or self-signed. The signing service is Azure Artifact Signing when the publishing entity is eligible, and otherwise an OV certificate held in a hardware-backed or cloud key store. Signing keys never reach a developer machine or the repository; the CI step is the only path to them, and a repository scan rejects certificate and key files (ADR-073).
+**BLD-107** (MUST) Every signature uses SHA-256 with an RFC 3161 timestamp (`SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256`) and is made in the release procedure, on Release builds only, where the Release build is packaged (ADR-073); Debug builds and local builds are unsigned or self-signed. The signing service is Azure Artifact Signing when the publishing entity is eligible, and otherwise an OV certificate held in a hardware-backed or cloud key store. Signing keys never reach a developer machine's disk or the repository: the signing service or the key store holds them, the signing step is the only path to them, and a repository scan rejects certificate and key files (ADR-073).
 
-**BLD-108** (MUST) Before a release candidate is published, a CI check verifies the signature and the timestamp of every PE file and package in it, and fails on any file that is unsigned, signed by another certificate or not timestamped (ADR-073).
+**BLD-108** (MUST) Before a release candidate is published, a check verifies the signature and the timestamp of every PE file and package in it, and fails on any file that is unsigned, signed by another certificate or not timestamped (ADR-073).
 
 **BLD-109** (MUST) The publisher registers the signing certificate with the Windows Desktop Application Program, so that crash data covers every signed executable (ADR-073, ADR-065).
 
@@ -741,37 +709,34 @@ Table 4.10-B Repair-check texts. The texts are new English text in the base lang
 
 **BLD-110** (MUST) The client's crash path is that of ADR-065, installed by the [platform layer](platform_layer.md): no handler swallows a fatal exception, unhandled exceptions on every thread reach Windows Error Reporting, and the platform layer registers the current log, the last settings file, the black box and the excluded memory. The build provides what makes those reports usable: symbols, version resources, signatures and the test-machine settings of this section.
 
-**BLD-111** (MUST) Every CI build publishes its PE files and PDBs to the private symbol store (BLD-026). Release builds also upload their symbols to Partner Center. No release is published until a CI check confirms that every distributed PE file has its PDB in the symbol store (ADR-065).
+**BLD-111** (MUST) Every Release build that is packaged publishes its PE files and PDBs to the private symbol store (BLD-026), and so does every CI build once the symbol job of table 4.9-B exists. Release builds also upload their symbols to Partner Center. No release is published until a check confirms that every distributed PE file has its PDB in the symbol store (ADR-065).
 
 **BLD-112** (MUST) Every executable carries the version resource of BLD-059, by which the Windows Desktop Application Program groups executables (ADR-057), and is signed (§4.11), which that program requires (ADR-073).
 
-**BLD-113** (MUST) CI provides with every build a registry file that enables Windows Error Reporting local dumps for `species.exe` and `species_server.exe` on test machines: custom dumps (`DumpType` `bld.crash.local_dump_type`) with data segments and thread data, at most `bld.crash.local_dump_count` dumps per program (`DumpCount`), written to the user-data `crashes\` folder of ADR-071 (`DumpFolder`). Applying it needs administrator rights, and it is never part of a player package. Dumps from test machines are CI artefacts (ADR-070).
+**BLD-113** (MUST) The build provides, with every build output, a registry file that enables Windows Error Reporting local dumps for `species.exe` and `species_server.exe` on test machines: custom dumps (`DumpType` `bld.crash.local_dump_type`) with data segments and thread data, at most `bld.crash.local_dump_count` dumps per program (`DumpCount`), written to the default user-data `crashes\` folder of ADR-071 (`DumpFolder`). A `--user-data` root (PLT-024, PLT-025) does not move that folder: the registry file names a fixed folder, so dumps always go to the default user-data `crashes\` folder. Applying the file needs administrator rights, and it is never part of a player package. Dumps from test machines are artefacts of the jobs that run them (ADR-070).
 
 **BLD-114** (MUST NOT) No player package contains a dump-writing helper, a support tool or a crash uploader. The client uploads nothing itself, and crash collection follows the player's Windows diagnostic-data settings (ADR-065). Any later uploader, for example for a dedicated server, is opt-in, uses HTTPS only and carries no credential in its binary or its report (ADR-065).
 
-**BLD-115** (MUST) The `server` product for Windows uses the symbol publication, version resources and signing of the client. The dedicated server's crash path, and the symbols and artefact signing of a server build for another host operating system, are design-phase decisions (ADR-065, ADR-073; "Hosting" in the [ADR index](../../ADR/README.md#deferred-to-the-design-phase)).
+**BLD-115** (MUST) The server, a Windows build (ADR-051), uses the symbol publication, version resources and signing of the client, and Windows Error Reporting covers its crashes (ADR-065). Where the dedicated server's crash reports go, and the build, symbols and artefact signing of a server for another host operating system, are design-phase decisions (ADR-065, ADR-073; "Hosting" in the [ADR index](../../ADR/README.md#deferred-to-the-design-phase)).
 
 ### 4.13 Tuning table
 
-Every value that a rule of this document owns. The pins restate the technology baseline of the [ADR index](../../ADR/README.md#technology-baseline) as checked on 2026-10-17; a pin changes only with its ADR.
+Every value that a rule of this document owns. The pins restate the technology baseline of the [ADR index](../../ADR/README.md#technology-baseline) and the CI workflow as checked on 2026-10-17; a pin changes only with its ADR.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `bld.pin.msvc_toolset` | 14.51 | MSVC Build Tools version | the toolset of every distributed binary (ADR-051) | BLD-027 | — |
-| `bld.pin.msvc_toolset_next` | 14.52 | MSVC Build Tools version | adopted when it becomes the default toolset | BLD-028 | — |
-| `bld.pin.msvc_toolset_fallback` | 14.50 | MSVC Build Tools version | long-term support; only for a preview-ABI break | BLD-028 | — |
+| `bld.pin.msvc_toolset` | `v145` | MSBuild platform toolset | Visual Studio 2026, MSVC Build Tools 14.50 or later; the minor version is printed by CI, not pinned (ADR-051) | BLD-027 | — |
 | `bld.pin.visual_studio` | 18.11 | Visual Studio 2026 version | minimum for developers | BLD-027 | — |
-| `bld.pin.windows_sdk` | the release for Windows 11 version 24H2, or later | Windows SDK release | the exact release is recorded in the toolchain preset; it is not yet in the technology baseline | BLD-029 | — |
-| `bld.pin.cxx_switch` | `/std:c++23preview` | compiler switch | `/std:c++23` from `bld.pin.msvc_toolset_next` (ADR-052) | BLD-031 | — |
-| `bld.pin.clangcl_min` | 19.1 | clang-cl version | minimum for module scanning | BLD-033 | — |
-| `bld.pin.cmake_min` | 4.4 | CMake version | 4.5 adopted after its release (ADR-053, ADR-054) | BLD-035 | — |
-| `bld.pin.presets_schema` | 10 | presets schema version | raised deliberately | BLD-035 | — |
-| `bld.pin.ninja_min` | 1.11 | Ninja version | | BLD-035 | — |
-| `bld.pin.vcpkg_registry_tag` | 2026.07.29 | vcpkg registry release tag | `builtin-baseline` is its registry revision | BLD-036 | — |
-| `bld.pin.agility_sdk` | 1.619.6 | Agility SDK package version | no preview SDK (ADR-001) | BLD-038, BLD-042 | — |
-| `bld.pin.d3d12_sdk_version` | 619 | exported `D3D12SDKVersion` | generated from `bld.pin.agility_sdk` | BLD-042 | — |
+| `bld.pin.windows_sdk` | 10.0.26100.9457 | Windows SDK release | September 2026, the latest release of the 10.0.26100 series; technology baseline item 2.4 (ADR-051) | BLD-029 | — |
+| `bld.pin.cxx_switch` | `/std:c++latest` | compiler switch | every project and configuration; code written to C++23 (ADR-052) | BLD-028 | — |
+| `bld.pin.msbuild_min` | 17.12 | MSBuild version | the first version that builds `.slnx` (ADR-054) | BLD-035 | — |
+| `bld.pin.agility_sdk` | 1.619.6 | `Microsoft.Direct3D.D3D12` package version | no preview SDK (ADR-001) | BLD-038, BLD-042 | — |
+| `bld.pin.d3d12_sdk_version` | 619 | exported `D3D12SDKVersion` | taken from `bld.pin.agility_sdk` | BLD-042 | — |
 | `bld.pin.d3d12_sdk_path` | `.\D3D12\` | exported `D3D12SDKPath` | relative to `species.exe` | BLD-042 | — |
-| `bld.pin.pix_event_runtime` | 1.0.240308001 | WinPixEventRuntime package version | never in a `Shipping` install (ADR-068) | BLD-038 | — |
+| `bld.pin.gameinput` | 3.5.283 | `Microsoft.GameInput` package version | technology baseline item 6 (ADR-028) | BLD-038, BLD-099 | — |
+| `bld.pin.pix_event_runtime` | 1.0.240308001 | `WinPixEventRuntime` package version | markers and the DLL in Debug and Release (ADR-068) | BLD-038 | — |
+| `bld.pin.clang_tidy` | 22.1.8 | clang-tidy version | installed from pip; pinned in `build.yml` (ADR-070) | BLD-091 | — |
+| `bld.pin.clang_format` | 18 | clang-format major version | the Ubuntu package 18.1.3; pinned in `build.yml` (ADR-070) | BLD-091 | — |
 | `bld.version.part_max` | 65535 | per version part | largest value of a version-resource part | BLD-019, BLD-059 | — |
 | `bld.channel.tag_max_chars` | 32 | characters | longest channel tag | BLD-021 | — |
 | `bld.cb.exit_ok` | 0 | exit code | content build: success | BLD-009 | — |
@@ -784,15 +749,15 @@ Every value that a rule of this document owns. The pins restate the technology b
 | `bld.crash.local_dump_count` | 10 | dumps per program | WER `DumpCount` on test machines | BLD-113 | — |
 | `bld.perf.incremental_one_source_s` | 10 | s | starting value; §5 | BLD-117 | — |
 | `bld.perf.per_change_pipeline_min` | 30 | min | starting value; §5 | BLD-117 | — |
-| `bld.perf.nightly_window_h` | 8 | h | starting value; §5 | BLD-117 | — |
+| `bld.perf.nightly_window_h` | 8 | h | starting value for the scheduled jobs; §5 | BLD-117 | — |
 
 Values that the rules above use and other documents own: `ast.hash.display_hex_digits` and the 32-byte digest `ast.hash.digest_bytes` ([asset pipeline](asset_pipeline_and_resources.md)); `ref.meta.lang.base` ([options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); `dat.perf.full_build_s` ([data schemas](data_schemas/README.md)); `plt.lifecycle.exit_code.normal` ([platform layer](platform_layer.md)).
 
 ## 5 Concurrency and performance budget
 
-**BLD-116** (MUST) The content build parallelises within a stage only (BLD-012): per-file and per-member tasks run on `--jobs` worker threads, and cross-file checks, edition selection, the localisation report and the map-identity listing run after the stage before them has finished for every file. Packaging, signing and symbol publication of one build run after its compile and content-build jobs; separate products and editions package in parallel.
+**BLD-116** (MUST) The content build parallelises within a stage only (BLD-012): per-file and per-member tasks run on `--jobs` worker threads, and cross-file checks, edition selection, the localisation report and the map-identity listing run after the stage before them has finished for every file. Packaging, signing and symbol publication of one build run after its Release build and its content build; separate products and editions package in parallel. MSBuild builds the projects of the solution in parallel (`/m`) along their references.
 
-**BLD-117** (MUST) The budgets of table 5-A are starting values, measured on every run and tracked by the nightly performance job (ADR-070); a run above a budget is reported with the stage times of DAT-053, and a budget changes only after measurement.
+**BLD-117** (MUST) The budgets of table 5-A are starting values, measured on every run and tracked by the performance job (table 4.9-B, ADR-070); a run above a budget is reported with the stage times of DAT-053, and a budget changes only after measurement. The developer machine class of the table is the diagnostics component's reference class, whose hardware is not yet named (see DEC-971).
 
 Table 5-A Build budgets.
 
@@ -800,31 +765,33 @@ Table 5-A Build budgets.
 |---|---|---|
 | an incremental `loose` run after one changed source, from start to the loose entries written | `bld.perf.incremental_one_source_s` (10 s) | on a developer machine of the diagnostics component's reference class |
 | a clean validation and cook of one edition | `dat.perf.full_build_s` ([data schemas](data_schemas/README.md)) | on a CI agent |
-| the wall time of all per-change jobs, with warm binary caches and a warm content graph | `bld.perf.per_change_pipeline_min` (30 min) | on the CI agents |
-| the nightly tier | `bld.perf.nightly_window_h` (8 h) | on the CI agents, GPU agent included |
+| the wall time of the committed workflow on one change, with a warm content graph once the content build job exists | `bld.perf.per_change_pipeline_min` (30 min) | on the CI runners |
+| the scheduled jobs of table 4.9-B together | `bld.perf.nightly_window_h` (8 h) | on the CI agents, GPU agent included |
 
-**BLD-118** (MUST) CI keeps the vcpkg binary cache (ADR-055) and the content build's dependency graph of the main branch, so that a per-change run rebuilds only what the change affects; the nightly reproducibility job (BLD-067) is the check that cached and clean results agree.
+**BLD-118** (MUST) The content build job, once added, keeps the content build's dependency graph of the main branch between runs, so that a per-change run rebuilds only what the change affects; the reproducibility job (BLD-067) is the check that cached and clean results agree. No package cache beyond NuGet's own is kept (ADR-055).
 
 ## 6 Failure modes, diagnostics and telemetry
 
 | Failure | Detected | Behaviour | Requirement |
 |---|---|---|---|
-| no product, an unknown product or two products | configure | configure fails and names the known products | BLD-044 |
-| a compiler that is not the pinned toolset; `/std:c++latest` in `Profile` or `Shipping` | configure | configure fails | BLD-027, BLD-031 |
-| a compile-time switch set by hand | configure | configure fails | BLD-014 |
-| a version part above `bld.version.part_max` | configure | configure fails | BLD-059 |
-| a missing `builtin-baseline`, a classic-mode install, or a triplet toolset that differs from the pin | CI lint | the change fails | BLD-036, BLD-037 |
-| a forbidden facility in shared or server code; `import std` mixed with headers | CI lint | the change fails | BLD-033, BLD-034 |
-| a `Shipping` or `Profile` binary with development code, PIX imports or an embedded key | CI binary check | the change fails | BLD-046 |
-| a `server` link map with a presentation symbol | CI binary check | the change fails | BLD-045 |
-| a PE file without its mitigations or without a PDB in the store | CI binary check | the change fails; a release is blocked | BLD-047, BLD-111 |
+| two solutions at the repository root | CI, locate step | the job fails | BLD-006 |
+| a project with another toolset, a Win32 platform or a third configuration, or Debug and Release that differ outside the settings of `AGENTS.md` §3 | `Build\CheckProjectFiles.py` | the change fails | BLD-027, BLD-031 |
+| `ENGINE_DEVELOPMENT` or another compile-time switch set by a project | `Build\CheckProjectFiles.py` | the change fails | BLD-014 |
+| a module interface unit, a `.hpp` or `.ixx` file, or `import std` | `Build\CheckProjectFiles.py` and review | the change fails | BLD-034 |
+| a package outside the allow-list, a pin that differs from the baseline, or a committed `packages\` folder | `Build\CheckProjectFiles.py` | the change fails | BLD-037, BLD-038 |
+| a server project that references a presentation library or package | `Build\CheckProjectFiles.py` | the change fails | BLD-045 |
+| a compiler warning, an MSBuild warning or a compile error | CI build step | the change fails | BLD-030 |
+| a test project that produced no DLL, or a failing test | CI test step | the change fails | BLD-091 |
+| a version part above `bld.version.part_max` | the identity build step | the build fails | BLD-059 |
+| a Release binary with development code or an embedded key | release check | the release is not packaged | BLD-046 |
+| a PE file without its mitigations or without a PDB in the store | release check | a release is blocked | BLD-047, BLD-111 |
 | an exported Agility SDK version that differs from the packaged runtime | build check | the build fails | BLD-042 |
 | a content error of any validator class | content build | exit code `bld.cb.exit_content_errors`; every error in the validation report | BLD-068 |
 | a missing tool input, a full disk or an internal error | content build | exit code `bld.cb.exit_tool_failure`; the log names the stage | BLD-065 |
 | an edition-manifest error, or paired editions with different simulation identities | content build | content error naming the edition and the field or key | BLD-049, BLD-051 |
 | a placeholder, an unreferenced asset or an incomplete listed language in an edition marked for release | content build | content error | BLD-054 |
 | a map source whose name is not a canonical map id | content build | content error | BLD-072 |
-| a source file that embeds a map hash | CI lint | the change fails | BLD-076 |
+| a source file that embeds a map hash | lint step | the change fails | BLD-076 |
 | a translated file that fails validation | `strings-import` | nothing is written; diagnostics listed | BLD-084 |
 | a file in the install directory that table 3.5-A does not list, or that BLD-024 forbids | packaging | packaging fails | BLD-097 |
 | an executable whose identity differs from `build_identity.json` | packaging | packaging fails | BLD-097 |
@@ -832,27 +799,27 @@ Table 5-A Build budgets.
 | a missing or invalid channel tag | start-up | the tag reads `unknown` | BLD-021 |
 | a damaged or missing pack | start-up or repair check | the messages of AST-102; the repair check lists the packs and ends with `bld.repair.exit_failed` | BLD-103 |
 | a match-start command for a map that is not permitted | match start | no match starts; the refusal is logged with the map id | BLD-053 |
-| an unsigned, wrongly signed or untimestamped file in a release candidate | CI signature check | the release candidate is not published | BLD-108 |
+| an unsigned, wrongly signed or untimestamped file in a release candidate | signature check | the release candidate is not published | BLD-108 |
 
-**BLD-119** (MUST) The content build logs in the `tools` category of the logging system (ADR-067): each stage's start, end and time, the counts of DAT-053, every tool failure, and the run's summary of errors, warnings, placeholders and offered languages per edition. Packaging and signing log every file they add, check and sign. Every log of a build tool starts with the tool's own build identity (BLD-061).
+**BLD-119** (MUST) The content build logs in the tools category of the logging system (ADR-067): each stage's start, end and time, the counts of DAT-053, every tool failure, and the run's summary of errors, warnings, placeholders and offered languages per edition. Packaging and signing log every file they add, check and sign. Every log of a build tool starts with the tool's own build identity (BLD-061).
 
 **BLD-120** (MUST) The build sends no telemetry. A client's telemetry submissions carry the build identity of the client, within the fixed data set of ADR-066; the channel tag reaches the log header only (BLD-021).
 
 ## 7 Acceptance tests
 
-Tests are named with the requirement id they verify (ADR-069).
+Tests are test methods of the Microsoft C++ Unit Test Framework, each carrying the requirement id it verifies (ADR-069); the CI and release checks are fixtures of `Build\CheckProjectFiles.py` and of the release procedure.
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T1 products | configure test | configures with no product, with an unknown product and with two products all fail; each known product configures | BLD-044, BLD-013 |
-| T2 switches | configure test | a preset that sets a compile-time switch by hand fails; each flavour produces the switch values of table 3.1-B | BLD-014 |
-| T3 toolchain pins | configure test | a compiler of another toolset and `/std:c++latest` in `Shipping` each fail configure | BLD-027, BLD-031 |
-| T4 dependency pins | CI fixture | a manifest without `builtin-baseline`, a classic-mode install and a triplet with another toolset each fail their check | BLD-036, BLD-037 |
-| T5 portable subset | build fixture | a server target that uses `std::stacktrace`, and a translation unit that both imports `std` and includes `<vector>`, each fail the lint | BLD-033, BLD-034 |
-| T6 binary checks | CI fixture | a `Shipping` binary with a debug-command symbol, a server binary that links `d3d12`, and a PE file without CET compatibility each fail | BLD-046, BLD-045, BLD-047 |
+| T1 products | build | building each product's project with `/t:<ProjectName>` through its solution produces exactly that program; the content build tool builds only from the tools solution | BLD-044, BLD-013, BLD-005 |
+| T2 switches | build and checker fixture | a Debug build has `ENGINE_DEVELOPMENT` at 1 and a Release build at 0; a project that defines it by hand fails the check; each configuration compiles in the switches of table 3.1-B | BLD-014 |
+| T3 configuration alignment | checker fixture | a project whose Debug and Release differ in an include directory, the language standard or `/arch` fails; one that differs only in the settings of `AGENTS.md` §3 passes; a toolset other than `v145`, a Win32 platform and a third configuration each fail | BLD-027, BLD-030, BLD-031 |
+| T4 package pins | checker fixture | a `packages.config` with a fourth package, a pinned package at another version and a committed `packages\` folder each fail; a restore of the solution brings exactly the three packages | BLD-036, BLD-037, BLD-038 |
+| T5 file rules | checker fixture | a `.ixx` file, a `.hpp` file and a translation unit with `import std` each fail | BLD-034 |
+| T6 release checks | release fixture | a Release binary with a debug-command symbol and a PE file without CET compatibility each fail; a Release binary that holds PIX markers passes; a server project that references the renderer fails the checker | BLD-046, BLD-047, BLD-045, BLD-122 |
 | T7 Agility SDK | build fixture | an exported version that differs from the packaged `D3D12Core.dll` fails; a matching pair passes; no install holds `D3D12SDKLayers.dll` | BLD-042, BLD-024 |
-| T8 identity generation | unit | the generated identity holds every field of table 3.3-A; a modified working tree carries the marker; the display and full texts have the forms of BLD-061 | BLD-019, BLD-058, BLD-061 |
-| T9 version resources | unit and CI check | `MAJOR.MINOR.PATCH.build` maps into `FileVersion` and `ProductVersion`; a part of 65536 fails configure; every distributed PE file's resource matches the identity | BLD-059, BLD-060 |
+| T8 identity generation | unit | the generated `BuildIdentity.h` and `build_identity.json` hold every field of table 3.3-A; a modified working tree carries the marker; the display and full texts have the forms of BLD-061 | BLD-019, BLD-020, BLD-058, BLD-061 |
+| T9 version resources | unit and release check | `MAJOR.MINOR.PATCH.build` maps into `FileVersion` and `ProductVersion`; a part of 65536 fails the build step; every distributed PE file's resource matches the identity | BLD-059, BLD-060 |
 | T10 identity switch | integration | `--write-build-identity` writes the identity and ends with `plt.lifecycle.exit_code.normal` without creating a window or mounting a pack | BLD-063 |
 | T11 channel tag | unit | a valid tag reads back; a missing file, an empty line, upper-case letters and a 33-character tag read `unknown` | BLD-021 |
 | T12 edition selection | build fixture | an unknown asset id, folder, tag, flag, mode, language and map id each fail; nothing outside the closure of the selection enters an edition | BLD-049, BLD-016 |
@@ -867,19 +834,21 @@ Tests are named with the requirement id they verify (ADR-069).
 | T21 reference audit | build fixture | two files with one base name in different folders stay distinct; an asset named only by an asset-id constant is referenced; an unreferenced asset is a warning in `development` and an error in an edition marked for release | BLD-069 |
 | T22 map identity | unit and build | reformatting a map source leaves its hash and listing entry unchanged; moving one structure changes both; a map larger than any reference map hashes without truncation; a source named outside the map-id form fails | BLD-072, BLD-073, BLD-074 |
 | T23 listing comparison | build | adding, removing and changing a map are each reported against the previous build; an unchanged listing is not rewritten | BLD-075 |
-| T24 no hash in code | CI lint fixture | a source file with an embedded map hash fails | BLD-076 |
+| T24 no hash in code | lint fixture | a source file with an embedded map hash fails | BLD-076 |
 | T25 localisation report | build fixture | a language with one missing id is withheld and listed; an untranslated id and an unknown id are warnings; the base language is in every client edition | BLD-078, BLD-080, BLD-081 |
-| T26 language test file | integration | in a `Development` client with the language test on, loading a language writes `language_report.json` into the `diagnostics\` folder and replaces it at the next load | BLD-082 |
+| T26 language test file | integration | in a Debug client with the language test on, loading a language writes `language_report.json` into the `diagnostics\` folder and replaces it at the next load | BLD-082 |
 | T27 translation export | unit | vectors for inserted, deleted, changed and renamed ids; a change of two letters inside one word is typo-level, and a change of the first letter is not | BLD-083 |
 | T28 translation import | unit | a file with one invalid message changes nothing; a valid file is written canonically and atomically | BLD-084 |
 | T29 map-tool validation | integration | `ValidateMapFile` and the `validate` command give the same diagnostics for every map fixture of the content build | BLD-010, BLD-087 |
-| T30 install directory | packaging fixture | an extra file, a PDB, `WinPixEventRuntime.dll` in a `Shipping` install and a second edition's packs each fail packaging | BLD-023, BLD-024, BLD-097, BLD-052 |
-| T31 install test | CI | the release-candidate archive installs on a clean image, the client runs as a standard user from a read-only directory, and nothing is written outside the user-data folders | BLD-105, BLD-025 |
+| T30 install directory | packaging fixture | an extra file, a PDB, a shader file beside the executable, a missing `WinPixEventRuntime.dll` and a second edition's packs each fail packaging | BLD-023, BLD-024, BLD-097, BLD-052 |
+| T31 install test | release procedure | the release-candidate archive installs on a clean image, the client runs as a standard user from a read-only directory, and nothing is written outside the user-data folders | BLD-105, BLD-025 |
 | T32 repair check | integration | a corrupted pack is listed and the check ends with `bld.repair.exit_failed`; an intact install ends with `plt.lifecycle.exit_code.normal`; the install directory is unchanged | BLD-103 |
-| T33 signing | CI | every PE file and package of a release candidate is signed and timestamped; an unsigned file blocks publication | BLD-106, BLD-108 |
-| T34 symbols | CI | every distributed PE file has its PDB in the store under the build identity; republishing an identity with other files fails | BLD-026, BLD-111 |
-| T35 local dumps | QA | with the registry file applied, the crash commands of ADR-065's confirmation produce custom dumps in the `crashes\` folder | BLD-113 |
+| T33 signing | release check | every PE file and package of a release candidate is signed and timestamped; an unsigned file blocks publication | BLD-106, BLD-108 |
+| T34 symbols | release check | every distributed PE file has its PDB in the store under the build identity; republishing an identity with other files fails | BLD-026, BLD-111 |
+| T35 local dumps | QA | with the registry file applied, the crash commands of ADR-065's confirmation produce custom dumps in the `crashes\` folder, and with `--user-data` set they still go to the default `crashes\` folder | BLD-113 |
 | T36 budgets | performance | the budgets of table 5-A hold | BLD-117 |
+| T37 workflow guards | CI fixture | on a tree without a solution the restore, build and test steps are skipped with a notice and the job passes; adding a solution makes them run; two solutions fail the locate step; a `*Tests.vcxproj` without its DLL fails the test step | BLD-090, BLD-091, BLD-006 |
+| T38 embedded shaders | build | each `.hlsl` of a `Shader/` folder yields its `CompiledShader/<Shader><Stage>.h` with `g_<Shader><Stage>`, compiled with the same settings in Debug and Release; changing a shader rebuilds the executable; no install holds a shader file | BLD-121, BLD-024 |
 
 ## 8 Open decisions
 
@@ -887,35 +856,37 @@ Tests are named with the requirement id they verify (ADR-069).
 |---|---|---|
 | DEC-015 | Resolved | build-time validation and loads that are never fatal; the content build is the gate (BLD-068, BLD-065) |
 | DEC-204 | Open | content and version identity: the build produces them; their exchange and comparison are the design phase's (BLD-051, BLD-062, BLD-073, BLD-077) |
-| DEC-220 | Open | process roles and the headless server build; the three products are built now (BLD-005, BLD-048) |
+| DEC-220 | Open | process roles and the headless server build; both programs are built now (BLD-005, BLD-048) |
 | DEC-222 | Open | whether the simulation library's include allow-list enforces the boundary (BLD-041) |
 | DEC-229 | Open | the build order; CI runs from the first change under every option (BLD-094) |
-| DEC-240 | Open | the numeric model; the floating-point property of the simulation targets (BLD-040) |
+| DEC-240, DEC-241 | Open | the numeric model and whether the simulation core is deterministic under `/fp:precise` and `/arch:AVX2` (BLD-040) |
 | DEC-248 | Open | entitlement and the trial product; no in-game map or mode lists gate access (BLD-053, table 3.2-C) |
 | DEC-802 | Open | whether player editions may hold maps with an empty mode list (BLD-057) |
+| DEC-971 | Open | the developer machine class of table 5-A is the reference test machine with a local solid-state disk, its hardware not yet named (BLD-117) |
 | DEC-561 | Resolved | per-mode map validation in the content build and in map tools (BLD-068, BLD-087) |
 | DEC-563 | Resolved | thumbnails and the map index are build outputs; no unreferenced asset is packaged (BLD-056, BLD-068) |
 | DEC-800 | Resolved | lossless, canonical and atomic writers: map tools and the translation import (BLD-088, BLD-084, BLD-072) |
 | DEC-801 | Resolved | duplicate keys, repeated fields and over-long values are build errors (table 4.5-B) |
-| DEC-804 | Resolved | the soak sequence names maps by map id and checks their hashes (table 4.6-A, BLD-091) |
+| DEC-804 | Resolved | the soak sequence names maps by map id and checks their hashes (table 4.6-A, table 4.9-B) |
 | DEC-332 | Dropped | the contents of other editions and packaged archives of the reference are not specified; Species defines its own editions (§3.2) |
 | DEC-340 | Dropped | the reference's archive, packaging, crash-report and production tools are not specified; Species defines its content build, packages and crash path (§4.5, §4.10, §4.12) |
-| DEC-041, DEC-099 | Resolved | development tooling only in development flavours (table 3.1-B, table 3.2-C); only complete languages are offered (BLD-081) |
+| DEC-041, DEC-099 | Resolved | development tooling only in Debug builds (table 3.1-B, table 3.2-C); only complete languages are offered (BLD-081) |
 | DEC-045, DEC-047, DEC-228, DEC-243 to DEC-245, DEC-249, DEC-317, DEC-329 | Open | the map editor (§4.8); the map index (table 4.6-A); stress maps (BLD-057); sessions (table 3.2-B); online services (BLD-021); voice per language (§8 item 10); assets that only rules create (BLD-069) |
-| ADR-051, ADR-052, ADR-055 to ADR-057, ADR-059, ADR-060, ADR-070, ADR-071 | Accepted | the toolchain, language, dependencies, products, identity, content build, content identity, CI and install layout this component implements |
-| ADR-001, ADR-003, ADR-050, ADR-058, ADR-061, ADR-063, ADR-066, ADR-067, ADR-068 | Accepted | the decisions of other components that this one packages, checks or reports on: the Agility SDK, the shader compiler, the OS floor, packs, schemas, localisation, telemetry, logging and profiling |
-| ADR-053, ADR-054, ADR-062, ADR-065, ADR-069, ADR-072, ADR-073 | Proposed | `import std`, presets, the authoring syntax, crash reporting, the test framework, channels and signing: the defaults this component follows until each is confirmed |
+| ADR-051, ADR-052, ADR-054 to ADR-057, ADR-059, ADR-060, ADR-069 to ADR-071 | Accepted | the toolchain, language, MSBuild solution, packages, products and configurations, identity, content build, content identity, tests, CI and install layout this component implements |
+| ADR-053 | Rejected | no modules and no `import std` (BLD-034) |
+| ADR-001, ADR-003, ADR-017, ADR-050, ADR-058, ADR-061, ADR-063, ADR-066, ADR-067, ADR-068 | Accepted | the decisions of other components that this one builds, packages, checks or reports on: the Agility SDK, the embedded shaders, the texture encoder of the tools, the OS floor, packs, schemas, localisation, telemetry, logging and profiling |
+| ADR-062, ADR-065, ADR-072, ADR-073 | Proposed | the authoring syntax, crash reporting, channels and signing: the defaults this component follows until each is confirmed |
 
 **Design-phase inputs.**
 
-1. **Dedicated-server build for other hosts** (DEC-220, "Hosting" in the [ADR index](../../ADR/README.md#deferred-to-the-design-phase)): whether to add a dedicated-server build for the host operating system that most community hosts run (vision brief §6 item 10; the technology baseline item 2.3 names it and lists its candidate compilers), with its presets, triplet and CI agents, its packaging (an archive, a container image), its crash path and its artefact signing (ADR-051, ADR-052, ADR-065, ADR-073). Until then the `server` product is built for Windows only (BLD-048).
+1. **Dedicated-server build for other hosts** (DEC-220, "Hosting" in the [ADR index](../../ADR/README.md#deferred-to-the-design-phase)): whether to add a dedicated-server build for the host operating system that most community hosts run, Linux (vision brief §6 item 10), with its build definition and compiler, which need a later ADR because the baseline is MSBuild and MSVC only, its CI agents, its packaging (an archive, a container image), its crash path and its artefact signing (ADR-051, ADR-052, ADR-054, ADR-065, ADR-073). Until then the server is built for Windows only (BLD-048).
 2. **Channels** (ADR-072): which storefronts Species uses; whether a channel delivers languages as separate packages, which would need per-language `locale` packs (AST-057); and whether packages carry a player manual.
 3. **Entitlement and trial** (DEC-248): the trial product and the platform services that replace any in-game gating.
 4. **Identity exchange** (DEC-204, DEC-245, DEC-249): what a client, a server and a session record compare, and whether the channel tag reaches an online service.
 5. **Map editor** (DEC-045): the product that carries it, its in-editor play test on the real simulation, and whether it may keep an unfinished map.
 6. **Test maps in player editions** (DEC-802).
-7. **Simulation build settings** (DEC-240, DEC-222): the floating-point model of the simulation targets, and the include allow-list of the simulation library.
-8. **Field profiling** (ADR-056, ADR-068): whether `Shipping` builds keep PIX markers for field captures; the default compiles them out.
-9. **Player content** (ADR-058; [asset pipeline](asset_pipeline_and_resources.md) §8): whether a shipping build mounts mod packs or community maps, and how such content enters the content identity.
+7. **Simulation build settings** (DEC-240, DEC-241, DEC-222): whether the simulation core is deterministic and which float rules it keeps under `/fp:precise` and `/arch:AVX2`, and the include allow-list of the simulation library.
+8. **Optimised development builds** (ADR-056): whether the team needs an optimised build with the development tools, which the two configurations do not provide; meanwhile an optimised build is measured through PIX captures, the telemetry data set and the repeatable performance scene.
+9. **Player content** (ADR-058; [asset pipeline](asset_pipeline_and_resources.md) §8): whether a Release build mounts mod packs or community maps, and how such content enters the content identity.
 10. **Languages** (R-META-461, DEC-317): the language set of the first release, the region of Portuguese, and whether voice is recorded per language.
-11. **Infrastructure** (ADR-070, ADR-055): the CI service, agent hosting, the binary-cache host, the symbol-store host and how long it keeps builds that were never release candidates.
+11. **Infrastructure** (ADR-070, ADR-065): agents beyond the hosted runners (the GPU agent), the machine and access of the release procedure, the symbol-store host and how long it keeps builds that were never release candidates.
