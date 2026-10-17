@@ -1542,3 +1542,172 @@ These details matter only for bit-compatibility with the original (replays, cros
 | T9 | Clouds | `Clouds::Advance` runs in simulation slice 3 but only moves a cosmetic texture offset | [C] `code/location.cpp:Location::AdvanceClouds`, `code/clouds.cpp` |
 | T10 | Water | Animation uses `g_gameTimer.GetAccurateTime()` on the render path; purely visual | [C] `code/water.cpp` |
 
+### 14.9 Timestep, frame structure and update ordering
+
+#### 14.9.1 Time constants
+
+| Quantity | Value | Kind | Ref |
+|---|---|---|---|
+| Server tick (one UPDATE letter) | **0.1 s real time**; schedule `m_nextServerAdvanceTime += 0.1f`, at most one tick per call, no skipping (`SkipToTime` has no caller) | literal | [C] `code/network/server.cpp:Server::Initialise`, `AdvanceIfNecessary` |
+| Game time per frame `SERVER_ADVANCE_PERIOD` | `0.1 × m_gameSpeed` game seconds (macro → `GameTimer::GetServerAdvancePeriod()`) | derived | [C] `code/gametimer.h`, `code/gametimer.cpp` |
+| Slices per frame | `NUM_SLICES_PER_FRAME = 10` | `#define` | [C] `code/globals.h` |
+| Client input (ALIVE) period | `IAMALIVE_PERIOD = 0.1` s real time | `#define` | [C] `code/globals.h`, `code/main.cpp:LocationGameLoop` |
+| Game speed values | 0 (MP match start; pause; victory, then locked), 1.0 (grace end, immediate), slow-down crate `0.2 + syncfrand(0.2)` for 15 s, speed-up crate `1.3 + syncfrand(0.7)` for 15 s, meteor slow-motion 0.4 for 4 s | data from the sim | [C] §2.6 |
+| Speed blending per frame | `speed += (target − speed) × rate` (rate 0.05 crates, 0.1 meteor, 0.2 pause, 1.0 grace), snap when within 0.01; a duration counts down **0.1 per frame regardless of speed** then the target becomes 1.0; `LockSpeedChange` blocks further requests | sim | [C] `GameTimer::Tick`, `RequestSpeedChange` |
+| Physics step | variable: every object integrates once per frame with `dt = SERVER_ADVANCE_PERIOD` ∈ {0, 0.02 … 0.2} s — the network frame rate stays 10 Hz, game speed scales dt, not the tick count; some terms are per tick, not per second (TriffidEgg gravity `9.8 × force` per tick, Spider pounce gravity 40 per tick, ArmyAnt/AntHill counters in ticks such as `m_antInsideCheck` 30, Lightning 1 % per tick, SpaceShip/DropShip `dt²` integration) and do not scale with speed crates; the crate capture-rate cap 0.05 per tick does not scale either | sim | [C] e.g. `code/worldobject/spider.cpp:Spider::AdvancePouncing` (`m_pos += m_vel * SERVER_ADVANCE_PERIOD`); P05, P08 notes |
+| Sim pacing on clients | `GetNumSlicesToAdvance`: 20 when catching up, else `int(0.3 × pendingSlices)` clamped to [0, 20] | local only | [C] §2.3 |
+| Catch-up | loop while > 20 frames behind and < 0.3 s spent this render frame | local only | [C] §2.3 |
+
+#### 14.9.2 Execution order of one frame (single entry point)
+
+The only caller of `Location::Advance` and `Multiwinia::Advance` is `ClientToServer::ProcessAllServerLetters` on the main thread [C grep]. For frame N:
+
+1. `GetNextLetter` returns letter N (strict sequence order; unsequenced letters run immediately at the inbox head) [C].
+2. `ProcessServerLetters` (CLIENTHELLO / GOODBYE / CLIENTID / TEAMASSIGN / NETSYNCERROR / NETSYNCFIXED / SPECTATORASSIGN / FILESEND / DISCONNECT / SERVER_FULL) else `ProcessServerUpdates`: the letter's subdirectories are applied **in the order the server popped them from its FIFO inbox** (ALIVE → `Location::UpdateTeam`, SELECTUNIT, RUNPROGRAM, TARGETPROGRAM, TERMINATE, ORDERGOTO, PROMOTE, TOGGLEENTITY, SELECTDGS, ORDERDGS, PAUSE, game options …) [C].
+3. If it was an UPDATE: `g_sliceNum = 0`, `GameTimer::Tick()`, `GenerateSyncValue()`, `SendSyncronisation()` [C]. Commands of frame N are therefore applied **before** slice 0 of frame N, and the sync value is generated right after applying them.
+4. Slices 0…9 (possibly spread over several render frames):
+
+| Slice | `Location::Advance(slice)` work, in this order | Ref |
+|---|---|---|
+| every | **Teams** 0 → 5 (skip `TeamTypeUnused`): [slice 1 only: `TaskManager::Advance`, kill-milestone messages for the local team] → for each unit (index order) `Unit::AdvanceEntities(slice)` (the unit's slice range) → [slice 0 only: `Unit::Advance` for every unit, remove dead] → [slice 0 only: selected-Darwinian count/centroid roll-over] → `m_others` slice range: `Entity::Advance`, then entity-grid `RemoveObject`/`UpdateObject` | [C] `code/team.cpp:Team::Advance`, `code/unit.cpp:Unit::AdvanceEntities` |
+| every | **Weapons**: `m_lasers` slice range (`Laser::Advance`, remove), then `m_effects` slice range (`WorldObject::Advance`, delete) | [C] `code/location.cpp:Location::AdvanceWeapons` |
+| every | **Buildings** slice range (`Building::Advance`; on removal: delete, `RecalculateAITargets` if AITarget/Wall, and after the loop `ObstructionGrid::CalculateAll`) | [C] `Location::AdvanceBuildings` |
+| every | **Spirits** slice range | [C] `Location::AdvanceSpirits` |
+| 3 | **Clouds** (`m_offset += (0.03, 0, −0.01) × period` — cosmetic but inside the step) | [C] `Location::AdvanceClouds`, `code/clouds.cpp:Clouds::Advance` |
+| every | `MissionComplete()` evaluation (Darwinia objectives; MW maps use `NeverTrue`) | [C] `Location::Advance` |
+| 3 | Weather spawners: snow (level effect or Christmas mode — both may run, sharing `m_christmasTimer`), soul rain, dust storm, lightning | [C] `Location::Advance` |
+| 7 | `EntityGridCache::Advance` — evict cached enemy queries older than 1.0 game s | [C] `code/entity_grid_cache.cpp` |
+| 8 (MP) | `AdvanceCrates`; `m_spawnManiaTimer`, `m_bitzkreigTimer` −= period | [C] `Location::Advance` |
+| after each slice | `ParticleSystem::Advance(slice)` — advances **all** particles at slice 0 only (cosmetic) | [C] `code/particle_system.cpp:ParticleSystem::Advance` |
+| 8 (MP) | `Multiwinia::Advance()` — mode rules; runs **even while `GamePaused()`** (grace countdown, un-pause); on three Blitzkrieg maps with trunk-port reinforcements `AdvanceTrunkPorts` runs twice per tick (deterministic, unintended — [01](01_game_modes.md)) | [C] `ProcessAllServerLetters`; P02 D3 |
+
+Steps 1–5 of `Location::Advance` are written as `#pragma omp parallel for schedule(dynamic)` over `step = 0..4` (with `#undef for` to defeat the `for`-scoping macro). OpenMP is not enabled in any configuration, so they execute serially in the order above [C config, I default]. They share the synced RNG, the entity grid, building lists and the static scratch buffers (`Entity::s_neighbours`, `spirit.cpp` `s_neighbours`, `EntityGrid::m_neighbours`, `Building::s_neighbours`) and `WorldObjectId::s_nextUniqueId` — enabling OpenMP would make the simulation nondeterministic.
+
+#### 14.9.3 Container iteration and slot allocation (what makes the order reproducible)
+
+| Mechanism | Rule | Ref |
+|---|---|---|
+| `FastDArray<T>` (base of `SliceDArray`) | slots iterated 0…`Size()−1` skipping empty slots; `PutData` takes the head of a **LIFO free list** (most recently freed slot first); when full it grows by the step size (`m_buildings` 10, `m_spirits`/`m_lasers`/`m_effects` 100; `m_spirits` presized 100) or doubles when step = −1; `RemoveData` pushes the slot on the free list | [C] `contrib/systemiv/lib/tosser/fast_darray.cpp:PutData/RemoveData/Grow`; `code/location.cpp:Location::Location` |
+| `SliceDArray::GetNextSliceBounds(slice)` | slice 0 starts at 0; slice k < 9 covers `[lastUpdated+1, lastUpdated+1+int(Size()/10.0f)]`; slice 9 ends at `Size()−1`; `Size()` is the **capacity**, read at slice time, so growth during earlier slices shifts later bounds. Every slot is advanced exactly once per frame, except: an object created into a slot above the current `lastUpdated` is advanced in the same frame; one created into a reused lower slot waits for the next frame. Entities in earlier slices see later-slice entities' previous-tick state | [C] `code/lib/slice_darray.cpp` |
+| Render-side use | renderers call `GetLastUpdated()`: slots ≤ lastUpdated are extrapolated with `predictionTime`, later slots with `predictionTime + SERVER_ADVANCE_PERIOD` | [C] `code/team.cpp:Team::RenderDarwinians` |
+| Entity-grid queries | results ordered by cell x ascending, then z ascending, then team 0…5, then cell slot order; duplicates (multi-cell objects) removed; "nearest" selections use strict `<`, so the first found wins ties | [C] `code/entity_grid.cpp:EntityGrid::GetNeighbours` |
+| Entity-grid cache | `GetEnemies` returns a cached result list when a same-team query centre lies within half the cached range (float-stored keys), regardless of the requested range; entries die after 1.0 game s (slice 7). Cached results are therefore stale by up to 1 s — the cache is simulation state and its contents depend on query order | [C] `code/entity_grid_cache.cpp:EntityGridCache::GetEnemies/FindCacheHit/Advance` |
+| Order-dependent decisions | port occupant = first matching Darwinian in entity-grid order; ownership ties resolve to the lowest team index (SpawnPoint, GunTurret, SolarPanel, KOTH zones, Rocket Riot simultaneous launch, Assault single-round winner); CTS co-op winner = last member of the winning group; Rocket lookup = last matching building; statue spawn = first zone with maximum distance; `SpawnPopulationLock` association = first lock in building-list order; RadarDish receiver = nearest by float distance; AI scans `m_buildings` by index with "first found"/strict `>`; `Location::Bang` damages in entity-grid order (kill credit depends on transitions) | [C] P02 D7, P04 note 9, P06 note 4, P08 §17 |
+| Hash maps / sorting / pointer order | none in simulation code: `qsort` only for the alpha-pass building depth sort (render), `std::map<Entity*,…>` only in the `TRACK_SYNC_RAND` watch list; BTree pre-order and HashTable slot order elsewhere are deterministic functions of the operation sequence | [C grep over `code/worldobject`, `location`, `team`, `unit`, `taskmanager`, `multiwinia`, `entity_grid`, `routing_system`, `obstruction_grid`, `level_file`, `global_world`]; [21](21_simulation_and_entity_model.md) |
+| Function-static scratch vectors | `s_neighbours` in several files, `Location::s_neighbours` with an in-use flag (`Location::Bang` falls back to a local vector when re-entered) | [C] |
+
+#### 14.9.4 Object identity and id allocation
+
+| Id | Allocation | Determinism notes | Ref |
+|---|---|---|---|
+| `WorldObjectId` = {`unsigned char teamId`, `int unitId`, `int index`, `int uniqueId`}; special unit ids `UNIT_BUILDINGS −100`, `UNIT_SPIRITS −101`, `UNIT_LASERS −102`, `UNIT_EFFECTS −103` | — | `index` is the slot in `Team::m_others` / `Unit::m_entities`; network commands address entities **by slot index** (TERMINATE, PROMOTE, TOGGLEENTITY, SELECTUNIT entityId), so slot allocation history must be identical on all peers | [C] `code/worldobject/worldobject.h`; `ClientToServer::ProcessServerUpdates` |
+| `uniqueId` for entities and effects | global `WorldObjectId::s_nextUniqueId`, pre-incremented (first id 1) by `GenerateUniqueId` in `Entity::CreateEntity`, `Location::ThrowWeapon/FireRocket/FireTurretShell/LaunchFireball/FireLaser/CreateShockwave`, weather spawners, zombies, spam infections, turret shells/targets, tank missiles/mines, BoxKite, OfficerOrders, MultiwiniaOfficerOrders (every 2 s), OfficerOrderTrail (every 0.2 s per active order effect) | reset only by `ResetUniqueIdSeed` in `DoEnterLocation` (**not** in Assault `Multiwinia::ResetLocation`) — deterministic either way because every peer executes the same allocations. Unique ids feed gameplay (`uid % 20` worship range, `uid % 10` fence clearance, abduction blend, render variation) ⇒ every peer must create exactly the same effects in the same order | [C] `code/worldobject/worldobject.cpp`, `code/main.cpp:DoEnterLocation`; P03 |
+| Building `uniqueId` | level-file ids; runtime buildings (crates, trees, AI targets of turrets/statues/radar dishes) from `GlobalWorld::GenerateBuildingId()` = `s_nextUniqueBuildingId++`, reset to 0 in `Location::Init` and set to (highest level id + 1) after `InitBuildings` | building ids travel in AIMBUILDING, SELECTUNIT, TOGGLELASERFENCE; `Location::GetBuilding(id)` is a linear scan returning the first match. **Local callers exist**: `MultiwiniaHelp::AttachTutorialTo3d/AttachTutorial2To3d` create crates with `GenerateBuildingId` from the render-frame loop (single-player tutorial only) | [C] `code/global_world.cpp:GlobalWorld::GenerateBuildingId`; `code/location.cpp:Location::InitBuildings`; `code/multiwiniahelp.cpp` |
+| Route ids | slots of `RoutingSystem::m_routes`, shared by simulated routes and **local** mouse-preview routes from `LocationInput` (the previous frame's preview route is still allocated while the sim runs `IssueDarwinianOrders → GenerateRoute`) | handles only, never transmitted or hashed — but they perturb the slot order on each peer differently | [C] `code/location_input.cpp:LocationInput::AdvanceTeamControl`, `code/routing_system.cpp`; P01 D15 |
+| Spirit index | slot in `Location::m_spirits` (`FastDArray<Spirit>` by value) | as FastDArray | [C] `Location::SpawnSpirit` |
+| Task ids | per-team counter, 1 byte on the wire | §5.4 | [C] |
+
+#### 14.9.5 Threads and the simulation
+
+The simulation runs on exactly one thread at a time: the main thread for frames, the loading-screen worker thread for `Location::Init` (initial load; the Assault `ResetLocation` re-init runs on the main thread). While the worker loads, the main thread renders the loading screen, advances sound, sends KEEPALIVE syncs, ticks the server and executes display-list jobs queued by the worker — none of which touch the synced RNG [C] `code/loading_screen.cpp:LoadingScreen::Render`, `code/main.cpp:EnterLocation`. Hand-over is via the `WorkQueue` mutex/events [I: memory visibility guaranteed by the Win32 synchronisation calls]. The only cross-thread hazard to simulation state is the shared non-synced LCG (§14.7).
+
+### 14.10 Simulated vs cosmetic state
+
+"Simulated" = must be bit-identical on all peers; advanced only inside `ProcessAllServerLetters`. "Cosmetic" = local, may differ freely, must never be read by simulated code. "Sim-resident cosmetic" = stored in a simulated object but only written/read by presentation (a re-implementation should move it to a view model). Full entity-model treatment: [21](21_simulation_and_entity_model.md).
+
+| Subsystem / state | Class | Evidence |
+|---|---|---|
+| Entities (`Team::m_units[].m_entities`, `Team::m_others`) — positions, velocities, fronts, health, states, timers, orders | **simulated** | [C] `Team::Advance`, `Unit::AdvanceEntities`; hashed by the debug IFrame |
+| Buildings (`Location::m_buildings`) incl. ownership, capture, ports, spawn timers | **simulated** | [C] `Location::AdvanceBuildings` |
+| Lasers (`m_lasers`), effects (`m_effects`: grenades, rockets, shells, airstrike markers/bombs, shockwaves, fireballs, pulse wave, spam infections, zombies, snow, dust balls, lightning, muzzle flashes) | **simulated** (snow, zombies and muzzle flashes are purely decorative but live in the simulated list and draw synced RNG) | [C] `Location::AdvanceWeapons`; `code/worldobject/worldobject.h` effect enum |
+| Spirits (`m_spirits`) | **simulated** (not hashed even by the debug IFrame) | [C] `Location::AdvanceSpirits`, `IFrame::Generate` |
+| Crates (spawn, fall, capture, reward) | **simulated** | [C] `Location::AdvanceCrates`; [04](04_crates_powerups_and_weapons.md) |
+| Crate orientation `m_front/m_up`, `m_centrePos`, bubble timer | **sim-resident cosmetic**: `Crate::Render` rotates `m_front/m_up` by wall-clock `g_advanceTime`; `m_centrePos` is recomputed in the sim from that orientation but only read by the renderer; crates' hit tests are disabled (`DoesSphereHit/ShapeHit/RayHit` return false) and the debug IFrame writes zero vectors for them | [C] `code/worldobject/crate.cpp:Crate::Render`, `Crate::DoesSphereHit`; `code/network/iframe.cpp` |
+| AI (one `Entity::TypeAI` per CPU team) | **simulated** on every peer | [C] `Location::InitialiseTeam`; §10 |
+| Task-manager tasks | **simulated**; `m_recentTasks`, `m_mostRecentTaskIdTimer`, `TaskSource::m_timer` use the wall clock — sim-resident cosmetic | [C] `code/taskmanager.cpp:TaskManager::RunTask`, `TaskManager::Advance`; P09 D1 |
+| Game timer `m_gameTime`, `m_gameSpeed`, speed requests | **simulated**; `m_lastClientAdvance`, `m_accurateTime`, `m_estimatedServerStartTime`, prediction are local | [C] `code/gametimer.cpp` |
+| Multiwinia rules state (scores, timers, eliminations, statue/rocket/zone state) | **simulated**; messages, achievements, help notifications keyed on `m_myTeamId` are local side effects | [C] `code/multiwinia.cpp`; P02 D5 |
+| Lobby/game options, team names/colours, ready flags | **synchronised** through the sequenced stream | [C] `ProcessServerUpdates` |
+| Terrain height map, normal map, obstruction grid, routing node tables | **simulated static data** (deterministic generation from the level file; private LCG) | [C] `code/landscape.cpp`; §14.8.9 |
+| Entity grid, entity-grid cache | **simulated derived structures** (query results and staleness matter) | [C] §14.9.3 |
+| Trees: fire, spread, spirit drops, corruption, offspring | **simulated**; the crown hit sphere is simulated but computed by the display-list generator (§14.7); colours/sway are cosmetic | [C] `code/worldobject/tree.cpp` |
+| Clouds offset | cosmetic, advanced inside the step (slice 3) without RNG | [C] `Clouds::Advance` |
+| Weather spawn (snow, soul rain, dust storm, lightning) | **simulated** (dust-ball vortex and lightning strikes affect units; snow is decoration on the synced stream) | [C] `Location::AdvanceChristmas/AdvanceDustWind/AdvanceLightning` |
+| Particles (`ParticleSystem`) | **cosmetic**; advanced inside the slice loop but only from unsynced RNG; `CreateParticle` returns `void`; nothing reads particles | [C] `code/particle_system.cpp` |
+| Explosions (shape shatter, `g_explosionManager`) | cosmetic; wall-clock lifetimes; advanced per render frame | [C] `code/explosion.cpp`, `code/main.cpp:LocationGameLoop` |
+| Sound | cosmetic: never writes simulation state; reads world objects, positions, team ids, `m_myTeamId`, landscape height, game speed, grace state and the camera; uses G6 and wall-clock time; team-matched sounds, camera-relative priorities and voice stealing differ per peer by design; game code only queries sound state to decide whether to (re)trigger sounds (`FuelPipe::Advance`, `EscapeRocket`, `Script::RunCommand_TriggerSound`) | [C] `code/sound/sound_instance.cpp`, `code/sound/soundsystem.cpp`; [27](27_audio_engine.md) |
+| Camera, `LocationInput`, `GameCursor`, `TaskManagerInterface`, markers, `MultiwiniaHelp`, chat, HUD | local; see leaks §14.11 | [C] `code/main.cpp:LocationGameLoop` render-frame calls |
+| Input drivers and camera | local and non-deterministic by design: drivers sample wall-clock state once per render frame; the camera integrates with `g_advanceTime` (≤ 0.25 s) or its own `GetHighResTime` deltas; camera shake uses `sfrand`; nothing in `code/lib/input` or `code/camera.cpp` calls the synced RNG. Input reaches the sim only through `TeamControls` (camera-relative stick directions are converted to world-space deltas **before** sending — correct, keep it) | [C] `code/camera.cpp`, `code/team.cpp:TeamControls::Advance`; P10 notes 1–2, 4, 6 |
+| Water (`Water::Advance` per render frame), landscape colours, lights, fog, deform/pixel effects | cosmetic | [C] `LocationGameLoop`; [24](24_rendering.md) |
+| Entity legs (`EntityLeg`: Spider, Tripod) | sim-resident cosmetic for Spider (foot swing timed with wall-clock `g_gameTime`; only leg rendering, foot-fall sounds and `m_nextLegMoveTime` depend on it; the body height comes from the terrain, not the feet); Tripod uses the wall clock for gameplay [B:LEGACY] | [C] `code/worldobject/entity_leg.cpp:EntityLeg::Advance`, `code/worldobject/spider.cpp:Spider::Advance` |
+| `m_renderDamaged` flags (Entity, AntHill, Centipede, Triffid) | sim-resident cosmetic (unsynced `frand` + wall clock inside `Advance`) | [C] |
+| Soul Destroyer captured-spirit trail (`m_spirits` of the creature) | sim-resident cosmetic (wall-clock birth times, `AppRandom` slot) | [C] `SoulDestroyer::Attack` |
+| Achievements, statistics, profile | local | [01](01_game_modes.md), [09](09_meta_systems.md) |
+
+**Render-time interpolation** [C] `code/gametimer.cpp`: `GameTimer::GetPredictionTime() = min(now − m_lastClientAdvance, 1.0) × m_gameSpeed`, 0 while paused; `m_lastClientAdvance` is stamped (wall clock) when a frame's commands are applied. Renderers receive `predictionTime` and extrapolate locally (`predictedPos = m_pos + m_vel × t`), adding one `SERVER_ADVANCE_PERIOD` for slots the current frame has not yet advanced (§14.9.3). Prediction is a pure function argument — never stored into simulated state [C: scripted scan of `*Render*` functions]. `docs/NetworkThreads.txt`'s "light weight advance" is this extrapolation; there is no state reception.
+
+**Render functions that write fields of simulated objects** (complete list from the scan of every assignment to an `m_…` member inside a function whose name contains `Render`, in `code/worldobject/*.cpp`, `location.cpp`, `team.cpp`, `unit.cpp`, `taskmanager.cpp`, `multiwinia.cpp`, `routing_system.cpp` — 94 lines) [C]:
+
+| Writer | Field(s) | Read by simulation? | Verdict |
+|---|---|---|---|
+| `Tree::RenderAlphas` → `Generate()` when display lists are missing | `m_hitcheckCentre`, `m_hitcheckRadius` (via `RenderBranch`) | **yes** (fire spread) | recomputes the same values from `m_seed` (idempotent) unless the G6 race of §14.7 hits; colours `m_*ColourArray`, `m_renderCorruptShadow` cosmetic |
+| `LaserFence::RenderAlphas` | `m_nextLaserFenceId = −1` if the linked id is missing or not a LaserFence | **yes** (`LaserFence::Advance` branches on `== −1`) and the call is camera-culled (`IsInView`) | latent desync: shipped data has **0 dangling links** among 703 fences in 57 `mp_*` maps [C] `_work/scripts/X3_fence_links.py`; fences are never destroyed |
+| `RadarDish::RenderAlphas` | `m_range`, `m_receiverId` | yes | saved and restored around the link drawing (single-threaded) → safe |
+| `GunTurret::Render` | `m_turretFront = m_front` | yes (aim) | only when `g_app->m_editing` [B:EDITOR]; `m_actualTargetPos` render-only |
+| `Crate::Render`, `Crate::RenderBubble` | `m_front`, `m_up`, `m_bubbleTimer` | no | sim-resident cosmetic |
+| `ThrowableWeapon::Render` | `m_up`, `m_front` (tumble per render frame), `m_numFlashes` (flash sound counter) | no (only the constructor and renderer use them) [C grep] | sim-resident cosmetic |
+| `TurretEmptyShell::Render`, `Missile::Render` (`m_fire`), `Armour::Render` (`m_smooth*`), `Darwinian::Render` (`m_colourTimer`, `m_shadowBuildingId`), `FuelGenerator::Render` (`m_pumpMovement`), `Flag::Render`, `MultiwiniaZone::RenderBlitzkrieg` (creates `m_blitzkriegFlag`), `ConstructionYard::RenderAlphas` [B:LEGACY], `LaserTrooper::Render` (`m_justFired`) | presentation fields | no [I: names and grep of readers] | cosmetic |
+| `SolarPanel::Render`, `DynamicNode::Render` [B:LEGACY], `SpiritReceiver::Render` [B:LEGACY] | `m_up`, `m_front` from the terrain normal | yes (shape hit transform) | idempotent: `SolarPanel::Initialise` sets the same values |
+| `BlueprintRelay::Render` | `m_pos.y` | — | [B:LEGACY] |
+| `Location::RenderBuildingAlphas` (sort buffer), `RenderCurrentMessage`, `RoutingSystem::Render` (`m_walkableRoute`), `Multiwinia::RenderRocketStatusPanel` | UI state | no | cosmetic |
+| `GameCursor::RenderCrosshair` (`code/gamecursor.cpp`) | **`building->m_type = Building::TypeRadarDish`** (`=` typo for `==`) for the local team's selected non-turret building | yes (type!) | dormant: only RadarDish/GunTurret can be selected in Multiwinia (L2) |
+
+### 14.11 Local-only state leaking into simulation — every known desync path
+
+Severity is for the shipped game. "Reachable" = can happen in a [B:FULL] Multiwinia match.
+
+| # | Leak | Reachable in MW? | Severity | Ref |
+|---|---|---|---|---|
+| L1 | `InsertionSquad::DirectControl`, executed on every peer from `Location::UpdateTeam` for the team's selected squad, returns early only if **neither** the sender's `m_cameraEntityTracking` **nor the local camera's `m_camLookAround`** is set. `m_camLookAround` = local control `CameraFreeMovement` held (default F2, gamepad right-stick click), refreshed every frame in free-movement mode. On any peer whose player holds it (including the squad owner's own peer), the squad receives `SetWayPoint(pointMan->m_pos)` whenever it is moving and the sender is not holding the left button (with the left button held, `SetWayPoint(point + Dx/Dy)`, which the later `unitMove` waypoint overrides unless the sender is also firing), plus an extra `Attack(...)` when the sender fires; the function also reads the local `Camera::GetControlVector()` and writes cosmetic camera fields → that squad's state diverges on that peer only | **yes** (squad crate reward; any player holding the free-look control while another team's selected squad moves) [C code; I frequency, 22-U8] | **High** | [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`, `code/location.cpp:Location::UpdateTeam` (the surrounding comment itself warns that local input state is invalid there), `code/camera.cpp`, `data/input/input_preferences.txt` (`CameraFreeMovement`) |
+| L2 | `GameCursor::RenderCrosshair` type-assignment typo (§14.10) | dormant | medium (latent) | [C] `code/gamecursor.cpp`; P09 D4 |
+| L3 | `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = −1` on the owning client only, after a wall-clock delay; the sim reads it right after successful `RunTask` calls (crate turret/napalm option, instant units, AI officer) | safe today (reads follow a successful `RunTask` in the same tick; AI teams are never "my team" [I]) | medium (latent) | [C] `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::Advance`; P09 D2 |
+| L4 | `TaskManagerInterfaceMultiwinia::RunScreenZone("DeleteTask")` calls `TaskManager::TerminateTask` directly (no network); likewise the Icons/Gestures interfaces (`TaskManagerInterfaceGestures::AdvanceTerminate`) | dormant in MP (zone not drawn, control `ControlTaskManagerEndTask` unbound) | medium (latent) | [C] `code/taskmanager_interface_multiwinia.cpp`; P09 D3 |
+| L5 | `MultiwiniaHelp::AttachTutorialTo3d/AttachTutorial2To3d` (render-frame loop, wall-clock timers) insert crates into `m_buildings` with `GenerateBuildingId` and change game options | single-player tutorial only | low (but breaks replay determinism) | [C] `code/multiwiniahelp.cpp`; [30](30_scripting_tutorial_and_cutscenes.md) |
+| L6 | `LocationInput` allocates/frees preview routes in the simulated `RoutingSystem::m_routes` | yes; ids never transmitted or hashed | low | [C] `code/location_input.cpp`, `code/routing_system.cpp` |
+| L7 | Presentation calls guarded by `m_myTeamId` inside simulated code: `Location::UpdateTeam` (cursor marker; a function-static `unitMoved` shared by all teams gates it), `Team::SelectUnit` (selection arrows, sounds, turret-aim camera), `Location::SelectDarwinians` (sound), `Location::IssueDarwinianOrders` (route highlight, `GameCursor::CreateMarker` — an unbounded list in MP), `Location::PromoteDarwinian` (officer marker), `Officer::Advance/SetOrders/SetFormation` (route highlight), `Crate::CaptureCrate/AdvanceOnGround` (messages, help), `MultiwiniaZone`, `Statue`, `EscapeRocket`, `Nuke` (messages, achievements), `Task::*`/`TaskManager::*` (interface messages, camera requests `RequestEntityTrackMode`/`RequestMode`, `GameCursor::BoostSelectionArrows`), `Multiwinia` (`AddToTotalKills`, `m_isMasterPlayer`, help notifications) | yes; presentation only | low (an event queue is the right design) | [C]; P02 D5, P09 D5, D11 |
+| L8 | `Officer::CalculateBoundingSphere` scales by local camera distance and pref `DarwinianScaleFactor` | used only by `Location::GetEntityId` mouse picking (local) | none | [C] `code/worldobject/officer.cpp`, `code/location.cpp:Location::GetEntityId` |
+| L9 | `Darwinian::AdvanceWatchingSpectacle` takes `m_front` from a wall-clock (`g_gameTime`) wobbled target | **no**: `EscapeRocket::IsSpectacle` returns false whenever `App::Multiplayer()`, so `WatchSpectacle` is never called by rockets in MW and the state exits immediately; `GodDish` is blocked. Resolved: P03 and the coordinator log listed "Darwinian rocket-watch wall-clock facing" as a probable desync; the code makes it unreachable in Multiwinia [C] | none in MW [B:LEGACY] | [C] `code/worldobject/rocket.cpp:EscapeRocket::IsSpectacle`, `code/worldobject/darwinian.cpp:Darwinian::AdvanceWatchingSpectacle`, `code/worldobject/goddish.cpp` |
+| L10 | `Tripod::*` mode timers and turn rate use the wall clock (`g_gameTime`, `g_advanceTime`); `Tank::IsUnloading` uses `GetHighResTime()` | Tripod blocked; Tank unreachable in FULL | none in MW [B:LEGACY] | [C] `code/worldobject/tripod.cpp`, `code/worldobject/tank.cpp` |
+| L11 | Armour direct `SetOrders` / `m_awaitingDeployment` from local input | only in the `!Multiplayer()` branch | none in MW [B:LEGACY] | [C] `code/location_input.cpp:LocationInput::AdvanceTeamControl` |
+| L12 | `Multiwinia::AdvanceAssault` compares wall-clock `GetHighResTime()` with game-time `m_startTime` | only feeds the local "defended all" achievement flag | none | [C] `code/multiwinia.cpp:Multiwinia::AdvanceAssault` |
+| L13 | **Difficulty preference.** `g_app->m_difficultyLevel` is read by the simulation (`EntityBlueprint::GetStat` multiplies every entity stat by `1 + d/10`; `SporeGenerator` egg chance `10 + 20·d/10` % and timer `2 + syncfrand(2) − d/10`; level parsing factors incl. `ParseInstantUnits`). `App::UpdateDifficultyFromPreferences` pins it to 0, **but** Options → Other → Apply (`PrefsOtherWindow`, live in MW) sets it to `pref Difficulty − 1` when applied at the top level (`m_locationId == −1`), and `Location::Init` copies it into any level without a pinned difficulty — 0 of 57 `mp_*` maps pin `CreatedAsDifficulty` → a player with a hand-edited `Difficulty` pref who applies Other Options desyncs every later match | **yes** (requires a hand-edited preference file; the Difficulty control itself is hidden) | medium | [C] `code/interface/prefs_other_window.cpp:ApplyOtherButton::MouseUp`, `code/app.cpp:App::UpdateDifficultyFromPreferences`, `code/worldobject/entity.cpp:EntityBlueprint::GetStat`, `code/worldobject/sporegenerator.cpp`, `code/location.cpp:Location::Init`, `data/levels/` (`mp_*` files) |
+| L14 | `FenceSwitch::Switch()` executed directly from local input (`LocationInput::SelectObjectUnderMouse`) without a network message | **no**: `FenceSwitch` is in the `BLOCK_OLD_DARWINIA_OBJECTS` list and no shipped level file contains one. Resolved: P01 D16 flagged it as a desync hazard "if any MW map has a fence switch"; none does [C] | none in MW [B:LEGACY] | [C] `code/location_input.cpp`, `code/worldobject/building.cpp:Building::BuildingIsBlocked`; grep of `data/levels/` |
+| L15 | `TOGGLEENTITY` on an officer makes **every** client issue a new SELECTUNIT command from inside the simulation step (N identical commands appear in a later frame) | yes | low (idempotent) | [C] `ClientToServer::ProcessServerUpdates`; P09 D9 |
+| L16 | Command handlers branch on local, non-simulation state: `TOGGLE_READY` and `CHRISTMASMODE` on `g_app->m_atMainMenu`; `REQUEST_TEAMNAME`/`SEND_CHATMESSAGE` post to UI chat windows; `ORDERGOTO` adds a marker only for friends of the local team; `COOPMODE` dereferences the main-menu window without a null check | yes | low (consistent as long as every peer is in the same phase when the command executes — true for lobby and in-game replays [I]) | [C] `ClientToServer::ProcessServerUpdates` |
+| L17 | `LocationInput` writes `Team::m_selectionCircleCentre/Radius` and `Team::m_lastOrdersSet` on the local client only | yes | none: only `code/location_input.cpp` and `code/multiwiniahelp.cpp` (UI) read them (Resolved: P09 D10 left this [U]; grep shows no simulation reader) [C]; `Officer::m_lastOrdersSet` is read only in SP code | [C] grep |
+| L18 | `ScriptTrigger::Advance` fires camera scripts from local camera distance/velocity/`IsInteractive()` | blocked type (`TypeScriptTrigger`) | none in MW [B:LEGACY] | [C] `code/worldobject/scripttrigger.cpp`, `code/worldobject/building.cpp:Building::BuildingIsBlocked` |
+| L19 | `Spam::Render` rotates `m_front/m_up` that `Spam::Advance` uses; `Spam::Spam`/`ResearchItem` random orientation from G6 | blocked types | none in MW [B:LEGACY] | [C] `code/worldobject/spam.cpp`, `code/worldobject/researchitem.cpp` |
+| L20 | Function statics surviving between matches read by the sim (`Armour::SetDirectOrders`, `s_numMultiwiniaZones`) | yes | **High** for peers with different session histories | §14.12 |
+| L21 | Tree hit sphere from the shared G6 (thread race) | yes (load time) | medium (frequency unknown) | §14.7 |
+
+Camera state is read by 73 `.cpp` files (calls to `m_camera->GetPos/GetFront/GetVel/GetUp/GetRight/GetHeight/GetBestBuildingInView/PosInViewFrustum/SphereInViewFrustum`); spot checks show render/LOD/sound uses (`Unit::IsInView` → `SphereInViewFrustum`, Darwinian/virii detail by camera distance in `Team::Render*`, `RoutingSystem` debug spots); the only simulation-side uses found are L1 and L18 [C] grep (P10 note 5). The remaining `code/worldobject/*` hits were classified by the scripted scan summarised in Table D below; the full row list is `_work/drafts/X3_local_state_refs.csv` (columns `file,line,function,symbol,context,statement`) [C].
+
+**Table D — local-state references in simulation-adjacent code (1941 rows of `X3_local_state_refs.csv`), symbol class × enclosing-function context.**
+
+| Symbol class | Total | advance | init/create | other | render | vfx-system |
+|---|---|---|---|---|---|---|
+| `float-decl` | 491 | 116 | 16 | 109 | 240 | 10 |
+| `wallclock` | 348 | 79 | 35 | 57 | 165 | 12 |
+| `camera` | 327 | 33 | 1 | 46 | 247 | 0 |
+| `renderer` | 176 | 27 | 0 | 10 | 139 | 0 |
+| `input` | 137 | 117 | 0 | 17 | 3 | 0 |
+| `m_myTeamId` | 109 | 45 | 3 | 46 | 15 | 0 |
+| `ui` | 96 | 40 | 2 | 51 | 3 | 0 |
+| `static-local` | 77 | 27 | 0 | 35 | 15 | 0 |
+| `prefs` | 55 | 5 | 2 | 14 | 34 | 0 |
+| `raw-transcendental` | 50 | 0 | 0 | 2 | 48 | 0 |
+| `GetMyTeam` | 43 | 15 | 1 | 17 | 10 | 0 |
+| `fmod` | 16 | 6 | 0 | 2 | 8 | 0 |
+| `prediction` | 13 | 2 | 0 | 1 | 10 | 0 |
+| `raw-sqrt` | 3 | 0 | 0 | 1 | 2 | 0 |
+
