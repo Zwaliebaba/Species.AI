@@ -75,7 +75,7 @@ Columns: *Defined in* = where the macro is set (all in `code/lib/universal_inclu
 
 | Macro | Defined in | FULL | Other builds | Files | Gates | Tag |
 |---|---|---|---|---|---|---|
-| `TARGET_DEBUG` | commented-out target line | **off** | the "debug" target | 20 | turns on `SOUND_EDITOR`, `CHEATMENU_ENABLED`, `GESTURE_EDITOR`, `NETWORK_STATS_ENABLED`, `AVI_GENERATOR`, `TRACK_SYNC_RAND`, `INCLUDE_CRATE_HELP_WINDOW`, TankBattle / Prologue / Campaign modes, and (in `code/worldobject/crate.h`) `INCLUDE_THEBEAST`; does **not** define `DUMP_DEBUG_LOG`. Directly gates: profile directory = working directory (`code/app.cpp:App::GetProfileDirectory`); duplicate-auth-key rejection skipped (`code/network/server.cpp:Server` client registration); full world-snapshot IFrames + SHA-1 sync hash (`code/network/iframe.cpp:IFrame::Generate`); packet-drop key (`code/network/clienttoserver.cpp:ClientToServer::ReceiveLetter`); lobby network-status overlay (`code/UI/GameMenuWindow.cpp:GameMenuWindow::RenderNetworkStatus`); `inputprefs_debug.txt` (`code/lib/input/input.cpp:InputManager::parseInputPrefs`); editor Save/Publish captions and saving into `levels/` (`code/interface/editor_window.cpp`, `code/level_file.cpp`, `code/global_world.cpp`); "Edit Official Maps" button (`code/interface/multiwinia_window.cpp`); Darwinia-mode button → demo page (`code/UI/DarwiniaModeButton.h`); per-datagram server log (`code/network/server.cpp:Server::AdvanceSender`); `Directory` debug checks (`contrib/systemiv/lib/tosser/directory.cpp` defines `_DEBUG`); attack-objective log (`code/worldobject/aiobjective.cpp`); `ToDouble` helper (`code/main.cpp`) | [B:DEBUG] |
+| `TARGET_DEBUG` | commented-out target line | **off** | the "debug" target | 20 | turns on `SOUND_EDITOR`, `CHEATMENU_ENABLED`, `GESTURE_EDITOR`, `NETWORK_STATS_ENABLED`, `AVI_GENERATOR`, `TRACK_SYNC_RAND`, `INCLUDE_CRATE_HELP_WINDOW`, TankBattle / Prologue / Campaign modes, and (in `code/worldobject/crate.h`) `INCLUDE_THEBEAST`; does **not** define `DUMP_DEBUG_LOG`. Directly gates: profile directory = working directory (`code/app.cpp:App::GetProfileDirectory`); duplicate-auth-key rejection skipped (`code/network/server.cpp:Server::AuthenticateClient`); full world-snapshot IFrames + SHA-1 sync hash (`code/network/iframe.cpp:IFrame::Generate`); packet-drop key (`code/network/clienttoserver.cpp:ClientToServer::ReceiveLetter`); lobby network-status overlay (`code/UI/GameMenuWindow.cpp:GameMenuWindow::RenderNetworkStatus`); `inputprefs_debug.txt` (`code/lib/input/input.cpp:InputManager::parseInputPrefs`); editor Save/Publish captions and saving into `levels/` (`code/interface/editor_window.cpp`, `code/level_file.cpp`, `code/global_world.cpp`); "Edit Official Maps" button (`code/interface/multiwinia_window.cpp`); Darwinia-mode button → demo page (`code/UI/DarwiniaModeButton.h`); per-datagram server log (`code/network/server.cpp:Server::AdvanceSender`); `Directory` debug checks (`contrib/systemiv/lib/tosser/directory.cpp` defines `_DEBUG`); attack-objective log (`code/worldobject/aiobjective.cpp`); `ToDouble` helper (`code/main.cpp`) | [B:DEBUG] |
 | `CHEATMENU_ENABLED` | `TARGET_DEBUG` | off | debug | 7 | cheat-window body (`code/interface/cheat_window.cpp:CheatWindow::Create`); F11 handler (`code/user_input.cpp:UserInput::Advance`); "Cheat Menu (F4)" debug-menu button; special-lighting keys L/K (`code/location.cpp:Location::RenderBuildings`); ×10 refinery speed with Shift (`code/worldobject/mine.cpp:MineBuilding::RefinerySpeed`, single-player only); ×100 rocket fuel with Shift (`code/worldobject/rocket.cpp:EscapeRocket::ProvideFuel`, single-player only) | [B:DEBUG] |
 | `NETWORK_STATS_ENABLED` | FULL, DEBUG, BETATEST_GROUP_ALL | **on** | — | 1 | F9 `ControlToggleNetworkStats` → `DebugKeyBindings::NetworkButton` (`code/user_input.cpp:UserInput::Advance`); the window class itself is always compiled | [B:FULL] |
 | `DEBUG_RENDER_ENABLED` | global (all targets) | **on** | all | 20 | `code/lib/debug_render.cpp` primitives, `g_debugRenderer` pass, `SyncDiff::Render`, shape/tree hit-check and marker renderers, editor arrows on buildings (§11) | [B:FULL] (mostly unreachable) |
@@ -412,7 +412,7 @@ Details per state:
 - `TESTBED_SETGAMEOPTIONSDELAY`: wait 5 sequence ids (0.5 s).
 - `TESTBED_SETGAMEOPTIONS`: `RequestToRegisterAsSpectator(myTeamId)` (time-limit option code is commented out), then `SetSequenceIDDelay(+10, WAIT_FOR_CLIENTS)`.
 - `TESTBED_WAIT_FOR_CLIENTS`: on `PageGameSetup`, when `Server::m_clients.NumUsed() > 1` → `SetSequenceIDDelay(+10, PLAY)`.
-- `TESTBED_PLAY`: the lobby's "all ready" test is replaced by `notReady = (state ≠ TESTBED_PLAY)` (`GameMenuWindow::UpdateMultiplayer`), so the game starts; when the page changes away from `PageGameSetup` → game count + 1, `TESTBED_IDLE`.
+- `TESTBED_PLAY`: the lobby's "all ready" test is replaced by `notReady = (state ≠ TESTBED_PLAY)` (`GameMenuWindow::UpdateMultiplayerPage`), so the game starts; when the page changes away from `PageGameSetup` → game count + 1, `TESTBED_IDLE`.
 - `TESTBED_GAME_OVER_DELAY`: accumulate wall time; after **10 s** advance to the next entry, remove own teams, clear spectator, back to `TESTBED_MAINMENU`.
 
 ### 6.5 Client automation [C] same function, client branch
@@ -431,10 +431,10 @@ stateDiagram-v2
 ```
 
 - `TESTBED_PICK_SERVER`: on `PageJoinGame`, every **3 s** walk `m_serverButtons`; pick the first `GameServerButton` whose `m_hostName` equals the testbed name and whose map name is not "Unknown Map"; copy game type and map into the log fields, `MouseUp` (the "server full" refusal is bypassed in testbed mode, `code/UI/GameServerButton.h`), game count + 1.
-- On `PageGameConnecting` the testbed accumulates time and after **10 s** without connecting presses "multiwinia_menu_back" and returns to `TESTBED_PICK_SERVER` (`GameMenuWindow` connecting-page update; the timer is reset when `JoinGame` starts the connection).
+- On `PageGameConnecting` the testbed accumulates time and after **10 s** without connecting presses "multiwinia_menu_back" and returns to `TESTBED_PICK_SERVER` (`GameMenuWindow::UpdateGameConnectingPage`; the timer is reset when `GameMenuWindow::JoinServer` starts the connection).
 - `TESTBED_MAKE_CLIENT_SPECTATOR`: when `m_gameType` and `m_requestedMapId` are known, `m_iGameIndex = FindGameEntry(type, map)` → `TESTBED_IDLE`. The server registers every testbed client as a spectator on join (§6.7).
 - `TESTBED_GAME_OVER_DELAY`: **40 s**, then remove own teams, clear spectator, `TESTBED_MAINMENU`.
-- Disconnection by the server (`ClientToServer` disconnect handling) → `TESTBED_MAINMENU` [C] `code/network/clienttoserver.cpp`.
+- Disconnection by the server (disconnect letter) → `TESTBED_MAINMENU` [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessServerLetters`.
 
 ### 6.6 In-match automation and `TestBedLog.txt` [C] `code/location_input.cpp:LocationInput::Advance`, `code/app.cpp:App::TestBedLogWrite`
 
@@ -466,13 +466,13 @@ The seed column plus `SetRandSeed`/`AddSequenceItem` let a failing game be repla
 |---|---|
 | `GRACE_TIME` 20.0 s instead of 3.0 s | `code/lib/universal_include.h` |
 | Game-option blueprints from `data/multiwinia-testbed.txt` instead of `data/multiwinia.txt` — identical except one added `TimeLimit 0 60 10 1` row for `GAMETYPE RocketRiot` ("TimeLimit added to Rocket Riot by John for testbed"), so unattended Rocket Riot games end | `code/multiwinia.cpp:Multiwinia::LoadBlueprints`, `data/multiwinia-testbed.txt` |
-| CLIENTID carries `Server::m_iRandSeed` instead of `m_syncRandSeed` when the override is set and non-zero | `code/network/server.cpp` CLIENTID construction |
-| Server registers every joining client as a spectator (client-type testbed: all; server-type: every client except the host's own, counting `m_iClientCount`) | `code/network/server.cpp` client registration |
-| Duplicate-auth-key rejection skipped (also skipped in `TARGET_DEBUG`) | same |
+| CLIENTID carries `Server::m_iRandSeed` instead of `m_syncRandSeed` when the override is set and non-zero | `code/network/server.cpp:Server::SendClientId` |
+| Server registers every joining client as a spectator (client-type testbed: all; server-type: every client except the host's own, counting `m_iClientCount`) | `code/network/server.cpp:Server::AuthenticateClient` |
+| Duplicate-auth-key rejection skipped (also skipped in `TARGET_DEBUG`) | `code/network/server.cpp:Server::AuthenticateClient` |
 | Client connection-attempt limit (`CTOS_MAX_CONNECTION_ATTEMPTS` = 50) not applied while testbed is on | `code/network/clienttoserver.cpp` connect loop, `code/network/clienttoserver.h` |
 | Testbed server: `m_nextServerAdvanceTime += 0.1` in every branch — the "advance 10 times faster" comment is not implemented; the "server more than 30 ids ahead" branch is also +0.1 | `code/network/server.cpp:Server::AdvanceIfNecessary` |
-| `Location::Render`, `ParticleSystem::Render`, `ExplosionManager::Render` return early and sound is muted (`SoundSystem` game-sound gate) while `m_bRenderOn` is false; `ToggleRendering` (R) toggles it | `code/location.cpp`, `code/particle_system.cpp`, `code/explosion.cpp`, `code/sound/soundsystem.cpp` |
-| `Multiwinia` team-slot debug asserts disabled | `code/multiwinia.cpp` |
+| `Location::Render`, `ParticleSystem::Render`, `ExplosionManager::Render` return early and sound is muted (`SoundSystem::NotReadyForGameSoundsYet` returns true) while `m_bRenderOn` is false; `ToggleRendering` (R) toggles it | `code/location.cpp`, `code/particle_system.cpp`, `code/explosion.cpp`, `code/sound/soundsystem.cpp` |
+| team-slot debug asserts disabled | `code/multiwinia.cpp:Multiwinia::InitialiseTeam` |
 | Server-full dialog bypassed when joining | `code/UI/GameServerButton.h` |
 | Client stores the received seed in `m_iClientRandomSeed` | `code/network/clienttoserver.cpp` |
 

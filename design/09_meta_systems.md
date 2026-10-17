@@ -3170,3 +3170,123 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 | `tools/russianlanguage.list` | per-language packaging list (§10.3) |
 | `tools/spanishlanguage.list` | per-language packaging list (§10.3) |
 
+
+## Appendix — dead/legacy code
+
+### A.1 Boot-loader framework and mini-programs [B:DEAD] (`USE_LOADERS` commented out)
+
+**Dispatcher `RunBootloader()`** [C] `code/main.cpp:RunBootloader` (inside `#ifdef USE_LOADERS`), called from the top of the main loop in `RunTheGame` when `requestBootloader` is set (`CampaignButton::LoadCampaign`): (1) `g_loadingScreen->Render()` (finish any pending load); (2) `name` = pref `BootLoader` (lookup default `"none"`; first-run value `firsttime`); (3) `"firsttime"` (case-insensitive) → construct `StartSequence`, loop `{ UpdateAdvanceTime(); if (StartSequence::Advance()) break; }`, delete it, camera `SetTarget((1000, 500, 1000), (0, −0.5, −1))` + `CutToTarget()`, set pref `BootLoader = "random"` and save; (4) else `idx = Loader::GetLoaderIndex(name)`; if `idx != −1`: `CreateLoader(idx)->Run()`, delete; (5) `g_RenderingFirstTimeBL = false`. `CreateLoader` body is inside `#ifndef DEMOBUILD` (demo builds return NULL and the caller would crash); unknown type → `AppReleaseAssert`. Registry: §9.5.
+
+**Shared helpers** [C] `code/loaders/loader.cpp`: `SetupFor2D(screenW)` — `screenH = screenW·(ScreenH/ScreenW)` (aspect-preserving virtual canvas), identity modelview, `gluOrtho2D(0, screenW, screenH, 0)`, cull / depth / lighting off, returns `screenH`; `FlipBuffers()` — `PollForEvents`, `InputManager::Advance`, `glFinish`, `Flip`, clear colour (0, 0, 0, 1) + depth, `Sleep(1)`; `AdvanceSound()` — `g_advanceTime = now − g_gameTime; g_gameTime = now`; if sound is initialised `SoundSystem::Advance()` + `SoundLibrary2d::TopupBuffer()`. Loop contract: `while (!controlEvent(ControlSkipMessage))`, break on `m_requestQuit`; music via `TriggerOtherEvent(NULL, "<Event>", TypeMusic)`, stopped with `StopAllSounds(WorldObjectId(), "Music <Event>")`. Skip = `key enter down`, `key esc down`, XInput start / a / b / y (edge-triggered; the edge stays latched until the next `InputManager::Advance()` in `FlipBuffers`, so one press skips every remaining phase of a multi-phase loader [I]). Other loader bindings [C] `data/input/input_preferences.txt` L254–278: `LoaderHelp = key h pressed`; `GOLLoaderSpeedup = key p pressed`; `GOLLoaderSlowdown = key o pressed`; `GOLLoaderReset = key g down`; `RTLoaderReflectivenessIncrease = key p pressed`, `…Decrease = key o pressed`; `RTLoaderPixelWaveIncrease = key l pressed`, `…Decrease = key k pressed`; `RTLoaderMotionBlurIncrease = key m pressed` (Decrease commented out — unbound); `RTLoaderPixelBlurIncrease = key i down`, `…Decrease = key u down`; `RTLoaderBrightnessIncrease = key b pressed`, `…Decrease = key v pressed`; `RTLoaderResolutionIncrease = key x down`, `…Decrease = key c down`; `RTLoaderCameraMode1/2/3 = key 1/2/3 pressed`; `RTLoaderLMB = mouse left pressed` and `mouse right pressed`; `RTLoaderRMB` unbound.
+
+**Music events** [C] `data/sounds.txt` (Music section; samples are third-party, IP items):
+
+| Event | Sample | Loop | Volume | Attack / Release |
+|---|---|---|---|---|
+| `LoaderSpeccy` | `speccyloader` | no | 9.00 | — |
+| `LoaderMatrix` | `matrix` | no | 9.03 | release 7.55 |
+| `LoaderFodder` | `fodder` | no | 9.03 | — |
+| `LoaderRaytrace` | `dma_sc-visitors_from_dreams` | yes | 9.00 | release 10.06 |
+| `LoaderSoul` | `tresk_-weeklies-_schroeders-failure` | yes | 10.00 | release 10.06 |
+| `LoaderGameOfLife` | `twoataris` | no | 9.00 | release 10.26 |
+| `LoaderAmiga` | `pang` | no | 9.00 | release 10.06 |
+| `Credits` | `trash80_-_pain-fade-down` | no | 10.00 | attack 2.71, release 10.06 |
+| `StartSequence` | `dma_sc-visitors_from_dreams` | no | 9.00 | release 10.06 |
+
+`LoaderAmiga` is absent from the sound-editor event list `SoundSystem::GetEventNames` (TypeMusic) but bound in `sounds.txt` [C].
+
+**Spectrum tape loader (`SpeccyLoader`)** [C] `code/loaders/speccy_loader.cpp`: imitates a cassette load. Virtual screen 320 × 256; paper (32, 32)–(288, 224) colour (200, 200, 200). Phases, each exiting on skip / quit; the first three draw no banner: Silence 1.5 s → Header 4.8 s → Data 0.07 s → (banner from here) Silence 1.1 s → Header 2.0 s → Data 1.85 s → Silence 1.01 s → Header 5.05 s → Data 0.07 s → Silence 0.99 s → Header 1.9 s → Screen (pre-screen total 20.34 s). Silence: whole screen one colour of red (255, 0, 0) / cyan (0, 255, 255), 1/200 chance per frame to swap. Header: per scanline a 1-px line in the current colour; stripe switches start at `AppRandom()%4` and recur every 7 lines; at a switch line a random `x = AppRandom()%1000` splits old / new colour (x ≥ 320 invisible); colours red / cyan. Data: same with yellow (255, 255, 0) / blue (0, 0, 255), spacing `2 + AppRandom()%4`. Banner `textures/program_darwinia.bmp` (256 × 256, nearest) at (33, 40)–(289, 296), black, blended. Screen: picture `textures/speccy_screen.bmp` revealed one line per `0.194 s` after a `0.192 s` delay (at most one per frame), destination row `((y & 0x38) >> 3) + ((y & 0x07) << 3) + (y & 0xC0)` (Spectrum display-file interleave), 1-px quads at y = 32 + row, x 32–288, v from `(256 − row)/256`; returns when 192 lines are shown (≈ 37.2 s; the final frame is never flipped). Total ≈ 57.6 s. Unused members `m_monoBmp[256·192]`, `m_currentPixel`, `m_startJ`, `EndFrame` (planned procedural tape sound).
+
+**Matrix rain (`MatrixLoader`)** [C] `code/loaders/matrix_loader.cpp`: grid 40 × 30 brightness cells drawn as 20 × 20 px `sprites/darwinian.bmp` quads on the 800-wide canvas (y uses a fixed 600), colour (0.4, 1.0, 0.4, alpha). Static logo mask `s_highlights[30·40]` (rows 10–17: product name in block letters — IP). Tick every `MATRIXLOADER_UPDATEPERIOD` = 0.02 s: each column with probability ½ shifts down (`pos[i][j] = pos[i][j−1]`); a moving head (value 1.0) over a non-zero mask cell doubles it (cap 100); new top `pos[i][1] − 0.05` (0.5 behind a head), clamped ≥ 0. Spawning by elapsed t: < 1 s head in column 20; 1–15 s one head per tick at a random column; 15–20 s none; first tick after 20 s "fall away" (outside rows 10–18 := 0, rows 10–18 := `mask/100·(j − 10)/8`, masks := 0); returns at t > 23 s without stopping its music. Cell alpha `pos`, or with a mask `max(mask/100, pos)·(0.2 + 0.8·|sin(now + i·j)|)`.
+
+**"Not endorsed by" disclaimer (`FodderLoader`)** [C] `code/loaders/fodder_loader.cpp`: three centred lines `bootloader_fodder_1..3` at (400, 215 / 265 / 320), `g_gameFont` 35, white with a 5 s fade-in while the song plays; ends when the music instance finishes or on skip (without sound it ends after one frame [I]).
+
+**Real-time ray tracer (`RayTraceLoader`)** [C] `code/loaders/raytrace_loader.cpp`: 6 spheres (capacity `RAYTRACELOADER_MAXOBJECTS` = 10; sphere 0 radius 10 colour (200, 130, 100); spheres 1–5 radius 5, even (100, 200, 130), odd (200, 200, 130)); floor plane y = −40; directional light `normalise(1, 0, 1)`; camera (0, 0, −100) looking +Z; defaults resolution 2, reflectiveness 1.0, pixelWave 0, motionBlur 0.1, pixelBlur 2.0, brightness 1.2. Target `160·res × 120·res` (res 1–5, `RAYTRACELOADER_MAXRES`); horizontal FOV 90°, vertical `90°·H/W`. `CastRay` depth `RAYTRACELOADER_RENDERDEPTH` = 2 (up to 3 hits), intensity `brightness/pixelBlur`: nearest sphere (geometric test), hit adds `colour·clamp(−N·L, 0, 1)·intensity` and recurses along the reflection without attenuation (refraction index 1.4 commented out); miss → floor checker `((int)P.x XOR (int)(P.z + now·100)) & 32` (32-unit squares scrolling 100 units/s), white adds `(200, 200, 200, 200)·min(100000/|P|², 1)·intensity`. Animation: axis rotated 0.75 rad/s about X and Y; sphere 0 `z = max(700 − 150√t, 0)`, after 60 s `z = −2(t − 60)`, `y = −7 + 10·sin(T/6)`; satellites at `pos_0 + v·(10 + 5i)` with `v` rotated per frame; camera mode 2 orbit (`|pos| = 100 + 40·sin(0.5T)`, `y = 10 + 10·sin(0.8T)`). Controls: reflectiveness ±dt [0, 1]; pixelWave ±dt (≥ 0); motionBlur ±0.1·dt [0, 1]; pixelBlur ±1 per edge (≥ 1); brightness ±0.1·dt; resolution ±1 [1, 5]; camera modes 0 fixed / 1 free (20 units/s) / 2 orbit; LMB rotates the light by 0.01·dX rad. Compositing: background gradient with alpha `1 − motionBlur` over the uncleared buffer (trails; a vertex uses `y = W/2` instead of `H/2` — bug); additive ray quad strips with optional sine pixel wave; overlay message fades in 30–40 s and out 60–70 s (`bootloader_raytrace_1..9`, `APP_NAME`), help page `_10.._23` while `LoaderHelp` is held (the motion-blur line passes no argument to its `%2.2f` — undefined output). `#pragma omp parallel for` but OpenMP is enabled in no configuration. Under [B:D3D] the colour buffer is cleared every frame (no trails).
+
+**Floating souls (`SoulLoader`)** [C] `code/loaders/soul_loader.cpp`: `gluPerspective(20°, W/H, 1, 10000)`, additive, linear fog 50–1500 black. A spirit every 0.6 s at `(sfrand(200), −170, −frand(1000))` (`sfrand(r)` = ±r/2), removed above y = 200; motion `vel = (sin(offset)·xRate, 3 + frand(3), sin(offset)·zRate)` with rates drifting to 2; drawn as two camera-facing diamonds (sizes 1 and 3, alpha 255 / 150, colour (100, 200, 100), faded in over 10 s). Ten messages `bootloader_soul_0..9` (static schedule): 0–7 start at `T_i = T_{i−1} + 5·(1 + sfrand(0.4))` from `T_{−1} = 10`, last 30 s, size 3, growth 0.7, following private spirits spawned at `(sfrand(150), −170, −700)`; 8 at `T_7 + 30`, 30 s, size 5, growth 0.15, at (0, 0, −300); 9 at `T_8 + 10`, 20 s, size 2, growth 0.3, at (0, −5, −300); alpha ramps over the first 20 %, holds to 80 %, fades out; drawn 4× with shimmer offsets `(sin(T + j), cos(T/2 + j), sin(T/3 + 2j))·size·0.06`. Runs until skipped.
+
+**Game of Life (`GameOfLifeLoader`, plain and Glow)** [C] `code/loaders/gameoflife_loader.cpp`: `CELLSIZE` 20, `MAXAGE` 50, `MAXSPAWNAGE` 30, `MAXSPIRITAGE` 20; grid 128 × `int(128·H/W)`; states Empty 0 / Alive 1 / Dead 2 (afterglow); init 20 % alive via `syncrand()` (network-synchronised RNG — unintended); rules: not alive and n == 3 (n = alive neighbours younger than 30) → born; alive with 2 ≤ n ≤ 3 and age < 50 → survives (age + 1); alive otherwise → Dead; Dead with age < 20 → age + 1; else Empty. Generations computed incrementally by rows over `m_speed` seconds (ages updated in place); zoom `0.08 + t²/500`, speed `max(0.1/(5·zoom), 0.1)` overwritten each frame, so the speed keys have no effect; all-dead overlay `bootloader_life_17` + colony age and `_18` fading in over 5 s; G resets; help `bootloader_life`, `_1.._16b` (`_16b` hidden under `OBERONBUILD`). Alive cells `sprites/darwinian.bmp` (0.4, 1, 0.4, `1 − age/50`); dead cells two diamonds (half-sizes 6.6 / 2.178); Glow variant adds `textures/glow.bmp` halos. Runs until skipped.
+
+**Amiga cracktro (`AmigaLoader`)** [C] `code/loaders/amiga_loader.cpp`, `code/3d_sierpinski_gasket.cpp`: canvas 320 × 256; 4000 stars in a 1024 × 768 field moving left at 20–220 px/s (only ≈ 10 % visible — quirk); from 10 s a 10 000-point chaos-game Sierpinski pyramid (apex (0, 0, 20), base (±20, ±20, −20)) in `gluPerspective(80°, 1.33, 1, 1000)` with oscillating scale (`sin(4t) + 1.25` after 12 s) and a bang-bang pendulum spin (initial phase 20, ±2.1 accel); bouncing two-part logo `textures/dmacrew.bmp`; sine scroller `bootloader_amiga` at 450 px/s, pitch 32 px, glyph height 55 with shadow; fade to black from 72 s over 15 s; ends at 89 s.
+
+**Distributor loaders** [B:DEAD] (no call site even when enabled): `EgamesLoader` (`EGAMESBUILD`) — plays `cinemaware.avi` (absent from `data/`) on a tilted screen in 60° perspective with a static crowd of unit sprites, replacing the sound callback with AVI audio (silence-fill pointer bug `_buffer + n·sizeof(short)`), then `RestartSoundLibrary()` and 1 s black; `OberonLoader` (`OBERONBUILD`, not skippable) — distributor splash 0–1 s fade in, hold to 2.5 s, cross-fade to the publisher logo 2.5–3.5 s (400 × 400 at (200, 100)), hold to 5 s, fade out to 6.5 s [C] `code/loaders/egames_loader.cpp`, `code/loaders/oberon_loader.cpp`.
+
+### A.2 `RequestBootloaderSequence` fade-out bug
+
+§9.2.6 (latent in [B:FULL]; Campaign launch is debug-only).
+
+### A.3 Benchmark recorder and test harness
+
+`BenchMark` (`BENCHMARK_AND_FTP`) and `TestHarness` (`TEST_HARNESS_ENABLED`) are compiled out of every target; specified in [32](32_debug_test_and_performance.md). Pref `TestHarness` and the FTP upload are dead [C].
+
+### A.4 Darwinia context-sensitive help (`HelpSystem`) [B:DEAD]
+
+All of `code/helpsystem.{h,cpp}` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; it is constructed in `App::App` only under it, and its `Advance` (`code/main.cpp` L557–559), `Render` (`code/renderer.cpp` L621–623) and `PlayerDoneAction` hooks (e.g. `code/location_input.cpp` ~L800) are wrapped; it also disables itself in multiplayer and while a `Tutorial` exists [C].
+
+Algorithm [C] `HelpSystem::Advance`: `m_helpEnabled` = pref `HelpEnabled` (default 1), forced false in multiplayer or when `g_app->m_tutorial` exists; clears `"HelpSystem"` highlights whenever Sepulveda is silent. If disabled: `ControlSepulvedaHelp` (key `h`, `data/input/input_preferences.txt` L255) with an interactive camera → `RunDefaultHelp()`. If enabled (in a location): the quiet timer `m_actionHelpTimer` resets to −1 while Sepulveda talks or the player fires a squad; pressing H shuts up, forces the timer to `now − 90 − 10` and marks help requested; when quiet for > `HELPSYSTEM_ACTIONHELP_INTERVAL` (**90 s**) in keyboard mode → give the first (enum order) action help with `!m_actionDone && IsActionAvailable()`; if not firing, silent and the camera is interactive → `RunHighlightedBuildingHelp()`; if H was pressed and nothing was given → `RunDefaultHelp()`. `Render`: blinking `help_pressh` at top centre (keyboard only).
+
+| Action help (priority order) | Available when | Says | On `PlayerDoneAction` |
+|---|---|---|---|
+| CameraMovement | always | `help_camera_movement` | done |
+| CameraHeight | always | `help_camera_height` | done |
+| TaskBasics | always | `help_taskmanager_1` | ShutUp, `help_taskmanager_2`, done |
+| TaskShutdown | task capacity full | `help_taskmanager_3` (marks done) | done |
+| SquadSummon | capacity free and Squad research | `help_squad_summon_1` + gesture `squad.txt` | ShutUp, `help_squad_summon_2`, done |
+| SquadUse | a squad selected | `help_squad_use` | done |
+| SquadThrowGrenade | Grenade research and squad selected | `help_squad_grenade` | done |
+| SquadDeselect | squad selected | `help_deselect` (marks done) | done |
+| TaskReselect | tasks exist and nothing selected | `help_taskmanager_4` (marks done) | done |
+| EngineerSummon | capacity free, Engineer research, and (spirits exist or an unowned ControlTower exists) | `help_engineer_summon` + gesture `engineer.txt` | ShutUp, `help_engineer_use`, done |
+| EngineerDeselect | engineer selected | `help_deselect` (marks done) | done |
+| OfficerCreate | capacity free, Officer research, team 0 has a unit | `help_officer_create` + gesture `officer.txt` | ShutUp, `help_officer_use`, done |
+| UseArmour | never (base) | — | `help_armour_use`, done |
+| ShowObjectives | always | `help_showobjectives` | done |
+| CameraZoom | always | `help_camera_zoom` (marks done) | done |
+| CameraMoveFast | always | `help_camera_movefast` (marks done) | done |
+| ShowChatLog | always | `help_showchatlog` (marks done) | done |
+| UseRadarDish | (building help) | highlight + `help_radardish_1` | ShutUp, `help_radardish_2` |
+| UseGunTurret | (building help) | highlight + `help_gunturret_1` | ShutUp, `help_gunturret_2` |
+| ResearchUpgrade | never (base) | — | `research_explanation_1..4`, done |
+
+Building help (`m_buildingHelp` by type, for `Camera::GetBestBuildingInView()`): RadarDish and GunTurret (shared objects above) and a generic `SeenBuildingHelp` (highlight + `help_<TypeName>`) for Incubator, TrunkPort, Refinery, Mine, AntHill, ControlTower, ResearchItem; if the building is not the player's and a ControlTower links to it, both are highlighted and `help_building_reprogram` is said instead; a ControlTower already owned by team 2 gets no help [C] `HelpSystem::HelpSystem`, `RunHighlightedBuildingHelp`. `RunDefaultHelp()` speaks per selection: squad `help_squad_use`, `help_deselect` + `help_squad_grenade` / `help_squad_setgrenade` / `help_squad_setrocket` / `help_squad_setairstrike` by research and weapon; engineer `help_engineer_use`, `help_deselect`; officer `help_officer_use` (+ `help_officer_toggle` if officer research > 2), `help_deselect`; armour `help_armour_use`, `help_deselect`; selected radar → `help_radardish_2`; gun turret → `help_gunturret_2`; highlighted building help; task being placed: officer `help_officer_create_2`, squad `help_squad_summon_2`, engineer `help_engineer_summon_2`, armour `help_armour_summon`; otherwise by task usage: none → `help_taskmanager_1`, `help_taskmanager_2`, `help_showobjectives`; full → `task_manager_full`, `help_taskmanager_4`; else `help_taskmanager_4`, `help_taskmanager_2`, `help_showobjectives` [C].
+
+### A.5 Other unreachable or dead windows
+
+| Window | Behaviour | Tag |
+|---|---|---|
+| `MainMenuWindow` "Main Menu" (Darwinia global-world Esc menu) | Resume Game (`MainCloseButton`), Profile, (Mods if enabled), Help and Options, Leaderboards (inactive), Achievements (`AchievementsButton`, no `MouseUp`), About (OBERON) **or** Visit Website (`http://www.multiwinia.co.uk/`; EGAMES `http://www.savedarwinia.com`) + Multiwinia (→ `MultiwiniaWindow`), Leave (`MenuGameExitButton`: `m_atMainMenu = true`, fade out) | [B:LEGACY] |
+| `WebsiteButton` | if full screen: switch to windowed 800 × 600 (destroy window, new renderer, reset event-handler window handle, flush/regenerate GL state, save, `EclInitialise(800, 600)`, recentre parent), then `OpenWebsite(url)` | [B:LEGACY] |
+| `ResetLocationWindow` "Reset Location" | text `dialog_reset1..5`; Yes → close it and `"dialog_locationmenu"`, `App::ResetLevel(false)` (`DEMO2`: true); No | [B:LEGACY] |
+| `AboutDarwiniaWindow` | 350 × 250; unit icon; `APP_NAME " " DARWINIA_VERSION`, publisher credit, publisher URL | [B:DEAD] |
+| `ReallyQuitWindow` "Really Quit?" | 160 × 90 centred; "Leave Multiwinia" (`GameExitButton`: `m_atMainMenu = true`, fade out) and "No. Player On!" (sic) close | [B:LEGACY] |
+| `SaveOnQuitWindow` | 200 × 100; "! Save changes to sounds.txt?" Yes (`SoundSystem::SaveBlueprints`, quit) / No / Cancel | [B:DEAD] |
+| `GameMenuWindow::RenderErrorDialogue` overlay | centred W/3 × H/3 box, dismissed with `ControlCloseTaskHelp`; never switched on | [B:LEGACY] |
+
+[C] `code/interface/mainmenus.cpp`, `code/interface/reallyquit_window.cpp`, `code/interface/save_on_quit_window.cpp`.
+
+### A.6 User profiles [B:LEGACY]
+
+Profiles are a Darwinia campaign-save mechanism. In Multiwinia: `App::Initialise` sets the profile from pref `UserProfile` (first-run `AccessAllAreas`); `App::LoadProfile` with `AccessAllAreas` / `AttractMode` loads `game_unlockall.txt` (every global location available, trunk ports online), else `m_gameDataFile` (`game.txt`); `App::SaveProfile` refuses unless the game mode is Campaign / Prologue → never saves in Multiwinia [C] `code/app.cpp:App::LoadProfile`, `App::SaveProfile`, `App::SetProfileName`.
+
+| Window | Content |
+|---|---|
+| `UserProfileWindow` (title "Profile") | lists `users/*` subdirectories but the list / "Load Profile" / "Create New Profile" buttons are commented out; if pref `AccessAllAreasUnlocked == 1` an "Access All Areas" button (`LoadUserProfileButton`; inactive and captioned "(loaded)" when current; no `MouseUp`, so a click only plays the menu sound); "Reset Profile" (`ConfirmResetButton`, inactive when AAA) → `ConfirmResetWindow` ("Reset This Profile?" No / Yes); Close |
+| `ResetProfileButton` (Yes) | delete every file in `users/<profile>/` **relative to the working directory** (not the profile directory used by `SaveProfile` — would delete the wrong folder), `LoadProfile()`, `SaveProfile(true, false)`, close the window and `"dialog_mainmenu"` |
+| `NewUserProfileWindow` (unreachable) | 300 × 110; name field (default "NewUser", 256 chars); Cancel / Create → `SetProfileName`, `m_loadingNewProfile = true`, `LoadProfile()`, `SaveProfile(true, true)` |
+| `LoadUserProfileButton::SetShortProperties` | caption post-processing: if the caption contains `-`, the number after the last `-` is incremented by 1 ("Profile-1" → "Profile-2") |
+
+### A.7 Mods [B:DEAD]
+
+Everything inside `#ifdef USE_DARWINIA_MOD_SYSTEM` (never defined) and gated by pref `ModSystemEnabled`. `ModsWindow` 300 × (210 + 30 × mods): "Current Mod: <name | none>", one "Load Mod: '<name>'" button per subdirectory of `<profile dir>mods/` (`LoadModButton`: `Resource::LoadMod(name)`, `SetProfileName(name)`, `LoadProfile()`), "Unload Mod" (loads "none"), "Create New Mod" → `NewModWindow` (name default "MyNewMod"; Create: `LoadMod`, profile "none", new `GlobalWorld` with every research item at level 2, `SaveGame("game.txt")`, toggle editor), "Toggle Editor (F9)", Close [C] `code/interface/mods_window.cpp:ModsWindow::Create`.
+
+### A.8 Demo-end window (`DemoEndWindow`) [B:DEAD]
+
+Darwinia "Demo 2" end screen, created only by `ExitLevelButton` under `DEMO2` [C] `code/interface/demoend_window.cpp:DemoEndWindow::Render`, `code/app.cpp:App::GetBuyNowURL`: 800 × 600 centred; background `textures/interface_red.bmp` tiled (u 0…8) fading in with `alpha = clamp((now − t0)/fadeIn, 0, 0.9)`; texts `launchpad_buyme_1..5` (a large headline at (centre + 20, y + 50, size 70) and size-20 lines at y + 150 / 180 / 250 / 280); `BuyOnlineButton` 300 × 100 at (centre − 150, 360) captioned "BUY NOW" + URL; `ExitDemoButton` 140 × 40 at (centre − 70, 520) "EXIT DEMO", usable only after 4 s (`ShowExitButton`, alpha ≤ 0.1 before). Buy: optional `SaveProfile(true, true)`, stop and delete sound libraries, delete resources, `OpenWebsite(App::GetBuyNowURL())`, delete the window manager, `exit(0)`; Exit: the same without the website.
+
+### A.9 Other remnants
+
+- Xbox Live Arcade / PDLC / Darwinia+ page slots 13, 14, 19–22, 26–30 and the members `m_xbla*`, `m_darwiniaPlus*`, `m_showingDeviceSelector` (§1.2.1, §5.7); `code/UI/DarwiniaPlusMPButton.h`, `code/UI/DarwiniaPlusSPButton.h` unused.
+- `code/UI/ErrorDialog.cpp/.h` and `code/UI/soundsliderbutton.h` are not in the vcproj; `code/UI/GameMenuOptionsButton.h` is included nowhere; `code/UI/GameTypeAnyButton.h` is included but never instantiated [C].
+- Testbed: `StartTestbedButton`, `CSpectatorButton`, the 10 s connect timeout, `RequestSetTeamReady` auto-ready and the game-over auto-return are `TESTBED_ENABLED`-only [B:DEAD].
+- Vista Game Explorer thumbnail flag in `ExitLevelButton` and rich-presence headers (`TARGET_OS_VISTA`) [B:DEAD].
+- Steam authentication files `contrib/systemiv/lib/metaserver/steamauth_client.cpp`, `steamauth_server.cpp` are not compiled (STEAM_* messages) [B:DEAD].

@@ -504,3 +504,158 @@ Defect [C]: several overlays pass byte colours (0–255) to `glColor4f` (`Darwin
 
 `Entity::Advance` evaluates, every tick and **inside the sim step**, `m_renderDamaged = frand(0.75)·(1 − |sin(g_gameTime + uid·10)|·0.8) > health/maxHealth` — unsynchronised RNG and wall time, but the flag is read only by render code [C] `code/worldobject/entity.cpp:Entity::Advance`. A full-health entity never flickers; at low health it flickers on most ticks, modulated by a slow per-entity sine. When set, shape-based entities distort their render matrix each frame: one randomly chosen axis (unsynchronised `frand`) of the `Matrix34` is scaled by `1 ± sin(g_gameTime + uid·10)·0.5`, and the shape is drawn with a darkening (`SRC_ALPHA, ONE_MINUS_SRC_COLOR`; SporeGenerator `ONE, ONE`) blend [C] `code/worldobject/spider.cpp:Spider::Render`, `code/worldobject/sporegenerator.cpp:SporeGenerator::Render`; the same idiom appears in Officer, Squadie, Tank, Armour, Harvester and Engineer renders ([02](02_units_and_entities.md)).
 
+## 5 Legged, segmented and other procedurally animated creatures
+
+All creature animation is procedural code. Behaviour (states, targeting, damage) is specified in [02](02_units_and_entities.md); this section specifies only the motion and drawing recipes.
+
+### 5.1 `EntityLeg` — legged locomotion with two-bone IK [C] `code/worldobject/entity_leg.h`, `code/worldobject/entity_leg.cpp`
+
+Users: **`Spider`** (8 legs, [B:FULL], reachable through TriffidEgg and SpamInfection crate outcomes) and **`Tripod`** (3 legs, [B:LEGACY] — no live creator) [C] `code/worldobject/spider.cpp:Spider::Begin`, `code/worldobject/tripod.cpp:Tripod::Begin`. No other class uses it [C] (grep).
+
+Resolved: P03 stated that only the Tripod uses `EntityLeg` and that `Spider` uses its own gait; the code shows `Spider::Begin` creates eight `EntityLeg(i, this, "spider_leg_upper.shp", "spider_leg_lower.shp", "MarkerLeg<i>")` and `Spider::UpdateLegs` drives them; `SpiderParameters` are only parameter sets copied into the legs (§5.2) [C]. ([02 §20](02_units_and_entities.md#20-entityleg) already carries this resolution.)
+
+**Data.**
+
+| Class | Field | Meaning |
+|---|---|---|
+| `EntityFoot` | `m_pos` | current foot position (world) |
+| | `m_targetPos` | planned landing point |
+| | `m_state` | `OnGround` (0), `Swinging` (1), `Pouncing` (2) |
+| | `m_leftGroundTimeStamp` | wall time (`g_gameTime`) the swing began |
+| | `m_lastGroundPos` | lift-off point |
+| | `m_bodyToFoot` | body − foot offset captured at pounce start |
+| `EntityLeg` | `m_legLift` | swing apex height (world units) |
+| | `m_idealLegSlope` | outward splay per unit of hover height (0 = vertical, 1 = 45°) |
+| | `m_legSwingDuration` | swing time (s) |
+| | `m_lookAheadCoef` | seconds of body velocity added to the landing point |
+| | `m_legNum`, `m_parent` | index, owning entity |
+| | `m_rootMarker` | marker `MarkerLeg<n>` on the parent shape (hip) — fatal assert if missing |
+| | `m_shapeUpper`, `m_shapeLower` | thigh and shin `.shp` (each must contain `MarkerEnd`) |
+| | `m_thighLen`, `m_shinLen` | `|MarkerEnd|` of each shape in its own space |
+
+**Algorithm** (all positions world space; `H` = owner's target hover height):
+
+1. **Hip** `GetLegRootPos()`: `m_rootMarker->GetWorldMatrix(Matrix34(parent.front, worldUp, parent.pos)).pos` — hips ignore body pitch/roll.
+2. **Foot home** `CalcFootHomePos(H)`: `d = horizontalNormalise(hip − body.pos) · groundNormal(body).y`; `home = hip + d·(idealLegSlope·H)`; `home.y −= H`. The foot rests outward from the hip, more so the higher the body hovers, less on slopes.
+3. **Desire to move** `CalcFootsDesireToMove(H) = |foot − home|` (a direction-weighting term against the velocity is commented out, so the weight is 1).
+4. **Step planning** is done by the owner (Spider §5.2, Tripod §5.3) using the desire score.
+5. **Lift** `LiftFoot(H)`: `target = home + rotateY(parent.vel, 0.5·1.2·parent.angVel.y)·lookAheadCoef` (velocity rotated by half the yaw expected over 1.2 s), then `target.y = terrainHeight(target)`; `state = Swinging`; `m_leftGroundTimeStamp = g_gameTime`; `m_lastGroundPos = m_pos`.
+6. **Swing** `Advance()` (called every sim tick by the owner): if Swinging, `f = RampUpAndDown(stamp, swingDuration, g_gameTime)` (§1.4). If `f > 1` → **plant** (`m_pos = m_targetPos`, `OnGround`) and return true ("planted this tick"); else `m_pos = lerp(lastGround, target, f) + (0, arc(f), 0)` with `arc = 3·f·lift` for `f < 0.33`, `3·(1 − f)·lift` for `f > 0.67`, `lift` otherwise (trapezoidal lift profile; reaches 0.99·lift at the knees of the trapezoid).
+7. **Knee** `CalcKneePos(foot, hip, bodyCentre)`: `L = |hip − foot|`; `axis = normalise(horizontalNormalise(hip − centre) × worldUp)` (horizontal, perpendicular to the hip's outward direction); `cosθ = min(1, 0.4·L / thighLen)` (source FIXME: the ratio can exceed 1); `θ = −acos(cosθ)`; `knee = foot + rotate(setLength(hip − foot, shinLen), axis·θ)`. This is an **approximate** two-bone IK: the shin always has its true length and points toward the hip rotated outward/upward by θ; the thigh is then drawn from knee to hip **regardless of its length**, so it stretches or compresses visually.
+8. **Pounce** `AdvanceSpiderPounce(f)`: `offset = bodyToFoot·(1 − f)` for `f < 0.5`, `bodyToFoot·f` otherwise; `foot = body.pos − offset + body.vel·f·0.05`; `lastGround = target = foot` (feet tuck in then extend during the leap). A D3D tearing-deform block in this function is commented out.
+9. **Render** `Render(tPred, predictedMove)`: hip = predicted; foot = `m_pos` (OnGround), the swing formula re-evaluated with the current `g_gameTime` (Swinging, so swings are smooth between ticks), or `m_pos + predictedMove` (Pouncing); knee from step 7; shin drawn with `Matrix34(front = up × worldUp, up = normalise(knee − foot), pos = foot)`, thigh with `up = normalise(hip − knee)`, pos = knee; lit with the owner's `SetObjectLighting`. `RenderPixelEffect` marks the same two shapes into the legacy pixel-effect grid.
+
+```mermaid
+stateDiagram-v2
+    [*] --> OnGround: Begin LiftFoot then PlantFoot
+    OnGround --> Swinging: owner LiftFoot when desire above threshold
+    Swinging --> OnGround: RampUpAndDown exceeds 1 so PlantFoot
+    OnGround --> Pouncing: Spider pounce start
+    Swinging --> Pouncing: Spider pounce start
+    Pouncing --> OnGround: Spider lands
+```
+
+Determinism: swing timing uses **wall time** `g_gameTime`, so the tick on which a foot plants differs between peers; see §12.3 for why this stays cosmetic for the Spider but not for the Tripod.
+
+### 5.2 Spider gait [B:FULL] [C] `code/worldobject/spider.cpp:Spider::Spider`, `Spider::Begin`, `Spider::CalcWhichFootToMove`, `Spider::UpdateLegs`, `Spider::UpdateLegsPouncing`, `Spider::AdvanceAttack`, `Spider::AdvancePouncing`, `Spider::Advance`, `Spider::Render`
+
+Parameter sets (`SpiderParameters m_parameters[3]`):
+
+| Stage | Ideal speed (u/s) | Leg lift | Ideal slope (stored) | Ideal slope (applied, ×2.5) | Swing duration (s) | Delay between lifts (s) | Look-ahead (s) |
+|---|---|---|---|---|---|---|---|
+| 0 | 10 | 3.0 | 2.6 | 6.5 | 0.40 | 0.11 | 0.75 |
+| 1 | 30 | 3.0 | 2.6 | 6.5 | 0.25 | 0.06 | 0.30 |
+| 2 | 50 | 3.0 | 2.6 | 6.5 | 0.25 | 0.04 | 0.20 |
+
+Constants (`#define`): `FOOT_MOVE_THRESHOLD` 5.0, `FOOT_EMERGENCY_THRESHOLD` 12.0, `HOVER_HEIGHT` 3.0 (= `m_targetHoverHeight`), `FOOT_DAMAGE_RADIUS` 20.0 / `FOOT_DAMAGE_STRENGTH` 10.0 (used only by the uncalled `StompFoot`). A commented-out older block lists `TURN_RATE 0.18` [C].
+
+- **Begin**: legs created with stage-2 values **without** the ×2.5 slope factor (slope 2.6); every foot is lifted and immediately planted at its home (feet start in place). From the first `UpdateLegs` onwards the ×2.5 factor applies [C].
+- **Per tick when not pouncing** (`Spider::Advance` → body height then `UpdateLegs`): body `y` eases toward `terrain + 3.0` with factor `SERVER_ADVANCE_PERIOD` (10 % per tick); then:
+  1. `CalcWhichFootToMove()` twice — so **up to two feet may lift per tick**. Each call: returns −1 if `GetNetworkTime() < m_nextLegMoveTime`; scans planted feet; any foot with desire > 12 is **lifted immediately** (emergency, not subject to the lock-out count); among the rest the highest desire wins; if it exceeds 5, `m_nextLegMoveTime = now + delayBetweenLifts` and that foot is lifted.
+  2. Stage selection: the stage whose ideal speed is nearest `|m_vel|` (ties keep the lower stage).
+  3. Copy the stage's lift, slope ×2.5, swing duration and look-ahead into every leg, call `Advance()`; each foot that plants triggers sound event `FootFall`.
+  4. `m_delayBetweenLifts` = stage value.
+- **Pounce start** (`AdvanceAttack`): for every leg `state = Pouncing`, `bodyToFoot = body − foot`, `lastGround = foot`, `target = foot + (pounceTarget − body)`; `m_pounceStartTime = GetNetworkTime()`.
+- **During the pounce**: `UpdateLegsPouncing` calls `AdvanceSpiderPounce(2·(now − pounceStart))` on every leg (sim time; f reaches 1 after 0.5 s).
+- **Landing** (`AdvancePouncing`, `y < terrain + 1`): every foot set to `OnGround` **where it is** (the next ticks' desire scores pull them back home) [C].
+- **Body render**: `up = terrain normal`, `right = m_up × m_front`, `front = right × up`, position predicted; damage flicker §4.6; legs drawn after the body with the same prediction.
+
+### 5.3 Tripod gait [B:LEGACY] [C] `code/worldobject/tripod.cpp`
+
+Constants: `IDEAL_LEG_SLOPE` 0.2, `LEG_LIFT` 3.0, `LEG_SWING_DURATION` 0.5 s, `LOOK_AHEAD_COEF` 1.2, `FOOT_MOVE_THRESHOLD` 1.0, `STATIONARY_HOVER_HEIGHT` 30.0, `ATTACK_HOVER_HEIGHT` 18.0, `HOVER_LOWER_WITH_SPEED_FACTOR` 0.2 (`H = 30 − |speed|·0.2` while walking), initial `m_targetHoverHeight` 27.0; leg shapes `tripod_leg_part.shp` for both bones.
+
+- **One foot at a time**: `CalcWhichFootToMove` returns −1 unless all three feet are planted; otherwise the highest desire if > 1.0.
+- **Topple while a foot is up** (`DoFallForTwoLegs`): take the two planted feet; `RayRayDist` between the foot-to-foot line and the vertical through the body gives `pointBetweenFeet` and `pointUnderBody`; moment per unit mass `|pointBetweenFeet − pointUnderBody|·GRAVITY` (GRAVITY 10); force `= (m_up × footToFootDir)` with magnitude `moment / |body − pointBetweenFeet|`; `bodyVel += force·dt`; `m_up` rotates about `footToFootDir` by `−0.1·|bodyVel|/|feetToBody|`; `pos += bodyVel·dt` then re-projected to keep its distance from `pointBetweenFeet`. With all feet planted: `bodyVel = 0`, `m_front` flattened, `m_up = worldUp`.
+- Death if the body sinks below the terrain (shape shattered, §8).
+- Code-quality note: the "which foot is up" tests are written `!state == OnGround`; they work only because `OnGround == 0` [C].
+- Because the body motion depends on foot state, and foot timing is wall-clock, the Tripod's **simulated** position would diverge between peers [C]/[I] — one reason it must not be revived as-is.
+
+### 5.4 Centipede — follow-the-leader segment chain [B:FULL] [C] `code/worldobject/centipede.cpp:Centipede::Advance`, `Centipede::RecordHistoryPosition`, `Centipede::GetTrailPosition`, `Centipede::Render`
+
+Each segment is a separate `Entity` in one `Unit` (behaviour: [02](02_units_and_entities.md)). Animation recipe:
+
+- **History**: every segment records its position each tick at the front of a 3-entry list (`RecordHistoryPosition`).
+- **Following** (sim): a non-head segment takes its leader's trail point: with the leader's history `h[0]` (newest), `h[1]`, `h[2]`, and `k = 0` if the leader has not yet advanced this tick (leader entity index > follower's) else `k = 1`: `pos = h[k+1] + (h[k] − h[k+1])·(1 − leaderSize)`, `vel = (h[k] − h[k+1]) / SERVER_ADVANCE_PERIOD`, `front = normalise(vel)`; requires ≥ 3 history samples. The spacing between segments therefore scales with the leader's size (a size-1.0 leader leaves its follower exactly one tick behind).
+- **Size gradient**: tail target 0.2, every other segment `min(1.1 × size of the segment behind, 1.0)`; each tick size moves 10 % toward the target when off by > 0.01 — so the body tapers from head (≤ 1.0) to tail (0.2) and re-tapers smoothly after growth or splitting.
+- **Render**: only when alive and `m_linked`; position predicted and snapped to terrain height; `up = terrain normal`, `right = up × front`, `front = right × up`; the matrix axes scaled by `m_size`; lit (`SetObjectLighting`) per-team `centipedehead.shp` / `centipede.shp` [C]. A commented-out D3D tearing deform would have followed the head.
+- **Death**: a dying segment shatters (§8) and unlinks, so the chain splits visibly.
+
+### 5.5 SoulDestroyer — serpent tail and eaten souls [B:FULL] [C] `code/worldobject/souldestroyer.cpp:SoulDestroyer::RecordHistoryPosition`, `SoulDestroyer::RenderShapes`, `SoulDestroyer::Render`, `SoulDestroyer::RenderSpirit`, `SoulDestroyer::Attack`
+
+- **Tail history**: the sim records the tail-marker position each tick; history length `clamp(roamRange/30, 9, 25)` samples (9 when spawned from an egg) ([02](02_units_and_entities.md)).
+- **Render** (`_predictionTime − SERVER_ADVANCE_PERIOD`, i.e. one tick behind): head `souldestroyerhead.shp` at the predicted position with `front`/`up` orthonormalised; for each history pair `i ≥ 1`: `pos = h[i−1] + (h[i−1] − h[i])/dt·t`, `front = normalise(h[i−1] − h[i])`, `right = front × worldUp`, `up = right × front`; scale `max(1.5·(1 − i/n), 0.5)`, last segment 0.8; draw `souldestroyertail.shp` with `GL_NORMALIZE`, lit. Blob shadows: 50 units under the head, `20·scale` under each segment.
+- **Eaten souls**: each victim's soul is pushed into a 50-slot render list (`SOULDESTROYER_MAXSPIRITS`) with a raw-clock timestamp and a random offset (unsynchronised `AppRandom` picks the slot when full); each frame every entry younger than 60 s is drawn at `m_pos + offset` as two camera diamonds of colour (100,50,50): inner size `4·a / d^¼`, alpha `200·a`; outer `12·a / d^¼`, alpha `100·a`, with `a = 1 − age/60` and `d` = camera distance; additive, depth test off. Entries older than 60 s are **removed by the render function** (render-side list mutation, render-only list) [C].
+- **Damage FX defect**: every hit (not only death) shatters every tail segment (`if (fractionDead)` is always true for hits ≥ 0.5 dead) [C] `SoulDestroyer::ChangeHealth`.
+
+### 5.6 Virii — glowing worm trail [B:FULL] [C] `code/worldobject/virii.cpp:Virii::RecordHistoryPosition`, `Virii::Render`, `ViriiUnit::Render`, `code/team.cpp:Team::RenderVirii`, `Team::Initialise`
+
+- **History** (sim): `ViriiHistory {m_pos, m_right, m_glowDiff, m_distance, m_required}`, newest first, sampled every 0.5 s while not idle plus extra *non-required* samples when the height changes by > 3; trimmed when the summed length exceeds **175** ([02](02_units_and_entities.md)).
+- **Atlas** `sprites/viriifull.bmp` is **generated at start-up**, not shipped: a 160×512 black bitmap whose left 32-px column holds 32 successively smaller copies of `sprites/virii.bmp` (copy *i* is `32 − i/2` px, stacked downward while they fit) and whose right part holds `textures/glow.bmp` blitted 128×128 at (32,0) [C] `Team::Initialise`; registered with `Resource::AddBitmap`.
+- **Strip construction** (`Render(t, team, detail)`, prediction `t + SERVER_ADVANCE_PERIOD`): start at the predicted head (snapped to terrain + hover at detail 1); for each history entry (skipping non-required entries, whose distance accumulates into the next) emit one **worm quad** of half-width 3.0 along `prev.m_right` (`−front × landNormal`, land normal only at detail 1) with u ∈ [0, 32/160] and v advancing `distance·6/512` per segment, and (detail < 4) one **glow quad** of half-width 12.0 extended ±`m_glowDiff` (10 units along the trail) with u ∈ [32/160, 1], v ∈ [0, 128/512].
+- **Fade along the trail**: worm alpha starts at 200 and the glow at 150; each segment subtracts its length from the running alpha (clamped at 0) — the worm reaches 0 after 200 units and the glow after 150; with the 175-unit history the visible worm tail ends near alpha 25.
+- **Colour**: worm = team colour × health fraction; glow = (200,100,100) in single-player, the worm colour in multiplayer; monster team: worm (255,255,255,0), glow (200,200,200,50) drawn in the darkening batch (dead monster Virii temporarily switch to additive); dead: RGB 250, worm alpha `health`, glow alpha `2.5·health`.
+- **LOD** (`detail` from `RenderEntityDetail` and camera distance, thresholds in [24 §4.9](24_rendering.md#49-entities-sprites-and-billboards)): detail > 1 renders only the first `1 − 0.25·min(detail − 1, 2)` of the history (100 % / 75 % / 50 %); detail 4 also drops the glow.
+
+### 5.7 SporeGenerator — four tentacle tails [B:FULL] [C] `code/worldobject/sporegenerator.cpp:SporeGenerator::Render`, `SporeGenerator::RenderTail`
+
+- Body `sporegenerator.shp` at the predicted position with a **fixed** orientation (front (0,0,1), up world up) — it does not turn; damage flicker uses blend `ONE, ONE`.
+- A function-static `s_vel = 0.95·s_vel + 0.05·m_vel` is updated once per generator drawn — **shared by all SporeGenerators** (render-only quirk) [C].
+- For each of 4 tails (markers `MarkerTail01`–`04`), 3 segments built as one `GL_QUAD_STRIP`: start at the marker, direction = horizontal(marker − body); each segment: `next = prev + dir·15`; add `sin(g_gameTime + i + j + uid·10)·10` to x, y and z; add `s_vel` set to length `10·j/3`; `y −= 10·j/3`; while panicking add `cos(5·g_gameTime + i + j)·5` to x, y, z; half-width `2·(1 − j/3) + 0.3·sin(g_gameTime + i + j)`; quad oriented perpendicular to the camera ray; normal = `(seg × worldUp) × seg`. Colour = team colour via `GL_COLOR_MATERIAL`, lit.
+- 20-unit blob shadow.
+
+### 5.8 Cloth flags — `Flag` [B:FULL] [C] `code/worldobject/flag.h`, `code/worldobject/flag.cpp:Flag::Initialise`, `Flag::Render`, `Flag::RayHit`; owners `code/worldobject/officer.cpp:Officer::RenderFlag`, `code/worldobject/armour.cpp`, `code/worldobject/multiwiniazone.cpp`
+
+A 6×6 vertex grid (`FLAG_RESOLUTION` 6) simulated **in the render function** with a lagged-follow scheme (not a mass-spring solver):
+
+- `Initialise`: vertex `[x][z] = pos + (x/6)·front + (z/6)·up`.
+- Per frame, for every column x and row z: `dt = g_advanceTime` (0.1 if game speed is 0); `k = dt·10·(6 − x)/6`, `k = 1` for x = 0, `k = 0.7` if `size > 40` or highlighted/selected; wind factor `w = 1` (0.3 when highlighted/selected); target = for x = 0: `pos + up·size/2 + (z/5)·up·size` (attached to the pole), else `vertex[x−1][z] + front·size/5`; target += `(w·cos(g_gameTime + 1.5x)·x/6, w·3·sin(g_gameTime + 1.1x)·x/6, w·cos(g_gameTime + 1.3x)·x/6)`; `vertex = vertex·(1 − k) + target·k`; then the link to the previous column is clamped to `size/2`.
+- Bounding sphere (centre = mean of the 36 vertices, radius = max distance) is recomputed each frame and used by `RayHit` (sphere pre-test, then 2 triangles per cell) for **mouse picking** of officers/armour — UI only.
+- Pole: white untextured quad of half-width 0.2 (perpendicular to `up × camFront`) and height `1.5·size`. Flag: 25 textured quads, alpha blend, LINEAR / LINEAR_MIPMAP_LINEAR.
+- Multiplayer team recolouring: texture `<file>_<colourId>_<groupPos>` (team colour /2), `<file>_selected_<colourId>_<groupPos>` (full team colour) or `<file>_255` (grey 128) is generated once from the source bitmap with `BitmapRGBA::ConvertRedChannel(teamColour)` and cached via `Resource::AddBitmap`.
+- Goto arrow: when a target is set, `icons/arrow.bmp` is drawn over the flag with polygon offset (−1, −5), its texture coordinates rotated so the arrow points from the flag toward the target's screen position (computed with `MarkerSystem::CalculateScreenPosition`).
+
+| Owner | Size | Orientation and texture rules |
+|---|---|---|
+| Officer (`Officer::RenderFlag`) | 20; MP: `×(1 + DarwinianScaleFactor·(d − 100)/1500)` beyond 100 | front = −heading (flattened); while orders ≠ None `up` wobbles about `front` by `0.4·sin(2·(g_gameTime + uid·10))`; MP: blends toward the camera axes by `clamp(d/200, 0, 1)` (view-flip flag set when mirrored); texture `icons/banner_none.bmp` (None, Goto, PrepareGoto), `banner_follow.bmp`, `banner_formation.bmp`, `banner_absorb.bmp`; Goto target = order position (MP: route waypoint 1). The local team's officer flags are drawn by `code/markersystem.cpp`, others by the officer [C] |
+| Armour (`m_flag`, `m_deployFlag`) | 20 | positioned at the `MarkerFlag` matrix each frame ([04](04_crates_powerups_and_weapons.md)) |
+| Blitzkrieg zone (`m_blitzkriegFlag`) | 50 (so `k` fixed at 0.7 — stiffer) | created lazily; textures per zone state ([03 §8.2](03_buildings_and_world_objects.md#82-flag)) |
+
+The flag uses wall time and frame time only, so it is purely presentational [C].
+
+### 5.9 Other procedural motions [C]
+
+| Motion | Class / function | Recipe | Build |
+|---|---|---|---|
+| Tree breathing sway | `Tree::RenderAlphas` | uniform scale `×(1 + sin((realTime + uid·2)·2)·0.003)` (evil 0.01) | [B:FULL] |
+| Tree regrowth / burn-down | `Tree::GetActualHeight` | height `= m_height·(1 − |m_onFire'|)` (≥ 1 %), render-predicted; growth and fire colouring in [24 §4.7](24_rendering.md#47-tree-rendering-procedural-geometry-bfull-c-codeworldobjecttreecpp) and [03 §7.3](03_buildings_and_world_objects.md#73-tree) | [B:FULL] |
+| Magic-tree leaf pulse | `Tree::RenderAlphas` | blue `B·f + 255·(1 − f)`, `f = |sin(realTime + uid·10)|` | [B:FULL] |
+| Spirit hover | `Spirit::Advance` (sim) | `hover = sin(offset)·rates`, rates random-walk with **synced** `syncsfrand(1)` in [0,2] ([02](02_units_and_entities.md)) | [B:FULL] |
+| Snow / zombie wobble | `Snow::Advance`, `Zombie::Advance` (sim) | same wobble idiom with synced RNG (§7.6, §7.7) | [B:FULL] |
+| Harvester tractor beam | `Harvester::RenderBeam` | 5 team-coloured animated rings (radius `75·heightScale`) cycling from ground to hover height while harvesting; additive collector bubble `textures/bubble.bmp` (16, alpha 150) | [B:FULL] |
+| SpaceShip beam and spin | `SpaceShip::RenderBeam`, `SpaceShip::Advance` | 30 stacked team-coloured rings scrolling up (abducting) or down (dropping) at 50 u/s; hull yaws 0.01 rad per tick (sim) | [B:FULL] |
+| Officer order travellers | `OfficerOrders::Render`, `MultiwiniaOfficerOrders::Render`, `OfficerOrderTrail::Render` | travelling `textures/starburst.bmp` (15) that fades over 1 s; ground arrows `icons/widearrow.bmp` of size `max(5, 20·camDist/2000)`, alpha `0.6·(1 − age)`, 1 s life, dropped every 0.2 s ([02 §5.8](02_units_and_entities.md)) | [B:FULL] |
+| Randomiser | `Randomiser::Render` | two `TypeMuzzleFlash` particles (size 60) per **frame** at opposite ends of a 100-unit radius spinning at 3 rad/s of game time, 5 above ground, random team colours (CRT `rand()`) | [B:FULL] |
+| Tank hull bob | `Tank::Render` | `y += 2·sin(t + id)` | [B:DEBUG] |
+| Turret empty shells | `TurretEmptyShell::Advance` (sim) | spin about `front + (frac(id·0.1), frac(id·0.3), frac(id·0.7))`, bounce with `m_force·0.5` until ≤ 0.2 | [B:FULL] |
+| Grenade tumble | `ThrowableWeapon::Render` | tumbling `throwable.shp` plus 1-s blink (§4.5) | [B:FULL] |
+
