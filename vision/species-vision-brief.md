@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1)
+## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -34,6 +34,13 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O11 | Research and training | Designed **later**. | The stat and modifier system, and the unit-specialisation hooks, are designed now, so research and training plug in without rework. |
 | O12 | Vocabulary | Name collisions resolved at the reference-library gate G1 (2026-10-17): **Command Console, Convert Turret, Transit Gate, Essence Grove, energy grid, Beam Dish, Solar Array, Relic Spawn Zone**. | The Species vocabulary in `design/CONVENTIONS.md` §8 is authoritative. |
 | O13 | Reference tuning values | The reference tuning values **may be adopted as Species starting values** (G1, 2026-10-17). | A legal check is required before commercial release. The design phase retunes freely; adopted values need no "provisional" flag for reasons of origin. |
+| O14 | Population cap and player slots | Every open slot is played: empty slots are filled with bots by default, leavers are taken over by bots, and the host may close slots; the per-team cap is the map cap ÷ open slots (DEC-079). | Skirmish lobbies need slot open/close and bot fill. For the world game, the design phase decides how this maps to settlements. |
+| O15 | Collector orbs | Collectors gather any team's Essence orbs; delivery respects the population cap (DEC-080). | — |
+| O16 | Catch-up bonus | Proportional catch-up curve, with Rogue and Visitor factions excluded (DEC-081). | — |
+| O17 | Mode second | 11 ticks for the first playable; A/B playtest of 10 vs 11 ticks before launch (DEC-003). | — |
+| O18 | Hostile crate outcomes | Hazards team-blind; every outcome respects the map's exclusion list; Brood ownership decided in playtest (DEC-107, DEC-121). | — |
+| O19 | Map values | Absent = lobby default, 0 = none, unlimited is explicit (DEC-120). | Typed map schema. |
+| O20 | First playable | Spawn Control, 2 players, core Supply crate pool. | Matches the GameAssets.md priorities. |
 
 ## 4 What carries over from the reference library
 

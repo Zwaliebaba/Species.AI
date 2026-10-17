@@ -19,3 +19,5 @@
 | 15 | C-SIM-a | new | multi-round Siege rebuild at a tick boundary; a per-slot generation for laser-bolt and Essence-orb handles (actor serials unchanged); the team selection as a generational handle; where the offset-table step goes | new DECs (see reports/C-SIM-a.md) |
 | 16 | C-SIM-a | DEC-016 vs DEC-455 | iteration order | reconcile together with item 9 |
 | 17 | C-SIM-a → C-SIM-c | — | order of initialisation draws; which rules read the Control Zone counter | cross-document fix between 02/04 and 07 |
+| 18 | owner O14–O16 | DEC-079, 080, 081 | G05 (already written) states the reference rules for the cap, Collector delivery and catch-up | **Phase 4: update `reference/05_population_flow.md`** to the owner-resolved rules (and G00's overview), citing the DECs |
+| 19 | owner O18–O19 | DEC-107, 120, 121 | G04, G08a and C-DAT (not started) read them from the register; G01 was told directly | check in Phase 4 |

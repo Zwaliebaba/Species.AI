@@ -4,13 +4,14 @@
 
 Every decision uses the format in [CONVENTIONS](../CONVENTIONS.md) §7. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **244** decisions: 116 Open, 102 Resolved, 26 Dropped.
+Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 
 ## Register files
 
 | File | Scope | Id range | Entries |
 |---|---|---|---|
-| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–199 | 119 |
+| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–119 | 119 |
+| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 2 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
 | [deferred/numerics_lobby_terrain_services.md](deferred/numerics_lobby_terrain_services.md) | Deferred: numerics, lobby, terrain runtime, services, persistence | DEC-240–259 | 12 |
@@ -103,9 +104,9 @@ Totals: **244** decisions: 116 Open, 102 Resolved, 26 Dropped.
 | DEC-076 | [Launch Vessel Flight is invulnerable and terminal](verdicts_and_fixes.md#dec-076-launch-vessel-flight-is-invulnerable-and-terminal) | Resolved | verdicts_and_fixes.md |
 | DEC-077 | [The bot-mode option accepts only defined values](verdicts_and_fixes.md#dec-077-the-bot-mode-option-accepts-only-defined-values) | Resolved | verdicts_and_fixes.md |
 | DEC-078 | [No-team colour, under-attack status and the neutral Home post](verdicts_and_fixes.md#dec-078-no-team-colour-under-attack-status-and-the-neutral-home-post) | Resolved | verdicts_and_fixes.md |
-| DEC-079 | [Per-team population cap](verdicts_and_fixes.md#dec-079-per-team-population-cap) | Open | verdicts_and_fixes.md |
-| DEC-080 | [Collector collection of any team's Essence orbs](verdicts_and_fixes.md#dec-080-collector-collection-of-any-teams-essence-orbs) | Open | verdicts_and_fixes.md |
-| DEC-081 | [Catch-up bonus curve](verdicts_and_fixes.md#dec-081-catch-up-bonus-curve) | Open | verdicts_and_fixes.md |
+| DEC-079 | [Per-team population cap](verdicts_and_fixes.md#dec-079-per-team-population-cap) | Resolved | verdicts_and_fixes.md |
+| DEC-080 | [Collector collection of any team's Essence orbs](verdicts_and_fixes.md#dec-080-collector-collection-of-any-teams-essence-orbs) | Resolved | verdicts_and_fixes.md |
+| DEC-081 | [Catch-up bonus curve](verdicts_and_fixes.md#dec-081-catch-up-bonus-curve) | Resolved | verdicts_and_fixes.md |
 | DEC-082 | [Rogue and Visitor factions never win and never block elimination](verdicts_and_fixes.md#dec-082-rogue-and-visitor-factions-never-win-and-never-block-elimination) | Resolved | verdicts_and_fixes.md |
 | DEC-083 | [Clickable power bar and wide power ids](verdicts_and_fixes.md#dec-083-clickable-power-bar-and-wide-power-ids) | Resolved | verdicts_and_fixes.md |
 | DEC-084 | [Hive Essence orbs and Hive ants](verdicts_and_fixes.md#dec-084-hive-essence-orbs-and-hive-ants) | Open | verdicts_and_fixes.md |
@@ -131,7 +132,7 @@ Totals: **244** decisions: 116 Open, 102 Resolved, 26 Dropped.
 | DEC-104 | [Formation volley rhythm in integer arithmetic](verdicts_and_fixes.md#dec-104-formation-volley-rhythm-in-integer-arithmetic) | Resolved | verdicts_and_fixes.md |
 | DEC-105 | [Worker grenade team and the Hive and Spitter Plant attack target](verdicts_and_fixes.md#dec-105-worker-grenade-team-and-the-hive-and-spitter-plant-attack-target) | Resolved | verdicts_and_fixes.md |
 | DEC-106 | [Performance envelope at the population cap](verdicts_and_fixes.md#dec-106-performance-envelope-at-the-population-cap) | Open | verdicts_and_fixes.md |
-| DEC-107 | [Hostile Supply crate outcomes: ownership and filtering](verdicts_and_fixes.md#dec-107-hostile-supply-crate-outcomes-ownership-and-filtering) | Open | verdicts_and_fixes.md |
+| DEC-107 | [Hostile Supply crate outcomes: ownership and filtering](verdicts_and_fixes.md#dec-107-hostile-supply-crate-outcomes-ownership-and-filtering) | Resolved | verdicts_and_fixes.md |
 | DEC-108 | [Launch Vessel survival under attack](verdicts_and_fixes.md#dec-108-launch-vessel-survival-under-attack) | Open | verdicts_and_fixes.md |
 | DEC-109 | [Crowd-sound audibility radius](verdicts_and_fixes.md#dec-109-crowd-sound-audibility-radius) | Open | verdicts_and_fixes.md |
 | DEC-110 | [Second tutorial start condition](verdicts_and_fixes.md#dec-110-second-tutorial-start-condition) | Open | verdicts_and_fixes.md |
@@ -144,6 +145,8 @@ Totals: **244** decisions: 116 Open, 102 Resolved, 26 Dropped.
 | DEC-117 | [Confirmed reference facts](verdicts_and_fixes.md#dec-117-confirmed-reference-facts) | Resolved | verdicts_and_fixes.md |
 | DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes.md |
 | DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes.md |
+| DEC-120 | [Map values: absent, zero and unlimited are distinct](verdicts_and_fixes_2.md#dec-120-map-values-absent-zero-and-unlimited-are-distinct) | Resolved | verdicts_and_fixes_2.md |
+| DEC-121 | [Ownership of Brood creatures](verdicts_and_fixes_2.md#dec-121-ownership-of-brood-creatures) | Open | verdicts_and_fixes_2.md |
 | DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Open | deferred/networking.md |
 | DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Open | deferred/networking.md |
 | DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Open | deferred/networking.md |

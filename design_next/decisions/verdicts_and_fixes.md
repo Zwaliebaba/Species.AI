@@ -39,6 +39,7 @@ The generated [register index](README.md) lists every entry of this file with it
 
 ### DEC-003 Mode-second length after playtest
 - Status: Open
+- Owner decision: O17 (2026-10-17): keep the 11-tick mode second for the first playable; run an A/B playtest of 10 against 11 ticks before launch.
 - Affects: reference/12_simulation_model/01_tick_timing_and_main_loop.md (R-SIM), reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/05_population_flow.md (R-ECON)
 - Specified behaviour: The mode second is 11 ticks (DEC-002). Every per-second rule, wave and elimination timer, the on-screen match clock and all balance values are tuned under it, so displayed seconds run 10 % slower than real seconds.
 - Options: A — keep the 11-tick mode second permanently; B — change the mode second to 10 ticks and re-tune every value that depends on it; C — keep 11 ticks internally but display real seconds.
@@ -500,6 +501,7 @@ The generated [register index](README.md) lists every entry of this file with it
 - Specified behaviour: Transit Gates advance exactly once per tick on every map. Where a map sets a value, the map value overrides the lobby default; a typed override keeps 0 as a value, where the reference silently drops a per-map override whose value is 0.
 - Options: A — the corrected rule; B — the reference behaviour, in which Transit Gates advance twice per tick on three Flag Chain maps, doubling their waves, and lobby values override map values.
 - Recommendation: A. Maps whose balance relies on doubled waves are tuned through their reinforcement values instead.
+- See also: DEC-120 (how a map value of 0, an absent value and "unlimited" are written).
 
 ### DEC-066 Multi-round Siege
 - Status: Open
@@ -595,28 +597,28 @@ The generated [register index](README.md) lists every entry of this file with it
 - Recommendation: A.
 
 ### DEC-079 Per-team population cap
-- Status: Open
+- Status: Resolved
+- Owner decision: O14 (2026-10-17): every player slot is occupied; empty slots are filled with bots by default, and the host may close slots before the match.
 - Affects: reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
-- Specified behaviour: The per-team cap is the map's population cap divided by the map's number of players, not by the number of teams playing. It never grows when a team leaves, and alliances are not pooled. The count includes the team's bot controller, Transports, Leaders, Crawler eggs and fading corpses, and excludes Crawlers. Two reference co-op maps set no population cap. In Siege each defending team has the defender cap, and the attackers share (map cap − defenders × defender cap) ÷ attackers, by integer division; two Siege maps set no defender cap and use map cap ÷ player count for both sides. Because empty slots below the player count are filled with bots at match start, the cap equals map cap ÷ teams in play at start, and only later departures leave shares unused.
+- Specified behaviour: Every open player slot of a map is occupied: at match start, empty open slots are filled with bots, and a participant who leaves is taken over by a bot. Before the match, the host may close slots. The per-team cap is the map's population cap divided by the number of **open** slots (the teams playing), so it never changes during a match. Alliances are not pooled. The bodies counted are listed explicitly: the team's bot controller, Transports, Leaders, Crawler eggs and fading corpses count; Crawlers do not. In Siege each defending team has the defender cap, and the attackers share (map cap − defenders × defender cap) ÷ attackers by integer division; a Siege map with no defender cap uses map cap ÷ open slots for both sides. A map that sets no population cap states "no cap" explicitly (DEC-120).
 - Options: A — the reference rule; B — a cap from the teams actually playing, pooled within alliances, with an explicit list of what counts as a body.
 - Recommendation: B, the stated default. It keeps army size proportional to the teams present and makes co-op caps explicit; confirm by playtest across player counts and on co-op maps.
-- Decide by: playtest
 
 ### DEC-080 Collector collection of any team's Essence orbs
-- Status: Open
+- Status: Resolved
+- Owner decision: O15 (2026-10-17): option B.
 - Affects: reference/02_units/collector.md (R-UNIT), reference/05_population_flow.md (R-ECON)
-- Specified behaviour: A Collector collects Essence orbs of any team and delivers them to its own team with no population-cap or activation check.
+- Specified behaviour: A Collector collects Essence orbs of any team and delivers them to its own team. The delivery is subject to the receiving team's population cap (DEC-079) and to the activation rules of the receiving Spawn Node: orbs that would exceed the cap are not converted.
 - Options: A — the reference rule; B — keep any-team collection and apply the population cap on delivery; C — own-team orbs only.
 - Recommendation: B, the stated default. Any-team collection is a designed comeback lever, and the cap on delivery bounds it.
-- Decide by: playtest
 
 ### DEC-081 Catch-up bonus curve
-- Status: Open
+- Status: Resolved
+- Owner decision: O16 (2026-10-17): option B.
 - Affects: reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/spawn_control.md (R-MODE), reference/01_skirmish_rules_and_modes/zone_control.md (R-MODE), reference/01_skirmish_rules_and_modes/siege.md (R-MODE)
-- Specified behaviour: The Catch-up bonus is a step function: at the default setting a team's production multiplier is either ×1.9 or ×1. The share it is based on is diluted by the Rogue and Visitor factions, its (own − 1) ÷ total term is always 0, and it has no effect in Siege. The multiplier is 1 while any Spawn Node on the map is neutral and when the map disables it, and 0 for the no-team; allies count as other teams, and the average uses integer division. It can help only a team holding exactly one Spawn Node, and only on maps with at least 7 (two players), 9 (three) or 11 (four) Spawn Nodes. The burst size int(20 × H) runs from 20 at a setting of 0 % to 38 at 90 %. Only Spawn Control and Zone Control can use it: the option is absent in Relic Run, Launch Race and Flag Chain, and Siege maps have no Spawn Nodes.
+- Specified behaviour: The Catch-up bonus is a proportional curve: a team's production multiplier is a function of its share deficit, which is the gap between the team's share of the Spawn Nodes held by teams in play and the even share. The Rogue and Visitor factions are excluded from the share. Allies count as other teams. The curve, its maximum and the modes and maps where it applies are tuning keys owned by reference/05_population_flow.md. The multiplier is 1 when the map disables the bonus.
 - Options: A — the reference step function; B — proportional catch-up: the multiplier is a function of the team's share deficit, with the Rogue and Visitor factions excluded.
 - Recommendation: B, the stated default. It gives a smooth, predictable catch-up in Spawn Control and Zone Control.
-- Decide by: playtest
 
 ### DEC-082 Rogue and Visitor factions never win and never block elimination
 - Status: Resolved
@@ -803,12 +805,12 @@ The generated [register index](README.md) lists every entry of this file with it
 - Decide by: prototype
 
 ### DEC-107 Hostile Supply crate outcomes: ownership and filtering
-- Status: Open
+- Status: Resolved
+- Owner decision: O18 (2026-10-17): hazards stay team-blind, every outcome respects the map's exclusion list, and Brood ownership is decided in playtest (DEC-121).
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/02_units/creatures_and_hazards.md (R-UNIT)
-- Specified behaviour: The creatures of the Brood outcome belong to the team that placed the power. The meteor shower, Sickness and Missile Barrage outcomes are not filtered by team. Hostile outcomes ignore the map's list of excluded outcomes. The step that sets up the Rogue faction for the opening team has no effect.
+- Specified behaviour: The meteor shower, Sickness and Missile Barrage outcomes affect every team (team-blind). Every Supply crate outcome, hostile ones included, respects the map's list of excluded outcomes. The ownership of Brood creatures is decided separately (DEC-121). The step that sets up the Rogue faction for the opening team has no effect and is not specified.
 - Options: A — keep each behaviour as specified; B — decide per outcome: hostile outcomes respect the map's exclusion list, Brood creatures belong to the Rogue faction, and each outcome's team filter is explicit.
 - Recommendation: A for the hazards that ignore teams, since they are the risk of the 10 % hostile pool (DEC-021); B for the exclusion list, so that map designers control every outcome. Decide Brood ownership in playtest.
-- Decide by: playtest
 
 ### DEC-108 Launch Vessel survival under attack
 - Status: Open

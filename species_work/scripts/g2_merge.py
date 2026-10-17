@@ -20,7 +20,7 @@ REPO = sys.argv[1]
 NEXT = os.path.join(REPO, 'design_next')
 WORK = os.path.join(REPO, 'species_work')
 RANGES = {
-    'verdicts_and_fixes.md': (1, 199), 'deferred/networking.md': (200, 219),
+    'verdicts_and_fixes.md': (1, 119), 'verdicts_and_fixes_2.md': (120, 199), 'deferred/networking.md': (200, 219),
     'deferred/process_tick_and_roadmap.md': (220, 239),
     'deferred/numerics_lobby_terrain_services.md': (240, 259),
     'open_questions.md': (300, 449), 'units_buildings_crates_economy.md': (450, 549),
@@ -29,7 +29,7 @@ RANGES = {
     'review_findings.md': (900, 949),
 }
 TITLES = {
-    'verdicts_and_fixes.md': 'Verdicts, keep-list and fix-list', 'deferred/networking.md': 'Deferred: networking',
+    'verdicts_and_fixes.md': 'Verdicts, keep-list and fix-list', 'verdicts_and_fixes_2.md': 'Verdicts (continued) and owner decisions', 'deferred/networking.md': 'Deferred: networking',
     'deferred/process_tick_and_roadmap.md': 'Deferred: process, tick rate and roadmap',
     'deferred/numerics_lobby_terrain_services.md': 'Deferred: numerics, lobby, terrain runtime, services, persistence',
     'open_questions.md': 'Open questions', 'units_buildings_crates_economy.md': 'Units, buildings, crates and population',

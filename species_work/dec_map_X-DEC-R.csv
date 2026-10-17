@@ -1,3 +1,5 @@
 dec_id,title,status,affects_prefix,affects_files,orig_refs
 DEC-118,The seasonal state is decided once per match,Resolved,R-META;R-SIM;VFX,reference/12_simulation_model/07_randomness_and_integrity.md;reference/09_front_end_and_match_flow/options_localisation_and_hooks.md;architecture/components/animation_and_vfx.md,(coordinator G2 amendment; see reports/X-DEC-R.md)
 DEC-119,Simulation code never issues player commands,Resolved,INP;R-CTRL;R-SIM,reference/12_simulation_model/06_teams_and_player_commands.md;reference/06_controls_camera_and_commands.md;architecture/components/input.md,(coordinator G2 amendment; see reports/X-DEC-R.md)
+DEC-120,"Map values: absent, zero and unlimited are distinct",Resolved,R-MAP;DAT;R-ECON,reference/08_maps_and_level_design/rules_and_conventions.md;architecture/components/data_schemas.md;reference/05_population_flow.md,(owner decision O19)
+DEC-121,Ownership of Brood creatures,Open,R-CRATE;R-UNIT,reference/04_supply_crates_powers_and_weapons/crates_and_powers.md;reference/02_units/creatures_and_hazards.md,"(split from DEC-107, owner decision O18)"
