@@ -68,3 +68,6 @@
 | 64 | C-RND-b | ADR-0005, ADR-0018 | no `Ghost` blend in the PSO catalogue (with item 38); ADR-0018's blend pairing conflicts with the additively drawn icons, markers and cursors | amend the ADRs |
 | 65 | C-RND-b vs C-RND-a | — | RND-096 samples the captured frame linearly; the input specifies point filtering | fix RND-096 |
 | 66 | C-RND-b | new | 7 DEC requests (centipede scaled-normal lighting, Crawler egg shadow size, route-spot spacing); missing assets: route arrows, the empty compass, the Crawler trail texture variant | DEC triage; X-AST pass 2 |
+| 67 | G09a vs G01 | DEC-120 | G01 still writes "0 means no limit" | fix G01 to DEC-120 |
+| 68 | G09a vs C-SIM-b | — | a slot open/close setup command is missing from the command catalogue (needed for O14/DEC-079) | add it to 06_teams_and_player_commands.md |
+| 69 | G09a | new | 5 DEC requests (closed-slot rules, the chat rename quirk); overlapping layout and explainer rules with C-UI and C-VFX; explainer picture lists for X-AST; `ui.logo_banner` unused | DEC triage; dedup; X-AST pass 2 |

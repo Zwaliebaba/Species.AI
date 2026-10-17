@@ -295,7 +295,7 @@ EV = {
     ('Interface', 'SelectTask'): ('select', 'the player selects a Power by its slot key'),
     ('Interface', 'TaskManagerSelectTask'): ('selection_set', 'a team\'s selection is set'),
     ('Interface', 'TaskManagerDeselectTask'): ('selection_cleared', 'a team\'s selection is cleared'),
-    ('Interface', 'SetOrderGoto'): ('order_given', 'the player gives a crowd order'),
+    ('Interface', 'SetOrderGoto'): ('match_ui.order_given', 'the player gives a crowd order'),
     ('Gesture', 'GestureBegin'): ('begin', 'the player starts a Power from the Power slots panel'),
     ('Gesture', 'GestureSuccess'): ('confirm', 'a Leader promotion, a Builder placement, or a weapon Power chosen'),
     # ambience
@@ -431,6 +431,14 @@ ASSET = {
     'ufo_engine2': 'sfx.creature.abductor.presence_loop_b', 'white_noise': 'amb.match_bed_b',
 }
 
+# Base events of every structure, used where a kind has no own entry
+BASE = {'Create': ('spawn', 'initialisation'),
+        'ChangeTeam': ('owner_changed', 'the owner changes'),
+        'Damage': ('damaged', 'any damage')}
+# Reference events that the Species units drop with their feature
+DROPPED = {('Darwinian', 'TakenControl'), ('Darwinian', 'EscapedControl'),
+           ('Officer', 'SetOrderAbsorb'), ('Crate', 'Capturing_%pc(bug)')}
+
 LINKS = {'HeightAboveGround': 'height', 'Ypos': 'altitude', 'Velocity': 'speed',
          'CameraDistance': 'camera_distance', 'Xpos': 'pos_x', 'Zpos': 'pos_z'}
 POS = {'2D': '2d', 'Stat': 'fix', 'Att': 'att'}
@@ -544,6 +552,7 @@ def main():
     for key in SOURCES:
         per_source[key] = {'live': [], 'silent': []}
     unmapped = []
+    dropped = []
     for r in rows:
         key = (r['group'], r['object_type'])
         if key not in SOURCES:
@@ -558,10 +567,16 @@ def main():
             trig = OUTCOME_TRIGGER.get(sev, 'the outcome runs')
         else:
             evkey = (r['object_type'], r['event'])
-            if evkey not in EV:
+            if evkey in DROPPED:
+                dropped.append(evkey)
+                continue
+            if evkey not in EV and r['group'] == 'BUILDING' and r['event'] in BASE:
+                sev, trig = BASE[r['event']]
+            elif evkey not in EV:
                 unmapped.append(evkey)
                 continue
-            sev, trig = EV[evkey]
+            else:
+                sev, trig = EV[evkey]
         if r['in_data'] == 'yes':
             per_source[key]['live'].append((sev, trig, r))
         else:
@@ -579,6 +594,8 @@ def main():
             blocks = [parse_block(t) for t in r['blueprint'].split('||')]
             for i, b in enumerate(blocks):
                 aid = ASSET.get(b['name'])
+                if src == 'crate_outcome':
+                    aid = 'sfx.crate.outcome.' + sev
                 if aid is None:
                     unmapped.append(('asset', b['name']))
                     aid = '??'
@@ -611,14 +628,21 @@ def main():
     for key, d in per_source.items():
         src, kind, title = SOURCES[key]
         for sev, trig, r in d['silent']:
-            md.append('| `%s.%s` | %s |' % (src, sev, trig))
+            full = sev if '.' in sev else '%s.%s' % (src, sev)
+            md.append('| `%s` | %s |' % (full, trig))
             nsil += 1
     md.append('')
     open(out_md, 'w', encoding='utf-8').write('\n'.join(md) + '\n')
+    rep.append('SUMMARY')
+    for key, d in per_source.items():
+        src, kind, title = SOURCES[key]
+        nb = sum(len(r['blueprint'].split('||')) for _s, _t, r in d['live'])
+        rep.append('| `%s` | %s | %s | %d | %d | %d |' % (src, title, kind, len(d['live']), nb, len(d['silent'])))
     rep.append('live pairs: %d' % sum(len(d['live']) for d in per_source.values()))
     rep.append('silent pairs: %d' % nsil)
     rep.append('stats: %s' % dict(stats))
     rep.append('unmapped: %s' % unmapped)
+    rep.append('dropped: %s' % dropped)
     no_event = [a for a in man_ids if a not in bound_assets]
     rep.append('manifest audio ids: %d; bound: %d' % (len(man_ids), len(bound_assets)))
     rep.append('assets with no event: %s' % no_event)

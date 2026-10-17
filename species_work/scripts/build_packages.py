@@ -160,7 +160,8 @@ pkg('G08b', 3, None, '§9.3', own('G08', lambda r: 'Map-editor hooks' in sec(r))
     notes='Hooks only (KH-EDITOR): record what the corpus describes and the verdict; do not design the editor.')
 pkg('G09a', 3, None, '§9.3', own('G09a'),
     ['reference/09_front_end_and_match_flow/README.md',
-     'reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md'], {'R-META': '001-399'},
+     'reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md',
+     'reference/09_front_end_and_match_flow/front_end_presentation.md'], {'R-META': '001-399'},
     notes='You also write the folder README (document map for both files).')
 pkg('G09b', 3, None, '§9.3', own('G09b'), ids={'R-META': '400-699'})
 pkg('G10', 3, None, '§9.3', own('G10'), ids={'R-AUD': '001-499'},
