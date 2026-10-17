@@ -1,5 +1,5 @@
 # P18_ui_gamemenu — Front-end GameMenuWindow and all UI buttons
-Scope: `code/UI/*` — `GameMenuWindow.cpp/.h` (5629 + 325 lines), `ImageButton.cpp/.h`, `MapData.cpp/.h` and 66 header-only button classes (every file listed for P18 in `partitions.json`, plus three unlisted files in the same directory noted in the appendix). Build baseline: see build_matrix.md (`Release|Win32` + `TARGET_PC_FULLGAME`; `TESTBED_ENABLED`, `LOCATION_EDITOR`, `TARGET_DEBUG`, `INCLUDEGAMEMODE_PROLOGUE/_CAMPAIGN`, `HIDE_INVALID_GAMETYPES`, `SPECTATOR_ONLY`, `PERMITTED_MAPS`, `MULTIPLAYER_DISABLED`, `MULTIWINIA_DEMOONLY` all **off**; `LAN_PLAY_ENABLED`, `WAN_PLAY_ENABLED`, `INCLUDE_TUTORIAL`, `INCLUDE_CRATES_ADVANCED`, `TARGET_MSVC` **on**).
+Scope: `code/UI/*` — `GameMenuWindow.cpp/.h` (5629 + 325 lines), `ImageButton.cpp/.h`, `MapData.cpp/.h` and 66 header-only button files (every file listed for P18 in `partitions.json`, plus three unlisted files in the same directory noted in the appendix). Build baseline: see build_matrix.md (`Release|Win32` + `TARGET_PC_FULLGAME`; `TESTBED_ENABLED`, `LOCATION_EDITOR`, `TARGET_DEBUG`, `INCLUDEGAMEMODE_PROLOGUE/_CAMPAIGN`, `HIDE_INVALID_GAMETYPES`, `SPECTATOR_ONLY`, `PERMITTED_MAPS`, `MULTIPLAYER_DISABLED`, `MULTIWINIA_DEMOONLY` all **off**; `LAN_PLAY_ENABLED`, `WAN_PLAY_ENABLED`, `INCLUDE_TUTORIAL`, `INCLUDE_CRATES_ADVANCED`, `TARGET_MSVC` **on**).
 
 Supporting reads outside scope (for context, not owned): `code/game_menu.cpp/.h` (P17b — base buttons, layout helpers, map list), `code/interface/darwinia_window.cpp` (P17a — navigation), `code/multiwinia.cpp/.h` + `data/multiwinia.txt` (P02 — option tables), `code/app.cpp` permission functions (P01), `code/network/demo_limitations.cpp`, `code/network/networkvalue.*`, `code/network/clienttoserver.cpp` (P15), `code/interface/helpandoptions_windows.cpp`, `code/interface/chatinput_window.cpp`, `code/interface/mainmenus.*` (P17b), `contrib/systemiv/lib/metaserver/authentication.*` (P15), `data/language/english.txt`.
 
@@ -158,7 +158,7 @@ flowchart TD
     GSSP -- "multiwinia_menu_back (ShutdownCurrentGame)" --> MAIN
     GSMP -- "multiwinia_menu_back (ShutdownCurrentGame)" --> NOJ
 
-    MAPSEL -- "<map>_name (level row)" --> LOBBY["PageGameSetup (6) lobby"]
+    MAPSEL -- "map row (localised map name)" --> LOBBY["PageGameSetup (6) lobby"]
     MAPSEL -- "demo-restricted map" --> BUY
     MAPSEL -- "multiwinia_menu_back" --> GSANY["PageGameSelect (2)"]
 
@@ -222,14 +222,16 @@ flowchart TD
     DAR -- "multiwinia_menu_prologue" --> PRO
     DAR -- "multiwinia_menu_campaign" --> CAMP
     DAR -- "multiwinia_menu_back" --> MAIN
-    NOJ["PageNewOrJoin"] -. "QuickMatchButton (commented out)" .-> QM["PageQuickMatchGame (5)"]
+    NOJ["PageNewOrJoin"] -.->|"QuickMatchButton (commented out)"| QM["PageQuickMatchGame (5)"]
     QM -- "first compatible non-full server" --> CONN["PageGameConnecting"]
     QM -- "multiwinia_menu_back" --> NOJ
-    X1["ResearchModeButton (never built)"] -.-> RES["PageResearch (8)"] -- back --> LOBBY["PageGameSetup"]
+    X1["ResearchModeButton (never built)"] -.-> RES["PageResearch (8)"]
+    RES -- back --> LOBBY["PageGameSetup"]
     X2["HelpModeButton (never built)"] -.-> HM["PageHelpMenu (10)"]
     X3["HelpSelectButton (commented out)"] -.-> HP["PageHelp (11)"]
     HP -- "Prev/Next past last image" --> HM
-    X4["no assigner"] -.-> ACH["PageAchievements (35)"] -- back --> MAIN
+    X4["no assigner"] -.-> ACH["PageAchievements (35)"]
+    ACH -- back --> MAIN
     X5["LeaderboardWindow (legacy)"] -.-> LB["PageLeaderBoard (18): empty"]
     MAIN -- "taskmanager_mapeditor [B:EDITOR]" --> ED[["MultiwiniaWindow editor"]]
 ```
@@ -1002,10 +1004,10 @@ classDiagram
 stateDiagram-v2
     [*] --> Pending : ctor sets m_newPage (Main or AuthKeyEntry), m_currentPage = -1
     Pending --> Building : Update() sees m_currentPage != m_newPage
-    Building --> Live : ShutdownPage(old); SetupNewPage(new): Remove() all buttons, delete scroll bar, call Setup*, StartMenuTransition, m_currentPage = new
+    Building --> Live : ShutdownPage(old), SetupNewPage(new) = Remove() all buttons, delete scroll bar, call Setup*, StartMenuTransition, m_currentPage = new
     Building --> Deferred : Setup* returned early (waiting for network echo / team id)
     Deferred --> Building : per-page Update re-calls Setup* when the condition holds
-    Live --> Live : per-page Update*(); buttons set m_newPage
+    Live --> Live : per-page Update*(), buttons set m_newPage
     Live --> Building : next Update() (one-frame latency; last write to m_newPage wins)
     Live --> Building : game type changed under GameSetup/MapSelect (rebuild same page)
     Live --> [*] : DestroyMenu (window removed)

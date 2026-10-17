@@ -1051,3 +1051,96 @@ So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer
 10. **Sync logging**: `Building::LogState` (hash of pos/vel/front/centre/radius) is written before/after each building advance under `TRACK_SYNC_RAND` ([B:DEBUG] only). [C] `Location::AdvanceBuildings`.
 11. **Spawn-link pointer sharing** (multi-path graphs) would double-advance a spirit deterministically; shipped graphs are trees. [C]/[I].
 
+## Cross-partition notes
+
+| Interface | Direction | What the other agent should know | Ref |
+|---|---|---|---|
+| Darwinian port behaviour | Darwinian → Building | `SearchForPorts` (range 100, nearest building, random free port with reservation counter < 1 in MP), `AdvanceApproachingPort` calls `OperatePort` each tick, `AdvanceOperatingPort` stays until `GetPortOccupant != me`; occupancy is evaluated by the building within 5 units | [C] `darwinian.cpp`, `building.cpp:EvaluatePorts` |
+| Darwinian carrying | Darwinian ↔ CarryableBuilding | Darwinians in `StateCarryingBuilding` with `m_buildingId`; they must increment `m_numLiftersThisFrame`, call `SetWaypoint` to vote, use `GetCarryPosition(uniqueId)`; Hot Feet changes speed | [C] `carryablebuilding.cpp`; [U] increment site (Darwinian agent) |
+| Entity teleport entry | Entity → RadarDish | `Entity::EnterTeleports(requiredId)` conditions (15 units, facing, ReadyToSend) | [C] `entity.cpp` |
+| Location | Building ← Location | `Bang` damages all buildings within 3·range; `InitialiseTeam` seeds port Darwinians on owned SpawnPoints/SolarPanels; `m_spawnManiaTimer`; `GetTeamFromPosition` remaps level team positions; `IsFriend` (co-op groups); `IsDefending/GetNumAttackers`; `FireTurretShell/FireRocket/ThrowWeapon/LaunchFireball/FireLaser` | [C] `location.cpp` |
+| LevelFile | LevelFile → Building | `CreateBuilding(char*)` (blocked names dropped silently), global-type assert, Team-1 SpawnPopulationLock difficulty scaling, `PopulationCap`/`DefenderPopulationCap`/`NumPlayers`/LevelOptions parsing (last `PopulationCap` wins) | [C] `level_file.cpp` |
+| Multiwinia modes | Multiwinia ← SpawnPoint | Domination scoring/elimination and KOTH/CTS elimination read `SpawnPoint::s_numSpawnPoints`; `Handicap` game option; turret reinforcement tasks (`TurretFrequency`, `MaxTurrets`, `nogunturrets`, `airstrikecapturezones`) | [C] `multiwinia.cpp` |
+| Crates | Crate → Building | `RunGunTurret` (neutral turret from task), `RunTheBeast` (Portal), `RunSpawnMania` (5 s); Harvester/Engineer/SpawnMania crates invalid on maps without spawn points | [C] `crate.cpp` |
+| Tasks | TaskManager → GunTurret | `Task::TargetGunTurret`; turret self-destruct (−1000) when captured by an enemy or task stops | [C] `taskmanager.cpp` |
+| ControlStation | ControlStation → RadarDish/other | port capture (> 2 occupants, > 1 for pulse-bomb stations) sets the linked building's team | [C] `controlstation.cpp` |
+| AI | AI ↔ GunTurret/RadarDish | AITargets auto-created by turrets (`m_turretTarget`) and connected dishes (`m_radarTarget`, linked to receiver's AITarget); AI aims dishes unless `noradarcontrol` | [C] `gunturret.cpp`, `radardish.cpp`, `ai.cpp` |
+| Team / input | Team → GunTurret | `m_currentBuildingId` puts a turret under manual control; `SelectUnit` sets `m_fireTimer = 0.5`; camera `ModeTurretAim`/`RadarAimMode` | [C] `team.cpp`, `location_input.cpp`, `location.cpp` |
+| Network | client→server | radar aim command accepted only if the dish's team = commanding team | [C] `clienttoserver.cpp` |
+| Power consumers | PylonEnd → LaserFence/FuelGenerator/ConstructionYard | `LaserFence::ProvidePower` (friend check done by PylonEnd), `FuelGenerator::ProvideSurge` (no team check here) | [C] `generator.cpp:PylonEnd::TriggerSurge` |
+| Engineer | Engineer → ControlTower/Incubator | `GetAvailablePosition/BeginReprogram/Reprogram/EndReprogram`; `Incubator::AddSpirit` | [C] `engineer.cpp` |
+| Sound | Building → SoundSystem | event names: Create, Reprogramming, ReprogramComplete, ChangeTeam, Damage, Explode; SpawnPoint TurnOn/TurnOff; GunTurret TargetSighted, RegisterKill (triggered) vs `RegisteredKill` (listed — **name mismatch**), FireShell/FireFlame/FireRocket/FireGrenade; RadarDish BeginRotation/EndRotation/ConnectionEstablished/ConnectionLost; entity EnterTeleport/ExitTeleport; PowerBuilding TriggerSurge; Generator Enable; SolarPanel Operate; Carryable Lift/Carry/Drop; Incubator AddSpirit/SpawnEntity; ReceiverBuilding TriggerSpirit | [C] `ListSoundEvents` + trigger sites |
+| Rendering | — | team-coloured turret shape copies (`battlecannonturret.shp_<colour>_<group>`), per-instance radar dish shape copy recoloured on team change | [C] |
+
+## Contradictions / open questions
+
+1. **Handicap arithmetic** uses integer division twice (`average = others/n`; `factor = 1 − (mine−1)/total` → always 1 in practice). The apparent intent (scale by share) is not what ships. Document the shipped behaviour (§05.5). [C].
+2. **Per-team cap divides by the level's `NumPlayers`**, not by teams in play: a 4-player map played by 2 teams still gives each team PopulationCap/4. Intentional? [U] (game-design intent; check any `NumPlayers` override in lobby code).
+3. **Co-op maps without caps** (`mp_domination_4P_2`, `mp_koth_4P_3`: `PopulationCap -1`, no locks) → unbounded spawn-point growth. [C] data; [I] no other limiter.
+4. `mp_cts_4p_3` contains two `PopulationCap` lines (−1 then 2000); the parser keeps the last. [C].
+5. `m_spawnCounter` / `m_spawnTimer` are not reset on ownership change (a captured point may fire a partial burst after activation). [C].
+6. `s_numSpawnPoints[NUM_TEAMS]` (team 5) not reset in `Location::Init`. [C].
+7. `Building::EvaluatePorts` accepts any operating Darwinian within 5 units, without checking it is operating *this* building/port — adjacent buildings could share an occupant. [C] code; [I] effect.
+8. `SpawnBuilding::TriggerSpirit` can place one spirit pointer on several links (latent double-delivery / double-free). Shipped graphs avoid it. [C].
+9. GunTurret sound list names `RegisteredKill` but the code triggers `RegisterKill`. [C].
+10. `Powerstation::Advance` dereferences its link without a null check (legacy). [C].
+11. Data oddity for other agents: `mp_assault_3p_1` declares `NumPlayers 2`. [C].
+12. JumpPad ignores `m_destroyed` and port evaluation (no base `Advance`). Harmless today. [C].
+13. SolarPanel captured from its starting team in Assault loses its ports permanently (the design reads as "knock out"); in other modes panels are freely recapturable. [C]; intent [I].
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | MP research levels (`GlobalResearch::TypeLaser`, `TypeRocket`, `TypeArmour`) → subversion-laser lifetime; (TurretShell and turret rockets override research in MP) | `Multiwinia::SetGameResearch` callers / MP research table (modes agent) |
+| U2 | Whether `GetNetworkTime()` and `g_gameTimer.GetGameTime()` are the same synced clock | `code/gametimer.cpp` (timer agent) |
+| U3 | How Darwinians react to `EffectGunTurretTarget` (flee radius etc.) | `darwinian.cpp` threat search (units agent) |
+| U4 | Whether GameTypes-none dev maps (`mp_sandbox*`) can be opened from the shipped UI (affects ControlTower/Incubator reachability) | `GameMenu::AddMap` (meta agent) |
+| U5 | `NUM_SLICES_PER_FRAME` and confirmation that each building advances exactly once per 0.1-s tick | core-loop agent (`main.cpp`/`clienttoserver.cpp`) |
+| U6 | Exact composition of `Team::m_others` (which entity types count against the population cap) | `team.cpp:NewEntity` (units/team agent) |
+| U7 | Where `m_numLiftersThisFrame` is incremented and the `m_minLifters/m_maxLifters/m_carryRadius/m_speedScale` of Statue/WallBuster | `statue.cpp`, `wallbuster.cpp`, Darwinian carry code |
+| U8 | Origin/meaning of `Darwinian::m_subversionTaskId` (turns Standard turret shots into subversion lasers) | crate/task agent (`Crate::RunSubversion`) |
+| U9 | `LaserFence::ProvidePower` and `FuelGenerator::ProvideSurge` effect per surge | laser fence / rocket agents |
+| U10 | `Location::GetTeamFromPosition` mapping rules (level team positions → lobby teams) | location/lobby agent |
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code reality | Ref |
+|---|---|---|---|
+| `docs/spirit resource system.txt` (Darwinia design note) | spirits of dead enemies are collected (garbage collectors) and used by factories to spawn units | Multiwinia spawn points use *virtual* master-emitted spirits; collected-spirit production exists only in legacy Factory/Incubator code | [C] `spawnpoint.cpp`, `factory.cpp`, `incubator.cpp` |
+| `docs/multiwiniachanges-beta.txt` issue 756 | "Gun turret/Incubators emplacements shared by friendly teams don't fire/spawns" (bug report) | GunTurret ownership now explicitly allows friendly (co-op) co-occupation (`IsFriend` check); turret fires for the winning ally | [C] `GunTurret::RecalculateOwnership` |
+| `docs/multiwinia-changes.txt` | "Virii no longer count towards your population limit" | consistent: `currentPop` subtracts `Virii::s_viriiPopulation` | [C] `SpawnPoint::PopulationLocked` |
+| Source comment in `building.h` ("When you add an entry here remember to update building.cpp") | name table must match enum | consistent (75 names for 75 values) | [C] |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian(s)" | name | throughout (`Entity::TypeDarwinian`, comments, UI) | "Sprite" / "worker unit" |
+| "Multiwinia", "Darwinia" | brand | `Multiwinia::*`, `App::GameModeMultiwinia` | "<Game>" / "legacy campaign" |
+| "Futurewinian" team | name | `GunTurret::RecalculateOwnership`, `Location::GetFuturewinianTeamId` | "Vanguard faction" |
+| "The Beast" (Portal crate), Tentacle | name | `Crate::RunTheBeast`, `portal.cpp` | "Rift Horror" |
+| "Spawn Mania" | name | `Crate::RunSpawnMania` | "Spawn Frenzy" |
+| Shaman | name | `Portal::SpecialSummon` | "Summoner" |
+| "Gq/s" output unit | text | `Generator::GetObjectiveCounter` | "units/s" |
+| UI/language keys `buildingname_*`, `buildingname_gunturret/rocketturret/grenadeturret/flameturret/subversionturret`, `objective_redpopulation`, `objective_output`, `objective_throughput`, `crate_message_run_gunturret`, `crate_message_thebeast`; on-turret text "FF!" | text | `GetTurretTypeName`, `GetTypeNameTranslated`, crate.cpp | own string table |
+| Shapes: `spawnpointmultiwinia.shp`, `spawnpoint.shp`, `spawnlink.shp`, `masterspawnpoint.shp`, `battlecannonbase.shp`, `battlecannonturret.shp`, `battlecannonbarrel.shp`, `cannon_bullets.shp`, `cannon_flame.shp`, `cannon_rocket.shp`, `radardish.shp`, `controltower.shp`, `controltowerdish.shp`, `generator.shp`, `pylon.shp`, `solarpanel.shp`, `powerstation.shp`, `constructionyard.shp`, `constructionyardrung.shp`, `mineprimitive1.shp`, `displayscreen.shp`, `armour.shp`, `incubator.shp`, `spiritreceiver.shp`, `spiritreceiverhead.shp`, `receiverlink.shp`, `spiritprocessor.shp`, `controlpad.shp`, `throwable.shp` | art | ctors in this partition | new models |
+| Textures: `textures/starburst.bmp`, `laser.bmp`, `cloudyglow.bmp`, `laserfence.bmp`, `radarsignal.bmp`, `glow.bmp`, `triangleOutline.bmp`, `beam.bmp`, `icons/thickarrow.bmp`, `icons/icon_gunturret.bmp` | art | render code | new textures |
+| Sound event bindings (names listed in Cross-partition notes; actual samples via `data/sounds.txt`) | audio | `ListSoundEvents` | new audio |
+| Level file names `mp_*` and their layouts | content | `data/levels` | new maps |
+
+## Appendix — dead/legacy code (this partition)
+
+| Item | Status | Note | Ref |
+|---|---|---|---|
+| Darwinia single-player spawn formula, red-team objective, spirit "accelerate to heaven" | [B:LEGACY] | `!Multiplayer()` branches of SpawnPoint/MasterSpawnPoint | [C] |
+| GunTurret SP player-control loss (team ≠ 2), green→yellow remap, SP model `battlecannonbarrel.shp` | [B:LEGACY] | | [C] |
+| ControlTower, Incubator | [B:FULL] code, [B:LEGACY] content | only Darwinia and GameTypes-none maps | [C] data |
+| Generator, PylonStart, Powerstation, ConstructionYard, DisplayScreen, SpiritReceiver, ReceiverLink, ReceiverSpiritSpawner, SpiritProcessor, UnprocessedSpirit, SpiritStore (via Factory) | [B:LEGACY] | blocked or only used by blocked buildings | [C] |
+| `Portal::SpecialSummon`, `SummonStateLoweringPortal`, commented master-portal code | [B:LEGACY] / dead | Shaman blocked | [C] |
+| Commented-out code: SpawnBuilding target-type check, SpawnPoint alternate team assignment, RadarDish MP `ValidReceiverDish` block and AI priority block, GunTurret "fire nonstop if enemies present" (disabled: "something wrong with the entity grid"), GunTurret crosshair/manual-input code, JumpPad particle ring and arrow quad, CarryableBuilding debug text | dead | | [C] |
+| `LOCATION_EDITOR` blocks: GunTurret mortar arc preview, JumpPad trajectory preview, SpawnPopulationLock radius sphere | [B:EDITOR] | | [C] |
+| `DEBUG_RENDER_ENABLED`: `RenderHitCheck`, `RenderLink`, PylonStart requirement arrow, editor arrows | [B:FULL] (debug overlay compiled in) | | [C] |
+| `USE_DIRECT3D`: RadarDish vertex-declaration reset, ReceiverBuilding/SpiritProcessor water-reflection skip and batched spirit rendering | [B:D3D] | | [C] |
+| `#pragma omp parallel for` in `Location::Advance` | inert (OpenMP off) | | [C] |
+| `Building::m_timeOfDeath` | unused in this partition | | [C] |

@@ -40,3 +40,13 @@
 - Script language: grammar, 43 opcodes, one-line-per-frame execution, 6 start paths; 42 scripts (39 [B:LEGACY], 3 [B:DEAD]); scripts cannot run in MW (all triggers blocked/compiled out; scripts/* excluded from PC data build). 31 tutorial tabs, 49 help enum values; Demo1 38 chapters, Demo2 50. [U]=7.
 - Key: live MW tutorials are a help-tab director inside MultiwiniaHelp running on mp_koth_2P_1 and mp_koth_3P_1; tutorial*.cpp, Sepulveda, HelpSystem are [B:DEAD]; data/mwhelp has no .txt files.
 - Uncertain: how radar dish 4 becomes player-owned at Tutorial 2 start; whether CPU team 2 reliably takes spawn 83 first; whether mapcrc.h CRCs match current KOTH maps (else tutorial buttons disabled).
+
+## P05_entities_creatures — done
+- 28 classes (21 live in FULL, 1 debug-only, 6 legacy); 14 stats rows; 12 diagrams; ~60 #defines; 15 sound bindings. [U]=5.
+- Eggs-crate creatures owned by task-placing player (not monster team) except SoulDestroyer → monster team in MP; meteor-shower damage not team-filtered; many timings per-frame not per-second (egg/spider gravity, empty-anthill counter, 1% lightning roll) and don't scale with slow/speed crates; SpaceShip speed 500 overflows byte stat (≈244 on MSVC) [I], movement applies tick length twice, wander points cluster in one quadrant.
+- DropShip, Tripod unreachable; Beast/Tentacle debug-only; level-load block list doesn't stop crates spawning blocked types.
+
+## P13_gfx_backend_math — done
+- ~96 GL/GLU entry points + 14 ARB/WGL pointers tabulated; 28 D3D-vs-GL defects D1–D28; 3 FixedFunc shader pairs + uniform layout; 4 window managers; 9 math modules + 11 iv_* wrappers; 8 determinism risks; ~45 constants. [U]=10.
+- ReleaseDirect3D probably does NOT compile at this commit (WindowManagerDirectX::CreateWin char* vs pure-virtual wchar_t* → abstract; D3DRS_LINEWIDTH undefined/Xbox-only) — corroborates P12 (deform.cpp Resolve()).
+- GL/D3D builds unlikely to stay in lockstep: D3D config /fp:fast + no D3DCREATE_FPU_PRESERVE (24-bit x87) vs baseline /fp:precise 53-bit. D3D gluPerspective doubles _43 (near/far) — intent unknown.

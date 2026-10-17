@@ -1026,3 +1026,88 @@ Kind: `#define` (D), `static const` / class constant (S), literal in code (L), d
 | Aid fade | alpha 0.8, −1/s after done, removal +1 s | `RenderOnScreenAids`, `Advance` |
 | Officer follow-vs-order radius | 50 u (MagSquared < 2500) | `RenderHelp` |
 
+## [→ 22_determinism_and_networking] Determinism notes (input & camera, for X3)
+
+1. **Input and camera are local and non-deterministic by design.** All drivers sample wall-clock state (`GetHighResTime`, Win32 message timing, XInput polling) once per *render* frame; the camera integrates with `g_advanceTime` (wall clock, ≤ 0.25 s) or its own `GetHighResTime` deltas, and camera shake uses the unsynchronised `sfrand` [C] `code/camera.cpp`, `contrib/systemiv/lib/math/random_number.h`. Nothing in `code/lib/input` or `code/camera.cpp` calls `syncrand`/`syncfrand`.
+2. Input reaches the simulation only through `TeamControls` (P01/P15): `TeamControls::Advance` reads `controlEvent`s and camera-derived values (e.g. `UnitMove` stick rotated by `Camera::GetControlVector()`, `m_cameraEntityTracking = camera.IsInMode(ModeEntityTrack)`, `m_primaryFireTarget` masked by `camera.m_camLookAround`) and the result is sent to the server [C] `code/team.cpp`. Converting camera-relative directions into world-space deltas *before* networking is correct and must be preserved.
+3. **Desync hazard (confirmed in code)**: `InsertionSquad::DirectControl`, which runs inside the simulation on *every* peer for the *networked* `TeamControls` of whichever team is being processed, reads the **local** `g_app->m_camera->m_camLookAround` in its early-out (`if (!controls.m_cameraEntityTracking && !g_app->m_camera->m_camLookAround) return;`) and then may call `SetWayPoint` [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`, called from `code/location.cpp` (TeamControls application; the surrounding comment itself warns that local input state is invalid there). A peer holding F2/R3 (look-around) therefore executes squad way-point logic that other peers skip. The same function writes cosmetic camera fields (`m_targetVector`, `m_wantedTargetVector`). New design: simulation code must never read camera or input-manager state; only networked command data.
+4. XInput "repeat" timers and Idle accumulators are mutated during queries/advance with wall-clock time — fine for local UI, unsuitable for anything simulated.
+5. Camera-distance LOD (`team.cpp` render paths, `darwinian.cpp`, `weapons.cpp`, `sound_instance.cpp`, `gamecursor.cpp`, …) reads `Camera::GetPos()`; these appear to be render/sound paths [I] (not audited here — determinism agent should confirm none of them feed simulation, e.g. `code/worldobject/darwinian.cpp` L4123, `officer.cpp` L289/401/434, `mine.cpp` L140, `spawnpoint.cpp` L231, `location.cpp` L2108).
+6. Frame-rate dependence (cosmetic only): free-movement smoothing `4·dt` unclamped (overshoot when dt > 0.25 is impossible for `g_advanceTime` but possible for the free-move local timer, clamp 1.0 s), squad zoom int truncation (§3.6), first-person damping per frame.
+
+## Cross-partition notes
+
+- **P01 (app core / `user_input.cpp`, `location_input.cpp`, `main.cpp`)**: owns the consumers of most `Unit*`, `Order*`, `Issue*`, `SelectionCircle`, `Menu*`, `ToggleInterface`, `GamePause`, `ToggleNetworkStats`, `ControllerPlugged/Unplugged` controls; `UserInput::GetMousePos3d`/`RecalcMousePos3d` (the ground point the camera looks at); `TeamControls` packing; game-loop order (input → server → camera → render). Note `MenuEscape` handling in `LocationGameLoop` toggles windows and calls `SetDebugMode(DebugModeAuto)`. `HandleCommonConditions` handles controller unplug dialog and focus pause.
+- **P09 (task manager / gestures / `gamecursor.cpp`)**: consumers of `TaskManager*`, `Icons*`, `Gestures*`, `GestureActive/Left/Right`, `ActivateTMButton`, `UnitCycle*`, `IconsTaskManagerQuickUnit*`; `KeyboardShortcut : ControlEventFunctor` [C] `code/taskmanager_interface.h`; task start requests `ModeEntityTrack` (`AutomaticCamera`), `Task::SwitchTo` exits aim modes; the icon task manager calls `Camera::Advance()` when hiding.
+- **P11 (terrain/level file/water reflection)**: `CameraMounts`/`CameraAnimations` grammar and storage (`LevelFile::ParseCameraMounts/ParseCameraAnims`, `GetCameraMount`, `GetCameraAnimId`, `MAGIC_MOUNT_NAME_START_POS = "CamPosBefore"`, `CAMERA_MOUNT_MAX_NAME_LEN`); heightmap `GetValue(x,z)` used for all camera clearance; `WaterReflect()`.
+- **P12 (render core / `targetcursor.cpp`, `renderer.cpp`)**: near/far per frame, `SetupProjMatrixFor3D`, poster tiling, near-plane depth-bias pattern, `ControlHelpSystem::Render` call site, `CreateScreenShot` consumer.
+- **P14 (platform/lib)**: `window_manager` (`NastyPollForMessages`, `CaptureMouse`, `EnsureMouseCaptured/Uncaptured`, `NastySetMousePos`), `TextReader` tokeniser (separators ` \t\n\r:,`, `#` comments) and `PrefsManager` (user binding file writer), `language_table` (case-insensitive lookup; `_kbd`/`_xin` mood suffixes keyed off `InputManager::getInputMode`).
+- **P15 (network)**: `ControlDebugDropPacket` (`TARGET_DEBUG`); `NET_DARWINIA_START_GAME` sets `GameModeMultiwinia`.
+- **P17a/P17b (UI / options)**: key-binding window (rebindable list §1.10, capture via `getFirstActiveInput`, save to `user_input_preferences.txt`, restore defaults); `prefs_other_window` stores `AutomaticCamera` and `ControlHelpEnabled`; camera mount/anim editor windows (`LOCATION_EDITOR`) call `SetTarget`/`CutToTarget`/`PlayAnimation`/`StopAnimation`; `controller_unplugged` window; leaderboard window consumes `Leaderboard*`, `XBoxMenuCycle*`.
+- **P18 (game menu)**: main menu sets camera `ModeSphereWorldFocus` + fixed target and its own `gluLookAt`/FOV 90; camera not advanced there.
+- **P19 (help/tutorial/script)**: script camera commands `CamCut`, `CamMove`, `CamAnim`, `CamFov`, `CamBuildingFocus`, `CamBuildingApproach`, `CamLocationFocus`, `CamGlobalWorldFocus`, `CamReset` map 1:1 onto §3.8 APIs [C] `code/script.cpp:Script::RunCommand_*`; `MultiwiniaHelp::ShowShiftSpeedupHelp` (3 s) and French camera image; `SkipCutscene` consumer.
+- **P20 (sequences/loaders)**: loaders consume `LoaderHelp`, `GOL*`, `RTLoader*` (all `USE_LOADERS`, off); `StartSequence` uses `ModeSphereWorldIntro` and `SkipMessage`; outro runs the `credits` loader.
+- **P03/P04 (entities)**: `InsertionSquad::DirectControl` camera coupling (desync hazard above); `Squadie::GetCameraFocusPoint`; camera-shake sources (portal, rocket, weapons).
+
+## Contradictions / open questions
+
+1. Is the `InsertionSquad::DirectControl` / `m_camLookAround` coupling exercised in practice? It only matters when a player holds `CameraFreeMovement` (F2 / R3) while another team's squad is processed without entity-tracking — likely rare but a genuine desync path [C] code; impact [I].
+2. Squad camera zoom-out (`CameraSquadZoomOut`) is effectively broken by int truncation at normal frame rates [C]; was this noticed by players? If the new game keeps a squad follow-camera it should store distance as float.
+3. `CameraRotateLeft/Right`, `CameraRotate`, `CameraDeZoom`, `WeaponCycleLeft/Right` are bound (and `control_help_camerarotate*` strings exist) but no live code reads them — the gamepad has no camera rotation in the shipped build [C].
+4. The `Value` driver's uninitialised `spec.type` and the `Prefs` driver's off-by-one key index are latent bugs with no shipped trigger [C].
+5. Officer/armour entity-tracking uses a stale orbit centre (§3.6) [C]; is EntityTrack ever entered for non-squad entities in practice (via `Task::Start` with `AutomaticCamera = 2` for an officer task)? [I] yes, reachable on gamepad.
+
+## [U] Unknowns
+
+1. [U] Exact XInput SDK dead-zone/threshold constants used at build time (`XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE`, `…_RIGHT_THUMB_DEADZONE`, `XINPUT_GAMEPAD_TRIGGER_THRESHOLD`) — headers not in the tree; resolve from the DirectX SDK version referenced by the vcproj (believed 7849 / 8689 / 30).
+2. [U] Behaviour of `BYTE = floor(trigger·6.3)` overflow under MSVC 2005 (wrap vs saturate) — affects analogue trigger magnitudes (no shipped binding uses trigger magnitude, only zero/non-zero, so impact is limited).
+3. [U] Whether `UnicodeString` → `std::string` assignment in `W32InputDriver::getInputDescription` produces ASCII text (assumed in the rebinding-failure finding §1.6.5); resolve by reading `contrib/systemiv/lib/unicode/unicode_string.h` conversion operators.
+4. [U] Whether any live camera-distance consumer (determinism note 5) influences simulated state — for the determinism agent.
+5. [U] `InputManager::Advance` is also called at the bottom of the top-level `while(true)` loop in `AppMain` after each sub-loop returns [C] `code/main.cpp`; whether this extra advance can swallow an edge between loops is unverified.
+6. [U] Real-world reachability of `ModeEntityTrack` for keyboard users: requires `AutomaticCamera = 2`, which no shipped UI widget sets; only by editing `preferences.txt`.
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code reality |
+|---|---|---|
+| `docs/input_preferences_syntax.txt` | Grammar lists no `repeat`, `~` icon lines, `alias`, `value`, `->` pipe, `mouse any`, `key any` | `repeat` exists for XInput BOOL controls; `~` sets icons; `alias`/`value` drivers exist; pipe exists but is unregistered; `any` parses but never fires [C] |
+| same | `XInput <xinput_analog> <analog_cond> [with sensitivity <1-200>]` | sensitivity is also accepted after BOOL conditions on analog controls (e.g. `leftthumbstick pressed with sensitivity 50`) and is rejected on directional stick buttons [C] `XInputDriver::writeExtraSpecInfo` |
+| same | "The user input preferences will override the FIRST binding" | true, and the keyboard-layout file does the same; repeated lines in one override file overwrite each other [C] |
+| same | unknown/invalid specs implied to fail | unknown condition words are silently accepted as `down` [C] §1.3 |
+| `docs/DarwiniaInput.rtf` | Action words include `moved` | the word is `move`; `moved` would hit the fallback and act as `down` [C] |
+| same | `lib/input/transform.h` holds `Movement2D` | it is in `lib/input/movement2d.h` [C] |
+| same | `g_controlBindings->ControlEvent(ControlBindings::ControlDeselect)` (old API) | current API is `g_inputManager->controlEvent(ControlUnitDeselect)`; no `ControlDeselect` exists [C] |
+| `code/camera.h` comment | "Remember to update the static string table at the end of camera.cpp" | no mode-name table exists [C] |
+| `code/camera.cpp` comment on `DistanceToBlockage` / `DirectDistanceToBlockage` | "If there is no blockage FLT_MAX is returned" | returns `_maxDist`; FLT_MAX only when there is no location [C] |
+| `code/lib/input/keynames.cpp` comment | `"QUOTE", //192` | QUOTE is index 222; MINUS_PAD/Unknown swapped vs `keydefs.h` [C] |
+| `code/lib/input/control_types.inc` comments | `CameraRotate` "rotate the cam in entity track mode"; `WeaponCycle*` "cycle weapons" | no consumer in the FULL build [C] |
+| `code/lib/input/control_bindings.cpp` comment | ControlBindings::replacePrimaryBinding | commented out; replace is a flag on `bind` [C] |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian" in control names `DarwinianPromote`, `IssueDarwinianOrders` | name | `code/lib/input/control_types.inc`; `data/input/input_preferences*.txt` | `PromoteUnit`, `IssueCrowdOrders` |
+| "Sepulveda" in `SepulvedaHelp`; Dr Sepulveda help system | name/character | `control_types.inc` | `AdvisorHelp` |
+| "Multiwinia" / "Darwinia" in preference names (`MultiwiniaControlMethod`), file names (`input_preferences_darwinia.txt`), string ids `multiwinia_control_*`, `darwinia_tutorial_*` | brand | `code/lib/input/file_paths.cpp`; `code/control_help.cpp`; `code/tutorial_demo2.cpp` | `ControlScheme`, `bindings_classic.txt`, `ui_control_*` |
+| "Eclipse" (Introversion UI framework) in `EclipseLMouseDown`, `EclipseLMousePressed`, `EclipseRMousePressed` | name | `control_types.inc` | `UiPointerDown`, `UiPointerHeld`, `UiAltPointerDown` |
+| Internal codenames `Pecan`, `Hummingbird` | name | `code/lib/input/inputdriver_values.inc` | `AlwaysTrue`, `FeatureFlagX` |
+| Xbox / XInput / "360" naming (`XBoxMenuCycleUp/Down`, "360 Control Help", gamepad button art) and SpaceNav | third-party brand | `control_types.inc`; `data/language/english.txt`; `data/input/input_preferences.txt` | `PadMenuCycleUp/Down`; generic pad glyphs |
+| Button/trigger icon art `icons/button_a.bmp`, `button_b.bmp`, `button_x.bmp`, `button_y.bmp`, `button_abxy_shadow.bmp`, `button_dpad.bmp`, `button_dpad_lr.bmp`, `button_control_shadow.bmp`, `button_lb.bmp`, `button_lb_shadow.bmp`, `button_rb.bmp`, `button_rb_shadow.bmp`, `button_la.bmp`, `button_ra.bmp`, `button_lt.bmp`, `button_rt.bmp`, `button_trigger_shadow.bmp`, `button_lt_ra.bmp`, `button_rt_ra.bmp`, `mouse_lmb.bmp`, `banner_goto.bmp`, `banner_follow.bmp`, `banner_none.bmp` | art | `code/control_help.cpp`; `data/input/input_preferences.txt` | new glyph set (e.g. `ui/glyph_pad_south.png`) |
+| Camera-help images `mwhelp/control_camera.bmp`, `mwhelp/control_camera_french.bmp` | art | `code/multiwiniahelp.cpp` | `help/camera_controls_<layout>.png` |
+| UI strings `gc_*` (Select, Destroy, Create, Close, Deselect, Place, Promote, Move, Look, Fire, Grenade, Rocket, Airstrike, Change Weapon, Change Orders, Up, Down, Set Goto, Set Turret, Prev, Next, Zoom, Zoom In, Zoom Out, Cancel), `control_help_*`, `control_event_*`, `control_<key>` | text | `data/language/english.txt` (and other languages) | write new strings |
+| Camera mount naming convention `player0..3`, `start`, `CamPosBefore` and Darwinia mount names (`intro*`, `outro*`, `attract*`, `tutorial*`, …) | level data | `data/levels/*.txt`; `code/level_file.h` | `spawn_view_<n>`, `default_view`, `previous_view` |
+| Weapon/unit names in hints (Squad, Engineer, Armour, Officer, grenade, rocket, airstrike) | names (generic but Introversion phrasing) | `code/control_help.cpp` | reuse own unit names |
+
+## Appendix — dead/legacy code
+
+- **SDL input** [B:DEAD] (Mac/Linux only; not in vcproj): `code/lib/input/inputdriver_sdl_key.{h,cpp}` (SDL key → Win32 VK mapping: punctuation, arrows, shifts → `KEY_SHIFT/CONTROL/ALT/META`, a–z −32, 0–9/backspace/tab unchanged, F-keys −170, others 0), `inputdriver_sdl_mouse.{h,cpp}` (same `mouse` grammar as W32), `sdl_eventhandler.{h,cpp}` (`SDL_QUIT` → quit; `WindowHasFocus` uses `(SDL_GetAppState() | SDL_APPACTIVE) != 0`, always true — bug), `sdl_eventproc.h`. Read fully except the middle of `inputdriver_sdl_mouse.cpp` (skimmed).
+- **Xbox event handler** [B:DEAD]: `code/lib/input/xbox_eventhandler.{h,cpp}` — `.cpp` `ExcludedFromBuild` in all configs (would duplicate `g_windowHasFocus`).
+- `code/lib/input/inputfilterspec.cpp` (`newFilterSpecID`) — not in vcproj [B:DEAD].
+- Pipe driver, filter manager, direction filter — compiled, never instantiated [B:LEGACY] (§1.6.10, §1.7).
+- `code/lib/input/control_types.cpp` — compiled, unused duplicate action table [B:LEGACY].
+- `W32EventHandler::BindAltTab/UnbindAltTab/ResetWindowHandle` — compiled, no live caller of `BindAltTab` [B:LEGACY].
+- Camera modes `ModeReplay` [B:DEAD]; `ModeFirstPerson`, `ModeEntityFollow`, `ModeBuildingFocus`, `ModeMoveToTarget` (animations/scripts), all `ModeSphereWorld*` [B:LEGACY] (§3.3, §3.8); helpers in §3.9 [B:LEGACY].
+- `ControlHelpSystem` rendering, conditions and on-screen aids [B:LEGACY] (§4.1); `code/tutorial_demo2.cpp` aid calls [B:DEAD] (`USE_SEPULVEDA_HELP_TUTORIAL`).
+- Under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] in `code/camera.cpp`: `HelpSystem::PlayerDoneAction(CameraMovement / CameraZoom / CameraHeight / UseRadarDish)` notifications. Under `_DEBUG` [B:DEBUG]: `DebugCameraFixUp` reset of intro/outro.
+- `docs/DarwiniaInput.rtf` and `docs/input_preferences_syntax.txt` describe the Darwinia-era system; still broadly accurate (see discrepancies).

@@ -615,11 +615,64 @@ Rules of thumb recovered from the code [C]:
 
 ```mermaid
 classDiagram
-  class EclWindow { +m_x,m_y,m_w,m_h; +m_name; +m_title; +m_movable; +m_resizable; +m_dirty; +m_buttons; +m_currentTextEdit; +Create(); +Remove(); +Update(); +Render(hasFocus); +Keypress(); +MouseEvent(); +RegisterButton(); +RemoveButton(); +GetButton(); +BeginTextEdit(); +EndTextEdit(); +MakeAllOnScreen() }
-  class EclButton { +m_name; +m_x,m_y,m_w,m_h; +m_caption; +m_tooltip; +m_inactive; #m_parent; +SetProperties(); +Render(); +MouseUp(); +MouseDown(); +MouseMove(); +Keypress() }
+  class EclWindow {
+    +m_x,m_y,m_w,m_h
+    +m_name
+    +m_title
+    +m_movable
+    +m_resizable
+    +m_dirty
+    +m_buttons
+    +m_currentTextEdit
+    +Create()
+    +Remove()
+    +Update()
+    +Render(hasFocus)
+    +Keypress()
+    +MouseEvent()
+    +RegisterButton()
+    +RemoveButton()
+    +GetButton()
+    +BeginTextEdit()
+    +EndTextEdit()
+    +MakeAllOnScreen()
+  }
+  class EclButton {
+    +m_name
+    +m_x,m_y,m_w,m_h
+    +m_caption
+    +m_tooltip
+    +m_inactive
+    #m_parent
+    +SetProperties()
+    +Render()
+    +MouseUp()
+    +MouseDown()
+    +MouseMove()
+    +Keypress()
+  }
   EclWindow "1" o-- "*" EclButton
-  class DarwiniaWindow { +m_buttonOrder; +m_currentButton; +m_backButton; +m_closeable; +m_lockMenu; +m_skipUpdate; +CreateValueControl(); +CreateColourControl(); +GetMenuSize(); +SetMenuSize(); +SetCurrentButton() }
-  class DarwiniaButton { +m_fontSize; +m_centered; +m_disabled; +SetShortProperties(); +SetDisabled(); +SpecialScroll() }
+  class DarwiniaWindow {
+    +m_buttonOrder
+    +m_currentButton
+    +m_backButton
+    +m_closeable
+    +m_lockMenu
+    +m_skipUpdate
+    +CreateValueControl()
+    +CreateColourControl()
+    +GetMenuSize()
+    +SetMenuSize()
+    +SetCurrentButton()
+  }
+  class DarwiniaButton {
+    +m_fontSize
+    +m_centered
+    +m_disabled
+    +SetShortProperties()
+    +SetDisabled()
+    +SpecialScroll()
+  }
   EclWindow <|-- DarwiniaWindow
   EclButton <|-- DarwiniaButton
   DarwiniaButton <|-- BorderlessButton
@@ -637,7 +690,15 @@ classDiagram
   EclButton <|-- ScrollBarButton
   EclButton <|-- FileButton
   EclButton <|-- GuideGrid
-  class ScrollBar { +m_parentWindow; +m_numRows; +m_winSize; +m_currentValue; +Create(); +Remove(); +SetCurrentValue() }
+  class ScrollBar {
+    +m_parentWindow
+    +m_numRows
+    +m_winSize
+    +m_currentValue
+    +Create()
+    +Remove()
+    +SetCurrentValue()
+  }
   ScrollBar ..> ScrollBarButton : owns via parent
   ScrollBar ..> ScrollChangeButton : owns via parent
   DarwiniaWindow <|-- ColourWindow
