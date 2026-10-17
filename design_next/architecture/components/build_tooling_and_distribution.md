@@ -145,7 +145,128 @@ Table 2.2-C Exit codes of the content build.
 The sketch is a C++23 declaration outline, not an implementation (ADR-052). Every type is in namespace `Engine`. Diagnostics are those of the data schemas (`Diagnostic`, DAT-051); packs and hashes are those of the asset pipeline (`Sha256Digest`).
 
 ```cpp
-@@SKETCH@@
+namespace Engine
+{
+
+// The products of table 3.1-A (ADR-056) and the two configurations (ADR-054).
+enum class BuildProduct : std::uint8_t
+{
+  Client,
+  Server,
+  ContentBuildTool
+};
+enum class BuildConfiguration : std::uint8_t
+{
+  Debug,
+  Release
+};
+
+struct SemanticVersion
+{
+  std::uint16_t major;
+  std::uint16_t minor;
+  std::uint16_t patch;
+};
+
+// ADR-057, §3.3
+struct BuildIdentity
+{
+  SemanticVersion version;
+  std::uint32_t buildNumber;        // CI build number, 0 for developer builds
+  std::string sourceRevision;       // source-control revision id
+  bool modifiedTree;                // built from a modified working tree
+  Sha256Digest contentManifestHash; // the content manifest of the mounted packs
+  BuildProduct product;
+  BuildConfiguration configuration;
+};
+
+// The code fields come from BuildIdentity.h, the content hash from the mounted content manifest.
+const BuildIdentity& CurrentBuildIdentity() noexcept;
+std::string DisplayVersion(const BuildIdentity& _identity);                       // "MAJOR.MINOR.PATCH+build.<number>"
+std::string FullIdentityText(const BuildIdentity& _identity);                     // build details screen, log header (§4.4)
+std::array<std::uint16_t, 4> VersionResourceQuad(const BuildIdentity& _identity); // MAJOR.MINOR.PATCH.build
+std::string_view ChannelTag() noexcept;                                           // §3.3; "unknown" when no channel file exists
+
+// The content build tool (tools solution, §2.2)
+using EditionId = std::string; // stable id of an edition manifest
+struct ContentBuildError;      // stage, input and reason of a tool or I/O failure
+
+// The commands of table 2.2-A.
+enum class ContentBuildCommand : std::uint8_t
+{
+  Build,
+  Validate,
+  Loose,
+  StringsExport,
+  StringsImport
+};
+
+// The stages of §4.5; the order carries meaning.
+enum class ContentBuildStage : std::uint8_t
+{
+  ResolveEditions,
+  ReadInputs,
+  CheckSources,
+  Cook,
+  Derive,
+  Placeholders,
+  CookRecordsAndGenerate,
+  CheckReferences,
+  SelectEditions,
+  Localisation,
+  MapIdentities,
+  WritePacks,
+  WriteManifestsAndReports
+};
+
+struct RunOptions
+{
+  std::vector<EditionId> editions; // empty: every edition
+  std::filesystem::path contentRoot;
+  std::filesystem::path outDir;
+  std::optional<std::filesystem::path> previousOutDir;
+  bool clean = false;
+  std::uint32_t jobs = 0; // 0: the hardware thread count
+};
+
+// §4.6
+struct MapIdentityEntry
+{
+  std::string mapId;              // map_<mode>_<players>p_<nn>
+  Sha256Digest hash;              // AST-099
+  std::vector<std::string> modes; // the header's mode list, in its order
+  std::uint8_t players;
+  std::string packId;
+};
+
+// §4.7
+struct LanguageFindings
+{
+  std::string tag; // BCP 47
+  std::vector<std::string> missing;
+  std::vector<std::string> untranslated;
+  std::vector<std::string> unknown;
+  std::uint32_t baseIds;
+  std::uint32_t presentIds;
+};
+
+struct RunResult
+{
+  int exitCode;                                // table 2.2-C
+  std::vector<Diagnostic> diagnostics;         // every diagnostic of the run, grouped by file
+  std::vector<MapIdentityEntry> mapIdentities; // per edition
+  std::vector<LanguageFindings> localisation;  // per edition
+};
+
+class ContentBuild
+{
+public:
+  std::expected<RunResult, ContentBuildError> Run(ContentBuildCommand _command, const RunOptions& _options); // table 2.2-A
+  // Map tools validate a map definition with the same code as the build (§4.8, R-MAP-400).
+  std::vector<Diagnostic> ValidateMapFile(const std::filesystem::path& _authoringFile) const;
+};
+
+} // namespace Engine
 ```
 
 **BLD-010** (MUST) The interfaces are those above in substance. Every operation that can fail returns `std::expected` or a list of diagnostics, never a partial result without an error. `ContentBuild::ValidateMapFile` runs exactly the validators that the `validate` command runs on a map definition, so a map tool and the content build accept and reject the same maps (§4.8).
