@@ -114,6 +114,19 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 
 **RND-449** (MUST) The structure-detail, entity-detail and sky-detail settings are read when each frame is drawn: a change applies to every structure, actor and cloud layer from the next frame, and no structure re-runs any set-up for it. The tree-detail setting applies when tree geometry is next generated (RND-191).
 
+Diagram — applying settings:
+
+```mermaid
+flowchart LR
+  A["Apply settings"] --> S["Save through the settings store"]
+  S --> Q{"Render size, window mode, sample count or HDR output changed?"}
+  Q -->|"yes"| R["Reconfigure: wait for the GPU, resize the swap chain, create the changed pipeline states, recompile the frame graph"]
+  Q -->|"no"| N["The next frame reads the new detail, style and lighting settings"]
+  R --> N
+```
+
+Caption: no settings change rebuilds terrain, sea or tree geometry, and none touches simulation state.
+
 ### 4.2 Quality presets
 
 **RND-450** (MUST) The renderer defines three quality presets over the four detail settings that the reference options pages offer: `rnd.preset.high` sets the sea, sky, structure and entity detail to 1, `rnd.preset.medium` to 2 and `rnd.preset.low` to 3; any other combination is the custom preset. A preset changes no other setting. The reference offers no named preset, only the four independent settings, each defaulting to 1, so the default settings are the high preset; whether the Species options pages show presets is decided with DEC-044.
@@ -122,7 +135,7 @@ void ApplyPreset(RenderSettings& s, QualityPreset preset);             // RND-45
 
 ### 4.3 The reference options pages
 
-**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size and the window mode. The Species options pages expose at least these settings; whether they also expose the engine settings of RND-442 (present mode, frame-rate cap, low latency, anti-aliasing, HDR, brightness) and further commonly expected options is decided by the design phase (see DEC-044).
+**RND-452** (MUST) The reference graphics options page shows exactly four choices, sea detail, sky detail, structure detail and entity detail, each with the values high, medium and low, plus apply and back actions; the screen options page shows the render size and the window mode. The reference has no anti-aliasing, anisotropic-filtering, gamma or brightness, vertical-sync, resolution-scale, texture-quality, shadow-quality or frame-rate-cap setting. The Species engine provides anti-aliasing, brightness, the present mode, the frame-rate cap and the render size (RND-442), and no anisotropic-filtering, texture-quality or shadow-quality setting. The Species options pages expose at least the reference settings; whether they also expose the engine settings of RND-442 (present mode, frame-rate cap, low latency, anti-aliasing, HDR, brightness) and further commonly expected options is decided by the design phase (see DEC-044).
 
 ### 4.4 Reference caps and costs
 

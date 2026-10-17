@@ -60,3 +60,8 @@
 | 56 | G06 folder | — | about 27 glossary links and other documents' links to `06_controls_camera_and_commands.md` | global link update (CONVENTIONS registry already updated) |
 | 57 | G06 vs G07 | — | `ref.bot.power.promote_radius` duplicates `ref.ctrl.promote_radius` | G07 cites the ctrl key |
 | 58 | G06 | new | 7 DEC requests (default demote and scrap bindings, clickable power-bar details); 2 missing sound events; three conflicts with G04 | DEC triage; X-AST pass 2; reconcile with G04 |
+| 59 | G08a | DEC-079 | R-ECON-052 (G05) and the glossary "population cap" entry still divide by the map's player count; DEC-079 (O14) divides by open slots | update G05, G00 and the glossary to O14 (with item 18) |
+| 60 | G08a vs G01 | DEC-801 | R-MODE-084 lets a repeated cap line count; DEC-801 makes it a build error | fix G01 |
+| 61 | G08a vs G03a | — | R-BLDG-132 counts 286 Spawn Nodes over 57 files; G08a table 2.4-A counts 258 over the 49 maps | fix R-BLDG-132 to the in-scope 49-map count |
+| 62 | G08a vs C-RND-a | — | RND-229: special lighting on three Zone Control maps; G08a says two Zone Control and one Spawn Control | fix RND-229 |
+| 63 | G08a | new | 9 DEC requests (unlimited defender caps, closed-slot positions, map routes, Essence-orb rain, non-square maps) | DEC triage |

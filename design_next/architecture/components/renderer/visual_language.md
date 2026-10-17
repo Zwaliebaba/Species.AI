@@ -64,7 +64,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 | map lights | per map, up to 2.0 per channel, no ambient term | RND-226 |
 | special light | (2.0, 1.5, 0.75) | `rnd.lighting.special_colour` |
 | occupied and empty ports | (0.3, 1.0, 0.3) and (1.0, 0.3, 0.3) | `rnd.structure.port.occupied_colour`, `rnd.structure.port.empty_colour` |
-| burning-tree flames | (0.8, 0.2, 0.1, alpha 0.5) | `rnd.tree.burning.flame_colour` |
+| burning-tree flames | (0.8, 0.2, 0.1), additive | `rnd.tree.burning.flame_colour` |
 | shockwave blast | (1, 0.5, 0.2) | `rnd.shockwave.blast_colour` |
 | no-team objects | an opaque grey | RND-405 |
 
@@ -121,6 +121,22 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 | ghost | `Ghost` (one, source colour) | placement ghost models (RND-372) |
 
 **RND-417** (MUST) Non-solid layers never write depth (RND-059). Additive layers saturate towards white where they overlap, and their order among themselves does not change the image; darkening layers multiply and are equally order-independent; both are therefore drawn unsorted. Only translucent alpha layers that the pass table marks as sorted are drawn back to front (RND-166).
+
+Diagram — the families of the look in the order a match frame draws them:
+
+```mermaid
+flowchart TD
+  K["Clear to black; the level fog colour is black"] --> SKY["Sky grid and clouds: additive, fogged to black"]
+  SKY --> TER["Terrain facets: opaque, lit, fogged; wire grid added"]
+  TER --> SEA["Flat sea: opaque; coastline waves: additive"]
+  SEA --> SOL["Structure and actor meshes: opaque flat facets"]
+  SOL --> CARDS["Blob shadows: darkening; Worker cards: cut-out"]
+  CARDS --> GLOW["Lights, ports, trees, effects, laser bolts, Essence orbs: additive"]
+  GLOW --> PART["Particles: darkening smoke, then additive glow"]
+  PART --> OVER["Markers, cursor and HUD: additive icons over darkened or alpha shadows"]
+```
+
+Caption: the pass order of RND-070 grouped by blend family; within an additive or darkening family the order of draws does not change the image.
 
 ### 4.4 Additive glow on black
 

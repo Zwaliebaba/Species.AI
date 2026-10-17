@@ -93,7 +93,7 @@ DevSphereMesh BuildDevSphere();
 }  // namespace species::render
 ```
 
-**Events.** The renderers consume these presentation events (DEC-007, ADR-0036): a Worker's team change (for the colour cross-fade, RND-317); a route highlight and a route intensity request (RND-350, RND-351); the registration and removal of world markers ([reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md)). They raise one request of their own: the camera shake of a laser bolt that passes near the camera, which they hand to the VFX screen effects (RND-347).
+**Events.** The renderers consume these presentation events (DEC-007, ADR-0036): a Worker's team change (for the colour cross-fade, RND-317); a route highlight and a route intensity request (RND-350, RND-351); the registration and removal of world markers ([reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md)). They raise one request of their own: the camera shake of a laser bolt that passes near the camera, which they hand to the VFX screen effects (RND-340).
 
 **Data contracts.** Per drawn actor the snapshot holds the fields of README §2 (position, velocity, front and up, team, kind, health) and the kind-specific fields named in §4.4; per route its points and its end point; per world marker its target, kind, icon, owner, persistence and progress fraction; per effect its kind, position, velocity, age and kind-specific fields.
 
@@ -212,7 +212,7 @@ Caption: one frame of crowd drawing; the CPU writes instance data, the GPU culls
 **RND-314** (MUST) Every in-view Worker is drawn as a card of `sprite.worker.front` with the `worker_card` entry, as a `WorldOriented` quad with the anchor `BottomCentre`, built from the Worker's values in [reference/02_units/worker.md](../../../reference/02_units/worker.md) R-UNIT-142 to R-UNIT-148 by this procedure, where *d* is the camera distance of the Worker's drawn position (RND-081), *E* the entity-detail setting ([options_and_budgets.md](options_and_budgets.md)), *k* the Worker distance scale factor setting and *g* the presentation frame time (R-SIM-570):
 
 ```text
-D  = rnd.crowd.worker_detail_distance[E]                 # 99999.9, 1000 or 500 wu
+D  = rnd.crowd.worker_detail_distance[clamp(E, 1, 3)]    # 99999.9, 1000 or 500 wu
 hd = clamp(1 − d² ÷ D², 0, 1)                            # the high-detail factor
 s  = ref.unit.worker.card_half_width
      × (1 + ref.unit.worker.card_variation × ((slot index × unit id) mod 10))
@@ -229,7 +229,7 @@ quad: halfWidth = s, halfHeight = s, axisRight = right, axisUp = up,
       blendStart = ref.unit.worker.card_face_start, blendLength = ref.unit.worker.card_scale_divisor
 ```
 
-The card therefore faces the Worker's own direction near the camera and turns into a camera billboard between 300 wu and 1300 wu (RND-306), and its size grows with distance so crowds stay readable when the camera is far ([visual_language.md](visual_language.md) RND-414).
+The procedure uses the high-detail distances `rnd.crowd.worker_detail_distance` and the Fury pulse `rnd.crowd.worker_fury_pulse`. The card therefore faces the Worker's own direction near the camera and turns into a camera billboard between 300 wu and 1300 wu (RND-306), and its size grows with distance so crowds stay readable when the camera is far ([visual_language.md](visual_language.md) RND-414).
 
 **RND-315** (MUST) The high-detail factor *hd* gates three things: the terrain-following orientation of RND-314, the hurt cards of R-UNIT-145, which are drawn only while *hd* is above 0, and the Worker's ground shadow, whose alpha is `ref.unit.worker.shadow_alpha` × *hd* (the "detail level" of R-UNIT-147), within `ref.unit.worker.shadow_range` and with the values of [animation_and_vfx.md](../animation_and_vfx.md) (RND-241, RND-221), drawn with `worker_ground_shadow`.
 
@@ -377,7 +377,7 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 ### 4.9 World markers (pass 16)
 
-**RND-356** (MUST) Pass 16 draws the local client's world markers (`WorldMarkers`), whose kinds and registration are specified in [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md) and [reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md), as 2-D icons over the 3-D view in the 2-D overlay space (RND-215), each clamped to the screen edge with a compass arrow when its target is off screen. Nothing is drawn without a match world, in the map editor or while the interface is hidden. In this section *H* is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028), and *D* is the camera distance of the marker's target.
+**RND-356** (MUST) Pass 16 draws the local client's world markers (`WorldMarkers`), whose kinds and registration are specified in [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) and [reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md), as 2-D icons over the 3-D view in the 2-D overlay space (RND-215), each clamped to the screen edge with a compass arrow when its target is off screen. Nothing is drawn without a match world, in the map editor or while the interface is hidden. In this section *H* is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028), and *D* is the camera distance of the marker's target.
 
 **RND-357** (MUST) A marker's screen position follows this procedure:
 
@@ -393,6 +393,8 @@ else:
     position = e − edgeNormal(e) × rnd.marker.edge_inset                        # 50 px inward
     compassAngle = the direction of edgeNormal(e)
 ```
+
+The procedure uses `rnd.marker.lift_factor`, `rnd.marker.offscreen_probe_distance`, `rnd.marker.offscreen_probe_step` and `rnd.marker.edge_inset`; the edge normal points out of the screen at the edge that the ray crosses.
 
 **RND-358** (MUST) A marker accumulates its on-screen time *a* in real time while it is on screen; it is seen once *a* exceeds `rnd.marker.seen_time` (1 s).
 
@@ -412,7 +414,7 @@ if the marker is hovered or selected: alpha = 1
 alpha = clamp(alpha, 0, 1)
 ```
 
-A transient marker therefore vanishes `ref.power.marker.lifetime_s` (8 s) after it is first seen ([reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-028), the sum of `rnd.marker.fade_start` and `rnd.marker.transient_fade_length`.
+The procedure uses `rnd.marker.fade_start`, `rnd.marker.fade_length`, `rnd.marker.min_alpha_distance_start`, `rnd.marker.min_alpha_distance_range`, `rnd.marker.min_alpha_centre_fraction`, `rnd.marker.transient_fade_length` and `rnd.marker.own_min_alpha`. A transient marker therefore vanishes `ref.power.marker.lifetime_s` (8 s) after it is first seen ([reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-028), the sum of `rnd.marker.fade_start` and `rnd.marker.transient_fade_length`.
 
 ```mermaid
 stateDiagram-v2
@@ -442,7 +444,7 @@ Caption: the visibility of one world marker; own Powers and orders never fall be
 
 ### 4.10 World cursor (pass 20)
 
-**RND-365** (MUST) A 2-D cursor is a textured quad in the 2-D overlay space (RND-215) at the pointer position (*x*, *y*) with a size *s* in pixels and a hotspot (*hx*, *hy*) given as fractions of the size: its top-left corner is (*x* − *s* × *hx*, *y* − *s* × *hy*), it is rotated by its angle about its centre, and its texture is upright. A cursor's defaults are the size `rnd.cursor.default_size` (20 px), the hotspot (0, 0), a shadow, the additive blend and white.
+**RND-365** (MUST) A 2-D cursor is a textured quad in the 2-D overlay space (RND-215) at the pointer position (*x*, *y*) with a size *s* in pixels and a hotspot (*hx*, *hy*) given as fractions of the size: its top-left corner is (*x* − *s* × *hx*, *y* − *s* × *hy*), it is rotated by its angle about its centre, and its texture is upright. A cursor's defaults are the size `rnd.cursor.default_size` (20 px), the hotspot (0, 0), a shadow, the additive blend and white. Every cursor is drawn in this projected 2-D form; none is drawn as a 3-D object.
 
 **RND-366** (MUST) A shadowed cursor first draws its shadow, the blurred variant of its art (RND-243), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for a cursor that is not additive. No cursor writes depth or is culled.
 
@@ -453,9 +455,9 @@ Caption: the visibility of one world marker; own Powers and orders never fall be
 | pointer | `cursor.world` | `rnd.cursor.pointer_hotspot` (0.055, 0.070) | `rnd.cursor.pointer_size` (35 px) | white, additive | yes | the default pointer |
 | entry marker | `cursor.place` | `rnd.cursor.centre_hotspot` (0.5, 0.5) | `rnd.cursor.entry_marker_size` (40 px) | white, additive | yes | while the selected unit tries to enter a Transport or a Transit Gate |
 | unavailable | `cursor.unavailable` | (0.5, 0.5) | `rnd.cursor.unavailable_size` (60 px) | `rnd.cursor.unavailable_colour` (255, 0, 0), additive | yes | an invalid entry target, and a route the selected unit cannot follow (RND-354) |
-| crosshair | `cursor.turret_aim` | (0.5, 0.5) | set by the turret-aiming rule ([reference/06](../../../reference/06_controls_camera_and_commands.md)) | white, alpha | no | while a turret is aimed |
+| crosshair | `cursor.turret_aim` | (0.5, 0.5) | set by the turret-aiming rule ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md)) | white, alpha | no | while a turret is aimed |
 
-The context rules that choose a cursor are [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md)'s. The move-here, selection and enter cursors are not drawn in a match; the highlight cursor art `cursor.highlight` serves the Power-slot focus of the Power slots panel (RND-378).
+The context rules that choose a cursor are those of [reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md). The move-here, selection and enter cursors are not drawn in a match; the highlight cursor art `cursor.highlight` serves the Power-slot focus of the Power slots panel (RND-378).
 
 **RND-368** (MUST) A cursor drawn animated has the size *s* + |sin(`rnd.cursor.pulse_rate` (4 rad per s) × *g*)| × *s* × `rnd.cursor.pulse_amplitude` (0.6), *g* the presentation frame time.
 
@@ -475,7 +477,7 @@ glow cylinder: radius rnd.cursor.glow_radius_factor × ρ, height ρ × max(1, c
                colour c at its base and c with alpha 0 at its top, interpolated
 ```
 
-The black rings take the alpha of *c*.
+The black rings take the alpha of *c*. The procedure uses `rnd.cursor.ring_min_steps`, `rnd.cursor.ring_steps_per_radius`, `rnd.cursor.ring_drape_distance`, `rnd.cursor.ring_drape_min`, `rnd.cursor.ring_team_band`, `rnd.cursor.ring_inner_black`, `rnd.cursor.ring_outer_black`, `rnd.cursor.glow_radius_factor` and `rnd.cursor.glow_height_distance`.
 
 **RND-371** (MUST) A started area Power shows its target area as a cylinder of `rnd.cursor.area_sides` (100) sides, drawn with `cursor_area`, with the radius and height of `rnd.cursor.area_default` (70 wu, 42 wu), or `rnd.cursor.area_meteor_shower` (280 wu, 70 wu) for a meteor shower and `rnd.cursor.area_missile_barrage` (210 wu, 70 wu) for a Missile Barrage, in the colour the world cursor passes, with alpha at its base and alpha 0 at its top. It blinks with the period `rnd.cursor.area_blink_period` (0.4 s): in the off half of each period its alpha is × `rnd.cursor.area_off_alpha` (0.5).
 
@@ -491,7 +493,7 @@ The black rings take the alpha of *c*.
 
 ### 4.11 Power slots panel and match HUD (passes 23 and 28)
 
-**RND-377** (MUST) The Power slots panel (`PowerSlotsPanel`, pass 23) and the match HUD (pass 28) are drawn in the HUD space of RND-028: an orthographic space `rnd.hud.ortho_height` (600) units high and 600 × the aspect ratio wide, origin top-left, independent of the render size. Their content and layout are [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md)'s (the Power bar, its pop-ups and messages), [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md)'s (scores, timers and the mode HUD) and [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md)'s; this section states how they are drawn. Neither pass uses depth.
+**RND-377** (MUST) The Power slots panel (`PowerSlotsPanel`, pass 23) and the match HUD (pass 28) are drawn in the HUD space of RND-028: an orthographic space `rnd.hud.ortho_height` (600) units high and 600 × the aspect ratio wide, origin top-left, independent of the render size. Their content and layout are those of [reference/06_controls_camera_and_commands/selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) (the Power bar, its pop-ups and messages), of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) (scores, timers and the mode HUD) and of [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md); this section states how they are drawn. Neither pass uses depth.
 
 **RND-378** (MUST) The panel's elements are drawn as follows:
 
