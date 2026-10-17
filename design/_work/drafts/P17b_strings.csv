@@ -1,0 +1,195 @@
+id,english,file,line
+multiwina_playername_default,NewPlayer,code/game_menu.cpp,141
+multiwinia_menu_back,Back,code/game_menu.cpp,369
+multiwinia_mainmenu_title,MULTIWINIA,code/game_menu.cpp,1432
+multiwinia_mainmenu_subtitle,Survival of the flattest,code/game_menu.cpp,1497
+multiwinia_mainmenu_title,MULTIWINIA,code/interface/mainmenus.cpp,105
+multiwinia_mainmenu_subtitle,Survival of the flattest,code/interface/mainmenus.cpp,112
+multiwinia_editor_success,Success,code/interface/mainmenus.cpp,224
+error,Error,code/interface/mainmenus.cpp,228
+dialog_profile,Profile,code/interface/mainmenus.cpp,301
+dialog_mods,Mods,code/interface/mainmenus.cpp,319
+dialog_multiwinia,Multiwinia,code/interface/mainmenus.cpp,342
+dialog_screenoptions,Screen Options,code/interface/mainmenus.cpp,360
+dialog_graphicsoptions,Graphics Options,code/interface/mainmenus.cpp,381
+dialog_soundoptions,Sound Options,code/interface/mainmenus.cpp,402
+dialog_otheroptions,Other Options,code/interface/mainmenus.cpp,422
+dialog_inputoptions,Control Options,code/interface/mainmenus.cpp,443
+multiwinia_menu_settings,Settings,code/interface/mainmenus.cpp,542
+dialog_back,<not in english.txt>,code/interface/mainmenus.cpp,584
+multiwinia_menu_back,Back,code/interface/mainmenus.cpp,585
+dialog_leavelocation,Leave Location,code/interface/mainmenus.cpp,615
+dialog_visitwebsite,Visit Website,code/interface/mainmenus.cpp,647
+dialog_yes,Yes,code/interface/mainmenus.cpp,722
+menu_close,<not in english.txt>,code/interface/mainmenus.cpp,727
+dialog_no,No,code/interface/mainmenus.cpp,728
+multiwinia_menu_helpandoptions,Help and Options,code/interface/mainmenus.cpp,860
+multiwinia_menu_leavegame,Exit Game,code/interface/mainmenus.cpp,869
+dialog_reset1,Are you sure you wish,code/interface/mainmenus.cpp,1001
+dialog_reset2,to reset this location?,code/interface/mainmenus.cpp,1002
+dialog_reset3,Your progress on this island,code/interface/mainmenus.cpp,1006
+dialog_reset4,will be lost and you will,code/interface/mainmenus.cpp,1007
+dialog_reset5,have to begin from scratch.,code/interface/mainmenus.cpp,1008
+multiwinia_menu_returntogame,Resume Game,code/interface/mainmenus.cpp,1041
+multiwinia_menu_leaderboards,Leaderboards,code/interface/mainmenus.cpp,1072
+multiwinia_menu_achievements,Achievements,code/interface/mainmenus.cpp,1079
+about_darwinia,About Darwinia,code/interface/mainmenus.cpp,1086
+dialog_leavedarwinia,Leave Darwinia,code/interface/mainmenus.cpp,1115
+dialog_close,Close,code/interface/mainmenus.cpp,1138
+bootloader_credits_4,Produced by,code/interface/mainmenus.cpp,1173
+bootloader_credits_5,Introversion Software,code/interface/mainmenus.cpp,1173
+about_developer,<not in english.txt>,code/interface/mainmenus.cpp,1197
+dialog_options,Options,code/interface/helpandoptions_windows.cpp,61
+multiwinia_mainmenu_title,MULTIWINIA,code/interface/helpandoptions_windows.cpp,185
+multiwinia_menu_howtoplay,How To Play,code/interface/helpandoptions_windows.cpp,206
+multiwinia_menu_cratehelp,Crate Information,code/interface/helpandoptions_windows.cpp,213
+multiwinia_menu_settings,Settings,code/interface/helpandoptions_windows.cpp,220
+multiwinia_auth,Authentication,code/interface/helpandoptions_windows.cpp,229
+close,<not in english.txt>,code/interface/helpandoptions_windows.cpp,238
+multiwinia_menu_back,Back,code/interface/helpandoptions_windows.cpp,239
+multiwinia_helppage_1,General,code/interface/helpandoptions_windows.cpp,311
+multiwinia_menu_helpandoptions,Help and Options,code/interface/helpandoptions_windows.cpp,335
+multiwinia_menu_crates,Crate Info,code/interface/helpandoptions_windows.cpp,403
+crate_hint_message,Hint: *H,code/interface/helpandoptions_windows.cpp,499
+multiwinia_help_general,General Help,code/interface/helpandoptions_windows.cpp,694
+dialog_previous,Previous,code/interface/helpandoptions_windows.cpp,731
+dialog_next,Next,code/interface/helpandoptions_windows.cpp,738
+multiwinia_leaderboards_tslb,TrueSkill rankings,code/interface/leaderboards_window.cpp,502
+multiwinia_leaderboards_tsr,TrueSkill rank,code/interface/leaderboards_window.cpp,504
+multiwinia_leaderboard_score,Points,code/interface/leaderboards_window.cpp,510
+multiwinia_menu_alllevels,All levels,code/interface/leaderboards_window.cpp,924
+location_garden,Garden,code/interface/leaderboards_window.cpp,926
+location_containment,Containment,code/interface/leaderboards_window.cpp,928
+location_mine,Mine,code/interface/leaderboards_window.cpp,930
+location_generator,Generator,code/interface/leaderboards_window.cpp,932
+location_yard,Yard,code/interface/leaderboards_window.cpp,934
+location_escort,Escort,code/interface/leaderboards_window.cpp,936
+location_pattern_buffer,Pattern Buffer,code/interface/leaderboards_window.cpp,938
+location_biosphere,Biosphere,code/interface/leaderboards_window.cpp,940
+location_receiver,Receiver,code/interface/leaderboards_window.cpp,942
+location_temple,Temple,code/interface/leaderboards_window.cpp,944
+location_prologue,Prologue,code/interface/leaderboards_window.cpp,946
+multiwinia_menu_allgames,All Games,code/interface/leaderboards_window.cpp,951
+multiwinia_gametype_domination,Domination,code/interface/leaderboards_window.cpp,953
+multiwinia_gametype_kingofthehill,King Of The Hill,code/interface/leaderboards_window.cpp,955
+multiwinia_gametype_rocketriot,Rocket Riot,code/interface/leaderboards_window.cpp,957
+multiwinia_gametype_capturethestatue,Capture The Statue,code/interface/leaderboards_window.cpp,959
+multiwinia_gametype_blitzkrieg,Blitzkrieg,code/interface/leaderboards_window.cpp,961
+multiwinia_menu_leaderboards,Leaderboards,code/interface/leaderboards_window.cpp,985
+multiwinia_menu_friends,Friends,code/interface/leaderboards_window.cpp,1003
+multiwinia_menu_myscore,My Score,code/interface/leaderboards_window.cpp,1006
+multiwinia_menu_overall,Overall,code/interface/leaderboards_window.cpp,1008
+multiwinia_leaderboard_rank,Rank,code/interface/leaderboards_window.cpp,1016
+multiwinia_leaderboard_loading,Loading,code/interface/leaderboards_window.cpp,1021
+multiwinia_leaderboard_showing,Showing rows *R to *S of *T total entries,code/interface/leaderboards_window.cpp,1027
+closeleaderboards,<not in english.txt>,code/interface/leaderboards_window.cpp,1041
+multiwinia_menu_back,Back,code/interface/leaderboards_window.cpp,1042
+multiwinia_gametype_overall,<not in english.txt>,code/interface/leaderboards_window.cpp,1055
+multiwinia_leaderboard_weekly_no,Show weekly stats,code/interface/leaderboards_window.cpp,1063
+multiwinia_leaderboards_sp_title,Darwinia,code/interface/leaderboards_window.cpp,1154
+multiwinia_leaderboards_cpu_title,Multiwinia (CPU),code/interface/leaderboards_window.cpp,1163
+multiwinia_leaderboards_mpr_title,Multiwinia (ranked),code/interface/leaderboards_window.cpp,1172
+multiwinia_leaderboards_mpn_title,Multiwinia (standard),code/interface/leaderboards_window.cpp,1181
+leaderboardselectionclose,<not in english.txt>,code/interface/leaderboards_window.cpp,1191
+editor_basic,Basic Options,code/interface/multiwiniaoptions_window.cpp,233
+dialog_name,Name:,code/interface/multiwiniaoptions_window.cpp,238
+editor_description,Description,code/interface/multiwiniaoptions_window.cpp,243
+multiwinia_gametype,Game Type,code/interface/multiwiniaoptions_window.cpp,248
+editor_coop_options,Co-op Options,code/interface/multiwiniaoptions_window.cpp,265
+editor_coop,Co-op,code/interface/multiwiniaoptions_window.cpp,270
+editor_forcecoop,Force Co-op,code/interface/multiwiniaoptions_window.cpp,275
+editor_coopgroup1,Co-op Group 1,code/interface/multiwiniaoptions_window.cpp,278
+editor_coopgroup2,Co-op Group 2,code/interface/multiwiniaoptions_window.cpp,291
+editor_assault_options,Assault Options,code/interface/multiwiniaoptions_window.cpp,306
+editor_attackingteams,Attacking Teams,code/interface/multiwiniaoptions_window.cpp,311
+editor_map_options,Map Options,code/interface/multiwiniaoptions_window.cpp,326
+cratename_airstrike,AirStrike,code/interface/multiwiniaoptions_window.cpp,387
+cratename_napalmstrike,Napalm Strike,code/interface/multiwiniaoptions_window.cpp,388
+buildingname_flameturret,FlameTurret,code/interface/multiwiniaoptions_window.cpp,389
+buildingname_rocketturret,RocketTurret,code/interface/multiwiniaoptions_window.cpp,390
+buildingname_gunturret,GunTurret,code/interface/multiwiniaoptions_window.cpp,391
+editor_effects,Effects,code/interface/multiwiniaoptions_window.cpp,415
+editor_effects_snow,Snow,code/interface/multiwiniaoptions_window.cpp,421
+editor_effects_lightning,Lightning,code/interface/multiwiniaoptions_window.cpp,426
+editor_effects_dustwind,Dust Storm,code/interface/multiwiniaoptions_window.cpp,431
+editor_effects_soulrain,Soul Rain,code/interface/multiwiniaoptions_window.cpp,436
+editor_effects_speciallights,Special Lighting,code/interface/multiwiniaoptions_window.cpp,441
+dialog_apply,Apply,code/interface/prefs_graphics_window.cpp,31
+multiwinia_mainmenu_title,MULTIWINIA,code/interface/prefs_graphics_window.cpp,141
+dialog_landscapedetail,Landscape Detail,code/interface/prefs_graphics_window.cpp,168
+dialog_high,High,code/interface/prefs_graphics_window.cpp,169
+dialog_medium,Medium,code/interface/prefs_graphics_window.cpp,170
+dialog_low,Low,code/interface/prefs_graphics_window.cpp,171
+dialog_upgrade,I need to upgrade,code/interface/prefs_graphics_window.cpp,172
+dialog_waterdetail,Water Detail,code/interface/prefs_graphics_window.cpp,179
+dialog_skydetail,Sky Detail,code/interface/prefs_graphics_window.cpp,190
+dialog_buildingdetail,Building Detail,code/interface/prefs_graphics_window.cpp,201
+dialog_entitydetail,Entity Detail,code/interface/prefs_graphics_window.cpp,212
+dialog_pixeleffect,Pixel Effect,code/interface/prefs_graphics_window.cpp,223
+dialog_close,Close,code/interface/prefs_graphics_window.cpp,239
+multiwinia_menu_back,Back,code/interface/prefs_graphics_window.cpp,240
+newcontrols_prefsoption,Control Mode,code/interface/prefs_keybindings_window.cpp,242
+newcontrols_prefs_gestures,Gesture based,code/interface/prefs_keybindings_window.cpp,243
+newcontrols_prefs_icons,Icon based,code/interface/prefs_keybindings_window.cpp,244
+1,<not in english.txt>,code/interface/prefs_keybindings_window.cpp,274
+3,<not in english.txt>,code/interface/prefs_keybindings_window.cpp,275
+dialog_restoredefaults,Restore Defaults,code/interface/prefs_keybindings_window.cpp,284
+dialog_close,Close,code/interface/prefs_keybindings_window.cpp,291
+dialog_apply,Apply,code/interface/prefs_keybindings_window.cpp,298
+dialog_mousebuttons,Mouse Buttons,code/interface/prefs_keybindings_window.cpp,340
+dialog_apply,Apply,code/interface/prefs_other_window.cpp,23
+multiwinia_mainmenu_title,MULTIWINIA,code/interface/prefs_other_window.cpp,229
+dialog_helpsystem,Help System,code/interface/prefs_other_window.cpp,263
+dialog_useportforwarding,Port Forwarding,code/interface/prefs_other_window.cpp,272
+dialog_serverport,Server Port,code/interface/prefs_other_window.cpp,280
+dialog_clientport,Client Port,code/interface/prefs_other_window.cpp,290
+dialog_language,Language,code/interface/prefs_other_window.cpp,302
+dialog_close,Close,code/interface/prefs_other_window.cpp,333
+multiwinia_menu_back,Back,code/interface/prefs_other_window.cpp,334
+dialog_controlhelpsystem,Control Pad Help,code/interface/prefs_other_window.cpp,357
+dialog_bootloaders,Boot Loaders,code/interface/prefs_other_window.cpp,358
+dialog_difficulty,Difficulty,code/interface/prefs_other_window.cpp,365
+dialog_christmas,Christmas,code/interface/prefs_other_window.cpp,371
+dialog_largemenus,Large Menus,code/interface/prefs_other_window.cpp,374
+dialog_autocam,Automatic Camera,code/interface/prefs_other_window.cpp,375
+dialog_windowedmode,(windowed mode),code/interface/prefs_screen_window.cpp,83
+dialog_apply,Apply,code/interface/prefs_screen_window.cpp,221
+multiwinia_mainmenu_title,MULTIWINIA,code/interface/prefs_screen_window.cpp,366
+dialog_resolution,Resolution,code/interface/prefs_screen_window.cpp,396
+dialog_windowed,Windowed,code/interface/prefs_screen_window.cpp,407
+dialog_refreshrate,Refresh Rate,code/interface/prefs_screen_window.cpp,414
+dialog_colourdepth,Colour Depth,code/interface/prefs_screen_window.cpp,426
+dialog_colourdepth_16,16 bit,code/interface/prefs_screen_window.cpp,427
+dialog_colourdepth_24,24 bit,code/interface/prefs_screen_window.cpp,428
+dialog_colourdepth_32,32 bit,code/interface/prefs_screen_window.cpp,429
+dialog_zbufferdepth,Z Buffer Depth,code/interface/prefs_screen_window.cpp,446
+dialog_close,Close,code/interface/prefs_screen_window.cpp,465
+multiwinia_menu_back,Back,code/interface/prefs_screen_window.cpp,466
+dialog_currentprofilename,Current Profile Name,code/interface/userprofile_window.cpp,130
+dialog_loadprofile,Load Profile,code/interface/userprofile_window.cpp,188
+dialog_newprofile,Create New Profile,code/interface/userprofile_window.cpp,201
+taskmanager_accessallareas,Access All Areas,code/interface/userprofile_window.cpp,214
+dialog_profile_loaded,*U (loaded),code/interface/userprofile_window.cpp,224
+dialog_resetprofile,Reset Profile,code/interface/userprofile_window.cpp,231
+dialog_close,Close,code/interface/userprofile_window.cpp,239
+dialog_cancel,Cancel,code/interface/userprofile_window.cpp,280
+dialog_create,Create,code/interface/userprofile_window.cpp,285
+dialog_currentmod,Current Mod,code/interface/mods_window.cpp,66
+dialog_loadmod,Load Mod,code/interface/mods_window.cpp,117
+dialog_unloadmod,Unload Mod,code/interface/mods_window.cpp,128
+dialog_createnewmod,Create New Mod,code/interface/mods_window.cpp,136
+editor_toggleeditor,Toggle Editor,code/interface/mods_window.cpp,143
+dialog_close,Close,code/interface/mods_window.cpp,153
+dialog_cancel,Cancel,code/interface/mods_window.cpp,222
+dialog_create,Create,code/interface/mods_window.cpp,227
+multiwinia_presstotalk,Press Enter To Chat,code/interface/chatinput_window.cpp,105
+dialog_unplugged_pc,Your control pad has been unplugged. Please plug it back in or press Esc to continue.,code/interface/controllerunplugged_window.cpp,19
+launchpad_button_exitdemo,EXIT DEMO,code/interface/demoend_window.cpp,213
+launchpad_button_buynow,BUY NOW,code/interface/demoend_window.cpp,217
+launchpad_buyme_1,WANT MORE?,code/interface/demoend_window.cpp,295
+launchpad_buyme_2,Buy Darwinia online and,code/interface/demoend_window.cpp,298
+launchpad_buyme_3,DOWNLOAD THE GAME IMMEDIATELY!,code/interface/demoend_window.cpp,299
+launchpad_buyme_4,Just a 30Mb download stands,code/interface/demoend_window.cpp,300
+launchpad_buyme_5,between you and the full game.,code/interface/demoend_window.cpp,301
+dialog_leavedarwinia,Leave Darwinia,code/interface/mainmenus.h,167
+multiwinia_menu_achievements,Achievements,code/interface/mainmenus.h,189

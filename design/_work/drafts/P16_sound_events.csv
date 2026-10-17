@@ -1,0 +1,297 @@
+group,object_type,event,SOUNDNAME,SOURCETYPE,POSITIONTYPE,INSTANCETYPE,LOOPTYPE,TEAMMATCHTYPE,MINDISTANCE,VOLUME,FREQUENCY,ATTACK,SUSTAIN,RELEASE,LOOPDELAY,EFFECTS,samplegroup_size
+ENTITY,LaserTroop,Attack,0lasers,1,1,0,0,0,100.00,TypeFixedValue 8.10 UpdateConstantly,TypeRangedRandom 0.93 1.03 0.00 UpdateConstantly,,,,,,24
+ENTITY,LaserTroop,Die,darwiniandie,1,1,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.83 1.09 0.00 UpdateOncePerLoop,,,,,,8
+ENTITY,Engineer,Create,engineer_hover,0,2,0,1,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,
+ENTITY,Engineer,BeginReprogramming,engineer_reprog_radar_loop,0,2,0,1,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+ENTITY,Engineer,EndReprogramming,engineer_repog_radar_loop_end,0,1,0,0,0,100.00,TypeFixedValue 6.48 UpdateConstantly,,,,,,,
+ENTITY,Engineer,LoseHealth,engineerinjury,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 1.58 1.89 0.00 UpdateOncePerLoop,,,TypeFixedValue 5.03 UpdateConstantly,,,9
+ENTITY,Engineer,Die,engineerdie,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.95 1.05 0.00 UpdateOncePerLoop,,,,,,5
+ENTITY,Virii,Attack,virusattack,1,2,0,0,0,200.00,TypeFixedValue 9.03 UpdateConstantly,TypeRangedRandom 0.91 1.12 0.00 UpdateOncePerLoop,,,,,,8
+ENTITY,Virii,LoseHealth,viruspain,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.81 1.01 0.00 UpdateOncePerLoop,,,TypeFixedValue 2.71 UpdateConstantly,,Echo,3
+ENTITY,Virii,ChangeDirection,newsamplegroup11,1,2,0,0,0,50.00,TypeFixedValue 6.55 UpdateConstantly,TypeRangedRandom 1.70 2.17 0.00 UpdateOncePerLoop,,,,,,29
+ENTITY,Virii,Die,newsamplegroup9,1,2,0,0,0,175.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 1.54 1.79 0.00 UpdateOncePerLoop,,,TypeFixedValue 10.06 UpdateOncePerLoop,,Echo,7
+ENTITY,Squadie,Create,newsamplegroup1,1,2,1,1,0,100.00,TypeFixedValue 9.00 UpdateOncePerLoop,,,,TypeFixedValue 5.23 UpdateOncePerLoop,TypeLinked 6.80 0.00 0.00 2.90 0.00 Velocity UpdateOncePerLoop,Echo,21
+ENTITY,Squadie,LoseHealth,newsamplegroup5,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,TypeFixedValue 0.91 UpdateOncePerLoop,,,TypeFixedValue 4.06 UpdateOncePerLoop,,Echo,4
+ENTITY,Squadie,WeaponReturns,grenade_return3,0,2,1,0,0,100.00,TypeFixedValue 9.00 UpdateOncePerLoop,,,,,,,
+ENTITY,Squadie,ThrowAirStrike,airstrike_alarm,0,2,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+ENTITY,Squadie,FireLaser,turretfire,1,2,0,0,0,100.00,TypeFixedValue 8.77 UpdateOncePerLoop,TypeRangedRandom 0.90 1.05 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,Squadie,Die,squaddiedeath,1,2,0,0,0,100.00,TypeFixedValue 8.97 UpdateConstantly,TypeRangedRandom 0.76 1.05 0.00 UpdateOncePerLoop,,,,,,5
+ENTITY,Squadie,EnterTeleport,enterteleport,1,1,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,6
+ENTITY,Squadie,ExitTeleport,exitteleport,1,2,0,0,0,100.00,TypeFixedValue 9.10 UpdateConstantly,,,,,,,6
+ENTITY,Egg,Die,eggsplat,1,1,0,0,0,100.00,TypeFixedValue 3.90 UpdateConstantly,,,,,,,7
+ENTITY,SporeGenerator,Create,sporegengroan,1,2,0,1,0,100.00,TypeFixedValue 8.32 UpdateConstantly,,,,,TypeLinked 4.00 0.19 164.00 5.81 0.00 HeightAboveGround UpdateConstantly,,3
+ENTITY,SporeGenerator,LoseHealth,sporegenlosehealt,1,2,0,0,0,150.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,6
+ENTITY,SporeGenerator,Die,sporegeneratordie,1,1,0,0,0,150.00,TypeFixedValue 10.00 UpdateOncePerLoop,TypeRangedRandom 0.86 1.10 0.00 UpdateOncePerLoop,,,TypeFixedValue 10.45 UpdateConstantly,,Echo,6
+ENTITY,SporeGenerator,LayEgg,spideregglay,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,10
+ENTITY,Tripod,Create,tripodcreate,1,2,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.84 1.14 0.00 UpdateOncePerLoop,,,,,,3
+ENTITY,Tripod,Attack,tprdattac,1,2,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.98 1.15 0.00 UpdateOncePerLoop,,,,,,5
+ENTITY,Tripod,LoseHealth,trpodlosehealth,1,2,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.68 1.05 0.00 UpdateOncePerLoop,,,,,,7
+ENTITY,Tripod,Die,ttripoddie,1,2,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.81 1.02 0.00 UpdateOncePerLoop,,,,,,4
+ENTITY,Centipede,Attack,newsamplegroup25,1,2,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.88 1.08 0.00 UpdateOncePerLoop,,,,,,9
+ENTITY,Centipede,Create,newsamplegroup26,1,2,0,2,0,80.09,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 0.95 1.05 0.00 UpdateOncePerLoop,,,,,,4
+ENTITY,Centipede,Die,newsamplegroup27,1,1,0,0,0,150.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.94 UpdateConstantly,,,TypeFixedValue 10.00 UpdateConstantly,,Echo,4
+ENTITY,Centipede,LoseHealth,newsamplegroup28,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,TypeRangedRandom 0.58 1.59 0.56 UpdateOncePerLoop,,,,TypeLinked 11.20 0.58 0.00 4.84 0.00 Velocity UpdateOncePerLoop,,5
+ENTITY,SpaceInvader,DropGrenade,airstrike_drop,0,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+ENTITY,SpaceInvader,Create,airstrike_hover2,0,2,0,1,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeLinked 13.20 0.91 74.40 1.96 0.00 Velocity UpdateConstantly,,,,,,
+ENTITY,Spider,Create,spidercreate,1,2,0,1,0,100.00,TypeFixedValue 8.93 UpdateConstantly,TypeRangedRandom 0.77 1.21 0.00 UpdateOncePerLoop,,,,TypeLinked 4.80 0.00 0.00 3.10 0.00 Velocity UpdateConstantly,,17
+ENTITY,Spider,Die,newsamplegroup13,1,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeLinked 1.20 0.58 34.40 0.82 0.00 Velocity UpdateConstantly,,,TypeFixedValue 16.65 UpdateConstantly,,DSound_Echo,7
+ENTITY,Spider,Attack,spiderpounce,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,TypeRangedRandom 0.74 1.03 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,Spider,Pounce,spiderpounce,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,TypeRangedRandom 0.89 1.22 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,Spider,LayEgg,spideregglay,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,10
+ENTITY,Spider,LoseHealth,spiderdeath,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,2
+ENTITY,Spider,FootFall,spiderfeet,1,2,0,0,0,62.63,TypeLinked 0.00 4.71 27.20 8.06 0.00 Velocity UpdateConstantly,,,,,,,13
+ENTITY,Darwinian,Die,darwiniandie,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 10.00 UpdateConstantly,,,8
+ENTITY,Darwinian,LoseHealth,darwinianlosehealth,1,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeFixedValue 1.06 UpdateConstantly,,,TypeFixedValue 10.00 UpdateConstantly,,Echo,18
+ENTITY,Darwinian,Create,darwiniancreate,1,2,2,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.58 1.59 0.56 UpdateOncePerLoop,,,TypeFixedValue 1.16 UpdateConstantly,TypeRangedRandom 0.87 4.84 0.00 UpdateOncePerLoop,Echo,15
+ENTITY,Darwinian,GivenOrders,officercreate,1,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 1.51 1.85 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,Darwinian,SeenThreatRunAway,darwinrunaway,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateOncePerLoop,TypeRangedRandom 0.90 1.09 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,Darwinian,LoseHealth,darwinianlosehealth,1,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeFixedValue 0.91 UpdateConstantly,,,,,,18
+ENTITY,Darwinian,Attack,0lasers,1,2,0,0,0,85.90,TypeFixedValue 9.00 UpdateConstantly,,,,,,,24
+ENTITY,Darwinian,VictoryJump,victoryjum,1,2,0,0,0,10.12,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 0.96 1.21 0.00 UpdateOncePerLoop,,,,,,9
+ENTITY,Darwinian,OnFire,darwinnianburncry,1,1,0,0,0,101.16,TypeFixedValue 9.35 UpdateConstantly,,,,,TypeFixedValue 0.58 UpdateConstantly,,13
+ENTITY,Darwinian,Attack,laserreload,1,2,2,0,0,60.34,TypeFixedValue 9.10 UpdateConstantly,,,,,TypeFixedValue 5.03 UpdateConstantly,,5
+ENTITY,Darwinian,Selected,dselect,1,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 0.92 1.25 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,Darwinian,GivenOrdersFromPlayer,dselect,1,2,0,0,0,100.00,TypeFixedValue 8.03 UpdateConstantly,TypeFixedValue 1.03 UpdateConstantly,,,,,,10
+ENTITY,Darwinian,LiftBuilding,carrystatue,1,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 0.93 1.21 0.00 UpdateOncePerLoop,,,,,,4
+ENTITY,Darwinian,SeenThreatAttack,combatvoxattack,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,37
+ENTITY,Darwinian,SeenThreatRunAway,combatvoxretreat,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,26
+ENTITY,Darwinian,SeenThreatAttackHorn,darwinseethreatattack,1,2,0,0,0,125.13,TypeFixedValue 9.00 UpdateConstantly,,,,,,,3
+ENTITY,Darwinian,Die,laserhitdarwinian,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,12
+ENTITY,Officer,Create,officercreate,1,2,0,0,0,200.00,TypeFixedValue 8.00 UpdateConstantly,,,,,,,6
+ENTITY,Officer,LoseHealth,darwinianlosehealth,1,2,0,0,0,100.03,TypeFixedValue 9.71 UpdateConstantly,,,,,,,18
+ENTITY,Officer,Die,darwiniandie,1,2,0,0,0,200.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,8
+ENTITY,Officer,Attack,darwinseethreatattack,1,2,0,0,0,200.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,3
+ENTITY,Officer,EnterTeleport,enterteleport,1,2,0,0,0,200.00,TypeFixedValue 9.16 UpdateConstantly,,,,,,,6
+ENTITY,Officer,SetOrderGoto,officerleftright,1,2,0,1,0,100.00,TypeFixedValue 8.03 UpdateConstantly,,,,,,,17
+ENTITY,Officer,Selected,officercreate,1,0,0,0,1,100.00,TypeFixedValue 8.06 UpdateConstantly,,,,,,,6
+ENTITY,Officer,SetOrderFormation,officerleftright,1,2,0,1,0,100.00,TypeFixedValue 8.06 UpdateConstantly,,,,,,,17
+ENTITY,Officer,Create,officercreate,1,0,0,0,1,100.00,TypeFixedValue 8.58 UpdateConstantly,,,,,,,6
+ENTITY,Officer,SetOrderGoto,officercreate,1,2,0,0,1,173.77,TypeFixedValue 9.13 UpdateConstantly,,,,,,,6
+ENTITY,Officer,SetOrderFormation,officercreate,1,2,0,0,1,173.77,TypeFixedValue 9.13 UpdateConstantly,,,,,,,6
+ENTITY,ArmyAnt,Attack,antatack,1,2,0,0,0,100.00,TypeFixedValue 8.50 UpdateConstantly,TypeRangedRandom 0.81 1.38 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,ArmyAnt,Create,antcreat,1,2,0,1,0,61.12,TypeRangedRandom 5.52 8.00 0.60 UpdateConstantly,TypeRangedRandom 0.67 1.34 0.45 UpdateConstantly,,,,TypeFixedValue 0.10 UpdateConstantly,,8
+ENTITY,ArmyAnt,LoseHealth,antlosehealth,1,2,0,0,0,100.00,TypeFixedValue 8.03 UpdateConstantly,TypeRangedRandom 0.85 1.23 0.00 UpdateOncePerLoop,,,,,,7
+ENTITY,ArmyAnt,Die,antdeath,1,2,0,0,0,100.00,TypeFixedValue 8.06 UpdateConstantly,TypeRangedRandom 0.70 1.28 0.00 UpdateOncePerLoop,,,,,,6
+ENTITY,Armour,Create,tank_hover,0,2,0,1,0,218.81,TypeLinked 0.00 9.55 2.40 10.00 0.00 Velocity UpdateConstantly,TypeLinked 0.00 1.10 22.40 1.68 0.00 Velocity UpdateConstantly,,,,,Gargle,
+ENTITY,Armour,LoseHealth,tankloseheath,1,2,0,0,0,141.42,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.88 1.05 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,Armour,Die,tankdeath,1,1,0,0,0,222.43,TypeFixedValue 10.00 UpdateOncePerLoop,TypeRangedRandom 0.89 1.09 0.00 UpdateOncePerLoop,,,,,,9
+ENTITY,Armour,Create,tankcreate,1,2,0,0,0,100.00,TypeFixedValue 9.35 UpdateConstantly,,,,,,,6
+ENTITY,Armour,SetOrders,officerordergoto,1,2,0,0,0,162.69,TypeFixedValue 9.03 UpdateConstantly,,,,,,,4
+ENTITY,SoulDestroyer,Create,souldestroycreate,1,2,0,1,0,100.00,TypeFixedValue 9.71 UpdateOncePerLoop,TypeLinked 0.00 1.01 300.00 1.65 0.00 HeightAboveGround UpdateConstantly,TypeFixedValue 0.19 UpdateOncePerLoop,,TypeFixedValue 0.39 UpdateOncePerLoop,,,11
+ENTITY,SoulDestroyer,LoseHealth,souldestpain,1,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,10
+ENTITY,SoulDestroyer,Die,souldestdeath,1,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.78 1.05 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,SoulDestroyer,Attack,soulattack,1,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.78 1.01 0.00 UpdateOncePerLoop,,,,,,7
+ENTITY,SoulDestroyer,EnemySighted,soulenemysighted,1,2,0,1,0,100.00,TypeLinked 812.00 0.00 0.00 8.68 0.00 HeightAboveGround UpdateConstantly,TypeLinked 72.00 0.37 0.00 0.76 0.69 HeightAboveGround UpdateConstantly,TypeFixedValue 0.58 UpdateOncePerLoop,,TypeFixedValue 10.45 UpdateConstantly,,,9
+ENTITY,SoulDestroyer,Create,souldestpain,1,2,0,0,0,204.25,TypeFixedValue 10.00 UpdateConstantly,,,,,,,10
+ENTITY,TriffidEgg,Create,triffidegglaunc,1,2,0,0,0,100.00,TypeFixedValue 9.10 UpdateConstantly,TypeRangedRandom 0.89 1.19 0.00 UpdateOncePerLoop,,,,,,5
+ENTITY,TriffidEgg,Bounce,triffideggbounce,1,1,0,0,0,100.00,TypeLinked 0.00 0.16 7.60 9.84 0.00 Velocity UpdateConstantly,TypeLinked 0.00 0.60 8.80 1.11 0.00 Velocity UpdateOncePerLoop,,,,,,5
+ENTITY,TriffidEgg,BurstOpen,triffeggbursts,1,1,0,0,0,100.00,TypeFixedValue 9.55 UpdateConstantly,TypeRangedRandom 0.91 0.99 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,TriffidEgg,Die,souldestdeath,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,10
+ENTITY,Harvester,Create,ufo_engine2,0,2,0,1,0,96.11,TypeFixedValue 8.00 UpdateConstantly,TypeLinked 0.00 0.32 984.00 2.47 0.00 HeightAboveGround UpdateConstantly,,,,,,
+ENTITY,Harvester,Create,ufo_engine1,0,2,0,1,0,89.81,TypeLinked 3.60 8.06 1.60 8.90 0.00 Velocity UpdateConstantly,,,,,,,
+ENTITY,Harvester,Create,rumble2_loop,0,2,0,1,0,150.84,TypeFixedValue 9.00 UpdateConstantly,TypeFixedValue 1.29 UpdateConstantly,,,,,,
+ENTITY,Harvester,DropSpirit,incubatoraddspirit,1,1,0,0,0,150.00,TypeFixedValue 9.00 UpdateConstantly,TypeRangedRandom 0.38 0.52 0.00 UpdateOncePerLoop,,,TypeFixedValue 15.10 UpdateConstantly,,Gargle,6
+ENTITY,Nuke,Create,rocketthrustloop,0,2,0,1,0,104.86,TypeFixedValue 9.00 UpdateConstantly,TypeLinked 100.00 0.41 60.00 1.00 0.00 CameraDistance UpdateConstantly,,,,,,
+ENTITY,Nuke,Explode,nukedetonatenear,0,1,0,0,0,217.86,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.45 0.99 0.00 UpdateOncePerLoop,,,,,,
+ENTITY,Nuke,Explode,nukedetonatefar,0,1,0,0,0,338.76,TypeFixedValue 9.77 UpdateConstantly,TypeRangedRandom 0.45 0.74 0.00 UpdateOncePerLoop,TypeRangedRandom 0.19 2.13 0.00 UpdateOncePerLoop,,,,,
+ENTITY,Meteor,Land,meteorhitclose1,0,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.03 UpdateConstantly,,,,,,
+ENTITY,Meteor,Land,meteorhitfar1,0,1,0,0,0,450.00,TypeLinked 100.00 0.00 320.00 9.90 0.00 CameraDistance UpdateConstantly,,,,,,,
+ENTITY,Meteor,Create,rocketthrust2loop,0,2,0,1,0,97.96,TypeFixedValue 10.00 UpdateConstantly,TypeLinked 24.00 0.89 996.00 1.80 0.00 HeightAboveGround UpdateConstantly,,,,,,
+ENTITY,Meteor,Create,rumble2_loop,0,2,0,1,0,18.52,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+ENTITY,Tank,Create,tankenginefar,0,2,0,1,0,100.00,TypeLinked 0.00 8.39 2.40 10.00 0.00 Velocity UpdateConstantly,TypeLinked 0.00 1.10 22.40 1.68 0.00 Velocity UpdateConstantly,,,,,,
+ENTITY,Tank,LoseHealth,tankloseheath,1,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,TypeRangedRandom 0.88 1.05 0.00 UpdateOncePerLoop,,,,,,10
+ENTITY,Tank,Die,tankdeath,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateOncePerLoop,TypeRangedRandom 0.73 0.94 0.00 UpdateOncePerLoop,,,,,,9
+ENTITY,Tank,Create,tankcreate,1,2,0,0,0,100.00,TypeFixedValue 9.35 UpdateConstantly,,,,,,,6
+ENTITY,SpaceShip,Create,theramins,1,2,0,1,0,329.40,TypeFixedValue 10.00 UpdateConstantly,,,,,TypeRangedRandom 0.00 5.81 0.00 UpdateOncePerLoop,,9
+ENTITY,SpaceShip,Create,ufo_engine2,0,2,0,1,0,208.04,TypeFixedValue 10.00 UpdateConstantly,TypeLinked 0.00 0.32 984.00 2.47 0.00 HeightAboveGround UpdateConstantly,,,,,,
+ENTITY,SpaceShip,Create,ufo_engine1,0,2,0,1,0,144.99,TypeLinked 3.60 8.06 1.60 9.90 0.00 Velocity UpdateConstantly,,,,,,,
+ENTITY,SpaceShip,TractorBeam,tractorbeam2,0,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+ENTITY,SpaceShip,Create,rumble2_loop,0,2,0,1,0,300.84,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.29 UpdateConstantly,,,,,,
+BUILDING,RadarDish,BeginRotation,radar_start_turn,0,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,
+BUILDING,RadarDish,EndRotation,radar_stop_turn,0,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+BUILDING,RadarDish,BeginRotation,radar_motor_run,0,2,0,1,0,100.00,TypeFixedValue 8.97 UpdateConstantly,,,,,,,
+BUILDING,RadarDish,ReprogramComplete,radar_reprog_complete,0,2,0,0,0,200.00,TypeFixedValue 8.97 UpdateConstantly,,,,TypeFixedValue 17.61 UpdateConstantly,,,
+BUILDING,RadarDish,ConnectionEstablished,radarconnect,1,2,0,1,0,50.00,TypeFixedValue 8.16 UpdateConstantly,,,,,,,4
+BUILDING,RadarDish,ConnectionLost,radarlose,1,2,0,0,0,150.00,TypeFixedValue 8.94 UpdateConstantly,,,,TypeFixedValue 14.32 UpdateConstantly,,Echo,4
+BUILDING,LaserFence,Create,fence_hum,0,2,0,1,0,20.00,TypeFixedValue 10.00 UpdateOncePerLoop,,,,,,,
+BUILDING,LaserFence,Spark,elec_cackle,1,2,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,TypeRangedRandom 0.84 1.40 0.00 UpdateOncePerLoop,,,,,,6
+BUILDING,LaserFence,Damage,elecfence@damage,1,2,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.94 1.09 0.00 UpdateOncePerLoop,,,,,,16
+BUILDING,GunTurret,FireShell,turretfire,1,2,0,0,0,91.92,TypeFixedValue 10.00 UpdateOncePerLoop,TypeRangedRandom 0.94 1.16 0.00 UpdateOncePerLoop,,,,,,6
+BUILDING,GunTurret,Damage,battlecannondamage,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateOncePerLoop,TypeRangedRandom 0.75 0.93 0.00 UpdateOncePerLoop,,,,,,10
+BUILDING,GunTurret,Create,armourtransform,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,6
+BUILDING,GunTurret,FireFlame,flameturretfire,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.92 1.55 0.00 UpdateOncePerLoop,,,,,,10
+BUILDING,GunTurret,RegisterKill,countdownbeep3,0,2,0,0,0,50.78,TypeFixedValue 10.00 UpdateOncePerLoop,TypeFixedValue 1.20 UpdateOncePerLoop,,,,,,
+BUILDING,Powerstation,Create,power_station_online,0,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Tree,CreateNormal,treeatmos,1,2,0,2,0,5.98,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 2.55 UpdateOncePerLoop,TypeRangedRandom 5.81 9.68 0.00 UpdateOncePerLoop,TypeFixedValue 2.55 UpdateConstantly,,,8
+BUILDING,Tree,CreateMagic,treeatmos,1,2,0,2,0,5.98,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 2.55 UpdateOncePerLoop,TypeRangedRandom 5.81 9.68 0.00 UpdateOncePerLoop,TypeFixedValue 2.55 UpdateConstantly,,,8
+BUILDING,Tree,Burn,treeonfire,1,2,0,1,0,145.75,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 9.68 UpdateConstantly,,,15
+BUILDING,Tree,Create,cratereward_forest2,0,2,0,0,0,90.83,TypeFixedValue 9.03 UpdateConstantly,TypeFixedValue 0.32 UpdateConstantly,,,,,,
+BUILDING,Tree,CreateEvil,gdspeechgroup,1,2,0,1,0,19.12,TypeFixedValue 10.00 UpdateConstantly,,,,,TypeRangedRandom 0.00 23.61 0.00 UpdateOncePerLoop,,17
+BUILDING,TrunkPort,ReprogramComplete,portcreate,1,2,0,1,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,,,,5
+BUILDING,ResearchItem,Create,researchcreate,1,2,0,1,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,,,,9
+BUILDING,ResearchItem,AquireResearch,aquireresearch,1,1,0,0,0,150.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,7
+BUILDING,Library,Create,ablaster,0,2,0,0,0,30.00,TypeFixedValue 3.00 UpdateConstantly,,,,,,,
+BUILDING,Generator,ReprogramComplete,generator_online,0,1,0,1,0,100.00,TypeFixedValue 9.84 UpdateOncePerLoop,,,,,,,
+BUILDING,Generator,TriggerSurge,generatorburst,1,2,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,TypeRangedRandom 0.86 1.21 0.00 UpdateOncePerLoop,,,,,,5
+BUILDING,Pylon,TriggerSurge,ylonelecsurge,1,2,0,0,0,50.00,TypeFixedValue 7.10 UpdateConstantly,TypeRangedRandom 0.94 1.55 0.00 UpdateOncePerLoop,,,,,,22
+BUILDING,SolarPanel,TriggerSurge,solarpanelenable,1,2,0,0,0,50.00,TypeFixedValue 7.06 UpdateOncePerLoop,TypeRangedRandom 0.89 1.24 0.00 UpdateOncePerLoop,,,,,,5
+BUILDING,SolarPanel,Operate,solarcharge,0,2,0,1,0,100.00,TypeFixedValue 8.00 UpdateConstantly,TypeRangedRandom 1.15 1.18 0.24 UpdateOncePerLoop,TypeFixedValue 4.06 UpdateConstantly,,,,,
+BUILDING,TrackLink,CogTurn,minecartcreak,1,1,0,0,0,150.00,TypeRangedRandom 8.19 9.74 0.00 UpdateOncePerLoop,,,,,,,43
+BUILDING,Refinery,CogTurn,refineryrun,1,2,0,0,0,200.00,TypeFixedValue 10.00 UpdateOncePerLoop,,,,,,,8
+BUILDING,Refinery,Create,mineambience,1,2,0,1,0,500.00,TypeFixedValue 9.00 UpdateConstantly,TypeFixedValue 0.62 UpdateConstantly,,,,,,6
+BUILDING,Mine,CogTurn,minerun,1,2,0,0,0,150.00,TypeFixedValue 8.97 UpdateConstantly,TypeFixedValue 0.95 UpdateOncePerLoop,,,,,DSound_I3DL2Reverb,7
+BUILDING,Yard,Create,yard,0,2,1,1,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.50 UpdateConstantly,,,,,,
+BUILDING,Incubator,Reprogramming,engineer_reprog_radar_loop,0,2,0,0,0,200.00,TypeFixedValue 8.06 UpdateConstantly,,,,,,,
+BUILDING,Incubator,SpawnEntity,incubatorspawn,1,1,0,0,0,200.00,TypeFixedValue 8.61 UpdateConstantly,TypeRangedRandom 0.90 1.02 0.00 UpdateOncePerLoop,,,TypeFixedValue 7.16 UpdateConstantly,,,6
+BUILDING,Incubator,AddSpirit,incubatoraddspirit,1,2,0,0,0,150.00,TypeFixedValue 9.00 UpdateConstantly,TypeRangedRandom 0.38 0.52 0.00 UpdateOncePerLoop,,,TypeFixedValue 15.10 UpdateConstantly,,Gargle,6
+BUILDING,AntHill,Damage,1anthilldamage,1,2,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,10
+BUILDING,AntHill,Explode,newsamplegroup3,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.31 UpdateConstantly,,,TypeFixedValue 12.19 UpdateConstantly,,,5
+BUILDING,Triffid,Damage,sporegenlosehealt,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.67 UpdateConstantly,,,TypeFixedValue 12.00 UpdateConstantly,,,6
+BUILDING,Triffid,Burn,triffidburn,1,2,0,1,0,124.17,TypeFixedValue 10.00 UpdateConstantly,,,,,,,3
+BUILDING,SpiritReceiver,Create,spiritdescent,1,2,0,2,0,50.00,TypeFixedValue 8.00 UpdateConstantly,,TypeFixedValue 3.29 UpdateConstantly,TypeFixedValue 8.71 UpdateConstantly,TypeFixedValue 6.39 UpdateConstantly,TypeFixedValue 3.87 UpdateConstantly,,25
+BUILDING,SpiritProcessor,Create,spiritdescent,1,2,0,2,0,100.00,TypeFixedValue 8.00 UpdateConstantly,,TypeFixedValue 3.29 UpdateConstantly,TypeFixedValue 7.74 UpdateConstantly,TypeFixedValue 8.32 UpdateConstantly,TypeFixedValue 3.10 UpdateConstantly,,25
+BUILDING,SpawnPoint,TurnOn,spawnpoint_playerturnson2,0,2,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,SpawnPoint,TurnOff,spawnpoint_playerturnsoff2,0,2,0,0,0,100.00,TypeFixedValue 9.10 UpdateConstantly,,,,,,,
+BUILDING,BlueprintStore,Create,elec_cackle,1,2,0,1,0,100.00,TypeFixedValue 9.00 UpdateConstantly,TypeFixedValue 0.42 UpdateConstantly,,,,,DSound_Echo,6
+BUILDING,BlueprintConsole,Create,relayhover,1,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.30 UpdateConstantly,,,,,,4
+BUILDING,BlueprintRelay,Create,relayhover,1,2,0,1,0,50.00,TypeFixedValue 8.48 UpdateOncePerLoop,,,,,,,4
+BUILDING,Spam,Create,samcreate,1,2,0,1,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,8
+BUILDING,Spam,Damage,emaildamage,1,2,0,0,0,150.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.67 UpdateConstantly,,,TypeFixedValue 13.16 UpdateConstantly,,DSound_Echo,7
+BUILDING,Spam,Attack,spamattack,1,1,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 1.00 1.28 0.00 UpdateOncePerLoop,,,,,,7
+BUILDING,Spam,Explode,spamboom,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.92 1.21 0.00 UpdateOncePerLoop,,,,,DSound_Echo,6
+BUILDING,Spam,CreateResearch,researchcreate,1,2,0,1,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,,,,9
+BUILDING,GodDish,ConnectToGod,connectgod,1,2,0,1,0,200.00,TypeFixedValue 9.87 UpdateConstantly,TypeFixedValue 0.56 UpdateConstantly,,,TypeFixedValue 12.00 UpdateConstantly,,,3
+BUILDING,GodDish,DisconnectFromGod,disconnectgod,1,2,0,0,0,250.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,3
+BUILDING,GodDish,Create,goddishcreate,1,2,0,1,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.11 UpdateConstantly,,,,,,5
+BUILDING,FuelGenerator,PumpUp,fuelpumpexhale1,0,2,0,0,0,202.34,TypeFixedValue 8.45 UpdateConstantly,TypeFixedValue 1.03 UpdateConstantly,,,,,,
+BUILDING,FuelGenerator,PumpUp,bigmetalgroan,1,2,0,0,0,100.00,TypeFixedValue 8.87 UpdateConstantly,TypeFixedValue 1.02 UpdateConstantly,,,,,,5
+BUILDING,FuelGenerator,PumpDown,fuelpumpup1,0,2,0,0,0,100.00,TypeFixedValue 8.77 UpdateConstantly,TypeFixedValue 0.98 UpdateConstantly,,,,,,
+BUILDING,FuelGenerator,PumpDown,kickverb,1,2,0,0,0,195.22,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.99 UpdateConstantly,,,,,,3
+BUILDING,FuelPipe,PumpFuel,fuelpipe2_loop,0,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.57 UpdateConstantly,TypeFixedValue 5.23 UpdateConstantly,,,,,
+BUILDING,FuelStation,LoadPassenger,loadpassenger,1,1,0,0,0,75.41,TypeFixedValue 9.06 UpdateConstantly,,,,TypeFixedValue 4.65 UpdateConstantly,,,5
+BUILDING,EscapeRocket,Happy,shiphappy,1,2,0,1,0,100.00,TypeFixedValue 6.94 UpdateConstantly,TypeRangedRandom 0.60 0.99 0.00 UpdateOncePerLoop,,,,TypeFixedValue 4.65 UpdateConstantly,,5
+BUILDING,EscapeRocket,Happy,shipheartbeat1,0,2,0,1,0,200.10,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.72 0.82 0.59 UpdateOncePerLoop,,,,,,
+BUILDING,EscapeRocket,Malfunction,shipmalfunction1,0,2,0,1,0,163.95,TypeFixedValue 9.55 UpdateConstantly,,,,,,,
+BUILDING,EscapeRocket,Explode,engineexplode,0,2,0,0,0,318.60,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 13.35 UpdateConstantly,,,
+BUILDING,EscapeRocket,Damage,shipscream,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.05 UpdateConstantly,,,,,,2
+BUILDING,EscapeRocket,EngineBurn,engineburn,0,2,0,1,0,150.25,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,EscapeRocket,EngineBurn,ignitionzap1,0,2,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,TypeFixedValue 0.50 UpdateConstantly,,,TypeFixedValue 6.39 UpdateConstantly,,,
+BUILDING,EscapeRocket,Unhappy,shiphungry,1,2,2,1,0,200.00,TypeFixedValue 9.35 UpdateConstantly,,,,,TypeRangedRandom 4.06 16.06 0.00 UpdateOncePerLoop,,7
+BUILDING,EscapeRocket,Flight,choir1,1,2,0,1,0,10000.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 12.00 UpdateConstantly,TypeRangedRandom 0.00 3.48 0.00 UpdateOncePerLoop,,6
+BUILDING,EscapeRocket,Explode,newsamplegroup27,1,2,0,0,0,190.11,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.62 UpdateConstantly,,,,,,4
+BUILDING,MultiwiniaZone,CaptureStatue,player_capture_statue,0,0,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,MultiwiniaZone,ChangeTeam,koh_zone_captured,0,2,0,0,1,300.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,MultiwiniaZone,ChangeTeam,koh_zone_lost,0,2,0,0,2,300.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,MultiwiniaZone,Create,koh_zoneactive,0,2,0,1,0,47.91,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+BUILDING,MultiwiniaZone,CaptureStatue,playercapturebugle5,0,0,0,0,1,200.00,TypeFixedValue 9.29 UpdateConstantly,,,,,,,
+BUILDING,MultiwiniaZone,CaptureStatue,enemycapturebugle1,0,0,0,0,2,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,ControlStation,Create,relayhover,1,2,0,1,0,70.89,TypeFixedValue 8.84 UpdateOncePerLoop,,,,,,,4
+BUILDING,Crate,Land,crateland1,0,2,0,0,0,150.00,TypeFixedValue 9.00 UpdateConstantly,TypeRangedRandom 0.89 1.42 0.00 UpdateOncePerLoop,,,,,,
+BUILDING,Crate,BeginCapture,crate_capturemyteam,0,2,0,0,1,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Crate,BeginCapture,engineer_reprog_radar_loop,0,2,0,1,0,64.40,TypeFixedValue 6.94 UpdateConstantly,,,,,,,
+BUILDING,Crate,BeginCapture,crate_captureotherteam,0,2,0,0,2,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Crate,LostCapture,crate_lostcapture,0,2,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Crate,Capturing_0pc,cratecapture_10a,0,2,0,2,0,150.00,TypeFixedValue 9.00 UpdateConstantly,,TypeFixedValue 1.16 UpdateConstantly,,TypeFixedValue 11.81 UpdateConstantly,,,
+BUILDING,Crate,Capturing_20pc,cratecapture_20a,0,2,0,2,0,150.00,TypeFixedValue 9.00 UpdateConstantly,,TypeFixedValue 1.16 UpdateConstantly,,TypeFixedValue 12.00 UpdateConstantly,,,
+BUILDING,Crate,Capturing_40pc,cratecapture_30a,0,2,0,2,0,157.70,TypeFixedValue 9.48 UpdateConstantly,,TypeFixedValue 1.16 UpdateConstantly,,TypeFixedValue 12.39 UpdateConstantly,,,
+BUILDING,Crate,Capturing_60pc,cratecapture_40a,0,2,0,2,0,200.03,TypeFixedValue 9.52 UpdateConstantly,,TypeFixedValue 0.97 UpdateConstantly,,TypeFixedValue 12.19 UpdateConstantly,,,
+BUILDING,Crate,Capturing_80pc,cratecapture_50a,0,2,0,2,0,218.95,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 1.16 UpdateConstantly,,TypeFixedValue 12.58 UpdateConstantly,,,
+BUILDING,Crate,Captured,cratecapturedaccent,0,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Crate,Falling,cratefalling,1,2,0,2,0,100.00,TypeFixedValue 8.58 UpdateConstantly,,TypeFixedValue 4.26 UpdateConstantly,TypeRangedRandom 0.97 12.58 0.00 UpdateOncePerLoop,TypeFixedValue 4.65 UpdateConstantly,,DSound_Echo,7
+BUILDING,Statue,ChangeTeam,player_capture_statue,0,0,0,0,1,100.00,TypeFixedValue 7.97 UpdateConstantly,,,,,,,
+BUILDING,Statue,ChangeTeam,enemy_capture_statue,0,0,0,0,2,100.00,TypeFixedValue 7.97 UpdateConstantly,,,,,,,
+BUILDING,Statue,Drop,statuedrop3,0,2,0,0,0,250.14,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,Statue,Create,statuespawn1,0,1,0,0,0,249.31,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+BUILDING,PulseBomb,Create,choir1,1,1,0,1,0,100.00,TypeFixedValue 9.32 UpdateConstantly,TypeFixedValue 0.50 UpdateConstantly,,,,,,6
+OTHER,Laser,InjuredEntity,combatvoxinjured,1,2,0,0,0,100.00,TypeFixedValue 9.55 UpdateConstantly,,,,,,,36
+OTHER,Grenade,Explode,newsamplegroup3,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 10.00 UpdateConstantly,,DSound_WavesReverb,5
+OTHER,Grenade,Create,newsamplegroup4,1,2,0,0,0,100.00,TypeFixedValue 9.55 UpdateConstantly,TypeRangedRandom 0.74 1.54 0.84 UpdateConstantly,,,,,,5
+OTHER,Grenade,Flash,grenade_beep,0,2,0,0,0,100.00,TypeFixedValue 7.90 UpdateConstantly,,,,,,,
+OTHER,Grenade,ExplodeController,hypno_loop_run,0,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,Grenade,Bounce,newsamplegroup6,1,2,0,0,0,74.60,TypeLinked 0.00 6.97 10.00 9.00 0.00 Velocity UpdateOncePerLoop,TypeRangedRandom 0.96 1.56 0.66 UpdateOncePerLoop,,,,,,6
+OTHER,Rocket,Explode,newsamplegroup7,1,1,0,0,0,200.00,TypeFixedValue 10.00 UpdateConstantly,TypeRangedRandom 0.80 1.20 0.00 UpdateConstantly,,,,,,4
+OTHER,Rocket,Create,rocket_fire4_run,0,2,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,Rocket,Create,rocketlauncher,0,2,0,0,0,150.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.94 UpdateOncePerLoop,,,,,,
+OTHER,AirStrikeBomb,Explode,airstrikeexplode,1,1,0,0,0,200.00,TypeFixedValue 9.23 UpdateConstantly,,,,,,,5
+OTHER,AirStrikeBomb,Flash,grenade_beep,0,2,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,,,,,,,
+OTHER,Spirit,PickedUp,sonar,0,2,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,Sepulveda,Appear,sepulveda_appear,0,3,0,0,0,100.00,TypeFixedValue 8.00 UpdateOncePerLoop,,,,,,,
+OTHER,Sepulveda,Disappear,sepulveda_disappear,0,3,0,0,0,100.00,TypeFixedValue 7.97 UpdateOncePerLoop,,,,TypeFixedValue 7.94 UpdateConstantly,,,
+OTHER,Sepulveda,TextAppear,[???],0,2,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,,,,
+OTHER,Gesture,GestureBegin,filtersweep,0,0,0,0,0,100.00,TypeFixedValue 6.97 UpdateConstantly,,,,TypeFixedValue 0.39 UpdateConstantly,,,
+OTHER,Gesture,GestureSuccess,gesturesuccess,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,Gesture,GestureFail,gesturefail,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,Ambience,EnterLocation,newsamplegroup8,1,0,0,2,0,100.00,TypeLinked 736.00 0.10 232.00 9.58 0.00 Ypos UpdateConstantly,,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 10.84 UpdateConstantly,TypeFixedValue 10.00 UpdateConstantly,,,3
+OTHER,Ambience,EnterLocation,white_noise,0,0,0,1,0,500.00,TypeLinked 0.00 3.03 992.00 7.03 0.00 Ypos UpdateConstantly,,,,,,Echo,
+OTHER,Ambience,EnterGlobalWorld,worldviewdry,1,0,0,1,0,100.00,TypeFixedValue 6.84 UpdateConstantly,,,,TypeFixedValue 8.32 UpdateConstantly,TypeRangedRandom 0.00 2.71 0.00 UpdateOncePerLoop,Echo,8
+OTHER,Ambience,EnterGlobalWorld,worldviewwet,1,0,0,1,0,100.00,TypeFixedValue 6.10 UpdateConstantly,,,,,TypeRangedRandom 0.19 2.52 0.00 UpdateOncePerLoop,,8
+OTHER,Ambience,EnterGlobalWorld,worldamb,1,0,0,2,0,100.00,TypeFixedValue 6.00 UpdateConstantly,TypeFixedValue 0.37 UpdateConstantly,TypeFixedValue 9.68 UpdateConstantly,TypeFixedValue 0.97 UpdateConstantly,TypeFixedValue 11.03 UpdateConstantly,TypeFixedValue 0.39 UpdateConstantly,Echo,4
+OTHER,Ambience,EnterGlobalWorld,altitude1,0,0,0,1,0,100.00,TypeFixedValue 5.23 UpdateConstantly,TypeFixedValue 0.70 UpdateConstantly,TypeFixedValue 6.19 UpdateConstantly,,TypeFixedValue 11.23 UpdateConstantly,,,
+OTHER,Ambience,EnterGlobalWorld,rumble1,0,0,0,1,0,100.00,TypeFixedValue 7.74 UpdateConstantly,TypeFixedValue 0.60 UpdateConstantly,TypeFixedValue 5.42 UpdateConstantly,,TypeFixedValue 6.00 UpdateConstantly,,,
+OTHER,Ambience,EnterLocation,highaltitude,1,0,0,2,0,100.00,TypeLinked 0.00 0.06 988.00 5.97 0.00 Ypos UpdateConstantly,TypeRangedRandom 0.75 1.35 0.66 UpdateOncePerLoop,TypeFixedValue 10.84 UpdateConstantly,TypeRangedRandom 1.94 16.45 0.00 UpdateOncePerLoop,TypeFixedValue 10.45 UpdateConstantly,,,7
+OTHER,Music,Cutscene1,tresk_-_excuses,0,0,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 20.13 UpdateConstantly,,,
+OTHER,Music,Cutscene2,tresk_-_faces-of-a-fashion,0,0,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 20.13 UpdateConstantly,,,
+OTHER,Music,Cutscene3,trash80_-_pain-fade-down,0,0,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 5.23 UpdateConstantly,,TypeFixedValue 20.13 UpdateConstantly,,,
+OTHER,Music,Cutscene4,tresk_-_impact-of-silence,0,0,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 2.90 UpdateConstantly,,TypeFixedValue 20.13 UpdateConstantly,,,
+OTHER,Music,LoaderRaytrace,dma_sc-visitors_from_dreams,0,0,0,1,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,TypeFixedValue 10.06 UpdateConstantly,,,
+OTHER,Music,LoaderFodder,fodder,0,0,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,
+OTHER,Music,LoaderSoul,tresk_-weeklies-_schroeders-failure,0,0,0,1,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,TypeFixedValue 10.06 UpdateConstantly,,,
+OTHER,Music,EndSequence,tresk_-_faces-of-a-fashion,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 5.23 UpdateConstantly,,TypeFixedValue 3.29 UpdateConstantly,,,
+OTHER,Music,Credits,trash80_-_pain-fade-down,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 2.71 UpdateConstantly,,TypeFixedValue 10.06 UpdateConstantly,,,
+OTHER,Music,StartSequence,dma_sc-visitors_from_dreams,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,TypeFixedValue 10.06 UpdateConstantly,,,
+OTHER,Music,Cutscene5,tresk_-_excuses,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,TypeFixedValue 3.10 UpdateConstantly,,TypeFixedValue 15.48 UpdateConstantly,,,
+OTHER,Music,LoaderSpeccy,speccyloader,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,Music,LoaderAmiga,pang,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,TypeFixedValue 10.06 UpdateConstantly,,,
+OTHER,Music,LoaderMatrix,matrix,0,0,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,TypeFixedValue 7.55 UpdateConstantly,,,
+OTHER,Music,LoaderGameOfLife,twoataris,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,TypeFixedValue 10.26 UpdateConstantly,,,
+OTHER,Music,Demo2Intro,trash80_-_pain-fade-down,0,0,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,
+OTHER,Music,Demo2Mid,tresk_-_faces-of-a-fashion,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,TypeFixedValue 20.71 UpdateConstantly,,,
+OTHER,Interface,Show,taskin,0,0,0,0,0,100.00,TypeFixedValue 8.48 UpdateConstantly,TypeFixedValue 1.05 UpdateConstantly,,,,,,
+OTHER,Interface,Hide,taskout,0,0,0,0,0,100.00,TypeFixedValue 8.52 UpdateConstantly,TypeFixedValue 0.72 UpdateConstantly,,,,,,
+OTHER,Interface,Slide,menuscroll2,0,0,0,0,0,100.00,TypeFixedValue 9.48 UpdateConstantly,,,,,,,
+OTHER,Interface,DeleteTask,deselect1,0,0,0,0,0,100.00,TypeFixedValue 9.13 UpdateConstantly,,,,,,,
+OTHER,Interface,MouseOverIcon,mouseovericon,1,0,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,,,,2
+OTHER,CratePowerup,Squad,cratereward_squaddies4,0,0,0,0,0,200.35,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 1.21 UpdateConstantly,,,,,,
+OTHER,CratePowerup,Harvester,cratereward_harvester2,0,0,0,0,0,100.00,TypeFixedValue 9.13 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Armour,cratereward_armour1,0,0,0,0,0,100.00,TypeFixedValue 9.06 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Darwinians,craterewrad_darwinians2,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,AntNest,cratereward_antsnest1,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,TypeFixedValue 0.75 UpdateConstantly,,,,,,
+OTHER,CratePowerup,Eggs,cratereward_egg4,0,0,0,0,0,199.97,TypeFixedValue 9.55 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Airstrike,cratereward_airstrike1,0,0,0,0,0,200.35,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,MagicalForest,cratereward_forest1,0,0,0,0,0,200.00,TypeFixedValue 9.00 UpdateConstantly,TypeFixedValue 0.51 UpdateConstantly,,,,,,
+OTHER,CratePowerup,DarkForest,cratereward_darkforest1,0,0,0,0,0,200.00,TypeFixedValue 9.52 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,CrateMania,cratereward_cratemania3,0,0,0,0,0,200.00,TypeFixedValue 9.55 UpdateConstantly,TypeFixedValue 0.81 UpdateConstantly,,,,,,
+OTHER,CratePowerup,GunTurret,cratereward_gunturret1,0,0,0,0,0,200.00,TypeFixedValue 9.16 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Meteor,cratereward_meteor4,0,0,0,0,0,200.00,TypeFixedValue 9.39 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,HotFeet,cratereward_hotfeet1,0,0,0,0,0,100.00,TypeFixedValue 9.06 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Nuke,cratereward_nuke,0,0,0,0,0,100.00,TypeFixedValue 9.06 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Plague,cratereward_plague,0,0,0,0,0,100.00,TypeFixedValue 9.06 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Randomiser,cratereward_randomiser,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,PersonalShield,cratereward_shield,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Subversion,cratereward_subversion2,0,0,0,0,0,200.00,TypeFixedValue 8.94 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,SpawnMania,cratereward_spawnmania,0,0,0,0,0,100.00,TypeFixedValue 8.97 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Bitzkreig,cratereward_bitzkrieg,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,FormationBooster,cratereward_formation2,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Rocketwinians,cratereward_rocketwinians,0,0,0,0,0,100.00,TypeFixedValue 9.10 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,FireExtinguisher,cratereward_extinguisher,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Infection,cratereward_infection,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Rage,cratereward_rage4,0,0,0,0,0,100.00,TypeFixedValue 9.06 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Tank,cratereward_tank,0,0,0,0,0,100.00,TypeFixedValue 8.97 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,FlameTurret,cratereward_gunturret1,0,0,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,Triffids,cratereward_triffid,0,0,0,0,0,100.00,TypeFixedValue 9.10 UpdateConstantly,,,,,,,
+OTHER,CratePowerup,SpaceShip,cratereward_futurewinians,0,0,0,0,0,100.00,TypeFixedValue 10.00 UpdateConstantly,,,,,,,
+OTHER,MultiwiniaInterface,CountdownTick,countdownbeep3,0,0,0,0,0,100.00,TypeFixedValue 7.03 UpdateConstantly,,,,,,,
+OTHER,MultiwiniaInterface,CountdownZeroTick,countdownbeep3,0,0,0,0,0,100.00,TypeFixedValue 7.10 UpdateConstantly,TypeFixedValue 2.00 UpdateConstantly,,,,,,
+OTHER,MultiwiniaInterface,SelectionCircle,filtersweep,0,0,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,,,,TypeFixedValue 0.58 UpdateConstantly,,,
+OTHER,MultiwiniaInterface,SelectionCircle,droneloop,0,0,0,1,0,100.00,TypeFixedValue 8.84 UpdateConstantly,,TypeFixedValue 1.35 UpdateConstantly,,TypeFixedValue 0.97 UpdateConstantly,,,
+OTHER,MultiwiniaInterface,LobbyAmbience,newsamplegroup8,1,0,0,2,0,100.00,TypeFixedValue 8.00 UpdateConstantly,,TypeFixedValue 9.29 UpdateConstantly,TypeFixedValue 10.65 UpdateConstantly,TypeFixedValue 10.84 UpdateConstantly,,,3
+OTHER,MultiwiniaInterface,LobbyAmbience,shipheartbeat1,0,0,0,1,0,200.10,TypeFixedValue 8.50 UpdateConstantly,TypeFixedValue 0.50 UpdateConstantly,,,,,,
+OTHER,MultiwiniaInterface,MenuRollOver,mouseovericon,1,0,0,0,0,100.00,TypeFixedValue 5.03 UpdateConstantly,,,,,,,2
+OTHER,MultiwiniaInterface,MenuSelect,menuscroll2,0,0,0,0,0,100.00,TypeFixedValue 9.00 UpdateConstantly,,,,,,,
+OTHER,MultiwiniaInterface,MenuCancel,menuscroll1,0,0,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,,,,,,,
+OTHER,MultiwiniaInterface,LobbyAmbience,multilobbyambiences,1,0,0,2,0,100.00,TypeFixedValue 9.00 UpdateConstantly,TypeRangedRandom 0.67 1.01 0.00 UpdateOncePerLoop,,TypeFixedValue 10.65 UpdateConstantly,TypeFixedValue 10.26 UpdateConstantly,,,10
+OTHER,MultiwiniaInterface,UnitHighlight,unithighlight,1,1,0,0,0,100.00,TypeFixedValue 7.00 UpdateConstantly,TypeFixedValue 0.90 UpdateConstantly,,,,,,2
+OTHER,MultiwiniaInterface,SelectUnit,mouseclick1,0,0,0,0,0,100.00,TypeFixedValue 6.97 UpdateConstantly,TypeFixedValue 0.33 UpdateConstantly,,,,,,
+OTHER,MultiwiniaInterface,MouseError,beep_harsh_malfunction,0,0,0,0,0,100.00,TypeFixedValue 8.55 UpdateConstantly,TypeFixedValue 0.62 UpdateConstantly,,,,,,
+OTHER,MultiwiniaInterface,ToggleUnitState,mouseclick1,0,0,0,0,0,100.00,TypeFixedValue 9.03 UpdateConstantly,TypeFixedValue 0.58 UpdateConstantly,,,,,,
+OTHER,MultiwiniaInterface,ChatMessage,chat,0,0,0,0,0,100.00,TypeFixedValue 8.00 UpdateConstantly,,,,,,,
