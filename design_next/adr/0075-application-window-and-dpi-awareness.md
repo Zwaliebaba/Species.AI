@@ -29,7 +29,7 @@ Who owns the window, how does it handle DPI, and which window modes exist?
 
 Chosen option: "A platform-owned Win32 window with per-monitor DPI awareness v2".
 
-* **Ownership:** the platform layer registers the window class and creates the window with the wide-character Win32 API, runs the message loop on the main thread, and forwards input messages to the input layer and size, DPI and focus events to the renderer and UI.
+* **Ownership:** the platform layer registers the window class and creates the window with the wide-character Win32 API, runs the message loop on the main thread, and forwards input messages to the input layer ([ADR-0028](0028-input-device-back-ends.md)) and size, DPI and focus events to the renderer and UI ([ADR-0033](0033-ui-layout-scaling-and-dpi.md)).
 * **Application manifest:** per-monitor DPI awareness v2; `<supportedOS>` entries for Windows 10 and 11 ([ADR-0050](0050-client-platform-and-minimum-os.md)); the UTF-8 process code page ([ADR-0063](0063-localisation.md)).
 * **DPI changes:** on `WM_DPICHANGED` the window takes the suggested rectangle and the UI receives the new scale; the UI scale combines the monitor DPI with the player's text-scale setting ([ADR-0064](0064-accessibility-baseline-xag.md)).
 * **Window modes:** windowed and borderless full screen (a borderless window covering one monitor). Borderless full screen is the default. Display-mode changes are not used; a lower render resolution is achieved by render-resolution scaling.

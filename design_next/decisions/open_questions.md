@@ -2,7 +2,7 @@
 
 > Status: Reference decisions · Range: DEC-300 to DEC-449 · Related: [decisions index](README.md), [verdicts and fixes](verdicts_and_fixes.md), [conventions](../CONVENTIONS.md)
 
-This file records the decisions that arise from the open questions of the reference library: behaviours whose design intent is not recorded, figures that are estimated rather than established, edge cases whose reachability is unknown, and inferences that a design choice depends on. Each **Open** entry states the faithful reference behaviour as its default, which is what the reference documents specify now, and gives options, a recommendation and the point by which it is decided. The **Resolved** entry records reference facts that are now settled and are stated as rules. Each **Dropped** entry records a group of questions that concern only content the library does not specify, with the reason. Questions that another register already decides are not repeated here: the headline verdicts, simulation-integrity rules, scope verdicts, fix-list decisions and design-critical uncertainties are in `decisions/verdicts_and_fixes.md` (DEC-001 to DEC-117); the networking model, process architecture, tick rate, numeric model, lobby, sessions and services, terrain runtime model and persistence are in `decisions/deferred/` (DEC-200 to DEC-251); engine-technology choices are ADRs under `adr/`. Entries here cite those decisions by number.
+This file records the decisions that arise from the open questions of the reference library: behaviours whose design intent is not recorded, figures that are estimated rather than established, edge cases whose reachability is unknown, and inferences that a design choice depends on. Each **Open** entry states the faithful reference behaviour as its default, which is what the reference documents specify now, and gives options, a recommendation and the point by which it is decided. A **Resolved** entry states a settled reference fact or a corrected rule as a rule. Each **Dropped** entry records a group of questions that concern only content the library does not specify, with the reason, or an entry superseded by the entry it names. Questions that another register already decides are not repeated here: the headline verdicts, simulation-integrity rules, scope verdicts, fix-list decisions and design-critical uncertainties are in `decisions/verdicts_and_fixes.md` (DEC-001 to DEC-119); the networking model, process architecture, tick rate, numeric model, lobby, sessions and services, terrain runtime model and persistence are in `decisions/deferred/` (DEC-200 to DEC-251); engine-technology choices are ADRs under `adr/`. Entries here cite those decisions by number.
 
 ## Index
 
@@ -15,7 +15,7 @@ This file records the decisions that arise from the open questions of the refere
 | [DEC-303](#dec-303-missile-barrage-arrival-spread) | Missile Barrage arrival spread | Open | R-CRATE |
 | [DEC-304](#dec-304-spawn-surge-request-count) | Spawn Surge request count | Open | R-CRATE, R-ECON |
 | [DEC-305](#dec-305-essence-grove-orbs-of-team-slots-not-in-play) | Essence Grove orbs of team slots not in play | Open | R-CRATE, R-UNIT, R-ECON |
-| [DEC-306](#dec-306-spawn-network-transit-time-and-update-order) | Spawn-network transit time and update order | Open | R-ECON, R-BLDG, R-SIM |
+| [DEC-306](#dec-306-spawn-network-transit-time-and-update-order) | Spawn-network transit time and update order | Dropped | R-ECON, R-BLDG, R-SIM |
 | [DEC-307](#dec-307-essence-orbs-held-by-a-removed-collector) | Essence orbs held by a removed Collector | Open | R-UNIT, R-ECON |
 | [DEC-308](#dec-308-orders-to-workers-that-operate-a-port) | Orders to Workers that operate a port | Open | R-CTRL, R-BLDG, R-ECON |
 | [DEC-309](#dec-309-global-flag-on-source-nodes) | Global flag on Source Nodes | Open | R-BLDG, R-MAP, DAT |
@@ -32,7 +32,7 @@ This file records the decisions that arise from the open questions of the refere
 | [DEC-320](#dec-320-match-end-pitch-drop) | Match-end pitch drop | Open | R-AUD, AEN |
 | [DEC-321](#dec-321-attached-sounds-when-their-emitter-is-removed) | Attached sounds when their emitter is removed | Open | R-AUD, AEN |
 | [DEC-322](#dec-322-start-value-of-smoothed-sound-parameters) | Start value of smoothed sound parameters | Open | R-AUD, AEN |
-| [DEC-323](#dec-323-loop-keep-alive-polling) | Loop keep-alive polling | Open | R-AUD, AEN, R-MODE |
+| [DEC-323](#dec-323-loop-keep-alive-polling) | Loop keep-alive polling | Resolved | R-AUD, AEN, R-MODE |
 | [DEC-324](#dec-324-terrain-generator-parameter-semantics-and-biases) | Terrain generator parameter semantics and biases | Open | TER, R-MAP |
 | [DEC-325](#dec-325-light-direction-and-the-camera-transform) | Light direction and the camera transform | Open | RND |
 | [DEC-326](#dec-326-terrain-grid-overlay) | Terrain grid overlay | Open | RND, TER |
@@ -93,7 +93,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-304 Spawn Surge request count
 - Status: Open
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/05_population_flow.md (R-ECON)
-- Specified behaviour: Spawn Surge gives each Spawn Node of the opening team 50 or 51 extra production requests. Which of the two applies depends on whether the Supply crate opens before or after that Spawn Node's update within the same tick.
+- Specified behaviour: Spawn Surge gives each Spawn Node of the opening team 50 or 51 extra production requests. Which of the two applies depends on whether the Supply crate opens before or after that Spawn Node's update within the same tick. It is one instance of the same-tick rule of DEC-455, which does not fix the count; this entry does.
 - Options: A — keep the order-dependent count; B — a fixed count of 50 requests per Spawn Node; C — a fixed count of 51.
 - Recommendation: B. The count no longer depends on the update order, and the difference from the reference is at most one Worker per Spawn Node.
 - Decide by: design phase
@@ -109,12 +109,9 @@ This file records the decisions that arise from the open questions of the refere
 ## 3 Population flow and structures
 
 ### DEC-306 Spawn-network transit time and update order
-- Status: Open
-- Affects: reference/05_population_flow.md (R-ECON), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/12_simulation_model/04_containers_and_update_order.md (R-SIM)
-- Specified behaviour: A transit orb that passes along h Relays reaches its Spawn Node after between 9h + 1 and 10h + 1 ticks. A hand-off to a structure that comes later in the structure update order advances again in the same tick, so the exact transit time on a map depends on the order in which its structures load. DEC-002 states the upper bound, 10h + 1.
-- Options: A — keep the order-dependent transit time, with the structure order fixed as the stable structure-index order (DEC-016); B — a fixed transit time of 10h + 1 ticks, independent of the update order; C — a fixed transit time of 9h + 1 ticks.
-- Recommendation: B. It matches the figure the population flow is described with (DEC-002, DEC-018), removes the dependence on load order, and changes timing by at most one tick per hop.
-- Decide by: design phase
+- Status: Dropped
+- Superseded by DEC-455.
+- DEC-455 decides the same-tick advance of every object handed over during a tick, the spawn-network transit of 9h + 1 to 10h + 1 ticks included, and its options give this entry's order-dependent, 10h + 1 and 9h + 1 transit times.
 
 ### DEC-307 Essence orbs held by a removed Collector
 - Status: Open
@@ -231,7 +228,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-320 Match-end pitch drop
 - Status: Open
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: When a match ends, the pitch of game sounds follows the square root of a smoothed game speed as the speed falls to 0.1×, which sounds like a tape slowing down. Its audible character has not been checked.
+- Specified behaviour: When a match ends, the pitch of game sounds follows the square root of a smoothed game speed as the speed falls to 0.1×, which sounds like a tape slowing down. DEC-569 keeps the drop as a deliberate effect of the world buses; its audible character has not been checked, and this entry confirms it.
 - Options: A — keep the effect; B — replace it with the designed match-end stings alone (DEC-049).
 - Recommendation: A, combined with the new match-end stings and confirmed by a listening test.
 - Decide by: playtest
@@ -239,7 +236,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-321 Attached sounds when their emitter is removed
 - Status: Open
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: A sound attached to an actor or a structure stops without its release on the first tick after its emitter leaves the match world. A graceful path, in which the sound becomes stationary at its last position and ends with its release, exists but almost never runs. Which behaviour is intended is not recorded; the question is design-critical for the sound of deaths and removals.
+- Specified behaviour: A sound attached to an actor or a structure stops without its release on the first tick after its emitter leaves the match world. A graceful path, in which the sound becomes stationary at its last position and ends with its release, exists but almost never runs. Which behaviour is intended is not recorded; the question is design-critical for the sound of deaths and removals. It is not among the audio corrections of DEC-097.
 - Options: A — the hard cut; B — the graceful path for every removal: the sound stays at the emitter's last position and plays its release.
 - Recommendation: B, confirmed by a listening test.
 - Decide by: playtest
@@ -247,18 +244,17 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-322 Start value of smoothed sound parameters
 - Status: Open
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: A sound parameter that is smoothed once per audio update starts from its definition's construction value (pitch 1.0) and is evaluated only two or three times before playback starts, so authored random pitch ranges are compressed towards 1.0 at the start of a note: a range of 0.75 to 1.35 becomes about 0.88 to 1.16.
+- Specified behaviour: A sound parameter that is smoothed once per audio update starts from its definition's construction value (pitch 1.0) and is evaluated only two or three times before playback starts, so authored random pitch ranges are compressed towards 1.0 at the start of a note: a range of 0.75 to 1.35 becomes about 0.88 to 1.16. It is not among the audio corrections of DEC-097.
 - Options: A — keep the compression; B — a smoothed parameter starts at its first evaluated value, so the authored range is heard as authored.
 - Recommendation: B, confirmed by a listening test against the intended ranges of the new sound set.
 - Decide by: playtest
 
 ### DEC-323 Loop keep-alive polling
-- Status: Open
+- Status: Resolved
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN), reference/01_skirmish_rules_and_modes/launch_race.md (R-MODE)
-- Specified behaviour: Game code keeps looping sounds alive by polling how many instances of a sound are playing for an emitter, and starts the loop again when it finds none. The poll cannot see an instance's emitter until an audio update has resolved it, and it never sees non-positional or stationary instances, so a loop can be started twice. The Launch Vessel loops of Launch Race are affected; the question is design-critical for that mode's sound.
-- Options: A — the reference polling; B — the audio engine records the emitter when a sound is triggered, and loops are started and stopped by explicit events, so a loop never runs twice for one emitter.
-- Recommendation: B. It removes duplicate loops by construction and fits the event model of DEC-007.
-- Decide by: design phase
+- Specified behaviour: The audio engine records a sound's emitter when the sound is triggered, so a query made before the next audio update, or for a non-positional or stationary sound, finds the instance. Looping sounds are started and stopped by explicit events, so a loop never runs twice for one emitter; the Launch Vessel loops of Launch Race follow this rule. Instance counts are defined in every voice state (DEC-752), and the other audio corrections are DEC-097.
+- Options: A — the corrected rule; B — the reference behaviour: game code keeps looping sounds alive by polling how many instances of a sound are playing for an emitter, and starts the loop again when it finds none; the poll cannot see an instance's emitter until an audio update has resolved it and never sees non-positional or stationary instances, so a loop can be started twice; and a stop request with no emitter matches every instance whose emitter was never set, that is, every non-positional and stationary sound.
+- Recommendation: A. Recording the emitter at trigger time removes duplicate loops by construction and fits the event model of DEC-007.
 
 ## 8 Terrain, rendering, effects and assets
 

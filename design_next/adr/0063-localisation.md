@@ -36,7 +36,7 @@ Chosen option: "UTF-8 string tables, BCP 47 tags, ICU MessageFormat via the in-b
 * **Formatting:** string values use ICU MessageFormat syntax for arguments, plurals and gender; numbers, dates, plural rules and collation come from the in-box ICU C API (`icu.dll`, present on every supported OS). The documented data level is Unicode 17 and CLDR 48; the in-box ICU version follows Windows servicing and is re-checked whenever the OS floor moves ([ADR-0050](0050-client-platform-and-minimum-os.md)).
 * **Input-dependent text:** a string may carry variants per input device (keyboard and mouse, gamepad), chosen by the device the player last used; captions reference actions through an action-glyph argument that the UI resolves to the current binding.
 * **Release rule:** a language is offered in an edition only when the content build reports full coverage of that edition's keys, or when the release sign-off accepts the listed fallback keys explicitly.
-* **Text entry:** the client supports input method editors through the window-message path chosen by the input ADR.
+* **Text entry:** the client supports input method editors through the window-message path chosen by the input ADR ([ADR-0028](0028-input-device-back-ends.md)); composition, caret, selection and clipboard follow [ADR-0032](0032-ui-focus-graph-page-stack-and-input.md).
 * **Server:** the dedicated server formats almost nothing for players; it sends string ids and arguments. If it needs ICU on a non-Windows host, the distribution's ICU is used.
 
 ### Consequences
@@ -45,7 +45,7 @@ Chosen option: "UTF-8 string tables, BCP 47 tags, ICU MessageFormat via the in-b
 * Good, because plural and gender rules come from CLDR rather than hand-written rules.
 * Good, because no player sees a raw key.
 * Bad, because the in-box ICU exposes C APIs only and its exact version varies with Windows servicing; tests must not depend on a particular CLDR revision.
-* Bad, because fonts with coverage for every offered language must be licensed for embedding (text rendering is specified by the UI framework ADRs).
+* Bad, because fonts with coverage for every offered language must be licensed for embedding (text rendering is specified by [ADR-0034](0034-text-rendering-and-glyph-cache.md)).
 
 ### Confirmation
 

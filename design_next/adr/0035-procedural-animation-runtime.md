@@ -43,6 +43,7 @@ Chosen option: **1, client-side procedural animation on the presentation clock**
 - Good, because animation can never change the simulation, and the simulation never waits for animation.
 - Good, because legs look correct at every stride, and motion is smooth at every frame rate.
 - Good, because trail, strip and cloth evaluation costs little CPU time.
+- Neutral, because legs look different from the reference, in which the shin keeps its length and is turned outward by θ = −acos(min(1, 0.4·L ÷ thigh length)), the ratio clamped to 1, and the thigh is drawn from knee to hip at whatever length results, so it stretches and compresses; in Species both segments keep their lengths.
 - Bad, because procedural motion is code, so new creature motion needs engineering work rather than authored clips.
 - Bad, because the presentation view must provide velocities and history for every animated body, which the simulation-to-presentation interface must carry.
 

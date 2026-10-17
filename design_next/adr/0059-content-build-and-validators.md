@@ -51,7 +51,8 @@ flowchart LR
   * keys that are not canonical or differ only in case;
   * unreferenced assets (an error for shipping editions, a warning otherwise);
   * per-mode map rules defined by the maps and level-design reference;
-  * a separate collision asset for every collidable mesh;
+  * a separate collision asset for every collidable mesh; duplicate node names, and a hit-test mesh whose position count differs from its vertex count, are errors, while a socket-only mesh with no node is accepted (DEC-012; one reference Relic mesh has 1,182 positions for 1,082 vertices, and the Brood Drifter mesh 43 for 42);
+  * keys listed twice and repeated fields, which common parsers of the authoring syntax accept silently (DEC-801);
   * string tables: missing keys per language, invalid message syntax, glyph coverage of the bundled fonts for every language an edition includes ([ADR-0063](0063-localisation.md));
   * texture, mesh and audio import settings (rules in the asset-pipeline ADRs).
 * **Generated outputs:** map thumbnails rendered by the engine from a top-down view; the map index and other indexes the front end needs; the content manifest.

@@ -73,3 +73,4 @@ Chosen option: **1, screen-fraction layout with DPI-scaled minimums and player s
 
 - Related: ADR-0016 (HUD space), ADR-0030 (UI framework and layouts), ADR-0031 (pixel snapping), ADR-0034 (glyph cache), ADR-0063 (localisation), ADR-0064 (accessibility), ADR-0075 (window and DPI awareness).
 - The UI framework component (`architecture/components/ui_framework/`) specifies the grid, the anchors and the overflow rules.
+- Explainer-animation panels (ADR-0035) follow the relayout rule: they are laid out again on a resize, DPI change or language change, whereas the reference lays a panel out once, when it is created.

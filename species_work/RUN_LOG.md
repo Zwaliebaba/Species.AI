@@ -96,3 +96,4 @@
 - Soft hits: Linux (11), lockstep (17), immediate-mode (1), retail (1), all in their allowed contexts → added to CONVENTIONS §9 "Allowed terms".
 - **No ADR is `owner-decision: blocking`**, so owner batch 2 is not needed.
 - Reconciliation agent X-DEC-R started with `g2_amendments.md`: 13 specific fixes, the extra facts from every report, and the owner-review list.
+- Owner instruction: delete the stray artifact → deleted (https://claude.ai/artifact/PDkJgi6qCyVwQkiTkbtoEv no longer resolves). The content remains in `design_next/decisions/deferred/networking.md`.

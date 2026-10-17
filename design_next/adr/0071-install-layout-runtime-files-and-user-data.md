@@ -36,7 +36,7 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
   * the third-party licence notices.
 * **Prerequisites** run by the installer or channel wrapper: `GameInputRedist.msi` from the pinned GameInput package (it never downgrades a newer installed runtime), and the Visual C++ redistributable for the pinned toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled: Direct3D 12 and XAudio 2.9 are in-box.
 * **No writes** to the install directory or the registry at run time. The client runs as a standard user, installs no service and no driver.
-* **User data** (from `SHGetKnownFolderPath`): `%LOCALAPPDATA%\<STUDIO>\Species\` with `settings\`, `logs\` ([ADR-0067](0067-logging.md)) and `crashes\` (local dumps, [ADR-0065](0065-crash-reporting.md)); screenshots in the user's Pictures folder under `Species\` ([ADR-0076](0076-screenshot-encoding.md)). Saved worlds and replays follow the persistence design (design phase), under the same rule: never in the install directory.
+* **User data** (from `SHGetKnownFolderPath`): `%LOCALAPPDATA%\<Studio>\Species\` with `settings\`, `logs\` ([ADR-0067](0067-logging.md)) and `crashes\` (local dumps, [ADR-0065](0065-crash-reporting.md)); screenshots in the user's Pictures folder under `Species\` ([ADR-0076](0076-screenshot-encoding.md)). Saved worlds and replays follow the persistence design (design phase), under the same rule: never in the install directory.
 * **Uninstall** removes the install directory only; user data stays unless the player chooses to delete it.
 * **Dedicated server:** a plain archive of the `server` product and its packs; its packaging for community hosts is a design-phase decision.
 
@@ -71,5 +71,5 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
 ## More Information
 
 * Facts and sources: technology baseline items 4.1, 6, 7 and 11.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Agility SDK getting-started page, the GameInput NuGet and redistribution pages, and the XAudio2 versions page.
-* `<STUDIO>` is the studio-name placeholder of CONVENTIONS §8.11.
+* `<Studio>` is the publisher-name parameter, the studio-name placeholder of CONVENTIONS §8.11; the same form names the user-data folder in the [ADR index](README.md#technology-baseline) and in the decision register.
 * Component: build tooling and distribution (`BLD`); runtime paths belong to the platform layer (`PLT`).

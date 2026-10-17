@@ -4,13 +4,13 @@
 
 Every decision uses the format in [CONVENTIONS](../CONVENTIONS.md) §7. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **242** decisions: 118 Open, 99 Resolved, 25 Dropped.
+Totals: **244** decisions: 116 Open, 102 Resolved, 26 Dropped.
 
 ## Register files
 
 | File | Scope | Id range | Entries |
 |---|---|---|---|
-| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–199 | 117 |
+| [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–199 | 119 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
 | [deferred/numerics_lobby_terrain_services.md](deferred/numerics_lobby_terrain_services.md) | Deferred: numerics, lobby, terrain runtime, services, persistence | DEC-240–259 | 12 |
@@ -142,6 +142,8 @@ Totals: **242** decisions: 118 Open, 99 Resolved, 25 Dropped.
 | DEC-115 | [Fixed match research levels](verdicts_and_fixes.md#dec-115-fixed-match-research-levels) | Open | verdicts_and_fixes.md |
 | DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Open | verdicts_and_fixes.md |
 | DEC-117 | [Confirmed reference facts](verdicts_and_fixes.md#dec-117-confirmed-reference-facts) | Resolved | verdicts_and_fixes.md |
+| DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes.md |
+| DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes.md |
 | DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Open | deferred/networking.md |
 | DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Open | deferred/networking.md |
 | DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Open | deferred/networking.md |
@@ -179,7 +181,7 @@ Totals: **242** decisions: 118 Open, 99 Resolved, 25 Dropped.
 | DEC-303 | [Missile Barrage arrival spread](open_questions.md#dec-303-missile-barrage-arrival-spread) | Open | open_questions.md |
 | DEC-304 | [Spawn Surge request count](open_questions.md#dec-304-spawn-surge-request-count) | Open | open_questions.md |
 | DEC-305 | [Essence Grove orbs of team slots not in play](open_questions.md#dec-305-essence-grove-orbs-of-team-slots-not-in-play) | Open | open_questions.md |
-| DEC-306 | [Spawn-network transit time and update order](open_questions.md#dec-306-spawn-network-transit-time-and-update-order) | Open | open_questions.md |
+| DEC-306 | [Spawn-network transit time and update order](open_questions.md#dec-306-spawn-network-transit-time-and-update-order) | Dropped | open_questions.md |
 | DEC-307 | [Essence orbs held by a removed Collector](open_questions.md#dec-307-essence-orbs-held-by-a-removed-collector) | Open | open_questions.md |
 | DEC-308 | [Orders to Workers that operate a port](open_questions.md#dec-308-orders-to-workers-that-operate-a-port) | Open | open_questions.md |
 | DEC-309 | [Global flag on Source Nodes](open_questions.md#dec-309-global-flag-on-source-nodes) | Open | open_questions.md |
@@ -196,7 +198,7 @@ Totals: **242** decisions: 118 Open, 99 Resolved, 25 Dropped.
 | DEC-320 | [Match-end pitch drop](open_questions.md#dec-320-match-end-pitch-drop) | Open | open_questions.md |
 | DEC-321 | [Attached sounds when their emitter is removed](open_questions.md#dec-321-attached-sounds-when-their-emitter-is-removed) | Open | open_questions.md |
 | DEC-322 | [Start value of smoothed sound parameters](open_questions.md#dec-322-start-value-of-smoothed-sound-parameters) | Open | open_questions.md |
-| DEC-323 | [Loop keep-alive polling](open_questions.md#dec-323-loop-keep-alive-polling) | Open | open_questions.md |
+| DEC-323 | [Loop keep-alive polling](open_questions.md#dec-323-loop-keep-alive-polling) | Resolved | open_questions.md |
 | DEC-324 | [Terrain generator parameter semantics and biases](open_questions.md#dec-324-terrain-generator-parameter-semantics-and-biases) | Open | open_questions.md |
 | DEC-325 | [Light direction and the camera transform](open_questions.md#dec-325-light-direction-and-the-camera-transform) | Open | open_questions.md |
 | DEC-326 | [Terrain grid overlay](open_questions.md#dec-326-terrain-grid-overlay) | Open | open_questions.md |

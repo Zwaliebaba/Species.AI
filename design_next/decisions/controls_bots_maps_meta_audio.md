@@ -80,7 +80,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 ### DEC-555 A crowd order for an empty group does nothing
 - Status: Resolved
 - Affects: reference/06_controls_camera_and_commands.md (R-CTRL), reference/12_simulation_model/06_teams_and_player_commands.md (R-SIM)
-- Specified behaviour: A crowd order executes against the Workers that the sending team controls at the tick of execution. If none remain, because they all died or the group was released after the click, the order does nothing: no route is created and no Worker receives an order.
+- Specified behaviour: A crowd order executes against the Workers that the sending team controls at the tick of execution. If none remain, because they all died or the group was released after the click, the order does nothing: no route is created and no Worker receives an order. This is the crowd-order case of DEC-653, under which simulation state never holds a non-finite value.
 - Options: A — the corrected rule; B — the reference behaviour, in which the route starts at the mean position of the controlled Workers, computed by dividing by their number, so an empty group gives an undefined (not-a-number) start position.
 - Recommendation: A. An undefined position must never enter simulation state. The general rule that every command handler defines its result when its target no longer exists is a constraint of DEC-202.
 
@@ -133,7 +133,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 - Specified behaviour: Mode objects are typed records with validated links, and Flag post adjacency is stored as one two-way relation. The content build, and any map tool when it saves, validates a map for every mode it offers and rejects it with a diagnostic when a rule fails:
   1. Relic Run: exactly one Relic Base per start position, and at least one Relic Spawn Zone;
   2. Flag Chain: one Home post per start position, and a connected Flag post graph;
-  3. Siege: one Core Device owned by a defending start position, at least three Command Consoles linked to it, and a Core Device timer equal to the match time limit;
+  3. Siege: one Core Device owned by a defending start position, at least three Command Consoles linked to it, a Core Device timer equal to the match time limit, and every defence bot objective marker that has a scan range bound to a structure (an unbound marker defaults to team 0, and its defence objective falls back at once, DEC-087);
   4. Launch Race: for each start position, one Launch Vessel, three fuel depots and one Transit Gate for reinforcements.
 - Options: A — validate at build and save time; B — the reference behaviour, in which these conventions hold only by authoring discipline, no tool checks them, and Flag post adjacency is not held as a two-way relation.
 - Recommendation: A. These are the per-mode conventions of the reference maps; checking them stops a broken map from reaching players under either editor option of DEC-045. Schema validation of content in general is DEC-015.
@@ -181,7 +181,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 ### DEC-567 Dry mix or applied effects
 - Status: Open
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: No audio effect runs, so the reference is heard dry. Sound definitions name effects in 22 places, but no effect is attached unless the preference file is edited by hand, and the long releases authored for echo tails play out as silence while they keep a voice busy. Where Species uses effects, they are applied per bus (DEC-027).
+- Specified behaviour: No audio effect runs, so the reference is heard dry. Sound definitions name effects in 22 places, but no effect is attached unless the preference file is edited by hand, and the long releases authored for echo tails play out as silence while they keep a voice busy. Where Species uses effects, they are applied per bus (DEC-027), and switching them off leaves no effect processing on any voice or bus (DEC-752). A DSP parameter that an effect binding omits is 0.0 in the reference, not its declared default; the schema default of each DSP parameter is therefore chosen deliberately, 0.0 for parity or the declared value, and it is audible only once effects are enabled.
 - Options: A — dry: the effect slots of the buses stay empty; B — a reverb send and a limiter on the master bus; C — option B plus per-event effects where a sound is designed for one.
 - Recommendation: B, adopted only after a listening test confirms that it keeps the character of the dry reference mix (vision pillar 5). The master limiter is safe in every case, because it only prevents clipping in dense fights. Sounds are authored for the chosen effect model, so no release tail is authored for an effect that does not run.
 - Decide by: design phase
@@ -196,7 +196,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 ### DEC-569 Game-speed pitch bend
 - Status: Resolved
 - Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
-- Specified behaviour: Game speed bends the pitch of world sounds by the square root of the game speed, smoothed over time rather than per call (DEC-097), as an effect of the world buses. UI sounds and announcer stings are not bent. The pitch drop at match end is kept as a deliberate effect: as the game speed falls, the world sounds fall to 0.1× pitch.
+- Specified behaviour: Game speed bends the pitch of world sounds by the square root of the game speed, smoothed over time rather than per call (DEC-097), as an effect of the world buses. UI sounds and announcer stings are not bent. The pitch drop at match end is kept as a deliberate effect: as the game speed falls, the world sounds fall to 0.1× pitch, and a listening test confirms its character (DEC-320). The smoothed game-speed value starts every match at normal speed and is discarded at match end (DEC-751).
 - Options: A — the adapted rule; B — the reference behaviour, in which the bend comes from a smoother that advances once per call, so its speed depends on the number of playing voices (DEC-097), and the bend is not limited to world sounds.
 - Recommendation: A. A speed change is a world event (Time Dilation, Time Rush and the slow-motion phase of the meteor shower, DEC-039), so it belongs on the world buses, while UI feedback and stings stay readable at every speed.
 

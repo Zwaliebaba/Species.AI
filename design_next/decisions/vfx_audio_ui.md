@@ -18,7 +18,7 @@ This file records the decisions on animation and visual effects, the audio engin
 | Actor kinds that no match creates | DEC-062 |
 | Audio corrections, including voice stealing that compares priorities | DEC-097 |
 | Localisation fallback per key to the base language | DEC-099 |
-| Seasonal theme | DEC-101 |
+| Seasonal theme; the seasonal state is decided once per match | DEC-101, DEC-118 |
 | UI framework corrections by construction | DEC-102 |
 | Crowd-sound audibility radius | DEC-109 |
 | Dry mix or applied effects | DEC-567 |
