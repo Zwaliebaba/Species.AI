@@ -88,3 +88,6 @@
 | 84 | C-AST vs C-RND-b | ADR-0018 | ADR-0018 forbids straight-alpha art drawn additively (RND-423 needs it) and has no nearest-magnification sampler for particles (see item 39) | amend ADR-0018, or change RND-423 |
 | 85 | C-AST vs X-AST | ADR-0017 | GameAssets has the cooker pad textures to 4×4 blocks; ADR-0017 rejects that; five asset rows fail | fix the 5 GameAssets and manifest rows (X-AST pass 2) |
 | 86 | C-AST | — | missing assets: derived shadow and Crawler-trail variants, 8 tint masks for the banner and flag art, a collision asset for every collidable mesh; 15 cross-document requests | X-AST pass 2; cross-document fixes |
+| 87 | C-AEN | ADR-0025 | the reference 60 MiB LRU sample cache is the reference model, not carried; resident set about 173 MiB, so the match bank budget is 192 MiB | amend ADR-0025 with the budgets and bank rules |
+| 88 | C-AEN | ADR-0024, 0027, 0022, 0026 | six buses (ADR-0024); maximum distance defaults to 10⁹ wu, keeping DEC-566; copy decay is a design value owned by G10 (ADR-0023); small wording fixes in 0022 and 0026 | amend the ADRs (closes item 80) |
+| 89 | C-AEN | DEC-567 | an omitted DSP parameter takes its declared default, not 0.0; 21 of 63 parameters have ranges excluding 0.0 | confirm in DEC-567; C-DAT schema default |
