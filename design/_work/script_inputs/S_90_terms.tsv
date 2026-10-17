@@ -57,7 +57,7 @@ BGR24 / BGRA32 / P4 / P8 / RLE8	abbreviation	Bitmap pixel layouts found in the s
 BOM	abbreviation	Byte-order mark; no shipped text file has one, and a UTF-8 BOM would be read as part of the first token.	29:3.1	no
 CJK	abbreviation	Chinese, Japanese and Korean scripts; served by bitmap font atlases under `data/textures/unicode/`.	25:2.15;28:10.5	no
 CPU (player)	abbreviation	Computer-controlled team that fills an empty lobby slot (team type `TeamTypeCPU`), steered by an `AI` entity; also used for the processor in performance sections.	07:2.3;09:5.12	no
-CRC	abbreviation	Cyclic redundancy check; map identity uses a 32-bit file CRC per level (`code/mapcrc.h`, tool `tools/MapCRC`).	31:10.2;29:4.6	no
+CRC	abbreviation	Cyclic redundancy check; a map's identity is the CRC-32 (reflected `0xEDB88320`, initial value 0, no final XOR) of its level-file bytes plus one `0xFF`, listed in `code/mapcrc.h` by the `tools/MapCRC` tool.	31:10.2;29:4.6	no
 CRLF / LF	abbreviation	Line-ending conventions (carriage return plus line feed, or line feed only); the text reader accepts both.	29:3.1	no
 CRT	abbreviation	The C run-time library (MSVC static multithreaded); its `rand()` and maths functions matter for determinism.	22:14.8;23:17.2	no
 CSV	abbreviation	Comma-separated values; used for generated tables under `_work/drafts/`.	03:2.1	no
