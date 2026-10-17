@@ -83,15 +83,15 @@ pkg('X-ADR-a', 2, '2a', '§9.2 X-ADR',
     'Engine runtime ADRs: renderer architecture, feature level and Shader Model, texture pipeline, mesh '
     'pipeline, audio engine, input, UI framework, animation and VFX runtime. Write `adr/README.md` (index '
     'for 0001-0099 plus the "Technology baseline" and "Deferred to the design phase" sections); X-ADR-b '
-    'appends its rows to the index table only.')
+    'leaves a marked placeholder row "<!-- X-ADR-b rows -->" where the coordinator inserts the 0050-0099 rows at G2.')
 pkg('X-ADR-b', 2, '2a', '§9.2 X-ADR',
     lambda r: r['action'] == 'TO-ADR' and r['doc'] in ('08', '29', '31', '32', '40', '41'),
     ['adr/'], {'ADR': '0050-0099'}, PHASE2_READS + [STD],
     'Toolchain, content and operations ADRs: platform and toolchain baseline, language standard and '
     'modules, build and dependency management, pack-file format and the no-loose-override rule, data '
     'schema format and versioning, localisation, accessibility, crash reporting and telemetry with consent, '
-    'logging, profiling, test framework and CI, client packaging and distribution. Append your rows to the '
-    '`adr/README.md` index table written by X-ADR-a; never edit its other sections.')
+    'logging, profiling, test framework and CI, client packaging and distribution. Never edit `adr/README.md`: '
+    'write your index rows (number, title, status, date) to `species_work/adr_index_X-ADR-b.md`; the coordinator merges them at G2.')
 
 # ---------------- Phase 2, wave 2b: per-document decisions, deduplicated ----------------
 W2B = ('Deduplicate: read the wave-2a register files first and reference an existing DEC instead of '
@@ -225,9 +225,10 @@ pkg('X-GLO-2', 3, None, '§9.3', lambda r: r['owner_package'] == 'X-GLO' and r['
     ['glossary/m_to_z.md'], reads=COMMON, notes='Terms M-Z (90 lines 476-844). In-scope Species terms only.',
     extra_inputs=GLO_X)
 pkg('X-AST', 3, '3.1', '§9.3 X-AST', lambda r: r['owner_package'] == 'X-AST',
-    ['assets/README.md', 'assets/asset_manifest.csv', 'assets/art_and_audio_briefs.md'],
-    reads=['species_work/rename_map.tsv', 'design_next/CONVENTIONS.md'], exempt=True,
-    notes='Script-driven from the CSVs (brief); TO-ASSETS prose only where the brief allows. Pass 1 in wave 3.1.')
+    ['assets/GameAssets.md', 'assets/README.md', 'assets/asset_manifest.csv', 'assets/art_and_audio_briefs.md'],
+    reads=['species_work/rename_map.tsv', 'design_next/CONVENTIONS.md', 'species_work/standards_baseline.md',
+           'species_work/owner_answers.md'], exempt=True,
+    notes='Script-driven from the CSVs (brief); TO-ASSETS prose only where the brief allows. Pass 1 started early (during Phase 2) at the owner\'s request, with GameAssets.md as its main deliverable; pass 2 in Phase 4.')
 
 
 def main():

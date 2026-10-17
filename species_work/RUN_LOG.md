@@ -62,3 +62,5 @@
 - **Gate G1 passed.** Phase 2 ready: wave 2a = X-DEC-1, X-DEC-2a, X-DEC-2b, X-DEC-2c, X-ADR-a, X-ADR-b; wave 2b = X-DEC-3, X-DEC-4a, X-DEC-4b, X-DEC-5a, X-DEC-5b, X-DEC-5c.
 
 ## Phase 2 — Decisions
+- Wave 2a started (2026-10-17): X-DEC-1, X-DEC-2a, X-DEC-2b, X-DEC-2c, X-ADR-a, X-ADR-b. ADR index ownership: X-ADR-a writes `adr/README.md` with a marker row; X-ADR-b writes `adr_index_X-ADR-b.md` for the coordinator to merge (avoids a concurrent-write collision).
+- **Owner request (during Phase 2):** a document `GameAssets.md` listing every asset to create, with filenames. Owner chose Species filenames in the repo plus a private original-to-Species map. X-AST pass 1 was pulled forward and started now as a seventh parallel agent (owner-requested deliverable): `design_next/assets/GameAssets.md` plus the manifest, README and briefs, and the private `species_work/asset_origin_map.csv` (→ OUTBOX). Prompt §5 and §9.3, and design-phase E2, updated to include GameAssets.md.
