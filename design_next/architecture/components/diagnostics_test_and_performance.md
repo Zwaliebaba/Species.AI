@@ -17,7 +17,7 @@ This component is the Species engine's developer and quality infrastructure. It 
 **DBG-001** (MUST) The diagnostics component owns:
 
 1. the logging system: its API, categories, levels, pipeline, sinks and drop policy (§4.1);
-2. the assertion levels, the black-box record and the fatal-check path up to its hand-over to crash handling (§4.2);
+2. the check macros, the black-box ring and what a failed check records before the platform layer's fatal path takes over (§4.2);
 3. the profiling layer: the marker macros, the collection of GPU timestamps, the profile tree and its view (§4.3), and the marker catalogue (§3.4);
 4. the development overlay, its pages and the counter-provider contract through which other components publish counters into it (§2.3, §4.4);
 5. the development windows: the network statistics window (§4.5) and the debug-command window (§4.6);
@@ -56,7 +56,7 @@ This component composes those parts into one developer view and one test harness
 |---|---|---|---|---|
 | log file and ETW sinks, info level and above | yes | yes | yes | yes |
 | debug-level records, per-category trace records, debugger output sink | yes | yes | no | no |
-| debug assertions (`SPECIES_ASSERT`) | yes | yes | no | no |
+| development checks (`SPECIES_ASSERT`, PLT-122) | yes | yes | no | no |
 | release checks and container bounds checks | yes | yes | yes | yes |
 | black-box record | yes | yes | yes | yes |
 | PIX markers and GPU timestamps | yes | yes | yes | no |
@@ -112,11 +112,10 @@ LogStats GetLogStats();
 void FlushLogSynchronously();                                                 // fatal path only (DBG-073)
 
 // Checks and the black box (§4.2, ADR-0065)
-#define SPECIES_ASSERT(condition)            /* debug assertion: Debug and Development */
+#define SPECIES_ASSERT(condition)            /* development check: Debug and Development (PLT-122) */
 #define SPECIES_CHECK(condition, fmt, ...)   /* release check: every flavour, fatal */
 #define SPECIES_CHECK_INDEX(index, size)     /* container bounds check: every flavour, fatal */
 [[noreturn]] void CheckFailed(std::source_location, std::string_view condition, std::string_view message);
-[[noreturn]] void FatalExit(std::string_view message);                        // DBG-074
 class BlackBox {                                       // one per process, owned by the composition root
 public:
   void NoteFrame(std::uint64_t frame_index);  void NoteTick(std::uint64_t tick);
@@ -273,7 +272,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | poster resolution | 1 | screenshots as N × N tiles | RND-110, RND-442 |
 | `dev.soak_session_name` | empty | the session name a soak host advertises and soak clients look for; a soak configuration's name replaces it | DBG-162 |
 
-**DBG-042** (MUST) The reference's terrain storage-mode setting has no Species meaning (RND-443), and its campaign test-harness switch is not specified (DEC-052). The reference start-up switches with a diagnostic role belong to their owners: writing the version identity to a file and exiting ([build tooling and distribution](build_tooling_and_distribution.md), ADR-0057), and keeping every log in the working directory instead of the profile folder ([platform layer](platform_layer.md)).
+**DBG-042** (MUST) The reference's terrain storage-mode setting has no Species meaning (RND-443), and its campaign test-harness switch is not specified (DEC-052). The reference start-up switches with a diagnostic role belong to the platform layer: writing the build identity to a file and exiting (PLT-023, ADR-0057), and moving every log and user file out of the profile folder (PLT-024).
 
 ### 3.3 Log records and categories
 
@@ -313,7 +312,7 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 4. the most recent `dbg.blackbox.recent_markers` (16) frame and tick markers, each with its frame index or tick;
 5. the current map id, or the world region id once the design phase defines regions;
 6. the most recent `dbg.blackbox.recent_checks` (8) failed-check and warning messages;
-7. for a fatal check: its message, its condition text, its source file and line, and the thread name.
+7. for a failed release check: the black-box record of PLT-123 (product name, build identity, UTC date and time, the message truncated to `plt.crash.check_message_max_chars`), and the condition text, the source file and line, and the thread name.
 
 It never holds chat text, account tokens or the names of other players (ADR-0065, ADR-0067).
 
@@ -328,15 +327,15 @@ It never holds chat text, account tokens or the names of other players (ADR-0065
 | log files in the logs folder (ADR-0071), one per run, the last `dbg.log.files_kept` (10) kept | logging system (§4.1) | the log | every flavour |
 | ETW events of the Species TraceLogging provider | logging system | the same records | every flavour |
 | black-box block | this component and the platform layer | DBG-047 | every flavour |
-| crash report and dump | platform layer, through WER (ADR-0065) | dump of every thread, registered files and the black box | every flavour |
-| language completeness report | the client's language test (R-META-473) | three lists per language | development |
-| command-history recording | the replay hook (§8.2) | the command frames of a match | development |
+| crash report and dump; on test machines also a local dump in the `crashes` folder (PLT-118) | platform layer, through WER (ADR-0065) | dump of every thread, registered files, the black box and the crash-context record (PLT-120) | every flavour |
+| language completeness report, in the `diagnostics` folder (PLT) | the client's language test (R-META-473) | three lists per language | development |
+| command-history recording, in the `diagnostics` folder | the replay hook (§8.2) | the command frames of a match | development |
 | soak report | the soak runner (DBG-166) | one row per match and the pass totals | CI |
 | telemetry queue | the telemetry service (§4.10) | unsent session records | every flavour, with consent |
 | PIX captures and ETW traces | PIX and Windows Performance Analyzer | captures taken by a developer | `Debug`, `Development`, `Profile` |
 | test reports and performance results | the test harness | CI artefacts (ADR-0070) | test builds |
 
-Key-binding parse errors go to the log ([input](input.md)). The world-state dump on divergence is DEC-206. The version file is the build tooling's (ADR-0057).
+Key-binding parse errors go to the log ([input](input.md)). The world-state dump on divergence is DEC-206. The version file is the platform layer's (PLT-023).
 
 ## 4 Behaviour and algorithms
 
@@ -362,28 +361,22 @@ Key-binding parse errors go to the log ([input](input.md)). The world-state dump
 
 | Species level | Reference counterpart | Flavours | On failure |
 |---|---|---|---|
-| debug assertion `SPECIES_ASSERT(c)` | debug assertion, no effect outside debug builds | `Debug`, `Development` | log at error level with the condition, file and line, note in the black box, break into an attached debugger; execution continues when no debugger is attached |
-| release check `SPECIES_CHECK(c, message)` | release assertion with a formatted message | every flavour | the fatal path of DBG-073 |
-| plain release check (no message) | assertion that reports the condition text, file and line | every flavour | the fatal path, message = condition text |
-| container bounds check `SPECIES_CHECK_INDEX(i, n)` | the assertion with arguments that every container bounds check uses | every flavour | the fatal path; an out-of-range container access is a fatal, reported error in every build |
-| abort | release assertion that is always false, with a message | every flavour | the fatal path |
-| fatal exit `FatalExit(message)` | logged exit with a message dialog and the assertion record | every flavour | DBG-074 |
+| development check `SPECIES_ASSERT(c)` | debug assertion, with no effect outside debug builds | `Debug`, `Development` (PLT-122) | breaks into an attached debugger, otherwise takes the release-check path (PLT-124) |
+| release check `SPECIES_CHECK(c, message)` | release assertion with a formatted message | every flavour (PLT-122) | DBG-073 and PLT-123 |
+| plain release check (no message) | assertion that reports the condition text, file and line | every flavour | as a release check; the message is the condition text, file and line |
+| container bounds check `SPECIES_CHECK_INDEX(i, n)` | the assertion with arguments that every container bounds check uses | every flavour | as a release check: an out-of-range container access is a fatal, reported error in every build |
+| abort | release assertion that is always false, with a message | every flavour | as a release check |
+| fatal exit | logged exit with a message dialog and the assertion record | every flavour | the platform layer's `FatalExit` (PLT-042), for failures of the environment that are not defects; DBG-074 |
 
 **DBG-071** (MUST) Content errors never reach a check: the content build rejects them (DEC-015, ADR-0059), and a load path reports and recovers. A check states a program invariant; a failed check is a defect.
 
-**DBG-072** (MUST) The test builds' simulation checks of §4.8 are debug assertions that the test harness turns into test failures; they never run in `Profile` or `Shipping` builds.
+**DBG-072** (MUST) The test builds' simulation checks of §4.8 are development checks that the test harness turns into test failures; they never run in `Profile` or `Shipping` builds.
 
-**DBG-073** (MUST) The fatal path of a failed check runs in this order:
+**DBG-073** (MUST) A failed release check takes the path of [platform layer](platform_layer.md) PLT-123. This component's part comes first: it writes the check's condition text, source location and thread name next to the black-box record of PLT-123 (DBG-047 item 7), and the full message as a fatal log record, which it flushes synchronously (ADR-0067), so the registered log file holds it. The platform layer then breaks into an attached debugger, or shows `ui.error.internal` unless the run is headless, and ends the process with a fail-fast exception, which Windows Error Reporting captures with the registered files and the black box (ADR-0065). The terminate, invalid-parameter and pure-call handlers take the same path (PLT-114). In the reference a failed release assertion shows its own message in a fatal-error message box, writes the assertion record and ends through the runtime's terminate path; whether its crash handler also runs is a property of its runtime library (DEC-341).
 
-1. write the message, the condition text, the source location and the thread name into the black box (DBG-047);
-2. write a fatal log record with the same content and flush the log synchronously (ADR-0067), so the registered log file holds it;
-3. hand over to the platform layer's fatal path, which shows the fatal-error message through the platform message path when a window exists and ends the process with a fail-fast exception, so that Windows Error Reporting captures a dump with the registered files and the black box ([platform layer](platform_layer.md), ADR-0065).
+**DBG-074** (MUST) Before the platform layer's `FatalExit` ends the process with `plt.lifecycle.exit_code.fatal` (PLT-042), this component writes the exit's string id and arguments to the black box and as a fatal log record and flushes the log; no dump is written.
 
-In the reference a failed release assertion formats its message into 512 bytes, shows a fatal-error message box, writes the assertion record and terminates through the runtime's terminate path; whether its crash handler also runs is a property of its runtime library (DEC-341). Species has one defined path.
-
-**DBG-074** (MUST) `FatalExit` is an orderly fatal exit that is not a defect, for a condition such as a missing required capability: it writes the message to the black box and the log, flushes the log, hands the message to the platform message path and ends the process with a non-zero exit code, without a dump.
-
-**DBG-075** (MUST) The black box is updated as the program runs: the frame loop notes each frame index and the tick clock notes each tick (`NoteFrame`, `NoteTick`); the outermost markers of a frame and a tick are noted as markers; loading a map or entering a region notes its id; each warning and each failed debug assertion is noted as a check message. Updates are atomic stores into the ring slots, never allocations.
+**DBG-075** (MUST) The black box is updated as the program runs: the frame loop notes each frame index and the tick clock notes each tick (`NoteFrame`, `NoteTick`); the outermost markers of a frame and a tick are noted as markers; loading a map or entering a region notes its id; each warning and each failed development check is noted as a check message. Updates are atomic stores into the ring slots, never allocations.
 
 ### 4.3 Profiling
 
@@ -462,11 +455,11 @@ The divergence column shows the diverged text in red while the participant has a
 | 14 | profile view | opens the profile view (§4.3) | local |
 | 15 | network statistics | opens the network statistics window (§4.5) | local |
 | 16 | reset render resources | releases and rebuilds every GPU resource through the device-removal path (ADR-0008); trees rebuild their geometry from the same per-tree seed, and their hit volumes are baked data (R-SIM-651), so nothing in the simulation changes | local |
-| 17–20 | crash tests | a fault on the main thread, a fault on a worker thread, a call of the terminate handler, and a hang of the main thread, for the crash-capture test of ADR-0065 | local |
+| 17–22 | crash tests | a fault on the main thread, a fault on a worker thread, a call of the terminate handler, an invalid parameter, a pure call, and a hang of the main thread, for the crash-capture tests of ADR-0065 and the platform layer | local |
 
 **DBG-118** (MUST) A sequenced debug command is a player command (DBG-024) that the authority accepts only in a session created with cheats enabled, and only from a participant authorised to send it; until DEC-202 is decided, the host's own participant is the only authorised sender. The authority validates the team slot, that P lies on the map and that a forced outcome is in the catalogue; a rejected command is dropped, logged and counted. An accepted command executes on its tick on every participant, like any command (R-SIM-670). The first accepted debug command sets the session's cheats-used marker, which the lobby and the match results show (`ui.match.cheats_used`) and which the match statistics carry ([reference/09](../../reference/09_front_end_and_match_flow/README.md) hooks).
 
-**DBG-119** (MUST) Local commands (rows 14 to 20) and the special-lighting actions of DBG-020 never travel as commands and never touch simulation state.
+**DBG-119** (MUST) Local commands (rows 14 to 22) and the special-lighting actions of DBG-020 never travel as commands and never touch simulation state.
 
 **DBG-120** (MUST NOT) The window has no campaign command (enabling campaign world buildings or opening campaign locations, DEC-052), no command that grants research, because match start fixes the research levels and such a command has no effect in a match (DEC-041, DEC-115), no narrator portrait command, and no sound-editor or sound-statistics window, whose content the audio page of the overlay shows (AEN-323).
 
@@ -774,7 +767,7 @@ Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.frame.fps
 | `ui.dev.command.title` | Debug commands |
 | `ui.dev.command.kill_all`, `.spawn_workers`, `.spawn_transport`, `.spawn_crawlers`, `.spawn_orbs`, `.arbitrary_placement`, `.spawn_at_ports`, `.spawn_crate`, `.crate_normal` | Defeat enemies · Add Workers ({team}) · Add Transport · Add Crawlers · Add Essence orbs · Free placement · Fill structure ports · Drop Supply crate · Random outcome |
 | `ui.dev.command.profile_view`, `.network_stats`, `.reset_render` | Profile · Network · Rebuild GPU resources |
-| `ui.dev.command.crash_main`, `.crash_worker`, `.crash_terminate`, `.hang_main` | Fault: main thread · Fault: worker thread · Fault: terminate · Hang: main thread |
+| `ui.dev.command.crash_main`, `.crash_worker`, `.crash_terminate`, `.crash_invalid_parameter`, `.crash_pure_call`, `.hang_main` | Fault: main thread · Fault: worker thread · Fault: terminate · Fault: invalid parameter · Fault: pure call · Hang: main thread |
 | `ui.match.cheats_used` | Debug commands were used in this session |
 
 ## 5 Concurrency and performance budget
@@ -874,7 +867,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | a thread's log buffer is full | trace, then debug records dropped and counted; warnings and above kept | DBG-061, DBG-062 |
 | the log file cannot be opened | the other sinks continue; reported once | DBG-064 |
 | a failed release check or bounds check | black box, flushed fatal record, platform fatal path, dump | DBG-073 |
-| a failed debug assertion | logged, noted in the black box, debugger break; execution continues | DBG-070 |
+| a failed development check | debugger break, otherwise the release-check path | DBG-070, PLT-124 |
 | a marker left with a different name | debug assertion; the tree pops the current node | DBG-081 |
 | GPU timestamps not ready | the previous values are shown; the CPU never waits | DBG-080 |
 | a debug command in a session without cheats, from an unauthorised sender or with an invalid argument | dropped, logged, counted | DBG-118 |
@@ -903,7 +896,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | profile view, sound editor, sound statistics, network statistics | no; audio is outside the simulation | none | local, or the audio overlay page (rows 14, 15) |
 | narrator portrait in the sky | no: sky drawing only, on a real-time timer | none | not specified (DBG-120) |
 
-**DBG-222** (MUST) Crash capture is the platform layer's ([platform layer](platform_layer.md), ADR-0065): this component supplies the black box (DBG-047) and the registered log file (DBG-049), and the CI-provided local-dump setting on test machines collects soak and test crashes (DBG-167). The dedicated-server crash path is a design-phase decision (ADR-0065).
+**DBG-222** (MUST) Crash capture is the platform layer's ([platform layer](platform_layer.md) PLT-113 to PLT-121, ADR-0065): this component supplies the black box (DBG-047) and the registered log file (DBG-049), and the CI-provided local-dump setting on test machines collects soak and test crashes (DBG-167). The dedicated-server crash path is a design-phase decision (ADR-0065).
 
 **DBG-223** (MUST) This component sends no telemetry other than the data set of DBG-181, and it sends that only with consent; component counters reach telemetry only through that data set (AEN-325, AST-126).
 
@@ -915,7 +908,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | T2 | performance | Eight threads log 10⁶ debug records; the per-call cost and the frame-time increase stay within their budgets; warnings logged during the flood all arrive. | DBG-061, DBG-206 |
 | T3 | unit | A full buffer drops trace before debug records, never warnings; the drop counts appear in the next drain warning. | DBG-061, DBG-062 |
 | T4 | unit | A 20-byte hex dump gives two lines of 16 and 4 bytes. | DBG-063 |
-| T5 | crash | A failed release check on the main thread, on a worker thread and through the terminate path each produce a dump with the registered log ending in the fatal record and a black box holding the message, condition, file and line; the four crash-test commands each produce a dump. | DBG-047, DBG-073, DBG-117 |
+| T5 | crash | A failed release check on the main thread, on a worker thread and through the terminate path each produce a dump with the registered log ending in the fatal record and a black box holding the message, condition, file and line; the six crash-test commands each produce a report (platform layer T22). | DBG-047, DBG-073, DBG-117 |
 | T6 | unit | A captured dump and log of a session with a seeded chat message and account token contain neither string. | DBG-047, DBG-066 |
 | T7 | golden-hash | A recorded match replayed with every diagnostic facility on and with every facility off gives identical per-tick simulation hashes. | DBG-002 |
 | T8 | unit | With the manual clock, nested markers of known durations give the expected calls, current, last and history times, shortest and longest; after `ResetHistory` the history is empty. | DBG-081 to DBG-084 |

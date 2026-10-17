@@ -30,7 +30,7 @@ Table 1-A Boundaries.
 | Neighbour | Gives the build tooling | Takes from it |
 |---|---|---|
 | [asset pipeline](asset_pipeline_and_resources.md) (`AST`) | the content stages, the packs, the asset indexes, the mount manifests, the content manifest, the placeholder flags and the asset diagnostics | the edition manifests and their release flag, the products and flavours, the CI jobs that run the content build, the installation of the packs (AST-056) |
-| [data schemas](data_schemas/README.md) (`DAT`) | the edition-manifest schema, the record diagnostics (DAT-057), the canonical writer and the migration step | the content build program that runs them, CI |
+| [data schemas](data_schemas/README.md) (`DAT`) | the edition-manifest schema, the record diagnostics (DAT-051), the canonical writer and the migration step | the content build program that runs them, CI |
 | [platform layer](platform_layer.md) (`PLT`) | the crash path and its registrations, the user-data folders, the start-up checks and the start-up message path | the build identity, the install layout, the channel tag, the test-machine dump settings |
 | [diagnostics](diagnostics_test_and_performance.md) (`DBG`) | the black box, the test harness, the soak harness, the performance tests and their budgets | the CI jobs and their artefacts, the build identity, the symbol store, the soak edition |
 | [renderer](renderer/README.md) (`RND`) | the use of the Agility SDK runtime and the version string drawn in the front end (RND-076) | the exported Agility SDK constants, generated from the package pin (§4.1) |
@@ -136,7 +136,7 @@ Table 2.2-C Exit codes of the content build.
 
 ### 2.3 Interface sketch
 
-The sketch is a C++23 declaration outline, not an implementation (ADR-0052). Diagnostics are those of the data schemas (`species::data::Diagnostic`, DAT-057); packs and hashes are those of the asset pipeline (`species::assets`).
+The sketch is a C++23 declaration outline, not an implementation (ADR-0052). Diagnostics are those of the data schemas (`species::data::Diagnostic`, DAT-051); packs and hashes are those of the asset pipeline (`species::assets`).
 
 ```cpp
 namespace species::build {
@@ -226,7 +226,7 @@ Table 2.4-A Outputs of the build.
 |---|---|---|---|
 | packs, asset indexes, mount manifest | content build | asset pipeline (AST-053 to AST-058) | client, server, packaging |
 | content manifest | content build | asset pipeline (AST-059) | client, server, packaging, the build identity, the soak harness (DEC-804) |
-| validation report | content build | data schemas (DAT-057) and asset pipeline (§6 of that document) | developers, CI |
+| validation report | content build | data schemas (DAT-051) and asset pipeline (§6 of that document) | developers, CI |
 | placeholder report | content build | asset pipeline (AST-083) | producers, CI |
 | localisation report | content build | this document (§4.7) | translators, the release sign-off, CI |
 | map-identity listing | content build | this document (§4.6) | CI, the soak harness, release notes |
@@ -239,7 +239,7 @@ Table 2.4-A Outputs of the build.
 
 ### 2.5 Threading contract
 
-**BLD-012** (MUST) The content build runs each stage as tasks on `--jobs` worker threads, one authoring file or one member per task, and merges the results of a stage in byte-wise key order before the next stage starts. Its outputs and its reports do not depend on the number of threads or on the order in which tasks finish (DAT-054, AST-066). Cross-file checks run only after every file of the content set has passed the per-file stages (DAT-054).
+**BLD-012** (MUST) The content build runs each stage as tasks on `--jobs` worker threads, one authoring file or one member per task, and merges the results of a stage in byte-wise key order before the next stage starts. Its outputs and its reports do not depend on the number of threads or on the order in which tasks finish (DAT-048, AST-066). Cross-file checks run only after every file of the content set has passed the per-file stages (DAT-048).
 
 ## 3 Data model
 
@@ -307,7 +307,7 @@ Table 3.2-C Reference build behaviours that are not edition flags.
 | network statistics window | present | the developer console of `Debug` and `Development` builds (table 3.1-B, DEC-041) |
 | debug log written to a file | on | the rotating log file of every flavour (ADR-0067) |
 | developer tools: the cheat window, a sound editor, a gesture editor, a video generator, random-draw tracking and a Supply-crate help window | absent | the cheats are sequenced debug commands of `Debug` and `Development` builds (DEC-041); the other tools are not specified |
-| object kinds that no match creates are refused | on | a build error (DEC-802, DAT-032) |
+| object kinds that no match creates are refused | on | a build error (DEC-802, DAT-026) |
 | player authentication | required | entitlement and identity are DEC-248; until decided, no entitlement check applies |
 | permitted maps | every map of the edition | the `maps` field `all` (BLD-053) |
 | exactly one build target per build | enforced | exactly one product per configure (BLD-044) and exactly one edition per install directory (BLD-052) |
@@ -438,7 +438,7 @@ Table 3.5-A Install-directory contents.
 
 **BLD-053** (MUST) The `maps` field fixes the **permitted maps** of an edition at build time: `all` permits every map of the edition, and a list permits only the listed map ids, each of which must be a map of the edition. A match-start command that names a map outside the permitted set does not start a match, and the refusal is logged with the map id. The permitted set is never changed or supplied at run time; trial and full access are separated by the platform entitlement, never by an in-game list of maps or modes (DEC-248 item 5). The reference edition permits every map it holds.
 
-**BLD-054** (MUST) An edition marked for release obeys these rules in addition, each a content error when broken: it holds no placeholder (AST-085); every asset it selects is referenced (AST-090); every language that it lists is complete, so that no listed language is withheld unnoticed (BLD-081); a package of it is made only from a CI build whose identity carries no modified marker; and every package of it is signed (§4.11). An edition not marked for release may hold placeholders and unreferenced assets, which its reports list (AST-090, DAT-038).
+**BLD-054** (MUST) An edition marked for release obeys these rules in addition, each a content error when broken: it holds no placeholder (AST-085); every asset it selects is referenced (AST-090); every language that it lists is complete, so that no listed language is withheld unnoticed (BLD-081); a package of it is made only from a CI build whose identity carries no modified marker; and every package of it is signed (§4.11). An edition not marked for release may hold placeholders and unreferenced assets, which its reports list (AST-090, DAT-032).
 
 **BLD-055** (MUST) The release flag of an edition, like the semantic version, changes only in a reviewed release change. CI builds and validates every edition on every change, whether or not it is marked for release (ADR-0070), so the reports of an edition that is to be released show its remaining placeholders and fallback ids throughout production.
 
@@ -497,7 +497,7 @@ Table 4.5-A Stage order of a content-build run.
 | 4 | `Cook` | cook every member whose inputs changed | AST-065 step 3, BLD-066 |
 | 5 | `Derive` | produce the derived variants | AST-065 step 4 |
 | 6 | `Placeholders` | generate a placeholder for every manifest row with no authored file | AST-065 step 5, AST-082 to AST-085 |
-| 7 | `CookRecordsAndGenerate` | cook data records, maps, string tables and explainer scripts; render thumbnails; generate the map index and the residency lists | AST-065 step 6, DAT-039 |
+| 7 | `CookRecordsAndGenerate` | cook data records, maps, string tables and explainer scripts; render thumbnails; generate the map index and the residency lists | AST-065 step 6, DAT-033 |
 | 8 | `CheckReferences` | check every reference and the unreferenced assets | AST-065 step 7, BLD-069 |
 | 9 | `SelectEditions` | select the entries of each edition | AST-065 step 8, BLD-049 |
 | 10 | `Localisation` | decide the offered languages of each edition, write the localisation report | §4.7 |
@@ -505,22 +505,22 @@ Table 4.5-A Stage order of a content-build run.
 | 12 | `WritePacks` | write the packs, the asset indexes and the mount manifests | AST-065 step 9 |
 | 13 | `WriteManifestsAndReports` | write the content manifest, the validation report, the placeholder report and the files of §3.4 | AST-065 step 10 |
 
-**BLD-065** (MUST) An error in any stage fails the run with the stage and the input named (AST-065). Every input that a stage declares must exist: a missing tool, list, record or source is a tool failure or a content error, never a skipped step, and the run never continues past a failed stage. An error in one file does not stop the per-file checks of the other files, so one run reports every error of a stage (DAT-030).
+**BLD-065** (MUST) An error in any stage fails the run with the stage and the input named (AST-065). Every input that a stage declares must exist: a missing tool, list, record or source is a tool failure or a content error, never a skipped step, and the run never continues past a failed stage. An error in one file does not stop the per-file checks of the other files, so one run reports every error of a stage (DAT-024).
 
 **BLD-066** (MUST) An incremental run keeps a dependency graph: each output records the hashes of its inputs, the content build's tool version and the hash of its cook options, and is rebuilt when any of them changes (ADR-0059). An output whose new bytes equal its old bytes is not rewritten, so its dependants are not rebuilt and its file time does not change. A `--clean` run removes the output directory first. A clean run and an incremental run of the same inputs give byte-identical outputs.
 
 **BLD-067** (MUST) Identical inputs give byte-identical packs, manifests and reports on any build agent and with any `--jobs` value (AST-066, BLD-012). A nightly CI job builds one revision twice, on different agents and with clean output directories, and compares every output byte for byte (ADR-0059).
 
-**BLD-068** (MUST) The content build runs every validator class of table 4.5-B. The document named owns the rule of each class; the content build reports every diagnostic in the validation report with its class, file, line, column and field (DAT-057), and each class has a failing fixture in the content build's test suite (AST-093, DAT-037).
+**BLD-068** (MUST) The content build runs every validator class of table 4.5-B. The document named owns the rule of each class; the content build reports every diagnostic in the validation report with its class, file, line, column and field (DAT-051), and each class has a failing fixture in the content build's test suite (AST-093, DAT-031).
 
 Table 4.5-B Validator classes of the content build.
 
 | Class | Catches | Severity | Rule |
 |---|---|---|---|
-| schema errors | malformed text, unknown or missing fields, wrong types, out-of-range or over-long values, positional tables, unknown or unmigrated schema versions | error | DAT-025 to DAT-033, DAT-052; DEC-015 |
-| duplicates | a key twice in one object; two records of one type with one stable id; a repeated field | error | DAT-028, DAT-031; DEC-801 |
-| missing references | an asset, record or string id that does not resolve, or that resolves to the wrong kind | error | AST-089, DAT-034 to DAT-036; DEC-015 |
-| case mismatches | keys or ids that differ only in case; a key or id that is not canonical | error | AST-014, AST-015, DAT-032 |
+| schema errors | malformed text, unknown or missing fields, wrong types, out-of-range or over-long values, positional tables, unknown or unmigrated schema versions | error | DAT-019 to DAT-027, DAT-046; DEC-015 |
+| duplicates | a key twice in one object; two records of one type with one stable id; a repeated field | error | DAT-022, DAT-025; DEC-801 |
+| missing references | an asset, record or string id that does not resolve, or that resolves to the wrong kind | error | AST-089, DAT-028 to DAT-030; DEC-015 |
+| case mismatches | keys or ids that differ only in case; a key or id that is not canonical | error | AST-014, AST-015, DAT-026 |
 | stray files | a file under the content root that belongs to no manifest row, import record or data record | error | AST-013 |
 | unreferenced assets | an asset that an edition selects and nothing references | error in an edition marked for release, warning otherwise | AST-090, BLD-069; DEC-563 |
 | placeholders | a manifest row with no authored file | error in an edition marked for release, listed otherwise | AST-083, AST-085 |
@@ -604,7 +604,7 @@ Table 4.7-A Language groups.
 
 The export also writes the base-language strings file once per run and a summary of the counts per language and class. Every file is UTF-8 (ADR-0063).
 
-**BLD-084** (MUST) `strings-import` validates each translated file with the string-table validators (message syntax, declared arguments, caption markup, maximum lengths and duplicate ids). Only when the whole file passes does it write the language's string table, through the canonical writer with atomic replacement (DEC-800, DAT-046); a file that fails changes nothing and is reported with its diagnostics. The import records the base-language text that the language was translated from, which the next export compares with.
+**BLD-084** (MUST) `strings-import` validates each translated file with the string-table validators (message syntax, declared arguments, caption markup, maximum lengths and duplicate ids). Only when the whole file passes does it write the language's string table, through the canonical writer with atomic replacement (DEC-800, DAT-040); a file that fails changes nothing and is reported with its diagnostics. The import records the base-language text that the language was translated from, which the next export compares with.
 
 **BLD-085** (MUST) The validation report holds the markup preview of every string: its expansion in each input mode, with an error for an input-mode passage that is not closed, a binding argument that names no action, an embedded id that does not exist and a cycle of embedded ids (UI-224). Reviewers read it as plain text or as an HTML page.
 
@@ -636,7 +636,7 @@ sequenceDiagram
 
 **BLD-087** (MUST) A map tool validates a map when it saves it with the content build's own validators, through `ContentBuild::ValidateMapFile`, and rejects the map with the diagnostics of the validation report (R-MAP-400, DEC-561, DEC-015). Whether a tool may keep an unfinished map that fails these rules is a design-phase input ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) §8).
 
-**BLD-088** (MUST) A map tool writes authoring files only, through the canonical writer with atomic replacement (DEC-800, DAT-046): under the content root of a development checkout, or into the player's map folder for a custom map (AST-106). It never writes a pack, a thumbnail, a map index or a map hash; the content build generates those (AST-086, AST-087, BLD-072).
+**BLD-088** (MUST) A map tool writes authoring files only, through the canonical writer with atomic replacement (DEC-800, DAT-040): under the content root of a development checkout, or into the player's map folder for a custom map (AST-106). It never writes a pack, a thumbnail, a map index or a map hash; the content build generates those (AST-086, AST-087, BLD-072).
 
 **BLD-089** (MUST) In a development checkout, a save followed by the `loose` command cooks the changed map and its dependants into the loose-content directory, which a `Debug` or `Development` client mounts last (AST-105) and reloads ([asset pipeline](asset_pipeline_and_resources.md) §4.14). A session that runs with loose content reports a modified content identity (AST-105). The round trip from a save to a reload needs no code build.
 
@@ -793,7 +793,7 @@ Values that the rules above use and other documents own: `ast.hash.display_hex_d
 
 **BLD-116** (MUST) The content build parallelises within a stage only (BLD-012): per-file and per-member tasks run on `--jobs` worker threads, and cross-file checks, edition selection, the localisation report and the map-identity listing run after the stage before them has finished for every file. Packaging, signing and symbol publication of one build run after its compile and content-build jobs; separate products and editions package in parallel.
 
-**BLD-117** (MUST) The budgets of table 5-A are starting values, measured on every run and tracked by the nightly performance job (ADR-0070); a run above a budget is reported with the stage times of DAT-059, and a budget changes only after measurement.
+**BLD-117** (MUST) The budgets of table 5-A are starting values, measured on every run and tracked by the nightly performance job (ADR-0070); a run above a budget is reported with the stage times of DAT-053, and a budget changes only after measurement.
 
 Table 5-A Build budgets.
 
@@ -835,7 +835,7 @@ Table 5-A Build budgets.
 | a match-start command for a map that is not permitted | match start | no match starts; the refusal is logged with the map id | BLD-053 |
 | an unsigned, wrongly signed or untimestamped file in a release candidate | CI signature check | the release candidate is not published | BLD-108 |
 
-**BLD-119** (MUST) The content build logs in the `tools` category of the logging system (ADR-0067): each stage's start, end and time, the counts of DAT-059, every tool failure, and the run's summary of errors, warnings, placeholders and offered languages per edition. Packaging and signing log every file they add, check and sign. Every log of a build tool starts with the tool's own build identity (BLD-061).
+**BLD-119** (MUST) The content build logs in the `tools` category of the logging system (ADR-0067): each stage's start, end and time, the counts of DAT-053, every tool failure, and the run's summary of errors, warnings, placeholders and offered languages per edition. Packaging and signing log every file they add, check and sign. Every log of a build tool starts with the tool's own build identity (BLD-061).
 
 **BLD-120** (MUST) The build sends no telemetry. A client's telemetry submissions carry the build identity of the client, within the fixed data set of ADR-0066; the channel tag reaches the log header only (BLD-021).
 
