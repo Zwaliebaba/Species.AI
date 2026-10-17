@@ -18,7 +18,7 @@
 - [10 Gesture rendering](#10-gesture-rendering)
 - [11 Camera shake and screen effects](#11-camera-shake-and-screen-effects)
 - [12 VFX budgets, limits and determinism](#12-vfx-budgets-limits-and-determinism)
-- [13 Re-implementation notes for a modern GPU VFX system](#13-re-implementation-notes-for-a-modern-gpu-vfx-system)
+- [13 Re-implementation notes for a modern GPU VFX system](#13-re-implementation-notes-for-a-modern-gpu-vfx-system-directx-12)
 - [Open questions and unknowns](#open-questions-and-unknowns)
 - [Docs-vs-code discrepancies](#docs-vs-code-discrepancies)
 - [IP items](#ip-items)

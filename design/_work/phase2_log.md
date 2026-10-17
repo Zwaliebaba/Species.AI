@@ -185,3 +185,6 @@
 
 ## S10 (10_audio_design.md) — done, ~319 KB, checks pass
 - 10 contradictions (R1–R10): music RELEASE 3.29–20.71 s on 14/17 blocks (27 said 0 → coordinator corrected 27 after verifying data); 22 effect uses in 22 blocks (27 said 21 → corrected); no zero beep when timed game ends (code in branch that only runs while time remains); master volume slider live (filename-case include). scripts/S_10_audio_tables.py re-parses sounds.txt (0 mismatches vs P16/X2b): 469 rows, 74 bound-but-silent pairs, 22 effect uses, 77-file call-site map. 10-U1..U16.
+
+## S26 (26_animation_and_vfx.md) — done, ~161 KB, checks pass
+- No skeletal animation (legs, trails, cloth flags all procedural). All 6 .anim files object by object (scripts/S_26_anim_tracks.py); 19 particle types + 98 live emitter sites (scripts/S_26_particle_emitters.py). 8 contradictions: Spider uses EntityLeg; Darwinian cards blend to billboards with distance; spider ≤1 regular foot lift/tick + emergency lifts; shattering ≤502 tris/fragment; debris spin ±2 rad/s; gesture trail fades continuously; effects.txt configures only audio DSP filters (inactive unless hidden pref) — EffectProcessor unrelated; particles can't affect sim except via shared synced RNG draws at spawn. 26-U1..U9.

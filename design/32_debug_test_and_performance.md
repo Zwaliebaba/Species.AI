@@ -947,3 +947,51 @@ In FULL steps 2–3 are inert: no snapshot exists and frames are matched by `Seq
 8. **Telemetry with consent** replacing the FTP benchmark (§8.6).
 9. **Data validators** in the content pipeline instead of run-time-only checks (the script test of §7.2 and the language test of §5.8 belong in the build).
 
+## Open questions and unknowns
+
+| Id | Question | Kind | What would resolve it |
+|---|---|---|---|
+| 32-U1 | What `throw;` with no active exception does in `AppReleaseAssertFailed` under the shipped CRT: caught by the `AppMain` SEH filter (ERRORLOG + minidump + support tool after the black box) or `terminate()` → `abort()` bypassing it | [U] | trigger a release assert in a `Release|Win32` build and observe which files appear |
+| 32-U2 | Real per-frame and per-system cost, draw-call counts and the population at which the shipped build drops below 30 / 15 fps on the EULA minimum hardware — no measurement exists in the tree | [U] | run a DEBUG build with the Profiler window (glFinish off) or an external profiler on `mp_benchmark_1` and a 2000-population map |
+| 32-U3 | Whether the hardware-compatibility (and assault-stress) SKUs were built with `BENCHMARK_AND_FTP`, and how they started `mp_benchmark_1` / `mp_assault_stress` although `GameTypes none` makes `GameMenu::AddMap` discard them (the hwcompat packaging copies `ncftpput.exe`) | [U] / design-critical [I] that hwcompat was the benchmark SKU | build logs or the `universal_include.h` revision used for those SKUs; their data archives |
+| 32-U4 | Whether the dxdiag filter ever captured `GFX` / `SND` lines (the reader stops at the first blank line) | [I] only `SYS` | run `dxdiag /t` on a period machine and feed it to `BenchMark::BuildDxDiag` |
+| 32-U5 | Whether the black-box EBP walk yields a usable trace in `Release|Win32` (`/O2` implies frame-pointer omission on x86 unless overridden) | [I] unreliable | inspect the compiled prologues or the `cl` command line of the shipped exe |
+| 32-U6 | What the MSVC 2005 CRT prints for the malformed formats `"%2.1 Kb/sec"`, `"%2.1 secs"` (network window) and `"%4.1"`, `"%4.0"` (profiler rows) | [U] | run the window |
+| 32-U7 | Whether the testbed compiles and runs at this commit (never-defined macro; `!GetTestBedMode() == TESTBED_ON` precedence slip in `code/UI/GameServerButton.h`; out-of-range reads noted in §6.2) | [U] | build with `TESTBED_ENABLED` and run a server and a client |
+| 32-U8 | Which build the beta release note "debugging code … to track rand sync errors" refers to (`TRACK_SYNC_RAND` is commented out for the beta targets here; beta groups do have snapshot IFrames) | [U] | beta-build configuration history |
+| 32-I1 | Network-safety classification of the 23 cheats (§4.3), in particular "Allow Arbitrary Placement" desyncing on the first otherwise-invalid placement and "Clear Resources" being simulation-safe | design-critical [I] | a two-client DEBUG session using each cheat while watching the network window |
+| 32-I2 | The catch-up spiral of §12.2 (a slow client spends up to 0.3 s per frame simulating, lowering fps further) and the 0-slice dead band for 1–3 pending slices | design-critical [I] (code [C], effect inferred) | instrument `GetNumSlicesToAdvance` on a throttled client |
+| 32-I3 | "Give all research" being a no-op in Multiwinia | [I] | run it in a DEBUG match and compare research levels |
+
+## Docs-vs-code discrepancies
+
+| Document | Claim | Code / data | Ref |
+|---|---|---|---|
+| `docs/cpu cycles.txt` | named by the specification as the performance cross-check | a gameplay design note (CPU-cycle program economy, task switching, Debug Zeppelins); no performance data; none of the mechanics exist in Multiwinia | §12.1 |
+| `docs/multiwiniareleasenotes-beta.txt` | the beta records benchmarks and uploads them to the FTP server "when you exit" | recorder compiled out in every target here (`//#define BENCHMARK_AND_FTP`); when enabled the upload runs at the **end of each match**, after `LocationGameLoop`; the `benchmarks` folder name matches | `code/main.cpp:EnterLocation`, `code/benchmark.cpp:BenchMark::Upload` |
+| `docs/multiwiniareleasenotes-beta.txt` | "debugging code is enabled to track rand sync errors" | `TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`; beta groups only get snapshot IFrames (`TARGET_BETATEST_GROUP`) | `code/lib/universal_include.h`, `code/network/iframe.cpp` |
+| `docs/Network.txt` | the network "Ticks at 25 FPS" and "Runs heavy weight physics at 25 fps" | server tick 10 Hz (`+= 0.1` s); 10 slices per tick | `code/network/server.cpp:Server::AdvanceIfNecessary`, `code/globals.h` |
+| `docs/NetworkThreads.txt` | dedicated send threads that sleep when queues are empty | sending is synchronous on the main thread | [22](22_determinism_and_networking.md) |
+| `docs/multiwinia_todo.txt` | "Debug tools: Profile for network system, Bandwidth send / received, latency etc, Server logging" | partly implemented: bandwidth/latency in the F9 window, server sections in the CPU profiler, server events in `debug.txt`; no dedicated network profile | §5.1, §9.5 |
+| `docs/detailed schedule.txt` | debug windows (Sound Stats/Parameter/Editor/Profile, Profile, Pokey, Network, Input Logger, Grabber, Gesture, Debug Menu, Cheat Window, Camera Anim) "missed out" of translation | consistent: all use literal English captions; the Input Logger has no implementation (`InputLogButton` undefined) | §3.2 |
+| Debug-menu captions | "Profile (F6)", "Display FPS (F5)", "Dbg Cam (F2)", "Toggle Editor (F3)", "Cheat Menu (F4)", "Sound Stats (F7)", "Sound Editor (F8)", "Sound Profile (F9)" | none of these keys is bound to these actions (F1–F8 are task-manager keys; F9 = network stats, F11 = cheat menu) | `data/input/input_preferences.txt` |
+| Code comment in `Server::AdvanceIfNecessary` | testbed server "Advance time 10 times faster than normal mode" | every branch adds 0.1 s — no speed-up | §6.7 |
+| `tools/build_multiwinia_hwcompat.bat` | copies `ncftpput.exe` (the benchmark uploader) into the hwcompat build | `TARGET_PC_HARDWARECOMPAT` does not define `BENCHMARK_AND_FTP` in this tree, and `ncftpput.exe` is absent from the tree | 32-U3 |
+| `docs/changes.txt` (Darwinia) | `RenderLandscapeMode` default "set to 2 (Vertex Buffer Objects)" | default −1 = automatic: VBO when the extension is supported, else display lists (same effect, different stored value) | `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer` |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" (`APP_NAME`) in the debug-log banner, black-box header and `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/lib/universal_include.h`, `contrib/systemiv/lib/debug_utils.cpp:AppGenerateBlackBox`, `code/benchmark.cpp` | product-name constant of the new game |
+| Profile folder `Introversion\Multiwinia\`, registry key `HKCU\Software\Introversion\Multiwinia` | brand | `code/app.cpp:App::GetProfileDirectory`, `contrib/XCrashReport/RegistryDefines.h` | own company / product folder and key |
+| Introversion FTP host and hard-coded FTP account | brand / credential | `code/benchmark.cpp:BenchMark::Upload` | none — token-based HTTPS telemetry endpoint; never embed credentials |
+| Support tool name `MultiwiniaSupport.exe`, crash-support e-mail address and crash-report host | brand / contact | `contrib/XCrashReport/CrashFileNames.h`, `contrib/XCrashReport/EmailDefines.h`, `tools/multiwiniasupport/MultiwiniaSupport.exe` | own crash reporter and endpoint |
+| Dr Sepulveda face cheat and its images | character / art | `code/clouds.cpp:Clouds::RenderFace`, `data/sepulveda/sepulveda1.bmp` (and siblings) | drop |
+| Cheat captions "Spawn Green/Red/Yellow/Blue/Virus/Future", "Spawn Virii", "Spawn Spirits", "Show Dr S Face"; campaign names "generator", "mine", "receiver", "pattern_buffer"; "Enable Generator and Mine", "Enable Receiver and Buffer", "Open All Locations" | text / names | `code/interface/cheat_window.cpp` | "Spawn Team 1–4", "Spawn Hostile", "Spawn Souls"; drop the campaign cheats |
+| All literal debug captions ("Kill All Enemies", "Allow Arbitrary Placement", "Give all research", "Clear Resources", "Spawn Ports", "GoodCrate", "Profile (F6)", "Dbg Cam (F2)", "Toggle glFinish", "Reset History", "Pokey Playground", the network-window labels) | text | `code/interface/cheat_window.cpp`, `code/interface/debugmenu.cpp`, `code/interface/profilewindow.cpp`, `code/interface/network_window.cpp` | rewrite |
+| "DWs" (Darwinians) in the FPS overlay | name | `code/renderer.cpp:Renderer::RenderFrame` | "Units" |
+| Testbed captions `start_testbed_server` "Testbed Server", `start_testbed_client` "Testbed Client"; English mode names written to `TestBedLog.txt` ("Domination", "King Of The Hill", "Capture the Statue", "Assault", "Rocket Riot", "Blitzkrieg") | text | `data/language/english.txt`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::UpdateTestBed` | own mode names ([01](01_game_modes.md) register) |
+| Stress maps "Stress Test" (+ description) and "Assault Stress Test" | level / text | `data/levels/mp_benchmark_1.txt`, `data/levels/mp_assault_stress.txt`, `data/language/english.txt` | `stress_test_01`, `stress_test_assault_01` |
+| Third-party code: exception handler (Bruce Dawson, modified by Hans Dietrich) and XCrashReport; `AVIGenerator` (Jonathan de Halleux); NcFTP's `ncftpput`; MT19937 (Matsumoto–Nishimura) | third-party licence | `code/lib/exception_handler.cpp`, `contrib/XCrashReport/XCrashReport.cpp`, `code/lib/avi_generator.cpp`, `tools/build_multiwinia_hwcompat.bat`, `contrib/systemiv/lib/math/random_number.cpp` | platform crash APIs / own implementations |
+
