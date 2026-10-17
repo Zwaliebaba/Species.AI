@@ -15,30 +15,74 @@ This document specifies the schemas of the records that the content build reads 
 The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
-namespace species::data::build {
+namespace Engine
+{
 
-enum class TextureKind : std::uint8_t { Colour, Ui, Normal, Mask, ExactData, CpuTable };   // AST table 3.3-A
-enum class ColourSpace : std::uint8_t { Srgb, Linear };
-enum class AlphaMode : std::uint8_t { Opaque, Straight, Premultiplied, Additive, Cutout };
-enum class MipPolicy : std::uint8_t { Full, None };
-enum class SamplerKind : std::uint8_t { LinearClamp, LinearWrap, PointClamp };             // ADR-018
-enum class TintMarking : std::uint8_t { None, VertexWeight, MaterialFlag };                // AST-034
-enum class MeshRole : std::uint8_t { Render, Collision };
-
-struct TextureImportRecord;                     // table 3.1-A
-struct MeshImportRecord;                        // table 3.2-A
-struct AudioImportRecord;                       // table 3.3-A
-struct EngineAssetTable;                        // table 3.4-A, generated from the code
-struct EditionManifest;                         // table 3.5-A
-
-class ImportRecordReader {                      // content build only
-public:
-  std::expected<TextureImportRecord, std::vector<Diagnostic>> ReadTexture(const JsonDocument&) const;
-  std::expected<MeshImportRecord, std::vector<Diagnostic>> ReadMesh(const JsonDocument&) const;
-  std::expected<AudioImportRecord, std::vector<Diagnostic>> ReadAudio(const JsonDocument&) const;
+// AST table 3.3-A.
+enum class TextureKind : std::uint8_t
+{
+  Color,
+  Ui,
+  Normal,
+  Mask,
+  ExactData,
+  CpuTable
+};
+enum class ColorSpace : std::uint8_t
+{
+  Srgb,
+  Linear
+};
+enum class AlphaMode : std::uint8_t
+{
+  Opaque,
+  Straight,
+  Premultiplied,
+  Additive,
+  Cutout
+};
+enum class MipPolicy : std::uint8_t
+{
+  Full,
+  None
+};
+// The closed set of ADR-018.
+enum class SamplerKind : std::uint8_t
+{
+  LinearClamp,
+  LinearWrap,
+  PointClamp,
+  PointMagnifyClamp
+};
+// AST-034.
+enum class TintMarking : std::uint8_t
+{
+  None,
+  VertexWeight,
+  MaterialFlag
+};
+enum class MeshRole : std::uint8_t
+{
+  Render,
+  Collision
 };
 
-}  // namespace species::data::build
+struct TextureImportRecord; // table 3.1-A
+struct MeshImportRecord;    // table 3.2-A
+struct AudioImportRecord;   // table 3.3-A
+struct EngineAssetTable;    // table 3.4-A, generated from the code
+struct EditionManifest;     // table 3.5-A
+
+// The content build tool only.
+class ImportRecordReader
+{
+public:
+  std::expected<TextureImportRecord, std::vector<Diagnostic>> ReadTexture(const JsonDocument& _document) const;
+  std::expected<MeshImportRecord, std::vector<Diagnostic>> ReadMesh(const JsonDocument& _document) const;
+  std::expected<AudioImportRecord, std::vector<Diagnostic>> ReadAudio(const JsonDocument& _document) const;
+};
+
+} // namespace Engine
 ```
 
 **Data contracts.** The cookers of the [asset pipeline](../asset_pipeline_and_resources.md) read the import records (AST-018); the content build's selection and validation steps read the engine asset table and the edition manifests (AST-017, AST-089, AST-090, BLD-049). The runtime reads none of these records, except the feature flags of an edition, which the content build writes into the packs as a record (BLD-016).
@@ -56,11 +100,11 @@ Table 3.1-A Fields of a texture import record.
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | kind | `kind` | enumeration `colour`, `ui`, `normal`, `mask`, `exact_data`, `cpu_table` | defaulted: from the row's `target_format` (AST table 3.3-B) | must agree with the row (AST-012) |
-| colour space | `colour_space` | enumeration `srgb`, `linear` | defaulted: from the row's `colour_space` | must agree with the row |
+| colour space | `color_space` | enumeration `srgb`, `linear` | defaulted: from the row's `colour_space` column | must agree with the row |
 | alpha mode | `alpha_mode` | enumeration `opaque`, `straight`, `premultiplied`, `additive`, `cutout` | defaulted: from the row's `alpha_mode` through AST table 3.3-C | must agree with the row |
 | cut-out threshold | `cutout_threshold` | integer alpha value | required with `cutout`, absent otherwise | the threshold of the pipeline-state entry that draws the art (AST-019) |
 | mip policy | `mip_policy` | enumeration `full`, `none` | defaulted: from the row's `target_format` | — |
-| sampler | `sampler` | enumeration `linear_clamp`, `linear_wrap`, `point_clamp` | defaulted: `linear_clamp`; `linear_wrap` where the row says "wrap repeat"; `point_clamp` when pixel-exact | the closed set of ADR-018 |
+| sampler | `sampler` | enumeration `linear_clamp`, `linear_wrap`, `point_clamp`, `point_magnify_clamp` | defaulted: `linear_clamp`; `linear_wrap` where the row says "wrap repeat"; `point_clamp` when pixel-exact; `point_magnify_clamp` for art that is magnified into hard-edged blocks and minified smoothly (AST-025) | the closed set of ADR-018 |
 | tint mask | `tint_mask` | asset reference to a single-channel mask | absence-meaningful: none | ADR-020 |
 | pixel-exact | `pixel_exact` | boolean | defaulted: false | — |
 | authoring scale | `authoring_scale` | integer: 1 or `ast.texture.ui_authoring_scale` | defaulted: `ast.texture.ui_authoring_scale` where the row says "author at 2x", otherwise 1 | — |

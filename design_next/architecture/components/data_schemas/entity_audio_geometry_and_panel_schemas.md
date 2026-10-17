@@ -15,36 +15,144 @@ This document specifies the schemas of the actor stat table, the Supply-crate ou
 The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
-namespace species::data {
+namespace Species
+{
 
-struct ActorStats { ActorKind kind; double health, speed, rate; std::optional<double> actorRate; };   // table 3.1-A
-
-struct CrateOutcomeEntry {                      // table 3.2-A
-  CrateOutcome outcome; OutcomeClass cls; bool good, bad, start; std::uint8_t comebackWeight; Delivery delivery;
+// Table 3.1-A.
+struct ActorStats
+{
+  ActorKind kind;
+  double health;
+  double speed;
+  double rate;
+  std::optional<double> actorRate;
 };
 
-enum class ParamKind : std::uint8_t { Fixed, Random, Linked };
-enum class ParamUpdate : std::uint8_t { Continuous, PerNote };
-enum class ParamLink : std::uint8_t {           // R-AUD-052
-  None, Height, PosX, Altitude, PosZ, Speed, CameraDistance, ObjectAge, TeamsNearby, TimeRemaining, UnitCount };
-struct SoundParam {                             // one modulatable value (DAT-268)
-  ParamKind kind; double value, lo, hi, inLo, inHi, outLo, outHi, smoothing; ParamLink link; ParamUpdate update;
+// Table 3.2-A.
+struct CrateOutcomeEntry
+{
+  CrateOutcome outcome;
+  OutcomeClass outcomeClass;
+  bool good;
+  bool bad;
+  bool start;
+  std::uint8_t comebackWeight;
+  Delivery delivery;
 };
-enum class EffectKind : std::uint8_t {          // R-AUD-077 order; the order carries meaning
-  Chorus, Compressor, Distortion, StereoEcho, Flanger, StandardGargle, RoomReverb,
-  ParametricEqualiser, StudioReverb, ResonantLowPass, BitCrusher, Gargle, Echo, SimpleReverb };
-struct EffectBinding { EffectKind kind; std::array<SoundParam, 13> params; std::uint8_t count; };  // kind order
-struct SoundLayerDef;                           // table 3.3-B
-struct SoundEventDef { std::string fullId; std::optional<double> cooldownSeconds; std::span<const SoundLayerDef> layers; };
-struct SoundSourceDef { std::string source; std::span<const SoundEventDef> events; };
-struct DspParamDesc { std::string_view name; double minimum, maximum, declaredDefault, schemaDefault; bool integer; };
-struct DspFilterDef { EffectKind kind; std::span<const DspParamDesc> params; };   // generated, compiled in
 
-struct ExplainerKey;                            // table 3.7-B
-struct ExplainerAnimation { MatchMode mode; std::uint32_t width, height; double loopStart, loopEnd;
-                            std::span<const std::span<const ExplainerKey>> objects; };
+// Table 3.7-B.
+struct ExplainerKey;
+struct ExplainerAnimation
+{
+  MatchMode mode;
+  std::uint32_t width;
+  std::uint32_t height;
+  double loopStart;
+  double loopEnd;
+  std::span<const std::span<const ExplainerKey>> objects;
+};
 
-}  // namespace species::data
+} // namespace Species
+
+namespace Engine
+{
+
+enum class ParamKind : std::uint8_t
+{
+  Fixed,
+  Random,
+  Linked
+};
+enum class ParamUpdate : std::uint8_t
+{
+  Continuous,
+  PerNote
+};
+// R-AUD-052
+enum class ParamLink : std::uint8_t
+{
+  None,
+  Height,
+  PosX,
+  Altitude,
+  PosZ,
+  Speed,
+  CameraDistance,
+  ObjectAge,
+  TeamsNearby,
+  TimeRemaining,
+  UnitCount
+};
+// One modulatable value (DAT-268).
+struct SoundParam
+{
+  ParamKind kind;
+  double value;
+  double lo;
+  double hi;
+  double inLo;
+  double inHi;
+  double outLo;
+  double outHi;
+  double smoothing;
+  ParamLink link;
+  ParamUpdate update;
+};
+// The order of R-AUD-077, which carries meaning.
+enum class EffectKind : std::uint8_t
+{
+  Chorus,
+  Compressor,
+  Distortion,
+  StereoEcho,
+  Flanger,
+  StandardGargle,
+  RoomReverb,
+  ParametricEqualizer,
+  StudioReverb,
+  ResonantLowPass,
+  BitCrusher,
+  Gargle,
+  Echo,
+  SimpleReverb
+};
+// Parameters in the kind's order.
+struct EffectBinding
+{
+  EffectKind kind;
+  std::array<SoundParam, 13> params;
+  std::uint8_t count;
+};
+// Table 3.3-B.
+struct SoundLayerDef;
+struct SoundEventDef
+{
+  std::string fullId;
+  std::optional<double> cooldownSeconds;
+  std::span<const SoundLayerDef> layers;
+};
+struct SoundSourceDef
+{
+  std::string source;
+  std::span<const SoundEventDef> events;
+};
+struct DspParamDesc
+{
+  std::string_view name;
+  double minimum;
+  double maximum;
+  double declaredDefault;
+  double schemaDefault;
+  bool integer;
+};
+// Generated, compiled in.
+struct DspFilterDef
+{
+  EffectKind kind;
+  std::span<const DspParamDesc> params;
+};
+
+} // namespace Engine
 ```
 
 **Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled effect-kind table (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
@@ -193,7 +301,7 @@ Table 3.7-A Content of a cooked mesh.
 
 **DAT-277** (MUST) Code addresses a socket by its kind and index only (ADR-021): no reader scans socket or node names by prefix, by a text pattern or without regard to case, and no socket is found by a name that code assembles at run time. Socket kinds that no rule reads are kept as DEC-330's default states (AST-041).
 
-**DAT-278** (MUST) A collision asset (schema `geometry.collision`) holds, per node, its triangles in world units relative to the asset origin and its bounding sphere; it is simulation-relevant and is cooked from its own source, never from render geometry (AST-044, AST-077, DEC-012). A triangle index outside its node's vertex count, and a node whose attribute counts differ, are build errors (AST-045).
+**DAT-278** (MUST) A collision asset (schema `geometry.collision`) holds, per node, its triangles in world units relative to the asset origin and its bounding sphere; it is simulation-relevant and is cooked from its own source, never from render geometry (AST-044, AST-077, DEC-012). A triangle index outside its node's vertex count, and a node whose attribute counts differ, are build errors (AST-045). The collision assets of the structures and scenery that a map places use `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.source_node`, `mesh.collision.relay_mast`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.command_console`, `mesh.collision.command_console_linked`, `mesh.collision.core_device`, `mesh.collision.fuel_pump_housing`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_depot`, `mesh.collision.solar_array`, `mesh.collision.grid_pylon`, `mesh.collision.beam_dish`, `mesh.collision.barrier_emitter`, `mesh.collision.turret_head`, `mesh.collision.turret_barrel`, `mesh.collision.wall_section`, `mesh.collision.hive_mound`, `mesh.collision.spitter_plant_head`, `mesh.collision.scenery_prop` and `mesh.collision.abductor_hull`, one record of this schema per asset member.
 
 **DAT-279** (MUST) A simulation data record (`SimRecord`, schema `geometry.sim_record`) holds, for each simulation-relevant socket kind, the socket transforms in index order with the rest transforms of their node chains, in world units; the asset's member order where the simulation draws a member, as for `mesh.relic.variant`; and the bounding sphere of each collision asset (AST-043, AST-046, AST-016). The simulation reads this record and never the render mesh (ADR-021).
 
@@ -229,7 +337,7 @@ Table 3.10-B Fields of a key; their defaults are `ref.meta.explainer.key_default
 | time | `time` | presentation decimal, s | 0 or more |
 | picture | `picture` | asset member of `help.explainer_picture` | a member the manifest holds |
 | x, y | `x`, `y` | presentation decimals, canvas units | the picture's centre; y grows downwards |
-| colour role | `colour_role` | enumeration `none`, `friendly`, `enemy`, `invisible` | resolved at draw time (R-META-227, ADR-035) |
+| colour role | `color_role` | enumeration `none`, `friendly`, `enemy`, `invisible` | resolved at draw time (R-META-227, ADR-035) |
 | scale | `scale` | presentation decimal, × the picture's pixel size | 0 or more |
 | angle | `angle` | presentation decimal, degrees | any finite value; values beyond one turn make spins when interpolated |
 | horizontal flip | `flip` | boolean | — |

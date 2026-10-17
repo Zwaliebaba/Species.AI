@@ -18,8 +18,8 @@ This component is the Species engine's developer and quality infrastructure. It 
 |---|---|---|
 | [README.md](README.md) (this file) | responsibilities and boundaries, the facilities per build configuration, the interface sketch, the debug entry points and development bindings, the counter providers and data contracts, the threading contract, ownership and lifetimes, the hidden development settings, the diagnostic outputs, the tuning-table convention, diagnostics and concurrency, the failure modes, the component-wide tests and the open decisions | DBG-001 to DBG-006, DBG-020 to DBG-031, DBG-040 to DBG-042, DBG-049, DBG-200, DBG-220, DBG-222, DBG-223 |
 | [logging_checks_and_profiling.md](logging_checks_and_profiling.md) | §3.3 to §3.5 and §4.1 to §4.3: log records and categories, the profile marker catalogue, the black-box contents, logging, the check levels, the black box and the fatal path, profiling and the profile view | DBG-043 to DBG-048, DBG-060 to DBG-066, DBG-070 to DBG-075, DBG-080 to DBG-090 |
-| [developer_tools.md](developer_tools.md) | §4.4 to §4.7: the development overlay, the network statistics window, the debug commands and the debug-command window, development drawing and the bot overlay; the development text; the classification of the reference cheats | DBG-095 to DBG-099, DBG-105 to DBG-110, DBG-115 to DBG-121, DBG-130 to DBG-136, DBG-221 |
-| [test_harness_soak_and_telemetry.md](test_harness_soak_and_telemetry.md) | §4.8 to §4.10 and §8.2: the test harness, the soak test, telemetry and the replay hooks | DBG-140 to DBG-150, DBG-160 to DBG-167, DBG-180 to DBG-183, DBG-240, DBG-241 |
+| [developer_tools.md](developer_tools.md) | §4.4 to §4.7: the development overlay, the network statistics window, the debug commands and the debug-command window, development drawing and the bot overlay; the developer tools of other components that they host; the development text; the classification of the reference cheats | DBG-095 to DBG-100, DBG-105 to DBG-110, DBG-115 to DBG-121, DBG-130 to DBG-136, DBG-221 |
+| [test_harness_soak_and_telemetry.md](test_harness_soak_and_telemetry.md) | §4.8 to §4.10 and §8.2: the test harness with the component suites it hosts, the soak test, telemetry and the replay hooks | DBG-140 to DBG-151, DBG-160 to DBG-167, DBG-180 to DBG-183, DBG-240, DBG-241 |
 | [performance_baseline.md](performance_baseline.md) | §5.2 to §5.5: the frame and tick structure of the reference, the reference performance figures, the Species budget baseline and the reference test machine | DBG-201 to DBG-209 |
 
 Section numbers are those of the whole component: a section cited as §4.8 is in the file that the index names for it.
@@ -453,7 +453,7 @@ The classification of the reference cheats, DBG-221, is in [developer tools](dev
 
 ## 7 Acceptance tests
 
-The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [logging, checks and profiling](logging_checks_and_profiling.md); T14 to T19 in [developer tools](developer_tools.md); T20 to T28 and T30 in [test harness, soak test and telemetry](test_harness_soak_and_telemetry.md); T10 and T29 in [performance baseline](performance_baseline.md). The component-wide tests are these:
+The tests of each topic are in its file: T1 to T6, T8, T9, T12 and T13 in [logging, checks and profiling](logging_checks_and_profiling.md); T14 to T19 and T32 in [developer tools](developer_tools.md); T20 to T28, T30 and T31 in [test harness, soak test and telemetry](test_harness_soak_and_telemetry.md); T10 and T29 in [performance baseline](performance_baseline.md). The component-wide tests are these:
 
 | # | Kind | Test | Requirements |
 |---|---|---|---|

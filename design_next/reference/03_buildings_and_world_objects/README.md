@@ -326,9 +326,9 @@ Table 2.12-B Structure meshes, their sockets and their collision assets (asset i
 
 ### 2.13 Presentation
 
-**R-BLDG-045** (MUST) When a structure has a team and light sockets, the translucent pass draws at each light `ref.bldg.structure.light_quads` (10) nested additive quads of `fx.starburst`, up to `ref.bldg.structure.light_size_wu` (6 wu) across, in the team colour. They are drawn only on ticks where ⌊(t mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ equals the team slot, with t the number of the last completed tick and the keys 10 and 2: teams 0 to 4 flash on 2 of every 10 ticks, and team slot 5 never flashes. In the map editor they are always drawn. The Barrier Emitter draws no lights.
+**R-BLDG-045** (MUST) When a structure has a team and light sockets, the translucent pass draws at each light `ref.bldg.structure.light_quads` (10) nested additive camera-facing quads of `fx.starburst` in the team colour, quad i (0 to 9) of half-size `ref.bldg.structure.light_size_wu` (6 wu) × i ÷ 10. They are drawn only while ⌊(n mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ equals the team slot, with n the number of the latest command frame the participant has received ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-531), which can run ahead of the last completed tick; with the keys 10 and 2, teams 0 to 4 flash in 2 of every 10 command frames, and team slot 5 never flashes. In the map editor they are always drawn. The Barrier Emitter draws no lights.
 
-**R-BLDG-046** (MUST) For each port the translucent pass draws the port pad mesh `ref.bldg.port.pad_height_wu` (0.5 wu) above the ground while the structure-detail setting is below `ref.bldg.port.pad_detail_limit` (3), and a status star of `fx.starburst`, `ref.bldg.port.status_star_size_wu` (6 wu) across, at the pad's `status` socket: `ref.bldg.port.status_occupied_rgb` (0.3, 1.0, 0.3) when the port is occupied and `ref.bldg.port.status_empty_rgb` (1.0, 0.3, 0.3) when it is not. The Spawn Node ([economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-131), the Solar Array (R-BLDG-183), the Command Console ([mode objects](mode_objects.md) R-BLDG-303) and the turret, whose mount carries the status sockets `status_01` to `status_04` ([defences and props](defences_and_props.md) R-BLDG-405), draw their ports in their own way. The visual change of each structure-detail branch is decided with the renderer's quality levels (see DEC-327).
+**R-BLDG-046** (MUST) For each port the translucent pass draws the port pad mesh `ref.bldg.port.pad_height_wu` (0.5 wu) above the ground while the structure-detail setting is below `ref.bldg.port.pad_detail_limit` (3), and a status star of `fx.starburst`, `ref.bldg.port.status_star_size_wu` (6 wu) across, at the pad's `status` socket: `ref.bldg.port.status_occupied_rgb` (0.3, 1.0, 0.3) when the port is occupied and `ref.bldg.port.status_empty_rgb` (1.0, 0.3, 0.3) when it is not. The Spawn Node ([economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-131), the Solar Array (R-BLDG-183) and the Command Console ([mode objects](mode_objects.md) R-BLDG-303) draw their ports in their own way. A turret draws its four ports with this look, except that the status star of port i (1 to 4) sits at the socket `status_0i` of its mount, which carries the status sockets `status_01` to `status_04` ([defences and props](defences_and_props.md) R-BLDG-405), instead of at the pad's `status` socket (see DEC-860). The visual change of each structure-detail branch is decided with the renderer's quality levels (see DEC-327).
 
 **R-BLDG-047** (MUST) Drawing, the in-view test, the depth sort and every other presentation step read simulation state and never write it (DEC-007). In particular, a change of the structure-detail setting never re-snaps a structure to the terrain and never rebuilds its ports (R-SIM-367).
 
@@ -397,9 +397,9 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.structure.destroy_particle_size` | 100 | particle size | explosion core | R-BLDG-037 | — |
 | `ref.bldg.structure.destroy_particle_speed` | U[−50, 50) | wu/s per axis | presentation generator | R-BLDG-037 | DEC-013 |
 | `ref.bldg.structure.light_quads` | 10 | quads | nested additive quads per light | R-BLDG-045 | — |
-| `ref.bldg.structure.light_size_wu` | 6 | wu | largest quad | R-BLDG-045 | — |
-| `ref.bldg.structure.light_cycle_ticks` | 10 | ticks | flash cycle | R-BLDG-045 | DEC-007 |
-| `ref.bldg.structure.light_ticks_per_team` | 2 | ticks | flash length per team slot; slot 5 never flashes | R-BLDG-045 | DEC-007 |
+| `ref.bldg.structure.light_size_wu` | 6 | wu | half-size scale: quad i has the half-size 6 × i ÷ 10 wu, so the largest is 5.4 wu | R-BLDG-045 | — |
+| `ref.bldg.structure.light_cycle_ticks` | 10 | command frames | flash cycle | R-BLDG-045 | DEC-007 |
+| `ref.bldg.structure.light_ticks_per_team` | 2 | command frames | flash length per team slot; slot 5 never flashes | R-BLDG-045 | DEC-007 |
 | `ref.bldg.port.pad_height_wu` | 0.5 | wu | port pad above the ground | R-BLDG-046 | — |
 | `ref.bldg.port.pad_detail_limit` | 3 | structure-detail level | the pad is drawn below this level | R-BLDG-046 | DEC-327 |
 | `ref.bldg.port.status_star_size_wu` | 6 | wu | status star | R-BLDG-046 | — |
@@ -453,7 +453,7 @@ All criteria run headless at game speed 1 with a fixed seed.
 
 **AC-BLDG-08 Content validation** (R-BLDG-011, R-BLDG-015, R-BLDG-028, R-BLDG-044). The content build rejects, each with a diagnostic: a map record of kind Relic; a map with two records of id 7; a Transit Gate record with the global flag clear; a Spawn Node mesh without the `door` socket.
 
-**AC-BLDG-09 Light flashing** (R-BLDG-045). Given owned structures of team slots 0 to 5 with light sockets, over ticks 0 to 9 the team-k lights are drawn exactly on ticks 2k and 2k + 1 for k = 0 to 4, and team-5 lights are never drawn.
+**AC-BLDG-09 Light flashing** (R-BLDG-045). Given owned structures of team slots 0 to 5 with light sockets, while the latest command frame received runs from 0 to 9 the team-k lights are drawn exactly in frames 2k and 2k + 1 for k = 0 to 4, and team-5 lights are never drawn; each light is 10 quads whose largest half-size is 5.4 wu.
 
 **AC-BLDG-10 No presentation writes** (R-BLDG-047). Changing the structure-detail setting during a match changes no port, no occupant, no reservation count and no structure height, and the simulation state hash after 1,000 ticks equals that of a run without the change.
 

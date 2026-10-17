@@ -169,7 +169,7 @@ Mesh queries used by the simulation are not renderer functions (RND-004). For th
 
 **RND-166** (MUST) The collected structures are sorted by the squared distance from the camera position to their sort centre and drawn from the farthest to the nearest; equal distances keep structure-pool order.
 
-**RND-167** (MUST) Ownership lights, the structure light flashes of [reference/03_buildings_and_world_objects/README.md](../../../reference/03_buildings_and_world_objects/README.md) R-BLDG-045, are drawn at every socket of a structure's mesh that is of the light kind (ADR-021), for structures that belong to a team, only in the command frames whose number *n* (R-SIM-531) satisfies ⌊(*n* mod `rnd.structure.light.blink_cycle` (10)) ÷ `rnd.structure.light.blink_frames` (2)⌋ = the team's index, and always in the map editor. Each team's lights are therefore on for 2 of every 10 command frames, 0.2 s on in a 1.0 s period at the reference tick rate, in a staggered order; because the quotient ranges only from 0 to 4, the team in slot 5 of the `ref.sim.max_teams` slots, the Visitor faction's slot (DEC-082), never shows ownership lights (see DEC-958 item 1). Each light is `rnd.structure.light.layers` (10) nested camera-facing quads of half-size `rnd.structure.light.max_half_size` (6 wu) × *i* ÷ 10 for *i* from 0 to 9, with `fx.starburst` in the team colour, using the `glow_additive_fog` entry.
+**RND-167** (MUST) Ownership lights, the structure light flashes of [reference/03_buildings_and_world_objects/README.md](../../../reference/03_buildings_and_world_objects/README.md) R-BLDG-045, are drawn at every socket of a structure's mesh that is of the light kind (ADR-021), for structures that belong to a team, only in the command frames whose number *n*, the latest command frame received (R-SIM-531), satisfies ⌊(*n* mod `ref.bldg.structure.light_cycle_ticks` (10)) ÷ `ref.bldg.structure.light_ticks_per_team` (2)⌋ = the team's index, and always in the map editor. Each team's lights are therefore on for 2 of every 10 command frames, 0.2 s on in a 1.0 s period at the reference tick rate, in a staggered order; because the quotient ranges only from 0 to 4, the team in slot 5 of the `ref.sim.max_teams` slots, the Visitor faction's slot (DEC-082), never shows ownership lights (see DEC-958 item 1). Each light is `ref.bldg.structure.light_quads` (10) nested camera-facing quads of half-size `ref.bldg.structure.light_size_wu` (6 wu) × *i* ÷ 10 for *i* from 0 to 9, with `fx.starburst` in the team colour, using the `glow_additive_fog` entry.
 
 **RND-168** (MUST) For each of a structure's ports, as [reference/03_buildings_and_world_objects/README.md](../../../reference/03_buildings_and_world_objects/README.md) R-BLDG-046 specifies: while the structure-detail setting is below `ref.bldg.port.pad_detail_limit` (3), the port pad mesh `mesh.structure.structure_default` is drawn at the terrain height + `ref.bldg.port.pad_height_wu` (0.5 wu) with the object lighting, using the `port_pad` entry; then a camera-facing `fx.starburst` of size `ref.bldg.port.status_star_size_wu` (6 wu) at the pad's status socket, in `ref.bldg.port.status_occupied_rgb` (0.3, 1.0, 0.3) when a Worker occupies the port and `ref.bldg.port.status_empty_rgb` (1.0, 0.3, 0.3) when it is empty, using `glow_additive_fog`. The structures that R-BLDG-046 names as drawing their ports in their own way follow their own rules (RND-169, RND-172).
 
@@ -178,7 +178,7 @@ Mesh queries used by the simulation are not renderer functions (RND-004). For th
 1. transit beams between linked structures' link sockets with `fx.beam_short`, an inner beam of half-width `rnd.structure.spawn.beam_inner_half_width` (1 wu) and an outer beam of half-width `rnd.structure.spawn.beam_outer_half_width` (3 wu); the outer beam glow only at structure detail 1;
 2. every transit orb (`TransitOrb`) on an edge as a diamond with an inner size of `rnd.structure.spawn.orb_inner_size` (2 wu) and an outer size of `rnd.structure.spawn.orb_outer_size` (6 wu), in the team colour of the Spawn Node it travels to, or grey `rnd.structure.spawn.orb_neutral_grey` (120 of 255) when that Spawn Node has no team;
 3. a status star per port, grey `rnd.structure.spawn.empty_port_grey` (150 of 255) when empty, otherwise in the occupant's team colour;
-4. glow blobs above the structure with `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure detail 1, 2 and 3; [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-131), with alpha = occupied ports ÷ ports, and a colour that moves linearly from `rnd.structure.spawn.glow_start_colour` (100, 100, 100, alpha 200 of 255) to the team colour as the Spawn Node's activation timer runs from `rnd.structure.spawn.glow_timer_start` (30) down to 0.
+4. glow blobs above the structure with `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure detail 1, 2 and 3; [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-131), with alpha = occupied ports ÷ `ref.econ.spawn_node.port_count` (5), and a colour that moves linearly from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) to the team colour as the remaining activation delay runs from `ref.econ.spawn_node.activation_ticks` (300 ticks) down to 0 ([reference/05](../../../reference/05_population_flow.md) R-ECON-025).
 
 **RND-170** (MUST) A turret draws its mount `mesh.structure.turret_mount` (sockets only) and its team-tinted head `mesh.structure.turret_head` on the mount's sockets in pass 6, and its lights and ports in pass 8. Its barrel smoke is particles, and its ejected shell casings (`ShellCasing`) and rounds (`TurretRound`) are effects ([README.md](../animation_and_vfx/README.md), [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)).
 
@@ -201,7 +201,7 @@ Mesh queries used by the simulation are not renderer functions (RND-004). For th
 
 **RND-175** (MUST) Trees draw nothing in pass 6; Barrier Emitters draw their posts in pass 6. Both draw their translucent parts in pass 8 (§4.6, §4.7) and ask for a depth sort.
 
-**RND-176** (MUST) Pass 8 draws the three-dimensional countdown screens of reference/03 as camera-facing quads of `uitex.panel_neutral` with the `alpha_fog` entry, each with its number drawn over it in the UI framework's glyphs (ADR-034):
+**RND-176** (MUST) Pass 8 draws the three-dimensional countdown screens of reference/03 as camera-facing quads of `uitex.panel_neutral` with the `alpha_fog` entry, each with its number drawn over it in the UI framework's glyphs (ADR-034; see DEC-959 item 5):
 
 1. the Core Device's screen, in its team colour, `ref.bldg.core_device.countdown_screen_height_wu` (50 wu) above it, while its time remaining is at most `ref.bldg.core_device.countdown_display_mode_seconds` (10 s) ([mode_objects.md](../../../reference/03_buildings_and_world_objects/mode_objects.md) R-BLDG-316);
 2. each fuel depot's screen of `ref.bldg.fuel_depot.countdown_screen_wu` (60 × 60 wu), `ref.bldg.fuel_depot.countdown_screen_height_wu` (150 wu) above the depot, while its Launch Vessel is in the Countdown state or in Flight: ⌊countdown⌋ + 1 during the Countdown and a blinking 0 during Flight ([economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-205).
@@ -311,7 +311,7 @@ Branch(from, to, n, pass):
 |---|---|---|
 | DEC-012 | Resolved | the Relic mesh draw and baked crown volumes (RND-174, RND-183) |
 | DEC-958 | Open | the ownership-light blink formula, which leaves the Visitor faction's slot dark (RND-167) |
-| DEC-959 | Open | the Barrier Emitter burn layer of an emitter that is not solar-linked and the clock of the cosmetic pulses (RND-172, RND-173, RND-199, RND-200) |
+| DEC-959 | Open | the Barrier Emitter burn layer of an emitter that is not solar-linked, the clock of the cosmetic pulses and the look of the countdown screens (RND-172, RND-173, RND-176, RND-199, RND-200) |
 | DEC-040 | Open | the inverted style (RND-134, RND-137) |
 | DEC-118, DEC-101 | Resolved, Open | the seasonal ramp, sea tile, gradient and trees (RND-134, RND-142, RND-144, RND-191) |
 | DEC-247 | Open | terrain level of detail and world scale (RND-138) |
@@ -364,18 +364,12 @@ Branch(from, to, n, pass):
 | `rnd.mesh.colour_attenuation` | 0.85 | × | applied by the mesh cooker | RND-160 | |
 | `rnd.tint.factor` | 0.7 | × | the default tint scale of a mesh; a mesh's owner may name another (RND-161) | RND-161 | |
 | `rnd.tint.worker_figure_entry0_factor` | 0.5 | × palette entry 0 | Worker figure mesh only | RND-162 | |
-| `rnd.structure.light.blink_cycle` | 10 | command frames | | RND-167 | |
-| `rnd.structure.light.blink_frames` | 2 | command frames per team | | RND-167 | |
-| `rnd.structure.light.layers` | 10 | quads | nested, *i* from 0 to 9 | RND-167 | |
-| `rnd.structure.light.max_half_size` | 6 | wu | | RND-167 | |
 | `rnd.structure.spawn.beam_inner_half_width` | 1 | wu | | RND-169 | |
 | `rnd.structure.spawn.beam_outer_half_width` | 3 | wu | detail 1 only | RND-169 | DEC-327 |
 | `rnd.structure.spawn.orb_inner_size` | 2 | wu | | RND-169 | |
 | `rnd.structure.spawn.orb_outer_size` | 6 | wu | | RND-169 | |
 | `rnd.structure.spawn.orb_neutral_grey` | 120 | of 255 | | RND-169 | |
 | `rnd.structure.spawn.empty_port_grey` | 150 | of 255 | | RND-169 | |
-| `rnd.structure.spawn.glow_start_colour` | 100, 100, 100, 200 | of 255 | | RND-169 | |
-| `rnd.structure.spawn.glow_timer_start` | 30 | activation-timer value | the colour reaches the team colour at 0 | RND-169 | |
 | `rnd.structure.dish.tube_radii` | 10, 9, 8, 4 | wu | | RND-171 | |
 | `rnd.structure.dish.tube_alphas` | 0.4, 0.2, 0.2, 0.5 | alpha | | RND-171 | |
 | `rnd.structure.grid.solar_glow_count` | 4 | quads | | RND-172 | |

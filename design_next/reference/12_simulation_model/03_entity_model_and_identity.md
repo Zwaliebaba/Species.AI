@@ -90,7 +90,7 @@ classDiagram
       +Render(double _predictionTime)
     }
     class Actor {
-      -uint8 m_stats
+      -float m_stats
       -bool m_dead
       -bool m_destroyed
       -m_reloadTimer
@@ -567,7 +567,7 @@ Table 2.4-C Handle allocation.
 
 **R-SIM-144** (MUST) The object model holds, in one match, every body that the map's population caps allow ([population flow](../05_population_flow.md)), plus every Essence orb, laser bolt, effect and structure that the rules create. It sets no limit of its own below the handle ranges of table 2.4-A. Every laser bolt and every Essence orb is a simulated object with its own handle. The performance envelope at the population cap is DEC-106, and the replication budget for these objects is DEC-201.
 
-**R-SIM-145** (MUST) Actor stats are unsigned 8-bit values (DEC-241). Gameplay is computed only by the simulation on the CPU; no GPU work and no third-party component computes a simulated object's state (DEC-654).
+**R-SIM-145** (MUST) Actor stats are floating-point values ([randomness and integrity](07_randomness_and_integrity.md) R-SIM-707; DEC-090). Gameplay is computed only by the simulation on the CPU; no GPU work and no third-party component computes a simulated object's state (DEC-654).
 
 ## 3 States and flows
 

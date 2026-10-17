@@ -17,54 +17,85 @@ This document specifies three schema families of configuration and text: the set
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace species::data::settings {
+namespace Engine
+{
 
-enum class SettingType : std::uint8_t { Boolean, Integer, Decimal, Text, Enum, BindingNode };
-enum class ApplyScope : std::uint8_t { Immediate, Renderer, AudioRestart, None };   // UI-441; None: inert entry
+enum class SettingType : std::uint8_t
+{
+  Boolean,
+  Integer,
+  Decimal,
+  Text,
+  Enum,
+  BindingNode
+};
+enum class ApplyScope : std::uint8_t
+{
+  Immediate,
+  Renderer,
+  AudioRestart,
+  None
+}; // UI-441; None: inert entry
 
-struct SettingSpec {                                   // one row of table 3.1-A
-  std::string_view key;                                // lower-case dotted
+// One row of table 3.1-A.
+struct SettingSpec
+{
+  std::string_view key; // lower-case dotted
   SettingType type;
-  std::optional<double> minimum, maximum;
+  std::optional<double> minimum;
+  std::optional<double> maximum;
   std::span<const std::string_view> enumerators;
-  DefaultValue defaultValue;                           // a value, or Absent
+  DefaultValue defaultValue; // a value, or Absent
   ApplyScope scope;
-  bool inert;                                          // stored and kept; read by nothing
+  bool inert; // stored and kept; read by nothing
 };
 
-class SettingsDefaults {                               // generated; available before any pack is mounted (DEC-100)
+// Generated; available before any pack is mounted (DEC-100).
+class SettingsDefaults
+{
 public:
   static std::span<const SettingSpec> All() noexcept;
-  static const SettingSpec* Find(std::string_view key) noexcept;   // exact; user binding keys by prefix
+  static const SettingSpec* Find(std::string_view _key) noexcept; // exact; user binding keys by prefix
 };
 
-struct SettingsFileContent;                            // lines in order: comments, blanks, entries
-class SettingsFile {                                   // used by the settings store (platform layer)
+struct SettingsFileContent; // lines in order: comments, blanks, entries
+// Used by the settings store (platform layer).
+class SettingsFile
+{
 public:
-  static SettingsFileContent Read(std::u8string_view text, std::vector<Diagnostic>& log);    // never fails
-  static std::u8string Write(const SettingsFileContent& loaded, const ValueMap& current);   // DAT-201
+  static SettingsFileContent Read(std::u8string_view _text, std::vector<Diagnostic>& _log); // never fails
+  static std::u8string Write(const SettingsFileContent& _loaded, const ValueMap& _current); // DAT-201
 };
 
-}  // namespace species::data::settings
+} // namespace Engine
 
-namespace species::data::strings {
+namespace Engine
+{
 
-enum class InputMode : std::uint8_t { KeyboardMouse, Gamepad };
+enum class InputMode : std::uint8_t
+{
+  KeyboardMouse,
+  Gamepad
+};
 
-class StringTableBuilder {                             // content build: merge, validate, expand (DAT-217)
+// Content build: merge, validate, expand (DAT-217).
+class StringTableBuilder
+{
 public:
-  std::vector<Diagnostic> Add(const JsonDocument& source);
-  std::expected<CookedStringTable, std::vector<Diagnostic>> Build(const BindingDescriptions& bindings) const;
+  std::vector<Diagnostic> Add(const JsonDocument& _source);
+  std::expected<CookedStringTable, std::vector<Diagnostic>> Build(const BindingDescriptions& _bindings) const;
 };
 
-class StringTableView {                                // runtime, read-only (UI-221)
+// Run time, read-only (UI-221).
+class StringTableView
+{
 public:
-  std::u8string_view Lookup(std::string_view id, InputMode mode) const noexcept;
-  bool Exists(std::string_view id) const noexcept;
-  std::string_view Language() const noexcept;          // BCP 47 tag
+  std::u8string_view Lookup(std::string_view _id, InputMode _mode) const noexcept;
+  bool Exists(std::string_view _id) const noexcept;
+  std::string_view Language() const noexcept; // BCP 47 tag
 };
 
-}  // namespace species::data::strings
+} // namespace Engine
 ```
 
 **Data contracts.** The settings store reads the settings file with `SettingsFile::Read` and the defaults with `SettingsDefaults`, and writes the file with `SettingsFile::Write` through the canonical writer's atomic replacement (README DAT-043). The input router reads the cooked binding sets and the keyboard-layout table (INP-162 to INP-164) and the user layer from the settings store (INP-070). The UI framework reads the cooked string tables (UI-218).
@@ -111,6 +142,7 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 | text language | `interface.language` | text, a BCP 47 tag | absent: `ref.meta.settings.language.default`, so start-up chooses (R-META-465) | immediate, with a rebuild of every window (R-META-466) | R-META-465, R-META-466 |
 | control help, difficulty | `interface.control_help`, `interface.difficulty` | boolean; integer | `ref.meta.settings.control_help.default`, `ref.meta.settings.difficulty.default`; inert | none | R-META-449, R-META-456 |
 | large menus | `interface.large_menus` | boolean | `ref.meta.settings.large_menus.default` | immediate | R-META-449 |
+| UI scale, text scale | `interface.ui_scale`, `interface.text_scale` | presentation decimal, a factor; the ranges are a design-phase input of the UI framework | `ui.scale.ui_default`, `ui.scale.text_default` | immediate, with a relayout | [UI layout](../ui_framework/layout_rendering_input_and_localisation.md) UI-168 |
 | automatic camera | `camera.automatic` | as [camera](../../../reference/06_controls_camera_and_commands/camera.md) states | `ref.ctrl.camera.automatic_setting` | immediate | reference/06 |
 | seasonal theme | `interface.seasonal_theme` | integer | none: inert | none | R-META-449, R-META-456 |
 | player name | `player.name` | text, at most the length its owner states | the text of `ui.player.default_name` | immediate | [screen flow](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-008 |

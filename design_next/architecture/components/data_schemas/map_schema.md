@@ -19,44 +19,130 @@ This document specifies the schema of the map definition (`MapDefinition`, schem
 The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
-namespace species::data::map {
+namespace Engine
+{
 
-enum class MatchMode : std::uint8_t;            // the six modes of R-MODE-029, in their order
-enum class MapOption : std::uint8_t {           // canonical order of R-MAP-070
-  NoCatchUpBonus, InstantSpawnNodeCapture, GateReinforcementCount, GateTransportCap, NoGunTurrets,
-  AttackerReinforcementCount, DefenderReinforcementCount, DefenderReinforcementPower,
-  AttackerReinforcementPower, SameTeamBeamDishLinks, NoBeamDishAiming, AirstrikeThreshold,
-  VisitorFactionPosition, AttackerReinforcementPowerOption, DefenderReinforcementPowerOption };
-enum class MapEffect : std::uint8_t { Snow, Lightning, DustVortices, EssenceOrbRain, SpecialLightRig };  // R-MAP-073
-enum class MapDifficulty : std::uint8_t { Basic, Intermediate, Advanced };
-enum class SiegeSide : std::uint8_t { Defending, Attacking };
-enum class CoopGroup : std::uint8_t { None, One, Two };
-enum class CameraTransition : std::uint8_t { Move, Cut };
-enum class RoutePointKind : std::uint8_t { Position, Ground, Structure };
-
-struct Limit {                                  // README DAT-008, DEC-120
-  enum class Form : std::uint8_t { Absent, None, Value, Unlimited } form;
-  std::uint32_t value;                          // meaningful only for Form::Value
+// README DAT-008, DEC-120.
+struct Limit
+{
+  enum class Form : std::uint8_t
+  {
+    Absent,
+    None,
+    Value,
+    Unlimited
+  } form;
+  std::uint32_t value; // meaningful only for Form::Value
 };
 
-struct MatchOptions;                            // the map header, table 3.2-A
-struct StartPosition { std::uint8_t position; std::string cameraView; SiegeSide side; CoopGroup group; };
-struct MapLight { Vec3 front; Vec3 colour; };   // front normalised at cook time
-struct CameraViewRecord { std::string name; Vec3 position, front, up; };
-struct CameraAnimationRecord { std::string name; std::vector<CameraAnimationStepRecord> steps; };
-struct StartingForcesRecord;                    // table 3.8-A
-struct RouteRecord { std::uint16_t id; std::vector<RoutePoint> points; };
+} // namespace Engine
 
-class MapHeaderView;                            // the header section alone (README DAT-038)
-class MapDefinitionView;                        // every block of table 3.1-A
+namespace Species
+{
 
-class MapLoader {
+// The six modes of R-MODE-029, in their order.
+enum class MatchMode : std::uint8_t;
+// The canonical order of R-MAP-070.
+enum class MapOption : std::uint8_t
+{
+  NoCatchUpBonus,
+  InstantSpawnNodeCapture,
+  GateReinforcementCount,
+  GateTransportCap,
+  NoGunTurrets,
+  AttackerReinforcementCount,
+  DefenderReinforcementCount,
+  DefenderReinforcementPower,
+  AttackerReinforcementPower,
+  SameTeamBeamDishLinks,
+  NoBeamDishAiming,
+  AirstrikeThreshold,
+  VisitorFactionPosition,
+  AttackerReinforcementPowerOption,
+  DefenderReinforcementPowerOption
+};
+// R-MAP-073.
+enum class MapEffect : std::uint8_t
+{
+  Snow,
+  Lightning,
+  DustVortices,
+  EssenceOrbRain,
+  SpecialLightRig
+};
+enum class MapDifficulty : std::uint8_t
+{
+  Basic,
+  Intermediate,
+  Advanced
+};
+enum class SiegeSide : std::uint8_t
+{
+  Defending,
+  Attacking
+};
+enum class CoopGroup : std::uint8_t
+{
+  None,
+  One,
+  Two
+};
+enum class CameraTransition : std::uint8_t
+{
+  Move,
+  Cut
+};
+enum class RoutePointKind : std::uint8_t
+{
+  Position,
+  Ground,
+  Structure
+};
+
+struct MatchOptions; // the map header, table 3.2-A
+struct StartPosition
+{
+  std::uint8_t position;
+  std::string cameraView;
+  SiegeSide side;
+  CoopGroup group;
+};
+// The front is normalised at cook time.
+struct MapLight
+{
+  Engine::Vec3 front;
+  Engine::Vec3 color;
+};
+struct CameraViewRecord
+{
+  std::string name;
+  Engine::Vec3 position;
+  Engine::Vec3 front;
+  Engine::Vec3 up;
+};
+struct CameraAnimationRecord
+{
+  std::string name;
+  std::vector<CameraAnimationStepRecord> steps;
+};
+struct StartingForcesRecord; // table 3.8-A
+struct RouteRecord
+{
+  std::uint16_t id;
+  std::vector<RoutePoint> points;
+};
+
+class MapHeaderView;     // the header section alone (README DAT-038)
+class MapDefinitionView; // every block of table 3.1-A
+
+class MapLoader
+{
 public:
-  std::expected<MapHeaderView, LoadError> ReadHeader(const PackEntry& entry) const;     // the catalogue
-  std::expected<MapDefinitionView, LoadError> Load(const PackEntry& entry) const;       // match entry
+  std::expected<MapHeaderView, Engine::LoadError> ReadHeader(const Engine::PackEntry& _entry) const; // the catalogue
+  std::expected<MapDefinitionView, Engine::LoadError> Load(const Engine::PackEntry& _entry) const;   // match entry
 };
 
-}  // namespace species::data::map
+} // namespace Species
 ```
 
 **Data contracts.** The map catalogue ([maps](../../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-011) reads `MapHeaderView` only. Match entry ([reference/12](../../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)) reads `MapDefinitionView`; the terrain component reads its terrain records (TER-030 to TER-036), the camera its camera data (CAM-014), the renderer its lights (RND-013) and the simulation its structures, start positions and starting forces. A map tool reads and writes the authoring form through the canonical writer (README DAT-040).
@@ -162,7 +248,7 @@ Table 3.4-A Fields of the terrain definition (`TerrainDefinition`).
 | cell size | `cell_size` | simulation decimal, binary32-rounded, wu per sample | defaulted: `ref.map.terrain.cell_size_default` (12.0 wu) | finite and above 0; the grid within `ter.grid.max_samples_per_side` of [terrain](../terrain/README.md) per side (TER-250) |
 | outside height | `outside_height` | simulation decimal, binary32-rounded, wu | defaulted: `ref.map.terrain.outside_height_default` (−10 wu) | finite |
 | maximum height | `max_height` | presentation decimal, held as binary32, wu | defaulted: `ref.map.terrain.max_height_default` (0.0 wu) | finite; the colour-ramp normaliser only (TER-030) |
-| land colour ramp | `land_colour_ramp` | asset member of `terrain.ramp` | defaulted: 1, the map default | a member the manifest holds |
+| land colour ramp | `land_color_ramp` | asset member of `terrain.ramp` | defaulted: 1, the map default | a member the manifest holds |
 | shore-wave gradient | `shore_wave_gradient` | asset member of `terrain.shore_wave_gradient` | defaulted: 1 | a member the manifest holds |
 | sea tile | `sea_tile` | asset member of `terrain.sea_tile` | defaulted: 1 | a member the manifest holds |
 
@@ -193,7 +279,7 @@ Table 3.4-C Fields of a terrain flatten area (`TerrainFlattenArea`).
 
 | Field | Key | Type and precision | Presence and default | Range and rules |
 |---|---|---|---|---|
-| centre | `centre` | vector of simulation decimals, binary32-rounded, wu | required | x, y, z; y is the operand of the flatten type (TER-034) |
+| centre | `center` | vector of simulation decimals, binary32-rounded, wu | required | x, y, z; y is the operand of the flatten type (TER-034) |
 | size | `size` | simulation decimal, binary32-rounded, wu | required | the half-width of the square; finite |
 | flatten type | `flatten_type` | enumeration `absolute`, `add`, `subtract`, `smooth`, `subtract2`, cooked as the stored values 0 to 4 of `FlattenOp` (TER-035) | defaulted: `absolute` | any other value is a build error |
 | threshold | `threshold` | simulation decimal, binary32-rounded, wu | defaulted: `ref.map.terrain.flatten_threshold_default` (40.0 wu) | finite |
@@ -209,11 +295,11 @@ Table 3.5-A Fields of a map light (`MapLight`).
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | direction | `front` | direction | defaulted: `rnd.light.default_front` of the [renderer](../renderer/README.md) | normalised at cook time; the light is directional, at an infinite distance |
-| colour | `colour` | colour multiplier | defaulted: `rnd.light.default_colour` | unclamped |
+| colour | `color` | colour multiplier | defaulted: `rnd.light.default_colour` | unclamped |
 
 ### 3.6 Start positions
 
-**DAT-087** (MUST) A map holds exactly one start-position record for each player position 0 to (player count − 1), keyed by its position (DEC-560, R-MAP-042); a missing position, a position at or above the player count and a position listed twice are build errors.
+**DAT-087** (MUST) A map holds exactly one start-position record for each player position 0 to (player count − 1), keyed by its position (DEC-560, R-MAP-042); a missing position, a position at or above the player count and a position listed twice are build errors. Each co-op group holds at most two start positions, and a position belongs to at most one group (see DEC-969).
 
 Table 3.6-A Fields of a start-position record.
 
@@ -224,7 +310,7 @@ Table 3.6-A Fields of a start-position record.
 | Siege side | `siege_side` | enumeration `defending`, `attacking` | defaulted: `defending` | read only in Siege |
 | co-op group | `coop_group` | enumeration `none`, `one`, `two` | defaulted: `none` | at most 2 positions in each group, because alliance assignment addresses the members of a group as its first and second position ([reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-020) |
 
-**DAT-088** (MUST) The header's attacking positions are derived from the start positions whose Siege side is `attacking`, and its group-1 and group-2 positions from the start positions in group `one` and group `two`, each list in ascending position order. The derived sets are cooked into the header section so that match setup reads them without the rest of the map; an authoring file that also states them is the derived-field error of README DAT-011. Start positions name their structures, starting forces and camera view through these records, and at load each start position is remapped to a match team (R-MAP-043, R-MAP-044; DEC-560).
+**DAT-088** (MUST) The header's attacking positions are derived from the start positions whose Siege side is `attacking`, and its group-1 and group-2 positions from the start positions in group `one` and group `two`, each list in ascending position order (see DEC-969). The derived sets are cooked into the header section so that match setup reads them without the rest of the map; an authoring file that also states them is the derived-field error of README DAT-011. Start positions name their structures, starting forces and camera view through these records, and at load each start position is remapped to a match team (R-MAP-043, R-MAP-044; DEC-560).
 
 ### 3.7 Camera views and camera animations
 

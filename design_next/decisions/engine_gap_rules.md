@@ -121,7 +121,7 @@ This file records the engine-baseline rules of the engine components that no oth
 - Status: Open
 - Affects: architecture/components/renderer/world_renderers.md (RND-167), architecture/components/renderer/view_lighting_and_fog.md (RND-214), architecture/components/renderer/entity_and_overlay_renderers.md (RND-326), architecture/components/renderer/frame_graph_and_passes.md (RND-055)
 - Specified behaviour: The renderer keeps these reference looks as its defaults:
-  1. **Ownership lights.** A team's ownership lights show in the command frames n where ⌊(n mod `rnd.structure.light.blink_cycle`) ÷ `rnd.structure.light.blink_frames`⌋ equals the team's index. The quotient ranges from 0 to 4, so the team in slot 5, the Visitor faction's slot (DEC-082), never shows ownership lights (RND-167).
+  1. **Ownership lights.** A team's ownership lights show in the command frames whose number n, the latest command frame received (R-SIM-531), satisfies ⌊(n mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ = the team's index (R-BLDG-045). The quotient ranges from 0 to 4, so the team in slot 5, the Visitor faction's slot (DEC-082), never shows ownership lights (RND-167).
   2. **Poster field of view.** Poster tiles use the scale φ ÷ `rnd.view.poster_fov_divisor` (78) on both axes, so a poster frames the scene differently from the screen, narrower horizontally at 16:9 (RND-214).
   3. **Scaled centipede segments.** A centipede segment is lit with its uniform scale σ left in its normals, so a larger segment is lit darker and a smaller one brighter before the clamp (RND-326). Every other scaled actor mesh, ants included, and every scaled wall section is lit with unit normals (RND-055); the reference look of scaled walls is not recorded.
 - Options: A — keep each look; B — correct each: a blink formula that covers every team slot; poster tiles that subdivide the on-screen frustum exactly; unit normals for centipede segments.
@@ -130,14 +130,15 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-959 Renderer values the reference does not record
 - Status: Open
-- Affects: architecture/components/renderer/world_renderers.md (RND-172, RND-173, RND-199, RND-200), architecture/components/renderer/entity_and_overlay_renderers.md (RND-324, RND-353)
+- Affects: architecture/components/renderer/world_renderers.md (RND-172, RND-173, RND-176, RND-199, RND-200), architecture/components/renderer/entity_and_overlay_renderers.md (RND-324, RND-353)
 - Specified behaviour: The renderer states these defaults where the reference records no value:
   1. **Barrier Emitter burn layer.** An emitter that is not solar-linked draws its burn layer with *t₀* = 0 and *th* = 1, one repeat without scrolling (RND-199, RND-200); the reference gives the range only for solar-linked emitters.
   2. **Clock of three cosmetic animations.** The Barrier Emitter scroll (the presentation frame time ÷ `rnd.barrier.scroll_period`), the jump-pad pulse and the Solar Array glow pulse read the presentation frame time (R-SIM-570), the clock of render-time animation (RND-172, RND-173, RND-199); the reference names no clock for the two pulses.
   3. **Crawler egg shadow.** A Crawler egg's blob shadow has the half-size `ref.unit.crawler_egg.card_size` ÷ 2, 4 wu (RND-324).
   4. **Route-line spots.** Route spots are placed one spot size apart, with arrow heads along each leg showing the direction (RND-353); the reference gives the spot size and its pulse, not the spacing or where the arrows go.
+  5. **Countdown screens.** The three-dimensional countdown screens of the Core Device and the fuel depots are camera-facing quads of `uitex.panel_neutral` drawn with the `alpha_fog` entry, and the number is drawn over the panel in the UI framework's glyphs (RND-176); the reference gives the size, the height above the structure, the panel and the content of each screen, not its orientation, its blend or how the number is drawn.
 - Options: A — the stated defaults; B — values set by art direction in a visual review.
-- Recommendation: A as the baseline, so that every draw is specified; revisit them in the look review of the design phase, where the route arrows also get their placement.
+- Recommendation: A as the baseline, so that every draw is specified; revisit them in the look review of the design phase, where the route arrows get their placement and the countdown screens their orientation.
 - Decide by: design phase
 
 ## 4 Animation and VFX

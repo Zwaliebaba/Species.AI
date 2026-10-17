@@ -11,7 +11,7 @@ Notation used throughout:
 - An **edition** is one selection of content with its runtime feature flags, described by one **edition manifest** (ADR-056, ADR-059). An edition **marked for release** is one whose manifest sets the release flag (§3.2).
 - A **channel** is a distribution channel, and a **channel wrapper** is the package that one channel delivers (ADR-072).
 - The **repository layout** is that of `AGENTS.md` §2 and ADR-054: the game's solution `<Solution>.slnx` at the repository root, with one flat folder per project and the shader subfolders `<Lib>/Shader/` and `<Lib>/CompiledShader/`; `content/`, the authoring sources of the content build (ADR-059); `Tools/`, the tools solution and the design tools; `Build/`, the checker scripts; and `.github/workflows/build.yml`, the CI workflow.
-- A **CI job** is one job of the committed workflow `.github/workflows/build.yml`, or a job that an amendment of ADR-070 adds to it (ADR-070).
+- A **CI job** is a job of `.github/workflows/build.yml`, committed or added by amendment of ADR-070.
 - The **release procedure** is the Release build, the release checks, packaging, signing and symbol publication that whoever ships runs before a release (BLD-122).
 
 ## 1 Responsibilities and boundaries
@@ -397,7 +397,7 @@ Table 3.3-A Build-identity fields.
 | product | the project being built | `client`, `server` or `contentbuild` |
 | configuration | the solution configuration | `Debug` or `Release` |
 
-**BLD-020** (MUST) A build step of each product's project generates the header `BuildIdentity.h` with every field except the content manifest hash, as constants of namespace `Engine`, so that a content change never recompiles code (ADR-057, `AGENTS.md` R7). The header is build output: never committed, never edited, and written where the first projects' layout puts generated files (ADR-054). The packaging step writes the data file `build_identity.json` into the install directory with every field, the content manifest hash included. At start-up the client and the server read the content manifest hash from the content manifest they mount, compose the full identity with the generated fields, and log a mismatch with `build_identity.json` as a modified installation (§6).
+**BLD-020** (MUST) A build step of each product's project generates the header `BuildIdentity.h` with every field except the content manifest hash, as constants of namespace `Engine`, so that a content change never recompiles code (ADR-057, `AGENTS.md` R7). It is build output, never committed or edited, written where the first projects' layout puts generated files (ADR-054). The packaging step writes the data file `build_identity.json` into the install directory with every field, the content manifest hash included. At start-up the client and the server read the content manifest hash from the content manifest they mount, compose the full identity with the generated fields, and log a mismatch with `build_identity.json` as a modified installation (§6).
 
 **BLD-021** (MUST) The **channel tag** names the channel that delivered an install. A channel wrapper writes it as the first line of `channel_tag.txt` in the install directory: lower-case ASCII letters, digits, `_` and `-`, at most `bld.channel.tag_max_chars` characters. A missing file, an empty first line or a tag that breaks these rules reads as `unknown`. The tag is written into the log header next to the build identity (ADR-067); it never changes behaviour, and it is not a field of the build identity, because one build is wrapped for several channels. Whether it reaches an online service is a design-phase input (DEC-249).
 
@@ -735,7 +735,7 @@ Table 4.9-A Jobs and steps of the committed workflow, in order.
 
 **BLD-092** (MUST) Every job publishes its artefacts: the build log and the test results now; and the validation, placeholder, localisation and map-identity reports, the soak reports, the performance results and the crash dumps of test machines (ADR-065) with the jobs of table 4.9-B that produce them. A crash in the soak job opens a defect automatically once that job exists (ADR-070).
 
-**BLD-093** (MUST) The committed jobs run on the hosted runners, whose image must provide the projects' toolset (BLD-027) and SDK (BLD-029); the toolchain record of every run names what it used. The golden-image and validation jobs and the content build's thumbnail rendering need an agent with a GPU, which is added with the first job that needs it, as an infrastructure choice (ADR-070, AST-087, ADR-059).
+**BLD-093** (MUST) The committed jobs run on the hosted runners, whose image must provide the projects' toolset (BLD-027) and SDK (BLD-029); the toolchain record of every run names what it used. The golden-image and validation jobs and the content build's thumbnail rendering need an agent with a GPU, which is added with the first job that needs it (ADR-070, AST-087, ADR-059).
 
 **BLD-094** (MUST) The workflow runs from the first change of the repository, whatever build order the design phase chooses (DEC-229): its guards pass an empty tree and gate each input the moment it lands, so in the reference work breakdown the first work package ends when CI builds an empty simulation library, runs its `SuiteSmoke` and checks its project files (DEC-229 item 6).
 
@@ -753,7 +753,7 @@ Table 4.9-B CI jobs that amendments of ADR-070 add.
 | performance (scheduled) | the performance tests in Release builds against the component budgets, and the budgets of §5 | the performance test projects | BLD-117, DBG-208 |
 | golden images and GPU validation | on a GPU agent: the golden-image tests, and a Debug client pass with the debug layer and GPU-based validation | the GPU agent | ADR-068, ADR-069 |
 | symbols | publish the PE files and PDBs of each CI build to the symbol store | the symbol store | BLD-026, BLD-111 |
-| replay regression | recorded matches replayed to compare their end-of-match state hashes | reproducible replays, once the design phase gives Species them (DEC-046) | ADR-070 |
+| replay regression | recorded matches replayed to compare their end-of-match state hashes | reproducible replays (DEC-046) | ADR-070 |
 
 **BLD-122** (MUST) CI does not build Release (`AGENTS.md` §6, ADR-070). Before a release, whoever ships runs the release procedure: builds `Release|x64` of every product through its solution and says so; runs the release checks of BLD-046, BLD-047 and BLD-059 on the binaries; packages the install directory and checks it (BLD-096, BLD-097); signs it (§4.11); publishes its symbols (§4.12); and tests the release-candidate archive (BLD-105). The static alignment check of BLD-031 stands in on every change for the Release build that CI does not run, and a change that could plausibly break only under optimisation is built in Release by its author.
 
@@ -875,7 +875,7 @@ Values that the rules above use and other documents own: `ast.hash.display_hex_d
 
 ## 5 Concurrency and performance budget
 
-**BLD-116** (MUST) The content build parallelises within a stage only (BLD-012): per-file and per-member tasks run on `--jobs` worker threads, and cross-file checks, edition selection, the localisation report and the map-identity listing run after the stage before them has finished for every file. Packaging, signing and symbol publication of one build run after its Release build and its content build; separate products and editions package in parallel. MSBuild builds the projects of the solution in parallel (`/m`) along their references.
+**BLD-116** (MUST) The content build parallelises within a stage only (BLD-012): per-file and per-member tasks run on `--jobs` worker threads, and cross-file checks, edition selection, the localisation report and the map-identity listing run after the stage before them has finished for every file. Packaging, signing and symbol publication of one build run after its Release build and its content build; separate products and editions package in parallel.
 
 **BLD-117** (MUST) The budgets of table 5-A are starting values, measured on every run and tracked by the performance job (table 4.9-B, ADR-070); a run above a budget is reported with the stage times of DAT-053, and a budget changes only after measurement. The developer machine class of the table is the diagnostics component's reference class, whose hardware is not yet named (see DEC-971).
 

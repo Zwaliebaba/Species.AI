@@ -157,14 +157,15 @@ This file records the gameplay rules that the reference documents had to choose 
 
 ### DEC-860 Structure rule details
 - Status: Open
-- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG-275, R-BLDG-324, R-BLDG-325), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG-149)
+- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG-275, R-BLDG-324, R-BLDG-325), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG-149), reference/03_buildings_and_world_objects/README.md (R-BLDG-046)
 - Specified behaviour:
   1. **Carryable ownership tie.** In the ownership recount of a carryable structure, a later team in slot order replaces the candidate only with a strictly higher Worker count, so a tie goes to the lowest team slot (R-BLDG-275, DEC-016).
   2. **Launch Vessel damage floor.** A Launch Vessel's damage that decays to 0 or below is set to 0, and its attack-warning flag is cleared (R-BLDG-324).
   3. **Launch Vessel attackers.** The k attacker picks among the n enemies found are independent uniform draws, so one actor can be picked more than once (R-BLDG-325).
   4. **Teleport exit jitter.** The single jitter draw, U[−17.5, 17.5) wu, offsets the exit waypoint across the exit direction, in the horizontal plane (R-BLDG-149).
-- Options: A — the rules as stated; B — distinct picks (item 3), and independent draws on both horizontal axes (item 4).
-- Recommendation: A. Each rule follows the stated arithmetic with the fewest draws, and a repeated pick only orders one actor twice.
+  5. **Turret port look.** The reference anchors a turret's port status at the status sockets `status_01` to `status_04` of its mount (R-BLDG-405) and records no colours or pad use for it. A turret draws its ports with the base port look of R-BLDG-046: the pad while the structure-detail setting is below `ref.bldg.port.pad_detail_limit`, and a status star that is green when the port is occupied and red when it is empty, with the star of port i (1 to 4) at the mount's socket `status_0i` instead of the pad's `status` socket.
+- Options: A — the rules as stated; B — distinct picks (item 3), independent draws on both horizontal axes (item 4), and status stars without pads on a turret (item 5).
+- Recommendation: A. Each rule follows the stated arithmetic with the fewest draws, and a repeated pick only orders one actor twice. For item 5 the re-anchored base look changes only the anchor that the turret's mount defines, and it matches the green and red status lights of the Solar Array (R-BLDG-183).
 - Decide by: design phase
 
 ## 5 Bots

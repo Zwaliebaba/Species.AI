@@ -10,7 +10,7 @@ This folder specifies the Species data schemas: how every kind of Species conten
 |---|---|---|
 | [README.md](README.md) (this file) | responsibilities and boundaries, the record-type registry, the schema language, the logical field types and presence rules, the limit form, cooked records, versioning and migration, the authoring parser, validation, the canonical writer, loaders, diagnostics, the shared tests and the open decisions | DAT-001 to DAT-053 |
 | [map_schema.md](map_schema.md) | the map definition: the map header and its match options, the map options and map effects, the terrain records, the map lights, the start positions, the camera views and camera animations, the starting forces, the routes and the primary objectives; the map index; the mode catalogue and the match-option schema; the custom-map container and achievement hooks | DAT-070 to DAT-110 |
-| [map_structure_records.md](map_structure_records.md) | the structure records of a map: the base fields, the fields of each of the 32 structure kinds that a map may place, the typed links and their validation | DAT-140 to DAT-161 |
+| [map_structure_records.md](map_structure_records.md) | the structure records of a map: the base fields with the role tags, the fields of each of the 32 structure kinds that a map may place, the typed links and their validation | DAT-140 to DAT-162 |
 | [config_input_and_strings.md](config_input_and_strings.md) | the settings schema and the settings file, the binding sets and the keyboard-layout table, the string tables and their caption markup | DAT-190 to DAT-218 |
 | [entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) | the actor stat table, the Supply-crate outcome catalogue, the sound data and the effect-kind table, the cooked mesh, collision and simulation data records, the colour ramps, the screenshot output, the explainer animations, and the component-owned record types | DAT-260 to DAT-290 |
 | [import_and_build_records.md](import_and_build_records.md) | the texture, mesh and audio import records, the engine asset table and the edition manifests | DAT-350 to DAT-361 |
@@ -37,9 +37,9 @@ Caption: Figure 0-A, the path of a record from its authoring file to a loaded re
 
 **DAT-001** (MUST) This component owns: the schema language subset and its Species annotations; the logical field types and the presence rules; the registry of record types, with their schema ids, versions, cooked content types and simulation-relevant flags; the strict authoring parser; the schema, duplicate, length and reference validators; the cooked record format and the record loaders; the canonical writer; the migration step of the content build; and the diagnostics of all of these. Each record type has exactly one schema, which the content build, the map editor and the runtime share (ADR-061, ADR-059).
 
-**DAT-002** (MUST) The meaning of a field, its rule and its default value belong to the document that owns the mechanic. A schema of this folder gives the field its key, logical type, unit, presence rule and range, and cites the owner's tuning key for its default instead of defining a second one. A field key is the owner's field name written in lower-case snake_case; where an owner gives no name, the key chosen here is listed in the field table and is used by every tool.
+**DAT-002** (MUST) The meaning of a field, its rule and its default value belong to the document that owns the mechanic. A schema of this folder gives the field its key, logical type, unit, presence rule and range, and cites the owner's tuning key for its default instead of defining a second one. A field key is the owner's field name written in lower-case snake_case and, because it generates a C++ field, spelt in American English (`AGENTS.md` R11, CONVENTIONS §8): the owner's "branch colour" is the key `branch_color`; where an owner gives no name, the key chosen here is listed in the field table and is used by every tool.
 
-**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container is recorded as a hook only ([map_schema.md](map_schema.md)).
+**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container ([maps](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-391, table 2.14-A: the map definition with up to four embedded RGBA8 images, each with its width, its height and its resource name) is a member of the typed container family that DEC-207 names, and is recorded as a hook only ([map_schema.md](map_schema.md) DAT-101).
 
 **DAT-004** (MUST NOT) No client and no server parses authoring text at run time. Loaders read cooked records only, check their header, version and hash, and never accept text (ADR-061). No reference data file, archive or tool output is imported into Species content (DEC-340).
 
@@ -79,102 +79,168 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation (ADR-052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator (ADR-062); generated files are build outputs and are never edited.
+The interface below is a C++23 declaration sketch, not an implementation (ADR-052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator of the content build tool, a development tool of the tools solution under `Tools/` (ADR-062, ADR-059); generated files are build outputs and are never edited. The generated C++ follows the naming of `AGENTS.md` §1: a record type is a PascalCase aggregate whose fields are the schema keys in camelCase, spelt in American English (the key `color_role` generates the field `colorRole`); a record type that names a game concept is generated into namespace `Species`, every other into `Engine`; schema ids, keys and enumerator strings are data names and keep their spelling.
 
 ```cpp
-namespace species::data {
+namespace Engine
+{
 
 // ---- logical field types (§3.1); the order carries no meaning -------------------
-enum class FieldType : std::uint8_t {
-  Boolean, Integer, Count, Ticks, SimDecimal, PresentationDecimal,
-  Text, StableId, StringId, AssetRef, AssetMember, RecordRef,
-  Enum, EnumSet, Vec3Value, Direction, ColourRgba8, ColourMultiplier, Limit,
-  List, Object
+enum class FieldType : std::uint8_t
+{
+  Boolean,
+  Integer,
+  Count,
+  Ticks,
+  SimDecimal,
+  PresentationDecimal,
+  Text,
+  StableId,
+  StringId,
+  AssetRef,
+  AssetMember,
+  RecordRef,
+  Enum,
+  EnumSet,
+  Vec3Value,
+  Direction,
+  ColorRgba8,
+  ColorMultiplier,
+  Limit,
+  List,
+  Object
 };
-enum class SimPrecision : std::uint8_t { Binary32Rounded, Binary64 };     // DAT-010, DEC-241
-enum class Presence : std::uint8_t { Required, Defaulted, AbsenceMeaningful, Derived };
+enum class SimPrecision : std::uint8_t
+{
+  Binary32Rounded,
+  Binary64
+}; // DAT-010, DEC-241
+enum class Presence : std::uint8_t
+{
+  Required,
+  Defaulted,
+  AbsenceMeaningful,
+  Derived
+};
 
-struct SchemaVersion { std::uint16_t major; std::uint16_t minor; };       // DAT-017
+// DAT-017
+struct SchemaVersion
+{
+  std::uint16_t major;
+  std::uint16_t minor;
+};
 
-struct FieldSpec {
-  std::string_view key;                   // lower-case snake_case (DAT-002)
+struct FieldSpec
+{
+  std::string_view key; // lower-case snake_case (DAT-002)
   FieldType type;
   Presence presence;
-  std::string_view unit;                  // "wu", "ticks", "s", "mode s", "dB", "" ...
-  std::optional<double> minimum, maximum; // inclusive unless the field says otherwise
-  std::uint32_t maxChars = 0;             // text and id fields (DAT-009)
-  std::optional<SimPrecision> precision;  // SimDecimal only
-  std::string_view refKind;               // record type or asset category of a reference
-  bool orderCarriesMeaning = false;       // List and EnumSet (DAT-013)
-  std::string_view defaultKey;            // the owner's tuning key of the default, if any
+  std::string_view unit;         // "wu", "ticks", "s", "mode s", "dB", "" ...
+  std::optional<double> minimum; // inclusive unless the field says otherwise
+  std::optional<double> maximum;
+  std::uint32_t maxChars = 0;            // text and id fields (DAT-009)
+  std::optional<SimPrecision> precision; // SimDecimal only
+  std::string_view refKind;              // record type or asset category of a reference
+  bool orderCarriesMeaning = false;      // List and EnumSet (DAT-013)
+  std::string_view defaultKey;           // the owner's tuning key of the default, if any
 };
 
-struct RecordSchema {
-  std::string_view id;                    // the schema id of table 1-A, for example "maps.definition"
+struct RecordSchema
+{
+  std::string_view id; // the schema id of table 1-A, for example "maps.definition"
   SchemaVersion version;
-  std::span<const FieldSpec> fields;      // schema order = canonical write order (DAT-042)
+  std::span<const FieldSpec> fields; // schema order = canonical write order (DAT-042)
   bool simulationRelevant;
-  ContentType cookedAs;                   // the pack content type (ADR-058)
+  ContentType cookedAs; // the pack content type (ADR-058)
 };
 
-class SchemaRegistry {                    // generated, compiled into every product
+// Generated, compiled into every program.
+class SchemaRegistry
+{
 public:
   static const SchemaRegistry& Instance() noexcept;
-  const RecordSchema* Find(std::string_view schemaId) const noexcept;
+  const RecordSchema* Find(std::string_view _schemaId) const noexcept;
   std::span<const RecordSchema> All() const noexcept;
 };
 
 // ---- diagnostics (§6) ------------------------------------------------------------
-struct SourceLocation { std::string file; std::uint32_t line; std::uint32_t column; std::string fieldPath; };
-enum class Severity : std::uint8_t { Error, Warning, Information };
-struct Diagnostic {
-  DiagnosticClass cls;                    // table 6-A
+struct SourceLocation
+{
+  std::string file;
+  std::uint32_t line;
+  std::uint32_t column;
+  std::string fieldPath;
+};
+enum class Severity : std::uint8_t
+{
+  Error,
+  Warning,
+  Information
+};
+struct Diagnostic
+{
+  DiagnosticClass diagnosticClass; // table 6-A
   Severity severity;
   SourceLocation at;
-  std::optional<SourceLocation> also;     // the other occurrence of a duplicate (DAT-025)
-  std::string message;                    // literal text, never a format string (DEC-800)
+  std::optional<SourceLocation> also; // the other occurrence of a duplicate (DAT-025)
+  std::string message;                // literal text, never a format string (DEC-800)
 };
 
-// ---- content build (tools product) -----------------------------------------------
-class AuthoringParser {                   // DAT-019 to DAT-023
+// ---- content build tool (tools solution) ----------------------------------------
+// DAT-019 to DAT-023
+class AuthoringParser
+{
 public:
-  std::expected<JsonDocument, std::vector<Diagnostic>>
-    Parse(std::span<const std::byte> bytes, std::string_view file) const;
+  std::expected<JsonDocument, std::vector<Diagnostic>> Parse(std::span<const std::byte> _bytes, std::string_view _file) const;
 };
-class RecordValidator {                   // DAT-024 to DAT-032
+// DAT-024 to DAT-032
+class RecordValidator
+{
 public:
-  std::vector<Diagnostic> Validate(const JsonDocument& doc, const RecordSchema& schema,
-                                   const ReferenceIndex& refs) const;
+  std::vector<Diagnostic> Validate(const JsonDocument& _document, const RecordSchema& _schema, const ReferenceIndex& _references) const;
 };
-class RecordCooker {                      // DAT-033 to DAT-035
+// DAT-033 to DAT-035
+class RecordCooker
+{
 public:
-  CookedRecord Cook(const JsonDocument& validated, const RecordSchema& schema) const;
+  CookedRecord Cook(const JsonDocument& _validated, const RecordSchema& _schema) const;
 };
-class CanonicalWriter {                   // DAT-040 to DAT-044, DEC-800
+// DAT-040 to DAT-044, DEC-800
+class CanonicalWriter
+{
 public:
-  std::string Write(const RecordValue& value, const RecordSchema& schema) const;
-  std::expected<void, Diagnostic> ReplaceFileAtomically(const std::filesystem::path& target,
-                                                        std::string_view content) const;
+  std::string Write(const RecordValue& _value, const RecordSchema& _schema) const;
+  std::expected<void, Diagnostic> ReplaceFileAtomically(const std::filesystem::path& _target, std::string_view _content) const;
 };
-class SchemaMigration {                   // DAT-045, DAT-046
+// DAT-045, DAT-046
+class SchemaMigration
+{
 public:
-  std::expected<RecordValue, std::vector<Diagnostic>>
-    Migrate(const JsonDocument& older, SchemaVersion from, const RecordSchema& to) const;
-};
-
-// ---- runtime (client, server and tools) ------------------------------------------
-template <class T> class RecordView;      // read-only view of a cooked record (DAT-005)
-enum class LoadError : std::uint8_t { WrongSchema, WrongVersion, HashMismatch, Truncated, Malformed };
-class RecordLoader {                      // DAT-036 to DAT-039
-public:
-  template <class T>
-  std::expected<RecordView<T>, LoadError> Load(const PackEntry& entry) const;
+  std::expected<RecordValue, std::vector<Diagnostic>> Migrate(const JsonDocument& _older, SchemaVersion _from,
+                                                              const RecordSchema& _to) const;
 };
 
-}  // namespace species::data
+// ---- runtime (client, server and content build tool) ----------------------------
+template <class T> class RecordView; // read-only view of a cooked record (DAT-005)
+enum class LoadError : std::uint8_t
+{
+  WrongSchema,
+  WrongVersion,
+  HashMismatch,
+  Truncated,
+  Malformed
+};
+// DAT-036 to DAT-039
+class RecordLoader
+{
+public:
+  template <class T> std::expected<RecordView<T>, LoadError> Load(const PackEntry& _entry) const;
+};
+
+} // namespace Engine
 ```
 
-**Events.** The component raises no gameplay or presentation events. In `Debug` and `Development` builds a changed record reloads through the asset cache's `AssetReloaded` notification ([asset pipeline](../asset_pipeline_and_resources.md) §2.2), and the reader of the record type decides whether it can take the new version while a match runs.
+**Events.** The component raises no gameplay or presentation events. In Debug builds a changed record reloads through the asset cache's `AssetReloaded` notification ([asset pipeline](../asset_pipeline_and_resources.md) §2.2), and the reader of the record type decides whether it can take the new version while a match runs.
 
 **Data contracts.** A cooked record entry is the header of DAT-014 followed by the generated payload of its schema version. The pack table of contents carries the schema id and version of every data entry (ADR-058). The content manifest lists every entry with its hash and its simulation-relevant flag (ADR-060).
 
@@ -229,7 +295,7 @@ Table 3.1-A Logical field types.
 | absence-meaningful | may omit the field | the value, or an explicit "absent" state that the reader interprets (the limit form of DAT-008, an unset map option) |
 | derived | must not hold the field | computed by the cooker from other fields, for example the derived header sets of [map_schema.md](map_schema.md) |
 
-**DAT-012** (MUST) A defaulted field that the authoring file omits takes the declared default of its schema, and only that value: no loader substitutes 0, an empty value or the caller's own fallback for an omitted field (DEC-567, DEC-073). Each record type has one defaults table, generated from its schema, whose values are the owners' tuning keys named in the field tables. The settings defaults are compiled into every product, so they exist before any pack is mounted (DEC-100).
+**DAT-012** (MUST) A defaulted field that the authoring file omits takes the declared default of its schema, and only that value: no loader substitutes 0, an empty value or the caller's own fallback for an omitted field (DEC-567, DEC-073). Each record type has one defaults table, generated from its schema, whose values are the owners' tuning keys named in the field tables; an effect binding that omits a DSP parameter takes that parameter's declared default (see DEC-567). The settings defaults are compiled into every program, so they exist before any pack is mounted (DEC-100).
 
 **DAT-013** (MUST) A list field declares whether its order carries meaning. An ordered list is cooked in authored order and keeps it, as the structure records of a map do (R-MAP-104) and the keys of an explainer object do (R-META-226). An unordered list, and every keyed collection of records, is cooked in byte-wise order of its keys, so reordering it in the authoring file changes no cooked byte (ADR-061). An enumeration whose order carries meaning, such as the outcome order of [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-007 or the effect-kind order of [reference/10](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-077, declares that order in its schema, never through the order of records in a file.
 
@@ -388,7 +454,7 @@ Table 6-A Diagnostic classes.
 | `version` | an unknown, newer or unmigrated schema version | error | DAT-046 |
 | `content_warning` | a condition that an owning document declares as a warning | warning | DAT-032 |
 
-**DAT-052** (MUST) At run time a refused or malformed entry raises one diagnostic in the content log category ([logging](../../../ADR/ADR-067-logging.md)) with the record type, the key, the load error and, for a version mismatch, both versions; the same entry is reported once per load. In `Development` builds the validation of loose content files runs the same validators and shows their diagnostics in the development overlay of the [diagnostics](../diagnostics_test_and_performance/README.md) component.
+**DAT-052** (MUST) At run time a refused or malformed entry raises one diagnostic in the content log category ([logging](../../../ADR/ADR-067-logging.md)) with the record type, the key, the load error and, for a version mismatch, both versions; the same entry is reported once per load. In Debug builds, the only builds that mount loose content files (AST-105), the validation of those files runs the same validators and shows their diagnostics in the development overlay of the [diagnostics](../diagnostics_test_and_performance/README.md) component; Release builds have neither the loose files nor the overlay (ADR-056).
 
 **DAT-053** (MUST) The content build records, per run, the number of files, records and diagnostics per record type and the time spent per stage, so that the budgets of DAT-050 can be tracked in CI.
 
@@ -424,7 +490,7 @@ Table 6-A Diagnostic classes.
 | DEC-100 | Resolved | one defaults table, compiled in (DAT-012) |
 | DEC-120 | Resolved | absent, 0, a number and unlimited are distinct (DAT-008, DAT-041) |
 | DEC-204 | Open | content identity by hash; lists keyed by id and hash (DAT-047) |
-| DEC-207 | Open | no network message format or transport container here (DAT-003) |
+| DEC-207 | Open | no network message format, transport container or custom-map container format here (DAT-003, DAT-101) |
 | DEC-223 | Open | loaded records are immutable and shared by every state owner (DAT-005) |
 | DEC-240 | Open | the numeric model: simulation decimals keep their declared precision until it is decided (DAT-010) |
 | DEC-241 | Open | the reference parsing and rounding semantics as the default (DAT-010, DAT-023) |
@@ -448,6 +514,7 @@ Table 6-A Diagnostic classes.
 4. **Network messages** (DEC-207): whether network messages reuse the schema language and code generator of this folder, with hard limits on every count, length and depth.
 5. **Modding** (vision §7): whether players may author records, which would make the authoring parser and validators part of a player tool, and how such records are identified (DEC-204).
 6. **A second authoring syntax** (ADR-062 revisit trigger): whether flat tables may also be written in a syntax with comments, validated against the same schemas.
+7. **Custom-map container** (DEC-207, DEC-204): the Species format of the container of R-MAP-391 (table 2.14-A), as a member of the typed container family, with its identity, listing and transfer ([map_schema.md](map_schema.md) DAT-101, §8.2 item 3).
 
 ## 9 Tuning table
 

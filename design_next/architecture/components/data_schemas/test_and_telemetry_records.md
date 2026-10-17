@@ -15,34 +15,49 @@ This document specifies the schemas of the three record types of the soak test a
 The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (ADR-062).
 
 ```cpp
-namespace species::data::diag {
+namespace Engine
+{
 
-enum class SoakProgressionKind : std::uint8_t { Linear, Random, Sequence };   // DBG-162
-enum class SoakEntryFailure : std::uint8_t { ContentHashMismatch };          // DBG-161
-enum class SoakParticipantRole : std::uint8_t { Host, Client };
-
-struct SoakSequenceItem;           // table 3.1-B; seed is std::optional, absence keeps the authority's seed
-struct SoakTestMap;                // table 3.1-C
-struct SoakConfigurationRecord;    // table 3.1-A, the cooked record the soak runner reads
-struct SoakMatchRow;               // table 3.2-A; absent cells are std::optional
-struct SoakPassSummary;            // table 3.2-B
-struct TelemetrySession;           // table 3.3-A, exactly the data set of DBG-181
-
-class SoakMatchTableWriter {       // owned by the SoakRunner (DBG-161)
-public:
-  std::expected<void, Diagnostic> WriteHeader();                  // DAT-376
-  std::expected<void, Diagnostic> AppendRow(const SoakMatchRow&); // one write, then flush (DAT-383)
+enum class SoakProgressionKind : std::uint8_t
+{
+  Linear,
+  Random,
+  Sequence
+}; // DBG-162
+enum class SoakEntryFailure : std::uint8_t
+{
+  ContentHashMismatch
+}; // DBG-161
+enum class SoakParticipantRole : std::uint8_t
+{
+  Host,
+  Client
 };
 
-std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySession&);  // DAT-380
-std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view); // DAT-385
+struct SoakSequenceItem;        // table 3.1-B; seed is std::optional, absence keeps the authority's seed
+struct SoakTestMap;             // table 3.1-C
+struct SoakConfigurationRecord; // table 3.1-A, the cooked record the soak runner reads
+struct SoakMatchRow;            // table 3.2-A; absent cells are std::optional
+struct SoakPassSummary;         // table 3.2-B
+struct TelemetrySession;        // table 3.3-A, exactly the data set of DBG-181
 
-}  // namespace species::data::diag
+// Owned by the SoakRunner (DBG-161).
+class SoakMatchTableWriter
+{
+public:
+  std::expected<void, Diagnostic> WriteHeader();                       // DAT-376
+  std::expected<void, Diagnostic> AppendRow(const SoakMatchRow& _row); // one write, then flush (DAT-383)
+};
+
+std::expected<std::string, std::vector<Diagnostic>> WriteTelemetrySession(const TelemetrySession& _session); // DAT-380
+std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySession(std::string_view _text); // DAT-385
+
+} // namespace Engine
 ```
 
-**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance/README.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTP client (DBG-182). No simulation rule reads any of these records.
+**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance/README.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTPS client (DBG-182, PLT-099). No simulation rule reads any of these records.
 
-**Threading contract.** The soak runner writes its report from its own thread, outside every simulation tick (DBG-030). The telemetry session record is formed and serialised on the main thread at the end of a session; only the send runs on the HTTP client's thread (DBG-182).
+**Threading contract.** The soak runner writes its report from its own thread, outside every simulation tick (DBG-030). The telemetry session record is formed and serialised on the main thread at the end of a session; only the send runs on the HTTPS client's thread (DBG-182).
 
 ## 3 Data model
 
@@ -70,7 +85,7 @@ Table 3.1-B Fields of a sequence item.
 |---|---|---|---|---|
 | map | `map` | record reference to a map, by map id | required | with `mode`, names one entry of the pass (DAT-373) |
 | mode | `mode` | mode enumerator: `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain` | required | the edition enables the mode (ADR-056) |
-| forced seed | `seed` | integer, 1 to 2^64 − 1 | absence-meaningful: the authority's own seed stays in place (DBG-162, DBG-163) | the seed the authority takes before the entry runs |
+| forced seed | `seed` | integer, 0 to 2^64 − 1 | absence-meaningful: the authority's own seed stays in place (DBG-162, DBG-163) | the seed the authority takes before the entry runs; 0 is an ordinary seed |
 
 Table 3.1-C Fields of a test-map item.
 
@@ -82,7 +97,7 @@ Table 3.1-C Fields of a test-map item.
 
 **DAT-373** (MUST) The content build checks a soak configuration against every edition that selects it, after README DAT-024: each sequence item's pair of map and mode must be an entry of the pass in that edition, that is, a mode the edition enables with a map that match setup lists for it, or a pair of `test_maps` (DBG-162); a pair listed twice in `sequence`, or twice in `test_maps`, is a build error, because a pass runs every entry exactly once (DEC-804 item 2); and every map named must be a map of that edition (BLD-053). Each failure is a build error that names the configuration, the edition, the item and the field.
 
-**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, never 0, and a pass without a termination tick has no `termination_tick`, never 0 (README DAT-011). Because the in-memory entry of DBG Listing 2.1-A still reads a seed of 0 as "keep the authority's seed", a forced seed of 0 cannot be authored; the range of `seed` widens to include 0 in a minor version once the entry holds an optional seed (README DAT-017).
+**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, and a pass without a termination tick has no `termination_tick` (README DAT-011). The soak entry of DBG Listing 2.1-A holds the forced seed and the termination tick as optional values, so every seed, 0 included, can be forced, and a termination tick of 0 is out of range.
 
 ### 3.2 The soak report
 
@@ -110,7 +125,7 @@ Table 3.2-A Columns of the soak match table, in order (DBG-166).
 | update-time percentiles | `sim_update_us_p<n>`, one column for each n of `dbg.telemetry.percentiles` in its order | count, microseconds, rounded to nearest | required | the simulation update-time percentiles of the match (DBG-166, ADR-070) |
 | peak population | `peak_population` | count | required | ADR-070 |
 
-**DAT-377** (MUST) No cell of the match table holds a marker value: a value that does not exist is an empty cell, never −1 or 0. The empty first-divergence cell is the column that DBG-166 writes as −1, and the empty previous-entry cell is the first match's.
+**DAT-377** (MUST) No cell of the match table holds a marker value: a value that does not exist is an empty cell, never −1 or 0. The first-divergence cell is empty for a match that did not diverge, and the previous-entry cell is empty for the first match of the pass (DBG-166).
 
 **DAT-378** (MUST) The pass summary is a JSON document of the schema `test.soak_report` with the top-level `schema` and `version` fields of README DAT-016 and the fields of table 3.2-B, written once at the end of the pass by the canonical writer (README DAT-040 to DAT-044), with atomic replacement (DEC-800 item 3). A pass that ends in a crash of the runner itself leaves no summary, and its match table stays readable (DAT-383).
 
@@ -191,7 +206,7 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 |---|---|---|
 | a sequence item or test map that names no entry of an edition, a pair listed twice, or a map outside the edition | build error naming configuration, edition, item and field | DAT-373 |
 | `progression_seed` missing with `random`, or `sequence` missing or empty with `sequence` | build error | DAT-372 |
-| a forced seed of 0, a termination tick of 0 | build error: out of range | DAT-374 |
+| a termination tick of 0 | build error: out of range | DAT-374 |
 | a crash during a pass | earlier rows intact; the table continues in the new process | DAT-383 |
 | a blank, truncated or short row in a match table | reported with its line; the other rows are read | DAT-383 |
 | a telemetry record with a field outside table 3.3-A, a missing field or an over-long text | rejected, logged, never queued | DAT-380 |
@@ -201,7 +216,7 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T70 configuration fixtures | unit | a linear, a random and a sequence configuration validate against the `soak` edition; one failing fixture each for a missing `progression_seed`, an empty `sequence`, a pair listed twice, a pair outside the edition, a forced seed of 0 and a termination tick of 0 | DAT-372 to DAT-374 |
+| T70 configuration fixtures | unit | a linear, a random and a sequence configuration validate against the `soak` edition; one failing fixture each for a missing `progression_seed`, an empty `sequence`, a pair listed twice, a pair outside the edition and a termination tick of 0; a forced seed of 0 validates | DAT-372 to DAT-374 |
 | T71 match table form | unit | a table with a diverged and an undiverged match has the header of table 3.2-A, empty first-divergence and first previous-entry cells and no −1; a map id holding a comma is quoted and reads back unchanged | DAT-376, DAT-377 |
 | T72 crash-safe rows | integration | killing the runner after the second match leaves two complete rows; the new process appends the third without a second header; a reader given a truncated last line and a blank line reads the complete rows | DAT-383 |
 | T73 pass summary | unit | a pass with one hash mismatch and one client crash writes `failed_entries` and `crashes` as table 3.2-B states; saving the summary twice gives the same bytes | DAT-378 |
@@ -224,7 +239,6 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 ### 8.2 Design-phase inputs
 
 1. **Telemetry collection service** (ADR-066): the endpoint, the batch envelope that carries the records of table 3.3-A, storage and retention.
-2. **Forced seed 0**: once the soak entry of DBG Listing 2.1-A holds an optional seed, the range of `seed` in table 3.1-B widens to include 0 (DAT-374).
 
 ## 9 Tuning table
 
