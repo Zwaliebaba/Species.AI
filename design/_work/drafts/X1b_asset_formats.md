@@ -35,7 +35,7 @@ Format index (anchors used by the coordinator; IDs added beyond the requested li
 
 Every text format in this draft (`.shp`, `.anim`, `gestures.txt`, gesture demos, `effects.txt`, `stats.txt`, `sounds.txt`) is read through the SystemIV `TextReader` family [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp:TextReader::CleanLine`, `TextReader::GetNextToken`, `TextFileReader::ReadLine`, `TextDataReader::ReadLine`; `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp`. Live in [B:FULL] (all files `vcproj_build=all` in `manifest.csv`).
 
-**Reader selection** [C] `code/lib/resource.cpp:Resource::GetTextReader`: for a resource name `N` the loose file `data/N` is tried first, then the archive entry `data/N` (§29.B16). In both cases a UTF-16 reader is constructed first; if the first two bytes are `FF FE` (UTF-16LE) or `FE FF` (UTF-16BE) the file is Unicode, otherwise it is re-opened as an 8-bit reader. All files in this draft's scope are 8-bit ASCII with CRLF line ends [C] `file(1)` survey.
+**Reader selection** [C] `code/lib/resource.cpp:Resource::GetTextReader`: for a resource name `N` the loose file `data/N` is tried first, then the archive entry `data/N` (§29.B16). In both cases a UTF-16 reader is constructed first; if the first two bytes are `FF FE` (UTF-16LE) or `FE FF` (UTF-16BE) the file is Unicode, otherwise it is re-opened as an 8-bit reader. All text files in this draft's scope are 8-bit ASCII with CRLF line ends (sole exception: `data/shapes/primaryupgradeport.shp`, LF-only) [C] `file(1)` survey.
 
 **Line processing** (`CleanLine`, applied to every physical line):
 1. *Obfuscation check* (first line only): if the line starts with `redshirt2` (case-insensitive) the reader strips those 9 characters and decrypts this and every following line (§29.B2).
@@ -444,7 +444,7 @@ END
 
 ### Discrepancies
 - Keys beyond `STOP` (above) are dead data [C].
-- The sprite bitmaps in `data/animations/` duplicate several icons/sprites under other paths (e.g. `flag*.bmp` also in `icons/`, `darwinian.bmp` also in `sprites/`, `textures/`); they are separate files and may differ — asset agents compare contents [U].
+- Several `data/animations/` sprites share names with files elsewhere but are **different images** (MD5 differs): `flag.bmp`, `flag_down.bmp`, `flag_locked.bmp`, `flag_up.bmp` vs `icons/`; `darwinian.bmp` vs `sprites/` and `textures/`; `cloudyglow.bmp`, `muzzleflash.bmp`, `laser.bmp` vs `textures/`. Only `darwinian_ouch4.bmp` is byte-identical to `sprites/darwinian_ouch4.bmp` [C] md5. The panel always loads `animations/<IMAGENAME>`, so the copies are independent assets.
 
 ---
 
@@ -900,7 +900,6 @@ The complete `sounds.txt` grammar (every keyword, enumerator name and value doma
 3. Whether data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`, …) are looked up via a `sprintf` pattern not caught by the literal grep — resolve with a full call-graph search of `LookupMarker` arguments.
 4. `animator.exe` behaviour (key editing, any fields it writes beyond `AnimatedPanel::Write`) — no source in tree; resolve by running the tool.
 5. `.psp` / `.grd` internal block contents beyond the header (irrelevant to the game).
-6. Content equality of duplicated images (`animations/flag*.bmp` vs `icons/flag*.bmp`, `animations/darwinian.bmp` vs `sprites/darwinian.bmp`) — resolve by hashing.
 
 ## Docs-vs-code discrepancies
 | Doc / comment | Says | Code does | Ref |

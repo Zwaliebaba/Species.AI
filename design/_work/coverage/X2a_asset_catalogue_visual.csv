@@ -1,800 +1,800 @@
 path,depth,reason,sections
-data/textures/ambrosia_logo.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/beam.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/bubble.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/clouds.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/cloudyglow.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/darwinian.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/deform1c.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/deform3.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/deform36c.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/dmacrew.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font_french.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font_german.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font_italian.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font_normal.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/editor_font_russian.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/fuel.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/glow.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/godray.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/interface_blur.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/interface_divider.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/interface_grey.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/interface_red.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/ivlogo.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/laser-long.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/laser.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/laserfence.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/laserfence2.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/lightning.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/menuhighlight.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/msn_oberon_combosplash.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/multiwinia.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/muzzleflash.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/mwtitle.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/particle.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/portallink.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/prices.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/prices_ambrosia.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/prices_steam.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/program_darwinia.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/radarsignal.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/shaman_background.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/shapewireframe.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/skywireframe.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/speccy_font_french.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/speccy_font_italian.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/speccy_font_normal.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/speccy_font_russian.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/speccy_screen.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/starburst.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/subversion.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/tree.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/triangleoutline.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/xboxlivearcade.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/plusmenu/darwinia.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/plusmenu/multiwinia.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/editor.0020.00ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/editor.0410.042f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/editor.0430.044f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/editor.20a0.20af.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/speccy.0020.00ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/speccy.0410.042f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/speccy.0430.044f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/speccy.20a0.20af.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.0020.00ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.0410.042f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.0430.044f.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.20a0.20af.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.3000.30ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.4e00.4eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.4f00.4fff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5000.50ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5100.51ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5200.52ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5300.53ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5400.54ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5500.55ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5600.56ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5700.57ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5800.58ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5900.59ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5a00.5aff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5b00.5bff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5c00.5cff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5d00.5dff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5e00.5eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.5f00.5fff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6000.60ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6100.61ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6200.62ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6300.63ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6400.64ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6500.65ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6600.66ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6700.67ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6800.68ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6900.69ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6a00.6aff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6b00.6bff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6c00.6cff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6d00.6dff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6e00.6eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.6f00.6fff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7000.70ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7100.71ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7200.72ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7300.73ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7400.74ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7500.75ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7600.76ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7700.77ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7800.78ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7900.79ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7a00.7aff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7b00.7bff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7c00.7cff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7d00.7dff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7e00.7eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.7f00.7fff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8000.80ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8100.81ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8200.82ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8300.83ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8400.84ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8500.85ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8600.86ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8700.87ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8800.88ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8900.89ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8a00.8aff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8b00.8bff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8c00.8cff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8d00.8dff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8e00.8eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.8f00.8fff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9000.90ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9100.91ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9200.92ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9300.93ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9400.94ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9500.95ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9600.96ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9700.97ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9800.98ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9900.99ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9a00.9aff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9b00.9bff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9c00.9cff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9d00.9dff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.9e00.9eff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ac00.acff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ad00.adff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ae00.aeff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.af00.afff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b000.b0ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b100.b1ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b200.b2ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b300.b3ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b400.b4ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b500.b5ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b600.b6ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b700.b7ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b800.b8ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.b900.b9ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ba00.baff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.bb00.bfff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.bc00.bcff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.bd00.bdff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.be00.beff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.bf00.bfff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c000.c0ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c100.c1ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c200.c2ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c300.c3ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c400.c4ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c500.c5ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c600.c6ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c700.c7ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c800.c8ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.c900.c9ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ca00.caff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.cb00.cbff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.cc00.ccff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.cd00.cdff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.ce00.ceff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.cf00.cfff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d000.d0ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d100.d1ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d200.d2ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d300.d3ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d400.d4ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d500.d5ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d600.d6ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/textures/unicode/square.d700.d7ff.bmp,full,,25.4 Per-file catalogue (textures)
-data/sprites/brainwaves.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian_ouch1.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian_ouch2.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian_ouch3.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian_ouch4.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/darwinian_side.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/egg.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/futurewinian.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/ghost.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/lasertrooper.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/nuke.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/santahat.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/sound.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/sub.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/subshadow.bmp,full,,25.4 Per-file catalogue (sprites)
-data/sprites/virii.bmp,full,,25.4 Per-file catalogue (sprites)
-data/shapes/aitarget.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/anthill.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/ark.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/armour.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/armyant.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/armyant2.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/armyant3.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/battlecannonbarrel.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/battlecannonbase.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/battlecannonfull.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/battlecannonturret.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/beachheadobstruction.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/blueprintconsole.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/blueprintrelay.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/blueprintstore.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/boxkite.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/bridgeend.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/bridgetower.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/camera.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/cannon_bullets.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/cannon_flame.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/cannon_rocket.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrybillboard.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrybillboard_pcg.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrybillboard_tpcg.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrybillboard_xfire.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrybillboard_zone.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrycube.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrydollar.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carryglobe.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrygun.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carryspider.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrysquaddie.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrystatue.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carryteapot.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carrytelescope.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/carryweights.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/cave.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/centipede.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/centipedehead.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/chesspiece.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/clonelab.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/constructionyard.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/constructionyardrung.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/controlpad.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/controlstation.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/controltower.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/controltowerdish.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/darwinian.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/displayscreen.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/emptyshell.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/engineer.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/factory.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/feedingtube.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fenceswitch.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fieldgun.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fieldgun_shell.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/flying_egg.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fuelgenerator.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fuelgeneratorpump.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fuelpipe.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fuelpipebase.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/fuelstation.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/garbagecollector.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/generator.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/globalworld_inner.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/globalworld_middle.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/globalworld_outer.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/goddish.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/goldenscroll.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/gunturret.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/harvester.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/help.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/incubator.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/lander.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/laser_troop.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/laserfence.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/library.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/masterspawnpoint.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/meteor.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/mine.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/minecart.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/minepolygon1.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/mineprimitive1.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/missile.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/officer.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/plant.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/portal.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/powerstation.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/primaryupgradeport.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/pulsebomb.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/pulsebombcontrolstation.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/pylon.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/radardish.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/receiverlink.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/refinery.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/researchitem.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/rocket.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/rockhead.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/solarpanel.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/souldestroyerhead.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/souldestroyertail.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spaceinvader.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spaceship.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spam.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spawnlink.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spawnpoint.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spawnpointmultiwinia.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spider.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spider_leg_lower.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spider_leg_part.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spider_leg_upper.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spiritprocessor.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spiritreceiver.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/spiritreceiverhead.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/sporegenerator.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/squad.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/statue.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/tank_body.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/tank_turret.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/temple1.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/temple2.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/temple3.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/temple4.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/throwable.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/tracklink.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/triffidegg.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/triffidhead.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/tripod.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/tripod_leg_part.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/trunkport.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/trunkport_mp.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/turretbarrel.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/turretbase.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/turretshell.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/upgrade_port.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/wall.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/wallbuster.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/wheel.shp,full,,25.4 Per-file catalogue (shapes)
-data/shapes/source/AITarget.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/AntHill.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/AnthillNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Ark.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Armour.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ArmyAnt.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BattleCannon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BattleCannonBarrel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BattleCannonBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BattleCannonFull.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BattleCannonTurret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BeachHeadObstruction.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BlueprintConsole.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BlueprintRelay.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BlueprintStore.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BoxCart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BridgeEnd.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/BridgeTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/camera.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Cannon_Bullets.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Cannon_Flame.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Cannon_Rocket.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryBillboard.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryDollar.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryGloby.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryGun.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryPortalCube.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarrySpider.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryStatue.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryTeaPot.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CarryTelescope.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Cave.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Centipede.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/CentipedeHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ChessPiece.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ConstructionYard.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ConstructionYardRung.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ControlPad.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ControlTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ControlTowerDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ControlTowerNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/DisplayScreen.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/DisplayScreenNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/emptyshell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Engineer.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Factory.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FeedingTube.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FenceSwitch.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FieldGun.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FieldGun3.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/fieldgun_shell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FlyingEgg.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FuelGenerator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FuelGeneratorPump.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FuelPipe.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FuelPipeBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/FuelStation.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/GarbageCollector.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Generator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/GlobalWorld.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/GodDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/GoldenScroll.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/GunTurret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Harvester.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/help.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Incubator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/IncubatorNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/lander.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/LaserFence.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/LaserTroop.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/LaserTroopSliced.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Library.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/MasterSpawnPoint.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Meteor.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Mine.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/MineCart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/MinePolygon1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/MinePrimitive1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Missile.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Officer.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/PerditionWeapon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Plant.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/PowerStation.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/PrimaryUpgradePort.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/PulseBombControlTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Pylon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/RadarDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ReceiverLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Refinery.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/ResearchItem.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Rocket.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/rockhead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SolarPanel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SolarPanelNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SoulDestroyerHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SoulDestroyerTail.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpaceInvader.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/spaceship.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Spam.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpawnLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpawnPoint.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpawnPointMultiwinia.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpawnPointNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/spider.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiderLegLower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiderLegPart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiderLegUpper.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiritProcessor.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiritReceiver.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SpiritReceiverHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/SporeGenerator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Squad.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Statue.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Statue_squaddie.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Statue_weights.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Tank_Body.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Tank_Turret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Temple1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Temple2.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Temple3.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/throwable.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TrackLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TriffidEgg.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TriffidHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Tripod.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TripodLegPart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TrunkPort.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TurretBarrel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TurretBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/TurretShell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/upgrade_port.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Wall.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/shapes/source/Wheel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.4 Per-file catalogue (shapes)
-data/animations/armour.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/assault_defend.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/blitz.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/cloudyglow.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/cts.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/darwinian.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/darwinian_ouch4.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/domination.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/flag.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/flag_down.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/flag_locked.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/flag_up.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/fuelpump.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/fuelpumper.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/island.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/koth.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/laser.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/muzzleflash.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/plusone.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/rocket.anim,full,,25.4 Per-file catalogue (animations)
-data/animations/rocket.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/solarpanel.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/spawnpoint.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/statue.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/trunkport.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/turretbarrel.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/turretbase.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/water.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/wmd.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/zone-back.bmp,full,,25.4 Per-file catalogue (animations)
-data/animations/zone-front.bmp,full,,25.4 Per-file catalogue (animations)
-data/terrain/landscape_beach.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_containment.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_dark.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_default.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_desert.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_earth.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_field.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_firetop.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_icecaps.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_icecaps_peaked.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_jailbreak.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_launchpad.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_marble.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_marble2.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_mine.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_mine2.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_ridges.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_shrine.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_silver.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_stronghold.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_trippy.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_volcanic.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/landscape_volcanicplain.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/water_default.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/water_icecaps.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/water_launchpad.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/water_yellow.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_containmentfield.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_default.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_desert.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_dull.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_earth.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_generator.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_icecaps.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_launchpad.bmp,full,,25.4 Per-file catalogue (terrain)
-data/terrain/waves_yellow.bmp,full,,25.4 Per-file catalogue (terrain)
-data/icons/arrow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/arrows_load.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/arrows_moving.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/arrows_unload.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/background.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_absorb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_deploy.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_follow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_formation.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_goto.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_none.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/banner_template.psp,skimmed,"Paint Shop Pro source image: not loadable by BitmapRGBA, never referenced; header not parsed",25.4 Per-file catalogue (icons)
-data/icons/banner_unload.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_a.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_a_hold.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_abxy_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_b.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_control_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_dpad.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_dpad_lr.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_la.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_lb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_lb_rb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_lb_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_lt.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_lt_ra.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_ra.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_rb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_rb_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_rt.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_rt_ra.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_tab.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_trigger_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_x.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_x_nearofficer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/button_y.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/compass.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/compass_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/darwin_research_associates.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/flag.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/flag_down.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/flag_locked.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/flag_up.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_airstrike.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_alpha.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_armour.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_controller.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_engineer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_grenade.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_officer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_rocket.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gesture_squad.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/gestureguide.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_airstrike.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_antnest.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_armour.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_controller.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_crate.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_darkforest.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_darwinian.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_delete.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_dropship.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_egg.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_engineer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_fireextinguisher.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_grenade.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_gunturret.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_harvester.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_hotfeet.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_infection.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_laser.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_magicalforest.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_meteorshower.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_notask.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_nuke.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_officer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_personalshield.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_plague.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_rage.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_randomizer.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_rocket.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_shaman.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_squad.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_statue.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_subversion.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_tank.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_taskmanager.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_template.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/icon_triffid.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/key_c.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/locked.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/marker_colour.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/marker_shadow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/menu_advanced.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/menu_basic.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/menu_intermediate.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_3dposition.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_disabled.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_enter.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_game.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_highlight.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_lmb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_lmb_hold.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_main.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_missiletarget.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_movehere.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_placement.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_rmb.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_selection.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mouse_turrettarget.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/mwlogo.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/nukesymbol.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/rocketcracked.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/rocketstatuspanel.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/scrollbar.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/selectionarrow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/target.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/thickarrow.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/tick.bmp,full,,25.4 Per-file catalogue (icons)
-data/icons/widearrow.bmp,full,,25.4 Per-file catalogue (icons)
-data/thumbnails/default.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_2P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_2P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_2p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_3P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_3P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_3P_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_4P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_assault_4P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_benchmark_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_2p_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_2p_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_2p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_2p_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_3P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_3P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_blitzkrieg_4P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_2p_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_2p_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_2p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_2p_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_3p_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_3P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_3p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_4P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_4P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_cts_4p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_domination_2P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_domination_2P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_domination_3P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_domination_4P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_domination_4P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_2P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_2P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_2P_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_2P_3b.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_2P_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_3P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_3P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_3P_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_3P_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_4P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_4P_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_koth_4P_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_2P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_2p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_2P_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_3p_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_3P_2.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_3P_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_rocketriot_4P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_skirmish_2p_3.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_skirmish_2p_4.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_skirmish_3P_1.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_tankbattle_2P.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_tankbattle_3P.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/thumbnails/mp_tankbattle_4P.bmp,full,,25.4 Per-file catalogue (thumbnails)
-data/mwhelp/360_controller.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/background.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/blitzkrieg1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/blitzkrieg2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/capturestatues.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/control_camera.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/control_camera_french.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/crates.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/gear.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/general1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/general2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/general3.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/general4.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/general5.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_0_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_1_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_1_2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_2_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_2_2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_2_3.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_3_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_3_2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_3_3.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_4_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_4_2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_4_3.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_4_4.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_5_1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_5_2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/help_5_3.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/koth.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/liftstatues.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_assault.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_blitzkrieg.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_campaign.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_capturethestatue.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_domination.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_kingofthehill.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_prologue.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_rocketriot.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/mode_tankbattle.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/pulsebomb.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/pulsebomb_attack.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/pulsebomb_defend.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/reinforcements.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/rocketriot1.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/rocketriot2.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/spawnpoint.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/spawnpoint_assault.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/starthere.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/mwhelp/wallbuster.bmp,full,,25.4 Per-file catalogue (mwhelp)
-data/shaders/deform.vs,full,,25.4 Per-file catalogue (shaders)
-data/shaders/deformDiamond.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/deformFullscreen.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/deformSphere.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc0.vs,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc0Maps.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc1.vs,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc1Maps.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc2.vs,full,,25.4 Per-file catalogue (shaders)
-data/shaders/FixedFunc2Maps.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/globals.h,full,,25.4 Per-file catalogue (shaders)
-data/shaders/water-meshwaves.ps,full,,25.4 Per-file catalogue (shaders)
-data/shaders/water-meshwaves.ps3,full,,25.4 Per-file catalogue (shaders)
-data/shaders/water-meshwaves.vs,full,,25.4 Per-file catalogue (shaders)
-data/sepulveda/sepulveda1.bmp,full,,25.4 Per-file catalogue (sepulveda)
-data/sepulveda/sepulveda2.bmp,full,,25.4 Per-file catalogue (sepulveda)
-data/sepulveda/sepulveda3.bmp,full,,25.4 Per-file catalogue (sepulveda)
-data/sepulveda/sepulveda4.bmp,full,,25.4 Per-file catalogue (sepulveda)
-data/sepulveda/sepulveda5.bmp,full,,25.4 Per-file catalogue (sepulveda)
+data/textures/ambrosia_logo.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/beam.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/bubble.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/clouds.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/cloudyglow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/darwinian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/deform1c.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/deform3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/deform36c.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/dmacrew.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font_french.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font_german.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font_italian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font_normal.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/editor_font_russian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/fuel.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/glow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/godray.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/interface_blur.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/interface_divider.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/interface_grey.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/interface_red.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/ivlogo.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/laser-long.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/laser.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/laserfence.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/laserfence2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/lightning.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/menuhighlight.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/msn_oberon_combosplash.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/multiwinia.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/muzzleflash.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/mwtitle.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/particle.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/portallink.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/prices.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/prices_ambrosia.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/prices_steam.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/program_darwinia.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/radarsignal.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/shaman_background.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/shapewireframe.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/skywireframe.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/speccy_font_french.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/speccy_font_italian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/speccy_font_normal.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/speccy_font_russian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/speccy_screen.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/starburst.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/subversion.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/tree.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/triangleoutline.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/xboxlivearcade.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/plusmenu/darwinia.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/plusmenu/multiwinia.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/textures/unicode/editor.0020.00ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/editor.0410.042f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/editor.0430.044f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/editor.20a0.20af.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/speccy.0020.00ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/speccy.0410.042f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/speccy.0430.044f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/speccy.20a0.20af.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.0020.00ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.0410.042f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.0430.044f.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.20a0.20af.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.3000.30ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.4e00.4eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.4f00.4fff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5000.50ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5100.51ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5200.52ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5300.53ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5400.54ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5500.55ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5600.56ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5700.57ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5800.58ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5900.59ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5a00.5aff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5b00.5bff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5c00.5cff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5d00.5dff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5e00.5eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.5f00.5fff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6000.60ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6100.61ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6200.62ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6300.63ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6400.64ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6500.65ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6600.66ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6700.67ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6800.68ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6900.69ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6a00.6aff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6b00.6bff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6c00.6cff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6d00.6dff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6e00.6eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.6f00.6fff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7000.70ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7100.71ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7200.72ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7300.73ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7400.74ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7500.75ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7600.76ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7700.77ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7800.78ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7900.79ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7a00.7aff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7b00.7bff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7c00.7cff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7d00.7dff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7e00.7eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.7f00.7fff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8000.80ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8100.81ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8200.82ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8300.83ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8400.84ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8500.85ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8600.86ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8700.87ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8800.88ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8900.89ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8a00.8aff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8b00.8bff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8c00.8cff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8d00.8dff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8e00.8eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.8f00.8fff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9000.90ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9100.91ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9200.92ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9300.93ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9400.94ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9500.95ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9600.96ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9700.97ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9800.98ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9900.99ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9a00.9aff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9b00.9bff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9c00.9cff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9d00.9dff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.9e00.9eff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ac00.acff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ad00.adff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ae00.aeff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.af00.afff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b000.b0ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b100.b1ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b200.b2ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b300.b3ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b400.b4ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b500.b5ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b600.b6ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b700.b7ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b800.b8ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.b900.b9ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ba00.baff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.bb00.bfff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.bc00.bcff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.bd00.bdff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.be00.beff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.bf00.bfff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c000.c0ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c100.c1ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c200.c2ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c300.c3ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c400.c4ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c500.c5ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c600.c6ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c700.c7ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c800.c8ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.c900.c9ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ca00.caff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.cb00.cbff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.cc00.ccff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.cd00.cdff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.ce00.ceff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.cf00.cfff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d000.d0ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d100.d1ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d200.d2ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d300.d3ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d400.d4ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d500.d5ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d600.d6ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/textures/unicode/square.d700.d7ff.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/brainwaves.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian_ouch1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian_ouch2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian_ouch3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian_ouch4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/darwinian_side.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/egg.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/futurewinian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/ghost.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/lasertrooper.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sprites/nuke.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/santahat.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/sound.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sprites/sub.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/subshadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/sprites/virii.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/shapes/aitarget.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/anthill.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/ark.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/armour.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/armyant.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/armyant2.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/armyant3.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/battlecannonbarrel.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/battlecannonbase.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/battlecannonfull.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/battlecannonturret.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/beachheadobstruction.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/blueprintconsole.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/blueprintrelay.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/blueprintstore.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/boxkite.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/bridgeend.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/bridgetower.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/camera.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/cannon_bullets.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/cannon_flame.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/cannon_rocket.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrybillboard.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrybillboard_pcg.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carrybillboard_tpcg.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carrybillboard_xfire.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carrybillboard_zone.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carrycube.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrydollar.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carryglobe.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrygun.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/carryspider.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrysquaddie.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrystatue.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carryteapot.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carrytelescope.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/carryweights.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/cave.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/centipede.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/centipedehead.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/chesspiece.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/clonelab.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/constructionyard.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/constructionyardrung.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/controlpad.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/controlstation.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/controltower.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/controltowerdish.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/darwinian.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/displayscreen.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/emptyshell.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/engineer.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/factory.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/feedingtube.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fenceswitch.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fieldgun.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/fieldgun_shell.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/flying_egg.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fuelgenerator.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fuelgeneratorpump.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fuelpipe.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fuelpipebase.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/fuelstation.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/garbagecollector.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/generator.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/globalworld_inner.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/globalworld_middle.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/globalworld_outer.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/goddish.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/goldenscroll.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/gunturret.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/harvester.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/help.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/incubator.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/lander.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/laser_troop.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/laserfence.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/library.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/masterspawnpoint.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/meteor.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/mine.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/minecart.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/minepolygon1.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/mineprimitive1.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/missile.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/officer.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/plant.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/portal.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/powerstation.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/primaryupgradeport.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/pulsebomb.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/pulsebombcontrolstation.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/pylon.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/radardish.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/receiverlink.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/refinery.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/researchitem.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/rocket.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/rockhead.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/solarpanel.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/souldestroyerhead.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/souldestroyertail.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spaceinvader.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spaceship.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spam.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/spawnlink.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spawnpoint.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spawnpointmultiwinia.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spider.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spider_leg_lower.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spider_leg_part.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/spider_leg_upper.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spiritprocessor.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spiritreceiver.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/spiritreceiverhead.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/sporegenerator.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/squad.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/statue.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/tank_body.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/tank_turret.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/temple1.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/temple2.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/temple3.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/temple4.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/throwable.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/tracklink.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/triffidegg.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/triffidhead.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/tripod.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/tripod_leg_part.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/trunkport.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/trunkport_mp.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/turretbarrel.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/turretbase.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers; 25.9 Assets not used by a Multiwinia match
+data/shapes/turretshell.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/upgrade_port.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/wall.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/wallbuster.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/wheel.shp,full,,25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers
+data/shapes/source/AITarget.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/AntHill.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/AnthillNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Ark.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Armour.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ArmyAnt.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BattleCannon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BattleCannonBarrel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BattleCannonBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BattleCannonFull.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BattleCannonTurret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BeachHeadObstruction.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BlueprintConsole.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BlueprintRelay.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BlueprintStore.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BoxCart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BridgeEnd.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/BridgeTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/camera.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Cannon_Bullets.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Cannon_Flame.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Cannon_Rocket.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryBillboard.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryDollar.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryGloby.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryGun.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryPortalCube.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarrySpider.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryStatue.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryTeaPot.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CarryTelescope.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Cave.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Centipede.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/CentipedeHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ChessPiece.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ConstructionYard.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ConstructionYardRung.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ControlPad.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ControlTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ControlTowerDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ControlTowerNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/DisplayScreen.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/DisplayScreenNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/emptyshell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Engineer.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Factory.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FeedingTube.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FenceSwitch.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FieldGun.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FieldGun3.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/fieldgun_shell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FlyingEgg.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FuelGenerator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FuelGeneratorPump.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FuelPipe.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FuelPipeBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/FuelStation.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/GarbageCollector.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Generator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/GlobalWorld.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/GodDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/GoldenScroll.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/GunTurret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Harvester.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/help.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Incubator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/IncubatorNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/lander.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/LaserFence.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/LaserTroop.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/LaserTroopSliced.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Library.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/MasterSpawnPoint.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Meteor.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Mine.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/MineCart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/MinePolygon1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/MinePrimitive1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Missile.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Officer.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/PerditionWeapon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Plant.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/PowerStation.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/PrimaryUpgradePort.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/PulseBombControlTower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Pylon.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/RadarDish.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ReceiverLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Refinery.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/ResearchItem.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Rocket.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/rockhead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SolarPanel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SolarPanelNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SoulDestroyerHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SoulDestroyerTail.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpaceInvader.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/spaceship.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Spam.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpawnLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpawnPoint.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpawnPointMultiwinia.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpawnPointNew.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/spider.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiderLegLower.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiderLegPart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiderLegUpper.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiritProcessor.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiritReceiver.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SpiritReceiverHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/SporeGenerator.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Squad.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Statue.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Statue_squaddie.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Statue_weights.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Tank_Body.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Tank_Turret.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Temple1.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Temple2.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Temple3.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/throwable.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TrackLink.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TriffidEgg.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TriffidHead.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Tripod.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TripodLegPart.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TrunkPort.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TurretBarrel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TurretBase.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/TurretShell.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/upgrade_port.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Wall.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/shapes/source/Wheel.max,skimmed,"binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)",25.6 Per-file catalogue — shapes (data/shapes/source); 25.9 Assets not used by a Multiwinia match
+data/animations/armour.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/assault_defend.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/blitz.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/cloudyglow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/cts.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/darwinian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/darwinian_ouch4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/domination.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/flag.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/flag_down.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/flag_locked.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/flag_up.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/fuelpump.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/fuelpumper.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/island.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/koth.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/laser.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/muzzleflash.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/plusone.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/rocket.anim,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/rocket.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/solarpanel.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/spawnpoint.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/statue.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/trunkport.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/turretbarrel.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/turretbase.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/water.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/wmd.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/zone-back.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/animations/zone-front.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_beach.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_containment.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_dark.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_default.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_desert.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_earth.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_field.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_firetop.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_icecaps.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_icecaps_peaked.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_jailbreak.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_launchpad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_marble.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_marble2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_mine.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_mine2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_ridges.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_shrine.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_silver.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_stronghold.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_trippy.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/landscape_volcanic.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/landscape_volcanicplain.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/water_default.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/water_icecaps.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/water_launchpad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/water_yellow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_containmentfield.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_default.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_desert.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/terrain/waves_dull.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_earth.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_generator.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_icecaps.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_launchpad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/terrain/waves_yellow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/arrow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/arrows_load.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/arrows_moving.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/arrows_unload.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/background.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/banner_absorb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/banner_deploy.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/banner_follow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/banner_formation.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/banner_goto.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/banner_none.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/banner_template.psp,skimmed,"Paint Shop Pro source image: not loadable by BitmapRGBA, never referenced; header not parsed","25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/banner_unload.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_a.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_a_hold.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_abxy_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_b.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_control_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_dpad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_dpad_lr.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_la.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_lb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_lb_rb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_lb_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_lt.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_lt_ra.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_ra.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_rb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_rb_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_rt.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_rt_ra.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_tab.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_trigger_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_x.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/button_x_nearofficer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/button_y.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/compass.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/compass_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/darwin_research_associates.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/flag.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/flag_down.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/flag_locked.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/flag_up.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_airstrike.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_alpha.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/gesture_armour.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_controller.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_engineer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_grenade.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_officer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_rocket.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gesture_squad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/gestureguide.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_airstrike.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_antnest.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_armour.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_controller.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_crate.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_darkforest.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_darwinian.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_delete.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_dropship.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_egg.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_engineer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_fireextinguisher.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_grenade.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_gunturret.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_harvester.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_hotfeet.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_infection.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_laser.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_magicalforest.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_meteorshower.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_notask.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_nuke.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_officer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_personalshield.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_plague.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_rage.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_randomizer.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_rocket.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_shaman.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_squad.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_statue.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_subversion.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_tank.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_taskmanager.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/icon_template.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/icon_triffid.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/key_c.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/locked.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/marker_colour.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/marker_shadow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/menu_advanced.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/menu_basic.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/menu_intermediate.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_3dposition.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_disabled.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_enter.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_game.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_highlight.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_lmb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_lmb_hold.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_main.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_missiletarget.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_movehere.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_placement.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_rmb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/mouse_selection.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mouse_turrettarget.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/mwlogo.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/nukesymbol.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/rocketcracked.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/rocketstatuspanel.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/scrollbar.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/icons/selectionarrow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/target.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/thickarrow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/tick.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/icons/widearrow.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/default.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_2P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_2P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_2p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_3P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_3P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_3P_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_4P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_assault_4P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_benchmark_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/thumbnails/mp_blitzkrieg_2p_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_2p_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_2p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_2p_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_3P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_3P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_blitzkrieg_4P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_2p_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_2p_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_2p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_2p_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_3p_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_3P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_3p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_4P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_4P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_cts_4p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_domination_2P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_domination_2P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_domination_3P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_domination_4P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_domination_4P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_2P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_2P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_2P_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_2P_3b.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_2P_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/thumbnails/mp_koth_3P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_3P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_3P_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_3P_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_4P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_4P_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_koth_4P_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_2P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_2p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_2P_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_3p_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_3P_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_3P_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_rocketriot_4P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_skirmish_2p_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/thumbnails/mp_skirmish_2p_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_skirmish_3P_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/thumbnails/mp_tankbattle_2P.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/thumbnails/mp_tankbattle_3P.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/thumbnails/mp_tankbattle_4P.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/mwhelp/360_controller.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/mwhelp/background.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/mwhelp/blitzkrieg1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/blitzkrieg2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/capturestatues.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/control_camera.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/control_camera_french.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/crates.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/gear.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/general1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/general2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/general3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/general4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/general5.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_0_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_1_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_1_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_2_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_2_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_2_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_3_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_3_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_3_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_4_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_4_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_4_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_4_4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_5_1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_5_2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/help_5_3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/koth.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/liftstatues.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_assault.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_blitzkrieg.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_campaign.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/mwhelp/mode_capturethestatue.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_domination.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_kingofthehill.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_prologue.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/mwhelp/mode_rocketriot.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/mode_tankbattle.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/pulsebomb.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/pulsebomb_attack.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/pulsebomb_defend.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/reinforcements.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/rocketriot1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/rocketriot2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/spawnpoint.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/spawnpoint_assault.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/starthere.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/mwhelp/wallbuster.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders"
+data/shaders/deform.vs,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/deformDiamond.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/deformFullscreen.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/deformSphere.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc0.vs,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc0Maps.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc1.vs,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc1Maps.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc2.vs,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/FixedFunc2Maps.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/globals.h,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/water-meshwaves.ps,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/water-meshwaves.ps3,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/shaders/water-meshwaves.vs,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sepulveda/sepulveda1.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sepulveda/sepulveda2.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sepulveda/sepulveda3.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sepulveda/sepulveda4.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"
+data/sepulveda/sepulveda5.bmp,full,,"25.5 Per-file catalogue — bitmaps, animation scripts and shaders; 25.9 Assets not used by a Multiwinia match"

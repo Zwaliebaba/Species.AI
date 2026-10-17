@@ -957,3 +957,482 @@ As §5.28 with target `1.3 + syncfrand(0.7)` → [1.3, 2.0); message `crate_mess
 | Slow Down / Speed Up | 15 s hold; locked after game over | — |
 | Rocketwinians | permanent per team | engage at > 95 range where rockets fall short |
 
+## 6 Weapons, projectiles and effect objects
+
+### 6.0 Conventions, class inventory and fire helpers
+
+All classes in this section derive from `WorldObject`, live in `Location::m_effects` (except `Laser`, pooled in `Location::m_lasers`), carry an `Effect*` type from `WorldObject`'s anonymous enum (`TypeInvalid` 0, `EffectThrowableGrenade` 1, `EffectThrowableAirstrikeMarker` 2, `EffectThrowableAirstrikeBomb` 3, `EffectThrowableControllerGrenade` 4, `EffectGunTurretTarget` 5, `EffectGunTurretShell` 6, `EffectSpamInfection` 7, `EffectBoxKite` 8, `EffectSnow` 9, `EffectRocket` 10, `EffectShockwave` 11, `EffectMuzzleFlash` 12, `EffectOfficerOrders` 13, `EffectOfficerOrderTrail` 14, `EffectZombie` 15, `EffectRandomiser` 16, `EffectDustBall` 17, `EffectLightning` 18, `EffectPulseWave` 19, `EffectFlameGrenade` 20, `EffectTurretEmptyShell` 21, `EffectFireball` 22), are advanced once per tick and removed when `Advance()` returns true [C] `code/worldobject/worldobject.h`, `code/location.cpp:Location::Advance`. `Missile` and `LandMine` never set `m_type` (stay `TypeInvalid`) [C].
+
+```mermaid
+classDiagram
+  WorldObject <|-- ThrowableWeapon
+  ThrowableWeapon <|-- Grenade
+  Grenade <|-- FlameGrenade
+  ThrowableWeapon <|-- AirStrikeMarker
+  ThrowableWeapon <|-- ControllerGrenade
+  WorldObject <|-- Rocket
+  WorldObject <|-- Laser
+  WorldObject <|-- TurretShell
+  WorldObject <|-- TurretEmptyShell
+  WorldObject <|-- Fireball
+  WorldObject <|-- Shockwave
+  WorldObject <|-- MuzzleFlash
+  WorldObject <|-- Missile
+  WorldObject <|-- LandMine
+  WorldObject <|-- PulseWave
+  WorldObject <|-- SpamInfection
+  WorldObject <|-- Lightning
+  WorldObject <|-- Snow
+  WorldObject <|-- DustBall
+  WorldObject <|-- GunTurretTarget
+  WorldObject <|-- BoxKite
+  Building <|-- Crate
+```
+
+| Class | Header | Created by (live paths) | Build / reachability |
+|---|---|---|---|
+| `ThrowableWeapon` | `code/worldobject/weapons.h` | base only | [B:FULL] |
+| `Grenade` | `weapons.h` | Darwinian grenade throws, InsertionSquad secondary weapon, airstrike bombers (as `EffectThrowableAirstrikeBomb`), Mortar gun turret (`explodeOnImpact`, life 1000 — no shipped MP map places a mortar turret) | [B:FULL] |
+| `FlameGrenade` | `weapons.h` | napalm bombers | [B:FULL] |
+| `AirStrikeMarker` | `weapons.h` | `Crate::RunAirStrike` (3–7 per strike) | [B:FULL] |
+| `ControllerGrenade` | `weapons.h` | `Location::ThrowWeapon(EffectThrowableControllerGrenade)`, only from `Squadie::FireSecondaryWeapon` with weapon type Controller, which no Multiwinia path sets | [B:LEGACY] [I] |
+| `Rocket` | `weapons.h` | Rocketwinian Darwinians, InsertionSquad rockets, Rocket gun turret (life 1.0), Tank (2.0, [B:LEGACY]) | [B:FULL] |
+| `Laser` | `weapons.h` | `Entity::Attack` (Darwinians, speed 150), InsertionSquad (200), Subversion Darwinians (75, mind-control), Subversion turret / subverted Standard turret barrel (125, mind-control) | [B:FULL] |
+| `TurretShell` | `weapons.h` | Standard gun turret via `Location::FireTurretShell` | [B:FULL] |
+| `TurretEmptyShell` | `weapons.h` | Standard gun turret shell-casing ejection | [B:FULL] (cosmetic) |
+| `Fireball` | `weapons.h` | Flame gun turret via `Location::LaunchFireball` | [B:FULL] |
+| `Shockwave` | `weapons.h` | every `Location::Bang` (`Location::CreateShockwave`) | [B:FULL] |
+| `MuzzleFlash` | `weapons.h` | `ThrowWeapon`, `FireRocket`, `FireTurretShell`, `FireLaser`; embedded (unregistered) in `Missile` | [B:FULL] (cosmetic) |
+| `Missile` | `weapons.h` | `Tank::LaunchMissile`, `Armour::LaunchMissile` — **neither function has a caller** | compiled, unreachable |
+| `LandMine` | `weapons.h` | `Tank::DropMine` — **no caller** | compiled, unreachable |
+| `PulseWave` | `weapons.h` | Assault `PulseBomb` detonation | [B:FULL] |
+| `SpamInfection` | `code/worldobject/spam.h` | `Crate::RunInfection`; legacy `Spam` building [B:LEGACY] | [B:FULL] |
+| `Lightning` | `code/worldobject/lightning.h` | `Location::AdvanceLightning` (level effect `lightning`) | [B:FULL] |
+| `Snow` | `code/worldobject/snow.h` | `Location::AdvanceChristmas` (level effect `snow`, or Christmas mode) | [B:FULL] |
+| `DustBall` | `code/worldobject/dustball.h` | `Location::AdvanceDustWind` (level effect `dustwind`) | [B:FULL] |
+| `GunTurretTarget` | `code/worldobject/gunturret.h` | `GunTurret::Advance` (one per turret) | [B:FULL] (consumer SP-only) |
+| `BoxKite` | `code/worldobject/darwinian.h` | `Darwinian::AdvanceWorshipSpirit` (single-player worship) | [B:LEGACY] |
+| `Crate` | `code/worldobject/crate.h` | §1 | [B:FULL] |
+
+[C] `code/worldobject/weapons.cpp`, `code/location.cpp`, `code/worldobject/gunturret.cpp:GunTurret::PrimaryFire`, `code/worldobject/darwinian.cpp:Darwinian::AdvanceCombat`, `code/worldobject/insertion_squad.cpp`, `code/worldobject/tank.cpp`, `code/worldobject/armour.cpp`, `code/worldobject/pulsebomb.cpp`; "no caller" by grep of `code/` [C].
+
+**Damage types** `Entity::DamageType{ DamageTypeUnresistable = 0, DamageTypeLaser, DamageTypeExplosive, DamageTypeTurretShell, DamageTypeFire }`; `Entity::ChangeHealth(amount, type = Unresistable)`; per-class resistances are `ChangeHealth` overrides (Darwinian: shield, formation × 0.6 vs explosive, rage × 0.75, Futurewinian × 2; Armour: laser-immune, shells ÷ 3; SpaceInvader: shells only; SpaceShip: invulnerable) [C] `code/worldobject/entity.h`, `code/worldobject/darwinian.cpp:Darwinian::ChangeHealth`. Base `Entity::ChangeHealth`: if `health + amount ≤ 0` → dead, sound `Die`, **one spirit** spawned; plays `LoseHealth` on any negative amount [C per P04] `code/worldobject/entity.cpp:Entity::ChangeHealth`.
+
+**Gravity.** Thrown objects do `vel.y −= 9.8 × gameSpeed` per tick; with the tick length `0.1 × gameSpeed` this is a constant **98 wu/s²** of game time [I arithmetic] `code/worldobject/weapons.cpp:ThrowableWeapon::Advance`.
+
+**Fire helpers** [C] `code/location.cpp`:
+
+| Helper | Signature (defaults) | Behaviour |
+|---|---|---|
+| `Location::ThrowWeapon` | `(pos, target, type, fromTeam, force = 0, lifeTime = 0, explodeOnImpact = false)` → effect index | `force = 8·√|target − pos|`, capped at `ThrowableWeapon::GetMaxForce(grenadeResearch)` = **110** (research 2; Darwinia single-player team 1 uses level 4); a non-zero `force` argument overrides (no cap). `front = normalise(target − pos)`, then `front.y = 1`, renormalise (45° on level ground, steeper otherwise). Creates `Grenade` / `AirStrikeMarker` / `ControllerGrenade` (for the controller: `m_squadTaskId` = the team's current task if it is a Squad task), id `(fromTeam, UNIT_EFFECTS, index)`, `Initialise()` (sound `Create`); a non-zero `lifeTime` overrides a grenade's fuse; spawns `MuzzleFlash(pos, front, 20, 3)` |
+| `Location::FireRocket` | `(pos, target, fromTeam, lifeTime = −1, fromBuildingId = −1, firework = false)` | `Rocket(pos, target)`, team, building, firework; `Initialise()` (sound `Create`); `lifeTime ≠ −1` → `m_lifeTime`; `MuzzleFlash(pos, dir, 20, 3)` |
+| `Location::FireTurretShell` | `(pos, vel, team, fromBuildingId)` | life by armour research (0/1 → 0.5, 2 → 1.0, 3 → 1.5, 4 → 2.0) but **multiplayer forces 0.6 s**; single-player forces the shell team to 255; `MuzzleFlash(pos + vel·dt/2, dir, 60, 2)` with team −1 |
+| `Location::LaunchFireball` | `(pos, vel, life = 1.0, fromBuildingId = −1)` | `Fireball`, id team **−1** (hurts everyone) |
+| `Location::FireLaser` | `(pos, vel, fromTeam, mindControl = false)` | lifetime by laser research (0 → 0.2, 1 → 0.4, **2 → 0.6**, 3 → 0.8, 4 → 1.0) × 2 for mind-control lasers ("half speed, so double life"); pooled `Laser::Initialise(lifetime)`; `MuzzleFlash(pos, dir, 25 × lifetime, 1.5)` |
+| `Location::CreateShockwave` | `(pos, size, team = 255, fromBuildingId = −1)` | `Shockwave(team, size)`; team passed as `unsigned char`, so −1 becomes 255 |
+
+### 6.1 Shared explosion model — `Location::Bang`
+
+`int Location::Bang(pos, R, D, teamId = −1, fromBuildingId = −1)` returns the number of non-`teamId` entities killed [C] `code/location.cpp:Location::Bang`:
+
+1. Cosmetic particles (unsynced `frand`): `R·D·0.01 (+ frand of that)` `TypeExplosionCore` at `pos + up·0.3R`; `clamp(R·D·0.01, 2, 30)` `TypeExplosionDebris` in a ring.
+2. **Entities**: every entity of every team (the attacker's own included) with XZ distance < **2R**; `d` = 3-D distance; `fraction = (2R − d) / R * 2` — operator precedence makes this `((2R − d)/R)·2`, clamped to [0, 1]: **full damage D for d ≤ 1.5R, linear falloff to 0 at d = 2R**. `ChangeHealth(−D·fraction, DamageTypeExplosive)`.
+3. Knock-back if `ChangeHealth` returned true and the type is not InsertionSquadie/Officer/Shaman: `push = normalise(entity − pos)`, `push.y = D` if on ground else −1, normalised, × fraction; added to `m_vel`, `m_onGround = false` (magnitude ≤ 1 wu/s — the effect is mainly to make the target airborne) [C].
+4. Kill count: entities that died this call and whose team ≠ `teamId` (so −1 counts every death); Darwinian kills are added to `teams[teamId].m_teamKills` when `teamId` is a valid team (single-player adds all kills).
+5. `CreateShockwave(pos, R/20, teamId, fromBuildingId)` (§6.11). [B:D3D] also `g_deformEffect->AddPunch(pos, R)`.
+6. **Buildings**: every building with 3-D centre distance < **3R** takes `Damage(−D·(1 − d/3R))`.
+
+| Source | R | D | Full ≤ | Zero at | Kills a 50-HP Darwinian within | Buildings < | Shockwave size (s) | Team |
+|---|---|---|---|---|---|---|---|---|
+| Grenade (power 25) | 12.5 | 50 | 18.75 | 25 | 18.75 (needs the full 50) | 37.5 | 0.625 | thrower |
+| Airstrike bomb (power 50) | 25 | 100 | 37.5 | 50 | 43.75 | 75 | 1.25 | bomber's team |
+| Rocket | 15 | 25 | 22.5 | 30 | — (25 < 50) | 45 | 0.75 | firer (turret kills via `RegisterKill`) |
+| Meteor | 50 | 100 | 75 | 100 | 87.5 | 150 | 2.5 | task owner |
+| Nuke warhead | 50 | 100 | 75 | 100 | 87.5 | 150 | 2.5 | −1 (deaths credited by `Nuke`) |
+| Missile [unreachable] | 20 | 100 | 30 | 40 | 35 | 60 | 1.0 | −1 |
+| Land mine [unreachable] | 20 | 20 | 30 | 40 | — | 60 | 1.0 | mine team |
+| Plague explosion | 5 | 25 | 7.5 | 10 | — | 15 | 0.25 | −1 |
+
+[C formula; I radii]. Resolved: `docs`-free; P04 and P05 agree with the code on the precedence bug.
+
+### 6.2 `ThrowableWeapon`
+
+Abstract base of thrown objects [C] `code/worldobject/weapons.cpp:ThrowableWeapon::ThrowableWeapon`, `ThrowableWeapon::Advance`, `ThrowableWeapon::Render`, `ThrowableWeapon::GetMaxForce`.
+
+| Parameter | Value |
+|---|---|
+| Shape | `throwable.shp` |
+| Initial state | `m_pos = start`, `m_vel = front × force`, `m_force = 1.0` (bounce energy, not the throw force), `m_birthTime = network time`, `m_up = front` |
+| Sound routing | Grenade / AirstrikeMarker / ControllerGrenade → `SoundSourceBlueprint::TypeGrenade`; AirstrikeBomb / FlameGrenade → `TypeAirstrikeBomb`; `Initialise()` triggers `Create` (bombs are created with `new` and never `Initialise`d — no `Create`) |
+| Trail | unless an AirstrikeMarker: with probability `syncfrand(1) > 0.1/gameSpeed` per tick a `TypeMissileTrail` particle (size 60) at `pos − vel·dt`, velocity `vel/4 + syncsfrand(5)` per axis (synced RNG spent on a cosmetic) |
+| Flight (while `m_force > 0.1`) | `vel.y −= 9.8·gameSpeed`; `pos += vel·dt`; if `pos.y < ground + 1`: `WorldObject::BounceOffLandscape()` (snap to ground, reflect about the terrain normal `v' = 2(n·(−v))n − (−v)`, × `COEF_OF_RESTITUTION = 0.85`), then `m_force *= 0.75`, `vel *= m_force`, clamp to ground + 1, sound `Bounce` |
+| Speed kept at bounce k | `0.85 · 0.75^k` of the incoming speed (0.64, 0.48, 0.36 …); at rest after the 9th bounce (`0.75^9 = 0.075 < 0.1`) [I arithmetic] |
+| Self-destruct | never (subclasses decide) |
+| `GetMaxForce(level)` | 0 → 50, 1 → 80, **2 → 110** (Multiwinia), 3 → 140, 4 → 170, other → 0 |
+| `GetApproxMaxRange(F)` | `F + 0.75F + 0.5625F = 2.3125F` (≈ 254 for F = 110) — a heuristic used by AI/UI |
+| `RemoveForce` / `ResetForce` | `m_force = 0` (frozen in place) / 1 — used by the Harvester when it captures a grenade |
+| Render | tumbling shape; once per second of age triggers sound `Flash` **from the render path** (client-side); `textures/starburst.bmp` flash billboard in `m_colour` (α 200) plus a white inner flash during the last 20 % of each second, size `1000/√camDist` |
+
+### 6.3 `Grenade`
+
+| Field | Default | Notes |
+|---|---|---|
+| `m_life` (fuse) | 3.0 s | decremented before the throw physics each tick |
+| `m_power` | 25.0 | → `Bang(pos, power/2, power×2, team)` |
+| `m_colour` | (255, 100, 100) | flash colour |
+| `m_explodeOnImpact` | false | Mortar turret: true (explodes when `pos.y < ground + 2`, life 1000) |
+| `m_collected` | false | set by a Harvester: `Advance` then returns at once (frozen, carried) |
+
+`Grenade::Advance` [C] `code/worldobject/weapons.cpp:Grenade::Advance`: if collected → nothing. Else `life −= dt`; explode when `life ≤ 0` (or on impact for mortar shells): sound `Explode`, `Bang(pos, 12.5, 50, team)` (§6.1), removed. Otherwise `ThrowableWeapon::Advance`.
+
+Airstrike bomb variant (created by `SpaceInvader::Advance`): `m_type = EffectThrowableAirstrikeBomb`, `m_life = 1.5`, `m_power = 50` → `Bang(R 25, D 100)` [C] `code/worldobject/airstrike.cpp:SpaceInvader::Advance`.
+
+Throw accuracy on flat ground (S04 re-implementation `_work/scripts/S_04_grenade_sim.py`, mirrors `ThrowWeapon` + `ThrowableWeapon::Advance` + `Grenade::Advance`) [I]:
+
+| Target distance | Force | First impact | Position when the 3 s fuse ends |
+|---|---|---|---|
+| 25 | 40.0 | 14.1 | 19.0 |
+| 50 | 56.6 | 28.0 | 37.5 |
+| 75 | 69.3 | 44.1 | 63.4 |
+| 100 | 80.0 | 62.2 | 88.1 |
+| 125 | 89.4 | 75.9 | 110.8 |
+| 150 | 98.0 | 90.1 | 128.3 |
+| ≥ 189 (force capped at 110) | 110.0 | 116.7 | 171.6 |
+
+Grenades land at ≈ 0.6 of the target distance and roll on to ≈ 0.75–0.9 of it before exploding; the practical maximum is ≈ 170 wu. Darwinians throw only at targets more than 75 away (§5.23) and flee any grenade or airstrike marker (any team) within 60 unless raging [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`.
+
+### 6.4 `FlameGrenade`
+
+Napalm bomb, derived from `Grenade`; colour (255, 100, 100), `m_type = EffectFlameGrenade`; created only by napalm bombers with `m_life = 1.5`, `m_power = 50` [C] `code/worldobject/weapons.cpp:FlameGrenade::Advance`.
+
+| Parameter | Value |
+|---|---|
+| Fuse | 1.5 s (`m_life −= dt`); ignores `m_collected` and `m_explodeOnImpact` |
+| On burst | sound `Explode`; **no `Bang`** (the call is commented out) |
+| Darwinians | every Darwinian of any team within `power × 1.25 = 62.5` (XZ) → `Darwinian::SetFire()` (refused for shielded, inside-Armour, being-sacrificed and Monster-team Darwinians) |
+| Trees / Triffids | every `Tree` or `Triffid` building with centre distance < `power × 2 = 100` takes `Damage(power × −4 = −200)`; a falloff `fraction` is computed but unused — no falloff |
+| Particles | 80 (51 `TypeFireball`, 20 `TypeFire`, 9 `TypeMissileTrail`), size 150–250, unsynced |
+| Otherwise | `ThrowableWeapon::Advance` |
+
+### 6.5 `AirStrikeMarker`
+
+Smoke marker thrown by `Crate::RunAirStrike` (§5.5) [C] `code/worldobject/weapons.cpp:AirStrikeMarker::Advance`.
+
+| Parameter | Value |
+|---|---|
+| Colour | (255, 100, 100) |
+| `m_naplamBombers` (sic) | false by default; `RunAirStrike(…, special)` sets it |
+| `m_airstrikeUnit` | id of the summoned `AirstrikeUnit` (invalid until summoned) |
+| Physics | `ThrowableWeapon::Advance` (no missile trail); every tick a `TypeFire` smoke particle (size 100, velocity `vel/4 + syncsfrand(5)`) "for the bombers to see" |
+| Summon condition | `now > birthTime + 2.0` **and** `m_force ≤ 0.1` (at rest) |
+| Summon | first time: `team->NewUnit(TypeSpaceInvader, CurrentLevel(TypeAirStrike) = 2, &unitId, m_pos)` → `AirstrikeUnit` with `m_effectId = marker index`, `m_napalm = m_naplamBombers` |
+| Removal | once summoned: when the unit no longer exists or enters `StateLeaving` |
+| Threat | Darwinians of every team flee markers within 60 (unless raging) |
+
+### 6.6 `Rocket`
+
+[C] `code/worldobject/weapons.cpp:Rocket::Rocket`, `Rocket::Advance`, `Rocket::Explode`, `Rocket::Render`.
+
+| Parameter | Value |
+|---|---|
+| Spawn | `pos = start + (0, 2, 0)`; `vel = normalise(target − pos) × 50`; `m_timer = network time`; shape `throwable.shp` |
+| Acceleration | each tick while `|vel| < 150`: `vel *= 1.2` (50 → 60 → 72 → 86.4 → 103.7 → 124.4 → 149.3 → 179.2, then constant 179.2) — applied before the move |
+| Firework curl (`m_firework`, rockets of infected Rocketwinians) | per tick `vel.x += sign(Δx)·min(Δx², 16)`, same for z, Δ = the tick's displacement — the rocket spirals outward |
+| Max life | Rocket research 2 → **0.75 s** (table 0 → 0.25, 1 → 0.5, 2 → 0.75, 3 → 1.0, 4 → 1.5); a non-zero `m_lifeTime` overrides (Rocket turret 1.0, Tank 2.0) |
+| Explodes when | `now > m_timer + maxLife` (after moving), or terrain height ≥ `pos.y`, or any building in the obstruction cell has `DoesSphereHit(pos, 3)` |
+| Explosion | `Bang(pos, 15, 25, team, fromBuilding)` (§6.1); firework: extra `TypeExplosionCore` particles in a random colour (unsynced); a GunTurret source gets `RegisterKill(255, numKills)` |
+| Sounds | `Create` / `Explode` (`TypeRocket`); stops the `Rocket Create` loop on explosion |
+| Trail | sim: `TypeFire` particle with probability `syncfrand(1) > 0.2` per tick; render: 5 `TypeMissileFire` per frame (unsynced) |
+| Range [I] | default life: 8 moves ≈ **95 wu** before expiring (60+72+86.4+103.7+124.4+149.3+179.2+179.2 = 954 × 0.1); turret life 1.0: 11 moves ≈ **149 wu** (the Rocket turret's 200 max range is therefore not reached in flight) |
+
+Resolved: P04 gave "≈ 77.5 u, or ≈ 95 u if an 8th tick runs"; the expiry test `now > m_timer + 0.75` is first true on the 8th tick after creation (0.8 > 0.75), and the move precedes the test, so 8 moves always happen — ≈ 95 wu [C code, I arithmetic].
+
+### 6.7 `Laser`
+
+Pooled bolt [C] `code/worldobject/weapons.cpp:Laser::Initialise`, `Laser::Advance`, `Laser::Render`; lifetime from `Location::FireLaser` (§6.0).
+
+| Parameter | Value |
+|---|---|
+| Lifetime | 0.6 s (laser research 2); × 2 = 1.2 s for mind-control lasers |
+| Speed / range | caller's velocity: Darwinian (`Entity::Attack`) 150 → 90 range; InsertionSquad 200 → 120; Subversion Darwinian 75 (× 2 life) → 90; Subversion turret 125 → 150 |
+| Aim jitter | `Entity::Attack`: target ± `syncsfrand(15)` (±7.5) in x, z; fires from `pos + 3 y`; `m_reloading = RATE`; sound `Attack` |
+| Per tick | removed if the team is 255; `life −= dt` (≤ 0 → removed); `pos += vel·dt` |
+| Terrain | first contact: ricochet — ray-cast from the old position to the terrain hit, reflect about the normal, continue the remaining step from the hit point, `m_bounced = true`; second contact → removed |
+| World bounds | outside → removed |
+| Buildings | `DoesRayHit(pos, dir, step)` against buildings in the obstruction cell → `TypeRocketTrail` spark, sound `HitBuilding`, removed (**no building damage**) |
+| Entities (while not harmless) | enemies of the firing team within `2·|halfStep|`; hit if (multiplayer) `|entity.y − laser.y| < 5` **and** 2-D point-to-segment distance < 5 (segment = pos ± half step); single-player skips the vertical test |
+| Hit — mind-control vs Darwinian | spawn a Darwinian of the firing team at the victim's position/velocity, victim `m_destroyed` (no spirit), new Darwinian `m_previousTeamId = old team`, `m_colourTimer = 4.0` |
+| Hit — otherwise | `ChangeHealth(−int(20 + syncfrand(20)), DamageTypeLaser)` → **20–39** damage; on a kill: `teams[from].m_teamKills++` for Darwinian victims, sound `KilledEntity`; a surviving Darwinian plays `InjuredEntity`; if `ChangeHealth` returned true: push = laser direction × `syncfrand(10)` with `y = 7 + syncfrand(5)`, sets `m_front` (not for InsertionSquadie, Virii, Shaman) and adds to `m_vel` (not Virii, Shaman) |
+| After a hit | `m_harmless = true` — keeps flying and rendering but cannot hit again |
+| Render | team-coloured 10-wu billboard (white for the Monster team); mind-control: `textures/subversion.bmp` at double width; camera shake 0.5 within √200 ≈ 14 of the camera |
+| Friendly fire | no (enemies only) |
+
+A Darwinian (HP 50) dies to 2–3 laser hits [I].
+
+### 6.8 `TurretShell`
+
+[C] `code/worldobject/weapons.cpp:TurretShell::Advance`, `TurretShell::Render`, `TurretShell::ExplodeShape`; `code/location.cpp:Location::FireTurretShell`.
+
+| Parameter | Value |
+|---|---|
+| Life / speed | 0.6 s in multiplayer; 500 wu/s (`GunTurret::PrimaryFire`) → 5–6 moves ≈ 250–300 wu |
+| Per tick | `life −= dt`, `age += dt`, `pos += vel·dt`; `life ≤ 0` → `ExplodeShape(0.2)` (fragment explosion of `turretshell.shp`) and removed; outside the world → removed |
+| Entity hits | enemies of the shell's team within `|step|` of the step midpoint; precise test `entity->RayHit(oldPos, dir)`; `ChangeHealth(−15, DamageTypeTurretShell)` on **every** entity hit this tick — the shell **pierces** |
+| Kill credit | sound `KilledEntity`; kills = 1 (+ passengers if the victim is an Armour; 0 if the victim Darwinian was already burning); added to `m_teamKills`; a GunTurret source gets `RegisterKill(victimTeam, kills)` |
+| Knock-back | if on ground: push = away from the shell + `SFRAND(3)` per axis, length 20, airborne |
+| Buildings | `DoesRayHit(oldPos, dir, step)` → 3 `TypeMissileTrail` sparks; `Tree`, `AntHill`, `Triffid` take `Damage(−2)`; `ExplodeShape(0.1)`; removed |
+| Terrain | end point or midpoint below ground → ray-hit point, `TypeRocketTrail` dust, `ExplodeShape(0.2)`, removed |
+| Render | lit shape + white tracer line (length `vel × 0.05`, α 0.5; double length and α 1 when the local player is controlling the firing turret) |
+| Friendly fire | no |
+
+### 6.9 `TurretEmptyShell`
+
+Shell casing ejected by Standard turrets [C] `code/worldobject/weapons.cpp:TurretEmptyShell::Advance`; `code/worldobject/gunturret.cpp:GunTurret::PrimaryFire`.
+
+| Parameter | Value |
+|---|---|
+| Shape | `emptyshell.shp` |
+| Launch | from the barrel's shell-eject marker ± 2.5 sideways; velocity = eject direction + (0, 1, 0) + `SFRAND(0.5)` per axis, length `20 + syncfrand(20)` (4 synced draws per casing); `m_front = −eject right`, `m_force = 1` |
+| Per tick (while `m_force > 0.2`) | gravity 98 wu/s²; spin about `front + (frac(id×0.1), frac(id×0.3), frac(id×0.7))` × `dt × force`; bounce: `BounceOffLandscape`, `m_force *= 0.5`, `vel *= m_force` |
+| Removal | as soon as `m_force ≤ 0.2` (after the 3rd bounce) |
+| Gameplay | none (cosmetic). `Render` rewrites `m_front`, which `Advance` reads for its spin axis — render state feeding a sim object; harmless because nothing reads the casing [C] |
+
+### 6.10 `Fireball`
+
+Flame-turret projectile [C] `code/worldobject/weapons.cpp:Fireball::Advance`, `Fireball::Damaged`.
+
+| Parameter | Value |
+|---|---|
+| Defaults | `m_life = 1.0`, `m_radius = 3.0`; `LaunchFireball` sets pos, vel (100 wu/s from the turret), life, building; team −1 |
+| First tick | 80 `TypeFireball` particles (unsynced) |
+| Per tick | `life −= dt`; `pos += vel·dt`; `radius = 20 × min(1, |1 − life|)` (grows 2 → 20 as life goes 0.9 → 0) |
+| Damage | every **Darwinian** (any team) within `radius` not already in `m_damaged`: `damage = 30 × (radius / max(1, d)) × max(1, life)` → `Darwinian::FireDamage(damage, −1)`; the id is remembered (each fireball damages a Darwinian once); a Darwinian that newly enters `StateOnFire` is credited to the source turret (`RegisterKill`) |
+| Fire threshold | `Darwinian::FireDamage` accumulates `m_fireDamage`; at ≥ 100 → `SetFire()` (refused while shielded) [C] `code/worldobject/darwinian.cpp:Darwinian::FireDamage` |
+| Trees | every `Tree` in the obstruction cell takes `Damage(−100)` **per tick** |
+| Other entities | ignored |
+| Removal | `life ≤ 0` or touching the ground |
+| Friendly fire | yes (team −1) — the turret's own friendly-fire guard (> 10 friends within 20 of the muzzle point blocks firing) is the only protection [C per P06] |
+
+### 6.11 `Shockwave`
+
+Expanding ring created by every `Bang` with `size = R/20`, `m_life = size` [C] `code/worldobject/weapons.cpp:Shockwave::Shockwave`, `Shockwave::Advance`, `Shockwave::Render`.
+
+| Parameter | Value |
+|---|---|
+| Per tick | `life −= dt` first (≤ 0 → removed), then `r = 35 + 40 × (size − life)` — first active tick r = 39, growing 4 wu per tick (40 wu/s) |
+| Candidates | `EntityGrid::GetNeighbours(pos, r)` — all teams, XZ distance < r |
+| Hit band | `|d − r| < 10` with d the 3-D distance → effectively a 10-wu band just inside the ring for ground units |
+| Damage | `fraction = life / size`; Darwinians: with probability `syncfrand(4) < 0.1` (**2.5 %** per tick) `SetFire()` instead of damage; otherwise (and for every non-Darwinian) `ChangeHealth(−40 × fraction, DamageTypeExplosive)` |
+| Kill credit | victim died and its team ≠ the shockwave's id team: Darwinian victims add to `teams[m_teamId].m_teamKills` when `m_teamId` is a valid team; a GunTurret source gets `RegisterKill` |
+| Knock-back | if on ground (not InsertionSquadie/Officer/Shaman): `push = normalise(victim − centre)`, `y = 3`, length `25 × fraction`, airborne |
+| Render | yellow→pink triangle-fan disc at y + 5, α `0.6 × life/size`; full-screen white flash for the first 0.1 s if on-screen, α `(1 − age/0.1) × max(0, 1 − dist/500)`, camera shake; `starburst.bmp` and `glow.bmp` billboards for the first 1 s |
+
+Duration and reach by source: grenade 0.625 s (6 active ticks, r 39 → 59); airstrike bomb 1.25 s (r 39 → ≈ 83); rocket 0.75 s (r 39 → ≈ 63); meteor / nuke 2.5 s (r 39 → ≈ 131–135, the last tick depending on floating-point residue) [I arithmetic]. A stationary ground target is inside the band for 2–3 consecutive ticks, taking `40 × fraction` each time [I].
+
+Resolved: P04 described a 20-wide band hit for ≈ 5 ticks starting at radius 35; the code decrements life before computing the radius (first ring 39) and only considers entities with XZ distance below r, so the band is effectively 10 wide and a target is hit 2–3 times [C code, I count].
+
+### 6.12 `MuzzleFlash`
+
+Cosmetic flash [C] `code/worldobject/weapons.cpp:MuzzleFlash::Advance`, `MuzzleFlash::Render`.
+
+| Parameter | Value |
+|---|---|
+| Defaults | `m_size = 1.0`, `m_life = 1.0` (default constructor); helpers pass (size, life) = ThrowWeapon/FireRocket (20, 3), FireTurretShell (60, 2), FireLaser (25 × laserLife, 1.5) |
+| Per tick | removed when `life ≤ 0`; `pos += front × 10 × dt`; `life −= 10 × dt` (life is in tenths of a second: life 3 → 0.3 s) |
+| Render | 5 nested quads of `textures/muzzleflash.bmp` shrinking × 0.8, α `clamp(life × 0.75, 0, 1)`, depth test off when `size < 50` |
+| Gameplay | none |
+
+### 6.13 `Missile`
+
+Guided missile written for the Tank (and an Armour variant) — **no live caller** (`Tank::LaunchMissile`, `Armour::LaunchMissile` are never called) [C] `code/worldobject/weapons.cpp:Missile::Missile`, `Missile::Advance`, `Missile::AdvanceToTargetPosition`, `Missile::Explode`.
+
+| Parameter | Value |
+|---|---|
+| Shape | `missile.shp`; requires marker `MarkerBooster` (fatal assert otherwise) |
+| Life | `5 + rocketResearch × 5` = 15 s |
+| Guidance | if the firing Tank exists, `target = Tank::GetMissileTarget()` every tick (player-guided) |
+| Steering | `front = normalise(front × (1 − 2dt) + toTarget × 2dt)`; 100-wu terrain look-ahead: if that point is under ground and the target is > 100 away, steer straight up |
+| Speed | 200 wu/s |
+| Explodes | life < 0, next position under ground, or within 20 of the target → `Bang(pos, 20, 100)` with team −1 |
+| Trail | 2 `TypeMissileTrail` per tick at the booster marker (synced size `50 + syncfrand(150)`); render: embedded `MuzzleFlash` booster flame (size 30–50, unsynced) and 5 `TypeMissileFire` per frame |
+
+### 6.14 `LandMine`
+
+Proximity mine written for the Tank — **no live caller** (`Tank::DropMine` is never called) [C] `code/worldobject/weapons.cpp:LandMine::Advance`, `code/worldobject/tank.cpp:Tank::DropMine`.
+
+| Parameter | Value |
+|---|---|
+| Shape | `flying_egg.shp`; `m_up` = terrain normal at the drop point |
+| Trigger | each tick `EntityGrid::GetNumEnemies(pos, 15, team) > 0` |
+| Effect | `Bang(pos, 20, 20, team)` + shape-shatter explosion; removed |
+| Arming delay / lifetime | none / unlimited |
+| Render | shape only (team-coloured beacon commented out) |
+
+### 6.15 `PulseWave`
+
+The Assault pulse-bomb detonation wave [C] `code/worldobject/weapons.cpp:PulseWave::Advance`, `PulseWave::Render`; `code/worldobject/pulsebomb.cpp:PulseBomb::Advance`; `code/worldobject/darwinian.cpp:Darwinian::Advance`.
+
+| Parameter | Value |
+|---|---|
+| Creation | when the pulse bomb's countdown reaches 0 (`m_timeRemaining ≤ 0`): `PulseWave` at the bomb position, `m_radius = 200`, team = bomb team; enemy-owned trunk ports are set neutral |
+| Singleton | `PulseWave::s_pulseWave` set in the constructor, cleared in the destructor (read by Darwinians, radar dishes and the Assault victory logic) |
+| Growth | `radius += radius × 0.03` per tick (3 % geometric); removed when `radius ≥ worldSizeX` (e.g. 200 → 3 000 in ≈ 92 ticks ≈ 9.2 s) [C rule, I time] |
+| Effect (in `Darwinian::Advance`, Assault only) | each non-friendly Darwinian within the radius: if the pulse team's team position equals level option `futurewinianteam` → converted to a Darwinian of the pulse team; else pushed outward at 20 wu/s and `ChangeHealth(−1000)` (unresistable — kills shielded Darwinians) |
+| Render | full-screen white flash for the first 0.3 s + camera shake; three team-coloured animated cylinders: ground outline 200 high, `textures/laser-long.bmp` glow tube 400 high, faint sky tube 1 000 high, α × `(1 − r/worldSizeX)` |
+
+Assault rules around the pulse bomb are in [01](01_game_modes.md).
+
+### 6.16 `SpamInfection`
+
+Homing infection streak (crate Infection) [C] `code/worldobject/spam.h`, `code/worldobject/spam.cpp:SpamInfection::SpamInfection`, `SpamInfection::Advance`, `SpamInfection::AdvanceIdle`, `SpamInfection::AdvanceAttackingEntity`, `SpamInfection::AdvanceAttackingSpirit`, `SpamInfection::AdvanceToTargetPosition`, `SpamInfection::SearchForEntities`, `SpamInfection::SearchForSpirits`, `SpamInfection::SearchForRandomPosition`, `SpamInfection::Render`.
+
+| Parameter | Value |
+|---|---|
+| `SPAMINFECTION_LIFE` | 10.0 s; **+1.0 s per successful hit or conversion**; decremented after the state update |
+| `SPAMINFECTION_MINSEARCHRANGE` / `MAXSEARCHRANGE` | 100 / 200 (entities and spirits) |
+| `SPAMINFECTION_TAILLENGTH` | 30 history samples |
+| Retarget | `m_retargetTimer` starts at `syncfrand(1)`, then every 1.0 s; in multiplayer the first retarget only decrements `m_startCounter = 1` (no search) |
+| Search order | 50/50 (`syncfrand(2) < 1`): entities then spirits, or spirits then entities; fallback `SearchForRandomPosition`: back to the parent Spam building if > 400 away (legacy), else `pos ± syncsfrand(200)` per axis, not below ground |
+| Entity search | `EntityGrid::GetBestEnemy(pos, 100, 200, team)` relative to team 1 (single-player) or the **Monster team** (multiplayer): nearest non-dead, non-AI enemy with XZ distance in [100, 200) |
+| Spirit search | nearest `Spirit::StateFloating` spirit 100–200 away and > 10 high (single-player skips spirits 50 % of the time) |
+| Movement | `vel = vel × (1 − dt/2) + normalise(target − pos) × 200 × dt/2`; arrival < 20 |
+| Entity hit (multiplayer) | if the target's team ≠ the infection's team: if Darwinian research > 2 (always 4 in MP) and `syncfrand(10) < 5` (**50 %**) → a **Monster-team Darwinian** is spawned at the target and the target is removed (`m_destroyed`, no spirit) — this applies to any entity type, not only Darwinians; else `ChangeHealth(−999)` (unresistable); then 5–9 unsynced `TypeFire` bursts, life + 1, back to idle. Harvesters and dead targets are dropped |
+| Spirit hit | spirit removed; spawns 1 Monster-team `Virii` (95 %) or `Spider` (5 %, `syncfrand(20) < 1`) with roam range 200; in multiplayer the Virii is skipped when the Monster team already has ≥ `VIRII_POPULATIONLIMIT` (250) virii |
+| Render | 4 passes of a camera-facing ribbon through the history using `textures/laser.bmp`; single-player red additive; **multiplayer black, alpha-blended** `(0, 0, 0, 0.5 α)`; length `30 × life/10` |
+| Threat | Darwinians of other teams flee SpamInfections within 60 (unless raging) |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> AttackingEntity: retarget and enemy at 100..200
+    Idle --> AttackingSpirit: retarget and floating spirit at 100..200
+    Idle --> Idle: random point
+    AttackingEntity --> Idle: target dead, gone or Harvester
+    AttackingEntity --> Idle: hit - convert 50 pct or kill, life plus 1
+    AttackingSpirit --> Idle: spirit gone or not floating
+    AttackingSpirit --> Idle: hit - spawn Virii or Spider, life plus 1
+    Idle --> [*]: life <= 0
+    AttackingEntity --> [*]: life <= 0
+    AttackingSpirit --> [*]: life <= 0
+```
+
+The legacy `Spam` building (emits 20 infections every `60 − 30 × difficulty/10` s) is blocked in Multiwinia — appendix [B:LEGACY] [C] `code/worldobject/building.cpp:Building::BuildingIsBlocked`, `code/worldobject/spam.cpp:Spam::SpawnInfection`.
+
+### 6.17 `ControllerGrenade`
+
+[B:LEGACY] squad "controller" grenade [C] `code/worldobject/weapons.cpp:ControllerGrenade::Advance`.
+
+| Parameter | Value |
+|---|---|
+| Colour | (100, 100, 255) |
+| `m_squadTaskId` | −1; set by `ThrowWeapon` to the thrower team's current Squad task |
+| Physics | `ThrowableWeapon::Advance` |
+| Trigger | 3.0 s after birth |
+| Effect | sound `ExplodeController` (`TypeGrenade`); particle shower (5–9 `TypeControlFlash` up-flashes + a 50-particle ring of radius 50, unsynced); every Darwinian **of the thrower's team** (friends) within 50 → `Darwinian::TakeControl(m_squadTaskId)`; removed |
+| Reachability | only `Squadie::FireSecondaryWeapon` with weapon type Controller creates it; no Multiwinia path sets that weapon type and no crate gives a Controller [I] |
+
+### 6.18 `Lightning`
+
+Storm strike, level effect `lightning` (shipped on `mp_blitzkrieg_3P_2`, `mp_cts_4P_2`) — not a crate outcome [C] `code/worldobject/lightning.cpp:Lightning::Advance`, `Lightning::Render`; `code/location.cpp:Location::AdvanceLightning`; `data/levels/mp_*.txt` `Effects` lines.
+
+| Parameter | Value |
+|---|---|
+| Generator | `Location::AdvanceLightning` (each tick while the level effect is on): shared timer `Location::m_christmasTimer` (initial −99.9) `−= dt`; when ≤ 0 → timer = `syncfrand(15)` s and one `Lightning` at a random `(FRAND(worldX), 1200, FRAND(worldZ))`, re-rolled until the terrain there is > 1 high; team −1 |
+| Strike roll | every tick `syncfrand(1) < 0.01` (1 % per tick ≈ 10 % per second at speed 1; per tick, so it does not scale with game speed); may strike repeatedly |
+| Lifetime | none until the first strike; each strike sets `m_life = 1.2`; removed when the countdown reaches 0 |
+| Strike effect | **every Darwinian within 30 (XZ) of the cloud → `SetFire()`** (any team; shielded/Monster immune); every `Tree` in the obstruction cell under it takes `Damage(−100)` |
+| FX | 5 `TypeExplosionDebris` (150–250) + 10 `TypeFire` (160–280) at the ground, unsynced |
+| Render | idle: pulsing 200-wu `textures/glow.bmp` cloud glow, α `|sin 2t|`; striking: 3 stacked bolt quads `textures/lightning.bmp` from the cloud to the ground, width 30 × 1.2 per layer, α halving |
+| Sound | none |
+
+The timer is shared with `AdvanceChristmas` and `AdvanceDustWind`: on a map with several effects (or snow plus Christmas mode, which calls `AdvanceChristmas` twice per tick) the generators interfere [C code, I consequence].
+
+### 6.19 `Snow`
+
+Ambient flakes, level effect `snow` (shipped on `mp_assault_3p_3`, `mp_blitzkrieg_2P_4`, `mp_blitzkrieg_4P_2`, `mp_cts_2p_2`, `mp_koth_2P_3`, `mp_koth_2P_3b`) or Christmas mode (`Location::ChristmasModEnabled`, server-switched) [C] `code/worldobject/snow.cpp:Snow::Snow`, `Snow::Advance`, `Snow::Render`, `Snow::GetLife`; `code/location.cpp:Location::AdvanceChristmas`.
+
+| Parameter | Value |
+|---|---|
+| Generator | first call (timer < −90): **150** flakes at random XZ, y `syncfrand(1000)`; then one flake per 0.1 s of game time at y `700 + syncfrand(300)`; team −1 |
+| Constructor | `m_positionOffset = syncfrand(10)`, axis rates `syncfrand(2)` each, `m_timeSync = network time` |
+| Motion | `vel *= 0.9` per tick; offset += dt; each axis rate random-walks by `syncsfrand(1)` per tick, clamped [0, 2]; `hover.xz = sin(offset) × rate`; fall `hover.y = −(20 + syncfrand(20)) × clamp(heightAboveGround/100, 0.2, 1)` wu/s; position clamped to the map |
+| Removal | when ≥ 10 below the terrain surface |
+| Gameplay effect | **none** |
+| Render | 20-wu white `textures/starburst.bmp` 3-D sprite |
+| `GetLife` | 0 → 1 over the first 10 s (fade-in helper, no caller here) |
+| Determinism | ≈ 4 synced random numbers per flake per tick; `snow.cpp` `#undef`s `TRACK_SYNC_RAND` so they are excluded from desync logging |
+
+### 6.20 `DustBall`
+
+Dust-storm particle and vortex, level effect `dustwind` (shipped on `mp_cts_3p_1`) [C] `code/worldobject/dustball.cpp:DustBall::DustBall`, `DustBall::Advance`, `DustBall::Render`; `code/location.cpp:Location::AdvanceDustWind`.
+
+| Parameter | Value |
+|---|---|
+| `DUSTBALL_SPEED` | 500 wu/s |
+| Generator | first call: **300** balls (y `syncfrand(1000)`, size `20 + syncfrand(20)`); then **2** balls per 0.1 s at random XZ, y `syncfrand(1000)`; team −1 |
+| Wind | `DustBall::s_vortexTimer −= dt`; when ≤ 0 → `15 + syncfrand(15)` s; with probability 1/10 (`syncrand() % 10 == 0`) and no active vortex → **vortex** at a random land point (height > 1), y `FRAND(500)`; otherwise vortex cleared and a new wind direction = normalise(random point − random point) |
+| Ball motion (wind) | steer toward `pos + wind × 2000` with turn blend `3 × dt`, speed 500; initial velocity = wind × 500 |
+| Ball motion (vortex) | head for `vortex + (cos τ, sin τ) × 300 × y/1000` at its own height (τ = now + uniqueId × 20) at 500 wu/s |
+| Removal | leaves the map rectangle |
+| **Vortex gameplay** | each tick every on-ground Darwinian (any team) within 50 of the vortex ground point enters `Darwinian::StateInVortex` and becomes airborne; it spirals up (speed `max(100 × y/1000, 30)`, radius `300 × y/1000`, up to `500 + 5 × (uniqueId % 100)`) until the vortex clears, then returns to `StateIdle` and falls ([02 §4](02_units_and_entities.md#4-darwinian)) |
+| Render | `textures/cloudyglow.bmp` sprite RGBA (0.6, 0.46, 0.12, 0.2), size `m_size` |
+| Reset | `s_vortexTimer = 0`, `s_vortexPos = 0` in `Location::Init` |
+
+### 6.21 `GunTurretTarget`
+
+"A GunTurret target that Darwinians can run from" [C] `code/worldobject/gunturret.cpp:GunTurretTarget::Advance`, `GunTurret::Advance`; `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`.
+
+| Parameter | Value |
+|---|---|
+| Creation | once per turret, on its first `Advance`: `GunTurretTarget(turretUniqueId)`, id team = turret team at that moment |
+| Per tick | removed if the turret no longer exists; position = the turret's aim point (`GetTarget()`) if any port is manned, else (0, 0, 0); in multiplayer adopts the turret's team for Standard turrets only |
+| Consumer | `Darwinian::SearchForThreats` flees it within 60 **only in single-player** (`!Multiplayer()` term); in multiplayer nothing reads it — the object is gameplay-inert [C] |
+| Render | nothing (debug sphere commented out) |
+
+### 6.22 `BoxKite`
+
+Single-player spirit-worship lantern [B:LEGACY] [C] `code/worldobject/darwinian.cpp:BoxKite::BoxKite`, `BoxKite::Advance`, `BoxKite::Release`, `BoxKite::Render`, `Darwinian::AdvanceWorshipSpirit`.
+
+| Parameter | Value |
+|---|---|
+| Creation | by a worshipping Darwinian when no other kite is within 50 (`distanceSqd < 2500`) — `StateWorshipSpirit` is never entered in multiplayer (`AdvanceWorshipSpirit` returns to idle) |
+| States | `StateHeld` (positioned by the owner's render), `StateReleased` |
+| Constructor | shape `boxkite.shp`, `m_birthTime = network time`, `m_size = 1 + syncsfrand(1)` (0.5–1.5), up = (0,1,0) |
+| `Release()` | `m_deathTime = now + 180` s |
+| Released motion | `vel = (sin(t + index), 2 + syncfrand(2), sin(t + index))`; `pos += vel·dt`; up blends to vertical 1 %/tick; removed after `m_deathTime` |
+| Every tick | `m_brightness = 0.5 + syncfrand(0.5)` (synced RNG spent on a cosmetic) |
+| Render | scale grows over 10 s to `m_size`, shrinks during the last 20 s; candle `textures/starburst.bmp` colour (1.0, 0.75, 0.2, brightness) |
+
+### 6.23 Weapon summary (Multiwinia values)
+
+| Weapon | Damage | Radius / falloff | Speed | Life | Damage type | Friendly fire |
+|---|---|---|---|---|---|---|
+| Laser (Darwinian / squad) | 20–39, single target | hit radius 5 (2-D), vertical ± 5 | 150 / 200 | 0.6 s | Laser | no |
+| Mind-control laser | converts one Darwinian | as laser | 75 / 125 | 1.2 s | — | no |
+| Grenade | 50 | full ≤ 18.75, 0 at 25; ring 39 → 59 | throw force ≤ 110 | 3 s fuse | Explosive | **yes** |
+| Airstrike bomb | 100 | full ≤ 37.5, 0 at 50; ring 39 → ≈ 83 | bomber velocity | 1.5 s | Explosive | yes |
+| Napalm bomb | ignite | Darwinians ≤ 62.5 set on fire; trees/triffids ≤ 100 take 200 | bomber velocity | 1.5 s | Fire (via `SetFire`) | yes |
+| Rocket | 25 | full ≤ 22.5, 0 at 30 | 50 → 179 | 0.75 s (turret 1.0) | Explosive | yes |
+| Turret shell | 15 per entity, pierces | ray | 500 | 0.6 s | TurretShell | no |
+| Fireball | `30 · r/d · max(1, life)` once per Darwinian | grows 2 → 20 | 100 | 1.0 s | Fire | yes (team −1) |
+| Shockwave | `40 · life/size` per tick in band | band ≈ 10 inside a ring expanding 40 wu/s from 39 | — | R/20 s | Explosive | yes |
+| Meteor / Nuke warhead | 100 | full ≤ 75, 0 at 100 | 350 / 50 → 100 | — | Explosive | yes |
+| SpamInfection | kill (−999) or convert | contact < 20 | 200 | 10 s + 1 s/hit | Unresistable | Monster team only spared |
+| Lightning | ignite | Darwinians ≤ 30 | — | 1.2 s per strike | Fire | yes |
+| Pulse wave | −1000 or convert | expanding radius | 3 %/tick | until world size | Unresistable | enemies only |
+| Missile [unreachable] | 100 | full ≤ 30, 0 at 40 | 200 | 15 s | Explosive | yes |
+| Land mine [unreachable] | 20 | full ≤ 30, 0 at 40; trigger 15 | static | ∞ | Explosive | yes |
+
+## 7 Determinism and implementation notes
+
+Full treatment in [22](22_determinism_and_networking.md); the points specific to this document:
+
+- **Simulation-side and deterministic:** crate timer, placement, falling, capture, reward choice, every effect and every weapon object. All gameplay randomness uses the shared stream (`syncrand`, `syncfrand`, `syncsfrand`, `FRAND`/`SFRAND`); `Crate::GenerateTrees` explicitly sequences eight `syncrand()` calls because C++ argument evaluation order is unspecified [C] `code/worldobject/crate.cpp:Crate::GenerateTrees`.
+- **Variable-length RNG consumption:** rejection loops (`Crate::CaptureCrate`, StartingPowerups, `RunNuke` sea search, `RunSpaceShip` land search, `RunEggs` spawn type, `AdvanceLightning`/`AdvanceDustWind` land search) consume a data-dependent number of draws — deterministic only if every peer has identical state. `syncfrand(1) < 0.9` is evaluated only when `m_rewardId == −1` (short-circuit) [C].
+- **Unbounded loops (hang risks):** `CaptureCrate` if no valid good type exists; StartingPowerups likewise; `RunNuke` on a map without sea; `RunSpaceShip` with no land ≥ 10; `AdvanceLightning`/`AdvanceDustWind` on a map with no land > 1 [C code, I risk]. A new implementation should bound them.
+- **Synced RNG spent on cosmetics** (must still be reproduced exactly if the original stream is to be matched, or moved to a cosmetic generator in a new design): throwable trails, rocket and missile trails, airstrike-marker smoke, meteor fire size, turret casing velocities and mortar jitter (consumed on **every** turret shot regardless of type), snow, dust, box-kite brightness [C].
+- **Unsynced (cosmetic only):** `Location::Bang` particles, fireball/napalm/lightning particles, hit flashes, Randomiser colour particles, plague particles (`rand()`), Hot Feet particle counts (`AppRandom`) [C].
+- **Render code that writes object state:** `Crate::Render` (front/up), `Crate::RenderBubble` (`m_bubbleTimer` per frame), `ThrowableWeapon::Render` (front/up and the `Flash` sound), `TurretEmptyShell::Render` (front, read by `Advance`) — none of these values feed gameplay today; keep them out of synced state [C].
+- **Per-tick versus per-second rules** that do not scale with the speed crates: capture cap 0.05 per tick, lightning 1 % per tick, Dark Forest 2 % per tick, the `GameTimer` hold counters (0.1 per tick) [C].
+- **Float hazards:** NaN in weighted crate drops when the total score is 0 [I]; `iv_sin`/`iv_cos` (low-nibble truncated) are used in sim paths (crate sway, dust vortex), `sinf`/`cosf` only in render [C].
+

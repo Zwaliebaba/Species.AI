@@ -1330,7 +1330,14 @@ with open(os.path.join(OUT, 'drafts', 'X2a_missing.csv'), 'w', newline='') as fh
 with open(os.path.join(OUT, 'coverage', 'X2a_asset_catalogue_visual.csv'), 'w', newline='') as fh:
     w = csv.writer(fh); w.writerow(['path', 'depth', 'reason', 'sections'])
     for rel, a in assets.items():
-        sec = '25.4 Per-file catalogue (%s)' % a['dir']
+        if a['ext'] == 'shp':
+            sec = '25.6 Per-file catalogue — shapes; 25.7 Shape hierarchies and markers'
+        elif a['ext'] == 'max':
+            sec = '25.6 Per-file catalogue — shapes (data/shapes/source)'
+        else:
+            sec = '25.5 Per-file catalogue — bitmaps, animation scripts and shaders'
+        if a['status'] != 'referenced' or a['reach'] != 'FULL':
+            sec += '; 25.9 Assets not used by a Multiwinia match'
         if a['ext'] == 'max':
             w.writerow([rel, 'skimmed', 'binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)', sec])
         elif a['ext'] == 'psp':

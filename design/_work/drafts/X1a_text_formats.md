@@ -842,3 +842,121 @@ DarwinianScaleFactor = 2.00
 ServerAddress = 127.0.0.1
 ```
 
+<a id="fmt-input-bindings"></a>
+## [→ 29_data_formats_reference] [→ 06_player_control_and_input] 7. Input binding files [B:FULL]
+
+### 7.1 Files and layering [C] `code/main.cpp:ReadInputPreferences`, `code/lib/input/file_paths.cpp`
+
+| Layer (order) | Path | Reader | `replace` | Selection |
+|---|---|---|---|---|
+| 1 system | `data/input/input_preferences.txt` (Win32), `input_preferences_mac.txt` (Mac), `input_preferences_darwinia.txt` (pref `MultiwiniaControlMethod` == 0, which `PrefsManager::Load` forces to 1 → unreachable [C]) | `Resource::GetTextReader` | false (append) | `InputPrefs::GetSystemPrefsPath` |
+| 2 keyboard layout | `data/input/keyboards/<layout>.txt` | `Resource::GetTextReader` (missing file silently skipped) | true | `<layout>` = pref `KeyboardLayout`, default = `locales.txt` entry for `GetKeyboardLayout(0) & 0xFFFF` (Win32 LANGID); empty on Mac |
+| 3 user | `<profile>/user_input_preferences.txt` | `UnicodeTextFileReader`, else `TextFileReader` | true | `InputPrefs::GetUserPrefsPath` |
+
+`replace = true` replaces the control's *primary* (first) binding instead of appending [C] `ControlBindings::bind` (P10 §1.10).
+
+### 7.2 Line grammar [C] `code/lib/input/input.cpp:InputManager::parseInputPrefs`, `parseInputSpecString`, `code/lib/input/inputspec.cpp:InputSpecTokens`
+
+```
+binding_file := { line }
+line         := blank
+              | CONTROL '=' spec                      ; binding line
+              | CONTROL '~' ICONPATH                  ; icon line
+              | other                                  ; rejected ("Assignment not found."), parsing continues
+CONTROL      := control name, case-insensitive (164 names of code/lib/input/control_types.inc; list: P10 §2.2 /
+                _work/drafts/P10_input_camera_bindings.csv)
+'=' / '~'    := must be the whole SECOND token (default TextReader separators); "Ctl=key a" is rejected
+spec         := rest of the line (GetRestOfLine), re-split on WHITESPACE ONLY (istringstream >> string):
+                ':' and ',' are ordinary characters inside a spec
+ICONPATH     := rest of the line, trailing CR/LF removed; stored with ControlBindings::setIcon (last wins)
+```
+
+An unknown CONTROL ("Control ID not found."), an unparsable spec ("Parse failed - <err> (state = n)") or a refused bind ("Binding failed.") only print a message (to `cout`; to `<profile>/inputprefs_debug.txt` on Mac or `TARGET_DEBUG`) — parsing never aborts [C].
+
+### 7.3 Spec grammar (driver chain) [C] `code/main.cpp:InitialiseInputManager`, each `code/lib/input/inputdriver_*.cpp:parseInputSpecification`
+
+The token list is offered to the drivers in registration order; the first that returns a success state wins, otherwise the error of the driver that got furthest is reported. Order: `Conjoin`, `Chord`, `Invert`, `Idle`, `W32` (key/mouse), `XInput` (only if `XINPUT1_3.dll` loads), `Prefs`, `Value`, `Alias`. This order makes `&&` bind loosest, then `++`, then `not`.
+
+```
+spec        := conj
+conj        := part { '&&' part }                      ; ≥1 '&&' required for this driver; ≤1 part may be non-BOOL
+part        := chord | unary                           ; each part is re-parsed by the whole chain
+chord       := leafnc '++' leafnc { '++' leafnc }      ; expands to N conjunctions: part i "down", others "pressed"; BOOL only
+unary       := ('not' | '!') unary | leaf              ; 'not' case-insensitive; operand must be BOOL
+leaf        := 'key' KEYNAME BCOND
+             | 'mouse' MBUTTON BCOND
+             | 'mouse' ('axes' | 'wheel') ACOND
+             | 'XInput' XBUTTON ( BCOND | 'repeat' )
+             | 'XInput' XANALOG ACOND [ 'with' 'sensitivity' N ]      ; N integer 1…200, default 100
+             | 'XInput' XDIR ( BCOND | 'repeat' )                     ; sensitivity fixed at 100
+             | ('idle' | 'Idle' …) ( 'atleast' | 'reaches' ) SECONDS  ; driver word case-insensitive; SECONDS integer > 0
+             | 'idle' 'no' 'longer'                                  ; 'longer' case-insensitive
+             | 'pref' [ 'not' | '!' ] PREFKEY | 'pref' '!'PREFKEY     ; key must EXIST in g_prefsManager at parse time
+             | 'value' ( 'Pecan' | 'Hummingbird' )
+             | 'alias' CONTROL
+leafnc      := a leaf without its trailing condition word (the chord driver appends it)
+BCOND       := 'down' | 'up' | 'pressed'
+ACOND       := 'release' | 'position' | 'move' | 'zero' | 'read'
+MBUTTON     := 'left' | 'right' | 'middle' | 'any'
+XBUTTON     := 'leftbumper' | 'rightbumper' | 'leftthumbstick' | 'rightthumbstick' (as buttons when used with BCOND only if
+               typed BOOL — see note) | 'dpadleft' | 'dpadright' | 'dpadup' | 'dpaddown' | 'a' | 'b' | 'x' | 'y'
+             | 'start' | 'back' | 'plug' | 'lefttriggerb' | 'righttriggerb'
+XANALOG     := 'lefttrigger' | 'righttrigger' (1D) | 'leftthumbstick' | 'rightthumbstick' (2D)
+XDIR        := 'leftthumbstickleft' | 'leftthumbstickright' | 'leftthumbstickup' | 'leftthumbstickdown'
+             | 'rightthumbstickleft' | 'rightthumbstickright' | 'rightthumbstickup' | 'rightthumbstickdown'
+KEYNAME     := case-insensitive entry of getKeyNames()[0…KEY_TILDE=223] or 'any' (KEY_ANY=255): BACKSPACE TAB ENTER
+               SHIFT CONTROL ALT PAUSE CAPSLOCK ESC SPACE PGUP PGDN END HOME LEFT UP RIGHT DOWN INSERT DEL 0…9 A…Z
+               0_PAD…9_PAD ASTERISK PLUS_PAD MINUS_PAD DEL_PAD SLASH_PAD F1…F12 NUMLOCK SCRLOCK COLON EQUALS COMMA
+               MINUS STOP SLASH AT OPENBRACE BACKSLASH CLOSEBRACE QUOTE TILDE, plus 'Unknown' (index 109)
+```
+
+Case sensitivity: driver words `key`, `mouse`, `XInput`, `pref`, `value`, `alias`, mouse/XInput control names, condition words, `with`, `sensitivity`, `atleast`, `reaches`, `no` are **case-sensitive** (`std::string ==`); `idle`, `not`, `longer`, key names and control names are case-insensitive [C] `W32InputDriver::acceptDriver`, `XInputDriver::acceptDriver/getControlID`, `IdleInputDriver::acceptDriver/getConditionID`, `InputDriver::getDefaultConditionID`, `W32InputDriver::getKeyId`, `ControlBindings::getControlID`.
+
+Condition typing: `getDefaultConditionID(name, type)` scans the 8-entry table {`down`,`up`,`pressed`: BOOL; `release`,`position`,`move`,`zero`,`read`: ANALOG} for a name whose type matches the control's type. **An unknown or type-mismatched condition word does not fail**: the scan stops on the NULL terminator (index 8 < `NumInputConditions` 10) and returns `COND_DOWN` with the spec type set to 0 [C] `code/lib/input/inputdriver.cpp:InputDriver::getDefaultConditionID`. Examples in shipped files: `XInput lefttrigger repeat`, `XInput righttrigger repeat` (analog + `repeat`) parse as "down". Key names containing a space (`unknown 0`…) can never be written because specs are whitespace-split; `META` (index 224 > `KEY_TILDE`) is unreachable [C].
+
+Parser states (`InputParserState`, `code/lib/input/inputdriver.h`): `STATE_ERROR`, `STATE_WANT_DRIVER`, `STATE_WANT_CONTROL`, `STATE_WANT_COND`, `STATE_WANT_MODIFIER`, `STATE_WANT_OPTIONAL`, `STATE_BAD_EXTRA`, then `STATE_DONE`/`STATE_OVERSTEP`/`STATE_CONJ_ERROR` (success = `PARSE_SUCCESS(state)`); a trailing surplus token yields `STATE_OVERSTEP` for single-word drivers (`alias`, `pref`, `value`) [C] respective drivers. Semantics of each condition and driver at run time: [→ 06] P10 §1.3–§1.6.
+
+### 7.4 Shipped files [C] `X1a_input_lines.py`
+
+| File | binding lines | icon lines | rejected | spec heads |
+|---|---|---|---|---|
+| `input_preferences.txt` | 224 | 18 | 2: `UnitPrimaryFireDirected ~ …` (unknown control), `TaskManagerSwitchTask INPUT_TYPE_BOOL` (no `=`) | `key` 94, `XInput` 88, `mouse` 32, `SpaceNav` 4 (no such driver → parse failed), conjunctions 4, chord 1, `idle` 1 |
+| `input_preferences_darwinia.txt` | 220 | 18 | same 2 | `key` 97, `XInput` 87, `mouse` 30, conj 4, chord 1, idle 1 |
+| `input_preferences_mac.txt` | 231 | 18 | same 2 | `key` 94, `XInput` 88, `mouse` 32, `SpaceNav` 4, conj 11, chord 1, idle 1 |
+| `keyboards/de_DE.txt` | 8 | 0 | 0 | `key` 8 |
+| `keyboards/fr_FR.txt` | 8 | 0 | 0 | `key` 8 |
+
+Per-line decoded bindings: P10 `_work/drafts/P10_input_camera_preflines.csv`.
+
+### 7.5 `user_input_preferences.txt` (runtime-written) [C] `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp`
+
+Written by a dedicated `PrefsManager(GetUserPrefsPath())` that is `Clear()`ed, filled with `SetString(<control name>, <binding string>)` for each of the user-rebindable controls (and the derived `IconsTaskManagerHide` = Display binding with `down`→`up`), then `Save()`d — so the file has the §6 writer format: UTF-16LE + BOM, one `ControlName = spec` line per control in ordinal `wcscmp` order. It is read back by `parseInputPrefs` (layer 3), which needs `=` as a separate token — satisfied by the `%ls = %ls` writer. Because a UTF-16 disk file's narrow mirror is not comment/CR-stripped (§1.3), `parseInputPrefs` explicitly trims a trailing `\n`/`\r` from icon paths; spec strings are immune because they are whitespace-split [C] `parseInputPrefs`. Note: the constructor of that `PrefsManager` first runs `Load()` — when the file does not exist yet this calls `CreateDefaultValues()` (all general defaults) before `Clear()` discards them [C].
+
+Minimal example (system or user file):
+
+```
+# camera on the arrow keys, zoom with Z or the mouse wheel button
+CameraForwards  = key up pressed
+CameraBackwards = key down pressed
+CameraZoom      = key z pressed
+CameraZoom      = mouse middle down
+SkipMessage     = key enter down && not key shift pressed
+MenuActivate    ~ icons/button_a.bmp
+```
+
+<a id="fmt-keyboard-layout"></a>
+### 7.6 Keyboard layout files `data/input/keyboards/<layout>.txt`
+
+Same grammar as §7.2, applied with `replace = true`. Shipped: `de_DE.txt` (QWERTZ: `CameraZoom = key y pressed`, …) and `fr_FR.txt` (AZERTY: Left `q`, Up `a`, Forwards `z`, Zoom `w`), 8 camera bindings each [C] files. A layout that has no file (e.g. `en_US`) is silently skipped. `InputPrefs::IsKeyboardFrenchLocale()` (layout == `fr_FR`) also changes a help image [C] `code/lib/input/file_paths.cpp`; P10 §1.10. The path is cached on first use; "Restore defaults" in Options does not re-apply this layer (P10).
+
+<a id="fmt-locales"></a>
+### 7.7 `data/input/locales.txt` [C] `code/lib/input/file_paths.cpp:readLocaleNames`
+
+```
+locales_file := { blank | LANGID LAYOUTNAME }        ; LANGID = atoi(first token); LAYOUTNAME = rest of line verbatim
+```
+
+Shipped: `1031 de_DE`, `1033 en_US`, `1036 fr_FR`, `2057 en_UK`, `4105 en_CA` (first line blank). `LAYOUTNAME` keeps trailing blanks (they would become part of the file name `keyboards/<name>.txt`); later duplicates of an id are ignored (`std::map::insert`). Only consulted on Windows (`GetKeyboardLayout(0) & 0xFFFF`) when pref `KeyboardLayout` is absent [C] `InputPrefs::GetKeyboardLayout`.
+
+Docs-vs-code (input): `docs/input_preferences_syntax.txt` omits icon lines (`~`), the `value` and `alias` drivers, the `repeat` condition, `key any`/`mouse any`, the XInput direction controls and `lefttriggerb`/`righttriggerb`; it states that a missing preference makes `pref X` false, but the code **rejects the binding at parse time** when the key does not exist (`PrefsInputDriver::parseInputSpecification` returns `STATE_WANT_CONTROL`) [C].
+
