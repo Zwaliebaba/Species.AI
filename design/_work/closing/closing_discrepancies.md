@@ -317,11 +317,11 @@ Headline discrepancies a reader of the original documentation would trip over; f
 | `docs/landscape lightmap.txt` | `Landscape::ApplyLightmap` / `GenerateLightMap` with `m_lightMapTextureId` | the lightmap is the registered bitmap `water_lightmap` built by `Water::GenerateLightMap`; `Landscape` only triggers it | `code/water.cpp:Water::GenerateLightMap` |
 | `code/lib/bitmap.h:BitmapRGBA::ConvertColourToAlpha` comment | luminance → alpha | green channel → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
 | method name `ApplyDilateFilter` | dilate | 8-neighbour mean (box blur without centre) | `code/lib/bitmap.cpp:BitmapRGBA::ApplyDilateFilter` |
-| `tools/FindUnusedResources.sh` | lists unused resources | misses 380 used visual files and counts 21 unused ones as used (§6.4) | X2a emulation |
-| `tools/ShapeExporter` | "Futurewar Shape Format v1.0" exporter | no longer compiles against `code/lib/shape.h`; writes triangle lists only, while 39 shipped files are strips | X1b |
-| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | X1b |
+| `tools/FindUnusedResources.sh` | lists unused resources | misses 380 used visual files and counts 21 unused ones as used (§6.4) | `tools/FindUnusedResources.sh` rules emulated over this tree (§6.4) |
+| `tools/ShapeExporter` | "Futurewar Shape Format v1.0" exporter | no longer compiles against `code/lib/shape.h`; writes triangle lists only, while 39 shipped files are strips | `tools/ShapeExporter/ShapeExporter.cpp`; shape survey (§1.5) |
+| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | `code/lib/shape.cpp:ShapeFragment::WriteToFile` |
 | `code/sound/sample_cache.cpp:CachedSampleManager::CleanUp` comment | "Largest song takes 13 MB" | the largest track decodes to 30 389 760 bytes, but no music ships; the largest live file is `data/sounds/evil.ogg` (53.9 s ≈ 4.75 MB decoded) | §5 |
-| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run from the Darwinia data directory" | ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | X2b |
+| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run from the Darwinia data directory" | ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` |
 
 <!-- from 26_animation_and_vfx.md -->
 ### From 26_animation_and_vfx.md
@@ -366,7 +366,7 @@ Headline discrepancies a reader of the original documentation would trip over; f
 |---|---|---|---|
 | `docs/multiwiniachanges-beta.txt` (Issue 650, listed as fixed) | "Game Menu: X360 B button in menus doesn't always go back" | Structural cases remain where B does nothing: pages without a `BackPageButton` (Main, AuthKeyEntry), any frame in which the `BackPageButton` is not rendered (drop-down list open, window unfocused), and `MessageDialog` (no back button) [C mechanism; I that these were the reported cases] | `code/game_menu.cpp:BackPageButton::Render`, `code/interface/message_dialog.cpp` |
 | `docs/multiwiniachanges-beta.txt` (Issue 558, listed as fixed) | "Menu navigation in the pre-game with controller" | consistent: the lobby builds `m_buttonOrder` and starts the cursor on Play | `GameMenuWindow::SetupMultiplayerPage` |
-| `docs/detailed schedule.txt` "Translation System → Missed out" (Sound Stats/Parameter/Editor/Profile windows, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window) | these windows are untranslated | consistent: literal English captions (§10.3) | P17a strings table |
+| `docs/detailed schedule.txt` "Translation System → Missed out" (Sound Stats/Parameter/Editor/Profile windows, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window) | these windows are untranslated | consistent: literal English captions (§10.3) | [C] grep of the window captions (§10.3) |
 | `docs/RussianFontRequest.txt` | only speccy had Cyrillic glyphs; they were copied to square and editor as a stop-gap | consistent: the three Cyrillic atlas pairs are byte-identical | `data/textures/unicode/*.0410.042f.bmp`, `*.0430.044f.bmp` |
 | `docs/sound changes.txt` | "Sound editor will now use a scrollbar if there are too many events to fit" | consistent (`SoundEditorWindow` creates a `ScrollBar`), but the sound editor is [B:DEBUG] only | `code/interface/soundeditor_window.cpp` |
 
@@ -435,7 +435,6 @@ Headline discrepancies a reader of the original documentation would trip over; f
 | `code/app.cpp` comments | affinity `0x02|0x8|0x20|0x80` "Even processors", `0x01|0x4|0x10|0x40` "Processor Number % 3 == 2" / "Odd processors" | the masks select CPUs 1,3,5,7 and 0,2,4,6 (0-based) respectively |
 | `tools/build_multiwinia_data.bat` echoes | sounds2 step prints "Making sounds.dat"; `ambx` platform prints "…hwcompat.txt" | builds `sounds2.dat`; appends the beta-test exclusion list |
 | `targets/vs2005/Common.vsprops` | include path `steam/` under `contrib/` | directory absent from the tree |
-| `_work/build_matrix.md` §3 (earlier phase note) | target table complete | omitted `LAN/WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `TARGET_BETATEST_GROUP`; corrected in §7.6 |
 
 <!-- from 32_debug_test_and_performance.md -->
 ### From 32_debug_test_and_performance.md

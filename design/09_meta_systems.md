@@ -509,7 +509,7 @@ Row rendering [C] `LevelSelectButton::Render`, `LevelSelectButtonBase::GetColumn
 
 `LevelSelectButton::MouseUp` [C]: start transition (+1); reject invalid indices; sound `MenuSelect`; demo-restricted → `PageBuyMeNow`; (custom-game branch dead); `m_requestedMapId = index` (network), `m_localSelectedLevel = index`; → `PageGameSetup`; if co-op is on and the map is not `CoopMode` → co-op off; if the map is `ForceCoop` → co-op on; if the mode has a `TimeLimit` parameter it is set to the map's `PlayTime` if non-zero, else to the blueprint default (but see §4.5).
 
-Thumbnail [C] `MapImageButton::Render`: map index = focused row, else requested map; texture `thumbnails/<file-without-ext>.bmp` (lower-cased), drawn only if it exists (fallback name `thumbnails/default.bmp` computed but used only if loading an existing file fails); demo-restricted maps get a centred "Full Game Only" (`dialog_fullonly`, font w/10) overlay; white outline. Description [C] `MapInfoButton::Render`: custom maps → the file's `Description` text; official maps → phrase `<file-without-ext>_description`, auto-scrolling.
+Thumbnail [C] `MapImageButton::Render`: map index = focused row, else requested map; texture `thumbnails/<file-without-ext>.bmp` (lower-cased), drawn only if it exists — a missing thumbnail draws no image, only the outline (the name is switched to `thumbnails/default.bmp`, but the quad is inside `if (exists)`); the second fallback to `default.bmp` when an existing file returns texture id −1 is unreachable, because `Resource::GetTextureWithFlags` raises a fatal `AppReleaseAssert` instead of returning −1 [C] `code/lib/resource.cpp:Resource::GetTextureWithFlags` ([08 §2.2](08_levels_and_level_design.md#22-how-the-game-discovers-maps-menu-catalogue)); demo-restricted maps get a centred "Full Game Only" (`dialog_fullonly`, font w/10) overlay; white outline. Description [C] `MapInfoButton::Render`: custom maps → the file's `Description` text; official maps → phrase `<file-without-ext>_description`, auto-scrolling.
 
 ### 3.6 PageGameSetup (6) — the lobby (single-player setup, host lobby and client lobby share one page)
 
@@ -2341,8 +2341,8 @@ Every key read or written by compiled code (76 distinct literal keys from the ac
 | `AccessAllAreasUnlocked` | Int | — | −1 | — | `UserProfileWindow::Create`: == 1 shows an "Access All Areas" button | [B:LEGACY] |
 | `AIInfoTeam` | Int | — | 1 | — | `AITarget::Render`: team whose AI debug info is drawn | debug render |
 | `AutomaticCamera` | Int | — | 0 | hidden (round-tripped by Other Options) | §11.8 | [B:FULL] |
-| `AVIMotionBlurFactor` | Int | — | 1 | — | `AVIGenerator` (`AVI_GENERATOR` only) | [B:DEBUG] |
-| `AVIOptions` | — | — | (existence test) | — | `AVIGenerator` | [B:DEBUG] |
+| `AVIMotionBlurFactor` | Int | — | 1 | — | `AVIGenerator::AVIGenerator` (`AVI_GENERATOR`, DEBUG builds only); the generator is created only by `GrabberWindow`, which only `DebugKeyBindings::GrabberButton` opens, and nothing calls that, so the read never runs [C] `code/lib/avi_generator.cpp:AVIGenerator::AVIGenerator`, `code/interface/grabber_window.cpp`, `code/interface/debugmenu.cpp:DebugKeyBindings::GrabberButton` | [B:DEAD] |
+| `AVIOptions` | — | — | (existence test, commented out) | — | none: the `DoesKeyExist` / `GetData` / `AddData` calls in `AVIGenerator` are all commented out, and the generator itself is never created (row above) [C] `code/lib/avi_generator.cpp` | [B:DEAD] |
 | `BootLoader` | String | `firsttime` | `random` (Other Options), `none` (`RunBootloader`) | hidden | `RunBootloader` (`USE_LOADERS`, off); it would also rewrite it to `random` after the intro | [B:DEAD] |
 | `BypassNetwork` | Int | 0 | — | — | none | unused |
 | `ChristmasEnabled` | Int | — | 1 | — | read into `PrefsOtherWindow::m_christmas`, never used | unused |

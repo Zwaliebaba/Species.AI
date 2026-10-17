@@ -149,7 +149,7 @@ Command letters carry the field codes of [22](22_determinism_and_networking.md) 
 
 | Command (code) | Sender function | Payload | Executed on every peer | Raised by (§1.3) |
 |---|---|---|---|---|
-| `ALIVE` (`cd`) | `ClientToServer::SendIAmAlive` | TEAMID, ALIVE_DATA (packed `TeamControls`, §6.1) | `Location::UpdateTeam(team, controls)`; server keeps only the latest per client per tick | A-/D-rows |
+| `ALIVE` (`cd`) | `ClientToServer::SendIAmAlive` | TEAMID, ALIVE_DATA (packed `TeamControls`, §6.1) | `Location::UpdateTeam(team, controls)`; server keeps only the latest per client per tick. Consequences: the OR-ed one-shot flags (§6.1) of an earlier ALIVE that reached the server in the same tick are discarded, and a tick in which no ALIVE arrived applies no `UpdateTeam` for that team ([22 §6.1](22_determinism_and_networking.md#61-serveradvance--one-tick-every-01-s-c-codenetworkservercppserveradvance)) [C] `code/network/server.cpp:SaveLast`, `AddLast`, `Server::Advance` | A-/D-rows |
 | `SELECTUNIT` (`ce`) | `RequestSelectUnit` | TEAMID, UNITID, ENTITYID, BUILDINGID (ints) | `Team::SelectUnit(u,e,b)` then `TaskManager::SelectTask(WorldObjectId(team,u,e,−1))`; latest-only per client per tick | S1, S3, T4–T6 |
 | `AIMBUILDING` (`cf`) | `RequestAimBuilding` | TEAMID, BUILDINGID, POSITION | if the building exists, belongs to TEAMID and is a RadarDish: `RadarDish::Aim(pos)` | O10 |
 | `RUNPROGRAM` (`ch`) | `RequestRunProgram` | TEAMID, PROGRAM (task **type**) | `TaskManager::RunTask(type)` | [B:LEGACY] only (Icons/Gestures interfaces, SP quick-units) |

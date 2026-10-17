@@ -188,7 +188,7 @@ Introversion IP that a new game must not reuse, with neutral placeholders.
 <!-- from 09_meta_systems.md -->
 ### From 09_meta_systems.md
 
-All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. Complete phrase-id inventories for this area: `_work/drafts/P17b_strings.csv` (194 ids) and `_work/drafts/P02_game_modes_strings.csv` (87 ids).
+All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. The phrase ids this area uses (194 front-end ids and 87 game-mode ids) are the `LANGUAGEPHRASE` literals of the Source-map code files; the working inventories were generated into `_work/drafts/P17b_strings.csv` and `_work/drafts/P02_game_modes_strings.csv` (provenance only).
 
 | Item | Kind | Ref | Neutral placeholder |
 |---|---|---|---|
@@ -215,7 +215,7 @@ All English strings behind the phrase ids are Introversion text (`data/language/
 | Loader / intro / credits music (`speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`) — third-party chiptune artists | audio (third-party licence) | `data/sounds.txt` Music events | licensed / commissioned tracks |
 | Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character), loader texts `bootloader_*`, Matrix block-letter product-name mask, Spectrum / demo-group art (`program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp`) | text / brand / art | Appendix A.1, [30 §6](30_scripting_tutorial_and_cutscenes.md) | new texts and art |
 | Distributor splash / video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`), distributor origin tag `buka` | third-party brand | `OberonLoader`, `EgamesLoader`, `tools/build_multiwinia_retail_russian.bat` | none (drop) |
-| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `P17b_strings.csv` | generic equivalents; do not copy the string table verbatim |
+| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `data/language/english.txt` (phrase ids used by `code/UI/GameMenuWindow.cpp` and the `code/interface/*` windows of the Source map) | generic equivalents; do not copy the string table verbatim |
 | Defaults "NewPlayer", "NewServer" | text | §11.10 | keep generic or rename |
 
 <!-- from 10_audio_design.md -->
@@ -321,7 +321,7 @@ All English strings behind the phrase ids are Introversion text (`data/language/
 | Virii, Spirit, Soul Destroyer, Centipede, Spider, Squadie / Insertion Squad, Shaman, Officer, Armour, Triffid, Harvester (names in render code) | names | §4.9, §4.13, §4.14 | role names: swarm, soul orb, devourer, segmented crawler, leaper, squad, summoner, commander, transport, spore pod, collector |
 | Sprite/texture art: `data/textures/particle.bmp`, `shapewireframe.bmp`, `triangleoutline.bmp`, `laser.bmp`, `clouds.bmp`, `starburst.bmp`, `glow.bmp`, `cloudyglow.bmp`, `tree.bmp`, `laserfence.bmp`, `laserfence2.bmp`, `lightning.bmp`, `subversion.bmp`, `radarsignal.bmp`, `godray.bmp`, `deform1c.bmp`, `deform3.bmp`, `deform36c.bmp`, `interface_red.bmp`; `data/sprites/virii.bmp`, `santahat.bmp`, `subshadow.bmp` | art | catalogue in [25](25_textures_and_assets.md) | regenerate procedurally / new art with the same roles |
 | Terrain ramps, water textures and wave tables (`data/terrain/landscape_*.bmp`, `water_*.bmp`, `waves_*.bmp`) | art | §4.1, §4.2 | new ramps `ramp_<theme>`, tileable water, 1-D gradients |
-| 139 `.shp` meshes (`data/shapes/*.shp`) | art | `_work/drafts/P12_shapes.csv` | new meshes |
+| 139 `.shp` meshes (`data/shapes/*.shp`) | art | `data/shapes/*.shp`; per-file list in [25](25_textures_and_assets.md) | new meshes |
 | Font atlases `speccy`, `editor`, `square` (`data/textures/unicode/*.bmp`, 138 files incl. CJK/Hangul glyph art) and legacy `editor_font*.bmp`, `speccy_font*.bmp` | art (font) | §4.22 | licensed open fonts (an OFL pixel font + Noto CJK) in a glyph cache |
 | Cursor and HUD icons (`data/icons/mouse_*.bmp`, `marker_*.bmp`, `compass*.bmp`, `icon_*.bmp`, `widearrow.bmp`, `thickarrow.bmp`, `target.bmp`, `selectionarrow.bmp`) | art | §4.18–§4.20 | new icon set |
 | Dr Sepulveda face in the clouds (`data/sepulveda/sepulveda1..5.bmp`, `Clouds::RenderFace`, `ShowDrSFace`) | character / art | §4.4 | drop |
@@ -406,7 +406,7 @@ All shipped art, meshes, animation scripts, fonts, shaders, sounds and file name
 | Framework phrase ids and their English text: `dialog_close`, `dialog_ok`, `dialog_cancel`, `dialog_back`, `dialog_multiplefiles`, `editor_coloureditor`, `editor_red`, `editor_green`, `editor_blue`, `editor_alpha`, `error`, `multiwinia_editor_success`, `multiwinia_editor_selectmap`, `multiwinia_menu_back`, `multiwinia_presstotalk`, `authentication_result`, `dialog_auth_status_demo_user` | text | `data/language/*.txt` | own string table (ids may be reused as neutral keys, texts not) |
 | Literal English captions in framework code: "Close", "Close this window", "Value left", "Value right", "New Window", "New Button", "New Scrollbar", "Failed to set requested screen resolution of …", "Failed to set requested sound settings", "Restart Required" / "Please restart Darwinia …" (Linux) | text | `code/interface/darwinia_window.cpp`, `code/interface/input_field.cpp`, `code/game_menu.cpp`, `contrib/eclipse/*`, `code/interface/scrollbar.cpp`, `code/renderer.cpp`, `code/sound/soundsystem.cpp`, `code/interface/prefs_screen_window.cpp` | rewrite |
 | Store URL `http://store.introversion.co.uk` (`App::GetBuyNowURL`), update URL / `autopatch.exe` launch | brand / URL | `code/app.cpp`, `code/UI/UnlockFullGameButton.h`, `code/UI/update_page_buttons.h` | own store/updater URLs from configuration |
-| Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP registers of [09](09_meta_systems.md) and `_work/drafts/P17b_strings.csv`, `_work/drafts/P17a_ui_framework_editor_ui_strings.csv` | own strings |
+| Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP register of [09](09_meta_systems.md); the text of every id is in `data/language/english.txt` | own strings |
 
 <!-- from 29_data_formats_reference.md -->
 ### From 29_data_formats_reference.md

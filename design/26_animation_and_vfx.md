@@ -1031,7 +1031,7 @@ No ground collision: debris falls through the terrain [C]. A `fraction` > 1 (wal
 | `Crate::RunAntNest` | 1.0 (ant hill shape) | ant-nest outcome | [B:FULL] |
 | `AntHill::Damage` | `1 − health/100`, then 1.0 on death | damage / death | [B:FULL] |
 | `Armour::ChangeHealth` | fraction dead (per 50-band hits and death) | hit | [B:FULL] |
-| `Armour::ConvertToGunTurret` | 1.0 | armour deploys as a turret | [B:FULL] |
+| `Armour::ConvertToGunTurret` | 1.0 | armour deploys as a turret (single-player only: `m_awaitingDeployment` is set only in the `!Multiplayer()` branch of `LocationInput::AdvanceTeamControl`; the `Location::UpdateTeam` setter is commented out) | [B:LEGACY] |
 | `Engineer::ChangeHealth`, `Harvester::ChangeHealth`, `SpaceInvader::ChangeHealth` | fraction dead (Harvester and SpaceInvader scale against the **Engineer**'s max health — copy-paste defect, visual only) | hit | [B:FULL] |
 | `Spider::ChangeHealth`, `SporeGenerator::ChangeHealth`, `SoulDestroyer::ChangeHealth` (+ every tail segment at 1.0) | fraction dead | hit | [B:FULL] |
 | `Centipede::ChangeHealth` | 1.0 (two sites: health-band drop in SP, death) | hit / death | [B:FULL] |

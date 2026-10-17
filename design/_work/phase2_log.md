@@ -279,3 +279,6 @@
 ## Fix F7 (23, 24, 26 + terrain port) — done: 35 findings (29 accepted, 2 partly, 1 rejected — 23 right, 3 n/a); checks clean
 - V12 fixed in P11_terrain_ref.py (sequential += from centre); oracle re-run: exactly 11 digests changed, all equal R7's G1 values; other 58 unchanged → all 69 match independent reviewer. Nuke sea min unchanged 0.2623 (mp_assault_3p_3); building-at-sea counts unchanged. 24 §3.2 rows 7b/7e/24 full state (24 always empty), "—" defined, 3a culling explained; new §4.9.1 per-entity render state. 26 §4.6 per-class damage-flicker table; Christmas lights replaced; debris cap 502; V3/V10/V11 tags; new terrain test vectors.
 ## ALL FIXERS F1–F8 DONE. Final pass: F9a (content-doc cross requests), F9b (Part C 40/41/90/README).
+
+## Fix F9a (cross-doc requests on content docs) — done: 9 accepted, 5 partly, 13 already applied by owners (verified), 2 rejected, 11 out of scope (Part C); Mermaid 156/156; 0 bad citations
+- Pushback verified in code: F5's "defensive officers" rename wrong (Officer::RunAI calls SetFormation) → kept "formation", clarified; m_mostRecentEntity filed as history-dependent not order-dependent. Coordinator spot-check: 22 T6 SphereHit "no caller" ✓; 08 tile merge per-sample max ✓.

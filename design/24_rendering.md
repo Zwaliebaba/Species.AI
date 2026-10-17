@@ -1805,7 +1805,7 @@ Resolved during synthesis (no longer open): special-lighting levels (`mp_koth_2P
 | Team colour names green/red/yellow/blue/orange/purple/cyan/pink (`multiwinia_team_*`) | text | `code/team.cpp:Team::GetTeamName` | generic colour names, new keys |
 | Christmas theme (Santa hats, ice ramps) | concept / art | §5.5 | optional seasonal theme with new art |
 | Shader sources `data/shaders/*` (14 files) | code (licence) | §6 | re-author in HLSL SM6 |
-| Global-world shapes `globalworld_outer/middle/inner.shp`, global-internet visuals | art / concept | §4.24 | drop (legacy) |
+| Global-world shapes `globalworld_outer/middle/inner.shp`, global-internet visuals | art / concept | §4.24. The shapes are **loaded at every start-up** ([B:FULL], load-only: `App::App` constructs `GlobalWorld`, whose `SphereWorld` constructor calls `GetShape` for all three) but never drawn in a match [C] `code/app.cpp:App::App`, `code/global_world.cpp:SphereWorld::SphereWorld` | drop (legacy); a new engine that drops them also drops the start-up load |
 | Third-party note: none of the renderer code is third-party (AVIGenerator, MT19937 are listed in [31](31_platform_build_and_tools.md)/[22](22_determinism_and_networking.md)) | — | — | — |
 
 ## Source map
