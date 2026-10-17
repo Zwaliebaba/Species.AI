@@ -605,7 +605,7 @@ Tokens after the 8 base fields (`Type id x z tm rx rz isGlobal`); `*` = repeated
 
 ## 4 Spawn network
 
-Source: `code/worldobject/spawnpoint.{h,cpp}`. Build tag **[B:FULL]** for all five classes; single-player branches are [B:LEGACY]. The economic consequences (burst/pause throughput, population caps, handicap, comparison with trunk ports and engineers/harvesters) are specified in [05](05_economy_and_population.md); this section is the building-level specification.
+Source: `code/worldobject/spawnpoint.h`, `code/worldobject/spawnpoint.cpp`. Build tag **[B:FULL]** for all five classes; single-player branches are [B:LEGACY]. The economic consequences (burst/pause throughput, population caps, handicap, comparison with trunk ports and engineers/harvesters) are specified in [05](05_economy_and_population.md); this section is the building-level specification.
 
 ### 4.1 Overview
 
@@ -788,7 +788,7 @@ stateDiagram-v2
 
 ### 5.1 GunTurret
 
-Source: `code/worldobject/gunturret.{h,cpp}`. Build tag **[B:FULL]**; the single-player lose-control branch and team-2 remap are [B:LEGACY]; mortar-arc and subversion editor previews are [B:EDITOR].
+Source: `code/worldobject/gunturret.h`, `code/worldobject/gunturret.cpp`. Build tag **[B:FULL]**; the single-player lose-control branch and team-2 remap are [B:LEGACY]; mortar-arc and subversion editor previews are [B:EDITOR].
 
 **Function.** A Darwinian-manned automatic weapon emplacement: a fixed base (`battlecannonbase.shp`, 4 ports) with a rotating turret (`battlecannonturret.shp`) and a barrel model chosen by turret type. It is owned by whichever team mans its ports, automatically engages enemies in range, and can be steered manually by its owner. [C] `GunTurret::GunTurret`, `GunTurret::Advance`.
 
@@ -903,7 +903,7 @@ Sounds: `TargetSighted`, `FireShell`, `FireFlame`, `FireGrenade`, `FireRocket`, 
 
 ### 5.2 Teleport
 
-Source: `code/worldobject/teleport.{h,cpp}`. Abstract base of RadarDish and (legacy) Bridge. **[B:FULL]**.
+Source: `code/worldobject/teleport.h`, `code/worldobject/teleport.cpp`. Abstract base of RadarDish and (legacy) Bridge. **[B:FULL]**.
 
 | Member | Meaning | Ref |
 |---|---|---|
@@ -927,7 +927,7 @@ Hazard [I]: `m_teleportMap` is static (process-wide) and not cleared on level ch
 
 ### 5.3 RadarDish
 
-Source: `code/worldobject/radardish.{h,cpp}`. **[B:FULL]** (the D3D vertex-declaration reset in `RenderAlphas` is [B:D3D]; a multiplayer block of `ValidReceiverDish` is commented out).
+Source: `code/worldobject/radardish.h`, `code/worldobject/radardish.cpp`. **[B:FULL]** (the D3D vertex-declaration reset in `RenderAlphas` is [B:D3D]; a multiplayer block of `ValidReceiverDish` is commented out).
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -975,7 +975,7 @@ stateDiagram-v2
 
 ### 5.4 ControlStation
 
-Source: `code/worldobject/controlstation.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/controlstation.h`, `code/worldobject/controlstation.cpp`. **[B:FULL]**.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1004,7 +1004,7 @@ stateDiagram-v2
 
 ### 5.5 JumpPad
 
-Source: `code/worldobject/jumppad.{h,cpp}`. **[B:FULL]** (trajectory preview [B:EDITOR]).
+Source: `code/worldobject/jumppad.h`, `code/worldobject/jumppad.cpp`. **[B:FULL]** (trajectory preview [B:EDITOR]).
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1024,7 +1024,7 @@ Source: `code/worldobject/jumppad.{h,cpp}`. **[B:FULL]** (trajectory preview [B:
 
 ## 6 Power network
 
-Source: `code/worldobject/generator.{h,cpp}`, `code/worldobject/powerstation.{h,cpp}`. SolarPanel, Pylon, PylonEnd, PowerSplitter are **[B:FULL]**; Generator, PylonStart, Powerstation are **[B:LEGACY]** (blocked from level files, no runtime creator).
+Source: `code/worldobject/generator.h`, `code/worldobject/generator.cpp`, `code/worldobject/powerstation.h`, `code/worldobject/powerstation.cpp`. SolarPanel, Pylon, PylonEnd, PowerSplitter are **[B:FULL]**; Generator, PylonStart, Powerstation are **[B:LEGACY]** (blocked from level files, no runtime creator).
 
 Power in Multiwinia is a stream of discrete **surges**, each tagged with the team of the solar panel that emitted it. Surges hop along `m_powerLink` chains (0.5 s per hop in MP) to a terminal `PylonEnd`, which hands them to a consumer: a **LaserFence** (keeps it raised, friend-only), a **FuelGenerator** (Rocket Riot fuel pressure) or, in Darwinia, a ConstructionYard. [C] `PowerBuilding::Advance`, `PylonEnd::TriggerSurge`.
 
@@ -1128,7 +1128,7 @@ Design reading [I]: in Assault and Blitzkrieg, defender/base fences are kept up 
 
 ### 7.1 LaserFence
 
-Source: `code/worldobject/laserfence.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/laserfence.h`, `code/worldobject/laserfence.cpp`. **[B:FULL]**.
 
 **Function.** A post (`laserfence.shp`) that, when raised, projects an energy curtain to the **next** post named by its link id; chains of posts form barrier lines. Enemy units touching a raised curtain are killed (generic entities) or set on fire (Darwinians); raised curtains of any team also block walking routes and AI routing. [C].
 
@@ -1214,7 +1214,7 @@ stateDiagram-v2
 
 ### 7.2 Wall
 
-Source: `code/worldobject/wall.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/wall.h`, `code/worldobject/wall.cpp`. **[B:FULL]**.
 
 **Function.** A straight wall segment (`wall.shp`) that blocks movement and line of fire; destroyed only by a single heavy hit. Main use: Assault, where attackers breach walls with the WallBuster (§8.5). Always team 255; not capturable; team irrelevant. [C] census, code.
 
@@ -1255,7 +1255,7 @@ stateDiagram-v2
 
 ### 7.3 Tree
 
-Source: `code/worldobject/tree.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/tree.h`, `code/worldobject/tree.cpp`. **[B:FULL]**.
 
 **Function.** Decorative but gameplay-relevant scenery: blocks movement and projectiles via two hit spheres, catches fire, burns down and regrows, sets nearby units on fire, can drop spirits ("magic" trees), can spread new trees, and in its *evil* variant kills Darwinians and corrupts nearby trees. Trees are the most numerous visible building in Multiwinia maps (661 lines in 39 official maps, 94 in 6 dev maps; only the invisible AITarget is more numerous). Also created at runtime by the Dark Forest / Magical Forest crate outcomes (`Crate::GenerateTrees`, `Crate::GenerateEvilTrees`) and by tree self-propagation (`Tree::CreateAnotherTree`). [C] census, `code/worldobject/crate.cpp`, `Tree::CreateAnotherTree`.
 
@@ -1399,7 +1399,7 @@ Determinism notes (→ [22](22_determinism_and_networking.md)): geometry RNG is 
 
 ### 7.4 StaticShape
 
-Source: `code/worldobject/staticshape.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/staticshape.h`, `code/worldobject/staticshape.cpp`. **[B:FULL]**.
 
 **Function.** Places any `.shp` from `data/shapes` as a solid, non-interactive obstacle (rocks, temple ruins, landing obstructions). No team logic (all lines team 255), not capturable, indestructible, no ports, no lights (`SetShapeLights` never runs because the shape is set after `Building::Initialise`). [C].
 
@@ -1408,13 +1408,13 @@ Source: `code/worldobject/staticshape.{h,cpp}`. **[B:FULL]**.
 | 8 | scale | float | 1.0 | uniform scale of the shape transform | 1.00 ×163; 0.83–1.76; one 6.10 | `%6.2f` |
 | 9 | shapeName | token (no spaces) | "none" | file under `data/shapes/`; "none" = no shape | `beachheadobstruction.shp` 67, `temple2.shp` 56, `rockhead.shp` 32, `temple4.shp` 27, `temple3.shp` 8, `statue.shp` 1, `spaceship.shp` 1, `carryspider.shp` 1 | `%s` |
 
-**Behaviour** [C] `StaticShape::Initialise/SetDetail/Advance`: `Initialise` copies scale and calls `SetShapeName` (loads through `Resource::GetShape` and computes centre/radius with the scaled transform); `SetDetail` re-samples Y and recomputes centre/radius; `Advance` = `Building::Advance`. Hit tests are exact mesh tests on the scaled shape; with no shape, a sphere of `m_radius` (13.0). A missing shape file is fatal: `Resource::GetShapeCopy` searches `data/shapes/<name>` (lower-cased) on disk then in the archive and raises `AppReleaseAssert("Couldn't find shape file …")`. Shapes are cached by name, so all StaticShapes using a file share one Shape. `SetStringId` is declared but never defined. Rendering: scaled shape with `GL_NORMALIZE`; with no shape `RenderSphere(m_pos, 40)` (debug helper). [C] `code/lib/resource.cpp:Resource::GetShapeCopy`.
+**Behaviour** [C] `StaticShape::Initialise/SetDetail/Advance`: `Initialise` copies scale and calls `SetShapeName` (loads through `Resource::GetShape` and computes centre/radius with the scaled transform); `SetDetail` re-samples Y and recomputes centre/radius; `Advance` = `Building::Advance`. Hit tests are exact mesh tests on the scaled shape; with no shape, a sphere of `m_radius` (13.0). A missing shape file is fatal: `Resource::GetShapeCopy` searches the `data/shapes` directory for the lower-cased file name on disk then in the archive and raises `AppReleaseAssert("Couldn't find shape file …")`. Shapes are cached by name, so all StaticShapes using a file share one Shape. `SetStringId` is declared but never defined. Rendering: scaled shape with `GL_NORMALIZE`; with no shape `RenderSphere(m_pos, 40)` (debug helper). [C] `code/lib/resource.cpp:Resource::GetShapeCopy`.
 
 **Mode usage**: 19 official maps — Assault 6/8, Domination 6/9, KOTH 5/9, Blitzkrieg 1/7, CTS 1/9. [C] census.
 
 ### 7.5 RestrictionZone
 
-Source: `code/worldobject/restrictionzone.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/restrictionzone.h`, `code/worldobject/restrictionzone.cpp`. **[B:FULL]**.
 
 **Function.** Invisible, non-colliding circle that (a) prevents random crates from landing inside it and (b) optionally blocks map-wide power-up targeting inside it (e.g. starting islands). Source comment: "doesn't do anything itself, although it prevents crates from dropping inside their area". All team 255; no capture; indestructible. [C].
 
@@ -1433,7 +1433,7 @@ Source: `code/worldobject/restrictionzone.{h,cpp}`. **[B:FULL]**.
 
 ### 7.6 SmokeMarker
 
-Source: `code/worldobject/smokemarker.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/smokemarker.h`, `code/worldobject/smokemarker.cpp`. **[B:FULL]**.
 
 **Function.** Emits a continuous rising column of grey smoke (atmospherics). No extra level fields (base 8 tokens only). Team irrelevant (all 255); not capturable; indestructible. [C].
 
@@ -1445,7 +1445,7 @@ Source: `code/worldobject/smokemarker.{h,cpp}`. **[B:FULL]**.
 
 ### 7.7 EruptionMarker
 
-Source: `code/worldobject/eruptionmarker.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/eruptionmarker.h`, `code/worldobject/eruptionmarker.cpp`. **[B:FULL]**.
 
 **Function.** Atmospheric volcano vent; visual only, no damage. No extra level fields; team 255; not capturable; indestructible; non-colliding (all three hit tests use `double` and return false outside the editor). [C].
 
@@ -1472,7 +1472,7 @@ Mode rules (scoring, win conditions, timers) that read these objects are specifi
 
 ### 8.1 MultiwiniaZone
 
-Source: `code/worldobject/multiwiniazone.{h,cpp}`. **[B:FULL]** (each per-mode branch is compiled under its `INCLUDEGAMEMODE_*` macro, all defined in FULLGAME).
+Source: `code/worldobject/multiwiniazone.h`, `code/worldobject/multiwiniazone.cpp`. **[B:FULL]** (each per-mode branch is compiled under its `INCLUDEGAMEMODE_*` macro, all defined in FULLGAME).
 
 **Function.** A circular zone whose meaning depends on the game type: the **hill** in King of the Hill, a **drop zone** (team-owned) or **statue spawn zone** (neutral) in Capture the Statue, and a **flag** in Blitzkrieg. In Domination, Assault and Rocket Riot it does nothing. [C] `MultiwiniaZone::Advance`.
 
@@ -1538,7 +1538,7 @@ Other members [C]: not collidable (`DoesSphereHit/DoesShapeHit` false; `DoesRayH
 
 ### 8.2 Flag
 
-Source: `code/worldobject/flag.{h,cpp}`. **[B:FULL]**. Not a building or world object: a cloth-flag render primitive owned by Blitzkrieg zones, `Armour` (`m_flag`, `m_deployFlag`) and `Officer` (`m_flag`). [C] `code/worldobject/armour.h`, `officer.h`.
+Source: `code/worldobject/flag.h`, `code/worldobject/flag.cpp`. **[B:FULL]**. Not a building or world object: a cloth-flag render primitive owned by Blitzkrieg zones, `Armour` (`m_flag`, `m_deployFlag`) and `Officer` (`m_flag`). [C] `code/worldobject/armour.h`, `officer.h`.
 
 - Function: purely presentational team marker; no ownership, inputs, outputs, damage or level fields of its own. Uses `g_advanceTime`/`g_gameTime` (render clock, non-deterministic).
 - Grid `m_flag[6][6]` (`FLAG_RESOLUTION` 6) of vertices; `Initialise` lays them on the front/up plane.
@@ -1549,7 +1549,7 @@ Source: `code/worldobject/flag.{h,cpp}`. **[B:FULL]**. Not a building or world o
 
 ### 8.3 CarryableBuilding
 
-Source: `code/worldobject/carryablebuilding.{h,cpp}`. **[B:FULL]**: the whole `Advance` body is inside `#if defined(INCLUDEGAMEMODE_CTS) || defined(INCLUDEGAMEMODE_ASSAULT) || defined(INCLUDEDGAMEMODE_PROLOGUE)` (note the typo `INCLUDEDGAMEMODE_PROLOGUE`); CTS and Assault are defined in FULLGAME, so it is live. Not a level-file type (no enum value); concrete subclasses are Statue (CTS), WallBuster (Assault) and ChessPiece (blocked). `IsCarryableBuilding(type)` = Statue, WallBuster, ChessPiece. [C].
+Source: `code/worldobject/carryablebuilding.h`, `code/worldobject/carryablebuilding.cpp`. **[B:FULL]**: the whole `Advance` body is inside `#if defined(INCLUDEGAMEMODE_CTS) || defined(INCLUDEGAMEMODE_ASSAULT) || defined(INCLUDEDGAMEMODE_PROLOGUE)` (note the typo `INCLUDEDGAMEMODE_PROLOGUE`); CTS and Assault are defined in FULLGAME, so it is live. Not a level-file type (no enum value); concrete subclasses are Statue (CTS), WallBuster (Assault) and ChessPiece (blocked). `IsCarryableBuilding(type)` = Statue, WallBuster, ChessPiece. [C].
 
 | Member | Default | Meaning |
 |---|---|---|
@@ -1592,7 +1592,7 @@ Damage: none at this level (base `Damage`; `HandleCollision` empty). Hit tests: 
 
 ### 8.4 Statue
 
-Source: `code/worldobject/statue.{h,cpp}`. **[B:FULL]**, created only at runtime in Capture the Statue (`TypeStatue` is blocked for level placement; the one dev line in `mp_sandbox` is dropped). [C] `code/multiwinia.cpp` CTS block, census.
+Source: `code/worldobject/statue.h`, `code/worldobject/statue.cpp`. **[B:FULL]**, created only at runtime in Capture the Statue (`TypeStatue` is blocked for level placement; the one dev line in `mp_sandbox` is dropped). [C] `code/multiwinia.cpp` CTS block, census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1612,7 +1612,7 @@ Source: `code/worldobject/statue.{h,cpp}`. **[B:FULL]**, created only at runtime
 
 ### 8.5 WallBuster
 
-Source: `code/worldobject/wallbuster.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/wallbuster.h`, `code/worldobject/wallbuster.cpp`. **[B:FULL]**.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1643,7 +1643,7 @@ stateDiagram-v2
 
 ### 8.6 TrunkPort
 
-Source: `code/worldobject/trunkport.{h,cpp}`. **[B:FULL]**; Darwinia world-map behaviour [B:LEGACY].
+Source: `code/worldobject/trunkport.h`, `code/worldobject/trunkport.cpp`. **[B:FULL]**; Darwinia world-map behaviour [B:LEGACY].
 
 | Member | Default | Meaning |
 |---|---|---|
@@ -1673,7 +1673,7 @@ Source: `code/worldobject/trunkport.{h,cpp}`. **[B:FULL]**; Darwinia world-map b
 
 ### 8.7 PulseBomb
 
-Source: `code/worldobject/pulsebomb.{h,cpp}`. **[B:FULL]** (Assault "WMD").
+Source: `code/worldobject/pulsebomb.h`, `code/worldobject/pulsebomb.cpp`. **[B:FULL]** (Assault "WMD").
 
 | Member | Default | Meaning |
 |---|---|---|
@@ -1716,7 +1716,7 @@ stateDiagram-v2
 
 ### 8.8 FuelBuilding
 
-Source: `code/worldobject/rocket.{h,cpp}`. **[B:FULL]** (MP branch; non-MP branches [B:LEGACY]). Base of the Rocket Riot fuel chain.
+Source: `code/worldobject/rocket.h`, `code/worldobject/rocket.cpp`. **[B:FULL]** (MP branch; non-MP branches [B:LEGACY]). Base of the Rocket Riot fuel chain.
 
 ```mermaid
 classDiagram
@@ -1879,7 +1879,7 @@ These buildings appear in Multiwinia only as crate outcomes (selection rules, pr
 
 ### 9.1 AntHill
 
-Source: `code/worldobject/anthill.{h,cpp}`. **[B:FULL]** live through the Ant Nest crate outcome (`CrateRewardAntNest`: player-placed task `GlobalResearch::TypeAntsNest` → `Task::TargetAntNest` → `Crate::RunAntNest`, or immediately at the crate when an uncaptured crate expires); level placement is legal (not blocked) but only Darwinia campaign maps do it (13 lines) → [B:LEGACY] content. The ArmyAnt entity is in [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunAntNest`, `Crate::RunUncapturedCrate`, `code/taskmanager.cpp:Task::TargetAntNest`, census.
+Source: `code/worldobject/anthill.h`, `code/worldobject/anthill.cpp`. **[B:FULL]** live through the Ant Nest crate outcome (`CrateRewardAntNest`: player-placed task `GlobalResearch::TypeAntsNest` → `Task::TargetAntNest` → `Crate::RunAntNest`, or immediately at the crate when an uncaptured crate expires); level placement is legal (not blocked) but only Darwinia campaign maps do it (13 lines) → [B:LEGACY] content. The ArmyAnt entity is in [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunAntNest`, `Crate::RunUncapturedCrate`, `code/taskmanager.cpp:Task::TargetAntNest`, census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1920,7 +1920,7 @@ stateDiagram-v2
 
 ### 9.2 Triffid
 
-Source: `code/worldobject/triffid.{h,cpp}`. **[B:FULL]** live through the Triffids crate outcome (`CrateRewardTriffids`, reachable only as an *uncaptured-crate* outcome: `Crate::CaptureCrate` re-rolls it); Darwinia maps place 30 → [B:LEGACY] content. Not blocked. TriffidEgg (entity) → [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunTriffids`, `Crate::RunUncapturedCrate`.
+Source: `code/worldobject/triffid.h`, `code/worldobject/triffid.cpp`. **[B:FULL]** live through the Triffids crate outcome (`CrateRewardTriffids`, reachable only as an *uncaptured-crate* outcome: `Crate::CaptureCrate` re-rolls it); Darwinia maps place 30 → [B:LEGACY] content. Not blocked. TriffidEgg (entity) → [02](02_units_and_entities.md). [C] `code/worldobject/crate.cpp:Crate::RunTriffids`, `Crate::RunUncapturedCrate`.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -1971,7 +1971,7 @@ stateDiagram-v2
 
 ### 9.3 Portal
 
-Source: `code/worldobject/portal.{h,cpp}`. **[B:DEBUG]** — created only by the "The Beast" crate outcome (`Crate::RunTheBeast`), whose callers are compiled only when `INCLUDE_THEBEAST` is defined, which `code/worldobject/crate.h` does only under `TARGET_DEBUG`. Blocked from level files (10 lines in `data/levels/old/*` prototype maps are dropped). `SpecialSummon` (Shaman) is [B:LEGACY]. Resolved: P06 tagged Portal [B:FULL]; corrected to [B:DEBUG] per the build matrix and `crate.h`. [C] `code/worldobject/crate.cpp:Crate::RunTheBeast`, `code/worldobject/crate.h`.
+Source: `code/worldobject/portal.h`, `code/worldobject/portal.cpp`. **[B:DEBUG]** — created only by the "The Beast" crate outcome (`Crate::RunTheBeast`), whose callers are compiled only when `INCLUDE_THEBEAST` is defined, which `code/worldobject/crate.h` does only under `TARGET_DEBUG`. Blocked from level files (10 lines in `data/levels/old/*` prototype maps are dropped). `SpecialSummon` (Shaman) is [B:LEGACY]. Resolved: P06 tagged Portal [B:FULL]; corrected to [B:DEBUG] per the build matrix and `crate.h`. [C] `code/worldobject/crate.cpp:Crate::RunTheBeast`, `code/worldobject/crate.h`.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2007,7 +2007,7 @@ stateDiagram-v2
 
 ### 9.4 Randomiser
 
-Source: `code/worldobject/randomiser.{h,cpp}`. **[B:FULL]**: not a Building but a `WorldObject` effect (`EffectRandomiser`) in `Location::m_effects`, created by the Randomiser crate outcome `Crate::RunRandomiser` (compiled under `INCLUDE_CRATES_ADVANCED`, defined in FULLGAME). No level-file presence. [C] `code/worldobject/crate.cpp:Crate::RunRandomiser`, `code/lib/universal_include.h`.
+Source: `code/worldobject/randomiser.h`, `code/worldobject/randomiser.cpp`. **[B:FULL]**: not a Building but a `WorldObject` effect (`EffectRandomiser`) in `Location::m_effects`, created by the Randomiser crate outcome `Crate::RunRandomiser` (compiled under `INCLUDE_CRATES_ADVANCED`, defined in FULLGAME). No level-file presence. [C] `code/worldobject/crate.cpp:Crate::RunRandomiser`, `code/lib/universal_include.h`.
 
 | Parameter | Value | Kind |
 |---|---|---|
@@ -2032,7 +2032,7 @@ These buildings are invisible scaffolding for CPU players; the AI that consumes 
 
 ### 10.1 AITarget
 
-Source: `code/worldobject/ai.{h,cpp}`. **[B:FULL]** (level-placed and runtime-created).
+Source: `code/worldobject/ai.h`, `code/worldobject/ai.cpp`. **[B:FULL]** (level-placed and runtime-created).
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2055,7 +2055,7 @@ Source: `code/worldobject/ai.{h,cpp}`. **[B:FULL]** (level-placed and runtime-cr
 
 ### 10.2 AIObjective
 
-Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/aiobjective.h`, `code/worldobject/aiobjective.cpp`. **[B:FULL]**.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2073,7 +2073,7 @@ Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
 
 ### 10.3 AIObjectiveMarker
 
-Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
+Source: `code/worldobject/aiobjective.h`, `code/worldobject/aiobjective.cpp`. **[B:FULL]**.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2093,7 +2093,7 @@ Source: `code/worldobject/aiobjective.{h,cpp}`. **[B:FULL]**.
 
 ### 10.4 AISpawnPoint
 
-Source: `code/worldobject/ai.{h,cpp}`. **[B:LEGACY]** (blocked; 3 campaign lines, 5 old maps).
+Source: `code/worldobject/ai.h`, `code/worldobject/ai.cpp`. **[B:LEGACY]** (blocked; 3 campaign lines, 5 old maps).
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2120,7 +2120,7 @@ These three classes are not blocked, so a level file may place them, but no offi
 
 ### 11.1 ControlTower
 
-Source: `code/worldobject/controltower.{h,cpp}`. **[B:FULL]** code; placed only in Darwinia maps (118 lines) and the GameTypes-none dev maps `mp_sandbox`/`mp_sandbox_all` (3 lines) → effectively [B:LEGACY] content. [C] census.
+Source: `code/worldobject/controltower.h`, `code/worldobject/controltower.cpp`. **[B:FULL]** code; placed only in Darwinia maps (118 lines) and the GameTypes-none dev maps `mp_sandbox`/`mp_sandbox_all` (3 lines) → effectively [B:LEGACY] content. [C] census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2151,7 +2151,7 @@ stateDiagram-v2
 
 ### 11.2 Incubator
 
-Source: `code/worldobject/incubator.{h,cpp}`. **[B:FULL]** code (not blocked; forced global); placed only in Darwinia missions (40 lines) and the dev maps `mp_sandbox*` (3 lines) → effectively [B:LEGACY] content. Spirit-economy consequences in [05](05_economy_and_population.md). [C] census.
+Source: `code/worldobject/incubator.h`, `code/worldobject/incubator.cpp`. **[B:FULL]** code (not blocked; forced global); placed only in Darwinia missions (40 lines) and the dev maps `mp_sandbox*` (3 lines) → effectively [B:LEGACY] content. Spirit-economy consequences in [05](05_economy_and_population.md). [C] census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2171,7 +2171,7 @@ Source: `code/worldobject/incubator.{h,cpp}`. **[B:FULL]** code (not blocked; fo
 
 ### 11.3 CloneLab
 
-Source: `code/worldobject/clonelab.{h,cpp}`. **[B:FULL]** compiled and loadable; appears only in 4 prototype maps under `data/levels/old/` (`mp_firetop`, `mp_kingspass`, `mp_sabrepoint`, `mp_silverisle`, 15 lines) and in no shipped `mp_*` map → Multiwinia prototype content. Not forced global and not asserted global. [C] census.
+Source: `code/worldobject/clonelab.h`, `code/worldobject/clonelab.cpp`. **[B:FULL]** compiled and loadable; appears only in 4 prototype maps under `data/levels/old/` (`mp_firetop`, `mp_kingspass`, `mp_sabrepoint`, `mp_silverisle`, 15 lines) and in no shipped `mp_*` map → Multiwinia prototype content. Not forced global and not asserted global. [C] census.
 
 | Aspect | Specification | Ref |
 |---|---|---|
@@ -2200,11 +2200,11 @@ stateDiagram-v2
 
 ## 12 Darwinia-legacy buildings (blocked)
 
-Every class in this section is compiled into `multiwinia.exe` but is **[B:LEGACY]**: its type is in `Building::BuildingIsBlocked` (§3.12), so level lines naming it are dropped at parse time, and no live Multiwinia code creates it by id (exceptions noted). Specifications are brief but list every field. "Mode usage: none" applies to all. Census sources: `data/levels/map_*`, `mission_*` and `data/levels/old/*`. [C] `code/worldobject/building.cpp:BuildingIsBlocked`, census.
+Every class in this section is compiled into `multiwinia.exe` but is **[B:LEGACY]**: its type is in `Building::BuildingIsBlocked` (§3.12), so level lines naming it are dropped at parse time, and no live Multiwinia code creates it by id (exceptions noted). Specifications are brief but list every field. "Mode usage: none" applies to all. Census sources: the Darwinia `map_*` / `mission_*` files and the prototype maps in `data/levels/old` (all under `data/levels`). [C] `code/worldobject/building.cpp:BuildingIsBlocked`, census.
 
 ### 12.1 ConstructionYard
 
-Level name `Yard`, `code/worldobject/constructionyard.{h,cpp}`; 1 campaign line (`map_yard`).
+Level name `Yard`, `code/worldobject/constructionyard.h`, `code/worldobject/constructionyard.cpp`; 1 campaign line (`map_yard`).
 - Function: tank (Armour) factory. Shape `constructionyard.shp` (12 ports, MarkerPrimitive01–09), rungs `constructionyardrung.shp` (MarkerSpike01–06), primitive `mineprimitive1.shp`.
 - Inputs: primitives via `AddPrimitive()` (max `YARD_NUMPRIMITIVES` 9; from mine carts at a TrackEnd) and power surges via `AddPowerSurge()` (from a PylonEnd).
 - Online: GlobalBuilding online when any port is occupied, ≥ 1 surge and ≥ 1 primitive.
@@ -2214,11 +2214,11 @@ Level name `Yard`, `code/worldobject/constructionyard.{h,cpp}`; 1 campaign line 
 
 ### 12.2 DisplayScreen
 
-`code/worldobject/constructionyard.{h,cpp}`; no level lines anywhere. Cosmetic: `displayscreen.shp` with `DISPLAYSCREEN_NUMRAYS` 3 ray markers projecting light rays onto a slowly rotating ×3-scale `armour.shp` hologram 75 units above the centre. No ownership logic, inputs, outputs, damage or extra fields. [C] `DisplayScreen::RenderAlphas`.
+`code/worldobject/constructionyard.h`, `code/worldobject/constructionyard.cpp`; no level lines anywhere. Cosmetic: `displayscreen.shp` with `DISPLAYSCREEN_NUMRAYS` 3 ray markers projecting light rays onto a slowly rotating ×3-scale `armour.shp` hologram 75 units above the centre. No ownership logic, inputs, outputs, damage or extra fields. [C] `DisplayScreen::RenderAlphas`.
 
 ### 12.3 ReceiverBuilding
 
-Abstract base of the Darwinia spirit-receiver network (`code/worldobject/spiritreceiver.{h,cpp}`; map `map_receiver`).
+Abstract base of the Darwinia spirit-receiver network (`code/worldobject/spiritreceiver.h`, `code/worldobject/spiritreceiver.cpp`; map `map_receiver`).
 - Members: `m_spiritLink` (next building id), `m_spirits : LList<double>` (progress values).
 - Advance: each spirit `progress += 0.8 × dt` (1.25 s per link); at ≥ 1 → `link->TriggerSpirit(0)`; `TriggerSpirit` pushes a new spirit at the list front + sound `TriggerSpirit`; spirit beam drawn between `MarkerSpiritLink`s ([B:D3D] batched rendering and water-reflection skip).
 - Ownership: level; damage: indestructible.
@@ -2248,15 +2248,15 @@ Level name `SpiritReceiver` (49 campaign lines). Shape `spiritreceiver.shp` (5 p
 
 ### 12.9 SpiritStore
 
-Helper container (`code/worldobject/spiritstore.{h,cpp}`), not a Building. `Initialise(initial, max, pos, sx, sy, sz)` sets capacity (`max`, step `max/2`) and pre-fills `initial` team-0 spirits; `AddSpirit` copies a spirit to a synced-random position within ±0.75 × size (`syncsfrand(1.5 × size)`) and sets `StateInStore`, `m_numNearbyEggs = 0`; `RemoveSpirits(n)` removes the first *n*; `Advance` advances each; `Render` draws a translucent `triangleOutline.bmp` box plus the spirits. Only user: Factory (§12.10). [C] `spiritstore.cpp`, `code/worldobject/factory.cpp`.
+Helper container (`code/worldobject/spiritstore.h`, `code/worldobject/spiritstore.cpp`), not a Building. `Initialise(initial, max, pos, sx, sy, sz)` sets capacity (`max`, step `max/2`) and pre-fills `initial` team-0 spirits; `AddSpirit` copies a spirit to a synced-random position within ±0.75 × size (`syncsfrand(1.5 × size)`) and sets `StateInStore`, `m_numNearbyEggs = 0`; `RemoveSpirits(n)` removes the first *n*; `Advance` advances each; `Render` draws a translucent `triangleOutline.bmp` box plus the spirits. Only user: Factory (§12.10). [C] `spiritstore.cpp`, `code/worldobject/factory.cpp`.
 
 ### 12.10 Factory
 
-`code/worldobject/factory.{h,cpp}`; no level lines. Shape `factory.shp`; level field [8] initialCapacity (int, default 10) → embedded `SpiritStore` (capacity 200 max, at `MarkerSpiritStore` + 11 y, half-sizes 5/10/5). `RequestUnit(type, n)`: creation time `n × 0.1` s, one unit per consumed spirit at `pos + (±2.5, 20 ± 2.5, 20)` with velocity `(SFRAND(1), SFRAND(1), 5 + syncsfrand(1))`; then 3 s `StateRecharging`. States `StateUnused → StateCreating → StateRecharging → StateUnused`; `SetTeamId` resets to Unused. `Factory::RequestUnit` has **no caller** in `code/` → dead even in Darwinia. Ownership: level; indestructible. [C] `Factory::*`, grep `RequestUnit(`.
+`code/worldobject/factory.h`, `code/worldobject/factory.cpp`; no level lines. Shape `factory.shp`; level field [8] initialCapacity (int, default 10) → embedded `SpiritStore` (capacity 200 max, at `MarkerSpiritStore` + 11 y, half-sizes 5/10/5). `RequestUnit(type, n)`: creation time `n × 0.1` s, one unit per consumed spirit at `pos + (±2.5, 20 ± 2.5, 20)` with velocity `(SFRAND(1), SFRAND(1), 5 + syncsfrand(1))`; then 3 s `StateRecharging`. States `StateUnused → StateCreating → StateRecharging → StateUnused`; `SetTeamId` resets to Unused. `Factory::RequestUnit` has **no caller** in `code/` → dead even in Darwinia. Ownership: level; indestructible. [C] `Factory::*`, grep `RequestUnit(`.
 
 ### 12.11 BlueprintBuilding
 
-Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobject/blueprintstore.{h,cpp}`; `map_pattern_buffer`: 1 store, 4 consoles, 12 relays). Field [8] buildingLink (int, `%-8d`) — next building in the relay chain. `Initialise` looks up `MarkerBlueprint`; `m_infected` = 100 if team 1 else 0. `Advance`: if `m_infected > 80` → `link->SendBlueprint(segment, true)`; if `< 20` → `SendBlueprint(segment, false)`. Default `SendBlueprint`: store the segment id, `m_infected ± 10/s` clamped [0, 100]. Render: shape + additive `textures/laser.bmp` ribbon (half-width 20) to the link, colour (infected, 0.7 − 0.7·infected, 0), alpha `0.1 + 0.2|sin t|` when both ends agree within 0.01 else `0.5 + 0.5|sin t|`. [C].
+Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobject/blueprintstore.h`, `code/worldobject/blueprintstore.cpp`; `map_pattern_buffer`: 1 store, 4 consoles, 12 relays). Field [8] buildingLink (int, `%-8d`) — next building in the relay chain. `Initialise` looks up `MarkerBlueprint`; `m_infected` = 100 if team 1 else 0. `Advance`: if `m_infected > 80` → `link->SendBlueprint(segment, true)`; if `< 20` → `SendBlueprint(segment, false)`. Default `SendBlueprint`: store the segment id, `m_infected ± 10/s` clamped [0, 100]. Render: shape + additive `textures/laser.bmp` ribbon (half-width 20) to the link, colour (infected, 0.7 − 0.7·infected, 0), alpha `0.1 + 0.2|sin t|` when both ends agree within 0.01 else `0.5 + 0.5|sin t|`. [C].
 
 ### 12.12 BlueprintStore
 
@@ -2272,15 +2272,15 @@ Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobje
 
 ### 12.15 Bridge
 
-`code/worldobject/bridge.{h,cpp}`, subclass of Teleport (§5.2); no level lines anywhere. Created at runtime only by `Engineer::BeginBridge`, which returns unless Engineer research ≥ 5 (maximum 4) → unreachable in every build. Fields: [8] nextBridgeId (int), [9] bridgeType (0 = `BridgeTypeEnd` → `bridgeend.shp`, 1 = `BridgeTypeTower` → `bridgetower.shp`; marker `MarkerSignal`). `BRIDGE_TRANSPORTPERIOD` 0.1 s, `BRIDGE_TRANSPORTSPEED` 50 u/s. `m_status` = 100 while an Engineer operates it (`BeginOperation`/`EndOperation`), else 0; < 0 → removed. Only End-type bridges with an operated, linked next bridge send entities; entities fly signal-to-signal at 50 u/s, hop through Tower bridges via `EnterTeleport`, exit at the final End bridge's entrance; loss of the carrier signal mid-transit → `ChangeHealth(−500)` and a random drop (`SFRAND(10), FRAND(10), SFRAND(10)`). Entry distance 25 (`Entity::EnterTeleports`). Render: 3-px smoothed line between signal markers in team colour, alpha = status/100. [C] `code/worldobject/engineer.cpp:Engineer::BeginBridge`, `bridge.cpp`.
+`code/worldobject/bridge.h`, `code/worldobject/bridge.cpp`, subclass of Teleport (§5.2); no level lines anywhere. Created at runtime only by `Engineer::BeginBridge`, which returns unless Engineer research ≥ 5 (maximum 4) → unreachable in every build. Fields: [8] nextBridgeId (int), [9] bridgeType (0 = `BridgeTypeEnd` → `bridgeend.shp`, 1 = `BridgeTypeTower` → `bridgetower.shp`; marker `MarkerSignal`). `BRIDGE_TRANSPORTPERIOD` 0.1 s, `BRIDGE_TRANSPORTSPEED` 50 u/s. `m_status` = 100 while an Engineer operates it (`BeginOperation`/`EndOperation`), else 0; < 0 → removed. Only End-type bridges with an operated, linked next bridge send entities; entities fly signal-to-signal at 50 u/s, hop through Tower bridges via `EnterTeleport`, exit at the final End bridge's entrance; loss of the carrier signal mid-transit → `ChangeHealth(−500)` and a random drop (`SFRAND(10), FRAND(10), SFRAND(10)`). Entry distance 25 (`Entity::EnterTeleports`). Render: 3-px smoothed line between signal markers in team colour, alpha = status/100. [C] `code/worldobject/engineer.cpp:Engineer::BeginBridge`, `bridge.cpp`.
 
 ### 12.16 Cave
 
-`code/worldobject/cave.{h,cpp}`; no level lines. `cave.shp`, marker `MarkerSpawnPoint`; no extra fields. For a used team: every `syncfrand(0.5)` s spawns one `Entity::TypeVirii` at the spawn marker if fewer than 30 friends within 100. `Damage(d)` destroys it (shape explosion, `m_dead`) only if `d > 80` — but damage is passed as negative numbers everywhere (e.g. `Location::Bang`), so caves are effectively indestructible. [C] `Cave::Advance`, `Cave::Damage`; [I] "never" relies on every caller passing negative values.
+`code/worldobject/cave.h`, `code/worldobject/cave.cpp`; no level lines. `cave.shp`, marker `MarkerSpawnPoint`; no extra fields. For a used team: every `syncfrand(0.5)` s spawns one `Entity::TypeVirii` at the spawn marker if fewer than 30 friends within 100. `Damage(d)` destroys it (shape explosion, `m_dead`) only if `d > 80` — but damage is passed as negative numbers everywhere (e.g. `Location::Bang`), so caves are effectively indestructible. [C] `Cave::Advance`, `Cave::Damage`; [I] "never" relies on every caller passing negative values.
 
 ### 12.17 ChessBase
 
-`code/worldobject/chess.{h,cpp}`; prototype Multiwinia mode (`data/levels/old/mp_chess1.txt`, 2 lines). Fields [8] width, [9] depth (read with `atoi` → integers; `Write` uses the malformed format `"%2.2 %2.2"` with no conversion letter — writer bug). `m_sparePoints = GetGameOption("TotalSize")`; neither `TotalSize` nor `SizeVariance` exists in any game blueprint, so `Multiwinia::GetGameOption` returns −1 and **no pieces ever spawn**. Logic (if it worked): every 1 s spawn a ChessPiece of scale `1 + syncsfrand(variance/100)` clamped [0.1, spare] while spare > 0.3, pushed 10 units at a time away from overlapping pieces (`50·scaleA + 50·scaleB`); an enemy piece whose 35·scale sphere (offset 35·scale behind it) intersects the width × depth zone triggers `HandleSuccess`. Render: team-coloured line loop of the zone 5 above ground. [C] `code/multiwinia.cpp:Multiwinia::GetGameOption`, `chess.cpp`.
+`code/worldobject/chess.h`, `code/worldobject/chess.cpp`; prototype Multiwinia mode (`data/levels/old/mp_chess1.txt`, 2 lines). Fields [8] width, [9] depth (read with `atoi` → integers; `Write` uses the malformed format `"%2.2 %2.2"` with no conversion letter — writer bug). `m_sparePoints = GetGameOption("TotalSize")`; neither `TotalSize` nor `SizeVariance` exists in any game blueprint, so `Multiwinia::GetGameOption` returns −1 and **no pieces ever spawn**. Logic (if it worked): every 1 s spawn a ChessPiece of scale `1 + syncsfrand(variance/100)` clamped [0.1, spare] while spare > 0.3, pushed 10 units at a time away from overlapping pieces (`50·scaleA + 50·scaleB`); an enemy piece whose 35·scale sphere (offset 35·scale behind it) intersects the width × depth zone triggers `HandleSuccess`. Render: team-coloured line loop of the zone 5 above ground. [C] `code/multiwinia.cpp:Multiwinia::GetGameOption`, `chess.cpp`.
 
 ### 12.18 ChessPiece
 
@@ -2288,11 +2288,11 @@ Abstract base of the Darwinia "Pattern Buffer" infection puzzle (`code/worldobje
 
 ### 12.19 FeedingTube
 
-`code/worldobject/feedingtube.{h,cpp}`; no level lines. `feedingtube.shp`, marker `MarkerFocus`; field [8] receiverId (int). Purely visual link: each tick `m_range` = distance between the two focus markers. Render: 4 nested textured tubes (radii 10, 9, 8, 4; alphas 0.4, 0.2, 0.2, 0.5), 20 radial segments, `distance/200` length steps, `laserfence.bmp` (REPLACE) × `radarsignal.bmp` (MODULATE), scrolling, clipped by two planes. Sphere hit uses the shape at 1.5× probe radius. Sound events `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost` (listed, never triggered). [C].
+`code/worldobject/feedingtube.h`, `code/worldobject/feedingtube.cpp`; no level lines. `feedingtube.shp`, marker `MarkerFocus`; field [8] receiverId (int). Purely visual link: each tick `m_range` = distance between the two focus markers. Render: 4 nested textured tubes (radii 10, 9, 8, 4; alphas 0.4, 0.2, 0.2, 0.5), 20 radial segments, `distance/200` length steps, `laserfence.bmp` (REPLACE) × `radarsignal.bmp` (MODULATE), scrolling, clipped by two planes. Sphere hit uses the shape at 1.5× probe radius. Sound events `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost` (listed, never triggered). [C].
 
 ### 12.20 DynamicBase
 
-Abstract base of a generic objective network (`code/worldobject/generichub.{h,cpp}`; design notes in `docs/new building docs.txt`). Fields [8] buildingLink (int), [9] shapeName (token; "none" → debug sphere 40). Sound `TriggerSurge`. [C].
+Abstract base of a generic objective network (`code/worldobject/generichub.h`, `code/worldobject/generichub.cpp`; design notes in `docs/new building docs.txt`). Fields [8] buildingLink (int), [9] shapeName (token; "none" → debug sphere 40). Sound `TriggerSurge`. [C].
 
 ### 12.21 DynamicHub
 
@@ -2304,11 +2304,11 @@ Fields [10] scoreValue, [11] scoreSupplied. Operates when all ports are occupied
 
 ### 12.23 GodDish
 
-`code/worldobject/goddish.{h,cpp}`; `map_temple`, `old/mp_temple` (1 line each). `goddish.shp`; no extra fields. Script-driven (`Script::RunCommand_GodDishActivate`, `RunCommand_GodDishDeactivate`, `RunCommand_GodDishSpawnSpam`, `RunCommand_GodDishSpawnResearch`, `RunCommand_SpamTrigger` in `code/script.cpp`; scripts cannot run in Multiwinia, [30](30_scripting_tutorial_and_cutscenes.md)). `Activate`: all team-0 Darwinians `WatchSpectacle`/`CastShadow`, sound `ConnectToGod`; timer counts up; deactivated timer decays ×(1 − 2·dt) (`DisconnectFromGod`). `SpawnSpam(isResearch)`: creates a `Spam` building 1125 up and 675 forward, falling at 80 u/s. `TriggerSpam`: every Spam → `SpawnInfection()`. Render: additive `cloudyglow.bmp` blobs (50/25/10 by RenderBuildingDetail) and `starburst.bmp` stars (10/5/2), alpha `min(timer × 0.1, 1)`. [C].
+`code/worldobject/goddish.h`, `code/worldobject/goddish.cpp`; `map_temple`, `old/mp_temple` (1 line each). `goddish.shp`; no extra fields. Script-driven (`Script::RunCommand_GodDishActivate`, `RunCommand_GodDishDeactivate`, `RunCommand_GodDishSpawnSpam`, `RunCommand_GodDishSpawnResearch`, `RunCommand_SpamTrigger` in `code/script.cpp`; scripts cannot run in Multiwinia, [30](30_scripting_tutorial_and_cutscenes.md)). `Activate`: all team-0 Darwinians `WatchSpectacle`/`CastShadow`, sound `ConnectToGod`; timer counts up; deactivated timer decays ×(1 − 2·dt) (`DisconnectFromGod`). `SpawnSpam(isResearch)`: creates a `Spam` building 1125 up and 675 forward, falling at 80 u/s. `TriggerSpam`: every Spam → `SpawnInfection()`. Render: additive `cloudyglow.bmp` blobs (50/25/10 by RenderBuildingDetail) and `starburst.bmp` stars (10/5/2), alpha `min(timer × 0.1, 1)`. [C].
 
 ### 12.24 Spam
 
-`code/worldobject/spam.{h,cpp}`; created only by GodDish (3 campaign lines). [C] `Spam::*`.
+`code/worldobject/spam.h`, `code/worldobject/spam.cpp`; created only by GodDish (3 campaign lines). [C] `Spam::*`.
 - `SPAM_RELOADTIME`: `SpamReloadTime()` = 60 s − 30 s × difficulty/10 between emissions of 20 `SpamInfection` entities (team = Spam team, sound `Attack`); the live Multiwinia "Infection" crate swarm is specified in [04](04_crates_powerups_and_weapons.md).
 - `SPAM_DAMAGE`: 100 health; explosion per 10-point band; at 0: the matching GlobalBuilding goes online, sound `Explode`, removed (`Destroy(i)` → base).
 - Movement: hovers 20 above ground; `SendFromHeaven` drops it (inactive); slides with friction `dt × 0.3`; pushes off other Spam.
@@ -2319,15 +2319,15 @@ Fields [10] scoreValue, [11] scoreSupplied. Operates when all ports are occupied
 
 ### 12.25 Library
 
-`code/worldobject/library.{h,cpp}`; no level lines. `library.shp`; no extra fields. Each tick, for every research type the player owns that has not been shown, spawns a `ResearchItem` (in-library) at marker `MarkerResearch%02d` (1-based). [C].
+`code/worldobject/library.h`, `code/worldobject/library.cpp`; no level lines. `library.shp`; no extra fields. Each tick, for every research type the player owns that has not been shown, spawns a `ResearchItem` (in-library) at marker `MarkerResearch%02d` (1-based). [C].
 
 ### 12.26 ResearchItem
 
-`code/worldobject/researchitem.{h,cpp}`; 8 campaign lines. `researchitem.shp`, markers `MarkerGrab1/2`; fields [8] researchType (token, `GlobalResearch::GetType` name), [9] level (int, optional, default 1). Hovers 20 above ground; reprogram progress `m_reprogrammed` 100 → 0 at 3/s while an Engineer works it (`Reprogram`); at 0 → shatter, `AddResearch`, set level, sound `AquireResearch`, task-manager message; removed when the research is already owned at ≥ level. The constructor orients it with unsynced `frand`; `Render` rotates `m_front/m_up` every frame (render-path mutation of state that `Advance` uses). Non-colliding except rays. Visuals: blue (0.1, 0.2, 0.8) `cloudyglow` blobs, starbursts and a 1050-unit "control line to heaven" (`laser.bmp`) fading with progress. [C].
+`code/worldobject/researchitem.h`, `code/worldobject/researchitem.cpp`; 8 campaign lines. `researchitem.shp`, markers `MarkerGrab1/2`; fields [8] researchType (token, `GlobalResearch::GetType` name), [9] level (int, optional, default 1). Hovers 20 above ground; reprogram progress `m_reprogrammed` 100 → 0 at 3/s while an Engineer works it (`Reprogram`); at 0 → shatter, `AddResearch`, set level, sound `AquireResearch`, task-manager message; removed when the research is already owned at ≥ level. The constructor orients it with unsynced `frand`; `Render` rotates `m_front/m_up` every frame (render-path mutation of state that `Advance` uses). Non-colliding except rays. Visuals: blue (0.1, 0.2, 0.8) `cloudyglow` blobs, starbursts and a 1050-unit "control line to heaven" (`laser.bmp`) fading with progress. [C].
 
 ### 12.27 MineBuilding
 
-Abstract base of the Darwinia mine/yard conveyor (`code/worldobject/mine.{h,cpp}`; `map_mine`, `map_yard`: 111 TrackLinks, 3 junctions, 1 start, 2 ends, 4 mines, 1 refinery). Field [8] trackLink (int). Shared static shapes `wheel.shp`, `minecart.shp` (markers `MarkerTrack1/2`, `MarkerContents1–3`), `minepolygon1.shp`, `mineprimitive1.shp`. `m_carts : LList<MineCart*>`; `Initialise` seeds carts at progress `0.2 + syncfrand(1.5)` cumulative steps < 1. Speed `RefinerySpeed()` (global, recomputed every 0.1 s): fraction of occupied ports of the first Refinery or Yard found, else 1.0 if the global Refinery on location "mine" is online, else 0; then `× |sin(2·gameTime)| × 0.5` progress/s (`numFuelGenerators` is never incremented → its branch is dead). Carts advance by speed·dt; overflow passes to the link via `TriggerCart`. Sound `CogTurn` when speed rises above 0.1. Render: two `laser.bmp` rails between track markers; carts hang 40 below the rail midpoint. [C].
+Abstract base of the Darwinia mine/yard conveyor (`code/worldobject/mine.h`, `code/worldobject/mine.cpp`; `map_mine`, `map_yard`: 111 TrackLinks, 3 junctions, 1 start, 2 ends, 4 mines, 1 refinery). Field [8] trackLink (int). Shared static shapes `wheel.shp`, `minecart.shp` (markers `MarkerTrack1/2`, `MarkerContents1–3`), `minepolygon1.shp`, `mineprimitive1.shp`. `m_carts : LList<MineCart*>`; `Initialise` seeds carts at progress `0.2 + syncfrand(1.5)` cumulative steps < 1. Speed `RefinerySpeed()` (global, recomputed every 0.1 s): fraction of occupied ports of the first Refinery or Yard found, else 1.0 if the global Refinery on location "mine" is online, else 0; then `× |sin(2·gameTime)| × 0.5` progress/s (`numFuelGenerators` is never incremented → its branch is dead). Carts advance by speed·dt; overflow passes to the link via `TriggerCart`. Sound `CogTurn` when speed rises above 0.1. Render: two `laser.bmp` rails between track markers; carts hang 40 below the rail midpoint. [C].
 
 ### 12.28 MineCart
 
@@ -2359,11 +2359,11 @@ Shape name spelled `trackLink.shp`. Fields [8] trackLink, [9] reqBuildingId; onl
 
 ### 12.35 SafeArea
 
-`code/worldobject/safearea.{h,cpp}`; 4 campaign lines. Objective circle. Fields [8] size (float, default 50), [9] entitiesRequired (int), [10] entityTypeRequired (int entity type id, default Darwinian). Every 2.0 s counts live friendly entities of that type within `size`; team 1 → online when count ≤ required; other teams → online when count ≥ required. Objective counter `objective_currentcount : N`. Editor-only circle render. [C].
+`code/worldobject/safearea.h`, `code/worldobject/safearea.cpp`; 4 campaign lines. Objective circle. Fields [8] size (float, default 50), [9] entitiesRequired (int), [10] entityTypeRequired (int entity type id, default Darwinian). Every 2.0 s counts live friendly entities of that type within `size`; team 1 → online when count ≤ required; other teams → online when count ≥ required. Objective counter `objective_currentcount : N`. Editor-only circle render. [C].
 
 ### 12.36 ScriptTrigger
 
-`code/worldobject/scripttrigger.{h,cpp}`; 25 campaign lines. Invisible trigger that runs a script file (`Script::RunScript`) or (only with `USE_SEPULVEDA_HELP_TUTORIAL`, never defined → [B:DEAD]) walks through numbered Sepulveda phrases.
+`code/worldobject/scripttrigger.h`, `code/worldobject/scripttrigger.cpp`; 25 campaign lines. Invisible trigger that runs a script file (`Script::RunScript`) or (only with `USE_SEPULVEDA_HELP_TUTORIAL`, never defined → [B:DEAD]) walks through numbered Sepulveda phrases.
 
 | # | Field | Type | Default | Meaning |
 |---|---|---|---|---|
@@ -2376,7 +2376,7 @@ Write format `%-6d %-6.2f %s %s`. Behaviour: `never` does nothing; otherwise, wh
 
 ### 12.37 FenceSwitch
 
-`code/worldobject/switch.{h,cpp}`; no level line in any file (census: zero, including all `mp_*` maps). Forced global by `CreateBuilding(int)`; `ParseBuildings` asserts non-global FenceSwitches. Shape `fenceswitch.shp` with 4 ports (`MarkerPort01–04`) and `MarkerConnectionLocation`. [C] census, `building.cpp`, `level_file.cpp`.
+`code/worldobject/switch.h`, `code/worldobject/switch.cpp`; no level line in any file (census: zero, including all `mp_*` maps). Forced global by `CreateBuilding(int)`; `ParseBuildings` asserts non-global FenceSwitches. Shape `fenceswitch.shp` with 4 ports (`MarkerPort01–04`) and `MarkerConnectionLocation`. [C] census, `building.cpp`, `level_file.cpp`.
 
 | # | Field | Type | Default | Meaning |
 |---|---|---|---|---|
@@ -2391,7 +2391,7 @@ Behaviour [C] `FenceSwitch::Advance/Switch`: 20 s start-up delay (`m_timer` 20, 
 
 ### 12.38 UpgradePort
 
-`code/worldobject/upgrade_port.{h,cpp}`; no level lines anywhere. Shape `upgrade_port.shp`; no behaviour beyond `Building`, no extra fields. [C].
+`code/worldobject/upgrade_port.h`, `code/worldobject/upgrade_port.cpp`; no level lines anywhere. Shape `upgrade_port.shp`; no behaviour beyond `Building`, no extra fields. [C].
 
 ### 12.39 PrimaryUpgradePort
 

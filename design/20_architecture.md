@@ -1682,7 +1682,250 @@ These constants were collected by P01 in the same source files (`code/location.c
 
 ## 13 Architecture for the new game
 
-<!-- S13 -->
+Brief per-layer notes for a Windows / C++23 / DirectX 12 / multiplayer successor; the keep/adapt/replace/drop decisions and their rationale are owned by [40](40_carry_forward_assessment.md).
+
+| Layer | Original | Note for the new game |
+|---|---|---|
+| L6 Application | god object `g_app` with raw pointers, flag-driven loops, `exit(0)` shutdown, leaks on in-match quit | explicit composition root owning services by `std::unique_ptr` in a documented construction/destruction order; an explicit application state machine (Boot → FrontEnd → Lobby → Loading → Match → Teardown) replacing the flag soup of §4.3; orderly shutdown that joins every thread |
+| Per-match state | `Location` plus ~40 class statics and file statics reset by hand in `Location::Init` (with gaps: §5.3, §10.7 item 6) | one `MatchWorld` object that owns *all* per-match simulation state (ids, counters, timers, AI tables, RNG) so a match is created and destroyed atomically; nothing simulation-relevant in statics |
+| Simulation clock | fixed 10 Hz real-time ticks, dt = 0.1 × speed, float accumulators, speed blending inside the timer, pause as speed 0 | keep deterministic fixed ticks but count **integer ticks**; decide the tick rate explicitly (10 Hz is coarse for a modern RTS feel; 20–30 Hz is typical); express speed effects as deterministic tick scheduling or as a fixed-point dt; make pause a sequenced command with an immediate effect; reset every timer field per match |
+| Sim stepping | network object steps the simulation (V1); each tick spread over 10 slices with a 30 %-of-backlog heuristic | a pure `Simulation::Step(tickInputs)` with no dependency on networking, UI or rendering; run a whole tick per step on a job system (the original slices existed only to spread single-threaded cost); feed it from an explicit input-delay/jitter buffer ([22](22_determinism_and_networking.md)) |
+| Presentation | renders live sim objects with extrapolation `pos + vel × t` (snaps on direction changes) | keep previous and current tick state (or a render snapshot) and **interpolate** with a fixed one-tick display delay; renderers read immutable snapshots, never mutate sim state (V5–V7) |
+| Sim → UI/audio coupling | direct calls from sim into HUD, camera and sound (V2, V3) | sim emits typed events into a per-tick queue consumed by presentation/audio on their own threads |
+| Threading | 10 game threads, but all game work on one thread; GL work marshalled to the main thread through blocking `Job`s; affinity masks hard-coded; per-thread x87 control word | task/job system sized to the hardware (no affinities); DX12 multi-threaded command recording and copy-queue resource uploads remove the GL-job hand-off; dedicated network I/O thread(s) with lock-free queues; audio on the API's own callback thread (XAudio2/WASAPI); x64 SSE2 makes the x87 precision issue disappear, but the sim still needs `/fp:precise`-class discipline or fixed-point ([22](22_determinism_and_networking.md)) |
+| Loading | one loader thread + blocking main-thread loading screen, no progress | asynchronous streaming with progress reporting; network keep-alive and host ticking during loads (keep this behaviour) |
+| Network layer | relay-lockstep `Server` inside the host process, metaserver helpers on ad-hoc threads | keep the authoritative command sequencer concept; isolate transport, session/lobby and lockstep layers ([22](22_determinism_and_networking.md)) |
+| Foundation | SystemIV containers with mutating read cursors, non-re-entrant static buffers, two `Vector3` classes | standard library containers, value types, one math library; no static result buffers |
+| Platform | Win32 message pump inside input `Advance`, GL vsync left to the driver, QPC clock | Win32 + DXGI flip-model swap chain with explicit present interval (and tearing support for VRR); one monotonic clock with an injectable fake clock for capture/replay ([31](31_platform_build_and_tools.md)) |
+
+## Open questions and unknowns
+
+| # | Item | Status | What would resolve it |
+|---|---|---|---|
+| 20-U1 | Real frame rate of the shipped GL build: the code sets no swap interval, so vsync depends on driver settings; the host's frame rate bounds the server tick rate (§10.2, §10.5) | [U] | measure a retail build on reference hardware with driver vsync on/off |
+| 20-U2 | Behaviour when the host renders below 10 fps: one server tick per frame ⇒ the whole session slows; clients cannot run ahead | [I] (from one-tick-per-call) | timing test with an artificially slowed host |
+| 20-U3 | Pacing results of §10.4/§10.9 assume zero network latency and perfectly periodic letters | [I] (model) | instrumented run logging slices per frame on host and remote clients |
+| 20-U4 | `Multiwinia::ResetLocation` (multi-round Assault) rebuilds the world after `AdvanceAndCatchUp` returns, so peers may have run different numbers of slices after the round-end flag; also no `ResetUniqueIdSeed` | [I] design-critical (if the mode were enabled) | confirm with [01](01_game_modes.md) that no UI sets multiple rounds; otherwise a two-client test |
+| 20-U5 | `SpawnPoint::s_numSpawnPoints[6]` (team 5) is never reset between matches (§5.3); impact depends on whether team 5 (Futurewinian) can own spawn points | [C] gap / [I] impact | [05](05_economy_and_population.md)/X4 level data: does any map give team 5 spawn points or let it capture them |
+| 20-U6 | `GameTimer` residue across matches can drive the game speed to −∞ and NaN (§10.7 item 6); reachability requires leaving a match during a crate hold and a quick restart | [I] design-critical for the port (reset everything) | reproduce in the original build: leave mid-hold, restart within the hold, wait > 110 s before readying |
+| 20-U7 | `m_fillsRequested` race between the waveOut callback thread and the main thread (H5) | [I] | audio stress test / code inspection of `TopupBuffer` buffer accounting ([27](27_audio_engine.md)) |
+| 20-U8 | Server listener running during `~Server` (H7) | [I] | review of `NetSocketListener::StopListening` blocking semantics in `contrib/systemiv/lib/netlib/net_socket_listener.cpp` |
+| 20-U9 | OpenMP in `Release\|Win32`: no `OpenMP` attribute → Visual Studio default (off) | [I] (default), [C] attribute absent | build log of the baseline configuration (`/openmp` absent) |
+| 20-U10 | `WorkQueue::RunThread` calling-convention mismatch (H1) is harmless in practice | [I] | disassembly of the shipped binary or a debug run |
+| 20-U11 | Whether DirectSound/winmm internal threads touch game memory beyond `WaveOutProc` | [I] | API documentation review; no game callbacks other than `WaveOutProc` are registered [C] |
+| 20-U12 | `g_fileSystem` (SystemIV `FileSystem`) is never instantiated | [I] | grep for `new FileSystem` across compiled sources ([31](31_platform_build_and_tools.md)) |
+| 20-U13 | `Teleport::m_teleportMap` has no per-match clear | [I] | read `code/worldobject/teleport.cpp` fully ([03](03_buildings_and_world_objects.md)) |
+| 20-U14 | Texture lookups via `Resource::GetTextureWithFlags` are unlocked outside loading screens; safe only if no worker touches `Resource` then (thumbnail preload runs under a loading screen) | [I] | audit every `Resource` call reachable from the SndL thread after boot |
+
+Resolved in this document (previously open in drafts or `_meta_unknowns`): P01 U1 (frame throttling, §10.5), P01 U7 (who ends a match, §8.2), `_meta_unknowns` U2 (`GetNetworkTime` vs `GetGameTime`, §10.1), U5 and "slice cadence" (once per tick, §10.3), "real-time vs game-time cadence of `Tick`" (§10.7), "semantics of `g_predictionTime`" (§10.6), "is `g_app->m_location` assigned before `Location::Init`" (§8.4), the thread count (§11.2), the sound preloader's existence on PC (§11.2), the thread on which the boot archives are parsed (§6.1), the OpenMP attribute (§10.3).
+
+## Docs-vs-code discrepancies
+
+| Document | Claim | Code reality | Ref |
+|---|---|---|---|
+| `docs/Network.txt` | "SERVER: Ticks at 25 FPS"; server loop sleeps until `lastFrameTimeStamp + 1/25` | server ticks every 0.1 s (10 Hz) of real time, at most once per main-loop call, never sleeps | `code/network/server.cpp:Server::AdvanceIfNecessary` |
+| `docs/Network.txt` | "CLIENT: Runs heavy weight physics at 25 fps … as a separate thread (at least conceptually)" | 10 ticks per second, each split into 10 slices, executed on the main thread interleaved with rendering | `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters` |
+| `docs/NetworkThreads.txt` | dedicated Server Send Thread and Client Send Thread that `Suspend()` when the queue is empty | sends happen synchronously on the main thread (`AdvanceSender` in `ClientToServer::Advance` and `Server::Advance`); only receiving is threaded | `code/network/clienttoserver.cpp:ClientToServer::AdvanceSender`, `code/network/server.cpp:Server::AdvanceSender` |
+| `docs/NetworkThreads.txt` | main thread runs "client heavy weight advance" when `time >= nextClientTimeSlice` and "light weight advance … if there is time" | heavy-weight work is metered by the 30 %-of-backlog rule every frame; the "light-weight advance" is the render-time extrapolation with `g_predictionTime` | `code/network/clienttoserver.cpp:GetNumSlicesToAdvance`, `code/gametimer.cpp:GetPredictionTime` |
+| `docs/NetworkThreads.txt` | light-weight advance extrapolates from the last received velocity | no state is received; rendering extrapolates the locally simulated state | §10.6 |
+| `code/gametimer.h` (comment) | `GameTimer` "Replaces g_gameTime, GetNetworkTime, SERVER_ADVANCE_PERIOD etc" | `g_gameTime` still exists as a separate wall-clock variable; `GetNetworkTime`/`SERVER_ADVANCE_PERIOD` became macros over `GameTimer` | `code/main.cpp`, `code/gametimer.h` |
+| `code/globals.h` (comment) | `MINIMUM_RENDER_PERIOD` "Render at least this frequently" | unused | grep |
+| `code/app.cpp` (comment) | main-thread affinity `0x02\|0x08\|0x20\|0x80` "Even processors" | zero-based CPUs 1, 3, 5, 7 | `code/app.cpp:App::App` |
+| `code/app.cpp`, `code/loading_screen.cpp` (comments) | worker affinity `0x01\|0x04\|0x10\|0x40` "Processor Number % 3 == 2" / "Odd processors" | zero-based CPUs 0, 2, 4, 6 | `SetWorkingThreadProcessor` (both files) |
+| `code/network/clienttoserver.cpp` (comment) | catch-up time limit "checked every 500 iterations" | checked every iteration | `ClientToServer::AdvanceAndCatchUp` |
+| `code/lib/window_manager_win32.cpp` (comment) | secondary GL context created "for loading thread" | never made current on any thread; workers marshal GL work to the main thread | `WindowManagerWin32::EnableOpenGL` ([24](24_rendering.md)) |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" (`APP_NAME`, window title, `DARWINIA_GAMETYPE "multiwinia"`, profile folder `…\Introversion\Multiwinia\`) | brand/name | `code/lib/universal_include.h`, `code/app.cpp:App::GetProfileDirectory`, `code/renderer.cpp` | `<GameName>` |
+| "Darwinia" (`DARWINIA_VERSION`, `Darwinia*` achievement enum prefix, `darwinia_gl.exe`, `darwinia_vistaedition` string) | brand/name | `code/main.cpp:AppMain`, `code/app.h`, `targets/vs2005/Darwinia.vcproj` | `<GameName>` |
+| "Introversion" (company folder, `http://store.introversion.co.uk`, metaserver host `metaserver-mwdev.introversion.co.uk`, `http://www.multiwinia.co.uk/`) | brand/endpoint | `code/app.cpp:App::GetBuyNowURL`, `App::InitMetaServer`, `code/main.cpp` | `<Studio>`, own endpoints |
+| crash-report module id `0B9432AF`; Vista Game Explorer GUID | identifiers | `code/main.cpp:AppMain`, `DoVistaChecks` | own identifiers |
+| archive names `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; data files `game.txt`, `game_unlockall.txt`, `gestures.txt`, `origin`, `authkey.dev` | packaging | `code/app.cpp` | own packaging names |
+| fonts `speccy`, `editor`, `square` | art | `code/app.cpp:App::SetLanguage` | licensed/open fonts |
+| loading-screen art `textures/ivlogo.bmp` (publisher logo), spinner `sprites/darwinian.bmp`; rating text `esrb_warning` | art/text | `code/loading_screen.cpp`, `code/lib/resource.cpp` | own splash and spinner |
+| sound events `EnterLocation`, `ExitLocation`, `EnterGlobalWorld` (Ambience), `LobbyAmbience`, `CountdownZeroTick`, `MenuSelect` (MultiwiniaInterface) and their samples | audio | `code/main.cpp`, `code/multiwinia.cpp`, `code/interface/mainmenus.cpp` | own audio events |
+| achievement names Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master Of Multiwinia, Explorer, Carnage, Blitz Master, Wrong Game, Genocide | names | `code/app.h` | own achievement names |
+| special profile names `AccessAllAreas`, `AttractMode` | text | `code/app.cpp:App::LoadProfile`, `SetProfileName` | drop |
+| team/unit names surfacing in this document's constants: "Darwinian", "Futurewinian", "Virii" | names | `code/location.cpp`, `code/team.cpp` | "Drone", "Neutral Hostile", "Swarm" |
+| `autopatch.exe` (Introversion patcher) | tool | `code/UI/update_page_buttons.h:RunAutoPatcherButton` | own updater |
+
+## Source map
+
+| File | Role for this document |
+|---|---|
+| `code/app.h` | `App` class: members, enums, methods |
+| `code/app.cpp` | `App` construction phases, `Initialise`, `~App`, `StartNetwork`, `ShutdownCurrentGame`, `GamePaused`, `CheckSounds`, `LoadSounds`, delayed jobs, affinity |
+| `code/main.cpp` | `AppMain`, `RunTheGame`, `Initialise`, `Finalise`, all main loops, `UpdateAdvanceTime`, `HandleCommonConditions`, `SendTeamControlsToNetwork`, `EnterLocation`, `DoEnterLocation`, globals `g_gameTime`, `g_advanceTime`, `g_lastProcessedSequenceId`, `g_sliceNum` |
+| `code/main.h` | extern declarations of the main-loop globals |
+| `code/globals.h` | `NUM_TEAMS`, `NUM_SLICES_PER_FRAME`, `IAMALIVE_PERIOD`, `MINIMUM_RENDER_PERIOD`, `GRAVITY` |
+| `code/gametimer.h` | `GameTimer` declaration and the `SERVER_ADVANCE_PERIOD` / `g_predictionTime` / `GetNetworkTime` macros |
+| `code/gametimer.cpp` | `GameTimer` implementation, `g_gameTimer` |
+| `code/loading_screen.h` | `LoadingScreen` declaration |
+| `code/loading_screen.cpp` | loading loop, Load work queue, GL job queue, 60 Hz cap, network pump under `TryLock` |
+| `code/lib/work_queue.h` | `WorkQueue` |
+| `code/lib/work_queue.cpp` | worker thread loop, per-thread FPU precision |
+| `code/lib/runnable.h` | `Runnable`, `Function`, `Method`, `Method1`, `Job`, `RunnableJob`, `DelayedJob` |
+| `code/lib/runnable.cpp` | `Job::Process/Wait`, `DelayedJob::ReadyToRun` |
+| `code/lib/safegl.h` | `glNewList`/`glEndList` redirection |
+| `code/lib/safegl.cpp` | `g_openGLMutex`, non-main-thread display-list warning |
+| `code/lib/hi_res_time.h` | clock API |
+| `code/lib/hi_res_time.cpp` | QPC clock, fake time |
+| `code/lib/window_manager.h` | `WindowManager` interface, `g_windowManager` |
+| `code/lib/window_manager.cpp` | `g_windowManager` definition |
+| `code/lib/window_manager_win32.cpp` | `WinMain`, GL window, `Flip`, ignored `_waitVRT` |
+| `code/lib/window_manager_directx.cpp` | [B:D3D] `WinMain` and window manager |
+| `code/lib/universal_include.h` | build target macros, `GRACE_TIME`, GL headers |
+| `code/lib/resource.cpp` | `Resource` locking, async GL producers |
+| `code/lib/resource.h` | `Resource::m_mutex` |
+| `code/lib/bitmap.cpp` | `ConvertToTextureAsync`, `WritePng` |
+| `code/lib/slice_darray.h` | `SliceDArray` declaration |
+| `code/lib/slice_darray.cpp` | slice bounds, `GetLastUpdated` |
+| `code/lib/preferences.cpp` | `g_prefsManager` |
+| `code/lib/system_info.cpp` | `g_systemInfo` |
+| `code/lib/targetcursor.cpp` | `g_target` |
+| `code/lib/text_renderer.cpp` | font globals |
+| `code/lib/ogl_extensions.cpp` | GL extension pointers |
+| `code/lib/opengl_directx.cpp` | [B:D3D] device globals, mip-map worker, deform/reflection creation |
+| `code/lib/FixedPipeline.cpp` | [B:D3D] `g_fixedPipeline` |
+| `code/lib/persisting_debug_render.cpp` | `g_debugRenderer` |
+| `code/lib/rgb_colour.cpp` | `g_colourBlack/White` |
+| `code/lib/vector3.cpp` | `g_upVector`, `g_zeroVector` |
+| `code/lib/matrix34.cpp` | `g_identityMatrix34`, scratch buffer |
+| `code/lib/matrix33.cpp` | scratch buffer |
+| `code/lib/opengl_trace.cpp` | `g_tracingOpenGL` |
+| `code/lib/sphere_renderer.cpp` | `Sphere::s_regenerateDisplayList` |
+| `code/lib/debug_logging.cpp` | `g_log` (not compiled) |
+| `code/lib/debug_fog_logging.cpp` | `g_fogLogging`, `g_fogEnabled` (not compiled) |
+| `code/lib/exception_handler.cpp` | `RecordExceptionInfo` (SEH in `AppMain`) |
+| `code/lib/avi_generator.cpp` | AVI capture [B:DEBUG] |
+| `code/lib/input/input.cpp` | `g_inputManager`, `Advance`, `PollForEvents` |
+| `code/lib/input/inputdriver_win32.cpp` | message pump, Alt+F4 quit, key globals |
+| `code/lib/input/inputdriver_xinput.cpp` | XInput driver (delay-loaded) |
+| `code/lib/input/eventhandler.cpp` | `g_eventHandler` |
+| `code/lib/input/win32_eventhandler.cpp` | `WM_CLOSE` quit, focus globals |
+| `code/lib/input/inputfiltermanager.cpp` | `g_inputFilterManager` (never created) |
+| `code/lib/input/xbox_eventhandler.cpp` | excluded from build |
+| `code/user_input.cpp` | `EclInitialise`, `UserInput::Advance` |
+| `code/location.cpp` | `Location::Init` resets, `Location::Advance` slice dispatcher, render prediction, constants of §12.2 |
+| `code/location_input.cpp` | `LocationInput` (V5), constants |
+| `code/team.cpp` | `Team`, `TeamControls`, constants |
+| `code/unit.cpp` | `Unit`, `Unit::s_offsets`, constants |
+| `code/renderer.cpp` | `Renderer::Initialise`/`Render`/`Flip`, `m_fps`, paused banner |
+| `code/landscape_renderer.cpp` | VBO job hand-off |
+| `code/game_menu.cpp` | `GameMenu::CreateMenu/DestroyMenu`, game mode reset |
+| `code/taskmanager_interface.cpp` | `CreateTaskManager` |
+| `code/taskmanager_interface_multiwinia.cpp` | V6 |
+| `code/gamecursor.cpp` | V6 assignment bug |
+| `code/multiwinia.cpp` | `Reset`, `ResetLocation`, speed requests, `s_numMultiwiniaZones` |
+| `code/explosion.cpp` | `g_explosionManager` |
+| `code/deform.cpp` | `g_deformEffect` |
+| `code/water_reflection.cpp` | `g_waterReflectionEffect` |
+| `code/water.cpp` | `Water::Advance`, `UpdateWaterThread` (never started) |
+| `code/entity_grid.cpp` | `g_counter` |
+| `code/global_world.cpp` | `GlobalWorld`, `s_nextUniqueBuildingId` |
+| `code/camera.cpp` | `Camera::s_neighbours` |
+| `code/particle_system.cpp` | `Particle::m_types`, sliced advance |
+| `code/multiwiniahelp.cpp` | `MultiwiniaHelp::s_neighbours` |
+| `code/tutorial_demo2.cpp` | `Demo2Tutorial::s_playerBusyTimer` [B:DEAD] |
+| `code/sound/soundsystem.cpp` | `Initialise`, `Advance` 20 Hz accumulator, trigger gate, Mac preload queue |
+| `code/sound/sound_library_2d_win32.cpp` | waveOut callback thread, `TopupBuffer` |
+| `code/sound/sound_library_2d.cpp` | `g_soundLibrary2d` |
+| `code/sound/sound_library_3d.cpp` | `g_soundLibrary3d` |
+| `code/sound/sound_library_3d_dsound.cpp` | DirectSound statics |
+| `code/sound/sample_cache.cpp` | `g_cachedSampleManager` |
+| `code/sound/sample_cache.h` | `CachedSampleManager::m_lock` |
+| `code/sound/sound_instance.cpp` | `SoundInstanceId::m_nextUniqueId` |
+| `code/sound/sound_stream_decoder.cpp` | Ogg Vorbis consumer |
+| `code/network/clienttoserver.h` | inbox/outbox mutexes |
+| `code/network/clienttoserver.cpp` | listener thread, `AdvanceAndCatchUp`, `ProcessAllServerLetters`, `GetNumSlicesToAdvance`, `KeepAlive`, `ClientLeave`, START_GAME and PAUSE handlers |
+| `code/network/server.h` | server mutexes |
+| `code/network/server.cpp` | `Initialise`, listener thread, `AdvanceIfNecessary`, `Advertise`, `~Server` |
+| `code/network/networkvalue.cpp` | `NetworkGameOptionInt::m_dataEmpty` |
+| `code/interface/mainmenus.cpp` | `LocationWindow`, `ExitLevelButton`, `ConfirmExitButton` |
+| `code/interface/prefs_screen_window.cpp` | `EclInitialise` on resolution change |
+| `code/interface/profilewindow.cpp` | `Profiler::Start` |
+| `code/interface/save_on_quit_window.cpp` | quit request [B:LEGACY] |
+| `code/interface/drop_down_menu.cpp` | `DropDownWindow::s_window` |
+| `code/interface/mods_window.cpp` | `NewModWindow::s_modName` |
+| `code/interface/userprofile_window.cpp` | `NewUserProfileWindow::s_profileName` |
+| `code/UI/GameMenuWindow.cpp` | server start from the lobby, join, lobby exit teardown, thumbnail preload, testbed globals |
+| `code/UI/FinishMultiwiniaButton.h` | lobby exit → `ShutdownCurrentGame` |
+| `code/UI/QuitButton.h` | quit request |
+| `code/UI/QuitAuthKeyButton.h` | quit request |
+| `code/UI/update_page_buttons.h` | `RunAutoPatcherButton` raw `exit(0)` |
+| `code/loaders/credits_loader.cpp` | `g_creditsLoader` |
+| `code/loaders/matrix_loader.cpp` | `MatrixLoader::s_highlights` |
+| `code/worldobject/worldobject.cpp` | `WorldObjectId::s_nextUniqueId`, `ResetUniqueIdSeed` |
+| `code/worldobject/entity.cpp` | `Entity::s_entityPopulation`, `EntityBlueprint` tables, `Entity::s_neighbours` |
+| `code/worldobject/building.cpp` | `Building` shape caches, `s_neighbours` |
+| `code/worldobject/spawnpoint.cpp` | spawn-point statics (reset gap) |
+| `code/worldobject/crate.cpp` | `Crate` statics, speed crates |
+| `code/worldobject/meteor.cpp` | meteor slow-motion |
+| `code/worldobject/tree.cpp` | V7 |
+| `code/worldobject/insertion_squad.cpp` | V4, `HistoricWayPoint::s_lastId` |
+| `code/worldobject/switch.cpp` | V5 |
+| `code/worldobject/virii.cpp` | `Virii::s_viriiPopulation` |
+| `code/worldobject/ai.cpp` | `AI::s_ai` |
+| `code/worldobject/aiobjective.cpp` | `AIObjective::s_objectivesInitialised` |
+| `code/worldobject/armour.cpp` | `Armour::s_armourObjectives` |
+| `code/worldobject/centipede.cpp` | shape caches |
+| `code/worldobject/controltower.cpp` | shape cache |
+| `code/worldobject/dustball.cpp` | `DustBall` statics |
+| `code/worldobject/engineer.cpp` | `Engineer` statics |
+| `code/worldobject/mine.cpp` | `MineBuilding` statics |
+| `code/worldobject/multiwiniazone.cpp` | `s_blitzkriegBaseZone` |
+| `code/worldobject/pulsebomb.cpp` | `PulseBomb` statics |
+| `code/worldobject/restrictionzone.cpp` | `s_restrictionZones` |
+| `code/worldobject/rocket.cpp` | `FuelBuilding::s_fuelPipe` |
+| `code/worldobject/souldestroyer.cpp` | `SoulDestroyer` statics |
+| `code/worldobject/teleport.cpp` | `Teleport::m_teleportMap` |
+| `code/worldobject/tentacle.cpp` | shape caches |
+| `code/worldobject/weapons.cpp` | `PulseWave::s_pulseWave` |
+| `contrib/systemiv/lib/netlib/net_mutex.h` | `NetMutex`, `NetLockMutex`, `NetEvent`, `NetSemaphore` |
+| `contrib/systemiv/lib/netlib/net_mutex_win32.cpp` | Win32 implementations |
+| `contrib/systemiv/lib/netlib/net_thread.h` | thread API |
+| `contrib/systemiv/lib/netlib/net_thread_win32.cpp` | `NetStartThread` |
+| `contrib/systemiv/lib/netlib/net_lib_win32.h` | `NetThreadFunc`, `NetSleep`, `NetThreadId` |
+| `contrib/systemiv/lib/netlib/net_socket_listener.cpp` | blocking listener loop used by every listener thread |
+| `contrib/systemiv/lib/metaserver/metaserver.cpp` | metaserver listener, WAN/LAN registration threads, mutexes |
+| `contrib/systemiv/lib/metaserver/authentication.cpp` | authentication thread |
+| `contrib/systemiv/lib/metaserver/matchmaker.cpp` | identity threads |
+| `contrib/systemiv/lib/metaserver/metaserver_defines.h` | ports and periods |
+| `contrib/systemiv/lib/metaserver/steamauth_client.cpp` | Steam thread (not compiled) |
+| `contrib/systemiv/lib/metaserver/steamauth_server.cpp` | Steam thread (not compiled) |
+| `contrib/systemiv/lib/math/random_number.cpp` | RNG state |
+| `contrib/systemiv/lib/profiler.cpp` | `g_profiler` |
+| `contrib/systemiv/lib/debug_utils.cpp` | `s_appDebugOutMutex` |
+| `contrib/systemiv/lib/tosser/llist.cpp` | mutating read cursor |
+| `contrib/systemiv/lib/filesys/filesys_utils.cpp` | static path buffers |
+| `contrib/systemiv/lib/filesys/file_system.cpp` | `g_fileSystem` |
+| `contrib/eclipse/eclipse.cpp` | window framework entry points |
+| `targets/vs2005/Darwinia.sln` | sub-projects and linked libraries |
+| `targets/vs2005/Darwinia.vcproj` | build membership, OpenMP attribute |
+| `targets/vs2005/Common.vsprops` | include order, linked system libraries |
+| `targets/vs2005/OpenGL.vsprops` | GL libraries |
+| `targets/vs2005/Direct3D.vsprops` | D3D libraries and define |
+| `docs/Network.txt` | discrepancy evidence |
+| `docs/NetworkThreads.txt` | discrepancy evidence |
+
+Generated evidence (not part of the source tree): `_work/scripts/S_20_module_graph.py` (§3.2), `_work/scripts/S_20_gametimer_sim.py` (§10.7), `_work/scripts/S_20_slice_pacing_sim.py` (§10.4, §10.9).
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] `TESTBED_ENABLED`**: `TESTBED_MODE {TESTBED_ON, TESTBED_OFF}`, `TESTBED_TYPE {TESTBED_CLIENT, TESTBED_SERVER}`, `TESTBED_STATE {TESTBED_MAINMENU, TESTBED_HOST_GAME, TESTBED_JOIN_GAME, TESTBED_PICK_SERVER, TESTBED_WAIT_FOR_CLIENT_ID, TESTBED_SELECT_GAME, TESTBED_SELECT_MAP, TESTBED_SETGAMEOPTIONSDELAY, TESTBED_SETGAMEOPTIONS, TESTBED_WAITFORGAMEOPTIONS, TESTBED_WAIT_FOR_MAP, TESTBED_WAIT_FOR_CLIENTS, TESTBED_PLAY, TESTBED_IDLE, TESTBED_GAME_OVER_DELAY, TESTBED_MAKE_CLIENT_SPECTATOR, TESTBED_SEQUENCEID_DELAY, TESTBED_BUILD_GAME_ENTRIES}`; 24 `App` fields and their accessors; `TestBedLogWrite` (CSV `TestBedLog.txt`: Date, NumSyncErrors, GameMode, GameMap, GameIndex, ClientRandomSeed, LastGameIndex, GameTimer, SyncSeqId); faster server schedule in `Server::AdvanceIfNecessary`; testbed globals in `code/UI/GameMenuWindow.cpp`; auto-return to menu in `LocationInput::Advance`; `GRACE_TIME` 20 s [C] `code/app.h`, `code/app.cpp`, `code/network/server.cpp`, `code/location_input.cpp`.
+- **[B:DEAD] `USE_SEPULVEDA_HELP_TUTORIAL`**: `m_helpSystem`, `m_tutorial`, `m_sepulveda`, `m_demoEndSequence` members and their per-frame `Advance` calls in `LocationGameLoop`/`GlobalWorldGameLoop`.
+- **[B:EDITOR] `LOCATION_EDITOR`**: `LocationEditorLoop` (input/camera/editor advance + render until Esc; re-registers an edited `.mwm` with `GameMenu::RemoveMap/AddMap`; tears down the location without networking) and `LocationEditor` creation in `EnterLocation`.
+- **[B:LEGACY]** `GlobalWorldGameLoop` body and `GlobalWorldEditorLoop` (returns immediately); Darwinia campaign plumbing (`GameModePrologue/Campaign`, `IsSinglePlayer()` branches, `LoadProfile/SaveProfile/ResetLevel`, `game.txt`, pref `StartMap`, `StartSinglePlayerServer` from `DoEnterLocation`, `TransferSpirits`, `ModeSphereWorld` camera at height 50); `LoadCampaign`/`LoadPrologue` on the Load thread; `CreditsLoader`.
+- **[B:DEAD] `USE_LOADERS`**: `RunBootloader` (pref `BootLoader` "firsttime" → `StartSequence`, else `Loader::CreateLoader`).
+- **[B:DEAD] `TARGET_OS_VISTA`**: `DoVistaChecks`, rich saved-game header, Media Center relaunch, `g_saveFile`, `g_mediaCenter`, thumbnail screenshot members.
+- **[B:DEAD]** `BENCHMARK_AND_FTP` (`BenchMark` Begin/End/Upload around `LocationGameLoop`), `ATTRACTMODE_ENABLED`, `TEST_HARNESS_ENABLED` (`TestHarnessLoop`), `USE_DARWINIA_MOD_SYSTEM`, `DEMOBUILD`/`DEMO2` (open website and `exit` after a location), `CHRISTMAS_DEMO`, `GIVE_ALL_LEVELS`, `FOG_LOGGING`/`FOG_PREFERENCE` (`SetPreferenceOverrides` body), `TRACK_MEMORY_LEAKS`.
+- **[B:DEBUG]** `SOUND_EDITOR` (`EffectProcessor`), `AVI_GENERATOR` (`m_aviGenerator`, fake-time capture), `TRACK_SYNC_RAND` (per-slice sync-rand logging in `ProcessAllServerLetters`), `TARGET_DEBUG` `ToDouble` helper in `code/main.cpp`.
+- **[B:D3D]** `WindowManagerDirectX` `WinMain`, D3D mip-map worker thread, `g_fixedPipeline`, device globals, deform/water-reflection effect objects.
+- **Not compiled / never started**: Mac sound preloader thread and `Finalise` queue draining; Steam authentication threads; `Water::UpdateWaterThread`; gesture-recording thread (`code/gesture_demo_win32.cpp`, `code/gesture_demo_sdl.cpp`); SDL event handler/drivers and `SoundLibrary2dSDL`; Linux/Mac `NetStartThread`/mutex implementations.
+- **Inert in FULL**: `#pragma omp parallel for` in `Location::Advance`; `GameTimer::DebugRender`; the time-based branch of `GetNumSlicesToAdvance`; `Server::SkipToTime`; `App::DoStartServer`, `App::DoCheckForPDLC` (no definitions); `m_steamInited`; `TARGET_FRAME_RATE_INCREMENT`; `MINIMUM_RENDER_PERIOD`; `g_inputFilterManager`; the `continue` after `HandleCommonConditions()`.
 
 ## Open questions and unknowns
 

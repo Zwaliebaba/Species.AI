@@ -10,17 +10,29 @@ unsync = re.compile(r'(?<![\w])(frand|sfrand|AppRandom|rand)\s*\(')
 rows = []
 for rel in sys.argv[2:]:
     path = os.path.join(root, rel)
-    lines = open(path, encoding='latin-1').read().split('\n')
+    raw = open(path, encoding='latin-1').read()
+    # blank out comments (keep newlines so line numbers survive); strings are respected
+    out = []; k = 0; n = len(raw)
+    while k < n:
+        c = raw[k]
+        if c == '"' or c == "'":
+            q = c; out.append(c); k += 1
+            while k < n and raw[k] != q:
+                if raw[k] == '\\' and k + 1 < n:
+                    out.append(raw[k:k+2]); k += 2; continue
+                out.append(raw[k]); k += 1
+            if k < n: out.append(raw[k]); k += 1
+        elif raw.startswith('//', k):
+            while k < n and raw[k] != '\n': k += 1
+        elif raw.startswith('/*', k):
+            e = raw.find('*/', k + 2); e = n if e < 0 else e + 2
+            out.append(''.join('\n' if ch == '\n' else ' ' for ch in raw[k:e])); k = e
+        else:
+            out.append(c); k += 1
+    lines = ''.join(out).split('\n')
     cur = '?'
-    in_block_comment = False
     for i, l in enumerate(lines):
         s = l.strip()
-        if '/*' in s and '*/' not in s:
-            in_block_comment = True
-        if in_block_comment:
-            if '*/' in s:
-                in_block_comment = False
-            continue
         m = fnre.match(l)
         if m and not l.rstrip().endswith(';'):
             cur = m.group(1)

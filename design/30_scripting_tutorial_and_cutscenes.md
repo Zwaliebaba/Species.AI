@@ -48,24 +48,24 @@ Multiwinia inherited Darwinia's whole cinematic stack — a line-oriented cutsce
 
 | # | Component | Files | Body compiled in [B:FULL]? | Reachable by a player in [B:FULL]? | Tag | Evidence |
 |---|---|---|---|---|---|---|
-| R1 | Script interpreter `Script` | `code/script.{h,cpp}` | Yes, except bodies of `Say`, `ShutUp`, `Highlight`, `ClearHighlights`, `DemoGesture`, `SetCutsceneMode`, the busy/speech wait checks and `ShowDemoEndSequence`, which are hollowed out by `USE_SEPULVEDA_HELP_TUTORIAL` | Ticked every frame (`Script::Advance` in the location loop), but **no Multiwinia path ever opens a script** (§2.5) and `scripts/*` is excluded from the PC data archive | **[B:FULL] engine / [B:LEGACY] content** | [C] `code/main.cpp` location loop; `code/script.cpp:Script::RunScript`; `tools/multiwinia_exclusions.txt` L36 |
+| R1 | Script interpreter `Script` | `code/script.h`, `code/script.cpp` | Yes, except bodies of `Say`, `ShutUp`, `Highlight`, `ClearHighlights`, `DemoGesture`, `SetCutsceneMode`, the busy/speech wait checks and `ShowDemoEndSequence`, which are hollowed out by `USE_SEPULVEDA_HELP_TUTORIAL` | Ticked every frame (`Script::Advance` in the location loop), but **no Multiwinia path ever opens a script** (§2.5) and `scripts/*` is excluded from the PC data archive | **[B:FULL] engine / [B:LEGACY] content** | [C] `code/main.cpp` location loop; `code/script.cpp:Script::RunScript`; `tools/multiwinia_exclusions.txt` L36 |
 | R2 | 42 cutscene scripts | `data/scripts/*.txt` | data | No (37 only via Darwinia triggers T1–T5, 5 via dead attract mode or nothing) | [B:LEGACY] ×37, [B:DEAD] ×5 | §2.6 |
-| R3 | Script triggers T1–T6 | `code/worldobject/scripttrigger.cpp`, `code/worldobject/switch.cpp`, `code/global_world.cpp`, `code/taskmanager_interface_*.cpp`, `code/worldobject/rocket.cpp`, `code/attract.cpp` | Yes | No (blocked buildings, no global events, no cutscene objectives, multiplayer guard, attract mode never constructed) | [B:LEGACY] (T1–T5), [B:DEAD] (T6) | §2.5 |
-| R4 | Multiwinia tutorials 1 and 2 (help-tab director) | `code/multiwiniahelp.{h,cpp}` (`AttachTutorialTo3d`, `AttachTutorial2To3d`, `RunTutorialHelp`, `RenderTab3d`), `code/UI/GameMenuWindow.cpp`, `code/UI/TutorialButton.h` | Yes (`INCLUDE_TUTORIAL` is defined for `TARGET_PC_FULLGAME`) | **Yes** — Main menu → Tutorials | **[B:FULL]** | [C] `code/lib/universal_include.h` FULLGAME block L97; `code/multiwiniahelp.cpp:MultiwiniaHelp::Advance` |
+| R3 | Script triggers T1–T6 | `code/worldobject/scripttrigger.cpp`, `code/worldobject/switch.cpp`, `code/global_world.cpp`, `code/taskmanager_interface_multiwinia.cpp`, `code/taskmanager_interface_icons.cpp`, `code/taskmanager_interface_gestures.cpp`, `code/worldobject/rocket.cpp`, `code/attract.cpp` | Yes | No (blocked buildings, no global events, no cutscene objectives, multiplayer guard, attract mode never constructed) | [B:LEGACY] (T1–T5), [B:DEAD] (T6) | §2.5 |
+| R4 | Multiwinia tutorials 1 and 2 (help-tab director) | `code/multiwiniahelp.h`, `code/multiwiniahelp.cpp` (`AttachTutorialTo3d`, `AttachTutorial2To3d`, `RunTutorialHelp`, `RenderTab3d`), `code/UI/GameMenuWindow.cpp`, `code/UI/TutorialButton.h` | Yes (`INCLUDE_TUTORIAL` is defined for `TARGET_PC_FULLGAME`) | **Yes** — Main menu → Tutorials | **[B:FULL]** | [C] `code/lib/universal_include.h` FULLGAME block L97; `code/multiwiniahelp.cpp:MultiwiniaHelp::Advance` |
 | R5 | Scripted camera: mounts | `code/camera.cpp:Camera::SetTarget(char const*)`, `code/level_file.cpp:LevelFile::ParseCameraMounts` | Yes | **Yes** — every Multiwinia level start cuts to mount `start`, then to `player<N>` | **[B:FULL]** | [C] `code/main.cpp:DoEnterLocation`, location loop |
 | R6 | Scripted camera: animations, MoveToTarget, BuildingFocus, sphere-world scripted/intro/outro/focus modes | `code/camera.cpp` | Yes | No — every shipped `CameraAnimations` block is empty and only scripts/editor/intro request these modes | [B:LEGACY] | §4 |
-| R7 | First-time intro `StartSequence` | `code/startsequence.{h,cpp}` | Yes | No — constructed only in `RunBootloader`, which is `#ifdef USE_LOADERS` (off) | [B:LEGACY] (compiled, never constructed) | [C] `code/main.cpp:RunBootloader` |
+| R7 | First-time intro `StartSequence` | `code/startsequence.h`, `code/startsequence.cpp` | Yes | No — constructed only in `RunBootloader`, which is `#ifdef USE_LOADERS` (off) | [B:LEGACY] (compiled, never constructed) | [C] `code/main.cpp:RunBootloader` |
 | R8 | "Darwin logo" splash (`ShowDarwinLogo`) | `code/script.cpp`, `code/renderer.cpp:Renderer::Render` | Yes | No (script-only) | [B:LEGACY] | §5.2 |
-| R9 | `DemoEndSequence` | `code/demoendsequence.{h,cpp}` | No (whole file under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/demoendsequence.cpp` L2 |
-| R10 | Dr Sepulveda narrator | `code/sepulveda.{h,cpp}`, `code/sepulveda_strings.cpp` | No (whole files under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/sepulveda.cpp` L3/L1494; `code/app.h` member gated |
-| R11 | Darwinia demo tutorials | `code/tutorial.{h,cpp}`, `code/tutorial_demo1.cpp`, `code/tutorial_demo2.cpp` | No (whole files under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/tutorial.h` L5–L88 |
-| R12 | Darwinia context help `HelpSystem` | `code/helpsystem.{h,cpp}` | No | No | [B:DEAD] (owned by [09](09_meta_systems.md)) | [C] `code/helpsystem.cpp` |
-| R13 | Attract mode (idle fly-through) | `code/attract.{h,cpp}` | Yes (no file gate) | No — object constructed and advanced only under `ATTRACTMODE_ENABLED` (defined nowhere) | [B:DEAD] (feature) | [C] `code/main.cpp` L583–588, L752–754 |
-| R14 | Gesture demos (recorded mouse paths replayed by the narrator) | `code/gesture_demo.{h,cpp}`, `data/gesture_demos/*` | No | No | [B:DEAD] | [C] `code/gesture_demo.cpp`; `tools/multiwinia_exclusions.txt` L34 |
+| R9 | `DemoEndSequence` | `code/demoendsequence.h`, `code/demoendsequence.cpp` | No (whole file under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/demoendsequence.cpp` L2 |
+| R10 | Dr Sepulveda narrator | `code/sepulveda.h`, `code/sepulveda.cpp`, `code/sepulveda_strings.cpp` | No (whole files under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/sepulveda.cpp` L3/L1494; `code/app.h` member gated |
+| R11 | Darwinia demo tutorials | `code/tutorial.h`, `code/tutorial.cpp`, `code/tutorial_demo1.cpp`, `code/tutorial_demo2.cpp` | No (whole files under `USE_SEPULVEDA_HELP_TUTORIAL`) | No | [B:DEAD] | [C] `code/tutorial.h` L5–L88 |
+| R12 | Darwinia context help `HelpSystem` | `code/helpsystem.h`, `code/helpsystem.cpp` | No | No | [B:DEAD] (owned by [09](09_meta_systems.md)) | [C] `code/helpsystem.cpp` |
+| R13 | Attract mode (idle fly-through) | `code/attract.h`, `code/attract.cpp` | Yes (no file gate) | No — object constructed and advanced only under `ATTRACTMODE_ENABLED` (defined nowhere) | [B:DEAD] (feature) | [C] `code/main.cpp` L583–588, L752–754 |
+| R14 | Gesture demos (recorded mouse paths replayed by the narrator) | `code/gesture_demo.h`, `code/gesture_demo.cpp`, `data/gesture_demos/*` | No | No | [B:DEAD] | [C] `code/gesture_demo.cpp`; `tools/multiwinia_exclusions.txt` L34 |
 | R15 | Network command-history record/replay (`RecordDemo` preference) | `code/main.cpp:UpdateAdvanceTime`, `code/app.cpp:App::ShutdownCurrentGame`, `code/network/server.cpp:Server::SaveHistory`/`LoadHistory` | Yes | Hidden preference only (not in `data/default_preferences.txt`, no UI) | [B:FULL] (developer feature) | §7 |
 | R16 | Late-join replay of the lockstep stream from sequence 0 | `code/network/clienttoserver.cpp`, `code/network/server.cpp` | Yes | Yes (implicit in joining) | [B:FULL] (owned by [22](22_determinism_and_networking.md)) | §7.3 |
 | R17 | AVI capture with fake time (`GrabberWindow`, `AVIGenerator`) | `code/interface/grabber_window.cpp`, `code/lib/avi_generator.cpp` | Only under `AVI_GENERATOR` (`TARGET_DEBUG`) | Debug menu only | [B:DEBUG] | [C] `code/lib/universal_include.h` L125 |
-| R18 | Benchmark telemetry recorder + FTP upload | `code/benchmark.{h,cpp}` | No (`BENCHMARK_AND_FTP` commented out) | No | [B:DEAD] (owned by [32](32_debug_test_and_performance.md)) | §7.4 |
+| R18 | Benchmark telemetry recorder + FTP upload | `code/benchmark.h`, `code/benchmark.cpp` | No (`BENCHMARK_AND_FTP` commented out) | No | [B:DEAD] (owned by [32](32_debug_test_and_performance.md)) | §7.4 |
 
 ```mermaid
 flowchart TD
@@ -120,7 +120,7 @@ Design consequences:
 ### 2.2 Lexical and syntactic grammar
 
 Location and loading [C] `code/script.cpp:Script::RunScript`:
-- File `data/scripts/<name>` opened with `g_app->m_resource->GetTextReader("scripts/" + name)` (archive or loose file).
+- File `<name>` in `data/scripts/` opened with `g_app->m_resource->GetTextReader("scripts/" + name)` (archive or loose file).
 - `RunScript(name)` only takes the `.txt` branch when `strstr(name, ".txt")` is non-NULL. A name **without** `.txt` is the "phrase-dump" form: push language phrases `<name>_1`, `<name>_2`, … (until the first missing id) into the narrator queue — compiled only under `USE_SEPULVEDA_HELP_TUTORIAL`, so in FULL a non-`.txt` name is silently ignored. [C]
 - Demo gate: when `!g_app->IsFullVersion()` and the name starts with `launchpad_purpose` (17-character `strnicmp`), `RunScript` returns without running. [C] [B:DEMO runtime gate on legacy content].
 
@@ -258,14 +258,14 @@ Consequences (all [C] from the code above):
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> Loaded: "RunScript(name.txt) opens reader"
-    Loaded --> Loaded: "next frame: ReadLine + execute one line"
-    Loaded --> Waiting: "line arms a wait (Wait, WaitCam, WaitFade, WaitRocket, EnterLocation)"
-    Waiting --> Loaded: "all armed conditions satisfied, flags cleared"
-    Waiting --> Loaded: "SkipCutscene clears timer, camera, rocket, busy waits"
-    Loaded --> Idle: "end of file (PermitEscape cleared)"
-    Waiting --> Idle: "SkipCutscene and PermitEscape: abort, stop Music, camera reset"
-    Loaded --> Idle: "SkipCutscene and PermitEscape"
+    Idle --> Loaded : RunScript with a .txt name opens the reader
+    Loaded --> Loaded : next frame, ReadLine and execute one line
+    Loaded --> Waiting : line arms a wait - Wait, WaitCam, WaitFade, WaitRocket, EnterLocation
+    Waiting --> Loaded : all armed conditions satisfied, flags cleared
+    Waiting --> Loaded : SkipCutscene clears timer, camera, rocket and busy waits
+    Loaded --> Idle : end of file, PermitEscape cleared
+    Waiting --> Idle : SkipCutscene with PermitEscape - abort, stop Music, camera reset
+    Loaded --> Idle : SkipCutscene with PermitEscape
 ```
 
 ### 2.5 Start paths (triggers)
@@ -274,10 +274,10 @@ Every call site of `Script::RunScript` [C] (grep of `code/`):
 
 | # | Trigger | Call site | Script source | Reachable in MW FULL? | Evidence |
 |---|---|---|---|---|---|
-| T1 | `ScriptTrigger` building (one-shot volume trigger placed in a level) | `code/worldobject/scripttrigger.cpp:ScriptTrigger::Trigger` | building field `m_scriptFilename` | No — `TypeScriptTrigger` is in `Building::BuildingIsBlocked`, so `CreateBuilding(char*)` returns NULL for it in FULL **and** DEBUG; no `mp_*` map contains one | [C] `code/worldobject/building.cpp:Building::CreateBuilding`, `Building::BuildingIsBlocked`; grep `data/levels/mp_*.txt` |
+| T1 | `ScriptTrigger` building (one-shot volume trigger placed in a level) | `code/worldobject/scripttrigger.cpp:ScriptTrigger::Trigger` | building field `m_scriptFilename` | No — `TypeScriptTrigger` is in `Building::BuildingIsBlocked`, so `CreateBuilding(char*)` returns NULL for it in FULL **and** DEBUG; no `mp_*` map contains one | [C] `code/worldobject/building.cpp:Building::CreateBuilding`, `Building::BuildingIsBlocked`; grep the `mp_*` maps in `data/levels/` |
 | T2 | `FenceSwitch` toggled, `m_script` containing `.txt` | `code/worldobject/switch.cpp` (L227–229; a second call site at L415–418 is commented out) | per-building `m_script` | No — `TypeFenceSwitch` blocked | [C] same |
 | T3 | Global-world event action `RunScript <file>` | `code/global_world.cpp:GlobalEventAction::Execute` (L361–363) | `data/game.txt`, `data/game_unlockall.txt`, `data/game_demo2.txt`, `data/purity/game.txt` lines `Action RunScript …` | No — Multiwinia creates a bare `new GlobalWorld` at start-up (`// bool profileLoaded = LoadProfile();` is commented out), so no `game.txt` events are loaded; only the debug Campaign/Prologue entries load a profile | [C] `code/app.cpp:App::App` (L452–453) |
-| T4 | Player clicks an objective in the task manager whose `GlobalEventCondition::m_cutScene` is set (third column of a `PrimaryObjectives` line) | `code/taskmanager_interface_multiwinia.cpp` (L929), `code/taskmanager_interface_icons.cpp` (L1415), `code/taskmanager_interface_gestures.cpp` (L771) | level `PrimaryObjectives` block | No — of 57 `mp_*.txt` maps, 45 contain only `NeverTrue`, 2 (`mp_sandbox`, `mp_sandbox_all`) contain two `BuildingOnline :sandbox,2` lines, 10 have no objectives block; none has a cutscene column | [C] census of `data/levels/mp_*.txt` |
+| T4 | Player clicks an objective in the task manager whose `GlobalEventCondition::m_cutScene` is set (third column of a `PrimaryObjectives` line) | `code/taskmanager_interface_multiwinia.cpp` (L929), `code/taskmanager_interface_icons.cpp` (L1415), `code/taskmanager_interface_gestures.cpp` (L771) | level `PrimaryObjectives` block | No — of 57 `mp_*.txt` maps, 45 contain only `NeverTrue`, 2 (`mp_sandbox`, `mp_sandbox_all`) contain two `BuildingOnline :sandbox,2` lines, 10 have no objectives block; none has a cutscene column | [C] census of the `mp_*` maps in `data/levels/` |
 | T5 | EscapeRocket ends `StateIgnition` (countdown ≤ 0) in **single-player** with `m_spawnCompleted` → `launchpad_victory.txt` | `code/worldobject/rocket.cpp` (L1196–1198) | hard-coded | No — the branch is the `else` of `if (g_app->Multiplayer())`; Multiwinia is always "multiplayer" | [C] `code/worldobject/rocket.cpp` (`EscapeRocket` ignition advance) |
 | T6 | Attract mode start/stop → `attractmode.txt`, `endattract.txt` | `code/attract.cpp:AttractMode::StartAttractMode` (L45), `AttractMode::EndAttractMode` (L61) | hard-coded | No — `AttractMode` is only constructed and advanced under `#ifdef ATTRACTMODE_ENABLED` (never defined); its start binding is commented out too | [C] `code/main.cpp` L583–588, L752–754; `data/input/input_preferences.txt` L280–287 |
 
@@ -343,7 +343,7 @@ Resolved: P19 tagged `launchpad_purpose.txt` [B:LEGACY] but the orphan `gamestar
 | `yard_primary3.txt` | 8/5 | CamBuildingFocus×1, CamReset×1, Say×2, WaitSay×1 | 2: `yard_safearea_1`..`yard_safearea_2` | 0 / 0 | T4 objective cutscene `data/levels/mission_yard_enable.txt:L71` | none | [B:LEGACY] |
 
 Notes on the register:
-- `ScriptTrigger` entries whose script name has no `.txt` (`launchpad_tutorial_defend`, `launchpad_finalintro`, `launchpad_dgupgrade`, `launchpad_reprogram`, `launchpad_reprogram2` in `data/levels/mission_launchpad.txt`; `pixelmines_yardport`, `pixelmines_refinery` in `data/levels/mission_mine_*.txt`) and `Action RunScript` entries without `.txt` in `data/game*.txt` (`gardenfinished`, `containment_finished`, `yard_available`, `yard_progress`, `yard_progressarmour`, `prebiosphere`, `biosphere_reddead`, `biosphere_end`, `gameover`) use the phrase-dump form of `RunScript` — dead twice over in FULL. [C] P19 census; `data/game.txt` L53–151.
+- `ScriptTrigger` entries whose script name has no `.txt` (`launchpad_tutorial_defend`, `launchpad_finalintro`, `launchpad_dgupgrade`, `launchpad_reprogram`, `launchpad_reprogram2` in `data/levels/mission_launchpad.txt`; `pixelmines_yardport`, `pixelmines_refinery` in `data/levels/mission_mine_demo.txt`, `data/levels/mission_mine_enable.txt`) and `Action RunScript` entries without `.txt` in `data/game*.txt` (`gardenfinished`, `containment_finished`, `yard_available`, `yard_progress`, `yard_progressarmour`, `prebiosphere`, `biosphere_reddead`, `biosphere_end`, `gameover`) use the phrase-dump form of `RunScript` — dead twice over in FULL. [C] P19 census; `data/game.txt` L53–151.
 - Music events used by scripts: `cutscene1`…`cutscene5`, `endsequence`, `Demo2Intro`, `Demo2Mid`, all defined in the `OTHER Music` block of `data/sounds.txt` (`Cutscene1`–`Cutscene5`, `EndSequence`, `Demo2Intro`, `Demo2Mid`; matching is case-insensitive). The narrator sounds `Appear`/`Disappear`/`TextAppear` are in `OTHER Sepulveda`. [C] `data/sounds.txt` (L2758–2790, L2951–3141); `code/sound/soundsystem.cpp:SoundSystem::TriggerOtherEvent`. Music in Multiwinia is therefore only reachable through scripts and loaders — see [10](10_audio_design.md) / [27](27_audio_engine.md).
 - No shipped script uses `CamAnim`, `RunCredits`, `PurityControl`, `DestroyBuilding`, `ActivateTrunkPort`, `ActivateTrunkPortFull`, `SetCutsceneMode`. [C] census.
 
@@ -408,19 +408,19 @@ sequenceDiagram
     participant M as GameMenuWindow
     participant S as Local server and client
     participant H as MultiwiniaHelp
-    P->>M: "click Tutorial 1 or 2 (TutorialButton::MouseUp)"
-    Note over M: "ignored if button inactive or a quick start is pending"
-    M->>M: "m_singlePlayer = m_quickStart = true, m_lockMenu = true"
-    M->>M: "g_app.m_multiwiniaTutorial = true, m_multiwiniaTutorialType = 1 or 2"
-    M->>S: "UpdateMainPage: StartMultiPlayerServer (local)"
-    M->>M: "server exists and not m_startingTutorial: SetupTutorial or SetupTutorial2"
-    Note over M: "KOTH, Easy AI, map id, default params, colour 0, fade out"
-    M->>S: "local team id assigned: RequestTeam(CPU) x (numPlayers - 1), RequestStartGame"
-    S->>H: "match runs; every frame Advance calls AttachTutorialTo3d or AttachTutorial2To3d"
-    H->>P: "instruction tabs (after grace period)"
-    S->>M: "match ends normally (time limit or score)"
-    M->>M: "GameMenu::CreateMenu: page = PageTutorials, m_multiwiniaTutorial = false"
-    M->>H: "SetupTutorialPage: m_currentTutorialHelp = -1"
+    P->>M: click Tutorial 1 or 2 in TutorialButton MouseUp
+    Note over M: ignored if the button is inactive or a quick start is pending
+    M->>M: set m_singlePlayer, m_quickStart and m_lockMenu
+    M->>M: set m_multiwiniaTutorial and m_multiwiniaTutorialType 1 or 2
+    M->>S: UpdateMainPage starts the local StartMultiPlayerServer
+    M->>M: server exists and not m_startingTutorial, run SetupTutorial or SetupTutorial2
+    Note over M: KOTH, Easy AI, map id, default params, colour 0, fade out
+    M->>S: local team id assigned, RequestTeam CPU numPlayers minus 1 times, RequestStartGame
+    S->>H: match runs, every frame Advance calls AttachTutorialTo3d or AttachTutorial2To3d
+    H->>P: instruction tabs after the grace period
+    S->>M: match ends normally by time limit or score
+    M->>M: GameMenu CreateMenu sets page PageTutorials and clears m_multiwiniaTutorial
+    M->>H: SetupTutorialPage sets m_currentTutorialHelp to -1
 ```
 
 - There is **no "tutorial complete" event** in either tutorial. Tutorial 1 ends when the KOTH match ends by its 5-minute time limit or score; Tutorial 2's director stops 20 s after its End tab and a normal 3-player KOTH continues (time limit active again from that moment). [C] `code/game_menu.cpp`; `AttachTutorial2To3d`.
@@ -841,7 +841,7 @@ camera_anims  := "CameraAnimations_StartDefinition" EOL
 ```
 Writer formats: mounts `\t%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f` (front and up keep only 2 decimals), animations `\t%s`, nodes `\t\t%-8s %-15s %.2f`, terminator `\t\tEnd`. `LevelFile::SaveMapFile` (the Multiwinia map writer) writes `CameraMounts` but **not** `CameraAnimations` (`//WriteCameraAnims(_out);`), so an editor round-trip of a map drops its animations; `SaveMissionFile` writes both. [C] `code/level_file.cpp:LevelFile::SaveMapFile`.
 
-Census [C] (`OUT/_work/drafts/X1a_level_survey` data and a re-count for this document over `data/levels/mp_*.txt`): mounts `player0` 51 files, `player1` 51, `player2` 31, `player3` 13, `start` 7; every `CameraAnimations` block in all `data/levels/*.txt` (including the Darwinia `map_*`/`mission_*` files) is empty; no script uses `CamAnim`. Six `mp_*` maps define no player mounts (`mp_assault_3p_3`, `mp_assault_stress`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_3P`, `mp_tankbattle_4P`). [C] P10 census.
+Census [C] (`OUT/_work/drafts/X1a_level_survey` data and a re-count for this document over the `mp_*` maps in `data/levels/`): mounts `player0` 51 files, `player1` 51, `player2` 31, `player3` 13, `start` 7; every `CameraAnimations` block in all `data/levels/*.txt` (including the Darwinia `map_*`/`mission_*` files) is empty; no script uses `CamAnim`. Six `mp_*` maps define no player mounts (`mp_assault_3p_3`, `mp_assault_stress`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_3P`, `mp_tankbattle_4P`). [C] P10 census.
 
 ### 4.2 Live use in Multiwinia: start-of-match mounts [B:FULL]
 
@@ -864,16 +864,16 @@ Census [C] (`OUT/_work/drafts/X1a_level_survey` data and a re-count for this doc
 ```mermaid
 stateDiagram-v2
     [*] --> Idle
-    Idle --> NodeMove: "PlayAnimation, node 0 is Move: save pose and mode, MoveToTarget(d0)"
-    Idle --> NodeCut: "PlayAnimation, node 0 is Cut: save pose and mode, DoNothing"
-    NodeMove --> NodeMove: "node time elapsed, next node Move"
-    NodeMove --> NodeCut: "node time elapsed, next node Cut"
-    NodeCut --> NodeMove: "node time elapsed: CutToTarget, next node Move"
-    NodeCut --> NodeCut: "node time elapsed: CutToTarget, next node Cut"
-    NodeMove --> Idle: "last node elapsed: restore previous mode"
-    NodeCut --> Idle: "last node elapsed: CutToTarget, restore previous mode"
-    NodeMove --> Idle: "StopAnimation"
-    NodeCut --> Idle: "StopAnimation"
+    Idle --> NodeMove : PlayAnimation with node 0 Move - save pose and mode, MoveToTarget for d0
+    Idle --> NodeCut : PlayAnimation with node 0 Cut - save pose and mode, DoNothing
+    NodeMove --> NodeMove : node time elapsed, next node Move
+    NodeMove --> NodeCut : node time elapsed, next node Cut
+    NodeCut --> NodeMove : node time elapsed - CutToTarget, next node Move
+    NodeCut --> NodeCut : node time elapsed - CutToTarget, next node Cut
+    NodeMove --> Idle : last node elapsed - restore previous mode
+    NodeCut --> Idle : last node elapsed - CutToTarget, restore previous mode
+    NodeMove --> Idle : StopAnimation
+    NodeCut --> Idle : StopAnimation
 ```
 
 ### 4.4 Interpolation and scripted camera modes
@@ -1003,7 +1003,7 @@ Behaviour as written [C] `code/demoendsequence.cpp:DemoEndSequence::DemoEndSeque
 
 ### 6.1 Build gating
 
-The whole of `code/sepulveda.{h,cpp}` and `code/sepulveda_strings.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` (defined nowhere); `g_app->m_sepulveda` exists and is constructed only under that macro (`code/app.cpp` L458–460, `code/app.h` member gated), and every live call site is wrapped too (`code/script.cpp`, `code/main.cpp`, `code/taskmanager_interface_multiwinia.cpp`, `code/renderer.cpp` L662–665). Even if compiled, `Say()` returns immediately when `g_app->Multiplayer()`. [C] `code/sepulveda.cpp:Sepulveda::Say`. It is documented in full as the reference design for a narrator/advisor.
+The whole of `code/sepulveda.h`, `code/sepulveda.cpp` and `code/sepulveda_strings.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` (defined nowhere); `g_app->m_sepulveda` exists and is constructed only under that macro (`code/app.cpp` L458–460, `code/app.h` member gated), and every live call site is wrapped too (`code/script.cpp`, `code/main.cpp`, `code/taskmanager_interface_multiwinia.cpp`, `code/renderer.cpp` L662–665). Even if compiled, `Say()` returns immediately when `g_app->Multiplayer()`. [C] `code/sepulveda.cpp:Sepulveda::Say`. It is documented in full as the reference design for a narrator/advisor.
 
 `sepulveda_strings.cpp` contains only debug-trace macros (`JAL_DEBUG 0`), key-length limits `MAX_READ_KEY_LENGTH 64`, `MAX_FINAL_KEY_LENGTH 96` and a `CaptionParserMode` stream printer; the caption parser it once served is gone (`BuildCaption` copies ≤ 1023 wide characters). [C] `code/sepulveda_strings.cpp`; `Sepulveda::BuildCaption`.
 
@@ -1092,7 +1092,7 @@ There is **no player-facing replay or demo-recording feature** in [B:FULL]. What
 - **Save** (`RecordDemo == 1`, in `ShutdownCurrentGame`, only when this machine hosts the server): binary file = `int32 historySize`, then each history letter's `Directory` written with `Directory::Write` (format: [29](29_data_formats_reference.md) `Directory`). The commented-out `g_inputManager->StopLogging("inputLog.dat")` shows a former input log.
 - **Load** (`RecordDemo == 2`, after `Location` init, not editing, server present): `m_history.EmptyAndDelete()`, read the count and each `Directory` into a new `ServerToClientLetter`; for each letter with `SEQID > m_sequenceId`, `m_sequenceId = SEQID + 1` (so an equal id does not advance it — quirk). The normal `Server::UpdateClients` path then streams the loaded letters to clients. [C] / [I] streaming consequence.
 - **Timing:** `UpdateAdvanceTime` sets `g_advanceTime = 1/DemoFrameRate` and calls `IncrementFakeTime(1/DemoFrameRate)` each frame; but `g_gameTime` is still taken from `GetHighResTime()`, which returns the fake clock only after `SetFakeTimeMode()` (called only by the debug grabber window and SDL focus loss). In FULL the fake clock therefore advances unused, frame-based systems step at the fixed rate, and `GamePaused()` is ignored in this mode. [C] / [I] consequence.
-- **Validity as a replay:** the replayed history includes the lobby (options, team assignments, START_GAME) and later commands; whether a replay reproduces a match depends on identical code/data, the same team/client layout and sync seed, and on the live clients not adding conflicting commands — not verified. [U] → 30-U3.
+- **Validity as a replay:** the replayed history includes the lobby (options, team assignments, START_GAME) and later commands; whether a replay reproduces a match depends on identical code and data, the same team/client layout and sync seed, and on the live clients not adding conflicting commands — not verified. [U] → 30-U3.
 
 ### 7.2 Late-join replay from sequence 0 [B:FULL]
 

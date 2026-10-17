@@ -121,23 +121,23 @@ All mode rules live in one object, `g_app->m_multiwinia` (class `Multiwinia`), c
 
 ```mermaid
 stateDiagram-v2
-    [*] --> FrontEnd : App start / GameMenu::CreateMenu → Multiwinia::Reset()
-    FrontEnd --> Lobby : host picks mode (all params reset to defaults) and map
-    Lobby --> Lobby : option / colour / name / ready changes (replicated letters)
-    Lobby --> Loading : host auto-start when every human slot is ready (MP) or Play (SP); empty slots below NumPlayers filled with CPU teams; server broadcasts START_GAME
-    Loading --> Grace : Location::Init done; game clock frozen (speed 0); m_gracePeriodTimer = 3.0
-    Grace --> Grace : some human or spectator team not ready → timer snaps back to 3.0
-    Grace --> Grace : all ready → timer −= 0.1 per tick ("GAME STARTING IN n")
-    Grace --> Running : timer ≤ 0 (30 ticks) → timer = −1, game speed 1.0
-    Running --> Running : per tick: mode Advance, trunk-port waves, retribution, rank messages
-    Running --> SuddenDeath : time up AND top score tied AND SuddenDeath = 1 (Domination, KOTH, CTS, Blitzkrieg)
-    SuddenDeath --> SuddenDeath : KOTH only: +60 mode s per still-tied extension
-    SuddenDeath --> GameOver : tie broken → DeclareWinner
-    Running --> AssaultRoundEnd : Assault bomb destroyed or detonated → RecordDefenseTime
-    AssaultRoundEnd --> Loading : multi-round only, rotations left → fade out, m_resetLevel → ResetLocation()
-    AssaultRoundEnd --> GameOver : single round, or last rotation; victory timer elapsed and no pulse wave alive
-    Running --> GameOver : DeclareWinner(team, or 255 = draw)
-    GameOver --> FrontEnd : player opens the in-game menu (Esc / Start) and presses "Leave game" → m_atMainMenu = true → ShutdownCurrentGame → Reset
+    [*] --> FrontEnd : app start or menu rebuilt, rules Reset
+    FrontEnd --> Lobby : host picks mode and map, params reset to defaults
+    Lobby --> Lobby : option, colour, name and ready letters replicated
+    Lobby --> Loading : every human ready or single player Play, empty slots filled with CPU, START_GAME broadcast
+    Loading --> Grace : Location Init done, clock frozen at speed 0, grace timer 3.0
+    Grace --> Grace : a human or spectator not ready, timer snaps back to 3.0
+    Grace --> Grace : all ready, timer minus 0.1 per tick
+    Grace --> Running : timer reaches 0 after 30 ticks, speed 1.0
+    Running --> Running : per tick mode advance, trunk port waves, retribution, rank messages
+    Running --> SuddenDeath : time up with tied top score and SuddenDeath on
+    SuddenDeath --> SuddenDeath : KOTH only, plus 60 mode seconds while still tied
+    SuddenDeath --> GameOver : tie broken, DeclareWinner
+    Running --> AssaultRoundEnd : bomb destroyed or detonated, RecordDefenseTime
+    AssaultRoundEnd --> Loading : multi round with rotations left, fade out, ResetLocation
+    AssaultRoundEnd --> GameOver : single round or last rotation, victory timer done, no pulse wave
+    Running --> GameOver : DeclareWinner with a team or 255 for a draw
+    GameOver --> FrontEnd : in-game menu Leave game, ShutdownCurrentGame, Reset
 ```
 
 Evidence [C]: `Multiwinia::Advance`, `Multiwinia::AdvanceGracePeriod`, `Multiwinia::DeclareWinner`, `Multiwinia::AdvanceAssault`, `Multiwinia::ResetLocation`, `code/main.cpp` (main-loop `m_resetLevel` hook), `code/interface/mainmenus.cpp` (`ExitLevelButton` when `GameOver()`, `ConfirmExitButton` otherwise), `code/app.cpp:App::ShutdownCurrentGame`, `code/UI/GameMenuWindow.cpp` (host auto-start in the lobby update, single-player Play button), `code/gametimer.cpp:GameTimer::Reset` (speed 0 in multiplayer).
@@ -678,3 +678,157 @@ Keys of the level's `MultiwiniaOptions` block read by the rules (grammar in [29]
 `english.txt` also defines labels `multiwinia_option_0_5_*`, `0_6_*`, `1_5_*`, `1_6_*`, `2_2_*`, `2_3_*` (No/Yes), `5_6_*`, `5_7_*` (No/Yes) and `5_8_*` (Random/Weighted). Those indices are check boxes or spinners in the current data, so the labels are never used; `5_8_*` belonged to a former Blitzkrieg CrateDropMode [C] `data/language/english.txt` vs `data/multiwinia.txt`.
 
 ---
+## 4 Per-mode specifications
+
+Common to every mode [C] `code/multiwinia.cpp`:
+- All per-second rule logic runs inside `m_timer −= dt; if (m_timer <= 0) { m_timer = 1.0; … }` → once per **mode second (11 ticks)**; `BackupScores()` is called at the start of each mode second (TankBattle: per team). `m_timeRemaining` counts mode seconds, so a "10-minute" game lasts 6,600 ticks = 660 game seconds.
+- "Special teams" = monster (4) and Futurewinian (5). They exist in every game, are CPU-controlled, can own zones, flags, statues and spawn points, and are handled per mode as stated below.
+- Players: level `NumPlayers` (2–4); empty slots become CPU teams at start; co-op only on maps flagged `CoopMode` / `ForceCoop` (§2.5.5).
+- Population caps are per team from the level (§3.7, [05 §4](05_economy_and_population.md#4-the-population-cap)); the per-map value is in each map table ("PopCap → per team").
+- Crate drops follow the mode's `CrateDropRate` / `CrateDropMode`; mode-specific crate validity rules are listed per mode (from `code/worldobject/crate.cpp:Crate::IsValid`).
+- Map tables below are generated by `_work/scripts/S_01_mode_tables.py` from `X4_levels.csv` (itself parsed from `data/levels/mp_*.txt`); "SpawnPts" counts spawn points by owning position (255 = neutral); "TrunkPorts" by owning position; "Start units" = InstantUnits total; "Demo default" = map on the fallback demo list ([09](09_meta_systems.md)). Map names are Introversion IP.
+
+### 4.1 Domination (`GameTypeSkirmish`) [B:FULL]
+
+**Objective.** Capture and hold spawn points; a team that owns none for 30 consecutive mode seconds (after the first 30 game seconds) is eliminated. Last team standing wins; with a time limit, the score at time-up decides [C] `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish`.
+
+**Team structure.** Free-for-all, 2–4 players; co-op 2v2 on `mp_domination_4P_1` (CoopMode) and `mp_domination_4P_2` (CoopMode with fixed groups: positions 0+2 vs 1+3).
+
+**Mode-specific buildings and objects.** None of its own: the spawn network (`SpawnPoint`, `SpawnLink`, `MasterSpawnPoint`, `SpawnPopulationLock`) is the objective ([03 §4](03_buildings_and_world_objects.md#4-spawn-network), [05 §2](05_economy_and_population.md#2-territory-capture-spawn-points)). Optional map furniture: `RadarDish` (`mp_koth_2P_2`, `mp_domination_4P_2`), neutral `TrunkPort` (inactive: no Domination map enables trunk-port waves), `JumpPad`, `GunTurret`, `LaserFence` (`mp_skirmish_3P_1`).
+
+**Options.** ScoreMode (0 total / 1 per second), TimeLimit 0–60 (default 10, 0 = unlimited), Handicap, CrateDropRate, StartingPowerups, RetributionMode, SuddenDeath, CrateDropMode (§3.2).
+
+**Timers.** 30 game s initial protection (`GetNetworkTime() > m_startTime + 30.0`); elimination countdown 30 mode s (`m_eliminationTimer`, reset to 30 whenever the team owns a spawn point); retribution 45 game s.
+
+**Per mode second** [C]:
+1. `if (m_timeRemaining > 0) --m_timeRemaining`; `BackupScores()`; if ScoreMode = 0 → `ZeroScores()`.
+2. `highScore = 0`, `winningTeam = −1`. For each used slot t (LobbyTeam type ≠ Unused):
+   - Special team: skipped entirely if it has ≤ 1 entity (`NumEntities(255) <= 1` — it always owns its AI entity) or owns no spawn point. Otherwise it counts in `totalTeams`, scores, and takes part in the leader/draw comparison, but is exempt from the elimination countdown — so while monster or Futurewinian teams hold spawn points "last team standing" cannot trigger [C code; I consequence].
+   - `++totalTeams`; if `m_eliminated[t]` → `++numEliminated`, skip.
+   - `notEliminated = t`; `m_score[t] += SpawnPoint::s_numSpawnPoints[t+1]` (spawn points owned now).
+   - If more than 30 game s have passed since start: a non-special team owning 0 spawn points → on the first such second (timer 30) message "You will be eliminated in 30 seconds!" (`multiwinia_skirmish_elimination_30`) to itself or "*T will be eliminated in 30 seconds!" to others; `--m_eliminationTimer[t]`; at ≤ 0 → `EliminateTeam(t)` + `Team::Eliminate()`. A team owning ≥ 1 spawn point → timer reset to 30. A team therefore dies on its 30th consecutive second without spawn points (≈ 33 game s).
+   - Leader tracking: equal to `highScore` → `winningTeam = 255` (draw); greater → `winningTeam = t`. Because `highScore` starts at 0, a team scoring 0 marks a draw until someone scores more.
+3. If sudden death is active: if `winningTeam ≠ 255` → `DeclareWinner(winningTeam)`; return.
+4. Else if time is up (`m_timeRemaining <= 0 && !m_unlimitedTime`): draw and SuddenDeath = 1 → sudden death (§2.10: every used team whose score ≠ `highScore` gets `Team::Eliminate()`, flags not set, their spawn points keep producing); otherwise `DeclareWinner(winningTeam)` (255 = draw). Return.
+5. Co-op: `noWinner` if any slot index `i < totalTeams` (sic — iterates indices 0 … totalTeams−1, not all slots) is not eliminated and not a friend of `notEliminated` (special teams with ≤ 1 entity skipped). If none → `DeclareWinner(winningTeam)` (the higher-scoring member of the surviving alliance; 255 if the two allies tie).
+6. Non-co-op: if `totalTeams − 1 == numEliminated` → `DeclareWinner(notEliminated)`; local winner → `GiveAchievement(Dominator)`.
+
+**Scoring formula.**
+
+| ScoreMode | Label | Per mode second |
+|---|---|---|
+| 0 (default) | Total Spawn Points | `score(t) = spawn points owned now` (zeroed then re-added) |
+| 1 | Spawn Points per Second | `score(t) += spawn points owned now` (cumulative) |
+
+**Win / lose / draw.** Win: last non-eliminated team (or alliance in co-op); or highest score at time-up; or first single leader during sudden death. Draw: tie at time-up with SuddenDeath off. Lose: elimination, or lower score at time-up. Unlimited time (TimeLimit 0): only elimination ends the game.
+
+**Population cap.** `PopulationCap / NumPlayers` per team (500–1000 on shipped maps; `mp_domination_4P_2` uncapped) [C] map table, [05 §4.5](05_economy_and_population.md#4-the-population-cap).
+
+**Crates.** Standard rules; Harvester / Engineer / Spawn Mania valid (maps have spawn points) [C] `Crate::IsValid`.
+
+**AI.** Standard priority model; formation officers when ≥ 70 friends; goto officers at spawn points — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD line** [C] `GetScoreLine`: while `0 < m_eliminationTimer < 30`: "*X Spawn Points, Elimination in *S seconds" (ScoreMode 1: "*X points, Elimination in *S seconds"); eliminated: "Eliminated" (`multiwinia_dom_eliminated`); ScoreMode 1: "*X points (+d) (est N)"; ScoreMode 0: "*X Spawn Points" (`multiwinia_dom_spawnpoints`). Final list: "name score".
+
+**End of game.** §2.11; game-over list "name score".
+
+**Achievement hook.** Dominator — non-co-op elimination win by the local team (not a time-out win) [C]; stubbed (§2.11).
+
+**Maps.**
+
+@@MAPTABLE Domination@@
+
+**Level conventions** (X4, re-checked against the table) [C data]: 1–3 spawn points per start position plus 3–9 neutral ones, one `SpawnPointMaster`, a `SpawnLink` tree (none on `mp_skirmish_3P_1`, whose master links directly to spawn points); no `MultiwiniaZone`. Four Domination maps are terrain twins of KOTH maps (`mp_domination_2P_2` ≡ `mp_koth_2P_1`, `mp_domination_3P_1` ≡ `mp_koth_3P_2`, `mp_domination_4P_1` ≡ `mp_koth_4P_1`, `mp_domination_4P_2` ≡ `mp_koth_4P_3`), replacing hill zones by extra neutral spawn points; `mp_koth_2P_2` and `mp_koth_2P_3` are Domination maps by their `GameTypes` line.
+
+### 4.2 King of the Hill (`GameTypeKingOfTheHill`) [B:FULL]
+
+**Objective.** Hold the hill zones (`MultiwiniaZone`, drawn as coloured rings) to score; highest score at time-up wins. There is no elimination [C] `code/multiwinia.cpp:Multiwinia::AdvanceKingOfTheHill`, `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_KingOfTheHill`.
+
+**Team structure.** Free-for-all 2–4; co-op on `mp_koth_4P_4`, `mp_koth_4P_1` (CoopMode) and `mp_koth_4P_3` (fixed groups 0+2 vs 1+3). The tutorials run on `mp_koth_2P_1` (Tutorial 1) and `mp_koth_3P_1` (Tutorial 2) ([30](30_scripting_tutorial_and_cutscenes.md)).
+
+**Mode-specific objects.** `MultiwiniaZone` hills ([03 §8.1](03_buildings_and_world_objects.md#8-mode-objective-objects)). Zone ownership, once per recount (every 1.0 game s, i.e. 10–11 ticks, `m_recountTimer`): count, via the entity grid within radius `m_size` (level value; default 50) of the zone centre, every Darwinian of any team that is not dead, not on fire and not inside an Armour → `m_teamCount[t]`, `m_totalCount`. Owner = the team with the strictly highest count (ties keep the lower team index); nobody → 255. Ownership changes instantly — there is no capture progress or contested state [C]. Supporting objects on some maps: spawn network (all KOTH maps except `mp_koth_3P_4`), `ControlStation`s that capture `RadarDish`es (`mp_koth_3P_1`), trunk ports with waves (`mp_koth_3P_4` only).
+
+**Options.** ScoreMode (four formulas), TimeLimit 1–60 (default 5; cannot be unlimited), Handicap, CrateDropRate, StartingPowerups, RetributionMode, SuddenDeath, CrateDropMode.
+
+**Per mode second** [C]:
+1. `if (m_timeRemaining > 0) --`; `BackupScores()`; ScoreMode 2 → `ZeroScores()`.
+2. `s_numMultiwiniaZones = 0`; for every zone: ScoreMode 1 or 2 → `m_score[t] += zone.m_teamCount[t]` for all six teams (special teams included); `++s_numMultiwiniaZones`; `numZonesOwned[owner]++` for owned zones.
+3. Help notification "captured KOTH zone" for the local team (issued twice; harmless).
+4. For each used slot (special teams included): ScoreMode 0 → `score += numZonesOwned[t]`; ScoreMode 3 → `++score` iff `numZonesOwned[t] == s_numMultiwiniaZones`. Leader/draw tracking as Domination (`highestScore` starts at 0).
+5. If `m_timeRemaining <= 0`: draw and SuddenDeath = 1 → `m_timeRemaining = 60` (one more minute), `m_suddenDeathActive = true`, "Sudden Death!", every used team with score ≠ highest gets `Team::Eliminate()`; this repeats each time an extra minute ends tied. Otherwise `DeclareWinner(winningTeamId)`; if the local team won and `highest > secondHighest × 1.5` (secondHighest = largest score strictly below highest, over all used slots) → `GiveAchievement(HailToTheKing)`.
+
+**Scoring formula** (per mode second):
+
+| ScoreMode | Label | Formula |
+|---|---|---|
+| 0 (default) | Zones controlled per second | `score += zones owned` |
+| 1 | Zone Population per second | `score += Σ_zones teamCount` |
+| 2 | Final Zone population | `score = Σ_zones teamCount` (reset each second) |
+| 3 | Total zone control | `score += 1` iff the team owns every zone |
+
+Concentric zones (several zones sharing a centre with different radii, §4.2 conventions) make the central area worth 2–3 zones under ScoreMode 0 [I intent].
+
+**Win / lose / draw.** Highest score at time-up wins; tie with SuddenDeath off → draw; with SuddenDeath on → repeated one-minute extensions until untied. Special teams take part in the comparison, so Futurewinians or the monster team can win a KOTH game [C code; I gameplay]. "Eliminated" exists only in the soft sense (§2.7) for retribution.
+
+**Population cap.** `PopulationCap / NumPlayers` (500–1000; `mp_koth_4P_3` uncapped).
+
+**AI.** Standard model plus hill override (0.95 until held with ≤ 10 others inside); keep-garrison 10/50 in held hills (not Easy) — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD line.** Generic "*X points (+d) (est N)" — `(est N)` shown for ScoreMode 0, 1, 3. Zone rendering: ring segments proportional to `teamCount[t] / totalCount` per team colour (owner animated, alpha 255; others alpha 100), grey remainder; 1200-unit-tall faint glow column; alpha fades when the camera is within 500 units (minimum 0.4) [C] `MultiwiniaZone::RenderAlphas`, `RenderZoneEdge`.
+
+**End of game.** §2.11; list "name score".
+
+**Achievement hook.** HailToTheKing (time-out win by more than 1.5 × second place).
+
+**Maps.**
+
+@@MAPTABLE KingOfTheHill@@
+
+**Level conventions** [C data; I intent]: hills are `MultiwiniaZone` rows, 1–15 per map, almost always neutral (255), radii 50–555.24. **Concentric zones** (centres within 10 units, different radii) on `mp_koth_3P_3`, `mp_koth_4P_1` (one triple + four pairs), `mp_koth_4P_3` (two pairs), `mp_koth_4P_4` (one triple + four pairs). Only `mp_koth_3P_3` tags three 150-unit zones with positions 0/1/2 — they start owned by those players but ownership then follows occupancy. `mp_koth_3P_4` has no spawn points: 2 trunk ports per position with `trunkportreinforcements 100` (waves every 66 game s; no armour, no turrets) and 6 neutral gun turrets; KOTH soft elimination (and so retribution) can never happen there. `mp_koth_3P_1` adds 12 neutral radar dishes, 6 neutral `ControlStation`s controlling them, and a neutral trunk port.
+
+### 4.3 Capture the Statue (`GameTypeCaptureTheStatue`) [B:FULL]
+
+**Objective.** Lift statues with Darwinians and carry them into your own zone; each delivered statue scores 1 point. Highest score at time-up wins [C] `code/multiwinia.cpp:Multiwinia::AdvanceCaptureStatue`, `Multiwinia::EnsureStartingStatue`, `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_CaptureTheStatue`, `code/worldobject/statue.cpp`, `code/worldobject/carryablebuilding.cpp`.
+
+**Team structure.** Free-for-all 2–4; co-op only on `mp_cts_4P_2` (CoopMode).
+
+**Mode-specific objects** ([03 §8.1, §8.3, §8.4](03_buildings_and_world_objects.md#8-mode-objective-objects)):
+- **Zones.** Every `MultiwiniaZone` owned by a position in the level is that player's **drop zone** (ownership fixed; the KOTH occupancy logic does not run in CTS); every neutral (255) zone is a **statue spawn**.
+- **Statue** (`Building::TypeStatue`, a `CarryableBuilding`). Cannot be placed by name in a level (`BuildingIsBlocked`) — only the rules object creates it, via `Building::CreateBuilding(TypeStatue)` + `Initialise` + new building id, team 255, random facing, marker `RegisterMarker_Statue`. Shape: `syncrand() % 8` → carrystatue, carrysquaddie, carryglobe, carrytelescope, carryweights, carrycube, carryteapot, carrybillboard. Lifters: `m_minLifters = 20`, `m_maxLifters = 50`, `m_carryRadius = 33`. Ownership (every 1.0 game s): per team, live Darwinians within 50 units; owner = strictly highest count that is ≥ 20, else 255 (unchanged if the new owner is a friend of the old). Movement while lifters ≥ 20: push = `lifters / 50 × 16 × speedScale × |sin(gameTime)|`. An owned statue with no waypoint routes itself (at most once per game second) to its owner's nearest zone (monster/Futurewinian owners: nearest neutral zone). Destroyed (exploding shape) when tilted (`up.y < 0.7`) or under water (`y < 0`). Each statue owns an `AITarget` (priority modifier 1.0) that follows it [C].
+- **Delivery.** Each owned zone, every 2.0 game s (20–21 ticks): any statue owned by the zone's team within 30 units (3D distance) of the zone position → `Statue::Destroy()`, `AwardPoints(team, 1)`, message "*T captured a Statue!" (`multiwinia_cts_statuecapture`), sound `CaptureStatue`, help notification [C].
+
+**Statue spawning** [C]:
+- Grace period: every grace tick, if no statue exists, spawn one at a uniformly random neutral zone (`EnsureStartingStatue`).
+- Each mode second, after the time-up block (also during sudden death): S = statues, Z = neutral zones. If S < Z: when `m_statueSpawner == −1` → arm it: `max = 60 × S / Z`, `m_statueSpawner = max/2 + syncfrand(max/2)`, floored at 10 (mode seconds); else if `> 0` → `−= 1`; else (≤ 0) → reset to −1 and spawn — if S = 0 at a random neutral zone, otherwise at the neutral zone whose nearest statue is **farthest** away, provided that distance is > 30 units (first zone wins ties; no spawn this cycle if none qualifies). Message "New Statue!" (`multiwinia_cts_newstatue`). A statue therefore appears ⌈T⌉ + 1 mode seconds after arming (with no statue left: 11 mode seconds ≈ 12 game s) [C code; I arithmetic].
+
+**Options.** TimeLimit 1–60 (default 10), CrateDropRate, RetributionMode, SuddenDeath, CrateDropMode. No Handicap, no StartingPowerups, no ScoreMode.
+
+**Per mode second and end condition** [C]: `m_timer` reset; `--m_timeRemaining` **unconditionally** (goes negative during sudden death); `BackupScores()`. When `m_timeRemaining <= 0`:
+1. Over used, non-special slots: leader/draw (`highScore` starts at −1, so 0-score teams compare properly); also the best among teams **not** `IsEliminated` (`notEliminatedWinner`; tie → 255).
+2. If draw and SuddenDeath = 1: if any tied top team `IsEliminated` (soft) → `winningTeam = notEliminatedWinner` (soft-eliminated teams lose ties).
+3. Co-op: sum scores of group 1 and group 2; equal → draw; else winner = the **last** slot index of the higher group (overrides steps 1–2).
+4. `winningTeam == −1` (no used teams): Futurewinians win if they have > 50 entities, else the monster team if > 50, else `DeclareWinner(255)`.
+5. Else if sudden death is active: if not a draw → `DeclareWinner`; return.
+6. Else if draw and SuddenDeath = 1: non-co-op → `Team::Eliminate()` every used non-special team below the top score; sudden death on, "Sudden Death!" — the next delivered statue breaks the tie.
+7. Else `DeclareWinner(winningTeam)`; local winner with `highScore > 2 × secondHighest` and `highScore > 3` → `GiveAchievement(Hoarder)`; return.
+
+**Scoring formula.** `score(t) = number of statues delivered by t` (event-driven, +1 per delivery).
+
+**Win / lose / draw.** Highest score at time-up; tie → sudden death (next delivery wins) or draw. Special teams cannot win except in the "no used teams" fallback.
+
+**Population cap.** `PopulationCap / NumPlayers` (500–1000).
+
+**Crates.** Standard rules.
+
+**AI.** CTS priority model (statue nodes 1.0); un-stick carried statues; formation officers need ≥ 150 idle — [07 §12](07_ai.md#12-per-mode-strategies).
+
+**HUD line.** "*X points (+n)" where n = statues currently owned by the team (always shown). Final list "name score".
+
+**Achievement hook.** Hoarder.
+
+**Maps.**
+
+@@MAPTABLE CaptureTheStatue@@
+
+**Level conventions** [C data]: exactly one team-owned `MultiwiniaZone` per start position = drop zone (radius 80, 100 or 109.27), plus 1–6 neutral zones = statue spawns (radius 40–75); spawn-point economy (1–3 per position, up to 8 neutral on `mp_cts_4P_1`); four maps set `instantspawnpointcapture`; 40 starting Darwinians per position. The unshipped `mp_cts_3p_3` uses trunk ports with `trunkportreinforcements 100` and `attackerreinforcementtype HotFeet` (in a non-Assault mode every team gets a Hot Feet task each wave).
+
