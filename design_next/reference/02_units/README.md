@@ -32,23 +32,23 @@ Table 2.1-A Actor kinds.
 
 | Kind | Identifier | Document | How a match obtains it | Essence orb on death | Map instant unit |
 |---|---|---|---|---|---|
-| Worker | `Worker` | [worker.md](worker.md) | Spawn Node production; one Worker per port of every Spawn Node and Solar Array a team owns at match start, placed directly into the manning state; the map's instant units; Transit Gate reinforcement waves; Collector and Builder deliveries; the Reinforcements outcome; Seed Pods of the Worker kind; conversions (Convert laser bolts, the Visitor faction's Core Device pulse wave, the Swarm streak); Leader demotion; the Abductor's drop of Visitor faction Workers | yes | allowed |
+| Worker | `Worker` | [worker.md](worker.md) | Spawn Node production; one Worker for each port on the Spawn Nodes and Solar Arrays that a team owns at match start, placed directly into the manning state; the map's instant units; Transit Gate reinforcement waves; Collector and Builder deliveries; the Reinforcements outcome; Seed Pods of the Worker kind; conversions (Convert laser bolts, the Visitor faction's Core Device pulse wave, the Swarm streak); Leader demotion; the Abductor's drop of Visitor faction Workers | yes | allowed |
 | Leader | `Leader` | [leader_and_formations.md](leader_and_formations.md) | promotion of a Worker by a player or a bot | yes | not allowed |
 | Trooper | `Trooper` | [strike_team.md](strike_team.md) | the Strike team outcome, which creates one Strike team of Troopers | **no** | allowed |
 | Transport | `Transport` | [transport.md](transport.md) | the Transport outcome; Transit Gate Transport reinforcements; the map's instant units, granted as a Power | **no** | allowed |
 | Collector | `Collector` | [collector.md](collector.md) | the Collector outcome | **no** | allowed |
 | Builder | `Builder` | [builder.md](builder.md) | the Builder outcome; the map's instant units, granted as a Power | **no** | allowed |
-| Bomber | `Bomber` | [creatures_and_hazards.md](creatures_and_hazards.md) | each airstrike target marker summons one airstrike flight of Bombers (airstrike and Firebomb Run outcomes, including their unopened-crate variants) | **no** | not allowed |
-| barrage missile | `BarrageMissile` | [creatures_and_hazards.md](creatures_and_hazards.md) | the Missile Barrage outcome, which launches several barrage missiles | yes in principle; its own advance never checks for death | not allowed |
-| meteor | `MeteorRock` | [creatures_and_hazards.md](creatures_and_hazards.md) | the meteor shower outcome; bot meteor use | none: removed on impact | not allowed |
+| Bomber | `Bomber` | [creatures_and_hazards.md](creatures_and_hazards.md) | each airstrike target marker summons one airstrike flight of 2 Bombers (airstrike and Firebomb Run outcomes, including their unopened-crate variants) | **no** | not allowed |
+| barrage missile | `BarrageMissile` | [creatures_and_hazards.md](creatures_and_hazards.md) | the Missile Barrage outcome, which launches 10 barrage missiles | yes in principle; its own advance never checks for death | not allowed |
+| meteor | `MeteorRock` | [creatures_and_hazards.md](creatures_and_hazards.md) | the meteor shower outcome (5 to 9 meteors); bot meteor use | none: removed on impact | not allowed |
 | Abductor | `Abductor` | [creatures_and_hazards.md](creatures_and_hazards.md) | the Abductor outcome of an unopened Supply crate, at most once per match and never in Siege | none: invulnerable | not allowed |
 | Crawler | `Crawler` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Crawler kind (also the fallback for a refused Reaper Serpent); hatching Crawler eggs; the Swarm streak's conversion of Essence orbs | yes | allowed |
 | Crawler egg | `CrawlerEgg` | [creatures_and_hazards.md](creatures_and_hazards.md) | laid by Brood Drifters and spiders; thrown by Seed Pods of the egg kind | **no** | not allowed |
 | Brood Drifter | `BroodDrifter` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Brood Drifter kind | yes | allowed |
-| centipede | `CentipedeCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the centipede kind (one actor group of segments); growth by eating Essence orbs | yes, one per segment | allowed |
+| centipede | `CentipedeCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the centipede kind (one actor group of 5 to 14 segments); growth by eating Essence orbs | yes, one per segment | allowed |
 | spider | `SpiderCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the spider kind; the Swarm streak's conversion of Essence orbs | yes | allowed |
 | ant | `AntCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | released by a Hive; one wake-up ant from the Hive outcome; Seed Pods of the ant kind | yes | not allowed |
-| Reaper Serpent | `ReaperSerpent` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Reaper Serpent kind, for the Rogue faction, with at most a fixed number alive and never in Siege | yes | allowed |
+| Reaper Serpent | `ReaperSerpent` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Reaper Serpent kind, for the Rogue faction, with at most 2 alive and never in Siege | yes | allowed |
 | Seed Pod | `SeedPod` | [creatures_and_hazards.md](creatures_and_hazards.md) | launched by Spitter Plants; the Brood outcome; nested Seed Pods of the Seed Pod kind | yes | not allowed |
 | bot controller | `BotController` | [../07_bots.md](../07_bots.md) | one per bot team, including the Rogue and Visitor factions, created when the team is initialised in the match world | none: invulnerable | not allowed |
 
@@ -140,7 +140,7 @@ Table 2.1-A Actor kinds.
 
 | List | Members | Used by |
 |---|---|---|
-| ungrouped actors | every actor spawned with no actor group: Workers, Leaders, Transports, Collectors, Builders, barrage missiles, meteors, the Abductor, the creatures that live outside groups, and the team's bot controller | the Worker searches, selection, bots |
+| ungrouped actors | every actor spawned with no actor group: Workers, Leaders, Transports, Collectors, Builders, barrage missiles, meteors, the Abductor, spiders, Brood Drifters, Reaper Serpents, Seed Pods, Crawler eggs, ants that no Hive group holds, and the team's bot controller | the Worker searches, selection, bots |
 | actor groups | Strike teams, airstrike flights, Crawler groups, centipedes and Hive ant groups | the group-level advance and render |
 | special units | the handles of every Leader, Transport, Collector and Builder of the team, registered when it spawns and removed when it is removed | the Worker's Leader and Transport searches, the bot's special-unit loop |
 
@@ -162,7 +162,7 @@ A kind that never runs the base advance gets no world clamp, no reload countdown
 
 ### 2.8 Damage model
 
-**R-UNIT-025** (MUST) A health change carries one of five damage kinds: **unresistable** (the default, used to kill outright), **laser**, **explosive**, **turret round** and **fire**. The order of the damage kinds carries no meaning.
+**R-UNIT-025** (MUST) A health change carries one of five damage kinds: **unresistable** (the default, which kills outright), **laser**, **explosive**, **turret round** and **fire**. The order of the damage kinds carries no meaning.
 
 **R-UNIT-026** (MUST) The amount of a health change is an integer; a fractional damage value is truncated toward zero before it is applied (DEC-241). The base health change ignores the damage kind and runs:
 

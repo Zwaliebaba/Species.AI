@@ -21,3 +21,8 @@
 | 17 | C-SIM-a → C-SIM-c | — | order of initialisation draws; which rules read the Control Zone counter | cross-document fix between 02/04 and 07 |
 | 18 | owner O14–O16 | DEC-079, 080, 081 | G05 (already written) states the reference rules for the cap, Collector delivery and catch-up | **Phase 4: update `reference/05_population_flow.md`** to the owner-resolved rules (and G00's overview), citing the DECs |
 | 19 | owner O18–O19 | DEC-107, 120, 121 | G04, G08a and C-DAT (not started) read them from the register; G01 was told directly | check in Phase 4 |
+| 20 | G01 vs C-SIM-b | DEC-078 | the colour of a co-op alliance with no colour: white (R-SIM-421) or opaque grey (G01) | decide from ORIG; fix the losing document |
+| 21 | G01/G05 vs C-SIM-b | — | elimination damage: 2 × health **stat** (R-SIM-407) or 2 × **current** health (G01, G05) | decide from ORIG; fix the losing document |
+| 22 | G01 | DEC-017 | it says 39 options; 38 remain once the debug-only mode's option is dropped | correct DEC-017; six G01 DEC requests in reports/G01.md |
+| 23 | G01 | — | no game-over, victory or defeat sound assets in the manifest | X-AST pass 2 |
+| 24 | G01 | — | O20 (first playable) has no DEC entry, so G01 cites DEC-229 | acceptable (DEC-229 is build order) or add an O20 note to DEC-229 |

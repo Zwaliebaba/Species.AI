@@ -12,9 +12,9 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-200** (MUST) Spawn Control is free-for-all for 2 to 4 players. Co-op, 2 against 2, exists on maps that allow it, with fixed alliances where the map defines group positions (positions 0 and 2 against 1 and 3 on the one reference map that does) (README R-MODE-018 to R-MODE-025).
 
-**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object, which makes it the reference first playable slice (DEC-229).
+**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object; it is the first playable mode of Species, and the rest of the build order is DEC-229.
 
-**R-MODE-202** (MUST) The options are score mode, time limit (0 to 60 minutes, default `ref.mode.spawn_control.option.time_limit`, 10; 0 means none), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The Catch-up bonus applies (README R-MODE-051, DEC-081).
+**R-MODE-202** (MUST) The options are score mode, time limit (0 to 60 minutes, default `ref.mode.spawn_control.option.time_limit`, 10; 0 means none), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-081).
 
 ### 2.2 Timers
 
@@ -49,7 +49,7 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-207** (MUST) A team wins as the last team in play that is not eliminated (in co-op, the surviving alliance's leading member), or with the highest score at time-up, or as the first single leader during sudden death. A draw is a tie at time-up with sudden death off. A team loses by elimination or by a lower score at time-up. With no time limit only elimination ends the match.
 
-**R-MODE-208** (MUST) The population cap is the map's cap ÷ player count per team ([reference/05](../05_population_flow.md), DEC-079); the reference maps give 500 to 1,000 per team, and one co-op map sets no cap ([reference/08](../08_maps_and_level_design/rules_and_conventions.md)).
+**R-MODE-208** (MUST) The population cap per team is the map's cap ÷ the number of open slots, fixed for the match and not pooled within an alliance ([reference/05](../05_population_flow.md), DEC-079); the reference maps give 500 to 1,000 per team, and one co-op map has no cap, which the map states as an explicit unlimited value (DEC-120; [reference/08](../08_maps_and_level_design/rules_and_conventions.md)).
 
 **R-MODE-209** (MUST) Supply crates follow the standard rules; the Collector, Builder and Spawn Surge outcomes are valid, because every Spawn Control map has Spawn Nodes ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
@@ -154,10 +154,8 @@ String ids that this file uses, with their new text:
 
 ## 8 Open decisions
 
-- DEC-079 — the per-team population cap (R-MODE-208).
-- DEC-081 — the Catch-up bonus curve (R-MODE-202).
-- DEC-229 — Spawn Control as the first playable slice of the build order (R-MODE-201).
+- DEC-229 — the build order after the Spawn Control first playable (R-MODE-201).
 - DEC-300 — the return of teams wiped out in sudden death (§5 item 2).
 - DEC-047 — the Total Control hook (R-MODE-212).
 
-Resolved decisions applied: DEC-002, DEC-039, DEC-070, DEC-082.
+Resolved decisions applied: DEC-002, DEC-039, DEC-070, DEC-079, DEC-081, DEC-082, DEC-120.

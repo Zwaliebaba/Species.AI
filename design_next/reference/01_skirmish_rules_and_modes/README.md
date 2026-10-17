@@ -49,7 +49,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-001** (MUST) Every timer of the match rules is an integer number of ticks, read from the tick counter only; no match rule reads the wall clock or a render-frame clock (DEC-002, DEC-009). Seconds are shown only as a value derived from ticks.
 
-**R-MODE-002** (MUST) The **mode second** is the named constant `ref.mode.mode_second` = 11 ticks (1.1 s at the reference tick rate). Every rule that the match rules state "per second" advances once per mode second: the mode step of every mode, the match clock and time limit, the elimination countdowns, the Relic spawn timer, the reinforcement-wave countdown ([reference/05](../05_population_flow.md)) and the rank check. The match clock therefore runs 10 % slower than game time. The constant is a deliberate, named rule (DEC-006), kept for the first playable and re-examined in playtest (DEC-003).
+**R-MODE-002** (MUST) The **mode second** is the named constant `ref.mode.mode_second` = 11 ticks (1.1 s at the reference tick rate). Every rule that the match rules state "per second" advances once per mode second: the mode step of every mode, the match clock and time limit, the elimination countdowns, the Relic spawn timer, the reinforcement-wave countdown ([reference/05](../05_population_flow.md)) and the rank check. The match clock therefore runs 10 % slower than game time. The constant is a deliberate, named rule (DEC-006). It stays at 11 ticks for the first playable, and an A/B playtest of 10 against 11 ticks runs before launch (DEC-003).
 
 **R-MODE-003** (MUST) The match rules keep three mode-second timers: the **rules timer** of the mode step, the **wave timer** of the reinforcement waves and the **rank timer** of the rank announcements. Each counts ticks and completes a mode second when `ref.mode.mode_second` ticks have elapsed. All three start at 0 at match start, so the first mode second of each ends on post-grace tick 0, and the d-th on post-grace tick 11 × (d − 1).
 
@@ -63,11 +63,11 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-007** (MUST) Every match has the six team slots of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.max_teams`, R-SIM-392, R-SIM-393). Slots 0 to 3 are player positions. Slot 4 is the **Rogue faction** and slot 5 the **Visitor faction**. Both faction slots exist as bot teams in every match, and each always owns one bot controller, which runs the full bot controller of [reference/07](../07_bots.md) (DEC-558).
 
-**R-MODE-008** (MUST) The Rogue and Visitor factions are neutral-hostile in every mode: they never win a match and never block an elimination win. They can own Spawn Nodes, Control Zones, Flag posts and Relics, and they score where a mode file says so, but every winner, draw and last-team-standing test of every mode excludes them. Hostile Supply crate outcomes stay owned by the Rogue faction, and the Visitor faction still arrives with the Abductor (DEC-082).
+**R-MODE-008** (MUST) The Rogue and Visitor factions are neutral-hostile in every mode: they never win a match and never block an elimination win. They can own Spawn Nodes, Control Zones, Flag posts and Relics, and they score where a mode file says so, but every winner, draw and last-team-standing test of every mode excludes them. Hostile Supply crate outcomes stay owned by the Rogue faction, and the Visitor faction still arrives with the Abductor (DEC-082). The hazard outcomes are team-blind (DEC-107), and the owner of Brood creatures is DEC-121.
 
 **R-MODE-009** (MUST) Map-placed structures and actors name a start position. At load each start position is mapped to the team that holds it, or to the no-team value when no team holds it, and each start position is a typed record of the map definition that carries its camera view, its Siege side and its co-op group (DEC-560; R-SIM-411, R-SIM-418).
 
-**R-MODE-010** (MUST) The player slots of a match are 0 to (player count − 1) of the map, 2 to 4. At match start the host fills every empty slot below the player count with a bot team (R-SIM-006, R-SIM-433). The spectator team kind exists, but no match setup offers a spectator slot (DEC-244).
+**R-MODE-010** (MUST) The player slots of a match are 0 to (player count − 1) of the map, 2 to 4. Before the match the host may close slots; every slot that stays **open** is occupied for the whole match. At match start the host fills every empty open slot with a bot team (R-SIM-006, R-SIM-433), and a participant who leaves is taken over by a bot (R-MODE-069). A closed slot is an unused slot. The number of open slots is fixed at match start (DEC-079). The spectator team kind exists, but no match setup offers a spectator slot (DEC-244).
 
 **R-MODE-011** (MUST) Outside Siege and co-op, a team's start position is drawn when the match first needs it, uniformly with the simulation generator from the positions that no team holds yet; match initialisation asks in team-slot order. In a tutorial the position equals the team slot, and the Rogue and Visitor factions use their own slot ids (R-SIM-417; DEC-450 is open on assigning every position once at match start).
 
@@ -136,7 +136,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 **R-MODE-024** (MUST) Two fallback steps of alliance assignment never apply, because their test for an existing partner also matches the candidate slot itself: pairing an uncoloured t with a coloured slot in `PairAllianceMembers(t, g)`, and the final forced random pair of `PairAllianceMembers(t)`. A player slot that no earlier step pairs keeps co-op group 0 (DEC-451 is open on always placing every player slot in a group).
 
-**R-MODE-025** (MUST) Each alliance group has a group colour id. Its members are drawn in the member-1 and member-2 shades of that colour by their co-op group position (R-SIM-421). Friendship in co-op is membership of the same group, and outside co-op a team is a friend only of itself; group 0 makes the Rogue and Visitor factions friends of each other in a co-op match (R-SIM-412, R-SIM-413, DEC-451). Co-op scoring is per mode; whether an alliance's population caps are pooled is DEC-079.
+**R-MODE-025** (MUST) Each alliance group has a group colour id. Its members are drawn in the member-1 and member-2 shades of that colour by their co-op group position (R-SIM-421). Friendship in co-op is membership of the same group, and outside co-op a team is a friend only of itself; group 0 makes the Rogue and Visitor factions friends of each other in a co-op match (R-SIM-412, R-SIM-413, DEC-451). Co-op scoring is per mode, and the population caps of an alliance are not pooled (DEC-079).
 
 ### 2.5 Siege sides
 
@@ -161,7 +161,7 @@ The resulting colours apply inside this step on every participant; alliance assi
 
 The complexity label is drawn with the badge `ui.difficulty_badge` on the mode buttons, and each mode has one explainer animation `anim.explainer` ([reference/11](../11_tutorial_and_help.md)). The debug-only mode of the reference is not an enumerator (DEC-058).
 
-**R-MODE-030** (MUST) One bot difficulty applies to every bot team of a match: `BotDifficulty::Easy`, `BotDifficulty::Standard` or `BotDifficulty::Hard`, default Standard; a tutorial starts with Easy (R-MODE-148). The difficulty parameters are in [reference/07](../07_bots.md).
+**R-MODE-030** (MUST) One bot difficulty applies to every bot team of a match: `BotDifficulty::Easy`, `BotDifficulty::Standard` or `BotDifficulty::Hard`, default Standard; a tutorial starts with Easy (R-MODE-083). The difficulty parameters are in [reference/07](../07_bots.md).
 
 **R-MODE-031** (MUST) Each mode is a typed ruleset on the shared skeleton of this file: a score function, an elimination predicate, a win predicate, a time-up decider, a sudden-death policy, a typed option schema and a HUD formatter (DEC-017). Each mode file states these for its mode.
 
@@ -246,7 +246,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 ### 2.12 Catch-up bonus
 
-**R-MODE-051** (MUST) The Catch-up bonus option exists in Spawn Control, Zone Control and Siege (values 0 to 90 % in steps of 10, default `ref.econ.catch_up.option_percent`, 90). It multiplies the Spawn Node output of a team that owns far fewer Spawn Nodes than the average of the other teams; the formula, its integer divisions and its reachable cases are [reference/05](../05_population_flow.md) R-ECON-034 to R-ECON-037. The bonus is a step function at the default (DEC-081). In Siege it has no effect on any reference map, because no Siege map has a Spawn Node. A map can switch it off with its no-catch-up option (§2.19).
+**R-MODE-051** (MUST) The Catch-up bonus option exists in Spawn Control, Zone Control and Siege (values 0 to 90 % in steps of 10, default `ref.econ.catch_up.option_percent`, 90). The bonus is a proportional curve: a team's Spawn Node output multiplier is a function of its share deficit, the gap between its share of the Spawn Nodes held by the teams in play and the even share; the Rogue and Visitor factions are excluded from the share, and allies count as other teams (DEC-081). The curve, its maximum and where it applies are owned by [reference/05](../05_population_flow.md). In Siege it has no effect on any reference map, because no Siege map has a Spawn Node. A map can switch it off with its no-catch-up option (§2.19), and the multiplier is then 1.
 
 ### 2.13 Comeback Bonus
 
@@ -475,19 +475,19 @@ Declaring "none" runs steps 1 and 2 only.
 
 **R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released.
 
-**R-MODE-084** (MUST) The map options that change mode rules are listed below; the map option catalogue and its grammar are [reference/08](../08_maps_and_level_design/rules_and_conventions.md). Every option is unset unless the map sets it, and a typed map value of 0 is a value (DEC-065).
+**R-MODE-084** (MUST) The map options that change mode rules are listed below; the map option catalogue and its grammar are [reference/08](../08_maps_and_level_design/rules_and_conventions.md). Every per-map limit has three distinct forms: absent, which applies the lobby default; 0, which means none; and an explicit unlimited value, never encoded as 0 or a negative number (DEC-120). A map value overrides the lobby default (DEC-065).
 
 | Map option | Mode effect |
 |---|---|
 | modes | the modes under which the map is listed |
-| player count | the player slots, and the divisor of the population cap |
-| population cap | per-team cap = cap ÷ player count ([reference/05](../05_population_flow.md); DEC-079); when a map sets it twice the last value counts |
+| player count | the player slots, of which the host may close some before the match (R-MODE-010) |
+| population cap | per-team cap = cap ÷ open slots, fixed for the match; alliances are not pooled; the bodies that count are listed in [reference/05](../05_population_flow.md) (DEC-079); a map without a cap states unlimited explicitly (DEC-120); when a map sets it twice the last value counts |
 | defender population cap | Siege: each defender's cap; the attackers share the rest |
 | attacking positions | Siege: the attacking start positions |
 | co-op allowed, co-op forced | co-op offered, or forced |
 | group-1 positions, group-2 positions | fixed co-op alliances (R-MODE-020) |
 | play time | the default time limit, in minutes (R-MODE-079) |
-| excluded crate outcomes | Supply crate outcomes that never drop on the map ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)) |
+| excluded crate outcomes | Supply crate outcomes that never drop on the map; every outcome, hostile ones included, respects the list ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md); DEC-107) |
 | no catch-up | Catch-up multiplier 1 |
 | instant Spawn Node capture | Spawn Nodes skip their activation delay ([reference/05](../05_population_flow.md)) |
 | gate reinforcement count | enables Transit Gate waves in any mode; the count per gate where the mode has no count option |
@@ -506,9 +506,9 @@ Declaring "none" runs steps 1 and 2 only.
 
 **R-MODE-086** (MUST) Each mode step does its per-second work when the rules timer completes a mode second, and the time remaining counts mode seconds. A 10-minute limit is 600 mode seconds and reaches its time-up evaluation with the 600th decrement, on post-grace tick 6,589 (659 s of game time).
 
-**R-MODE-087** (MUST) The players of a match are the map's player count, 2 to 4; empty slots are bots from the start, and co-op exists only on maps that allow or force it. Population caps are per team, from the map ([reference/05](../05_population_flow.md); DEC-079). The match rules set no engine population limit and no per-tick budget (DEC-228).
+**R-MODE-087** (MUST) The players of a match are the open slots of the map, 2 to 4; empty open slots are bots from the start, and co-op exists only on maps that allow or force it. The per-team population cap is the map's cap ÷ the number of open slots, fixed for the whole match, with no pooling within alliances and an explicit list of counted bodies ([reference/05](../05_population_flow.md); DEC-079). The match rules set no engine population limit and no per-tick budget (DEC-228).
 
-**R-MODE-088** (MUST) Supply crate drops follow the mode's crate drop period and crate placement. Each mode file lists the mode's Supply crate validity rules, which [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) specifies.
+**R-MODE-088** (MUST) Supply crate drops follow the mode's crate drop period and crate placement. Each mode file lists the mode's Supply crate validity rules, which [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) specifies; every outcome respects the map's excluded outcomes (DEC-107).
 
 **R-MODE-089** (MUST) No match rule loops without bound: every random choice of the match rules is a choice from an explicit candidate list, with a defined result when the list is empty (DEC-014). Every tie is decided by an explicit ordered rule over stable ids (DEC-016).
 
@@ -651,7 +651,7 @@ Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.mat
 | `ref.match.hud.final_list_y` | 0.73 | × screen height | centre of the final score list | R-MODE-068 | — |
 | `ref.match.hud.final_list_box_scale` | 1.3 | × box | | R-MODE-068 | — |
 
-String ids that this file uses, with their new text (`{…}` marks a value inserted at run time):
+String ids that this file uses, with their new text; a word in braces, such as `{seconds}`, marks a value inserted at run time:
 
 | String id | Text |
 |---|---|
@@ -723,7 +723,8 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 10. **An unpaired co-op slot.** A player slot that alliance assignment leaves in co-op group 0 is a friend of the Rogue and Visitor factions and of every other group-0 slot (R-MODE-024, R-MODE-025, DEC-451).
 11. **No time limit and sudden death.** With a time limit of 0 the lobby forces sudden death off; the match can then end only by elimination, or not at all in a mode without elimination (R-MODE-056).
 12. **Siege colour limits on a 3-player map.** One defender and two attackers: a second defender request is refused when one slot already defends, and a third attacker when two already attack (R-MODE-014).
-13. **The factions and winning.** A faction may lead the scores on the HUD, but no mode declares it the winner and no last-team-standing test waits for it (R-MODE-008, DEC-082).
+13. **Closed slots and departures.** On a 4-player map with a cap of 2,000 and one slot closed by the host, three teams play with a cap of 666 each for the whole match; a departure changes nothing, because a bot takes the team over (R-MODE-010, R-MODE-087, DEC-079).
+14. **The factions and winning.** A faction may lead the scores on the HUD, but no mode declares it the winner and no last-team-standing test waits for it (R-MODE-008, DEC-082).
 
 ### 5.1 Cross-mode comparison
 
@@ -744,7 +745,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 | Crate placement option | yes | yes | yes | no: random | no: random | no: random |
 | Transit Gate waves | no | where the map enables them | where the map enables them | yes, from map options | yes, from mode options | yes, from mode options |
 | Mode objects | the spawn network | Control Zones | Relic Bases, Relic Spawn Zones, Relics | Core Device, Command Consoles, Transit Gates, bot objectives, Breach Charge | Launch Vessels, fuel depots, fuel pumps, fuel lines, the energy grid, Transit Gates | Flag posts, Home posts, Transit Gates |
-| Population cap | cap ÷ player count | cap ÷ player count | cap ÷ player count | defender cap; the attackers share the rest | cap ÷ player count | cap ÷ player count |
+| Population cap | cap ÷ open slots | cap ÷ open slots | cap ÷ open slots | defender cap; the attackers share the rest | cap ÷ open slots | cap ÷ open slots |
 | Mode Supply crate rules | — | — | — | no rocket turret, no Abductor; no Collector, Builder or Spawn Surge; no Transport with a map Transport cap | no Transport | no Transport with a map Transport cap |
 | Bot priority model ([reference/07](../07_bots.md)) | standard | standard with the zone override | Relic | Siege diffusion and objectives | Launch Race with markers | Siege diffusion with Flag post pins |
 | Bot formation Leaders | yes | yes | yes | no | no | no |
@@ -781,6 +782,8 @@ The number of reference maps per mode and per player count is [reference/08](../
 - **AC-15** (R-MODE-037) Given a Flag Chain map that also sets a map reinforcement count, then Transit Gate waves run every 660 ticks at the default interval, never every 330.
 - **AC-16** (R-MODE-020 to R-MODE-024) Given a 4-player co-op map with group-1 positions {0, 2} and group-2 positions {1, 3}, two players on green and two on red, and a fixed seed, when alliance assignment runs, then each slot's group is the group of its final start position, each group has two members, and the assignment is identical on every participant.
 
+- **AC-17** (R-MODE-010, R-MODE-087) Given a 4-player map with a population cap of 2,000 and one slot closed before the match, then three teams play, each with a cap of 666 from match start to match end, and a team whose player leaves keeps the same cap under its bot.
+
 ## 7 Dependencies
 
 - **Reference documents:** [00 Reference overview](../00_reference_overview.md) (core loop); [02 Units](../02_units/README.md) (Workers, Collectors, the Visitor faction's Workers); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) and [mode objects](../03_buildings_and_world_objects/mode_objects.md) (every mode object); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (crate drops, outcome validity, Power slots); [05 Population flow](../05_population_flow.md) (Catch-up bonus, Comeback Bonus, reinforcement waves, caps, starting powers); [06 Controls, camera and commands](../06_controls_camera_and_commands.md) (the Ready action); [07 Bots](../07_bots.md); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map options, per-mode validation); [09 Front end and match flow](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby, loading, achievement hooks); [10 Audio design](../10_audio_design.md) (match sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials, help pages, hints); [12 Simulation model](../12_simulation_model/README.md) (tick timing, teams, commands, match lifecycle).
@@ -795,8 +798,7 @@ Open decisions whose default this file specifies:
 - DEC-003 — the length of the mode second after playtest (R-MODE-002).
 - DEC-047 — achievements, statistics and leaderboards; the hooks only (R-MODE-037, R-MODE-057, R-MODE-059).
 - DEC-048 — a post-match results screen (R-MODE-035, R-MODE-058).
-- DEC-079 — the per-team population cap and co-op pooling (R-MODE-025, R-MODE-084, R-MODE-087).
-- DEC-081 — the Catch-up bonus curve (R-MODE-051).
+- DEC-121 — the owner of Brood creatures (R-MODE-008).
 - DEC-116 — Supply crates during the grace period (R-MODE-044).
 - DEC-200 — the replication and authority model (R-MODE-032).
 - DEC-205 — join, reconnect, leave and session continuity (R-MODE-069).
@@ -812,4 +814,4 @@ Open decisions whose default this file specifies:
 - DEC-241 — numeric semantics of the integer divisions (R-MODE-091).
 - DEC-244 — session admission and spectators (R-MODE-010).
 
-Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-082, DEC-119, DEC-465, DEC-560 and DEC-561. DEC-058 records why the debug-only mode is absent. The Open decisions of the mode files are listed in each of them.
+Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-081 (the proportional Catch-up curve), DEC-082, DEC-107, DEC-119, DEC-120, DEC-465, DEC-560 and DEC-561. DEC-003 carries the owner's decision to keep 11 ticks for the first playable. DEC-058 records why the debug-only mode is absent. The Open decisions of the mode files are listed in each of them.
