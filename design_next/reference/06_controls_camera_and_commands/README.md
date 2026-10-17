@@ -39,7 +39,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 **R-CTRL-004** (MUST) Simulation code never issues a player command. A rule that needs a follow-up change, such as the selection of a newly promoted Leader or of a toggled Leader, applies it inside the same simulation step, so one click yields one command and one selection change on every participant (DEC-119, R-SIM-454).
 
-**R-CTRL-005** (MUST) Bot teams issue no input actions. A bot controller acts through the same simulation operations that the commands execute ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-435; [Bots](../07_bots/README.md)).
+**R-CTRL-005** (MUST) Bot teams issue no input actions. A bot controller issues, inside its own step, the catalogue commands that express its actions, and applies its other actions as bot-only operations ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-435; [Bots](../07_bots/README.md) R-BOT-014, R-BOT-015; see DEC-122).
 
 **R-CTRL-006** (MUST) Durations of simulation rules are ticks of `ref.sim.tick_period` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)). Presentation timings (the camera, the cursor, the world markers, the Power slots panel and interface sound throttles) are real-time or presentation-clock values in seconds, and never feed a simulation rule (DEC-009).
 
@@ -76,7 +76,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 7. the match camera advances, only while the application window has focus ([camera](camera.md));
 8. the match input pump (`MatchInputPump`) resolves the pointer context and issues discrete commands ([actions and bindings](actions_and_bindings.md));
 9. the Power slots panel advances ([selection and Power slots](selection_and_power_slots.md));
-10. the tutorial and hint logic ([Tutorial and help](../11_tutorial_and_help.md)), the audio engine, the world markers ([cursor and markers](cursor_and_markers.md)) and the hint overlay advance.
+10. the tutorial logic ([Tutorial and help](../11_tutorial_and_help.md)), the audio engine, the world markers ([cursor and markers](cursor_and_markers.md)) and the hint overlay advance. This step hosts the tutorial director, which is evaluated here once per tick of match time ([Tutorial and help](../11_tutorial_and_help.md) R-TUT-061), and the hint overlay advances after the world markers (R-TUT-011).
 
 **R-CTRL-021** (MUST) The match input pump sends each discrete command as soon as the action that issues it is recognised. The team command state carries the continuous state; its one-shot flags are combined (logical OR) over every frame between two sends, and the sender clears every flag before sending while a UI window is open or the chat log is held (R-SIM-441).
 
@@ -84,7 +84,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 **R-CTRL-023** (MUST) The route preview line is generated in every frame and discarded in the next. Its routes live in a store of the presentation, separate from the simulation's route storage, and never take an entry or an id from it (DEC-095).
 
-**R-CTRL-024** (MUST) No simulation rule reads the camera, the pointer, a device, a UI window or a preference of any participant (DEC-008). The sender converts every camera-relative quantity of direct control to world space before it enters the team command state (R-SIM-440), and folds its camera's look-around state into the `camera_tracking` field ([actions and bindings](actions_and_bindings.md) R-CTRL-103).
+**R-CTRL-024** (MUST) No simulation rule reads the camera, the pointer, a device, a UI window or a preference of any participant (DEC-008). The sender converts every camera-relative quantity of direct control to world space before it enters the team command state (R-SIM-440), and folds its camera's look-around state into the `cameraTracking` field ([actions and bindings](actions_and_bindings.md) R-CTRL-103).
 
 
 **R-CTRL-025** (MUST) The rules of the sub-files apply together: an action table names the command; the command's effect when it executes is the catalogue entry of [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-450 to R-SIM-452 and the unit rules of [reference/02_units](../02_units/README.md); the feedback that the participant sees is the cursor, marker, panel and camera rules of this folder.
@@ -159,14 +159,17 @@ The tuning keys of this folder are defined in the tuning table of each sub-file:
 
 | DEC | Topic | Default specified | File |
 |---|---|---|---|
-| DEC-050 | Front-end features designed new | no reachable rebinding window or control-help panel (R-CTRL-034) | [actions and bindings](actions_and_bindings.md) |
+| DEC-050 | Front-end features designed new | no reachable rebinding window or control-help panel (R-CTRL-034); no options control for the automatic-camera setting (R-CTRL-480) | [actions and bindings](actions_and_bindings.md), [camera](camera.md) |
+| DEC-122 | Bot and deputy actions outside the player command catalogue | a bot applies the actions that no command expresses as bot-only operations (R-CTRL-005) | this file |
 | DEC-202 | Command validation and authority | each handler decides at execution (R-CTRL-003) | this file |
 | DEC-203 | Input timing, coalescing and latency | latest control state per tick; one-shot flags combined between sends (R-CTRL-014, R-CTRL-021) | this file |
 | DEC-302 | Transport unload order over sea | the order is not registered and the Transport goes idle | [actions and bindings](actions_and_bindings.md) |
 | DEC-308 | Orders to Workers that operate a port | orders reach every controlled Worker | [selection and Power slots](selection_and_power_slots.md) |
 | DEC-310 | Camera tracking after selecting a Leader or a Transport | the stale orbit centre is kept | [camera](camera.md) |
+| DEC-803 | Camera animations without content | the structure focus, the approach and the developer fly mode exist outside the live camera modes (R-CTRL-457) | [camera](camera.md) |
+| DEC-864 | Pointer fallback and camera smoothing | the reversed ray meets a far sphere (R-CTRL-058); smoothing is not clamped where the reference does not clamp it (R-CTRL-454) | [actions and bindings](actions_and_bindings.md), [camera](camera.md) |
 | DEC-550 | Power cancellation in the tutorials | no Power can be cancelled in the blocked tutorial phases | [selection and Power slots](selection_and_power_slots.md) |
 | DEC-551 | Units that outlive their Power slot | a cancel frees the slot even when the unit stays | [selection and Power slots](selection_and_power_slots.md) |
 | DEC-556 | Power slot order | the compact slot order; keys select by position | [selection and Power slots](selection_and_power_slots.md) |
 
-Resolved decisions applied in this folder: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-023, DEC-024, DEC-028, DEC-031, DEC-032, DEC-033, DEC-038, DEC-083, DEC-086, DEC-095, DEC-096, DEC-117, DEC-119, DEC-553, DEC-554, DEC-555, DEC-564, DEC-653. Dropped decisions that mark what the folder does not specify: DEC-055 (gestures and the icon Power bar), DEC-056 (the alternative control scheme), DEC-552 (Power kinds without targeting behaviour).
+Resolved decisions applied in this folder: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-023, DEC-024, DEC-028, DEC-031, DEC-032, DEC-033, DEC-038, DEC-083, DEC-086, DEC-095, DEC-096, DEC-102, DEC-117, DEC-119, DEC-553, DEC-554, DEC-555, DEC-564, DEC-653, DEC-863, DEC-953, DEC-955, DEC-960. Dropped decisions that mark what the folder does not specify: DEC-055 (gestures and the icon Power bar), DEC-056 (the alternative control scheme), DEC-552 (Power kinds without targeting behaviour).

@@ -53,7 +53,7 @@ Interval(D) := ceil(10 * D * (ref.crate.drop.interval_factor_max - SimRng::NextU
 
 ### 2.3 Placement
 
-**R-CRATE-105** (MUST) `TryDrop()` uses the weighted placement of R-CRATE-106 when the crate placement option is weighted, and the random placement of R-CRATE-107 otherwise, or when the weighted placement falls back to it. Weighted placement is the Supply crate's own catch-up lever and is independent of the Catch-up bonus, whose proportional curve and keys belong to [reference/05](../05_population_flow.md) (DEC-081).
+**R-CRATE-105** (MUST) `TryDrop()` uses the weighted placement of R-CRATE-106 when the crate placement option is weighted, and the random placement of R-CRATE-107 otherwise, or when the weighted placement falls back to it. Weighted placement is the Supply crate's own catch-up lever and is independent of the Catch-up bonus, whose proportional curve and `ref.econ.catch_up.*` keys belong to [reference/05](../05_population_flow.md) (DEC-124).
 
 **R-CRATE-106** (MUST) **Weighted placement** favours the structures of lower-scoring teams; its drop position is the reference default of DEC-114:
 
@@ -839,4 +839,4 @@ The README's string table holds the announcement texts of every outcome.
 - DEC-111 — Values derived from flat-terrain calculation (R-CRATE-112, R-CRATE-160, R-CRATE-163, R-CRATE-216).
 - DEC-550, DEC-551, DEC-556 — Power slot rules, see the [README](README.md).
 
-Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-015, DEC-016, DEC-088 (turret line of sight), DEC-021 (the starting-power exclusions name the Essence Grove), DEC-033, DEC-039, DEC-073, DEC-092, DEC-093, DEC-097, DEC-107, DEC-116 (no drop while the world is held for the grace period), DEC-120, DEC-331, DEC-465, DEC-652, DEC-653, DEC-960. Dropped: DEC-057.
+Resolved decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-009, DEC-011, DEC-013, DEC-014, DEC-015, DEC-016, DEC-088 (turret line of sight), DEC-021 (the starting-power exclusions name the Essence Grove), DEC-033, DEC-039, DEC-073, DEC-092, DEC-093, DEC-097, DEC-107, DEC-116 (no drop while the world is held for the grace period), DEC-120, DEC-124 (the Catch-up bonus, independent of weighted placement), DEC-331, DEC-465, DEC-652, DEC-653, DEC-960. Dropped: DEC-057.

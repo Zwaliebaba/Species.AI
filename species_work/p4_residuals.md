@@ -15,3 +15,6 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 9 | FX-07 | camera_and_sequences.md: one snake-case team-command field; CAM-030 to cite DEC-955 | FX-10 (give in its prompt) |
 | 10 | FX-01 | RA-040 (general port keys) waits for the paired reference/03 row | check after FX-04 |
 | 11 | FX-01 | collector.md must cap its delivery (DEC-080) | verify FX-03's change matches DEC-080 ("waits while the node is capped or activating") |
+| 12 | FX-04 | RA-040 pair: reference/03 now defines the general port keys; reference/05 still defines its own (same values, two names) | remove reference/05's port keys and cite reference/03's (residual pass; reference/05 has about 0.6 KB room) |
+| 13 | FX-04 | RA-145: no document states how a turret draws its ports | X-ARB entry from ORIG, or a DEC |
+| 14 | FX-04 | small corrections in DEC-960, DEC-968, DEC-550 and the asset string table (see reports/FX-04.md) | coordinator |
