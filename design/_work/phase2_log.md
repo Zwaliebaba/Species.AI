@@ -265,3 +265,6 @@
 
 ## Fix F3 (03, 07) — done; checks clean
 - V8 spawn-link transit = 10h + 1 ticks for h hops (prose, diagram, new table column); V9 throttle ≈ 200 recounts; Armour→turret LEGACY; crate turrets self-destruct only in MaxTurrets modes; neutral-start solar-panel case; 7 random draws per turret shot; turret line of sight samples BEHIND the target (was wrong). 07 §7.4 selection table rebuilt (trunk-port armour doesn't select; refused promotion re-orders last officer → clears selection); retribution scope, speed rule, grid order, radar helpers, TankBattle (V10). Closed 03-U1, U2, U4–U7, U15, 07-U6. Rejected "missing 41 link" (file exists). Requests for 01, 41, 26, 04, 22 in F3.md.
+
+## Fix F4 (06, 08, 09) — done: 36 findings (31 accepted incl. 3 self-found, 1 rejected — R1 confirms 09 right); checks clean
+- R4 all 3 Med + 19 Low gaps fixed: click-pick metric, task-slot re-sort, control help dead in MW, NEXTWEAPON, compass texture (06-U12 closed), thumbnails (no default fallback), advertising gates; R7 tile merge per-sample max; R8 default_preferences tag; V1, V10. Self-found: Assault Armour + TankBattle Tank instant units use runAsTask; 08 neutral-start example wrong; _work CSV evidence replaced. S_08_tables.py, S_09_source_map.py re-run. Request: 26 L142 TankBattle "compiled out".
