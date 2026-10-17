@@ -157,7 +157,7 @@ Design/
     ├── first_playable.md              the skirmish vertical slice on the server-authoritative, in-process server
     └── agent_handbook.md
 AGENTS.md                              (repo root) the engineering rules; this run updates its status section and adds R18+ (design-sourced conformance rules)
-CLAUDE.md                              (repo root) a short entry point that imports AGENTS.md and points to the agent handbook
+CLAUDE.md                              (repo root) the entry point that imports AGENTS.md; this run updates its status and points it to the agent handbook
 README.md                              (repo root) what Species is
 Tools/DesignModels/                   quantitative models with a README (kept for rebalancing)
 ```
@@ -300,7 +300,7 @@ Then merge the findings into `WORK/fix_list.md`, re-open the owning areas for ta
 
 **Phase 6 — Owner gate C and close.**
 1. Present the outcome: the pillars as designed; the top risks; the Open DECs; the Proposed ADRs; H1's top three changes. Ask for sign-off with one `AskUserQuestion`, with options *Accept v1*, *Accept with listed changes* (another targeted round, then close) and *Re-open areas* (name them).
-2. On acceptance, update `DESIGN/README.md`, update `AGENTS.md` (its status section, and R18 onward: the conformance rules the Species design implies, each citing its design source, approved by the owner at this gate), and write the root `CLAUDE.md` (under 40 lines, starting with `@AGENTS.md`: `Design/` is the authority; start at `Design/implementation/agent_handbook.md`; requirement IDs in commits and tests; implement Open DECs as their specified default behind their tuning key; provisional tuning values are expected to change; never consult outside material about other games to fill gaps, but raise a DEC instead) and the root `README.md`.
+2. On acceptance, update `DESIGN/README.md`, update `AGENTS.md` (its status section, and R18 onward: the conformance rules the Species design implies, each citing its design source, approved by the owner at this gate), and update the root `CLAUDE.md` (under 40 lines, still starting with `@AGENTS.md`: `Design/` is the authority; start at `Design/implementation/agent_handbook.md`; requirement IDs in commits and tests; implement Open DECs as their specified default behind their tuning key; provisional tuning values are expected to change; never consult outside material about other games to fill gaps, but raise a DEC instead) and the root `README.md`.
 3. Delete `WORK/`. Run the gates one final time.
 4. Commit `species: design v1`, then push.
 

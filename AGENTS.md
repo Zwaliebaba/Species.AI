@@ -10,6 +10,7 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 
 | Path | What it is |
 |---|---|
+| `CLAUDE.md` | The entry point for Claude Code: it imports this file and adds where things are and the current status. |
 | `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O24. |
 | `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. It is a reference for the design phase, not yet the Species game design. |
 | `prompts/species-design-phase.md` | The run that turns the reference library and the vision into the Species game design. |

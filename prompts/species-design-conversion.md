@@ -35,7 +35,7 @@ The owner fixed these values. Do not change them without asking the owner.
 | Document standard | Reference specifications with `R-` requirement IDs (§6). Engine component specifications follow the arc42 level-3 template. Engine-technology decisions are **MADR 4** ADRs. Diagrams are Mermaid. |
 | Language | British English (en-GB), matching `ORIG` spelling. |
 | Max parallel agents | 6 per wave, unless the owner raises it |
-| Files kept at cutover | `vision/`, `prompts/species-design-phase.md`, `Tools/DesignCheck/`, `Tools/DesignModels/`, `AGENTS.md`, the root configuration files and `.github/`. This prompt is removed, because it necessarily names the original product. |
+| Files kept at cutover | `vision/`, `prompts/species-design-phase.md`, `Tools/DesignCheck/`, `Tools/DesignModels/`, `AGENTS.md`, `CLAUDE.md`, the root configuration files and `.github/`. This prompt is removed, because it necessarily names the original product. |
 
 ---
 
@@ -315,8 +315,8 @@ The script runs over `NEXT/` (and, at the cutover, over the whole repository wit
 1. Re-run `check_design.py` on `NEXT/`. It must pass.
 2. Write the owner-only hand-over files to `OUTBOX` (§8.3). They may name the original product and its assets, which is why they never enter the repository.
 3. `git rm -r -q design`. Then delete any untracked leftovers under `design/` (`rm -rf design`) and confirm `design/` no longer exists. Only then run `git mv design_next Design`; if `design/` or `Design/` still existed, `git mv` would nest the set inside it. Confirm that `Design/ADR/` holds the ADRs and that no path in the repository still names `design_next/`.
-4. Move the retained terrain generator to `Tools/DesignModels/TerrainGenerator.py` with a README (scan it first). Then `git rm -r -q species_work prompts/species-design-conversion.md`. Keep `prompts/species-design-phase.md`, `vision/`, `Tools/`, `AGENTS.md`, the root configuration files and `.github/`.
-5. Run the §7.1 scan over the whole repository, excluding `.git/`. This includes `.gitignore`, `.gitattributes`, `AGENTS.md`, `.github/`, `vision/`, `prompts/` and `Tools/`. It must find zero hits. Then run `TOOLS` over `design/`. It must pass.
+4. Move the retained terrain generator to `Tools/DesignModels/TerrainGenerator.py` with a README (scan it first). Then `git rm -r -q species_work prompts/species-design-conversion.md`. Keep `prompts/species-design-phase.md`, `vision/`, `Tools/`, `AGENTS.md`, `CLAUDE.md`, the root configuration files and `.github/`. Update the status section of `CLAUDE.md` (the library is now in `Design/`; the next step is the design phase) and the `design_next/` note in `AGENTS.md`.
+5. Run the §7.1 scan over the whole repository, excluding `.git/`. This includes `.gitignore`, `.gitattributes`, `AGENTS.md`, `CLAUDE.md`, `.github/`, `vision/`, `prompts/` and `Tools/`. It must find zero hits. Then run `TOOLS` over `design/`. It must pass.
 6. Commit `species: cut over to the Species reference library`, then push.
 
 ### 8.3 Final report to the owner
