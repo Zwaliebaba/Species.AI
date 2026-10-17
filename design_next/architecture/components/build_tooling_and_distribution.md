@@ -370,7 +370,7 @@ Table 3.5-A Install-directory contents.
 
 **BLD-024** (MUST NOT) An install directory never holds: `D3D12SDKLayers.dll` or any file of a preview Agility SDK (ADR-0001); the shader compiler or any of its libraries (ADR-0003); `WinPixEventRuntime.dll` in a `Shipping` install (ADR-0068); PDB files or other symbol files; a crash-dump helper library, a support or crash-upload tool, an updater, a copy helper or a profile locator (ADR-0065, ADR-0071, ADR-0072); loose content files; any file that table 3.5-A does not list.
 
-**BLD-025** (MUST) User data never lives in the install directory. Its folders are those of ADR-0071 under `%LOCALAPPDATA%\<Studio>\Species\` (`settings\`, `logs\`, `crashes\`), resolved by the [platform layer](platform_layer.md); `<Studio>` is the publisher-name parameter (CONVENTIONS §8.11).
+**BLD-025** (MUST) User data never lives in the install directory. Its folders are those of ADR-0071 under `%LOCALAPPDATA%\<Studio>\Species\` (`settings\`, `logs\`, `crashes\`), resolved by the [platform layer](platform_layer.md) (PLT-016, PLT-017), which also holds the `diagnostics\` and `maps\` folders; `<Studio>` is the publisher-name parameter (CONVENTIONS §8.11).
 
 ### 3.6 The symbol store
 
@@ -458,7 +458,7 @@ Table 3.5-A Install-directory contents.
 
 **BLD-062** (MUST) The crash black box (ADR-0065), the log header (ADR-0067), telemetry submissions (ADR-0066), the symbol store (§4.12), the soak log (DEC-804) and every package read the identity from the generated header or from `build_identity.json`; none of them keeps its own version number. Compatibility checks between a client and a server, and between stored data and a build, are design-phase decisions that read this identity and no other number (DEC-204).
 
-**BLD-063** (MUST) Every Species executable accepts the start-up switch `--write-build-identity <file>`: it writes its full identity, in the form of `build_identity.json`, to `<file>` and ends at once with exit code 0, before it creates a window, mounts a pack or reads a setting. Packaging uses it to check that every executable it packages agrees with `build_identity.json` (BLD-097).
+**BLD-063** (MUST) Every Species executable accepts the start-up switch `--write-build-identity <file>`: it writes its full identity, in the form of `build_identity.json`, to `<file>` and ends at once, before any other initialisation, as the [platform layer](platform_layer.md) handles it (PLT-023, with the exit code `plt.lifecycle.exit_code.normal`). Packaging uses it to check that every executable it packages agrees with `build_identity.json` (BLD-097).
 
 ### 4.5 The content build
 
@@ -596,7 +596,7 @@ Table 4.7-A Language groups.
 
 **BLD-081** (MUST) A language is offered in an edition only when its `missing` list for that edition is empty (DEC-099, R-META-463). A language that is not offered is left out of the edition's `locale` pack and is listed in the report as withheld. The report lists every id that would fall back to the base language at run time (R-META-464, ADR-0063).
 
-**BLD-082** (MUST) The development setting language test (R-META-473, hidden from players by R-META-457) makes the client write, for each language it loads, the same three lists in the form of the localisation report to `language_report.json` in the user-data `logs\` folder (ADR-0071). The file is replaced at each language load; it is never written to the working directory or the install directory.
+**BLD-082** (MUST) The development setting language test (R-META-473, hidden from players by R-META-457) makes a `Debug` or `Development` client write, for each language it loads, the same three lists in the form of the localisation report to `language_report.json` in the user-data `diagnostics\` folder of the [platform layer](platform_layer.md) (PLT-017, ADR-0071). The file is replaced at each language load; it is never written to the working directory or the install directory.
 
 **BLD-083** (MUST) `strings-export` writes, for each named language, a translator pack holding: the language's current table; the base-language strings, each with its text expanded in each input mode (UI-223, UI-224), so that the translator sees what players read; and a change report against the base-language text of the language's last import. The change report classifies each id as inserted, deleted, changed or renamed:
 - an id is **renamed** when it disappears while a new id appears with the same base-language text; both ids are listed;
@@ -714,7 +714,7 @@ Table 4.10-A Packages.
 
 **BLD-102** (MUST) Updates are delivered by the channel: the storefront client, the Store's automatic update or the `.appinstaller` feed. Species has no first-party patcher and no launcher (ADR-0072). An update replaces the packs of the install as one edition, so an install always holds the packs of exactly one edition (BLD-052).
 
-**BLD-103** (MUST) The client offers the **repair check** as the start-up switch `--verify-content`. It mounts the packs of the install directory, runs the asset pipeline's check of every entry of every pack (AST-107), writes the result to the log, shows the result through the platform message path with the texts of table 4.10-B, and ends with exit code `bld.repair.exit_ok` when every pack passes and `bld.repair.exit_failed` otherwise. It never writes to the install directory; restoring a failed pack is the channel's repair or update function (ADR-0072). The start-up messages `ui.error.content_missing` and `ui.error.content_damaged` (AST-102) lead the player to this path.
+**BLD-103** (MUST) The client offers the **repair check** as the start-up switch `--verify-content`. It mounts the packs of the install directory, runs the asset pipeline's check of every entry of every pack (AST-107), writes the result to the log, shows the result through the platform message path with the texts of table 4.10-B, and ends with the normal exit code `plt.lifecycle.exit_code.normal` ([platform layer](platform_layer.md) PLT-042) when every pack passes and with `bld.repair.exit_failed` otherwise. It never writes to the install directory; restoring a failed pack is the channel's repair or update function (ADR-0072). The start-up messages `ui.error.content_missing` and `ui.error.content_damaged` (AST-102) lead the player to this path.
 
 Table 4.10-B Repair-check texts. The texts are new English text in the base language.
 
@@ -779,7 +779,6 @@ Every value that a rule of this document owns. The pins restate the technology b
 | `bld.cb.exit_usage` | 2 | exit code | content build: usage error | BLD-009 | — |
 | `bld.cb.exit_tool_failure` | 3 | exit code | content build: tool or I/O failure | BLD-009 | — |
 | `bld.l10n.typo_max_edit_distance` | 2 | characters | Levenshtein distance of a typo-level change | BLD-083 | — |
-| `bld.repair.exit_ok` | 0 | exit code | repair check: every pack intact | BLD-103 | — |
 | `bld.repair.exit_failed` | 1 | exit code | repair check: at least one pack failed | BLD-103 | — |
 | `bld.crash.local_dump_type` | 0 | WER `DumpType` | 0 is a custom dump | BLD-113 | — |
 | `bld.crash.local_dump_count` | 10 | dumps per program | WER `DumpCount` on test machines | BLD-113 | — |
@@ -787,7 +786,7 @@ Every value that a rule of this document owns. The pins restate the technology b
 | `bld.perf.per_change_pipeline_min` | 30 | min | starting value; §5 | BLD-117 | — |
 | `bld.perf.nightly_window_h` | 8 | h | starting value; §5 | BLD-117 | — |
 
-Values that the rules above use and other documents own: `ast.hash.display_hex_digits` and the 32-byte digest `ast.hash.digest_bytes` ([asset pipeline](asset_pipeline_and_resources.md)); `ref.meta.lang.base` ([options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); `dat.perf.full_build_s` ([data schemas](data_schemas/README.md)).
+Values that the rules above use and other documents own: `ast.hash.display_hex_digits` and the 32-byte digest `ast.hash.digest_bytes` ([asset pipeline](asset_pipeline_and_resources.md)); `ref.meta.lang.base` ([options, localisation and hooks](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); `dat.perf.full_build_s` ([data schemas](data_schemas/README.md)); `plt.lifecycle.exit_code.normal` ([platform layer](platform_layer.md)).
 
 ## 5 Concurrency and performance budget
 
@@ -854,7 +853,7 @@ Tests are named with the requirement id they verify (ADR-0069).
 | T7 Agility SDK | build fixture | an exported version that differs from the packaged `D3D12Core.dll` fails; a matching pair passes; no install holds `D3D12SDKLayers.dll` | BLD-042, BLD-024 |
 | T8 identity generation | unit | the generated identity holds every field of table 3.3-A; a modified working tree carries the marker; the display and full texts have the forms of BLD-061 | BLD-019, BLD-058, BLD-061 |
 | T9 version resources | unit and CI check | `MAJOR.MINOR.PATCH.build` maps into `FileVersion` and `ProductVersion`; a part of 65536 fails configure; every distributed PE file's resource matches the identity | BLD-059, BLD-060 |
-| T10 identity switch | integration | `--write-build-identity` writes the identity and ends with exit code 0 without creating a window or mounting a pack | BLD-063 |
+| T10 identity switch | integration | `--write-build-identity` writes the identity and ends with `plt.lifecycle.exit_code.normal` without creating a window or mounting a pack | BLD-063 |
 | T11 channel tag | unit | a valid tag reads back; a missing file, an empty line, upper-case letters and a 33-character tag read `unknown` | BLD-021 |
 | T12 edition selection | build fixture | an unknown asset id, folder, tag, flag, mode, language and map id each fail; nothing outside the closure of the selection enters an edition | BLD-049, BLD-016 |
 | T13 server editions | build fixture | a server edition that selects a texture fails; a client and server pair with different simulation-relevant flags fails and names the key | BLD-050, BLD-051 |
@@ -870,13 +869,13 @@ Tests are named with the requirement id they verify (ADR-0069).
 | T23 listing comparison | build | adding, removing and changing a map are each reported against the previous build; an unchanged listing is not rewritten | BLD-075 |
 | T24 no hash in code | CI lint fixture | a source file with an embedded map hash fails | BLD-076 |
 | T25 localisation report | build fixture | a language with one missing id is withheld and listed; an untranslated id and an unknown id are warnings; the base language is in every client edition | BLD-078, BLD-080, BLD-081 |
-| T26 language test file | integration | in a `Development` client with the language test on, loading a language writes `language_report.json` into the logs folder and replaces it at the next load | BLD-082 |
+| T26 language test file | integration | in a `Development` client with the language test on, loading a language writes `language_report.json` into the `diagnostics\` folder and replaces it at the next load | BLD-082 |
 | T27 translation export | unit | vectors for inserted, deleted, changed and renamed ids; a change of two letters inside one word is typo-level, and a change of the first letter is not | BLD-083 |
 | T28 translation import | unit | a file with one invalid message changes nothing; a valid file is written canonically and atomically | BLD-084 |
 | T29 map-tool validation | integration | `ValidateMapFile` and the `validate` command give the same diagnostics for every map fixture of the content build | BLD-010, BLD-087 |
 | T30 install directory | packaging fixture | an extra file, a PDB, `WinPixEventRuntime.dll` in a `Shipping` install and a second edition's packs each fail packaging | BLD-023, BLD-024, BLD-097, BLD-052 |
 | T31 install test | CI | the release-candidate archive installs on a clean image, the client runs as a standard user from a read-only directory, and nothing is written outside the user-data folders | BLD-105, BLD-025 |
-| T32 repair check | integration | a corrupted pack is listed and the check ends with `bld.repair.exit_failed`; an intact install ends with `bld.repair.exit_ok`; the install directory is unchanged | BLD-103 |
+| T32 repair check | integration | a corrupted pack is listed and the check ends with `bld.repair.exit_failed`; an intact install ends with `plt.lifecycle.exit_code.normal`; the install directory is unchanged | BLD-103 |
 | T33 signing | CI | every PE file and package of a release candidate is signed and timestamped; an unsigned file blocks publication | BLD-106, BLD-108 |
 | T34 symbols | CI | every distributed PE file has its PDB in the store under the build identity; republishing an identity with other files fails | BLD-026, BLD-111 |
 | T35 local dumps | QA | with the registry file applied, the crash commands of ADR-0065's confirmation produce custom dumps in the `crashes\` folder | BLD-113 |

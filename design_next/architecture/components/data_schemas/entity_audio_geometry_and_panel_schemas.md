@@ -261,7 +261,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 
 ### 4.2 Stats, outcomes and meshes
 
-**DAT-288** (MUST) The actor stat table and the outcome catalogue are validated for completeness against their enumerations (README DAT-027), and their entries are cooked in enumeration order, so a reader indexes them by kind or outcome with no search.
+**DAT-288** (MUST) The actor stat table and the outcome catalogue are validated for completeness against their enumerations (README DAT-027), and their entries are cooked in enumeration order, so a reader indexes them by kind or outcome with no search. Both records are required in every edition: an edition without them fails the content build, and a client or server whose cooked table is refused at load reports the diagnostic and starts no match, because no default stat or outcome table exists (DEC-015).
 
 **DAT-289** (MUST) A mesh, a collision asset and a simulation data record are cooked in one run of the mesh cooker from the same validated source (AST-078), and each carries the schema id and version of its record type (AST-046, ADR-0061).
 

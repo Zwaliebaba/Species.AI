@@ -113,22 +113,33 @@ Table 3.4-A Fields of the engine asset table.
 
 ### 3.5 Edition manifests
 
-**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `content/records/editions/` with the fields of table 3.5-A, whose meanings are [build tooling and distribution](../build_tooling_and_distribution.md) table 3.2-A and table 3.2-B (BLD-015, BLD-016).
+**DAT-358** (MUST) An edition manifest (`edition.manifest`) is authored under `content/records/editions/` with the fields of table 3.5-A, which are the fields of [build tooling and distribution](../build_tooling_and_distribution.md) table 3.2-A; their meanings, the release flag's among them, are BLD-015 to BLD-018, BLD-049 to BLD-055 and BLD-078, and this document owns their types.
 
 Table 3.5-A Field types of an edition manifest.
 
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | edition id | `id` | stable id | required | unique among the edition manifests (DEC-801) |
-| product | `product` | enumeration `client`, `server` | required | exactly one (BLD-050) |
-| release flag | `release` | boolean | defaulted: false | an edition with the flag set contains no placeholder and no unreferenced asset (AST-085, AST-090) |
-| server edition | `server_edition` | record reference to an edition manifest of product `server` | required for a client edition, absent for a server edition | BLD-051 |
-| languages | `languages` | list of BCP 47 tags, or one language-group name of BLD table 4.7-A | defaulted: the base language only | the base language `ref.meta.lang.base` is always included (BLD-078) |
+| product | `product` | enumeration `client`, `server` | required | exactly one product (BLD-050) |
+| release flag | `release` | boolean | defaulted: false | its meaning and the rules of an edition marked for release are BLD-054 and BLD-055 (AST-085, AST-090) |
+| server edition | `server_edition` | record reference to an edition manifest whose product is `server` | required for a client edition, absent for a server edition | BLD-051 |
+| languages | `languages` | either a list of distinct BCP 47 tags or one language-group enumerator, `all` or `efigs` (BLD table 4.7-A) | required | the base language `ref.meta.lang.base` is always included, whether or not it is listed (BLD-078) |
 | selection | `select` | list of selectors, each an object with exactly one of `asset` (asset reference), `folder` (a folder under the content root) or `tag` (an asset tag, among them the manifest's `priority` values) | required | positive selection only (BLD-049) |
-| maps | `maps` | the string `"all"`, or a list of map ids | defaulted: `"all"` | each listed map must exist (BLD-053) |
-| feature flags | `features` | object with one field per flag of BLD table 3.2-B, each of the type that table gives (a list of mode enumerators, a set of outcome classes, or `on` and `off`) | required: every flag named | an unknown flag is a build error (ADR-0056) |
+| maps | `maps` | either the enumerator `all` or a list of distinct map ids | required | each listed map id must be a map of the edition (BLD-053) |
+| feature flags | `features` | object with exactly the six fields of table 3.5-B | required: every flag named | an unknown or missing flag is a build error (ADR-0056, BLD-016) |
 
-**DAT-359** (MUST) The content build writes the feature flags of each edition into its packs as a record, which the client and the server read once at start-up (BLD-016); the flags marked simulation-relevant in BLD table 3.2-B are part of that record's simulation-relevant entry and of the simulation content identity (ADR-0056, ADR-0060).
+Table 3.5-B Types of the runtime feature flags of BLD table 3.2-B.
+
+| Flag | Key | Type | Simulation-relevant (BLD table 3.2-B) |
+|---|---|---|---|
+| modes | `modes` | list of distinct mode enumerators: `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain`; cooked in the catalogue order of R-MODE-029 | no |
+| Supply-crate classes | `crate_classes` | enumeration set of `basic`, `advanced` | yes |
+| tutorial | `tutorial` | enumeration `on`, `off` | no |
+| local-network play | `play_local_network` | enumeration `on`, `off` | no |
+| internet play | `play_internet` | enumeration `on`, `off` | no |
+| map editor | `map_editor` | enumeration `on`, `off` | no |
+
+**DAT-359** (MUST) The content build writes the feature flags of each edition into its packs as the edition's flag record, the cooked `Record` of README table 1-A, which the client and the server read once at start-up and never change while the process runs (BLD-016, ADR-0056). The flags that BLD table 3.2-B marks simulation-relevant are part of that record's simulation-relevant entry and of the simulation content identity (ADR-0060, AST-100); a client edition and its server edition have equal values of those flags (BLD-051).
 
 ## 4 Behaviour and algorithms
 
@@ -164,7 +175,7 @@ Caption: Figure 4-A, how the build records feed the content build (DAT-352 to DA
 | a mesh record whose asset or member differs from its row; a collidable mesh without a collision asset | build error | DAT-354 |
 | a loop end before its loop start | build error | DAT-355 |
 | an engine-asset-table entry that maps to no asset, or to the wrong category; an enumerator without a row | build error | DAT-357 |
-| an edition with an unknown flag, a missing flag, a duplicate id or a client edition without a server edition | build error | DAT-358 |
+| an edition with an unknown flag, a missing flag, a duplicate id, an unknown language group or a client edition without a server edition | build error | DAT-358 |
 
 ## 7 Acceptance tests
 
@@ -174,7 +185,7 @@ Caption: Figure 4-A, how the build records feed the content build (DAT-352 to DA
 | T61 mesh records | unit | asset and member mismatches fail; a collidable mesh without `collision` fails | DAT-354 |
 | T62 audio records | unit | loop points out of order fail; a record with a per-language field fails until the record type gains one | DAT-355, DAT-356 |
 | T63 engine table | unit | removing an enumerator's row and pointing a constant at an asset of another category each fail | DAT-357 |
-| T64 editions | unit | the baseline editions of BLD table 3.2-D validate; an unknown flag fails; the feature-flag record of `full` holds every flag of BLD table 3.2-B | DAT-358, DAT-359 |
+| T64 editions | unit | the baseline editions `full`, `full_server`, `development` and `soak` of BLD table 3.2-D validate; an unknown flag, a missing flag and an unknown language group each fail; the flag record of `full` holds the six flags of table 3.5-B with the reference feature set's values | DAT-358, DAT-359 |
 
 ## 8 Open decisions
 

@@ -150,7 +150,7 @@ Table 3.2-A Lines of the settings file.
 
 ### 3.3 The binding-set schema
 
-**DAT-202** (MUST) The default binding set and each keyboard-layout layer are records of the record type `input.binding_set`, with the fields of INP-070 in table 3.3-A; their binding nodes are the JSON nodes of INP-071, each an object with exactly one node-kind property (INP-073). The user layer is the `binding.<action id>` entries of the settings file (DAT-194).
+**DAT-202** (MUST) The default binding set and each keyboard-layout layer are records of the record type `input.binding_set`, with the fields of INP-070 in table 3.3-A; their binding nodes are the JSON nodes of INP-071, each an object with exactly one node-kind property (INP-073). The user layer is the `binding.<action id>` entries of the settings file (DAT-194). Because every node names its kind and holds its operands, the structure of a binding is explicit and no operator-precedence rule exists in the schema; the binding of a conjunction of chords, for example, is one `all` node whose operands are `chord` nodes.
 
 Table 3.3-A Fields of a binding set.
 
@@ -169,7 +169,7 @@ Table 3.3-A Fields of a binding set.
 
 ### 3.4 The keyboard-layout table
 
-**DAT-205** (MUST) The keyboard-layout table (`input.keyboard_layouts`) maps the language of the operating system's keyboard layout to a layout tag; its rows are those of INP table 4.13-A. Each row holds `system_layout`, the BCP 47 tag of the operating system's keyboard-layout language, and `layout`, the layout tag whose layer applies; a system layout listed twice is a build error, where the reference keeps the first. Operating-system numeric language identifiers do not appear in content: the platform layer reports the active layout as a BCP 47 tag (INP-164), and a tag that the table does not list, or whose layer does not exist, gives no layout layer.
+**DAT-205** (MUST) The keyboard-layout table (`input.keyboard_layouts`) maps the language of the operating system's keyboard layout to a layout tag; its rows are those of INP table 4.13-A. Each row holds `system_layout`, the BCP 47 tag of the operating system's keyboard-layout language, and `layout`, the layout tag whose layer applies; a system layout listed twice is a build error, where the reference keeps the first. Operating-system numeric language identifiers do not appear in content: the platform layer reports the active layout as a BCP 47 tag (INP-164), and a tag that the table does not list, or whose layer does not exist, gives no layout layer. The active layout tag also selects the keyboard variant of a help picture that shows controls ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-472).
 
 ### 3.5 String tables
 

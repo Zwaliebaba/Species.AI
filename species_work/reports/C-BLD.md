@@ -6,7 +6,7 @@ Package: `species_work/packages/C-BLD.json` · Target: `design_next/architecture
 
 | File | Size | Notes |
 |---|---|---|
-| `design_next/architecture/components/build_tooling_and_distribution.md` | 105,602 bytes (103 KB) | component template §6.4, headings 1 to 8; the tuning table is §4.13, inside §4, as in `terrain.md` |
+| `design_next/architecture/components/build_tooling_and_distribution.md` | 105,930 bytes (103 KB) | component template §6.4, headings 1 to 8; the tuning table is §4.13, inside §4, as in `terrain.md` |
 | `species_work/reports/C-BLD.md` | this file | |
 | `species_work/scripts/C-BLD_check.py` | helper | self-check (ids, keys, DECs, ADRs, cited requirement ids, links, truncation words, headings, size) |
 | `species_work/scripts/C-BLD_renumber.py` | helper | numbers requirement definitions in document order and rewrites references |
@@ -17,7 +17,7 @@ No split was needed (under 120 KB). Nothing was published; no git write commands
 ## 2 Counts
 
 - Requirements: **120** (BLD-001 to BLD-120, ascending in document order, no gaps; 113 MUST, 7 MUST NOT).
-- Tuning keys owned: **29** (`bld.pin.*` 15, `bld.version.part_max`, `bld.channel.tag_max_chars`, `bld.cb.exit_*` 4, `bld.l10n.typo_max_edit_distance`, `bld.repair.exit_*` 2, `bld.crash.*` 2, `bld.perf.*` 3). Keys cited from other documents: `ast.hash.display_hex_digits`, `ast.hash.digest_bytes`, `ref.meta.lang.base`, `dat.perf.full_build_s`.
+- Tuning keys owned: **28** (`bld.pin.*` 15, `bld.version.part_max`, `bld.channel.tag_max_chars`, `bld.cb.exit_*` 4, `bld.l10n.typo_max_edit_distance`, `bld.repair.exit_failed`, `bld.crash.*` 2, `bld.perf.*` 3). Keys cited from other documents: `ast.hash.display_hex_digits`, `ast.hash.digest_bytes`, `ref.meta.lang.base`, `dat.perf.full_build_s`, `plt.lifecycle.exit_code.normal`.
 - Diagrams: **5** Mermaid (build overview flowchart, content-build stages, map identity, translation round trip sequence, CI tiers), each with a caption; all 5 parse with mermaid 11.4.1 (headless Chromium, the scratchpad checker).
 - Enumerations: 27 tables (23 captioned, plus the failure-mode, acceptance-test, open-decision and tuning tables) with 268 rows; 36 acceptance tests (T1–T36); 13 content-build stages; 12 validator classes; 6 runtime feature flags; 7 configure-preset stems; 15 CI jobs; 5 packages.
 - String ids introduced: `ui.repair.passed`, `ui.repair.failed` (new English text, table 4.10-B). Cited: `ui.error.content_missing`, `ui.error.content_damaged` (AST-102).
@@ -27,7 +27,9 @@ No split was needed (under 120 KB). Nothing was published; no git write commands
 - `scan_patterns.py forbidden_patterns.tsv`: no hits.
 - `scan_patterns.py soft_patterns.tsv`: no hits (two "source code/tree" phrasings and one "Linux" were reworded; the dedicated-server host OS is described as "the host operating system that most community hosts run", citing baseline item 2.3).
 - `C-BLD_check.py`: OK. Every BLD id in range and unique; every tuning key unique in `design_next/` and cited by a requirement; every cited DEC (25) and ADR (28) exists; every `decs_to_cite` entry is cited and the register statuses match; every cited R-, AST-, DAT-, UI-, RND- id exists; links resolve (to files on disk or planned package targets: `platform_layer.md`, `diagnostics_test_and_performance.md`); no truncation words.
-- `accept_package.py`: only "report missing" before this file was written.
+- `accept_package.py`: PASS.
+- **Concurrent renumbering.** C-DAT renumbered `data_schemas/README.md` during this run (for example the old DAT-054, DAT-057 and DAT-059 are now DAT-048, DAT-051 and DAT-053). Every DAT citation of this document was remapped by content to the numbering on disk at 19:05 (DAT-019 to DAT-053). Please re-run `C-BLD_check.py` after C-DAT finishes; it reports any DAT id that no longer exists.
+- **Other documents already cite BLD ids**: `data_schemas/import_and_build_records.md` (BLD-015, 016, 018, 049, 050, 051, 053, 078) and `diagnostics_test_and_performance.md` (BLD-021, 057, 117, 120). The numbering is final; do not renumber this document.
 
 ## 4 Open DECs cited (all from `decs_to_cite`)
 
@@ -62,25 +64,24 @@ None. The document cites no asset id.
 
 ## 8 Cross-document requests
 
-1. **C-DAT (`data_schemas/import_and_build_records.md`).** The `edition.manifest` schema needs the fields of table 3.2-A: `id`, `product`, `release`, `server_edition`, `languages` (tags or a group of table 4.7-A), `select`, `maps` (`all` or a list of map ids), `features` (the six flags of table 3.2-B with their value sets). This answers C-AST request 6: C-BLD owns the meaning of the release flag (BLD-054, BLD-055); C-DAT owns its field type. The edition's flag record is the cooked `Record` of DAT table 1-A.
+1. **C-DAT (`data_schemas/import_and_build_records.md`).** Already aligned during this run: DAT-358 and table 3.5-A give the field types of exactly the fields of BLD table 3.2-A, and DAT-359 writes the flag record (BLD-016). This answers C-AST request 6: C-BLD owns the meaning of the release flag (BLD-054, BLD-055); C-DAT owns its type. One addition for DAT table 3.5-A's `release` row: an edition with the flag set also lists only complete languages, and is packaged only from an unmodified build (BLD-054).
 2. **C-AST.**
    - (a) Answered: the edition release flag (§3.2, BLD-054); the CI jobs of AST-066 (BLD-067, `ci-nightly-reproducibility`) and AST-105 (BLD-046, `ci-change-binaries`); installing the mount and content manifests in `packs\` (BLD-022, table 3.5-A); the repair function (BLD-103, `--verify-content`).
    - (b) AST-057 says the `locale` pack holds "the fonts and string tables of the edition's languages". BLD-081 withholds a listed language that is not complete. Please read "the edition's offered languages" there.
    - (c) Table 1-A of AST names `build_tooling_and_distribution.md` correctly; no change.
 3. **C-PLT (`platform_layer.md`).**
-   - The start-up switches `--write-build-identity <file>` (BLD-063: write and exit before a window, a pack mount or a settings read) and `--verify-content` (BLD-103) need the platform layer's command-line handling.
-   - At start-up the platform layer composes the full identity from `species_build_identity.h` and the mounted content manifest, compares it with `build_identity.json`, and logs a mismatch as a modified installation (BLD-020).
-   - It reads `channel_tag.txt` (BLD-021) and writes the tag into the log header next to the identity.
-   - The repair-check result is shown through the start-up message path with `ui.repair.passed` and `ui.repair.failed` (table 4.10-B).
-   - The test-machine `LocalDumps` registry file writes into the user-data `crashes\` folder (BLD-113); please confirm the folder path.
+   - Aligned already: `--write-build-identity` is PLT-023 (BLD-063 now cites it and `plt.lifecycle.exit_code.normal`); the user-data root and folders are PLT-016 and PLT-017 (BLD-025); the language-test report goes to `diagnostics\` (PLT table 3.2-A row 16, BLD-082).
+   - Please add `--verify-content` (BLD-103) to table 3.3-A, owner build tooling, every flavour; PLT-022 otherwise logs and ignores it. Its result is shown through `ShowPlatformMessage` with `ui.repair.passed` or `ui.repair.failed` (table 4.10-B), and it ends with `plt.lifecycle.exit_code.normal` or `bld.repair.exit_failed`.
+   - Table 3.2-A row 14 says the distributor tag is "not specified (DEC-249)". Species has the channel tag of BLD-021 (`channel_tag.txt` in the install directory, read at start-up, written in the log header only, which DBG-044 already adopts); reporting it to online services stays DEC-249. Please name BLD-021 in that row and read the file at start-up.
+   - At start-up, compose the full identity from `species_build_identity.h` and the mounted content manifest, compare it with `build_identity.json`, and log a mismatch as a modified installation (BLD-020).
+   - The test-machine `LocalDumps` registry file writes into the default user-data `crashes\` folder (BLD-113); a `--user-data` root (PLT-024) does not move it.
    - The crash handlers, WER registrations and thread naming of ADR-0065 are yours; BLD-110 cites `platform_layer.md` for them.
-4. **C-DBG (`diagnostics_test_and_performance.md`).**
+4. **C-DBG (`diagnostics_test_and_performance.md`).** Aligned already: DBG-044 puts the channel tag in the log header and keeps it out of the black box (BLD-021, BLD-120); DBG cites BLD-057 and BLD-117. Remaining:
    - The `soak` server edition (table 3.2-D) and the nightly job `ci-nightly-soak` (table 4.9-A) host your soak harness (DEC-804).
-   - Please define the "reference class" of developer machine that `bld.perf.incremental_one_source_s` is measured on (table 5-A).
+   - Please define the "reference class" of developer machine on which `bld.perf.incremental_one_source_s` is measured (table 5-A).
    - `ci-nightly-performance` runs your performance tests and the build budgets of table 5-A.
-   - Whether the black box should carry the channel tag is yours; BLD only puts it in the log header (BLD-021, BLD-120).
 5. **G09b (`options_localisation_and_hooks.md`) and C-UI-a (`layout_rendering_input_and_localisation.md`).**
-   - R-META-473's language test writes its three lists as `language_report.json` in the user-data `logs\` folder, replaced at each language load, never in the working directory (BLD-082). The writer is the string-table code; please cite BLD-082.
+   - R-META-473's language test writes its three lists as `language_report.json` in the user-data `diagnostics\` folder, replaced at each language load, in `Debug` and `Development` builds only, never in the working directory (BLD-082, PLT-017). The writer is the string-table code; please cite BLD-082.
    - The options screen's build details show the full identity text of BLD-061 (ADR-0057). Please cite BLD-061 where the build details are listed.
 6. **G09a (`screen_flow_and_match_setup.md`) and C-SIM-a (`02_match_lifecycle_and_state_reset.md`).** BLD-053: a match-start command for a map outside the edition's permitted set starts no match and logs the map id. In the reference edition every map is permitted, so no reference rule changes; please cite BLD-053 where match start validates its map.
 7. **G08a (`rules_and_conventions.md`).** R-MAP-010 states that the content build computes a map's hash. The map-identity listing (BLD-074) and the rule that a source whose name is not a canonical map id is a build error (BLD-072) may be cited there.
