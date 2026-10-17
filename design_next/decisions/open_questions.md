@@ -145,8 +145,8 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-310 Camera tracking after selecting a Leader or a Transport
 - Status: Open
 - Affects: reference/06_controls_camera_and_commands.md (R-CTRL), architecture/components/camera_and_sequences.md (CAM)
-- Specified behaviour: When the camera tracks a Leader or a Transport, it orbits a centre that is not updated as the tracked unit moves. This state is reachable only when the player selects a Leader or a Transport while the camera is already tracking a Strike team, which happens in gamepad play.
-- Options: A — keep the reference behaviour; B — recompute the orbit centre whenever the tracked unit changes and as it moves.
+- Specified behaviour: When the camera switches to tracking a Leader or a Transport, it keeps a stale orbit centre. This state is reachable only when the player selects a Leader or a Transport while the camera is already tracking a Strike team, which happens in gamepad play.
+- Options: A — keep the reference behaviour; B — recompute the orbit centre whenever the tracked unit changes.
 - Recommendation: B. A stale orbit centre has no play value, and the fix does not change any other camera rule (DEC-024).
 - Decide by: design phase
 
@@ -265,7 +265,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-324 Terrain generator parameter semantics and biases
 - Status: Open
 - Affects: architecture/components/terrain.md (TER), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/08_maps_and_level_design/map_editor_hooks.md (R-MAP)
-- Specified behaviour: The terrain generator's arithmetic is kept (DEC-025). Two of its properties are inferred from the formulas, not from recorded intent: the roughness parameter acts as an exponent, larger values giving smoother terrain, and the gain modifiers approximately normalise amplitude across the generator's shape parameters. Two are arithmetic facts whose deliberate use is unknown: generation method 2 never chooses two of its four directions and almost never chooses the other two, and the smooth flatten type divides a sum of five terms by six.
+- Specified behaviour: The terrain generator's arithmetic is kept (DEC-025). Two of its properties are inferred from the formulas, not from recorded intent: the roughness parameter acts as an exponent, larger values giving smoother terrain, and the gain modifiers approximately normalise amplitude across the generator's shape parameters. Two are arithmetic facts whose deliberate use is unknown: generation method 2 never chooses two of its directions and almost never chooses two others, and the smooth flatten type divides a sum of five terms by six.
 - Options: A — keep the arithmetic exactly, biases included; B — keep A, and also offer unbiased variants of generation method 2 and of the smooth flatten type in the map editor; C — replace the biased forms with unbiased ones.
 - Recommendation: B. The biased forms keep the reference look for terrains that are meant to match it, and new maps can use the unbiased variants.
 - Decide by: design phase
@@ -323,7 +323,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-331 Confirmed facts: the convert tag and the victory celebration
 - Status: Resolved
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/02_units/worker.md (R-UNIT), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/10_audio_design.md (R-AUD)
-- Specified behaviour: These behaviours are settled and are specified as rules. A Worker's convert tag, which turns gun-turret shots into convert lasers, is set only by the Convert power: placing the power tags the opening team's own Workers within the power effect range; the power lasts 30 s and ends early when no tagged Worker remains; a Worker clears its tag once the power has ended. A map with no primary objectives receives one objective that never completes, and the victory celebration of idle Workers starts only when every objective is complete, so it never starts on such a map.
+- Specified behaviour: These behaviours are settled and are specified as rules. A Worker's convert tag, which turns gun-turret shots into convert lasers, is set only by the Convert power: placing the power tags the placing team's own Workers within the power effect range; the power lasts 30 s and ends early when no tagged Worker remains; a Worker clears its tag once the power has ended. A map with no primary objectives receives one objective that never completes, and the victory celebration of idle Workers starts only when every objective is complete, so it never starts on such a map.
 - Options: none.
 - Recommendation: Resolved: each fact is confirmed, and the owning reference document states it as a rule.
 
