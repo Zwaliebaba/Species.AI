@@ -165,3 +165,6 @@
 ## S30 (30_scripting_tutorial_and_cutscenes.md) — done, ~189 KB, checks pass
 - 7 contradictions: scripts 37 LEGACY + 5 DEAD (not 39+3); radar dish 4 becomes player's when ≥3 units occupy ControlStation 51; tutorial map CRCs match mapcrc.h; phrase variants by input mode; music event names case-insensitive. New: Tutorial 2 checks ownership vs hard-coded team 0; scripted camera moves overshoot mount by 4–8 % uncorrected; CameraAnimations blocks not written on map save; script triggers T3–T5 debug-only. 30-U1..U8.
 ## Coordinator: manifest gained included_by_live column (18 non-project files compiled via #include); build_matrix §6 corrected; coverage checker treats them as live.
+
+## S02 (02_units_and_entities.md) — done, ~330 KB, checks pass (resumed after rate limit)
+- 26 entity types full template; 47 class headings. ~17 contradictions resolved: ant capture of Darwinians live; Spider leg update runs → EntityLeg live via Spider; dormant Eggs never decay (120 s limit dead); Harvester + Engineer fully team-coloured, Squadie + SpaceInvader fixed colours; Armour has no turret; airstrike formation offsets regenerated per match; AI entity at (20,·,20); Harvester any-team souls + bypasses pop cap; Virii slope sign corrected. 02-U1..U18.

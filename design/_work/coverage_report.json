@@ -3005,9 +3005,8 @@
   "data/mwsounds/cratereward_": [
    "10_audio_design.md"
   ],
-  "data/terrain/landscape_": [
-   "23_terrain_and_landscape.md",
-   "24_rendering.md"
+  "data/terrain/waves_": [
+   "23_terrain_and_landscape.md"
   ],
   "data/terrain/water_": [
    "23_terrain_and_landscape.md"
@@ -3015,49 +3014,50 @@
   "data/levels/map_": [
    "23_terrain_and_landscape.md"
   ],
-  "data/terrain/waves_": [
-   "23_terrain_and_landscape.md"
-  ],
-  "data/icons/mouse_": [
-   "24_rendering.md"
-  ],
-  "code/lib/texture.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "data/shapes/<lowercased name>": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_directx_dlist.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/shader.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_trace.{h,cpp}": [
+  "data/terrain/landscape_": [
+   "23_terrain_and_landscape.md",
    "24_rendering.md"
   ],
   "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
    "24_rendering.md"
   ],
-  "code/lib/fixedpipeline.{h,cpp}": [
+  "data/shapes/<lowercased name>": [
    "24_rendering.md"
   ],
-  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
+  "data/icons/mouse_": [
    "24_rendering.md"
   ],
-  "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
+  "code/lib/opengl_trace.{h,cpp}": [
    "24_rendering.md"
   ],
   "data/sepulveda/sepulveda1..5.bmp": [
    "24_rendering.md"
   ],
-  "code/lib/window_manager_sdl.{cpp,h}": [
+  "code/lib/shader.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/texture.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_dlist.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/fixedpipeline.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
    "24_rendering.md"
   ],
   "data/shaders/fixedfunc": [
    "24_rendering.md"
   ],
-  "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
+  "code/lib/window_manager_sdl.{cpp,h}": [
    "24_rendering.md"
   ],
   "contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}": [

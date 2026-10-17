@@ -736,7 +736,20 @@ Common to every mode [C] `code/multiwinia.cpp`:
 
 **Maps.**
 
-@@MAPTABLE Domination@@
+*Map table — Domination (retail data set, 9 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_domination_2P_2.txt` | The Eternal Guardians | 2 | basic | - | 2000 → 1000 | - | - | - | 8 (0:1;1:1;255:6) | - | masters 1, links 7, radar 0 | 80 | - |
+| 1 | `mp_skirmish_2p_4.txt` | Hamburger Hill | 2 | basic | - | 1800 → 900 | - | - | - | 10 (0:1;1:1;255:8) | 255:1 | masters 1, links 11, radar 0 | 0 | - |
+| 2 | `mp_domination_2P_1.txt` | Barriers to Progress | 2 | intermediate | - | 2000 → 1000 | - | - | - | 8 (0:1;1:1;255:6) | - | masters 1, links 13, radar 0 | 90 | - |
+| 3 | `mp_koth_2P_2.txt` | Shrine of Memory | 2 | intermediate | 10 | 2000 → 1000 | - | - | - | 9 (0:3;1:3;255:3) | 255:1 | masters 1, links 10, radar 6 | 0 | - |
+| 4 | `mp_koth_2P_3.txt` | The Bitter Front | 2 | intermediate | 10 | 1500 → 750 | - | - | - | 10 (0:2;1:2;255:6) | - | masters 1, links 11, radar 0 | 80 | - |
+| 5 | `mp_domination_3P_1.txt` | Field of Unending Dawn | 3 | basic | 10 | 1800 → 600 | - | - | - | 10 (0:2;1:2;2:2;255:4) | - | masters 1, links 14, radar 0 | 120 | - |
+| 6 | `mp_skirmish_3P_1.txt` | Leap of Faith | 3 | advanced | - | 1800 → 600 | - | - | - | 15 (0:2;1:2;2:2;255:9) | - | masters 1, links 0, radar 0 | 120 | - |
+| 7 | `mp_domination_4P_1.txt` | The Holy Tree | 4 | intermediate | 15 | 2000 → 500 | CoopMode | - | - | 10 (0:1;1:1;2:1;3:1;255:6) | - | masters 1, links 18, radar 0 | 160 | - |
+| 8 | `mp_domination_4P_2.txt` | A Monument to the Heavens | 4 | advanced | 10 | -1 → none | CoopMode (G1 0 2 / G2 1 3) | - | - | 12 (0:2;1:2;2:2;3:2;255:4) | - | masters 1, links 20, radar 8 | 160 | - |
 
 **Level conventions** (X4, re-checked against the table) [C data]: 1–3 spawn points per start position plus 3–9 neutral ones, one `SpawnPointMaster`, a `SpawnLink` tree (none on `mp_skirmish_3P_1`, whose master links directly to spawn points); no `MultiwiniaZone`. Four Domination maps are terrain twins of KOTH maps (`mp_domination_2P_2` ≡ `mp_koth_2P_1`, `mp_domination_3P_1` ≡ `mp_koth_3P_2`, `mp_domination_4P_1` ≡ `mp_koth_4P_1`, `mp_domination_4P_2` ≡ `mp_koth_4P_3`), replacing hill zones by extra neutral spawn points; `mp_koth_2P_2` and `mp_koth_2P_3` are Domination maps by their `GameTypes` line.
 
@@ -782,7 +795,20 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 
 **Maps.**
 
-@@MAPTABLE KingOfTheHill@@
+*Map table — KingOfTheHill (retail data set, 9 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_koth_2P_1.txt` | The Eternal Guardians | 2 | basic | - | 2000 → 1000 | - | - | - | 6 (0:1;1:1;255:4) | - | zones 3 (255:3; r 150.00) | 80 | Y |
+| 1 | `mp_koth_2P_3b.txt` | The Bitter Front | 2 | intermediate | 10 | 1500 → 750 | - | - | - | 10 (0:2;1:2;255:6) | - | zones 4 (255:4; r 100.00) | 80 | - |
+| 2 | `mp_koth_3P_2.txt` | Field of Unending Dawn | 3 | basic | 5 | 1800 → 600 | - | - | - | 9 (0:2;1:2;2:2;255:3) | - | zones 4 (255:4; r 80.00) | 120 | - |
+| 3 | `mp_koth_3P_1.txt` | Pursuit of Victory | 3 | intermediate | 10 | 1800 → 600 | - | - | - | 9 (0:1;1:1;2:1;255:6) | 255:1 | zones 4 (255:4; r 160.00 80.00) | 135 | Y |
+| 4 | `mp_koth_3P_3.txt` | The Deceitful Vale | 3 | intermediate | 10 | 1800 → 600 | - | - | - | 9 (0:2;1:2;2:2;255:3) | 255:1 | zones 5 (0:1;1:1;2:1;255:2; r 101.17 140.00 150.00) | 120 | - |
+| 5 | `mp_koth_3P_4.txt` | The Walled Garden | 3 | intermediate | 10 | 1800 → 600 | - | trunkportreinforcements=100 | - | 0 (-) | 0:2;1:2;2:2 | zones 1 (255:1; r 86.20) | 0 | - |
+| 6 | `mp_koth_4P_4.txt` | Barbs of Madness | 4 | basic | - | 2000 → 500 | CoopMode | - | - | 12 (0:3;1:3;2:3;3:3) | 255:4 | zones 15 (255:15; r 122.00 122.63 193.87 50.00 555.24) | 160 | - |
+| 7 | `mp_koth_4P_1.txt` | The Holy Tree | 4 | intermediate | 10 | 2000 → 500 | CoopMode | - | - | 10 (0:1;1:1;2:1;3:1;255:6) | - | zones 11 (255:11; r 100.00 125.00 200.00 50.00) | 160 | Y |
+| 8 | `mp_koth_4P_3.txt` | A Monument to the Heavens | 4 | advanced | 10 | -1 → none | CoopMode (G1 0 2 / G2 1 3) | - | - | 12 (0:2;1:2;2:2;3:2;255:4) | - | zones 12 (255:12; r 100.00 220.00 233.01 50.00 90.00) | 160 | - |
 
 **Level conventions** [C data; I intent]: hills are `MultiwiniaZone` rows, 1–15 per map, almost always neutral (255), radii 50–555.24. **Concentric zones** (centres within 10 units, different radii) on `mp_koth_3P_3`, `mp_koth_4P_1` (one triple + four pairs), `mp_koth_4P_3` (two pairs), `mp_koth_4P_4` (one triple + four pairs). Only `mp_koth_3P_3` tags three 150-unit zones with positions 0/1/2 — they start owned by those players but ownership then follows occupancy. `mp_koth_3P_4` has no spawn points: 2 trunk ports per position with `trunkportreinforcements 100` (waves every 66 game s; no armour, no turrets) and 6 neutral gun turrets; KOTH soft elimination (and so retribution) can never happen there. `mp_koth_3P_1` adds 12 neutral radar dishes, 6 neutral `ControlStation`s controlling them, and a neutral trunk port.
 
@@ -828,7 +854,20 @@ Concentric zones (several zones sharing a centre with different radii, §4.2 con
 
 **Maps.**
 
-@@MAPTABLE CaptureTheStatue@@
+*Map table — CaptureTheStatue (retail data set, 9 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_cts_2p_1.txt` | Mountain of Lost Souls | 2 | basic | - | 2000 → 1000 | - | - | - | 6 (0:2;1:2;255:2) | - | zones 4 (0:1;1:1;255:2; r 40.00 80.00) | 80 | Y |
+| 1 | `mp_cts_2p_4.txt` | The Unending Peaks | 2 | basic | - | 2000 → 1000 | - | - | - | 4 (0:2;1:2) | - | zones 3 (0:1;1:1;255:1; r 100.00 50.00) | 80 | - |
+| 2 | `mp_cts_2p_2.txt` | The Bloody Shrine | 2 | intermediate | - | 2000 → 1000 | - | instantspawnpointcapture | - | 4 (0:2;1:2) | - | zones 4 (0:1;1:1;255:2; r 69.80 80.00) | 80 | - |
+| 3 | `mp_cts_2p_3.txt` | Price of War | 2 | intermediate | - | 2000 → 1000 | - | - | - | 4 (0:1;1:1;255:2) | - | zones 4 (0:1;1:1;255:2; r 109.27 50.00) | 80 | - |
+| 4 | `mp_cts_3p_1.txt` | Melting Pot | 3 | intermediate | - | 1800 → 600 | - | instantspawnpointcapture | - | 6 (0:2;1:2;2:2) | - | zones 6 (0:1;1:1;2:1;255:3; r 100.00 50.00) | 120 | - |
+| 5 | `mp_cts_3P_2.txt` | The Tortured Expanse | 3 | intermediate | - | 1500 → 500 | - | instantspawnpointcapture | - | 9 (0:3;1:3;2:3) | - | zones 8 (0:1;1:1;2:1;255:5; r 100.00 50.00 60.00 60.54) | 120 | - |
+| 6 | `mp_cts_4P_1.txt` | Field of Unlife | 4 | advanced | - | 2000 → 500 | - | - | - | 12 (0:1;1:1;2:1;3:1;255:8) | - | zones 7 (0:1;1:1;2:1;3:1;255:3; r 100.00 60.00) | 160 | - |
+| 7 | `mp_cts_4P_2.txt` | Scorched Earth | 4 | advanced | - | 2000 → 500 | CoopMode | instantspawnpointcapture | - | 8 (0:2;1:2;2:2;3:2) | - | zones 10 (0:1;1:1;2:1;3:1;255:6; r 100.00 50.00 63.38) | 160 | - |
+| 8 | `mp_cts_4p_3.txt` | Maze of Despair | 4 | advanced | - | 2000 → 500 | - | - | - | 8 (0:2;1:2;2:2;3:2) | - | zones 7 (0:1;1:1;2:1;3:1;255:3; r 100.00 75.00) | 160 | - |
 
 **Level conventions** [C data]: exactly one team-owned `MultiwiniaZone` per start position = drop zone (radius 80, 100 or 109.27), plus 1–6 neutral zones = statue spawns (radius 40–75); spawn-point economy (1–3 per position, up to 8 neutral on `mp_cts_4P_1`); four maps set `instantspawnpointcapture`; 40 starting Darwinians per position. The unshipped `mp_cts_3p_3` uses trunk ports with `trunkportreinforcements 100` and `attackerreinforcementtype HotFeet` (in a non-Assault mode every team gets a Hot Feet task each wave).
 
@@ -895,7 +934,19 @@ stateDiagram-v2
 
 **Maps.**
 
-@@MAPTABLE Assault@@
+*Map table — Assault (retail data set, 8 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_assault_2P_1.txt` | Beneath the Baleful Eye | 2 | basic | 15 | 2000 → def 350 / att 1650 | - | trunkportreinforcements=100 | Squad Airstrike Nuke Meteor | 0 (-) | 0:1;1:4 | bomb 900.00 s, stations 255:3, attackers pos 1, AIObj 12/markers 36 | 327 | - |
+| 1 | `mp_assault_2p_3.txt` | Dog Green Sector | 2 | intermediate | 15 | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | Squad Airstrike Nuke Meteor | 0 (-) | 0:3 | bomb 900.00 s, stations 255:5, attackers pos 0, AIObj 11/markers 25 | 308 | - |
+| 2 | `mp_assault_2P_2.txt` | The Woeful Plateau | 2 | advanced | 15 | 2000 → def 275 / att 1725 | - | trunkportreinforcements=100 trunkportarmour=1 | - | 0 (-) | 0:1;1:5 | bomb 900.00 s, stations 255:3, attackers pos 1, AIObj 9/markers 28 | 209 | - |
+| 3 | `mp_assault_3p_1.txt` | The Third Kind | 2 | advanced | 15 | 1600 → def 250 / att 1350 | - | trunkportreinforcements=75 | Armour | 0 (-) | 0:1;1:6 | bomb 900.00 s, stations 255:3, attackers pos 1, AIObj 10/markers 27 | 139 | - |
+| 4 | `mp_assault_3p_3.txt` | Fort Zulu | 3 | intermediate | 15 | 1800 → 600 | ForceCoop (G1 0 / G2 1 2) | trunkportreinforcements=100 | - | 0 (-) | 1:4;2:4 | bomb 900.00 s, stations 0:3, attackers pos 1 2, AIObj 6/markers 29 | 260 | - |
+| 5 | `mp_assault_3P_2.txt` | The Hard Way | 3 | advanced | 15 | 1500 → def 250 / att 625 | ForceCoop (G1 0 / G2 1 2) | trunkportreinforcements=75 | Armour | 0 (-) | 0:1;1:4;2:4 | bomb 900.00 s, stations 255:3, attackers pos 1 2, AIObj 12/markers 27 | 182 | - |
+| 6 | `mp_assault_4P_1.txt` | Beyond the Pale | 4 | advanced | 15 | 1600 → def 200 / att 600 | ForceCoop (G1 0 1 / G2 2 3) | trunkportreinforcements=75 | Armour | 0 (-) | 0:3;1:3;2:1;3:1 | bomb 900.00 s, stations 255:4, attackers pos 0 1, AIObj 14/markers 24 | 170 | - |
+| 7 | `mp_assault_4P_2.txt` | The Last Stand | 4 | advanced | 20 | 1500 → def 200 / att 550 | ForceCoop (G1 0 1 / G2 2 3) | trunkportreinforcements=60 trunkportarmour=3 | Armour | 0 (-) | 0:1;1:1;2:4;3:4 | bomb 1200.00 s, stations 255:3, attackers pos 2 3, AIObj 18/markers 44 | 158 | - |
 
 **Per-map Assault configuration** (X4, re-checked against `mp_assault_4P_2.txt`) [C data]:
 
@@ -954,7 +1005,18 @@ Every tick (outside the per-second block): `AdvanceTrunkPorts()` (§4.5 reinforc
 
 **Maps.**
 
-@@MAPTABLE RocketRiot@@
+*Map table — RocketRiot (retail data set, 7 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_rocketriot_2P_4.txt` | Bridge of Light | 2 | basic | - | 1500 → 750 | - | - | Armour | 0 (-) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 6 | 0 | - |
+| 1 | `mp_rocketriot_2P_2.txt` | Echoes of the Future | 2 | intermediate | - | 1500 → 750 | - | - | - | 2 (255:2) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 10 | 0 | - |
+| 2 | `mp_rocketriot_2p_3.txt` | Stairway to Heaven | 2 | intermediate | - | 1800 → 900 | - | - | - | 0 (-) | 0:1;1:1 | rockets 0:1;1:1, fuel stations 0:3;1:3, markers 6 | 0 | - |
+| 3 | `mp_rocketriot_3p_1.txt` | The Second Beginning | 3 | basic | - | 1800 → 600 | - | - | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 15 | 0 | Y |
+| 4 | `mp_rocketriot_3P_2.txt` | Wake of Eternity | 3 | intermediate | - | 1800 → 600 | - | - | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 21 | 0 | - |
+| 5 | `mp_rocketriot_3P_3.txt` | Heart of Chaos | 3 | advanced | - | 1800 → 600 | - | nogunturrets | - | 0 (-) | 0:1;1:1;2:1 | rockets 0:1;1:1;2:1, fuel stations 0:3;1:3;2:3, markers 15 | 24 | - |
+| 6 | `mp_rocketriot_4P_1.txt` | Threads of Fate | 4 | advanced | - | 1800 → 450 | - | - | - | 12 (255:12) | 0:1;1:1;2:1;3:1 | rockets 0:1;1:1;2:1;3:1, fuel stations 0:3;1:3;2:3;3:3, markers 17 | 0 | - |
 
 **Level conventions** [C data]: per position 1 `EscapeRocket` (fields `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), 3 `FuelStation`s, 1 `TrunkPort`, 3 team-owned `Pylon`s, 3 `FuelGenerator`s (team-owned on `2P_2`, `2p_3`, `3p_1`; neutral on `2P_4`, `3P_2`, `3P_3`, `4P_1`), `FuelPipe` chains, shared neutral grid (15–24 `SolarPanel`, 3–5 `PowerSplitter`, 3 `PylonEnd` per position); `AIObjectiveMarker`s (6–21) for the CPU. No `LevelOptions` needed (waves are intrinsic to the mode); `3P_3` sets `nogunturrets` and has 6 neutral gun turrets; `2P_4` bans Armour crates.
 
@@ -1023,7 +1085,18 @@ stateDiagram-v2
 
 **Maps.**
 
-@@MAPTABLE Blitzkrieg@@
+*Map table — Blitzkrieg (retail data set, 7 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_blitzkrieg_2p_1.txt` | Confrontation Point | 2 | basic | - | 1500 → 750 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 1 (255:1) | 0:1;1:1 | flags 3 (0:1;1:1;255:1; r 100.00) | 80 | - |
+| 1 | `mp_blitzkrieg_2P_3.txt` | The Eye of the World | 2 | intermediate | - | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 4 (255:4) | 0:1;1:1;255:1 | flags 3 (0:1;1:1;255:1; r 100.00) | 0 | - |
+| 2 | `mp_blitzkrieg_2p_2.txt` | The Bleak Mountains | 2 | advanced | - | 2000 → 1000 | - | trunkportreinforcements=100 trunkportarmour=3 | - | 6 (0:2;1:2;255:2) | 0:1;1:1 | flags 5 (0:1;1:1;255:3; r 100.00) | 16 | - |
+| 3 | `mp_blitzkrieg_2P_4.txt` | The Apex of Infinity | 2 | advanced | - | 1800 → 900 | - | nogunturrets | - | 3 (255:3) | 0:1;1:1;255:1 | flags 6 (0:1;1:1;255:4; r 100.00) | 72 | - |
+| 4 | `mp_blitzkrieg_3P_2.txt` | The Wheel | 3 | basic | - | 2000 → 666 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1 | flags 7 (0:1;1:1;2:1;255:4; r 75.00) | 0 | - |
+| 5 | `mp_blitzkrieg_3P_1.txt` | Upon the Blazing Sea | 3 | intermediate | - | 1500 → 500 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1 | flags 7 (0:1;1:1;2:1;255:4; r 100.00) | 45 | - |
+| 6 | `mp_blitzkrieg_4P_2.txt` | Gridlock | 4 | advanced | - | 1400 → 350 | - | airstrikecapturezones=3 | - | 0 (-) | 0:1;1:1;2:1;3:1 | flags 9 (0:1;1:1;2:1;3:1;255:5; r 100.00) | 0 | - |
 
 **Flag graphs** (id : owner position → links as written in the file; made bidirectional at start) [C data, X4]:
 
@@ -1058,6 +1131,13 @@ Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`); invisible and
 | HUD | "*X Tanks" (`multiwinia_numtanks`); no game-over list |
 | End of game | §2.11 |
 
-@@MAPTABLE TankBattle@@
+*Map table — TankBattle (all_in_tree data set, 3 maps, menu order)*
+
+
+| # | File | Name (IP) | Pl | Diff | PlayTime | PopCap → per team | Co-op | LevelOptions | InvalidCrates | SpawnPts (team:n) | TrunkPorts (pos:n) | Mode objects | Start units | Demo default |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | `mp_tankbattle_2P.txt` | 2P TankBattle Arena | 2 | basic | - | -1 → none | - | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 | 2 | - |
+| 1 | `mp_tankbattle_3P.txt` | 3P TankBattle Arena | 3 | basic | - | -1 → none | - | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 Tank@2x1 | 3 | - |
+| 2 | `mp_tankbattle_4P.txt` | 4P TankBattle Arena | 4 | basic | - | -1 → none | CoopMode | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 Tank@2x1 Tank@3x1 | 4 | - |
 
 ---
