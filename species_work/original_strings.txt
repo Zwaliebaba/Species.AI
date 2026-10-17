@@ -1,0 +1,451 @@
+09 u5 fix in the new game one namespaced key registry filter on the advertised
+300 is 5 minutes
+360 control help
+77 5 u or 95 u if an 8th tick runs
+88 level files
+a bitchin tank for 30 seconds
+a gunturret target that darwinians can run from
+a map with this filename already exists
+access all areas
+achievements should only be available in games without ai players
+add ai player
+advanceanim node timing and transitions
+advancecomponentmousewheelheight m height
+advancecomponentzoom fov easing
+all darwinians will always throw grenades for 10 seconds
+all parts held and at least one went down this frame
+all power slots full
+allow arbitrary placement
+and command field
+any game type
+app start loadingscreen publisher logo app initialise on worker
+are you sure you wish
+armour control is now handled in locationinput advanceteamcontrol
+attack and destroy the wmd
+auth key passes simplekeycheck
+authkey not found
+back single player
+basic crates only
+between you and the full game
+button commented out
+buy darwinia online and
+buy full game
+camera modesphereworldoutro after 70 s
+cameraleft adds getright
+campaignbutton loadcampaign debug only page
+capture bar full team t
+capture mouse uncapture if gamemodenone per mode advancer br location modes only if the landscape heightmap exists
+capture score zone
+capture solar npanels to begin nrefueling rocket
+capture solar panels to begin refueling rocket
+capture spawn point
+capture the statue
+capturecrate forced reward
+capturecrate uniform over valid basic types
+capturecrate uniform over valid good types
+captured a statue
+causes a meteor shower
+change to a timer for user idleness
+cheat menu f4
+checkinput sub spec
+click a selected officer to demote
+client net start game
+close this window
+co op group 1
+co op group 2
+co op options
+collision bug c keys i effect applyfilterpasswords removes entries that have data net darwinia server password defined as
+colour row free
+comeback powers slots full
+connected and game type received
+control pad help
+controlbindings br controltype to inputspec list icon suppress
+controlevent controlx details br first satisfied spec wins
+crate drop period
+create new anim
+create new location
+create new map
+create new mod
+create new mount
+create new profile
+create new task
+creates an ants nest
+creates some eggs
+current mod name none
+current profile name
+darwiniaplus darwinia mp page
+darwiniaplus darwinia page
+darwiniaplus darwinia sp page
+darwiniaplus mp page
+darwiniaplus sp page
+dbg cam f2
+defend the wmd
+demo and mode not permitted
+demo restricted map
+demo to full upgrade detected
+demo users can join any lan game on any map if hosted by a full game player
+demo2 only dead
+dialog duplicate key
+dialog unplugged pc
+did logical control x trigger this frame
+discarded map because it didn't contain a game type
+disconnect kicked duplicate key connection error
+disconnect server full bad password
+display fps f5
+divide by n 1
+divide by n then subtract 1
+do not set these directly
+download the game immediately
+duplicate preference item ignoring
+eclipse text input
+edge reachable in full
+edit camera mounts
+edit existing map
+edit flatten areas
+edit instant units
+edit land tiles
+edit official maps
+effect at crate position or global
+elimination in seconds
+enable generator and mine
+enable receiver and buffer
+enter focus lost
+esc then multiwinia menu leavegame exitlevelbutton
+esrb notice game experience may change during online play
+everything is a sequenced lobby command
+expired nobody captured the crate in time
+failed to create new location
+failed to load language file
+failed to load texture
+failed to save
+failed to set requested screen resolution of
+failed to set requested sound settings
+failed to set screen mode
+final zone population
+first compatible non full server
+follow your every command for 60 seconds
+for 60 seconds
+for the bombers to see
+force co op
+fuel 9x x
+fuel nn n
+full game only
+game and ui code br userinput locationinput teamcontrols br taskmanagerinterface camera eclipse
+game menu invalid page
+game over press controltoggleready lobby
+game over toggleready returns to menu
+game over toggleready returns to the menu
+game starting in
+game starting in n
+gametypehelpwindow 1 to 4 pages
+generalhelpwindow 5 pages
+give all research
+grace period ready up and countdown
+hack by chris to disable old style control
+half speed so double life
+have to begin from scratch
+help and options
+helpmodebutton never built
+helpselectbutton commented out
+hi name x
+hold back release on a button
+hold shift to move faster
+horizontal then vertical
+host every human team ready
+host port name
+how this mode works
+how to play
+how to play domination
+hud multiwinia blitzkrieg timer
+i love the smell of napalm in the morning
+i need to upgrade
+icons task manager used when use xbox 360 controller
+idle cinematic fly through of scripted camera mounts over live levels with a throw away unlocked profile any input returns to the menu
+idleinputdriver br idle seconds
+if there is no blockage flt max is returned
+if xi r then r yi
+immune to laser fire
+immune to laser fire and attack more often
+in code network network defines h a game letter key servers advertise a password with net metaserver haspassword
+in game game over results overlay
+in game grace period ready up animated panel 3 2 1
+in game running match
+incoming nuke barrage
+index out of bounds
+inputmanager g inputmanager
+instant 10 iconschatlog
+instant 11 iconstaskmanagerdisplay
+instant 12 iconstaskmanagerendtask
+instant 8 skipmessage
+instant 9 gestureschatlog
+int status authkey authkeyid hashtoken
+into listings which would make the
+ip port port
+is also net metaserver gametime in contrib systemiv lib metaserver metaserver defines h which nothing in the tree sets unchecking
+is the winner
+it doesn't work
+it's a draw
+join as spectator when the teams are full
+just a 30mb download stands
+key l pressed
+key meta down
+kill a total of 100 000 darwinians
+kill all enemies
+killed more than 3000 enemy darwinians in a single game
+king of the hill
+launches a nuke barrage
+launchpad button buynow open store url
+leaderboards and achievements appear in the in game menu
+left the game
+lmb rmb mmb
+load mod name
+load your rocket nwith 100 nmultiwinians
+load your rocket with 100 multiwinians
+loader worker thread
+loadingscreen doenterlocation on worker thread
+local server 127 0 0 1
+loses a tank
+m anim set
+m requestquit true
+m rewardid set
+main loop ifdef use loaders runbootloader
+main thread gl
+mainmenuloop gamemenu createmenu new gamemenuwindow
+mainmenuwindow darwinia unreachable
+map has been successfully created
+matchmaker node name
+metaserver added fields i protocolmatch
+missing string n id
+mode is sphereworld freemovement buildingfocus br entitytrack radaraim firstperson or turretaim
+more than 3000
+move to score zone
+multiple files selected
+multiwinia auth main menu only
+multiwinia error badpass
+multiwinia error incompatible
+multiwinia error missingmap
+multiwinia error serverfull
+multiwinia gametype permitted
+multiwinia help general
+multiwinia helppage 1 general
+multiwinia leaderboard score
+multiwinia mainmenu title
+multiwinia menu advanceoptions host full key
+multiwinia menu autopatch run autopatch exe exit
+multiwinia menu back
+multiwinia menu back applynamebutton
+multiwinia menu back arrived from pageenterpassword
+multiwinia menu back arrived from pagejoingame
+multiwinia menu back savefiltersbutton
+multiwinia menu back shutdowncurrentgame
+multiwinia menu back stored back page
+multiwinia menu buyfullgame demo only
+multiwinia menu campaign
+multiwinia menu campaign includegamemode campaign debug only inactive
+multiwinia menu connect password non empty
+multiwinia menu connecting
+multiwinia menu done enter key accepted locally
+multiwinia menu filters
+multiwinia menu helpandoptions
+multiwinia menu hostgame hostgamepermitted
+multiwinia menu howtoplay
+multiwinia menu joingame
+multiwinia menu leavegame game not over
+multiwinia menu multiplayergame
+multiwinia menu multiplayergame inactive demo no mp
+multiwinia menu paste
+multiwinia menu play demo demo key generated
+multiwinia menu play single player
+multiwinia menu prologue
+multiwinia menu prologue includegamemode prologue debug only
+multiwinia menu quit
+multiwinia menu ready toggle
+multiwinia menu searching
+multiwinia menu selecthelp
+multiwinia menu settings
+multiwinia menu singleplayergame
+multiwinia menu singleplayergame b debug
+multiwinia menu tutorial short
+multiwinia menu tutorial1 tutorial2
+multiwinia menu versuscpu
+multiwinia update available only if newer version
+multiwiniahelp to animatedpanelrenderer
+must be a power of 2 for linux
+napalm lots and lots of napalm
+napalm strikes will now set fire to trees much more reliably
+net start game
+new flatten area
+newcontrols place name
+newcontrols select name
+next round in
+no anim and debug always or debug auto with an eclipse window open br or framesinthismode below 2
+no player on
+no servers found
+no spaces allowed
+normalise assert sane
+not compiled or never constructed
+not endorsed by
+not in english txt
+not m camlookaround and mode is not entitytrack
+one button per mode 0 to 5
+one key can only run one server at once
+one minute remaining
+one minute to wmd detonation
+open all locations
+opened a crate
+optional intro bootloaders
+own gamer tag
+pagegameselect 2 multiplayer advertised server
+pagegameselect 2 single player local server
+pagegamesetup 6 lobby
+pagejoingame 4 lan wan browser
+pageleaderboard 18 empty
+part 1 the basics
+part 2 advanced concepts
+permit crate power ups placement near trunk ports
+pick one of these targets
+pipeinputdriver not registered
+place your x
+plants a dark forest
+player pressed ctrl c so demote this officer
+port forwarding configuration in help and options settings other options
+power up received
+powerup limit reached
+prefers the gamepad
+press a when ready
+press c to terminate a unit
+press enter to chat
+press enter to talk
+press esc to exit
+press space to deselect
+press space to exit
+press space when ready
+press start to exit
+prev next past last image
+profile authkey dev
+promote an officer
+quick start local server koth easy cpu requeststartgame
+quickmatchbutton commented out
+quit this game
+recount once per second
+release win32 target pc fullgame
+remember to update the static string table at the end of camera cpp
+removed by chris it doesn't work
+research forced to 3 in mp 5 squaddies
+researchmodebutton never built
+reset this profile
+retribution two powerups max
+right click on officer set surrounding multiwinians into formation
+right click to toggle orders
+right mouse button to move npress space to deselect
+right mouse button to move press space to deselect
+rotate the cam in entity track mode
+row compatible not full map installed no password
+row demo restricted
+row incompatible full missing map
+runs hot feet
+runs personal shield
+rununcapturedcrate uniform over bad list monster team
+s rocket has been refueled
+s rocket is preparing for launch
+save changes to sounds txt
+screen graphics sound other options
+script op runcredits
+select some multiwinians
+select terrain colour
+select water colour
+select wave colour
+server filter settings are now saved
+server hosts may now password their servers
+show all stats
+show demo games
+show dr s face
+show first time intro
+show weekly stats
+showing rows to of total entries
+single assault round
+so terminate this turret
+sorry not enough mouse samples
+sound editor f8
+sound profile f8
+sound stats f7
+spawn constantly for 15 seconds
+spawn points per second
+spawns 13 trees
+spawns a spam object
+spawns between 1 and 3 eggs
+speccy matrix fodder raytrace soul gol golglow amiga
+special x toggles
+specifying gestures by example
+sprites darwinian bmp
+survival of the flattest
+syncfrand 1 below 0 9
+targetcursor g target br virtual cursor x y z
+targetmove targetmovesecondary targetmovez
+task manager visible
+taskmanager mapeditor b editor
+taskmanager runtask on team t lost if 6 tasks held
+textures multiwinia bmp
+textures prices bmp
+the beast cometh
+the pose recorded before the animation started
+the user input preferences will override the first binding
+therefore hides nothing unless the external metaserver injects
+this needs to be updated once metaserver fullgame checks are implemented for the pc version
+to avoid laggy interface
+to reset this location
+to wake up the monster team
+todo any key not implemented
+toggle editor f3
+toggle editor f9
+toggle when ordering near itself
+total spawn points
+total zone control
+translation system missed out
+triggered by a gesture of some kind
+trying to enter
+two powerups max
+uncapture mouse advancedebugmode
+unknown 146 185
+unknown 193 218
+unrar not thread safe
+updates available page
+use in full
+user rebindable options ui
+v level 0
+w32eventhandler wndproc br focus alt fix quit
+w32inputdriver br key mouse state deltas
+wait for game to start
+waiting for players
+waiting for players n m
+want more buy now exit demo
+weapon of mass destruction
+what does a click mean here
+when you exit
+will be eliminated in 30 seconds
+will be lost and you will
+win the game
+window messages br wm key wm button wm mousemove br wm mousewheel wm char wm hotkey
+wmd control panel
+xinputdriver br 4 x controller br deadzone cubic curve
+xinputgetstate 0 3
+yes returning from a tutorial
+you are eliminated
+you can't terminate shamans
+you cannot create a new location nyou must first create a mod from the main menu nbefore you can add locations
+you cannot save the location data nyou must first create a mod from the main menu nbefore you can edit and save locations
+you will be eliminated in 30 seconds
+your base is under attack
+your control pad has been unplugged
+your control pad has been unplugged please plug it back in or press esc to continue
+your progress on this island
+your rocket has been refueled
+your rocket is nunder attack n ndamage
+your rocket is on fire
+your rocket is preparing for launch
+your rocket is under attack
+your rocket is under attack damage n
+your rocket nis on nfire
+z buffer depth
+zone population per second
+zones controlled per second

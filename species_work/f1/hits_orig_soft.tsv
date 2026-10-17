@@ -1,0 +1,53 @@
+pattern	flags	class	hits	files	note
+\boriginal(ly)?\b	i	history	166	28	prompt §7.2
+\bshipped\b	i	history	937	29	prompt §7.2
+\brecover(ed|y)\b	i	history	30	8	prompt §7.2
+\blegacy\b	i	history	2251	29	prompt §7.2
+\bcarry[- ]forward\b	i	history	25	12	prompt §7.2
+\bport(ed|ing)\b	i	history	5	4	prompt §7.2
+\bport of\b	i	history	7	5	prompt §7.2; the gameplay word port (a manning slot) is not matched
+\bused to\b	i	history	11	9	prompt §7.2
+\bretail\b	i	history	531	18	prompt §7.2
+\bsource (tree|code)\b	i	history	26	16	prompt §7.2
+\bcommit\b	i	history	67	21	prompt §7.2
+\bdemo\b	i	history	435	27	prompt §7.2
+\blockstep\b	i	scoped	96	17	prompt §7.2: allowed only in reference/12 and design-phase DEC entries
+immediate[- ]mode	i	scoped	26	5	prompt §7.2: allowed for developer tooling UI only
+fixed[- ]function	i	scoped	28	9	prompt §7.2: allowed for the output-merger and rasteriser stages only
+\bLinux\b		scoped	342	14	prompt §7.2: allowed only for server or CI hosting
+\bmacOS\b		scoped	58	4	prompt §7.2: allowed only for server or CI hosting
+\bMac OS\b		scoped	3	2	prompt §7.2: allowed only for server or CI hosting
+\bTODO\b		unfinished	9	5	prompt §7.2
+\bTBD\b		unfinished	0	0	prompt §7.2
+\?\?\?		unfinished	13	3	prompt §7.2
+@strings:original_strings.txt	i	orig-string	717	26	quoted string of three or more words equal to an original English string (normalised)
+\bDomination\b		renamed-term	260	19	mode name; use Spawn Control
+\bAssault\b		renamed-term	637	24	mode name; use Siege
+\bDOM\b|\bRR\b|\bTANK\b		renamed-term	56	8	mode abbreviations; write the Species mode name
+\bRetribution\b		renamed-term	62	11	use Comeback Bonus
+\bHandicap\b		renamed-term	49	12	use Catch-up bonus
+\bOfficers?\b		renamed-term	587	24	use Leader
+\bEngineers?\b		renamed-term	430	25	use Builder
+\bHarvesters?\b		renamed-term	358	22	use Collector
+\bArmour\b		renamed-term	643	28	use Transport
+\bSquads?\b		renamed-term	185	22	use Strike team
+\bStatues?\b		renamed-term	229	22	use Relic
+\bSpirits?\b|\bSouls?\b		renamed-term	290	21	use Essence orb
+\bMonster team\b		renamed-term	72	10	use Rogue faction
+\bPlague\b		renamed-term	54	14	use Sickness
+\bInfection\b		renamed-term	89	13	use Swarm
+\bRage\b		renamed-term	68	14	use Fury
+\bRandomi[sz]er\b		renamed-term	87	16	use Allegiance Scrambler
+\bSlow Down\b|\bSpeed Up\b		renamed-term	32	5	use Time Dilation / Time Rush
+\bnapalm\b		renamed-term	43	11	use firebomb
+\bZombies?\b		renamed-term	65	10	use Wisp
+\bPortal\b		renamed-term	101	17	use Rift
+\bTentacles?\b|\bShaman\b|\bTripod\b|\bLander\b		renamed-term	496	22	dropped creatures
+\bSpace Ship\b		renamed-term	31	5	use Abductor
+\bSpawn Points?\b|\bSpawn Links?\b|\bPopulation Lock\b		renamed-term	25	8	use Spawn Node / Relay / Population Limiter
+\bSolar Panels?\b|\bRadar Dish(?:es)?\b|\bLaser Fences?\b		renamed-term	18	6	use Solar Array / Beam Dish / Barrier Emitter
+\bFuel Station\b|\bFuel Generator\b|\bRestriction Zone\b		renamed-term	2	1	use fuel depot / fuel pump / exclusion zone
+\bTask Manager\b		renamed-term	9	6	use Power slots (allowed only for the Windows tool)
+\bIncubator\b		renamed-term	133	17	dropped building
+\bExplorer\b		renamed-term	31	7	achievement name; use Tourist (allowed for Windows File Explorer)
+\bUplink Console\b|\bWarp Gate\b|\bRelay Dish\b|\bEnergy Collector\b|\bSpirit Grove\b|\bArmour Duel\b|\bLightning War\b		renamed-term	45	7	90 placeholders replaced by the collision screen
