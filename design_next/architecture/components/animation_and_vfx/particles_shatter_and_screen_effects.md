@@ -144,7 +144,7 @@ Each type's keys are `.life`, `.size`, `.gravity`, `.friction` and `.colours` (Â
 
 **VFX-209** (MUST) The simulate pass advances every live particle in fixed sub-steps of h = `vfx.particle.sub_step` (1/60 s of scaled presentation time), as many as the frame's scaled clock advance holds and at most `vfx.particle.max_sub_steps` (30) per frame, which covers a 0.25 s frame at the highest game speed, 2.0 (`ref.sim.speed.time_rush_min` + `ref.sim.speed.time_rush_spread`), carrying the remainder to the next frame (ADR-010, DEC-960). Particle motion is therefore independent of the simulation tick and of the frame rate.
 
-**VFX-210** (MUST) Each sub-step, with T = `ref.sim.tick_period` (0.1 s), the reference integration step at game speed 1, P the scaled presentation time and H, N the terrain height and normal sampled from `terrain_heights` (RND-063, [terrain.md](../terrain/README.md)):
+**VFX-210** (MUST) Each sub-step, with T = `ref.sim.tick_period` (0.1 s), the reference integration step at game speed 1, P the scaled presentation time and H, N the terrain height and normal sampled from `terrain_heights` (RND-063, [terrain](../terrain/README.md)):
 
 ```text
 for each live particle p with type T_p:

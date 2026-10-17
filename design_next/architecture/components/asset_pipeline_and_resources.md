@@ -402,7 +402,8 @@ Table 3.3-C The manifest's `alpha_mode` values and the import-record alpha mode.
 | darkening layer (destination x (1 - texel)) | `Mask` | `opaque`: the single channel is the darkening weight | darkening or ink |
 | tint mask (team-tint weight read by the shader; never drawn on its own) | `Mask` | `opaque`: the single channel is the team-tint weight | none: read by the tint function of the material that draws its parent (AST-022) |
 | none (look-up table) | `CpuTable` | `opaque` | none: not drawn |
-| opaque; team regions, where the mesh has any, marked by explicit tint weights (the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag); opaque; no tint marking | not a texture: a mesh (§3.7, AST-034) | `opaque` | the material shaders of ADR-003 |
+| opaque; team regions, where the mesh has any, marked by explicit tint weights: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (ADR-020) | not a texture: a mesh (§3.7, AST-034) | `opaque` | the material shaders of ADR-003 |
+| opaque; no tint marking | not a texture: a mesh without team regions | `opaque` | the material shaders of ADR-003 |
 | coverage (premultiplied in the UI shader) | not a texture: a font (§3.11) | none | the glyph cache's states (ADR-034) |
 | straight alpha | not a texture: the application icon `uitex.app_icon`, a Windows icon resource built into the executable and never packed | none | none |
 | n/a | not a texture | none | none |

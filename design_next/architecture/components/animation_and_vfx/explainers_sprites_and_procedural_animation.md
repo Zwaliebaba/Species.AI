@@ -162,7 +162,7 @@ A dead Worker's body is drawn in its colour × `ref.unit.worker.corpse_colour` (
 | seasonal hats on every Worker whose unit id is divisible by `ref.unit.worker.seasonal_hat_period` (3) | R-UNIT-148, VFX-118 |
 | snow on every map, from the presentation generator | R-SIM-234, R-CRATE-500, [particles](particles_shatter_and_screen_effects.md) VFX-224 |
 | trees with branches of `ref.bldg.tree.seasonal_branch_rgb` (180, 100, 50) and no leaves | [trees_and_crate_structures.md](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md), [renderer/world_renderers.md](../renderer/world_renderers.md) |
-| the seasonal terrain ramp, sea tile and shore-wave gradient | [terrain.md](../terrain/README.md) TER-042 |
+| the seasonal terrain ramp, sea tile and shore-wave gradient | [terrain](../terrain/README.md) TER-042 |
 | every light colour replaced by `rnd.light.seasonal_colour` (1.3, 1.2, 1.2); the light's alpha keeps its map value | RND-013 |
 
 No other seasonal theme exists.

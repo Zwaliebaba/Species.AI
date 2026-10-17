@@ -45,9 +45,9 @@ Table 1-A Neighbours and contracts.
 | match input pump and input router ([input](input/README.md)) | actions, the pointer, the input mode, whether a UI window is open | the control vector and the look-around state (R-CTRL-451, R-CTRL-472, R-CTRL-487); the pointer moves of the cursor lock (`InputRouter::WarpPointer`, INP-158); pointer confinement while a match mode advances (`InputRouter::ConfinePointer`, INP-159, R-CTRL-456) | read a device; write the team command state |
 | renderer ([view, lighting and fog](renderer/view_lighting_and_fog.md)) | the frame view of the last rendered frame (RND-210 to RND-213), `ProjectToScreen` (RND-216), the fade (RND-085, RND-086) | the camera frame output (CAM-012) | build the frame's matrices; set the planes |
 | animation and VFX ([README](animation_and_vfx/README.md)) | the shake rotation offset of the frame (VFX-232) | the view of the frame (VFX-003) | store the shake offset in its pose |
-| terrain ([terrain](terrain.md)) | terrain height queries | nothing | change the terrain |
+| terrain ([terrain](terrain/README.md)) | terrain height queries | nothing | change the terrain |
 | UI framework ([README](ui_framework/README.md)) | caption drawing; whether a UI window is open | caption requests of a timeline (CAM-110) | lay out widgets |
-| audio engine ([audio engine](audio_engine.md)) | nothing | the camera frame output, which the listener reads; the sound events of a timeline (CAM-113) | start a voice directly |
+| audio engine ([audio engine](audio_engine/README.md)) | nothing | the camera frame output, which the listener reads; the sound events of a timeline (CAM-113) | start a voice directly |
 | map data ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md), [data schemas](data_schemas/README.md)) | the validated camera views, camera animations and start-position records (DEC-560) | nothing | write a map; the map editor does (R-MAP-370) |
 
 ## 2 Interfaces
@@ -629,7 +629,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 **CAM-112** (MUST) An Overlay statement switches a named full-screen overlay effect on or off. The overlay effects, such as the grid or scan-line overlays of an intro, are presentation content of the animation and VFX and UI components, defined in data; their catalogue is a design-phase input.
 
-**CAM-113** (MUST) A Sound statement raises a presentation sound event of the [audio design](../../reference/10_audio_design/README.md) through the [audio engine](audio_engine.md). The timeline keeps the handles of the sounds it starts, so that an abort can stop them (CAM-106).
+**CAM-113** (MUST) A Sound statement raises a presentation sound event of the [audio design](../../reference/10_audio_design/README.md) through the [audio engine](audio_engine/README.md). The timeline keeps the handles of the sounds it starts, so that an abort can stop them (CAM-106).
 
 **CAM-114** (MUST) A camera trigger starts a timeline from the camera's own state: a camera-enter trigger fires when the camera position is inside its volume, and a camera-view trigger fires when its point passes the point-in-view test of RND-234 for the frame view. Camera triggers are polled every `cam.timeline.trigger_poll_s` (1 s) of the camera clock, fire once and are then spent, and are evaluated only on the participant whose camera they test. They never feed the simulation and never issue a command (R-SIM-660). Triggers that test the world, such as objectives or units in a volume, belong to the tutorial step graph and to sequenced simulation events (DEC-103), not to the camera.
 

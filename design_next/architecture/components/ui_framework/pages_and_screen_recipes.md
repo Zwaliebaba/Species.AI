@@ -194,7 +194,7 @@ public:
 
 **UI-314** (MUST) **Threading contract.** Every interface of this document runs on the main thread, in the UI's update phase or in its draw ([README](README.md) UI-006, ADR-032). A page hook never blocks: a picture, a thumbnail or a session list that is not yet available arrives through a queue that the page's view-model drains in its update (DEC-226), and a page that needs data before it can be built returns `Waiting` (UI-362).
 
-**UI-315** (MUST) Pages and widgets never play a sound directly. They raise the interface events of the match UI sound source, which the audio engine plays ([reference/10](../../../reference/10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-300; [audio_engine.md](../audio_engine.md)). The events that the screens of this document raise are:
+**UI-315** (MUST) Pages and widgets never play a sound directly. They raise the interface events of the match UI sound source, which the audio engine plays ([reference/10](../../../reference/10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-300; [audio_engine.md](../audio_engine/README.md)). The events that the screens of this document raise are:
 
 | Event | Raised by | Rule | Asset |
 |---|---|---|---|

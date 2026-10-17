@@ -25,3 +25,7 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 19 | FX-02 | the match message and the Power slots panel's centre message share one layout: share keys or not | coordinator: keep separate keys, each owner's document states its own (no change) |
 | 20 | FX-02 | `ref.unit.transport.bot_turret_search_default` (200 wu) is the search radius for a target that is not a Flag post, not a default Flag post size | coordinator edit of the key's notes in reference/02 transport.md |
 | 21 | FX-02 | RA-257 (turret frequency 0) and RB-070 (8 px line) not applied, with reasons | closed |
+| 22 | FX-08 | new renderer names need registering in CONVENTIONS §8 (reports/FX-08.md §5) | coordinator or a CONVENTIONS follow-up |
+| 23 | FX-08 | DEC-959 needs an item recording RND-176's defaults (camera-facing orientation, blend, number drawing) | decision edit |
+| 24 | FX-08 | AGENTS.md R9 against CONVENTIONS: renderer (and other component) types that know a game concept by name are registered in `Engine` | coordinator ruling: AGENTS.md wins; a type that names a game concept lives in `Species` (the game layer's presentation code) and builds on generic `Engine` types; one sweep over all component sketches and CONVENTIONS §8 after wave B |
+| 25 | FX-08 | about 33 files link the old terrain.md | `p4_fix_links.py --apply` |
