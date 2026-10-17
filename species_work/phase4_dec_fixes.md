@@ -57,3 +57,6 @@
 | 53 | G07 vs G04 | — | R-CRATE-035 lists a Swarm handler that only a debug tool can trigger; G07 dropped it | drop it from G04, or keep it with a Dropped note |
 | 54 | G07 vs G02a2 | — | two selection rules in transport.md and strike_team.md differ from G07's input | decide from ORIG |
 | 55 | G07 folder | — | links to `07_bots.md` elsewhere need updating | global link update |
+| 56 | G06 folder | — | about 27 glossary links and other documents' links to `06_controls_camera_and_commands.md` | global link update (CONVENTIONS registry already updated) |
+| 57 | G06 vs G07 | — | `ref.bot.power.promote_radius` duplicates `ref.ctrl.promote_radius` | G07 cites the ctrl key |
+| 58 | G06 | new | 7 DEC requests (default demote and scrap bindings, clickable power-bar details); 2 missing sound events; three conflicts with G04 | DEC triage; X-AST pass 2; reconcile with G04 |

@@ -144,7 +144,8 @@ pkg('G04', 3, None, '§9.3', own('G04'),
      'reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md'], {'R-CRATE': '001-599'},
     notes='Output is a folder (the input is 140 KB): crates and powers from 04 §1-§5, weapons and projectiles from 04 §6.')
 pkg('G05', 3, None, '§9.3', own('G05'), ids={'R-ECON': '001-399'})
-pkg('G06', 3, None, '§9.3', own('G06'), ids={'R-CTRL': '001-599'},
+pkg('G06', 3, None, '§9.3', own('G06'), ['reference/06_controls_camera_and_commands/' + f for f in ('README.md',
+    'actions_and_bindings.md', 'selection_and_power_slots.md', 'cursor_and_markers.md', 'camera.md')], ids={'R-CTRL': '001-599'},
     notes='If the output passes 120 KB, make `reference/06_controls_camera_and_commands/` a folder (README plus files).')
 pkg('G07', 3, None, '§9.3', own('G07'), ['reference/07_bots/' + f for f in ('README.md', '01_navigation_graph.md',
     '02_priority_model.md', '03_decision_loop_and_leaders.md', '04_powers_and_unit_policies.md',

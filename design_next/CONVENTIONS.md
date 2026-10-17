@@ -26,21 +26,21 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `R-MODE` | Skirmish match rules and modes | `reference/01_skirmish_rules_and_modes/` |
 | `R-UNIT` | Units, creatures, hazards, projectiles | `reference/02_units/` |
 | `R-BLDG` | Buildings and world objects | `reference/03_buildings_and_world_objects/` |
-| `R-CRATE` | Supply crates, powers and weapons | `reference/04_supply_crates_powers_and_weapons.md` |
+| `R-CRATE` | Supply crates, powers and weapons | `reference/04_supply_crates_powers_and_weapons/` |
 | `R-ECON` | Population flow | `reference/05_population_flow.md` |
-| `R-CTRL` | Controls, camera and commands | `reference/06_controls_camera_and_commands.md` |
-| `R-BOT` | Bots | `reference/07_bots.md` |
-| `R-MAP` | Maps and level design | `reference/08_maps_and_level_design.md` |
-| `R-META` | Front end and match flow | `reference/09_front_end_and_match_flow.md` |
+| `R-CTRL` | Controls, camera and commands | `reference/06_controls_camera_and_commands/` |
+| `R-BOT` | Bots | `reference/07_bots/` |
+| `R-MAP` | Maps and level design | `reference/08_maps_and_level_design/` |
+| `R-META` | Front end and match flow | `reference/09_front_end_and_match_flow/` |
 | `R-AUD` | Audio design | `reference/10_audio_design.md` |
 | `R-TUT` | Tutorial and help | `reference/11_tutorial_and_help.md` |
-| `R-SIM` | Simulation model | `reference/12_simulation_model.md` |
+| `R-SIM` | Simulation model | `reference/12_simulation_model/` |
 | `TER` | Terrain | `architecture/components/terrain.md` |
 | `RND` | Renderer | `architecture/components/renderer/` |
 | `AST` | Asset pipeline and resources | `architecture/components/asset_pipeline_and_resources.md` |
 | `VFX` | Animation and VFX | `architecture/components/animation_and_vfx.md` |
 | `AEN` | Audio engine | `architecture/components/audio_engine.md` |
-| `UI` | UI framework | `architecture/components/ui_framework.md` |
+| `UI` | UI framework | `architecture/components/ui_framework/` |
 | `INP` | Input | `architecture/components/input.md` |
 | `CAM` | Camera and sequences | `architecture/components/camera_and_sequences.md` |
 | `DAT` | Data schemas | `architecture/components/data_schemas.md` |
@@ -57,7 +57,7 @@ Every reference document has a **Tuning table** with the columns `key | value | 
 ## 5 Units
 
 - Distance is in world units (`wu`).
-- Every simulation duration is in **ticks**. The reference tick rate is defined once, in `reference/12_simulation_model.md`. Seconds appear only as a derived display value next to a tick count.
+- Every simulation duration is in **ticks**. The reference tick rate is defined once, in `reference/12_simulation_model/`. Seconds appear only as a derived display value next to a tick count.
 - Rates are given per tick, or per second derived from ticks, and say which.
 
 ## 6 Content rules
