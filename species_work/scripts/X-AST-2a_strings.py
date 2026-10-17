@@ -26,9 +26,19 @@ for dp, dn, fn in os.walk(root):
         if f.endswith('.md'):
             p = os.path.join(dp, f); rel = os.path.relpath(p, root)
             t = open(p, encoding='utf-8').read(); texts[rel] = t
-            for m in re.finditer(r'^\|\s*`([a-z0-9_.]+)`\s*\|', t, re.M):
-                keydef.add(m.group(1))
-ID = re.compile(r'`((?:' + '|'.join(sorted(roots, key=len, reverse=True)) + r')\.[a-z0-9_]+(?:\.[a-z0-9_<>{},]+)*)`')
+            hdr = None
+            for line in t.split('\n'):
+                if not line.startswith('|'):
+                    hdr = None; continue
+                cells = [c.strip() for c in line.strip().strip('|').split('|')]
+                if hdr is None:
+                    hdr = cells[0].lower(); continue
+                if hdr == 'key':
+                    m = re.match(r'`([a-z0-9_.]+)`$', cells[0])
+                    if m:
+                        keydef.add(m.group(1))
+ROOTS = roots | {'team', 'tutorial', 'faction', 'bot', 'help', 'option', 'options'}
+ID = re.compile(r'`((?:' + '|'.join(sorted(ROOTS, key=len, reverse=True)) + r')\.[a-z0-9_]+(?:\.[a-z0-9_<>{},]+)*)`')
 found = collections.defaultdict(set)
 for rel, t in texts.items():
     if rel.startswith(('assets/', 'decisions/', 'adr/', 'glossary/')) or rel == 'CONVENTIONS.md':
