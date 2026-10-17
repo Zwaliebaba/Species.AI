@@ -1383,3 +1383,74 @@ Ranges: `syncfrand(x)` ∈ [0,x), `syncsfrand(x)` ∈ [−x/2, x/2), `syncrand()
 | MP research levels | all 3; Squad 1; Laser 2; Grenade 2; Rocket 2; AirStrike 2; Darwinian 4 | code | `Location::Init` (P01) |
 | Laser life by level | 0.2/0.4/0.6/0.8/1.0 s (×2 subversion) | code | `Location::FireLaser` (P01) |
 
+## Cross-partition notes
+- **P01 (app core / Location / Team / Unit)**: `Location::SpawnEntities` (id assignment, `FindValidSpawnPosition`, grid insertion, monster/futurewinian team auto-init), `GetEntity/GetEntitySafe/GetWorldObject/GetEffect/GetSpirit/GetBuilding` resolution, `SpawnSpirit`, `IsFriend` (coop groups), `IsWalkable`/`GetWalkingDistance` (quirk: `IsWalkable` never advances `oldPosition`), `SelectDarwinians`, `IssueDarwinianOrders`, `PromoteDarwinian`/`DemoteOfficer`, `FireLaser` (lifetime by research), MP research levels in `Location::Init`, `AdvanceBuildings` → `ObstructionGrid::CalculateAll` on every building removal, `EntityGridCache::Advance` on slice 7, dust-ball vortex capture (sets `Darwinian::StateInVortex`), `Team::m_others/m_specials/m_evolutions/m_taskManager`, `Team::Advance` selection counting, `Unit::AdvanceEntities` grid updates.
+- **P02 (modes)**: Blitzkrieg — `Location::m_bitzkreigTimer > 0` grants Rage to all Darwinians; `MultiwiniaZone::m_blitzkriegLocked`, `m_size`, `BLITZKRIEG_FLAGCAPTURE_RANGE`; Assault — `PulseWave::s_pulseWave`, `LevelOptionFuturewinianTeam`; Rocket Riot — `FuelStation::IsLoading/BoardRocket/GetEntrance`, `EscapeRocket::m_passengers/IsSpectacle`, `rocket.cpp` calls `BoardRocket`, `WatchSpectacle`, `CastShadow`, `AttackBuilding`, `SetFire`; CTS — statues via `CarryableBuilding`.
+- **P04 (military)**: `Laser::Advance` damage 20+U[0,20), subversion conversion, knock-back, kill counting; `Location::ThrowWeapon` / `FireRocket`; `ControllerGrenade` → `Darwinian::TakeControl` (`weapons.cpp`); flame weapons → `FireDamage`; Armour passenger API (`IsLoading`, `IsUnloading`, `AddPassenger`, `RemovePassenger`, `RegisterPassenger`, `GetEntrance`, `Capacity`, `GetNumPassengers`, `GetSpeed`, `StateUnloading/Idle`) and `Armour::IsRouteClear` (sea routing); Harvester spirit collection → `SpawnPoint::SpawnDarwinian`; `InsertionSquad::m_focusPos/m_numControlled/m_numControlledThisFrame`.
+- **P05 (creatures)**: `SpaceShip` (`Abduct`, `ShipStateAbducting`, `IncreaseAbductees`), `DustBall::s_vortexPos`, `ArmyAnt::GetCarryMarker`, `Tripod` (sole `EntityLeg` user), `SoulDestroyer` (consumes spirits), `Virii/Egg` (spirit egg cache), `Zombie` effect, `Shaman` (sacrifice; legacy).
+- **P06 (core buildings)**: port API (`GetNumPorts`, `GetNumPortsOccupied`, `GetPortOccupant`, `GetPortOperatorCount`, `GetPortPosition`, `OperatePort`), collision API (`DoesSphereHit`, `DoesShapeHit`, `DoesRayHit`, `m_radius`, `m_centrePos`), `Teleport/RadarDish/Bridge` (`GetEntrance`, `GetExit`, `ReadyToSend`, `EnterTeleport`, `Connected`, `m_radius`), `LaserFence` (`IsEnabled`, `Electrocute`, `GetBuildingLink`), `AITarget` (`m_enemyCount[team]`, `GetRange`, `m_checkCliffs`, `m_radarTarget`, `IsImportant`, `NeedsDefending`, `m_neighbours`), `SpawnPoint::SpawnDarwinian`, spawn-on-ports at match start (`location.cpp` ≈L3355).
+- **P07 (misc buildings)**: `Wall` push, `Tree` (`IsOnFire`, `GetBurnRange`, `Damage`), `CarryableBuilding` (`IsCarryableBuilding`, `GetCarryPosition`, `m_numLifters`, `m_maxLifters`, `m_numLiftersThisFrame`, `SetWaypoint`), `WallBuster`, `GodDish`, `Statue`.
+- **P08 (crates / AI)**: crate power-up entry points (`SetBooster`, `GiveHotFeet`, `GiveRage`, `GiveMindControl`, `Infect`, `RunRocketDarwinians` → `Team::EvolutionRockets`), crate capture by nearby `StateOpeningCrate` Darwinians (`Crate::GetPercentCaptured`, `CRATE_SCAN_RANGE`), CPU AI calling `Darwinian::GiveOrders`, `Officer::RunAI`, `Officer::m_noFormations = true` (`ai.cpp`), `m_wallHits`, `m_closestAITarget`.
+- **P09 (task manager / input)**: power-up tasks (`GlobalResearch::TypeBooster/TypeHotFeet/TypeSubversion/TypeRage`) validated each tick; `taskmanager.cpp` sets `m_underPlayerControl`; `LocationInput` generates/deletes preview routes in the shared routing system; `Team::m_currentEntityId` (officer PrepareGoto); `markersystem.cpp` renders local officer flags.
+- **P12 (render)**: `Flag`, `g_explosionManager.AddExplosion`, particle types used (`TypeControlFlash`, `TypeDarwinianFire`, `TypeMissileTrail`, `TypeHotFeet`, `TypePlague`, `TypeBlueSpark`, `TypeMuzzleFlash`, `TypeRocketTrail`), `Renderer::MarkUsedCells`, `DarwinianScaleFactor` preference.
+- **P15 (network)**: `RequestPromoteDarwinian` command (promote/demote toggle); `GAMEOPTION_GAME_RESEARCH_LEVEL` (`Multiwinia::SetGameResearch`) is overwritten by `Location::Init`'s fixed MP research table [I] (order of execution: lobby option first, location init later).
+- **P16 (sound)**: entity sound event names listed in the Darwinian/Officer/Entity sections; `StopAllSounds(id, "Darwinian SeenThreat" / "Darwinian TakenControl" / "Officer SetOrder*")`.
+- **X3**: all RNG sites and hazards in the determinism section; `#undef TRACK_SYNC_RAND` in `spirit.cpp`.
+
+## Contradictions / open questions
+1. `TypeOfficer` (and `TypeNuke`, `TypeMeteor`, `TypeSpaceShip`, `TypeDropShip`) are "blocked" yet created at runtime; "blocked" only filters level-file placement [C].
+2. `Darwinian::StateWatchingGodDish` is never assigned anywhere; `StateFollowingShaman` is unreachable (`SearchForShamans` call commented out) [C].
+3. The MP "idle Darwinians go to useful buildings/officers" feature in `AdvanceIdle` is dead because `Advance` resets `m_idleTimer = 60` every tick in MP [C] — likely an unintended disable.
+4. `Darwinian::SearchForThreats` ant-nest attack and `Officer::RunAI` final target both pass an **array index** where a building unique id is expected [C] (bugs; behaviour depends on whether a building happens to have that id).
+5. `Darwinian::FireDamage` increments the attacker's kill counter on every call after ignition [C].
+6. `Officer::Advance` runs `AdvanceInWater` twice per tick (drown ×2 speed) [C].
+7. `Entity::AdvanceInAir` discards the `PushFromObstructions` result; `WorldObject::BounceOffLandscape` midpoint is a no-op [C].
+8. `ObstructionGrid::CalculateBuildingArea` fence "diagonal gap" guard is defeated by variable shadowing (always dilates) [C].
+9. `EntityGridCache` hits ignore the requested range; `AreNeighboursPresent` tests cell capacity, not occupancy; `GetNum*` counts are not range-filtered [C] — all "fast" approximations that change gameplay thresholds (grenade decision, scared check).
+10. `SearchForPorts` draws a random building then overrides it with the nearest [C].
+11. Laser fences set enemy Darwinians on fire (`SetFire`) rather than killing them outright; other entities die instantly (`ChangeHealth(−9999)`) [C].
+12. In MP `Officer::SetNextMode/SetPreviousMode` are no-ops; officer mode changes come from `SetOrders`/`SetFormation` only [C].
+13. `IsWalkable` is direction-dependent but the routing graph caches it symmetrically [C].
+
+## [U] Unknowns
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Where `Darwinian::m_underPlayerControl` is cleared after an order (only teleport entry clears it in P03 files) | read `code/location_input.cpp`, `code/taskmanager.cpp` (P09) |
+| U2 | Effective `m_stats` value for Meteor (350) and SpaceShip (500) speed after double→uchar conversion (UB; MSVC x87 behaviour) | disassemble/run the shipped binary, or check whether P05 subclasses read `m_stats[StatSpeed]` at all |
+| U3 | Whether the wall-clock `m_front` in `AdvanceWatchingSpectacle` actually desyncs Rocket Riot (is the match still simulated after launch?) | P02 Rocket Riot end-of-game flow; sync-log test |
+| U4 | Whether Harvesters collect enemy-team souls (no team test seen in `Harvester::SearchForSpirits`) | full read of `code/worldobject/harvester.cpp` (P04) |
+| U5 | Crate capture rule (how `StateOpeningCrate` Darwinians contribute; team rules) | `code/worldobject/crate.cpp` (P08) |
+| U6 | Exact port-capture contribution of `Building::OperatePort` per tick | `code/worldobject/building.cpp`, `spawnpoint.cpp` (P06) |
+| U7 | Whether `GAMEOPTION_GAME_RESEARCH_LEVEL` can override the fixed MP research table (order of `SetGameResearch` vs `Location::Init`) | P15/P01 sequencing of lobby options vs location init |
+| U8 | `NUM_SLICES_PER_FRAME` value and therefore exact per-entity advance cadence | `code/globals.h` / P01 |
+
+## Docs-vs-code discrepancies
+| Doc | Claim | Code |
+|---|---|---|
+| `docs/spirit resource system.txt` | Spirits "gradually float away over the course of a minute"; garbage-collector units and factories that need spirits | MP: 6 s birth + 30–50 s floating + 90 s ascent; SP 6 + 90–150 + 180 s (`Spirit::Advance`). Only Harvesters (crate) and legacy Engineers/Incubators consume souls; no "garbage collector" unit [C] |
+| `docs/multiwinia_manual.pdf` (Officers) | "Right click on officer: set surrounding Multiwinians into formation" | formation toggles when the order point is < 50 from the officer and no radar-dish entrance is within √5 (`Officer::IsFormationToggle`) — consistent; "surrounding" Darwinians join only if they are FOLLOW-searching within 150 and the formation (90 max) isn't full [C] |
+| manual (tips) | "Multiwinians in Formation are very vulnerable from behind" | consistent: formation threat search is centred 0.66 × range **ahead** of the officer and members hold position (`SearchForThreats`) [C] |
+| `docs/changes.txt` | "Un-occupied Battle Cannons will no longer scare Darwinians" | `EffectGunTurretTarget` threats are only considered in single-player and for other teams; in MP they are ignored entirely [C] |
+| `docs/multiwinia-changes.txt` | "Fixed: Sync error involving Officers sending Darwinians into a radar dish" | current code path: `SearchForOfficers` copies `m_ordersBuildingId`; no residual issue identified [I] |
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian" (unit/class name, sounds "Darwinian …") | name | `code/worldobject/darwinian.*`, sound event prefixes | "Sprite" / "Citizen" |
+| "Multiwinian" (manual term) | name | `docs/multiwinia_manual.pdf` | "Citizen" |
+| "Futurewinian" | name | `Darwinian::m_futurewinian`, `sprites/futurewinian.bmp` | "Elite Citizen" |
+| "Officer" banners `icons/banner_none/follow/formation/absorb.bmp` | art | `Officer::RenderFlag` | new banner art |
+| `officer.shp`, `boxkite.shp`, `tripod_leg_part.shp`, `data/shapes/darwinian.shp` | art (3D) | `Officer::Begin`, `BoxKite::BoxKite`, `tripod.cpp`, `Entity::ConvertShapeColoursToTeam` | new models |
+| `sprites/darwinian.bmp`, `darwinian_ouch1..4.bmp`, `darwinian_side.bmp`, `santahat.bmp`, `brainwaves.bmp`, `futurewinian.bmp` | art (sprites) | `Darwinian::Render` | new sprites |
+| `textures/glow.bmp`, `bubble.bmp`, `laser.bmp`, `starburst.bmp`, `particle.bmp`, `icons/widearrow.bmp` | art | Darwinian/Officer/Spirit/Routing render | new VFX textures |
+| Spirit/soul visual (green/team-coloured double-quad soul) and BoxKite (spirit-guiding kite) concepts | art/design | `Spirit::Render`, `BoxKite` | "essence orb" |
+| Sound event names ("SeenThreatAttackHorn", "VictoryJump", "LiftBuilding", "SetOrderAbsorb", …) and their samples | audio | `ListSoundEvents` (samples bound in `data/sounds.txt`, X2b) | new event names/samples |
+| Entity type names "SoulDestroyer", "Virii", "Squadie", "Tripod", "Centipede", "SpaceInvader", "TriffidEgg", "Shaman", "Harvester", "Tank", "Nuke", "Meteor", "SpaceShip", "DropShip", "Engineer", "LaserTroop", "ArmyAnt", "Spider", "Egg", "SporeGenerator", "Lander", "Tentacle", "AI" | name | `Entity::GetTypeName`, `data/stats.txt` | generic role names |
+| Language phrase keys `entityname_<Type>`, `multiwinia_kills_*` | text | `Entity::GetTypeNameTranslated`, `team.cpp` | new string table |
+| Christmas santa-hat mod | design/art | `Darwinian::Render`, `Location::ChristmasModEnabled` | optional seasonal cosmetic |
+| "Dr Sepulveda" lines (`officer_notwalkable`) | text/character | `Officer::SetOrders` (dead under `USE_SEPULVEDA_HELP_TUTORIAL`) | omit |
+
+## Appendix — dead/legacy code
+- **[B:DEAD]** `Darwinian::AdvanceJumpPadLaunch` (commented out); `StateUsingJumpPad` (commented in enum); Sepulveda hooks under `USE_SEPULVEDA_HELP_TUTORIAL` (`Officer::SetOrders`, `taskmanager.cpp`); `TRACK_SYNC_RAND` tracking (`Entity` ctor/dtor/`NewEntity`, debug only); `DEBUG_ENTITY_GRID` error visualiser; `EntityGrid::Render` / `ObstructionGrid::Render` / `EntityGridCache::Render` are debug renders (`EntityGridCache::Render` call commented out).
+- **[B:LEGACY]** (compiled, unreachable or SP-only in Multiwinia): `StateWorshipSpirit` + `BoxKite`, `SearchForSpirits`, `StateCapturedByAnt` (ArmyAnt blocked), `StateFollowingShaman`/`SearchForShamans`, `StateBeingSacraficed`/`Sacrafice`/`OrbitPortal`/Zombie (Shaman blocked), `StateWatchingGodDish`, GodDish spectacle, `BeginVictoryDance`, SP red-team (team 1) special cases ("Red Darwinians don't respond to officers/armour/spirits", always soldier+grenades), SP team-2 grenade safety check, `OfficerOrders` (SP order effect), Officer `SetNextMode/SetPreviousMode` research-level cycling and absorb/shield mechanics (research level 4 only; MP fixes level 3), `Task::Promote`, `EntityLeg` (Tripod only), `Spirit` egg/store/attached/shaman states, `Spirit::AddToGlobalWorld`, `Location::IsFriend` SP friendship table, `Entity::PushFromEachOther` (only LaserTrooper uses it), `Entity::PushFromCliffs` (no live caller), `Officer::SearchForRandomPosition` (no caller), `Darwinian::AdvanceIdle` MP idle search (dead by timer reset), `m_avoidObstruction` (never set).
+- `EntityBlueprint` difficulty scaling (`m_difficultyLevel` forced to 0 in Multiwinia unless a level stores one).

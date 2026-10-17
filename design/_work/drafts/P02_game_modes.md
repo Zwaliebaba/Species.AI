@@ -6,7 +6,7 @@ Conventions used below:
 - "tick" = one server advance = one call of `Multiwinia::Advance` / `Building::Advance`, nominally 0.1 s of game time. `SERVER_ADVANCE_PERIOD` ≡ `0.1 * g_gameTimer.m_gameSpeed` [C] `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`, `code/gametimer.h`.
 - "game second" = `GetNetworkTime()` ≡ `g_gameTimer.GetGameTime()` units [C] `code/gametimer.h`.
 - "mode second" = one period of the `m_timer`/`m_reinforcementTimer`/`m_positionTimer` 1.0-second countdowns. **These last 11 ticks (1.1 game seconds), not 10** — see §8 Determinism D1 [C by arithmetic on the code path].
-- Team ids: `NUM_TEAMS = 6` [C] `code/globals.h`; player teams 0–3; team 4 = "monster" team (Evilinians), team 5 = Futurewinians, both only when `Location::m_allowMonsterTeam` [C] `code/location.cpp:Location::GetMonsterTeamId`, `GetFuturewinianTeamId`. Team id 255 = neutral/unowned.
+- Team ids: `NUM_TEAMS = 6` [C] `code/globals.h`; player teams 0–3; team 4 = "monster" team (Evilinians), team 5 = Futurewinians, `m_allowMonsterTeam` is always set true in `Location::Init` and both special teams are created in every multiplayer game as `TeamTypeCPU` LobbyTeams (`Location::InitMonsterTeam`/`InitFuturewinianTeam` → `Multiwinia::InitialiseTeam(id, TeamTypeCPU, -1)`) [C] `code/location.cpp:Location::GetMonsterTeamId`, `GetFuturewinianTeamId`, `Location::Init` (L~358), L~641/652. They are therefore "used" teams in every loop that only skips `TeamTypeUnused`. Team id 255 = neutral/unowned.
 
 ---
 

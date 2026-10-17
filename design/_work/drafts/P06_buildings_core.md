@@ -91,6 +91,7 @@ classDiagram
 
 1. **Parse.** `LevelFile::ParseBuildings` reads each line; first token = type name → `Building::CreateBuilding(char*)` (honours `BuildingIsBlocked`, returns NULL for blocked or unknown names, and the line is then silently skipped) → `building->Read(_in,_dynamic)`. Duplicate unique ids are a fatal `AppReleaseAssert`. Types TrunkPort, ControlTower, RadarDish, Incubator, FenceSwitch must have `isGlobal = 1` or loading asserts. Team-1-owned SpawnPopulationLocks get `m_maxPopulation *= 1 + difficulty/5` when the level difficulty is < 0 (Darwinia). [C] `code/level_file.cpp:LevelFile::ParseBuildings`.
 2. **Instantiate.** For each parsed template, `Location` calls `CreateBuilding(type)` (int overload: **no** block check), maps the template's team **position** to a real team with `GetTeamFromPosition` (if team ≠ 255/−1), then `newBuilding->Initialise(template)` and `newBuilding->SetDetail(1)`. [C] `code/location.cpp` building-instantiation loop (≈L465–495).
+   There is **no separate `BuildingDefinition` type**: the "definition" is a template `Building` object of the same class, created by `CreateBuilding(char*)` and filled by `Read()`; `Initialise(template)` copies from it (subclasses down-cast the template to read their extra fields). [C] `level_file.cpp:ParseBuildings`, every `Initialise` in scope.
 3. **`Initialise(template)`** (base): copies `m_id, m_pos, m_front, m_up, m_dynamic, m_isGlobal, m_destroyed`; snaps `m_pos.y` to the heightmap; computes `m_centrePos/m_radius` from the shape; collects lights and ports; if a `GlobalBuilding` record exists for (uniqueId, requested location) its team overrides; triggers sound event `Create`. [C] `Building::Initialise`.
 4. **`SetDetail(detail)`**: re-snaps y, recomputes centre/radius, **deletes and rebuilds all ports** (so port occupancy resets). `_detail` is ignored by the base class. [C] `Building::SetDetail`.
 5. **`Advance()`** each tick: if `m_destroyed` return true (delete me); else `EvaluatePorts()`; return false. Subclasses call it last. [C] `Building::Advance`.
@@ -334,6 +335,27 @@ Not blocked although Darwinia-era: AntHill, Triffid, ControlTower, Incubator, Tr
 | `controlpad.shp` | 0 | 0 | MarkerStatus | [C] |
 
 Hit-test overrides: buildings that must never block movement or projectiles return false from `DoesSphereHit/DoesShapeHit` (SpawnPopulationLock, JumpPad, Portal, CarryableBuilding); RadarDish inflates its sphere test ×1.5 so its door registers in obstruction-grid cells; GunTurret ray test = turret shape ∪ barrel shape ∪ sphere r=12 at pos+(0,10,0) (exact picking for selection). [C] respective `DoesSphereHit/DoesRayHit`.
+
+### 13. Level-file parameters of every class in this partition
+
+Tokens after the 8 base fields (`Type id x z team fx fz isGlobal`); "*" = repeated until end of line; [opt] = read only if a token is available. [C] each class's `Read/Write`.
+
+| Level-file type | Class | Extra tokens (order) | Write format | Notes |
+|---|---|---|---|---|
+| `SpawnPoint`, `SpawnLink`, `SpawnPointMaster` | SpawnBuilding subclasses | `linkId*` | `%-6d` each | links = outgoing spawn links |
+| `SpawnPopulationLock` | SpawnPopulationLock | `searchRadius maxPopulation` | `%-8.2f %-6d` | both mandatory |
+| `GunTurret` | GunTurret | [opt] `state` [opt] `targetX targetZ targetRadius targetForce` | `%-4d` + 4×`%-2.2f ` | mortar fields relative to turret |
+| `RadarDish` | RadarDish | [opt] `forceConnection` [opt] `autoConnectAtStart` `validLinkId*` | `%-5d` each | isGlobal must be 1 |
+| `JumpPad` | JumpPad | `force angle` | `%-2.2f ` each | angle in radians |
+| `SolarPanel`, `Pylon`, `PylonEnd`, `Generator`* | PowerBuilding subclasses | `powerLink` | `%-8d` | *Generator blocked |
+| `PylonStart`* | PylonStart | `powerLink reqBuildingId` | `%-8d %-8d` | *blocked |
+| `PowerSplitter` | PowerSplitter | `powerLink linkId*` | `%-8d` then `%-4d` each | splitter ignores powerLink when routing |
+| `Powerstation`* | Powerstation | `linkedBuildingId` | `%-8d` | *blocked |
+| `ControlTower` | ControlTower | `controlBuildingId` | `%6d` | isGlobal must be 1 |
+| `Incubator` | Incubator | [opt] `numStartingSpirits` | `%6d` | isGlobal must be 1 |
+| `SpiritReceiver`*, `ReceiverLink`*, `SpiritSpawner`*, `SpiritProcessor`* | ReceiverBuilding subclasses | `spiritLink` | `%-8d` | *blocked |
+| `Yard`*, `DisplayScreen`*, `Portal`* | — | none | — | *blocked |
+| (no level type) | CarryableBuilding, Teleport | — | — | abstract/bases |
 
 ## [→ 03_buildings_and_world_objects] Spawn network buildings (SpawnBuilding, SpawnPoint, SpawnLink, MasterSpawnPoint, SpawnPopulationLock)
 
@@ -628,6 +650,7 @@ Source: `code/worldobject/jumppad.{h,cpp}`. Build tag: **[B:FULL]** (trajectory 
 | Ownership | none — works for every team | [C] |
 | Behaviour | every **0.3 s** (`m_launchTimer`): launch vector = `m_front` rotated about `m_front × up` by `m_angle` (radians), length `m_force`; every Darwinian from the entity grid within `JUMPPAD_RADIUS` **40** that is on the ground and not `StateInsideArmour` gets `vel = launch`, `m_onGround = false`, `StateIdle`, waypoint cleared, orders cleared | [C] `JumpPad::Advance` |
 | Note | does **not** call `Building::Advance` (no port evaluation; `m_destroyed` never honoured) | [C] |
+| Damage | indestructible (base `Damage`) | [C] |
 | Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 units long, ±20 wide, brightness pulsing `0.3 + 0.7|sin t|` | [C] `RenderAlphas` |
 | Level line | `JumpPad id x z team fx fz isGlobal force angle` (write `%-2.2f ` each) | [C] |
 | Data | 23 placed in 3 official MP levels (Assault `2P_2` 3, Blitzkrieg `2P_3` 2, Domination `skirmish_3P_1` 18); force 76.17–227.38, angle 0.51–1.08 rad | [C] data |
@@ -646,6 +669,7 @@ Source: `code/worldobject/generator.{h,cpp}`, `code/worldobject/powerstation.{h,
 | Rendering | power line beam between the two `MarkerPowerLocation`s; surges as star sprites (size 20) in the surge team's colour (MP; monster/Futurewinian teams skipped for the trail) with a 3-sprite trail | [C] `RenderAlphas` |
 | Level line | base fields + `powerLink` (`%-8d`) | [C] `Read/Write` |
 | Link API | `GetBuildingLink/SetBuildingLink` = `m_powerLink` | [C] |
+| Damage | all power buildings are indestructible (base `Damage`) | [C] |
 
 ### SolarPanel — the capturable power source
 
@@ -709,6 +733,20 @@ Behaviour per tick [C] `CarryableBuilding::Advance`:
 5. **Movement & collision**: desired position = pos + dir·speed·dt (y on terrain); no move if it would not get closer to the goal. Collision factor = Σ over other carryables of `(rA + rB − dist)` for overlaps (using `m_carryRadius`). Move only if currently not colliding or the move reduces overlap; otherwise stop and call `HandleCollision(m_scale / numEnemies)` on each **enemy** carryable hit (base implementation empty; subclasses may react). Up vector follows terrain normal with y ×1.5. [C].
 6. `Building::Advance()`.
 
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Resting : recount (1 s): a team has >= minLifters Darwinians within 50
+    Resting --> Lifted : lifters >= minLifters (sound Lift/Carry, goal reset)
+    Lifted --> Resting : lifters < minLifters (sound Drop)
+    Lifted --> Lifted : carriers vote > 66% for new waypoint/route
+    Resting --> Neutral : recount finds no qualifying team
+    Lifted --> Neutral : recount finds no qualifying team
+    Resting --> Resting : non-allied team now has more (team switch, goal reset)
+```
+
+Damage: none at this level (base `Damage`; `HandleCollision` empty) — subclasses define collision damage. [C].
+
 `GetCarryPosition(uniqueId)`: zero vector if the ring is full (`m_numLiftersThisFrame ≥ m_maxLifters`), else a point on the ring at angle `uniqueId × 123.467` rad offset by `vel × 0.5`, on terrain. Hit tests: none in game (ray test only in editor). Always in view. [C].
 
 ## [→ 03_buildings_and_world_objects] ControlTower
@@ -762,6 +800,16 @@ Source: `code/worldobject/portal.{h,cpp}`. Build tag: **[B:FULL]** via the crate
 | `SummonStateFinished` (6) | — | — | [C] |
 
 Rendering uses **unsynced** `rand()`/`frand()` for fire particles (cosmetic only). [C] `Portal::RenderAlphas`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PortalExpand : created by The Beast crate
+    PortalExpand --> Thrash : radius >= 100 (10 s)\nspawn 6x12 tentacles
+    Thrash --> Explode : 45 s
+    Explode --> CoolDown : 10 s, then Bang(200, 255)
+    CoolDown --> [*] : 1 s, m_destroyed, burn patch
+    note right of PortalExpand : every tick in all states:\nDarwinians within radius set on fire
+```
 
 ## [→ 03_buildings_and_world_objects] Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)
 

@@ -1,0 +1,74 @@
+path,depth,reason,sections
+code/interface/buildings_window.cpp,full,,[08] E4.6 BuildingsCreateWindow;[08] E4.7 BuildingEditWindow
+code/interface/buildings_window.h,full,,[08] E4.6 BuildingsCreateWindow;[08] E4.7 BuildingEditWindow
+code/interface/camera_anim_window.cpp,full,,[08] E4.10 Camera mounts and animations
+code/interface/camera_anim_window.h,full,,[08] E4.10 Camera mounts and animations
+code/interface/camera_mount_window.cpp,full,,[08] E4.10 Camera mounts and animations
+code/interface/camera_mount_window.h,full,,[08] E4.10 Camera mounts and animations
+code/interface/cheat_window.cpp,full,,[32] D1 Debug tool windows;[32] D4 Cheat window
+code/interface/cheat_window.h,full,,[32] D1 Debug tool windows;[32] D4 Cheat window
+code/interface/checkbox.cpp,full,,[28] 4.5 CheckBox
+code/interface/checkbox.h,full,,[28] 4.5 CheckBox
+code/interface/darwinia_window.cpp,full,,[28] 3 Darwinia layer;[28] 5 Window rendering summary;[28] 6 Controller and keyboard navigation;[28] 7 Localisation integration;[28] 8 How a new screen is built;[28] 10 Framework defects
+code/interface/darwinia_window.h,full,,[28] 3 Darwinia layer;[28] 5 Window rendering summary;[28] 6 Controller and keyboard navigation;[28] 7 Localisation integration;[28] 8 How a new screen is built;[28] 10 Framework defects
+code/interface/debugmenu.cpp,full,,[32] D1 Debug tool windows;[32] D2 DebugKeyBindings;[32] D3 DebugMenu
+code/interface/debugmenu.h,full,,[32] D1 Debug tool windows;[32] D2 DebugKeyBindings;[32] D3 DebugMenu
+code/interface/drop_down_menu.cpp,full,,[28] 4.6 DropDownMenu
+code/interface/drop_down_menu.h,full,,[28] 4.6 DropDownMenu
+code/interface/editor_window.cpp,full,,[08] E3 MainEditWindow
+code/interface/editor_window.h,full,,[08] E3 MainEditWindow
+code/interface/filedialog.cpp,full,,[28] 4.8 FileDialog;[08] E4.1 LandscapeEditWindow
+code/interface/filedialog.h,full,,[28] 4.8 FileDialog;[08] E4.1 LandscapeEditWindow
+code/interface/gesture_window.cpp,full,,[32] D7 Gesture editor;Appendix
+code/interface/gesture_window.h,full,,[32] D7 Gesture editor;Appendix
+code/interface/globalworldeditor_window.cpp,full,,[08] E4.13 GlobalWorldEditorWindow;Appendix
+code/interface/globalworldeditor_window.h,full,,[08] E4.13 GlobalWorldEditorWindow;Appendix
+code/interface/grabber_window.cpp,full,,[32] D6 Grabber window;Appendix
+code/interface/grabber_window.h,full,,[32] D6 Grabber window;Appendix
+code/interface/input_field.cpp,full,,[28] 4.1 InputField;[28] 4.2 InputScroller;[28] 4.3 ColourWidget/ColourWindow;[28] 3.7 Value-control factory;[28] 10 Framework defects
+code/interface/input_field.h,full,,[28] 4.1 InputField;[28] 4.2 InputScroller;[28] 4.3 ColourWidget/ColourWindow;[28] 3.7 Value-control factory;[28] 10 Framework defects
+code/interface/instant_unit_window.cpp,full,,[08] E4.9 Instant units
+code/interface/instant_unit_window.h,full,,[08] E4.9 Instant units
+code/interface/invalidcrates_window.cpp,full,,[08] E4.12 InvalidCratesWindow
+code/interface/invalidcrates_window.h,full,,[08] E4.12 InvalidCratesWindow
+code/interface/landscape_window.cpp,full,,[08] E4.1 LandscapeEditWindow;[08] E4.2 LandscapeTileEditWindow;[08] E4.3 LandscapeFlattenAreaEditWindow;[08] E4.4 LandscapeGuideGridWindow
+code/interface/landscape_window.h,full,,[08] E4.1 LandscapeEditWindow;[08] E4.2 LandscapeTileEditWindow;[08] E4.3 LandscapeFlattenAreaEditWindow;[08] E4.4 LandscapeGuideGridWindow
+code/interface/lights_window.cpp,full,,[08] E4.5 LightsEditWindow
+code/interface/lights_window.h,full,,[08] E4.5 LightsEditWindow
+code/interface/message_dialog.cpp,full,,[28] 4.7 MessageDialog
+code/interface/message_dialog.h,full,,[28] 4.7 MessageDialog
+code/interface/multiwinia_filedialog.cpp,full,,[28] 4.9 MultiwiniaFileDialog;[08] E1.3 Entry and exit flow
+code/interface/multiwinia_filedialog.h,full,,[28] 4.9 MultiwiniaFileDialog;[08] E1.3 Entry and exit flow
+code/interface/multiwinia_window.cpp,full,,[08] E1.2 Reachability in FULL;[08] E1.3 Entry and exit flow;[28] 8.2 Multiwinia front-end page pattern
+code/interface/multiwinia_window.h,full,,[08] E1.2 Reachability in FULL;[08] E1.3 Entry and exit flow;[28] 8.2 Multiwinia front-end page pattern
+code/interface/network_window.cpp,full,,[32] D5 Network stats window
+code/interface/network_window.h,full,,[32] D5 Network stats window
+code/interface/scrollbar.cpp,full,,[28] 4.4 ScrollBar
+code/interface/scrollbar.h,full,,[28] 4.4 ScrollBar
+code/interface/tree_window.cpp,full,,[08] E4.8 TreeWindow
+code/interface/tree_window.h,full,,[08] E4.8 TreeWindow
+code/location_editor.cpp,full,,[08] E2 LocationEditor core;[08] E5 Editor defects
+code/location_editor.h,full,,[08] E2 LocationEditor core;[08] E5 Editor defects
+contrib/eclipse/eclbutton.cpp,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+contrib/eclipse/eclbutton.h,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+contrib/eclipse/eclipse.cpp,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+contrib/eclipse/eclipse.h,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+contrib/eclipse/eclwindow.cpp,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+contrib/eclipse/eclwindow.h,full,,[28] 2 Eclipse core;[28] 1 Layering and build status;[28] 9 Class diagram
+code/interface/multiwiniaoptions_window.cpp,full,outside scope (P17b); read to document editor Other Options window,[08] E4.11 MultiwiniaOptionsWindow
+code/interface/multiwiniaoptions_window.h,full,outside scope (P17b),[08] E4.11 MultiwiniaOptionsWindow
+code/UI/MultiwiniaEditorButton.h,full,outside scope (P18); editor entry gating,[08] E1.2 Reachability in FULL
+code/UI/GameMenuWindow.cpp,skimmed,outside scope (P18); only LOCATION_EDITOR editor-button block read,[08] E1.2 Reachability in FULL
+code/main.cpp,skimmed,"outside scope (P01); editor/global-world loops, EnterLocation, RemoveAllWindows read",[08] E1.3 Entry and exit flow;[08] E4.13 GlobalWorldEditorWindow
+code/user_input.cpp,skimmed,outside scope (P10); Eclipse pump and debug hot-keys read,[28] 2.2 Pump;[32] D1 Debug tool windows
+code/lib/input/inputdriver_win32.cpp,skimmed,outside scope; WM_CHAR routing only,[28] 2.2 Pump
+data/input/input_preferences.txt,skimmed,outside scope; UI/editor/debug bindings extracted,[28] 6 Controller and keyboard navigation;[08] E2.2;[32] D1
+code/network/networkvalue.h,skimmed,outside scope (P15); value adaptor semantics,[28] 4.1 InputField
+code/network/networkvalue.cpp,skimmed,outside scope (P15); parse/format semantics,[28] 4.1 InputField
+code/lib/text_renderer.cpp,skimmed,"outside scope (P12); blend modes, BeginText2D, GetTextWidth",[28] 3.4 Window chrome;[28] 4.7 MessageDialog
+code/lib/language_table.cpp,skimmed,outside scope; LookupPhrase fallback,[28] 7 Localisation integration
+code/interface/mainmenus.h,skimmed,outside scope (P17b); GameOptionsWindow/MenuCloseButton,[28] 8.2 Multiwinia front-end page pattern
+code/interface/mainmenus.cpp,skimmed,outside scope (P17b); MultiwiniaButton reachability,[08] E1.2 Reachability in FULL
+code/game_menu.cpp,skimmed,outside scope (P18); layout helpers and .mwm listing gate,[28] 4.9 MultiwiniaFileDialog;[08] E1.1
+code/level_file.h,skimmed,outside scope (P11); editor-edited structures,[08] E2-E4
+contrib/eclipse/eclipse.vcproj,full,build settings for eclipse lib,[28] 1 Layering and build status

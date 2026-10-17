@@ -480,10 +480,10 @@ with open(OUT_MD, 'w') as fh:
             r['idx'], r['control'], r['type'], esc(r['comment']), esc(r['kbm_default'] + ((' ; other: ' + r['other_default']) if r['other_default'] else '')),
             esc(r['xinput_default']), esc(diff), esc(r['live_consumers'].replace(';', ', '))))
     fh.write('\n')
-    fh.write('\n#### Icons (`~` lines) in input_preferences.txt (last per control wins)\n\n| Control | Icon |\n|---|---|\n')
+    fh.write('\n#### 2.2.1 Icons (`~` lines) in input_preferences.txt (last per control wins)\n\n| Control | Icon |\n|---|---|\n')
     for k, v in main_i.items():
         fh.write('| `%s` | `%s` |\n' % (k, v))
-    fh.write('\n### Lines of the shipped preference files that do not create a binding\n\n')
+    fh.write('\n#### 2.2.2 Lines of the shipped binding files that fail, are ignored, or bind only through a parser quirk\n\n')
     fh.write('| File:line | Control | Op | Spec | Status | Reason |\n|---|---|---|---|---|---|\n')
     for f in FILES:
         for r in results[f][0]:

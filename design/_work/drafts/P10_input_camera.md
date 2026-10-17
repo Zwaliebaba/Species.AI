@@ -562,7 +562,7 @@ classDiagram
 | 163 | `LobbyChat` | BOOL | — | key enter down | — | KB/M: (none) ; pad: same | UI/GameMenuWindow.cpp, location_input.cpp |
 
 
-#### Icons (`~` lines) in input_preferences.txt (last per control wins)
+#### 2.2.1 Icons (`~` lines) in input_preferences.txt (last per control wins)
 
 | Control | Icon |
 |---|---|
@@ -585,7 +585,7 @@ classDiagram
 | `IconsTaskManagerEndTask` | `icons/button_y.bmp` |
 | `IconsTaskManagerDisplay` | `icons/button_x.bmp` |
 
-### Lines of the shipped preference files that do not create a binding
+#### 2.2.2 Lines of the shipped binding files that fail, are ignored, or bind only through a parser quirk
 
 | File:line | Control | Op | Spec | Status | Reason |
 |---|---|---|---|---|---|

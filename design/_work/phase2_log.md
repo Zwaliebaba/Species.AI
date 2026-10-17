@@ -50,3 +50,8 @@
 - ~96 GL/GLU entry points + 14 ARB/WGL pointers tabulated; 28 D3D-vs-GL defects D1–D28; 3 FixedFunc shader pairs + uniform layout; 4 window managers; 9 math modules + 11 iv_* wrappers; 8 determinism risks; ~45 constants. [U]=10.
 - ReleaseDirect3D probably does NOT compile at this commit (WindowManagerDirectX::CreateWin char* vs pure-virtual wchar_t* → abstract; D3DRS_LINEWIDTH undefined/Xbox-only) — corroborates P12 (deform.cpp Resolve()).
 - GL/D3D builds unlikely to stay in lockstep: D3D config /fp:fast + no D3DCREATE_FPU_PRESERVE (24-bit x87) vs baseline /fp:precise 53-bit. D3D gluPerspective doubles _43 (near/far) — intent unknown.
+
+## P15_network — done
+- Relay lockstep: server sequences a 10 Hz command stream; host is also a client; no dedicated server. 40 C→S command types (+4 defined never sent); 11 S→C letter types (+2 UPDATE variants); 10 disconnect reasons; ~60 data-field codes; 14 game options; 13 metaserver/matchmaker messages; 9 threads; 4 sequence diagrams. [U]=5.
+- Per-frame sync byte in FULL comes only from the synced RNG stream (not world state); detected desync freezes the game permanently.
+- Uncertain: metaserver/matchmaker server side absent from tree; messages >1500 bytes dropped on receive and resent forever (stall) [I]; late join/rejoin replays full history from frame 0 [I]; server never checks sender owns the team its commands target. Key-check algorithm stubbed out in this source release.

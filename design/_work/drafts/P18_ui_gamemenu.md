@@ -291,7 +291,7 @@ The tutorial launch sequence is in §5.4.
 [C] `SetupGameSelectPage`, `GameTypeButton.h`, `GameTypeImageButton.h`, `GameTypeInfoButton.h`.
 - **Server start**: if there is no local server: single player → `App::StartSinglePlayerServer()` (server reachable on 127.0.0.1 only, client joins via loopback); multiplayer → `App::StartMultiPlayerServer()` (listens on the local host IP / listener port). Both reset AI type to `AITypeStandard` unless a tutorial is running [C] `code/app.cpp:StartSinglePlayerServer/StartMultiPlayerServer/StartNetwork`.
 - One `GameTypeButton` per entry of `Multiwinia::s_gameBlueprints` (loaded from `data/multiwinia.txt` in file order: Domination 0, KingOfTheHill 1, CaptureTheStatue 2, Assault 3, RocketRiot 4, Blitzkrieg 5, TankBattle 6). Name = caption phrase = `MultiwiniaGameBlueprint::GetName()` = `multiwinia_gametype_<lower-case name>` if that phrase exists, else the raw name.
-  - A button whose *name* is literally `"TankBattle"` (i.e. phrase missing — it is missing from `english.txt`) is flagged inactive **before registration and is never registered** → Tank Battle is invisible [C].
+  - A button whose *name* is literally `"TankBattle"` (i.e. phrase missing — `multiwinia_gametype_tankbattle` is absent from all nine `data/language/*.txt` files) is flagged inactive **before registration and is never registered** → Tank Battle is invisible [C].
   - Every other button is registered and navigable; afterwards, if `!App::IsGameModePermitted(i)` it is marked inactive (visible greyed, skipped by pad navigation).
   - `HIDE_INVALID_GAMETYPES` builds skip non-permitted modes entirely `[B:HWCOMPAT/ASSAULT_STRESSTEST/BETATEST]`.
 - Each `GameTypeButton` renders **only after the local client has a team** (`myTeamId != 255`, or spectator) — i.e. the list appears once the just-started local server has accepted the local player [C] `GameTypeButton::Render`. It draws a complexity icon at the right edge (width 0.1·w, height 0.05·w): `icons/menu_basic.bmp` (Domination, KOTH), `icons/menu_intermediate.bmp` (CTS, TankBattle, Assault), `icons/menu_advanced.bmp` (Rocket Riot, Blitzkrieg) from `MultiwiniaGameBlueprint::GetDifficulty` [C] `code/multiwinia.cpp:GetDifficulty`. When it has controller focus it sets `m_highlightedGameType`.
@@ -370,7 +370,7 @@ Fonts: stacked controls use small; title, Play and Back use med.
 #### 4.6.3 Gamer tag (player slot) rendering [C] `GamertagButton::Render`
 Caption, by priority:
 1. If the lobby team has a non-empty name: the name; if `m_demoPlayer` prefix with trimmed `teamtype_demo` + space; if `m_ready` the caption becomes `name + " (" + multiwinia_ready + ")"` (the demo prefix is dropped in this case).
-2. Else by team type: `TeamTypeLocalPlayer` → `teamtype_0`; `TeamTypeRemotePlayer` → `teamtype_1`; `TeamTypeCPU` → `teamtype_2`; `TeamTypeSpectator` → phrase `Spectator` (not present in `english.txt`); unused → `teamtype_2` in single player, `multiwinia_open_or_cpu` in multiplayer.
+2. Else by team type: `TeamTypeLocalPlayer` → `teamtype_0`; `TeamTypeRemotePlayer` → `teamtype_1`; `TeamTypeCPU` → `teamtype_2`; `TeamTypeSpectator` → phrase `Spectator` (not present in any language file, so the literal key "Spectator" is shown — missing ids return the key [C] `code/lib/language_table.cpp:LookupPhrase`); unused → `teamtype_2` in single player, `multiwinia_open_or_cpu` in multiplayer.
 3. If the focused button is this slot's kick button and the mouse is over it → `multiwinia_clicktokick`.
 
 Visuals: CPU/unused slots are inactive (not navigable) with colour ×0.25 and border alpha 0.3; colour-less teams (`m_colourId == -1`, e.g. Assault/co-op before choosing) are grey 0.7. Background is a horizontal gradient from the team colour (left) to black (right) — or to 50 % team colour/50 % white when focused. When a slot's team type changes, its colour flashes from white back to the team colour over 1.0 s (linear) — except for the unused→CPU change. Text: white if inactive, red (1,0.3,0.3) if focused, else green (0.6,1,0.4).
@@ -773,7 +773,7 @@ Options come from `data/multiwinia.txt` (`GAMETYPE <name>` blocks of `Name Min M
 | Change | Widget | Caption | Values |
 |---|---|---|---|
 | −1 | `GameMenuCheckBox` | `multiwinia_param_<lower name>` | 0/1 |
-| 0 | `GameMenuDropDown` (cycle mode) | `LANGUAGEPHRASE(<raw Name>)` — raw names such as `ScoreMode` are not phrase ids in `english.txt` [I: caption falls back to the raw id / framework default] | one entry per integer p in [Min, Max], label phrase `multiwinia_option_<gameType>_<paramIndex>_<p>` |
+| 0 | `GameMenuDropDown` (cycle mode) | `LANGUAGEPHRASE(<raw Name>)` — raw names such as `ScoreMode` are not phrase ids, and a missing id makes `LookupPhrase` return the key itself, so the caption reads literally `ScoreMode` / `CrateDropMode` [C] `code/lib/language_table.cpp:LangTable::LookupPhrase` | one entry per integer p in [Min, Max], label phrase `multiwinia_option_<gameType>_<paramIndex>_<p>` |
 | > 0 | `GameMenuInputField` (int) with `<` and `>` scroller buttons | translated `multiwinia_param_<lower name>` | clamped to [Min, Max] (`SetBounds`), `<`/`>` step = ±Change |
 Help text for each control: `multiwinia_param_<name>_description_<gameType>` if present, else `multiwinia_param_<name>_description` (§4.7).
 
@@ -1268,7 +1268,7 @@ All values [C] at the cited symbol; "derived" = computed from screen size at run
 - U2: Which key file (`authkey` or `authkey.dev`) is loaded at start-up, and with what precedence? → P15 `Authentication_GetKey` / app initialisation.
 - U3: Could the metaserver inject key `"dy"` into listings (which would make the password filter hide those servers)? → metaserver protocol docs/P15.
 - U4: Meaning of the three boolean arguments of `MetaServer_GetServerList` (LAN/WAN/… selection) → P15 `contrib/systemiv/lib/metaserver/metaserver.cpp`.
-- U5: `LANGUAGEPHRASE` fallback for missing ids (raw parameter-name captions, `Spectator`) → P14 language table.
+- (U5 resolved during drafting: a missing phrase id renders as the id itself [C] `code/lib/language_table.cpp:LangTable::LookupPhrase`.)
 - U6: Exact visual of the menu transition (slide vs fade, curve) → P12 `Renderer::RenderMenuTransition`.
 - U7: Are option requests applied strictly in arrival order (affects contradiction 1)? → P15 server letter processing.
 - U8: Semantic difference of Eclipse `m_disabled` vs Darwinia `m_inactive` for click handling → P17a.

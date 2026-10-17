@@ -164,7 +164,7 @@ Every call first dirties the window under the cursor. Then exactly one LMB branc
 ```mermaid
 stateDiagram-v2
   [*] --> Idle
-  Idle --> Idle: move (no LMB)\nupdate hover / tooltip
+  Idle --> Idle: move without LMB (hover, tooltip)
   Idle --> Pressed: LMB down
   Pressed --> Dragging: LMB held next frame
   Dragging --> Dragging: LMB held
