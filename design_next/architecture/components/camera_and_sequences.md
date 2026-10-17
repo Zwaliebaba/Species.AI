@@ -437,17 +437,17 @@ sequenceDiagram
     participant Entry as Match entry
     participant Cam as Match camera
     participant Data as Map camera data
-    participant Loop as Match loop
+    participant ML as Match loop
     Entry->>Cam: EnterMatch with the map camera data
     Cam->>Cam: set the bounds and target the fallback pose
     Cam->>Data: look up default_view
     Data-->>Cam: the view, or none
     Cam->>Cam: cut, then enter free movement
-    Loop->>Cam: first frame with a local team - OnLocalTeamKnown with its start position
+    ML->>Cam: first frame with a local team - OnLocalTeamKnown with its start position
     Cam->>Data: the start view of that start-position record
     Data-->>Cam: the view, or none
     Cam->>Cam: cut when a view was found
-    Loop->>Cam: after a reset that rebuilds the match world - OnLocalTeamKnown again
+    ML->>Cam: after a reset that rebuilds the match world - OnLocalTeamKnown again
 ```
 
 Caption: Diagram 4.7-A, the start-of-match camera sequence (CAM-060 to CAM-062; R-CTRL-495 to R-CTRL-497).

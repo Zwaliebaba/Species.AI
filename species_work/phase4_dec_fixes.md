@@ -96,3 +96,6 @@
 | 92 | C-UI-a | ADR-0032 / new | keyboard defaults for the menu actions (arrows, Enter, Esc), required by ADR-0032 (keyboard-only operation); the reference binds them to the gamepad only | new Resolved DEC (accessibility requirement) |
 | 93 | C-UI-a | DEC-102 | the percent sign is an ordinary character in text fields (the reference rejects it) | confirm under DEC-102 |
 | 94 | C-UI-a | — | C-UI-b uses "compact" where it means the caption role; C-INP should adopt the nine `action.menu.*` ids; G09b to cite the large-menu, horizontal-scale and table hand-over keys; 7 minor DEC requests | C-UI-b and C-INP told; dedup and DEC triage |
+| 95 | C-INP | ADR-0028 | GameInput for gamepads only, per ADR-0028 (the coordinator's brief said all devices; the ADR is authoritative and C-INP followed it); both back-ends sit behind one interface | none (note only) |
+| 96 | C-INP vs C-UI-a | — | 14 `action.menu.*` ids in input.md (including C-UI-a's nine) while C-UI's docs carry their own binding table | merge into one binding table, owned by input.md; C-UI cites it |
+| 97 | C-INP | new | 7 DEC requests; missing glyph assets `glyph.pad.stick_left`, `glyph.pad.stick_right`, `glyph.pad.dpad_horizontal` | DEC triage; X-AST pass 2 |
