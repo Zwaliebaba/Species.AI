@@ -146,7 +146,9 @@ pkg('G04', 3, None, '§9.3', own('G04'),
 pkg('G05', 3, None, '§9.3', own('G05'), ids={'R-ECON': '001-399'})
 pkg('G06', 3, None, '§9.3', own('G06'), ids={'R-CTRL': '001-599'},
     notes='If the output passes 120 KB, make `reference/06_controls_camera_and_commands/` a folder (README plus files).')
-pkg('G07', 3, None, '§9.3', own('G07'), ids={'R-BOT': '001-399'},
+pkg('G07', 3, None, '§9.3', own('G07'), ['reference/07_bots/' + f for f in ('README.md', '01_navigation_graph.md',
+    '02_priority_model.md', '03_decision_loop_and_leaders.md', '04_powers_and_unit_policies.md',
+    '05_mode_strategies_and_tutorials.md')], ids={'R-BOT': '001-399'},
     notes='State plainly where the bots use perfect information.')
 pkg('G08a', 3, None, '§9.3', own('G08', lambda r: 'Map-editor hooks' not in sec(r)),
     ['reference/08_maps_and_level_design/README.md', 'reference/08_maps_and_level_design/rules_and_conventions.md'],

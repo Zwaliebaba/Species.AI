@@ -69,10 +69,10 @@ Each ring is a quad strip in the plane perpendicular to the ground normal at the
 
 | Priority | Context | Drawn |
 |---|---|---|
-| 1 | the team has a current Power | its icon `icon.power.<kind>`; while it is Pending, the icon blinks: it shows while real time mod `ref.ctrl.cursor.blink_period` < `ref.ctrl.cursor.blink_on` |
-| 1a | as 1, the Power is Pending, and its target-area test fails at the pointer ground point ([selection and Power slots](selection_and_power_slots.md) R-CTRL-192) | also the red `cursor.unavailable` sprite at `ref.ctrl.cursor.unavailable_scale` × half the icon size, at the icon centre (the anchor + `ref.ctrl.cursor.icon_centre_offset` along n) |
-| 1b | as 1, and the Power is a Pending turret or Hive Power | also a ghost model at the pointer ground point, `mesh.structure.turret_head` or `mesh.structure.hive_mound`, unrotated, with an additive colour blend and no depth writes |
-| 1c | as 1, and the Power is a Pending Speed Boost, Shield, Convert, Sickness, meteor shower, Fury or Missile Barrage Power | also a glowing area cylinder at the pointer ground point, by `ref.ctrl.cursor.area_cylinder`: 100 sides, attached to the ground, up = world up, in the team colour, its alpha halved while the blink is off; radius `ref.ctrl.power.effect_range` and height 0.6 × that, except the meteor shower (radius × 4, height × 1) and the Missile Barrage (radius × 3, height × 1) |
+| 1 | the team has a current Power | its icon `icon.power.<kind>`; while it is Waiting, the icon blinks: it shows while real time mod `ref.ctrl.cursor.blink_period` < `ref.ctrl.cursor.blink_on` |
+| 1a | as 1, the Power is Waiting, and its target-area test fails at the pointer ground point ([selection and Power slots](selection_and_power_slots.md) R-CTRL-192) | also the red `cursor.unavailable` sprite at `ref.ctrl.cursor.unavailable_scale` × half the icon size, at the icon centre (the anchor + `ref.ctrl.cursor.icon_centre_offset` along n) |
+| 1b | as 1, and the Power is a Waiting turret or Hive Power | also a ghost model at the pointer ground point, `mesh.structure.turret_head` or `mesh.structure.hive_mound`, unrotated, blended as source + destination × source colour, with no depth writes |
+| 1c | as 1, and the Power is a Waiting Speed Boost, Shield, Convert, Sickness, meteor shower, Fury or Missile Barrage Power | also a glowing area cylinder at the pointer ground point, by `ref.ctrl.cursor.area_cylinder`: 100 sides, attached to the ground, up = world up, in the team colour, its alpha halved while the blink is off; radius `ref.power.effect_range` and height 0.6 × that, except the meteor shower (radius × 4, height × 1) and the Missile Barrage (radius × 3, height × 1) |
 | 2 | no current Power, and the selection is a Leader | `icon.power.leader` |
 | 3 | Workers selected | `icon.power.workers` and the selected count by `ref.ctrl.cursor.count_text`: text size 15, an outline pass, then white with alpha 0.9, at the icon centre + (2, 0.4 × size); when the route preview finds no walkable route, the red `cursor.unavailable` sprite replaces the count |
 
@@ -114,7 +114,7 @@ The crosshair only reads the selected structure's kind and never changes it (DEC
 
 | Type | Created by | Tracks | Persistent | Shown off screen | Clickable | Flash at birth | Icon and disc |
 |---|---|---|---|---|---|---|---|
-| fixed | every Supply crate outcome effect, with its team, position and icon | the position + `ref.ctrl.marker.fixed_lift` up | no: removed once its on-screen time reaches `ref.ctrl.marker.fixed_life` after it was seen | until first seen | no | when its team is not the local team, after the grace period | the given icon on a team-colour disc; spins for 2.5 s with rotation += (2.5 − t)² |
+| fixed | every Supply crate outcome effect, with its team, position and icon | the position + `ref.ctrl.marker.fixed_lift` up | no: removed once its on-screen time reaches `ref.power.marker.lifetime_s` after it was seen | until first seen | no | when its team is not the local team, after the grace period | the given icon on a team-colour disc; spins for 2.5 s with rotation += (2.5 − t)² |
 | Supply crate | every new Supply crate | the crate + `ref.ctrl.marker.lift` up; removed with the crate | yes | always | yes, for every team | no | `marker.supply_crate`; the disc fills from the bottom by the capture fraction in the capturing team's colour (grey 155 while neutral; alpha 1 when owned); rotation = the smoothed fraction × −10π, with smoothed = 0.95 × smoothed + 0.05 × fraction per frame |
 | Power | every targeted Power with a tracked object except a turret, of any team, bots included ([selection and Power slots](selection_and_power_slots.md) R-CTRL-191); every Transit Gate reinforcement Transport | the Power's position + `ref.ctrl.marker.lift` up; removed when the Power ends | yes | for the local team | for the local team | for the local team, after the grace period | `icon.power.<kind>` on a team-colour disc; for friendly Powers the extra information of R-CTRL-232; spins for 5 s with rotation += (5 − t)² |
 | Relic | every Relic as it is created | the Relic + up × its radius × 4 | yes | always | no | no | `marker.relic`; the disc fills by (lifters − minimum) ÷ (maximum − minimum) in the carrying team's colour, alpha × 0.5 ([Relic Run](../01_skirmish_rules_and_modes/relic_run.md)) |
@@ -181,7 +181,7 @@ Caption: Diagram 3-B, the life of a world marker (R-CTRL-380 to R-CTRL-384).
 
 ## 4 Tuning table
 
-This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)), `ref.ctrl.power.effect_range` ([selection and Power slots](selection_and_power_slots.md)), `ref.sim.tick_period` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)), `ref.sim.team.formation_size_upgrade` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)) and `ref.unit.transport.arrival_distance` ([Transport](../02_units/transport.md)). Pixel values are screen pixels unless stated.
+This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)), `ref.power.effect_range` and `ref.power.marker.lifetime_s` ([Supply crates, Powers and weapons](../04_supply_crates_powers_and_weapons/README.md)), `ref.sim.tick_period` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)), `ref.sim.team.formation_size_upgrade` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)) and `ref.unit.transport.arrival_distance` ([Transport](../02_units/transport.md)). Pixel values are screen pixels unless stated.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -209,7 +209,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.icon_centre_offset` | 50 | pixels | from the anchor along n | R-CTRL-366 | — |
 | `ref.ctrl.cursor.unavailable_scale` | 1.2 | × half the icon size | | R-CTRL-366 | — |
 | `ref.ctrl.cursor.count_text` | size 15; outline, then white alpha 0.9; offset (2, 0.4 × size) | layout | | R-CTRL-366 | — |
-| `ref.ctrl.cursor.area_cylinder` | 100 sides; radius `ref.ctrl.power.effect_range`, height 0.6 × radius; meteor shower radius × 4, height × 1; Missile Barrage radius × 3, height × 1 | layout | | R-CTRL-366 | — |
+| `ref.ctrl.cursor.area_cylinder` | 100 sides; radius `ref.power.effect_range`, height 0.6 × radius; meteor shower radius × 4, height × 1; Missile Barrage radius × 3, height × 1 | layout | | R-CTRL-366 | — |
 | `ref.ctrl.cursor.circle_particles` | 30 | particles per frame | | R-CTRL-370 | — |
 | `ref.ctrl.cursor.circle_spin` | 0.5 | rad per real second | | R-CTRL-370 | — |
 | `ref.ctrl.cursor.circle_lift` | 10 | wu | above the terrain | R-CTRL-370 | — |
@@ -220,7 +220,6 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.cursor.preview_diamond` | 2 | wu | half-diagonal of each diamond | R-CTRL-374 | — |
 | `ref.ctrl.cursor.selection_boost` | 2.0 | factor | selection-arrow boost event | R-CTRL-375 | — |
 | `ref.ctrl.marker.fixed_lift` | 30 | wu | | R-CTRL-381 | — |
-| `ref.ctrl.marker.fixed_life` | 8 | s of on-screen time | after it was seen | R-CTRL-381 | — |
 | `ref.ctrl.marker.lift` | 20 | wu | Supply crate, Power and Leader markers | R-CTRL-381 | — |
 | `ref.ctrl.marker.order_sort_offset` | 50 | wu of sort key | | R-CTRL-381, R-CTRL-382 | — |
 | `ref.ctrl.marker.order_pick_radius` | 8 | wu | ground-sphere pick of an order marker | R-CTRL-381 | — |
@@ -251,9 +250,9 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 
 **AC-CTRL-CM-02 — Highlight geometry** (R-CTRL-363). For r = 10: ring 1 spans 8 to 10 wu, ring 2 spans 7.25 to 8 wu, ring 3 spans 10 to 10.75 wu; at a camera distance of 600 wu the glow cylinder is 20 wu tall.
 
-**AC-CTRL-CM-03 — Icon priority** (R-CTRL-366). With a Pending Power and a selected group, the Power's icon is drawn and the group's count is not.
+**AC-CTRL-CM-03 — Icon priority** (R-CTRL-366). With a Waiting Power and a selected group, the Power's icon is drawn and the group's count is not.
 
-**AC-CTRL-CM-04 — Area cylinder** (R-CTRL-366). A Pending meteor shower draws a cylinder of radius 280 wu and height 70 wu; a Pending Shield one of 70 wu and 42 wu.
+**AC-CTRL-CM-04 — Area cylinder** (R-CTRL-366). A Waiting meteor shower draws a cylinder of radius 280 wu and height 70 wu; a Waiting Shield one of 70 wu and 42 wu.
 
 **AC-CTRL-CM-05 — Marker life** (R-CTRL-381, R-CTRL-384). A fixed marker that stays on screen is removed after 8 s of on-screen time; a Supply crate marker stays until its crate is gone.
 

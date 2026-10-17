@@ -75,9 +75,9 @@ Table 2.3-A State of a bot controller.
 | Solar Array field list | empty | Launch Race: one entry per bot objective marker of the team (marker position, Solar Array count, the marker, its scan range), filled once ([05](05_mode_strategies_and_tutorials.md) R-BOT-138) |
 | tutorial centre latch | false | first tutorial: set once its centre Control Zone has an owner ([05](05_mode_strategies_and_tutorials.md) R-BOT-151) |
 
-**R-BOT-010** (MUST) A bot controller never dies: every health change is refused and its advance never requests its removal. It is not counted by the match's actor population counter (R-SIM table 2.5-A), but it is one of its team's ungrouped actors, so it counts towards its team's population (DEC-079, R-ECON-107). It stands in the actor grid at its position: node recounts count it like any actor (R-BOT-042), and enemy target searches may select it; the nearest-enemy query and the turret searches skip it, the Worker threat search and the creature searches do not, and the rule for all searches is the Open DEC-311.
+**R-BOT-010** (MUST) A bot controller never dies: every health change is refused and its advance never requests its removal. It is not counted by the match's actor population counter ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.5-A), but it is one of its team's ungrouped actors, so it counts towards its team's population (DEC-079, R-ECON-107). It stands in the actor grid at its position: node recounts count it like any actor (R-BOT-042), and enemy target searches may select it; the nearest-enemy query and the turret searches skip it, the Worker threat search and the creature searches do not, and the rule for all searches is the Open DEC-311.
 
-**R-BOT-011** (MUST) Match-world initialisation clears the bot registry entry of every team slot 0 to 5, the bot-objectives-initialised flag and the Transport objective list, and match-world teardown resets the same state ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-016 step 3, R-SIM-232; DEC-011). A bot controller's Solar Array field list is destroyed with it.
+**R-BOT-011** (MUST) Match-world initialisation clears the bot registry entry of every team slot 0 to 5, the bot-objectives-initialised flag and the Transport objective list, and match-world teardown resets the same state ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-016, table 2.4-A step 3; R-SIM-232; DEC-011). A bot controller's Solar Array field list is destroyed with it.
 
 **R-BOT-012** (MUST) When a human leaves during a match, every participant, at the same tick, changes that team to `TeamKind::Bot`, creates a bot controller for it by R-BOT-008 and R-BOT-009, records the bot takeover time and emits `match.player_left` (DEC-035, R-SIM-436, R-MODE-069). The new bot inherits the team's Workers, Leaders, Transports, Strike teams, Collectors, Builders and Powers as they stand, and runs every rule of this folder on them from that tick. A player who leaves in the lobby frees the slot instead. A team initialised after the match world has initialised its teams receives its bot controller in the same way.
 
@@ -136,7 +136,7 @@ Table 2.5-A Perfect-information register.
 1. **Perfect information**: the reads of table 2.5-A.
 2. **Unlimited command rate**: any number of Workers are re-ordered in one main cycle, Leaders are promoted without input, and Powers are targeted anywhere the target rule allows, at once.
 3. **Per-Worker orders**: individual Workers receive waypoint orders, where a human orders the selected crowd or uses Leaders.
-4. **Transport self-destruct**: a bot Transport can drive into an enemy Spawn Node and destroy itself there ([transport.md](../02_units/transport.md) R-UNIT-404), which no player command can do.
+4. **Transport self-destruct**: a bot Transport drives itself into an enemy Spawn Node and destroys itself there with a health change of −1000 ([transport.md](../02_units/transport.md) R-UNIT-404); a player can only scrap one of its own units where it stands (`PlayerCommand::ScrapActor`, R-SIM-456).
 5. **Transport unloading control**: a bot sets a Transport's arrival point and its loading and unloading directly, without the player's toggle and deploy actions.
 
 The bot controller is not a free unit: it counts towards its team's population (R-BOT-010).
@@ -163,7 +163,7 @@ Table 2.7-A Difficulty parameters.
 | keep a garrison in a tagged zone node | no | yes | yes | R-BOT-084 |
 | Flag post pins | 1.0 at every Flag post | by the team's Flag Chain status | by the team's Flag Chain status | R-BOT-069 |
 | Flag Chain turret count at the Home post | `ref.bot.power.flag_turrets_easy` (1) | `ref.bot.power.flag_turrets` (2) | `ref.bot.power.flag_turrets` (2) | R-BOT-117 |
-| Launch Race turret placement | the standard placement | the Launch Vessel ring | the Launch Vessel ring | R-BOT-116 |
+| Launch Race turret placement | the frontier placement | the Launch Vessel ring | the Launch Vessel ring | R-BOT-116 |
 | Transport think period, Spawn Control, Zone Control, Relic Run, Flag Chain and Launch Race | 200 ticks | 101 ticks | 11 ticks | R-UNIT-402 |
 | Transport think period, Siege | 101 ticks | 51 ticks | 11 ticks | R-UNIT-402 |
 | Flag Chain Transport defends the Home post links when under threat | always | with a 50 % draw | never | R-UNIT-406 |

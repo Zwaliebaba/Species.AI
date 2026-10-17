@@ -1,6 +1,6 @@
 # Maps and level design
 
-> Status: Reference · Prefix: R-MAP · Related: [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [09 Front end and match flow](../09_front_end_and_match_flow/README.md) · [12 Simulation model](../12_simulation_model/README.md)
+> Status: Reference · Prefix: R-MAP · Related: [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots/README.md) · [09 Front end and match flow](../09_front_end_and_match_flow/README.md) · [12 Simulation model](../12_simulation_model/README.md)
 
 This folder specifies what a map is in the reference game: how the game finds its maps and lists them, how a map loads into a match, what a map definition can express, the per-map match options, the conventions that each mode's maps follow, and the distribution of the reference map set over modes and player counts. It also records the hooks of the map editor. Every Species map is authored new: this folder carries no reference map name, layout or terrain (DEC-063), and the per-map data of the reference maps appears only as anonymous counts, ranges and distributions per mode and player count.
 
@@ -9,8 +9,8 @@ This folder specifies what a map is in the reference game: how the game finds it
 | File | Content | Requirement ids |
 |---|---|---|
 | [README.md](README.md) | this index; the reference map set at a glance; reading guide | none |
-| [rules_and_conventions.md](rules_and_conventions.md) | map identity and the map catalogue; the map definition and the level load; start positions; the match options of the map header (the map options and map effects); level-design capabilities (terrain, lights, structure placement, routes, camera views, starting forces); fixed research levels; what a map cannot express; per-mode map conventions; the reference map distribution and the per-map parameters as anonymous distributions | R-MAP-001 to R-MAP-299 |
-| [map_editor_hooks.md](map_editor_hooks.md) | the map editor's hooks: what an editor edits, its entry and exit flow, custom-map handling and the writer rules (DEC-045) | R-MAP-300 to R-MAP-499 |
+| [rules_and_conventions.md](rules_and_conventions.md) | map identity and the map catalogue; the map definition and the level load; start positions; the match options of the map header (the map options and map effects); level-design capabilities (terrain, lights, structure placement, routes, camera views, starting forces); fixed research levels; what a map cannot express; per-mode map conventions; the reference map distribution and the per-map parameters as anonymous distributions | R-MAP ids 001 to 299 |
+| [map_editor_hooks.md](map_editor_hooks.md) | the map editor's hooks: what an editor edits, its entry and exit flow, custom-map handling and the writer rules (DEC-045) | R-MAP ids 300 to 499 |
 
 ## The reference map set at a glance
 

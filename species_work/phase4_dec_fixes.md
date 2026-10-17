@@ -51,3 +51,9 @@
 | 47 | G04 | DEC-465 vs DEC-653 item 7 | zero-score weighted drop; G04 followed DEC-465 | reconcile; DEC-550's airstrike wording also needs aligning |
 | 48 | G04 vs G03b/G02a2/G02b | — | wrong list of whole-map Powers (R-BLDG-464); rocket-turret life 10 vs 11 ticks; a cancelled Transport; Strike team life 600 vs 601; a bad-pool airstrike that cannot occur (G02b) | decide from ORIG; fix the losing documents |
 | 49 | G04 | — | RESOLVED during Phase 3: G04 removed its 7 duplicate blight-tree keys, cites G03b (R-BLDG-620–623), took G03b values (incl. 101 ticks), fixed R-CRATE-181 to DEC-088 | none |
+| 50 | G07 | DEC-119 / new | **many reference bot actions have no catalogue command** (per-Worker orders, Leader orders, Transport control, promotion); G07 marked them bot-only | new DEC (Open, design phase): the AI and deputy must act only through the player command catalogue (extend the catalogue) or through a separate, validated AI command set. **Key input for design-phase B7/D7** |
+| 51 | G07 | DEC-087 | the bot controller's position is not given; G07 chose the team start position (map centre for Rogue/Visitor); unused promotion-Power expiry; cap of 100 placement attempts | confirm in DEC-087 |
+| 52 | G07 vs G03 | DEC-064 | node and marker recount periods: 21 ticks (reference/03, per Resolved DEC-064) vs 20 (G07's input) | G07 states 21 with DEC-064 |
+| 53 | G07 vs G04 | — | R-CRATE-035 lists a Swarm handler that only a debug tool can trigger; G07 dropped it | drop it from G04, or keep it with a Dropped note |
+| 54 | G07 vs G02a2 | — | two selection rules in transport.md and strike_team.md differ from G07's input | decide from ORIG |
+| 55 | G07 folder | — | links to `07_bots.md` elsewhere need updating | global link update |

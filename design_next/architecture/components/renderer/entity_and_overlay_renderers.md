@@ -483,7 +483,7 @@ The black rings take the alpha of *c*.
 
 **RND-373** (MUST) While the selection circle grows (DEC-032), the cursor emits, every frame, `rnd.cursor.selection_particles` (30) control-flash particles evenly spaced on the circle at the circle's current radius, `rnd.cursor.selection_lift` (10 wu) above the terrain, the whole set rotated by the selection-circle phase, which advances by `rnd.cursor.selection_spin` (0.5 rad per s) of real time; the particles belong to the particle pool of [animation_and_vfx.md](../animation_and_vfx.md).
 
-**RND-374** (MUST) A formation preview draws, at each formation slot, a camera-facing diamond of `fx.particle_dot` whose corners are the slot position ± `rnd.cursor.formation_dot_size` (2 wu) × the camera up vector and ± 2 wu × the camera right vector, in the team colour, with the `cursor_dots` entry.
+**RND-374** (MUST) A formation preview draws, at each formation slot, a camera-facing diamond of `fx.particle_dot` whose corners are the slot position ± `rnd.cursor.formation_dot_size` (2 wu) × the camera up vector and ± the same size × the camera right vector, in the team colour, with the `cursor_dots` entry.
 
 **RND-375** (MUST) The badge beside the cursor (the icon of the selected unit or Power) draws the shadow, colour-disc and icon layers of RND-361 at the pointer position + `rnd.cursor.badge_offset` (5 px) × normalise(`rnd.cursor.badge_direction` (0.85, 1)), *y* downwards, with the size *H* ÷ `rnd.cursor.badge_divisor` (24) px.
 
@@ -508,3 +508,191 @@ The black rings take the alpha of *c*.
 **RND-379** (MUST) The match HUD of pass 28 draws its panels with `overlay_alpha`, its gradients with `overlay_gradient_alpha` and its text in the UI framework's text styles, inside the 2-D block of passes 26 to 32 and therefore over the fade of pass 27 (RND-086).
 
 **RND-380** (MUST NOT) The panel draws no gesture trail and no icon power bar (see DEC-055).
+
+## 5 Concurrency and performance budget
+
+**RND-385** (MUST) Per frame, the CPU work of these renderers is proportional to the number of visible candidates whose instance data it writes, and the number of draw and dispatch calls is fixed per instance type and pass (ADR-0009); no pipeline state is created during a frame (ADR-0005). Instance buffers live in the upload ring for one frame in flight (README RND-017).
+
+**RND-386** (MUST) The frame budgets of these passes (CPU time to write instances, GPU time of `instance_cull` and of each pass, and the instance counts at the design and stress populations) are the budgets of [options_and_budgets.md](options_and_budgets.md); every pass carries its marker and GPU timestamps (ADR-0068), and the development overlay shows the compacted instance count of every instance type (ADR-0009).
+
+**RND-387** (MUST) Instance writing for different instance types MAY run on several threads where the threading model allows (DEC-224); the writes of one type keep the pool order of RND-313.
+
+## 6 Failure modes, diagnostics and telemetry
+
+| Failure | Behaviour | Requirement |
+|---|---|---|
+| an instance type has more instances than its buffer | the upload-ring overflow rule: a one-off buffer, a log entry, a larger ring at the next reconfiguration; no instance is dropped | RND-302, README RND-017 |
+| an actor's mesh or card art is missing | the default resource at heap index 0 and a diagnostic (DEC-015); the actor is still drawn | RND-324 |
+| a presentation record names an object that no longer exists | the record is deleted at the end of the frame | RND-307 |
+| a route's points are no longer available during its fade (option B of DEC-651 not taken and the route freed) | the fade record is deleted and the route is no longer drawn | RND-352 |
+| a marker's target projects to no screen position and its probe also fails | the marker is drawn at the screen edge in the direction of its last valid position, or skipped in its first frame | RND-357 |
+| `cursor_ghost` names a mesh that does not exist | the default structure body `mesh.structure.structure_default` and a diagnostic | RND-372 |
+
+Diagnostics: a development view lists, per instance type, the written and compacted instance counts and the GPU time of its draws; a development toggle draws every actor's cull sphere with the development sphere (RND-330).
+
+## 7 Acceptance tests
+
+| Test | Kind | Checks | Requirements |
+|---|---|---|---|
+| T1 crowd cost | performance | a stress crowd of the population of [options_and_budgets.md](options_and_budgets.md) on the minimum-capability GPU: the number of draw and dispatch calls is the same for 100 and for 4,000 Workers, and CPU frame time does not grow with the Worker count beyond the instance writes | RND-311, RND-385 |
+| T2 conservative cull | property | for recorded camera paths, every instance kept by the CPU view test of its kind is kept by `instance_cull` | RND-312 |
+| T3 Worker card | golden-image | a Worker on a slope at camera distances 50, 300, 800, 1300 and 2000 wu with entity detail 1 and scale factor 2.0: the card faces the Worker's front near the camera, is a billboard from 1300 wu, and its half-size at 2000 wu is 3.0 × (1 + 2 × 1900 ÷ 1000) = 14.4 wu for slot 0 | RND-314 |
+| T4 high-detail factor | unit | entity detail 2 (*D* = 1000 wu) gives *hd* = 1, 0.75 and 0 at 0, 500 and 1000 wu; entity detail 3 gives 0 from 500 wu, and the hurt card and ground shadow disappear there | RND-315, RND-316 |
+| T5 card choice | unit | the texture precedence of RND-316 for a Visitor, an edge-on, a Burning, a Rogue faction and an ordinary Worker | RND-316 |
+| T6 colour cross-fade | unit and golden-hash | after a team change the drawn colour is the midpoint of the two team colours 2 s later and the new colour from 4 s; the per-tick state hash of a match with and without the renderer is identical | RND-301, RND-317 |
+| T7 Crawler trail texture | unit | the cooked trail column is 32 × 512 px with 18 copies, copy *i* being 32 − ⌊*i* ÷ 2⌋ px square for *i* from 0 to 17 (32 px down to 24 px), 504 px in all | RND-320 |
+| T8 Crawler detail | unit | the level of RND-322 for each entity-detail setting at 250, 450, 550, 700, 900 and 1100 wu | RND-322 |
+| T9 actor kinds | golden-image | one reference image per actor kind of RND-324, with and without the flicker draw | RND-323, RND-324 |
+| T10 blob shadow | golden-image | a shadow on flat and sloped ground and over the sea (corners at 1.0 wu), and a caster below all four corners whose shadow is skipped | RND-325 |
+| T11 scaled centipede | golden-image | centipede segments at scales 0.5, 1 and 2 under one light: the lit colour of a facet at scale 2 is half its scale-1 value before the clamp | RND-326 |
+| T12 shockwave ring | unit and golden-image | a ring of size 2.5 has the drawn radius 35 wu when created and 135 wu at the end of its life; its rim alpha is 0.6 at creation; the blast is drawn only in its first second | RND-333, RND-334 |
+| T13 lightning | golden-image | the idle cloud glow at *g* = 0 and *g* = π ÷ 4 (alpha 0 and 1) and a strike's three layers with alphas *a*, *a* ÷ 2 and *a* ÷ 4 | RND-336, RND-337 |
+| T14 laser bolt | golden-image | a bolt in colour 0.1 over black, with a white texel, reads 0.5; a Convert bolt is twice as wide; a bolt coplanar with the terrain wins its depth tie | RND-338, RND-339 |
+| T15 route fade | unit | an intensity request of 1 fades to 0 after 4 s of frames; a second request of 0.5 at 1 s leaves the value at 0.75; a route ending off the land keeps its value and is not drawn | RND-351, RND-352 |
+| T16 route colour | unit | the spot colour of a walkable and of a blocked preview, the grey offset, and the pulse of spots 0 and 1 at *r* = 0 | RND-353, RND-354 |
+| T17 marker edge | unit | a target behind the camera is drawn 50 px inside the screen edge on the side of its direction, with its compass along the edge normal | RND-357 |
+| T18 marker alpha | unit | the alpha vectors of RND-359 for a persistent and a transient marker at on-screen times 0.5, 3, 7, 7.9 and 12 s, at camera distances 300 and 1200 wu, at the screen centre and near an edge | RND-358, RND-359 |
+| T19 marker size | unit | icon sizes at render height 1080 for *D* = 250, 500 and 1000 wu, hovered and flashing | RND-360 |
+| T20 cursor | golden-image | the pointer at 1080 and 2160 lines is 35 px with its hotspot at the pointer position and its shadow darkening the scene under it; the crosshair has no shadow and blends with alpha | RND-365 to RND-369 |
+| T21 highlight rings | golden-image | the ring bands of RND-370 for ρ = 10 and 40 wu at camera distances 50 and 1000 wu, draped and flat | RND-370 |
+| T22 ghost blend | golden-image | a ghost texel of 0.4 over a destination of 0.5 reads 0.6 | RND-372 |
+| T23 overlay depth | golden-image | a highlight ring partly behind a hill is hidden behind it and drawn after the UI windows | RND-309 |
+| T24 surges | unit | a fuel pump tracking 20 surges draws 20 | RND-302 |
+
+## 8 Open decisions
+
+| Reference | Status | Where it applies |
+|---|---|---|
+| DEC-007 | Resolved | the renderers never write simulation state (RND-301, RND-317, RND-352) |
+| DEC-013 | Resolved | presentation randomness (RND-304) |
+| DEC-029 | Resolved | the crowd look: cards that turn into billboards, decal shadows (RND-314, RND-325) |
+| DEC-032 | Resolved | the selection circle the cursor draws (RND-373) |
+| DEC-055 | Dropped | no gesture trail or icon power bar (RND-380) |
+| DEC-062 | Dropped | actor kinds that no match creates are not drawn (RND-328) |
+| DEC-095 | Resolved | the route preview store (RND-354) |
+| DEC-222 | Open | presentation records instead of render-side writes (RND-301) |
+| DEC-224 | Open | parallel instance writing (RND-387) |
+| DEC-337 | Dropped | driver and pointer properties (RND-376) |
+| DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
+| DEC-651 | Open | how the route fade gets its points (RND-352) |
+| ADR-0005 | Accepted | the `Ghost` blend (one, source colour) of RND-372 is a blend state of the renderer's catalogue (RND-058) |
+| ADR-0009 | Accepted | instancing, orientation modes and decal shadows |
+
+**Design-phase inputs.**
+
+1. **Crowd scale.** The instance budgets and the culling distances for battles at the vision's larger player counts, and whether far crowds need a level of detail beyond the card-to-billboard blend (for example aggregated crowd impostors at the strategic zoom).
+2. **Card growth at the strategic zoom.** Whether the card growth of RND-314, which keeps a Worker near a constant screen size at large distances ([visual_language.md](visual_language.md) RND-414), is kept for the world game's camera range.
+3. **Markers and fog of war.** Which world markers stay visible for objects hidden by fog of war, and how markers scale for a persistent world with many more objectives.
+4. **Route lines.** The spacing of route spots and the art and spacing of the route arrows, which the reference library does not fix, and whether route previews are drawn for other players' orders.
+5. **HUD.** The world game's HUD content in the HUD space of RND-377; the techniques of RND-378 and RND-379 carry over.
+
+## 9 Tuning table
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `rnd.crowd.worker_detail_distance` | 99999.9, 1000, 500 | wu | at entity detail 1, 2, 3; high-detail factor 1 − d² ÷ D² | RND-314, RND-315 | DEC-029 |
+| `rnd.crowd.worker_fury_pulse` | 0.5 | × \|sin g\| | card size pulse with Fury | RND-314 | |
+| `rnd.crowd.rogue_orb_colour` | 100, 100, 100, 0 | of 255 | a Rogue faction orb, darkening batch | RND-327 | |
+| `rnd.crawler.trail_column_width` | 32 | px | Crawler trail texture | RND-320 | |
+| `rnd.crawler.trail_column_height` | 512 | px | | RND-320 | |
+| `rnd.crawler.trail_copy_shrink` | 1 | px per two copies | copy *i* is 32 − ⌊*i* ÷ 2⌋ px square | RND-320 | |
+| `rnd.crawler.lod_low_near` | 300 | wu | entity detail 3: level 2 beyond | RND-322 | |
+| `rnd.crawler.lod_low_mid` | 600 | wu | entity detail 3: level 3 beyond | RND-322 | |
+| `rnd.shadow.blob.lift` | 0.9 | wu | above the terrain at each corner | RND-325 | |
+| `rnd.shadow.blob.min_height` | 1.0 | wu | lowest corner height | RND-325 | |
+| `rnd.shadow.blob.builder_size` | 10 | wu, half-size | | RND-324 | |
+| `rnd.shadow.blob.collector_size` | 10 | wu, half-size | | RND-324 | |
+| `rnd.sphere.ico_x` | 0.5257311121 | unit-sphere coordinate | icosahedron | RND-330 | |
+| `rnd.sphere.ico_z` | 0.85065080835 | unit-sphere coordinate | icosahedron | RND-330 | |
+| `rnd.sphere.subdivisions` | 1 | levels | 80 triangles | RND-330 | |
+| `rnd.sphere.line_width` | 1 | px | wire drawing | RND-330 | |
+| `rnd.shockwave.ring_lift` | 5 | wu | above the ring's height | RND-333 | |
+| `rnd.shockwave.ring_base_radius` | 35 | wu | drawn radius at creation | RND-333 | |
+| `rnd.shockwave.ring_growth` | 40 | wu per s of life | | RND-333 | |
+| `rnd.shockwave.centre_colour` | 1, 1, 0, 0 | RGBA | fan centre | RND-333 | |
+| `rnd.shockwave.rim_colour` | 1, 0.5, 0.5 | RGB | fan rim | RND-333 | |
+| `rnd.shockwave.rim_alpha` | 0.6 | × remaining life ÷ size | | RND-333 | |
+| `rnd.shockwave.blast_duration` | 1 | s of age | | RND-334 | |
+| `rnd.shockwave.blast_layers` | 5 | quads | per texture | RND-334 | |
+| `rnd.shockwave.blast_star_scale` | 500 | × size ÷ √distance | first star half-size | RND-334 | |
+| `rnd.shockwave.blast_glow_scale` | 1000 | × size ÷ √distance | first glow half-size | RND-334 | |
+| `rnd.shockwave.blast_layer_growth` | 1.2 | × per layer | | RND-334 | |
+| `rnd.shockwave.blast_colour` | 1, 0.5, 0.2 | RGB | alpha 1 − age | RND-334 | |
+| `rnd.lightning.cloud_size` | 200 | wu, half-size | idle cloud glow | RND-336 | |
+| `rnd.lightning.cloud_pulse_rate` | 2 | rad per s of presentation frame time | alpha \|sin(2 g)\| | RND-336 | |
+| `rnd.lightning.bolt_layers` | 3 | quads | | RND-337 | |
+| `rnd.lightning.bolt_width` | 30 | wu | first layer | RND-337 | |
+| `rnd.lightning.bolt_width_growth` | 1.2 | × per layer | | RND-337 | |
+| `rnd.lightning.bolt_alpha_falloff` | 0.5 | × per layer | | RND-337 | |
+| `rnd.laser.layers` | 5 | instances per bolt | five times the brightness | RND-338 | |
+| `rnd.laser.length` | 10 | wu | along the velocity | RND-339 | |
+| `rnd.laser.half_width` | 0.8 | wu | | RND-339 | |
+| `rnd.laser.convert_width_factor` | 2 | × half-width | Convert bolts | RND-339 | |
+| `rnd.laser.rogue_colour` | 255, 255, 255 | RGB | Rogue faction bolts | RND-339 | |
+| `rnd.route.highlight_step` | 10 | wu | particle spacing along a highlighted route | RND-350 | |
+| `rnd.route.highlight_sizes` | 75, 60 | particle size | two particles per step | RND-350 | |
+| `rnd.route.highlight_rise_speed` | 10 | wu/s | upward particle velocity | RND-350 | |
+| `rnd.route.highlight_colour_offset` | 100, 100, 100, 100 | of 255, added | capped at 255 | RND-350 | |
+| `rnd.route.fade_rate` | 0.25 | fade per s of presentation frame delta | 4 s from 1 to 0 | RND-352 | DEC-651 |
+| `rnd.route.spot_size_divisor` | 100 | wu per wu of half-size | spot half-size = camera distance ÷ 100 | RND-353 | |
+| `rnd.route.blocked_colour` | 0, 0, 0, 100 | of 255 | preview not walkable | RND-353 | |
+| `rnd.route.grey_offset` | 50 | of 255, added to RGB | | RND-353 | |
+| `rnd.route.pulse_base` | 0.5 | alpha factor | | RND-353 | |
+| `rnd.route.pulse_amplitude` | 0.5 | alpha factor | | RND-353 | |
+| `rnd.route.pulse_rate` | 10 | rad per s of real time | | RND-353 | |
+| `rnd.route.pulse_phase_step` | 0.7 | rad per spot | | RND-353 | |
+| `rnd.marker.lift_factor` | 5 | px × H ÷ D | on-screen icon lift | RND-357 | |
+| `rnd.marker.offscreen_probe_distance` | 1000 | wu | ahead of the camera | RND-357 | |
+| `rnd.marker.offscreen_probe_step` | 100 | wu | towards the target | RND-357 | |
+| `rnd.marker.edge_inset` | 50 | px | inward from the screen edge | RND-357 | |
+| `rnd.marker.seen_time` | 1 | s of on-screen real time | | RND-358 | |
+| `rnd.marker.fade_start` | 6 | s of on-screen real time | | RND-359 | |
+| `rnd.marker.fade_length` | 9 | s | seen markers | RND-359 | |
+| `rnd.marker.transient_fade_length` | 2 | s | non-persistent markers; ends at 8 s | RND-359 | |
+| `rnd.marker.min_alpha_distance_start` | 350 | wu | alpha floor (D − 350) ÷ 500 | RND-359 | |
+| `rnd.marker.min_alpha_distance_range` | 500 | wu | | RND-359 | |
+| `rnd.marker.min_alpha_centre_fraction` | 0.5 | × H | alpha floor near the screen centre | RND-359 | |
+| `rnd.marker.own_min_alpha` | 0.75 | alpha | own Powers and orders | RND-359 | |
+| `rnd.marker.icon_divisor` | 20 | H ÷ this | icon size in px | RND-360 | |
+| `rnd.marker.near_distance` | 500 | wu | × (2 − D ÷ 500) below it | RND-360 | |
+| `rnd.marker.hover_scale` | 1.2 | × size | hovered or selected | RND-360 | |
+| `rnd.marker.flash_duration` | 3 | s of real time | | RND-360 | |
+| `rnd.marker.flash_scale` | 1.3 | × size | while flashing | RND-360 | |
+| `rnd.marker.flash_alphas` | 0.2, 1.0 | alpha | alternating | RND-360 | |
+| `rnd.marker.flash_period` | 0.2 | s | per alternation | RND-360 | |
+| `rnd.marker.shadow_extra` | 10 | px | shadow larger than the icon | RND-360 | |
+| `rnd.marker.compass_divisor` | 30 | H ÷ this, added | compass larger than the icon | RND-360 | |
+| `rnd.marker.shadow_alpha` | 0.9 | alpha | black shadow layer | RND-361 | |
+| `rnd.marker.order_ring_size` | 10 | wu | order-marker ring radius, ± 1 | RND-362 | |
+| `rnd.marker.order_ring_pulse_rate` | 5 | rad per s of presentation frame time | | RND-362 | |
+| `rnd.cursor.default_size` | 20 | px | | RND-365 | |
+| `rnd.cursor.pointer_size` | 35 | px, physical | at every resolution | RND-367, RND-369 | |
+| `rnd.cursor.pointer_hotspot` | 0.055, 0.070 | fraction of size | | RND-367 | |
+| `rnd.cursor.centre_hotspot` | 0.5, 0.5 | fraction of size | | RND-367 | |
+| `rnd.cursor.entry_marker_size` | 40 | px | | RND-367 | |
+| `rnd.cursor.unavailable_size` | 60 | px | | RND-367 | |
+| `rnd.cursor.unavailable_colour` | 255, 0, 0 | RGB | | RND-367 | |
+| `rnd.cursor.pulse_rate` | 4 | rad per s of presentation frame time | animated cursors | RND-368 | |
+| `rnd.cursor.pulse_amplitude` | 0.6 | × size | | RND-368 | |
+| `rnd.cursor.ring_min_steps` | 25 | segments | per ring | RND-370 | |
+| `rnd.cursor.ring_steps_per_radius` | 2 | segments per wu | | RND-370 | |
+| `rnd.cursor.ring_drape_distance` | 75 | wu | drape = min(1, 75 ÷ distance) | RND-370 | |
+| `rnd.cursor.ring_drape_min` | 0.1 | drape | rings stay flat at or below | RND-370 | |
+| `rnd.cursor.ring_team_band` | 0.2 | × radius | team-coloured band inside the radius | RND-370 | |
+| `rnd.cursor.ring_inner_black` | 0.275 | × radius | inner edge of the inner black band | RND-370 | |
+| `rnd.cursor.ring_outer_black` | 0.075 | × radius | outer black band | RND-370 | |
+| `rnd.cursor.glow_radius_factor` | 1.075 | × radius | glow cylinder | RND-370 | |
+| `rnd.cursor.glow_height_distance` | 300 | wu | height = ρ × max(1, distance ÷ 300) | RND-370 | |
+| `rnd.cursor.area_sides` | 100 | sides | area cylinder | RND-371 | |
+| `rnd.cursor.area_default` | 70, 42 | wu radius, wu height | | RND-371 | |
+| `rnd.cursor.area_meteor_shower` | 280, 70 | wu radius, wu height | | RND-371 | |
+| `rnd.cursor.area_missile_barrage` | 210, 70 | wu radius, wu height | | RND-371 | |
+| `rnd.cursor.area_blink_period` | 0.4 | s | on and off halves | RND-371 | |
+| `rnd.cursor.area_off_alpha` | 0.5 | × alpha | off half | RND-371 | |
+| `rnd.cursor.selection_particles` | 30 | particles per frame | | RND-373 | DEC-032 |
+| `rnd.cursor.selection_lift` | 10 | wu | above the terrain | RND-373 | |
+| `rnd.cursor.selection_spin` | 0.5 | rad per s of real time | | RND-373 | |
+| `rnd.cursor.formation_dot_size` | 2 | wu | diamond half-diagonal | RND-374 | |
+| `rnd.cursor.badge_offset` | 5 | px | from the pointer | RND-375 | |
+| `rnd.cursor.badge_direction` | 0.85, 1 | screen vector, normalised | *y* downwards | RND-375 | |
+| `rnd.cursor.badge_divisor` | 24 | H ÷ this | badge size in px | RND-375 | |

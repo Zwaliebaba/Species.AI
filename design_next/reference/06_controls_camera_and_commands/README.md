@@ -39,7 +39,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 **R-CTRL-004** (MUST) Simulation code never issues a player command. A rule that needs a follow-up change, such as the selection of a newly promoted Leader or of a toggled Leader, applies it inside the same simulation step, so one click yields one command and one selection change on every participant (DEC-119, R-SIM-454).
 
-**R-CTRL-005** (MUST) Bot teams issue no input actions. A bot controller acts through the same simulation operations that the commands execute ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-435; [Bots](../07_bots.md)).
+**R-CTRL-005** (MUST) Bot teams issue no input actions. A bot controller acts through the same simulation operations that the commands execute ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-435; [Bots](../07_bots/README.md)).
 
 **R-CTRL-006** (MUST) Durations of simulation rules are ticks of `ref.sim.tick_period` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)). Presentation timings (the camera, the cursor, the world markers, the Power slots panel and interface sound throttles) are real-time or presentation-clock values in seconds, and never feed a simulation rule (DEC-009).
 
@@ -57,7 +57,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 | **G-play** | the match is not in its grace period, not over and not paused ([Skirmish rules](../01_skirmish_rules_and_modes/README.md)) |
 | **nothing selected** | the team's current selection names no actor group, no actor and no structure (R-SIM-399) |
 | **Workers selected** | the team has at least one selected Worker in the latched count of R-SIM-402 |
-| **placing** | the team has a current Power and that Power is Pending ([selection and Power slots](selection_and_power_slots.md)) |
+| **placing** | the team has a current Power and that Power is Waiting ([selection and Power slots](selection_and_power_slots.md)) |
 
 **R-CTRL-013** (MUST) The Power slots have no full-screen overlay in a match: the Power slots panel ([selection and Power slots](selection_and_power_slots.md)) is always on screen, and no action is gated on an overlay being hidden.
 
@@ -129,16 +129,13 @@ Caption: Diagram 3-B, the control graph: actions resolve to commands, commands c
 
 ## 4 Tuning table
 
-The tuning keys of this folder are defined in the tuning table of each sub-file: [actions and bindings](actions_and_bindings.md) §4, [selection and Power slots](selection_and_power_slots.md) §4, [cursor and markers](cursor_and_markers.md) §4 and [camera](camera.md) §4. This file uses `ref.sim.tick_period` and `ref.sim.command.control_state_period`, which are defined in [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) and [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md).
-
-| key | value | unit | range or notes | requirement | DEC |
-|---|---|---|---|---|---|
+The tuning keys of this folder are defined in the tuning table of each sub-file: [actions and bindings](actions_and_bindings.md) §4, [selection and Power slots](selection_and_power_slots.md) §4, [cursor and markers](cursor_and_markers.md) §4 and [camera](camera.md) §4. This file uses `ref.sim.tick_period` and `ref.sim.command.control_state_period`, which are defined in [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) and [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md). This file defines no tuning key of its own.
 
 ## 5 Edge cases and interactions
 
 1. **Input while a window is open.** The team command state is still sent once per control-state period, with every flag cleared, so a Strike team under direct control neither moves nor fires while a UI window or the chat log is open (R-CTRL-021).
 2. **One click, one selection.** A click with nothing selected issues one `Select`, never two (R-CTRL-048, DEC-096).
-3. **Feedback before execution.** The aim camera of a Beam Dish or a turret starts at the click, before the selection reaches the simulation; if the command then has no effect, the camera leaves the aim mode when its own check fails (R-CTRL-022; [camera](camera.md)).
+3. **Feedback before execution.** The aim camera of a Beam Dish or a turret starts at the click, before the selection reaches the simulation; turret aim returns to free movement as soon as the team's selection is not its own turret ([camera](camera.md) R-CTRL-491), while Beam Dish aim has no such check (R-CTRL-022).
 4. **Route previews.** A preview never changes the route ids that the simulation hands to Workers, because it never uses the simulation's route storage (R-CTRL-023, DEC-095).
 
 ## 6 Acceptance criteria
@@ -153,7 +150,7 @@ The tuning keys of this folder are defined in the tuning table of each sub-file:
 
 ## 7 Dependencies
 
-- **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (the command catalogue, the team command state, command execution order); [Tick timing and main loop](../12_simulation_model/01_tick_timing_and_main_loop.md) (tick period, presentation clocks); [reference/02_units](../02_units/README.md); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (grace period, game over); [Tutorial and help](../11_tutorial_and_help.md) (hints and tutorial notifications); [Bots](../07_bots.md).
+- **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (the command catalogue, the team command state, command execution order); [Tick timing and main loop](../12_simulation_model/01_tick_timing_and_main_loop.md) (tick period, presentation clocks); [reference/02_units](../02_units/README.md); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (grace period, game over); [Tutorial and help](../11_tutorial_and_help.md) (hints and tutorial notifications); [Bots](../07_bots/README.md).
 - **Engine components:** [input](../../architecture/components/input.md) (device events, binding graph, control catalogue); [camera and sequences](../../architecture/components/camera_and_sequences.md) (camera views, scripted moves, picking and projection services); [UI framework](../../architecture/components/ui_framework/README.md); [platform layer](../../architecture/components/platform_layer.md).
 - **ADRs:** ADR-0028 (input device back-ends), ADR-0029 (input event model and binding contract), ADR-0036 (presentation clock).
 - **Assets:** listed in each sub-file.

@@ -77,7 +77,7 @@ if inRange and ( IsPathClear(A, B, evaluateCliffs = checkCliff, permitSteepDownh
 
 **R-BOT-032** (MUST) The first link build of a match runs in match-world initialisation step 7, after the obstacle grid exists, so the initial graph accounts for walls and Barrier Emitters ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A, R-SIM-329; DEC-087).
 
-**R-BOT-033** (MUST) A link is **usable** for a team t when its crossed emitter is none, or no longer exists, or is switched off, or belongs to a team that the using rule accepts: t itself for the standard, Relic Run and Launch Race priorities ([02](02_priority_model.md)), a friend of t for the diffusion priority and for target selection ([03](03_decision_loop_and_leaders.md)). Each rule states which test it uses.
+**R-BOT-033** (MUST) Whether a link is **usable** for a team t is tested when a rule uses it, by one of three tests that each rule names: for the standard, Relic Run and Launch Race priorities ([02](02_priority_model.md)), the crossed emitter is none, no longer exists, is switched off, or belongs to t; for the diffusion priority and the best target selection ([03](03_decision_loop_and_leaders.md)), the same with a friend of t in place of t; for the random target selection, the crossed emitter is none, no longer exists or belongs to t, whether it is switched on or off (R-BOT-088).
 
 ### 2.4 Link culling
 
@@ -104,7 +104,7 @@ for each node A, in structure order, skipping turret nodes:
 
 ### 2.5 Zone tagging
 
-**R-BOT-036** (MUST) While the link build of node A visits structures, it tags A in Relic Run and in Zone Control: a Relic Spawn Zone (Relic Run) or a Control Zone (Zone Control) that has no team at that moment and whose radius contains A becomes A's tagged zone; when several qualify, the last in structure order wins. No rule clears the tag, so a node keeps its tagged zone after the zone has been captured, and a later rebuild while the zone is owned leaves the tag unchanged. No other mode tags nodes. The tag sets the node's range (R-BOT-042), the Zone Control priority override ([02](02_priority_model.md)), the garrison rule and the defence test (R-BOT-051).
+**R-BOT-036** (MUST) While the link build of node A visits structures, it tags A in Relic Run and in Zone Control: a Relic Spawn Zone (Relic Run) or a Control Zone (Zone Control) that has no team at that moment and whose radius contains A becomes A's tagged zone; when several qualify, the last in structure order wins. No rule clears the tag, so a node keeps its tagged zone after the zone has been captured, and a later rebuild while the zone is owned leaves the tag unchanged. No other mode tags nodes. The tag sets the node's range (R-BOT-040), the Zone Control priority override ([02](02_priority_model.md)), the garrison rule and the defence test (R-BOT-051).
 
 ### 2.6 Rebuilding the links
 

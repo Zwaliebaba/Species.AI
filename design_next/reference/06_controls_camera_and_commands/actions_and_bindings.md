@@ -14,9 +14,9 @@ This file gives every player action a Species action id and a default binding (�
 
 **R-CTRL-030** (MUST) Every player action has a Species action id of the form `action.<group>.<name>`. The [input component](../../architecture/components/input.md) binds each action id to device conditions through its binding graph; several action ids may share one physical input, and the context rules of §2.2 decide which of them applies. The ids of this document are the stable names that bindings, rebinding and saved settings use (ADR-0029).
 
-**R-CTRL-031** (MUST) The default bindings of the match control scheme are those of table 2.4-A. Each binding is stated with its effective meaning (DEC-553). Gamepad controls are named by position: the south, east, west and north face buttons, the left and right shoulder buttons, the left and right triggers, the left and right sticks and their presses, the d-pad, and the menu and view buttons; their glyphs are `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.face_west`, `glyph.pad.face_north`, `glyph.pad.shoulder_left` and `glyph.pad.shoulder_right`.
+**R-CTRL-031** (MUST) The default bindings of the match control scheme are those of table 2.1-A. Each binding is stated with its effective meaning (DEC-553). Gamepad controls are named by position: the south, east, west and north face buttons, the left and right shoulder buttons, the left and right triggers, the left and right sticks and their presses, the d-pad, and the menu and view buttons; their glyphs are `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.face_west`, `glyph.pad.face_north`, `glyph.pad.shoulder_left` and `glyph.pad.shoulder_right`.
 
-Table 2.4-A Default bindings of the match control scheme.
+Table 2.1-A Default bindings of the match control scheme.
 
 | Action id | Keyboard and mouse | Gamepad | Row |
 |---|---|---|---|
@@ -82,7 +82,7 @@ Table 2.4-A Default bindings of the match control scheme.
 | `action.device.pad_disconnected`, `action.device.pad_connected` | — | gamepad disconnect, connect | M7 |
 | `action.app.quit` | Alt+F4, or the window's close request | — | M8 |
 
-**R-CTRL-032** (MUST) The gamepad triggers are read as press bindings where table 2.4-A says "down": the secondary fire on the left trigger fires once when the trigger goes down (DEC-553). Trigger magnitude is available to bindings but no default binding uses it (DEC-554).
+**R-CTRL-032** (MUST) The gamepad triggers are read as press bindings where table 2.1-A says "down": the secondary fire on the left trigger fires once when the trigger goes down (DEC-553). Trigger magnitude is available to bindings but no default binding uses it (DEC-554).
 
 **R-CTRL-033** (MUST) Each local player drives the match only with its own assigned gamepad (DEC-554). The other input corrections of DEC-096 and DEC-554 (canonical key names, validated drivers, per-binding repeat state, reloading the layout-specific bindings when the keyboard layout changes) are rules of the input component.
 
@@ -99,7 +99,7 @@ Table 2.4-A Default bindings of the match control scheme.
 | A1 | `action.camera.pan_left`, `action.camera.pan_right`, `action.camera.pan_forward`, `action.camera.pan_back`, `action.camera.pan_stick` | free-movement camera | moves the camera target along the horizontal camera basis ([camera](camera.md) R-CTRL-471) |
 | A2 | `action.camera.fast_pan` | with the A1 keys | multiplies the key pan speed ([camera](camera.md) R-CTRL-471); the stick pan ignores it |
 | A3 | `action.camera.raise`, `action.camera.lower`, `action.camera.height_wheel` | no UI window open; raise and lower are ignored while a Beam Dish or a turret is aimed | changes the camera height ([camera](camera.md) R-CTRL-461) |
-| A4 | `action.camera.aim`, `action.camera.aim_stick` | free movement, Beam Dish aim and turret aim; the stick only while no UI window is open; not while the chat log is held | the camera turns to face the ground point under the pointer, and the pointer stays on that ground point ([camera](camera.md) R-CTRL-471, [camera](camera.md) R-CTRL-464) |
+| A4 | `action.camera.aim`, `action.camera.aim_stick` | free movement, Beam Dish aim and turret aim; the stick only while no UI window is open; not while the chat log is held | the camera turns to face the ground point under the pointer, and the pointer stays on that ground point ([camera](camera.md) R-CTRL-471, R-CTRL-464) |
 | A5 | `action.camera.zoom` | no UI window open; not in tracking, where it re-centres the camera behind the Strike team ([camera](camera.md) R-CTRL-484) | divides the field-of-view target while held ([camera](camera.md) R-CTRL-460) |
 | A6 | `action.camera.look_around` | ignored while `action.direct.fire` is held | freezes the camera position and suspends tracking; the orientation still follows the pointer ([camera](camera.md) R-CTRL-472) |
 | A7 | `action.camera.track_closer`, `action.camera.track_farther` | tracking camera | changes the tracking distance ([camera](camera.md) R-CTRL-484) |
@@ -207,7 +207,7 @@ An order to a Transport always sets the straight-route flag (R-SIM-450); an orde
 
 A press that meets none of these conditions does nothing. While a Strike team, a Builder, a Collector or a turret is selected, the secondary button acts only through the team command state (rows D2, D4 and D5).
 
-**R-CTRL-051** (MUST) Every order action that reaches rule 3, 4 or 5 of R-CTRL-050 also sets the `special_orders` flag of the team command state (R-CTRL-101), whatever its meaning.
+**R-CTRL-051** (MUST) Whenever `action.order.special` fires, it also sets the `special_orders` flag of the team command state (R-CTRL-101), whatever meaning the resolver gives the press.
 
 ### 2.4 The object under the pointer
 
@@ -220,7 +220,7 @@ A press that meets none of these conditions does nothing. While a Strike team, a
    - **Actor groups** of the team: a group with live members is pre-tested as a sphere of `ref.sim.query.group_pick_factor` × its radius at its centre, then each live member as a sphere of the same factor × its radius; the group of the best-scoring member wins.
    - **Ungrouped actors** of the team, Workers excluded: a Leader is tested against its picking sphere ([Leader and formations](../02_units/leader_and_formations.md) R-UNIT-192); a Transport by its exact ray test, after which the running best score is set to `ref.sim.query.transport_pick_range` unconditionally, so a Transport hit replaces every earlier actor and loses only to a later score below that value; every other actor as a sphere of `ref.sim.query.actor_pick_factor` × its radius.
 4. A structure that is neither a Beam Dish nor a turret is dropped as a result, but its score is kept. A structure that cannot be selected, such as a Spawn Node, whose score is not larger than the actor's or the group's score therefore still blocks that pick in step 6, and then nothing is returned.
-5. If no actor was hit and the team's current Power is a Pending Leader Power, the nearest own Worker within `ref.ctrl.promote_radius` of the pointer ground point counts as the actor, with score 0.
+5. If no actor was hit and the team's current Power is a Waiting Leader Power, the nearest own Worker within `ref.ctrl.promote_radius` of the pointer ground point counts as the actor, with score 0.
 6. The kinds are compared by score with strict less-than: the actor wins if its score is below both other scores; otherwise the group, if its score is below both others; otherwise the structure, if its score is below both others and it belongs to the team or to no team; otherwise nothing is returned. While a Leader Power is placed, a Worker found at score 0 therefore ties with a Beam Dish or a turret under the pointer, and nothing is returned.
 
 **R-CTRL-056** (MUST) Enemy actors, groups and structures are never picked. A structure of no team can be picked, which serves order snapping, but only own Beam Dishes and own turrets are selected (row S1). Picking is local presentation and input and never runs in a simulation step ([Space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-387).
@@ -273,7 +273,7 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 
 **R-CTRL-100** (MUST) The direct-control rules apply to the team's selected Strike team, Builder, Collector, Leader or turret and are carried only by the team command state (R-SIM-438 to R-SIM-443). Direct control exists only for the Strike team, the Transport (through discrete orders), the Collector, the Builder, turrets and the Beam Dish (through `AimBeamDish`) (DEC-008).
 
-**R-CTRL-101** (MUST) The sender samples the team command state in every frame from the actions of table 2.4-A. Each one-shot flag is combined over the frames since the last send (R-SIM-441):
+**R-CTRL-101** (MUST) The sender samples the team command state in every frame from the actions of table 2.1-A. Each one-shot flag is combined over the frames since the last send (R-SIM-441):
 
 | Field | Set when |
 |---|---|
@@ -292,7 +292,7 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 | `direct_move_vector` | the movement stick converted to world space by R-SIM-440, with the camera's control vector ([camera](camera.md) R-CTRL-487) |
 | `direct_target_vector` | the aiming stick converted to world space; while the camera tracks a Strike team, the absolute target lead Trooper position + the camera's aim vector (R-CTRL-102) |
 
-**R-CTRL-102** (MUST) The aiming stick also steers the sender's camera aim vector, which is presentation: the wanted aim vector moves towards the stick vector with the acceleration `ref.ctrl.direct.aim_accel`, or `ref.ctrl.direct.aim_accel_fast` when the squared change exceeds `ref.ctrl.direct.aim_fast_threshold_sq`; its length is clamped to `ref.ctrl.direct.aim_max_length` when its squared length exceeds the square of that length. Each frame the camera aim vector moves a quarter of the way to the wanted aim vector ([camera](camera.md) R-CTRL-483).
+**R-CTRL-102** (MUST) The aiming stick also steers the sender's camera aim vector, which is presentation: the wanted aim vector moves towards the stick vector with the acceleration `ref.ctrl.direct.aim_accel`, or `ref.ctrl.direct.aim_accel_fast` when the squared change exceeds `ref.ctrl.direct.aim_fast_threshold_sq`; its length is clamped to `ref.ctrl.direct.aim_max_length` when its squared length exceeds the square of that length. While the camera tracks a Strike team in gamepad mode and `action.direct.fire` is not held, the sender sets both aim vectors to zero. Each frame the camera aim vector moves a quarter of the way to the wanted aim vector ([camera](camera.md) R-CTRL-483).
 
 **R-CTRL-103** (MUST) The sender sets `camera_tracking` when its camera tracks the selected unit or when the player holds `action.camera.look_around`, so the Strike team's direct-control rule reads the sender's state and never a camera (DEC-008, [Strike team](../02_units/strike_team.md) R-UNIT-358).
 
@@ -301,7 +301,7 @@ A press that meets none of these conditions does nothing. While a Strike team, a
 | Selected | Behaviour |
 |---|---|
 | Strike team | the move flag becomes `primary_held` and not `primary_fire`; the Strike team's direct-control rule runs (R-UNIT-358); with the move flag, the waypoint becomes the pointer position, the target direction points from the group centre to it, and the formation offsets are recalculated (R-UNIT-343); except with a gamepad, primary fire attacks the pointer position without a grenade and secondary fire with a grenade (R-UNIT-352, R-UNIT-357) |
-| Builder or Collector | the move flag sets its waypoint to the pointer position and clears the team's selection (R-UNIT-441, R-UNIT-463) |
+| Builder or Collector | the move flag sets its waypoint to the pointer position and clears the team's selection (R-UNIT-441, R-UNIT-463); secondary fire with a Builder selected starts no action in a match |
 | Leader | while its order is PrepareWaypoint and its speed is below `ref.ctrl.leader.face_pointer_speed`, it faces the pointer position (R-UNIT-168) |
 | Transport | nothing: a Transport takes discrete orders only (R-CTRL-080) |
 | turret | the turret aims at the pointer position; any of the move flag, `primary_fire`, `direct_move` or `primary_held` fires it ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)) |
@@ -345,7 +345,7 @@ flowchart TD
     M -- yes --> M1["the marker"]
     M -- no --> R["cast the click ray; best structure, best actor group, best ungrouped actor by screen-space score"]
     R --> D["drop structures other than a Beam Dish or a turret, keep their score"]
-    D --> L{"no actor hit and a Leader Power Pending?"}
+    D --> L{"no actor hit and a Leader Power Waiting?"}
     L -- yes --> L1["nearest own Worker within the promote radius, score 0"]
     L -- no --> C
     L1 --> C["compare scores with strict less-than: actor, then group, then own or no-team structure, else nothing"]

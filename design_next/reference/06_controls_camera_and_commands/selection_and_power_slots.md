@@ -67,7 +67,7 @@ With no controlled Worker left at the tick of execution the order does nothing: 
 
 **R-CTRL-170** (MUST) Each team has one set of Power slots (`PowerSlots`), created when the team is initialised (R-SIM-399). A Power (`Power`) is a slot-limited ability that the team owns: a placed unit (a Strike team, a Transport, a Builder, a Collector, a Leader promotion) or a targeted one-shot or timed effect. In a match no player creates a Power: the simulation grants it, through Supply crates, reinforcements, the Comeback Bonus, starting powers, map-placed starting units that run as Powers, and bots. The player only selects, targets and cancels Powers, each through a command that every participant executes (R-SIM-457).
 
-**R-CTRL-171** (MUST) A Power lives as follows: it is granted and starts Pending (waiting for a target; its icon pulses); targeting it spawns or fires its effect; it is Running while its tracked object lives or its life runs; it is removed when its advance reports that it is done or when it is cancelled. A one-shot Power ends itself when it is targeted (§2.8).
+**R-CTRL-171** (MUST) A Power lives as follows: it is granted and becomes Waiting, waiting for a target while its icon pulses; targeting it spawns or fires its effect; it is Running while its tracked object lives or its life runs; it is removed when its advance reports that it is done or when it is cancelled. A one-shot Power ends itself when it is targeted (§2.8).
 
 **R-CTRL-172** (MUST) A Power holds:
 
@@ -93,7 +93,7 @@ With no controlled Worker left at the tick of execution the order does nothing: 
 | verify targeting | true | while false, the target-area test accepts any point on the map (map-placed starting units) |
 | most recent Power | none | the id of the last Power granted; simulation code reads it right after a grant |
 | previous Power | none | the last Power explicitly selected: the cycling anchor (R-CTRL-203) |
-| most recent Leader | none | the Leader most recently promoted through the Leader Power; the bot reads it ([Bots](../07_bots.md)) |
+| most recent Leader | none | the Leader most recently promoted through the Leader Power; the bot reads it ([Bots](../07_bots/README.md)) |
 
 **R-CTRL-174** (MUST) The pop-up queue, the pop-up timers, the most-recent-Power timer and the icon screen positions are presentation state of the Power slots panel. The panel builds them from the grant's presentation event; it never writes the Power slots record, and no Power holds a real-time value (DEC-007, DEC-009).
 
@@ -106,57 +106,57 @@ Table 2.7-A Power kinds.
 | # | Kind | On grant | Targeting | Ends when | Stop on cancel | Granted in a match by |
 |---|---|---|---|---|---|---|
 | 1 | Worker | level only | — | — | — | — |
-| 2 | Leader | — | promotes the nearest own Worker (R-CTRL-193), then ends itself | its advance sets it back to Pending every tick, so it never ends by itself otherwise | — | bots ([Bots](../07_bots.md)); players promote with row O2 |
+| 2 | Leader | — | promotes the nearest own Worker (R-CTRL-193), then ends itself | its advance sets it back to Waiting every tick, so it never ends by itself otherwise | — | bots ([Bots](../07_bots/04_powers_and_unit_policies.md) R-BOT-107); players promote with row O2 |
 | 3 | Strike team | life `ref.unit.strike_team.life_ticks` | spawns a Strike team of 2 + its power level Troopers, scattered within `ref.unit.strike_team.spawn_spread`, and selects it; may request camera tracking (R-CTRL-194) | its life reaches 0, which stops it; its group is gone or has no live Trooper | every Trooper takes −`ref.unit.strike_team.stop_damage` ([Strike team](../02_units/strike_team.md) R-UNIT-338) | the Strike team outcome |
 | 4 | laser | level only | — | — | — | — |
 | 5 | grenade | a Strike team weapon choice, not a slot Power (R-CTRL-176) | — | — | — | — |
 | 6 | rocket | a Strike team weapon choice, not a slot Power (R-CTRL-176) | — | — | — | — |
 | 7 | airstrike | — | launches the airstrike, or the Firebomb Run for that variant, at the point; tracks the airstrike flight; position := the point; marks itself Running and ends itself | its flight has gone, where it could not end itself (DEC-550) | — | the airstrike and Firebomb Run outcomes; Flag Chain reinforcements; the Comeback Bonus |
-| 8 | Transport | — | spawns a Transport at the point and selects it | the Transport is gone or dead | the Transport takes −1000 health; refused in the tutorials ([Transport](../02_units/transport.md)) | the Transport outcome; Transit Gate reinforcements (Launch Race, Flag Chain); the Siege defenders' starting Transports, which are map-placed starting units (R-CTRL-186) |
+| 8 | Transport | — | spawns a Transport at the point and selects it | the Transport is gone or dead | the Transport takes −`ref.power.stop.damage`; refused in the tutorials ([Transport](../02_units/transport.md)) | the Transport outcome; Transit Gate reinforcements (Launch Race, Flag Chain); the Siege defenders' starting Transports, which are map-placed starting units (R-CTRL-186) |
 | 9 | Power slots level | level only; a match ignores it (DEC-033) | — | — | — | — |
 | 10 | Builder | — | spawns a Builder `ref.unit.builder.spawn_height` above the point and selects it | the Builder is gone or dead | −`ref.unit.builder.stop_damage` | the Builder outcome |
 | 11 | Collector | — | spawns a Collector `ref.unit.collector.spawn_height` above the point and selects it | the Collector is gone or dead | the Collector is made vulnerable and takes −`ref.unit.collector.stop_damage` | the Collector outcome |
 | 12 | Missile Barrage | — | fires the barrage at the point; ends itself | — | — | the Missile Barrage outcome |
-| 13 | Convert | its life (reference/04) | starts the effect at the point; Running; the selection switch of R-CTRL-201 | its life reaches 0, or no Worker of the team is still tagged with this Power | — | the Convert outcome |
+| 13 | Convert | life `ref.power.lifetime.buff_ticks` | starts the effect at the point; Running; the selection switch of R-CTRL-201 | its life reaches 0, or no Worker of the team is still tagged with this Power | — | the Convert outcome |
 | 14 | Shield | as Convert | as Convert | as Convert | — | the Shield outcome |
 | 15 | Speed Boost | as Convert | as Convert | as Convert | — | the Speed Boost outcome |
-| 16 | turret | — | places a turret of the variant's kind (gun by default); position := the point; without the turret-cap option it ends itself; with it, it stays Running and the current Power is cleared | the turret is gone; or another team (not its own and not no team) holds it, which damages it by −1000 and ends the Power | while the turret is its own: −1000; otherwise refused | the gun, rocket and flame turret outcomes; Launch Race and Flag Chain reinforcement turrets |
+| 16 | turret | — | places a turret of the variant's kind (gun by default); position := the point; without the turret-cap option it ends itself; with it, it stays Running and the current Power is cleared | the turret is gone; or another team (not its own and not no team) holds it, which damages it by −`ref.bldg.turret.self_destruct_damage` and ends the Power | while the turret is its own: −`ref.bldg.turret.self_destruct_damage`; otherwise refused | the gun, rocket and flame turret outcomes; Launch Race and Flag Chain reinforcement turrets |
 | 17 | Swarm | — | fires at the point; ends itself | — | — | the Swarm outcome |
 | 18 | Essence Grove | — | grows the grove at the point; ends itself | — | — | the Comeback Bonus grant path (reference/04) |
 | 19 | Blight Grove | — | as Essence Grove | — | — | the Blight Grove outcome; the Comeback Bonus |
 | 20 | Hive | — | places the Hive; ends itself | — | — | the Hive outcome |
-| 21 | Sickness | — | starts the effect; ends itself | — | — | reference/04 |
+| 21 | Sickness | — | starts the effect; ends itself | — | — | no Supply crate outcome grants it as a Power; the Sickness outcome is specified in reference/04 |
 | 22 | Brood | — | lays the eggs; ends itself | — | — | the Brood outcome; the Comeback Bonus |
 | 23 | meteor shower | — | starts the shower; ends itself | — | — | the meteor shower outcome; the Comeback Bonus |
 | 24 | Fury | as Convert | as Convert | as Convert | — | the Fury outcome |
 
-**R-CTRL-176** (MUST) Requesting a grenade or rocket kind is a weapon choice for the current Power's Strike team: when the current Power is a Strike team, its weapon changes; otherwise the request fails. No match path makes the request, so a Strike team always throws grenades (DEC-117). A request for any other kind that table 2.7-A does not list fails. No other Power kind is specified: the kinds with no targeting behaviour are outside the reference (DEC-552).
+**R-CTRL-176** (MUST) Requesting a grenade or rocket kind is a weapon choice for the current Power's Strike team: when the current Power is a Strike team, its weapon changes; otherwise the request fails. No match path makes the request, so a Strike team always throws grenades (DEC-117). A request to create a level-only kind, or a kind that table 2.7-A does not list, fails. No other Power kind is specified: the kinds with no targeting behaviour are outside the reference (DEC-552).
 
 **R-CTRL-177** (MUST) When a Strike team, Transport, Builder or Collector Power ends while it is the local player's current Power, the panel shows `ui.power_slots.cancelled` for `ref.ctrl.power.message.cancelled_s`.
 
 ### 2.8 Power states
 
-**R-CTRL-180** (MUST) A Power is in one of the states Idle, Pending, Running and Stopping, with the transitions of diagram 3-B:
+**R-CTRL-180** (MUST) A Power is in one of the states Idle, Waiting, Running and Stopping, with the transitions of diagram 3-B:
 
-1. a grant starts the Power, which makes it Pending;
-2. targeting is ignored unless the Power is Pending and its lock is 0;
+1. a grant starts the Power, which makes it Waiting;
+2. targeting is ignored unless the Power is Waiting and its lock is 0;
 3. a one-shot Power ends itself inside its targeting: the airstrike, Missile Barrage, Swarm, Essence Grove, Blight Grove, Hive, Sickness, Brood, meteor shower, the turret without the turret-cap option, and the Leader after its promotion;
-4. the Leader Power's advance sets it back to Pending every tick;
+4. the Leader Power's advance sets it back to Waiting every tick;
 5. a Strike team whose life reaches 0 is stopped and becomes Stopping;
 6. a Power's advance reports removal when it is Stopping at its end, when its tracked object is gone, when its life has run out, when no affected Worker remains, or when its turret is lost;
-7. a cancel removes a Pending or Running Power after running its stop behaviour (§2.12).
+7. a cancel removes a Waiting or Running Power after running its stop behaviour (§2.12).
 
 **R-CTRL-181** (MUST) A Power's advance counts its lock down by 1 tick while it is above 0, in every state. A Strike team's life counts down only while it is above 0, so a life of none never ends ([Strike team](../02_units/strike_team.md) R-UNIT-338, DEC-551).
 
 ### 2.9 Capacity and slot order
 
-**R-CTRL-185** (MUST) A team's capacity is `ref.ctrl.power.slots`, or `ref.ctrl.power.slots_eliminated` while the team is eliminated; power and research levels never change it in a match (DEC-033). Every Power occupies one slot, Pending Powers and running turrets included.
+**R-CTRL-185** (MUST) A team's capacity is `ref.power.slots.capacity`, or `ref.power.slots.capacity_eliminated` while the team is eliminated; power and research levels never change it in a match (DEC-033). Every Power occupies one slot, Waiting Powers and running turrets included.
 
 **R-CTRL-186** (MUST) Granting a Power to a team runs these steps:
 
 1. If the slots in use reach the capacity, the grant fails and the Power is lost; for the local player the panel shows `ui.power_slots.full`, or `ui.power_slots.comeback_full` for an eliminated team.
 2. The Power receives the next id.
-3. It is inserted before the first Pending Power of the slot list, or appended when there is none, so placed and running Powers stay left of unplaced ones (see DEC-556).
+3. It is inserted before the first Waiting Power of the slot list, or appended when there is none, so placed and running Powers stay left of unplaced ones (see DEC-556).
 4. It starts (§2.8 step 1), which sets its life by its kind.
 5. It is never selected automatically (R-SIM-457).
 6. The most recent Power becomes its id, and a grant presentation event carries its source (a Supply crate, a reinforcement or the Comeback Bonus) to the panel's pop-up.
@@ -164,12 +164,12 @@ Table 2.7-A Power kinds.
 
 A map-placed starting unit that runs as a Power (the Siege defenders' Transports) is granted at team initialisation and targeted at once with verify targeting off; its life is none, and it occupies a slot from the start ([Population flow](../05_population_flow.md) R-ECON-109).
 
-**R-CTRL-187** (MUST) A Power can also be **registered**: appended without reordering and without starting, after the same capacity check. Registration serves the Beam Dish transit of a Strike team: when its first Trooper enters a Beam Dish and a new group is created at the destination, the old Power is removed without its stop behaviour, and a new Running Strike team Power for the new group is registered with the old life carried over. When the registration succeeds, the new Power is selected inside the same step; it has a new id and the last slot position, so the slot key that selects it changes. When it fails, because the eliminated team's capacity has dropped to two, the Strike team continues with no Power: no life limit, no slot, and no cancel from the bar ([Strike team](../02_units/strike_team.md) R-UNIT-339; see DEC-551 and DEC-556).
+**R-CTRL-187** (MUST) A Power can also be **registered**: appended without reordering and without starting, after the same capacity check. Registration serves the Beam Dish transit of a Strike team: when its first Trooper enters a Beam Dish and a new group is created at the destination, the old Power is removed without its stop behaviour, and a new Running Strike team Power for the new group is registered with the old life carried over. The Strike team's weapon kind is copied to the new group. When the registration succeeds, the new Power is selected inside the same step; it has a new id and the last slot position, so the slot key that selects it changes. When it fails, because the eliminated team's capacity has dropped to two, the Strike team continues with no Power: no life limit, no slot, and no cancel from the bar ([Strike team](../02_units/strike_team.md) R-UNIT-339; see DEC-551 and DEC-556).
 
-**R-CTRL-188** (MUST) Each team's Power slots advance once per tick, in update slice 1 as part of the team's advance:
+**R-CTRL-188** (MUST) Each team's Power slots advance once per tick, in update slice `ref.sim.slice.power_slots` (1) as part of the team's advance:
 
-1. **Ordering pass.** For i from the last index down to 1: if Power i is Running and Power i − 1 is Pending, the Pending Power moves to index i and the Running Power to index i − 1. The pass continues at i − 1, which holds the same Running Power, so in one tick a Running Power passes every contiguous Pending Power to its left ([P, P, R] becomes [R, P, P]). A Running Power directly behind another Running Power is not carried along in that tick: [P, R, R] becomes [R, P, R], and [R, R, P] after the next tick. This rule decides which slot key selects which Power (see DEC-556).
-2. **Advance.** While the local team's current Power is Pending, a presentation event keeps its placement message (R-CTRL-221) alive for `ref.ctrl.power.message.ready_s`. Then each Power advances; one that reports removal is removed, and if it was the current Power, the current Power becomes none and the team's selection is cleared inside the step.
+1. **Ordering pass.** For i from the last index down to 1: if Power i is Running and Power i − 1 is Waiting, the Waiting Power moves to index i and the Running Power to index i − 1. The pass continues at i − 1, which holds the same Running Power, so in one tick a Running Power passes every contiguous Waiting Power to its left ([P, P, R] becomes [R, P, P]). A Running Power directly behind another Running Power is not carried along in that tick: [P, R, R] becomes [R, P, R], and [R, R, P] after the next tick. This rule decides which slot key selects which Power (see DEC-556).
+2. **Advance.** While the local team's current Power is Waiting, a presentation event keeps its placement message (R-CTRL-221) alive for `ref.ctrl.power.message.ready_s`. Then each Power advances; one that reports removal is removed, and if it was the current Power, the current Power becomes none and the team's selection is cleared inside the step.
 3. The shared power-level advance runs, so it runs once per team per tick.
 
 **R-CTRL-189** (MUST) Slot position n (1 to 9) is the n-th Power of the slot list. With the reference order of R-CTRL-186 and R-CTRL-188, positions move as Powers start running, end, or are registered again (see DEC-556).
@@ -185,17 +185,17 @@ A map-placed starting unit that runs as a Power (the Siege defenders' Transports
 1. It fails when the Power does not exist or the point lies outside the map.
 2. It passes when the team's verify-targeting flag is off.
 3. **Leader:** it passes exactly when a Worker of the team stands within `ref.ctrl.promote_radius` of the point.
-4. **Turret:** it fails inside an exclusion zone that blocks Powers ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)); it fails when the sphere test of any structure with radius `ref.ctrl.power.turret.structure_clearance` hits the point; it fails within `ref.ctrl.power.turret.gate_exclusion` of a Transit Gate, or within `ref.ctrl.power.turret.spawn_node_exclusion` of a Spawn Node, that a team other than a friend owns (no-team structures excluded); otherwise it passes.
-5. **Shield, Speed Boost, Convert, Fury:** it passes exactly when at least one actor of the team stands within `ref.ctrl.power.effect_range` of the point.
+4. **Turret:** it fails inside an exclusion zone that blocks Powers ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)); it fails when the sphere test of any structure with radius `ref.power.target.turret_clearance` hits the point; it fails within `ref.power.target.turret_gate_clearance` of a Transit Gate, or within `ref.power.target.turret_node_clearance` of a Spawn Node, that a team other than a friend owns (no-team structures excluded); otherwise it passes.
+5. **Shield, Speed Boost, Convert, Fury:** it passes exactly when at least one actor of the team stands within `ref.power.effect_range` of the point.
 6. **Otherwise** it passes exactly when the point lies within one of the kind's target areas (distance ≤ radius, table 2.10-A); in the "anywhere" area a point inside an exclusion zone that blocks Powers fails.
 
 Table 2.10-A Target areas.
 
 | Kind | Areas |
 |---|---|
-| Builder, Collector | a moving circle of `ref.ctrl.power.area.unit_anchor_radius` around each actor group of the team whose members are Troopers or Builders, which in a match means every Strike team, because a Builder is an ungrouped actor; then also the Strike team areas |
+| Builder, Collector | a moving circle of `ref.power.target.group_centre_radius` around each actor group of the team whose members are Troopers or Builders, which in a match means every Strike team, because a Builder is an ungrouped actor; then also the Strike team areas |
 | Transport | the Strike team areas |
-| Strike team | a fixed circle of `ref.ctrl.power.area.structure_anchor_radius` around every friendly Spawn Node, turret, Control Zone (the zone type that also serves Relic Bases, Relic Spawn Zones and Flag posts) and Transit Gate |
+| Strike team | a fixed circle of `ref.power.target.unit_drop_radius` around every friendly Spawn Node, turret, Control Zone (the zone type that also serves Relic Bases, Relic Spawn Zones and Flag posts) and Transit Gate |
 | every other kind | one area centred at (0, 0, 0) with radius `ref.ctrl.power.area.anywhere_radius`: anywhere |
 
 **R-CTRL-193** (MUST) Targeting the Leader Power is refused while the team has an actor group, an actor or a structure selected. Otherwise the nearest Worker of exactly the team within `ref.ctrl.promote_radius` of the point (by squared distance) is promoted (R-UNIT-153); the Power ends itself; the new Leader is selected; the most recent Leader becomes it; and the local team sees the placement message and hears `power_input.confirm`.
@@ -238,9 +238,9 @@ Table 2.10-A Target areas.
 
 **R-CTRL-223** (MUST) A clickable panel element is a **screen zone**: an action name, a tooltip string id, a rectangle on the virtual canvas, an integer argument, a navigation group (none, or 1 to 3) and a sub-zones flag. The panel regenerates its zones while it draws each frame and takes the new set at the start of its next advance, one frame later. A zone with a keyboard shortcut shows the bound key in its tooltip as `ui.power_slots.shortcut`.
 
-**R-CTRL-224** (MUST) The panel advances in this order: cycling (R-CTRL-203), the screen zones (R-CTRL-226), the slot keys (R-CTRL-205), the cancel action (row T3), and then the clean-up of the pop-up timers (R-CTRL-239).
+**R-CTRL-224** (MUST) While the panel is locked, its advance does nothing. Otherwise it advances in this order: cycling (R-CTRL-203), the screen zones (R-CTRL-226), the slot keys (R-CTRL-205), the cancel action (row T3), and then the clean-up of the pop-up timers (R-CTRL-239).
 
-**R-CTRL-225** (MUST) In a match the panel generates only "select Power" zones, one per bar slot, in navigation group 2. The show and hide actions of row T8 and the menu-navigation actions have no effect in a match.
+**R-CTRL-225** (MUST) In a match the panel generates only "select Power" zones, one per bar slot, in navigation group 2. The show and hide actions of row T8, the menu-navigation actions, the hold-and-release activation of the view button and the panel's scrolling shortcuts (registered on the cycling and on the forward and back pan actions) have no effect in a match.
 
 **R-CTRL-226** (MUST) The power bar is clickable (DEC-083): each frame the bar slot under the pointer takes the focus, shows its tooltip and draws the focus highlight `cursor.highlight` around itself, grown by `ref.ctrl.bar.focus_grow` of its height on each side; `action.power.activate_slot` on the focused slot selects its Power as a slot key does (row S11). A primary-button press that starts over the bar acts on the bar and is withheld from the world actions for the rest of the frame, as over a UI window (row M6).
 
@@ -253,8 +253,8 @@ Table 2.10-A Target areas.
 **R-CTRL-231** (MUST) Each occupied slot draws, with k = `ref.ctrl.bar.current_scale` for the current Power's slot and 1 ÷ `ref.ctrl.bar.current_scale` for every other, and with the disc constants `ref.ctrl.bar.disc` and the icon tints `ref.ctrl.bar.icon_tint`:
 
 1. the shadow `marker.team_disc_shadow` in black with alpha 0.81, alpha-blended, half-extent (size + 10) × k ÷ 2.2;
-2. the colour disc `marker.team_disc`, additive, half-extent (size + 10) × k ÷ 2.4, in the team colour, or for a turret Power in the colour of the turret's current owner and not at all when the turret has no team; no disc while the Power is locked; its colour × 0.1 while the Power is not Running; its alpha × max(0.5, |sin(4 × game time)|) while it is Pending;
-3. the kind's icon `icon.power.<kind>` (for example `icon.power.strike_team` or `icon.power.leader`), additive, size × k, grey (0.5, 0.5, 0.5, 1) while locked, (1, 1, 1, 0.6) while not Running, else white; its zone gets the tooltip `power.<kind>.select_hint`, or `power.<kind>.place_hint` while Pending, and its screen position is kept for the pop-up;
+2. the colour disc `marker.team_disc`, additive, half-extent (size + 10) × k ÷ 2.4, in the team colour, or for a turret Power in the colour of the turret's current owner and not at all when the turret has no team; no disc while the Power is locked; its colour × 0.1 while the Power is not Running; its alpha × max(0.5, |sin(4 × game time)|) while it is Waiting;
+3. the kind's icon `icon.power.<kind>` (for example `icon.power.strike_team` or `icon.power.leader`), additive, size × k, grey (0.5, 0.5, 0.5, 1) while locked, (1, 1, 1, 0.6) while not Running, else white; its zone gets the tooltip `power.<kind>.select_hint`, or `power.<kind>.place_hint` while Waiting, and its screen position is kept for the pop-up;
 4. for the current Power while it is not Running, the highlight `cursor.highlight` around the icon, `ref.ctrl.bar.highlight_margin` larger on each side;
 5. the extra information of R-CTRL-232;
 6. the compass of R-CTRL-233, when the Power's position is not (0, 0, 0).
@@ -278,9 +278,9 @@ On a world marker that shows a Transport's order, the state icon follows the arr
 
 **R-CTRL-234** (MUST) While the bar holds at least one slot, the cycling hint is drawn left of the first slot with the placement of `ref.ctrl.bar.cycle_hint`, centred at (x₀ − 1.2 × size, y + size ÷ 2 − 0.2 × size) with half-size 0.4 × size: `glyph.key.tab` in keyboard and mouse mode and `glyph.pad.shoulder_left` in gamepad mode, first black with alpha 0.75, then white with alpha 0.75.
 
-**R-CTRL-235** (MUST) While the current Power is Pending and its target areas are not the single "anywhere" area, each target area shows placement sparkles: in every frame two muzzle-flash particles of size `ref.ctrl.panel.sparkle_size` at centre ± (r sin a, 0, r cos a), with r the area radius, a = game time × `ref.ctrl.panel.sparkle_rate`, and y the ground height + `ref.ctrl.panel.sparkle_lift`.
+**R-CTRL-235** (MUST) While the current Power is Waiting and its target areas are not the single "anywhere" area, each target area shows placement sparkles: in every frame two muzzle-flash particles of size `ref.ctrl.panel.sparkle_size` at centre ± (r sin a, 0, r cos a), with r the area radius, a = game time × `ref.ctrl.panel.sparkle_rate`, and y the ground height + `ref.ctrl.panel.sparkle_lift`.
 
-**R-CTRL-236** (MUST) While the current Power is Pending, the Power help tooltip shows its outcome's tooltip text (`crate.<outcome>.tooltip`, [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)) in a box `ref.ctrl.panel.tooltip_width` wide with its top at y `ref.ctrl.panel.tooltip_top`, centred on W ÷ 2; the text and box follow `ref.ctrl.panel.tooltip_text`: the text wraps at 1.75 × the box width, in size 11 with a 20 % line gap; the box is filled black with alpha 0.75 and outlined white with alpha 0.5. The Firebomb Run variant shows the Firebomb Run tooltip; a turret Power shows its gun, rocket or flame turret tooltip, and any other turret kind the gun turret tooltip.
+**R-CTRL-236** (MUST) While the current Power is Waiting, the Power help tooltip shows its outcome's tooltip text (`crate.<outcome>.tooltip`, [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)) in a box `ref.ctrl.panel.tooltip_width` wide with its top at y `ref.ctrl.panel.tooltip_top`, centred on W ÷ 2; the text and box follow `ref.ctrl.panel.tooltip_text`: the text wraps at 1.75 × the box width, in size 11 with a 20 % line gap; the box is filled black with alpha 0.75 and outlined white with alpha 0.5. The Firebomb Run variant shows the Firebomb Run tooltip; a turret Power shows its gun, rocket or flame turret tooltip, and any other turret kind the gun turret tooltip.
 
 **R-CTRL-237** (MUST) The panel's text uses the string table; a missing string follows the string table's rule for missing keys ([UI framework](../../architecture/components/ui_framework/README.md)).
 
@@ -308,7 +308,7 @@ stateDiagram-v2
     Nothing --> StrikeTeam: pick an own Strike team
     Nothing --> Unit: pick an own Leader, Transport, Builder or Collector, or promote a Worker
     Nothing --> Structure: pick an own Beam Dish or turret
-    Nothing --> Placing: SelectPower of a Pending Power
+    Nothing --> Placing: SelectPower of a Waiting Power
     StrikeTeam --> Nothing: deselect, its Power ends, or the group is gone
     Unit --> Nothing: deselect, demote, Leader waypoint order, Transport deploy, Builder or Collector move
     Structure --> Nothing: deselect or cancel, or the turret is captured
@@ -322,14 +322,14 @@ Caption: Diagram 3-A, the selection lifecycle of one team (R-CTRL-150 to R-CTRL-
 ```mermaid
 stateDiagram-v2
     [*] --> Idle: granted
-    Idle --> Pending: started
-    Pending --> Running: targeted, only with lock 0
-    Pending --> Removed: a one-shot Power targeted, it ends itself
-    Running --> Pending: Leader Power, every tick
+    Idle --> Waiting: started
+    Waiting --> Running: targeted, only with lock 0
+    Waiting --> Removed: a one-shot Power targeted, it ends itself
+    Running --> Waiting: Leader Power, every tick
     Running --> Stopping: Strike team life reaches 0, stop runs
     Running --> Removed: advance reports done, for an object gone, life out, no affected Worker or a turret lost
     Stopping --> Removed: advance at the end of the tick
-    Pending --> Removed: cancelled, stop runs
+    Waiting --> Removed: cancelled, stop runs
     Running --> Removed: cancelled, stop runs
     Removed --> [*]
 ```
@@ -340,8 +340,8 @@ Caption: Diagram 3-B, the Power states (R-CTRL-180, R-CTRL-181, R-CTRL-210).
 flowchart TD
     G["grant a Power"] --> F{"slots in use reach the capacity?"}
     F -- yes --> L["the Power is lost; the full message for the local player"]
-    F -- no --> I["next id; insert before the first Pending Power, or append"]
-    I --> S["start: Pending, life set by kind"]
+    F -- no --> I["next id; insert before the first Waiting Power, or append"]
+    I --> S["start: Waiting, life set by kind"]
     S --> E["grant event to the pop-up; full message if now full"]
     E --> T["each tick: ordering pass, Power advances, power-level advance"]
 ```
@@ -350,7 +350,7 @@ Caption: Diagram 3-C, granting a Power and the per-tick advance of the Power slo
 
 ## 4 Tuning table
 
-This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)); `ref.sim.command.power_id_min_bits` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)); `ref.unit.strike_team.life_ticks`, `ref.unit.strike_team.spawn_spread`, `ref.unit.strike_team.stop_damage` ([Strike team](../02_units/strike_team.md)); `ref.unit.builder.spawn_height`, `ref.unit.builder.stop_damage` ([Builder](../02_units/builder.md)); `ref.unit.collector.spawn_height`, `ref.unit.collector.stop_damage` ([Collector](../02_units/collector.md)); and `ref.unit.worker.order_transport_radius` ([Worker](../02_units/worker.md)). The durations of the Convert, Shield, Speed Boost and Fury effects belong to [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), and the starting-power lock to `ref.econ.start.power_lock_ticks` ([Population flow](../05_population_flow.md)).
+This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bindings.md)); `ref.power.slots.capacity`, `ref.power.slots.capacity_eliminated`, `ref.power.effect_range`, `ref.power.target.unit_drop_radius`, `ref.power.target.group_centre_radius`, `ref.power.target.turret_clearance`, `ref.power.target.turret_gate_clearance`, `ref.power.target.turret_node_clearance`, `ref.power.lifetime.buff_ticks` and `ref.power.stop.damage` ([Supply crates, Powers and weapons](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-014 to R-CRATE-025); `ref.bldg.turret.self_destruct_damage` ([defences and props](../03_buildings_and_world_objects/defences_and_props.md)); `ref.sim.slice.power_slots` ([Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md)); `ref.sim.command.power_id_min_bits` ([Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md)); `ref.unit.strike_team.life_ticks`, `ref.unit.strike_team.spawn_spread`, `ref.unit.strike_team.stop_damage` ([Strike team](../02_units/strike_team.md)); `ref.unit.builder.spawn_height`, `ref.unit.builder.stop_damage` ([Builder](../02_units/builder.md)); `ref.unit.collector.spawn_height`, `ref.unit.collector.stop_damage` ([Collector](../02_units/collector.md)); and `ref.unit.worker.order_transport_radius` ([Worker](../02_units/worker.md)). The effects of the outcomes belong to [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md), and the starting-power lock to `ref.econ.start.power_lock_ticks` ([Population flow](../05_population_flow.md)).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -359,14 +359,6 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.select.circle_max_radius` | 100 | wu | | R-CTRL-156 | DEC-032 |
 | `ref.ctrl.order.crowd_interval_ticks` | 10 | ticks | 1.0 s of match time between a team's crowd orders | R-CTRL-160 | DEC-032 |
 | `ref.ctrl.order.breach_charge_fraction` | 0.25 | of the selected Workers | at least this share carrying a Breach Charge forces a straight route | R-CTRL-160 | — |
-| `ref.ctrl.power.slots` | 6 | slots | capacity of a team | R-CTRL-185 | DEC-033 |
-| `ref.ctrl.power.slots_eliminated` | 2 | slots | capacity while eliminated | R-CTRL-185 | DEC-033 |
-| `ref.ctrl.power.effect_range` | 70 | wu | Shield, Speed Boost, Convert and Fury target test; also the base radius of the cursor's area cylinder ([cursor and markers](cursor_and_markers.md)) | R-CTRL-192 | — |
-| `ref.ctrl.power.turret.structure_clearance` | 10 | wu | sphere test against every structure | R-CTRL-192 | — |
-| `ref.ctrl.power.turret.gate_exclusion` | 400 | wu | from a Transit Gate of a team that is not a friend | R-CTRL-192 | — |
-| `ref.ctrl.power.turret.spawn_node_exclusion` | 200 | wu | from a Spawn Node of a team that is not a friend | R-CTRL-192 | — |
-| `ref.ctrl.power.area.unit_anchor_radius` | 100 | wu | around each Strike team | R-CTRL-192 | — |
-| `ref.ctrl.power.area.structure_anchor_radius` | 75 | wu | around each friendly anchor structure | R-CTRL-192 | — |
 | `ref.ctrl.power.area.anywhere_radius` | 99999.9 | wu | the "anywhere" area, centred at (0, 0, 0) | R-CTRL-192 | — |
 | `ref.ctrl.power.message.ready_s` | 2.5 | s of real time | Ready message, also kept alive while placing | R-CTRL-188, R-CTRL-221 | — |
 | `ref.ctrl.power.message.not_available_s` | 2.5 | s of real time | | R-CTRL-221 | — |
@@ -390,7 +382,7 @@ This file cites `ref.ctrl.promote_radius` ([actions and bindings](actions_and_bi
 | `ref.ctrl.bar.first_x_offset` | 5 | virtual pixels | | R-CTRL-230 | — |
 | `ref.ctrl.bar.y` | 550 | virtual pixels | | R-CTRL-230 | — |
 | `ref.ctrl.bar.current_scale` | 1.1 | factor | k for the current slot; 1 ÷ 1.1 for the others | R-CTRL-231 | — |
-| `ref.ctrl.bar.disc` | shadow alpha 0.81, half-extent (size + 10) × k ÷ 2.2; disc half-extent (size + 10) × k ÷ 2.4; colour × 0.1 when not Running; alpha × max(0.5, \|sin(4 × game time)\|) while Pending | layout | | R-CTRL-231 | — |
+| `ref.ctrl.bar.disc` | shadow alpha 0.81, half-extent (size + 10) × k ÷ 2.2; disc half-extent (size + 10) × k ÷ 2.4; colour × 0.1 when not Running; alpha × max(0.5, \|sin(4 × game time)\|) while Waiting | layout | | R-CTRL-231 | — |
 | `ref.ctrl.bar.icon_tint` | locked (0.5, 0.5, 0.5, 1); not Running (1, 1, 1, 0.6); otherwise white | RGBA | | R-CTRL-231 | — |
 | `ref.ctrl.bar.highlight_margin` | 5 | virtual pixels | each side of the current unplaced icon | R-CTRL-231 | — |
 | `ref.ctrl.bar.focus_grow` | 0.1 | × zone height | each side of the focused slot | R-CTRL-226 | DEC-083 |
@@ -430,7 +422,7 @@ String ids that this file uses, with their new text:
 
 ## 5 Edge cases and interactions
 
-1. **Tutorial termination block.** In the blocked tutorial phases a one-shot Power that ends itself on targeting stays Pending and can be fired again; the airstrike is marked Running and leaves when its flight has gone (R-CTRL-210, see DEC-550).
+1. **Tutorial termination block.** In the blocked tutorial phases a one-shot Power that ends itself on targeting stays Waiting and can be fired again; the airstrike is marked Running and leaves when its flight has gone (R-CTRL-210, see DEC-550).
 2. **Units without a slot.** A cancelled Transport or turret whose stop declines stays in the world without a slot (R-CTRL-211, see DEC-551).
 3. **Strike team through a Beam Dish.** It gets a new Power id and the last slot position, so its slot key changes; after elimination with two full slots it continues with no Power and no life limit (R-CTRL-187, see DEC-551 and DEC-556).
 4. **Capacity after elimination.** An eliminated team has two slots; the Comeback Bonus grants only while one is free ([Skirmish rules](../01_skirmish_rules_and_modes/README.md)), and a grant to full slots is lost (R-CTRL-185, R-CTRL-186, DEC-033).
@@ -447,7 +439,7 @@ String ids that this file uses, with their new text:
 
 **AC-CTRL-SP-01 — Capacity** (R-CTRL-185, R-CTRL-186). Given a team with six Powers, when a Supply crate grants a seventh, then the team still holds six, the new Power is lost and the local player sees `ui.power_slots.full`; given an eliminated team with two, a third is lost.
 
-**AC-CTRL-SP-02 — Insertion and ordering** (R-CTRL-186, R-CTRL-188). Slot lists after a grant and after ticks, with R = Running and P = Pending:
+**AC-CTRL-SP-02 — Insertion and ordering** (R-CTRL-186, R-CTRL-188). Slot lists after a grant and after ticks, with R = Running and P = Waiting:
 
 | Before | Event | After |
 |---|---|---|
@@ -478,7 +470,7 @@ String ids that this file uses, with their new text:
 
 ## 7 Dependencies
 
-- **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (commands, selection fields, R-SIM-405); [Worker](../02_units/worker.md); [Leader and formations](../02_units/leader_and_formations.md); [Strike team](../02_units/strike_team.md); [Transport](../02_units/transport.md); [Builder](../02_units/builder.md); [Collector](../02_units/collector.md); [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (outcomes, effects, durations, Power names and tooltips); [Population flow](../05_population_flow.md) (starting powers and their lock, map-placed starting units); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (reinforcements, Comeback Bonus, turret cap); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (exclusion zones, turrets); [Tutorial and help](../11_tutorial_and_help.md); [Bots](../07_bots.md); [Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (power levels).
+- **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (commands, selection fields, R-SIM-405); [Worker](../02_units/worker.md); [Leader and formations](../02_units/leader_and_formations.md); [Strike team](../02_units/strike_team.md); [Transport](../02_units/transport.md); [Builder](../02_units/builder.md); [Collector](../02_units/collector.md); [Supply crates and Powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (outcomes, effects, durations, Power names and tooltips); [Population flow](../05_population_flow.md) (starting powers and their lock, map-placed starting units); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (reinforcements, Comeback Bonus, turret cap); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (exclusion zones, turrets); [Tutorial and help](../11_tutorial_and_help.md); [Bots](../07_bots/README.md); [Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (power levels).
 - **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) (the panel's widgets, the string table); [renderer](../../architecture/components/renderer/README.md).
 - **Assets:** `icon.power.workers`, `icon.power.leader`, `icon.power.strike_team`, `icon.hud.slot_empty`, `icon.hud.slot_discard`, `icon.hud.icon_halo`, `icon.hud.transport_state`, `marker.team_disc`, `marker.team_disc_shadow`, `marker.edge_compass`, `marker.edge_compass_shadow`, `marker.supply_crate`, `cursor.highlight`, `glyph.key.tab`, `glyph.pad.shoulder_left`; sound events `match_ui.unit_select`, `match_ui.selection_circle`, `match_ui.order_given`, `power_slots.icon_hover`, `power_slots.select`, `power_input.confirm`.
 
@@ -489,6 +481,6 @@ String ids that this file uses, with their new text:
 | DEC-308 | Orders to Workers that operate a port | crowd orders reach every controlled Worker (R-CTRL-160) |
 | DEC-550 | Power cancellation in the tutorials | every cancel is refused in the blocked phases (R-CTRL-210) |
 | DEC-551 | Units that outlive their Power slot | a cancel frees the slot even when the unit stays; a re-registered Strike team gets a new id, and fails when slots are full (R-CTRL-187, R-CTRL-211) |
-| DEC-556 | Power slot order | insertion before the first Pending Power, the per-tick ordering pass, keys by position (R-CTRL-186, R-CTRL-188, R-CTRL-189) |
+| DEC-556 | Power slot order | insertion before the first Waiting Power, the per-tick ordering pass, keys by position (R-CTRL-186, R-CTRL-188, R-CTRL-189) |
 
 Resolved decisions applied: DEC-007, DEC-009, DEC-028, DEC-032, DEC-033, DEC-083, DEC-096, DEC-117, DEC-119, DEC-555, DEC-564, DEC-653. Dropped: DEC-552.

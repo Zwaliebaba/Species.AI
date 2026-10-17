@@ -34,11 +34,11 @@ The camera is local to each participant, is never sent, and is never read by the
 6. re-orthonormalisation of front and up;
 7. the recomputation of the pointer ground point ([actions and bindings](actions_and_bindings.md) R-CTRL-058).
 
-A mode change takes effect from the next frame's advancer. The debug modes and their grace frames are not specified (DEC-024).
+A mode change takes effect from the next frame's advancer. While a match mode advances, the pointer is held inside the window ([input](../../architecture/components/input.md)). The debug modes and their grace frames are not specified (DEC-024).
 
-**R-CTRL-457** (MUST) The live camera modes are those of table 2.3-A. The spherical-world, scripted-campaign, building-focus, first-person, entity-follow and replay modes and the debug modes are not specified (DEC-024).
+**R-CTRL-457** (MUST) The live camera modes are those of table 2.2-A. The spherical-world, scripted-campaign, building-focus, first-person, entity-follow and replay modes and the debug modes are not specified (DEC-024).
 
-Table 2.3-A Live camera modes.
+Table 2.2-A Live camera modes.
 
 | Mode | Entered by | Player-steered | Height component |
 |---|---|---|---|
@@ -189,7 +189,7 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.ctrl.camera.initial_pose` | field of view 60°; height 50 wu; position (1000, 500, 1000); front normalise(0, −0.5, −1) | pose | before the first view cut | R-CTRL-452 | — |
+| `ref.ctrl.camera.initial_pose` | field of view 60°; height 50 wu; position (1000, 500, 1000); front normalise(0, −0.5, −1); bounds ±10⁶ wu on both horizontal axes | pose | until match entry sets the pose and the bounds | R-CTRL-452 | — |
 | `ref.ctrl.camera.fov_base` | 60 | degrees | vertical; the free-movement target | R-CTRL-460, R-CTRL-470 | DEC-024 |
 | `ref.ctrl.camera.zoom_divisor` | 4 | — | 60° becomes 15° while zooming | R-CTRL-460 | DEC-024 |
 | `ref.ctrl.camera.zoom_rates` | normal 30; zooming 100; static and scripted move 1; k = dt × rate × 0.1 | per second | time constants 1/3 s, 0.1 s, 10 s | R-CTRL-460 | DEC-024 |
