@@ -399,3 +399,108 @@ Per-object tracks follow (ranges are min..max over the object's keys; "→" is n
 
 A new engine can map this 1:1 onto a UI timeline (per-object property tracks, cubic/quadratic ease on transform, linear on rotation/alpha, step on sprite/role/flip). Colour roles must be resolved at draw time against the local player's team.
 
+## 4 Sprite and billboard animation conventions
+
+### 4.1 General rules [C]
+
+- **No flip-book animation anywhere.** No sprite sheet is ever stepped through frames over time; every sprite is a single image whose quad is transformed procedurally. "Animation frames" are *state textures* chosen by condition (e.g. the four `darwinian_ouch*.bmp` images, §4.2) [C] (grep of `SetTexture`/`GetTexture` call sites; no frame-index arithmetic).
+- **Keying**: sprites are pink-keyed (magenta → alpha 0) and mip-mapped by the default texture flags; additive sprites rely on black backgrounds instead ([25](25_textures_and_assets.md)).
+- **Billboards** are built inline from `Camera::GetUp()` / `GetRight()` (a square or **diamond** — corners on the up/right axes — of half-extent *s*), or with `Render3DSprite(pos, w, h, tex)` (bottom-anchored camera-facing quad, horizontally mirrored UVs) [C] `code/lib/3d_sprite.cpp:Render3DSprite`; state per pass in [24 §4.9](24_rendering.md#49-entities-sprites-and-billboards).
+- **Pulsing** is always `|sin(k·t)|` of wall time (`g_gameTime`) with a floor (typically 0.3); **blinking** uses `fmod(now, period)` thresholds.
+- **Fades** are linear in remaining life unless stated.
+- **Prediction**: sprites are drawn at `pos + vel·predictionTime` (some classes add or subtract one `SERVER_ADVANCE_PERIOD`, noted per class).
+
+### 4.2 Darwinian sprite card [B:FULL] [C] `code/worldobject/darwinian.cpp:Darwinian::Render`, `code/team.cpp:Team::RenderDarwinians`
+
+Pass state (texture `sprites/darwinian.bmp`, alpha test `GREATER 0.04`, cull off) is in [24 §3.2 pass 7d](24_rendering.md#32-ordered-pass-table--one-multiwinia-match-frame-bfull). Not drawn when `m_destroyed`, `!m_enabled` or `StateInsideArmour`.
+
+**Orientation and size** (per frame):
+
+| Step | Rule |
+|---|---|
+| Position | `p = m_pos + m_vel·t_pred`; with high detail and camera distance < 1300: on ground `p.y = terrain(p)`; airborne (not being sacrificed / in water / abducted) `p.y += 3` |
+| Up vector | high detail and < 1300: terrain normal at `p` (world up while being sacrificed); else world up |
+| Work sway | states `WorshipSpirit`, `OperatingPort`, `WatchingSpectacle`, `OpeningCrate`: `up` rotated about `m_front` by `sin(accurateTime)·0.3` rad |
+| Airborne tumble | airborne, not sacrificed / in water, not Futurewinian: `up` rotated about `m_front` by `accurateTime·(uid % 10)·0.1` rad, sign + for even uid, − for odd |
+| Right vector | `right = m_front × up` — the card faces the Darwinian's **own** heading, not the camera |
+| Carrying a building | `right = normalise(building − p) × up`; `up` tilted about `right` by 0.3 rad (leans toward the load) |
+| Captured by ant | `up = −normalise(m_vel)`, `right = old up`, `p += (0,4,0)` (carried sideways) |
+| Base size | `size = 3.0`; quad corners `p ± right·size` and `p ± right·size + up·2·size` — width 2·size (6) by height 2·size (6), anchored at the feet |
+| Distance scaling (pref `DarwinianScaleFactor` = `m_scaleFactor`, default 2.0, > 0) | `d > 100`: `size *= 1 + scale·(d − 100)/1000`; `d > 300`: `f = clamp((d − 300)/1000, 0, 1)`, `up = up·(1−f) + camUp·f`, `right = right·(1−f) ± camRight·f` (sign chosen so the card never mirrors: `+` when `m_front·camFront < 0`) — the card **turns into a camera billboard with distance** |
+| Individual variation | `size *= 1 + 0.03·((index·uid) % 10)` (0–27 % larger) |
+| Rage power-up | `size *= 1 + |sin(g_gameTime)|·0.5` |
+
+Resolved: drafts disagreed ("camera-facing sprite" in P03/02 vs "facing-oriented card" in 24). Code shows the card is aligned to the Darwinian's heading and terrain and blends to a camera billboard between 300 and 1300 units [C] `Darwinian::Render`.
+
+**Colour and state textures** (drawn in this order):
+
+| Layer | Condition | Texture | Colour / blend | Geometry |
+|---|---|---|---|---|
+| Ground silhouette shadow | high detail, no spectacle shadow, alive, not abducted, `d < 2000` | current texture (Darwinian or Futurewinian silhouette) | black, alpha `150·highDetail` (×0.3 monster team, ≤ 255), depth write off | quad flat on the terrain (+0.3), spanning `right` and world **+Z** by `2·size` [C] |
+| Body | always unless monster/Futurewinian, drawn when alive or airborne | `darwinian.bmp`; `darwinian_ouch4.bmp` when `StateOnFire` or `m_burning`; `darwinian_ouch1/2/3.bmp` for airborne corpses with `uid % 10 < 3` (index `1 + uid % 10`) | team colour (cross-faded, below) × `(0.3 + 0.7·health/maxHealth)`, alpha 255; dead: RGB ×0.2, alpha `2.5·health`; paralysed: (150,150,150) | card |
+| Futurewinian body | `m_futurewinian` | `futurewinian.bmp` | (0.5,0.5,0.5)×health factor, size ×1.3; plus `textures/glow.bmp` camera bubble of size `2·size`, additive, depth test off, alpha `|sin(2t)|·0.3`, colour **team colour passed to `glColor4f` as 0–255 values** (saturates, see §4.4) | card + billboard |
+| Control glow | local team, `m_controllerId != −1` or `m_underPlayerControl`, alive | current | (0.1,0.1,1.0), alpha `max(|sin(5t)|, 0.3)`, additive, depth test off, **10 stacked identical quads** (10× brightness) | card |
+| Rage glow | `m_rageTaskId != −1`, alive | current (monster: `darwinian_ouch4`, ×1.5) | `glColor4f(200,200,200,·)` → white, alpha `max(|sin(2t)|, 0.3)`, additive, depth test off | card |
+| Plague bubble | `InfectionStateInfected`, alive | `textures/glow.bmp` | (90,130,10), alpha `|sin(2t)|·0.8·255`, additive | camera billboard `2·size`, raised by `size` |
+| Monster-team body | monster team | `darwinian_ouch4.bmp` ×1.5 | white, blend on, alpha test **off**, drawn **twice** | card |
+| Booster bubble | `m_boosterTaskId != −1`, alive | `textures/bubble.bmp` | team colour via `glColor4f(0–255)` (saturates), alpha `|sin(2t)|·0.5`, additive | camera billboard `2·size` |
+| Spectacle shadow | `m_shadowBuildingId` set (GodDish [B:LEGACY] or EscapeRocket launch) | current | black, alpha 1 in MP (SP: 1 within 400 of the rocket, linear to 0 at 700; GodDish `timer·0.1`); a back-shadow card offset 0.05 away from the building plus a ground quad stretched `10·size` away from the building, alpha fading to 10 % at the far edge (smooth shading) | card + ground quad |
+| Side line | always: when `|horizontal(front) × horizontal(toCamera)| > 0.95` (edge-on) | `darwinian_side.bmp` | team colour, alpha `255·20·(cross − 0.95)` | thin camera-right ±0.25 strip of height `up` |
+| Santa hat | Christmas mode (§4.3) and (team 0 or multiplayer) and `uid % 3 == 0` | `sprites/santahat.bmp` | white | card scaled 0.65, raised `0.95·up`, offset `0.01·front` |
+| Mind-control brainwaves | `m_subversionTaskId != −1`, alive | `sprites/brainwaves.bmp` | team colour, alpha `255·(1 − frac(t))`, alpha test off, depth write off | card scaled `2.8 + frac(g_gameTime)` (expands each second), lowered `0.4·up` |
+| Crate-capture beam | `StateOpeningCrate`, crate within `CRATE_SCAN_RANGE·1.1` | `textures/laser.bmp` | team colour, alpha `|sin(3·(t + uid))|·255`, additive | ribbon of half-width 0.5 from `p + 4·up` to the crate at a per-uid offset |
+| Dead fragments | `m_dead` | current | black, alpha `health·2.55` | 3 half-size cards drifting apart by `10 − predictedHealth/10` along ±x/z and rising with height, predicted health falling 40/s on ground, 20/s airborne |
+
+Team-colour cross-fade: while `m_colourTimer > 0` (set to 4.0 by a mind-control conversion, `code/worldobject/weapons.cpp:Laser::Advance`), colour = `lerp(previousTeam, team, 1 − m_colourTimer/4)`; the render path then does `m_colourTimer -= predictionTime` — a **render-side write whose decay rate depends on frame rate** (≈ frames × average prediction time per second, not real seconds) [C]. `m_colourTimer` is read nowhere else, so this is cosmetic [C] (grep).
+
+### 4.3 Seasonal content — Christmas mode [B:FULL]
+
+Activation [C] `code/app.cpp:App::UseChristmasMode`, `code/network/clienttoserver.cpp:ClientToServer::Advance`, `ClientToServer::RequestChristmasMode`, `ClientToServer::ProcessServerUpdates` (`NET_DARWINIA_CHRISTMASMODE` = `"dz"`), `code/location.cpp:Location::Init`, `Location::ChristmasModEnabled`:
+
+1. Each client checks its **local date**: December 24, 25 or 26 (`tm_mon == 11`); never while editing; never under `DEMOBUILD`; a `CHRISTMAS_DEMO` variant (27 Nov–31 Dec) is not defined in any target [C].
+2. While at the main menu and not yet in Christmas mode, the client sends `RequestChristmasMode`; when the command comes back through the server stream and the receiver is at the main menu, it sets `ClientToServer::m_christmasMode` [C].
+3. `Location::Init` moves the flag into `Location::m_christmasMode` for the next match [C].
+
+Because the flag travels through the shared command stream it is the same on every peer that is at the main menu when it arrives [I]; a peer joining from elsewhere could differ, and Christmas mode changes simulation state (snow effects consume the synchronised RNG) — a latent desync hazard [I] (§12.3).
+
+Effects while enabled [C]:
+
+| Effect | Ref |
+|---|---|
+| Santa hats on every third Darwinian (team 0 or multiplayer) | `Darwinian::Render` (§4.2) |
+| Snow on every map (`AdvanceChristmas`, §7.6) | `code/location.cpp:Location::Advance` |
+| Trees: branches (180,100,50), no leaves | `code/worldobject/tree.cpp:Tree::RenderAlphas` |
+| Terrain ramps forced to `landscape_icecaps.bmp`, `waves_earth.bmp`, `water_icecaps.bmp` | `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/water.cpp:Water::Water` ([23](23_terrain_and_landscape.md)) |
+| Light colours multiplied (1.3, 1.2, 1.2) | `code/location.cpp:Location::SetupLights` |
+
+No other seasonal mode exists [C] (grep for date checks).
+
+### 4.4 Team colour in VFX [C]
+
+| Source | Used by |
+|---|---|
+| `Team::m_colour` (RGBA bytes) | sprites, lasers, spirits, rings, beams, flags, particles given an explicit colour |
+| Per-team recoloured shape copies `<shape>_<colourId>_<coopGroupPosition>` (`Entity::SetupTeamShape`, `ConvertShapeColoursToTeam`) | shattering debris inherits these colours (§8) |
+| Per-team recoloured bitmaps `<file>_<colourId>_<groupId>` via `BitmapRGBA::ConvertRedChannel` | cloth flags (§5.8) |
+| Monster team (id 4, (10,10,10)) | rendered as **darkening** (blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`) or white/transparent instead of near-black additive (spirits, Virii, lasers white) |
+
+Defect [C]: several overlays pass byte colours (0–255) to `glColor4f` (`Darwinian::Render` Futurewinian glow and booster bubble; rage glow `glColor4f(200,200,200,·)`); OpenGL clamps each channel to [0,1], so any non-zero channel becomes full intensity — the bubbles appear in a saturated "binary" version of the team colour [I] (GL clamping rule). A re-implementation should decide whether to keep that look.
+
+### 4.5 Other billboards and sprites [C]
+
+| Sprite | Class | Recipe |
+|---|---|---|
+| Spirit (soul) | `Spirit::RenderWithoutGlBegin` | §7.8 |
+| Officer shield souls | `Officer::RenderSpirit` | inner 0.5 (alpha 255), outer 1.5 (alpha 40) untextured diamonds + 10-unit `glow.bmp` (alpha 20), colour (100,250,100) [B:LEGACY] |
+| SoulDestroyer eaten souls | `SoulDestroyer::RenderSpirit` | §5.5 |
+| Zombie ghost | `Zombie::Render` | §7.7 |
+| Nuke warhead, submarine, shadow, ground symbol | `Nuke::Render`, `Nuke::RenderSub`, `Nuke::RenderGroundMarker` | warhead: additive `sprites/nuke.bmp`, size `10·(1 + 0.03·((index·uid) % 10))`, team colour (monster white/subtractive); sub: two camera-facing 100-unit billboards `sprites/subshadow.bmp` (subtractive) and `sprites/sub.bmp` (team colour), alpha `max(subPos.y,0)/30`; ground symbol `icons/nukesymbol.bmp` red (200,20,20), size `40 + 25·sin(realTime)`, plus a blurred `shadow_icons/nukesymbol.bmp` generated by `ApplyBlurFilter(10)` ([04](04_crates_powerups_and_weapons.md)) |
+| Grenade / marker / bomb blink | `ThrowableWeapon::Render` | `textures/starburst.bmp` flash in `m_colour` during the last 20 % of every second of life; sound `Flash` once per second **from the render path** |
+| Mine glow | `code/worldobject/mine.cpp` | `Render3DSprite`, `textures/glow.bmp` 50×50 [B:LEGACY] (Darwinia mine buildings) |
+| Dust ball | `DustBall::Render` | §7.6 |
+| Snow flake | `Snow::Render` | §7.6 |
+
+### 4.6 Damage flicker convention [C]
+
+`Entity::Advance` evaluates, every tick and **inside the sim step**, `m_renderDamaged = frand(0.75)·(1 − |sin(g_gameTime + uid·10)|·0.8) > health/maxHealth` — unsynchronised RNG and wall time, but the flag is read only by render code [C] `code/worldobject/entity.cpp:Entity::Advance`. A full-health entity never flickers; at low health it flickers on most ticks, modulated by a slow per-entity sine. When set, shape-based entities distort their render matrix each frame: one randomly chosen axis (unsynchronised `frand`) of the `Matrix34` is scaled by `1 ± sin(g_gameTime + uid·10)·0.5`, and the shape is drawn with a darkening (`SRC_ALPHA, ONE_MINUS_SRC_COLOR`; SporeGenerator `ONE, ONE`) blend [C] `code/worldobject/spider.cpp:Spider::Render`, `code/worldobject/sporegenerator.cpp:SporeGenerator::Render`; the same idiom appears in Officer, Squadie, Tank, Armour, Harvester and Engineer renders ([02](02_units_and_entities.md)).
+

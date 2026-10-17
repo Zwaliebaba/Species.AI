@@ -271,3 +271,78 @@ A replacement must route every cheat through the command stream (a "debug comman
 | Shift held, single-player | Refinery speed ×10 | `code/worldobject/mine.cpp:MineBuilding::RefinerySpeed` |
 | Shift held, single-player | Escape-rocket fuel per delivery ×100 | `code/worldobject/rocket.cpp:EscapeRocket::ProvideFuel` |
 
+## 5 Network statistics window (F9) and other debug windows
+
+### 5.1 "Network Stats" window — ships in FULL [C] `code/interface/network_window.cpp:NetworkWindow::Create`, `NetworkWindow::Render`
+
+Size 600 × 200; on a host (`App::m_server` non-NULL) the height becomes `170 + (6 × 20 + 15)` = 305 and an `InvertedBox` panel is registered at (10, 110), w = `m_w − 20`, h = 135 for the client table. Positioned bottom-left at (10, ScreenH − h). Font `g_editorFont`; every caption literal English. Text lines are 15 px apart starting at `m_y + 15`.
+
+**Server block (host only)**, size-12 text at x + 10:
+
+| Line | Value | Source |
+|---|---|---|
+| "Server SeqID       %d" | last sequence id issued | `Server::m_sequenceId` |
+| "Server Send        %2.1 Kb/sec" | send rate | `(int)Server::m_sendRate / 1024.0` |
+| "Server Receive     %2.1 Kb/sec" | receive rate | `(int)Server::m_receiveRate / 1024.0` |
+
+The format `"%2.1 Kb/sec"` has no conversion letter and receives a `double` → the printed number is undefined (bug; see 32-U6). A horizontal rule follows; then a header row (size 14) "ID", "IP:Port", "SeqID", "Name", "Status" at column offsets 0, 60, 200, 260, 410 from `m_x + 20`, the sync flag at +500.
+
+Up to **6** client rows (`maxClients = 6` hard-coded; slots ≥ 6 are never shown), 20 px apart. For each valid `ServerToClient`:
+
+| Column | Content |
+|---|---|
+| ID | `m_clientId` (colour (200,200,255,200)) |
+| IP:Port | `"%s:%d"` of `m_ip`, `m_port` |
+| SeqID | `m_lastKnownSequenceId` |
+| Name | translated team-type name (`LANGUAGEPHRASE(Team::GetTeamType(teamType))`) of the lobby team whose `m_clientId` matches, in that team's colour |
+| Status | `timeBehind = now − m_lastMessageReceived`; if > **2.0 s** → red "Lost Con...%ds"; else if not `m_caughtUp` → (200,200,30) "Synching...%d" with `100 × lastKnownSeq / serverSeq`; else "Ping %dms" with `latencyMs = (serverSeq − lastKnownSeq) × 100` (one sequence = 100 ms, the 10 Hz server tick) and colour red = `min(255, 20 × lagSteps)`, green = 255 − red |
+| sync flag | red "out of sync" when `m_syncErrorSeqId ≠ −1` |
+
+Empty slots print "Empty" at alpha 50.
+
+**Client block** (whenever `App::m_clientToServer` exists):
+- If `g_lastProcessedSequenceId ≥ 0`: caption (size 13) "Sequence messages in queue. Ideal is 0 or 1 filled, no gaps." at `m_y + m_h − 50`, then a strip at `m_y + m_h − 25`: label "SeqID %d" (last processed id), then 10 boxes for ids last+1 … last+10, each `(m_w − 120)/10` = 48 px wide minus a 20 % gap, 20 px high, background (20,20,50), filled green (0,255,0) when `ClientToServer::IsSequenceIdInQueue(id)`, frame (255,255,255,100).
+- Non-host clients add "Server Known     SeqID   %d" (`m_serverSequenceId`), "Server Estimated SeqID   %d" (`GetEstimatedServerSeqId()`) and a centred size-15 "Estimated Latency : %2.1 secs" (`GetEstimatedLatency()`, same broken format).
+- Right column at x + 250 from the top: "Client SEQID       %d" (`m_lastValidSequenceIdFromServer`), "Client Send … Kb/sec", "Client Receive … Kb/sec" (`m_sendRate`, `m_receiveRate`, same broken format).
+
+Diagnostic value: the window exposes exactly the lockstep health indicators — per-client sequence lag (≈ ping in 100 ms steps), catch-up state, last-message age with a 2.0 s "lost" display threshold, the per-client desync flag and the client's inbox gaps. Rates are 5-second averages in bytes/s from `BandwidthCounter` (`code/network/bandwidth.cpp:BandwidthCounter::Count`: when more than 5.0 s have passed since `m_since`, `m_rate = m_count / period`, then the count restarts); there is no bandwidth limiting anywhere, only measurement ([22](22_determinism_and_networking.md)).
+
+### 5.2 Profiler window → §9.
+
+### 5.3 Sound tools [B:DEBUG]
+
+Sound Editor, Effect Editor, Sample-group editor, Parameter editor, Purge Sounds, Sound Stats, Sound Profile and the Pokey playground are specified in [27 §13](27_audio_engine.md#13-profiles-statistics-debug-and-editor-tooling). Reachability: only "Sound Editor" and "Sound Stats", from cheat-window buttons 20–21; the debug-menu entries need `modsEnabled` (never true) and the hot-keys are commented out [C] `code/interface/debugmenu.cpp`, `code/user_input.cpp`. `PokeyWindow` is referenced but defined nowhere, so a `SOUND_EDITOR` build that compiled `DebugKeyBindings::PokeyButton` would need that class [C grep].
+
+### 5.4 Grabber window (AVI capture) [B:DEBUG, non-functional] [C] `code/interface/grabber_window.cpp`, `code/lib/avi_generator.cpp`, `code/lib/hi_res_time.cpp`
+
+Buttons "Start" (10, 30, 70 × 15) and "Stop" (90, 30, 70 × 15). Start (if no generator): `SetFakeTimeMode()` (freezes `GetHighResTime` at the current value so the game advances only by explicit `IncrementFakeTime` steps), create `App::m_aviGenerator` with a `BITMAPINFOHEADER` of ScreenW × ScreenH, 24 bpp, `BI_RGB`, `InitEngine()`. Stop: `SetRealTimeMode()` (re-bases real time by the frozen offset), `ReleaseEngine()`, delete. `AVIGenerator` reads prefs `AVIMotionBlurFactor` (default 1) and `DemoFrameRate` (default 25). **No code calls `AVIGenerator::AddFrame()`** and `GrabberButton` has no caller, so capture never records a frame [C grep]. The fixed-step clock it relies on is advanced only when pref `RecordDemo` is 1 or 2 (`code/main.cpp:UpdateAdvanceTime`: `g_advanceTime = 1/DemoFrameRate`, `IncrementFakeTime(1/DemoFrameRate)` per frame) — see [31 §4.2](31_platform_build_and_tools.md#42-fake-time-offline-capture-c-codelibhi_res_timecpp-codemaincppupdateadvancetime-codeinterfacegrabber_windowcpp).
+
+### 5.5 Gesture editor [B:DEAD] [C] `code/interface/gesture_window.cpp`, `code/gesture_demo_win32.cpp`
+
+Training tool for the gesture recogniser ([06](06_player_control_and_input.md)): a 4:3 drawing box (height `m_h − 180`) where mouse-down/up record a sample; `(m_w − 100)/110` status tiles of 90 × 120 each showing gesture *i*'s task name (`TaskManager::MapGestureToTask`), icon `icons/gesture_<taskname>.bmp` (64 × 64, additive), number of training samples, confidence % and Mahalanobis deviation, the recognised symbol framed yellow; buttons "Record Demo" (`RecordGestureDemo()` — a recorder thread at `THREAD_PRIORITY_TIME_CRITICAL`), "New Gesture" (caption "New Demo", `NewSymbol()`), "Load Data" / "Save Data" (`gestures.txt`). Requires `GESTURE_EDITOR` **and** `USE_SEPULVEDA_HELP_TUTORIAL` → compiled out everywhere.
+
+### 5.6 Lobby network-status overlay [B:DEBUG] [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::RenderNetworkStatus`
+
+Drawn on two front-end pages only under `TARGET_DEBUG`, `g_gameFont` size 15, line height 18, from (10, 10), colour (1,1,1,0.2): on a host the header "IP:Port [Sent/Known/CaughtUp]" and one line per client `"%s [%d/%d/%d]"` (`m_lastSentSequenceId`, `m_lastKnownSequenceId`, `m_caughtUp`); then the client connection state: "Disconnected", "Connecting (%d)" (attempts), "Handshaking (%d/%d)" (`g_lastProcessedSequenceId` / `m_lastValidSequenceIdFromServer`) or "Connected".
+
+### 5.7 Crate help window [B:DEBUG] [C] `code/interface/helpandoptions_windows.cpp`
+
+`INCLUDE_CRATE_HELP_WINDOW` adds a "multiwinia_menu_cratehelp" button to the Help & Options page that opens a list of every crate reward with its tooltip/hint strings ([04](04_crates_powerups_and_weapons.md)).
+
+### 5.8 Hidden preferences that act as debug switches [B:FULL] [C] (pref reads as listed; full key list in [29](29_data_formats_reference.md))
+
+| Preference | Default | Effect | Ref |
+|---|---|---|---|
+| `RenderAIInfo` | 0 | 1 → every AITarget prints the AI priority `m_priority[t]` ("%2.2f", outlined, team colour) for one team at 60 + 15·t above the node; ≠ 0 → arrows along every AITarget link (half length, width 3, grey for neutral, team colour otherwise). The AIObjective / marker overlays it also tests are inside `#ifdef LOCATION_EDITOR` → nothing in FULL ([07 §18](07_ai.md#18-debug-visualisation)) | `code/worldobject/ai.cpp:AITarget::Render`, `AITarget::RenderAlphas`, `code/worldobject/aiobjective.cpp:AIObjective::RenderAlphas` |
+| `AIInfoTeam` | 1 | lobby **position** whose priorities `RenderAIInfo` shows (`Location::GetTeamFromPosition`) | `code/worldobject/ai.cpp:AITarget::Render` |
+| `RecordDemo` | absent (0) | 1 → fixed time step `1/DemoFrameRate` and `Server::SaveHistory("serverHistory.dat")` when the game shuts down; 2 → fixed step and `Server::LoadHistory("ServerHistory.dat")` after the level loads (command-stream replay, [22](22_determinism_and_networking.md)) | `code/main.cpp:UpdateAdvanceTime`, `code/app.cpp:App::ShutdownCurrentGame` |
+| `DemoFrameRate` | 25 | frames per simulated second for `RecordDemo` and the AVI generator | `code/main.cpp:UpdateAdvanceTime`, `code/lib/avi_generator.cpp` |
+| `TextLanguageTest` | 0 | 1 → `LangTable::TestAgainstEnglish` writes `language_errors.txt` (strings missing versus English) in the working directory ([31 §12.5](31_platform_build_and_tools.md#125-in-game-qa-c-codeliblanguage_tablecpplangtabletestagainstenglish)) | `code/app.cpp:App::SetLanguage`, `code/lib/language_table.cpp` |
+| `RenderPosterResolution` | 1 | N > 1 → the screenshot key renders an N × N tiled high-resolution poster | `code/renderer.cpp:Renderer::Render`, `code/lib/poster_maker.cpp` |
+| `RenderLandscapeMode` | −1 (auto) | forces vertex arrays / display lists / VBOs for the terrain mesh (§12.3) | `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer` |
+| `RenderSpecialLighting` | 0 | warm key light on buildings | `code/location.cpp:Location::RenderBuildings` |
+| `TestHarness` | absent | 1 → runs the campaign test harness, only with `TEST_HARNESS_ENABLED` (§7) | `code/main.cpp:RunTheGame` |
+| `TestbedServerName` | — | server name the testbed hosts / looks for, only with `TESTBED_ENABLED` (§6) | `code/app.cpp:App::App` |
+
+Command-line switches with a diagnostic role: `--write-version` (write `DARWINIA_VERSION` to a file `version` and exit) and `--NoProfile` (use the working directory instead of the profile directory for every log) [C] `code/main.cpp:AppMain`, `code/main.cpp:Initialise` ([31 §5.4](31_platform_build_and_tools.md#54-command-line-switches-c)).
+

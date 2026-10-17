@@ -1,0 +1,31 @@
+# test
+<!-- CONTENTS -->
+## A
+<!-- GEN:dir_stats -->
+<!-- GEN:npot_table -->
+<!-- GEN:font_inventory -->
+<!-- GEN:anim_detail -->
+<!-- GEN:shape_stats -->
+<!-- GEN:marker_vocab -->
+<!-- GEN:audio_stats -->
+<!-- GEN:missing_table -->
+<!-- GEN:mp_unplaced -->
+<!-- GEN:mp_unplaced_count -->
+<!-- GEN:tex:textures -->
+<!-- GEN:tex:textures/unicode -->
+<!-- GEN:tex:sprites -->
+<!-- GEN:tex:animations -->
+<!-- GEN:tex:terrain -->
+<!-- GEN:tex:icons -->
+<!-- GEN:tex:thumbnails -->
+<!-- GEN:tex:mwhelp -->
+<!-- GEN:tex:sepulveda -->
+<!-- GEN:tex:shaders -->
+<!-- GEN:shape_table -->
+<!-- GEN:shape_hier -->
+<!-- GEN:max_table -->
+<!-- GEN:audio:sounds -->
+<!-- GEN:audio:mwsounds -->
+<!-- GEN:unused_lists -->
+<!-- GEN:fur_table -->
+<!-- GEN:conflict_table -->

@@ -161,6 +161,7 @@ SYS = [
     ('code/sepulveda.cpp', 'Sepulveda (Darwinia help)', '-'),
     ('code/loaders/', 'Loader mini-programs', '-'),
     ('code/tutorial', 'Darwinia tutorial', '-'),
+    ('code/lib/resource.cpp', 'Resource (context regeneration)', '-'),
     ('code/app.cpp', 'App', '-'),
     ('code/main.cpp', 'main loop', '-'),
     ('code/script.cpp', 'Script (cut-scenes)', '-'),
@@ -258,43 +259,64 @@ def flag_cells(row, lrefs):
     if not fl:
         return '-', '-'
     if all(v == 'CPU' for v in fl):
-        return 'n/a (CPU look-up via GetBitmap)', 'n/a'
+        return 'n/a (CPU look-up via GetBitmap)', ''
     if all(v == 'never drawn' for v in fl):
-        return 'n/a (never drawn)', 'n/a'
-    mips, masks, alpha = set(), set(), False
+        return 'n/a (never drawn)', ''
+    sigs = []
     for v in fl:
-        for m in re.finditer(r'mip=(true|false)', v):
-            mips.add(m.group(1))
-        for m in re.finditer(r'mask=(true|false)', v):
-            masks.add(m.group(1))
-        if 'alpha=green' in v:
-            alpha = True
-    if mips == {'true'}:
-        mip = 'yes'
-    elif mips == {'false'}:
-        mip = 'no'
-    elif mips:
-        mip = 'conflict: ' + ' / '.join(fl) + ' — first requester wins (§2.6)'
+        if v in ('CPU', 'never drawn'):
+            continue
+        for part in v.split(';'):
+            mm = re.search(r'mip=(true|false)', part)
+            if not mm:
+                continue
+            alpha = 'alpha=green' in part
+            mk = re.search(r'mask=(true|false)', part)
+            mask = (mk.group(1) == 'true') if (mk and not alpha) else False
+            sg = (mm.group(1), mask, alpha)
+            if sg not in sigs:
+                sigs.append(sg)
+    def sig_txt(sg):
+        return ('mip' if sg[0] == 'true' else 'no mip') + (', green→A' if sg[2] else (', mask' if sg[1] else ', no mask'))
+    if not sigs:
+        return '; '.join(fl), ''
+    if len(sigs) == 1:
+        mip = 'yes' if sigs[0][0] == 'true' else 'no'
+        proc = sig_txt(sigs[0]).split(', ', 1)[1]
     else:
-        mip = '; '.join(fl)
-    proc = []
-    if alpha:
-        proc.append('green→A')
-    if masks == {'true'}:
-        proc.append('mask')
-    elif masks == {'false'}:
-        proc.append('no mask')
-    elif masks:
-        proc.append('mask conflict (first requester wins)')
+        mip = 'CONFLICT: ' + ' vs '.join(sig_txt(sg) for sg in sigs) + ' — first requester wins (§2.6)'
+        proc = ''
     if 'CPU' in fl:
-        proc.append('also CPU read')
-    return mip, ', '.join(proc)
+        proc = (proc + ', ' if proc else '') + 'also read on CPU'
+    return mip, proc
+
+GL_BY_RULE = {   # GL state at rule-built draw sites whose literal the X2a scan could not see (checked in code)
+    'rule:map-thumbnail': 'MIN_FILTER=LINEAR MAG_FILTER=LINEAR',            # code/UI/MapImageButton.h:MapImageButton::Render
+    'rule:map-thumbnail-tankbattle': 'MIN_FILTER=LINEAR MAG_FILTER=LINEAR',
+    'rule:mode-image': 'MIN_FILTER=LINEAR MAG_FILTER=LINEAR Blend(SRC_ALPHA,ONE)',  # code/UI/GameTypeImageButton.h:GameTypeImageButton::Render
+    'rule:help-general': 'MIN_FILTER=LINEAR MAG_FILTER=LINEAR Blend(SRC_ALPHA,ONE_MINUS_SRC_ALPHA)',  # code/UI/ImageButton.cpp:ImageButton::Render
+    'rule:help-gametype': 'MIN_FILTER=LINEAR MAG_FILTER=LINEAR Blend(SRC_ALPHA,ONE_MINUS_SRC_ALPHA)',
+}
+WATER_GL = 'WRAP_S=REPEAT WRAP_T=REPEAT MIN_FILTER=LINEAR_MIPMAP_LINEAR MAG_FILTER=LINEAR TexEnv(MODULATE) unit1=water_lightmap'
+def ref_gl(r, path):
+    if r['gl_state']:
+        return r['gl_state']
+    if '/terrain/water_' in path:
+        return WATER_GL                                                          # code/water.cpp:Water::RenderFlatWater
+    if r['kind'] in GL_BY_RULE:
+        return GL_BY_RULE[r['kind']]
+    f, sym, _ = split_site(r['site'])
+    if sym in ('GameMenuWindow::SetupBuyMePage',):
+        return GL_BY_RULE['rule:help-general']
+    if sym in ('MapImageButton::Render', 'GameTypeImageButton::Render'):
+        return GL_BY_RULE['rule:map-thumbnail']
+    return ''
 
 ABBR = {'LINEAR_MIPMAP_LINEAR': 'LML', 'LINEAR': 'L', 'NEAREST': 'N', 'REPEAT': 'REPEAT', 'CLAMP': 'CLAMP'}
-def gl_cells(lrefs):
+def gl_cells(lrefs, path=''):
     wraps, mins, mags, envs, blends = [], [], [], [], []
     for r in lrefs:
-        g = r['gl_state']
+        g = ref_gl(r, path)
         for m in re.finditer(r'WRAP_(?:S|T|S/T)=(\w+)', g):
             if m.group(1) not in wraps: wraps.append(m.group(1))
         for m in re.finditer(r'MIN(?:_FILTER)?=(\w+)', g):
@@ -317,6 +339,8 @@ def gl_cells(lrefs):
         parts.append('MAG ' + '/'.join(mags))
     if envs:
         parts.append('env ' + '/'.join(envs))
+    if any('unit1=water_lightmap' in ref_gl(r, path) for r in lrefs):
+        parts.append('unit 1 = `water_lightmap` (COMBINE MODULATE)')
     return ('; '.join(parts) if parts else 'upload default'), blends
 
 def sites_cell(lrefs, limit=None):
@@ -406,6 +430,7 @@ tex_by_group = collections.OrderedDict((g, []) for g in GROUP_TITLES)
 for row in tex:
     tex_by_group[group_of(row['path'])].append(row)
 mp_unplaced = []
+conflicts = []
 for g, rows in tex_by_group.items():
     if not rows or g.startswith('shapes') or g in ('sounds', 'mwsounds'):
         continue
@@ -414,7 +439,7 @@ for g, rows in tex_by_group.items():
     for row in rows:
         lr = live_refs(row)
         mip, procs = flag_cells(row, lr)
-        glc, blends = gl_cells(lr)
+        glc, blends = gl_cells(lr, row['path'])
         cons, passes, pairs = consumers_cell(row, lr)
         p = row['path']
         if p.endswith('.bmp'):
@@ -443,10 +468,25 @@ for g, rows in tex_by_group.items():
         sk = status_key(row)
         if sk == 'FULL' and pairs and all('MP-map placements 0' in c for c, _ in pairs):
             mp_unplaced.append((p, cons))
+        if mip.startswith('CONFLICT') and p.endswith('.bmp'):
+            sig = mip.split(': ', 1)[1].split(' — ')[0]
+            pk = int(row['pink_key_pixels'] or 0)
+            if 'green→A' in sig:
+                eff = 'visible: alpha mask (white, A = green) vs original RGB art'
+            elif 'no mip' in sig:
+                eff = 'mip chain present or absent; a no-mip draw that leaves MIN = LINEAR_MIPMAP_LINEAR samples an incomplete texture if the no-mip request came first'
+            elif pk:
+                eff = 'visible: magenta pixels transparent or opaque magenta'
+            else:
+                eff = 'none visible (file has no magenta pixels)'
+            conflicts.append('| `%s` | %s | %d | %s | %s |' % (p, sig, pk, STATUS_TEXT[sk], eff))
         out.append('| `%s` | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
             p, size, md(fmtc), md(alc), md(mip), md(glc), md(sites_cell(lr)), md(cons), md(passes),
             md(packed(row['archive'])), STATUS_TEXT[sk]))
     GEN['tex:' + g] = '\n'.join(out)
+
+GEN['conflict_table'] = '\n'.join(['| Texture | Distinct processing requested by its reachable call sites | Magenta pixels in file | Status | Effect of the first-requester rule |', '|---|---|---|---|---|'] + conflicts)
+GEN['conflict_count'] = str(len(conflicts))
 
 # .anim detail
 out = ['| Panel script | Panel size | Time span | Objects | Keyframes | Images referenced (all under `data/animations/`) | Loaded by (game type) |', '|---|---|---|---|---|---|---|']
@@ -589,7 +629,7 @@ for r in allrows:
 for g, rows in by_g.items():
     if not rows:
         continue
-    bpp = collections.Counter(r['bpp'] for r in rows if r['bpp'])
+    bpp = collections.Counter(r['bpp'] for r in rows if r.get('bpp'))
     p2 = sum(1 for r in rows if r.get('pow2') == 'yes'); np_ = sum(1 for r in rows if (r.get('pow2') or '').startswith('no'))
     al = sum(1 for r in rows if 'non-trivial' in (r.get('alpha_in_file') or ''))
     pk = sum(1 for r in rows if (r.get('pink_key_pixels') or '0') not in ('', '0'))
