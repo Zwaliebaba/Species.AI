@@ -13,3 +13,5 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 7 | FX-07 | DEC-263 item 1 names `directRoute`; reference/12 05 spells the parameter `_directRoute` | edit DEC-263 |
 | 8 | FX-07 | `rename_map.tsv` rows 673–675 give `kMaxTeams`, `kUpdateSlicesPerTick`, `kTickPeriod`; CONVENTIONS and reference/12 use `MAX_TEAMS`, `UPDATE_SLICES_PER_TICK`, `TICK_PERIOD_SECONDS` | update the ledger |
 | 9 | FX-07 | camera_and_sequences.md: one snake-case team-command field; CAM-030 to cite DEC-955 | FX-10 (give in its prompt) |
+| 10 | FX-01 | RA-040 (general port keys) waits for the paired reference/03 row | check after FX-04 |
+| 11 | FX-01 | collector.md must cap its delivery (DEC-080) | verify FX-03's change matches DEC-080 ("waits while the node is capped or activating") |

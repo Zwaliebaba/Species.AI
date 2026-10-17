@@ -259,7 +259,7 @@ Table 2.10-A Core Device state.
 
 **R-BLDG-320** (MUST) A Launch Vessel holds: its state (R-BLDG-321); its fuel, 0 to `ref.bldg.launch_vessel.max_fuel` (100); its intake count; its passengers, 0 to `ref.bldg.launch_vessel.launch_passengers` (100); its countdown; its damage; its refuel rate; its fuel before the explosion; its attack-warning flag; and its attacker timer.
 
-**R-BLDG-321** (MUST) The Launch Vessel states (`LaunchVesselState`) are, in this order, which carries meaning for the tests "before Wrecked": Fuelling, Boarding, Ignition, PreLaunch, Countdown, Wrecked and Flight.
+**R-BLDG-321** (MUST) The Launch Vessel states (`LaunchVesselState`) are, in this order, which carries meaning for the tests "before Wrecked": Fuelling, Boarding, Ignition, PreLaunch, Countdown, Wrecked and Flight. Their enumerators are `LaunchVesselState::Fueling`, `LaunchVesselState::Boarding`, `LaunchVesselState::Ignition`, `LaunchVesselState::PreLaunch`, `LaunchVesselState::Countdown`, `LaunchVesselState::Wrecked` and `LaunchVesselState::Flight`.
 
 **R-BLDG-322** (MUST) A Launch Vessel's fuel intake is the fuel-chain intake (R-BLDG-194), and each intake call with a level above `ref.bldg.launch_vessel.intake_level_min` (0.1) adds 1 to its intake count. Its passengers come from its fuel depots (R-BLDG-203). Explosions damage it (R-BLDG-323).
 
