@@ -7,6 +7,29 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 ## Index
 
 <!-- index:start -->
+| ID | Title | Status | Affects |
+|---|---|---|---|
+| [DEC-550](#dec-550-power-cancellation-in-the-tutorials) | Power cancellation in the tutorials | Open | R-TUT, R-CRATE, R-CTRL |
+| [DEC-551](#dec-551-units-that-outlive-their-power-slot) | Units that outlive their Power slot | Open | R-CRATE, R-CTRL, R-UNIT |
+| [DEC-552](#dec-552-power-kinds-without-targeting-behaviour) | Power kinds without targeting behaviour | Dropped | R-CRATE, R-CTRL |
+| [DEC-553](#dec-553-default-bindings-that-rely-on-lenient-parsing) | Default bindings that rely on lenient parsing | Resolved | INP, R-CTRL |
+| [DEC-554](#dec-554-input-devices-key-names-and-binding-drivers) | Input devices, key names and binding drivers | Resolved | INP, R-CTRL |
+| [DEC-555](#dec-555-a-crowd-order-for-an-empty-group-does-nothing) | A crowd order for an empty group does nothing | Resolved | R-CTRL, R-SIM |
+| [DEC-556](#dec-556-power-slot-order) | Power slot order | Open | R-CTRL, R-CRATE, UI |
+| [DEC-557](#dec-557-bot-troop-movement-between-navigation-nodes) | Bot troop movement between navigation nodes | Open | R-BOT, R-SIM |
+| [DEC-558](#dec-558-bot-controller-of-the-rogue-and-visitor-factions) | Bot controller of the Rogue and Visitor factions | Open | R-BOT, R-MODE |
+| [DEC-559](#dec-559-bot-module-structure) | Bot module structure | Open | R-BOT |
+| [DEC-560](#dec-560-start-positions-are-typed-map-records) | Start positions are typed map records | Resolved | R-MAP, DAT, CAM, R-MODE |
+| [DEC-561](#dec-561-per-mode-map-validation) | Per-mode map validation | Resolved | R-MAP, R-BLDG, DAT, BLD |
+| [DEC-562](#dec-562-map-lighting-and-weather-presets) | Map lighting and weather presets | Open | R-MAP, RND, VFX, DAT |
+| [DEC-563](#dec-563-map-thumbnails-and-the-map-index-are-content-build-outputs) | Map thumbnails and the map index are content-build outputs | Resolved | R-MAP, R-META, AST, BLD |
+| [DEC-564](#dec-564-laser-fire-is-audible-and-selection-sounds-stay-local) | Laser fire is audible, and selection sounds stay local | Resolved | R-AUD, R-CTRL |
+| [DEC-565](#dec-565-sounds-for-the-other-silent-gameplay-events) | Sounds for the other silent gameplay events | Open | R-AUD |
+| [DEC-566](#dec-566-listener-position-and-distance-limits) | Listener position and distance limits | Open | R-AUD, AEN |
+| [DEC-567](#dec-567-dry-mix-or-applied-effects) | Dry mix or applied effects | Open | R-AUD, AEN |
+| [DEC-568](#dec-568-sample-group-choice-and-linked-parameters) | Sample-group choice and linked parameters | Resolved | R-AUD, AEN |
+| [DEC-569](#dec-569-game-speed-pitch-bend) | Game-speed pitch bend | Resolved | R-AUD, AEN |
+| [DEC-570](#dec-570-buses-priority-classes-and-voice-budgets) | Buses, priority classes and voice budgets | Resolved | R-AUD, R-META, AEN |
 <!-- index:end -->
 
 ## 1 Controls and powers
@@ -113,7 +136,7 @@ This file holds the decisions on controls and powers, bots, maps and level data,
   3. Siege: one Core Device owned by a defending start position, at least three Command Consoles linked to it, and a Core Device timer equal to the match time limit;
   4. Launch Race: for each start position, one Launch Vessel, three fuel depots and one Transit Gate for reinforcements.
 - Options: A — validate at build and save time; B — the reference behaviour, in which these conventions hold only by authoring discipline, no tool checks them, and Flag post adjacency is not held as a two-way relation.
-- Recommendation: A. Every reference map follows these conventions; checking them stops a broken map from reaching players under either editor option of DEC-045. Schema validation of content in general is DEC-015.
+- Recommendation: A. These are the per-mode conventions of the reference maps; checking them stops a broken map from reaching players under either editor option of DEC-045. Schema validation of content in general is DEC-015.
 
 ### DEC-562 Map lighting and weather presets
 - Status: Open
@@ -132,19 +155,19 @@ This file holds the decisions on controls and powers, bots, maps and level data,
 
 ## 4 Audio design
 
-### DEC-564 Laser fire and Supply crate expiry are audible
+### DEC-564 Laser fire is audible, and selection sounds stay local
 - Status: Resolved
 - Affects: reference/10_audio_design.md (R-AUD), reference/06_controls_camera_and_commands.md (R-CTRL)
-- Specified behaviour: The laser-bolt events are bound: a laser bolt is heard when it is fired, when it hits a structure and when it kills. A Supply crate that expires unopened plays an expiry sound. When the interface sounds for selecting and deselecting a power are bound, they play only for the local player's own selections, never for another team's. The other silent moments of the reference are decided elsewhere: the match-end stings (DEC-049), the Supply crate capture and decay tones and the Strike team grenade throw (DEC-097), and the final countdown sound (DEC-072).
-- Options: A — bind these events, with the selection sounds scoped to the local player; B — the reference behaviour, in which these events fire with no binding and are silent, and the selection sounds fire for every team's selections, silent only because they have no binding.
-- Recommendation: A. Laser fire is the Workers' main attack (DEC-030) and an expiring Supply crate is a lost chance that the player needs to notice; neither should be silent. The reference sound set holds unbound recordings for laser charging, structure hits, actor hits, ground hits and ricochets, so these moments are meant to be heard; Species authors new sounds for them.
+- Specified behaviour: The laser-bolt events are bound: a laser bolt is heard when it is fired, when it hits a structure and when it kills. When the interface sounds for selecting and deselecting a power are bound, they play only for the local player's own selections, never for another team's. The other silent moments of the reference are decided elsewhere: the match-end stings (DEC-049), the Supply crate capture and decay tones and the Strike team grenade throw (DEC-097), the final countdown sound (DEC-072), and the Supply crate expiry and the remaining silent events (DEC-565).
+- Options: A — bind the laser-bolt events, with the selection sounds scoped to the local player; B — the reference behaviour, in which the laser-bolt events fire with no binding and are silent, and the selection sounds fire for every team's selections, silent only because they have no binding.
+- Recommendation: A. Laser fire is the Workers' main attack (DEC-030) and should never be silent. The reference sound set holds unbound recordings for laser charging, structure hits, actor hits, ground hits and ricochets, so these moments are meant to be heard; Species authors new sounds for them. A selection sound that plays for another team's selection would tell the player nothing about their own actions.
 
 ### DEC-565 Sounds for the other silent gameplay events
 - Status: Open
 - Affects: reference/10_audio_design.md (R-AUD)
-- Specified behaviour: These gameplay events fire with no binding and are silent: a turret acquiring a target, and a rocket turret firing; an actor electrocuted by a Barrier Emitter; a Relic being lifted and carried, whose carry sound is stopped when the Relic is dropped; Workers boarding and leaving a Transport; a Leader changing its order mode (follow, absorb and none); the creature cues of a spider landing a pounce, a centipede growing, panicking and sighting an enemy, a Reaper Serpent panicking and a Spitter Plant launching a Seed Pod; a Transit Gate coming online; selecting a Transport, a Builder or a Collector; selecting a power, and the player's waypoint order; a Builder delivering an Essence orb; a Collector, a Bomber, a barrage missile or a meteor losing health or being destroyed; and leaving the match. The reference sound set holds unbound recordings of carrying and straining, of Leader acknowledgements and of marching, attention and formation calls.
+- Specified behaviour: These gameplay events fire with no binding and are silent: a Supply crate expiring unopened; a turret acquiring a target, and a rocket turret firing; an actor electrocuted by a Barrier Emitter; a Relic being lifted and carried, whose carry sound is stopped when the Relic is dropped; Workers boarding and leaving a Transport; a Leader changing its order mode (follow, absorb and none); the creature cues of a spider landing a pounce, a centipede growing, panicking and sighting an enemy, a Reaper Serpent panicking and a Spitter Plant launching a Seed Pod; a Transit Gate coming online; selecting a Transport, a Builder or a Collector; selecting a power, and the player's waypoint order; a Builder delivering an Essence orb; a Collector, a Bomber, a barrage missile or a meteor losing health or being destroyed; and leaving the match. The reference sound set holds unbound recordings of carrying and straining, of Leader acknowledgements and of marching, attention and formation calls.
 - Options: A — keep these events silent; B — author and bind a sound for every one of them; C — bind a reviewed subset first, ranked by how much the player needs to hear the event to act on it, and extend it as the mix budget allows.
-- Recommendation: C, growing to B within the voice budgets of DEC-570. Bind first the events a player acts on: a turret acquiring a target, a Barrier Emitter electrocution, a Relic lifted and carried, Workers boarding and leaving a Transport, Leader order changes, unit and power selection, the waypoint order and a Transit Gate coming online; then the creature cues and the damage sounds. The authored event list is reviewed event by event, so that no event stays silent by accident (DEC-027).
+- Recommendation: C, growing to B within the voice budgets of DEC-570. Bind first the events a player acts on: a Supply crate expiring unopened, a turret acquiring a target, a Barrier Emitter electrocution, a Relic lifted and carried, Workers boarding and leaving a Transport, Leader order changes, unit and power selection, the waypoint order and a Transit Gate coming online; then the creature cues and the damage sounds. The authored event list is reviewed event by event, so that no event stays silent by accident (DEC-027).
 - Decide by: design phase
 
 ### DEC-566 Listener position and distance limits
@@ -185,12 +208,12 @@ This file holds the decisions on controls and powers, bots, maps and level data,
   | Bus | Contents | Default level | Real voices | Priority class |
   |---|---|---|---|---|
   | UI | interface sounds | 0 dB | 4 | highest; never stolen |
-  | Announcer and stings | Supply crate rewards, Control Zone and Relic stings, match flow | 0 dB; ducks the world bus by 6 dB for 1 s | 4 | high |
+  | Announcer and stings | Supply crate rewards, zone and Relic stings, match flow | 0 dB; ducks the world bus by 6 dB for 1 s | 4 | high |
   | Voice | unit barks | −3 dB | 16; at most 3 per event | medium |
   | World | weapons, impacts, structures, creatures | −3 dB | 32; at most 4 to 6 per event | by loudness at the listener (DEC-566) |
   | Ambience | ambience beds | −10 dB | 4 | low, but never stolen by world sounds |
   | Music | the music system (DEC-049) | −6 dB | 2, for cross-fades | separate |
 
-  A request steals a voice only when it outranks the victim by at least 3 dB; a request that loses is virtualised, not dropped. Triggers carry a time stamp, so start latency is not quantised to the tick, and any number of voices may start in one frame. Per-event cool-downs are data and replace fixed rate limits of 0.2 s, 0.5 s and 4 s. In a stress scene of 500 units and 30 explosions within 1 s, no UI sound or sting is lost and no category of one-shot sound disappears completely.
-- Options: A — this bus layout and these budgets as the Species baseline, tuned against the stress scene; B — the reference behaviour: one master volume; a priority based on perceived volume with no steal test; at most one voice start per 50 ms audio tick, in which the lowest-ranked voice is replaced by the best queued request whatever its loudness, so a burst of 30 explosions takes 1.5 s to start and most one-shots expire unheard; interface sounds and stings always win and can evict world combat voices; and only a higher volume, a larger minimum distance or closeness to the camera protects an important world sound, so Strike team laser fire is easily lost.
-- Recommendation: A. The buses implement the replacement of the priority model and the mix (DEC-027, DEC-097); the figures are starting values, retuned against the stress scene and by listening tests.
+  A request steals a voice only when it outranks the victim by at least 3 dB; a request that loses is virtualised, not dropped. Triggers carry a time stamp, so start latency is not quantised to the tick, and any number of voices may start in one frame. Per-event cool-downs are data and replace fixed rate limits of 0.2 s, 0.5 s and 4 s.
+- Options: A — this bus layout and these budgets as the Species baseline; B — the reference behaviour: one master volume; a priority based on perceived volume with no steal test; at most one voice start per 50 ms audio tick, in which the lowest-ranked voice is replaced by the best queued request whatever its loudness, so a burst of 30 explosions takes 1.5 s to start and most one-shots expire unheard; interface sounds and stings always win and can evict world combat voices; and only a higher volume, a larger minimum distance or closeness to the camera protects an important world sound, so Strike team laser fire is easily lost.
+- Recommendation: A. The buses implement the replacement of the priority model and the mix (DEC-027, DEC-097); the figures are starting values, retuned by listening tests in dense battles, where UI sounds and stings must never be lost and no kind of one-shot sound may disappear.

@@ -33,9 +33,9 @@ ORIG_REFS = {
     "DEC-561": ["08_levels_and_level_design.md:2008-2008"],
     "DEC-562": ["08_levels_and_level_design.md:2010-2010"],
     "DEC-563": ["08_levels_and_level_design.md:2014-2015"],
-    "DEC-564": ["10_audio_design.md:959-959", "10_audio_design.md:961-961", "10_audio_design.md:971-971",
+    "DEC-564": ["10_audio_design.md:961-961", "10_audio_design.md:971-971",
                 "10_audio_design.md:1597-1597", "06_player_control_and_input.md:2320-2320"],
-    "DEC-565": ["10_audio_design.md:963-974"],
+    "DEC-565": ["10_audio_design.md:959-959", "10_audio_design.md:963-974"],
     "DEC-566": ["10_audio_design.md:1289-1290", "10_audio_design.md:1294-1294"],
     "DEC-567": ["10_audio_design.md:1342-1353", "10_audio_design.md:1562-1562", "10_audio_design.md:1593-1593"],
     "DEC-568": ["10_audio_design.md:1586-1586", "10_audio_design.md:1589-1589"],
@@ -122,7 +122,8 @@ def main(argv):
                 errors.append(f"{dec_id}: prefix {pfx} for {path}, expected {want}")
         if dec_id not in ORIG_REFS:
             errors.append(f"{dec_id}: no orig_refs")
-    for ref in sorted(set(re.findall(r"\bDEC-\d{3}\b", text))):
+    cited_text = "\n".join(l for l in text.splitlines() if not l.startswith("> Status:"))
+    for ref in sorted(set(re.findall(r"\bDEC-\d{3}\b", cited_text))):
         if ref not in known:
             errors.append(f"cited {ref} does not exist")
     for k in ORIG_REFS:

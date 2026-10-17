@@ -1,0 +1,4 @@
+dec_id,title,status,affects_prefix,affects_files,orig_refs
+DEC-750,Explainer-animation loop and visibility rules,Open,VFX;R-META;DAT,architecture/components/animation_and_vfx.md;reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md;architecture/components/data_schemas.md,26_animation_and_vfx.md:389-401
+DEC-751,Game-speed pitch state starts every match at normal speed,Resolved,AEN;R-AUD,architecture/components/audio_engine.md;reference/10_audio_design.md,27_audio_engine.md:722-734
+DEC-752,Audio queries and reused voices carry no stale state,Resolved,AEN,architecture/components/audio_engine.md,27_audio_engine.md:472-507;27_audio_engine.md:923-930
