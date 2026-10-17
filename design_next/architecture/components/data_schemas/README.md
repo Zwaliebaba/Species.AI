@@ -14,6 +14,7 @@ This folder specifies the Species data schemas: how every kind of Species conten
 | [config_input_and_strings.md](config_input_and_strings.md) | the settings schema and the settings file, the binding sets and the keyboard-layout table, the string tables and their caption markup | DAT-190 to DAT-218 |
 | [entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) | the actor stat table, the Supply-crate outcome catalogue, the sound data and the effect-kind table, the cooked mesh, collision and simulation data records, the colour ramps, the screenshot output, the explainer animations, and the component-owned record types | DAT-260 to DAT-290 |
 | [import_and_build_records.md](import_and_build_records.md) | the texture, mesh and audio import records, the engine asset table and the edition manifests | DAT-350 to DAT-361 |
+| [test_and_telemetry_records.md](test_and_telemetry_records.md) | the soak configuration, the soak report and the telemetry session record | DAT-370 to DAT-386 |
 
 ```mermaid
 flowchart LR
@@ -38,7 +39,7 @@ Caption: Figure 0-A, the path of a record from its authoring file to a loaded re
 
 **DAT-002** (MUST) The meaning of a field, its rule and its default value belong to the document that owns the mechanic. A schema of this folder gives the field its key, logical type, unit, presence rule and range, and cites the owner's tuning key for its default instead of defining a second one. A field key is the owner's field name written in lower-case snake_case; where an owner gives no name, the key chosen here is listed in the field table and is used by every tool.
 
-**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The settings file of [config_input_and_strings.md](config_input_and_strings.md) is the one runtime-written file this folder specifies, and its versioning is DEC-250's. The custom-map container is recorded as a hook only ([map_schema.md](map_schema.md)).
+**DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container is recorded as a hook only ([map_schema.md](map_schema.md)).
 
 **DAT-004** (MUST NOT) No client and no server parses authoring text at run time. Loaders read cooked records only, check their header, version and hash, and never accept text (ADR-0061). No reference data file, archive or tool output is imported into Species content (DEC-340).
 
@@ -72,6 +73,9 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 | `import.texture`, `import.mesh`, `import.audio` | the import record beside each source | beside the source, sharing its stem | none: build input | no | [import_and_build_records.md](import_and_build_records.md) |
 | `assets.engine_table` | the asset-id constants and enumeration-to-asset tables of the code | generated from the code by the content build | none: build input | no | [import_and_build_records.md](import_and_build_records.md) |
 | `edition.manifest` | one edition: what it ships and its runtime feature flags | `content/records/editions/` | build input; the feature flags as a `Record` | the feature flags that change simulation behaviour | [import_and_build_records.md](import_and_build_records.md) |
+| `test.soak_configuration` | one soak configuration: progression, sequence, test maps, session name, termination tick | `content/records/test/`, selected only into the `development` and `soak` editions | `Record` | no | [test_and_telemetry_records.md](test_and_telemetry_records.md) |
+| `test.soak_report` | the report of one soak pass: the match table and the pass summary | written by the soak runner; a CI artefact | none: diagnostic output | no | [test_and_telemetry_records.md](test_and_telemetry_records.md) |
+| `telemetry.session` | one telemetry session record, exactly the data set of DBG-181 | formed by the client, only with consent | none: diagnostic output | no | [test_and_telemetry_records.md](test_and_telemetry_records.md) |
 
 ## 2 Interfaces
 

@@ -63,7 +63,6 @@ Table 3.1-A Fields of a soak configuration.
 | termination tick | `termination_tick` | ticks, at least 1 | absence-meaningful: no termination tick, so a match ends only by game over or a divergence | the tick at which every match of the pass ends (DBG-162, DBG-165 item 3) |
 | clients | `clients` | count, at least 1 | defaulted: the smallest number that, with the host, reaches `dbg.soak.min_participants` | the client participants the runner starts (DBG-160, DBG-163) |
 | rendering | `rendering` | boolean | defaulted: false | true starts the clients rendered; soak participants otherwise start with rendering and sound off (DBG-167) |
-| notes | `notes` | text, at most `dat.notes.max_chars` characters | defaulted: none | not cooked (README DAT-016) |
 
 Table 3.1-B Fields of a sequence item.
 
@@ -79,11 +78,11 @@ Table 3.1-C Fields of a test-map item.
 |---|---|---|---|---|
 | map | `map` | record reference to a map, by map id | required | a map selected by the test tag into every edition that selects this configuration (BLD-057) |
 | mode | `mode` | mode enumerator, as in table 3.1-B | required | the mode the entry runs, whether or not the map's mode list holds it (DAT-104 of [map_schema.md](map_schema.md)) |
-| bot teams | `bot_teams` | count, 1 to the map's player count | defaulted: the map's player count | the bot teams of the entry (DBG-161) |
+| bot teams | `bot_teams` | count, 1 to the map's player count | required | the bot teams of the entry (DBG-161) |
 
 **DAT-373** (MUST) The content build checks a soak configuration against every edition that selects it, after README DAT-024: each sequence item's pair of map and mode must be an entry of the pass in that edition, that is, a mode the edition enables with a map that match setup lists for it, or a pair of `test_maps` (DBG-162); a pair listed twice in `sequence`, or twice in `test_maps`, is a build error, because a pass runs every entry exactly once (DEC-804 item 2); and every map named must be a map of that edition (BLD-053). Each failure is a build error that names the configuration, the edition, the item and the field.
 
-**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, never 0, and a pass without a termination tick has no `termination_tick`, never 0 (DEC-120 for absence, README DAT-011). Because the in-memory entry of DBG Listing 2.1-A still reads a seed of 0 as "keep the authority's seed", a forced seed of 0 cannot be authored; the range of `seed` widens to include 0 in a minor version once the entry holds an optional seed (README DAT-017).
+**DAT-374** (MUST) The configuration holds no marker value: a seed that the authority keeps is an absent `seed`, never 0, and a pass without a termination tick has no `termination_tick`, never 0 (README DAT-011). Because the in-memory entry of DBG Listing 2.1-A still reads a seed of 0 as "keep the authority's seed", a forced seed of 0 cannot be authored; the range of `seed` widens to include 0 in a minor version once the entry holds an optional seed (README DAT-017).
 
 ### 3.2 The soak report
 
@@ -113,7 +112,7 @@ Table 3.2-A Columns of the soak match table, in order (DBG-166).
 
 **DAT-377** (MUST) No cell of the match table holds a marker value: a value that does not exist is an empty cell, never −1 or 0. The empty first-divergence cell is the column that DBG-166 writes as −1, and the empty previous-entry cell is the first match's.
 
-**DAT-378** (MUST) The pass summary is a JSON document of the schema `test.soak_report` with the fields of table 3.2-B, written once at the end of the pass by the canonical writer (README DAT-040 to DAT-044), with atomic replacement (DEC-800 item 3). A pass that ends in a crash of the runner itself leaves no summary, and its match table stays readable (DAT-383).
+**DAT-378** (MUST) The pass summary is a JSON document of the schema `test.soak_report` with the top-level `schema` and `version` fields of README DAT-016 and the fields of table 3.2-B, written once at the end of the pass by the canonical writer (README DAT-040 to DAT-044), with atomic replacement (DEC-800 item 3). A pass that ends in a crash of the runner itself leaves no summary, and its match table stays readable (DAT-383).
 
 Table 3.2-B Fields of the pass summary.
 
@@ -135,7 +134,7 @@ Table 3.2-B Fields of the pass summary.
 
 ### 3.3 The telemetry session record
 
-**DAT-379** (MUST) A telemetry session record (`telemetry.session`) is one JSON document per session with the top-level `schema` and `version` fields of README DAT-016 and exactly the fields of table 3.3-A, which are the data set of DBG-181 and the identifiers of DBG-182 (DBG-026, ADR-0066). The `schema` and `version` fields name the record's form and are not data.
+**DAT-379** (MUST) A telemetry session record (`telemetry.session`) is one JSON document per session with the top-level `schema` and `version` fields of README DAT-016 and exactly the fields of table 3.3-A, which are the data set of DBG-181 and the identifiers of DBG-182 (DBG-026, ADR-0066). The `schema` and `version` fields name the record's form and are not data; the `notes` field that README DAT-016 allows elsewhere is not accepted in this record type.
 
 Table 3.3-A Fields of a telemetry session record.
 
@@ -147,7 +146,7 @@ Table 3.3-A Fields of a telemetry session record.
 | simulation update time | `sim_update_time_us` | object, as `frame_time_us` | absence-meaningful: the session ran no simulation tick | DBG-181 |
 | entity counts | `entity_count` | object: `peak` (count), `mean` (presentation decimal) | required | DBG-181 |
 | network traffic | `network` | object: `bytes_in_per_s`, `bytes_out_per_s`, `round_trip_ms`, each an object with one field `p<n>` for each n of `dbg.telemetry.percentiles`, each a presentation decimal | absence-meaningful: the session had no network connection | the samples of `dbg.telemetry.sample_period_ms` reduced to percentiles (DBG-181) |
-| renderer | `renderer` | object: `preset` (enumeration `high`, `medium`, `low`, `custom`, RND-450), `settings` (object whose keys are the `render.` keys of [config_input_and_strings.md](config_input_and_strings.md) table 3.1-A that RND-440 stores, each with its settings type) | required | the active settings and preset (RND-457) |
+| renderer | `renderer` | object: `preset` (enumeration `high`, `medium`, `low`, `custom`, RND-450), `settings` (object with one field for each `render.` setting of [config_input_and_strings.md](config_input_and_strings.md) table 3.1-A that RND-440 stores, keyed by the part of the setting key after `render.`, each with its settings type) | required | the active settings and preset (RND-457) |
 | graphics adapter | `adapter` | object: `description` (text), `driver_version` (text) | required | the adapter the renderer chose, from the system summary ([platform layer](../platform_layer.md) table 3.6-A) |
 | processor | `processor` | object: `logical_processors` (count), `physical_cores` (count), `architecture` (text), `brand` (text) | required | the processors group of PLT table 3.6-A |
 | memory | `memory` | object: `physical_total` (count, in units of `plt.sysinfo.memory_unit`) | required | from the memory group of PLT table 3.6-A |
@@ -215,7 +214,6 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 
 | Reference | Status | Where it applies |
 |---|---|---|
-| DEC-120 | Resolved | absence instead of marker values (DAT-374, DAT-377) |
 | DEC-206 | Open | the divergence whose first tick the match table records (table 3.2-A) |
 | DEC-250 | Open | whether the telemetry queue is kept across runs (DAT-385) |
 | DEC-801 | Resolved | unique configuration ids (table 3.1-A) |

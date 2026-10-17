@@ -129,7 +129,7 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 | capture frame rate | `debug.capture_frame_rate` | integer, presentation frames per second of the fixed step of command-history modes 1 and 2 | `dbg.replay.capture_frame_rate` | immediate | DBG-041, DBG-241 |
 | soak session name | `debug.soak_session_name` | text | the empty text; a soak configuration's session name replaces it | immediate | DBG-041, DBG-162 |
 | telemetry consent | `telemetry.consent` | boolean | off: telemetry is opt-in (ADR-0066) | immediate; withdrawing deletes the unsent records | DBG-180 |
-| telemetry installation id | `telemetry.installation_id` | text, a random id that the player can reset | absent: created when consent is first given | immediate | DBG-182 |
+| telemetry installation id | `telemetry.installation_id` | text, 32 lower-case hexadecimal digits, a random id that the player can reset ([test_and_telemetry_records.md](test_and_telemetry_records.md) DAT-381) | absent: created when consent is first given | immediate | DBG-182 |
 | user bindings | `binding.<action id>`, one per action of INP-067 | binding node in canonical form (INP-072) | absent: the action keeps the bindings of the earlier layers | immediate, with a binding rebuild | INP-070, INP-171 |
 
 **DAT-195** (MUST) A setting key is lower-case ASCII letters, digits, `_` and `.`, at most `dat.id.max_chars` characters, and unique in the schema. A setting that a binding node names with `setting` must be a key of this schema; the content build rejects a binding that names any other key (INP-060, R-META-455 item 4).
