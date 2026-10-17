@@ -191,3 +191,7 @@
 
 ## S32 (32_debug_test_and_performance.md) — done, ~148 KB, checks pass
 - 8 contradictions: 18 debug entry points (not 17); debug menu + profiler unreachable in FULL; syncerror-*.txt world dump written in FULL too (only preceding RNG-call log debug-only); benchmark bandwidth bytes/s averaged 5 s; cheat crate reward −1 → normal random reward; testbed "10× faster" server not implemented. docs/cpu cycles.txt is a gameplay design note (no perf data) → hotspots built from code (186 profiled call sites). No measured frame times anywhere (32-U2). FTP credentials deliberately omitted. 32-U1..U8 + 32-I1..I3. scripts/S_32_profile_sections.py.
+
+## S25 (25_textures_and_assets.md) — done, ~694 KB, checks pass, (e) = 0
+- All 2131 required asset files have a row (scripts/S_25_catalogue.py from X2a/X2b CSVs + script_inputs/S_25_template.md; self-checking). 11 contradictions: icons/compass_empty.bmp can NEVER be requested (Vector2::Normalise maps zero vector to (0,1)) → no reachable missing-file crash; viriifull built from 18 sprite copies (not 32); cloud + laser textures first loaded mip-mapped by start-up preload; archive lookups case-insensitive but texture cache case-sensitive; 506 BMPs (not 667); 441 fragment blocks vs 440 names. New hazard: carryweights.shp (live CTS mesh) overruns hit-test buffer on accurate hit test. 25-U1..U10.
+## Coordinator: redacted FTP credential string (from code/benchmark.cpp) in drafts/P15_network.md and routed/_meta_ip.md; final docs only used placeholders.

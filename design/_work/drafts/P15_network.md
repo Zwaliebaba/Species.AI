@@ -907,7 +907,7 @@ Starts identity discovery; every 1.0 s rebuilds the filtered list; joins the **f
 |---|---|---|---|
 | `metaserver-mwdev.introversion.co.uk` | brand / service hostname | `code/app.cpp:App::InitMetaServer` | `directory.example.net` |
 | `80.175.29.66` (route-probe address) | Introversion-owned IP [I] | `contrib/systemiv/lib/netlib/net_lib.cpp:GetLocalHostIP` | use OS interface enumeration |
-| `ftp.introversion.co.uk`, user/password `multiwinia_stats` | brand / credentials | `code/benchmark.cpp` (P20) | none — do not reuse |
+| `ftp.introversion.co.uk`, user/password (redacted — see `code/benchmark.cpp:Benchmark::Upload`) | brand / credentials | `code/benchmark.cpp` (P20) | none — do not reuse |
 | `http://store.introversion.co.uk` | brand URL | `code/app.cpp:App::GetBuyNowURL` | store URL of new title |
 | `"Multiwinia"` (`APP_NAME`, GAMENAME on the wire) | name | `code/lib/universal_include.h` | `<NewTitle>` |
 | `METASERVER_GAMETYPE_MULTIWINIA` = 4, `_DEFCON` = 2, "defcon-steam3" | product ids / names | `metaserver_defines.h`, `steamauth_server.cpp` | new product id |

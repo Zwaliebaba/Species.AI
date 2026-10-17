@@ -639,6 +639,8 @@ Debug-only limits asserted by `Set()`: `teamId < ID_MAXTEAMS (256)`, `unitId < I
 | Unit | — | `Team::m_units` slot via `GetNextFree` | — | — | `Team::NewUnit` | [C] `code/team.cpp:Team::NewUnit` |
 | Route | — | `RoutingSystem::m_routes` slot (DArray: **lowest** free index) | — | — | `RoutingSystem::GenerateRoute` | [C] `code/routing_system.cpp:RoutingSystem::GenerateRoute`; `contrib/systemiv/lib/tosser/darray.cpp:DArray::PutData` |
 
+Resolved: P03 inferred that effects, lasers and buildings "set their ids by other routes" [I]; the code shows the exact per-kind rules tabulated above (effects generate their own unique id, lasers have none, spirits use −1, buildings use level or generated building ids, and the soul-rain spawner leaves its effect without an id).
+
 Counters and their reset points [C]:
 
 | Counter | Reset | Ref |
@@ -824,6 +826,8 @@ All are header templates whose bodies live in the `.cpp` the header includes [C]
 
 [C] `contrib/systemiv/lib/tosser/llist.cpp`, `darray.cpp`, `fast_darray.cpp`, `bounded_array.h`, `btree.cpp`, `hash_table.cpp`, `sorting_hash_table.cpp`, `code/lib/slice_darray.cpp`, `code/lib/2d_array.cpp`, `code/lib/2d_surface_map.cpp`, `code/lib/auto_vector.h`.
 
+Resolved: P01 stated that all Location arrays are `FastDArray` derivatives with LIFO re-use; that is true for the entity, building, effect, laser and spirit pools, but `RoutingSystem::m_routes` and `m_nodes` are plain `DArray`s that re-use the **lowest** free slot [C] `code/routing_system.h:RoutingSystem`.
+
 Guarantees a re-implementation must reproduce for bit-compatibility, or replace by one documented policy [C]/[I]:
 - Iteration of every simulation array is by **ascending slot index**, including the slots created during the iteration (§5.4).
 - `FastDArray` re-use is **LIFO** (most recently freed first); `DArray` re-use is **lowest index first**. The same sequence of operations therefore yields different slots in the two container kinds [C]; routes (`DArray`) and entities/effects (`FastDArray`) differ.
@@ -928,7 +932,7 @@ Exact order [C] `code/location.cpp:Location::Init` (runs on the loading worker t
 4. Christmas: `m_clientToServer->m_christmasMode` → `m_christmasMode`.
 5. `InitLights()`, `InitLandscape()` ([23](23_terrain_and_landscape.md)), `m_water = new Water()`.
 6. Team colours / alliances (§9.5): Assault → `SetupAssault()`; else co-op → `SetupCoop(i)` per player position not yet grouped; else every CPU team gets `Multiwinia::GetCPUColour()` (tutorial: colour = team index).
-7. Not editing: `InitBuildings()` → `RecalculateAITargets()` (**before** the obstruction grid exists, so AI-target links ignore walls — [07 §4](07_ai.md#4-the-aitarget-node-graph--the-ais-map)) → `m_entityGrid = new EntityGrid(32, 32)` → `m_entityGridCache` → `m_obstructionGrid(32 or 64)` (its constructor runs `CalculateAll`) → `m_clouds` → `m_routingSystem.Initialise()` → `m_seaRoutingSystem.Initialise()` (both **after** the obstruction grid, so routing edges see walls). Editing [B:EDITOR]: only snap level buildings to the terrain.
+7. Not editing: `InitBuildings()` → `RecalculateAITargets()` (**before** the obstruction grid exists, so AI-target links ignore walls — [07 §4](07_ai.md#4-the-aitarget-node-graph--the-ais-map)) → `m_entityGrid = new EntityGrid(32, 32)` → `m_entityGridCache` → `m_obstructionGrid(32 or 64)` (its constructor runs `CalculateAll`) → `m_clouds` → `m_routingSystem.Initialise()` → `m_seaRoutingSystem.Initialise()` (both **after** the obstruction grid, so routing edges see walls). Editing [B:EDITOR]: only snap level buildings to the terrain. Resolved: S07 reported that "the initial node graph is built before walls and fences are known"; that applies to the AI-target links (`RecalculateAITargets`, obstruction grid still NULL, so `IsWalkable` skips the wall test), not to the routing system, whose `Initialise` runs after the obstruction grid exists [C] `Location::Init`, `Location::IsWalkable` (`if( m_obstructionGrid )`).
 8. `InitTeams()`: for i in 0..5: a lobby colour of −1 → `GetNextAvailableColour()`; `m_teams[i] = new Team(lobbyTeam)`; type ≠ Unused → `InitialiseTeam(i)`; `m_teamsInitialised = true`.
 9. Fewer than 4 players: each team slot i ≥ numPlayers (except 4 and 5) gets a random unused colour `(syncrand() % 8) / 2` (0–3), colour only.
 10. Difficulty: level difficulty −1 → store `g_app->m_difficultyLevel` (0 in Multiwinia) in it; else copy it into `m_difficultyLevel`.
@@ -941,7 +945,7 @@ Exact order [C] `code/location.cpp:Location::Init` (runs on the loading worker t
 | Function | Behaviour [C] `code/location.cpp` |
 |---|---|
 | `AdvanceChristmas` | if `m_christmasTimer < −90`: 150 `Snow` effects at (FRAND(sizeX), syncfrand(1000), FRAND(sizeZ)). Timer −= dt; when ≤ 0: timer = 0.1 s and one `Snow` at y = 700 + syncfrand(300). Ids (255, `UNIT_EFFECTS`, slot, generated uid) |
-| `AdvanceSoulRain` | `m_spawnSync −= dt`; when ≤ 0: 1.0 s; one `UnprocessedSpirit` at (FRAND(sizeX), 700 + syncfrand(300), FRAND(sizeZ)) into `m_effects` **without an id**. No shipped `mp_` map sets `soulrain` [C] scan of `data/levels/mp_*.txt` `Effects` lines |
+| `AdvanceSoulRain` | `m_spawnSync −= dt`; when ≤ 0: 1.0 s; one `UnprocessedSpirit` at (FRAND(sizeX), 700 + syncfrand(300), FRAND(sizeZ)) into `m_effects` **without an id**. No shipped `mp_` map sets `soulrain` [C] scan of `data/levels/mp_*.txt` `Effects` lines. Resolved: 03 tags `UnprocessedSpirit` [B:LEGACY] as a SpiritProcessor product; this spawner is compiled and reachable from any level whose `Effects` line contains `soulrain` (`code/level_file.cpp:LevelFile::ParseMultiwiniaOptions`, `Effects` keyword), so the class is a live code path that no shipped map triggers (§2.8 tag) |
 | `AdvanceDustWind` | `DustBall::s_vortexTimer −= dt`; when ≤ 0: timer = 15 + syncfrand(15); if `syncrand() % 10 == 0` and no vortex: vortex at a random point (FRAND(sizeX), FRAND(500), FRAND(sizeZ)) re-rolled while terrain ≤ 1.0; else clear the vortex and set `m_windDirection = normalise(random − random)`. First run (`m_christmasTimer < −90`): 300 `DustBall`s at y = syncfrand(1000), size += syncfrand(20). Shared timer −= dt; when ≤ 0: two dust balls (timer 0.1). Active vortex: every grid neighbour within 50 of the vortex ground point that is an on-ground Darwinian → `StateInVortex`, airborne |
 | `AdvanceLightning` | shared timer −= dt; when ≤ 0: timer = syncfrand(15); one `Lightning` effect at y = 1200 over a random land point (height > 1.0, re-rolled) |
 
@@ -1392,7 +1396,7 @@ Team types (`code/team.h` enum) [C]:
 | `m_lobbyTeam` | pointer | back-pointer |
 | `m_units` | `FastDArray<Unit*>` step 5 | squads and other units |
 | `m_others` | `SliceDArray<Entity*>` step 100, 10 slices | every free entity (Darwinians, officers, armour, engineers, harvesters, AI, creatures not in units) |
-| `m_specials` | `LList<WorldObjectId>` | officers, armour, harvesters, engineers (MP), tanks, shamans — quick lookup |
+| `m_specials` | `LList<WorldObjectId>` | officers, armour, harvesters, engineers (MP), tanks, shamans — quick lookup. Resolved: the header comment (and P01) say "Officers and tanks"; `RegisterSpecial` is called from `Armour`, `Engineer`, `Harvester`, `Officer`, `Shaman` and `Tank` [C] grep of `RegisterSpecial` |
 | `m_taskManager` | NULL → `new TaskManager(teamId)` in `Initialise` | per-team task slots ([06](06_player_control_and_input.md)) |
 | `m_ready` | false | in-match ready (grace period) |
 | `m_currentUnitId`, `m_currentEntityId`, `m_currentBuildingId` | −1 | **current selection; changed only by network commands** (§3.5 rule 7) |
@@ -1495,7 +1499,7 @@ All of this consumes the synced RNG during `Location::Init` in team-index order,
 | `m_centrePos`, `m_vel`, `m_radius` | group centroid, velocity, bounding radius |
 | `m_targetDir` | (1, 0, 0) initially; set towards the mouse on move |
 | `m_attackAccumulator` | fire-rate regulator |
-| `s_offsets` (static) | 100 random formation jitters, lazily generated with `syncfrand(1.0)` on the first `GetFormationOffset`; deleted in `Location::Init`/`Empty` |
+| `s_offsets` (static) | 100 random formation jitters, lazily generated with `syncfrand(1.0)` on the first `GetFormationOffset`; deleted in `Location::Init`/`Empty` (resolved: P04 said it is never reset between games; the code deletes it in both) |
 | `m_accumulatedCentre`, `m_accumulatedRadiusSquared`, `m_numAccumulated` (protected) | filled by members each tick through `UpdateEntityPosition` |
 | enum | `FormationRectangle = 0`, `FormationAirstrike = 1`, `NumFormations = 2` |
 

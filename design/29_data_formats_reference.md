@@ -1400,3 +1400,175 @@ B. "Nick" Example
 ```
 
 **Discrepancies.** A name beginning with `:` or `,` loses that character; a name containing `#` is truncated [C].
+
+---
+
+## 6 Localisation and scripts
+
+<a id="fmt-language"></a>
+### 6.1 Language phrase tables and caption markup
+
+**Purpose.** Phrase id → localised text, with input-mode variants and inline markup expanded once per input mode [C] `code/lib/language_table.cpp:LangTable::ParseLanguageFile`, `RebuildTables`, `RebuildTable`, `buildCaption`, `consumeMarker`, `consumeIfMarker`, `consumeKeyMarker`, `consumeOtherMarker`, `buildPhrase`, `markerLength`, `LookupPhrase`, `RawLookupPhrase`, `DoesPhraseExist`; selection `code/app.cpp:App::InitLanguage`, `App::TrySetLanguage`, `App::SetLanguage`.
+
+**Files** [C] `X1a_language_survey.py` (re-run for this document):
+
+| File | Encoding | Lines | Phrases | Coverage vs English |
+|---|---|---|---|---|
+| `data/language/english.txt` | single byte (2 Latin-1 bytes) | 3120 | 2423 | reference |
+| `data/language/french.txt` | UTF-16BE + BOM | 3219 | 2514 | 7 missing, 98 extra |
+| `data/language/german.txt` | UTF-16BE + BOM | 3186 | 2487 | 8 missing, 72 extra; one literal `\N` |
+| `data/language/italian.txt` | UTF-16BE + BOM | 3035 | 2361 | 62 missing |
+| `data/language/spanish.txt` | UTF-16BE + BOM | 3219 | 2514 | 7 missing, 98 extra |
+| `data/language/russian.txt` | UTF-16LE + BOM | 2770 | 2141 | 282 missing |
+| `data/language/japanese.txt` | UTF-16LE + BOM, no final newline | 281 | 220 | 2205 missing (partial) |
+| `data/language/korean.txt` | UTF-16BE + BOM, no final newline | 218 | 160 | 2265 missing (partial) |
+| `data/language/portuguese.txt` | UTF-16BE + BOM, mixed CRLF/LF, no final newline | 218 | 160 | 2264 missing (partial) |
+
+The language files are packed into `language.dat` (excluded from `main.dat`) by `tools/build_language_dat.bat` ([31 §12](31_platform_build_and_tools.md)). Selection [C] `App::InitLanguage`: pref `TextLanguage` (default `unknown`; not on Mac), then the OS language (`GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SENGLANGUAGE)`), `english`, then the first file listed in `language/`; the first name for which `language/<lower(name)>.txt` exists is used and stored back into `TextLanguage` (failure of all four is fatal). `SetLanguage(name)` parses `language/<name>.txt` and then, if present, an overlay `strings_<name>.txt` or else `strings_default.txt` from the `data/` root into the same table (later definitions override); calls `setlocale(LC_CTYPE, name)`; `chinese-trad`, `chinese-simp`, `korean`, `japanese` switch every font to the `square` title font with horizontal scale 1.0 (others 0.6) [C] `App::SetLanguage`.
+
+**Line grammar** [C] `LangTable::ParseLanguageFile`:
+
+```ebnf
+lang_file   = { blank | phrase_line } ;
+phrase_line = KEY , SEP , TEXT , EOL ;
+KEY         = first token (narrow separator set " \t\n\r:,") ;      (* stored case-insensitively *)
+SEP         = 1*( ' ' | TAB | ':' | ',' | FF ) ;                     (* FF only for UTF-16 files *)
+TEXT        = REST after the section 3.1 cleaning ;                   (* a '#' anywhere ends the text *)
+```
+
+Rules [C]:
+
+1. Duplicate `KEY` (case-insensitive `BTree` lookup): the **later definition replaces the earlier** (opposite of preferences). Shipped duplicates: `buildingname_grenadeturret`, `multiwinia_help_title_crates` (all full files), `multiwinia_help_breakformation`, `multiwinia_help_clearinfo` (Italian).
+2. Escape: the two characters `\n` become **blank + newline** (`" \n"`); any other backslash stays literal (German `\N`). There is no way to write `#`, a leading blank/`:`/`,`, or a literal `[`…`]` pair.
+3. Post-processing: a trailing newline is removed, and a CR or FF at length − 2 is replaced by NUL. An empty `TEXT` in a UTF-16 file reads index −1 (undefined; once each in French, German, Russian); in an 8-bit file a key alone on its line makes `GetRestOfLine()` return `NULL` and `UnicodeString(char const*)` calls `strlen(NULL)` — crash (english.txt has no such line) [C] `contrib/systemiv/lib/unicode/unicode_string.cpp:UnicodeString::UnicodeString(char const*)`. (Resolved: P14 marked this crash [I]; the constructor shows it directly.)
+4. UTF-16 files are decoded unit by unit (no surrogate pairs); 8-bit files are Latin-1.
+5. The unterminated last line of UTF-16 or archived files is dropped (§3.1): `multiwinia_exclamation` is lost from `japanese.txt` and `korean.txt`, `multiwinia_option_5_5_1` from `portuguese.txt` [C] survey.
+
+**Mode variants and final tables** [C] `RebuildTables`, `RebuildTable`, `wrong_suffix`, `chomp_mode_suffix`, `specific_key_exists`: two hash tables (case-insensitive) are built, keyboard (`INPUT_MODE_KEYBOARD`, suffix `_kbd`) and gamepad (`INPUT_MODE_GAMEPAD`, suffix `_xin`), lazily on first lookup and explicitly after `SetLanguage`.
+
+| Raw key form | Entry in the table for mode M |
+|---|---|
+| `foo`, no `foo_<M>` exists | `foo` → caption(`foo`, M) |
+| `foo`, `foo_<M>` exists | skipped (the specific one wins) |
+| `foo_<M>` | `foo` → caption(`foo_<M>`, M) |
+| `foo_<other>`, neither `foo` nor `foo_<M>` exists | `foo` → empty string (feature hidden in mode M) |
+| `foo_<other>` otherwise | skipped |
+| `part_*` | never in the final tables; usable only as `[part_x]` references |
+
+**Caption markup** (expanded at table-build time) [C] `buildCaption`, `consumeMarker`, `consumeIfMarker`, `consumeKeyMarker`, `consumeOtherMarker`, `markerLength`:
+
+```ebnf
+text   = { char | marker } ;
+marker = '[IFMODE KEYBOARD]' | '[ELSE]' | '[ENDIF]'      (* nestable conditional; the mode word is compared case-insensitively *)
+       | '[KEY' CONTROLNAME ']'                          (* e.g. [KEYCAMERAFORWARDS] *)
+       | '[' PHRASEKEY ']' | '[ ' PHRASEKEY ']' ;        (* inline another phrase; the leading-blank form emits one blank first *)
+```
+
+| Element | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| `[IFMODE KEYBOARD]` … `[ELSE]` … `[ENDIF]` | marker | – | only `KEYBOARD` understood | text written only in keyboard / only in gamepad mode; `[IFMODE X]` for any other X increments the depth but falls through to the phrase-reference rule (consumed, writes nothing); no shipped phrase uses IFMODE | `consumeIfMarker` |
+| `[KEY<name>]` | marker | – | name 1…63 chars | replaced by the description noun of the input bound to control `<name>` (`InputManager::getControlID`, `getBoundInputDescription`); unknown/unbound → falls through to the phrase rule and is removed; English uses 87 | `consumeKeyMarker` |
+| `[<key>]` | marker | – | key 1…63 chars, lower-cased | replaced by the mode-specific raw phrase (`<key>_kbd`/`<key>_xin` preferred, else `<key>`), recursively expanded; unknown → removed. **Any `[…]` pair is markup**: English `multiwinia_notpermitted  [Not permitted]` expands to an empty string (the id is unused, grep) | `consumeOtherMarker`, `buildPhrase` |
+| output length | – | – | `SEPULVEDA_MAX_PHRASE_LENGTH` = 1024 code units; key buffers `MAX_READ_KEY_LENGTH` = 64, `MAX_FINAL_KEY_LENGTH` = 96 | truncation | `buildCaption` |
+| runtime placeholder `*<letter>` | – | – | letters substituted in `code/`: `F`, `G`, `H`, `P`, `R`, `S`, `T`, `U`, `X` (`*T` team/player name, `*S` seconds); English also has `*K`, `*A` (no live substitution found) and the whole-phrase macro `*BETATESTERS` | replaced at display time by `UnicodeString::ReplaceStringFlag` (every `*` + letter); phrases are never printf formats, so `%` is literal | `contrib/systemiv/lib/unicode/unicode_string.cpp:UnicodeString::ReplaceStringFlag` |
+
+**Lookup** [C] `LookupPhrase`, `RawLookupPhrase`, `DoesPhraseExist`, `code/lib/language_table.h`: `LANGUAGEPHRASE(k)` = current-mode table lookup; NULL key or no table → `"ERROR (null)"`; **a missing id returns the id text itself** (no fallback to English); `RawLookupPhrase(k)` tries `k_<mode>` then `k`, else `"ERROR (k)"`; the miss result points into a shared member overwritten by the next miss (not thread-safe). With a partial language most UI text shows raw ids; whether retail editions shipped complete Japanese/Korean/Portuguese files is **29-U3**. Phrase-id generators in code: `multiwinia_gametype_<type>`, `multiwinia_param_<param>`, `buildingname_<Type>`, `entityname_<Type>`, `researchname_<Type>`, `cratename_<Name>`, `multiwinia_credits_<n>` (n = 1, 2, … until the first missing id), `bootloader_credits_<n>` [C] respective `GetNameTranslated`/`GetTypeNameTranslated`, `code/UI/GameMenuWindow.cpp:ReadCredits`. Word wrapping: [28](28_ui_framework.md).
+
+**Verification.** Re-read: `ParseLanguageFile` (key via narrow `GetNextToken`, text via `GetRestOfUnicodeLine` for UTF-16 or `GetRestOfLine` for 8-bit), `markerLength`, `consumeIfMarker`, `consumeOtherMarker`. Survey `X1a_language_survey.py` over the 9 files: 120 `_kbd` and 75 `_xin` ids in each full file, no `part_` ids, 87 `[KEY…]` markers and 1 `[phrase]` marker per full file, the 3 dropped last lines above.
+
+**Minimal valid example** (written for this document)
+
+```text
+# sample.txt - ASCII, or UTF-16 with BOM
+menu_play                 Play
+menu_play_xin             Press START to play
+hint_zoom_kbd             Hold [KEYCAMERAZOOM] to zoom.\nRelease to stop.
+hint_score                *T scored *S points
+```
+
+**Discrepancies / hazards.** An unterminated `[` makes `markerLength` return 0 and `consumeOtherMarker` move the read position back by one (`inOffset += len + 1` with `len = −2`), so `buildCaption` re-reads the same `[` indefinitely — a hang during `RebuildTables` [I: derived from the code arithmetic; no shipped phrase contains one, survey]. `consume*Marker` copy the partly built caption through freshly allocated buffers whose contents depend on heap reuse [I]. `docs/changes.txt` (Darwinia Steam notes) says the default language comes from `HKCU\software\valve\steam\language`; Multiwinia uses `GetLocaleInfo` and reads no registry key [C].
+
+<a id="fmt-script"></a>
+### 6.2 Cut-scene scripts [B:LEGACY]
+
+**Purpose.** One-command-per-line Darwinia cut-scene scripts [C] `code/script.cpp:Script::RunScript`, `Script::Advance`, `Script::AdvanceScript`, `Script::GetOpCode`, `g_opCodeNames`. Meaning of each command: [30](30_scripting_tutorial_and_cutscenes.md).
+
+**Files.** `data/scripts/*.txt` — 42 files, all Darwinia content; `scripts/*` is excluded from the retail `main.dat` [C] `tools/multiwinia_exclusions.txt`. `RunScript(name)`: a name containing `.txt` opens `data/scripts/<name>`; otherwise a Sepulveda phrase sequence (no-op in FULL); in a demo (`!IsFullVersion()`) names starting `launchpad_purpose` are refused [C]. No Multiwinia path ever starts a script ([30](30_scripting_tutorial_and_cutscenes.md)).
+
+**Encoding.** ASCII, CRLF, newline-terminated (42/42) [C] survey.
+
+**Execution model** [C]: `Advance()` runs at most **one line per call** (once per rendered frame) and only when no wait is pending; a blank or comment line consumes a frame; end of file closes the script; `SkipCutscene` input ends waits and, after `PermitEscape`, aborts the script.
+
+```ebnf
+script  = { line } ;
+line    = [ command ] EOL ;
+command = OPCODE [ ARG1 [ ARG2 [ ARG3 [ ARG4 ] ] ] ] { ignored } ;
+OPCODE  = one of the 43 names of g_opCodeNames, case-insensitive ;   (* unknown -> opcode -1, debug assert, line ignored *)
+ARG1    = token, available as text (nextWord) and as F32 (nextFloat = iv_atof, 0 if absent) ;
+ARGn    = token read on demand with GetNextToken() (n > 1) ;           (* MISSING => CRASH unless noted *)
+```
+
+| Opcodes | Arguments (R required, O optional; w word, f F32, i INT) | Parser ref |
+|---|---|---|
+| `CamCut`, `CamAnim`, `EnterLocation`, `Say`, `TriggerSound`, `StopSound`, `DemoGesture`, `GiveResearch` | ARG1 w (absent → NULL passed on; most handlers dereference it) | `Script::AdvanceScript` |
+| `CamMove` | ARG1 w mount, ARG2 f duration (s) R | same |
+| `CamFov` | ARG1 f fov (degrees), ARG2 i immediate O (default true) | same |
+| `CamBuildingFocus` | ARG1 i building, ARG2 f range R, ARG3 f height R | same |
+| `CamBuildingApproach` | ARG1 i building, ARG2 f range, ARG3 f height, ARG4 f duration (all R) | same |
+| `CamLocationFocus` | ARG1 w location, ARG2 f fov R | same |
+| `Wait` | ARG1 f seconds (absent → 0) | same |
+| `WaitRocket` | ARG1 i building, ARG2 w state R, ARG3 i data R | same |
+| `Highlight` | ARG1 i building | same |
+| `SetMission` | ARG1 w location, ARG2 w mission file R | same |
+| `SetCutsceneMode` | ARG1 i (`atoi(nextWord)` — absent ⇒ CRASH; handler Sepulveda-only) | same |
+| `DestroyBuilding` | ARG1 i building, ARG2 f intensity R | same |
+| `ActivateTrunkPort`, `ActivateTrunkPortFull` | ARG1 i building | same |
+| `CamGlobalWorldFocus`, `CamReset`, `ExitLocation`, `ShutUp`, `WaitSay`, `WaitCam`, `WaitFade`, `WaitPlayerNotBusy`, `ClearHighlights`, `GameOver`, `ResetResearch`, `RestoreResearch`, `RunCredits`, `GodDishActivate`, `GodDishDeactivate`, `GodDishSpawnSpam`, `GodDishSpawnResearch`, `TriggerSpam`, `PurityControl`, `ShowDarwinLogo`, `ShowDemoEndSequence`, `PermitEscape` | none (extra tokens ignored) | same |
+
+**Verification.** `_work/scripts/X1a_script_check.py` (re-run) over 43 files (42 scripts + `data/purity/buyme.txt`): 37 of 43 opcodes used (`Say` 273, `WaitSay` 112, `CamMove` 72, `Wait` 54, `CamBuildingFocus` 52, `Highlight` 44, `WaitCam` 29, `CamReset` 29, `ClearHighlights` 26, `WaitFade` 24, `CamCut` 20, `CamFov` 20, `CamLocationFocus` 15, `EnterLocation` 14, `ExitLocation` 14, `TriggerSound` 14, `StopSound` 8, `PermitEscape` 7, `GodDishSpawnResearch` 5, `SetMission` 4, `DemoGesture` 4, `ShutUp` 4, `TriggerSpam` 4, `GiveResearch` 3, `GodDishSpawnSpam` 3, `WaitPlayerNotBusy` 2, `WaitRocket` 2, and once each `GameOver`, `ShowDarwinLogo`, `CamGlobalWorldFocus`, `CamBuildingApproach`, `ShowDemoEndSequence`, `ResetResearch`, `GodDishActivate`, `GodDishDeactivate`, `RestoreResearch`, `PurityControl`); no unknown opcode; no missing required argument; one surplus argument (`CamCut … 1` in `data/scripts/launchpad_victory.txt`, ignored). Never used: `CamAnim`, `RunCredits`, `SetCutsceneMode`, `DestroyBuilding`, `ActivateTrunkPort`, `ActivateTrunkPortFull`. `SCRIPT_TEST_ENABLED` (`Script::TestScript`) is never defined [B:DEAD].
+
+**Minimal valid example**
+
+```text
+# outro.txt
+CamFov       45 1
+CamMove      overview 6.0
+WaitCam
+Wait         1.5
+ExitLocation
+```
+
+**Discrepancies.** None in shipped data beyond the surplus argument above.
+
+<a id="fmt-purity-misc"></a>
+### 6.3 `purity/buyme.txt` — purity-control script [B:DEAD]
+
+**Purpose.** A cut-scene script ([fmt-script](#fmt-script) grammar) for a "buy me" outro: `EnterLocation mine`, `CamMove buyme1 80`, `WaitFade`, `TriggerSound cutscene2`, six `Say puritycontrol_<n>` (n = 1…6), `WaitCam`, `WaitSay`, `StopSound cutscene2`, `PurityControl` [C] file.
+
+**Files.** `data/purity/buyme.txt` only. No code path opens `data/purity/` (the only `purity` hits in `code/` are `#ifdef PURITY_CONTROL` guards and the `PurityControl` command) and every packaging exclusion list removes `purity` [C] `tools/multiwinia_exclusions.txt`.
+
+**Encoding / grammar / fields.** As [fmt-script](#fmt-script); verified by `X1a_script_check.py` (included in the 43 files).
+
+The `PurityControl` command (compiled into [B:FULL]) deletes every file in `users/<profile>/`, opens the "buy now" web page and calls `exit(0)` [C] `code/script.cpp:Script::RunCommand_PurityControl` — documented for completeness; a new game must not replicate it.
+
+**Minimal valid example.** Any [fmt-script](#fmt-script) file, e.g. one line `Wait 1.0`.
+
+**Discrepancies.** [I] The set was meant to be copied over `data/` in cracked builds (inferred from names and content).
+
+<a id="fmt-purity"></a>
+### 6.4 `data/purity/` — purity-control data set (directory convention) [B:DEAD]
+
+**Purpose.** A self-contained Darwinia promotional/anti-piracy data set; each file uses a format defined elsewhere.
+
+| File | Format | Content [C] file |
+|---|---|---|
+| `data/purity/buyme.txt` | [fmt-purity-misc](#fmt-purity-misc) | outro script |
+| `data/purity/game.txt` | [fmt-game-txt](#fmt-game-txt) | cut-down `game.txt` whose containment-completion event runs `buyme.txt`: 11 locations, 0 global buildings, 11 research rows, 6 events |
+| `data/purity/map_mine.txt` | [fmt-level-file](#fmt-level-file) (map) | `mine` map variant: world 2000×2000, one tile with a 5-power guide grid, no flatten areas; colour files `landscape_mine.bmp`, `waves_containmentfield.bmp`, `water_default.bmp` |
+| `data/purity/mission_mine_enable.txt` | [fmt-level-file](#fmt-level-file) (mission) | camera mounts `start`, `buyme1`; no buildings or units |
+
+**Verification.** `X1a_level_survey.py` (purity set, 2 files: block orders in §4.1.2) and `X1a_script_check.py` (buyme). `PURITY_CONTROL` is never defined [C].
+
+**Minimal valid example.** Not applicable (convention over other formats).
+
+**Discrepancies.** None.
