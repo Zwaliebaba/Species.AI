@@ -420,6 +420,41 @@ All English strings behind the phrase ids below are Introversion text (`data/lan
 | `APP_NAME` shown by the ray tracer, `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/loaders/raytrace_loader.cpp:RenderMessage`, `code/benchmark.cpp` | new product constant |
 | Profile names `AttractMode`, `AccessAllAreas`, `game_unlockall.txt` | names | `code/app.cpp:App::LoadProfile` | `__attract__`, `__unlockall__` |
 
+<!-- from X1b_asset_formats -->
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia", "Darwinian" (names in `stats.txt`, `sounds.txt` source names `MultiwiniaInterface`, file names `darwinian*.bmp`) | name/brand | `data/stats.txt`, `data/sounds.txt`, `data/animations/darwinian*.bmp` | "Game", "Sprite", "Unit" |
+| Dr Sepulveda portraits `sepulveda1–5.bmp`; `OTHER Sepulveda` sound source; `sepulveda_appear/disappear.ogg` | art/name/audio | `data/sepulveda/*`, `data/sounds.txt`, `tools/sounds.txt` | "Mentor portrait 1–5", "Mentor" |
+| "Purity Control" promo content (`buyme.txt` phrases `puritycontrol_1..6`, `game.txt`, map/mission) | text/name | `data/purity/*` | omit |
+| 139 `.shp` models + 133 `.max` sources | art | `data/shapes/`, `data/shapes/source/` | new models (glTF) |
+| 506 BMP images (icons, help pictures, thumbnails, sprites, textures, fonts, terrain ramps, animation sprites) | art | `data/**.bmp` | new art; terrain ramps may be regenerated procedurally |
+| `.anim` choreographies (6) | art/animation | `data/animations/*.anim` | new explainer animations |
+| 1 332 Ogg samples incl. licensed retro tracks by "Tresk", "Trash80", "DMA-SC" (file names) | audio (incl. third-party music) | `data/sounds/`, `data/mwsounds/` | new audio library |
+| `sounds.txt` / `effects.txt` authored mix data (event bindings, parameter values) | data (creative tuning) | `data/sounds.txt`, `data/effects.txt` | re-author; effect *types* (chorus, echo …) are generic |
+| Gesture training vectors / demo strokes | data | `data/gestures.txt`, `data/gesture_demos/*` | retrain (Rubine algorithm is public) |
+| "redshirt2" magic, "Futurewar" exporter name, "Introversion Software" author string | text/brand | `text_file_writer.cpp`, `ShapeExporter.cpp` | none needed / own magic |
+| `animator.exe`, `animator.dat` (tool binary + UI data) | software | repo root | own tooling |
+| `banner_template.psp` | art source | `data/icons/` | omit |
+| Third-party brands in formats: RAR/UnRAR (format licence), DirectSound effect names `DSound_*` (Microsoft), Paint Shop Pro, Photoshop `.grd`, amBX (`ambx.dat`) | third-party | as listed | avoid RAR; use generic effect names |
+
+<!-- from X2b_asset_catalogue_audio -->
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| All 1332 sound samples (898 live) — Introversion recordings/designs, plus third-party music | audio | `data/sounds/`, `data/mwsounds/` (catalogue §25.B) | Commission a new set using the per-source counts of §10.K as the brief (≈ 900 live variants; 1–3 variants per one-shot is usually enough for prototypes) |
+| Third-party music: `tresk_-_excuses`, `tresk_-_faces-of-a-fashion`, `tresk_-_impact-of-silence`, `tresk_-weeklies-_schroeders-failure` (artist "tresk"), `trash80_-_pain-fade-down` (artist "trash80"), `dma_sc-visitors_from_dreams` ("dma_sc") | audio (third-party, not shipped with Multiwinia) | `data/sounds/` | Do not reuse; commission `music_*` |
+| Retro-homage loader tunes `fodder`, `speccyloader`, `pang`, `matrix`, `twoataris` | audio (possibly derived from third-party game music) | `data/sounds/` | Do not reuse |
+| Lobby pad set `MultiLobbyAmb1..10`, altitude bed `High1..7`, `evil`, `alien_lands3`, `rumble1`, `white_noise`, `shipheartbeat1` | audio (signature ambience) | `data/mwsounds/`, `data/sounds/` | `amb_lobby_pad_01..`, `amb_altitude_01..`, `amb_ground_01..` |
+| Voice/bark sets (`darwin_*`, `DSelect*`, `Attack*`, `Retreat*`, `Hit*`, `LaserHitDarwinian*`, `officer_*`, `squaddie_chatter*`, `GDSpeech*`, `YesSir*`, `Aye*`, `Attention*`, `Marching*`, `Formation*`, `DStrain*`) | audio (character voices) | `data/sounds/`, `data/mwsounds/` | New character voices; names `vo_unit_select_01`, `vo_unit_attack_01`, `vo_commander_ack_01` |
+| Announcer stings `CrateReward_*` (incl. `CrateReward_Futurewinians`, `CrateReward_Rocketwinians`), `GameOver*`, `YouWon`, `YouLost2`, `Player_Capture_Statue`, `Enemy_Capture_Statue`, `KOH_Zone_*`, `Crate_Capture*` | audio + embedded IP names (Futurewinians, Rocketwinians, KOH, Statue) | `data/mwsounds/` | `vo_reward_<function>`, `vo_match_win`, `vo_match_lose`, `sfx_zone_captured` |
+| File and group names embedding IP names: `darwin_*`, `darwinian_threat_*`, `darwiniandie`, `darwiniancreate`, `darwinnianonfire`, `darwinnianburncry`, `CrateRewrad_Darwinians*`, `sepulveda_appear`, `sepulveda_disappear`, `koh_zone*`, `KOH_ZoneActive`, `gdspeechgroup`, `souldestroyer`/`soul_dest_*`, `redvirus_*`, `multilobbyambiences`, `MultiLobbyAmb*` | name | `data/sounds.txt` SAMPLEGROUPs, file names | Functional names (`unit_die`, `unit_spawn`, `zone_active`) |
+| Source/event names (IP-flavoured): `Darwinian`, `Officer`, `Squadie`, `SoulDestroyer`, `Virii`, `Sepulveda`, `MultiwiniaInterface`, `MultiwiniaZone`, `CratePowerup` reward names `Bitzkreig`, `Rocketwinians`, `Darwinians`, `Infection`, `Plague` | name | `data/sounds.txt`, `code/sound/soundsystem.cpp:GetSoundSourceName`, `code/worldobject/crate.cpp:Crate::GetName` | `Unit`, `Commander`, `Trooper`, `MatchUI`, `CaptureZone`, `Reward_<function>` |
+| Encoder vendor strings (`Xiph.Org libVorbis I …`, `aoTuV b3`) | metadata (open source, BSD) | Ogg comment headers | none needed |
+
+Placeholder plan [I]: (1) keep the binding model (source × event → blueprint → sample/group), (2) generate silent or synthesised placeholder `.ogg`/`.wav` files named by function for the 182 live events (one file per event, more variants later), (3) bind the currently silent but gameplay-relevant events listed in §10.D (match end, crate expiry, squad grenade throw, laser create/hit, turret target/rocket fire), (4) add a real music system (none exists in live content), (5) give every looping event an explicit stop rule and release all location sounds on exit.
+
 <!-- from X4_level_catalogue -->
 ## IP register
 

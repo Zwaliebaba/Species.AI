@@ -690,7 +690,7 @@ for each vertex pair (v1 = j, v2 = j+1), prevH1 = prevH2 = 0 at strip start:
     duplicated degenerate-join vertices are kept at equal heights (isIdentical on x, z)
 ```
 
-So waves are a sum of two travelling sinusoids per axis (amplitude up to 7·(1.2 + 0.9) = 14.7 per axis), scaled by depth so they vanish at the shore; brightness is a wave-height proxy times "shoreness" plus the per-vertex shore whitening, so deep water is dark and coasts are bright [C]+[I]. `waveX[ix − 1]` is read out of bounds when ix = 0 [I] (only if the very first water column is needed; not in practice). `Round` is the macro `(int)(a)` (truncation toward zero; the comment above it warns it is not repeatable, but the macro form is a plain cast) [C] `code/lib/math_utils.h:Round`. Constants are file-scope `float const`: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, plus the local `scaleFactor = 7.0` [C].
+So waves are a sum of two travelling sinusoids per axis (peak amplitude 7·(1.2 + 0.9) = 14.7 along x and 7·(0.9 + 0.65) = 10.85 along z, ±25.55 combined), scaled by depth so they vanish at the shore; brightness is a wave-height proxy times "shoreness" plus the per-vertex shore whitening, so deep water is dark and coasts are bright [C]+[I]. `waveX[ix − 1]` is read out of bounds when ix = 0 [I] (only if the very first water column is needed; not in practice). `Round` is the macro `(int)(a)` (truncation toward zero; the comment above it warns it is not repeatable, but the macro form is a plain cast) [C] `code/lib/math_utils.h:Round`. Constants are file-scope `float const`: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, plus the local `scaleFactor = 7.0` [C].
 
 ### 13.6 Water assets
 
@@ -713,4 +713,97 @@ So waves are a sum of two travelling sinusoids per axis (amplitude up to 7·(1.2
 | `water_yellow.bmp` | 128 × 128, 8-bit | same | 2 | 0 |
 
 The wave table size is taken from the bitmap width (`m_numColours = width`), so a new table may have any width [C] `code/water.cpp:Water::Water`.
+
+## 14 Landscape queries used by gameplay
+
+[C] `code/landscape.cpp`. All are read-only; all simulation reads go through `g_app->m_location->m_landscape` (no cached pointers), which is why mid-game regeneration is safe (§15).
+
+| Function | Behaviour | Edge cases |
+|---|---|---|
+| `m_heightMap->GetValue(x, z)` | bilinear height (§3) — 394 call sites | off-map rules of §9.3 |
+| `m_heightMap->GetData(i, j)` | raw sample; off-grid → `outsideHeight` | — |
+| `m_normalMap->GetValue(x, z)` | bilinear, non-normalised normal (§10.1) | off-map rules of §9.3; outside value (0,1,0) only via `GetData` |
+| `GetWorldSizeX/Z()` | extent (§9.1); 1e6 before a map exists | — |
+| `IsInLandscape(p)` | `0 ≤ x < sizeX'` and `0 ≤ z < sizeZ'` | — |
+| `RayHit(start, dir, *hit)` | normalises dir; if the start cell is inside (`0 ≤ x0 < cols` and `0 ≤ z0 ≤ rows` — note `≤` on z) calls `UnsafeRayHit`; otherwise intersects the 2-D ray with the two grid edges facing it (chosen by the signs of dir.x and dir.z) using `SegRayIntersection2D`, returns false if neither is hit, else restarts from the entry point with entry height `start.y + λ·dir.y`, λ = (entry.x − start.x)/dir.x | the source comment warns it may report hits behind the start; a ray with dir.x = 0 entering from outside divides by zero [I] |
+| `UnsafeRayHit` | grid walk: test `RayHitCell`; step in z if the ray crosses the cell's far z-edge segment, else step in x; stop when leaving the grid. Four quadrant variants; dir.x = 0 or dir.z = 0 falls into the last (south-east) branch | [I] for the zero-component case |
+| `RayHitCell(x0, z0)` | two triangles per cell: (c00, c01, c10) then (c01, c10, c11) via `RayTriIntersection(…, 1e10)` — the same diagonal as the render mesh | — |
+| `SphereHit(c, r)` | debug-asserts 0 < r < 200; scans samples in the bounding box (indices clamped to [0, size]); returns the distance to the nearest **sample point** if ≤ r, else −1 | no caller outside `code/landscape.cpp` [C] grep — dead in practice |
+| `DeleteTile(id)` | removes a tile from the level's `LandscapeDef` and re-runs `Init` | [B:EDITOR] (`code/interface/landscape_window.cpp`) |
+| `RenderHitNormals()` | debug lines of normals × 20, colour (255, 90, 90) | no caller — dead |
+
+`RayHit` callers: `code/location.cpp`, `code/user_input.cpp`, `code/worldobject/armour.cpp`, `code/worldobject/tank.cpp`, `code/worldobject/weapons.cpp` and editor/cheat windows [C] grep.
+
+## 15 Lifecycle and regeneration
+
+| Event | Effect | Evidence |
+|---|---|---|
+| Level load | `Location::Init` → `Landscape::Init(def)` (full pipeline, normals, renderer) → `new Water()`; buildings then sample the height map | [C] `code/location.cpp:Location::Init`, `Location::InitLandscape` |
+| Graphics options "apply" or Other options "apply" while a location is loaded | `Landscape::Init(def)` again (full regeneration; also calls `m_water->GenerateLightMap()` because water exists), then the water is deleted and rebuilt | [C] `code/interface/prefs_graphics_window.cpp`, `code/interface/prefs_other_window.cpp` |
+| `Location::RegenerateOpenGlState` (screen-mode change, resource regeneration) | `Landscape::BuildOpenGlState` (renderer rebuilt from the unchanged height map; colours re-drawn from the current `AppRandom` state) + `Water::BuildOpenGlState` (D3D buffers only) | [C] `code/location.cpp:Location::RegenerateOpenGlState` |
+| Burn patch added | renderer rebuilt with new colours | [C] `code/location.cpp:Location::AddBurnPatch` [B:LEGACY] |
+| Editor tile / flatten edits, scaling (× 0.95 / × 1.05 of tile positions, sizes and world size, also moving buildings, units and camera mounts), "randomise" seed | `Landscape::Init` | [C] `code/interface/landscape_window.cpp:ScaleLandscapeButton::MouseUp`, `LandscapeTileButton::MouseUp` [B:EDITOR] |
+| Level unload | `Location::Empty` deletes the water; `Landscape::~Landscape` → `Empty` deletes renderer, height and normal maps | [C] `code/landscape.cpp:Landscape::Empty` |
+
+`Landscape::Init` reallocates the height and normal maps whenever the cell size changed **or** the stored world size differs from the requested one — the stored value is the snapped extent, so in practice it reallocates every time [C]. Regeneration is a pure function of `LandscapeDef`, so heights after an options "apply" are identical to the original ones and the simulation is unaffected, provided the regenerating thread uses the same FP environment (§17.3) [I].
+
+## 16 Worked example — `mp_koth_2P_1`
+
+### 16.1 Input (numbers from `data/levels/mp_koth_2P_1.txt`)
+
+Landscape block: `worldSizeX 2700`, `worldSizeZ 2700`, `cellSize 15.76`, `outsideHeight -15.39`, `landColourFile landscape_launchpad.bmp`, `wavesColourFile waves_launchpad.bmp`, `waterColourFile water_launchpad.bmp` (no `maxHeight`). No flatten areas. Three tiles:
+
+| Tile | x | y | z | size | frac dim | height scale | desired height | gen method | seed | lowland smooth | guide power | guide string |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 204 | −3.98 | 260 | 2264 | 1.20 | 4.00 | 220 | 1 | 269491 | 1.00 | 2 | `AAAAAAAAAAAAAAAAAA` (9 zeros) |
+| 1 | 1274 | 1.57 | 132 | 1014 | 1.20 | 4.00 | 220 | 1 | 904945 | 1.00 | 2 | `AAAAAAAAAAAAAAAAAA` (9 zeros) |
+| 2 | 1129 | 0.00 | 985 | 834 | 1.20 | 1.00 | 300 | 0 | 1 | 1.00 | 0 | – |
+
+### 16.2 Derived values
+
+Produced by `python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> detail mp_koth_2P_1.txt` [I] (the oracle implements §5–§9; hand-checkable steps are shown).
+
+- `cellSize` = f32(15.76) = 15.760000228881836; `outsideHeight` = f32(−15.39) = −15.390000343322754.
+- Grid: 2700 / 15.760000228881836 = 171.32 → **172 × 172** samples; extent 2710.720039 × 2710.720039.
+- fd = f32(1.2) = 1.2000000476837158 ⇒ fracDimModifier = 30.7 · f32(e^(−7.8000003)) = 0.012578859674977138; ls = 1.0 ⇒ smoothingModifier = 15.353 · f32(e^(−3.1)) = 0.6916403936557471.
+
+| Quantity | Tile 0 | Tile 1 | Tile 2 |
+|---|---|---|---|
+| reqWorldCells = ⌊size / cellSize⌋ | ⌊143.65⌋ = 143 | ⌊64.34⌋ = 64 | ⌊52.92⌋ = 52 |
+| k = ⌈log₂(reqWorldCells − 1)⌉ → n | ⌈log₂ 142⌉ = 8 → 257 | ⌈log₂ 63⌉ = 6 → 65 | ⌈log₂ 51⌉ = 6 → 65 |
+| guide grid | r = 3, scale 64, points at 64/128/192, all 0 | r = 3, scale 16, points at 16/32/48, all 0 | none |
+| iterations / first step | 9 − 2 = 7 / 64 | 7 − 2 = 5 / 16 | 7 − 0 = 7 / 64 |
+| comp | 4 × 0.012578859… × 0.691640… = 0.03480018982936636 | 0.03480018982936636 | 0.00870004745734159 |
+| tile highest after posY | 11.67633525289311 | 27.39792619447322 | 39.5289374012995 |
+| range = highest − outside + 0.001 | 27.067335596215866 | 42.78892653779597 | 54.91993774462225 |
+| factor = (desired − outside)/range | 8.696459963951211 | 5.501189662596465 | 5.742723194805618 |
+| posXi = (ushort)(x / cell + 0.5) | ⌊12.944 + 0.5⌋ = 13 | ⌊80.84 + 0.5⌋ = 81 | ⌊71.64 + 0.5⌋ = 72 |
+| posZi | ⌊16.497 + 0.5⌋ = 16 | ⌊8.376 + 0.5⌋ = 8 | **62** (see below) |
+| numCells | 143 | 64 | 52 |
+| tile cell = size / n | 8.809338521400779 | 15.6 | 12.830769230769231 |
+
+Precision trap illustrated: for tile 2, 985 / 15.760000228881836 = 62.4999991 → + 0.5 = 62.9999991 → posZi = 62. Had `cellSize` been parsed in full double precision (15.76 exactly as a double), 985 / 15.76 = 62.5 → 63.0 → posZi = 63, shifting the tile's footprint by one world cell. This is why `iv_atof` rounding must be replicated.
+
+### 16.3 First displacement steps of tile 2 (unit-test vector)
+
+`python3 -I _work/scripts/S_23_terrain_oracle.py <SRC> trace mp_koth_2P_1.txt 2 24` (method 0, seed 1, n = 65, p = 0). Pass 1 (step 64) has one cell; pass 2 (step 32) has four cells.
+
+| # | Event | Value |
+|---|---|---|
+| 1 | RNG draw | 41 |
+| 2 | Square(32, 32, h = 32): base = mean of four corners = −15.390000343322754; noise | +54.918937744622255 |
+| 3 | write (32, 32) — becomes the tile's highest sample | 39.5289374012995 |
+| 4 | RNG 18467; Square(16, 16, 16): base = (3·outside + 39.5289…)/4 = −1.6602659071671901; noise −0.4416614889824001 | write (16, 16) = −2.1019273961495903 |
+| 5 | RNG 6334; Square(16, 48, 16): base −1.6602659071671901; noise +2.1302986002057267 | write (16, 48) = 0.47003269303853656 |
+| 6 | RNG 26500; Diamond(16, 32, 16): base = (W + E + S + N)/4 = (−15.39 + 39.5289 − 2.1019 + 0.4700)/4 = 5.626760588716423; noise −5.800023064758535 | write (16, 32) = −0.17326247604211176 |
+| 7 | RNG 19169; Square(48, 16, 16): base −1.6602659071671901; noise −0.5904718394818702 | write (48, 16) = −2.2507377466490603 |
+| 8 | RNG 15724; Diamond(32, 16, 16) (low-x edge of cell x = 32): base 4.9465679787945245; noise +0.3372408885970395 | write (32, 16) = 5.2838088673915635 |
+| 9 | RNG 11478; Square(48, 48, 16) | write (48, 48) = −0.6203952883991724 |
+| 10 | RNG 29358; Diamond(48, 32, 16) | write (48, 32) = −1.7554467377951273 |
+
+The whole tile makes 48 387 traced events (draws, noise calls and writes, including the 65² posY writes).
+
+### 16.4 Result
+
+World heights range −15.390000343322754 … 273.38014287056404; the peak is below tile 2's `desiredHeight` of 300 because no world sample coincides with tile sample (32, 32) (§7.2). Probe samples: h[0, 0] = −15.390000343322754, h[43, 43] = 64.11465376675797, h[86, 86] = 99.71780778328521, h[129, 57] = 80.84683847539341. 48 of the 48 buildings in the file stand above sea level. 259 tile-merge samples hit the (−1, 0) truncation case of §7.3. Grid digest (SHA-256 of the 172 × 172 little-endian float64 values, z outer, x inner, first 16 hex digits): **`bb4397625e5006a1`** — identical to `mp_domination_2P_2`, which reuses the same landscape blocks.
 

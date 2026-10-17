@@ -251,6 +251,29 @@
 | `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | Bootloader issues (GoL-glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | Loaders not compiled in Multiwinia; widescreen stretching is consistent with fixed 320×256 / 800×600 canvases in Speccy/Amiga/Credits (`IsOffscreen` 800×600) | loader sources |
 | `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)`: −range < result < range | Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects Soul/DemoEnd spawn spreads quoted above) | `contrib/systemiv/lib/math/random_number.cpp:sfrand` |
 
+<!-- from X1b_asset_formats -->
+## Docs-vs-code discrepancies
+| Doc / comment | Says | Code does | Ref |
+|---|---|---|---|
+| `code/lib/bitmap.h` comment on `ConvertColourToAlpha` | luminance → alpha | **green channel** → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
+| `data/effects.txt` header | "Default: the starting value" | defaults are not applied to parameters omitted in `sounds.txt` (they are fixed 0); editor seeds with min | `soundsystem.cpp:ParseSoundEffect`, `soundeditor_window.cpp` |
+| `data/stats.txt` header | `SPED` in m/s, `NAME` = creature name | rows bound by position; speed × (1 + difficulty/10); instance copy truncated to `unsigned char` | `entity.cpp:EntityBlueprint::Initialise`, `GetStat`, `Entity::SetType` |
+| `docs/changes.txt` (Darwinia) | mods in `mods/<name>/`, "stats.txt reloaded when a mod is selected" | mod look-up compiled out in Multiwinia (`USE_DARWINIA_MOD_SYSTEM` undefined) | `code/lib/resource.cpp` |
+| `tools/ShapeExporter` description | "Futurewar Shape Format v1.0" | game-side parser has diverged (exporter no longer compiles against `shape.h`) | `ShapeExporter.cpp` vs `code/lib/shape.h` |
+| `code/lib/shape.cpp` `WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | `ShapeFragment::WriteToFile`, `ShapeMarker::WriteToFile` |
+| `code/gesture_demo.h` comment | "Returns a mouse pos scaled for the current screen resolution" | scales both axes by screen **height** only; interpolation weights swapped | `GestureDemo::GetCoords` |
+
+<!-- from X2b_asset_catalogue_audio -->
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code/data does | Ref |
+|---|---|---|---|
+| `docs/multiwinia audio.docx` (P16) | Game Over / You've won / You've lost sounds | Events fired by `Multiwinia::DeclareWinner`; samples `GameOver1/2`, `YouWon`, `YouLost2` exist in `data/mwsounds/` but no EVENT block binds them | `data/sounds.txt` `OTHER MultiwiniaInterface` |
+| `docs/sound changes.txt` (P16) | Crate `Expired`; carryable `Lift`/`Carry`/`Drop` | `Expired`, `Lift`, `Carry` fired but unbound; only `Statue Drop` bound (sample `StatueDrop3`; `StatueDrop`, `StatueDrop2`, `StatueDrop4`, `Drop_Statue`, `Drop_Statue2`, `carry1..4` unused) | §10.D, §10.J |
+| `code/sound/sample_cache.cpp:CachedSampleManager::CleanUp` comment | "Largest song takes 13 MB" | the largest track decodes to 30 389 760 bytes, but no music is shipped; the largest **shipped** files are `data/sounds/altitude1.ogg` (91.3 s ≈ 8.05 MB decoded, dead data) and, live, `data/sounds/evil.ogg` (53.9 s ≈ 4.75 MB) | §10.I |
+| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run this script from the Darwinia data directory" | they ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | §10.J |
+| P16 §10.2 | "130 SAMPLEGROUPs referencing 1120 sample entries" | 131 definitions / 1126 lines; 130 distinct names / 1120 distinct entries (duplicate `officercreate`) | §10.A |
+
 <!-- from X4_level_catalogue -->
 ## Docs-vs-code discrepancies
 - `docs/multiwiniareleasenotes-beta.txt` (e.g. "VERSION 1.9.24": Assault "The Woeful Plateau, The Third Kind, Beyond the Pale", Rocket Riot "Echoes of the Future, Heart of Chaos, Threads of Fate"; later CTS "Price of War, The Tortured Expanse, Scorched Earth", Blitzkrieg "The Apex of Infinity, Upon the Blazing Sea, Gridlock", KOTH "The Bitter Front, The Walled Garden, Barbs of Madness", Domination "Barriers to Progress, Leap of Faith, A Monument to the Heavens") describes beta map rotations that match neither the beta-group `PERMITTED_MAPS` in `code/lib/universal_include.h` nor the `tools/multiwinia_inclusions_beta_test_group_*.txt` lists; the code/data reflect a different (probably final) rotation. Documented: the code.

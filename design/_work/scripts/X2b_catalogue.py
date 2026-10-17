@@ -1,7 +1,7 @@
 """X2b: Multiwinia audio asset catalogue.
 
 Usage:
-  python3 -I X2b_catalogue.py <SRC multiwinia root> <OUT _work dir> [<notes.py>]
+  python3 -I X2b_catalogue.py <SRC multiwinia root> <OUT _work dir> [<notes.py> [<scratch dir>]]
 
 Reads (as data only, never executed):
   data/sounds/*.ogg, data/mwsounds/*.ogg   -> Ogg/Vorbis identification + comment headers, last granule
@@ -14,7 +14,9 @@ Reads (as data only, never executed):
   OUT/_work/manifest.csv                   -> vcproj build membership of each code file
 Writes:
   OUT/_work/drafts/X2b_samples.csv, X2b_sound_events.csv, X2b_callsites.csv, X2b_summary.txt,
-  X2b_callsite_context.txt (review aid), X2b_md_*.md (generated markdown tables for the draft)
+  OUT/_work/coverage/X2b_asset_catalogue_audio.csv;
+  <scratch>/X2b_callsite_context.txt (review aid, contains code context - keep out of drafts),
+  <scratch>/X2b_md_*.md (markdown tables spliced into the draft by X2b_assemble.py)
 The optional notes.py is a plain dict literal file (parsed with ast.literal_eval, not imported).
 """
 import ast
@@ -568,6 +570,9 @@ def main():
     if len(sys.argv) > 3:
         notes = ast.literal_eval(open(sys.argv[3], encoding='utf-8').read())
     drafts = os.path.join(outw, 'drafts')
+    # intermediate files (markdown tables, call-site context with verbatim code) go to a scratch dir
+    scratch = sys.argv[4] if len(sys.argv) > 4 else drafts
+    os.makedirs(scratch, exist_ok=True)
     summary = []
 
     # ---------------- audio files
@@ -761,7 +766,7 @@ def main():
             s['obj'] = a[0]
             w.writerow([s['file'], s['line'], s['func'], s['call'], a[0], a[1], other, team,
                         'yes' if s['commented'] else '', 'yes' if s['pp_active'] else 'NO', s['pp'], s['vcproj']])
-    with open(os.path.join(drafts, 'X2b_callsite_context.txt'), 'w') as fh:
+    with open(os.path.join(scratch, 'X2b_callsite_context.txt'), 'w') as fh:
         for s in sites:
             fh.write('=== %s:%d %s %s(%s) commented=%s active=%s pp=%s vcproj=%s\n' % (
                 s['file'], s['line'], s['func'], s['call'], ', '.join(s['args']), s['commented'], s['pp_active'],
@@ -986,7 +991,7 @@ def main():
         return str(s).replace('|', '\\|')
     def short_ev(e):
         return ' '.join(e.split(' ')[1:])
-    with open(os.path.join(drafts, 'X2b_md_samples.md'), 'w') as fh:
+    with open(os.path.join(scratch, 'X2b_md_samples.md'), 'w') as fh:
         for fo in ('sounds', 'mwsounds'):
             rs = [r for r in srows if r['folder'] == fo]
             fh.write('\n### `data/%s/` (%d files)\n\n' % (fo, len(rs)))
@@ -1013,7 +1018,7 @@ def main():
             st = st.rstrip(']')
             out.append('`%s`' % ref + ('' if st == 'FULL' else ' [%s]' % st))
         return '<br>'.join(out) if out else '—'
-    with open(os.path.join(drafts, 'X2b_md_events.md'), 'w') as fh:
+    with open(os.path.join(scratch, 'X2b_md_events.md'), 'w') as fh:
         fh.write('| # | Source | Event | Data blocks: [Sample\\|Group name] pos/loop/inst/team md=min-distance v=volume f=pitch a/s/r/ld=ADSR,loop-delay fx | Files | Fired in FULL | Gameplay trigger | Code trigger site(s) |\n')
         fh.write('|---|---|---|---|---|---|---|---|\n')
         i = 0
@@ -1024,7 +1029,7 @@ def main():
             fh.write('| %d | %s %s | %s | %s | %d | %s | %s | %s |\n' % (
                 i, r['group'], r['object_type'], r['event'], md_esc(r['blueprint']).replace(' || ', '<br>'),
                 r['n_samples'], r['fired_in_FULL'], md_esc(r['gameplay_trigger']), md_esc(site_short(r['code_sites']))))
-    with open(os.path.join(drafts, 'X2b_md_events_codeonly.md'), 'w') as fh:
+    with open(os.path.join(scratch, 'X2b_md_events_codeonly.md'), 'w') as fh:
         agg = collections.OrderedDict()
         for r in rows:
             if r['in_data'] == 'yes':

@@ -233,6 +233,23 @@
 3. [U] Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (state inherited from the caller) — determines whether the first 7 s smear. Resolve by tracing GL state at `Script::RunCommand_RunCredits` / outro camera.
 4. [U] Exact reachability of `PageDarwinia` (and therefore `CampaignButton`) in FULL — P18 to confirm; affects whether §1.6's bug is player-visible.
 
+<!-- from X1b_asset_formats -->
+## [U] Unknowns
+1. Exact version of `tools/Rar.exe` (strings are packed; no version resource found) and whether retail `.dat` files were produced with RAR 2.9 or 3.x method numbering — resolve by running `Rar.exe` without arguments on Windows or by inspecting a retail `.dat` header (`animator.dat` shows unpack version 29).
+2. Whether the Shaman interface (which loads the RLE8 `textures/shaman_background.bmp`) is reachable in Multiwinia play — resolve with P05/P09 reachability analysis or a run.
+3. Whether data-only marker names (`MarkerIsland*`, `MarkerTrunk*to*`, `MarkerFloat*`, …) are looked up via a `sprintf` pattern not caught by the literal grep — resolve with a full call-graph search of `LookupMarker` arguments.
+4. `animator.exe` behaviour (key editing, any fields it writes beyond `AnimatedPanel::Write`) — no source in tree; resolve by running the tool.
+5. `.psp` / `.grd` internal block contents beyond the header (irrelevant to the game).
+6. Content equality of duplicated images (`animations/flag*.bmp` vs `icons/flag*.bmp`, `animations/darwinian.bmp` vs `sprites/darwinian.bmp`) — resolve by hashing.
+
+<!-- from X2b_asset_catalogue_audio -->
+## [U] Unknowns
+
+1. [U] Audible content of voice files (intelligible words vs Darwinian gibberish) — audition `data/mwsounds/YesSir*`, `Attack*`, `Retreat*`, `CrateReward_*`, `GDSpeech*`, `GameOver*`, `YouWon`, `YouLost2`.
+2. [U] Whether the retail `sounds.dat`/`sounds2.dat`/`menusounds.dat` match this tree's manifests (archives are not in the repository) — list a retail install's archives (`code/lib/resource.cpp` parsing, P14 `scripts/P14_rar_list.py`).
+3. [U] Provenance of non-music samples (in-house recordings vs licensed libraries) — affects only the legal note; all are treated as Introversion IP below.
+4. [U] Behaviour of objective-less maps (Contradiction 3) and stationary loops (Contradiction 1) at runtime — play-test.
+
 <!-- from X4_level_catalogue -->
 ## [U] Unknowns
 | # | Unknown | What would resolve it |

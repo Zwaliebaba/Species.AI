@@ -110,3 +110,8 @@
 ## S27 (27_audio_engine.md) — done, ~154 KB
 - Voice stealing confirmed (lowest-priority channel replaced, no compare; priority = perceived volume × 0.75 per louder copy of same event); volume curves 5 dB (DSound) vs 4.343 dB (software) confirmed. 5 contradictions resolved: master-volume slider (code/UI/soundsliderbutton.h) IS live (P17b/P18 said dead); WAV decoder unreachable; record-to-file hook no caller; smoothed params start values; sound tools reachable only via cheat window. New: nearest-emitter crowd sounds discarded unless emitter within ~316 units of camera; software mixer likely crashes if selected; no audio device → queued sounds never freed. 27-U1..U14.
 ## Phase 3 launched: S32
+
+## X2b_asset_catalogue_audio — done
+- 10.A–K: method + P16 check (0 mismatches; corrections: officercreate defined twice in sounds.txt; music releases 3.3–20.7 s not 0); name resolution/packaging; full event table (256 data pairs); 213 events fired by code with no data; stop sites; music; UI; voice; stats; unused samples. 25.A pipeline, 25.B one row per file (1332). CSVs: X2b_samples.csv, X2b_sound_events.csv (469), X2b_callsites.csv (285), X2b_summary.txt. [U]=4.
+- Music NEVER heard in MW (triggers compiled out or Darwinia-only; all 11 tracks excluded from shipped archives; triggering would release-assert). 182/256 bound events live; 898 files can play; 192 unused (still shipped). Bugs: crate decay sound uses "%pc" format → silent; stationary loops (Assault pulse-bomb) never stopped. Match-end voice samples unbound.
+## Phase 3 launched: S10

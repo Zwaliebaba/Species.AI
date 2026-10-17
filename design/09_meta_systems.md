@@ -165,3 +165,245 @@ Resolved: P20 described `PageDarwinia` (and hence `CampaignButton`) as "edge-rea
 **Key consequence for the new game.** The only live option screens are Settings → {Screen, Graphics, Sound, Other}, reached through *Help and Options* from both the front end and the in-game Esc menu. Everything that would need a persistent online service (achievements, leaderboards, statistics, profiles) is absent or stubbed in this source release.
 
 ---
+## 2 Front-end architecture and full screen flow
+
+### 2.1 Lifecycle: `GameMenu` (controller) and `GameMenuWindow` (the screen)
+
+`GameMenu` is a persistent controller object owned by `App` (`g_app->m_gameMenu`, created once in `App::Initialise`) — **not a window** [C] `code/app.cpp:App::Initialise`. It owns the map catalogue, the 3D backdrop and creation/destruction of the one front-end window, `GameMenuWindow` ("multiwinia_mainmenu_title", the name doubles as the phrase id of the title) [C] `code/game_menu.cpp`, `code/UI/GameMenuWindow.cpp`. Everything else (pages, transitions, lobby logic, browser) lives in `GameMenuWindow`.
+
+| Step | Behaviour | Ref |
+|---|---|---|
+| Main loop | `MainMenuLoop` runs while `g_app->m_atMainMenu`; whenever `!m_gameMenu->m_menuCreated` and the renderer fade is complete it calls `GameMenu::CreateMenu()` | [C] `code/main.cpp:MainMenuLoop` |
+| `GameMenu::GameMenu()` | zero `m_numDemoMaps[7]`; `CreateMapList()` (§2.4); `m_clouds = new Clouds(); m_clouds->Advance()` | [C] `code/game_menu.cpp:GameMenu::GameMenu` |
+| `GameMenu::CreateMenu()` | `Renderer::StartFadeIn(0.25)`; `RemoveAllWindows()`; `g_app->m_multiwinia->Reset()`; `EclRegisterWindow(new GameMenuWindow())`; camera `RequestMode(ModeSphereWorldFocus)`, `SetTarget((-900, 3000, 3970), front (0, 0.5, -1))`, `CutToTarget()`, `SetDebugMode(0)`; `g_app->m_gameMode = GameModeNone`; if `g_app->m_multiwiniaTutorial` is set (returning from a tutorial) the new window's `m_newPage = PageTutorials`; clear the flag; `m_menuCreated = true` | [C] `code/game_menu.cpp:GameMenu::CreateMenu` |
+| `GameMenuWindow` constructor | full screen (0, 0, ScreenW, ScreenH), not resizable / movable / closeable; `m_currentPage = -1`, `m_newPage = PageMain`; **auth gate**: `Authentication_GetKey`, `Authentication_SimpleKeyCheck(key, METASERVER_GAMETYPE_MULTIWINIA)`; if not `AuthenticationAccepted` → `m_newPage = PageAuthKeyEntry` (a stored value `"authkey not found"` is blanked) — gate compiled out under `MULTIWINIA_DEMOONLY`; player name from pref `PlayerName` (default token `multiwina_playername_default` → localised "NewPlayer"), every `%` replaced by a space, stored through `PlayerNameString::Set` (which also writes the pref and saves the prefs file); browser filters from prefs `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (all default 1) | [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::GameMenuWindow` |
+| First `Update` | page −1 → `SetupNewPage(m_newPage)`; on the first update after the sound system is ready the window triggers interface sound `LobbyAmbience` | [C] `GameMenuWindow::Update` |
+| Leaving to a game | the server's sequenced `NET_DARWINIA_START_GAME` sets `m_loadingLocation = true`, `m_requestedLocationId = 999`, `m_gameMode = GameModeMultiwinia`, `m_atMainMenu = false`, `m_hideInterface = false`, `m_atLobby = false`, `g_gameTimer.Reset()`; `MainMenuLoop` exits, stops sound `"MultiwiniaInterface LobbyAmbience"`, calls `GameMenu::DestroyMenu()` (removes the window, fade out) | [C] `code/network/clienttoserver.cpp` (START_GAME handler L2607–2625), `code/main.cpp:MainMenuLoop`, `code/game_menu.cpp:GameMenu::DestroyMenu` |
+| Returning | the in-game menu's leave button sets `m_requestedLocationId = -1` and `m_atMainMenu = true`; the main-menu loop re-creates a **fresh** `GameMenuWindow` at `PageMain` (or `PageTutorials` after a tutorial, or `PageAuthKeyEntry` if the key has become invalid). No lobby state survives except preferences | [C] `code/interface/mainmenus.cpp:ExitLevelButton::MouseUp`; [I] fresh object ⇒ no carried state |
+| Results | the end-of-game results are an **in-game overlay** drawn by `Multiwinia::Render` (§3.23); the front end has no results page | [C] absence of a results page in the `GameMenuWindow.h` enum |
+
+Resolved: P02 described "game over → press `ControlToggleReady` → lobby" as the way back to the menu. In [B:FULL] the `GameOver()` block in `LocationInput::Advance` is empty — the `ToggleReady`-to-exit branch exists only `#ifdef TESTBED_ENABLED` (L1232–1262) [C] `code/location_input.cpp:LocationInput::Advance`. The only live exit is Esc → `LocationWindow` → "Exit Game", which in a finished game is the `ExitLevelButton` directly (no confirmation) [C] `code/interface/mainmenus.cpp:LocationWindow::Create`. The on-screen prompt "Press ESC to Exit" (`multiwinia_spacetoexit` / gamepad "Press START to Exit") is therefore accurate for the shipped build.
+
+### 2.2 Shared screen layout (every front-end page and every `GameOptionsWindow`)
+
+[C] `code/game_menu.cpp:GetPositions`, `GetPosition_TitleBar`, `GetPosition_LeftBox`, `GetPosition_RightBox`, `GetFontSizes`, `GetButtonSizes` (W = screen width px, H = screen height px).
+
+| Quantity | Formula |
+|---|---|
+| `horizSplit` | 0.26·H |
+| `vertSplit` | 0.6·W |
+| `gap` | 0.05·vertSplit (= 0.03·W) |
+| outer edges | left = top = gap; right = W − gap; bottom = H − gap; if W/H > 1.4 (widescreen): left += 0.08·W, right −= 0.08·W |
+| Title bar | x = left, y = top, w = right − left, h = horizSplit − 0.5·gap − top |
+| Left box | x = left, y = horizSplit + 0.5·gap, w = vertSplit − 0.5·gap − left, h = bottom − y |
+| Right box | x = vertSplit + 0.5·gap, y = horizSplit + 0.5·gap, w = right − x, h = bottom − y |
+| Fonts | large = 0.095·H, med = 0.04·H, small = 0.022·H |
+| Standard button | w = 0.9·leftW, h = 1.3·med (= 0.052·H), gap = 0.1·med (= 0.004·H) |
+
+Standard page skeleton (e.g. `GameMenuWindow::SetupNewOrJoinPage`) [C]: buttons centred in the left box at `buttonX = leftX + (leftW − buttonW)/2`; title `GameMenuTitleButton` "title" at (leftX + 10, leftY + 10, leftW − 20, 1.5·buttonH), med font, rendered upper-cased, shrunk to fit, over a highlight beam (`code/game_menu.cpp:GameMenuTitleButton::Render`); first stacked button at `yPos = leftY + 0.5·buttonH + 1.3·buttonH + (buttonH + gap)`, each further button `+= buttonH + gap`; Back at `leftY + leftH − 2·buttonH`; the right box carries an information panel (image, description, MOTD or chat) outside the navigation order.
+
+Symbols used in the page tables below: `bx` = buttonX, `bw`/`bh` = standard button width/height, `lX/lY/lW/lH`, `rX/rY/rW/rH` = left/right box. "Base MouseUp" = `GameMenuButton::MouseUp`: plays `MenuSelect` (or `MenuCancel` when `m_transitionDirection == -1`) and starts a 1.0 s menu transition in that direction [C] `code/game_menu.cpp:GameMenuButton::MouseUp`. Page building, transitions, `BackPageButton` semantics ("Back(prev)" returns to whatever page was showing before, because `SetupNewPage` assigns `m_currentPage` last) and controller navigation are specified in [28 §12](28_ui_framework.md).
+
+### 2.3 Persistent background behind every page
+
+`GameMenuWindow::Render` draws, in order [C]:
+
+1. **`RenderBigDarwinian()`** (static; also used by other menus, `code/interface/mainmenus.cpp`, `code/game_menu.cpp:GameMenuDropDownWindow::Render`): full-screen additive quad, black at three corners and RGB (1.0, 0.5, 0.1) at the bottom-left vertex (smooth-shaded glow); a giant mascot sprite (`sprites/darwinian.bmp`, nearest filtering, tint (1, 0, 0, 1)) centred at (0.75·W, 0.7·H), half-size `0.3·W + 5·sin(t)` px (breathing), quad rotated 0.2 rad; in high detail 10 echo copies, each `size *= 1.02`, centre shifted (−6, −6) px, tint (1, 0.2, 0.2) alpha `0.2·(1 − i/10)`; a rotating gear (`mwhelp/gear.bmp`) half-size 0.6·W centred on screen, angle `0.2·t` rad, additive white alpha 0.06, drawn 10 times each rotated a further 0.02 rad (0 times in low detail). Detail switch (only evaluated while `Multiwinia::GameInLobby()`): `smoothFps = smoothFps·(1 − k) + fps·k`, `k = g_advanceTime·0.5`; low detail when `smoothFps < 20`, high again when `≥ 60` (hysteresis), initial 60 [C] `GameMenuWindow::RenderBigDarwinian`.
+2. **Title bar**: fill box; if the localised `multiwinia_mainmenu_title` equals `"MULTIWINIA"` the bitmap `textures/mwtitle.bmp` is drawn (width = title-font text width for that many characters at large size × 1.1, height = width/5.4, top at titleY + 0.1·titleH), otherwise the text is drawn with outline; subtitle `multiwinia_mainmenu_subtitle` at med size one large line below; logo `icons/mwlogo.bmp` (aspect 277/194, height 0.8·titleH) at x = titleX + 0.05·titleW and mirrored at the right.
+3. **Per-page content boxes** (`DrawFillBox`, shadowed panel): GameSetup → left + right; JoinGame and Achievements → one box of title-bar width; GameConnecting → left; GameSelect / MapSelect / LeaderBoardSelect / AdvancedOptions / DemoSinglePlayer / BuyMeNow → left + right; Main → left, plus MOTD box (right, height rightH, or 0.75·rightH when the auth box is shown) once a MOTD has arrived, plus the auth box (rightY + 0.8·rightH, height 0.2·rightH) when `ShowAuthBox()`; all other pages → left only.
+4. **Overlays**: JoinGame with an empty list → blinking "requesting list" / "no servers found" caption (§5.8.1); Achievements → blinking "loading achievements" caption (blink: alpha 1.0 for the first 0.5 s of each second, 0.5 otherwise) [C] `RenderRequestingEffect`, `RenderLoadingAchievementsEffect`.
+5. **Buttons** (`EclWindow::Render`); if a drop-down list is open (`GameMenuDropDownWindow::s_window`) only the button owning it is drawn.
+
+The 3D backdrop behind the window is `GameMenu::Render()`, called by `Renderer::RenderFrame` when `m_atMainMenu && m_menuCreated` and by the loading screen: `Camera::Advance`; camera at the origin, FOV 90; eye (0, 600, 0), front (0, 0, 1), up (0, 1, 0), each rotated about Y by −1.899 rad then about Z by −1.079 rad; focus = eye + front×100; `m_clouds->Render(−GetHighResTime())` (sky grid + cloud layers; the Sky Detail option applies) [C] `code/game_menu.cpp:GameMenu::Render`, `code/renderer.cpp:Renderer::RenderFrame`.
+
+### 2.4 Map catalogue built at start-up (`GameMenu::CreateMapList`, `GameMenu::AddMap`)
+
+1. `Resource::ListResources("levels/", "mp_*", false)`; each name ending in `.txt` is opened with a `TextReader` and passed to `AddMap` [C] `code/game_menu.cpp:GameMenu::CreateMapList`.
+2. `AddMap` creates a `MapData` (`code/UI/MapData.h`) with `m_fileName` and reads tokenised header lines until `MultiwiniaOptions_EndDefinition`:
+
+| Token | Field / effect |
+|---|---|
+| `Name` | `m_levelName` = rest of line |
+| `GameTypes` | each following token compared (`strcmp`, case-sensitive) with each blueprint's `m_name`; on a match the map is appended to `m_maps[j]` and `m_gameTypes[j] = true` |
+| `NumPlayers` | `m_numPlayers = atoi(next)` |
+| `Author` | `m_author` = rest of line (not displayed) |
+| `Description` | `m_description` = rest of line (displayed for custom maps only) |
+| `PlayTime` | `m_playTime = atoi(next)` (minutes) |
+| `Difficulty` | `m_difficulty` = next token (`basic` / `intermediate` / `advanced`) |
+| `CoopMode` | `m_coop = true` |
+| `ForceCoop` | `m_forceCoop = true` |
+| `OfficialLevel` | `m_officialMap = true` |
+
+3. `MapData::CalculeMapId()` → `m_mapId = LevelFile::CalculeCRC(filename)` (CRC of `levels/<file>`); `−1` (unreadable) marks `m_customMap` [C] `code/UI/MapData.cpp:MapData::CalculeMapId`, `code/level_file.cpp:LevelFile::CalculeCRC`.
+4. If `IS_DEMO`: for each game type the map supports, `m_numDemoMaps[j]++` when `App::IsMapAvailableInDemo(j, mapId)` [C].
+5. A map with no recognised game type is discarded (log "Discarded map … because it didn't contain a game type"); otherwise added to `m_allMaps`. The count of `OfficialLevel` maps is passed to `AchievementTracker::SetNumLevels(n)` (stored, never used) [C] `code/game_menu.cpp` L757.
+6. Per game type, bubble sort: ascending `m_numPlayers`, ties by difficulty rank (substring `basic` = 1, `inter` = 2, `advan` = 3, else 0) [C].
+7. `#ifdef LOCATION_EDITOR` [B:EDITOR]: player maps `*.mwm` from `App::GetMapDirectory()` are also loaded through `MapFile`.
+
+Quirk [C]: a map whose `GameTypes` line lists one type twice is appended to `m_maps[j]` twice. The shipped map list per mode is catalogued in [08](08_levels_and_level_design.md).
+
+`MapData` fields: `m_fileName`, `m_levelName`, `m_description`, `m_author`, `m_difficulty` (all `char*`, default NULL, freed by `~MapData`); `m_numPlayers` (int, 0); `m_playTime` (int, 0); `m_coop`, `m_forceCoop`, `m_officialMap`, `m_customMap` (bool, false); `m_mapId` (int, −1); `m_gameTypes[MAX_GAME_TYPES = 7]` (bool) [C] `code/UI/MapData.h`. `CalculeMapId` is re-run before every start/permission check in the lobby [C] `GameMenuWindow::UpdateMultiplayerPage`, `code/UI/PlayGameButton.h`.
+
+### 2.5 Full live screen flow (front end → lobby → game → results → front end)
+
+Edge labels are button caption phrase ids (or the condition). Double-bordered nodes are separate Eclipse windows layered over the page underneath. [C] for every edge (sources: the `Setup*Page` functions and button `MouseUp` handlers cited in §3).
+
+```mermaid
+flowchart TD
+    BOOT(["App start: LoadingScreen (publisher logo), App::Initialise on worker"]) --> START
+    START(["MainMenuLoop: GameMenu::CreateMenu, new GameMenuWindow"]) --> AUTHCHK{"auth key passes SimpleKeyCheck?"}
+    AUTHCHK -- "no" --> AUTH["PageAuthKeyEntry 23"]
+    AUTHCHK -- "yes, returning from a tutorial" --> TUT["PageTutorials 33"]
+    AUTHCHK -- "yes" --> MAIN["PageMain 0"]
+
+    AUTH -- "multiwinia_menu_done / Enter (key accepted locally)" --> MAIN
+    AUTH -- "multiwinia_menu_play_demo (demo key generated)" --> MAIN
+    AUTH -- "multiwinia_menu_paste" --> AUTH
+
+    MAIN -- "multiwinia_menu_singleplayergame" --> GSSP["PageGameSelect 2 (single player, local server)"]
+    MAIN -- "multiwinia_menu_multiplayergame" --> NOJ["PageNewOrJoin 3"]
+    MAIN -- "multiwinia_menu_multiplayergame inactive (demo, no MP)" --> BUY["PageBuyMeNow 16"]
+    MAIN -- "multiwinia_menu_tutorial_short" --> TUT
+    MAIN -- "multiwinia_menu_helpandoptions" --> HO[["HelpAndOptionsWindow"]]
+    MAIN -- "multiwinia_update_available (only if newer version)" --> UPD["PageUpdateAvailable 31"]
+    MAIN -- "dialog_credits" --> CRED["PageCredits 32"]
+    MAIN -- "multiwinia_menu_buyfullgame (demo only)" --> BUY
+    MAIN -- "multiwinia_menu_quit" --> QUIT(["m_requestQuit = true"])
+
+    HO -- "multiwinia_menu_howtoplay" --> SH[["SelectHelpWindow"]]
+    SH -- "multiwinia_helppage_1 General" --> GH[["GeneralHelpWindow 5 pages"]]
+    SH -- "one button per mode 0 to 5" --> GTH[["GameTypeHelpWindow 1 to 4 pages"]]
+    HO -- "multiwinia_menu_settings" --> OM[["OptionsMenuWindow Settings"]]
+    OM --> SCR[["PrefsScreenWindow"]]
+    OM --> GFX[["PrefsGraphicsWindow"]]
+    OM --> SND[["PrefsSoundWindow"]]
+    OM --> OTH[["PrefsOtherWindow"]]
+    HO -- "multiwinia_auth (main menu only)" --> AUTH
+
+    TUT -- "multiwinia_menu_tutorial1 / tutorial2" --> QS[["quick start: local server, KOTH, Easy CPU, RequestStartGame"]]
+    TUT -- "multiwinia_menu_back" --> MAIN
+
+    NOJ -- "multiwinia_menu_hostgame (HostGamePermitted)" --> GSMP["PageGameSelect 2 (multiplayer, advertised server)"]
+    NOJ -- "multiwinia_menu_joingame" --> JOIN["PageJoinGame 4 (LAN/WAN browser)"]
+    NOJ -- "multiwinia_menu_back" --> MAIN
+
+    GSSP -- "multiwinia_gametype_* (permitted)" --> MAPSEL["PageMapSelect 9"]
+    GSMP -- "multiwinia_gametype_* (permitted)" --> MAPSEL
+    GSSP -- "demo and mode not permitted" --> BUY
+    GSMP -- "demo and mode not permitted" --> BUY
+    GSSP -- "multiwinia_menu_back (ShutdownCurrentGame)" --> MAIN
+    GSMP -- "multiwinia_menu_back (ShutdownCurrentGame)" --> NOJ
+
+    MAPSEL -- "map row" --> LOBBY["PageGameSetup 6 (lobby)"]
+    MAPSEL -- "demo-restricted map" --> BUY
+    MAPSEL -- "multiwinia_menu_back" --> GSANY["PageGameSelect 2"]
+
+    LOBBY -- "multiwinia_menu_advanceoptions (host, full key)" --> ADV["PageAdvancedOptions 12"]
+    ADV -- "multiwinia_menu_back" --> LOBBY
+    LOBBY -- "own gamer tag" --> PO["PagePlayerOptions 24"]
+    PO -- "colour row (free)" --> LOBBY
+    PO -- "multiwinia_menu_back (ApplyNameButton)" --> LOBBY
+    LOBBY -- "multiwinia_menu_play (single player)" --> LOAD
+    LOBBY -- "multiwinia_menu_ready (toggle)" --> LOBBY
+    LOBBY -- "host: every human team ready" --> WAIT["PageWaitForGameToStart 37"]
+    WAIT -- "NET START_GAME" --> LOAD
+    LOBBY -- "client: NET START_GAME" --> LOAD
+    LOBBY -- "back, single player" --> MAPSEL
+    LOBBY -- "back, host" --> GSANY
+    LOBBY -- "back, client" --> NOJ
+
+    JOIN -- "row: compatible, not full, map installed, no password" --> CONN["PageGameConnecting 7"]
+    JOIN -- "row: passworded" --> PASS["PageEnterPassword 36"]
+    JOIN -- "row: incompatible / full / missing map" --> ERR["PageError 34"]
+    JOIN -- "row: demo-restricted" --> BUY
+    JOIN -- "multiwinia_menu_filters" --> FILT["PageSearchFilters 25"]
+    JOIN -- "multiwinia_menu_back" --> NOJ
+    FILT -- "multiwinia_menu_back (SaveFiltersButton)" --> JOIN
+    PASS -- "multiwinia_menu_connect (password non-empty)" --> CONN
+    PASS -- "multiwinia_menu_back" --> JOIN
+    CONN -- "connected and game type received" --> LOBBY
+    CONN -- "multiwinia_menu_back" --> JOIN
+    CONN -- "disconnect: server full / bad password" --> ERR
+    CONN -- "disconnect: kicked / duplicate key / connection error" --> ERR
+    ERR -- "multiwinia_menu_back (stored back page)" --> JOIN
+    ERR -- "multiwinia_menu_back (stored back page)" --> MAIN
+
+    BUY -- "launchpad_button_buynow (open store URL)" --> BUY
+    BUY -- "Back(prev)" --> MAIN
+    UPD -- "multiwinia_menu_autopatch (run autopatch.exe, exit)" --> QUIT
+    UPD -- "dialog_visitwebsite" --> UPD
+    UPD -- "Back(prev)" --> MAIN
+    CRED -- "Back(prev)" --> MAIN
+
+    QS --> LOAD
+    LOAD[["LoadingScreen: DoEnterLocation on worker thread"]] --> GRACE["in game: grace period (ready-up, animated panel, 3-2-1)"]
+    GRACE --> PLAY["in game: running match"]
+    PLAY -- "Esc" --> LW[["LocationWindow"]]
+    LW -- "multiwinia_menu_helpandoptions" --> HO
+    LW -- "multiwinia_menu_back" --> PLAY
+    LW -- "multiwinia_menu_leavegame, game not over" --> CEW[["ConfirmExitWindow"]]
+    CEW -- "No" --> LW
+    CEW -- "Yes (ExitLevelButton)" --> START
+    PLAY -- "winner declared" --> RES["in game: GAME OVER results overlay"]
+    RES -- "Esc, then multiwinia_menu_leavegame (ExitLevelButton)" --> START
+    PLAY -- "Enter" --> CHAT[["ChatInputWindow"]]
+    CHAT -- "Enter / focus lost" --> PLAY
+```
+
+Notes [C] unless stated:
+
+- `GSANY`, `GSSP` and `GSMP` are the same page; single player vs multiplayer is the boolean `m_singlePlayer` (set by `DarwiniaModeButton`, cleared by `SetupMainPage` / `SetupNewOrJoinPage` because LAN/WAN play is compiled in).
+- `PageBuyMeNow` "Back(prev)" returns to whichever page opened it (Main, GameSelect, MapSelect or JoinGame); only the Main edge is drawn.
+- `PageError` stores its back page in `m_errorBackPage` (default `PageMain`); browser-row errors and "server full" / "bad password" disconnects use `PageJoinGame`; kick, duplicate key and connection errors use `PageMain`; any other disconnect reason sends the window straight to `PageMain` without an error page [C] `code/UI/GameServerButton.h:GameServerButton::MouseUp`, `code/network/clienttoserver.cpp` disconnect handler.
+- After a Screen-Options Apply the user lands back on Screen Options (all windows rebuilt); after an Other-Options Apply that changed language or large-menu mode all windows are removed and the user lands on `PageMain` (front end) or a fresh `LocationWindow` (in game) — not back in Other Options [C] `code/interface/prefs_screen_window.cpp:SetScreenButton::MouseUp`, `code/interface/prefs_other_window.cpp:ApplyOtherButton::MouseUp`.
+- `ControllerUnpluggedWindow` can appear over any screen (§3.22.4).
+
+### 2.6 Compiled-but-unreachable and non-baseline flow
+
+```mermaid
+flowchart TD
+    MAIN["PageMain"] -- "multiwinia_menu_singleplayergame [B:DEBUG]" --> SPD["PageDemoSinglePlayer 15"]
+    SPD -- "multiwinia_menu_versuscpu" --> GS["PageGameSelect"]
+    SPD -- "multiwinia_menu_prologue (INCLUDEGAMEMODE_PROLOGUE, DEBUG only)" --> PRO[["Darwinia prologue"]]
+    SPD -- "multiwinia_menu_campaign (INCLUDEGAMEMODE_CAMPAIGN, DEBUG only, inactive)" --> CAMP[["Darwinia campaign"]]
+    SPD -- "multiwinia_menu_back" --> MAIN
+    SPD -- "demo to full upgrade detected" --> DAR["PageDarwinia 1"]
+    DAR -- "multiwinia_menu_prologue" --> PRO
+    DAR -- "multiwinia_menu_campaign" --> CAMP
+    DAR -- "multiwinia_menu_back" --> MAIN
+    NOJ["PageNewOrJoin"] -. "QuickMatchButton commented out" .-> QM["PageQuickMatchGame 5"]
+    QM -- "first compatible non-full server" --> CONN["PageGameConnecting"]
+    QM -- "multiwinia_menu_back" --> NOJ
+    X1["ResearchModeButton never built"] -.-> RES["PageResearch 8"]
+    RES -- "back" --> LOBBY["PageGameSetup"]
+    X2["HelpModeButton never built"] -.-> HM["PageHelpMenu 10"]
+    X3["HelpSelectButton commented out"] -.-> HP["PageHelp 11"]
+    HP -- "Prev/Next past last image" --> HM
+    X4["no assigner"] -.-> ACH["PageAchievements 35"]
+    ACH -- "back" --> MAIN
+    X5["LeaderboardWindow (legacy)"] -.-> LB["PageLeaderBoard 18 (empty)"]
+    MAIN -- "taskmanager_mapeditor [B:EDITOR]" --> ED[["MultiwiniaWindow editor"]]
+    MMW[["MainMenuWindow (Darwinia), unreachable"]] -.-> UP[["UserProfileWindow"]]
+    UP -.-> CRW[["ConfirmResetWindow"]]
+    MMW -.-> LBS[["LeaderboardSelectionWindow"]]
+    LBS -.-> LBW[["LeaderboardWindow"]]
+    MMW -.-> MODS[["ModsWindow (DEAD)"]]
+    OMW[["OptionsMenuWindow"]] -. "button commented out" .-> KB[["PrefsKeybindingsWindow"]]
+    EXIT[["ExitLevelButton"]] -. "DEMO2 only (DEAD)" .-> DEW[["DemoEndWindow"]]
+```
+
+### 2.7 Back / Esc rules and front-end audio
+
+- Every full-screen window registers a Back `MenuCloseButton` as `m_backButton`; `DarwiniaWindow::Update` invokes it on `ControlMenuClose` (gamepad Back or B) [C] `code/interface/darwinia_window.cpp:DarwiniaWindow::Update`. Keyboard Esc (`ControlMenuEscape`, `key esc down` / `XInput start down`) inside `LocationGameLoop` removes **all** windows at once (and unhides the interface) rather than going back one level [C] `code/main.cpp:LocationGameLoop`, `data/input/input_preferences.txt` L1, L10–12.
+- Windows stack: each new window registers on top; closing one reveals the one beneath.
+- Front-end interface sound events (all `SoundSourceBlueprint::TypeMultiwiniaInterface`) [C]:
+
+| Event | When | Ref |
+|---|---|---|
+| `LobbyAmbience` | first update once sounds are ready; stopped (`"MultiwiniaInterface LobbyAmbience"`) when leaving the main-menu loop | `GameMenuWindow::Update`, `code/main.cpp:MainMenuLoop` |
+| `MenuSelect` | forward button press (base MouseUp), level-row click, editor button | `code/game_menu.cpp:GameMenuButton::MouseUp`, `code/UI/LevelSelectButton.h` |
+| `MenuCancel` | buttons with `m_transitionDirection == -1` that call the base MouseUp (Done, Play Demo) play it instead of `MenuSelect` (Paste and the auth status box set −1 but never call the base, so they are silent); every `BackPageButton` (direction left at +1) plays `MenuSelect` via the base call **and then** `MenuCancel`, and re-initialises the transition with direction −1 | same, `code/game_menu.cpp:BackPageButton::MouseUp` |
+| `MenuRollOver` | focus moves to a new button (base render, level rows, colour rows) | `GameMenuButton::Render`, `code/UI/LevelSelectButton.h`, `code/UI/FancyColourButton.h` |
+| `ChatMessage` | lobby chat message received (not join notices) | `GameMenuWindow::NewChatMessage` |
+
+---

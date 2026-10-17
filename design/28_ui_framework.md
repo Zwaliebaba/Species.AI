@@ -1188,3 +1188,1181 @@ There are **no keyboard bindings for `MenuUp/Down/Left/Right/Activate/Close`** i
 10. **Input mode** (P10): `INPUT_MODE_KEYBOARD` (1) or `INPUT_MODE_GAMEPAD` (2), chosen by the most recently active driver with the gamepad preferred; it controls hover-to-focus, the B-glyph hints, the `_kbd`/`_xin` phrase variants (§10.2) and the controller-unplugged dialogue [C] `code/lib/input/input.cpp` ([06](06_player_control_and_input.md)).
 
 ---
+## 10 Localisation integration
+
+### 10.1 Phrase lookup and fallbacks [C] `code/lib/language_table.h`, `code/lib/language_table.cpp:LangTable::LookupPhrase`
+
+| Macro / call | Expands to | Semantics |
+|---|---|---|
+| `LANGUAGEPHRASE(key)` | `g_app->m_langTable->LookupPhrase(key)` → `const UnicodeString&` | table for the current input mode; NULL key or no table → `"ERROR (null)"`; **missing key → the key text itself** (no English fallback at phrase level). The miss result lives in one shared member (`m_notFound`), overwritten by the next miss — copy it before the next lookup |
+| `ISLANGUAGEPHRASE(key)` / `ISLANGUAGEPHRASE_ANY(key)` | `DoesPhraseExist(key)` | existence test (used to choose between phrase and raw text) |
+| `RAWLANGUAGEPHRASE(key)` | `RawLookupPhrase(key)` | `key_<mode>` then `key`, else `"ERROR (key)"` |
+
+Language-level fallback exists only at load time: `App::InitLanguage` tries pref `TextLanguage`, then the OS locale's English language name, then `"english"`, then the first file in `language/`; `App::SetLanguage(name)` loads `language/<name>.txt` into a new `LangTable`, overlays `strings_<name>.txt` or `strings_default.txt` if present, calls `setlocale(LC_CTYPE, name)` (so `StrUpr` upper-cases correctly), swaps fonts (§10.5), rebuilds the input-mode tables and keeps the old table alive for 5 main-loop iterations (`DelayedJob`) so frames still holding references finish [C] `code/app.cpp:App::SetLanguage`, `App::InitLanguage` (P14 §31.11). Language files: grammar in [29](29_data_formats_reference.md) (`key rest-of-line`, `\n` → space + newline, later duplicates replace earlier, case-insensitive keys).
+
+### 10.2 Input-mode variants and caption markup [C] `code/lib/language_table.cpp:LangTable::RebuildTables`, `buildCaption`
+
+Two final tables are built — keyboard (suffix `_kbd`) and gamepad (suffix `_xin`); `foo_kbd`/`foo_xin` override `foo` in the matching mode, and a key present only in the other mode resolves to an empty string (the caption disappears). Captions are expanded at table-build time: `[IFMODE KEYBOARD]…[ELSE]…[ENDIF]`, `[KEY<control>]` (replaced by the noun of the input currently bound to the control), `[phrase_key]` references (recursive), output limit 1024 characters. Consequence for the UI: switching between mouse/keyboard and pad switches every caption that has variants with no UI code involved; but any caption cached in a widget (`m_caption` set at page build) only changes when the page is rebuilt [I: widgets copy the `UnicodeString` at `SetShortProperties` time].
+
+### 10.3 How the UI layers use the table [C]
+
+| Pattern | Mechanism | Ref |
+|---|---|---|
+| Window name = phrase key | `DarwiniaWindow` title = upper-cased `LANGUAGEPHRASE(name)` — but the drawn title is always `multiwinia_mainmenu_title` (§3.4); `GameMenuDropDownWindow` and the in-game menu use `LANGUAGEPHRASE(m_name)` for their page title | `DarwiniaWindow::DarwiniaWindow`, `code/game_menu.cpp:GameMenuDropDownWindow::Create`, `code/interface/mainmenus.cpp:LocationWindow::Create` |
+| Widget name = phrase key | `GameMenuDropDown` label = `LANGUAGEPHRASE(m_name)`; `CreateMenuControl` caption = `LANGUAGEPHRASE(name)`; option help = `<name>_description[_<mode>]` | §5.1, §5.5, `code/UI/OptionDetailsButton.h` |
+| Explicit caption | most buttons: `SetShortProperties(id, …, LANGUAGEPHRASE(id))` with the same id for name and caption | e.g. `GameMenuWindow::SetupNewOrJoinPage` |
+| Value-control labels | phrase if `ISLANGUAGEPHRASE(name)`, else the raw name (editor names like `"R0"` show raw) | `DarwiniaWindow::CreateValueControl` |
+| Drop-down captions | closed caption translated if the option word is a key; the Darwinia open list shows raw words; the front-end open list translates | §4.6, §5.5 |
+| Placeholders | `UnicodeString::ReplaceStringFlag(flag, text)` replaces every `*<flag>` (`*F` file name, `*S` status) | `code/interface/multiwinia_window.cpp:CreateMapButton::MouseUp`, `code/UI/AuthInputField.h` |
+| Implicit narrowing | `UnicodeString → const char*` conversion (characters > U+00FF become `?`) lets translated strings be passed where `char*` keys/words are expected (`menu->AddOption(LANGUAGEPHRASE("buildingname_gunturret"), …)`, `CreateValueControl(LANGUAGEPHRASE("editor_threshold"), …)`) — lossy for non-Latin languages | `contrib/systemiv/lib/unicode/unicode_string.h` |
+| Untranslated UI | cheat window, debug menu, network window, camera-animation window, gesture/grabber windows, `MessageDialog` texts from the renderer and sound system, `"PAUSED"`, `"INCOMPATIBLE : <version>"`, `"Update"` use literal English | P17a strings table; [C] grep |
+| Printf safety | `InputField` rejects `%` so typed text is safe if later passed to printf-style `DrawText2D(char*, …)`; `MessageDialog` lines *are* drawn through the printf overload | §4.1, §4.7 |
+
+### 10.4 Unicode strings [C] `contrib/systemiv/lib/unicode/unicode_string.*` (P14 §29.L.6)
+
+`UnicodeString` owns a `wchar_t` (UTF-16 on Win32) buffer plus a parallel narrow copy (`?` for code points > 255); `Length()` = buffer size − 1 (not `wcslen`); `WcsLen()` = `wcslen`; comparisons `wcscmp`; `StrUpr/StrLwr` via `_wcsupr/_wcslwr` (locale-dependent); `Truncate(n)` resizes the buffer; `ReplaceStringFlag`; `LastHanCharacter` for CJK word-wrap; `Trim()` advances the buffer pointer past leading spaces (heap-corruption risk on a later `delete[]`). Text rendering is BMP-only: surrogate pairs are decoded with an OR instead of an ADD and stored back into a 16-bit unit, so astral characters cannot render [C] ([24](24_rendering.md)).
+
+### 10.5 Font selection per language [C] `code/app.cpp:App::SetLanguage`
+
+| Language (`TextLanguage`) | Fonts used | Horizontal scale |
+|---|---|---|
+| `chinese-trad`, `chinese-simp`, `korean`, `japanese` | `g_gameFont` and `g_editorFont` become struct copies of `g_titleFont` ("square", the only family with CJK/Hangul atlases); originals saved in `g_oldGameFont`/`g_oldEditorFont` | 1.0 for all three (Latin characters < U+3000 still use the default 0.6) |
+| every other language | original `speccy` / `editor` / `square` (restored from the saved copies if a CJK language was active) | 0.6 |
+
+Shipped data [C] `data/language/*`, `data/textures/unicode/*`: `english` (8-bit, 2425 keys), `french` (UTF-16BE, 2516), `german` (UTF-16BE, 2489), `italian` (UTF-16BE, 2365), `spanish` (UTF-16BE, 2516), `russian` (UTF-16LE, 2142), `japanese` (UTF-16LE, 221), `korean` (UTF-16BE, 161), `portuguese` (UTF-16BE, 161) — key counts by S28 parse; no `chinese-*` files. The Cyrillic atlases (`U+0410–042F`, `U+0430–044F`) of `editor`, `speccy` and `square` are byte-identical copies of the speccy glyphs (md5 equal), matching `docs/RussianFontRequest.txt`. Because missing phrases return their key, choosing a language with a partial file (Japanese, Korean, Portuguese) would show raw phrase ids for most of the UI [I: lookup rule + key counts] — whether those files ship depends on the per-SKU `language.dat` list ([31](31_platform_build_and_tools.md)); see 28-U3.
+
+### 10.6 Text entry of non-Latin text [C]
+
+`WM_CHAR` delivers UTF-16 code units to Eclipse (Unicode window class), and `InputField::Keypress` appends any non-control unit not matched earlier, so precomposed non-Latin characters can be typed into string fields. There is no IME composition support (no `WM_IME_*` handling; with a Unicode window `DefWindowProcW` normally converts IME results into `WM_CHAR`, so committed IME text probably arrives as characters [I]), no caret movement (append/backspace only), no selection, no clipboard except the dedicated Paste button of the auth page (`CF_TEXT`, ANSI) [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::PasteFromClipboard`.
+
+### 10.7 Runtime language switch
+
+Other Options → Language → Apply: `App::SetLanguage(name)`, then `RemoveAllWindows()` and, at the main menu, `GameMenu::CreateMenu()` (fresh front end on `PageMain`); in game a new `LocationWindow` [C] `code/interface/prefs_other_window.cpp:ApplyOtherButton::MouseUp`. All captions are re-read because every window is rebuilt.
+
+---
+
+## 11 How a new screen is built (recipes) and re-implementation guidance
+
+### 11.1 Recipe A — Darwinia-style tool window (editor/debug pattern)
+
+Pseudocode distilled from `LightsEditWindow`, `TreeWindow`, `CheatWindow`, `NetworkWindow` (not verbatim):
+
+```cpp
+class MyToolWindow : public DarwiniaWindow {
+public:
+    MyToolWindow() : DarwiniaWindow("my_window_key") {}       // unique name = lookup key = phrase key; takes focus now
+    void Create() override {
+        DarwiniaWindow::Create();                              // close box at (w-12, 2)
+        int y = 5, pitch = 17;                                 // rows below the 15 px title bar
+        auto *b = new MyActionButton();                        // DarwiniaButton subclass overriding MouseUp()
+        b->SetShortProperties("my_action", 10, y += pitch, m_w - 20, -1, LANGUAGEPHRASE("my_action"));
+        RegisterButton(b);                                     // window auto-grows to fit
+        m_buttonOrder.PutData(b);                              // optional: controller navigation
+        CreateValueControl("my_value", &m_someFloat, y += pitch, 0.1f, 0.0f, 10.0f, b /*callback*/);
+    }
+};
+// opener (idempotent toggle, as every DebugKeyBindings entry does)
+if (!EclGetWindow("my_window_key")) {
+    auto *w = new MyToolWindow();
+    w->SetMenuSize(220, 100);                                  // width/height before registration
+    w->SetPosition(0, screenH - 100);
+    EclRegisterWindow(w);                                      // front-most; Create() runs now
+}
+```
+
+Rules recovered from the code [C]:
+1. Choose a unique `m_name`; it is the lookup key, the phrase key for the (undrawn) title and the target of `EclRemoveWindow`. Use `EclGetWindow(name)` to make openers idempotent.
+2. Set `m_w` (and optionally `m_h`, `m_x`, `m_y`) **before** `EclRegisterWindow`; height grows with content; position is clamped on-screen at registration; pass a parent window to get automatic placement.
+3. Build all buttons in `Create()`; `Remove()` must undo them (the base removes all buttons) because resizing calls `Remove()` + `Create()`. Never keep raw pointers to buttons across a resize or rebuild.
+4. Behaviour lives in tiny `DarwiniaButton` subclasses overriding `MouseUp` (click) or `MouseDown` (held). Reach the window through `m_parent` (cast). Check `m_disabled`/`m_inactive` yourself.
+5. Bind data with `CreateValueControl` / `InputField::Register*` / `CheckBox::Register*` / `DropDownMenu::RegisterInt` — the widget writes straight into the target variable; pass a callback button to react (e.g. regenerate terrain).
+6. Rebuild dynamic lists with `Remove(); Create();`.
+7. Close via `EclRemoveWindow(m_name)` (or the close box); put teardown side effects in the destructor.
+
+### 11.2 Recipe B — full-screen `GameOptionsWindow` page (options/help/in-game menu pattern)
+
+1. Derive from `GameOptionsWindow("<title phrase id>")` — the base constructor already makes it full-screen, fixed and non-resizable. In the constructor copy every preference the page edits into members (`m_x = g_prefsManager->GetInt(key, default)`).
+2. In `Create()`: call `GameOptionsWindow::Create()` (empty, but keeps the pattern); fetch `GetPosition_LeftBox`, `GetFontSizes`, `GetButtonSizes`; `x = leftX + (leftW − buttonW)/2`; add a `GameMenuTitleButton` `"title"` captioned `LANGUAGEPHRASE(m_name)` at `(leftX+10, leftY+10, leftW−20, 1.5 bH)`; for each option add a `GameMenuDropDown` (`m_cycleMode = true` for short lists, `RegisterInt(&member)`), `GameMenuCheckBox` (`RegisterInt`/`RegisterBool`) or `CreateMenuControl(...)` field, each `RegisterButton` + `m_buttonOrder.PutData`; rows at `y += rowH + gap` (options pages use `0.65 bH` rows and `fontSmall`).
+3. Add an Apply `GameMenuButton` whose `Render` compares members with stored prefs each frame and sets `m_inactive` when nothing changed; its `MouseUp` returns when inactive, else writes prefs, `Save()`s and performs the minimum re-initialisation (screen: renderer restart + window rebuild; graphics: landscape + water re-init; other: listener re-open, language reload, full window rebuild) (P17b §11.4).
+4. Add a `MenuCloseButton("dialog_back")` at `leftY + leftH − 2 bH` and assign it to `m_backButton` (pad B works because `m_closeable` stays true).
+5. Set `m_renderRightBox` / `m_renderWholeScreen` if needed; report errors with `CreateErrorDialogue(text, success)`.
+6. Open it from a `GameMenuButton` subclass: `GameMenuButton::MouseUp()` (sound + frame capture), `EclRegisterWindow(new MyPage())`, `g_app->m_doMenuTransition = true`.
+7. Live readers query `g_prefsManager` directly at render/advance time (no change notification), so most options take effect next frame; anything cached at construction needs the explicit re-init in step 3.
+
+### 11.3 Recipe C — a new `GameMenuWindow` page
+
+1. Add a page constant to the enum in `code/UI/GameMenuWindow.h` and a string to `s_pageNames` in `code/game_menu.cpp` (the constructor release-asserts the counts match).
+2. Write `SetupXPage()`: layout from `GetPosition_LeftBox/RightBox/TitleBar`, `GetFontSizes`, `GetButtonSizes`; a `GameMenuTitleButton` `"title"`; stack widgets with the five-step pattern (§6.5); a `BackPageButton(target)` — or `BackPageButton(m_currentPage)` for "return to caller", remembering that `m_currentPage` is still the previous page during set-up — at `leftY + leftH − 2 bH`; right-box panels (`ScrollingTextButton` subclasses, `ImageButton`s) **not** in `m_buttonOrder`.
+3. Add the `case` to `SetupNewPage`; add an `UpdateXPage()` and a `case` in `Update` if the page polls anything (network echo, metaserver, timers); add a `ShutdownXPage()` and a `case` in `ShutdownPage` if it starts a service that must stop.
+4. Add a `case` in `Render` if the page needs non-default fill boxes (default = left box only) or overlays.
+5. Navigation into the page: a small `GameMenuButton` subclass whose `MouseUp` calls `GameMenuButton::MouseUp()` (sound + transition capture) and sets `((GameMenuWindow*)m_parent)->m_newPage = PageX`.
+6. Put any state that must survive the rebuild in a `GameMenuWindow` member, a networked option (lobby settings shared with clients, §4.12) or a pref.
+7. If the page needs data that arrives over the network, return early from set-up and re-call it from the page's update when the data arrives (pattern of MapSelect and GameSetup).
+
+### 11.4 Guidance for re-implementing on the new engine (Windows, C++23, DirectX 12, multiplayer) [I — design recommendations]
+
+**Keep** (proven, cheap): the screen-fraction layout grid (§7.1) as data; the "page = full-screen panel built from a declarative widget list" model; a single navigation cursor shared by mouse hover and pad, with hover-to-focus only in mouse mode; the requested-vs-echoed value split for lobby options (§4.12); input-mode-dependent captions (§10.2); the cascade/pop button entrance and page-swipe as presentation polish.
+
+**Replace**:
+
+| Original mechanism | Problem | Replacement |
+|---|---|---|
+| Name-string identity everywhere (§2.2, Q5–Q6) | duplicate names shadow, lookups are linear `strcmp` | typed widget handles/IDs; names only for debugging and localisation keys |
+| Release-target click, held `MouseDown`, no capture (Q1–Q2) | accidental clicks, frame-rate-dependent repeats | pointer capture on press; click = press+release on the same widget; explicit repeat timers (initial delay + rate) independent of frame rate |
+| Dirty rectangles that never clear (Q3) | leak, no benefit | full immediate-mode redraw (or retained draw lists) every frame |
+| Rebuild-on-resize / rebuild-on-page-change with state in window members | state loss, ad-hoc persistence | view-model per page; widgets bind to it; layout recomputed without destroying state |
+| `m_currentPage`-as-caller and `m_newPage` writes from widgets | implicit flow, render-time triggers | explicit page stack (`push`, `pop`, `replace`) with a one-frame deferred commit; Back = pop |
+| `m_buttonOrder` + `SpecialScroll` on the wrong list (F5) | navigation bugs | focus-scope object per page with 2D (up/down/left/right) neighbours, scroll-into-view for lists |
+| Pad "back" polled inside `Render` (§5.3) | back fails whenever the button is not drawn | input handled in an update phase through a page-level `OnBack` |
+| `WM_CHAR`-only text input, no IME, no caret | CJK input, editing | TSF/IME-aware text service, caret and selection, clipboard (UTF-16), validation hooks (numeric ranges, max length) on commit **and** while typing |
+| Fixed-cell bitmap fonts, BMP-only, approximate widths | wrong layout, no shaping | glyph cache (DirectWrite or FreeType+HarfBuzz) with measured widths; full Unicode |
+| Key-as-fallback localisation | raw ids on screen | fall back to the source language per string; build-time check that every key exists in every shipped language |
+| Fixed-function immediate draw, state leaks (§8.6) | not portable to DX12 | one batched UI vertex stream, three blend states, scissor stack (§8.7) |
+| Error dialogue as a `m_lockMenu` flag | input leaks, pad soft-locks (F10) | modal layer on the page stack that owns focus and Back |
+
+**Networking note**: the lobby widgets must keep sending *requests* and displaying *echoed* values; the server must validate ownership/host rights (the UI only hides controls — see [22](22_determinism_and_networking.md)).
+
+---
+## 12 Class diagram and complete UI class inventory
+
+### 12.1 Core classes with members
+
+```mermaid
+classDiagram
+  class EclWindow {
+    +int m_x
+    +int m_y
+    +int m_w
+    +int m_h
+    +char m_name
+    +UnicodeString m_title
+    +bool m_movable
+    +bool m_resizable
+    +bool m_dirty
+    +LList m_buttons
+    +char m_currentTextEdit
+    +Create()
+    +Remove()
+    +Update()
+    +Render(hasFocus)
+    +Keypress(keyCode, shift, ctrl, alt, ascii)
+    +MouseEvent(lmb, rmb, up, down)
+    +RegisterButton(button)
+    +RemoveButton(name)
+    +GetButton(name)
+    +GetButton(x, y)
+    +BeginTextEdit(name)
+    +EndTextEdit()
+    +MakeAllOnScreen()
+  }
+  class EclButton {
+    +char m_name
+    +int m_x
+    +int m_y
+    +int m_w
+    +int m_h
+    +UnicodeString m_caption
+    +UnicodeString m_tooltip
+    +bool m_inactive
+    #EclWindow m_parent
+    +SetProperties(name, x, y, w, h, caption, tooltip)
+    +Render(realX, realY, highlighted, clicked)
+    +MouseUp()
+    +MouseDown()
+    +MouseMove()
+    +Keypress(keyCode, shift, ctrl, alt, ascii)
+  }
+  class DarwiniaWindow {
+    +LList m_buttonOrder
+    +int m_currentButton
+    +bool m_buttonChangedThisUpdate
+    +bool m_skipUpdate
+    +bool m_closeable
+    +bool m_lockMenu
+    +EclButton m_backButton
+    +CreateValueControl()
+    +CreateColourControl()
+    +RemoveValueControl(name)
+    +GetMenuSize(value)
+    +SetMenuSize(w, h)
+    +SetCurrentButton(button)
+  }
+  class DarwiniaButton {
+    +float m_fontSize
+    +bool m_centered
+    +bool m_disabled
+    +bool m_mouseHighlightMode
+    +SetShortProperties()
+    +SetDisabled(flag)
+    +UpdateButtonHighlight()
+    +SpecialScroll(direction)
+  }
+  class GameOptionsWindow {
+    +bool m_renderRightBox
+    +bool m_renderWholeScreen
+    +bool m_showingErrorDialogue
+    +CreateMenuControl()
+    +CreateErrorDialogue(text, success)
+  }
+  class GameMenuWindow {
+    +int m_currentPage
+    +int m_newPage
+    +NetworkGameOptionInt m_gameType
+    +NetworkGameOptionMapId m_requestedMapId
+    +NetworkIntArray m_params
+    +ScrollBar m_scrollBar
+    +SetupNewPage(page)
+    +ShutdownPage(page)
+    +Update()
+    +Render(hasFocus)
+    +RenderBigDarwinian()
+  }
+  class GameMenuButton {
+    +double m_birthTime
+    +int m_transitionDirection
+    +float m_ir
+    +float m_ig
+    +float m_ib
+    +float m_ia
+    +MouseUp()
+    +Render()
+  }
+  class InputField {
+    +UnicodeString m_buf
+    +int m_type
+    +NetworkValue m_value
+    +DarwiniaButton m_callback
+    +RegisterTyped()
+    +Refresh()
+    +Keypress()
+  }
+  class ScrollBar {
+    +char m_parentWindow
+    +int m_numRows
+    +int m_winSize
+    +int m_currentValue
+    +Create(name, x, y, w, h, numRows, winSize, stepSize)
+    +Remove()
+    +SetCurrentValue(v)
+    +ChangeCurrentValue(d)
+  }
+  EclWindow "1" o-- "*" EclButton : m_buttons
+  EclWindow <|-- DarwiniaWindow
+  EclButton <|-- DarwiniaButton
+  DarwiniaWindow <|-- GameOptionsWindow
+  DarwiniaWindow <|-- GameMenuWindow
+  DarwiniaButton <|-- GameMenuButton
+  DarwiniaButton <|-- BorderlessButton
+  BorderlessButton <|-- InputField
+  ScrollBar ..> EclButton : registers three buttons
+  GameMenuWindow ..> ScrollBar : m_scrollBar
+```
+
+### 12.2 Master class diagram — every framework, widget, window and `code/UI` class
+
+Generated by `_work/scripts/S_28_ui_inventory.py` from the declarations found by `_work/scripts/S_28_ui_classes.py` (all three layers; annotations: none = live in `[B:FULL]`; `<<tooluse>>` = compiled in FULL, used only by editor/debug tools; `<<legacy>>` = compiled in FULL but never reached; `<<editor>>` = `[B:EDITOR]`; `<<debug>>` = `[B:DEBUG]`; `<<othertarget>>` = other product target/platform; `<<dead>>` = not compiled in any PC configuration; `<<external>>` = non-UI base). Screen-private button classes (declared inside one screen's `.cpp`, e.g. the 29 sound-editor buttons) are omitted from the picture for legibility but listed in §12.3.
+
+```mermaid
+classDiagram
+  direction LR
+  class NetworkUnicodeString
+  <<external>> NetworkUnicodeString
+  class EclButton
+  class DirtyRect
+  class EclWindow
+  class BuildingEditWindow
+  <<editor>> BuildingEditWindow
+  class BuildingsCreateWindow
+  <<editor>> BuildingsCreateWindow
+  class BuyNowWindow
+  <<dead>> BuyNowWindow
+  class CameraAnimMainEditWindow
+  <<editor>> CameraAnimMainEditWindow
+  class CameraAnimSecondaryEditWindow
+  <<editor>> CameraAnimSecondaryEditWindow
+  class CameraMountEditWindow
+  <<editor>> CameraMountEditWindow
+  class ChatInputWindow
+  class ChatInputField
+  class CheatWindow
+  <<debug>> CheatWindow
+  class CheckBox
+  class ControllerUnpluggedWindow
+  class DarwiniaWindow
+  class DarwiniaButton
+  class BorderlessButton
+  class CloseButton
+  class GameExitButton
+  <<legacy>> GameExitButton
+  class InvertedBox
+  class LabelButton
+  <<editor>> LabelButton
+  class DebugMenu
+  <<legacy>> DebugMenu
+  class DemoEndWindow
+  <<legacy>> DemoEndWindow
+  class DropDownOptionData
+  class DropDownWindow
+  class DropDownMenu
+  class DropDownMenuOption
+  class MainEditWindow
+  <<editor>> MainEditWindow
+  class FileOKButton
+  <<tooluse>> FileOKButton
+  class FileButton
+  <<tooluse>> FileButton
+  class FileCancelButton
+  <<tooluse>> FileCancelButton
+  class SelectedButton
+  <<tooluse>> SelectedButton
+  class FileDialog
+  <<tooluse>> FileDialog
+  class GestureWindow
+  <<dead>> GestureWindow
+  class GlobalWorldEditorWindow
+  <<legacy>> GlobalWorldEditorWindow
+  class GrabberWindow
+  <<debug>> GrabberWindow
+  class HelpAndOptionsWindow
+  class SelectHelpWindow
+  class CrateButton
+  <<debug>> CrateButton
+  class CrateHelpWindow
+  <<debug>> CrateHelpWindow
+  class GeneralHelpWindow
+  class TextButton
+  class GameTypeHelpWindow
+  class InputField
+  class InputScroller
+  class ColourWidget
+  <<tooluse>> ColourWidget
+  class ColourWindow
+  <<tooluse>> ColourWindow
+  class InstantUnitEditWindow
+  <<editor>> InstantUnitEditWindow
+  class InstantUnitCreateWindow
+  <<editor>> InstantUnitCreateWindow
+  class InvalidCratesWindow
+  <<editor>> InvalidCratesWindow
+  class TerrainSelectorFileDialog
+  <<editor>> TerrainSelectorFileDialog
+  class WaterSelectorFileDialog
+  <<editor>> WaterSelectorFileDialog
+  class WavesSelectorFileDialog
+  <<editor>> WavesSelectorFileDialog
+  class LandscapeTileEditWindow
+  <<editor>> LandscapeTileEditWindow
+  class LandscapeFlattenAreaEditWindow
+  <<editor>> LandscapeFlattenAreaEditWindow
+  class LandscapeEditWindow
+  <<editor>> LandscapeEditWindow
+  class LandscapeGuideGridWindow
+  <<editor>> LandscapeGuideGridWindow
+  class LeaderboardWindow
+  <<legacy>> LeaderboardWindow
+  class LeaderboardSelectionWindow
+  <<legacy>> LeaderboardSelectionWindow
+  class LightsEditWindow
+  <<editor>> LightsEditWindow
+  class GameOptionsWindow
+  class MainMenuWindow
+  <<legacy>> MainMenuWindow
+  class OptionsMenuWindow
+  class LocationWindow
+  class ResetLocationWindow
+  <<legacy>> ResetLocationWindow
+  class AboutDarwiniaWindow
+  <<dead>> AboutDarwiniaWindow
+  class ConfirmExitWindow
+  class ConfirmResetWindow
+  <<legacy>> ConfirmResetWindow
+  class MenuCloseButton
+  class MenuGameExitButton
+  <<legacy>> MenuGameExitButton
+  class HelpAndOptionsButton
+  class AchievementsButton
+  <<legacy>> AchievementsButton
+  class LeaderBoardButton
+  <<legacy>> LeaderBoardButton
+  class ConfirmResetButton
+  <<legacy>> ConfirmResetButton
+  class OKButton
+  class MessageDialog
+  class ModsWindow
+  <<dead>> ModsWindow
+  class NewModWindow
+  <<dead>> NewModWindow
+  class MultiwiniaFileOKButton
+  <<editor>> MultiwiniaFileOKButton
+  class MultiwiniaFileButton
+  <<editor>> MultiwiniaFileButton
+  class MultiwiniaFileDialog
+  <<editor>> MultiwiniaFileDialog
+  class MultiwiniaWindow
+  <<editor>> MultiwiniaWindow
+  class NewMapWindow
+  <<editor>> NewMapWindow
+  class MultiwiniaOptionsWindow
+  <<editor>> MultiwiniaOptionsWindow
+  class NetworkWindow
+  class PrefsGraphicsWindow
+  class PrefsKeybindingsWindow
+  <<legacy>> PrefsKeybindingsWindow
+  class PrefsOtherWindow
+  class PrefsScreenWindow
+  class PrefsSoundWindow
+  class ProfileWindow
+  <<debug>> ProfileWindow
+  class ReallyQuitWindow
+  <<legacy>> ReallyQuitWindow
+  class SaveOnQuitWindow
+  <<legacy>> SaveOnQuitWindow
+  class ScrollBar
+  class ScrollBarButton
+  class ScrollChangeButton
+  class SoundProfileWindow
+  <<debug>> SoundProfileWindow
+  class SoundSelector
+  <<debug>> SoundSelector
+  class SampleGroupFileDialog
+  <<debug>> SampleGroupFileDialog
+  class SoundEditorWindow
+  <<debug>> SoundEditorWindow
+  class DspEffectEditor
+  <<debug>> DspEffectEditor
+  class SampleGroupEditor
+  <<debug>> SampleGroupEditor
+  class RenameSampleGroupWindow
+  <<debug>> RenameSampleGroupWindow
+  class PurgeSoundsWindow
+  <<debug>> PurgeSoundsWindow
+  class SoundParameterEditor
+  <<debug>> SoundParameterEditor
+  class SoundStatsWindow
+  <<debug>> SoundStatsWindow
+  class TreeWindow
+  <<editor>> TreeWindow
+  class UpdateAvailableWindow
+  <<dead>> UpdateAvailableWindow
+  class UserProfileWindow
+  <<legacy>> UserProfileWindow
+  class NewUserProfileWindow
+  <<legacy>> NewUserProfileWindow
+  class AchievementButton
+  <<legacy>> AchievementButton
+  class AdvancedOptionsModeButton
+  class AnyLevelSelectButton
+  <<legacy>> AnyLevelSelectButton
+  class ApplyNameButton
+  class AuthInputField
+  class AuthPageButton
+  class AuthStatusButton
+  class BuyNowInfoButton
+  <<legacy>> BuyNowInfoButton
+  class BuyNowModeButton
+  class CSpectatorButton
+  <<dead>> CSpectatorButton
+  class CampaignButton
+  <<debug>> CampaignButton
+  class ServerConnectButton
+  class DarwiniaModeButton
+  class DarwiniaPlusMPButton
+  <<legacy>> DarwiniaPlusMPButton
+  class DarwiniaPlusSPButton
+  <<legacy>> DarwiniaPlusSPButton
+  class EnterAuthkeyButton
+  class ErrorDialog
+  <<dead>> ErrorDialog
+  class FancyColourButton
+  class FiltersPageButton
+  class FinishMultiwiniaButton
+  class FinishSinglePlayerButton
+  class SaveFiltersButton
+  class GameMenuOptionsButton
+  <<dead>> GameMenuOptionsButton
+  class GameMenuChatButton
+  class ServerPasswordString
+  class GameMenuWindow
+  class GameServerButton
+  class GameTypeAnyButton
+  <<legacy>> GameTypeAnyButton
+  class GameTypeButton
+  class GameTypeImageButton
+  class GameTypeInfoButton
+  class GamertagButton
+  class HelpImageButton
+  <<legacy>> HelpImageButton
+  class HelpModeButton
+  <<dead>> HelpModeButton
+  class HelpSelectButton
+  <<legacy>> HelpSelectButton
+  class ImageButton
+  class JoinGameButton
+  class KickPlayerButton
+  class LevelSelectButton
+  class LevelSelectButtonBase
+  class MapData
+  class MapImageButton
+  class MapInfoButton
+  class MapListTitlesButton
+  class MapSelectModeButton
+  class MultiwiniaEditorButton
+  <<editor>> MultiwiniaEditorButton
+  class MultiwiniaModeButton
+  <<dead>> MultiwiniaModeButton
+  class MultiwiniaVersusCpuButton
+  <<debug>> MultiwiniaVersusCpuButton
+  class NewOrJoinButton
+  class NewServerButton
+  class NextHelpButton
+  <<legacy>> NextHelpButton
+  class OptionDetailsButton
+  class PasteKeyButton
+  class PlayDemoAuthkeyButton
+  class PlayGameButton
+  class PrevHelpButton
+  <<legacy>> PrevHelpButton
+  class PrologueButton
+  <<debug>> PrologueButton
+  class QuickMatchButton
+  <<legacy>> QuickMatchButton
+  class QuickStartButton
+  <<dead>> QuickStartButton
+  class QuitAuthkeyButton
+  <<othertarget>> QuitAuthkeyButton
+  class QuitButton
+  class RequestAIButton
+  <<dead>> RequestAIButton
+  class ResearchModeButton
+  <<dead>> ResearchModeButton
+  class RollingDemoButton
+  <<dead>> RollingDemoButton
+  class ScrollingTextButton
+  class ServerTitleInfoButton
+  class StartTestbedButton
+  <<dead>> StartTestbedButton
+  class TutorialPageButton
+  class TutorialButton
+  class UnlockFullGameButton
+  class WaitingButton
+  class CreditsButton
+  class MapDetailsButton
+  <<dead>> MapDetailsButton
+  class MOTDButton
+  class VolumeControl
+  <<dead>> VolumeControl
+  class UpdatePageButton
+  class RunAutoPatcherButton
+  class RunSparkleButton
+  <<othertarget>> RunSparkleButton
+  class VisitWebsiteButton
+  class PlayerNameString
+  class GameMenu
+  class GameMenuTitleButton
+  class GameMenuButton
+  class GameMenuDropDown
+  class GameMenuDropDownWindow
+  class GameMenuDropDownMenuOption
+  class GameMenuInputField
+  class GameMenuInputScroller
+  class BackPageButton
+  class GameMenuCheckBox
+  DarwiniaWindow <|-- BuildingEditWindow
+  DarwiniaWindow <|-- BuildingsCreateWindow
+  DarwiniaWindow <|-- BuyNowWindow
+  DarwiniaWindow <|-- CameraAnimMainEditWindow
+  DarwiniaWindow <|-- CameraAnimSecondaryEditWindow
+  DarwiniaWindow <|-- CameraMountEditWindow
+  DarwiniaWindow <|-- ChatInputWindow
+  InputField <|-- ChatInputField
+  DarwiniaWindow <|-- CheatWindow
+  DarwiniaButton <|-- CheckBox
+  GameOptionsWindow <|-- ControllerUnpluggedWindow
+  EclWindow <|-- DarwiniaWindow
+  EclButton <|-- DarwiniaButton
+  DarwiniaButton <|-- BorderlessButton
+  DarwiniaButton <|-- CloseButton
+  DarwiniaButton <|-- GameExitButton
+  DarwiniaButton <|-- InvertedBox
+  DarwiniaButton <|-- LabelButton
+  DarwiniaWindow <|-- DebugMenu
+  DarwiniaWindow <|-- DemoEndWindow
+  DarwiniaWindow <|-- DropDownWindow
+  DarwiniaButton <|-- DropDownMenu
+  BorderlessButton <|-- DropDownMenuOption
+  DarwiniaWindow <|-- MainEditWindow
+  DarwiniaButton <|-- FileOKButton
+  EclButton <|-- FileButton
+  DarwiniaButton <|-- FileCancelButton
+  DarwiniaButton <|-- SelectedButton
+  DarwiniaWindow <|-- FileDialog
+  DarwiniaWindow <|-- GestureWindow
+  DarwiniaWindow <|-- GlobalWorldEditorWindow
+  DarwiniaWindow <|-- GrabberWindow
+  GameOptionsWindow <|-- HelpAndOptionsWindow
+  GameOptionsWindow <|-- SelectHelpWindow
+  DarwiniaButton <|-- CrateButton
+  GameOptionsWindow <|-- CrateHelpWindow
+  GameOptionsWindow <|-- GeneralHelpWindow
+  DarwiniaButton <|-- TextButton
+  GameOptionsWindow <|-- GameTypeHelpWindow
+  BorderlessButton <|-- InputField
+  DarwiniaButton <|-- InputScroller
+  DarwiniaButton <|-- ColourWidget
+  DarwiniaWindow <|-- ColourWindow
+  DarwiniaWindow <|-- InstantUnitEditWindow
+  DarwiniaWindow <|-- InstantUnitCreateWindow
+  DarwiniaWindow <|-- InvalidCratesWindow
+  FileDialog <|-- TerrainSelectorFileDialog
+  FileDialog <|-- WaterSelectorFileDialog
+  FileDialog <|-- WavesSelectorFileDialog
+  DarwiniaWindow <|-- LandscapeTileEditWindow
+  DarwiniaWindow <|-- LandscapeFlattenAreaEditWindow
+  DarwiniaWindow <|-- LandscapeEditWindow
+  DarwiniaWindow <|-- LandscapeGuideGridWindow
+  GameOptionsWindow <|-- LeaderboardWindow
+  GameOptionsWindow <|-- LeaderboardSelectionWindow
+  DarwiniaWindow <|-- LightsEditWindow
+  DarwiniaWindow <|-- GameOptionsWindow
+  GameOptionsWindow <|-- MainMenuWindow
+  GameOptionsWindow <|-- OptionsMenuWindow
+  GameOptionsWindow <|-- LocationWindow
+  GameOptionsWindow <|-- ResetLocationWindow
+  DarwiniaWindow <|-- AboutDarwiniaWindow
+  GameOptionsWindow <|-- ConfirmExitWindow
+  GameOptionsWindow <|-- ConfirmResetWindow
+  GameMenuButton <|-- MenuCloseButton
+  GameMenuButton <|-- MenuGameExitButton
+  GameMenuButton <|-- HelpAndOptionsButton
+  GameMenuButton <|-- AchievementsButton
+  GameMenuButton <|-- LeaderBoardButton
+  GameMenuButton <|-- ConfirmResetButton
+  DarwiniaButton <|-- OKButton
+  DarwiniaWindow <|-- MessageDialog
+  DarwiniaWindow <|-- ModsWindow
+  DarwiniaWindow <|-- NewModWindow
+  GameMenuButton <|-- MultiwiniaFileOKButton
+  DarwiniaButton <|-- MultiwiniaFileButton
+  GameOptionsWindow <|-- MultiwiniaFileDialog
+  GameOptionsWindow <|-- MultiwiniaWindow
+  GameOptionsWindow <|-- NewMapWindow
+  DarwiniaWindow <|-- MultiwiniaOptionsWindow
+  DarwiniaWindow <|-- NetworkWindow
+  GameOptionsWindow <|-- PrefsGraphicsWindow
+  DarwiniaWindow <|-- PrefsKeybindingsWindow
+  GameOptionsWindow <|-- PrefsOtherWindow
+  GameOptionsWindow <|-- PrefsScreenWindow
+  GameOptionsWindow <|-- PrefsSoundWindow
+  DarwiniaWindow <|-- ProfileWindow
+  DarwiniaWindow <|-- ReallyQuitWindow
+  DarwiniaWindow <|-- SaveOnQuitWindow
+  EclButton <|-- ScrollBarButton
+  DarwiniaButton <|-- ScrollChangeButton
+  DarwiniaWindow <|-- SoundProfileWindow
+  FileDialog <|-- SoundSelector
+  FileDialog <|-- SampleGroupFileDialog
+  DarwiniaWindow <|-- SoundEditorWindow
+  DarwiniaWindow <|-- DspEffectEditor
+  DarwiniaWindow <|-- SampleGroupEditor
+  DarwiniaWindow <|-- RenameSampleGroupWindow
+  DarwiniaWindow <|-- PurgeSoundsWindow
+  DarwiniaWindow <|-- SoundParameterEditor
+  DarwiniaWindow <|-- SoundStatsWindow
+  DarwiniaWindow <|-- TreeWindow
+  MessageDialog <|-- UpdateAvailableWindow
+  GameOptionsWindow <|-- UserProfileWindow
+  DarwiniaWindow <|-- NewUserProfileWindow
+  GameMenuButton <|-- AchievementButton
+  GameMenuButton <|-- AdvancedOptionsModeButton
+  LevelSelectButtonBase <|-- AnyLevelSelectButton
+  BackPageButton <|-- ApplyNameButton
+  InputField <|-- AuthInputField
+  GameMenuButton <|-- AuthPageButton
+  GameMenuButton <|-- AuthStatusButton
+  DarwiniaButton <|-- BuyNowInfoButton
+  GameMenuButton <|-- BuyNowModeButton
+  GameMenuButton <|-- CSpectatorButton
+  GameMenuButton <|-- CampaignButton
+  GameMenuButton <|-- ServerConnectButton
+  GameMenuButton <|-- DarwiniaModeButton
+  GameMenuButton <|-- DarwiniaPlusMPButton
+  GameMenuButton <|-- DarwiniaPlusSPButton
+  GameMenuButton <|-- EnterAuthkeyButton
+  DarwiniaWindow <|-- ErrorDialog
+  GameMenuButton <|-- FancyColourButton
+  GameMenuButton <|-- FiltersPageButton
+  BackPageButton <|-- FinishMultiwiniaButton
+  BackPageButton <|-- FinishSinglePlayerButton
+  BackPageButton <|-- SaveFiltersButton
+  GameMenuButton <|-- GameMenuOptionsButton
+  DarwiniaButton <|-- GameMenuChatButton
+  NetworkUnicodeString <|-- ServerPasswordString
+  DarwiniaWindow <|-- GameMenuWindow
+  GameMenuButton <|-- GameServerButton
+  GameMenuButton <|-- GameTypeAnyButton
+  GameMenuButton <|-- GameTypeButton
+  DarwiniaButton <|-- GameTypeImageButton
+  ScrollingTextButton <|-- GameTypeInfoButton
+  GameMenuButton <|-- GamertagButton
+  DarwiniaButton <|-- HelpImageButton
+  GameMenuButton <|-- HelpModeButton
+  GameMenuButton <|-- HelpSelectButton
+  DarwiniaButton <|-- ImageButton
+  GameMenuButton <|-- JoinGameButton
+  DarwiniaButton <|-- KickPlayerButton
+  LevelSelectButtonBase <|-- LevelSelectButton
+  DarwiniaButton <|-- LevelSelectButtonBase
+  DarwiniaButton <|-- MapImageButton
+  ScrollingTextButton <|-- MapInfoButton
+  DarwiniaButton <|-- MapListTitlesButton
+  GameMenuButton <|-- MapSelectModeButton
+  GameMenuButton <|-- MultiwiniaEditorButton
+  GameMenuButton <|-- MultiwiniaModeButton
+  GameMenuButton <|-- MultiwiniaVersusCpuButton
+  GameMenuButton <|-- NewOrJoinButton
+  GameMenuButton <|-- NewServerButton
+  GameMenuButton <|-- NextHelpButton
+  ScrollingTextButton <|-- OptionDetailsButton
+  GameMenuButton <|-- PasteKeyButton
+  GameMenuButton <|-- PlayDemoAuthkeyButton
+  GameMenuButton <|-- PlayGameButton
+  GameMenuButton <|-- PrevHelpButton
+  GameMenuButton <|-- PrologueButton
+  GameMenuButton <|-- QuickMatchButton
+  GameMenuButton <|-- QuickStartButton
+  GameMenuButton <|-- QuitAuthkeyButton
+  GameMenuButton <|-- QuitButton
+  GameMenuButton <|-- RequestAIButton
+  GameMenuButton <|-- ResearchModeButton
+  GameMenuButton <|-- RollingDemoButton
+  DarwiniaButton <|-- ScrollingTextButton
+  DarwiniaButton <|-- ServerTitleInfoButton
+  GameMenuButton <|-- StartTestbedButton
+  GameMenuButton <|-- TutorialPageButton
+  GameMenuButton <|-- TutorialButton
+  GameMenuButton <|-- UnlockFullGameButton
+  DarwiniaButton <|-- WaitingButton
+  GameMenuButton <|-- CreditsButton
+  DarwiniaButton <|-- MapDetailsButton
+  ScrollingTextButton <|-- MOTDButton
+  DarwiniaButton <|-- VolumeControl
+  GameMenuButton <|-- UpdatePageButton
+  GameMenuButton <|-- RunAutoPatcherButton
+  GameMenuButton <|-- RunSparkleButton
+  GameMenuButton <|-- VisitWebsiteButton
+  NetworkUnicodeString <|-- PlayerNameString
+  DarwiniaButton <|-- GameMenuTitleButton
+  DarwiniaButton <|-- GameMenuButton
+  DropDownMenu <|-- GameMenuDropDown
+  DropDownWindow <|-- GameMenuDropDownWindow
+  DropDownMenuOption <|-- GameMenuDropDownMenuOption
+  InputField <|-- GameMenuInputField
+  InputScroller <|-- GameMenuInputScroller
+  GameMenuButton <|-- BackPageButton
+  CheckBox <|-- GameMenuCheckBox
+  EclWindow "1" o-- "*" EclButton : m_buttons
+  ScrollBar ..> ScrollBarButton : registers in parent
+  ScrollBar ..> ScrollChangeButton : registers in parent
+  DropDownMenu ..> DropDownWindow : opens singleton
+  GameMenuDropDown ..> GameMenuDropDownWindow : opens singleton
+  InputScroller ..> InputField : m_inputField
+  GameMenu ..> GameMenuWindow : creates and destroys
+  GameMenuWindow ..> ScrollBar : m_scrollBar
+  GameMenuWindow ..> MapData : via GameMenu m_maps
+```
+
+### 12.3 Complete inventory of UI class declarations (generated)
+
+Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface/*`, `code/UI/*`, `code/game_menu.*` (384 declarations; `ClearLinksButton` is declared twice in `code/interface/buildings_window.cpp`, once per `#if` branch). Status rules: file-level reachability (vcproj membership, `#ifdef` guards, instantiation sites, P17a/P17b/P18 reachability tables) with per-class overrides, all in `_work/scripts/S_28_ui_inventory.py`. "[B:FULL]*" = compiled into the shipped exe but only instantiated by editor/debug tool windows.
+
+| # | Class | Base | Declared in | Status | Tag |
+|---|---|---|---|---|---|
+| 1 | `EclButton` | — | `contrib/eclipse/eclbutton.h:EclButton` | live in the shipped build | [B:FULL] |
+| 2 | `DirtyRect` | — | `contrib/eclipse/eclipse.h:DirtyRect` | live in the shipped build | [B:FULL] |
+| 3 | `EclWindow` | — | `contrib/eclipse/eclwindow.h:EclWindow` | live in the shipped build | [B:FULL] |
+| 4 | `ToolButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:ToolButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 5 | `DeleteBuildingButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:DeleteBuildingButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 6 | `TeamButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:TeamButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 7 | `IsGlobalButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:IsGlobalButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 8 | `CloneBuildingButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:CloneBuildingButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 9 | `ClearLinksButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:ClearLinksButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 10 | `ClearRadarLinksButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:ClearRadarLinksButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 11 | `ClearLinksButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:ClearLinksButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 12 | `NewBuildingButton` | `DarwiniaButton` | `code/interface/buildings_window.cpp:NewBuildingButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 13 | `BuildingEditWindow` | `DarwiniaWindow` | `code/interface/buildings_window.h:BuildingEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 14 | `BuildingsCreateWindow` | `DarwiniaWindow` | `code/interface/buildings_window.h:BuildingsCreateWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 15 | `BuyNowButton` | `DarwiniaButton` | `code/interface/buynow_window.cpp:BuyNowButton` | not compiled in any PC configuration | [B:DEAD] |
+| 16 | `BuyNowWindow` | `DarwiniaWindow` | `code/interface/buynow_window.h:BuyNowWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 17 | `NewAnimButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:NewAnimButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 18 | `DeleteAnimButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:DeleteAnimButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 19 | `SelectAnimButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:SelectAnimButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 20 | `NewNodeButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:NewNodeButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 21 | `CamBeforeMountButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:CamBeforeMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 22 | `StartPreviewButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:StartPreviewButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 23 | `StopPreviewButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:StopPreviewButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 24 | `SelectMountButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:SelectMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 25 | `DeleteNodeButton` | `DarwiniaButton` | `code/interface/camera_anim_window.cpp:DeleteNodeButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 26 | `CameraAnimMainEditWindow` | `DarwiniaWindow` | `code/interface/camera_anim_window.h:CameraAnimMainEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 27 | `CameraAnimSecondaryEditWindow` | `DarwiniaWindow` | `code/interface/camera_anim_window.h:CameraAnimSecondaryEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 28 | `NewMountButton` | `DarwiniaButton` | `code/interface/camera_mount_window.cpp:NewMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 29 | `GotoMountButton` | `DarwiniaButton` | `code/interface/camera_mount_window.cpp:GotoMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 30 | `DeleteMountButton` | `DarwiniaButton` | `code/interface/camera_mount_window.cpp:DeleteMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 31 | `UpdateMountButton` | `DarwiniaButton` | `code/interface/camera_mount_window.cpp:UpdateMountButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 32 | `CameraMountEditWindow` | `DarwiniaWindow` | `code/interface/camera_mount_window.h:CameraMountEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 33 | `ChatInputWindow` | `DarwiniaWindow` | `code/interface/chatinput_window.h:ChatInputWindow` | live in the shipped build | [B:FULL] |
+| 34 | `ChatInputField` | `InputField` | `code/interface/chatinput_window.h:ChatInputField` | live in the shipped build | [B:FULL] |
+| 35 | `KillAllEnemiesButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:KillAllEnemiesButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 36 | `SpawnDarwiniansButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SpawnDarwiniansButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 37 | `SpawnTankButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SpawnTankButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 38 | `SpawnViriiButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SpawnViriiButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 39 | `SpawnSpiritButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SpawnSpiritButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 40 | `AllowArbitraryPlacementButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:AllowArbitraryPlacementButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 41 | `ShowDrSepulvedaFaceButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:ShowDrSepulvedaFaceButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 42 | `EnableGeneratorAndMineButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:EnableGeneratorAndMineButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 43 | `EnableReceiverAndBufferButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:EnableReceiverAndBufferButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 44 | `OpenAllLocationsButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:OpenAllLocationsButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 45 | `ClearResourcesButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:ClearResourcesButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 46 | `GiveAllResearchButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:GiveAllResearchButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 47 | `SpawnPortsButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SpawnPortsButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 48 | `ProfilerCreateButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:ProfilerCreateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 49 | `SoundEditorCreateButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SoundEditorCreateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 50 | `SoundStatsCreateButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:SoundStatsCreateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 51 | `NetworkStatsCreateButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:NetworkStatsCreateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 52 | `CrateCreateButton` | `DarwiniaButton` | `code/interface/cheat_window.cpp:CrateCreateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 53 | `CheatWindow` | `DarwiniaWindow` | `code/interface/cheat_window.h:CheatWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 54 | `CheckBox` | `DarwiniaButton` | `code/interface/checkbox.h:CheckBox` | live in the shipped build | [B:FULL] |
+| 55 | `ControllerUnpluggedWindow` | `GameOptionsWindow` | `code/interface/controllerunplugged_window.h:ControllerUnpluggedWindow` | live in the shipped build | [B:FULL] |
+| 56 | `DarwiniaWindow` | `EclWindow` | `code/interface/darwinia_window.h:DarwiniaWindow` | live in the shipped build | [B:FULL] |
+| 57 | `DarwiniaButton` | `EclButton` | `code/interface/darwinia_window.h:DarwiniaButton` | live in the shipped build | [B:FULL] |
+| 58 | `BorderlessButton` | `DarwiniaButton` | `code/interface/darwinia_window.h:BorderlessButton` | live in the shipped build | [B:FULL] |
+| 59 | `CloseButton` | `DarwiniaButton` | `code/interface/darwinia_window.h:CloseButton` | live in the shipped build | [B:FULL] |
+| 60 | `GameExitButton` | `DarwiniaButton` | `code/interface/darwinia_window.h:GameExitButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 61 | `InvertedBox` | `DarwiniaButton` | `code/interface/darwinia_window.h:InvertedBox` | live in the shipped build | [B:FULL] |
+| 62 | `LabelButton` | `DarwiniaButton` | `code/interface/darwinia_window.h:LabelButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 63 | `ProfileButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:ProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 64 | `NetworkButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:NetworkButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 65 | `EditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:EditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 66 | `DebugCameraButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:DebugCameraButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 67 | `FPSButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:FPSButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 68 | `PrefsScreenButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsScreenButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 69 | `PrefsGfxDetailButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsGfxDetailButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 70 | `PrefsSoundButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsSoundButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 71 | `PokeyEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PokeyEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 72 | `GestureEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:GestureEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 73 | `CheatButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:CheatButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 74 | `SoundStatsButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundStatsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 75 | `SoundProfileButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 76 | `SoundEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 77 | `DebugMenu` | `DarwiniaWindow` | `code/interface/debugmenu.h:DebugMenu` | compiled into FULL, never reached | [B:LEGACY] |
+| 78 | `DebugKeyBindings` | — | `code/interface/debugmenu.h:DebugKeyBindings` | live in the shipped build | [B:FULL] |
+| 79 | `BuyOnlineButton` | `DarwiniaButton` | `code/interface/demoend_window.cpp:BuyOnlineButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 80 | `ExitDemoButton` | `DarwiniaButton` | `code/interface/demoend_window.cpp:ExitDemoButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 81 | `ReturnToGameButton` | `DarwiniaButton` | `code/interface/demoend_window.cpp:ReturnToGameButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 82 | `DemoEndWindow` | `DarwiniaWindow` | `code/interface/demoend_window.h:DemoEndWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 83 | `DropDownOptionData` | — | `code/interface/drop_down_menu.h:DropDownOptionData` | live in the shipped build | [B:FULL] |
+| 84 | `DropDownWindow` | `DarwiniaWindow` | `code/interface/drop_down_menu.h:DropDownWindow` | live in the shipped build | [B:FULL] |
+| 85 | `DropDownMenu` | `DarwiniaButton` | `code/interface/drop_down_menu.h:DropDownMenu` | live in the shipped build | [B:FULL] |
+| 86 | `DropDownMenuOption` | `BorderlessButton` | `code/interface/drop_down_menu.h:DropDownMenuOption` | live in the shipped build | [B:FULL] |
+| 87 | `MainEditWindowButton` | `BorderlessButton` | `code/interface/editor_window.cpp:MainEditWindowButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 88 | `MainEditWindow` | `DarwiniaWindow` | `code/interface/editor_window.h:MainEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 89 | `FileOKButton` | `DarwiniaButton` | `code/interface/filedialog.cpp:FileOKButton` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 90 | `FileButton` | `EclButton` | `code/interface/filedialog.cpp:FileButton` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 91 | `FileCancelButton` | `DarwiniaButton` | `code/interface/filedialog.cpp:FileCancelButton` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 92 | `SelectedButton` | `DarwiniaButton` | `code/interface/filedialog.cpp:SelectedButton` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 93 | `FileDialog` | `DarwiniaWindow` | `code/interface/filedialog.h:FileDialog` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 94 | `DrawGestureBox` | `DarwiniaButton` | `code/interface/gesture_window.cpp:DrawGestureBox` | not compiled in any PC configuration | [B:DEAD] |
+| 95 | `GestureStatusButton` | `DarwiniaButton` | `code/interface/gesture_window.cpp:GestureStatusButton` | not compiled in any PC configuration | [B:DEAD] |
+| 96 | `SaveDataButton` | `DarwiniaButton` | `code/interface/gesture_window.cpp:SaveDataButton` | not compiled in any PC configuration | [B:DEAD] |
+| 97 | `LoadDataButton` | `DarwiniaButton` | `code/interface/gesture_window.cpp:LoadDataButton` | not compiled in any PC configuration | [B:DEAD] |
+| 98 | `NewGestureButton` | `DarwiniaButton` | `code/interface/gesture_window.cpp:NewGestureButton` | not compiled in any PC configuration | [B:DEAD] |
+| 99 | `RecordGestureDemoButton` | `DarwiniaButton` | `code/interface/gesture_window.cpp:RecordGestureDemoButton` | not compiled in any PC configuration | [B:DEAD] |
+| 100 | `GestureWindow` | `DarwiniaWindow` | `code/interface/gesture_window.h:GestureWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 101 | `SetModeButton` | `DarwiniaButton` | `code/interface/globalworldeditor_window.cpp:SetModeButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 102 | `NewLocationButton` | `DarwiniaButton` | `code/interface/globalworldeditor_window.cpp:NewLocationButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 103 | `SaveLocationsButton` | `DarwiniaButton` | `code/interface/globalworldeditor_window.cpp:SaveLocationsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 104 | `GlobalWorldEditorWindow` | `DarwiniaWindow` | `code/interface/globalworldeditor_window.h:GlobalWorldEditorWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 105 | `StartRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StartRecordButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 106 | `StopRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StopRecordButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 107 | `GrabberWindow` | `DarwiniaWindow` | `code/interface/grabber_window.h:GrabberWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 108 | `HelpWindowButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:HelpWindowButton` | live in the shipped build | [B:FULL] |
+| 109 | `CrateHelpWindowButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:CrateHelpWindowButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 110 | `OptionsButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:OptionsButton` | live in the shipped build | [B:FULL] |
+| 111 | `HelpTypeButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:HelpTypeButton` | live in the shipped build | [B:FULL] |
+| 112 | `GeneralNextPageButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:GeneralNextPageButton` | live in the shipped build | [B:FULL] |
+| 113 | `NextPageButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:NextPageButton` | live in the shipped build | [B:FULL] |
+| 114 | `HelpAndOptionsWindow` | `GameOptionsWindow` | `code/interface/helpandoptions_windows.h:HelpAndOptionsWindow` | live in the shipped build | [B:FULL] |
+| 115 | `SelectHelpWindow` | `GameOptionsWindow` | `code/interface/helpandoptions_windows.h:SelectHelpWindow` | live in the shipped build | [B:FULL] |
+| 116 | `CrateButton` | `DarwiniaButton` | `code/interface/helpandoptions_windows.h:CrateButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 117 | `CrateHelpWindow` | `GameOptionsWindow` | `code/interface/helpandoptions_windows.h:CrateHelpWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 118 | `GeneralHelpWindow` | `GameOptionsWindow` | `code/interface/helpandoptions_windows.h:GeneralHelpWindow` | live in the shipped build | [B:FULL] |
+| 119 | `TextButton` | `DarwiniaButton` | `code/interface/helpandoptions_windows.h:TextButton` | live in the shipped build | [B:FULL] |
+| 120 | `GameTypeHelpWindow` | `GameOptionsWindow` | `code/interface/helpandoptions_windows.h:GameTypeHelpWindow` | live in the shipped build | [B:FULL] |
+| 121 | `InputField` | `BorderlessButton` | `code/interface/input_field.h:InputField` | live in the shipped build | [B:FULL] |
+| 122 | `InputScroller` | `DarwiniaButton` | `code/interface/input_field.h:InputScroller` | live in the shipped build | [B:FULL] |
+| 123 | `ColourWidget` | `DarwiniaButton` | `code/interface/input_field.h:ColourWidget` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 124 | `ColourWindow` | `DarwiniaWindow` | `code/interface/input_field.h:ColourWindow` | compiled into FULL, only used by editor/debug tools | [B:FULL]* |
+| 125 | `EditButton` | `DarwiniaButton` | `code/interface/instant_unit_window.cpp:EditButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 126 | `TeamButton1` | `DarwiniaButton` | `code/interface/instant_unit_window.cpp:TeamButton1` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 127 | `DeleteInstantUnitButton` | `DarwiniaButton` | `code/interface/instant_unit_window.cpp:DeleteInstantUnitButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 128 | `CloneInstantUnitButton` | `DarwiniaButton` | `code/interface/instant_unit_window.cpp:CloneInstantUnitButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 129 | `CreateButton` | `DarwiniaButton` | `code/interface/instant_unit_window.cpp:CreateButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 130 | `InstantUnitEditWindow` | `DarwiniaWindow` | `code/interface/instant_unit_window.h:InstantUnitEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 131 | `InstantUnitCreateWindow` | `DarwiniaWindow` | `code/interface/instant_unit_window.h:InstantUnitCreateWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 132 | `InvalidCratesWindow` | `DarwiniaWindow` | `code/interface/invalidcrates_window.h:InvalidCratesWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 133 | `TerrainSelectorFileDialog` | `FileDialog` | `code/interface/landscape_window.cpp:TerrainSelectorFileDialog` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 134 | `WaterSelectorFileDialog` | `FileDialog` | `code/interface/landscape_window.cpp:WaterSelectorFileDialog` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 135 | `WavesSelectorFileDialog` | `FileDialog` | `code/interface/landscape_window.cpp:WavesSelectorFileDialog` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 136 | `NewFileDialogButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:NewFileDialogButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 137 | `LandscapeTileButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:LandscapeTileButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 138 | `LandscapeFlattenAreaDeleteButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:LandscapeFlattenAreaDeleteButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 139 | `NewTileButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:NewTileButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 140 | `NewFlattenAreaButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:NewFlattenAreaButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 141 | `ScaleLandscapeButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:ScaleLandscapeButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 142 | `GuideGridButton` | `DarwiniaButton` | `code/interface/landscape_window.cpp:GuideGridButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 143 | `GuideGrid` | `EclButton` | `code/interface/landscape_window.cpp:GuideGrid` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 144 | `GuideGridTool` | `DarwiniaButton` | `code/interface/landscape_window.cpp:GuideGridTool` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 145 | `LandscapeTileEditWindow` | `DarwiniaWindow` | `code/interface/landscape_window.h:LandscapeTileEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 146 | `LandscapeFlattenAreaEditWindow` | `DarwiniaWindow` | `code/interface/landscape_window.h:LandscapeFlattenAreaEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 147 | `LandscapeEditWindow` | `DarwiniaWindow` | `code/interface/landscape_window.h:LandscapeEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 148 | `LandscapeGuideGridWindow` | `DarwiniaWindow` | `code/interface/landscape_window.h:LandscapeGuideGridWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 149 | `LeaderboardSmallFontRenderingButton` | `GameMenuButton` | `code/interface/leaderboards_window.cpp:LeaderboardSmallFontRenderingButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 150 | `LeaderBoardGamertagButton` | `LeaderboardSmallFontRenderingButton` | `code/interface/leaderboards_window.cpp:LeaderBoardGamertagButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 151 | `LeaderBoardTypeButton` | `GameMenuButton` | `code/interface/leaderboards_window.cpp:LeaderBoardTypeButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 152 | `LeaderBoardMessageButton` | `LeaderboardSmallFontRenderingButton` | `code/interface/leaderboards_window.cpp:LeaderBoardMessageButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 153 | `LeaderBoardWeeklyButton` | `LeaderBoardMessageButton` | `code/interface/leaderboards_window.cpp:LeaderBoardWeeklyButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 154 | `LeaderBoardListButton` | `GameMenuButton` | `code/interface/leaderboards_window.cpp:LeaderBoardListButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 155 | `LeaderBoardMiniListButton` | `LeaderBoardListButton` | `code/interface/leaderboards_window.cpp:LeaderBoardMiniListButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 156 | `LeaderboardLoader` | — | `code/interface/leaderboards_window.h:LeaderboardLoader` | compiled into FULL, never reached | [B:LEGACY] |
+| 157 | `LeaderboardWindow` | `GameOptionsWindow` | `code/interface/leaderboards_window.h:LeaderboardWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 158 | `LeaderboardSelectionWindow` | `GameOptionsWindow` | `code/interface/leaderboards_window.h:LeaderboardSelectionWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 159 | `LightButton` | `DarwiniaButton` | `code/interface/lights_window.cpp:LightButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 160 | `LightGammaButton` | `DarwiniaButton` | `code/interface/lights_window.cpp:LightGammaButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 161 | `NewLightButton` | `DarwiniaButton` | `code/interface/lights_window.cpp:NewLightButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 162 | `LightsEditWindow` | `DarwiniaWindow` | `code/interface/lights_window.h:LightsEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 163 | `AboutDarwiniaButton` | `DarwiniaButton` | `code/interface/mainmenus.cpp:AboutDarwiniaButton` | not compiled in any PC configuration | [B:DEAD] |
+| 164 | `MainMenuUserProfileButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:MainMenuUserProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 165 | `ModsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ModsButton` | not compiled in any PC configuration | [B:DEAD] |
+| 166 | `MultiwiniaButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:MultiwiniaButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 167 | `ScreenOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ScreenOptionsButton` | live in the shipped build | [B:FULL] |
+| 168 | `GraphicsOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:GraphicsOptionsButton` | live in the shipped build | [B:FULL] |
+| 169 | `SoundOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:SoundOptionsButton` | live in the shipped build | [B:FULL] |
+| 170 | `OtherOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:OtherOptionsButton` | live in the shipped build | [B:FULL] |
+| 171 | `KeybindingsOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:KeybindingsOptionsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 172 | `MainCloseButton` | `MenuCloseButton` | `code/interface/mainmenus.cpp:MainCloseButton` | live in the shipped build | [B:FULL] |
+| 173 | `ResetLevelButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ResetLevelButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 174 | `ExitLevelButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ExitLevelButton` | live in the shipped build | [B:FULL] |
+| 175 | `WebsiteButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:WebsiteButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 176 | `ConfirmExitButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ConfirmExitButton` | live in the shipped build | [B:FULL] |
+| 177 | `ResetLocationButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ResetLocationButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 178 | `GameOptionsWindow` | `DarwiniaWindow` | `code/interface/mainmenus.h:GameOptionsWindow` | live in the shipped build | [B:FULL] |
+| 179 | `MainMenuWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:MainMenuWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 180 | `OptionsMenuWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:OptionsMenuWindow` | live in the shipped build | [B:FULL] |
+| 181 | `LocationWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:LocationWindow` | live in the shipped build | [B:FULL] |
+| 182 | `ResetLocationWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ResetLocationWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 183 | `AboutDarwiniaWindow` | `DarwiniaWindow` | `code/interface/mainmenus.h:AboutDarwiniaWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 184 | `ConfirmExitWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ConfirmExitWindow` | live in the shipped build | [B:FULL] |
+| 185 | `ConfirmResetWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ConfirmResetWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 186 | `MenuCloseButton` | `GameMenuButton` | `code/interface/mainmenus.h:MenuCloseButton` | live in the shipped build | [B:FULL] |
+| 187 | `MenuGameExitButton` | `GameMenuButton` | `code/interface/mainmenus.h:MenuGameExitButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 188 | `HelpAndOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.h:HelpAndOptionsButton` | live in the shipped build | [B:FULL] |
+| 189 | `AchievementsButton` | `GameMenuButton` | `code/interface/mainmenus.h:AchievementsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 190 | `LeaderBoardButton` | `GameMenuButton` | `code/interface/mainmenus.h:LeaderBoardButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 191 | `ConfirmResetButton` | `GameMenuButton` | `code/interface/mainmenus.h:ConfirmResetButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 192 | `OKButton` | `DarwiniaButton` | `code/interface/message_dialog.cpp:OKButton` | live in the shipped build | [B:FULL] |
+| 193 | `MessageDialog` | `DarwiniaWindow` | `code/interface/message_dialog.h:MessageDialog` | live in the shipped build | [B:FULL] |
+| 194 | `LoadModButton` | `DarwiniaButton` | `code/interface/mods_window.cpp:LoadModButton` | not compiled in any PC configuration | [B:DEAD] |
+| 195 | `ToolsButton` | `DarwiniaButton` | `code/interface/mods_window.cpp:ToolsButton` | not compiled in any PC configuration | [B:DEAD] |
+| 196 | `NewModWindowButton` | `DarwiniaButton` | `code/interface/mods_window.cpp:NewModWindowButton` | not compiled in any PC configuration | [B:DEAD] |
+| 197 | `NewModButton` | `DarwiniaButton` | `code/interface/mods_window.cpp:NewModButton` | not compiled in any PC configuration | [B:DEAD] |
+| 198 | `ModsWindow` | `DarwiniaWindow` | `code/interface/mods_window.h:ModsWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 199 | `NewModWindow` | `DarwiniaWindow` | `code/interface/mods_window.h:NewModWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 200 | `MultiwiniaFileOKButton` | `GameMenuButton` | `code/interface/multiwinia_filedialog.cpp:MultiwiniaFileOKButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 201 | `MultiwiniaFileButton` | `DarwiniaButton` | `code/interface/multiwinia_filedialog.cpp:MultiwiniaFileButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 202 | `MultiwiniaFileDialog` | `GameOptionsWindow` | `code/interface/multiwinia_filedialog.h:MultiwiniaFileDialog` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 203 | `CreateMapButton` | `GameMenuButton` | `code/interface/multiwinia_window.cpp:CreateMapButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 204 | `EditMapButton` | `GameMenuButton` | `code/interface/multiwinia_window.cpp:EditMapButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 205 | `PlayMapButton` | `DarwiniaButton` | `code/interface/multiwinia_window.cpp:PlayMapButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 206 | `SelectMapButton` | `GameMenuButton` | `code/interface/multiwinia_window.cpp:SelectMapButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 207 | `NewMapWindowButton` | `GameMenuButton` | `code/interface/multiwinia_window.cpp:NewMapWindowButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 208 | `CurrentMapButton` | `DarwiniaButton` | `code/interface/multiwinia_window.cpp:CurrentMapButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 209 | `MultiwiniaWindow` | `GameOptionsWindow` | `code/interface/multiwinia_window.h:MultiwiniaWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 210 | `NewMapWindow` | `GameOptionsWindow` | `code/interface/multiwinia_window.h:NewMapWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 211 | `TextTab` | `DarwiniaButton` | `code/interface/multiwiniaoptions_window.cpp:TextTab` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 212 | `AttackersButton` | `DarwiniaButton` | `code/interface/multiwiniaoptions_window.cpp:AttackersButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 213 | `CoopGroupButton` | `DarwiniaButton` | `code/interface/multiwiniaoptions_window.cpp:CoopGroupButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 214 | `MultiwiniaOptionsWindow` | `DarwiniaWindow` | `code/interface/multiwiniaoptions_window.h:MultiwiniaOptionsWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 215 | `NetworkWindow` | `DarwiniaWindow` | `code/interface/network_window.h:NetworkWindow` | live in the shipped build | [B:FULL] |
+| 216 | `ApplyGraphicsButton` | `GameMenuButton` | `code/interface/prefs_graphics_window.cpp:ApplyGraphicsButton` | live in the shipped build | [B:FULL] |
+| 217 | `PrefsGraphicsWindow` | `GameOptionsWindow` | `code/interface/prefs_graphics_window.h:PrefsGraphicsWindow` | live in the shipped build | [B:FULL] |
+| 218 | `RestoreDefaultsButton` | `DarwiniaButton` | `code/interface/prefs_keybindings_window.cpp:RestoreDefaultsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 219 | `ApplyKeybindingsButton` | `DarwiniaButton` | `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 220 | `ChangeKeybindingButton` | `DarwiniaButton` | `code/interface/prefs_keybindings_window.cpp:ChangeKeybindingButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 221 | `ControlMethodDropDownMenu` | `DropDownMenu` | `code/interface/prefs_keybindings_window.cpp:ControlMethodDropDownMenu` | compiled into FULL, never reached | [B:LEGACY] |
+| 222 | `PrefsKeybindingsWindow` | `DarwiniaWindow` | `code/interface/prefs_keybindings_window.h:PrefsKeybindingsWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 223 | `ApplyOtherButton` | `GameMenuButton` | `code/interface/prefs_other_window.cpp:ApplyOtherButton` | live in the shipped build | [B:FULL] |
+| 224 | `PrefsOtherWindow` | `GameOptionsWindow` | `code/interface/prefs_other_window.h:PrefsOtherWindow` | live in the shipped build | [B:FULL] |
+| 225 | `ScreenResDropDownMenu` | `GameMenuDropDown` | `code/interface/prefs_screen_window.cpp:ScreenResDropDownMenu` | live in the shipped build | [B:FULL] |
+| 226 | `FullscreenRequiredMenu` | `GameMenuDropDown` | `code/interface/prefs_screen_window.cpp:FullscreenRequiredMenu` | live in the shipped build | [B:FULL] |
+| 227 | `SetScreenButton` | `GameMenuButton` | `code/interface/prefs_screen_window.cpp:SetScreenButton` | live in the shipped build | [B:FULL] |
+| 228 | `PrefsScreenWindow` | `GameOptionsWindow` | `code/interface/prefs_screen_window.h:PrefsScreenWindow` | live in the shipped build | [B:FULL] |
+| 229 | `RestartSoundButton` | `GameMenuButton` | `code/interface/prefs_sound_window.cpp:RestartSoundButton` | live in the shipped build | [B:FULL] |
+| 230 | `HW3DDropDownMenu` | `GameMenuCheckBox` | `code/interface/prefs_sound_window.cpp:HW3DDropDownMenu` | live in the shipped build | [B:FULL] |
+| 231 | `PrefsSoundWindow` | `GameOptionsWindow` | `code/interface/prefs_sound_window.h:PrefsSoundWindow` | live in the shipped build | [B:FULL] |
+| 232 | `ProfilerButton` | `DarwiniaButton` | `code/interface/profilewindow.cpp:ProfilerButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 233 | `ProfileWindow` | `DarwiniaWindow` | `code/interface/profilewindow.h:ProfileWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 234 | `ReallyQuitWindow` | `DarwiniaWindow` | `code/interface/reallyquit_window.h:ReallyQuitWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 235 | `YesButton` | `DarwiniaButton` | `code/interface/save_on_quit_window.cpp:YesButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 236 | `NoButton` | `DarwiniaButton` | `code/interface/save_on_quit_window.cpp:NoButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 237 | `CancelButton` | `DarwiniaButton` | `code/interface/save_on_quit_window.cpp:CancelButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 238 | `SaveOnQuitWindow` | `DarwiniaWindow` | `code/interface/save_on_quit_window.h:SaveOnQuitWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 239 | `ScrollBar` | — | `code/interface/scrollbar.h:ScrollBar` | live in the shipped build | [B:FULL] |
+| 240 | `ScrollBarButton` | `EclButton` | `code/interface/scrollbar.h:ScrollBarButton` | live in the shipped build | [B:FULL] |
+| 241 | `ScrollChangeButton` | `DarwiniaButton` | `code/interface/scrollbar.h:ScrollChangeButton` | live in the shipped build | [B:FULL] |
+| 242 | `ResetHistoryButton` | `DarwiniaButton` | `code/interface/sound_profile_window.cpp:ResetHistoryButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 243 | `SoundProfileWindow` | `DarwiniaWindow` | `code/interface/sound_profile_window.h:SoundProfileWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 244 | `SoundEventButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SoundEventButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 245 | `ObjectTypeMenu` | `DropDownMenu` | `code/interface/soundeditor_window.cpp:ObjectTypeMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 246 | `ObjectGroupMenu` | `DropDownMenu` | `code/interface/soundeditor_window.cpp:ObjectGroupMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 247 | `NewSoundEventMenu` | `DropDownMenu` | `code/interface/soundeditor_window.cpp:NewSoundEventMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 248 | `SoundPositionButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SoundPositionButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 249 | `PlayButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:PlayButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 250 | `PlayRepeatButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:PlayRepeatButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 251 | `StopButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:StopButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 252 | `SelectObjectButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SelectObjectButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 253 | `SaveAllButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SaveAllButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 254 | `DeleteEventButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:DeleteEventButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 255 | `SoundSelector` | `FileDialog` | `code/interface/soundeditor_window.cpp:SoundSelector` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 256 | `SoundSelectorButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SoundSelectorButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 257 | `DspEffectButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:DspEffectButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 258 | `DeleteDspEffectButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:DeleteDspEffectButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 259 | `PurgeSoundsButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:PurgeSoundsButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 260 | `ConvertVolumesButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:ConvertVolumesButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 261 | `DspEffectTypeMenu` | `DropDownMenu` | `code/interface/soundeditor_window.cpp:DspEffectTypeMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 262 | `SampleGroupFileDialog` | `FileDialog` | `code/interface/soundeditor_window.cpp:SampleGroupFileDialog` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 263 | `SampleGroupSampleName` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SampleGroupSampleName` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 264 | `SampleGroupSampleDelete` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SampleGroupSampleDelete` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 265 | `SampleGroupAddSample` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:SampleGroupAddSample` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 266 | `SampleGroupSelector` | `DropDownMenu` | `code/interface/soundeditor_window.cpp:SampleGroupSelector` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 267 | `NewSampleGroupButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:NewSampleGroupButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 268 | `RenameSampleGroupCommit` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:RenameSampleGroupCommit` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 269 | `RenameSampleGroupButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:RenameSampleGroupButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 270 | `DeleteSoundButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:DeleteSoundButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 271 | `RefreshFileListButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:RefreshFileListButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 272 | `DeleteAllButton` | `DarwiniaButton` | `code/interface/soundeditor_window.cpp:DeleteAllButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 273 | `SoundEditorWindow` | `DarwiniaWindow` | `code/interface/soundeditor_window.h:SoundEditorWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 274 | `DspEffectEditor` | `DarwiniaWindow` | `code/interface/soundeditor_window.h:DspEffectEditor` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 275 | `SampleGroupEditor` | `DarwiniaWindow` | `code/interface/soundeditor_window.h:SampleGroupEditor` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 276 | `RenameSampleGroupWindow` | `DarwiniaWindow` | `code/interface/soundeditor_window.h:RenameSampleGroupWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 277 | `PurgeSoundsWindow` | `DarwiniaWindow` | `code/interface/soundeditor_window.h:PurgeSoundsWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 278 | `SoundParameterGraphScaleToggle` | `DarwiniaButton` | `code/interface/soundparameter_window.cpp:SoundParameterGraphScaleToggle` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 279 | `LinkTypeMenu` | `DropDownMenu` | `code/interface/soundparameter_window.cpp:LinkTypeMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 280 | `UpdateTypeMenu` | `DropDownMenu` | `code/interface/soundparameter_window.cpp:UpdateTypeMenu` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 281 | `SoundParameterButton` | `BorderlessButton` | `code/interface/soundparameter_window.h:SoundParameterButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 282 | `SoundParameterEditor` | `DarwiniaWindow` | `code/interface/soundparameter_window.h:SoundParameterEditor` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 283 | `SoundParameterGraph` | `InvertedBox` | `code/interface/soundparameter_window.h:SoundParameterGraph` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 284 | `SoundStatsWindow` | `DarwiniaWindow` | `code/interface/soundstats_window.h:SoundStatsWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 285 | `TreeButton` | `DarwiniaButton` | `code/interface/tree_window.cpp:TreeButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 286 | `TreeWindow` | `DarwiniaWindow` | `code/interface/tree_window.h:TreeWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 287 | `GetItNowButton` | `DarwiniaButton` | `code/interface/updateavailable_window.cpp:GetItNowButton` | not compiled in any PC configuration | [B:DEAD] |
+| 288 | `UpdateAvailableWindow` | `MessageDialog` | `code/interface/updateavailable_window.h:UpdateAvailableWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 289 | `NewProfileButton` | `DarwiniaButton` | `code/interface/userprofile_window.cpp:NewProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 290 | `LoadUserProfileButton` | `GameMenuButton` | `code/interface/userprofile_window.cpp:LoadUserProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 291 | `NewProfileWindowButton` | `DarwiniaButton` | `code/interface/userprofile_window.cpp:NewProfileWindowButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 292 | `UserProfileWindow` | `GameOptionsWindow` | `code/interface/userprofile_window.h:UserProfileWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 293 | `ResetProfileButton` | `GameMenuButton` | `code/interface/userprofile_window.h:ResetProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 294 | `NewUserProfileWindow` | `DarwiniaWindow` | `code/interface/userprofile_window.h:NewUserProfileWindow` | compiled into FULL, never reached | [B:LEGACY] |
+| 295 | `AchievementButton` | `GameMenuButton` | `code/UI/AchievementButton.h:AchievementButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 296 | `AdvancedOptionsModeButton` | `GameMenuButton` | `code/UI/AdvancedOptionsModeButton.h:AdvancedOptionsModeButton` | live in the shipped build | [B:FULL] |
+| 297 | `AnyLevelSelectButton` | `LevelSelectButtonBase` | `code/UI/AnyLevelSelectButton.h:AnyLevelSelectButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 298 | `ApplyNameButton` | `BackPageButton` | `code/UI/ApplyNameButton.h:ApplyNameButton` | live in the shipped build | [B:FULL] |
+| 299 | `AuthInputField` | `InputField` | `code/UI/AuthInputField.h:AuthInputField` | live in the shipped build | [B:FULL] |
+| 300 | `AuthPageButton` | `GameMenuButton` | `code/UI/AuthPageButton.h:AuthPageButton` | live in the shipped build | [B:FULL] |
+| 301 | `AuthStatusButton` | `GameMenuButton` | `code/UI/AuthStatusButton.h:AuthStatusButton` | live in the shipped build | [B:FULL] |
+| 302 | `BuyNowInfoButton` | `DarwiniaButton` | `code/UI/BuyNowInfoButton.h:BuyNowInfoButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 303 | `BuyNowModeButton` | `GameMenuButton` | `code/UI/BuyNowModeButton.h:BuyNowModeButton` | live in the shipped build | [B:FULL] |
+| 304 | `CSpectatorButton` | `GameMenuButton` | `code/UI/CSpectatorButton.h:CSpectatorButton` | not compiled in any PC configuration | [B:DEAD] |
+| 305 | `CampaignButton` | `GameMenuButton` | `code/UI/CampaignButton.h:CampaignButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 306 | `ServerConnectButton` | `GameMenuButton` | `code/UI/ConnectButton.h:ServerConnectButton` | live in the shipped build | [B:FULL] |
+| 307 | `DarwiniaModeButton` | `GameMenuButton` | `code/UI/DarwiniaModeButton.h:DarwiniaModeButton` | live in the shipped build | [B:FULL] |
+| 308 | `DarwiniaPlusMPButton` | `GameMenuButton` | `code/UI/DarwiniaPlusMPButton.h:DarwiniaPlusMPButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 309 | `DarwiniaPlusSPButton` | `GameMenuButton` | `code/UI/DarwiniaPlusSPButton.h:DarwiniaPlusSPButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 310 | `EnterAuthkeyButton` | `GameMenuButton` | `code/UI/EnterAuthKeyButton.h:EnterAuthkeyButton` | live in the shipped build | [B:FULL] |
+| 311 | `ErrorDialog` | `DarwiniaWindow` | `code/UI/ErrorDialog.h:ErrorDialog` | not compiled in any PC configuration | [B:DEAD] |
+| 312 | `FancyColourButton` | `GameMenuButton` | `code/UI/FancyColourButton.h:FancyColourButton` | live in the shipped build | [B:FULL] |
+| 313 | `FiltersPageButton` | `GameMenuButton` | `code/UI/FiltersPageButton.h:FiltersPageButton` | live in the shipped build | [B:FULL] |
+| 314 | `FinishMultiwiniaButton` | `BackPageButton` | `code/UI/FinishMultiwiniaButton.h:FinishMultiwiniaButton` | live in the shipped build | [B:FULL] |
+| 315 | `FinishSinglePlayerButton` | `BackPageButton` | `code/UI/FinishMultiwiniaButton.h:FinishSinglePlayerButton` | live in the shipped build | [B:FULL] |
+| 316 | `SaveFiltersButton` | `BackPageButton` | `code/UI/FinishMultiwiniaButton.h:SaveFiltersButton` | live in the shipped build | [B:FULL] |
+| 317 | `GameMenuOptionsButton` | `GameMenuButton` | `code/UI/GameMenuOptionsButton.h:GameMenuOptionsButton` | not compiled in any PC configuration | [B:DEAD] |
+| 318 | `GameMenuChatButton` | `DarwiniaButton` | `code/UI/GameMenuWindow.cpp:GameMenuChatButton` | live in the shipped build | [B:FULL] |
+| 319 | `ServerPasswordString` | `NetworkUnicodeString` | `code/UI/GameMenuWindow.h:ServerPasswordString` | live in the shipped build | [B:FULL] |
+| 320 | `GameMenuWindow` | `DarwiniaWindow` | `code/UI/GameMenuWindow.h:GameMenuWindow` | live in the shipped build | [B:FULL] |
+| 321 | `GameServerButton` | `GameMenuButton` | `code/UI/GameServerButton.h:GameServerButton` | live in the shipped build | [B:FULL] |
+| 322 | `GameTypeAnyButton` | `GameMenuButton` | `code/UI/GameTypeAnyButton.h:GameTypeAnyButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 323 | `GameTypeButton` | `GameMenuButton` | `code/UI/GameTypeButton.h:GameTypeButton` | live in the shipped build | [B:FULL] |
+| 324 | `GameTypeImageButton` | `DarwiniaButton` | `code/UI/GameTypeImageButton.h:GameTypeImageButton` | live in the shipped build | [B:FULL] |
+| 325 | `GameTypeInfoButton` | `ScrollingTextButton` | `code/UI/GameTypeInfoButton.h:GameTypeInfoButton` | live in the shipped build | [B:FULL] |
+| 326 | `GamertagButton` | `GameMenuButton` | `code/UI/GamerTagButton.h:GamertagButton` | live in the shipped build | [B:FULL] |
+| 327 | `HelpImageButton` | `DarwiniaButton` | `code/UI/HelpImageButton.h:HelpImageButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 328 | `HelpModeButton` | `GameMenuButton` | `code/UI/HelpModeButton.h:HelpModeButton` | not compiled in any PC configuration | [B:DEAD] |
+| 329 | `HelpSelectButton` | `GameMenuButton` | `code/UI/HelpSelectButton.h:HelpSelectButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 330 | `ImageButton` | `DarwiniaButton` | `code/UI/ImageButton.h:ImageButton` | live in the shipped build | [B:FULL] |
+| 331 | `JoinGameButton` | `GameMenuButton` | `code/UI/JoinGameButton.h:JoinGameButton` | live in the shipped build | [B:FULL] |
+| 332 | `KickPlayerButton` | `DarwiniaButton` | `code/UI/KickPlayerButton.h:KickPlayerButton` | live in the shipped build | [B:FULL] |
+| 333 | `LevelSelectButton` | `LevelSelectButtonBase` | `code/UI/LevelSelectButton.h:LevelSelectButton` | live in the shipped build | [B:FULL] |
+| 334 | `LevelSelectButtonBase` | `DarwiniaButton` | `code/UI/LevelSelectButtonBase.h:LevelSelectButtonBase` | live in the shipped build | [B:FULL] |
+| 335 | `MapData` | — | `code/UI/MapData.h:MapData` | live in the shipped build | [B:FULL] |
+| 336 | `MapImageButton` | `DarwiniaButton` | `code/UI/MapImageButton.h:MapImageButton` | live in the shipped build | [B:FULL] |
+| 337 | `MapInfoButton` | `ScrollingTextButton` | `code/UI/MapInfoButton.h:MapInfoButton` | live in the shipped build | [B:FULL] |
+| 338 | `MapListTitlesButton` | `DarwiniaButton` | `code/UI/MapListTitlesButton.h:MapListTitlesButton` | live in the shipped build | [B:FULL] |
+| 339 | `MapSelectModeButton` | `GameMenuButton` | `code/UI/MapSelectModeButton.h:MapSelectModeButton` | live in the shipped build | [B:FULL] |
+| 340 | `MultiwiniaEditorButton` | `GameMenuButton` | `code/UI/MultiwiniaEditorButton.h:MultiwiniaEditorButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
+| 341 | `MultiwiniaModeButton` | `GameMenuButton` | `code/UI/MultiwiniaModeButton.h:MultiwiniaModeButton` | not compiled in any PC configuration | [B:DEAD] |
+| 342 | `MultiwiniaVersusCpuButton` | `GameMenuButton` | `code/UI/MultiwiniaVersusCpuButton.h:MultiwiniaVersusCpuButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 343 | `NewOrJoinButton` | `GameMenuButton` | `code/UI/NewOrJoinButton.h:NewOrJoinButton` | live in the shipped build | [B:FULL] |
+| 344 | `NewServerButton` | `GameMenuButton` | `code/UI/NewServerButton.h:NewServerButton` | live in the shipped build | [B:FULL] |
+| 345 | `NextHelpButton` | `GameMenuButton` | `code/UI/NextHelpButton.h:NextHelpButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 346 | `OptionDetailsButton` | `ScrollingTextButton` | `code/UI/OptionDetailsButton.h:OptionDetailsButton` | live in the shipped build | [B:FULL] |
+| 347 | `PasteKeyButton` | `GameMenuButton` | `code/UI/PasteKeyButton.h:PasteKeyButton` | live in the shipped build | [B:FULL] |
+| 348 | `PlayDemoAuthkeyButton` | `GameMenuButton` | `code/UI/PlayDemoAuthkeyButton.h:PlayDemoAuthkeyButton` | live in the shipped build | [B:FULL] |
+| 349 | `PlayGameButton` | `GameMenuButton` | `code/UI/PlayGameButton.h:PlayGameButton` | live in the shipped build | [B:FULL] |
+| 350 | `PrevHelpButton` | `GameMenuButton` | `code/UI/PrevHelpButton.h:PrevHelpButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 351 | `PrologueButton` | `GameMenuButton` | `code/UI/PrologueButton.h:PrologueButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 352 | `QuickMatchButton` | `GameMenuButton` | `code/UI/QuickMatchButton.h:QuickMatchButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 353 | `QuickStartButton` | `GameMenuButton` | `code/UI/QuickStartButton.h:QuickStartButton` | not compiled in any PC configuration | [B:DEAD] |
+| 354 | `QuitAuthkeyButton` | `GameMenuButton` | `code/UI/QuitAuthKeyButton.h:QuitAuthkeyButton` | other product target / platform only | [B:DEAD] |
+| 355 | `QuitButton` | `GameMenuButton` | `code/UI/QuitButton.h:QuitButton` | live in the shipped build | [B:FULL] |
+| 356 | `RequestAIButton` | `GameMenuButton` | `code/UI/RequestAIButton.h:RequestAIButton` | not compiled in any PC configuration | [B:DEAD] |
+| 357 | `ResearchModeButton` | `GameMenuButton` | `code/UI/ResearchModeButton.h:ResearchModeButton` | not compiled in any PC configuration | [B:DEAD] |
+| 358 | `RollingDemoButton` | `GameMenuButton` | `code/UI/RollingDemoButton.h:RollingDemoButton` | not compiled in any PC configuration | [B:DEAD] |
+| 359 | `ScrollingTextButton` | `DarwiniaButton` | `code/UI/ScrollingTextButton.h:ScrollingTextButton` | live in the shipped build | [B:FULL] |
+| 360 | `ServerTitleInfoButton` | `DarwiniaButton` | `code/UI/ServerTitleInfoButton.h:ServerTitleInfoButton` | live in the shipped build | [B:FULL] |
+| 361 | `StartTestbedButton` | `GameMenuButton` | `code/UI/TestBedButtons.h:StartTestbedButton` | not compiled in any PC configuration | [B:DEAD] |
+| 362 | `TutorialPageButton` | `GameMenuButton` | `code/UI/TutorialButton.h:TutorialPageButton` | live in the shipped build | [B:FULL] |
+| 363 | `TutorialButton` | `GameMenuButton` | `code/UI/TutorialButton.h:TutorialButton` | live in the shipped build | [B:FULL] |
+| 364 | `UnlockFullGameButton` | `GameMenuButton` | `code/UI/UnlockFullGameButton.h:UnlockFullGameButton` | live in the shipped build | [B:FULL] |
+| 365 | `WaitingButton` | `DarwiniaButton` | `code/UI/WaitingButton.h:WaitingButton` | live in the shipped build | [B:FULL] |
+| 366 | `CreditsButton` | `GameMenuButton` | `code/UI/credits_button.h:CreditsButton` | live in the shipped build | [B:FULL] |
+| 367 | `MapDetailsButton` | `DarwiniaButton` | `code/UI/mapDetailsButton.h:MapDetailsButton` | not compiled in any PC configuration | [B:DEAD] |
+| 368 | `MOTDButton` | `ScrollingTextButton` | `code/UI/motdButton.h:MOTDButton` | live in the shipped build | [B:FULL] |
+| 369 | `VolumeControl` | `DarwiniaButton` | `code/UI/soundsliderbutton.h:VolumeControl` | not compiled in any PC configuration | [B:DEAD] |
+| 370 | `UpdatePageButton` | `GameMenuButton` | `code/UI/update_page_buttons.h:UpdatePageButton` | live in the shipped build | [B:FULL] |
+| 371 | `RunAutoPatcherButton` | `GameMenuButton` | `code/UI/update_page_buttons.h:RunAutoPatcherButton` | live in the shipped build | [B:FULL] |
+| 372 | `RunSparkleButton` | `GameMenuButton` | `code/UI/update_page_buttons.h:RunSparkleButton` | other product target / platform only | [B:DEAD] |
+| 373 | `VisitWebsiteButton` | `GameMenuButton` | `code/UI/update_page_buttons.h:VisitWebsiteButton` | live in the shipped build | [B:FULL] |
+| 374 | `PlayerNameString` | `NetworkUnicodeString` | `code/game_menu.h:PlayerNameString` | live in the shipped build | [B:FULL] |
+| 375 | `GameMenu` | — | `code/game_menu.h:GameMenu` | live in the shipped build | [B:FULL] |
+| 376 | `GameMenuTitleButton` | `DarwiniaButton` | `code/game_menu.h:GameMenuTitleButton` | live in the shipped build | [B:FULL] |
+| 377 | `GameMenuButton` | `DarwiniaButton` | `code/game_menu.h:GameMenuButton` | live in the shipped build | [B:FULL] |
+| 378 | `GameMenuDropDown` | `DropDownMenu` | `code/game_menu.h:GameMenuDropDown` | live in the shipped build | [B:FULL] |
+| 379 | `GameMenuDropDownWindow` | `DropDownWindow` | `code/game_menu.h:GameMenuDropDownWindow` | live in the shipped build | [B:FULL] |
+| 380 | `GameMenuDropDownMenuOption` | `DropDownMenuOption` | `code/game_menu.h:GameMenuDropDownMenuOption` | live in the shipped build | [B:FULL] |
+| 381 | `GameMenuInputField` | `InputField` | `code/game_menu.h:GameMenuInputField` | live in the shipped build | [B:FULL] |
+| 382 | `GameMenuInputScroller` | `InputScroller` | `code/game_menu.h:GameMenuInputScroller` | live in the shipped build | [B:FULL] |
+| 383 | `BackPageButton` | `GameMenuButton` | `code/game_menu.h:BackPageButton` | live in the shipped build | [B:FULL] |
+| 384 | `GameMenuCheckBox` | `CheckBox` | `code/game_menu.h:GameMenuCheckBox` | live in the shipped build | [B:FULL] |
+
+Totals: not compiled in any PC configuration = 32; TARGET_DEBUG builds only = 73; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 76; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 120; other product target / platform only = 2; compiled into FULL, never reached = 74; all declarations = 384.
+
+---
+

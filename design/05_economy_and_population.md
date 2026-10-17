@@ -896,3 +896,223 @@ Recommendations derived from the findings above (not evidence about the original
 5. Keep the territory model (≥ 3 of 5 operators, any enemy contests, 30 s activation, linear income) — it is the core of the game's feel — but specify ally handling and the occupancy query radius precisely (§2).
 6. Treat the soul economy as a deliberate design choice: either keep "harvest any team's dead" (a strong comeback/snowball lever) or restrict it; give engineer-collected souls a destination or remove spirit collection from engineers on maps without incubators (§5.3).
 
+---
+
+## Open questions and unknowns
+
+| ID | Item | Status | What would resolve it |
+|---|---|---|---|
+| 05-U1 | Does the 5.0-radius neighbour query in `Building::EvaluatePorts` return only Darwinians within 5.0 of the port, or anything in the grid cell (P03 reports grid shortcuts ignoring the requested range)? Affects which Darwinian "occupies" a port and therefore capture. | [U] | Read `code/entity_grid.cpp:EntityGrid::GetNeighbours` (owned by [21](21_simulation_and_entity_model.md)) or instrument a run. |
+| 05-U2 | Exact wall latency of the spawn network per map: depends on how many link hand-offs go to a building later in `m_buildings` (same-tick increment) — range 9h + 1 … 10h + 1 ticks. | [I] | Replay `SpawnBuilding::Advance` with each map's building order (ids in load order). |
+| 05-U3 | Fate of spirits in `StateHarvested` / `StateCollected` when a Harvester disappears by a path other than its own grenade (task termination, `Team::StopAllTasks`); Harvested has no timer and no owner check, so such spirits may persist forever and occupy slots. Note `Team::Eliminate`'s `ChangeHealth` cannot kill a harvester (invulnerable unless `m_vunerable`). | [U] | Read `code/taskmanager.cpp` task stop/removal for TypeHarvester and the entity removal path; test. |
+| 05-U4 | Do Futurewinian (team 5) Darwinians operate spawn-point ports and capture points? If yes, E1 (never-reset `s_numSpawnPoints[6]`) is reachable in shipped play. | [I] (they are ordinary Darwinians, so probably yes) | Runtime test with the space-ship crate on a spawn-point map; read team-5 AI (07). |
+| 05-U5 | Design intent of the handicap (binary, diluted by the two special teams, `(mine−1)/total` always 0). Shipped behaviour is [C]; intent unknown. | [U] | Introversion design notes / patch history. |
+| 05-U6 | Intent of the per-team cap divisor (level NumPlayers, alliances not pooled) and of the two uncapped co-op maps (`mp_domination_4P_2`, `mp_koth_4P_3`). | [U] | Design notes; play-testing data. |
+| 05-U7 | Whether the doubled reinforcement rate on `mp_blitzkrieg_2P_3`, `2p_1`, `2p_2` was noticed and balanced around. | [I] unintended | Release notes / balance discussions. |
+| 05-U8 | Engineer can target a spirit that is `Harvested`/`Collected`/`InEgg` (`Engineer::AdvanceToSpirit` rejects only Death/Attached) → one slot referenced by two collectors; combined with the `while (m_spirits.Size() > 0)` drop loops this could hang (E8). Reachability unknown. | [I] | Targeted test: engineer and harvester on the same soul field. |
+| 05-U9 | Whether player selection/orders can pull an operating Darwinian off a port (would let a player "un-man" a point deliberately). | [I] | [06](06_player_control_and_input.md) selection rules / test. |
+| 05-U10 | `Virii::s_viriiPopulation` returns to 0 between games because `Team::~Team` deletes `m_others` and `~Virii` decrements — holds only if every constructed Virii had `Begin()` called (always true via `SpawnEntities`). | [I] (resolves meta U3 of the creatures agent) | Confirm no `new Virii` outside `Entity::NewEntity` + `SpawnEntities`. |
+| 05-U11 | Spawn Mania exact request count per point (50 or 51) depends on whether the crate is captured in a building slot before or after the point in the same tick. | [I] | Instrumented run. |
+| 05-U12 | Harvester throughput figure (≈ 2.5 Darwinians/s for a 500-unit round trip) is a back-of-envelope estimate; real movement uses turning and acceleration filters. | [I] | Simulate `Harvester::AdvanceToTargetPos` on a map. |
+
+Resolved in this document (previously open): meta U3/U6 composition of `m_others` (§4.1, [C]); meta U4 harvesters collect enemy souls (§5.3, [C]); P06 "each building once per tick?" (§8.1, [C] — yes); P06 "GetNetworkTime vs GetGameTime" — `GetNetworkTime` is a macro for `g_gameTimer.GetGameTime` [C] `code/gametimer.h`; per-team cap vs teams in play (§4.2: empty slots are CPU-filled, disconnected humans become CPU with a new AI entity [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`).
+
+Contradictions resolved by re-reading code: (1) retribution called vs never called (§6.9); (2) destroyed ant hills releasing monster spirits (§5.1); (3) spore generators creating spirits regardless of team (§5.1); (4) handicap "other used teams" omitting the two special teams (§3.2); (5) spawn-link latency "exactly 1.0 s" vs 11/10 ticks (§3.4); (6) double-run step "6 ticks" vs 5.5 ticks / 330-tick waves (§6.4); (7) P03 labelling Engineer spirit collection and egg fertilisation "legacy" — both are live in [B:FULL] via crates (§5.3); (8) P05/P03 "harvester enemy souls [I]" → [C].
+
+## Docs-vs-code discrepancies
+
+| Doc / comment | Statement | Code behaviour | Ref |
+|---|---|---|---|
+| `docs/spirit resource system.txt` | a spirit "gradually floats away over the course of a minute" | MP: Birth 6.1 s + Floating 30–50 s (collectable) + ascent 90.1 s ≈ 126–146 s | `code/worldobject/spirit.cpp:Spirit::Advance` |
+| `docs/spirit resource system.txt` | "When your creatures die they die for good and can not be respawned" | Harvesters recycle souls of every team, including your own | `code/worldobject/harvester.cpp:Harvester::AdvanceHarvesting` |
+| `docs/spirit resource system.txt` | garbage collectors grab "2 or 3 at a time", "if they die they will drop their spirits"; factories need spirits | Harvester capacity 100 and sucks every soul within 75; it dies only by sucking up a grenade, which re-births its souls; spawn points use virtual master spirits; spirit factories are legacy/blocked | `harvester.cpp`, `spawnpoint.cpp`, `code/worldobject/factory.cpp` |
+| `docs/multiwiniachanges-beta.txt` Issue 366 | "Magical forests produce red souls only if red around" | tree souls pick a uniform random team 0–3 regardless of surroundings (may be an unused slot) | `code/worldobject/tree.cpp:Tree::Advance` |
+| `docs/multiwiniachanges-beta.txt` Issue 304 | "Engineer gets stuck trying to offload souls" | consistent: in MP an engineer can only unload at an incubator; no shipped official map has one, so engineers keep souls | `code/worldobject/engineer.cpp:Engineer::AdvanceIdle` |
+| `docs/multiwiniachanges-beta.txt` Issue 612 and the `AdvanceSkirmish` comment ("ScoreMode 0: Final Population, 1: Population Per Second") | Domination scores population | ScoreMode 0 → score = spawn points owned now; 1 → cumulative spawn points per mode-second; population is never scored | `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish` |
+| `docs/multiwinia_manual.pdf` (via P02) | Handicap applies to "Domination, King of the Hill" | also an Assault option (inert there: no Assault map has spawn points) | `data/multiwinia.txt` |
+| `docs/multiwinia-changes.txt` | "Virii no longer count towards your population limit, but have their own limit" | consistent (subtracted; 250 per team) | `SpawnPoint::PopulationLocked`, `code/worldobject/virii.h` |
+| `code/level_file.h` comment on `LevelOptionDefenderReinforcementType` | "replaces the TrunkPortArmour option (which must be active for this option to have effect)" | applied whenever `AdvanceTrunkPorts` runs (`trunkportreinforcements` alone suffices); it suppresses port armour for that side | `Multiwinia::AdvanceTrunkPorts` |
+| `code/level_file.h` comment on `LevelOptionNoGunTurrets` | "disables GunTurret tasks from TrunkPorts on RocketRiot" | disables all turret-wave tasks (incl. Blitzkrieg AirStrike upgrades) in any mode (used on `mp_blitzkrieg_2P_4`) | `Multiwinia::AdvanceTrunkPorts` |
+| `code/level_file.h` comment on `LevelOptionTrunkPortReinforcements` | "activates the RocketRiot style trunk port reinforcements on a level" | in Rocket Riot/Blitzkrieg its count is ignored (game option wins) but it adds a second call per tick | `Multiwinia::Advance` |
+| `SpawnPoint::Advance` comment | instant activation for "our first (or last) spawn point" | triggers whenever the team owns exactly one point at that moment | `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance` |
+| `code/gametimer.h` header comment / mode code | "1-second" rule timers | fire every 11 ticks (1.1 s) | §8.2 |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian(s)", "Multiwinian(s)" (unit name; crate name `cratename_darwinians` "Multiwinians"; "Evil Darwinians!" hard-coded) | name / text | `code/worldobject/crate.cpp:Crate::RunDarwinians`, `data/language/english.txt` | "worker(s)", "hostile workers" |
+| "Futurewinian(s)" (team 5) | name | `code/location.cpp:Location::InitFuturewinianTeam` | "alt-faction" |
+| "Spirit" / "soul" concept with green orb visual and ascent "to heaven" | concept / art | `code/worldobject/spirit.cpp`, `code/worldobject/spawnpoint.cpp:MasterSpawnPoint::Advance` | "essence orb" |
+| "SpawnPoint", "SpawnPointMaster", "SpawnLink", "SpawnPopulationLock" (`buildingname_spawnpoint`, `buildingname_spawnpointmaster`) | name | `data/language/english.txt` | "Gateway", "Source Node", "Relay", "Population Limiter" |
+| "TrunkPort" (`buildingname_trunkport`) | name | `data/language/english.txt` | "Warp Gate" |
+| "Incubator" (`buildingname_incubator`) | name | `data/language/english.txt` | "Hatchery" |
+| "Harvester", "Engineer" (`cratename_harvester`) | name | `data/language/english.txt` | "Collector", "Builder" |
+| "Spawn Mania" (`cratename_spawnmania`), "Retribution" (`multiwinia_retribution_maxtasks`) | name / text | `data/language/english.txt` | "Spawn Surge", "Comeback Bonus" |
+| UI strings `crate_message_darwinians` ("*T receives Reinforcements!"), `multiwinia_reinforcementsgiven`, `multiwinia_skirmish_elimination_30`, `multiwinia_player_left`, `objective_redpopulation` | text | `data/language/english.txt` | own string table |
+| Shapes `spawnpointmultiwinia.shp`, `spawnpoint.shp`, `masterspawnpoint.shp`, `spawnlink.shp`, `trunkport_mp.shp`, `trunkport.shp`, `harvester.shp`, `incubator.shp`, `solarpanel.shp` | art | `data/shapes/` | new meshes |
+| Textures used by the spawn network and ports: `textures/laser.bmp` (link beams), `textures/cloudyglow.bmp` (activation glow), `textures/starburst.bmp` (port status stars) | art | `SpawnBuilding::RenderAlphas`, `SpawnPoint::RenderAlphas`, `SpawnPoint::RenderPorts` | new VFX textures |
+| Sound events `TurnOn`, `TurnOff` (spawn point), `DropSpirit` (harvester), `PickedUp` (spirit), `SpawnEntity` (incubator), `PowerUp` (trunk port) — the event names are generic, the samples bound to them in `data/sounds.txt` are IP | audio | [10](10_audio_design.md) | new samples |
+| Level names and layouts `data/levels/mp_*.txt` | name / level design | §4.6 | new maps |
+| Darwinia lore of a "central repository of spirits" | text / concept | `docs/sepulveda_interview.txt` | drop |
+
+## Source map
+
+| File | Role in the economy |
+|---|---|
+| `code/worldobject/spawnpoint.cpp` | SpawnBuilding link transit, MasterSpawnPoint, SpawnPoint capture/activation/spawn cycle/handicap/cap, SpawnPopulationLock |
+| `code/worldobject/spawnpoint.h` | spawn-network classes, `s_numSpawnPoints`, members |
+| `code/worldobject/spirit.cpp` | Spirit states and timers |
+| `code/worldobject/spirit.h` | Spirit state enum, `SPIRIT_MAXNEARBYEGGS` |
+| `code/worldobject/trunkport.cpp` | `TrunkPort::PopulationLocked`, trunk-port shape/markers |
+| `code/worldobject/trunkport.h` | TrunkPort members |
+| `code/worldobject/harvester.cpp` | soul collection and spawn-point delivery |
+| `code/worldobject/harvester.h` | Harvester states |
+| `code/worldobject/engineer.cpp` | engineer soul collection, incubator delivery, drop on death |
+| `code/worldobject/engineer.h` | `ENGINEER_SEARCHRANGE`, `ENGINEER_RETARGETTIMER` |
+| `code/worldobject/incubator.cpp` | spirit → Darwinian conversion |
+| `code/worldobject/incubator.h` | `INCUBATOR_PROCESSTIME(_MULTIPLAYER)` |
+| `code/worldobject/virii.cpp` | `s_viriiPopulation` bookkeeping, spirit ferrying |
+| `code/worldobject/virii.h` | `VIRII_POPULATIONLIMIT` |
+| `code/worldobject/egg.cpp` | fertilised egg → 4 Virii |
+| `code/worldobject/egg.h` | Egg states |
+| `code/worldobject/anthill.cpp` | ant-hill cap, spirit → ants, destruction release |
+| `code/worldobject/anthill.h` | AntHill members |
+| `code/worldobject/armyant.cpp` | ants carrying spirits |
+| `code/worldobject/centipede.cpp` | spirit eating |
+| `code/worldobject/centipede.h` | centipede constants |
+| `code/worldobject/souldestroyer.cpp` | deletes spirits of its kills |
+| `code/worldobject/souldestroyer.h` | SoulDestroyer members |
+| `code/worldobject/spam.cpp` | SpamInfection spirit deletion / conversion |
+| `code/worldobject/spam.h` | Spam classes |
+| `code/worldobject/sporegenerator.cpp` | egg laying with spirits |
+| `code/worldobject/sporegenerator.h` | SporeGenerator members |
+| `code/worldobject/spider.cpp` | egg laying (creature population) |
+| `code/worldobject/triffid.cpp` | TriffidEgg spawn table (Darwinians, Virii, spirits, …) |
+| `code/worldobject/triffid.h` | spawn-type enum |
+| `code/worldobject/tree.cpp` | Magical Forest soul drops |
+| `code/worldobject/tree.h` | `m_spiritDropRate` |
+| `code/worldobject/officer.cpp` | absorb / shield spirits (legacy) |
+| `code/worldobject/officer.h` | Officer constants |
+| `code/worldobject/darwinian.cpp` | port seeking/occupation, death, worship disabled in MP |
+| `code/worldobject/darwinian.h` | `DARWINIAN_SEARCHRANGE_PORTS` |
+| `code/worldobject/entity.cpp` | death → spirit, corpse fade |
+| `code/worldobject/entity.h` | Entity base members |
+| `code/worldobject/building.cpp` | ports, occupancy, reservation counters |
+| `code/worldobject/building.h` | BuildingPort |
+| `code/worldobject/generator.cpp` | SolarPanel (port-seeded at start) |
+| `code/worldobject/generator.h` | SolarPanel class |
+| `code/worldobject/crate.cpp` | Darwinians, Spawn Mania, speed, ant-nest, forest rewards; `Crate::IsValid` |
+| `code/worldobject/crate.h` | crate reward enum |
+| `code/worldobject/rocket.cpp` | passenger boarding/ejection |
+| `code/worldobject/rocket.h` | EscapeRocket members |
+| `code/worldobject/spaceship.cpp` | abduction / Futurewinian drop |
+| `code/worldobject/spaceship.h` | SpaceShip members |
+| `code/worldobject/randomiser.cpp` | team conversion |
+| `code/worldobject/weapons.cpp` | subversion conversion |
+| `code/worldobject/multiwiniazone.cpp` | `GetNumZones` for the Blitzkrieg air-strike upgrade |
+| `code/worldobject/multiwiniazone.h` | zone class |
+| `code/worldobject/armour.cpp` | Armour death (no spirit) |
+| `code/worldobject/insertion_squad.cpp` | Squaddie death (no spirit), unit membership |
+| `code/worldobject/airstrike.cpp` | SpaceInvader (no spirit, unit membership) |
+| `code/worldobject/tank.cpp` | Tank death (no spirit) [B:DEBUG task] |
+| `code/worldobject/portal.cpp` | Tentacle unit membership [B:DEBUG] |
+| `code/worldobject/factory.cpp` | legacy spirit factory |
+| `code/worldobject/spiritreceiver.cpp` | legacy spirit-receiver network |
+| `code/worldobject/spiritstore.cpp` | legacy spirit store |
+| `code/worldobject/dropship.cpp` | legacy DropShip reinforcement |
+| `code/team.cpp` | `NewEntity` (m_others vs units), `Advance`, `Eliminate`, destructor |
+| `code/team.h` | Team members (`m_others`, `m_units`, flags) |
+| `code/location.cpp` | `Init` resets and special teams, research levels, `InitBuildings`, `InitialiseTeam`, `SpawnEntities`, `SpawnSpirit`, `Advance` slices, `AdvanceCrates`, `IsFriend`, position mapping |
+| `code/location.h` | Location members (`m_spawnManiaTimer`, `m_spirits`) |
+| `code/multiwinia.cpp` | `AdvanceTrunkPorts`, `Advance`, `AdvanceRocketRiot`, `AdvanceBlitkrieg`, `AdvanceSkirmish`, `AdvanceRetribution`, `IsEliminated`, `GetGameOption`, `RemoveTeams`, grace period |
+| `code/multiwinia.h` | reinforcement members |
+| `code/multiwiniahelp.cpp` | tutorial-2 spawn gating, reinforcement notification |
+| `code/level_file.cpp` | MultiwiniaOptions parsing (caps, NumPlayers, LevelOptions, AttackingTeams) |
+| `code/level_file.h` | LevelOption enum and comments |
+| `code/gametimer.cpp` | dt = 0.1 × speed, speed changes, grace freeze |
+| `code/gametimer.h` | `SERVER_ADVANCE_PERIOD`, `GetNetworkTime` macros |
+| `code/globals.h` | `NUM_TEAMS`, `NUM_SLICES_PER_FRAME` |
+| `code/taskmanager.cpp` | task spawns (squad in unit, armour/harvester/engineer/officer in m_others) |
+| `code/network/clienttoserver.cpp` | slice scheduling, Multiwinia::Advance at slice 8 (P01) |
+| `code/interface/multiwiniaoptions_window.cpp` | editor cap controls [B:EDITOR] |
+| `code/interface/cheat_window.cpp` | debug spawn of Darwinians/spirits [B:DEBUG] |
+| `contrib/systemiv/lib/math/random_number.cpp` | synced RNG |
+| `contrib/systemiv/lib/math/random_number.h` | `syncfrand` / `syncsfrand` ranges |
+| `targets/vs2005/Darwinia.vcproj` | OpenMP off (serial slice order) |
+| `data/multiwinia.txt` | Handicap, ReinforcementTimer/Count, MaxArmour, TurretFrequency, MaxTurrets, StartingPowerups, CrateDropRate defaults |
+| `data/stats.txt` | Darwinian and Harvester health/speed |
+| `data/language/english.txt` | economy UI strings |
+| `data/sounds.txt` | sample bindings of the economy sound events |
+| `data/shapes/spawnpointmultiwinia.shp` | 5 ports, door marker |
+| `data/shapes/masterspawnpoint.shp` | master shape |
+| `data/shapes/spawnlink.shp` | relay shape |
+| `data/shapes/trunkport_mp.shp` | MP trunk port |
+| `data/shapes/harvester.shp` | harvester mesh |
+| `data/shapes/incubator.shp` | incubator mesh |
+| `data/shapes/solarpanel.shp` | 5 ports (port seeding) |
+| `data/textures/laser.bmp` | spawn-link beams |
+| `data/textures/cloudyglow.bmp` | spawn-point activation glow |
+| `data/textures/starburst.bmp` | port status stars |
+| `docs/spirit resource system.txt` | original soul-economy design note (discrepancies) |
+| `docs/multiwinia-changes.txt` | Virii cap change note |
+| `docs/multiwiniachanges-beta.txt` | beta issue reports on souls/engineers/scoring |
+| `docs/multiwinia_manual.pdf` | manual statements on handicap (via P02) |
+| `docs/sepulveda_interview.txt` | spirit lore (IP) |
+| `data/levels/mp_assault_2P_1.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_2P_2.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_2p_3.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_3P_2.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_3p_1.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_3p_3.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_4P_1.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_4P_2.txt` | level economy data (Assault): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_assault_stress.txt` | level economy data (none): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_benchmark_1.txt` | level economy data (none): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | level economy data (Blitzkrieg): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_2p_1.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_2p_2.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_2p_3.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_2p_4.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_3P_2.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_3p_1.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_3p_3.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_4P_1.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_4P_2.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_cts_4p_3.txt` | level economy data (CaptureTheStatue): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_domination_2P_1.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_domination_2P_2.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_domination_3P_1.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_domination_4P_1.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_domination_4P_2.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_2P_1.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_2P_2.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_2P_3.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_2P_3b.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_3P_1.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_3P_2.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_3P_3.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_3P_4.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_4P_1.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_4P_3.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_koth_4P_4.txt` | level economy data (KingOfTheHill): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_2P_2.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_2P_4.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_2p_3.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_3P_2.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_3P_3.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_3p_1.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_rocketriot_4P_1.txt` | level economy data (RocketRiot): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_sandbox.txt` | level economy data (none): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_sandbox_all.txt` | level economy data (none): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_skirmish_2p_4.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_skirmish_3P_1.txt` | level economy data (Domination): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_tankbattle_2P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_tankbattle_3P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |
+| `data/levels/mp_tankbattle_4P.txt` | level economy data (TankBattle): caps, options, spawn network, trunk ports, start units (§4.6, §6.3) |

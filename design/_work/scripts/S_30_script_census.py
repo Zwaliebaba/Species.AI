@@ -80,20 +80,41 @@ def census(src):
                 if f.lower() in ln.lower():
                     stripped = ln.strip()
                     commented = stripped.startswith('#') or stripped.startswith('//')
-                    (dead if commented else live).append(f'{rel}:L{i}')
+                    kind = ('T6' if rel.endswith('code/attract.cpp') else
+                            'T5' if rel.endswith('code/worldobject/rocket.cpp') else
+                            'code' if rel.startswith('code/') else
+                            'T1' if 'scripttrigger' in ln.lower() else
+                            'T3' if 'runscript' in ln.lower() else
+                            'T4' if rel.startswith('data/levels/') else 'code')
+                    (dead if commented else live).append(f'{kind} {rel}:L{i}')
         rows.append((f, len(raw), exe, ops, says, wait, move, live, dead))
     return rows
 
 
+def classify(live):
+    names = {'T1': 'ScriptTrigger', 'T3': 'global event', 'T4': 'objective cutscene',
+             'T5': 'EscapeRocket victory', 'T6': 'attract mode', 'code': 'code'}
+    trig = []
+    for ref in live:
+        kind, _, where = ref.partition(' ')
+        trig.append(f'{kind} {names[kind]} `{where}`')
+    if not trig:
+        return 'orphan (no live reference)', '[B:DEAD]'
+    if all(t.startswith('T6') for t in trig):
+        return '; '.join(trig), '[B:DEAD]'
+    return '; '.join(trig), '[B:LEGACY]'
+
+
 def main():
     src = sys.argv[1]
-    print('| Script | Phys. lines | Exec. lines | Commands (opcode×count) | Say ids (n: first..last) | ΣWait s | ΣCamMove s | Live references | Commented-out references |')
-    print('|---|---|---|---|---|---|---|---|---|')
+    print('| Script | Lines phys/exec | Commands (opcode×count) | Say ids (n: first..last) | ΣWait / ΣCamMove s | Live references | Commented-out references | Tag |')
+    print('|---|---|---|---|---|---|---|---|')
     for f, phys, exe, ops, says, wait, move, live, dead in census(src):
         cmds = ', '.join(f'{k}×{v}' for k, v in sorted(ops.items(), key=lambda kv: kv[0].lower()))
         s = f'{len(says)}: `{says[0]}`..`{says[-1]}`' if says else '0'
-        print(f'| `{f}` | {phys} | {exe} | {cmds} | {s} | {wait:g} | {move:g} | '
-              f'{"; ".join(live) if live else "none"} | {"; ".join(dead) if dead else "none"} |')
+        trig, tag = classify(live)
+        print(f'| `{f}` | {phys}/{exe} | {cmds} | {s} | {wait:g} / {move:g} | '
+              f'{trig} | {"; ".join("`" + d.partition(" ")[2] + "`" for d in dead) if dead else "none"} | {tag} |')
 
 
 if __name__ == '__main__':

@@ -677,7 +677,7 @@ All keywords are case-insensitive. `:` and `,` are separators, which is why cond
 
 Writers: `WriteLocations` (`"\t%4d %4d %30s %40s"`), `WriteBuildings` (`"\t%4d %4d %6d %6d %6d %6d"`), `GlobalResearch::Write` (all 29 research rows + `CurrentResearch` + `CurrentPoints`), `GlobalEvent::Write`, `WriteLevelTimes`/`WriteSquaddiesUsed` (both empty), `WriteTutorial` (DEMO2 only) [C] `GlobalWorld::SaveGame`.
 
-Shipped content: all five files have the four sections Locations, Buildings, Research, Events; `game.txt` defines 11 locations (ids 1–11), 2 global buildings, 11 research rows, 17 events; `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent) [C].
+Shipped content: all five files have the four sections Locations, Buildings, Research, Events; `game.txt` defines 11 locations (ids 1–11), 2 global buildings, 11 research rows, 18 events; `game_unlockall.txt` 11/2/11/13; `game_demo.txt` 1/1/9/0; `game_demo2.txt` 8/8/9/1; `purity/game.txt` 11/0/11/6 (locations/buildings/research/events); `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent) [C].
 
 <a id="fmt-locations-txt"></a>
 ### 3.4 `data/locations.txt` — world-map positions [B:LEGACY] [C] `GlobalWorld::LoadLocations`, `SaveLocations`
@@ -775,4 +775,70 @@ name_list := { line }          ; line = free text; leading space/TAB/':'/',' str
 ```
 
 Encoding: single-byte; accented names are Latin-1 bytes and render as the corresponding U+00xx characters (§1.6). Minimal example: `Jane 'Example' Doe` on its own line. A name beginning with `:` or `,` loses that character; a name containing `#` is truncated.
+
+<a id="fmt-preferences"></a>
+## [→ 29_data_formats_reference] 6. Preferences (`preferences.txt`, `data/default_preferences.txt`, `user_input_preferences.txt`) [B:FULL]
+
+### 6.1 Files and life cycle [C] `code/lib/preferences.cpp:PrefsManager`, `code/app.cpp:App::App`, `App::GetPreferencesPath`
+
+| File | Role | Read by | Written by | Encoding |
+|---|---|---|---|---|
+| `<profile>/preferences.txt` (`<profile>` = `%LOCALAPPDATA%\Introversion\Multiwinia\`, or cwd with `--NoProfile`; Mac `~/Library/Preferences/uk.co.introversion.<APP_NAME>.txt`) | user settings | `PrefsManager::Load` (UTF-16 if BOM, else bytes) | `PrefsManager::Save` (13 call sites) | written as **UTF-16LE with BOM** (`UnicodeTextFileWriter`, `_O_U16TEXT`, CRLF [I: CRT text mode translation]) |
+| `data/default_preferences.txt` | overrides of the hard-coded first-run defaults | `PrefsManager::CreateDefaultValues` via `Resource::GetTextReader` | never | ASCII |
+| `<profile>/user_input_preferences.txt` | user key bindings (§7.5) | `InputManager::parseInputPrefs` (not `PrefsManager`) | a second `PrefsManager` instance in `ApplyKeybindingsButton::MouseUp` | UTF-16LE with BOM |
+
+Life cycle: `App::App` parses `init.dat`, then constructs `g_prefsManager = new PrefsManager(GetPreferencesPath())` [C]. `Load()` reads the file; if it does not exist (or fails the first-line check below) it calls `CreateDefaultValues()` — in the latter case it also saves immediately. Then, unconditionally, `SetInt("MultiwiniaControlMethod", 1)` ("Hack by Chris to disable old-style control"), and the constructor adds `ControlMethod = 1` if `GetInt("ControlMethod")` returns −1 [C] `PrefsManager::Load`, `PrefsManager::PrefsManager`. Because the manager is created before `main.dat` is parsed, a packaged install finds `default_preferences.txt` only if it is a loose file [I, from archive order; P14 §31.5.3].
+
+### 6.2 Line grammar (reader side)
+
+Each physical line is first cleaned by the `TextReader` (§1: `#` comment, CR/LF removal) and then reduced with `GetRestOfUnicodeLine()` (leading space/TAB/`:`/`,` stripped) before `PrefsManager::AddLine` sees it [C] `PrefsManager::Load`.
+
+```
+prefs_file := { line }
+line       := empty_line | item_line
+empty_line := text with no alphanumeric character before an optional '#'      ; IsLineEmpty
+item_line  := { non_alnum } KEY SEPCHAR { WS | '=' } VALUE
+KEY        := 1*ALNUM                         ; iswalnum (locale-dependent; ASCII letters/digits in practice); case-SENSITIVE
+SEPCHAR    := exactly one character (normally ' ' or '='), overwritten and skipped
+VALUE      := rest of the line, verbatim (trailing blanks kept)
+```
+
+Value typing (`PrefsItem::PrefsItem`) [C]:
+
+| Condition on VALUE | Stored type | Conversion |
+|---|---|---|
+| first char is `-` or a digit, and VALUE contains no `.` | `TypeInt` | `wistringstream >> int` (leading number; junk after it ignored; failure → 0) |
+| first char is `-` or a digit, exactly one `.` | `TypeFloat` | `wistringstream >> float` |
+| first char is `-` or a digit, two or more `.` | `TypeString` | e.g. `127.0.0.1` |
+| anything else | `TypeString` | verbatim |
+
+Lookup is **type-strict**: `GetInt` on a float item, `GetFloat` on an int item, or `GetString` on a number returns the caller's default [C] `PrefsManager::GetInt/GetFloat/GetString`. Example: `DarwinianScaleFactor = 2` is an int and `GetFloat("DarwinianScaleFactor", …)` ignores it — always write floats with a decimal point. Duplicate keys: the first occurrence wins while loading a file ("Duplicate preference item %s. Ignoring"); lines added while `s_overwrite` is set (the `default_preferences.txt` pass) replace the existing item [C] `PrefsManager::AddLine`.
+
+Edge cases [C]: (a) the **first line** of an existing file is validated — every character before the first space or `=` must lie in `'A'…'z'` (ASCII 65–122, so digits fail); otherwise the whole file is discarded, defaults are recreated and saved ("Unicode file fuck up check"); (b) a key that runs to the end of the line (no separator) makes the value pointer start one past the terminator (out-of-bounds read); (c) the value-skip loop's `value == L'\0'` test compares a pointer, not a character (harmless because `iswspace('\0')` is false).
+
+### 6.3 Writer (`PrefsManager::Save`) [C]
+
+1. All items' `m_hasBeenWritten` flags are cleared; the file is truncated and a UTF-16 BOM written.
+2. For each remembered input line (`m_fileText`, in load order): an *empty* line is written verbatim **without adding a newline** — so blank lines and comments read from disk (already reduced to empty strings by the reader) vanish; only the literal `"\n"` lines added by `CreateDefaultValues` survive. For an item line the key is re-extracted by scanning to the first `=`: it starts at the first alphanumeric and ends at the **last non-alphanumeric character before `=`**; the item is written as `KEY = VALUE\n` (`%ls = %d`, `%ls = %.2f`, `%ls = %ls`).
+3. Items not yet written are appended in `std::map` order (`wcscmp`, ordinal).
+
+Hazards for implementers (all [C], reproduce only if byte-compatible output is required): a template line of the form `Key=1` (no character between key and `=`) is copied verbatim without a newline, glueing it to the next line and losing the following key on the next load; a template line containing no `=` makes the scan run past the end of the string; `Key  = 1` (two spaces) yields the key `"Key "` and creates a bogus empty item; floats are rounded to 2 decimals; a `%` inside a copied line is interpreted as a format specifier.
+
+### 6.4 Hard-coded first-run defaults (FULL, Win32) and `default_preferences.txt` overrides [C] `PrefsManager::CreateDefaultValues`, `data/default_preferences.txt`
+
+Order of `AddLine` calls (blank `"\n"` lines omitted): `ServerAddress = 127.0.0.1`, `BypassNetwork = 0`, `ServerPort = 4000`, `TextLanguage = unknown`, `TextSpeed = 15`, `HelpEnabled = 1` (0 under `DEMOBUILD`), `SoundLibrary = dsound` (`HAVE_DSOUND`), `SoundMixFreq = 22050` (44100 Mac), `SoundMasterVolume = 255`, `SoundChannels = 32` (16/32 Mac by CPU), `SoundHW3D = 0`, `SoundSwapStereo = 0`, `SoundMemoryUsage = 1`, `SoundBufferSize = 512`, `SoundDSP = 0`, `RenderLandscapeDetail = 1`, `RenderWaterDetail = 1`, `RenderBuildingDetail = 1`, `RenderEntityDetail = 1`, `RenderCloudDetail = 1`, `RenderPixelShader = 1`, `DarwinianScaleFactor = 2.00`, `ControlMouseButtons = 3` (1 Mac), `ControlMethod = 1`, `MultiwiniaControlMethod = 1`, (Linux/Mac: `RenderLandscapeMode = 2`, `ManuallyScaleTextures = 0`), `BootLoader = firsttime`, `UserProfile = AccessAllAreas`, `ScreenOverscan = 0`, `RenderSpecialLighting = 0`, `Difficulty = 1` (`OTHER_DIFFICULTY`). `DEMOBUILD` variants (`StartMap`, `UserProfile = DemoUser`, …) are [B:DEAD].
+
+`data/default_preferences.txt` (17 lines) then overrides/adds: `NetworkServerPort = 4000`, `NetworkClientPort = 4001`, `ServerAddress = 127.0.0.1`, `BypassNetwork = 0`, `ServerPort = 4000`, `TextSpeed = 15`, `ControlMethod = 1`, `WaitVerticalRetrace = 0`, `DarwinianScaleFactor = 2.0`, `MultiwiniaControlMethod = 1`; the line `#TextLanguage = english` is a comment (ignored) [C] file. The complete register of keys read anywhere in code (with defaults at each call site) is in P17b `_work/drafts/P17b_prefs_accesses.csv` and P14 `_work/drafts/P14_platform_lib_pref_keys.csv` [→ 09_meta_systems].
+
+Discrepancies [C] (grep of `code/` for the literal key and for any `#define` naming it): `ServerAddress`, `ServerPort` and `BypassNetwork` are written by both default sources but **never read** (dead keys; the live ports are `NetworkServerPort`/`NetworkClientPort` via `PREFS_NETWORKSERVERPORT`/`PREFS_NETWORKCLIENTPORT`, `code/network/network_defines.h`, read in `code/network/server.cpp`, `code/network/clienttoserver.cpp`, `code/UI/GameMenuWindow.cpp`); `WaitVerticalRetrace` defaults to **1** in code (`code/renderer.cpp`, L146) but `default_preferences.txt` sets 0, so a fresh development install starts without v-sync while a packaged install (file not found, §6.1) starts with it [I]; `DarwinianScaleFactor = 2.0` (float) is consistent with the code default `2.00`.
+
+Minimal example (`preferences.txt`, shown as text; the game writes UTF-16LE):
+
+```
+TextLanguage = english
+ScreenWidth = 1280
+RenderSpecialLighting = 0
+DarwinianScaleFactor = 2.00
+ServerAddress = 127.0.0.1
+```
 

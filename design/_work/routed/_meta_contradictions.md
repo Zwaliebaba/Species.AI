@@ -255,6 +255,25 @@
 7. `animatedpanel.cpp` includes `lib/render/renderer.h`, which resolves (via the `..\..\contrib\SystemIV` include path) to the uncompiled SystemIV renderer header [I] — nothing from it appears to be used; a re-implementation can ignore it.
 8. `RequestBootloaderSequence` leaves `g_RenderingFirstTimeBL = true` forever in FULL builds → fade-outs suppressed after a Campaign launch (§1.6) [C].
 
+<!-- from X1b_asset_formats -->
+## Contradictions / open questions
+1. P14 states archive keys must be requested in lower case; code shows case-insensitive look-up (above) — resolved in favour of code [C].
+2. Original spec §5 places `effects.txt` under 26_animation_and_vfx; the file is audio DSP configuration → route to 10/27 [C].
+3. `ShapeExporter` source vs shipped `.shp`: the in-tree exporter writes triangle lists and no `right:` lines, yet 39 shipped files are strip-encoded and 3 contain `right:` → files predate the current exporter [I].
+4. Marker `front` sign convention differs from fragments in the exporter (§29.B4) — interpretation [I]; a test export would confirm.
+
+<!-- from X2b_asset_catalogue_audio -->
+## Contradictions / open questions
+
+1. **Stationary loops never stop** (`PulseBomb Create`, legacy `Generator ReprogramComplete`) — §10.E [I]; resolve by running an Assault match to completion.
+2. **`menusounds.dat` early load has no effect** because all triggers wait for `m_soundsLoaded` (set after `sounds.dat`/`sounds2.dat`) — §10.B [I].
+3. **Victory jumps in objective-less maps**: `Darwinian::BeginVictoryDance` treats an empty `m_primaryObjectives` list as victory; 47 of the 57 `data/levels/mp_*.txt` define `PrimaryObjectives` (45 with `NeverTrue`, 2 `mp_sandbox*` with `BuildingOnline`), 10 define none (`mp_assault_2p_3`, `mp_assault_3p_1`, `mp_assault_3p_3`, `mp_assault_4P_2`, `mp_blitzkrieg_4P_2`, `mp_domination_2P_1`, `mp_domination_4P_1`, `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_skirmish_3P_1`) → on those, idle team-0 Darwinians above y = 10 should randomly jump with `VictoryJump` [I: depends on the level loader leaving the list empty; P11/P02 to confirm].
+4. **Crate decay sound bug** (`"Capturing_%pc"`) — §10.C [C].
+5. **Base-class attribution is by method name**: overloads with different signatures (e.g. `Statue::Destroy()` vs `Building::Destroy(double)`) are treated as overrides; this can only mis-classify rows that are silent anyway (no data) [I].
+6. **Render-driven triggers**: `Grenade|AirStrikeBomb Flash` (`ThrowableWeapon::Render`) and the in-game clock `CountdownTick` (`Multiwinia::Render`) fire from rendering, so they depend on the object/HUD being rendered [I]; a new engine should drive them from simulation/UI state.
+7. **Officer/Squad acknowledgement voices recorded but unbound** (§10.H) — design intent (docs) vs shipped data; the new game should decide explicitly.
+8. **P16 §27.10 music release**: P16 states all music blocks have RELEASE 0; the data has 3.29–20.71 s releases on 14 of 17 blocks (§10.F) [C]. Moot for Multiwinia (music unreachable) but relevant to anyone reusing the music design.
+
 <!-- from X4_level_catalogue -->
 ## Contradictions / open questions
 1. `level_enum.txt` is excluded from every Multiwinia data build but is the only source of achievement level ids (§13) → Master of Multiwinia unreachable with script-built data [C]/[I].

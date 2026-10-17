@@ -1075,3 +1075,366 @@ Rendering `MarkerSystem::Render` [C]:
 - Hover: `IsMOuseInside` uses the icon's screen box → `m_newMarkerUnderMouse` → `m_markerUnderMouse` at end of frame; order markers set `m_isOrderMarkerUnderMouse`.
 - Debug/AI overlays (pref `RenderAIInfo` 1, `AIInfoTeam`): AITargets print per-team priority text and draw team-coloured arrows; AIObjective spheres only under `LOCATION_EDITOR` [C] `code/worldobject/ai.cpp:AITarget::Render` ([07](07_ai.md)).
 
+## 9 Camera
+
+### 9.1 Model and conventions
+
+[C] `code/camera.h:Camera`, `code/camera.cpp`.
+- One global camera `g_app->m_camera` — **local per machine, never networked**. World is Y-up; sea level y = 0; units = world units ("metres" in comments).
+- Orientation: `m_front` (unit view direction) and `m_up`, re-orthonormalised every frame by `Normalise()` (`right = up × front`, `up = front × right`). **`GetRight()` returns `m_up × m_front`, which with this handedness points to screen-left**, which explains the sign conventions below ("CameraLeft adds `GetRight()`"). `GetUp()` returns world up if `m_up` is zero.
+- State: `m_pos`, `m_targetPos` (mode-specific goal point), `m_targetFront/m_targetUp` (goal orientation for cuts/moves), `m_height` (desired absolute y in free movement; height parameter in aim modes), `m_fov`/`m_targetFov` (vertical FOV, degrees), `m_mode`, `m_debugMode`, `m_framesInThisMode`, `m_vel`, `m_cameraShake`; animation cursor (`m_anim`, `m_animCurrentNode`, `m_animNodeStartTime`, `m_modeBeforeAnim`, `m_pos/front/upBeforeAnim`); entity tracking (`m_trackingEntity(Id)`, `m_trackingCameraDist`, `m_currentEntityTrackPos`, `m_lastEntityTrackPos`, `m_wantedPos`, `m_lastSquadieId`, `m_cameraTarget`, `m_predictedEntityPos`, `m_resettingCameraPos`, `m_controlVector`, `m_skipDirectionCalculation`); flags `m_entityTrack`, `m_camLookAround`; cosmetic aim helpers `m_targetVector`, `m_wantedTargetVector`.
+- Constructor defaults [C] `Camera::Camera`: fov = targetFov = 60°, height 50, pos (1000, 500, 1000), front = normalise(0, −0.5, −1), up orthogonalised from world up, mode `ModeDoNothing`, debug mode `DebugModeAuto`, `m_distFromEntity` 100, `m_trackingCameraDist` 250 (**int**), `m_heightMultiplier` 1, `m_targettingFOVAngle` 0.939692621 (cos 20°), bounds ±1e6.
+- Timing: camera motion uses the **render-frame** delta `g_advanceTime` (wall clock, capped at 0.25 s [C] `code/main.cpp:UpdateAdvanceTime`) or direct `GetHighResTime()` deltas; `g_gameTime` for animations and oscillations. The camera advances once per rendered frame, only while the window has focus [C] `code/main.cpp:LocationGameLoop`, plus an extra `Advance()` when the (legacy) icon task manager closes. Not advanced in the main-menu loop (call commented out) [C] `code/main.cpp:MainMenuLoop`.
+- Most smoothing is first-order exponential `x = x·(1 − k·dt) + target·k·dt` without clamping `k·dt` — at low frame rates it can overshoot (free movement uses its own dt clamped to 1.0 s, so `4·dt` can reach 4).
+
+### 9.2 Per-frame `Camera::Advance`
+
+[C] `Camera::Advance`
+
+```mermaid
+flowchart TD
+  A["Advance"] --> B{"m_anim set?"}
+  B -- yes --> B1["AdvanceAnim: node timing and transitions"]
+  B -- no --> C{"not m_camLookAround and mode is not EntityTrack"}
+  B1 --> C
+  C -- yes --> C1["AdvanceComponentZoom: FOV easing"]
+  C -- no --> D{"mode is SphereWorld, FreeMovement, BuildingFocus,<br/>EntityTrack, RadarAim, FirstPerson or TurretAim"}
+  C1 --> D
+  D -- yes --> D1["AdvanceComponentMouseWheelHeight: m_height"]
+  D -- no --> E{"no anim and (debug Always, or debug Auto with an Eclipse window open,<br/>or framesInThisMode below 2)"}
+  D1 --> E
+  E -- yes --> E1["uncapture mouse, AdvanceDebugMode"]
+  E -- no --> E2["capture mouse (uncapture if GameModeNone), per-mode advancer,<br/>location modes only if the landscape heightmap exists"]
+  E1 --> F["camera shake"]
+  E2 --> F
+  F --> G["Normalise, assert sane"]
+  G --> H["UserInput::RecalcMousePos3d"]
+  H --> I["framesInThisMode += 1"]
+```
+
+Every mode request resets `m_framesInThisMode = 0`, so **the first two frames after any mode change run the debug advancer** (with no window open the camera keys fly the camera at world-size/30 per second for those frames) [C].
+
+### 9.3 Mode enumeration (15 modes) and debug sub-modes
+
+[C] `code/camera.h:Camera::Mode`
+
+| # | Mode | Advancer | Entered by (live FULL code) | Build / reachability | `IsInteractive` | Wheel-height component |
+|---|---|---|---|---|---|---|
+| 0 | `ModeReplay` | none (no `case`) | only `code/lib/input_sdl.cpp` (not built) | [B:DEAD] | no | no |
+| 1 | `ModeSphereWorld` | `AdvanceSphereWorldMode` | `EnterGlobalWorld`, script `CamReset` outside a location, end of outro | [B:LEGACY] Darwinia global world | yes | yes |
+| 2 | `ModeFreeMovement` | `AdvanceFreeMovementMode` | `EnterLocation`; deselect (`UnitDeselect`), turret/officer release, task switch out of aim modes, entity-track exit, turret lost, script `CamReset` | [B:FULL] **the normal Multiwinia camera** | yes | yes |
+| 3 | `ModeBuildingFocus` | `AdvanceBuildingFocusMode` | script `CamBuildingFocus`; task-manager hooks under `USE_SEPULVEDA_HELP_TUTORIAL` | [B:LEGACY] | no | yes |
+| 4 | `ModeEntityTrack` | `AdvanceEntityTrackMode` | automatic from free movement (squad selected and tracking on); `Task::TargetSquad` when `AutomaticCamera` = 2 or gamepad; Tab cycling onto a squad task (`AdvanceTab`) | [B:FULL] (gamepad default, or pref) | yes | yes |
+| 5 | `ModeRadarAim` | `AdvanceRadarAimMode` | selecting an own radar dish (`RequestRadarAimMode`, unless level option `NoRadarControl`) [C] `code/location_input.cpp` | [B:FULL] | yes | yes (clamped 50–120) |
+| 6 | `ModeFirstPerson` | `AdvanceFirstPersonMode` | nobody | [B:LEGACY] unreachable | no | yes |
+| 7 | `ModeMoveToTarget` | `AdvanceMoveToTargetMode` | camera animations, `RestoreCameraPosition(false)`, script `CamMove`/`CamBuildingApproach` | [B:LEGACY] (no shipped animation or script use in Multiwinia, §9.8) | no | no |
+| 8 | `ModeDoNothing` | none (static) | constructor; end of MoveToTarget; `Cut` animation nodes | [B:FULL] (initial) | no | no |
+| 9 | `ModeEntityFollow` | `AdvanceEntityFollowMode` | nobody (`RequestEntityFollowMode` has no caller) | [B:LEGACY] unreachable | no | no |
+| 10 | `ModeTurretAim` | `AdvanceTurretAimMode` | selecting an own gun turret (or chess piece) [C] `code/location_input.cpp`; `Team::SelectUnit` when the current building is a turret [C] `code/team.cpp` | [B:FULL] | yes | yes (clamped 10–50) |
+| 11 | `ModeSphereWorldScripted` | `AdvanceSphereWorldScriptedMode` | script `CamLocationFocus` | [B:LEGACY] | no | no |
+| 12 | `ModeSphereWorldIntro` | `AdvanceSphereWorldIntroMode` | `StartSequence::Advance`; the sequence is only created by `RunBootloader`, compiled only under `USE_LOADERS` (off) [C] `code/main.cpp:RunBootloader` | [B:LEGACY] unreachable | no | no |
+| 13 | `ModeSphereWorldOutro` | `AdvanceSphereWorldOutroMode` | script (`code/script.cpp`) | [B:LEGACY] | no | no |
+| 14 | `ModeSphereWorldFocus` | `AdvanceSphereWorldFocusMode` | main menu (`GameMenu::CreateMenu` via plain `RequestMode`, then `SetTarget` + `CutToTarget`; the menu loop never advances the camera), script `CamGlobalWorldFocus` | [B:LEGACY] | no | no |
+
+`IsMoving()` ⇔ MoveToTarget; `IsAnimPlaying()` ⇔ animation active or MoveToTarget. Debug sub-modes (`m_debugMode`): `DebugModeNever` 0, `DebugModeAlways` 1 (editors), `DebugModeAuto` 2 (game: debug advancer only while an Eclipse window is open); `SetNextDebugMode` cycles 0 → 1 → 2 → 0 (debug menu); `MenuEscape` sets Auto when opening the location menu [C].
+
+### 9.4 Common components
+
+**Zoom (FOV)** [C] `Camera::AdvanceComponentZoom` — skipped while the task manager is visible, in EntityTrack, or while `m_camLookAround`:
+- `target = m_targetFov`; `change = 30`.
+- `CameraZoom` held and no Eclipse window → `target /= 4` (60° → 15°), `change = 100`.
+- `change = 10` in SphereWorldScripted; `change = 1` in MoveToTarget, DoNothing, BuildingFocus.
+- `k = dt·change·0.1`; `fov = fov·(1 − k) + target·k` (time constant 1/3 s normal, 0.1 s while zooming).
+- `SetFOV` sets fov and target; `SetTargetFOV` only the target. Mode targets: FreeMovement 60 (on request), TurretAim 50 (every frame), SphereWorld 100, SphereWorldFocus 100, Intro/Outro 70, editing 60.
+- `CameraDeZoom` (key C) is bound but never read: there is no zoom-out beyond the base FOV.
+- Projection clamps fov to [1°, 180°] [C] `Camera::SetupProjectionMatrix`.
+
+**Height (mouse wheel / camera up-down)** [C] `Camera::AdvanceComponentMouseWheelHeight`:
+- `delta = TargetCursor.dZ` (wheel notches this frame, forward positive). If no Eclipse window: `CameraUp` (Q / right trigger) adds `7·dt`, `CameraDown` (E / left trigger) subtracts `7·dt`, both suppressed while the current building is a gun turret or radar dish (`AimingBuilding()`).
+- In a location: `land = max(heightmap(camera.xz), MIN_HEIGHT = 10)`; `m_height += delta·2·√|m_height − land|` (speed ∝ √altitude). Then TurretAim → clamp [10, 50]; RadarAim → clamp [50, 120]; other modes → `m_height ≥ land + MIN_GROUND_CLEARANCE (10)`. All: `m_height ≤ MAX_HEIGHT = 5000`.
+- Outside a location: `m_height += delta·(0.1·m_height + 5)`; < 0 → 0.1; > 1000 → 1000.
+- Holding Q rises `14·√alt` u/s (e.g. ≈ 140 u/s at 100 u altitude); one wheel notch at 100 u altitude = +20 u [I arithmetic].
+
+**Camera shake** [C] `Camera::CreateCameraShake`, `Camera::Advance`: `shake = max(shake, intensity)`; per frame while > 0: yaw `front` by `sfrand(0.05·shake)` rad, `up` = world up rolled about front by `0.3·sfrand(shake)` rad, re-orthogonalise, `shake −= dt` (linear decay, 1 unit/s). Sources: portal 1.0, rocket (distance-scaled), weapons 0.5 and alpha-scaled [C] `code/worldobject/portal.cpp`, `code/worldobject/rocket.cpp`, `code/worldobject/weapons.cpp`. Uses the **unsynchronised** RNG `sfrand` [C] `contrib/systemiv/lib/math/random_number.h`.
+
+**Cursor lock** (free movement, radar/turret aim, sphere world): before moving, project the cursor ground point (`UserInput::GetMousePos3d`) to screen; after moving, re-project it; add the pixel difference (accumulated in static sub-pixel remainders, floored) to the virtual cursor and clamp to [0, W−1]×[0, H−1] — the cursor stays glued to the same ground point while the camera moves [C] `Camera::AdvanceFreeMovementMode`.
+
+### 9.5 `ModeFreeMovement` — the Multiwinia camera [B:FULL]
+
+[C] `Camera::AdvanceFreeMovementMode`, `Camera::RequestMode`. On request: `m_targetPos = m_pos`, `m_height = m_pos.y`, `m_targetFov = 60`, cursor to screen centre.
+
+Each frame (skipped while rendering a poster):
+1. `UpdateEntityTrackingMode()` (§9.6). Tracking on and `GetEntityToTrack` yields an insertion-squad member → `RequestEntityTrackMode(id)` and return.
+2. Set up matrices; record the cursor ground point's screen position.
+3. If neither the task manager nor the Shaman UI is visible:
+   - `moveRate = 250` u/s, ×4 (= 1000) while `CameraSpeedup` (Shift / L3). Basis: `fwd` = front projected to XZ, normalised; `left` = `GetRight()` projected to XZ.
+   - Own timer `dt' = now − last` (function static, clamped ≤ 1.0 s — independent of `g_advanceTime`).
+   - Keys: `CameraLeft` → `target += left·dt'·rate`; `CameraRight` → `−left`; `CameraForwards` → `+fwd`; `CameraBackwards` → `−fwd`.
+   - Pad (only in FreeMovement): `CameraMove` (left stick, −40…+39) → `target −= left·dt'·x·10; target −= fwd·dt'·y·10` (stick up = negative y = forward; no speed-up multiplier) and records `CondMoveCameraOrUnit` for control help.
+   - Only Forwards held (no other direction, no Shift) for > 4 s → `MultiwiniaHelp::ShowShiftSpeedupHelp()` every frame (3 s hint, §10.4) [C] `code/multiwiniahelp.cpp`.
+   - **Cliff avoidance**: `dir` = horizontal direction to target; `d = DistanceToBlockage(dir, 100)` = first of 40 samples (2.5 u steps) where `land + 10 > m_height` (else 100). If `d < 100`: `s = max(0, (d − 30)/70)`; `target = pos + (target − pos)·s`; `m_height += (1 − s)·|horizontal(target − pos)|` (the camera climbs instead of hitting the slope).
+   - **Ground clearance**: `land` = max heightmap at target and at (±10, ±10) around it, ≥ 10. If `land + 10 > m_height`: `target.y = m_height = land + 10`; else `target.y = m_height`.
+   - **Position**: unless `m_camLookAround`, `pos = pos·(1 − 4dt') + target·4dt'`; `m_vel = Δpos/dt'`.
+   - **Orientation (mouse-look)**: task manager hidden and chat log not held → if the cursor ground point exists, rotate `front` toward `normalise(cursor3D − pos)` about the axis `front × desired` by `|front × desired|·min(1, √dt')` rad; rebuild `up` from world up. **The camera always turns to face the point under the cursor** — moving the mouse (or the right stick via `TargetMoveSecondary`) aims the camera; the cursor lock then keeps the cursor on that ground point. There is **no edge scrolling and no rotate/orbit key** in this mode.
+   - Cursor lock (§9.4).
+4. Bounds: `SetBounds(−200, sizeX + 200, −200, sizeX + 200)` is called on level load (X size reused for Z) [C] `code/main.cpp:DoEnterLocation`, but the clamp code is commented out — **horizontal movement is unbounded** [C].
+
+Chat log (`ChatLogVisible()`): true while `IconsChatLog` (pref `ControlMethod` 1) or `GesturesChatLog` (`ControlMethod` 0) — key L — is held and no Eclipse window is open; it freezes mouse-look [C] `Camera::ChatLogVisible`.
+
+Holding `CameraFreeMovement` (F2 / R3) without `UnitPrimaryFireTarget` sets `m_camLookAround` (evaluated in `SwitchEntityTracking`, i.e. during the free-movement and entity-track advancers): position frozen, zoom skipped, orientation still follows the cursor, tracking suspended [C] `Camera::SwitchEntityTracking`.
+
+### 9.6 `ModeEntityTrack` and automatic tracking [B:FULL]
+
+[C] `Camera::AdvanceEntityTrackMode`, `AdvanceAutomaticTracking`, `AdvanceCameraMoveBehind`, `RotateTowardsEntity`, `UpdateControlVector`, `UpdateEntityTrackingMode`, `GetEntityToTrack`.
+
+Tracking switch: pref `AutomaticCamera` (`OTHER_AUTOMATICCAM`, default 0; **no widget sets it** in the shipped options window [C] `code/interface/prefs_other_window.cpp`): 1 = never, 2 = always, other = automatic → on iff input mode is GAMEPAD; `m_entityTrack = (value == 2) ∧ ¬m_camLookAround`. Keyboard players therefore get tracking only by hand-editing `preferences.txt` [C].
+
+`GetEntityToTrack`: false while `CameraFreeMovement` is held or with no location/team; else my team's selected entity (`GetMyEntity`, e.g. officer/armour) if any; else, if the current task is not stopping and the selected unit is an insertion squad, its point man. (Free movement only auto-switches for squad members.)
+
+`RequestEntityTrackMode(id)`: `m_trackingCameraDist = 250`, `m_distFromEntity = 200`, clears targeting state, `m_cameraTarget = m_pos`, `m_targetPos = entity.pos`.
+
+Per frame (returns immediately while the task manager is visible):
+1. Re-evaluate tracking; exit to FreeMovement if tracking is off, the entity is missing/dead, the current task is not Running, there is no task and the entity is not an officer, or the id is invalid.
+2. `predicted = pos + g_predictionTime·vel`.
+3. `AdvanceAutomaticTracking`:
+   - `CameraZoom` (R3 / Z / MMB) latches `m_resettingCameraPos` (snap behind).
+   - `CameraSquadZoomIn/Out` (d-pad up/down held): `dist = clamp(dist ∓ 10·dt, 50, 500)` — `m_trackingCameraDist` is an **int**, so zoom-in moves 1 u per frame (frame-rate dependent) and **zoom-out never changes it unless dt ≥ 0.1 s** [C].
+   - `k = min(1, 4·dt·(3 if resetting else 1))`.
+   - Move-behind (only when the tracked entity is an insertion-squad member): on a new squad member `last = pos` (y = 0). `cur = member.pos` (y = 0). If `|cur − last|² > 10`: `c = dot(norm(cur − last), norm(wanted − last))`; if not resetting and `c > 0.5` (unit moving towards the camera within ±60°) the camera translates with the unit (`target = wanted + (cur − last)`); otherwise push `cur − last` into a static 10-sample history (initially filled with copies), average it, and place the camera `dist` behind the average direction of travel (`target = cur − avĝ·dist`); `target.y = dist`; `last = cur`; `wanted = target`.
+   - `cameraTarget = lerp(cameraTarget, target (or pos if no input), k)`; snap it onto the horizontal circle of radius `dist` around `cur` at absolute height **y = dist** (not terrain-relative); `pos = lerp(pos, cameraTarget, k)`.
+   - Reset ends when `pos − wanted < 5` on each axis (signed comparison).
+   - `RotateTowardsEntity`: `k2 = min(1, 2·dt + √(ex² + ey²)/10)` where e = the entity's normalised screen offset from centre; `m_targetPos` eased to the entity; `front` eased toward it; up rebuilt.
+   - `UpdateControlVector`: refresh `m_controlVector = GetRight()` unless the stick is held, no `UnitMoveDirectionChange`, and `|cos(worldUp·camUp)| ≥ 0.98` (the code takes `cos` of a dot product — effectively only when the camera looks almost straight down) — keeps stick-relative unit movement stable while the camera swings. `TeamControls` uses this vector to rotate the stick into world space (§6.1).
+   - For non-squad entities (officer/armour) move-behind is skipped and the circle centre `m_currentEntityTrackPos` is stale (last squad position or origin) [C]. All three `RequestEntityTrackMode` callers pass a squad (`Camera::AdvanceFreeMovementMode`, `Task::TargetSquad`, `TaskManagerInterface::AdvanceTab`) [C] grep, so an officer/armour is tracked only when the player selects one while the camera is already tracking a squad (`GetEntityToTrack` prefers the selected entity) [I] — a rarely exercised path.
+4. Virtual cursor forced to screen centre every frame.
+5. `m_targetVector += (m_wantedTargetVector − m_targetVector)/4` (cosmetic aim helper).
+
+The zoom-FOV component is disabled in this mode; the wheel-height component runs but has no effect (position uses `dist`).
+
+### 9.7 Building-aim modes [B:FULL]
+
+**Radar aim** [C] `Camera::RequestRadarAimMode`, `AdvanceRadarAimMode`: target = dish position (`RadarDish::GetDishPos(0)`), `m_height = 80`. Each frame: `ground = target` with y = heightmap; `k = 4·dt`; front eased toward the cursor ground point; `ideal = ground + (0, h, 0) − horiz(front)·1.5h`; `pos = lerp(pos, ideal, k)`; cursor lock. Height adjustable within [50, 120] (wheel only). FOV unchanged.
+
+**Turret aim** [C] `Camera::RequestTurretAimMode`, `AdvanceTurretAimMode`: target = turret position, `m_height = 20`, `m_objectId` = building. Each frame: exit to FreeMovement unless my team's current building is my own `TypeGunTurret`; `SetTargetFOV(50)`; `ground = target + (0,20,0) − front·h`; front eased toward the cursor point (k = 4·dt); `ideal = ground + (0,h,0) − horiz(front)·0.8h`; position eased; cursor lock. Height within [10, 50]. Camera up/down keys and triggers are blocked while aiming a building (`AimingBuilding`). `Task::SwitchTo` drops back to free movement from either aim mode [C] `code/taskmanager.cpp:Task::SwitchTo`.
+
+### 9.8 Mounts, animations and scripted modes
+
+**Camera mounts** (level file `CameraMounts_StartDefinition … CameraMounts_EndDefinition`, one line per mount: `name px py pz fx fy fz ux uy uz`; front and up normalised on load) [C] `code/level_file.cpp:LevelFile::ParseCameraMounts` (grammar in [29](29_data_formats_reference.md)). `SetTarget(mountName)` looks a mount up case-insensitively; the magic name `CamPosBefore` (`MAGIC_MOUNT_NAME_START_POS`) means "the pose recorded before the animation started" [C] `code/level_file.h`, `Camera::SetTarget(char const*)`.
+
+**Multiwinia use of mounts** [B:FULL] [C] `code/main.cpp:DoEnterLocation`, `LocationGameLoop`: on load `SetTarget((maxX, 1000, maxX), front (−1, −0.7, −1))` as a fallback, `SetTarget("start")`, `CutToTarget()`, `RequestMode(FreeMovement)`; then, as soon as the local team exists, `SetTarget("player<N>")` with `N = Location::GetTeamPosition(myTeamId)` and `CutToTarget()` (repeated after a level reset). Census (`_work/scripts/S_06_mount_census.py`, 87 top-level `data/levels/*.txt`, 57 of them `mp_*`): `player0` 51, `player1` 51, `player2` 31, `player3` 13, `start` 7 of the mp levels; 6 mp levels define no player mounts (`mp_assault_3p_3`, `mp_assault_stress`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_3P`, `mp_tankbattle_4P`) and keep the `start`/fallback pose [C]. Level designers must author one mount per player slot.
+
+**Camera animations** (level file `CameraAnimations_StartDefinition`: an animation name line, then node lines `Move|Cut <mountName|CamPosBefore> <duration 0..60 s>` until `End`) [C] `code/level_file.cpp:LevelFile::ParseCameraAnims`. **No top-level level file contains a non-empty animation block** (same census) [C]; playback is reachable only through script `CamAnim` (Darwinia scripts, [30](30_scripting_tutorial_and_cutscenes.md)) and the editor's camera-animation window (`LOCATION_EDITOR`).
+
+Playback state machine [C] `Camera::PlayAnimation`, `AdvanceAnim`, `StopAnimation`:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> NodeActive : PlayAnimation with nodes, save mode and pose, SetTarget node0 mount, Move gives MoveToTarget, Cut gives DoNothing
+  NodeActive --> NodeActive : node time elapsed and a next node exists, CutToTarget if the ending node is Cut, SetTarget next mount, restart timer
+  NodeActive --> Idle : node time elapsed on the last node, CutToTarget if Cut, RequestMode modeBefore, m_anim cleared
+  NodeActive --> Idle : StopAnimation, RequestMode modeBefore
+```
+
+The cut is applied when a Cut node *ends* (the camera holds its previous pose for the node's duration, then jumps) [C].
+
+**`ModeMoveToTarget`** [C] `Camera::AdvanceMoveToTargetMode`: on request store start pos/front/up and `m_startTime = g_gameTime`. `f = max(0.2, (gameTime − start)/duration)`; `dir`, `dist` from start to target; `vmax = 2·dist/duration`; position integrates a triangular speed profile (`v = 2·vmax·f` for f < 0.5, `2·vmax·(1 − f)` for f < 1). Orientation: `mid` = start front rotated about `start × target` by `0.5·|start × target|` rad (½·sin θ — an approximation of half the angle); blend start → mid then mid → target with `RampUpAndDown` (quadratic ease-in/out) [C] `code/lib/math_utils.cpp:RampUpAndDown`. Up forced to world up. At f ≥ 1 → `ModeDoNothing`, `front = target front` (position not snapped). `RestoreCameraPosition(cut)` returns to the recorded pose by cut or a 3 s move.
+
+**`ModeBuildingFocus`** [C] `Camera::RequestBuildingFocusMode`, `AdvanceBuildingFocusMode`: orbit `m_targetPos = building.centrePos`, radius `|r|·(1 + 0.3 sin 0.3t)`, height `h·(1 + 0.5 sin 0.3t)` above the centre, angular velocity −0.15 rad/s; ramp `mf = min(1, t_since_start)`; during the first 2 s lift `y += 0.75·distance·(2 − t)` capped at y 1000; `pos` eased with `0.5·mf·dt`, `front` with `mf·dt`; negative range flips the view horizontally; y ≥ land + 10.
+
+**Sphere-world modes** [B:LEGACY] [C]: `SphereWorld` — fov 100; focus (0, −400h, 0); front eased (2·dt) toward the cursor point; pos eased (dt) to `focus − front·30000` (|ideal| ≤ 35000); `CameraMove` stick moves the cursor; cursor lock. `SphereWorldScripted` — height 50, focus wobble (±4000 x, ±2000 y, ±4000 z at 0.5/0.4/0.3 rad/s), front eased to `m_targetPos`. `SphereWorldIntro` — fov 70, start pose (−965852, 1720000, 2600000), flies toward (−1e6, 4e6, 397000) for 30 s then to (1000, 500, 1000), speed 3000×62 u/s scaled near the end, rolling. `SphereWorldOutro` — fov 70, from the origin outward (speed `clamp(4√|pos|, 1000, 2000)`×62), after 70 s runs the `credits` loader then `ModeSphereWorld` at (0,0,100). `SphereWorldFocus` — fov 100, orbit radius 100000·(1 + 0.4 sin 0.3t) at y −110000 + 50000 sin 0.2t, looking at (0, 10000, 0), up derived from (0, −1, 0). Intro/outro `_DEBUG` reset key `DebugCameraFixUp`.
+
+**Unreachable modes** [B:LEGACY]: `ModeFirstPerson` — exits on `CameraFreeMovement`; fires `Location::FireLaser` from (right·−2, up·−3) along `front·200` every 0.1 s while `UnitPrimaryFireTarget`; `vel *= 0.9993` per frame; mouse yaw −0.01 rad/px, pitch 0.01 rad/px; y = land + 3. `ModeEntityFollow` — cursor recentred each frame, yaw −0.015 rad/px, pitch −0.01 rad/px (pitch limited so up.y > 0.1), distance `×(1 − 0.1·dZ)` clamped [15, 5000], target eased (5·dt) to the predicted entity position, `pos = target − front·dist`.
+
+**Debug mode** [C] `Camera::AdvanceDebugMode`: speed = `worldSizeX/30` u/s (global world: `size/30`), ×10 with `CameraSpeedup`, ×0.1 with `CameraSlowdown` (RMB); a static `DPadMovement` of the six camera keys moves along −right, up, front only when no Eclipse window is open (or editing); `CameraDebugRotate` (RMB) yaw −0.005·dx and pitch −0.005·dy rad. Editing forces target fov 60.
+
+### 9.9 Unused camera helpers
+
+[C] `AdvanceNotTooLow` (min tracking height `MIN_TRACKING_HEIGHT` 200 × `m_heightMultiplier`), `AdvanceCanSeeUnits` (line of sight via `DirectDistanceToBlockage` + `GetHighestTangentPoint`), `AdvanceNotTooFarAway` (1.2 × `m_distFromEntity`), `AdvanceManualRotateCamera` (`CameraRotateLeft/Right` ±100 px equivalent, 0.015 rad/px), `AdvanceManualCameraHeight` (`m_heightMultiplier` ±0.05, clamp [0.25, 2]) are referenced only from a commented-out block in `AdvanceAutomaticTracking`; `TargetEntity` (auto-target enemies within 225 u in a 40° cone) and `GetHighestPoint` have no live callers; `Render()` is empty; `SetCubemapSide` is declared but never defined. Consequently **`CameraRotateLeft/Right` (triggers) do nothing in the shipped build** even though they are bound and help text exists (the §12 consumer column lists `code/camera.cpp` because the uncalled helper reads them).
+
+### 9.10 Other public services
+
+[C] `Camera::GetClickRay(x, y)`: `gluUnProject` at window depth 0 and 1 with the current GL matrices (y flipped: `viewport[3] − y − 1`); a degenerate modelview is reset to identity first. `Get2DScreenPos` = `gluProject`. `GetBestBuildingInView()`: camera speed > 5 u/s or no location → none; otherwise at most once per 1.0 s cast the centre-screen ray and choose the nearest building hit within 200 u (static cache). `WaterReflect()`: negate y of pos, front, up (applied twice around the reflection pass, [24](24_rendering.md)). `RecordCameraPosition`/`RestoreCameraPosition`; `SetTarget(focus, distance, height)` (place on the current bearing at `distance`, `height` above the focus, looking at it); `CutToTarget` (pose = target, `m_height = target.y`). Projection and frustum: [24](24_rendering.md).
+
+### 9.11 Camera constants
+
+Kind: `#define` (D), class constant (S), literal (L).
+
+| Constant | Value | Kind | Ref (`code/camera.cpp:` unless noted) |
+|---|---|---|---|
+| `MIN_GROUND_CLEARANCE` | 10 | D | file scope |
+| `MIN_HEIGHT` (above sea level) | 10 | D | file scope |
+| `MAX_HEIGHT` | 5000 | D | file scope |
+| `MIN_TRACKING_HEIGHT` | 200 (unused path) | D | file scope |
+| Initial fov / height / pos / front | 60° / 50 / (1000,500,1000) / norm(0,−0.5,−1) | L | `Camera::Camera` |
+| Free-move key speed | 250 u/s; ×4 with `CameraSpeedup` | L | `AdvanceFreeMovementMode` |
+| Free-move stick gain | ×10 per stick unit (≤ ≈393 u/s) | L | same |
+| Free-move dt clamp | 1.0 s | L | same |
+| Free-move position smoothing | 4 /s | L | same |
+| Mouse-look rate | `min(1, √dt)` × misalignment | L | same |
+| Cliff probe | 100 u, 40 samples; slow band 30–100 u | L | `AdvanceFreeMovementMode`, `DistanceToBlockage` |
+| Ground sample offsets | ±10 u (5 samples) | L | `AdvanceFreeMovementMode` |
+| Shift-help trigger | Forwards alone held > 4 s | L | same |
+| Zoom FOV divisor / rate | ÷4; change 100 (zooming), 30 (normal), 10 (sphere-scripted), 1 (move/do-nothing/building); factor `dt·change·0.1` | L | `AdvanceComponentZoom` |
+| Height key rate | 7 per s (wheel-notch units) | L | `AdvanceComponentMouseWheelHeight` |
+| Height scale (location) | `2·√|h − land|` per unit | L | same |
+| Height scale (global) | `0.1·h + 5` per unit; clamp [0.1, 1000] | L | same |
+| Turret / radar height clamp | [10, 50] / [50, 120] | L | same |
+| Radar aim height / back-off | 80 / 1.5·h; smoothing 4 /s | L | `RequestRadarAimMode`, `AdvanceRadarAimMode` |
+| Turret aim height / back-off / lift / FOV | 20 / 0.8·h / +20 / 50° | L | `RequestTurretAimMode`, `AdvanceTurretAimMode` |
+| Entity-track distance | 250 default; squad zoom ±10/s clamp [50, 500] (int truncation) | L | `RequestEntityTrackMode`, `AdvanceAutomaticTracking` |
+| Entity-track smoothing | 4 /s (×3 while resetting), clamp 1 | L | `AdvanceAutomaticTracking` |
+| Move-behind | min move² 10; toward-camera cos > 0.5; 10-sample history | L | `AdvanceCameraMoveBehind` |
+| Reset complete | < 5 u per axis (signed) | L | `AdvanceAutomaticTracking` |
+| Rotate-towards factor | `2·dt + |screenOffset|/10`, clamp 1 | L | `RotateTowardsEntity` |
+| Control-vector threshold | 0.98 | S | `UpdateControlVector` |
+| Targeting cone | cos 20° = 0.939692621; range 225 u (unused) | L | `Camera::Camera`, `TargetEntity` |
+| Building focus | orbit −0.15 rad/s; height ×(1 + 0.5 sin 0.3t); range ×(1 + 0.3 sin 0.3t); ramp 1/s; lift 0.75·d·(2 − t) ≤ y 1000 for 2 s; floor land + 10 | L | `AdvanceBuildingFocusMode` |
+| MoveToTarget | min time fraction 0.2; `vmax = 2·dist/duration`; restore duration 3 s | L | `AdvanceMoveToTargetMode`, `RestoreCameraPosition` |
+| Camera-animation node duration | 0 ≤ d < 60 s (asserted at load) | L | `code/level_file.cpp:LevelFile::ParseCameraAnims` |
+| Shake | yaw ±0.05·s rad, roll ±0.3·s rad, decay 1/s | L | `Camera::Advance` |
+| Best building | speed gate 5 u/s; recompute 1.0 s; reach 200 u | L | `GetBestBuildingInView` |
+| `PosInViewFrustum` tolerance | 0.2 (on cosine) | L | `PosInViewFrustum` |
+| Debug fly | worldSize/30 u/s; ×10 / ×0.1; rotate 0.005 rad/px | L | `AdvanceDebugMode` |
+| Debug-advancer grace | first 2 frames after any mode request | L | `Camera::Advance` |
+| Level bounds (stored, unused) | −200 … sizeX + 200 on both axes | L | `code/main.cpp:DoEnterLocation` |
+| Sphere world | fov 100; ideal 30000 (≤ 35000); focus y −400·h | L | `AdvanceSphereWorldMode` |
+| Intro / outro | fov 70; 30 s phase; credits after 70 s; speed ×62 | L | `AdvanceSphereWorldIntroMode`, `AdvanceSphereWorldOutroMode` |
+| First person (unreachable) | speed 100 (unused), fire period 0.1 s, laser speed 200, damping 0.9993/frame, eye land + 3 | L | `AdvanceFirstPersonMode` |
+| Entity follow (unreachable) | dist clamp [15, 5000]; smoothing 5 /s | L | `AdvanceEntityFollowMode` |
+| Near / far (location) | 5 / 15000 | L | `code/renderer.cpp:Renderer::RenderFrame` |
+| Near / far (no location) | 50 / 10 000 000 | L | same |
+| Near / far (initial) | 5 / 150000 | L | `Renderer::Renderer` |
+| Poster FOV divisor | 78 | L | `Renderer::SetupProjMatrixFor3D` |
+| FOV clamp | [1°, 180°] | L | `Camera::SetupProjectionMatrix` |
+
+## 10 Control help and Multiwinia hint overlays
+
+### 10.1 Reachability — the gamepad control help never displays in Multiwinia
+
+`g_app->m_controlHelpSystem` is created by `App`, advanced every location frame and rendered every frame [C] `code/main.cpp:LocationGameLoop`, `code/renderer.cpp:Renderer::RenderFrame`, but in the Multiwinia FULL build it draws nothing:
+- `ControlHelpSystem::Render()` returns immediately if `g_app->Multiplayer()` — true for every Multiwinia game, tutorial included [C] `code/control_help.cpp:ControlHelpSystem::Render`, `code/app.cpp:App::Multiplayer`.
+- Otherwise it would also require a location, `INPUT_MODE_GAMEPAD`, pref `ControlHelpEnabled` (`OTHER_CONTROLHELPENABLED`, default 1) ≠ 0, no running script, no `dialog_locationmenu` window; `RenderHelp` additionally requires `IsSinglePlayer()` (Prologue/Campaign), modes that only the `INCLUDEGAMEMODE_PROLOGUE/CAMPAIGN` buttons can set (not compiled in FULL) [C] `code/UI/PrologueButton.h`, `code/UI/CampaignButton.h`; build_matrix §5.
+- `AddOnScreenAid` begins with `return;` and its only callers are in `code/tutorial_demo2.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`) [C].
+- `CheckCondition` returns false (body commented out) and the `Advance` loop that would use it is commented out [C].
+
+The whole system is therefore **[B:LEGACY]** (Darwinia-campaign gamepad help). Only `RecordCondUsed` bookkeeping runs (from camera, target cursor and team input). The live Multiwinia contextual hints are in `MultiwiniaHelp` (§10.4).
+
+`Advance()` early-out: returns when input mode ≠ GAMEPAD **and** `ControlHelpEnabled` ≠ 0 (so on keyboard with help *disabled* it does run — inverted logic, harmless since aids are never added) [C]. Its aid loop examines only the first aid (unconditional `break`) and removes aids starting from index `Size()` (first index out of range) [C].
+
+### 10.2 Icons and sets (old corner layout, rendered only by commented-out code)
+
+[C] `ControlHelpSystem::InitialiseIcons`
+
+| Icon id | Texture / shadow | Set-relative pos | Text anchors (x,y direction) |
+|---|---|---|---|
+| A | `icons/button_a.bmp` / `icons/button_abxy_shadow.bmp` | (50, 100) | (0, 1) |
+| B | `icons/button_b.bmp` / abxy shadow | (100, 50) | (1, 0) |
+| X | `icons/button_x.bmp` / abxy shadow | (0, 50) | (−1, 0) |
+| Y | `icons/button_y.bmp` / abxy shadow | (50, 0) | (0, −1) |
+| DPAD | `icons/button_dpad.bmp` / `icons/button_control_shadow.bmp` | (50, 0) | (1,0), (0,−1), (0,1) |
+| LB | `icons/button_lb.bmp` / `icons/button_lb_shadow.bmp` | (0, 0) | (−1, 0) |
+| RB | `icons/button_rb.bmp` / `icons/button_rb_shadow.bmp` | (100, 0) | (1, 0) |
+| LA | `icons/button_la.bmp` / control shadow | (25, 0) | (1, 0) |
+| LT | `icons/button_lt.bmp` / `icons/button_trigger_shadow.bmp` | (−25, 0) | (0, 1) |
+| RA | `icons/button_ra.bmp` / control shadow | (75, 50) | (−1, 0) |
+| RT | `icons/button_rt.bmp` / trigger shadow | (125, 50) | (0, 1) |
+
+Sets (stacked vertically, set height in px): 0 = {A, B, X, Y} 175; 1 = {LB, RB} 75; 2 = {LA, RA, LT, RT} 150; 3 = {DPAD} 75. `HelpIcon::Render`: 50 px icon, 10 px gap, 12 px outlined text; icon alpha = max text alpha (min 0.3); blinks `0.75a + 0.25a·sin(8t)` for 1.5 s after its text changes; shadow `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR`, icon additive. `HelpIconSet::Render`: 1.0 s fade in/out when any icon becomes (un)used.
+
+### 10.3 Condition → hint table (29 conditions)
+
+[C] `ControlHelpSystem::InitialiseConditions`; intended triggers from the commented-out `ControlHelpSystem::CheckCondition`. `TextIndicator(icon, textSlot, langId, minTime, maxTime, maxUsage, decayRate)`; usage bookkeeping: `RecordCondUsed` adds `2·dt` to `timeUsed` (capped at `maxUsage` if non-zero; `timeUsed` is never initialised); `DecayCond` subtracts `decayRate·dt`; `SetCondIcon` alpha = 1 below `minTime`, else `(maxTime − used)/(maxTime − minTime)`, hidden when < 0 (hints fade once the player has used the control enough).
+
+| # | Condition | Icon | Text id (English) | min/max/maxUsage/decay | Intended trigger (commented code) | `RecordCondUsed` callers (live) |
+|---|---|---|---|---|---|---|
+| 0 | `CondDestroyUnit` | Y | `gc_destroy` (Destroy) | 0/0/0/1 | a program running or unit selected | — |
+| 1 | `CondTaskManagerCreateBlue` | X | `gc_create` (Create) | 0/0/0/1 | task manager hidden, or TM advises create | — |
+| 2 | `CondTaskManagerCloseBlue` | X | `gc_close` (Close) | 0/0/0/1 | never (too cluttered) | — |
+| 3 | `CondTaskManagerCloseRed` | B | `gc_close` | 0/0/0/1 | task manager visible | — |
+| 4 | `CondDeselectUnit` | B | `gc_deselect` (Deselect) | 0/0/0/1 | unit or building selected | — |
+| 5 | `CondMoveUnit` | A | `gc_move` (Move) | 0/0/0/1 | TM hidden and cursor advises movable entity | — |
+| 6 | `CondSelectUnit` | A | `gc_select` (Select) | 0/0/0/1 | TM hidden and cursor highlights something | — |
+| 7 | `CondTaskManagerCreateGreen` | A | `gc_create` | 0/0/0/1 | TM visible and advises create | — |
+| 8 | `CondTaskManagerSelect` | A | `gc_select` | 0/0/0/1 | TM visible over a selectable zone | — |
+| 9 | `CondPlaceUnit` | A | `gc_place` (Place) | 0/0/0/1 | TM hidden and placement opportunity | — |
+| 10 | `CondPromoteOfficer` | A | `gc_promote` (Promote) | 0/0/0/1 | highlighting + officer program being placed | — |
+| 11 | `CondMoveCameraOrUnit` | LA | `gc_move` | 2/3/9/0.3 | free-movement or entity-track camera | camera stick move [C] `code/camera.cpp`; unit stick move [C] `code/team.cpp` |
+| 12 | `CondZoom` | LT | `gc_zoom` (Zoom) | 0/0/0/1 | radar-aim camera | — |
+| 13 | `CondCameraAim` | RA | `gc_aim` (Look) | 2/3/9/0.3 | free-movement camera | `TargetCursor` moved in free movement [C] `code/lib/targetcursor.cpp` |
+| 14 | `CondSquaddieFire` | RA | `gc_fire` (Fire) | 2/3/9/1 | squad selected (entity-track) | (commented) |
+| 15 | `CondChangeWeapon` | DPAD | `gc_changeweapon` (Change Weapon) | 1/2/8/0.3 | squad selected with > 1 secondary weapon researched | — |
+| 16 | `CondChangeOrders` | DPAD | `gc_changeorders` (Change Orders) | 0/0/0/1 | officer or armour selected | — |
+| 17 | `CondCameraUp` | RT | `gc_cameraup` (Up) | 1/2/3/0.3 | no LA/RA hint, TM hidden, no squad | camera up/down used [C] `code/camera.cpp` |
+| 18 | `CondCameraDown` | LT | `gc_cameradown` (Down) | 1/2/3/0.3 | same | same |
+| 19 | `CondFireGrenades` | RT | `gc_grenade` (Grenade) | 1/2/8/0.3 | `UnitPrimaryFireDirected` (non-existent control) + grenade selected | [C] `code/team.cpp` |
+| 20 | `CondFireRocket` | RT | `gc_rocket` (Rocket) | 1/2/8/0.3 | same, rocket | same |
+| 21 | `CondFireAirstrike` | RT | `gc_airstrike` (Airstrike) | 1/2/8/0.3 | same, airstrike | same |
+| 22 | `CondOfficerSetGoto` | RT | `gc_setgoto` (Set Goto) | 0/0/0/1 | officer selected | — |
+| 23 | `CondArmourSetTurret` | RT | `gc_setturret` (Set Turret) | 0/0/0/1 | armour selected | — |
+| 24 | `CondSwitchPrevUnit` | LB | `gc_prev` (Prev) | 0/0/0/1 | > 1 task | — |
+| 25 | `CondSwitchNextUnit` | RB | `gc_next` (Next) | 0/0/0/1 | > 1 task | — |
+| 26 | `CondRadarAim` | A | `control_help_radar` (Aim Radar) | 0/0/0/1 | radar dish selected | — |
+| 27 | `CondRotateCameraLeft` | LT | `control_help_camerarotateleft` (Look Left) | 0/0/0/1 | squad selected and not firing | — |
+| 28 | `CondRotateCameraRight` | RT | `control_help_camerarotateright` (Look Right) | 0/0/0/1 | squad selected and not firing | — |
+
+### 10.4 Live Multiwinia hint overlays (`MultiwiniaHelp`) — the replacement
+
+The hints a Multiwinia player actually sees about controls come from `MultiwiniaHelp` (full specification in [30](30_scripting_tutorial_and_cutscenes.md) and [09](09_meta_systems.md)); the control-related ones are [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::Render`, `ShowSpaceDeselectHelp`, `ShowShiftSpeedupHelp`, `RenderGracePeriodHelp`:
+
+| # | Hint | Trigger | Text id (English) | Duration rule |
+|---|---|---|---|---|
+| H2 | Camera-controls picture | grace period of a **tutorial**, keyboard mode | image `mwhelp/control_camera.bmp` (`mwhelp/control_camera_french.bmp` when `InputPrefs::IsKeyboardFrenchLocale()`) | whole grace period |
+| H3 | "Deselect" hint | post-grace, pref `HelpEnabled` ≠ 0 (default 1); (1) LMB on empty ground with something selected (S2), or (2) RMB while placing a task (T2) | `multiwinia_rmbhelp` "Right mouse button to move\npress SPACE to deselect" (from S2) / `multiwinia_deselect` "press SPACE to deselect" (from T2); `_xbox` variants in pad mode | state machine below |
+| H4 | "Hold SHIFT to move faster" | post-grace, `HelpEnabled`, keyboard mode, camera-forward held alone > 4.0 s | `multiwinia_shiftspeedhelp` | re-armed to 3.0 s every frame while held; 3 s after release |
+| H5 | Deselect-building hint | post-grace, `HelpEnabled`, local team's selected building is a GunTurret or RadarDish | `multiwinia_deselect` / `_xbox` (left-side "building" layout) | every frame while selected; box flashes white while camera keys are pressed |
+| H6 | Terminate-officer hint | post-grace, `HelpEnabled`, entity under the cursor is an Officer with `OrderNone` | `multiwinia_officerterminate` "press c to terminate a unit" / `_xbox` | every frame while hovered |
+| H7 | Toggle-armour-orders hint | post-grace, `HelpEnabled`, an order marker of an Armour with `m_conversionOrder == StateIdle` is under the cursor | `multiwinia_armourtoggle` "Right Click to toggle orders" / `_xbox` | every frame while hovered |
+
+H3 state machine (`m_showSpaceDeselectHelp`, float seconds) [C] `MultiwiniaHelp::ShowSpaceDeselectHelp`, `MultiwiniaHelp::Render`:
+
+```
+on trigger(immediate, showRMB):
+    if v > 0:  v = min(v + 1.0, 3.0)                    # extend while showing
+    else:
+        v -= 0.75
+        if v < -1.0 or immediate: rmbFlag = showRMB; v = 3.0
+per rendered frame (HelpEnabled, post-grace):
+    if v > 0: draw with alpha = min(1, v); v -= dt
+    elif v < 0: v = min(v + 0.33*dt, 0)                 # "suspicion" decays back to 0
+```
+
+So one stray click is tolerated; two within ≈ 1.5 s show the hint for 3 s; the RMB-while-placing trigger (immediate) shows it at once [C + I arithmetic]. Layout `RenderHelpMessage(alpha, caption, buildingPosition, oversize)` [C]: width 0.35·H (0.55·H if oversize, Mac-only), font 0.02·H (`g_editorFont`, outline + fill), box height (lines + 1)·font, centred at (W/2, 0.78·H); building layout x = 0.1·W, y = H − 1.5·boxH; black α·0.75 box, white α·0.5 border.
+
+Phrase lookup picks `_kbd`/`_xin` mood variants from the current input mode [C] `code/lib/language_table.cpp:LangTable::RawDoesPhraseExist` (§11.2).
+
+### 10.5 Selection-dependent help panel (`RenderHelp`) [B:LEGACY]
+
+[C] `ControlHelpSystem::RenderHelp`, `RenderControlHelp`, `RenderControlHelpDPad`, `RenderControlHelpDPadIcon`. Layout: d-pad icon (`icons/button_dpad.bmp` + `icons/button_control_shadow.bmp`, 50 px) at `(W/2 − W/6, 0.75H + 12.5)` with captions around it (positions 1 = up, 2 = left, 3 = right, 4 = down; offsets ±1.5 box units); four button boxes mirrored at `(W/2 + W/6)` in a 2×2 grid (1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right). Box `w = 0.15H`, `h = 0.3w`, base y `0.75H`, background black α 0.75·a, outline white α 0.2·a; optional highlight in team colour ×0.7 (timer decays 0.5/s); icon = `icons/<name>.bmp` scaled from 64-px units to `0.25w`; caption = upper-cased phrase, outlined, font `0.4h`. The keyboard icon variant (`mouse_lmb`) is chosen in KEYBOARD mode (never, since rendering requires GAMEPAD).
+
+| Selected (team's entity type, else unit troop type) | D-pad captions (position: text id [flag icon]) | Buttons (position: text id, pad icon) |
+|---|---|---|
+| `Entity::TypeOfficer` | 1: `multiwinia_control_order` [`banner_goto`]; 2: `multiwinia_control_follow` [`banner_follow`]; 4: `multiwinia_control_noorder` [`banner_none`] | 1: `multiwinia_control_follow` if the cursor is within 50 u (√2500) of the officer else `multiwinia_control_order`, `button_x`; 2: `gc_destroy`, `button_y`; 3: `gc_move`, `button_a`; 4: `gc_deselect`, `button_b` |
+| `Entity::TypeInsertionSquadie` | 1: `gc_zoomin`; 4: `gc_zoomout` | 1: `gc_changeweapon`, `button_x`; 2: `gc_destroy`, `button_y`; 4: `gc_deselect`, `button_b` |
+| `Entity::TypeArmour` | 1: `gc_setturret` | 1: `multiwinia_control_unload` if passengers > 0 else `multiwinia_control_load`, `button_x`; 2: `gc_destroy`, `button_y`; 3: `gc_setturret` if awaiting deployment else `gc_move`, `button_a`; 4: `gc_cancel` if awaiting deployment else `gc_deselect`, `button_b` |
+| nothing selected | 1: `researchname_squad`; 2: `researchname_engineer`; 3: `researchname_armour` (only if armour research level > 0) | 1: `multiwinia_control_promote`, `button_x`; 3: `multiwinia_control_select`, `button_a` |
+
+`GetOrderNameAndBanner(order)` (unused helper): `OrderNone` → `multiwinia_control_noorder`/`banner_none`; `OrderFollow` → `multiwinia_control_follow`/`banner_follow`; `OrderGoto` and `OrderPrepareGoto` → `multiwinia_control_order`/`banner_goto`.
+
+On-screen aids (disabled, §10.1): centred text at (W/2, H/3) with a W/40-sized icon pair to its left, alpha 0.8 fading 1/s after the aid's control fires (or its `CheckRunner` predicate, e.g. `BoolChecker<ControlHelpSystem>(&HasSquadRunning)`), removed 1 s after completion. Text ids passed by the dead tutorial: `control_help_cameramove` (CameraMove), `control_help_cameraturn` (TargetMoveSecondary), `control_help_cameraup` (CameraUp), `control_help_cameradown` (CameraDown), `control_help_quickunitstart` (IconsTaskManagerDisplayPressed), `control_help_quickunitcreate` (UnitCreate / HasSquadRunning), `control_help_quickunitplace` (UnitCreate), `control_help_move` (UnitMove), `control_help_camerarotateleft` (CameraRotateLeft), `control_help_camerarotateright` (CameraRotateRight), `darwinia_tutorial_engineer` (MenuDown), `darwinia_tutorial_grenade` (UnitPrimaryFireTarget), `darwinia_tutorial_taskmanager` (IconsTaskManagerDisplayPressed), `darwinia_tutorial_createunit` (UnitCreate) [C] `code/tutorial_demo2.cpp` [B:DEAD].
+
+### 10.6 Control-help constants
+
+| Constant | Value | Ref (`code/control_help.cpp:` unless noted) |
+|---|---|---|
+| `NUM_ON_SCREEN_AIDS` | 16 (unused) | `code/control_help.h` |
+| `MaxSets` / icon count | 4 / 11 | `code/control_help.h` |
+| Icon size / gap / font | 50 / 10 / 12 px | `HelpIcon::Render` |
+| Blink | 1.5 s, `0.75 + 0.25 sin 8t` | `HelpIcon::Render` |
+| Set fade | 1.0 s | `HelpIconSet::Render` |
+| Panel box | `w = 0.15H`, `h = 0.3w`, base `0.75H`, side offset `W/6`, highlight decay 0.5/s | `RenderControlHelp` |
+| Aid fade | alpha 0.8, −1/s after done, removal +1 s | `RenderOnScreenAids`, `Advance` |
+| Officer follow-vs-order radius | 50 u (MagSquared < 2500) | `RenderHelp` |
+| MW deselect hint | +1.0 (cap 3.0) while showing; −0.75 per stray click; show if < −1.0; 3.0 s; decay 0.33/s | `code/multiwiniahelp.cpp:MultiwiniaHelp::ShowSpaceDeselectHelp` |
+| MW shift hint | forward held > 4.0 s; 3.0 s | `code/camera.cpp:Camera::AdvanceFreeMovementMode`; `MultiwiniaHelp::ShowShiftSpeedupHelp` |
+

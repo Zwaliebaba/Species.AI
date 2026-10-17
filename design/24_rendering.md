@@ -128,7 +128,7 @@ Under `USE_DIRECT3D` both `Require*Textures` return `false` immediately [C].
 #### 1.3.3 WGL context, vsync, MSAA, gamma [C] `code/lib/window_manager_win32.cpp:WindowManagerWin32::EnableOpenGL`
 
 - Pixel format: `PIXELFORMATDESCRIPTOR{PFD_DRAW_TO_WINDOW|PFD_SUPPORT_OPENGL|PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, cColorBits = ScreenColourDepth, cDepthBits = ScreenZDepth, PFD_MAIN_PLANE}` → `ChoosePixelFormat` + `SetPixelFormat` (results unchecked). **No alpha, stencil or multisample bits are requested.**
-- Two contexts: primary `m_hRC`, and a secondary `m_hRC2` "for loading thread" joined with `wglShareLists`; `m_hRC2` is **never made current** and never deleted (`UseSecondaryContext/ReleaseSecondaryContext/DestroySecondaryContext` declared, not defined). All GL work runs on the main thread; worker threads queue GL jobs to the loading screen (§4.26).
+- Two contexts: primary `m_hRC`, and a secondary `m_hRC2` "for loading thread" joined with `wglShareLists`; `m_hRC2` is **never made current** and never deleted (`UseSecondaryContext/ReleaseSecondaryContext/DestroySecondaryContext` declared, not defined). All GL work runs on the main thread; worker threads queue GL jobs to the loading screen (§4.25).
 - **Vsync**: no `wglSwapIntervalEXT` call exists anywhere [C grep] ⇒ the swap interval is the driver default; the `WaitVerticalRetrace` preference has no effect in the baseline. `waitVRT` and `antiAlias` arguments of `CreateWin` are ignored by the Win32 GL window manager.
 - **Multisampling**: none (see `gglChoosePixelFormatARB`).
 - **Gamma**: no gamma-ramp code for GL (`Renderer::SetScreenGamma` exists only under `USE_DIRECT3D` and has no caller).
@@ -665,7 +665,7 @@ This is the **state contract**: every pass in §3 is documented as the delta it 
 | Colour | `GL_COLOR_MATERIAL` off, `glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)` |
 | Lighting | `GL_LIGHTING` off; `GL_LIGHT0`…`GL_LIGHT7` off; then `Location::SetupLights()` (or `GlobalWorld::SetupLights()` with no location); `GL_LIGHT_MODEL_AMBIENT` = (0,0,0,0) |
 | Blend / alpha | `GL_BLEND` off, `glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)`; `GL_ALPHA_TEST` off, `glAlphaFunc(GL_GREATER, 0.01)` |
-| Fog | `Location::SetupFog()` (or `GlobalWorld::SetupFog()`): parameters set, fog left **disabled** (§5.5) |
+| Fog | `Location::SetupFog()` (or `GlobalWorld::SetupFog()`): parameters set, fog left **disabled** (§5.4) |
 | AA | `GL_LINE_SMOOTH` off, `GL_POINT_SMOOTH` off |
 | Texture | `GL_TEXTURE_2D` off; wrap S/T `GL_CLAMP` (applied to the currently bound texture object); `GL_TEXTURE_ENV_MODE = GL_MODULATE`; `GL_TEXTURE_ENV_COLOR` = (0,0,0,0) |
 | Framebuffer | `GL_DEPTH_TEST` on, depth mask on, `glDepthFunc(GL_LEQUAL)`, `GL_SCISSOR_TEST` off (`glStencilMask` commented out — no stencil is ever used) |
@@ -713,9 +713,9 @@ stateDiagram-v2
 |---|---|---|---|
 | **Match frame** | `m_locationId != −1`, not editing, not at main menu | `Location::Render(true)` (passes 3–13 below) | [B:FULL] — the frame documented in §3.2 |
 | Main-menu frame | `g_app->m_atMainMenu && m_gameMenu->m_menuCreated` | `GameMenu::Render`: clouds/sky only (§4.4), then the overlay passes (menu windows are Eclipse windows, pass 19) | [B:FULL] |
-| Loading-screen frame | while `LoadingScreen::Render` blocks the main thread (start-up, level load, thumbnail preload) | its own loop, not `RenderFrame` (§4.26) | [B:FULL] |
+| Loading-screen frame | while `LoadingScreen::Render` blocks the main thread (start-up, level load, thumbnail preload) | its own loop, not `RenderFrame` (§4.25) | [B:FULL] |
 | Single-player pixel-effect frame | `RenderPixelShader > 0 && !g_app->Multiplayer()` | pixel-effect pre-pass, [D3D] water-reflection pre-pass and deform start, second clear, `Location::Render(true)`, `ApplyPixelEffect` | **[B:LEGACY]** — `App::Multiplayer()` ≡ `m_gameMode == GameModeMultiwinia` [C] `code/app.cpp:App::Multiplayer`, true in every Multiwinia game including tutorials |
-| Global-world frame | `m_locationId == −1` and not at the menu | `GlobalWorld::Render` (§4.25) | [B:LEGACY] — `code/main.cpp:GlobalWorldGameLoop` exits immediately |
+| Global-world frame | `m_locationId == −1` and not at the menu | `GlobalWorld::Render` (§4.24) | [B:LEGACY] — `code/main.cpp:GlobalWorldGameLoop` exits immediately |
 | Editor frame | `g_app->m_editing` | `Location::Render` + `LocationEditor::Render` under `LOCATION_EDITOR`, else `GlobalWorld::Render` | [B:EDITOR] |
 | Poster tile | screenshot key with `RenderPosterResolution > 1` | per tile `RenderFrame(false)` with a `glFrustum` sub-projection (§5.1) | dev feature, live in [B:FULL] |
 
@@ -732,23 +732,23 @@ stateDiagram-v2
 | 3b | Blobby clouds | `Clouds::RenderBlobby` | 1–3 huge textured quads (y = 1200/1000/800) by `RenderCloudDetail` | on (`SRC_ALPHA, ONE`) | **off / off** | on | off | on, black, 2000→5000 | off | `textures/clouds.bmp` (no mip) · MODULATE · LINEAR/NEAREST · REPEAT | colour (0.7,0.7,0.9,0.6); each quad split 4×4; exit → default, wrap CLAMP, `SetupFog` |
 | 3c | Flat clouds | `Clouds::RenderFlat` | 1–2 huge quads (y = 1200/1000) | on (`SRC_ALPHA, ONE`) | off / off | on | off | on, black, 2000→5000 | off | `textures/clouds.bmp` · MODULATE · NEAREST/NEAREST · REPEAT | colour (0.7,0.7,0.9,0.3), alpha 0.5 at detail 3; exit as 3b |
 | 3d | Sky face [B:DEBUG] | `Clouds::RenderFace` | cross-faded face images 5–30 s after the cheat | func `SRC_ALPHA, ONE` set but blend **disabled** (opaque) | on / off | on | off | off | off | `sepulveda/sepulveda1..5.bmp` (mip on the current; previous default) | cheat-window only (§4.4) |
-| 4a | Landscape main | `Location::RenderLandscape` → `Landscape::Render` → `LandscapeRenderer::Render` → `RenderMainSlow` or display list `LandscapeMain` | the whole terrain as **one** triangle strip (VBO, display list or client arrays) | off (negative mode: on, `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, left enabled) | on / on | on | off | **on**, level fog (§5.5) | **on**: `GL_LIGHT0`+`GL_LIGHT1`, `GL_COLOR_MATERIAL`, material specular (0,0,0,0), ambient+diffuse (1,1,1,0), shininess 100 | off | FLAT (faceted); arrays vertex/normal/colour; exit: lighting, lights, colour material off |
+| 4a | Landscape main | `Location::RenderLandscape` → `Landscape::Render` → `LandscapeRenderer::Render` → `RenderMainSlow` or display list `LandscapeMain` | the whole terrain as **one** triangle strip (VBO, display list or client arrays) | off (negative mode: on, `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, left enabled) | on / on | on | off | **on**, level fog (§5.4) | **on**: `GL_LIGHT0`+`GL_LIGHT1`, `GL_COLOR_MATERIAL`, material specular (0,0,0,0), ambient+diffuse (1,1,1,0), shininess 100 | off | FLAT (faceted); arrays vertex/normal/colour; exit: lighting, lights, colour material off |
 | 4b | Landscape overlay | `LandscapeRenderer::RenderOverlaySlow` or display list `LandscapeOverlay` | same mesh again, outline texture → glowing wire grid | on (`SRC_ALPHA, ONE`; negative `SRC_ALPHA, ONE_MINUS_SRC_COLOR`) | on (passes at equal depth by `LEQUAL`) / **off** | on | off | on | on: LIGHT0+1, material specular (0.5,0.5,0.5,1), ambient+diffuse (1.2,1.2,1.2,0), shininess 40 | `textures/triangleOutline.bmp` (mip, unmasked) · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR · **REPEAT** | arrays + texcoord; exit → default, wrap CLAMP; `glDisable(GL_FOG)` after both passes |
 | 5a | Flat (under-)water | `Location::RenderWater` → `Water::Render` → `RenderFlatWater` → `RenderFlatWaterTiles` | 32×32 tile grid of `GL_QUADS` at y = −9 over twice the land size, tiles flagged "all very deep" skipped | off (negative: on, `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour alpha 0) | on / **off** | **off** | off | on (level) | off | unit 0: `terrain/<waterColourFile>` (mip, masked) · MODULATE (a `GL_COMBINE_RGB_EXT=REPLACE` parameter is set but inert) · LINEAR/LINEAR_MIPMAP_LINEAR · REPEAT, UV 30 repeats scrolling `t/30`; unit 1: `water_lightmap` (shore mask) · `GL_COMBINE_EXT`, RGB `MODULATE` · LINEAR/LINEAR_MIPMAP_LINEAR | vertex colour (255,255,255,255); exit → default (unit 1 left in COMBINE mode, disabled) |
 | 5b | Dynamic water | `Water::RenderDynamicWater` (if `RenderWaterDetail > 0`; [B:D3D] only with hardware vertex processing) | coastal wave mesh strip at y ≈ 0 with per-vertex colours | on (`SRC_ALPHA, ONE`) | on / on | on | off | on | off | none ([B:D3D]: `water-meshwaves` shader sampling the reflection target when `RenderWaterEffect && RenderPixelShader`) | arrays vertex/colour, `glDrawArrays(GL_TRIANGLE_STRIP)`; exit: `SetupFog` (fog off), blend off |
-| 6 | Buildings (solid) | `Location::RenderBuildings` → `Building::Render` → `Shape::Render` (+ subclass extras) | every in-view building's `.shp` mesh | off | on / on | on | off | **on**, level fog | `Renderer::SetObjectLighting` (lighting + LIGHT0 + LIGHT1, material diffuse (1,1,1,1), specular 0, ambient 0, shininess 127) **or** `Location::SetupSpecialLights` (§5.6); [B:D3D] FixedPipeline `m_specular = true` | off (subclasses may bind) | `GL_COLOR_MATERIAL` on inside `Shape::Render`; push / `glMultMatrixd` / pop per shape; display lists; exit: fog off, lighting off |
+| 6 | Buildings (solid) | `Location::RenderBuildings` → `Building::Render` → `Shape::Render` (+ subclass extras) | every in-view building's `.shp` mesh | off | on / on | on | off | **on**, level fog | `Renderer::SetObjectLighting` (lighting + LIGHT0 + LIGHT1, material diffuse (1,1,1,1), specular 0, ambient 0, shininess 127) **or** `Location::SetupSpecialLights` (§5.5); [B:D3D] FixedPipeline `m_specular = true` | off (subclasses may bind) | `GL_COLOR_MATERIAL` on inside `Shape::Render`; push / `glMultMatrixd` / pop per shape; display lists; exit: fog off, lighting off |
 | 7a | Units | `Location::RenderTeams` → `Team::Render` (×6 teams) → `Unit::Render` | every in-view `Team::m_units` entry (insertion-squad members) | on (default func) | on / on | on | **on, `GREATER 0.02`** | off | per unit | on · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR (applied to the bound texture) | → default, alpha ref back to 0.01 |
-| 7b | Other entities | `Team::RenderOthers` → `Entity::Render` | every in-view entity in `Team::m_others` whose type is neither Darwinian nor Virii (entity catalogue in [02](02_units_and_entities.md)) | per entity | per entity | per entity | per entity | per entity | per entity (shapes lit via `SetObjectLighting`) | per entity | blob shadows use near ×1.05 (§5.7) |
+| 7b | Other entities | `Team::RenderOthers` → `Entity::Render` | every in-view entity in `Team::m_others` whose type is neither Darwinian nor Virii (entity catalogue in [02](02_units_and_entities.md)) | per entity | per entity | per entity | per entity | per entity | per entity (shapes lit via `SetObjectLighting`) | per entity | blob shadows use near ×1.05 (§5.6) |
 | 7c | Virii | `Team::RenderVirii` | tail-sprite strips per Virii, LOD 1–4 | on: `SRC_ALPHA, ONE`; **monster team `SRC_ALPHA, ONE_MINUS_SRC_COLOR`** | on / **off** | **off** | default (off) | off | off | `sprites/viriifull.bmp` · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR | projection near × **1.05**; exit → default, wrap CLAMP, near restored |
-| 7d | Darwinians | `Team::RenderDarwinians` → `Darwinian::Render` | facing-oriented sprite cards + flat black drop shadows (§4.9, §5.7) | on (default func) | on / on (shadow quads: write off) | **off** | **on, `GREATER 0.04`** | off | off | `sprites/darwinian.bmp` (and state variants) · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR | → default |
+| 7d | Darwinians | `Team::RenderDarwinians` → `Darwinian::Render` | facing-oriented sprite cards + flat black drop shadows (§4.9, §5.6) | on (default func) | on / on (shadow quads: write off) | **off** | **on, `GREATER 0.04`** | off | off | `sprites/darwinian.bmp` (and state variants) · MODULATE · LINEAR/LINEAR_MIPMAP_LINEAR | → default |
 | 7e | Sync-error markers | `Team::RenderSyncErrors` → `SyncDiff::Render` | 500-unit debug arrow + 3D text per recorded sync difference | per helper | per helper | — | — | — | — | font | only when `LobbyTeam::m_syncDifferences` is non-empty; hidden with the interface |
 | 8 | Building alphas | `Location::RenderBuildingAlphas` → `Building::RenderAlphas` | non-sorted buildings in index order, then buildings whose `PerformDepthSort` is true **far-to-near** by squared camera distance; default `RenderAlphas` = `RenderLights` + `RenderPorts` | per building; lights/ports `SRC_ALPHA, ONE` | on / lights+ports **off** | lights+ports off | off | **on** for the whole pass (level fog) | port pads lit with `SetObjectLighting` | lights/ports `textures/starburst.bmp` · LINEAR/LINEAR_MIPMAP_LINEAR | camera-facing quads; exit fog off |
 | 9 | Location particles | `Location::RenderParticles` | **empty function** | — | — | — | — | — | — | — | — |
-| 10a | Effects | `Location::RenderWeapons` (part 1) | every `Location::m_effects` object (22 types, §4.11), frustum-culled by `PosInViewFrustum` except `EffectPulseWave`, `EffectSpamInfection`, `EffectLightning` | on (`SRC_ALPHA, ONE`) set for the batch | on / **off** | **off** | default | off | off | per effect | some effects switch to smooth shading or 2D (shockwave flash) |
+| 10a | Effects | `Location::RenderWeapons` (part 1) | every `Location::m_effects` object (22 types, §4.10), frustum-culled by `PosInViewFrustum` except `EffectPulseWave`, `EffectSpamInfection`, `EffectLightning` | on (`SRC_ALPHA, ONE`) set for the batch | on / **off** | **off** | default | off | off | per effect | some effects switch to smooth shading or 2D (shockwave flash) |
 | 10b | Lasers | `Location::RenderWeapons` (part 2) → `Laser::Render` | all laser bolts in **one** `glBegin(GL_QUADS)` | on (`SRC_ALPHA, ONE`) | on / off | off | default | off | off | `textures/laser.bmp` (requested **without** mip-maps) · MODULATE · obj; mind-control bolts rebind `textures/subversion.bmp` | `GL_LINE_SMOOTH` on (no effect on quads); projection near × **1.2**; exit → default |
 | 11 | Spirits | `Location::RenderSpirits` → `Spirit::RenderWithoutGlBegin` | untextured inner/outer quads per spirit; monster-team spirits first | monster `SRC_ALPHA, ONE_MINUS_SRC_COLOR`; others `SRC_ALPHA, ONE` | on / **off** | **off** | default | off | off | off | exit → default |
 | 12 | Route lines | `RoutingSystem::Render` → `RenderRouteLine` | player route previews (fade 0.25/s) | on (`SRC_ALPHA, ONE_MINUS_SRC_ALPHA`) | **off** / on | off in line draw | default | off | off | `textures/particle.bmp`, `icons/widearrow.bmp` | `glLineWidth(1)` at exit; depth test restored |
-| 13 | Location message | `Location::RenderCurrentMessage` | centred caption, 40 px (scaled to fit), grows `+√(2−t)·15` in the last 2 s, y = 370·W/1280, team-coloured, outline first | text (§4.23) | off / off | off | — | — | off | font atlases · LINEAR/LINEAR_MIPMAP_LINEAR | `g_gameFont.BeginText2D/EndText2D` |
+| 13 | Location message | `Location::RenderCurrentMessage` | centred caption, 40 px (scaled to fit), grows `+√(2−t)·15` in the last 2 s, y = 370·W/1280, team-coloured, outline first | text (§4.22) | off / off | off | — | — | off | font atlases · LINEAR/LINEAR_MIPMAP_LINEAR | `g_gameFont.BeginText2D/EndText2D` |
 | 14 | Explosion debris | `ExplosionManager::Render` → `Explosion::Render` | shattered shape triangles | on (default func) | on / on | **off** | off | off | **on** (`SetObjectLighting`) + `GL_COLOR_MATERIAL` | `textures/shapewireframe.bmp` · **`GL_DECAL`** · LINEAR/LINEAR_MIPMAP_LINEAR | exit: env MODULATE, → default |
 | 15 | Particles | `ParticleSystem::Render` | smoke batch (darkening) then glow batch (additive) | smoke `SRC_ALPHA, ONE_MINUS_SRC_COLOR`; glow `SRC_ALPHA, ONE` | on / **off** | **off** | default | off | off | `textures/particle.bmp` · MODULATE · MAG **NEAREST** (restored LINEAR) / obj | camera billboards; exit → default |
 | 16 | Markers | `MarkerSystem::Render` | world markers projected to 2D icons, off-screen compass arrows | on (`SRC_ALPHA, ONE_MINUS_SRC_ALPHA`; icon layers additive) | off (2D) | off | — | — | — | `icons/marker_shadow.bmp`, `icons/compass*.bmp`, `icons/marker_colour.bmp`, `icons/icon_*.bmp` | `SetupMatricesFor3D` to project, then `SetupMatricesFor2D` |
@@ -759,7 +759,7 @@ stateDiagram-v2
 | 21 | Chat | `Location::RenderChatMessages` (only when `renderChat`) | chat log, "press to talk" hint; 60 s life with 5 s fade from 55 s | text | 2D | off | — | — | off | font | `g_editorFont` |
 | 22 | Camera debug | `Camera::Render` | **empty** (arrow/sphere commented out) | — | — | — | — | — | — | — | — |
 | 23 | Task manager | `TaskManagerInterface::Render` (instance `TaskManagerInterfaceMultiwinia`) | target-area particles, power-up bar, pop-ups, messages | on | 2D | off | — | — | — | `icons/*` | `BeginText2D` |
-| 24 | Persistent debug | `g_debugRenderer.Render()` (`DEBUG_RENDER_ENABLED`, global) | queued debug squares/markers/spheres/vectors (normally empty) | per item | per item | — | — | — | — | — | §4.24 |
+| 24 | Persistent debug | `g_debugRenderer.Render()` (`DEBUG_RENDER_ENABLED`, global) | queued debug squares/markers/spheres/vectors (normally empty) | per item | per item | — | — | — | — | — | §4.23 |
 | 25 | Control help | `ControlHelpSystem::Render` | returns immediately when `g_app->Multiplayer()` → **draws nothing in Multiwinia** | — | — | — | — | — | — | — | [C] `code/control_help.cpp:ControlHelpSystem::Render` |
 | 26 | 2D block start | `g_editorFont.BeginText2D()` | — | on | off / off | off | — | — | off | — | ortho |
 | 27 | Fade | `Renderer::RenderFadeOut` | black quad | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA` | off / off | — | — | — | — | — | 2D |
@@ -791,8 +791,8 @@ Resolved [C]: earlier drafts described the clear/fog colour as "level-defined"; 
 
 | Feature | Status in a match | Ref |
 |---|---|---|
-| Pixel effect (§4.15) | never runs | `Renderer::RenderFrame` gate |
-| [B:D3D] deform effect (§4.14) | `Start/Stop` never called; `g_deformEffect` still created | same |
+| Pixel effect (§4.14) | never runs | `Renderer::RenderFrame` gate |
+| [B:D3D] deform effect (§4.13) | `Start/Stop` never called; `g_deformEffect` still created | same |
 | [B:D3D] water reflection pre-render (§4.3) | never runs; `Water::RenderDynamicWater` **still binds** the `water-meshwaves` shader when `RenderWaterEffect && RenderPixelShader`, sampling a render target that is never written (contents undefined, 24-U2) | `code/water.cpp:Water::Render` |
 | `ControlHelpSystem` hints | draw nothing | `ControlHelpSystem::Render` |
 | `StartSequence`, Darwin logo, global world, Sepulveda | unreachable | §3.2 |
@@ -892,7 +892,7 @@ Linux/Mac default preferences write `RenderLandscapeMode = 2` [C] `code/lib/pref
 |---|---|---|
 | Purpose | solid, flat-shaded, vertex-lit terrain coloured by the ramp | additive glowing wireframe grid: `textures/triangleOutline.bmp` (128×128 8-bit; a 2×2 block of squares, three with a diagonal) |
 | Fog | ON, linear, black, start = end/3, end = max(4000, sizeX+1000, sizeZ+1000) | ON (same) |
-| Lighting | ON, `GL_LIGHT0`, `GL_LIGHT1` (the first two level lights, §5.6) | ON, LIGHT0, LIGHT1 |
+| Lighting | ON, `GL_LIGHT0`, `GL_LIGHT1` (the first two level lights, §5.5) | ON, LIGHT0, LIGHT1 |
 | Material | specular (0,0,0,0), ambient+diffuse (1,1,1,0), shininess 100 | specular (0.5,0.5,0.5,1), ambient+diffuse (1.2,1.2,1.2,0), shininess 40 — the level lights' colour is also their `GL_SPECULAR`, so grid lines catch highlights [I] |
 | Colour material | ON (`GL_FRONT_AND_BACK`, `GL_AMBIENT_AND_DIFFUSE`) | ON |
 | Texture | OFF | ON; `GetTexture("textures/triangleOutline.bmp", mipmaps=true, masked=false)`; MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, wrap REPEAT; env MODULATE |
@@ -1067,7 +1067,7 @@ Marker: <name>                   # up to 100
 
 ### 4.6 Buildings: solid pass, alpha pass, depth sort, lights and ports [C] `code/location.cpp`, `code/worldobject/building.cpp`
 
-- **Solid pass** (pass 6): `Location::RenderBuildings` sets fog, `SetObjectLighting` (or special lighting, §5.6) and calls `Building::Render` for every in-view building with the slice-aware prediction time. Default `Building::Render` = `m_shape->Render(t, Matrix34(m_front, m_up, m_pos))` plus, when editing, a debug arrow. Subclasses add extras (team-coloured turret barrels, fence posts with `GL_NORMALIZE`, scaled static shapes).
+- **Solid pass** (pass 6): `Location::RenderBuildings` sets fog, `SetObjectLighting` (or special lighting, §5.5) and calls `Building::Render` for every in-view building with the slice-aware prediction time. Default `Building::Render` = `m_shape->Render(t, Matrix34(m_front, m_up, m_pos))` plus, when editing, a debug arrow. Subclasses add extras (team-coloured turret barrels, fence posts with `GL_NORMALIZE`, scaled static shapes).
 - **Alpha pass** (pass 8): fog enabled for the whole pass. Buildings whose `PerformDepthSort(centrePos)` returns false are drawn first in container order; the others are collected into `m_sortedBuildingsAlphas` (grown in steps of 128 = `StepDepthSortedBuildings`), sorted ascending by squared camera distance with `qsort` and drawn **from the end (farthest) to the start (nearest)**.
 - **Ownership lights** `Building::RenderLights` (for every `MarkerLight*` marker, buildings with team ≠ 255 only): shown only when `(m_lastValidSequenceIdFromServer % 10) / 2 == teamId` (or editing) — a team-staggered blink: each team's lights are on for 2 of every 10 server sequence ids (0.2 s on, 1.0 s period at 10 Hz); 10 nested camera-facing quads of half-size `6·i/10` (i = 0..9) with `textures/starburst.bmp`, team colour, additive, depth write off, cull off.
 - **Ports** `Building::RenderPorts`: per port, the shared `controlpad.shp` lit with `SetObjectLighting` at terrain height + 0.5 (only when `RenderBuildingDetail < 3`), then a 6-unit starburst billboard at the pad's status marker, green (0.3,1.0,0.3) when occupied, red (1.0,0.3,0.3) when empty, additive, depth write off.
@@ -1160,7 +1160,7 @@ Rendering [C] `Tree::RenderAlphas`, `Tree::Render`:
 **Darwinians** [C] `code/team.cpp:Team::RenderDarwinians`, `code/worldobject/darwinian.cpp:Darwinian::Render`:
 - Pass state: `sprites/darwinian.bmp`, blend on (default func), **alpha test `GREATER 0.04`**, cull off. Detail factor `highDetail = clamp(1 − d²/D², 0, 1)` with D = 99999.9 / 1000 / 500 for `RenderEntityDetail` ≤ 1 / 2 / ≥ 3.
 - Card geometry: base half-width `size = 3.0`; if `DarwinianScaleFactor` (`m_scaleFactor`, pref default 2.0) > 0: beyond 100 units `size *= 1 + scale·(d − 100)/1000` (units stay readable when zoomed out); per-individual variation `size *= 1 + 0.03·((index·uniqueId) % 10)`; rage task pulse `×(1 + |sin(g_gameTime)|·0.5)`. Orientation: `up` = terrain normal (high detail within 1300 units; tilted ±0.3 rad by `sin(time)` while worshipping/operating/watching/opening), `right = front × up` — a **card facing the Darwinian's own direction**; between 300 and 1300 units `up` and `right` blend linearly toward the camera's up/right (`factor = (d − 300)/1000`), i.e. the card turns into a camera billboard with distance. Quad: width 2·size, height 2·size from the feet. Resolved: earlier drafts called these "camera-facing sprites"; the code shows facing-oriented cards that become billboards with distance.
-- Colour: team colour (lerped from the previous team over `m_colourTimer/4` after conversion — the render path decrements `m_colourTimer` by the prediction time, a render-side state write [C]), × `0.3 + 0.7·health`; dead: RGB ×0.2, alpha `2.5·health`; state textures (`sprites/darwinian_ouch*.bmp`, `sprites/futurewinian.bmp`, `sprites/santahat.bmp` on every 3rd Darwinian in Christmas mode, bubbles additive); drop shadow §5.7.
+- Colour: team colour (lerped from the previous team over `m_colourTimer/4` after conversion — the render path decrements `m_colourTimer` by the prediction time, a render-side state write [C]), × `0.3 + 0.7·health`; dead: RGB ×0.2, alpha `2.5·health`; state textures (`sprites/darwinian_ouch*.bmp`, `sprites/futurewinian.bmp`, `sprites/santahat.bmp` on every 3rd Darwinian in Christmas mode, bubbles additive); drop shadow §5.6.
 
 **Virii** [C] `Team::RenderVirii`: `sprites/viriifull.bmp`, additive (monster team: darkening), depth write off, cull off, projection near × 1.05. LOD `viriiDetail` from `RenderEntityDetail` and camera distance: detail 1: 1, or 2 beyond 1000; detail 2: 1, 2 beyond 500, 3 beyond 1000; detail 3: 1, 2 beyond 300, 3 beyond 600, 4 beyond 1000 (higher = fewer tail segments).
 
@@ -1479,9 +1479,91 @@ There are **no shadow maps, no stencil shadows and no projected-geometry shadows
 | Gamma ramp | `Renderer::SetScreenGamma` (`g = 2 − gamma`, ramp `(i/255)^g·65535`) | [B:D3D], no caller |
 | Post-process bloom/blur/AA | none | — |
 
-<!-- SECTION 6 shaders -->
+## 6 Shaders (`data/shaders/`) — all [B:D3D]
 
-<!-- SECTION 7 style -->
+**The shipped OpenGL build uses no programmable shaders.** All 14 files are HLSL (Shader Model 2/3 era) consumed only by the D3D9 configuration (`code/lib/shader.cpp`, `code/lib/FixedPipeline.cpp`, `code/deform.cpp`, `code/water_reflection.cpp` are `#ifdef USE_DIRECT3D`) [C].
+
+**Compilation and binding** [C] `code/lib/shader.cpp:Shader::Shader`, `Shader::Create`, `MyD3DXInclude`:
+- `Shader::Create(vsFile, psFile)` loads both files through the resource system (`MemFile`), compiles with `D3DXCompileShader(text, size, NULL, &include, "vs_main" | "ps_main", profile, 0, &code, &errors, &constantTable)` using the **device's best profile** (`D3DXGetVertexShaderProfile` / `D3DXGetPixelShaderProfile`); `#include "x"` is resolved by `MyD3DXInclude::Open` as resource `shaders/x`. On failure `Create` deletes the object and raises `AppReleaseAssert("Shader create error: vertex name … pixel name …")` (fatal).
+- `Shader::Bind` = `SetVertexShader` + `SetPixelShader`; `Unbind` sets both NULL. Constants are set **by name** through the D3DX constant tables of both stages: `SetBool`, `SetBoolArray`, `SetInt`, `SetIntArray`, `SetFloat`, `SetFloatArray`, `SetUniform(1–4 floats)`, `SetMatrix(float*|double*)`, `SetMatrixTranspose`, `SetSamplerDX(name, IDirect3DBaseTexture9*)`, `SetSamplerTex(name, Texture*)`, and (in `code/lib/opengl_directx.cpp`) `SetSamplerGLTextureId(name, glId)`, `SetSamplerGLFixedStage(name, unit)`.
+
+| # | File | Stage / profile | Inputs | Outputs | Uniforms / constants | Effect | Bound by |
+|---|---|---|---|---|---|---|---|
+| 1 | `data/shaders/globals.h` | include | — | — | `#define DEFORM_PRECISION 10` ("greater = higher precision (use against banding), but max deformation limited to 1/DEFORM_PRECISION of screen") | shared constant | included by `deformDiamond.ps`, `deformSphere.ps`, `deformFullscreen.ps` (not by FixedFunc shaders) |
+| 2 | `data/shaders/FixedFunc0.vs` | VS, device profile | `POSITION0` float4, `NORMAL0` float3, `COLOR0` float4 | `POSITION`, `TEXCOORD0` = colour | `shared float4x4 matCameraView : register(c0)`, `shared float4x4 matCameraViewIT : register(c4)` (both identity), `float4x4 matProj`, `float4x4 matWorldView`, `float4x4 matWorldViewIT`, `bool bSpecular`, `float2 fogRange` (x = end, y = end − start), `int numLights`, `CLight lights[2] {float3 vDir; float4 vDiffuse; float4 vSpecular;}` | `P = pos·(matWorldView·matCameraView)`, `oPos = P·matProj`. If `numLights ≤ 0`: colour = input colour. Else `N = normalize((float3x3)(matCameraViewIT·matWorldViewIT)·normalize(n) + (0, 0.0001, 0))`, `V = normalize(P)`; per light `L = −vDir`, `d = N·L`; if `d > 0`: diffuse `d·vDiffuse`, specular (if `bSpecular`) `pow(max(0, normalize(L+V)·N), 16)·vSpecular`; colour = Σ(diffuse·inColour + specular); **alpha forced 1** ("fixes world map"). Fog `f = saturate((fogRange.x − oPos.z)/fogRange.y)`; output colour × f (all 4 channels) | `FixedPipeline::Bind` when texture unit 0 is off |
+| 3 | `data/shaders/FixedFunc0Maps.ps` | PS | `TEXCOORD0` colour | `COLOR` | none | pass-through colour | with #2 |
+| 4 | `data/shaders/FixedFunc1.vs` | VS | `POSITION0`, `COLOR0`, `TEXCOORD0` | `POSITION`, `TEXCOORD1` = colour, `TEXCOORD0` = uv | `matCameraView` c0, `matCameraViewIT` c4, `matProj`, `matWorldView`, `matWorldViewIT` (unused), `fogRange` | same transform; colour × fog; **no lighting** | `FixedPipeline::Bind` when unit 0 on, unit 1 off |
+| 5 | `data/shaders/FixedFunc1Maps.ps` | PS | `TEXCOORD1` colour, `TEXCOORD0` uv | `COLOR` | `sampler map0` (stage 0 [I]) | `colour · tex2D(map0, uv)` (MODULATE only) | with #4 |
+| 6 | `data/shaders/FixedFunc2.vs` | VS | `POSITION0`, `COLOR0`, `TEXCOORD0`, `TEXCOORD1` | `POSITION`, `TEXCOORD2` = colour, `TEXCOORD0`, `TEXCOORD1` | as #4 plus `float4 fogColour` (**never set, never used**) | same; two UV sets; no lighting | `FixedPipeline::Bind` when units 0 and 1 on |
+| 7 | `data/shaders/FixedFunc2Maps.ps` | PS | `TEXCOORD2` colour, `TEXCOORD0`, `TEXCOORD1` | `COLOR` | `sampler map0`, `sampler map1` (stages 0/1 [I]) | `colour · tex2D(map0, uv0) · tex2D(map1, uv1)` (fixed MODULATE×MODULATE — flat water's COMBINE and the fence's REPLACE are not honoured) | with #6 |
+| 8 | `data/shaders/deform.vs` | VS | `POSITION` (clip-space xy), `TEXCOORD0` = sprite centre (u,v), `TEXCOORD1` = (invSize, height), `COLOR` (x = time) | `POSITION` = input; `COLOR` = (centre.x, centre.y, invSize, height); `TEXCOORD0.xy` = screen UV `(0.5(1+x)+0.0003, 0.5(1−y)+0.0003)` (offset "protects against ugly interference on Radeon X300"), `TEXCOORD0.z` = time | none | passes per-sprite parameters through the colour interpolator | `DeformEffect` (all three PS) |
+| 9 | `data/shaders/deformSphere.ps` | PS | `TEXCOORD0` (uv, time), `COLOR` (centre, invSize, height) | float4 (dx, dy, −dx, −dy) | `sampler deformSampler`, `float aspect` | radial displacement: `dir = uv − centre; dist = |dir·(aspect, 1)|; delta = tex(deformSampler, (time, dist·invSize)).x · height/dist · dir · DEFORM_PRECISION`; the signed vector is split into positive (xy) and negated (zw) channels so additive blending into an unsigned target accumulates both signs | `DeformEffect::Stop` (punch, tear) |
+| 10 | `data/shaders/deformDiamond.ps` | PS | same | same; `clip(−1)` where delta == 0 | `deformSampler`, `aspect`, unused `noiseSampler` | diamond (L1) metric `|dx|·aspect + |dy|`, lookup at `(time, 1 − dist·invSize)`, **inward** (negated) displacement | `DeformEffect::Stop` (spirits) |
+| 11 | `data/shaders/deformFullscreen.ps` | PS | `TEXCOORD0` | `COLOR` | `sampler screenSampler`, `sampler deformSampler` | `screen(uv + (d.xy − d.zw)/DEFORM_PRECISION)` — pure refraction ("transparent"); commented alternatives: rainbow (− delta), darken (− delta.x), darken+brighten | `DeformEffect::Stop` final composite |
+| 12 | `data/shaders/water-meshwaves.vs` | VS | `POSITION`, `NORMAL` (unnormalised wave normal), `COLOR` | `TEXCOORD1` = world position, `POSITION` = pos·WVP, `TEXCOORD0` = (pos + (normal, 0))·WVP (reflection coordinates), `COLOR` | `float4x4 worldViewProjMatrix` (= `Renderer::GetTotalMatrix()`); `matCameraView` c0 and `matCameraViewIT` c4 declared, unused | projects water vertices; perturbs the reflection lookup by the wave normal | `WaterReflectionEffect::Start` |
+| 13 | `data/shaders/water-meshwaves.ps` | PS (ps_2) | `TEXCOORD0` reflection coords (xyw), `COLOR` | `COLOR` | `sampler water` | `uv = 0.5·((1,1) − refl.xy/refl.w)`; `uv.y += 0.004` ("fix 1pix seam between water and land"); `out = 0.7·colour + 0.7·(r+g+b)·tex(water, uv)`; `out.a = 0.7` | `WaterReflectionEffect::Create` when the PS profile is below ps_3 |
+| 14 | `data/shaders/water-meshwaves.ps3` | PS (≥ ps_3) | + `TEXCOORD1` world position | `COLOR` | `sampler water`, `float2 time` (x = seconds `(GetTickCount() % 10000000)/1000`, y = small-wave amplitude `0.001·1024/ScreenW`) | as #13 plus screen-space ripples `uv += time.y · sin((0.2·pos.yy + pos.xz)·0.25 + 4·time.x) / (|ddx(pos.x)| + |ddx(pos.z)|)` | chosen when `D3DXGetPixelShaderProfile` returns ps_3 or higher |
+
+**Uniform/register layout** [C for declarations; non-`register()` assignments are compiler-chosen (24-U3)]:
+
+| Uniform | Declared in | Register | Set by |
+|---|---|---|---|
+| `shared float4x4 matCameraView` | FixedFunc0/1/2.vs, water-meshwaves.vs | **c0–c3** | identity (FixedPipeline ctor, after each `Present`) |
+| `shared float4x4 matCameraViewIT` | same | **c4–c7** | identity |
+| `float4x4 matProj` | FixedFunc VS | compiler | `FixedPipeline::Bind` |
+| `float4x4 matWorldView` | FixedFunc VS | compiler | `FixedPipeline::Bind` |
+| `float4x4 matWorldViewIT` | FixedFunc VS | compiler | `FixedPipeline::Bind` (plain inverse; HLSL `mul((float3x3)M, n)` applies it transposed) |
+| `float2 fogRange` | FixedFunc VS | compiler | `FixedPipeline::Bind` (`(100000, 1000)` when fog is off) |
+| `bool bSpecular` | FixedFunc0.vs | compiler | `FixedPipeline::Bind` (true only during `Location::RenderBuildings`) |
+| `int numLights` | FixedFunc0.vs | compiler | `FixedPipeline::Bind` |
+| `CLight lights[2]` | FixedFunc0.vs | compiler | `FixedPipeline::Bind` |
+| `float4 fogColour` | FixedFunc2.vs | compiler | never |
+| `sampler map0`, `map1` | FixedFunc1/2Maps.ps | s0, s1 [I] | GL emulation stage textures |
+| `float4x4 worldViewProjMatrix`, `float2 time`, `sampler water` | water-meshwaves | compiler | `WaterReflectionEffect::Start` |
+| `float aspect`, `sampler deformSampler`, `screenSampler`, `noiseSampler` | deform PS | compiler | `DeformEffect::RenderSpritesBegin`, `Stop` (`noiseSampler` never) |
+
+**Effective shader count in Multiwinia** [I]: under [B:D3D] only the six FixedFunc files run every frame; `water-meshwaves.*` run (sampling a stale target) whenever `RenderWaterEffect && RenderPixelShader`; the deform shaders are compiled but never used. Under [B:FULL] none run.
+
+## 7 Visual style; resolution and aspect
+
+### 7.1 How the look is produced [C] unless marked
+
+The deliberate retro look — flat-faceted geometry, glowing wire grids, additive neon sprites on black — comes from a small set of techniques that a new renderer can reproduce exactly:
+
+| Technique | Implementation | Where |
+|---|---|---|
+| **Flat polygons** | `glShadeModel(GL_FLAT)` globally; `.shp` fragments carry one face normal per triangle (file normals discarded); terrain stores one normal and one colour per strip triangle on the provoking vertex | `Renderer::SetOpenGLState`, `ShapeFragment::GenerateNormals`, `LandscapeRenderer::BuildNormArray/BuildColourArray` |
+| Provoking vertex | OpenGL flat shading uses the **last** vertex of a triangle; D3D9 uses the **first** — the D3D path rebuilds strips as lists to compensate, but unconverted `GL_TRIANGLES` with differing vertex colours render differently (explosion debris explicitly takes vertex 1's colour) [I] | §1.5.6, D29 |
+| **Wireframe edges** | textures with bright edge lines: `textures/triangleOutline.bmp` repeated once per terrain cell (REPEAT) and drawn additively over the lit terrain; `textures/shapewireframe.bmp` on explosion shards with `GL_DECAL`; sphere renderer in `GL_LINE` mode for debug | §4.1, §4.12, §4.16 |
+| **Additive glow** | nearly every non-solid element uses `SRC_ALPHA, ONE` with depth write off (sky grid, clouds, terrain outline, dynamic water, effects, lasers, spirits, particle glow, building lights/ports, trees, cursors, normal text); overlapping layers saturate toward white and draw order among them is irrelevant | §3.2 |
+| **Dark "negative" layers** | `SRC_ALPHA, ONE_MINUS_SRC_COLOR` with source alpha 0: result = `dst·(1 − srcRGB)` — multiplicative darkening without sorting. Used for smoke particles, monster-team Virii and spirits, text outlines/shadows, cursor and icon shadows, logo halos, blob shadows, pixel-effect passes 2–3 | §4.11, §4.19, §4.22, §5.6 |
+| Colour attenuation | `.shp` colours × 0.85 at load; team recolour × 0.7; armour × 0.1; green-team Darwinian shape × 0.5 | §4.5 |
+| **Black world** | clear colour and fog colour = `App::m_backgroundColour` = (0,0,0,0); linear fog fades terrain and buildings to black between `fogEnd/3` and `fogEnd = max(4000, worldSize + 1000)`; deep sea is not drawn | §5.4, §4.2 |
+| Over-bright lights | level light colours up to 2.0 per channel, no ambient | §5.5 |
+| Team palette | 8 lobby colours (green, red, yellow, blue, orange, purple, cyan, pink); shapes recoloured only where the authored colour is "mostly red" (`r > 2g && r > 2b`) unless `convertAll` | §4.5 |
+| Distance-scaled sprites | Darwinian cards grow with camera distance (`DarwinianScaleFactor`) and turn into billboards beyond 300 units | §4.9 |
+| Negative renderer | pref `RenderNegative` (default 0, no UI): white background and fog, landscape/water switch to darkening blends with zero alpha — an alternative "ink on paper" look | `code/app.cpp:App::App`, §4.1, §4.2 |
+| Christmas theme | networked flag: ice terrain/water ramps, warm white lights, leafless trees, Santa hats | §5.5 |
+| Texture filtering | trilinear for most world textures; deliberate **NEAREST** for particles (magnification), flat clouds, pixel-effect passes 1 and 4, captured frames — the blocky pixel aesthetic | §3.2 |
+
+Palette conventions: world art is authored as greyscale or near-white textures tinted by vertex colour (`MODULATE`); team colour is applied by vertex colour (sprites, spirits, lights, lasers) or by shape palette conversion; UI chrome uses the "red glass panel + steel-blue highlight" palette of [28](28_ui_framework.md).
+
+### 7.2 Resolution and aspect handling [C]
+
+| Aspect | Rule | Ref |
+|---|---|---|
+| Back buffer | `ScreenWidth × ScreenHeight` from preferences (first run: desktop resolution), snapped to the closest enumerated display mode | `Renderer::Initialise`, `WindowManager::GetClosestResolution` |
+| Display modes | `EnumDisplaySettings` modes with bpp ≥ 15, w ≥ 640, h ≥ 480, de-duplicated by size; refresh rates per size | `code/lib/window_manager_win32.cpp:ListAllDisplayModes` ([31](31_platform_build_and_tools.md)) |
+| 3D aspect | always `ScreenW/ScreenH`; vertical FOV fixed, horizontal FOV widens with aspect (Hor+); no letter-boxing, no fixed virtual resolution | `Renderer::SetupProjMatrixFor3D` |
+| 2D UI (Eclipse, text) | pixel-unit ortho over the viewport; menu layouts scale by their own size helpers ([28](28_ui_framework.md)) | `SetupMatricesFor2D`, `BeginText2D` |
+| Task-manager / HUD | 600-unit-high ortho `gluOrtho2D(0, 600·aspect, 600, 0)` — resolution-independent | `code/taskmanager_interface_multiwinia.cpp` |
+| Messages and chat | scale `ScreenW/1280` (chat: `ScreenW/1024` at ≤ 800 px, 0.75 at ≤ 640 px) | `Location::RenderCurrentMessage`, `RenderChatMessages` |
+| Markers | sizes from `screenH` (icon H/20) | `MarkerSystem::Render` |
+| Cursors | physical pixels (pointer 35 px) | `GameCursor` |
+| Overscan | `ScreenOverscan` forced 0 | `Renderer::Initialise` |
+| Windowed mode | window must fit the desktop or creation fails; centred | `WindowManagerWin32::CreateWin` |
+| Resolution change | renderer and window destroyed/recreated (fullscreen→fullscreen via a temporary 640×480 window), then `Resource::FlushOpenGlState` + `RegenerateOpenGlState` rebuild every texture and display list | `RestartWindowManagerAndRenderer` |
+| Off-screen render targets | pixel effect 256×256; [B:D3D] deform RT half resolution, reflection RT half resolution; captured frame = screen size (POT when required) | §4.13, §4.14, §2.6 |
 
 <!-- SECTION 8 options -->
 

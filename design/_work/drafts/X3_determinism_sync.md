@@ -259,3 +259,112 @@ Steps 1–5 of `Location::Advance` are written as `#pragma omp parallel for sche
 ### 4.5 Threads and the simulation
 
 The simulation runs on exactly one thread at a time: the main thread for frames, the loading-screen worker thread for `Location::Init` (initial load; the Assault `ResetLocation` re-init runs on the main thread). While the worker loads, the main thread renders the loading screen, advances sound, sends KEEPALIVE syncs and ticks the server, and executes display-list jobs queued by the worker — none of which touch the synced RNG [C] `code/loading_screen.cpp:LoadingScreen::Render`, `code/main.cpp:EnterLocation`. Hand-over between the threads is via the `WorkQueue` mutex/events [I: memory visibility guaranteed by the Win32 synchronisation calls]. The only cross-thread hazard to sim state is the shared non-synced LCG (§2.6).
+
+## [→ 21_simulation_and_entity_model] 5. Simulated vs cosmetic state
+
+### 5.1 Classification of every major subsystem
+
+"Simulated" = must be bit-identical on all peers; advanced only inside `ProcessAllServerLetters`. "Cosmetic" = local, may differ freely, must never be read by simulated code. "Sim-resident cosmetic" = stored in a simulated object but only written/read by presentation (a re-implementation should move it to a view model).
+
+| Subsystem / state | Class | Evidence |
+|---|---|---|
+| Entities (`Team::m_units[].m_entities`, `Team::m_others`) — positions, velocities, fronts, health, states, timers, orders | **simulated** | [C] `Team::Advance`, `Unit::AdvanceEntities`; hashed by the debug IFrame |
+| Buildings (`Location::m_buildings`) incl. ownership, capture, ports, spawn timers | **simulated** | [C] `Location::AdvanceBuildings` |
+| Lasers (`m_lasers`), effects (`m_effects`: grenades, rockets, shells, airstrike markers/bombs, shockwaves, fireballs, pulse wave, spam infections, zombies, snow, dust balls, lightning, muzzle flashes…) | **simulated** (some — snow, zombies, muzzle flashes — are purely decorative but live in the simulated list and draw synced RNG) | [C] `Location::AdvanceWeapons`; `code/worldobject/worldobject.h` effect enum |
+| Spirits (`m_spirits`) | **simulated** (not hashed even by the debug IFrame) | [C] `Location::AdvanceSpirits`, `IFrame::Generate` |
+| Crates (spawn, fall, capture, reward) | **simulated** | P08; [C] `Location::AdvanceCrates` |
+| Crate orientation `m_front/m_up`, `m_centrePos`, bubble timer | **sim-resident cosmetic**: `Crate::Render` rotates `m_front/m_up` by wall-clock `g_advanceTime`; the crate's `m_centrePos` is recomputed in sim from that orientation but only read by its renderer; crates' hit tests are disabled (`DoesSphereHit/ShapeHit/RayHit` return false) and the debug IFrame writes zero vectors for them | [C] `code/worldobject/crate.cpp:Crate::Render`, `Crate::DoesSphereHit`; `iframe.cpp` |
+| AI (one `Entity::TypeAI` per CPU team) | **simulated** on every peer | [C] `Location::InitialiseTeam`; P08, P15 §11 |
+| Task manager tasks | **simulated**; `m_recentTasks`, `m_mostRecentTaskIdTimer`, `TaskSource::m_timer` use wall clock — sim-resident cosmetic | P09 D1 |
+| Game timer `m_gameTime`, `m_gameSpeed`, speed requests | **simulated**; `m_lastClientAdvance`, `m_accurateTime`, `m_estimatedServerStartTime`, prediction | local | [C] `code/gametimer.cpp` |
+| Multiwinia rules state (scores, timers, eliminations, statue/rocket/zone state) | **simulated**; messages, achievements, help notifications keyed on `m_myTeamId` | local side effects (P02 D5) | [C] `code/multiwinia.cpp` |
+| Lobby/game options, team names/colours, ready flags | **synchronised** through the sequenced stream (P15 §5.3) | [C] `ProcessServerUpdates` |
+| Terrain heightmap, normal map, obstruction grid, routing node tables | **simulated static data** (deterministic generation from the level file; private LCG) | [C] `code/landscape.cpp`; P11 |
+| Entity grid, entity-grid cache | **simulated derived structures** (query results and staleness matter) | [C] §4.3 |
+| Trees: fire, spread, spirit drops, corruption, offspring | **simulated**; crown hit sphere is simulated but computed by the display-list generator (§2.6); colours/sway | cosmetic | [C] `tree.cpp`; P07 |
+| Clouds offset | cosmetic, advanced inside the step (slice 3) without RNG | [C] `Clouds::Advance` |
+| Weather spawn (snow, soul rain, dust storm, lightning) | **simulated** (dust-ball vortex and lightning strikes affect units; snow is decoration on the synced stream) | [C] `Location::AdvanceChristmas/AdvanceDustWind/AdvanceLightning`; P05 |
+| Particles (`ParticleSystem`) | **cosmetic**; advanced inside the slice loop but only from unsynced RNG; `CreateParticle` returns `void`, nothing reads particles | [C] `code/particle_system.cpp` |
+| Explosions (shape shatter, `g_explosionManager`) | cosmetic; wall-clock lifetimes; advanced per render frame | [C] `code/explosion.cpp`, `code/main.cpp:LocationGameLoop` |
+| Sound | cosmetic (never writes sim state; P16) | P16 determinism notes |
+| Camera, `LocationInput`, `GameCursor`, `TaskManagerInterface`, markers, `MultiwiniaHelp`, chat, HUD | local; see leaks §5.4 | [C] `code/main.cpp:LocationGameLoop` render-frame calls |
+| Water (`Water::Advance` per render frame), landscape colours, lights, fog, deform/pixel effects | cosmetic | [C] `LocationGameLoop`; P11, P12 |
+| Entity legs (`EntityLeg`: Spider, Tripod) | sim-resident cosmetic for Spider (foot swing timed with wall-clock `g_gameTime`; only leg rendering, foot-fall sounds and `m_nextLegMoveTime` depend on it; body height is computed from terrain, not feet); Tripod uses wall clock for gameplay [B:LEGACY] | [C] `code/worldobject/entity_leg.cpp:EntityLeg::Advance`, `spider.cpp:Spider::Advance/UpdateLegs`; P03 |
+| `m_renderDamaged` flags (Entity, AntHill, Centipede, Triffid) | sim-resident cosmetic (unsynced `frand` + wall clock inside `Advance`) | [C] |
+| Soul Destroyer captured-spirit trail (`m_spirits` of the creature) | sim-resident cosmetic (wall-clock birth times, `AppRandom` slot) | [C] `SoulDestroyer::Attack` |
+| Achievements, statistics, profile | local | P02, P18 |
+
+### 5.2 Render-time interpolation
+
+`GameTimer::GetPredictionTime() = min(now − m_lastClientAdvance, 1.0) × m_gameSpeed`, 0 while paused; `m_lastClientAdvance` is stamped (wall clock) when a frame's commands are applied [C] `code/gametimer.cpp`. Renderers receive `predictionTime` and extrapolate locally (`predictedPos = m_pos + m_vel × t`), adding one `SERVER_ADVANCE_PERIOD` for slots the current frame has not yet advanced (§4.3). Prediction is a pure function argument — it is never stored into simulated state [C: scripted scan of `*Render*` functions in `code/worldobject` and core sim files for member writes, results in §5.3].
+
+### 5.3 Render functions that write fields of simulated objects (complete list from the scan)
+
+Scan: every assignment to an `m_…` member inside a function whose name contains `Render`, in `code/worldobject/*.cpp`, `location.cpp`, `team.cpp`, `unit.cpp`, `taskmanager.cpp`, `multiwinia.cpp`, `routing_system.cpp` (94 lines) [C].
+
+| Writer | Field(s) | Read by simulation? | Verdict |
+|---|---|---|---|
+| `Tree::RenderAlphas` → `Generate()` when display lists are missing | `m_hitcheckCentre`, `m_hitcheckRadius` (via `RenderBranch`) | **yes** (fire spread) | recomputes the same values from `m_seed` (idempotent) unless the G6 race of §2.6 hits; colours `m_*ColourArray`, `m_renderCorruptShadow` cosmetic [C] |
+| `LaserFence::RenderAlphas` | `m_nextLaserFenceId = −1` if the linked id is missing or not a LaserFence | **yes** (`LaserFence::Advance` branches on `== −1`) and the call is camera-culled (`IsInView`) | latent desync: shipped data has **0 dangling links** among 703 fences in 57 `mp_*` maps [C] `scripts/X3_fence_links.py`; fences are never destroyed (no `Damage`/destroy path) [C] |
+| `RadarDish::RenderAlphas` | `m_range`, `m_receiverId` | yes | saved and restored around the link drawing (single-threaded) → safe [C] |
+| `GunTurret::Render` | `m_turretFront = m_front` | yes (aim) | only when `g_app->m_editing` [B:EDITOR] [C]; `m_actualTargetPos` render-only |
+| `Crate::Render`, `Crate::RenderBubble` | `m_front`, `m_up`, `m_bubbleTimer` | no (see 5.1) | sim-resident cosmetic |
+| `ThrowableWeapon::Render` | `m_up`, `m_front` (tumble per render frame), `m_numFlashes` (flash sound counter) | no (only the constructor and renderer use them) [C grep] | sim-resident cosmetic |
+| `TurretEmptyShell::Render`, `Missile::Render` (`m_fire`), `Armour::Render` (`m_smooth*`), `Darwinian::Render` (`m_colourTimer`, `m_shadowBuildingId`), `FuelGenerator::Render` (`m_pumpMovement`), `Flag::Render`, `MultiwiniaZone::RenderBlitzkrieg` (creates `m_blitzkriegFlag`), `ConstructionYard::RenderAlphas` [B:LEGACY], `LaserTrooper::Render` (`m_justFired`) | presentation fields | no [I: names and grep of readers] | cosmetic |
+| `SolarPanel::Render`, `DynamicNode::Render` [B:LEGACY], `SpiritReceiver::Render` [B:LEGACY] | `m_up`, `m_front` from the terrain normal | yes (shape hit transform) | idempotent: `SolarPanel::Initialise` sets the same values [C] |
+| `BlueprintRelay::Render` | `m_pos.y` | — | [B:LEGACY] |
+| `Location::RenderBuildingAlphas` (sort buffer), `RenderCurrentMessage`, `RoutingSystem::Render` (`m_walkableRoute`), `Multiwinia::RenderRocketStatusPanel` | UI state | no | cosmetic |
+| `GameCursor::RenderCrosshair` (`code/gamecursor.cpp`) | **`building->m_type = Building::TypeRadarDish`** (`=` typo for `==`) for the local team's selected non-turret building | yes (type!) | P09 D4 confirmed [C]; dormant because only RadarDish/GunTurret can be selected in Multiwinia (P09) |
+
+### 5.4 Local-only state leaking into simulation (verified list)
+
+| # | Leak | Reachable in MW? | Severity | Ref |
+|---|---|---|---|---|
+| L1 | `InsertionSquad::DirectControl`, executed on every peer from `Location::UpdateTeam` for the team's selected squad, returns early only if **neither** the sender's `m_cameraEntityTracking` **nor the local camera's `m_camLookAround`** is set. `m_camLookAround` = local control `CameraFreeMovement` held (default F2, gamepad right-stick click) and refreshed every frame in free-movement mode. On a peer whose player holds it, the squad receives `SetWayPoint(pointMan->m_pos)` whenever it is moving (or `SetWayPoint(point + Dx/Dy)` when the sender holds the left button) and an extra `Attack(...)` when the sender fires → that squad's state diverges on that peer only | **yes** (squad crate reward; any player holding the free-look control while an opponent's selected squad moves) [C code; I frequency] | **High** | [C] `code/worldobject/insertion_squad.cpp:InsertionSquad::DirectControl`, `code/location.cpp:Location::UpdateTeam`, `code/camera.cpp:Camera::SwitchEntityTracking`, `data/input/input_preferences.txt` (`CameraFreeMovement`) |
+| L2 | `GameCursor::RenderCrosshair` type-assignment typo | dormant | medium (latent) | §5.3; P09 D4 |
+| L3 | `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = −1` on the owning client only, after a wall-clock delay; sim reads it right after successful `RunTask` calls | safe today (reads follow a successful `RunTask` in the same tick) | medium (latent) | [C] `code/taskmanager_interface_multiwinia.cpp` (L~287); P09 D2 |
+| L4 | `TaskManagerInterfaceMultiwinia::RunScreenZone("DeleteTask")` calls `TaskManager::TerminateTask` directly (no network); same in the Icons/Gestures interfaces | dormant in MP (P09: zone not drawn / control unbound) | medium (latent) | [C] `taskmanager_interface_multiwinia.cpp` (L~865); P09 D3 |
+| L5 | `MultiwiniaHelp::AttachTutorialTo3d/AttachTutorial2To3d` (render-frame loop, wall-clock timers) insert crates into `m_buildings` with `GenerateBuildingId`, change game options | single-player tutorial only | low (but breaks replay determinism) | [C] `code/multiwiniahelp.cpp`; P19 §2.6 |
+| L6 | `LocationInput` allocates/frees preview routes in the simulated `RoutingSystem::m_routes` | yes; ids never transmitted | low | P03 |
+| L7 | `Location::UpdateTeam` / `Team::SelectUnit` / `Location::IssueDarwinianOrders` etc. call markers, cursor, sounds, camera requests guarded by `m_myTeamId` | yes; presentation only | low (but an event queue is the right design) | [C]; P09 D5 |
+| L8 | `Officer::CalculateBoundingSphere` scales by local camera distance and pref `DarwinianScaleFactor` | used only by `Location::GetEntityId` mouse picking (local) | none | [C] `code/worldobject/officer.cpp`, `code/location.cpp:Location::GetEntityId` |
+| L9 | `Darwinian::AdvanceWatchingSpectacle` faces a wall-clock-wobbled target | `EscapeRocket::IsSpectacle` returns false in Multiplayer; GodDish blocked | none in MW [B:LEGACY] | [C] `darwinian.cpp`, `rocket.cpp:EscapeRocket::IsSpectacle` |
+| L10 | `Tripod::*` mode timers and turn rate use wall clock (`g_gameTime`, `g_advanceTime`) | Tripod blocked | none in MW [B:LEGACY] | [C] `code/worldobject/tripod.cpp` |
+| L11 | Armour direct `SetOrders` from local input | only in the `!Multiplayer()` branch | none in MW [B:LEGACY] | [C] `code/location_input.cpp` (L~1054) |
+| L12 | `Multiwinia::AdvanceAssault` compares wall clock `GetHighResTime()` with game-time `m_startTime` | only feeds the local "defended all" achievement flag | none | [C] `code/multiwinia.cpp` (L~1752) |
+
+## [→ 22_determinism_and_networking] 6. Sync checking, desync reaction and forensics
+
+P15 §8 documents the wire messages and server algorithm; this section states exactly what is protected and what is not.
+
+### 6.1 What the per-frame sync byte covers
+
+| Build | Sync byte | Covers | Does **not** cover | Ref |
+|---|---|---|---|---|
+| Baseline FULL (`!TARGET_DEBUG && !TARGET_BETATEST_GROUP`) | `(unsigned char)(255 × syncfrand(1))` → 0…254 | only the **number of synced draws consumed so far** (and the seed): MT19937 outputs are a fixed sequence, so peers that made the same number of draws report the same byte whatever they used the values for | every world field; a divergence is noticed only once it changes the count of synced draws (e.g. a different number of units in range, a branch that draws) | [C] `code/network/iframe.cpp:IFrame::Generate` |
+| `TARGET_DEBUG`, `TARGET_BETATEST_GROUP*` | low byte of SHA-1 word 0 over the snapshot | seq id, `GetNetworkTime()`, per used team: every unit's `m_centrePos` and every unit entity's `m_pos/m_vel/m_front/uniqueId`, every `m_others` entity's `m_pos/m_vel/m_front/uniqueId`; every laser `m_pos/m_vel`; every effect `m_pos/m_vel`; every building `m_pos/m_vel/m_radius/uniqueId` and `m_front/m_up/m_centrePos` (zero vectors for crates); slot validity flags and array sizes; a `syncfrand(255)` sample | health and stats, entity/building **states and timers**, building **team ownership**, spirits, task managers, AI state, scores and mode state, game speed, entity-grid cache, routes | [C] `IFrame::Generate`, `ReadIFrameData` |
+
+Cadence: one byte per executed UPDATE frame (10 Hz), plus 1 Hz KEEPALIVE repeats of the last byte while a level loads; lobby frames send 0 [C] `ClientToServer::GenerateSyncValue`, `KeepAlive`, `SendSyncronisation`. Each value consumes one synced draw in both build kinds, keeping the streams of same-kind builds aligned [C].
+
+Detection statistics [I arithmetic]: if two peers' draw counts differ, their next outputs are effectively independent, so the bytes collide with probability 1/255 per frame; the chance of escaping detection for k consecutive frames is 255^−k (≈ 0.4 % for one frame, 1.5·10^−5 for two). The real latency is dominated by how long a state divergence takes to alter the draw count — unbounded in principle.
+
+### 6.2 Decision and reaction (summary of P15 §8.3–8.4, verified)
+
+- Server: stores `ServerToClient::m_sync[seq]`; when all connected clients have reported `seq` and values disagree, flags each unflagged client for which no other unflagged (or later-flagged) client has the same byte, and broadcasts sequenced NETSYNCERROR(client index, seq). Two-player games flag both players. Flags are never cleared (the "sync fixed" path is commented out) [C] `code/network/server.cpp:Server::HandleSyncMessage`, `NotifyNetSyncError`.
+- Clients: `SetSyncState(id, false)` → `m_outOfSyncClients` non-empty → `App::GamePaused()` true → `Location::Advance`, particles and `GameTimer` accumulation stop at the **same sequence id on every peer** (NETSYNCERROR is sequenced) while `Multiwinia::Advance` keeps running; red "multiwinia_error_syncerror" banner [C] `ClientToServer::ProcessServerLetters`, `code/app.cpp:App::GamePaused`, `code/renderer.cpp`. CLIENTGOODBYE of a flagged client clears its flag; if none remain the match resumes [C].
+- On the first notification: `SendIFrame(seq)` (inert in the baseline: frames carry no data and `SequenceId()` stays 0), `[B:DEBUG]` `DumpSyncRandLog`, and `Location::DumpWorldToSyncLog` appends `Begin Final Object Positions` plus one `LogState()` line per unit entity, other entity, effect (except snow) and building to `<profile>syncerror-<server-start YYYY-MM-DD--HH-MM-SS>-client<id>-team<team>.txt` [C] `ClientToServer::GetSyncFileName`, `code/location.cpp:Location::DumpWorldToSyncLog`.
+
+### 6.3 Forensic tooling
+
+| Tool | Build | Behaviour | Ref |
+|---|---|---|---|
+| Sync-rand call log | [B:DEBUG] (`TRACK_SYNC_RAND`) | every synced draw appends `"%8d | <value> | <file> line <n>"` (call counter since the last seed; value printed by `HashDouble`); the seed call is logged; frame markers (`Seq ID`, letter summaries via `WriteSummary`/`DecodeCmd` for the first 1000 sequence ids, slice numbers, "Advance Location", "Advance Multiwinia"); `ENTITY/UNIT ENTITY/EFFECT/Building BEFORE/AFTER` state lines around every advance; ring buffer of **100 000** lines; `DumpSyncRandLog(file)` writes `SyncRandSeed <n> (as signed int: <n>)` then the lines | [C] `contrib/systemiv/lib/math/random_number.cpp`; `code/network/clienttoserver.cpp:ProcessAllServerLetters`; `code/team.cpp`, `code/unit.cpp`, `code/location.cpp` |
+| Entity watch list | [B:DEBUG] | `TrackEntity` (body commented out) / `WatchEntities` log `Watch Changed From/To` when a tracked entity's `LogState` changes | [C] `code/location.cpp` (end of file), `entity.cpp:Entity::CreateEntity` |
+| `HashDouble` | all | prints the IEEE-754 bit pattern of a double as 16 hex digits, **least-significant nibble first** (exact comparison of logged values) | [C] `contrib/systemiv/lib/debug_utils.cpp:HashDouble` |
+| `LogState()` formats | all | `WOBJ Type[t] Id[u] pos[x,y,z], vel[Σ]`; `ENT Type[name] Id pos vel[Σ] front[Σ]`; Darwinian adds `state`, `waypoint[x,y,z]`, `boxId`; Officer adds `state`, `waypoint[Σ]`; Building adds `front[Σ] centre[Σ] radius`; Crate `pos vel radius`; Tree adds `height`, `hitcheckCentre[Σ]`, `hitcheckRadius` (Σ = sum of components, hashed) | [C] `worldobject.cpp`, `entity.cpp`, `darwinian.cpp`, `officer.cpp`, `building.cpp`, `crate.cpp`, `tree.cpp` `::LogState` |
+| Cost note | all | `Location::AdvanceBuildings` and `Unit::AdvanceEntities` call `LogState()` (two `sprintf`s with `HashDouble`) around **every** advance even in the baseline, where `SyncRandLogText` is an empty function | [C] |
+| IFrame exchange and diff | [B:DEBUG]/beta | snapshots of the last **50** frames; on desync uploaded via the FTP manager, relayed by the server, diffed index-by-index (`Local only`, `Remote only`, `[POS][VEL][FRONT][UP][CENTRE][RADIUS]`, `[CENTREPOS]`, `[n ENTITY DIFFS]`, `Network Time Different`, `Sync Rand Different`), written to `syncdiff-*.txt` and drawn as in-world arrows (`Team::RenderSyncErrors`) | [C] `iframe.cpp:CalculateDiff`, `code/multiwinia.cpp:Multiwinia::SaveIFrame`; P15 §8.4 |
+| Network stats window | [B:FULL] (`NETWORK_STATS_ENABLED`) | per client "out of sync" when the server has flagged it | [C] `code/interface/network_window.cpp` |
+| Command-history record/replay | all (pref `RecordDemo`) | `1`: host writes the server history to `serverHistory.dat` at `App::ShutdownCurrentGame`; `2`: `Server::LoadHistory("ServerHistory.dat")` at `DoEnterLocation`; both values also switch `UpdateAdvanceTime` to a fixed fake clock (`DemoFrameRate`, default 25) for AVI capture. The sync seed is **not** in the history (it travels in the unsequenced CLIENTID) and the count is written as a raw host-endian `int` → [I] replays only reproduce a match by accident; developer tool | [C] `code/app.cpp:App::ShutdownCurrentGame`, `code/main.cpp:DoEnterLocation`, `UpdateAdvanceTime`, `code/network/server.cpp:SaveHistory/LoadHistory` |
+
+Historical evidence of desync classes (release notes, supporting only): trees and height maps, laser fences, statues (Capture the Statue), the Tornado/dust-storm effect, Officers sending Darwinians into radar dishes [C] `docs/multiwiniareleasenotes-beta.txt`, `docs/multiwiniachanges-beta.txt`, `docs/multiwinia-changes.txt`.

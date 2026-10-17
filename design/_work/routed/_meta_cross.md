@@ -311,6 +311,30 @@
 - **P02 (game modes)**: grace-period timer semantics drive panel visibility; `mp_benchmark_1` (`GameTypes none`).
 - **`.anim` grammar owner**: in-memory semantics in §2.4–2.6 must agree with the grammar doc (`WIDTH/HEIGHT/START/STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; parser takes only the first token after a command, so image names cannot contain spaces) [C] `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.
 
+<!-- from X1b_asset_formats -->
+## Cross-partition notes
+- **P14 (31.5)**: archive look-ups are case-insensitive (`HashTable::HashFunc` masks bit 0x20, `GetIndex` uses `stricmp`), so P14's "callers must pass lower-case names" is not required [C] `contrib/systemiv/lib/tosser/hash_table.cpp`. Also: zero-size entries are leaked, `MAX_FILES` overflow crashes rather than truncating.
+- **P12 (24.5/25.x)**: shipped shape count is 139 `.shp` (P12 text says 140; `P12_shapes.csv` has 139 data rows). Add: two marker-only shapes (`battlecannonbase.shp`, `portal.shp`); `m_positionsInWS` overrun cases (`carryweights.shp`, `sporegenerator.shp`); `carrycube.shp` duplicate fragment name.
+- **P11 (23.11/23.13)**: waves ramp uses only bitmap row y = 1 as a 1-D table indexed by wave brightness; water texture repeats 30× across the sea plane and scrolls 1/30 tile/s; D3D compile error in `Water::Water` (`bmp.GetPixel` on a pointer).
+- **P16 (10.x/27.x)**: see 10.X1b above.
+- **P09 (3.x)**: `SaveTrainingData` writes an empty line for zero-trainer symbols that `LoadTrainingData` cannot read; `GestureDemo::GetCoords` interpolation weights swapped (dead code).
+- **P03/P04**: `stats.txt` is positional; per-instance stats are `unsigned char` (Squadie RATE 0.5 → 0 in `m_stats`, 0.5 via `GetStat`); speed scaled by `1 + difficulty/10` except SpaceInvader.
+- **P13**: shader file conventions (§29.B15) and the D3D-only status of `data/shaders`.
+- **P19**: `data/purity/buyme.txt` uses the cut-scene script grammar and the `PurityControl` opcode (deletes the profile's save files).
+- **Asset catalogue agents**: the BMP survey script `X1b_bmp_survey.py --detail <subdir>` prints per-file size/depth/pink/alpha usage; referenced-but-missing icons/mwhelp names listed in §29.B19.
+
+<!-- from X2b_asset_catalogue_audio -->
+## Cross-partition notes
+
+- **P16 (sound engine)**: verified (§10.A); correction: music RELEASE values are not 0 (§10.F). Additions for P16 §10.10/§10.11: `Interface Show/Hide/Slide` and `Gesture GestureFail` are unreachable in Multiwinia (`TaskManagerInterfaceIcons`/`TaskManagerInterfaceGestures` are created only when `!App::Multiplayer()`, `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager`; Show/Hide are commented out in `code/taskmanager_interface_multiwinia.cpp`); `Gesture GestureSuccess` is live through `Task::TargetEngineer`, `Task::TargetOfficer` and the Multiwinia task manager; dead data also includes `CratePowerup FlameTurret`, `GunTurret Damage`, `Egg Die`, `Officer Attack`, `Incubator Reprogramming`, `Generator ReprogramComplete`.
+- **P04/P05/P06/P07 (entities/buildings)**: `GunTurret::Damage` has no sound (data `GunTurret Damage` dead); `Egg::ChangeHealth` has no sound; Officer never calls `Entity::Attack`; `Squadie ThrowGrenade` (the only reachable squad secondary) has no data while unreachable `ThrowAirStrike` has; `TrunkPort PowerUp`, `LaserFence Electrocute`, `Triffid LaunchEgg`, `Spider PounceLand`, `Centipede Grow/Panic/EnemySighted`, `Armour Load/UnloadDarwinian` are fired but silent. `Darwinian::BeginVictoryDance` can fire on the 10 MW maps without `PrimaryObjectives` (§Contradictions 3).
+- **P08 (crates)**: `Crate::TriggerSoundEvent` callers and the `%p` decay-sound bug in `Crate::AdvanceOnGround` (§10.C); `RunGunTurret` reports every turret type as `GunTurret`; `Expired` and `Capturing_100pc` silent.
+- **P02 / P18 (modes, game menu)**: match end (`Multiwinia::DeclareWinner`) fires `GameOver`/`YouWon`/`YouLost` with no data although samples exist; countdown ticks are partly render-driven (`Multiwinia::Render`).
+- **P19 / P20 (scripts, loaders)**: music reachability confirmed dead/legacy (§10.F).
+- **X1b (formats)**: `sounds.txt` has CRLF line ends and one duplicate `SAMPLEGROUP` (`officercreate`, first definition wins); `SAMPLE` lines carry no extension; unknown fields are ignored.
+- **29/31 (packaging / build)**: archive membership rules (§10.B); `tools/patch.full.list` is Darwinia-only; `sounds2.dat` exists only because six late UI samples were never added to `tools/sounds.txt`.
+- **X2a (texture catalogue)**: `data/sprites/sound.bmp` is the only image used by the audio tooling.
+
 <!-- from X4_level_catalogue -->
 ## Cross-partition notes
 - **X1a (grammar)** — quirks observed in shipped files that a grammar must tolerate: CRLF line endings; `#` header-comment lines inside blocks (written by every `Write*`); trailing tabs/spaces after values; empty blocks; a second, empty `Buildings` block after `CameraAnimations` (layout A, §1.3); `GameTypes` with zero tokens (`old/mp_koth_2P_4`) or as a bare line outside any block (`old/mp_chess1`); duplicate scalar keys (`PopulationCap` twice in `mp_cts_4p_3`, last wins); objective lines containing `:` and `,` (`BuildingOnline :sandbox,2`); unknown building type names (`CarryableBuilding`) silently skipped.

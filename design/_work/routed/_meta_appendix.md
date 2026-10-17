@@ -362,6 +362,25 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - **`SpeccyLoader` unused members** (`m_monoBmp`, `m_currentPixel`, `m_startJ`, `EndFrame`) and **`AmigaLoader` unused mode enum** (`ModeSilence/Header/Data/Screen`, copied from the Speccy loader) [C].
 - **Commented code**: ray-tracer refraction and floor reflection, pixel-wave auto-ramp after 45 s, FPS readout; credits target-ghost; spinner stepped rotation; Intro camera's earlier implementation (block comment in `camera.cpp`).
 
+<!-- from X1b_asset_formats -->
+## Appendix — dead/legacy code
+- `code/gesture_demo.cpp`, `code/gesture_demo_win32.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`, `GESTURE_EDITOR`), `Resource::GetGestureDemo` — [B:DEAD]; `code/gesture_demo_sdl.cpp` not in the project.
+- `code/sepulveda.cpp` image use — [B:DEAD]; `Clouds::RenderFace` — compiled, unreachable.
+- `code/lib/shader.cpp` and all `data/shaders/*` — [B:D3D] only.
+- WAV decoding path in `SoundStreamDecoder` — compiled, unreachable (`.ogg` always appended).
+- Mod-directory look-ups in `Resource` (`USE_DARWINIA_MOD_SYSTEM`, `TARGET_OS_VISTA`) — [B:DEAD].
+- Xbox data branch of `build_multiwinia_data.bat` (`.tex` DXT conversion via absent `convert_bmp_to_tex.cmd`, `*.wmv`) — not a PC path.
+- `tools/ShapeExporter` (stale vs engine headers) and `tools/3DGeometry` (maths test viewer) — tools, not compiled into the game.
+- `data/purity/*`, `data/gesture_demos/*`, `data/shapes/source/*.max`, `data/icons/banner_template.psp`, `data/Untitled Gradients.grd` — never packaged.
+- Writers used only by debug editors: `AnimatedPanel::Write` (no caller), `Gesture::SaveTrainingData` ([B:DEBUG] gesture editor), `SoundSystem::SaveBlueprints` ([B:DEBUG] sound editor), `Shape::WriteToFile` (broken).
+
+<!-- from X2b_asset_catalogue_audio -->
+## Appendix — dead/legacy code
+
+- [B:DEAD] Music triggers in `code/loaders/{speccy,amiga,matrix,raytrace,gameoflife,fodder,soul}_loader.cpp` and `code/startsequence.cpp` (`USE_LOADERS`); `Sepulveda Appear/Disappear/TextAppear` in `code/sepulveda.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`); `App::CheckSounds` lobby-ambience trigger (commented out); `Spirit Create/BeginAscent/Dropped/PlacedInEgg/EggDestroyed`, `Laser HitEntity` (commented out); `CratePowerup FormationBooster/FireExtinguisher/Tank` callers (commented out).
+- [B:LEGACY] `TaskManagerInterfaceIcons`/`TaskManagerInterfaceGestures` UI sounds, `ShamanInterface` mouse-over, script music/`ShowLogo`, `Ambience EnterGlobalWorld`, `CreditsLoader`, ControlTower/ResearchItem engineer reprogramming, `Building::ReprogramComplete`/`Building::Destroy` paths, all Darwinia-only building blueprints (`Powerstation`, `ResearchItem`, `Library`, `Generator`, `TrackLink`, `Refinery`, `Mine`, `Yard`, `Incubator`, `SpiritReceiver`, `SpiritProcessor`, `BlueprintStore/Console/Relay`, `Spam`, `GodDish`) and entity blueprints `LaserTroop`, `Tripod`; squad `ThrowAirStrike/ThrowController/FireRocket`; controller grenade `ExplodeController`.
+- [B:DEBUG] `Tank` blueprints (Tank Battle mode); sound editor tooling (P16 §27.13).
+
 <!-- from X4_level_catalogue -->
 ## Appendix — dead/legacy code and data
 - **Darwinia levels** (29 `map_*`/`mission_*`) and their loaders (`GlobalWorld::LoadGame`, `ParseMissionFile`, `RunningPrograms`, `LeaderboardStats`, `Difficulty`, mission save-games under `<profile>/users/`) [B:LEGACY]; data excluded from Multiwinia builds (§11).

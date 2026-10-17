@@ -1398,3 +1398,410 @@ stateDiagram-v2
 
 **Mode usage**: 1 line (`mp_blitzkrieg_3P_2`, id 80) — Blitzkrieg 1/7. [C] census.
 
+## 8 Mode objective objects
+
+Mode rules (scoring, win conditions, timers) that read these objects are specified in [01](01_game_modes.md); this section specifies the objects themselves.
+
+### 8.1 MultiwiniaZone
+
+Source: `code/worldobject/multiwiniazone.{h,cpp}`. **[B:FULL]** (each per-mode branch is compiled under its `INCLUDEGAMEMODE_*` macro, all defined in FULLGAME).
+
+**Function.** A circular zone whose meaning depends on the game type: the **hill** in King of the Hill, a **drop zone** (team-owned) or **statue spawn zone** (neutral) in Capture the Statue, and a **flag** in Blitzkrieg. In Domination, Assault and Rocket Riot it does nothing. [C] `MultiwiniaZone::Advance`.
+
+| Member | Type | Default | Meaning |
+|---|---|---|---|
+| `m_size` | double | 50.0 | zone radius (KOTH counting radius, ring radius, `m_radius` after `SetDetail`) |
+| `m_life` | double | −1.0 | > −1 → zone deletes itself when it reaches 0 (only used by a commented-out zone spawner) |
+| `m_recountTimer` | double | 0.0 | next game time to recount |
+| `m_totalCount`, `m_teamCount[6]` | int | 0 | counted Darwinians |
+| `m_blitzkriegFlag` | Flag* | NULL | lazily created cloth flag (size 50) |
+| `m_aiTarget` | AITarget* | NULL | **never assigned** → the priority code at the top of `Advance` is dead |
+| `m_blitzkriegLinks` | LList<int> | — | linked zone ids (level file + reverse links added at Blitzkrieg start) |
+| `m_numStandardLinks` | int | 0 | link count from the level (written, unused) |
+| `m_blitzkriegOwnership` | double | 0.0 | 0–100 capture progress |
+| `m_blitzkriegCaptureTeam` | int | 255 | team currently gaining/holding progress |
+| `m_blitzkriegUpOrDown` | int | 0 | −1 / 0 / +1 last change direction (flag icon) |
+| `m_blitzkriegLocked` | bool | true | locked flags cannot be contested |
+| `m_blitzkriegUnderAttackMessageTimer` | double | 0.0 | 20 s throttle for "base under attack" |
+| static `s_blitzkriegBaseZone[6]` | int | reset to −1 at location init | home flag id per team |
+
+[C] `code/worldobject/multiwiniazone.h`, ctor.
+
+**Initialise.** Copies size and links; `m_centrePos = pos + (0, radius/2, 0)`. In Blitzkrieg, a zone with a level team (remapped to a real team) is recorded as that team's **base zone** and then set **neutral** — home flags start uncaptured. [C] `MultiwiniaZone::Initialise`.
+
+**King of the Hill** (`Advance_KingOfTheHill`, every 1.0 s, see §1.2): count every Darwinian within `m_size` that is not dead, not on fire and not inside Armour, per team; owner = team with the strictly highest count (ties → lower index), none → 255. Scoring modes (zones held per second, population per second, final population, total control) live in [01](01_game_modes.md). [C].
+
+**Capture the Statue** (`Advance_CaptureTheStatue`, owned zones only, every 2.0 s): every Statue owned by the zone's team within **30** units of the zone position → `Statue::Destroy()`, `Multiwinia::AwardPoints(team, 1)`, help notification, message `multiwinia_cts_statuecapture`, sound `CaptureStatue`. Neutral zones are statue spawn points (spawn timer in [01](01_game_modes.md)). Zone ownership in CTS never changes (no recount). [C].
+
+**Blitzkrieg** (`Advance_Blitzkrieg`, every 1.0 s) [C]:
+1. `m_blitzkriegLocked = IsBlitzkriegZoneLocked()`: unlocked if neutral **and** a base zone; unlocked if part-captured (0 < ownership < 100); otherwise locked unless some linked zone is owned by a team other than this zone's team (neutral neighbours do not unlock).
+2. If not locked: per used team, count Darwinians within **40** units (not `m_size`) that are not dead, not on fire, not in Armour; leader = strictly highest count. If locked, no counting happens (stale `m_teamCount`, leader = none).
+3. Leader present: `change = 5.0 × top × (top / total)`; if the zone is owned, `captureTeam = owner`; if leader ≠ captureTeam: `ownership −= change × dt`, at ≤ 0 → `SetTeamId(255)`, `captureTeam = leader`; else `ownership += change × dt`, at ≥ 100 → `SetTeamId(leader)`. Per recount (dt = 0.1) this is `0.5 × top × fraction` points.
+4. No leader: if neutral, `ownership −= 10 × dt` (1 point per recount); at ≤ 0 `captureTeam = 255`. Owned zones do not regenerate.
+5. Clamp to [0, 100]; set up/down indicator; "base under attack" message (`dialog_baseunderattack`) for the local owner of its base when enemies are within `m_size`, throttled to 20 s.
+6. The AITarget nearest the zone gets `m_priority[i] = 1.0` (Easy) or `GetBlitzkriegPriority(zone, i)` (Standard/Hard) and `m_aiObjectiveTarget[i] = (p > 0)` → [07](07_ai.md).
+
+`GetBlitzkriegPriority(zone, team)` by the team's Blitzkrieg status score: SAFE → 1.0 for zones not owned by the team; ENEMYOCCUPIED / UNDERATTACK / UNOCCUPIED → 1.0 for base zones owned by a live team; UNDERTHREAT → 1.0 for zones linked to the team's base and not owned by it; finally 0.0 for any non-base zone the team already owns. [C].
+
+Blitzkrieg initialisation in `Multiwinia::AdvanceBlitzkrieg` adds reverse links (links are made bidirectional) and increments the file-static `s_numMultiwiniaZones` once per zone **without resetting it** (KOTH resets it every scoring tick, Blitzkrieg never) — the count accumulates across Blitzkrieg games in one session and feeds the airstrike-reinforcement threshold `numZones ≥ (s_numMultiwiniaZones + 1)/2`, a cross-session desync hazard → [01](01_game_modes.md), [22](22_determinism_and_networking.md). [C] `code/multiwinia.cpp` (s_numMultiwiniaZones uses).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral : Initialise, ownership 0, base zones forced neutral
+    Neutral --> Capturing : unlocked and leader L present, captureTeam L, ownership rises
+    Capturing --> Neutral : nobody present, ownership falls 1 per recount to 0, captureTeam 255
+    Capturing --> Capturing : different leader, ownership falls, at 0 captureTeam switches
+    Capturing --> Owned : ownership reaches 100, SetTeamId L
+    Owned --> Locked : no linked zone owned by another team, ownership 0 or 100
+    Locked --> Owned : a linked zone becomes enemy-owned
+    Owned --> Contested : enemy leads, ownership falls
+    Contested --> Owned : owner leads again, ownership rises
+    Contested --> Neutral : ownership reaches 0, SetTeamId 255, captureTeam = enemy
+```
+
+Other members [C]: not collidable (`DoesSphereHit/DoesShapeHit` false; `DoesRayHit` only in the editor); `GetBuildingLink()` = first link; `SetBuildingLink(id)` appends if absent; static `GetNumZones(team)` counts zones owned by a team; `IsBlitzkriegBaseZone()`; `GetBaseTeamId()`. Rendering (ring segments, animated edge, flag) → [24](24_rendering.md). Sound: `CaptureStatue`.
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | size | float (`atof`) | 50.0 | zone radius | `%-6.2f` |
+| 9… | linkId | int, repeated | none | Blitzkrieg flag links | `   %d` each |
+
+**Mode usage**: Blitzkrieg 7/7, CTS 9/9, KOTH 9/9 (152 official lines). [C] census.
+
+### 8.2 Flag
+
+Source: `code/worldobject/flag.{h,cpp}`. **[B:FULL]**. Not a building or world object: a cloth-flag render primitive owned by Blitzkrieg zones, `Armour` (`m_flag`, `m_deployFlag`) and `Officer` (`m_flag`). [C] `code/worldobject/armour.h`, `officer.h`.
+
+- Function: purely presentational team marker; no ownership, inputs, outputs, damage or level fields of its own. Uses `g_advanceTime`/`g_gameTime` (render clock, non-deterministic).
+- Grid `m_flag[6][6]` (`FLAG_RESOLUTION` 6) of vertices; `Initialise` lays them on the front/up plane.
+- `Render(teamId, fileName)`: each frame relaxes vertices towards a target (column 0 attached to the pole, others trailing the previous column by `size/5`); factor `advanceTime·10·(6 − x)/6` (1.0 for x = 0; 0.7 if size > 40 or highlighted/selected); wind wobble `cos/sin(gameTime + x·k)·x/6` (×0.3 when highlighted); max link length `size/2`. Draws a white pole quad (width 0.4, height `size·1.5`) then the textured flag. In multiplayer with a filename: per-team recoloured texture cached as `<file>_<colourId>_<groupPos>` (`_255` neutral grey, `_selected_…` brighter) via `BitmapRGBA::ConvertRedChannel(teamColour)`; optional goto-arrow overlay (`icons/arrow.bmp`).
+- `RenderText(x, y, caption)` draws text on a cell; `RayHit` = sphere pre-test + per-quad triangle tests (clicking officer/armour flags).
+
+[C] `Flag::Initialise`, `Flag::Render`, `Flag::RayHit`.
+
+### 8.3 CarryableBuilding
+
+Source: `code/worldobject/carryablebuilding.{h,cpp}`. **[B:FULL]**: the whole `Advance` body is inside `#if defined(INCLUDEGAMEMODE_CTS) || defined(INCLUDEGAMEMODE_ASSAULT) || defined(INCLUDEDGAMEMODE_PROLOGUE)` (note the typo `INCLUDEDGAMEMODE_PROLOGUE`); CTS and Assault are defined in FULLGAME, so it is live. Not a level-file type (no enum value); concrete subclasses are Statue (CTS), WallBuster (Assault) and ChessPiece (blocked). `IsCarryableBuilding(type)` = Statue, WallBuster, ChessPiece. [C].
+
+| Member | Default | Meaning |
+|---|---|---|
+| `m_carryRadius` | subclass | radius of the carrier ring; also the collision radius between carryables |
+| `m_scale` | 1.0 | render scale; collision push force passed to `HandleCollision` |
+| `m_numLifters` / `m_numLiftersThisFrame` | 0 | carriers counted last tick / being counted this tick |
+| `m_minLifters` / `m_maxLifters` | 0 | lifters needed to move it / ring capacity |
+| `m_lifted` | false | currently moving |
+| `m_recountTimer` | 0.0 | next ownership recount (game time) |
+| `m_waypoint`, `m_routeId`, `m_routeWayPointId` | —, −1, −1 | goal and optional route |
+| `m_speedScale` | 1.0 | base speed multiplier |
+| `m_requestedWaypoint`, `m_requestedRouteId`, `m_numRequests` | —, −1, 0 | carriers' votes for a new goal this tick |
+
+**Behaviour per tick** [C] `CarryableBuilding::Advance`:
+1. **Ownership** (`CalculateOwnership`, every 1.0 s): for each used team count non-dead Darwinians of that team within **50**; new owner = team with the highest count that is also ≥ `m_minLifters` (else 255). The team changes only if the new team is not a friend of the old one; on change the goal is reset to the current position. While neutral the goal is reset every tick — a neutral carryable never moves.
+2. **Goal vote**: if `m_numRequests > 0.66 × m_numLiftersThisFrame`, adopt the requested waypoint/route. Requests reset each tick.
+3. Follow route waypoints (advance when within 10 units; route end → stop).
+4. **Lift and speed**: `m_numLifters = m_numLiftersThisFrame` (then reset). `GetCarryPercentage` = `lifters / maxLifters` if lifters ≥ minLifters else 0. Speed = `percentage × 16 × GetSpeedScale() × |sin(gameTime)|` u/s (the sine gives a heave-ho rhythm). `GetSpeedScale` = `m_speedScale`, multiplied by the mean speed ratio (`stats[Speed] / blueprint speed`) of carriers within `1.2 × carryRadius` when at least one carrier has a Hot Feet task. Sounds `Lift` + `Carry` on pick-up (goal reset), `Drop` on set-down.
+5. **Movement and collision**: desired position = pos + dir·speed·dt (y on terrain); no move if it would not get closer to the goal. Collision factor = Σ over other carryables of `(rA + rB − dist)` for overlaps (using `m_carryRadius`; static array of 32 collisions). Move only if currently not colliding or the move reduces overlap; otherwise stop and call `HandleCollision(m_scale / numEnemies)` on each **enemy** carryable hit (base implementation empty). Up vector follows the terrain normal with y × 1.5.
+6. `Building::Advance()`.
+
+**Darwinian side** [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForCarryableBuilding`, `AdvanceApproachingCarriableBuilding`, `AdvanceCarryingBuilding`, `Darwinian::SetWaypoint` (resolves P06-U7):
+- `SearchForCarryableBuilding` (multiplayer only): candidates = carryables within `DARWINIAN_SEARCHRANGE_CARRYABLE` **150** (minus their radius), excluding own-team carryables already at max lifters; one is chosen with `syncrand()`; state `StateApproachingCarriableBuilding`.
+- Approaching: walk to a point 30 units from the carryable at a random angle (`syncfrand(2π)`) and mill around; these Darwinians are what the 50-unit ownership count sees. As soon as the carryable's team equals the Darwinian's team → `StateCarryingBuilding`.
+- Carrying: target = `GetCarryPosition(uniqueId)` (zero vector if the ring is full → Darwinian goes idle; else a point on the ring at angle `uniqueId × 123.467` rad offset by `vel × 0.5`, on terrain); the Darwinian counts as a lifter (`m_numLiftersThisFrame++`) once it is within `20 × gameSpeed × speedRatio` of that point. It leaves if the carryable changes to another team. Orders given to a carrying Darwinian become a waypoint vote (`SetWaypoint`; WallBusters always get a direct route, route id −1).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Resting : recount, a team has at least minLifters Darwinians within 50
+    Resting --> Lifted : lifters at least minLifters, sounds Lift and Carry, goal reset
+    Lifted --> Resting : lifters below minLifters, sound Drop
+    Lifted --> Lifted : carriers vote above 66 percent for a new waypoint
+    Resting --> Neutral : recount finds no qualifying team
+    Lifted --> Neutral : recount finds no qualifying team
+    Resting --> Resting : a non-allied team now leads, team switch, goal reset
+```
+
+Damage: none at this level (base `Damage`; `HandleCollision` empty). Hit tests: none in game (ray only in the editor). Always in view. Rendering: shape scaled by `m_scale`, lifted +5 y, up from the terrain normal. [C].
+
+### 8.4 Statue
+
+Source: `code/worldobject/statue.{h,cpp}`. **[B:FULL]**, created only at runtime in Capture the Statue (`TypeStatue` is blocked for level placement; one dev line in `mp_sandbox_all` is dropped). [C] `code/multiwinia.cpp` CTS block, census.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | carryable relic; delivered to an owned MultiwiniaZone within 30 units it scores 1 point and is destroyed (§8.1) | [C] |
+| Creation | by `Multiwinia` CTS logic: `CreateBuilding(TypeStatue)` + `Initialise(template)` + new building id at a neutral zone, team 255, random facing (timer rules in [01](01_game_modes.md)) | [C] |
+| Lifters / radius | `m_minLifters` 20, `m_maxLifters` 50, `m_carryRadius = m_radius = 33` | [C] `Statue::Statue`, `Initialise` |
+| Shape | `syncrand() % 8` → `carrystatue`, `carrysquaddie`, `carryglobe`, `carrytelescope`, `carryweights`, `carrycube`, `carryteapot`, `carrybillboard` (.shp); billboard sets `m_renderSpecial` but the special shape `carryspecialshape.shp` does not exist, so the normal shape renders | [C] `Statue::Initialise`, `Statue::Render` |
+| Spawn effect | `ExplodeShape(0.5)` "materialise" burst unless the game is in its grace period | [C] |
+| Ownership | CarryableBuilding rule (§8.3) with min 20 | [C] |
+| Auto-goal | when owned and the waypoint is unset or reached: at most once per game second, route (`RoutingSystem::GenerateRoute`) to the nearest MultiwiniaZone owned by the statue's team (Monster/Futurewinian owners → nearest neutral zone); the route is highlighted for the local team | [C] `Statue::Advance` |
+| AI target | creates an `AITarget` (priority modifier 1.0, `m_statueTarget` = statue id) on first Advance; moved to the statue (and AI targets recalculated) when it drifts > 1.5 × carry radius | [C] |
+| Destruction | `Destroy()` (explode full shape, `m_destroyed`, destroy AI target) when tilted (`m_up.y < 0.7`), in water (`m_pos.y < 0`) or delivered | [C] |
+| Damage | not damageable by weapons | [C] |
+| Level fields | none of its own | [C] |
+| Rendering | special lights (`SetupSpecialLights`) then restore | [C] |
+| Mode usage | CTS only (runtime); `INCLUDEGAMEMODE_CTS` gates the `Advance` body | [C] |
+
+### 8.5 WallBuster
+
+Source: `code/worldobject/wallbuster.{h,cpp}`. **[B:FULL]**.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | carryable explosive charge that breaches Walls (Assault) | [C] |
+| Shape / scale | `wallbuster.shp`, `m_scale` 10 | [C] ctor |
+| Lifters | min 10, max 30; `m_speedScale` 0.6; carry radius 13 (also `m_radius`) | [C] ctor, `Initialise` |
+| Ownership | CarryableBuilding rule (§8.3) with min 10 | [C] |
+| Breach | every tick: any `Wall` in the buster's obstruction cell whose `DoesSphereHit(pos, 20)` → `ExplodeShape(1.0)`, `BreakWalls()` (**every Wall within 200 takes `Damage(−1000)`**), `Location::Bang(pos, 50, 150)`, `Destroy()`, global message `dialog_wallbreach` | [C] `WallBuster::Advance`, `BreakWalls` |
+| Defender scuttle | if owned by a team whose map position is **not attacking** (`m_attacking[position]`) and carried by ≥ 10 lifters: `m_destructTimer` (10 s) counts down; at 0 → `Destroy()` + `Bang(pos, 50, 500)` (also destroys walls within 60 units, §7.2); resets to 10 s whenever the condition fails | [C] |
+| AI target | creation code commented out → `m_aiTarget` normally NULL | [C] |
+| AI routing (`RunAI`) | called by the Assault AI for its own busters: when the waypoint is unset/reached, once per second, route (`GenerateRoute(…, false, true)`) to the nearest Wall that lies within 500 of any marker of the AI's current `AIObjective` | [C] `WallBuster::RunAI` |
+| Damage | not damageable by weapons | [C] |
+| Level fields | none of its own (base 8) | [C] |
+| Mode usage | 3 lines (team 255) in `mp_assault_2P_1` only (Assault 1/8) | [C] census |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Carried : at least 10 Darwinians of one team within 50
+    Carried --> Neutral : recount finds no qualifying team
+    Carried --> Breached : touches a Wall within 20, all walls within 200 destroyed
+    Carried --> Scuttling : owner is a defender and lifters at least 10
+    Scuttling --> Carried : condition fails, timer reset to 10 s
+    Scuttling --> Exploded : 10 s elapsed, Bang 50 500
+    Breached --> [*]
+    Exploded --> [*]
+```
+
+### 8.6 TrunkPort
+
+Source: `code/worldobject/trunkport.{h,cpp}`. **[B:FULL]**; Darwinia world-map behaviour [B:LEGACY].
+
+| Member | Default | Meaning |
+|---|---|---|
+| `m_targetLocationId` | −1 | Darwinia destination location (single-player label) |
+| `m_destination1/2` | markers | label anchors (`MarkerDestination1/2`) |
+| `m_heightMapSize` | `TRUNKPORT_HEIGHTMAP_MAXSIZE` 16 / detail | portal-surface grid |
+| `m_heightMap` | NULL | pre-computed surface grid around `MarkerSurface` |
+| `m_openTimer` | 0.0 | wall-clock time the portal opened (Darwinia; MP always draws the surface) |
+| `m_populationLock` | −1 | cached nearby SpawnPopulationLock id (−2 = none) |
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | reinforcement gate: owned trunk ports emit periodic reinforcement waves of Darwinians (and grant Armour/turret tasks) driven by `Multiwinia::AdvanceTrunkPorts` — formulae, cadence and caps in [05](05_economy_and_population.md) | [C] `code/multiwinia.cpp:Multiwinia::AdvanceTrunkPorts` |
+| Shape | `trunkport_mp.shp` in Multiwinia (`trunkport.shp` in Darwinia) | [C] ctor |
+| Ownership | fixed from the level (`tm` position); neutralised (255, direct write) by `Team::Eliminate()`, by PulseBomb destruction (all ports not owned by the defender) and by PulseBomb detonation (all ports not owned by the bomb team). Neutral ports produce nothing. Never captured | [C] `code/team.cpp`, `code/worldobject/pulsebomb.cpp` |
+| Population lock | MP: Assault defender/attacker caps; else `PopulationCap / NumPlayers`; else nearest SpawnPopulationLock (same algorithm as SpawnPoint) | [C] `TrunkPort::PopulationLocked` |
+| Advance | Darwinia only: GlobalBuilding online and `m_openTimer == 0` → `m_openTimer = GetHighResTime()` (wall clock), sound `PowerUp`; then `Building::Advance` | [C] `TrunkPort::Advance` |
+| `ReprogramComplete()` | Darwinia world-map unlock [B:LEGACY] | [C] |
+| Damage | indestructible | [C] |
+| Rendering | Darwinia destination text [B:LEGACY]; alpha pass: animated portal surface (`textures/laserfence.bmp` + `textures/glow.bmp`) tinted with the owner's colour at 70% alpha in MP | [C] `TrunkPort::RenderAlphas` |
+| Global | forced global; level lines must say isGlobal 1 | [C] |
+| Mode usage | 28 official maps — Assault 8/8, Blitzkrieg 7/7, Rocket Riot 7/7, KOTH 4/9, Domination 2/9 (109 lines); reinforcements only flow where the mode or level options enable them ([05](05_economy_and_population.md)) | [C] census |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | targetLocationId | int, optional | −1 | Darwinia destination; MP maps use −1 | `%-8d` |
+
+### 8.7 PulseBomb
+
+Source: `code/worldobject/pulsebomb.{h,cpp}`. **[B:FULL]** (Assault "WMD").
+
+| Member | Default | Meaning |
+|---|---|---|
+| `m_active` | true | unused |
+| `m_scale` | 0.75 | shape scale (copy of `pulsebomb.shp`, radius scaled) |
+| `m_detonateTime` | 0.0 | game time of detonation |
+| `m_startTime` | 0.0 | countdown length in seconds (level value) |
+| `m_links` | — | linked ControlStation ids (de-duplicated by `SetBuildingLink`) |
+| `m_oneMinuteWarning` | false | warning shown |
+| static `s_pulseBombs[6]` | −1 (location init) | bomb id per owning team |
+| static `s_defaultTime` | 0.0 (`Multiwinia::Reset`) | first round's `m_startTime` |
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | the defenders' doomsday device: when its countdown expires it detonates and wipes out attackers; attackers win by capturing **every** linked ControlStation | [C] |
+| Initialise | copy start time and links; `s_pulseBombs[team] = id`; if `Multiwinia::m_pulseTimer > 0` it overrides the start time (multi-round Assault); set `s_defaultTime` once; **sets `Multiwinia::m_timeRemaining = (int)m_startTime`** (the bomb defines the Assault clock) | [C] `PulseBomb::Initialise` |
+| `SetDetail` | snap to ground; centre/radius from the scaled shape (no port rebuild) | [C] |
+| Advance | returns false immediately once destroyed (the bomb is **never removed** from the building list; it only stops advancing/rendering). Otherwise: `LinkToPulseBomb(id)` on every linked station; if every existing linked station is owned (≠ 255) by a non-friend of the bomb team → `Destroy()` + `RecordDefenseTime(startTime − GetPreciseTimeRemaining(), team)`; at `m_timeRemaining ≤ 60` once → message `dialog_oneminutewarning`; at `m_timeRemaining ≤ 0` and not yet detonated → `RecordDefenseTime(startTime, team)`, `m_detonateTime = now`, spawn a `PulseWave` effect (radius 200, bomb team; [02](02_units_and_entities.md)), set every trunk port not owned by the bomb team to 255 | [C] `PulseBomb::Advance` |
+| Edge cases | with no existing linked station the capture test is vacuously true → immediate destruction; the capture test keeps running after detonation, so capturing all stations during the wave would call `RecordDefenseTime` a second time [I] | [C] code; [I] effect |
+| `Destroy()` | explode shape, `m_destroyed`; defender = last team index with a bomb; every trunk port not owned by the defender → 255; `Location::Bang(pos, 75, 5)`; message "WMD Destroyed!" | [C] `PulseBomb::Destroy` |
+| Damage | not damageable by weapons (no override) | [C] |
+| Hit tests | scaled shape (sphere, ray, shape) | [C] |
+| Rendering | team-coloured glow blobs (up to 20 by detail) rising `200 × (1 − remaining/start)` above the bomb and growing; at `m_timeRemaining ≤ 10` a 3D countdown screen (team colour) 50 above | [C] |
+| Mode usage | Assault 8/8, one per map (official maps use `900.00` with 3–4 station ids) | [C] census, level files |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | startTime | float | 0.0 | countdown in seconds | `%-6.2f  ` |
+| 9… | linkId | int, repeated | none | ControlStation ids | `%-4d` each |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Counting : Initialise sets the Assault clock to startTime
+    Counting --> Counting : link stations each tick, one-minute warning at 60 s
+    Counting --> Destroyed : every linked station owned by a non-friend, attackers win
+    Counting --> Detonated : clock reaches 0, PulseWave radius 200, enemy trunk ports neutral
+    Detonated --> Destroyed : all stations captured during the wave, second defence-time record
+    Destroyed --> [*] : stays in the building list, inert
+```
+
+### 8.8 FuelBuilding
+
+Source: `code/worldobject/rocket.{h,cpp}`. **[B:FULL]** (MP branch; non-MP branches [B:LEGACY]). Base of the Rocket Riot fuel chain.
+
+```mermaid
+classDiagram
+    Building <|-- FuelBuilding
+    FuelBuilding <|-- FuelGenerator
+    FuelBuilding <|-- FuelPipe
+    FuelBuilding <|-- FuelStation
+    FuelBuilding <|-- EscapeRocket
+    class FuelBuilding{
+        +int m_fuelLink
+        +double m_currentLevel
+        ShapeMarker* m_fuelMarker
+        static Shape* s_fuelPipe
+        ProvideFuel(level)
+        GetLinkedBuilding()
+        GetFuelPosition()
+    }
+    class FuelGenerator{
+        +double m_surges
+        Shape* m_pump
+        ShapeMarker* m_pumpTip
+        ProvideSurge()
+    }
+    class FuelStation{
+        ShapeMarker* m_entrance
+        AITarget* m_aiTarget
+        IsLoading()
+        BoardRocket(id)
+    }
+    class EscapeRocket{
+        +int m_state
+        +double m_fuel
+        +int m_pipeCount
+        +int m_passengers
+        +double m_countdown
+        +double m_damage
+        +double m_refuelRate
+    }
+```
+
+**Fuel flow.** Surges reach a FuelGenerator from a PylonEnd (§6.4). On Rocket Riot maps the chain is SolarPanel → (SolarPanel…) → PowerSplitter → team Pylon… → PylonEnd → FuelGenerator → FuelPipe(s) → FuelStation → EscapeRocket; each team has its own generator, 3 stations (each station's `fuelLink` = the rocket id) and a rocket. [C] `data/levels/mp_rocketriot_2P_4.txt`, `code/worldobject/generator.cpp:PylonEnd::TriggerSurge`.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| `Advance` | pass `m_currentLevel` to `GetLinkedBuilding()->ProvideFuel()` (link must be a FuelGenerator, FuelPipe, FuelStation or EscapeRocket, else ignored); then `Building::Advance` | [C] `FuelBuilding::Advance`, `GetLinkedBuilding` |
+| `ProvideFuel(level)` | `f = 0.2 × SERVER_ADVANCE_PERIOD` (×3 if `level < current` — "decrease faster than increase"); `current = current·(1 − f) + level·f`, clamped [0, 1]. Applied once per feeding building per tick | [C] `FuelBuilding::ProvideFuel` |
+| `Destroy` | also explodes the connecting pipe shape | [C] |
+| Rendering | pipe shape `fuelpipe.shp` from the own `MarkerFuel` to the linked building's; alpha pass animated `textures/fuel.bmp` beam, colour (1, 0.4, 0.1, 0.4 × level), 1–3 loops by `RenderBuildingDetail` | [C] |
+| Ownership / damage | team from level; not captured; not damageable except EscapeRocket | [C] |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | fuelLink | int, mandatory | −1 | next building downstream | `%6d ` |
+
+### 8.9 FuelGenerator
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | converts power surges into fuel pressure | [C] |
+| Shape | `fuelgenerator.shp` + `fuelgeneratorpump.shp` (`MarkerTip`) | [C] ctor |
+| Input | `ProvideSurge()`: `m_surges += 1` per surge from a PylonEnd (no team check) | [C] |
+| Advance | `maxSurges = 20` (MP; 10 non-MP); `m_surges −= 1.0 × dt`, clamp [0, max]; `m_surges > 8` → GlobalBuilding online (Darwinia remnant); `ProvideFuel(m_surges / maxSurges)` — i.e. its own `m_currentLevel` follows pressure = surges/20; pump particles `TypeDarwinianFire` from the pump tip (unsynced); sounds `PumpUp`/`PumpDown` at the pump extremes; then `FuelBuilding::Advance` | [C] `FuelGenerator::Advance` |
+| Output | pressure `m_currentLevel` ∈ [0, 1] passed down the pipe | [C] |
+| Steady state [I] | surges decay at 1/s, so sustained pressure needs ≥ 1 surge/s, i.e. ≥ 2 fully manned solar panels routed to the team (0.5 surges/s each, §6.2); with less inflow the pressure saws between 0 and 1/20 per surge | [I] arithmetic |
+| Inconsistency | `Render` uses `maxSurges` 15 (MP) for the pump animation while `Advance` uses 20 | [C] `FuelGenerator::Render` |
+| HUD | objective counter "Fuel Pressure n%" | [C] `GetObjectiveCounter` |
+| Mode usage | Rocket Riot 7/7 (57 lines) | [C] census |
+
+### 8.10 FuelPipe
+
+Relay segment (`fuelpipebase.shp`): FuelBuilding behaviour only; ambient sound `PumpFuel` started while `m_currentLevel > 0.2` and stopped at ≤ 0.2. Level field `fuelLink`. Mode usage: Rocket Riot 7/7 (178 lines). [C] `FuelPipe::Advance`, census.
+
+### 8.11 FuelStation
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | boarding gate for the rocket and the last fuel hop | [C] |
+| Shape | `fuelstation.shp` (`MarkerEntrance`) | [C] |
+| Advance | if the linked rocket is in `StateLoading` and `SafeToLaunch()` (always true in MP): ensure an AITarget at the station (priority modifier 1.0); then pick **one** random own-team entity within 300 (`syncrand() % numFound`); if it is a Darwinian in `StateIdle` or `StateWorshipSpirit` → `Darwinian::BoardRocket(stationId)` (it walks to `MarkerEntrance`, then `FuelStation::BoardRocket` → `EscapeRocket::BoardRocket` → `++passengers` (only while Loading); 4–7 `TypeControlFlash` particles (unsynced `AppRandom`), sound `LoadPassenger`). Otherwise remove the AITarget. Then `FuelBuilding::Advance` (fuel to the rocket) | [C] `FuelStation::Advance`, `BoardRocket` |
+| Boarding rate [I] | ≤ 1 boarding order per station per tick → with 3 stations at most 30 orders/s, less the fraction of non-idle or non-Darwinian picks | [I] |
+| Rendering | when the rocket's Countdown ≤ 10 or Flight: a 60 × 60 screen 150 above showing `(int)countdown + 1` (or blinking "0") | [C] `RenderAlphas` |
+| Level field | `fuelLink` = rocket id | [C] |
+| Mode usage | Rocket Riot 7/7 (57 lines; 3 per team) | [C] census |
+
+### 8.12 EscapeRocket
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | each team's Rocket Riot objective: refuel, load 100 passengers, launch; the first rocket above y = 600 wins ([01](01_game_modes.md)) | [C] |
+| Shape | per-instance copy of `rocket.shp`, recoloured in MP to the team colour × 0.3 (`ConvertFragmentColours`); markers `MarkerBooster`, `MarkerWindow01–03` | [C] ctor, `Initialise` |
+| Ownership | fixed from the level; never captured | [C] |
+| Inputs | fuel pressure from FuelStations (`ProvideFuel`, `m_pipeCount` = number of calls with level > 0.1 since the last refuel); passengers from FuelStations; damage from explosions | [C] |
+| Damage | `Damage(d)` (d negative): `Building::Damage` (sound `Damage`); if not Exploding: local owner gets `dialog_rocketunderattack` once per damage episode; MP `m_damage −= d × 0.2`; if `m_damage > 100` → `m_fuelBeforeExplosion = fuel`, state Exploding, sound `Explode`, owner message `dialog_rocketdestroyed`. Every tick in MP `m_damage −= 0.33 × dt` (attack warning cleared at 0) | [C] `EscapeRocket::Damage`, `Advance` |
+| Attackers | `SetupAttackers()` (Refueling, Loading, Ready, Countdown; only while state < Exploding and fuel > 33): every `1 + syncfrand(2)` s, find enemies within 150; choose `1 + syncrand() % (1 + int(numFound × 0.05))` random ones; each live, non-burning Darwinian → `AttackBuilding(rocketId)` | [C] `EscapeRocket::SetupAttackers` |
+| Attack mechanics | an attacking Darwinian runs to 100–150 from the rocket and, within 200, throws **one grenade** at rocket position + 50 y (thrower team hard-coded to 1) and returns to idle. Grenade power 25 → `Bang(12.5, 50)` → rocket damage `50 × (1 − d/37.5)` × 0.2 ≤ 10 per grenade, where d is measured to the rocket's base point → ≥ 11 well-placed grenades (minus decay) explode a rocket; grenades bursting near the 50-unit aim point deal nothing (resolves P02-U2 to the mechanism; effective rate depends on where grenades land [I]) | [C] `code/worldobject/darwinian.cpp:Darwinian::AdvanceAttackingBuilding`, `Location::ThrowWeapon`, `Location::Bang` |
+| Not collidable | `DoesSphereHit/DoesShapeHit` false; ray only in the editor | [C] |
+| HUD | objective counter "Fuel n%, Passengers n%" | [C] `GetObjectiveCounter` |
+| Sounds | `Refueling`, `Happy`, `Unhappy`, `Flight`, `Malfunction`, `Explode`, `EngineBurn`, `Damage` | [C] `ListSoundEvents`, `SetupSounds` |
+| Mode usage | Rocket Riot 7/7 (19 lines: one per team) | [C] census |
+
+States (`StateRefueling` 0, `StateLoading` 1, `StateIgnition` 2, `StateReady` 3, `StateCountdown` 4, `StateExploding` 5, `StateFlight` 6; script names via `GetStateId`: "Refueling", "Loading", "Ignition", "Ready", "Countdown", "Exploding", "Flight"). [C] `code/worldobject/rocket.h`, `EscapeRocket::GetStateId`.
+
+Per-state behaviour (MP) [C] `EscapeRocket::Advance*`:
+- **Refueling**: `SetupAttackers`; `Refuel()`; at fuel > 33 help notification; at `fuel ≥ 95` → Loading (+ one-time message `multiwinia_rr_refueled` / `_otherrefueled`).
+- **Refuel()** (Refueling and Loading): `newRate = pipeCount × m_currentLevel × 0.4`; `m_refuelRate = 0.99·rate + 0.01·newRate`; `fuel += rate × dt` (max 100); `pipeCount = 0`. Max steady rate with 3 stations at full pressure: 1.2 fuel-%/s (≈ 80 s from 0 to 95 plus ≈ 10 s EMA lag) [I].
+- **Loading**: `SetupAttackers`; `Refuel()`; at `fuel > 95` and `passengers ≥ 100` → Ignition, `countdown = 18` (+ one-time message `multiwinia_rr_launchprep` / `_launchprepother`). Fuel can fall back below 95 only through explosions; there is no Loading → Refueling transition.
+- **Ignition**: MP forces `countdown = 0` → immediately Ready with `countdown = 10`, camera shake 5. (Darwinia: 18 s, then `countdown = 120`, `launchpad_victory.txt` script [B:LEGACY].)
+- **Ready**: the Darwinia launch-pad attacker spawner (buildings 18/51/52/54 must be team-0 spawn points and `countdown > 95`) cannot trigger in MP; `SetupAttackers`; `countdown −= dt`; at ≤ 0 → Countdown with `countdown = 10` (**10 s in Ready**).
+- **Countdown**: `countdown −= 0.5 × dt` (half speed: **20 s** of game time for the displayed 10 → 0), clamped ≥ 0; `SetupAttackers`; exactly 0 → Flight.
+- **Flight**: `thrust = max(2·sqrt(y − ground), 0.1)`; `vel = (0, thrust, 0)`; `pos += vel × dt` (rendered with velocity prediction). Not protected from damage (`Damage` only excludes Exploding) — a flight rocket damaged past 100 would explode and later return to Refueling in mid-air [I] (P02 contradiction 13).
+- **Exploding**: per tick `damage −= 0.1` (on top of the general 0.033 decay → 1.33/s); fuel −0.5/tick (5/s) down to 50% of `m_fuelBeforeExplosion`; one passenger ejected per tick from a random window as an own-team Darwinian with outward velocity 10–40 (50% set on fire, synced); shape debris while fuel > 0; 3 fire + 3 smoke particles per tick (synced sizes); once passengers = 0 and fuel at its minimum an extra `damage −= 0.2`/tick; at `damage ≤ 0` → damage 0, `m_currentLevel = 0`, `m_spawnCompleted`, Refueling (passengers must be re-loaded; fuel must again reach 95). Typical exploding duration ≈ 35 s from 100 damage [I].
+- Every tick after the state step: `SetupSounds()` (ambience by state: Refueling → `Refueling` if level > 0.2 else `Unhappy`; Loading…Countdown → `Happy`; `Malfunction` whenever damage ≥ 75; Exploding → `Malfunction` if fuel > 0 else `Unhappy`; Flight → `Flight`; `EngineBurn` loop in Ready/Countdown/Flight); camera shake decays; in Ready/Countdown/Flight 15 booster particles per tick (11 `TypeMissileFire`, 4 `TypeMissileTrail`, size 500, unsynced). Glow sprites (`textures/starburst.bmp`) with alpha = fuel/100.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Refueling
+    Refueling --> Loading : fuel at least 95
+    Loading --> Ignition : fuel above 95 and passengers at least 100, countdown 18
+    Ignition --> Ready : MP countdown forced 0, then countdown 10, camera shake 5
+    Ready --> Countdown : 10 s, countdown 10
+    Countdown --> Flight : countdown reaches exactly 0 at half speed, 20 s
+    Refueling --> Exploding : damage above 100
+    Loading --> Exploding : damage above 100
+    Ignition --> Exploding : damage above 100
+    Ready --> Exploding : damage above 100
+    Countdown --> Exploding : damage above 100
+    Flight --> Exploding : damage above 100
+    Exploding --> Refueling : damage reaches 0, passengers ejected, fuel halved
+    Flight --> [*] : y above 600, Multiwinia declares the winner
+```
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | fuelLink | int | −1 | unused for the rocket (−1 on RR maps) | `%6d ` |
+| 9 | fuel | float | 0.0 | starting fuel | `%6.2f` |
+| 10 | passengers | int | 0 | starting passengers | `%6d` |
+| 11 | spawnBuildingId | int | −1 | Darwinia launch-pad spawner building | `%6d` |
+| 12 | spawnCompleted | int (bool) | 0 | Darwinia flag | `%6d` |
+
+Rocket Riot maps use `-1 0.00 0 -1 0`. [C] `EscapeRocket::Read/Write`, level files.
+
+### 8.13 Mode usage matrix
+
+[C] census (official maps; "rt" = runtime-created only).
+
+| Object | Domination | KOTH | CTS | Assault | Rocket Riot | Blitzkrieg |
+|---|---|---|---|---|---|---|
+| MultiwiniaZone | – | 9/9 hill | 9/9 drop zone / statue spawn | – | – | 7/7 flag |
+| Statue | – | – | rt | – | – | – |
+| Flag (render) | officers/armour | officers/armour | officers/armour | officers/armour | officers/armour | flags + officers/armour |
+| CarryableBuilding subclasses | – | – | Statue (rt) | WallBuster 1/8 | – | – |
+| TrunkPort | 2/9 | 4/9 | – | 8/8 | 7/7 | 7/7 |
+| PulseBomb | – | – | – | 8/8 | – | – |
+| ControlStation | – | 1/9 (radar control) | – | 8/8 | – | – |
+| FuelGenerator, FuelPipe, FuelStation, EscapeRocket | – | – | – | – | 7/7 | – |
+

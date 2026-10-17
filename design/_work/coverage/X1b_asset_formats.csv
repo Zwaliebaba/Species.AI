@@ -1,0 +1,203 @@
+path,depth,reason,sections
+data/animations/armour.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/assault_defend.anim,full,,29.B7 .anim;26.X1b
+data/animations/blitz.anim,full,,29.B7 .anim;26.X1b
+data/animations/cloudyglow.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/cts.anim,full,,29.B7 .anim;26.X1b
+data/animations/darwinian.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/darwinian_ouch4.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/domination.anim,full,,29.B7 .anim;26.X1b
+data/animations/flag.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/flag_down.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/flag_locked.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/flag_up.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/fuelpump.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/fuelpumper.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/island.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/koth.anim,full,,29.B7 .anim;26.X1b
+data/animations/laser.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/muzzleflash.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/plusone.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/rocket.anim,full,,29.B7 .anim;26.X1b
+data/animations/rocket.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/solarpanel.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/spawnpoint.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/statue.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/trunkport.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/turretbarrel.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/turretbase.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/water.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/wmd.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/zone-back.bmp,full,,29.B7 .anim;29.B5 BMP
+data/animations/zone-front.bmp,full,,29.B7 .anim;29.B5 BMP
+data/gesture_demos/airstrike.txt,full,,29.B9 gesture demos
+data/gesture_demos/armour.txt,full,,29.B9 gesture demos
+data/gesture_demos/controller.txt,full,,29.B9 gesture demos
+data/gesture_demos/engineer.txt,full,,29.B9 gesture demos
+data/gesture_demos/grenade.txt,full,,29.B9 gesture demos
+data/gesture_demos/officer.txt,full,,29.B9 gesture demos
+data/gesture_demos/rocket.txt,full,,29.B9 gesture demos
+data/gesture_demos/squad.txt,full,,29.B9 gesture demos
+data/sepulveda/sepulveda1.bmp,full,,29.B19 sepulveda;29.B5 BMP
+data/sepulveda/sepulveda2.bmp,full,,29.B19 sepulveda;29.B5 BMP
+data/sepulveda/sepulveda3.bmp,full,,29.B19 sepulveda;29.B5 BMP
+data/sepulveda/sepulveda4.bmp,full,,29.B19 sepulveda;29.B5 BMP
+data/sepulveda/sepulveda5.bmp,full,,29.B19 sepulveda;29.B5 BMP
+data/effects.txt,full,,29.B10 effects.txt;10.X1b
+data/stats.txt,full,,29.B11 stats.txt
+data/sounds.txt,full,,29.B12 sounds.txt;10.X1b
+data/gestures.txt,full,,29.B8 gestures.txt
+data/Untitled Gradients.grd,skimmed,"binary Photoshop preset; header and name decoded, stop records not decoded (unused file)",29.B18 grd
+data/icons/banner_template.psp,skimmed,binary Paint Shop Pro file; header/size decoded only (unused authoring file),29.B17 psp
+data/shapes/*.shp,full,directory level: all 139 files parsed by X1b_shp_survey.py; per-shape catalogue by asset agents/P12,29.B3 shp
+data/shapes/source/*.max,skimmed,directory level: 133 binary 3ds Max files; magic bytes and names only,29.B4 max
+data/shaders/*,skimmed,directory level: entry points/includes/line counts only; semantics P12/P13,29.B15 shader
+data/terrain/landscape_beach.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_containment.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_dark.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_default.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_desert.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_earth.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_field.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_firetop.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_icecaps.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_icecaps_peaked.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_jailbreak.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_launchpad.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_marble.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_marble2.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_mine.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_mine2.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_ridges.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_shrine.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_silver.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_stronghold.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_trippy.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_volcanic.bmp,full,,29.B6 colour ramps
+data/terrain/landscape_volcanicplain.bmp,full,,29.B6 colour ramps
+data/terrain/water_default.bmp,full,,29.B6 colour ramps
+data/terrain/water_icecaps.bmp,full,,29.B6 colour ramps
+data/terrain/water_launchpad.bmp,full,,29.B6 colour ramps
+data/terrain/water_yellow.bmp,full,,29.B6 colour ramps
+data/terrain/waves_containmentfield.bmp,full,,29.B6 colour ramps
+data/terrain/waves_default.bmp,full,,29.B6 colour ramps
+data/terrain/waves_desert.bmp,full,,29.B6 colour ramps
+data/terrain/waves_dull.bmp,full,,29.B6 colour ramps
+data/terrain/waves_earth.bmp,full,,29.B6 colour ramps
+data/terrain/waves_generator.bmp,full,,29.B6 colour ramps
+data/terrain/waves_icecaps.bmp,full,,29.B6 colour ramps
+data/terrain/waves_launchpad.bmp,full,,29.B6 colour ramps
+data/terrain/waves_yellow.bmp,full,,29.B6 colour ramps
+data/purity/buyme.txt,skimmed,format identified only; grammar owned by P11 (map/mission/game) and P19 (script),29.B19 purity
+data/purity/game.txt,skimmed,format identified only; grammar owned by P11 (map/mission/game) and P19 (script),29.B19 purity
+data/purity/map_mine.txt,skimmed,format identified only; grammar owned by P11 (map/mission/game) and P19 (script),29.B19 purity
+data/purity/mission_mine_enable.txt,skimmed,format identified only; grammar owned by P11 (map/mission/game) and P19 (script),29.B19 purity
+data/thumbnails/*,skimmed,directory level: naming rule and header survey; per-file catalogue by asset agents,29.B19 thumbnails;29.B5 BMP
+data/icons/*.bmp,skimmed,directory level: naming patterns and header survey; per-file catalogue by asset agents,29.B19 icons;29.B5 BMP
+data/mwhelp/*,skimmed,directory level: naming patterns and header survey,29.B19 mwhelp;29.B5 BMP
+data/textures/*,skimmed,"directory level: header survey only (bit depths, RLE file)",29.B5 BMP
+data/sprites/*,skimmed,directory level: header survey only,29.B5 BMP
+data/sounds/*.ogg,skimmed,directory level: Vorbis identification headers of all 954 files,29.B14 ogg
+data/mwsounds/*.ogg,skimmed,directory level: Vorbis identification headers of all 378 files,29.B14 ogg
+data/multiwinia.txt,skimmed,GAMETYPE names only (owned by P02),29.B19 mwhelp
+data/levels/*,skimmed,grep for colour-file keywords and CreatedAsDifficulty only (owned by P11),29.B6 colour ramps;29.B11 stats.txt
+tools/build_multiwinia_data.bat,full,,29.B16 dat archives;29.B13 pack lists
+tools/build_language_dat.bat,skimmed,archive commands only; language lists owned by P14,29.B16 dat archives;29.B13 pack lists
+tools/listfiles.pl,full,,29.B16 dat archives;29.B13 pack lists
+tools/copyfiles.pl,full,,29.B16 dat archives;29.B13 pack lists
+tools/init.list,full,,29.B16 dat archives;29.B13 pack lists
+tools/multiwinia_exclusions.txt,full,,29.B16 dat archives;29.B13 pack lists
+tools/sounds.txt,full,,29.B13 pack lists
+tools/menu_sounds.txt,full,,29.B13 pack lists
+tools/Rar.exe,not-read,binary executable; version strings not recoverable,29.B16 dat archives;29.B13 pack lists
+tools/oggenc.exe,not-read,binary encoder,29.B16 dat archives;29.B13 pack lists
+tools/oggdec.exe,not-read,binary decoder,29.B16 dat archives;29.B13 pack lists
+tools/patch.full.list,skimmed,Darwinia-era patch list (P14),29.B16 dat archives;29.B13 pack lists
+tools/InstallerScript_retail_crashreporter_euro.iss,skimmed,.dat file list only (P14),29.B16 dat archives;29.B13 pack lists
+tools/InstallerScript_retail_crashreporter.iss,skimmed,.dat file list only (P14),29.B16 dat archives;29.B13 pack lists
+tools/ShapeExporter/ShapeExporter.cpp,full,,29.B4 max/tools
+tools/ShapeExporter/ShapeExporter.h,full,,29.B4 max/tools
+tools/ShapeExporter/DllEntry.cpp,not-read,Max plug-in DLL boilerplate,29.B4 max/tools
+tools/ShapeExporter/ShapeExporter.dsp,not-read,project file,29.B4 max/tools
+tools/ShapeExporter/ShapeExporterDLL.dsp,not-read,project file,29.B4 max/tools
+tools/ShapeExporter/ShapeExporter.dsw,not-read,workspace file,29.B4 max/tools
+tools/ShapeExporter/ShapeExporter.def,not-read,DLL exports,29.B4 max/tools
+tools/ShapeExporter/ShapeExporter.rc,not-read,resources,29.B4 max/tools
+tools/ShapeExporter/resource.h,not-read,resource ids,29.B4 max/tools
+tools/ShapeExporter/.cvsignore,not-read,VCS metadata,29.B4 max/tools
+tools/3DGeometry/main.cpp,full,,29.B4 max/tools
+tools/3DGeometry/3DGeometry.dsp,not-read,project file,29.B4 max/tools
+tools/3DGeometry/3DGeometry.dsw,not-read,workspace file,29.B4 max/tools
+tools/3DGeometry/.cvsignore,not-read,VCS metadata,29.B4 max/tools
+animator.exe,skimmed,binary; strings inspected only,29.B7 .anim;26.X1b
+animator.dat,skimmed,"RAR headers listed, not extracted",29.B7 .anim;26.X1b
+contrib/unrar/unrar.h,full,,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/unrar.cpp,full,,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/extract.cpp,skimmed,in-memory extraction loop only,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/unpack.cpp,skimmed,method dispatch only,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/version.h,full,,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/AndrewsReadme.txt,full,,29.B16 dat archives;29.B13 pack lists
+contrib/unrar/Unrar.vcproj,skimmed,file list and defines,29.B16 dat archives;29.B13 pack lists
+contrib/systemiv/lib/filesys/text_stream_readers.cpp,full,,29.B1 text conventions;29.B2 redshirt
+contrib/systemiv/lib/filesys/text_stream_readers.h,full,,29.B1 text conventions;29.B2 redshirt
+contrib/systemiv/lib/filesys/binary_stream_readers.cpp,full,,29.B1 text conventions;29.B2 redshirt
+contrib/systemiv/lib/filesys/text_file_writer.cpp,full,,29.B2 redshirt;29.B19 purity
+contrib/systemiv/lib/filesys/filesys_utils.cpp,skimmed,DoesFileExist/GetExtensionPart/FindCaseInsensitive only,29.B16 dat archives;29.B13 pack lists
+contrib/systemiv/lib/filesys/file_system.cpp,skimmed,OrderedInsert only,29.B16 dat archives;29.B13 pack lists
+contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp,skimmed,BOM detection and redshirt check only,29.B1 text conventions;29.B2 redshirt
+contrib/systemiv/lib/tosser/hash_table.cpp,skimmed,HashFunc/GetIndex/GetInsertPos only,29.B16 dat archives;29.B13 pack lists
+contrib/systemiv/lib/math/math_stubs.cpp,skimmed,iv_atof only,29.B1 text conventions;29.B2 redshirt
+code/lib/shape.cpp,full,,29.B3 shp
+code/lib/shape.h,full,,29.B3 shp
+code/lib/bitmap.cpp,full,,29.B5 BMP;25.X1b
+code/lib/bitmap.h,full,,29.B5 BMP;25.X1b
+code/lib/resource.cpp,full,,29.B16 dat archives;29.B5 BMP;29.B1 text conventions;29.B3 shp
+code/lib/resource.h,full,,29.B16 dat archives;29.B5 BMP
+code/lib/shader.cpp,full,,29.B15 shader
+code/lib/math_utils.cpp,skimmed,POT helpers only,29.B5 BMP;25.X1b
+code/lib/rgb_colour.cpp,skimmed,operator*= and == only,29.B3 shp;29.B5 BMP
+code/lib/matrix34.cpp,skimmed,Normalise only,29.B3 shp
+code/lib/poster_maker.cpp,skimmed,PNG save call only,29.B5 BMP;25.X1b
+code/lib/universal_include.h,skimmed,TEXTURE_EXTENSION only (build_matrix covers the rest),29.B5 BMP;25.X1b
+code/animatedpanel.cpp,full,,29.B7 .anim;26.X1b
+code/animatedpanel.h,full,,29.B7 .anim;26.X1b
+code/animatedpanel_renderer.cpp,full,,29.B7 .anim;26.X1b
+code/animatedpanel_renderer.h,full,,29.B7 .anim;26.X1b
+code/multiwiniahelp.cpp,skimmed,"animated panel, TEXTURE_EXTENSION names only (owned by P19)",29.B7 .anim;26.X1b
+code/gesture.cpp,skimmed,Load/SaveTrainingData and constructor only (owned by P09),29.B8 gestures.txt;29.B9 gesture demos
+code/gesture.h,full,,29.B8 gestures.txt;29.B9 gesture demos
+code/gesture_demo.cpp,full,,29.B8 gestures.txt;29.B9 gesture demos
+code/gesture_demo.h,full,,29.B8 gestures.txt;29.B9 gesture demos
+code/gesture_demo_win32.cpp,full,,29.B8 gestures.txt;29.B9 gesture demos
+code/sound/soundsystem.cpp,skimmed,LoadEffects/LoadBlueprints/Parse*/Write*/GetSampleGroup/IsSoundSourceOK only (owned by P16),29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_parameter.cpp,full,,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_parameter.h,full,,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_instance.cpp,skimmed,DspHandle and SoundInstance ctor/SetSoundName only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_instance.h,skimmed,enums and DspHandle only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sample_cache.cpp,skimmed,CachedSample ctor only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_stream_decoder.cpp,skimmed,header/ogg read paths,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_stream_decoder.h,full,,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/sound_library_3d.h,skimmed,DSP enum only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/sound/soundsystem.h,skimmed,DspBlueprint/SampleGroup only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/worldobject/entity.cpp,skimmed,EntityBlueprint and SetType only,29.B11 stats.txt
+code/worldobject/entity.h,skimmed,stat enum/storage only,29.B11 stats.txt
+code/worldobject/building.cpp,skimmed,SetShapeLights/SetShapePorts/GetTypeName only,29.B3 shp
+code/landscape_renderer.cpp,skimmed,ramp load and GetLandscapeColour only (owned by P11),29.B6 colour ramps
+code/water.cpp,skimmed,"wave colour table, flat water texture only (owned by P11)",29.B6 colour ramps
+code/water.h,skimmed,GetColour only,29.B6 colour ramps
+code/level_file.cpp,skimmed,"colour-file keywords, ParseDifficulty, save writers only",29.B6 colour ramps
+code/location.cpp,skimmed,difficulty assignment only,29.B11 stats.txt
+code/app.cpp,skimmed,"ParseArchive calls, Gesture ctor, difficulty only",29.B16 dat archives;29.B8 gestures.txt;29.B11 stats.txt
+code/clouds.cpp,skimmed,RenderFace only,29.B19 sepulveda
+code/sepulveda.cpp,skimmed,image loading only ([B:DEAD]),29.B19 sepulveda
+code/shaman_interface.cpp,skimmed,background texture load only,29.B5 BMP;25.X1b
+code/UI/MapImageButton.h,full,,29.B19 icons/mwhelp/thumbnails
+code/interface/helpandoptions_windows.cpp,skimmed,help image names only,29.B19 icons/mwhelp/thumbnails
+code/interface/soundeditor_window.cpp,skimmed,effect default seeding only,29.B10 effects.txt;29.B12 sounds.txt;29.B14 ogg
+code/script.cpp,skimmed,RunCommand_PurityControl only,29.B2 redshirt;29.B19 purity
+code/water_reflection.cpp,skimmed,shader selection only,29.B15 shader
+code/deform.cpp,skimmed,shader creation only,29.B15 shader
+code/lib/FixedPipeline.cpp,skimmed,shader creation only,29.B15 shader
+code/taskmanager_interface_icons.cpp,skimmed,icon name patterns only,29.B19 icons/mwhelp/thumbnails
+code/worldobject/insertion_squad.cpp,skimmed,stat reads only,29.B11 stats.txt
+code/worldobject/entity_leg.cpp,skimmed,MarkerEnd use only,29.B3 shp
