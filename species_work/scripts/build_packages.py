@@ -135,7 +135,9 @@ pkg('G02a2', 3, None, '§9.3', own('G02a', lambda r: r['target_file'] not in G02
 pkg('G02b', 3, None, '§9.3', own('G02b'), ['reference/02_units/creatures.md', 'reference/02_units/hazards_and_projectiles.md'],
     ids={'R-UNIT': '500-899'}, notes='Output split at Phase 3 (over 120 KB): creatures.md and hazards_and_projectiles.md.')
 pkg('G03a', 3, None, '§9.3', own('G03a'), ids={'R-BLDG': '001-399'})
-pkg('G03b', 3, None, '§9.3', own('G03b'), ids={'R-BLDG': '400-799'})
+pkg('G03b', 3, None, '§9.3', own('G03b'), ['reference/03_buildings_and_world_objects/defences_and_props.md',
+    'reference/03_buildings_and_world_objects/trees_and_crate_structures.md'], ids={'R-BLDG': '400-799'},
+    notes='Output split at Phase 3 (over 120 KB).')
 pkg('G04', 3, None, '§9.3', own('G04'),
     ['reference/04_supply_crates_powers_and_weapons/README.md',
      'reference/04_supply_crates_powers_and_weapons/crates_and_powers.md',

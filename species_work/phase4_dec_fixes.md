@@ -46,3 +46,5 @@
 | 42 | G03a vs G01 | — | **Core Device countdown: 900 (G03a) or 1,200 (siege.md)** | decide from ORIG; fix the losing document |
 | 43 | G03a | DEC-459 vs DEC-561 | overlap (Open against Resolved) | supersede or cross-cite; 7 DEC requests (mostly unstated tie rules) in reports/G03a.md |
 | 44 | G03a | — | missing asset: the Launch Vessel fuelling-loop sample group; wrong role: `mesh.structure.structure_default` is the port pad; fuel-chain consumer paths need correcting | X-AST pass 2 |
+| 45 | G03b split | — | the folder README (G03a) must list `trees_and_crate_structures.md` and repoint the tree, Hive, Spitter Plant and Allegiance Scrambler rows | update the README |
+| 46 | G03b vs G04 | — | blight-tree keys duplicated, with three differences (reach, which tree is corrupted, 100 vs 101 ticks); G04's R-CRATE-181 states the uncorrected turret LOS | G04 told while running; verify in Phase 4 |

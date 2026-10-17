@@ -1,0 +1,394 @@
+# Map rules and conventions
+
+> Status: Reference · Prefix: R-MAP · Related: [README](README.md) · [map editor hooks](map_editor_hooks.md) · [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) · [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) · [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) · [05 Population flow](../05_population_flow.md) · [07 Bots](../07_bots.md) · [09 Front end and match flow](../09_front_end_and_match_flow/README.md) · [12 Simulation model](../12_simulation_model/README.md)
+
+## 1 Purpose and player experience
+
+A map is the arena of one match: a square island world surrounded by sea, with its terrain, its lights, its structures, its starting forces and the match options that tune the mode rules for that arena. A player meets maps in match setup, where each mode lists its maps sorted by player count and difficulty, each with a name, a description, a thumbnail and a suggested play time. Once a map is chosen, the match loads it, gives each team one of the map's start positions, hands the structures of each position to the team that holds it, and opens the camera on that team's start view.
+
+The reference game builds every mode on the same map model. One map definition serves its player count of 2 to 4; mode objects, per-map rule overrides, lights, camera views and starting forces are typed records of that definition; and the terrain comes from a small set of procedural tiles, each with a hand-painted guide grid, composited and flattened into the look of the reference game (DEC-025). The map's match options are the designer's levers on the mode rules: the population caps, the Transit Gate reinforcements, the Supply crate outcomes the map excludes, co-op and the Siege sides.
+
+This document specifies those rules, the conventions that the maps of each mode follow, and the reference map set as anonymous distributions per mode and player count. It names no reference map, and every Species map is authored new (DEC-063). The map editor's hooks are [map_editor_hooks.md](map_editor_hooks.md).
+
+### 1.1 Conventions used in this document
+
+- **Units.** Distances are in world units (wu). Simulation durations are ticks of `ref.sim.tick_period` ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md)); a mode second is `ref.mode.mode_second` (11 ticks) of [reference/01](../01_skirmish_rules_and_modes/README.md). Presentation durations, such as camera animations, are in seconds of real time.
+- **The reference maps.** "The reference maps" are the 49 match maps of the reference map set (§2.22). Where a figure covers more files, the text says so.
+- **Positions.** A *start position* (or *position*) is one of a map's player positions 0 to (player count − 1). The map names positions; teams are assigned to positions at load (§2.5). Positions 4 and 5 are the positions of the Rogue faction and the Visitor faction, whose team slots are `ref.sim.team.rogue_slot` (4) and `ref.sim.team.visitor_slot` (5) of [reference/12](../12_simulation_model/06_teams_and_player_commands.md). *No team* is the neutral owner.
+- **Map values.** A per-map value is **absent**, **0** or a number, and a per-map limit may also be **unlimited** (DEC-120). "Sets" means present.
+- **Identifiers.** Map structures use the structure kinds of [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A; map options and map effects use the `MapOption` and `MapEffect` enumerations of §2.7; Supply crate outcomes use the `CrateOutcome` identifiers of [reference/04](../04_supply_crates_powers_and_weapons/README.md) table 2.2-A.
+- **Text.** Player-facing text is new text under Species string ids (§4.2).
+
+## 2 Rules
+
+### 2.1 Scope and shared conventions
+
+**R-MAP-001** (MUST) The values of the tuning table of this document are the reference tuning baseline (DEC-004), and this document is the specification of record for maps and level design (DEC-005). A reference behaviour that looks accidental and that no Resolved decision corrects is stated as an explicit rule (DEC-006).
+
+**R-MAP-002** (MUST) A map is one map definition (`MapDefinition`): a typed, versioned asset validated against its schema by the content build ([data schemas](../../architecture/components/data_schemas.md), ADR-0059, ADR-0061). The same definition serves every mode it lists and every match size up to its player count; no map has a variant per mode or per player count (DEC-025).
+
+**R-MAP-003** (MUST) The content build validates every map definition and every asset reference of it. A missing mandatory field, an unknown block or field, a surplus value, a value outside its declared range and a missing asset are build errors with a diagnostic. At run time the map loader never passes a missing value on, never hangs on malformed data, and reports a missing asset as a diagnostic with a fallback, never as a fatal error (DEC-015, DEC-802).
+
+**R-MAP-004** (MUST) A field of a map definition appears at most once in its record, a list is an explicit array, and two records of one kind with the same id in one map are a build error. A value that replaces a lobby default is the map's typed match-option value itself, never a repeated field (DEC-801).
+
+**R-MAP-005** (MUST) Every text field and every id of a map definition has the maximum length that its schema declares, and the validator enforces it with the file, the position and the field (DEC-801). The maxima of the header's text fields are those of §2.6; no run-time structure holds map text in a fixed-size buffer.
+
+**R-MAP-006** (MUST) Every per-map value has the three forms of DEC-120: **absent** applies the lobby default or the typed default of the mode ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-076); **0** means none; a number is that number. A per-map limit also has an explicit **unlimited** form, which is never written as 0 or as a negative number. Where a map sets a value, the map value overrides the lobby default (DEC-065), and a map value of 0 is a value, not an absence.
+
+**R-MAP-007** (MUST) Every Species map is authored new. No terrain, layout, display name or identity of a reference map is reproduced (DEC-063); the per-map figures of this document describe the reference map set only as counts, ranges and distributions per mode and per player count.
+
+### 2.2 Map identity and the map catalogue
+
+**R-MAP-010** (MUST) A map's **map id** (`MapId`) is its stable name, `map_<mode>_<players>p_<nn>` (CONVENTIONS §8.11), where `<mode>` is the Species mode id of the mode it is made for, `<players>` its player count and `<nn>` a two-digit serial. The content build computes a content hash of the cooked map (ADR-0060), which identifies the version of that id; lists of maps (the map lists of match setup, the map index of the achievement hooks) are keyed by the map id together with that hash, and no list identifies a map by its file bytes (DEC-204).
+
+**R-MAP-011** (MUST) The **map catalogue** is built once, at start-up. It reads the header of every map definition that lies directly in the maps folder of a mounted content set; sub-folders of the maps folder are not searched. The catalogue reads each header only: it stops at the end of the header and never loads the rest of the map (DEC-045).
+
+**R-MAP-012** (MUST) The catalogue's **base order** is built by inserting each map, in the order of the content set's map index, with this ordered insertion, whose comparison is the byte-wise comparison of map ids:
+
+```
+OrderedInsert(list, id):
+    for i in 0 .. len(list) - 2:          # the last entry is never compared
+        c := Compare(list[i], id)
+        if c == 0: return                  # an exact duplicate of a compared entry is dropped
+        if c > 0:
+            insert id before list[i]
+            return
+    append id                              # also when id sorts before the last entry or equals it
+```
+
+The base order is therefore nearly alphabetical: an id that sorts after every entry except the last is appended after the last entry, an exact duplicate of the last entry is appended again, and into a list of one entry every new id is appended. This is the reference default of DEC-314; its option B breaks every tie of R-MAP-016 by the map id instead.
+
+**R-MAP-013** (MUST) The catalogue reads these header fields (§2.6): the display name, the modes, the player count, the author, the description, the play time, the difficulty, co-op allowed, co-op forced and the official flag. Every mode in the map's mode list adds the map to that mode's map list, in the base order. A map whose mode list names a mode twice is added to that mode's list twice; no reference map does so (see §8, new decision request).
+
+**R-MAP-014** (MUST) A map whose mode list is empty is valid and loadable, and is listed under no mode: it is reached only through test and tool paths. The content build rejects a mode name that is not one of the six modes of the mode catalogue of [reference/01](../01_skirmish_rules_and_modes/README.md); the mode list of a listed map names at least one mode and passes the per-mode map rules of every mode it names (§2.16 to §2.21). This is the reference default of DEC-802, whose option B adds an explicit visibility field.
+
+**R-MAP-015** (MUST) A map whose definition does not come from a mounted content set, because it is read from the player's own map folder, is a **custom map**; its handling is [map editor hooks](map_editor_hooks.md). The catalogue counts the maps whose header sets the official flag, and the content build generates the **map index**: the list of the map ids of the official maps, which the Completionist achievement hook counts and which is packaged with the maps it lists (DEC-563).
+
+**R-MAP-016** (MUST) Within each mode's list the catalogue sorts the maps with a stable sort: by player count, ascending, then by difficulty rank, ascending, where the rank is `ref.map.catalogue.rank.none` (0) for a map that sets no difficulty, `ref.map.catalogue.rank.basic` (1) for basic, `ref.map.catalogue.rank.intermediate` (2) for intermediate and `ref.map.catalogue.rank.advanced` (3) for advanced. Maps that tie on both keys keep their base order (R-MAP-012; DEC-314).
+
+**R-MAP-017** (MUST) The header's mode list decides only where match setup lists the map. A match takes its mode from the match setup, and match setup offers a map only under the modes the map lists ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-084; [reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)).
+
+### 2.3 Map display in match setup
+
+**R-MAP-020** (MUST) Match setup shows a map listed from a content set by the string ids `map.<map id>.name` and `map.<map id>.description`, which the map header names and which must exist in the string tables (DEC-802, ADR-0063); the header's own display-name text is shown only for a custom map. Every display name is new text.
+
+**R-MAP-021** (MUST) Match setup shows the map's play time, when the map sets one, as hours and minutes, so a play time of 10 minutes reads 0:10. Choosing the map makes the play time the mode's time limit, when the mode has a time-limit option, and the host applies it once, authoritatively ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-079, DEC-067). A map without a play time leaves the mode's default time limit.
+
+**R-MAP-022** (MUST) Every map listed from a content set has a thumbnail (`thumb.spawn_control`, `thumb.zone_control`, `thumb.relic_run`, `thumb.siege`, `thumb.launch_race` or `thumb.flag_chain`), which the content build renders with the engine from a top-down view of the map at an aspect ratio of 4:3 (DEC-563). The map-select page draws the thumbnail `ref.map.thumbnail.width_fraction` (0.8) of the width of its right-hand column wide and `ref.map.thumbnail.aspect` (0.75) of that width high, inside an outline. A map without a thumbnail, which only a custom map can be, shows the outline alone.
+
+**R-MAP-023** (MUST) The difficulty is shown with the label `map.difficulty.basic`, `map.difficulty.intermediate` or `map.difficulty.advanced`; it is a descriptive rating that orders the lists (R-MAP-016) and changes no rule of the match (DEC-010).
+
+### 2.4 The map definition
+
+**R-MAP-030** (MUST) A map definition holds the blocks of table 2.4-A, each at most once. The match options form the **map header**, which comes first and is readable without the rest of the map, so that the catalogue reads only the header (R-MAP-011, DEC-045). One parser reads the header for the catalogue and the whole map for play, with the same field names and the same rules (DEC-045).
+
+Table 2.4-A Blocks of a map definition.
+
+| Block | Content | Rules |
+|---|---|---|
+| match options (the map header) | the per-map match options | §2.6, §2.7 |
+| terrain definition (`TerrainDefinition`) | world size, cell size, outside height, maximum height and the three terrain colour assets | §2.8 |
+| terrain tiles (`TerrainTile`) | the procedural tiles of the terrain | §2.8 |
+| terrain flatten areas (`TerrainFlattenArea`) | the flatten areas, applied after the tiles | §2.8 |
+| map lights (`MapLight`) | the directional lights | §2.9 |
+| structures | one record per map-placed structure, with its links | §2.11 |
+| start positions | one record per player position: camera view, Siege side, co-op group | §2.5 (DEC-560) |
+| camera views | named camera poses | §2.13 |
+| camera animations | named lists of moves and cuts between camera views | §2.13 |
+| starting forces | the map's starting-unit records | §2.14 |
+| routes | named lists of route points | §2.12 |
+| primary objectives | a list of objective conditions | R-MAP-033 |
+
+**R-MAP-031** (MUST) A block listed twice is a build error (DEC-801); in particular a map has one list of map lights and one list of structures. Every structure of a map is a static map structure, created once at match-world initialisation (R-MAP-047).
+
+**R-MAP-032** (MUST) The content build rejects a block or a record that only campaign content uses: the save-game records of running powers, a created-at-difficulty record and a statistics record have no place in a map definition (DEC-052, DEC-802).
+
+**R-MAP-033** (MUST) The primary objectives of a map are a list of objective conditions. On every reference map the list is empty or holds only the condition that never becomes true. When the list is empty, loading the map adds one condition that never becomes true, so every match world holds at least one objective that never completes. No map scripts a win condition: every mode decides its winner by its own rules ([reference/01](../01_skirmish_rules_and_modes/README.md)). The idle Workers' victory celebration starts only when every objective is complete, so it never starts in a match (DEC-331; [reference/02 worker.md](../02_units/worker.md)). The other objective conditions belong to campaign content and are not specified (DEC-052).
+
+**R-MAP-034** (MUST) Loading a map derives no secondary objective: no objective is created for a Transit Gate or for any other map structure.
+
+### 2.5 Level load and start positions
+
+**R-MAP-040** (MUST) The match-start command carries the map id, and the match loads that map during match entry ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-014, table 2.3-A step 5, and R-SIM-016, table 2.4-A). The map is read from the mounted content sets; a map id that no content set holds is read from the player's own map folder (a custom map, R-MAP-015). When neither holds it, the load fails with a diagnostic, and the program does not end (DEC-015). Figure 3.2 shows the sequence.
+
+**R-MAP-041** (MUST) Reading the map definition creates no simulated object and makes no random draw; every map-placed structure is created once, from its record, at match-world initialisation (R-SIM-017, DEC-652). The match has no global difficulty: actor stats use difficulty level 0, and the difficulty that a map lists is the descriptive rating of R-MAP-023 (DEC-010).
+
+**R-MAP-042** (MUST) A map definition holds one **start-position record** for each player position 0 to (player count − 1). The record carries the position's start camera view (`spawn_view_<position>`, §2.13), its Siege side (attacking or defending) and its co-op group (1, 2 or none). Structures, starting forces and camera views name the start position they belong to (DEC-560). The header fields "attacking positions" and "group-1 positions" and "group-2 positions" of §2.6 are the content of these records.
+
+**R-MAP-043** (MUST) Match-world initialisation assigns a start position to every team slot below the map's player count, whether or not the slot plays, by the rules of [reference/12](../12_simulation_model/06_teams_and_player_commands.md): outside Siege and co-op by the uniform draw over the free positions of R-SIM-417, asked for in slot order (the reference default of DEC-450); in a tutorial and for the Rogue and Visitor factions the position equals the slot; positions kept from a rematch rotation (R-SIM-418) are used without a draw; Siege then reassigns every position by side (R-SIM-419), and co-op places each team by its group (R-SIM-420). Structures are given their teams only after these steps.
+
+**R-MAP-044** (MUST) The team field of a structure record is a start position or no team. At load each structure record's position is replaced by the team that holds that position: the first team slot below the player count whose position equals it; or by no team when none holds it (R-SIM-411, R-SIM-418). Because every slot below the player count receives a position (R-MAP-043), a structure record becomes no team only when its position is at or above the player count; a structure record whose position is 4 or 5 therefore becomes no team, not the Rogue or Visitor faction. No reference structure record uses position 4 or 5. A record that names no team stays no team.
+
+**R-MAP-045** (MUST) A starting-forces record belongs to the team whose start position equals the record's position (§2.14). Positions 4 and 5 therefore address the Rogue faction and the Visitor faction, whose positions equal their slots (R-MAP-043); a map can field Visitor-faction Workers at position 5 this way.
+
+**R-MAP-046** (MUST) At match start every open slot below the map's player count is occupied: empty open slots are filled with bot teams, and a participant who leaves is taken over by a bot. The host may close slots before the match; a closed slot is an unused team slot (DEC-079; [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-010, R-MODE-087).
+
+**R-MAP-047** (MUST) The structure ids of a map are unique within the map; a repeated id is a build error (DEC-801), and the link fields of other records refer to these ids. Each map-placed structure is created once, from its record, at match-world initialisation step 7 ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A); afterwards the structure serial counter continues above the highest map id (R-SIM-018). In Siege, initialisation binds every Command Console that the Core Device's record lists to the Core Device ([reference/03 mode objects](../03_buildings_and_world_objects/mode_objects.md)).
+
+**R-MAP-048** (MUST) On match entry the camera's bounds are −`ref.sim.match_entry.camera_border` to the world size x + `ref.sim.match_entry.camera_border` on both horizontal axes; the x size is used for z as well. The camera first takes the fallback pose (world size x, `ref.sim.match_entry.fallback_camera_height`, world size x) looking along `ref.sim.match_entry.fallback_camera_direction`, then moves to and cuts to the map's default camera view `default_view`, when the map defines one ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.3-A step 8). Once the local team exists, the camera cuts to `spawn_view_<position>` of the local team's start position (R-SIM-418; [camera and sequences](../../architecture/components/camera_and_sequences.md)). A map without these views leaves the camera at the pose it last reached.
+
+**R-MAP-049** (MUST) Match-world initialisation creates the map lights, the terrain height field and the sea from the map definition at step 5, and the map-placed structures, grids, route graphs and bot navigation links at step 7 ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A). Each team's starting forces are created when the team is initialised, at step 8 (§2.14).
+
+### 2.6 The match options of the map header
+
+**R-MAP-060** (MUST) The map header holds the match options of table 2.6-A (`MatchOptions`). A field that is absent takes the default of the table. Each field's value is checked against its type and range by the content build (R-MAP-003).
+
+Table 2.6-A Fields of the map header.
+
+| Field | Identifier | Value | When absent | Meaning | On the reference maps |
+|---|---|---|---|---|---|
+| display name | `MatchOptions::DisplayName` | the string id `map.<map id>.name`; for a custom map a text of at most `ref.map.header.name_max_chars` (511) characters | required | the map's name in match setup (R-MAP-020) | — |
+| modes | `MatchOptions::Modes` | a list of modes (`MatchMode`) | empty: the map is listed under no mode (R-MAP-014) | the mode lists that show the map | every reference map lists exactly one mode |
+| population cap | `MatchOptions::PopulationCap` | a number of bodies, 0 or unlimited | required: the map states unlimited explicitly when it has no cap | the per-team cap is the cap ÷ the number of open slots (R-MAP-062) | 1,400 to 2,000; unlimited on two 4-player co-op maps |
+| defender population cap | `MatchOptions::DefenderPopulationCap` | a number of bodies or 0 | Siege uses the population cap ÷ open slots for both sides | Siege: each defending team's cap; the attacking teams share the rest (R-MAP-062) | 200 to 350 on 6 of the 8 Siege maps |
+| player count | `MatchOptions::PlayerCount` | `ref.map.players.min` (2) to `ref.sim.team.player_slots` (4) | required | the number of start positions and of lobby slots | 2-player 22 maps, 3-player 15, 4-player 12 |
+| play time | `MatchOptions::PlayTime` | whole minutes | the mode's default time limit | the time limit that choosing the map sets (R-MAP-021) | 5, 10, 15 or 20 on 20 maps (§2.22) |
+| difficulty | `MatchOptions::Difficulty` | basic, intermediate or advanced | rank 0 | the descriptive rating that orders the lists (R-MAP-016, R-MAP-023) | every reference map sets one |
+| map effects | `MatchOptions::Effects` | a set of map effects (`MapEffect`, table 2.7-B) | none | weather and lighting effects (§2.10) | snow 6 maps, special lighting 3, lightning 2, dust wind 1 |
+| map options | `MatchOptions::MapOptions` | one value per map option (`MapOption`, table 2.7-A) | each option takes its own default (table 2.7-A) | per-map rule overrides (§2.7) | §2.22 |
+| excluded outcomes | `MatchOptions::ExcludedOutcomes` | a set of Supply crate outcome identifiers (`CrateOutcome`) | none | outcomes that never drop on the map ([reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-029, R-CRATE-030) | 7 maps (§2.23) |
+| attacking positions | `MatchOptions::AttackingPositions` | a set of start positions 0 to (player count − 1), held as the Siege side of each start-position record (R-MAP-042) | no attacking position | Siege: the attacking positions; every other position below the player count defends | every Siege map (§2.19) |
+| co-op allowed | `MatchOptions::CoopAllowed` | flag | off | match setup offers co-op on this map | 6 maps, all 4-player |
+| co-op forced | `MatchOptions::CoopForced` | flag | off | match setup sets co-op on this map | 4 Siege maps |
+| group-1 positions, group-2 positions | `MatchOptions::CoopGroup1Positions`, `MatchOptions::CoopGroup2Positions` | sets of start positions, held as the co-op group of each start-position record (R-MAP-042) | no fixed groups | fixed co-op alliances ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-020) | 6 maps |
+| official | `MatchOptions::Official` | flag | off | the map belongs to the map index (R-MAP-015, DEC-563) | every reference map |
+| author | `MatchOptions::Author` | a text of at most `ref.map.header.author_max_chars` (63) characters | none | the author's name; never displayed | never set |
+| description | `MatchOptions::Description` | the string id `map.<map id>.description`; for a custom map a text of at most `ref.map.header.description_max_chars` (511) characters | none | the description in match setup (R-MAP-020) | — |
+
+**R-MAP-061** (MUST) The player count, the population cap, the defender population cap and the attacking positions are match options of the map, each unset unless the map sets it ([reference/05](../05_population_flow.md) R-ECON-053). A map that gives the population cap twice is a build error (R-MAP-004, DEC-801). The content build rejects a start position outside 0 to (player count − 1) in the attacking positions and in the co-op group positions.
+
+**R-MAP-062** (MUST) Every open slot of the map is occupied by a player or a bot (R-MAP-046). The per-team population cap is the map's population cap divided by the number of open slots, by integer division, fixed for the whole match; caps are per team and never pooled within an alliance. In Siege with a defender population cap, each defending team has the defender cap and the attacking teams share (map cap − number of defenders × defender cap) ÷ number of attackers; a Siege map without a defender cap uses map cap ÷ open slots for both sides. A population cap of unlimited means no cap, and a cap of 0 locks every Spawn Node and Transit Gate of every team. The bodies that count, the enforcement points and the Population Limiter fallback, which takes effect only on a map whose population cap is unlimited, are [reference/05](../05_population_flow.md) §2.11 to §2.14 (DEC-079, DEC-120, DEC-454).
+
+**R-MAP-063** (MUST) Choosing a map in match setup clears the co-op setting on a map that does not allow co-op and sets it on a map that forces co-op ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-079). A map that forces co-op also allows it.
+
+**R-MAP-064** (MUST) The match options that the map header sets and their effect on each mode are listed in [reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-084 and specified by the documents that consume them; this document owns their names, types, defaults and forms (DEC-017, DEC-120).
+
+### 2.7 Map options and map effects
+
+**R-MAP-070** (MUST) The map options are the 15 per-map rule overrides of table 2.7-A, held in the header field "map options". The order of the table is the canonical map-option order: the order of the fields in the map schema and of the option list in the map editor. Species defines its own enumerator values, and no rule depends on them.
+
+Table 2.7-A Map options (`MapOption`), in canonical order.
+
+| # | Map option | Identifier | Value | When absent | Effect | Specified in | Reference maps |
+|---|---|---|---|---|---|---|---|
+| 1 | no Catch-up bonus | `MapOption::NoCatchUpBonus` | flag | off | the Catch-up bonus multiplier is 1, whatever the lobby option | [reference/05](../05_population_flow.md) §2.8 | none |
+| 2 | instant Spawn Node capture | `MapOption::InstantSpawnNodeCapture` | flag | off | Spawn Nodes skip their activation delay | [reference/05](../05_population_flow.md) §2.5 | 4 Relic Run maps |
+| 3 | Transit Gate reinforcement count | `MapOption::GateReinforcementCount` | Workers per owned Transit Gate per wave: a number or 0 | absent | a value above 0 runs Transit Gate waves in every mode; the count per gate per wave, also in a mode that has a count option (R-MAP-071) | [reference/05](../05_population_flow.md) R-ECON-088, R-ECON-091 | 12 maps: 60, 75 or 100 |
+| 4 | Transit Gate Transport cap | `MapOption::GateTransportCap` | a number, 0 or unlimited | absent | a value above 0 also runs waves; the Transport cap of the waves; a value of 1 or more makes the Transport outcome invalid | [reference/05](../05_population_flow.md) R-ECON-091, R-ECON-093, R-ECON-098; [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-125 | 6 maps: 1 or 3 |
+| 5 | no gun turrets | `MapOption::NoGunTurrets` | flag | off | the turret frequency is 0: waves grant no turret powers | [reference/05](../05_population_flow.md) R-ECON-091 | 2 maps |
+| 6 | attacker reinforcement count | `MapOption::AttackerReinforcementCount` | a number or 0 | the Transit Gate reinforcement count | Siege: the attackers' Workers per gate per wave | [reference/05](../05_population_flow.md) R-ECON-093 | none |
+| 7 | defender reinforcement count | `MapOption::DefenderReinforcementCount` | a number or 0 | the Transit Gate reinforcement count | Siege: the defenders' Workers per gate per wave | [reference/05](../05_population_flow.md) R-ECON-093 | none |
+| 8 | defender reinforcement power | `MapOption::DefenderReinforcementPower` | a Power kind (R-MAP-072) | none | each defending team receives one Power of this kind per wave, and the defenders' gates grant no Transport | [reference/05](../05_population_flow.md) R-ECON-093, R-ECON-102 | 1 Siege map: the airstrike |
+| 9 | attacker reinforcement power | `MapOption::AttackerReinforcementPower` | a Power kind (R-MAP-072) | none | each attacking team receives one Power of this kind per wave; outside Siege every team receives it | [reference/05](../05_population_flow.md) R-ECON-093, R-ECON-102 | none |
+| 10 | same-team Beam Dish links | `MapOption::SameTeamBeamDishLinks` | flag | off | two Beam Dishes connect only when one team owns both | [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md) | 1 Siege map |
+| 11 | no Beam Dish aiming | `MapOption::NoBeamDishAiming` | flag | off | neither players nor bots can aim a Beam Dish | [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/06](../06_controls_camera_and_commands.md), [reference/07](../07_bots.md) | 1 Siege map (the same map) |
+| 12 | airstrike threshold | `MapOption::AirstrikeThreshold` | a number of Flag posts | absent | Flag Chain: on a turret wave, a team that holds more than this many Flag posts receives the airstrike instead of the gun turret | [reference/05](../05_population_flow.md) R-ECON-104 | 3 Flag Chain maps: 3 |
+| 13 | Visitor-faction position | `MapOption::VisitorFactionPosition` | a start position | none | the team whose start position equals the value fields Visitor-faction Workers in place of Workers; the value is compared with the team's start position, not its team slot | [reference/02](../02_units/README.md) | none |
+| 14 | attacker reinforcement power option | `MapOption::AttackerReinforcementPowerOption` | an integer | none | the option of the attacker reinforcement power, for example the bomb kind of an airstrike or the turret type | [reference/05](../05_population_flow.md) R-ECON-103; [reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-012 | none |
+| 15 | defender reinforcement power option | `MapOption::DefenderReinforcementPowerOption` | an integer | none | the option of the defender reinforcement power | [reference/05](../05_population_flow.md) R-ECON-103 | none |
+
+**R-MAP-071** (MUST) The reinforcement values of a map override the lobby defaults: at each wave the reinforcement count and the Transport cap take the map's value where the map sets one, otherwise the mode's option value, otherwise the typed default; a map value of 0 is a value (DEC-065; [reference/05](../05_population_flow.md) R-ECON-091). Transit Gates advance exactly once per tick on every map, whichever of the mode and the map options starts the waves (DEC-065).
+
+**R-MAP-072** (MUST) A reinforcement power option names a Power kind by its identifier: one of the Supply crate outcomes whose delivery is a Power in [reference/04](../04_supply_crates_powers_and_weapons/README.md) table 2.2-A. The content build rejects any other value (R-MAP-003). Granting the power is [reference/05](../05_population_flow.md) R-ECON-093.
+
+**R-MAP-073** (MUST) The map effects are the five effect flags of table 2.7-B, held in the header field "map effects", in this canonical order.
+
+Table 2.7-B Map effects (`MapEffect`), in canonical order.
+
+| # | Map effect | Identifier | Effect in a match | Reference maps |
+|---|---|---|---|---|
+| 1 | snow | `MapEffect::Snow` | the snow spawner (R-MAP-090) | 6 |
+| 2 | lightning | `MapEffect::Lightning` | the lightning spawner (R-MAP-090) | 2 |
+| 3 | dust wind | `MapEffect::DustWind` | the dust-storm spawner and its dust vortices (R-MAP-090) | 1 |
+| 4 | Essence-orb rain | `MapEffect::EssenceOrbRain` | none specified (R-MAP-092) | none |
+| 5 | special lighting | `MapEffect::SpecialLighting` | the special lighting for structures (R-MAP-091) | 3 |
+
+### 2.8 Terrain authoring
+
+**R-MAP-080** (MUST) The terrain definition (`TerrainDefinition`) holds the fields of table 2.8-A. The playable world is the rectangle from (0, 0) to (world size x, world size z); every reference map is square.
+
+Table 2.8-A Fields of the terrain definition.
+
+| Field | Value | When absent | Meaning |
+|---|---|---|---|
+| world size x, world size z | whole wu | `ref.map.terrain.world_size_default` (2,000 wu) each | the playable square |
+| cell size | wu per height sample | `ref.map.terrain.cell_size_default` (12.0 wu) | the resolution of the height field |
+| outside height | wu | `ref.map.terrain.outside_height_default` (−10 wu) | the sea floor, the base of every tile and the height outside the map |
+| maximum height | wu | `ref.map.terrain.max_height_default` (0.0 wu) | the normaliser of the colour-ramp look-up only; it limits no height |
+| land colour ramp | one file of `terrain.ramp` | the map default, file 1 | the terrain colour by slope and height |
+| shore-wave gradient | one file of `terrain.shore_wave_gradient` | the map default, file 1 | the colours of the coastline waves |
+| sea tile | one file of `terrain.sea_tile` | the map default, file 1 | the repeated sea surface texture |
+
+**R-MAP-081** (MUST) Each terrain tile record (`TerrainTile`) holds, in this order: position x, position y, position z; size; fractal dimension; height scale; desired height; generation method (0, 1 or 2); random seed; lowland smoothing factor; guide-grid power p; and, when p > 0, a guide grid of 2^p − 1 cells per side whose cells take one of `ref.map.terrain.guide_grid_levels` (16) levels, written A to P. Each tile is a square procedural island with its own private generator, re-seeded from its seed every time the tile is generated, so a tile's heights depend only on its own record (DEC-246). The desired height is the height of the tile's highest point; the guide grid pins the coarse shape of the tile.
+
+**R-MAP-082** (MUST) The tiles are composited by maximum: a tile writes its scaled height into a sample only where it exceeds the height already there, so the order of the tiles does not change the result. The flatten areas are applied afterwards, in record order.
+
+**R-MAP-083** (MUST) Each terrain flatten area record (`TerrainFlattenArea`) holds centre x, centre y, centre z, size, and optionally a flatten type and a height threshold. The area is the axis-aligned square of half-width size around the centre. The flatten types are 0 Absolute (heights set to centre y), 1 Add, 2 Subtract, 3 Smooth and 4 Subtract2; an absent type is 0. The threshold, `ref.map.terrain.flatten_threshold_default` (40.0 wu) when absent, is used by types 2 to 4.
+
+**R-MAP-084** (MUST) The generation algorithm of the tiles, the composition and the five flatten types, with their exact arithmetic and its biases, is [terrain](../../architecture/components/terrain.md) (DEC-025, DEC-324). Whether the terrain is generated at load from these records or baked by the content build is DEC-246, whose default is generation at load; the scale of terrain for a large world is DEC-247.
+
+**R-MAP-085** (MUST) The terrain of the reference map files lies within the envelope of table 2.8-B. The figures cover the 57 reference map files, which are the 49 match maps and 8 development and test maps (DEC-334); the match maps alone are the figures of DEC-247.
+
+Table 2.8-B Terrain envelope of the reference map files.
+
+| Parameter | Range or values used | Notes |
+|---|---|---|
+| world size | 2,000 to 7,000 wu, square in every file, 28 distinct sizes | the most common are 3,000 wu (12 files) and 2,000 wu (8); on the 49 match maps, 3,000 wu on 11 and 2,000 wu on 5 |
+| cell size | 9.00 to 27.08 wu, 17 distinct values | grids of 137 × 137 to 334 × 334 samples; the finest cells are on small maps |
+| outside height | −30.00 to −6.93 wu, 8 distinct values | −10.00 wu in 40 files; every map has sea on at least 26.2 % of its cells, and sea along its whole border |
+| maximum height | 0.00 in 40 files, 200.00 in 1, absent in 16 | the colour ramp only |
+| tiles per map | 1 to 25, 445 tiles in all | |
+| tile size | 124 to 4,484 wu | |
+| tile position y | −25.93 to 83.90 wu | |
+| fractal dimension | 0.57 to 7.88 | |
+| height scale | 0.0 to 10.0 | |
+| desired height | 30 to 961 wu | |
+| generation method | 0 on 30 tiles, 1 on 356, 2 on 59 | all three methods are used |
+| lowland smoothing factor | 0.0 to 3.0 | |
+| guide-grid power | 0 on 71 tiles, 1 on 26, 2 on 209, 3 on 30, 4 on 93, 5 on 16 | hand-painted guide grids on 374 of the 445 tiles |
+| flatten areas | 53 areas in 19 files, 0 to 6 per file | Absolute 17, Add 1, Subtract 5, Smooth 27, Subtract2 3; half-size 8.4 to 1,000 wu; centre y −26 to 886.2 wu; threshold −3.9 to 348.9 wu |
+
+**R-MAP-086** (MUST) The reference map files use 14 land colour ramps, 8 shore-wave gradients and 4 sea tiles, which the asset manifest recreates as the 14 files of `terrain.ramp`, the 8 of `terrain.shore_wave_gradient` and the 4 of `terrain.sea_tile`, each with the map default as file 1. The number of map files that use each asset is: land colour ramps 10 (the map default), 10, 8, 5, 5, 5, 3, 3, 2, 2, 1, 1, 1 and 1; shore-wave gradients 17 (the map default), 11, 10, 8, 4, 3, 3 and 1; sea tiles 30 (the map default), 20, 5 and 2. While the match's seasonal state is active, one land colour ramp, one shore-wave gradient and one sea tile replace the map's own on every map ([renderer](../../architecture/components/renderer/world_renderers.md) RND-134, RND-142, RND-144; DEC-118).
+
+### 2.9 Map lights
+
+**R-MAP-087** (MUST) Each map light record (`MapLight`) holds a direction (front x, y, z) and a colour (r, g, b). Every map light is directional, at an infinite distance; its direction is normalised at load, and its colour components are unclamped multipliers, so values above 1 brighten. A light record without values takes the renderer's defaults `rnd.light.default_colour` and `rnd.light.default_front` ([renderer](../../architecture/components/renderer/README.md) RND-012). The renderer uses the first two lights of the list (RND-013, RND-226); the simulation never reads a map light.
+
+**R-MAP-088** (MUST) Every reference map has exactly `ref.map.light.count` (2) lights. Their colour components lie between 0.26 and 5.23 (red), 0.26 and 3.15 (green) and 0.00 and 2.07 (blue), and the normalised y component of their direction between 0.00 and 0.86. The two lights follow one pattern: a neutral grey fill light, with equal components between 0.33 and 1.25, and a warm key light whose red component exceeds its green, which exceeds its blue. The pattern is a level-design tool that the schema accepts (DEC-315). Whether maps keep per-map light values or select named lighting presets is DEC-562, whose default is the per-map values.
+
+### 2.10 Map effects in a match
+
+**R-MAP-090** (MUST) The map effects snow, dust wind and lightning start the map-effect spawners of [reference/12](../12_simulation_model/04_containers_and_update_order.md), which run in update slice `ref.sim.slice.map_effects` (3) in the order snow, dust storm, lightning, then the seasonal snow (R-SIM-234 to R-SIM-238). The snow spawner creates `ref.sim.weather.snow_burst` (150) snowflakes over the whole map, at heights from 0 to `ref.sim.weather.snow_burst_height_range` (1,000 wu), on its first run, and then one snowflake at a height from `ref.sim.weather.snow_height_base` (700 wu) to that base plus `ref.sim.weather.snow_height_range` (300 wu) every `ref.sim.weather.snow_period` (1 tick). The three spawners share one timer (R-SIM-237). A lightning strike is drawn with `fx.lightning_strip`; the dust vortex and the lightning strike are specified in [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md).
+
+**R-MAP-091** (MUST) The map effect special lighting lights the structures with the special light rig of the renderer instead of the map lights. The same lighting is also used in every Launch Race match, whatever the map's effects, and whenever the special-lighting setting is on ([renderer](../../architecture/components/renderer/view_lighting_and_fog.md) RND-229).
+
+**R-MAP-092** (MUST) The map effect Essence-orb rain has no specified effect in a match, and no reference map sets it (see §8, new decision request).
+
+**R-MAP-093** (MUST) The seasonal theme starts the snow spawner on every map, independently of the map's effects, when the match setup's seasonal state is active (DEC-118; R-SIM-234). Music is not a property of a map: no field of a map definition names a music track.
+
+### 2.11 Structure placement
+
+**R-MAP-100** (MUST) Each structure record of a map holds the base fields, in this order: structure kind, structure id, position x, position z, team (a start position or no team), facing x, facing z and the global flag; then the fields of its kind, which [reference/03](../03_buildings_and_world_objects/README.md) specifies per kind and the map schema family of [data schemas](../../architecture/components/data_schemas.md) types (R-BLDG-014, R-BLDG-108, R-BLDG-138, R-BLDG-145, R-BLDG-407, R-BLDG-433, R-BLDG-459, R-BLDG-462, R-BLDG-473, R-BLDG-601). Link fields name structure ids of the same map.
+
+**R-MAP-101** (MUST) A structure record's kind is one of the structure kinds of [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A that a map may place. The content build rejects a record of the Relic or the Supply crate, which only rules create (R-BLDG-011, R-CRATE-101), and a record of a kind that only campaign content uses (DEC-052, DEC-802). A map may place a Hive or a Spitter Plant, which Supply crate outcomes otherwise create; no reference map does.
+
+**R-MAP-102** (MUST) A structure record carries no height: at match-world initialisation every map-placed structure is placed on the terrain at its (x, z) ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-A step 7).
+
+**R-MAP-103** (MUST) The global flag is required on every Beam Dish and Transit Gate record, and the content build rejects such a record without it (R-BLDG-015). Otherwise the flag changes no match rule; on a Source Node it selects only how the Source Node is drawn. This is the reference default of DEC-309, whose recommendation removes the flag from map data.
+
+**R-MAP-104** (MUST) Map-placed structures enter the structure pool in record order, so the record order of a map is the structure order that order-dependent rules read, such as the Population Limiter look-up of [reference/05](../05_population_flow.md) R-ECON-062 and the advance order of transit orbs (R-ECON-040). Every participant creates the same structures in the same order (R-SIM-017).
+
+**R-MAP-105** (MUST) No map record is scaled by a difficulty: counts, radii and populations are used as authored (DEC-010).
+
+**R-MAP-106** (MUST) A turret ignores the facing of its map record; its initial facing does not come from map data (R-BLDG-407). This is the reference default of DEC-462.
+
+**R-MAP-107** (MUST) A smoke column that a map places is an invisible obstacle that blocks movement, as [reference/03 defences and props](../03_buildings_and_world_objects/defences_and_props.md) specifies; this is the reference default of DEC-089, whose recommendation makes such markers collide only where the map marks the obstacle as wanted.
+
+**R-MAP-108** (MUST) A map that places Spawn Nodes places exactly one Source Node, whose links start a tree of Relays and Spawn Nodes that reaches every Spawn Node. The content build rejects a spawn network whose links contain a cycle (DEC-456; [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-100, R-BLDG-102). On the reference maps a network has 0 to 23 Relays, and on one map the Source Node links straight to every Spawn Node.
+
+**R-MAP-109** (MUST) Population Limiters are local population caps around hubs. On the reference map files their radius lies between 272.77 and 1,169.84 wu and their maximum population between 100 and 1,200. Every reference map that places one also sets a population cap, so no Population Limiter takes effect on a reference map (DEC-454; R-ECON-061).
+
+**R-MAP-110** (MUST) The owner field of the structure records of the reference map files is distributed as table 2.11-A. The per-mode counts of records and maps over the 49 match maps are [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A; table 2.11-A covers the 57 reference map files of R-MAP-085, without the records of kinds that only campaign content uses.
+
+Table 2.11-A Owner field of the structure records of the reference map files.
+
+| Structure kind | Records | Files | Owner field: no team, then per start position |
+|---|---|---|---|
+| bot objective | 95 | 9 | no team 62; position 0: 18, 1: 8, 2: 4, 3: 3 |
+| bot objective marker | 340 | 16 | no team 155; position 0: 42, 1: 87, 2: 44, 3: 12 |
+| bot navigation node | 1,112 | 53 | no team 1,101; position 1: 11 |
+| Command Console | 36 | 10 | no team 33; position 0: 3 |
+| volcano vent | 1 | 1 | no team 1 |
+| Launch Vessel | 19 | 7 | position 0: 7, 1: 7, 2: 4, 3: 1 |
+| fuel pump | 57 | 7 | no team 36; position 0: 9, 1: 9, 2: 3 |
+| fuel line | 178 | 7 | no team 114; position 0: 25, 1: 25, 2: 14 |
+| fuel depot | 57 | 7 | position 0: 21, 1: 21, 2: 12, 3: 3 |
+| turret | 207 | 14 | no team 207 |
+| jump pad | 23 | 3 | no team 23 |
+| Barrier Emitter | 703 | 15 | no team 141; position 0: 288, 1: 154, 2: 77, 3: 43 |
+| Control Zone (also Relic Base, Relic Spawn Zone, Flag post, Home post) | 176 | 27 | no team 126; position 0: 18, 1: 18, 2: 10, 3: 4 |
+| grid splitter | 26 | 7 | no team 25; position 0: 1 |
+| Core Device | 9 | 9 | position 0: 5, 1: 3, 2: 1 |
+| grid pylon | 301 | 17 | no team 244; position 0: 21, 1: 21, 2: 12, 3: 3 |
+| grid terminal | 88 | 17 | no team 88 |
+| Beam Dish | 46 | 7 | no team 44; position 0: 2 |
+| exclusion zone | 35 | 14 | no team 35 |
+| smoke column | 6 | 1 | no team 6 |
+| Solar Array | 231 | 17 | no team 146; position 0: 52, 1: 21, 2: 3, 3: 9 |
+| Relay | 276 | 23 | no team 265; position 1: 11 |
+| Spawn Node | 286 | 34 | no team 124; position 0: 53, 1: 57, 2: 33, 3: 19 |
+| Source Node | 34 | 34 | no team 33; position 1: 1 |
+| Population Limiter | 87 | 22 | no team 87 |
+| scenery mesh | 193 | 19 | no team 193 |
+| tree | 755 | 45 | no team 704; position 1: 51 |
+| Transit Gate | 123 | 31 | no team 14; position 0: 33, 1: 46, 2: 23, 3: 7 |
+| wall | 356 | 11 | no team 356 |
+| Breach Charge | 3 | 1 | no team 3 |
+
+**R-MAP-111** (MUST) The reference maps follow these placement patterns, which the map schema accepts:
+
+1. **Spawn economy.** Every map with Spawn Nodes has one Source Node and a tree of Relays (R-MAP-108). Each start position owns 1 to 3 Spawn Nodes, and capturable Spawn Nodes with no team sit between the positions (§2.16 to §2.21).
+2. **Bot hints.** Bot navigation nodes (`BotNavNode`, marker mesh `mesh.structure.bot_nav_node`) are placed on every reference map. Each record holds a link to another node (none, or a node id), a priority modifier from −1 to 1 and a cliff-check flag. Siege maps chain bot objectives (`BotObjective`) by a next-objective link and place bot objective markers (`BotObjectiveMarker`), each with a scan range from 0 to 306.6 wu, an objective id, a Transport flag and a pickup-only flag; Launch Race maps also place bot objective markers. Their use by the bots is [reference/07](../07_bots.md).
+3. **Fortification kit.** Walls; Barrier Emitters in chains, each record naming the next emitter, with a scale from 0.25 to 3.0 and, over the reference map files, the mode Raised on 658 records, Lowered on 20, AlwaysRaised on 23 and RelayOnly on 2 (R-BLDG-435); turrets, every one with no team, of the gun type on 196 records and the flame type on 11, with every target field 0; exclusion zones with a size from 300 to 1,118.8 wu and the Power-blocking flag (§2.23); jump pads with a force from 76.17 to 227.38 wu/s and an angle from 0.51 to 1.08 rad; Beam Dishes with their force-connection and auto-connect flags and their valid receivers, in the patterns of [reference/03 economy](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-168.
+4. **Energy grid and fuel chain.** Solar Arrays, grid pylons, grid terminals and grid splitters, each record naming its next link and a splitter a list of candidates, feed fuel pumps, fuel lines, fuel depots and Launch Vessels on the Launch Race maps; energy grids also appear on Siege, Flag Chain and Spawn Control maps ([reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A).
+5. **Set dressing.** Trees, procedural, each record with its height (43.54 to 272.65 wu on the reference maps) and the tree fields of R-BLDG-601; scenery meshes with a scale from 0.83 to 6.1, of which the five most used pieces of `mesh.scenery.prop` account for 67, 56, 32, 27 and 8 records and one record places the Abductor hull `mesh.creature.abductor_hull`; one volcano vent on one Flag Chain map; six smoke columns and three Breach Charges, each on one Siege map.
+
+**R-MAP-112** (MUST) The reference maps also use these level-design patterns, whose design intent is not recorded and which the map schema and the per-mode validation accept: concentric Control Zones in Zone Control (§2.17); duplicate Relic Spawn Zones in Relic Run (§2.18); Zone Control Control Zones that start owned by a position (§2.17); the key and fill pair of map lights (R-MAP-088); and twin terrains, two maps built on one terrain (§2.22). This is the reference default of DEC-315.
+
+### 2.12 Routes
+
+**R-MAP-120** (MUST) A map may hold routes. A route has an id from 0 to `ref.map.route.id_limit` − 1 (0 to 9,999) and a list of route points, each one of three kinds: a 3-D position (x, y, z), a ground position (x, z) or a structure id.
+
+**R-MAP-121** (MUST) In a match a route id names a route of the match's own route table, which holds the routes that players draw ([reference/12](../12_simulation_model/05_space_routing_and_physics.md)); a route of the map definition is never followed. A starting-forces record's route id therefore indexes the match's route table. No reference map holds a route, and no reference starting-forces record names one (see §8, new decision request).
+
+### 2.13 Camera views and camera animations
+
+**R-MAP-125** (MUST) A camera view record holds a name, a position (x, y, z), a front vector (x, y, z) and an up vector (x, y, z); the front and up vectors are normalised at load. A camera view name has at most `ref.map.camera.view_name_max_chars` (62) characters, and names are looked up without regard to case. The camera that uses the views is [camera and sequences](../../architecture/components/camera_and_sequences.md).
+
+**R-MAP-126** (MUST) Three view names are reserved:
+
+| Name | Meaning |
+|---|---|
+| `spawn_view_<n>` | the start view of start position n; once the local team exists the camera cuts to the view of its position (R-MAP-048) |
+| `default_view` | the view the camera moves to after the map has loaded; without it the camera stays at its fallback pose |
+| `previous_view` | the camera pose from before a camera animation started; an animation may name it without the map defining it |
+
+**R-MAP-127** (MUST) A camera animation record holds a name and a list of steps until its end; each step is a move or a cut to a named camera view, with a duration from 0 up to, but not including, `ref.map.camera.animation_duration_max_s` (60 s). The view of a step is either defined before the animation or is `previous_view`. The content build rejects an animation that breaks these rules (DEC-015). Camera animations are played only by sequences ([camera and sequences](../../architecture/components/camera_and_sequences.md)); every camera-animation block of the reference map files is empty.
+
+**R-MAP-128** (MUST) On the reference maps every map defines `spawn_view_<n>` for each of its start positions, except one 3-player Siege map that defines no camera view at all, so its camera stays at the pose it reaches after load. Two 2-player maps also define a `spawn_view_2` that no position uses. Over the 57 reference map files, `spawn_view_0` is defined in 51 files, `spawn_view_1` in 51, `spawn_view_2` in 31, `spawn_view_3` in 13 and `default_view` in 7.
+
+### 2.14 Starting forces
+
+**R-MAP-130** (MUST) A starting-forces record holds, in this order: actor kind, start position, x, z, count, in-group flag, state, spread, and optionally a waypoint (x, z), a route id, a route-point id and the run-as-power flag. When absent, the state is none, the spread is `ref.map.starting_forces.spread_default` (200 wu), the waypoint is (0, 0), the route id and the route-point id are none and the run-as-power flag is off.
+
+**R-MAP-131** (MUST) The content build rejects a starting-forces record whose actor kind no match creates as a starting unit: the Leader, the Crawler egg, the Bomber, the ant, the Seed Pod, the bot controller, the barrage missile, the meteor, the Abductor, and every actor kind of campaign or debug content (DEC-062, DEC-802). A Trooper record whose in-group flag is off creates nothing.
+
+**R-MAP-132** (MUST) When a team is initialised at match start, each starting-forces record whose start position equals the team's start position is created for that team (R-MAP-045), after the team's bot controller, its starting powers and its port seeding ([reference/05](../05_population_flow.md) R-ECON-106, R-ECON-109):
+
+1. **Run as a power.** With the run-as-power flag set, a Transport record becomes a Transport Power, a Trooper record a Strike team Power, a Collector record a Collector Power and a Builder record a Builder Power, each targeted at (x, z), with no lifetime limit, occupying a Power slot of the team ([reference/04](../04_supply_crates_powers_and_weapons/README.md)). A record of any other kind with the flag set creates nothing.
+2. **Actors.** Otherwise `count` actors of the kind are created around (x, z) within the spread. With the in-group flag set they form one actor group whose waypoint is the spawn point. A single Worker whose state is "following orders" is ordered to the waypoint, which snaps to the centre of a Beam Dish whose radius contains it; a Transport receives the waypoint and the record's state. The actor rules are [reference/02](../02_units/README.md).
+
+**R-MAP-133** (MUST) No reference starting-forces record uses a route or a waypoint: every record gives the waypoint (0, 0), no route and no route point, or leaves them out. The run-as-power flag is set on every Transport record of the Siege maps (7 records on 4 maps) and on no other reference record, so the defenders' starting Transports on those maps begin as Transport Powers with no lifetime limit that occupy Power slots.
+
+**R-MAP-134** (MUST) The starting forces of the reference maps are distributed as table 2.14-A, per start position. The Workers that port seeding adds (one per port of each Spawn Node and Solar Array that a position owns at start, [reference/05](../05_population_flow.md) R-ECON-108) are listed separately.
+
+Table 2.14-A Starting forces of the reference maps.
+
+| Mode | Starting Workers per start position | Port-seeded Workers per start position |
+|---|---|---|
+| Spawn Control | 40 on 6 maps (2-player 2 of 5, 3-player 2 of 2, 4-player 2 of 2); 45 on one 2-player map; none on two 2-player maps | 5 to 20 (5 on 3 maps, 10 on 4, 15 on 1, 20 on 1) |
+| Zone Control | 40 on 7 maps; 45 on one 3-player map; none on one 3-player map (the map without Spawn Nodes) | 0 to 15 (5 on 3 maps, 10 on 4, 15 on 1, none on 1) |
+| Relic Run | 40 on all 9 maps | 5 to 15 (5 on 2 maps, 10 on 6, 15 on 1) |
+| Siege | defending positions 63 to 325 (325, 300, 209, 103, 260, 180, 100 and 68, 63 and 95 per map); attacking positions none, except one 2-player map whose attacking position starts with 8; one 2-player map also places 35 Visitor-faction Workers at position 5; Transport Powers on 4 maps (R-MAP-133) | defenders on 5 maps: 30 to 60; attackers none |
+| Launch Race | none on 6 maps; 8 on one 3-player map | none |
+| Flag Chain | 2-player maps 40, 36, 8 and none; 3-player maps 15 and none; the 4-player map none | 15 on one 2-player map and on the 4-player map, 10 on another 2-player map, none on the other 4 maps |
+
+On 9 reference maps the opening army is the first Transit Gate wave alone, with no starting Workers and no port seeding: 6 Launch Race maps, 2 Flag Chain maps and 1 Zone Control map. The two Spawn Control maps without starting Workers open with their port-seeded Workers, and the Siege attackers open with their first wave.
+
+### 2.15 Fixed research levels and what a map cannot express
+
+**R-MAP-140** (MUST) A map cannot set research levels. Match start sets every power and research level to `ref.sim.init.power_level_default` (3), then the Strike team to `ref.sim.init.power_level.strike_team` (1), the laser, grenade, rocket and airstrike to 2 (`ref.sim.init.power_level.laser`, `ref.sim.init.power_level.grenade`, `ref.sim.init.power_level.rocket`, `ref.sim.init.power_level.airstrike`) and the Worker to `ref.sim.init.power_level.worker` (4), after any research setting of the match setup, which therefore has no effect ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) table 2.4-B; DEC-115). A map refers to power kinds only by identifier, in its reinforcement power options (R-MAP-072).
+
+**R-MAP-141** (MUST) The power and research items (`PowerLevels`) that hold a level are, in this order: Worker, Leader, Strike team, laser, grenade, rocket, airstrike, Transport, Power slots, Builder, Collector, Missile Barrage, Convert, Shield, Speed Boost, gun turret, Swarm, Essence Grove, Blight Grove, Hive, Sickness, Brood, meteor shower and Fury. The items of campaign and debug content that the reference enumeration also holds are not specified (DEC-052, DEC-062). The level progression of campaign research does not exist in a match.
+
+**R-MAP-142** (MUST) A map definition cannot express: a music track; sky or cloud settings; fog; a per-map bot difficulty; the Supply crate drop period or any outcome probability (only excluded outcomes); research levels; team colours; a time of day; scripted events or a win condition for a mode; or a per-map ambient sound. These come from the mode's options, the match setup or fixed rules ([reference/01](../01_skirmish_rules_and_modes/README.md), [reference/04](../04_supply_crates_powers_and_weapons/README.md), [reference/09](../09_front_end_and_match_flow/README.md), [reference/10](../10_audio_design.md)).
