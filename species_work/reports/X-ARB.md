@@ -4,8 +4,9 @@
 
 | File | Size | Content |
 |---|---|---|
-| `species_work/p4_arbitration.md` | 101.7 KB | 34 entries A-1 to A-34, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
+| `species_work/p4_arbitration.md` | 131.1 KB | 42 entries A-1 to A-42, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
 | `species_work/scripts/` helper named X-ARB + `_extract_replacements.py` (the mandated `<ID>_*.py` form; its name trips one technology pattern of the forbidden list, a false positive) | 1.3 KB | pulls the replacement blocks out of the working file so they can be scanned on their own |
+| `species_work/scripts/` helper named X-ARB + `_census.py` | 3.2 KB | recounts ORIG 08's per-file camera-mount and landscape tables over the 49 match maps; it first reproduces the 57-file figures of R-MAP-128 and R-MAP-086 exactly |
 | `species_work/reports/X-ARB.md` | this file | |
 
 No file in `design_next/` was edited. No publishing, upload or git write tool was used.
@@ -56,16 +57,28 @@ Coordinator request 2 (conflicts flagged by the routing agents; route ids closed
 - A-34 (RA-200 point b): both `Select` and `SelectPower` boost the selection arrows. Fix: R-CTRL-375.
 - X-ROUTE-b: none of its X-ARB rows is a new conflict. RB-051, RB-056, RB-173, RB-174, RB-208, RB-221, RB-224 and RB-292 apply existing entries. RB-091 is a citation fix: A-1 confirms that R-BLDG-048 should cite `ref.match.colour.no_group`. RB-306 waits on X-DEC-P4b.
 
+Coordinator request 3 (residual round, including the three FX-08 points):
+- A-35 (RB-204): the limit stays 62. The reference declares 63, but the map reader copies a 63-character name without a terminator. Only the tuning note changes.
+- A-36 (RA-221): recount over the 49 match maps. A new table 2.11-C gives the derivable owner splits (Command Console, turret, Control Zone, Core Device, grid terminal, Population Limiter, Spawn Node, Transit Gate, wall, and every kind with no records in the non-match files). Also recounted: turret types (189 gun, 11 flame), camera views (48, 48, 29, 12, 5) and terrain-asset use. The rest is not derivable from ORIG and keeps its stated 57-file scope: bot structure fields, Barrier Emitter modes and owners, pylon and Solar Array owners, Relay, Source Node and tree owners, and the Population Limiter range. Note for X-AST: one land ramp and one shore-wave gradient are used only by non-match files.
+- A-37 (RB-004 items 1, 2): both pushes have no live caller in the reference, so R-UNIT-041 holds. No change.
+- A-38 (RA-145): ORIG gives only the anchor (the mount's status sockets 01 to 04). The look is a **design choice**: the base port look, re-anchored. Note for X-DEC-P4a; a new rule goes in defences_and_props.md.
+- A-39 (stat width): the reference stores 8-bit stats, and Resolved DEC-090 applies floating point. R-SIM-145 changes to the fixed rule, and its DEC-241 citation was wrong.
+- A-40 (RB-044): the library is right. "160 × 512" is the reference atlas, holding the 32 px trail column plus the glow at 128 × 128. "32 copies" is the loop bound, of which 18 fit. RND-320 gains one optional sentence.
+- A-41 (FX-08 §6.3): the ownership-light clock is the latest command frame **received**, and quad i has half-size 6 × i ÷ 10 (largest 10.8 wu across). R-BLDG-045 and RND-167 need fixing. Removing the duplicate `rnd.structure.light.*` keys is recommended, but it is the coordinator's call.
+- A-42 (FX-08 §6.4): the values agree (occupied ÷ 5 ports; 30 s = 300 ticks; same colour). RND-169 should cite the reference keys in ticks, and its two duplicate keys should be removed.
+- Naming: the replacement text uses no new code identifier and cites no ADR. Existing identifiers and keys keep their current spelling.
+
 ## Hand-offs
 
 - **X-DEC-P4a:** the DEC-085 replacement text in A-3. A-12 means item 52's proposed action is not taken.
 - **X-DEC-P4b:** the design-choice notes in A-19 and A-20 (item 118) and A-31 (DEC-651).
+- **X-DEC-P4a:** the design-choice note in A-38 (turret port look).
 - **Document fixers / X-ROUTE:** every "Replacements" block. The summary table at the end of `p4_arbitration.md` lists, for each entry, the file and requirement ids that must change.
 - **Not arbitrated** (no ORIG question): G07's request to align R-UNIT-359 with R-BOT-014. It belongs to the routing pass and to the Open DEC of item 50.
 
 ## Checks
 
-- Replacement text: the extraction helper pulls all 165 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
+- Replacement text: the extraction helper pulls all 203 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
 - Whole working file: it has hits (137 forbidden, plus soft-pattern hits). Every hit is on the header line or inside an ORIG evidence quote, which the X-ARB brief allows for this working file. Nothing in this file is meant for `design_next/`.
 
 ## Could not do

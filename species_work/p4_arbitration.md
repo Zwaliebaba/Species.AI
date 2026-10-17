@@ -718,6 +718,210 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 - No change to R-SIM-405 or R-CTRL-200.
 - Closes: point (b) of RA-200 (the other points of RA-200 are alignment fixes with no ORIG question).
 
+## A-35 Maximum length of a camera view name: 62 or 63 characters (route RB-204)
+
+**Question.** R-MAP-125 limits a camera view name to `ref.map.camera.view_name_max_chars` (62) characters. C-CAM reports that the reference holds 63 characters in a 64-byte buffer. Which is the limit?
+
+**Statements.**
+- `reference/08_maps_and_level_design/rules_and_conventions.md` **R-MAP-125** and tuning row `ref.map.camera.view_name_max_chars` (62); R-MAP-127 applies the same limit to camera animation names.
+- `reference/08_maps_and_level_design/map_editor_hooks.md`: the editor's name field accepts `ref.map.editor.camera_view.name_field_chars` (63), "one more than" the 62 limit; under DEC-801 a longer name is refused, never truncated (R-MAP-370).
+- C-CAM report: "the data model gives camera-view and animation names at most 63 characters in a 64-byte buffer".
+
+**ORIG evidence.**
+- `30_scripting_tutorial_and_cutscenes.md` l.830: "`m_name` | ≤ 63 characters (`CAMERA_MOUNT_MAX_NAME_LEN`), `strncpy` into `char[64]`"; `08_levels_and_level_design.md` l.1856: the editor field edits "`m_name` (char[64], `CAMERA_MOUNT_MAX_NAME_LEN` 63)".
+- `08_levels_and_level_design.md` l.1125 (the map reader): "name copied with `strncpy` into `char[64]` (keep ≤ 62 characters, a 63+ name is not NUL-terminated)".
+
+**Verdict.** ORIG settles it: the declared length is 63, but the map reader copies at most 63 characters without adding a terminator, so the longest name the reference reads back correctly is **62**. R-MAP-125's 62 is the reference's working limit and stands. The editor field's 63, already keyed separately, is the declared length, and under DEC-801 that 63rd character is refused. The coordinator's alternative (raise the key to 63) is not taken. Only the tuning note changes, so that a reader sees why 62 and 63 both appear.
+
+**Replacements.**
+- `reference/08_maps_and_level_design/rules_and_conventions.md`, tuning row: `| ref.map.camera.view_name_max_chars | 62 | characters | the longest name the reference reads back intact; its name field holds 63 (map editor hooks) | R-MAP-125 | DEC-801 |`
+- No change to R-MAP-125, R-MAP-127 or map_editor_hooks.md.
+- Closes: RB-204.
+
+## A-36 The reference map census recounted over the 49 match maps (route RA-221)
+
+**Question.** reference/08 states several field and team distributions over all 57 reference map files (the 49 match maps plus 8 development, test and cut files). What are the figures over the 49 match maps only?
+
+**Statements.**
+- `reference/08_maps_and_level_design/rules_and_conventions.md`: **R-MAP-110** with table 2.11-A (owner field per structure kind, 57 files); **R-MAP-200** with table 2.11-B (57-file field distributions of the bot structures); **R-MAP-111** item 3 (Barrier Emitter modes and turret types "over the reference map files"); **R-MAP-128** (camera views "over the 57 reference map files"); **R-MAP-086** (terrain asset use per map file); **R-MAP-109** (Population Limiter radius and maximum "on the reference map files").
+
+**ORIG evidence and method.** The 49-map figure of each kind is the 57-file figure minus the eight non-match files. `03_buildings_and_world_objects.md` l.80–155 (type table, columns "Official MP maps (lines)" and "Dev mp_ maps") gives the 49-map record and map counts of every kind. The owner field of the eight files' records comes from:
+- `08_levels_and_level_design.md` l.358–366 (contents of each non-match file);
+- l.228–276 (master table);
+- l.567 (the cut map's zones with owners);
+- l.598 (the stress file's Core Device and consoles);
+- `05_economy_and_population.md` l.393, l.394, l.408, l.436 (per-file Transit Gate and Spawn Node owners);
+- `07_ai.md` l.346 and l.1548–1590 (navigation nodes per file).
+
+The camera views and terrain assets were recounted file by file from ORIG 08's per-file camera-mount table (l.1136–1194) and landscape table (l.833–903), with the helper script X-ARB + `_census.py`, which first reproduces the 57-file figures of R-MAP-128 and R-MAP-086 exactly. Where ORIG gives no owner or field value for a non-match file's records, the 49-map split cannot be derived, and the entry says so.
+
+**Verdict.** ORIG settles the figures below. Table 2.11-A, the R-MAP-200 field column and the parts of R-MAP-111 item 3, R-MAP-109 and R-MAP-111 item 5 that cannot be split stay at their stated 57-file scope, which is correct as written. Every derivable 49-map figure is given here, so that reference/08 can state the census of record over the 49 match maps.
+
+Table A-36-1. Owner field over the 49 match maps (records, maps, owner split). "= 57" means that the eight non-match files hold no record of the kind, so the 57-file row of table 2.11-A is also the 49-map row.
+
+| Structure kind | 49 maps | Owner field | Non-match records removed |
+|---|---|---|---|
+| bot objective | 92, 8 maps | not derivable (3 records of unknown owner) | 3 (stress file) |
+| bot objective marker | 330, 15 maps (Siege 240, Launch Race 90) | Launch Race 90: position 0: 32, 1: 32, 2: 22, 3: 4; Siege 240: not derivable (10 records of unknown owner) | 10 (stress file) |
+| bot navigation node | 1,029, 49 maps | not derivable (the 11 records owned by position 1 are not located) | 83 (stress 30, benchmark 13, cut map 35, sandbox 5) |
+| Command Console | 33, 9 maps | no team 30; position 0: 3 | 3, no team (stress file) |
+| volcano vent, Launch Vessel, fuel pump, fuel line, fuel depot, jump pad, grid splitter, Beam Dish, exclusion zone, smoke column, scenery mesh, Breach Charge | = 57 | = 57 | none |
+| turret | 200, 13 maps | no team 200 | 7, no team (stress file) |
+| Barrier Emitter | 677, 14 maps | not derivable (26 records of unknown owner) | 26 (stress file) |
+| Control Zone (all its kinds) | 152, 25 maps | no team 105; position 0: 17, 1: 17, 2: 9, 3: 4 | 24 (benchmark 15 no team; cut map 6 no team and one each at positions 0, 1, 2) |
+| Core Device | 8, 8 maps | position 0: 5, 1: 2, 2: 1 | 1, position 1 (stress file) |
+| grid pylon | 296, 16 maps | not derivable (5 records of unknown owner) | 5 (stress file) |
+| grid terminal | 86, 16 maps | no team 86 | 2, no team (stress file) |
+| Solar Array | 225, 16 maps | not derivable (6 records of unknown owner) | 6 (stress file) |
+| Relay | 261, 21 maps | not derivable (the 11 records owned by position 1 are not located) | 15 (sandbox 11, benchmark 4) |
+| Spawn Node | 258, 32 maps | no team 120; position 0: 48, 1: 48, 2: 28, 3: 14 (A-14) | 28 |
+| Source Node | 32, 32 maps | not derivable (the record owned by position 1 is not located) | 2 (sandbox, benchmark) |
+| Population Limiter | 86, 21 maps | no team 86 | 1, no team (benchmark) |
+| tree | 661, 39 maps | not derivable (the 51 records owned by position 1 are not located) | 94 (benchmark 18, sandbox 2, cut map 15, the three arena files 18, 18, 23) |
+| Transit Gate | 109, 28 maps | no team 10; position 0: 27, 1: 43, 2: 22, 3: 7 | 14 (stress position 0: 5, 1: 2; benchmark 4 no team; cut map one each at positions 0, 1, 2) |
+| wall | 323, 9 maps | no team 323 | 33, no team (stress 30, sandbox 3) |
+
+Other 49-map figures:
+- **Turret types** (R-MAP-111 item 3): gun type 189 and flame type 11, on the 49 maps (ORIG 03 l.898: every flame turret is on a match map, and the stress file's 7 are of the gun type). Barrier Emitter modes: not derivable (the stress file's 26 records).
+- **Camera views** (R-MAP-128): over the 49 match maps `spawn_view_0` is defined in 48 maps, `spawn_view_1` in 48, `spawn_view_2` in 29, `spawn_view_3` in 12 and `default_view` in 5.
+- **Terrain assets** (R-MAP-086): over the 49 match maps the land colour ramps are used by 6 maps (the map default), 10, 8, 5, 5, 4, 3, 3, 1, 1, 1, 1 and 1, and one ramp by no match map. The shore-wave gradients are used by 11 (the map default), 10, 10, 8, 4, 3 and 3, and one gradient by no match map. The sea tiles are used by 24 (the map default), 18, 5 and 2. (Asset consequence for X-AST: one land colour ramp and one shore-wave gradient of the manifest are used only by non-match files.)
+- **Bot structure fields** (table 2.11-B, 57-file column): not derivable for the 83 navigation nodes, 3 objectives and 10 markers of the non-match files, so that column keeps its 57-file scope.
+- **Population Limiters** (R-MAP-109): the upper ends of the stated ranges, 1,169.84 wu and 1,200, are those of the benchmark file's limiter (ORIG 08 l.361). The 49-map maxima are not stated in ORIG, so R-MAP-109 must name its scope.
+
+**Replacements.**
+- `reference/08_maps_and_level_design/rules_and_conventions.md`, R-MAP-110, second sentence: "The records, maps and owner field over the 49 match maps are table 2.11-C, and the per-mode counts are [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A; table 2.11-A covers the 57 reference map files of R-MAP-085, without the records of kinds that only campaign content uses."
+- Same file, new table after table 2.11-A, "Table 2.11-C Owner field of the structure records of the 49 match maps.", with the columns `Structure kind | Records | Maps | Owner field: no team, then per start position`. It has one row per kind of table A-36-1, using the 49-map values above. Where a split is "not derivable", the row reads "not recorded for the match maps alone; see table 2.11-A". Where a row is "= 57", it repeats the table 2.11-A row.
+- Same file, R-MAP-111 item 3: "… turrets, every one with no team, of the gun type on 189 records and the flame type on 11 on the match maps (196 and 11 over the reference map files) …"; the Barrier Emitter mode figures keep "over the reference map files".
+- Same file, R-MAP-128, last sentence: "On the 49 match maps `spawn_view_0` is defined in 48 maps, `spawn_view_1` in 48, `spawn_view_2` in 29, `spawn_view_3` in 12 and `default_view` in 5; over the 57 reference map files the counts are 51, 51, 31, 13 and 7."
+- Same file, R-MAP-086, the counts sentence: "On the 49 match maps the number of maps that use each asset is: land colour ramps 6 (the map default), 10, 8, 5, 5, 4, 3, 3, 1, 1, 1, 1, 1 and 0; shore-wave gradients 11 (the map default), 10, 10, 8, 4, 3, 3 and 0; sea tiles 24 (the map default), 18, 5 and 2. Over the 57 reference map files they are 10, 10, 8, 5, 5, 5, 3, 3, 2, 2, 1, 1, 1 and 1; 17, 11, 10, 8, 4, 3, 3 and 1; and 30, 20, 5 and 2." (The list order follows the manifest's file order as R-MAP-086 does now; the fixer keeps each count with its asset.)
+- Same file, R-MAP-109, the range sentence: "Over the 57 reference map files their radius lies between 272.77 and 1,169.84 wu and their maximum population between 100 and 1,200; the largest of both belongs to a development file."
+- Closes: RA-221, for every figure that ORIG allows to be derived; the rest stays at 57-file scope, as stated.
+
+## A-37 Cliff push and separation push between actors (route RB-004, items 1 and 2)
+
+**Question.** The C-SIM-a report lists two movement constants for reference/12: a cliff push (slope above 1.0, spiral search 0 to 50 wu in 0.2 wu steps) and a separation push between actors (radius 2.0 wu, force 0.1 ÷ distance). reference/02 R-UNIT-041 says that actors never push each other apart and never push themselves away from cliffs. Which holds in the reference?
+
+**Statements.**
+- `reference/02_units/README.md` **R-UNIT-041**: "Actors never push each other apart and never push themselves away from cliffs; no separation step exists (… R-SIM-360)".
+- C-SIM-a report (request to C-SIM-b): the cliff push and the separation push as constants whose rules belong in reference/12 05.
+
+**ORIG evidence.**
+- `21_simulation_and_entity_model.md` l.1287: "`Entity::PushFromCliffs(pos, oldPos)` | slope … > 1.0 → spiral `d = 0..50` step 0.2 … | none in Multiwinia [B:LEGACY]"; l.1288: "`Entity::PushFromEachOther(pos)` | grid neighbours within 2.0 … × 0.1 / |pos − other| … | only `LaserTrooper` [B:LEGACY]; commented out in `Entity::Advance`"; l.1933: "`Entity::PushFromCliffs` (no caller) and `PushFromEachOther` (LaserTrooper only)" are legacy.
+- `02_units_and_entities.md` l.361: both "exist but have no live caller in Multiwinia".
+- The constants table at l.1703–1704 of ORIG 21, the source of C-SIM-a's list, records the literals without their reachability.
+
+**Verdict.** ORIG settles it: **R-UNIT-041 holds**. Both pushes are code with no live caller (the only user of the separation push is a campaign unit), so they are not reference rules, and reference/12 gets no rule or key for them. RB-004 items 1 and 2 are closed with no change. Items 3 to 6 of RB-004 are not ORIG questions and stay with the routing pass.
+
+**Replacements.** None. R-UNIT-041 and R-SIM-360 stand.
+- Closes: RB-004 items 1 and 2.
+
+## A-38 How a turret draws its ports (route RA-145)
+
+**Question.** R-BLDG-046 says that the turret draws its ports in its own way, with status sockets `status_01` to `status_04` on its mount, but no document states that way. What does the reference draw?
+
+**Statements.**
+- `reference/03_buildings_and_world_objects/README.md` **R-BLDG-046**: the base port drawing (a pad mesh below structure detail 3 and a 6 wu status star at the pad's `status` socket, green when occupied, red when empty). "The Spawn Node …, the Solar Array (R-BLDG-183), the Command Console … and the turret, whose mount carries the status sockets `status_01` to `status_04` …, draw their ports in their own way."
+- `reference/03_buildings_and_world_objects/defences_and_props.md`: no turret port-drawing rule.
+
+**ORIG evidence.**
+- `03_buildings_and_world_objects.md` l.372: the base port drawing is overridden by "SpawnPoint, GunTurret, SolarPanel, ControlStation" (and two campaign classes); l.536: the turret base mesh carries "MarkerStatus01–04 (code requests 5; #5 NULL, harmless)"; l.865: "Ports / status markers | 4 / 5 (4 present in the shape)".
+- `25_textures_and_assets.md` l.1355: the turret base mesh's markers are four port markers and four status markers.
+- `24_rendering.md` l.1090: the turret's alpha drawing is "lights, ports"; no line of ORIG states the colours, sizes or pad use of the turret's own port drawing. The nearest analogue, the Solar Array, draws "status lights green/red" at its own status markers (ORIG 03 l.1065).
+
+**Verdict.** ORIG settles only the anchor: the turret draws its port status at the four status sockets of its own mount, not at the pads' status sockets. It does not record the look, so that part is a **design choice** for X-DEC-P4a (the gameplay-gap file, or DEC-959 "renderer values the reference does not record"). Recommendation: the base look of R-BLDG-046 (pad mesh below structure detail 3, a 6 wu `fx.starburst` star, green when the port is occupied and red when empty), with star i drawn at the mount's socket `status_0i` instead of the pad's socket. This is the reading that changes only what ORIG shows the turret changing, and it matches the Solar Array's green and red status lights.
+
+**Replacements.**
+- `reference/03_buildings_and_world_objects/defences_and_props.md`, new rule in the turret presentation section (next free id of the file's block):
+  > **R-BLDG-4NN** (MUST) A turret draws its four ports with the base port look of [README](README.md) R-BLDG-046, the pad below structure detail `ref.bldg.port.pad_detail_limit` and a status star green when the port is occupied and red when it is empty, except that the status star of port i (1 to 4) sits at the turret mount's socket `status_0i` instead of the pad's `status` socket (see DEC-NNN).
+- `reference/03_buildings_and_world_objects/README.md`, R-BLDG-046, the turret clause: "… and the turret, whose mount carries the status sockets `status_01` to `status_04` ([defences and props](defences_and_props.md) R-BLDG-4NN), draw their ports in their own way."
+- Design-choice note for X-DEC-P4a: "Turret port look: the reference anchors the status lights at the mount's four status sockets but records no colours or pad use. Options: A — the base port look re-anchored (default); B — status stars only, without pads. Recommendation: A."
+- Closes: RA-145 (with the DEC id filled in).
+
+## A-39 Width of an actor's stats (R-SIM-145 against R-SIM-707 and DEC-090)
+
+**Question.** R-SIM-145 says actor stats are unsigned 8-bit values; R-SIM-707 and Resolved DEC-090 say floating point. What does the reference store, and which statement belongs in the library?
+
+**Statements.**
+- `reference/12_simulation_model/03_entity_model_and_identity.md` **R-SIM-145**: "Actor stats are unsigned 8-bit values (DEC-241)."
+- `reference/12_simulation_model/07_randomness_and_integrity.md` **R-SIM-707**: "Actor stats are floating-point values, so no stat is truncated to a byte and no speed overflows (DEC-090)."
+- `reference/02_units/README.md` **R-UNIT-011**: stats are floating-point values, speed multipliers apply exactly (DEC-090); R-UNIT-013: the Abductor's speed is the explicit 244.
+- `decisions/verdicts_and_fixes.md` **DEC-090** (Resolved): floating-point stats; option B is the reference behaviour of 8-bit stats.
+
+**ORIG evidence.**
+- `02_units_and_entities.md` l.228–231 and l.484: each entity copies its three stats into "`unsigned char m_stats[3]`"; values are "truncated to integers and limited to 0–255"; speed multipliers applied to the byte truncate; the Abductor's listed speed of 500 becomes 244.
+- l.237: "New-game recommendation: store stats as floats per instance", which DEC-090 applies.
+
+**Verdict.** ORIG settles the reference: it stores **unsigned 8-bit** stats per actor. But ORIG also recommends the fix, and DEC-090 is Resolved, so under the library's rules the documents state the fixed rule: **floating-point stats** (R-SIM-707, R-UNIT-011). R-SIM-145 states the superseded reference behaviour, and its citation of DEC-241 is wrong (DEC-241 is the Open entry on numeric semantics, not on stat width). R-SIM-145 changes.
+
+**Replacements.**
+- `reference/12_simulation_model/03_entity_model_and_identity.md`, R-SIM-145, first sentence: "Actor stats are floating-point values ([randomness and integrity](07_randomness_and_integrity.md) R-SIM-707; DEC-090)." The second and third sentences stay.
+- No change to R-SIM-707, R-UNIT-011 or DEC-090.
+
+## A-40 The Crawler trail texture: 32 × 512 or 160 × 512 (route RB-044)
+
+**Question.** RND-320, AST-029 and the manifest row `sprite.crawler.segment.trail` give a 32 × 512 px column holding 18 shrinking copies of the segment art. C-SIM-c's input gives "160 × 512, 32 copies, glow 128". What does the reference use?
+
+**Statements.**
+- `architecture/components/renderer/entity_and_overlay_renderers.md` **RND-320**: a column `rnd.crawler.trail_column_width` (32 px) by `rnd.crawler.trail_column_height` (512 px), copy i being (32 − ⌊i ÷ 2⌋) px square "while the next copy fits", "that is 18 copies, 504 px in all. The glow strip samples `fx.glow_round`."
+- C-SIM-c input row (via FX-08 §6 item 1): "160 × 512, 32 copies, glow 128".
+
+**ORIG evidence.**
+- `24_rendering.md` l.1176 and `26_animation_and_vfx.md` l.627: the reference builds one runtime atlas, "a 160×512 bitmap cleared black, the left 32-px column filled with 32 successively smaller copies of [the segment sprite] (copy i is `32 − i/2` px square, stacked downward while they fit in 512), and [the round glow texture] blitted 128×128 at (32, 0)".
+- X-ARB replay: with copy sizes 32 − ⌊i ÷ 2⌋, 18 copies fit (504 px); the 19th would end at 534 px. The loop bound is 32, and the fit test stops it at 18.
+- `species_work/asset_origin_map.csv` row 21: `fx.glow_round` recreates the same round glow texture.
+
+**Verdict.** ORIG settles it, and the library is right. The reference's 160 × 512 image is two parts in one atlas: the 32 px trail column (RND-320's texture) and, to its right, the round glow copied at 128 × 128 px. "32 copies" is the loop bound, of which 18 fit. "Glow 128" is the size at which the glow is copied into the atlas, not a required size of `fx.glow_round`. Species keeps the two parts as separate assets, which changes no sampled texel of the trail and only the source resolution of the glow strip. RB-044 is closed with no change. One clarifying sentence may be added to RND-320 so that a later reader does not raise the question again.
+
+**Replacements.**
+- `architecture/components/renderer/entity_and_overlay_renderers.md`, RND-320, append: "The reference builds the column and a 128 × 128 px copy of the round glow side by side in one 160 × 512 px image; Species keeps them as the two assets named here."
+- No change to AST-029 or the manifest.
+- Closes: RB-044.
+
+## A-41 Ownership lights: which clock, and what size (FX-08 §6 item 3)
+
+**Question.** RND-167 and R-BLDG-045 give the same ownership-light values under two key sets, but they count different clocks: RND-167 the command-frame number (R-SIM-531), R-BLDG-045 "the number of the last completed tick". They also describe the quad size differently. Which are the reference values?
+
+**Statements.**
+- `architecture/components/renderer/world_renderers.md` **RND-167**: lights shown in "the command frames whose number n (R-SIM-531) satisfies ⌊(n mod `rnd.structure.light.blink_cycle` (10)) ÷ `rnd.structure.light.blink_frames` (2)⌋ = the team's index"; 10 nested quads of "half-size `rnd.structure.light.max_half_size` (6 wu) × i ÷ 10 for i from 0 to 9". Keys `rnd.structure.light.*` (DEC-958 item 1 cites them).
+- `reference/03_buildings_and_world_objects/README.md` **R-BLDG-045**: shown "on ticks where ⌊(t mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ equals the team slot, with t the number of the last completed tick"; 10 nested quads "up to `ref.bldg.structure.light_size_wu` (6 wu) across".
+
+**ORIG evidence.**
+- `24_rendering.md` l.1083: "shown only when `(m_lastValidSequenceIdFromServer % 10) / 2 == teamId` (or editing) … each team's lights are on for 2 of every 10 server sequence ids … **team id 5 never shows ownership lights** …; 10 nested camera-facing quads of half-size `6·i/10` (i = 0..9)"; `03_buildings_and_world_objects.md` l.371 and l.2473 give the same rule.
+- `22_determinism_and_networking.md` l.101 and l.115: `m_lastValidSequenceIdFromServer` is the latest frame received, against `g_lastProcessedSequenceId`, the last frame processed. The pacing controller (R-SIM-531) runs on the difference between the two.
+
+**Verdict.** ORIG settles both points.
+- (1) The clock is the number of the **latest command frame received** from the host (R-SIM-531's "latest frame received"). It runs ahead of the last completed tick by the pending frames. Neither document says "received": RND-167 is closer, and R-BLDG-045 is wrong.
+- (2) The quads have **half-size 6 wu × i ÷ 10** (i = 0 to 9), so the largest is 10.8 wu across. RND-167 is right, and R-BLDG-045's "up to 6 wu across" is wrong.
+
+The values 10 and 2 agree. On the duplicate keys: the reference value belongs to the reference document under the one-key rule, so the recommendation is that RND-167 and DEC-958 item 1 cite the `ref.bldg.structure.light_*` keys and the four `rnd.structure.light.*` rows are removed. That is a routing choice for the coordinator, not an ORIG question.
+
+**Replacements.**
+- `reference/03_buildings_and_world_objects/README.md`, R-BLDG-045:
+  > **R-BLDG-045** (MUST) When a structure has a team and light sockets, the translucent pass draws at each light `ref.bldg.structure.light_quads` (10) nested additive camera-facing quads of `fx.starburst` in the team colour, quad i (0 to 9) of half-size `ref.bldg.structure.light_size_wu` (6 wu) × i ÷ 10. They are drawn only while ⌊(n mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ equals the team slot, with n the number of the latest command frame the participant has received ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-531), which can run ahead of the last completed tick; with the keys 10 and 2, teams 0 to 4 flash in 2 of every 10 command frames, and team slot 5 never flashes. In the map editor they are always drawn. The Barrier Emitter draws no lights.
+- Same file, tuning rows: `ref.bldg.structure.light_size_wu` note "largest half-size; quad i has 6 × i ÷ 10"; `ref.bldg.structure.light_cycle_ticks` and `ref.bldg.structure.light_ticks_per_team` unit "command frames".
+- `architecture/components/renderer/world_renderers.md`, RND-167, the clock clause: "… only in the command frames whose number n, the latest command frame received (R-SIM-531), satisfies …". If the coordinator takes the key recommendation: RND-167 cites `ref.bldg.structure.light_cycle_ticks`, `ref.bldg.structure.light_ticks_per_team`, `ref.bldg.structure.light_quads` and `ref.bldg.structure.light_size_wu`; the four `rnd.structure.light.*` rows are removed; and DEC-958 item 1 cites the same `ref.bldg` keys.
+- Closes: FX-08 §6 item 3.
+
+## A-42 Spawn Node glow: opacity, timer and start colour (FX-08 §6 item 4)
+
+**Question.** RND-169 and R-BLDG-131 (with R-ECON-025) describe the Spawn Node's glow blobs with different values: opacity (occupied ports ÷ ports, against occupied ÷ 5), timer (from `rnd.structure.spawn.glow_timer_start` (30), against "300 to 0") and start colour (two keys with the same value). Which are the reference values?
+
+**Statements.**
+- `architecture/components/renderer/world_renderers.md` **RND-169** item 4: "alpha = occupied ports ÷ ports, and a colour that moves linearly from `rnd.structure.spawn.glow_start_colour` (100, 100, 100, alpha 200 of 255) to the team colour as the Spawn Node's activation timer runs from `rnd.structure.spawn.glow_timer_start` (30) down to 0".
+- `reference/03_buildings_and_world_objects/economy_and_spawn_objects.md` **R-BLDG-131** and `reference/05_population_flow.md` **R-ECON-025**: opacity "(occupied ports ÷ 5)", colour from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) to the owner's colour "as the activation delay runs from 300 to 0" (R-ECON-025: "as (remaining delay / 300) goes from 1 to 0").
+
+**ORIG evidence.**
+- `03_buildings_and_world_objects.md` l.743 (Spawn Node visuals): "20 / 10 / 3 glow blobs … alpha = occupied/total, colour lerps from (100,100,100,200) to the team colour as `m_activationTimer` goes 30 → 0".
+- The activation delay is 30.0 s, which is 300 ticks under DEC-002 (`ref.econ.spawn_node.activation_ticks`, reference/05); a Spawn Node has 5 ports (`ref.econ.spawn_node.port_count`).
+
+**Verdict.** ORIG settles it, and the values **agree**. "Occupied ÷ total" is "occupied ÷ 5" for a Spawn Node. The timer's 30 is seconds of the activation delay, that is 300 ticks, and the start colour is the same RGBA. RND-169's formulation is the less correct one: its timer key holds a seconds value, which the integer-tick model (DEC-002) does not allow, and its colour key duplicates the reference key. RND-169 therefore changes to cite the reference keys, and its two duplicate keys are removed. R-BLDG-131 and R-ECON-025 stand.
+
+**Replacements.**
+- `architecture/components/renderer/world_renderers.md`, RND-169 item 4:
+  > 4. glow blobs above the structure with `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure detail 1, 2 and 3; [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-131), with alpha = occupied ports ÷ `ref.econ.spawn_node.port_count` (5), and a colour that moves linearly from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) to the team colour as the remaining activation delay runs from `ref.econ.spawn_node.activation_ticks` (300 ticks) down to 0 ([reference/05](../../../reference/05_population_flow.md) R-ECON-025).
+- Same file, tuning table: remove the rows `rnd.structure.spawn.glow_start_colour` and `rnd.structure.spawn.glow_timer_start`, and list the three reference keys among the keys cited.
+- Closes: FX-08 §6 item 4.
+
 ---
 
 ## Summary
@@ -758,5 +962,13 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 | A-32 | RA-219 | bot controller initialisation draws | 2 own draws after the kind's rate draw; the reference total of 4 counts the rate twice | yes | reference/12 07 (R-SIM-626), reference/07 README (R-BOT-009) |
 | A-33 | RA-166 | three Power rules | stays Waiting; sources crate, reinforcement, Comeback Bonus; accumulated on-screen time | yes | reference/04 README (R-CRATE-021, R-CRATE-023, R-CRATE-028, tuning note) |
 | A-34 | RA-200 (b) | commands that boost the selection arrows | both `Select` and `SelectPower` | yes | reference/06 cursor_and_markers.md (R-CTRL-375) |
+| A-35 | RB-204 | camera view name limit | 62 (the declared 63 is read without a terminator) | yes | reference/08 rules_and_conventions.md (tuning note only) |
+| A-36 | RA-221 | census over the 49 match maps | derivable figures given; the rest stay at 57-file scope | yes, partly | reference/08 rules_and_conventions.md (R-MAP-110 and a new table 2.11-C, R-MAP-111 item 3, R-MAP-128, R-MAP-086, R-MAP-109) |
+| A-37 | RB-004 (1, 2) | cliff push and separation push | no live caller; R-UNIT-041 holds | yes | none |
+| A-38 | RA-145 | turret port drawing | anchored at the mount's four status sockets; look not recorded | anchor yes; look **design choice** | defences_and_props.md (new rule), reference/03 README (R-BLDG-046); note for X-DEC-P4a |
+| A-39 | coordinator | actor stat width | 8-bit stats in the reference; Resolved DEC-090 applies floating point, which the documents state | yes (fixed rule) | reference/12 03 (R-SIM-145) |
+| A-40 | RB-044 | Crawler trail texture | the 32 px column of a 160 px atlas whose other part is the glow at 128 px; library right | yes | renderer entity_and_overlay_renderers.md (RND-320, one sentence) |
+| A-41 | FX-08 §6.3 | ownership lights | clock: latest command frame received; quads of half-size 6 × i ÷ 10 | yes | reference/03 README (R-BLDG-045, tuning notes), renderer world_renderers.md (RND-167); key duplication for the coordinator |
+| A-42 | FX-08 §6.4 | Spawn Node glow | values agree; RND-169 cites the reference keys in ticks | yes | renderer world_renderers.md (RND-169 item 4, two rows removed) |
 
-Design choices for X-DEC-P4b: A-19 and A-20 (both item 118) and A-31 (DEC-651). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.
+Design choices for X-DEC-P4b: A-19 and A-20 (both item 118) and A-31 (DEC-651); for X-DEC-P4a: A-38 (turret port look). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.

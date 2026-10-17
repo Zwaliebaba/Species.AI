@@ -197,3 +197,25 @@ Every wave B agent also:
 **Checks:** run `CheckDesign.py design_next` and `species_work/scripts/check_design.py` on the same tree: the gate results must be equal (report both tables); run `SelfTest.py`; run both pattern scans over `Tools/` (the hard scan must print nothing: the denylist must not leak a name).
 
 **Output:** the two folders and `species_work/reports/X-TOOLS.md`.
+
+---
+
+## RES-1 — Residual pass (after wave B)
+
+**Inputs:** `species_work/p4_residuals.md` (the residual list), `species_work/p4_arbitration.md` entries **A-35 to A-42**, and the reports the residual rows cite.
+
+**You own** every file the items below name, except the files of FX-11's package (data schemas, platform layer, build tooling, diagnostics), which another agent is still editing; put any change they need in your report.
+
+**Task:** apply, in clean Species form and the current naming (AGENTS.md, CONVENTIONS §8):
+1. A-36: the 49-map table 2.11-C and the corrected counts in `reference/08_maps_and_level_design/rules_and_conventions.md` (figures ORIG cannot split keep their 57-file scope, said so).
+2. A-38 (RA-145): the settled anchor (the mount's status sockets) in R-BLDG-046; the look of the turret ports becomes a numbered item of a gameplay gap-rule DEC in `decisions/gameplay_gap_rules.md` (next free id or an existing entry for turrets), with R-BLDG-046 citing it.
+3. A-39: R-SIM-145 and its diagram follow DEC-090 (floating-point stats); amend DEC-241 item 2 to say DEC-090 decides the stat representation.
+4. A-41: R-BLDG-045 and RND-167 (ownership lights: the latest command frame received, half-size 6 × i ÷ 10). A-42: RND-169 cites the reference keys.
+5. Residual 23: DEC-959 gains an item for RND-176's defaults (camera-facing orientation, blend, number drawing).
+6. Residuals 22 and 30: register in CONVENTIONS §8 (table 8.12-B or the component tables) the new names that reports FX-08, FX-09 and FX-10 list as unregistered.
+7. Residual 27: R-META-066 as reports/FX-10.md asks.
+8. Residual 32: the ADR-022 and ADR-059 notes reports/FX-09.md §13 and §15 ask for (amendment notes; keep numbers and MADR form).
+9. Close residuals 1 (A-35: 62 stays), 5 (A-37: R-UNIT-041 holds), and 40 (A-40: no change) in your report.
+Do not repoint links to split documents (the coordinator runs `p4_fix_links.py`). Respect sizes: `screen_flow_and_match_setup.md`, `reference/05_population_flow.md` and `asset_pipeline_and_resources.md` are near the limit; split per the wave B rule if an edit needs room.
+
+**Checks and report** as in wave B; report `species_work/reports/RES-1.md`, one line per item.
