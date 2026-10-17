@@ -169,14 +169,13 @@ This file records the engine-baseline rules of the engine components that no oth
 
 ### DEC-963 Animation and VFX reference looks kept as defaults
 - Status: Open
-- Affects: architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-126, VFX-138, VFX-139), architecture/components/animation_and_vfx/README.md (VFX-025), reference/02_units/README.md (R-UNIT-051)
+- Affects: architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX-126, VFX-139), architecture/components/animation_and_vfx/README.md (VFX-025), reference/02_units/README.md (R-UNIT-051)
 - Specified behaviour: The animation and VFX component keeps these reference looks as its defaults:
-  1. **Brood Drifter tails.** One smoothed tail velocity is shared by every Brood Drifter and updated once per drawn Brood Drifter at every effect step, so the tails of all Brood Drifters drag the same way (VFX-138).
-  2. **Large and selected flags.** For a cloth flag larger than `ref.bldg.cloth_flag.damped_size_wu`, or highlighted or selected, the fixed factor `ref.bldg.cloth_flag.damped_factor` (0.7) replaces the per-column relaxation factor instead of scaling it, so such a flag looks stiffer (VFX-139).
-  3. **Damage-flicker cadence.** An object's damage-flicker flag is evaluated once per `vfx.flicker.step`, one `ref.sim.tick_period` (0.1 s) of scaled presentation time (VFX-126); reference/02 R-UNIT-051 describes the flicker as decided in each render frame.
-  The frame-quantised explainer loop is DEC-750, and the saturated bubble colours are DEC-328.
-- Options: A — keep each look; B — correct each: one smoothed velocity per Brood Drifter; scale the per-column factor; evaluate the flicker at every effect step of DEC-960.
-- Recommendation: B for item 1, whose shared state makes one Brood Drifter's tails follow another's motion; A for items 2 and 3, which are part of the reference look. The two documents of item 3 state the cadence of the reference differently, and the one that is wrong is corrected.
+  1. **Large and selected flags.** For a cloth flag larger than `ref.bldg.cloth_flag.damped_size_wu`, or highlighted or selected, the fixed factor `ref.bldg.cloth_flag.damped_factor` (0.7) replaces the per-column relaxation factor instead of scaling it, so such a flag looks stiffer (VFX-139).
+  2. **Damage-flicker cadence.** An object's damage-flicker flag is evaluated once per `vfx.flicker.step`, one `ref.sim.tick_period` (0.1 s) of scaled presentation time (VFX-126); reference/02 R-UNIT-051 describes the flicker as decided in each render frame.
+  The tail velocity that every Brood Drifter shares (VFX-138) is DEC-856 item 4, the frame-quantised explainer loop is DEC-750, and the saturated bubble colours are DEC-328.
+- Options: A — keep each look; B — correct each: scale the per-column factor instead of replacing it; evaluate the flicker at every effect step of DEC-960.
+- Recommendation: A for both, which are part of the reference look. The two documents of item 2 state the cadence of the reference differently; the one that is wrong is corrected, and the decision is then between the two cadences.
 - Decide by: design phase
 
 ### DEC-964 Accessibility limits for camera shake and flashes
@@ -208,7 +207,7 @@ This file records the engine-baseline rules of the engine components that no oth
 - Affects: architecture/components/terrain.md (TER-017, TER-076)
 - Specified behaviour: The terrain component states these defaults where the reference result is not established:
   1. **Axis-parallel rays.** The grid walk of a ray whose x or z component is zero visits only the column or the row it lies in (TER-017).
-  2. **Highest sample of a non-square grid.** `Highest()` bounds both of its loops by the row count (TER-076). This is exact on a square grid, and every tile and every reference terrain is square; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value.
+  2. **Highest sample of a non-square grid.** `Highest()` bounds both of its loops by the row count (TER-076). This is exact on a square grid, and every tile and every reference terrain is square; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value. Whether a map may be non-square at all is DEC-865 item 4; under its option B the case never arises.
 - Options: A — the stated defaults; B — item 1 reproduces the reference's quadrant branch for a zero component once it is established, and item 2 scans columns × rows.
 - Recommendation: A for item 1, which visits exactly the cells that the ray crosses; B for item 2, which only a non-square Species terrain can reach (DEC-247) and whose reference scan gives a wrong highest sample there.
 - Decide by: design phase

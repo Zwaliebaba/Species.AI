@@ -180,12 +180,14 @@ The summary table of all entries is at the end of this file.
 
 **Verdict.** ORIG settles it: the turret rocket expires on the **11th** tick after the tick it was fired in, the same conversion that R-CRATE-431 uses for every rocket life (1.0 s → 11). G04 is right; `ref.bldg.turret.rocket.life_ticks` must be 11. (The creation-tick move, which makes 12 moves possible in the reference, is the general rocket rule of R-CRATE-431 and is not changed here.)
 
+**Related finding (same table, same conversion; found by X-ARB, not raised by a report).** The flame turret's fireball has the same nominal 1.0 s life and the same off-by-one. ORIG evidence: `04_crates_powerups_and_weapons.md` l.1238: "Per tick `life −= dt`; … `radius = 20 × min(1, abs(1 − life))` (grows 2 → 20 as life goes 0.9 → 0)"; l.1243: "Removal | `life ≤ 0` or touching the ground"; l.1485 (resolved open question on these timers): "Tick counts of `x −= 0.1` timers: computed … with IEEE-754 doubles — 1.0 → 11 ticks". X-ARB replay: after 10 subtractions the life is 1.4 × 10⁻¹⁶, still above 0, so the fireball is removed on its 11th tick. Verdict: `ref.bldg.turret.flame.fireball_life_ticks` is 11, not 10. Consequence: R-CRATE-461 derives the radius growth by dividing by this key, which with 11 would no longer give the reference growth of 2 wu per tick reaching 20 wu after 10 ticks; it must state the growth directly. Whether the fireball still damages on its 11th tick (removal before or after the damage pass) is not stated in ORIG and stays as reference/04 now orders it.
+
 **Replacements.**
 - `reference/03_buildings_and_world_objects/defences_and_props.md`, R-BLDG-420 table, rocket turret row, last cell: "from the muzzle towards the point muzzle + barrel front × `ref.bldg.turret.rocket.aim_distance` (500 wu), with a life of `ref.bldg.turret.rocket.life_ticks` (11 ticks: the first tick on which the rocket's age exceeds 1.0 s, as in R-CRATE-431)".
 - Same file, tuning row: `| ref.bldg.turret.rocket.life_ticks | 11 | ticks | nominal 1.0 s; the first tick on which the age exceeds 1.0 s | R-BLDG-420 | DEC-002 |`
-- If any acceptance criterion of defences_and_props.md computes a rocket-turret range or flight from 10 ticks, it changes to 11 (none found by X-ARB with a search for the key).
-
-**Related finding (same table, same conversion; found by X-ARB, not raised by a report).** The flame turret's fireball has the same 1.0 s life and the same off-by-one. `04_crates_powerups_and_weapons.md` l.1238: "Per tick `life −= dt`"; l.1243: "Removal | `life ≤ 0` or touching the ground"; l.1485 (04-U12, resolved): "Tick counts of `x −= 0.1` timers: computed … with IEEE-754 doubles — 1.0 → 11 ticks". After 10 subtractions the life is 1.4 × 10⁻¹⁶, still above 0, so the fireball is removed on its 11th tick (replayed by X-ARB). Replacements in `defences_and_props.md`: R-BLDG-420 table, flame turret row, "with a life of `ref.bldg.turret.flame.fireball_life_ticks` (11 ticks)"; tuning row `| ref.bldg.turret.flame.fireball_life_ticks | 11 | ticks | nominal 1.0 s | R-BLDG-420 | DEC-002 |`. The same key is cited by `reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md` R-CRATE-460 ("10 ticks, 1.0 s" → "11 ticks, nominal 1.0 s") and its summary table row ("10 ticks" → "11 ticks"). R-CRATE-461 divides by the key for the radius growth; with 11 it must instead state the reference growth directly: the radius after k ticks is min(`ref.weapon.fireball.max_radius`, 2 × k) wu (ORIG l.1238: radius = 20 × min(1, |1 − life|) with life = 1.0 − 0.1 k), so the factor of 2 wu per tick needs its own key in reference/04. Because this finding was not raised by a Phase 3 report and touches two owners, X-ARB marks it **verify by the owners (G03b, G04)** rather than as a settled replacement; the ORIG evidence above is complete.
+- No acceptance criterion of defences_and_props.md uses either key (checked).
+- Related finding, same file: R-BLDG-420 table, flame turret row: "with a life of `ref.bldg.turret.flame.fireball_life_ticks` (11 ticks)"; tuning row `| ref.bldg.turret.flame.fireball_life_ticks | 11 | ticks | nominal 1.0 s; removed on the 11th tick | R-BLDG-420 | DEC-002 |`.
+- Related finding, `reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md`: R-CRATE-460 "(10 ticks, 1.0 s)" becomes "(11 ticks, nominal 1.0 s)"; the summary table row of the fireball "10 ticks" becomes "11 ticks"; R-CRATE-461, the radius clause, becomes "its radius becomes min(`ref.weapon.fireball.max_radius` (20 wu), `ref.weapon.fireball.growth_per_tick` × k) after k ticks, growing by 2 wu per tick from 2 to 20 wu", with the new tuning row `| ref.weapon.fireball.growth_per_tick | 2 | wu per tick | the radius reaches 20 wu after 10 ticks | R-CRATE-461 | — |`.
 
 ## A-9 What cancelling a Transport's Power does (item 48, sub-point 3)
 
@@ -229,7 +231,7 @@ The summary table of all entries is at the end of this file.
 - `reference/02_units/strike_team.md`, R-UNIT-338, first sentence: "A Strike team's Power starts with a life of `ref.unit.strike_team.life_ticks` (601 ticks, nominal 60 s)." The rest of the statement stays.
 - Same file, tuning row: `| ref.unit.strike_team.life_ticks | 601 | ticks | nominal 60 s; counts down only while above 0 | R-UNIT-338 | DEC-002, DEC-551 |`
 - Same file, edge case 2: "during the 601-tick life".
-- Same file, AC-ST-01: "… after 601 ticks every Trooper is dead, and after 600 ticks every Trooper is still alive."
+- Same file, AC-ST-01: "… after 601 ticks every Trooper is dead; with no other damage, every Trooper is still alive after 600 ticks."
 
 ## A-11 An airstrike from the bad branch of a Supply crate (item 48, sub-point 5)
 
@@ -515,3 +517,36 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 
 **Replacements.**
 - `reference/08_maps_and_level_design/map_editor_hooks.md`, R-MAP-387, the clause: replace "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they can be read back only through fixed field widths;" by "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they read back as two values only because the power's field is 6 characters wide and its value (0 to 5) leaves leading spaces;". The rest of R-MAP-387 stays.
+
+---
+
+## Summary
+
+| Entry | Item | Topic | Verdict | Settled by ORIG | Documents to change |
+|---|---|---|---|---|---|
+| A-1 | 20 | colour of a co-op group without a colour | white for the group shade request; the DEC-078 grey is the no-team colour (colour id none) | yes | reference/01 README (R-MODE-017, tuning note) |
+| A-2 | 21 | elimination damage | 2 × current health | yes | reference/12 06 (R-SIM-407, tuning unit, AC-SIM-06-14) |
+| A-3 | 25 | Builder orb destination | delivery to the nearest friendly Spawn Node | yes | reference/05 (R-ECON-082, event table, Figures 1 and 3, formula reference, §8), reference/00 glossary row, builder.md §8 title, DEC-085 (rewrite, Resolved) and the decisions index title |
+| A-4 | 29 | door Worker airborne or grounded | airborne: the spawn hook grounds it, the door then clears the flag | yes | reference/05 (R-ECON-043, §2.21 step 2 sentence) |
+| A-5 | 42 | Core Device countdown | 900 on seven maps, 1,200 on one 4-player map | yes | mode_objects.md (R-BLDG-317) |
+| A-6 | 46, 49 | blight-tree differences | G03b right on all three (actual height, first tree in structure order, 101 ticks); R-CRATE-181 already corrected | yes | none |
+| A-7 | 48.1 | Powers that test exclusion zones | G04's list | yes | defences_and_props.md (R-BLDG-464) |
+| A-8 | 48.2 | rocket-turret rocket life | 11 ticks; related finding: the flame-turret fireball life is also 11 | yes | defences_and_props.md (R-BLDG-420 row, tuning rows); for the fireball also weapons_and_projectiles.md (R-CRATE-460, R-CRATE-461 with one new key, summary row) |
+| A-9 | 48.3 | cancelled Transport | destroyed (−1000), except in a tutorial | yes | transport.md (R-UNIT-370, command row, edge case 8, §8 row) |
+| A-10 | 48.4 | Strike team life | 601 ticks | yes | strike_team.md (R-UNIT-338, tuning row, edge case 2, AC-ST-01) |
+| A-11 | 48.5 | bad-branch airstrike | unreachable; removed | yes | hazards_and_projectiles.md (R-UNIT-711 row 3, §1 row, §5 edge case) |
+| A-12 | 52 | bot node and marker recount period | 20 ticks; DEC-064 does not apply | yes | reference/03 README (R-BLDG-003, table 2.7-A two rows) |
+| A-13 | 54 | Transport ferry pickup; Strike team scan | first qualifying node in structure order; running-nearest scan in result order | yes | transport.md (R-UNIT-407 item 2), strike_team.md (R-UNIT-360 first sentence) |
+| A-14 | 61 | Spawn Node census | 258 on 32 of the 49 match maps; owner split 120 / 48 / 48 / 28 / 14 | yes (derived) | economy_and_spawn_objects.md (R-BLDG-132) |
+| A-15 | 62 | maps with special lighting | two Zone Control, one Spawn Control | yes | renderer view_lighting_and_fog.md (RND-229) |
+| A-16 | 77 | guide-grid cell levels | 256 (0 to 255) | yes | reference/08 rules_and_conventions.md (R-MAP-081, tuning row) |
+| A-17 | 98 | left and right on a cycle-mode drop-down | no effect; activation steps the value | yes | reference/09 screen_flow (R-META-044 row 3) |
+| A-18 | 103 | start-view cut once or after resets | once per build of the match world; the reset re-arms it | yes | reference/12 01 (R-SIM-581 steps 2 and 11.3) |
+| A-19 | 118.1 | co-op group list order and size | identical on every reference map; ascending order and at most 2 kept | reference content yes; custom maps **design choice** | reference/01 README (R-MODE-020 sentence); note for X-DEC-P4b |
+| A-20 | 118.2 | Hive ants-inside out of range | reference rule is the run-time replacement; the build error is a Species check | reference rule yes; build check **design choice** | trees_and_crate_structures.md (R-BLDG-633 sentence); note for X-DEC-P4b |
+| A-21 | report G03b | neutral gun turrets per Siege map | 12 to 40 (160 in total) | yes | siege.md (R-MODE-354) |
+| A-22 | 98 | colour-row press saves the settings | stores and saves | yes | reference/09 options (R-META-406 item 7), screen_flow (R-META-081) |
+| A-23 | report G02b | Wisp wobble draws per tick | three `NextSigned(1)` and one `NextUnit(20)` | yes | creatures.md (R-UNIT-596, one tuning key) |
+| A-24 | report C-TER | tile writer separator | values separate through the power field's padding | yes | reference/08 map_editor_hooks.md (R-MAP-387 clause) |
+
+Design choices for X-DEC-P4b: A-19 and A-20 (both item 118). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.

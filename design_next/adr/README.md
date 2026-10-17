@@ -226,7 +226,6 @@ These baseline facts could not be confirmed from a primary source on 2026-10-17.
 - Whether a package that contains the Agility SDK passes Store (MSIX) certification (only a 2021 statement was found). A re-check on 2026-10-17 (https://learn.microsoft.com/windows/msix/package/packaging-uwp-apps#validate-your-app-package) found that the Windows App Certification Kit is deprecated and no longer maintained, and that certification runs automatically when a package is submitted to Partner Center; [ADR-0072](0072-distribution-channels-and-package-formats.md) therefore requires a test submission first.
 - The licence terms of the GameInput redistributable (linked from the package page, not read), and whether the 4.0 package adds a `GameInput::v4` namespace. A Microsoft Learn search on 2026-10-17 (https://learn.microsoft.com/gaming/gdk/docs/features/common/input/overviews/input-versioning) did not settle the namespace question.
 - cmake.org and registry.khronos.org (the same documents were read from the Kitware and Khronos repositories).
-- The WinHTTP behaviours that [ADR-0077](0077-client-http-stack.md) relies on (system and automatic proxy configuration, operating-system certificate validation, disabling automatic logon) were not checked against Microsoft's documentation on 2026-10-17; confirm them before ADR-0077 is accepted.
 
 ## Deferred to the design phase
 
