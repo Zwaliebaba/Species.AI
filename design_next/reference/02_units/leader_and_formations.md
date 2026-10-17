@@ -101,23 +101,23 @@ Table 2.3-A Leader state.
 
 ### 2.5 Orders and formation operations
 
-**R-UNIT-169** (MUST) `SetWaypoint(target)`: the Leader becomes ToWaypoint with the target as its waypoint. In formation mode it clears the formation angle, so the formation turns before it moves, unless the target is its own position. A connected Beam Dish whose entrance lies within `ref.unit.leader.beam_dish_radius` (5 wu) of the target becomes its waypoint teleport.
+**R-UNIT-169** (MUST) `AssignWaypoint(target)`: the Leader becomes ToWaypoint with the target as its waypoint. In formation mode it clears the formation angle, so the formation turns before it moves, unless the target is its own position. A connected Beam Dish whose entrance lies within `ref.unit.leader.beam_dish_radius` (5 wu) of the target becomes its waypoint teleport.
 
 **R-UNIT-170** (MUST) A click is a **formation toggle** exactly when the match is not the first tutorial ([reference/11](../11_tutorial_and_help.md)), the Leader's no-formations flag is clear, no Beam Dish entrance lies within √`ref.unit.leader.toggle_teleport_radius_sq` (√5 wu) of the click, and the click is closer than `ref.unit.leader.formation_toggle_radius` (50 wu) to the Leader.
 
-**R-UNIT-171** (MUST) `SetOrders(target, straight)` acts in this order:
+**R-UNIT-171** (MUST) `AssignOrders(target, straight)` acts in this order:
 
-1. **Formation move.** If the Leader is already in formation mode: for a toggle click it moves one unit length towards the click, otherwise to the click; it runs `SetWaypoint` and `SetFormation` with that point, and the team's selection is cleared.
-2. **Entering formation.** Otherwise, for a toggle click, it runs `SetWaypoint(position + d)` and `SetFormation(position + d)`, with d the unit vector towards the click.
+1. **Formation move.** If the Leader is already in formation mode: for a toggle click it moves one unit length towards the click, otherwise to the click; it runs `AssignWaypoint` and `FormUp` with that point, and the team's selection is cleared.
+2. **Entering formation.** Otherwise, for a toggle click, it runs `AssignWaypoint(position + d)` and `FormUp(position + d)`, with d the unit vector towards the click.
 3. **Waypoint order.** Otherwise its order position becomes the target and its order Waypoint; formation mode is switched off; its order route becomes a new land route from its position to the target, straight when the order says so, highlighted for the local team ([reference/12](../12_simulation_model/05_space_routing_and_physics.md)); a Beam Dish entrance within √5 wu of the target becomes its order structure and the order position becomes that entrance, and otherwise the order position is passed through the obstacle push; it raises `leader.order_waypoint`; and the team's selection is cleared. The Leader itself does not walk on a waypoint order: it stays and redirects the Workers that pass it.
 
-**R-UNIT-172** (MUST) `SetFormation(target)` does nothing in the first tutorial. Otherwise, the first time it is called for the current formation, it clears the order position and turns the Leader to face the target; when the Leader is already in formation mode, the order position becomes the target. It sets the order Follow and the formation flag, and clears the formation angle. For the local team it shows a preview route from the Leader to the target, a local-only route that never enters the simulation (DEC-095), and two muzzle-flash particles of size `ref.unit.leader.preview_flash_size` (40) at each of the formation-size slot positions (presentation); it raises `leader.order_formation`.
+**R-UNIT-172** (MUST) `FormUp(target)` does nothing in the first tutorial. Otherwise, the first time it is called for the current formation, it clears the order position and turns the Leader to face the target; when the Leader is already in formation mode, the order position becomes the target. It sets the order Follow and the formation flag, and clears the formation angle. For the local team it shows a preview route from the Leader to the target, a local-only route that never enters the simulation (DEC-095), and two muzzle-flash particles of size `ref.unit.leader.preview_flash_size` (40) at each of the formation-size slot positions (presentation); it raises `leader.order_formation`.
 
-**R-UNIT-173** (MUST) `CancelOrders()` sets the order None, switches formation mode off and sets the waypoint to the Leader's position.
+**R-UNIT-173** (MUST) `ClearOrders()` sets the order None, switches formation mode off and sets the waypoint to the Leader's position.
 
-**R-UNIT-174** (MUST) `SetFollowMode()` sets the order Follow when the team's Leader research level is above `ref.unit.leader.follow_level` (2); the level is 3 in every match (README R-UNIT-009). Leader mode cycling (`PlayerCommand::NextMode`, `PlayerCommand::PreviousMode`) has no effect in a match ([reference/12](../12_simulation_model/06_teams_and_player_commands.md)).
+**R-UNIT-174** (MUST) `EnterFollowMode()` sets the order Follow when the team's Leader research level is above `ref.unit.leader.follow_level` (2); the level is 3 in every match (README R-UNIT-009). Leader mode cycling (`PlayerCommand::NextMode`, `PlayerCommand::PreviousMode`) has no effect in a match ([reference/12](../12_simulation_model/06_teams_and_player_commands.md)).
 
-**R-UNIT-175** (MUST) The commands reach a Leader as [reference/12](../12_simulation_model/06_teams_and_player_commands.md) states: `PlayerCommand::OrderUnit` with the move-only flag runs `SetWaypoint(position)`, and without it `SetOrders(position, straight)`; `PlayerCommand::ToggleUnit` cancels the orders of a Leader that is in formation mode or holds a waypoint order, and otherwise gives it orders to the point `ref.sim.command.leader_toggle_offset` (1 wu) in front of it, which enters formation, and selects it in the same step (R-SIM-454). The bindings are in [reference/06](../06_controls_camera_and_commands.md).
+**R-UNIT-175** (MUST) The commands reach a Leader as [reference/12](../12_simulation_model/06_teams_and_player_commands.md) states: `PlayerCommand::OrderUnit` with the move-only flag runs `AssignWaypoint(position)`, and without it `AssignOrders(position, straight)`; `PlayerCommand::ToggleUnit` cancels the orders of a Leader that is in formation mode or holds a waypoint order, and otherwise gives it orders to the point `ref.sim.command.leader_toggle_offset` (1 wu) in front of it, which enters formation, and selects it in the same step (R-SIM-454). The bindings are in [reference/06](../06_controls_camera_and_commands.md).
 
 **R-UNIT-176** (MUST) The order state machine of diagram 3-B holds in a match: None becomes PrepareWaypoint on every tick; PrepareWaypoint becomes None when the Leader is no longer the team's selected actor; a far click from PrepareWaypoint, Waypoint or Follow-without-formation gives Waypoint with a new route; a toggle click gives Follow with formation mode; a click while in formation mode moves the formation and keeps Follow; entering a teleport at the waypoint turns Waypoint into None; and cancelling gives None.
 
@@ -127,9 +127,9 @@ Table 2.3-A Leader state.
 
 **R-UNIT-178** (MUST) **Formation upkeep**, each tick while the formation flag is set: every slot's timer is counted down by one tick, and a slot whose timer is at or below 0 is emptied. Then a gap count adds, for every run of consecutive empty slots, the run's length minus 1; if the gap count is above `ref.unit.leader.gap_rule_fraction` (0.5) × the array size, every slot is emptied, and the members re-join on the next tick with new indices.
 
-**R-UNIT-179** (MUST) `RegisterWithFormation(member)` adds one tick to the member's slot timer. A member registers every tick in which it is FollowingLeader or Fighting in the formation, so its timer stays constant while it stays, and a member that stops registering drops out after its timer has run down.
+**R-UNIT-179** (MUST) `RefreshSlot(member)` adds one tick to the member's slot timer. A member registers every tick in which it is FollowingLeader or Fighting in the formation, so its timer stays constant while it stays, and a member that stops registering drops out after its timer has run down.
 
-**R-UNIT-180** (MUST) `GetFormationPosition(member)` returns the position of the member's slot when it holds one. Otherwise, when the formation is not full, it creates a slot for the member in the first empty index, with the timer `ref.unit.leader.slot_timer_ticks` (51 ticks, nominal 5.0 s), and returns its position. When the formation is full it returns the zero vector.
+**R-UNIT-180** (MUST) `SlotPositionFor(member)` returns the position of the member's slot when it holds one. Otherwise, when the formation is not full, it creates a slot for the member in the first empty index, with the timer `ref.unit.leader.slot_timer_ticks` (51 ticks, nominal 5.0 s), and returns its position. When the formation is full it returns the zero vector.
 
 **R-UNIT-181** (MUST) A formation is **full** when its number of occupied slots is at least the team's formation size (R-UNIT-162). In the first tutorial every formation counts as full.
 
@@ -175,10 +175,10 @@ Table 2.6-A Row size by slot-array size (`ref.unit.leader.row_size_table`).
 
 **R-UNIT-188** (MUST) The bot controller of the Leader's team runs the Leader's bot hook ([reference/07](../07_bots.md)) every `ref.unit.leader.bot_think_ticks` (11 ticks, nominal 1 s):
 
-1. **Waypoint order.** The next think is set `ref.unit.leader.bot_waypoint_think_ticks` (101 ticks, nominal 10 s) ahead. The hook finds the bot navigation node nearest to the Leader and the target structure that node leads to for the team; if the chosen node is more than `ref.unit.leader.bot_reorder_distance` (60 wu) from the Leader's current order position, the Leader receives orders (`SetOrders`) to the chosen node's position plus an offset of length `ref.unit.leader.bot_order_offset_base` + `NextUnit(ref.unit.leader.bot_order_offset_spread)` (20 + [0, 20) wu) at angle `NextUnit(2π)`; for a node that targets a Beam Dish, the order point is that Beam Dish's entrance. The hook then ends.
-2. **Otherwise** the hook makes sure the Leader is in formation, by `SetFormation(position + front × ref.unit.leader.bot_formation_ahead)` (50 wu) when it is not. If more than `ref.unit.leader.bot_enemy_count` (10) enemies are within `ref.unit.leader.bot_enemy_range` (270 wu, 3 × 90), the Leader stops (`SetWaypoint(position)`) and its bot target front turns towards the enemies' mean position. If the Leader is walking, the hook ends.
+1. **Waypoint order.** The next think is set `ref.unit.leader.bot_waypoint_think_ticks` (101 ticks, nominal 10 s) ahead. The hook finds the bot navigation node nearest to the Leader and the target structure that node leads to for the team; if the chosen node is more than `ref.unit.leader.bot_reorder_distance` (60 wu) from the Leader's current order position, the Leader receives orders (`AssignOrders`) to the chosen node's position plus an offset of length `ref.unit.leader.bot_order_offset_base` + `NextUnit(ref.unit.leader.bot_order_offset_spread)` (20 + [0, 20) wu) at angle `NextUnit(2π)`; for a node that targets a Beam Dish, the order point is that Beam Dish's entrance. The hook then ends.
+2. **Otherwise** the hook makes sure the Leader is in formation, by `FormUp(position + front × ref.unit.leader.bot_formation_ahead)` (50 wu) when it is not. If more than `ref.unit.leader.bot_enemy_count` (10) enemies are within `ref.unit.leader.bot_enemy_range` (270 wu, 3 × 90), the Leader stops (`AssignWaypoint(position)`) and its bot target front turns towards the enemies' mean position. If the Leader is walking, the hook ends.
 3. With t the nearest bot navigation node: if t is important, the Leader walks to it when it is more than `ref.unit.leader.bot_node_reach` (20 wu) away; if t needs defending, the Leader holds there and faces from t towards the enemy-owned neighbour of t (DEC-087); otherwise it faces towards the first neighbour of t.
-4. If it is not holding and its formation is full, it chooses the nearest walkable navigation node that is enemy-owned, or important and neutral, takes that node's structure by its id (DEC-087) and runs `SetWaypoint` to it.
+4. If it is not holding and its formation is full, it chooses the nearest walkable navigation node that is enemy-owned, or important and neutral, takes that node's structure by its id (DEC-087) and runs `AssignWaypoint` to it.
 
 ### 2.9 Damage and death
 
@@ -210,7 +210,7 @@ Table 2.10-A Leader sound events.
 | `leader.order_none` | the order becomes None | none (silent, DEC-565) |
 | `leader.order_waypoint` | a waypoint order (R-UNIT-171) | `sfx.unit.leader.order_waypoint`, with `sfx.unit.leader.spawn` as a second layer |
 | `leader.order_follow` | the order becomes Follow | none (silent, DEC-565) |
-| `leader.order_formation` | `SetFormation` (R-UNIT-172) | `sfx.unit.leader.order_waypoint`, with `sfx.unit.leader.spawn` as a second layer |
+| `leader.order_formation` | `FormUp` (R-UNIT-172) | `sfx.unit.leader.order_waypoint`, with `sfx.unit.leader.spawn` as a second layer |
 
 ## 3 States and flows
 
@@ -218,8 +218,8 @@ Table 2.10-A Leader sound events.
 stateDiagram-v2
     [*] --> Idle
     Idle --> GivingOrders: order is not None
-    Idle --> ToWaypoint: SetWaypoint
-    GivingOrders --> ToWaypoint: SetWaypoint or formation move
+    Idle --> ToWaypoint: AssignWaypoint
+    GivingOrders --> ToWaypoint: AssignWaypoint or formation move
     GivingOrders --> GivingOrders: faces its order target
     ToWaypoint --> Idle: arrived within 10 wu, or 3 wu in formation mode
 ```
@@ -231,24 +231,24 @@ stateDiagram-v2
     [*] --> None
     None --> PrepareWaypoint: every tick in a match
     PrepareWaypoint --> None: no longer the team's selected actor
-    PrepareWaypoint --> Waypoint: SetOrders with a far click
+    PrepareWaypoint --> Waypoint: AssignOrders with a far click
     PrepareWaypoint --> Follow: toggle click within 50 wu, enters formation
-    Waypoint --> Waypoint: SetOrders with a far click, new route
+    Waypoint --> Waypoint: AssignOrders with a far click, new route
     Waypoint --> Follow: toggle click within 50 wu
-    Waypoint --> None: entered a teleport, or CancelOrders
-    Follow --> Follow: SetOrders moves the formation
-    Follow --> None: CancelOrders
+    Waypoint --> None: entered a teleport, or ClearOrders
+    Follow --> Follow: AssignOrders moves the formation
+    Follow --> None: ClearOrders
 ```
 
 Diagram 3-B The Leader's order state machine (R-UNIT-176), independent of its behaviour state.
 
 ```mermaid
 flowchart TD
-    A[Worker in FollowingLeader or Fighting in a formation] --> B[GetFormationPosition: existing slot, or first empty index with timer 51 ticks]
-    B --> C[RegisterWithFormation: slot timer + 1 tick]
-    D[Leader formation upkeep each tick] --> E[every slot timer - 1 tick; empty a slot at or below 0]
+    A[Worker in FollowingLeader or Fighting in a formation] --> B[SlotPositionFor: existing slot, or first empty index with timer 51 ticks]
+    B --> C[RefreshSlot: slot timer + 1 tick]
+    D[Leader formation upkeep each tick] --> E[every slot timer - 1 tick, empty a slot at or below 0]
     E --> F{sum over runs of empty slots of run length - 1, above half the array size?}
-    F -- yes --> G[empty every slot; members re-join next tick]
+    F -- yes --> G[empty every slot, members re-join next tick]
     F -- no --> H[keep slots]
     B --> I[slot position: row size by array size, ranks 6 wu apart, first rank 12 wu ahead]
 ```
@@ -261,7 +261,7 @@ sequenceDiagram
     participant L as Leader
     participant W as Idle Worker
     P->>L: OrderUnit far from the Leader
-    L->>L: SetOrders: order Waypoint, new route, order marker every 20 ticks
+    L->>L: AssignOrders: order Waypoint, new route, order marker every 20 ticks
     W->>W: task search finds the Leader within 100 wu
     W->>W: copies the order position, route and structure
     W->>W: OnWaypointOrder along the route

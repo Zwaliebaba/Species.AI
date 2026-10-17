@@ -102,7 +102,7 @@ Table 2.4-A Worker behaviour states.
 | OnWaypointOrder | a waypoint order (R-UNIT-111); a Leader signpost or a pending order in the Leader search | R-UNIT-073 | Idle |
 | FollowingLeader | the Leader search, for a Leader in follow mode | R-UNIT-074 | Idle |
 | Fighting | a successful threat search; Sickness insanity | §2.8 | FollowingLeader when its Leader is still valid, otherwise Idle |
-| CarriedByAnt | an ant's capture ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-075 | Idle, death |
+| CarriedByAnt | an ant's capture ([creatures.md](creatures.md)) | R-UNIT-075 | Idle, death |
 | BoardingVessel | a fuel depot or a Launch Vessel calling it to board (Launch Race) | R-UNIT-076 | Idle, removal |
 | AttackingStructure | a Launch Vessel calling it to attack; the Hive and Spitter Plant check of the threat search | R-UNIT-077 | Idle |
 | Burning | being set on fire (R-UNIT-121) | R-UNIT-079 | death only |
@@ -111,7 +111,7 @@ Table 2.4-A Worker behaviour states.
 | Carrying | its carryable structure becoming its team's | R-UNIT-082 | Idle |
 | OpeningCrate | the Supply crate search | R-UNIT-078 | Idle |
 | CaughtInVortex | a dust vortex ([reference/08](../08_maps_and_level_design/README.md)) | R-UNIT-083 | Idle |
-| InAbductionBeam | an Abductor's beam ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-084 | removal, Idle |
+| InAbductionBeam | an Abductor's beam ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-084 | removal, Idle |
 | ClaimingFlag | the flag search (Flag Chain) | R-UNIT-085 | Idle |
 
 **R-UNIT-068** (MUST) **Idle.** The Worker walks towards its waypoint at the Idle speed (R-UNIT-063); the random-position search of R-UNIT-097 sets that waypoint. The Worker leaves Idle only through the task search.
@@ -128,7 +128,7 @@ Table 2.4-A Worker behaviour states.
 
 **R-UNIT-074** (MUST) **FollowingLeader.** The Worker becomes Idle if its Leader no longer exists, is dead or is not in follow mode, or if the Leader is in formation mode, its formation is full and this Worker holds no slot in it. Each tick it counts its follow timer down by one tick; when the timer is at or below 0 it resets it to `ref.unit.worker.follow_retarget_ticks` (51 ticks, nominal 5 s) and tests whether the Leader is walkable from its position: if not, it follows the Leader into the teleport structure the Leader last used, if any (its pending order takes that structure and its waypoint becomes the structure's entrance), and otherwise becomes Idle; if the Leader is walkable, its waypoint becomes the Leader's position plus a random point of a disc of radius `ref.unit.worker.follow_disc_radius` (40 wu; radius, then angle). Then, while the Leader is in formation mode, the Worker registers with the formation and its waypoint becomes its formation position, every tick ([leader_and_formations.md](leader_and_formations.md)); when it arrives there it turns to face along the Leader's front. It follows routes by R-UNIT-110.
 
-**R-UNIT-075** (MUST) **CarriedByAnt.** If the ant no longer exists or is dead, the Worker becomes Idle. Otherwise its position and velocity are those of the ant's carry socket; the ant kills it at the Hive with an unresistable health change, which releases an Essence orb ([creatures_and_hazards.md](creatures_and_hazards.md)).
+**R-UNIT-075** (MUST) **CarriedByAnt.** If the ant no longer exists or is dead, the Worker becomes Idle. Otherwise its position and velocity are those of the ant's carry socket; the ant kills it at the Hive with an unresistable health change, which releases an Essence orb ([creatures.md](creatures.md)).
 
 **R-UNIT-076** (MUST) **BoardingVessel.** The target structure must be a fuel depot that is loading and whose linked Launch Vessel holds fewer passengers than its capacity of 100; otherwise the Worker becomes Idle. The Worker walks to the fuel depot's entrance; on arrival it boards the Launch Vessel, which counts it, and it is removed without an Essence orb ([reference/03](../03_buildings_and_world_objects/mode_objects.md)).
 
@@ -150,7 +150,7 @@ Table 2.4-A Worker behaviour states.
 
 **R-UNIT-085** (MUST) **ClaimingFlag.** The target must be a Flag post that is not the Worker's team's and is not locked; otherwise the Worker becomes Idle. The Worker walks to it and on arrival turns to face it; the Flag post computes its own capture ([reference/01](../01_skirmish_rules_and_modes/flag_chain.md)).
 
-**R-UNIT-086** (MUST) A Worker never enters the launch-watching behaviour in a match: the spectacle in which nearby Workers turn to watch a launching Launch Vessel is inactive (DEC-009).
+**R-UNIT-086** (MUST) A Worker never enters the launch-watching behaviour in a match: the spectacle in which nearby Workers turn to watch a launching Launch Vessel, and the spectacle's shadow on the watching Workers, are inactive (DEC-009).
 
 ### 2.5 Task search
 
@@ -228,7 +228,7 @@ Each waypoint passes through the obstacle push with kill set (R-UNIT-115) and is
 
 - In a formation the Worker fires by the volley rhythm: with i its formation index, n = min(`ref.unit.worker.volley_size_cap` (90), the formation's slot count including gaps) and t the tick count of the match, it fires on a tick where (`ref.unit.worker.volley_divisor` × (t + i)) mod n < `ref.unit.worker.volley_divisor` (4), and with Fury also on a tick where (`ref.unit.worker.volley_divisor_fury` × (t + i)) mod n < `ref.unit.worker.volley_divisor_fury` (16). The rhythm is evaluated exactly in integer arithmetic (DEC-104; DEC-241). A formation of fewer than 4 slots fires on every tick.
 - Outside a formation: with Fury it fires every tick and makes no fire-roll draw; otherwise, with a = `ref.unit.worker.attack_divisor` (10), or `ref.unit.worker.attack_divisor_shield` (7) with a Shield, or `ref.unit.worker.attack_divisor_visitor` (3) for a Visitor faction Worker, divided by the game speed *s*, it fires when a ≥ 1 and `NextUint` mod ⌊a⌋ is 0. At game speed 1 that is about one attempt per second.
-- A shot is a Convert laser bolt when the Worker has a Convert link or is a Visitor faction Worker (R-UNIT-126), and otherwise the base attack (README R-UNIT-052). With Fury the aim point gains (`NextSigned(ref.unit.worker.fury_scatter)`, 0, `NextSigned(ref.unit.worker.fury_scatter)`), each in (−30, 30) wu, and the reload timer is cleared after the shot, so a Worker with Fury fires 10 laser bolts per second.
+- A shot is a Convert shot (R-UNIT-196) when the Worker has a Convert link or is a Visitor faction Worker (R-UNIT-126), and otherwise the base attack (README R-UNIT-052). With Fury the aim point gains (`NextSigned(ref.unit.worker.fury_scatter)`, 0, `NextSigned(ref.unit.worker.fury_scatter)`), each in (−30, 30) wu, and the reload timer is cleared after the shot, so a Worker with Fury fires 10 laser bolts per second.
 - Both shots fire only while the reload timer is 0 (30 ticks after the last shot), so outside Fury a Worker fires about one laser bolt every 4 s.
 
 The divisions by *s* are never evaluated at *s* = 0 and carry an explicit guard (DEC-653).
@@ -393,7 +393,7 @@ Table 2.12-A Worker deaths and removals.
 | abduction | no | removed; the Abductor counts it |
 | conversion by a Convert laser bolt or the Swarm streak | no | its destroyed flag is set, and a new Worker of the converter's team is spawned |
 | conversion by the Visitor faction's pulse wave | no | marked dead and removed |
-| a Reaper Serpent's kill | the orb is created and deleted; a Wisp appears | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| a Reaper Serpent's kill | the orb is created and deleted; a Wisp appears | [creatures.md](creatures.md) |
 
 ### 2.13 Player control
 
@@ -464,6 +464,10 @@ Table 2.15-A Worker sound events.
 | `worker.victory_jump` | the victory celebration hop | `sfx.unit.worker.victory_jump` |
 | `worker.burning` | while Burning, a presentation chance of 1 in `ref.unit.worker.burning_sound_odds` (30) per tick | `sfx.unit.worker.burning` |
 | `worker.lift_relic` | while Carrying a Relic or another carryable structure | `sfx.unit.worker.lift_relic` |
+
+### 2.16 Convert shots
+
+**R-UNIT-196** (MUST) A Convert shot fires a Convert laser bolt at a target point under the reload gate of the base attack (README R-UNIT-052): when the reload timer is 0, the aim point gains (`NextSigned(ref.unit.attack.aim_jitter)`, 0, `NextSigned(ref.unit.attack.aim_jitter)`), x before z; the bolt leaves from the Worker's position + (0, `ref.unit.worker.convert_muzzle_height`, 0) (2 wu up) with velocity towards the aim point scaled to `ref.unit.worker.convert_speed` (75 wu/s), for the Worker's team, and lives `ref.unit.worker.convert_life_factor` (2) × the laser bolt's lifetime, that is 1.2 s at laser level 2, so it reaches about 90 wu; the reload timer becomes the Worker's rate; and `worker.attack` is raised. The bolt converts an enemy Worker it hits instead of damaging it ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); DEC-111 for the derived range).
 
 ## 3 States and flows
 
@@ -564,7 +568,7 @@ flowchart TD
     I -- no --> N2[clear threat, stop threat sounds]
     I -- yes --> J[cached enemy query, filter, nearest to the Worker]
     J -- none --> N2
-    J -- found --> K[Fighting; scared flag; barks; order cancel; range := distance]
+    J -- found --> K[Fighting, scared flag, barks, order cancel, range := distance]
 ```
 
 Diagram 3-C The threat search (R-UNIT-098).
@@ -572,7 +576,7 @@ Diagram 3-C The threat search (R-UNIT-098).
 ```mermaid
 flowchart LR
     H[healthy] -->|infected| S[sick: timer 1-100 ticks, speed x 0.75]
-    S -->|timer expires| E[reset timer 51-100 ticks; spread to neighbours within 30 wu; outcome roll mod 20]
+    S -->|timer expires| E[reset timer 51-100 ticks, spread to neighbours within 30 wu, outcome roll mod 20]
     E -->|0| X[blast and -100]
     E -->|1| Y[-100]
     E -->|2| Z[speed x 0.5]
@@ -616,6 +620,9 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 | `ref.unit.worker.rocket_aim_height` | 10 | wu | | R-UNIT-104 | — |
 | `ref.unit.worker.rocket_insane_jitter` | 4 | wu | NextUnit(4) − 2 on x and on z | R-UNIT-104 | — |
 | `ref.unit.worker.aim_height` | 2 | wu | above the threat | R-UNIT-103 | — |
+| `ref.unit.worker.convert_muzzle_height` | 2 | wu | above the Worker | R-UNIT-196 | — |
+| `ref.unit.worker.convert_speed` | 75 | wu/s | | R-UNIT-196 | DEC-111 |
+| `ref.unit.worker.convert_life_factor` | 2 | × laser bolt lifetime | 1.2 s at laser level 2 | R-UNIT-196 | DEC-111 |
 | `ref.unit.worker.attack_divisor` | 10 | — | ÷ game speed; 1 in ⌊a⌋ per tick | R-UNIT-103 | DEC-653 |
 | `ref.unit.worker.attack_divisor_shield` | 7 | — | with a Shield | R-UNIT-103, R-UNIT-122 | — |
 | `ref.unit.worker.attack_divisor_visitor` | 3 | — | Visitor faction Worker | R-UNIT-103, R-UNIT-132 | — |
@@ -840,7 +847,7 @@ Diagram 3-D Sickness on a Worker (R-UNIT-127 to R-UNIT-130).
 
 ## 7 Dependencies
 
-- **Reference documents:** [README.md](README.md) (stats, damage model, death, slope factors, base attack, colouring); [leader_and_formations.md](leader_and_formations.md) (signposts, formations, formation positions); [transport.md](transport.md) (loading and unloading); [essence_orbs.md](essence_orbs.md); [creatures_and_hazards.md](creatures_and_hazards.md) (ant capture, Abductor, Reaper Serpent, Crawler eggs); [reference/01 flag_chain.md](../01_skirmish_rules_and_modes/flag_chain.md) (Flag posts); [reference/03](../03_buildings_and_world_objects/README.md) (ports, Barrier Emitters, walls, trees, carryable structures, fuel depots, Launch Vessels, Core Device pulse wave, teleports); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (Supply crates, Powers, laser bolts, grenades, rockets, shockwave ring, Sickness outcome, Swarm streak); [reference/05](../05_population_flow.md) (port reservation, Spawn Node doors, Launch Vessel release); [reference/06](../06_controls_camera_and_commands.md) (selection circle and crowd-order bindings); [reference/07](../07_bots.md) (bot census, wall-hit reset, bot orders); [reference/08](../08_maps_and_level_design/README.md) (dust vortex, map options); [reference/10](../10_audio_design.md) (sound events); [reference/11](../11_tutorial_and_help.md) (second tutorial); [reference/12](../12_simulation_model/README.md) (actor grid and cache, routes, walkability, airborne step, commands).
+- **Reference documents:** [README.md](README.md) (stats, damage model, death, slope factors, base attack, colouring); [leader_and_formations.md](leader_and_formations.md) (signposts, formations, formation positions); [transport.md](transport.md) (loading and unloading); [essence_orbs.md](essence_orbs.md); [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md) (ant capture, Abductor, Reaper Serpent, Crawler eggs); [reference/01 flag_chain.md](../01_skirmish_rules_and_modes/flag_chain.md) (Flag posts); [reference/03](../03_buildings_and_world_objects/README.md) (ports, Barrier Emitters, walls, trees, carryable structures, fuel depots, Launch Vessels, Core Device pulse wave, teleports); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (Supply crates, Powers, laser bolts, grenades, rockets, shockwave ring, Sickness outcome, Swarm streak); [reference/05](../05_population_flow.md) (port reservation, Spawn Node doors, Launch Vessel release); [reference/06](../06_controls_camera_and_commands.md) (selection circle and crowd-order bindings); [reference/07](../07_bots.md) (bot census, wall-hit reset, bot orders); [reference/08](../08_maps_and_level_design/README.md) (dust vortex, map options); [reference/10](../10_audio_design.md) (sound events); [reference/11](../11_tutorial_and_help.md) (second tutorial); [reference/12](../12_simulation_model/README.md) (actor grid and cache, routes, walkability, airborne step, commands).
 - **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Worker cards and overlays), [../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md) (particles), [../../architecture/components/audio_engine.md](../../architecture/components/audio_engine.md) (sound events).
 - **ADRs:** ADR-0009 (instanced crowds, sprite cards and shadows), ADR-0020 (team tint).
 - **Assets:** `sprite.worker.front`, `sprite.worker.side`, `sprite.worker.hurt`, `sprite.worker.state_overlay`, `sprite.worker.seasonal_hat`, `sprite.visitor.front`, `mesh.unit.worker_figure`, `fx.glow_round`, `fx.bubble_sphere`, `fx.beam_short`, `icon.power.workers`, `sfx.unit.worker.spawn`, `sfx.unit.worker.attack`, `sfx.unit.worker.attack_b`, `sfx.unit.worker.hurt`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.unit.worker.selected`, `sfx.unit.worker.attack_bark`, `sfx.unit.worker.attack_horn`, `sfx.unit.worker.flee_bark`, `sfx.unit.worker.flee_bark_b`, `sfx.unit.worker.victory_jump`, `sfx.unit.worker.burning`, `sfx.unit.worker.lift_relic`, `sfx.unit.leader.spawn`. The selected-Workers cursor badge and power icon `icon.power.workers` is drawn by [reference/06](../06_controls_camera_and_commands.md).

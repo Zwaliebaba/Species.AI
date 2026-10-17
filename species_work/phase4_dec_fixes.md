@@ -29,3 +29,8 @@
 | 25 | G02a2 | DEC-085 | **contradiction:** G02a2's input says that in a match the Builder delivers its orbs to the nearest friendly Spawn Node; DEC-085, R-ECON-082 and the G00 overview say the orbs reach no destination | verify in ORIG; correct DEC-085, R-ECON-082 and G00 if G02a2 is right |
 | 26 | G02a2 | — | five guessed G02a1 keys (`ref.unit.base.corpse_fade_start`, `ref.unit.base.corpse_fade_ground_ticks`, three `ref.unit.worker.transport_*` keys); seven reference/05 mirror keys now point to G02a2 keys | reconcile with G02a1 and G05 |
 | 27 | G02a2 | — | 10 DEC requests or clarifications; missing assets: a Builder placement sound and a UI unit-toggle sound; `icon.power.rocket` unused here | DEC triage; X-AST pass 2 |
+| 28 | G02a1 vs G02a2 | — | eight stat and slope keys (Builder, Collector, Transport, Trooper) defined in both; values agree; the stat table belongs to G02a1's README | G02a2 cites the README keys; remove its duplicate definitions |
+| 29 | G02a1 vs G05 | — | Workers leave a Spawn Node airborne (G05) or spawn on the ground (G02a1) | decide from ORIG; fix the losing document |
+| 30 | G02a1 vs G00 | — | Worker task search 10–20 ticks (G00) or 11–20 (G02a1, from the source) | fix G00 |
+| 31 | G02a1 | new | Worker rules that divide by game speed under tick scheduling; the fire-damage kill over-count; Trooper per-unit fire rate under floating-point stats; range of the Worker's Hive and Spitter Plant check | four new DECs |
+| 32 | G02b | — | G02b split into `creatures.md` and `hazards_and_projectiles.md` | update the package targets, dec_map affects_files, the manifest consumers and the glossary links |

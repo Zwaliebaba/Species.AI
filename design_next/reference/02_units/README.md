@@ -14,7 +14,8 @@ This folder specifies every mobile actor of a reference match. This README is th
 | [transport.md](transport.md) | the Transport |
 | [collector.md](collector.md) | the Collector |
 | [builder.md](builder.md) | the Builder |
-| [creatures_and_hazards.md](creatures_and_hazards.md) | the airstrike Bombers, the barrage missile, the meteor, the Abductor and every crate-spawned creature |
+| [creatures.md](creatures.md) | the creatures: Seed Pod, Crawler egg, Crawler, Brood Drifter, centipede, ant, spider and Reaper Serpent, with the procedural legs and the Wisp |
+| [hazards_and_projectiles.md](hazards_and_projectiles.md) | the event hazards: the airstrike flights and their Bombers, the barrage missile, the meteor and the Abductor |
 
 ## 1 Purpose and player experience
 
@@ -38,18 +39,18 @@ Table 2.1-A Actor kinds.
 | Transport | `Transport` | [transport.md](transport.md) | the Transport outcome; Transit Gate Transport reinforcements; the map's instant units, granted as a Power | **no** | allowed |
 | Collector | `Collector` | [collector.md](collector.md) | the Collector outcome | **no** | allowed |
 | Builder | `Builder` | [builder.md](builder.md) | the Builder outcome; the map's instant units, granted as a Power | **no** | allowed |
-| Bomber | `Bomber` | [creatures_and_hazards.md](creatures_and_hazards.md) | each airstrike target marker summons one airstrike flight of 2 Bombers (airstrike and Firebomb Run outcomes, including their unopened-crate variants) | **no** | not allowed |
-| barrage missile | `BarrageMissile` | [creatures_and_hazards.md](creatures_and_hazards.md) | the Missile Barrage outcome, which launches 10 barrage missiles | yes in principle; its own advance never checks for death | not allowed |
-| meteor | `MeteorRock` | [creatures_and_hazards.md](creatures_and_hazards.md) | the meteor shower outcome (5 to 9 meteors); bot meteor use | none: removed on impact | not allowed |
-| Abductor | `Abductor` | [creatures_and_hazards.md](creatures_and_hazards.md) | the Abductor outcome of an unopened Supply crate, at most once per match and never in Siege | none: invulnerable | not allowed |
-| Crawler | `Crawler` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Crawler kind (also the fallback for a refused Reaper Serpent); hatching Crawler eggs; the Swarm streak's conversion of Essence orbs | yes | allowed |
-| Crawler egg | `CrawlerEgg` | [creatures_and_hazards.md](creatures_and_hazards.md) | laid by Brood Drifters and spiders; thrown by Seed Pods of the egg kind | **no** | not allowed |
-| Brood Drifter | `BroodDrifter` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Brood Drifter kind | yes | allowed |
-| centipede | `CentipedeCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the centipede kind (one actor group of 5 to 14 segments); growth by eating Essence orbs | yes, one per segment | allowed |
-| spider | `SpiderCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the spider kind; the Swarm streak's conversion of Essence orbs | yes | allowed |
-| ant | `AntCreature` | [creatures_and_hazards.md](creatures_and_hazards.md) | released by a Hive; one wake-up ant from the Hive outcome; Seed Pods of the ant kind | yes | not allowed |
-| Reaper Serpent | `ReaperSerpent` | [creatures_and_hazards.md](creatures_and_hazards.md) | Seed Pods of the Reaper Serpent kind, for the Rogue faction, with at most 2 alive and never in Siege | yes | allowed |
-| Seed Pod | `SeedPod` | [creatures_and_hazards.md](creatures_and_hazards.md) | launched by Spitter Plants; the Brood outcome; nested Seed Pods of the Seed Pod kind | yes | not allowed |
+| Bomber | `Bomber` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | each airstrike target marker summons one airstrike flight of 2 Bombers (airstrike and Firebomb Run outcomes, including their unopened-crate variants) | **no** | not allowed |
+| barrage missile | `BarrageMissile` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the Missile Barrage outcome, which launches 10 barrage missiles | yes in principle; its own advance never checks for death | not allowed |
+| meteor | `MeteorRock` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the meteor shower outcome (5 to 9 meteors); bot meteor use | none: removed on impact | not allowed |
+| Abductor | `Abductor` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the Abductor outcome of an unopened Supply crate, at most once per match and never in Siege | none: invulnerable | not allowed |
+| Crawler | `Crawler` | [creatures.md](creatures.md) | Seed Pods of the Crawler kind (also the fallback for a refused Reaper Serpent); hatching Crawler eggs; the Swarm streak's conversion of Essence orbs | yes | allowed |
+| Crawler egg | `CrawlerEgg` | [creatures.md](creatures.md) | laid by Brood Drifters and spiders; thrown by Seed Pods of the egg kind | **no** | not allowed |
+| Brood Drifter | `BroodDrifter` | [creatures.md](creatures.md) | Seed Pods of the Brood Drifter kind | yes | allowed |
+| centipede | `CentipedeCreature` | [creatures.md](creatures.md) | Seed Pods of the centipede kind (one actor group of 5 to 14 segments); growth by eating Essence orbs | yes, one per segment | allowed |
+| spider | `SpiderCreature` | [creatures.md](creatures.md) | Seed Pods of the spider kind; the Swarm streak's conversion of Essence orbs | yes | allowed |
+| ant | `AntCreature` | [creatures.md](creatures.md) | released by a Hive; one wake-up ant from the Hive outcome; Seed Pods of the ant kind | yes | not allowed |
+| Reaper Serpent | `ReaperSerpent` | [creatures.md](creatures.md) | Seed Pods of the Reaper Serpent kind, for the Rogue faction, with at most 2 alive and never in Siege | yes | allowed |
+| Seed Pod | `SeedPod` | [creatures.md](creatures.md) | launched by Spitter Plants; the Brood outcome; nested Seed Pods of the Seed Pod kind | yes | not allowed |
 | bot controller | `BotController` | [../07_bots.md](../07_bots.md) | one per bot team, including the Rogue and Visitor factions, created when the team is initialised in the match world | none: invulnerable | not allowed |
 
 **R-UNIT-002** (MUST) A map definition may place actors through its instant units only of the kinds marked "allowed" in table 2.1-A. A kind marked "not allowed" is never placed by a map but is still created at run time by the rules listed for it. An instant unit of a kind that a Power delivers (Transport, Builder) may be marked to arrive as a granted Power instead of as an actor. The reference maps place 269 Workers and 7 Transports, the Transports on four Siege maps and granted as Powers, and no instant unit of any other kind ([reference/08](../08_maps_and_level_design/README.md)).
@@ -73,18 +74,18 @@ Table 2.1-A Actor kinds.
 | order trail mark | `OrderTrailMark` | effect | the arrow mark an order marker leaves on the ground | [leader_and_formations.md](leader_and_formations.md) |
 | Strike team | `StrikeTeam` | actor group | the group of Troopers | [strike_team.md](strike_team.md) |
 | trail point | `TrailPoint` | record | breadcrumb of a Strike team | [strike_team.md](strike_team.md) |
-| airstrike flight | `AirstrikeFlight` | actor group | the group of Bombers of one airstrike target marker | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler group | `CrawlerGroup` | actor group | the group of Crawlers drawn together | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler trail sample | `CrawlerTrailSample` | record | one sample of a Crawler's trail | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider gait | `SpiderGait` | record | a gait parameter set of the spider | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| procedural leg, procedural foot | `ProceduralLeg`, `ProceduralFoot` | helpers | the procedural legs of the spider | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Wisp | `Wisp` | effect | the ghost left by a Worker that a Reaper Serpent kills | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| airstrike flight | `AirstrikeFlight` | actor group | the group of Bombers of one airstrike target marker | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| Crawler group | `CrawlerGroup` | actor group | the group of Crawlers drawn together | [creatures.md](creatures.md) |
+| Crawler trail sample | `CrawlerTrailSample` | record | one sample of a Crawler's trail | [creatures.md](creatures.md) |
+| spider gait | `SpiderGait` | record | a gait parameter set of the spider | [creatures.md](creatures.md) |
+| procedural leg, procedural foot | `ProceduralLeg`, `ProceduralFoot` | helpers | the procedural legs of the spider | [creatures.md](creatures.md) |
+| Wisp | `Wisp` | effect | the ghost left by a Worker that a Reaper Serpent kills | [creatures.md](creatures.md) |
 
 ### 2.3 Ticks, timers and game speed
 
 **R-UNIT-005** (MUST) Every unit timer, cooldown, lifetime and per-tick probability is an integer number of ticks or a per-tick value, never a floating-point countdown (DEC-002). The tick period, dt = `ref.sim.tick_period` (0.1 s of game time), is defined in [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md). A unit timer whose nominal length is given in seconds lasts the reference tick count that its owning tuning table states. That count follows the reference conversion of a countdown that loses 0.1 s per tick and ends at or below 0, so several nominal durations last one tick more than ten ticks per second; the conversion vectors are in AC-UNIT-02. In particular, every unit timer that the reference states as "every 1 s" (the Leader's bot timer, the Transport and Trooper retarget timers) fires every 11 ticks.
 
-**R-UNIT-006** (MUST) Game speed is tick scheduling: every tick has the same length and the same arithmetic at every game speed, and game speed changes only how many ticks run per unit of real time (DEC-039, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md)). Every per-tick constant of the units is therefore a per-second rate scheduled in ticks and scales with game speed like every other rule (DEC-092). The unit rules of this kind are: the Seed Pod's gravity, the spider's pounce gravity, the Transport's fall, the Leader's corpse sink, the centipede's and the Reaper Serpent's per-tick retreat rolls, the ant's per-tick bite, the Crawler's per-tick bite, the Abductor's integration and the sick Worker's per-tick stop roll.
+**R-UNIT-006** (MUST) Game speed is tick scheduling: every tick has the same length and the same arithmetic at every game speed, and game speed changes only how many ticks run per unit of real time (DEC-039, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md)). Every per-tick constant of the units is therefore a per-second rate scheduled in ticks and scales with game speed like every other rule (DEC-092). The unit rules of this kind are: the Seed Pod's gravity, the spider's pounce gravity, the Transport's fall, the Leader's corpse sink, the centipede's and the Reaper Serpent's per-tick retreat rolls, the ant's per-tick bite, the Crawler's per-tick bite, the Abductor's integration and the sick Worker's per-tick stop roll. The lightning strike roll and the empty-Hive counter, which are not units, follow the same rule in their own documents.
 
 **R-UNIT-007** (MUST) Two Worker rules read the game speed *s* of the tick clock directly: the burning damage roll and the fire roll outside a formation ([worker.md](worker.md)); the carried-structure lift test of the Worker also scales by *s*. These rules keep the reference formulas. They are never evaluated at *s* = 0, because no world tick runs while the world is held, and each division by *s* carries an explicit guard (DEC-653).
 
@@ -100,7 +101,7 @@ Table 2.1-A Actor kinds.
 | laser | 2 | a laser bolt lives 0.6 s, so a Worker's laser reaches about 90 wu | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | grenade | 2 | the throw force of a grenade is capped at 110 | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | rocket | 2 | a rocket lives 0.75 s | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| airstrike | 2 | each airstrike target marker summons 2 Bombers | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| airstrike | 2 | each airstrike target marker summons 2 Bombers | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | Transport | 3 | none in a match: the turret-round lifetime that this level selects is overridden in a match | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | Leader | 3 | none in a match: Leaders have no mode cycling in a match | [leader_and_formations.md](leader_and_formations.md) |
 | Collector | 3 | a Collector holds 100 Essence orbs | [collector.md](collector.md) |
@@ -122,7 +123,7 @@ Table 2.1-A Actor kinds.
 
 **R-UNIT-015** (MUST) Setting an actor's kind draws its initial reload timer uniformly from [0, rate) from the simulation generator, once per spawn (DEC-652; [reference/12](../12_simulation_model/03_entity_model_and_identity.md)). The reload timer counts down by one tick per tick in the base actor advance and stops at 0; an actor may fire only while it is 0.
 
-**R-UNIT-016** (MUST) Actor speeds are the stat-table values at difficulty level 0. No process-global difficulty level exists, and no unit rule scales a stat by one (DEC-010). Every unit rule that reads a difficulty factor reads the value 0; the Brood Drifter's egg timing is such a rule ([creatures_and_hazards.md](creatures_and_hazards.md)).
+**R-UNIT-016** (MUST) Actor speeds are the stat-table values at difficulty level 0. No process-global difficulty level exists, and no unit rule scales a stat by one (DEC-010). Every unit rule that reads a difficulty factor reads the value 0; the Brood Drifter's egg timing is such a rule ([creatures.md](creatures.md)).
 
 **R-UNIT-017** (MUST) A stat that table 4.1 marks "unused" is read by no rule of that kind. The unit documents state any rule that replaces a stat, for example the Reaper Serpent's fixed speed and the centipede's health scaling by segment size.
 
@@ -158,7 +159,8 @@ Table 2.7-A Where each kind runs the base advance.
 | after its own steps | Transport, Builder, spider, Crawler egg, Collector, Trooper, Crawler, Brood Drifter, Reaper Serpent, Seed Pod, Abductor |
 | never | Bomber, barrage missile, centipede (which runs the dead advance itself for its dead segments), meteor, bot controller |
 
-A kind that never runs the base advance gets no world clamp, no reload countdown, no base water handling and no base route following.
+A kind that never runs the base advance gets no world clamp, no reload countdown, no base water handling and no base route following. The hooks that each kind provides are in §2.17.
+
 
 ### 2.8 Damage model
 
@@ -167,7 +169,7 @@ A kind that never runs the base advance gets no world clamp, no reload countdown
 **R-UNIT-026** (MUST) The amount of a health change is an integer; a fractional damage value is truncated toward zero before it is applied (DEC-241). The base health change ignores the damage kind and runs:
 
 ```
-ChangeHealth(amount, kind = unresistable):          # base rule; kind is ignored here
+ApplyHealthChange(amount, kind = unresistable):     # base rule; kind is ignored here
     if not dead:
         if amount < 0: emit presentation event <kind>.hurt
         if health + amount <= 0:
@@ -218,7 +220,7 @@ Table 2.8-A Resistance and death rules per kind.
 
 **R-UNIT-029** (MUST) A Worker inside a Transport stays registered in the actor grid at the Transport's position: the team advance moves only its grid entry. A Convert laser bolt or a Swarm streak that reaches a Transport's passengers therefore converts them.
 
-**R-UNIT-030** (MUST) Every creature contact attack is a health change of the default unresistable kind, which the Shield does not block: the Crawler's bite (−20 per tick), the ant's bite (−1 per tick) and its kill of a carried Worker at the Hive, the centipede's and the Reaper Serpent's contact attacks and the spider's squash ([creatures_and_hazards.md](creatures_and_hazards.md)).
+**R-UNIT-030** (MUST) Every creature contact attack is a health change of the default unresistable kind, which the Shield does not block: the Crawler's bite (−20 per tick), the ant's bite (−1 per tick) and its kill of a carried Worker at the Hive, the centipede's and the Reaper Serpent's contact attacks and the spider's squash ([creatures.md](creatures.md)).
 
 ### 2.9 Explosions as they affect units
 
@@ -226,7 +228,7 @@ Table 2.8-A Resistance and death rules per kind.
 
 **R-UNIT-032** (MUST) An explosion counts as kills the actors that died in that explosion and whose team differs from the exploding team; it adds the number of Workers among them to the exploding team's kill counter when the exploding team is a real team ([reference/12](../12_simulation_model/06_teams_and_player_commands.md)).
 
-**R-UNIT-033** (MUST) The shockwave ring that every explosion creates ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) damages the actors in its band, except that a Worker in the band instead catches fire with the ring's ignition chance and takes no damage on that tick. The ring knocks an actor back only when the health change returned true, the actor is on the ground, and it is neither a Trooper nor a Leader, so a Worker set on fire by the ring is not pushed.
+**R-UNIT-033** (MUST) The shockwave ring that every explosion creates ([reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)) damages the actors in its band, except that a Worker in the band instead catches fire with the ring's ignition chance and takes no damage on that tick. The ring knocks an actor back only when the health change returned true, the actor is on the ground, and it is neither a Trooper nor a Leader, so a Worker set on fire by the ring is not pushed. The explosion's particles and ring geometry are in §2.18.
 
 ### 2.10 Death, corpse fade and Essence orb release
 
@@ -285,14 +287,14 @@ Table 2.12-A Colouring per kind.
 | Transport | whole hull in team colour × `ref.unit.transport.hull_tint` (0.1) | [transport.md](transport.md) |
 | Collector | whole-model tint; tractor rings in team colour | [collector.md](collector.md) |
 | Builder | whole-model tint; a fixed blue beam | [builder.md](builder.md) |
-| Bomber | no tint: authored grey `ref.unit.bomber.colour` (128, 128, 128) | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| barrage missile | launcher and warhead cards in team colour; the Rogue faction's are white and subtractive | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| ant, centipede, Reaper Serpent | region tint | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider, Seed Pod | whole-model tint | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Brood Drifter | region tint of the body; tails in team colour | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler | body in team colour × health fraction; glow in team colour; the Rogue faction's are white or transparent | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler egg | its card drawn white | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| meteor, Abductor | authored colours; the Abductor's beam rings in team colour | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| Bomber | no tint: authored grey `ref.unit.bomber.colour` (128, 128, 128) | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| barrage missile | launcher and warhead cards in team colour; the Rogue faction's are white and subtractive | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| ant, centipede, Reaper Serpent | region tint | [creatures.md](creatures.md) |
+| spider, Seed Pod | whole-model tint | [creatures.md](creatures.md) |
+| Brood Drifter | region tint of the body; tails in team colour | [creatures.md](creatures.md) |
+| Crawler | body in team colour × health fraction; glow in team colour; the Rogue faction's are white or transparent | [creatures.md](creatures.md) |
+| Crawler egg | its card drawn white | [creatures.md](creatures.md) |
+| meteor, Abductor | authored colours; the Abductor's beam rings in team colour | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 
 Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Brood Drifter tails, Abductor beam rings and Collector beam rings take the team colour as their vertex colour; each document states the Rogue faction's variant.
 
@@ -313,7 +315,7 @@ Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Br
 **R-UNIT-052** (MUST) The base attack of an actor fires a laser bolt at a target point:
 
 ```
-Attack(target):
+FireAtPoint(target):
     if reload > 0: return                                         # no shot
     aim := target + (NextSigned(ref.unit.attack.aim_jitter), 0, NextSigned(ref.unit.attack.aim_jitter))
                                                                    # each component in (-7.5, 7.5)
@@ -328,17 +330,17 @@ The x draw comes before the z draw. The laser bolt's lifetime, damage, hit test 
 
 **R-UNIT-053** (MUST) The weapons that units use are those of table 2.14-A. The weapon parameters belong to [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) and to the unit document named.
 
-Table 2.14-A Weapons used by units.
+Table 2.14-A Weapons used by units. The values are summaries; the owning document's key is authoritative.
 
-| Weapon | Fired by | Damage kind | Hits | Document |
-|---|---|---|---|---|
-| laser bolt (base attack) | Worker | laser | enemies of the shooter only | R-UNIT-052, [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| Trooper laser bolt | Trooper | laser | enemies only | [strike_team.md](strike_team.md) |
-| Convert laser bolt | a Worker under the Convert power, a Visitor faction Worker | none: it converts an enemy Worker | enemies only | [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| grenade | Worker (Worker research above 3), Trooper | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| rocket | Workers of a team with the Rocket Troops upgrade | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| airstrike bomb, firebomb | Bomber | explosive, or fire for the firebomb | every actor in reach | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| contact attacks | Crawler, ant, centipede, Reaper Serpent, spider squash | unresistable | per kind | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| Weapon | Fired by | Damage | Reach or radius | Speed and life | Damage kind | Hits | Document |
+|---|---|---|---|---|---|---|---|
+| laser bolt (base attack) | Worker | 20 + `NextUnit(20)`, that is 20–39, one target; hit when the 2-D point-to-segment distance is below 5 wu and the height difference below 5 wu; knock-back `NextUnit(10)` along the bolt with a vertical component of 7 + `NextUnit(5)` | — | 150 wu/s for 0.6 s, about 90 wu | laser | enemies of the shooter only | R-UNIT-052, [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| Trooper laser bolt | Trooper | as the base laser bolt | — | 200 wu/s for 0.6 s, 120 wu | laser | enemies only | [strike_team.md](strike_team.md) |
+| Convert laser bolt | a Worker under the Convert power, a Visitor faction Worker | none: it converts an enemy Worker | — | 75 wu/s for 1.2 s, about 90 wu | — | enemies only | [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| grenade | Worker (Worker research above 3), Trooper | 50 | explosion range 12.5 wu | throw force 8 × √distance, at most 110; 3 s fuse | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| rocket | Workers of a team with the Rocket Troops upgrade | 25 | explosion range 15 wu | 50 wu/s, × 1.2 per tick (about 179 wu/s at most), 0.75 s | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| airstrike bomb, firebomb | Bomber | 100; the firebomb ignites Workers within 62.5 wu | explosion range 25 wu | 1.5 s fuse | explosive, or fire for the firebomb | every actor in reach | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| contact attacks | Crawler (20 per tick), ant (1 per tick), centipede ((radius − d) × 10), Reaper Serpent ((25 − d) × 50), spider squash (100 × fraction, at most 20) | as stated | contact | — | unresistable | per kind | [creatures.md](creatures.md) |
 
 ### 2.15 Control model
 
@@ -355,9 +357,9 @@ Table 2.15-A Control category per kind.
 | Transport | direct, with task-style orders | move; go to a point and load or unload; toggle loading and unloading; toggle the pending arrival action | [transport.md](transport.md) |
 | Collector | direct move only | a move order, which deselects it; otherwise autonomous | [collector.md](collector.md) |
 | Builder | direct move only | a move order, which deselects it | [builder.md](builder.md) |
-| airstrike, Firebomb Run, Missile Barrage, meteor shower | targeted Power | the player chooses a target point once; the units then act on their own | [creatures_and_hazards.md](creatures_and_hazards.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Brood, Hive, Swarm and Blight Grove outcomes | targeted Power | the player chooses a point; the creatures act on their own (Brood creatures belong to the placing team, DEC-107; Hive ants and Swarm creatures to the Rogue faction) | [creatures_and_hazards.md](creatures_and_hazards.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| creatures, Abductor, Wisp, Essence orb | none | — | [creatures_and_hazards.md](creatures_and_hazards.md), [essence_orbs.md](essence_orbs.md) |
+| airstrike, Firebomb Run, Missile Barrage, meteor shower | targeted Power | the player chooses a target point once; the units then act on their own | [hazards_and_projectiles.md](hazards_and_projectiles.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
+| Brood, Hive, Swarm and Blight Grove outcomes | targeted Power | the player chooses a point; the creatures act on their own (Brood creatures belong to the placing team, DEC-107; Hive ants and Swarm creatures to the Rogue faction) | [creatures.md](creatures.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
+| creatures, Abductor, Wisp, Essence orb | none | — | [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md), [essence_orbs.md](essence_orbs.md) |
 | bot controller | bot player | issues the same unit operations as a player through the bot hooks of special units and through waypoint orders to Workers | [../07_bots.md](../07_bots.md) |
 
 **R-UNIT-055** (MUST) A command acts on the team it names and on that team's selected unit, and its handler first checks that a named actor exists, belongs to the team and is of the required kind; otherwise the command does nothing ([reference/12](../12_simulation_model/06_teams_and_player_commands.md), R-SIM-453; DEC-202).
@@ -367,6 +369,34 @@ Table 2.15-A Control category per kind.
 ### 2.16 Reference values and quirks
 
 **R-UNIT-057** (MUST) The tuning tables of this folder hold the reference values, which are the Species starting baseline (DEC-004). Where a unit document states a rule, that statement is the reference behaviour (DEC-005). A kept quirk is stated as an explicit rule with a named key (DEC-006).
+
+### 2.17 Actor hooks
+
+**R-UNIT-194** (MUST) Each actor kind provides the hooks of table 2.17-A; a kind that does not specify a hook has the default behaviour.
+
+Table 2.17-A Actor hooks.
+
+| Hook | Default | Contract |
+|---|---|---|
+| spawn hook | raises `<source>.spawn`; computes the centre and radius from the mesh | runs once, in the spawn step, after the handle and position are set and before the actor-grid insertion; team-tinted meshes are chosen here |
+| advance | the base actor advance (R-UNIT-024) | requests removal when the actor is to be destroyed |
+| dead advance | the corpse fade (R-UNIT-034) | |
+| airborne step, water step | [reference/12](../12_simulation_model/05_space_routing_and_physics.md) | |
+| bot hook | nothing | run by the team's bot controller for every special unit ([../07_bots.md](../07_bots.md)) |
+| health change | the base rule (R-UNIT-026) | returns whether the hit registered |
+| attack | the base attack (R-UNIT-052) | |
+| set waypoint | nothing | used by base route following |
+| obstacle push, teleport entry | [reference/12](../12_simulation_model/05_space_routing_and_physics.md) | |
+| direct control | nothing | the Strike team's direct-control hook ([strike_team.md](strike_team.md)) |
+| selectable | false | R-UNIT-023 |
+| sound event list | the base events of R-UNIT-047 | each kind adds its own |
+| ray hit | the mesh at transform (front, up, position), or a sphere of `ref.sim.ray.sprite_radius` (5 wu) without a mesh | picking and turret rounds ([reference/12](../12_simulation_model/05_space_routing_and_physics.md)) |
+| camera focus point | position + velocity | the point the camera tracks ([reference/06](../06_controls_camera_and_commands.md)); presentation |
+| render | nothing | presentation only (DEC-007) |
+
+### 2.18 Explosion presentation and the shockwave ring
+
+**R-UNIT-195** (MUST) Every explosion of this folder also creates presentation particles and a shockwave ring as [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) specifies: for an explosion of range R and damage D, about R × D × 0.01 explosion cores plus a presentation-random share of that count, and clamp(R × D × 0.01, 2, 30) debris particles; and a shockwave ring of size R ÷ 20 s, whose active radius is 35 + 40 × (size − remaining life) wu after the life is counted down at the start of each tick, which hits a target whose distance d satisfies |d − r| < 10 with 40 × (remaining life ÷ size) damage, and knocks it back by 25 × that fraction with a vertical component of 3. The ring radii and active ticks for the explosions of units are the vectors of AC-UNIT-14.
 
 ## 3 States and flows
 
@@ -443,10 +473,10 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.builder.speed` | 28 | wu/s | | R-UNIT-011 | — |
 | `ref.unit.builder.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.bomber.health` | 10 | health | | R-UNIT-011 | — |
-| `ref.unit.bomber.speed` | 40 | wu/s | its cruise speed is a multiple of this stat ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-011 | — |
+| `ref.unit.bomber.speed` | 40 | wu/s | its cruise speed is a multiple of this stat ([creatures.md](creatures.md)) | R-UNIT-011 | — |
 | `ref.unit.bomber.rate` | 1 | s | | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.health` | 255 | health | | R-UNIT-011 | — |
-| `ref.unit.barrage_missile.speed` | 100 | wu/s | its flight speed rises from half of this to this ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-011 | — |
+| `ref.unit.barrage_missile.speed` | 100 | wu/s | its flight speed rises from half of this to this ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.meteor.health` | 255 | health | | R-UNIT-011 | — |
 | `ref.unit.meteor.speed` | 350 | wu/s | read directly by the meteor | R-UNIT-013 | DEC-090 |
@@ -457,23 +487,23 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.crawler.health` | 10 | health | | R-UNIT-011 | — |
 | `ref.unit.crawler.speed` | 32 | wu/s | | R-UNIT-011 | — |
 | `ref.unit.crawler.rate` | 0 | s | | R-UNIT-011 | — |
-| `ref.unit.crawler_egg.health` | 10 | health | also the scale of its dormant decay ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-011 | DEC-091 |
+| `ref.unit.crawler_egg.health` | 10 | health | also the scale of its dormant decay ([creatures.md](creatures.md)) | R-UNIT-011 | DEC-091 |
 | `ref.unit.crawler_egg.speed` | 0 | wu/s | | R-UNIT-011 | — |
 | `ref.unit.crawler_egg.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.brood_drifter.health` | 200 | health | | R-UNIT-011 | — |
 | `ref.unit.brood_drifter.speed` | 20 | wu/s | | R-UNIT-011 | — |
 | `ref.unit.brood_drifter.rate` | 10 | s | unused | R-UNIT-017 | — |
-| `ref.unit.centipede.health` | 255 | health | scaled by 2 × segment size, capped at `ref.unit.health_max` ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-011, R-UNIT-017 | — |
+| `ref.unit.centipede.health` | 255 | health | scaled by 2 × segment size, capped at `ref.unit.health_max` ([creatures.md](creatures.md)) | R-UNIT-011, R-UNIT-017 | — |
 | `ref.unit.centipede.speed` | 80 | wu/s | | R-UNIT-011 | — |
 | `ref.unit.centipede.rate` | 1 | s | | R-UNIT-011 | — |
 | `ref.unit.spider.health` | 200 | health | | R-UNIT-011 | — |
-| `ref.unit.spider.speed` | 50 | wu/s | unused: the spider's gait sets its walking speed ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-017 | — |
+| `ref.unit.spider.speed` | 50 | wu/s | unused: the spider's gait sets its walking speed ([creatures.md](creatures.md)) | R-UNIT-017 | — |
 | `ref.unit.spider.rate` | 1 | s | | R-UNIT-011 | — |
 | `ref.unit.ant.health` | 20 | health | | R-UNIT-011 | — |
-| `ref.unit.ant.speed` | 25 | wu/s | scaled per ant by a factor in [0.8, 1.2] ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-011 | — |
+| `ref.unit.ant.speed` | 25 | wu/s | scaled per ant by a factor in [0.8, 1.2] ([creatures.md](creatures.md)) | R-UNIT-011 | — |
 | `ref.unit.ant.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.reaper_serpent.health` | 255 | health | | R-UNIT-011 | — |
-| `ref.unit.reaper_serpent.speed` | 150 | wu/s | unused: replaced by the Reaper Serpent's fixed speed ([creatures_and_hazards.md](creatures_and_hazards.md)) | R-UNIT-017 | — |
+| `ref.unit.reaper_serpent.speed` | 150 | wu/s | unused: replaced by the Reaper Serpent's fixed speed of 130 wu/s ([creatures.md](creatures.md)) | R-UNIT-017 | — |
 | `ref.unit.reaper_serpent.rate` | 1 | s | | R-UNIT-011 | — |
 | `ref.unit.seed_pod.health` | 50 | health | | R-UNIT-011 | — |
 | `ref.unit.seed_pod.speed` | 100 | wu/s | unused | R-UNIT-017 | — |
@@ -527,34 +557,34 @@ This index is informative and defines no tuning key. It lists the named constant
 | Collector: collection range | 75 wu | [collector.md](collector.md), [reference/05](../05_population_flow.md) |
 | Builder: retarget period | 1.0 s (11 ticks) | [builder.md](builder.md) |
 | Builder: search range | 200 wu | [builder.md](builder.md) |
-| ant: search range | 10 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Seed Pod: bounce friction | 0.65 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler egg: dormant life | 120 s | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler: search range | 30 wu to 60 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler: tail length | 175 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler: population limit | 250 per team | [creatures_and_hazards.md](creatures_and_hazards.md), [reference/05](../05_population_flow.md) |
-| Brood Drifter: tails | 4 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Brood Drifter: hover height | 100 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Brood Drifter: egg-laying height | 20 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Brood Drifter: Essence orb search range | 200 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede: search range | 75 wu to 150 wu (each × size) | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede: Essence orb eating range | 10 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede: Essence orbs per new segment | 4 | [creatures_and_hazards.md](creatures_and_hazards.md), [reference/05](../05_population_flow.md) |
-| centipede: maximum size | 20 segments | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: legs | 8 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: foot move threshold, emergency threshold | 5 wu, 12 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: foot damage radius, foot damage strength | 20 wu, 10 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: hover height, turn rate | 3 wu, 0.1 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: normal speed, attack speed | 300, 90 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: highest path height | 100 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: attack search range | 100 wu to 250 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: attack preamble | 5 s | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider: Essence orb search range | 30 wu to 100 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Reaper Serpent: search range | 200 wu to 300 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Reaper Serpent: damage range | 25 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Reaper Serpent: most Essence orbs held | 50 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Abductor: hover height | 500 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Abductor: abduction beam radius | 45 wu | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| ant: search range | 10 wu | [creatures.md](creatures.md) |
+| Seed Pod: bounce friction | 0.65 | [creatures.md](creatures.md) |
+| Crawler egg: dormant life | 120 s | [creatures.md](creatures.md) |
+| Crawler: search range | 30 wu to 60 wu | [creatures.md](creatures.md) |
+| Crawler: tail length | 175 wu | [creatures.md](creatures.md) |
+| Crawler: population limit | 250 per team | [creatures.md](creatures.md), [reference/05](../05_population_flow.md) |
+| Brood Drifter: tails | 4 | [creatures.md](creatures.md) |
+| Brood Drifter: hover height | 100 wu | [creatures.md](creatures.md) |
+| Brood Drifter: egg-laying height | 20 wu | [creatures.md](creatures.md) |
+| Brood Drifter: Essence orb search range | 200 wu | [creatures.md](creatures.md) |
+| centipede: search range | 75 wu to 150 wu (each × size) | [creatures.md](creatures.md) |
+| centipede: Essence orb eating range | 10 wu | [creatures.md](creatures.md) |
+| centipede: Essence orbs per new segment | 4 | [creatures.md](creatures.md), [reference/05](../05_population_flow.md) |
+| centipede: maximum size | 20 segments | [creatures.md](creatures.md) |
+| spider: legs | 8 | [creatures.md](creatures.md) |
+| spider: foot move threshold, emergency threshold | 5 wu, 12 wu | [creatures.md](creatures.md) |
+| spider: foot damage radius, foot damage strength | 20 wu, 10 | [creatures.md](creatures.md) |
+| spider: hover height, turn rate | 3 wu, 0.1 | [creatures.md](creatures.md) |
+| spider: normal speed, attack speed | 300, 90 | [creatures.md](creatures.md) |
+| spider: highest path height | 100 wu | [creatures.md](creatures.md) |
+| spider: attack search range | 100 wu to 250 wu | [creatures.md](creatures.md) |
+| spider: attack preamble | 5 s | [creatures.md](creatures.md) |
+| spider: Essence orb search range | 30 wu to 100 wu | [creatures.md](creatures.md) |
+| Reaper Serpent: search range | 200 wu to 300 wu | [creatures.md](creatures.md) |
+| Reaper Serpent: damage range | 25 wu | [creatures.md](creatures.md) |
+| Reaper Serpent: most Essence orbs held | 50 | [creatures.md](creatures.md) |
+| Abductor: hover height | 500 wu | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| Abductor: abduction beam radius | 45 wu | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | bot navigation node: automatic link range | 600 wu | [../07_bots.md](../07_bots.md) |
 | bounce restitution | 0.85 | [reference/12](../12_simulation_model/05_space_routing_and_physics.md) (`ref.sim.physics.restitution`) |
 | handle limits: teams, groups, group members | 256, 65 536, 65 536 | [reference/12](../12_simulation_model/03_entity_model_and_identity.md) (`ref.sim.handle.*`) |
@@ -567,14 +597,14 @@ This index is informative and defines no tuning key. It lists the named constant
 |---|---|---|---|---|
 | Worker | its threat search: grenades and airstrike target markers within 60 wu (any team; it flees), burning trees, enemies within about 90 wu through the cached enemy query, excluding Crawler eggs, Collectors, Builders and moving Transports | laser bolt of 20–39 damage about every 4 s; grenade or rocket every 12–20 s at targets beyond 75 wu | enemies; a Worker driven insane by Sickness treats every team as an enemy | [worker.md](worker.md) |
 | Trooper | the player's pointer, or the nearest enemy within 0–100 wu every 11 ticks when its Strike team is deselected | laser bolt of 20–39 damage, 6 shots per second per Strike team; grenade every 4 s | enemies | [strike_team.md](strike_team.md) |
-| Bomber | the airstrike target marker's point | one bomb: explosion of range 25 wu and damage 100, or a firebomb | none: the explosion hits every actor | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| barrage missile | the chosen point ± 150 wu | explosion of range 50 wu and damage 100, with its shockwave | none | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| meteor | the chosen point ± 210 wu | explosion of range 50 wu and damage 100, with its shockwave | none | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| ant | its Hive's objectives; Essence orbs and enemies within 10 wu | captures Workers (killed at the Hive); bites other actors for 1 health per tick | enemies; never Collectors | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler | the nearest grounded enemy between 30 wu and 60 wu | 20 health per tick on contact | enemies | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede | the nearest enemy between 75 × size and 150 × size wu | (radius − d) × 10 per tick per segment | enemies | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider | an enemy between 100 wu and 250 wu, at a snapshot of its position | pounce: 100 × fraction within 20 wu, push within 40 wu | enemies | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Reaper Serpent | an enemy between 200 wu and 300 wu while it is at least 50 wu up | (25 − d) × 50 per tick; deletes the victim's Essence orb | enemies | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| Bomber | the airstrike target marker's point | one bomb: explosion of range 25 wu and damage 100, or a firebomb | none: the explosion hits every actor | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| barrage missile | the chosen point ± 150 wu | explosion of range 50 wu and damage 100, with its shockwave | none | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| meteor | the chosen point ± 210 wu | explosion of range 50 wu and damage 100, with its shockwave | none | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| ant | its Hive's objectives; Essence orbs and enemies within 10 wu | captures Workers (killed at the Hive); bites other actors for 1 health per tick | enemies; never Collectors | [creatures.md](creatures.md) |
+| Crawler | the nearest grounded enemy between 30 wu and 60 wu | 20 health per tick on contact | enemies | [creatures.md](creatures.md) |
+| centipede | the nearest enemy between 75 × size and 150 × size wu | (radius − d) × 10 per tick per segment | enemies | [creatures.md](creatures.md) |
+| spider | an enemy between 100 wu and 250 wu, at a snapshot of its position | pounce: 100 × fraction within 20 wu, push within 40 wu | enemies | [creatures.md](creatures.md) |
+| Reaper Serpent | an enemy between 200 wu and 300 wu while it is at least 50 wu up | (25 − d) × 50 per tick; deletes the victim's Essence orb | enemies | [creatures.md](creatures.md) |
 | Leader, Transport, Collector, Builder, Abductor, Brood Drifter, Crawler egg, Seed Pod, Wisp, bot controller | — | no attack | — | — |
 
 ### 5.2 How Workers react to each kind
@@ -606,13 +636,13 @@ This index is informative and defines no tuning key. It lists the named constant
 | Trooper, Transport, Collector, Builder, Bomber, Crawler egg | die without an Essence orb | table 2.8-A |
 | Collector | collects up to 100 floating Essence orbs of any team; each delivered orb becomes one Worker at a friendly Spawn Node, past the population cap and the activation delay | [collector.md](collector.md), [reference/05](../05_population_flow.md) |
 | Builder | the same with 25 Essence orbs, delivered one by one in a train | [builder.md](builder.md) |
-| ant | carries Essence orbs and captured Workers home to its Hive; Rogue faction Hives produce no Essence orbs | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Crawler, Crawler egg | Crawlers ferry Essence orbs into Crawler eggs; one Essence orb becomes 4 Crawlers after 15 s | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Brood Drifter | lays Crawler eggs; a quarter of them come with a newly created Essence orb | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| centipede | eats Essence orbs (chance size ÷ 2 per tick within 10 wu) and grows one segment per 4 | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| spider | lays one Crawler egg 45 wu beyond an Essence orb | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Reaper Serpent | deletes the Essence orb of every victim; a Worker victim leaves a Wisp | [creatures_and_hazards.md](creatures_and_hazards.md) |
-| Abductor | removes abducted Workers without Essence orbs and adds as many Visitor faction Workers, at most 100 | [creatures_and_hazards.md](creatures_and_hazards.md) |
+| ant | carries Essence orbs and captured Workers home to its Hive; Rogue faction Hives produce no Essence orbs | [creatures.md](creatures.md) |
+| Crawler, Crawler egg | Crawlers ferry Essence orbs into Crawler eggs; one Essence orb becomes 4 Crawlers after 15 s | [creatures.md](creatures.md) |
+| Brood Drifter | lays Crawler eggs; a quarter of them come with a newly created Essence orb | [creatures.md](creatures.md) |
+| centipede | eats Essence orbs (chance size ÷ 2 per tick within 10 wu) and grows one segment per 4 | [creatures.md](creatures.md) |
+| spider | lays one Crawler egg 45 wu beyond an Essence orb | [creatures.md](creatures.md) |
+| Reaper Serpent | deletes the Essence orb of every victim; a Worker victim leaves a Wisp | [creatures.md](creatures.md) |
+| Abductor | removes abducted Workers without Essence orbs and adds as many Visitor faction Workers, at most 100 | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 | Swarm streak | deletes Essence orbs, spawning Rogue faction Crawlers (95 %) or spiders (5 %) | [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 
 ### 5.4 Further interactions
@@ -623,6 +653,7 @@ This index is informative and defines no tuning key. It lists the named constant
 - A Builder never fades: it is removed on the tick after its death (R-UNIT-035).
 - A falling corpse sinks through the terrain and still counts in approximate counts until it fades (R-UNIT-036, DEC-313).
 - The bot controller can hold a Worker's attention without ever dying (R-UNIT-056, DEC-311).
+- A ground target close to an explosion's centre (29 wu or less) is never hit by the shockwave ring, only by the explosion itself (R-UNIT-195, AC-UNIT-14).
 
 ## 6 Acceptance criteria
 
@@ -667,23 +698,25 @@ This index is informative and defines no tuning key. It lists the named constant
 
 **AC-UNIT-13 — Trooper rate** (R-UNIT-014). Given a spawned Trooper, then its reload timer is 0 after the spawn step and stays 0 after each shot, while its Strike team reads a rate of 0.5 s.
 
-**AC-UNIT-14 — Explosions caused by units** (R-UNIT-031). With the falloff of DEC-093 and the structure reach of three ranges, these explosions have these reaches (owners: [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) for the grenade and the rocket, [transport.md](transport.md), [creatures_and_hazards.md](creatures_and_hazards.md), [worker.md](worker.md) for the Sickness explosion):
+**AC-UNIT-14 — Explosions caused by units** (R-UNIT-031). With the falloff of DEC-093 and the structure reach of three ranges, these explosions have these reaches (owners: [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) for the grenade and the rocket, [transport.md](transport.md) for the Transport, [hazards_and_projectiles.md](hazards_and_projectiles.md) for the airstrike bomb, the barrage missile and the meteor, [worker.md](worker.md) for the Sickness explosion):
 
-| Explosion | Range r | Damage | Full damage up to | Zero at | Structures within |
-|---|---|---|---|---|---|
-| grenade | 12.5 | 50 | 18.75 | 25 | 37.5 |
-| airstrike bomb | 25 | 100 | 37.5 | 50 | 75 |
-| rocket | 15 | 25 | 22.5 | 30 | 45 |
-| Transport death | 20 | 50 | 30 | 40 | 60 |
-| barrage missile | 50 | 100 | 75 | 100 | 150 |
-| meteor | 50 | 100 | 75 | 100 | 150 |
-| Sickness explosion | 5 | 25 | 7.5 | 10 | 15 |
+| Explosion | Range r | Damage | Full damage up to | Zero at | Structures within | Shockwave ring radii (active ticks) |
+|---|---|---|---|---|---|---|
+| grenade | 12.5 | 50 | 18.75 | 25 | 37.5 | 39 to 59 (6) |
+| airstrike bomb | 25 | 100 | 37.5 | 50 | 75 | 39 to 83 (12) |
+| rocket | 15 | 25 | 22.5 | 30 | 45 | 39 to 63 (7) |
+| Transport death | 20 | 50 | 30 | 40 | 60 | 39 to 75 (10) |
+| barrage missile | 50 | 100 | 75 | 100 | 150 | 39 to 131 (24) |
+| meteor | 50 | 100 | 75 | 100 | 150 | 39 to 131 (24) |
+| Sickness explosion | 5 | 25 | 7.5 | 10 | 15 | 39 to 43 (2) |
+
+The ring grows by 4 wu per tick, so a stationary target at distance d is hit once for every ring radius r with r − 10 < d < r: two or three times inside the ring's reach, once for 29 < d ≤ 33 and once within 4 wu below the last radius, and never at d ≤ 29.
 
 **AC-UNIT-15 — No difficulty scaling** (R-UNIT-016). Given any match, when an actor is spawned, then its speed equals the stat-table value of its kind.
 
 ## 7 Dependencies
 
-- **Reference documents:** [worker.md](worker.md), [leader_and_formations.md](leader_and_formations.md), [essence_orbs.md](essence_orbs.md), [strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md), [creatures_and_hazards.md](creatures_and_hazards.md); [reference/05](../05_population_flow.md) (Essence orb release, population cap); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (weapons, projectiles, Powers, conversions); [reference/06](../06_controls_camera_and_commands.md) (bindings); [reference/07](../07_bots.md) (bot controller, bot hooks); [reference/08](../08_maps_and_level_design/README.md) (instant units); [reference/09](../09_front_end_and_match_flow/README.md) (research settings of the match setup); [reference/10](../10_audio_design.md) (sound events); [reference/12](../12_simulation_model/README.md) (entity model, spawn order, base advance, actor grid, physics, explosions, team colours, commands).
+- **Reference documents:** [worker.md](worker.md), [leader_and_formations.md](leader_and_formations.md), [essence_orbs.md](essence_orbs.md), [strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md), [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md); [reference/05](../05_population_flow.md) (Essence orb release, population cap); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (weapons, projectiles, Powers, conversions); [reference/06](../06_controls_camera_and_commands.md) (bindings); [reference/07](../07_bots.md) (bot controller, bot hooks); [reference/08](../08_maps_and_level_design/README.md) (instant units); [reference/09](../09_front_end_and_match_flow/README.md) (research settings of the match setup); [reference/10](../10_audio_design.md) (sound events); [reference/12](../12_simulation_model/README.md) (entity model, spawn order, base advance, actor grid, physics, explosions, team colours, commands).
 - **Engine components:** [../../architecture/components/data_schemas.md](../../architecture/components/data_schemas.md) (actor stat schema), [../../architecture/components/animation_and_vfx.md](../../architecture/components/animation_and_vfx.md) (particles, shatter effects), [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (unit rendering, shadows, flicker).
 - **ADRs:** ADR-0020 (flat shading and team tint), ADR-0021 (mesh socket schema).
 - **Assets:** `mesh.unit.worker_figure`, `mesh.unit.leader_figure`, `fx.glow_round`, `fx.muzzle_flash`.
