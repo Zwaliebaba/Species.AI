@@ -997,3 +997,57 @@ So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer
 | Incubator interval | 0.2 s MP / max(0.5, 5 − n/10) s SP | `#define` | [C] |
 | Darwinian exit speed | ×10 of (door front + jitter) | literal | [C] |
 
+## [→ 03_buildings_and_world_objects] Consolidated constants table (non-economy)
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Default building radius (no shape) | 13.0 | ctor literal | [C] `Building::Building` |
+| Port push-out radius / step | 5.0 / 2.0 | literal | [C] `SetShapePorts`, `PushFromBuilding` |
+| Port occupant search radius | 5.0 | literal | [C] `EvaluatePorts` |
+| Port counter decay / cap | −4 per tick when empty / 50 | literal | [C] `EvaluatePorts`, `OperatePort` |
+| Darwinian port search range | 100 (`DARWINIAN_SEARCHRANGE_PORTS`) beyond building radius | `#define` | [C] `darwinian.h` |
+| Port reservation limit | 1 (MP) / 20 (SP) approaching per team | literal | [C] `Darwinian::SearchForPorts` |
+| Light flash schedule | team t flashes when `(seq % 10)/2 == t` | literal | [C] `RenderLights` |
+| Destroy() | 3 explosions; Bang(intensity, intensity/4); intensity/4 particles | literal | [C] `Building::Destroy` |
+| Building blast damage falloff | `damage × (1 − d/(3·range))` within 3·range | literal | [C] `Location::Bang` |
+| GunTurret | see GunTurret parameter table | | |
+| RadarDish transport period / speed | `RADARDISH_TRANSPORTPERIOD` 0.1 s / `RADARDISH_TRANSPORTSPEED` 50 u/s | `#define` | [C] `radardish.h` |
+| RadarDish entry distance | 15 | literal | [C] `Entity::EnterTeleports` |
+| RadarDish yaw dead-band / pitch clamp | π/3000 / y ∈ [−0.2, 0.3] | literal | [C] `RadarDish::Advance` |
+| RadarDish beam-loss damage | −500 health | literal | [C] `UpdateEntityInTransit` |
+| Teleport default send period | 1.0 s | ctor literal | [C] `Teleport::Teleport` |
+| JumpPad radius / period | `JUMPPAD_RADIUS` 40 / 0.3 s | `#define` / literal | [C] |
+| Power surge speed | 2 segments/s MP (dt×2), 4 SP | literal | [C] `PowerBuilding::Advance` |
+| SolarPanel surge probability | fraction/20 per tick | literal | [C] |
+| SolarPanel operate thresholds | > 0.6 on, < 0.3 off | literal | [C] |
+| Carryable ownership radius / period | 50 / 1.0 s | literal | [C] |
+| Carryable speed | 16 × (lifters/max) × speedScale × |sin t| | literal | [C] |
+| Carryable vote threshold | > 0.66 × lifters | literal | [C] |
+| Carryable route waypoint reach | 10 | literal | [C] |
+| ControlTower ownership step | ±0.1 per Reprogram call, range 0–100 | literal | [C] |
+| ControlTower trunk-port check | 2.0 s | literal | [C] |
+| ControlTower radius | 4.0 | literal | [C] |
+| Portal | +1 radius/tick to 100; 6 × 12 tentacles; 45 s thrash; 10 s build-up; Bang(200, 255); 1 s cooldown; burn patch 2 × radius | literal / `NUM_TENTACLES` 6 | [C] |
+| Incubator | `INCUBATOR_PROCESSTIME` 5.0, `INCUBATOR_PROCESSTIME_MULTIPLAYER` 0.2 | `#define` | [C] |
+| ConstructionYard | `YARD_NUMPRIMITIVES` 9, `YARD_NUMRUNGSPIKES` 6, > 50 surges, 30 s build, max 5 armour | `#define` / literal | [C] |
+| SolarPanel markers | `SOLARPANEL_NUMGLOWS` 4, `SOLARPANEL_NUMSTATUSMARKERS` 5 | `#define` | [C] |
+| SpiritReceiver markers | `SPIRITRECEIVER_NUMSTATUSMARKERS` 5 | `#define` | [C] |
+| DisplayScreen rays | `DISPLAYSCREEN_NUMRAYS` 3 | `#define` | [C] |
+| ReceiverBuilding spirit speed | 0.8 link/s | literal | [C] |
+| SpiritProcessor | 150 initial spirits, +1 per 0.2 s, throughput window 10 s ×7, online > 50 | literal | [C] |
+| Generator | throughput EMA 0.8/0.2 per 1 s, online > 6.5 | literal | [C] |
+
+## [→ 22_determinism_and_sync] Determinism notes for X3 (this partition)
+
+1. **RNG streams.** All gameplay randomness in these files uses the synced Mersenne-Twister (`syncrand/syncfrand/syncsfrand` and the upper-case `FRAND/SFRAND` wrappers, which are synced). Unsynced RNG (`sfrand`, `frand`, `AppRandom`, CRT `rand`) appears only in cosmetic paths: ControlTower reprogram sparks (`sfrand`, inside `Advance`), Incubator spawn flashes (`AppRandom`, `sfrand`, `frand`, inside `SpawnEntity`), Portal fire particles (`rand`, `frand`, in `RenderAlphas`), TurretShell building-hit particles (`sfrand/frand`, weapons). Any port must keep cosmetic randomness on a separate stream. [C].
+2. **Synced RNG spent on visuals** (must stay lock-step on every peer or be moved to a cosmetic stream in a re-design): GunTurret shell-casing ejection (`SFRAND(0.5)`×3 + `syncfrand(20)` per shot) and overheat smoke (`syncfrand` per particle), SolarPanel's per-tick `syncfrand(20)` (gameplay, but drawn every tick even when unmanned), RadarDish beam-loss kick. [C].
+3. **RNG consumed at construction**: `SpawnPoint` ctor draws 2 (`m_evaluateTimer`, `m_spawnTimer`), `SpawnPopulationLock` ctor 1, `UnprocessedSpirit` ctor 4, `GunTurret::Initialise` 3 (`SearchForRandomPos`). Level-file *templates* are constructed too (`CreateBuilding(char*)`), so level parsing order and content must be identical on all peers. [C] ctors; `LevelFile::ParseBuildings`.
+4. **Order-dependent decisions**: port occupant = first matching Darwinian in entity-grid order; ownership ties resolve to the lowest team index (SpawnPoint, GunTurret, SolarPanel); `Darwinian::SearchForPorts` consumes a `syncrand()` that is then overridden by the nearest-building loop; SpawnPopulationLock association = first lock in building-list order; RadarDish receiver = nearest by float distance; buildings advance in slice/index order after teams and weapons of the same slice. Re-implementations must reproduce iteration orders exactly or redesign the rules to be order-free. [C].
+5. **Float time accumulation**: timers are decremented by dt = 0.1 (not exactly representable), e.g. a 10.0-s pause takes 101 ticks, a 0.2-s burst interval exactly 2 ticks, rocket reload 1.5 s → 15 or 16 ticks. A new engine should use integer tick counters with the same tick counts if bit-compatibility matters. [C]+[I] (computed).
+6. **Math library**: gameplay uses `iv_sin/iv_cos/iv_acos/iv_sqrt` (low-nibble-truncated wrappers, see build_matrix §3) — turret aim angle (`iv_acos`, fire cone 0.3 rad), radar yaw speed (`iv_sqrt`), carryable heave (`iv_sin(networkTime)`), turret target wobble. RadarDish also uses single-precision `fabsf/signf` in `Advance` (precision loss but deterministic for one binary). `GunTurret::Render` uses `acosf` (render only). [C].
+7. **Time bases mixed in simulation**: `GetNetworkTime()` (carryable recount/heave, SpawnPopulationLock overpopulation sampling, turret wobble, Generator) and `g_gameTimer.GetGameTime()` (turret keep-firing window, overheat). [U] whether both are the same synced clock — resolve in the game-timer document.
+8. **Static state surviving between matches**: `MasterSpawnPoint::s_masterSpawnPointId`; `SpawnPoint::s_numSpawnPoints[6]` (team 5 slot not reset in `Location::Init`); `Teleport::m_teleportMap` (pruned only when units vanish); `ReceiverBuilding::GetSpiritProcessor` cached id; ControlTower render statics. Reset all per-match state explicitly in a re-implementation. [C].
+9. **Shared scratch buffer**: `Building::s_neighbours` is one static vector used by every building's grid queries; the `#pragma omp parallel for` in `Location::Advance` is inert because OpenMP is disabled (`OpenMP="false"` in ReleaseDirect3D, unset in the other configs) — enabling it would race on this buffer and on RNG. [C] `location.cpp:Location::Advance`, `targets/vs2005/Darwinia.vcproj`.
+10. **Sync logging**: `Building::LogState` (hash of pos/vel/front/centre/radius) is written before/after each building advance under `TRACK_SYNC_RAND` ([B:DEBUG] only). [C] `Location::AdvanceBuildings`.
+11. **Spawn-link pointer sharing** (multi-path graphs) would double-advance a spirit deterministically; shipped graphs are trees. [C]/[I].
+

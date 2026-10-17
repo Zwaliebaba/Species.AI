@@ -791,13 +791,12 @@ The renderer-facing specification of particles (billboard construction, two blen
 | `docs/OpenGLState.txt` | fog start 800, end 2000 | start `fogEnd/3`, end `max(4000, worldSize+1000)` | `Location::SetupFog` |
 | `docs/OpenGLState.txt` | lights from `g_app->m_world->m_lights` (ambient/diffuse/position/specular per light) | `Location::m_lights` direction + colour, ambient forced black, LIGHT1 zeroed first, only 2 lights used | `Location::SetupLights` |
 | `docs/OpenGLState.txt` | mag/min filter undefined | every textured pass sets its filters explicitly; upload default LINEAR / LINEAR_MIPMAP_LINEAR | passes in 24.2 |
-| `docs/OpenGLState.txt` | (no alpha-test ref, no shade model change) | alpha ref 0.01 restored by passes; shade FLAT asserted | `Renderer::SetOpenGLState` |
 | `docs/HardwareComplianceIssues.txt` | ARB multitexture unsupported on a Linux test machine | flat water requires `gglActiveTextureARB` multitexture with no fallback in the paths read | `code/water.cpp:Water::RenderFlatWater` (P11/P13) |
 | comment `render_utils.h` | split quads needed for Radeon fog artefacts | functions have no callers | `code/lib/render_utils.cpp` |
 | comment in `ApplyPixelEffect` | pass 4 "Additive smooth" | uses NEAREST (blocky) | `Renderer::ApplyPixelEffect` |
 | method name `ApplyDilateFilter` | dilate | 8-neighbour mean (box blur without centre) | `code/lib/bitmap.cpp` |
 | comment `ParticleType::m_spin` | spin rad/s; fade-in/out times | never read | `code/particle_system.cpp` |
-| comment `deform.h` | `AddPunch(pos, range)` "creates punch effect" scaled by range | `m_range` forced to 1 | `DeformEffect::AddPunch` |
+| signature `deform.h` | `AddPunch(Vector3 pos, float range)` takes a range | the `range` argument is ignored (`m_range = 1`) | `DeformEffect::AddPunch` |
 
 ## IP register
 | Item | Kind | Where (ref) | Neutral placeholder |

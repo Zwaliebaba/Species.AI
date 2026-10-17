@@ -225,7 +225,7 @@ stateDiagram-v2
 | Tumble | `m_up` rotated about `(up × vel)` by `m_force² × 30 × dt`; self-rights when `up.y < 0.3` and `m_force < 0.4` | [C] `TriffidEgg::Advance` |
 | Damage | **immune to `DamageTypeLaser`**; otherwise generic death (spirit) + shape explosion | [C] `TriffidEgg::ChangeHealth` |
 | Burst | at `now > m_timerSync`: shape explosion, `Spawn()`, sound `"BurstOpen"`, egg removed | [C] `TriffidEgg::Advance` |
-| Visual | `triffidegg.shp` (team-coloured, `SetShape(..., true)`), pulsating size `m_size + |sin 2t|×(1-age)×0.4`, shadow `size×10` | [C] `TriffidEgg::Render` |
+| Visual | `triffidegg.shp` (team-coloured, `SetShape(..., true)`), pulsating size `m_size + abs(sin 2t)×(1-age)×0.4`, shadow `size×10` | [C] `TriffidEgg::Render` |
 
 ```mermaid
 stateDiagram-v2
@@ -442,7 +442,7 @@ Large walker with 8 procedurally animated legs that pounces on enemies and lays 
 | Pounce trigger distance | ≤ 150 m from pounce target (and facing) | [C] `Spider::AdvanceAttack` |
 | Pounce launch | `vel = normalise(dir with y = 0.5) × 24 × sqrt(distance)` | [C] |
 | Pounce gravity | `vel.y -= 40` **per tick** | [C] `Spider::AdvancePouncing` |
-| Landing squash | enemies within 40 m: `fraction = (40 − d)/40 × (1 + syncfrand(0.3))`; those within **20 m** take `100 × fraction` damage; all are pushed (`front` with y = 5×|front|, length `min(30×fraction, 20)`) and made airborne | [C] `Spider::AdvancePouncing` |
+| Landing squash | enemies within 40 m: `fraction = (40 − d)/40 × (1 + syncfrand(0.3))`; those within **20 m** take `100 × fraction` damage; all are pushed (`front` with y = 5×length(front), length `min(30×fraction, 20)`) and made airborne | [C] `Spider::AdvancePouncing` |
 | Retarget | 5 s idle/egg-laying; 3 s set at pounce; 6 s after landing | [C] |
 | Spider–spider avoidance | if another spider within 22 m of `pos + vel`, retarget 40 m along the summed escape vector (uses `syncrand()%numFound`, bug: picks a random neighbour, not the spider found) | [C] `Spider::DetectCollisions` |
 | `NORMAL_SPEED` 300, `ATTACK_SPEED` 90, `FOOT_MOVE_THRESHOLD` 5, `FOOT_EMERGENCY_THRESHOLD` 12, `FOOT_DAMAGE_RADIUS` 20, `FOOT_DAMAGE_STRENGTH` 10, `ATTACK_PREAMBLE` 5 | `NORMAL_SPEED`, `ATTACK_SPEED`, `ATTACK_PREAMBLE` unused; foot thresholds drive the gait; `StompFoot` (foot damage) is never called | [C] `code/worldobject/spider.cpp` defines, `Spider::UpdateLegs` (call commented out) |
@@ -603,7 +603,7 @@ Snow is additionally forced on every map when **Christmas mode** is active (`Loc
 | Lifetime | none until the first strike; each strike sets `m_life = 1.2` s; removed when it counts down to 0 | [C] |
 | Strike effect | **sets on fire (`Darwinian::SetFire`) every Darwinian within 30 m** (any team); every **Tree** in the obstruction cell under the strike takes `Damage(-100)` (catches fire) | [C] `Lightning::Advance` |
 | FX | 5 `TypeExplosionDebris` (150–250) + 10 `TypeFire` (160–280) particles at ground (unsynced sizes/velocities) | [C] |
-| Render | idle: pulsing 200 m `textures/glow.bmp` cloud glow (alpha `|sin 2t|`); striking: 3 stacked bolt quads `textures/lightning.bmp` from the cloud to the ground, width 30 ×1.2 per layer, alpha halving | [C] `Lightning::Render` |
+| Render | idle: pulsing 200 m `textures/glow.bmp` cloud glow (alpha `abs(sin 2t)`); striking: 3 stacked bolt quads `textures/lightning.bmp` from the cloud to the ground, width 30 ×1.2 per layer, alpha halving | [C] `Lightning::Render` |
 No sound event is triggered by Lightning code. [C] (no `m_soundSystem` call in `code/worldobject/lightning.cpp`).
 
 ### Snow (`EffectSnow`) — purely ambient
@@ -731,7 +731,7 @@ A small (0.2-scale `spaceship.shp`) transport that flies from the map corner nea
 
 | Item | Value | Ref |
 |---|---|---|
-| Entry | the corner `(100|X−100, 500, 100|Z−100)` nearest the target | [C] `Task::TargetDropShip` |
+| Entry | the corner (x ∈ {100, X−100}, y = 500, z ∈ {100, Z−100}) nearest the target | [C] `Task::TargetDropShip` |
 | `DROPSHIP_HOVERHEIGHT` | 250 m above target terrain | [C] `code/worldobject/dropship.cpp` |
 | `DROPSHIP_ABDUCTIONBEAM_RADIUS` | 20 m (beam render only) | [C] |
 | Passengers | 20 Darwinians, 1 per tick, team = ship team | [C] `DropShip::DropShip`, `DropShip::Advance` |
@@ -749,7 +749,7 @@ States: `DropShipStateArriving` → (arrived) `Dropping` → `Leaving` → remov
 |---|---|---|
 | Stats | health 155, speed 20, rate 1 | [C] `data/stats.txt` |
 | Legs | 3 `EntityLeg`s (`tripod_leg_part.shp`, markers `MarkerLeg0`–`2`), `LEG_LIFT` 3.0, `IDEAL_LEG_SLOPE` 0.2, `LEG_SWING_DURATION` 0.5 s, `LOOK_AHEAD_COEF` 1.2, `FOOT_MOVE_THRESHOLD` 1.0; a foot moves only when all three are planted | [C] `code/worldobject/tripod.cpp` defines, `Tripod::Begin`, `Tripod::CalcWhichFootToMove` |
-| Hover heights | start 27; `STATIONARY_HOVER_HEIGHT` 30 − 0.2 × |speed| (`HOVER_LOWER_WITH_SPEED_FACTOR`); `ATTACK_HOVER_HEIGHT` 18; body y blends to terrain + hover at `dt` per tick | [C] `Tripod::AdvanceWalk`, `Tripod::Advance` |
+| Hover heights | start 27; `STATIONARY_HOVER_HEIGHT` 30 − 0.2 × abs(speed) (`HOVER_LOWER_WITH_SPEED_FACTOR`); `ATTACK_HOVER_HEIGHT` 18; body y blends to terrain + hover at `dt` per tick | [C] `Tripod::AdvanceWalk`, `Tripod::Advance` |
 | Navigation (`TripodNavData`) | six hex directions (60° apart); picks the direction with the largest dot to the destination, steps ±1 direction when the angle exceeds 30°; adds 1.0 m/s per tick of velocity in that direction; new destination within ±150 m (no enemies) or ±50 m of a random enemy within `NAVIGATION_SEARCH_RADIUS` 1000 m, re-rolled with chance 1/40 per tick | [C] `Tripod::DoNavigation`, `Tripod::ChooseDestination`, `TripodNavData::TripodNavData` |
 | Two-leg fall | when a foot is lifted the body pivots about the line between the planted feet under `GRAVITY` (`Tripod::DoFallForTwoLegs`; contains an operator-precedence bug `!state == OnGround`) | [C] |
 | Attack cycle | `ModeWalking` → (≥ 17 s since last attack and nearest enemy within `ATTACK_SEARCH_RADIUS` 200 m) `ModePreAttack` (stop, crouch to 18 m, tilt toward target) → `ModeAttacking` for `ATTACK_DURATION` 7 s: after 1 s, on odd 0.1-s slots fires **two lasers** (±4 m either side, speed 80, aim jitter `syncsfrand(0.1)`) via `Location::FireLaser` → `ModePostAttack` (rise to 30 m) → `ModeWalking` | [C] `Tripod::AdvanceWalk`, `AdvancePreAttack`, `AdvanceAttack`, `AdvancePostAttack` |

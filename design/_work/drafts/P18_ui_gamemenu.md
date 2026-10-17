@@ -339,7 +339,7 @@ Thumbnail [C] `MapImageButton::Render`: map index = focused row, else requested 
 #### 4.6.1 Preconditions and state on entry
 1. `_gameType == -1` → nothing is built.
 2. `mapId = m_localSelectedLevel` (or networked `m_requestedMapId` if −1). If `mapId == -1` **or** the local player has no team yet (`myTeamId == 255` and not spectator) → set `m_waitingForTeamID=true`, remember the type, return with an empty page; `UpdateMultiplayerPage` calls setup again once a team id (or spectator flag) arrives [C].
-3. Coming from MapSelect with a different `m_uiGameType` → rebuild MapSelect instead. Coming from any page other than Research/AdvancedOptions/PlayerOptions (and not MapSelect): `m_uiGameType = _gameType` and, **on the host**, `m_requestedMapId = 0` [C] (only reachable via the game-type-changed rebuild, §12.2).
+3. Coming from MapSelect with a different `m_uiGameType` → rebuild MapSelect instead. Coming from any page other than Research/AdvancedOptions/PlayerOptions (and not MapSelect): `m_uiGameType = _gameType` and, **on the host**, `m_requestedMapId = 0` [C]; [I] in practice this branch is only reached by the game-type-changed rebuild of the lobby (§12.2), because every normal entry comes from MapSelect, PlayerOptions, AdvancedOptions or (clients) GameConnecting.
 4. `g_app->m_atLobby = true`.
 5. Returning from PlayerOptions with an empty name → name reset to the localised default.
 6. Unless returning from PlayerOptions/AdvancedOptions: colour request initialised — Assault or co-op: remember the old request in `m_previousRequestedColour`, request `-1` (no colour; side chosen later); otherwise request pref `PlayerPreferedColour` if that colour is free, else `Multiwinia::GetNextAvailableColour()` (lowest id 0–7 not used by any non-unused team) [C] + `code/multiwinia.cpp:GetNextAvailableColour`.
@@ -930,7 +930,7 @@ Index = parameter index *i* within the mode (used by `multiwinia_option_<g>_<i>_
 |---|---|---|
 | `LobbyAmbience` | first update once sounds are ready (stopped when leaving the main-menu loop) | [C] `Update`, `code/main.cpp:MainMenuLoop` |
 | `MenuSelect` | forward button press (base MouseUp), level row click, editor button | [C] `code/game_menu.cpp:GameMenuButton::MouseUp`, `LevelSelectButton.h` |
-| `MenuCancel` | buttons whose `m_transitionDirection == -1` (Done, Paste, Play Demo, auth status) play it instead of `MenuSelect`; every `BackPageButton` (direction left at +1) plays `MenuSelect` via the base call **and then** `MenuCancel`, and re-initialises the transition with direction −1 | [C] same, `BackPageButton::MouseUp` |
+| `MenuCancel` | buttons whose `m_transitionDirection == -1` and that call the base `MouseUp` (Done, Play Demo) play it instead of `MenuSelect` (Paste and the auth status box set −1 but never call the base, so they are silent); every `BackPageButton` (direction left at +1) plays `MenuSelect` via the base call **and then** `MenuCancel`, and re-initialises the transition with direction −1 | [C] same, `BackPageButton::MouseUp` |
 | `MenuRollOver` | focus moves to a new button (base render, level rows, colour rows) | [C] `GameMenuButton::Render`, `LevelSelectButton.h`, `FancyColourButton.h` |
 | `ChatMessage` | lobby chat received (not joins) | [C] `NewChatMessage` |
 

@@ -27,3 +27,7 @@
 - 32 reward enum values (31 shipped + 1 debug-only The Beast) + 3 commented; 90/10 good/bad pools; per-level probability table drafts/P08_crate_pools.csv; InvalidCrates syntax; StartingPowerups; Retribution never called. AI: AITarget node graph, 4 priority formulas, 19 task handlers, per-mode strategies, difficulty table, no cheats beyond perfect information; 8 marker types; ~80 constants; [U]=6.
 - Correction applied: INCLUDE_THEBEAST is under #ifdef TARGET_DEBUG → off in FULL (build_matrix fixed).
 - Bugs: unbounded loops; AI target-id bugs (RunNuke needs sea; RunSpam/RunPlague wrong ids). Unconfirmed: monster/Futurewinian team AI entities (Location::Init ordering).
+
+## P17b_menus_options — done
+- 32 window/controller classes; 14 visible option controls + 6 hidden round-tripped prefs; 341 pref accesses (drafts/P17b_prefs_accesses.csv); 166 string ids; 11 keys in default_preferences.txt, 76 in code. [U]=3.
+- Live: only Screen, Graphics, Sound, Other options. Unreachable/dead: profiles, leaderboards (stub, no backend), mods, key rebinding, demo-end. Pixel effect never runs in MW; vsync/AA ignored in GL build. Options absent: multisampling, gamma, invert mouse, auto-zoom, v-sync.
