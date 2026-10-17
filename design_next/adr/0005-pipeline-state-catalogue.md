@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Every Species draw combines a material shader (ADR-0003) with a blend, depth, rasteriser and target configuration. The look relies on a small, fixed set of those combinations: opaque facets, alpha-blended panels, additive glow and text, multiplicative darkening layers and outlines, depth-tested but not depth-written effects, screen-facing text drawn without depth, and decals and shadows that need a depth bias. Direct3D 12 bakes all of these into immutable pipeline state objects (PSOs), and creating one can take milliseconds.
+Every Species draw combines a material shader (ADR-0003) with a blend, depth, rasteriser and target configuration. The look relies on a small, fixed set of those combinations: opaque facets, alpha-blended panels, additive glow and text, multiplicative darkening layers and outlines, the brightening blend of placement ghost models, depth-tested but not depth-written effects, screen-facing text drawn without depth, and decals and shadows that need a depth bias. Direct3D 12 bakes all of these into immutable pipeline state objects (PSOs), and creating one can take milliseconds.
 
 Species needs every combination it draws to exist before it is needed, so that no frame stalls on creation and no draw silently falls back to a different state. The frame begins from one documented default state, and every pass is a documented difference from it.
 
@@ -36,7 +36,7 @@ Chosen option: **1, a build-time catalogue derived from the pass table**, becaus
 
 | Group | Default |
 |---|---|
-| Rasteriser | solid fill; back faces culled; counter-clockwise triangles are front-facing; depth clip on; no depth bias |
+| Rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`); depth clip on; no depth bias |
 | Depth | test on, write on; comparison equivalent to less-or-equal in the depth convention of ADR-0016 |
 | Stencil | off (no pass uses stencil) |
 | Blend | off |
@@ -54,8 +54,9 @@ Chosen option: **1, a build-time catalogue derived from the pass table**, becaus
 | additive | `SRC_ALPHA` | `ONE` | glow, sprites, particles, normal text (ADR-0031) |
 | darkening | `ZERO` | `INV_SRC_COLOR` | darkening layers, dark smoke, text outlines and shadows |
 | ink | `SRC_ALPHA` | `INV_SRC_COLOR` | UI content whose darkening also depends on source alpha |
+| ghost | `ONE` | `SRC_COLOR` | placement ghost models of the world cursor (the destination is brightened in proportion to the source colour) |
 
-Darkening is order-independent (each layer multiplies the destination by one minus the source colour), so darkening passes are never sorted.
+Darkening is order-independent (each layer multiplies the destination by one minus the source colour), so darkening passes are never sorted. An ink draw whose source alpha is 0 is arithmetically a darkening draw; the renderer component maps it to the darkening state (ADR-0031).
 
 **Depth variants:** test and write; test without write (transparent, additive and darkening passes); neither test nor write (UI and screen-facing text); and depth-biased variants for decals, shadows and overlays, which use the pipeline's `DepthBias` and `SlopeScaledDepthBias` instead of any change to the projection.
 
@@ -108,3 +109,4 @@ Darkening is order-independent (each layer multiplies the destination by one min
 
 - Related: ADR-0003 (material shaders and permutations), ADR-0004 (frame graph and pass table), ADR-0014 (HDR formats), ADR-0015 (sample counts), ADR-0016 (depth convention), ADR-0018 (alpha modes), ADR-0031 (UI blend states).
 - The renderer component (`architecture/components/renderer/`) lists the ordered pass table with each pass's catalogue keys.
+- **Amendment 2026-10-17.** The blend list gains the `ghost` state (`ONE`, `SRC_COLOR`) that the renderer component uses for the world cursor's placement ghost models (RND-058, RND-365). The front-facing rule is stated on the render target, as the renderer's default state gives it (RND-055).

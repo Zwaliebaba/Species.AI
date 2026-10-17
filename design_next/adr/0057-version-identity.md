@@ -29,7 +29,7 @@ How does a Species build identify itself?
 Chosen option: "One generated build identity".
 
 * **Fields:** a `MAJOR.MINOR.PATCH` semantic version (set in one checked-in file and changed by release changes only); a CI build number; the source-control revision id (with a "modified" marker for builds from a modified working tree); the content manifest hash of the content set built with it ([ADR-0060](0060-content-identity-by-hash.md)); the product and flavour ([ADR-0056](0056-editions-build-flavours-and-feature-flags.md)).
-* **Generation:** CMake generates one header and one data file per build from these fields. The executable's `VERSIONINFO` resource (FileDescription, FileVersion, ProductName, ProductVersion), the package manifests ([ADR-0072](0072-distribution-channels-and-package-formats.md)), the crash black box, the log header and telemetry all read the generated values.
+* **Generation:** configure generates one header with every field except the content manifest hash, so that a content-only change never recompiles code; the packaging step writes one data file, `build_identity.json`, into the install directory with every field, the content manifest hash included. At start-up a program composes its full identity from the generated fields and the hash of the content manifest it mounts, and logs a mismatch with `build_identity.json` as a modified installation. The executable's `VERSIONINFO` resource (FileDescription, FileVersion, ProductName, ProductVersion), the package manifests ([ADR-0072](0072-distribution-channels-and-package-formats.md)), the crash black box, the log header and telemetry all read the generated values.
 * **Display form:** `MAJOR.MINOR.PATCH+build.<number>`; the full identity, including revision and content hash, is shown in the options screen's build details and written at the top of every log.
 * **Compatibility checks** between client and server, and between saves and builds, are defined by the design phase; they read this identity and never a separate number.
 
@@ -62,4 +62,5 @@ Chosen option: "One generated build identity".
 ## More Information
 
 * Component: build tooling and distribution (`BLD`).
+* **Amendment 2026-10-17.** The identity is split between the generated header (every field except the content manifest hash) and the packaged `build_identity.json` (every field), and is composed at start-up, as the build tooling component specifies (BLD-019, BLD-020). The channel tag of an install (`channel_tag.txt`, BLD-021) is not a field of the identity, because one build is wrapped for several channels.
 * Related: [ADR-0073](0073-code-signing.md); the Windows Desktop Application Program groups executables by their version resource.

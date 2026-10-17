@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-The Species look is produced by a small set of shading techniques: unlit vertex colour; one texture modulated by vertex colour; two textures with an explicit combine mode; lighting by two directional lights with no ambient term (light colours may exceed 1.0, up to 2.0 per channel, which gives the over-bright facets); a lit, textured variant with a wire-grid edge mask; per-pixel linear fog towards the level's fog colour; additive glow; and multiplicative darkening. Terrain, water, sprite cards, particles, UI, glyphs and full-screen passes add their own shaders.
+The Species look is produced by a small set of shading techniques: unlit vertex colour; one texture modulated by vertex colour; two textures with an explicit combine mode; lighting by two directional lights with no ambient term (light colours may exceed 1.0, up to 2.0 per channel, which gives the over-bright facets), with a specular highlight where a material declares one; a lit, textured variant with a wire-grid term; per-pixel linear fog towards the level's fog colour; additive glow; and multiplicative darkening. Terrain, water, sprite cards, particles, UI, glyphs and full-screen passes add their own shaders.
 
 Species needs these shaders written once, compiled reproducibly, validated in CI, debuggable in PIX, and loaded without a compiler in the client. The set must be small enough that every combination the renderer uses is a catalogued pipeline state (ADR-0005), and every shader must run on the minimum capability of ADR-0002.
 
@@ -43,12 +43,12 @@ Chosen option: **1, HLSL 2021, offline DXC, fixed material set**, because it is 
   1. unlit, vertex colour;
   2. one texture, modulated by vertex colour;
   3. two textures with an explicit combine mode, chosen per material from a closed list that the renderer component defines;
-  4. lit by two directional lights with no ambient term, light colours up to 2.0 per channel;
-  5. lit, one texture, with a wire-grid edge mask.
+  4. lit by two directional lights with no ambient term, light colours up to 2.0 per channel, and a specular term with a per-material specular colour and shininess;
+  5. lit, one texture, with a wire-grid term (the terrain's grid texture or a barycentric edge mask).
   The other shaders are: terrain, water, sky, sprite cards and particles, shatter debris, UI, glyphs, and the full-screen passes (fade, screen transition, resolve, tone mapping).
-- **Lighting and fog inputs.** Light directions are given in world space in the per-frame constants, independent of the camera. Fog is linear, evaluated per pixel on view-space distance, towards the level's fog colour.
+- **Lighting and fog inputs.** Light directions are given in world space in the per-frame constants, independent of the camera. The specular term uses the half vector between the light direction and the view direction, with the viewer at an infinite distance along the camera's view axis; its specular colour and shininess are material parameters, and a material without a highlight has specular colour 0. The terrain grid material and the special lighting rig use it with the values of the renderer component. Fog is linear, evaluated per pixel on view-space distance, towards the level's fog colour.
 - **Flat shading.** Facet colour and facet normal are baked per triangle by the mesh cooker (ADR-0020), so no shader depends on a provoking-vertex convention.
-- **Edge mask.** The wire-grid edge term is computed in the pixel shader from barycentric coordinates that the cooker writes as a vertex attribute (meshes are already split per triangle for flat colour). `SV_Barycentrics` may be used only as an optional path behind `D3D12_FEATURE_DATA_D3D12_OPTIONS3.BarycentricsSupported`.
+- **Wire-grid term and edge mask.** The terrain shader's grid term comes from the stylised grid texture (the default) or from a barycentric edge term, selected by a declared permutation (ADR-0011, DEC-326). Barycentric edge terms, the terrain option and the shatter-debris edge mask (ADR-0010), are computed in the pixel shader from barycentric coordinates that the cooker writes as a vertex attribute (meshes are already split per triangle for flat colour). `SV_Barycentrics` may be used only as an optional path behind `D3D12_FEATURE_DATA_D3D12_OPTIONS3.BarycentricsSupported`.
 - **Permutations.** Each shader declares its permutation axes (for example fog on or off, alpha cut-out on or off) in a list that the build expands. A permutation that is not declared does not exist. Each compiled permutation is referenced by at least one pipeline state in the catalogue (ADR-0005); the build rejects unreferenced ones.
 
 ### Consequences
@@ -97,3 +97,4 @@ Chosen option: **1, HLSL 2021, offline DXC, fixed material set**, because it is 
 - Technology baseline item 4.5 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://github.com/microsoft/DirectXShaderCompiler/releases · `ReleaseNotes.md` of https://github.com/microsoft/DirectXShaderCompiler.
 - Related: ADR-0002 (Shader Model 6.6 profiles), ADR-0005 (pipeline state catalogue), ADR-0006 (root signature), ADR-0020 (flat shading and team tint).
 - The renderer component (`architecture/components/renderer/`) specifies each shader's inputs, outputs and permutation axes, and the closed list of combine modes.
+- **Amendment 2026-10-17.** The lit material has a specular term (RND-233, RND-270), used by the terrain grid material and the special lighting rig (RND-229, RND-266); the terrain grid term has two sources, the grid texture by default and the barycentric edge term as a permutation (RND-135, RND-264, RND-266), matching ADR-0011 and DEC-326.

@@ -31,9 +31,10 @@ Which authoring syntax and schema language does Species use?
 
 Chosen option: "JSON authoring files validated by JSON Schema, with a Species code generator". This is the default the team proceeds with.
 
-* **Schemas** are JSON Schema documents, one per record type, using a restricted subset (object, array, string, integer, number, boolean, enumeration, reference) plus Species annotation keywords prefixed `x-species-` for units, logical numeric types, reference kinds and enumeration order. The schema draft is pinned by the `$schema` keyword when the validator library is chosen.
+* **Schemas** are JSON Schema documents, one per record type, using a restricted subset (object, array, string, integer, number, boolean, enumeration, reference) plus Species annotation keywords prefixed `x-species-` for units, logical numeric types and precision, presence, reference kinds and enumeration order. The `$schema` keyword pins the draft **2020-12** in every schema.
 * **Code generation:** a Species generator in the content build turns each schema into C++23 record types, the binary layout and the loader table; generated files are build outputs, never edited.
 * **Authoring files** are JSON. Every record may carry a `notes` string for author comments, because JSON has no comments. The JSON parser records line and column for every value so that errors name the exact location.
+* **Parser and validator:** the authoring parser is Species code, a strict parser of RFC 8259 JSON with the I-JSON restrictions of RFC 7493 (UTF-8 only, no duplicate keys), and the validator is generated from the schemas; no third-party JSON or JSON Schema library sits in the content build's validation path, so duplicate-key detection and per-value locations never depend on a library's mode. Numbers are converted with the C++ standard library's correctly rounded `std::from_chars` and written back in shortest round-trip form with `std::to_chars`. The published JSON Schema documents serve authors' editors only.
 * **Editors:** schemas are published to authors' text editors for inline validation and completion.
 
 ### Consequences
@@ -77,5 +78,6 @@ Chosen option: "JSON authoring files validated by JSON Schema, with a Species co
 
 ## More Information
 
-* The standards baseline does not cover JSON Schema or JSON parser libraries; the draft version and the libraries are chosen and pinned in the data schemas component (`DAT`) through [ADR-0055](0055-dependencies-vcpkg-manifest-mode.md).
+* The standards baseline does not cover JSON Schema or JSON parser libraries. The data schemas component (`DAT`) pins the draft (`dat.schema.draft`, 2020-12) and specifies the Species-owned parser and generated validator; no JSON library is pinned through [ADR-0055](0055-dependencies-vcpkg-manifest-mode.md).
+* **Amendment 2026-10-17.** The record states the pinned draft 2020-12 (DAT-015), the Species-owned strict parser and generated validator (DAT-019 to DAT-022), and the standard-library number conversions (DAT-023, DAT-041), as the data schemas component specifies.
 * Revisit trigger: if authors report that comment-less JSON slows tuning work, TOML may be added as a second syntax for flat tables, validated against the same JSON Schema data model.

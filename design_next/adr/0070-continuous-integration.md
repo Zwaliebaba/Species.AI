@@ -30,8 +30,8 @@ What does Species' continuous integration run, and when?
 Chosen option: "Two tiers: required per-change jobs and nightly long-running jobs, all as workflow presets".
 
 * **Per change (required):**
-  * `windows-msvc-development` and `windows-msvc-shipping` builds of every product, with warnings as errors;
-  * the `windows-clangcl-analysis` build of shared and server code, with static analysis;
+  * the `windows-msvc-development-<product>` and `windows-msvc-shipping-<product>` builds of every product, with warnings as errors;
+  * the `windows-clangcl-analysis-<product>` builds of the `server` and `tools` products, which cover the shared and server code, with static analysis;
   * the content build of every edition, with all validators;
   * unit, property and golden-hash tests ([ADR-0069](0069-test-framework.md));
   * binary checks: mitigation flags, symbols in the symbol store, version resource, no developer or loose-file code in shipping binaries ([ADR-0056](0056-editions-build-flavours-and-feature-flags.md), [ADR-0057](0057-version-identity.md)).
@@ -80,3 +80,4 @@ Chosen option: "Two tiers: required per-change jobs and nightly long-running job
 
 * Components: diagnostics, test and performance (`DBG`), build tooling and distribution (`BLD`).
 * The CI service, agent hosting and the binary-cache host are infrastructure choices made by the team operating the project.
+* **Amendment 2026-10-17.** Job presets carry the product suffix of ADR-0054 (`<os>-<compiler>-<flavour>-<product>`, BLD-006); the build tooling component lists the jobs and their workflow presets.

@@ -32,7 +32,7 @@ Chosen option: "MSVC Build Tools, one pinned version, with clang-cl as a second 
 
 * **IDE and build tools:** Visual Studio 2026 (18.11.0 is current) for development; the Visual Studio Build Tools edition on CI agents.
 * **Toolset pin:** MSVC Build Tools **14.51** now. Move to **14.52** when it becomes the default toolset (Microsoft expects November 2026), because `/std:c++23` arrives with it. Toolset 14.50 (long-term support to November 2028) is the fallback only if a C++23-preview ABI change breaks the build. The pin lives in one place, the toolchain preset of [ADR-0054](0054-build-system-cmake-presets.md), and CI honours it through `VCToolsVersion`.
-* **Windows SDK:** one pinned Windows SDK release, at least the release for Windows 11 version 24H2 (the OS floor of [ADR-0050](0050-client-platform-and-minimum-os.md)). Agility SDK headers are included before Windows SDK headers.
+* **Windows SDK:** one pinned Windows SDK release, at least the release for Windows 11 version 24H2 (the OS floor of [ADR-0050](0050-client-platform-and-minimum-os.md)). The pin is **10.0.26100.9457** (September 2026), the latest release of the 10.0.26100 series, which is the series of the OS floor and of the primary test targets 25H2 and 26H2. The 10.0.28000 series (Windows 11 26H1) is not needed, because no Species component needs an API that only that series provides; the pin moves to a later release at each milestone re-check. Agility SDK headers are included before Windows SDK headers.
 * **Always-on compiler options:** `/permissive-`, `/Zc:__cplusplus`, `/Zc:preprocessor`, `/utf-8`, `/W4`, `/EHsc`, `/Zi`; `/WX` on CI; `/guard:cf`; `/GS`; `/MD` (dynamic CRT, one CRT instance across all modules).
 * **Always-on linker options:** `/DEBUG:FULL` (a PDB for every configuration), `/DYNAMICBASE`, `/HIGHENTROPYVA`, `/NXCOMPAT`, `/CETCOMPAT`, `/guard:cf`; `/OPT:REF` and `/OPT:ICF` in optimised configurations.
 * **Assertions:** `NDEBUG` is defined in the profile and shipping configurations; development checks use Species assertion macros controlled by the build flavour ([ADR-0056](0056-editions-build-flavours-and-feature-flags.md)), never by `NDEBUG` alone.
@@ -73,6 +73,7 @@ Chosen option: "MSVC Build Tools, one pinned version, with clang-cl as a second 
 
 ## More Information
 
-* Facts and sources: technology baseline items 2.1, 2.2, 2.3 and 4.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Visual Studio 2026 release notes, the MSVC compiler-versions page and the Agility SDK getting-started page.
-* The standards baseline lists no Windows SDK release number; the exact pin is set by the build tooling component and recorded in the toolchain preset.
+* Facts and sources: technology baseline items 2.1, 2.2, 2.3, 2.4 and 4.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Visual Studio 2026 release notes, the MSVC compiler-versions page, the Windows SDK overview, downloads and release-notes pages, and the Agility SDK getting-started page.
+* The Windows SDK pin is recorded in the toolchain preset by the build tooling component (`bld.pin.windows_sdk`).
 * Component: build tooling and distribution (`BLD`).
+* **Amendment 2026-10-17.** The Windows SDK release is verified and added to the technology baseline (item 2.4): 10.0.26100.9457.

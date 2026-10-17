@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Species sound is data-driven: game code fires a (sound source, event) pair, and data decides what plays, with friend and foe variants, sample groups, generative loops and per-event parameters (the audio design in `reference/10_audio_design.md`). A battle can request far more simultaneous sounds than any device should play, positional sounds follow units across the battlefield, and the mix needs separate control of effects, ambience, UI and music. The audio engine must keep the binding model and replace everything below it with a modern voice graph, must follow device changes (headphones plugged in, default device switched) without a restart, and must never influence the simulation. The headless dedicated server has no audio at all.
+Species sound is data-driven: game code fires a (sound source, event) pair, and data decides what plays, with friend and foe variants, sample groups, generative loops and per-event parameters (the audio design in `reference/10_audio_design/`). A battle can request far more simultaneous sounds than any device should play, positional sounds follow units across the battlefield, and the mix needs separate control of effects, ambience, UI and music. The audio engine must keep the binding model and replace everything below it with a modern voice graph, must follow device changes (headphones plugged in, default device switched) without a restart, and must never influence the simulation. The headless dedicated server has no audio at all.
 
 The problem is which audio API the client's audio engine is built on, and how the engine is layered on it.
 
@@ -33,12 +33,12 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 
 - **API.** The client links `xaudio2.lib` from the Windows SDK and uses the in-box `xaudio2_9.dll`. The XAudio2 redistributable is not installed. X3DAudio and the built-in effects (`XAPOFX`) come from the same library.
 - **Graph.** One XAudio2 engine with one **mastering voice**, created on the default device with the default format (no fixed sample rate), so the engine follows device switches and the system spatial-sound format. Under it, one **submix voice per bus** (ADR-0024), and **one source voice per playing sound** (ADR-0023), fed with resident buffers or streamed packets (ADR-0025).
-- **Module plan.** The audio engine (`AudioEngine`) is built in five layers, each depending only on the ones below it:
-  1. **binding**: (source, event) lookups into the sound source and event definitions (`SoundSourceDef`, `SoundEventDef`);
-  2. **instances**: playing and virtual sound instances, their parameters (`SoundParam`) and priorities (ADR-0023);
-  3. **sample data**: resident banks and streams owned by the asset system (`SampleCache`, `AudioDecoder`; ADR-0025);
-  4. **voices and device**: the XAudio2 graph (`SoundVoice`), spatialisation (ADR-0027) and device handling;
-  5. **effects**: XAPO chains on buses (ADR-0024).
+- **Module plan.** The audio engine (`AudioEngine`) is built in five layers, each depending only on the ones below it, listed from the top:
+  - layer 5, **binding**: (source, event) lookups into the sound source and event definitions (`SoundSourceDef`, `SoundEventDef`);
+  - layer 4, **instances**: playing and virtual sound instances (`SoundVoice`), their parameters (`SoundParam`) and priorities (ADR-0023);
+  - layer 3, **sample data**: resident banks and streams owned by the asset system (`SampleCache`, `SampleBank`, `AudioStream`, `AudioDecoder`; ADR-0025);
+  - layer 2, **voices and device**: the XAudio2 graph (`AudioBusGraph`), the pooled source voices (`SourceVoiceSlot`), spatialisation (ADR-0027) and device handling;
+  - layer 1, **effects**: XAPO chains on buses (ADR-0024).
 - **Threading.** The game thread only enqueues commands; the audio engine applies them on its own update and in XAudio2 callbacks that never block (ADR-0026).
 - **Device changes and errors.** `IXAudio2EngineCallback::OnCriticalError` and `XAUDIO2_E_DEVICE_INVALIDATED` cause the voices and the graph to be rebuilt on the new default device, with playing instances resubmitted from their stored play positions, so loops and one-shots continue where they were. Device changes are also tested while the game is paused.
 - **Isolation.** Audio code never writes simulation state and never draws from the simulation random generator; it uses the presentation random generator (`FxRng`), through its own instance, shared with no other system; its draws choose sample-group members, random emitters and ranged-random parameters (DEC-013). The dedicated server target does not link the audio engine.
@@ -80,4 +80,5 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-versions · https://learn.microsoft.com/uwp/win32-and-com/win32-apis#apis-from-xaudio2_9dll · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-redistributable · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-0023 (virtual voices), ADR-0024 (buses and effects), ADR-0025 (codecs and residency), ADR-0026 (command queue and callbacks), ADR-0027 (spatialisation).
-- The audio engine component (`architecture/components/audio_engine.md`) specifies each layer; the audio design (`reference/10_audio_design.md`) specifies the binding model and the sound data.
+- The audio engine component (`architecture/components/audio_engine.md`) specifies each layer; the audio design (`reference/10_audio_design/`) specifies the binding model and the sound data.
+- **Amendment 2026-10-17.** The layer names and numbers follow the audio engine component (AEN-002): `SoundVoice` is the sound instance of layer 4, as the naming ledger defines it, and the pooled source voice of layer 2 is `SourceVoiceSlot`.

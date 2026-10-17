@@ -31,7 +31,7 @@ Chosen option: "Xbox Accessibility Guidelines (XAG) 3.2 as the checklist". This 
 
 Engine features provided from the start:
 
-* **Text scale** setting that feeds the glyph cache and UI layout (XAG 101); minimum default text size of 9 px at 1080p and 19 px at 4K for icons and glyph text.
+* **Text scale** setting that feeds the glyph cache and UI layout (XAG 101); minimum default text size of 9 px at 1080p and 19 px at 4K for icons and glyph text. For a client height *H* in pixels, the minimum is 9 px × *H* ÷ 1080 up to 1080, linear from 9 px at 1080 to 19 px at 2160, and 19 px × *H* ÷ 2160 above 2160.
 * **Contrast:** gameplay-relevant text at 4.5:1 or more, inactive elements at 3:1, and a high-contrast mode at 7:1 (XAG 102). UI palettes are data, so the high-contrast palette is a content variant.
 * **Identity beyond colour:** team and race identity always has a second channel, shape or pattern, as well as colour (XAG 103).
 * **Input:** full remapping, hold-or-toggle options for held actions, and remapping done once in the input abstraction for every device (XAG 107).
@@ -73,4 +73,5 @@ Engine features provided from the start:
 
 * Facts and sources: technology baseline item 10.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the XAG overview, the XAG version history and the accessibility feature-tag pages on learn.microsoft.com.
 * Related: [ADR-0063](0063-localisation.md) (text and fonts).
-* Components: UI framework (`UI`), input (`INP`), renderer (`RND`), audio engine (`AEN`).
+* Components: UI framework (`UI`), input (`INP`), renderer (`RND`), audio engine (`AEN`), animation and VFX (`VFX`, the flash and motion rules).
+* **Amendment 2026-10-17.** The minimum text size is defined for every client height by the rule of the UI framework (UI-171, `ui.access.min_text_1080p`, `ui.access.min_text_2160p`), which interpolates between the two XAG reference points.

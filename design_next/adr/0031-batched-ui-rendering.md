@@ -33,7 +33,7 @@ Chosen option: **1, one batched dynamic vertex stream per frame**, because the w
 
 - **Stream.** Each frame, the UI framework emits every visible quad, line and glyph quad into one vertex stream in the upload ring (ADR-0008), in painter's order. Each vertex carries position (in pixels), texture coordinates, colour, and the atlas or texture index.
 - **Batches.** Consecutive items that share blend mode, texture or atlas page and clipping rectangle form one batch; a change of any of them starts a new batch. Order is never changed for batching, so blending stays correct.
-- **Blend states.** Three UI pipeline states from the catalogue (ADR-0005): **alpha** (`SRC_ALPHA`, `INV_SRC_ALPHA`), **additive** (`SRC_ALPHA`, `ONE`) and **ink** (`SRC_ALPHA`, `INV_SRC_COLOR`). Glyph coverage from the glyph cache (ADR-0034) multiplies the item's colour and alpha, so text uses the same three states: normal text additive, outlines and shadows ink.
+- **Blend states.** Three UI pipeline states from the catalogue (ADR-0005): **alpha** (`SRC_ALPHA`, `INV_SRC_ALPHA`), **additive** (`SRC_ALPHA`, `ONE`) and **ink** (`SRC_ALPHA`, `INV_SRC_COLOR`). Glyph coverage from the glyph cache (ADR-0034) multiplies the item's colour and alpha, so text uses the same three states: normal text additive, outlines and shadows ink. An ink item with source alpha 0 has the arithmetic of the catalogue's darkening state, and the renderer may draw it with that state.
 - **Clipping.** The framework keeps a stack of clipping rectangles; each batch carries the intersection of the stack, applied as the scissor rectangle.
 - **Captured images.** A page transition samples a declared frame-graph target that holds the previous page's image (ADR-0004); the UI never reads the back buffer in place.
 - **Placement.** The UI pass runs after the scene's resolve, tone mapping and brightness passes, at the window's native resolution; with HDR on, at the SDR reference white level (ADR-0014). UI geometry is snapped to whole pixels.
@@ -74,3 +74,4 @@ Chosen option: **1, one batched dynamic vertex stream per frame**, because the w
 
 - Related: ADR-0004 (captured targets), ADR-0005 (UI blend states), ADR-0008 (upload ring), ADR-0014 (HDR and SDR white), ADR-0030 (UI framework), ADR-0033 (layout and pixel scale), ADR-0034 (glyph cache).
 - The UI framework component (`architecture/components/ui_framework/`) specifies the vertex layout, the batching rules and the screen recipes.
+- **Amendment 2026-10-17.** The ink state with source alpha 0 equals the darkening state of ADR-0005 (UI-180, RND-058). The UI budget of the performance test is the UI framework's: 32 draws, 65 536 vertices and 1.0 ms of main-thread time on the busiest screen (UI-240, `ui.budget.*`).

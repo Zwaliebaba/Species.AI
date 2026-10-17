@@ -73,4 +73,4 @@ Chosen option: **1, client-side procedural animation on the presentation clock**
 ## More Information
 
 - Related: ADR-0019 (mesh nodes), ADR-0021 (sockets on moving parts), ADR-0030 (UI timelines), ADR-0036 (presentation clock and effect events).
-- The animation and VFX component (`architecture/components/animation_and_vfx.md`) specifies the gait planner, the trail and cloth models and their tuning values.
+- The animation and VFX component (`architecture/components/animation_and_vfx/`) specifies the gait planner, the trail and cloth models and their tuning values.

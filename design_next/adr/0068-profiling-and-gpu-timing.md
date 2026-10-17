@@ -33,7 +33,7 @@ Chosen option: "PIX markers and GPU timestamp queries behind a Species macro lay
 * **Markers:** one Species macro layer (`SPECIES_PROFILE_SCOPE(name)` and its GPU counterpart on a command list) emits PIX events through **WinPixEventRuntime 1.0.240308001** (MIT licence), linked as a DLL in `Debug`, `Development` and `Profile` builds. In `Shipping` builds the macros expand to nothing and `WinPixEventRuntime.dll` is not distributed ([ADR-0056](0056-editions-build-flavours-and-feature-flags.md)).
 * **Coverage:** every frame-graph pass ([ADR-0004](0004-frame-graph-from-the-ordered-pass-table.md)), every engine subsystem update and every content-loading stage carries a marker; the task groups of the threading model carry markers once the design phase defines that model.
 * **GPU timing:** timestamp queries around every frame-graph pass, resolved into a readback buffer and read one or more frames later, so the CPU never waits for the GPU to measure it.
-* **Overlay:** in `Development` and `Profile` builds, an in-game overlay shows the frame-time graph, per-pass GPU times, per-subsystem CPU times against their budgets, and entity counts per type.
+* **Overlay:** in `Debug`, `Development` and `Profile` builds, an in-game overlay shows the frame-time graph, per-pass GPU times, per-subsystem CPU times against their budgets, and entity counts per type.
 * **System-wide traces:** ETW traces (with the TraceLogging provider of [ADR-0067](0067-logging.md)) are captured with Windows Performance Analyzer when a problem is outside the game process.
 * **Validation:** the Direct3D 12 debug layer and GPU-based validation run in a CI test configuration ([ADR-0070](0070-continuous-integration.md)); `D3D12SDKLayers.dll` is never distributed.
 
@@ -70,3 +70,4 @@ Chosen option: "PIX markers and GPU timestamp queries behind a Species macro lay
 * Facts and sources: technology baseline item 4.7 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the PIX download page, the WinPixEventRuntime NuGet package and its GitHub repository.
 * Whether PIX markers stay in shipping builds for field captures is a design-phase choice; the default is compiled out.
 * Component: diagnostics, test and performance (`DBG`).
+* **Amendment 2026-10-17.** The overlay's performance pages are also present in `Debug` builds, which compile in everything that `Development` builds do (ADR-0056, DBG-004).

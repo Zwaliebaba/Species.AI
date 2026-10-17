@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Players expect separate volume controls for music, sound effects, ambience and the interface, and the mix needs to stay clean when a battle fills it: no clipping, and no wall of noise. The audio design defines filters and effects for sounds (resonant low-pass, bit crushing, amplitude modulation, echo, reverb) that colour whole groups of sounds, and parameters that are authored on a 0-to-10 loudness scale where each step is 5 dB. Music, which the design phase designs from scratch, needs its own streaming path with cross-fades. Effects must sound the same whatever the device's sample rate.
+Players expect separate volume controls for each part of the mix (the interface, the announcer and stings, voice, world sounds, ambience and music; DEC-570), and the mix needs to stay clean when a battle fills it: no clipping, and no wall of noise. The audio design defines filters and effects for sounds (resonant low-pass, bit crushing, amplitude modulation, echo, reverb) that colour whole groups of sounds, and parameters that are authored on a 0-to-10 loudness scale where each step is 5 dB. Music, which the design phase designs from scratch, needs its own streaming path with cross-fades. Effects must sound the same whatever the device's sample rate.
 
 The problem is how the mix is structured, where effects run, and in what units loudness is authored and applied.
 
@@ -31,10 +31,10 @@ The problem is how the mix is structured, where effects run, and in what units l
 
 Chosen option: **1, a bus graph with per-bus effects, sends and a master limiter**, because it gives each player setting and each effect one place in the graph, and its effect cost does not grow with the number of playing sounds.
 
-- **Bus graph.** The buses are submix voices defined in audio data. The baseline graph is: **music**, **effects**, **ambience** and **UI**, each feeding a **pre-master** bus that carries the limiter and feeds the mastering voice; plus **reverb send buses** that sources and buses send to. The player's volume settings set the gains of the music, effects, ambience and UI buses and of the pre-master bus (master volume).
-- **Routing.** Every sound event names its bus. An effect that the audio design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has that effect, or by a send to such a bus. No source voice carries an effect chain of its own.
-- **Per-voice processing.** Source voices use only XAudio2's built-in per-voice filter (for distance and occlusion low-pass filtering, ADR-0027) and send levels to the reverb buses.
-- **Effects.** Bus chains use the built-in effects (`FXReverb`, `FXEQ`, `FXEcho`, `FXMasteringLimiter`) and Species XAPO effects that implement the audio design's filter algorithms (resonant low-pass, bit crusher, amplitude modulation, echo, multi-tap reverb). Every effect processes 32-bit float at its bus's actual sample rate and computes its time constants from that rate.
+- **Bus graph.** The buses are submix voices defined in audio data. The baseline graph has the six **player buses** of DEC-570: **UI**, **announcer and stings**, **voice**, **world**, **ambience** and **music**, each feeding a **pre-master** bus that carries the limiter and feeds the mastering voice; plus **effect buses** that the content build creates per player bus and effect chain, each feeding the player bus of the sounds routed to it. The player's volume settings set the gains of the six player buses and of the pre-master bus (master volume).
+- **Routing.** Every sound event names its bus. An effect that the audio design attaches to a group of sounds is realised by routing those sounds to an effect bus whose chain has that effect (insert), or by a send to such a bus (send). No source voice carries an effect chain of its own.
+- **Per-voice processing.** Source voices use only XAudio2's built-in per-voice filter (for distance and occlusion low-pass filtering, ADR-0027) and send levels to the effect buses.
+- **Effects.** Bus chains use the built-in effects `FXEQ`, `FXEcho` and `FXMasteringLimiter`, the XAudio2 reverb (`XAudio2CreateReverb`, with room-reverb parameters converted by `ReverbConvertI3DL2ToNative`), and Species XAPO effects that implement the audio design's other effect kinds, including its own filter algorithms (resonant low-pass, bit crusher, amplitude modulation, echo, simple reverb); the audio engine component lists the realisation of every kind. Every effect processes 32-bit float at its bus's actual sample rate and computes its time constants from that rate.
 - **Limiter.** `FXMasteringLimiter` on the pre-master bus keeps the output from clipping.
 - **Loudness units.** Every volume parameter in the engine is in decibels and is converted with `XAudio2DecibelsToAmplitudeRatio` at the voice. Reference values authored on the 0-to-10 scale are converted once, when data is cooked, with **dB = 5 × (v − 10)**, so 10 is 0 dB and each step is 5 dB.
 - **Music path.** The music bus has a streaming voice pair, so one stream can cross-fade into the next with sample-accurate timing (`OperationSet` and `CommitChanges`). What plays and when is the music system's decision, which the design phase makes.
@@ -53,7 +53,7 @@ Chosen option: **1, a bus graph with per-bus effects, sends and a master limiter
 - Unit tests run each Species XAPO effect over reference signals at 44.1 kHz and 48 kHz and check that delay times, modulation rates and cut-off frequencies match the definitions at both rates.
 - A unit test checks the 0-to-10 conversion at every integer step.
 - A stress test plays the loudest recorded battle mix and checks that the output stays within full scale after the limiter.
-- A settings test checks that each player volume setting changes exactly one bus gain.
+- A settings test checks that each of the six player volume settings and the master volume changes exactly one bus gain.
 
 ## Pros and Cons of the Options
 
@@ -77,4 +77,5 @@ Chosen option: **1, a bus graph with per-bus effects, sends and a master limiter
 
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); source checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-0022 (audio engine), ADR-0023 (bus caps and audibility), ADR-0025 (streaming), ADR-0027 (per-voice filtering).
-- The audio design (`reference/10_audio_design.md`) defines the filter algorithms and their parameters; the audio engine component (`architecture/components/audio_engine.md`) defines the bus graph and the Species XAPO effects.
+- The audio design (`reference/10_audio_design/`) defines the filter algorithms and their parameters; the audio engine component (`architecture/components/audio_engine.md`) defines the bus graph and the Species XAPO effects.
+- **Amendment 2026-10-17.** The baseline graph has the six player buses of DEC-570 under the pre-master bus (AEN-220, R-AUD-221), with content-built effect buses (AEN-223, AEN-224); the room-reverb kind uses the XAudio2 reverb with I3DL2 conversion (AEN-070).

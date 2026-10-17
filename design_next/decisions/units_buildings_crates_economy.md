@@ -17,7 +17,7 @@ This file records the decisions on teams and alliances, match options, populatio
 | [DEC-456](#dec-456-spawn-networks-are-trees-and-an-essence-orb-is-on-one-edge-at-a-time) | Spawn networks are trees, and an Essence orb is on one edge at a time | Resolved | R-BLDG, R-MAP, DAT |
 | [DEC-457](#dec-457-structure-links-are-type-checked) | Structure links are type-checked | Resolved | R-BLDG, DAT |
 | [DEC-458](#dec-458-linking-a-command-console-to-the-core-device-rebuilds-its-ports) | Linking a Command Console to the Core Device rebuilds its ports | Resolved | R-BLDG, R-MODE, R-AUD |
-| [DEC-459](#dec-459-core-device-with-no-linked-command-console) | Core Device with no linked Command Console | Open | R-BLDG, R-MODE, R-MAP |
+| [DEC-459](#dec-459-core-device-with-no-linked-command-console) | Core Device with no linked Command Console | Resolved | R-BLDG, R-MODE, R-MAP |
 | [DEC-460](#dec-460-a-burning-hive-releases-ants-only-while-it-holds-any) | A burning Hive releases ants only while it holds any | Resolved | R-BLDG, R-UNIT |
 | [DEC-461](#dec-461-each-turret-type-fires-from-the-sockets-of-its-own-mesh) | Each turret type fires from the sockets of its own mesh | Resolved | R-BLDG, R-CRATE, AST, VFX |
 | [DEC-462](#dec-462-turret-facing-from-map-data) | Turret facing from map data | Open | R-BLDG, R-MAP, DAT |
@@ -56,10 +56,10 @@ This file records the decisions on teams and alliances, match options, populatio
 
 ### DEC-453 Population-cap enforcement points and uncapped sources
 - Status: Open
-- Affects: reference/05_population_flow.md (R-ECON), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/02_units/creatures_and_hazards.md (R-UNIT)
-- Specified behaviour: The per-team population cap (DEC-079) is checked at three points only: at each production request of a Spawn Node; at each Transit Gate, once per reinforcement wave, so a wave that starts below the cap is released in full; and at each ant sortie of a Hive. An Essence orb already travelling through the spawn network is not checked again when it arrives. These sources add bodies with no cap check: Collector deliveries (DEC-080); the Reinforcements outcome (50 to 99 Workers); the 10 to 19 Workers that a Seed Pod releases, and the creatures of the Brood outcome; the passengers that a Launch Vessel releases when it explodes; a map's starting units; and actors that change team through Convert, the Core Device pulse wave or the Allegiance Scrambler. No global limit on the number of actors exists.
+- Affects: reference/05_population_flow.md (R-ECON), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/02_units/creatures.md (R-UNIT)
+- Specified behaviour: The per-team population cap (DEC-079) is checked at four points only: at each production request of a Spawn Node; at each Transit Gate, once per reinforcement wave, so a wave that starts below the cap is released in full; at each ant sortie of a Hive; and at each Collector delivery, where an orb that would exceed the cap is not converted (DEC-080). An Essence orb already travelling through the spawn network is not checked again when it arrives. These sources add bodies with no cap check: Builder deliveries at a friendly Spawn Node (DEC-085); the Reinforcements outcome (50 to 99 Workers); the 10 to 19 Workers that a Seed Pod releases, and the creatures of the Brood outcome; the passengers that a Launch Vessel releases when it explodes; a map's starting units; and actors that change team through Convert, the Core Device pulse wave or the Allegiance Scrambler. No global limit on the number of actors exists.
 - Options: A — the reference behaviour; B — check the cap for every unit that a Transit Gate wave releases and for every Essence orb when it arrives, and keep power outcomes, conversions and starting units as named, uncapped exceptions; C — every source respects the cap.
-- Recommendation: B. A power keeps its full value, which is the point of the Supply crate as a wildcard, while the steady sources stop overshooting the cap by a whole wave or by the orbs in transit. Together with option B of DEC-080, every recurring source is then capped. Confirm the effect on army sizes by playtest across player counts.
+- Recommendation: B. A power keeps its full value, which is the point of the Supply crate as a wildcard, while the steady sources stop overshooting the cap by a whole wave or by the orbs in transit. Together with the capped Collector delivery of DEC-080, every recurring source is then capped. Confirm the effect on army sizes by playtest across player counts.
 - Decide by: playtest
 
 ### DEC-454 Population Limiter as a fallback cap
@@ -82,50 +82,49 @@ This file records the decisions on teams and alliances, match options, populatio
 
 ### DEC-456 Spawn networks are trees, and an Essence orb is on one edge at a time
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas.md (DAT)
+- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas/ (DAT)
 - Specified behaviour: The links between Spawn Nodes, Relays and the Source Node form a tree. The content build rejects a map whose spawn-network links contain a cycle, and the run-time walk over the links keeps a visited set, so it ends on any graph. An Essence orb that enters the spawn network is placed on exactly one edge at a time.
 - Options: A — validated trees and one edge per orb; B — the reference behaviour, in which the link walk has no cycle detection and triggering one orb can place it on several edges. Every reference spawn network is a tree, so neither defect occurs on reference maps.
 - Recommendation: A. A cyclic network would make the walk recurse without end on every participant, and an orb held by several edges could be delivered more than once. Validation at build time costs nothing on valid maps (DEC-015).
 
 ### DEC-457 Structure links are type-checked
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/03_buildings_and_world_objects/README.md (R-BLDG), architecture/components/data_schemas.md (DAT)
+- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/03_buildings_and_world_objects/README.md (R-BLDG), architecture/components/data_schemas/ (DAT)
 - Specified behaviour: A structure link names its target by handle and by the structure kind it expects. An energy-grid structure follows its link only when the target is an energy-grid structure. The content build rejects a map whose link targets a structure of another kind, and at run time a missing or mismatched target counts as no link. The same check applies to every link kind that a map can express.
 - Options: A — type-checked links; B — the reference behaviour, in which an energy-grid structure treats its link target as an energy-grid structure without checking, which is undefined for a target of any other kind. Reference maps link only matching kinds.
 - Recommendation: A. The unchecked conversion is a crash defect, and a typed link schema catches the mistake in the content build.
 
 ### DEC-458 Linking a Command Console to the Core Device rebuilds its ports
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), reference/01_skirmish_rules_and_modes/siege.md (R-MODE), reference/10_audio_design.md (R-AUD)
+- Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), reference/01_skirmish_rules_and_modes/siege.md (R-MODE), reference/10_audio_design/ (R-AUD)
 - Specified behaviour: When the Core Device links a Command Console at load, the console switches to its three-port Core Device configuration by releasing its old ports and building the new ones explicitly. It does not run its structure initialisation a second time, so it plays no second creation sound and does not register itself again.
 - Options: A — an explicit port rebuild; B — the reference behaviour, in which the old ports are discarded without being released and the whole structure initialisation runs again, which plays the creation sound again and repeats the registration.
 - Recommendation: A. The reference path leaks the old ports and plays a sound that no player action caused.
 
 ### DEC-459 Core Device with no linked Command Console
-- Status: Open
+- Status: Resolved
 - Affects: reference/03_buildings_and_world_objects/mode_objects.md (R-BLDG), reference/01_skirmish_rules_and_modes/siege.md (R-MODE), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
-- Specified behaviour: The Core Device is destroyed when every linked Command Console is held by a team and none is held by a friend of the Core Device's team. A Core Device with no linked Command Console meets this condition on its first advance, so it is destroyed at once and the attackers win. No reference Siege map has such a Core Device.
-- Options: A — the reference behaviour; B — map validation rejects a Siege map whose Core Device links no Command Console.
-- Recommendation: B, as part of the per-mode map validation (DEC-015, DEC-045). A Siege match that is decided on its first tick is never intended, and validation leaves the destruction rule unchanged for every valid map.
-- Decide by: design phase
+- Specified behaviour: The Core Device is destroyed when every linked Command Console is held by a team and none is held by a friend of the Core Device's team. A Core Device with no linked Command Console would meet this condition on its first advance and be destroyed at once (R-BLDG-311), but the per-mode map validation of DEC-561 rejects every Siege map whose Core Device links fewer than three Command Consoles (R-BLDG-317), so no match reaches that case. No reference Siege map has such a Core Device.
+- Options: A — the reference behaviour, with no validation; B — map validation rejects a Siege map whose Core Device links no Command Console.
+- Recommendation: Resolved: B, applied by the Siege rule of DEC-561, which requires at least three linked Command Consoles. A Siege match that is decided on its first tick is never intended, and validation leaves the destruction rule unchanged for every valid map.
 
 ### DEC-460 A burning Hive releases ants only while it holds any
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/02_units/creatures_and_hazards.md (R-UNIT)
+- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/02_units/creatures.md (R-UNIT)
 - Specified behaviour: When a Hive burns, it releases an ant only while its ant count is above zero, and the count never falls below zero. The empty-Hive rule, which refills an empty Hive to 10 ants, applies unchanged.
 - Options: A — the guarded release; B — the reference behaviour, in which a burning Hive releases an ant even when it is empty, its count turns negative, and the empty-Hive rule then refills it to 10.
 - Recommendation: A. A negative ant count has no meaning, and the guard changes only what a burning, empty Hive releases.
 
 ### DEC-461 Each turret type fires from the sockets of its own mesh
 - Status: Resolved
-- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md (R-CRATE), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/animation_and_vfx.md (VFX)
+- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md (R-CRATE), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/animation_and_vfx/ (VFX)
 - Specified behaviour: Each turret type takes its barrel-end and casing-ejection sockets from its own mesh, so every turret type fires from its own barrel positions. Casing ejection is a presentation effect and draws from the presentation generator (DEC-013).
 - Options: A — sockets from the turret's own mesh; B — the reference behaviour, in which every turret looks its sockets up once, when it is created, on the gun-turret mesh, so rocket turrets, flame turrets and Convert Turrets fire from gun-turret barrel positions, and every shot of every turret type spends four simulation draws on casing ejection.
 - Recommendation: A. Every turret mesh is authored new, so its sockets must match its own geometry, and moving the casing draws off the simulation generator changes nothing a player sees.
 
 ### DEC-462 Turret facing from map data
 - Status: Open
-- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas.md (DAT)
+- Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas/ (DAT)
 - Specified behaviour: A turret ignores the facing that the map gives it: its initial facing does not come from map data, and it turns towards its targets as reference/03 specifies.
 - Options: A — the reference behaviour, with no facing field in the turret's map schema; B — the facing in the map sets the turret's initial facing.
 - Recommendation: A. A turret turns towards every target it engages, so its initial facing affects only its first engagement, and dropping the field keeps the reference timing of that engagement. Choose B if the world game lets players place turrets with a chosen facing.
@@ -150,7 +149,7 @@ This file records the decisions on teams and alliances, match options, populatio
 ### DEC-465 Score-weighted Supply crate drop when every score is zero
 - Status: Resolved
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/12_simulation_model/07_randomness_and_integrity.md (R-SIM)
-- Specified behaviour: A score-weighted Supply crate drop favours lower-scoring teams. When the scores it weights total zero, every team in the weighting has the same weight. The weighting never divides by a zero total and never produces a non-finite value.
+- Specified behaviour: A score-weighted Supply crate drop favours lower-scoring teams. When the scores it weights total zero, every score counts as equal: every team in the weighting has the same weight, and the share p that the drop's first draw tests is max(1 ÷ n, 1 − 1 ÷ n) for n weighted teams, the limit of the rule for equal non-zero scores (R-CRATE-106). The weighting never divides by a zero total and never produces a non-finite value; the fallback to random placement happens only when that first draw exceeds p.
 - Options: A — equal weights at a zero total; B — the reference behaviour, in which a zero total can produce a not-a-number weight that then feeds the drop.
 - Recommendation: A. Equal weights are the limit of equal non-zero scores, so A agrees with the rule at every other score, and a non-finite value in simulation state is an integrity defect.
 

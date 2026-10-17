@@ -76,7 +76,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-302 Transport unload order over sea
 - Status: Open
-- Affects: reference/02_units/transport.md (R-UNIT), reference/06_controls_camera_and_commands.md (R-CTRL)
+- Affects: reference/02_units/transport.md (R-UNIT), reference/06_controls_camera_and_commands/ (R-CTRL)
 - Specified behaviour: A Transport cannot unload its passengers while it is over sea. An unload order given there is not registered, and the Transport falls back to its idle state. This inference is design-critical and has not been confirmed in play.
 - Options: A — keep: an unload order over sea is ignored and the Transport goes idle; B — the Transport moves to the nearest shore point and unloads there; C — the order is rejected with player feedback, and the Transport keeps its previous state.
 - Recommendation: C. It keeps the rule that a Transport never unloads at sea and removes the silent loss of the Transport's previous orders.
@@ -84,7 +84,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-303 Missile Barrage arrival spread
 - Status: Open
-- Affects: reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md (R-CRATE), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE)
+- Affects: reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md (R-CRATE), reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/02_units/hazards_and_projectiles.md (R-UNIT-728)
 - Specified behaviour: The launch of each barrage missile is compensated for its distance to the target by a term of distance ÷ 100. With a mean flight speed of about 47 wu/s this does not equalise arrival times: missiles from nearer launch points strike first. The arrival times are derived by calculation on flat terrain (DEC-111); this inference is design-critical.
 - Options: A — keep the staggered arrival; B — equalise arrival, so every missile of one barrage strikes at the same tick; C — an explicit, authored stagger with a tuning key.
 - Recommendation: A. The stagger reads as a rolling barrage, and the outcome's damage balance is tuned under it. Confirm the spread on real terrain in the first prototype, and move to C only if the spread varies too much between maps.
@@ -93,7 +93,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-304 Spawn Surge request count
 - Status: Open
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/05_population_flow.md (R-ECON)
-- Specified behaviour: Spawn Surge gives each Spawn Node of the opening team 50 or 51 extra production requests. Which of the two applies depends on whether the Supply crate opens before or after that Spawn Node's update within the same tick. It is one instance of the same-tick rule of DEC-455, which does not fix the count; this entry does.
+- Specified behaviour: While Spawn Surge lasts, every Spawn Node of every team that has an owner, is active and is not population-locked requests one transit orb every tick, so each such Spawn Node makes 50 or 51 extra production requests (R-ECON-045, R-ECON-046). Which of the two applies depends on whether the Supply crate opens before or after that Spawn Node's update within the same tick. It is one instance of the same-tick rule of DEC-455, which does not fix the count; this entry does.
 - Options: A — keep the order-dependent count; B — a fixed count of 50 requests per Spawn Node; C — a fixed count of 51.
 - Recommendation: B. The count no longer depends on the update order, and the difference from the reference is at most one Worker per Spawn Node.
 - Decide by: design phase
@@ -123,7 +123,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-308 Orders to Workers that operate a port
 - Status: Open
-- Affects: reference/06_controls_camera_and_commands.md (R-CTRL), reference/03_buildings_and_world_objects/README.md (R-BLDG), reference/05_population_flow.md (R-ECON)
+- Affects: reference/06_controls_camera_and_commands/ (R-CTRL), reference/03_buildings_and_world_objects/README.md (R-BLDG), reference/05_population_flow.md (R-ECON)
 - Specified behaviour: Selection and crowd orders apply as reference/06 specifies, with no special case for a Worker that is operating a port. Whether a player can thereby pull an operating Worker off its port, and so un-man a structure on purpose, is not established.
 - Options: A — orders reach operating Workers, so a player can un-man a structure deliberately; B — operating Workers ignore crowd orders until they leave their port on their own.
 - Recommendation: A, once play has established what the reference rules produce. Deliberate un-manning lets players choose which structures their Workers hold; choose B only if playtests show frequent accidental un-manning.
@@ -131,7 +131,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-309 Global flag on Source Nodes
 - Status: Open
-- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas.md (DAT)
+- Affects: reference/03_buildings_and_world_objects/economy_and_spawn_objects.md (R-BLDG), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), architecture/components/data_schemas/ (DAT)
 - Specified behaviour: A map definition can mark a Source Node as global, and several reference maps do. In a match the flag changes no rule, because the only behaviour that reads it belongs to campaign content (DEC-052); it affects only how the Source Node is drawn. That no other match rule reads the flag is inferred, not confirmed.
 - Options: A — keep the flag as a presentation-only attribute of the map definition; B — remove the flag from Species map data, and express any visual variant of a Source Node as an explicit asset choice.
 - Recommendation: B. Every map is authored new, and a flag that suggests a world-level link but only changes drawing invites misuse.
@@ -141,7 +141,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-310 Camera tracking after selecting a Leader or a Transport
 - Status: Open
-- Affects: reference/06_controls_camera_and_commands.md (R-CTRL), architecture/components/camera_and_sequences.md (CAM)
+- Affects: reference/06_controls_camera_and_commands/ (R-CTRL), architecture/components/camera_and_sequences.md (CAM)
 - Specified behaviour: When the camera switches to tracking a Leader or a Transport, it keeps a stale orbit centre. This state is reachable only when the player selects a Leader or a Transport while the camera is already tracking a Strike team, which happens in gamepad play.
 - Options: A — keep the reference behaviour; B — recompute the orbit centre whenever the tracked unit changes.
 - Recommendation: B. A stale orbit centre has no play value, and the fix does not change any other camera rule (DEC-024).
@@ -149,15 +149,15 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-311 Bot controller as a target
 - Status: Open
-- Affects: reference/07_bots.md (R-BOT), reference/02_units/worker.md (R-UNIT), reference/02_units/creatures_and_hazards.md (R-UNIT), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG)
-- Specified behaviour: Each bot team has a bot controller, an immortal actor that sits in the actor grid; in the reference it stands at (20, 0, 20), and DEC-087 places it inside the map instead. The Worker threat search does not exclude it, so enemy Workers near it can lock onto a target they cannot kill. Whether the target searches of turrets, ants and other creatures exclude it is not established.
+- Affects: reference/07_bots/ (R-BOT), reference/02_units/worker.md (R-UNIT), reference/02_units/creatures.md (R-UNIT), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG)
+- Specified behaviour: Each bot team has a bot controller, an immortal actor that sits in the actor grid; in the reference it stands at (20, 0, 20), and DEC-087 places it inside the map instead, at its team's start position or at the map centre (DEC-862). The Worker threat search does not exclude it, so enemy Workers near it can lock onto a target they cannot kill. Both target searches of turrets skip it, and the Hive's search for any enemy actor does not. Whether the target searches of the other creatures exclude it is not established.
 - Options: A — the reference behaviour; B — no target search ever selects a bot controller, and it still counts towards its team's population (DEC-079); C — the bot controller is not a spatial actor at all.
 - Recommendation: B for the reference skirmish rules, because it keeps the population count unchanged. C is the cleaner model for the world game, where settlement AI and the deputy need no body in the world.
 - Decide by: design phase
 
 ### DEC-312 Bot decisions and node recounts within a tick
 - Status: Open
-- Affects: reference/07_bots.md (R-BOT), reference/12_simulation_model/04_containers_and_update_order.md (R-SIM)
+- Affects: reference/07_bots/ (R-BOT), reference/12_simulation_model/04_containers_and_update_order.md (R-SIM)
 - Specified behaviour: The bot controller advances in the update slice that its position in the actor pool gives it, assumed to be slice 0. The order within one tick between its decisions and the recount of bot navigation nodes is not established; it changes a bot's reaction time by at most one tick.
 - Options: A — leave the order to the bot controller's pool position; B — state the order explicitly: bot decisions run after the bot navigation node recount of the same tick.
 - Recommendation: B, stated in the update order of reference/12, so that bot behaviour does not depend on pool layout (DEC-016).
@@ -203,7 +203,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-317 Voice set language
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), assets/art_and_audio_briefs.md
+- Affects: reference/10_audio_design/ (R-AUD), reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META), assets/art_and_audio_briefs.md
 - Specified behaviour: Voice events fire for unit acknowledgements, attack and retreat orders, Supply crate outcomes, the game-over announcement, and the win and loss announcements. Whether the reference voice content consists of intelligible words, which would need localisation, is not established. Every Species voice line is authored new.
 - Options: A — worded voice lines, localised through the string tables; B — non-verbal vocalisations only; C — non-verbal crowd voices with worded, localised announcer lines.
 - Recommendation: C. Crowd acknowledgements repeat constantly and need no translation, while the announcements carry information that players must understand.
@@ -211,7 +211,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-318 Sound triggers tied to the frame rate
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
 - Specified behaviour: The flash sounds of grenades and airstrike bombs and the tick sounds of the match clock are triggered from drawing code, so how often they play can depend on the frame rate, and they can be skipped while the HUD is hidden.
 - Options: A — the reference behaviour; B — these sounds are presentation events issued at the tick where the flash or the clock change happens (DEC-007), independent of drawing.
 - Recommendation: B. What players hear then no longer depends on their frame rate or HUD setting.
@@ -219,7 +219,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-319 Ambience during loading views
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META)
+- Affects: reference/10_audio_design/ (R-AUD), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META)
 - Specified behaviour: The front-end sounds are loaded before the first loading view, but no lobby ambience plays during a loading view, because its trigger is inactive.
 - Options: A — silent loading views; B — an ambience bed during loading views.
 - Recommendation: B with new ambience if loading views stay long enough to be noticed; otherwise A. The choice follows the loading design of DEC-226.
@@ -227,7 +227,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-320 Match-end pitch drop
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
 - Specified behaviour: When a match ends, the pitch of game sounds follows the square root of a smoothed game speed as the speed falls to 0.1×, which sounds like a tape slowing down. DEC-569 keeps the drop as a deliberate effect of the world buses; its audible character has not been checked, and this entry confirms it.
 - Options: A — keep the effect; B — replace it with the designed match-end stings alone (DEC-049).
 - Recommendation: A, combined with the new match-end stings and confirmed by a listening test.
@@ -235,7 +235,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-321 Attached sounds when their emitter is removed
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
 - Specified behaviour: A sound attached to an actor or a structure stops without its release on the first tick after its emitter leaves the match world. A graceful path, in which the sound becomes stationary at its last position and ends with its release, exists but almost never runs. Which behaviour is intended is not recorded; the question is design-critical for the sound of deaths and removals. It is not among the audio corrections of DEC-097.
 - Options: A — the hard cut; B — the graceful path for every removal: the sound stays at the emitter's last position and plays its release.
 - Recommendation: B, confirmed by a listening test.
@@ -243,7 +243,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-322 Start value of smoothed sound parameters
 - Status: Open
-- Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN)
 - Specified behaviour: A sound parameter that is smoothed once per audio update starts from its definition's construction value (pitch 1.0) and is evaluated only two or three times before playback starts, so authored random pitch ranges are compressed towards 1.0 at the start of a note: a range of 0.75 to 1.35 becomes about 0.88 to 1.16. It is not among the audio corrections of DEC-097.
 - Options: A — keep the compression; B — a smoothed parameter starts at its first evaluated value, so the authored range is heard as authored.
 - Recommendation: B, confirmed by a listening test against the intended ranges of the new sound set.
@@ -251,7 +251,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-323 Loop keep-alive polling
 - Status: Resolved
-- Affects: reference/10_audio_design.md (R-AUD), architecture/components/audio_engine.md (AEN), reference/01_skirmish_rules_and_modes/launch_race.md (R-MODE)
+- Affects: reference/10_audio_design/ (R-AUD), architecture/components/audio_engine.md (AEN), reference/01_skirmish_rules_and_modes/launch_race.md (R-MODE)
 - Specified behaviour: The audio engine records a sound's emitter when the sound is triggered, so a query made before the next audio update, or for a non-positional or stationary sound, finds the instance. Looping sounds are started and stopped by explicit events, so a loop never runs twice for one emitter; the Launch Vessel loops of Launch Race follow this rule. Instance counts are defined in every voice state (DEC-752), and the other audio corrections are DEC-097.
 - Options: A — the corrected rule; B — the reference behaviour: game code keeps looping sounds alive by polling how many instances of a sound are playing for an emitter, and starts the loop again when it finds none; the poll cannot see an instance's emitter until an audio update has resolved it and never sees non-positional or stationary instances, so a loop can be started twice; and a stop request with no emitter matches every instance whose emitter was never set, that is, every non-positional and stationary sound.
 - Recommendation: A. Recording the emitter at trigger time removes duplicate loops by construction and fits the event model of DEC-007.
@@ -292,7 +292,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-328 Saturated team colours on effect bubbles
 - Status: Open
-- Affects: architecture/components/animation_and_vfx.md (VFX), architecture/components/renderer/visual_language.md (RND)
+- Affects: architecture/components/animation_and_vfx/ (VFX), architecture/components/renderer/visual_language.md (RND)
 - Specified behaviour: The Shield bubble and the Visitor-faction bubble are drawn with team colours whose channels are saturated to fully on or fully off, because 8-bit channel values are passed where unit fractions are expected. Whether this look is intended is not recorded.
 - Options: A — keep the saturated colours as the look of both bubbles; B — draw the bubbles in the team colour palette, with their saturation set by art direction.
 - Recommendation: B, after a visual comparison of both looks.
@@ -318,7 +318,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-331 Confirmed facts: the convert tag and the victory celebration
 - Status: Resolved
-- Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/02_units/worker.md (R-UNIT), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/10_audio_design.md (R-AUD)
+- Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/02_units/worker.md (R-UNIT), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP), reference/10_audio_design/ (R-AUD)
 - Specified behaviour: These behaviours are settled and are specified as rules. A Worker's convert tag, which turns gun-turret shots into convert lasers, is set only by the Convert power: placing the power tags the placing team's own Workers within the power effect range; the power lasts 30 s and ends early when no tagged Worker remains; a Worker clears its tag once the power has ended. A map with no primary objectives receives one objective that never completes, and the victory celebration of idle Workers starts only when every objective is complete, so it never starts on such a map.
 - Options: none.
 - Recommendation: Resolved: each fact is confirmed, and the owning reference document states it as a rule.
@@ -355,7 +355,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-336 Second graphics back end
 - Status: Dropped
-- Affects: architecture/components/renderer/README.md (RND), architecture/components/animation_and_vfx.md (VFX)
+- Affects: architecture/components/renderer/README.md (RND), architecture/components/animation_and_vfx/ (VFX)
 - Specified behaviour: Not specified. Whether the reference's alternative graphics build compiles, its dynamic-water look, its shader register allocation, its automatic mip generation, its doubled projection depth range, its deform render-target handling, its effect on floating-point precision, and its debris and deform look are outside the reference.
 - Options: none.
 - Recommendation: Dropped: no match runs on that build; the Species renderer is specified by its component and ADRs (DEC-059, ADR-0001).
@@ -383,7 +383,7 @@ This file records the decisions that arise from the open questions of the refere
 
 ### DEC-340 Data formats, archives and production tools
 - Status: Dropped
-- Affects: architecture/components/data_schemas.md (DAT), architecture/components/build_tooling_and_distribution.md (BLD), architecture/components/asset_pipeline_and_resources.md (AST)
+- Affects: architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution.md (BLD), architecture/components/asset_pipeline_and_resources.md (AST)
 - Specified behaviour: Not specified. The version and compression method of the reference's archive tool, the provenance of its crash-report tool, what its panel-animation tool writes, the forward-axis sign convention of its mesh exporter, the behaviour of its absent tools (updater, copy helper, profile locator, upload client, data-build and release scripts), the role of a memory-log sorting tool, and the name of the linker map file are outside the reference.
 - Options: none.
 - Recommendation: Dropped: Species defines its own pack files (ADR-0058), data schemas (ADR-0061), mesh and axis conventions (ADR-0016, ADR-0019, ADR-0021), crash reporting (ADR-0065) and tools; no reference data or tool output is imported.

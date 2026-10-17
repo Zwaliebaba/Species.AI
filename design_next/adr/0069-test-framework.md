@@ -35,7 +35,7 @@ Chosen option: "GoogleTest (with GoogleMock), discovered by CTest". This is the 
 * **Golden-hash tests:** the content build ([ADR-0059](0059-content-build-and-validators.md)) and deterministic engine subsystems compare output hashes with checked-in expectations.
 * **Golden-image tests:** the renderer renders fixed scenes on a pinned reference configuration and compares images with per-test tolerances; reference images are reviewed on change.
 * **Fuzz tests:** libFuzzer-compatible harnesses for the pack-file reader, every binary record loader and the authoring-file parser, run nightly in a sanitiser-enabled analysis configuration ([ADR-0051](0051-windows-toolchain-and-compiler-policy.md)); the fuzzing engine is pinned with the other dependencies.
-* **Performance tests:** benchmark executables with fixed scenes and budgets from the component specifications; results are CI artefacts.
+* **Performance tests:** performance-test executables with repeatable scenes and budgets from the component specifications; results are CI artefacts.
 * **Modules:** test translation units include standard headers and never `import std` ([ADR-0053](0053-modules-and-import-std.md)), because the framework headers include standard headers.
 
 ### Consequences
@@ -75,3 +75,4 @@ Chosen option: "GoogleTest (with GoogleMock), discovered by CTest". This is the 
 * The standards baseline does not list test-framework versions; the version is pinned through vcpkg and recorded by the diagnostics component.
 * Related: [ADR-0070](0070-continuous-integration.md).
 * Component: diagnostics, test and performance (`DBG`).
+* **Amendment 2026-10-17.** Performance tests use repeatable scenes, in the wording of the diagnostics component (DBG-183, DBG-208).

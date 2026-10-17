@@ -36,7 +36,7 @@ Proposed option: **1, a display-referred working space**. **Default while Propos
 - **Textures.** The cooker tags colour textures as sRGB-encoded (for example `BC7_UNORM_SRGB`, ADR-0017) and data textures as linear. The loader creates sRGB-tagged textures with the typeless format of their family and gives shaders a `UNORM` view, so samples are the encoded values. Mip levels of sRGB-tagged textures are filtered with sRGB-aware filtering at cook time.
 - **Mesh colours.** The mesh cooker converts glTF vertex colours (`COLOR_0`) and colour factors from their linear definition to sRGB-encoded values with the exact sRGB encoding curve, once, at cook time (ADR-0019, ADR-0020).
 - **Constants.** Palette colours, fog colours, light colours and UI colours are stored and used as encoded values, exactly as the tuning tables give them.
-- **Lighting.** Lighting multiplies encoded colours by the sum of the two lights' encoded colours weighted by their facing terms, and clamps on write, as the shader set of ADR-0003 specifies.
+- **Lighting.** Lighting sums, over the two lights, a diffuse term (the encoded facet colour × the light's encoded colour × its facing term) and a specular term (the light's encoded colour × the material's encoded specular colour × the highlight term), and clamps the sum to [0, 1] before texturing, fog and blending, as the shader set of ADR-0003 specifies.
 - **HDR.** When HDR output is enabled, the scene targets become `R16G16B16A16_FLOAT` holding encoded values without per-layer clamping, and the final pass converts them to the output colour space (ADR-0014). The HDR image intentionally differs from the SDR image above the SDR white level.
 - Changing to a linear-light working space later (option 2) would be a deliberate change of the look and needs a new ADR; because texture metadata is truthful, it would change shader views and constants, not assets.
 
@@ -76,3 +76,4 @@ Proposed option: **1, a display-referred working space**. **Default while Propos
 
 - Related: ADR-0003 (shader set and lighting), ADR-0005 (blend states), ADR-0012 (back-buffer format), ADR-0014 (HDR output), ADR-0017 (texture formats and sRGB tags), ADR-0018 (texture import manifest), ADR-0020 (flat shading and team tint).
 - The renderer component (`architecture/components/renderer/`) states the visual-language requirements that define the look in encoded values.
+- **Amendment 2026-10-17.** The lighting rule includes the specular term of the lit materials (RND-233), which the terrain grid and the special lighting use (RND-229, RND-266). Single-channel masks (glow, beam and darkening families) are linear data textures; they are read as stored values, so the look is the same as for encoded colour (AST-020).

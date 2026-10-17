@@ -4,13 +4,13 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# World-surface rendering: chunked terrain, edge-term wire overlay and GPU water
+# World-surface rendering: chunked terrain, single-pass wire overlay and GPU water
 
 ## Context and Problem Statement
 
 The Species world surface is a flat-shaded height-field terrain with a glowing wire-grid overlay, surrounded and cut by animated water, under a sky drawn into a black, fogged world. The terrain and water fill most of the screen in every frame, and the wire overlay is a defining part of the look. At the strategic zoom level of a large world, far more terrain is in view than in a skirmish arena.
 
-How terrain heights are *produced* (generated when a map loads or baked into the map asset), and how terrain streams for a large world, are deferred to the design phase (the terrain runtime model; see [the index](README.md#deferred-to-the-design-phase)). Whatever the answer, the renderer receives a height field and a per-vertex colour field for each terrain region and has to draw them efficiently, together with the water and the sky.
+How terrain heights are *produced* (generated when a map loads or baked into the map asset), and how terrain streams for a large world, are deferred to the design phase (the terrain runtime model; see [the index](README.md#deferred-to-the-design-phase)). Whatever the answer, the renderer receives a height field and one colour per terrain facet for each terrain region and has to draw them efficiently, together with the water and the sky.
 
 The problem is how the renderer draws the terrain, its wire overlay, the water and the sky.
 
@@ -24,17 +24,17 @@ The problem is how the renderer draws the terrain, its wire overlay, the water a
 
 ## Considered Options
 
-1. **Chunked static terrain buffers** with per-chunk culling, and the **wire overlay as an edge term** in the terrain pixel shader (one pass).
+1. **Chunked static terrain buffers** with per-chunk culling, and the **wire overlay as a grid term** in the terrain pixel shader (one pass).
 2. Chunked static terrain buffers with the wire overlay drawn as a **second, depth-biased pass**.
 3. A **continuous-LOD terrain** (geometry clipmaps or GPU tessellation) with the edge term in its pixel shader.
 
 ## Decision Outcome
 
-Chosen option: **1, chunked static terrain with a single-pass edge term**, because it is the cheapest way to draw the terrain and its overlay at the reference look, and it leaves the choice of a level-of-detail scheme to the design phase's terrain runtime model.
+Chosen option: **1, chunked static terrain with a single-pass grid term**, because it is the cheapest way to draw the terrain and its overlay at the reference look, and it leaves the choice of a level-of-detail scheme to the design phase's terrain runtime model.
 
-- **Terrain buffers.** Each terrain region is split into chunks of a fixed grid size. Each chunk's vertices (position, facet colour, barycentric coordinates for the edge term) and indices live in default-heap buffers created when the region's height and colour data become available (ADR-0008). Each chunk carries a bounding box.
+- **Terrain buffers.** Each terrain region is split into chunks of a fixed grid size. Each chunk's vertices (position, facet colour, facet normal, grid coordinates and barycentric coordinates) and indices live in default-heap buffers created when the region's height and colour data become available (ADR-0008). Each chunk carries a bounding box.
 - **Culling.** Chunks are culled against the view frustum each frame, and the visible chunks are drawn with one instanced or indirect draw per pass.
-- **Wire overlay.** The terrain pixel shader adds the wire-grid edge term computed from barycentric coordinates (ADR-0003), so surface and overlay are drawn in one pass. Where the look needs the overlay with a different blend from the surface, the renderer component may specify a second pass instead, as a documented exception in the pass table.
+- **Wire overlay.** The terrain pixel shader adds the wire-grid term to the surface, so surface and overlay are drawn in one pass. The term has two sources, selected by a permutation of the terrain shader (ADR-0003): the **stylised grid texture**, mapped once onto each height-field cell so that its lines do not follow the triangle edges, which is the default (the reference look, DEC-326 option A); and the **edge term** computed from barycentric coordinates, which follows the triangle edges (DEC-326 option B). Either source is lit with the grid's own specular material, separate from the surface material (ADR-0003). Where the look needs the overlay with a different blend from the surface, the renderer component may specify a second pass instead, as a documented exception in the pass table.
 - **Height-field texture.** The renderer also keeps each region's heights in a single-channel float texture, which particles (ADR-0010) and shadow projection (ADR-0009) sample.
 - **Water.** Wave heights and colours are computed in the water vertex shader from the presentation time and per-level wave parameters, over a static grid mesh; a compute pass that writes a displaced vertex buffer is allowed where the vertex-shader form proves too expensive. Flat water layers are one draw with two textures and an explicit combine mode (ADR-0003). A planar water reflection is not part of the baseline.
 - **Sky.** The sky and clouds are one draw with additive blending, with fog computed in the shader.
@@ -51,13 +51,13 @@ Chosen option: **1, chunked static terrain with a single-pass edge term**, becau
 
 ### Confirmation
 
-- Golden-image tests compare the single-pass terrain and overlay with the reference images of the renderer component at several camera distances and angles.
+- Golden-image tests compare the single-pass terrain and overlay with the reference images of the renderer component at several camera distances and angles, for both grid sources.
 - A performance test on the minimum-capability GPU measures terrain and water GPU time for the largest skirmish map and for a synthetic large region.
 - A culling test checks that chunks outside the frustum issue no draws.
 
 ## Pros and Cons of the Options
 
-### 1. Chunked terrain with a single-pass edge term
+### 1. Chunked terrain with a single-pass grid term
 
 - Good, because it is simple, cheap and exact for the look.
 - Neutral, because LOD is left to a later decision.
@@ -76,5 +76,6 @@ Chosen option: **1, chunked static terrain with a single-pass edge term**, becau
 
 ## More Information
 
-- Related: ADR-0003 (edge mask and combine modes), ADR-0008 (static buffers), ADR-0009 (shadow projection), ADR-0010 (particles on terrain).
+- Related: ADR-0003 (grid term, edge mask and combine modes), ADR-0008 (static buffers), ADR-0009 (shadow projection), ADR-0010 (particles on terrain).
 - The terrain component (`architecture/components/terrain.md`) and the renderer component (`architecture/components/renderer/`) specify the terrain algorithm, the chunk size, the wire-grid parameters and the water parameters.
+- **Amendment 2026-10-17.** The wire overlay is a grid term with two sources: the stylised grid texture is the default and the barycentric edge term is the alternative permutation, matching the renderer component (RND-135, RND-266) and DEC-326. The grid term has its own specular material (RND-233, RND-266). The terrain supplies one colour per facet (RND-134).

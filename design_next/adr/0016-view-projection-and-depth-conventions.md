@@ -32,9 +32,9 @@ Proposed option: **1, right-handed, +Y up, reversed-Z, Hor+**. **Default while P
 
 - **Axes.** World and view space are right-handed with +Y up; the camera looks along −Z in view space. Distances are in world units (`wu`). The mesh cooker converts source axes into world axes once, at cook time (ADR-0019). If the simulation model's axes differ, the conversion happens once at the boundary between simulation state and presentation, never inside a sub-renderer.
 - **Projection and depth.** Perspective projection with **reversed Z**: the near plane maps to depth 1 and the far plane to depth 0. The depth buffer is `D32_FLOAT`, cleared to 0, and the default depth comparison is greater-or-equal (the catalogue default of ADR-0005). The far plane stays finite, so culling and fog distances keep a defined end.
-- **Depth bias.** Decals, blob shadows and overlays use the pipeline's `DepthBias` and `SlopeScaledDepthBias` with signs chosen for reversed Z (ADR-0005), never a change of the projection's near plane.
+- **Depth bias.** Decals, blob shadows and overlays use the pipeline's `DepthBias` and `SlopeScaledDepthBias` with signs chosen for reversed Z (ADR-0005), never a change of the projection's near plane. Where the look is defined as a near plane raised by a factor *k*, the renderer converts it to a constant bias of round((*k* − 1) × 2²⁴) units with no slope term, which never gives less offset than the raised plane.
 - **Matrices.** The CPU uses DirectXMath with row vectors. Constant and structured buffers store matrices row-major, HLSL declares them `row_major` and multiplies `mul(v, M)`, so CPU and GPU agree without transposes. World transforms are passed as 3x4 affine matrices (`Mat3x4`).
-- **Field of view.** The vertical field of view is fixed by the camera; the horizontal field of view grows with the aspect ratio (Hor+). The camera component owns the field-of-view values.
+- **Field of view.** The vertical field of view is fixed by the camera; the horizontal field of view grows with the aspect ratio (Hor+). The camera component owns the field-of-view values; the renderer owns the near and far planes and clamps the field of view to its valid range before each projection set-up.
 - **HUD space.** The in-match HUD is laid out in an orthographic space 600 units high whose width follows the window's aspect ratio. The front-end UI uses the screen-fraction layout grid of the UI framework (ADR-0033).
 - **Picking.** Screen-to-world rays are built from the inverse view-projection matrix with reversed-Z depth values; one helper serves the cursor, unit selection and the camera.
 
@@ -73,4 +73,5 @@ Proposed option: **1, right-handed, +Y up, reversed-Z, Hor+**. **Default while P
 ## More Information
 
 - Related: ADR-0005 (depth comparison and depth bias), ADR-0009 (shadows), ADR-0019 (mesh source axes), ADR-0033 (UI layout and scaling).
-- The camera component (`architecture/components/camera_and_sequences.md`) owns the field-of-view, near and far values.
+- The camera component (`architecture/components/camera_and_sequences.md`) owns the field-of-view values; the renderer component (`architecture/components/renderer/`) owns the near and far planes and the field-of-view clamp.
+- **Amendment 2026-10-17.** Ownership of the view values follows the components: the camera owns the field of view (CAM-005, CAM-012), the renderer the near and far planes (RND-211) and the clamp (RND-212). The depth-bias conversion for a raised near plane is the renderer's (RND-220).

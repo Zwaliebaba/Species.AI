@@ -32,9 +32,9 @@ Chosen option: "Opt-in HTTPS telemetry with a fixed data set and no embedded sec
 
 * **Consent:** off by default. The first-run screen and the options screen ask with plain text that lists the data set; the choice is stored in the settings and can be withdrawn at any time, which deletes unsent data.
 * **Data set (per session):** frame-time percentiles (50th, 95th, 99th) rather than a frames-per-second integer; simulation update time percentiles; peak and mean entity counts; network bytes in and out per second and round-trip latency; the build identity ([ADR-0057](0057-version-identity.md)); a hardware summary read in-process (DXGI adapter description and driver version, `GetSystemInfo`, `GlobalMemoryStatusEx`, the display mode). No player names, chat, account ids or IP addresses are part of the data set.
-* **Transport:** HTTPS only, through the platform layer's HTTP client; batched, retried with back-off, and dropped after a bounded local queue size.
+* **Transport:** HTTPS only, through the platform layer's HTTPS client, whose stack is chosen in [ADR-0077](0077-client-http-stack.md); batched, retried with back-off, and dropped after a bounded local queue size.
 * **No secrets:** the client embeds no credential. Submissions carry the build identity and a random per-installation id that the player can reset; the collector treats every submission as untrusted input.
-* **Benchmark scene:** a recorded, repeatable scene that the client can run headless or rendered, reporting the same data set, serves QA and players who want a performance check.
+* **Repeatable performance scene:** a recorded, repeatable scene that the client can run headless or rendered, reporting the same data set, serves QA and players who want a performance check.
 * **Out of scope:** the collection endpoint, storage and retention (online services, design phase).
 
 ### Consequences
@@ -69,4 +69,5 @@ Chosen option: "Opt-in HTTPS telemetry with a fixed data set and no embedded sec
 ## More Information
 
 * Related: [ADR-0065](0065-crash-reporting.md) (crash data uses its own, OS-consented path), [ADR-0068](0068-profiling-and-gpu-timing.md) (the timing sources).
-* Component: diagnostics, test and performance (`DBG`).
+* Component: diagnostics, test and performance (`DBG`); the HTTPS client belongs to the platform layer (`PLT`).
+* **Amendment 2026-10-17.** The scene is called the repeatable performance scene, as the diagnostics component names it (DBG-183). The HTTPS client is the platform layer's (PLT-099), on the stack of [ADR-0077](0077-client-http-stack.md).

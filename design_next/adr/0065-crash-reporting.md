@@ -72,4 +72,5 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 ## More Information
 
 * Facts and sources: technology baseline item 11.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the WER guide and API pages, the `LocalDumps` settings, the Windows Desktop Application Program, the Partner Center health report and the Sentry Native releases.
-* Component: build tooling and distribution (`BLD`); the black box belongs to diagnostics, test and performance (`DBG`).
+* Components: the platform layer (`PLT`) owns the crash path (the terminate, invalid-parameter and pure-call handlers, the WER registrations, the exclusions and thread naming); build tooling and distribution (`BLD`) owns the symbols, signatures, version resources and the test-machine `LocalDumps` settings; diagnostics, test and performance (`DBG`) owns the black box and the crash debug commands.
+* **Amendment 2026-10-17.** The crash path is the platform layer's (PLT-118 to PLT-125), as the build tooling (BLD-004) and diagnostics components state; the system summary and the crash context hold no Windows user name and write paths relative to placeholders (PLT-035, PLT-125).
