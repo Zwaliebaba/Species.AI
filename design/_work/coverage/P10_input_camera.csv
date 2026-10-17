@@ -103,3 +103,16 @@ contrib/systemiv/lib/filesys/text_stream_readers.cpp,skimmed,outside scope (P14)
 contrib/systemiv/lib/tosser/hash_table.cpp,skimmed,outside scope; case-insensitive key compare,1. Input system architecture
 data/language/english.txt,skimmed,control_* / gc_* / control_help_* phrases only,1. Input system architecture;4. Control help
 data/levels,skimmed,census of CameraMounts/CameraAnimations blocks in all 88 level files (scripted),3. Camera
+code/user_input.cpp,skimmed,outside scope (P01); InputManager::Advance call site and Eclipse click suppression,1. Input system architecture
+code/worldobject/scripttrigger.cpp,skimmed,outside scope (P07); camera-driven script triggers,Determinism notes
+code/unit.cpp,skimmed,outside scope (P03); IsInView uses SphereInViewFrustum,Determinism notes
+code/routing_system.cpp,skimmed,outside scope (P11/P09); camera use in debug spot rendering,Determinism notes
+code/network/clienttoserver.cpp,skimmed,outside scope (P15); START_GAME sets GameModeMultiwinia,4. Control help
+code/app.cpp,skimmed,outside scope (P01); IsSinglePlayer/Multiplayer predicates,4. Control help
+code/lib/vector3.cpp,skimmed,outside scope (P13); RotateAround semantics,3. Camera
+code/lib/math_utils.cpp,skimmed,outside scope (P13); RampUpAndDown,3. Camera
+code/lib/math_utils.h,skimmed,outside scope (P13); clamp macro,"Camera projection, view and frustum"
+code/taskmanager_interface_icons.cpp,skimmed,outside scope (P09); extra Camera::Advance on hide,3. Camera
+code/interface/prefs_other_window.h,skimmed,outside scope (P17b); AutomaticCamera/ControlHelpEnabled names,3. Camera;4. Control help
+code/lib/preferences.cpp,skimmed,outside scope (P14); MultiwiniaControlMethod/ControlMethod/BootLoader defaults,2. Logical controls and default bindings
+data/default_preferences.txt,skimmed,ControlMethod and MultiwiniaControlMethod defaults,2. Logical controls and default bindings

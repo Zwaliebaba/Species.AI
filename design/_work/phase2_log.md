@@ -69,3 +69,9 @@
 - 28 §1–10 (focus/mouse/keyboard rules, every widget, palette, controller bindings, localisation, new-screen walkthrough, class diagram); 08 E1–E5 (editor core: 9 modes, 5 tools; 16 editor windows, ~60 building-edit control rows); 32 D1–D7 (23 cheats, 17 debug entry points, network window fields); ~55 constants; UI string table (221 rows). [U]=5.
 - Editor unreachable in FULL (Map Editor button exists only in editor builds; other route via Darwinia loop exits immediately); custom .mwm maps editor-build-only; F9 network stats window ships in FULL.
 - Uncertain: "Create New Map" .txt readable as .mwm?; LevelFile::m_gameTypes single type vs bitmask; reinforcement-mode drop-down reuses values 0/1.
+
+## P03_entity_core — done
+- WorldObjectId/WorldObject; Entity (27-value type enum + blocked status, NewEntity, stats loading, team colour, collision); entity grid/cache/obstruction/routing; class diagrams for all 159 worldobject classes (drafts/P03_worldobject_classes.csv); Darwinian (25 states), Officer (3 states, 4 order types), Spirit (10 states), EntityLeg; 23 effect types; 5 damage types; 17 Darwinian sound events; ~80 constants; 13 contradictions/bugs. [U]=7.
+- Critical: Darwinians watching a launching rocket take facing from wall clock (g_gameTime from GetHighResTime) → probable desync; Harvesters appear to collect any team's souls (no team check) → Darwinians at own spawns; grid shortcuts ignore range (cache ignores requested range; presence checks use cell capacity) → exact queries play differently.
+
+## Phase 3 started (early): S07 (07_ai), S27 (27_audio_engine), S28 (28_ui_framework), S02 (02_units_and_entities), S04 (04_crates_powerups_and_weapons). Class→doc assignment: _work/class_assignment.csv.

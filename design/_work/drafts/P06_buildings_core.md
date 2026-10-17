@@ -133,7 +133,7 @@ Runtime-created buildings (crate turrets, statues, crates, portals, AI targets) 
 | `OperatePort(i, team)` | `counter[team] = min(counter[team]+1, 50)` | — | [C] |
 | `GetPortOperatorCount(i, team)` | `counter[team]`, or −1 for a bad index | — | [C] |
 | `GetObjectiveCounter(UnicodeString&)` | empty string | MasterSpawnPoint, Generator, SpiritProcessor (Darwinia objectives) | [C] |
-| `DoesSphereHit(pos,r)` | shape sphere test, else `|pos−m_pos| ≤ r + m_radius` | SpawnPopulationLock, JumpPad, Portal, CarryableBuilding (all false); RadarDish (radius ×1.5) | [C] |
+| `DoesSphereHit(pos,r)` | shape sphere test, else `length(pos−m_pos) ≤ r + m_radius` | SpawnPopulationLock, JumpPad, Portal, CarryableBuilding (all false); RadarDish (radius ×1.5) | [C] |
 | `DoesShapeHit(shape, mat)` | shape-vs-shape, else sphere | SpawnPopulationLock, JumpPad, Portal, CarryableBuilding (false) | [C] |
 | `DoesRayHit(start,dir,len,pos,norm)` | shape ray test (`pos/norm` not filled), else ray-sphere | GunTurret, RadarDish, JumpPad, Portal, CarryableBuilding | [C] |
 | `ListSoundEvents(list)` | `Create`, `Reprogramming` (comment "Remove me"), `ReprogramComplete`, `ChangeTeam`, `Damage` | most | [C] |
@@ -493,7 +493,7 @@ Projectile characteristics (owned by the weapons agent; summarised for completen
 | TurretShell | 500 u/s, straight | 0.6 s in MP (≈300 u); Darwinia: 0.5/0.5/1.0/1.5/2.0 s by armour research 0–4 | each enemy entity whose `RayHit` intersects the swept segment: `ChangeHealth(−15, DamageTypeTurretShell)`; knock-back 20 u/s + airborne; tree/anthill/triffid buildings −2; kills credited to turret (`RegisterKill`) and team. MP shell team = turret team; SP shell team = 255 | [C] `location.cpp:FireTurretShell`, `weapons.cpp:TurretShell::Advance` |
 | Rocket | starts 50 u/s, ×1.2 per tick until ≥150 | 1.0 s (turret override) or ground/building contact | `Bang(pos, 15, 25, team, turretId)` | [C] `weapons.cpp:Rocket::Rocket/Advance/Explode` |
 | Grenade (mortar) | ballistic, `force` from level | explodes on impact (life 1000) | power 25 → `Bang(pos, 12.5, 50, team)` | [C] `weapons.cpp:Grenade::Advance`, `location.cpp:ThrowWeapon` |
-| Fireball | 100 u/s | 1.0 s; radius 20·min(1,|1−life|) | Darwinians in radius (once each): `FireDamage(30 · radius/dist · max(1, life))` | [C] `weapons.cpp:Fireball::Advance` |
+| Fireball | 100 u/s | 1.0 s; radius 20·min(1, abs(1−life)) | Darwinians in radius (once each): `FireDamage(30 · radius/dist · max(1, life))` | [C] `weapons.cpp:Fireball::Advance` |
 | Subversion laser | 125 u/s | Darwinia laser-research lifetime (level 0–4: 0.2, 0.4, 0.6, 0.8, 1.0 s) × 2 | mind-control laser (converts) | [C] `location.cpp:FireLaser`; [U] MP research level of `TypeLaser` (set by `Multiwinia::SetGameResearch`, other agent) |
 
 ### Effective fire rate (derived)
@@ -609,7 +609,7 @@ Entities enter teleports themselves: `Entity::EnterTeleports(requiredId)` scans 
 | Shape | per-instance copy of `radardish.shp` (so colours can be changed per team); fragments `Dish` (pitch) and `UpperMount` (yaw); markers `MarkerFocus` (beam origin), `MarkerTeleportEntrance`; 2 lights; no ports | [C] ctor; data/shapes |
 | Ownership | no own capture logic. In MP it is set by a linked **ControlStation** (port-based capture, other partition) via `b->SetTeamId(winner)`; MP dishes are placed neutral (team 255) except two team-0 dishes in `mp_assault_2p_3` (auto-connected, with `forceradarteammatch`). On team change in MP the dish's shape copy is recoloured to the team colour (white when neutral) | [C] `RadarDish::Advance`; `code/worldobject/controlstation.cpp:ControlStation::RecalculateOwnership`; data |
 | Aiming | `Aim(worldPos)`: if the dish has a *valid-link list* and `m_forceConnection` is set, the request is ignored unless the ray from the focus toward `worldPos` hits (ray–sphere on centre/radius) one of the listed dishes with terrain visibility. Otherwise stores `m_target`, clears both alignment flags, plays `BeginRotation`. Aim requests come from the network command for the owning team only (team must equal the dish's team) and from the AI; the human can only select their own dish, and not at all with level option `noradarcontrol` | [C] `RadarDish::Aim`; `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates` (`NET_DARWINIA_AIMBUILDING`, ≈L2684); `code/location_input.cpp`; `code/worldobject/ai.cpp` (`noradarcontrol` check) |
-| Rotation | Yaw first: rotation axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `|axis.y| > π/3000`, `UpperMount.angVel.y = sign·sqrt(|axis.y|)`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `|angVel| < 0.001`. Both integrated with dt. Sounds `BeginRotation`/`EndRotation` | [C] `RadarDish::Advance` |
+| Rotation | Yaw first: rotation axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `abs(axis.y) > π/3000`, `UpperMount.angVel.y = sign(axis.y)·sqrt(abs(axis.y))`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `length(angVel) < 0.001`. Both integrated with dt. Sounds `BeginRotation`/`EndRotation` | [C] `RadarDish::Advance` |
 | Connection test (every tick, once a target exists) | among all other RadarDishes: the ray from this focus along the focus front must hit the other's bounding sphere, the other's dish front must face back (`dot < 0`), focus-to-focus terrain visibility (`Location::IsVisible`), nearest such dish wins, and it must pass `ValidReceiverDish` | [C] `RadarDish::Advance` |
 | `ValidReceiverDish(id)` | in the MP tutorial building 11 is never valid; if level option `forceradarteammatch`: receiver team must equal ours; else if the valid-link list is empty any dish is valid, otherwise only listed ids | [C] |
 | Connected state | `m_receiverId`, `m_range` (focus-to-focus distance), `m_signal = 1`; `Connected() = receiver ≠ −1 && signal > 0`; `ReadyToSend = Connected && m_timeSync ≤ 0`. Transitions play `ConnectionEstablished` / `ConnectionLost` and set `GlobalBuilding.m_link` | [C] |
@@ -652,7 +652,7 @@ Source: `code/worldobject/jumppad.{h,cpp}`. Build tag: **[B:FULL]** (trajectory 
 | Behaviour | every **0.3 s** (`m_launchTimer`): launch vector = `m_front` rotated about `m_front × up` by `m_angle` (radians), length `m_force`; every Darwinian from the entity grid within `JUMPPAD_RADIUS` **40** that is on the ground and not `StateInsideArmour` gets `vel = launch`, `m_onGround = false`, `StateIdle`, waypoint cleared, orders cleared | [C] `JumpPad::Advance` |
 | Note | does **not** call `Building::Advance` (no port evaluation; `m_destroyed` never honoured) | [C] |
 | Damage | indestructible (base `Damage`) | [C] |
-| Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 units long, ±20 wide, brightness pulsing `0.3 + 0.7|sin t|` | [C] `RenderAlphas` |
+| Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 units long, ±20 wide, brightness pulsing `0.3 + 0.7·abs(sin t)` | [C] `RenderAlphas` |
 | Level line | `JumpPad id x z team fx fz isGlobal force angle` (write `%-2.2f ` each) | [C] |
 | Data | 23 placed in 3 official MP levels (Assault `2P_2` 3, Blitzkrieg `2P_3` 2, Domination `skirmish_3P_1` 18); force 76.17–227.38, angle 0.51–1.08 rad | [C] data |
 
@@ -682,7 +682,7 @@ Source: `code/worldobject/generator.{h,cpp}`, `code/worldobject/powerstation.{h,
 | Operating flag | `fraction > 0.6` → operating (sound `Operate`); `< 0.3` → not operating (sound stopped); purely cosmetic/AI | [C] |
 | Assault rule | if the panel has a starting team (level file ≠ 255) and is now owned by a **different** team in Assault, all its ports are deleted → next evaluation sets it neutral and it never produces again (attackers permanently knock out defender panels) | [C] `SolarPanel::Advance` + `RecalculateOwnership` (`GetNumPorts()==0 → 255`); [I] design intent |
 | Start of game | `Location::InitialiseTeam` spawns one Darwinian per port on every SolarPanel owned by the team and evaluates ownership | [C] `code/location.cpp:Location::InitialiseTeam` |
-| Rendering | status lights green/red; when occupied & owned, 4 glow quads (60×40) pulsing `0.5 + 0.5|sin t|` in team colour (Darwinia: blue 100,100,250) | [C] |
+| Rendering | status lights green/red; when occupied & owned, 4 glow quads (60×40) pulsing `0.5 + 0.5·abs(sin t)` in team colour (Darwinia: blue 100,100,250) | [C] |
 | Level line | base + `powerLink` | [C] |
 
 ### Pylon / PylonEnd / PowerSplitter
@@ -847,7 +847,7 @@ Sources: `code/worldobject/spawnpoint.cpp` (all functions), with supporting refs
 
 ### 1. Overview
 
-In every Multiwinia mode that has spawn points (Domination, KOTH, CTS, 2-player Blitzkrieg maps, two Rocket Riot maps — see the SpawnPoint mode-usage row), **territory is the only steady source of new Darwinians from buildings**: each *owned and activated* SpawnPoint runs a burst/pause request cycle; each request becomes a virtual spirit that travels from the level's master spawn point along spawn links to that SpawnPoint and turns into one Darwinian for the SpawnPoint's *current* owner. The per-team population cap and the handicap modulate this. Other population sources (not in this partition): starting `InstantUnits` in the level file, trunk-port reinforcements (Assault/Rocket Riot/Blitzkrieg option `trunkportreinforcements`), crate rewards (e.g. *Darwinians*, *Spawn Mania*), Futurewinian/monster teams. [C] spawnpoint.cpp; [C] `data/levels/*` LevelOptions; [I] list of other sources from grep, owned by other agents.
+In every Multiwinia mode that has spawn points (Domination, KOTH, CTS, 2-player Blitzkrieg maps, two Rocket Riot maps — see the SpawnPoint mode-usage row), **territory is the only steady source of new Darwinians from buildings**: each *owned and activated* SpawnPoint runs a burst/pause request cycle; each request becomes a virtual spirit that travels from the level's master spawn point along spawn links to that SpawnPoint and turns into one Darwinian for the SpawnPoint's *current* owner. The per-team population cap and the handicap modulate this. Other population sources (not in this partition): starting `InstantUnits` in the level file, trunk-port reinforcements (Rocket Riot natively via its `ReinforcementTimer`/`ReinforcementCount` game options, and any level with LevelOption `trunkportreinforcements` — all 8 Assault maps, `mp_blitzkrieg_2P_3`, `mp_blitzkrieg_2p_1`, `mp_blitzkrieg_2p_2`, `mp_cts_3p_3`, `mp_koth_3P_4`), crate rewards (e.g. *Darwinians*, *Spawn Mania*), Futurewinian/monster teams. [C] spawnpoint.cpp; [C] `data/levels/*` LevelOptions; [I] list of other sources from grep, owned by other agents.
 
 ```mermaid
 sequenceDiagram
@@ -856,7 +856,7 @@ sequenceDiagram
     participant L as SpawnLink(s)
     participant D as Darwinian
     loop every 0.2 s during a burst (N requests), then pause 10–15 s
-        SP->>SP: PopulationLocked()? (skip whole cycle if yes)
+        SP->>SP: PopulationLocked()? (if yes: timer frozen this tick)
         SP->>M: RequestSpirit(SP.id)
         M->>L: spirit on matching link (1 s per link)
         L->>SP: TriggerSpirit (after h links = h seconds)
@@ -986,13 +986,13 @@ So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer
 | Pause | 10–15 s (mean ≈ 12.55 s) | | |
 | Cycle (mean) | (N−1)·0.2 + 12.55 s | ≈ 16.35 s | ≈ 19.95 s |
 | Darwinians per spawn point per second (mean) | N / cycle | **≈ 1.22 /s (≈ 73/min)** | **≈ 1.90 /s (≈ 114/min)** |
-| Range over u | | 1.45–1.06 /s | 2.28–1.69 /s |
+| Range over u (u = 0 → 5) | N / ((N−1)·0.2 + 10 + u) | 1.45–1.06 /s | 2.18–1.70 /s |
 
 [I] derived from the [C] constants above.
 
 **Territory → throughput**: a team's spawn income ≈ `k × N / C` Darwinians/s for k owned, active, unlocked SpawnPoints — linear in territory, independent of how many ports are manned beyond the 3 needed to hold each point, delayed by the 30-s activation per newly captured point and by link latency (hops × 1 s), and clipped by the per-team cap. Example: 2-player KOTH `mp_koth_2P_1` (cap 2000/2 = 1000 per team; 40 starting Darwinians per team from `InstantUnits`): holding 3 points with H = 1 ≈ 3 × 1.22 ≈ 3.7 Darwinians/s ⇒ (1000 − 40)/3.7 ≈ 260 s ≈ 4.3 min to reach the cap with no losses. [I].
 
-**Spawn Mania** (crate reward, `INCLUDE_CRATES_ADVANCED`): sets `Location::m_spawnManiaTimer = 5.0`, decremented by dt in `Location::Advance` slice 8 (Multiwinia only). While > 0, every active unlocked SpawnPoint requests **every tick** (10/s, ignoring the timer; the counter/pause bookkeeping still runs) ⇒ ≈ 50 extra spirits per SpawnPoint. [C] `code/worldobject/crate.cpp:Crate::RunSpawnMania`, `code/location.cpp:Location::Advance`, `SpawnPoint::Advance`.
+**Spawn Mania** (crate reward, `INCLUDE_CRATES_ADVANCED`): sets `Location::m_spawnManiaTimer = 5.0`, decremented by dt in `Location::Advance` slice 8 (Multiwinia only). While > 0, every active unlocked SpawnPoint requests **every tick** (10/s, ignoring the timer; the counter/pause bookkeeping still runs) ⇒ ≈ 50 requests per SpawnPoint during the 5 s (vs ≈ 6 at the normal mean rate). [C] `code/worldobject/crate.cpp:Crate::RunSpawnMania`, `code/location.cpp:Location::Advance`, `SpawnPoint::Advance`.
 
 **Darwinia formula** [B:LEGACY] (not Multiwinia): `spawnTimer = 2 + 5·(1 − fractionOccupied) − (team == 1 ? 1.0 : 0.5)·difficulty/10 + syncfrand(1)`. [C].
 
@@ -1070,7 +1070,7 @@ So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer
 | SolarPanel surge probability | fraction/20 per tick | literal | [C] |
 | SolarPanel operate thresholds | > 0.6 on, < 0.3 off | literal | [C] |
 | Carryable ownership radius / period | 50 / 1.0 s | literal | [C] |
-| Carryable speed | 16 × (lifters/max) × speedScale × |sin t| | literal | [C] |
+| Carryable speed | 16 × (lifters/max) × speedScale × abs(sin t) | literal | [C] |
 | Carryable vote threshold | > 0.66 × lifters | literal | [C] |
 | Carryable route waypoint reach | 10 | literal | [C] |
 | ControlTower ownership step | ±0.1 per Reprogram call, range 0–100 | literal | [C] |
