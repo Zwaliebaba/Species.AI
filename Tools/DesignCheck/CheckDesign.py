@@ -78,7 +78,7 @@ REGEX_META = set('.^$*+?{}[]|()')
 
 WORD_STRIP = re.compile(r'[^a-z0-9!]')
 JOIN_SPLIT = re.compile(r'[^a-z0-9_]+')
-DASHES = re.compile('[-‐-―−⸺⸻﹘﹣－]')
+DASHES = re.compile('[-\u2010-\u2015\u2212\u2e3a\u2e3b\ufe58\ufe63\uff0d]')   # hyphen-minus and Unicode dashes
 NON_ALNUM = re.compile(r'[^A-Za-z0-9]+')
 CASE_STEP = re.compile(r'(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
 
