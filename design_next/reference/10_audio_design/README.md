@@ -23,7 +23,7 @@ The reference audio is **data-bound and event-driven**. Game and interface code 
 
 | Phase | What plays | Rules |
 |---|---|---|
-| Start-up and loading views | Nothing. No sound starts before the sound set has loaded, and no game sound event plays while a loading view shows (DEC-319). | R-AUD-049, R-AUD-395 |
+| Start-up and loading views | Nothing. No sound starts before the sound set has loaded, and no game sound event plays while a loading view shows (DEC-319). | R-AUD-048, R-AUD-395 |
 | Front end, lobby and options | `match_ui.lobby_bed`: three endless two-dimensional layers, a slow random sequence of pads (`amb.lobby_bed`), a low drone (`amb.match_bed`) and a heartbeat at half speed (`sfx.building.launch_vessel.fuelled_b`). It starts on the first front-end update after the sound set has loaded and starts again each time the front end is built, so after every match. Menu hover, select and back sounds and the chat sound play over it. No music track plays. | R-AUD-390 to R-AUD-392, R-AUD-300 |
 | Leaving the front end | The lobby bed stops: its two pad layers fade out over their releases (10.84 s and 10.26 s); the heartbeat has no release and stops at the next audio update. | R-AUD-392 |
 | Match start | `ambience.match_enter`: three two-dimensional layers whose levels follow the camera's altitude for the whole match. The ground rumble fades out as the camera rises above about 232 wu; a high-altitude wind bed and white noise fade in as it climbs towards about 990 wu. | R-AUD-393 |

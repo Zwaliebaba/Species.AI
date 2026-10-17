@@ -422,3 +422,178 @@ When `attack_node` is owned: first, when no tutorial crate has been inserted and
 
 **R-TUT-119** (MUST) **Who takes the attack node.** Until the bots may act no bot moves. Afterwards, until the bots may spawn, the first bot never moves and the second bot moves only to Beam Dish nodes (R-BOT-152); `bot_gate_node`, 47.4 wu from `attack_node`, gives the second bot the pin priority (R-BOT-155); the second bot's home Beam Dish is linked to a dish about 212 wu from `attack_node`. `attack_node` lies about 1,138 wu from the second bot's home and 1,482 wu from the player's. The lessons expect the second bot to take `attack_node` first, which shows `formation_attack`; whether it does depends on play, and when the player takes it first, phase A goes straight to the Transport crate, so the lessons may come in another order (DEC-110).
 
+### 2.11 String ids and text
+
+**R-TUT-130** (MUST) The action-glyph and value arguments of the strings of this document are those of table 2.11-0. A glyph argument shows the current binding of its action in the current input mode (R-TUT-003); a value argument shows the current value of its key.
+
+Table 2.11-0 String arguments.
+
+| Argument | Shows |
+|---|---|
+| `{select}` | the binding of `action.select.circle_grow` |
+| `{pick}` | the binding of `action.select.pick` |
+| `{order}` | the binding of `action.order.crowd` |
+| `{promote}` | the binding of `action.order.promote` |
+| `{special}` | the binding of `action.order.special` |
+| `{waypoint}` | the binding of `action.order.move_modifier`, which gives a selected Leader its waypoint order in gamepad mode (R-CTRL-043) |
+| `{deselect}` | the binding of `action.select.clear` |
+| `{next_power}` | the binding of `action.power.next` |
+| `{place}` | the binding of `action.power.place` |
+| `{fast_pan}` | the binding of `action.camera.fast_pan` |
+| `{demote}` | the binding of `action.order.demote` |
+| `{min_lifters}` | `ref.bldg.relic.min_lifters` |
+| `{boarding_fuel}` | `ref.bldg.launch_vessel.full_fuel` |
+| `{attack_fuel}` | `ref.bldg.launch_vessel.attack_fuel` |
+
+**R-TUT-131** (MUST) The instruction tabs are those of table 2.11-A, with the texts of table 2.11-B. The tabs `promote` and `promote_advanced` share one title, and so do `use_dish` and `leader_to_dish`. The movement tabs of R-TUT-066 are marked.
+
+Table 2.11-A Instruction tabs.
+
+| Tab | Tutorials | Title | Body | Gamepad variant of the body | Movement tab |
+|---|---|---|---|---|---|
+| `select_group` | first, second | `tutorial.tab.select_group.title` | `tutorial.tab.select_group.body` | yes | no |
+| `capture_node` | first | `tutorial.tab.capture_node.title` | `tutorial.tab.capture_node.body` | yes | yes |
+| `move_to_zone` | first | `tutorial.tab.move_to_zone.title` | `tutorial.tab.move_to_zone.body` | yes | yes |
+| `promote` | first, second | `tutorial.tab.promote.title` | `tutorial.tab.promote.body` | yes | no |
+| `promote_advanced` | first | `tutorial.tab.promote.title` | `tutorial.tab.promote_advanced.body` | yes | no |
+| `leader_to_zone` | first | `tutorial.tab.leader_to_zone.title` | `tutorial.tab.leader_to_zone.body` | yes | yes |
+| `capture_far_zone` | first | `tutorial.tab.capture_far_zone.title` | `tutorial.tab.capture_far_zone.body` | no | yes |
+| `scores` | first | `tutorial.tab.scores.title` | `tutorial.tab.scores.body` | no | no |
+| `crate_falling` | first | `tutorial.tab.crate_falling.title` | `tutorial.tab.crate_falling.body` | no | no |
+| `crate_open` | first, second | `tutorial.tab.crate_open.title` | `tutorial.tab.crate_open.body` | no | no |
+| `select_airstrike` | first | `tutorial.tab.select_airstrike.title` | `tutorial.tab.select_airstrike.body` | yes | no |
+| `launch_airstrike` | first | `tutorial.tab.launch_airstrike.title` | `tutorial.tab.launch_airstrike.body` | yes | no |
+| `select_dish` | second | `tutorial.tab.select_dish.title` | `tutorial.tab.select_dish.body` | yes | no |
+| `aim_dish` | second | `tutorial.tab.aim_dish.title` | `tutorial.tab.aim_dish.body` | yes | no |
+| `deselect` | second | `tutorial.tab.deselect.title` | `tutorial.tab.deselect.body` | yes | no |
+| `use_dish` | second | `tutorial.tab.use_dish.title` | `tutorial.tab.use_dish.body` | yes | no |
+| `dish_transit` | second | `tutorial.tab.dish_transit.title` | `tutorial.tab.dish_transit.body` | no | no |
+| `leader_to_dish` | second | `tutorial.tab.use_dish.title` | `tutorial.tab.leader_to_dish.body` | yes | no |
+| `form_up` | second | `tutorial.tab.form_up.title` | `tutorial.tab.form_up.body` | yes | no |
+| `move_formation` | second | `tutorial.tab.move_formation.title` | `tutorial.tab.move_formation.body` | yes | no |
+| `formation_info` | second | `tutorial.tab.formation_info.title` | `tutorial.tab.formation_info.body` | no | no |
+| `formation_attack` | second | `tutorial.tab.formation_attack.title` | `tutorial.tab.formation_attack.body` | no | no |
+| `break_formation` | second | `tutorial.tab.break_formation.title` | `tutorial.tab.break_formation.body` | yes | no |
+| `select_transport` | second | `tutorial.tab.select_transport.title` | `tutorial.tab.select_transport.body` | yes | no |
+| `place_transport` | second | `tutorial.tab.place_transport.title` | `tutorial.tab.place_transport.body` | yes | no |
+| `load_transport` | second | `tutorial.tab.load_transport.title` | `tutorial.tab.load_transport.body` | yes | no |
+| `move_transport` | second | `tutorial.tab.move_transport.title` | `tutorial.tab.move_transport.body` | yes | no |
+| `unload_transport` | second | `tutorial.tab.unload_transport.title` | `tutorial.tab.unload_transport.body` | yes | no |
+| `capture_console` | second | `tutorial.tab.capture_console.title` | `tutorial.tab.capture_console.body` | no | no |
+| `win` | second | `tutorial.tab.win.title` | `tutorial.tab.win.body` | no | no |
+
+Table 2.11-B Instruction tab texts (en-GB source).
+
+| String id | Text | Gamepad variant |
+|---|---|---|
+| `tutorial.tab.select_group.title` | Gather a crowd | — |
+| `tutorial.tab.select_group.body` | Hold {select} over the Workers here. The circle grows while you hold, and every Worker inside it joins your group when you let go. | Point at the Workers here and hold {select}. The circle grows while you hold, and every Worker inside it joins your group when you let go. |
+| `tutorial.tab.capture_node.title` | Claim the next Spawn Node | — |
+| `tutorial.tab.capture_node.body` | Click {order} on this Spawn Node. Your group walks over and claims it, and it starts producing Workers for you. | Point at this Spawn Node and press {order}. Your group walks over and claims it, and it starts producing Workers for you. |
+| `tutorial.tab.move_to_zone.title` | Into the ring | — |
+| `tutorial.tab.move_to_zone.body` | This match is Zone Control: each Control Zone you own earns points every second. Click {order} inside this ring to march your group in. | This match is Zone Control: each Control Zone you own earns points every second. Point inside this ring and press {order} to march your group in. |
+| `tutorial.tab.promote.title` | Make a Leader | — |
+| `tutorial.tab.promote.body` | Leaders pass your orders on, so you need not steer every Worker. With nothing selected, click {promote} on one Worker here to turn it into a Leader. | Leaders pass your orders on, so you need not steer every Worker. With nothing selected, point at one Worker here and press {promote} to turn it into a Leader. |
+| `tutorial.tab.promote_advanced.body` | A Leader with a waypoint redirects every idle Worker that comes close to it, all by itself. Click {promote} on a Worker here to make another Leader. | A Leader with a waypoint redirects every idle Worker that comes close to it, all by itself. Point at a Worker here and press {promote} to make another Leader. |
+| `tutorial.tab.leader_to_zone.title` | Show the way | — |
+| `tutorial.tab.leader_to_zone.body` | With your Leader selected, click {special} inside the zone. From then on, idle Workers near the Leader set off for the zone without being told. | With your Leader selected, point inside the zone and press {waypoint}. From then on, idle Workers near the Leader set off for the zone without being told. |
+| `tutorial.tab.capture_far_zone.title` | Hold a second zone | — |
+| `tutorial.tab.capture_far_zone.body` | Send a group into this zone too. Every extra zone you own makes your score climb faster. | — |
+| `tutorial.tab.scores.title` | Reading the score | — |
+| `tutorial.tab.scores.body` | The scoreboard sits at the top left. Each second it adds a point for every Control Zone you own, and whoever is ahead when the clock runs out takes the match. | — |
+| `tutorial.tab.crate_falling.title` | Something is falling | — |
+| `tutorial.tab.crate_falling.body` | Supply crates land at random spots during a match. Each one gives a random Power to the team that opens it. | — |
+| `tutorial.tab.crate_open.title` | Open the crate | — |
+| `tutorial.tab.crate_open.body` | Bring more Workers around the crate than any other team, and keep them there until it opens. | — |
+| `tutorial.tab.select_airstrike.title` | Your new Power | — |
+| `tutorial.tab.select_airstrike.body` | The crate held an airstrike. Press {next_power} to make it your current Power. | The crate held an airstrike. Press {next_power} to pick it from your Power slots. |
+| `tutorial.tab.launch_airstrike.title` | Call in the bombers | — |
+| `tutorial.tab.launch_airstrike.body` | Click {place} on the enemy Spawn Node to send the airstrike there. | Point at the enemy Spawn Node and press {place} to send the airstrike there. |
+| `tutorial.tab.select_dish.title` | A Beam Dish | — |
+| `tutorial.tab.select_dish.body` | A Beam Dish fires Workers along its beam to another dish far across the map. Click {pick} on it to take control of it. | A Beam Dish fires Workers along its beam to another dish far across the map. Point at it and press {pick} to take control of it. |
+| `tutorial.tab.aim_dish.title` | Aim the beam | — |
+| `tutorial.tab.aim_dish.body` | This dish is where the beam should land. Click {pick} on it to link the two dishes. | This dish is where the beam should land. Point at it and press {pick} to link the two dishes. |
+| `tutorial.tab.deselect.title` | Let go of the dish | — |
+| `tutorial.tab.deselect.body` | The link is up. Press {deselect} to release the dish so that you can give orders again. | the base text, with the gamepad glyph |
+| `tutorial.tab.use_dish.title` | Through the beam | — |
+| `tutorial.tab.use_dish.body` | Click {order} on the Beam Dish to march your group into it. | Point at the Beam Dish and press {order} to march your group into it. |
+| `tutorial.tab.dish_transit.title` | Riding the beam | — |
+| `tutorial.tab.dish_transit.body` | Your Workers travel along the beam and step out at the far dish. | — |
+| `tutorial.tab.leader_to_dish.body` | With your Leader selected, click {special} on the Beam Dish. The Leader then keeps sending idle Workers into it. | With your Leader selected, point at the Beam Dish and press {waypoint}. The Leader then keeps sending idle Workers into it. |
+| `tutorial.tab.form_up.title` | Form ranks | — |
+| `tutorial.tab.form_up.body` | With your Leader selected, click {special} on the ground right next to it. Nearby Workers line up behind it in a formation. | With your Leader selected, point at the ground right next to it and press {waypoint}. Nearby Workers line up behind it in a formation. |
+| `tutorial.tab.move_formation.title` | March together | — |
+| `tutorial.tab.move_formation.body` | Click {special} here to march the formation into the zone. | Point here and press {waypoint} to march the formation into the zone. |
+| `tutorial.tab.formation_info.title` | Formation firepower | — |
+| `tutorial.tab.formation_info.body` | A formation hits hard at whatever is ahead of it but turns slowly, so keep it facing the enemy. | — |
+| `tutorial.tab.formation_attack.title` | Charge the Spawn Node | — |
+| `tutorial.tab.formation_attack.body` | Lead the formation onto the enemy Spawn Node and wear down the Workers defending it. | — |
+| `tutorial.tab.break_formation.title` | Break ranks | — |
+| `tutorial.tab.break_formation.body` | Click {promote} on the Leader or on its banner to release the Workers from the formation. | Point at the Leader or its banner and press {promote} to release the Workers from the formation. |
+| `tutorial.tab.select_transport.title` | Your new Transport | — |
+| `tutorial.tab.select_transport.body` | The crate held a Transport. Press {next_power} to make it your current Power. | The crate held a Transport. Press {next_power} to pick it from your Power slots. |
+| `tutorial.tab.place_transport.title` | Set the Transport down | — |
+| `tutorial.tab.place_transport.body` | A Transport has to arrive close to a structure that your team owns. Click {place} beside this Spawn Node. | A Transport has to arrive close to a structure that your team owns. Point beside this Spawn Node and press {place}. |
+| `tutorial.tab.load_transport.title` | All aboard | — |
+| `tutorial.tab.load_transport.body` | A Transport carries a crowd of Workers across any ground. Click {promote} on it to open its doors, then send Workers over. | A Transport carries a crowd of Workers across any ground. Point at it and press {promote} to open its doors, then send Workers over. |
+| `tutorial.tab.move_transport.title` | Drive | — |
+| `tutorial.tab.move_transport.body` | With the Transport selected, click {special} near this Spawn Node to drive there. | With the Transport selected, point near this Spawn Node and press {special} to drive there. |
+| `tutorial.tab.unload_transport.title` | Everybody out | — |
+| `tutorial.tab.unload_transport.body` | Click {promote} on the Transport or on its order marker to let the Workers out. | Point at the Transport or its order marker and press {promote} to let the Workers out. |
+| `tutorial.tab.capture_console.title` | Take the console | — |
+| `tutorial.tab.capture_console.body` | Workers standing at a Command Console give you the Beam Dish it controls. Send a group to this one. | — |
+| `tutorial.tab.win.title` | Over to you | — |
+| `tutorial.tab.win.body` | Leaders, Transports and Beam Dishes are all at your command now. Hold as many Control Zones as you can and win the match. | — |
+
+**R-TUT-132** (MUST) The hint and explainer strings are those of table 2.11-C.
+
+Table 2.11-C Hint and explainer texts (en-GB source).
+
+| String id | Used by | Text | Gamepad variant |
+|---|---|---|---|
+| `ui.help.hint.move_or_deselect` | H3 (R-TUT-025 item 1) | {order} sends what you have selected. {deselect} clears the selection. | Press {order} to send what you have selected, or {deselect} to clear the selection. |
+| `ui.help.hint.deselect` | H3 (R-TUT-025 item 2), H5 | Press {deselect} to clear the selection. | the base text, with the gamepad glyph |
+| `ui.help.hint.fast_pan` | H4 | Hold {fast_pan} to move the camera faster. | — (keyboard and mouse only) |
+| `ui.help.hint.demote_leader` | H6 | Select a Leader and press {demote} to make it a Worker again. | the base text, with the gamepad glyph |
+| `ui.help.hint.transport_arrival` | H7 | Click {promote} on the marker to choose what the Transport does when it arrives. | Point at the marker and press {promote} to choose what the Transport does when it arrives. |
+| `ui.help.explainer.spawn_control` | H1 | Take Spawn Nodes to grow your army. A team with none left is out. | — |
+| `ui.help.explainer.zone_control` | H1 | Crowd the Control Zones. Each zone you own scores every second. | — |
+| `ui.help.explainer.relic_run` | H1 | Lift a Relic with a crowd of Workers and carry it back to your base. | — |
+| `ui.help.explainer.siege` | H1 | Attackers storm the Command Consoles; defenders hold out until the Core Device goes off. | — |
+| `ui.help.explainer.launch_race` | H1 | Fuel your Launch Vessel, crew it and lift off before anyone else. | — |
+| `ui.help.explainer.flag_chain` | H1 | Raise Flag posts link by link until your chain reaches an enemy Home post. | — |
+
+**R-TUT-133** (MUST) The help-page strings are those of table 2.11-D.
+
+Table 2.11-D Help page texts (en-GB source).
+
+| String id | Text | Gamepad variant |
+|---|---|---|
+| `ui.help.mode.spawn_control.title` | Spawn Control guide | — |
+| `ui.help.mode.zone_control.title` | Zone Control guide | — |
+| `ui.help.mode.relic_run.title` | Relic Run guide | — |
+| `ui.help.mode.siege.title` | Siege guide | — |
+| `ui.help.mode.launch_race.title` | Launch Race guide | — |
+| `ui.help.mode.flag_chain.title` | Flag Chain guide | — |
+| `ui.help.page.general.1` | Workers are your whole army: they capture, they fight and they carry. Hold {select} to gather a crowd of them, then click {order} to send it somewhere. | Workers are your whole army: they capture, they fight and they carry. Hold {select} to gather a crowd of them, then press {order} to send it somewhere. |
+| `ui.help.page.general.2` | With nothing selected, click {promote} on a single Worker to turn it into a Leader. Leaders guide other Workers, so you do not have to steer every crowd yourself. | With nothing selected, point at a single Worker and press {promote} to turn it into a Leader. Leaders guide other Workers, so you do not have to steer every crowd yourself. |
+| `ui.help.page.general.3` | New Workers appear at the Spawn Nodes you own. The more Spawn Nodes you hold, the faster your numbers grow. | — |
+| `ui.help.page.general.4` | Workers defend themselves: any enemy that comes within reach is attacked at once, without an order from you. | — |
+| `ui.help.page.general.5` | Supply crates drop from the sky during a match. Open one with a crowd of Workers to win a random Power, then press {next_power} to choose it. | Supply crates drop from the sky during a match. Open one with a crowd of Workers to win a random Power, then press {next_power} to pick it from your Power slots. |
+| `ui.help.page.spawn_control.1` | Own as many Spawn Nodes as you can. A team that loses its last Spawn Node is knocked out, and the last team still in play wins. | — |
+| `ui.help.page.zone_control.1` | Own as many Control Zones as you can. Every zone you own adds to your score each second. | — |
+| `ui.help.page.zone_control.2` | A zone belongs to the team with the most Workers standing inside its ring. Walk in with a bigger crowd to take it over. | — |
+| `ui.help.page.relic_run.1` | Score by lifting a Relic and carrying it to your Relic Base. Every Relic you deliver is worth a point. | — |
+| `ui.help.page.relic_run.2` | A Relic is heavy: it takes at least {min_lifters} Workers to lift it, and a bigger crowd carries it faster. Gather one with {select} and send it with {order}. | A Relic is heavy: it takes at least {min_lifters} Workers to lift it, and a bigger crowd carries it faster. Gather one by holding {select}, then press {order} to send it. |
+| `ui.help.page.relic_run.3` | A Relic in enemy hands can still be won: bring a bigger crowd around it and take it from its carriers. | — |
+| `ui.help.page.siege.1` | Siege splits the players into two sides, attackers and defenders. | — |
+| `ui.help.page.siege.2` | The defenders guard the Core Device. If its countdown runs out, the defenders win; the attackers win by holding every Command Console at the same time. | — |
+| `ui.help.page.siege.3` | Breach Charges are explosives that Workers carry. Bring one to a wall to blast a way through. | — |
+| `ui.help.page.launch_race.1` | Win the race in three steps: capture Solar Arrays, fill your Launch Vessel with fuel, then crew it and launch. | — |
+| `ui.help.page.launch_race.2` | Capture Solar Arrays the way you capture Spawn Nodes, with Workers. Each one you own feeds fuel to your Launch Vessel. | — |
+| `ui.help.page.launch_race.3` | Once the fuel reaches {boarding_fuel}, your Workers start to board. The vessel lifts off when it is fully crewed. | — |
+| `ui.help.page.launch_race.4` | Enemies go for a well-fuelled vessel. Once its fuel passes {attack_fuel}, keep Workers close by to defend it. | — |
+| `ui.help.page.flag_chain.1` | Knock other teams out by taking their Flag posts. | — |
+| `ui.help.page.flag_chain.2` | Your Home post starts empty, so claim it first. If an enemy chain of Flag posts reaches it and takes it, you are out. | — |
+| `ui.help.page.flag_chain.3` | Knock out every other team to win the match. | — |
+

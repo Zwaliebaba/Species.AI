@@ -210,7 +210,7 @@ Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [0
 - **AC-POS-04** (R-AUD-237) Given game speed 0.25 held after the grace period, then a positioned instance plays at 0.5× pitch once the smoothing has settled, and a two-dimensional instance at 1.0×; given game speed 0, then positioned instances settle at 0.1×; given the next match, then its first positioned instance plays at 1.0×.
 - **AC-POS-05** (R-AUD-240) Given 100 spawning Workers all 400 wu from the camera, then `worker.spawn` is not heard; given one of them 300 wu from the camera, then it is heard from that Worker.
 - **AC-POS-06** (R-AUD-251) Given four instances of one event at equal audibility a, then their priorities are a, 0.75a, 0.5625a and 0.421875a.
-- **AC-POS-07** (R-AUD-253, R-AUD-260) Given a battle that triggers 30 explosions in 1 s, then every interface sound and every sting triggered meanwhile plays, at least one explosion starts within 10 ms of its trigger time, and no waiting loop restarts from its beginning when it gets its voice back.
+- **AC-POS-07** (R-AUD-253, R-AUD-260) Given a battle that triggers 30 explosions in 1 s, then every interface sound and every sting triggered meanwhile plays, every explosion becomes real or virtual at the first audio update after its trigger time with the loudest ones real, and no waiting loop restarts from its beginning when it gets its voice back.
 - **AC-POS-08** (R-AUD-260) Given an outcome sting, then the world bus is 6 dB lower for 1 s; the voice, ambience and interface buses are unchanged.
 - **AC-POS-09** (R-AUD-266) Given master steps 255, 128 and 0, then the master gain is 0 dB, −40.64 dB and −81.6 dB, and the change is heard at the next audio update.
 

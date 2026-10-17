@@ -6,13 +6,13 @@
 
 This document specifies what the player can set and what the client remembers between sessions, how the game speaks the player's language, and the hooks of the features that the design phase designs: achievements, statistics and leaderboards. It also specifies the one in-match status panel that belongs to no mode page, the Launch Vessel status panel of Launch Race.
 
-**Settings.** The player opens the settings from the help-and-options branch, at the front end or from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), help-and-options branch). Four pages follow one pattern: the page edits copies of the stored values, an apply action stores and applies them, and the back action discards them. The screen options set the screen size, a window or full screen, and three full-screen display parameters; the graphics options set four detail levels; the sound options set the audio output, the mixing rate, the volume, the number of sounds and the stereo orientation; the other options switch the in-match tips, set the network ports and choose the text language. A handful of further settings are stored without any page: the player name, the preferred colour, the session-browser filters, renderer and input refinements, and development aids. The client keeps all of them in one settings store in the player's profile folder. No setting changes a match: everything that changes the simulation is a match option.
+**Settings.** The player opens the settings from the help-and-options branch, at the front end or from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.15, help-and-options branch). Four pages follow one pattern: the page edits copies of the stored values, an apply action stores and applies them, and the back action discards them. The screen options set the screen size, a window or full screen, and three full-screen display parameters; the graphics options set four detail levels; the sound options set the audio output, the mixing rate, the volume, the number of sounds and the stereo orientation; the other options switch the in-match tips, set the network ports and choose the text language. A handful of further settings are stored without any page: the player name, the preferred colour, the session-browser filters, renderer and input refinements, and development aids. The client keeps all of them in one settings store in the player's profile folder. No setting changes a match: everything that changes the simulation is a match option.
 
 **Language.** Every word the player reads comes from a string table keyed by Species string ids. The reference set has nine languages. A language whose table lacks a string shows the base-language text for that string, and only complete languages are offered (DEC-099). Fonts are licensed families rasterised at run time into a glyph cache, with companion faces for Japanese and Korean.
 
 **Hooks.** The match rules evaluate 12 achievement conditions and keep a small set of statistics, but nothing is awarded, stored or ranked: the platform layer behind them is missing, the achievements page never finishes loading, and the leaderboard pages have no data source. This document records exactly what those hooks compute, where, and what the pages would show (DEC-047). The design phase designs the features.
 
-**Loading.** The loading view itself is [front_end_presentation.md](front_end_presentation.md); this document adds the parts of start-up that read the settings and the language (§2.10).
+**Loading.** The loading view itself is [front_end_presentation.md](front_end_presentation.md) §2.3; this document adds the parts of start-up that read the settings and the language (§2.10).
 
 ## 2 Rules
 
@@ -32,7 +32,7 @@ This document specifies what the player can set and what the client remembers be
 
 **R-META-406** (MUST) The store saves the settings file on each of these events, and on no other:
 1. the apply action of any options page (§2.3 to §2.6);
-2. every change of the player name, from the name field or the chat rename command, and every creation of the front-end screen, which stores the player name it read ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), front-end lifecycle);
+2. every change of the player name, from the name field or the chat rename command, and every creation of the front-end screen, which stores the player name it read ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-008, R-META-052);
 3. the name apply action of the player options page;
 4. the renderer's start-up, after it has set the display mode (R-META-424);
 5. leaving the session-browser filter page, which stores the filters;
@@ -55,7 +55,7 @@ This document specifies what the player can set and what the client remembers be
 
 **R-META-410** (MUST) The settings screen, titled `ui.options.title`, lists from top to bottom: the screen options `ui.options.screen.title`, the graphics options `ui.options.graphics.title`, the sound options `ui.options.sound.title`, the other options `ui.options.other.title`, then Back (`ui.common.back`). It has no controls page: the key-rebinding page exists only as an unreachable hook (DEC-050; [reference/06](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-034).
 
-**R-META-411** (MUST) The settings screen opens from the help-and-options window, at the front end and from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), help-and-options branch). Each options page is a full-screen options screen (`OptionsScreen`), built by the full-screen page recipe of [pages_and_screen_recipes.md](../../architecture/components/ui_framework/pages_and_screen_recipes.md); the settings pages belong to the single-window page flow of the front end (DEC-026).
+**R-META-411** (MUST) The settings screen opens from the help-and-options window, at the front end and from the in-match menu ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.15, R-META-061). Each options page is a full-screen options screen (`OptionsScreen`), built by the full-screen page recipe of [pages_and_screen_recipes.md](../../architecture/components/ui_framework/pages_and_screen_recipes.md); the settings pages belong to the single-window page flow of the front end (DEC-026).
 
 **R-META-412** (MUST) Every options page follows one pattern:
 1. on opening, the page reads each of its settings into a copy held by the page; its controls edit only the copies;
@@ -173,7 +173,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 2. **Difficulty**, stored as a level + 1 with the default `ref.meta.settings.difficulty.default` (1). At the front end the page reads the stored value − 1, at least 0; in a match it reads the current difficulty level. The apply action writes it only at the front end, storing level + 1 and setting the process difficulty level. The setting is inert: every map load sets the difficulty level to 0 and no map can carry one, so every match runs at level 0 (DEC-010). Species has no process-global difficulty.
 3. **Automatic camera**, the tracking switch of [reference/06](../06_controls_camera_and_commands/camera.md) R-CTRL-480, with the choices and the default of `ref.ctrl.camera.automatic_setting`.
 4. **Large menus**, default `ref.meta.settings.large_menus.default` (off). On, the small tool-style windows scale with the screen height by the large-menu factor of the [UI framework](../../architecture/components/ui_framework/layout_rendering_input_and_localisation.md), also at start-up; the full-screen options screens are laid out in screen fractions and do not change.
-5. **Seasonal theme**, read but never written; it has no effect on the seasonal theme ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), seasonal theme at match setup; DEC-101, DEC-118).
+5. **Seasonal theme**, read but never written; it has no effect on the seasonal theme ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.25, R-META-103; DEC-101, DEC-118).
 
 **R-META-450** (MUST) Rebuilding the windows after the other options apply closes every window; at the front end it builds the front-end screen again, and in a match it opens the match view again. The settings screen is not opened again.
 
@@ -183,7 +183,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 
 | Setting | Default | Written by | Read by |
 |---|---|---|---|
-| player name | `ui.player.default_name` | every change of the name, from the name field or the chat rename command; every creation of the front-end screen; the name apply action (the front-end lifecycle and the name rule of [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md)) | the front-end screen when it is created; the default session name |
+| player name | `ui.player.default_name` | every change of the name, from the name field or the chat rename command; every creation of the front-end screen; the name apply action ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-008, R-META-052) | the front-end screen when it is created; the default session name |
 | preferred colour | `ref.meta.settings.preferred_colour.default` (none) | the colour picker of the player options page, except in Siege and in co-op | the match setup page when it assigns the local slot's colour |
 | session name | the player name, or `ui.settings.default_session_name` when there is none | only an edit of the settings file | the advertised record of a hosted session (DEC-245) |
 
@@ -223,7 +223,7 @@ The Species renderer applies a new size or window mode by reconfiguring itself, 
 10. network rate or bandwidth settings: only the ports and the forwarded port exist;
 11. profile selection or save slots.
 
-**R-META-459** (MUST) The bot difficulty is not a setting: it is a per-match option of the match setup page ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), match setup options).
+**R-META-459** (MUST) The bot difficulty is not a setting: it is a per-match option of the match setup page ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.17, match setup options).
 
 ### 2.9 Localisation
 
@@ -249,7 +249,7 @@ The three stubs hold an early subset only: team-kind labels, menu titles, the se
 
 **R-META-463** (MUST) A language is offered only when it is complete (DEC-099): a language whose table covers less than `ref.meta.lang.offer_coverage` (100 %) of the base language's string ids is not offered. The reference behaviour that DEC-099 replaces is §5 item 5.
 
-**R-META-464** (MUST) A string id that the current language's table lacks shows, per string, the text of the base language (DEC-099, ADR-0063). No page ever shows a string id as text ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), page specification conventions), and the content build lists every id that falls back.
+**R-META-464** (MUST) A string id that the current language's table lacks shows, per string, the text of the base language (DEC-099, ADR-0063). No page ever shows a string id as text ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-021), and the content build lists every id that falls back.
 
 **R-META-465** (MUST) At start-up the client chooses the language by trying, in this order, until one loads (DEC-099, ADR-0063):
 1. the stored language setting, which on first run is `ref.meta.settings.language.default` (unset);
@@ -267,9 +267,9 @@ The language that loads is stored in the language setting. When none loads, star
 
 **R-META-469** (MUST) Values inserted at run time are named arguments in ICU MessageFormat syntax, such as `{width}` (ADR-0063). A text value is shown literally: no character of it, a percent sign included, is ever read as a formatting directive (DEC-102, DEC-800 item 4).
 
-**R-META-470** (MUST) Every player-facing caption has a string id, including the captions that the reference draws without one: the spectator label (`ui.lobby.slot.spectator`, [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md)); the captions of the score-mode and crate-drop lists of the match options, which show the option's internal name ([reference/01](../01_skirmish_rules_and_modes/README.md) §2.19); the refresh action of the session browser ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), session pages); and the master-volume caption (`ui.options.sound.master_volume`). The development windows are the [diagnostics](../../architecture/components/diagnostics_test_and_performance.md)'.
+**R-META-470** (MUST) Every player-facing caption has a string id, including the captions that the reference draws without one: the spectator label (`ui.lobby.slot.spectator`, [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md)); the captions of the score-mode and crate-drop lists of the match options, which show the option's internal name ([reference/01](../01_skirmish_rules_and_modes/README.md) §2.19); the refresh action of the session browser ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.13); and the master-volume caption (`ui.options.sound.master_volume`). The development windows are the [diagnostics](../../architecture/components/diagnostics_test_and_performance.md)'.
 
-**R-META-471** (MUST) Whether a string id exists drives counts that come from data: the number of help pages of each mode and the lines of the credits page ([reference/11](../11_tutorial_and_help.md); [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md), credits page). Because only complete languages are offered (R-META-463), every offered language gives the same counts.
+**R-META-471** (MUST) Whether a string id exists drives counts that come from data: the number of help pages of each mode and the lines of the credits page ([reference/11](../11_tutorial_and_help.md); [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.14). Because only complete languages are offered (R-META-463), every offered language gives the same counts.
 
 **R-META-472** (MUST) A help picture that shows controls has a variant per language, chosen by the current language, and keyboard pictures also by the keyboard layout; without a variant for the current language, the base-language picture is shown ([reference/11](../11_tutorial_and_help.md)).
 
@@ -289,7 +289,7 @@ The language that loads is stored in the language setting. When none loads, star
 
 ### 2.10 Loading
 
-**R-META-477** (MUST) The loading view, its background loading, its frame and its progress are [front_end_presentation.md](front_end_presentation.md)'s.
+**R-META-477** (MUST) The loading view, its background loading, its frame and its progress are [front_end_presentation.md](front_end_presentation.md)'s (§2.3, R-META-211 to R-META-219).
 
 **R-META-478** (MUST) Start-up reads the settings before anything that uses them: the settings store first (R-META-402), then the window and the renderer with the screen settings (R-META-424) and the audio engine with the sound settings; the language is chosen (R-META-465) before the first text is drawn.
 
@@ -337,7 +337,7 @@ The language that loads is stored in the language setting. When none loads, star
 
 **R-META-490** (MUST) Achievement progress is never stored: loading it does nothing, saving it does nothing, and it is lost when the client exits (DEC-250).
 
-**R-META-491** (MUST) The achievements page has a page slot, but no page leads to it. If reached, it shows the title `ui.achievements.title`, a scroll bar and Back to the title page, and the caption `ui.achievements.loading`, blinking like the blinking captions of [front_end_presentation.md](front_end_presentation.md) (`ref.meta.blink.on_alpha`, `ref.meta.blink.on_time`, `ref.meta.blink.off_alpha`) for as long as the page is open, because the achievement events never report that they have loaded. Its rows are never created.
+**R-META-491** (MUST) The achievements page has a page slot, but no page leads to it. If reached, it shows the title `ui.achievements.title`, a scroll bar and Back to the title page, and the caption `ui.achievements.loading`, blinking like the blinking captions of [front_end_presentation.md](front_end_presentation.md) R-META-209 (`ref.meta.blink.on_alpha`, `ref.meta.blink.on_time`, `ref.meta.blink.off_alpha`) for as long as the page is open, because the achievement events never report that they have loaded. Its rows are never created.
 
 **R-META-492** (MUST) An achievement row, if one were created, is one row per achievement, in the order of R-META-481. After the menu transition it slides down into place at `ref.meta.achievement.row_slide_speed` (750 px/s); the scroll bar moves the rows by `ref.meta.achievement.row_scroll_step` (4 px) per step, and the rows are clipped to the scroll bar's band. A row draws only its background, grey `ref.meta.achievement.row_grey` (0.4) at alpha `ref.meta.achievement.row_alpha` (0.5), with no picture and no text, and is inactive. Numbers on the page are shown with the thousands separators of the current language (ADR-0063).
 
@@ -355,7 +355,7 @@ The language that loads is stored in the language setting. When none loads, star
 | the maps played and won | session | the Tourist and Completionist checks only |
 | network statistics: bandwidth, latency and divergence checks | session | the development network window ([diagnostics](../../architecture/components/diagnostics_test_and_performance.md)) |
 
-**R-META-495** (MUST) There is no statistics page, no stored career record and no summary page after a match: a finished match stays under its game-over overlay ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-058). The data available at match end, the scores, the kill totals and the times, is the input of a results screen, which is the design phase's (DEC-048; [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) results-screen hooks).
+**R-META-495** (MUST) There is no statistics page, no stored career record and no summary page after a match: a finished match stays under its game-over overlay ([reference/01](../01_skirmish_rules_and_modes/README.md) R-MODE-058). The data available at match end, the scores, the kill totals and the times, is the input of a results screen, which is the design phase's (DEC-048; [screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) §2.26).
 
 **R-META-496** (MUST) The match statistics (`MatchStatistics`) are the hook through which a results screen, a leaderboard or a career record would read these values; the reference fills nothing beyond the counters of R-META-494.
 

@@ -71,3 +71,5 @@
 | 67 | G09a vs G01 | DEC-120 | G01 still writes "0 means no limit" | fix G01 to DEC-120 |
 | 68 | G09a vs C-SIM-b | — | a slot open/close setup command is missing from the command catalogue (needed for O14/DEC-079) | add it to 06_teams_and_player_commands.md |
 | 69 | G09a | new | 5 DEC requests (closed-slot rules, the chat rename quirk); overlapping layout and explainer rules with C-UI and C-VFX; explainer picture lists for X-AST; `ui.logo_banner` unused | DEC triage; dedup; X-AST pass 2 |
+| 70 | G09b | ADR-0063 vs DEC-099 | **settled from ORIG:** the reference offers every language present and shows the string id when a string is missing; the document specifies DEC-099 (complete languages only, per-key fallback to en-GB) and cites both | **amend ADR-0063**: which languages ship is product policy and belongs in DEC-099; ADR-0063 covers only the technical fallback mechanism |
+| 71 | G09b | DEC-044, DEC-570, DEC-800 | narrow DEC-044 (DEC-570 already decides the volume sliders); sound options with no Species counterpart; DEC-800 wording | DEC triage |
