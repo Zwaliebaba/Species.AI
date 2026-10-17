@@ -951,7 +951,7 @@ Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEv
 - **Meta (09)**: Christmas mode flag from the server (`ClientToServer::m_christmasMode`, `App::UseChristmasMode`) forces snow. [C]
 
 ## Contradictions / open questions
-1. **`INCLUDE_THEBEAST`**: `build_matrix.md` §4 lists it as "on" (defined in `worldobject/crate.h`), but `code/worldobject/crate.h` wraps the `#define` in `#ifdef TARGET_DEBUG`, so in `TARGET_PC_FULLGAME` it is **off** and `CrateRewardTheBeast` does not exist (Portal/Tentacle unreachable). [C] `code/worldobject/crate.h`. Coordinator should correct the build matrix.
+1. **`INCLUDE_THEBEAST`**: `code/worldobject/crate.h` wraps the `#define` in `#ifdef TARGET_DEBUG`, so in `TARGET_PC_FULLGAME` it is **off** and `CrateRewardTheBeast` does not exist (Portal/Tentacle unreachable). `build_matrix.md` §4 originally said "on"; it has since been corrected to off/[B:DEBUG] — consistent with this draft. [C] `code/worldobject/crate.h`.
 2. **Eggs crate owner**: `Crate::RunEggs` spawns TriffidEggs on the *task owner's* team, so hatched Virii/Centipedes/Spiders/SporeGenerators fight for the player who used the task, while the uncaptured variants (Triffids/Infection/AntNest) are Monster-team. Intentional design? [C] behaviour; intent [U] — resolve by playtesting the shipped build.
 3. **Meteor shower friendly fire**: `Location::Bang` is not team-filtered, so the user's own units in the 420 m square are hit. [C]; intent [U].
 4. **SpaceShip wander bias** to the low-x/low-z quarter (SFRAND + heightmap wrap). [I] — resolve by instrumenting `SpaceShip::FindNewTarget` in a build.

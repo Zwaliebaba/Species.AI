@@ -819,3 +819,113 @@ Note the cut is applied when a Cut node *ends* (the camera holds its previous po
 - `WaterReflect()`: negate y of pos, front, up (applied twice around the reflection pass, P11).
 - `RecordCameraPosition`/`RestoreCameraPosition`, `SetTarget(focus, distance, height)` (place on the current bearing at `distance`, `height` above the focus, looking at it), `CutToTarget` (pose = target, `m_height = target.y`).
 
+## [→ 24_rendering] Camera projection, view and frustum
+
+All [B:FULL] (identical under [B:D3D], where the GL calls are emulated).
+
+| Parameter | Value | Ref |
+|---|---|---|
+| Projection | `gluPerspective(fovY = camera.m_fov degrees, aspect = screenW/screenH, near, far)` — FOV is **vertical**; horizontal FOV follows aspect | [C] `code/renderer.cpp:Renderer::SetupProjMatrixFor3D` |
+| FOV clamp | `clamp(m_fov, 1, 180)` (macro modifies in place) before every projection set-up by the camera | [C] `code/camera.cpp:Camera::SetupProjectionMatrix`; `code/lib/math_utils.h:clamp` |
+| Default FOV | 60° (free movement); 15° while zooming (60/4); 50° turret aim; 100° sphere world; 70° intro/outro; 90° set by main menu renderer | §3.4; [C] `code/game_menu.cpp` |
+| Near / far in a location | **5 / 15 000** world units, re-set every frame in `RenderFrame` | [C] `code/renderer.cpp:Renderer::RenderFrame` |
+| Near / far outside a location (global world / menu) | 50 / 10 000 000 | same |
+| Initial near / far | 5 / 150 000 (constructor) | [C] `code/renderer.cpp:Renderer::Renderer` |
+| Poster tiling | when `m_renderingPoster == PosterMakerTiling`: `scale = fov/78`, `left = −scale·near`, `top = −(H/W)·scale·near`, split into `RenderPosterResolution`² tiles, `glFrustum` per tile | [C] `code/renderer.cpp:Renderer::SetupProjMatrixFor3D` |
+| View matrix | `gluLookAt(pos, pos + front·|pos|, up·|pos|)` (vectors scaled by distance from origin, presumably for precision) | [C] `code/camera.cpp:Camera::SetupModelviewMatrix` |
+| 2D overlay | `gluOrtho2D(viewport)` with identity modelview | [C] `code/renderer.cpp:Renderer::SetupMatricesFor2D` |
+
+**Depth-bias by near-plane nudging** [C] (pattern used by other renderers via `Camera::SetupProjectionMatrix(near·k, far)` then restoring `near`): lasers ×1.2 (`code/location.cpp`), team "others" (Darwinians, virii) ×1.05 (`code/team.cpp`), entities ×1.05 (`code/worldobject/entity.cpp`, `virii.cpp`), spirit receivers ×1.1, mines ×1.1, rockets ×1.2, portals ×1.5, Sepulveda ×1.5 (`code/sepulveda.cpp`, [B:DEAD]). [I] Increasing the near plane shrinks window depth for the same eye distance (depth ≈ 1 − near/d for far ≫ near), so these passes win depth tests against coplanar terrain — a substitute for `glPolygonOffset`.
+
+**Frustum tests** (CPU-side culling helpers) [C] `code/camera.cpp`:
+- `SetupProjectionMatrix` also computes `m_cosFov = cos(fovY)` and the **diagonal half-angle** `m_maxFovRadians`: with screen half sizes `W/2`, `H/2` in pixels, `dtc = (H/2)/sin(fovY/2)` (distance to top-centre), `dc = √(dtc² + (W/2)²)` (distance to a corner), `ddHalf = √(W²+H²)/2`, `m_maxFovRadians = 2·asin(ddHalf/dc)`.
+- `PosInViewFrustum(p)`: `dot(norm(p − pos), front) ≥ cos(fovY) − 0.2` (a cone test on the cosine with tolerance 0.2; note it uses the full vertical FOV angle, not the half-angle, so it is generous).
+- `SphereInViewFrustum(c, r)`: true if camera inside sphere; else `acos(dot(norm(c − pos), front)) − asin(r/|c − pos|) ≤ m_maxFovRadians/2` (cone around the screen diagonal).
+- No plane-based frustum and no far-plane rejection in these helpers.
+
+**Picking**: `GetClickRay` / `Get2DScreenPos` (§3.10) read back the live GL matrices; callers must have the 3D matrices set (the camera's advancers push/pop around their own use).
+
+**Water reflection**: the reflection pass mirrors the camera with `WaterReflect()` (y → −y on pos/front/up) and calls it again to restore [C] `code/water_reflection.cpp` (P11/P12).
+
+## [→ 06_player_control_and_input] 4. Control help (`ControlHelpSystem`)
+
+### 4.1 Reachability summary [C]
+
+`g_app->m_controlHelpSystem` is created by `App`, advanced every location frame and rendered every frame [C] `code/main.cpp:LocationGameLoop`, `code/renderer.cpp:Renderer::RenderFrame`, but in the Multiwinia FULL build it draws nothing:
+- `Render()` returns immediately if `g_app->Multiplayer()` (game mode Multiwinia — set for every game started through the client's `NET_DARWINIA_START_GAME` handling, tutorial included [C] `code/network/clienttoserver.cpp`) [C] `code/control_help.cpp:ControlHelpSystem::Render`, `code/app.cpp:App::Multiplayer`;
+- otherwise it also requires a location, `INPUT_MODE_GAMEPAD`, preference `ControlHelpEnabled` (`OTHER_CONTROLHELPENABLED`, default 1) ≠ 0, no running script, no `dialog_locationmenu` window; `RenderHelp` additionally requires `IsSinglePlayer()` (Prologue/Campaign), modes that only the `INCLUDEGAMEMODE_PROLOGUE/CAMPAIGN` buttons can set (not compiled) [C] `code/UI/PrologueButton.h`, `code/UI/CampaignButton.h`; build_matrix §5.
+- `AddOnScreenAid` begins with `return;` and its only callers are in `code/tutorial_demo2.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`) [C].
+- `CheckCondition` returns `false` (body commented out) and the Advance loop that would use it is commented out [C].
+Therefore the whole system is **[B:LEGACY]** (Darwinia-campaign gamepad help). Only `RecordCondUsed` bookkeeping runs (from camera, target cursor and team input). The live Multiwinia contextual hints are in `MultiwiniaHelp` (P19), e.g. the Shift-speed-up hint (§3.5) and the French camera image.
+
+`Advance()` early-out: returns when input mode ≠ GAMEPAD **and** `ControlHelpEnabled` ≠ 0 (so on keyboard with help *disabled* it does run — inverted logic, harmless since aids are never added) [C]. Its aid loop only examines the first aid (unconditional `break`) and removes aids from index `Size()` downwards (first index out of range) [C].
+
+### 4.2 Icons and sets (old corner layout, rendered only by commented-out code) [C] `ControlHelpSystem::InitialiseIcons`
+
+| Icon id | Texture / shadow | Set-relative pos | Text anchors (x,y direction) |
+|---|---|---|---|
+| A | `icons/button_a.bmp` / `icons/button_abxy_shadow.bmp` | (50, 100) | (0, 1) |
+| B | `icons/button_b.bmp` / abxy shadow | (100, 50) | (1, 0) |
+| X | `icons/button_x.bmp` / abxy shadow | (0, 50) | (−1, 0) |
+| Y | `icons/button_y.bmp` / abxy shadow | (50, 0) | (0, −1) |
+| DPAD | `icons/button_dpad.bmp` / `icons/button_control_shadow.bmp` | (50, 0) | (1,0), (0,−1), (0,1) |
+| LB | `icons/button_lb.bmp` / `icons/button_lb_shadow.bmp` | (0, 0) | (−1, 0) |
+| RB | `icons/button_rb.bmp` / `icons/button_rb_shadow.bmp` | (100, 0) | (1, 0) |
+| LA | `icons/button_la.bmp` / control shadow | (25, 0) | (1, 0) |
+| LT | `icons/button_lt.bmp` / `icons/button_trigger_shadow.bmp` | (−25, 0) | (0, 1) |
+| RA | `icons/button_ra.bmp` / control shadow | (75, 50) | (−1, 0) |
+| RT | `icons/button_rt.bmp` / trigger shadow | (125, 50) | (0, 1) |
+
+Sets (stacked vertically, set height in px): 0 = {A,B,X,Y} 175; 1 = {LB,RB} 75; 2 = {LA,RA,LT,RT} 150; 3 = {DPAD} 75. `HelpIcon::Render`: 50 px icon, 10 px gap, 12 px outlined text; icon alpha = max text alpha (min 0.3); blinks `0.75a + 0.25a·sin(8t)` for 1.5 s after its text changes; shadow drawn with `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR`, icon additive. `HelpIconSet::Render`: 1.0 s fade in/out when any icon becomes (un)used.
+
+### 4.3 Condition → hint table [C] `ControlHelpSystem::InitialiseConditions`, intended triggers from the commented-out `ControlHelpSystem::CheckCondition`
+
+`TextIndicator(icon, textSlot, langId, minTime, maxTime, maxUsage, decayRate)`; usage bookkeeping: `RecordCondUsed` adds `2·dt` to `timeUsed` (capped at `maxUsage` if non-zero; `timeUsed` is never initialised); `DecayCond` subtracts `decayRate·dt`; `SetCondIcon` alpha = 1 below `minTime`, else `(maxTime − used)/(maxTime − minTime)`, hidden when < 0 (hints fade out once the player has used the control enough).
+
+| # | Condition | Icon | Text id (English) | min/max/maxUsage/decay | Intended trigger (commented code) | `RecordCondUsed` callers (live) |
+|---|---|---|---|---|---|---|
+| 0 | `CondDestroyUnit` | Y | `gc_destroy` (Destroy) | 0/0/0/1 | a program running or unit selected | — |
+| 1 | `CondTaskManagerCreateBlue` | X | `gc_create` (Create) | 0/0/0/1 | task manager hidden, or TM advises create | — |
+| 2 | `CondTaskManagerCloseBlue` | X | `gc_close` (Close) | 0/0/0/1 | never (too cluttered) | — |
+| 3 | `CondTaskManagerCloseRed` | B | `gc_close` | 0/0/0/1 | task manager visible | — |
+| 4 | `CondDeselectUnit` | B | `gc_deselect` (Deselect) | 0/0/0/1 | unit or building selected | — |
+| 5 | `CondMoveUnit` | A | `gc_move` (Move) | 0/0/0/1 | TM hidden and cursor advises movable entity | — |
+| 6 | `CondSelectUnit` | A | `gc_select` (Select) | 0/0/0/1 | TM hidden and cursor highlights something | — |
+| 7 | `CondTaskManagerCreateGreen` | A | `gc_create` | 0/0/0/1 | TM visible and advises create | — |
+| 8 | `CondTaskManagerSelect` | A | `gc_select` | 0/0/0/1 | TM visible over selectable zone | — |
+| 9 | `CondPlaceUnit` | A | `gc_place` (Place) | 0/0/0/1 | TM hidden and placement opportunity | — |
+| 10 | `CondPromoteOfficer` | A | `gc_promote` (Promote) | 0/0/0/1 | highlighting + officer program being placed | — |
+| 11 | `CondMoveCameraOrUnit` | LA | `gc_move` | 2/3/9/0.3 | free-movement or entity-track camera | camera stick move [C] `code/camera.cpp`; unit stick move [C] `code/team.cpp` |
+| 12 | `CondZoom` | LT | `gc_zoom` (Zoom) | 0/0/0/1 | radar-aim camera | — |
+| 13 | `CondCameraAim` | RA | `gc_aim` (Look) | 2/3/9/0.3 | free-movement camera | `TargetCursor` moved in free movement [C] `code/lib/targetcursor.cpp` |
+| 14 | `CondSquaddieFire` | RA | `gc_fire` (Fire) | 2/3/9/1 | squad selected (entity-track) | (commented) |
+| 15 | `CondChangeWeapon` | DPAD | `gc_changeweapon` (Change Weapon) | 1/2/8/0.3 | squad selected with >1 secondary weapon researched | — |
+| 16 | `CondChangeOrders` | DPAD | `gc_changeorders` (Change Orders) | 0/0/0/1 | officer or armour selected | — |
+| 17 | `CondCameraUp` | RT | `gc_cameraup` (Up) | 1/2/3/0.3 | no LA/RA hint, TM hidden, no squad | camera up/down used [C] `code/camera.cpp` |
+| 18 | `CondCameraDown` | LT | `gc_cameradown` (Down) | 1/2/3/0.3 | same | same |
+| 19 | `CondFireGrenades` | RT | `gc_grenade` (Grenade) | 1/2/8/0.3 | `UnitPrimaryFireDirected` (non-existent control) + grenade selected | [C] `code/team.cpp` |
+| 20 | `CondFireRocket` | RT | `gc_rocket` (Rocket) | 1/2/8/0.3 | same, rocket | same |
+| 21 | `CondFireAirstrike` | RT | `gc_airstrike` (Airstrike) | 1/2/8/0.3 | same, airstrike | same |
+| 22 | `CondOfficerSetGoto` | RT | `gc_setgoto` (Set Goto) | 0/0/0/1 | officer selected | — |
+| 23 | `CondArmourSetTurret` | RT | `gc_setturret` (Set Turret) | 0/0/0/1 | armour selected | — |
+| 24 | `CondSwitchPrevUnit` | LB | `gc_prev` (Prev) | 0/0/0/1 | >1 task | — |
+| 25 | `CondSwitchNextUnit` | RB | `gc_next` (Next) | 0/0/0/1 | >1 task | — |
+| 26 | `CondRadarAim` | A | `control_help_radar` (Aim Radar) | 0/0/0/1 | radar dish selected | — |
+| 27 | `CondRotateCameraLeft` | LT | `control_help_camerarotateleft` (Look Left) | 0/0/0/1 | squad selected and not firing | — |
+| 28 | `CondRotateCameraRight` | RT | `control_help_camerarotateright` (Look Right) | 0/0/0/1 | squad selected and not firing | — |
+
+### 4.4 Selection-dependent help panel (`RenderHelp`, the replacement layout) [C] `ControlHelpSystem::RenderHelp`, `RenderControlHelp`, `RenderControlHelpDPad`, `RenderControlHelpDPadIcon`
+
+Layout: d-pad icon (`icons/button_dpad.bmp` + `icons/button_control_shadow.bmp`, 50 px) at `(W/2 − W/6, 0.75H + 12.5)` with d-pad captions around it (positions 1 = up, 2 = left, 3 = right, 4 = down; offsets ±1.5 box units); four button boxes mirrored to `(W/2 + W/6)` in a 2×2 grid (1 top-left, 2 top-right, 3 bottom-left, 4 bottom-right). Box `w = 0.15H`, `h = 0.3w`, base y `0.75H`, background black α 0.75·a, outline white α 0.2·a; optional highlight in team colour ×0.7 (timer decays at 0.5/s); icon = `icons/<name>.bmp` scaled from 64-px units to `0.25w`; caption = upper-cased language phrase, outlined, font `0.4h`. The keyboard icon variant (`mouse_lmb`) is chosen when the input mode is KEYBOARD (never true here because rendering requires GAMEPAD).
+
+| Selected (team's entity type, else unit troop type) | D-pad captions (position: text id [flag icon]) | Buttons (position: text id, pad icon) |
+|---|---|---|
+| `Entity::TypeOfficer` | 1: `multiwinia_control_order` [`banner_goto`]; 2: `multiwinia_control_follow` [`banner_follow`]; 4: `multiwinia_control_noorder` [`banner_none`] | 1: `multiwinia_control_follow` if the cursor is within 50 u (√2500) of the officer else `multiwinia_control_order`, `button_x`; 2: `gc_destroy`, `button_y`; 3: `gc_move`, `button_a`; 4: `gc_deselect`, `button_b` |
+| `Entity::TypeInsertionSquadie` | 1: `gc_zoomin`; 4: `gc_zoomout` | 1: `gc_changeweapon`, `button_x`; 2: `gc_destroy`, `button_y`; 4: `gc_deselect`, `button_b` |
+| `Entity::TypeArmour` | 1: `gc_setturret` | 1: `multiwinia_control_unload` if passengers > 0 else `multiwinia_control_load`, `button_x`; 2: `gc_destroy`, `button_y`; 3: `gc_setturret` if awaiting deployment else `gc_move`, `button_a`; 4: `gc_cancel` if awaiting deployment else `gc_deselect`, `button_b` |
+| nothing selected | 1: `researchname_squad`; 2: `researchname_engineer`; 3: `researchname_armour` (only if armour research level > 0) | 1: `multiwinia_control_promote`, `button_x`; 3: `multiwinia_control_select`, `button_a` |
+
+`GetOrderNameAndBanner(order)` (unused helper): `OrderNone` → `multiwinia_control_noorder`/`banner_none`; `OrderFollow` → `multiwinia_control_follow`/`banner_follow`; `OrderGoto` and `OrderPrepareGoto` → `multiwinia_control_order`/`banner_goto`.
+
+On-screen aids (disabled, §4.1): centred text at `(W/2, H/3)` with a `W/40`-sized icon pair to its left, alpha 0.8 fading 1/s after the aid's control fires (or its `CheckRunner` predicate, e.g. `BoolChecker<ControlHelpSystem>(&HasSquadRunning)`), removed 1 s after completion. Text ids passed by the dead tutorial: `control_help_cameramove` (CameraMove), `control_help_cameraturn` (TargetMoveSecondary), `control_help_cameraup` (CameraUp), `control_help_cameradown` (CameraDown), `control_help_quickunitstart` (IconsTaskManagerDisplayPressed), `control_help_quickunitcreate` (UnitCreate / HasSquadRunning), `control_help_quickunitplace` (UnitCreate), `control_help_move` (UnitMove), `control_help_camerarotateleft` (CameraRotateLeft), `control_help_camerarotateright` (CameraRotateRight), `darwinia_tutorial_engineer` (MenuDown), `darwinia_tutorial_grenade` (UnitPrimaryFireTarget), `darwinia_tutorial_taskmanager` (IconsTaskManagerDisplayPressed), `darwinia_tutorial_createunit` (UnitCreate) [C] `code/tutorial_demo2.cpp` [B:DEAD].
+

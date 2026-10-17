@@ -175,24 +175,75 @@ Created by `WindowManagerWin32::EnableOpenGL` — documented in the 31 section b
 
 ```mermaid
 classDiagram
-  class MatrixStack{<<abstract>> +m_transformType +m_modified +Load() +Multiply() +Push() +Pop() +SetTransform() +GetTransform() +FastSetTransform()}
-  class MatrixStackActual{-ID3DXMatrixStack* m_matrixStack}
-  class MatrixStackDisplayList{-DisplayListDevice* m_device -MatrixStack* m_actual}
+  class MatrixStack{
+    <<abstract>>
+    +m_transformType
+    +m_modified
+    +Load()
+    +Multiply()
+    +Push()
+    +Pop()
+    +SetTransform()
+    +GetTransform()
+    +FastSetTransform()
+  }
+  class MatrixStackActual{
+    -ID3DXMatrixStack* m_matrixStack
+  }
+  class MatrixStackDisplayList{
+    -DisplayListDevice* m_device
+    -MatrixStack* m_actual
+  }
   MatrixStack <|-- MatrixStackActual
   MatrixStack <|-- MatrixStackDisplayList
   class IDirect3DDevice9
-  class DisplayListDevice{-unsigned m_id -vector~Command*~ m_commands -vector~CustomVertex~ m_vertices +DrawPrimitiveUP() +Record*() +Compile()}
+  class DisplayListDevice{
+    -unsigned m_id
+    -vector~Command*~ m_commands
+    -vector~CustomVertex~ m_vertices
+    +DrawPrimitiveUP()
+    +RecordLoadTransform()
+    +RecordMultMatrix()
+    +RecordPushMatrix()
+    +RecordPopMatrix()
+    +Compile()
+  }
   IDirect3DDevice9 <|-- DisplayListDevice
-  class Command{<<abstract>> +Execute()}
+  class Command{
+    <<abstract>>
+    +Execute()
+  }
   Command <|-- CommandDrawPrimitive
   Command <|-- CommandLoadTransform
   Command <|-- CommandMultiplyTransform
   Command <|-- CommandPushMatrix
   Command <|-- CommandPopMatrix
-  class DisplayList{-IDirect3DVertexBuffer9* m_pVertexBuffer -Command** m_commands +Draw()}
+  class DisplayList{
+    -IDirect3DVertexBuffer9* m_pVertexBuffer
+    -Command** m_commands
+    +Draw()
+  }
   DisplayListDevice ..> DisplayList : Compile()
   DisplayList o-- Command
-  class FixedPipeline{+m_fogEnabled +m_fogStart +m_fogEnd +m_lighting +m_lightEnabled[2] +m_materialDiffuse[4] +m_materialSpecular[4] +m_materialShininess +State m_state +State m_oldState -Shader* m_fixedShader[3] -Shader* m_bound -m_enabled +Bind() +Unbind() +Disable() +Enable()}
+  class FixedPipeline{
+    +m_fogEnabled
+    +m_fogStart
+    +m_fogEnd
+    +m_lighting
+    +m_lightEnabled[2]
+    +m_materialDiffuse[4]
+    +m_materialSpecular[4]
+    +m_materialShininess
+    +State m_state
+    +State m_oldState
+    -Shader* m_fixedShader[3]
+    -Shader* m_bound
+    -m_enabled
+    +Bind()
+    +Unbind()
+    +Disable()
+    +Enable()
+  }
   FixedPipeline o-- Shader
 ```
 
@@ -573,30 +624,72 @@ Sign conventions [C/I]: normals are negated on input (`glNormal3f_impl`) and `L 
 
 ```mermaid
 classDiagram
-  class WindowManager{<<abstract>>
+  class WindowManager{
+    <<abstract>>
     +LList~Resolution*~ m_resolutions
     +bool m_mousePointerVisible
     +bool m_invertY
-    #int m_mouseOffsetX, m_mouseOffsetY
-    #bool m_windowed, m_mouseCaptured
-    #int m_screenW, m_screenH
-    #int m_desktopScreenW, m_desktopScreenH, m_desktopColourDepth, m_desktopRefresh
-    +GetResolutionId(w,h) int
+    #int m_mouseOffsetX
+    #int m_mouseOffsetY
+    #bool m_windowed
+    #bool m_mouseCaptured
+    #int m_screenW
+    #int m_screenH
+    #int m_desktopScreenW
+    #int m_desktopScreenH
+    #int m_desktopColourDepth
+    #int m_desktopRefresh
+    +GetResolutionId(w, h) int
     +GetResolution(id) Resolution*
-    +SuggestDefaultRes(w,h,refresh,depth)
-    +GetClosestResolution(w,h,refresh)
-    +CreateWin(w,h,windowed,colourDepth,refresh,zDepth,waitVRT,antiAlias,title)*
-    +DestroyWin()* +Window()* +Flip()*
-    +NastySetMousePos()* +NastyMoveMouse()* +NastyPollForMessages()*
-    +CaptureMouse()* +UncaptureMouse()* +HideMousePointer()* +UnhideMousePointer()*
-    +EnsureMouseCaptured() +EnsureMouseUncaptured()
-    +OpenWebsite(url)* +Windowed() +Captured() +WindowMoved()
+    +SuggestDefaultRes(w, h, refresh, depth)
+    +GetClosestResolution(w, h, refresh)
+    +CreateWin(w, h, windowed, colourDepth, refresh, zDepth, waitVRT, antiAlias, title)*
+    +DestroyWin()*
+    +Window()*
+    +Flip()*
+    +NastySetMousePos(x, y)*
+    +NastyMoveMouse(dx, dy)*
+    +NastyPollForMessages()*
+    +CaptureMouse()*
+    +UncaptureMouse()*
+    +HideMousePointer()*
+    +UnhideMousePointer()*
+    +EnsureMouseCaptured()
+    +EnsureMouseUncaptured()
+    +OpenWebsite(url)*
+    +Windowed() bool
+    +Captured() bool
+    +WindowMoved()
   }
-  class Resolution{+int m_width +int m_height +LList~int~ m_refreshRates}
-  class WindowManagerWin32{#m_waitVRT #m_borderWidth #m_titleHeight #HWND m_hWnd #HDC m_hDC #HGLRC m_hRC #HGLRC m_hRC2 +SaveDesktop() +RestoreDesktop() +EnableOpenGL() +DisableOpenGL() +ListAllDisplayModes()}
-  class WindowManagerDirectX{#m_waitVRT #m_borderWidth #m_titleHeight #HWND m_hWnd #HDC m_hDC #HGLRC m_hRC}
-  WindowManager <|-- WindowManagerWin32 : [B:FULL]
-  WindowManager <|-- WindowManagerDirectX : [B:D3D]
+  class Resolution{
+    +int m_width
+    +int m_height
+    +LList~int~ m_refreshRates
+  }
+  class WindowManagerWin32{
+    #m_waitVRT
+    #m_borderWidth
+    #m_titleHeight
+    #HWND m_hWnd
+    #HDC m_hDC
+    #HGLRC m_hRC
+    #HGLRC m_hRC2
+    +SaveDesktop()
+    +RestoreDesktop()
+    +EnableOpenGL()
+    +DisableOpenGL()
+    +ListAllDisplayModes()
+  }
+  class WindowManagerDirectX{
+    #m_waitVRT
+    #m_borderWidth
+    #m_titleHeight
+    #HWND m_hWnd
+    #HDC m_hDC
+    #HGLRC m_hRC
+  }
+  WindowManager <|-- WindowManagerWin32 : B-FULL
+  WindowManager <|-- WindowManagerDirectX : B-D3D
   WindowManager o-- Resolution
 ```
 

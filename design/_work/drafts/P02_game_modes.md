@@ -1018,3 +1018,101 @@ Note: between 95% and 100% fuel the rocket is already Loading but the caption st
 | HUD reference height | 800 px | literal | `Render` |
 | Scoreboard box | 440 (530 RR) × (50 + rows·18.2) at (10,10) | literal | `Render` |
 | Rocket panel | w = 0.2·ScreenH, h = 1.5w, at (ScreenW − w − 10, 10) | literal | `RenderRocketStatusPanel` |
+
+---
+
+## Cross-partition notes
+
+- **P01 (Location/Team/App):** `Location::InitBuildings` remaps building `tm` positions to team ids and links Assault control stations to the bomb at load; `Location::SetupAssault` (side from colour 0/1), `SetupCoop`/`SetCoopTeam`/`SetSoloTeam`, `IsFriend` (co-op = same group), `GetTeamPosition`/`GetTeamFromPosition`/`RotatePositions`, `IsAttacking`/`IsDefending`, `GetMonsterTeamId()=4`/`GetFuturewinianTeamId()=5` (always enabled in MP, `Location::Init`), `Location::InitialiseTeam` (StartingPowerups), `AdvanceCrates`/`CreateRandomCrate` (CrateDropRate/Mode), `m_spawnManiaTimer`/`m_bitzkreigTimer` (HUD only here). `Team::Eliminate()` kills units/entities, stops tasks, neutralises trunk ports. `Location::Init` overwrites research levels in MP (all 3; Squad 1; Laser/Grenade/Rocket 2 …), so `SetGameResearch` from the lobby is superseded [C] `code/location.cpp` (L~358–375). `App::GiveAchievement`/`EarnedAchievement` stubs; `App::IsGameModePermitted`; main-loop `m_resetLevel` hook.
+- **P03 (Darwinian):** `BoardRocket`/`AdvanceBoardingRocket` (walk to FuelStation entrance, stop at 100 passengers), `AttackBuilding`/`AdvanceAttackingBuilding` (rocket damage source), `WatchSpectacle`/`CastShadow` (SP only), PulseWave kill/convert reaction (Assault), `BLITZKRIEG_FLAGCAPTURE_RANGE` (20) use in officer/flag behaviour, `StateInsideArmour` and `IsOnFire()` exclusions from zone counts.
+- **P04 (weapons):** `PulseWave` (static `s_pulseWave`, radius growth ×1.03/tick, full-screen flash 0.3 s) — Multiwinia waits for it to vanish before declaring the Assault result; Nuke (WrongGame check).
+- **P06 (buildings core):** `CarryableBuilding` (ownership/lift/route), `SpawnPoint::CalculateHandicap`, `SpawnPoint` Assault population cap (duplicate of TrunkPort logic), `SpawnPopulationLock`, building ports (ControlStation occupancy), `PylonEnd::TriggerSurge` → `FuelGenerator::ProvideSurge`, `SolarPanel`, `GunTurret`, `Building::BuildingIsBlocked` (Statue blocked by name).
+- **P08 (AI & crates):** AI reads `m_aiType` (Easy/Standard/Hard), `AITarget::m_priority/m_aiObjectiveTarget` written by Blitzkrieg zones, statue/fuel-station AITargets, AIObjective (Assault). `Crate::CaptureCrate` used by retribution; `Crate::IsValid`; crate exclusion lists; weighted crate placement (has a height-check bug: `GetValue(pos.x, pos.z > 20.0)`).
+- **P09 (task manager):** `TaskManager::RunTask(type|Task*)`, `CountNumTasks`, `Capacity/CapacityUsed`, `SelectTask`, `NotifyRecentTaskSource(1=trunk port, 2=retribution)`, `m_blockMostRecentPopup`, `Team::m_blockUnitChange`, `MaxTurrets` semantics in `Task::TargetGunTurret`.
+- **P10 (input):** `ControlToggleReady` (ready-up and exit after game over).
+- **P11 (level file):** `MultiwiniaOptions` keys consumed here: `GameTypes`, `NumPlayers`, `PopulationCap`, `DefenderPopulationCap`, `AttackingTeams`, `CoopMode`/`ForceCoop`/`CoopGroup1Positions`/`CoopGroup2Positions`, `PlayTime`, `InvalidCrates`, `LevelOptions` (`nohandicap`, `instantspawnpointcapture`, `trunkportreinforcements N`, `trunkportarmour N`, `nogunturrets`, `attackerreinforcements N`, `defenderreinforcements N`, `defenderreinforcementtype <research>`, `attackerreinforcementtype <research>`, `forceradarteammatch`, `noradarcontrol`, `airstrikecapturezones N`, `futurewinianteam N`, `attackreinforcementoption N`, `defendreinforcementoption N`); defaults −1 except the five boolean options which default 0 [C] `code/level_file.cpp`.
+- **P15 (network):** option replication letters/versions, `RequestToggleReady`, `SendTeamScores` (ignored), viral achievement mask in team requests, `SaveIFrame`/`SyncDiff`, Multiwinia advance on slice 8.
+- **P16 (sound):** events used here (all `TypeMultiwiniaInterface` unless building): `CountdownTick`, `CountdownZeroTick`, `GameOver`, `YouWon`, `YouLost`; building events `CaptureStatue` (MultiwiniaZone), `PumpUp`/`PumpDown` (FuelGenerator), `PumpFuel` (FuelPipe), `LoadPassenger` (FuelStation), `Refueling`/`Happy`/`Unhappy`/`Flight`/`Malfunction`/`Explode`/`EngineBurn` (EscapeRocket), `PowerUp` (TrunkPort), `Damage`/`Explode` (Building base), `Lift` (CarryableBuilding).
+- **P17b/P18 (menus):** game-type/map pages, Advanced Options page (option controls §2.1), AI-mode drop-down, co-op & basic-crates check boxes, `OptionDetailsButton` descriptions (`multiwinia_param_<name>_description[_<gameType>]`), achievements page (empty), map PlayTime column.
+- **P19 (help/tutorial):** `MultiwiniaHelp::Notify*` calls (CapturedKothZone, CapturedStatue, LiftedStatue, FueledUp, Reinforcements); tutorial forces basic crates, `SetGameOption(7, 0)` (KOTH CrateDropMode = Random) and Easy AI [C] `code/multiwiniahelp.cpp` (L~914).
+- **X3 (determinism):** §8. **X4 (levels):** §1.3 counts, missing `mp_cts_3p_3` id, absent PDLC files.
+
+## Contradictions / open questions
+
+1. **BlitzMaster condition** `m_startTime <= m_timeRemaining + 300` mixes a game-time stamp with remaining mode-seconds; the commented-out predecessor used `GetNetworkTime() - m_startTime < 300`. Live behaviour: essentially every Blitzkrieg win qualifies [C code; I intent].
+2. **Achievement thresholds vs comments:** Carnage comment "more than 3000", code `>= 2000`; Genocide comment "100,000", code `>= 1000000`; `m_totalKills` starts at −1 [C].
+3. **Assault multi-round** (rotate positions, best defence time wins, later rounds timed by the best time so far) is fully implemented but unreachable: `m_assaultSingleRound` defaults true and no UI sets it [C/I].
+4. **Double trunk-port advance** on some Blitzkrieg maps (D3) — likely unintended.
+5. **`s_numMultiwiniaZones` accumulation** (D4) — bug and desync hazard.
+6. **Domination co-op winner loop** iterates `i < totalTeams` instead of all slots (may skip teams in slots ≥ totalTeams) [C].
+7. KOTH zone ties are awarded to the lower team index (no contested state) [C].
+8. `GetGroupColour(member, -1)` constructs `RGBAColour(0.6f, 0.6f, 0.6f, 1.0f)` — whether that is 0.6 bytes (≈ black) or 60% grey depends on the RGBAColour float ctor (not read) [U-lite].
+9. Exit prompt reads "Press ESC to Exit" but polls `ControlToggleReady` [C strings/code; binding P10].
+10. `multiwinia_blitzkrieg_unoccupied` and `_underattack` texts both read "Under Threat" — an unoccupied home flag is reported as under threat [C].
+11. FuelGenerator renders pump speed with maxSurges 15 but advances with 20 [C].
+12. AI-mode network range check accepts 3 [C].
+13. Rocket in `StateFlight` can still be damaged into `StateExploding` by non-Darwinian damage (attract-attackers stops at Flight) — then it would "refuel" mid-air [I].
+14. Pulse bomb capture check continues after detonation → possible second `RecordDefenseTime` [I].
+15. `IsEliminated` for KOTH/CTS (no spawn points & < 50 Darwinians) never removes a team; it only enables retribution and loses CTS ties [C].
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Exact rules for Darwinians occupying building ports (how ControlStation occupants are acquired/lost) | P06 `code/worldobject/building.cpp` port code |
+| U2 | Damage per Darwinian shot / explosion on `EscapeRocket` (hence time-to-explode) | P03 `Darwinian::AdvanceAttackingBuilding`, P04 explosion damage |
+| U3 | Composition of `Team::m_others` (what counts toward trunk-port population caps) | P01 `team.cpp` |
+| U4 | `TaskManager::Capacity()` for eliminated teams (string says "Two powerups max") | P09 `taskmanager.cpp` |
+| U5 | `RGBAColour(float…)` semantics (contradiction 8) | `code/lib/rgb_colour.*` |
+| U6 | Whether the retail Steam/XBL build had a real achievement layer replacing the stubs | not in tree; external |
+| U7 | Units of level `PlayTime` — treated as minutes because it is copied into `TimeLimit` and printed as `0:%02d` | consistent [I]; confirm with P18 `MapData` |
+| U8 | Port-marker → port-count mapping (5 and 3 ports assumed from `MarkerPort*` markers) | P06 `Building::SetShape`/port loading |
+
+## Docs-vs-code discrepancies
+
+| Doc statement (docs/multiwinia_manual.pdf, pp.10–19) | Code behaviour | Ref |
+|---|---|---|
+| Assault: "Play then switches around and the attacker becomes the defender … winner is the player who successfully attacks in the quickest time" | Default single round, no side switch; winner = attackers if the bomb was destroyed else defenders. Rotation exists but is unreachable | `AdvanceAssault`, §2.5 |
+| Assault: "sabotage the three control stations" | 3–4 linked stations per map | level files |
+| Blitzkrieg: "When a player loses their home flag, they are eliminated" | Also requires the capturer to hold an unbroken, not-being-recaptured chain of its flags back to its own home flag | `DoesBlitzkriegRouteExist` |
+| CTS: a shattered statue "re-appears randomly in one of the Statue Zones" | Respawn after a randomised ≥ 10-mode-second timer at the neutral zone farthest from existing statues (random only when none exist) | `AdvanceCaptureStatue` |
+| Rocket Riot: explosion burns "all the fuel and all the Multiwinians inside, re-setting the rocket to its starting point" | MP: fuel burns down to 50% of its pre-explosion value; passengers are ejected (50% on fire, the rest survive); rocket returns to Refueling | `EscapeRocket::AdvanceExploding` |
+| Handicap: "Domination, King of the Hill" | Also an Assault option | `data/multiwinia.txt` |
+| Co-op "(4 players required) – Domination and King of the Hill" | Any map flagged `CoopMode`/`ForceCoop` (incl. 3P Assault maps, CTS 4P_2, TankBattle 4P) | level files |
+| KOTH "scoring one point per second for every zone under their control" | Correct for ScoreMode 0; 3 more modes exist; a "second" is 1.1 game s | §4.2, D1 |
+| Option descriptions (english.txt) — Crate drop "50% deviation" | Matches `1.5 − U(0,1)` | `Location::AdvanceCrates` |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Multiwinian(s)", "Darwinian" | brand/name | strings (`multiwinia_rr_status_b`, …), class names | "the game", "units"/"Sprites" |
+| Mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle | name | `data/multiwinia.txt`, `multiwinia_gametype_*` | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain, Armour Duel |
+| "Evilinians", "Futurewinians" | name/characters | `multiwinia_team_virus`, `multiwinia_team_future` | Rogue faction, Future faction |
+| "WMD", "WMD Control Panel", "Pulse Bomb", "Trunk Port", "Retribution", "MEGA RAGE", "SPAWN MANIA", "Hot Feet" | name | strings csv, level options | Core Device, Uplink Console, Warp Gate, Comeback Bonus, Frenzy, Spawn Surge, Speed Boost |
+| Achievement names Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master of Multiwinia, Explorer, Carnage, BlitzMaster, Wrong Game, Genocide | name | `code/app.h` enum | Generic: "Total Control", "Collector", "Crowned", "Clean Launch", "Iron Defence", "Giant Slayer", "Completionist", "Tourist", "Massacre", "Lightning War", "Friendly Fire", "Annihilator" |
+| All 87 UI strings used by these files (e.g. "Defend the WMD!", "Capture solar panels to begin refueling rocket", "It's a DRAW!") | text | `OUT/_work/drafts/P02_game_modes_strings.csv`, `data/language/*.txt` | rewrite all copy |
+| Level ids/file names `mp_<mode>_<n>P_<k>` and their display names; PDLC1/PDLC2 map names | name | `data/levels/level_enum.txt`, X4 | new map names |
+| Shapes `rocket.shp`, `fuelgenerator.shp`, `fuelgeneratorpump.shp`, `fuelpipe.shp`, `fuelpipebase.shp`, `fuelstation.shp`, `trunkport.shp`, `trunkport_mp.shp`, `pulsebomb.shp`, `controlstation.shp`, `pulsebombcontrolstation.shp`, `carrystatue/squaddie/globe/telescope/weights/cube/teapot/billboard.shp` (+ unused `carrydollar`, `carryspider`, `carrygun`, billboard variants `_pcg`, `_tpcg`, `_xfire`, `_zone` — the latter reference third-party brands) | art | `data/shapes/` | new models |
+| Textures `icons/rocketstatuspanel.bmp`, `icons/rocketcracked.bmp`, `icons/flag.bmp`, `flag_up.bmp`, `flag_down.bmp`, `flag_locked.bmp`, `icons/arrow.bmp`, `sprites/darwinian.bmp`, `textures/laser.bmp`, `laser-long.bmp`, `fuel.bmp`, `starburst.bmp`, `glow.bmp`, `laserfence.bmp`, `interface_grey.bmp`, `muzzleflash.bmp` | art | cited render code | new textures |
+| Sound events listed in Cross-partition P16 and their samples | audio | `data/sounds.txt` (P16) | new audio |
+| Darwinia script `launchpad_victory.txt` | text/script | `EscapeRocket::AdvanceIgnition` [B:LEGACY] | — |
+| `data/multiwinia_betatesters.txt` (real people's names/handles) | text/personal data | data file | do not ship |
+| Colour palette and names (Green, Red, Yellow, Blue, Orange, Purple, Cyan, Pink) | generic | §3.8 | free to reuse (generic) |
+
+## Appendix — dead/legacy code
+
+- `Multiwinia::AdvanceChess` (score backup only) and `AdvanceShaman` (scores 200, portal scoring commented) — never dispatched [C].
+- Commented-out older `AdvanceBlitkrieg` (win by locking all zones, squad-drop retribution at a random high flat spot, BlitzMaster within 300 s) [C] `code/multiwinia.cpp` L1872–2088.
+- Commented-out KOTH random zone spawner using non-existent options `NumberOfZones`, `ZoneSize`, `ZoneMoveFrequency` (and `MultiwiniaZone::m_life`) [C].
+- Commented-out "retribution: spawn 25–34 Darwinians at a random spot" block [C].
+- `Multiwinia::GameOver()` tail after the first `return` (per-mode end checks, 5 s victory timer, rocket check, `m_timeRemaining == 0`) [C]; `m_rocketsFound` only used there.
+- Commented-out Assault objectives HUD (`multiwinia_assault_obj*` strings) [C] `Render`.
+- TankBattle mode [B:DEBUG] (`INCLUDEGAMEMODE_TANKBATTLE`).
+- `data/multiwinia-testbed.txt` [B:DEAD] (`TESTBED_ENABLED`); testbed auto-ready path in `location_input.cpp`.
+- `MULTIWINIA_DEMOONLY` bodies-removed variant [B:DEMO-only target].
+- `MultiwiniaZone::m_aiTarget` priority code (never assigned).
+- `CheckMentorAchievement` stub; `App::CheckMasterAchievement`/`EarnedAchievement` stubs; `AchievementTracker::Load/Save` stubs; `ACHIEVEMENT_RECORD_FILENAME` unused; `m_teamsStatus` write-only; `BLITZKRIEGSCORE_UNDERATTACK` never assigned; `m_numStandardLinks` unused; `PulseBomb::m_active` unused.
+- Darwinia branches in `rocket.cpp` [B:LEGACY]: non-MP `Refuel` by pipe count (0–1 pipes → towards 50 at `level×0.005/s`; 2 → towards 100 at 0.01; 3 → 0.1), `SafeToLaunch` (< 2 enemies of team 0 within 200), spectacle (Darwinians watch/cast shadows), Ignition 18 s, Ready 120 s with `launchpad_victory.txt`, scripted attacker spawns by hard-coded building ids 18/51/52/54, SP attacker selection (20%/tick, range 350), `ProvideFuel` ×100 cheat under `CHEATMENU_ENABLED` [B:DEBUG], FuelGenerator GlobalBuilding online at > 8 surges.
+- `TrunkPort` destination labels, `m_targetLocationId`, `ReprogramComplete`, open-timer power-up [B:LEGACY].
+- `code/worldobject/chess.cpp` reads options `TotalSize`/`SizeVariance` that no blueprint defines (ChessBase/ChessPiece are blocked old objects) [B:LEGACY].

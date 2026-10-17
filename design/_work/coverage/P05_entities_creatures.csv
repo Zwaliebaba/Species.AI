@@ -1,0 +1,67 @@
+path,depth,reason,sections
+code/worldobject/anthill.cpp,full,,AntHill (Building) and ArmyAnt (Entity) — ant colony;Partition summary;Crate outcomes delivered by this partition;Creature interactions with spirits and population
+code/worldobject/anthill.h,full,,AntHill (Building) and ArmyAnt (Entity) — ant colony;Constants table
+code/worldobject/armyant.cpp,full,,AntHill (Building) and ArmyAnt (Entity) — ant colony;X3 — random-number and clock usage
+code/worldobject/armyant.h,full,,AntHill (Building) and ArmyAnt (Entity) — ant colony;Constants table
+code/worldobject/centipede.cpp,full,,Centipede — segmented ground predator;Creature interactions with spirits and population
+code/worldobject/centipede.h,full,,Centipede — segmented ground predator;Constants table
+code/worldobject/dropship.cpp,full,,DropShip — reinforcement transport (unreachable);Appendix — dead/legacy code;Constants table
+code/worldobject/dropship.h,full,,DropShip — reinforcement transport (unreachable)
+code/worldobject/dustball.cpp,full,,Ambient weather objects — Lightning Snow DustBall;Constants table
+code/worldobject/dustball.h,full,,Ambient weather objects — Lightning Snow DustBall
+code/worldobject/egg.cpp,full,,Egg (Virii egg) — spirit-fertilised hatchery
+code/worldobject/egg.h,full,,Egg (Virii egg) — spirit-fertilised hatchery;Constants table
+code/worldobject/lander.cpp,full,,Lander — Darwinia beach-landing craft (legacy);Appendix — dead/legacy code
+code/worldobject/lander.h,full,,Lander — Darwinia beach-landing craft (legacy)
+code/worldobject/lightning.cpp,full,,Ambient weather objects — Lightning Snow DustBall
+code/worldobject/lightning.h,full,,Ambient weather objects — Lightning Snow DustBall
+code/worldobject/meteor.cpp,full,,Meteor shower — Crate::RunMeteorShower and Meteor;X3 — random-number and clock usage
+code/worldobject/meteor.h,full,,Meteor shower — Crate::RunMeteorShower and Meteor
+code/worldobject/snow.cpp,full,,Ambient weather objects — Lightning Snow DustBall;X3 — random-number and clock usage
+code/worldobject/snow.h,full,,Ambient weather objects — Lightning Snow DustBall
+code/worldobject/souldestroyer.cpp,full,,SoulDestroyer and Zombie — the soul-eating flyer and its ghosts;X3 — random-number and clock usage
+code/worldobject/souldestroyer.h,full,,SoulDestroyer and Zombie — the soul-eating flyer and its ghosts;Constants table
+code/worldobject/spaceship.cpp,full,,SpaceShip — Futurewinian abduction event;Constants table
+code/worldobject/spaceship.h,full,,SpaceShip — Futurewinian abduction event
+code/worldobject/spam.cpp,full,,SpamInfection — Infection crate swarm (and the legacy Spam building);Appendix — dead/legacy code
+code/worldobject/spam.h,full,,SpamInfection — Infection crate swarm (and the legacy Spam building);Constants table
+code/worldobject/spider.cpp,full,,Spider — eight-legged pouncer;Constants table
+code/worldobject/spider.h,full,,Spider — eight-legged pouncer
+code/worldobject/sporegenerator.cpp,full,,SporeGenerator — flying egg layer;Constants table
+code/worldobject/sporegenerator.h,full,,SporeGenerator — flying egg layer
+code/worldobject/tentacle.cpp,full,,Tentacle — portal tentacles (The Beast debug-only)
+code/worldobject/tentacle.h,full,,Tentacle — portal tentacles (The Beast debug-only);Constants table
+code/worldobject/triffid.cpp,full,,Triffid (Building) and TriffidEgg (Entity) — egg launcher and monster egg;Contradictions / open questions
+code/worldobject/triffid.h,full,,Triffid (Building) and TriffidEgg (Entity) — egg launcher and monster egg;Constants table
+code/worldobject/tripod.cpp,full,,Tripod and TripodNavData — three-legged walker (legacy);Constants table
+code/worldobject/tripod.h,full,,Tripod and TripodNavData — three-legged walker (legacy)
+code/worldobject/virii.cpp,full,,Virii ViriiUnit ViriiHistory — worm swarm;Constants table
+code/worldobject/virii.h,full,,Virii ViriiUnit ViriiHistory — worm swarm;Constants table
+code/worldobject/wallbuster.cpp,full,,WallBuster — Assault-mode carryable wall charge
+code/worldobject/wallbuster.h,full,,WallBuster — Assault-mode carryable wall charge
+data/stats.txt,full,,Partition summary;every creature section
+data/sounds.txt,skimmed,extracted ENTITY/BUILDING sections for this partition's types only (script _work/scripts/P05_sounds.py),Sound events raised by this partition
+code/worldobject/crate.cpp,skimmed,read CaptureCrate/RunUncapturedCrate/IsValid and the Run* effects for this partition's outcomes only (P08 owns the file),Crate outcomes delivered by this partition;Meteor shower;SpaceShip;Triffid;AntHill;SpamInfection
+code/worldobject/crate.h,skimmed,reward enum and INCLUDE_THEBEAST guard,Contradictions / open questions;Crate outcomes delivered by this partition
+code/taskmanager.cpp,skimmed,Task::Target* functions for crate tasks and DropShip,Crate outcomes delivered by this partition;DropShip
+code/worldobject/entity.cpp,skimmed,EntityIsBlocked/NewEntity/SetType/ChangeHealth/Advance/AdvanceDead/AdvanceInAir/AdvanceInWater/Begin,Common conventions used by every creature
+code/worldobject/entity.h,full,,Common conventions used by every creature
+code/worldobject/building.cpp,skimmed,BuildingIsBlocked and CreateBuilding,Common conventions used by every creature
+code/location.cpp,skimmed,SpawnEntities/InitMonsterTeam/InitFuturewinianTeam/Bang/ambient effect generators/Init resets,Common conventions;Ambient weather objects;Meteor shower
+code/level_file.cpp,skimmed,ParseInstantUnits blocking and Effects/reinforcement options,Common conventions;Ambient weather objects;DropShip
+code/gametimer.cpp,skimmed,GetServerAdvancePeriod/Tick/RequestSpeedChange,Common conventions;Meteor shower
+code/lib/vector3.h,skimmed,FRAND/SFRAND wrappers,Common conventions;X3
+contrib/systemiv/lib/math/random_number.cpp,skimmed,generator definitions,Common conventions;X3
+code/worldobject/darwinian.cpp,skimmed,AntCapture/AdvanceCapturedByAnt/AdvanceInVortex/Abduct/AdvanceBeingAbducted/SearchForThreats,AntHill;Ambient weather objects;SpaceShip
+code/worldobject/spirit.cpp,skimmed,egg/collector state helpers,Egg;Virii;Cross-partition notes
+code/worldobject/portal.cpp,skimmed,AdvanceStateExpanding tentacle spawn,Tentacle
+code/worldobject/shaman.cpp,skimmed,CanSummonEntity disabled,Appendix — dead/legacy code
+code/entity_grid.cpp,skimmed,GetBestEnemy semantics,Virii;Cross-partition notes
+code/lib/2d_surface_map.cpp,skimmed,GetValue out-of-range behaviour,SpaceShip
+code/team.cpp,skimmed,NewUnit ViriiUnit and RenderVirii,Virii
+tools/multiwinia_exclusions.txt,skimmed,levels exclusions,DropShip;Appendix — dead/legacy code
+tools/build_multiwinia_data.bat,skimmed,how exclusions are applied,DropShip
+data/levels,skimmed,grep of InstantUnits/Buildings/Effects/reinforcement options across mp_ map_ mission_ old/,Partition summary;Ambient weather objects;WallBuster;Appendix — dead/legacy code
+docs/multiwinia_todo.txt,skimmed,grep for creature terms,Docs-vs-code discrepancies
+docs/sound changes.txt,skimmed,grep for creature terms,Docs-vs-code discrepancies
+docs/bad guys.txt,full,,Docs-vs-code discrepancies

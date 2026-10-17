@@ -80,7 +80,7 @@ File counts = number of files under `code/`, `contrib/systemiv/lib`, `contrib/ec
 | `INVOKE_CALLBACK_FROM_SOUND_THREAD` | `TARGET_OS_MACOSX` | off | 7 | Sound threading variant |
 | `DEBUG_RENDER_ENABLED` | global | **on** | 17 | Debug overlay renderers compiled into shipping exe |
 | `USE_LOADERS` | commented out | **off** | 17 | Loading-screen mini-programs gated (verify per-file in P20) |
-| `INCLUDE_THEBEAST` | `worldobject/crate.h` | on | 3 | Crate outcome "The Beast" |
+| `INCLUDE_THEBEAST` | `worldobject/crate.h`, inside `#ifdef TARGET_DEBUG` | **off** (debug-only; corrected after P08 review) | 3 | Crate outcome "The Beast" — [B:DEBUG] |
 | `USE_FIXED`, `FIXED64_NUMERICS` | nowhere | off | 3 / – | Fixed-point numerics alternative |
 | `DEMOBUILD`, `DEMO2`, `EGAMESBUILD`, `OBERONBUILD`, `AMBROSIA_REGISTRATION` | nowhere / Darwinia-era | off | 7/7/8/4/2 | Darwinia demo and distributor variants |
 | `BENCHMARK_AND_FTP` | commented out | off | 4 | Hardware-compat benchmark upload |

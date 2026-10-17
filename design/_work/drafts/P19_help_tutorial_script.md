@@ -347,7 +347,7 @@ Evaluation order each frame (first rule that sets a tab wins, except where noted
 | C | zone 9 owned **or** player `m_teamCount` in zone 9 > 5; for i = 0,1 with spawn[i] owned and spawn[i+1] "dealt with" (owned or > 10 ordered there) and no officer at AITarget[i] with goto→zone 9: nothing selected, ≥ 10 idle, no entity selected → | `HelpTutorialPromote` (i=0) / `HelpTutorialPromoteAdvanced` (i=1) (AITarget[i], 40) | RMB a Darwinian to promote an officer |
 | | … else if selected entity is an Officer → | `HelpTutorialSendToZone` (zone 9, 20) | RMB in zone 9 to give the officer a goto order |
 | D | all 3 spawns owned **and** ≥ 2 of AITargets 30/25/40 have a goto-officer → | | |
-| D1 | final zone not taken (zone 23 owned or ≥ 10 ordered) and > 10 idle near AITarget 40 → | `HelpTutorialCaptureZone` (zone 23, 20) | Send Darwinians to zone 23 |
+| D1 | final zone not yet "taken" (taken = zone 23 owned by player or ≥ 10 Darwinians ordered there) and > 10 idle near AITarget 40 → | `HelpTutorialCaptureZone` (zone 23, 20) | Send Darwinians to zone 23 |
 | D2 | else, crate help not done (`doneCrateHelp` = crate spawned **and** gone **and** player owns 0 airstrike tasks): (a) if no tutorial crate yet and ≥ 10 s since last tab change → spawn crate (see below); (b) crate exists and on ground → | `HelpTutorialCrateCollect` (crate pos + vel·`SERVER_ADVANCE_PERIOD`, 80) | Move Darwinians onto crate |
 | | crate exists, falling → | `HelpTutorialCrateFalling` (crate pos, 80) | Watch |
 | | crate collected, no power-up info box (`m_mostRecentTaskId == −1`), no current task → | `HelpTutorialSelectTask` (screen 0.5W, 0.85H) | Press TAB / right bumper |
