@@ -24,7 +24,7 @@ MODE_DEFAULTS = {
 
 def parse_level(path):
     res = dict(gametypes='', numplayers=-1, popcap=-1, popcap_lines=[], defcap=-1,
-               options=[], effects=[], coop=False, attacking=[], official=False,
+               options=[], effects=[], coop=False, forcecoop=False, attacking=[], official=False,
                buildings=[], instant=[])
     section = None
     with open(path, 'r', encoding='latin-1') as f:
@@ -56,6 +56,9 @@ def parse_level(path):
                     res['effects'] = t[1:]
                 elif lw == 'coopmode':
                     res['coop'] = True
+                elif lw == 'forcecoop':
+                    # LevelFile::ParseMultiwiniaOptions sets m_forceCoop; the menu forces co-op on
+                    res['forcecoop'] = True
                 elif lw == 'attackingteams':
                     res['attacking'] = [int(x) for x in t[1:]]
                 elif lw == 'officiallevel':
@@ -162,7 +165,7 @@ def main():
             level=fn[:-4], gametypes=L['gametypes'], official='Y' if L['official'] else '',
             numplayers=n, popcap=cap if len(L['popcap_lines']) <= 1 else f"{cap} (lines {' '.join(map(str, L['popcap_lines']))})",
             percap=per if per is not None else 'none', assault=assault,
-            coop='Y' if L['coop'] else '', attacking=' '.join(map(str, L['attacking'])),
+            coop=('ForceCoop' if L['forcecoop'] else ('Y' if L['coop'] else '')), attacking=' '.join(map(str, L['attacking'])),
             options=' '.join(f"{k}={v}" if k in TAKES_ARG else k for k, v in opts.items()),
             effects=' '.join(L['effects']),
             spawnpoints=len(sps), sp_start=' '.join(f"t{k}:{v}" for k, v in sorted(sp_owned.items())),

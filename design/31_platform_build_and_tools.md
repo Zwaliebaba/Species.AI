@@ -2,7 +2,7 @@
 
 > Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
-> Sources merged: P14_platform_lib (build system, platform map, timing, file locations, archives, data pipeline, packaging, installers, MapCRC, ShapeExporter, localisation, audit scripts, crash handling, system info, root/targets/tools/docs inventories), P13_gfx_backend_math (window managers, D3D device creation/reset, display modes, vsync/MSAA/gamma, AVI capture/playback), P11_terrain_world (map CRC definition and the 87/87 reproduction script `_work/scripts/P11_mapcrc.py`, third D3D compile breakage), P12_render_core (fourth D3D compile breakage in `code/deform.cpp`), `_work/build_matrix.md` (superseded here for build facts), `_work/routed/_meta_*.md`, `_work/phase2_log.md`. New S31 scripts: `_work/scripts/S_31_archive_contents.py` (emulates the data build and lists every `.dat` archive's content), `_work/scripts/S_31_inventory.py` (one-row-per-file inventories), `_work/scripts/S_31_source_map.py` (source map, manifest-checked), `_work/scripts/S_31_citation_fixes.py` (writes paths of files absent from the tree as name + existing folder, so they are not read as citations).
+> Sources merged: P14_platform_lib (build system, platform map, timing, file locations, archives, data pipeline, packaging, installers, MapCRC, ShapeExporter, localisation, audit scripts, crash handling, system info, root/targets/tools/docs inventories), P13_gfx_backend_math (window managers, D3D device creation/reset, display modes, vsync/MSAA/gamma, AVI capture/playback), P11_terrain_world (map CRC definition and the 87/87 reproduction script `_work/scripts/P11_mapcrc.py`, third D3D compile breakage), P12_render_core (fourth D3D compile breakage in `code/deform.cpp`), `_work/build_matrix.md` (superseded here for build facts), `_work/routed/_meta_*.md`, `_work/phase2_log.md`. New S31 scripts: `_work/scripts/S_31_archive_contents.py` (emulates the data build and lists every `.dat` archive's content), `_work/scripts/S_31_inventory.py` (one-row-per-file inventories), `_work/scripts/S_31_source_map.py` (source map, manifest-checked), `_work/scripts/S_31_citation_fixes.py` (writes paths of files absent from the tree as name + existing folder, so they are not read as citations). These scripts and the draft labels (P11–P14, S31) are provenance only; every claim cites the code or data it rests on.
 
 ## Contents
 
@@ -94,7 +94,7 @@ Platform identity strings [C] `code/lib/universal_include.h`: `APP_SYSTEM` = `"P
 | `code/sound/sound_library_3d_xaudio.cpp`, `.h` | XAudio (`HAVE_XAUDIO`) | yes | no [B:DEAD] | no | |
 | `code/sound/sound_library_2d_sdl.cpp`, `code/sound/sound_library_2d_sdl.h` | SDL audio | no | no [B:DEAD] (the header is included by `code/sound/soundsystem.cpp` only in the `#if !defined(WIN32)` branch) | yes | needs the absent `ASWSDLRingBuffer` sources (a `macosx/` sub-folder of `code/sound/` that is not in the tree) |
 | `code/sound/sound_library_3d_software.cpp`, `.h` | portable software mixer | yes | yes | yes | `INVOKE_CALLBACK_FROM_SOUND_THREAD` variant is Mac-only |
-| `code/unicode/sound_library_2d.cpp`, `.h`, `code/unicode/sound_library_2d_sdl.cpp`, `.h`, `code/unicode/sound_library_3d.cpp`, `.h` | stale copies | no | no [B:DEAD] | no | live files include `"sound/sound_library_2d.h"` / `"sound/sound_library_3d.h"`, which resolve through the include path to `code/sound/`, not `code/unicode/` (no include directory points at `code/unicode/`, and the only same-directory includer, `code/unicode/sound_library_2d.cpp`, is not compiled) — resolved: the manifest's `included_by_live` marks for `code/unicode/sound_library_2d.h`, `code/unicode/sound_library_3d.h`, `code/unicode/sound_library_2d_sdl.h` are base-name matches, not real inclusions [C include paths] |
+| `code/unicode/sound_library_2d.cpp`, `.h`, `code/unicode/sound_library_2d_sdl.cpp`, `.h`, `code/unicode/sound_library_3d.cpp`, `.h` | stale copies | no | no [B:DEAD] | no | live files include `"sound/sound_library_2d.h"` / `"sound/sound_library_3d.h"`, which resolve through the include path to `code/sound/`, not `code/unicode/` (no include directory points at `code/unicode/`, and the only same-directory includer, `code/unicode/sound_library_2d.cpp`, is not compiled) — resolved: an earlier file inventory's "included by a live file" marks for `code/unicode/sound_library_2d.h`, `code/unicode/sound_library_3d.h`, `code/unicode/sound_library_2d_sdl.h` are base-name matches, not real inclusions [C include paths] |
 | `code/gesture_demo_win32.cpp` | Win32 thread | yes | no (needs `GESTURE_EDITOR` + `USE_SEPULVEDA_HELP_TUTORIAL`) [B:DEAD] | no | |
 | `code/gesture_demo_sdl.cpp` | SDL | no | no [B:DEAD] | yes | |
 | `code/interface/buynow_window.cpp`, `.h`, `code/interface/updateavailable_window.cpp`, `.h` | Mac upsell / update windows | no | no [B:DEAD] — but `code/interface/updateavailable_window.h` is `#include`d **unconditionally** by `code/main.cpp`, so its `UpdateAvailableWindow` declaration is compiled into the baseline; the class is never instantiated there and its `.cpp` is not compiled [C] | yes | |
@@ -418,7 +418,7 @@ Alt-Tab: `BindAltTab` registers `MOD_ALT+VK_TAB` as a hot key (swallowing Alt-Ta
 
 The options UI exposes none of vsync, MSAA or gamma ([09](09_meta_systems.md)).
 
-### 3.12 Video capture — `AVIGenerator` [B:DEBUG] [C] `code/lib/avi_generator.cpp`, `code/lib/avi_generator.h`
+### 3.12 Video capture — `AVIGenerator` [B:DEAD] [C] `code/lib/avi_generator.cpp`, `code/lib/avi_generator.h`
 
 Compiled only with `AVI_GENERATOR`, defined only by `TARGET_DEBUG` (and `#undef`'d on Linux/Mac) [C] `code/lib/universal_include.h`. Based on a published "AVIGenerator" sample (header comment) using Video for Windows (`vfw.h`, `vfw32.lib`).
 
@@ -432,7 +432,7 @@ Compiled only with `AVI_GENERATOR`, defined only by `TARGET_DEBUG` (and `#undef`
 | dtor | if pref `RecordDemo == 2` → `ReleaseEngine()` |
 | `GetRecordingFrameRate()` | `m_frameRate` |
 
-Integration [C]: created by the debug Grabber window (`code/interface/grabber_window.cpp`, opened from the debug menu): *Start* sets fake-time mode (§4.2) and calls `InitEngine`; *Stop* restores real time and releases. **No code calls `AVIGenerator::AddFrame()`** [C grep] — a recording in this tree produces an AVI with no frames. Playback (`AviPlayer`) is in the appendix.
+Integration [C]: created only by the Grabber window (`code/interface/grabber_window.cpp`): *Start* sets fake-time mode (§4.2) and calls `InitEngine`; *Stop* restores real time and releases. That window is created only by `code/interface/debugmenu.cpp:DebugKeyBindings::GrabberButton`, which **has no caller in any build** (grep finds only its declaration in `code/interface/debugmenu.h` and its definition; it is not an entry of the never-constructed `DebugMenu` either, [32 §3.2](32_debug_test_and_performance.md#32-debugkeybindings--the-18-static-entry-points-c-codeinterfacedebugmenuhdebugkeybindings-codeinterfacedebugmenucpp)), so the whole AVI path is unreachable even in `TARGET_DEBUG` → [B:DEAD]. In addition **no code calls `AVIGenerator::AddFrame()`** [C grep] — even if opened, a recording would produce an AVI with no frames. Playback (`AviPlayer`) is in the appendix.
 
 ---
 
@@ -455,7 +455,7 @@ The game clock and simulation tick are layered on top of this in `GameTimer` (`c
 ### 4.2 Fake time (offline capture) [C] `code/lib/hi_res_time.cpp`, `code/main.cpp:UpdateAdvanceTime`, `code/interface/grabber_window.cpp`
 
 * `SetFakeTimeMode()` freezes `g_fakeTime = GetHighResTime()` and switches to fake mode; `IncrementFakeTime(dt)` advances it; `SetRealTimeMode()` sets `g_timeShift = realTime − g_fakeTime`, so real time resumes continuously from the fake value.
-* Callers: the debug Grabber window (Start → fake, Stop → real) [B:DEBUG]; `UpdateAdvanceTime` when pref `RecordDemo` ∈ {1, 2}: `g_advanceTime = 1/DemoFrameRate` (default 25) and `IncrementFakeTime(1/DemoFrameRate)` every frame (only effective if fake mode was enabled).
+* Callers: the Grabber window (Start → fake, Stop → real), which nothing opens [B:DEAD] (§3.12); `UpdateAdvanceTime` when pref `RecordDemo` ∈ {1, 2}: `g_advanceTime = 1/DemoFrameRate` (default 25) and `IncrementFakeTime(1/DemoFrameRate)` every frame (only effective if fake mode was enabled).
 * `RecordDemo == 1` additionally makes `App::ShutdownCurrentGame` save the server's command history to `serverHistory.dat` in the working directory ([22](22_determinism_and_networking.md), [32](32_debug_test_and_performance.md)) [C] `code/app.cpp:App::ShutdownCurrentGame`.
 
 ### 4.3 Variants [B:DEAD]
@@ -682,7 +682,7 @@ Solution configurations [C]: `Debug`, `DebugDirect3D`, `PC OpenGL (Debug)` (→ 
 
 | Sheet | Contents | Evidence |
 |---|---|---|
-| `Common.vsprops` | Include path **in this order**: `contrib/libogg-1.1.3/include`, `contrib/libvorbis-1.1.2/include`, `steam/` under `contrib/` (absent from the tree), **`code`**, `contrib`, `contrib/unrar`, `.\`, **`contrib/SystemIV`**, `contrib/SystemIV/lib/netlib`, `contrib/eclipse`, four Windows SDK v6.0 locations, DirectX SDK include directories (June 2008, February 2007, December 2006 ×3, November 2007, unversioned, April 2007), `contrib/lpng1215`, `contrib/zlib`. Defines `WIN32;TARGET_MSVC;_CRT_SECURE_NO_DEPRECATE`. Links `vfw32.lib winmm.lib dxguid.lib dxerr9.lib dsound.lib wsock32.lib dbghelp.lib xinput.lib`; library paths include an `oggvorbis/lib` folder under `contrib/` (absent; the Mac project uses `contrib/systemiv/contrib/oggvorbis`), `contrib/unrar`, `contrib/eclipse` and the same SDK roots; **delay-loads `xinput1_3.dll`**. Resource compiler include adds `code` | `targets/vs2005/Common.vsprops` |
+| `Common.vsprops` | Include path **in this order**: `contrib/libogg-1.1.3/include`, `contrib/libvorbis-1.1.2/include`, `steam/` under `contrib/` (absent from the tree), **`code`**, `contrib`, `contrib/unrar`, `.\`, **`contrib/SystemIV`**, `contrib/SystemIV/lib/netlib`, `contrib/eclipse`, four Windows SDK v6.0 locations, DirectX SDK include directories (June 2008, February 2007, December 2006 ×3, November 2007, unversioned), `contrib/lpng1215`, `contrib/zlib`, and last the DirectX SDK April 2007 include directory. Defines `WIN32;TARGET_MSVC;_CRT_SECURE_NO_DEPRECATE`. Links `vfw32.lib winmm.lib dxguid.lib dxerr9.lib dsound.lib wsock32.lib dbghelp.lib xinput.lib`; library paths include an `oggvorbis/lib` folder under `contrib/` (absent; the Mac project uses `contrib/systemiv/contrib/oggvorbis`), `contrib/unrar`, `contrib/eclipse` and the same SDK roots; **delay-loads `xinput1_3.dll`**. Resource compiler include adds `code` | `targets/vs2005/Common.vsprops` |
 | `OpenGL.vsprops` | links `opengl32.lib glu32.lib`; user macro `GraphicsLibrary=OpenGL` | `targets/vs2005/OpenGL.vsprops` |
 | `Direct3D.vsprops` | defines `USE_DIRECT3D`; links `d3dxof.lib d3dx9.lib d3d9.lib`; `GraphicsLibrary=Direct3D` | `targets/vs2005/Direct3D.vsprops` |
 
@@ -728,7 +728,9 @@ Switch names in parentheses are the MSVC 2008 meanings of the stored enum values
 
 The output directory `$(OutDir)\..\..\..` resolves to the repository root, which is why the packaging scripts copy `darwinia_gl.exe` and `save_symbols.cmd` copies `Darwinia.pdb` from the root [C] `tools/build_multiwinia.bat`, `tools/save_symbols.cmd`.
 
-### 7.4 Per-file overrides in the vcproj [C] (`_work/scripts/P14_vcproj_overrides.py`)
+### 7.4 Per-file overrides in the vcproj [C]
+
+Source: the `FileConfiguration` blocks and file list of `targets/vs2005/Darwinia.vcproj`.
 
 | File | Override |
 |---|---|
@@ -737,14 +739,59 @@ The output directory `$(OutDir)\..\..\..` resolves to the repository root, which
 | `x360_qnet.cpp` (under `code/network/`) | `ExcludedFromBuild` in all four configurations (file absent from the tree) |
 | `contrib/systemiv/lib/unicode/unicode_string.cpp`, `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp` | object file renamed `$(InputName)1.obj` (avoids a clash with same-named objects) |
 
-Files referenced by the vcproj but absent from the tree (14) [C scripted]: `window_manager_xbox.h` (under `code/lib/`); `preferences.txt` (repository root); `Multiwinia.spa.h`, `x360_qnet.cpp`, `x360_qnet.h` (under `code/network/`); `CustomGameTypeSelection.h`, `DownloadPDLCButton.h`, `InvitePlayersButton.h`, `PDLCOptionsButton.h`, `XBLASelectSessionType.h` (under `code/UI/`); `invisible.cur`, `GDF\resource`, `resource1.h`, `version_resource.h` (under `targets/vs2005/`) — Xbox Live Arcade / PDLC remnants and resource-editor leftovers; headers and non-source items do not break the build. 47 source files under `code/` exist but are not in the vcproj (§2.2 lists the platform ones; the full list is in `_work/manifest.csv`, rows with empty `vcproj_build`). Not being listed does **not** mean not compiled: 18 of them are reached by `#include` from live files (manifest column `included_by_live`; build_matrix §6 correction). Checked against the include guards [C]:
+Files referenced by the vcproj but absent from the tree (14) [C scripted]: `window_manager_xbox.h` (under `code/lib/`); `preferences.txt` (repository root); `Multiwinia.spa.h`, `x360_qnet.cpp`, `x360_qnet.h` (under `code/network/`); `CustomGameTypeSelection.h`, `DownloadPDLCButton.h`, `InvitePlayersButton.h`, `PDLCOptionsButton.h`, `XBLASelectSessionType.h` (under `code/UI/`); `invisible.cur`, `GDF\resource`, `resource1.h`, `version_resource.h` (under `targets/vs2005/`) — Xbox Live Arcade / PDLC remnants and resource-editor leftovers; headers and non-source items do not break the build. 47 source files under `code/` exist but are not listed in the vcproj (§2.2 describes the platform ones). Not being listed does **not** mean not compiled: 15 of them are `#include`d by compiled files — 9 unconditionally (so they are compiled into the baseline) and 6 only under non-PC guards — and 3 `code/unicode/` headers merely share a base name with included `code/sound/` headers. The complete list, each checked against its include sites and guards [C] grep of `#include` over `code/` and `contrib/`:
 
-| Group | Files | Effective state in the baseline |
-|---|---|---|
-| template bodies pulled in by their headers | `code/lib/2d_array.cpp`, `code/lib/2d_surface_map.cpp`, `code/lib/slice_darray.cpp` | **compiled** (live) |
-| headers included unconditionally | `code/lib/float_vector3.h`, `code/lib/matrix_cache.h`, `code/lib/preference_names.h`, `code/lib/mouse_cursor.h` (empty stub), `code/UI/soundsliderbutton.h` (via `code/interface/prefs_sound_window.h`), `code/interface/updateavailable_window.h` (via `code/main.cpp`; declaration only) | **compiled** |
-| headers included only under platform guards | `code/lib/input/inputdriver_sdl_key.h`, `code/lib/input/inputdriver_sdl_mouse.h`, `code/lib/input/sdl_eventhandler.h`, `code/lib/window_manager_sdl.h` (`code/main.cpp`, `#ifdef TARGET_OS_MACOSX`); `code/lib/macosx_hardware_detect.h` (`code/lib/preferences.cpp`, `#ifdef TARGET_OS_MACOSX`); `code/sound/sound_library_2d_sdl.h` (`code/sound/soundsystem.cpp`, non-`WIN32` branch) | not compiled on PC [B:DEAD] |
-| base-name matches only | `code/unicode/sound_library_2d.h`, `code/unicode/sound_library_3d.h`, `code/unicode/sound_library_2d_sdl.h` | not compiled: the live `#include "sound/…"` lines resolve to `code/sound/` (§2.2) [C include paths] |
+| # | File | Included by (in the baseline sources) | Effective state in the baseline |
+|---|---|---|---|
+| 1 | `code/UI/ErrorDialog.cpp` | – | not compiled [B:DEAD] |
+| 2 | `code/UI/ErrorDialog.h` | only `code/UI/ErrorDialog.cpp` | not compiled [B:DEAD] |
+| 3 | `code/UI/soundsliderbutton.h` | `code/interface/prefs_sound_window.h` (as `UI/SoundSliderButton.h`, unconditional) | **compiled** |
+| 4 | `code/gesture_demo_sdl.cpp` | – | not compiled [B:DEAD] (SDL; Mac target) |
+| 5 | `code/interface/buynow_window.cpp` | – | not compiled [B:DEAD] (Mac upsell window) |
+| 6 | `code/interface/buynow_window.h` | only `code/interface/buynow_window.cpp` | not compiled [B:DEAD] |
+| 7 | `code/interface/updateavailable_window.cpp` | – | not compiled [B:DEAD] |
+| 8 | `code/interface/updateavailable_window.h` | `code/main.cpp` (unconditional) | **compiled** (declaration of `UpdateAvailableWindow` only; never instantiated) |
+| 9 | `code/lib/2d_array.cpp` | `code/lib/2d_array.h` (template body) | **compiled** (live) |
+| 10 | `code/lib/2d_surface_map.cpp` | `code/lib/2d_surface_map.h` (template body) | **compiled** (live) |
+| 11 | `code/lib/debug_fog_logging.cpp` | – | not compiled [B:DEAD] |
+| 12 | `code/lib/debug_logging.cpp` | – | not compiled [B:DEAD] |
+| 13 | `code/lib/debug_logging.h` | only the two unlisted files above | not compiled [B:DEAD] |
+| 14 | `code/lib/float_vector3.h` | `code/landscape_renderer.h`, `code/water.h` (unconditional) | **compiled** |
+| 15 | `code/lib/hi_res_time_gcc.cpp` | – | not compiled [B:DEAD] (§4.3) |
+| 16 | `code/lib/hi_res_time_sdl.cpp` | – | not compiled [B:DEAD] (§4.3) |
+| 17 | `code/lib/input/inputdriver_sdl_key.cpp` | – | not compiled [B:DEAD] |
+| 18 | `code/lib/input/inputdriver_sdl_key.h` | `code/main.cpp` inside `#ifdef TARGET_OS_MACOSX` | not compiled on PC [B:DEAD] |
+| 19 | `code/lib/input/inputdriver_sdl_mouse.cpp` | – | not compiled [B:DEAD] |
+| 20 | `code/lib/input/inputdriver_sdl_mouse.h` | `code/main.cpp` inside `#ifdef TARGET_OS_MACOSX` (also the unlisted SDL window manager) | not compiled on PC [B:DEAD] |
+| 21 | `code/lib/input/inputfilterspec.cpp` | – | not compiled [B:DEAD] (its header `inputfilterspec.h` is listed and compiled) |
+| 22 | `code/lib/input/sdl_eventhandler.cpp` | – | not compiled [B:DEAD] |
+| 23 | `code/lib/input/sdl_eventhandler.h` | `code/main.cpp` inside `#ifdef TARGET_OS_MACOSX` | not compiled on PC [B:DEAD] |
+| 24 | `code/lib/input/sdl_eventproc.h` | only the SDL input/window headers above | not compiled on PC [B:DEAD] |
+| 25 | `code/lib/input_sdl.cpp` | – | not compiled [B:DEAD] (Darwinia-era SDL input; listed by `targets/linux/Makefile`) |
+| 26 | `code/lib/macosx_hardware_detect.cpp` | – | not compiled [B:DEAD] |
+| 27 | `code/lib/macosx_hardware_detect.h` | `code/lib/preferences.cpp` inside `#ifdef TARGET_OS_MACOSX` | not compiled on PC [B:DEAD] |
+| 28 | `code/lib/matrix_cache.h` | `code/routing_system.cpp` (unconditional) | **compiled** |
+| 29 | `code/lib/mouse_cursor.cpp` | – | not compiled [B:DEAD] |
+| 30 | `code/lib/mouse_cursor.h` | `code/app.cpp`, `code/renderer.cpp`, `code/sepulveda.cpp` (unconditional) | **compiled** (an empty stub that only includes `lib/rgb_colour.h`) |
+| 31 | `code/lib/ogl_extensions_sdl.cpp` | – | not compiled [B:DEAD] |
+| 32 | `code/lib/preference_names.h` | `code/benchmark.cpp`, `code/global_world.cpp`, `code/interface/prefs_screen_window.cpp` (unconditional) | **compiled** |
+| 33 | `code/lib/slice_darray.cpp` | `code/lib/slice_darray.h` (template body) | **compiled** (live) |
+| 34 | `code/lib/system_info_macosx.cpp` | – | not compiled [B:DEAD] |
+| 35 | `code/lib/tri_tri.cpp` | – | not compiled [B:DEAD] (Möller triangle–triangle test; listed by `targets/linux/Makefile`) |
+| 36 | `code/lib/window_manager_sdl.cpp` | – | not compiled [B:DEAD] |
+| 37 | `code/lib/window_manager_sdl.h` | `code/main.cpp` inside `#ifdef TARGET_OS_MACOSX` | not compiled on PC [B:DEAD] |
+| 38 | `code/network/network_defines_debug.h` | – (no includer anywhere) | never compiled [B:DEAD] |
+| 39 | `code/network/networkupdate.inc` | – (no includer anywhere) | never compiled [B:DEAD] |
+| 40 | `code/sound/sound_library_2d_sdl.cpp` | – | not compiled [B:DEAD] |
+| 41 | `code/sound/sound_library_2d_sdl.h` | `code/sound/soundsystem.cpp` in the `#if !defined(WIN32)` branch | not compiled on PC [B:DEAD] |
+| 42 | `code/unicode/sound_library_2d.cpp` | – | not compiled [B:DEAD] (stale copy) |
+| 43 | `code/unicode/sound_library_2d.h` | only `code/unicode/sound_library_2d.cpp` and `code/unicode/sound_library_2d_sdl.h` (same-directory includes); every live include resolves to `code/sound/sound_library_2d.h` (§2.2) | not compiled [B:DEAD] |
+| 44 | `code/unicode/sound_library_2d_sdl.cpp` | – | not compiled [B:DEAD] (stale copy) |
+| 45 | `code/unicode/sound_library_2d_sdl.h` | none (the live `#include "sound/sound_library_2d_sdl.h"` resolves to `code/sound/`) | not compiled [B:DEAD] |
+| 46 | `code/unicode/sound_library_3d.cpp` | – | not compiled [B:DEAD] (stale copy) |
+| 47 | `code/unicode/sound_library_3d.h` | none (the live `#include "sound/sound_library_3d.h"` resolves to `code/sound/`) | not compiled [B:DEAD] |
+
+Totals: 9 compiled (rows 3, 8, 9, 10, 14, 28, 30, 32, 33), 6 included only under non-PC guards (rows 18, 20, 23, 27, 37, 41; row 24 is included only by those headers), 32 neither listed nor included by any compiled file.
 
 ### 7.5 Resource scripts compiled into the exe [C]
 
@@ -847,7 +894,7 @@ Other conditional-compilation families (state in the baseline; file counts are t
 | `USE_PENTIUM_COUNTER` | `code/lib/hi_res_time.cpp` (= 0) | off | 1 | RDTSC timer (§4.3) |
 | `XCRASHREPORT_WRITE_MINIDUMP` | `code/lib/exception_handler.cpp` (= 1) | on | 1 | minidump (§6.2) |
 
-Runtime gates inside the baseline binary (compiled in ≠ reachable) [C]: `App::m_gameMode` ∈ {`GameModeNone`, `GameModePrologue`, `GameModeCampaign`, `GameModeMultiwinia`} with Prologue/Campaign menu entries compiled only under their `INCLUDEGAMEMODE_*` macros (`code/app.h`, `code/UI/GameMenuWindow.cpp`); Multiwinia game types Skirmish(=Domination), KingOfTheHill, CaptureTheStatue, Assault, RocketRiot, Blitzkreig, TankBattle (TankBattle compiled out) (`code/multiwinia.h`); `Building::BuildingIsBlocked` / `Entity::EntityIsBlocked` for Darwinia-only types under `BLOCK_OLD_DARWINIA_OBJECTS`; `IS_DEMO` ≡ `!g_app->IsFullVersion()` (runtime authentication gate, `code/game_menu.h`) — see [01](01_game_modes.md), [09](09_meta_systems.md).
+Runtime gates inside the baseline binary (compiled in ≠ reachable) [C]: `App::m_gameMode` ∈ {`GameModeNone`, `GameModePrologue`, `GameModeCampaign`, `GameModeMultiwinia`} with the Prologue/Campaign buttons of the single-player demo page compiled only under their `INCLUDEGAMEMODE_*` macros, while those of `PageDarwinia` are compiled unconditionally but unreachable (`code/app.h`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupSPDemoPage`, `SetupDarwiniaPage`); Multiwinia game types Skirmish(=Domination), KingOfTheHill, CaptureTheStatue, Assault, RocketRiot, Blitzkreig, TankBattle (`code/multiwinia.h`) — TankBattle is **compiled in but not permitted**: with `INCLUDEGAMEMODE_TANKBATTLE` undefined, `code/app.cpp:App::IsGameModePermitted` returns false for it and `code/multiwinia.cpp:Multiwinia::AdvanceTankBattle` has an empty body, while the blueprint, the `Multiwinia::Advance` dispatch case and the game-type button (made inactive in `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupGameSelectPage`) remain; `Building::BuildingIsBlocked` / `Entity::EntityIsBlocked` for Darwinia-only types under `BLOCK_OLD_DARWINIA_OBJECTS`; `IS_DEMO` ≡ `!g_app->IsFullVersion()` (runtime authentication gate, `code/game_menu.h`) — see [01](01_game_modes.md), [09](09_meta_systems.md).
 
 ### 7.8 Non-Windows targets
 
@@ -971,7 +1018,7 @@ inclusion_file := { relpath EOL }               ; exact file paths relative to d
                                                 ; copyfiles.pl dies ("<path> <errno>") if one is missing
 ```
 
-`listfiles.pl` prints every surviving **file** (directories are traversed, not printed) as a `/`-separated path relative to `data/`, in `File::Find` traversal order [C]. All list entries resolve to existing `data/` files when compared case-insensitively (e.g. `mp_koth_2p_1.txt` vs on-disk `mp_koth_2P_1.txt`); on a case-sensitive file system 30 entries would fail [C scripted, P14]. `Marketing/LogitechG15/landrotate.bmp` in the exclusion lists matches nothing in `data/` [C].
+`listfiles.pl` prints every surviving **file** (directories are traversed, not printed) as a `/`-separated path relative to `data/`, in `File::Find` traversal order [C]. All list entries resolve to existing `data/` files when compared case-insensitively (e.g. `mp_koth_2p_1.txt` vs on-disk `mp_koth_2P_1.txt`); on a case-sensitive file system 30 entries would fail [C scripted]. `Marketing/LogitechG15/landrotate.bmp` in the exclusion lists matches nothing in `data/` [C].
 
 ### 8.5 Per-SKU exclusion lists — every entry [C]
 
@@ -994,7 +1041,7 @@ Why these exclusions matter for the design set: the retail `main.dat` contains n
 
 ### 8.7 The archives — names, contents, load order, override rules
 
-Contents below are computed by `_work/scripts/S_31_archive_contents.py`, which re-implements the batch/Perl logic of §8.2–§8.4 over the checked-in `data/` tree (Windows case-insensitive globbing) [C scripted].
+Contents below are computed by re-applying the batch/Perl rules of §8.2–§8.4 (`tools/build_multiwinia_data.bat`, `tools/listfiles.pl`, `tools/build_language_dat.bat`) to the checked-in `data/` tree with Windows case-insensitive globbing [C scripted; provenance `_work/scripts/S_31_archive_contents.py`].
 
 | Load order | Archive | Parsed in (thread) | Built by | Retail content (`retail all`) | RAR options |
 |---|---|---|---|---|---|
@@ -1010,7 +1057,7 @@ Contents below are computed by `_work/scripts/S_31_archive_contents.py`, which r
 
 [C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`. Further facts from the emulation [C scripted]: 8 shader files (`deform*`, `globals.h`, `water-meshwaves.*`) are packed into **both** `init.dat` and `main.dat` (only `FixedFunc*` are excluded from `main.dat`), so `main.dat` overrides them with identical bytes; in the retail build 298 `data/` files are packed in no archive (levels 68 — Darwinia maps, test maps and `levels/old/`; shapes 133 — the `.max` sources; scripts 42; textures 24 — editor/speccy font sheets, the 7 unicode pages in no language list, plusmenu, marketing images; sounds 11 — licensed/loader music; gesture_demos 8; purity 4; thumbnails 5; mwhelp 1; icons 1 — `banner_template.psp`; data root 1 — `Untitled Gradients.grd`). Packing other SKUs: `pcpreview` main.dat 472 files (3 levels), `pcbetatest group_a` 492 (13 levels), `pchwcompat` 528 (3 levels + 42 scripts + 8 gesture demos), `pcassaultstress` 523.
 
-Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`, 200 `.txt`, 139 `.shp`, 133 `.max`, 7 `.ps`, 6 `.anim`, 5 `.vs`, 1 `.ps3`, 1 `.h`, 1 `.psp`, 1 `.grd`; every type the game loads is covered by the filter; the unmatched types are authoring files never packed [C scripted, P14].
+Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`, 200 `.txt`, 139 `.shp`, 133 `.max`, 7 `.ps`, 6 `.anim`, 5 `.vs`, 1 `.ps3`, 1 `.h`, 1 `.psp`, 1 `.grd`; every type the game loads is covered by the filter; the unmatched types are authoring files never packed [C scripted].
 
 **Load-order guarantee**: `App::App` blocks in `LoadingScreen::Render` until the loading worker queue (which runs `App::Initialise`) is empty, and only then queues `App::LoadSounds` on the separate sound queue, so no two archives are ever decompressed concurrently — required because unrar is not thread-safe ("Can't unrar too files at once") [C] `code/app.cpp:App::App`, `code/loading_screen.cpp:LoadingScreen::Render`. Resolved: earlier notes implied sound archives load "in parallel"; they load after `main.dat` completes. On Mac `LoadSounds` runs on the loading worker itself.
 
@@ -1031,7 +1078,7 @@ Extension filter check: outside `sounds/`/`mwsounds/`, `data/` holds 506 `.bmp`,
 
 ### 8.9 First-run defaults ordering [C] `code/app.cpp:App::App`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`
 
-`App::App` parses `init.dat` and immediately constructs `PrefsManager(<P>preferences.txt)`. If that file is absent (first run) or its first line looks corrupted, `CreateDefaultValues()` adds the hard-coded defaults and then overlays `default_preferences.txt` via `g_app->m_resource->GetTextReader(...)` with overwrite enabled. At that moment only `init.dat` is mounted and `default_preferences.txt` is not in `tools/init.list`; it lives in `main.dat` (mounted later in `App::Initialise`). In the development tree the loose `data/default_preferences.txt` is found; in a packaged install, whose installers copy only the `.dat` files and executables (no loose `data\`, §9.2), it is not [C], so **first-run defaults come only from code** and `Renderer::Initialise` immediately saves them to `preferences.txt` — after which `default_preferences.txt` is never consulted again [C]. Whether a patch ever shipped a loose copy is 31-U8. The 11 keys of `data/default_preferences.txt` are listed in [09](09_meta_systems.md)/[29](29_data_formats_reference.md).
+`App::App` parses `init.dat` and immediately constructs `PrefsManager(<P>preferences.txt)`. If that file is absent (first run) or its first line looks corrupted, `CreateDefaultValues()` adds the hard-coded defaults and then overlays `default_preferences.txt` via `g_app->m_resource->GetTextReader(...)` with overwrite enabled. At that moment only `init.dat` is mounted and `default_preferences.txt` is not in `tools/init.list`; it lives in `main.dat` (mounted later in `App::Initialise`). In the development tree the loose `data/default_preferences.txt` is found; in a packaged install, whose installers copy only the `.dat` files and executables (no loose `data\`, §9.2), it is not [C], so **first-run defaults come only from code** and `Renderer::Initialise` immediately saves them to `preferences.txt` — after which `default_preferences.txt` is never consulted again [C for a pure-`.dat` install: `tools/init.list`, `code/app.cpp:App::App`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`]. Whether any SKU or patch shipped a loose copy is 31-U8. The 10 active items (plus one commented `#TextLanguage` line) of `data/default_preferences.txt` are listed in [29 §5.1](29_data_formats_reference.md#51-preferences-preferencestxt-default_preferencestxt).
 
 ### 8.10 SystemIV `FileSystem` (compiled, unused) [C] `contrib/systemiv/lib/filesys/file_system.cpp`
 
@@ -1128,7 +1175,7 @@ Build integration [C]: Visual Studio pre-build event in all four configurations,
 | Result type | `int` (printed `0x%08x`); `LevelFile::CalculeCRC` returns −1 if the file cannot be opened |
 | Line endings | bytes are hashed as stored, so a CRLF ↔ LF conversion of a level file changes its ID |
 
-**Verification** [C scripted]: `_work/scripts/P11_mapcrc.py` (re-run for this document) recomputes all 87 top-level `data/levels/*.txt` with this definition and reproduces every `MAPID_*` constant in `code/mapcrc.h` exactly (87 OK, 0 mismatches).
+**Verification** [C scripted]: an independent re-implementation of this definition, run over all 87 top-level `data/levels/*.txt` for this document, reproduces every `MAPID_*` constant in `code/mapcrc.h` exactly (87 OK, 0 mismatches) (provenance: `_work/scripts/P11_mapcrc.py`).
 
 ### 10.3 Runtime use [C]
 
@@ -1239,7 +1286,7 @@ Limitations [I: from the regex pipeline]: names built at run time (`sprintf`, co
 
 | Script | What it does |
 |---|---|
-| `tools/findAllOpts.sh` | `grep g_prefsManager` over every `*.cpp`, extract the first string literal per line, sort/uniq → preference-key inventory (the maintained equivalent is `_work/drafts/P14_platform_lib_pref_keys.csv`) |
+| `tools/findAllOpts.sh` | `grep g_prefsManager` over every `*.cpp`, extract the first string literal per line, sort/uniq → preference-key inventory (the maintained register of keys and defaults is in [09](09_meta_systems.md)) |
 | `tools/unused_samples.sh` | compares `SOUNDNAME`/`SAMPLE` entries in `data/sounds.txt` against files in `data/sounds` (Darwinia layout; ignores `data/mwsounds`) |
 | `tools/unused_sample_groups.sh` | compares `SAMPLEGROUP` definitions with `SOUNDNAME` references in `sounds.txt` |
 | `tools/FindErrors.sh` | `grep -i ERROR test_log.txt`, strip up to `ERROR: `, sort/uniq (test-harness output, [32](32_debug_test_and_performance.md)) |
@@ -1253,7 +1300,7 @@ Limitations [I: from the regex pipeline]: names built at run time (`sprintf`, co
 
 ## 14 File inventories (root, targets, tools, docs)
 
-One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 inventory tables with the S31 corrections applied (rows for `tools/build_multiwinia.bat`, `tools/build_multiwinia_crashreporter.bat`, `tools/build_multiwinia_gold.bat`, `tools/build_multiwinia_pc_preview.bat`, `tools/InstallerScript_retail_crashreporter_euro.iss`, `tools/multiwiniasupport/MultiwiniaSupport.exe`, `tools/SlashSort.exe`, `tools/traceblackbox.bat`, `tools/MapCRC/MapCRC.exe`, `targets/linux/Makefile`, `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj`, `targets/macosx/Multiwinia/data`, `docs/Network.txt`) and checked for completeness against `_work/manifest.csv` (10 root + 64 `targets/` + 174 `tools/` + 70 `docs/` files, 0 missing). Roles of binaries come from `file`/`strings` inspection and script references. These tables are part of this document's source map.
+One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 inventory tables with the S31 corrections applied (rows for `tools/build_multiwinia.bat`, `tools/build_multiwinia_crashreporter.bat`, `tools/build_multiwinia_gold.bat`, `tools/build_multiwinia_pc_preview.bat`, `tools/InstallerScript_retail_crashreporter_euro.iss`, `tools/multiwiniasupport/MultiwiniaSupport.exe`, `tools/SlashSort.exe`, `tools/traceblackbox.bat`, `tools/MapCRC/MapCRC.exe`, `targets/linux/Makefile`, `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj`, `targets/macosx/Multiwinia/data`, `docs/Network.txt`) and checked for completeness against a `find` listing of the tree (10 root + 64 `targets/` + 174 `tools/` + 70 `docs/` files, 0 missing). Roles of binaries come from `file`/`strings` inspection and script references. These tables are part of this document's source map.
 
 ### 14.1 Repository root (10 files)
 
@@ -1263,7 +1310,7 @@ One row per file, generated by `_work/scripts/S_31_inventory.py` from the P14 in
 | 2 | `README.TXT` | Development readme: VS2008, solution in `targets\vs2005`, configuration→exe list, DirectX SDK requirement, optional Vista SDK for `TARGET_OS_VISTA`, set working dir to `..\..` | [C] |
 | 3 | `MultiwiniaSupport.ini` | Support-tool file list (§6.4) | [C] |
 | 4 | `animator.exe` | Introversion sprite-animation tool (PE32 GUI) [I: name + data] | [C] file type |
-| 5 | `animator.dat` | Solid RAR v4 data for animator.exe: 15 entries (paths inside the archive, below its own `data\` root, not files of this tree): animations `cloudyglow`, `darwinian`, `laser`, `plusone`, `spawnpoint`, `zone-back`, `zone-front`, `zone` (`.bmp`); font `verdana-bold.bmp`; dialogs `animator-controlpanel`, `animator-mainmenu`, `animator-panel`, `file-dialog`, `mainmenu` (`.txt`); `english.txt` | [C] `_work/scripts/P14_rar_list.py` header walk |
+| 5 | `animator.dat` | Solid RAR v4 data for animator.exe: 15 entries (paths inside the archive, below its own `data\` root, not files of this tree): animations `cloudyglow`, `darwinian`, `laser`, `plusone`, `spawnpoint`, `zone-back`, `zone-front`, `zone` (`.bmp`); font `verdana-bold.bmp`; dialogs `animator-controlpanel`, `animator-mainmenu`, `animator-panel`, `file-dialog`, `mainmenu` (`.txt`); `english.txt` | [C] RAR v4 header walk of the file |
 | 6 | `darwinia.gdf` | Darwinia Vista Game Definition File (UTF-16; v1.5.4.0, release 2005-03-04, executable `darwinia.exe`) | [C] |
 | 7 | `darwinia.mcl` | Windows Media Center application descriptor for Darwinia (installed by the NSIS Vista installer) | [C] |
 | 8 | `darwinia.png` | 256×256 Media Center/box image (listed in the vcproj as a non-built file) | [C] |
@@ -1632,7 +1679,7 @@ Detailed keep/adapt/replace verdicts are in [40](40_carry_forward_assessment.md)
 | 31-U8 | Was `default_preferences.txt` ever shipped loose (or by a patch) so that first-run defaults applied in packaged installs (§8.9)? | [U] | retail install tree |
 | 31-U9 | Exact role of `tools/SlashSort.exe` | [I] | run it on a `TRACK_MEMORY_LEAKS` log |
 | 31-U10 | Which string the Russian build's `subst.pl … retail\... retail.ru` patch targeted (absent from this tree) | [U] | diff a Russian retail exe against an English one |
-| 31-U11 | Is the debug menu (hence the Grabber window and profiler) reachable from the shipped FULL build's input bindings? | [U] | see [32](32_debug_test_and_performance.md)/[06](06_player_control_and_input.md) binding analysis |
+| 31-U11 | ~~Is the debug menu (hence the Grabber window and profiler) reachable from the shipped FULL build's input bindings?~~ **Resolved [C]:** no. `DebugMenu` is never constructed in any build (its only opener, the F1 call in `code/user_input.cpp:UserInput::AdvanceMenus`, is commented out, and there is no `new DebugMenu`); `DebugKeyBindings::GrabberButton` has no caller at all, so the Grabber/AVI path is [B:DEAD] (§3.12); the profiler window is reachable only from the cheat window in `TARGET_DEBUG` builds (`code/interface/cheat_window.cpp` calls `DebugKeyBindings::ProfileButton`; [32 §3.2](32_debug_test_and_performance.md#32-debugkeybindings--the-18-static-entry-points-c-codeinterfacedebugmenuhdebugkeybindings-codeinterfacedebugmenucpp)) | closed | — |
 | 31-U12 | Name of the map file the baseline `Release` link produces (linker default) — `tools/traceblackbox.bat` expects `darwinia.map` | [I] | link the Release configuration |
 | 31-U13 | Is QPC monotonic across the main (0xAA) and worker (0x55) affinity sets on the 2008 target hardware? Cross-core skew would surface directly in `GetHighResTime` (§4.1) | [I] | measure on period hardware; irrelevant for the new engine |
 | 31-U14 | Was the shipped Windows binary built from this commit? (`DARWINIA_VERSION "dev"`, development metaserver host, versionless `.rc`) — design-critical because every [B:FULL] claim assumes it | [I] probably a development snapshot close to release | compare behaviour/strings with a retail `multiwinia.exe` |
@@ -1662,7 +1709,6 @@ Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one ga
 | `code/app.cpp` comments | affinity `0x02|0x8|0x20|0x80` "Even processors", `0x01|0x4|0x10|0x40` "Processor Number % 3 == 2" / "Odd processors" | the masks select CPUs 1,3,5,7 and 0,2,4,6 (0-based) respectively |
 | `tools/build_multiwinia_data.bat` echoes | sounds2 step prints "Making sounds.dat"; `ambx` platform prints "…hwcompat.txt" | builds `sounds2.dat`; appends the beta-test exclusion list |
 | `targets/vs2005/Common.vsprops` | include path `steam/` under `contrib/` | directory absent from the tree |
-| `_work/build_matrix.md` §3 (earlier phase note) | target table complete | omitted `LAN/WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `TARGET_BETATEST_GROUP`; corrected in §7.6 |
 
 ## IP items
 
@@ -1685,7 +1731,7 @@ Design-critical inferences (not unknowns, but [I]): GL and D3D clients in one ga
 
 ## Source map
 
-Code, contrib and data files that implement or feed this document's subject (generated by `_work/scripts/S_31_source_map.py`; every path verified present in `_work/manifest.csv`). Every file under `tools/`, `targets/`, `docs/` and the repository root is listed with its role in §14.1–§14.4, which are part of this source map. Audio files named by `tools/sounds.txt`/`tools/menu_sounds.txt` are catalogued in [10](10_audio_design.md)/[27](27_audio_engine.md) and are not repeated.
+Code, contrib and data files that implement or feed this document's subject (provenance: `_work/scripts/S_31_source_map.py`; every path verified present in the source tree). Every file under `tools/`, `targets/`, `docs/` and the repository root is listed with its role in §14.1–§14.4, which are part of this source map. Audio files named by `tools/sounds.txt`/`tools/menu_sounds.txt` are catalogued in [10](10_audio_design.md)/[27](27_audio_engine.md) and are not repeated.
 
 | File | Role in this document |
 |---|---|
@@ -1712,12 +1758,12 @@ Code, contrib and data files that implement or feed this document's subject (gen
 | `code/lib/input/win32_eventhandler.h` | Win32 event handler declaration (§3.10) |
 | `code/interface/prefs_keybindings_window.cpp` | commented-out Alt-Tab binding (§3.10) |
 | `code/interface/mainmenus.cpp` | `ResetWindowHandle` call (§3.10) |
-| `code/lib/avi_generator.cpp` | AVI capture [B:DEBUG] (§3.12) |
+| `code/lib/avi_generator.cpp` | AVI capture [B:DEAD] (DEBUG-only, never created) (§3.12) |
 | `code/lib/avi_generator.h` | AVI capture declaration (§3.12) |
 | `code/lib/avi_player.cpp` | AVI playback for the eGames loader [B:DEAD] (appendix) |
 | `code/lib/avi_player.h` | AVI playback declaration [B:DEAD] (appendix) |
-| `code/interface/grabber_window.cpp` | debug Grabber window: fake time + AVI generator (§3.12, §4.2) |
-| `code/interface/debugmenu.cpp` | opens the Grabber window (§3.12) |
+| `code/interface/grabber_window.cpp` | Grabber window: fake time + AVI generator, never opened [B:DEAD] (§3.12, §4.2) |
+| `code/interface/debugmenu.cpp` | `DebugKeyBindings::GrabberButton` would open the Grabber window; it has no caller (§3.12) |
 | `code/lib/hi_res_time.h` | timer API (§4.1) |
 | `code/lib/hi_res_time.cpp` | QPC clock, fake time, dead RDTSC path (§4) |
 | `code/lib/hi_res_time_gcc.cpp` | QPC variant for GCC [B:DEAD] (§4.3) |
@@ -2068,13 +2114,13 @@ Code, contrib and data files that implement or feed this document's subject (gen
 | Item | Build tag | Note |
 |---|---|---|
 | `AviPlayer` (`code/lib/avi_player.cpp`, `code/lib/avi_player.h`) | [B:DEAD] (`EGAMESBUILD`) | VfW playback for the eGames distributor loader (`code/loaders/egames_loader.cpp`): `OpenAvi` opens video stream 0 and audio stream 0, begins streaming at speed 2000, allocates a fixed 512×256×3 RGB frame; `DecodeVideoFrame(int)` copies the DIB from `AVIStreamGetFrame` into the power-of-two buffer with BGR→RGB swizzle (row stride 512·3; returns 1 at end) and counts displayed/missed frames; `DecodeVideoFrame(float t)` → `AVIStreamTimeToSample(t·1000)`; `GetAudioData(n, short*)` reads n PCM samples sequentially; `CloseAvi` releases everything |
-| `AVIGenerator` (§3.12) | [B:DEBUG], effectively non-functional | `AddFrame()` never called |
+| `AVIGenerator` and the Grabber window (§3.12) | [B:DEAD] (compiled only in `TARGET_DEBUG`, never created) | `DebugKeyBindings::GrabberButton` has no caller; `AddFrame()` is never called either |
 | `WindowManagerDirectX` `TARGET_OS_VISTA` command line (`-mediacenter`, save-file argument), `DoVistaChecks`, Vista screenshot folder, Vista mod paths | [B:DEAD] | `TARGET_OS_VISTA` never defined |
 | `WindowManagerWin32::m_hRC2` secondary context; declared-but-undefined `UseSecondaryContext/ReleaseSecondaryContext/DestroySecondaryContext`; `gglChoosePixelFormatARB` | compiled, unused | §3.3 |
 | `Renderer::SetScreenGamma` | [B:D3D], no callers | §3.11 |
 | RDTSC timer path (`USE_PENTIUM_COUNTER 0`), `code/lib/hi_res_time_gcc.cpp`, `code/lib/hi_res_time_sdl.cpp` | [B:DEAD] | §4.3 |
 | `code/lib/window_manager_sdl.*`, `code/lib/ogl_extensions_sdl.cpp`, SDL input drivers, `code/sound/sound_library_2d_sdl.*`, `code/lib/system_info_macosx.cpp`, `code/lib/macosx_hardware_detect.*`, `code/interface/buynow_window.*`, `code/interface/updateavailable_window.*`, `code/gesture_demo_sdl.cpp`, Mac branches of `StandardiseCPUPrecision`, `debug_utils`, `unicode_string`, `network_stream`, `unicode_text_file_writer`, `contrib/systemiv/lib/tosser/hash_map_darwin.h` | [B:DEAD] on PC (Mac target only) | §2.2, §2.4 |
-| `code/lib/input_sdl.cpp`, `code/lib/debug_logging.*`, `code/lib/debug_fog_logging.cpp`, `code/lib/tri_tri.cpp`, `code/lib/mouse_cursor.*`, `code/lib/input/inputfilterspec.cpp`, `code/unicode/sound_library_2d.cpp` and its five siblings in `code/unicode/` (§2.2) | [B:DEAD] (not in the vcproj) | §2.2 |
+| `code/lib/input_sdl.cpp`, `code/lib/debug_logging.*`, `code/lib/debug_fog_logging.cpp`, `code/lib/tri_tri.cpp`, `code/lib/mouse_cursor.cpp` (its header is an empty stub that is compiled), `code/lib/input/inputfilterspec.cpp`, `code/network/network_defines_debug.h`, `code/network/networkupdate.inc`, `code/UI/ErrorDialog.*`, `code/unicode/sound_library_2d.cpp` and its five siblings in `code/unicode/` (§2.2) | [B:DEAD] (not in the vcproj) | §2.2, §7.4 |
 | Xbox 360 remnants: `code/lib/input/xbox_eventhandler.*` (excluded), `code/sound/sound_library_3d_xaudio.*` (`HAVE_XAUDIO`), absent `x360_qnet.*`, `Multiwinia.spa.h`, `window_manager_xbox.h`, XBLA/PDLC UI headers; `platxbox` branches of the data build, `convert_bmp_to_tex.cmd`, DXT conversions, `textures/xboxlivearcade.bmp` in `tools/init.list`, `D3DRS_LINEWIDTH`, `Resolve()` | [B:DEAD] | §7.4, §7.9, §8.3 |
 | `code/gesture_demo_win32.cpp` | [B:DEAD] (`GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL`) | §2.2 |
 | `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem` | compiled, never instantiated | §8.10 |

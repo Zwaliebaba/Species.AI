@@ -2,8 +2,8 @@
 
 > Part C · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
-> Sources merged: P12_render_core (§25.1–25.3 decoder, upload, resource manager), X1b_asset_formats (§25.X1b, §29.B5–B7, B16), X2a_asset_catalogue_visual (§25.0–25.15, CSVs `_work/drafts/X2a_textures.csv`, `X2a_shapes.csv`, `X2a_refs.csv`, `X2a_missing.csv`), X2b_asset_catalogue_audio (§25.A, §25.B, `_work/drafts/X2b_samples.csv`), `_work/drafts/P12_shapes.csv`.
-> Generated: the per-file tables of §1.2, §2.6, §2.8, §2.15, §3–§6 and the Source map are produced by `_work/scripts/S_25_catalogue.py` (run `python3 -I _work/scripts/S_25_catalogue.py _work .` from the design directory) from the CSVs above and the hand-written template `_work/script_inputs/S_25_template.md`; the script also verifies that every file under `data/textures`, `data/sprites`, `data/shapes`, `data/animations`, `data/terrain`, `data/shaders`, `data/icons`, `data/thumbnails`, `data/mwhelp`, `data/sepulveda`, `data/sounds` and `data/mwsounds` listed in `_work/manifest.csv` appears in this document with its `data/...` path (2131 files; 0 missing at generation time).
+> Sources merged: P12_render_core (decoder, upload, resource manager), X1b_asset_formats (asset-format surveys), X2a_asset_catalogue_visual (visual catalogue), X2b_asset_catalogue_audio (audio catalogue). The labels P12, X1b, X2a and X2b in "Resolved:" notes name these analysis drafts (P14 is the platform/build draft P14_platform_lib); they only record which earlier statement was corrected and are never the evidence for a claim — every claim cites code or data.
+> Generated: the per-file tables of §1.2, §2.6, §2.8, §2.15, §3–§6 and the Source map were computed from the source tree by the method of §1.5 (provenance: `_work/scripts/S_25_catalogue.py` and its hand-written template `_work/script_inputs/S_25_template.md`). Every file under `data/textures`, `data/sprites`, `data/shapes`, `data/animations`, `data/terrain`, `data/shaders`, `data/icons`, `data/thumbnails`, `data/mwhelp`, `data/sepulveda`, `data/sounds` and `data/mwsounds` (2131 files) appears in this document with its `data/...` path (0 missing at generation time).
 
 ## Contents
 
@@ -39,18 +39,18 @@ Counts are files on disk (generated). Status columns are mutually exclusive and 
 
 <!-- GEN:dir_stats -->
 
-Audio (generated from `_work/drafts/X2b_samples.csv`; status vocabulary in §5.2):
+Audio (generated, §1.5; status vocabulary in §5.2):
 
 <!-- GEN:audio_stats -->
 
-Resolved: the X2a draft's key findings said "667 BMP bitmaps … all 667 have a 40-byte header"; the tree holds **506** `.bmp` files in these directories (194 + 17 + 25 + 36 + 121 + 57 + 51 + 5) [C] `find`, matching X1b's survey and [31 §8.7](31_platform_build_and_tools.md#87-the-archives--names-contents-load-order-override-rules); all 506 have a 40-byte `BITMAPINFOHEADER`.
+Resolved: the X2a draft said "667 BMP bitmaps … all 667 have a 40-byte header"; the tree holds **506** `.bmp` files in these directories (194 + 17 + 25 + 36 + 121 + 57 + 51 + 5) [C] `find`, as [31 §8.7](31_platform_build_and_tools.md#87-the-archives--names-contents-load-order-override-rules); all 506 have a 40-byte `BITMAPINFOHEADER`.
 
 ### 1.3 Status vocabulary and evidence rules
 
 | Status | Meaning | How decided [C] |
 |---|---|---|
-| referenced [B:FULL] | at least one confirmed reference from code compiled into the baseline and reachable in a Multiwinia session, or from a data file the baseline loads (live `data/levels/mp_*` maps, the six `.anim` files) | X2a lexed every `.cpp/.h/.inc` under `code/` and `contrib/eclipse/` (strings, comments, `#if` stacks per configuration, vcproj membership), folded `"…" TEXTURE_EXTENSION` into `….bmp`, and resolved run-time-built names by the rules below |
-| referenced [B:LEGACY] only | compiled into FULL but unreachable in a Multiwinia match (single-player task managers, ShamanInterface, ControlHelpSystem, Darwinia world map, Darwinia cut-scene logo, prologue/campaign mode pictures) | reachability overrides verified by grep (table below) |
+| referenced [B:FULL] | at least one confirmed reference from code compiled into the baseline and reachable in a Multiwinia session (including loads made once at start-up, e.g. the `SphereWorld` meshes and the `TaskManagerInterfaceIcons` pre-load, below), or from a data file the baseline loads (live `data/levels/mp_*` maps, the six `.anim` files) | every `.cpp/.h/.inc` under `code/` and `contrib/eclipse/` lexed into strings, comments and `#if` stacks per configuration, with vcproj membership; `"…" TEXTURE_EXTENSION` folded into `….bmp`; run-time-built names resolved by the rules below (§1.5) |
+| referenced [B:LEGACY] only | compiled into FULL but unreachable in a Multiwinia match (single-player task managers, ShamanInterface, ControlHelpSystem, Darwinia world map rendering, Darwinia cut-scene logo, prologue/campaign mode pictures, the `thumbnails/default.bmp` fallback) | reachability overrides verified by grep (table below) |
 | referenced [B:D3D] only | only the Direct3D configuration loads it (all shaders, the three deform tables) | `#ifdef USE_DIRECT3D` around the load site |
 | referenced [B:DEBUG] only | only `TARGET_DEBUG` builds reach it (cheat window, sound editor, crate help window, TankBattle thumbnails) | `CHEATMENU_ENABLED`, `SOUND_EDITOR`, `INCLUDE_CRATE_HELP_WINDOW`, `INCLUDEGAMEMODE_TANKBATTLE` |
 | referenced [B:EDITOR] only | only `LOCATION_EDITOR` builds (`data/shapes/camera.shp`) | `#ifdef LOCATION_EDITOR` |
@@ -86,7 +86,9 @@ Reachability overrides (compiled into FULL, not reachable in a Multiwinia match)
 | `code/taskmanager_interface_icons.cpp`, `code/taskmanager_interface_gestures.cpp` | LEGACY | `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager` creates `TaskManagerInterfaceMultiwinia` whenever `App::Multiplayer()`; the gesture interface only for single-player keyboard `ControlMethod` 0, the icon interface otherwise. Exception: `TaskManagerInterfaceIcons::TaskManagerInterfaceIcons` runs once at start-up (game mode None, `code/app.cpp:App::Initialise`) and pre-loads four textures — counted as FULL |
 | `code/shaman_interface.cpp` | LEGACY | shown only from `TaskManagerInterfaceIcons` |
 | `code/control_help.cpp` | LEGACY | `ControlHelpSystem::Render` returns immediately when `App::Multiplayer()`; `RenderHelp` also requires `App::IsSinglePlayer()` |
-| `code/global_world.cpp` render code, `code/global_internet.cpp` | LEGACY | Darwinia world map (`Renderer` branch `m_locationId == -1`, [24 §3.3](24_rendering.md#33-branches-that-replace-passes-313)) |
+| `code/global_world.cpp` render code, `code/global_internet.cpp` | LEGACY | Darwinia world map (`Renderer` branch `m_locationId == -1`, [24 §3.3](24_rendering.md#33-branches-that-replace-passes-313)). Exception: `code/global_world.cpp:SphereWorld::SphereWorld` runs at every start-up (`code/app.cpp:App::Initialise` → `new GlobalWorld` → `GlobalWorld::GlobalWorld` → `new SphereWorld`) and loads `globalworld_outer.shp`, `globalworld_middle.shp`, `globalworld_inner.shp` with `GetShape`, which release-asserts on a missing file (`code/lib/resource.cpp:Resource::GetShapeCopy`) — counted as FULL (load only; never drawn in a match) |
+| `code/UI/MapImageButton.h:MapImageButton::Render` `thumbnails/default.bmp` fallback | LEGACY | a map whose thumbnail does not exist (`DoesTextureExist` false) is drawn without one; the fallback request runs only if `GetTexture` of an existing thumbnail returns −1, but `code/lib/resource.cpp:Resource::GetTextureWithFlags` release-asserts instead of returning −1 |
+| `code/loaders/credits_loader.cpp:CreditsLoader` | LEGACY | compiled into FULL (outside `USE_LOADERS`), created only by `code/camera.cpp:Camera::AdvanceSphereWorldOutroMode` (Darwinia outro) and `code/script.cpp:Script::RunCommand_RunCredits` (cut-scene command) |
 | `code/multiwiniahelp.cpp:MultiwiniaHelp::RenderControlHelp` (no-argument overload), `RenderBasicControlHelp`, `RenderCurrentUnitHelp`, `RenderCurrentTaskHelp` | LEGACY | no live caller (the two task-manager calls are commented out) |
 | `code/renderer.cpp:Renderer::RenderFrame` Darwin-logo block | LEGACY | `m_renderDarwinLogo` is set only by a script command (`code/script.cpp`) used by Darwinia cut-scenes |
 | `code/renderer.cpp:Renderer::RenderFlatTexture` | LEGACY | its only call is commented out |
@@ -98,7 +100,7 @@ Reachability overrides (compiled into FULL, not reachable in a Multiwinia match)
 | `code/interface/gesture_window.cpp` | DEBUG/DEAD | created only by `code/interface/debugmenu.cpp`; body under `GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL` |
 | `code/interface/helpandoptions_windows.cpp:CrateButton`, `CrateHelpWindow` | DEBUG | reachable only through `CrateHelpWindowButton` (`#ifdef INCLUDE_CRATE_HELP_WINDOW`) |
 
-"Referenced [B:FULL]" means compiled and callable in a Multiwinia session, not necessarily seen: <!-- GEN:mp_unplaced_count --> of the FULL assets are consumed only by building classes that no live Multiwinia map places (§6.2) [C counts from `_work/drafts/P06_level_building_usage.csv`].
+"Referenced [B:FULL]" means compiled and callable in a Multiwinia session, not necessarily seen: <!-- GEN:mp_unplaced_count --> of the FULL assets are consumed only by building classes that no live Multiwinia map places (§6.2) [C counts of building types placed by the live `data/levels/mp_*` files, §1.5].
 
 ### 1.4 Key findings
 
@@ -107,10 +109,28 @@ Reachability overrides (compiled into FULL, not reachable in a Multiwinia match)
 - **Three transparency mechanisms** coexist (magenta colour key by default, green-as-alpha masks, true 32-bit alpha) plus additive blending of art painted on black (§2.4) [C].
 - **NPOT is common** (all thumbnails, most help images, many icons); images are rescaled **up** to the next power of two at upload whenever power-of-two textures are required — always in the D3D build (§2.8) [C].
 - **Loose files override archives; archive look-ups are case-insensitive; nothing is encrypted** (§2.9) [C].
-- **No missing-file crash is reachable in FULL.** Resolved: X2a and the coordinator log treated the unguarded `GetTexture("icons/compass_empty.bmp")` in `code/markersystem.cpp:MarkerSystem::RenderCompass` as a live fatal path; the branch requires a direction of exactly (0,0), but every caller passes a vector produced by `code/lib/vector2.cpp:Vector2::Normalise`, which maps a zero vector to (0,1), or the on-screen constant (0,−1) — the request can never be made [C] (§6.1).
+- **No missing-file crash is reachable in FULL.** Resolved: the X2a draft treated the unguarded `GetTexture("icons/compass_empty.bmp")` in `code/markersystem.cpp:MarkerSystem::RenderCompass` as a live fatal path; the branch requires a direction of exactly (0,0), but every caller passes a vector produced by `code/lib/vector2.cpp:Vector2::Normalise`, which maps a zero vector to (0,1), or the on-screen constant (0,−1) — the request can never be made [C] (§6.1).
 - **Packaging differs from the tree:** 160 visual files are packed in no archive (133 `.max`, legacy fonts, platform/distributor branding, TankBattle/benchmark thumbnails, the cut `mp_cts_3p_3` map and every font atlas no language list names — including all three currency atlases `*.20a0.20af.bmp`, so U+20A0–20AF never renders in a packed build) (§2.9, §2.15) [C].
 - **Shapes:** 139 meshes, 441 fragment blocks, 150 820 triangles, 425 markers; two files contain markers only; `data/shapes/carrycube.shp` repeats fragment name `Box04`; `data/shapes/carryweights.shp` (a live Capture-the-Statue mesh) and `data/shapes/sporegenerator.shp` declare more positions than vertices, which overruns the hit-test scratch buffer (§4.5) [C].
 - **Audio:** 1332 mono Ogg Vorbis files; 898 can play in FULL, 242 are bound only to events that never fire, 192 are bound to nothing; 11 music/loader files are never shipped (§5) [C].
+
+### 1.5 How the per-file catalogue was computed
+
+Every value in §1.2 and §3–§6 was computed from the files of the source tree (commit `f909630`), not copied from documentation, so the catalogue can be re-derived by re-implementing these rules [C unless a column of §3.0 says [I]]:
+
+| Columns | Method |
+|---|---|
+| BMP size, bit depth, compression, palette ("n used") | every `.bmp` header parsed exactly as `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp` does (`ReadBMPFileHeader`, `ReadWinBMPInfoHeader` / `ReadOS2BMPInfoHeader`, palette size from `bfOffBits`, §2.2); "n used" = distinct palette indices that occur in the pixel data |
+| Alpha usage statistics | pixels decoded to RGBA8 as the loader does; `magenta key` = exact (255,0,255) pixels (alpha 255); `black bg` = share of (0,0,0) pixels; `A8 x% zero, y% partial` = share of 32-bit pixels with alpha 0 and with 0 < alpha < 255 |
+| POT upload size | `code/lib/math_utils.cpp:nearestPowerOfTwo` applied to each side (§2.5) |
+| Shape columns, hierarchy, markers | every `.shp` parsed with the grammar of `code/lib/shape.cpp:Shape::Load` (fragments, parent names, markers, positions, vertices); triangles counted after the strip conversion of `ShapeFragment::ParseStripBlock` (degenerate triangles dropped, odd triangles reversed) |
+| Load sites, flags, build tag | every `.cpp`, `.h` and `.inc` under `code/` and `contrib/eclipse/` lexed into string literals, comments and `#if`/`#ifdef` stacks; `"…" TEXTURE_EXTENSION` folded into `….bmp`; a literal naming a file under `data/` — or a name produced by a rule of §1.3 — is a reference; its build tag comes from its `#if` stack evaluated for each configuration of `code/lib/universal_include.h` and `targets/vs2005/Darwinia.vcproj` membership, then from the reachability overrides of §1.3; flags = the arguments of the `GetTexture*` call (for names held in a variable, read in the calling function) |
+| Wrap / filter / blend at draw | GL state set within ±14 source lines of the bind [I per entry] |
+| Data references | `StaticShape` and colour-file keys of every file in `data/levels/` (`data/levels/old/` is never listed, so dead), `IMAGENAME` of the six `.anim` files, `~ icon` lines of `data/input/*.txt` |
+| Consumer and "MP-map placements" | the class or system of the requesting function; for building classes, the number of live Multiwinia maps (the menu-listed `data/levels/mp_*` files whose `GameTypes` name a permitted mode, so not the TankBattle-only maps) that place the type — level files name types by `code/worldobject/building.cpp:Building::GetTypeName`, e.g. `SpawnPointMaster` for class `MasterSpawnPoint`, `Yard` for `ConstructionYard` |
+| Packed | the rules of `tools/build_multiwinia_data.bat`, `tools/listfiles.pl` and `tools/build_language_dat.bat` re-applied to the tree with Windows case-insensitive globbing ([31 §8](31_platform_build_and_tools.md#8-data-build-pipeline-and-the-dat-archives)) |
+| Audio columns | Ogg identification and comment headers (channels, rate, nominal bit rate, vendor); duration from the last page's granule position; bindings from the `SAMPLE`/`SOUNDNAME` lines of `data/sounds.txt` (`code/sound/soundsystem.cpp:SoundSystem::LoadBlueprints` rules, §5.1); event liveness from [10](10_audio_design.md) |
+| Missing names (§6.1) | every reference whose resolved name has no file under `data/` |
 
 ## 2 Loading pipeline, resource manager, runtime textures and fonts
 
@@ -158,11 +178,11 @@ In-memory format [C] `code/lib/bitmap.h`, `code/lib/bitmap.cpp`: `RGBAColour` is
 |---|---|---|---|
 | 1, 16 | `AppDebugAssert(0)`; pixels left uninitialised in release | — | none |
 | 4 | palette index per nibble, **high nibble = left pixel**; odd widths write one pixel past the row | **not consumed** → width must be a multiple of 8 | 58 (all widths multiples of 8) |
-| 8 | palette index per byte | **not consumed** → width must be a multiple of 4 | 118 (all widths multiples of 4), plus the RLE8 file |
+| 8 | palette index per byte | **not consumed** → width must be a multiple of 4 | 117 `BI_RGB` (all widths multiples of 4), plus the RLE8 file (118 8-bit files in total) |
 | 24 | B, G, R; alpha := 255 | consumed (`(4 − 3w) & 3` bytes) | 281 |
 | 32 | B, G, R, A used as-is — the **only** way to ship real alpha | none needed | 49 |
 
-Decoding gap [C]: `data/textures/shaman_background.bmp` (512×512, 8-bit, compression 1 = RLE8) is decoded as raw indices that run past the data (`BinaryDataReader::ReadU8` returns 0xFF at end of data) → corrupt image in release, debug assert in debug. Its only consumer is `code/shaman_interface.cpp:ShamanInterface::RenderBackground` [B:LEGACY]. Resolved: P12 left "whether shipped data contains any RLE or top-down BMP" open (P12-U4); the survey of all 506 files finds exactly this one RLE file and no top-down, OS/2, V4/V5, mis-padded or palette-gap file [C] `_work/drafts/X2a_textures.csv`.
+Decoding gap [C]: `data/textures/shaman_background.bmp` (512×512, 8-bit, compression 1 = RLE8) is decoded as raw indices that run past the data (`BinaryDataReader::ReadU8` returns 0xFF at end of data) → corrupt image in release, debug assert in debug. Its only consumer is `code/shaman_interface.cpp:ShamanInterface::RenderBackground` [B:LEGACY]. Resolved: P12 left "whether shipped data contains any RLE or top-down BMP" open (P12-U4); the header survey of all 506 files (§1.5) finds exactly this one RLE file and no top-down, OS/2, V4/V5, mis-padded or palette-gap file [C].
 
 Output paths [C]: `SaveBmp`/`WriteBmp` write 24-bit Windows BMPs at 2835 px/m; `SavePng`/`WritePng` (libpng) write 8-bit RGB with rows flipped to top-down, `Z_BEST_SPEED`, memory level 8, window 15, buffer 8192 — `SavePng` never forwards its `_saveAlpha` argument, so PNGs are always RGB. Used for screenshots (`code/lib/poster_maker.cpp`) and the Vista save thumbnail [B:DEAD].
 
@@ -227,7 +247,7 @@ Consequences:
 - First requesters at start-up [C] `code/app.cpp:App::Initialise`: `TaskManagerInterface::CreateTaskManager` (game mode None → `TaskManagerInterfaceIcons`, which pre-loads `textures/interface_grey.bmp`, `textures/interface_red.bmp`, `icons/gestureguide.bmp`, `icons/icon_shadow.bmp` with mip, **no mask**), then `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadTextures` (default flags) for `icons/button_b.bmp`, `icons/button_lb_shadow.bmp`, `icons/button_rb_shadow.bmp`, `icons/button_lb.bmp`, `icons/button_rb.bmp`, `icons/button_a.bmp`, `textures/interface_blur.bmp`, `sprites/darwinian.bmp`, `mwhelp/gear.bmp`, `textures/laser.bmp`, `textures/clouds.bmp`. When a match starts, `TaskManagerInterfaceMultiwinia::TaskManagerInterfaceMultiwinia` pre-loads every existing `icons/icon_<research>.bmp` and `icons/gesture_<research>.bmp` with mip, no mask.
 - Resolved: P12 inferred that `Clouds::RenderBlobby` loads `textures/clouds.bmp` first (non-mip-mapped) and that `textures/laser.bmp` is saved by `Clouds::RenderSky`; the code shows both are first loaded mip-mapped and masked by `GameMenuWindow::PreloadTextures` at start-up [C] `code/app.cpp:App::Initialise` L466, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadTextures`.
 
-Every texture whose reachable call sites request different processing (generated from the per-site flags of `_work/drafts/X2a_refs.csv`, completed by the hand-verified site table in the script):
+Every texture whose reachable call sites request different processing (generated from the flags passed at every reachable call site, §1.5; where the name is held in a variable at the `GetTexture` call, the flags were read in the calling function):
 
 <!-- GEN:conflict_table -->
 
@@ -240,7 +260,7 @@ There is no per-asset metadata: every choice is made by the request flags and by
 | Choice | Assets | Where set |
 |---|---|---|
 | mip-mapped (default `GetTexture`) | all world-space art: building/unit glows, VFX, sprites, icons drawn in 3-D or scaled HUD, font atlases | every default call |
-| **no mip-maps** + MIN/MAG LINEAR at draw | the 51 FULL thumbnails (+3 TankBattle, debug), `mwhelp/mode_*`, `mwhelp/general1–5`, `mwhelp/help_*` (16), `textures/mwtitle.bmp`, `textures/prices.bmp`, `textures/multiwinia.bmp` | `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`, `code/UI/GameTypeImageButton.h:GameTypeImageButton::Render`, `code/UI/ImageButton.cpp:ImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::Render` (title) |
+| **no mip-maps** + MIN/MAG LINEAR at draw | the 50 FULL thumbnails (+3 TankBattle, debug; + the unreachable `thumbnails/default.bmp` fallback), `mwhelp/mode_*`, `mwhelp/general1–5`, `mwhelp/help_*` (16), `textures/mwtitle.bmp`, `textures/prices.bmp`, `textures/multiwinia.bmp` | `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`, `code/UI/GameTypeImageButton.h:GameTypeImageButton::Render`, `code/UI/ImageButton.cpp:ImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::Render` (title) |
 | no mip-maps, NEAREST | `textures/clouds.bmp` (blobby: MAG LINEAR / MIN NEAREST; flat: NEAREST/NEAREST) | `code/clouds.cpp:Clouds::RenderBlobby`, `Clouds::RenderFlat` |
 | no mip-maps, MIN left at default | `textures/laser.bmp` | `code/location.cpp:Location::RenderWeapons`, `code/worldobject/weapons.cpp:Laser::Render` |
 | mip-maps, MAG NEAREST (crisp pixels) | `textures/particle.bmp` (particle batches; LINEAR restored after), `sprites/darwinian.bmp` for the giant front-end Darwinian (restored after) | `code/particle_system.cpp:ParticleSystem::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::RenderBigDarwinian` |
@@ -367,7 +387,7 @@ Names registered with `Resource::AddBitmap` behave exactly like files for `GetTe
 
 ### 3.0 Column legend
 
-Generated from `_work/drafts/X2a_textures.csv` (file properties, computed by parsing every header exactly as `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp` does) and `_work/drafts/X2a_refs.csv` (every reference, re-aggregated here without truncation) [C unless the column says otherwise].
+Generated by the method of §1.5: file properties from parsing every header exactly as `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp` does; load sites from every reference found in the code and data, listed without truncation [C unless the column says otherwise].
 
 | Column | Meaning |
 |---|---|
@@ -437,11 +457,11 @@ Each game type's help overlay plays one panel script; grammar in [29](29_data_fo
 
 ### 4.1 Conventions and statistics
 
-- Format, hierarchy, transforms, display lists, hit tests and team recolouring: [24 §4.5](24_rendering.md#45-shape-rendering-shp-meshes-c-codelibshapeh-codelibshapecpp) and the grammar in [29](29_data_formats_reference.md). The X2a parser reproduces the engine's triangle counts (strip → triangle conversion with degenerate removal and odd-triangle reversal, `code/lib/shape.cpp:ShapeFragment::ParseStripBlock`).
+- Format, hierarchy, transforms, display lists, hit tests and team recolouring: [24 §4.5](24_rendering.md#45-shape-rendering-shp-meshes-c-codelibshapeh-codelibshapecpp) and the grammar in [29](29_data_formats_reference.md). Triangle counts follow the engine's strip → triangle conversion (degenerate removal and odd-triangle reversal, `code/lib/shape.cpp:ShapeFragment::ParseStripBlock`).
 - Shapes are looked up as `data/shapes/<lower-cased name>` (`Resource::GetShapeCopy`), so code always passes bare names (`"armour.shp"`) [C].
 - `Shape::Load` keeps at most 100 fragments and 100 markers in stack arrays (debug assert only); fragments attach to `SceneRoot` or to the **first** fragment with the named parent (a missing parent leaves the fragment orphaned in release); markers attach to their named parent fragment (a missing parent dereferences `NULL`) and record `Depth` parents up to `SceneRoot` [C] `code/lib/shape.cpp:Shape::Load`.
 
-Statistics (generated from `_work/drafts/X2a_shapes.csv`):
+Statistics (generated, §1.5):
 
 <!-- GEN:shape_stats -->
 
@@ -473,7 +493,7 @@ Code fetches markers and fragments by literal name, so a replacement mesh pipeli
 | `data/shapes/carryweights.shp` | 1182 positions, 1082 vertices | `ShapeFragment::m_positionsInWS` is sized by vertex count but filled for every position during accurate ray/sphere hit tests → heap overrun; the mesh is one of the eight Capture-the-Statue statues chosen by `syncrand() % 8` | [C] `code/lib/shape.cpp:ShapeFragment::RayHit`, `code/worldobject/statue.cpp:Statue::Initialise`; whether an accurate hit test is ever run on a statue is [I] |
 | `data/shapes/sporegenerator.shp` | 43 positions, 42 vertices | same overrun by one entry | [C] |
 | `data/shapes/battlecannonbase.shp`, `data/shapes/portal.shp` | markers only, no fragment | valid; `portal.shp` is unused (the `Portal::Portal` `GetShape` call is commented out) | [C] |
-| 39 strip-encoded files and 3 with `right:` lines | written by an older exporter | the in-tree `tools/ShapeExporter` writes triangle lists only and no longer compiles against `code/lib/shape.h` [I] | X1b |
+| 39 strip-encoded files and 3 with `right:` lines | written by an older exporter | the in-tree `tools/ShapeExporter` writes triangle lists only and no longer compiles against `code/lib/shape.h` [I] | `tools/ShapeExporter/ShapeExporter.cpp`; shape survey (§1.5) |
 
 ### 4.6 Synthetic shape keys and level-placed meshes
 
@@ -504,13 +524,13 @@ Name resolution [C] `code/sound/soundsystem.cpp:ParseSoundEvent`, `ParseSampleGr
 
 ### 5.2 Statistics
 
-Status vocabulary: **live** = bound to at least one event fired by reachable FULL code; **dead** = bound only to events that never fire in Multiwinia (Darwinia-only objects, compiled-out triggers); **unused** = no `SAMPLE`/`SOUNDNAME` reference (an "orphan group" is a sample group no event uses). Encoders (Vorbis comment vendor): libVorbis 20040920 (863 files, 65 kbps except `data/sounds/fodder.ogg` 33 kbps), libVorbis 20020717 (466, 128 kbps; 8 at 96 kbps), libVorbis 20030909 (2), aoTuV b3 (1, `data/sounds/pang.ogg`). 466 files carry the bare comment `Sony Ogg Vorbis 1.0 Final`; 27 carry `DATE=` and an `ENGINEER=` personal name (value redacted in `_work/drafts/X2b_samples.csv`) [C].
+Status vocabulary: **live** = bound to at least one event fired by reachable FULL code; **dead** = bound only to events that never fire in Multiwinia (Darwinia-only objects, compiled-out triggers); **unused** = no `SAMPLE`/`SOUNDNAME` reference (an "orphan group" is a sample group no event uses). Encoders (Vorbis comment vendor): libVorbis 20040920 (863 files, 65 kbps except `data/sounds/fodder.ogg` 33 kbps), libVorbis 20020717 (466, 128 kbps; 8 at 96 kbps), libVorbis 20030909 (2), aoTuV b3 (1, `data/sounds/pang.ogg`). 466 files carry the bare comment `Sony Ogg Vorbis 1.0 Final`; 27 carry `DATE=` and an `ENGINEER=` personal name (value not reproduced here) [C].
 
 <!-- GEN:audio_stats -->
 
 ### 5.3 `data/sounds`
 
-Generated; one row per file (duration from the last Ogg granule position; KiB = 1024 bytes; full metadata including decoded PCM size in `_work/drafts/X2b_samples.csv`).
+Generated (§1.5); one row per file (duration from the last Ogg granule position; KiB = 1024 bytes).
 
 <!-- GEN:audio:sounds -->
 
@@ -522,27 +542,27 @@ Generated; one row per file (duration from the last Ogg granule position; KiB = 
 
 ### 6.1 Names requested by code or data that have no file
 
-A request for a missing texture through `Resource::GetTexture*` is fatal (`AppReleaseAssert("Failed to load texture %s")`) unless guarded by `DoesTextureExist`; a missing shape is fatal in `Resource::GetShapeCopy`. Run-time names registered with `AddBitmap` (§2.13) are not listed. Generated from `_work/drafts/X2a_missing.csv`, one row per requested name; names are shown as resource names (below `data/`).
+A request for a missing texture through `Resource::GetTexture*` is fatal (`AppReleaseAssert("Failed to load texture %s")`) unless guarded by `DoesTextureExist`; a missing shape is fatal in `Resource::GetShapeCopy`. Run-time names registered with `AddBitmap` (§2.13) are not listed. Generated (§1.5), one row per requested name; names are shown as resource names (below `data/`).
 
 <!-- GEN:missing_table -->
 
-Result: no missing name is requested on a path reachable in a FULL Multiwinia match — every remaining entry is LEGACY, DEAD, DEBUG or guarded by `DoesTextureExist` [C]. `tools/FindUnusedResources.sh` additionally reports `shockwave.shp` as missing; no compiled code requests it [C X2a].
+Result: no missing name is requested on a path reachable in a FULL Multiwinia match — every remaining entry is LEGACY, DEAD, DEBUG or guarded by `DoesTextureExist` [C]. `tools/FindUnusedResources.sh` additionally reports `shockwave.shp` as missing; no compiled code requests it — the only request is commented out in `code/worldobject/weapons.cpp:Shockwave::Shockwave` [C].
 
 ### 6.2 Assets referenced in FULL but consumed only by unplaced buildings
 
-<!-- GEN:mp_unplaced_count --> FULL assets are drawn only by building classes that no live Multiwinia map places. Some are created at run time — Capture-the-Statue statues `carry*.shp` are spawned by `code/multiwinia.cpp` (`Building::CreateBuilding(Building::TypeStatue)`), crates use `icons/target.bmp`, triffids and master spawn points are spawned by crates/modes [I]; the rest are Darwinia-only buildings whose assets are practically unreachable [I] (25-U3).
+<!-- GEN:mp_unplaced_count --> FULL assets are drawn only by building classes that no live Multiwinia map places. Some are created at run time — Capture-the-Statue statues `carry*.shp` are spawned by `code/multiwinia.cpp` (`Building::CreateBuilding(Building::TypeStatue)`), crates use `icons/target.bmp`, triffids are spawned by crates [I]; the rest are Darwinia-only buildings whose assets are practically unreachable [I] (25-U3).
 
 <!-- GEN:mp_unplaced -->
 
 ### 6.3 Unused and non-baseline assets
 
-Every visual file whose status is not "referenced [B:FULL]", grouped by reason (generated; evidence text from X2a). Unused audio files are the rows with status `unused` in §5.3–§5.4 (192 files: 73 in `data/sounds`, 119 in `data/mwsounds`).
+Every visual file whose status is not "referenced [B:FULL]", grouped by reason (generated; evidence = the reference survey of §1.5 and the reachability overrides of §1.3). Unused audio files are the rows with status `unused` in §5.3–§5.4 (192 files: 73 in `data/sounds`, 119 in `data/mwsounds`).
 
 <!-- GEN:unused_lists -->
 
 ### 6.4 Cross-check with `tools/FindUnusedResources.sh`
 
-The Darwinia-era tool (it refuses to run unless the working directory is named `Darwinia`) greps only lines containing `GetShape(`/`GetSound(`/`GetTexture(` and a quote, keeps the last call on the line, strips directories and compares basenames case-insensitively against every `.bmp/.shp/.ogg/.jpg/.wav` under `data/`, with the exceptions of `tools/FindUnusedResourcesExceptions.txt` (`editor_font.bmp`, `landscape.bmp`, `viriifull.bmp`). It also counts commented-out code and cannot see names built with `sprintf`, arrays or data files, so it disagrees with this catalogue as follows (visual assets only; emulation by X2a):
+The Darwinia-era tool (it refuses to run unless the working directory is named `Darwinia`) greps only lines containing `GetShape(`/`GetSound(`/`GetTexture(` and a quote, keeps the last call on the line, strips directories and compares basenames case-insensitively against every `.bmp/.shp/.ogg/.jpg/.wav` under `data/`, with the exceptions of `tools/FindUnusedResourcesExceptions.txt` (`editor_font.bmp`, `landscape.bmp`, `viriifull.bmp`). It also counts commented-out code and cannot see names built with `sprintf`, arrays or data files, so it disagrees with this catalogue as follows (visual assets only; the script's rules emulated over this tree):
 
 <!-- GEN:fur_table -->
 
@@ -571,7 +591,7 @@ The Darwinia-era tool (it refuses to run unless the working directory is named `
 1. A texture/shape/sound name is a `data/`-relative path; textures carry the `.bmp` extension, shapes are bare `x.shp` names resolved under `shapes/`, sounds are extension-less names resolved under `sounds/` then `mwsounds/` [C].
 2. Archive and loose-file look-ups are case-insensitive on Windows; the texture cache is case-sensitive (keep one spelling per asset) [C].
 3. Many names are built at run time (§1.3 rule table) — renaming an asset requires changing the formatter, the value set (research/task names, game-type names, level stems, `IMAGENAME`s) and the file together.
-4. Missing assets are fatal unless the caller probes with `DoesTextureExist`/`DoesShapeExist` (thumbnails fall back to `thumbnails/default.bmp`, `code/UI/MapImageButton.h:MapImageButton::Render`).
+4. Missing assets are fatal unless the caller probes with `DoesTextureExist`/`DoesShapeExist` (a map without a thumbnail is simply drawn without one: `code/UI/MapImageButton.h:MapImageButton::Render` tests `DoesTextureExist` first; its `thumbnails/default.bmp` fallback runs only if `GetTexture` returns −1, which cannot happen because `Resource::GetTextureWithFlags` release-asserts instead).
 5. Markers and fragments are addressed by literal names (§4.4); statues are chosen by index from a fixed list consuming the synchronised RNG (§4.6).
 6. Font coverage is defined by the set of atlas files present at start-up; the packaging list decides what a SKU can render (§2.15).
 
@@ -589,9 +609,9 @@ None of the files catalogued here may be reused by the new game (§IP items). Th
 | Controller/keyboard glyphs | (in icons) | per-platform sets | platform-neutral `input_glyph_<button>` | licensed or in-house glyph set (no console trade dress) |
 | Font atlases | 138 (3 fonts) | full Latin-1, Cyrillic, CJK, Hangul and currency coverage | run-time glyph cache over open-licence fonts | licensed body, display and CJK faces |
 | Terrain ramps / water / waves | 26 | ramp axes (slope × height), 1-D wave table row, seamless water tile | procedurally generated `terrain_ramp_<theme>`, `water_<theme>`, `waves_<theme>` | environment artist per biome |
-| Map thumbnails | 51 | 4:3, no mip-maps | auto-rendered top-down captures of each new map | generated by the map tool |
+| Map thumbnails | 50 | 4:3, no mip-maps | auto-rendered top-down captures of each new map | generated by the map tool |
 | Help pictures and panel animations | 47 + 31 | per-mode pages; panel scripts reference images by name | diagram placeholders `help_<mode>_<page>`, `mode_<mode>`; re-author panels in the new UI animation format | UX writer + UI artist |
-| Meshes (`data/shapes`) | 113 | flat-shaded, red = team colour, named markers/fragments used by code, statue set of 8 | primitive-built meshes per role (`bld_spawn_point`, `bld_capture_zone`, `bld_turret_base/barrel_<type>`, `unit_officer`, `prop_statue_<n>`) with the same socket names or an explicit socket table | 3-D artist; keep low-poly flat look |
+| Meshes (`data/shapes`) | 116 (113 drawn in a match + the 3 `globalworld_*.shp` loaded at start-up only; a new engine needs no replacement for those) | flat-shaded, red = team colour, named markers/fragments used by code, statue set of 8 | primitive-built meshes per role (`bld_spawn_point`, `bld_capture_zone`, `bld_turret_base/barrel_<type>`, `unit_officer`, `prop_statue_<n>`) with the same socket names or an explicit socket table | 3-D artist; keep low-poly flat look |
 | Shaders | 14 ([B:D3D]) | none (D3D9 GL emulation and two effects) | write new HLSL for D3D12 from [24](24_rendering.md) | — |
 | Sound samples | 898 live | mono, short one-shots and loops; behaviour lives in the binding data | silent or synthesised `sfx_<event>` per live event (one file each) | commission per [10](10_audio_design.md) event list; add music (none is audible in Multiwinia) |
 
@@ -602,7 +622,7 @@ None of the files catalogued here may be reused by the new game (§IP items). Th
 3. Replace magenta keys and green-as-alpha masks with real alpha channels at import; keep the additive art style through the blend mode, not through black backgrounds.
 4. Author textures at power-of-two sizes or rely on D3D12's NPOT support with explicit UV-preserving padding; never resample UI art at load.
 5. Use a packed archive with a table of contents (memory-mapped, no whole-archive decompression), case-insensitive ids, and an explicit override order (patch > base) — but forbid loose-file overrides in shipping builds of a multiplayer game (§2.9), because any client could otherwise replace simulation-relevant data such as level files.
-6. Validate every reference at build time (the generator and checker in `_work/scripts/S_25_catalogue.py` show the needed inventory logic): no missing names, no unused files shipped, no undecodable formats.
+6. Validate every reference at build time (§1.5 describes the inventory logic needed): no missing names, no unused files shipped, no undecodable formats.
 7. Replace the bitmap fonts with a glyph cache; include U+20A0–20AF.
 8. Store mesh sockets (markers) in a schema the code references by id, and keep the statue (and any other synchronised-RNG-selected) asset lists versioned as part of the lock-step data contract.
 
@@ -630,11 +650,11 @@ None of the files catalogued here may be reused by the new game (§IP items). Th
 | `docs/landscape lightmap.txt` | `Landscape::ApplyLightmap` / `GenerateLightMap` with `m_lightMapTextureId` | the lightmap is the registered bitmap `water_lightmap` built by `Water::GenerateLightMap`; `Landscape` only triggers it | `code/water.cpp:Water::GenerateLightMap` |
 | `code/lib/bitmap.h:BitmapRGBA::ConvertColourToAlpha` comment | luminance → alpha | green channel → alpha, RGB := white | `code/lib/bitmap.cpp:BitmapRGBA::ConvertColourToAlpha` |
 | method name `ApplyDilateFilter` | dilate | 8-neighbour mean (box blur without centre) | `code/lib/bitmap.cpp:BitmapRGBA::ApplyDilateFilter` |
-| `tools/FindUnusedResources.sh` | lists unused resources | misses 380 used visual files and counts 21 unused ones as used (§6.4) | X2a emulation |
-| `tools/ShapeExporter` | "Futurewar Shape Format v1.0" exporter | no longer compiles against `code/lib/shape.h`; writes triangle lists only, while 39 shipped files are strips | X1b |
-| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | X1b |
+| `tools/FindUnusedResources.sh` | lists unused resources | misses 380 used visual files and counts 21 unused ones as used (§6.4) | `tools/FindUnusedResources.sh` rules emulated over this tree (§6.4) |
+| `tools/ShapeExporter` | "Futurewar Shape Format v1.0" exporter | no longer compiles against `code/lib/shape.h`; writes triangle lists only, while 39 shipped files are strips | `tools/ShapeExporter/ShapeExporter.cpp`; shape survey (§1.5) |
+| `code/lib/shape.cpp:ShapeFragment::WriteToFile` | writes a loadable `.shp` | broken `%5.2`/`%7.3`/`%6.3` formats, colours not un-scaled | `code/lib/shape.cpp:ShapeFragment::WriteToFile` |
 | `code/sound/sample_cache.cpp:CachedSampleManager::CleanUp` comment | "Largest song takes 13 MB" | the largest track decodes to 30 389 760 bytes, but no music ships; the largest live file is `data/sounds/evil.ogg` (53.9 s ≈ 4.75 MB decoded) | §5 |
-| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run from the Darwinia data directory" | ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | X2b |
+| `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run from the Darwinia data directory" | ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` |
 
 ## IP items
 
@@ -660,19 +680,21 @@ All shipped art, meshes, animation scripts, fonts, shaders, sounds and file name
 
 ## Source map
 
-One row per source, tool, data-definition or documentation file that implements or feeds the asset pipeline (<!-- GEN:source_map_count --> files; generated: hand-written roles for the implementation files, and every file that names an asset according to `_work/drafts/X2a_refs.csv`). The 2131 asset files themselves are catalogued one per row in §3, §4 and §5.
+One row per source, tool, data-definition or documentation file that implements or feeds the asset pipeline (<!-- GEN:source_map_count --> files; generated: hand-written roles for the implementation files, and every file that names an asset according to the reference survey of §1.5). The 2131 asset files themselves are catalogued one per row in §3, §4 and §5.
 
 <!-- GEN:source_map -->
 
 ## Appendix — dead/legacy code
 
-- [B:DEAD] `code/loaders/*` (`USE_LOADERS` off): `AmigaLoader` (`textures/dmacrew.bmp`), `SpeccyLoader` (`textures/program_darwinia.bmp`, `textures/speccy_screen.bmp`), `OberonLoader` (`textures/msn_oberon_combosplash.bmp`, `OBERONBUILD`), `EGamesLoader`, `CreditsLoader` (`sprites/darwinian.bmp`), and their music samples.
+- [B:DEAD] `code/loaders/*` (`USE_LOADERS` off): `AmigaLoader` (`textures/dmacrew.bmp`), `SpeccyLoader` (`textures/program_darwinia.bmp`, `textures/speccy_screen.bmp`), `OberonLoader` (`textures/msn_oberon_combosplash.bmp`, `OBERONBUILD`), `EGamesLoader`, and their music samples.
+- [B:LEGACY] `code/loaders/credits_loader.cpp:CreditsLoader` (`sprites/darwinian.bmp`): compiled into FULL (outside `USE_LOADERS`) but created only by the Darwinia outro camera (`code/camera.cpp:Camera::AdvanceSphereWorldOutroMode`) and the `RunCredits` script command (`code/script.cpp:Script::RunCommand_RunCredits`).
 - [B:DEAD] `code/sepulveda.cpp` (`USE_SEPULVEDA_HELP_TUTORIAL`): `sepulveda/*`, `icons/mouse_main.bmp`, `icons/scrollbar.bmp`, `textures/godray.bmp`; the cloud-face reuse of `sepulveda/*` is cheat-only [B:DEBUG].
 - [B:DEAD] mod loading (`USE_DARWINIA_MOD_SYSTEM`): `Resource::LoadMod`, mod-directory look-ups in `GetTextReader`/`GetBinaryReader`/`GetShapeCopy`/`ListResources`.
 - [B:DEAD] `Resource::GetGestureDemo` (`USE_SEPULVEDA_HELP_TUTORIAL`); Vista rich-save thumbnail (`TARGET_OS_VISTA`); `Renderer::RenderLogo` (`PROMOTIONAL_BUILD`, `textures/privatedemo.bmp` which does not exist).
-- [B:LEGACY] `code/global_world.cpp` / `code/global_internet.cpp` Darwinia world map: `globalworld_inner/middle/outer.shp`, `textures/glow.bmp`, `starburst.bmp`, `laserfence2.bmp` there.
+- [B:LEGACY] `code/global_world.cpp` / `code/global_internet.cpp` Darwinia world-map rendering: the `globalworld_inner/middle/outer.shp` meshes (loaded at every start-up by `SphereWorld::SphereWorld`, hence [B:FULL] load-only, but never drawn in a match), `textures/glow.bmp`, `starburst.bmp`, `laserfence2.bmp` there.
 - [B:LEGACY] single-player task managers and the shaman interface (`code/taskmanager_interface_icons.cpp`, `code/taskmanager_interface_gestures.cpp`, `code/shaman_interface.cpp`) — including the RLE8 `textures/shaman_background.bmp` and the non-existent `icons/shaman_*.bmp`; `code/control_help.cpp` (`ControlHelpSystem`) and its controller glyphs; Darwin-logo overlay (`icons/darwin_research_associates.bmp`); prologue/campaign mode pictures.
 - [B:EDITOR] `code/location_editor.cpp` (`LOCATION_EDITOR`): `shapes/camera.shp`; terrain file dialogs in `code/interface/landscape_window.cpp`.
 - [B:D3D] `code/deform.cpp`, `code/water_reflection.cpp`, `code/lib/FixedPipeline.cpp`, `code/lib/shader.cpp`, `code/lib/texture.cpp`: all shaders, the three deform tables and the render-target wrapper; the deform and reflection effects never run in a Multiwinia match.
 - [B:DEBUG] cheat window (cloud face), sound editor (`sprites/sound.bmp`), crate help window (`icons/icon_template.bmp`, `icon_<crate>` names), TankBattle thumbnails.
+- [B:LEGACY] the `thumbnails/default.bmp` fallback of `code/UI/MapImageButton.h:MapImageButton::Render` (unreachable, §1.3).
 - Dead help paths: `GameMenuWindow` `PageHelp` (`mwhelp/helppage_*`, no files), `MultiwiniaHelp::RenderBasicControlHelp` (`mwhelp/basic_*`, no files), `RenderCurrentUnitHelp` (`mwhelp/officercontrol*`, `mwhelp/darwiniancontrol*`, no files), the `HelpDarwinians` tab icon `mwhelp/darwinian.bmp` (no file).

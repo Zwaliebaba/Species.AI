@@ -27,7 +27,7 @@ This document is the functional description of Multiwinia's **maps** as a level 
 
 Build reality in one paragraph [C]:
 
-- **[B:FULL]** — the baseline executable lists and loads every `data/levels/mp_*.txt` whose `GameTypes` names one of the six compiled modes (Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg). With the retail data set (`tools/multiwinia_exclusions.txt`) that is **49 maps**. TankBattle (`INCLUDEGAMEMODE_TANKBATTLE`) is compiled only in `TARGET_DEBUG` [C] `code/lib/universal_include.h`.
+- **[B:FULL]** — the baseline executable lists and loads every `data/levels/mp_*.txt` whose `GameTypes` names one of the six compiled modes (Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg). With the retail data set (`tools/multiwinia_exclusions.txt`) that is **49 maps**. TankBattle's mode code (blueprint, `Multiwinia` dispatch, Tank AI) is compiled into FULL too, but `App::IsGameModePermitted` returns true for it, and `Multiwinia::AdvanceTankBattle` has a body, only under `INCLUDEGAMEMODE_TANKBATTLE`, which is defined only in `TARGET_DEBUG` — so its availability is [B:DEBUG] [C] `code/lib/universal_include.h`, `code/app.cpp:App::IsGameModePermitted`, `code/multiwinia.cpp:Multiwinia::AdvanceTankBattle`.
 - **[B:EDITOR]** — the map editor (`code/location_editor.*` and the nine editor-window source pairs listed in §8.1) is compiled only under `LOCATION_EDITOR`, which is commented out in every target; even the menu entry is compiled out. Custom `.mwm` maps can be loaded by FULL code but are listed and created only in an editor build (§8.1).
 - **[B:LEGACY]** — the Darwinia campaign levels (`data/levels/map_*.txt`, `data/levels/mission_*.txt`) are parseable by the same `LevelFile` code but are excluded from every Multiwinia data build and reachable only through the dead Darwinia global world (§7.1). `data/levels/old/` is never listed by any build (§7.2).
 
@@ -74,13 +74,13 @@ Directory listing [C] (`_work/scripts/S_08_tables.py` table `inventory`):
 | Custom map | `<profile>/maps/<name>.mwm` | zlib-compressed `Directory` with the map text and optional textures (§8.8) | `LevelFile::ParseMWMFile` when the map name's extension is not `txt` | load path [B:FULL]; creation and listing [B:EDITOR] |
 | Superseded maps | `data/levels/old/mp_*.txt` | older Multiwinia maps (Shaman, Chess, early Skirmish/Assault prototypes) | nothing | never loaded |
 
-Block counts across all of `data/levels/**` [C] (`_work/scripts/P11_levelstats.py`): Landscape 69, LandscapeTiles 69, LandFlattenAreas 69, Lights 69, Buildings 134, CameraMounts 75, CameraAnimations 65, InstantUnits 75, PrimaryObjectives 65, Difficulty 3, MultiwiniaOptions 57. No shipped file contains `Routes`, `RunningPrograms` or `LeaderboardStats` [C] `_work/drafts/X1a_level_field_usage.csv`.
+Block counts (number of files containing each block) across the 87 top-level `data/levels/*.txt` files [C] (keyword census of those files): Landscape 69, LandscapeTiles 69, LandFlattenAreas 69, Lights 69, Buildings 134 blocks in 86 files, CameraMounts 75, CameraAnimations 65, InstantUnits 75, PrimaryObjectives 65, Difficulty 3, MultiwiniaOptions 57. No file under `data/levels/` (top level or `old/`) contains `Routes`, `RunningPrograms` or `LeaderboardStats` [C] (keyword census of the files).
 
 ### 2.2 How the game discovers maps (menu catalogue)
 
 [C] `code/game_menu.cpp:GameMenu::CreateMapList`, `GameMenu::AddMap`, `code/lib/resource.cpp:Resource::ListResources`, `contrib/systemiv/lib/filesys/file_system.cpp:OrderedInsert`, `code/UI/MapData.cpp:MapData::CalculeMapId`. The page that displays the result is specified in [09 §2.4 and §3.5](09_meta_systems.md#24-map-catalogue-built-at-start-up-gamemenucreatemaplist-gamemenuaddmap).
 
-1. `ListResources("levels/", "mp_*", false)` lists loose files in `data/levels/` and every pre-loaded archive entry whose directory part equals `data/levels/` (`stricmp`). The scan is **non-recursive**, so `data/levels/old/` is never seen. Results are merged with `OrderedInsert`, which compares with `strcmp` (case-sensitive), drops exact duplicates and inserts before the first larger entry — but its loop runs only to `Size()−1`, so a name that sorts after every entry except the last is appended **after** the last one. The base order is therefore "nearly alphabetical"; archive entry names are lower-cased when an archive is indexed (`strlwr(file->m_filename)` in `code/lib/resource.cpp:Resource::ParseArchive`) [C], so in a packaged build the menu sees lower-case file names.
+1. `ListResources("levels/", "mp_*", false)` lists loose files in `data/levels/` and every pre-loaded archive entry whose directory part equals `data/levels/` (`stricmp`). The scan is **non-recursive**, so `data/levels/old/` is never seen. Results are merged with `OrderedInsert`, which compares with `strcmp` (case-sensitive), drops exact duplicates and inserts before the first larger entry — but its loop runs only to `Size()−1`, so the current **last** entry is never compared: a name that sorts after every entry except the last is appended **after** the last one, and an exact duplicate of the last entry is **not** dropped but appended again (with a one-entry list every new name is appended). The base order is therefore "nearly alphabetical"; archive entry names are lower-cased when an archive is indexed (`strlwr(file->m_filename)` in `code/lib/resource.cpp:Resource::ParseArchive`) [C], so in a packaged build the menu sees lower-case file names.
 2. Only names whose extension is exactly `txt` are opened; `AddMap` then scans lines until the first `MultiwiniaOptions_EndDefinition` with **case-sensitive** `strcmp` keyword tests for `Name`, `GameTypes`, `NumPlayers`, `Author`, `Description`, `PlayTime`, `Difficulty`, `CoopMode`, `ForceCoop`, `OfficialLevel` (it does not check that it is inside the block).
 3. `GameTypes`: **every** following token that equals a blueprint name of `data/multiwinia.txt` (`Domination`, `KingOfTheHill`, `CaptureTheStatue`, `Assault`, `RocketRiot`, `Blitzkrieg`, `TankBattle`) adds the map to that mode's list. A map with no matching token is discarded with the log line "Discarded map … because it didn't contain a game type".
 4. `MapData::CalculeMapId()` = `LevelFile::CalculeCRC(fileName)` (§2.3); −1 (not readable as a resource) marks the map as custom.
@@ -92,13 +92,13 @@ Two parsers read the same header [C]: the menu (`AddMap`, case-sensitive keys, a
 
 Display strings [C] `code/UI/LevelSelectButton.h`, `contrib/systemiv/lib/tosser/hash_table.cpp:HashFunc`: the menu shows the language phrase `<file stem>_name` and `<file stem>_description` (`GameMenu::GetMapNameId` strips `.txt`); language-table keys hash case-insensitively, so `mp_assault_3p_1_name` finds `mp_assault_3P_1_name`. The level's own `Name` is shown only for custom maps. `PlayTime` is shown as `"0:%02d"` and copied into the mode's time option when the map is selected; absent/0 → blueprint default (ordering caveat in [09 §4.5](09_meta_systems.md)).
 
-Thumbnails [C] `code/UI/MapImageButton.h`, `code/UI/GameMenuWindow.cpp:SetupMapSelectPage`: file `thumbnails/<file stem>.bmp` (`TEXTURE_EXTENSION` = `bmp`), lower-cased with `strlwr`; if the texture does not exist, `thumbnails/default.bmp`. Displayed at width `rightW × 0.8`, height = width × 0.75. The catalogue of all 57 thumbnails is §3.5.
+Thumbnails [C] `code/UI/MapImageButton.h`, `code/UI/GameMenuWindow.cpp:SetupMapSelectPage`: file `thumbnails/<file stem>.bmp` (`TEXTURE_EXTENSION` = `bmp`), lower-cased with `strlwr`. If that texture does not exist (`Resource::DoesTextureExist`), the code sets the name to `thumbnails/default.bmp` but draws **nothing** — the textured quad is inside `if (exists)` — so only the white outline (and, in a demo, the "full version only" caption) appears. The second fallback, to `default.bmp` when an existing file returns texture id −1, is unreachable: `Resource::GetTextureWithFlags` raises a fatal `AppReleaseAssert` instead of returning −1 [C] `code/lib/resource.cpp:Resource::GetTextureWithFlags`. Displayed at width `rightW × 0.8`, height = width × 0.75. The catalogue of all 57 thumbnails is §3.5.
 
 ### 2.3 Map identity: MapCRC
 
 [C] `code/level_file.cpp:LevelFile::CalculeCRC`, `contrib/systemiv/lib/math/filecrc.cpp:FileCRC`, `contrib/unrar/crc.cpp:CRC`, `code/mapcrc.h`, `tools/MapCRC/main.cpp:GenerateMapCRCs`.
 
-- Input: the raw bytes of resource `levels/<filename>` read byte-by-byte until EOF **plus one trailing 0xFF byte** (the EOF read is stored before the loop notices EOF), into a static 100 000-byte buffer (a file larger than that would overflow by one byte [I]; the largest shipped level is 46 085 bytes [C] `X4_levels.csv`).
+- Input: the raw bytes of resource `levels/<filename>` read byte-by-byte until EOF **plus one trailing 0xFF byte** (the EOF read is stored before the loop notices EOF), into a static 100 000-byte buffer (a file larger than that would overflow by one byte [I]; the largest file under `data/levels/` is `data/levels/mp_assault_4P_2.txt`, 46 085 bytes [C] file sizes).
 - Algorithm: CRC-32, reflected polynomial `0xEDB88320`, **initial value 0, no final XOR**; returned as `int`; −1 if the file cannot be opened.
 - `code/mapcrc.h` is generated ("Auto-generated IDs for each map. DO NOT MODIFY") by `tools/MapCRC/main.cpp`: one `#define MAPID_<NAME> 0x%08x` per `data/levels/*.txt`, name = file name minus `.txt`, upper-cased, `.`/`-`/space → `_`.
 - Verified in this phase: `python3 -I _work/scripts/P11_mapcrc.py <SRC>` reproduces **87 of 87** `MAPID_*` constants [C]. Resolved: drafts said "86/86" (X4, phase-2 log) and "87/87" (P11); both are right — the 87 `.txt` files in `data/levels/` are 86 level files (57 `mp_*`, 12 `map_*`, 17 `mission_*`) plus `level_enum.txt` (`MAPID_LEVEL_ENUM 0x95ed5f58`); the 30 files in `old/` are not in `mapcrc.h`.
@@ -123,7 +123,7 @@ Because `CalculeCRC` hashes the file bytes, any edit — including a whitespace 
 | `TARGET_BETATEST_GROUP_C` | `{MAPID_MP_ROCKETRIOT_2P_4, MAPID_MP_ROCKETRIOT_2P_3, MAPID_MP_ROCKETRIOT_3P_1, 0}` | 3 |
 | `TARGET_BETATEST_GROUP_ALL`, `TARGET_DEBUG`, `TARGET_MULTIWINIA_DEMOONLY` | none (`GROUP_ALL` has a commented-out 13-map list: KOTH_2P_1, KOTH_3P_1, ASSAULT_2P_3, ASSAULT_3P_2, ASSAULT_3P_3, ASSAULT_4P_2, ROCKETRIOT_2P_3, ROCKETRIOT_3P_2, ROCKETRIOT_4P_1, CTS_2P_2, CTS_2P_4, CTS_3P_1, CTS_4P_1) | all |
 
-Enforcement [C]: `GameMenuWindow::SetupMapSelectPage` skips non-permitted maps under `#ifdef PERMITTED_MAPS` and greys buttons via `IsMapPermitted(gameType, id)`; `DoEnterLocation` recomputes `IsMapPermitted(CalculeCRC(requestedMap))` before `Location::Init` and, if false, sets `m_requestedLocationId = −1` and returns to the menu after loading; tutorial buttons are inactive when their map is missing or not permitted. The whitelist terminator is `0` (`for( i = 0; permittedMaps[i]; i++ )`), so a map whose CRC were 0 could never be whitelisted.
+Enforcement [C]: `GameMenuWindow::SetupMapSelectPage` skips non-permitted maps under `#ifdef PERMITTED_MAPS` and greys buttons via `IsMapPermitted(gameType, id)`; `DoEnterLocation` recomputes `IsMapPermitted(CalculeCRC(requestedMap))` before `Location::Init` and, if false, sets `m_requestedLocationId = −1` and returns to the menu after loading — but only under `#if defined(PERMITTED_MAPS)` (both the check and the bail-out), so in [B:FULL] there is **no load-time map check** and a demo-mode client is gated only by the menu (`LevelSelectButton`, `PlayGameButton`, `SetupMapSelectPage`) [C] `code/main.cpp:DoEnterLocation`; tutorial buttons are inactive when their map is missing or not permitted. The whitelist terminator is `0` (`for( i = 0; permittedMaps[i]; i++ )`), so a map whose CRC were 0 could never be whitelisted.
 
 Data packaging per build [C] `tools/build_multiwinia_data.bat`, `tools/listfiles.pl`, `tools/copyfiles.pl`, exclusion/inclusion lists (grammar in [31](31_platform_build_and_tools.md)):
 
@@ -189,7 +189,8 @@ Resolved: X2b reported that `Darwinian::BeginVictoryDance` treats an empty objec
 Start positions → teams [C] `code/location.cpp:Location::GetTeamPosition`, `Location::GetTeamFromPosition`, `Location::InitBuildings`, `Location::InitialiseTeam`:
 
 - Every team id `0 … NumPlayers−1` is assigned a **start position** in `[0, NumPlayers)`: drawn with `syncrand() % unused.Size()` among unused positions (deterministic across peers); in a tutorial position = team id; the monster team (4) and Futurewinian team (5) always have position = team id; outside Multiwinia mode (`!Multiplayer()`) position = team id.
-- The `team` column of a building row is a **position**: `InitBuildings` replaces it with the team that holds that position, or **255 (neutral)** when no team holds it (e.g. position 3 on a 4-player map played by 3 teams). Rows with team 255 stay neutral. Because the search only covers teams `0 … NumPlayers−1`, a building row with position 4 or 5 would become neutral [C]; no shipped row uses 4 or 5 [C] (`_work/drafts/X1a_level_field_usage.csv`).
+- **Order and timing of the draws** (needed to reproduce the `syncrand` sequence) [C] `code/location.cpp:Location::Init`, `Location::GetTeamPosition`: `Location::Init` calls `LoadLevel`, then `AppSeedRandom(1)` (the non-synchronised generator), then, in its static-reset loop, `GetTeamPosition(i)` for `i = 0 … NUM_TEAMS−1` in ascending order — before lights, landscape and buildings. Team *i* < NumPlayers consumes exactly one `syncrand()` (`% (NumPlayers − i)`; the last one is `% 1`) whether or not that slot is in use; ids ≥ NumPlayers consume none (no free position, or pinned 4/5). Positions already set before `Init` are kept: `Multiwinia::ResetLocation` copies the rotated positions (`Location::RotatePositions`) into the new `Location` first, so no draw happens. Afterwards, Assault re-assigns every position with `Location::SetupAssault` (memset −1; per team *i* < NumPlayers: an unset `m_colourId` is forced to defender/attacker when that side is full, else `syncrand() % 2`; then `GetFreeDefenderPosition` / `GetFreeAttackerPosition`, each one `syncrand() % free.Size()`); in co-op mode `Location::SetupCoop(i)` (for each team *i* < NumPlayers not yet grouped, ascending) may move a team to the other co-op group's position and then calls `GetTeamPosition` again for the displaced team, drawing again. Only then does `InitBuildings` map building rows to teams.
+- The `team` column of a building row is a **position**: `InitBuildings` replaces it with the team that holds that position (`Location::GetTeamFromPosition`, which searches team ids `0 … NumPlayers−1`), or **255 (neutral)** when none of them holds it. Because `Init` gives every team id below NumPlayers a position whether or not the slot is playing, this happens only for position values ≥ NumPlayers — so a building row with position 4 or 5 would become neutral [C]; no shipped row uses 4 or 5 [C] (census of the `Buildings` rows of `data/levels/mp_*.txt`). Empty slots do not arise in practice: before sending START_GAME both the single-player Play button and the host's start fill every unused slot below NumPlayers with a CPU team [C] `code/UI/PlayGameButton.h:PlayGameButton::MouseUp`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::UpdateMultiplayerPage`. Rows with team 255 stay neutral.
 - Instant units are spawned per team in `InitialiseTeam`: a unit row belongs to the team whose position equals its `team` column (§6.6).
 - Duplicate unique ids across the parsed buildings are fatal (`AppReleaseAssert` "duplicate building found"); after init `GlobalWorld::s_nextUniqueBuildingId = highest id + 1`.
 - In Assault, `InitBuildings` binds every `ControlStation` whose id appears in the `PulseBomb`'s link list via `ControlStation::LinkToPulseBomb` (§4.5).
@@ -198,7 +199,7 @@ Camera on entry [C] `code/main.cpp:DoEnterLocation`, the in-game loop in `code/m
 
 ### 2.6 Two on-disk section layouts of `mp_*` files
 
-[C] data (`X4_levels.csv` column `sections`), [I] origin.
+[C] data (block-order census of the 57 `data/levels/mp_*.txt`), [I] origin.
 
 | Layout | Block order | Files |
 |---|---|---|
@@ -224,7 +225,7 @@ One row per `data/levels/mp_*.txt` (generated by `S_08_tables.py` table `master`
 | `data/levels/mp_assault_3p_3.txt` | Fort Zulu | ASLT | 3 | 2549×2549 | 9.95 | 257x257 | 7 | 1 | 0 | TrunkPort 8, PulseBomb 1, CtrlStn 3, Turret 40, Wall 25, Shape 10 | 1800 | — | Darwinian@0x260 | `data/thumbnails/mp_assault_3P_3.bmp` | Y | official retail |
 | `data/levels/mp_assault_4P_1.txt` | Beyond the Pale | ASLT | 4 | 4070×4070 | 20.00 | 204x204 | 15 | 5 | 0 | TrunkPort 8, PulseBomb 1, CtrlStn 4, Turret 18, Radar 6, Fence 81, RestrZone 1, Tree 26, Shape 5 | 1600 / def 200 | Armour | Armour@2x1 Armour@3x1 Darwinian@2x100 Darwinian@3x68 | `data/thumbnails/mp_assault_4P_1.bmp` | Y | official retail |
 | `data/levels/mp_assault_4P_2.txt` | The Last Stand | ASLT | 4 | 7000×7000 | 26.00 | 270x270 | 19 | 5 | 0 | TrunkPort 10, PulseBomb 1, CtrlStn 3, Turret 20, Wall 34, Fence 124, RestrZone 2, Shape 27 | 1500 / def 200 | Armour | Darwinian@0x63 Darwinian@1x95 | `data/thumbnails/mp_assault_4P_2.bmp` | Y | official retail |
-| `data/levels/mp_assault_stress.txt` | Assault Stress Test | none | 2 | 4000×4000 | 20.00 | 200x200 | 5 | 0 | 0 | TrunkPort 7, PulseBomb 1, CtrlStn 3, Turret 7, Wall 30, Fence 26 | 2000 | — | Darwinian@1x90 | `data/thumbnails/default.bmp` (fallback) | N | stress test; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_assault_stress.txt` | Assault Stress Test | none | 2 | 4000×4000 | 20.00 | 200x200 | 5 | 0 | 0 | TrunkPort 7, PulseBomb 1, CtrlStn 3, Turret 7, Wall 30, Fence 26 | 2000 | — | Darwinian@1x90 | none (no image drawn, §2.2) | N | stress test; hidden (GameTypes none); not in retail data |
 | `data/levels/mp_benchmark_1.txt` | Stress Test | none | 4 | 3000×3000 | 18.00 | 167x167 | 10 | 0 | 0:5;1:5;2:5;3:5;255:4 | Zone 15, TrunkPort 4, PopLock 1, Tree 18 | -1 | — | Darwinian@0x150 Darwinian@1x150 Darwinian@2x150 Darwinian@3x150 | `data/thumbnails/mp_benchmark_1.bmp` | N | benchmark; hidden (GameTypes none); not in retail data |
 | `data/levels/mp_blitzkrieg_2p_1.txt` | Confrontation Point | BLITZ | 2 | 3500×3500 | 12.00 | 292x292 | 6 | 2 | 255:1 | Zone 3, TrunkPort 2, Fence 23, Tree 7 | 1500 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_blitzkrieg_2p_1.bmp` | Y | official retail |
 | `data/levels/mp_blitzkrieg_2p_2.txt` | The Bleak Mountains | BLITZ | 2 | 4000×4000 | 18.00 | 223x223 | 8 | 4 | 0:2;1:2;255:2 | Zone 5, TrunkPort 2, Turret 4, Wall 17, PopLock 6 | 2000 | — | Darwinian@0x8 Darwinian@1x8 | `data/thumbnails/mp_blitzkrieg_2p_2.bmp` | Y | official retail |
@@ -266,8 +267,8 @@ One row per `data/levels/mp_*.txt` (generated by `S_08_tables.py` table `master`
 | `data/levels/mp_rocketriot_3P_2.txt` | Wake of Eternity | RR | 3 | 4285×4285 | 18.00 | 239x239 | 22 | 0 | 0 | TrunkPort 3, Rocket 3, FuelStn 9, RestrZone 4, Tree 18 | 1800 | — | — | `data/thumbnails/mp_rocketriot_3P_2.bmp` | Y | official retail |
 | `data/levels/mp_rocketriot_3P_3.txt` | Heart of Chaos | RR | 3 | 4500×4500 | 16.00 | 282x282 | 7 | 3 | 0 | TrunkPort 3, Rocket 3, FuelStn 9, Turret 6 | 1800 | — | Darwinian@0x8 Darwinian@1x8 Darwinian@2x8 | `data/thumbnails/mp_rocketriot_3P_3.bmp` | Y | official retail |
 | `data/levels/mp_rocketriot_4P_1.txt` | Threads of Fate | RR | 4 | 4186×4186 | 18.00 | 233x233 | 17 | 0 | 255:12 | TrunkPort 4, Rocket 4, FuelStn 12, RestrZone 4 | 1800 | — | — | `data/thumbnails/mp_rocketriot_4P_1.bmp` | Y | official retail |
-| `data/levels/mp_sandbox.txt` | — | none | 2 | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 0 | Wall 3, CtrlTower 1, Incubator 1, Statue(blocked) 1 | 2500 | — | — | `data/thumbnails/default.bmp` (fallback) | N | sandbox; hidden (GameTypes none); not in retail data |
-| `data/levels/mp_sandbox_all.txt` | — | none | — | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 1:4 | CtrlTower 2, Incubator 2, Tree 2 | -1 | — | — | `data/thumbnails/default.bmp` (fallback) | N | sandbox; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_sandbox.txt` | — | none | 2 | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 0 | Wall 3, CtrlTower 1, Incubator 1, Statue(blocked) 1 | 2500 | — | — | none (no image drawn, §2.2) | N | sandbox; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_sandbox_all.txt` | — | none | — | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 1:4 | CtrlTower 2, Incubator 2, Tree 2 | -1 | — | — | none (no image drawn, §2.2) | N | sandbox; hidden (GameTypes none); not in retail data |
 | `data/levels/mp_skirmish_2p_4.txt` | Hamburger Hill | DOM | 2 | 2000×2000 | 12.00 | 167x167 | 2 | 0 | 0:1;1:1;255:8 | TrunkPort 1, Tree 9 | 1800 | — | — | `data/thumbnails/mp_skirmish_2p_4.bmp` | Y | official retail |
 | `data/levels/mp_skirmish_3P_1.txt` | Leap of Faith | DOM | 3 | 6000×6000 | 20.00 | 300x300 | 10 | 1 | 0:2;1:2;2:2;255:9 | Turret 6, Fence 95, JumpPad 18, RestrZone 3, Tree 9 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_skirmish_3P_1.bmp` | Y | official retail |
 | `data/levels/mp_tankbattle_2P.txt` | 2P TankBattle Arena | TANK | 2 | 2000×2000 | 12.00 | 167x167 | 1 | 0 | 0 | Tree 18 | -1 | — | Tank@0x1 Tank@1x1 | `data/thumbnails/mp_tankbattle_2P.bmp` | N | TankBattle [B:DEBUG]; not in retail data |
@@ -277,7 +278,7 @@ One row per `data/levels/mp_*.txt` (generated by `S_08_tables.py` table `master`
 
 ### 3.2 Identity and availability
 
-Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); "CRC check" = recomputed value equals the `MAPID_*` constant; "level_enum id" = achievement index (§7.3); "Data shipped in" = which data builds package the file (retail, `prev` PC preview, `hw` hardware-compat, `stress` Assault stress test, `βA`/`βB`/`βC` beta groups; §2.4); "FULL menu" = what the baseline binary does with the file (`listed`; `permitted, data absent` = would be listed but retail data omits it; `mode not compiled` = TankBattle; `never listed` = no valid `GameTypes`); "Demo default" = in `DemoLimitations`' fallback list; "Tutorial" = map hard-wired by `GameMenuWindow::SetupTutorial`/`SetupTutorial2`.
+Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); "CRC check" = recomputed value equals the `MAPID_*` constant; "level_enum id" = achievement index (§7.3); "Data shipped in" = which data builds package the file (retail, `prev` PC preview, `hw` hardware-compat, `stress` Assault stress test, `βA`/`βB`/`βC` beta groups; §2.4); "FULL menu" = what the baseline binary does with the file (`listed`; `permitted, data absent` = would be listed but retail data omits it; `mode not permitted` = TankBattle (added to mode 6's list, but `App::IsGameModePermitted(6)` is false in FULL, so the mode is never offered); `never listed` = no valid `GameTypes`); "Demo default" = in `DemoLimitations`' fallback list; "Tutorial" = map hard-wired by `GameMenuWindow::SetupTutorial`/`SetupTutorial2`.
 
 <!-- S08:identity -->
 | File | Bytes | MAPID macro (`code/mapcrc.h`) | CRC = map id | CRC check | level_enum id | Data shipped in | FULL menu (retail data) | PERMITTED_MAPS of other targets | Demo default | Tutorial |
@@ -336,9 +337,9 @@ Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); 
 | `data/levels/mp_sandbox_all.txt` | 4329 | MAPID_MP_SANDBOX_ALL | 0xa3f63f95 | OK | — | — | never listed | — | — | — |
 | `data/levels/mp_skirmish_2p_4.txt` | 7279 | MAPID_MP_SKIRMISH_2P_4 | 0xa3a30f75 | OK | 48 | retail | listed | — | — | — |
 | `data/levels/mp_skirmish_3P_1.txt` | 21730 | MAPID_MP_SKIRMISH_3P_1 | 0x177cc7b3 | OK | 49 | retail | listed | — | — | — |
-| `data/levels/mp_tankbattle_2P.txt` | 5660 | MAPID_MP_TANKBATTLE_2P | 0x840ab50d | OK | — | — | mode not compiled | — | — | — |
-| `data/levels/mp_tankbattle_3P.txt` | 5683 | MAPID_MP_TANKBATTLE_3P | 0x2b3a6c4c | OK | — | — | mode not compiled | — | — | — |
-| `data/levels/mp_tankbattle_4P.txt` | 6585 | MAPID_MP_TANKBATTLE_4P | 0x43fa87ed | OK | — | — | mode not compiled | — | — | — |
+| `data/levels/mp_tankbattle_2P.txt` | 5660 | MAPID_MP_TANKBATTLE_2P | 0x840ab50d | OK | — | — | mode not permitted | — | — | — |
+| `data/levels/mp_tankbattle_3P.txt` | 5683 | MAPID_MP_TANKBATTLE_3P | 0x2b3a6c4c | OK | — | — | mode not permitted | — | — | — |
+| `data/levels/mp_tankbattle_4P.txt` | 6585 | MAPID_MP_TANKBATTLE_4P | 0x43fa87ed | OK | — | — | mode not permitted | — | — | — |
 <!-- /S08:identity -->
 
 ### 3.3 Summary
@@ -360,7 +361,7 @@ Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); 
 | `data/levels/mp_benchmark_1.txt` ("Stress Test" — "spawn Multiwinians indefinitely" per its language description) | benchmark | `GameTypes none` (never menu-listed); excluded from retail; included and whitelisted for `TARGET_PC_HARDWARECOMPAT` | terrain and zones copied from `mp_koth_4P_4`; 5 SpawnPoint per position + 4 neutral, 15 neutral MultiwiniaZone, 4 neutral TrunkPort, 1 SpawnPopulationLock (radius 1169.84, max 1200), 150 Darwinians per position; `PopulationCap -1`, `CoopMode` | hardware-compat only; how it was launched is [U] 08-U2 |
 | `data/levels/mp_sandbox.txt` | developer sandbox | `GameTypes none`; excluded from retail | 11 rows: ControlTower, Incubator, **Statue** (blocked → dropped at parse), 3 Wall, 5 AITarget; `PopulationCap 2500`, `NumPlayers 2`, `AttackingTeams 1`; `PrimaryObjectives BuildingOnline :sandbox,2` twice (Darwinia condition; location "sandbox" does not exist in Multiwinia's empty global world → id −1 → condition false) | none |
 | `data/levels/mp_sandbox_all.txt` | developer sandbox | as above; also **no `NumPlayers`** (→ −1) | same terrain as `mp_sandbox`; 2 ControlTower, 2 Incubator, 4 SpawnPoint (position 1), 11 SpawnLink, 1 SpawnPointMaster, 2 Tree | none |
-| `data/levels/mp_tankbattle_2P.txt`, `data/levels/mp_tankbattle_3P.txt`, `data/levels/mp_tankbattle_4P.txt` ("2P/3P/4P TankBattle Arena") | TankBattle mode | `GameTypes TankBattle` → listed under mode 6 only where `INCLUDEGAMEMODE_TANKBATTLE` is compiled (`TARGET_DEBUG`); excluded from retail data | 2000×2000 / 12 arenas, only Trees (18/18/23); one `Tank` instant unit per position; `PopulationCap -1`; 4P has `CoopMode`; 3P/4P have **no camera mounts** | [B:DEBUG] |
+| `data/levels/mp_tankbattle_2P.txt`, `data/levels/mp_tankbattle_3P.txt`, `data/levels/mp_tankbattle_4P.txt` ("2P/3P/4P TankBattle Arena") | TankBattle mode | `GameTypes TankBattle` → `AddMap` puts it in mode 6's list in every build, but the mode is offered only where `App::IsGameModePermitted(6)` is true (`INCLUDEGAMEMODE_TANKBATTLE`, `TARGET_DEBUG`); excluded from retail data | 2000×2000 / 12 arenas, only Trees (18/18/23); one `Tank` instant unit per position; `PopulationCap -1`; 4P has `CoopMode`; 3P/4P have **no camera mounts** | [B:DEBUG] |
 | `data/levels/mp_cts_3p_3.txt` ("The Outreach Peaks") | cut CTS map | complete CTS map but explicitly excluded from retail data, no `level_enum` id, no `Difficulty` | the only CTS map with trunk ports instead of spawn points: 1 TrunkPort per position, `trunkportreinforcements 100`, `attackerreinforcementtype HotFeet`, 3 team drop zones (r 75) + 6 statue zones (r 50), `PlayTime 10`, no starting Darwinians; 24-bit thumbnail (also excluded) | FULL code would list it if the file were present |
 
 ### 3.5 Thumbnails (`data/thumbnails/`, 57 files)
@@ -370,7 +371,7 @@ Format from each BMP header [C]: 53 files are 400×300 8-bit palettised (52 × 1
 <!-- S08:thumbs -->
 | Thumbnail | Bytes | Format | Level (case-insensitive stem) | Note | Data shipped in |
 |---|---|---|---|---|---|
-| `data/thumbnails/default.bmp` | 120778 | 400×300×8bpp | — | fallback (MapImageButton) when thumbnails/<stem>.bmp missing | retail prev hw stress βA βB βC |
+| `data/thumbnails/default.bmp` | 120778 | 400×300×8bpp | — | named by MapImageButton as the fallback, but never drawn: a missing thumbnail draws no image (§2.2) | retail prev hw stress βA βB βC |
 | `data/thumbnails/mp_assault_2P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2P_1.txt` | — | retail |
 | `data/thumbnails/mp_assault_2P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2P_2.txt` | — | retail |
 | `data/thumbnails/mp_assault_2p_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2p_3.txt` | — | retail βA |
@@ -429,7 +430,7 @@ Format from each BMP header [C]: 53 files are 400×300 8-bit palettised (52 × 1
 | `data/thumbnails/mp_tankbattle_4P.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_tankbattle_4P.txt` | — | — |
 <!-- /S08:thumbs -->
 
-Mismatches [C]: every top-level `mp_*` file except `mp_assault_stress`, `mp_sandbox` and `mp_sandbox_all` has a thumbnail (those three would show `default.bmp`); two thumbnails have no top-level level: `mp_koth_2P_4.bmp` (level only in `data/levels/old/mp_koth_2P_4.txt`, "Pillar of Light") and `mp_skirmish_2p_3.bmp` (no level anywhere; the language file has `mp_skirmish_2P_3_name` "Stairway to Heaven" with description "INSERT DESCRIPTION HERE" — probably the precursor of `mp_rocketriot_2p_3` [I]). Both ship in retail data although nothing can display them.
+Mismatches [C]: every top-level `mp_*` file except `mp_assault_stress`, `mp_sandbox` and `mp_sandbox_all` has a thumbnail (those three would show no image, §2.2 — moot, because all three are `GameTypes none` and never listed); two thumbnails have no top-level level: `mp_koth_2P_4.bmp` (level only in `data/levels/old/mp_koth_2P_4.txt`, "Pillar of Light") and `mp_skirmish_2p_3.bmp` (no level anywhere; the language file has `mp_skirmish_2P_3_name` "Stairway to Heaven" with description "INSERT DESCRIPTION HERE" — probably the precursor of `mp_rocketriot_2p_3` [I]). Both ship in retail data although nothing can display them.
 
 ## 4 Per-mode map lists and level conventions
 
@@ -437,7 +438,7 @@ Mode rules themselves (scoring, timers, win conditions) are in [01 §4](01_game_
 
 ### 4.1 Menu lists in menu order (retail data set)
 
-Order as produced by `GameMenu::CreateMapList` (§2.2): nearly-alphabetical base order, then stable sort by `NumPlayers`, then difficulty rank. The sort keys are [C]; the order of ties depends on the archive index order through `OrderedInsert` and is [I] (08-U4). Mode index = blueprint index (`data/multiwinia.txt` order = `Multiwinia::GameType*` enum). TankBattle is shown from the source tree (no retail data; mode not compiled in FULL). Generated table `modes` from `_work/drafts/X4_mode_maplists.csv`:
+Order as produced by `GameMenu::CreateMapList` (§2.2): nearly-alphabetical base order, then stable sort by `NumPlayers`, then difficulty rank. The sort keys are [C]; the order of ties depends on the archive index order through `OrderedInsert` and is [I] (08-U4). Mode index = blueprint index (`data/multiwinia.txt` order = `Multiwinia::GameType*` enum). TankBattle is shown from the source tree (no retail data; mode not permitted in FULL). Generated table `modes` from `_work/drafts/X4_mode_maplists.csv`:
 
 <!-- S08:modes -->
 **0 Domination** (retail data, 9 maps)
@@ -621,7 +622,7 @@ Generated table `rr` (owner field per position; `255` = neutral):
 | `data/levels/mp_rocketriot_4P_1.txt` | 4 | 0:1;1:1;2:1;3:1 | 0:3;1:3;2:3;3:3 | 255:12 | 24 | 0:1;1:1;2:1;3:1 | 0:3;1:3;2:3;3:3;255:51 | 22 | 5 | 255:12 | 255:12 | — | — | — |
 <!-- /S08:rr -->
 
-Conventions [C data]: per start position **1 `EscapeRocket`** (extra tokens `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), **3 `FuelStation`**, **1 `TrunkPort`**, **3 team-owned `Pylon`**; **3 `FuelGenerator` per position** (team-owned on `mp_rocketriot_2P_2`, `mp_rocketriot_2p_3`, `mp_rocketriot_3p_1`; neutral on the other four), `FuelPipe` chains, a shared neutral power grid (`SolarPanel` 15–24, `PowerSplitter` 3–5, `PylonEnd` 3 per position, neutral `Pylon`s). The trunk port is the main Darwinian source; starting Darwinians only on `mp_rocketriot_3P_3` (8 per position). Resolved: X4 stated that Rocket Riot maps have "no spawn points"; the data show neutral spawn networks on `mp_rocketriot_2P_2` (2 `SpawnPoint` + `SpawnPointMaster`) and `mp_rocketriot_4P_1` (12 + master) [C]. No `LevelOptions` are needed (trunk-port reinforcements are intrinsic to the mode, [01](01_game_modes.md)); `mp_rocketriot_3P_3` sets `nogunturrets` and has 6 neutral turrets; `mp_rocketriot_2P_4` bans `Armour` crates. **Special lighting is forced for every Rocket Riot match** regardless of the level's `Effects` (§5.3) [C] `code/location.cpp:Location::RenderBuildings`.
+Conventions [C data]: per start position **1 `EscapeRocket`** (extra tokens `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), **3 `FuelStation`**, **1 `TrunkPort`**, **3 team-owned `Pylon`**; **3 `FuelGenerator` per position** (team-owned on `mp_rocketriot_2P_2`, `mp_rocketriot_2p_3`, `mp_rocketriot_3p_1`; neutral on the other four), `FuelPipe` chains, a shared neutral power grid (`SolarPanel` 15–24, `PowerSplitter` 3–5, `PylonEnd` 3 per position, neutral `Pylon`s) — every `SolarPanel`, `PylonEnd` and `PowerSplitter` row is neutral except one `PowerSplitter` owned by position 0 on `mp_rocketriot_3P_2` (owners 0:1, 255:3) [C data]. The trunk port is the main Darwinian source; starting Darwinians only on `mp_rocketriot_3P_3` (8 per position). Resolved: X4 stated that Rocket Riot maps have "no spawn points"; the data show neutral spawn networks on `mp_rocketriot_2P_2` (2 `SpawnPoint` + `SpawnPointMaster`) and `mp_rocketriot_4P_1` (12 + master) [C]. No `LevelOptions` are needed (trunk-port reinforcements are intrinsic to the mode, [01](01_game_modes.md)); `mp_rocketriot_3P_3` sets `nogunturrets` and has 6 neutral turrets; `mp_rocketriot_2P_4` bans `Armour` crates. **Special lighting is forced for every Rocket Riot match** regardless of the level's `Effects` (§5.3) [C] `code/location.cpp:Location::RenderBuildings`.
 
 ### 4.7 Blitzkrieg (`Blitzkrieg`, blueprint 5) — 7 maps
 
@@ -643,7 +644,7 @@ Economy [C data]: 1 `TrunkPort` per position on all 7 (+1 neutral on `mp_blitzkr
 
 ### 4.8 Tank Battle (`TankBattle`, blueprint 6) [B:DEBUG]
 
-Three 2000×2000 arenas containing only `Tree`s, one `Tank` instant unit per position, `PopulationCap −1`, no mode objects [C data]; the mode is compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`).
+Three 2000×2000 arenas containing only `Tree`s, one `Tank` instant unit per position (`runAsTask 1`), `PopulationCap −1`, no mode objects [C data]. The mode code is compiled in every target, but it is permitted (`App::IsGameModePermitted`) and `Multiwinia::AdvanceTankBattle` has a body only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`); `Task::TargetTank` is commented out everywhere, so the `Tank` rows would only create inert Tank tasks (§6.6).
 
 ## 5 Per-level options (`MultiwiniaOptions`)
 
@@ -695,7 +696,7 @@ The `MultiwiniaOptions_StartDefinition … _EndDefinition` block is the per-map 
 | 13 | `attackreinforcementoption` | int | −1 | `Task::m_option` of attacker reinforcement tasks (e.g. napalm strike, turret type) — `code/multiwinia.cpp` |
 | 14 | `defendreinforcementoption` | int | −1 | `Task::m_option` of defender reinforcement tasks |
 
-Shipped usage [C] (`X4_levels.csv`, top-level files): `trunkportreinforcements` 60/75/100/250 on 14 maps, `trunkportarmour` 1/3 on 6, `instantspawnpointcapture` 4, `airstrikecapturezones 3` 3, `defenderreinforcementtype` (`AirStrike`, `Armour`) 2, `nogunturrets` 2, `attackerreinforcementtype HotFeet` 1 (cut map), `forceradarteammatch` 1, `noradarcontrol` 1. Never used at top level: `nohandicap` (only `old/mp_koth_2P_4`), `attackerreinforcements`, `defenderreinforcements`, `futurewinianteam`, `attackreinforcementoption`, `defendreinforcementoption` (the last three only in `old/mp_assault_3P_1`).
+Shipped usage [C] (census of the 57 top-level `data/levels/mp_*.txt`): `trunkportreinforcements` 60/75/100/250 on 14 maps, `trunkportarmour` 1/3 on 6, `instantspawnpointcapture` 4, `airstrikecapturezones 3` 3, `defenderreinforcementtype` (`AirStrike`, `Armour`) 2, `nogunturrets` 2, `attackerreinforcementtype HotFeet` 1 (cut map), `forceradarteammatch` 1, `noradarcontrol` 1. Never used at top level: `nohandicap` (only `old/mp_koth_2P_4`), `attackerreinforcements`, `defenderreinforcements`, `futurewinianteam`, `attackreinforcementoption`, `defendreinforcementoption` (the last three only in `old/mp_assault_3P_1`).
 
 ### 5.3 `Effects` (enum `LevelFile::LevelEffect*`)
 
@@ -803,10 +804,10 @@ Summary of the three blocks (full field tables with every default, range and par
 | Block | Per-row content | Design meaning |
 |---|---|---|
 | `Landscape` (`key value`) | `worldSizeX`, `worldSizeZ` (int wu, default 2000), `cellSize` (wu per height sample, default 12.0), `outsideHeight` (default −10: sea floor and the base of every tile), `maxHeight` (default 0.0; colour-ramp normaliser only), `landColourFile` / `wavesColourFile` / `waterColourFile` (files in `data/terrain/`, defaults `landscape_default.bmp`, `waves_default.bmp`, `water_default.bmp`) | the playable square, its height-map resolution, the sea and the three colour ramps; no blank lines allowed inside the block (crash) |
-| `LandscapeTiles` (positional) | `posX posY posZ size fractalDimension heightScale desiredHeight generationMethod randomSeed lowlandSmoothingFactor guideGridPower [guideGrid]` | each tile is a square fractal "island" with its own private RNG; `desiredHeight` is the height of its highest point; a hand-painted guide grid (2^p − 1 cells per side, letters `A`–`P`) pins the coarse shape; tiles are merged in file order (later tiles win where they overlap, [23 §7](23_terrain_and_landscape.md#7-height-map-composition-across-tiles-merge-and-bilinear-resampling)) |
+| `LandscapeTiles` (positional) | `posX posY posZ size fractalDimension heightScale desiredHeight generationMethod randomSeed lowlandSmoothingFactor guideGridPower [guideGrid]` | each tile is a square fractal "island" with its own private RNG; `desiredHeight` is the height of its highest point; a hand-painted guide grid (2^p − 1 cells per side, letters `A`–`P`) pins the coarse shape; where tiles overlap the **higher** sample wins (`Landscape::MergeTileIntoLandscape` writes a tile's scaled height only if it exceeds the value already there), so tile order does not matter; the flatten areas are applied afterwards, in file order ([23 §7](23_terrain_and_landscape.md#7-height-map-composition-across-tiles-merge-and-bilinear-resampling)) [C] `code/landscape.cpp:Landscape::MergeTileIntoLandscape`, `Landscape::GenerateHeightMap` |
 | `LandFlattenAreas` (positional) | `centreX centreY centreZ size [flattenType heightThreshold]` | axis-aligned square of half-width `size`: type 0 Absolute (set to `centreY`), 1 Add, 2 Subtract, 3 Smooth, 4 Subtract2; `heightThreshold` (default 40.0) used by 2–4; absent type → 0 ([23 §8](23_terrain_and_landscape.md#8-smoothing-and-flatten-areas-five-types)) |
 
-Envelope used by the 57 top-level maps [C] (`X4_levels.csv`):
+Envelope used by the 57 top-level maps [C] (census of the `data/levels/mp_*.txt` files):
 
 | Parameter | Used range / values | Notes |
 |---|---|---|
@@ -1203,7 +1204,7 @@ Spawning [C] `code/location.cpp:Location::InitialiseTeam`:
 - Otherwise `count` entities are spawned around (x, z) within `spread`; with `inAUnit` they form one `Unit` with its waypoint at the spawn point; a single Darwinian with state `StateFollowingOrders` is ordered to the waypoint (snapped to the centre of a radar dish whose radius contains it); Armour gets the waypoint and the row's state.
 - Team-1 Darwinia difficulty scaling (count × f, centipede splitting, spread × 1.2^(difficulty/5)) is inert (f = 1).
 
-Shipped data [C]: starting Darwinians per position on non-Assault maps are 8–150 (40 on most; 45 on `mp_domination_2P_1`, `mp_koth_3P_1`; 8 on `mp_blitzkrieg_2p_2`, `mp_rocketriot_3P_3`; 150 on `mp_benchmark_1`); none on 15 files (6 of 7 Rocket Riot maps, `mp_blitzkrieg_2P_3`, `mp_blitzkrieg_3P_2`, `mp_blitzkrieg_4P_2`, `mp_koth_2P_2`, `mp_koth_3P_4`, `mp_skirmish_2p_4`, `mp_cts_3p_3`, both sandboxes); Assault: §4.5; `Tank` ×1 per position on TankBattle. No instant unit uses a route, a waypoint or `runAsTask`.
+Shipped data [C]: starting Darwinians per position on non-Assault maps are 8–150 (40 on most; 45 on `mp_domination_2P_1`, `mp_koth_3P_1`; 8 on `mp_blitzkrieg_2p_2`, `mp_rocketriot_3P_3`; 150 on `mp_benchmark_1`); none on 15 files (6 of 7 Rocket Riot maps, `mp_blitzkrieg_2P_3`, `mp_blitzkrieg_3P_2`, `mp_blitzkrieg_4P_2`, `mp_koth_2P_2`, `mp_koth_3P_4`, `mp_skirmish_2p_4`, `mp_cts_3p_3`, both sandboxes); Assault: §4.5; `Tank` ×1 per position on TankBattle. No instant unit uses a route or a waypoint (every row: waypoint 0.0 0.0, `routeId` −1, `routeWaypointId` −1, or the fields omitted). `runAsTask 1` is set on every `Armour` row of the Assault maps (7 rows: `mp_assault_2P_1` ×2, `mp_assault_3p_1` ×1, `mp_assault_3P_2` ×2, `mp_assault_4P_1` ×2) and every `Tank` row of the three TankBattle arenas; all other rows have 0 or omit it [C] (census of the `InstantUnits` rows of `data/levels/*.txt`). So the defenders' starting armour on those Assault maps begins as running Armour **tasks** with no lifetime limit, occupying task slots ([06 §3.3](06_player_control_and_input.md#33-task-types--complete-enumeration-29)).
 
 ### 6.7 Objectives, running programs, difficulty and leaderboard blocks
 
@@ -1859,7 +1860,7 @@ Instant units are identified by list index; deleting shifts later indices (no st
 
 Destructor: close `"editor_cameraanims"` and `"editor_cameraanim"`; `RequestMode(ModeNone)`.
 
-`CameraAnimMainEditWindow` / `CameraAnimSecondaryEditWindow` — compiled in editor builds but **never opened** (creation in `CreateEditWindowForMode(ModeCameraMount)` and in `SelectAnimButton::MouseUp` is commented out) [C]. Designed behaviour: main window "Create New Anim" → `CameraAnimation` named `"CamAnim<AppRandom() & 0x3ff>"`; per animation a name field (`name:<anim>`, w 150), "Del" (x 170) and "Select" (x 210, sets `m_selectionId`). Secondary window (310×100, bottom-right): "Add Link" toggles `m_newNodeArmed` (blinks at 2 Hz on `g_gameTime`); "CameStart" (sic) appends a node with mount `CamPosBefore` when armed; "Preview" → `Camera::PlayAnimation(anim)`; "Stop" → `StopAnimation()`; per node a transition drop-down (Move 0, Cut 1) bound to `m_transitionMode`, a duration VC (double, step 0.5, [0.1, 100] s, label blanked), the mount label and "Del" (removes the first node with that mount name). While armed, clicking a mount in the viewport appends a node (§8.3). Node defaults: Move, 1.0 s [C] `code/level_file.h:CamAnimNode`.
+`CameraAnimMainEditWindow` / `CameraAnimSecondaryEditWindow` — compiled in editor builds but **never opened** (creation in `CreateEditWindowForMode(ModeCameraMount)` and in `SelectAnimButton::MouseUp` is commented out) [C]. Designed behaviour: main window "Create New Anim" → `CameraAnimation` named `"CamAnim<AppRandom() & 0x3ff>"`; per animation a name field (`name:<anim>`, w 150), "Del" (x 170) and "Select" (x 210, sets `m_selectionId`). Secondary window (310×100, bottom-right): "Add Link" toggles `m_newNodeArmed` (while armed its highlight toggles every 0.5 s, `(int)(g_gameTime × 2) & 1` — a 1 Hz on/off cycle); "CameStart" (sic) appends a node with mount `CamPosBefore` when armed; "Preview" → `Camera::PlayAnimation(anim)`; "Stop" → `StopAnimation()`; per node a transition drop-down (Move 0, Cut 1) bound to `m_transitionMode`, a duration VC (double, step 0.5, [0.1, 100] s, label blanked), the mount label and "Del" (removes the first node with that mount name). While armed, clicking a mount in the viewport appends a node (§8.3). Node defaults: Move, 1.0 s [C] `code/level_file.h:CamAnimNode`.
 
 #### 8.5.11 `MultiwiniaOptionsWindow` "multiwiniaoptions_window" (w 300) (`code/interface/multiwiniaoptions_window.cpp`)
 
@@ -2081,7 +2082,8 @@ Code, tools and non-level data (one row per file):
 | `code/UI/MapData.h` | menu map record (§2.2) |
 | `code/UI/MapData.cpp` | `CalculeMapId` (§2.2) |
 | `code/UI/LevelSelectButton.h` | map-name/PlayTime display, demo gating click (§2.2) |
-| `code/UI/MapImageButton.h` | thumbnail lookup and fallback (§2.2, §3.5) |
+| `code/UI/MapImageButton.h` | thumbnail lookup; a missing thumbnail draws no image (§2.2, §3.5) |
+| `code/UI/PlayGameButton.h` | single-player start: fills empty slots below NumPlayers with CPU teams (§2.5) |
 | `code/UI/GameMenuWindow.h` | map-select page declarations |
 | `code/UI/GameMenuWindow.cpp` | `SetupMapSelectPage`, tutorials' map ids, "Map Editor" button (§2.2, §2.4, §8.1) |
 | `code/UI/MultiwiniaEditorButton.h` | main-menu editor entry [B:EDITOR] (§8.1) |
@@ -2097,13 +2099,14 @@ Code, tools and non-level data (one row per file):
 | `code/network/clienttoserver.cpp` | `NET_DARWINIA_START_GAME`, `GAMEOPTION_MAPNAME`, custom-map request (§2.5) |
 | `code/network/server.cpp` | map CRC advertising (§2.3) |
 | `code/lib/universal_include.h` | `PERMITTED_MAPS`, `LOCATION_EDITOR`, mode macros (§1, §2.4) |
-| `code/lib/resource.cpp` | `ListResources` (non-recursive scan) (§2.2) |
+| `code/lib/resource.cpp` | `ListResources` (non-recursive scan); `DoesTextureExist`, fatal `GetTextureWithFlags` on a missing texture (§2.2) |
 | `contrib/systemiv/lib/filesys/file_system.cpp` | `OrderedInsert` (§2.2) |
 | `contrib/systemiv/lib/math/filecrc.cpp` | `FileCRC` (§2.3) |
 | `contrib/unrar/crc.cpp` | CRC-32 table (§2.3) |
 | `code/global_world.h` | `GlobalResearch`, `GlobalEventCondition` (§6.7, §6.8) |
 | `code/global_world.cpp` | research names, `GetLocationIdFromMapFilename` bug, Darwinia `LoadGame` (§2.5, §6.8, §7.1) |
-| `code/multiwinia.cpp` | consumers of level options (§5.2) |
+| `code/multiwinia.cpp` | consumers of level options (§5.2); empty `AdvanceTankBattle` in FULL (§4.8); `ResetLocation` keeps rotated start positions (§2.5) |
+| `code/taskmanager.cpp` | `Task::TargetTank` commented out — TankBattle `Tank` rows create inert tasks (§4.8, §6.6) |
 | `code/team.cpp` | Futurewinian position test (§5.2) |
 | `code/location_input.cpp` | `noradarcontrol` consumer (§5.2) |
 | `code/gamecursor.cpp` | `noradarcontrol` consumer (§5.2) |
@@ -2127,7 +2130,7 @@ Code, tools and non-level data (one row per file):
 | `code/worldobject/triffid.cpp` | editor trajectory gizmo (§8.3) |
 | `code/worldobject/tree.cpp` | tree row columns, `Generate` (§6.3, §8.5.8) |
 | `code/landscape.h` | `LandscapeTile` (§6.1) |
-| `code/landscape.cpp` | tile constructor defaults, `DeleteTile`, guide grid (§8.5) |
+| `code/landscape.cpp` | tile merge by per-sample maximum, flatten areas after tiles (§6.1); tile constructor defaults, `DeleteTile`, guide grid (§8.5) |
 | `code/renderer.cpp` | editor render call (§8.3) |
 | `code/routing_system.h` | `WayPoint` types (§6.4) |
 | `code/script.cpp` | camera-animation consumer [B:LEGACY] (§6.5) |
@@ -2328,7 +2331,7 @@ Level and thumbnail files (one row per file; generated table `sourcemap`):
 | `data/levels/old/mp_thestretch.txt` | superseded Multiwinia map, never loaded (§7.2) |
 | `data/levels/old/mp_twistedhighlands.txt` | superseded Multiwinia map, never loaded (§7.2) |
 | `data/levels/level_enum.txt` | achievement level ids 1–59; excluded from retail data (§7.3) |
-| `data/thumbnails/default.bmp` | map-select thumbnail fallback (§3.5) |
+| `data/thumbnails/default.bmp` | map-select thumbnail named as fallback, never drawn (§3.5) |
 | `data/thumbnails/mp_assault_2P_1.bmp` | map-select thumbnail of mp_assault_2P_1.txt (§3.5) |
 | `data/thumbnails/mp_assault_2P_2.bmp` | map-select thumbnail of mp_assault_2P_2.txt (§3.5) |
 | `data/thumbnails/mp_assault_2p_3.bmp` | map-select thumbnail of mp_assault_2p_3.txt (§3.5) |

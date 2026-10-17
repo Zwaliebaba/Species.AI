@@ -61,7 +61,7 @@ def mode_objects(mode, row):
     if mode == "Blitzkrieg":
         return "flags %s (%s; r %s)" % (row["mwzones"], z, sizes)
     if mode == "Assault":
-        return "bomb %s s, stations %s, attackers pos %s, AIObj %s/markers %s" % (
+        return "bomb %s mode s, stations %s, attackers pos %s, AIObj %s/markers %s" % (
             row["pulsebomb_starttime"] or "-", row["controlstations_by_team"] or "-",
             row["attackingteams"] or "-", row["aiobjectives"], row["aiobjectivemarkers"])
     if mode == "RocketRiot":
@@ -120,7 +120,7 @@ def main():
         if gt in ("none", ""):
             role = "level with `GameTypes none` — never listed by the menu (%s)" % ships
         elif gt == "TankBattle":
-            role = "TankBattle arena [B:DEBUG] (mode compiled out of FULL; %s)" % ships
+            role = "TankBattle arena [B:DEBUG] (mode not permitted in FULL; %s)" % ships
         else:
             role = "%s map, %s players (%s)" % (gt, x["numplayers"], ships)
         lrows.append("| `%s` | %s |" % (f, role))

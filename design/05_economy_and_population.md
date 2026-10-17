@@ -38,7 +38,7 @@ Multiwinia has **no build queue and no currency**. A team's army is a *populatio
 |---|---|---|---|
 | Spawn points (territory) | owned + activated SpawnPoint requests "virtual spirits" from the level's master spawn point in bursts; each arrives after a link-count latency and becomes 1 Darwinian | population cap, 30 s activation delay, handicap | §2, §3 |
 | Trunk ports (fixed reinforcement gates) | every 60 "mode seconds" each owned trunk port emits a wave of Darwinians (+ armour/turret/air-strike tasks) | population cap checked once per port per wave | §6.1 |
-| Starting units | level `InstantUnits` + 5 Darwinians seeded on every port of every team-owned SpawnPoint / SolarPanel | none | §6.7 |
+| Starting units | level `InstantUnits` + 1 operating Darwinian seeded on each port of every team-owned SpawnPoint / SolarPanel (5 ports, so 5 per building) | none | §6.7 |
 | Souls (spirits) recycled | every death of a non-monster entity through `Entity::ChangeHealth` leaves a Spirit; a Harvester (crate unit) collects floating spirits of **any** team and turns each into a Darwinian at a friendly spawn point | **no cap check**, no activation check | §5 |
 | Crates and creatures | Darwinians crate (50–99), triffid-egg Darwinians (10–19), Spawn Mania (all spawn points request every tick for 5 s), exploding escape-rocket passengers, Futurewinian space ship (team 5) | none (except Spawn Mania, which goes through spawn points) | §6.10 |
 
@@ -93,7 +93,7 @@ flowchart LR
 | Boarding an escape rocket (Rocket Riot) | no (returned as burning Darwinians of the rocket's team if the rocket explodes, 1 per tick) | [C] `code/worldobject/rocket.cpp:EscapeRocket::BoardRocket`, `EscapeRocket::AdvanceExploding` |
 | Abduction by the space ship | no (replaced by ≤ 100 Futurewinians of team 5) | [C] `code/worldobject/spaceship.cpp`; P05 |
 | Conversion by subversion laser / Futurewinian pulse | no (converter gains a Darwinian) | [C] `code/worldobject/weapons.cpp`, `code/worldobject/darwinian.cpp`; P03 |
-| Team eliminated (`Team::Eliminate`): every unit and `m_others` entity takes 2 × its health damage | yes for soul-producing types (they die through `ChangeHealth`) | [C] `code/team.cpp:Team::Eliminate` |
+| Team eliminated (`Team::Eliminate`): every unit member and every `m_others` entity takes damage 2 × its **current** health (`ChangeHealth` default type `DamageTypeUnresistable`) | yes for soul-producing types (they die through `ChangeHealth`); the team's Harvesters (damageable only while `m_vunerable`) and its AI entity (`AI::ChangeHealth` returns false) survive | [C] `code/team.cpp:Team::Eliminate`, `code/worldobject/entity.h` (`ChangeHealth` default argument), `code/worldobject/harvester.cpp:Harvester::ChangeHealth`, `code/worldobject/ai.cpp:AI::ChangeHealth` |
 
 A dead entity stays in `Team::m_others` — and keeps counting against the cap — until its corpse fades: health is reset to 100 on death and decremented by `int(40·dt)` = 4 per tick on the ground (25 ticks = 2.5 s) or 2 per tick airborne (50 ticks) [C] `code/worldobject/entity.cpp:Entity::AdvanceDead`.
 
@@ -103,11 +103,11 @@ A dead entity stays in `Team::m_others` — and keeps counting against the cap �
 
 ### 2.1 Ports and occupancy
 
-A SpawnPoint has **5 ports** (`MarkerPort01`–`MarkerPort05` in `data/shapes/spawnpointmultiwinia.shp`) [C]. Every tick, in `Building::Advance → EvaluatePorts`, each port's occupant is reset and then set to the **first** Darwinian found by an entity-grid neighbour query of radius 5.0 around the port position whose state is `StateOperatingPort` — of any team, and not necessarily the Darwinian that walked to that port [C] `code/worldobject/building.cpp:Building::EvaluatePorts`. (Whether the grid query honours the 5.0 radius exactly is a grid-implementation question, see [21](21_simulation_and_entity_model.md) [I].)
+A SpawnPoint has **5 ports** (`MarkerPort01`–`MarkerPort05` in `data/shapes/spawnpointmultiwinia.shp`) [C]. Every tick, in `Building::Advance → EvaluatePorts`, each port's occupant is reset and then set to the **first** Darwinian found by an entity-grid neighbour query of radius 5.0 around the port position whose state is `StateOperatingPort` — of any team, and not necessarily the Darwinian that walked to that port [C] `code/worldobject/building.cpp:Building::EvaluatePorts`. **Resolved (05-U1):** the query is exact. `EntityGrid::GetNeighbours` scans every 32 × 32-unit grid cell that overlaps the square of half-side 5.0 around the port and keeps an entity only if `dx² + dz² < 5.0²` (strict, xz only), so only Darwinians strictly within 5.0 of the port can occupy it. When several operating Darwinians qualify, the **first in result order** wins: grid cell x ascending → cell z ascending → team 0 … 5 → slot order of that cell's id array (a free list, so freed slots are reused first); an entity registered in several cells is listed once [C] `code/entity_grid.cpp:EntityGrid::GetNeighbours`, `EntityGridCell::AddObjectId`, `code/location.cpp:Location::Init` (`new EntityGrid( 32.0, 32.0 )`).
 
 How Darwinians come to occupy ports [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForPorts`, `AdvanceApproachingPort`, `AdvanceOperatingPort`:
 
-1. An **idle** Darwinian re-targets every 1.0 + syncfrand(1.0) s (`m_retargetTimer`); the idle search order is threats → ports → carryable buildings → crates → armour → (Blitzkrieg) flags → officers → spirits (disabled in MP) → random position. Darwinians in `StateFollowingOrders` / `StateFollowingOfficer` / `StateApproachingArmour` also search ports right after threats, **unless** they are under direct player orders (`m_followingPlayerOrders`), in which case only threats are searched [C] `Darwinian::SearchForNewTask` (switch on `m_state`).
+1. An **idle** Darwinian re-targets every 1.0 + syncfrand(1.0) s (`m_retargetTimer`); the idle search order is threats → ports → carryable buildings → crates → armour → (Blitzkrieg) flags → officers → spirits (disabled in MP) → random position. Darwinians in `StateFollowingOrders` / `StateFollowingOfficer` / `StateApproachingArmour` search threats → ports → carryable buildings, **unless** they are under direct player orders (`m_followingPlayerOrders`), in which case only threats are searched [C] `Darwinian::SearchForNewTask` (switch on `m_state`).
 2. `SearchForPorts` considers every building with ports whose distance minus its radius is < `DARWINIAN_SEARCHRANGE_PORTS` = 100.0, that has at least one unoccupied port and is walkable from the Darwinian; it picks the **nearest** such building (the random pick is immediately overwritten by the nearest-distance loop). **There is no team test** — Darwinians walk onto the free ports of enemy-held spawn points [C].
 3. A port is available if it has no occupant and the team's reservation counter `GetPortOperatorCount(p, team)` is < 1 in MP (< 20 in single-player); the approaching Darwinian increments that counter every tick (`OperatePort`, capped at 50); `EvaluatePorts` zeroes all counters of an occupied port and decays those of an empty port by 4 per tick [C] `Building::OperatePort`, `Building::EvaluatePorts`.
 4. On arrival the Darwinian enters `StateOperatingPort` and stays there (in MP it does **not** even search for threats) until it is no longer the port's occupant, the building vanishes, or it is killed [C]; being re-ordered by the player through selection is the remaining exit [I] (selection/orders are specified in [06](06_player_control_and_input.md)).
@@ -268,7 +268,7 @@ Timing per cycle in ticks of 0.1 s [C constants, I arithmetic]: emissions at rel
 - **No population re-check on arrival** — requests made just before the cap was reached still arrive (overshoot, §4.4) [C].
 - **Losses** [C]: target neutral on arrival; target unreachable (no link lists it); a link to a non-spawn building; master absent.
 - **Spawned Darwinian**: `Location::SpawnEntities(doorPos, owner, unit −1, TypeDarwinian, 1, vel, spread 0)` with `vel = (door.front + (syncsfrand(1), syncsfrand(1), syncsfrand(1))) × 10` (each jitter ±0.5) in MP, `m_onGround = false` [C] `SpawnPoint::SpawnDarwinian`; `syncsfrand(x)` ∈ [−x/2, x/2) [C] `contrib/systemiv/lib/math/random_number.h`.
-- Shipped graphs (all 32 MP levels with spawn points + `mp_benchmark_1`, `mp_sandbox_all`): one master, every SpawnPoint reachable, exactly one path to each, no cycles, no self-links [C] `_work/drafts/P06_spawn_graph.csv`. `ExploreLinks` has no cycle protection and the multi-link `TriggerSpirit` would double-deliver/double-free on a non-tree graph (latent defect) [I].
+- Shipped graphs (all 32 MP levels with spawn points + `mp_benchmark_1`, `mp_sandbox_all`): one master, every SpawnPoint reachable, exactly one path to each, no cycles, no self-links [C] the `SpawnPointMaster`, `SpawnLink` and `SpawnPoint` rows and their link lists in those `data/levels/mp_*.txt` files (graphs extracted with `_work/scripts/P06_spawn_graph.py`, provenance only). `ExploreLinks` has no cycle protection and the multi-link `TriggerSpirit` would double-deliver/double-free on a non-tree graph (latent defect) [I].
 
 ### 3.5 Worked numerical examples
 
@@ -304,7 +304,7 @@ Every cap check uses
 ```
 currentPop(team) = Team::m_others.NumUsed() − Virii::s_viriiPopulation[team]
 ```
-[C] `code/worldobject/spawnpoint.cpp:SpawnPoint::PopulationLocked`, `code/worldobject/trunkport.cpp:TrunkPort::PopulationLocked`, `code/worldobject/anthill.cpp:AntHill::PopulationLocked`. `m_others` is the team's `SliceDArray` of entities spawned with unit id −1 (`Team::NewEntity` with `_unitId == -1`); entities created inside a `Unit` (squads, airstrike bombers, centipedes, ants from an ant hill, tentacles) live in `Team::m_units` and are **not** counted [C] `code/team.cpp:Team::NewEntity`. Virii are subtracted because they have their own limit (`VIRII_POPULATIONLIMIT` = 250 per team, checked by eggs and triffid eggs) [C] `code/worldobject/virii.h`, `code/worldobject/egg.cpp:Egg::Advance`, `code/worldobject/triffid.cpp:TriffidEgg::Spawn`. Spirits in transit inside the spawn network are not entities and are not counted [C].
+[C] `code/worldobject/spawnpoint.cpp:SpawnPoint::PopulationLocked`, `code/worldobject/trunkport.cpp:TrunkPort::PopulationLocked`, `code/worldobject/anthill.cpp:AntHill::PopulationLocked`. `m_others` is the team's `SliceDArray` of entities spawned with unit id −1 (`Team::NewEntity` with `_unitId == -1`); entities created inside a `Unit` (squads, airstrike bombers, centipedes, ants from an ant hill, tentacles) live in `Team::m_units` and are **not** counted [C] `code/team.cpp:Team::NewEntity`. Virii are subtracted because they have their own limit (`VIRII_POPULATIONLIMIT` = 250 per team, checked by eggs, triffid eggs and spam infections) [C] `code/worldobject/virii.h`, `code/worldobject/egg.cpp:Egg::Advance`, `code/worldobject/triffid.cpp:TriffidEgg::Spawn`, `code/worldobject/spam.cpp` (`SpamInfection` arrival). Spirits in transit inside the spawn network are not entities and are not counted [C].
 
 **Resolved (meta U3/U6, "which `m_others` count toward the cap"):** by enumerating every `SpawnEntities(…, -1, …)` call site [C]:
 
@@ -352,7 +352,7 @@ The generic cap in `Location::SpawnEntities` (`Entity::s_entityPopulation ≥ m_
 | Crates (Darwinians 50–99, triffid eggs, eggs, Futurewinians, nukes, armour, harvester, engineer, squads) | no | — | [C] `code/worldobject/crate.cpp:Crate::RunDarwinians`, `TriffidEgg::Spawn` |
 | Rocket passengers returned on explosion | no | — | [C] `EscapeRocket::AdvanceExploding` |
 | Conversions (subversion, pulse wave) | no | — | [C] `code/worldobject/weapons.cpp`, `code/worldobject/darwinian.cpp` |
-| Virii | own limit 250 per team | per egg | [C] `Egg::Advance` |
+| Virii | own limit 250 per team | per egg / triffid egg / spam infection | [C] `Egg::Advance`, `TriffidEgg::Spawn`, `code/worldobject/spam.cpp` |
 
 ### 4.4 Overshoot
 
@@ -378,18 +378,18 @@ Because only the request is gated, a team can exceed its cap by [I]:
 
 ### 4.6 Per-map table (every `mp_` level file in data/levels)
 
-Columns: *Off.* = `OfficialLevel` flag; *PopulationCap* as parsed (last line wins); *Per-team cap* = PopulationCap / NumPlayers (integer); *Assault caps* = defender / attacker per team (rule 2); *SpawnPoints* = total with the count owned at start per level team **position** (`tN` = position N; positions are mapped to team ids at load); *SpawnLinks* = relay nodes; *Hops* = min–max links from the master to a spawn point (latency ≈ 1 s per hop, §3.4); *Pop-locks* = `SpawnPopulationLock` buildings (inert wherever PopulationCap ≠ −1); *TrunkPorts* = count with owners (`t255` = neutral, never reinforces); *InstantUnits Darwinians* and *Port-seeded Darwinians* (5 per owned SpawnPoint or SolarPanel) per position; *Other start units* (`(task)` = `runAsTask`, created as a task). Generated by `_work/scripts/S_05_economy_tables.py` (run with `python3 -I`) [C] data.
+Columns: *Off.* = `OfficialLevel` flag; *PopulationCap* as parsed (last line wins); *Per-team cap* = PopulationCap / NumPlayers (integer); *Assault caps* = defender / attacker per team (rule 2); *Co-op* = `Y` for `CoopMode`, `ForceCoop` for maps that force co-op; *SpawnPoints* = total with the count owned at start per level team **position** (`tN` = position N; positions are mapped to team ids at load); *SpawnLinks* = relay nodes; *Hops* = min–max links from the master to a spawn point (latency 10h + 1 ticks for h hops: 11 for the first, 10 for each further one, §3.4); *Pop-locks* = `SpawnPopulationLock` buildings (inert wherever PopulationCap ≠ −1); *TrunkPorts* = count with owners (`t255` = neutral, never reinforces); *InstantUnits Darwinians* and *Port-seeded Darwinians* (5 per owned SpawnPoint or SolarPanel) per position; *Other start units* (`(task)` = `runAsTask`, created as a task). Generated by `_work/scripts/S_05_economy_tables.py` (run with `python3 -I`) [C] data.
 
 | Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | SpawnLinks | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `mp_assault_2P_1` | Assault | Y | 2 | 2000 | 1000 | def 350 / att 1650 |  | trunkportreinforcements=100 | 0 | 0 |  | 1 | 5 (t0:1 t1:4) | t0:325 |  | Armour(task)×1@0; Armour(task)×1@0 |
 | `mp_assault_2P_2` | Assault | Y | 2 | 2000 | 1000 | def 275 / att 1725 |  | trunkportreinforcements=100 trunkportarmour=1 | 0 | 0 |  | 0 | 6 (t0:1 t1:5) | t0:209 | t0:50 |  |
 | `mp_assault_2p_3` | Assault | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | 0 | 0 |  | 0 | 3 (t0:3) | t0:8 t1:300 |  |  |
-| `mp_assault_3P_2` | Assault | Y | 3 | 1500 | 500 | def 250 / att 625 |  | trunkportreinforcements=75 | 0 | 0 |  | 1 | 9 (t0:1 t1:4 t2:4) | t0:180 | t0:60 | Armour(task)×1@0; Armour(task)×1@0 |
+| `mp_assault_3P_2` | Assault | Y | 3 | 1500 | 500 | def 250 / att 625 | ForceCoop | trunkportreinforcements=75 | 0 | 0 |  | 1 | 9 (t0:1 t1:4 t2:4) | t0:180 | t0:60 | Armour(task)×1@0; Armour(task)×1@0 |
 | `mp_assault_3p_1` | Assault | Y | 2 | 1600 | 800 | def 250 / att 1350 |  | trunkportreinforcements=75 | 0 | 0 |  | 0 | 7 (t0:1 t1:6) | t0:103 t5:35 | t0:45 | Armour(task)×1@0 |
-| `mp_assault_3p_3` | Assault | Y | 3 | 1800 | 600 |  |  | trunkportreinforcements=100 | 0 | 0 |  | 0 | 8 (t1:4 t2:4) | t0:260 |  |  |
-| `mp_assault_4P_1` | Assault | Y | 4 | 1600 | 400 | def 200 / att 600 |  | trunkportreinforcements=75 | 0 | 0 |  | 0 | 8 (t0:3 t1:3 t2:1 t3:1) | t2:100 t3:68 | t3:30 | Armour(task)×1@2; Armour(task)×1@3 |
-| `mp_assault_4P_2` | Assault | Y | 4 | 1500 | 375 | def 200 / att 550 |  | trunkportreinforcements=60 trunkportarmour=3 | 0 | 0 |  | 0 | 10 (t0:1 t1:1 t2:4 t3:4) | t0:63 t1:95 | t0:60 t1:30 |  |
+| `mp_assault_3p_3` | Assault | Y | 3 | 1800 | 600 |  | ForceCoop | trunkportreinforcements=100 | 0 | 0 |  | 0 | 8 (t1:4 t2:4) | t0:260 |  |  |
+| `mp_assault_4P_1` | Assault | Y | 4 | 1600 | 400 | def 200 / att 600 | ForceCoop | trunkportreinforcements=75 | 0 | 0 |  | 0 | 8 (t0:3 t1:3 t2:1 t3:1) | t2:100 t3:68 | t3:30 | Armour(task)×1@2; Armour(task)×1@3 |
+| `mp_assault_4P_2` | Assault | Y | 4 | 1500 | 375 | def 200 / att 550 | ForceCoop | trunkportreinforcements=60 trunkportarmour=3 | 0 | 0 |  | 0 | 10 (t0:1 t1:1 t2:4 t3:4) | t0:63 t1:95 | t0:60 t1:30 |  |
 | `mp_assault_stress` | none | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=250 defenderreinforcementtype=Armour | 0 | 0 |  | 0 | 7 (t0:5 t1:2) | t1:90 | t1:30 |  |
 | `mp_benchmark_1` | none | Y | 4 | -1 | none |  | Y |  | 24 (t0:5 t1:5 t2:5 t3:5) | 4 | 2–2 | 1 | 4 (t255:4) | t0:150 t1:150 t2:150 t3:150 | t0:25 t1:25 t2:25 t3:25 |  |
 | `mp_blitzkrieg_2P_3` | Blitzkrieg | Y | 2 | 2000 | 1000 |  |  | trunkportreinforcements=100 trunkportarmour=3 | 4 | 9 | 3–8 | 0 | 3 (t0:1 t1:1 t255:1) |  |  |  |
@@ -503,7 +503,19 @@ Spirits are `Spirit` objects (a `WorldObject`, not an `Entity`) stored by value 
 | 8 | Harvested | no timer, no wobble; the Harvester moves it toward its collector | → Collected when within 2 of the orbit target (or within 50 and |Δy| < 5) | [C] `Harvester::AdvanceSpirits` |
 | 9 | Collected | no timer; velocity = harvester velocity | delivered and removed; → Floating if the harvester no longer exists | [C] `Spirit::Advance` |
 
-MP lifetime of an uncollected soul ≈ 6.1 + [30, 50) + 90.1 s ≈ **126–146 s**; it is **collectable by a harvester only during the 30–50 s Floating window** (engineers also take Birth-state spirits) [C/I arithmetic]. Each live spirit consumes 3 synced random numbers per tick (wobble), plus 1 in Birth/Death — a population-proportional load on the shared RNG stream ([22](22_determinism_and_networking.md)) [C].
+MP lifetime of an uncollected soul ≈ 6.1 + [30, 50) + 90.1 s ≈ **126–146 s**; it is **collectable by a harvester only during the 30–50 s Floating window** (engineers, Virii and army ants also take Birth-state spirits) [C/I arithmetic]. A spirit dropped by its carrier (`CollectorDrops`) or freed from a destroyed egg (`EggDestroyed`) returns to Floating with the `m_timeSync` it had when it was picked up, so a spirit taken during Birth floats only for its remaining Birth time [C] `Spirit::CollectorDrops`, `Spirit::EggDestroyed`.
+
+Synced-RNG draws per spirit, in the order they are made — a population-proportional load on the shared stream ([22](22_determinism_and_networking.md)) [C] `code/worldobject/spirit.cpp:Spirit::Begin`, `Spirit::Advance`:
+
+| Situation | Draws | Calls |
+|---|---|---|
+| creation (`Begin`) | 4 | `syncfrand(10)` phase, then `syncfrand(2)` × 3 axis rates |
+| wobble, every tick in Birth, Floating, InStore and Death | 3 | `syncsfrand(1)` × 3 |
+| Birth, extra each tick | +1, then +1 more either while > 10 above its spawn-time ground height or on the tick it turns Floating | `syncfrand(0.5)`; then `syncfrand(10)` or `syncsfrand(60)` |
+| Death (ascent), extra each tick | +1 | `syncfrand(2)` |
+| Attached, InEgg, Shaman, Harvested, Collected | 0 | — |
+
+A live spirit therefore draws 0, 3, 4 or 5 numbers per tick.
 
 ```mermaid
 stateDiagram-v2
@@ -511,17 +523,17 @@ stateDiagram-v2
     Birth --> Floating : 6.1 s and within 10 of ground
     Floating --> Death : 30-50 s (MP)
     Death --> [*] : 90 s ascent
-    Birth --> Attached : Engineer collects
+    Birth --> Attached : Engineer, Virii or ArmyAnt collects
     Floating --> Attached : Engineer, Virii or ArmyAnt collects
     Attached --> Floating : collector drops it or dies
-    Attached --> [*] : delivered to incubator, egg or ant hill
+    Attached --> InEgg : Virii delivers it to a dormant egg
+    Attached --> [*] : delivered to an incubator or an ant hill
     Floating --> Harvested : Harvester within 75
     Harvested --> Collected : reaches the collector
     Collected --> [*] : delivered at a friendly spawn point (1 Darwinian)
     Collected --> Floating : harvester gone
     Harvested --> Birth : harvester destroyed by its own grenade (ReleaseSpirits)
     Collected --> Birth : harvester destroyed by its own grenade (ReleaseSpirits)
-    Floating --> InEgg : Virii ferry into an egg
     InEgg --> [*] : egg hatches 4 Virii after 15 s
     InEgg --> Floating : egg destroyed
     Floating --> [*] : eaten by centipede, deleted by spam infection
@@ -534,8 +546,8 @@ stateDiagram-v2
 |---|---|---|---|---|---|
 | **Harvester** (crate reward; task) | Floating, unbroken (`m_broken < 0`) | **none — collects any team's souls, incl. enemies'** | search nearest within `ENGINEER_SEARCHRANGE` 200 every `ENGINEER_RETARGETTIMER` 1.0 s while idle; then sucks every Floating spirit whose xz-distance < `HARVESTER_COLLECTION_RANGE` 75; capacity 100 (research level 3 in MP: 0/25/50/100/200 for levels 0–4) | nearest spawn point whose owner `IsFriend` the harvester's team; on arrival drops **one spirit per tick** (10/s), each → `SpawnPoint::SpawnDarwinian()` for the point's **current** owner; sound `DropSpirit` | [C] `code/worldobject/harvester.cpp:Harvester::SearchForSpirits`, `AdvanceHarvesting`, `GetMaxSpirits`, `SearchForSpawnPoint`, `AdvanceToSpawnPoint`; `code/location.cpp:Location::Init` (research levels) |
 | **Engineer** (basic crate reward; task) | Birth or Floating, unbroken | none | nearest within 200 every 1.0 s while idle; capacity 25 (level 3: 0/10/15/25/30) | a friendly **Incubator** only — none exists on any shipped official map (only `mp_sandbox`, `mp_sandbox_all`), so in shipped games engineers **hoard** souls (Attached, never expiring) until they die (`CollectorDrops` → Floating) | [C] `code/worldobject/engineer.cpp:Engineer::SearchForSpirits`, `GetMaxSpirits`, `AdvanceIdle`, `Engineer::Advance`; data |
-| Virii | Floating near dormant eggs | none | egg cache `SPIRIT_MAXNEARBYEGGS` 8 within `VIRII_MAXSEARCHRANGE` | fertilises an egg → 4 Virii of the **egg's** team after 15 s (if that team has < 250 Virii) | [C] `code/worldobject/virii.cpp`, `egg.cpp:Egg::Advance` |
-| ArmyAnt | Floating (and captured Darwinians) | none | — | ant hill: each stored spirit → +6 ants, one conversion per 1.0 s (MP) | [C] `code/worldobject/armyant.cpp`, `anthill.cpp:AntHill::Advance` |
+| Virii | Birth or Floating, within `VIRII_MAXSEARCHRANGE` = 60 (3D distance) of the Virii, and only if the spirit's own egg cache is non-empty (up to `SPIRIT_MAXNEARBYEGGS` = 8 dormant, grounded eggs within 60 in xz) | none | nearest qualifying spirit; carries one (Attached) | `Egg::Fertilise` on a dormant egg (spirit → InEgg) → after 151 ticks (15.1 s) the spirit is removed and, if the **egg's** team has < 250 Virii, 4 Virii of that team are spawned | [C] `code/worldobject/virii.cpp:Virii::SearchForSpirits`, `Virii::AdvanceToSpirit`, `Virii::AdvanceToEgg`, `code/worldobject/virii.h`, `code/worldobject/spirit.cpp:Spirit::SearchForNearbyEggs`, `egg.cpp:Egg::Advance`, `Egg::Fertilise` |
+| ArmyAnt | Birth or Floating within `ARMYANT_SEARCHRANGE` = 10 (3D distance), and captured Darwinians | none | nearest qualifying spirit | ant hill: each stored spirit → +6 ants, one conversion per 1.0 s (MP) | [C] `code/worldobject/armyant.cpp:ArmyAnt::SearchForSpirits`, `code/worldobject/armyant.h`, `anthill.cpp:AntHill::Advance` |
 | Centipede | Floating within `CENTIPEDE_SPIRITEATRANGE` | none | eat chance = size / 2 | +1 segment per 4 eaten (max size); spirit destroyed | [C] `centipede.cpp:Centipede::EatSpirits` |
 | SpamInfection | Floating | none | — | spirit deleted, a monster Virii/Spider spawned | [C] `code/worldobject/spam.cpp` |
 
@@ -667,7 +679,7 @@ The game clock is frozen during the grace period (`GameTimer` speed 0 until `Adv
 ### 6.7 Starting units
 
 At team initialisation [C] `code/location.cpp:Location::InitialiseTeam`:
-1. CPU teams (incl. the monster and Futurewinian teams) get one `AI` entity at (−100, 0, −100) — it is in `m_others` and counts toward the cap.
+1. CPU teams (incl. the monster and Futurewinian teams) get one `AI` entity, requested at (−100, 0, −100) with spread 0. `FindValidSpawnPosition` makes 10 tries that all fall off the map (2 synced draws each, 20 in all) and then clamps the position into the map, so the entity is stored at **(20, 0, 20)**. It is in `m_others` and counts toward the cap [C] `Location::SpawnEntities`, `Location::FindValidSpawnPosition`.
 2. Starting powerups (§6.8).
 3. For every **SpawnPoint and SolarPanel** owned by the team (level team position remapped): one Darwinian per port (5) spawned directly in `StateOperatingPort` facing the port; then `EvaluatePorts()` + `RecalculateOwnership()`; SpawnPoints also get `m_activationTimer = 0` (productive immediately, first request after the inherited 2–4 s spawn timer).
 4. `InstantUnits` whose team field equals the team's **position**: created as entities (optionally in a unit) at the given position with spread, route and waypoint (radar-dish waypoints snap to the dish), or — if `runAsTask` — as a task of the matching type (Armour, Squad, Harvester, Shaman, Engineer, Tank), targeted at the position, `m_lifeTimer = -1` (permanent). Officer and following-orders details in [02](02_units_and_entities.md).
@@ -751,7 +763,7 @@ A default Rocket Riot trunk port is worth half a spawn point; an Assault port wi
 - **Marginal spawn point**: +1.22 Darwinians/s (+73/min) while below the cap; in Domination also +1 score per mode-second (11 ticks) [C] `Multiwinia::AdvanceSkirmish`.
 - **Capture cost**: 3–5 Darwinians parked as operators (still counted against the cap), the 30 s activation delay (≈ 37 Darwinians of foregone production unless it is the team's only point), the link latency (1–11 s, one-off) and the risk that a single enemy on a port neutralises it within 2–3 s [I].
 - **Saturation**: once at the cap, extra points add nothing until losses occur; territory then buys *replacement rate*. A team sustaining losses L/s stays at the cap while L < 1.22·k, otherwise declines [I].
-- **Soul recycling**: every death in a fight leaves a harvestable soul for 30–50 s; a harvester (capacity 100, speed 28, delivery 10/s) parked near a battle can add up to its round-trip-limited rate — e.g. 100 souls per (2 × 500 / 28 ≈ 36 s travel + a few s collecting) ≈ 2.5 Darwinians/s, i.e. about two spawn points, without cap or activation limits, and including the enemy's dead [I].
+- **Soul recycling**: every death in a fight leaves a harvestable soul for 30–50 s; a harvester (capacity 100, speed 28, delivery 10/s) parked near a battle can add up to its round-trip-limited rate — e.g. 100 souls per (2 × 500 / 28 ≈ 36 s travel + a few s collecting) ≈ 2.5 Darwinians/s, i.e. about two spawn points, without cap or activation limits, and including the enemy's dead [I]. The estimate ignores the movement law (turn rate 9.5·dt, velocity filter 0.92 / 0.08 per tick, arrival within 5, ×0.25 speed while idle), which is specified in [02 §9.6](02_units_and_entities.md#96-harvester--movement-terrain-and-obstacles) [C] `Harvester::AdvanceToTargetPos`.
 - **Other territory types** convert to score, not units: KOTH zones (score per mode-second by ScoreMode), CTS statues (+1 per delivery), Blitzkrieg flags (flags held + elimination bonus; flags also upgrade turret reinforcements to air strikes), Rocket Riot solar panels (rocket fuel), Assault control stations (bomb arming/defence time) — specified in [01](01_game_modes.md) [C] P02.
 - **Handicap**: the default Handicap 90 nearly doubles the burst of a team reduced to a single point while every other point is owned and its opponents (with the two special teams in the divisor) average ≥ 2 points; otherwise it is inactive (§3.2).
 
@@ -780,7 +792,7 @@ All countdowns are `t -= dt; if (t <= 0) …` in IEEE double; repeated subtracti
 | Reinforcement wave (ReinforcementTimer 60) | 60 steps | 660 (first gap 649) | 66.0 s (64.9 s) | `Multiwinia::AdvanceTrunkPorts` |
 | — double-run maps | 60 steps, 2 calls/tick | 330 (first gap 324) | 33.0 s | §6.6 |
 | Domination elimination | 30 mode-seconds without spawn points (after the first 30 game s) | 330 | 33.0 s | `Multiwinia::AdvanceSkirmish` |
-| Retribution | 45.0 (first 5.0) | 450 (50) | 45.0 s | `Multiwinia::AdvanceRetribution` |
+| Retribution | 45.0 (first 5.0) | 450 (first 51) | 45.0 s (first 5.1 s) | `Multiwinia::AdvanceRetribution` |
 | Spawn Mania | 5.0 | ≈ 50–51 ticks with timer > 0 | 5.0–5.1 s | `Location::Advance` |
 | Spirit Birth | 6.0 | 61 | 6.1 s | `Spirit::Advance` |
 | Spirit Floating (MP) | (120 + syncsfrand(60)) / 3 | 300–500 | 30–50 s | `Spirit::Advance` |
@@ -793,7 +805,7 @@ All countdowns are `t -= dt; if (t <= 0) …` in IEEE double; repeated subtracti
 | Darwinian corpse fade | health 100 − 4 or 2 per tick | 25 (ground) / 50 (air) | 2.5 / 5.0 s | `Entity::AdvanceDead` |
 | SpawnPopulationLock recount cycle | 10 + syncsfrand(2) | 90–110 | 9–11 s | `SpawnPopulationLock::Advance` |
 | Ant hill spirit → ants (MP) | `GetNetworkTime() + 1.0` | 10–11 | ≈ 1 s | `AntHill::Advance` |
-| Egg hatch | `m_timer += dt` until ≥ 15.0 | 150–151 | 15 s | `Egg::Advance` |
+| Egg hatch | `m_timer += dt` until ≥ 15.0 | 151 | 15.1 s | `Egg::Advance` |
 
 ### 8.3 Game-speed crates
 
@@ -816,12 +828,12 @@ All countdowns are `t -= dt; if (t <= 0) …` in IEEE double; repeated subtracti
 
 | # | Hazard | Effect | Ref |
 |---|---|---|---|
-| E1 | `s_numSpawnPoints[6]` (Futurewinian team) never reset in `Location::Init` | stale count leaks into the next game's handicap totals, Domination special-team scoring and team-5 activation shortcut; peers with different histories diverge | [C] `code/location.cpp:Location::Init` |
+| E1 | `s_numSpawnPoints[6]` (Futurewinian team) never reset in `Location::Init`; the stale value is the number of points team 5 held when the previous match of the same process ended | stale count leaks into the next game's handicap totals, Domination special-team scoring and team-5 activation shortcut, and — through `CountSpawnPoints`, which sums all 7 entries — into KOTH/CTS soft elimination on maps without spawn points (`IsEliminated`: retribution grants, task capacity 2, the CTS sudden-death tie-break) and into `Crate::IsValid` for Harvester, Engineer and Spawn Mania; peers with different histories diverge. Latent unless team 5 has ever owned a spawn point (05-U4) | [C] `code/location.cpp:Location::Init`, `code/multiwinia.cpp:CountSpawnPoints`, `Multiwinia::IsEliminated`, `code/taskmanager.cpp:TaskManager::Capacity`, `code/worldobject/crate.cpp:Crate::IsValid` |
 | E2 | `s_numMultiwiniaZones` accumulates across Blitzkrieg games | AirStrike-vs-GunTurret reinforcement threshold depends on session history (desync) | [C] `code/multiwinia.cpp` |
 | E3 | `MasterSpawnPoint::s_masterSpawnPointId` never reset | until the new level's master advances once, `GetMasterSpawnPoint` resolves a stale id (NULL unless a master happens to have that id); requests in that window are dropped | [C] `code/worldobject/spawnpoint.cpp:MasterSpawnPoint::GetMasterSpawnPoint` |
 | E4 | Float accumulation in countdowns | 11-tick "seconds", 61-tick births, 10h+1-tick transits — deterministic on identical FPUs, but a re-implementation using integer ticks or float32 changes timing | [C] |
 | E5 | Building/entity array order | same-tick hand-offs in the spawn network; order of trunk-port waves vs. cap; a Darwinian spawned into a later slot is advanced in the same tick | [C] `Location::AdvanceBuildings`, `Team::Advance` |
-| E6 | Synced RNG consumption scales with live spirits (3–4 calls each per tick) and with every spawned Darwinian (`FindValidSpawnPosition` 2 calls per try, velocity jitter 3 calls) | any divergence in spirit count shifts all later random draws | [C] `Spirit::Advance`, `Location::FindValidSpawnPosition`, `SpawnPoint::SpawnDarwinian` |
+| E6 | Synced RNG consumption scales with live spirits (0–5 calls each per tick, §5.2) and with every spawned Darwinian (`FindValidSpawnPosition` 2 calls per try, velocity jitter 3 calls) | any divergence in spirit count shifts all later random draws | [C] `Spirit::Advance`, `Location::FindValidSpawnPosition`, `SpawnPoint::SpawnDarwinian` |
 | E7 | Integer divisions (cap, Assault split, handicap average and factor) | rounding rules must be reproduced exactly | [C] |
 | E8 | `Engineer::Advance` / `Harvester::ReleaseSpirits` loop `while (m_spirits.Size() > 0)` and only remove an entry when its spirit slot is still valid | an invalid id (spirit removed elsewhere — e.g. an engineer took a spirit a harvester then delivered) would hang the simulation | [C] code; [I] reachability |
 
@@ -878,9 +890,10 @@ Birth >= 6 s (61 ticks) -> Floating 30..50 s -> Death/ascent 90 s -> removed
 Harvester: takes Floating spirits of ANY team within 75 (capacity 100), delivers 1/tick at the nearest
            friendly spawn point -> 1 Darwinian each, no cap, no activation check
 Engineer: takes Birth/Floating spirits (capacity 25), delivers only to an incubator (1 Darwinian / 0.2 s)
+Virii (range 60, needs a dormant egg near the spirit) and ArmyAnts (range 10) also take Birth/Floating spirits
 
 # ---- Start of game ----
-5 operating Darwinians per port of each owned SpawnPoint / SolarPanel (point active at once)
+1 operating Darwinian per port = 5 per owned SpawnPoint / SolarPanel (owned spawn points active at once)
 + InstantUnits for the team's position; + StartingPowerups (Domination/KOTH, 0-3 random non-population rewards)
 ```
 
@@ -902,7 +915,7 @@ Recommendations derived from the findings above (not evidence about the original
 
 | ID | Item | Status | What would resolve it |
 |---|---|---|---|
-| 05-U1 | Does the 5.0-radius neighbour query in `Building::EvaluatePorts` return only Darwinians within 5.0 of the port, or anything in the grid cell (P03 reports grid shortcuts ignoring the requested range)? Affects which Darwinian "occupies" a port and therefore capture. | [U] | Read `code/entity_grid.cpp:EntityGrid::GetNeighbours` (owned by [21](21_simulation_and_entity_model.md)) or instrument a run. |
+| 05-U1 | Does the 5.0-radius neighbour query in `Building::EvaluatePorts` return only Darwinians within 5.0 of the port, or anything in the grid cell? Affects which Darwinian "occupies" a port and therefore capture. | **Resolved [C]**: exact strict test `dx² + dz² < 25`; the occupant is the first operating Darwinian in grid result order (cell x → cell z → team 0–5 → cell slot), §2.1 | — (closed by `code/entity_grid.cpp:EntityGrid::GetNeighbours`) |
 | 05-U2 | Exact wall latency of the spawn network per map: depends on how many link hand-offs go to a building later in `m_buildings` (same-tick increment) — range 9h + 1 … 10h + 1 ticks. | [I] | Replay `SpawnBuilding::Advance` with each map's building order (ids in load order). |
 | 05-U3 | Fate of spirits in `StateHarvested` / `StateCollected` when a Harvester disappears by a path other than its own grenade (task termination, `Team::StopAllTasks`); Harvested has no timer and no owner check, so such spirits may persist forever and occupy slots. Note `Team::Eliminate`'s `ChangeHealth` cannot kill a harvester (invulnerable unless `m_vunerable`). | [U] | Read `code/taskmanager.cpp` task stop/removal for TypeHarvester and the entity removal path; test. |
 | 05-U4 | Do Futurewinian (team 5) Darwinians operate spawn-point ports and capture points? If yes, E1 (never-reset `s_numSpawnPoints[6]`) is reachable in shipped play. | [I] (they are ordinary Darwinians, so probably yes) | Runtime test with the space-ship crate on a spawn-point map; read team-5 AI (07). |
@@ -913,9 +926,9 @@ Recommendations derived from the findings above (not evidence about the original
 | 05-U9 | Whether player selection/orders can pull an operating Darwinian off a port (would let a player "un-man" a point deliberately). | [I] | [06](06_player_control_and_input.md) selection rules / test. |
 | 05-U10 | `Virii::s_viriiPopulation` returns to 0 between games because `Team::~Team` deletes `m_others` and `~Virii` decrements — holds only if every constructed Virii had `Begin()` called (always true via `SpawnEntities`). | [I] (resolves meta U3 of the creatures agent) | Confirm no `new Virii` outside `Entity::NewEntity` + `SpawnEntities`. |
 | 05-U11 | Spawn Mania exact request count per point (50 or 51) depends on whether the crate is captured in a building slot before or after the point in the same tick. | [I] | Instrumented run. |
-| 05-U12 | Harvester throughput figure (≈ 2.5 Darwinians/s for a 500-unit round trip) is a back-of-envelope estimate; real movement uses turning and acceleration filters. | [I] | Simulate `Harvester::AdvanceToTargetPos` on a map. |
+| 05-U12 | Harvester throughput figure (≈ 2.5 Darwinians/s for a 500-unit round trip) is a back-of-envelope estimate; real movement uses turning and acceleration filters. | [I] | Simulate `Harvester::AdvanceToTargetPos` on a map with the movement law of [02 §9.6](02_units_and_entities.md#96-harvester--movement-terrain-and-obstacles) (turn 9.5·dt, velocity filter 0.92 / 0.08, arrival 5). |
 
-Resolved in this document (previously open): meta U3/U6 composition of `m_others` (§4.1, [C]); meta U4 harvesters collect enemy souls (§5.3, [C]); P06 "each building once per tick?" (§8.1, [C] — yes); P06 "GetNetworkTime vs GetGameTime" — `GetNetworkTime` is a macro for `g_gameTimer.GetGameTime` [C] `code/gametimer.h`; per-team cap vs teams in play (§4.2: empty slots are CPU-filled, disconnected humans become CPU with a new AI entity [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`).
+Resolved in this document (previously open): 05-U1 port-occupancy query radius and tie order (§2.1, [C]); meta U3/U6 composition of `m_others` (§4.1, [C]); meta U4 harvesters collect enemy souls (§5.3, [C]); P06 "each building once per tick?" (§8.1, [C] — yes); P06 "GetNetworkTime vs GetGameTime" — `GetNetworkTime` is a macro for `g_gameTimer.GetGameTime` [C] `code/gametimer.h`; per-team cap vs teams in play (§4.2: empty slots are CPU-filled, disconnected humans become CPU with a new AI entity [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`).
 
 Contradictions resolved by re-reading code: (1) retribution called vs never called (§6.9); (2) destroyed ant hills releasing monster spirits (§5.1); (3) spore generators creating spirits regardless of team (§5.1); (4) handicap "other used teams" omitting the two special teams (§3.2); (5) spawn-link latency "exactly 1.0 s" vs 11/10 ticks (§3.4); (6) double-run step "6 ticks" vs 5.5 ticks / 330-tick waves (§6.4); (7) P03 labelling Engineer spirit collection and egg fertilisation "legacy" — both are live in [B:FULL] via crates (§5.3); (8) P05/P03 "harvester enemy souls [I]" → [C].
 

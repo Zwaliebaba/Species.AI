@@ -2,7 +2,7 @@
 
 > Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
-> Sources merged: P17a_ui_framework_editor (§1–§10), P17b_menus_options (§11), P18_ui_gamemenu (§12–§13, plus page table §2 and layout §1.3–§1.4 for context), P12_render_core (24.7 text rendering), P14_platform_lib (29.L language table, 31.11 localisation build), P10_input_camera (input modes), `_meta_*` cross-partition notes. Every numeric constant and state transition below was re-read in the code by the synthesis agent (S28); corrections are flagged "Resolved:".
+> Sources merged: P17a_ui_framework_editor (§1–§10), P17b_menus_options (§11), P18_ui_gamemenu (§12–§13, plus page table §2 and layout §1.3–§1.4 for context), P12_render_core (24.7 text rendering), P14_platform_lib (29.L language table, 31.11 localisation build), P10_input_camera (input modes), `_meta_*` cross-partition notes. Every numeric constant and state transition below was re-read in the code for this document; corrections are flagged "Resolved:". The labels P10, P12, P14, P17a, P17b and P18 (sometimes with a draft section number) name the analysis drafts listed here; they are provenance only and never the evidence for a claim — the evidence is the cited code or data.
 
 ## Contents
 
@@ -78,9 +78,9 @@ flowchart TB
 1. `targets/vs2005/Darwinia.sln` contains a project `"eclipse"` whose file is `..\..\contrib\eclipse\eclipse.vcproj`; it is a static-library project (`_LIB`) compiled with `PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_CRT_SECURE_NO_DEPRECATE;TARGET_MSVC"` and `AdditionalIncludeDirectories="..\..\code;..\..\contrib\SystemIV"` [C] `contrib/eclipse/eclipse.vcproj`. Its file list is exactly `eclbutton.cpp/.h`, `eclipse.cpp/.h`, `eclwindow.cpp/.h` (`contrib/eclipse/eclipse.dsp` is the VC6 predecessor and is not used by the VS2005 solution).
 2. `targets/vs2005/Darwinia.vcproj` (803 `RelativePath` entries) references SystemIV files only under `contrib\systemIV\lib\{debug_utils, memory_leak, network_stream, profiler, string_utils, filesys\*, netlib\*, metaserver\{authentication, matchmaker, metaserver}, math\{filecrc, hash, math_stubs, random_number}, tosser\*, unicode\*}`. No path under `contrib\systemiv\interface\` or `contrib\systemiv\lib\eclipse\` appears in any project file [C] grep of `targets/vs2005/*.vcproj`, `*.sln`, `*.vsprops`.
 3. Include resolution: game code writes `#include <eclipse.h>` / `"eclipse.h"`. The game project's include path is `…;..\..\code;..\..\contrib;…;..\..\contrib\SystemIV;..\..\contrib\SystemIV\lib\netlib;..\..\contrib\eclipse;…` [C] `targets/vs2005/Darwinia.vcproj` (VCCLCompilerTool). There is no `eclipse.h` in `code/`, `contrib/` or `contrib/systemiv/` (the SystemIV copy lives one level deeper at `contrib/systemiv/lib/eclipse/eclipse.h` and would need `"lib/eclipse/eclipse.h"`), so `eclipse.h` resolves to `contrib/eclipse/eclipse.h` [C] directory listing; no `code/` file includes `lib/eclipse/…` or `interface/components/…` [C] grep.
-4. Consequently the SystemIV UI components (`contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}`, `interface/options/{screenoptions_window, soundoptions_window}`, `interface/soundsystem/{soundeditor_window, soundparameter_window, soundstats_window}`, `interface/styleeditor_window`) and the SystemIV Eclipse copy are **[B:DEAD]**; their Multiwinia counterparts are the `code/interface` files [C] `_work/build_matrix.md` §6, `_work/manifest.csv` (empty `vcproj_build`).
+4. Consequently the SystemIV UI components (`contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}`, `interface/options/{screenoptions_window, soundoptions_window}`, `interface/soundsystem/{soundeditor_window, soundparameter_window, soundstats_window}`, `interface/styleeditor_window`) and the SystemIV Eclipse copy are **[B:DEAD]**; their Multiwinia counterparts are the `code/interface` files [C] `targets/vs2005/Darwinia.vcproj` (no file under `contrib/systemiv/interface/` or `contrib/systemiv/lib/eclipse/` is in the project; [31 §7.4](31_platform_build_and_tools.md#74-per-file-overrides-in-the-vcproj-c)).
 
-**`contrib/systemiv` usage by the live UI** [C] (header shadowing rule: `code` precedes `contrib/SystemIV` on the include path, so an include of the form "lib/name.h" resolves to the copy under the code directory when one exists — `_work/drafts/P14_platform_lib.md` "Header shadowing rule"):
+**`contrib/systemiv` usage by the live UI** [C] (header shadowing rule: `code` precedes `contrib/SystemIV` on the include path, so an include of the form "lib/name.h" resolves to the copy under the code directory when one exists — `targets/vs2005/Common.vsprops` `AdditionalIncludeDirectories`, [31 §7.2](31_platform_build_and_tools.md#72-property-sheets-applied-to-every-configuration-c)):
 
 | SystemIV module | Used by the UI for | Ref |
 |---|---|---|
@@ -89,7 +89,7 @@ flowchart TB
 | `contrib/systemiv/lib/math/random_number.*` | `AppRandom()` (non-synchronised RNG, `APP_RAND_MAX = 32767`) for automatic child-window placement — does not touch the lock-step RNG | [C] `contrib/eclipse/eclipse.cpp:EclRegisterWindow`, `contrib/systemiv/lib/math/random_number.h` |
 | `contrib/systemiv/lib/debug_utils.*` | included by `eclipse.cpp` (assertions are commented out) | [C] `contrib/eclipse/eclipse.cpp` |
 | `contrib/systemiv/lib/metaserver/authentication.*` | `AUTHENTICATION_KEYLEN`, key check/status phrases in the auth-key page | [C] `code/UI/AuthInputField.h:AuthInputField` |
-| (shadowed, **not** used) `contrib/systemiv/lib/language_table.*`, `preferences.*`, `hi_res_time.*` | Multiwinia uses `code/lib/language_table.*`, `code/lib/preferences.*`, `code/lib/hi_res_time.*` | [C] `_work/drafts/P14_platform_lib.md` |
+| (shadowed, **not** used) `contrib/systemiv/lib/language_table.*`, `preferences.*`, `hi_res_time.*` | Multiwinia uses `code/lib/language_table.*`, `code/lib/preferences.*`, `code/lib/hi_res_time.*` | [C] `targets/vs2005/Darwinia.vcproj` lists only the `code/lib` copies; `targets/vs2005/Common.vsprops` puts `code` before `contrib/SystemIV` on the include path |
 
 ### 1.3 Component status
 
@@ -112,7 +112,7 @@ flowchart TB
 | `DebugKeyBindings::NetworkButton` → `NetworkWindow` | `debugmenu.cpp`, `network_window.*` | Yes | **Yes** — `ControlToggleNetworkStats` (F9) under `NETWORK_STATS_ENABLED` [C] `code/user_input.cpp:UserInput::Advance` | [B:FULL] |
 | `CheatWindow` | `cheat_window.*` | `Create()` empty unless `CHEATMENU_ENABLED` | `TARGET_DEBUG` (F11, only when no window is open) | [B:DEBUG] |
 | Sound editor/stats/profile/parameter windows | `soundeditor_window.*`, `soundstats_window.*`, `sound_profile_window.*`, `soundparameter_window.*` | Bodies inside `#ifdef SOUND_EDITOR` | `TARGET_DEBUG` only | [B:DEBUG] |
-| `GrabberWindow` | `grabber_window.*` | `#ifdef AVI_GENERATOR` | Not even in DEBUG (no caller of `DebugKeyBindings::GrabberButton`) | [B:DEBUG] |
+| `GrabberWindow` | `grabber_window.*` | `#ifdef AVI_GENERATOR` (TARGET_DEBUG only) | Not even in DEBUG (no caller of `DebugKeyBindings::GrabberButton`) | [B:DEAD] |
 | `GestureWindow` | `gesture_window.*` | `#if defined(GESTURE_EDITOR) && defined(USE_SEPULVEDA_HELP_TUTORIAL)` | No | [B:DEAD] |
 | Front-end layer | `code/game_menu.*`, `code/interface/mainmenus.*`, `code/UI/*` | Yes | Yes (details §5, §6, §12) | [B:FULL] |
 
@@ -792,7 +792,7 @@ Leaving to a game: the server's start-game letter sets `m_atMainMenu = false`; `
 | 36 | `PageEnterPassword` | "Password Entry" | `SetupPageEnterPassword` | — | live |
 | 37 | `PageWaitForGameToStart` | "Wait for Game to Start" | none (the case only leaves `Remove()`'s empty page) | nothing | live (host after Start) |
 
-Counts: 18 live, 10 compiled-but-unreachable, 10 gap slots [C] (P18 §2). Help sub-enum (only `PageHelp`): `HelpPageGeneral = 1`, `HelpPageSkirmish = 2`, `HelpPageKoth = 3`, `HelpPageCts = 4`, `HelpPageRR = 5`, `NumHelpPages = 6`.
+Counts: 18 live, 10 compiled-but-unreachable, 10 gap slots [C] (page table above). Help sub-enum (only `PageHelp`): `HelpPageGeneral = 1`, `HelpPageSkirmish = 2`, `HelpPageKoth = 3`, `HelpPageCts = 4`, `HelpPageRR = 5`, `NumHelpPages = 6`.
 
 ### 6.3 Page state machine and per-frame order
 
@@ -896,7 +896,7 @@ Used by credits, MOTD, game-type info, map info and option details.
   - Otherwise: taken if any team uses it (Render: excluding unused teams and the local team; MouseUp: any of the `NUM_TEAMS` slots including the local one).
   - Index −1 is never taken.
 - `Render`: sets `m_inactive = taken` (**render-time mutation of navigation state**: taken colours are skipped by the pad cursor from the next frame); "clicked" = the local team already has this colour; row box `(1,1,1,0.1)` or focus band `(0.75,0.75,1.0,0.5)`; caption outline + green, red when clicked, inactive grey; swatch at the right quarter (`x = realX + w − w/4`, `w × 0.95/4` wide, `0.8 h` high, `0.1 h` from the top) shaded horizontally from the team colour (`Multiwinia::GetColour(index)`, grey 0.7 for −1, grey 0.5 when taken) to black; roll-over sound.
-- `MouseUp`: return if `m_inactive`; if not taken → `parent->m_currentRequestedColour = index`; outside Assault/co-op also save pref `PlayerPreferedColour` (+ `Save()`); `InitialiseMenuTransition(1.0, −1)` and `m_newPage = PageGameSetup` (no `GameMenuButton::MouseUp`, so **no select sound**). The colour request itself is sent by `GameMenuWindow::SetTeamNameAndColour`, which `UpdateGameOptions(true)` calls every frame on the GameSelect/MapSelect/GameSetup/PlayerOptions pages; it issues `ClientToServer::ReliableSetTeamColour(m_currentRequestedColour)` only while on PageGameSetup or PagePlayerOptions (or when starting a tutorial), after substituting the preferred or next free colour if the requested one has been taken [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetTeamNameAndColour`, `GameMenuWindow::UpdateGameOptions` (lobby rules in [09](09_meta_systems.md)).
+- `MouseUp`: return if `m_inactive`; if not taken → `parent->m_currentRequestedColour = index`; outside Assault/co-op also save pref `PlayerPreferedColour` (+ `Save()`); `InitialiseMenuTransition(1.0, −1)` and `m_newPage = PageGameSetup` (no `GameMenuButton::MouseUp`, so **no select sound**). The colour request itself is sent by `GameMenuWindow::SetTeamNameAndColour`, which `UpdateGameOptions(true)` calls every frame on the GameSelect/MapSelect/GameSetup/PlayerOptions pages; first, if the local team id is valid (≠ −1, ≠ 255), the requested colour is not −1, the team does not already have it, it is taken, **and the game is neither co-op nor Assault**, it substitutes pref `PlayerPreferedColour` (when that is free) or else `Multiwinia::GetNextAvailableColour()`; then, only while on PageGameSetup or PagePlayerOptions (or when starting a tutorial), it issues `ClientToServer::ReliableSetTeamColour(m_currentRequestedColour)` — and only if the requested colour is not −1, unless the game is co-op or Assault (then −1 is sent too) [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetTeamNameAndColour`, `GameMenuWindow::UpdateGameOptions` (lobby rules in [09](09_meta_systems.md)).
 
 ### 6.11 Other custom widgets with framework-relevant behaviour [C]
 
@@ -912,7 +912,7 @@ Used by credits, MOTD, game-type info, map info and option details.
 
 ### 6.12 Inventory of every class in `code/UI`
 
-Status: **Live** = instantiated in `[B:FULL]`; **Unreached** = instantiated only on unreachable pages; **Unused** = compiled (header included) but never instantiated; **Uncompiled** = header included nowhere (never compiled although listed in the `.vcproj`); **Not in project** = file absent from `Darwinia.vcproj` [C] include/instantiation grep over `code/` (P18 §12.8, re-verified for every Uncompiled/Unused row by S28).
+Status: **Live** = instantiated in `[B:FULL]`; **Unreached** = instantiated only on unreachable pages; **Unused** = compiled (header included) but never instantiated; **Uncompiled** = header included nowhere (never compiled although listed in the `.vcproj`); **Not in project** = file absent from `Darwinia.vcproj` [C] include/instantiation grep over `code/` (re-verified for every Uncompiled/Unused row for this document).
 
 | Class | File | Base | Overrides | Status | Purpose / action |
 |---|---|---|---|---|---|
@@ -996,7 +996,7 @@ Status: **Live** = instantiated in `[B:FULL]`; **Unreached** = instantiated only
 | `RunSparkleButton` | update_page_buttons.h | `GameMenuButton` | MouseUp | macOS only `[B:DEAD]` | Sparkle update |
 | `VisitWebsiteButton` | update_page_buttons.h | `GameMenuButton` | MouseUp, Render | Live | open UpdateURL |
 
-Totals: 79 classes = 76 widget classes + `GameMenuWindow` + `ServerPasswordString` + `MapData` (plus the file-local `ServerKey` struct). Of the 76 widget classes: 47 live (counting the base `LevelSelectButtonBase`), 7 unreached, 8 unused, 8 uncompiled, 2 not in the project, 4 other-build only (`QuitAuthkeyButton`, `StartTestbedButton`, `MultiwiniaEditorButton`, `RunSparkleButton`) [C] (S28 generator `_work/scripts/S_28_ui_inventory.py` agrees: 50 live rows for `code/UI`).
+Totals: 79 classes = 76 widget classes + `GameMenuWindow` + `ServerPasswordString` + `MapData` (plus the file-local `ServerKey` struct). Of the 76 widget classes: 47 live (counting the base `LevelSelectButtonBase`), 7 unreached, 8 unused, 8 uncompiled, 2 not in the project, 4 other-build only (`QuitAuthkeyButton`, `StartTestbedButton`, `MultiwiniaEditorButton`, `RunSparkleButton`) [C] (the generated inventory of §12.3 agrees: 50 live rows for `code/UI`).
 
 ---
 ## 7 Layout conventions and formulas
@@ -1218,7 +1218,7 @@ Two final tables are built — keyboard (suffix `_kbd`) and gamepad (suffix `_xi
 | Drop-down captions | closed caption translated if the option word is a key; the Darwinia open list shows raw words; the front-end open list translates | §4.6, §5.5 |
 | Placeholders | `UnicodeString::ReplaceStringFlag(flag, text)` replaces every `*<flag>` (`*F` file name, `*S` status) | `code/interface/multiwinia_window.cpp:CreateMapButton::MouseUp`, `code/UI/AuthInputField.h` |
 | Implicit narrowing | `UnicodeString → const char*` conversion (characters > U+00FF become `?`) lets translated strings be passed where `char*` keys/words are expected (`menu->AddOption(LANGUAGEPHRASE("buildingname_gunturret"), …)`, `CreateValueControl(LANGUAGEPHRASE("editor_threshold"), …)`) — lossy for non-Latin languages | `contrib/systemiv/lib/unicode/unicode_string.h` |
-| Untranslated UI | cheat window, debug menu, network window, camera-animation window, gesture/grabber windows, `MessageDialog` texts from the renderer and sound system, `"PAUSED"`, `"INCOMPATIBLE : <version>"`, `"Update"` use literal English | P17a strings table; [C] grep |
+| Untranslated UI | cheat window, debug menu, network window, camera-animation window, gesture/grabber windows, `MessageDialog` texts from the renderer and sound system, `"PAUSED"`, `"INCOMPATIBLE : <version>"`, `"Update"` use literal English | [C] grep of the caption literals in `code/interface/*.cpp`, `code/lib/*.cpp`, `code/sound/*.cpp` |
 | Printf safety | `InputField` rejects `%` so typed text is safe if later passed to printf-style `DrawText2D(char*, …)`; `MessageDialog` lines *are* drawn through the printf overload | §4.1, §4.7 |
 
 ### 10.4 Unicode strings [C] `contrib/systemiv/lib/unicode/unicode_string.*` (P14 §29.L.6)
@@ -1232,7 +1232,7 @@ Two final tables are built — keyboard (suffix `_kbd`) and gamepad (suffix `_xi
 | `chinese-trad`, `chinese-simp`, `korean`, `japanese` | `g_gameFont` and `g_editorFont` become struct copies of `g_titleFont` ("square", the only family with CJK/Hangul atlases); originals saved in `g_oldGameFont`/`g_oldEditorFont` | 1.0 for all three (Latin characters < U+3000 still use the default 0.6) |
 | every other language | original `speccy` / `editor` / `square` (restored from the saved copies if a CJK language was active) | 0.6 |
 
-Shipped data [C] `data/language/*`, `data/textures/unicode/*`: `english` (8-bit, 2425 keys), `french` (UTF-16BE, 2516), `german` (UTF-16BE, 2489), `italian` (UTF-16BE, 2365), `spanish` (UTF-16BE, 2516), `russian` (UTF-16LE, 2142), `japanese` (UTF-16LE, 221), `korean` (UTF-16BE, 161), `portuguese` (UTF-16BE, 161) — key counts by S28 parse; no `chinese-*` files. The Cyrillic atlases (`U+0410–042F`, `U+0430–044F`) of `editor`, `speccy` and `square` are byte-identical copies of the speccy glyphs (md5 equal), matching `docs/RussianFontRequest.txt`. Because missing phrases return their key, choosing a language with a partial file (Japanese, Korean, Portuguese) would show raw phrase ids for most of the UI [I: lookup rule + key counts] — whether those files ship depends on the per-SKU `language.dat` list ([31](31_platform_build_and_tools.md)); see 28-U3.
+Shipped data [C] `data/language/*`, `data/textures/unicode/*`: `english` (8-bit, 2425 keys), `french` (UTF-16BE, 2516), `german` (UTF-16BE, 2489), `italian` (UTF-16BE, 2365), `spanish` (UTF-16BE, 2516), `russian` (UTF-16LE, 2142), `japanese` (UTF-16LE, 221), `korean` (UTF-16BE, 161), `portuguese` (UTF-16BE, 161) — these are **entry lines** (non-blank lines with a key); the **distinct phrases actually loaded** are english 2423, french 2514, german 2487, italian 2361, spanish 2514, russian 2141, japanese 220, korean 160, portuguese 160, because a repeated key replaces the earlier entry (`code/lib/language_table.cpp:LangTable::ParseLanguageFile`) and the UTF-16 readers drop an unterminated last line, which the japanese, korean and portuguese files have (`contrib/systemiv/lib/filesys/text_stream_readers.cpp`, [29 §6.1](29_data_formats_reference.md#61-language-phrase-tables-and-caption-markup)); no `chinese-*` files. The Cyrillic atlases (`U+0410–042F`, `U+0430–044F`) of `editor`, `speccy` and `square` are byte-identical copies of the speccy glyphs (md5 equal), matching `docs/RussianFontRequest.txt`. Because missing phrases return their key, choosing a language with a partial file (Japanese, Korean, Portuguese) would show raw phrase ids for most of the UI [I: lookup rule + key counts] — whether those files ship depends on the per-SKU `language.dat` list ([31](31_platform_build_and_tools.md)); see 28-U3.
 
 ### 10.6 Text entry of non-Latin text [C]
 
@@ -1464,7 +1464,7 @@ classDiagram
 
 ### 12.2 Master class diagram — every framework, widget, window and `code/UI` class
 
-Generated by `_work/scripts/S_28_ui_inventory.py` from the declarations found by `_work/scripts/S_28_ui_classes.py` (all three layers; annotations: none = live in `[B:FULL]`; `<<tooluse>>` = compiled in FULL, used only by editor/debug tools; `<<legacy>>` = compiled in FULL but never reached; `<<editor>>` = `[B:EDITOR]`; `<<debug>>` = `[B:DEBUG]`; `<<othertarget>>` = other product target/platform; `<<dead>>` = not compiled in any PC configuration; `<<external>>` = non-UI base). Screen-private button classes (declared inside one screen's `.cpp`, e.g. the 29 sound-editor buttons) are omitted from the picture for legibility but listed in §12.3.
+Generated from every `class X [: public Y]` declaration in the UI sources of §12.3 and their status (provenance: `_work/scripts/S_28_ui_classes.py` lists the declarations, `_work/scripts/S_28_ui_inventory.py` assigns the status) (all three layers; annotations: none = live in `[B:FULL]`; `<<tooluse>>` = compiled in FULL, used only by editor/debug tools; `<<legacy>>` = compiled in FULL but never reached; `<<editor>>` = `[B:EDITOR]`; `<<debug>>` = `[B:DEBUG]`; `<<othertarget>>` = other product target/platform; `<<dead>>` = not compiled in any PC configuration, or compiled only in DEBUG and never instantiated (`GrabberWindow`); `<<external>>` = non-UI base). Screen-private button classes (declared inside one screen's `.cpp`, e.g. the 29 sound-editor buttons) are omitted from the picture for legibility but listed in §12.3.
 
 ```mermaid
 classDiagram
@@ -1526,7 +1526,7 @@ classDiagram
   class GlobalWorldEditorWindow
   <<legacy>> GlobalWorldEditorWindow
   class GrabberWindow
-  <<debug>> GrabberWindow
+  <<dead>> GrabberWindow
   class HelpAndOptionsWindow
   class SelectHelpWindow
   class CrateButton
@@ -1977,7 +1977,7 @@ classDiagram
 
 ### 12.3 Complete inventory of UI class declarations (generated)
 
-Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface/*`, `code/UI/*`, `code/game_menu.*` (384 declarations; `ClearLinksButton` is declared twice in `code/interface/buildings_window.cpp`, once per `#if` branch). Status rules: file-level reachability (vcproj membership, `#ifdef` guards, instantiation sites, P17a/P17b/P18 reachability tables) with per-class overrides, all in `_work/scripts/S_28_ui_inventory.py`. "[B:FULL]*" = compiled into the shipped exe but only instantiated by editor/debug tool windows.
+Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface/*`, `code/UI/*`, `code/game_menu.*` (384 declarations; `ClearLinksButton` is declared twice in `code/interface/buildings_window.cpp`, once per `#if` branch). Status rules: file-level reachability (vcproj membership, `#ifdef` guards, instantiation sites found by grep of `new <Class>`) with per-class overrides (provenance: `_work/scripts/S_28_ui_inventory.py`, which holds the status of every file and override). "[B:FULL]*" = compiled into the shipped exe but only instantiated by editor/debug tool windows.
 
 | # | Class | Base | Declared in | Status | Tag |
 |---|---|---|---|---|---|
@@ -2085,9 +2085,9 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 102 | `NewLocationButton` | `DarwiniaButton` | `code/interface/globalworldeditor_window.cpp:NewLocationButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 103 | `SaveLocationsButton` | `DarwiniaButton` | `code/interface/globalworldeditor_window.cpp:SaveLocationsButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 104 | `GlobalWorldEditorWindow` | `DarwiniaWindow` | `code/interface/globalworldeditor_window.h:GlobalWorldEditorWindow` | compiled into FULL, never reached | [B:LEGACY] |
-| 105 | `StartRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StartRecordButton` | TARGET_DEBUG builds only | [B:DEBUG] |
-| 106 | `StopRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StopRecordButton` | TARGET_DEBUG builds only | [B:DEBUG] |
-| 107 | `GrabberWindow` | `DarwiniaWindow` | `code/interface/grabber_window.h:GrabberWindow` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 105 | `StartRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StartRecordButton` | compiled only in TARGET_DEBUG builds, never instantiated (no caller) | [B:DEAD] |
+| 106 | `StopRecordButton` | `DarwiniaButton` | `code/interface/grabber_window.cpp:StopRecordButton` | compiled only in TARGET_DEBUG builds, never instantiated (no caller) | [B:DEAD] |
+| 107 | `GrabberWindow` | `DarwiniaWindow` | `code/interface/grabber_window.h:GrabberWindow` | compiled only in TARGET_DEBUG builds, never instantiated (no caller) | [B:DEAD] |
 | 108 | `HelpWindowButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:HelpWindowButton` | live in the shipped build | [B:FULL] |
 | 109 | `CrateHelpWindowButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:CrateHelpWindowButton` | TARGET_DEBUG builds only | [B:DEBUG] |
 | 110 | `OptionsButton` | `GameMenuButton` | `code/interface/helpandoptions_windows.cpp:OptionsButton` | live in the shipped build | [B:FULL] |
@@ -2366,7 +2366,7 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 383 | `BackPageButton` | `GameMenuButton` | `code/game_menu.h:BackPageButton` | live in the shipped build | [B:FULL] |
 | 384 | `GameMenuCheckBox` | `CheckBox` | `code/game_menu.h:GameMenuCheckBox` | live in the shipped build | [B:FULL] |
 
-Totals: not compiled in any PC configuration = 31; TARGET_DEBUG builds only = 78; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 77; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 119; other product target / platform only = 2; compiled into FULL, never reached = 70; all declarations = 384.
+Totals: not compiled in any PC configuration = 31; TARGET_DEBUG builds only = 75; compiled only in TARGET_DEBUG builds, never instantiated (no caller) = 3; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 77; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 119; other product target / platform only = 2; compiled into FULL, never reached = 70; all declarations = 384.
 
 ---
 
@@ -2523,7 +2523,7 @@ Page-level constants of `GameMenuWindow` (routed from P18 §13; page behaviour i
 |---|---|---|---|
 | 28-U1 | Exact on-screen look of "ink" text (`SRC_ALPHA, ONE_MINUS_SRC_COLOR`) over the Darwinia highlight gradient and the fill boxes | [I] (blend arithmetic only) | render a captured frame on the target build (or run the GL path in a reference renderer) |
 | 28-U2 | Content of the frame captured by `InitialiseMenuTransition` (`glCopyTexImage2D` from the read buffer during the update phase, i.e. after the previous `Flip`): previous frame or undefined back-buffer contents depending on the driver's swap behaviour | [U] | test on several GL drivers / read `WindowManagerWin32::Flip` pixel-format flags (swap copy vs exchange) |
-| 28-U3 | Whether the shipped SKUs include the partial `japanese`/`korean`/`portuguese` language files (161–221 keys each); if they do, choosing them shows raw phrase ids for most of the UI | [I] design-critical for localisation QA | inspect the retail `language.dat` per SKU (`tools/build_language_dat.bat` + `tools/*language.list`, [31](31_platform_build_and_tools.md)) |
+| 28-U3 | Whether the shipped SKUs include the partial `japanese`/`korean`/`portuguese` language files (160–220 loaded phrases each); if they do, choosing them shows raw phrase ids for most of the UI | [I] design-critical for localisation QA | inspect the retail `language.dat` per SKU (`tools/build_language_dat.bat` + `tools/*language.list`, [31](31_platform_build_and_tools.md)) |
 | 28-U4 | Whether committed IME text reaches `InputField` as `WM_CHAR` units (no `WM_IME_*` handling exists) | [I] | run the game with a Japanese/Korean IME |
 | 28-U5 | Whether the server rejects lobby option requests from non-host clients (the UI only hides controls, §4.12) | [U] (shared with 09/22) | `code/network/server.cpp` handlers for `NET_DARWINIA_SETGAMEOPTION*` |
 | 28-U6 | Consequence of F21 (server-row navigation entries removed at the wrong index) in real browsing sessions | [I] | instrument `UpdateJoinGamePage` or step through with a shrinking list |
@@ -2537,7 +2537,7 @@ Page-level constants of `GameMenuWindow` (routed from P18 §13; page behaviour i
 |---|---|---|---|
 | `docs/multiwiniachanges-beta.txt` (Issue 650, listed as fixed) | "Game Menu: X360 B button in menus doesn't always go back" | Structural cases remain where B does nothing: pages without a `BackPageButton` (Main, AuthKeyEntry), any frame in which the `BackPageButton` is not rendered (drop-down list open, window unfocused), and `MessageDialog` (no back button) [C mechanism; I that these were the reported cases] | `code/game_menu.cpp:BackPageButton::Render`, `code/interface/message_dialog.cpp` |
 | `docs/multiwiniachanges-beta.txt` (Issue 558, listed as fixed) | "Menu navigation in the pre-game with controller" | consistent: the lobby builds `m_buttonOrder` and starts the cursor on Play | `GameMenuWindow::SetupMultiplayerPage` |
-| `docs/detailed schedule.txt` "Translation System → Missed out" (Sound Stats/Parameter/Editor/Profile windows, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window) | these windows are untranslated | consistent: literal English captions (§10.3) | P17a strings table |
+| `docs/detailed schedule.txt` "Translation System → Missed out" (Sound Stats/Parameter/Editor/Profile windows, Profile Window, Pokey Window, Network Window, Input Logger, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window) | these windows are untranslated | consistent: literal English captions (§10.3) | [C] grep of the window captions (§10.3) |
 | `docs/RussianFontRequest.txt` | only speccy had Cyrillic glyphs; they were copied to square and editor as a stop-gap | consistent: the three Cyrillic atlas pairs are byte-identical | `data/textures/unicode/*.0410.042f.bmp`, `*.0430.044f.bmp` |
 | `docs/sound changes.txt` | "Sound editor will now use a scrollbar if there are too many events to fit" | consistent (`SoundEditorWindow` creates a `ScrollBar`), but the sound editor is [B:DEBUG] only | `code/interface/soundeditor_window.cpp` |
 
@@ -2557,7 +2557,7 @@ Page-level constants of `GameMenuWindow` (routed from P18 §13; page behaviour i
 | Framework phrase ids and their English text: `dialog_close`, `dialog_ok`, `dialog_cancel`, `dialog_back`, `dialog_multiplefiles`, `editor_coloureditor`, `editor_red`, `editor_green`, `editor_blue`, `editor_alpha`, `error`, `multiwinia_editor_success`, `multiwinia_editor_selectmap`, `multiwinia_menu_back`, `multiwinia_presstotalk`, `authentication_result`, `dialog_auth_status_demo_user` | text | `data/language/*.txt` | own string table (ids may be reused as neutral keys, texts not) |
 | Literal English captions in framework code: "Close", "Close this window", "Value left", "Value right", "New Window", "New Button", "New Scrollbar", "Failed to set requested screen resolution of …", "Failed to set requested sound settings", "Restart Required" / "Please restart Darwinia …" (Linux) | text | `code/interface/darwinia_window.cpp`, `code/interface/input_field.cpp`, `code/game_menu.cpp`, `contrib/eclipse/*`, `code/interface/scrollbar.cpp`, `code/renderer.cpp`, `code/sound/soundsystem.cpp`, `code/interface/prefs_screen_window.cpp` | rewrite |
 | Store URL `http://store.introversion.co.uk` (`App::GetBuyNowURL`), update URL / `autopatch.exe` launch | brand / URL | `code/app.cpp`, `code/UI/UnlockFullGameButton.h`, `code/UI/update_page_buttons.h` | own store/updater URLs from configuration |
-| Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP registers of [09](09_meta_systems.md) and `_work/drafts/P17b_strings.csv`, `_work/drafts/P17a_ui_framework_editor_ui_strings.csv` | own strings |
+| Menu page and button strings (every `multiwinia_*` id used by `code/UI`) and window names | text | enumerated in the IP register of [09](09_meta_systems.md); the text of every id is in `data/language/english.txt` | own strings |
 
 ## Source map
 
@@ -2617,8 +2617,8 @@ UI framework and front-end sources (every file in `contrib/eclipse/`, `code/inte
 | `code/interface/cheat_window.cpp` | cheat buttons [B:DEBUG] |
 | `code/interface/profilewindow.h` | `ProfileWindow` [B:DEBUG] — screen ([32](32_debug_test_and_performance.md)) |
 | `code/interface/profilewindow.cpp` | CPU profiler window [B:DEBUG] |
-| `code/interface/grabber_window.h` | `GrabberWindow` [B:DEBUG] — screen ([32](32_debug_test_and_performance.md)) |
-| `code/interface/grabber_window.cpp` | AVI capture window [B:DEBUG] |
+| `code/interface/grabber_window.h` | `GrabberWindow` [B:DEAD] (DEBUG-only, never instantiated) — screen ([32](32_debug_test_and_performance.md)) |
+| `code/interface/grabber_window.cpp` | AVI capture window [B:DEAD] (DEBUG-only, never instantiated) |
 | `code/interface/gesture_window.h` | `GestureWindow` [B:DEAD] |
 | `code/interface/gesture_window.cpp` | gesture editor [B:DEAD] |
 | `code/interface/soundeditor_window.h` | sound editor windows [B:DEBUG] — screen ([27](27_audio_engine.md)) |
@@ -2984,11 +2984,11 @@ Glyph atlases (`data/textures/unicode/*`, 138 files) feed all UI text; they are 
 | `contrib/systemiv/interface/*` (SystemIV UI components, options and sound-editor windows, style editor) and `contrib/systemiv/lib/eclipse/*` (SystemIV copy of Eclipse) | not referenced by any project file; `eclipse.h` resolves to `contrib/eclipse` (§1.2) | [B:DEAD] |
 | Unused Eclipse API: `EclMaximiseWindow`/`EclUnMaximise`, `EclRegisterPopup`, `EclRegisterTooltipCallback`, `EclRegisterClearFunction`, `EclResetDirtyRectangles`, `EclGetDirtyRects`, `EclGenerateUniqueWindowName`, `EclGetCurrentButton`, `EclButton::MouseMove`; non-Win32 branch of `EclGetAccurateTime` | compiled, never called | [B:FULL] unused |
 | `GestureWindow` (`code/interface/gesture_window.*`) | needs `GESTURE_EDITOR` and `USE_SEPULVEDA_HELP_TUTORIAL` | [B:DEAD] |
-| `GrabberWindow` | `AVI_GENERATOR` (TARGET_DEBUG) and no caller of `DebugKeyBindings::GrabberButton` | [B:DEBUG] unreachable |
+| `GrabberWindow` | compiled only under `AVI_GENERATOR` (TARGET_DEBUG), and its only creator `DebugKeyBindings::GrabberButton` has no caller in any build (`code/interface/debugmenu.cpp`) | [B:DEAD] |
 | `DebugMenu` ("Tools Menu") | opener (F1) commented out | [B:LEGACY] |
 | `CheatWindow`, `ProfileWindow`, sound editor/stats/profile/parameter windows, `CrateHelpWindow` | `CHEATMENU_ENABLED` / `SOUND_EDITOR` / `INCLUDE_CRATE_HELP_WINDOW` (TARGET_DEBUG) | [B:DEBUG] |
 | Map-editor windows, `MultiwiniaWindow`, `NewMapWindow`, `MultiwiniaFileDialog`, `InvalidCratesWindow`, `MultiwiniaOptionsWindow`, `MultiwiniaEditorButton` | `LOCATION_EDITOR` or only reachable from editor code | [B:EDITOR] |
-| `MainMenuWindow` and its buttons, profiles, leaderboards, `ResetLocationWindow`, `PrefsKeybindingsWindow`, `ReallyQuitWindow` (with `GameExitButton`), `SaveOnQuitWindow`, `DemoEndWindow`, `GlobalWorldEditorWindow` | compiled; no reachable opener (P17a/P17b reachability tables) | [B:LEGACY] |
+| `MainMenuWindow` and its buttons, profiles, leaderboards, `ResetLocationWindow`, `PrefsKeybindingsWindow`, `ReallyQuitWindow` (with `GameExitButton`), `SaveOnQuitWindow`, `DemoEndWindow`, `GlobalWorldEditorWindow` | compiled; no reachable opener — the creators are the Darwinia loops `code/main.cpp:GlobalWorldGameLoop` (`MainMenuWindow`) and `GlobalWorldEditorLoop` (`GlobalWorldEditorWindow`), buttons of the legacy `code/interface/mainmenus.cpp` menus (`OptionsMenuWindow::Create` → `DemoEndWindow`, key bindings, profiles, reset location), `code/interface/debugmenu.cpp:DebugKeyBindings::ReallyQuitButton` and `code/sound/soundsystem.cpp:SoundSystem::AreBlueprintsModified` (`SaveOnQuitWindow`, sound editor) [C] grep `new <Class>` | [B:LEGACY] |
 | `ModsWindow`, `NewModWindow` (method bodies inside `#ifdef USE_DARWINIA_MOD_SYSTEM`) | macro never defined | [B:DEAD] |
 | `AboutDarwiniaWindow`, `AboutDarwiniaButton`, `ModsButton` | classes compiled; their only instantiations are inside `#ifdef OBERONBUILD` / `#ifdef USE_DARWINIA_MOD_SYSTEM` (Resolved: P17b tagged `AboutDarwiniaWindow` [B:DEAD]; the class itself is compiled, only its opener is not) | [B:LEGACY] |
 | `BuyNowWindow`, `UpdateAvailableWindow`, `code/UI/ErrorDialog.*`, `code/UI/soundsliderbutton.h` (`VolumeControl`) | not in `Darwinia.vcproj` | [B:DEAD] |

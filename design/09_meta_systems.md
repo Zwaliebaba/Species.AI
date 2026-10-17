@@ -150,7 +150,7 @@ Resolved: P20 described `PageDarwinia` (and hence `CampaignButton`) as "edge-rea
 | In-game contextual help messages | `code/multiwiniahelp.cpp:MultiwiniaHelp::Render` | live (pref `HelpEnabled`) | — | §8.2 |
 | Tutorial instruction tabs | `MultiwiniaHelp::RenderTutorialHelp` | live (tutorials only) | `INCLUDE_TUTORIAL` | §8.4 |
 | Objective tabs (non-tutorial) | `MultiwiniaHelp::Render` | unreachable (renderer under a never-defined macro) | §8.3 | §8.3 |
-| Gamepad control prompts | `code/control_help.cpp:ControlHelpSystem` | live in gamepad mode only (pref `ControlHelpEnabled`) | — | [06](06_player_control_and_input.md) |
+| Gamepad control prompts | `code/control_help.cpp:ControlHelpSystem` | unreachable in Multiwinia [B:LEGACY]: `Render` returns at once whenever `App::Multiplayer()` (every Multiwinia game); `Advance` still runs (its gate is inverted — it returns only when *not* in gamepad mode *and* the pref is non-zero) but nothing it computes is drawn; pref `ControlHelpEnabled` has no visible effect | `ControlHelpSystem::Render`, `ControlHelpSystem::Advance` | [06 §10.1](06_player_control_and_input.md) |
 | Overlay error dialogue inside `GameMenuWindow` (`RenderErrorDialogue`) | `code/UI/GameMenuWindow.cpp` | unreachable (`m_showingErrorDialogue` assignments commented out) | — | §3.14 |
 | `StartSequence` first-time intro | `code/startsequence.cpp` | unreachable (only constructed in `RunBootloader`, which is `#ifdef USE_LOADERS`) | `code/main.cpp:RunBootloader` | §9.4.2, [30 §6](30_scripting_tutorial_and_cutscenes.md) |
 | Boot-loader mini-programs (Spectrum, Matrix, Fodder, Raytrace, Soul, Game of Life ×2, Amiga) | `code/loaders/*` | dead (`USE_LOADERS` commented out) | `code/lib/universal_include.h` L68 | §9.5, Appendix A.1 |
@@ -178,7 +178,7 @@ Resolved: P20 described `PageDarwinia` (and hence `CampaignButton`) as "edge-rea
 | `GameMenu::CreateMenu()` | `Renderer::StartFadeIn(0.25)`; `RemoveAllWindows()`; `g_app->m_multiwinia->Reset()`; `EclRegisterWindow(new GameMenuWindow())`; camera `RequestMode(ModeSphereWorldFocus)`, `SetTarget((-900, 3000, 3970), front (0, 0.5, -1))`, `CutToTarget()`, `SetDebugMode(0)`; `g_app->m_gameMode = GameModeNone`; if `g_app->m_multiwiniaTutorial` is set (returning from a tutorial) the new window's `m_newPage = PageTutorials`; clear the flag; `m_menuCreated = true` | [C] `code/game_menu.cpp:GameMenu::CreateMenu` |
 | `GameMenuWindow` constructor | full screen (0, 0, ScreenW, ScreenH), not resizable / movable / closeable; `m_currentPage = -1`, `m_newPage = PageMain`; **auth gate**: `Authentication_GetKey`, `Authentication_SimpleKeyCheck(key, METASERVER_GAMETYPE_MULTIWINIA)`; if not `AuthenticationAccepted` → `m_newPage = PageAuthKeyEntry` (a stored value `"authkey not found"` is blanked) — gate compiled out under `MULTIWINIA_DEMOONLY`; player name from pref `PlayerName` (default token `multiwina_playername_default` → localised "NewPlayer"), every `%` replaced by a space, stored through `PlayerNameString::Set` (which also writes the pref and saves the prefs file); browser filters from prefs `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (all default 1) | [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::GameMenuWindow` |
 | First `Update` | page −1 → `SetupNewPage(m_newPage)`; on the first update after the sound system is ready the window triggers interface sound `LobbyAmbience` | [C] `GameMenuWindow::Update` |
-| Leaving to a game | the server's sequenced `NET_DARWINIA_START_GAME` sets `m_loadingLocation = true`, `m_requestedLocationId = 999`, `m_gameMode = GameModeMultiwinia`, `m_atMainMenu = false`, `m_hideInterface = false`, `m_atLobby = false`, `g_gameTimer.Reset()`; `MainMenuLoop` exits, stops sound `"MultiwiniaInterface LobbyAmbience"`, calls `GameMenu::DestroyMenu()` (removes the window, fade out) | [C] `code/network/clienttoserver.cpp` (START_GAME handler L2607–2625), `code/main.cpp:MainMenuLoop`, `code/game_menu.cpp:GameMenu::DestroyMenu` |
+| Leaving to a game | the server's sequenced `NET_DARWINIA_START_GAME` sets `m_loadingLocation = true`, `m_requestToggleEditing = false`, `m_requestedLocationId = 999`, `m_gameMode = GameModeMultiwinia`, `m_requestedMission = "null"`, `m_atMainMenu = false`, `m_hideInterface = false`, `m_atLobby = false`, `g_gameTimer.Reset()`; `MainMenuLoop` exits, stops sound `"MultiwiniaInterface LobbyAmbience"`, calls `GameMenu::DestroyMenu()` (removes the window, fade out) | [C] `code/network/clienttoserver.cpp` (START_GAME handler L2607–2625), `code/main.cpp:MainMenuLoop`, `code/game_menu.cpp:GameMenu::DestroyMenu` |
 | Returning | the in-game menu's leave button sets `m_requestedLocationId = -1` and `m_atMainMenu = true`; the main-menu loop re-creates a **fresh** `GameMenuWindow` at `PageMain` (or `PageTutorials` after a tutorial, or `PageAuthKeyEntry` if the key has become invalid). No lobby state survives except preferences | [C] `code/interface/mainmenus.cpp:ExitLevelButton::MouseUp`; [I] fresh object ⇒ no carried state |
 | Results | the end-of-game results are an **in-game overlay** drawn by `Multiwinia::Render` (§3.23); the front end has no results page | [C] absence of a results page in the `GameMenuWindow.h` enum |
 
@@ -322,7 +322,8 @@ flowchart TD
     PASS -- "multiwinia_menu_connect (password non-empty)" --> CONN
     PASS -- "multiwinia_menu_back" --> JOIN
     CONN -- "connected and game type received" --> LOBBY
-    CONN -- "multiwinia_menu_back" --> JOIN
+    CONN -- "multiwinia_menu_back (arrived from PageJoinGame)" --> JOIN
+    CONN -- "multiwinia_menu_back (arrived from PageEnterPassword)" --> NOJ
     CONN -- "disconnect: server full / bad password" --> ERR
     CONN -- "disconnect: kicked / duplicate key / connection error" --> ERR
     ERR -- "multiwinia_menu_back (stored back page)" --> JOIN
@@ -354,7 +355,7 @@ Notes [C] unless stated:
 
 - `GSANY`, `GSSP` and `GSMP` are the same page; single player vs multiplayer is the boolean `m_singlePlayer` (set by `DarwiniaModeButton`, cleared by `SetupMainPage` / `SetupNewOrJoinPage` because LAN/WAN play is compiled in).
 - `PageBuyMeNow` "Back(prev)" returns to whichever page opened it (Main, GameSelect, MapSelect or JoinGame); only the Main edge is drawn.
-- `PageError` stores its back page in `m_errorBackPage` (default `PageMain`); browser-row errors and "server full" / "bad password" disconnects use `PageJoinGame`; kick, duplicate key and connection errors use `PageMain`; any other disconnect reason sends the window straight to `PageMain` without an error page [C] `code/UI/GameServerButton.h:GameServerButton::MouseUp`, `code/network/clienttoserver.cpp` disconnect handler.
+- `PageError` takes its back page from `m_errorBackPage`, which `CreateErrorDialogue(text, backPage = PageMain)` sets (the member itself is initialised to −1 and reset to −1 once the error page is built); browser-row errors and the `Disconnect_ServerFull` / `Disconnect_BadPassword` disconnect reasons use `PageJoinGame`; `Disconnect_KickedByServer`, `Disconnect_DuplicateKey` and the duplicate-client-id connection error use `PageMain`; the separate `NET_DARWINIA_SERVER_FULL` ("ev") handler passes no back page and so uses the default `PageMain` (no code in this tree sends that message; the server reports a full game through `Disconnect_ServerFull`); any other disconnect reason sends the window straight to `PageMain` without an error page (full table: §3.14) [C] `code/UI/GameServerButton.h:GameServerButton::MouseUp`, `code/network/clienttoserver.cpp` (`NET_DARWINIA_DISCONNECT` and `NET_DARWINIA_SERVER_FULL` handlers), `code/UI/GameMenuWindow.cpp:GameMenuWindow::CreateErrorDialogue`.
 - After a Screen-Options Apply the user lands back on Screen Options (all windows rebuilt); after an Other-Options Apply that changed language or large-menu mode all windows are removed and the user lands on `PageMain` (front end) or a fresh `LocationWindow` (in game) — not back in Other Options [C] `code/interface/prefs_screen_window.cpp:SetScreenButton::MouseUp`, `code/interface/prefs_other_window.cpp:ApplyOtherButton::MouseUp`.
 - `ControllerUnpluggedWindow` can appear over any screen (§3.22.4).
 
@@ -645,7 +646,7 @@ Specified in §6.6.
 
 ### 3.18 PageCredits (32) — the live credits
 
-[C] `GameMenuWindow::SetupCreditsPage`, `GameMenuWindow::ReadCredits`, `GameMenuWindow::ReadMultiwiniaBetaTesters`, `code/UI/ScrollingTextButton.h`. Title `dialog_credits`; one `ScrollingTextButton` `credits_box` (small font) at (bx, lY + 1.8bh, bw, lH − 1.5bh − 1.3bh − bh − 2gap); text = phrases `multiwinia_credits_1`, `_2`, … concatenated with `" \n"` until the first missing index; a phrase whose text is exactly `*BETATESTERS` is replaced by every line of `data/multiwinia_betatesters.txt`. Lines starting with `-` render 1.25× larger without the dash (section headings). `BackPageButton(prev)`. Scrolling behaviour of `ScrollingTextButton`: [28 §12.6](28_ui_framework.md). Structure of the shipped English credits [C] `data/language/english.txt` L3051–3116: 66 consecutive phrases `multiwinia_credits_1..66`, 11 of them `-` section headings; phrase 55 is `*BETATESTERS`, expanded to the 69 lines of `data/multiwinia_betatesters.txt`. (Names are real people — IP/personal data, §IP items.)
+[C] `GameMenuWindow::SetupCreditsPage`, `GameMenuWindow::ReadCredits`, `GameMenuWindow::ReadMultiwiniaBetaTesters`, `code/UI/ScrollingTextButton.h`. Title `dialog_credits`; one `ScrollingTextButton` `credits_box` (small font) at (bx, lY + 1.8bh, bw, lH − 1.5bh − 1.3bh − bh − 2gap); text = phrases `multiwinia_credits_1`, `_2`, … concatenated with `" \n"` until the first missing index; a phrase whose text is exactly `*BETATESTERS` is replaced by every line of `data/multiwinia_betatesters.txt`. Lines starting with `-` render 1.25× larger without the dash (section headings). `BackPageButton(prev)`. Scrolling behaviour of `ScrollingTextButton`: [28 §12.6](28_ui_framework.md). Structure of the shipped English credits [C] `data/language/english.txt` L3051–3120: 66 consecutive phrases `multiwinia_credits_1..66`, 11 of them `-` section headings; phrase 55 is `*BETATESTERS`, expanded to the 69 lines of `data/multiwinia_betatesters.txt`. (Names are real people — IP/personal data, §IP items.)
 
 ### 3.19 Compiled-but-unreachable pages (behaviour if revived)
 
@@ -808,7 +809,7 @@ No TimeLimit ⇒ `GetTimeOption()` = −1 and the map PlayTime is ignored; the c
 
 `english.txt` also contains `multiwinia_option_0_5_*`, `0_6_*`, `1_5_*`, `1_6_*`, `2_2_*`, `2_3_*`, `5_6_*`, `5_7_*` (No/Yes) and `5_8_*` (Random/Weighted) — stale labels from an older parameter order; no drop-down uses them [C].
 
-**Tank Battle** (6) — `NumTanks` 3 / 10 / 3 / 1. Mode compiled out of [B:FULL] (`INCLUDEGAMEMODE_TANKBATTLE` off) and its button never registered (§3.4) [B:DEBUG].
+**Tank Battle** (6) — `NumTanks` 3 / 10 / 3 / 1. The mode code (blueprint, dispatch, Tank AI) is compiled into [B:FULL] but never permitted: `App::IsGameModePermitted(6)` is true, and `Multiwinia::AdvanceTankBattle` has a body, only under `INCLUDEGAMEMODE_TANKBATTLE` (defined only for `TARGET_DEBUG`); its button is also never registered (§3.4). Availability [B:DEBUG].
 
 ### 4.3 Lobby-level options outside the blueprint
 
@@ -982,7 +983,11 @@ Metaserver data items (`DataType` values) [C]: Time, MOTD (requested with the la
 
 ### 5.3 What a hosting server advertises (`Server::Advertise`, every server tick)
 
-[C] `code/network/server.cpp:Server::Advertise`. Not advertised when: no map chosen (`m_requestedMap` "null" or empty), `m_noAdvertise`, game type −1, own key fails the simple check, or single player. Otherwise both LAN and WAN registration run.
+[C] `code/network/server.cpp:Server::Advertise`, `Server::Advance`. Two kinds of gate, with different effects:
+- **Skip this tick** (no Start/Stop call is reached, so a registration that is already running is **not** stopped): `m_noAdvertise` (tested by the caller, `Server::Advance`) and no map chosen (`m_requestedMap` "null" or empty; `Advertise` returns before the properties and the Start/Stop logic).
+- **Stop registering** (`permittedToAdvertise` false → `MetaServer_StopRegisteringOverLAN`, and `MetaServer_StopRegisteringOverWAN` + `MatchMaker_StopRequestingIdentity`, if running): game type −1, own key fails `Authentication_SimpleKeyCheck`, or single player (server port −1).
+
+Otherwise both LAN and WAN registration are started if not already running (WAN also starts `MatchMaker_StartRequestingIdentity`).
 
 | Field | Value |
 |---|---|
@@ -1437,7 +1442,7 @@ Methods: `AddVisitedLevel` / `AddVictoryOnLevel` (ignore unknown names and ids >
 | Team kills (`Team::m_teamKills`) | match | Carnage check; added to the session total | [C] |
 | Session total kills (`AchievementTracker::m_totalKills`) | session | Genocide check only | [C] |
 | Visited / won levels | session | Explorer / Master of Multiwinia checks only | [C] |
-| Darwinia single-player level times (`LevelFile::ParseLeaderboardStats`, `LevelFile::m_leaderboardLevelTime`, `GlobalWorld::m_spLevelTimes` written by `TaskManagerInterfaceIcons`) | campaign | no UI reads them [B:LEGACY] | [C] `code/level_file.cpp`, `code/global_world.cpp`, `code/taskmanager_interface_icons.cpp` |
+| Darwinia single-player level times (`LevelFile::ParseLeaderboardStats`, `LevelFile::m_leaderboardLevelTime`, `GlobalWorld::m_spLevelTimes`, written by `TaskManagerInterfaceIcons` on mission completion and by `LevelFile::WriteLeaderboardStats` when a level is saved) | campaign | the only reader is the legacy icon task manager's Objectives screen, whose statistics box shows "Time" = `m_leaderboardLevelTime` + the current game time (while the mission is incomplete) next to Kills / Survivors / Squaddies; no Multiwinia UI reads them [B:LEGACY] | [C] `code/level_file.cpp:LevelFile::ParseLeaderboardStats`, `LevelFile::WriteLeaderboardStats`, `code/global_world.cpp`, `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::RenderObjectives` |
 | Network statistics (bandwidth, latency, sync) | session | debug network window (F9) and the dead benchmark recorder | [32](32_debug_test_and_performance.md) |
 
 There is no statistics screen, no persisted career record and no post-match summary page beyond the in-match game-over overlay.
@@ -1473,7 +1478,7 @@ Design takeaway: leaderboards were planned (TrueSkill-ranked + standard + versus
 ---
 ## 8 Help system and tutorial content
 
-Live help in [B:FULL] consists of: (1) **How To Play** pages in Help and Options (§8.1); (2) **in-game contextual hints** from `MultiwiniaHelp` (§8.2); (3) the **animated game-mode panel** during the pre-game wait (§9.3); (4) the two **tutorials** (§8.4); (5) gamepad **control prompts** from `ControlHelpSystem` (gamepad mode only; [06](06_player_control_and_input.md)). The Darwinia Sepulveda-driven `HelpSystem`, the Darwinia demo tutorials and the older `GameMenuWindow` help pages are dead or unreachable (Appendix A.4, §3.19). All help text lives in `data/language/*.txt`; `data/mwhelp/` holds only 51 BMP images and **no `.txt` files** [C].
+Live help in [B:FULL] consists of: (1) **How To Play** pages in Help and Options (§8.1); (2) **in-game contextual hints** from `MultiwiniaHelp` (§8.2); (3) the **animated game-mode panel** during the pre-game wait (§9.3); (4) the two **tutorials** (§8.4). The gamepad **control prompts** of `ControlHelpSystem` are never drawn in Multiwinia (`ControlHelpSystem::Render` returns when `App::Multiplayer()`; §1.2.3, [06 §10.1](06_player_control_and_input.md)). The Darwinia Sepulveda-driven `HelpSystem`, the Darwinia demo tutorials and the older `GameMenuWindow` help pages are dead or unreachable (Appendix A.4, §3.19). All help text lives in `data/language/*.txt`; `data/mwhelp/` holds only 51 BMP images and **no `.txt` files** [C].
 
 ### 8.1 Help pages ("Help and Options" → "How To Play") [B:FULL]
 
@@ -1692,7 +1697,7 @@ flowchart TD
       CO["Camera ModeSphereWorldOutro after 70 s"]:::legacy --> CL
     end
     subgraph DEAD["Not compiled or never constructed"]
-      RB["RunBootloader"]:::dead --> SS["StartSequence"]:::dead
+      RB["RunBootloader"]:::dead --> SS["StartSequence"]:::legacy
       RB --> L8["Speccy / Matrix / Fodder / RayTrace / Soul / GoL / GoLGlow / Amiga"]:::dead
       AM["AttractMode"]:::dead
       BM["BenchMark"]:::dead
@@ -1815,7 +1820,7 @@ A small keyframed 2D cartoon (sprites moving, rotating, fading) in a framed box 
 | `GameTypeAssault` | `animations/assault_defend.anim` |
 | `GameTypeRocketRiot` | `animations/rocket.anim` |
 | `GameTypeBlitzkreig` | `animations/blitz.anim` |
-| `GameTypeTankBattle` (compiled out) | none → no panel |
+| `GameTypeTankBattle` (not permitted in FULL) | none → no panel |
 
 - Created lazily in `MultiwiniaHelp::Advance` (which returns early unless `g_app->Multiplayer()`) when `m_animatedPanel == NULL && Multiwinia::GameInGracePeriod()` (`m_gracePeriodTimer > 0`). If the file cannot be opened, no panel.
 - Deleted only by `MultiwiniaHelp::Reset()` (from `App::ShutdownCurrentGame`) — created once per match.
@@ -1880,7 +1885,7 @@ Every Multiwinia match starts the same way [C] `code/multiwinia.cpp:Multiwinia::
 
 #### 9.4.2 `StartSequence` — first-time intro [B:LEGACY] (summary; timeline in [30 §6](30_scripting_tutorial_and_cutscenes.md))
 
-Compiled but never constructed: its only `new StartSequence()` is in `RunBootloader` (`code/main.cpp` L1248, inside `#ifdef USE_LOADERS`), which would play it when pref `BootLoader == "firsttime"` on the first Darwinia campaign launch, then set the pref to `"random"`. Mechanism: up to 90 s (skippable with `SkipMessage` = Enter / Esc / pad Start/A/B/Y), music event `StartSequence`, camera flight `Camera::ModeSphereWorldIntro` from deep space to the world, ten timed typewriter captions `intro_1..10` (20 characters/s, blinking block cursor), fade from black over 0–3 s and to white over 87–89 s, a growing 3D line grid from 50 s. There is **no Multiwinia-mode intro** in this tree [C].
+Compiled but never constructed: its only `new StartSequence()` is in `RunBootloader` (`code/main.cpp` L1248, inside `#ifdef USE_LOADERS`), which would play it when pref `BootLoader == "firsttime"` on the first Darwinia campaign launch, then set the pref to `"random"`. Mechanism: up to 90 s (skippable with `SkipMessage` = Enter / Esc / pad Start/A/B/Y; also ends on `App::m_requestQuit`), music event `StartSequence`, camera flight `Camera::ModeSphereWorldIntro` from deep space to the world, ten timed typewriter captions `intro_1..10` (20 characters/s, blinking block cursor), fade from black over 0–3 s and to white over 87–89 s, a growing 3D line grid from 50 s. There is **no Multiwinia-mode intro** in this tree [C].
 
 #### 9.4.3 `DemoEndSequence` [B:DEAD]
 
@@ -2124,7 +2129,7 @@ Order and values exactly as `PrefsManager::CreateDefaultValues` emits them in th
 
 Then every line of `default_preferences.txt` is added with overwrite (§11.11) — but only if `g_app->m_resource` can open it at that moment; then `Load` forces `MultiwiniaControlMethod = 1`; then `Renderer::Initialise` writes the screen keys and saves (§11.5). Keys **not** in the first-run set (e.g. `ScreenWidth`, `LargeMenus`, `AutomaticCamera`, `NetworkUsePortForwarding`, `PlayerName`) take the per-call-site default until first written — and those defaults are not always consistent (§11.13).
 
-`default_preferences.txt` availability [C build lists; I effect]: the prefs manager is created when only `init.dat` has been parsed (`code/app.cpp:App::App` L217–219), and `tools/init.list` does not contain `default_preferences.txt` (it holds shaders, `sprites/darwinian.bmp`, `textures/xboxlivearcade.bmp`, `textures/ivlogo.bmp`); the file is in `main.dat`, parsed later (L337). In a packaged install the data-file overrides are therefore probably **not** applied on first run unless a loose `data/default_preferences.txt` exists — the built-in values above apply instead (e.g. `WaitVerticalRetrace` absent, `NetworkServerPort` absent → call-site defaults). 09-U4.
+`default_preferences.txt` availability [C]: the prefs manager is created when only `init.dat` has been parsed (`code/app.cpp:App::App` L217–219), and `tools/init.list` does not contain `default_preferences.txt` (it holds shaders, `sprites/darwinian.bmp`, `textures/xboxlivearcade.bmp`, `textures/ivlogo.bmp`); the file is in `main.dat`, parsed later (L337). So in an install whose data are only the `.dat` archives the data-file overrides are **not** applied on first run — the first-run defaults come only from code (the built-in values above; e.g. `WaitVerticalRetrace` absent, `NetworkServerPort` absent → call-site defaults). They are applied only if a loose `data/default_preferences.txt` can be read at that moment (as in the source tree); whether a retail install shipped such a loose copy is open (09-U4).
 
 ### 11.3 Related stores (not `preferences.txt`)
 
@@ -2266,8 +2271,8 @@ Hidden members that Apply also writes (no visible control in Multiwinia; values 
 
 | Member | Pref key | Constructor read (default) | What Apply writes | Engine effect |
 |---|---|---|---|---|
-| `m_controlHelpEnabled` | `ControlHelpEnabled` (`OTHER_CONTROLHELPENABLED`) | 1 | same value | gamepad button-prompt overlays: `ControlHelpSystem::Advance` / `Render` only run in gamepad mode **and** pref ≠ 0; `TaskManagerInterfaceIcons::Render*` draw pad prompts under the same condition [C] `code/control_help.cpp:ControlHelpSystem::Advance`, `code/taskmanager_interface_icons.cpp` |
-| `m_difficulty` | `Difficulty` (`OTHER_DIFFICULTY`) | at top level (`m_locationId == -1`): `GetInt(…, 1) − 1`, clamped ≥ 0; else `g_app->m_difficultyLevel` | only at top level: pref = `m_difficulty + 1`, `g_app->m_difficultyLevel = m_difficulty` | Darwinia campaign difficulty; `App::UpdateDifficultyFromPreferences` body commented out [B:LEGACY] |
+| `m_controlHelpEnabled` | `ControlHelpEnabled` (`OTHER_CONTROLHELPENABLED`) | 1 | same value | **no visible effect in Multiwinia**: `ControlHelpSystem::Render` returns immediately whenever `App::Multiplayer()`, and its in-location test (gamepad mode **and** pref ≠ 0) is reached only in Darwinia modes; `ControlHelpSystem::Advance` has the test inverted (returns when *not* gamepad **and** pref ≠ 0, so it runs in gamepad mode **or** with pref 0); the other readers, `TaskManagerInterfaceIcons::Render*`, belong to the icon task manager, which Multiwinia never creates [B:LEGACY] [C] `code/control_help.cpp:ControlHelpSystem::Render`, `ControlHelpSystem::Advance`, `code/taskmanager_interface_icons.cpp` |
+| `m_difficulty` | `Difficulty` (`OTHER_DIFFICULTY`) | at top level (`m_locationId == -1`): `GetInt(…, 1) − 1`, clamped ≥ 0; else `g_app->m_difficultyLevel` | only at top level: pref = `m_difficulty + 1`, `g_app->m_difficultyLevel = m_difficulty` | Darwinia campaign difficulty [B:LEGACY]. **Not a desync path in Multiwinia**: Apply skips the write during a match (`m_locationId` is 999, not −1), and every level load resets it — `LevelFile::LevelFile` calls `App::UpdateDifficultyFromPreferences`, which assigns `m_difficultyLevel = 0` (its preference read is commented out), and `Location::Init` copies that 0 into `LevelFile::m_levelDifficulty` (a map file cannot carry a `Difficulty` block; only mission files are parsed for one). So the level is 0 on every peer and its consumers — `EntityBlueprint::GetStat` (speed only, ×(1 + d/10), not SpaceInvader), the load factors of `LevelFile::ParseBuildings` / `ParseInstantUnits`, and the direct readers `SpawnPoint::Advance`, `SporeGenerator`, `AntHill` and `SpamReloadTime` (`code/worldobject/spam.cpp`) — are inert [C] `code/app.cpp:App::UpdateDifficultyFromPreferences`, `code/level_file.cpp:LevelFile::LevelFile`, `code/location.cpp:Location::Init`, `code/interface/prefs_other_window.cpp:ApplyOtherButton::MouseUp`, `code/worldobject/entity.cpp:EntityBlueprint::GetStat` |
 | `m_bootLoader` | `BootLoader` (`OTHER_BOOTLOADER`) | string, default `"random"`: `none` → 0, `random` → 1, anything else → 2 | 0 → `"none"`, 1 → `"random"`, 2 → `"firsttime"` | `RunBootloader` only `#ifdef USE_LOADERS` → no effect [B:DEAD] |
 | `m_automaticCamera` | `AutomaticCamera` (`OTHER_AUTOMATICCAM`) | 0 | same | `Camera::UpdateEntityTrackingMode`: 1 = off, 2 = on, anything else = auto (on iff gamepad input mode); `SwitchEntityTracking(on)` (suppressed while free-look is held). `Task::TargetSquad`: if 0 and gamepad → 2; if 2 the camera tracks the newly spawned squad [C] `code/camera.cpp:Camera::UpdateEntityTrackingMode`, `code/taskmanager.cpp:Task::TargetSquad` — the closest thing to "auto camera" in the game |
 | `m_largeMenus` | `LargeMenus` (`OTHER_LARGEMENUS`) | 0 | same; `g_app->m_largeMenus = (value == 2)` (Vista media-centre branch dead) | "ten-foot" UI scale for `DarwiniaWindow::GetMenuSize` / `SetMenuSize`: `scale = 0.96 × screenH / 460` [C] `code/interface/darwinia_window.cpp:DarwiniaWindow::GetMenuSize`; also applied at start-up in `App::Initialise`; full-screen `GameOptionsWindow`s use screen fractions, so it only affects small legacy-style windows |
@@ -2305,7 +2310,7 @@ Bindable controls (`s_controls`, label id → English; `instant` flag): 0 Camera
 
 ### 11.11 Every key in `data/default_preferences.txt`
 
-One row per line (17 lines, CRLF) [C] `data/default_preferences.txt`. Consulted **only on first run** (or after the corruption reset), each line added with `s_overwrite = true`, so its values replace the built-in first-run values; an existing `preferences.txt` is never merged with it [C] `PrefsManager::CreateDefaultValues` — and possibly not at all in packaged installs (§11.2, 09-U4).
+One row per line (17 lines, CRLF) [C] `data/default_preferences.txt`. Consulted **only on first run** (or after the corruption reset), each line added with `s_overwrite = true`, so its values replace the built-in first-run values; an existing `preferences.txt` is never merged with it [C] `PrefsManager::CreateDefaultValues` — and not at all in an install that carries it only inside `main.dat` (§11.2; packaging question 09-U4).
 
 | Line | Key = value | Type as parsed | Meaning | Live reader(s) | Effective? |
 |---|---|---|---|---|---|
@@ -2341,7 +2346,7 @@ Every key read or written by compiled code (76 distinct literal keys from the ac
 | `BootLoader` | String | `firsttime` | `random` (Other Options), `none` (`RunBootloader`) | hidden | `RunBootloader` (`USE_LOADERS`, off); it would also rewrite it to `random` after the intro | [B:DEAD] |
 | `BypassNetwork` | Int | 0 | — | — | none | unused |
 | `ChristmasEnabled` | Int | — | 1 | — | read into `PrefsOtherWindow::m_christmas`, never used | unused |
-| `ControlHelpEnabled` | Int | — | 1 | hidden | §11.8 | [B:FULL] |
+| `ControlHelpEnabled` | Int | — | 1 | hidden | §11.8 (read and written, but no visible effect in Multiwinia) | [B:LEGACY] |
 | `ControlMethod` | Int | 1 | none (−1), 0 | legacy window | §11.9, §11.11 | [B:FULL] / [B:LEGACY] |
 | `ControlMouseButtons` | Int | 3 | 3 | legacy (Mac) | `code/main.cpp:SendTeamControlsToNetwork` (`numMouseButtons`) | [B:FULL] |
 | `ControlRemap` | Int | — | none (−1) | — | `LocationInput::SelectObjectUnderMouse`: if `== 0`, cannot select a new object while something is selected; default −1 → feature off | [B:FULL] |
@@ -2427,7 +2432,7 @@ Every key read or written by compiled code (76 distinct literal keys from the ac
 
 ### 11.14 Options a player might expect that do **not** exist
 
-Verified by grep over `code/` for the option names and for any preference key containing them [C] (`P17b_prefs_accesses.csv`):
+Verified by grep over `code/` for the option names and for any preference key containing them [C]:
 
 | Option | Status |
 |---|---|
@@ -2562,7 +2567,7 @@ Every [U] and every design-critical [I] in this document. Resolved during synthe
 | 09-U1 | Did the retail Steam / Xbox Live build have a real achievement layer replacing the `App::EarnedAchievement` / `GiveAchievement` stubs, and were achievements persisted (`achievements.txt`)? | [U] | the retail branch or a retail binary; not in this tree |
 | 09-U2 | Which authentication key file shipped: start-up reads `<profile>authkey.dev`, typed keys are written to `<profile>authkey` (support INI and installers reference `authkey`). If the retail build matched this tree, hand-typed keys were lost on restart | [U] | retail binary / release branch, or a retail install's profile folder |
 | 09-U3 | Final `TimeLimit` after picking a map with a non-zero `PlayTime`: timing-dependent (map PlayTime if the lobby is built before the echo — the usual case — else the blueprint default) | [I] | instrumented run logging `GAMEOPTION_GAME_PARAM` versions on host and clients |
-| 09-U4 | Whether `default_preferences.txt` is applied on first run in a packaged install (prefs created when only `init.dat` is parsed; the file lives in `main.dat`) — affects first-run `NetworkServerPort`, `WaitVerticalRetrace`, `DarwinianScaleFactor` | [I] | first launch of a packaged build with an empty profile folder; inspect the written `preferences.txt` |
+| 09-U4 | Whether a retail install also shipped a loose `data/default_preferences.txt` (the code shows the copy inside `main.dat` cannot be read when the first-run defaults are built, because only `init.dat` is parsed then) — decides first-run `NetworkServerPort`, `WaitVerticalRetrace`, `DarwinianScaleFactor` | [U] | first launch of a packaged build with an empty profile folder; inspect the written `preferences.txt` |
 | 09-U5 | Could the external metaserver inject key `"dy"` into listings (which would make the "show passworded games" filter hide those servers)? | [U] | metaserver source or packet capture |
 | 09-U6 | Exact visual of the 1.0 s menu transition (slide vs fade, curve) used by every page change | [U] | [24](24_rendering.md)/[28](28_ui_framework.md) `Renderer::RenderMenuTransition`, or a run |
 | 09-U7 | Whether the metaserver protocol could carry leaderboard / TrueSkill data; none of the defined fields is used for it (`PLAYERSCORE` unused) | [U] | metaserver source |
@@ -2603,7 +2608,7 @@ Every [U] and every design-critical [I] in this document. Resolved during synthe
 
 ## IP items
 
-All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. Complete phrase-id inventories for this area: `_work/drafts/P17b_strings.csv` (194 ids) and `_work/drafts/P02_game_modes_strings.csv` (87 ids).
+All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. The phrase ids this area uses (194 front-end ids and 87 game-mode ids) are the `LANGUAGEPHRASE` literals of the Source-map code files; the working inventories were generated into `_work/drafts/P17b_strings.csv` and `_work/drafts/P02_game_modes_strings.csv` (provenance only).
 
 | Item | Kind | Ref | Neutral placeholder |
 |---|---|---|---|
@@ -2630,12 +2635,12 @@ All English strings behind the phrase ids are Introversion text (`data/language/
 | Loader / intro / credits music (`speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`) — third-party chiptune artists | audio (third-party licence) | `data/sounds.txt` Music events | licensed / commissioned tracks |
 | Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character), loader texts `bootloader_*`, Matrix block-letter product-name mask, Spectrum / demo-group art (`program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp`) | text / brand / art | Appendix A.1, [30 §6](30_scripting_tutorial_and_cutscenes.md) | new texts and art |
 | Distributor splash / video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`), distributor origin tag `buka` | third-party brand | `OberonLoader`, `EgamesLoader`, `tools/build_multiwinia_retail_russian.bat` | none (drop) |
-| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `P17b_strings.csv` | generic equivalents; do not copy the string table verbatim |
+| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `data/language/english.txt` (phrase ids used by `code/UI/GameMenuWindow.cpp` and the `code/interface/*` windows of the Source map) | generic equivalents; do not copy the string table verbatim |
 | Defaults "NewPlayer", "NewServer" | text | §11.10 | keep generic or rename |
 
 ## Source map
 
-One row per file that implements or feeds this document's subject (530 rows), generated by `_work/scripts/S_09_source_map.py` from `_work/manifest.csv` (run `python3 -I S_09_source_map.py manifest.csv`).
+One row per file that implements or feeds this document's subject (534 rows), generated by `_work/scripts/S_09_source_map.py` from `_work/manifest.csv` (run `python3 -I S_09_source_map.py manifest.csv`).
 
 | File | Role |
 |---|---|
@@ -2730,12 +2735,13 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 | `code/benchmark.h` | benchmark declarations (§9.1) |
 | `code/camera.cpp` | shift-to-speed-up hint, AutomaticCamera, outro to credits (§8.2, §11.8, §9.6.2) |
 | `code/clouds.cpp` | Sky Detail effect (§11.6) |
-| `code/control_help.cpp` | gamepad control prompts gated by `ControlHelpEnabled` (§11.8) |
+| `code/control_help.cpp` | gamepad control prompts; never drawn in Multiwinia (`Render` returns when `Multiplayer()`), so `ControlHelpEnabled` has no effect (§1.2.3, §11.8) |
 | `code/control_help.h` | control help declarations (§11.8) |
 | `code/demoendsequence.cpp` | prologue end sequence, dead (§9.4.3) |
 | `code/demoendsequence.h` | demo-end sequence declarations (§9.4.3) |
 | `code/game_menu.cpp` | `GameMenu` controller, map catalogue, layout helpers, `PlayerNameString`, page names (§2) |
 | `code/game_menu.h` | `IS_DEMO`, menu constants, menu widget classes (§2, §6.1) |
+| `code/global_world.cpp` | `GlobalWorld::m_spLevelTimes` store (§7.4.1) |
 | `code/helpsystem.cpp` | Darwinia context help, dead (Appendix A.4) |
 | `code/helpsystem.h` | Darwinia help ids, 90 s interval (Appendix A.4) |
 | `code/interface/chatinput_window.cpp` | chat input window and field, /name command (§5.13) |
@@ -2776,6 +2782,7 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 | `code/interface/save_on_quit_window.h` | save-on-quit declarations (Appendix A.5) |
 | `code/interface/userprofile_window.cpp` | user-profile windows, unreachable (Appendix A.6) |
 | `code/interface/userprofile_window.h` | user-profile declarations (Appendix A.6) |
+| `code/level_file.cpp` | difficulty reset to 0 on every level load, leaderboard-stat parse/write (§7.4.1, §11.8) |
 | `code/lib/input/inputdriver_prefs.cpp` | `pref <key>` input driver (§11.12) |
 | `code/lib/language_table.cpp` | phrase lookup, input-mode tables, word wrap (§10.1) |
 | `code/lib/language_table.h` | `LANGUAGEPHRASE` macros (§10.1) |
@@ -2829,10 +2836,12 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 | `code/rocket_status_panel.h` | status panel members (§7.4.2) |
 | `code/startsequence.cpp` | first-time intro, never constructed (§9.4.2) |
 | `code/startsequence.h` | intro declarations (§9.4.2) |
+| `code/taskmanager_interface_icons.cpp` | legacy Objectives screen: SP level-time statistics box; pad prompts (§7.4.1, §11.8) |
 | `code/team.cpp` | entity-detail distances, demo name prefix (§6.1, §11.6) |
 | `code/testharness.cpp` | campaign test harness, dead (§9.1) |
 | `code/testharness.h` | test harness declarations (§9.1) |
 | `code/water.cpp` | Water Detail effect (§11.6) |
+| `code/worldobject/entity.cpp` | `EntityBlueprint::GetStat` speed scaling by difficulty, inert in Multiwinia (§11.8) |
 | `code/worldobject/nuke.cpp` | Wrong Game achievement check (§7.1) |
 | `contrib/systemiv/lib/metaserver/authentication.cpp` | key status, demo key, hashing, auth thread (§6.3) |
 | `contrib/systemiv/lib/metaserver/authentication.h` | `AUTHENTICATION_KEYLEN`, status codes (§6.3) |
@@ -3209,7 +3218,7 @@ One row per file that implements or feeds this document's subject (530 rows), ge
 
 **Amiga cracktro (`AmigaLoader`)** [C] `code/loaders/amiga_loader.cpp`, `code/3d_sierpinski_gasket.cpp`: canvas 320 × 256; 4000 stars in a 1024 × 768 field moving left at 20–220 px/s (only ≈ 10 % visible — quirk); from 10 s a 10 000-point chaos-game Sierpinski pyramid (apex (0, 0, 20), base (±20, ±20, −20)) in `gluPerspective(80°, 1.33, 1, 1000)` with oscillating scale (`sin(4t) + 1.25` after 12 s) and a bang-bang pendulum spin (initial phase 20, ±2.1 accel); bouncing two-part logo `textures/dmacrew.bmp`; sine scroller `bootloader_amiga` at 450 px/s, pitch 32 px, glyph height 55 with shadow; fade to black from 72 s over 15 s; ends at 89 s.
 
-**Distributor loaders** [B:DEAD] (no call site even when enabled): `EgamesLoader` (`EGAMESBUILD`) — plays `cinemaware.avi` (absent from `data/`) on a tilted screen in 60° perspective with a static crowd of unit sprites, replacing the sound callback with AVI audio (silence-fill pointer bug `_buffer + n·sizeof(short)`), then `RestartSoundLibrary()` and 1 s black; `OberonLoader` (`OBERONBUILD`, not skippable) — distributor splash 0–1 s fade in, hold to 2.5 s, cross-fade to the publisher logo 2.5–3.5 s (400 × 400 at (200, 100)), hold to 5 s, fade out to 6.5 s [C] `code/loaders/egames_loader.cpp`, `code/loaders/oberon_loader.cpp`.
+**Distributor loaders** [B:DEAD] (no call site even when enabled): `EgamesLoader` (`EGAMESBUILD`) — plays `cinemaware.avi` (absent from `data/`) on a tilted screen in 60° perspective with a static crowd of unit sprites, replacing the sound callback with AVI audio (silence-fill pointer bug `_buffer + n·sizeof(short)`), then `RestartSoundLibrary()` and 1 s black; `OberonLoader` (`OBERONBUILD`, not skippable) — distributor splash 0–1 s fade in, hold to 2.5 s, cross-fade from the first logo `textures/msn_oberon_combosplash.bmp` to the second, `textures/ivlogo.bmp` (the developer's logo), 2.5–3.5 s (400 × 400 at (200, 100)), hold to 5 s, fade out to 6.5 s [C] `code/loaders/egames_loader.cpp`, `code/loaders/oberon_loader.cpp`.
 
 ### A.2 `RequestBootloaderSequence` fade-out bug
 

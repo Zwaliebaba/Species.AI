@@ -2,7 +2,7 @@
 
 > Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
-> Sources merged: X1a_text_formats, X1b_asset_formats, P14_platform_lib (29.T, 29.P, 29.L, 29.D, 29.B), P15_network (§4 encoding, §5.2 team controls), P11_terrain_world (level-file and `.mwm` notes), P16_sound (sound grammar cross-checks), P10_input_camera (binding grammar cross-checks), P19 (script opcodes), _meta_* notes, phase2_log.md. Spot-verified against the code for this document (every parser named in §2 was re-read; survey scripts re-run, §1.4).
+> Sources merged: X1a_text_formats, X1b_asset_formats, P14_platform_lib (29.T, 29.P, 29.L, 29.D, 29.B), P15_network (§4 encoding, §5.2 team controls), P11_terrain_world (level-file and `.mwm` notes), P16_sound (sound grammar cross-checks), P10_input_camera (binding grammar cross-checks), P19 (script opcodes), _meta_* notes, phase2_log.md. Spot-verified against the code for this document (every parser named in §2 was re-read; surveys re-run, §1.4). The labels X1a, X1b, P10–P19 (sometimes with a draft section number) in "Resolved:" and "Verification" notes name these analysis drafts; they record provenance only and are never the evidence for a claim — the evidence is the cited code or data.
 
 ## Contents
 
@@ -30,7 +30,7 @@
 
 ### 1.1 Scope
 
-Every file format the Multiwinia code base reads or writes — shipped text definitions under `data/`, binary assets, packed archives, build-time lists, files written at run time into the profile directory, and the binary wire container used by the network layer — has its own section below, introduced by an HTML anchor `fmt-<id>` that matches a row of `_work/formats_registry.csv`. Semantics that belong to a subsystem (what a building column *does*, what a sound parameter *sounds like*) are specified in the subsystem's document; this document fixes **syntax, types, units, defaults, ranges, parser behaviour and failure modes** precisely enough to write a compatible reader and writer.
+Every file format the Multiwinia code base reads or writes — shipped text definitions under `data/`, binary assets, packed archives, build-time lists, files written at run time into the profile directory, and the binary wire container used by the network layer — has its own section below, introduced by an HTML anchor `fmt-<id>` (every id is listed in the format index of §2). Semantics that belong to a subsystem (what a building column *does*, what a sound parameter *sounds like*) are specified in the subsystem's document; this document fixes **syntax, types, units, defaults, ranges, parser behaviour and failure modes** precisely enough to write a compatible reader and writer.
 
 Every format section follows the same template: purpose · files · encoding · formal grammar (EBNF) or byte layout · field table (name, type, units, default, range, semantics, parser ref) · verification · minimal valid example (written for this document, not copied from shipped data) · discrepancies and edge cases.
 
@@ -58,7 +58,7 @@ Determinism note [C]: F32 rounding is applied by `iv_atof`; any field marked F32
 * **MISSING ⇒ CRASH** — the parser calls `GetNextToken()` without first checking `TokenAvailable()`; a short line yields a `NULL` token that is passed to `atoi`/`atof`/`strcpy`/`stricmp`/`strdup` → access violation (or CRT invalid-parameter termination) in release [C code path; I exact failure mode — no `_set_invalid_parameter_handler` exists in `code/` or `contrib/systemiv/lib`].
 * **fatal** — `AppReleaseAssert`, `AppAssert` or `AppAbort`: message box "Fatal Error", `blackbox.txt`, process ends ([31 §6.5](31_platform_build_and_tools.md)) [C] `contrib/systemiv/lib/debug_utils.h` (`AppAssert` is defined as `AppReleaseAssert`).
 * **debug assert** — `AppDebugAssert`: does nothing in Release except showing the OS cursor; parsing continues [C] `contrib/systemiv/lib/debug_utils.h`.
-* **Verification** for each format names (a) the parser function(s) re-read for this document and (b) the survey script and the number of shipped files it checked. Survey scripts live in `_work/scripts/` (X1a_*, X1b_*, P11_mapcrc.py, P10_bindings.py, P16_parse_sounds.py, S_31_archive_contents.py) and were re-run for this document with `python3 -I` on the source tree at commit `f909630`; results quoted below are from those runs (e.g. `X1a_level_survey.py` reproduced `_work/drafts/X1a_level_field_usage.csv` byte-for-byte).
+* **Verification** for each format names (a) the parser function(s) re-read for this document and (b) the scripted survey of the shipped files and how many it checked. Each survey is an independent re-implementation of the named parser's rules (tokeniser, block grammar, field types) applied to every shipped file of the format; all were run for this document with `python3 -I` on the source tree at commit `f909630`, and the results quoted below are from those runs (provenance: the survey scripts are kept under `_work/scripts/`).
 
 ---
 
@@ -125,7 +125,7 @@ Kind: **text** (line-oriented text parsed by the shared tokeniser unless noted),
 | [fmt-support-ini](#fmt-support-ini) | Crash-report file list | text (INI) | `MultiwiniaSupport.ini` | `contrib/XCrashReport/Dlg.cpp:CDlg::GetFileDetails` | support tool |
 | [fmt-testbedconfig](#fmt-testbedconfig) | Test-bed sequence | text | `testbedconfig.txt` | `code/UI/GameMenuWindow.cpp:GameMenuWindow::ReadTestBedConfig` | [B:DEAD] |
 
-Format ids added by this document (appended to `_work/formats_registry.csv`): `binary-common`, `directory`, `map-crc`, `png-output`, `server-history`, `team-controls`, `blackbox`, `crash-report`, `debug-log`, `origin-version`, `language-errors`, `user-info`.
+Format ids added by this document (not in the original format inventory): `binary-common`, `directory`, `map-crc`, `png-output`, `server-history`, `team-controls`, `blackbox`, `crash-report`, `debug-log`, `origin-version`, `language-errors`, `user-info`.
 
 ---
 
@@ -212,7 +212,7 @@ rest_of_line  = text after the leading separators, verbatim ;
 
 Consequences used by every grammar: `:` and `,` are interchangeable with blanks (`pos: 1, 2, 3` ≡ `pos 1 2 3`); no value can contain a blank, `:`, `,` or `#` unless the consumer reads `REST`; a `REST` value can never begin with blank, `:` or `,`; keyword case is decided by each parser.
 
-**Encodings shipped** [C] `X1a_text_survey.py` → `_work/drafts/X1a_encoding_survey.csv` (190 text files in scope) plus the X1b `file(1)` survey of `.shp`/`.anim`/`sounds.txt`/`effects.txt`/`stats.txt`/`gestures.txt`:
+**Encodings shipped** [C] scripted encoding survey of the 190 text files in scope (BOM, byte order, line endings, final LF) plus a `file(1)` survey of `.shp`/`.anim`/`sounds.txt`/`effects.txt`/`stats.txt`/`gestures.txt`:
 
 | Group | Files | Encoding | Line ends |
 |---|---|---|---|
@@ -321,7 +321,7 @@ UTF-16 reader [C] `UnicodeTextReader::CleanLine`: it calls `m_unicodeline.StrOff
 | `Seek(SEEK_END, off)` | `fseek` | `offset = size − off` |
 | `GetFileType()` | extension after the last `.` | same |
 
-**Verification.** `binary_stream_readers.cpp` re-read for `BinaryDataReader::ReadU8`, `ReadS16`; other rows from P14 §29.B.1 [C]. Consequence [I]: a parser that tests `m_eof` after a final successful `ReadBytes` behaves differently for loose and archived files; no shipped parser in scope does so (the BMP loader debug-asserts `!m_eof` only before the pixel rows).
+**Verification.** `binary_stream_readers.cpp` re-read for `BinaryDataReader::ReadU8`, `ReadS16`; other rows as read in `contrib/systemiv/lib/filesys/binary_stream_readers.cpp` by the P14 draft (not re-read) [C]. Consequence [I]: a parser that tests `m_eof` after a final successful `ReadBytes` behaves differently for loose and archived files; no shipped parser in scope does so (the BMP loader debug-asserts `!m_eof` only before the pixel rows).
 
 **Minimal valid example.** Bytes `34 12 78 56` read with `ReadS16` twice give 0x1234 and 0x5678; read with `ReadS32` once give 0x56781234.
 
@@ -367,9 +367,9 @@ packedint   = u8 (0..254)  |  0xFF , i32 ;  (* any value < 0 or >= 255 takes the
 | UNICODE length | packedint | `L"[SAFESTRING"` (sic, missing `]`) when out of range | ≤ 10 240 units | – | `ReadUnicodeString` |
 | typed getters on missing/mistyped data | – | INT −1, FLOAT −1.0, CHAR `'?'` (63), STRING `"[SAFESTRING]"`, BOOL false, ULLONG 0xFFFFFFFFFFFFFFFF, UNICODE `L"[SAFESTRING"` | – | safe defaults | `contrib/systemiv/lib/tosser/directory.h` (`DIRECTORY_SAFE*`) |
 
-Other rules [C]: `CreateData(name, …)` replaces an existing field of the same name; name lookup is linear and case-sensitive (`strcmp`), sub-directory paths use `/`; `Directory::Write(int &length)` returns a heap buffer with a trailing NUL not counted in `length`. When a dynstring length is out of range the bytes are **not skipped**, so the rest of the stream is misparsed [C] `ReadDynamicString`. Datagrams are received into 1 500-byte buffers (`MAX_PACKET_SIZE`), so a serialised letter larger than 1 500 bytes is never delivered [I, P15].
+Other rules [C]: `CreateData(name, …)` replaces an existing field of the same name; name lookup is linear and case-sensitive (`strcmp`), sub-directory paths use `/`; `Directory::Write(int &length)` returns a heap buffer with a trailing NUL not counted in `length`. When a dynstring length is out of range the bytes are **not skipped**, so the rest of the stream is misparsed [C] `ReadDynamicString`. Datagrams are received into 1 500-byte buffers (`MAX_PACKET_SIZE`), so a serialised letter larger than 1 500 bytes is never delivered [I].
 
-**Verification.** `Directory::Read`, `DirectoryData::Read/Write`, `ReadPackedInt`, `WritePackedInt`, `ReadDynamicString`, `ReadUnicodeString`, `ReadVoidData`, `ReadNumbersData`, `WriteNetworkValue` re-read for this document. No shipped sample; sizes cross-checked against P15 §4.3 (node overhead 7 bytes for name `ba`).
+**Verification.** `Directory::Read`, `DirectoryData::Read/Write`, `ReadPackedInt`, `WritePackedInt`, `ReadDynamicString`, `ReadUnicodeString`, `ReadVoidData`, `ReadNumbersData`, `WriteNetworkValue` re-read for this document. No shipped sample; sizes cross-checked against [22 §4](22_determinism_and_networking.md) (node overhead 7 bytes for name `ba`).
 
 **Minimal valid example** (written for this document): a node `ab` with one INT field `cd` = 5 and no children, 15 bytes:
 
@@ -639,7 +639,7 @@ Load rules [C]:
 5. Difficulty scaling (Darwinia legacy) for team 1: `SpawnPopulationLock.maxPopulation ×= f`, `AntHill.numAntsInside ×= f`, `AISpawnPoint.period /= f`, `Triffid.reloadTime /= f` with `f = 1 + difficultyLevel/5` when the level has no `Difficulty` block; `App::UpdateDifficultyFromPreferences` hard-codes `m_difficultyLevel = 0`, so `f = 1.0` [C] `code/app.cpp:App::UpdateDifficultyFromPreferences`.
 6. Every row constructs a template object and some constructors draw synchronised random numbers, so the set and order of rows must be identical on every peer [C] ([22](22_determinism_and_networking.md)). Parsed objects are templates; `Location` later creates live buildings with `CreateBuilding(type)` + `Initialise(template)` — behaviour of every column: [03](03_buildings_and_world_objects.md).
 
-**Per-type extra columns** (75 type names = enum 0…74, `NumBuildingTypes` = 75). Legend: R required (MISSING ⇒ CRASH); O optional, read only if a token remains, nested (a later O is read only if the earlier O was present); `*` = list to end of line. Row counts are over all 118 level files [C] `X1a_level_survey.py` → `_work/drafts/X1a_level_field_usage.csv`.
+**Per-type extra columns** (75 type names = enum 0…74, `NumBuildingTypes` = 75). Legend: R required (MISSING ⇒ CRASH); O optional, read only if a token remains, nested (a later O is read only if the earlier O was present); `*` = list to end of line. Row counts are over all 118 level files [C] scripted survey (§4.1 Verification).
 
 | # | Type name | Class (`Read`) | Extra columns after `isGlobal` | Optional defaults | Blocked in FULL | Shipped rows (files) |
 |---|---|---|---|---|---|---|
@@ -827,7 +827,7 @@ The loop has no `TokenAvailable` guard — a blank line inside crashes [C]. If t
 
 #### 4.1.18 Verification
 
-Parsers re-read for this document: `LevelFile::ParseMissionFile`, `ParseMapFile` (both overloads), `ParseMultiwiniaOptions`, `ParseBuildings`, `ParseInstantUnits`, `ParseLandscapeData`, `ParseLandscapeTiles`, `ParseLandFlattenAreas`, `ParseLights`, `ParseRoute`, `ParseRoutes`, `ParsePrimaryObjectives`, `ParseCameraMounts`, `ParseCameraAnims`, the two `LevelFile` constructors, `Building::Read`, `Tree::Read`, `GunTurret::Read`, `AITarget::Read`, `GameMenu::AddMap`. Survey: `X1a_level_survey.py` (re-run; output identical to `_work/drafts/X1a_level_field_usage.csv`) over **118 level files** (57 mp, 12 map, 17 mission, 30 old, 2 purity): every strict part of the grammar (no blank lines in `Landscape`/`PrimaryObjectives`, every required column present, every `isGlobal` constraint met, guide-grid lengths exact) is respected by shipped data; 10 anomalies listed below.
+Parsers re-read for this document: `LevelFile::ParseMissionFile`, `ParseMapFile` (both overloads), `ParseMultiwiniaOptions`, `ParseBuildings`, `ParseInstantUnits`, `ParseLandscapeData`, `ParseLandscapeTiles`, `ParseLandFlattenAreas`, `ParseLights`, `ParseRoute`, `ParseRoutes`, `ParsePrimaryObjectives`, `ParseCameraMounts`, `ParseCameraAnims`, the two `LevelFile` constructors, `Building::Read`, `Tree::Read`, `GunTurret::Read`, `AITarget::Read`, `GameMenu::AddMap`. Survey: a scripted parse of **118 level files** (57 mp, 12 map, 17 mission, 30 old, 2 purity): every strict part of the grammar (no blank lines in `Landscape`/`PrimaryObjectives`, every required column present, every `isGlobal` constraint met, guide-grid lengths exact) is respected by shipped data; 10 anomalies listed below.
 
 #### 4.1.19 Minimal valid examples (written for this document)
 
@@ -936,7 +936,7 @@ level_enum = { blank | MAPFILENAME LEVELID EOL } ;      (* LEVELID INT; a one-to
 
 Both containers copy the token, so the reader buffer may be freed [C] `HashTable::PutData`.
 
-**Verification.** Parser re-read for this document (loop with `TokenAvailable` guard, unguarded second `GetNextToken`). Data check (X1a script): ids 1…49 are exactly the 49 retail maps (every `mp_*` not excluded by `tools/multiwinia_exclusions.txt`), no gaps, no duplicates; ids 50…59 name `mp_PDLC1_*`/`mp_PDLC2_*` maps absent from the tree [C].
+**Verification.** Parser re-read for this document (loop with `TokenAvailable` guard, unguarded second `GetNextToken`). Data check (scripted): ids 1…49 are exactly the 49 retail maps (every `mp_*` not excluded by `tools/multiwinia_exclusions.txt`), no gaps, no duplicates; ids 50…59 name `mp_PDLC1_*`/`mp_PDLC2_*` maps absent from the tree [C].
 
 **Minimal valid example**
 
@@ -983,7 +983,7 @@ Shipped parameters (`name min max default change`) [C] `data/multiwinia.txt`:
 | Assault (3) | Handicap 0 90 90 10; CrateDropRate 0 300 40 10 |
 | RocketRiot (4) | CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 7 1; MaxTurrets 0 5 3 1 |
 | Blitzkrieg (5) | TimeLimit 0 60 15 1; CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 2 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; MaxTurrets 0 5 2 1 |
-| TankBattle (6) | NumTanks 3 10 3 1 (game type compiled out: `INCLUDEGAMEMODE_TANKBATTLE` undefined) |
+| TankBattle (6) | NumTanks 3 10 3 1 (game type compiled in but not permitted: `INCLUDEGAMEMODE_TANKBATTLE` is undefined in FULL, so `code/app.cpp:App::IsGameModePermitted` returns false for it and `code/multiwinia.cpp:Multiwinia::AdvanceTankBattle` has an empty body; the blueprint, the dispatch case and the game-type button exist, the button made inactive in `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupGameSelectPage`) |
 
 `multiwinia-testbed.txt` differs only by an extra comment and `TimeLimit 0 60 10 1` appended to RocketRiot [C] diff.
 
@@ -1066,7 +1066,7 @@ Research names (case-insensitive, `GlobalResearch::GetTypeName`, index order): `
 
 Writers [C] `GlobalWorld::SaveGame`: `WriteLocations` (`"\t%4d %4d %30s %40s"`), `WriteBuildings` (`"\t%4d %4d %6d %6d %6d %6d"`), `GlobalResearch::Write` (29 rows + `CurrentResearch` + `CurrentPoints`), `GlobalEvent::Write`, `WriteLevelTimes`/`WriteSquaddiesUsed` (empty), `WriteTutorial` (DEMO2 only).
 
-**Verification.** Grammar from X1a's reading of `GlobalWorld::LoadGame` and helpers [C]; not re-read line by line for this document (legacy-only format) — the block keywords and the research-name list were re-checked by grep. Data: all five shipped files have Locations, Buildings, Research, Events: `game.txt` 11/2/11/18 (locations / global buildings / research rows / events), `game_unlockall.txt` 11/2/11/13, `game_demo.txt` 1/1/9/0, `game_demo2.txt` 8/8/9/1, `purity/game.txt` 11/0/11/6 [C] X1a survey; `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent).
+**Verification.** Grammar from the X1a draft's reading of `code/global_world.cpp:GlobalWorld::LoadGame` and helpers [C]; not re-read line by line for this document (legacy-only format) — the block keywords and the research-name list were re-checked by grep. Data: all five shipped files have Locations, Buildings, Research, Events: `game.txt` 11/2/11/18 (locations / global buildings / research rows / events), `game_unlockall.txt` 11/2/11/13, `game_demo.txt` 1/1/9/0, `game_demo2.txt` 8/8/9/1, `purity/game.txt` 11/0/11/6 [C] scripted survey; `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent).
 
 **Minimal valid example**
 
@@ -1108,7 +1108,7 @@ locations_file = { blank | ID X Y Z { ignored } EOL } ;      (* INT F32 F32 F32,
 | `ID` | INT | – | – | an id already loaded from the game file; others ignored (e.g. 12 in the shipped file) | location | `LoadLocations` |
 | `X`, `Y`, `Z` | F32 | world-map renderer units [I] | – | – | `GlobalLocation::m_pos` | same |
 
-**Verification.** From X1a's reading of `LoadLocations`/`SaveLocations` [C]; shipped file 12 rows, 11 matching `game.txt` ids [C].
+**Verification.** From the X1a draft's reading of `code/global_world.cpp:GlobalWorld::LoadLocations`/`SaveLocations` [C]; shipped file 12 rows, 11 matching `game.txt` ids [C].
 
 **Minimal valid example**
 
@@ -1150,7 +1150,7 @@ SANITISED   = upper-case file name without ".txt", with '.', '-' and ' ' replace
 | `SANITISED` | identifier | `MAPID_MP_KOTH_2P_1` etc. |
 | `HEX8` | 8 lower-case hex digits | the CRC above |
 
-**Verification.** `FileCRC`/`ReadFileData` re-read for this document; `BinaryDataReader::ReadU8` confirmed to return 0xFF and set `m_eof` past the end. `_work/scripts/P11_mapcrc.py` reproduces all 87 `MAPID_*` values in `code/mapcrc.h` (87 OK, 0 mismatches) [C] (P11; re-run by S31).
+**Verification.** `FileCRC`/`ReadFileData` re-read for this document; `BinaryDataReader::ReadU8` confirmed to return 0xFF and set `m_eof` past the end. An independent re-implementation of this definition, run over the 87 top-level `data/levels/*.txt`, reproduces all 87 `MAPID_*` values in `code/mapcrc.h` (87 OK, 0 mismatches) [C scripted; [31 §10](31_platform_build_and_tools.md#10-map-crc-tool-and-runtime-map-identity)].
 
 **Minimal valid example.** A 2-byte file `AB` hashes the 3 bytes `41 42 FF` with init 0, no final XOR; the header line would be `#define   MAPID_EXAMPLE` + padding + ` 0x<crc>`.
 
@@ -1163,7 +1163,7 @@ SANITISED   = upper-case file name without ".txt", with '.', '-' and ' ' replace
 <a id="fmt-preferences"></a>
 ### 5.1 Preferences (`preferences.txt`, `default_preferences.txt`)
 
-**Purpose.** Typed key/value user settings [C] `code/lib/preferences.cpp:PrefsManager` (`g_prefsManager`), `PrefsItem::PrefsItem(UnicodeString)`, `PrefsManager::Load`, `AddLine`, `IsLineEmpty`, `CreateDefaultValues`, `Save`, `SaveItem`. The key register (≈ 75 keys with call-site defaults) is in [09](09_meta_systems.md) (`_work/drafts/P17b_prefs_accesses.csv`, `_work/drafts/P14_platform_lib_pref_keys.csv`).
+**Purpose.** Typed key/value user settings [C] `code/lib/preferences.cpp:PrefsManager` (`g_prefsManager`), `PrefsItem::PrefsItem(UnicodeString)`, `PrefsManager::Load`, `AddLine`, `IsLineEmpty`, `CreateDefaultValues`, `Save`, `SaveItem`. The key register (≈ 75 keys with call-site defaults) is in [09](09_meta_systems.md).
 
 **Files**
 
@@ -1321,7 +1321,7 @@ KEYNAME = case-insensitive entry of getKeyNames()[0 .. KEY_TILDE = 223] or 'any'
 | `data/input/keyboards/de_DE.txt` | 8 | 0 | 0 | `key` 8 |
 | `data/input/keyboards/fr_FR.txt` | 8 | 0 | 0 | `key` 8 |
 
-`_work/scripts/P10_bindings.py` (P10) independently re-implements the spec parser and decodes every line (`_work/drafts/P10_input_camera_preflines.csv`). Shipped specs `XInput lefttrigger repeat` and `XInput righttrigger repeat` (analogue + `repeat`) parse as "down" through the fallback above [C].
+An independent re-implementation of the spec parser decodes every line of the shipped binding files [C scripted]. Shipped specs `XInput lefttrigger repeat` and `XInput righttrigger repeat` (analogue + `repeat`) parse as "down" through the fallback above [C].
 
 **User file** [C] `code/interface/prefs_keybindings_window.cpp:ApplyKeybindingsButton::MouseUp`: written by a dedicated `PrefsManager(GetUserPrefsPath())` that is `Clear()`ed, filled with `SetString(<control>, <binding string>)` for each user-rebindable control (plus the derived `IconsTaskManagerHide` = the Display binding with `down` → `up`) and `Save()`d — §5.1 writer format, one `Control = spec` line per control in `wcscmp` order; `=` is a separate token as `parseInputPrefs` requires. Because the narrow mirror of a UTF-16 disk file is not comment/CR-stripped (§3.1), `parseInputPrefs` trims a trailing LF/CR from icon paths explicitly; specs are immune (whitespace split). The constructor's `Load()` of a not-yet-existing file runs `CreateDefaultValues()` before `Clear()` discards them [C].
 
@@ -1409,7 +1409,7 @@ name_line = REST EOL ;      (* leading blank, TAB, ':' or ',' stripped; '#' star
 |---|---|---|---|---|---|
 | name | REST, single byte (Latin-1 widened byte-for-byte) | – | no leading `:`/`,`, no `#` | one credited person | as above |
 
-**Verification.** Both parsers from X1a's reading [C]; files surveyed (CRLF, Latin-1 bytes, no blank line in `betatesters.txt`) [C] `X1a_text_survey.py`.
+**Verification.** Both parsers as read by the X1a draft [C]; files surveyed (CRLF, Latin-1 bytes, no blank line in `betatesters.txt`) [C scripted].
 
 **Minimal valid example**
 
@@ -1544,7 +1544,7 @@ ARGn    = token read on demand with GetNextToken() (n > 1) ;           (* MISSIN
 | `ActivateTrunkPort`, `ActivateTrunkPortFull` | ARG1 i building | same |
 | `CamGlobalWorldFocus`, `CamReset`, `ExitLocation`, `ShutUp`, `WaitSay`, `WaitCam`, `WaitFade`, `WaitPlayerNotBusy`, `ClearHighlights`, `GameOver`, `ResetResearch`, `RestoreResearch`, `RunCredits`, `GodDishActivate`, `GodDishDeactivate`, `GodDishSpawnSpam`, `GodDishSpawnResearch`, `TriggerSpam`, `PurityControl`, `ShowDarwinLogo`, `ShowDemoEndSequence`, `PermitEscape` | none (extra tokens ignored) | same |
 
-**Verification.** `_work/scripts/X1a_script_check.py` (re-run) over 43 files (42 scripts + `data/purity/buyme.txt`): 37 of 43 opcodes used (`Say` 273, `WaitSay` 112, `CamMove` 72, `Wait` 54, `CamBuildingFocus` 52, `Highlight` 44, `WaitCam` 29, `CamReset` 29, `ClearHighlights` 26, `WaitFade` 24, `CamCut` 20, `CamFov` 20, `CamLocationFocus` 15, `EnterLocation` 14, `ExitLocation` 14, `TriggerSound` 14, `StopSound` 8, `PermitEscape` 7, `GodDishSpawnResearch` 5, `SetMission` 4, `DemoGesture` 4, `ShutUp` 4, `TriggerSpam` 4, `GiveResearch` 3, `GodDishSpawnSpam` 3, `WaitPlayerNotBusy` 2, `WaitRocket` 2, and once each `GameOver`, `ShowDarwinLogo`, `CamGlobalWorldFocus`, `CamBuildingApproach`, `ShowDemoEndSequence`, `ResetResearch`, `GodDishActivate`, `GodDishDeactivate`, `RestoreResearch`, `PurityControl`); no unknown opcode; no missing required argument; one surplus argument (`CamCut … 1` in `data/scripts/launchpad_victory.txt`, ignored). Never used: `CamAnim`, `RunCredits`, `SetCutsceneMode`, `DestroyBuilding`, `ActivateTrunkPort`, `ActivateTrunkPortFull`. `SCRIPT_TEST_ENABLED` (`Script::TestScript`) is never defined [B:DEAD].
+**Verification.** A scripted opcode check over 43 files (42 scripts + `data/purity/buyme.txt`): 37 of 43 opcodes used (`Say` 273, `WaitSay` 112, `CamMove` 72, `Wait` 54, `CamBuildingFocus` 52, `Highlight` 44, `WaitCam` 29, `CamReset` 29, `ClearHighlights` 26, `WaitFade` 24, `CamCut` 20, `CamFov` 20, `CamLocationFocus` 15, `EnterLocation` 14, `ExitLocation` 14, `TriggerSound` 14, `StopSound` 8, `PermitEscape` 7, `GodDishSpawnResearch` 5, `SetMission` 4, `DemoGesture` 4, `ShutUp` 4, `TriggerSpam` 4, `GiveResearch` 3, `GodDishSpawnSpam` 3, `WaitPlayerNotBusy` 2, `WaitRocket` 2, and once each `GameOver`, `ShowDarwinLogo`, `CamGlobalWorldFocus`, `CamBuildingApproach`, `ShowDemoEndSequence`, `ResetResearch`, `GodDishActivate`, `GodDishDeactivate`, `RestoreResearch`, `PurityControl`); no unknown opcode; no missing required argument; one surplus argument (`CamCut … 1` in `data/scripts/launchpad_victory.txt`, ignored). Never used: `CamAnim`, `RunCredits`, `SetCutsceneMode`, `DestroyBuilding`, `ActivateTrunkPort`, `ActivateTrunkPortFull`. `SCRIPT_TEST_ENABLED` (`Script::TestScript`) is never defined [B:DEAD].
 
 **Minimal valid example**
 
@@ -1721,7 +1721,7 @@ sample_line = X Y EOL ;            (* FLOAT FLOAT, written "%.3f %.3f"; every ph
 
 Playback [C] `GetCoords`: `index = t · 25`, interpolate between the floor and ceil samples, multiply both coordinates by the current `ScreenH()`.
 
-**Verification.** From X1b's reading of `gesture_demo.cpp` [C]; sample counts and ranges from the X1b survey of all 8 files [C].
+**Verification.** From the X1b draft's reading of `code/gesture_demo.cpp` [C]; sample counts and ranges from a scripted survey of all 8 files [C].
 
 **Minimal valid example**
 
@@ -1800,7 +1800,7 @@ Parameter tokens in shipped data: `TypeFixedValue` 512, `TypeRangedRandom` 79, `
 
 **Writer format** (editor output) [C] `WriteSoundEvent`, `SoundParameter::Write`: `\tEVENT %-20s`, then fixed-order fields `SOUNDNAME`, `SOURCETYPE`, `POSITIONTYPE`, `INSTANCETYPE`, `LOOPTYPE`, `TEAMMATCHTYPE`, `MINDISTANCE %2.2f`, `VOLUME` always, `FREQUENCY` only if not fixed 1.0, `ATTACK`/`SUSTAIN`/`RELEASE`/`LOOPDELAY` only if not fixed 0.0, each `%-18s PARAMETER %-18s` + `%8.2f` values (+ link name) + two blanks + update type; effects as `\t\tEFFECT %s` + one `\t\t\t` line per blueprint parameter + `\t\tEND`; `\tEND`. Sources are written in enum order preceded by a `# ====…` comment line and followed by `END` and two blank lines; groups as `\tSAMPLE  <name>`. Two decimals → an editor round trip quantises every parameter to 0.01.
 
-**Verification.** Parsers re-read as listed. `_work/scripts/X1b_sounds_grammar.py` (independent state machine, re-run) over `data/sounds.txt`: 0 blank-line hazards, 0 unknown sources, 0 duplicate source blocks, effect parameter counts equal to the blueprint counts in every block (Echo 3, DSound_Echo 5, Gargle 3, DSound_I3DL2Reverb 13, DSound_WavesReverb 4), 0 parameter-label mismatches against [fmt-effects-txt](#fmt-effects-txt) order; all 1 228 referenced sample files exist (only unresolved name `[???]`). P16's `P16_parse_sounds.py` produced the same event set (`_work/drafts/P16_sound_events.csv`).
+**Verification.** Parsers re-read as listed. An independent state-machine parse of `data/sounds.txt`: 0 blank-line hazards, 0 unknown sources, 0 duplicate source blocks, effect parameter counts equal to the blueprint counts in every block (Echo 3, DSound_Echo 5, Gargle 3, DSound_I3DL2Reverb 13, DSound_WavesReverb 4), 0 parameter-label mismatches against [fmt-effects-txt](#fmt-effects-txt) order; all 1 228 referenced sample files exist (only unresolved name `[???]`). A second, independently written parser produced the same event set.
 
 **Minimal valid example** (written for this document)
 
@@ -1921,7 +1921,7 @@ Naming and placement [C]: a stem resolves to `sounds/<stem>.ogg` first, then `mw
 
 **WAV.** A RIFF/WAVE PCM reader (8/16-bit, mono/stereo, `fmt `/`data` chunks) exists (`SoundStreamDecoder::ReadWavHeader`, `ReadWavData`), selected by the reader's file extension, but `Resource::GetSoundStreamDecoder` always appends `.ogg`, so **WAV is unreachable** [C].
 
-**Verification.** `_work/scripts/X1b_ogg_survey.py` (re-run) over all 1 332 files: every file mono; 1 330 at 44 100 Hz and 2 at 22 050 Hz (one per directory); nominal bit-rates `sounds/` 64 kbps ×862, 128 ×89, 32/60/80 ×1 each; `mwsounds/` 128 ×369, 96 ×8, 40 ×1; no blanks, no non-Ogg, no unreadable headers, no name in both directories [C]. Encoder/decoder binaries in tree: `tools/oggenc.exe`, `tools/oggdec.exe` (not read).
+**Verification.** A scripted Ogg header survey of all 1 332 files: every file mono; 1 330 at 44 100 Hz and 2 at 22 050 Hz (one per directory); nominal bit-rates `sounds/` 64 kbps ×862, 128 ×89, 32/60/80 ×1 each; `mwsounds/` 128 ×369, 96 ×8, 40 ×1; no blanks, no non-Ogg, no unreadable headers, no name in both directories [C]. Encoder/decoder binaries in tree: `tools/oggenc.exe`, `tools/oggdec.exe` (not read).
 
 **Minimal valid example.** A mono 44 100 Hz Ogg Vorbis I stream saved as `mwsounds/sample_ping1.ogg` (under `data/`), referenced from `sounds.txt` as `SOUNDNAME sample_ping1`.
 
@@ -2028,7 +2028,7 @@ Derived at load [C] `RegisterPositions`, `GenerateNormals`: a synthetic `SceneRo
 
 Marker names present in data but not referenced by any literal: `MarkerIsland*`, `MarkerTrunk<N>to<M>` (`globalworld_*.shp`), `MarkerFloat*`, `MarkerControl*`, `MarkerGun*`, `MarkerRocket*`, `MarkerParticleA`/`B`, `MarkerPlinth`, `MarkerFlowerCentre`, `MarkerBreach` [C] grep; whether any is built by `sprintf` elsewhere is **29-U4**.
 
-**Verification.** All shape parser functions above re-read for this document. `_work/scripts/X1b_shp_survey.py` (re-run) over 139 files: keywords `fragment` 441, `parentname` 866, `up`/`front`/`pos` 866 each, `positions`/`normals`/`colours`/`vertices` 441 each, `triangles` 290, `strips` 151, `strip` 163, `verts` 163, `material` 140 (35 files), `marker` 425, `depth` 425, `markerend` 422, `right` 15; fragments = geometry blocks = 441; 0 files with non-zero normals; 0 colour values > 255; anomaly: `carrycube.shp` duplicate fragment names. Per-shape table: `_work/drafts/P12_shapes.csv`, `_work/drafts/X2a_shapes.csv`.
+**Verification.** All shape parser functions above re-read for this document. A scripted keyword survey of all 139 files: keywords `fragment` 441, `parentname` 866, `up`/`front`/`pos` 866 each, `positions`/`normals`/`colours`/`vertices` 441 each, `triangles` 290, `strips` 151, `strip` 163, `verts` 163, `material` 140 (35 files), `marker` 425, `depth` 425, `markerend` 422, `right` 15; fragments = geometry blocks = 441; 0 files with non-zero normals; 0 colour values > 255; anomaly: `carrycube.shp` duplicate fragment names. Per-shape table: [25 §4.2](25_textures_and_assets.md#42-per-file-table).
 
 **Minimal valid example** (written for this document: a strip-encoded triangle pair under a parent fragment, plus a marker on the child)
 
@@ -2117,7 +2117,7 @@ Marker: MarkerFlag
 
 `tools/3DGeometry` is an Allegro/AllegroGL viewer for ray–sphere / sphere–triangle tests from `code/lib/math_utils.cpp`; not a format or converter [B:DEAD] [C] `tools/3DGeometry/main.cpp`.
 
-**Verification.** Magic bytes of all 133 files and the exporter source read by X1b [C]; name comparison scripted (X1b).
+**Verification.** Magic bytes of all 133 files checked and the exporter source `tools/ShapeExporter/ShapeExporter.cpp` read (X1b draft) [C]; name comparison scripted.
 
 **Minimal valid example.** Not applicable (proprietary binary); the exporter's output contract is the [fmt-shp](#fmt-shp) grammar.
 
@@ -2128,7 +2128,7 @@ Marker: MarkerFlag
 
 **Purpose.** Every image the game loads (textures, sprites, icons, help pictures, thumbnails, font pages, terrain ramps, animation sprites) is a Windows BMP decoded by `BitmapRGBA` [C] `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp`, `ReadBMPFileHeader`, `ReadWinBMPInfoHeader`, `ReadOS2BMPInfoHeader`, `ReadBMPPalette`, `Read4BitLine`, `Read8BitLine`, `Read24BitLine`, `Read32BitLine`; texture pipeline `code/lib/resource.cpp:Resource::GetTextureWithFlags`, `GetTexture`, `GetTextureWithAlpha`, `ProcessBmp`, `GetBitmap`, `DoesTextureExist`, `code/lib/bitmap.cpp:ConvertToTexture`. Upload algorithm and per-asset catalogue: [24](24_rendering.md), [25](25_textures_and_assets.md).
 
-**Files** [C] `_work/scripts/X1b_bmp_survey.py` (re-run) — 506 `.bmp` under `data/`:
+**Files** [C] header survey of all 506 `.bmp` under `data/` (method: [25 §1.5](25_textures_and_assets.md#15-how-the-per-file-catalogue-was-computed)):
 
 | Directory | Count | Bit depth (all 40-byte info header) | Notes |
 |---|---|---|---|
@@ -2228,7 +2228,7 @@ None is OS/2, top-down or `BI_BITFIELDS`; the only compressed file is the RLE8 t
 
 Full algorithms: [23](23_terrain_and_landscape.md).
 
-**Verification.** From X1b/P11 readings of the renderer and water code [C]; survey of all 36 ramp files (sizes, depths) [C] `X1b_bmp_survey.py`.
+**Verification.** From the X1b/P11 drafts' readings of `code/landscape_renderer.cpp` and `code/water.cpp` [C]; header survey of all 36 ramp files (sizes, depths) [C].
 
 **Minimal valid examples**
 
@@ -2236,12 +2236,12 @@ Full algorithms: [23](23_terrain_and_landscape.md).
 * `waves_sample.bmp`: 300×2 24-bit; the top row as viewed (row 1) a gradient from deep blue (x = 0) to white (x = 299); bottom row unused.
 * `water_sample.bmp`: any seamlessly tiling 64×64 image.
 
-**Discrepancies.** 9 landscape ramps are referenced by no level (`beach`, `containment`, `field`, `icecaps_peaked`, `marble2`, `mine2`, `ridges`, `volcanic`, `volcanicplain`) [C] P11. The D3D path of `Water::Water` writes `bmp.GetPixel(x,1)` on a `const BitmapRGBA *` → compile error under `USE_DIRECT3D` [C] ([31 §7.9](31_platform_build_and_tools.md)).
+**Discrepancies.** 9 landscape ramps are referenced by no level the game can load: `beach`, `field`, `icecaps_peaked`, `ridges`, `volcanic`, `volcanicplain` by no level file at all, `containment`, `marble2`, `mine2` only by never-listed `data/levels/old/` files [C] grep of `landColourFile` over `data/levels/` and `data/purity/`. The D3D path of `Water::Water` writes `bmp.GetPixel(x,1)` on a `const BitmapRGBA *` → compile error under `USE_DIRECT3D` [C] ([31 §7.9](31_platform_build_and_tools.md)).
 
 <a id="fmt-anim"></a>
 ### 8.6 `.anim` — animated help panel
 
-**Purpose.** A short looping 2-D cartoon shown during a Multiwinia game's grace period explaining the mode [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; parser `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`; interpolation `AnimatedPanel::CalculateObjectProperties`, `CalculateRampUpAndDown`; renderer `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Authored with the external `animator.exe` (repository root; its data archive `animator.dat` holds `data/animations/*.bmp`, data\fonts\verdana-bold.bmp, data\dialogs\animator-*.txt (archive-internal names, not in the tree)) [C] strings, RAR listing via `_work/scripts/P14_rar_list.py`. `AnimatedPanel::Write` exists with no caller. Playback model: [26](26_animation_and_vfx.md). [B:FULL]
+**Purpose.** A short looping 2-D cartoon shown during a Multiwinia game's grace period explaining the mode [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; parser `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`; interpolation `AnimatedPanel::CalculateObjectProperties`, `CalculateRampUpAndDown`; renderer `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Authored with the external `animator.exe` (repository root; its data archive `animator.dat` holds `data/animations/*.bmp`, data\fonts\verdana-bold.bmp, data\dialogs\animator-*.txt (archive-internal names, not in the tree)) [C] strings, RAR header walk of `animator.dat`. `AnimatedPanel::Write` exists with no caller. Playback model: [26](26_animation_and_vfx.md). [B:FULL]
 
 **Files** [C] `InitialiseAnimatedPanel`, `X1b_anim_survey.py` (re-run):
 
@@ -2341,11 +2341,11 @@ icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'butto
 | `icons/menu_<level>.bmp`, `icons/menu_%dplayer.bmp` | menu badges | `menu_basic.bmp` | map details |
 | `icons/<free name>.bmp` | `MultiwiniaHelp` icon tabs (`"icons/%s.bmp"`), HUD | `compass.bmp`, `nukesymbol.bmp` | help, HUD |
 
-**Verification.** Literal grep + existence check by X1b [C]; catalogue per file: [25](25_textures_and_assets.md).
+**Verification.** Literal grep of `code/` + existence check under `data/icons/` [C]; catalogue per file: [25](25_textures_and_assets.md).
 
 **Minimal valid example.** `icons/icon_shield.bmp` (under `data/`) — a 64×64 24-bit image with pink-key background, requested as `icons/icon_shield.bmp`.
 
-**Discrepancies.** Names referenced but absent from `data/icons/`: `menu_campaign.bmp`, `menu_prologue.bmp`, `menu_coop.bmp`, `menu_forcecoop.bmp`, `menu_<n>player.bmp`, `compass_empty.bmp`, `icon_enter.bmp`, `shaman_shadow.bmp` — fatal if requested without a `DoesTextureExist` guard [C]; reachability (e.g. `MarkerSystem::RenderCompass` → `compass_empty.bmp`) and whether `patch.dat` supplies them: [25](25_textures_and_assets.md).
+**Discrepancies.** Names referenced in compiled code but absent from `data/icons/`: `menu_<n>player.bmp` (guarded by `DoesTextureExist`, `code/UI/mapDetailsButton.h`), `compass_empty.bmp` (`code/markersystem.cpp`), `icon_enter.bmp` (`code/markersystem.cpp`), `shaman_shadow.bmp` (`code/shaman_interface.cpp`) — fatal if requested without a `DoesTextureExist` guard [C]; `menu_campaign.bmp`, `menu_prologue.bmp`, `menu_coop.bmp`, `menu_forcecoop.bmp` occur **only in commented-out code** (`code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupDarwiniaPage`, `code/UI/LevelSelectButton.h`) and are never requested [C]; reachability (e.g. `MarkerSystem::RenderCompass` → `compass_empty.bmp`) and whether `patch.dat` supplies them: [25](25_textures_and_assets.md).
 
 <a id="fmt-mwhelp"></a>
 ### 8.8 `data/mwhelp/` naming convention
@@ -2361,7 +2361,7 @@ icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'butto
 | `mwhelp/mode_<blueprint name>.bmp` | game-mode tile; name from [fmt-multiwinia-txt](#fmt-multiwinia-txt) matched case-insensitively against the lower-case files (`mode_domination.bmp` …), plus fixed `mode_prologue.bmp`, `mode_campaign.bmp` |
 | `mwhelp/<topic>.bmp` | in-game help tab icons: `starthere`, `koth`, `spawnpoint`, `spawnpoint_assault`, `crates`, `liftstatues`, `capturestatues`, `wallbuster`, `pulsebomb`, `pulsebomb_attack`, `pulsebomb_defend`, `rocketriot1`, `rocketriot2`, `reinforcements`, `blitzkrieg1`, `blitzkrieg2`, `gear`, `control_camera`, `control_camera_french` (the last chosen when `InputPrefs::IsKeyboardFrenchLocale()`) |
 
-**Verification.** Literal grep + existence check by X1b [C].
+**Verification.** Literal grep of `code/` + existence check under `data/mwhelp/` [C].
 
 **Minimal valid example.** `mwhelp/help_0_2.bmp` (under `data/`) (400×300 24-bit) would be shown as Domination help page 2 with text id `multiwinia_helppage_1_2`.
 
@@ -2373,16 +2373,16 @@ icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'butto
 **Purpose / parser.** Lobby map thumbnails [C] `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`.
 
 ```ebnf
-thumbnail_name = 'thumbnails/' lower( MAPFILE without '.txt' ) '.bmp' ;     (* fallback 'thumbnails/default.bmp' *)
+thumbnail_name = 'thumbnails/' lower( MAPFILE without '.txt' ) '.bmp' ;     (* no thumbnail -> nothing drawn *)
 ```
 
 | Field | Rule |
 |---|---|
-| name | level file name without `.txt`, **lower-cased** (`strlwr`) before look-up; if `DoesTextureExist` fails → `thumbnails/default.bmp` |
+| name | level file name without `.txt`, **lower-cased** (`strlwr`) before look-up; if `DoesTextureExist` fails the button draws **no** thumbnail. The `thumbnails/default.bmp` fallback in `MapImageButton::Render` runs only when `GetTexture` of an existing file returns −1, which cannot happen because `code/lib/resource.cpp:Resource::GetTextureWithFlags` release-asserts on failure — the fallback is unreachable [C] |
 | loading | `GetTexture(name, mipmaps = false, masked = false)`, drawn with LINEAR min/mag |
 | shipped | 57 files, 400×300 (53 8-bit paletted, 4 24-bit); disk names keep mixed case (`mp_koth_2P_1.bmp`), which works only because file and archive look-ups are case-insensitive |
 
-**Verification.** X1b survey + `X4_thumbnails.csv` (X4 level catalogue) [C].
+**Verification.** Header survey of the 57 files; names matched against the `data/levels/mp_*` list that `code/game_menu.cpp:GameMenu::CreateMapList` builds [C].
 
 **Minimal valid example.** `thumbnails/mp_example_2p.bmp` (under `data/`), 400×300 8-bit, for the map of §4.1.19.
 
@@ -2475,7 +2475,7 @@ include_line = '#include "' NAME '"' ;              (* resolved as resource shad
 
 Pairs created [C]: `FixedFunc0.vs` + `FixedFunc0Maps.ps`, `FixedFunc1.vs` + `FixedFunc1Maps.ps`, `FixedFunc2.vs` + `FixedFunc2Maps.ps`; `deform.vs` + `deformFullscreen.ps` / `deformSphere.ps` / `deformDiamond.ps`; `water-meshwaves.vs` + `water-meshwaves.ps3` or `.ps`.
 
-**Verification.** From X1b/P13 readings of `shader.cpp` and the three users [C]; files counted by `S_31_archive_contents.py` (both archives) [C].
+**Verification.** From the X1b/P13 drafts' readings of `code/lib/shader.cpp` and its three users [C]; archive membership from the data-build rules of [31 §8](31_platform_build_and_tools.md#8-data-build-pipeline-and-the-dat-archives) (both archives) [C].
 
 **Minimal valid example** (written for this document; any `vs_2_0`/`ps_2_0` profile)
 
@@ -2500,7 +2500,7 @@ void ps_main(in float4 c : COLOR, out float4 o : COLOR) { o = c * tint; }
 
 **Purpose.** Shipped data is packed into RAR archives that the game decompresses entirely into memory at start-up [C] `code/lib/resource.cpp:Resource::ParseArchive`, `GetUncompressedFile`, `GetTextReader`, `GetBinaryReader`, `ListResources`; `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `MemMappedFile::MemMappedFile`; `contrib/unrar/extract.cpp:CmdExtract::ExtractArchive` (modified to unpack into memory); `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `GetIndex`. Build pipeline and per-SKU contents: [31 §8](31_platform_build_and_tools.md).
 
-**Files.** Runtime archives (none committed): `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; `ambx.dat` is installed by the euro installer but never opened. The repository's `animator.dat` (tool data) is an example: archive flags 0x0008 (solid), file headers with unpack version 29, method 0x35 (best), names data\animations\… [C] RAR header walk.
+**Files.** Runtime archives (none committed): `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; `ambx.dat` is installed by the v1.9.20, beta-test and euro installers (`tools/InstallerScript.iss`, `tools/InstallerScript_multiwinia_beta_test_crashreporter.iss`, `tools/InstallerScript_retail_crashreporter_euro.iss`) but never opened. The repository's `animator.dat` (tool data) is an example: archive flags 0x0008 (solid), file headers with unpack version 29, method 0x35 (best), names data\animations\… [C] RAR header walk.
 
 **Encoding / container.** Standard **RAR 4.x** (signature `52 61 72 21 1A 07 00` "Rar!"), produced by `tools/Rar.exe`, read by the bundled UnRAR 3.30 beta 1 source (`contrib/unrar/version.h`: 3.30 β1, 14 Nov 2003; unpack methods 1.5, 2.0/2.6, 2.9) [C]. **No encryption**: every `ParseArchive` call passes `password = NULL` and the build never uses `-p`/`-hp` [C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`, `tools/build_multiwinia_data.bat`. Entries may be any format of this document; text entries could in principle be "redshirt2"-obfuscated — none are.
 
@@ -2535,7 +2535,7 @@ Switches [I, RAR CLI]: `a` add, `-m5` best / `-m2` fast (Ogg already compressed)
 
 `ListResources(dir, filter)` merges the loose directory listing with archive entries whose directory part equals `data/<dir>` (case-insensitive) and whose file part matches the wildcard filter (`*`, `?`; `Resource::WildCmp` is **case-sensitive**, archive names are lower case); entries are inserted with `OrderedInsert` (`contrib/systemiv/lib/filesys/file_system.cpp`), which keeps `strcmp` order and skips exact duplicates only against the last element → a loose file and its archive twin can both appear (always when their case differs, e.g. loose `mp_koth_2P_1.txt` vs archived `mp_koth_2p_1.txt`) [C].
 
-**Verification.** `Resource::ParseArchive`, `GetTextReader`, `GetBinaryReader`, `HashTable::HashFunc`, `GetIndex`, `GetInsertPos` re-read for this document. Archive contents computed by `_work/scripts/S_31_archive_contents.py` (re-implements the batch/Perl logic; retail `main.dat` 565 files, `init.dat` 16, `menusounds.dat` 18, `sounds.dat` 1 297, `sounds2.dat` 6) [C scripted, 31]; `animator.dat` header walked with `_work/scripts/P14_rar_list.py` [C].
+**Verification.** `Resource::ParseArchive`, `GetTextReader`, `GetBinaryReader`, `HashTable::HashFunc`, `GetIndex`, `GetInsertPos` re-read for this document. Archive contents computed by re-applying the batch/Perl rules of `tools/build_multiwinia_data.bat`, `tools/listfiles.pl` and `tools/build_language_dat.bat` to the tree (retail `main.dat` 565 files, `init.dat` 16, `menusounds.dat` 18, `sounds.dat` 1 297, `sounds2.dat` 6) [C scripted, [31 §8.7](31_platform_build_and_tools.md#87-the-archives--names-contents-load-order-override-rules)]; the `animator.dat` headers were walked block by block [C].
 
 **Minimal valid example.** `rar a -m5 -s -idp sample.dat data\stats.txt` from the repository root; mounted with `ParseArchive("sample.dat", NULL)` it serves resource `stats.txt` (key `data/stats.txt`) unless a loose `data/stats.txt` exists.
 
@@ -2570,7 +2570,7 @@ archive_list   = { RELPATH EOL } ;   (* init.list / *language.list: rar @listfil
 
 `listfiles.pl` prints every surviving **file** as a `/`-separated path relative to `data/`, in `File::Find` traversal order [C].
 
-**Verification.** `X1b_sounds_grammar.py` (re-run): `tools/sounds.txt` 1 297 entries (935 `sounds/`, 362 `mwsounds/`), `tools/menu_sounds.txt` 18 entries (10 `mwsounds/multilobbyamb1`–`10.ogg`; `sounds/shipheartbeat1`, `mouse2`, `mouse3`, `menuscroll2`, `menuscroll1`, `alien_lands3`, `evil`, `rumble1`), 0 missing on disk, no overlap, no duplicates; of 1 332 Oggs 1 315 are listed and 17 remain, of which 11 are excluded and 6 go to `sounds2.dat` (`mwsounds/rollover1a`, `rollover1b`, `rollover1c`, `mouseclick1`, `chat`, `beep_harsh_malfunction`). Exclusion semantics re-implemented by `_work/scripts/S_31_archive_contents.py` [C scripted].
+**Verification.** Scripted check: `tools/sounds.txt` 1 297 entries (935 `sounds/`, 362 `mwsounds/`), `tools/menu_sounds.txt` 18 entries (10 `mwsounds/multilobbyamb1`–`10.ogg`; `sounds/shipheartbeat1`, `mouse2`, `mouse3`, `menuscroll2`, `menuscroll1`, `alien_lands3`, `evil`, `rumble1`), 0 missing on disk, no overlap, no duplicates; of 1 332 Oggs 1 315 are listed and 17 remain, of which 11 are excluded and 6 go to `sounds2.dat` (`mwsounds/rollover1a`, `rollover1b`, `rollover1c`, `mouseclick1`, `chat`, `beep_harsh_malfunction`). Exclusion semantics re-implemented from `tools/listfiles.pl` and applied to the tree [C scripted].
 
 **Minimal valid example** (an exclusion list and a sound list)
 
@@ -3032,7 +3032,7 @@ command      = 'SetProgression' ( 'LINEAR' | 'RANDOM' | 'SEQUENCE' )        (* (
 | `GAMEINDEX` | INT | – | index into `g_vGameEntries` | concatenation, over game types 0…5 (type 6 skipped), of every map in that type's lobby list (`BuildGameEntries`) | same |
 | `SetTestBedName` | WORD | – | ≤ 255 | also sets `App::m_testbedServerName` | same |
 
-**Verification.** From X1a's reading [C]; shipped file: `SetProgression RANDOM`, `SetTestBedName TESTBED_GodOfCode`, `AddSequenceItem 0 10`, `AddSequenceItem 10 20` [C] file, `X1a_text_survey.py` (NO-FINAL-LF).
+**Verification.** From the X1a draft's reading of `code/UI/GameMenuWindow.cpp:GameMenuWindow::ReadTestBedConfig` [C]; shipped file: `SetProgression RANDOM`, `SetTestBedName TESTBED_GodOfCode`, `AddSequenceItem 0 10`, `AddSequenceItem 10 20` [C] `testbedconfig.txt` (14 lines, no final LF).
 
 **Minimal valid example**
 
@@ -3139,7 +3139,7 @@ Recommendations for the format layer of the new game (Windows, C++23, DirectX 12
 ---
 ## Source map
 
-Generated by `_work/scripts/S_29_source_map.py` from the paths cited above (every path exists in `_work/manifest.csv`; glob rows stand for the file sets catalogued per file in [25](25_textures_and_assets.md), [10](10_audio_design.md) and [08](08_levels_and_level_design.md)).
+Generated from the paths cited above (provenance: `_work/scripts/S_29_source_map.py`; every path exists in the source tree; glob rows stand for the file sets catalogued per file in [25](25_textures_and_assets.md), [10](10_audio_design.md) and [08](08_levels_and_level_design.md)).
 
 | File | Role | Formats citing it |
 |---|---|---|

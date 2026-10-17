@@ -250,3 +250,7 @@
 ## S41 (41_risks_and_open_questions.md) — done, ~319 KB, checks pass, 1,506 links resolve
 - 322 source open-question rows → 235 de-duplicated (196 open, 39 resolved; 88 merged); inline [U] all covered; resolved by S41: 02-U5, 02-U6, 02-U7/03-U4, 02-U12, 03-U14, 04-U2, 04-U3, 04-U10, 05-U1, 07-U6, 07-U11 (three via terrain-port scripts S_41_* — re-run after F7 fixes the port); 03-U7 closed from R3; 07-U1 narrowed. Docs-vs-code 306 → 225; Cyrillic font contradiction resolved by MD5 (byte-identical). IP: 345 rows → 50 categories + 90 §3 placeholders + 57 mp_ map names.
 - ALL 31 final documents now exist. Pending: F1–F8 fixes, then F9 Part C sync (41 re-collect + re-run S_41_* after port fix, 40 V1/V2, README, regenerate 91/99, final checks).
+
+## Fix F6 (20, 21, 22) — done: 35 findings (30 accepted, 1 partly, 0 rejected); checks clean
+- V1/V2 applied everywhere in 22 incl. risk register D7/D9/D10; L13 → resolved (GetStat scales only StatSpeed); L20 split (zone counter High; Armour debounce latent). Latest-only ALIVE confirmed (SaveLast replaces earlier ALIVE without merge → second ALIVE in same tick drops first one's clicks; tick with none applies no input for that team; not a desync) → 22 §6.1 row 7, 21 §9.7, N11 revised (coalesce continuous state, merge one-shot events), new risk N15.
+- Requests: 40 F29 drop L13 + Armour entries; 40 R17/K25 qualify "latest-only"; 41 R02/R04 same corrections.

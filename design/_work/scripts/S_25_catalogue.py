@@ -41,6 +41,65 @@ refs = collections.defaultdict(list)
 for r in refs_all:
     refs[r['asset']].append(r)
 
+# ------------------------------------------------------------------ reviewed overrides (Phase-5 fix pass)
+# Each entry was verified in the source tree; they correct the reachability recorded in the survey CSVs.
+# (1) globalworld_*.shp are loaded at every start-up: code/app.cpp:App::Initialise -> new GlobalWorld ->
+#     code/global_world.cpp:GlobalWorld::GlobalWorld -> new SphereWorld -> SphereWorld::SphereWorld -> GetShape
+#     (a missing file release-asserts in code/lib/resource.cpp:Resource::GetShapeCopy).  Never rendered in a match.
+LOAD_ONLY_FULL = {
+    'data/shapes/globalworld_outer.shp', 'data/shapes/globalworld_middle.shp', 'data/shapes/globalworld_inner.shp'}
+LOAD_ONLY_NOTE = ('[C] shape-name | loaded at every start-up by `SphereWorld::SphereWorld` (`App::Initialise` -> `new GlobalWorld`); '
+                  'a missing file is fatal; drawn only on the Darwinia world map')
+# (2) thumbnails/default.bmp: code/UI/MapImageButton.h:MapImageButton::Render loads it only when GetTexture of an
+#     existing thumbnail returned -1, which cannot happen (Resource::GetTextureWithFlags release-asserts first);
+#     a map without a thumbnail is drawn without one.
+FALLBACK_LEGACY = {'data/thumbnails/default.bmp'}
+FALLBACK_NOTE = ('[C] literal | why LEGACY: the only request (`code/UI/MapImageButton.h:MapImageButton::Render`) runs when '
+                 '`GetTexture` of an existing thumbnail returns -1, but `Resource::GetTextureWithFlags` release-asserts instead '
+                 'of returning -1; a map without a thumbnail is simply not drawn')
+# (3) CreditsLoader is compiled into FULL but reached only from the Darwinia outro camera
+#     (code/camera.cpp:Camera::AdvanceSphereWorldOutroMode) and the RunCredits script command (code/script.cpp).
+REF_BUILD_BY_FILE = {'code/loaders/credits_loader.cpp': 'LEGACY'}
+
+def _apply_overrides(rows):
+    for r in rows:
+        if r['path'] in LOAD_ONLY_FULL:
+            r['reach'] = 'FULL'; r['evidence'] = LOAD_ONLY_NOTE
+        if r['path'] in FALLBACK_LEGACY:
+            r['reach'] = 'LEGACY'; r['evidence'] = FALLBACK_NOTE
+for r in refs_all:
+    site_file = r['site'].split(':', 1)[0]
+    if r['asset'] in LOAD_ONLY_FULL and 'SphereWorld::SphereWorld' in r['site']:
+        r['build'] = 'FULL'
+    if r['asset'] in FALLBACK_LEGACY and 'MapImageButton::Render' in r['site']:
+        r['build'] = 'LEGACY'
+    if site_file in REF_BUILD_BY_FILE and r['build'] == 'FULL':
+        r['build'] = REF_BUILD_BY_FILE[site_file]
+
+_apply_overrides(tex); _apply_overrides(shp)
+
+# level files name building types by code/worldobject/building.cpp:Building::GetTypeName; four classes differ
+TYPE_NAME_OF_CLASS = {'masterspawnpoint': 'spawnpointmaster', 'constructionyard': 'yard',
+                      'primaryupgradeport': 'primaryupgrade', 'receiverspiritspawner': 'spiritspawner'}
+
+# evidence strings of the survey CSVs carry draft labels; they are rewritten to document references
+def clean_evidence(row):
+    ev = row['evidence']
+    ev = ev.replace(', see P12 24.2)', ', see 24 §3.3)').replace(', P18)', ')')
+    ev = ev.replace('icon bindings parsed by ControlBindings but InputManager::controlIcon has no caller (code/lib/input/input.cpp)',
+                    'the `~ icon` binding lines are parsed by InputManager::parseInputPrefs and stored with ControlBindings::setIcon, '
+                    'but InputManager::controlIcon has no caller (code/lib/input/input.cpp)')
+    m = re.search(r'also dead/commented: [^|]*', ev)
+    if m:
+        dead = [x['site'] for x in refs[row['path']] if x['build'] == 'DEAD' or x['kind'] == 'commented-out']
+        by = collections.OrderedDict()
+        for site in dead:
+            f, sym, ln = split_site(site)
+            by.setdefault('%s:%s' % (f, sym), []).append('L' + ln)
+        ev = ev[:m.start()] + 'also dead/commented: ' + '; '.join('%s %s' % (k, ', '.join(v)) for k, v in by.items()) + \
+             (' ' if ev[m.end():].startswith('|') else '') + ev[m.end():]
+    return ev
+
 # ------------------------------------------------------------------ helpers
 def md(x):
     return str(x).replace('|', '\\|').replace('\n', ' ')
@@ -199,8 +258,10 @@ def consumer_of(r, asset_dir):
             ps = {'Entity': '7a/7b', 'Building': '6/8', 'WorldObject': '10a'}.get(rk, '6-10')
         place = ''
         if rk == 'Building':
-            place = ', MP-map placements %d' % mp_place.get(cls.lower(), 0)
+            place = ', MP-map placements %d' % mp_place.get(TYPE_NAME_OF_CLASS.get(cls.lower(), cls.lower()), 0)
         return '%s (%s%s)' % (cls, rk or 'worldobject', place), ps
+    if sym == 'SphereWorld::SphereWorld':
+        return 'SphereWorld (created at start-up by `GlobalWorld`; load only, drawn only on the Darwinia world map)', 'load only'
     for pre, name, ps in SYS:
         if f.startswith(pre):
             return name, ps
@@ -746,7 +807,7 @@ for k, title in order:
     out.append('#### %s — %d files\n' % (title, len(rows)))
     out.append('| Path | Packed | Evidence |\n|---|---|---|')
     for r in rows:
-        ev = r['evidence']
+        ev = clean_evidence(r)
         out.append('| `%s` | %s | %s |' % (r['path'], md(packed(r['archive'])), md(ev)))
     out.append('')
 auth = [r for r in allrows if status_key(r) == 'authoring']

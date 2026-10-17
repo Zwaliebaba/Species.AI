@@ -58,7 +58,7 @@ def fullmenu(r):
     if not modes:
         return 'never listed'
     if not (modes & FULL_MODES):
-        return 'mode not compiled'
+        return 'mode not permitted'
     return 'listed' if r['ships_retail'] == 'Y' else 'permitted, data absent'
 
 
@@ -156,7 +156,7 @@ def T_master():
         rows.append([code(r['file']), r['english_name'], modes, r['numplayers'],
                      f"{r['worldSizeX']}×{r['worldSizeZ']}", r['cellSize'], r['grid_cells'], r['tiles'], r['flatten_areas'],
                      r['spawnpoints_by_team'] or '0', notable(r), cap, r['invalidcrates'], r['instantunits'],
-                     code(r['thumbnail']) if r['thumbnail'] else '`data/thumbnails/default.bmp` (fallback)',
+                     code(r['thumbnail']) if r['thumbnail'] else 'none (no image drawn, §2.2)',
                      'Y' if r['ships_retail'] == 'Y' else 'N', klass(r)])
     return md(['File', 'English name (IP)', 'Modes', 'Players', 'World (wu)', 'cellSize', 'Grid', 'Tiles', 'Flatten',
                'SpawnPoints by pos', 'Notable objects (counts)', 'PopCap / DefenderPopCap', 'InvalidCrates',
@@ -320,8 +320,12 @@ def T_rr():
 def T_thumbs():
     rows = []
     for r in T:
+        note = r['note']
+        if os.path.basename(r['file']) == 'default.bmp':
+            # Fix pass (R4): MapImageButton draws nothing when <stem>.bmp is missing; the default.bmp branch is unreachable.
+            note = 'named by MapImageButton as the fallback, but never drawn: a missing thumbnail draws no image (§2.2)'
         rows.append([code(r['file']), r['size_bytes'], f"{r['width']}×{r['height']}×{r['bpp']}bpp", code(r['level_file']),
-                     r['note'], ships(r)])
+                     note, ships(r)])
     return md(['Thumbnail', 'Bytes', 'Format', 'Level (case-insensitive stem)', 'Note', 'Data shipped in'], rows)
 
 
@@ -393,7 +397,7 @@ def T_sourcemap():
     rows.append([code('data/levels/level_enum.txt'), 'achievement level ids 1–59; excluded from retail data (§7.3)'])
     for r in T:
         lv = os.path.basename(r['level_file']) if r['level_file'] else ''
-        role = 'map-select thumbnail' + (f' of {lv}' if lv else (' fallback' if 'default' in r['file'] else ' without a top-level level'))
+        role = 'map-select thumbnail' + (f' of {lv}' if lv else (' named as fallback, never drawn' if 'default' in r['file'] else ' without a top-level level'))
         rows.append([code(r['file']), role + ' (§3.5)'])
     return md(['File', 'Role'], rows)
 
