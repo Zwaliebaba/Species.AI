@@ -293,7 +293,7 @@ class ScreenshotWriter {  // PNG through WIC (ADR-0076)
 
 **PLT-016** (MUST) The user-data root is `%LOCALAPPDATA%\<Studio>\Species\`: the Local AppData known folder, from `SHGetKnownFolderPath` with `FOLDERID_LocalAppData`, then the folder `<Studio>`, the publisher name compiled into the build, then the folder `Species`, the product name `kProductName` (ADR-0071). Each level is created when it is missing. Every build flavour uses the same root; only the start-up option `--user-data` replaces it (PLT-025). No flavour and no option writes user files to the working directory or beside the executable.
 
-**PLT-017** (MUST) The user-data root holds the folders of table 3.1-A, each created on first use. Screenshots go to the Pictures known folder (`FOLDERID_Pictures`) under `Species\` (ADR-0071, ADR-0076).
+**PLT-017** (MUST) The user-data root holds the folders of table 3.1-A, each created on first use, except `crashes\`, which is created at start-up (PLT-120). Screenshots go to the Pictures known folder (`FOLDERID_Pictures`) under `Species\` (ADR-0071, ADR-0076).
 
 Table 3.1-A: user-data folders.
 
@@ -378,7 +378,7 @@ Table 3.3-A: start-up options.
 
 **PLT-024** (MUST) `--verify-content` runs start-up steps 1 to 10 of PLT-038 unchanged, then hands over to the repair check of [build tooling](build_tooling_and_distribution.md) BLD-103 instead of steps 11 to 17: the packs are mounted for checking only, so a damaged pack does not stop the start-up as AST-102 would, and no window, renderer, audio engine or UI is created. The platform layer shows the result as a pre-UI message, `ui.repair.passed` or `ui.repair.failed` with the names of the failed packs (BLD table 4.10-B), using their compiled-in text when no string table could be loaded, and the process ends with BLD-103's exit code.
 
-**PLT-025** (MUST) `--user-data <directory>` makes the given directory the user-data root for every user file: settings, logs, local dumps, custom maps and development outputs. Every consumer, the crash-context registration included, reads the root only after the command line has been parsed, so all of them follow the option. A directory inside the install directory is refused with the fatal message `ui.error.user_data_inside_install` (ADR-0071). Screenshots still go to the Pictures folder.
+**PLT-025** (MUST) `--user-data <directory>` makes the given directory the user-data root for every user file: settings, logs, custom maps and development outputs. Every consumer, the crash-context registration included, reads the root only after the command line has been parsed, so all of them follow the option. A directory inside the install directory is refused with the fatal message `ui.error.user_data_inside_install` (ADR-0071). Screenshots still go to the Pictures folder, and local dumps still go to the folder that the registry file of [build tooling](build_tooling_and_distribution.md) BLD-113 names.
 
 **PLT-026** (MUST) In `Profile` and `Shipping` builds the `--loose-content` option is not compiled in (ADR-0056, AST-105, AST-006) and is therefore an unknown argument. No start-up option selects a product, a flavour or a feature flag: those are fixed by the build and the edition manifest (ADR-0056).
 
