@@ -694,7 +694,7 @@ Every mode request resets `m_framesInThisMode = 0`, so **the first two frames af
 | 9 | `ModeEntityFollow` | `AdvanceEntityFollowMode` | nobody (`RequestEntityFollowMode` has no caller) | [B:LEGACY] unreachable | no | no |
 | 10 | `ModeTurretAim` | `AdvanceTurretAimMode` | selecting own gun turret / chess piece [C] `code/location_input.cpp`; `Team` when current building is a turret [C] `code/team.cpp`; task-manager | [B:FULL] | yes | yes (clamped 10–50) |
 | 11 | `ModeSphereWorldScripted` | `AdvanceSphereWorldScriptedMode` | script `CamLocationFocus` | [B:LEGACY] | no | no |
-| 12 | `ModeSphereWorldIntro` | `AdvanceSphereWorldIntroMode` | `StartSequence` [C] `code/startsequence.cpp` | [B:LEGACY] (Darwinia intro) [I] | no | no |
+| 12 | `ModeSphereWorldIntro` | `AdvanceSphereWorldIntroMode` | `StartSequence::Advance` [C] `code/startsequence.cpp`; the sequence is only created by `RunBootloader`, which is compiled only under `USE_LOADERS` (off) [C] `code/main.cpp:RunBootloader` | [B:LEGACY] unreachable | no | no |
 | 13 | `ModeSphereWorldOutro` | `AdvanceSphereWorldOutroMode` | script (`code/script.cpp`) | [B:LEGACY] | no | no |
 | 14 | `ModeSphereWorldFocus` | `AdvanceSphereWorldFocusMode` | main menu (`GameMenu::CreateMenu` via plain `RequestMode`, then `SetTarget`+`CutToTarget`; but the menu loop never advances the camera), script `CamGlobalWorldFocus` | [B:LEGACY] | no | no |
 

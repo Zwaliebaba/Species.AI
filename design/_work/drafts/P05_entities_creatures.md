@@ -101,7 +101,7 @@ These facts are shared engine behaviour that every class below relies on; they a
 | First spawn delay | `m_spawnTimer = now + 5.0` s after `Initialise` | [C] `AntHill::Initialise` |
 | Objective cap | SP: 3; MP: `m_numAntsInside/10` clamped to [1,6] | [C] `AntHill::Advance` |
 | Objective search interval | `now + syncrand()%2` s (0 or 1 s) | [C] `AntHill::Advance` |
-| Ants per objective | SP: `5 + 5*(difficulty/10)`; MP: `int(5 + syncfrand(5) + m_numAntsInside/20.0)` (5–9 + ants/20) | [C] `AntHill::Advance` |
+| Ants per objective | SP: `int(5 + 5×difficulty/10)`; MP: `n = int(5 + syncfrand(5))` (5–9), then `n = int(n + m_numAntsInside/20.0)` | [C] `AntHill::Advance` |
 | Ant release interval | MP: 0.2 s; SP: `0.2 - 0.2*difficulty/10` | [C] `AntHill::Advance` |
 | Spirit→ant conversion | each conversion consumes 1 stored spirit: SP +3 ants, next after 5.0 s; MP **+6 ants**, next after 1.0 s | [C] `AntHill::Advance` |
 | Empty-hill decay (MP) | if `m_numAntsInside <= 0` for **30 consecutive Advance calls** (3.0 s at 10 Hz) → `m_numAntsInside = 10`, `Damage(-10)` | [C] `AntHill::Advance` |
@@ -237,7 +237,7 @@ stateDiagram-v2
     Flying --> Dead: health <= 0 (non-laser damage)
     Bouncing --> Dead: health <= 0
     Burst --> [*]: Spawn(type); removed
-    Dead --> [*]: spirit + explosion; fade
+    Dead --> [*]: spirit + explosion; removed on the next Advance (no fade)
 ```
 
 ## [→ 02_units_and_entities] Egg (Virii egg) — spirit-fertilised hatchery
@@ -727,7 +727,7 @@ stateDiagram-v2
 ## [→ 02_units_and_entities] DropShip — reinforcement transport (unreachable)
 
 ### Role and build tag
-A small (0.2-scale `spaceship.shp`) transport that flies from the map corner nearest the target to 250 m above it, drops 20 Darwinians of its team one per tick, and leaves. Created only by `Task::TargetDropShip` for a `GlobalResearch::TypeDropShip` task. No code issues that task directly; it can only arise as a **level-option reinforcement type** (`defenderreinforcementtype`/`attackerreinforcementtype DropShip`), used solely by `data/levels/old/mp_assault_3P_1.txt`, which is outside the shipped `levels/mp_*` listing (`GameMenu` lists `levels/` non-recursively). ⇒ **[B:LEGACY]** (dormant feature). `TypeDropShip` is in `EntityIsBlocked`. [C] `code/taskmanager.cpp:Task::TargetDropShip`; `code/multiwinia.cpp` (L998–999 reinforcement types); `code/level_file.cpp:LevelFile::ParseMultiwiniaOptions` (L485–489); `code/game_menu.cpp` (L733 `ListResources("levels/", "mp_*", false)`); [I] that `old/` maps are not shipped.
+A small (0.2-scale `spaceship.shp`) transport that flies from the map corner nearest the target to 250 m above it, drops 20 Darwinians of its team one per tick, and leaves. Created only by `Task::TargetDropShip` for a `GlobalResearch::TypeDropShip` task. No code issues that task directly; it can only arise as a **level-option reinforcement type** (`defenderreinforcementtype`/`attackerreinforcementtype DropShip`), used solely by `data/levels/old/mp_assault_3P_1.txt`, which is outside the shipped `levels/mp_*` listing (`GameMenu` lists `levels/` non-recursively). ⇒ **[B:LEGACY]** (dormant feature). `TypeDropShip` is in `EntityIsBlocked`. [C] `code/taskmanager.cpp:Task::TargetDropShip`; `code/multiwinia.cpp` (L998–999 reinforcement types); `code/level_file.cpp:LevelFile::ParseMultiwiniaOptions` (L485–489); `code/game_menu.cpp` (L733 `ListResources("levels/", "mp_*", false)`); `tools/multiwinia_exclusions.txt` (L21 `levels/old/*`, consumed by `tools/build_multiwinia_data.bat`) excludes the `old/` maps from the shipped data archives. [C]
 
 | Item | Value | Ref |
 |---|---|---|
@@ -759,7 +759,7 @@ States: `DropShipStateArriving` → (arrived) `Dropping` → `Leaving` → remov
 
 ## [→ 02_units_and_entities] Tentacle — portal tentacles ("The Beast", debug-only)
 
-**[B:DEBUG]** / **[B:LEGACY]**: Tentacles are spawned only by `Portal::AdvanceStateExpanding` (6 tentacles × 12 segments on the Monster team, `NUM_TENTACLES` 6). Portals come from Darwinia/Shaman maps (`TypePortal` is blocked; maps only in `data/levels/old/`) or from the **The Beast** crate (`Crate::RunTheBeast`), which exists only when `INCLUDE_THEBEAST` is defined — and `code/worldobject/crate.h` defines it only under `TARGET_DEBUG`. `TypeTentacle` is in `EntityIsBlocked`. [C] `code/worldobject/portal.cpp:Portal::AdvanceStateExpanding`, `code/worldobject/portal.h`, `code/worldobject/crate.cpp:Crate::RunTheBeast`, `code/worldobject/crate.h`.
+**[B:DEBUG]** / **[B:LEGACY]**: Tentacles are spawned only by `Portal::AdvanceStateExpanding` (6 tentacles × 12 segments on the Monster team, `NUM_TENTACLES` 6). Portals come from Darwinia/Shaman maps (`TypePortal` is blocked; those maps exist only in `data/levels/old/`, which `tools/multiwinia_exclusions.txt` keeps out of the shipped data) or from the **The Beast** crate (`Crate::RunTheBeast`), which exists only when `INCLUDE_THEBEAST` is defined — and `code/worldobject/crate.h` defines it only under `TARGET_DEBUG`. `TypeTentacle` is in `EntityIsBlocked`. [C] `code/worldobject/portal.cpp:Portal::AdvanceStateExpanding`, `code/worldobject/portal.h`, `code/worldobject/crate.cpp:Crate::RunTheBeast`, `code/worldobject/crate.h`.
 
 | Item | Value | Ref |
 |---|---|---|
@@ -966,12 +966,11 @@ Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEv
 ## [U] Unknowns
 | # | Unknown | What would resolve it |
 |---|---|---|
-| U1 | Whether `data/levels/old/*.txt` (only user of `DropShip` reinforcements, Shaman/Portal maps) ship in the retail `.dat` archives | Inspect `tools/build_multiwinia_data.bat` include lists / retail data archive |
-| U2 | Exact runtime value of the SpaceShip byte speed stat (UB conversion) | Run the shipped binary or disassemble `Entity::SetType` |
-| U3 | Designer intent for Eggs-crate creatures belonging to the task owner (contradiction 2) | Playtest / design notes |
-| U4 | Whether `Virii::s_viriiPopulation` returns to 0 between games (no explicit reset; relies on destructors) | Verify `Location` teardown deletes every Virii |
-| U5 | Behaviour of Futurewinian-team Darwinians after drop (CPU team with no spawn points/AI entity?) | Read `Location::InitFuturewinianTeam` callers and AI creation for team 5 (07_ai) |
-| U6 | `Location::Bang` damage falloff formula `(_range*2 - d)/_range*2` (operator precedence) — confirmed in code; whether intended | Design intent; documented as-is |
+| U1 | Exact runtime value of the SpaceShip byte speed stat (UB conversion) | Run the shipped binary or disassemble `Entity::SetType` |
+| U2 | Designer intent for Eggs-crate creatures belonging to the task owner (contradiction 2) | Playtest / design notes |
+| U3 | Whether `Virii::s_viriiPopulation` returns to 0 between games (no explicit reset; relies on destructors) | Verify `Location` teardown deletes every Virii |
+| U4 | Behaviour of Futurewinian-team Darwinians after drop (CPU team with no spawn points/AI entity?) | Read `Location::InitFuturewinianTeam` callers and AI creation for team 5 (07_ai) |
+| U5 | `Location::Bang` damage falloff formula `(_range*2 - d)/_range*2` (operator precedence) — confirmed in code; whether intended | Design intent; documented as-is |
 
 ## Docs-vs-code discrepancies
 - `docs/multiwinia_todo.txt` (L74–76) suggests creatures such as Triffids should belong to "a generic non-player team… reserve team 0". Code uses a dedicated **Monster team = 4** (and Futurewinian team = 5), created lazily by `Location::InitMonsterTeam`. [C] `code/location.cpp:Location::GetMonsterTeamId`.
@@ -1006,7 +1005,7 @@ Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEv
 - **[B:DEBUG]/[B:LEGACY] Tentacle**: Portal-only (The Beast crate in debug builds; Shaman maps). `code/worldobject/tentacle.cpp`.
 - **[B:LEGACY] Shaman summon paths** for ArmyAnt/Centipede/Spider/SporeGenerator/SoulDestroyer/Tripod/Virii: `Shaman::CanSummonEntity` returns false; the switch is commented out. `code/worldobject/shaman.cpp`.
 - **[B:LEGACY] Cave → Virii**: `Cave` is blocked. `code/worldobject/cave.cpp`.
-- **[B:LEGACY] Darwinia campaign placements**: `data/levels/map_*.txt`, `mission_*.txt` instant units (AI 6, ArmyAnt 1, Centipede 55, Darwinian 60, SoulDestroyer 8, Spider 45, SporeGenerator 26, Virii 118) and buildings (AntHill 13, GodDish 1, Spam 3, Triffid 30) — campaign mode is not compiled into FULLGAME (`INCLUDEGAMEMODE_CAMPAIGN` off); ArmyAnt instant units are additionally blocked. [C] grep of `data/levels`.
+- **[B:LEGACY] Darwinia campaign placements**: `data/levels/map_*.txt`, `mission_*.txt` instant units (AI 6, ArmyAnt 1, Centipede 55, Darwinian 60, SoulDestroyer 8, Spider 45, SporeGenerator 26, Virii 118) and buildings (AntHill 13, GodDish 1, Spam 3, Triffid 30) — campaign mode is not compiled into FULLGAME (`INCLUDEGAMEMODE_CAMPAIGN` off), these files are excluded from the shipped archives (`tools/multiwinia_exclusions.txt` L24–25 `levels/map_*`, `levels/mission_*`), and ArmyAnt instant units are additionally blocked. [C] grep of `data/levels`.
 - **[B:LEGACY] Single-player branches** inside live classes: SP-only constants (AntHill objective rules, Triffid unlimited launching, Centipede SP explosions, SpamInfection SP target team 1/2 rules, SporeGenerator hover start) — retained in the sections above as SP vs MP rows.
 - **[B:EDITOR] Triffid trajectory/trigger preview** in `Triffid::RenderAlphas` under `LOCATION_EDITOR`.
 - **[B:DEBUG] Cheat window Virii spawn** (`CHEATMENU_ENABLED`): 20 Monster Virii, roam 1000. `code/interface/cheat_window.cpp`.

@@ -978,3 +978,164 @@ Rows `Vector3 r, u, f` = the object's right, up and forward axes expressed in pa
 | R7 | Unguarded degenerate cases produce NaN that `ASSERT_FLOAT_IS_SANE` cannot catch (`HorizontalAndNormalise`, `Vector2::SetLength`, `SegRayIntersection2D`, `Matrix33::Invert`, `InvertMatrix`) | math code | Medium (NaN propagates deterministically on the same platform but differs across platforms in sign/payload handling) |
 | R8 | Static scratch buffers (`Matrix33/34::m_openGLFormat`) shared across threads | headers | Low (render only) |
 
+---
+
+## [→ 40_carry_forward_assessment] Backend concepts → Direct3D 12 equivalents (hints)
+
+| Original concept | Where | D3D12 / modern equivalent | Verdict |
+|---|---|---|---|
+| GL 1.x immediate mode (`glBegin/glVertex/glEnd`) and its D3D9 emulation (`DrawPrimitiveUP` per `glEnd`) | `opengl_directx.cpp:glEnd` | per-frame **upload ring buffer** (UPLOAD heap, persistently mapped) + `IASetVertexBuffers` with offsets; batch many primitives per draw; quads → index buffer pattern (0,1,2,0,2,3) instead of vertex duplication | Replace |
+| GL state machine + emulator state cache (`s_currentAttribs`, render/sampler states set eagerly) | state cache table | immutable **Pipeline State Objects** (blend, depth, raster, input layout, shaders) keyed by a hashed state descriptor + small dynamic state (viewport, scissor, blend factor); root constants for per-draw values | Replace (keep the *catalogue of states actually used* as the PSO list) |
+| `FixedPipeline` + `FixedFunc0/1/2` shader variants selected by texture-unit enables | `FixedPipeline::Bind` | a handful of explicit HLSL (SM 6.x) material shaders compiled offline with DXC; permutations as PSOs (unlit/vertex-colour, 1 texture, 2 textures, lit) | Adapt (fix D1–D5: lit+textured, real fog colour, alpha preservation) |
+| Shader constants set by name via `ID3DXConstantTable` every draw | `Shader::Set*` | root signature: root CBV for per-frame (view, proj, fog, lights), root constants or per-draw CBV slice for world matrix; no string lookups | Replace |
+| Matrix stacks (`ID3DXMatrixStack`, GL post-multiply) | `opengl_directx_matrix_stack.cpp` | explicit CPU-side transform hierarchy (DirectXMath `XMMATRIX`), world matrices written into constant buffers | Replace |
+| Display lists (recorder device → MANAGED VB + command list) | `opengl_directx_dlist*` | static **default-heap vertex/index buffers** created once (copy queue upload) + optional **bundles** or pre-recorded command lists for static geometry | Adapt (concept maps well to bundles; record state explicitly — the emulator's silent state dropping must not be replicated) |
+| ARB VBO emulation (`glBufferDataD3D` → MANAGED VB) | `ogl_extensions_directx.cpp` | default-heap buffers + upload heap staging; `D3D12_VERTEX_BUFFER_VIEW` | Replace |
+| MANAGED pool / lost-device `WaitAndResetDevice` | `Direct3DSwapBuffers` | no device-lost in the D3D9 sense; handle **`DXGI_ERROR_DEVICE_REMOVED/RESET`** by full device recreation; swap-chain `ResizeBuffers` on mode/size change | Replace |
+| Async mip generation on a worker thread | `MipMapTask` | offline mip generation in the asset pipeline (BC-compressed DDS with full chains) or a compute-shader mip pass | Replace |
+| `D3DFMT_A8R8G8B8` / DXT1 runtime compression | `d3dCreateTexture` | `DXGI_FORMAT_R8G8B8A8_UNORM(_SRGB)`, BC1/BC3/BC7 compressed offline | Replace |
+| `glCopyTexImage2D` / `StretchRect` back-buffer copies (water reflection, deform) | emulator, P11/P12 | render to an offscreen render target texture, sample it (resource barriers RT→SRV) | Adapt |
+| `glReadPixels` (screenshots, AVI capture) | emulator | `CopyTextureRegion` into a READBACK heap buffer, map after fence | Replace |
+| Clip planes transformed to clip space | `glClipPlane` | `SV_ClipDistance` output from the vertex shader | Adapt |
+| Polygon offset (broken in D3D9 path) | `glPolygonOffset` | PSO `DepthBias` / `SlopeScaledDepthBias` (integer/float fields, correct units) | Adapt |
+| Fog computed per-vertex on clip z | FixedFunc VS | per-pixel fog on view-space distance in the material shader, colour from the level's background colour | Adapt |
+| Vsync via `PresentationInterval` / driver default (GL) | `Direct3DInit` | `IDXGISwapChain::Present(syncInterval, flags)` with flip-model swap chain; `DXGI_PRESENT_ALLOW_TEARING` for VRR | Replace |
+| Exclusive fullscreen via `ChangeDisplaySettings` / D3D9 fullscreen | window managers | borderless-windowed flip-model swap chain (recommended on Windows 10/11); optional `SetFullscreenState` | Replace |
+| Display-mode enumeration (`EnumDisplaySettings`) | `ListAllDisplayModes` | `IDXGIOutput1::GetDisplayModeList1`; for borderless, render-resolution scaling instead of mode switching | Replace |
+| MSAA (absent) | — | MSAA render targets + `ResolveSubresource`, or FXAA/TAA | New |
+| Gamma ramp (dead) | `Renderer::SetScreenGamma` | sRGB swap-chain formats + a brightness constant in the final pass | Replace |
+| Hardware blacklists (Intel/SiS VBO) | `ogl_extensions.cpp` | feature-level/`CheckFeatureSupport` gating; vendor blacklists generally unnecessary | Drop |
+| `safegl` mutex for cross-thread display-list compile | `safegl.cpp` | multi-threaded command-list recording is native to D3D12 (per-thread allocators) | Replace |
+| AVI capture via VfW | `avi_generator.cpp` | Media Foundation `IMFSinkWriter` or external capture tools | Drop/Replace |
+| double-precision sim math with x87 precision control and `iv_trunc_low_nibble` | math library | for lockstep: SSE2-only build (`/arch:SSE2` is implicit on x64), `/fp:precise` or `/fp:strict`, no `FPU_PRESERVE` concerns on x64, and **own deterministic implementations** of sin/cos/atan2/sqrt (or fixed-point) instead of rounding CRT results | Adapt (keep the "wrap all transcendental calls" discipline; replace the mechanism) |
+
+---
+
+## Constants table (this partition)
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `MAX_ACTIVE_TEXTURES` | 2 | `const int` | `opengl_directx.cpp` |
+| Initial immediate-mode vertex capacity | 1024 vertices (×2 growth) | literal | `InitialiseData`, `reallocateVertexList` |
+| `CustomVertex` stride | 44 bytes | struct | `opengl_directx_internals.h` |
+| Mip worker CPU affinity mask | `0x01|0x04|0x10|0x40` (CPUs 0,2,4,6) | literal | `SetWorkingThreadProcessor` |
+| Lost-device poll interval | 100 ms | literal `Sleep(100)` | `WaitAndResetDevice` |
+| FPS counter window | 5000 ms | literal | `Direct3DSwapBuffers` |
+| `gluPerspective` z-translation factor | `_43 *= 2.0f` | literal | `gluPerspective` |
+| `gluOrtho2D` depth range | −1 … +1 | literal | `gluOrtho2D` |
+| Clear depth / stencil | 1.0 / 0 | literal | `glClear` |
+| Default clear colour | RGBA(0,0,0,255) | literal | `InitialiseData` |
+| Alpha-ref quantisation | ×255, truncated | literal | `glAlphaFunc` |
+| Colour float→byte | ×255 truncation, clamp [0,1] | macro `CLAMPF2B` | `opengl_directx_inline.h` |
+| Fog range when fog disabled | (100000, 1000) | literal | `FixedPipeline::Bind` |
+| Specular exponent | 16 | HLSL literal | `FixedFunc0.vs` |
+| Normal epsilon | (0, 0.0001, 0) added before normalise | HLSL literal | `FixedFunc0.vs` |
+| Shared VS constants | c0–c3 `matCameraView`, c4–c7 `matCameraViewIT` | HLSL `register` | `FixedFunc*.vs` |
+| `DEFORM_PRECISION` | 10 | `#define` | `data/shaders/globals.h` |
+| GL trace max lines | 50000 | `const unsigned MAX_LINES` | `opengl_trace.cpp:glTrace` |
+| Trace rotating string slots | 32 | `const int MAX_STRINGS` | `rotatingStaticString` |
+| Extension-string buffer | 4096 bytes (vendor/renderer/version 256 each) | static arrays | `ogl_extensions.cpp` |
+| Display-mode filter | bpp ≥ 15, w ≥ 640, h ≥ 480 | literals | `ListAllDisplayModes` |
+| Temporary window for fullscreen res change | 640×480 windowed | literals | `RestartWindowManagerAndRenderer` |
+| Safety window mode | 800×600, windowed, 16-bit colour, 16/24-bit z, 60 Hz | literals | `Renderer::Initialise` |
+| D3D depth formats | 16→D16, 24→D24X8, 32→D32 | switch | `Direct3DInit` |
+| D3D colour formats | 24/32→X8R8G8B8 (fallback A8R8G8B8); 15/16→X1R5G5B5 (fallback R5G6B5, A1R5G5B5) | switch | `Direct3DInit` |
+| Gamma exponent | `2.0 − gamma`; ramp scale 65535 | literals | `Renderer::SetScreenGamma` |
+| AVI defaults | DemoFrameRate 25, AVIMotionBlurFactor 1, 24 bpp, 1000 ppm, `"Untitled.avi"`, VfW ≥ 0x010a | prefs/literals | `AVIGenerator::AVIGenerator`, `InitEngine` |
+| AviPlayer frame buffer | 512×256×3 bytes; streaming speed 2000 | literals | `AviPlayer::OpenAvi` |
+| `M_PI` | 3.1415926535897932384626 | `#define` | `math_utils.h` |
+| `NearlyEquals` tolerance | 1e-6 | macro | `math_utils.h` |
+| `Vector3::Normalise` threshold | lenSqrd > 1e-10 else (0,0,1) | literal | `vector3.h` |
+| `Vector3::RotateAround` threshold | |axis|² < 1e-8 | literal | `vector3.cpp` |
+| `Matrix33/34::RotateAround` threshold | |axis|² < (1e-5)² | literal | `matrix33.cpp`, `matrix34.cpp` |
+| `Matrix34::IsNormalised` tolerances | length² ∈ [0.999, 1.001], dot ≤ 0.001 | literals | `matrix34.cpp` |
+| `RampUpAndDown` overrun value | 1.0001 | literal | `math_utils.cpp` |
+| `IsPointInTriangle` tolerance | ×1.0001 | literal | `math_utils.cpp` |
+| `RaySegDist` direction threshold / miss multiplier | 0.0001 / ×100000 | literals | `math_utils.cpp` |
+| `RayTriIntersection` det epsilon / default ray length | 1e-7 / 1e10 | literals | `math_utils.cpp` |
+| `RayPlaneIntersection` epsilons | 1e-7 | literals | `math_utils.cpp` |
+| `nearestPowerOfTwo` cap | 2³¹ | literal | `math_utils.cpp` |
+| MT19937 (dead copy) | N 624, M 397, MATRIX_A 0x9908b0df, default seed 5489 | `#define` | `math_utils.cpp` |
+| `Vector2::Compare` tolerance | `FLT_EPSILON` (float `fabsf`) | `<float.h>` | `vector2.cpp` |
+| `code/globals.h` | NUM_TEAMS 6, NUM_SLICES_PER_FRAME 10, IAMALIVE_PERIOD 0.1 s, MINIMUM_RENDER_PERIOD 1.0 s, GRAVITY 10.0 | `#define` | `code/globals.h` |
+
+---
+
+## Cross-partition notes
+
+- **P12 (render core)**: owns `FixedPipeline`/`Shader` files; this draft documents their emulation semantics. `Renderer::Initialise` (window creation retry chain), `Renderer::SetOpenGLState/CheckOpenGLState` (state contract), `Renderer::SetScreenGamma` (dead), `Resource::FlushOpenGlState/RegenerateOpenGlState` (called after device reset and window recreation) are P12 code with backend implications described here. `bitmap.cpp` POT/square rescaling depends on `RequirePowerOfTwoTextures/RequireSquareTextures`.
+- **P11 (terrain/water)**: `LandscapeRenderer` render-mode selection (VBO vs display list, Intel/SiS blacklist), the D3D-native VBO path (`SetVertexDeclaration(GetVertexDecl())` + `DrawPrimitive`), `USE_DIRECT3D_TRILIST` (flat shading under D3D), and `ReleaseD3DPoolDefaultResources/ReleaseD3DResources` hooks for landscape and water. Whether the landscape restores `s_pCustomVertexDecl` after drawing is for P11 to confirm [U].
+- **P10 (input)**: `W32EventHandler::WndProc` receives all window messages; `W32InputDriver` calls `NastyPollForMessages`, `CaptureMouse/UncaptureMouse`, and receives `SetMousePosNoVelocity` from `NastySetMousePos/NastyMoveMouse`; `Camera::Advance` calls `EnsureMouseCaptured/Uncaptured`; `win32_eventhandler.cpp` calls `WindowMoved`.
+- **P17b (options)**: `PrefsScreenWindow` enumerates `g_windowManager->m_resolutions` and refresh rates (`HAVE_REFRESH_RATES`), applies via `RestartWindowManagerAndRenderer`; `SetWindowed` used by debug menu.
+- **P17a (UI framework/editor)**: `GrabberWindow` drives `AVIGenerator` [B:DEBUG].
+- **P20 (loaders/loading screen)**: `LoadingScreen::RenderFrame` locks `g_openGLMutex` and polls `GeneratingMipmaps()`; loaders call `g_windowManager->Flip()`; `gameoflife_loader.cpp` calls `glTraceEnable` (dead: `USE_LOADERS` off).
+- **P14 (platform lib)**: `universal_include.h` (header switch, `iv_*` macros), `contrib/systemiv/lib/math/math_stubs.cpp` (`iv_trunc_low_nibble`, `iv_atof`, `iv_wtof`, `iv_wtoi`), `random_number.cpp` (live synced RNG), `work_queue.cpp` (per-thread `StandardiseCPUPrecision`).
+- **P15 (network) / 22**: `NetworkFloat/NetworkDouble::FromUnicodeString` apply `iv_trunc_low_nibble`; cross-build (GL vs D3D) lockstep is unsafe (FP model + D3D9 FPU precision); recommend the 22 author audit the raw-CRT call list above.
+- **P09 (gestures)**: only consumer of `InvertMatrix` (14×14).
+- **P01 (app core)**: `code/globals.h` constants; `App::m_aviGenerator`; `AppMain` calls `StandardiseCPUPrecision`.
+
+## Contradictions / open questions
+
+1. `Matrix33/34::DecomposeToYDR()` comment says `x = dive, y = yaw`, but the code returns `(yaw, dive, roll)` in (x, y, z) [C]. Callers outside this partition must be checked by their owners.
+2. `Matrix33 * Vector3` (world→local) and `Matrix34 * Vector3` (local→world) use opposite conventions; `Matrix34::InverseMultiplyVector` and `Matrix34::Transpose` are mathematically not inverses (both unused) [C].
+3. `Plane(normal, point)` uses the opposite sign of `d` to `Plane(a,b,c)` (unused) [C].
+4. `Renderer::Initialise` passes literal `true` for `waitVRT` on the first two attempts although it reads `WaitVerticalRetrace` — intent unclear (bug or deliberate "always vsync") [C/U].
+5. `SetOpenGLState` sets `glShadeModel(GL_FLAT)` but the D3D emulator ignores shade model; the baseline look relies on flat shading (P12's visual-style section should note that D3D renders Gouraud except for strips) [C/I].
+6. `gluPerspective`'s `_43 *= 2` ("Preserve OpenGL compatibility") doubles effective near/far distances [I]; deliberate?
+7. Whether `ReleaseDirect3D` builds at all at this commit (see 24 build-viability) [I].
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Does `ReleaseDirect3D` compile (abstract `WindowManagerDirectX`, `D3DRS_LINEWIDTH`)? | Build with DirectX SDK March 2008 headers |
+| U2 | Is `D3DRS_LINEWIDTH` present in any PC D3D9 SDK header? | Inspect `d3d9types.h` of the SDK in the vcproj include path |
+| U3 | Register allocation of non-`register()` uniforms in FixedFunc shaders (and sampler registers s0/s1) | Disassemble compiled shaders (`fxc /Fc`) for the profile returned by `D3DXGetVertexShaderProfile` |
+| U4 | Whether D3D9 exposes >1 mip level for `D3DUSAGE_AUTOGENMIPMAP` managed textures here (does `MipMapTask` do any work?) | Runtime check of `GetLevelCount()` on target hardware/driver |
+| U5 | Whether `_43 *= 2` was intended (effective depth range [2zn, 2zf]) | Compare D3D vs GL builds at the near plane; author intent unavailable |
+| U6 | Actual swap interval of the baseline GL build (driver default) | Runtime observation; no code sets it |
+| U7 | Behaviour of `AVIStreamWrite` with `biSizeImage = 0` (moot: `AddFrame()` is never called) | Runtime test under a debug build |
+| U8 | Exact x87 control-word change performed by D3D9 `CreateDevice` without `FPU_PRESERVE` on the shipped driver/runtime | `_control87(0,0)` readback after `Direct3DInit` |
+| U9 | Whether `docs/HardwareComplianceIssues.txt` "mouse pointer background not transparent" was fixed in cursor code (P12 `targetcursor`) | P12 review of cursor texture alpha handling |
+| U10 | Whether the landscape D3D path restores the emulator's vertex declaration after drawing | P11 reading of `LandscapeRenderer::Render*` end |
+
+## Docs-vs-code discrepancies
+
+| Doc statement | Code reality | Ref |
+|---|---|---|
+| `docs/OpenGLState.txt`: fog `GL_FOG_END 2000`, `GL_FOG_START 800` | `Location::SetupFog`: `fogEnd = max(4000, worldSizeX+1000, worldSizeZ+1000)`, `start = fogEnd/3`; `CheckOpenGLState` asserts `FOG_END ≥ 4000` | `code/location.cpp:Location::SetupFog`, `code/renderer.cpp:Renderer::CheckOpenGLState` |
+| fog colour = `g_app->m_world->m_backgroundColour` | `g_app->m_backgroundColour` with alpha 0; and the D3D path ignores fog colour entirely (fades to black) | `Location::SetupFog`, `glFogfv` |
+| lights from `g_app->m_world->m_lights[x]` | `m_location->SetupLights()` or `m_globalWorld->SetupLights()`; `m_world` is a Darwinia-era name | `Renderer::SetOpenGLState` |
+| `glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)` | `glTexEnvi(…MODULATE)` plus `glTexEnviv(GL_TEXTURE_ENV_COLOR, {0,0,0,0})` | `Renderer::SetOpenGLState` |
+| lists `GL_TEXTURE_MAG_FILTER` twice (MIN filter missing) | neither filter is part of the default state | `SetOpenGLState` |
+| no mention of `GL_NORMALIZE`, `GL_LIGHT_MODEL_AMBIENT`, `GL_SCISSOR_TEST`, lights 2–7 | code disables NORMALIZE, sets light-model ambient {0,0,0,0}, disables scissor and all 8 lights | `SetOpenGLState` |
+| trailing `glMaterialfv(GL_FRONT, GL_AMBIENT/DIFFUSE/SHININESS/SPECULAR…)` and `allegro_gl_set_texture_format(GL_INTENSITY8)` | no Allegro anywhere in `code/` [C grep]; materials set by `Renderer::SetObjectLighting` (specular 0, diffuse 1, shininess 127, ambient 0); under D3D `GL_AMBIENT` material is ignored and materials never reach shaders | `Renderer::SetObjectLighting`, `glMaterialfv` |
+| (implied) the documented state is the API contract | under D3D, shade model, line/point smooth, fog colour/density, light-model ambient and material state are not emulated, so the contract holds only for the GL baseline | emulator tables |
+| `docs/HardwareComplianceIssues.txt`: "Multitexturing ARB not supported" (Linux) | no Win32 fallback: multitexture function pointers are called unguarded; Linux build is dead | `ogl_extensions.cpp`, consumers |
+| `docs/HardwareComplianceIssues.txt`: "Mouse pointer background not transparent" | no code in this partition addresses it (see U9) | — |
+| Code comment `vector3.h`: `==`/`!=` "Uses FLT_EPSILON" | uses `NearlyEquals` (1e-6 absolute) | `Vector3::Compare` |
+| Code comment `math_utils.h`: `Round` "may round up or down, depending on the current CPU rounding mode" | macro is `(int)(a)` = truncation (the rounding-mode-dependent asm is commented out) | `math_utils.h` |
+| `random_number.h` comment: `_syncsfrand` "-range < result < range" | returns `(syncfrand(1) − 0.5)·range` ∈ [−range/2, range/2) | `random_number.cpp:_syncsfrand` |
+| `Matrix33/34::DecomposeToYDR()` comment "x = dive, y = yaw, z = roll" | returns (yaw, dive, roll) | matrix files |
+| `ogl_extensions.cpp` comment: secondary GL context "for loading thread" | never made current; no loading-thread GL use | `WindowManagerWin32::EnableOpenGL` |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" (`APP_NAME_W`, used as window title **and** window-class name) | brand/name | `code/lib/universal_include.h`, `code/renderer.cpp:Renderer::Initialise` → `CreateWin` | `"<GameTitle>"` |
+| `http://www.multiwinia.co.uk/` (opened via `OpenWebsite`) | brand/URL | `code/main.cpp` | studio/product URL from config |
+| "Please restart Darwinia for the screen settings to take affect" (Linux-only dialog) | UI text / brand | `code/interface/prefs_screen_window.cpp:RestartWindowManagerAndRenderer` | "Please restart the game to apply display settings" |
+| Application icon resource 101 (D3D window class) | art | `code/lib/window_manager_directx.cpp:CreateWin` | new icon |
+| `iv_` prefix ("Introversion") on numeric wrappers | naming | `universal_include.h`, `math_stubs.cpp` | `det_` / `dmath::` |
+| Shader file names `FixedFunc0/1/2(.vs, Maps.ps)` and `globals.h` content | asset (code-like) | `data/shaders/` | rewrite; names are generic |
+| Third-party (not Introversion, but licence-relevant): MT19937 (Matsumoto/Nishimura BSD notice) in `math_utils.cpp`; "AVIGenerator" by Jonathan de Halleux (CodeProject) in `avi_generator.*` incl. its error strings ("…Come on, join the 21th century!"); `math_stubs.cpp` "Copyright 2007 Ambrosia Software"; comp.graphics FAQ 1.03 segment/ray algorithm; Möller–Trumbore ray/triangle | third-party code/text | as listed | use standard libraries / own implementations |
+
+## Appendix — dead/legacy code
+
+- **SDL window manager** `code/lib/window_manager_sdl.{cpp,h}`, `code/lib/ogl_extensions_sdl.cpp` — not in `Darwinia.vcproj` (Mac/Linux). Skimmed: `SDL_SetVideoMode` with RGB 8/8/8 or 5/5/5, double buffer, depth = zDepth, **antialias via `SDL_GL_MULTISAMPLEBUFFERS 2` / `SDL_GL_MULTISAMPLESAMPLES 4`** (retries without AA, then with 16-bit Z), `SDL_GL_SWAP_CONTROL 1` (vsync); extensions via `SDL_GL_GetProcAddress` + `gluCheckExtension`, no Intel blacklist [B:DEAD].
+- **`AviPlayer`** (`EGAMESBUILD`) — VfW AVI playback into a 512×256 RGB buffer for the eGames distributor loader [B:DEAD].
+- **`AVIGenerator`** (`AVI_GENERATOR`, `TARGET_DEBUG` only) — frame capture never fed (`AddFrame()` uncalled) [B:DEBUG, effectively non-functional].
+- **`TARGET_OS_VISTA` block** in `WindowManagerDirectX` `WinMain` (`-mediacenter`, save-file argument) [B:DEAD].
+- **Mac precision control** inline asm in `StandardiseCPUPrecision` [B:DEAD].
+- **Unreferenced in live builds**: `code/lib/math_utils.cpp:syncrand` (+ `init_genrand`); `OpenGLRegisterD3DTexture`; `Attributes`/`s_attributeStack` (no `glPushAttrib`); `WindowManagerWin32::m_hRC2` secondary context and the declared-but-undefined `Use/Release/DestroySecondaryContext`; `gglChoosePixelFormatARB`; `Renderer::SetScreenGamma`; `glTraceEnable` callers (`USE_LOADERS` off); `TriTriIntersection` (implementation file excluded); `Matrix34::InverseMultiplyVector`, `Matrix34::Transpose`, `Matrix33::Invert`, `Plane(normal, point)`; `FixedPipeline::m_state.m_environmentDiffuse/Specular` (never assigned); `fogColour` uniform in `FixedFunc2.vs`; triple-buffering block and NVPerfHUD adapter selection in `Direct3DInit` (commented out); `glFinish` back-buffer lock (after `return`).

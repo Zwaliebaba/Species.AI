@@ -522,7 +522,7 @@ Opened by `LocationGameLoop` on `ControlMenuEscape` once the fade is complete an
 
 | Aspect | Behaviour | Evidence |
 |---|---|---|
-| Open (in game) | `LocationInput::Advance`: `ControlLobbyChat` (= `key enter down`) while chat not visible, not toggled this update, input mode ≠ gamepad, and **no Eclipse windows open** → register `ChatInputWindow`, set `m_chatToggledThisUpdate`. If the input mode becomes gamepad while open → `CloseChat()` | [C] `code/location_input.cpp`; `data/input/input_preferences.txt` |
+| Open (in game) | `LocationInput::Advance`: `ControlLobbyChat` (= `key enter down`) while chat not visible, not toggled this update, input mode ≠ gamepad, and **no Eclipse windows open** → register `ChatInputWindow`, set `m_chatToggledThisUpdate`. If the input mode becomes gamepad while open → `CloseChat()` | [C] `code/location_input.cpp:LocationInput::Advance`; `data/input/input_preferences.txt` |
 | Open (lobby) | the lobby page of `GameMenuWindow` embeds a `ChatInputField` named `chat_input`; `UpdateMultiplayerPage` starts text edit on `ControlLobbyChat` | [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::UpdateMultiplayerPage` (P18) |
 | Geometry (in game) | font = `0.015 × screenH`; scale = W/1280 (W ≤ 800 → W/1024; W ≤ 640 → 0.75); position x = 10×scale, y = H − 10×scale − 1.5×font; size = (0.25 W, 1.5 × font) | [C] `ChatInputWindow::ChatInputWindow` |
 | Field | single `ChatInputField` filling the window, `RegisterString(m_currentChatMessage, 255)` (initial "none", cleared on click); `BeginTextEdit` immediately unless in the lobby | [C] `ChatInputWindow::Create` |

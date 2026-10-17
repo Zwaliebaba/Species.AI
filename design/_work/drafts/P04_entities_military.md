@@ -11,7 +11,7 @@ Scope: `code/worldobject/{weapons,airstrike,nuke,armour,insertion_squad,lasertro
 ### 0.2 Random number sources (determinism)
 | Function | Generator | Range actually produced | Net-safe? | Ref |
 |---|---|---|---|---|
-| `syncfrand(x)` | `_syncfrand` (synced LCG `_syncrand()/2^32`) | `[0, x)` | yes | [C] `contrib/systemiv/lib/math/random_number.cpp:_syncfrand` |
+| `syncfrand(x)` | `_syncfrand` = `_syncrand()·x/2^32`, `_syncrand` is a Mersenne-Twister (MT19937, `mt[]`/`mti`, `MATRIX_A`) seeded by `syncrandseed` | `[0, x)` | yes | [C] `contrib/systemiv/lib/math/random_number.cpp:_syncfrand` |
 | `syncsfrand(x)` | `(_syncfrand(1)-0.5)*x` | **`(-x/2, +x/2)`** (header comment says ±x — wrong) | yes | [C] `contrib/systemiv/lib/math/random_number.cpp:_syncsfrand` |
 | `syncrand()` | synced integer | `[0, 2^32)` | yes | [C] same file |
 | `FRAND(x)` / `SFRAND(x)` (upper-case, used inside `Vector3` constructors) | `_syncfrand` / `_syncsfrand` with guaranteed left-to-right order | `[0,x)` / `(-x/2,x/2)` | yes | [C] `code/lib/vector3.cpp:FromRand`, `code/lib/vector3.h` |
@@ -157,7 +157,7 @@ Derived from `Grenade`; colour (255,100,100); `m_type=EffectFlameGrenade` [C]. C
 ### 1.5 `ControllerGrenade`
 - Colour (100,100,255); `m_squadTaskId=-1` [C].
 - `Advance`: runs base throw physics; after **3.0 s** from birth: sound `ExplodeController` (TypeGrenade), particle shower `TypeControlFlash` (5–9 random up-flashes + a 50-particle ring of radius 50, non-synced RNG), then every `Darwinian` **of the thrower's team** within 50 → `Darwinian::TakeControl(m_squadTaskId)`; removed [C].
-- Reachability: only created by `Location::ThrowWeapon(EffectThrowableControllerGrenade)`. The only caller with that type is `InsertionSquad`'s weapon fire when the squad's selected weapon is the Controller [I — confirm in §4]. Multiwinia has no Controller crate/task path (`Task::Start`/crate tables list no `TypeController` reward) → [B:LEGACY] [I].
+- Reachability: only created by `Location::ThrowWeapon(EffectThrowableControllerGrenade)`, whose only caller is `Squadie::FireSecondaryWeapon` when the squad's `m_weaponType == TypeController` [C]. No reachable Multiwinia path sets that weapon type (§4.5), and no crate gives a Controller → [B:LEGACY] [I].
 
 ### 1.6 `Rocket`
 | Param | Value | Ref |

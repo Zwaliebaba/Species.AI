@@ -1,0 +1,85 @@
+path,depth,reason,sections
+code/3d_sierpinski_gasket.cpp,full,,24.6 Billboards/spheres/utility;Appendix;Constants table
+code/3d_sierpinski_gasket.h,full,,24.6 Billboards/spheres/utility;Appendix
+code/deform.cpp,full,,Deform effect;Shaders;Contradictions;Unknowns;Constants table;Appendix
+code/deform.h,full,,Deform effect;Docs-vs-code
+code/effect_processor.cpp,full,,26.2 EffectProcessor;Appendix;Constants table;IP register
+code/effect_processor.h,full,,26.2 EffectProcessor
+code/explosion.cpp,full,,Explosions (shape shattering);24.2 Frame composition;Constants table
+code/explosion.h,full,,Explosions (shape shattering)
+code/lib/3d_sprite.cpp,full,,24.6 Billboards/spheres/utility
+code/lib/3d_sprite.h,full,,24.6 Billboards/spheres/utility
+code/lib/FixedPipeline.cpp,full,,Shaders;Cross-partition notes
+code/lib/FixedPipeline.h,full,,Shaders
+code/lib/bitmap.cpp,full,,25.1 Bitmap decoding;25.2 Texture upload;Constants table;Contradictions
+code/lib/bitmap.h,full,,25.1 Bitmap decoding;25.2 Texture upload
+code/lib/debug_render.cpp,full,,24.6 Billboards/spheres/utility
+code/lib/debug_render.h,full,,24.6 Billboards/spheres/utility
+code/lib/persisting_debug_render.cpp,full,,24.6 Billboards/spheres/utility;24.2 Frame composition
+code/lib/persisting_debug_render.h,full,,24.6 Billboards/spheres/utility
+code/lib/poster_maker.cpp,full,,24.6 Billboards/spheres/utility;24.1 Renderer object
+code/lib/poster_maker.h,full,,24.6 Billboards/spheres/utility
+code/lib/render_utils.cpp,full,,24.6 Billboards/spheres/utility;Appendix;Docs-vs-code
+code/lib/render_utils.h,full,,24.6 Billboards/spheres/utility
+code/lib/resource.cpp,full,,25.3 Resource manager;24.5 Shape rendering;Constants table;Contradictions;Appendix
+code/lib/resource.h,full,,25.3 Resource manager
+code/lib/shader.cpp,full,,Shaders;Cross-partition notes
+code/lib/shader.h,full,,Shaders
+code/lib/shape.cpp,full,,24.5 Shape rendering;24.4 Visual style/options/budgets;Constants table;Appendix;Contradictions
+code/lib/shape.h,full,,24.5 Shape rendering
+code/lib/sphere_renderer.cpp,full,,24.6 Billboards/spheres/utility;Constants table
+code/lib/sphere_renderer.h,full,,24.6 Billboards/spheres/utility
+code/lib/targetcursor.cpp,full,,24.6 Billboards/spheres/utility
+code/lib/targetcursor.h,full,,24.6 Billboards/spheres/utility
+code/lib/text_renderer.cpp,full,,24.7 Text rendering;Constants table;Contradictions
+code/lib/text_renderer.h,full,,24.7 Text rendering;Constants table
+code/lib/texture.cpp,full,,25.3 Resource manager
+code/lib/texture.h,full,,25.3 Resource manager
+code/lib/texture_uv.cpp,full,,Cross-partition notes
+code/lib/texture_uv.h,full,,Cross-partition notes
+code/particle_system.cpp,full,,Particle system;24.2 Frame composition;Constants table;Docs-vs-code
+code/particle_system.h,full,,Particle system
+code/renderer.cpp,full,,24.1 Renderer object;24.2 Frame composition;24.3 Pixel effect;24.4 Visual style/options/budgets;Constants table;Contradictions;Appendix
+code/renderer.h,full,,24.1 Renderer object;24.3 Pixel effect;Constants table
+data/shaders/FixedFunc0.vs,full,,Shaders
+data/shaders/FixedFunc0Maps.ps,full,,Shaders
+data/shaders/FixedFunc1.vs,full,,Shaders
+data/shaders/FixedFunc1Maps.ps,full,,Shaders
+data/shaders/FixedFunc2.vs,full,,Shaders
+data/shaders/FixedFunc2Maps.ps,full,,Shaders
+data/shaders/deform.vs,full,,Shaders
+data/shaders/deformDiamond.ps,full,,Shaders
+data/shaders/deformFullscreen.ps,full,,Shaders
+data/shaders/deformSphere.ps,full,,Shaders
+data/shaders/globals.h,full,,Shaders;Constants table
+data/shaders/water-meshwaves.ps,full,,Shaders
+data/shaders/water-meshwaves.ps3,full,,Shaders
+data/shaders/water-meshwaves.vs,full,,Shaders
+code/water_reflection.cpp,full,read for water-meshwaves binding (P11 file),Shaders;24.2 Frame composition;Contradictions
+code/location.cpp,skimmed,read Render*/RenderBuildings/RenderBuildingAlphas/RenderWeapons/RenderSpirits/RenderClouds/RenderCurrentMessage/RenderChatMessages/SetupFog/SetupLights/SetupSpecialLights/WaterReflect/Flush+RegenerateOpenGlState/Bang excerpt only,24.1 Renderer object;24.2 Frame composition;Deform effect
+code/team.cpp,skimmed,read Team::Render/RenderVirii/RenderDarwinians/RenderOthers/RenderSyncErrors/Initialise (viriifull)/GetTeamName only,24.2 Frame composition;25.3 Resource manager;24.4 Visual style/options/budgets
+code/landscape_renderer.cpp,skimmed,read RenderMainSlow/RenderOverlaySlow/Render GL state only (P11 owns),24.2 Frame composition
+code/water.cpp,skimmed,read Water::Render and GL state of RenderFlatWater/RenderDynamicWater only (P11 owns),24.2 Frame composition;24.4 Visual style/options/budgets
+code/clouds.cpp,skimmed,read Render/RenderSky/RenderBlobby/RenderFlat GL state only (P11 owns),24.2 Frame composition;24.4 Visual style/options/budgets
+code/worldobject/building.cpp,skimmed,read Render/RenderAlphas/RenderLights/RenderPorts only,24.2 Frame composition
+code/worldobject/entity.cpp,skimmed,read ConvertFragmentColours/ConvertShapeColoursToTeam/SetupTeamShape only,24.5 Shape rendering
+code/worldobject/armour.cpp,skimmed,read ConvertShapeColours/Armour::Begin only,24.5 Shape rendering
+code/worldobject/spirit.cpp,skimmed,read RenderWithoutGlBegin only,24.2 Frame composition
+code/app.cpp,skimmed,"read constructor archive/renderer init, Initialise archives, SetLanguage fonts, Multiplayer/IsSinglePlayer",25.3 Resource manager;24.7 Text rendering;24.2 Frame composition
+code/main.cpp,skimmed,"read UpdateAdvanceTime, LocationGameLoop render section, SetPreferenceOverrides",Explosions (shape shattering);24.4 Visual style/options/budgets;Cross-partition notes
+code/camera.cpp,skimmed,read SetupProjectionMatrix/SetupModelviewMatrix/Render only,24.1 Renderer object;24.2 Frame composition
+code/lib/preferences.cpp,skimmed,read CreateDefaultValues/GetDefault* only,24.4 Visual style/options/budgets
+code/lib/math_utils.cpp,skimmed,read RequireSquareTextures/RequirePowerOfTwoTextures/nearestPowerOfTwo only,25.2 Texture upload
+code/interface/prefs_graphics_window.cpp,skimmed,read option list and apply handler,24.4 Visual style/options/budgets
+code/lib/opengl_directx.cpp,skimmed,read Create/ReleaseD3dPoolDefaultResources only (P13 owns),Deform effect;Cross-partition notes
+code/routing_system.cpp,skimmed,read RoutingSystem::Render only,24.2 Frame composition
+code/user_input.cpp,skimmed,read UserInput::Render only,24.2 Frame composition
+code/markersystem.cpp,skimmed,read start of MarkerSystem::Render only,24.2 Frame composition
+code/game_menu.cpp,skimmed,read GameMenu::Render only,24.2 Frame composition
+code/global_world.cpp,skimmed,read GlobalWorld::Render only,24.2 Frame composition
+code/network/clienttoserver.cpp,skimmed,read particle advance call site only,Particle system
+code/script.cpp,skimmed,read RunCommand_ShowDarwinLogo only,24.1 Renderer object
+docs/OpenGLState.txt,full,,Docs-vs-code
+docs/HardwareComplianceIssues.txt,full,,Docs-vs-code
+data/textures/unicode,skimmed,"BMP headers of all 138 atlases parsed by script (dims/bpp), contents not inspected",24.7 Text rendering
+data/shapes,skimmed,all 140 .shp parsed by OUT/_work/scripts/P12_shapes.py for counts (P12_shapes.csv),24.5 Shape rendering
