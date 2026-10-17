@@ -12,7 +12,7 @@ This document specifies, as reference behaviour:
 - the two route graphs, the walkability primitives, graph construction, the path query, route following and route lifetime;
 - the movement model: per-tick integration, the ground, world and spawn clamps, falling, water, obstacle push, bounce, teleport entry, ray tests and the explosion primitive.
 
-There is no rigid-body physics and no collision between actors. Motion is explicit per-tick integration, terrain height look-ups and push-out loops against structure hit volumes. Per-kind speeds and slope rules belong to [../../02_units/README.md](../02_units/README.md).
+There is no rigid-body physics and no collision between actors. Motion is explicit per-tick integration, terrain height look-ups and push-out loops against structure hit volumes. Per-kind speeds and slope rules belong to [../02_units/README.md](../02_units/README.md).
 
 ## 2 Rules
 
@@ -30,7 +30,7 @@ There is no rigid-body physics and no collision between actors. Motion is explic
 |---|---|---|---|---|
 | actor grid | `ActorGrid` | `ref.sim.actor_grid.cell_size` (32 wu) per side | actor handles, one layer per team slot; the no-team value is never registered | per actor, after each advance (R-SIM-308) |
 | actor grid cache | `ActorGridCache` | — | memo of recent enemy queries | entries evicted by age once per tick (R-SIM-318) |
-| obstacle grid | `ObstacleGrid` | `ref.sim.obstacle_grid.cell_size` (32 wu) per side | handles of structures whose hit volume overlaps the cell | incrementally, when a structure is created or removed (R-SIM-324) |
+| obstacle grid | `ObstacleGrid` | `ref.sim.obstacle_grid.cell_size` (32 wu) per side | handles of structures whose hit volume overlaps the cell | incrementally, when a structure is created or removed (R-SIM-323) |
 
 **R-SIM-303** (MUST) Only actors are registered in the actor grid. Structures, effects, laser bolts and Essence orbs are never registered. An Essence orb or an effect that looks for targets scans its own container, or queries the actor grid for actors.
 
@@ -104,7 +104,7 @@ The test uses each actor's current position, which may already have moved during
 
 | Caller | Query | Decision it drives | Owning document |
 |---|---|---|---|
-| Worker threat search | `EnemiesInCells(search position, range)` gates the cached enemy query (R-SIM-317); `FriendsInCells` | whether to look for threats at all; the fear test | [../02_units/worker.md](../02_units/worker.md) |
+| Worker threat search | `EnemiesInCells(search position, range)` gates the cached enemy query (R-SIM-316); `FriendsInCells` | whether to look for threats at all; the fear test | [../02_units/worker.md](../02_units/worker.md) |
 | Worker grenade decision | `CountInCells`, `CountFriendsInCells` and `CountEnemiesInCells` at the threat, radius 50 wu | throw a grenade when more than 5 enemies and fewer than 2 friends are near the target | [../02_units/worker.md](../02_units/worker.md) |
 | Population Limiter | `CountFriendsInCells(position, search radius, team)` for each team, on its staggered recount | the per-team counts | [../03_buildings_and_world_objects/economy_and_spawn_objects.md](../03_buildings_and_world_objects/economy_and_spawn_objects.md) |
 | Control Zone | `CountEnemiesInCells(position, zone size) > 0` | whether the zone is contested | [../01_skirmish_rules_and_modes/zone_control.md](../01_skirmish_rules_and_modes/zone_control.md) |
@@ -291,7 +291,7 @@ return cost
 
 **R-SIM-350** (MUST) Merging scans the route from its start. Whenever a point and its successor are closer than `ref.sim.route.merge_distance` (50 wu) and `IsPathClear(point, successor, evaluateCliffs = true)` holds, both are replaced in place by their midpoint, and the merged point is tested again against its new successor.
 
-**R-SIM-351** (MUST) After the y of every point is snapped to the terrain, the direct-route override applies: with climbing := not `straightWalkable` and `straightCost` > 0, if `straightCost` ≥ 0 and (not climbing or `permitClimbing`) and `straightCost` ≤ the route's walking distance (R-SIM-334), the route is replaced by the two points [from, to]. When a complex route was not possible (step 3), the route already holds only [from, to].
+**R-SIM-351** (MUST) After the y of every point is snapped to the terrain, the direct-route override applies: with climbing := not `straightWalkable` and `straightCost` > 0, if `straightCost` ≥ 0 and (not climbing or `permitClimbing`) and `straightCost` ≤ the route's walking distance (R-SIM-334), the route is replaced by the two points [from, to]. The override applies only when the corridor test of R-SIM-345 step 3 ran; otherwise the route keeps the points that merging left (R-SIM-350).
 
 **R-SIM-352** (MUST) The new route is stored under a new generational route handle (DEC-028). `BuildRoute` draws no random value; its result depends only on the terrain, the structures and the node tables. Every point of a generated route is a position point: structure points arise only from teleport travel (R-SIM-386).
 
@@ -359,7 +359,7 @@ if not dead:
     if p.y <= ground:
         onGround := true; v := 0; p.y := ground + ref.sim.physics.land_offset
     if p.y <= seaLevel:
-        if inWater < 0: inWater := 0                # starts the in-water count (R-SIM-376)
+        if inWater < 0: inWater := 0                # starts the in-water count (R-SIM-375)
         v := 0
 ```
 
@@ -371,7 +371,7 @@ A landed actor therefore rests `ref.sim.physics.land_threshold` + `ref.sim.physi
 
 **R-SIM-373** (MUST) The airborne step applies to these kinds while they are airborne: ant, Worker, Crawler egg, Trooper, Leader, and every actor that a jump pad launches.
 
-**R-SIM-374** (MUST) An explosion knocks an actor back by adding normalise((dir.x, k, dir.z)) × f to its velocity and making it airborne, where dir is the explosion-to-actor vector of the explosion model ([../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), k is the explosion damage while the actor is on the ground and −1 while it is airborne, and f is the actor's damage factor (R-SIM-388). Troopers and Leaders receive the velocity change but are not made airborne.
+**R-SIM-374** (MUST) An explosion knocks an actor back by adding normalise((dir.x, k, dir.z)) × f to its velocity and making it airborne, where dir is the explosion-to-actor vector of the explosion model ([../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)), k is the explosion damage while the actor is on the ground and −1 while it is airborne, and f is the actor's damage factor (R-SIM-388). Troopers and Leaders are not made airborne.
 
 ### 2.15 Water
 
@@ -446,7 +446,7 @@ return result                                                                   
 |---|---|
 | actor ray hit | the ray against the actor's hit shape at transform (front, up, position); an actor without a hit shape is a sphere of radius `ref.sim.ray.sprite_radius` (5.0 wu) |
 | structure ray hit | the ray against the structure's hit shape (no hit position or normal is produced); a structure without a hit shape is a sphere |
-| terrain ray hit | the line-of-sight test of the simulation ([../../architecture/components/terrain.md](../../architecture/components/terrain.md)) |
+| terrain ray hit | the line-of-sight test, and the pointer's ground hit on the input side ([../../architecture/components/terrain.md](../../architecture/components/terrain.md)) |
 
 Pointer picking of actors, actor groups and structures is screen-space and local to one participant; it is presentation and input ([../06_controls_camera_and_commands.md](../06_controls_camera_and_commands.md)) and never runs inside the simulation step. Its result reaches the simulation only as a command (DEC-008).
 
@@ -646,7 +646,7 @@ The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update
 
 **AC-SIM-05-08 — Symmetric memo** (R-SIM-336, R-SIM-339, R-SIM-340). Given node 0 at the foot and node 1 at the top of a uniform land slope that rises 70 wu over 100 wu horizontally (terrain normal y about 0.82), with both check-cliffs flags true: `IsPathClear` from node 1 to node 0 is clear, from node 0 to node 1 it is not, and neither node's table holds an edge to the other.
 
-**AC-SIM-05-09 — Path query shapes** (R-SIM-345 to R-SIM-351). A query whose three corridor lanes are clear returns [from, to]. A query with `directRoute` true returns [from, to]. A query whose node chain would exceed 100 points returns [from, to]. A query whose straight walk cost is not greater than the node route's walking distance returns [from, to]. Every returned point has its y on the terrain except where the override restored [from, to].
+**AC-SIM-05-09 — Path query shapes** (R-SIM-345 to R-SIM-351). Between two land points at least 50 wu apart: a query whose three corridor lanes are clear returns [from, to]; a query with `directRoute` true returns [from, to]; a query whose node chain would exceed 100 points returns [from, to]; and a query whose straight walk cost is not greater than the node route's walking distance returns [from, to]. A query with `directRoute` true between two land points less than 50 wu apart with a clear path returns their midpoint as its single point. Every point of a route that the override did not replace lies on the terrain.
 
 **AC-SIM-05-10 — Determinism of routes** (R-SIM-352, R-SIM-358, R-SIM-359). Given two participants with the same match state, one of which draws route previews every frame, when the same crowd order executes on both, then both allocate the same route handle with identical points.
 

@@ -30,7 +30,7 @@ It also specifies how the reference advances a match in time:
 
 **R-SIM-502** (MUST) A duration in seconds is a derived display value only: seconds = ticks × `ref.sim.tick_period` at game speed 1. A document that shows seconds shows the tick count beside them.
 
-**R-SIM-503** (MUST) The **mode second** is the named constant `ref.sim.mode_second` = 11 ticks (1.1 s at the reference tick rate). Every rule that the match rules state "per second" (the match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks) advances once per mode second, so displayed mode seconds run 10 % slower than real seconds. The mode-second timers start at 0 at match start, so the first mode second ends on the first tick after the grace period. The rules that use the mode second are in [reference/01](../01_skirmish_rules_and_modes/README.md). Its length is kept for the first playable and re-examined in playtest (DEC-002, DEC-003).
+**R-SIM-503** (MUST) The **mode second** is a named constant of 11 ticks (1.1 s at the reference tick rate), defined in the tuning table of [reference/01](../01_skirmish_rules_and_modes/README.md). Every rule that the match rules state "per second" (the match clock, elimination countdowns, Relic timers, reinforcement waves and rank checks) advances once per mode second, so displayed mode seconds run 10 % slower than real seconds. The mode-second timers start at 0 at match start, so the first mode second ends on the first tick after the grace period. The rules that use the mode second are in reference/01. Its length is kept for the first playable and re-examined in playtest (DEC-002, DEC-003).
 
 **R-SIM-504** (MUST) The reference tick counts in every tuning table are the starting values of Species (DEC-004). A reference behaviour that looks accidental is stated as an explicit rule with a named key, never left implicit (DEC-006). The reference library is the specification of record for these values (DEC-005).
 
@@ -58,7 +58,7 @@ It also specifies how the reference advances a match in time:
 | a team's Power slots update | 1 | `ref.sim.slice.power_slots` |
 | map-effect spawners (snow, dust storm, lightning) | 3 | `ref.sim.slice.map_effects` |
 | sky offset (cosmetic, no random draw) | 3 | `ref.sim.slice.sky` |
-| actor-grid query cache refresh | 7 | `ref.sim.slice.actor_grid_cache` |
+| actor-grid query cache eviction | 7 | `ref.sim.grid_cache.evict_slice`, defined in [05](05_space_routing_and_physics.md) |
 | Supply crate drops | 8 | `ref.sim.slice.supply_crates` |
 | match-rules update | 8 | `ref.sim.slice.match_rules` |
 
@@ -98,7 +98,7 @@ Teams, weapons, structures and Essence orbs advance one slice share of their sli
 
 **R-SIM-535** (MUST) A participant that is catching up spends up to 0.3 s per render frame simulating, so it renders at about 3 frames per second until it has caught up.
 
-**R-SIM-536** (MUST) The Species input delay, display delay and catch-up policy are decided by DEC-203 and DEC-225, and the command latency of Species does not depend on a participant's render rate; R-SIM-530 to R-SIM-535 describe the reference default.
+**R-SIM-536** (MUST) The Species input delay, display delay and catch-up policy are decided by DEC-203 and DEC-225; R-SIM-530 to R-SIM-535 describe the reference default, in which command latency depends on the participant's render rate (table below).
 
 The steady state of R-SIM-531, with one command frame every 0.1 s, frames arriving on a render-frame boundary and no network latency, is (derived values, not tuning):
 
@@ -162,7 +162,7 @@ Every request comes from simulation code or from a sequenced command, so it happ
 
 **R-SIM-548** (MUST) Game speed is **tick scheduling** (DEC-039). Every tick has the length `ref.sim.tick_period` and the same arithmetic at every speed; game speed sets how many ticks run per unit of real time, so that over any interval of real time the number of ticks run equals the integral of *s* over the interval divided by `ref.sim.tick_period`, with any fraction carried to the next interval and never dropped. Every per-tick probability, growth and rate, including the hold countdown of R-SIM-541 step 4, therefore scales with game speed (DEC-092).
 
-**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed-request steps 3 and 4 of R-SIM-541, and the match-rules update while the world is held (R-SIM-511) keep the reference real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their reference real-time lengths and a held match can resume. The ticks of the world step are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225.
+**R-SIM-549** (MUST) Under tick scheduling, command frames (R-SIM-510), the speed blend (step 3 of R-SIM-541) and the match-rules update while the world is held (R-SIM-511) keep the reference real-time cadence of one per `ref.sim.tick_period` of real time, so that the speed ramps of R-SIM-554 and R-SIM-555 keep their reference real-time lengths and a held match can resume; the hold countdown (step 4 of R-SIM-541) counts the ticks the world runs (R-SIM-548). The ticks of the world step are scheduled within that cadence; the exact scheduling and rounding rule is decided with DEC-225.
 
 ### 2.6 The held world, the start hold, pause and the end of a match
 
@@ -298,7 +298,7 @@ stateDiagram-v2
   Stopped --> Blending: grace end or resume request
   Steady --> Blending: speed request
   Blending --> Blending: a new request replaces the running one
-  Blending --> Steady: target reached, no hold
+  Blending --> Steady: non-zero target reached, no hold
   Blending --> Holding: target reached, hold set
   Holding --> Blending: hold expired, request normal speed
   Holding --> Blending: a new request replaces the hold
@@ -307,7 +307,7 @@ stateDiagram-v2
   Holding --> LockedBlending: match won
   LockedBlending --> LockedStopped: speed reaches 0
   LockedStopped --> [*]: match end
-  Steady --> Stopped: pause ramp reaches 0
+  Blending --> Stopped: target 0 reached
 ```
 
 Figure 2 — Speed-request states of the tick clock; "Stopped" and "LockedStopped" hold the world (R-SIM-541 to R-SIM-555).
@@ -315,7 +315,7 @@ Figure 2 — Speed-request states of the tick clock; "Stopped" and "LockedStoppe
 ```mermaid
 flowchart TD
   A["Render frame: participant step"] --> B{"Match loading?"}
-  B -- "yes" --> C["Keep the connection alive; run no slices"]
+  B -- "yes" --> C["Keep the connection alive, run no slices"]
   B -- "no" --> D["Record the real time at the start"]
   D --> E{"More than 20 frames behind and holding a participant id?"}
   E -- "yes" --> F["n = 20, catching up"]
@@ -402,11 +402,9 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 |---|---|---|---|---|---|
 | `ref.sim.tick_period` | 0.1 | s of real time per tick | **the reference tick rate: 10 ticks per second.** The reference schedule adds the period rounded to single precision, 0.100000001490116 s per tick | R-SIM-500, R-SIM-520 | DEC-227 |
 | `ref.sim.update_slices` | 10 | slices per tick | `kUpdateSlicesPerTick` | R-SIM-510, R-SIM-514 | DEC-224, DEC-227 |
-| `ref.sim.mode_second` | 11 | ticks | 1.1 s at the reference tick rate | R-SIM-503 | DEC-002, DEC-003 |
 | `ref.sim.slice.power_slots` | 1 | slice index (from 0) | | R-SIM-513 | |
 | `ref.sim.slice.map_effects` | 3 | slice index | snow, dust storm and lightning spawners | R-SIM-513 | |
 | `ref.sim.slice.sky` | 3 | slice index | cosmetic | R-SIM-513 | |
-| `ref.sim.slice.actor_grid_cache` | 7 | slice index | | R-SIM-513 | |
 | `ref.sim.slice.supply_crates` | 8 | slice index | | R-SIM-513 | |
 | `ref.sim.slice.match_rules` | 8 | slice index | runs also while the world is held | R-SIM-511, R-SIM-513 | |
 | `ref.sim.schedule.max_frames_per_poll` | 1 | command frames | | R-SIM-521 | DEC-225 |
@@ -444,6 +442,8 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 | `ref.sim.frame.memory_log_interval` | 60 | s of real time | diagnostic memory report | R-SIM-581 | |
 | `ref.sim.frame.deferred_jobs_per_iteration` | 1 | jobs | | R-SIM-581 | |
 
+Keys cited here and defined elsewhere: the mode second in [reference/01](../01_skirmish_rules_and_modes/README.md); `ref.match.grace_period` in reference/01; `ref.sim.grid_cache.evict_slice` in [05](05_space_routing_and_physics.md). Every value is a reference value adopted as the Species starting value (DEC-004).
+
 ## 5 Edge cases and interactions
 
 - **Slow host.** A host whose loop runs below 10 iterations per second issues fewer than 10 command frames per second, and every participant's match runs slower (R-SIM-523).
@@ -468,8 +468,8 @@ Alongside, the team command state is sent once per 0.1 s, the audio engine runs 
 
   | *N* | Slices 0 to 8 | Slice 9 |
   |---|---|---|
-  | 100 | 11 slots each: 0–10, 11–21, …, 88–98 | slot 99 |
-  | 95 | 10 slots each: 0–9, 10–19, …, 80–89 | slots 90–94 |
+  | 100 | 11 slots each: 0–10, 11–21, 22–32, 33–43, 44–54, 55–65, 66–76, 77–87, 88–98 | slot 99 |
+  | 95 | 10 slots each: 0–9, 10–19, 20–29, 30–39, 40–49, 50–59, 60–69, 70–79, 80–89 | slots 90–94 |
   | 5 | slices 0–4 one slot each (0, 1, 2, 3, 4); slices 5–8 visit no slot | empty |
 
 - **A4** (R-SIM-515, R-SIM-516) Given a tick in which a new effect is created in slice 4 in a slot after the last advanced slot, and another is created in a re-used earlier slot, when the tick ends, then the first has advanced once and the second has not advanced; every object that existed for the whole tick has advanced exactly once.
