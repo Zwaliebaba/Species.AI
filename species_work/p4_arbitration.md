@@ -392,3 +392,126 @@ The summary table of all entries is at the end of this file.
   > 2. **Player camera.** In the first iteration in which the local team exists (the first frame after team initialisation), cut the camera to that team's camera view `spawn_view_<n>`, where *n* is the team's start position. This happens once per build of the match world: the in-place reset of step 11.3 re-arms it, so the camera cuts again, to the view of the team's new start position, in the first iteration after the reset ([reference/06 camera](../06_controls_camera_and_commands/camera.md) R-CTRL-497).
 - Same requirement, step 11.3: append "; this re-arms step 2".
 - No change to camera.md or CAM-061.
+
+## A-19 Order and size of a map's co-op group position lists (item 118, first conflict)
+
+**Question.** Alliance assignment reads the map's group-1 and group-2 position lists by index (G1[0], G1[1], G2[0], G2[1]). The data schema derives these lists from the start-position records in ascending position order and limits each group to at most 2 positions; the reference reads them in the authored order. Does the derived order change any reference behaviour, and which statement stands?
+
+**Statements.**
+- `reference/01_skirmish_rules_and_modes/README.md` **R-MODE-020**: "`G1` and `G2` are the map's group-1 and group-2 position lists"; `AssignAlliance` moves a team to `G2[0]` or `G2[1]` (mirror `G1[0]`, `G1[1]`) when its group is full. It states neither the order nor a size limit.
+- `architecture/components/data_schemas/map_schema.md` **DAT-088**: the group-1 and group-2 positions are derived "from the start positions in group `one` and group `two`, each list in ascending position order"; **DAT-087** with C-DAT's report: groups hold at most 2 positions.
+
+**ORIG evidence.**
+- `01_game_modes.md` l.251–262 (the alliance pseudocode, source of R-MODE-020): it indexes the parsed lists `CoopGroup1Positions` and `CoopGroup2Positions` as read from the map file, so the reference order is the authored order.
+- `08_levels_and_level_design.md` l.721 and l.724–790 (per-map options, "values exactly as interpreted by `ParseMultiwiniaOptions`"): the reference maps that define groups list them as "0 / 1 2" (two 3-player Siege maps), "0 1 / 2 3" (two 4-player Siege maps) and "0 2 / 1 3" (one Spawn Control and one Zone Control 4-player map). **Every authored list is already in ascending order**, and none holds more than 2 positions.
+- l.1879 (map editor, co-op group swatches): "a group holds ≤ 2 positions; a position cannot be in both".
+- R-SIM-419 / `21_simulation_and_entity_model.md` l.1482: in Siege the group is chosen by membership only ("1 if the position is in `m_coopGroup1Positions`, else 2"), so order matters only outside Siege, on the two "0 2 / 1 3" maps.
+
+**Verdict.** ORIG settles the reference content: on every reference map the authored order equals ascending order, so DAT-088's derivation reproduces every reference outcome of R-MODE-020 exactly, and the 2-position limit is the reference editor's own rule. Only a custom map authored in the reference text form with a non-ascending list would behave differently; Species' schema has no authored list order to preserve, so that case is a **design choice** (minor), for X-DEC-P4b to record with item 118. Recommendation: keep DAT-088 and DAT-087 as written, and make R-MODE-020 state the order and the limit so that both documents read the same.
+
+**Replacements.**
+- `reference/01_skirmish_rules_and_modes/README.md`, R-MODE-020, last sentence before the pseudocode:
+  > `G1` and `G2` are the map's group-1 and group-2 position lists, each holding at most two start positions in ascending position order ([data schemas](../../architecture/components/data_schemas/map_schema.md) DAT-087, DAT-088); a position belongs to at most one group:
+- Design-choice note for X-DEC-P4b (fold into the item-118 entry): "Co-op group lists are derived in ascending position order; the reference reads them in authored order, which is ascending on every reference map. Options: A — ascending order (default); B — keep an authored order field. Recommendation: A."
+
+## A-20 Hive ants-inside value out of range: build error or run-time replacement (item 118, second conflict)
+
+**Question.** A Hive's map record carries its starting ants inside. R-BLDG-633 replaces a value outside [0, 10,000] by 0 when the map loads; DAT-159 makes such a value a build error. Which rule stands?
+
+**Statements.**
+- `reference/03_buildings_and_world_objects/trees_and_crate_structures.md` **R-BLDG-633**: "a value outside [0, `ref.bldg.hive.map_ants_max`] (10,000) becomes 0, and the default is 0. A map may place a Hive; no reference map does."
+- `architecture/components/data_schemas/map_structure_records.md` **DAT-159**: "A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error. The run-time replacement … that R-BLDG-633 states therefore never meets validated content; it remains the rule for any other creator."
+
+**ORIG evidence.**
+- `03_buildings_and_world_objects.md` l.1906 (Hive record): "numAntsInside | int, mandatory | 0 | starting ants; values outside [0, 10000] reset to 0".
+- `08_levels_and_level_design.md` l.1111: the Hive is "absent from every shipped (retail) map"; l.1752: the map editor's field range is [0, 1000].
+- ORIG has no content build step, so it says nothing about rejecting a value before load.
+
+**Verdict.** ORIG settles the **reference rule**: the run-time replacement by 0, with the bound 10,000, as R-BLDG-633 states. It does not settle whether Species' content build rejects such a value: DAT-159 is a Species validation rule layered in front of the reference rule, and the two statements are compatible as DAT-159 words them. This part is a **design choice** for X-DEC-P4b (item 118). Recommendation: keep both; R-BLDG-633 gains a cross-reference so that a reader of the reference rule finds the build check.
+
+**Replacements.**
+- `reference/03_buildings_and_world_objects/trees_and_crate_structures.md`, R-BLDG-633:
+  > **R-BLDG-633** (MUST) A Hive's map record holds the base fields and its ants inside, an integer; a value outside [0, `ref.bldg.hive.map_ants_max`] (10,000) becomes 0, and the default is 0. The content build rejects such a value in an authored map ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) DAT-159), so the replacement applies only to records that bypass validation. A map may place a Hive; no reference map does.
+- Design-choice note for X-DEC-P4b (fold into the item-118 entry): "An out-of-range Hive ants-inside value is a build error; the reference replaces it by 0 at load. Options: A — build error, run-time replacement kept for other creators (default); B — run-time replacement only. Recommendation: A."
+- No change to DAT-159.
+
+## A-21 Number of neutral gun turrets on a reference Siege map (found in report G03b, request to G01)
+
+Not on the item list; G03b asked G01 to reconcile, and only ORIG can settle the number.
+
+**Question.** How many neutral gun turrets does a reference Siege map place: 7 to 40 (siege.md) or 12 to 40 (G03b)?
+
+**Statements.**
+- `reference/01_skirmish_rules_and_modes/siege.md` **R-MODE-354**: "… Barrier Emitters, 7 to 40 neutral gun turrets per reference map, …".
+- G03b report: "12 to 40 per Siege map (200 records on 13 maps)" (the 200 records are all match maps with turrets, not only Siege).
+
+**ORIG evidence.**
+- `08_levels_and_level_design.md` l.220–227 (per-map table of the eight Siege maps): turret counts 20, 12, 19, 18, 13, 40, 18 and 20 (minimum 12, maximum 40, 160 in total); l.228: the hidden stress-test file, which no player can select, has 7.
+- `08_levels_and_level_design.md` l.604 and `01_game_modes.md` l.917 ("7–40 neutral `GunTurret`s") include that stress-test file; l.989 (owner census): every gun turret record has no team.
+
+**Verdict.** ORIG settles it: **12 to 40** on the eight reference Siege maps; the 7 belongs to a file outside the reference map set. R-MODE-354 must change.
+
+**Replacements.**
+- `reference/01_skirmish_rules_and_modes/siege.md`, R-MODE-354: replace "7 to 40 neutral gun turrets per reference map" by "12 to 40 neutral gun turrets per reference map (160 on the eight maps)". The rest stays.
+
+## A-22 Does the colour-row press save the settings file? (item 98, last point; report C-UI-b request 3)
+
+Item 98 lists this point for the document fixers; it is a factual question that only ORIG settles, so it is arbitrated here.
+
+**Question.** When the player presses a free colour row of the player options page outside Siege and co-op, the preferred colour is stored. Is the settings file also saved at that moment?
+
+**Statements.**
+- `reference/09_front_end_and_match_flow/options_localisation_and_hooks.md` **R-META-406**: "The store saves the settings file on each of these events, and on no other:" followed by six events, none of them the colour row.
+- `reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md` **R-META-081**: the press "stores it in the preferred-colour setting" (silent on saving).
+- `architecture/components/ui_framework/pages_and_screen_recipes.md` **UI-419**: "outside Siege and co-op it also stores that colour in the preferred-colour setting and saves the settings file".
+
+**ORIG evidence.**
+- `28_ui_framework.md` l.899 (colour-row button, click handler): "if not taken → `parent->m_currentRequestedColour = index`; outside Assault/co-op also save pref `PlayerPreferedColour` (+ `Save()`)".
+- `09_meta_systems.md` l.1194 and l.2304 (screen-level description): "the pref `PlayerPreferedColour` is stored", written by the same click handler; it does not list the save, but does not exclude it.
+
+**Verdict.** ORIG settles it: the press **stores and saves**. UI-419 is right; R-META-406's closed list misses the event, and R-META-081 should say so too.
+
+**Replacements.**
+- `reference/09_front_end_and_match_flow/options_localisation_and_hooks.md`, R-META-406: add item 7:
+  > 7. a press of a free colour row of the player options page outside Siege and co-op, which stores the preferred colour ([screen_flow_and_match_setup.md](screen_flow_and_match_setup.md) R-META-081).
+- `reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md`, R-META-081:
+  > **R-META-081** (MUST) Pressing a free colour or side row sets the requested colour to its colour id and, outside Siege and co-op, stores it in the preferred-colour setting and saves the settings file ([options_localisation_and_hooks.md](options_localisation_and_hooks.md) R-META-406); it then plays a backwards transition and returns to the match setup page.
+
+## A-23 Per-tick draws of the Wisp wobble (found in report G02b, request to C-SIM-c)
+
+Not on the item list; G02b asked C-SIM-c to check a draw count that only ORIG settles.
+
+**Question.** Does the Wisp's per-tick wobble make three draws `NextSigned(1)` (creatures.md), or three draws plus one `NextUnit(20)` (reference/12 table 1)?
+
+**Statements.**
+- `reference/02_units/creatures.md` **R-UNIT-596**: "each axis rate takes a cosmetic random walk of `FxRng::NextSigned`(`ref.unit.wisp.rate_walk`) (1) per tick" (three draws).
+- `reference/12_simulation_model/07_randomness_and_integrity.md` table rows "snowflake and Wisp wobble | three `NextSigned(1)` and one `NextUnit(20)` per object per tick" (l.71 and l.138 of that file).
+
+**ORIG evidence.**
+- `22_determinism_and_networking.md` l.1193 (synced-draw catalogue, by function): "`snow.cpp:Snow::Advance`, `souldestroyer.cpp:Zombie::Advance` | `syncsfrand(1)` × 3 + `syncfrand(20)` wobble (no gameplay effect; snow unlogged) | every object every tick"; l.1051 repeats it ("`Snow`/`Zombie` wobble `syncsfrand(1)` × 3 + `syncfrand(20)` per object per tick").
+- `02_units_and_entities.md` l.2273 (the Wisp's own table, source of creatures.md): "wobble like a spirit (rates random-walk `syncsfrand(1)` per tick in [0, 2] …)": it names the random walk and omits the fourth draw; ORIG does not say what the fourth draw feeds.
+
+**Verdict.** ORIG settles the count: **three `NextSigned(1)` and one `NextUnit(20)` per Wisp per tick**, as for the snowflake. Reference/12 is right; creatures.md omits the fourth draw. Under DEC-013 these draws come from the cosmetic stream in Species, so the simulation is unaffected, but the reference draw count belongs in the rule.
+
+**Replacements.**
+- `reference/02_units/creatures.md`, R-UNIT-596, append: "Each tick the wobble also makes one further cosmetic draw `FxRng::NextUnit`(20), which has no gameplay effect, so the Wisp makes four cosmetic draws per tick, as the snowflake does ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md))." The value 20 needs a key in creatures.md's tuning table (proposed `ref.unit.wisp.extra_draw_range`, `20`, note "fourth per-tick wobble draw; no gameplay effect").
+- No change to reference/12.
+
+## A-24 The tile writer's missing separator (found in report C-TER, request 4 to G08b)
+
+Not on the item list; C-TER asked G08b to check a statement that only ORIG settles.
+
+**Question.** R-MAP-387 says that the reference text writer puts no separator between a tile's lowland smoothing factor and its guide-grid power, "so that they can be read back only through fixed field widths". Is that right?
+
+**Statements.**
+- `reference/08_maps_and_level_design/map_editor_hooks.md` **R-MAP-387**: "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they can be read back only through fixed field widths".
+- C-TER (report): the writer uses fixed-width fields (lowland `%6.2f`, power `%6d`), so the two values are separated by padding unless a value fills its width.
+
+**ORIG evidence.**
+- `08_levels_and_level_design.md` l.1944 (tile writer formats): "… `%6.2f` `%6d` [`   %s` guide] — … `lowlandSmoothing` and `guidePower` are concatenated without a separator (works only thanks to the field widths)".
+- `23_terrain_and_landscape.md` l.131: the reader splits tokens on spaces, tabs, line ends, colons and commas (it does not read fixed widths); l.181: the guide-grid power is 0 to 5, so its 6-character field always starts with at least 5 spaces.
+
+**Verdict.** ORIG settles it, and C-TER is right in substance: the format string has no separator, but the power's right-aligned field width always pads it with spaces, and the reader splits on those spaces. The two values therefore read back as separate tokens; the reader does not use fixed widths. R-MAP-387's clause is misleading and is reworded; the data-loss list it belongs to is unchanged.
+
+**Replacements.**
+- `reference/08_maps_and_level_design/map_editor_hooks.md`, R-MAP-387, the clause: replace "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they can be read back only through fixed field widths;" by "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they read back as two values only because the power's field is 6 characters wide and its value (0 to 5) leaves leading spaces;". The rest of R-MAP-387 stays.

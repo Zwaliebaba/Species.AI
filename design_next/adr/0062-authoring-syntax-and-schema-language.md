@@ -16,7 +16,7 @@ Which authoring syntax and schema language does Species use?
 
 * One schema source that drives validation, editor support and C++ code generation.
 * A syntax that the map editor can write losslessly and that diffs well.
-* Mature parsers and validators for C++ on every build platform.
+* A strict parser that reports the location of every value and rejects duplicate keys, the same on every build platform.
 * Room for Species-specific annotations (units, logical numeric types, reference kinds).
 
 ## Considered Options
@@ -42,7 +42,7 @@ Chosen option: "JSON authoring files validated by JSON Schema, with a Species co
 * Good, because one standard schema format serves the validator, editors and the code generator.
 * Good, because the map editor writes the same syntax authors read.
 * Bad, because JSON has no comments and is verbose for large tables; the `notes` field and editor support mitigate this.
-* Bad, because the code generator is Species-owned and must support exactly the restricted schema subset.
+* Bad, because the code generator, the parser and the generated validator are Species-owned and must support exactly the restricted schema subset and the JSON grammar.
 
 ### Confirmation
 

@@ -36,6 +36,9 @@ This file records the decisions on animation and visual effects, the audio engin
 | Procedural animation on the client and the presentation clock; two-bone leg solving; explainer animations as a UI timeline | ADR-0035 |
 | Effect events, the presentation clock and effect definitions | ADR-0036 |
 | Data records bound by field name, with explicit defaults | ADR-0061 |
+| Engine gap rules of the UI framework and input: keyboard operation of the menus, repeat and increment timing, UI and input reference behaviours kept as defaults, input back-end rules | DEC-950 to DEC-954 |
+| Engine gap rules of animation and VFX: presentation clocks while the world is held and camera shake, fixed effect steps, explainer relayout, effect values and looks, accessibility limits | DEC-955, DEC-960 to DEC-964 |
+| Audio engine reference behaviours kept as defaults | DEC-965 |
 
 ## Index
 
@@ -49,7 +52,7 @@ This file records the decisions on animation and visual effects, the audio engin
 
 ### DEC-750 Explainer-animation loop and visibility rules
 - Status: Open
-- Affects: architecture/components/animation_and_vfx.md (VFX), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META), architecture/components/data_schemas.md (DAT)
+- Affects: architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md (VFX), reference/09_front_end_and_match_flow/front_end_presentation.md (R-META), architecture/components/data_schemas/entity_audio_geometry_and_panel_schemas.md (DAT); DEC-963
 - Specified behaviour: An explainer animation plays its keyframed objects on a timeline with a loop start and a loop end. The first pass starts at time 0, even when the loop start is later, so the span before the loop start plays once, as a lead-in; every later pass restarts at the loop start. When a frame's advance carries the time past the loop end, the excess is discarded and the next pass begins exactly at the loop start, so each pass lasts the loop length plus up to one frame. An object is hidden while the current time lies before its first key; authors rely on this to make objects appear part-way through a pass. Keys after the loop end are never reached; at least one reference explainer animation of each of the six modes holds such keys. Colour roles are resolved against the local player's team colour at draw time (ADR-0035).
 - Options: A — the reference rules as specified; B — keep the lead-in and the hidden-before-first-key rule as named authoring rules, carry the excess past the loop end into the next pass so that the loop length does not depend on the frame rate, and make the content build warn about keys after the loop end; C — option B, and also start every pass, the first included, at the loop start.
 - Recommendation: B. The lead-in and the late appearance are authoring tools that the reference content relies on, so they stay as rules. A loop whose length depends on the frame rate contradicts the presentation-clock rule that every other effect follows (ADR-0036), and a key that can never play is an authoring mistake that a validator catches cheaply. Every explainer animation is authored new, so no content depends on the frame-quantised loop.
@@ -59,7 +62,7 @@ This file records the decisions on animation and visual effects, the audio engin
 
 ### DEC-751 Game-speed pitch state starts every match at normal speed
 - Status: Resolved
-- Affects: architecture/components/audio_engine.md (AEN), reference/10_audio_design.md (R-AUD)
+- Affects: architecture/components/audio_engine.md (AEN), reference/10_audio_design/positional_priorities_and_mix.md (R-AUD)
 - Specified behaviour: The smoothed game-speed value that bends the pitch of world sounds (DEC-569) belongs to the match. It is 1.0 outside a match and throughout the grace period, it starts every match at 1.0, and it is discarded when the match ends. Its smoothing follows elapsed time that game speed does not scale, with one time constant, an audio engine tuning value whose starting value is 0.17 s, the time constant of the reference smoothing with 30 world sounds playing; the speed of the smoothing never depends on how many sounds are playing (ADR-0026). Nothing a match does to game speed, the slow-down at match end included, carries into the next match.
 - Options: A — per-match state with time-based smoothing; B — the reference behaviour: one process-wide value that is never reset and moves 1 % of the way towards the current game speed on every pitch evaluation of a playing world sound and on every voice start, so its time constant ranges from about 0.17 s with 30 world sounds playing to about 5 s with one; because the slow-down at match end drives the value towards its floor, the next match can begin its world-sound bend near 0.1× pitch.
 - Recommendation: A. State that survives between matches makes one match depend on the one before it, the failure class that DEC-011 removes from the simulation. A smoothing speed that depends on the number of playing sounds makes the same speed change sound different in a quiet scene and in a battle.
@@ -73,4 +76,4 @@ This file records the decisions on animation and visual effects, the audio engin
 
 ## 3 UI framework
 
-Every UI framework decision of this scope is recorded elsewhere: the window-core quirks and the 33 framework defects are corrected by construction (DEC-102, ADR-0032, ADR-0033), a missing phrase falls back per key to the base language (DEC-099), and text entry supports input method editors, a caret, selection and the clipboard (ADR-0028, ADR-0032, ADR-0063).
+Every UI framework decision of this scope is recorded elsewhere: the window-core quirks and the 33 framework defects are corrected by construction (DEC-102, ADR-0032, ADR-0033), a missing phrase falls back per key to the base language (DEC-099), and text entry supports input method editors, a caret, selection and the clipboard (ADR-0028, ADR-0032, ADR-0063). The keyboard operation of the menus, the repeat and increment timing and the UI reference behaviours kept as defaults are entries of the [engine gap rules](engine_gap_rules.md) (DEC-950 to DEC-952).

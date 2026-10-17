@@ -31,7 +31,7 @@ Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the de
 
 * **Format:** PNG, 8-bit sRGB RGBA for SDR frames; HDR frames are tone-mapped to SDR before encoding.
 * **Pipeline:** the renderer copies the frame or tile into a readback buffer, a worker thread maps it after its fence completes and encodes it with WIC, and the file is written as `species_<UTC date and time>.png` under `Pictures\Species\`.
-* **Poster renders:** tiles are encoded into one PNG through WIC's frame-encode interface, one tile row at a time, so memory stays bounded.
+* **Poster renders:** tiles are encoded into one PNG through WIC's frame-encode interface, one tile row at a time, so memory stays bounded; every pixel's alpha is written fully opaque, so the image shows exactly the colour channels of the frames.
 * **Golden images in CI** use the same encoder, so test images and player screenshots share one path.
 * **Video:** no engine video recorder; trailers and reports use external capture tools, with the fixed-step time source for frame-by-frame capture.
 
@@ -71,3 +71,4 @@ Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the de
 
 * The standards baseline lists no WIC version; WIC is part of every supported Windows version and of the Windows SDK pinned by [ADR-0051](0051-windows-toolchain-and-compiler-policy.md).
 * Components: renderer (`RND`, readback), platform layer (`PLT`, encoding and file output).
+* **Amendment 2026-10-17.** Posters are written with opaque alpha (RND-114); the file name gains a numeric suffix when a file of that name exists (PLT-097).
