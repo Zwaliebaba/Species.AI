@@ -4,7 +4,7 @@ identifier	shape	sources	count	context
 2d_surface_map.cpp	file	21,91	4	code/lib/2d_surface_map.cpp
 2d_surface_map.h	file	21	2	code/lib/2d_surface_map.h
 ADSR	caps_word	90	1	ADSR
-AI	caps_word	21,90,91	20	AI
+AI	caps_word	21,90,91	19	AI
 AI::AdvanceRocketRiotAI	qualified	91	1	AI::AdvanceRocketRiotAI
 AI::s_ai	qualified	21	1	AI::s_ai[i] = NULL
 AIObjective	compound	21,90,91	8	Building <|-- AIObjective
@@ -66,7 +66,6 @@ AdvanceWeapons	compound	21	7	code/location.cpp:Location::AdvanceWeapons
 AirStrike	compound	21	1	11.  ; Multiplayer:  ,  ; fixed research levels (every item 3, then Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4).
 AirStrikeMarker	compound	21,90,91	7	ThrowableWeapon <|-- AirStrikeMarker
 AirstrikeUnit	compound	21,90,91	16	AirstrikeUnit
-AlwaysTrue	compound	90	1	Pecan / Hummingbird
 AnimatedPanel	compound	90	2	.anim
 AnimatedPanel::Read	qualified	90	1	.anim
 AntHill	compound	21,90,91	8	Building <|-- AntHill
@@ -346,7 +345,7 @@ EULA	caps_word	90	1	EULA
 EULA.txt	file	90	1	EULA
 EclButton	compound	90	2	Eclipse
 EclWindow	compound	90	2	Eclipse
-Effect	single	21,90	4	Effect*
+Effect	single	21,90	3	Effect*
 EffectProcessor	compound	90	3	EffectProcessor
 EffectRandomiser	compound	90	1	Randomiser
 EffectThrowableGrenade	compound	21	1	EffectThrowableGrenade
@@ -436,7 +435,6 @@ FancyColourButton.h	file	91	1	code/UI/FancyColourButton.h
 FastDArray	compound	21,90	17	FastDArray::SetSize
 FastDArray::SetSize	qualified	21	2	FastDArray::SetSize
 FastDArray_Unit	snake	21	2	+FastDArray_Unit m_units
-FeatureFlagX	compound	90	1	Pecan / Hummingbird
 FeedingTube	compound	21,90,91	8	Building <|-- FeedingTube
 FenceSwitch	compound	21,90,91	14	Building <|-- FenceSwitch
 FenceSwitch::Switch	qualified	21	1	FenceSwitch::Switch()
@@ -472,7 +470,6 @@ FuelStation	compound	21,90,91	7	FuelBuilding <|-- FuelStation
 Full	single	91	1	) — driver 0]<br>[09 2.5 Full live screen flow (front end → lobby → game → result]<br>[09 3.3 PageNewOrJoin (3) — host or join]<br>[09 3.6 PageGameSetup (6) — t
 GAMEOPTION_	snake	90	1	GAMEOPTION_*
 GAMEOPTION_BASICCRATES	macro	90	2	Basic crates only
-GAME_TITLE	macro	90	4	Darwinia
 GDF	caps_word	90	1	GDF
 GESTURE_EDITOR	macro	90	1	GESTURE_EDITOR / AVI_GENERATOR
 GL	caps_word	90	2	GL
@@ -840,7 +837,6 @@ MarkerSpiritLink	compound	90	1	Shape marker
 MarkerSystem	compound	90,91	2	MarkerSystem
 MasterSpawnPoint	compound	21,90,91	9	SpawnBuilding <|-- MasterSpawnPoint
 MasterSpawnPoint::Advance	qualified	90	1	MasterSpawnPoint (master spawn point)
-MatchOptions	compound	90	1	MultiwiniaOptions (block)
 Matrix34	single	21,90	3	building->DoesShapeHit(m_shape, Matrix34(m_front, up, result))
 MaxArmour	compound	90	1	Game options
 MaxTurrets	compound	90	1	Game options
@@ -888,7 +884,6 @@ NET_DARWINIA_ALIVE	macro	21	1	NET_DARWINIA_ALIVE
 NET_DARWINIA_REQUEST_COLOUR	macro	21	1	NET_DARWINIA_REQUEST_COLOUR
 NET_DARWINIA_SEQID	macro	90	1	SEQID
 NET_DARWINIA_UPDATE	macro	21	1	NET_DARWINIA_UPDATE
-NET_GAME_	macro	90	1	NET_DARWINIA_*
 NN	caps_word	90	1	NN-U<n>
 NPOT	caps_word	90	1	NPOT / POT
 NSIS	caps_word	90	1	NSIS / Inno Setup
@@ -936,7 +931,7 @@ OfficerOrders	compound	21,90,91	13	WorldObject <|-- OfficerOrders
 OfficialLevel	compound	90	1	MultiwiniaOptions (block)
 OpenGL	compound	90,91	2	OpenGL emulation layer (opengl_directx)
 OrderGoto	compound	90	1	GOTO (order)
-OrderMarker	compound	21,90	2	OrderMarker
+OrderMarker	compound	21	1	OrderMarker
 P01	caps_word	90	1	P01–P20, X1a–X4, S<nn>
 P03_classdiag	snake	21	1	_work/scripts/P03_classdiag.py
 P03_worldobject_classes.csv	file	21	1	_work/drafts/P03_worldobject_classes.csv
@@ -1131,7 +1126,6 @@ SPEC	caps_word	90	1	Input binding file
 SSE2	caps_word	90	2	SSE2
 START_GAME	macro	90	1	START_GAME
 STRETCH_RECT	macro	90	1	STRETCH_RECT
-STUDIO	caps_word	90	2	Introversion Software
 S_21_classdiagram	snake	21	4	_work/scripts/S_21_classdiagram.py verify
 SafeArea	compound	21,90,91	8	Building <|-- SafeArea
 Sample	single	90	1	Sample cache (CachedSampleManager)
@@ -1405,8 +1399,6 @@ USE_SOUND_HW3D	macro	90	1	HW3D
 UTF	caps_word	90	2	UTF-8 / UTF-16
 UV	caps_word	90	1	UV
 UX	caps_word	90	1	UI / UX
-UiButton	compound	90	1	DarwiniaWindow / DarwiniaButton
-UiWindow	compound	90	1	DarwiniaWindow / DarwiniaButton
 UnRegisterSpecial	compound	21	2	UnRegisterSpecial
 UnicodeString	compound	21,90	2	|  ,  ,  ,   | double, UnicodeString, int, bool | 0.0, empty, −1, false | centre-screen message (real-time expiry 3.0 s; team 255 = white) — presentation |
 Unit	single	21,90	67	Unit
@@ -1469,10 +1461,10 @@ WindowManager	compound	90	1	WindowManager
 WindowManagerDirectX	compound	90	1	WindowManager
 WindowManagerWin32	compound	90	1	WindowManager
 WorkQueue	compound	90	1	WorkQueue
-WorldObject	compound	21,90,91	115	> Sources merged: P03_entity_core (identity, WorldObject/Entity base, spatial partitioning, routing, class hierarchy of all 159   classes), P01_app_core (Locati
+WorldObject	compound	21,90,91	114	> Sources merged: P03_entity_core (identity, WorldObject/Entity base, spatial partitioning, routing, class hierarchy of all 159   classes), P01_app_core (Locati
 WorldObject::Advance	qualified	21	1	WorldObject::Advance
 WorldObject::BounceOffLandscape	qualified	21	1	WorldObject::BounceOffLandscape()
-WorldObject::Effect	qualified	21,90	3	WorldObject::Effect*
+WorldObject::Effect	qualified	21,90	2	WorldObject::Effect*
 WorldObjectId	compound	21,90,91	38	WorldObjectId
 WorldObjectId::IsValid	qualified	21	1	worldobject.h:WorldObjectId::IsValid
 WorldObjectId::ResetUniqueIdSeed	qualified	21	1	code/worldobject/worldobject.cpp:WorldObjectId::ResetUniqueIdSeed
@@ -1640,7 +1632,6 @@ debug.txt	file	90	2	AppDebugOut / AppReleaseAssert
 decision	lower	91	1	ClientToS]<br>[22 9 Sync checking and desync handling]<br>[22 9.1 What the per-frame sync byte covers]<br>[22 9.2 Server decision algorithm [C] 
 decoding	lower	91	1	code/lib]<br>[25 2 Loading pipeline, resource manager, runtime textures and f]<br>[25 2.2 Bitmap decoding (
 default_preferences.txt	file	90,91	4	Preferences file
-default_view	snake	90	1	Camera mount / camera animation
 deform.cpp	file	90,91	4	Deform effect
 demo_limitations	snake	90	1	Demo limitations
 demoendsequence.cpp	file	91	1	code/demoendsequence.cpp
@@ -1934,7 +1925,7 @@ m_dead	member	21	9	+bool m_dead
 m_demoPlayer	member	21	1	m_demoPlayer
 m_deployFlag	member	21	1	Armour *-- Flag : m_flag m_deployFlag
 m_destroyed	member	21	7	+bool m_destroyed
-m_difficultyLevel	member	21,90	6	g_app->m_difficultyLevel = 0
+m_difficultyLevel	member	21,90	5	g_app->m_difficultyLevel = 0
 m_directUnitMove	member	21	1	m_directUnitMove
 m_directUnitMoveDx	member	21	1	pointMan->m_pos + (m_directUnitMoveDx, m_directUnitMoveDy)
 m_directUnitMoveDy	member	21	1	pointMan->m_pos + (m_directUnitMoveDx, m_directUnitMoveDy)
@@ -2133,7 +2124,7 @@ mainmenus.cpp	file	91	2	code/interface/mainmenus.cpp
 manager	lower	91	1	code/lib]<br>[25 2 Loading pipeline, resource manager, runtime textures and f]<br>[25 2.2 Bitmap decoding (
 manifest.csv	file	21	1	_work/manifest.csv
 map	lower	21,91	6	std::map<Entity*, …>
-map_	snake	90,91	4	Level file
+map_	snake	90,91	2	Level file
 mapcrc.h	file	90	2	CRC
 mapfile.cpp	file	90	1	.mwm
 marker	lower	21	2	AreEnemiesPresent(marker, 450)
@@ -2155,7 +2146,7 @@ mine.h	file	21,91	17	code/worldobject/mine.h
 mission	lower	21	3	Location::Init(mission, map)
 mission_	snake	21,90,91	3	mission_*_attract
 mod	lower	21	1	new[i] = old[(i + 1) mod numPlayers]
-mode	lower	90,91	4	Map
+mode	lower	90,91	2	Map
 more	lower	91	11	 — gesture-classifier training set]<br>… +3 more | [25] ×287, [10] ×94, [28] ×34, [41] ×28, [90] ×21, [20] ×19, [31] ×18, [09] ×14, [22] ×9, [24] ×6 | 
 mp_	snake	21,90	13	mp_*
 mp_assault_2P_1.txt	file	91	2	data/levels/mp_assault_2P_1.txt
@@ -2188,7 +2179,6 @@ mp_sandbox_all.txt	file	91	1	data/levels/mp_sandbox_all.txt
 mp_tankbattle_2P.txt	file	91	1	data/levels/mp_tankbattle_2P.txt
 mp_tankbattle_3P.txt	file	91	1	data/levels/mp_tankbattle_3P.txt
 msg	lower	21	1	virtual char *LogState(char *msg)
-mt19937	lower	90	1	MT19937
 multiplier	lower	90	1	Burst / pause cycle
 multiwinia	lower	21,90	3	multiwinia
 multiwinia-testbed.txt	file	91	1	data/multiwinia-testbed.txt
@@ -2293,7 +2283,6 @@ plan	lower	91	1	ClientToS]<br>[22 14.6 Non-synced randomness inside simulation c
 player	lower	21,91	2	"""player<position>"""
 player0	lower	90	1	Camera mount / camera animation
 player3	lower	90	1	Camera mount / camera animation
-players	lower	90	2	Map
 point	lower	21	1	SetWayPoint(point + Dx/Dy)
 pointMan	compound	21	2	pointMan->m_pos + (m_directUnitMoveDx, m_directUnitMoveDy)
 portal.h	file	21,91	3	code/worldobject/portal.h
@@ -2318,7 +2307,6 @@ qsort	lower	21	1	qsort
 radardish.cpp	file	21	3	radardish.cpp
 radardish.h	file	21,91	3	code/worldobject/radardish.h
 radius	lower	21	9	unit->UpdateEntityPosition(pos, radius)
-ramp_	snake	90	1	Colour ramp
 rand	lower	90	3	AppRandom / frand / sfrand
 random	lower	21	2	m_windDirection = normalise(random − random)
 random_number	snake	90	1	Synced RNG (syncrand, syncfrand, syncsfrand)
@@ -2430,7 +2418,6 @@ sourcemap	lower	21	1	_work/scripts/S_21_classdiagram.py sourcemap
 spaceship.h	file	21,91	3	code/worldobject/spaceship.h
 spam.cpp	file	91	1	code/worldobject/spam.cpp
 spam.h	file	21,91	5	code/worldobject/spam.h
-spawn_view_	snake	90	1	Camera mount / camera animation
 spawnpoint.cpp	file	21,91	5	code/worldobject/spawnpoint.cpp
 spawnpoint.h	file	21,91	16	code/worldobject/spawnpoint.h
 speccy	lower	90	1	Font atlas
@@ -2458,7 +2445,6 @@ stats.txt	file	21,90,91	8	data/stats.txt
 statue.cpp	file	21,91	3	statue.cpp
 statue.h	file	21,91	3	code/worldobject/statue.h
 std::map	qualified	21	1	std::map<Entity*, …>
-std::mt19937	qualified	90	1	MT19937
 std::vector	qualified	21	4	std::vector<WorldObjectId>
 step	lower	21	1	step = 0..4
 straightLineWalkDistance	compound	21	4	straightLineWalkDistance = GetWalkingDistance(from, to)
@@ -2517,7 +2503,6 @@ textures	lower	91	4	code/lib]<br>[25 2 Loading pipeline, resource manager, runti
 that	lower	91	1	ClientToS]<br>[22 14.6 Non-synced randomness inside simulation code — every li]<br>[24 3.3 Branches that replace passes 3–13]<br>[25 7 Usage conventions and ass
 the	lower	91	7	code/team.h:]<br>[01 3.6 Lobby options outside the blueprint]<br>[02 21.6 Zombie — ghost effect]<br>[06 11.6.1 Conjoin (
 theirRadius	compound	21	1	theirRadius + ourRadius ≥ distance
-theme	lower	90	1	Colour ramp
 threat	lower	21	3	GetNumNeighbours(threat, 50)
 throwable.shp	file	90	1	ThrowableWeapon
 time	lower	21	1	ChatMessage {m_msg, m_clientId, m_recievedTime (real time), m_colour, m_senderName}

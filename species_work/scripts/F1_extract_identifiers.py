@@ -176,7 +176,10 @@ def main():
                 add(tok, '90', term)
             elif shape_of(tok) == 'single' and 'engine (class)' in raw:
                 add(tok, '90', term)
-        for s in spans:
+        # Term and Definition cells only: the IP column holds placeholders, not original identifiers
+        definition = cells[2] if len(cells) > 2 else ''
+        definition = LINK_URL.sub(']', definition)
+        for s in INLINE.findall(definition):
             harvest_code(s, '90', term)
 
     # ORIG/91: class names (§4), inline code in every table, key source file basenames

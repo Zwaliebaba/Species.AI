@@ -27,3 +27,4 @@
   - **X-GLO is 174.7 KiB** → split A–L / M–Z.
   - **40-U14 (may the reference tuning values be reused verbatim?)** is an IP and scope question → escalate to the owner in batch 1.
   - Six facts resolved in 41 §1.4 are MERGE to G02a, G02b, G04 and G10.
+- F2b2 done: 600 rows (522 distinct ranges, 26–32); coverage complete and its own column check gives 0 errors. No package over 150 KB, but C-UI sits at about 152 KB with hooks → split C-UI-a (28 §1–5, §7–10, §14, about 100 KB) / C-UI-b (28 §6, §11, §13, about 52 KB). C-DAT at 126 KB → `data_schemas/` folder likely. C-VFX 119 KB, C-AEN 104 KB. To confirm at G1: 32 §7.1 "test harness" is a campaign mission explorer → DL-CAMPAIGN (accepted by the coordinator: a campaign-only tool); the tick-rate row is tagged DD-THREADS for lack of a code → **add `DD-TICK`** with DD-ROADMAP after F1.
