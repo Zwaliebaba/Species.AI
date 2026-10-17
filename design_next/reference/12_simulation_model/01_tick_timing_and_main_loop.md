@@ -38,7 +38,7 @@ It also specifies how the reference advances a match in time:
 
 ### 2.2 The tick and its update slices
 
-**R-SIM-510** (MUST) One tick is one **command frame**: the batch of player commands that the tick source sequences for that tick. Executing a tick performs, in this order:
+**R-SIM-510** (MUST) In the reference structure, one tick is one **command frame**: the batch of player commands that the tick source sequences for that tick (R-SIM-549 states how ticks and command frames relate under tick scheduling). Executing a tick performs, in this order:
 
 1. apply every command of the frame, in sequence order (the command catalogue and the batching rules are [06](06_teams_and_player_commands.md));
 2. the tick-clock update (§2.5);

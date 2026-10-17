@@ -10,3 +10,5 @@
 | 6 | G05 | DEC-021 | "Forest" in the starting-power exclusions is the **Essence Grove** | tell G04; update DEC-021 |
 | 7 | G00 | — | the overview duplicates owner values under `ref.vis.*` keys | replace with references to the owner keys |
 | 8 | G05 | — | about 45 values repeated from other documents, marked "owner" | merge into references to the owner keys |
+| 9 | C-SIM-b | DEC-016 vs DEC-650 | DEC-016 orders actor-grid results by cell slot, while DEC-650 says the registration schedule has no visible effect; both hold only if the order within a cell is history-free | reconcile: make the order within a cell history-free (sorted by a stable key) in a Resolved DEC |
+| 10 | C-SIM-b | new | defaults chosen for gaps: the route query when no corridor test runs; an actor group that reports no positions in a tick; a group attack with no candidates; the obstacle push on a structure's base point; the colour command sent after co-op setup | five new Open DECs, with C-SIM-b's defaults (see reports/C-SIM-b.md) |
