@@ -1,0 +1,105 @@
+path,depth,reason,sections
+code/camera.cpp,full,,"3. Camera;Camera projection, view and frustum;5. Constants;Determinism notes;Appendix — dead/legacy code"
+code/camera.h,full,,"3. Camera;Camera projection, view and frustum"
+code/control_help.cpp,full,,4. Control help;5. Constants;Appendix — dead/legacy code
+code/control_help.h,full,,4. Control help;5. Constants
+code/lib/input/control_bindings.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/control_bindings.h,full,,1. Input system architecture;5. Constants
+code/lib/input/control_types.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/control_types.h,full,,1. Input system architecture;2. Logical controls and default bindings
+code/lib/input/control_types.inc,full,,1. Input system architecture;2. Logical controls and default bindings;5. Constants
+code/lib/input/eventhandler.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/eventhandler.h,full,,1. Input system architecture;5. Constants
+code/lib/input/file_paths.cpp,full,,1. Input system architecture;2. Logical controls and default bindings;5. Constants
+code/lib/input/file_paths.h,full,,1. Input system architecture;5. Constants
+code/lib/input/input.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/input.h,full,,1. Input system architecture;5. Constants
+code/lib/input/input_types.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/input_types.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_alias.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_alias.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_chord.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_chord.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_conjoin.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_conjoin.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_idle.cpp,full,,1. Input system architecture;Determinism notes
+code/lib/input/inputdriver_idle.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_invert.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_invert.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_pipe.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputdriver_pipe.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputdriver_prefs.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_prefs.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_simple.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_simple.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_value.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_value.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_values.inc,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_win32.cpp,full,,1. Input system architecture;2. Logical controls and default bindings;5. Constants
+code/lib/input/inputdriver_win32.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputdriver_xinput.cpp,full,,1. Input system architecture;2. Logical controls and default bindings;5. Constants;Determinism notes
+code/lib/input/inputdriver_xinput.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputfilter.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilter.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilter_direction.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilter_direction.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilter_withdelta.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilter_withdelta.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfiltermanager.cpp,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfiltermanager.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputfilterspec.h,full,,1. Input system architecture;Appendix — dead/legacy code
+code/lib/input/inputspec.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/inputspec.h,full,,1. Input system architecture;5. Constants
+code/lib/input/inputspeclist.h,full,,1. Input system architecture;5. Constants
+code/lib/input/keydefs.h,full,,1. Input system architecture;5. Constants
+code/lib/input/keynames.cpp,full,,1. Input system architecture;2. Logical controls and default bindings
+code/lib/input/keynames.h,full,,1. Input system architecture;5. Constants
+code/lib/input/movement2d.cpp,full,,1. Input system architecture;3. Camera
+code/lib/input/movement2d.h,full,,1. Input system architecture;3. Camera
+code/lib/input/transform.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/transform.h,full,,1. Input system architecture;5. Constants
+code/lib/input/win32_eventhandler.cpp,full,,1. Input system architecture;5. Constants
+code/lib/input/win32_eventhandler.h,full,,1. Input system architecture;5. Constants
+code/lib/input/win32_eventproc.h,full,,1. Input system architecture;5. Constants
+code/lib/input/xbox_eventhandler.h,full,,Appendix — dead/legacy code
+code/lib/input/inputdriver_sdl_key.cpp,skimmed,"Mac-only SDL driver, not in vcproj; key mapping and grammar read",Appendix — dead/legacy code
+code/lib/input/inputdriver_sdl_key.h,full,,Appendix — dead/legacy code
+code/lib/input/inputdriver_sdl_mouse.cpp,skimmed,"Mac-only SDL driver, not in vcproj; grammar/description read",Appendix — dead/legacy code
+code/lib/input/inputdriver_sdl_mouse.h,skimmed,Mac-only SDL driver header,Appendix — dead/legacy code
+code/lib/input/sdl_eventhandler.cpp,full,,Appendix — dead/legacy code
+code/lib/input/sdl_eventhandler.h,full,,Appendix — dead/legacy code
+code/lib/input/sdl_eventproc.h,full,,Appendix — dead/legacy code
+code/lib/input/inputfilterspec.cpp,full,,Appendix — dead/legacy code
+code/lib/input/xbox_eventhandler.cpp,full,,Appendix — dead/legacy code
+data/input/input_preferences.txt,full,,1. Input system architecture;2. Logical controls and default bindings
+data/input/input_preferences_darwinia.txt,full,,1. Input system architecture;2. Logical controls and default bindings
+data/input/input_preferences_mac.txt,full,,2. Logical controls and default bindings;Appendix — dead/legacy code
+data/input/keyboards/de_DE.txt,full,,1. Input system architecture;2. Logical controls and default bindings
+data/input/keyboards/fr_FR.txt,full,,1. Input system architecture;2. Logical controls and default bindings
+data/input/locales.txt,full,,1. Input system architecture
+docs/input_preferences_syntax.txt,full,,Docs-vs-code discrepancies
+docs/DarwiniaInput.rtf,full,,Docs-vs-code discrepancies
+code/lib/targetcursor.cpp,full,,1. Input system architecture;3. Camera
+code/main.cpp,skimmed,"outside scope (P01); input init, prefs loading, loop order, camera set-up, controller plug",1. Input system architecture;3. Camera
+code/renderer.cpp,skimmed,outside scope (P12); near/far and projection functions only,"Camera projection, view and frustum"
+code/level_file.cpp,skimmed,outside scope (P11); camera mount/animation parsers only,3. Camera
+code/level_file.h,skimmed,outside scope (P11); CameraMount/CamAnimNode/CameraAnimation classes,3. Camera
+code/script.cpp,skimmed,outside scope (P19); camera script commands only,3. Camera
+code/interface/prefs_keybindings_window.cpp,skimmed,outside scope (P17b); rebinding capture/save/restore,1. Input system architecture
+code/interface/prefs_other_window.cpp,skimmed,outside scope (P17b); AutomaticCamera/ControlHelpEnabled prefs,3. Camera;4. Control help
+code/worldobject/insertion_squad.cpp,skimmed,outside scope (P04); DirectControl camera coupling,Determinism notes
+code/team.cpp,skimmed,outside scope (P01/P03); TeamControls camera-derived fields,Determinism notes
+code/location.cpp,skimmed,outside scope (P01); TeamControls application context,Determinism notes
+code/taskmanager.cpp,skimmed,outside scope (P09); camera mode requests,3. Camera
+code/location_input.cpp,skimmed,outside scope (P01); camera mode requests,3. Camera
+code/game_menu.cpp,skimmed,outside scope (P18); menu camera set-up,3. Camera
+code/startsequence.cpp,skimmed,outside scope (P20); intro camera request,3. Camera
+code/attract.cpp,skimmed,outside scope; attract-mode control consumers,2. Logical controls and default bindings
+code/multiwiniahelp.cpp,skimmed,outside scope (P19); shift-speedup hint and French camera image,1. Input system architecture;3. Camera
+code/lib/language_table.cpp,skimmed,outside scope (P14); phrase lookup and input-mode suffixes,1. Input system architecture
+contrib/systemiv/lib/filesys/text_stream_readers.cpp,skimmed,outside scope (P14); tokenizer separators and # comments,1. Input system architecture
+contrib/systemiv/lib/tosser/hash_table.cpp,skimmed,outside scope; case-insensitive key compare,1. Input system architecture
+data/language/english.txt,skimmed,control_* / gc_* / control_help_* phrases only,1. Input system architecture;4. Control help
+data/levels,skimmed,census of CameraMounts/CameraAnimations blocks in all 88 level files (scripted),3. Camera

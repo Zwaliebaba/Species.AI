@@ -442,7 +442,7 @@ Model: `m_numRows` (content rows), `m_winSize` (visible rows), `m_currentValue` 
 `ScrollBarButton::Render`: track quad `(85,93,78)`, outline `(187,187,187)`; thumb `barTop = h × cur/numRows`, `barEnd = min(h × (cur+win)/numRows, h−1)`; thumb colour `(50,55,120)` clicked, `(55,60,120)` highlighted, `(65,71,120)` normal, inset 1 px left/top. (Division by `numRows` = 0 when the list is empty → NaN/inf rect [I].)
 
 Interaction [C]:
-- `MouseDown` (every held frame): if not grabbing and the cursor is within the thumb → `grabOffset = winSize × (mouseY − barTop)/(barEnd − barTop)` (int rows). If grabbing → `value = floor((mouseY − trackTop)/h × numRows) − grabOffset`.
+- `MouseDown` (every held frame): if not grabbing and the cursor is within the thumb → `grabOffset = winSize × (mouseY − barTop)/(barEnd − barTop)` (int rows). If grabbing → `value = int((mouseY − trackTop)/h × numRows) − grabOffset` (truncation toward zero), then `SetCurrentValue` clamps.
 - `MouseUp`: if not grabbing → page: cursor above thumb → `−winSize`; below → `+winSize` (the `barEnd` clamp compares an absolute screen y against `m_h`, so effectively any click not above the thumb pages down — benign because thumb clicks set a grab first). If grabbing → stop grab.
 - `ScrollChangeButton::MouseDown` → `ChangeCurrentValue(amount)` **every held frame** (frame-rate-dependent auto-repeat, no initial delay). Render: DarwiniaButton look plus `icons/selectionarrow.bmp` (64×64, [C]) quad inset 5 %, flipped vertically for the up arrow, white, with `glBlendFunc(SRC_ALPHA, ONE)` additive and depth writes off — **blend mode is left additive afterwards** (state leak) [C].
 - `Remove()` unregisters the three buttons. The object itself is owned by the parent window class (deleted in its destructor).
@@ -451,7 +451,7 @@ Interaction [C]:
 
 Binds a `NetworkBool*` via `RegisterBool(bool*)` (owned `LocalBool`), `RegisterInt(int*)` (owned `LocalIntAsBool`), `RegisterNetworkInt(NetworkInt*)` (owned `NetworkIntAsBool` adaptor), `RegisterNetworkBool(NetworkBool*)` (not owned); the first registration wins, later calls are ignored [C]. `MouseUp` → `Toggle()` (`v = !v`); `Set(int|bool)`; `IsChecked()` (false if unbound).
 
-Render [C] `CheckBox::Render`: highlighted → full-rect quad `(199,214,220,255)` with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, caption in shadow mode with alpha 0 (ink cut-out); normal → white additive caption. Caption at `(x+5, y + h/2 − fontSize/2 + 7)`. Box: side `s = 0.75h` at `x = right − 2s`, `y = top + (h − s)/2`, grey `(0.3,0.3,0.3,1)` fill, white 1 px outline; when checked a tick texture `icons/tick.bmp` (50×50 32-bit [C]) tinted `(0.6,1.0,0.4,1)` inset `0.05h`, size `0.65h`.
+Render [C] `CheckBox::Render`: highlighted → full-rect quad `(199,214,220,255)` with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, caption in shadow mode with colour alpha 0 (blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR` → glyphs darken the highlight, "ink" effect [I]); normal → white additive caption. Caption at `(x+5, y + h/2 − fontSize/2 + 7)`. Box: side `s = 0.75h` at `x = right − 2s`, `y = top + (h − s)/2`, grey `(0.3,0.3,0.3,1)` fill, white 1 px outline; when checked a tick texture `icons/tick.bmp` (50×50 32-bit [C]) tinted `(0.6,1.0,0.4,1)` inset `0.05h`, size `0.65h`.
 
 ### 4.6 DropDownMenu (`code/interface/drop_down_menu.*`) [B:FULL]
 

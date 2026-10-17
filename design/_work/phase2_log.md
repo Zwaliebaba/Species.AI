@@ -59,3 +59,8 @@
 ## P18_ui_gamemenu — done
 - 38 page slots: 18 live, 10 compiled-but-unreachable (Achievements, QuickMatch, Help…), 10 gap slots; live + legacy Mermaid flowcharts; per-page button tables; 74 widget classes (47 live); 6 game types × 34 parameter rows + TankBattle; 10 error triggers; 15 contradictions. [U]=8.
 - Uncertain: server-side rejection of non-host option changes (UI only hides controls — P15 says server never checks team ownership); map PlayTime overwritten by default TimeLimit on host lobby entry; authkey vs authkey.dev at startup; "show passworded games" filter checks key "dy" which collides with GAMETIME → filters nothing.
+
+## P02_game_modes — done
+- 7 game types (TankBattle DEBUG-only); 39 option definitions + 5 other lobby options; full Multiwinia class (lifecycle SM, per-tick order, grace/ready, colours, ending, HUD); 11 world-object classes; rocket (7 states) + Blitzkrieg flag SMs; trunk-port reinforcement waves; 12 achievements; strings table drafts/P02_game_modes_strings.csv. [U]=8.
+- Critical: every "1-second" rule timer fires every 11 ticks (1.1 s) due to float rounding; s_numMultiwiniaZones never reset between games and feeds sim (cross-session desync); on 3 Blitzkrieg maps trunk-port reinforcements run twice per tick; achievements stubbed out in PC source; multi-round Assault unreachable (no UI sets option).
+- Uncertain: Darwinian port occupancy deciding control-station capture (P06); damage per shot vs escape rocket; whether shipped Steam/XBL build had a real achievement layer.
