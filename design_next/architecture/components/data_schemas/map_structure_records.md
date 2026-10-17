@@ -24,9 +24,9 @@ enum class StructureKind : std::uint8_t;        // reference/03 table 2.4-A, wit
 struct StructureRecord {                        // the base fields, table 3.1-A
   StructureKind kind;
   std::uint32_t id;                             // unique within the map
-  double x, z;                                  // wu, binary32-rounded (README DAT-013)
+  double x, z;                                  // wu, binary32-rounded (README DAT-010)
   std::optional<std::uint8_t> team;             // a start position 0..5; empty: no team
-  std::optional<std::array<double, 2>> facing; // x and z; empty for a turret (DAT-160)
+  std::optional<std::array<double, 2>> facing; // x and z; empty for a turret (DAT-156)
   bool global;
   KindFields fields;                            // one alternative per kind, table 3.2-A
 };
@@ -57,12 +57,12 @@ Table 3.1-A Base fields of a structure record.
 | structure id | `id` | integer | required | 0 to 2^31 − 1; unique within the map (R-MAP-047, DEC-801); the target of every link field |
 | x, z | `x`, `z` | simulation decimals, binary32-rounded, wu | required | finite |
 | team | `team` | integer, a start position | absence-meaningful: absent, no team | 0 to `ref.sim.team.visitor_slot` (5); remapped to a team at load, and a position at or above the player count, 4 and 5 included, becomes no team (R-MAP-044) |
-| facing | `facing` | x and z, simulation decimals, binary32-rounded | defaulted: (1, 0), the front of R-BLDG-014 | normalised by initialisation with y = 0 (R-BLDG-014), with the degenerate result of DEC-241 for a zero vector; a turret record holds none (DAT-160) |
+| facing | `facing` | x and z, simulation decimals, binary32-rounded | defaulted: (1, 0), the front of R-BLDG-014 | normalised by initialisation with y = 0 (R-BLDG-014), with the degenerate result of DEC-241 for a zero vector; a turret record holds none (DAT-156) |
 | global flag | `global` | boolean | defaulted: false | required and `true` on every Beam Dish and Transit Gate record (R-BLDG-015, R-MAP-103) |
 
 **DAT-144** (MUST) The global flag changes no match rule; on a Source Node it selects only how the Source Node is drawn (R-BLDG-015). This is the reference default of DEC-309, whose recommendation removes the flag from Species map data and expresses a visual variant as an explicit asset choice.
 
-**DAT-145** (MUST) No structure field uses a marker value: a team of "no team" is an absent `team`, a link of "none" is an absent link field or an empty list, and a field that the reference marks as unset with −1 is absent (DEC-120, README DAT-011).
+**DAT-145** (MUST) No structure field uses a marker value: a team of "no team" is an absent `team`, a link of "none" is an absent link field or an empty list, and a field that the reference marks as unset with −1 is absent (DEC-120, README DAT-008).
 
 ### 3.2 Fields of each structure kind
 
@@ -118,12 +118,12 @@ Table 3.2-A Kind-specific fields. "Ref" marks a record reference to a structure 
 | jump pad (`jump_pad`) | force | `force` | simulation decimal, binary32-rounded, wu/s | defaulted: `ref.bldg.jump_pad.default_value` | — | R-BLDG-473 |
 | | angle | `angle` | simulation decimal, binary32-rounded, rad | defaulted: `ref.bldg.jump_pad.default_value` | — | R-BLDG-473 |
 | smoke column (`smoke_column`), volcano vent (`volcano_vent`) | — | — | base fields only | — | — | R-BLDG-466, R-BLDG-469 |
-| Hive (`hive`) | ants inside | `ants_inside` | count | defaulted: 0 (R-BLDG-633) | 0 to `ref.bldg.hive.map_ants_max` (DAT-163) | R-BLDG-633 |
+| Hive (`hive`) | ants inside | `ants_inside` | count | defaulted: 0 (R-BLDG-633) | 0 to `ref.bldg.hive.map_ants_max` (DAT-159) | R-BLDG-633 |
 | Spitter Plant (`spitter_plant`) | size | `size` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_size` | — | R-BLDG-644 |
 | | pitch | `pitch` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_pitch` | — | R-BLDG-644 |
 | | force | `force` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_force` | — | R-BLDG-644 |
 | | variance | `variance` | simulation decimal, binary32-rounded | defaulted: `ref.bldg.spitter_plant.default_variance` | — | R-BLDG-644 |
-| | reload | `reload` | ticks | defaulted: `ref.bldg.spitter_plant.default_reload_ticks` | at least 10 ticks, so that the first-deadline draw of R-BLDG-645 has a range | R-BLDG-644, R-BLDG-645 |
+| | reload | `reload` | ticks | defaulted: `ref.bldg.spitter_plant.default_reload_ticks` | large enough that the first-deadline draw of R-BLDG-645 has at least one value, ⌊reload ÷ 10⌋ ≥ 1 | R-BLDG-644, R-BLDG-645 |
 | | trigger flag | `trigger` | boolean | defaulted: false | — | R-BLDG-644 |
 | | trigger offset | `trigger_x`, `trigger_z` | simulation decimals, binary32-rounded, wu | defaulted: 0 (R-BLDG-644) | — | R-BLDG-644 |
 | | trigger radius | `trigger_radius` | simulation decimal, binary32-rounded, wu | defaulted: `ref.bldg.spitter_plant.default_trigger_radius` | 0 or more | R-BLDG-644 |
@@ -145,33 +145,33 @@ Table 3.2-A Kind-specific fields. "Ref" marks a record reference to a structure 
 
 **DAT-149** (MUST) The spawn-network links of a map form a tree: a map that places Spawn Nodes places exactly one Source Node, whose links reach every Spawn Node through Relays and Spawn Nodes, and the content build rejects a spawn network whose links contain a cycle or leave a Spawn Node unreached (R-MAP-108, DEC-456). The run-time walk over the links still keeps a visited set, so it ends on any graph (DEC-456).
 
-**DAT-150** (MUST) The Barrier Emitter chain links, the grid links, the fuel links and the bot-objective chain may end with an absent link but must not loop back to a record already on the same chain, except where the owning document states that a closed chain is valid; a loop is the `reference_cycle` diagnostic of README table 6-A. Flag post links form a graph and may contain cycles; the Flag Chain rule of R-MAP-176 requires that graph to be connected.
+**DAT-150** (MUST) The other chains may end with an absent link or close into a loop: a ring of Barrier Emitters, a loop of grid links, of fuel links or of bot objectives is valid data, because each step of these chains is bounded per tick by its owner's rules. One loop is unbounded and is a build error, the `reference_cycle` diagnostic of README table 6-A: a ring of Barrier Emitters whose every emitter starts in `relay_only` mode, because each of them forwards every request at once and a forwarded request would circle the ring without end (R-BLDG-435, DEC-014). Flag post links form a graph, which the Flag Chain rule of R-MAP-176 requires to be connected.
 
 ## 4 Behaviour and algorithms
 
 ### 4.1 Structure rules of the map validation
 
-**DAT-155** (MUST) The content build checks, for every map, in addition to the field checks of table 3.1-A and table 3.2-A: unique structure ids (R-MAP-047); the global flag on every Beam Dish and Transit Gate (R-BLDG-015); the kinds that a map may place (R-MAP-101); every link (DAT-147 to DAT-150); and, for every mode the map lists, the structure parts of the per-mode rules of DEC-561 ([map_schema.md](map_schema.md) DAT-107): one Relic Base per start position and at least one Relic Spawn Zone (Relic Run, R-MAP-161); one Home post per start position and a connected Flag post graph (Flag Chain, R-MAP-176); one Core Device owned by a defending start position, at least three linked Command Consoles, a countdown equal to the match time limit, and every defence bot objective marker with a scan range bound to a structure (Siege, R-MAP-166); one Launch Vessel, three fuel depots and one Transit Gate for each start position (Launch Race, R-MAP-170).
+**DAT-151** (MUST) The content build checks, for every map, in addition to the field checks of table 3.1-A and table 3.2-A: unique structure ids (R-MAP-047); the global flag on every Beam Dish and Transit Gate (R-BLDG-015); the kinds that a map may place (R-MAP-101); every link (DAT-147 to DAT-150); and, for every mode the map lists, the structure parts of the per-mode rules of DEC-561 ([map_schema.md](map_schema.md) DAT-103): one Relic Base per start position and at least one Relic Spawn Zone (Relic Run, R-MAP-161); one Home post per start position and a connected Flag post graph (Flag Chain, R-MAP-176); one Core Device owned by a defending start position, at least three linked Command Consoles, a countdown equal to the match time limit, and every defence bot objective marker with a scan range bound to a structure (Siege, R-MAP-166); one Launch Vessel, three fuel depots and one Transit Gate for each start position (Launch Race, R-MAP-170).
 
-**DAT-156** (MUST) A record of a structure kind that the reference maps never place, the Hive and the Spitter Plant, is valid (R-MAP-101). A record whose kind no match creates and that only campaign content uses is an unknown kind and a build error (DEC-802).
+**DAT-152** (MUST) A record of a structure kind that the reference maps never place, the Hive and the Spitter Plant, is valid (R-MAP-101). A record whose kind no match creates and that only campaign content uses is an unknown kind and a build error (DEC-802).
 
 ### 4.2 Reading a record at initialisation
 
-**DAT-157** (MUST) Initialisation copies the base fields and the kind's fields from the record, with the presence rules of table 3.2-A, and never reads a value that the record does not hold: an absent optional field is its declared default or its explicit "absent" state, never a missing value passed on (DEC-015). Records are read in list order, which is the structure order (R-MAP-104), and every participant reads the same records in the same order (R-SIM-017).
+**DAT-153** (MUST) Initialisation copies the base fields and the kind's fields from the record, with the presence rules of table 3.2-A, and never reads a value that the record does not hold: an absent optional field is its declared default or its explicit "absent" state, never a missing value passed on (DEC-015). Records are read in list order, which is the structure order (R-MAP-104), and every participant reads the same records in the same order (R-SIM-017).
 
-**DAT-158** (MUST) The team of a record is a start position; at load it is replaced by the team that holds that position, or by no team (R-MAP-044). The kinds whose owner the reference recomputes from their ports or their rules keep the record's team only until their first recount (R-BLDG-027); the bot navigation node ignores it (R-BOT-027).
+**DAT-154** (MUST) The team of a record is a start position; at load it is replaced by the team that holds that position, or by no team (R-MAP-044). The kinds whose owner the reference recomputes from their ports or their rules keep the record's team only until their first recount (R-BLDG-027); the bot navigation node ignores it (R-BOT-027).
 
-**DAT-159** (MUST) A Control Zone's size and a bot navigation node's priority modifier keep the full binary64 value of their decimal; every other simulation decimal of a structure record is binary32-rounded at cook time (README DAT-013, DEC-241).
+**DAT-155** (MUST) A Control Zone's size and a bot navigation node's priority modifier keep the full binary64 value of their decimal; every other simulation decimal of a structure record is binary32-rounded at cook time (README DAT-010, DEC-241).
 
-**DAT-160** (MUST) A turret record holds no facing: a turret's initial facing does not come from map data, and initialisation sets its up to (0, 1, 0) and its front to (0, 0, 1) (R-BLDG-407, R-MAP-106). A turret record that gives a `facing` is a build error, because no rule would read it. This is the reference default of DEC-462, whose option B would add a facing field that sets the initial facing.
+**DAT-156** (MUST) A turret record holds no facing: a turret's initial facing does not come from map data, and initialisation sets its up to (0, 1, 0) and its front to (0, 0, 1) (R-BLDG-407, R-MAP-106). A turret record that gives a `facing` is a build error, because no rule would read it. This is the reference default of DEC-462, whose option B would add a facing field that sets the initial facing.
 
-**DAT-161** (MUST) A Barrier Emitter's initial mode, a turret's type and a bot objective marker's pickup value are named enumerators; the record never holds the decimal or the signed number by which the reference encodes them, and an unknown name is a build error (DEC-015).
+**DAT-157** (MUST) A Barrier Emitter's initial mode, a turret's type and a bot objective marker's pickup value are named enumerators; the record never holds the decimal or the signed number by which the reference encodes them, and an unknown name is a build error (DEC-015).
 
-**DAT-162** (MUST) A tree's colours are RGBA8 values written as four integers; the record never holds a packed colour in a signed integer. The baked crown data of a map-placed tree is derived from the tree record by the content build ([map_schema.md](map_schema.md) DAT-100; DEC-012).
+**DAT-158** (MUST) A tree's colours are RGBA8 values written as four integers; the record never holds a packed colour in a signed integer. The baked crown data of a map-placed tree is derived from the tree record by the content build ([map_schema.md](map_schema.md) DAT-096; DEC-012).
 
-**DAT-163** (MUST) A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error. The run-time replacement of such a value by 0 that R-BLDG-633 states therefore never meets validated content; it remains the rule for any other creator.
+**DAT-159** (MUST) A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error. The run-time replacement of such a value by 0 that R-BLDG-633 states therefore never meets validated content; it remains the rule for any other creator.
 
-**DAT-164** (MUST) A smoke column that a map places is an obstacle that blocks movement, as [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) specifies; this is the reference default of DEC-089, whose recommendation would add a field marking the obstacle as wanted (R-MAP-107).
+**DAT-160** (MUST) A smoke column that a map places is an obstacle that blocks movement, as [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) specifies; this is the reference default of DEC-089, whose recommendation would add a field marking the obstacle as wanted (R-MAP-107).
 
 ```mermaid
 flowchart TD
@@ -180,7 +180,7 @@ flowchart TD
   K -- yes --> F["base fields: id unique, team position, facing (none for a turret), global flag"]
   F --> G["kind fields: types, ranges, defaults"]
   G --> L["link fields: target exists and has an accepted kind"]
-  L --> T["chains: spawn-network tree, no loops where loops are forbidden"]
+  L --> T["chains: spawn-network tree; no ring of relay-only Barrier Emitters"]
   T --> M["per-mode structure rules for every listed mode"]
   M --> C["cooked in list order; tree crowns derived"]
   F -- error --> E
@@ -190,26 +190,26 @@ flowchart TD
   M -- error --> E
 ```
 
-Caption: Figure 4-A, the checks of one structure record and of the structures of a map (DAT-143 to DAT-163).
+Caption: Figure 4-A, the checks of one structure record and of the structures of a map (DAT-143 to DAT-159).
 
 ## 5 Concurrency and performance budget
 
-**DAT-165** (MUST) Link validation is linear in the number of records and links of a map: the validator indexes the records by id once and resolves every link through the index, and the tree and cycle checks visit each record at most once per chain. The reference maps hold at most a few thousand structure records each ([maps](../../../reference/08_maps_and_level_design/rules_and_conventions.md) table 2.11-A), well inside the per-map share of `dat.perf.full_build_s`.
+**DAT-161** (MUST) Link validation is linear in the number of records and links of a map: the validator indexes the records by id once and resolves every link through the index, and the tree and cycle checks visit each record at most once per chain. The reference maps hold at most a few thousand structure records each ([maps](../../../reference/08_maps_and_level_design/rules_and_conventions.md) table 2.11-A), well inside the per-map share of `dat.perf.full_build_s`.
 
 ## 6 Failure modes, diagnostics and telemetry
 
 | Condition | Result | Requirement |
 |---|---|---|
-| an unknown kind, a Relic or Supply crate record, a campaign kind | build error | DAT-141, DAT-156 |
+| an unknown kind, a Relic or Supply crate record, a campaign kind | build error | DAT-141, DAT-152 |
 | a repeated structure id | build error naming both records | DAT-143 |
 | a Beam Dish or Transit Gate without the global flag | build error | DAT-143 |
-| a turret record with a facing | build error | DAT-160 |
+| a turret record with a facing | build error | DAT-156 |
 | a link to no structure or to a structure of a kind the field does not accept | build error | DAT-147 |
 | a repeated target in a list, a self-link | build error | DAT-148 |
 | a spawn-network cycle, an unreached Spawn Node, no or two Source Nodes | build error | DAT-149 |
-| a loop in a chain that forbids loops | build error | DAT-150 |
-| a value outside its range, an unknown enumerator | build error | DAT-146, DAT-161, DAT-163 |
-| a per-mode structure rule that fails | build error naming the mode and the rule | DAT-155 |
+| a ring of Barrier Emitters that all start in `relay_only` mode | build error | DAT-150 |
+| a value outside its range, an unknown enumerator | build error | DAT-146, DAT-157, DAT-159 |
+| a per-mode structure rule that fails | build error naming the mode and the rule | DAT-151 |
 
 Every diagnostic names the map, the record's id and kind, its list index, the field and the file location.
 
@@ -217,11 +217,11 @@ Every diagnostic names the map, the record's id and kind, its list index, the fi
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
-| T30 kind fixtures | unit | one valid record of each of the 32 kinds cooks and loads with every default taken from its owner key; one failing fixture per row of the table of §6 | DAT-143 to DAT-163 |
+| T30 kind fixtures | unit | one valid record of each of the 32 kinds cooks and loads with every default taken from its owner key; one failing fixture per row of the table of §6 | DAT-143 to DAT-159 |
 | T31 link kinds | property | for every link field, a target of each kind of table 3.2-A is accepted exactly when the field lists that kind | DAT-147 |
 | T32 spawn tree | unit | a tree passes; a cycle, a second Source Node and an unreached Spawn Node each fail | DAT-149 |
-| T33 precision | unit | a Control Zone size and a priority modifier keep their binary64 value; a structure x of 0.1 cooks to the binary32-rounded value | DAT-159 |
-| T34 order | integration | the cooked structure order equals the list order, and two loads give the same structure order and ids | DAT-143, DAT-157 |
+| T33 precision | unit | a Control Zone size and a priority modifier keep their binary64 value; a structure x of 0.1 cooks to the binary32-rounded value | DAT-155 |
+| T34 order | integration | the cooked structure order equals the list order, and two loads give the same structure order and ids | DAT-143, DAT-153 |
 | T35 mortar object | unit | a turret with all four mortar fields loads them; a turret with three is a schema error; a turret without the object takes `ref.bldg.turret.default_mortar_value` for all four | DAT-146 |
 
 ## 8 Open decisions
@@ -231,14 +231,14 @@ Every diagnostic names the map, the record's id and kind, its list index, the fi
 | Reference | Status | Where it applies |
 |---|---|---|
 | DEC-309 | Open | the global flag on Source Nodes (DAT-144) |
-| DEC-462 | Open | turret facing from map data; no facing field by default (DAT-160) |
-| DEC-089 | Open | the smoke-column obstacle (DAT-164) |
+| DEC-462 | Open | turret facing from map data; no facing field by default (DAT-156) |
+| DEC-089 | Open | the smoke-column obstacle (DAT-160) |
 | DEC-456 | Resolved | spawn-network trees (DAT-149) |
 | DEC-457 | Resolved | typed links (DAT-147) |
-| DEC-561 | Resolved | the per-mode structure rules (DAT-155) |
-| DEC-012 | Resolved | baked tree crowns (DAT-162) |
-| DEC-241 | Open | the precision of each simulation decimal (DAT-159) |
-| DEC-052, DEC-466, DEC-802 | Dropped, Dropped, Open | campaign kinds and fields have no schema; unknown kinds are errors (DAT-141, DAT-156) |
+| DEC-561 | Resolved | the per-mode structure rules (DAT-151) |
+| DEC-012 | Resolved | baked tree crowns (DAT-158) |
+| DEC-241 | Open | the precision of each simulation decimal (DAT-155) |
+| DEC-052, DEC-466, DEC-802 | Dropped, Dropped, Open | campaign kinds and fields have no schema; unknown kinds are errors (DAT-141, DAT-152) |
 
 ### 8.2 Design-phase inputs
 
