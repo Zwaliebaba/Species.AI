@@ -219,3 +219,17 @@ Every wave B agent also:
 Do not repoint links to split documents (the coordinator runs `p4_fix_links.py`). Respect sizes: `screen_flow_and_match_setup.md`, `reference/05_population_flow.md` and `asset_pipeline_and_resources.md` are near the limit; split per the wave B rule if an edit needs room.
 
 **Checks and report** as in wave B; report `species_work/reports/RES-1.md`, one line per item.
+
+---
+
+## RES-2 — R9 layering sweep and the last ADR items
+
+**You own** every component specification under `design_next/architecture/components/`, `design_next/CONVENTIONS.md` §8, `design_next/glossary/` (names only) and `design_next/ADR/`; X-AST-2b owns `design_next/assets/` at the same time, so do not edit it.
+
+1. **R9 sweep (coordinator ruling, residual 24).** AGENTS.md R9: "if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer". In every component sketch and in CONVENTIONS §8, find each type, enumeration and free function registered or declared in `Engine` that names or encodes a game concept (Worker, Spawn Node, Supply crate, Power, Leader, team, mode, Relic, Flag post, match HUD, Power slots and the other Species terms of CONVENTIONS §8; for example `ActorRenderer`, `StructureRenderer`, `MatchHudRenderer`, `PowerSlotsPanelRenderer`, `PresentationSnapshot`) and move it to namespace `Species`, the game layer's presentation code, built on generic `Engine` types (an instanced sprite batch, a mesh renderer, a UI panel, a snapshot interface). Keep every requirement id, tuning key and heading; change only identifiers, namespace lines and the sentences that state the layer. Where a split needs a new generic `Engine` type, name it in AGENTS.md style and register it. Update CONVENTIONS §8's layer column and the glossary entries that name a moved identifier. List every moved identifier (old → new namespace) in your report.
+2. **Registry scope (coordinator ruling):** CONVENTIONS §8 registers types, enumerations with their enumerators, public free functions, macros and constants; member functions and fields of a type are not registered (the sketch is their record). Say so in §8 and do not add members.
+3. **ADR leftovers:** ADR-065 ("every CI build publishes its PDBs": align with `build.yml`, which uploads the build log and test results only; publishing symbols is a release step of BLD), ADR-067 ("Debug and Development builds" → Debug and Release, development features in Debug only), ADR-019 (the glTF validator of the tools solution: pin and licence, as AGENTS.md §2 requires for tools-solution dependencies), and BLD table 2.1-B: CI now passes `/p:EngineBuildNumber=${{ github.run_number }}` (default 0 in a local build). Amendment notes, numbers and MADR form kept.
+4. **`MeshRole`** is declared in both `asset_pipeline_and_resources.md` and `data_schemas/import_and_build_records.md`: keep one declaration (the data schema's, which owns record types) and cite it from the other.
+5. **Sizes:** `rules_and_conventions.md` (reference/08), `screen_flow_and_match_setup.md` and `build_tooling_and_distribution.md` are within 1 KiB of 115 KiB; if an edit of yours needs room in one of them, split it into a folder per the wave B rule.
+
+Checks and report as in wave B (the gates: `python3 Tools/DesignCheck/CheckDesign.py design_next --skip-mermaid`, then the Mermaid check on any edited diagram); report `species_work/reports/RES-2.md`.
