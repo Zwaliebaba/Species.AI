@@ -6,14 +6,32 @@ This file records the decisions on teams and alliances, match options, populatio
 
 ## Index
 
-<!-- index -->
+| ID | Title | Status | Affects |
+|---|---|---|---|
+| [DEC-450](#dec-450-start-positions-and-the-colours-of-bot-and-unused-slots) | Start positions and the colours of bot and unused slots | Open | R-MODE, R-META, R-SIM |
+| [DEC-451](#dec-451-co-op-friendship-of-slots-outside-the-two-alliances) | Co-op friendship of slots outside the two alliances | Open | R-MODE, R-SIM |
+| [DEC-452](#dec-452-comeback-bonus-power-pool-and-the-maps-excluded-outcomes) | Comeback Bonus power pool and the map's excluded outcomes | Open | R-CRATE, R-MODE |
+| [DEC-453](#dec-453-population-cap-enforcement-points-and-uncapped-sources) | Population-cap enforcement points and uncapped sources | Open | R-ECON, R-CRATE, R-BLDG, R-UNIT |
+| [DEC-454](#dec-454-population-limiter-as-a-fallback-cap) | Population Limiter as a fallback cap | Open | R-BLDG, R-ECON, R-MAP |
+| [DEC-455](#dec-455-same-tick-advance-of-objects-created-or-handed-over-during-a-tick) | Same-tick advance of objects created or handed over during a tick | Open | R-SIM, R-ECON, R-CRATE, R-BLDG |
+| [DEC-456](#dec-456-spawn-networks-are-trees-and-an-essence-orb-is-on-one-edge-at-a-time) | Spawn networks are trees, and an Essence orb is on one edge at a time | Resolved | R-BLDG, R-MAP, DAT |
+| [DEC-457](#dec-457-structure-links-are-type-checked) | Structure links are type-checked | Resolved | R-BLDG, DAT |
+| [DEC-458](#dec-458-linking-a-command-console-to-the-core-device-rebuilds-its-ports) | Linking a Command Console to the Core Device rebuilds its ports | Resolved | R-BLDG, R-MODE, R-AUD |
+| [DEC-459](#dec-459-core-device-with-no-linked-command-console) | Core Device with no linked Command Console | Open | R-BLDG, R-MODE, R-MAP |
+| [DEC-460](#dec-460-a-burning-hive-releases-ants-only-while-it-holds-any) | A burning Hive releases ants only while it holds any | Resolved | R-BLDG, R-UNIT |
+| [DEC-461](#dec-461-each-turret-type-fires-from-the-sockets-of-its-own-mesh) | Each turret type fires from the sockets of its own mesh | Resolved | R-BLDG, R-CRATE, AST, VFX |
+| [DEC-462](#dec-462-turret-facing-from-map-data) | Turret facing from map data | Open | R-BLDG, R-MAP, DAT |
+| [DEC-463](#dec-463-one-surge-limit-for-the-fuel-pump) | One surge limit for the fuel pump | Resolved | R-BLDG, RND |
+| [DEC-464](#dec-464-the-siege-solar-array-knock-out-uses-one-no-team-value) | The Siege Solar Array knock-out uses one no-team value | Resolved | R-BLDG, R-MODE |
+| [DEC-465](#dec-465-score-weighted-supply-crate-drop-when-every-score-is-zero) | Score-weighted Supply crate drop when every score is zero | Resolved | R-CRATE, R-SIM |
+| [DEC-466](#dec-466-defects-in-structures-and-fields-that-no-match-uses) | Defects in structures and fields that no match uses | Dropped | R-BLDG |
 
 ## 1 Teams, alliances and match options
 
 ### DEC-450 Start positions and the colours of bot and unused slots
 - Status: Open
 - Affects: reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md (R-META), reference/12_simulation_model/06_teams_and_player_commands.md (R-SIM)
-- Specified behaviour: Outside Siege and co-op, a team's start position is drawn uniformly, with the simulation generator, from the map positions that no team holds yet, at the moment the match first needs that team's position. Match initialisation asks for the positions in team-slot order, so the draws happen in slot order. In a tutorial the position equals the team slot, and the Rogue and Visitor factions use their own slot ids. At match start the host fills every empty slot below the map's player count with a bot team. Each bot team in such a slot draws its colour from colours 0 to 3, excluding every colour that a team with a colour id below 4 holds (the draw is bounded by DEC-014). Each unused slot, at or above the map's player count, draws a colour from 0 to 3 that no player slot holds, so that the Essence Grove and Allegiance Scrambler effects, which can pick a slot that no team plays, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour. Siege assigns sides and positions by its own procedure, and co-op assigns them by alliance (DEC-451).
+- Specified behaviour: Outside Siege and co-op, a team's start position is drawn uniformly, with the simulation generator, from the map positions that no team holds yet, at the moment the match first needs that team's position. Match initialisation asks for the positions in team-slot order, so the draws happen in slot order. In a tutorial the position equals the team slot, and the Rogue and Visitor factions use their own slot ids. At match start the host fills every empty slot below the map's player count with a bot team. Each bot team in such a slot receives a random colour from 0 to 3 that no other team holds; DEC-014 makes this a choice from the list of free colours. Each unused slot, at or above the map's player count, draws a colour from 0 to 3 that no player slot holds, so that the Essence Grove and Allegiance Scrambler effects, which can pick a slot that no team plays, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour. Siege assigns sides and positions by its own procedure, and co-op assigns them by alliance (DEC-451).
 - Options: A — the reference behaviour; B — assign every start position and every slot colour once, at match start, in slot order, from the match seed, and record the assignment in the match setup; unused slots receive distinct colours while free colours remain.
 - Recommendation: B. The distribution of start positions is unchanged, but the assignment no longer depends on which code first asks for a position, and a recorded assignment lets the loading view, replays and bots read it without drawing from the simulation generator. Distinct colours for unused slots keep the random-colour effects distinguishable.
 - Decide by: design phase
@@ -102,7 +120,7 @@ This file records the decisions on teams and alliances, match options, populatio
 - Status: Resolved
 - Affects: reference/03_buildings_and_world_objects/defences_and_props.md (R-BLDG), reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md (R-CRATE), architecture/components/asset_pipeline_and_resources.md (AST), architecture/components/animation_and_vfx.md (VFX)
 - Specified behaviour: Each turret type takes its barrel-end and casing-ejection sockets from its own mesh, so every turret type fires from its own barrel positions. Casing ejection is a presentation effect and draws from the presentation generator (DEC-013).
-- Options: A — sockets from the turret's own mesh; B — the reference behaviour, in which every turret looks its sockets up once, when it is created, on the gun-turret mesh, so rocket, flame and Convert turrets fire from gun-turret barrel positions, and every shot of every turret type spends four simulation draws on casing ejection.
+- Options: A — sockets from the turret's own mesh; B — the reference behaviour, in which every turret looks its sockets up once, when it is created, on the gun-turret mesh, so rocket turrets, flame turrets and Convert Turrets fire from gun-turret barrel positions, and every shot of every turret type spends four simulation draws on casing ejection.
 - Recommendation: A. Every turret mesh is authored new, so its sockets must match its own geometry, and moving the casing draws off the simulation generator changes nothing a player sees.
 
 ### DEC-462 Turret facing from map data
