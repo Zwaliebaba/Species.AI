@@ -4,7 +4,7 @@
 
 | File | Size | Content |
 |---|---|---|
-| `species_work/p4_arbitration.md` | 75.1 KB | 24 entries A-1 to A-24, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
+| `species_work/p4_arbitration.md` | 78.0 KB | 25 entries A-1 to A-25, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
 | `species_work/scripts/` helper named X-ARB + `_extract_replacements.py` (the mandated `<ID>_*.py` form; its name trips one technology pattern of the forbidden list, a false positive) | 1.3 KB | pulls the replacement blocks out of the working file so they can be scanned on their own |
 | `species_work/reports/X-ARB.md` | this file | |
 
@@ -41,6 +41,9 @@ Extra conflicts found in the Phase 3 reports that only ORIG could settle:
 - A-23 (G02b to C-SIM-c): a Wisp's wobble makes three `NextSigned(1)` draws and one `NextUnit(20)` draw each tick. Fix: R-UNIT-596 and one new key.
 - A-24 (C-TER to G08b): the tile writer puts no separator between two fields, but the field padding still separates them. Fix: a clause of R-MAP-387.
 
+Coordinator request (after the first hand-back):
+- A-25 (VFX-126 against R-UNIT-051): settled for VFX-126. ORIG computes the damage-flicker flag once per tick inside the per-tick advance; each render frame only reads it. The sine uses the unscaled wall time. Fix: R-UNIT-051 (full replacement in A-25).
+
 ## Hand-offs
 
 - **X-DEC-P4a:** the DEC-085 replacement text in A-3. A-12 means item 52's proposed action is not taken.
@@ -50,7 +53,7 @@ Extra conflicts found in the Phase 3 reports that only ORIG could settle:
 
 ## Checks
 
-- Replacement text: the extraction helper pulls all 118 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
+- Replacement text: the extraction helper pulls all 122 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
 - Whole working file: it has hits (137 forbidden, plus soft-pattern hits). Every hit is on the header line or inside an ORIG evidence quote, which the X-ARB brief allows for this working file. Nothing in this file is meant for `design_next/`.
 
 ## Could not do

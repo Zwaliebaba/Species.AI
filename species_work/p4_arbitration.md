@@ -518,6 +518,26 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 **Replacements.**
 - `reference/08_maps_and_level_design/map_editor_hooks.md`, R-MAP-387, the clause: replace "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they can be read back only through fixed field widths;" by "it writes a tile's lowland smoothing factor and guide-grid power with no separator between them, so that they read back as two values only because the power's field is 6 characters wide and its value (0 to 5) leaves leading spaces;". The rest of R-MAP-387 stays.
 
+## A-25 Cadence of the damage flicker (coordinator request, VFX-126 against R-UNIT-051)
+
+**Question.** Is a unit's damaged-flicker flag evaluated every render frame (R-UNIT-051) or once per tick period (VFX-126)?
+
+**Statements.**
+- `reference/02_units/README.md` **R-UNIT-051**: "each render frame it is drawn damaged when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(presentation time + …)| × …) > its health fraction".
+- `architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md` **VFX-126**: the flag is "evaluated once per `vfx.flicker.step` (one `ref.sim.tick_period`, 0.1 s of scaled presentation time), the cadence of the reference", with the sine of the unscaled presentation time.
+
+**ORIG evidence.**
+- `26_animation_and_vfx.md` l.505 (§4.6, routed to C-VFX): "`Entity::Advance` evaluates, every tick and **inside the sim step**, `m_renderDamaged = frand(0.75)·(1 − |sin(g_gameTime + uid·10)|·0.8) > health/maxHealth` … A full-health entity never flickers; at low health it flickers on most ticks … When the flag is set, the classes below distort their render matrix each frame".
+- `02_units_and_entities.md` l.412 (§2, routed to G02a1): "`Entity::Advance` sets `m_renderDamaged` = …" (the per-tick advance, not the render); `21_simulation_and_entity_model.md` l.688: step (4) of the base per-tick advance.
+- `26_animation_and_vfx.md` l.50: the time in the sine is the wall time, set every frame and not advanced while paused (unscaled by game speed).
+
+**Verdict.** ORIG settles it: the flag is **evaluated once per tick**, and each render frame only reads it (and applies its own per-frame distortion). VFX-126 is right; R-UNIT-051 wrongly evaluates the expression every render frame and leaves the clock of the sine unstated.
+
+**Replacements.**
+- `reference/02_units/README.md`, R-UNIT-051:
+  > **R-UNIT-051** (MUST) A unit flickers to show damage. Its damaged flag is evaluated once per tick period of scaled presentation time, the reference cadence of one evaluation per simulation tick, and not every render frame ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-126): the flag is set when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(t + `ref.unit.flicker.phase_per_id` × unit id)| × `ref.unit.flicker.sine_weight`) > its health fraction, with t the unscaled presentation time, chance scale 0.75, phase 10 per unit id and sine weight 0.8. Every render frame draws the unit by its current flag. The flicker is presentation state: it draws only from the presentation generator, reads only the presentation clock, and no simulation rule reads it (DEC-007, DEC-013).
+- No change to VFX-126.
+
 ---
 
 ## Summary
@@ -548,5 +568,6 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
 | A-22 | 98 | colour-row press saves the settings | stores and saves | yes | reference/09 options (R-META-406 item 7), screen_flow (R-META-081) |
 | A-23 | report G02b | Wisp wobble draws per tick | three `NextSigned(1)` and one `NextUnit(20)` | yes | creatures.md (R-UNIT-596, one tuning key) |
 | A-24 | report C-TER | tile writer separator | values separate through the power field's padding | yes | reference/08 map_editor_hooks.md (R-MAP-387 clause) |
+| A-25 | coordinator | damage-flicker cadence | once per tick period; frames only read the flag | yes | reference/02 README (R-UNIT-051) |
 
 Design choices for X-DEC-P4b: A-19 and A-20 (both item 118). DEC text for X-DEC-P4a: A-3 (DEC-085). No other entry needs a DEC change; A-12 means the proposed action of item 52 ("G07 states 21 with DEC-064") is not taken.
