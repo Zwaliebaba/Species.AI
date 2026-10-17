@@ -610,3 +610,169 @@ level_enum := { blank | MAPFILENAME LEVELID }          ; LEVELID INT; MISSING �
 * The file lacks a final newline (last line `mp_PDLC2_rocketriot_3P_1.txt 59`): read from disk it is processed, read from an archive (`TextDataReader`) it would be dropped [C] §1.2 — harmless (id 59 > 49).
 * `tools/multiwinia_exclusions.txt` excludes `levels/level_enum.txt` from the retail `main.dat` → in a packaged retail build the file is not found ("Failed to load level_enum.txt") unless shipped another way [C] exclusion list; [U] whether a patch/DLC archive supplies it (resolve: inspect a retail `patch.dat`/PDLC archive).
 
+<a id="fmt-game-txt"></a>
+## [→ 29_data_formats_reference] 3. Campaign world files: `game.txt` family [B:LEGACY]
+
+### 3.1 Purpose, files, reachability
+
+`GlobalWorld::LoadGame(name)` builds the Darwinia campaign world (locations, global buildings, research, scripted events). It is reached only through `App::LoadProfile` / `App::SaveProfile`, whose callers are campaign/prologue paths (`Script::RunCommand_EnterLocation`, attract mode, user-profile and mods windows, `ControlTower`) [C] `code/app.cpp:App::LoadProfile`, grep of callers. In the FULL Multiwinia flow `App::Initialise` creates an **empty** `GlobalWorld` (the `LoadProfile()` call is commented out) [C] `code/app.cpp:App::Initialise`. Hence every file in this section is [B:LEGACY] (compiled, unreachable from the Multiwinia menus).
+
+| File | Selected when | Tag |
+|---|---|---|
+| `data/game.txt` | `GAMEDATAFILE` = `game.txt` in FULL (`DEMOBUILD`/`DEMO2` undefined); `m_gameDataFile = "game.txt"` [C] `code/app.cpp` (`#define GAMEDATAFILE`, L369) | [B:LEGACY] |
+| `data/game_demo.txt` | only with `DEMOBUILD` | [B:DEAD] |
+| `data/game_demo2.txt` | only with `DEMO2` | [B:DEAD] |
+| `data/game_unlockall.txt` | `LoadProfile` when full version and profile name is `AccessAllAreas` or `AttractMode` (then every trunk port is forced online and every location available) [C] `App::LoadProfile` | [B:LEGACY] |
+| `data/purity/game.txt` | never (no code opens `purity/`) | [B:DEAD] |
+| `<profile>/users/<name>/game.txt` | save game, tried first (§13.3) | [B:LEGACY] |
+
+Load order: user save (`UnicodeTextFileReader`→`TextFileReader`) else `Resource::GetTextReader(name)`; then `locations.txt` (§3.4); then every location's map file and every `levels/mission_<locationname>*.txt` are parsed to register global buildings and mark missions complete; finally `EvaluateEvents()` [C] `GlobalWorld::LoadGame`.
+
+### 3.2 Grammar [C] `GlobalWorld::LoadGame`, `ParseLocations`, `ParseBuildings`, `ParseEvents`, `GlobalEvent::Read`, `GlobalEventAction::Read`, `GlobalResearch::Read`, `ParseTutorial`, `ParseLevelTimes`, `ParseSquaddiesUsed`
+
+```
+game_file    := { blank | section | other_line }                    ; other_line silently ignored
+section      := locations | gbuildings | research | events | tutorial | leveltimes | squaddies
+locations    := 'Locations_StartDefinition' EOL { blank | loc_row } 'Locations_EndDefinition' EOL
+loc_row      := ID AVAILABLE MAPFILE MISSIONFILE                    ; INT INT WORD WORD — MISSING ⇒ CRASH
+gbuildings   := 'Buildings_StartDefinition' EOL { blank | gb_row } 'Buildings_EndDefinition' EOL
+gb_row       := ID TEAMID LOCID TYPE LINK ONLINE                     ; six INT — MISSING ⇒ CRASH
+research     := 'Research_StartDefinition' EOL { blank | r_line } 'Research_EndDefinition' EOL
+r_line       := 'Research' RESEARCHNAME PROGRESS LEVEL | 'CurrentResearch' RESEARCHNAME | 'CurrentPoints' INT
+events       := 'Events_StartDefinition' EOL { blank | event } 'Events_EndDefinition' EOL
+event        := 'Event' { condition } EOL { blank | action_line } 'End' EOL
+condition    := 'AlwaysTrue' | 'NotInLocation' | 'NeverTrue'
+              | ('BuildingOnline' | 'BuildingOffline') LOCATIONNAME BUILDINGID
+              | 'ResearchOwned' RESEARCHNAME
+              | 'DebugKey' INT
+action_line  := 'Action' ( 'SetMission' LOCATIONNAME MISSIONFILE | 'RunScript' SCRIPTNAME | 'MakeAvailable' LOCATIONNAME )
+tutorial     := 'Tutorial_StartDefinition' EOL { WORD WORD INT EOL } 'Tutorial_EndDefinition' EOL      ; e.g. "CurrentChapter = 3"
+leveltimes   := 'LevelTimes_StartDefinition' EOL { INDEX VALUE EOL } 'LevelTimes_EndDefinition' EOL
+squaddies    := 'SquaddiesUsed_StartDefinition' EOL { INDEX VALUE EOL } 'SquaddiesUsed_EndDefinition' EOL
+```
+
+All keywords are case-insensitive. `:` and `,` are separators, which is why conditions are conventionally written `BuildingOnline:garden,8` (three tokens) [C] `data/game.txt`.
+
+### 3.3 Field table
+
+| Section / field | Type | Semantics and rules [C] |
+|---|---|---|
+| `loc_row.ID` | INT | location id (1…12 in Darwinia); referenced by `gb_row.LOCID`, `TrunkPort.targetLocationId`, `locations.txt` |
+| `loc_row.AVAILABLE` | INT→bool | location reachable on the world map |
+| `loc_row.MAPFILE` | WORD ≤255 | `levels/` map file; **the location name is derived from it**: drop the first 4 characters and the last 4 (`map_garden.txt` → `garden`). A file not following `map_<name>.txt` yields a wrong name; a name shorter than 4 characters underflows (bug) |
+| `loc_row.MISSIONFILE` | WORD ≤255 | current mission or `null` |
+| `gb_row` | 6×INT | `GlobalBuilding{ id, teamId, locationId, type (Building enum), link, online }`; looked up by (id, locationId) only — shipped rows use type 0 |
+| `Research NAME PROGRESS LEVEL` | research name (case-insensitive, 29 names: `Darwinian`, `Officer`, `Squad`, `Laser`, `Grenade`, `Rocket`, `Controller`, `AirStrike`, `Armour`, `TaskManager`, `Engineer`, `Harvester`, `Nuke`, `Subversion`, `PersonalShield`, `HotFeet`, `GunTurret`, `Shaman`, `Infection`, `MagicalForest`, `DarkForest`, `AntNest`, `Plague`, `Egg`, `MeteorShower`, `FireExtinguisher`, `Rage`, `Tank`, `DropShip` — `GlobalResearch::GetTypeName`), INT, INT | sets level then progress. **An unknown name gives index −1 and writes `m_researchLevel[-1]` (out of bounds)** |
+| `CurrentResearch NAME` | research name | current research (−1 if unknown) |
+| `CurrentPoints INT` | INT | research points |
+| any other word in `Research` | – | `AppReleaseAssert("Error loading GlobalResearch")` — **fatal in release** |
+| `Event` conditions | §2.14 condition grammar; `LOCATIONNAME` resolved against the locations loaded so far (`GetLocationId`, −1 → debug assert) | conjunction: the event fires when all conditions are true |
+| `Action` lines | – | actions execute **one per evaluation** in order (`GlobalEvent::Execute` pops the first action); a first token other than `Action` is debug-asserted but still parsed as an action line; an unknown action word leaves `m_type` uninitialised (debug assert only) — undefined behaviour on execute |
+| `SetMission LOC FILE` | – | set the location's mission file |
+| `RunScript NAME` | – | `Script::RunScript`: a name containing `.txt` runs `data/scripts/NAME` (§10); a name without `.txt` is a phrase-sequence id handled only under `USE_SEPULVEDA_HELP_TUTORIAL` → **no-op in FULL** (e.g. `RunScript gardenfinished` in `game.txt`) |
+| `MakeAvailable LOC` | – | location becomes available |
+| `Tutorial` lines | 2nd token ignored, 3rd INT | chapter for the Darwinia demo tutorial; `-1` deletes it — whole section compiled only under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] |
+| `LevelTimes INDEX VALUE` | INT INT | `m_spLevelTimes[INDEX] = VALUE` — no bounds check |
+| `SquaddiesUsed INDEX VALUE` | INT INT | **bug**: also writes `m_spLevelTimes[INDEX]` (not a squaddie table) |
+
+Writers: `WriteLocations` (`"\t%4d %4d %30s %40s"`), `WriteBuildings` (`"\t%4d %4d %6d %6d %6d %6d"`), `GlobalResearch::Write` (all 29 research rows + `CurrentResearch` + `CurrentPoints`), `GlobalEvent::Write`, `WriteLevelTimes`/`WriteSquaddiesUsed` (both empty), `WriteTutorial` (DEMO2 only) [C] `GlobalWorld::SaveGame`.
+
+Shipped content: all five files have the four sections Locations, Buildings, Research, Events; `game.txt` defines 11 locations (ids 1–11), 2 global buildings, 11 research rows, 17 events; `game_demo2.txt` uses `BuildingOnline:launchpad:1` (colon instead of comma — equivalent) [C].
+
+<a id="fmt-locations-txt"></a>
+### 3.4 `data/locations.txt` — world-map positions [B:LEGACY] [C] `GlobalWorld::LoadLocations`, `SaveLocations`
+
+```
+locations_file := { blank | ID X Y Z [ ignored ] }        ; INT F32 F32 F32 — MISSING ⇒ CRASH
+```
+
+Sets `GlobalLocation::m_pos` of an **already loaded** location (an id not in the game file — e.g. 12 in the shipped file — is ignored). Coordinates are positions on the sphere world (radius-scale units of the world-map renderer [I]). Read through `Resource::GetTextReader("locations.txt")`; a missing file dereferences `NULL` (crash) [C]. The editor writer (`GlobalWorldEditorWindow`, [B:EDITOR]) emits `"%-6d %-8.2 %-8.2 %-8.2\n"` — the `%-8.2` conversions lack a type letter, so a saved file is malformed [C] `GlobalWorld::SaveLocations`.
+
+Minimal example (both files, written for this document):
+
+```
+# game.txt
+Locations_StartDefinition
+	1  1  map_example.txt  mission_example.txt
+Locations_EndDefinition
+Research_StartDefinition
+	Research Darwinian 0 1
+	CurrentResearch Darwinian
+	CurrentPoints 0
+Research_EndDefinition
+Events_StartDefinition
+	Event BuildingOnline:example,10
+		Action RunScript example_done.txt
+		End
+Events_EndDefinition
+```
+```
+# locations.txt
+1   100.00  -150.00  80.00
+```
+
+<a id="fmt-multiwinia-txt"></a>
+## [→ 29_data_formats_reference] 4. `data/multiwinia.txt` — game types and their parameters [B:FULL]
+
+### 4.1 Purpose, files, parser
+
+Defines the Multiwinia game types (in **file order**, which *is* the game-type index used by code, maps, network and UI) and each type's lobby parameters. Loaded once by `Multiwinia::LoadBlueprints` through `Resource::GetTextReader`; a missing file is `AppReleaseAssert("Couldn't load multiwinia.txt")` (fatal). `data/multiwinia-testbed.txt` replaces it only under `TESTBED_ENABLED` [B:DEAD] [C] `code/multiwinia.cpp:Multiwinia::LoadBlueprints`.
+
+### 4.2 Grammar
+
+```
+mw_file   := { blank | gametype }
+gametype  := 'GAMETYPE' NAME EOL { param } 'END' EOL        ; NO blank or comment-only line between GAMETYPE and END
+param     := PARAMNAME MIN MAX DEFAULT CHANGE EOL            ; WORD F32 F32 F32 INT — MISSING ⇒ CRASH
+```
+
+* The top-level keyword is only debug-asserted to be `GAMETYPE` (`stricmp`); in release **any** first token starts a game type [C].
+* Inside a block the parser does `ReadLine(); GetNextToken()` with no `TokenAvailable` check, so a blank or comment-only line inside a block passes `NULL` to `stricmp(param,"END")` (crash). `END` is case-insensitive.
+* `NAME`, `PARAMNAME`: `strcpy` into `char[256]`; phrase ids are derived as `multiwinia_gametype_<lower(NAME)>` and `multiwinia_param_<lower(PARAMNAME)>` [C] `MultiwiniaGameBlueprint::MultiwiniaGameBlueprint`, `MultiwiniaGameParameter::MultiwiniaGameParameter`.
+* At most `MULTIWINIA_MAXPARAMS` = 64 parameters per type are storable in `Multiwinia::m_params[64]`; the loader does not check [I: `SetGameOptions` copies `numParams` ints into `m_params`].
+
+### 4.3 Field table
+
+| Field | Type | Semantics [C] |
+|---|---|---|
+| `NAME` | WORD (case-sensitive identity) | blueprint name; level files' `GameTypes` must match it with `strcmp`. Index order must equal the `Multiwinia::GameType*` enum: 0 `Domination` (= `GameTypeSkirmish`), 1 `KingOfTheHill`, 2 `CaptureTheStatue`, 3 `Assault`, 4 `RocketRiot`, 5 `Blitzkrieg` (`GameTypeBlitzkreig`), 6 `TankBattle` [C] `code/multiwinia.h` enum |
+| `PARAMNAME` | WORD | looked up case-insensitively by `Multiwinia::GetGameOption(name)` (returns −1 if absent) |
+| `MIN`, `MAX`, `DEFAULT` | F32 (stored as `double`, used as int by the lobby) | allowed range and initial value |
+| `CHANGE` | INT | UI widget: `-1` = checkbox, `0` = drop-down menu, `> 0` = slider step [C] `code/UI/GameMenuWindow.cpp` (L4589–L4620) |
+
+Shipped parameters (`data/multiwinia.txt`) [C]:
+
+| Game type (index) | Parameters `name min max default change` |
+|---|---|
+| Domination (0) | ScoreMode 0 1 0 0; TimeLimit 0 60 10 1; Handicap 0 90 90 10; CrateDropRate 0 300 40 10; StartingPowerups 0 3 0 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| KingOfTheHill (1) | ScoreMode 0 3 0 0; TimeLimit 1 60 5 1; Handicap 0 90 90 10; CrateDropRate 0 300 40 10; StartingPowerups 0 3 0 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| CaptureTheStatue (2) | TimeLimit 1 60 10 1; CrateDropRate 0 300 40 10; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; CrateDropMode 0 1 1 0 |
+| Assault (3) | Handicap 0 90 90 10; CrateDropRate 0 300 40 10 |
+| RocketRiot (4) | CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 7 1; MaxTurrets 0 5 3 1 |
+| Blitzkrieg (5) | TimeLimit 0 60 15 1; CrateDropRate 0 300 40 10; ReinforcementTimer 10 300 60 10; ReinforcementCount 1 100 40 1; MaxArmour 1 10 2 1; TurretFrequency 0 10 2 1; RetributionMode 0 1 1 −1; SuddenDeath 0 1 1 −1; MaxTurrets 0 5 2 1 |
+| TankBattle (6) | NumTanks 3 10 3 1 (game type compiled out: `INCLUDEGAMEMODE_TANKBATTLE` undefined) |
+
+Units/semantics per parameter (minutes, seconds, percent): [→ 01_game_modes] P02 §2. `multiwinia-testbed.txt` differs only by an extra comment and `TimeLimit 0 60 10 1` appended to RocketRiot [C] diff.
+
+Minimal example:
+
+```
+GAMETYPE Domination
+    TimeLimit   0  60  10  1
+END
+```
+
+<a id="fmt-betatesters"></a>
+## [→ 29_data_formats_reference] 5. Credit name lists: `betatesters.txt`, `multiwinia_betatesters.txt`
+
+| File | Parser | Grammar | Tag |
+|---|---|---|---|
+| `data/multiwinia_betatesters.txt` (69 lines, 3 Latin-1 names) | `code/UI/GameMenuWindow.cpp:ReadMultiwiniaBetaTesters` | every physical line → `GetRestOfUnicodeLine()` (leading separators stripped, `#` comments removed, empty lines give an empty entry) + `" \n"`; the concatenation replaces the credits phrase whose text is exactly `*BETATESTERS` (`multiwinia_credits_55`) in `ReadCredits` | [B:FULL] (Credits page) |
+| `data/betatesters.txt` (38 lines, 1 Latin-1 name) | `code/loaders/credits_loader.cpp:CreditsLoader::GenerateBetaTesterList` | `GetRestOfLine()`; lines with `strlen > 1` become names; **an empty line returns NULL and `strlen(NULL)` crashes** (the shipped file has none); laid out in 2 columns | [B:LEGACY] (`CreditsLoader` is reached only via `Script` `RunCredits` and the Darwinia sphere-world camera; `RunBootloader` is `USE_LOADERS`-only [B:DEAD]) |
+
+```
+name_list := { line }          ; line = free text; leading space/TAB/':'/',' stripped; '#' starts a comment
+```
+
+Encoding: single-byte; accented names are Latin-1 bytes and render as the corresponding U+00xx characters (§1.6). Minimal example: `Jane 'Example' Doe` on its own line. A name beginning with `:` or `,` loses that character; a name containing `#` is truncated.
+

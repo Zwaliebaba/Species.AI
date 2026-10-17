@@ -650,7 +650,7 @@ All of this is cosmetic and rebuilt from the height map; render state and pass o
 6. `grey = min(255, blurred·855.0)`; stored as `RGBAColour(grey, grey, grey)` (float → `unsigned char` truncation) at bitmap position (x, 127 − z) — i.e. **vertically flipped**.
 7. Any previous `"water_lightmap"` bitmap and texture are deleted, the new bitmap is registered under that name with `Resource::AddBitmap`.
 
-Effect: a soft 0–255 "distance to coast" mask, saturated (255) on and near land and fading to 0 within about 5 mask pixels (≈ 5·2·size/128 ≈ 0.08·size world units) out to sea [I].
+Effect: a soft 0–255 "distance to coast" mask, saturated (255) on and near land and reaching 0 six mask pixels from a straight coast (one pixel = size/64 world units, so ≈ 0.094·size) [I] (kernel half-width 5 plus the ×855 gain).
 
 ### 13.3 Depth map and flat-water tile mask
 
@@ -683,14 +683,14 @@ for each vertex pair (v1 = j, v2 = j+1), prevH1 = prevH2 = 0 at strip start:
     b1   = (prevH1 + prevH2 + v1.y) * 4.0 * (1 - depth[j])   + shoreNoise[j]   ; prevH1 = v1.y
     v2.y = (waveX[ix] + waveZ[iz+1]) * depth[j+1]
     b2   = (prevH2 + prevH1 + v2.y) * 4.0 * (1 - depth[j+1]) + shoreNoise[j+1] ; prevH2 = v2.y
-    v1.colour = waveTable[clamp(Round(0.7*b2 + 0.3*b1), 0, 399)]
-    v2.colour = waveTable[clamp(Round(0.7*b1 + 0.3*b2), 0, 399)]      # cross-mix softens the flat-shading sawtooth
+    v1.colour = waveTable[clamp(Round(0.7*b2 + 0.3*b1), 0, numColours-1)]   # Round(a) is #define'd as (int)(a): truncation
+    v2.colour = waveTable[clamp(Round(0.7*b1 + 0.3*b2), 0, numColours-1)]   # cross-mix softens the flat-shading sawtooth
     v1.normal = (-(waveX[ix+1]-waveX[ix-1])*depth[j],   v1.y, -(waveZ[iz+1]-waveZ[iz])*depth[j])     # unnormalised, D3D shader only
     v2.normal = (-(waveX[ix+1]-waveX[ix-1])*depth[j+1], v2.y, -(waveZ[iz+2]-waveZ[iz+1])*depth[j+1])
     duplicated degenerate-join vertices are kept at equal heights (isIdentical on x, z)
 ```
 
-So waves are a sum of two travelling sinusoids per axis (amplitude up to 7·(1.2 + 0.9) = 14.7 per axis), scaled by depth so they vanish at the shore; brightness is a wave-height proxy times "shoreness" plus the per-vertex shore whitening, so deep water is dark and coasts are bright [C]+[I]. `waveX[ix − 1]` is read out of bounds when ix = 0 [I] (only if the very first water column is needed; not in practice). Constants are file-scope `float const`: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, plus the local `scaleFactor = 7.0` [C].
+So waves are a sum of two travelling sinusoids per axis (amplitude up to 7·(1.2 + 0.9) = 14.7 per axis), scaled by depth so they vanish at the shore; brightness is a wave-height proxy times "shoreness" plus the per-vertex shore whitening, so deep water is dark and coasts are bright [C]+[I]. `waveX[ix − 1]` is read out of bounds when ix = 0 [I] (only if the very first water column is needed; not in practice). `Round` is the macro `(int)(a)` (truncation toward zero; the comment above it warns it is not repeatable, but the macro form is a plain cast) [C] `code/lib/math_utils.h:Round`. Constants are file-scope `float const`: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, plus the local `scaleFactor = 7.0` [C].
 
 ### 13.6 Water assets
 

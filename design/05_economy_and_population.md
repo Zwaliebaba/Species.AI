@@ -743,8 +743,8 @@ A default Rocket Riot trunk port is worth half a spawn point; an Assault port wi
 |---|---|---|---|---|
 | `mp_koth_2P_1`, hold 3 points | 45 | 1000 | 3.67/s | ≈ 260 s |
 | `mp_domination_4P_1`, hold 2 points | 45 | 500 | 2.45/s | ≈ 186 s |
-| `mp_assault_2P_1` attackers, 4 ports × 100 per wave | 0 | 1650 | 400 per 66 s | wave 5 (≈ 4 min 20 s) reaches 2000 > 1650; waves 1–4 give 1600 |
-| `mp_rocketriot_4P_1`, 1 port | 0 | 450 | 40 per 66 s | 12 waves ≈ 12 min (plus any of the 12 spawn points held) |
+| `mp_assault_2P_1` attackers, 4 ports × 100 per wave | 0 | 1650 | 400 per 66 s | waves 1–4 (t = 0, 64.9, 130.9, 196.9 s) give 1600; at wave 5 (262.9 s) the first port adds 100 (1700) and the other three ports are then locked — cap overshot by 50 |
+| `mp_rocketriot_4P_1`, 1 port | 0 | 450 | 40 per 66 s | wave 12 (≈ 725 s ≈ 12 min) takes it from 440 to 480 (plus whatever the map's 12 neutral spawn points add) |
 
 ### 7.4 Value of a unit of territory
 
