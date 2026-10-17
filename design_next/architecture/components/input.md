@@ -16,7 +16,7 @@ Notation used throughout:
 
 **INP-002** (MUST) Game code never reads a device. It asks the input router (`InputRouter`) whether an action fired in the current frame and may receive the action's value: its kind, its axis values and the device that produced it. Every answer comes from the state that the router built at the start of the frame; asking is free of side effects (DEC-554).
 
-**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A) and adds only the UI navigation and hook-page actions of table 3.6-B, which that document leaves to the UI framework (R-CTRL-035). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-0029).
+**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A). The UI navigation actions are those that the UI framework defines, with their keyboard defaults ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203, UI-204; R-CTRL-035); this component binds them in table 3.6-B and defines no menu action of its own, except the five leaderboard hook-page actions that no UI requirement lists (INP-077). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-0029).
 
 **INP-004** (MUST) Player commands originate only in the input layer. The match input pump (`MatchInputPump`) and the sampler of the team command state (`TeamCommandState`) turn actions into members of `PlayerCommand` and into fields of the team command state, by the rules of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) (DEC-023); the router itself produces actions, never commands. Simulation code links no input interface, never queries an action, never reads the pointer, a device, the input mode or the camera, and never issues a player command (DEC-008, DEC-119, R-CTRL-003, R-CTRL-004). One click therefore yields one command on the sender and one effect on every participant.
 
@@ -28,7 +28,7 @@ Notation used throughout:
 
 **INP-008** (MUST) The neighbours of this component own: the window, its focus, its close request and the system cursor's visibility over the client area ([platform layer](platform_layer.md), ADR-0075); widget focus, page navigation, UI repeat timers and input-mode captions ([UI framework](ui_framework/README.md), ADR-0032); the meaning, context and command of every match action (reference/06); the file format of the binding sets ([data schemas](data_schemas/README.md), ADR-0061, ADR-0062); and the settings store (`SettingsStore`) that holds the user layer (DEC-250).
 
-**INP-009** (MUST) The default binding set binds only the actions of tables 3.6-A and 3.6-B. It holds the one match control scheme (`ControlScheme`, R-CTRL-002): no alternative scheme (DEC-056), no gesture input and no icon Power bar (DEC-055), no loader mini-programs or attract mode (DEC-054), and no developer key other than `action.debug.network_stats`.
+**INP-009** (MUST) The default binding set binds only the actions of tables 3.6-A and 3.6-B, that is the actions of reference/06 table 2.1-A, those of UI-203 and the leaderboard hook-page actions. It holds the one match control scheme (`ControlScheme`, R-CTRL-002): no alternative scheme (DEC-056), no gesture input and no icon Power bar (DEC-055), no loader mini-programs or attract mode (DEC-054), and no developer key other than `action.debug.network_stats`.
 
 **INP-010** (MUST) Every device class is remapped through the same binding graph, and the graph offers a latch node for hold-or-toggle options (§4.8), so remapping and toggle options are done once for every device (ADR-0064).
 
@@ -402,26 +402,26 @@ Table 3.6-A Default bindings of the match actions.
 
 **INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-0028, ADR-0075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
 
-**INP-077** (MUST) The default binding set of the UI navigation and hook-page actions is table 3.6-B. The UI framework consumes these actions in its update phase and owns their context rules ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md), ADR-0032); the five leaderboard actions serve a hook page with no data source (DEC-047, R-META-500 to R-META-502). The keyboard bindings of `action.menu.left`, `action.menu.right`, `action.menu.up`, `action.menu.down`, `action.menu.activate` and `action.menu.close` are Species baseline bindings for keyboard-only use (ADR-0064); the reference binds those actions on the gamepad only, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
+**INP-077** (MUST) The UI navigation actions, their meanings, their context rules and their default bindings are defined by the UI framework ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203 and UI-204, ADR-0032, ADR-0064): `action.menu.up`, `action.menu.down`, `action.menu.left`, `action.menu.right`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss` and `action.menu.scroll_speedup`. Rows 1 to 9 of table 3.6-B state those defaults as binding nodes, with their order and their primary binding, and add nothing to them; the keyboard bindings are the Species baseline of UI-204, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). Rows 10 to 14 bind the leaderboard hook page, which no UI requirement lists: `action.menu.cycle_up` (`PadMenuCycleUp`) and `action.menu.cycle_down` (`PadMenuCycleDown`) on the shoulder buttons with repeat, the view selector on the trigger presses and the period toggle on the north face button (DEC-047, DEC-553, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
 
-Table 3.6-B Default bindings of the UI navigation and hook-page actions.
+Table 3.6-B Default bindings of the UI navigation actions of UI-203 and UI-204, and of the leaderboard hook-page actions.
 
-| # | Action id | Kind | Keyboard and mouse | Gamepad | Glyph override | Use |
+| # | Action id | Kind | Keyboard and mouse | Gamepad | Glyph override | Defined by |
 |---|---|---|---|---|---|---|
-| 1 | `action.menu.left` | Boolean | `key:left:repeat` | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | d-pad left and right (no asset) | moves the cursor left; numeric text fields |
-| 2 | `action.menu.right` | Boolean | `key:right:repeat` | `pad:dpad_right:repeat` · `pad:stick_left_right:repeat` · `pad:stick_right_right:repeat` | — | moves the cursor right; numeric text fields |
-| 3 | `action.menu.up` | Boolean | `key:up:repeat` | `pad:dpad_up:repeat` · `pad:stick_left_up:repeat` · `pad:stick_right_up:repeat` | — | moves the cursor up |
-| 4 | `action.menu.down` | Boolean | `key:down:repeat` | `pad:dpad_down:repeat` · `pad:stick_left_down:repeat` · `pad:stick_right_down:repeat` | — | moves the cursor down |
-| 5 | `action.menu.activate` | Boolean | `key:enter:down` | `pad:face_south:down` | `glyph.pad.face_south` | clicks the cursor's widget |
-| 6 | `action.menu.front_end_activate` | Boolean | — | `pad:menu:down` | — | as activate, while at the front end |
-| 7 | `action.menu.close` | Boolean | `key:escape:down` | `pad:view:down` · `pad:face_east:down` | — | the back action; Escape outside a match only |
-| 8 | `action.menu.dismiss` | Boolean | `mouse:primary:down` · `key:space:down` · `key:enter:down` · `key:escape:down` | `pad:face_south:down` | — | dismisses an in-page dialog and the gamepad-disconnected dialog |
-| 9 | `action.menu.scroll_speedup` | Boolean | `key:shift:held` | — | — | speeds up a held increment button |
-| 10 | `action.menu.cycle_up` | Boolean | — | `pad:shoulder_left:repeat` | — | `PadMenuCycleUp`: previous board on the leaderboard page |
-| 11 | `action.menu.cycle_down` | Boolean | — | `pad:shoulder_right:repeat` | — | `PadMenuCycleDown`: next board on the leaderboard page |
-| 12 | `action.menu.select_previous` | Boolean | — | `pad:trigger_left:down` | — | previous view on the leaderboard page |
-| 13 | `action.menu.select_next` | Boolean | — | `pad:trigger_right:down` | — | next view on the leaderboard page |
-| 14 | `action.menu.toggle_period` | Boolean | — | `pad:face_north:down` | — | period toggle on the leaderboard page |
+| 1 | `action.menu.left` | Boolean | `key:left:repeat` | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | d-pad left and right (no asset) | UI-203, UI-204 |
+| 2 | `action.menu.right` | Boolean | `key:right:repeat` | `pad:dpad_right:repeat` · `pad:stick_left_right:repeat` · `pad:stick_right_right:repeat` | — | UI-203, UI-204 |
+| 3 | `action.menu.up` | Boolean | `key:up:repeat` | `pad:dpad_up:repeat` · `pad:stick_left_up:repeat` · `pad:stick_right_up:repeat` | — | UI-203, UI-204 |
+| 4 | `action.menu.down` | Boolean | `key:down:repeat` | `pad:dpad_down:repeat` · `pad:stick_left_down:repeat` · `pad:stick_right_down:repeat` | — | UI-203, UI-204 |
+| 5 | `action.menu.activate` | Boolean | `key:enter:down` | `pad:face_south:down` | `glyph.pad.face_south` | UI-203, UI-204 |
+| 6 | `action.menu.front_end_activate` | Boolean | — | `pad:menu:down` | — | UI-203, UI-204 |
+| 7 | `action.menu.close` | Boolean | `key:escape:down` | `pad:view:down` · `pad:face_east:down` | — | UI-203, UI-204 |
+| 8 | `action.menu.dismiss` | Boolean | `mouse:primary:down` · `key:space:down` · `key:enter:down` · `key:escape:down` | `pad:face_south:down` | — | UI-203, UI-204 |
+| 9 | `action.menu.scroll_speedup` | Boolean | `key:shift:held` | — | — | UI-203, UI-204 |
+| 10 | `action.menu.cycle_up` | Boolean | — | `pad:shoulder_left:repeat` | — | R-META-500 (`PadMenuCycleUp`) |
+| 11 | `action.menu.cycle_down` | Boolean | — | `pad:shoulder_right:repeat` | — | R-META-500 (`PadMenuCycleDown`) |
+| 12 | `action.menu.select_previous` | Boolean | — | `pad:trigger_left:down` | — | R-META-501 |
+| 13 | `action.menu.select_next` | Boolean | — | `pad:trigger_right:down` | — | R-META-501 |
+| 14 | `action.menu.toggle_period` | Boolean | — | `pad:face_north:down` | — | R-META-502 |
 
 **INP-078** (MUST) `action.power.end_current` and `action.direct.secondary_fire_directed` have no default binding. They are queried like every other action and fire only when the user layer binds them.
 
