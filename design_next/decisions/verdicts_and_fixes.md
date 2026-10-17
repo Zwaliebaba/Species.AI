@@ -135,7 +135,7 @@ The generated [register index](README.md) lists every entry of this file with it
 ### DEC-016 Tie-breaks are explicit ordered rules
 - Status: Resolved
 - Affects: reference/12_simulation_model/04_containers_and_update_order.md (R-SIM), reference/01_skirmish_rules_and_modes/zone_control.md (R-MODE), reference/01_skirmish_rules_and_modes/launch_race.md (R-MODE), reference/01_skirmish_rules_and_modes/relic_run.md (R-MODE), reference/07_bots/ (R-BOT)
-- Specified behaviour: Every tie that container iteration order decides in the reference is an explicit rule over a stable sort key: a Control Zone ownership tie goes to the lowest team id; simultaneous Launch Vessel launches go to the lowest team id; when several Relic Spawn Zones are equally far, the Relic spawns at the first in stable-id order; bots consider structures in stable structure-index order; the port occupant is the first operating Worker in grid result order, whose stable key is cell x, then cell z, then team 0 to 5, then cell slot; the single-round Siege winner is the first slot of the winning side; the Relic Run co-op winner is the last slot of the group; the Launch Vessel lookup takes the last matching structure; and Command Console ownership goes to the first qualifying team in slot order and changes only to a team with strictly more operators. Simulation containers iterate in stable-id order, never in slot-reuse or hash order.
+- Specified behaviour: Every tie that container iteration order decides in the reference is an explicit rule over a stable sort key: a Control Zone ownership tie goes to the lowest team id; simultaneous Launch Vessel launches go to the lowest team id; when several Relic Spawn Zones are equally far, the Relic spawns at the first in stable-id order; bots consider structures in stable structure-index order; the port occupant is the first operating Worker in grid result order, whose stable key is cell x, then cell z, then team 0 to 5, then actor serial (DEC-260); the single-round Siege winner is the first slot of the winning side; the Relic Run co-op winner is the last slot of the group; the Launch Vessel lookup takes the last matching structure; and Command Console ownership goes to the first qualifying team in slot order and changes only to a team with strictly more operators. Containers iterate in their documented slot order, never in hash order (DEC-260).
 - Options: A — explicit ordered rules sorted by stable id; B — leave ties to container order.
 - Recommendation: A. It reproduces the reference outcomes exactly while leaving the implementation free to choose its containers.
 
@@ -300,7 +300,7 @@ The generated [register index](README.md) lists every entry of this file with it
 ### DEC-039 Speed crates are tick scheduling
 - Status: Resolved
 - Affects: reference/04_supply_crates_powers_and_weapons/crates_and_powers.md (R-CRATE), reference/12_simulation_model/01_tick_timing_and_main_loop.md (R-SIM)
-- Specified behaviour: Time Dilation runs the game at 0.2–0.4× and Time Rush at 1.3–2.0× for 15 s, and the meteor shower adds a slow-motion phase. Game speed changes how many ticks run per unit of real time; the tick length never changes, so every rule sees the same tick arithmetic at every speed.
+- Specified behaviour: Time Dilation runs the game at 0.2–0.4× and Time Rush at 1.3–2.0× for a hold of 150 ticks (DEC-265), and the meteor shower adds a slow-motion phase. Game speed changes how many ticks run per unit of real time; the tick length never changes, so every rule sees the same tick arithmetic at every speed.
 - Options: A — speed as tick-rate scheduling; B — a variable time step.
 - Recommendation: A. A variable time step breaks integer tick timers (DEC-002); scheduling keeps every rule identical at every speed.
 
@@ -505,9 +505,9 @@ The generated [register index](README.md) lists every entry of this file with it
 
 ### DEC-066 Multi-round Siege
 - Status: Open
-- Affects: reference/01_skirmish_rules_and_modes/siege.md (R-MODE)
-- Specified behaviour: Siege is a single-round match. Multi-round Siege, in which the sides rotate between rounds and the best defence time wins, is fully specified in the rules, but no match setup can select it. The reference round reset leaves the object id seed unchanged and runs after each process has advanced a variable number of update slices from the round-end flag, which consume simulation draws.
-- Options: A — drop multi-round Siege; B — expose it in the lobby, with the round reset performed at a tick boundary as a sequenced simulation event that also resets the object id seed.
+- Affects: reference/01_skirmish_rules_and_modes/siege.md (R-MODE), reference/12_simulation_model/02_match_lifecycle_and_state_reset.md (R-SIM-029)
+- Specified behaviour: Siege is a single-round match. Multi-round Siege, in which the sides rotate between rounds and the best defence time wins, is fully specified in the rules, but no match setup can select it. The round reset runs at a tick boundary (DEC-261) and leaves the object serial counter unchanged.
+- Options: A — drop multi-round Siege; B — expose it in the lobby, with a round reset that also resets the object serial counter.
 - Recommendation: A, the stated default, unless playtests show demand. If B is chosen, the round reset is never applied outside a tick.
 - Decide by: design phase
 
@@ -767,7 +767,7 @@ The generated [register index](README.md) lists every entry of this file with it
 
 ### DEC-102 UI framework corrections by construction
 - Status: Resolved
-- Affects: architecture/components/ui_framework/README.md (UI), architecture/components/ui_framework/core_and_widgets.md (UI), architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI)
+- Affects: architecture/components/ui_framework/ (UI: README.md, core_and_widgets.md, layout_rendering_input_and_localisation.md, pages_and_screen_recipes.md)
 - Specified behaviour: The Species UI framework avoids by construction the 10 window-core quirks and all 33 framework defects that the UI framework component lists. The window-core corrections include: a press and its release act on the same widget, with pointer capture; a held button repeats on explicit timers (ADR-0032); a relayout keeps view-model state (ADR-0033); and the maximise path never accesses a missing object, a crash defect. The reference framework supports tooltips, but nothing registers one, so no tooltip appears; Species specifies none, and a tooltip feature is front-end design for the design phase. The framework corrections include: Escape cancels and never commits; gamepad Back is handled as input, not polled during rendering; a percent sign is an ordinary character of message text and text fields; a colour or side row has one availability rule for drawing and pressing; no fixed-size array limits a list; a disabled widget never acts, so a host button stays inactive while hosting is not permitted (DEC-243); and list rows are removed by identity, so shrinking a list never removes the wrong row, such as the Back entry.
 - Options: A — a new framework that avoids every listed defect; B — reproduce the reference framework.
 - Recommendation: A.

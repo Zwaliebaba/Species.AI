@@ -1,10 +1,10 @@
 # X-DEC-P4b hand-off to X-DEC-P4a
 
-Cross-file amendments that X-DEC-P4b needs in decision files owned by X-DEC-P4a. Each item gives the entry, the field, the exact text to replace (copied from the file as it stood at 2026-10-17, after X-DEC-P4a's own edits to DEC-011, DEC-024, DEC-036, DEC-102, DEC-116 and DEC-567) and the exact new text. Byte deltas are UTF-8 bytes of new minus old text.
+Cross-file amendments that X-DEC-P4b needs in decision files owned by X-DEC-P4a. X-DEC-P4a has finished, so the coordinator applies them. Each item gives the entry, the field, the exact text to replace (copied from the file as it stood at 2026-10-17, after X-DEC-P4a's own edits to DEC-011, DEC-024, DEC-036, DEC-102, DEC-116 and DEC-567) and the exact new text. Byte deltas are UTF-8 bytes of new minus old text.
 
 **Size budget of `verdicts_and_fixes.md`.** Items H1 to H4 change that file by −115 + 25 = **−90 bytes in total** (H1 +10, H2 −72, H3 −53, H4 +25). Applying all four keeps the file smaller than it is now; if only some are applied, apply H2 or H3 together with H1 and H4.
 
-Earlier triage items whose amendment X-DEC-P4a has already made in its own files, so no hand-off is needed: item 14 (DEC-011, stale Source Node id), item 12 (DEC-116 and DEC-036, start hold), item 93 (DEC-102, percent sign), item 98 (DEC-102, colour-row availability), item 101 (DEC-024, timeline-only operations and the fly mode) and item 89 (DEC-567, DSP defaults).
+Earlier triage items whose amendment X-DEC-P4a has already made in its own files, so no hand-off is given for them (H3 below is a different change, the Affects line of DEC-102 only): item 14 (DEC-011, stale Source Node id), item 12 (DEC-116 and DEC-036, start hold), item 93 (DEC-102, percent sign), item 98 (DEC-102, colour-row availability), item 101 (DEC-024, timeline-only operations and the fly mode) and item 89 (DEC-567, DSP defaults).
 
 ## H1 DEC-016 Tie-breaks are explicit ordered rules (`verdicts_and_fixes.md`) — items 9 and 16, DEC-260
 
@@ -92,3 +92,7 @@ Reason: DEC-953 (Resolved) records the assignment rule of input.md INP-145 to IN
 
 - DEC-856 item 4 (one smoothed tail velocity shared by every Brood Drifter) covers C-VFX request 9's first quirk; DEC-963 cites DEC-856 instead of repeating it.
 - DEC-865 item 4 (maps that are not square) bounds DEC-966 item 2 (the highest-sample scan on a non-square grid): under DEC-865 option B the case never arises. DEC-966 cites DEC-865.
+
+## Applied from X-DEC-P4a's hand-off
+
+X-DEC-P4b applied all four items of `p4_dec_handoff_X-DEC-P4a.md` to its files: H-1 (DEC-653 item 7, replacing X-DEC-P4b's own earlier rewording of that item), H-2 (DEC-652, forced crate outcome), H-3 (DEC-653 items 5 and 6) and H-4 (DEC-229 Owner decision line for O20).
