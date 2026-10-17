@@ -165,6 +165,13 @@ jobs:
           msbuild "${{ steps.solution.outputs.path }}" /t:Restore /p:RestorePackagesConfig=true `
             /p:Configuration=$env:CONFIGURATION /p:Platform=$env:PLATFORM /nologo /v:minimal
 
+      # The schema code generator's output is committed source (AGENTS.md §2, ADR-062). This
+      # regenerates it and fails on any difference, once the checker exists.
+      - name: Check the generated schema code
+        if: hashFiles('Build/CheckGeneratedSchemas.py') != ''
+        shell: pwsh
+        run: python Build\CheckGeneratedSchemas.py
+
       # /warnaserror covers MSBuild's own warnings; /WX for the compiler is set in the projects.
       - name: Build
         if: steps.solution.outputs.path != ''

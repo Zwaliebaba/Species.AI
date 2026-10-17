@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O27 when the code standards (`AGENTS.md`) were adopted)
+## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O28 when the code standards (`AGENTS.md`) were adopted)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -48,6 +48,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O25 | Shader files | `AGENTS.md` §2 gains the compute stage suffix `CS`; a permutation is its own file `<Shader><Permutation><Stage>.hlsl`; a shader's shared code lives in one `<Shader>.hlsli` in the same `Shader/` folder. | The renderer and VFX specifications name their shaders this way. |
 | O26 | Development-tool dependencies | C++ development tools (the content build tool and its importers) live under `Tools/` in a **separate solution**, which may use pinned third-party code (for example a BC7 texture encoder), each recorded in an ADR with its licence. The game's solution stays at the Windows SDK, the MSVC standard library and the three allow-listed packages. | ADR-017, ADR-055 and ADR-059 follow it. |
 | O27 | CI additions | `build.yml` gains a guarded NuGet restore step and a guarded design-check job (`Tools/DesignCheck/CheckDesign.py Design`). Fuzz projects and an `ENGINE_DEVELOPMENT` macro rule are **not** added to `AGENTS.md`. | X-TOOLS delivers `Tools/DesignCheck/` with the CLI and the pinned `package.json` the job uses. |
+| O28 | Generated schema code | The schema code generator's output is **committed source**: a developer runs it when a schema changes, it writes `AGENTS.md`-style `.h` files into the owning project folder, and CI regenerates them and fails on any difference. | The game's solution needs nothing from `Tools/` to build (ADR-062, `AGENTS.md` §2). |
 
 ## 4 What carries over from the reference library
 

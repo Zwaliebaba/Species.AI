@@ -11,7 +11,7 @@ This repository is a greenfield C++23 game and a hobby project with one develope
 | Path | What it is |
 |---|---|
 | `CLAUDE.md` | The entry point for Claude Code: it imports this file and adds where things are and the current status. |
-| `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O24. |
+| `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O28. |
 | `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. It is a reference for the design phase, not yet the Species game design. |
 | `prompts/species-design-phase.md` | The run that turns the reference library and the vision into the Species game design. |
 | `Tools/DesignCheck/`, `Tools/DesignModels/` | The design gate checker (run on every change under `Design/`) and the design phase's quantitative models. They never ship and never link (R14). |
@@ -171,6 +171,8 @@ The concrete layout — the solution, the projects and the edges between them �
 **Development tools have a solution of their own.** C++ development tools that never ship — the content build tool and its importers — live under `Tools/` in a separate solution, which follows every rule in this file except R14: it may use pinned third-party code (for example a BC7 texture encoder), each dependency recorded in an ADR with its licence. Nothing from that solution links into the executable, and the game's solution never references a project of it.
 
 **Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
+
+**Generated source is committed when a developer-run tool produces it.** The schema code generator of the tools solution (ADR-062) is not a build step: a developer runs it when a schema changes, and it writes ordinary `.h` files in this file's style directly into the owning project folder. Each starts with a comment naming the schema it came from and saying it is generated; it is never edited by hand, and it is formatted, linted and registered in the `.vcxproj` like any other header. CI regenerates the files and fails on any difference (`Build/CheckGeneratedSchemas.py`), so the game's solution never needs anything from `Tools/` to build.
 
 ---
 

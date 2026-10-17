@@ -23,7 +23,7 @@ Read this whole file, `AGENTS.md` (how code is written and built; it binds the e
 | `TOOLS` | `$REPO/Tools/DesignCheck/` (gates); `$REPO/Tools/DesignModels/` (quantitative design models, created by this run and kept) |
 | `OUTBOX` | a directory outside the repository that the owner can open (your session's scratchpad or outputs directory) |
 | `BRANCH` | the branch this session was given. Commit and push only there. |
-| Owner decisions | O1–O27 in `VISION` §3, plus every answer the owner gives during this run (recorded as O28, O29, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
+| Owner decisions | O1–O28 in `VISION` §3, plus every answer the owner gives during this run (recorded as O29, O30, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
 | Language | British English (en-GB) |
 | Max parallel agents | 6 per wave, unless the owner raises it |
 | Challenge rounds | at most 2 per area. Round 2 runs only if a Critical or High finding is still open after revision. |

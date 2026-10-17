@@ -37,3 +37,4 @@ The owner added `AGENTS.md`, `.clang-format`, `.clang-tidy`, `.editorconfig`, `.
 | O25 | Shader files (X-ADR-P4 proposals 1, 2) | **Add `CS` and permutation files** (`<Shader><Permutation><Stage>.hlsl`, shared `<Shader>.hlsli`) | AGENTS.md §2, .editorconfig |
 | O26 | Content build tool's BC7 encoder (proposal 4) | **Separate tools solution under `Tools/`**, may use pinned third-party code with an ADR and licence | AGENTS.md §2 and R14 |
 | O27 | Housekeeping (proposals 3, 5, 6 and a design-check job) | **CI NuGet restore step and CI design-check job** only; no fuzz-project rule, no `ENGINE_DEVELOPMENT` rule | build.yml; X-TOOLS brief |
+| O28 | How the game gets the schema code generator's output (RES-1 question) | **Commit generated source**; CI regenerates and fails on a difference | AGENTS.md §2, ADR-062 amendment, DAT README, build.yml guarded step |
