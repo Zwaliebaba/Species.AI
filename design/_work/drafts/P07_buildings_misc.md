@@ -44,12 +44,12 @@ Subclass fields follow from index 8. Below, subclass field tables list **only** 
 | `GodDish` (+ creates `Spam`) | goddish.cpp | `TypeGodDish` | **yes** | 0 (1 in `old/mp_temple`) | no | [B:LEGACY] | |
 | `Library` | library.cpp | `TypeLibrary` | **yes** | 0 | no | [B:LEGACY] | |
 | `TrackLink`, `TrackJunction`, `TrackStart`, `TrackEnd`, `Refinery`, `Mine`, `MineCart` (non-building helper) | mine.cpp | `TypeTrack*`, `TypeRefinery`, `TypeMine` | **yes** (all six building types) | 0 | no | [B:LEGACY] | |
-| `Randomiser` | randomiser.cpp | *(none — Entity subclass, see section)* | n/a | n/a | verify in section | see section | |
+| `Randomiser` | randomiser.cpp | *(not a Building — `WorldObject` effect `EffectRandomiser`)* | n/a | n/a | yes — `Crate::RunRandomiser` (`INCLUDE_CRATES_ADVANCED`, on in FULLGAME) | **[B:FULL]** | `code/worldobject/crate.cpp:Crate::RunRandomiser` |
 | `ResearchItem` | researchitem.cpp | `TypeResearchItem` | **yes** | 0 | no | [B:LEGACY] | |
 | `SafeArea` | safearea.cpp | `TypeSafeArea` | **yes** | 0 | no | [B:LEGACY] | |
-| `UpgradePort` | upgrade_port.cpp | `TypeUpgradePort` / "UpgradePort" | **yes** | 0 | no | [B:LEGACY] | |
+| `UpgradePort`, `PrimaryUpgradePort` | upgrade_port.cpp | `TypeUpgradePort` / "UpgradePort", `TypePrimaryUpgradePort` / "PrimaryUpgrade" | **yes** (both) | 0 (none in any file) | no | [B:LEGACY] | |
 
-(Rows marked "verify in section" are resolved in the class's own section below.)
+Counts: 38 classes in scope — 33 concrete building classes (including `PrimaryUpgradePort`), 4 abstract/helper classes (`BlueprintBuilding`, `DynamicBase`, `MineBuilding`, `MineCart`) and 1 effect (`Randomiser`); 8 live in MW (Tree, LaserFence, Wall, StaticShape, RestrictionZone, SmokeMarker, EruptionMarker, Randomiser), 1 compiled-and-loadable but data-unused (CloneLab), the rest blocked.
 
 Additional non-building / abstract classes defined in scope: `BlueprintBuilding` (abstract base of the three Blueprint classes), `DynamicBase` (abstract base of DynamicHub/Node), `MineBuilding` (abstract base of the track/refinery/mine family), `MineCart` (plain helper struct, not a WorldObject), `Randomiser` (a `WorldObject` effect, not a Building), `PrimaryUpgradePort` (declared in `upgrade_port.h`). `Bridge` derives from `Teleport` (P06), `CloneLab` from `Incubator` (P06), `ChessPiece` from `CarryableBuilding` (P06).
 
@@ -156,7 +156,7 @@ A sphere/shape/ray hits the tree if it hits either sphere. `IsInView` uses spher
 
 `Tree::Damage(d)` (fire damage is passed as a **negative** number): call `Building::Damage` (plays "Damage" sound event); if `m_fireDamage < 50`: `m_fireDamage += −d`; if it now exceeds 50: if `m_onFire == 0` → `m_onFire = 0.01`; else if `m_onFire < 0` (regrowing) → `m_onFire = −m_onFire` (resumes burning at the same height); start "Burn" sound once [C] `Tree::Damage`. A tree that is already burning (`m_onFire > 0`) is unaffected. Neighbour spread therefore needs > 50 net damage: at +1/tick against −0.1/tick decay, ≈ 56 ticks ≈ 5.6 s of continuous contact [I] (arithmetic).
 
-External ignition sources (other partitions): Darwinian on fire touching the tree (`Darwinian::AdvanceHotFeet`, sphere radius 2, `Damage(-1)` per tick); `Lightning::Advance` (`Damage(-100)` for trees in its obstruction cell); `Fireball::Advance` (`Damage(-100)`); `FlameGrenade::Advance` (`Damage(m_power*-4)` within `m_power*2`); crate "extinguish"-type outcome flips burning trees to regrowing (`SetFireAmount(-GetFireAmount())` within `POWERUP_EFFECT_RANGE*2 = 140`) [C] `code/worldobject/darwinian.cpp:Darwinian::AdvanceHotFeet`, `code/worldobject/lightning.cpp:Lightning::Advance`, `code/worldobject/weapons.cpp:Fireball::Advance`, `FlameGrenade::Advance`, `code/worldobject/crate.cpp` (≈L2018), `code/taskmanager.h:POWERUP_EFFECT_RANGE`. Darwinians flee burning trees within `2*GetBurnRange()` [C] `code/worldobject/darwinian.cpp` (≈L2781).
+External ignition sources (other partitions): Darwinians under the Hot Feet powerup touching the tree (`Darwinian::AdvanceHotFeet`, called while `m_hotFeetTaskId != -1`; sphere radius 2, `Damage(-1)` per tick); `Lightning::Advance` (`Damage(-100)` for trees in its obstruction cell); `Fireball::Advance` (`Damage(-100)`); `FlameGrenade::Advance` (`Damage(m_power*-4)` within `m_power*2`); the Extinguisher crate outcome flips burning trees to regrowing (`SetFireAmount(-GetFireAmount())` within `POWERUP_EFFECT_RANGE*2 = 140`); `TurretShell` hits deal `Damage(-2)` [C] `code/worldobject/darwinian.cpp:Darwinian::AdvanceHotFeet`, `code/worldobject/lightning.cpp:Lightning::Advance`, `code/worldobject/weapons.cpp:Fireball::Advance`, `FlameGrenade::Advance`, `TurretShell::Advance`, `code/worldobject/crate.cpp:Crate::RunExtinguisher`, `code/taskmanager.h:POWERUP_EFFECT_RANGE`. Darwinians flee burning trees within `2*GetBurnRange()` [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForThreats`.
 
 End of burn (`m_onFire` exceeds 1.0): set `m_onFire = −1.0` (stump, height 1%); if `m_corrupted && m_evil` → both cleared (fire cleanses a corrupted tree); if `m_destroyable` → stop burn sound and return true from `Advance` (the building is removed) [C] `Tree::Advance`. Level-placed trees are never destroyable (`m_destroyable` defaults false and is not in the level format); only crate-created trees (and their offspring, via `Clone`) are [C] `code/worldobject/crate.cpp:Crate::GenerateTrees`.
 
@@ -470,3 +470,277 @@ Count port occupants per team; the owning team is the first team (index order) w
 ### Rendering (→ 24) [C] `CloneLab::RenderPorts`
 Per port a 6-unit camera-facing `textures/starburst.bmp` billboard (additive, depth write off) 5 units above ground at the control-pad status marker, grey (150,150,150) if empty or the occupant's team colour.
 
+---
+
+## [→ 03_buildings_and_world_objects] Randomiser — crate-spawned team-scrambling field [B:FULL]
+
+**Function.** Not a Building: a `WorldObject` effect (`m_type = EffectRandomiser`) placed in `Location::m_effects` by the "Randomiser" crate outcome (`Crate::RunRandomiser`, compiled under `INCLUDE_CRATES_ADVANCED`, which FULLGAME defines) [C] `code/worldobject/randomiser.cpp`, `code/worldobject/crate.cpp:Crate::RunRandomiser`, `code/lib/universal_include.h`. Routed here because it lives in `worldobject/`; crate selection rules belong to [→ 04_crates_powerups_and_weapons]. No level-file presence.
+
+| Parameter | Value | Kind | Evidence |
+|---|---|---|---|
+| `RANDOMISER_RANGE` | 100.0 world units | `#define` | `randomiser.cpp` |
+| Lifetime `m_life` | 15.0 s | ctor literal | `Randomiser::Randomiser` |
+| Pulse interval | first pulse on the first tick (`m_timer` starts 0), then `0.5 + syncfrand(2.5)` s (0.5–3.0 s) | literal, synced | `Randomiser::Advance` |
+
+**Pulse** [C] `Randomiser::Advance`: for every entity within 100 units (all teams) that is a Darwinian not in `Darwinian::StateInsideArmour`: spawn one new Darwinian at its position with its velocity for team `syncrand() % levelFile->m_numPlayers` (team indices 0…numPlayers−1, the original team is possible), then mark the original `m_destroyed = true`. Ownership of the crate is irrelevant to the effect (the crate's team only receives the message and a fixed map marker `icons/icon_randomizer.bmp`).
+
+**Rendering** (→ 24) [C] `Randomiser::Render`: each frame two `Particle::TypeMuzzleFlash` particles (size 60) on opposite ends of a 100-unit radius rotating at 3 rad/s of game time, 5 units above ground, each coloured with a random team colour (CRT `rand() % NUM_TEAMS`, unsynced; spawning particles from the render path).
+
+Determinism: pulse timer and team picks are synced; the spawned Darwinians go through `Location::SpawnEntities` (P03).
+
+---
+
+## [→ 03_buildings_and_world_objects] ScriptTrigger — Darwinia campaign script/tutorial trigger [B:LEGACY]
+
+**Status.** Blocked by `BuildingIsBlocked` (`TypeScriptTrigger`) [C]; 25 lines exist only in campaign `map_*`/`mission_*` files, none in `mp_*` [C] census. Documented for completeness because the brief flags it.
+
+**Function.** Invisible trigger that, when its condition is met, runs a script file (`Script::RunScript`) or (only with `USE_SEPULVEDA_HELP_TUTORIAL`, never defined → [B:DEAD]) walks through numbered Sepulveda phrases `<name>_1`, `<name>_2`, ….
+
+### Level-file parameters [C] `code/worldobject/scripttrigger.cpp:ScriptTrigger::Read`, `Write` (`%-6d %-6.2f %s %s`)
+
+| # | Field | Type | Default | Meaning |
+|---|---|---|---|---|
+| 8 | linkId | int | −1 | Building to highlight (Sepulveda path only) |
+| 9 | range | float | 100.0 | Trigger radius (world units) |
+| 10 | scriptFilename | token | "NewScript" | If it contains ".txt" → script file to run; otherwise a phrase-id prefix |
+| 11 | entityType | token | "never" | `always` (999), `never` (998), `camenter` (997), `camview` (996), or an entity type name (`Entity::GetTypeId`) |
+
+### Behaviour [C] `ScriptTrigger::Advance`, `ScriptTrigger::Trigger`
+- Mode `never` (`SCRIPTRIGGER_RUNNEVER` = 998): does nothing.
+- Otherwise, while not triggered and no script is running and the camera is interactive, every 1.0 s (first check on the first tick) test: `always` → fire; `camenter` → camera within `range` and camera speed < 5; `camview` → (camera within `range + 300`, speed < 5, interactive, and camera forward ray hits sphere(pos, range)) **or** (within `range`, speed < 5); entity type → at least one entity of that type **and of the trigger's own team** within `range`.
+- `Trigger()`: filename contains ".txt" → `RunScript`, `m_triggered = −1` → next tick the trigger removes itself. Otherwise `m_triggered = 1` → with Sepulveda compiled out, the next tick removes itself without effect.
+- Non-colliding (sphere/shape false; ray only in editor). Editor render: two spheres of `range` in team colour + filename/state text [B:EDITOR in practice, `g_app->m_editing` gated].
+
+---
+
+## [→ 03_buildings_and_world_objects] FenceSwitch — port-operated laser-fence switch [B:LEGACY]
+
+**Status.** Blocked (`TypeFenceSwitch`) and absent from every level file [C]. `Building::CreateBuilding(int)` still forces `m_isGlobal = true` for this type and `LevelFile::ParseBuildings` asserts non-global FenceSwitches as an error [C] `code/worldobject/building.cpp`, `code/level_file.cpp`. Shape `fenceswitch.shp` with 4 ports (`MarkerPort01–04`) and `MarkerConnectionLocation` [C] `data/shapes/fenceswitch.shp`.
+
+### Level-file parameters [C] `FenceSwitch::Read`, `Write`
+
+| # | Field | Type | Default | Meaning |
+|---|---|---|---|---|
+| 8 | linkedBuildingId | int | −1 | Primary LaserFence |
+| 9 | linkedBuildingId2 | int | −1 | Optional second LaserFence (toggled opposite to the first) |
+| 10 | switchValue | int | −1 → set to linkedBuildingId | Which link is currently "selected" (the enabled one) |
+| 11 | lockable | int | 0 | 1 = lock after the first switch |
+| 12 | script | token | "none" | Script file run when the switch acts (if it contains ".txt") |
+| 13 | locked | int, optional | 0 | 1 = start locked |
+
+### Behaviour [C] `FenceSwitch::Advance`, `FenceSwitch::Switch`
+- 20 s start-up delay (`m_timer` 20.0, raised to at least 10.0 by `SetDetail`) before any logic.
+- Team: set to team 2 (the Darwinia single-player "player" team; team 0 = green, 1 = red per `Location::IsFriend`'s table) when all ports are occupied and none by team 1, else set to team 1 (red) — every tick.
+- When all ports are occupied and its `GlobalBuilding` is offline: if friendly → `m_switchable = true` and apply `switchValue` (enable the selected fence, disable the other); if hostile → force primary enabled, secondary disabled. Then mark the GlobalBuilding online and `EvaluateEvents()`. When ports are no longer all occupied and it is online: reset to primary; with no second link, disable the primary; with a second link, enable primary/disable secondary; mark offline.
+- Any actual change → run script, and lock if lockable.
+- `Switch()` (called **locally** from `LocationInput::SelectObjectUnderMouse` when the player clicks the switch, not via a network message [C] `code/location_input.cpp`): if switchable and not locked, flip `switchValue` between the two links and set the GlobalBuilding offline so the next tick re-applies. (A sim-state change from local input — would desync in multiplayer [I]; unreachable because the type is blocked.)
+- Rendering (→ 24): additive `textures/laser.bmp` ribbon (half-width 2.0, camera-facing) from `MarkerConnectionLocation` to each linked fence's top marker, yellow (0.9,0.9,0.5) for the selected link and grey (0.5,0.5,0.5) for the other; ownership lights are green when the primary link is selected, red otherwise (10 stacked starbursts, size up to 6).
+
+---
+
+## [→ 03_buildings_and_world_objects] Consolidated constants table (live classes)
+
+| Class | Constant | Value | Unit | Kind | Evidence |
+|---|---|---|---|---|---|
+| Tree | default height / budsize / pushOut / pushUp / iterations / seed | 50.0 / 1.0 / 1.0 / 1.0 / 6 / 0 | wu / – | ctor | `Tree::Tree` |
+| Tree | branch quad half-width factor | 0.1 × segment length | – | literal | `Tree::RenderBranch` |
+| Tree | leaf quad half-width factor | 0.1 × budsize × segment length | – | literal | same |
+| Tree | children per segment | 4 (±A, ±B) | – | literal | same |
+| Tree | child start parameter t | 0.3 + frand(0.6) | fraction of parent | literal | same |
+| Tree | child sideways reach | 0.4 × len × pushOut | – | literal | same |
+| Tree | crown radius shrink | ×0.8 (hit), ×1.5 (`m_radius`) | – | literal | `Tree::Generate`, `SetDetail` |
+| Tree | trunk hit sphere | 10.0 | wu | literal | `Tree::DoesSphereHit` |
+| Tree | min actual height | 1% of height | – | literal | `GetActualHeight` |
+| Tree | ignition threshold / decay / clamp | > 50 / −1 per s / [0,100] | dmg | literal | `Damage`, `Advance` |
+| Tree | burn rate | 0.02 /s | phase | literal | `Advance` |
+| Tree | regrow SP / MP | 0.01 /s / 0.05 /s | phase | literal | `Advance` |
+| Tree | healthy window | −0.3 < onFire ≤ 0 | phase | literal | `Advance` |
+| Tree | drop chance per tick | 1/(51 − rate) | – | literal | `Advance` |
+| Tree | propagation delay | 5 + syncfrand(5) | s | literal | `Advance` |
+| Tree | propagation neighbourhood | 100 | wu | literal | `CreateAnotherTree` |
+| Tree | offspring height | height × 0.75 × (1 + syncsfrand(0.2)) | – | literal | `CreateAnotherTree` |
+| Tree | obstruction push step / probe radius | 2.0 / 1.0 | wu | literal | `PushFromObstructions` |
+| Tree | AntHill ignition reach | ourCrownR×1.5 + 100 | wu | literal | `Advance` |
+| Tree | evil kill chance | 2% per tick (`syncfrand(10) < 0.2`) | – | literal | `Advance` |
+| Tree | evil kill damage | −999 | hp | literal | `Advance` |
+| Tree | zombie launch vy | 20 + syncfrand(25) | wu/s | literal | `Advance` |
+| Tree | corruption check interval | initial 5.0, then 10 + syncfrand(5) | s | literal | `Tree::Tree`, `Advance` |
+| Tree | corruption → evil delay | 10 | s | literal | `Advance` |
+| Tree | sway amplitude normal / evil | 0.003 / 0.01, ω = 2 rad/s | – | literal | `RenderAlphas` |
+| Tree | fire particle count | int(actualH/12) / RenderBuildingDetail | per tick | literal | `Advance` |
+| Tree | fire glow billboards | 4, colour (0.8,0.2,0.1), alpha 0.5×H/h, half-size max(2H,5) | – | literal | `RenderAlphas` |
+| Tree | RenderTreeDetail leaf alpha boost | ×1.3^detail if detail > 1 | – | literal | `Generate` |
+| LaserFence | raise speed | 0.3 /s | status | `#define` | `laserfence.h` |
+| LaserFence | chain hand-off | status 0.5 | – | literal | `Advance` |
+| LaserFence | spark interval | initial syncfrand(10); then 8 + syncfrand(4) | s | literal | `Initialise`, `Advance` |
+| LaserFence | spark particles | 5 + frand(5) sparks, speed 40 + frand(20) (+jitter), size 25 + frand(25); spawn height frand(50×scale) | – | literal | `Spark` |
+| LaserFence | solar timeout | 5.0 | s | literal | `Advance` |
+| LaserFence | full height | 48.28 × scale (shape markers) | wu | data | `laserfence.shp` |
+| LaserFence | curtain skirt | h/3 below base | – | literal | `RenderAlphas`, `DoesRayHit` |
+| LaserFence | curtain alpha | 150 | /255 | literal | `RenderAlphas` |
+| LaserFence | texture scroll | gameTime/15 (normal), gameTime/1.5 with 7× tiling (solar) | uv | literal | `RenderAlphas` |
+| LaserFence | edge line width | 2.0 (0.5 solar) | px | literal | `RenderAlphas` |
+| LaserFence | entity kill | `ChangeHealth(−9999)` | hp | literal | `Entity::PushFromObstructions` |
+| LaserFence | Darwinian push band | 5 + uniqueId % 10, step 20 | wu | literal | `Darwinian::PushFromObstructions` |
+| Wall | collision length / depth / ray height | 100 / 20 / 37.5 | wu | `#define` | `wall.cpp` |
+| Wall | destroy threshold | single hit ≤ −300 | dmg | literal | `Wall::Damage` |
+| Wall | WallBuster break radius / damage | 200 / −1000 | wu / dmg | literal | `WallBuster::BreakWalls` |
+| Wall | Darwinian wall push | probe 4, step 5 along ±front, clear radius 1 | wu | literal | `Darwinian::PushFromObstructions` |
+| StaticShape | default scale / shape | 1.0 / "none" | – | ctor | `StaticShape::StaticShape` |
+| StaticShape | placeholder sphere | 40 | wu | literal | `StaticShape::Render` |
+| RestrictionZone | default size / blockPowerups | 300.0 / 0 | wu / bool | ctor | `RestrictionZone::RestrictionZone` |
+| RestrictionZone | crate re-roll limit | 100 tries, also rejects height < 20 | – | literal | `Location::CreateRandomCrate` |
+| SmokeMarker | particles | 3/tick, speed 50, jitter ±0.2 xz, size 200 + frand(100), `TypeMissileTrail` | – | literal | `SmokeMarker::Advance` |
+| SmokeMarker | accidental hit sphere | 13.0 (Building default radius) | wu | ctor default | `Building::Building` |
+| EruptionMarker | start chance / duration | 1/1000 per tick / 3 + syncfrand(4) s | – | literal | `EruptionMarker::Advance` |
+| EruptionMarker | particles | 10/tick, speed 100, size 300 + frand(200), `TypeVolcano` | – | literal | same |
+| CloneLab | capture threshold | > 2 occupants of 5 ports, plurality | Darwinians | literal | `RecalculateOwnership` |
+| CloneLab | conversion interval | 0.2 s (MP) / 5.0 s base (SP) | s | `#define` | `incubator.h` |
+| Randomiser | range / life / pulse | 100 / 15 s / 0.5 + syncfrand(2.5) s | – | `#define`/literal | `randomiser.cpp` |
+
+## [→ 22_determinism_and_networking] Determinism notes (X3) for this partition
+
+| Object | Synced RNG draws (order within the object's Advance) | Unsynced/visual-only | Hazards |
+|---|---|---|---|
+| Tree | spirit drop: `syncrand()` test → `syncfrand(h)` (x) → `syncfrand(2π)` (yaw) → `syncfrand(6)` until valid team; spawn timer `syncfrand(5)`; `CreateAnotherTree`: `syncfrand(H)` → (`syncsfrand(π/4)` or `syncfrand(2π)`) → `syncfrand(99999)` seed → `syncsfrand(0.2)` height; evil: `syncfrand(10)` every tick, Zombie `syncsfrand(1)`, `syncfrand(25)`; corruption `syncfrand(5)` | geometry LCG (re-seeded per pass), fire particles `frand`, leaf drop CRT `rand()` | sim hit volume derived from render-list generation; `RenderAlphas` regenerates lists (same values); `volatile` ordering in offspring height; `SetDetail` must be 1 |
+| LaserFence | `syncfrand(10)` in `Initialise`, `syncfrand(4)` per spark | spark particles | `RenderAlphas` may reset the link id (render-path write) |
+| EruptionMarker | `syncrand()` every idle tick, `syncfrand(4)` | particles | consumes synced RNG although purely cosmetic |
+| SmokeMarker | none | particles every tick (`sfrand`, `frand`) | accidental collision sphere (see section) is deterministic |
+| Randomiser | `syncfrand(2.5)`, `syncrand()` per converted Darwinian | render particles (`rand()`) | – |
+| Wall / StaticShape / RestrictionZone | none | – | – |
+| CloneLab | none in own code (Incubator: P06) | – | – |
+
+General: `frand/sfrand` = global LCG `AppRandom` (MSVC-`rand` clone, 15-bit), **not** network-synced; `syncfrand/syncsfrand/syncrand` = MT19937 global stream; `FRAND(x)`/`SFRAND(x)` used inside a `Vector3` constructor map to the **synced** generator with left-to-right ordering [C] `code/lib/vector3.h`, `code/lib/vector3.cpp:FromRand`, `contrib/systemiv/lib/math/random_number.cpp`. Note `sfrand(r)` returns [−r/2, r/2] (not ±r as its header comment claims) and `syncsfrand(r)` returns [−r/2, r/2) [C].
+
+## [→ 24_rendering] World-object render passes in this partition
+
+The complete tree-geometry generator (pseudocode, RNG, derived counts, hit-volume derivation) is specified in this draft under *Tree → Procedural generation algorithm (exact)* and must be carried into 24 verbatim-in-meaning; the per-state colour rules are under *Tree → Rendering*. Summary of GL state per live object [C] (functions cited in each class section):
+
+| Object | Opaque pass (`Render`) | Alpha pass (`RenderAlphas`) | Textures | Blend | Depth write | Cull | Notes |
+|---|---|---|---|---|---|---|---|
+| Tree | nothing | 2 display lists (branches, leaves) of `GL_QUADS`, crossed-plane quads per segment, scaled by actual height; up to 2 passes while corrupting; fire glow billboards | `textures/tree.bmp` (alpha, trilinear); `textures/starburst.bmp` for fire glow | additive `SRC_ALPHA,ONE` normally; `SRC_ALPHA,ONE_MINUS_SRC_ALPHA` when evil / burning / corrupt-shadow | off | off | depth-sorted at crown centre; display lists regenerated lazily after `FlushOpenGlState`; fire glow drawn with depth test **off**; D3D bakes colour into lists |
+| LaserFence | `laserfence.shp` scaled, `GL_NORMALIZE` | curtain quad between posts (skirt h/3 below ground), additive overlay quad, smoothed top edge line | unit0 `laserfence.bmp` (COMBINE REPLACE), unit1 `laserfence2.bmp` (COMBINE MODULATE), overlay `laserfence2.bmp` | alpha (curtain), additive (overlay) | off | off | multitexture pass skipped when `RenderBuildingDetail ≥ 3`; UV scrolling with game time; team / grey / pulsing-solar colour at alpha 150 |
+| Wall | `wall.shp` | – | shape's own | – | – | – | destruction via shape-shatter explosion (`g_explosionManager.AddExplosion(shape, mat, 3.0)`) |
+| StaticShape | named `.shp` scaled, `GL_NORMALIZE` (or debug sphere r=40) | – | shape's own | – | – | – | shapes cached and shared |
+| CloneLab | `clonelab.shp` (Building default) | port status billboards (6-unit) | `starburst.bmp` | additive | off | off | grey empty / occupant team colour |
+| RestrictionZone, EruptionMarker | – | editor-only spheres (`LOCATION_EDITOR`) | – | – | – | – | invisible in game; EruptionMarker visuals are `TypeVolcano` particles |
+| SmokeMarker | – | base `Building::RenderAlphas` (no lights/ports → nothing) | – | – | – | – | visuals are `TypeMissileTrail` particles spawned in `Advance` |
+| Randomiser | `TypeMuzzleFlash` particles spawned from `Render` | – | particle system | – | – | – | random team colours (unsynced `rand()`) |
+
+Shared idioms: camera-facing billboards built from `Camera::GetRight/GetUp`; ownership "lights" (`Building::RenderLights`) blink by `(lastValidSequenceIdFromServer % 10)/2 == teamId`; `RenderBuildingDetail` (1–3) scales particle/blob counts and drops multitexture effects.
+
+## Cross-partition notes
+- **P06 (buildings core):** `Building::Read/Write` base 7 fields; `Building::CreateBuilding(int)` bypasses `BuildingIsBlocked` (used by `Engineer`→Bridge, `ChessBase`→ChessPiece, `GodDish`→Spam, `Crate`→Portal/Tree); `CloneLab` inherits all spawning from `Incubator` and its level field from `Incubator::Read`; `Bridge` inherits `Teleport` transit; `ChessPiece` inherits `CarryableBuilding`. `PylonEnd::TriggerSurge` (`code/worldobject/generator.cpp`) is the only live caller of `LaserFence::ProvidePower`; it requires `IsFriend(surgeTeam, fenceTeam)`.
+- **P08 (crates/AI):** Dark Forest / Magical Forest create Trees (`Crate::GenerateTrees`: 1–2 trees within ±50 units, template = first non-evil level tree or a random one; offspring `m_spawnsRemaining = 2 + syncfrand(3)` (truncated to int: 2–4), `m_destroyable = true`, `m_spiritDropRate = 15 + syncfrand(15)` (15–29); `Crate::GenerateEvilTrees`: 2–4 evil trees, iterations 5). Quirk: crate `colourToInt` packs R into the **high** byte while `Tree` unpacks R from the **low** byte, and the same `col` accumulator is OR-ed for branch then leaf colour without reset, so leaf colour = branch|leaf bits [C] `code/worldobject/crate.cpp:colourToInt`, `Crate::GenerateTrees` vs `code/worldobject/tree.cpp:intToArray`. Extinguisher-type outcome flips burning trees within 140 units to regrowing. Randomiser effect (this partition) is spawned by `Crate::RunRandomiser`. `RestrictionZone::IsRestricted` gates random crate drops and map-wide powerup targeting (`TaskManager::IsValidTargetArea`, P09). AI routing (`code/worldobject/ai.cpp`) consults `AITarget` neighbour `m_laserFenceId` and skips enabled enemy fences.
+- **P03/P04 (entities):** fence lethality and wall/tree push-out are implemented in `Entity::PushFromObstructions` and `Darwinian::PushFromObstructions`; Hot-Feet Darwinians ignite trees in `Darwinian::AdvanceHotFeet`; Darwinians flee burning trees within `2×GetBurnRange()`; `TurretShell` deals `Damage(−2)` to trees/anthills/triffids; `Fireball` `Damage(−100)` to trees; `FlameGrenade` damages trees/triffids within `2×power` by `−4×power×` (fraction computed but not applied — damage is unscaled) [C] `code/worldobject/weapons.cpp:FlameGrenade::Advance` (the computed `fraction` is unused); `Lightning` `Damage(−100)`. `Armour::IsRouteClear` treats enabled enemy fences (overload 1) or any fence ray-hit (overload 2) as blocking.
+- **P11 (terrain/world):** `ObstructionGrid::CalculateBuildingArea` rasterises LaserFence links cell-by-cell; `Location::GetWalkingDistance`/`IsWalkable` block on walls and enabled fences; wall destruction triggers `RecalculateAITargets()`; `Location::FlushOpenGlState` deletes tree display lists; `Location::Bang` damages all buildings within 3× range (relevant to Wall destruction).
+- **P12/24 (rendering):** procedural tree display lists (`Resource::CreateDisplayListAsync`, display-list emulation under D3D), additive alpha pass ordering via `PerformDepthSort`, multitexture combine (`GL_COMBINE_EXT` REPLACE/MODULATE) for fence curtains, particle types `TypeFire`, `TypeLeaf`, `TypeSpark`, `TypeMissileTrail`, `TypeVolcano`, `TypeMuzzleFlash`.
+- **P16 (sound):** sound event names listed per class (Tree, LaserFence, FenceSwitch-none, GodDish, Mine/Refinery "CogTurn", ResearchItem "AquireResearch", DynamicHub "Enable", DynamicNode "Operate", FeedingTube rotation/connection events).
+- **P19 (scripts):** `ScriptTrigger`, `FenceSwitch` and `GodDish` are script-driven Darwinia features (`Script::RunCommand_GodDishActivate`, `RunCommand_GodDishDeactivate`, `RunCommand_GodDishSpawnSpam`, `RunCommand_GodDishSpawnResearch`, `RunCommand_SpamTrigger`; `ScriptTrigger` and `FenceSwitch` call `Script::RunScript`) — all blocked in MW.
+
+## Contradictions / open questions
+- `BuildingIsBlocked` filters only **name-based** creation. Whether any live MW code path creates a blocked type by id: `Crate` creates `Portal` (blocked by name) — P06/P08 to confirm reachability; `Engineer` (→Bridge) is itself expected to be a blocked entity (P03 to confirm via `Entity::EntityIsBlocked`).
+- `CloneLab` is not blocked and fully functional yet appears in no shipped map; maps could still be authored with it (e.g. by modders/editor builds). Treated as compiled-in but data-unused.
+- SmokeMarker's `float` signatures make it a 13-unit invisible obstacle (by C++ overriding rules); whether this materially affects play on `mp_assault_3p_1` depends on marker placement relative to paths — not verified in-game.
+- `LaserFence::DoesRayHit` uses only this post's height for both ends of the collision quad, while rendering uses each post's own height — with differing `scale` values on a link the visible curtain and the lethal surface differ.
+
+## [U] Unknowns
+1. [U] Exact visual impact of the Tree hit-sphere/rotation mismatch (needs running the game or reproducing the generator numerically for a sample tree) — design-irrelevant for a new game but relevant for bit-exact replays.
+2. [U] Whether `mp_assault_3p_1` smoke markers sit on walkable routes (resolve by plotting the six marker positions against the map's routes/AITargets).
+3. [U] Whether `Location::Bang` is ever called with damage ≥ 300 at a wall's position in MW (nuke/airstrike values live in P08/P04) — determines whether walls can be destroyed by anything other than the WallBuster.
+4. [U] Texture contents/dimensions of `textures/tree.bmp`, `laserfence.bmp`, `laserfence2.bmp` (P25 asset catalogue).
+
+## Docs-vs-code discrepancies
+| Doc | Claim | Code reality |
+|---|---|---|
+| `docs/game objects.txt` "Tree / forest" | "Acts as an obstacle to anything in the air, but can be walked through" | Ground units are pushed out of the 10-unit trunk sphere and crown sphere (`Darwinian::PushFromObstructions` generic branch, `Entity::PushFromObstructions`) — trees block walking [C]. |
+| `docs/game objects.txt` "Tree / forest" | "? Spawn seeds which sprout into new trees ?" (speculative) | Implemented as `m_spawnsRemaining`/`CreateAnotherTree`, but only crate-created trees (and offspring) have a non-zero budget; level trees never spread [C]. |
+| `docs/game objects.txt` "Laser Fence" | "Can only be shut down by disconnecting / destroying power source" | In MW a fence's mode is fixed by the level unless it is solar-linked (powered fences drop 5 s after the last surge); fences are indestructible [C]. |
+| `docs/game objects.txt` "Wall" | "Can be blown up with enough force" | Matches: single hit ≤ −300 [C]. |
+| `docs/new building docs.txt` FenceSwitch | Mentions "Pylon 1 / Pylon 2" values for passing on power surges | `FenceSwitch` has no pylon fields or surge handling in this tree (`switch.cpp` reads 2 fence links, switchValue, lockable, script, locked) [C]. |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand`: "-range < result < range" | Returns [−range/2, range/2] [C]. |
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Darwinian" (unit name used in tree/fence/randomiser logic) | name | `code/worldobject/darwinian.h` | "Sprite" / "Unit" |
+| "Multiwinia" | brand | build/product | (project codename) |
+| "Futurewinian" team | name | `Location::GetFuturewinianTeamId` (used by `Tree::Advance`) | "Neutral-AI team" |
+| "Dark Forest", "Magical Forest" crate outcomes | name | `code/worldobject/crate.cpp`, `taskmanager.cpp` | "Blight Grove", "Spirit Grove" |
+| "Randomiser" outcome / `icons/icon_randomizer.bmp` | name/art | `crate.cpp:Crate::RunRandomiser` | "Allegiance Scrambler" / new icon |
+| "Soul Destroyer" (Zombie effect class home) | name | `code/worldobject/souldestroyer.h` | "Wraith effect" |
+| "Spam", "GodDish", "Sepulveda", "Pattern Buffer", "Blueprint Store/Console/Relay" | name | blocked Darwinia objects | do not reuse |
+| Darwinia campaign map names `biosphere`, `containment`, `escort`, `garden`, `generator`, `launchpad`, `mine`, `pattern_buffer`, `receiver`, `sandbox`, `temple`, `yard` | name | `data/levels/map_*`, `mission_*` | do not reuse |
+| Map titles in docs: "The Last Stand", "Stairway to Heaven", "The Holy Tree" | name | `docs/multiwinia-changes.txt`, `docs/multiwiniareleasenotes-beta.txt` | new map names |
+| Shapes: `laserfence.shp`, `wall.shp`, `clonelab.shp`, `fenceswitch.shp`, `beachheadobstruction.shp`, `temple2.shp`, `temple3.shp`, `temple4.shp`, `rockhead.shp`, `statue.shp`, `spaceship.shp`, `carryspider.shp`, `incubator.shp`, legacy (`blueprint*.shp`, `bridgeend/bridgetower.shp`, `cave.shp`, `chesspiece.shp`, `factory.shp`, `feedingtube.shp`, `goddish.shp`, `library.shp`, `mine.shp`, `minecart.shp`, `minepolygon1.shp`, `mineprimitive1.shp`, `refinery.shp`, `researchitem.shp`, `tracklink.shp`, `wheel.shp`, `upgrade_port.shp`, `primaryupgradeport.shp`) | art | `data/shapes/` | new meshes |
+| Textures: `textures/tree.bmp`, `starburst.bmp`, `laserfence.bmp`, `laserfence2.bmp`, `laser.bmp`, `cloudyglow.bmp`, `glow.bmp`, `interface_grey.bmp`, `radarsignal.bmp`, `sprites/darwinian.bmp` | art | as cited | new textures |
+| Sound event names: `CreateNormal`, `CreateEvil`, `CreateMagic`, `Burn`/"Tree Burn", `Spark`, `Electrocute`, `ConnectToGod`, `DisconnectFromGod`, `CogTurn`, `AquireResearch`, `TriggerSurge`, `Enable`, `Operate`, `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost` | audio binding | `ListSoundEvents` implementations | new event ids |
+| UI strings: `dialog_wallbreach`, `objective_totalinfection`, `objective_currentcount`, `objective_refined`, editor labels `editor_*` | text | `wallbuster.cpp`, `blueprintstore.cpp`, `safearea.cpp`, `mine.cpp`, `tree_window.cpp` | new string ids |
+| Christmas mod tree styling | feature/art | `Location::ChristmasModEnabled` in `Tree::RenderAlphas` | optional seasonal theme |
+
+## Appendix — dead/legacy code
+
+All classes below are compiled into `multiwinia.exe` but are **[B:LEGACY]**: their type is in `Building::BuildingIsBlocked` under `BLOCK_OLD_DARWINIA_OBJECTS` [C] `code/worldobject/building.cpp:BuildingIsBlocked`, so level lines naming them are dropped at parse time, and no live MW code creates them by id (exceptions noted). Brief, but every class and every level field is listed for completeness. Census sources: `data/levels/map_*`, `mission_*` (Darwinia campaign) and `data/levels/old/*` (MW prototypes).
+
+### A.1 BlueprintBuilding (abstract), BlueprintStore, BlueprintConsole, BlueprintRelay — `blueprintstore.cpp` [B:LEGACY]
+Darwinia "Pattern Buffer" infection puzzle (`map_pattern_buffer.txt`: 1 store, 4 consoles, 12 relays).
+- **BlueprintBuilding** fields: [8] buildingLink (int, `%-8d`) — next building in the relay chain. `Initialise` looks up `MarkerBlueprint`; `m_infected` = 100 if team 1 else 0. `Advance`: if `m_infected > 80` → `link->SendBlueprint(segment, true)`; if `< 20` → `SendBlueprint(segment, false)`. Default `SendBlueprint`: store segment id, `m_infected ± 10/s` clamped [0,100]. Render: shape; alpha pass draws an additive `textures/laser.bmp` ribbon (half-width 20) to the link, colour (infected, 0.7−0.7·infected, 0) with alpha `0.1+0.2|sin t|` when both ends agree within 0.01, else `0.5+0.5|sin t|`.
+- **BlueprintStore** (`blueprintstore.shp`, `BLUEPRINTSTORE_NUMSEGMENTS` = 4): `m_segments[4]` start 100 (team 1) or 0. `SendBlueprint`: segment `± 1/s`. `Advance`: with f = #segments at exactly 100 and c = 4 − f, each segment < 100 gains `f·0.9/c` per second; if all segments are 0 → GlobalBuilding online. Objective counter "objective_totalinfection N%". Render: a 100×100 billboard of `sprites/darwinian.bmp` with per-corner colours from the four segments plus two scrolling `interface_grey.bmp` overlay passes; display wobbles with `sin/cos(gameTime)`.
+- **BlueprintConsole** (`blueprintconsole.shp`): fields [8] buildingLink, [9] segment (int). Ownership: team with > 2 port occupants and plurality, else 255 (same rule as CloneLab). Team 1 → `SendBlueprint(seg, true)`, team 0 → `SendBlueprint(seg, false)` every tick. Port status starbursts as CloneLab.
+- **BlueprintRelay** (`blueprintrelay.shp`): fields [8] buildingLink, [9] altitude (float, default 400; `%-2.2f`). Floats at Y = altitude; `Advance` drifts position by `(sin(t/1.5), sin(t/1.3), cos(t/1.7))` units per tick with t = gameTime + uniqueId + index (sim position driven by game time), `m_vel` derived.
+
+### A.2 Bridge — `bridge.cpp` [B:LEGACY] (subclass of `Teleport`, P06)
+Darwinia Engineer-operated bridge; created at runtime only by `Engineer` [C] `code/worldobject/engineer.cpp` (≈L1006). No level lines in any file. Fields: [8] nextBridgeId (int), [9] bridgeType (0 = `BridgeTypeEnd` → `bridgeend.shp`, 1 = `BridgeTypeTower` → `bridgetower.shp`; marker `MarkerSignal`). `BRIDGE_TRANSPORTPERIOD` 0.1 s (Teleport send period), `BRIDGE_TRANSPORTSPEED` 50 wu/s. `m_status` = 100 while an engineer operates it (`BeginOperation`/`EndOperation`), else 0; `< 0` → removed. Only End-type bridges with an operated, linked next bridge send entities; entities in transit fly signal-to-signal at 50 wu/s, hop through Tower bridges via `EnterTeleport`, exit at the final End bridge's entrance marker; if the carrier signal is lost mid-transit the entity takes `ChangeHealth(−500)` and is dropped with random velocity (`SFRAND(10), FRAND(10), SFRAND(10)`). Render: 3-px smoothed line between signal markers in team colour with alpha = status/100.
+
+### A.3 Cave — `cave.cpp` [B:LEGACY]
+`cave.shp`, marker `MarkerSpawnPoint`; no extra level fields. For a used team: every `syncfrand(0.5)` s spawns one `Entity::TypeVirii` at the spawn marker if fewer than 30 friends within 100 units. `Damage(d)` destroys it (shape explosion) only if `d > 80` — but damage is passed as negative numbers everywhere (e.g. `Location::Bang`), so caves are effectively indestructible [C]/[I].
+
+### A.4 ChessBase, ChessPiece — `chess.cpp` [B:LEGACY] (prototype MW mode; `old/mp_chess1.txt` ×2 ChessBase)
+- **ChessBase**: fields [8] width, [9] depth (read with `atoi` → integers; `Write` uses the malformed format `"%2.2 %2.2"` with no conversion letter — a writer bug). Spare points `m_sparePoints = GetGameOption("TotalSize")`; neither "TotalSize" nor "SizeVariance" exists in any game blueprint (grep), so `GetGameOption` returns −1 and **no pieces ever spawn** [C] `code/multiwinia.cpp:Multiwinia::GetGameOption`. Logic (if it worked): every 1 s spawn a piece of scale `1 + syncsfrand(variance/100)` clamped [0.1, spare] while spare > 0.3, pushed 10 units at a time away from overlapping pieces (`50·scaleA + 50·scaleB`); an enemy piece whose 35·scale sphere (offset 35·scale behind it) intersects the width×depth zone triggers `HandleSuccess`. Render: team-coloured line loop of the zone 5 units above ground.
+- **ChessPiece** (`CarryableBuilding`, `chesspiece.shp`): `HandleCollision(force)`: damage += force·dt; every 2.0 → scale −0.05 + shatter 0.3; dies when scale < 0.1. `HandleSuccess`: respawn a piece of the same scale at its own base, `Multiwinia::AwardPoints(team, int(10·scale))`, then die. `SetWaypoint` only accepts waypoints on one side of the piece (forward-only movement). The only ChessPiece selection path is `LocationInput` (turret-aim mode branch) [C] `code/location_input.cpp`.
+
+### A.5 Factory — `factory.cpp` [B:LEGACY]
+`factory.shp`; field [8] initialCapacity (int, default 10) → embedded `SpiritStore` (capacity, 200 max, at `MarkerSpiritStore` + 11 Y, sizes 5/10/5). `RequestUnit(type, n)`: creation time `n × 0.1` s, spawns one unit per spirit consumed at `pos + (±2.5, 20±2.5, 20)` with velocity `(SFRAND(1), SFRAND(1), 5 + syncsfrand(1))`; then 3 s `StateRecharging`. States `StateUnused → StateCreating → StateRecharging → StateUnused`; `SetTeamId` resets to Unused. `Factory::RequestUnit` has no caller anywhere in `code/` [C] (grep `RequestUnit(`).
+
+### A.6 FeedingTube — `feedingtube.cpp` [B:LEGACY]
+`feedingtube.shp`, marker `MarkerFocus`; field [8] receiverId (int). Purely visual link: each tick `m_range` = distance between the two focus markers. Render: 4 nested textured tubes (radii 10, 9, 8, 4; alphas 0.4, 0.2, 0.2, 0.5) between the dishes, 20 radial segments, `distance/200` length steps, units 0/1 = `laserfence.bmp` (REPLACE) / `radarsignal.bmp` (MODULATE), scrolling by `−gameTime/radius` and `−gameTime`, clipped by two user clip planes facing each dish. Sphere hit uses the shape at 1.5× probe radius. Sound events `BeginRotation`, `EndRotation`, `ConnectionEstablished`, `ConnectionLost` (listed, not triggered here).
+
+### A.7 DynamicBase (abstract), DynamicHub, DynamicNode — `generichub.cpp` [B:LEGACY]
+Generic objective network (see `docs/new building docs.txt`). `CreateBuilding` forces DynamicHub global.
+- **DynamicBase** fields: [8] buildingLink (int), [9] shapeName (token, "none" → debug sphere 40). Sound `TriggerSurge`.
+- **DynamicHub** fields: [10] requiredScore, [11] currentScore, [12] minActiveLinks (ints). `m_reprogrammed` true if no ControlTower links to it, or the linking tower has the hub's team; counts linked nodes. Enabled when all nodes active (`ActivateLink`/`DeactivateLink`) or (score mode) `currentScore ≥ requiredScore` and `activeLinks ≥ minActiveLinks`; when `currentScore ≥ requiredScore`, enabled → GlobalBuilding online, else (mission not complete) offline. `ChangeScore` clamps to requiredScore. `PointsPerHub = requiredScore / minActiveLinks` (**integer division by zero if minActiveLinks = 0**). Objective counter text "percent complete: N" (hard-coded English).
+- **DynamicNode** fields: [10] scoreValue, [11] scoreSupplied. Operates when all ports are occupied and none by team 1 → `hub->ActivateLink()`; stops when any port empties. While operating with scoreValue > 0: every 1 s add `±scoreValue` (−if any red occupant) while `PointsPerHub() > scoreSupplied`. Portless nodes activate on `ReprogramComplete`. Editor render aligns to terrain normal.
+
+### A.8 GodDish — `goddish.cpp` [B:LEGACY] (`map_temple.txt`, `old/mp_temple.txt`)
+`goddish.shp`; no extra fields. Script-driven (`Script::RunCommand_GodDishActivate`, `RunCommand_GodDishDeactivate`, `RunCommand_GodDishSpawnSpam`, `RunCommand_GodDishSpawnResearch`, `RunCommand_SpamTrigger`, `code/script.cpp`). `Activate`: makes all team-0 Darwinians `WatchSpectacle`/`CastShadow`, sound `ConnectToGod`; timer counts up; deactivated timer decays ×(1 − 2·dt). `SpawnSpam(isResearch)`: creates a `Spam` building (by type id) 1125 units up and 675 forward, falling at 80 wu/s. `TriggerSpam`: every Spam → `SpawnInfection()`. Render: additive `cloudyglow.bmp` blobs (50/25/10 by RenderBuildingDetail 1/2/3) and `starburst.bmp` stars (10/5/2), alpha `min(timer·0.1, 1)`, depth test off.
+
+### A.9 Library — `library.cpp` [B:LEGACY]
+`library.shp`; no extra fields. Each tick, for every research type the player owns that has not been shown, spawns a `ResearchItem` (in-library) at marker `MarkerResearch%02d` (1-based).
+
+### A.10 MineBuilding (abstract), MineCart (helper), TrackLink, TrackJunction, TrackStart, TrackEnd, Refinery, Mine — `mine.cpp` [B:LEGACY]
+Darwinia "Mine"/"Yard" conveyor (`map_mine.txt`, `map_yard.txt`: 111 TrackLinks, 3 junctions, 1 start, 2 ends, 4 mines, 1 refinery).
+- **MineBuilding** field [8] trackLink (int). Shared static shapes `wheel.shp`, `minecart.shp` (markers `MarkerTrack1/2`, `MarkerContents1–3`), `minepolygon1.shp`, `mineprimitive1.shp`. `Initialise` seeds carts at progress `0.2 + syncfrand(1.5)` cumulative steps < 1. Speed `RefinerySpeed()` (global, recomputed every 0.1 s): fraction of occupied ports of the first Refinery or Yard found, else 1.0 if the global Refinery on location "mine" is online, else 0; then `× |sin(2·gameTime)| × 0.5` progress/s (`numFuelGenerators` is never incremented → the fuel-generator branch is dead). Carts advance by speed·dt, overflow passes to the link via `TriggerCart`. Sound `CogTurn` when speed rises above 0.1. Render: two `laser.bmp` rails (width 2, or 1 at lower detail) between track markers; carts hang 40 units below the rail midpoint with contents meshes and a `glow.bmp` sprite on primitives (near plane nudged ×1.1).
+- **MineCart**: `m_progress` (0–1), `m_polygons[3]`, `m_primitives[3]`.
+- **TrackLink**: plain segment (`tracklink.shp`).
+- **TrackJunction**: fields [8] trackLink then any number of extra link ids (read while tokens remain, `%-4d`); routes each arriving cart to `syncrand() % n` of its links.
+- **TrackStart**: field [9] reqBuildingId; while that GlobalBuilding is online, carts past 50% get one random primitive.
+- **TrackEnd** (shape name spelled `trackLink.shp`): field [9] reqBuildingId; online if that building is a TrunkPort with open timer > 0, a Yard, or a FuelGenerator; carts past 50% unload primitives (into `ConstructionYard::AddPrimitive` if Yard) and clear polygons. Dereferences the building without a NULL check.
+- **Refinery** (`refinery.shp`, wheels `MarkerWheel01–03`, `MarkerCounter`): a cart with polygons and no primitives becomes one random primitive and increments `GlobalBuilding::m_link` (refined count); at ≥ 20 refined → online. Counter text rendered in 3D.
+- **Mine** (`mine.shp`, wheels `MarkerWheel01–02`): an empty arriving cart is filled with polygons with probability = occupied ports / ports.
+
+### A.11 ResearchItem — `researchitem.cpp` [B:LEGACY] (8 campaign lines)
+`researchitem.shp`, markers `MarkerGrab1/2`; fields [8] researchType (token, `GlobalResearch::GetType` name), [9] level (int, optional, default 1). Hovers 20 above ground; reprogram progress `m_reprogrammed` 100 → 0 at 3/s while an Engineer works it (`Reprogram`); at 0 → shatter, `AddResearch`, set level, "AquireResearch" sound, task-manager message; removed when the research is already owned at ≥ level. Constructor orients it with unsynced `frand`; `Render` rotates `m_front/m_up` every frame (render-path mutation of orientation that `Advance` uses for `CalculateCentre`) [C]. Non-colliding except rays (sphere of `m_radius`). Visuals: blue (0.1,0.2,0.8) `cloudyglow` blobs, starbursts and a 1050-unit "control line to heaven" (`laser.bmp`) fading with reprogram progress.
+
+### A.12 SafeArea — `safearea.cpp` [B:LEGACY] (4 campaign lines)
+Objective circle. Fields [8] size (float, default 50), [9] entitiesRequired (int), [10] entityTypeRequired (int entity type id, default Darwinian). Every 2.0 s counts live friendly entities of that type within `size`; team 1 → online when count ≤ required; other teams → online when count ≥ required. Objective counter "objective_currentcount : N". Editor-only circle render.
+
+### A.13 UpgradePort, PrimaryUpgradePort — `upgrade_port.cpp` [B:LEGACY]
+No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. `PrimaryUpgradePort` (`primaryupgradeport.shp`, name string "PrimaryUpgrade"): `ReprogramComplete` increments `m_controlTowersOwned`; at exactly 3 → GlobalBuilding online.
+
+### A.14 Dead code inside live classes
+- Tree: per-branch wobble animation (commented out in `RenderBranch`); `Render` hit-check call commented out.
+- LaserFence: obstruction-grid recalculation calls commented out in `Advance`.
+- Wall: sinking/falling animation and damage accumulation commented out (`Advance`, `Damage`); `m_fallSpeed` always 0.
+- RestrictionZone/SmokeMarker/EruptionMarker editor visualisation: `LOCATION_EDITOR` only [B:EDITOR].
+- ScriptTrigger Sepulveda phrase sequencing: `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD].
+- `NET_DARWINIA_TOGGLELASERFENCE` handler without sender (`ClientToServer::RequestToggleFence` uncalled).

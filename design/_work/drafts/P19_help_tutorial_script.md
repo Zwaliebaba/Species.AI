@@ -249,7 +249,7 @@ Two tutorials exist, both implemented as a *help-tab director* inside `Multiwini
 | Game type | KingOfTheHill | KingOfTheHill | [C] `GameMenuWindow::SetupTutorial`, `SetupTutorial2` |
 | Map | `MAPID_MP_KOTH_2P_1` (CRC `0xfa61f648`) = `data/levels/mp_koth_2P_1.txt` (2 players, PopulationCap 2000) | `MAPID_MP_KOTH_3P_1` (CRC `0xc5dbe61e`) = `data/levels/mp_koth_3P_1.txt` (3 players, PopulationCap 1800) | [C] `code/mapcrc.h`; [I] CRC→file mapping by name |
 | AI | `m_aiMode = AITypeEasy` (not overridden to Standard because `StartSinglePlayerServer`/`StartMultiPlayerServer` skip the override when `m_multiwiniaTutorial`) | same; switched to `AITypeStandard` at the final step | [C] `code/app.cpp:App::StartSinglePlayerServer`, `StartMultiPlayerServer` |
-| Game options | every KOTH blueprint parameter reset to its default (`data/multiwinia.txt` `GAMETYPE KingOfTheHill`: ScoreMode, TimeLimit, Handicap, CrateDropRate, StartingPowerups, RetributionMode, SuddenDeath, CrateDropMode) | same; team colour ids forced to 0,1,2 | [C] `SetupTutorial*` |
+| Game options | every KOTH blueprint parameter reset to its default (`data/multiwinia.txt` `GAMETYPE KingOfTheHill`, columns min/max/default/step per `Multiwinia::LoadBlueprints`): ScoreMode 0, TimeLimit 5 min (→ `m_timeRemaining` 300 s), Handicap 90, CrateDropRate 40, StartingPowerups 0, RetributionMode 1, SuddenDeath 1, CrateDropMode 1 | same; team colour ids forced to 0,1,2 | [C] `SetupTutorial*`; `code/multiwinia.cpp:Multiwinia::LoadBlueprints`, `GameOptionsChanged` |
 | Menu path | Main menu → "Tutorials" (`TutorialPageButton`, phrase `multiwinia_menu_tutorial_short`; placed *above* "single player" for demo/unauthenticated users, *below* "multiplayer" for full version) → `PageTutorials` → button | same | [C] `GameMenuWindow` main-page setup (L3026–3066) |
 | Button disabled when | map id not found or `!IsMapPermitted(KOTH, map)`; always under `TARGET_PC_HARDWARECOMPAT` | same | [C] `SetupTutorialPage` |
 
@@ -341,7 +341,7 @@ Evaluation order each frame (first rule that sets a tab wins, except where noted
 | A | `firstSpawnTaken` (spawn 4 owned by player **or** ≥ 10 player Darwinians ordered to it) **and** < 10 Darwinians ordered to zone 9: if nothing selected and > 15 idle near AITarget 30 (r 100) → | `HelpTutorialGroupSelect` (AITarget 30, 40) | Hold LMB to group-select |
 | | … else if Darwinians selected → | `HelpTutorialMoveToMainZone` (zone 9, 40) | RMB in zone 9 |
 | B | (no entity selected) for i = 0,1: spawn[i] owned and spawn[i+1] not owned: nothing selected, ≥ 20 idle near AITarget[i], < 10 ordered to spawn[i+1] → | `HelpTutorialGroupSelect` (AITarget[i], 40) | Group-select |
-| | … else if Darwinians selected → (the later i overrides the earlier within the frame) | `HelpTutorialMoveToSpawnPoint` (spawn[i+1], 40) | RMB on next spawn point |
+| | … else if Darwinians selected → | `HelpTutorialMoveToSpawnPoint` (spawn[i+1], 40) | RMB on next spawn point |
 | C | zone 9 owned **or** player `m_teamCount` in zone 9 > 5; for i = 0,1 with spawn[i] owned and spawn[i+1] "dealt with" (owned or > 10 ordered there) and no officer at AITarget[i] with goto→zone 9: nothing selected, ≥ 10 idle, no entity selected → | `HelpTutorialPromote` (i=0) / `HelpTutorialPromoteAdvanced` (i=1) (AITarget[i], 40) | RMB a Darwinian to promote an officer |
 | | … else if selected entity is an Officer → | `HelpTutorialSendToZone` (zone 9, 20) | RMB in zone 9 to give the officer a goto order |
 | D | all 3 spawns owned **and** ≥ 2 of AITargets 30/25/40 have a goto-officer → | | |
@@ -533,8 +533,386 @@ Phrase ids are resolved with `LANGUAGEPHRASE`; where code chooses `…_xbox` tha
 | `HelpTutorial2BreakFormation` (47) | T2 | `multiwinia_help_title_breakformation` → "CANCEL FORMATION" | `multiwinia_help_breakformation` / `_xbox` → "To release your Multiwinians from the Formation, Right Click on the Officer or its Flag…" |
 | `HelpTutorialDismissInfoBox` (48) | none (callers commented out) | `multiwinia_help_title_clearinfo` → "PRESS SPACE" | `multiwinia_help_clearinfo` / `_xbox` → "Press the Space Bar or Left Click to dismiss the Power-up info box." |
 
-All 62 phrase ids above exist in `data/language/english.txt` (checked by `OUT/_work/scripts/P19_phrases.py`). [C]
+Every phrase id above (keyboard and `_xbox` variants) exists in `data/language/english.txt` (checked by `OUT/_work/scripts/P19_phrases.py`). [C]
+
+Note on multiple `RunTutorialHelp` calls in one frame (rules B and C loop over i): the first call sets `m_tutorialTimer = now`, so a second call in the same frame with a *different* tab is rejected by the 0.5 s limiter, while a second call with the *same* tab just moves its anchor. [C] `MultiwiniaHelp::RunTutorialHelp`.
 
 ### 2.6 Determinism / networking caveat
 The tutorial director runs in the *client* frame loop and directly mutates simulation state: it inserts `Crate` buildings into `Location::m_buildings` with a fresh `GlobalWorld::GenerateBuildingId()`, rewrites `RadarDish` links, and changes `Multiwinia::m_timeRemaining`, `m_basicCratesOnly`, `m_aiType` and a game option — none via the network layer. This is safe only because tutorials are single-player (local server) [I]. A new implementation should drive tutorial side-effects through the authoritative simulation (e.g. scripted server-side events). [I]
+
+
+---
+
+## [→ 09_meta_systems] 3. In-game help (`MultiwiniaHelp`, non-tutorial) [B:FULL]
+
+### 3.1 Lifecycle
+- Single instance `g_app->m_multiwiniaHelp`, created in `App::App`, deleted in `App::~App`; `Reset()` on location shutdown. [C] `code/app.cpp` (L355, L608, L1131).
+- `Advance()` called once per frame in the location loop (after `MarkerSystem::Advance`); returns immediately unless `g_app->Multiplayer()` (i.e. `m_gameMode == GameModeMultiwinia`) and the local team exists. [C] `code/main.cpp` (L578); `MultiwiniaHelp::Advance`.
+- `Render()` called from the renderer's 2D overlay pass after `MarkerSystem::Render` and before `ShamanInterface`/`UserInput`/cursor. Skipped when: no location, not multiplayer, `m_hideInterface`, game over, Assault victory timer running, no local team. [C] `code/renderer.cpp` (L646); `MultiwiniaHelp::Render`.
+- Input-mode change (keyboard ↔ gamepad) reloads tab icon filenames. [C] `Advance`, `LoadIcons`.
+
+### 3.2 What the player actually sees (live outputs)
+
+| # | Output | When shown | Content (phrase id → English) | Duration / frequency rule | Ref |
+|---|---|---|---|---|---|
+| H1 | Game-mode **animated panel** | grace period, not tutorial, `m_gracePeriodTimer ≥ GRACE_TIME` (i.e. while waiting for all players to be ready, before the 3.0 s countdown starts) | title = blueprint name phrase upper-cased; caption `multiwinia_animdesc_<blueprint>` (domination: "Capture all Spawn Points to win the game"; kingofthehill: "Occupy key zones to score points every second"; capturethestatue: "Lift heavy statues back to your home base to score points"; assault: "Defend your weapon of mass destruction against waves of incoming attackers"; rocketriot: "Be the first team to refuel and Launch your rocket"; blitzkrieg: "Capture all flags between you and your enemy to knock them out"); animation `data/animations/{domination,koth,cts,assault_defend,rocket,blitz}.anim` | loaded lazily on first grace-period frame (`InitialiseAnimatedPanel`), freed by `Reset`; TankBattle has no panel | [C] `MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; `code/multiwinia.cpp:Multiwinia::GameInGracePeriod` and grace countdown (L2381–2414); `data/language/english.txt` L2356–2361 |
+| H2 | Camera-controls picture | grace period **in a tutorial**, keyboard mode | `mwhelp/control_camera.bmp` / `_french` | whole grace period | §2.2 |
+| H3 | "Deselect" hint after a mis-click | post-grace, pref `HelpEnabled` ≠ 0 (default 1), `m_showSpaceDeselectHelp > 0` | `multiwinia_rmbhelp` "Right mouse button to move\npress SPACE to deselect" (`_xbox`, Mac `_mac`) when triggered by an LMB-on-nothing; `multiwinia_deselect` "press SPACE to deselect" (`_xbox`) when triggered by RMB while placing a task | see state machine below | [C] `MultiwiniaHelp::ShowSpaceDeselectHelp`, `Render` |
+| H4 | "Hold SHIFT to move faster" | post-grace, `HelpEnabled`, keyboard mode, `m_showShiftToSpeedUpHelp > 0` | `multiwinia_shiftspeedhelp` | set to 3.0 s every frame once the camera-forward key has been held alone (no left/right/back, no speed-up) for > 4.0 s, so it stays up while holding and for 3 s after release; counts down by real frame time | [C] `code/camera.cpp` (L695–707); `MultiwiniaHelp::ShowShiftSpeedupHelp`, `Render` |
+| H5 | Deselect-building hint | post-grace, `HelpEnabled`, local team's selected building is a GunTurret or RadarDish | `multiwinia_deselect` / `_xbox`, drawn in the *building position* layout (left of screen) | every frame while selected; box flashes white while camera keys are pressed | [C] `Render` |
+| H6 | Terminate-officer hint | post-grace, `HelpEnabled`, entity under the cursor is an Officer with `OrderNone` | `multiwinia_officerterminate` "press c to terminate a unit" / `_xbox` "press b…" | every frame while hovered | [C] `Render` |
+| H7 | Toggle-armour-orders hint | post-grace, `HelpEnabled`, an order marker is under the mouse and belongs to an Armour whose `m_conversionOrder == Armour::StateIdle` | `multiwinia_armourtoggle` "Right Click to toggle orders" / `_xbox` | every frame while hovered | [C] `Render` |
+| H8 | Tutorial tabs | tutorial only | §2.5 | §2.2 | §2 |
+
+H3 state machine (`m_showSpaceDeselectHelp`, float seconds) [C] `ShowSpaceDeselectHelp`, `Render`:
+```
+on trigger(immediate, showRMB):
+    if v > 0:  v = min(v + 1.0, 3.0)                    # extend while showing
+    else:
+        v -= 0.75
+        if v < -1.0 or immediate: rmbFlag = showRMB; v = 3.0
+per rendered frame (HelpEnabled, post-grace):
+    if v > 0: draw with alpha = min(1, v); v -= dt
+    elif v < 0: v = min(v + 0.33*dt, 0)                 # "suspicion" decays back to 0
+```
+So a single stray click is tolerated; two stray clicks within ≈1.5 s (−0.75 then −0.75 again before it decays by 0.5) show the hint for 3 s; the RMB-while-placing trigger shows it immediately. [C+I arithmetic]
+Triggers [C] `code/location_input.cpp`: (1) LMB on empty ground with pref `MultiwiniaControlMethod == 1` while something is selected and not placing a task, not controlling an insertion squad, not a gamepad move of an officer/armour, and not `ControlUnitSetTarget` → plays `MouseError` (TypeMultiwiniaInterface) and `ShowSpaceDeselectHelp()`; (2) `ControlIssueSpecialOrders` (RMB) while a task is in `StateStarted` (being placed) on keyboard → `MouseError` + `ShowSpaceDeselectHelp(true, false)`.
+
+`RenderHelpMessage(alpha, caption, buildingPosition, oversize)` layout [C]: width 0.35·H (0.55·H if `oversize`, Mac-only RMB case), font height 0.02·H (g_editorFont, outline + fill), box height (lines + 1)·font; centred at x = W/2, y = 0.78·H; building layout: x = 0.1·W, y = H − 1.5·boxH; box black α·0.75, border white α·0.5; additive white α·0.6 fill while any camera direction key is pressed (building layout only).
+
+### 3.3 Help-tab model (`MultiwiniaHelpItem` × 49) — computed but not displayed outside tutorials
+
+`MultiwiniaHelp::Advance` computes, for every enum value, `m_appropriate`, a world anchor and a stacked screen layout, and cycles a highlight every 5.0 s; **but the only renderer for non-tutorial tabs is inside `#ifdef THIS_IS_FUCKING_SHIT_AND_IT_ALWAYS_HAS_BEEN` (never defined), and `RenderCurrentTaskHelp`/`RenderCurrentUnitHelp` call sites are commented out** (`code/taskmanager_interface_multiwinia.cpp` L1721, L1736). The grace-period/objective tabs therefore have no visible effect in any build. [C] `MultiwiniaHelp::Render` (L2317–2385). They are documented as the designed-but-cut "objective cards" feature:
+
+| Enum (value) | Icon (`mwhelp/…bmp`) | Appropriate when | Anchor (nearest to camera) / world size / offset | Title → body (English) | "Accomplished" notification |
+|---|---|---|---|---|---|
+| `HelpStartHere` (0) | `starthere` | grace period and mode ∉ {RocketRiot, Assault, Blitzkrieg} | own SpawnPoint (any occupancy) / 6 / 0 | YOU → Start Here | — |
+| `HelpReinforcements` (1) | `reinforcements` | mode ∈ {RocketRiot, Assault, Blitzkrieg} | own TrunkPort / 6 / 0 | TRUNKPORT → Give Reinforcements | `NotifyReinforcements` (from `Multiwinia` reinforcement arrival) ×3 → accomplished |
+| `HelpSpawnPoints` (2) | `spawnpoint` | grace, any spawn points exist, ≥ 1 neutral spawn, not tutorial | SpawnPoint any team with nobody within 100 / 6 / 0 | CAPTURE → Creates Multiwinians | `max(accomplished, SpawnPointsOwned − 1)` each frame |
+| `HelpKoth` (3) | `koth` | grace, KOTH, not tutorial | nearest MultiwiniaZone / 10 / 0 | CONTROL → Gives Points | `NotifyCapturedKothZone(n)` → max |
+| `HelpLiftStatue` (4) | `liftstatues` | grace, CTS | nearest Statue of team 255 / 10 / 80 | LIFT → Using Multiwinians | `NotifyLiftedStatue` (`code/worldobject/statue.cpp`) |
+| `HelpCaptureStatue` (5) | `capturestatues` | grace, CTS | own MultiwiniaZone / 6 / 10 | CAPTURE → Gives Points | `NotifyCapturedStatue` (`multiwiniazone.cpp`) |
+| `HelpSolarPanels` (6) | `rocketriot2` | mode RocketRiot | nearest SolarPanel / 9 / 50 | CAPTURE → Refuels Rocket | `NotifyFueledUp` (`rocket.cpp`) |
+| `HelpRocketRiot` (7) | `rocketriot1` | mode RocketRiot | own EscapeRocket / 12 / 100 | LOAD → Multiwinians to Launch | `NotifyFueledUp` |
+| `HelpSpawnPointsConquer` (8) | `spawnpoint_assault` | grace, Domination (`GameTypeSkirmish`) | SpawnPoint not owned by me with people within 100 / 10 / 0 | CAPTURE → To Win | — |
+| `HelpCrates` (9) | `crates` | grace, `Crate::s_crates > 0` | — (no anchor case) | CRATES → Random Powerup | `NotifyCapturedCrate` (`crate.cpp`, own team capture) ++ |
+| `HelpDarwinians` (10) | `darwinian` (**file absent** from `data/mwhelp`) | never (hard-coded false) | — | (no strings) | group-select ≥ 1 and promote ≥ 1 |
+| `HelpWallBuster` (11) | `wallbuster` | my position is an attacker and the map has a WallBuster | nearest WallBuster (`m_pos`) / 6 / 0 | CARRY → Destroys Walls | — |
+| `HelpStationAttack` (12) | `pulsebomb_attack` | Assault and I attack | nearest ControlStation / 6 / 0 | CAPTURE → all to Win | — |
+| `HelpStationDefend` (13) | `pulsebomb_defend` | Assault and I defend | nearest ControlStation / 6 / 0 | DEFEND → Hold to Win | — |
+| `HelpPulseBombAttack` (14) | `pulsebomb` | Assault and I attack | nearest PulseBomb / 12 / 100 | WIN → Before Detonation | — |
+| `HelpPulseBombDefend` (15) | `pulsebomb` | Assault and I defend | nearest PulseBomb / 12 / 100 | DEFEND → Until Detonation | — |
+| `HelpBlitzkrieg1` (16) | `blitzkrieg1` | Blitzkrieg | nearest MultiwiniaZone / 10 / 0 | CAPTURE → Gives Points | — |
+| `HelpBlitzkrieg2` (17) | `blitzkrieg2` | Blitzkrieg | base zone `MultiwiniaZone::s_blitzkriegBaseZone[t]` of a random other team (`rand()`, non-synced) / 10 / 0 | WIN → Capture Enemy Flag | — |
+| 18–48 | — | tutorial tabs (§2.5) | — | — | — |
+
+Anchors are only (re)computed during the grace period when the anchor is still zero. Layout (unused): tab size = min(0.2·H, 200) px, stacked from (W − size − 10, 10) with 10 px gaps; after grace they would shrink to 0.66·size, move at `2·dt` (×3 horizontally) clamped to H/5 per frame, alpha 0.5 when accomplished; highlight link circle radius `10000·worldSize/camDist`. Highlight blink alpha: 0 for 1 s, then alternating 1.0/0.3 every 0.2 s until 2 s, then 1. [C] `MultiwiniaHelp::Advance`, `RenderTabLink`, `CalculateHighlightAlpha`.
+
+Unused helpers compiled in FULL [C]: `RenderControlHelp()` (contextual LMB/RMB/C-key boxes with captions `multiwinia_control_{close,select,grenade,move,formation,order,unload,load,laser,destroy,place,promote}`, `control_help_secondaryfire`, icons `icons/<name>.bmp`) and `RenderBasicControlHelp()` (`mwhelp/basic_select*.bmp`, `mwhelp/basic_promote*.bmp` — files absent) have no callers; `RenderCurrentUnitHelp` (`mwhelp/officercontrol*.bmp`, `mwhelp/darwiniancontrol*.bmp` — absent) and `RenderCurrentTaskHelp` call sites are commented out; `GetHelpType`/`GetResearchType` return −1; `HighlightingDarwinian` has no caller. Control hints actually shown in Multiwinia come from `ControlHelpSystem` (`code/control_help.cpp`, other partition). [C] grep of `code/`.
+
+### 3.4 Help pages in the menus ("Help and Options" → "How To Play") [B:FULL]
+
+Navigation [C] `code/interface/helpandoptions_windows.cpp`, `code/interface/mainmenus.cpp:HelpAndOptionsButton::MouseUp`:
+- `HelpAndOptionsButton` (main menu page in `GameMenuWindow`, and the in-game menus in `mainmenus.cpp` L859/L1064) opens `HelpAndOptionsWindow` ("multiwinia_menu_helpandoptions") with buttons: How To Play (`multiwinia_menu_howtoplay`) → `SelectHelpWindow`; Crate help (`multiwinia_menu_cratehelp` → `CrateHelpWindow`, **only** under `INCLUDE_CRATE_HELP_WINDOW` = TARGET_DEBUG → [B:DEBUG]); Settings (`multiwinia_menu_settings` → `OptionsMenuWindow`); Authentication (`multiwinia_auth`, main menu only, not under `MULTIWINIA_DEMOONLY`); Back.
+- `SelectHelpWindow`: "General" (`multiwinia_helppage_1`) → `GeneralHelpWindow`; then one button per game blueprint index 0 … `s_gameBlueprints.Size()−2` (i.e. every mode except the last blueprint, TankBattle), labelled with the blueprint name phrase → `GameTypeHelpWindow(i)`. Under `HIDE_INVALID_GAMETYPES`/`MULTIWINIA_DEMOONLY`, non-permitted modes are hidden.
+- `GeneralHelpWindow`: pages 1…`MAX_PAGES` (= 5); each page = image `mwhelp/general<p>.bmp` (square, side = leftBoxH/3.5) + text `multiwinia_helppage_general<p>` (Mac: `_mac` variant if present); Previous/Next buttons; going below 1 or above 5 closes the window.
+- `GameTypeHelpWindow(gt)`: title `multiwinia_help_gametypetitle_<gt>`; page p shows image `mwhelp/help_<gt>_<p>.bmp` and text `multiwinia_helppage_<gt+1>_<p>`; if that text id does not exist the window closes (so the number of pages is data-driven by the language file). `GetLabelPos` holds per-mode label coordinates but has no caller (dead).
+- A second, older help-page implementation inside `GameMenuWindow` (`PageHelpMenu`=10, `PageHelp`=11, images `mwhelp/helppage_<type>_<n>.bmp`) is unreachable: its only entry button `HelpModeButton` is never instantiated and no `helppage_*` image exists. [C] grep `code/UI/*`.
+
+Page → asset map (game-type index from `code/multiwinia.h` enum: 0 Domination/`GameTypeSkirmish`, 1 KingOfTheHill, 2 CaptureTheStatue, 3 Assault, 4 RocketRiot, 5 Blitzkrieg):
+
+| Page | Image | Text phrase | English (first words) |
+|---|---|---|---|
+| General 1 | `general1.bmp` (150×150) | `multiwinia_helppage_general1` (`_mac`, `_xin`) | "These are Multiwinians. They inhabit Darwinia, and make up your entire army…" |
+| General 2 | `general2.bmp` | `multiwinia_helppage_general2` (`_xin`) | "Multiwinians can be promoted to Officers using the Right Mouse button…" |
+| General 3 | `general3.bmp` (150×149) | `multiwinia_helppage_general3` | "Multiwinians are created at Spawn Points…" |
+| General 4 | `general4.bmp` | `multiwinia_helppage_general4` | "When they get close enough, enemy Multiwinians will automatically attack…" |
+| General 5 | `general5.bmp` | `multiwinia_helppage_general5` (`_xin`) | "Crates containing a random powerup will fall from the sky…" |
+| Domination 1 | `help_0_1.bmp` | `multiwinia_helppage_1_1` | "In Domination, the goal is to capture as many Spawn Points as you can…" |
+| KOTH 1 | `help_1_1.bmp` | `multiwinia_helppage_2_1` | "In King of the Hill, your goal is to control as many of the Hill-Zones…" |
+| KOTH 2 | `help_1_2.bmp` | `multiwinia_helppage_2_2` | "In order to capture a Hill-Zone, simply move your Multiwinians inside of it…" |
+| CTS 1 | `help_2_1.bmp` | `multiwinia_helppage_3_1` | "In Capture the Statue, you score points by lifting the giant statues…" |
+| CTS 2 | `help_2_2.bmp` | `multiwinia_helppage_3_2` (`_xin`) | "To lift a statue and carry it away, you need to move a large number…" |
+| CTS 3 | `help_2_3.bmp` | `multiwinia_helppage_3_3` | "If there are enemy Multiwinians already at the statue…" |
+| Assault 1 | `help_3_1.bmp` | `multiwinia_helppage_4_1` | "In Assault, players are divided into 2 groups - Attackers and Defenders…" |
+| Assault 2 | `help_3_2.bmp` | `multiwinia_helppage_4_2` | "On each Assault map, there is a WMD belonging to the Defending team…" |
+| Assault 3 | `help_3_3.bmp` | `multiwinia_helppage_4_3` | "Some Assault maps have large mobile explosives called Wall Busters…" |
+| Rocket Riot 1 | `help_4_1.bmp` | `multiwinia_helppage_5_1` | "Rocket Riot has 3 objectives…" |
+| Rocket Riot 2 | `help_4_2.bmp` | `multiwinia_helppage_5_2` | "Solar Panels are captured in the same way as Spawn Points…" |
+| Rocket Riot 3 | `help_4_3.bmp` | `multiwinia_helppage_5_3` | "Once your Rocket's fuel level reaches 95, you can begin loading…" |
+| Rocket Riot 4 | `help_4_4.bmp` | `multiwinia_helppage_5_4` | "Defending your Rocket is a very important task - once your Fuel level reaches 70…" |
+| Blitzkrieg 1 | `help_5_1.bmp` | `multiwinia_helppage_6_1` | "In Blitzkrieg, the goal is to eliminate enemy teams by capturing their flags…" |
+| Blitzkrieg 2 | `help_5_2.bmp` | `multiwinia_helppage_6_2` | "The first flag that you capture is your home flag…" |
+| Blitzkrieg 3 | `help_5_3.bmp` | `multiwinia_helppage_6_3` | "If you eliminate all the other teams on the map, you will win the game…" |
+
+Text pages from [C] `data/language/english.txt` L2514–2586 (the `_xin` variants are chosen by the language table in gamepad mode [I: suffix resolution lives in `code/lib/language_table.cpp`, other partition]).
+
+### 3.5 Complete `data/mwhelp/` usage map (51 files, all 24-bit/32-bit BMP)
+
+| File | Size (px, bpp) | Consumer | Status |
+|---|---|---|---|
+| `360_controller.bmp` | 600×389, 32 | none in code; excluded from PC data build (`tools/multiwinia_exclusions.txt` L41); converted DXT3 only for Xbox (`tools/build_multiwinia_data.bat`) | unused on PC [B:DEAD] |
+| `background.bmp` | 200×200, 24 | none | orphan (shipped, unused) |
+| `blitzkrieg1.bmp`, `blitzkrieg2.bmp` | 200×200, 24 | `MultiwiniaHelp::LoadIcons` (tabs 16, 17) | loaded name only; never rendered (§3.3) |
+| `capturestatues.bmp`, `liftstatues.bmp` | 200×200, 24 | tabs 5, 4 | never rendered |
+| `control_camera.bmp`, `control_camera_french.bmp` | 512×128, 32 (alpha) | `MultiwiniaHelp::RenderGracePeriodHelp` (tutorial grace period) | **live** |
+| `crates.bmp` | 200×200, 24 | tab 9 | never rendered |
+| `gear.bmp` | 426×406, 24 | `GameMenuWindow::PreloadTextures`; `GameMenuWindow::RenderBigDarwinian` ("gear effect" behind the menu mascot) | **live** |
+| `general1.bmp` … `general5.bmp` | 150×150 (general3 150×149), 24 | `GeneralHelpWindow` pages 1–5 | **live** |
+| `help_0_1.bmp` … `help_5_3.bmp` (16 files: 0_1; 1_1–1_2; 2_1–2_3; 3_1–3_3; 4_1–4_4; 5_1–5_3) | 150×150, 24 | `GameTypeHelpWindow` (see §3.4) | **live** |
+| `koth.bmp` | 200×200, 24 | tab 3 | never rendered |
+| `mode_assault.bmp`, `mode_blitzkrieg.bmp`, `mode_capturethestatue.bmp`, `mode_domination.bmp`, `mode_kingofthehill.bmp`, `mode_rocketriot.bmp`, `mode_tankbattle.bmp` | 300×200, 24 | `GameTypeImageButton::Render` (`mwhelp/mode_<lower(blueprint m_name)>`), preloaded in `GameMenuWindow::SetupGameSelectPage`/`SetupSPDemoPage` | **live** (tankbattle only if that mode is offered — it is compiled out in FULL) |
+| `mode_campaign.bmp`, `mode_prologue.bmp` | 400×300, 24 | `GameTypeImageButton` for `GAMETYPE_CAMPAIGN`/`GAMETYPE_PROLOGUE` | [B:DEBUG] (those menu entries only under `INCLUDEGAMEMODE_PROLOGUE/_CAMPAIGN`) |
+| `pulsebomb.bmp`, `pulsebomb_attack.bmp`, `pulsebomb_defend.bmp` | 200×200, 24 | tabs 14/15, 12, 13 | never rendered |
+| `reinforcements.bmp` | 200×200, 24 | tab 1 | never rendered |
+| `rocketriot1.bmp`, `rocketriot2.bmp` | 200×200, 24 | tabs 7, 6 | never rendered |
+| `spawnpoint.bmp`, `spawnpoint_assault.bmp` | 200×200, 24 | tabs 2, 8 | never rendered |
+| `starthere.bmp` | 200×200, 24 | tab 0 | never rendered |
+| `wallbuster.bmp` | 200×200, 24 | tab 11 | never rendered |
+
+Referenced by code but **absent** from `data/mwhelp/`: `darwinian.bmp` (tab 10), `officercontrol[_xbox].bmp`, `darwiniancontrol[_xbox].bmp`, `basic_select[_xbox].bmp`, `basic_promote[_xbox].bmp`, `helppage_<n>_<m>.bmp` — all on dead paths. [C] directory listing vs `code/multiwiniahelp.cpp`, `code/UI/*Help*Button.h`.
+There are **no `.txt` files** in `data/mwhelp/`; all help text lives in `data/language/*.txt`. [C]
+
+
+---
+
+## [→ 30_scripting_tutorial_and_cutscenes] 4. Dr Sepulveda dialogue system (`Sepulveda`) [B:DEAD]
+
+Whole of `code/sepulveda.{h,cpp}` and `code/sepulveda_strings.cpp` is inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; `g_app->m_sepulveda` is only constructed under that macro (`code/app.cpp` L458–460), and every call site in live code is wrapped too (`code/script.cpp`, `code/main.cpp`, `code/taskmanager_interface_multiwinia.cpp`, `code/renderer.cpp` L662–665). Even if compiled, `Say()` returns immediately when `g_app->Multiplayer()`. [C] `code/sepulveda.cpp:Sepulveda::Say`. Documented in full because it is the reference design for a narrator/advisor system.
+
+`sepulveda_strings.cpp` contains only debug-trace macros (`JAL_DEBUG 0`), key-length limits `MAX_READ_KEY_LENGTH 64`, `MAX_FINAL_KEY_LENGTH 96` and a `CaptionParserMode` stream printer — the caption parser it once served is gone (`BuildCaption` now just copies ≤ 1023 wide chars). [C] `code/sepulveda_strings.cpp`; `Sepulveda::BuildCaption`.
+
+### 4.1 Data model
+| Member | Meaning | Ref |
+|---|---|---|
+| `m_caption` (UnicodeString) | line currently being "spoken" (empty = silent) | [C] `code/sepulveda.h` |
+| `m_msgQueue` (LList<char*>) | FIFO of pending phrase ids | [C] |
+| `m_timeSync` | time the current caption started (s, `GetHighResTime`) | [C] |
+| `m_fade` | text-box/face fade 0..1 | [C] |
+| `m_previousNumChars` | for the per-character typing sound | [C] |
+| `m_cutsceneMode` | cutscene layout (bigger face/text, history hidden) | [C] |
+| `m_scrollbarOffset` | history scroll (chat-log mode) | [C] |
+| `m_gestureDemo`, `m_gestureStartTime`, `m_mouseCursor` (`icons/mouse_main.bmp`) | mouse-gesture replay | [C] |
+| `m_highlights` (LList<SepulvedaHighlight*>) | named building/position light beams | [C] |
+| `m_history` (LList<SepulvedaCaption*>, newest first) | spoken lines `{stringId, timeSync}` | [C] |
+| `m_langDefines` (BTree) | OS-specific substitutions `part_leftclick` = "Left click"/"Click" (Mac), `part_rightclick`, `part_leftmousebutton`, `part_leftclicking` (unused by the current `BuildCaption`) | [C] `Sepulveda::Sepulveda` |
+| `SEPULVEDA_MAX_PHRASE_LENGTH` | 1024 | [C] `#define` |
+
+Constructor pre-caches `sepulveda/sepulveda1..5.bmp` (no mipmaps). With pref `TextLanguageTest == 1` it validates every language phrase and writes `language_errors.txt` (empty-after-build phrases are errors; phrases containing "gesture"/"Gesture"/"[TAB]" without a `<id>_icons` variant are warnings). [C] `Sepulveda::Sepulveda`.
+
+### 4.2 `Say(id)` queueing rules [C] `Sepulveda::Say`
+1. Ignored entirely in multiplayer.
+2. Variant selection (later rules override earlier): `<id>_1mb` if pref `ControlMouseButtons == 1` and phrase exists; `<id>_icons` if pref `ControlMethod == 1` and exists; `<id>_demogame` if `!IsFullVersion()` and exists; else `<id>`.
+3. Empty id → ignored. Same as `m_history[0]` while still talking → ignored. Already in queue → ignored.
+4. Appended to the queue tail.
+
+`ShutUp()`: clear caption, stop all highlights (fade out), drop gesture demo, empty queue. `PlayerSkipsMessage()` (ESC during a script): clear current caption only. [C]
+
+### 4.3 Timing (per frame `Advance`) [C] `Sepulveda::Advance`, `CalculateTextTime`, `CalculatePauseTime`
+- `speed` = pref `TextSpeed` (default **15** chars/s); `len` = caption length in wide chars.
+- Typing time `T = 0.6·len/speed`; pause `P = len/speed`, halved when not in cutscene mode.
+- Caption is removed when `now ≥ timeSync + T + P` **or** `ControlSkipMessage` fires (bindings: Enter, Esc, XInput Start/A/B/Y — `data/input/input_preferences.txt` L32–37). Normal mode total = 1.1·len/speed s; cutscene = 1.6·len/speed s (e.g. a 100-char line: 7.33 s / 10.67 s).
+- While a caption is showing, `m_history[0].timeSync` is refreshed every frame (so its 20 s fade starts when it ends).
+- Next queued id is popped when silent; sound events (`SoundSourceBlueprint::TypeSepulveda`): `Appear` when speech starts from silence, `Disappear` when the last caption ends, `TextAppear` each time the number of revealed characters changes.
+- `IsTalking()` = caption non-empty **or** queue non-empty (this is what `WaitSay` waits on). `IsVisible()` = talking or newest history alpha·0.8 > 0.1.
+- History fade: `alpha = clamp(1 − (now − timeSync)/20, 0, 1)`. Opening the chat log (`Camera::ChatLogVisible`, TAB) bumps every history item to ≥ now − 3 s. Cutscene mode subtracts 30 s from every history item each frame (instant hide).
+- Highlights fade in/out by 0.02 alpha **per frame** (frame-rate dependent) and are deleted when fully faded.
+
+### 4.4 Rendering [C] `Sepulveda::Render`, `RenderTextBox*`, `RenderFace`, `SepulvedaHighlight::Render`, `RenderGestureDemo`
+All 2D layouts use a virtual screen 600 units high and `600·aspect` wide (`gluOrtho2D`).
+
+| Layout | Selected when | Face rect (x, y, w, h) | Text | Background / extras |
+|---|---|---|---|---|
+| Normal | task manager hidden, camera not scripted, `m_fade ≤ 0.01` after cutscene | (X−90, 490, 80, 100) where X = W/2 − 300 + 20 | 15-unit lines, newest line at y = 580 drawn upwards; only lines with 450 < y < 585 visible; ">" marker at first line of each item; history items below current, alpha −0.2 per rendered item | vertical gradient quad rgba(0.1,0.1,0.5, 0.8·α) at y=590 → transparent at smoothed top − 10 (top smoothed `0.95·old + 0.05·new` when growing, instant when shrinking; drawn only if top < 579); queue indicator "`sepulveda_pressreturn` (n)" at (X+600, 590) size 7 right-aligned; scroll bar in chat-log mode |
+| Cutscene | camera mode ∈ {BuildingFocus, MoveToTarget, DoNothing, SphereWorldScripted, SphereWorldOutro, SphereWorldFocus}, task manager hidden | (X−90, 430, 80, 100) | 18-unit lines from y = 440 downward; fade snaps 0/1 | prompt: `sepulveda_pressreturn_skipall` if the script set `PermitEscape`, else "`sepulveda_pressreturn` (n)" or plain |
+| Task manager | task manager visible | (X'−48, 514, 48, 60) where X' = W/2 − 300 | 15-unit lines from y = 524; typing 1.5× slower | box 600×60 rgba(0.1,0.1,0.5, 0.75·fade); border rgb(199,214,220) |
+
+Typing effect: characters revealed = `len · clamp((now − timeSync)/T, 0, 1)` (task-manager mode uses 1.5·T); text drawn twice (outline then fill). Fade (normal/task modes): `fade = 0.95·fade + 0.05` while talking, `·0.95` otherwise (per frame).
+
+Portrait animation (`RenderFace`, static state): every 0.4 s while alpha > 0.9: with probability 1/6 choose new zoom ∈ [0, 0.1); with 1/6 choose new x-offset ∈ [−0.1, 0.1); image = `sepulveda5.bmp` (mouth open) with p = 0.1, else `sepulveda4.bmp` (eyes shut) with p = 0.1, else uniformly `sepulveda1..3.bmp`. Zoom and offset are smoothed with factor `4·dt`, offset clamped to ±zoom; UV rect = [zoom+offset, zoom] … [1−zoom+offset, 1−zoom]. During the 0.4 s after a change, the previous image is cross-faded on top with alpha `α·(1 − Δt/0.4)·0.75` (if α > 0.75). 1-px white border. Uses `frand`/`AppRandom` (non-synced, render-side). [C]
+
+Highlights (`SepulvedaHighlight`): additive "god-ray" beam using `textures/godray.bmp` from `pos + (0, 1500, 1000)` to `pos − (0, 200, 133)`; 3 quads whose bottom ends orbit a 10-unit circle (`sin/cos(t + i)`), width `radius·0.5` perpendicular to the view, colour (1, 1, 0.5 + 0.5·|sin(t·i)|, 0.5·alpha); depth writes off; near plane ×1.5; not drawn in multiplayer. Highlights are named (`"ScriptHighlight"`, `"HelpSystem"`, `"research"`, `"Tutorial"`) so callers clear only their own. [C]
+
+Gesture demo: replays a recorded mouse path (`Resource::GetGestureDemo(name)`, files `data/gesture_demos/*.txt`, excluded from the Multiwinia data build — `tools/multiwinia_exclusions.txt` L34) after a start delay: line segments every 0.04 s of path time, 40 px wide, colour fades with segment age over 2 s, mouse cursor sprite at the head; loops with a 2 s pause. Suppressed when pref `ControlMethod == 1`. [C] `RenderGestureDemo`, `DemoGesture`.
+
+Phrase families spoken (all present in `data/language/english.txt`, Darwinia content): script lines (§1.6 "Says" column), `tutorial_*` (Demo 1), `launchpad_tutorial_*` (Demo 2), `help_*` (HelpSystem), `research_explanation_1..4`, `task_manager_full`, `tutorial_skipped`, `dialog_skiptutorial`, `sepulveda_pressreturn[_skipall]`, `help_pressh`. Input-specific `_kbd`/`_xin` suffixes exist in the language file. [C] grep `english.txt`.
+
+---
+
+## [→ 30_scripting_tutorial_and_cutscenes] 5. Darwinia demo tutorials (`Tutorial`, `Demo1Tutorial`, `Demo2Tutorial`) [B:DEAD]
+
+Compiled only with `USE_SEPULVEDA_HELP_TUTORIAL`; instantiated only under `DEMOBUILD` (`Demo2Tutorial` if `DEMO2`, else `Demo1Tutorial`) — none of these macros is defined. [C] `code/app.cpp` (L401–407). Demo 1 = Darwinia demo level "mine" (`data/game_demo.txt` → `map_mine.txt` + `mission_mine_demo.txt`, intro script `mine_demo_intro.txt`); Demo 2 = "launchpad" (`data/game_demo2.txt` → `map_launchpad.txt` + `mission_launchpad.txt`, intro `launchpad_intro.txt`). Both levels are excluded from the Multiwinia data build (`levels/map_*`, `levels/mission_*`). [C] data files; `tools/multiwinia_exclusions.txt` L24–25. The player is team 2 (Darwinia convention). [C] `m_teams[2]` uses.
+
+### 5.1 Base class mechanics [C] `code/tutorial.cpp`
+- `Advance()`: does nothing during level reset, without location/teams, or while team 2 is unused. `ControlSkipTutorial` (key `t` pressed; XInput Back commented out — `data/input/input_preferences.txt` L293–294) → Sepulveda `tutorial_skipped`, delete tutorial, camera free. Chapter 0 → `TriggerChapter(1)` once the fade is complete and no script runs. While a script runs nothing advances. When `AdvanceCurrentChapter()` returns true the tutorial deletes itself.
+- `AdvanceCurrentChapter()` (base): if `m_nextChapterTimer > 0` → when reached, `TriggerChapter(m_chapter + 1)`; return false (subclass logic skipped while a timer is pending). Else, if a repeat message is set and Sepulveda is not visible and `now ≥ m_repeatMessageTimer` → re-say it (and replay its gesture with 2.0 s delay), re-arm; return true (subclass runs).
+- `TriggerChapter(n)`: `m_chapter = n`, clear timer and repeat message, `ShutUp()`; subclass then performs the chapter's actions.
+- `RepeatMessage(id, period = 20.0 s, gesture = NULL)`.
+- `SetChapter(n)` (from saved game `Tutorial_StartDefinition` block, `GlobalWorld::ParseTutorial`): 0 → 0; n > 0 → `m_chapter = n−1`, timer now + 3 s (so chapter n triggers in 3 s); n < 0 → −1 (`-1` in the save deletes the tutorial).
+- `Render()`: blinking (`int(gameTime) % 2 == 0`) `dialog_skiptutorial` at top centre (y 15, size 15).
+- "Set `m_chapter = k` and timer" is used as a *goto k+1 after delay* idiom by the death handlers.
+
+### 5.2 Demo 1 chapter table [C] `code/tutorial_demo1.cpp`
+Buildings (`map_mine.txt`/`mission_mine_demo.txt`): 52 ControlTower, 55 ControlTower, 97 Incubator, 12 Incubator, 90 Refinery. Camera mounts: `gamestart`, `tutorial1`…`tutorial7`. "Say" = Sepulveda line; "rep" = RepeatMessage (20 s unless stated); HSD/HSD2/HED/HED2 = handlers below.
+
+| Ch | On enter | Advance rule → next |
+|---|---|---|
+| 1 | Say+rep `tutorial_1` | camera > 100 from mount `gamestart` → +5 s → 2 |
+| 2 | Say+rep `tutorial_2` | camera height differs > 100 from `gamestart` → +10 s → 3 |
+| 3 | BuildingFocus(52, 200, 200); Say `tutorial_3`, `_3b` | not talking → 4 |
+| 4 | FreeMovement; Say `tutorial_4`, `_4b`; rep `_4b` | task manager visible → 5 |
+| 5 | Say `tutorial_5`; gesture `squad.txt`; rep 30 s + gesture | current task Squad → 6; other task type → terminate it, Say `tutorial_5_error` |
+| 6 | MoveToTarget `tutorial1` 3 s | camera idle → 7 |
+| 7 | FreeMovement; Say+rep `tutorial_7` | HSD; squad task Running → 8 |
+| 8 | Say+rep `tutorial_8` | team-2 unit waypoint > 50 from its centre → +5 s → 9 |
+| 9 | Say+rep `tutorial_9` | HSD; > 3 lasers in flight → +5 s → 10 |
+| 10 | Say+rep `tutorial_10` | HSD; a ThrowableGrenade effect exists → +5 s → 11 |
+| 11 | Say `tutorial_11`; rep 60 s | HSD; enemies of team 2 within 300 of 52 ≤ 20 → 12 |
+| 12 | Say `tutorial_12` | HSD; ≤ 5 → 13 |
+| 13 | Say `tutorial_13` | HSD; = 0 → 20 |
+| 20 | BuildingFocus(97, 120, 120); Say `tutorial_20`, `_20b`, `_20c` | not talking → 21 |
+| 21 | FreeMovement; Say `tutorial_21`; gesture `engineer.txt`; rep 30 s + gesture | current task Engineer → 22 |
+| 22 | Say+rep `tutorial_22` | HED; an Engineer within 150 of 52 → 23 |
+| 23 | BuildingFocus(52, 70, 70); Say `tutorial_23` | HED; tower 52 team 2 and ownership > 98 → 24 |
+| 24 | FreeMovement; Say `tutorial_24`, `_24b`, `_24c` | HED; a team-2 Darwinian within 100 of 97 → 25 |
+| 25 | MoveToTarget `tutorial2` 3 s; Say `tutorial_25` | not talking → 26 |
+| 26 | MoveToTarget `tutorial3` 15 s; Say `tutorial_26` | not talking → 30 |
+| 27 | FreeMovement (only ever a *timer base* for → 28) | — |
+| 28 | MoveToTarget `tutorial6` 3 s; Say `tutorial_28`; gesture `squad.txt`; rep 30 s + gesture | current task Squad → 29 |
+| 29 | FreeMovement; Say+rep `tutorial_29` | squad task Running → 32 |
+| 30 | MoveToTarget `tutorial4` 3 s; Say `tutorial_30` | always → +5 s → 31 |
+| 31 | MoveToTarget `tutorial5` 15 s; Say `tutorial_31`, `_31b` | not talking → 32 |
+| 32 | Say `tutorial_32` | HSD2; enemies within 400 of incubator 12 = 0 → 33 |
+| 33 | MoveToTarget `tutorial7` 4 s; Say `tutorial_33`, `_33b` | not talking → 34 |
+| 34 | FreeMovement; Say `tutorial_34`; rep 40 s | HED2; tower 55 team 2 and ownership > 98 → 35 |
+| 35 | MoveToTarget `tutorial2` 30 s; Say `tutorial_35`, `_35b`, `_35c` | not talking → 351 |
+| 351 | FreeMovement; Say `tutorial_351`; gesture `officer.txt`; rep 30 s + gesture | current task Officer → 36 |
+| 36 | FreeMovement; Say+rep `tutorial_36` | team 2 has ≥ 1 special (officer) → 37 |
+| 37 | Say `tutorial_37`, `_37b`; rep `_37b` | an officer has `OrderGoto` → +10 s → 38 |
+| 38 | BuildingFocus(90, 400, 100); Say `tutorial_38`, `_38b` … `_38e` | not talking → 39 |
+| 39 | FreeMovement; Say `tutorial_39` | **end** (returns true next frame) |
+| 40 | FreeMovement; Say `tutorial_40`, `_40b`; rep `_40b` | squad task Running → 32 |
+| 41 | Say `tutorial_41`; gesture `engineer.txt`; rep 30 s + gesture | current task Engineer → 42 |
+| 42 | Say+rep `tutorial_42` | engineer task Running → 34 |
+| 43 | Say `tutorial_43`, `_43b`; rep `_43b` | engineer task Running → 34 |
+
+Recovery handlers: **HSD** (ch 7, 9–13) if the current task is not a squad: reselect any running squad task; if none, Say `tutorial_squaddeath`, goto 5 after 10 s. **HSD2** (ch 32): squad exists but deselected → goto 40 now; none → Say `tutorial_squaddeath`, goto 28 after 10 s. **HED** (ch 22–24): reselect engineer; none → Say `tutorial_engineerdeath`, goto 21 after 10 s. **HED2** (ch 34): engineer exists but deselected → goto 43 now; none → Say `tutorial_engineerdeath`, goto 41 after 10 s.
+
+```mermaid
+flowchart LR
+    C1[1 camera move] --> C2[2 camera height] --> C3[3 show tower 52] --> C4[4 open task mgr] --> C5[5 squad task] --> C6[6 cam to tutorial1] --> C7[7 place squad] --> C8[8 move squad] --> C9[9 lasers] --> C10[10 grenade] --> C11[11 kill virii ≤20] --> C12[12 ≤5] --> C13[13 =0]
+    C13 --> C20[20 show incubator 97] --> C21[21 engineer task] --> C22[22 engineer at 52] --> C23[23 reprogram 52] --> C24[24 darwinians born] --> C25[25 cam tutorial2] --> C26[26 cam tutorial3] --> C30[30 cam tutorial4] --> C31[31 cam tutorial5] --> C32[32 clear incubator 12] --> C33[33 cam tutorial7] --> C34[34 reprogram 55] --> C35[35 cam tutorial2] --> C351[351 officer task] --> C36[36 promote] --> C37[37 goto order] --> C38[38 refinery 90] --> C39((39 end))
+    C7 & C9 & C10 & C11 & C12 & C13 -. squad lost .-> C5
+    C32 -. squad deselected .-> C40[40 reselect squad] --> C32
+    C32 -. squad lost .-> C28[28 new squad] --> C29[29 place] --> C32
+    C22 & C23 & C24 -. engineer lost .-> C21
+    C34 -. engineer deselected .-> C43[43 reselect] --> C34
+    C34 -. engineer lost .-> C41[41 new engineer] --> C42[42 place] --> C34
+```
+
+### 5.3 Demo 2 chapter table [C] `code/tutorial_demo2.cpp`
+Buildings (`map_launchpad.txt`/`mission_launchpad.txt`): 0 EscapeRocket, 1 FuelGenerator, 25 SolarPanel, 66 & 67 RadarDish, 75 & 85 ControlTower, 86 Incubator, 129 ResearchItem, 6 ScriptTrigger. Mounts: `start`, `incubator1..3`, `attack6`, `wherenext1`. "Aid" = `ControlHelpSystem::AddOnScreenAid(icon, shadow, phrase, control[, checker])` (other partition, `code/control_help.cpp`).
+
+| Ch | On enter | Advance rule → next |
+|---|---|---|
+| 1 | Say `launchpad_tutorial_1`, `_2`; rep `_2`; clear aids; aids LA `control_help_cameramove` (ControlCameraMove), RA `control_help_cameraturn` (ControlTargetMoveSecondary) | camera > 200 from mount `start` → +5 s → 2 |
+| 2 | Say+rep `_3`; aids RT `control_help_cameraup`, LT `control_help_cameradown` | height differs > 100 → +10 s → 3 |
+| 3 | Say+rep `_4`; aid X `control_help_quickunitstart` | task manager visible → 4 |
+| 4 | Say+rep `_5`; aid A `control_help_quickunitcreate` (checker `HasSquadRunning`) | current task Squad → 5; other → terminate, Say `_5_error`, aids X `darwinia_tutorial_taskmanager`, A `darwinia_tutorial_createunit` |
+| 5 | camera to (building 85 pos − front·50) at range 400, height 300, 2 s | camera idle → 6 |
+| 6 | FreeMovement; Say+rep `_6`; aid A `control_help_quickunitplace` | HSD; squad Running → 7 |
+| 7 | Say+rep `_7`; aids LA `control_help_move`, LT `control_help_camerarotateleft`, RT `…right` | HSD; team-2 unit waypoint > 20 from centre → +5 s → 8 |
+| 8 | Say+rep `_8` | HSD; any laser from team 2 → +5 s → 9 |
+| 9 | — | → 10 immediately |
+| 10 | Say `_9` | HSD; ResearchItem 129 gone → +5 s → 11; no enemies within 200 of 129 → +5 s → 11 |
+| 11 | Highlight 129 ("research"); Say `_10`, `_11`; rep `_11`; aids X quickunitstart, LA `darwinia_tutorial_engineer` (ControlMenuDown), A quickunitcreate | 129 exists and current task Engineer → 13 |
+| 13 | ClearHighlights; Say+rep `_12`; aid A quickunitplace | 129 exists and an Engineer within 150 → 14 |
+| 14 | record camera; BuildingFocus(129, 150, 20); FOV 30; Say `_12b`, `_12c`, `_12d` | not talking → 141 |
+| 141 | BuildingFocus(129, 250, 150); FOV 60; Say `_12e` | player has Grenade research → 15 |
+| 15 | FreeMovement; Say `_13`, `_13b`; rep `_13b` | squad Running → 16 |
+| 16 | Say+rep `_14`; aid RT `darwinia_tutorial_grenade` | team-2 grenade effect exists → +5 s → 17 |
+| 17 | — | `TriggerChapter(18)` then falls through into ch 18's test in the same frame |
+| 18 | Say `_15`, `_16` | no enemies within 200 of tower 75 → +5 s → 19 |
+| 19 | record camera; BuildingFocus(66, 150, 50); Say `_17` … `_20` | not talking → 191 |
+| 191 | — (restore commented out) | camera idle → 20 |
+| 20 | FreeMovement; Say `_21`; rep 60 s | an Engineer within 150 of dish 66 → 21 |
+| 21 | Say `_22` | dish 66 owned by team 2 → +2 s → 22 |
+| 22 | Say+rep `_23` | dish 66 selected → 23 |
+| 23 | Highlight 67 ("Tutorial"); Say+rep `_24` | dish 66 connected to 67 → 24 |
+| 24 | ClearHighlights("Tutorial"); Say+rep `_25` | misalignment check (selected dish not linked to 67 → 22, or → 23 if 67 itself selected); squad Running → 25 |
+| 25 | Say+rep `_26` | selected squad has no enabled live member (all in transit) → +3 s → 26 |
+| 26 | — | no enemies within 250 of incubator 86 → set 39, +2 s → 40; nag `launchpad_tutorial_clearincubator` if squad > 500 from 86, ScriptTrigger 6 consumed and not talking |
+| 40 | BuildingFocus(86, 200, 150); Say `_40`, `_41`, `_42` | not talking → +2 s → 41 |
+| 41 | FreeMovement; Say `_43`; rep 60 s | incubator 86 owned by team 2 → +5 s → 42 |
+| 42 | Say `_44` … `_48` | any team-0 Darwinian within 300 of 86 → +1 s → 43 |
+| 43 | `BeginPlayerBusyCheck` | `!IsPlayerBusy` → +1 s → 44 |
+| 44 | cut to `incubator1`, move to `incubator2` 30 s, FOV 40; Say `_49`, `_50`, `_51` | not talking → +1 s → 45 |
+| 45 | move to `incubator3` 15 s, FOV 40; Say `_52`, `_53` | not talking → +1 s → 46 |
+| 46 | FreeMovement | player has Officer research → 461 |
+| 461 | `BeginPlayerBusyCheck` | `!IsPlayerBusy` → 47 |
+| 47 | BuildingFocus(0, 600, 100); Say `_54`, `_54b`, `_55` | not talking → 48 |
+| 48 | BuildingFocus(1, 400, 300); Say `_56` … `_58` | not talking → 49 |
+| 49 | BuildingFocus(25, 400, 200); Say `_59` … `_61` | not talking → 50 |
+| 50 | move to `incubator2` 5 s; Say `_62` | not talking → 51 |
+| 51 | rep `_62`; FreeMovement | current task Officer → 52 |
+| 52 | Say+rep `_63` | Officer selected → 53 |
+| 53 | Say+rep `_64` | selected officer `OrderFollow` → 54 |
+| 54 | Say `_65`, `_66`; rep `_66` | selected officer `OrderGoto` → 55 |
+| 55 | Say `_67`, `_68`; rep `_68` 60 s | primary objective 0 `Evaluate()` true → +5 s → 56 |
+| 56 | BuildingFocus(25, 400, 250); Say `_69`, `_70` | not talking → 57 |
+| 57 | BuildingFocus(1, 400, 300); Say `_71` … `_73` | not talking → 58 |
+| 58 | move to `attack6` 10 s; Say `_74` | not talking → 59 |
+| 59 | move to `wherenext1` 8 s; Say `_75` … `_77` | not talking → 60 |
+| 60 | FreeMovement | **end** |
+| other ids | Say `launchpad_tutorial_done` | — |
+
+HSD (Demo 2, ch 6, 7, 8, 10): reselect a running squad; none → Say `launchpad_tutorial_9_error`, goto 3 after 5 s. `IsPlayerBusy()` = true if the selected insertion squad is firing (`ControlUnitPrimaryFireTarget`) or enemies are within 100 of its waypoint (both reset the 3 s busy timer), or `now < busyTimer + 3.0`; used by chapters 43/461 and the `WaitPlayerNotBusy` script command.
+
+```mermaid
+flowchart LR
+    D1[1 cam] --> D2[2 height] --> D3[3 task mgr] --> D4[4 squad task] --> D5[5 cam to 85] --> D6[6 place] --> D7[7 move] --> D8[8 lasers] --> D9[9] --> D10[10 clear research 129] --> D11[11 engineer task] --> D13[13 engineer at 129] --> D14[14 focus 129] --> D141[141 grenade research] --> D15[15 reselect squad] --> D16[16 grenade] --> D17[17] --> D18[18 clear tower 75] --> D19[19 show dish 66] --> D191[191] --> D20[20 engineer to 66] --> D21[21 reprogram 66] --> D22[22 select 66] --> D23[23 aim at 67] --> D24[24 squad into dish] --> D25[25 transit] --> D26[26 clear incubator 86] --> D40[40 show 86] --> D41[41 reprogram 86] --> D42[42 darwinians born] --> D43[43 not busy] --> D44[44 incubator flyby] --> D45[45] --> D46[46 officer research] --> D461[461 not busy] --> D47[47 rocket] --> D48[48 fuel gen] --> D49[49 solar] --> D50[50] --> D51[51 officer task] --> D52[52 select officer] --> D53[53 follow] --> D54[54 goto] --> D55[55 objective 0] --> D56[56] --> D57[57] --> D58[58] --> D59[59] --> D60((60 end))
+    D6 & D7 & D8 & D10 -. squad lost .-> D3
+    D24 -. dish misaligned .-> D22
+```
+
+---
+
+## [→ 09_meta_systems] 6. Darwinia context-sensitive help (`HelpSystem`) [B:DEAD]
+
+Whole of `code/helpsystem.{h,cpp}` inside `#ifdef USE_SEPULVEDA_HELP_TUTORIAL`; constructed in `App::App` only under it; its `Advance` (`code/main.cpp` L557–559), `Render` (`code/renderer.cpp` L621–623) and `PlayerDoneAction` hooks (e.g. `code/location_input.cpp` ~L800) are all wrapped. It also disables itself in multiplayer and while a `Tutorial` exists. [C]
+
+Algorithm [C] `HelpSystem::Advance`:
+- `m_helpEnabled` = pref `HelpEnabled` (default 1); forced false in multiplayer or when `g_app->m_tutorial` exists. Clears `"HelpSystem"` highlights whenever Sepulveda is silent.
+- If disabled: `ControlSepulvedaHelp` (key `h`, `data/input/input_preferences.txt` L255) with an interactive camera → `RunDefaultHelp()`.
+- If enabled (in a location): the quiet timer `m_actionHelpTimer` resets to −1 while Sepulveda talks or the player fires a squad; starts when quiet. Pressing H: ShutUp, force the timer to `now − 90 − 10`, mark help requested. When quiet for > `HELPSYSTEM_ACTIONHELP_INTERVAL` (**90 s**) and input mode is keyboard: give the first (priority order) action help with `!m_actionDone && IsActionAvailable()`; restart timer. If not firing, silent and camera interactive: `RunHighlightedBuildingHelp()`. If H was pressed and nothing was given: `RunDefaultHelp()`.
+- `Render`: blinking `help_pressh` at top centre (keyboard mode only).
+
+Action helps (priority order = enum order; `IsActionAvailable` / `GiveActionHelp` / `PlayerDoneAction`) [C] anonymous-namespace classes in `code/helpsystem.cpp`:
+
+| Enum | Available when | Says | On PlayerDoneAction |
+|---|---|---|---|
+| CameraMovement | always | `help_camera_movement` | done |
+| CameraHeight | always | `help_camera_height` | done |
+| TaskBasics | always | `help_taskmanager_1` | ShutUp, `help_taskmanager_2`, done |
+| TaskShutdown | task capacity full | `help_taskmanager_3` (marks done) | done |
+| SquadSummon | capacity free and Squad research | `help_squad_summon_1` + gesture `squad.txt` | ShutUp, `help_squad_summon_2`, done |
+| SquadUse | a squad selected | `help_squad_use` | done |
+| SquadThrowGrenade | Grenade research and squad selected | `help_squad_grenade` | done |
+| SquadDeselect | squad selected | `help_deselect` (marks done) | done |
+| TaskReselect | tasks exist and nothing selected | `help_taskmanager_4` (marks done) | done |
+| EngineerSummon | capacity free, Engineer research, and (spirits exist or an un-owned ControlTower exists) | `help_engineer_summon` + gesture `engineer.txt` | ShutUp, `help_engineer_use`, done |
+| EngineerDeselect | engineer selected | `help_deselect` (marks done) | done |
+| OfficerCreate | capacity free, Officer research, team 0 has a Darwinian | `help_officer_create` + gesture `officer.txt` | ShutUp, `help_officer_use`, done |
+| UseArmour | never (base) | — | `help_armour_use`, done |
+| ShowObjectives | always | `help_showobjectives` | done |
+| CameraZoom | always | `help_camera_zoom` (marks done) | done |
+| CameraMoveFast | always | `help_camera_movefast` (marks done) | done |
+| ShowChatLog | always | `help_showchatlog` (marks done) | done |
+| UseRadarDish | (building help) | highlight + `help_radardish_1` | ShutUp, `help_radardish_2` |
+| UseGunTurret | (building help) | highlight + `help_gunturret_1` | ShutUp, `help_gunturret_2` |
+| ResearchUpgrade | never (base) | — | `research_explanation_1..4`, done |
+
+Building help (`m_buildingHelp` by building type; for the camera's `GetBestBuildingInView()`): RadarDish and GunTurret (shared objects above), and a generic `SeenBuildingHelp` (highlight + `help_<TypeName>`) for Incubator, TrunkPort, Refinery, Mine, AntHill, ControlTower, ResearchItem. If the building is not the player's and a ControlTower links to it, both are highlighted and `help_building_reprogram` is said instead. A ControlTower already owned by team 2 gets no help. [C] `HelpSystem::HelpSystem`, `RunHighlightedBuildingHelp`.
+
+`RunDefaultHelp()` (on H): speaks per current selection — squad: `help_squad_use`, `help_deselect`, plus `help_squad_grenade` / `help_squad_setgrenade` / `help_squad_setrocket` / `help_squad_setairstrike` depending on research and current weapon; engineer: `help_engineer_use`, `help_deselect`; officer: `help_officer_use`, (`help_officer_toggle` if officer research level > 2), `help_deselect`; armour: `help_armour_use`, `help_deselect`; selected radar → `help_radardish_2`; gun turret → `help_gunturret_2`; highlighted building help; task being placed: officer `help_officer_create_2`, squad `help_squad_summon_2`, engineer `help_engineer_summon_2`, armour `help_armour_summon`; otherwise by task usage: 0 tasks → `help_taskmanager_1`, `help_taskmanager_2` (queued twice, de-duplicated by `Say`), `help_showobjectives`; full → `task_manager_full`, `help_taskmanager_4`; else `help_taskmanager_4`, `help_taskmanager_2`, `help_showobjectives`. [C]
 

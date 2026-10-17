@@ -470,16 +470,19 @@ with open(OUT_CSV, 'w', newline='') as fh:
 def esc(s):
     return s.replace('|', '\\|') if s else '—'
 with open(OUT_MD, 'w') as fh:
-    fh.write('| # | ControlType | Type | Keyboard / mouse default (input_preferences.txt) | Xbox (XInput) default | Darwinia-scheme diff (KB/M ; pad) | Live consumers (code/) |\n')
-    fh.write('|---|---|---|---|---|---|---|\n')
+    fh.write('| # | ControlType | Type | Source comment | Keyboard / mouse default (input_preferences.txt) | Xbox (XInput) default | Darwinia-scheme diff (KB/M ; pad) | Live consumers (code/) |\n')
+    fh.write('|---|---|---|---|---|---|---|---|\n')
     for r in rows:
         diff = ''
         if r['darwinia_kbm_diff'] or r['darwinia_xinput_diff']:
             diff = 'KB/M: %s ; pad: %s' % (r['darwinia_kbm_diff'] or 'same', r['darwinia_xinput_diff'] or 'same')
-        fh.write('| %d | `%s` | %s | %s | %s | %s | %s |\n' % (
-            r['idx'], r['control'], r['type'], esc(r['kbm_default'] + ((' ; other: ' + r['other_default']) if r['other_default'] else '')),
+        fh.write('| %d | `%s` | %s | %s | %s | %s | %s | %s |\n' % (
+            r['idx'], r['control'], r['type'], esc(r['comment']), esc(r['kbm_default'] + ((' ; other: ' + r['other_default']) if r['other_default'] else '')),
             esc(r['xinput_default']), esc(diff), esc(r['live_consumers'].replace(';', ', '))))
     fh.write('\n')
+    fh.write('\n#### Icons (`~` lines) in input_preferences.txt (last per control wins)\n\n| Control | Icon |\n|---|---|\n')
+    for k, v in main_i.items():
+        fh.write('| `%s` | `%s` |\n' % (k, v))
     fh.write('\n### Lines of the shipped preference files that do not create a binding\n\n')
     fh.write('| File:line | Control | Op | Spec | Status | Reason |\n|---|---|---|---|---|---|\n')
     for f in FILES:

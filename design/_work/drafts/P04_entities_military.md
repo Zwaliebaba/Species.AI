@@ -295,7 +295,7 @@ stateDiagram-v2
 - `targetFront = normalise(target − waypoint)`; `front = normalise(front·(1−a) + targetFront·a)` with `a = dt = 0.1` (10 % blend per tick).
 - `desiredSpeed = 40` (SPED); ×10 = **400** if (Approaching and distance from waypoint to attackPosition > 600) or (Leaving and that distance > 100). `m_speed = m_speed·(1−a) + desiredSpeed·a`.
 - `waypoint += front·m_speed·dt`; returns true when within 10 of `target`.
-- In `StateLeaving` the "arrived" result is ignored; the flight keeps steering to the exit corner. Because the turn blend is only 10 %/tick at ~400 u/s, the flight overshoots the corner, which is only 100 from the map edge, and crosses the world boundary where every bomber deletes itself [I] (no explicit despawn exists; reasoning from turn rate vs inset).
+- In `StateLeaving` the "arrived" result is ignored; the flight keeps steering to the exit corner. Because the turn blend is only 10 %/tick at ~400 u/s, the flight overshoots the corner, which is only 100 from the map edge, and crosses the world boundary where every bomber deletes itself (no explicit despawn exists) [I]. A re-implementation (`_work/scripts/P04_airstrike_sim.py`, flat terrain, maps 1500–3000 wide) gives: waypoint within 90 of the attack point ≈ 5.3–6.9 s after the flight spawns, flying at ≈ 44 u/s (decelerated), and leaving the world ≈ 13.5–15.4 s after spawning [I]. Dropped bombs inherit ≈ 44 u/s forward velocity from ≈ 70 above ground and fall ≈ 1.2 s (98 u/s²) before bouncing, so they land ≈ 50 u past the release point, i.e. close to the marker [I].
 
 ### 2.5 `SpaceInvader` (bomber) — stats and behaviour
 | Stat | Value | Ref |
@@ -372,11 +372,11 @@ stateDiagram-v2
   InFlight --> Exploded : |pos − target| < 5·gameSpeed → Bang
   Exploded --> [*] : casualtyMessageTimer 5 s elapsed (sub sinks at 10 u/s meanwhile)
 ```
-- The launch countdown `sizeX/100 − distance/100` (seconds) makes farther nukes launch sooner, so the 10 warheads arrive at roughly similar times [I] (intent; exact only if flight time ∝ distance/100, but mean speed is ≈ 67–75 u/s).
+- The launch countdown `sizeX/100 − distance/100` (seconds) makes farther nukes launch sooner (intent: simultaneous arrival). Because the lofted flight averages only ≈ 47 u/s (simulation below), arrival is **not** simultaneous: total time after surfacing ≈ `2.5 + (sizeX − D)/100 + D/47` s, so nearer subs still hit first (e.g. sizeX 2000: D=500 → ≈ 28 s, D=1000 → ≈ 34 s, D=1500 → ≈ 39 s) [I] (re-implementation `_work/scripts/P04_nuke_sim.py`, flat terrain).
 - Flight `Nuke::AdvanceToTarget` per tick [C]:
   - `f = 1 − remaining/totalDistance` (0 at launch → 1 at target).
   - `heightFactor = |subPos − target| / 3`; `fractionNorth = max(2, 5·pos.y / heightFactor)`.
-  - `front = normalise(target − pos)`, rotated about `r = normalise(normalise(target − subPos) × up)` by `π/fractionNorth`, then by `−f·π/fractionNorth` → initial pitch offset ≤ 90° (fractionNorth ≥ 2) that decays linearly to 0 at the target, i.e. a lofted arc [I] (rotation sign convention of `Vector3::RotateAround` not verified).
+  - `front = normalise(target − pos)`, rotated about `r = normalise(normalise(target − subPos) × up)` by `π/fractionNorth`, then by `−f·π/fractionNorth` → net pitch-**up** offset `(1−f)·π/fractionNorth` (≤ 90° since fractionNorth ≥ 2) that decays to 0 at the target — a lofted arc. Sign verified from `Vector3::FastRotateAround` (Rodrigues `a + c·n1 + s·(n×n1)`) and the right-handed `operator^` [C] `code/lib/vector3.cpp`, `code/lib/vector3.h`. Launch from y=30 with fractionNorth = 2 means the warhead initially climbs vertically; simulated apex ≈ 0.31·D and flight time ≈ D/47 s (D=300: 6.0 s/apex 94; 1000: 21.1 s/310; 2000: 42.6 s/620) [I] (`_work/scripts/P04_nuke_sim.py`).
   - Speed `= SPD/2 + SPD/2·f²` (50 → 100 u/s); `pos += vel·dt`.
   - `m_armed = true` once `pos.y > 150` (flag is never read) [C].
   - Arrival within `5·gameSpeed` → explode at `(pos.x, ground(target), pos.z)`.
@@ -699,4 +699,297 @@ Per-state details [C]:
 - Visuals: lit shape; collector bubble billboard `textures/bubble.bmp` (16 size, additive, alpha 150) at collector+3; while Harvesting: 5 team-coloured animated rings (radius `75·heightScale`) cycling from ground to hover height ("tractor beam"); shadow; engine exhaust per engine marker: 5 blue `TypeMissileFire` (size 75, colour (50,50,250)) + 1 `TypeMissileTrail` per tick using **non-synced** `sfrand/frand` inside `Advance` (cosmetic only) [C].
 - Sounds: `DropSpirit` (triggered, not listed); `ListSoundEvents` lists `BeginReprogramming`, `EndReprogramming`, `ReprogrammingComplete` (Engineer leftovers, never triggered here) [C].
 - UI action strings: `engineer_idle`, `engineer_towaypoint`, `engineer_tospirit`, `engineer_toincubator` (Harvesting/ToSpawnPoint fall back to `engineer_idle`) [C] `Harvester::GetCurrentAction`.
+
+## [→ 02_units_and_entities] [→ 04_crates_powerups_and_weapons] 10. Engineer (`code/worldobject/engineer.{h,cpp}`)
+
+`Engineer : Entity` (type `TypeEngineer`). Build: [B:FULL] (Darwinia-heritage unit kept for Multiwinia). A small hovering drone that **collects spirits one by one (snake-train) and returns each to a friendly Spawn Point as a new Darwinian**; in maps with Darwinia buildings it also reprograms Control Towers/Research Items and operates Bridges. Registered as a team special only in `GameModeMultiwinia` [C] `Engineer::Begin`.
+
+### 10.1 How it is obtained
+- Captured crate reward *Engineer* (a "basic" crate, `Crate::IsBasicCrate`) → `RunTask(TypeEngineer)` → player targets ground → `Task::TargetEngineer(pos)`: spawn at `pos + 10y`, select it, sound `GestureSuccess` (TypeGesture) [C] `code/taskmanager.cpp:Task::TargetEngineer`. Crate only valid on maps with spawn points [C] `crate.cpp:Crate::IsValid`.
+- Level instant units with `runAsTask` [C].
+- Task ends when the engineer is dead; `Task::Stop` → `ChangeHealth(-1000)` [C].
+
+### 10.2 Stats & constants
+| Item | Value | Kind / Ref |
+|---|---|---|
+| Health | 255 | `data/stats.txt` Engineer |
+| Speed | 28 u/s (×(1+difficulty/10)); idle 0.25× | stats.txt; [C] `Engineer::AdvanceToTargetPos` |
+| Spirit capacity `GetMaxSpirits` | research 0→0, 1→10, 2→15, **3→25 (Multiwinia)**, 4→30 | [C] |
+| Search range | `ENGINEER_SEARCHRANGE = 200` | `#define` |
+| Retarget interval | `ENGINEER_RETARGETTIMER = 1.0` s | `#define` |
+| Hover height | 15 above max(terrain, 0) | [C] |
+| Turn blend | `3·dt = 0.3` per tick | [C] |
+| Arrival | 5 (horizontal) | [C] |
+| Idle wander | random point 30 away | [C] `SearchForRandomPosition` |
+| Idle rotate rate | `syncsfrand(0.5)` (stored, unused) | [C] |
+| Spawn-point drop position | `spawnPoint.pos + front·50` (pushed out of obstructions) | [C] `AdvanceToIncubator` |
+| Bridge-hold range | ends own bridge if > 100 away | [C] |
+| Bridge building | `BeginBridge` requires Engineer research ≥ **5** (max is 4) → **never builds** | [C] — dead in all builds |
+| Shape | `engineer.shp` | [C] |
+
+### 10.3 State machine
+```mermaid
+stateDiagram-v2
+  [*] --> Idle
+  Idle --> ToResearchItem : every 1 s, priority 1: ResearchItem needing reprogram within 200
+  Idle --> ToControlTower : priority 2: ControlTower (enemy-owned or ownership<100) with free console within 200
+  Idle --> ToBridge : priority 3: Bridge with free position and status<100 within 200
+  Idle --> ToSpirit : priority 4: nearest Birth/Floating unbroken spirit within 200 and carried<capacity
+  Idle --> ToIncubator : carrying>0 and friendly Incubator or (Multiwinia) friendly SpawnPoint exists
+  Idle --> ToWaypoint : SetWaypoint
+  ToWaypoint --> Idle : arrived
+  ToSpirit --> Idle : arrived → CollectSpirit (spirit Attached)
+  ToSpirit --> ToWaypoint : spirit gone / Death / already Attached
+  ToIncubator --> ToWaypoint : last spirit delivered
+  ToIncubator --> Idle : no target building
+  ToControlTower --> Reprogramming : arrived at console (BeginReprogram)
+  ToControlTower --> Idle : tower ours at 100% / no free console / gone
+  Reprogramming --> Idle : ControlTower::Reprogram finished / tower gone
+  ToBridge --> OperatingBridge : arrived (Bridge::BeginOperation)
+  ToBridge --> Idle : no free position / gone
+  OperatingBridge --> Idle : bridge gone
+  ToResearchItem --> Researching : arrived (35 short of the item)
+  ToResearchItem --> Idle : item no longer needs reprogramming
+  Researching --> Idle : ResearchItem::Reprogram done / item gone
+  Idle --> Dead : health 0
+  Dead --> [*]
+```
+- Delivery (`AdvanceToIncubator`, despite the name): target = nearest friendly Incubator (distance + 10·its spirits) **or**, in Multiwinia, nearest friendly SpawnPoint (plain distance) [C] `Engineer::SearchForIncubator`. At a SpawnPoint: one spirit per tick removed and `SpawnPoint::SpawnDarwinian()` (one Darwinian of the spawn point's team), sound `DropSpirit` [C]. At an Incubator: `Incubator::AddSpirit` [C].
+- Spirit train: collected spirits (`Spirit::CollectorArrives` → `StateAttached`) are placed on the engineer's position history (spirit *i* at history *i+1*, one tick behind each other); history length = capacity + 1 [C] `Engineer::Advance`.
+- Reprogramming a Control Tower calls `ControlTower::Reprogram(team)` **10 times per tick**; the engineer bobs around the console (`±2` along front, `±3` sideways, `sin/cos(t + 10·id)`), blue control-laser beam rendered to the console [C]. Moving away (player waypoint) ends the reprogram (`EndReprogram`, sound `EndReprogramming`).
+- Research items: `ResearchItem::Reprogram()` per tick + 2 `TypeBlueSpark` particles (non-synced RNG) [C]. Research items/control towers/incubators appear only in `mp_sandbox*.txt` among MP maps [C] `data/levels/` (grep) → effectively Darwinia/sandbox features [B:LEGACY] for shipped maps [I].
+
+### 10.4 Damage, death, control, AI, sounds
+- `Engineer::ChangeHealth`: **lasers ignored**; others full; muzzle-flash particle on every non-lethal hit; shape-fragment explosion per 50-band; at < 0 → health 0, `m_dead`, `Die`, **no spirit** [C]. On removal: carried spirits `CollectorDrops()`; ends any reprogram/research/bridge operation [C].
+- Player control: move → `SetWaypoint(mouse)` + deselect (`team->SelectUnit(-1,-1,-1)`, task deselected); secondary fire → `BeginBridge(mouse)` (no-op, research < 5) [C] `code/location.cpp` (`TypeEngineer` branch).
+- AI (`Engineer::RunAI`, every 1 s): if Idle → waypoint = nearest spirit (any state) [C].
+- Render: lit shape (front y halved), shadow, blue (0.2,0.4,1.0) pulsing `textures/laser.bmp` beam while reprogramming/operating/researching; `RenderPixelEffect` disabled in Multiplayer [C].
+- Sounds: Entity events + `BeginReprogramming`, `EndReprogramming`, `ReprogrammingComplete`, `DropSpirit` [C] `Engineer::ListSoundEvents`. UI strings `engineer_idle`, `engineer_towaypoint`, `engineer_tospirit`, `engineer_toincubator`, `engineer_reprogramming`, `engineer_researching`, `engineer_bridge` [C] `Engineer::GetCurrentAction`.
+
+## [→ 02_units_and_entities] 8. LaserTrooper (`code/worldobject/lasertrooper.{h,cpp}`) — [B:LEGACY]
+
+`LaserTrooper : Entity` (type `TypeLaserTroop`). Compiled in FULL, unreachable in Multiwinia: `TypeLaserTroop` is in `EntityIsBlocked` (level files cannot place it) and the only runtime creator is `Lander` (`code/worldobject/lander.cpp`), which itself is blocked and has no other spawner [C]. Stats: health 20, speed 15, rate 1 s [C] `data/stats.txt`.
+- `Advance`: moves straight toward `m_targetPos` at SPEED (snap when within one step); `m_front = vel`; `EnterTeleports()`; air/water handling; own reload countdown; dead fade; optional victory dance (1 % per tick hop `10 + syncfrand(10)` up) [C]. `m_targetPos` is fed by `Unit::Advance` for `TypeLaserTroop` (moves the target ≤ 1 unit per tick toward `m_unitTargetPos` = waypoint + rectangle-formation offset) [C] `code/unit.cpp:Unit::Advance`, `Unit::RecalculateOffsets`. Fires via the generic `Unit::Attack`/`Entity::Attack` (laser speed 150, reload RATE) [C].
+- Render: team-coloured sprite quad (×0.7 while reloading, ×(0.5+0.5·health)), ground shadow, side-on additive line; dead → 3 black fragments drifting apart (alpha = health·2.55) [C]. The previous Darwinia `Advance` is commented out (appendix).
+
+## [→ 02_units_and_entities] 9. Shaman (`code/worldobject/shaman.{h,cpp}`) and Shaman Interface (`code/shaman_interface.{h,cpp}`) — [B:LEGACY]
+
+### 9.1 Reachability
+- `Shaman::Advance` has its entire body commented out and **returns true**, so a Shaman is deleted on its first simulation tick [C] `code/worldobject/shaman.cpp:Shaman::Advance`.
+- Creation paths: `Task::TargetShaman` (task type `TypeShaman`) — no crate/UI path runs it in FULL; the `GameTypeShaman` start-up block is commented out [C] `code/location.cpp` (team init), `code/multiwinia.cpp:Multiwinia::Advance`; level-file instant units are blocked (`EntityIsBlocked` lists `TypeShaman`) [C]. ⇒ Shaman is a cut "Shaman" game-mode unit. The task manager refuses to terminate Shaman tasks (`TaskManager::TerminateTask`: "you can't terminate shamans") [C] `code/taskmanager.cpp`.
+- Stats if it existed: health 200, speed 25, rate 2 [C] `data/stats.txt`; shape `officer.shp` [C].
+
+### 9.2 Abilities as coded (for the record; none reachable)
+| Ability | Trigger | Mechanics | Cost / cooldown | Ref |
+|---|---|---|---|---|
+| Move | move order → `SetWaypoint` | walk at SPEED with slope factor clamp [0.1, 2.0], turn blend 0.6/tick, `PushFromObstructions`; waypoint within 5 of a connected RadarDish/Bridge → enter teleport, exit + 30 | — | [C] `Shaman::AdvanceToTargetPosition`, `SetWaypoint` |
+| Change mode | primary fire on/near (≤ 20) itself → `ChangeMode` (else shows teleport target rings) | cycles `ModeNone → ModeCreateDarwinians → ModeFollow → ModeNone`; label "Creating Darwinians" / "Darwinians Following" drawn above it | 0.3 s debounce | [C] `Shaman::ChangeMode`, `Render` |
+| Create Darwinians (mode) | `AdvanceCreateDarwinians` (called only from the commented-out Advance) | every Floating spirit within 50 → spawn one Darwinian of the shaman's team, spirit set to `StateDeath` + `SkipStage()` | none | [C] |
+| Follow (mode) | `CallingDarwinians()` true in ModeFollow → Darwinians follow it (`Darwinian::SearchForShamans`) | — | — | [C]/[I] `code/worldobject/darwinian.cpp` |
+| Teleport | secondary fire → `TeleportToPos(mouse)` | instant jump if the target is inside any own-team `Portal` radius (`Portal::m_portalRadius`); entity grid updated | 0.3 s debounce (shared with mode change) | [C] `Shaman::TeleportToPos`, `ValidTeleportPos`, `GetTargetArea` |
+| Summon (via Shaman Interface) | `ShamanInterface` ring menu → `RequestShamanSummon` → `Shaman::SummonEntity(type)` → `BeginSummoning` (**body commented out**) | sacrifice Darwinians within 50 (`SacraficeDarwinians`: one batch per 1.0 s, each `Darwinian::Sacrafice(shamanId, portal)`) until `GetSoulRequirement(type)` | souls below | [C] (inert) |
+| Capture portal | icon "capture" (`Entity::NumEntityTypes`) shown if `CanCapturePortal()`: nearest Portal not ours, ≤ 300 away, no summonable monster within 300 | 25 souls | — | [C] |
+| Paralyze | `Paralyze()` (final summon) | freezes, invulnerable, health reset | — | [C] |
+
+Summon table (`Shaman::GetSummonTime/GetDefaultSpawnNumber/GetSoulRequirement/GetEggType`, `IsSummonable`) [C]:
+| Entity | Summonable (`IsSummonable`) | Summon time (s) | Spawn count | Souls | Egg type (`Triffid::Spawn*`) | Icon |
+|---|---|---|---|---|---|---|
+| Centipede | yes | 20 | 1 | 30 | SpawnCentipede | `shaman_centipede.bmp` |
+| ArmyAnt | no | 10 | 3 | 20 | SpawnAnts | `shaman_ants.bmp` |
+| SoulDestroyer | yes | 60 | 1 | 100 | SpawnSoulDestroyer | `shaman_souldestroyer.bmp` |
+| Spider | yes | 30 | 3 | 25 | SpawnSpider | `shaman_spider.bmp` |
+| SporeGenerator | yes | 10 | 1 | 15 | SpawnSporeGenerator | `shaman_sporegenerator.bmp` |
+| Tripod | no | 15 | 1 | 15 | — | `shaman_tripod.bmp` |
+| Virii | yes | 5 | 1 | 15 | SpawnVirii | `shaman_virii.bmp` |
+| Darwinian | no | 10 | 1 | 20 | SpawnDarwinians | `shaman_darwinian.bmp` |
+| Special final summon (255 / −1) | — | — | — | 200 | — | `shaman_special.bmp` |
+| Capture portal (`NumEntityTypes`) | — | — | — | 25 | — | `shaman_capture.bmp` |
+| other | — | −1 | 0 | 999 | −1 | none |
+`CanSummonEntity` always returns false (portal-count rules commented out) [C]. `MAX_EGGS = 3` (unused) [C].
+- Damage: `Shaman::ChangeHealth` only while `m_vunerable` (default true); death → shape explosion, no spirit [C]. Lasers and Bang/Shockwave never push it (excluded types) [C].
+
+### 9.3 Shaman Interface (radial summon menu) [C] `code/shaman_interface.cpp`
+- Shown when the local player's current entity is a Shaman and the task-manager key is pressed (`taskmanager_interface_multiwinia.cpp`/`taskmanager_interface_icons.cpp` hijack); hidden by `ControlIconsTaskManagerHide` or after a selection. `ShamanInterface::Advance` is called every frame from `code/main.cpp`; `Render` from `code/renderer.cpp`.
+- Icons: one per `IsSummonable` type (Centipede, SoulDestroyer, Spider, SporeGenerator, Virii — in enum order), + special-summon icon (condition commented out → never), + capture icon if `CanCapturePortal`. Ring of radius 175 px around screen centre, starting at −90°, icon size 120 px (scaled by 8/N when N > 8), shadow `icons/shaman_shadow.bmp`, background `textures/shaman_background.bmp` (550 px), selection ring `icons/mouse_selection.bmp` (130 px, yellow) at the top slot; centre shows the current summon's icon greyed [C].
+- Input: `ControlMenuLeft/Right` rotate the ring one slot (animation `0.1 rad` per frame until `2π/N`), sound `MouseOverIcon` (TypeInterface); `ControlActivateTMButton` → `RequestShamanSummon(team, shamanUniqueId, iconType)` and hide [C]. Mouse hover selection (`AdvanceMouseInIcon`, 60 px) is disabled [C].
+- Network: letter `NET_DARWINIA_SHAMANSUMMON` {`TEAMID`, `ENTITYID` = shaman unique id, `ENTITYTYPE` = summon type (uchar)} [C] `code/network/clienttoserver.cpp:ClientToServer::RequestShamanSummon`; the handler finds the shaman among the team's specials and calls `Shaman::SummonEntity(type)` [C].
+
+## [→ 04_crates_powerups_and_weapons] 11. Crate-delivered military effects — mechanics summary
+
+The outcome table, probabilities and `InvalidCrates` lists are P08's. This table specifies what each military outcome does once it fires (all [B:FULL] unless noted). "Targeted" = the reward creates a `Task` the player must aim with the task-manager cursor (`Task::Target(pos)`), the effect happens at the chosen point.
+
+| Reward (`Crate::CrateReward*`) | Delivery | Effect spec | Duration / end | Section |
+|---|---|---|---|---|
+| Squad | targeted task `TypeSquad` | 3 squaddies (HP 75, speed 30, lasers 20–39 dmg, grenade every 4 s) at the target | 60 s then all die; or all killed | §4 |
+| Armour | targeted task `TypeArmour` | 1 transport (HP 200, speed 60, capacity 100, laser-immune, turret shells ÷3) | until destroyed | §5 |
+| Harvester | targeted task `TypeHarvester` | flying collector (cap 100 spirits, radius 75) converting spirits → Darwinians at friendly spawn points | until destroyed (only by its own sucked-up grenade or task end) | §7 |
+| Engineer | targeted task `TypeEngineer` | hovering collector (25 spirits, search 200), same conversion | until destroyed | §10 |
+| Airstrike | targeted task `TypeAirStrike` (terminated on launch) | 3–7 smoke markers within ±50; each → 2 bombers → 1 bomb each (Bang R25 D100) | ≈ 8–10 s from targeting to impact [I] | §2 |
+| Napalm Strike | as Airstrike with `m_option=1` | bombs ignite all Darwinians ≤ 62.5, trees/triffids ≤ 100 take 200 | same | §2, §1.3 |
+| Nuke | targeted task `TypeNuke` (terminated on launch) | 10 submarine-launched warheads, first exactly at the target, nine within ±150; each Bang R50 D100 (full ≤ 75, 0 at 100) + 2.5 s shockwave ring to 135; buildings ≤ 150 | ≈ 28–40 s from targeting to impacts [I] | §3 |
+| Uncaptured Airstrike / Napalm | immediate, at the crate, monster team | as above, hostile to everyone | | §2 |
+| (Tank) | commented out | — | — | §6 [B:DEBUG]/unreachable |
+| (Shaman) | no crate | — | — | §9 [B:LEGACY] |
+
+Counters by unit (derived from the damage models) [C]:
+| Target | Immune to | Vulnerable to |
+|---|---|---|
+| Squaddie | nothing (no knock-back) | all; no spirit on death |
+| Armour | lasers | explosions (full), turret shells (÷3), fire/unresistable; passengers burn on death |
+| Harvester | everything except unresistable while `m_vunerable` | its own captured ground grenade; task termination |
+| Engineer | lasers | explosions, shells, fire |
+| Airstrike bomber | all except turret shells | gun-turret shells (1 hit) |
+| Nuke warhead | (no override) | n/a in practice |
+| Tank | lasers | others |
+
+## [→ 02_units_and_entities] 12. Team colouring summary
+| Entity / effect | Colouring rule | Ref |
+|---|---|---|
+| Laser | billboard in `teams[fromTeam].m_colour`; monster team white; mind-control lasers use `subversion.bmp` | [C] `Laser::Render` |
+| Armour | per-(colourId, coopGroup) shape copy, every fragment colour = team colour × 0.1 | [C] `Armour::Begin` |
+| Tank | per-(colourId, coopGroup) shape copies of body and turret, colour × 0.5 | [C] `Tank::Begin` |
+| Harvester | shape native colours; tractor-beam rings in team colour | [C] `Harvester::RenderBeam` |
+| Engineer | native shape; blue beam (0.2,0.4,1.0) | [C] |
+| Squaddie | native `squad.shp` colours (no recolour in class) | [C]/[U] |
+| SpaceInvader | native `spaceinvader.shp` ×2 scale | [C] |
+| Nuke | warhead sprite and trail in team colour (monster: white subtractive); sub sprite in team colour | [C] |
+| PulseWave | rings in team colour of the id | [C] |
+| Grenade / marker / bomb flash | fixed (255,100,100); controller grenade (100,100,255) | [C] |
+| Shockwave | fixed yellow→pink | [C] |
+| LaserTrooper | sprite in team colour (dim when reloading/damaged) | [C] |
+| Shaman | native `officer.shp`; sacrifice ring in team colour (grey for team 255) | [C] |
+
+## [→ 02_units_and_entities] [→ 10_audio_design] 13. Sound events and visual assets used by this partition
+
+### 13.1 Sound events
+| Source (`SoundSourceBlueprint` type / entity) | Event names | Ref |
+|---|---|---|
+| TypeGrenade (Grenade, AirStrikeMarker, ControllerGrenade) | `Create`, `Bounce`, `Flash` (render path, once per second), `Explode`, `ExplodeController` | [C] `weapons.cpp` |
+| TypeAirstrikeBomb (bomb, FlameGrenade) | `Bounce`, `Flash`, `Explode` | [C] |
+| TypeRocket | `Create`, `Explode`; `StopAllSounds(id, "Rocket Create")` | [C] `Rocket` |
+| TypeLaser | `Create`, `HitBuilding`, `KilledEntity` (also turret-shell kills), `InjuredEntity` | [C] `Laser::Advance`, `TurretShell::Advance` |
+| TypeCratePowerup | crate name strings: `"Airstrike"`, `"Squad"`, `"Armour"`, `"Harvester"` (via `Crate::TriggerSoundEvent`) | [C] `code/taskmanager.cpp`, `crate.cpp` |
+| TypeGesture | `GestureSuccess` (Engineer/Shaman spawn; single-player for others), `GestureBegin` | [C] |
+| TypeInterface | `MouseOverIcon` (Shaman interface) | [C] |
+| TypeMultiwiniaInterface | `ToggleUnitState` (right-click armour) | [C] `code/location_input.cpp` |
+| Entity base (all) | `Create` (Begin), `LoseHealth`, `Die`, `Attack`, `EnterTeleport` | [C] `entity.cpp` |
+| SpaceInvader | `DropGrenade` | [C] |
+| Nuke | `Explode` | [C] |
+| Armour | `LoadDarwinian`, `UnloadDarwinian`, `SetOrders` | [C] |
+| Squadie | `FireLaser`, `ThrowGrenade`, `FireRocket`, `ThrowAirStrike`, `ThrowController`, `WeaponReturns` | [C] |
+| Harvester | `DropSpirit` (+ listed-but-unused `BeginReprogramming`, `EndReprogramming`, `ReprogrammingComplete`) | [C] |
+| Engineer | `BeginReprogramming` (looping; stopped via `StopAllSounds(id, "Engineer BeginReprogramming")`), `EndReprogramming`, `ReprogrammingComplete`, `DropSpirit` | [C] |
+| Tank | Entity events; `StopAllSounds(id)` on death | [C] |
+
+### 13.2 Particle types used
+`TypeMissileTrail`, `TypeFire`, `TypeControlFlash`, `TypeExplosionCore`, `TypeExplosionDebris` (via Bang), `TypeMissileFire`, `TypeRocketTrail`, `TypeFireball`, `TypeMuzzleFlash`, `TypeBrass`, `TypeBlueSpark` [C] (`code/particle_system.h` owned by another partition).
+
+### 13.3 Shapes, textures, sprites
+| Kind | Assets |
+|---|---|
+| Shapes | `throwable.shp` (grenade, marker, bomb, rocket, carried bomb), `missile.shp` (marker `MarkerBooster`), `turretshell.shp`, `emptyshell.shp`, `flying_egg.shp` (land mine), `spaceinvader.shp`, `armour.shp` (`MarkerEntrance`), `squad.shp` (`MarkerLaser`, `MarkerBrass`), `tank_body.shp` (`MarkerTurret`, `MarkerEntrance`), `tank_turret.shp` (`MarkerBarrelEnd`), `harvester.shp` (`MarkerEngine1..4`), `engineer.shp`, `officer.shp` (Shaman) |
+| Textures | `textures/starburst.bmp`, `textures/glow.bmp`, `textures/laser.bmp`, `textures/subversion.bmp`, `textures/muzzleflash.bmp`, `textures/laser-long.bmp`, `textures/bubble.bmp`, `textures/shaman_background.bmp` |
+| Sprites | `sprites/nuke.bmp`, `sprites/sub.bmp`, `sprites/subshadow.bmp` |
+| Icons | `icons/icon_airstrike.bmp`, `icons/icon_nuke.bmp`, `icons/nukesymbol.bmp` (+ generated `shadow_icons/nukesymbol.bmp`), `icons/icon_engineer.bmp` (single-player), `icons/shaman_shadow.bmp`, `icons/mouse_selection.bmp`, `shadow_icons/mouse_selection.bmp`, `icons/shaman_{centipede,ants,souldestroyer,spider,sporegenerator,tripod,virii,darwinian,special,capture}.bmp`; commented-out banners `icons/banner_{none,unload,follow}.bmp` |
+Explosions of shapes use `g_explosionManager.AddExplosion(shape, matrix, fraction)` (fragment debris) [C] `code/explosion.h` (other partition).
+
+## X3. Determinism notes (lock-step simulation)
+The simulation is lock-step over the network: every peer must advance identically. Rules derived from this partition:
+1. **Synced RNG** (`syncfrand/syncsfrand/syncrand/FRAND/SFRAND`) is used for every gameplay decision: laser damage `20+syncfrand(20)` and push, shockwave ignite chance, bomb count `3+syncrand()%5`, marker scatter `SFRAND(100)`, nuke scatter `syncsfrand(300)`, squad target choice/aim/grenade chance, Armour AI choices and conversion jitter, Harvester wander and spirit snap offsets, Darwinian unload jump direction, Tank AI scatter, Engineer `m_idleRotateRate` [C].
+2. Synced RNG is **also consumed by some cosmetic particles inside `Advance`** (ThrowableWeapon trail, AirStrikeMarker smoke, Rocket smoke, Missile trail, Armour exhaust). They must stay synced (or be moved out of the sim) — changing particle counts would shift the shared RNG stream [C]/[I].
+3. **Non-synced `frand/sfrand/AppRandom` inside sim `Advance` code** (cosmetic only, but they advance the local `AppRandom` state): `ControllerGrenade::Advance` (flash count/velocities), `Rocket::Explode` (firework colour/cores), `Location::Bang` (particle counts — outside partition), `Laser::Advance` (building-hit spark), `TurretShell::Advance` (sparks/dust), `Fireball::Advance` (first-tick particles), `FlameGrenade::Advance` (80 particles), `Harvester::AdvanceEngines` (exhaust every tick), `Engineer::AdvanceResearching` (sparks), `Shaman::SacraficeDarwinians` (fire particles, dead code) [C]. Safe only if `AppRandom` never drives gameplay anywhere; a new implementation should use a separate, explicitly non-sim RNG for VFX [I].
+4. Render-only non-synced RNG: `Entity::Advance` `m_renderDamaged` flag uses `frand(0.75)` **inside the sim advance** but only affects rendering [C] — keep it out of any hashed state.
+5. **Local, non-networked state read in sim paths** (desync risks): `InsertionSquad::DirectControl` reads `g_app->m_camera` (control vector, `m_camLookAround`) for gamepad squad control [C]; `Tank::IsUnloading` uses `GetHighResTime()` (wall clock; dead code) [C]; `Squadie::Advance` faces `team->m_currentMousePos` (network-transmitted team control data [I]).
+6. **Static shared state**: `Armour::SetDirectOrders` debounce uses a function-static `lastOrdersSet` shared by all armours of all teams; `Unit::s_offsets` (formation noise) is lazily filled from the synced RNG on first use and never reset between games [C] — a new implementation should make both per-instance / per-match.
+7. Time sources in sim: `GetNetworkTime()` / `g_gameTimer` only; `Nuke::RenderGroundMarker` and `Harvester/Engineer` render paths use `GetHighResTime()`/`g_gameTime` (render only) [C].
+8. Floating point: all sim trig goes through `iv_sin/iv_cos/iv_acos/iv_sqrt` (low-nibble truncation, see build_matrix); exceptions in this partition are render-only (`sinf/cosf` in Armour/Harvester render) and `fmod` in `TurretEmptyShell::Advance` (cosmetic object, deterministic inputs) [C].
+9. Order dependence: `Location::Bang` damages entities in entity-grid order and the kill credit depends on transitions; `Armour::m_numPassengers` is rebuilt from per-tick registrations (order-independent count) [C].
+
+## [→ 02_units_and_entities] 14. Consolidated constants table
+| Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|
+| SERVER_ADVANCE_PERIOD | 0.1·gameSpeed | s | code | `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod` |
+| Throwable gravity | 9.8·gameSpeed per tick (≈98 u/s²) | u/s per tick | literal | `ThrowableWeapon::Advance` |
+| COEF_OF_RESTITUTION | 0.85 | — | `#define` | `code/worldobject/worldobject.cpp` |
+| Throwable bounce energy | ×0.75 per bounce; rest at force ≤ 0.1 | — | literal | `ThrowableWeapon::Advance` |
+| Throw force | `8·sqrt(dist)`, cap GetMaxForce | u/s | literal | `Location::ThrowWeapon` |
+| GetMaxForce | 50/80/110/140/170 (levels 0–4) | u/s | literal | `ThrowableWeapon::GetMaxForce` |
+| Grenade fuse / power | 3.0 s / 25 | s / — | literal | `Grenade::Grenade` |
+| Bomb fuse / power | 1.5 s / 50 | | literal | `SpaceInvader::Advance` |
+| Napalm ignite radius | power·1.25 = 62.5 | u | literal | `FlameGrenade::Advance` |
+| Napalm tree radius / damage | power·2 = 100 / power·4 = 200 | u / HP | literal | |
+| Controller grenade | 3.0 s, radius 50 | | literal | `ControllerGrenade::Advance` |
+| Airstrike marker wait | 2.0 s and at rest | s | literal | `AirStrikeMarker::Advance` |
+| Markers per strike | 3 + syncrand()%5 (tutorial 10) | count | literal | `Crate::RunAirStrike` |
+| Marker scatter | SFRAND(100) → ±50 | u | literal | |
+| Bombers per marker | Airstrike research level (2) | count | research | `AirStrikeMarker::Advance` |
+| Corner inset / altitude | 100 / 500 | u | literal | `AirstrikeUnit::Begin` |
+| Attack altitude | ground + 70 | u | literal | `AirstrikeUnit` |
+| Bomber speed | 40 (×10 when far: >600 approaching, >100 leaving) | u/s | stats + literal | |
+| Bomb release distance | 90 | u | literal | `SpaceInvader::Advance` |
+| Rocket initial / growth / cap | 50 / ×1.2 per tick / growth stops at ≥150 | u/s | literal | `Rocket` |
+| Rocket life | 0.25/0.5/0.75/1.0/1.5 (MW 0.75) | s | literal | |
+| Rocket Bang | R15 D25 | | literal | `Rocket::Explode` |
+| Rocket building hit sphere | 3.0 | u | literal | |
+| Laser life | 0.2/0.4/0.6/0.8/1.0 (MW 0.6), ×2 mind-control | s | literal | `Location::FireLaser` |
+| Laser damage | 20 + syncfrand(20) | HP | literal | `Laser::Advance` |
+| Laser hit tolerance | 5 (2-D seg dist), vertical 5 (MP) | u | literal | |
+| Laser push | horiz syncfrand(10), y 7+syncfrand(5) | u/s | literal | |
+| Shockwave size / radius / damage | R/20 s; 35+40·age; 40·life/size; band ±10 | | literal | `Shockwave::Advance` |
+| Shockwave ignite chance | syncfrand(4) < 0.1 (2.5 %/tick) | | literal | |
+| Shockwave push | 25·fraction, y 3 | u/s | literal | |
+| Missile life / speed / turn / arrive | 5+5·rocketLevel (15) / 200 / 0.2 per tick / 20 | | literal | `Missile` |
+| Missile look-ahead | 100 | u | literal | |
+| Missile Bang | R20 D100 | | literal | |
+| Turret shell life | 0.5/0.5/1.0/1.5/2.0; MP 0.6 | s | literal | `Location::FireTurretShell` |
+| Turret shell damage / push | 15 / 20 | HP / u/s | literal | `TurretShell::Advance` |
+| Fireball radius / damage | 20·min(1,|1−life|) / 30·r/max(1,d)·max(1,life) | | literal | `Fireball::Advance` |
+| Fireball tree damage | 100 per tick | HP | literal | |
+| PulseWave growth | ×1.03 per tick | | literal | `PulseWave::Advance` |
+| Land-mine trigger / Bang | 15 / R20 D20 | | literal | `LandMine::Advance` |
+| Empty shell bounce | ×0.5; remove at force ≤ 0.2 | | literal | |
+| Bang falloff | full ≤ 1.5R, 0 at 2R; buildings < 3R | | literal | `Location::Bang` |
+| Squad size | 2 + squadLevel (3) | count | research | `Task::TargetSquad` |
+| Squad lifetime (MP) | 60 | s | literal | `Task::Start` |
+| GAP_BETWEEN_MEN | 10.0 | u | `#define` | `insertion_squad.h` |
+| Squaddie laser speed / jitter | 200 / ±3.5 | | literal | `Squadie::Attack` |
+| Squaddie target search / retarget | 100 / 1.0 s | | literal | `Squadie::RunAI` |
+| Squaddie max turn | 20 | rad/s | literal | |
+| Squad secondary cooldowns | grenade 4, rocket 4, airstrike 20, controller 4 | s | literal | `Squadie::FireSecondaryWeapon` |
+| Squad AI think / scan / cluster | 1.0 s / 500 / ≥20 enemies in 75 | | literal | `InsertionSquad::RunAI` |
+| Armour capacity (MP) | 100 | Darwinians | literal | `Armour::Capacity` |
+| ARMOUR_UNLOADPERIOD | 0.1 | s | `#define` | `armour.h` |
+| DARWINIAN_SEARCHRANGE_ARMOUR | 150 | u | `#define` | `darwinian.h` |
+| Armour accel / decel | +10 / −5 | u/s² | literal | `Armour::AdvanceToTargetPos` |
+| Armour turn | 5 % of angle per tick | | literal | |
+| Armour conversion arrival / special-order min distance | 15 / 50 | u | literal | |
+| Armour new-orders lockout | 1.0 (2.0 set on arrival) | s | literal | |
+| Armour separation | 40 | u | literal | |
+| Armour death Bang | R20 D50 | | literal | |
+| Armour shell divisor | 3 | | literal | `Armour::ChangeHealth` |
+| Armour AI think (Hard/Std/Easy) | 1 / 10 / 20 s (Assault 1/5/10) | s | literal | `Armour::Run*AI` |
+| Tank accel / decel / turn | +10 / −20 u/s²; 0.05 rad/tick | | literal | `Tank::Advance` |
+| Tank fire interval | RATE (2) / 4 outside TankBattle | s | stats+literal | `Tank::PrimaryFire` |
+| Tank rocket life | 2.0 | s | literal | |
+| TANK_CAPACITY / TANK_UNLOADPERIOD / TANK_NUMFLOATERS | 40 / 0.1 / 3 | | `#define` (dead) | `tank.h` |
+| Tank mine timer | 1.0 | s | literal (dead) | |
+| Tank AI ranges | 50..300 (TankBattle 50..3000, waypoint ±125) | u | literal | `Tank::Run*AI` |
+| HARVESTER_COLLECTION_RANGE | 75 | u | `#define` | `harvester.cpp` |
+| Harvester capacity | 0/25/50/100/200 (MW 100) | spirits | literal | `Harvester::GetMaxSpirits` |
+| Harvester hover | 50 ± 2.5 | u | literal | |
+| Harvester field threshold | > 30 spirits | count | literal | |
+| Harvester grenade pickup | 25 horiz, < ground+2 | u | literal | |
+| ENGINEER_SEARCHRANGE / ENGINEER_RETARGETTIMER | 200 / 1.0 | u / s | `#define` | `engineer.h` |
+| Engineer capacity | 0/10/15/25/30 (MW 25) | spirits | literal | `Engineer::GetMaxSpirits` |
+| Engineer hover | 15 | u | literal | |
+| Engineer bridge min research | 5 (unreachable) | | literal | `Engineer::BeginBridge` |
+| Nuke count / scatter | 10 / ±150 | | literal | `Crate::RunNuke` |
+| Nuke sub rise / wait | 1 u per tick from −30 to 30 / 2.5 s | | literal | `Nuke::AdvanceSub` |
+| Nuke launch delay | sizeX/100 − dist/100 (≥0) | s | literal | |
+| Nuke speed | SPD/2 + SPD/2·f² (50→100) | u/s | stats+literal | |
+| Nuke Bang | R50 D100 at ground | | literal | |
+| Nuke casualty linger | 5 | s | literal | |
+| Nuke "wrong game" radius | 120 | u | literal | |
+| Shaman ranges (dead) | sacrifice 50 every 1.0 s; create-Darwinians 50; capture 300; mode debounce 0.3 s | | literal | `shaman.cpp` |
+| Shaman interface ring | radius 175 px, icon 120 px, background 550 px, selector 130 px | px | literal | `shaman_interface.cpp` |
 

@@ -1,0 +1,53 @@
+path,depth,reason,sections
+code/gamecursor.cpp,full,,4. GameCursor — cursors highlights placement previews;5. Constants;6. Determinism notes for X3
+code/gamecursor.h,full,,4. GameCursor — cursors highlights placement previews
+code/gesture.cpp,full,,3. Gesture recognition (Gesture);3.9 Gesture trail rendering
+code/gesture.h,full,,3. Gesture recognition (Gesture);5. Constants
+code/gesture_demo.cpp,full,,Appendix — dead/legacy code
+code/gesture_demo.h,full,,Appendix — dead/legacy code
+code/gesture_demo_win32.cpp,full,,Appendix — dead/legacy code
+code/taskmanager.cpp,full,,1. TaskManager — the Task (program) model;5. Constants;6. Determinism notes for X3
+code/taskmanager.h,full,,1. TaskManager — the Task (program) model
+code/taskmanager_interface.cpp,full,,2.1 Variant selection;2.2 Base class TaskManagerInterface;1.7 Selection
+code/taskmanager_interface.h,full,,2.2 Base class TaskManagerInterface
+code/taskmanager_interface_gestures.cpp,full,,2.5 TaskManagerInterfaceGestures;3.9 Gesture trail rendering
+code/taskmanager_interface_gestures.h,full,,2.5 TaskManagerInterfaceGestures
+code/taskmanager_interface_icons.cpp,full,,2.4 TaskManagerInterfaceIcons
+code/taskmanager_interface_icons.h,full,,2.4 TaskManagerInterfaceIcons
+code/taskmanager_interface_multiwinia.cpp,full,,2.3 TaskManagerInterfaceMultiwinia;5. Constants;6. Determinism notes for X3
+code/taskmanager_interface_multiwinia.h,full,,2.3 TaskManagerInterfaceMultiwinia
+data/gestures.txt,full,,3.6 Classification and thresholds;3.7 Symbol set
+data/gesture_demos/airstrike.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/armour.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/controller.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/engineer.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/grenade.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/officer.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/rocket.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+data/gesture_demos/squad.txt,full,,3.7 Symbol set;Appendix — dead/legacy code
+code/gesture_demo_sdl.cpp,full,outside partition (SDL variant; not in vcproj),Appendix — dead/legacy code
+code/location_input.cpp,full,outside partition (P01) — read for player-action table,2.6 Multiwinia player-action reference;6. Determinism notes for X3
+code/lib/input/control_types.inc,full,outside partition (P10) — binding names,2.3.2 Controls handled;2.6 Multiwinia player-action reference
+data/input/input_preferences.txt,full,outside partition (P10/X1) — default bindings,2.3.2 Controls handled;2.6 Multiwinia player-action reference
+code/lib/invert_matrix.cpp,full,outside partition — gesture training maths,3.5 Training
+code/global_world.h,skimmed,outside partition — GlobalResearch enum only,1.3 Task types
+code/global_world.cpp,skimmed,outside partition — GlobalResearch names only,1.3 Task types
+code/network/clienttoserver.cpp,skimmed,outside partition (P15) — Program/SelectUnit/ToggleEntity/StartGame commands only,1.9 Mapping to network commands;6. Determinism notes for X3
+code/worldobject/crate.cpp,skimmed,outside partition (P08) — CaptureCrate reward→task mapping only,1.3 Task types
+code/multiwinia.cpp,skimmed,outside partition (P02) — reinforcement/retribution task grants and GetGameOption,1.3 Task types;1.10 Edge cases
+code/location.cpp,skimmed,outside partition — Init research levels; InitialiseTeam start powerups/instant units; CreateMarker callers,1.3 Task types;1.10 Edge cases;5. Constants
+code/team.cpp,skimmed,outside partition (P01) — SelectUnit/Advance/StopAllTasks,1.5 Slots / capacity;2.3.5 Selection model
+code/main.cpp,skimmed,outside partition (P01) — client loop order and CreateTaskManager call sites,2.1 Variant selection
+code/renderer.cpp,skimmed,outside partition (P12) — overlay render order,2.1 Variant selection;4.2 Frame flow
+code/app.cpp,skimmed,outside partition — IsSinglePlayer/Multiplayer and Gesture construction,2.1 Variant selection;3.1 Liveness
+code/worldobject/teleport.cpp,skimmed,outside partition — EnterTeleport squad task migration,1.5 Slots / capacity;1.10 Edge cases
+code/worldobject/ai.cpp,skimmed,outside partition (P08) — AI officer task use,1.3 Task types;6. Determinism notes for X3
+code/worldobject/building.cpp,skimmed,outside partition — BuildingIsBlocked list,4.8 Crosshair
+code/lib/input/transform.cpp,skimmed,outside partition — ControlEventFunctor,2.2 Base class TaskManagerInterface
+code/gametimer.cpp,skimmed,outside partition — server advance period,Conventions
+code/sepulveda.cpp,skimmed,outside partition — RenderGestureDemo (dead),Appendix — dead/legacy code
+code/lib/resource.cpp,skimmed,outside partition — GetGestureDemo (dead),Appendix — dead/legacy code
+contrib/systemiv/lib/math/random_number.h,skimmed,outside partition — synced vs unsynced RNG,6. Determinism notes for X3
+data/multiwinia.txt,skimmed,outside partition — MaxTurrets option values,5. Constants
+data/default_preferences.txt,skimmed,outside partition — ControlMethod defaults,2.1 Variant selection
+data/language/english.txt,skimmed,outside partition — UI strings for IP register,2.2 Base class TaskManagerInterface;IP register

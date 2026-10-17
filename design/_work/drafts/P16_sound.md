@@ -49,32 +49,97 @@ classDiagram
       +TriggerOtherEvent()
       +StopAllSounds()
     }
-    class SoundSourceBlueprint { +LList~SoundEventBlueprint*~ m_events }
-    class SoundEventBlueprint { +char* m_eventName; +SoundInstance* m_instance; +TeamMatch() }
-    class SampleGroup { +char m_name[256]; +LList~char*~ m_samples }
-    class DspBlueprint { +char m_name[256]; +DArray~DspParameterBlueprint*~ m_params }
-    class DspParameterBlueprint { +m_name; +m_min; +m_max; +m_default; +m_dataType }
+    class SoundSourceBlueprint {
+      +LList~SoundEventBlueprint*~ m_events
+    }
+    class SoundEventBlueprint {
+      +char* m_eventName
+      +SoundInstance* m_instance
+      +TeamMatch()
+    }
+    class SampleGroup {
+      +char m_name
+      +LList~char*~ m_samples
+    }
+    class DspBlueprint {
+      +char m_name
+      +DArray~DspParameterBlueprint*~ m_params
+    }
+    class DspParameterBlueprint {
+      +m_name
+      +m_min
+      +m_max
+      +m_default
+      +m_dataType
+    }
     class SoundInstance {
       +SoundInstanceId m_id
-      +SoundParameter m_volume, m_freq, m_attack, m_sustain, m_release, m_loopDelay
+      +SoundParameter m_volume
+      +SoundParameter m_freq
+      +SoundParameter m_attack
+      +SoundParameter m_sustain
+      +SoundParameter m_release
+      +SoundParameter m_loopDelay
       +LList~DspHandle*~ m_dspFX
       +CachedSampleHandle* m_cachedSampleHandle
       +SoundInstance* m_parent
-      +StartPlaying(); Advance(); AdvanceLoop(); BeginRelease(); StopPlaying()
+      +StartPlaying()
+      +Advance()
+      +AdvanceLoop()
+      +BeginRelease()
+      +StopPlaying()
     }
-    class SoundParameter { +m_type; +m_link; +m_updateType; +Recalculate(); +GetOutput() }
-    class DspHandle { +int m_type; +SoundParameter m_params[13]; +Advance() }
-    class CachedSampleManager { +GetSample(); +CleanUp(); +EmptyCache() }
-    class CachedSample { +m_numChannels; +m_freq; +m_numSamples; +Read() }
-    class CachedSampleHandle { +Read(); +Restart() }
-    class SoundStreamDecoder { +Read(); +Restart() }
-    class SoundLibrary3d { <<abstract>> +SetChannel*(); +EnableDspFX(); +Advance() }
+    class SoundParameter {
+      +m_type
+      +m_link
+      +m_updateType
+      +Recalculate()
+      +GetOutput()
+    }
+    class DspHandle {
+      +int m_type
+      +SoundParameter m_params
+      +Advance()
+    }
+    class CachedSampleManager {
+      +GetSample()
+      +CleanUp()
+      +EmptyCache()
+    }
+    class CachedSample {
+      +m_numChannels
+      +m_freq
+      +m_numSamples
+      +Read()
+    }
+    class CachedSampleHandle {
+      +Read()
+      +Restart()
+    }
+    class SoundStreamDecoder {
+      +Read()
+      +Restart()
+    }
+    class SoundLibrary3d {
+      <<abstract>>
+      +SetChannelVolume()
+      +SetChannelPosition()
+      +EnableDspFX()
+      +Advance()
+    }
     class SoundLibrary3dDirectSound
     class SoundLibrary3dSoftware
     class SoundLibrary3dNoSound
-    class SoundLibrary2d { <<abstract>> +TopupBuffer() }
+    class SoundLibrary2d {
+      <<abstract>>
+      +TopupBuffer()
+    }
     class SoundLibrary2dWin32
-    class DspEffect { <<abstract>> +SetParameters(); +Process() }
+    class DspEffect {
+      <<abstract>>
+      +SetParameters()
+      +Process()
+    }
     SoundSystem "1" o-- "*" SoundSourceBlueprint
     SoundSourceBlueprint "1" o-- "*" SoundEventBlueprint
     SoundEventBlueprint "1" *-- "1" SoundInstance : prototype
@@ -195,18 +260,18 @@ Tick steps, in order [C]:
 
 ```mermaid
 flowchart TD
-  A[Advance: m_timeSync += frame dt] -->|< 0.05 s| Z[return]
-  A -->|>= 0.05 s| M[advance / swap music]
-  M --> P1[Pass 1: expire one-shots, drop orphaned attached sounds, compute perceived volume]
-  P1 --> S[sort by perceived volume desc]
-  S --> P2[Pass 2: priority = perceived x 0.75^k per event name; pick best non-playing]
-  P2 -->|candidate| C[FindBestAvailableChannel: first empty else lowest priority]
-  C --> E[evict: one-shot deleted / looping parked]
-  E --> SP[StartPlaying + ResetChannel]
+  A["Advance: m_timeSync += frame dt"] -->|< 0.05 s| Z["return"]
+  A -->|>= 0.05 s| M["advance / swap music"]
+  M --> P1["Pass 1: expire one-shots, drop orphaned attached sounds, compute perceived volume"]
+  P1 --> S["sort by perceived volume desc"]
+  S --> P2["Pass 2: priority = perceived x 0.75^k per event name; pick best non-playing"]
+  P2 -->|candidate| C["FindBestAvailableChannel: first empty else lowest priority"]
+  C --> E["evict: one-shot deleted / looping parked"]
+  E --> SP["StartPlaying + ResetChannel"]
   P2 -->|none| AC
-  SP --> AC[Advance every playing instance: ADSR, pitch, DSP params, 3D pos]
-  AC --> L[listener = camera]
-  L --> D[SoundLibrary3d::Advance -> PCM callbacks]
+  SP --> AC["Advance every playing instance: ADSR, pitch, DSP params, 3D pos"]
+  AC --> L["listener = camera"]
+  L --> D["SoundLibrary3d::Advance -> PCM callbacks"]
 ```
 
 ## [→ 27_audio_engine] 27.5 Voice (channel) management — exact rules
@@ -392,23 +457,23 @@ Load/save tooling in `SoundSystem` [C]: `SaveBlueprints(filename)` writes ENTITY
 ```mermaid
 flowchart LR
   subgraph Data
-    ST[data/sounds.txt] --> BP[SoundSourceBlueprint x (Entity types + Building types + 12 Other)]
-    EF[data/effects.txt] --> DB[DspBlueprint x 14]
-    AR[sounds.dat / sounds2.dat / menusounds.dat\n data/sounds/*.ogg, data/mwsounds/*.ogg]
+    ST["data/sounds.txt"] --> BP["SoundSourceBlueprint x (Entity types + Building types + 12 Other)"]
+    EF["data/effects.txt"] --> DB["DspBlueprint x 14"]
+    AR["sounds.dat / sounds2.dat / menusounds.dat<br/> data/sounds/*.ogg, data/mwsounds/*.ogg"]
   end
-  G[Game code: Trigger*Event(obj, name)] --> TM{TeamMatch}
+  G["Game code: Trigger*Event(obj, name)"] --> TM{TeamMatch}
   BP --> TM
-  TM -->|each matching EVENT block| SI[SoundInstance copy\n(pos, vel, object id)]
-  SI --> Q[m_sounds queue]
-  Q --> PR[20 Hz: perceived volume -> priority -> 1 start/tick]
-  PR --> CH[effect channel 0..N-2]
-  SI -. Music source .-> MU[music slot]
-  CH --> CB[PCM callback: CachedSampleHandle::Read, loop logic]
+  TM -->|each matching EVENT block| SI["SoundInstance copy<br/>(pos, vel, object id)"]
+  SI --> Q["m_sounds queue"]
+  Q --> PR["20 Hz: perceived volume -> priority -> 1 start/tick"]
+  PR --> CH["effect channel 0..N-2"]
+  SI -. Music source .-> MU["music slot"]
+  CH --> CB["PCM callback: CachedSampleHandle::Read, loop logic"]
   MU --> CB
-  AR --> DEC[SoundStreamDecoder] --> CS[CachedSample RAM] --> CB
-  CB --> FX[in-house DSP] --> DEV[DirectSound buffer / software mixer]
-  CAM[Camera pos/front/up/vel] --> DEV
-  PREF[prefs: SoundMasterVolume, SoundChannels, SoundMixFreq, SoundSwapStereo, SoundDSP] --> DEV
+  AR --> DEC["SoundStreamDecoder"] --> CS["CachedSample RAM"] --> CB
+  CB --> FX["in-house DSP"] --> DEV["DirectSound buffer / software mixer"]
+  CAM["Camera pos/front/up/vel"] --> DEV
+  PREF["prefs: SoundMasterVolume, SoundChannels, SoundMixFreq, SoundSwapStereo, SoundDSP"] --> DEV
 ```
 
 ---
@@ -604,3 +669,263 @@ Smoothing: `smooth` ∈ [0, 0.99] (editor), effective per-tick retention factor 
 
 Shipped links: VOLUME on Velocity (7), HeightAboveGround (1), CameraDistance (1), Ypos (3); FREQUENCY on Velocity (5), HeightAboveGround (5), CameraDistance (1); LOOPDELAY on Velocity (3), HeightAboveGround (1). Examples: vehicle engines (`Armour Create`, `Tank Create`: volume 8.39/9.55 → 10 and pitch 1.10 → 1.68 as speed goes 0 → 2.4/22.4 wu/s), flyers (`Harvester`/`SpaceShip Create`: pitch 0.32 → 2.47 with height 0 → 984), level ambience by camera altitude (`Ambience EnterLocation`: `highaltitude` volume 0.06 → 5.97 over Ypos 0 → 988; `white_noise` 3.03 → 7.03 over Ypos 0 → 992 with Echo; a sample group 9.58 → 0.10 as Ypos rises 232 → 736), `Meteor Land` volume 0 → 9.9 over camera distance 100 → 320 [C] `P16_sound_events.csv`.
 
+## [→ 10_audio_design] 10.6 Positional rules
+
+- **Listener = game camera** every tick: position, facing (`front`), `up` (negated by default, §09.1 Swap Stereo), velocity × 0.2 (irrelevant: Doppler factor 0) [C] `soundsystem.cpp:Advance`; `sound_library_3d_dsound.cpp:Initialise`.
+- **Distance model** (both back-ends): amplitude factor `g(d) = 1` for `d ≤ minDistance`, `g(d) = minDistance / d` beyond (inverse distance, −6 dB per doubling), no maximum distance (DirectSound default max distance 1e9 wu), no cone/occlusion/obstruction/air absorption. DirectSound applies it in hardware/software 3D (`DS3DMODE_NORMAL`, rolloff 1.0); the software mixer applies the same factor per channel [C] `sound_library_3d_software.cpp:CalcChannelVolumes`. This matches `docs/MinDistAndVolume.jpg` (flat to the min distance, then hyperbolic fall-off; illustrates a 100 m airplane vs a 2 cm bee, and a quieter waterfall with the same min distance) [C].
+- The same `minDistance/d` factor (with camera position) is used for **priority** (perceived volume) [C] `sound_instance.cpp:CalculatePerceivedVolume`.
+- **Panning**: DirectSound HRTF/pan per its 3D algorithm `DS3DALG_DEFAULT`; software: linear pan `right = (dir·listenerRight + 1)/2`, `left = 1 − right` [C].
+- **2D sounds** (`POSITIONTYPE 0`): head-relative at the listener origin — centred, unattenuated, never pitch-shifted by game speed, always perceived volume 10 (so they out-prioritise every 3D sound with volume < 10 at distance) [C].
+- **Stationary vs attached**: use `Type3DStationary` for anything that must outlive its emitter (deaths, explosions, impacts) — the shipped data does so for most `Die`/`Explode`/`Land` events — because attached sounds are hard-cut on the first tick after the emitter is removed from the location [C] `soundsystem.cpp:Advance` + data. Attached sounds on buildings track `m_centrePos` [C].
+- **Height/altitude dependence** is expressed only through linked parameters (`HeightAboveGround`, `Ypos`, `CameraDistance`), e.g. the level ambience bed that changes with camera altitude (§10.5).
+- Shipped min distances: 5.98 (tree creation) … 10000 (one ambience block); 170 blocks at 100.0, 39 at 200.0; ≥ 450: `Meteor Land`, `Refinery Create`, `EscapeRocket Flight`, `Ambience EnterLocation` [C] `P16_sound_events.csv`.
+- World scale note [I]: the code comment calls min distance "metres"; the game's world units are used directly (landscape heights up to ~1000 wu per the linked ranges).
+
+## [→ 10_audio_design] 10.7 Filters / DSP
+
+Filter types (enum order = `effects.txt` order = DSP type id) [C] `code/sound/sound_library_3d.h:SoundLibrary3d` enum, `data/effects.txt`:
+
+| Id | Enum | `effects.txt` name | Implementation | Parameters (name min..max default, dataType 0=float 1=long) |
+|---|---|---|---|---|
+| 0 | `DSP_DSOUND_CHORUS` | DSound_Chorus | DirectX FX (DirectSound back-end only) | WetDryMix 0..100 50; Depth 0..100 10; Feedback −99..99 25; Frequency 0..10 1.1; Waveform 0..1 1 (long); Delay 0..20 16; Phase 0..4 3 (long) |
+| 1 | `DSP_DSOUND_COMPRESSOR` | DSound_Compressor | DirectX FX | Gain −60..60 0; Attack 0.01..500 10; Release 50..3000 200; Threshold −60..0 −20; Ratio 1..100 3; PreDelay 0..4 4 |
+| 2 | `DSP_DSOUND_DISTORTION` | DSound_Distortion | DirectX FX | Gain −60..0 −18; Edge 0..100 15; PostEQCentreFreq 100..8000 2400; PostEQBandwidth 100..8000 2400; PreLowpassCutoff 100..8000 8000 |
+| 3 | `DSP_DSOUND_ECHO` | DSound_Echo | DirectX FX | WetDryMix 0..100 50; Feedback 0..100 50; LeftDelay 1..2000 500; RightDelay 1..2000 500; PanDelay 0..1 0 (long) |
+| 4 | `DSP_DSOUND_FLANGER` | DSound_Flanger | DirectX FX | WetDryMix 0..100 50; Depth 0..100 100; Feedback −99..99 −50; Frequency 0..10 0.25; Waveform 0..1 1 (long); Delay 0..4 2; Phase 0..4 2 (long) |
+| 5 | `DSP_DSOUND_GARGLE` | DSound_Gargle | DirectX FX | RateHz 1..100 20 (long); WaveShape 0..1 0 (long) |
+| 6 | `DSP_DSOUND_I3DL2REVERB` | DSound_I3DL2Reverb | DirectX FX (+ `SetQuality(param 12)`) | Room −10000..0 −1000 (long); RoomHF −10000..0 −100 (long); RoomRolloffFactor 0..10 0; DecayTime 0.1..20 1.49; DecayHFRatio 0.1..2 0.83; Reflections −10000..1000 −2602 (long); ReflectionsDelay 0..0.3 0.01; Reverb −10000..2000 200 (long); ReverbDelay 0..0.1 0.01; Diffusion 0..100 100; Density 0..100 100; HFReference 20..20000 5000; Quality 0..3 2 (long) |
+| 7 | `DSP_DSOUND_PARAMEQ` | DSound_ParamEQ | DirectX FX | Centre 80..16000 8000; Bandwidth 1..36 12; Gain −15..15 0 |
+| 8 | `DSP_DSOUND_WAVESREVERB` | DSound_WavesReverb | DirectX FX | InGain −96..0 0; ReverbMix −96..0 0; ReverbTime 0.01..3000 1000; HighFreqRTRatio 0.01..0.99 0.01 |
+| 9 | `DSP_RESONANTLOWPASS` | ResonantLowPass | in-house `DspResLowPass` | CutoffFrequency 100..20000 2500; Resonance 0.1..20 7; Gain 0..10 1 |
+| 10 | `DSP_BITCRUSHER` | BitCrusher | in-house `DspBitCrusher` | BitRate 1..16 16 |
+| 11 | `DSP_GARGLE` | Gargle | in-house `DspGargle` | WetDryMix 0..100 50; RateHz 0.01..100 20; WaveShape 0..1 0 (long) |
+| 12 | `DSP_ECHO` | Echo | in-house `DspEcho` | WetDryMix 0..100 50; Delay 1..3000 (ms) 200; Attenuation 0..100 50 |
+| 13 | `DSP_SIMPLE_REVERB` | SimpleReverb | in-house `DspReverb` | WetDryMix 0..100 50 (ignored) |
+
+In-house algorithms (mono int16 in place, per channel block) [C] `code/sound/sound_filter.cpp`:
+- **ResonantLowPass**: biquad RBJ low-pass. `f = exp(p0/3850 + 4.7)` Hz (p0 = 100 → 113 Hz, 20000 → 19.9 kHz), `Q = exp(p1/4) − 1` (min 1e-5), `gain = p2`; `ω = 2π·min(f/44100, 0.499)` — **the 44100 is hard-coded** regardless of the channel rate; `α = sin ω/(2Q)`; `a0 = a2 = (1−cos ω)/2/(1+α)`, `a1 = (1−cos ω)/(1+α)`, `b1 = −2cos ω/(1+α)`, `b2 = (1−α)/(1+α)`; `y = a0x + a1x₁ + a2x₂ − b1y₁ − b2y₂`, output `clamp(y·gain, ±32765)`; denormal guard `y₁ += 1e-26` per block. Initial coefficients for 1000 Hz, Q 1, gain 1.
+- **BitCrusher**: `step = 65536 / 2^bits`; `out = step·trunc(x/step)` clamped ±32767.
+- **Gargle** (amplitude modulation): phase 0..2 advances `2·rate/sampleRate` per sample; triangle: `x·(1−w) + x·tri(phase)·w` with `w = mix/100`, `tri` rising 0→1 then falling 1→0; square: zero the second half of each period (wet/dry ignored). Defaults mix 50, 20 Hz, triangle.
+- **Echo**: float delay line of `3 × sampleRate` samples, delay `D = delay_ms·sampleRate/1000`; `out = x·(1−w) + buf[j]·w` (clamp ±32766), `buf[j] = buf[j]·(att/100) + x` (feedback = attenuation %). The circular index wraps at `D` (not at the buffer length).
+- **SimpleReverb**: 6 parallel taps on a shared 3 s int16 history: delays {1.1, 3, 11, 19, 29, 46} ms, gains {0.36, 0.25, 0.34, 0.23, 0.32, 0.21}; `y = 0.23·x + 0.67·Σ gainᵢ·hist[i − delayᵢ]` clamped ±32766 and written back to history (feedback). Wet/dry parameter unused.
+
+Gating and usage [C]:
+- `USE_SOUND_DSPEFFECTS` (undefined in all targets) only controls the **options-screen toggle** ("dialog_realtimeeffects") and the Apply logic; the runtime switch is the preference `SoundDSP` (default 0 on PC) read in `SoundInstance::Copy`. With the shipped defaults no DSP runs. Toggling `SoundDSP` via Apply (only possible with `USE_SOUND_DSPEFFECTS`) calls `PropagateBlueprints()` (on) or `StopAllDSPEffects()` (off).
+- Shipped usage (if enabled): Echo ×12, DSound_Echo ×5, Gargle ×3, DSound_I3DL2Reverb ×1, DSound_WavesReverb ×1 on: Virii LoseHealth/Die, Squadie Create/LoseHealth, SporeGenerator Die, Centipede Die, Darwinian LoseHealth/Create (Echo); Spider Die, BlueprintStore Create, Spam Damage/Explode, Crate Falling (DSound_Echo); Armour Create, Harvester DropSpirit, Incubator AddSpirit (Gargle); Mine CogTurn (I3DL2Reverb); Grenade Explode (WavesReverb); RadarDish ConnectionLost, Ambience EnterLocation (white_noise), Ambience EnterGlobalWorld ×2 (Echo) [C] `P16_sound_events.csv`.
+- DirectX FX types (0–8) do nothing on the software mixer and on XAudio; `docs/ThoughtsOnSoundSystem.txt` explains why Distortion, ParamEq and Compressor were not reimplemented in software and why in-house Gargle/Echo replaced the DirectX ones.
+
+## [→ 10_audio_design] 10.8 Priorities, voice limits, mix groups
+
+- **No authored priority**: the `PRIORITY` field is ignored; effective priority is computed every 50 ms from loudness at the listener with a 0.75 per-duplicate penalty per event name (§27.5). Implications for content: louder (VOLUME), closer (MINDISTANCE) and 2D sounds win; many simultaneous copies of one event self-limit.
+- **Voice limit**: `SoundChannels − 1` simultaneous effect voices (31 by default; 7/15/31/63 for the 8/16/32/64 options) + 1 music voice; at most one new voice per 50 ms; queued one-shots expire after 3 ticks; looping sounds wait.
+- **Per-event voice limiting** is otherwise done with `INSTANCETYPE` 1/2 (one shared voice per event, used for crowd sounds such as `Darwinian Create`/`Attack` and `Squadie Create`).
+- **Mix groups / buses / categories: none.** There is a single master volume (pref `SoundMasterVolume`, 0–255) applied to every channel including music; there are no separate music/SFX/voice/UI volumes, no ducking, no snapshots [C] (no other gain stage exists in `code/sound`). The only "group-like" controls are: `TEAMMATCHTYPE` (audience filter by local team), `POSITIONTYPE 0` (UI/2D bed), and the music slot.
+- Requests noted in `docs/sound changes.txt` ("possibility of dropping all volumes to highlight a single sound event", microphone positioning) and `docs/multiwinia audio.docx` ("Investigate new Parameter Link: Age of object") were **not** implemented [C by absence in code].
+
+## [→ 10_audio_design] 10.9 Music and ambience system
+
+Music selection is entirely event-driven; there is no playlist, no in-match music logic and no game-state-driven music [C] (all `TypeMusic` call sites enumerated):
+
+| Trigger site | Event | Build reality |
+|---|---|---|
+| Script command `TriggerSound <event>` (`Script::RunCommand_TriggerSound`: plays `Music <event>` unless `NumInstancesPlaying(-, "Music <event>") > 0` — always 0 for music because music never occupies an effect channel) | any Music event; shipped scripts use cutscene1–cutscene5, endsequence, Demo2Intro, Demo2Mid (`data/scripts/*.txt`) | [B:LEGACY] Darwinia campaign/cutscene scripts (P19 owns script reachability) |
+| Script command `StopSound <event>` → `StopAllSounds(-, "Music <event>")` (stops whatever music plays); cutscene escape → `StopAllSounds(-, "Music")` | — | [B:LEGACY] |
+| Loaders (`code/loaders/*_loader.cpp`): LoaderSpeccy, LoaderAmiga, LoaderMatrix, LoaderRaytrace, LoaderGameOfLife, LoaderFodder, LoaderSoul, Credits | per loader | [B:DEAD] whole files inside `#ifdef USE_LOADERS` |
+| `StartSequence::Advance` (first-run boot sequence, 90 s max, skippable) | StartSequence | [B:DEAD] only constructed in `RunBootloader` under `USE_LOADERS` [C] `code/main.cpp` |
+
+Therefore [I]: in a Multiwinia session the music channel stays silent; the "music" the player hears in the front end is the **lobby ambience** (below). Shipped Music entries (all `POSITIONTYPE 0`, single sample, Loop for Cutscene1–4/LoaderRaytrace/LoaderSoul, PlayOnce otherwise, VOLUME 9.0–10.0, ATTACK on Cutscene3 5.23 s, Cutscene4 2.90 s, Cutscene5 3.10 s, EndSequence 5.23 s, Credits 2.71 s) reference licensed third-party tracks (IP register).
+
+Ambience beds [C]:
+| Event | Fired by | Stopped by | Data |
+|---|---|---|---|
+| `Ambience EnterLocation` | `LocationGameLoop()` start (every Multiwinia match) | `StopAllSounds(-, "Ambience EnterLocation")` when the loop exits; then `Ambience ExitLocation` is fired (no data → silent) | 3 blocks, all 2D: (a) group `newsamplegroup8` (alien_lands3, rumble1, evil) LoopADSR, attack 10.00 s, sustain 10.84 s, release 10.00 s, volume linked to camera Ypos 232 → 736 : 9.58 → 0.10; (b) `white_noise` Loop, volume Ypos 0 → 992 : 3.03 → 7.03, Echo, min distance 500; (c) group `highaltitude` (7 files) LoopADSR, pitch random 0.75–1.35 per note (smooth 0.66), attack 10.84 s, sustain random 1.94–16.45 s per note, release 10.45 s, volume Ypos 0 → 988 : 0.06 → 5.97 — i.e. ground-level rumble fades out and a high-altitude wind bed fades in as the camera climbs |
+| `Ambience EnterGlobalWorld` | `GlobalWorldGameLoop()` start [B:LEGACY] | `StopAllSounds(-, "Ambience EnterGlobalWorld")` | 5 blocks (world-view beds, altitude, rumble) |
+| `MultiwiniaInterface LobbyAmbience` | `GameMenuWindow::Update` once sounds are ready (and commented-out in `App::CheckSounds`) | `StopAllSounds(-, "MultiwiniaInterface LobbyAmbience")` when `MainMenuLoop()` exits (`code/main.cpp`) | 3 blocks, 2D: (a) group `newsamplegroup8` LoopADSR vol 8.0, attack 9.29 s, sustain 10.65 s, release 10.84 s; (b) `shipheartbeat1` Loop vol 8.5 at pitch 0.5; (c) group `MultiLobbyAmbiences` (10 files `multilobbyamb1..10`) LoopADSR vol 9.0, pitch random 0.67–1.01 per note, no attack, sustain 10.65 s, release 10.26 s — i.e. an endless sequence of ~10.65 s random ambient pads, each new note starting at full volume while the previous one fades over ~10 s |
+
+## [→ 10_audio_design] 10.10 Menu, UI and game-state sounds
+
+All are `OTHER` sources, 2D unless noted [C] call sites and `data/sounds.txt`:
+
+| Event | Fired from | Data (sample; vol) |
+|---|---|---|
+| `MultiwiniaInterface MenuRollOver` | menu buttons on hover (`code/game_menu.cpp`, `code/UI/FancyColourButton.h`, `code/UI/LevelSelectButton.h`, `code/interface/leaderboards_window.cpp`) | group `mouseovericon`; 5.03 |
+| `MultiwiniaInterface MenuSelect` | button activation (`code/game_menu.cpp`, `code/interface/mainmenus.cpp`, `helpandoptions_windows.cpp`, `multiwinia_window.cpp`, `code/UI/LevelSelectButton.h`, `MultiwiniaEditorButton.h`) | `menuscroll2`; 9.00 |
+| `MultiwiniaInterface MenuCancel` | back/cancel (`code/game_menu.cpp`, `code/interface/mainmenus.h`) | `menuscroll1`; 8.00 |
+| `MultiwiniaInterface ChatMessage` | chat line received (`Location::NewChatMessage`, `code/UI/GameMenuWindow.cpp`) | `chat`; 8.00 |
+| `MultiwiniaInterface CountdownTick` / `CountdownZeroTick` | pre-game grace-period countdown (`Multiwinia::AdvanceGracePeriod`) and the last 10 s of a timed game (`Multiwinia::Render`, timer display — a render-driven trigger) | `countdownbeep3`; 7.03 / 7.10 |
+| `MultiwiniaInterface SelectUnit`, `ToggleUnitState`, `MouseError`, `SelectionCircle` | unit selection / state toggle / invalid order / selection-circle drag (`LocationInput::SelectObjectUnderMouse`, `LocationInput::AdvanceTeamControl`) | `mouseclick1` 6.97; `mouseclick1` 9.03; `beep_harsh_malfunction` 8.55; `filtersweep` 7.00 + `droneloop` (Loop) 8.84 |
+| `MultiwiniaInterface UnitHighlight` | cursor hovering a unit, at the unit position, team 255 (`code/gamecursor.cpp`) | group `unithighlight`, **3D stationary**; 7.00 |
+| `MultiwiniaInterface GameOver`, `YouWon`, `YouLost` | match end (`code/multiwinia.cpp` winner block) | **no data — silent** |
+| `Interface Show`/`Hide`/`Slide`/`MouseOverIcon`/`DeleteTask` | task-manager UI (`code/taskmanager_interface_*.cpp`, `code/shaman_interface.cpp`) | `taskin` 8.48 / `taskout` 8.52 / `menuscroll2` 9.48 / group `mouseovericon` 7.00 / `deselect1` 9.13 |
+| `Gesture GestureBegin`/`GestureSuccess`/`GestureFail` | task-manager gestures/selection (`code/taskmanager*.cpp`, `code/location_input.cpp`) | `filtersweep` 6.97 / `gesturesuccess` 10 / `gesturefail` 10 |
+| `CratePowerup <RewardName>` | when a crate reward is run, at the crate position with the collecting team (`Crate::TriggerSoundEvent`) | 29 blocks (one per reward name) |
+
+## [→ 10_audio_design] 10.11 Event coverage cross-check (code ↔ data)
+
+Fired by code but **no data** (silent in the shipped game) [C] literal search of `Trigger*Event` call sites vs `data/sounds.txt`:
+- ENTITY/BUILDING names: Carry, Electrocute, Enable, EscapedControl, Expired, FireGrenade, FireRocket, Grow, LaunchEgg, Lift, LoadDarwinian, Panic, PounceLand, PowerUp, ReprogrammingComplete, SetOrderAbsorb, SetOrderFollow, SetOrderNone, TakenControl, TargetSighted, ThrowController, ThrowGrenade, TriggerSpirit, UnloadDarwinian (name-level check; per-type pairing is owned by the entity/building partitions).
+- OTHER: Interface SelectTask, SetOrderGoto, ShowLogo, TaskManagerSelectTask, TaskManagerDeselectTask; Gesture GestureEnd; MultiwiniaInterface GameOver, YouWon, YouLost; Laser Create, HitBuilding, KilledEntity; Ambience ExitLocation; CratePowerup Engineer, RocketTurret, NapalmStrike, SlowDown, SpeedUp, TheBeast (`Crate::GetName` values without blocks).
+
+Data that **no code path fires** (dead data): CratePowerup FireExtinguisher, FormationBooster, Tank (their `GetName` cases are commented out); sample groups never referenced: aye, darwinnianonfire, lasercock, laserhitbuild, laserhitentity, laserhitgnd, laserricochet, offciersetordergoto, officerabsorb, officerselected, officersetorderfollow, officersetorderformation [C] `P16_parse_sounds.py` summary. Grenade/AirStrikeBomb events are fired with a variable name through `ThrowableWeapon::TriggerSoundEvent` (`code/worldobject/weapons.cpp`).
+
+Design caveat for game-side "keep a loop alive" code [C]: `SoundInstance::m_objId` (the emitter id used by `StopAllSounds`, `NumInstances`, `NumInstancesPlaying`) is only filled by `GetAttachedObject()` during the first tick after triggering, and **never** for 2D/stationary sounds (they keep only `m_objIds`). Game code such as `FuelPipe::Advance` and `EscapeRocket` (`code/worldobject/rocket.cpp`) polls `NumInstances(m_id, "…")` every sim tick and re-triggers when it reads 0 — this works for attached sounds once a sound tick has passed, but cannot see stationary/2D instances or instances created earlier in the same frame [I: possible duplicate loops when several sim ticks run between two sound ticks]. A new engine should record the emitter id at trigger time.
+
+---
+
+## [→ 09_meta_systems] 09.1 Sound options screen (`PrefsSoundWindow`)
+
+[C] `code/interface/prefs_sound_window.cpp`, `code/UI/soundsliderbutton.h:VolumeControl`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`, `code/sound/soundsystem.cpp:RestartSoundLibraryInternal`. Window name `dialog_soundoptions` (a `GameOptionsWindow`, full screen, not movable, title string `multiwinia_mainmenu_title`). Controls in on-screen order (all labels are language-table keys unless noted):
+
+| # | Control (string id) | Pref key | Values | Default (prefs file generated on first run / code fallback) | Applied | Effect | Build |
+|---|---|---|---|---|---|---|---|
+| 1 | Drop-down `dialog_soundlibrary` | `SoundLibrary` | option list contains **only** `dialog_directsound` (=1) under `HAVE_DSOUND` (`dialog_softwaresound` (=0) otherwise); Apply writes `"dsound"` (1) or `"software"` (0) | `dsound` / `dsound` | Apply → library restart | Back-end selection (§27.1). `"none"` (hand-edited) disables audio | [B:FULL] |
+| 2 | Drop-down (cycle) `dialog_mixfrequency` | `SoundMixFreq` | `dialog_11khz` 11025, `dialog_22khz` 22050, `dialog_44khz` 44100 | 22050 / 22050 (2D waveOut fallback 44100) | Apply → restart | Primary-buffer/mixer output rate; in-house DSP sample rate | [B:FULL] |
+| 3 | Slider `volume` (caption hard-coded English **"Master Volume"**) | `SoundMasterVolume` | 0–255 (slider fraction × 255, truncated; track spans 50 %–95 % of the button width) | 255 / 255 | **Immediately** on mouse-down (`SetMasterVolume`, forces all channel volumes to refresh); written + `prefs.Save()` on mouse-up; independent of Apply | Global attenuation `(255−m)×0.32 dB` (§27.11) for all sounds and music | [B:FULL] |
+| 4 | Drop-down (cycle) `dialog_numchannels` | `SoundChannels` | `dialog_8channels` 8, `dialog_16channels` 16, `dialog_32channels` 32, `dialog_64channels` 64 (a 48 option is commented out: software mixer needs powers of 2) | 32 / 32 in the sound system, but the window's `ReadValues` fallback is **16** | Apply → restart | Voice count (N−1 effect voices + music) | [B:FULL] |
+| 5 | Check box `dialog_swapstereo` | `SoundSwapStereo` | 0/1 | 0 / 0 | Apply (value read every sound tick) | 0 = listener up vector negated (normal orientation for DirectSound's handedness [I]); 1 = not negated → left/right swapped | [B:FULL] |
+| 6 | Drop-down `dialog_memoryusage` | `SoundMemoryUsage` | `dialog_high` 1, `dialog_medium` 2, `dialog_low` 3 | 1 / 1 | Apply → `EmptyCache()` and reopen every stream | Limits random choice to the first 100 % / 50 % / 25 % of each sample group (§27.6). The pref is still honoured at runtime in the baseline if hand-edited | UI [B:DEAD] (`USE_SOUND_MEMORY`) |
+| 7 | Check box `dialog_hw3dsound` (`HW3DDropDownMenu`; shows `dialog_unavailable` when no HW support) | `SoundHW3D` | 0/1 | 0 / 0 | Apply → restart | Requests `DSBCAPS_LOCHARDWARE` buffers; on init failure: message box "Failed to set requested sound settings" (English literal), pref reset to 0, retry | UI [B:DEAD] (`USE_SOUND_HW3D`); pref read in baseline |
+| 8 | Check box `dialog_realtimeeffects` | `SoundDSP` | 0/1 | 0 / 0 | Apply → `PropagateBlueprints()` (on) or `StopAllDSPEffects()` (off) | Enables per-sound DSP chains (§10.7) | UI [B:DEAD] (`USE_SOUND_DSPEFFECTS`); pref read in baseline |
+| — | Button `dialog_apply` (`RestartSoundButton`) | — | — | — | — | Greyed (inactive) while every control equals the stored prefs (compares with fallbacks 22050 / 16 / 0 / 0 / 1 and library match where a missing/empty `SoundLibrary` counts as matching either choice). On click: write prefs, `SoundSystem::RestartSoundLibrary()`, cache/DSP handling as above, `prefs.Save()`, `RefreshValues()` | [B:FULL] |
+| — | Button `dialog_close`, caption `multiwinia_menu_back` (`MenuCloseButton`) | — | — | — | — | Back | [B:FULL] |
+
+Hidden prefs (no UI) [C]: `SoundBufferSize` (waveOut buffer length in stereo samples for the software path; default line 512 "Must be a power of 2 for Linux", code fallback 2000), `Sound` (SDL only, [B:DEAD]). `SoundLibrary` default on Mac is `software`, and `SoundMixFreq` 44100, `SoundChannels` 16 on slow Macs [B:DEAD].
+
+Library restart semantics [C] `soundsystem.cpp:RestartSoundLibraryInternal`: deletes channel table and both devices, recreates them with the new prefs; live `SoundInstance`s survive but all lose their channels (looping sounds re-queue and restart from the beginning of their sample; one-shots expire after 3 ticks); the music instance keeps its read position and resumes on the new music buffer [I].
+
+`PrefsSoundWindow::Render` returns right after `GameOptionsWindow::Render`; the code after the `return` (audio device name, sound CPU % from the "Advance SoundSystem" profile with red text above 15 %, sample-cache memory "Mb (unused …)") is unreachable [C].
+
+---
+
+## [→ 27_audio_engine] 27.15 Constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Sound tick period | 0.05 s (20 Hz) | `#define SOUNDSYSTEM_UPDATEPERIOD` | `code/sound/soundsystem.cpp` |
+| New voices per tick | 1 | code structure | `SoundSystem::Advance` |
+| Same-event priority decay | ×0.75 per louder duplicate | literal | `SoundSystem::Advance` |
+| Sort array initial size | 128 (doubles) | static | `SoundSystem::Advance` |
+| One-shot restart attempts | 3 (ticks) | literal | `SoundSystem::InitialiseSound` |
+| Default min distance | 100.0 wu | ctor | `SoundInstance::SoundInstance` |
+| Default volume / frequency | 7.0 vol units / 1.0 | ctor | same |
+| Initial calculated priority | 128.0 | ctor | same |
+| Volume scale | 0.0–10.0 (clamped) | code | `SoundInstance::UpdateChannelVolume` |
+| Perceived volume of 2D/editor sounds | 10.0 | literal | `CalculatePerceivedVolume` |
+| Max DSP params per effect | 13 (`MAX_PARAMS`) | `#define` | `code/sound/sound_instance.h` |
+| Max DSP types per instance at start | 16 (array) | literal | `SoundInstance::StartPlaying` |
+| DSP filter types | 14 (`NUM_FILTERS`) | enum | `code/sound/sound_library_3d.h` |
+| Frequency sanity window | 0–144000 Hz (3 × 48000) | literal | `SoundInstance::Advance`; `SoundLibrary3dSoftware::SetChannelFrequency` |
+| Game-speed pitch smoothing | `s = 0.99 s + 0.01 speed` per call; floor 0.01; pitch √s | literals | `GetFrequencyModifier` |
+| DirectSound main buffer | 20000 samples/channel (`bufSize`) | literal | `RestartSoundLibraryInternal` |
+| DirectSound music buffer | 200000 samples (`bufSize × 10`) | literal | same |
+| DirectSound max channels (software buffers) | 64 | literal | `SoundLibrary3dDirectSound::GetMaxChannels` |
+| HW3D threshold | `dwMaxHw3DStreamingBuffers > 3`; usable = that − 2 | literal | `Hardware3DSupport`, `GetMaxChannels` |
+| Position update threshold | 5 % of listener distance (`0.0025` squared) | literal | `SetChannelPosition` |
+| Simulated play-cursor margin | 1000 bytes | literal | `AdvanceChannel` |
+| Real play-cursor polling | every other tick per channel (4-phase counter) | literal | `AdvanceChannel`, `Advance` |
+| Volume → mB | `−(5 − v/2)·1000 + master`, clamp [−10000, 0] | formula | `SetChannelVolume` |
+| Master volume → mB | `(255 − m)·(−32)` | formula | `SoundLibrary3d::SetMasterVolume` |
+| Listener velocity scale | 0.2 | literal | `SoundSystem::Advance` |
+| Doppler factor | 0.0 | literal | `SoundLibrary3dDirectSound::Initialise` |
+| Sample cache limit | 60 MiB (62914560 bytes) LRU, unlocked only | `const` | `CachedSampleManager::CleanUp` |
+| Sample sanity limits | ≤ 8 channels, ≤ 268435456 samples, ≤ 192000 Hz, ≤ 1 GiB PCM | literals | `CachedSample::CachedSample` |
+| waveOut buffers | 10 × `SoundBufferSize` stereo samples, 4 primed | literals | `SoundLibrary2dWin32`, `SoundLib2dBuf` |
+| Software mixer channel buffer | `samplesPerBuffer × 48000/outRate × 3.1` | formula | `SoftwareChannel::SoftwareChannel` |
+| Software output limiter | block peak > 32766 → scale | literal | `SoundLibrary3dSoftware::Callback` |
+| Record-to-file rate | 20 blocks/s | literal | `SoundLibrary2dWin32::TopupBuffer` |
+| Low-pass mapping | `f = e^(p/3850 + 4.7)`, `Q = e^(r/4) − 1`, ref rate 44100, ratio ≤ 0.499 | literals | `DspResLowPass` |
+| Echo buffer | 3 s; default 200 ms, 50 % wet, 50 % feedback | literals | `DspEcho` |
+| Reverb taps | 1.1/3/11/19/29/46 ms × 0.36/0.25/0.34/0.23/0.32/0.21; dry 0.23, wet 0.67 | literals | `DspReverb` |
+| Gargle defaults | 50 % wet, 20 Hz, triangle | literals | `DspGargle` |
+| Pref defaults | `SoundLibrary` dsound, `SoundMixFreq` 22050, `SoundMasterVolume` 255, `SoundChannels` 32, `SoundHW3D` 0, `SoundSwapStereo` 0, `SoundMemoryUsage` 1, `SoundBufferSize` 512, `SoundDSP` 0 | prefs file | `PrefsManager::CreateDefaultValues` |
+
+---
+
+## Determinism notes (sound must not affect the simulation)
+
+- **Write direction**: the sound system never writes simulation state. It reads world objects (`Location::GetWorldObject`), positions/velocities, team ids, `m_myTeamId`, landscape height, game speed (`g_gameTimer.GetGameSpeed()`), grace-period state and the camera [C] (`sound_instance.cpp`, `soundsystem.cpp`).
+- **Random numbers**: all audio randomness (sample-group choice, `MonophonicRandom` emitter choice, `TypeRangedRandom` parameters) uses `AppRandom()`/`frand()` — the non-synchronised LCG (`holdrand = holdrand·214013 + 2531011`, 15-bit output), separate from the network-synchronised Mersenne-Twister `syncrand` [C] `contrib/systemiv/lib/math/random_number.cpp`. The LCG is a **shared** global: any non-synced consumer elsewhere sees a sequence perturbed by audio [I]; the new game should give audio its own RNG.
+- **Per-peer divergence by design**: team-matched sounds depend on the local team; camera-relative priority, monophonic-nearest selection, linked `CameraDistance` parameters, discarded voices and loading-time drops (`NotReadyForGameSoundsYet`) all differ between peers. Nothing in the sim may branch on sound state. Existing game code only queries sound state to decide whether to (re)trigger sounds (`FuelPipe::Advance`, `EscapeRocket`, `Script::RunCommand_TriggerSound`) [C].
+- **Clocks**: the sound system uses wall-clock (`GetHighResTime`) for envelopes/loop delays and the frame delta (`g_advanceTime`) for its 20 Hz accumulator — never the sim tick. Triggers originate inside sim `Advance()` calls but are executed immediately on the main thread (the trigger only enqueues).
+- **Floating point**: audio math uses the CRT `expf`/`ceil`/`fabsf` and `iv_*` wrappers; none of it feeds back into the sim.
+
+---
+
+## Cross-partition notes
+
+- **P03–P07 (entities/buildings)**: every `Entity`/`Building` subclass implements `ListSoundEvents(LList<char*>*)` (editor list) and fires `TriggerEntityEvent`/`TriggerBuildingEvent` with literal or `sprintf`-built names; the per-type pairing of fired names vs `data/sounds.txt` (§10.11 is name-level only) should be checked by those agents. Dynamic names: `Crate` `Capturing_<0|20|40|60|80>pc` (`code/worldobject/crate.cpp`), `EscapeRocket` state sounds via `requiredSoundName` and the "keep alive" `NumInstances` polling (`code/worldobject/rocket.cpp`), `FuelPipe::Advance`.
+- **P08 (crates)**: `Crate::TriggerSoundEvent(type, pos, team)` → `OTHER CratePowerup <Crate::GetName(type)>` at the crate position with the collector's team (team filter applies); reward names without data are silent (§10.11).
+- **P02 (game modes) / P18 (UI)**: countdown ticks are fired from `Multiwinia::AdvanceGracePeriod` and from `Multiwinia::Render` (render-driven, last 10 s); `GameOver`/`YouWon`/`YouLost` have no data. Grace period and game speed feed the pitch modifier (§27.9). Lobby ambience starts in `GameMenuWindow::Update` and stops when `MainMenuLoop()` exits; `GameMenuWindow` calls `SoundSystem::WaitIsInitialized()` before launching a game.
+- **P01 (app core/main loop)**: `App::LoadSounds` (background archive load), `App::CheckSounds` (lazy init + cache LRU each frame), double `SoundSystem::Advance()` when fps < 15, loading screen pumping `Advance()`, `Finalise` teardown, the "Advance SoundSystem" profile entry.
+- **P10 (camera/input)**: listener = camera pos/front/up/vel; `LocationInput` fires selection/UI sounds; `GameCursor` fires `UnitHighlight` at unit positions.
+- **P14 (platform lib)**: `g_systemInfo->m_audioInfo.m_preferredDevice` (−1 = no audio device) and `m_deviceNames`, `g_systemInfo->m_directXVersion` (DirectSound requires ≥ 9.0), `NetMutex`/`NetEvent`, `GetHighResTime`, `Resource::GetSoundStreamDecoder` (path resolution, `.ogg/.wav`, archives `sounds.dat`, `sounds2.dat`, `menusounds.dat`, case-insensitive names), `PrefsManager`.
+- **P17b (options menus)**: `PrefsSoundWindow` is a `GameOptionsWindow`; master volume slider class `VolumeControl` lives in `code/UI/soundsliderbutton.h` (P18 file list).
+- **P19 (scripts)**: `TriggerSound`/`StopSound` script op-codes (`Script::RunCommand_TriggerSound`, `RunCommand_StopSound`) drive music; cutscene escape stops music. Reachability of scripts in Multiwinia decides whether any music plays at all.
+- **P20 (sequences/loaders)**: all loader music and `StartSequence` music are inside `USE_LOADERS` (off).
+- **X1b / X2b**: formal `sounds.txt`/`effects.txt` grammar and the per-sample catalogue. This draft's generated `_work/drafts/P16_sound_events.csv` (296 rows) and `_work/scripts/P16_parse_sounds.py` can be reused for cross-checks.
+- **22 (determinism)**: audio consumes the shared non-synced `AppRandom` LCG.
+
+## Contradictions / open questions
+
+1. Channel-count default: prefs generator writes 32 and the sound system falls back to 32, but `PrefsSoundWindow::ReadValues` and the Apply-button comparison fall back to 16 — only visible when the key is missing from `preferences.txt` (the Apply button then shows as active) [C].
+2. `SoundMixFreq` fallback: 22050 in the sound system and options window, 44100 in `SoundLibrary2dWin32` [C].
+3. `SoundBufferSize`: generated default 512 vs code fallback 2000 [C].
+4. Volume curve differs between DirectSound (5 dB per vol unit) and the software mixer (4.34 dB per unit) — which is "the design"? Proposal: DirectSound's (shipped) [I].
+5. The software-mixer volume-ramp flag is inverted relative to its comment; a new mixer should ramp gain every block (de-click) except on a fresh voice [C/I].
+6. Is music reachable at all in Multiwinia? All `TypeMusic` triggers are `USE_LOADERS` code or Darwinia scripts [I] — P19/P20 to confirm.
+7. Attached sounds hard-cut when their emitter dies (§27.4) although `Update3DPosition` contains a graceful "convert to stationary and release" path that is effectively dead — intended behaviour was probably the graceful one [I].
+8. DirectSound head-relative 2D sounds: `SetChannelPosition` skips updates closer than 5 % of the listener distance, measured in world space, so a 2D sound (position 0,0,0 in head space) inherits a stale world position when the channel's previous position was near the world origin relative to the camera distance [I from code; not observed].
+
+## [U] Unknowns
+
+1. [U] Exact DirectSound 3D panning/HRTF of `DS3DALG_DEFAULT` on the shipping drivers — resolve by measuring the shipped game; a new engine can use a simple equal-power pan + inverse-distance curve.
+2. [U] Whether any Multiwinia path executes Darwinia scripts containing `TriggerSound` (music) — resolve with P19's reachability analysis.
+3. [U] Whether `menusounds.dat` contains assets not in `data/mwsounds` (the archive build is in `tools/build_multiwinia_data.bat`, owned by P20/X) — resolve by inspecting the packaging script/archive manifests.
+4. [U] Runtime behaviour after a library restart with the software mixer (waveOut buffers not re-primed) — needs a run; not reachable from the shipped UI.
+5. [U] Intended meaning of `docs/multiwinia audio.docx` "Lobby: Sounds + music ?" — whether lobby music was ever planned beyond the ambience beds.
+
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code/data does | Ref |
+|---|---|---|---|
+| `docs/adsr.gif` | Classic ADSR: Attack → **Decay** → Sustain **level** → Release on key-off | No decay stage (`StateDecay` never entered); SUSTAIN is a hold **duration**; peak = sustain level = VOLUME | `sound_instance.cpp:UpdateChannelVolume` |
+| `docs/ThoughtsOnSoundSystem.txt` | 2D buffer fixed at 2000 samples "probably needs to be adjustable"; wants linear/log toggle on the parameter graph; "Sort out SetChannelVolume / SetChannel3dMode for software mixer" | Buffer is pref `SoundBufferSize`; graph has a sqrt ("log") mode but the toggle button is commented out; both software-mixer functions implemented | `sound_library_2d_win32.cpp`; `soundparameter_window.cpp:SoundParameterGraph`; `sound_library_3d_software.cpp` |
+| `docs/sound changes.txt` (28 Aug 2007) | New CRATE event `Expired` | Code fires it; data has no block → silent | `data/sounds.txt` Crate block |
+| `docs/sound changes.txt` (19 Sep 2007) | CARRYABLE BUILDING events `Lift`, `Carry (loop)`, `Drop` | Code fires Lift/Carry/Drop; data has only `Statue Drop` | same |
+| `docs/sound changes.txt` (28 Aug 2007) | CratePowerup event list includes Infection etc. | Data adds FireExtinguisher/FormationBooster/Tank (never fired) and lacks Engineer, RocketTurret, NapalmStrike, SlowDown, SpeedUp, TheBeast | §10.11 |
+| `docs/sound changes.txt` (Requested) | Microphone position, "drop all volumes to highlight a single sound" | Not implemented | — |
+| `docs/multiwinia audio.docx` | Game Over / You've won / You've lost sounds; Age-of-object parameter link | Events fired but no data; link not implemented | §10.10, §10.5 |
+| `code/sound/sample_cache.cpp` comment | "Largest song takes 13 MB" | Largest shipped track decodes to 29.0 MiB (`tresk_-_excuses.ogg`, 344.6 s mono 44.1 kHz); whole PCM buffer is allocated on open | header scan of `data/sounds/*.ogg` |
+| `code/sound/sound_instance.h` comment | VOLUME 0.0 = "silence" | 0.0 = −50 dB on DirectSound (−43 dB software); only master 0 + vol 0 reaches the −100 dB floor | `SetChannelVolume` |
+| `code/sound/sound_library_3d.h` comment | "Currently two implementations" | Three (+ null): DirectSound, software, XAudio | `code/sound/` |
+| `contrib/systemiv/lib/math/random_number.h` comment | `frand`: 0 ≤ result < range | can return exactly `range` (AppRandom max 32767 / 32767) | `random_number.cpp:frand` |
+| `docs/MinDistAndVolume.jpg` | Flat to min distance, then fall-off | Consistent (inverse distance) | §10.6 |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| All 1332 audio samples (954 in `data/sounds/`, 378 in `data/mwsounds/`, e.g. `darwiniandie`, `CrateFall1`, `MultiLobbyAmb1..10`, `countdownbeep3`, `koh_zone_captured`) | audio | `data/sounds/`, `data/mwsounds/`, `sounds.dat`, `sounds2.dat`, `menusounds.dat` | Commission/record new assets; name by function (`unit_die_01`, `crate_fall_01`, `lobby_pad_01`) |
+| Licensed music: `tresk_-_excuses`, `tresk_-_faces-of-a-fashion`, `tresk_-_impact-of-silence`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`, `dma_sc-visitors_from_dreams` | audio (third-party artists) | `data/sounds/*.ogg`; `OTHER Music` blocks | New licensed/commissioned tracks `music_cutscene_01..` |
+| Retro-homage loader tunes `fodder`, `speccyloader`, `pang`, `matrix`, `twoataris` | audio (possibly third-party game music) | `data/sounds/*.ogg` | Drop or replace with original chiptunes |
+| Artist/track list in `docs/retro music.txt` (trash80 catalogue: "impact of silence", "schroeders failure", …) | text (third-party) | `docs/retro music.txt` | Do not reuse |
+| Sound-source/type names "Darwinian", "Officer", "Squadie", "Sepulveda", "MultiwiniaInterface", "MultiwiniaZone", "SoulDestroyer", "Virii", reward names "Rocketwinians", "Futurewinians" (sample `CrateReward_Futurewinians`), "Bitzkreig" | name | `data/sounds.txt`, `soundsystem.cpp:GetSoundSourceName` | Generic: `Unit`, `Commander`, `Trooper`, `Narrator`, `MatchUI`, `CaptureZone`, `reward_rocket_units` |
+| Sample-group names embedding IP names (`darwiniandie`, `darwiniancreate`, `officercreate`, `darwinnianonfire`, …) | name | `data/sounds.txt` SAMPLEGROUPs | Functional names |
+| UI strings: "Master Volume" (hard-coded English), "Failed to set requested sound settings", language keys `dialog_soundoptions`, `dialog_soundlibrary`, `dialog_directsound`, `dialog_softwaresound`, `dialog_mixfrequency`, `dialog_11khz`, `dialog_22khz`, `dialog_44khz`, `dialog_numchannels`, `dialog_8channels`, `dialog_16channels`, `dialog_32channels`, `dialog_64channels`, `dialog_memoryusage`, `dialog_high`, `dialog_medium`, `dialog_low`, `dialog_swapstereo`, `dialog_hw3dsound`, `dialog_unavailable`, `dialog_realtimeeffects`, `dialog_apply`, `dialog_close`, `multiwinia_menu_back`, `multiwinia_mainmenu_title`, `dialog_cpuusage`, `dialog_cpuusageunknown` | text | `code/interface/prefs_sound_window.cpp`, `code/UI/soundsliderbutton.h`, `soundsystem.cpp` | New string table: "Audio", "Output device", "Mix rate", "Voices", "Swap L/R", "Master volume", "Apply", "Back" |
+| Editor debug labels "Pokey Playground", window titles "Sound Editor", "Sound Stats", "Sound Profile", "Purge Sounds", "Effect Editor" | text | `code/interface/debugmenu.cpp`, `soundeditor_window.*` | Generic tool names |
+| Editor billboard `sprites/sound.bmp` | art | `soundeditor_window.cpp:SoundEditorWindow::Render` | Any speaker icon |
+| `docs/MinDistAndVolume.jpg` (airplane/bee/waterfall chart, apparently from DirectX documentation) | art (third-party) | `docs/` | Redraw own chart |
+| Planning notes `docs/multiwinia audio.docx` (crate reward commentary, "voice of the devil" etc.) | text | `docs/` | Do not reuse |
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] `SoundLibrary3dXAudio`** (`code/sound/sound_library_3d_xaudio.*`, Xbox 360): whole TU under `HAVE_XAUDIO`; 6-channel (5.1) X3DAudio emitters with positions divided by min distance (`CurveDistanceScaler` 10000), 3 packets per channel sized for an assumed 15 Hz update, music voice at 44100 Hz with 10/15 s packets, `GetMaxChannels` 32, DSP functions empty, pitch via `XAudioSampleRateToPitch`, music channel topped up twice per Advance.
+- **[B:DEAD] `SoundLibrary2dSDL`** (`code/sound/sound_library_2d_sdl.*`, not in the vcproj; needs `sound/macosx/ASWSDLRingBuffer.h`): SDL audio at `min(SoundMixFreq, 44100)`, 512-sample device buffer, ring buffer of 1/15 s pre-filled with 1/10 s of silence, filled from `TopupBuffer` by elapsed wall time; with `INVOKE_CALLBACK_FROM_SOUND_THREAD` the mixer runs inside the SDL callback under `SoundSystem::m_mutex`; pref `Sound` (default 1) un-pauses.
+- **[B:DEAD] `code/unicode/sound_library_*`** — older copies, not built (build_matrix §6).
+- **[B:DEAD] Mac preloading** (`SoundSystem::PreloadSounds`, `BackgroundSoundLoad`, `LoadSound`, `CachedSample::Preload`, `SampleLoadState`): preload every blueprint sample except Music/Gesture/Sepulveda/Interface/MultiwiniaInterface; first group member on the main thread, the rest on a low-priority thread; fall back to the first group member while loading; LRU disabled.
+- **[B:DEAD] `INVOKE_CALLBACK_FROM_SOUND_THREAD`** locking variant (Mac).
+- **[B:DEAD] Options UI for `USE_SOUND_MEMORY`, `USE_SOUND_HW3D`, `USE_SOUND_DSPEFFECTS`** (§09.1 rows 6–8) and the unreachable tail of `PrefsSoundWindow::Render`.
+- **[B:DEAD] Loader/boot-sequence music** (`USE_LOADERS`): LoaderSpeccy, LoaderAmiga, LoaderMatrix, LoaderRaytrace, LoaderGameOfLife, LoaderFodder, LoaderSoul, Credits, StartSequence.
+- **[B:DEAD] `SOUNDSYSTEM_VERIFY` / `RuntimeVerify`**, `LoadtimeVerify` (call commented out), `TESTBED_ENABLED` mute.
+- **[B:DEBUG]** Sound editor family (§27.13), `ConvertVolume` legacy migration (maps old 0–3+ volume scale to 0–10: ≤1→0, ≤1.25→0.5, ≤1.5→1.8, ≤1.75→3.6, ≤2.0→5.0, ≤2.25→6.1, ≤2.5→7.0, ≤2.75→7.65, ≤3.0→8.5, else 10), Purge Sounds, record-to-WAV (`AVI_GENERATOR`).
+- **[B:LEGACY]** Darwinia-only sources/events compiled and loaded but unreachable or blocked in Multiwinia: `OTHER Sepulveda` (Sepulveda code under `USE_SEPULVEDA_HELP_TUTORIAL`), `OTHER Spirit` (only `PickedUp` live), `Ambience EnterGlobalWorld` (global world), Music cutscenes (scripts), and BUILDING blocks for types listed in `Building::BuildingIsBlocked` (`BLOCK_OLD_DARWINIA_OBJECTS`, blocks creation by name from level files) [C] `code/worldobject/building.cpp:BuildingIsBlocked`: BlueprintConsole, BlueprintRelay, BlueprintStore, Generator, GodDish, Library, Mine, Powerstation, Refinery, ResearchItem, SpiritProcessor, SpiritReceiver, TrackLink, Yard are Darwinia-only [I]; Crate, Statue and Spam are also in that list but are spawned at runtime by Multiwinia game modes/crates and are live [I] (owned by P06–P08). EscapeRocket and the Fuel* buildings (Rocket Riot) are not blocked.

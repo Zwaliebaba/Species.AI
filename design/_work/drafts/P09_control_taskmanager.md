@@ -60,7 +60,7 @@ Task type ids are the `GlobalResearch` enum [C] `code/global_world.h:GlobalResea
 | Id | Enum | Name string | Created by `RunTask(int)`? | `Start()` effect | `Target(pos)` effect | Terminates when (`Advance`) | `Stop()` (on terminate) | MP source |
 |---|---|---|---|---|---|---|---|---|
 | 0 | TypeDarwinian | Darwinian | no (returns false) | – | – | – | – | – (research level only) |
-| 1 | TypeOfficer | Officer | yes | – | Promote nearest own Darwinian within 10 wu to Officer, then **terminate own task** (§1.6) | never (state forced back to Started each tick) | – | AI only (`ai.cpp` RunTask Officer); player promotion is a direct order, see §2.7 |
+| 1 | TypeOfficer | Officer | yes | – | Promote nearest own Darwinian within 10 wu to Officer, then **terminate own task** (§1.6) | never (state forced back to Started each tick) | – | AI only (`ai.cpp` RunTask Officer); player promotion is a direct order, see §2.6 |
 | 2 | TypeSquad | Squad | yes | `m_lifeTimer = 60` | Spawn squad unit of `2 + CurrentLevel(TypeSquad)` InsertionSquadies (MP level 1 → **3**) at pos, spread 10; select it; optional camera track | MP: life timer reaches 0 → `Stop()`; any: unit gone or `NumAliveEntities()==0` | all squaddies `ChangeHealth(-1000)` | Crate "Squad" |
 | 3 | TypeLaser | Laser | no | – | – | – | – | – (squad weapon research) |
 | 4 | TypeGrenade | Grenade | special: sets current squad's weapon | – | – | – | – | – |
@@ -135,7 +135,9 @@ stateDiagram-v2
 6. `m_mostRecentTaskId = id`, `m_mostRecentTaskIdTimer = GetHighResTime()`, push `TaskSource{id, GetHighResTime(), source 0}` into `m_recentTasks`.
 7. MP and now full and local team → `dialog_powerup_limit` message.
 
-`RegisterTask(Task*)`: capacity-checked append without `Start()` (used for restoring saved Darwinia programs and teleport transfers — [B:LEGACY]) [C] `TaskManager::RegisterTask`; `code/location.cpp`, `code/worldobject/teleport.cpp`.
+`RegisterTask(Task*)`: capacity-checked append (at the end, no MP re-ordering) without `Start()` [C] `TaskManager::RegisterTask`. Users:
+- **[B:FULL] Radar-dish squad migration**: when the first squaddie of an `InsertionSquad` enters a RadarDish/Teleport and a new unit is created at the destination, the old Squad task is removed (no `Stop()`), a new `Task{type=Squad, state=Running, objId=new unit}` is registered with the old `m_lifeTimer` carried over in MP, and — if registration succeeds — `SelectTask(newId)` is called (in the sim, on all peers). The new task gets a **new id** and moves to the **end of the slot list**; weapon type and controller id are copied to the new unit [C] `code/worldobject/teleport.cpp:Teleport::EnterTeleport`.
+- [B:LEGACY] restoring saved Darwinia running programs (Engineer, InsertionSquad) [C] `code/location.cpp:Location::InitialiseTeam` (running-program block).
 
 `TaskManager::Advance()` (sim; once per tick from `Team::Advance` slice 1) [C] `TaskManager::Advance`, `code/team.cpp:Team::Advance`:
 1. MP: one bubble pass from the end: if task *i* is Running and *i-1* is Started, swap them (Running tasks drift left one position per tick).
@@ -177,7 +179,7 @@ Spawn side effects for local team: Squad → if pref `OTHER_AUTOMATICCAM` (`"Aut
 
 ### 1.7 Selection (`SelectTask`, `SwitchTo`, cycling)
 
-- `SelectTask(int id)` [C]: `m_currentTaskId = id`; if ≠ -1: `m_previousTaskId = id`; find task (return silently if missing); `task->SwitchTo()`; `GameCursor::BoostSelectionArrows(2.0)` (UI-only effect called from sim — see §5.3).
+- `SelectTask(int id)` [C]: `m_currentTaskId = id`; if ≠ -1: `m_previousTaskId = id`; find task (return silently if missing); `task->SwitchTo()`; `GameCursor::BoostSelectionArrows(2.0)` (UI-only effect called from sim — see §6 D5).
 - `SelectTask(WorldObjectId)`: selects the task whose `m_objId` matches team/unit/index; else `m_currentTaskId=-1`. Called by the network `SelectUnit` command so that clicking a unit in the world also selects its task [C] `code/network/clienttoserver.cpp` `NET_DARWINIA_SELECTUNIT` handler.
 - `SwitchTo()` [C] `Task::SwitchTo`: if local team and camera in RadarAim/TurretAim → camera FreeMovement. Then by type: Squad → `Team::SelectUnit(unitId,-1,-1)`; Engineer/Armour/Harvester/Shaman/Tank → `SelectUnit(-1, entityIndex, -1)`; Controller → select the Squad task with the same `m_objId`; Officer → deselect all; HotFeet/Booster/Subversion/Rage → for non-CPU teams set `m_underPlayerControl = true` on every Darwinian tagged with this task id, then deselect all (this is how the power-up's affected Darwinians become a directly controlled group); default → deselect all.
 - `GetNextTaskId()` returns the id after the current one (wrapping; -1 current ⇒ first) [C]; used by the legacy interfaces.
@@ -206,7 +208,7 @@ All player task actions are sent as `ClientToServer` letters and executed by eve
 
 | Player action | Sent by (client) | Command string (`NET_DARWINIA_COMMAND`) | Payload | Executed on every peer |
 |---|---|---|---|---|
-| Create task (SP/legacy only; MP UI never creates) | Icons/Gestures/Multiwinia `RunScreenZone("NewTask"/"SelectWeapon")`; `LocationInput` quick-unit d-pad (SP); squad weapon cycling (`location_input.cpp`) | `RunProgram` | `TEAMID` (uchar), `PROGRAM` (uchar task type) | `team->m_taskManager->RunTask(program)` |
+| Create task (SP/legacy only; MP UI never creates) | Icons/Gestures/Multiwinia `RunScreenZone("NewTask"/"SelectWeapon")`; `LocationInput` quick-unit d-pad (SP) (the squad weapon-cycling sender in `location_input.cpp` is commented out) | `RunProgram` | `TEAMID` (uchar), `PROGRAM` (uchar task type) | `team->m_taskManager->RunTask(program)` |
 | Place / fire current task | `LocationInput::Advance` on `ControlUnitCreate` (mouse left down / pad A) while current task is Started, TM overlay not visible, and (MP) not grace period/game over/paused | `TargetProgram` | `TEAMID`, `PROGRAM` (uchar **task id**), `POSITION` (Vector3 = `UserInput::GetMousePos3d()`) | `TaskManager::TargetTask(id,pos)` |
 | Select task | `AdvanceTab` (MP), Multiwinia/Icons `RunScreenZone("SelectTask")` | `SelectProgram` | `TEAMID`, `PROGRAM` (uchar task id) | `TaskManager::SelectTask(id)` |
 | Terminate current task | Multiwinia `AdvanceTerminate` on `ControlIconsTaskManagerEndTask` (**C** key / pad **Y**) when no Eclipse window open; Icons equivalent | `Terminate` (`NET_DARWINIA_TERMINATE`) | `TEAMID`, `PROGRAM` (uchar task id), `ENTITYID` = -1 | if `PROGRAM != 255`: `TerminateTask(program)`; else kill `team->m_others[ENTITYID]` (`RequestTerminateEntity`) |
@@ -223,7 +225,7 @@ sequenceDiagram
     participant Net as ClientToServer
     Sim->>Sim: Crate captured → TaskManager::RunTask(type)\n(state Started, not selected in MP)
     Sim-->>UI: m_recentTasks pop-up (wall-clock timers)
-    UI->>Net: Tab / key 1-9 / click icon → RequestSelectProgram(team, taskId)
+    UI->>Net: Tab / [ / ] / bumpers / key 1-9 → RequestSelectProgram(team, taskId)
     Net->>Sim: SelectProgram → SelectTask(id) → SwitchTo()
     UI->>Net: Left click (ControlUnitCreate) → RequestTargetProgram(team, currentTaskId, mousePos3d)
     Net->>Sim: TargetProgram → TargetTask → IsValidTargetArea → Task::Target(pos)
@@ -236,13 +238,15 @@ sequenceDiagram
 
 | # | Behaviour [C] | Ref |
 |---|---|---|
-| E1 | Multiwinia tutorial: `TerminateTask` refuses, so one-shot tasks (Nuke, Infection, forests, AntNest, Plague, Eggs, Meteor) whose `Target` relies on self-termination remain `StateStarted` and **can be fired again**; AirStrike sets Running first and is then removed by `Advance` when the effect object disappears. | `Task::TargetNuke` etc., `TaskManager::TerminateTask` |
+| E1 | Multiwinia tutorial 1 (and tutorial 2 until `MultiwiniaHelp::m_tutorial2AICanSpawn`): `TerminateTask` refuses, so one-shot tasks (Nuke, Infection, forests, AntNest, Plague, Eggs, Meteor) whose `Target` relies on self-termination remain `StateStarted` and **can be fired again**; AirStrike sets Running first and is then removed by `Advance` when the effect object disappears. | `Task::TargetNuke` etc., `TaskManager::TerminateTask` |
 | E2 | `Task::Stop()` refusing (`stop=false`) does not stop `TerminateTask` from deleting the task — the armour/turret survives without a slot. | `TaskManager::TerminateTask` |
 | E3 | Extinguisher and Tank `Target*` bodies are commented out: such a task would stay Started forever (not reachable in FULLGAME). | `Task::TargetExtinguisher`, `Task::TargetTank` |
 | E4 | `Capacity()` in MP ignores research; an eliminated team gets 2 slots (for retribution powers). | `TaskManager::Capacity`; `Multiwinia::AdvanceRetribution` checks `CapacityUsed() < Capacity()` before granting |
 | E5 | Squad life timer only counts down in MP and only while `> 0`; instant-unit squads get `m_lifeTimer = -1` (permanent). | `Task::Advance`, `Location::InitialiseTeam` |
 | E6 | `StartingPowerups` game option: each team gets N random crate rewards at team init (excluding Randomiser, CrateMania, Darwinians, Bitzkreig, SpawnMania, Plague, RocketDarwinians, SpaceShip, Spam, Triffids, SpeedUpTime, SlowDownTime, Forest, TheBeast and invalid ones); then every non-Shaman task gets `m_startTimer = 30.0` s (locked, greyed, countdown shown). | `code/location.cpp:Location::InitialiseTeam` |
 | E7 | `TaskManager::Advance` calls `GlobalResearch::AdvanceResearch()` once per team per tick (research is a single global object). | `TaskManager::Advance` |
+| E8 | A squad passing through a RadarDish gets a **new task id** and moves to the last slot (keyboard 1–9 mapping changes); if registration fails (e.g. capacity dropped to 2 on elimination) the squad continues **without a task** (no life timer, no slot, cannot be terminated via the task bar). | `Teleport::EnterTeleport` |
+| E9 | Tab is bound to both `ControlUnitCycleRight` and `ControlIconsTaskManagerDisplay`: with a Shaman selected, one Tab press both requests the next task and opens the Shaman UI (the select request applies a round-trip later) [I]. | `data/input/input_preferences.txt`; `TaskManagerInterfaceMultiwinia::Advance` |
 
 ---
 
@@ -293,7 +297,7 @@ The Multiwinia interface has **no pop-up task-manager screen in practice**: `Set
 | U4 | **Crate help tooltip** | current task is Started | box width 0.35·600 = 210, top y=420, centred on W/2; text wrapped at 1.75·210, font 11 (+20 % gap); black 0.75 fill, white 0.5 outline; text outline+fill (`g_editorFont`) | caption `crate_tooltip_<name>` (lower-cased); napalm → `crate_tooltip_napalmstrike`; turret option 0/1/3 → gun/rocket/flame tooltip, other → gun; missing → "Missing String:\n<id>" | `RenderCurrentCrateHelp` |
 | U5 | **Running-task bar** | whenever ≥1 task (drawn in the `!m_visible` branch every frame) | centred horizontally at y≈550; slot pitch = iconSize + 10; iconSize eases from 60 to 55; selected slot ×1.1, others ÷1.1 | see §2.3.3 | `RenderRunningTasks` |
 | U6 | **Tab / LB hint** | ≥1 task | left of first slot: centre (x₀ − 1.2·size, y + size/2 − 0.2·size), half-size 0.4·size | `icons/button_tab.bmp` (keyboard mode) or `icons/button_lb.bmp` (other modes); black 0.75 pass then white 0.75 | `RenderRunningTasks` |
-| U7 | **Focus highlight** | `m_currentScreenZone` valid (pad navigation; mouse hover only while visible) | zone grown by 10 % of its height on every side | MP: `icons/mouse_highlight.bmp`, additive, a **square** of side h at (x,y) | `RenderScreenZones`, `RenderScreenZoneHighlight` |
+| U7 | **Focus highlight** | `m_currentScreenZone` valid — **never in MP** (see note below); the same highlight is drawn explicitly around the current task icon while it is unplaced (§2.3.3) | zone grown by 10 % of its height on every side | MP: `icons/mouse_highlight.bmp`, additive, a **square** of side h at (x,y) | `RenderScreenZones`, `RenderScreenZoneHighlight` |
 | U8 | Standard cursor redraw | only if `m_visible` (never in MP) | – | `GameCursor::RenderStandardCursor` | `Render` |
 
 `Render()` draws nothing when: editing, no location, any Eclipse window open, `m_hideInterface` (Alt+X toggles), Multiwinia grace period, game over, or the local team currently controls a GunTurret building [C] `TaskManagerInterfaceMultiwinia::Render`.
@@ -313,7 +317,7 @@ The Multiwinia interface has **no pop-up task-manager screen in practice**: `Set
 | `ControlTaskManagerEndTask` | **unbound** in all shipped input files | would call `TerminateTask(current)` **locally** (non-networked) — dormant | `RunScreenZone("DeleteTask")` |
 | `ControlUnitCycleLeft`/`Right`, `ControlCameraForwards`/`Backwards` as shortcuts "ScreenUp"/"ScreenDown" | as above / W, Up / S, Down | **no handler** in the MP `RunScreenZone` → no-op | constructor, `RunScreenZone` |
 | `ControlIconsTaskManagerEndTask` | **C** down; pad **Y** down | If no Eclipse window: `RequestTerminateProgram(myTeam, m_currentTaskId)` (no-op if none selected, see §1.9) | `AdvanceTerminate` |
-| `ControlActivateTMButton` | mouse left up; pad A up; Enter down | Activates `m_currentScreenZone` (not when the focus is only a world-hover echo) | `AdvanceScreenZones` |
+| `ControlActivateTMButton` | mouse left up; pad A up; Enter down | Activates `m_currentScreenZone` — **never fires in MP** because the focus index is forced to −1 while hidden | `AdvanceScreenZones` |
 | `ControlIconsTaskManagerDisplayUp` (after Back held > 0.5 s) | pad Back up | Activates focused zone ("hold Back, release on a button") | `ButtonHeld`, `ButtonHeldAndReleased` |
 | `ControlMenuUp` / `ControlMenuDown` | pad d-pad/sticks up/down (repeat) | Only while visible (never in MP): move focus within current scroll zone, wrapping | `AdvanceScreenZones` |
 | `ControlMenuLeft` / `ControlMenuRight` | pad d-pad/sticks left/right (repeat) | Only while visible: switch scroll zone 1↔2, 2→3 when the zone has sub-zones, step through zone 3 | `AdvanceScreenZones` |
@@ -321,7 +325,9 @@ The Multiwinia interface has **no pop-up task-manager screen in practice**: `Set
 
 `RunScreenZone(name, data)` actions in this variant [C]: `NewTask` (refused with `MessageFailure` 2.5 s while another non-Officer task is Started; else if research owned → `RequestRunProgram` + sound `GestureBegin`; pad → hide), `SelectTask` (above), `DeleteTask` (local `TerminateTask(data or current)` + sound `DeleteTask` — only reachable via zones rendered while visible or the unbound key), `SelectWeapon` (research owned → `RequestRunProgram(weapon)` + `GestureBegin` + `GestureSuccess`), `Research` (`SetCurrentResearch`), `Objective` (data = ±(index+10); runs cut-scene script or default objective; hides). In MP only `SelectTask` zones are ever generated (by the bar, scroll zone 2) [C] `RenderRunningTasks`.
 
-**World-hover echo**: when hidden, if the object under the mouse (`LocationInput::GetObjectUnderMouse`) is the `m_objId` of one of my tasks, the matching `SelectTask` zone is marked "highlight only" (clicking it does nothing; it prevents a world click from also activating the zone) [C] `AdvanceScreenZones`. `m_highlightedTaskId` = task of the focused `SelectTask` zone.
+**The MP task bar is display-only for the mouse** [C] `AdvanceScreenZones`: mouse hover is evaluated only `if (m_visible)`, and when hidden `m_currentScreenZone` is reset to −1 every frame (the initial auto-focus only picks zones whose `m_scrollZone` equals `m_currentScrollZone` = 1, while bar zones use 2). Clicking a task icon therefore does nothing; tasks are selected with keys 1–9, Tab/`[`/`]`/bumpers, or by selecting the task's unit in the world (`SelectUnit` → `SelectTask(WorldObjectId)`).
+
+**World-hover echo**: when hidden, if the object under the mouse (`LocationInput::GetObjectUnderMouse`) is the `m_objId` of one of my tasks, the matching `SelectTask` zone is flagged "highlight only" (would suppress activation) [C] `AdvanceScreenZones` — the line that would focus it is commented out, so in MP this has no visible effect. `m_highlightedTaskId` = task of the focused `SelectTask` zone, hence always −1 in MP.
 
 Advisories for `ControlHelpSystem` [C]: Blue = focus valid ∧ Back held > 0.5 s ∧ Back pressed ∧ free slot; Green = focus valid ∧ free slot ∧ focused zone is `NewTask`; OverSelectableZone = focused zone exists and is not `NewTask`; CloseControlHelp = visible ∧ ¬(focus valid ∧ held ∧ pressed).
 
@@ -386,7 +392,7 @@ Gesture capture [C] `AdvanceGestures` (all while the overlay is held and the cen
 
 Terminate: `ControlGesturesTaskManagerEndTask` (Ctrl+C chord / pad Y) → **local** `TerminateTask(current)` and `m_currentTaskId = -1` (SP only, not networked) [C] `AdvanceTerminate`. Shortcuts: `SelectTask` 0–8 (keys 1–9), which here set `m_currentTaskId` and call `SelectTask` locally.
 
-Elements: title "taskmanager_taskmanager" size 50; grey title bar 100 px high spanning 3 screens; silver dividers; central red panel `textures/interface_red.bmp` multiplied by the alpha mask `icons/gesture_alpha.bmp` (red channel → alpha, two texture units, GL_COMBINE); **gesture guide** `icons/gestureguide.bmp` 320×320 centred at (W/2, H/2 − 10), additive 0.7; running-task row at y=490 (icon 70, shadow 78, gap 18, all capacity slots; Started blink; current alpha 1.0, visible 0.5, hidden 0.3; engineer/squad info; compass size 53); overview tabs (research / task manager / objectives) at y=95, 100×16 boxes; objectives and research screens as in Icons (research rows also show `icons/gesture_<Name>.bmp` for every type except Darwinian, Laser, TaskManager); live gesture trail (§3.7) [C] `Render*`.
+Elements: title "taskmanager_taskmanager" size 50; grey title bar 100 px high spanning 3 screens; silver dividers; central red panel `textures/interface_red.bmp` multiplied by the alpha mask `icons/gesture_alpha.bmp` (red channel → alpha, two texture units, GL_COMBINE); **gesture guide** `icons/gestureguide.bmp` 320×320 centred at (W/2, H/2 − 10), additive 0.7; running-task row at y=490 (icon 70, shadow 78, gap 18, all capacity slots; Started blink; current alpha 1.0, visible 0.5, hidden 0.3; engineer/squad info; compass size 53); overview tabs (research / task manager / objectives) at y=95, 100×16 boxes; objectives and research screens as in Icons (research rows also show `icons/gesture_<Name>.bmp` for every type except Darwinian, Laser, TaskManager); live gesture trail (§3.9) [C] `Render*`.
 
 ### 2.6 Multiwinia player-action reference (cross-partition summary; primary owner P01 `code/location_input.cpp`, P10 input)
 
@@ -394,7 +400,7 @@ Listed so 06 has one table; evidence [C] `code/location_input.cpp:LocationInput:
 
 | Action | Mouse/keyboard | Pad | Condition | Network command | Notes |
 |---|---|---|---|---|---|
-| Select object under cursor | left down (`ControlUnitSelect`) | A down | overlay hidden; pick priority: marker icon under mouse, else nearest of entity/unit/building along the click ray; buildings only RadarDish, GunTurret, FenceSwitch (own or neutral) | `SelectUnit` | RadarDish (unless level option NoRadarControl) → camera radar-aim; own GunTurret/ChessPiece → camera turret-aim; FenceSwitch → `Switch()` called **locally** (blocked type in MP). With pref `ControlRemap == 0` nothing new can be selected while something is selected. Clicking empty ground with something selected (MultiwiniaControlMethod 1) → "MouseError" sound + Space-to-deselect help |
+| Select object under cursor | left down (`ControlUnitSelect`) | A down | overlay hidden; pick priority: marker icon under mouse, else nearest of entity/unit/building along the click ray; buildings only RadarDish, GunTurret, FenceSwitch (own or neutral) | `SelectUnit` | RadarDish (unless level option NoRadarControl) → camera radar-aim; own GunTurret/ChessPiece → camera turret-aim; FenceSwitch → `Switch()` called **locally** (blocked type in MP). If pref `ControlRemap == 0` nothing new can be selected while something is selected (the key is absent from default prefs → `GetInt` default −1 → restriction inactive). Clicking empty ground with something selected (MultiwiniaControlMethod 1) → "MouseError" sound + Space-to-deselect help |
 | Deselect | Space down (`ControlUnitDeselect`) | B down | always | `SelectUnit(-1,-1,-1)` | camera free; `m_previousTaskId = -1` |
 | Place / fire current task | left down (`ControlUnitCreate`) | A down | current task Started, overlay hidden, not grace/game over/pause | `TargetProgram` | right-click instead → "MouseError" + help hint |
 | Select / cycle task | 1–9; Tab, `]`, `[` | RB / LB | §2.3.2 | `SelectProgram` | |
@@ -413,3 +419,369 @@ Listed so 06 has one table; evidence [C] `code/location_input.cpp:LocationInput:
 | Toggle ready (grace period) | Space | A / B | grace period | `RequestToggleReady` | after game over the same key returns to menu |
 | Shaman summon UI | Tab | Back | Shaman selected | (P04) | |
 
+
+---
+
+## [→ 06_player_control_and_input] 3. Gesture recognition (`Gesture`)
+
+### 3.1 Liveness
+
+`App::App` always constructs `m_gesture = new Gesture("gestures.txt")`, which loads and trains on `data/gestures.txt` at start-up [C] `code/app.cpp`. The recogniser is **only driven** by `TaskManagerInterfaceGestures` (SP, [B:LEGACY]) and the gesture editor window (`GESTURE_EDITOR` && `USE_SEPULVEDA_HELP_TUTORIAL` → [B:DEAD]) [C] `code/interface/gesture_window.cpp`. In Multiwinia the only calls are `EndGesture()` from `HideTaskManager()` (which recomputes features of a stale/empty buffer and prints "Sorry, not enough mouse samples" when < 3 samples) [C]. Gesture symbols are therefore **not a Multiwinia mechanic**; they are documented in full because they are a self-contained, reusable recogniser.
+
+### 3.2 Algorithm overview
+
+A **Rubine-style linear statistical classifier** (13 global stroke features, per-class mean vectors, a pooled ("common") covariance matrix, linear discriminant evaluation, soft-max confidence, Mahalanobis rejection) [C] `code/gesture.cpp`; [I] the feature list and training maths match D. Rubine, "Specifying Gestures by Example" (SIGGRAPH 1991), a public-domain algorithm — safe to re-implement.
+
+Constants [C] `code/gesture.h`:
+
+| Name | Value | Meaning |
+|---|---|---|
+| `GESTURE_MAX_MOUSE_SAMPLES` | 1024 | sample buffer (debug assert on overflow) |
+| `GESTURE_MAX_FEATURES` | 13 | features f1..f13 (array index 0 unused, always 0) |
+| `GESTURE_MAX_TRAINERS` | 32 | max training examples per symbol (assert `< 32`) |
+| `GESTURE_MIN_SAMPLE_DISTANCE` | 6.0 px | a new sample closer than this to the previous accepted one is dropped |
+| `GESTURE_CONFIDENCETHRESHOLD` | 0.5 | min confidence for success |
+| `GESTURE_MAHALANOBISTHRESHOLD` | 3000.0 | max Mahalanobis distance for success |
+| confidence temperature | 500.0 | divisor in the soft-max (literal in `RunComparison`) |
+
+### 3.3 Sampling
+
+- `BeginGesture()`: clear samples and results, `recording = true`.
+- `AddSample(x, y)` — called once per client frame while the button is held with **integer screen pixel** coordinates of the target cursor (`g_target->X/Y`, origin top-left, y down). Drops the sample if its Euclidean distance to the last accepted sample is < 6.0 px; else stores `{x, y, time = GetHighResTime()·1000}` (milliseconds, double). No resampling, no smoothing, no normalisation of position/scale/rotation — the features themselves are scale-dependent (lengths in px, speeds in px²/ms², durations in ms) [C] `Gesture::AddSample`.
+- `EndGesture()`: `recording = false`; `CalculateFeatureSet()`; `RunComparison()`.
+
+### 3.4 Features (computed in `CalculateFeatureSet`, n = number of samples; requires n ≥ 3, otherwise the previous feature set is kept)
+
+Let sᵢ = (xᵢ, yᵢ, tᵢ).
+
+| f | Definition as implemented [C] | Note |
+|---|---|---|
+| f1 | (x₂−x₀)/‖s₂−s₀‖ | initial direction cosine (uses 3rd point to reduce noise) |
+| f2 | (y₂−y₀)/‖s₂−s₀‖ | initial direction sine |
+| f3 | √((R−L)² + (B−T)²) where L = min x, T = min y, B = max y, and **R is updated as "if xᵢ > R then R = yᵢ"** (initial R = 0, L = T = 999999, B = 0) | bounding-box diagonal — **defect**: R takes a y value |
+| f4 | atan((B−T)/(R−L)) (`iv_atan`) | bounding-box diagonal angle, same defect |
+| f5 | ‖s_{n−1} − s₀‖ | start–end distance |
+| f6 | (x_{n−1}−x₀)/f5 | start–end cosine (NaN if f5 = 0) |
+| f7 | (y_{n−1}−y₀)/f5 | start–end sine |
+| f8 | Σ_{j=0}^{n−3} ‖s_{j+1}−s_j‖ | total length — **defect**: last segment omitted |
+| f9 | Σ_{k=1}^{n−2} θₖ, θₖ = atan( (aₓ·b_y − bₓ·a_y) / (aₓ·bₓ + a_y·b_y) ), a = s_{k+1}−s_k, b = s_k−s_{k−1} | total turning; CRT `atan` (not atan2) so each θ ∈ (−π/2, π/2) |
+| f10 | Σ |θₖ| | |
+| f11 | Σ θₖ² | |
+| f12 | max over consecutive pairs of (Δx²+Δy²)/Δt² (pairs with Δt = 0 skipped) | max speed², px²/ms² |
+| f13 | Σ Δt over pairs with Δt ≠ 0 | duration, ms |
+
+### 3.5 Training (`TrainSystem`, run after loading and after every added sample)
+
+For C symbols with nᶜ trainers each (training vectors include index 0, always 0):
+1. Mean μᶜᵢ = (1/nᶜ) Σₑ fᵢ⁽ᵉ⁾ for i = 0..13.
+2. Per-class scatter Sᶜᵢⱼ = Σₑ (fᵢ⁽ᵉ⁾−μᶜᵢ)(fⱼ⁽ᵉ⁾−μᶜⱼ), i, j = 0..13.
+3. Pooled covariance **as implemented**: Σᵢⱼ = [ Σ_c ( Sᶜᵢⱼ / nᶜ − 1.0 ) ] / ( Σ_c nᶜ − C ). (The source writes `S / (double) n - 1.0`; operator precedence makes it "divide by n, then subtract 1", not "divide by n−1". Because f0 ≡ 0, row/column 0 of Σ is the constant −C/(N−C), which keeps the 14×14 matrix invertible.) **A re-implementation must reproduce this exact formula to reproduce the shipped classification with `data/gestures.txt`.**
+4. Σ⁻¹ by Gaussian elimination with scaled partial pivoting (`code/lib/invert_matrix.cpp:inv`, 1-based).
+5. Weights: wᶜⱼ = Σ_{i=1}^{13} Σ⁻¹ᵢⱼ μᶜᵢ for j = 1..13; wᶜ₀ = −½ Σ_{i=1}^{13} wᶜᵢ μᶜᵢ.
+
+### 3.6 Classification and thresholds (`RunComparison`, `GetSymbolID`, `GestureSuccess`)
+
+- Score rᶜ = wᶜ₀ + Σ_{i=1}^{13} wᶜᵢ fᵢ (0 for classes with no trainers).
+- Symbol = first index with the maximum score.
+- Confidence of class i = 1 / Σⱼ exp((rⱼ − rᵢ)/500).
+- Mahalanobis of class i = Σ_{j=1}^{12} Σ_{k=1}^{12} Σ⁻¹ⱼₖ (fⱼ−μⁱⱼ)(fₖ−μⁱₖ) — **defect**: loops stop at `< GESTURE_MAX_FEATURES`, so f13 (duration) is excluded.
+- Success ⇔ confidence(best) ≥ 0.5 ∧ Mahalanobis(best) ≤ 3000.0.
+- Accessors return −1.0 for out-of-range symbol ids.
+
+Training-file format (`data/gestures.txt`, grammar owned by X1b) [C] `Gesture::LoadTrainingData`/`SaveTrainingData`: line 1 = number of symbols; then per symbol a line with the trainer count and a line with trainerCount × 14 floats (f0..f13 per trainer, f0 written as 0). Shipped file: **8 symbols × 20 trainers** [C] (parsed by `_work/scripts/P09_gestures.py`).
+
+Validation [I] (simulation, not original code): a faithful Python port including all defects (`_work/scripts/P09_gesture_sim.py`) accepts 160/160 training vectors and classifies all eight `data/gesture_demos/*.txt` strokes (replayed at 40 ms/sample, screen height 768 and 600) as their intended symbol with confidence 0.57–1.00 and Mahalanobis 72–887 (< 3000). These are usable as regression test vectors.
+
+### 3.7 Symbol set (complete)
+
+Symbol id = order in `data/gestures.txt`; mapping by `TaskManager::MapGestureToTask` [C]; shapes [I] from the stroke coordinates in `data/gesture_demos/<name>.txt` (screen space, y down) and confirmed by the trained means [C] (`_work/scripts/P09_gestures.py` output).
+
+| Id | Task | Stroke (from demo file) | Mean f5 start–end px | Mean f13 duration ms | Mean f9 turning rad | Icon |
+|---|---|---|---|---|---|---|
+| 0 | Squad | closed triangle: from apex down-right, left along the base, back up to apex | 24.2 | 955 | −0.22 | `icons/gesture_squad.bmp` |
+| 1 | Engineer | square arch "⊓": up, right, down | 234.7 | 739 | −1.29 | `icons/gesture_engineer.bmp` |
+| 2 | Grenade | rounded arch "∩": up, curving over to the right, down | 351.8 | 482 | −3.14 | `icons/gesture_grenade.bmp` |
+| 3 | Rocket | right-pointing arrow: shaft left→right, then up-left, down, back up-right to the tip (arrowhead) | 449.4 | 902 | −2.84 | `icons/gesture_rocket.bmp` |
+| 4 | AirStrike | three-spoke star drawn as out-and-back strokes from a centre (up, down-right, down-left) | 25.8 | 1845 | 0.15 | `icons/gesture_airstrike.bmp` |
+| 5 | Controller | zig-zag with three peaks "/\/\/\" | 344.1 | 1133 | −0.04 | `icons/gesture_controller.bmp` |
+| 6 | Officer | "V" / tick: down-right then up-right | 364.6 | 407 | −0.82 | `icons/gesture_officer.bmp` |
+| 7 | Armour | closed shield/pentagon: right along top, down, down-left to a point, up-left, up to start | 30.3 | 1358 | −0.57 | `icons/gesture_armour.bmp` |
+
+The gesture guide image `icons/gestureguide.bmp` (all symbols) and `icons/gesture_alpha.bmp` (panel mask) are used only by the Gestures interface [C].
+
+### 3.8 Gesture → action
+
+Successful symbol → task type (above) → if `GlobalResearch::HasResearch(type)` → `RequestRunProgram(team, type)`; Squad/Engineer/Officer/Armour create tasks; Grenade/Rocket/AirStrike(SP)/Controller switch the current squad's weapon (§1.3) [C] `TaskManagerInterfaceGestures::AdvanceGestures`, `TaskManager::RunTask(int)`.
+
+## [→ 26_animation_and_vfx] 3.9 Gesture trail rendering [B:LEGACY]
+
+[C] `TaskManagerInterfaceGestures::RenderGestures` (an identical copy exists, uncalled, in `TaskManagerInterfaceIcons::RenderGestures`):
+1. Lazily create a 64×64 `BitmapRGBA` and texture.
+2. Each frame clear to black; map every sample to the 64×48 region (x·64/screenW, y·48/screenH); draw line segments between consecutive samples with grey level α = 255·(1 − age/3 s) (0 if age ≥ 3 s), where age = now − sample time in **whole seconds** (the int accessor truncates ms/1000), so the trail fades in 1-s steps.
+3. `ApplyBlurFilter(1.4)`; upload with `glTexImage2D` (RGBA).
+4. Draw a full-screen quad with texcoords (0,0)–(1,0.75) twice, additive (SRC_ALPHA, ONE): pass 1 `GL_NEAREST`, colour (0.2,0.2,0.9,1) (blocky blue); pass 2 `GL_LINEAR`, colour (0.7,0.7,1.0,1) (soft glow). Result: a low-resolution, blurred, glowing blue trail covering the screen.
+
+Gesture-demo playback (Sepulveda tutorial) is [B:DEAD] — see Appendix.
+
+---
+
+## [→ 06_player_control_and_input] 4. GameCursor — cursors, highlights, placement previews
+
+### 4.1 Cursor objects
+
+`MouseCursor` = a textured screen- or world-space quad with optional blurred shadow [C] `code/gamecursor.cpp:MouseCursor`. Constructed from a BMP: the bitmap is registered as a texture under its file name, then a copy blurred with `ApplyBlurFilter(10.0)` is registered as `shadow_<file>`. Defaults: size 20, hotspot (0,0) (fraction of size; (0,0) = top-left, (1,1) = bottom-right), not animating, shadowed, additive, colour white.
+
+| Member | Texture | Hotspot | Size (px or wu) | Animated | Colour / blend | Used in MP? |
+|---|---|---|---|---|---|---|
+| `m_cursorStandard` | `icons/mouse_game.bmp` | (0.055, 0.070) | 35 | no | white, additive, shadowed | **yes** — default pointer |
+| `m_cursorPlacement` | `icons/mouse_placement.bmp` | (0.5, 0.5) | 40 (varies) | per call | white, additive | **yes** — "trying to enter" marker; SP placement, orders markers |
+| `m_cursorDisabled` | `icons/mouse_disabled.bmp` | (0.5, 0.5) | 60 | no | red (255,0,0), additive | **yes** — invalid enter; (texture also drawn as a red sprite for invalid placement / no route) |
+| `m_cursorMoveHere` | `icons/mouse_movehere.bmp` | (0.5, 0.5) | 30 | yes | (255,255,150) additive | SP only |
+| `m_cursorHighlight` | `icons/mouse_highlight.bmp` | (0.5, 0.5) | 30 (set by caller) | yes (off when used) | white additive | SP only (the same texture is the MP task-bar focus highlight) |
+| `m_cursorTurretTarget` | `icons/mouse_turrettarget.bmp` | (0.5, 0.5) | caller | no | white, **alpha-blend**, **no shadow** | **yes** — crosshair |
+| `m_cursorSelection` | `icons/mouse_selection.bmp` | (0.5, 0.5) | caller | no | team colour | SP only |
+| `m_cursorEnter` | `icons/mouse_enter.bmp` | (0.5, 1.0) | 50 | yes | white additive | SP only |
+| `m_cursorMissile` | – (NULL, never created) | – | – | – | – | no |
+
+Animation: `GetSize() = size + |sin(4·g_gameTime)|·size·0.6` (pulses between 1.0× and 1.6× at 4 rad/s) [C] `MouseCursor::GetSize`.
+
+2D render (`MouseCursor::Render(x, y, angle)`): top-left = (x − s·hotX, y − s·hotY); translate to quad centre, rotate by `angle` degrees about Z; shadow pass with `shadow_` texture, blend (SRC_ALPHA, ONE_MINUS_SRC_COLOR), colour (1,1,1,0) (darkens what is beneath by the shadow's colour); main pass with colour, blend additive or alpha; depth writes off, culling off; texcoords V flipped (BMP bottom-up) [C].
+
+3D render (`Render3D(pos, front, up, cameraScale)`): quad lying in the plane spanned by `right = front × up` and `front`, size s = GetSize() (+ (camDist − 300)/20 when camera farther than 300 wu and cameraScale), offset by hotspot; same two passes (main pass always additive) [C]. (`Render3D(pos)` derives `up` from `normalMap(pos.x, pos.y)` — **defect**: should be pos.z; unused.) `RENDER_CURSOR_3D` is never defined, so all in-game cursors use the projected-2D path [C].
+
+### 4.2 Frame flow in Multiwinia
+
+`Renderer` calls, in order, `GameCursor::Render()` then `GameCursor::RenderBasicCursorAlwaysOnTop()` [C] `code/renderer.cpp`.
+
+1. `Render()`: return if the interface is hidden (Alt+X) and no window is open; return if at a location without a local team (unless `SPECTATOR_ONLY`, defined only for the hardware-compat and assault-stress targets); in MP → `RenderMultiwinia()` and return [C].
+2. `RenderMultiwinia()` (3D matrices; returns if no location or any Eclipse window is open) [C]:
+   a. `RenderSelectionCircle()` (§4.6).
+   b. Team colour for effects: team colour (or (255,255,100) if none) + (100,100,100) clamped, alpha 150.
+   c. **Highlighted object** (§4.3): if any → `RenderUnitHighlightEffect(pos, radius, teamCol)`; if it is an Armour → route line from armour to its waypoint (`RoutingSystem::RenderRouteLine`, intensity 0.5); if it is an Officer in formation mode, not my selected entity, and in `StateToWaypoint` → route line to its waypoint + formation preview at the waypoint facing the travel direction. Store `m_objUnderMouse`.
+   d. **Selected object**: unless it is a GunTurret building, or a squad/squaddie currently in transit inside any RadarDish (`m_inTransit`), draw `RenderUnitHighlightEffect` with teamCol + (50,50,50), alpha 255.
+   e. **Promotable Darwinian**: if nothing highlighted or selected, no Darwinians selected and no selection circle → `Task::FindDarwinian(mouse3d, myTeam)`; if found and selectable → highlight ring at its predicted position, radius 2× entity radius.
+   f. **Officer formation preview**: if my selected entity is an Officer and the cursor is not on it: if `Officer::IsFormationToggle(mouse3d)` → preview formation at the officer facing the cursor; else if in formation mode → preview at the cursor facing away from the officer.
+3. `RenderBasicCursorAlwaysOnTop()` (MP only; skipped when interface hidden and no window): 2D; if no window open → `RenderSelectedObjectNearCursor()` (§4.5) and `RenderTryingToEnterEffect()` (§4.7); then `RenderCrosshair()`; if it returned false → `RenderStandardCursor(x, y)`.
+
+The standard pointer is therefore drawn in MP whenever no crosshair applies; with Eclipse windows open only the icon/enter effects are suppressed and `RenderCrosshair` returns false, so the pointer is still drawn [C] `RenderBasicCursorAlwaysOnTop`.
+
+### 4.3 Highlight / selection resolution
+
+`GetHighlightedObject(id, pos, radius)` [C]:
+- Source: if the TM overlay is hidden, `LocationInput::GetObjectUnderMouse` (marker icon under mouse first; then nearest of entity/unit/building along the click ray; buildings limited to RadarDish/GunTurret/FenceSwitch; none while controlling a turret; while placing an Officer task a nearby Darwinian counts). If visible, the task under the TM focus (`m_highlightedTaskId`).
+- Accepted kinds: building = RadarDish, Bridge, own GunTurret, FenceSwitch (radius ×0.8; turret pos raised by 0.5·radius); unit (if `IsSelectable`) at centre + vel·`g_predictionTime` + first entity's centre offset; entity (if `IsSelectable`) at predicted position, Darwinian radius ×2.
+- Predicted position = pos + centrePos + vel·(`g_predictionTime` [+ `SERVER_ADVANCE_PERIOD` if the entity index is beyond the team's last-updated index this tick]) [C] `GetPredictedPosition` (client-side interpolation, P15).
+- Side effect: when the highlighted id changes, sound `UnitHighlight` (TypeMultiwiniaInterface) at most every 0.2 s.
+
+`GetSelectedObject`: selected entity (predicted pos) → else current building (centrePos) → else selected unit (centre + vel·prediction + first entity's centre) [C].
+
+### 4.4 Unit highlight effect (rings + glow cylinder)
+
+[C] `RenderUnitHighlightEffect(pos, radius, colour)`:
+- `numSteps = max(25, 2·radius)`; main ring width = 0.2·radius; outline width = 0.075·radius.
+- Projection near plane pushed to 1.03× to reduce z-fighting; alpha blend; depth writes off.
+- Ring 1 (team colour): inner radius−0.2r, outer r. Ring 2 (black): inner r−0.2r−0.075r, outer r−0.2r. Ring 3 (black): r → r+0.075r.
+- `RenderRing`: quad strip in the plane perpendicular to the ground normal at the centre; vertices blended toward terrain height by `amountToFollowLand = min(1, 75 / distance(camera, centre))` (only applied if > 0.1) — close objects drape on the terrain, far ones stay planar.
+- Glow cylinder: radius r + 0.075r, height r·max(1, camDist/300), `numSteps` sides, colour alpha at the base fading to 0 at the top (smooth shading), "up" = normalised average of world up and ground normal.
+
+### 4.5 Icon near the cursor (`RenderSelectedObjectNearCursor`) — MP context rules
+
+Not drawn after game over. Anchor: cursor + 5 px along direction n = normalise(0.85, 1) (down-right); icon size = screenH/24; drawn through `MarkerSystem::RenderShadow`, `RenderColourCircle` (team colour) and `RenderIcon` (P08) [C] `RenderSelectedIcon`. Priority:
+
+| Priority | Context | What is drawn | Ref |
+|---|---|---|---|
+| 1 | A current task exists | task icon `icons/icon_<Name>.bmp`; while Started it blinks (shown when `fmod(now, 0.4) < 0.25`) | `RenderSelectedTaskIcon` |
+| 1a | …and Started and `IsValidTargetArea(mouse3d)` is false | red sprite `icons/mouse_disabled.bmp` (×1.2 of half icon) at the icon centre (anchor + 50 px along n) | same |
+| 1b | …Started GunTurret / AntsNest | ghost model at the cursor: `battlecannonturret.shp` / `anthill.shp`, identity orientation (front (0,0,1)), blend (ONE, SRC_COLOR), depth writes off | same |
+| 1c | …Started HotFeet, Booster, Subversion, Plague, Extinguisher, MeteorShower, Rage, Nuke | glowing area cylinder at the cursor (`RenderCyliner`, 100 sides, attached to ground, up = world up), team colour, alpha halved during the "off" phase of the 0.4 s blink. Radius/height: default 70 / 42 wu; MeteorShower 280 / 70; Nuke 210 / 70 | same (radii = `POWERUP_EFFECT_RANGE` ×1, ×4, ×3; height ×0.6 or ×1) |
+| 2 | No task, selected entity is an Officer | `icons/icon_officer.bmp` | `RenderSelectedUnitIcon` |
+| 3 | Darwinians selected | `icons/icon_darwinian.bmp` + count (font 15, outline then 0.9 white) at anchor+50 px+(2, 0.4·size); if `RoutingSystem::m_walkableRoute` is false, the red disabled sprite replaces the count ("no route") | `RenderSelectedDGsIcon` |
+
+### 4.6 Selection circle (Darwinian group selection) visual
+
+[C] `RenderSelectionCircle`: while `Team::m_selectionCircleCentre ≠ 0`, every frame create 30 `Particle::TypeControlFlash` particles, size = current radius, evenly spaced on the circle of `m_selectionCircleRadius` (max 100 wu, grown by `LocationInput`), rotating at 0.5 rad/s (angle offset = wall time·0.5), 10 wu above the terrain.
+
+### 4.7 "Trying to enter" effect
+
+[C] `RenderTryingToEnterEffect` when `m_objUnderMouse` is: an Armour while Darwinians are selected (valid if passengers < capacity), or a RadarDish while Darwinians or an Officer are selected (entrance from `RadarDish::GetEntrance`, valid if `Connected()`). Draw `m_cursorPlacement` at the projected entrance, animated only if valid; if invalid also draw `m_cursorDisabled` (red, 60 px) on top.
+
+### 4.8 Crosshair (`RenderCrosshair`)
+
+Returns false (→ standard pointer) if any window is open, no team, or nothing building/unit selected. Rules [C]:
+
+| Selected | Crosshair | Size |
+|---|---|---|
+| Own GunTurret building | `m_cursorTurretTarget` at the projected `GunTurret::m_actualTargetPos`, smoothed (exp. lerp, factor 10·dt) — only when a target pos exists; the standard pointer is suppressed either way | 1.5·screenH/10 |
+| Any other selected building (in MP: RadarDish) | turret-target sprite at the projected 3D mouse position | screenH/10 |
+| InsertionSquad unit in gamepad mode with a tracked entity | nothing drawn (early `return true` — comment: "doesn't work") | – |
+| InsertionSquad unit in gamepad mode without tracking | turret-target at projected mouse | screenW/25.6 |
+| Any other unit (keyboard) | none (standard pointer) | – |
+
+**Defect**: the RadarDish test is written `building->m_type = Building::TypeRadarDish` (assignment) [C] — any selected non-turret building has its **type overwritten to RadarDish on the local client** while the crosshair renders. In Multiwinia only GunTurret, RadarDish and ChessPiece can be selected, and ChessPiece is blocked (`BLOCK_OLD_DARWINIA_OBJECTS`), so the write is a no-op in practice — but it is a render→sim write (see §6).
+
+### 4.9 Formation preview (`RenderFormation`)
+
+For i in 0..`Team::m_evolutions[EvolutionFormationSize]`−1: position = `Officer::GetFormationPositionFromIndex(pos, i, front, size)` (P03); a camera-facing diamond (vertices ±2·camUp, ±2·camRight) textured `textures/particle.bmp`, team colour, alpha blend; near plane ×1.03 [C].
+
+### 4.10 Selection arrows, off-screen arrow, markers [B:LEGACY] in MP
+
+- `BoostSelectionArrows(s)`: `m_selectionArrowBoost = max(current, s)`; called with 2.0 by `TaskManager::SelectTask` and `Team::SelectUnit` for the local team [C] — but arrows are drawn only by the SP render path, so in MP the call has no visible effect.
+- `RenderSelectionArrows(id, pos)` (SP): on-screen → four `icons/selectionarrow.bmp` triangles (size 40) at distance 1000/√camDist around the object, alpha = max(0.1, min(boost, 0.9), clamp((camDist−200)/200, ·, 0.9)), boost decays 0.4/s; team colour in MP, (255,255,75) in SP; off-screen → a 60 px arrow at the screen edge (`FindScreenEdge`) pointing toward the object; also `RenderOffscreenArrow` (dotted particle path from object to mouse, darkened ×0.2 if not walkable; disabled in MP).
+- `CreateMarker(pos)` (move-order confirmation) is called by `Location` for the local team when orders are given, but `RenderMarkers` (which shrinks a 3D placement marker from 20 to 0 over 0.5 s and deletes it) is only called by the SP path → in MP the marker list **grows without bound** (leak) [C] `code/location.cpp:Location::IssueDarwinianOrders`, `GameCursor::RenderMarkers`.
+- `RenderWeaponMarker` (animated, shadowed 3D placement marker, size 40): no callers found [I].
+
+### 4.11 SP cursor state machine [B:LEGACY] (for completeness)
+
+`Render()` non-MP branch [C]: editing/window → none; chat log → none; non-interactive camera (cut-scene) → none; global world → placement cursor (animated if the highlighted location is available, else + disabled); at a location: TM visible → selection arrows + selection sprite; placing a non-Officer task → placement cursor (animated if valid, else + disabled; sets `m_validPlacementOpportunity`) plus area sparkles (`Particle::TypeSelectionMarker`, 10 or 30 around radius 70/140/420) or ghost turret/anthill; entity-track camera → turret target when firing; otherwise highlight sprite, armour-enter cursor, move-here arrow rotated toward the selected unit, building crosshair (200 px), Darwinian-promote highlight, landscape highlight cursor. Advisories `AdviseHighlightingSomething`, `AdvisePlacementOpportunity`, `AdviseMoveableEntitySelected` are only updated in this branch (so in MP they keep their initial `false`) — consumed by `ControlHelpSystem` (P10).
+
+
+---
+
+## [→ 24_rendering] 4R. Task-manager / cursor overlay render states (summary)
+
+All drawing is immediate-mode OpenGL (emulated by the D3D9 layer under `USE_DIRECT3D`), no shaders [C]. Render order inside a frame: … `MarkerSystem::Render` → `MultiwiniaHelp::Render` → `ShamanInterface::Render` → `UserInput::Render` → `GameCursor::Render` (3D world-space highlights) → `GameCursor::RenderBasicCursorAlwaysOnTop` (2D icon, enter marker, crosshair/pointer) → chat → `Camera::Render` → `TaskManagerInterface::Render` (target-area particles, then 2D bar/pop-ups/messages) → debug renderer [C] `code/renderer.cpp`.
+
+| Pass | Space / projection | Blend (src, dst) | Depth | Texture (filter) | Ref |
+|---|---|---|---|---|---|
+| Cursor shadow | 2D screen px (or world quad) | SRC_ALPHA, ONE_MINUS_SRC_COLOR with colour (1,1,1,0) | write off | `shadow_<cursor>` = cursor BMP blurred r=10 | `MouseCursor::Render` |
+| Cursor main | same | SRC_ALPHA, ONE (additive) or SRC_ALPHA, ONE_MINUS_SRC_ALPHA (`m_additive=false`: turret crosshair) | write off | cursor BMP | same |
+| Highlight rings | 3D, near plane ×1.03 | SRC_ALPHA, ONE_MINUS_SRC_ALPHA | write off | none | `RenderUnitHighlightEffect` |
+| Glow / area cylinder | 3D | alpha blend, smooth shading, top alpha 0 | write off (highlight) | none | `RenderCyliner` |
+| Ghost turret/anthill | 3D model at cursor | ONE, SRC_COLOR | write off | model textures | `RenderSelectedTaskIcon` |
+| Formation dots | 3D billboards | alpha blend | – | `textures/particle.bmp` | `RenderFormation` |
+| Task bar shadow | 2D ortho 600-high | alpha blend | write off | `icons/marker_shadow.bmp` (alpha) | `RenderRunningTasks` |
+| Task bar colour disc / icon | same | additive | write off | `icons/marker_colour.bmp` (alpha), `icons/icon_*.bmp` | same |
+| Compass | same | shadow alpha-blend, arrow additive | – | `icons/compass_shadow.bmp`, `icons/compass.bmp` (no mipmap) | `RenderCompass` |
+| Pop-up box | same | alpha blend; gradient with smooth shading; crate icon additive, clipped to the box via `Renderer::Clip` ([I] scissor) | – | `icons/icon_crate.bmp` | `RenderRecentRunTask` |
+| Text | same | fonts' own (outline pass with colour alpha 0, then fill) | – | `g_titleFont`, `g_gameFont`, `g_editorFont` | `RenderMessages`, `RenderCurrentCrateHelp` |
+| Gesture trail [B:LEGACY] | full-screen quad | additive ×2 (nearest then linear) | – | dynamic 64×64 RGBA, blurred 1.4 | §3.9 |
+
+Notes: [I] icon BMPs carry no alpha (24-bit BMP; `TEXTURE_EXTENSION` = "bmp"; only `marker_*` and `compass_shadow` are loaded with `GetTextureWithAlpha`), so black reads as transparent through additive blending, and "shadow" passes darken via ONE_MINUS_SRC_COLOR [C for the blend modes]; a new renderer must either keep additive icon art or author RGBA art. UI coordinates are resolution-independent via the 600-unit-high orthographic canvas (`gluOrtho2D(0, 600·aspect, 600, 0)`), cursors are in physical pixels (sizes in px, e.g. 35 px pointer regardless of resolution) [C].
+
+## [→ 06_player_control_and_input] 5. Constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `POWERUP_EFFECT_RANGE` | 70.0 wu | `#define` | `code/taskmanager.h` |
+| Squad task life | 60.0 s (MP only counts down) | literal | `Task::Start` |
+| Booster / HotFeet / Subversion / Rage life | 30.0 s | literal | `Task::Start` |
+| Tank life (non-TankBattle) | 30.0 s | literal | `Task::Start` |
+| Squad size | 2 + research level(Squad); MP level = 1 → 3 | formula / data | `Task::TargetSquad`; `code/location.cpp:Location::Init` |
+| MP research levels | all 3, except Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4 | literal | `Location::Init` |
+| Squad spawn spread | 10 wu | literal | `Task::TargetSquad` |
+| Engineer / Harvester spawn height offset | +10 / +50 wu | literal | `TargetEngineer`, `TargetHarvester` |
+| DropShip entry | map corners inset 100 wu, height 500 wu | literal | `TargetDropShip` |
+| Promote/demote flash particles | 5 + rand%5, vel (±5, 0..15, ±5) | literal | `Task::Promote`, `Demote` |
+| FindDarwinian radius | 10.0 wu | literal | `Task::FindDarwinian`, `IsValidTargetArea` |
+| Capacity MP | 6 (2 when eliminated) | literal | `TaskManager::Capacity` |
+| Capacity SP | 1 + research level(TaskManager) | formula | same |
+| Turret placement exclusion | building sphere 10 wu; enemy TrunkPort 400 wu; enemy SpawnPoint 200 wu; restriction zones | literal | `IsValidTargetArea` |
+| Target-area radii | squad-anchored 100 wu; building-anchored 75 wu; open trunk port 120 wu (SP); "anywhere" 99999.9 | literal | `GetTargetArea` |
+| Turret limit | game option `MaxTurrets` (Rocket Riot default 3, range 0–5; Blitzkrieg default 2, range 0–5; other modes −1 = no limit) | data | `data/multiwinia.txt` |
+| Starting power-up lock | 30.0 s (`m_startTimer`) | literal | `Location::InitialiseTeam` |
+| Retribution grant interval | 45 s (eliminated teams) | literal | `Multiwinia::AdvanceRetribution` (P02) |
+| Message durations | Success 2.5 s, Failure 2.5 s, Shutdown 3.0 s | literal | `taskmanager.cpp`, interfaces |
+| Recent-task pop-up | show 3.0 s, minimise 1.0 s; SP clear after 1.0 s | literal | `TaskManager::Advance`, `RenderRecentRunTask` |
+| Pad "hold Back" threshold | 0.5 s | literal | `TaskManagerInterfaceMultiwinia::ButtonHeld` |
+| Virtual UI canvas | height 600, width 600·aspect | literal | `SetupRenderMatrices` |
+| MP task bar | icon 60→55, gap 10, y 550, selected ×1.1 / others ÷1.1, ease factor min(dt,0.1)·10 | literal | `RenderRunningTasks` |
+| Compass size | 0.77·icon (MP), 0.75·icon (Icons), 53 (Gestures) | literal | `RenderCompass` callers |
+| Tooltip typewriter | 50 chars/s | literal | `RenderTooltip` |
+| Centre message | y = 370, size 40 (+15·√(2−t) last 2 s) | literal | `RenderMessages` |
+| Crate help box | width 210, y 420, font 11 | literal | `RenderCurrentCrateHelp` |
+| Screen-edge scroll border | 10 px | literal | `AdvanceScreenEdges` |
+| Gesture constants | §3.2 | `#define` | `code/gesture.h` |
+| Cursor sizes / hotspots | §4.1 | literal | `GameCursor::GameCursor` |
+| Cursor pulse | +60 % at |sin(4·gameTime)| | literal | `MouseCursor::GetSize` |
+| Shadow blur radius | 10.0 (cursors, selection arrow) | literal | `MouseCursor::MouseCursor` |
+| Highlight ring widths | 0.2·r, 0.075·r; min 25 steps | literal | `RenderUnitHighlightEffect` |
+| Land-follow factor | min(1, 75 / camDist), threshold 0.1 | literal | `RenderRing`, `RenderCyliner` |
+| Placement preview radii | 70/42 (default), 280/70 (meteor), 210/70 (nuke) wu | formula | `RenderSelectedTaskIcon` |
+| Selection-circle visual | 30 particles, 0.5 rad/s, +10 wu | literal | `RenderSelectionCircle` |
+| Selection circle growth | +100 wu/s up to 100 wu | literal | `code/location_input.cpp` (P01) |
+| Darwinian order rate limit | 1.0 s | literal | same |
+| Highlight sound rate limit | 0.2 s | literal | `GetHighlightedObject` |
+| Order marker life (SP) | 0.5 s, size 20→0 | literal | `RenderMarkers` |
+
+---
+
+## 6. Determinism notes for X3 (local UI ↔ simulation)
+
+Tasks are simulation state replicated by lockstep command execution; everything below is where local, per-client UI state touches or could touch it.
+
+| # | Finding | Severity | Ref |
+|---|---|---|---|
+| D1 | **Wall-clock in sim objects**: `TaskManager::RunTask` stores `GetHighResTime()` in `m_mostRecentTaskIdTimer` and `TaskSource::m_timer`; `TaskManager::Advance` (sim tick) edits/removes `m_recentTasks` by wall time. Only UI reads these, so harmless, but they live inside the replicated object. New design: keep pop-up state in a client-side view model. | low | `TaskManager::RunTask`, `Advance` |
+| D2 | **UI writes a sim field**: `TaskManagerInterfaceMultiwinia::Advance` sets `tm->m_mostRecentTaskId = -1` on the owning client only. Sim code reads `m_mostRecentTaskId` right after `RunTask` (crate turret/napalm option, instant units, AI officer) — safe only because those reads follow a *successful* `RunTask` in the same tick (AI teams are never "my team" [I]). Any future read after a failed `RunTask` desyncs. | medium (latent) | `taskmanager_interface_multiwinia.cpp:Advance`; `crate.cpp:CaptureCrate`; `ai.cpp` |
+| D3 | **Local (non-networked) terminations**: `RunScreenZone("DeleteTask")` calls `TerminateTask` directly. In MP it is reachable only via `ControlTaskManagerEndTask` (unbound) or delete zones (only drawn when the overlay is visible, which never happens in MP). Gestures interface `AdvanceTerminate` is also local (SP only). If either were reachable in MP it would desync immediately. | medium (latent) | `RunScreenZone`, `TaskManagerInterfaceGestures::AdvanceTerminate` |
+| D4 | **Render writes sim state**: `GameCursor::RenderCrosshair` assigns `building->m_type = TypeRadarDish` for any selected non-turret building (typo for `==`). No-op in MP today (only RadarDish/GunTurret selectable). | medium (latent) | `GameCursor::RenderCrosshair` |
+| D5 | **Sim calls UI singletons**: `TaskManager::SelectTask` → `GameCursor::BoostSelectionArrows`; `Task::*` → `TaskManagerInterface::SetCurrentMessage`, sound events, camera requests (`RequestEntityTrackMode`, `RequestMode`) and `Location::SetCurrentMessage` — all guarded by `m_teamId == m_myTeamId` or purely cosmetic; deterministic sim must route these through an event queue. | low | `taskmanager.cpp` throughout |
+| D6 | **Non-synced RNG in sim**: `Task::Promote`/`Demote` use `AppRandom`/`frand`/`sfrand` (non-synchronised) for particle count/velocity. Safe only if the particle system never feeds back into simulation (P12/P03 to confirm). | low | `Task::Promote` |
+| D7 | **8-bit task ids on the wire** while ids are unbounded ints — after 256 tasks per team, Select/Target/Terminate address the wrong task (identically on all peers, so no desync, but wrong behaviour); id 255 is untargetable for terminate (sentinel). | medium | `ClientToServer::Request*Program`; update handler |
+| D8 | Selection affects sim: `Team::SelectUnit` / `m_currentTaskId` are replicated via commands (`SelectUnit`, `SelectProgram`), and `Task::SwitchTo` sets `m_underPlayerControl` on Darwinians (sim state) — correct because it runs from the command stream on all peers. The client must never call `SelectTask` locally in MP (SP code paths do). | info | `Task::SwitchTo` |
+| D9 | `NET_DARWINIA_TOGGLEENTITY` handler (officer branch) calls `RequestSelectUnit` from inside command execution on **every** peer → N duplicate SelectUnit commands for the officer's team (idempotent). | low | `code/network/clienttoserver.cpp` (P15) |
+| D10 | `LocationInput` writes `Team::m_selectionCircleCentre/Radius` and `m_lastOrdersSet` on the local client only, and `FenceSwitch::Switch()` is called locally on click (blocked type in MP). Whether any sim code reads the selection-circle fields must be checked by P01/X3 [U]. | unknown | `code/location_input.cpp` |
+| D11 | `GameCursor::CreateMarker` is invoked from sim order processing for the local team (UI side effect from sim; in MP also an unbounded list). | low | `Location::IssueDarwinianOrders` |
+| D12 | Floating point: gesture features use CRT `atan` and `iv_sqrt/iv_atan` (nibble-truncated); irrelevant to sync (local UI only). | info | `Gesture::CalculateFeatureSet` |
+
+---
+
+## Cross-partition notes
+
+- **P08 (crates/markers)**: crate rewards → `TaskManager::RunTask(type)` and `m_option` assignment (napalm = 1; turret types) [C] `code/worldobject/crate.cpp:CaptureCrate()`, `CaptureCrate(int,int)`; effect bodies `Crate::Run*` (AirStrike, Nuke, Subversion, Booster, HotFeet, GunTurret, Infection, MagicalForest, DarkForest, AntNest, Plague, Eggs, MeteorShower, Rage) are called by `Task::Target*`. `MarkerSystem::RegisterMarker_Task(objId)` is called on successful targeting (not for turrets); `MarkerSystem` calls back `TaskManagerInterfaceMultiwinia::RenderExtraTaskInfo` for world markers.
+- **P02 (game modes)**: reinforcement armour/turret/air-strike tasks and retribution grants with `NotifyRecentTaskSource(1|2)`; `m_blockMostRecentPopup` is written but has no reader; `MaxTurrets`, `MaxArmour`, `StartingPowerups` options; `IsEliminated` drives capacity 2.
+- **P01 (app/input/team)**: `LocationInput` owns Darwinian selection circle, promotion, officer/armour orders, placement click (`RequestTargetProgram`), entity terminate; `Team::SelectUnit` (selection state, `m_blockUnitChange`); `Team::Advance` slice 1 advances the task manager; `Team` elimination calls `StopAllTasks`.
+- **P03 (entities)**: `Darwinian` fields `m_promoted`, `m_controllerId`, `m_hotFeetTaskId`, `m_boosterTaskId`, `m_subversionTaskId`, `m_rageTaskId`, `m_underPlayerControl`, `LoseControl()`; `Officer::IsFormationToggle`, `IsInFormationMode`, `GetFormationPositionFromIndex`, `CancelOrders`, `SetOrders`; `InsertionSquad::SetWeaponType`; `Engineer::GetCurrentAction/GetNumSpirits`; `Harvester::m_vunerable`; `Armour` states/`m_conversionOrder`/passengers.
+- **P04**: `ShamanInterface::ShowInterface/HideInterface/IsVisible` (Tab with a Shaman selected; Shaman tasks can't be terminated).
+- **P10 (input/camera/control help)**: binding names in §2.3.2/§2.6; `ControlHelpSystem` consumes the four `Advise*` methods and `GameCursor::Advise*`; camera modes `ModeEntityTrack`, `ModeFreeMovement`, `ModeRadarAim`, `ModeTurretAim`.
+- **P15 (network)**: command strings `RunProgram`, `TargetProgram`, `SelectProgram`, `Terminate`, `SelectUnit`, `ToggleEntity`, `Promote`; uchar program field width (§1.9).
+- **P12/P13 (rendering)**: all TM/cursor drawing is immediate-mode GL in a 600-high ortho canvas; blend modes listed per element; `MarkerSystem::RenderShadow/RenderColourCircle/RenderIcon` used by the cursor icon.
+- **P19 (tutorial)**: `g_app->m_multiwiniaTutorial`, `m_multiwiniaTutorialType`, `MultiwiniaHelp::m_tutorial2AICanSpawn` block termination; MultiwiniaHelp reads `m_mostRecentTaskId` and `GameCursor::GetHighlightedObject/m_objUnderMouse`.
+
+## Contradictions / open questions
+
+1. `GameCursor::RenderSelectionArrows` and `BoostSelectionArrows` are wired from sim code but never drawn in MP — dead feedback path in the shipped game [C].
+2. The MP task bar draws only occupied slots although `Capacity()` is computed; the Icons/Gestures variants draw empty slot shadows for every capacity slot [C]. Design intent for MP slot visibility is unclear [I].
+3. `TaskManagerInterfaceMultiwinia` contains a full overlay implementation (delete icons, pad zone navigation, scroll zones 1/3) that can never become visible in MP [C] — remnants of the SP Icons interface.
+4. `Task::m_route` and the Controller task creation are commented out; `TypeController` survives only as a squad weapon and as a fall-through branch in `Advance` [C].
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Whether `Team::m_selectionCircleCentre/Radius` (written locally by UI) are read by simulation code | grep/read of P01/P03 Darwinian selection handling (`NET_DARWINIA_SELECTDARWINIANS` handler) |
+| U2 | Whether particles created from sim code (`Task::Promote`) can affect simulation | P12 particle-system review |
+| U3 | Callers of `GameCursor::RenderWeaponMarker`, `Task::Demote`, `TaskManager::GetNextTaskId` in live code (none found by grep in `code/`) | full-tree reference search by X-agents |
+| U4 | Exact semantics of `RestrictionZone::IsRestricted(pos, true)` used by turret/anywhere placement | P07/P11 restriction-zone documentation |
+| U5 | Visual appearance of icon/cursor BMPs (only file names known) | asset review (art IP — replace anyway) |
+
+## Docs-vs-code discrepancies
+
+- `docs/betachanges.txt` lists fixes for "Gestures Mode", "Icons task manager used when use Xbox 360 controller" and Tab in Icons mode — these concern the Darwinia(+) SP interfaces; code confirms both SP variants still exist but are unreachable in Multiwinia (FULLGAME has no Prologue/Campaign entry) [C]. No Multiwinia-specific task-manager documentation found in `docs/` (grep for "task manager", "gesture").
+- `docs/game objects.txt` suggests power-ups "triggered by a gesture of some kind"; in Multiwinia power-ups are placed by click, never by gesture [C] `TaskManagerInterface::CreateTaskManager`.
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Task Manager", "program", "RUN PROGRAM", "SYNTAX ERROR", "PROGRAM TERMINATED", "ACQUIRED", "UPGRADED", "OBJECTIVES COMPLETED" | text / fiction | `data/language/english.txt` `taskmanager_msg0..5`; `taskmanager_taskmanager` | "Power slots"; "Ready", "Not available", "Cancelled", "Unlocked", "Improved", "Objectives complete" |
+| "*P TERMINATED", "Powerup Limit Reached!", "Retribution : Two powerups max" | text | `dialog_terminated`, `dialog_powerup_limit`, `multiwinia_retribution_maxtasks` | "<power> cancelled", "All power slots full", "Comeback powers: slots full" |
+| "crate opened", "reinforcements", "retribution" | text | `multiwinia_cratepowerupfound`, `multiwinia_reinforcementsgiven`, `multiwinia_retributiongiven` | "supply drop", "reinforcements", "comeback bonus" |
+| Power-up names ("Napalm Strike", "Hot Feet", "Shields"/"PersonalShield", "Subversion", "Rage", "Magical Forest", "Dark Forest", "Ant Nest", "Plague", "Eggs", "Meteor Shower", "Fire Extinguisher", "Space Ship", "Gun Turret", "Rocket/Flame Turret", "Infection", "Shaman") and all `crate_tooltip_*` texts (e.g. "High-powered cannon operated by Multiwinians") | names / text | `researchname_*`, `cratename_*`, `crate_tooltip_*` | functional names: "Air strike", "Incendiary strike", "Speed boost", "Shield", "Convert", "Frenzy", "Grove", "Blight grove", "Swarm nest", … |
+| "Darwinian(s)", "Multiwinian(s)", "Officer", "Engineer", "Squad", "Armour", "Harvester" as unit names | names | `GlobalResearch::GetTypeName`, language file | "Worker", "Leader", "Builder", "Strike team", "Transport", "Collector" |
+| Gesture symbol designs (triangle, arch, arrow, star, zig-zag, V, shield) as authored with the icons | art / design | `icons/gesture_*.bmp`, `data/gestures.txt`, `data/gesture_demos/*` | new symbol set + newly recorded training data |
+| All TM / cursor bitmaps: `icons/icon_*.bmp`, `icons/gesture_*.bmp`, `icons/gestureguide.bmp`, `icons/gesture_alpha.bmp`, `icons/mouse_*.bmp`, `icons/compass*.bmp`, `icons/marker_*.bmp`, `icons/arrows_*.bmp`, `icons/button_*.bmp`, `icons/selectionarrow.bmp`, `icons/icon_crate.bmp`, `icons/icon_delete.bmp`, `icons/tick.bmp`, `textures/interface_*.bmp`, `textures/starburst.bmp`, `textures/particle.bmp` | art | `data/icons`, `data/textures` | new UI icon set |
+| Ghost models `battlecannonturret.shp`, `anthill.shp` | art | `GameCursor::RenderSelectedTaskIcon` | new placement-preview meshes |
+| Sound event names `GestureBegin/End/Success/Fail`, `SelectTask`, `DeleteTask`, `MouseOverIcon`, `UnitHighlight`, `Show`, `Hide`, `Slide`, `MouseError`, `SelectUnit`, `ToggleUnitState` and their audio | audio | sound system calls in scope files | new UI sound set |
+| Prologue objectives text `prologue_objective_1..5`, "launchpad" location | text / level name | `TaskManagerInterfaceIcons::InitProgressBarList` | n/a (legacy) |
+| Dr Sepulveda lines (`task_manager_full`, `task_manager_targetfirst`, `research_notyetavailable`, …) | character / text | `#ifdef USE_SEPULVEDA_HELP_TUTORIAL` blocks | n/a (dead) |
+
+## Appendix — dead/legacy code
+
+- **[B:LEGACY] `TaskManagerInterfaceGestures`, `TaskManagerInterfaceIcons`**, SP branches of `GameCursor::Render`, SP target areas (ControlTower, open TrunkPort), SP auto-select on `RunTask`, SP `Capacity`, research screens, objectives screens, quick-unit d-pad creation (`ControlIconsTaskManagerQuickUnitLeft/Right/Up` → Engineer/Armour/Squad; `…Down`/`Left` officer none/follow) [C].
+- **[B:LEGACY]** `RegisterTask` user: saved running programs (`Location` load) [C] (the Teleport/RadarDish user is live, §1.5).
+- **[B:DEAD] `GestureDemo`** (`code/gesture_demo.{h,cpp}`, all under `USE_SEPULVEDA_HELP_TUTORIAL`): loads `data/gesture_demos/<name>` (one "x y" pair per line, normalised by screen height, 40 ms per sample = 25 Hz); `GetTotalDuration = count·0.040 s`; `GetCoords(t)`: index = t·25, interpolates between floor/ceil samples — **with the weights swapped** (fractional part weights the *lower* sample), clamps to the last sample, scales by screen height. Played by `Sepulveda::RenderGestureDemo`: 40 px wide GL lines in 0.04 s steps, colour fades with age (2 s), loops 2 s after the end, a mouse cursor drawn at the pen tip [C] `code/sepulveda.cpp` (dead). Recorder `GestureRecordingThread` samples `g_target` every 40 ms while `ControlGestureActive` and writes `gesture_demos/new_gesture_demo.txt` (`%.3f %.3f`).
+- **[B:DEAD] `code/gesture_demo_win32.cpp`**: `RecordGestureDemo()` spawns the recorder on a `THREAD_PRIORITY_TIME_CRITICAL` Win32 thread; requires `GESTURE_EDITOR` (TARGET_DEBUG) **and** `USE_SEPULVEDA_HELP_TUTORIAL` (never) [C].
+- **[B:DEAD]** Gesture editor window `code/interface/gesture_window.cpp` (same double gate).
+- **[B:D3D]** `TaskManagerInterfaceGestures::ReleaseD3dResources()` frees the gesture bitmaps/textures on device loss (`USE_DIRECT3D`) [C].
+- Commented-out code: Controller task creation, squad weapon cycling in `LocationInput`, `TargetExtinguisher`, `TargetTank`, Shaman game type start task, MP "special" Darwinian/officer pseudo-slots in the task bar, keyboard F-key shortcuts in the MP interface.

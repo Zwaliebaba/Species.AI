@@ -596,3 +596,349 @@ stateDiagram-v2
 ```
 (Any non-armour state can go to OnFire/InWater/InVortex/BeingAbducted/BoardingRocket/WatchingSpectacle/AttackingBuilding by external calls; edges shown from Idle/Combat for readability.)
 
+### Targeting — `SearchForThreats()` [C]
+Executed in order; first match returns:
+1. `m_threatRange = 90·dt + m_threatRange·(1 − dt)` (exponential relaxation back toward 90 with factor `SERVER_ADVANCE_PERIOD` per call; calls happen every 1–2 s). In formation → `m_threatRange = 90`.
+2. Approaching a GunTurret port, or CarryingBuilding → return false (task has absolute priority).
+3. **Projectile threats** (skipped while `HasRage()`): nearest effect within 60 of type `EffectThrowableGrenade` or `EffectThrowableAirstrikeMarker` (**any team, including our own**), SP-only enemy `EffectGunTurretTarget`, enemy `EffectSpamInfection` → state Combat, `m_scared = true`, sound "SeenThreatRunAway" if the threat id changed.
+4. **Burning trees**: any `Tree` with `IsOnFire()` within `2 × GetBurnRange()` → Combat, `m_threatId = tree id`, scared, sound; if `m_ordersSet` → cancel orders (prevents re-entering the fire).
+5. `searchRange = m_threatRange`. With probability 1/500 (`syncrand() % 500 == 0`): enemy AntHill/Triffid in our obstruction cell within range → `AttackBuilding(id)` — **bug**: passes the loop index into the cell list, not the building id [C].
+6. **AITarget quick reject** (not in formation): for each `AITarget` building within `target->GetRange()` of us, if `target->m_enemyCount[myTeam] == 0` → return false immediately (no enemies nearby according to the AI-target census, P08).
+7. Range adjustments: OperatingPort → range × 0.5, and 0 if the port belongs to a GunTurret. Formation → search centre shifted `officer.front × range × 0.66` ahead. Under squad control → centre = pos + (focus − pos) clamped to 30, range 90.
+8. If `EntityGrid::AreEnemiesPresent(centre, range)` (cell-capacity over-approximation): `EntityGridCache::GetEnemies(centre, range)` (≤ 1 s old). Candidate filter: alive; not a burning Darwinian; not a Darwinian being sacrificed; not `TypeEgg`, `TypeHarvester`, `TypeEngineer`; Armour only if `GetSpeed() < 15` (moving armour is ignored). Count `numEnemies`; pick the nearest to **our position** (not the shifted centre). Note the cached list is not re-range-checked.
+9. If a threat was found: state Combat. `m_scared` = (non-soldier) true; (soldier) `numEnemies > 5 && !AreFriendsPresent(pos, range)`; forced false when squad-controlled or boosted; forced **true** when the threat is SporeGenerator, Tripod, Spider, SoulDestroyer, TriffidEgg, InsertionSquadie, Armour or SpaceInvader. New threat → sounds (scared: "SeenThreatRunAway"; brave: "SeenThreatAttack" and, with unsynced `frand(200) < 1` and ≥ 4 s game time since the last horn of *any* Darwinian (function-static), "SeenThreatAttackHorn"). If `m_ordersSet` and within 50 of the order point and not player orders → `m_ordersSet = false`. `m_threatRange = distance to threat`. Return true.
+10. Otherwise clear `m_threatId`, stop "Darwinian SeenThreat" sounds, return false.
+
+### Combat — `AdvanceCombat()` [C]
+- Insane & no threat → `GetBestEnemy(pos, 0, 90, team 255)` (team 255 has no friends ⇒ **every** team, own included, is a candidate).
+- Threat resolution through `GetWorldObject` (entity, effect or building). Missing or dead → FollowingOfficer if `m_officerId` valid else Idle; `m_retargetTimer = 0`; stop threat sound. Gun-turret target effect farther than 90 (60×1.5) → same exit.
+- `soldier` = Darwinian research > 2 (always in MP). Booster → `m_scared = false`. If in formation → `officer->RegisterWithFormation(uid)`.
+- **Movement**:
+  - In formation: waypoint = `officer->GetFormationPosition(uid)` (hold formation, even vs grenades).
+  - Soldier & not scared: if distance < 100 and not squad-controlled and we are not > 25 below the threat (`heightDiff > −25`) → **retreat** to pos + 30 × away-direction rotated `syncsfrand(π/2)` (±45°); else **close in**: waypoint = pos + (threat − pos) rotated ±45° with length `dist − (20 + syncfrand(20))` (keep 20–40 away).
+  - Otherwise (scared or non-soldier): if distance > 200 → `m_scared = false`, forget threat; **flee** waypoint = pos + 30 × away rotated ±45°.
+  - Waypoints pass through `PushFromObstructions` and are snapped to ground; then `AdvanceToTargetPosition`.
+- **Shooting** (only if the threat is an entity): `attackRate = 10` (booster 7, futurewinian 3) `/ gameSpeed`. Soldiers only:
+  - In formation: volley schedule — `idx = GetFormationIndex(uid)`, `size = min(90, formationEntities.Size())`, `t = gameTime × 10`; fire when `int(fmodf(t + idx, size/4)) == 0` (rage: also `fmod(t + idx, size/16)`). (Uses synced game time, but `fmodf` is single-precision.)
+  - Not in formation: fire when `attackRate ≥ 1 && syncrand() % int(attackRate) == 0` (≈1/10 per tick ⇒ ~1 attempt/s); rage → every tick.
+  - Fire = `FireSubversion(threat + (0,2,0))` if subversion power-up or futurewinian, else `Attack(threat + (0,2,0))` (rage adds ±30 x/z scatter and clears `m_reloading` after the shot ⇒ continuous fire). `Attack`/`FireSubversion` only shoot when `m_reloading == 0` (3 s reload).
+- **Grenades/rockets**: allowed if Darwinian research > 3 (MP: yes) and not in formation, no subversion, not futurewinian, and not (MultiwiniaTutorial2 before `m_tutorial2AICanSpawn`). `m_grenadeTimer -= dt`; when ≤ 0 → reset to `12 + syncfrand(8)`; if distance > 75 (or insane): (SP team 0: abort if any team-2 entity in cells around the target within 50); require our and target terrain normals `.y > 0.7` and `heightDiff > −50`; then
+  - "grenade-worthy" targets (SporeGenerator, Spider, TriffidEgg, InsertionSquadie, Armour, Tank) → throw if the target is < 40 above ground;
+  - otherwise throw if `GetNumEnemies(target, 50) > 5 && GetNumFriends(target, 50) < 2` (cell-square counts);
+  - insane → always; SpaceShip target → never.
+  - Throw = `Location::FireRocket(pos, target + (0,10,0) [insane: ±2 jitter], team, −1.0, −1, infected)` if the team has `Team::EvolutionRockets == 1` (granted by the "Rocketwinians" crate, `crate.cpp:Crate::RunRocketDarwinians`), else `Location::ThrowWeapon(pos, target, EffectThrowableGrenade, team)` (P04).
+
+### Movement — `AdvanceToTargetPosition()` [C]
+Returns "arrived". Steps:
+1. Paralysed (`m_paralyzeTimer > 0`) or waypoint = zero → false, no movement.
+2. Infected: 1/20 per tick (`syncrand() % 20 == 0`) stop dead (vel 0, waypoint = pos) and return true.
+3. Horizontal distance `d` to waypoint: `d == 0` → vel 0, return true; `d < 1` → snap to waypoint, vel = Δ/dt, return false (arrival reported next tick).
+4. `speed = m_stats[Speed]`; ×0.2 Idle/WorshipSpirit; ×1.75 UnderControl.
+5. Turn: `dir = normalise(front × (1 − 0.4) + toTarget × 0.4)` (turn blend `dt × 4`).
+6. Slope: `factor = 1 + (h(cur) − h(next))/3`, clamped [0.3, 2.0] (downhill faster, uphill slower; `next = pos + dir·speed·dt`).
+7. Arrival slow-down: `d < 10` → speed × d/10.
+8. `newPos = PushFromObstructions(pos + dir·speed·dt)`; displacement clamped to `speed·dt`; `pos = newPos`; `vel = Δ/dt`; `front = normalise(Δ)`.
+(`PushFromCliffs` is not used — commented out.)
+
+### Obstacle handling — `Darwinian::PushFromObstructions(pos, killem=true)` [C]
+- Editing mode → unchanged. On ground → y = terrain.
+- **Water**: if `y ≤ 1`: `pushAngle = syncsfrand(1)`; spiral `d = 40, 45, …, 95`, angle `d·pushAngle·π`; first point with height > 1 is taken.
+- **Buildings in the obstruction cell** (each):
+  - Enabled enemy `LaserFence`: `closest = 5 + uid%10`. If the fence sphere-hits our **current** position (radius 1) and `killem` → `SetFire()` + `Electrocute(pos)` (Darwinians burn rather than die instantly). Else if it hits the candidate within `closest` → push perpendicular to the fence line (`(next − this) × up`, sign chosen from the cross product with the to-centre vector) in 20-unit steps until clear. Friendly fences are ignored (pass-through).
+  - `Wall`: if hit within 4 → push 5 units along ±`wall.front` (sign = side of the wall we are on) until no hit at radius 1; `m_wallHits++`.
+  - Any other building within 30: push 4 units directly away from its centre (flattened) while `DoesSphereHit(result, 2.0)`, re-snapping y.
+- `m_avoidObstruction` override (inert, see members).
+- Callers pass `killem = false` when computing waypoints for orders/routes (no burning from merely *planning* through a fence).
+
+### Officer & formation response (Darwinian side) [C]
+- `SearchForOfficers()` (SP: not red team): pending `m_ordersSet` → resume FollowingOrders (waypoint = `m_orders` or current route waypoint, ±20 jitter). Else over the team's `m_specials` list: FOLLOW officers within 150 whose formation isn't full → nearest is chosen **first** (requires `IsWalkable(pos, officer, cliffs)`) → FollowingOfficer (`m_officerTimer = 5`). Otherwise GOTO officers within 100 → one chosen by `syncrand() % n`: copy `m_orderPosition`, `m_orderRouteId` (route waypoint index reset), `m_ordersBuildingId`; waypoint = orders ± 20 (disc) → FollowingOrders, sound "GivenOrders". (This is the "officer as signpost" mechanic: GOTO officers redirect every idle Darwinian passing within 100.)
+- `IsInFormation()` returns the officer iff `m_officerId` resolves to an Officer with `m_formation` and `officer->IsInFormation(uid)`.
+- Formation membership effects: explosive damage × 0.6 (not futurewinian); no grenades; volley fire schedule; threat search centred ahead of the officer with full range 90; waypoint pinned to `GetFormationPosition(uid)`.
+
+### Route following — `Darwinian::FollowRoute()` [C]
+Only in FollowingOrders or FollowingOfficer. Route from routing system (MP). First call jumps to waypoint index 1 (index 0 is the start); thereafter advance when within 20 of the current `m_wayPoint`; each new waypoint gets ±40 disc jitter (`syncfrand` radius/angle) and `PushFromObstructions(·, false)`; past the end → route cleared (the final `GiveOrders` waypoint then applies via `m_orders`? — no: `m_wayPoint` keeps the last jittered route point) [I].
+
+### `GiveOrders(target, routeId = −1)` [C]
+`m_orders = target`, `m_ordersSet = true`, clear `m_ordersBuildingId`; if CarryingBuilding → forward to the carryable and return (state unchanged). If a RadarDish/Bridge is within 5 of the target (obstruction cell) → `m_ordersBuildingId` = it and `m_orders` = its entrance (no jitter). Else waypoint = target + disc(`syncfrand(20)`), pushed (`killem=false`). `m_routeId = routeId`, waypoint index −1, state FollowingOrders. (Callers: `Location::IssueDarwinianOrders`, AI (`ai.cpp`), `location.cpp` ≈L3468.)
+
+### Other searches [C]
+| Search | Rule |
+|---|---|
+| `SearchForPorts` | buildings with ports, `(dist − radius) < 100`, not all ports occupied, `IsWalkable(pos, building)`; a random pick (`syncrand`) is drawn but then **overridden by the nearest** candidate; among its ports: unoccupied and `GetPortOperatorCount(p, team) < limit` (SP 20, **MP 1**); random port (`syncrand`). Waypoint = port position. |
+| `SearchForCarryableBuilding` (MP) | carryables (`CarryableBuilding::IsCarryableBuilding`) with `(dist − radius) < 150`, skipping ones already ours with `numLifters ≥ maxLifters`; random pick (`syncrand`). |
+| `SearchForCrates` | first (building order) `Crate` with `m_onGround`, < 150 away and walkable. Waypoint: stay if < 35; else a point `35/3 + syncfrand(70/3)` from the crate toward us plus a random offset ≤ 35/3. |
+| `SearchForFlags` (Blitzkrieg) | first non-own, unlocked `MultiwiniaZone` with distance < `zone->m_size`; waypoint = stay if < 20 else zone ± SFRAND(20) (±10). |
+| `SearchForArmour` | (SP: not red) own team `m_specials` Armour alive, ≤ 150, `IsLoading()`; random pick (`syncrand`). |
+| `SearchForSpirits` | **SP only** (MP returns false before consuming RNG); 1/5 chance (`syncrand() % 5`); nearest Birth/Floating spirit < 50. |
+| `SearchForRandomPosition` | 70 % (`syncfrand(1) < 0.7`): waypoint 20 units away at angle `syncsfrand(2π)`, pushed; always returns true. |
+| `BeginVictoryDance` | team 0, on ground, `syncfrand(5) < 1` (RNG consumed only for team 0), `y > 10`, and **all** `m_levelFile->m_primaryObjectives` evaluate true → `vel.y += 15 + syncfrand(15)`, airborne, "VictoryJump". MP level files declare `NeverTrue` primary objectives (e.g. `data/levels/mp_koth_2P_1.txt`), and `LevelFile::GenerateAutomaticObjectives` inserts a `NeverTrue` objective when none exist [C] `code/level_file.cpp` ⇒ never fires in MP, but team-0 Idle Darwinians still consume one `syncfrand(5)` per re-target [B:LEGACY]. |
+
+### Damage model — `Darwinian::ChangeHealth(amount, damageType)` [C]
+Evaluated in order:
+1. InsideArmour or BeingSacraficed and type ≠ Unresistable → return false (immune).
+2. Booster active and type ≠ Unresistable → immune; an **Explosive** hit additionally consumes the booster (`m_boosterTaskId = −1`). Returns false.
+3. In formation (and not futurewinian) and Explosive → `amount × 0.6` (int truncation).
+4. Rage → `amount × 0.75`. Futurewinian → `amount × 2.0` (futurewinians take double damage).
+5. `Entity::ChangeHealth(amount)` (note: the damage type is **not** forwarded) → death at ≤ 0 (health set to 100 as fade counter, "Die", spirit spawned).
+`IsInvincible(againstExplosions)`: explosions → InsideArmour‖BeingSacraficed; otherwise also booster [C] (used by weapons, P04).
+`FireDamage(amount, teamId)` (flame weapons, `weapons.cpp`): `m_fireDamage += amount`; once ≥ 100 → `SetFire()` and the attacking team's `m_teamKills++` — **on every subsequent call** too (kill over-count) [C].
+`SetFire()`: ignored if InsideArmour, BeingSacraficed, boosted, or on the monster team; else state = OnFire.
+
+### Status effects and crate power-ups [C]
+| Effect | Granted by | Mechanics |
+|---|---|---|
+| Booster (shield) | crate task (`Crate` → `SetBooster(task)`, `code/worldobject/crate.cpp`) | immune to all but Unresistable damage; one explosive hit pops it; not scared; attack rate 7 instead of 10; cannot be set on fire; bubble render; ignored while InsideArmour |
+| Hot Feet | crate (`GiveHotFeet`) | speed ×2 if current/blueprint < 3.5 (20→40→80); per tick fire trail particles and `Tree::Damage(−1.0)` on trees within 2 (sets forests alight); speed reset on expiry |
+| Rage | crate (`GiveRage`); **also global during Blitzkrieg while `Location::m_bitzkreigTimer > 0`** (`HasRage`) | speed ×1.5 if ratio < 3 (20→30→45→67); damage taken ×0.75; ignores incoming-grenade fear; fires every tick with ±30 scatter and no reload; formation volley ×4 density; size pulsing render |
+| Subversion (mind-control) | crate (`GiveMindControl`) | shoots subversion lasers (speed 75) that **convert** enemy Darwinians to our team (`Laser::Advance`: spawn new Darwinian of shooter team, old one `m_destroyed`); no grenades; brainwave render. Converted Darwinian cross-fades colour over 4 s (`m_colourTimer = 4`) |
+| Plague infection | crate (`Infect()` on Darwinians, `crate.cpp`), spread by infected | Clean → Infected: timer `syncfrand(10)`, speed ×0.75. Every `5 + syncfrand(5)` s: each alive Darwinian (any team) within 30 has 50 % (`syncrand()%2`) to be infected; then one roll `syncrand()%20`: 0 → `Location::Bang(pos, 5.0, 25)` + `ChangeHealth(−100)` (explodes); 1 → `ChangeHealth(−100)`; 2 → speed /2; 3 → paralysed `5 + syncfrand(10)` s; 4 → insane + Combat; 5–6 → Immune (speed restored, no longer contagious); 7–19 → nothing. Movement: 1/20 per tick random stop. Rockets fired while infected carry the infection flag |
+| Insane | plague roll 4 | targets anyone (team 255 search); always throws grenades/rockets regardless of range/conditions (±2 rocket jitter) |
+| Paralysed | plague roll 3 | no movement (`AdvanceToTargetPosition` returns false); grey render |
+| Futurewinian | team = Futurewinian team or level option `FuturewinianTeam` | shoots subversion lasers at attack rate 3; double damage taken; no grenades; formation explosive reduction not applied; futurewinian sprite + glow; in Assault their pulse wave converts enemies |
+
+### Death, spirit and removal [C]
+| Cause | Spirit? | Path |
+|---|---|---|
+| Health ≤ 0 by any `ChangeHealth` (lasers, fire, drowning, plague, pulse wave in non-futurewinian case, laser fence via fire) | **yes** — `Location::SpawnSpirit(pos, vel×0.5, team, id)` (suppressed for the monster team) | `Entity::ChangeHealth` → `m_dead`; corpse fades (`AdvanceDead`: −4 health/tick on ground, −2 in air from 100 ⇒ ~2.5 s) then removed |
+| Promoted to Officer | no | `m_promoted` → removed next tick |
+| Boarded rocket (Rocket Riot) | no | removed; counted by the rocket |
+| Abducted | no | removed; `SpaceShip::IncreaseAbductees` |
+| Converted by subversion laser | no | `m_destroyed`; new Darwinian spawned for converter |
+| Converted by futurewinian pulse wave (Assault) | no | `m_dead = true`, `amIDead = true` |
+| Sacrificed by shaman [B:LEGACY] | yes (state `StateShaman`) | |
+Spirits are the input to the population economy — see the Spirit section and [→ 05].
+
+### Team colour, rendering and VFX [C] `Darwinian::Render` (render-only; P12 owns the pipeline)
+- Sprite billboard: base size 3.0 (half-width) × 6 tall, ×(1 + 0.03·((index·uid) mod 10)) per-individual variation; far-distance enlargement `size *= 1 + DarwinianScaleFactor·(camDist − 100)/1000` beyond 100, and progressive camera-facing beyond 300 (blend factor `(camDist−300)/1000`). Oriented by terrain normal ("up") and `m_front`; airborne Darwinians tumble (rotation ∝ accurate time × (uid%10)×0.1, direction by uid parity); worshipping/operating/watching/crate states sway ±0.3 rad.
+- Colour = team colour × (0.3 + 0.7·health/50); dead: black at alpha `2.5·health` and drawn as 3 drifting sprite fragments; paralysed (150,150,150).
+- Textures: `sprites/darwinian.bmp` (body), `sprites/darwinian_ouch4.bmp` (burning, and the monster team), `sprites/darwinian_ouch1..3.bmp` (30 % of airborne corpses), `sprites/darwinian_side.bmp` (edge-on view when |front×toCamera| > 0.95), `sprites/futurewinian.bmp`, `sprites/santahat.bmp` (Christmas mod: team 0 or MP, uid%3 == 0), `sprites/brainwaves.bmp` (subversion), `textures/glow.bmp` (futurewinian/plague bubbles), `textures/bubble.bmp` (booster), `textures/laser.bmp` (crate capture beam).
+- Overlays: local-team selection/control glow (additive blue, pulsing ≥ 0.3), rage glow, plague green bubble (90,130,10), booster bubble (team colour), spectacle shadows (GodDish / EscapeRocket), ground blob shadow (alpha 150×detail; monster ×0.3) within 2000.
+- Particles (all created with unsynced `frand/sfrand/AppRandom`, cosmetic): `TypeControlFlash` (take/lose control, promotion), `TypeDarwinianFire` + `TypeMissileTrail` (fire, power-up grant bursts ×20), `TypeHotFeet`, `TypePlague`, `TypeBlueSpark` (crate capture, abduction).
+- Render mutates two members: `m_colourTimer -= predictionTime` and clears `m_shadowBuildingId` when the spectacle ends (render-side state; frame-rate dependent) [C].
+
+### Sound events [C] `Darwinian::ListSoundEvents` + `Entity::ListSoundEvents`
+| Event | Trigger |
+|---|---|
+| Create | `Entity::Begin` |
+| Attack | laser / subversion shot |
+| LoseHealth | any damage |
+| EnterTeleport | `EnterTeleports` success |
+| ExitTeleport | (listed; triggered by teleports, P06) |
+| Die | death |
+| Selected | `Location::SelectDarwinians` (local team) |
+| SeenThreatAttack | brave reaction to new threat |
+| SeenThreatAttackHorn | rare (unsynced 1/200, global 4 s cooldown) |
+| SeenThreatRunAway | scared reaction / incoming grenade / burning tree |
+| TakenControl / EscapedControl | squad mind control start / end (stops "Darwinian TakenControl") |
+| GivenOrders | GOTO officer handout |
+| GivenOrdersFromPlayer | player group order; also alternating with LiftBuilding while carrying |
+| VictoryJump | SP victory dance |
+| OnFire | burning (unsynced 1/30 per tick; 1/100 while sacrificed-burning) |
+| LiftBuilding | carrying a statue/carryable (period by lifter fraction) |
+"Darwinian SeenThreat" sounds are stopped when the threat ends.
+
+### BoxKite (`class BoxKite : WorldObject`, effect `EffectBoxKite`) [C] [B:LEGACY] (SP worship only)
+States `StateHeld`/`StateReleased`. Ctor: shape `boxkite.shp`, birth = network time, `m_size = 1 + syncsfrand(1)` (0.5–1.5). Held: positioned by the owner's Render. `Release()`: deathTime = now + 180 s. Released Advance: `vel = (sin(t + index), 2 + syncfrand(2), sin(t + index))`, up blends to vertical (1 %/tick), removed after deathTime; every tick `m_brightness = 0.5 + syncfrand(0.5)` (synced RNG spent on a cosmetic). Render: scale grows over 10 s to size, shrinks in the last 20 s; candle `textures/starburst.bmp` colour (1.0, 0.75, 0.2, brightness).
+
+## [→ 02_units_and_entities] Officer
+
+[C] `code/worldobject/officer.h`, `code/worldobject/officer.cpp`. Class `Officer : Entity`, type `TypeOfficer` (13). Listed in `EntityIsBlocked` (cannot be placed by level files) but fully live: created at runtime by promotion.
+
+### Role and acquisition
+- A promoted Darwinian that acts as a **signpost / rally banner**: it never fights directly (except via the legacy spirit shield) and Darwinians decide by themselves to obey it (see Darwinian "Officer & formation response").
+- Creation: player requests promotion of a Darwinian (`LocationInput` → `ClientToServer::RequestPromoteDarwinian` → on execution `Location::PromoteDarwinian(team, entityIndex)` [C] `code/network/clienttoserver.cpp`, `code/location.cpp`): refused if the Darwinian is on fire; spawns an Officer at its position/velocity (SP: the local team), control-flash particles, marks the Darwinian `m_promoted` (removed next tick, no spirit), registers a marker for the local team (`MarkerSystem::RegisterMarker_Officer`). `Location::DemoteOfficer` spawns another Officer and marks `m_promoted` on the cast entity (legacy path; [I] effectively unused in MP — resolve in P01/P15).
+- Container: `Team::m_others`; also registered in `Team::m_specials` on `Begin` and unregistered in the destructor (the list Darwinians scan for officers/armour).
+
+### Stats [C] `data/stats.txt` row 13 (applied by `SpawnEntities → SetType`; the Officer ctor sets only `m_type`)
+| Stat | Value |
+|---|---|
+| Health | 255 |
+| Speed | 30 (×0.2 when Idle; ×0.4 in formation; terrain factor clamp [0.1, 2.0]) |
+| Rate | 3 (unused — officers don't shoot) |
+| Arrival threshold | 10 (formation mode: 3) |
+| Turn blend per tick | `dt×6` (0.6); formation `dt×0.6` (0.06); order facing `dt×3` (formation ×0.2) |
+| `OFFICER_ATTACKRANGE` | 10 (shield attack) |
+| `OFFICER_ABSORBRANGE` | 10 (absorb) |
+| Grid radius | shape radius × 2 (`Begin`); centre + 1 up |
+
+### Members [C] `officer.h`, ctor
+| Member | Default | Meaning |
+|---|---|---|
+| `m_state` | StateIdle | {StateIdle, StateToWaypoint, StateGivingOrders} |
+| `m_orders` | OrderNone | {OrderNone=0, OrderPrepareGoto=1, OrderGoto=2, OrderFollow=3, NumOrderTypes}; names via `GetOrderType`: "None","PrepareGoto","Goto","Follow" |
+| `m_wayPoint` | pos (Begin) | where the officer itself walks |
+| `m_wayPointTeleportId` | -1 | teleport to enter at the waypoint |
+| `m_targetFront`, `m_turnToTarget` (false) | zero | AI facing target (never reset to zero once set) |
+| `m_shield` | 0 | number of absorbed souls orbiting (legacy absorb) |
+| `m_demoted` | false | `Advance` returns `amIDead || m_demoted` |
+| `m_absorb`, `m_absorbTimer` (2.0) | false | legacy absorb mode |
+| `m_noFormations` | false | disables formation toggle |
+| `m_orderPosition` | — | GOTO destination handed to Darwinians; in formation = facing target |
+| `m_ordersBuildingId` | -1 | teleport at destination (also the teleport the officer last used — followers use it) |
+| `m_orderRouteId` | -1 | routing-system route for the GOTO order |
+| `m_lastOrdersSet`, `m_lastOrderCreated` | 0 | debounce / order-effect timers |
+| `m_formation` | false | formation mode flag |
+| `m_formationEntities` | empty `DArray<OfficerFormation>` | slots `{int m_entityUniqueId; double m_timer}` |
+| `m_formationAngleSet` | false | formation has finished turning toward its waypoint |
+| `m_flagMarker` | — | shape marker "MarkerFlag" (release-assert if missing) |
+| `m_flag` | `Flag` (size 20) | cloth banner (`code/worldobject/flag.h`, P12) |
+
+### Advance [C] `Officer::Advance`
+1. Not on ground → `AdvanceInAir`. `Entity::Advance`. If `m_inWater != −1` → `AdvanceInWater` **again** (it already ran inside `Entity::Advance`, so officers drown after ~5 s instead of 10). On ground & alive → snap y to terrain.
+2. **MP: `OrderNone` is immediately replaced by `OrderPrepareGoto`.**
+3. If alive, on ground, not in water — state dispatch:
+   - `AdvanceIdle`: orders ≠ None → GivingOrders; vel 0.
+   - `AdvanceToWaypoint`: in formation mode and not yet `m_formationAngleSet` → `AdvanceToTargetPositionInFormation` (turn in place at `dt×0.6` until `|targetDir × front| < 0.1`); else `AdvanceToTargetPosition`. While `m_formation`: `m_orderPosition = pos + front×100`. Arrived → Idle.
+   - `AdvanceGivingOrders`: Goto → face `m_orderPosition` (MP: face route waypoint[1]); PrepareGoto → if the team's `m_currentEntityId` is no longer this officer → OrderNone (and step 2 flips it back to PrepareGoto next tick); Follow with `m_orderPosition ≠ 0` → turn toward it (`dt×3`, formation ×0.2) until `front·dir > 0.99`, then clear it. vel 0.
+4. Dead → `vel.y -= 20` per tick and sink (`pos.y += vel.y·dt`) while `AdvanceDead` fades.
+5. **Order visualisation effects** while `OrderGoto`: SP 5 %/tick (`syncfrand(1) < 0.05`) spawns an `OfficerOrders` effect; MP every 2.0 s of network time spawns a `MultiwiniaOfficerOrders` effect (pos + 2 up, waypoint = order pos, route = order route). Both are `m_effects` world objects with `GenerateUniqueId`.
+6. `m_absorb` → `Absorb()`: nearest friendly alive Darwinian within 10; every 1 s (first after 2 s) it is `m_destroyed` (no spirit) and `m_shield++` [B:LEGACY in MP: absorb mode only reachable via research level 4 mode cycling, which is SP-only] [I].
+7. **Formation upkeep** (`m_formation`): each slot's `m_timer -= dt`; expired slots are removed (Darwinians refresh their slot by `+dt` per tick via `RegisterWithFormation` and start at 5.0 s, so a member that stops registering drops out after ≤ 5 s); if the run of consecutive gaps exceeds half the array size, the whole array is emptied (re-pack; members re-join next tick, getting new indices).
+8. **Shield attack** (`m_shield > 0`): `GetBestEnemy(pos, 0, 10)` → `ChangeHealth(−10)` on it, `m_shield--`, spawn a spirit (team 0 hard-coded, invalid owner id) flying from it to the officer (one per tick).
+9. Teleports: if `m_wayPointTeleportId` set and `EnterTeleports(id)` succeeds → `m_ordersBuildingId = id`; waypoint = exit + exitFront×30; Goto → None.
+10. `m_targetFront` facing (AI): when not walking, turn toward it at `dt×0.6`.
+11. **MP route upkeep** for Goto: if the officer is > 50 from its route's first waypoint, regenerate `GenerateRoute(pos, route end)` (old route not deleted) and highlight for the local team.
+
+### Orders & formation API [C]
+- `SetWaypoint(wp)`: walk there (StateToWaypoint); in formation mode re-arm the turn-first behaviour (unless wp ≈ pos); connected RadarDish/Bridge within 5 → enter it.
+- `IsFormationToggle(mouse)`: true iff not Tutorial1, not `m_noFormations`, no RadarDish entrance within √5 of the click, and click distance from the officer < **50** — i.e. *clicking close to the officer toggles formation*.
+- `SetOrders(orders, directRoute)` (player/AI order target):
+  - SP and unwalkable → ignored (Sepulveda line compiled out).
+  - Already in formation mode → move formation: target = orders (or a 1-unit step toward it if it was a toggle click) → `SetWaypoint(target)`, `SetFormation(target)`, deselect the team's unit.
+  - Toggle click, not yet in formation → MP: `SetWaypoint(pos + dir)`, `SetFormation(pos + dir)`; SP: (0.3 s debounce) research Officer > 2 → OrderFollow.
+  - Otherwise **GOTO**: `m_orderPosition = orders`, OrderGoto, absorb/formation off, `m_orderRouteId = GenerateRoute(pos, orders, directRoute)` (highlighted for the local team); RadarDish entrance within √5 → `m_ordersBuildingId` and order pos = entrance, else order pos = `PushFromObstructions(order pos)`; SP-only immediate particle preview; sound "SetOrderGoto"; MP deselects the unit. The officer itself does **not** walk for a GOTO order — it stands and redirects passing Darwinians.
+- `SetFormation(target)` (no-op in Tutorial1): first time → `m_orderPosition = 0`, face target; already formation → `m_orderPosition = target`. Sets OrderFollow, `m_formation = true`, re-arm turning. Local team: preview route + two `TypeMuzzleFlash` (size 40) particles at each of `EvolutionFormationSize` slot positions; sound "SetOrderFormation".
+- `CancelOrders()`: None, formation off, waypoint = pos. `SetFollowMode()`: research Officer > 2 → Follow.
+- `SetNextMode/SetPreviousMode`: **return immediately in MP**; SP cycle depends on `TypeOfficer` research (0–2: None only; 3: None→Goto→Follow→None (SP); 4: None→Follow→Follow+absorb→None) with a function-static 0.3 s debounce and mode sounds. `GetNextMode/GetPreviousMode` are the query forms (the level-4 branch of `GetNextMode` nonetheless mutates `m_absorb`/`m_orders` — bug). MP officer research level is 3.
+- `FormationFull()`: SP → always true (formations disabled); Tutorial1 → true; else `(used slots) ≥ team->m_evolutions[EvolutionFormationSize]` (= **90** from `Team` ctor; the crate "formation increase" that would set 200 is commented out, `crate.cpp:Crate::RunFormtationIncrease`).
+- `GetFormationPosition(uid)`: existing slot index, or (if not full) a new slot `{uid, timer 5.0}` in the first free array index; full → zero vector. Position = `GetFormationPositionFromIndex(officerPos, index, front, arraySize)`:
+
+| Array size (incl. gaps) | Row size |
+|---|---|
+| ≤ 24 | 6 |
+| 25–47 | 9 |
+| 48–89 | 12 |
+| 90–199 | 15 |
+| ≥ 200 | 25 |
+
+  `col = idx % rowSize`, `row = idx / rowSize`, spacing 6 × 6; `pos + front·(6·row + 12) + right·(6·col − 3·rowSize)`, y = terrain (`right = normalise(front × up)`). **The block forms in front of the officer**, first rank 12 units ahead, centred laterally, deepening forward as it fills.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> GivingOrders: orders != None (MP: always PrepareGoto)
+    GivingOrders --> ToWaypoint: SetWaypoint / SetOrders(formation)
+    Idle --> ToWaypoint: SetWaypoint
+    ToWaypoint --> Idle: arrived (≤10, formation ≤3)
+    GivingOrders --> GivingOrders: face order target
+    note right of GivingOrders
+      Orders: None → PrepareGoto (MP, selected)
+      PrepareGoto → Goto (SetOrders far click)
+      PrepareGoto/any → Follow+formation (click < 50)
+      Goto → None (entered teleport)
+    end note
+```
+
+### CPU AI hook — `Officer::RunAI(AI*)` (called by the AI entity, P08) [C]
+Every 1 s (`m_aiTimer`):
+- OrderGoto: next think in 10 s; `FindNearestTarget(pos)` → `FindTargetBuilding(target, team)`; if the chosen AITarget is > 60 from the current order point → new order at target + random offset radius `20 + syncfrand(20)`, angle `syncfrand(2π)` (radar-target AITargets: use the RadarDish entrance in that cell) → `SetOrders`. Return.
+- Otherwise ensure formation (`SetFormation(pos + front×50)` if not). If > 10 enemies within 270 (3 × 90): stop (`SetWaypoint(pos)`) and face their centroid. If walking, return. Nearest AITarget `t`: if `t->IsImportant()`: walk to it if > 20 away; if `t->NeedsDefending(team)` → hold and face away from an enemy-owned neighbour; else face the first neighbour. If not holding and `FormationFull()`: choose the nearest walkable AITarget that is enemy-owned or important & neutral → `GetBuilding(id)` with **the array index instead of the unique id (bug)** → `SetWaypoint`.
+
+### Damage, death [C]
+`ChangeHealth`: if hit while `m_shield > 0`: `loss = min(shield×10, −amount)`; spawn `ceil(loss/10)` free spirits (team 0, random horizontal velocity `SFRAND(40)`), `shield -= int(loss/10)`, `amount += loss`. Then base `ChangeHealth` (255 hp, spirit on death). On death `g_explosionManager.AddExplosion(shape, transform)` (shape shatters, P12).
+
+### Rendering, flag, sounds [C]
+- Shape `officer.shp`; MP per-team copy `officer.shp_<colourId>_<coopGroupPosition>` recoloured with `ConvertShapeColoursToTeam(…, convertAll = true)` (entire model in team colour). Distance scaling and camera-facing like Darwinians (`DarwinianScaleFactor`); damaged flicker (unsynced `frand`); `RenderPixelEffect` only in SP.
+- Flag at marker "MarkerFlag", size 20 (MP grows with distance `1 + scale·(d−100)/1500`, camera-facing by d/200); wobbles while orders ≠ None; textures `icons/banner_none.bmp` (None/PrepareGoto/Goto), `icons/banner_follow.bmp`, `icons/banner_formation.bmp`, `icons/banner_absorb.bmp`; Goto flag points at the order position (MP: route waypoint 1). The local team's flags are drawn by `markersystem.cpp`, others by `Officer::Render`.
+- Shield: `m_shield` green souls (100,250,100) orbiting 10 above (`RenderSpirit`: quads 0.5/1.5 and `textures/glow.bmp` 10).
+- `CalculateBoundingSphere`: centre +4 y, radius 8 (scaled with distance) — picking.
+- Sounds: Entity's + "SetOrderNone", "SetOrderGoto", "SetOrderFollow", "SetOrderAbsorb", "SetOrderFormation" (`CancelOrderSounds` stops all five).
+
+### Order effect objects [C]
+| Class | Type | Behaviour |
+|---|---|---|
+| `OfficerOrders` (SP) | `EffectOfficerOrders` | travels at `clamp(1.1·|v|, 30, 150)` along the ground (+2) to the waypoint; local team: `TypeMuzzleFlash` trail particles (size 30); arrives when the next step overshoots or < 10; fades 1 s; render `textures/starburst.bmp` size 15 (SP colour (1,0.3,1,0.7)) |
+| `MultiwiniaOfficerOrders` (MP) | `EffectOfficerOrders` | follows the officer's route (`FollowRoute`: start at waypoint 1, advance within 10) at `clamp(|v|·(1+dt), 30, 100)`; every 0.2 s game time drops an `OfficerOrderTrail`; arrives when the route ends; fades 1 s; rendered for friends of the local team |
+| `OfficerOrderTrail` | `EffectOfficerOrderTrail` | ground-aligned arrow `icons/widearrow.bmp`, size `max(5, 20·camDist/2000)`, alpha `0.6·(1 − age)`, removed after 1 s; rendered for the local team only |
+
+## [→ 02_units_and_entities] Spirit (soul)
+
+[C] `code/worldobject/spirit.h`, `code/worldobject/spirit.cpp`. `class Spirit : WorldObject` — not an Entity; stored **by value** in `Location::m_spirits` (`FastDArray<Spirit>`, initial size 100, step 100, sliced over `NUM_SLICES_PER_FRAME`) [C] `code/location.cpp:Location::Location` (≈L147–156). Note `spirit.cpp` `#undef`s `TRACK_SYNC_RAND`, so spirit RNG calls are never sync-logged even in debug builds [C].
+
+### Creation — `Location::SpawnSpirit(pos, vel, team, ownerId)` [C] `code/location.cpp`
+- Returns −1 (no spirit) if `team == GetMonsterTeamId()`.
+- `index = m_spirits.GetNextFree()`; `pos = _pos + (0,1,0)`; `vel = _vel` (deaths pass `entity.vel × 0.5`); `m_teamId = team`; `m_worldObjectId = ownerId` (the dead entity's id; officers' shield spirits pass an invalid id and **team 0**); `m_id = (team, UNIT_SPIRITS, index, uniqueId −1)`; `Begin()`.
+- Producers [C] grep `SpawnSpirit(`: `Entity::ChangeHealth` (every entity death), `Officer` (shield loss / shield attack), `Darwinian` (sacrifice, legacy), `anthill.cpp`, `sporegenerator.cpp`, `tree.cpp`, `triffid.cpp`, `location.cpp` (2 sites), `interface/cheat_window.cpp` [B:DEBUG].
+
+### Members
+| Member | Default | Meaning |
+|---|---|---|
+| `m_teamId` | 255 | owning team (colour) |
+| `m_state` | StateUnknown | see enum |
+| `m_worldObjectId` | — | id of the entity that died (used by `Location::GetSpirit(WorldObjectId)` lookups) |
+| `m_nearbyEggs[SPIRIT_MAXNEARBYEGGS = 8]`, `m_numNearbyEggs`, `m_eggSearchTimer` | 0 | legacy Virii/egg fertilisation cache (`NumNearbyEggs()` re-searches every 3 s network time within `VIRII_MAXSEARCHRANGE` for dormant on-ground Eggs) [B:LEGACY] |
+| `m_broken` | −1 | seconds since the soul was "broken" (`BreakSpirit()`); ≥ 0 hides the inner core and drops the shell |
+| `m_harvesterId` | — | harvester carrying us |
+| `m_timeSync` | 6.0 (Begin) | state timer (counts down) |
+| `m_hover` | — | wobble velocity component |
+| `m_positionOffset` | `syncfrand(10)` | wobble phase |
+| `m_xaxisRate`, `m_yaxisRate`, `m_zaxisRate` | `syncfrand(2)` each | wobble amplitudes (random walk in [0,2]) |
+| `m_groundHeight` | terrain at spawn | floor |
+| `m_pushFromBuildings` | true | push out of buildings until clear |
+| `m_shellPos` | — | outer shell position when broken |
+
+### States [C] `spirit.h` enum (values in order)
+| # | State | Meaning / behaviour in `Advance` |
+|---|---|---|
+| 0 | StateUnknown | constructed, before `Begin` |
+| 1 | StateBirth | rise: `hover.y = max(hover.y, syncfrand(0.5))`; if > 10 above ground: `hover.y = (−10 − syncfrand(10)) × min(h/100, 1)` (pulled back down); else when `m_timeSync ≤ 0` (6 s) → Floating with `m_timeSync = 120 + syncsfrand(60)` (90–150 s), **÷3 in MP (30–50 s)** |
+| 2 | StateFloating | wobble; capturable (harvesters, engineers, eggs, Darwinian worship in SP); timer expiry → Death with `m_timeSync = 180` (**÷2 in MP = 90 s**); SP also `AddToGlobalWorld()` (`GlobalLocation::AddSpirits(1)`) |
+| 3 | StateAttached | held by a collector (Engineer, legacy): no wobble, no floor clamp (`CollectorArrives` / `CollectorDrops` → Floating, re-enable building push, new ground height) |
+| 4 | StateInStore | in a SpiritStore (legacy): timer frozen? — wobble still runs, no state logic, no building push |
+| 5 | StateInEgg | fertilising an Egg (legacy): no wobble/floor (`InEgg`; `EggDestroyed` → Floating) |
+| 6 | StateDeath | ascend: `hover.y = max(hover.y, 2 + syncfrand(2))` (rises 2–4 u/s); when `m_timeSync ≤ 0` → **removed** (`Advance` returns true); no building push |
+| 7 | StateShaman | used by a shaman (legacy): timer forced 0; no wobble (`SetShamanMode` sets 5.0 then Advance zeroes it) |
+| 8 | StateHarvested | being sucked up by a Harvester (`Harvest(id)`): no wobble (harvester moves it, P04) |
+| 9 | StateCollected | in a harvester's collector: no timer/wobble update; `vel = harvester.vel`; harvester gone → Floating |
+
+### Per-tick motion [C] `Spirit::Advance`
+1. `vel *= (1 − dt)` (drag 10 %/tick).
+2. Unless Attached/InEgg/Shaman/Harvested: (unless Collected) `m_timeSync -= dt`, `m_positionOffset += dt`, each axis rate `+= syncsfrand(1) × gameSpeed` (±0.5) clamped to [0,2]; `hover = sin(offset) × rates` (all three axes share the same phase); then the state switch above.
+3. Push from buildings (if enabled and not InStore/Death): for each building in the obstruction cell with `DoesSphereHit(pos, 5)`: `vel += (pos − building.pos) × 0.1`, `vel.y = 0`, `|vel| ≤ 10`; when nothing is hit and `|vel| < 1` the push is disabled permanently.
+4. `pos += (vel + hover) × dt`; clamp x,z to the world; unless InEgg/Death/Attached: `pos.y ≥ groundHeight + 2` (ground height cached at spawn — spirits do not follow terrain).
+5. `m_broken` timer advances if set.
+RNG per spirit per tick: 3 × `syncsfrand` (+1 `syncfrand` in Birth/Death) — a significant, population-proportional consumer of the shared stream (X3).
+
+Lifetime totals (no capture): MP ≈ 6 + 40 ± 10 + 90 ≈ 126–146 s; SP ≈ 6 + 120 ± 30 + 180 s [C/I arithmetic].
+
+### Other API [C]
+`SkipStage()` (`m_timeSync = 0`, used by SP MasterSpawnPoint to accelerate spirits to heaven), `SetShamanMode()`, `BreakSpirit()` (once: `m_broken = 0`, shell position saved, 5 `TypeControlFlash` particles using **synced** `FRAND(5)` velocities — cosmetic consuming sync RNG), `Harvest`, `InEgg`, `EggDestroyed`, `CollectorArrives` (sound "PickedUp", `SoundSourceBlueprint::TypeSpirit`), `CollectorDrops`, `AddToGlobalWorld`, `PushFromBuildings`, `NumNearbyEggs`, `GetNearbyEggs`.
+
+### Rendering [C] `Spirit::Render`, `RenderWithoutGlBegin` (batched quads by `Location`)
+Two camera-facing quads: inner size 1.0 alpha 255, outer size 3.0 alpha 100 (**MP halves both sizes and alphas**); team colour (255 → white); Birth grows with `1.2 − timeSync/6`; Death shrinks/fades with `timeSync / (180 or 90)`; monster team: invisible (alpha 0, blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`); broken: inner hidden, shell sinks `m_broken` units/s and fades 10 alpha/s. Render uses `predictionTime − SERVER_ADVANCE_PERIOD` (draws one tick behind).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Birth: SpawnSpirit (death)
+    Birth --> Floating: 6 s and ≤10 above ground
+    Floating --> Death: 30–50 s (MP) / 90–150 s (SP)
+    Floating --> Harvested: Harvester::Harvest
+    Harvested --> Collected: in collector (harvester.cpp)
+    Collected --> Floating: harvester lost
+    Collected --> [*]: delivered (spawn point / incubator)
+    Floating --> Attached: CollectorArrives (Engineer, legacy)
+    Attached --> Floating: CollectorDrops
+    Floating --> InEgg: egg fertilised (legacy)
+    InEgg --> Floating: EggDestroyed
+    Floating --> Shaman: SetShamanMode (legacy)
+    Death --> [*]: 90 s (MP) / 180 s (SP)
+```
+
+## [→ 05_economy_and_population] Souls, deaths and population accounting (P03 view)
+
+- **Death → soul.** Every entity death through `Entity::ChangeHealth` spawns exactly one Spirit of the dead entity's team at its position (velocity = half the corpse velocity), except for the monster team [C] `entity.cpp:Entity::ChangeHealth`, `location.cpp:Location::SpawnSpirit`. Deaths that *remove* units without `ChangeHealth` (promotion, rocket boarding, abduction, subversion conversion, futurewinian pulse conversion, officer absorb) produce **no** soul [C] (Darwinian "Death, spirit and removal").
+- **Soul → population (MP).** In Multiwinia free-floating souls are not consumed by spawn points directly (the "accelerate spirits to heaven" and spirit-consuming logic in `MasterSpawnPoint::Advance` is single-player only) [C] `code/worldobject/spawnpoint.cpp:MasterSpawnPoint::Advance`. Souls become new Darwinians only when a **Harvester** (crate unit, P04) collects `Floating`, unbroken souls within `ENGINEER_SEARCHRANGE` and delivers them to an owned SpawnPoint, which calls `SpawnPoint::SpawnDarwinian()` once per soul (sound "DropSpirit") [C] `code/worldobject/harvester.cpp:Harvester::SearchForSpirits, AdvanceToSpawnPoint`. Note the spirit's team is ignored — **enemy souls are harvested into the harvester owner's Darwinians** [I] (no team check in `SearchForSpirits`; verify in P04). Souls are also destroyed by the SoulDestroyer (P05). Uncollected souls expire after ~2–2.5 min (MP timings above).
+- **Darwinian worship of souls** (`StateWorshipSpirit`, BoxKites) is disabled in MP (`SearchForSpirits` returns false; `AdvanceWorshipSpirit` resets to Idle) [C].
+- **Population counters in scope**: `Entity::s_entityPopulation` (all live Entity objects, ++ctor/−−dtor); the population-cap check in `SpawnEntities` is commented out (`/*if( Entity::s_entityPopulation >= m_levelFile->m_populationCap …*/`) [C] `location.cpp:Location::SpawnEntities` — caps are enforced by the spawning buildings instead (P06/P02). `Team::Advance` counts selected Darwinians; team kill counters `Team::m_teamKills` are incremented by lasers (Darwinian kills), `Darwinian::FireDamage` (over-counts), and others (P04).
+- **Territory → throughput hooks in scope**: Darwinians operate building ports (`StateApproachingPort/OperatingPort`, `Building::OperatePort`, MP limit 1 operator per team per port) — this is the capture mechanic for spawn points and other port buildings (P06); crates are captured by standing near (`StateOpeningCrate`, P08); Blitzkrieg flags by `StateRaisingFlag` (P02); statues by `StateCarryingBuilding` (P02/P07).
+

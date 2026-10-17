@@ -435,3 +435,501 @@ Colour ids and RGB (`code/multiwinia.cpp:teamColours`, P02): 0 (100,255,100) gre
 
 Click on a free colour: `m_currentRequestedColour = id`; outside Assault/co-op store pref `PlayerPreferedColour`; reverse transition; → `PageGameSetup`. The actual request is sent by `SetTeamNameAndColour()` (called each frame by `UpdateGameOptions(true)` on GameSetup/MapSelect/GameSelect/PlayerOptions): if (team assigned, a colour is requested, it differs from the team's colour, it is taken by someone, not co-op, not Assault) the request falls back to the preferred colour (if free) or the next available; then on GameSetup/PlayerOptions (or while starting a tutorial) `ReliableSetTeamColour(request)` is sent when request ≠ −1 or co-op or Assault; and the team name is sent once if not yet requested [C].
 Visual: row background white 0.1 (or (0.75,0.75,1,0.5) when focused/clicked); caption at 0.05w; colour swatch in the right quarter (x = w·3/4, width 0.95·w/4, height 0.8h) with a left-to-right gradient to black; rollover sound `MenuRollOver`.
+
+### 4.9 PageJoinGame (4) — LAN/WAN server browser
+[C] `SetupJoinGamePage`, `UpdateJoinGamePage`, `UpdateServerList`, `ApplyServerFilters`, `ApplyBasicServerListSort`, `JoinServer`, `GameServerButton.h`, `ServerTitleInfoButton.h`, `code/game_menu.cpp:RemoveDelistedServers`.
+
+#### 4.9.1 Layout
+- Setup calls `ClientToServer::StartIdentifying()` (public-address discovery, P15) and requests the WAN list `MetaServer_RequestServerListWAN(METASERVER_GAMETYPE_MULTIWINIA)`; clears `m_highlightedGameType/m_highlightedLevel`.
+- The page uses the **title-bar width** for its box. Row geometry: x = bx, width `m_serverW = 0.9·titleW`, row height = row step = `0.6·bh`, small font; first row at y = lY + 0.5bh + 1.3bh + 0.8bh. At most **13** rows (`SERVERS_ON_SCREEN`, `code/game_menu.h`).
+- Column header `ServerTitleInfoButton` "Titles" at (bx, lY+10+1.6bh, 0.9titleW, 0.6bh), black 50 % strip: `multiwinia_join_host` at x+0.05w; `multiwinia_join_type` at +0.25w (cumulative 0.30w); `multiwinia_join_map` at +0.1w (0.40w); `multiwinia_join_players` right-aligned at 0.98w.
+- `ScrollBar` "scrollBar" (P17a) at x = lX + titleW − (bh/2 + 10), y = first row, w = bh/2, h = 13 rows; created with numRows 0, window size 10 (rows are 13 — mismatch [C]); `SetNumRows(list size)` on every refresh.
+- Bottom row: `BackPageButton(PageNewOrJoin)` "multiwinia_menu_back" (width 0.45·titleW) and `FiltersPageButton` "filters_page" caption `multiwinia_menu_filters` at x + 1.1·(0.45 titleW) → `PageSearchFilters`.
+- A right-hand map preview (`MapImageButton`/`MapInfoButton`) is commented out; rows still set `m_highlightedGameType/Level` on hover [C].
+- Empty list overlay: blinking `multiwinia_error_requestinglist`, replaced by `multiwinia_error_noserversfound` once a WAN list has been received and processed (`MetaServer_HasReceivedListWAN() && s_gotListFromMetaserver`) [C] `RenderRequestingEffect`.
+
+#### 4.9.2 Refresh timing
+| Event | Interval | Ref |
+|---|---|---|
+| Rebuild list & rows | every **2.0 s**, or after **1.0 s** if the list is empty and a WAN list has arrived | [C] `UpdateJoinGamePage` (function-static timer starts at 0) |
+| Re-request WAN list from metaserver | every **10.0 s** (also clears `s_gotListFromMetaserver`) | [C] same |
+
+#### 4.9.3 List pipeline (`UpdateServerList`, then manual entries)
+1. LAN list `MetaServer_GetServerList(false,false,true)`, WAN list `MetaServer_GetServerList(false,true,false)` (argument semantics: P15).
+2. **De-duplicate**: drop WAN entries whose key (`NET_METASERVER_STARTTIME` u64, `NET_METASERVER_RANDOM` int; ordered lexicographically) matches a LAN entry; append WAN to LAN [C] `RemoveDuplicateWANServers`.
+3. Drop entries carrying `NET_METASERVER_DELISTED` [C] `RemoveDelistedServers`.
+4. Filters (§4.10) then sort (§4.9.4).
+5. **Manual servers**: for i = 0..29, pref `Server<i+1>` = `"<host> <port> <name>"` (sscanf; defaults host `0.0.0.0`, port pref `NetworkServerPort` default 4000, name = whole line) → synthetic entry: name, `NUMTEAMS 0`, `MAXTEAMS 4`, `GAMEINPROGRESS 0`, `GAMEMODE = i mod 6`, IP/LOCALIP = host, PORT/LOCALPORT = port, inserted at the **top** [C]. They carry no version/protocol/map CRC, so the row click path reports "incompatible" [I] (from `IsProtocolMatch` requiring `PROTOCOLMATCH` or `GAMEVERSION`) — manual entries are effectively unjoinable in this build.
+6. Row buttons: created/removed so that count = min(list, 13); each `GameServerButton(rowIndex)` is named `server<row><global counter>`, positioned at row y, and inserted into `m_buttonOrder` before the last entry (so rows sit between Back and Filters) [C]. (Removal uses `m_serverButtonOrderStartIndex + row`, which does not match the insertion index — see §Contradictions.)
+
+#### 4.9.4 Sorting [C] `ApplyBasicServerListSort`
+Single pass over the filtered list building a new list: protocol-incompatible → appended at the end; full (`NUMTEAMS == MAXTEAMS`) or demo-restricted (`NET_METASERVER_DEMORESTRICTED`) → inserted at index `numGood`; otherwise → inserted at the front and `numGood++`. Resulting order: good servers (reverse of arrival), then full/demo-restricted (reverse of arrival), then incompatible (arrival order). A scored alternative `ApplyBetterSlowerServerListSort` (full = 1, incompatible = 10, stable insertion) exists but is never called `[B:LEGACY]`. There is **no user-selectable sort column**.
+
+#### 4.9.5 Row rendering [C] `GameServerButton::Render`
+Row r shows list entry `r + scrollBar.m_currentValue`; rows without an entry are blank and inactive.
+- Columns: host name (`NET_METASERVER_SERVERNAME`) at 0.05w; short mode name `multiwinia_gametypeshort_<name>` (DOM/KOTH/CTS/ASLT/ROCKET/BLITZ) at 0.30w; map at 0.40w; `"(%d/%d)"` players at 0.90w; player boxes — `MAXTEAMS` outlined boxes starting 80 px left of the count, each (0.66·(h−8)) × (h−8) px, 2 px apart, filled for occupied slots: full colour for humans, ×0.6 for AI. Human count = `NET_METASERVER_NUMHUMANTEAMS`, except when it is `'?'` or the game is not in progress → equals `NUMTEAMS`.
+- Map column text: localised `<file>_name` for a known map (mode + `MAPCRC` found in local list), else `multiwinia_error_unknownmap` (custom-map name only under `LOCATION_EDITOR`); replaced by `authentication_demorestricted` when demo-restricted; replaced by the literal `"INCOMPATIBLE : <version>"` when protocol-incompatible.
+- Padlock `icons/locked.bmp` (0.8h square at 0.01w) when `NET_METASERVER_HASPASSWORD`.
+- Colours (RGB 0–255):
+
+| State (first match wins) | Text, unfocused | Text, focused | Focus background (α 0.5) |
+|---|---|---|---|
+| protocol mismatch | (128,0,0) | (77,0,0) | (77,0,0) |
+| LAN game (`"lan"` key) | (150,150,255) | (by the rows below) | (by the rows below) |
+| demo-restricted | (255,255,102) | (by the rows below) | (by the rows below) |
+| not full | (153,255,102) | (255,77,77) | (191,191,255) |
+| full, map unknown | (100,100,100) | (100,100,100) | (77,77,77) |
+| full | (128,128,128) | (77,77,77) | (77,77,77) |
+(The LAN and demo-restricted colours apply only when unfocused; the focused branch tests mismatch → not-full → unknown-map → else [C].)
+- Controller scrolling: `SpecialScroll(+1)` on row 0 with ≥13 more entries below advances the scroll bar instead of moving focus; `SpecialScroll(−1)` on the last row (12) scrolls up if possible [C]. (The window calls it on `m_buttons[m_currentButton]`, see §12.4.)
+
+#### 4.9.6 Clicking a row [C] `GameServerButton::MouseUp`, `GameMenuWindow::JoinServer`
+Base MouseUp, then the first matching rule:
+1. protocol mismatch → `PageError` "multiwinia_error_incompatible", back → JoinGame;
+2. `NET_METASERVER_DEMORESTRICTED` → `PageBuyMeNow`;
+3. full → `PageError` "multiwinia_error_serverfull", back → JoinGame;
+4. map (mode, CRC) not installed → `PageError` "multiwinia_error_missingmap", back → JoinGame;
+5. `NET_METASERVER_HASPASSWORD` → remember list index in `m_serverIndex`, → `PageEnterPassword`;
+6. else `JoinServer(index)`.
+
+`JoinServer(n)`: `m_bSpectator=false`; copy the entry into `m_joinServer` (used by the Connecting page); target = `NET_METASERVER_IP`/`PORT` (port −1 if absent); if our own public identity is known and equals the server's public IP, use `LOCALIP`/`LOCALPORT` instead (same-LAN case); port −1 → silently do nothing; if a password has been typed copy it to `ClientToServer::m_password`; `App::StartNetwork(false, ip, port)` (client join); → `PageGameConnecting` [C]. (`JoinServerAsSpectator` exists — same but `m_bSpectator=true`, no port check — and is never called `[B:LEGACY]`.)
+
+Leaving the page (`ShutdownJoinGamePage`): `StopIdentifying()` unless the next page is GameConnecting; forget row buttons [C].
+
+### 4.10 PageSearchFilters (25) — browser filters
+[C] `SetupFiltersPage`, `ApplyServerFilters` and `ApplyFilter*`, `FinishMultiwiniaButton.h:SaveFiltersButton`. Controls height 0.65·bh, font small.
+
+| # | Widget | Name | Caption | Variable | Persisted pref | Filter effect when **unchecked** / value |
+|---|---|---|---|---|---|---|
+| — | title | `title` | `multiwinia_menu_filters` | | | |
+| 1 | `GameMenuDropDown` (unsorted) | `multiwinia_gametype` | `multiwinia_gametype` | `m_gameTypeFilter` (int) | **not persisted** (resets to −1 with every new window) | ≠ −1: keep only entries with `NET_METASERVER_GAMEMODE == value`. Options: `multiwinia_gametype_any` −1, `_domination` 0, `_kingofthehill` 1, `_capturethestatue` 2, `_assault` 3, `_rocketriot` 4, `_blitzkrieg` 5 |
+| 2 | `GameMenuCheckBox` | `check_box` | `multiwinia_menu_showdemogames` | `m_showDemosFilter` | `FilterShowDemos` | remove entries with bool `NET_METASERVER_DEMOSERVER` |
+| 3 | `GameMenuCheckBox` | `check_box2` | `multiwinia_menu_showincompatible` | `m_showIncompatibleGamesFilter` | `FilterShowIncompatible` | remove protocol mismatches **and** entries whose map is not installed |
+| 4 | `GameMenuCheckBox` | `check_box3` | `multiwinia_menu_showfull` | `m_showFullGamesFilter` | `FilterShowFullGames` | remove `NUMTEAMS ≥ MAXTEAMS` |
+| 5 | `GameMenuCheckBox` | `check_box5` | `multiwinia_menu_showpasswords` | `m_showPasswordedFilter` | `FilterShowPassworded` | remove entries containing key `NET_DARWINIA_SERVER_PASSWORD` (`"dy"`) — **does not match** the advertised `NET_METASERVER_HASPASSWORD` (`"dI"`) and collides with `NET_METASERVER_GAMETIME` (`"dy"`, never set) ⇒ removes nothing [I] |
+| — | (none) | | | `m_showCustomMapsFilter` | `FilterShowCustomMaps` | no checkbox and no filter function — dead setting [C] |
+| 6 | `SaveFiltersButton(prev)` | `multiwinia_menu_back` | same | | writes all 5 prefs + save | back to JoinGame |
+
+Filter order: invalid game types (only `HIDE_INVALID_GAMETYPES`, off) → game type → full → protocol → demos → missing maps → passwords [C].
+
+### 4.11 PageEnterPassword (36)
+[C] `SetupPageEnterPassword`, `ConnectButton.h`.
+
+| # | Widget | Name | Caption | Notes |
+|---|---|---|---|---|
+| — | title | `title` | `multiwinia_enterpassword` | |
+| — | `TextButton` (P17b) | `passrequired_text` | `multiwinia_passwordrequired` | small, centred, shadow |
+| 1 | `GameMenuInputField` (text, style 2, height 0.65bh) | `multiwinia_enterpassword` | same | bound to `m_serverPassword` (≤16); text edit starts immediately |
+| 2 | `ServerConnectButton` | `multiwinia_menu_connect` | same | at lY+lH−3bh; inactive while the password is empty; click → `JoinServer(m_serverIndex)` (no sound) |
+| 3 | `BackPageButton(PageJoinGame)` | `multiwinia_menu_back` | same | |
+A wrong password comes back from the server as disconnect reason `Disconnect_BadPassword` → `PageError` "multiwinia_error_badpass", back → JoinGame [C] `code/network/clienttoserver.cpp`.
+
+### 4.12 PageGameConnecting (7)
+[C] `SetupGameConnectingPage`, `UpdateGameConnectingPage`, `ShutdownGameConnectingPage`, `WaitingButton.h`.
+- Title `multiwinia_menu_joining`; `WaitingButton("multiwinia_menu_connecting")` named `connecting` (med font); `FinishMultiwiniaButton(page)` back where page = JoinGame if arriving from JoinGame, otherwise NewOrJoin (e.g. from the password page).
+- `WaitingButton` text by `ClientToServer::m_connectionState`: Connecting → `multiwinia_menu_connecting` + 0–3 dots (`(int)(t·2) mod 4`, i.e. one step per 0.5 s), second line (0.6× font) `multiwinia_menu_attempts` with flag `T` replaced by `m_connectionAttempts`; Handshaking/Connected → `multiwinia_menu_connected`, second line `multiwinia_menu_resyncing` with `T` = `100·lastProcessedSequenceId / serverSequenceId` formatted `"%2.0f"`; Disconnected → blank. If `m_joinServer` is set, a details block (0.5× font, rows 0.7× font apart, values at x+200 px): `multiwinia_join_host` name; `multiwinia_join_address` `"<ip>, port <port>"` (actual connection target); `multiwinia_gametype` full mode name; `multiwinia_join_map` map name; `multiwinia_join_players` `"n/max"`. Text drawn twice (outline then fill).
+- Transition: when state is Connected **and** the networked `m_gameType != -1` → `PageGameSetup` (which may then wait for a team id, §4.6.1). No timeout in `[B:FULL]` (a 10 s timeout exists only under `TESTBED_ENABLED`).
+- Leaving the page stops identification.
+
+### 4.13 PageWaitForGameToStart (37)
+Empty page (no buttons; default left fill box) shown on the host between `RequestStartGame()` and the server's start broadcast; prevents the auto-start block from firing twice [C] `UpdateMultiplayerPage`, `SetupNewPage`.
+
+### 4.14 PageError (34)
+[C] `CreateErrorDialogue`, `SetupErrorPage`. `CreateErrorDialogue(msg, back=PageMain)` stores the message and back page, sets `m_newPage=PageError`, clears `m_atLobby` and the chat log. Page: title `error`; `TextButton(message)` `error_text` (small, centred) at lY+0.5bh+2bh; `BackPageButton(m_errorBackPage)`; back page then reset to −1.
+Error sources and messages (all phrase ids):
+
+| Trigger | Message | Back page | Ref |
+|---|---|---|---|
+| browser row: protocol mismatch | `multiwinia_error_incompatible` | JoinGame | [C] `GameServerButton::MouseUp` |
+| browser row: full | `multiwinia_error_serverfull` | JoinGame | same |
+| browser row: map not installed | `multiwinia_error_missingmap` | JoinGame | same |
+| disconnect `Disconnect_ServerFull` | `multiwinia_error_serverfull` | JoinGame | [C] `code/network/clienttoserver.cpp` |
+| disconnect `Disconnect_DuplicateKey` | `dialog_duplicate_key` | Main | same |
+| disconnect `Disconnect_KickedByServer` | `multiwinia_error_kickedbyserver` | Main | same |
+| disconnect `Disconnect_BadPassword` | `multiwinia_error_badpass` | JoinGame | same |
+| client id received twice | `multiwinia_error_connection` | Main | same |
+| joined as spectator when not allowed / server-side removal of our client id | `multiwinia_error_serverfull` | JoinGame / Main | same |
+| any other disconnect reason | (no error page) | → Main directly | same |
+
+A second, overlay-style error dialog (`m_showingErrorDialogue`, `RenderErrorDialogue`: centred box W/3 × H/3, `error` title, word-wrapped text, dismissed with `ControlCloseTaskHelp`) is never switched on (assignments commented out) `[B:LEGACY]` [C].
+
+### 4.15 PageAuthKeyEntry (23) — authentication key
+[C] `SetupAuthKeyPage`, `AuthInputField.h`, `PasteKeyButton.h`, `EnterAuthKeyButton.h`, `PlayDemoAuthkeyButton.h`, `QuitAuthKeyButton.h`, `GameMenuWindow::PasteFromClipboard/CheckNewAuthKeyStatus`, `contrib/systemiv/lib/metaserver/authentication.h` (`AUTHENTICATION_KEYLEN = 32`).
+
+| # | Widget | Name | Caption | Position | Build |
+|---|---|---|---|---|---|
+| — | title | `title` | `multiwinia_enterauthkey` | | all |
+| — | `AuthInputField` | `auth_input` | — | (bx, lY+0.5bh+1.3bh+bh+gap, bw, bh/2); char cell width = font = bw/31; text editing starts immediately | all |
+| 1 | `PasteKeyButton` | `paste` | `multiwinia_menu_paste` (tooltip `multiwinia_menu_paste_tooltip`) | lY+lH−5bh | `TARGET_MSVC` / `TARGET_OS_MACOSX` |
+| 2 | `PlayDemoAuthkeyButton` | `multiwinia_menu_play_demo` | same | lY+lH−3bh | all except HWCOMPAT/BETATEST/ASSAULT_STRESSTEST targets |
+| 3 | `EnterAuthkeyButton` | `multiwinia_menu_done` | same | lY+lH−2bh | all |
+| (4) | `QuitAuthkeyButton` | `multiwinia_menu_quit_auth_key` | `multiwinia_menu_quit` | lY+lH−2bh, right half | HWCOMPAT/BETATEST/ASSAULT_STRESSTEST only `[B:DEAD]` for FULL |
+There is no Back button.
+
+Key field behaviour [C] `AuthInputField`:
+- Displays 31 character cells (`KEYLEN−1`), upper-case; cell separator lines alpha 100/255, brighter (255) for cells where `i mod 7 ≥ 5` (marks every 6+1 group); a blinking block cursor (on for the first 0.5 s of each second) while editing and length < 32.
+- Typing: accepted only while length < 31 (Backspace always); the buffer is upper-cased, stored and **saved on every keystroke** to `<profile dir>authkey`; after a non-backspace key, when the length becomes 6, 13, 20 or 27 a `-` is appended automatically → format `XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXX` (31 chars).
+- Enter: `CheckNewAuthKeyStatus()` — local algorithmic check `Authentication_SimpleKeyCheck`; if accepted and not a demo key also asks the metaserver for the real status (`Authentication_RequestStatus`); returns true when locally accepted → `PageMain`.
+- Status line once ≥31 chars: phrase `authentication_result` with flag `S` replaced by the status phrase (`dialog_auth_accepted`, `dialog_auth_unknown`, `dialog_auth_key_invalid`, `dialog_auth_key_banned`, `dialog_auth_key_revoked`, `dialog_auth_key_not_found`, `dialog_auth_version_revoked`, `dialog_auth_key_inactive`, `dialog_auth_version_not_found`, `dialog_auth_key_dead`, `dialog_auth_wrong_platform`, `dialog_auth_unknown_game` for statuses 1, 0, −1 … −10) or `dialog_auth_status_demo_user` for demo keys; green, 1.5× font, 6 field-heights below [C] + `authentication.cpp:Authentication_GetStatusStringLanguagePhrase`.
+- Mouse click on a field still holding `"authkey not found"` clears it.
+- Mac only: Ctrl/Cmd-V pastes.
+Buttons: **Paste** reads up to 31 chars of `CF_TEXT` from the Windows clipboard, upper-cases, sets and saves the key to `<profile dir>authkey.dev`, runs `CheckNewAuthKeyStatus()` (stays on page). **Done** (reverse transition) → if locally accepted: `CheckNewAuthKeyStatus()` and → Main. **Play Demo** (reverse transition) generates a demo key `Authentication_GenerateKey(buf, 4, true)`; if it passes the simple check it is set and saved to `<profile dir>authkey.dev` and → Main, otherwise the buffer is cleared.
+
+### 4.16 PageBuyMeNow (16) `[B:DEMO]` — upsell
+[C] `SetupBuyMePage`, `UnlockFullGameButton.h`, `ImageButton.cpp`.
+
+| # | Widget | Name | Caption / content | Geometry |
+|---|---|---|---|---|
+| — | title | `title` | `launchpad_buyme_1` | |
+| — | `TextButton` | `info` | `multiwinia_buy_prices` (1.3·small, shadow, centred) | y0 = lY+bh+0.5bh+0.5bh+bh |
+| — | `ImageButton("textures/prices.bmp")` (no border) | `image` | price artwork | (bx+0.2bw, y0+3bh, 0.6bw, (40/300)·0.6bw) |
+| 1 | `UnlockFullGameButton` | `launchpad_button_buynow` | same (centred, 1.2·med) | (bx+0.2bw, y0+4.5bh, 0.6bw, 2bh); `m_url = App::GetBuyNowURL()` |
+| 2 | `BackPageButton(prev)` | `multiwinia_menu_back` | same | lY+lH−2bh |
+| — | `ImageButton("textures/multiwinia.bmp")` (border) | `image` | box art | right (rX+0.1rW, rY+0.1rH, 0.8rW, (149/394)·0.8rW) |
+| — | `TextButton` | `info` | `multiwinia_buynow` (small, shadow) | below box art, rW × rH |
+`UnlockFullGameButton`: vertical gradient white→black (α 0.5), outline, caption, own additive highlight (α 0.2) on hover/click, URL printed at the bottom (font 0.13·h), gamepad "A" icon `icons/button_a.bmp` in gamepad mode. Click: open the URL in the browser; if running full-screen (`ScreenWindowed`=0) switch to windowed 1024×768 (prefs `ScreenWindowed`, `ScreenWidth`, `ScreenHeight`), recreate the GL window/renderer, flush/regenerate GL state, save prefs, re-initialise Eclipse at 1024×768, remove all windows and rebuild the front end from scratch [C].
+`BuyNowInfoButton` (five lines `multiwinia_buynow_1`…`_5`) exists but is never placed `[B:LEGACY]`.
+
+### 4.17 PageUpdateAvailable (31)
+[C] `SetupUpdatePage`, `update_page_buttons.h`. Title `multiwinia_update_available`; `RunAutoPatcherButton` `multiwinia_menu_autopatch` with **hard-coded caption "Update"** ("FIXME: localize"; macOS uses `RunSparkleButton` with the phrase) — click (Win32): `CreateProcess("autopatch.exe")` and `exit(0)`; `VisitWebsiteButton` `dialog_visitwebsite` — lazily fetches metaserver datum `UpdateURL` while rendering and opens it on click (no-op until fetched); `BackPageButton(prev)`.
+
+### 4.18 PageCredits (32)
+[C] `SetupCreditsPage`, `ReadCredits`, `ReadMultiwiniaBetaTesters`, `ScrollingTextButton.h`. Title `dialog_credits`; one `ScrollingTextButton` `credits_box` (small font) at (bx, lY+1.8bh, bw, lH − 1.5bh − 1.3bh − bh − 2gap); text = phrases `multiwinia_credits_1`, `_2`, … concatenated with `" \n"` until the first missing index; a phrase whose text is exactly `*BETATESTERS` is replaced by every line of the resource file `multiwinia_betatesters.txt` (`data/multiwinia_betatesters.txt`). Lines starting with `-` render 1.25× larger without the dash (section headings). Scrolling per §12.6. `BackPageButton(prev)`.
+
+### 4.19 Compiled-but-unreachable pages (behaviour if revived)
+| Page | Contents [C] | Why unreachable |
+|---|---|---|
+| `PageDarwinia` (1) | `PrologueButton("Prologue")` `prologue`/`multiwinia_menu_prologue`; `CampaignButton("Campaign")` `campaign`/`multiwinia_menu_campaign`; `BackPageButton(PageMain)` | only entered from `PageDemoSinglePlayer` `[B:DEBUG]` |
+| `PageDemoSinglePlayer` (15) | title `multiwinia_singleplayer_title`; `MultiwiniaVersusCpuButton` `versus`/`multiwinia_menu_versuscpu` (→ GameSelect, transition +1); Prologue (`INCLUDEGAMEMODE_PROLOGUE`); Campaign (`INCLUDEGAMEMODE_CAMPAIGN`, created inactive, navigable only with full key); `FinishMultiwiniaButton(PageMain)`; right: `GameTypeImageButton` + `GameTypeInfoButton` (1.2·small) | `DarwiniaModeButton` targets it only under `TARGET_DEBUG` |
+| `PageQuickMatchGame` (5) | title `multiwinia_setup_quick_match`; `WaitingButton("multiwinia_menu_searching")`; Back → NewOrJoin. Update: rebuild list every 1.0 s; join the first entry that is protocol-compatible and not full; WAN re-request every 10 s | button commented out |
+| `PageResearch` (8) | one numeric `InputField` per `GlobalResearch` item (range 0–4, step 1) using `GetDefaultPositions`; Back → GameSetup | `ResearchModeButton` never instantiated (Darwinia research) `[B:LEGACY]` |
+| `PageHelpMenu` (10) | only `BackPageButton(m_currentPage)` (the per-topic `HelpSelectButton` loop over `multiwinia_helppage_1..5` is commented out) | `HelpModeButton` never instantiated |
+| `PageHelp` (11) | `HelpImageButton` 600×400 px centred showing `mwhelp/helppage_<helpPage>_<image>.bmp`; `PrevHelpButton` (caption `multiwinia_menu_back`) / `NextHelpButton` (`dialog_next`) step the image index while the next file exists, else return to HelpMenu | no live entry. Live help is `HelpAndOptionsWindow` → `HelpWindow`/`GameTypeHelpWindow` (P17b/P19) |
+| `PageAchievements` (35) | title `multiwinia_menu_achievements`; scroll bar; Back → Main; "loading achievements" overlay until `AchievementTracker::HasLoaded()`; `m_achievementButtons` list never filled | no assigner; the in-game `AchievementsButton` (P17b) has no MouseUp override |
+| `PageLeaderBoardSelect` (17), `PageLeaderBoard` (18) | setup functions are empty `return;` | leaderboards unimplemented on PC |
+| `PageXBLASignIn` (14) | none (would assert) | Xbox remnant |
+
+`AchievementButton` (if ever created): per-achievement row named `achievement<N>`, slides down into place at 750 px/s after the menu transition completes, scrolls 4 px per scroll-bar step, clipped to the scroll-bar band, draws only a grey (0.4, α 0.5) background — the image/text drawing has been removed; it marks itself disabled+inactive; helper `MakeNumberHumanReadable` formats thousands with commas [C] `AchievementButton.h`.
+
+---
+
+## [→ 09_meta_systems] 5. Start sequences driven from the front end
+
+### 5.1 Single-player (versus CPU) game
+```mermaid
+sequenceDiagram
+    participant U as Player
+    participant M as GameMenuWindow
+    participant C as ClientToServer
+    participant S as local Server (127.0.0.1)
+    U->>M: Main "Single Player"
+    M->>M: m_singlePlayer=true, page GameSelect
+    M->>S: StartSinglePlayerServer (StartNetwork(true,NULL,-1)), client joins loopback
+    S-->>C: team id assigned (myTeamId != 255) -> mode buttons become visible
+    U->>M: mode button
+    M->>C: set GAMEOPTION_GAME_TYPE, reset params to defaults
+    C-->>M: echo -> MapSelect page builds
+    U->>M: map row
+    M->>C: set map, (TimeLimit from map PlayTime)
+    M->>M: page GameSetup (host branch resets params to defaults)
+    U->>M: PlayerOptions (optional) name / colour
+    U->>M: "Play"
+    M->>C: RequestTeam(CPU) for each empty slot < numPlayers
+    M->>C: RequestStartGame
+    S-->>C: START_GAME -> m_atMainMenu=false -> menu destroyed -> loading screen
+```
+[C] `DarwiniaModeButton.h`, `SetupGameSelectPage`, `GameTypeButton.h`, `LevelSelectButton.h`, `PlayGameButton.h`, `code/network/clienttoserver.cpp` START_GAME.
+
+### 5.2 Hosting a multiplayer game
+Main → Multiplayer → Host → GameSelect (`StartMultiPlayerServer`: listens on the local host IP and the listener's port; the server is created with `m_noAdvertise = true` and its later advertising is P15's concern) → mode → map → lobby. The host waits for clients, may change AI/advanced options, presses **Ready**; when every human team is ready the host auto-fills empty slots with CPU teams and requests the start (§4.6.4) [C] `code/app.cpp:StartNetwork`, `UpdateMultiplayerPage`.
+
+### 5.3 Joining a multiplayer game
+```mermaid
+sequenceDiagram
+    participant U as Player
+    participant M as GameMenuWindow
+    participant MS as MetaServer
+    participant C as ClientToServer
+    U->>M: Multiplayer -> Join
+    M->>C: StartIdentifying
+    M->>MS: RequestServerListWAN (and every 10 s)
+    loop every 2 s
+        M->>MS: GetServerList LAN + WAN, dedupe, filter, sort, show 13 rows
+    end
+    U->>M: click row (checks: protocol, demo, full, map, password)
+    M->>C: StartNetwork(false, ip, port) [LAN ip if same public ip]
+    M->>M: page GameConnecting (attempts / resync %)
+    C-->>M: StateConnected and game type known
+    M->>M: page GameSetup (waits for team id)
+    U->>M: Ready (toggle)
+    C-->>M: START_GAME from host -> game
+```
+[C] `SetupJoinGamePage`, `UpdateJoinGamePage`, `GameServerButton::MouseUp`, `JoinServer`, `UpdateGameConnectingPage`, `SetupMultiplayerPage`.
+
+### 5.4 Tutorial launch ("quick start" path)
+1. Tutorials page → `TutorialButton`: `m_singlePlayer=true`, `m_quickStart=true`, `g_app->m_multiwiniaTutorial=true`, tutorial type stored, menu input locked [C].
+2. Next frames (page Tutorials runs `UpdateGameOptions(false)` then `UpdateMainPage()`): `UpdateMainPage` starts a server via `StartMultiPlayerServer()` (because `m_singlePlayer` and no server) [C].
+3. `UpdateGameOptions`: with a server, tutorial flag and not yet started → `SetupTutorial()` (type 1) or `SetupTutorial2()` (type 2): mode = King of the Hill (also set directly on `g_app->m_multiwinia`), AI = Easy, map = index of CRC `MAPID_MP_KOTH_2P_1` (tutorial 1) or `MAPID_MP_KOTH_3P_1` (tutorial 2), requested colour 0, all KOTH params at defaults; tutorial 2 also pre-assigns lobby colours 0,1,2 to teams 0,1,2; `m_startingTutorial=true`; renderer fade-out [C].
+4. When the local team id arrives: wait for sound init, send name/colour (`SetTeamNameAndColour` — the "starting tutorial" flag makes it send the colour), request `numPlayers−1` CPU teams, `RequestStartGame()`, `m_quickStart=false` [C] `UpdateGameOptions`.
+5. After the tutorial game, `GameMenu::CreateMenu` re-opens the front end on `PageTutorials` [C].
+
+### 5.5 Dead quick-start variants
+`QuickStartButton` (KOTH, map index 0, colour 0, defaults, `m_quickStart=true`, fade-out — then step 4 above requests `numPlayers−1` CPU teams; its render is hidden until a team id exists) and `RollingDemoButton` (KOTH, map index 0, colour 0, defaults, fade-out, two CPU teams, immediate start; ignored if `m_quickStart`) are never instantiated — headers not even included [C] `QuickStartButton.h`, `RollingDemoButton.h`. `MultiwiniaModeButton` (→ GameSelect, starts an MP server) and `RequestAIButton` ("Add AI Player" → `RequestTeam(TeamTypeCPU,-1)`) likewise unused `[B:LEGACY]`.
+
+---
+
+## [→ 09_meta_systems] 6. Lobby state model (what the front end owns)
+
+### 6.1 Networked game options held by `GameMenuWindow`
+Assigning to these members sends a request to the (local or remote) server; reading returns the local mirror that the server's echo updates [C] `code/network/networkvalue.cpp:NetworkGameOptionInt::Set/NetworkGameParam::Set/NetworkGameOptionBool::Set/NetworkGameOptionMapId::Set`, `code/network/network_defines.h` (`GAMEOPTION_*`).
+
+| Member | Class | Option id (value) | Mirror | Set by |
+|---|---|---|---|---|
+| `m_gameType` | `NetworkGameOptionInt` | `GAMEOPTION_GAME_TYPE` (0) | `Multiwinia::m_gameType` | `GameTypeButton`, tutorial setup |
+| `m_params[64]` | `NetworkIntArray` of `NetworkGameParam` (`MULTIWINIA_MAXPARAMS = 64`) | `GAMEOPTION_GAME_PARAM` (1) [index] | `Multiwinia::m_params[i]` | GameType click (defaults), map click (TimeLimit), lobby entry on host (defaults), Advanced Options, tutorials |
+| `m_researchLevel[]` | `NetworkIntArray` of `NetworkGameResearchLevel` | `GAMEOPTION_GAME_RESEARCH_LEVEL` (2) | `GlobalWorld::m_research->m_researchLevel[i]` | Research page (unreachable) |
+| `m_requestedMapId` | `NetworkGameOptionMapId` | `GAMEOPTION_MAPNAME` (3) (map stored by file name, converted to index for the current mode) | `g_app->m_requestedMap` | map click, tutorial, lobby (host reset to 0), Finish (−1) |
+| `m_aiMode` | `NetworkGameOptionInt` | `GAMEOPTION_AIMODE` (4) | `Multiwinia::m_aiType` | lobby drop-down, tutorial (Easy) |
+| `m_coopMode` | `NetworkGameOptionBool` | `GAMEOPTION_COOPMODE` (5) | `Multiwinia::m_coopMode` | Advanced checkbox; map click (ForceCoop on / non-coop map off) |
+| `m_singleAssaultRound` | `NetworkGameOptionBool` | `GAMEOPTION_SINGLEASSAULT` (6) | `Multiwinia::m_assaultSingleRound` | **no UI** in this build |
+| `m_basicCrates` | `NetworkGameOptionBool` | `GAMEOPTION_BASICCRATES` (7) | `Multiwinia::m_basicCratesOnly` | Advanced checkbox |
+Team status options occupy ids 8 .. 8+NUM_TEAMS−1 (`GAMEOPTION_TEAMSSTATUS_LBOUND/UBOUND`) — not touched by P18.
+
+When the server echoes co-op on, the client clears all team colours and the window's requested colour (remembering the previous one); co-op off restores it [C] `code/network/clienttoserver.cpp` (GAMEOPTION_COOPMODE handler).
+
+### 6.2 Local (non-networked) front-end state
+| Member | Meaning | Initial |
+|---|---|---|
+| `m_currentPage` / `m_newPage` | current / requested page | −1 / `PageMain` (or AuthKeyEntry) |
+| `m_singlePlayer` | single-player flow (local server, Play instead of Ready, no chat, no kick) | false |
+| `m_quickStart`, `m_startingTutorial` | quick-start in progress / tutorial configured | false |
+| `m_localSelectedLevel` | map chosen locally, used to avoid starting before the network echo | −1 |
+| `m_uiGameType`, `m_clickGameType` | game type the current page was built for / clicked type awaiting echo | −1 / uninitialised (commented out in ctor; set before use) [C] |
+| `m_highlightedLevel`, `m_highlightedGameType` | focused map / mode for preview panels (`GAMETYPE_PROLOGUE`=254, `GAMETYPE_CAMPAIGN`=255 for the Darwinia buttons) | −1 / 0 |
+| `m_currentRequestedColour`, `m_previousRequestedColour` | colour/side request | −1 |
+| `m_teamName` | `PlayerNameString`, ≤16 chars | pref |
+| `m_serverPassword` | `ServerPasswordString`, ≤16 chars | empty |
+| `m_waitingForTeamID`, `m_waitingGameType` | lobby build deferred until team id | false, −1 |
+| `m_disconnectFromGame` | leaving while ready — waiting for un-ready | false |
+| `m_joinServer`, `m_serverIndex`, `m_serverList`, `m_serverButtons` | browser state | NULL / −1 |
+| filter booleans, `m_gameTypeFilter` | §4.10 | prefs / −1 |
+| `m_authKey[256]` | key edit buffer | loaded key |
+| `m_chatMessages`, `m_currentChatMessage`, `m_chatToggledThisUpdate` | §9 | empty |
+| `m_errorMessage`, `m_errorBackPage` | §4.14 | — |
+| `m_motdFound` | MOTD arrived (draws MOTD box) | false |
+| `m_demoUpgradeCheck` | last seen `IS_DEMO` value | false |
+Vestigial members with no effect in `[B:FULL]`: `m_xblaSessionType`, `m_xblaSelectSessionTypeNextPage`, `m_xblaSignInNextPage`, `m_xblaOfferSplitscreen`, `m_clickedCampaign`, `m_clickedPrologue`, `m_showingDeviceSelector`, all `m_darwiniaPlus*` and `m_initedDarwiniaSelection`, `m_screenTexture`, `m_teamNameChanged`, `m_helpPage`/`m_currentHelpImage` (only unreachable Help page), `m_settingUpCustomGame`/`m_customGameType`/`m_customMapId` (never set true), `m_bSpectator` (written, never read), `m_reloadPage` (never set true), `m_setupNewPage` (written only), `m_showingErrorDialogue` (never set true), `m_setupAchievementsPage` [C] `GameMenuWindow.h` + grep of `code/`.
+
+---
+
+## [→ 09_meta_systems] 7. Demo / full-game gating in the front end
+
+### 7.1 Definitions
+- **Demo user** ≡ `IS_DEMO` ≡ `!App::IsFullVersion()` ≡ the stored auth key is a *demo key* (`Authentication_IsDemoKey`). Under `MULTIWINIA_DEMOONLY` the game is always demo; under `GIVE_ALL_LEVELS` (not defined) always full [C] `code/game_menu.h`, `code/app.cpp:IsFullVersion`.
+- **Demo limitations** are fetched from the metaserver datum `Demo2Limits` (`NET_METASERVER_DATA_DEMO2LIMITS`) on every query; if the datum is absent or incomplete the defaults apply [C] `code/network/clienttoserver.cpp:GetDemoLimitations`, `code/network/demo_limitations.cpp:DemoLimitations::Initialise`:
+
+| Field | Metaserver key | Default |
+|---|---|---|
+| `m_maxGameSize` | `NET_METASERVER_MAXDEMOGAMESIZE` (int) | 4 |
+| `m_maxDemoPlayers` | `NET_METASERVER_MAXDEMOPLAYERS` (int) | 4 |
+| `m_allowDemoServers` | `NET_METASERVER_ALLOWDEMOSERVERS` (bool) | true |
+| `m_allowedGameModes` (bit mask, bit = game type) | `NET_METASERVER_DEMOMODES` (int) | KOTH (bit 1) | CTS (bit 2) | Rocket Riot (bit 4) = 0x16 |
+| `m_allowedMapCRCs` | `NET_METASERVER_DEMOMAPS` (int list) | `MAPID_MP_KOTH_2P_1`, `MAPID_MP_KOTH_4P_1`, `MAPID_MP_CTS_2P_1`, `MAPID_MP_KOTH_3P_1`, `MAPID_MP_ROCKETRIOT_3P_1` |
+
+- Derived predicates [C] `code/app.cpp`: `IsGameModePermitted(m)` = (full or demo mask has m) **and** m compiled in (`INCLUDEGAMEMODE_*`: in FULL Domination, KOTH, CTS, Rocket Riot, Assault, Blitzkrieg; **not** Tank Battle); `IsMapPermitted(m, crc)` = mode permitted and (full, or crc in demo list) (`PERMITTED_MAPS` builds use a fixed list instead); `IsMapAvailableInDemo(m, crc)` = demo mask has m and crc in list; `MultiplayerPermitted()` = full or `maxDemoPlayers > 0`; `HostGamePermitted()` = full or `allowDemoServers`.
+
+### 7.2 Every gate the UI applies
+| Where | Gate | Effect | Ref |
+|---|---|---|---|
+| Startup | key fails local check | forced to `PageAuthKeyEntry` | [C] ctor |
+| Main | demo | Tutorial button listed first; "Buy full game" button added | [C] `SetupMainPage` |
+| Main | `!MultiplayerPermitted()` | Multiplayer button inactive → click opens BuyMeNow | [C] `NewOrJoinButton.h` |
+| Main | auth status | status box shown while demo or not accepted (§10.3) | [C] `ShowAuthBox` |
+| NewOrJoin | `!HostGamePermitted()` | Host button disabled | [C] `SetupNewOrJoinPage` |
+| GameSelect | mode not permitted | button inactive (greyed); click on demo → BuyMeNow; "Full Game Only" over the mode picture | [C] `GameTypeButton.h`, `GameTypeImageButton.h` |
+| MapSelect | map not permitted | row inactive; demo-restricted row greyed (name, time, icons); click → BuyMeNow; "Full Game Only" over thumbnail | [C] `LevelSelectButton.h`, `MapImageButton.h`, `SetupMapSelectPage` |
+| Lobby | demo key | Advanced Options and AI drop-down created disabled+inactive; Advanced click ignored | [C] `SetupMultiplayerPage`, `AdvancedOptionsModeButton.h` |
+| Lobby | demo + restricted map | Play/Ready button hidden; host never auto-starts | [C] `PlayGameButton.h`, `UpdateMultiplayerPage` |
+| Lobby | demo player on a team | gamer tag prefixed `teamtype_demo` | [C] `GamerTagButton.h` |
+| Advanced | demo | co-op checkbox not offered | [C] `SetupAdvancedOptionsPage` |
+| Browser | `NET_METASERVER_DEMORESTRICTED` on entry | yellow row, map column `authentication_demorestricted`, sorted after good servers, click → BuyMeNow | [C] `GameServerButton.h` |
+| Browser filter | "show demo games" off | hides `NET_METASERVER_DEMOSERVER` entries | [C] `ApplyFilterShowDemos` |
+| Auth page | "Play Demo" | generates and stores a demo key | [C] `PlayDemoAuthkeyButton.h` |
+| Runtime upgrade | `IS_DEMO` changes while on `PageDemoSinglePlayer` | jump to `PageDarwinia` (`[B:DEBUG]` path) | [C] `Update` |
+| Campaign | demo | Campaign button ignored / not navigable `[B:DEBUG]` | [C] `CampaignButton.h`, `SetupSPDemoPage` |
+| Editor | demo | editor button → BuyMeNow `[B:EDITOR]` | [C] `MultiwiniaEditorButton.h` |
+
+(Demo users can host/join only on demo maps; LAN games hosted by full users are joinable on any map per `docs/multiwinia-changes.txt` v1.2.0 — that rule is implemented server/metaserver-side via the demo-restricted flag, not in P18 [I].)
+
+---
+
+## [→ 09_meta_systems] 8. Game-setup options as data (per game type)
+
+### 8.1 Source table and widget mapping
+Options come from `data/multiwinia.txt` (`GAMETYPE <name>` blocks of `Name Min Max Default Change`, terminated by `END`), parsed into `MultiwiniaGameBlueprint::m_params` (P02 owns semantics) [C] `code/multiwinia.cpp:Multiwinia::LoadBlueprints` (reads `multiwinia-testbed.txt` under `TESTBED_ENABLED`). The **Change** column selects the lobby widget [C] `SetupAdvancedOptionsPage`:
+
+| Change | Widget | Caption | Values |
+|---|---|---|---|
+| −1 | `GameMenuCheckBox` | `multiwinia_param_<lower name>` | 0/1 |
+| 0 | `GameMenuDropDown` (cycle mode) | `LANGUAGEPHRASE(<raw Name>)` — raw names such as `ScoreMode` are not phrase ids in `english.txt` [I: caption falls back to the raw id / framework default] | one entry per integer p in [Min, Max], label phrase `multiwinia_option_<gameType>_<paramIndex>_<p>` |
+| > 0 | `GameMenuInputField` (int) with `<` and `>` scroller buttons | translated `multiwinia_param_<lower name>` | clamped to [Min, Max] (`SetBounds`), `<`/`>` step = ±Change |
+Help text for each control: `multiwinia_param_<name>_description_<gameType>` if present, else `multiwinia_param_<name>_description` (§4.7).
+
+### 8.2 Parameters by game type (all shown on the host's Advanced Options page in this order)
+Index = parameter index *i* within the mode (used by `multiwinia_option_<g>_<i>_<p>` and by `m_params[i]`). Units per the description phrases in `english.txt` (P02 confirms semantics).
+
+**Domination** (game type 0, short `DOM`)
+| i | Name | Min | Max | Default | Change → widget | Drop-down labels / notes |
+|---|---|---|---|---|---|---|
+| 0 | ScoreMode | 0 | 1 | 0 | 0 → drop-down | 0 `multiwinia_option_0_0_0` ("Total Spawn Points"), 1 `_0_0_1` ("Spawn Points per Second") |
+| 1 | TimeLimit | 0 | 60 | 10 | 1 → numeric (minutes; 0 = unlimited) | lobby value overridden by map PlayTime on map click (but see §8.4) |
+| 2 | Handicap | 0 | 90 | 90 | 10 → numeric (%) | |
+| 3 | CrateDropRate | 0 | 300 | 40 | 10 → numeric (seconds, "Crate Drop Period") | |
+| 4 | StartingPowerups | 0 | 3 | 0 | 1 → numeric | |
+| 5 | RetributionMode | 0 | 1 | 1 | −1 → checkbox | |
+| 6 | SuddenDeath | 0 | 1 | 1 | −1 → checkbox | inactive & forced 0 when TimeLimit = 0 |
+| 7 | CrateDropMode | 0 | 1 | 1 | 0 → drop-down | 0 `multiwinia_option_0_7_0` ("Random"), 1 `_0_7_1` ("Weighted") |
+
+**King of the Hill** (1, `KOTH`)
+| i | Name | Min | Max | Default | Change → widget | Labels / notes |
+|---|---|---|---|---|---|---|
+| 0 | ScoreMode | 0 | 3 | 0 | 0 → drop-down | `multiwinia_option_1_0_0` ("Zones controlled per second"), `_1_0_1` ("Zone Population per second"), `_1_0_2` ("Final Zone population"), `_1_0_3` ("Total zone control") |
+| 1 | TimeLimit | 1 | 60 | 5 | 1 → numeric | min 1 ⇒ SuddenDeath never auto-disabled |
+| 2 | Handicap | 0 | 90 | 90 | 10 → numeric | |
+| 3 | CrateDropRate | 0 | 300 | 40 | 10 → numeric | |
+| 4 | StartingPowerups | 0 | 3 | 0 | 1 → numeric | |
+| 5 | RetributionMode | 0 | 1 | 1 | −1 → checkbox | |
+| 6 | SuddenDeath | 0 | 1 | 1 | −1 → checkbox | |
+| 7 | CrateDropMode | 0 | 1 | 1 | 0 → drop-down | `multiwinia_option_1_7_0` Random, `_1_7_1` Weighted |
+
+**Capture the Statue** (2, `CTS`)
+| i | Name | Min | Max | Default | Change → widget | Labels / notes |
+|---|---|---|---|---|---|---|
+| 0 | TimeLimit | 1 | 60 | 10 | 1 → numeric | |
+| 1 | CrateDropRate | 0 | 300 | 40 | 10 → numeric | |
+| 2 | RetributionMode | 0 | 1 | 1 | −1 → checkbox | |
+| 3 | SuddenDeath | 0 | 1 | 1 | −1 → checkbox | |
+| 4 | CrateDropMode | 0 | 1 | 1 | 0 → drop-down | `multiwinia_option_2_4_0` Random, `_2_4_1` Weighted |
+
+**Assault** (3, `ASLT`)
+| i | Name | Min | Max | Default | Change → widget |
+|---|---|---|---|---|---|
+| 0 | Handicap | 0 | 90 | 90 | 10 → numeric |
+| 1 | CrateDropRate | 0 | 300 | 40 | 10 → numeric |
+(No TimeLimit ⇒ `GetTimeOption()` = −1, map PlayTime ignored; colour page shows Random/Attackers/Defenders; the networked "single assault round" option has no UI.)
+
+**Rocket Riot** (4, `ROCKET`)
+| i | Name | Min | Max | Default | Change → widget |
+|---|---|---|---|---|---|
+| 0 | CrateDropRate | 0 | 300 | 40 | 10 → numeric |
+| 1 | ReinforcementTimer | 10 | 300 | 60 | 10 → numeric (seconds between waves) |
+| 2 | ReinforcementCount | 1 | 100 | 40 | 1 → numeric (units per wave) |
+| 3 | MaxArmour | 1 | 10 | 2 | 1 → numeric |
+| 4 | TurretFrequency | 0 | 10 | 7 | 1 → numeric |
+| 5 | MaxTurrets | 0 | 5 | 3 | 1 → numeric |
+
+**Blitzkrieg** (5, `BLITZ`)
+| i | Name | Min | Max | Default | Change → widget | Notes |
+|---|---|---|---|---|---|---|
+| 0 | TimeLimit | 0 | 60 | 15 | 1 → numeric | 0 = unlimited |
+| 1 | CrateDropRate | 0 | 300 | 40 | 10 → numeric | |
+| 2 | ReinforcementTimer | 10 | 300 | 60 | 10 → numeric | |
+| 3 | ReinforcementCount | 1 | 100 | 40 | 1 → numeric | |
+| 4 | MaxArmour | 1 | 10 | 2 | 1 → numeric | |
+| 5 | TurretFrequency | 0 | 10 | 2 | 1 → numeric | |
+| 6 | RetributionMode | 0 | 1 | 1 | −1 → checkbox | |
+| 7 | SuddenDeath | 0 | 1 | 1 | −1 → checkbox | forced 0/inactive when TimeLimit = 0 |
+| 8 | MaxTurrets | 0 | 5 | 2 | 1 → numeric | |
+(`english.txt` contains `multiwinia_option_5_6_*`, `_5_7_*` (No/Yes) and `_5_8_*` (Random/Weighted) — stale labels from an older parameter order; no drop-down uses them [C].)
+
+**Tank Battle** (6) — `NumTanks` 3..10, default 3, change 1. Mode compiled out of `[B:FULL]` (`INCLUDEGAMEMODE_TANKBATTLE` off) and its button never registered (§4.4) `[B:DEAD]`.
+
+### 8.3 Lobby-level options outside the blueprint
+| Option | Widget / page | Values | Who | Condition |
+|---|---|---|---|---|
+| AI type | drop-down `multiwinia_menu_aimode` (lobby) | Easy 0 / Standard 1 / Hard 2; server start resets to Standard (except tutorials: Easy) | host | full key |
+| Basic crates only | checkbox `multiwinia_param_basiccrates` (Advanced) | 0/1 | host | `INCLUDE_CRATES_ADVANCED` |
+| Co-op | checkbox `multiwinia_menu_coop` (Advanced) | 0/1; auto-on for `ForceCoop` maps, auto-off when picking a non-`CoopMode` map | host | map `CoopMode`, full key |
+| Server password | text field `multiwinia_menu_serverpassword` (Advanced) | ≤16 chars | host | multiplayer |
+| Player name | text field `multiwinia_player_name` (PlayerOptions); chat `/name` or `/rename` | ≤16 chars | each player | |
+| Colour / side | PlayerOptions rows | 8 colours or Random/Attackers/Defenders | each player | taken rules §4.8 |
+| Map | MapSelect | maps of the mode | host | permitted |
+
+### 8.4 Ordering issue with map PlayTime (design note)
+`LevelSelectButton::MouseUp` requests `TimeLimit = map PlayTime`, then the next frame the host's `SetupMultiplayerPage` (entered from MapSelect, which is not in its exclusion list) requests every parameter back to the blueprint default. Requests are applied in order, so the lobby ends with the **default** TimeLimit, while the map row displayed the map's PlayTime [I] (from request ordering in `code/network/networkvalue.cpp:NetworkGameParam::Set`; P02/P15 to confirm the server applies requests in arrival order).
+
+---
+
+## [→ 09_meta_systems] 9. Lobby chat
+[C] `GameMenuWindow::NewChatMessage`, `UpdateMultiplayerPage`, `GameMenuChatButton::Render`, `code/interface/chatinput_window.cpp:ChatInputField::Keypress`, `code/multiwinia.cpp:RemoveTeams`, `code/network/clienttoserver.cpp`.
+- Present only in multiplayer lobbies (right box, under the map name). Opening: control `ControlLobbyChat` (when not already editing text) starts editing `chat_input` and clears its buffer. While the chat field is visible, window navigation is suspended (§12.4).
+- Sending (ChatInputField, P17b): Enter sends `ClientToServer::SendChatMessage(text, clientId)`; if the text contains `/rename ` or `/name ` (and no `//`) the following up-to-15 characters become the new player name (`m_teamName.Set` + `SetTeamNameAndColour` in the lobby, `ReliableSetTeamName` in game) instead of a message.
+- Receiving: `NET_DARWINIA_SEND_CHATMESSAGE` while `m_atMainMenu` → `NewChatMessage(text, clientId)`; the message is put at the **front** of `m_chatMessages` with receive time, sender name and colour copied from the lobby team whose `m_clientId` matches; sound `ChatMessage` (not for joins). Join notifications: when a team-name update arrives with the "show message" flag, `"PLAYERJOIN"` is posted; `Multiwinia::RemoveTeams` in the lobby posts `"PLAYERLEAVE"`.
+- Rendering (`GameMenuChatButton`): black box α 200/255 with white α 0.5 outline (height = button h − 1.5·font); messages from newest (bottom) upwards; per message: re-resolve the sender's current team (name/colour), fallback name `"Player"` in grey (150,150,150) when unknown; `PLAYERJOIN` → `multiwinia_player_join`, `PLAYERLEAVE` → `multiwinia_player_leave` (flag `P` = name), else `"<name>: <text>"`; word-wrapped at 1.75·w; drawn in the sender's colour with outline; stops when reaching 5 % from the top. Messages never expire (expiry code commented out); the log is cleared on lobby exit, errors and Finish buttons.
+- The "press Enter to talk" hint (`multiwinia_lobbypresstotalk`) is commented out [C].
+
+---
+
+## [→ 09_meta_systems] 10. Metaserver-driven front-end content
+
+### 10.1 Message of the day (MOTD)
+[C] `motdButton.h:MOTDButton::Render`. On the Main page's right box. Each render, until found, requests metaserver datum `MOTD` for language = pref `TextLanguage` (default `App::GetDefaultLanguage()`); when a non-empty value (not `DIRECTORY_SAFESTRING`) arrives it becomes the scrolling text, scrolling starts 5.0 s later, and `m_motdFound=true` makes the window draw the MOTD panel box; polling stops after the first answer (even an empty one). `m_ignoreButtons=true` (scroll timer not reset by focus changes).
+
+### 10.2 Update check
+[C] `SetupMainPage`, `UpdateMainPage`, `update_page_buttons.h`. Datum `LatestVersion` compared with `APP_VERSION` (=`DARWINIA_VERSION`, `code/lib/universal_include.h`) by string equality; mismatch ⇒ "Update available" button on Main → `PageUpdateAvailable` (autopatcher / website `UpdateURL`).
+
+### 10.3 Authentication status box
+[C] `GameMenuWindow::ShowAuthBox`, `AuthStatusButton.h`. `ShowAuthBox()` is true when (a) the auth status (`Authentication_GetStatus(key)`) or the demo-key flag has changed within the last **2.0 s** (function-static tracking), or (b) status ≠ `AuthenticationAccepted`, or (c) the key is a demo key; always false under `MULTIWINIA_DEMOONLY`. The box shows `dialog_auth_status` (small) and the status phrase (med) — `dialog_auth_status_demo_user` for a demo key whose status ≥ Unknown, otherwise the phrase for the status code (§4.15); Unknown is drawn at α 0.66.
+
+---
+
+## [→ 09_meta_systems] 11. Map metadata, thumbnails and game-type presentation
+
+### 11.1 `MapData` record
+[C] `code/UI/MapData.h`, `code/UI/MapData.cpp`; filled by P17b's `GameMenu::AddMap` from the header of each `levels/mp_*.txt` file (keys `Name`, `GameTypes`, `NumPlayers`, `Author`, `Description`, `PlayTime`, `Difficulty`, `CoopMode`, `ForceCoop`, `OfficialLevel`, ending at `MultiwiniaOptions_EndDefinition`).
+
+| Field | Type | Default | Meaning |
+|---|---|---|---|
+| `m_fileName` | char* | NULL | level file name (e.g. `mp_koth_2p_1.txt`); basis of phrase ids `<name>_name`, `<name>_description` and thumbnail `thumbnails/<name>.bmp` |
+| `m_levelName` | char* | NULL | `Name` line (used as button name; custom-map display name) |
+| `m_description` | char* | NULL | `Description` (displayed only for custom maps) |
+| `m_author` | char* | NULL | `Author` (not displayed by P18) |
+| `m_difficulty` | char* | NULL | `basic` / `intermediate` / `advanced` (sorting; display code commented out) |
+| `m_numPlayers` | int | 0 | slot count (lobby rows, CPU fill, player icons) |
+| `m_playTime` | int | 0 | suggested minutes (row display, TimeLimit request) |
+| `m_coop` | bool | false | co-op allowed |
+| `m_forceCoop` | bool | false | co-op forced |
+| `m_officialMap` | bool | false | counts toward achievement level total |
+| `m_mapId` | int | −1 | CRC-32 identity, `CalculeMapId()` = `LevelFile::CalculeCRC(m_fileName)`; −1 ⇒ `m_customMap = true` |
+| `m_customMap` | bool | false | custom (non-CRC) map |
+| `m_gameTypes[7]` | bool[`MAX_GAME_TYPES`=7] | all false | modes listed in `GameTypes` |
+`MapData::~MapData` frees the five strings. `CalculeMapId` is re-run before every start/permission check in the lobby [C] `UpdateMultiplayerPage`, `PlayGameButton::MouseUp`.
+
+### 11.2 Images and texts used for modes and maps
+| Purpose | Asset / phrase pattern | Ref |
+|---|---|---|
+| mode picture | `mwhelp/mode_<lower blueprint name>.bmp` (`…_prologue`, `…_campaign` for Darwinia buttons) | [C] `GameTypeImageButton.h` |
+| mode blurb | `multiwinia_help_<lower name>`, `multiwinia_help_prologue`, `multiwinia_help_campaign` | [C] `GameTypeInfoButton.h` |
+| mode name / short name | `multiwinia_gametype_<lower name>` / `multiwinia_gametypeshort_<lower name>` | [C] `code/multiwinia.cpp:MultiwiniaGameBlueprint` ctor, `code/game_menu.cpp:GameTypeToShortCaption` |
+| complexity icon | `icons/menu_basic.bmp`, `icons/menu_intermediate.bmp`, `icons/menu_advanced.bmp` | [C] `GameTypeButton.h` |
+| map thumbnail | `thumbnails/<file-without-ext>.bmp` (fallback name `thumbnails/default.bmp`) | [C] `MapImageButton.h`, `PreloadThumbnails` |
+| map name / description | `<file-without-ext>_name`, `<file-without-ext>_description` | [C] `code/game_menu.cpp:GetMapNameId/GetMapDescriptionId` |
+| player icons | `textures/darwinian.bmp` | [C] `LevelSelectButton.h` |
+| padlock | `icons/locked.bmp` | [C] `GameServerButton.h` |
+| kick icon | `icons/mouse_disabled.bmp`, `shadow_icons/mouse_disabled.bmp` | [C] `KickPlayerButton.h` |
+| buy-now art | `textures/prices.bmp`, `textures/multiwinia.bmp` | [C] `SetupBuyMePage` |
+| title/logo | `textures/mwtitle.bmp`, `icons/mwlogo.bmp` | [C] `Render` |
+| background | `sprites/darwinian.bmp`, `mwhelp/gear.bmp` | [C] `RenderBigDarwinian` |
+| gamepad glyphs | `icons/button_a.bmp`, `icons/button_b.bmp` (+ `button_lb`, `button_rb`, shadows, `textures/interface_blur.bmp`, `textures/laser.bmp`, `textures/clouds.bmp` preloaded) | [C] `PreloadTextures`, `UnlockFullGameButton.h`, `code/game_menu.cpp:BackPageButton::Render` |
+| (dead) map details | `icons/menu_<n>player.bmp`, difficulty icons, `"%d mins"` | [C] `mapDetailsButton.h` (never instantiated) |
+| (dead) help pages | `mwhelp/helppage_<page>_<image>.bmp` | [C] `HelpImageButton.h` |
+`GameMenuWindow::PreloadTextures()` (called once at startup by `code/app.cpp`) loads `icons/button_b.bmp`, `icons/button_lb_shadow.bmp`, `icons/button_rb_shadow.bmp`, `icons/button_lb.bmp`, `icons/button_rb.bmp`, `icons/button_a.bmp`, `textures/interface_blur.bmp`, `sprites/darwinian.bmp`, `mwhelp/gear.bmp`, `textures/laser.bmp`, `textures/clouds.bmp` [C].
+
+### 11.3 Front-end audio events (all `SoundSourceBlueprint::TypeMultiwiniaInterface`)
+| Event | When | Ref |
+|---|---|---|
+| `LobbyAmbience` | first update once sounds are ready (stopped when leaving the main-menu loop) | [C] `Update`, `code/main.cpp:MainMenuLoop` |
+| `MenuSelect` | forward button press (base MouseUp), level row click, editor button | [C] `code/game_menu.cpp:GameMenuButton::MouseUp`, `LevelSelectButton.h` |
+| `MenuCancel` | buttons whose `m_transitionDirection == -1` (Done, Paste, Play Demo, auth status) play it instead of `MenuSelect`; every `BackPageButton` (direction left at +1) plays `MenuSelect` via the base call **and then** `MenuCancel`, and re-initialises the transition with direction −1 | [C] same, `BackPageButton::MouseUp` |
+| `MenuRollOver` | focus moves to a new button (base render, level rows, colour rows) | [C] `GameMenuButton::Render`, `LevelSelectButton.h`, `FancyColourButton.h` |
+| `ChatMessage` | lobby chat received (not joins) | [C] `NewChatMessage` |

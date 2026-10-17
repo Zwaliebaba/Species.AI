@@ -17,7 +17,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `m_resource` | `Resource*` | `App::App` (first, after NetLib) | `~App` (second-to-last) | process | FULL | archive/texture/shape cache; `ParseArchive("init.dat")` immediately |
 | `m_soundSystem` | `SoundSystem*` | `App::Initialise` | `~App` | process | FULL | initialised lazily by `App::CheckSounds` |
 | `m_particleSystem` | `ParticleSystem*` | `App::Initialise` | `~App` | process | FULL | emptied in `ShutdownCurrentGame` |
-| `m_langTable` | `LangTable*` | `App::SetLanguage` (via `InitLanguage`) | `~App`; old table deleted 5 s later by a `DelayedJob` | process | FULL | |
+| `m_langTable` | `LangTable*` | `App::SetLanguage` (via `InitLanguage`) | `~App`; the replaced table is deleted by a `DelayedJob(…, 5)` — counter = number of `HandleDelayedJobs` polls (≈ frames) while at the head of the queue, so it runs on the 6th poll [C] `code/lib/runnable.cpp:DelayedJob::ReadyToRun` | process | FULL | |
 | `m_aviGenerator` | `AVIGenerator*` | never in this partition (init NULL) | – | – | `AVI_GENERATOR` only ([B:DEBUG]) | [C] ctor init list |
 | `m_globalWorld` | `GlobalWorld*` | `App::Initialise` | `~App`; re-created by `LoadProfile`/`ResetLevel(true)` | process | FULL (Multiwinia uses it only as id/team/research holder) | `m_myTeamId` lives here |
 | `m_location` | `Location*` | `DoEnterLocation` (loading thread) | `App::ShutdownCurrentGame` | one match | FULL | §3 |
@@ -36,7 +36,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `m_locationEditor` | `LocationEditor*` | `EnterLocation` when editing | `LocationEditorLoop` end | editor session | [B:EDITOR] | |
 | `m_helpSystem`, `m_tutorial`, `m_sepulveda`, `m_demoEndSequence` | | | | | `USE_SEPULVEDA_HELP_TUTORIAL` → [B:DEAD] | |
 | `m_effectProcessor` | `EffectProcessor*` | `App::Initialise` under `SOUND_EDITOR` | `~App` | | [B:DEBUG] | NULL in FULL |
-| `m_taskManagerInterface` | `TaskManagerInterface*` | `TaskManagerInterface::CreateTaskManager()` (static, assigns g_app member) — called in `App::Initialise`, `DoEnterLocation` and on input-mode switch | `~App` | recreated per match / input mode | FULL | [I] CreateTaskManager deletes the previous one (P09 to confirm) |
+| `m_taskManagerInterface` | `TaskManagerInterface*` | `TaskManagerInterface::CreateTaskManager()` (static, assigns g_app member) — called in `App::Initialise`, `DoEnterLocation` and on input-mode switch | `~App` | recreated per match / input mode | FULL | `CreateTaskManager` deletes the previous instance, then creates `TaskManagerInterfaceGestures` (single-player, pref `ControlMethod`==0, not gamepad), `TaskManagerInterfaceMultiwinia` (Multiplayer) or `TaskManagerInterfaceIcons` [C] `code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager`. At boot `m_gameMode` is None so the Icons variant is built first |
 | `m_gesture` | `Gesture*` | `App::Initialise` (`new Gesture("gestures.txt")`) | `~App` | process | FULL | |
 | `m_script` | `Script*` | `App::Initialise` | `~App` | process | FULL | |
 | `m_testHarness` | `TestHarness*` | `RunTheGame` under `TEST_HARNESS_ENABLED` | – | | [B:DEAD] | |
@@ -53,7 +53,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `m_achievementTracker` | `AchievementTracker*` | `App::Initialise` | `~App` (last) | process | FULL | `Load()` polled in `MainMenuLoop` |
 | `m_soundsWorkQueue` (private) | `WorkQueue*` | ctor init list (`new WorkQueue`) — spawns a thread | `~App` | process | FULL | loads `sounds.dat`,`sounds2.dat` |
 | `m_delayedJobs` (private) | `LList<DelayedJob*>` | | | process | FULL | one job run per `HandleCommonConditions` |
-| `m_oldLangTable` (private) | `LangTable*` | `SetLanguage` | `DeleteOldLangTable` (DelayedJob, 5) | | FULL | |
+| `m_oldLangTable` (private) | `LangTable*` | `SetLanguage` | `DeleteOldLangTable` (DelayedJob, counter 5 polls) | | FULL | |
 | `m_thumbnailScreenshot`, `m_saveThumbnail` | | | | | `TARGET_OS_VISTA` → [B:DEAD] | |
 
 ### 1.2 Scalar/state members
@@ -64,7 +64,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `m_difficultyLevel` | int | 0 | `UpdateDifficultyFromPreferences` hard-codes 0 (pref read commented out); `Location::Init` overwrites from/to `LevelFile::m_levelDifficulty` |
 | `m_largeMenus` | bool | false | true iff pref `OTHER_LARGEMENUS` == 2 |
 | `m_usingFontCopies` | bool | false | CJK languages alias game/editor font to title font |
-| `m_steamInited` | bool | false | never set true in this partition [U] (grep other partitions) |
+| `m_steamInited` | bool | false | never read or written anywhere else in `code/` [C] grep — dead flag |
 | `m_userRequestsPause` | bool | false | toggled by network `NET_DARWINIA_PAUSE`; reset in `ShutdownCurrentGame` |
 | `m_lostFocusPause` | bool | false | = !window-has-focus (or controller unplugged in gamepad mode), recomputed every `HandleCommonConditions` |
 | `m_editing` | bool | false | editor mode ([B:EDITOR] paths only) |
@@ -95,7 +95,7 @@ All paths are relative to `SRC=multiwinia/`.
 
 | Method | Semantics [C] `code/app.cpp` |
 |---|---|
-| `App()` | sets `g_app=this`; NetLib init; pins thread affinity to mask `0x02|0x08|0x20|0x80` (odd-numbered CPUs 1,3,5,7) [B:FULL Win32]; `Resource` + `init.dat`; `PrefsManager(GetPreferencesPath())`; `SetPreferenceOverrides()`; `Renderer::Initialise` + `SetOpenGLState`; queries `GL_MAX_TEXTURE_SIZE` → `BitmapRGBA::SetMaxTextureSize`; queues `App::Initialise` on the loading-screen work queue; renders the loading screen (blocks until queue drained); then queues `SetWorkingThreadProcessor` (affinity mask `0x01|0x04|0x10|0x40`) and `App::LoadSounds` on `m_soundsWorkQueue` |
+| `App()` | sets `g_app=this`; NetLib init; pins thread affinity to mask `0x02\|0x08\|0x20\|0x80` (odd-numbered CPUs 1,3,5,7) [B:FULL Win32]; `Resource` + `init.dat`; `PrefsManager(GetPreferencesPath())`; `SetPreferenceOverrides()`; `Renderer::Initialise` + `SetOpenGLState`; queries `GL_MAX_TEXTURE_SIZE` → `BitmapRGBA::SetMaxTextureSize`; queues `App::Initialise` on the loading-screen work queue; renders the loading screen (blocks until queue drained); then queues `SetWorkingThreadProcessor` (affinity mask `0x01\|0x04\|0x10\|0x40`) and `App::LoadSounds` on `m_soundsWorkQueue` |
 | `Initialise()` (private, runs on loading thread) | see §1.4 |
 | `SetProfileName(name)` | copy; unless "AttractMode", writes pref `UserProfile` and saves prefs |
 | `LoadProfile()` | recreates `m_globalWorld`; profile `AccessAllAreas`/`AttractMode` loads `game_unlockall.txt` and sets every trunk port online / every location available [B:LEGACY] |
@@ -111,7 +111,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `GetDefaultLanguage()` | `g_systemInfo->m_localeInfo.m_language` |
 | `InitLanguage()` | tries in order: pref `TextLanguage` (not on macOS), OS locale, "english", first available; asserts one succeeds |
 | `TrySetLanguage(lang)` | if `language/<lang>.txt` exists: save pref `TextLanguage`, `SetLanguage(lang, pref TextLanguageTest)` |
-| `SetLanguage(lang, test)` | builds `LangTable("language/<lang>.txt")`, optional `TestAgainstEnglish`; `setlocale(LC_CTYPE, lang)`; merges `strings_<lang>.txt` or `strings_default.txt` if present; first call initialises fonts `speccy` (game), `editor`, `square` (title), spacing factors editor 0.91, title 1.03; for `chinese-trad`,`chinese-simp`,`korean`,`japanese`: horizontal scale 1.0 and game+editor font := title font; else scale 0.6 for all three; `RebuildTables()` if input manager exists; old table deleted after `DelayedJob(m,5)` |
+| `SetLanguage(lang, test)` | builds `LangTable("language/<lang>.txt")`, optional `TestAgainstEnglish`; `setlocale(LC_CTYPE, lang)`; merges `strings_<lang>.txt` or `strings_default.txt` if present; first call initialises fonts `speccy` (game), `editor`, `square` (title), spacing factors editor 0.91, title 1.03; for `chinese-trad`,`chinese-simp`,`korean`,`japanese`: horizontal scale 1.0 and game+editor font := title font; else scale 0.6 for all three; `RebuildTables()` if input manager exists; old table deleted by `DelayedJob(m,5)` (6th poll, ≈ frames) |
 | `InitMetaServer()` | loads `<profile>authkey.dev`; `Authentication_SetKey`; `Authentication_RequestStatus(key, METASERVER_GAMETYPE_MULTIWINIA)`; `MetaServer_Initialise`; `MetaServer_Connect("metaserver-mwdev.introversion.co.uk", PORT_METASERVER_CLIENT_LISTEN)`; `MatchMaker_LocateService(same host, PORT_METASERVER_LISTEN)` |
 | `Multiplayer()` | `m_gameMode == GameModeMultiwinia` |
 | `IsSinglePlayer()` | `m_gameMode ∈ {Campaign, Prologue}` (so a Multiwinia skirmish vs CPU is **not** "single player") |
@@ -122,7 +122,7 @@ All paths are relative to `SRC=multiwinia/`.
 | `GetMapDirectory()` (static) | `<profile>maps/` (user maps, `.mwm`) |
 | `UpdateDifficultyFromPreferences()` | `m_difficultyLevel = 0` |
 | `ToggleGamePaused()` | allowed only if **no** `LobbyTeam` is `TeamTypeRemotePlayer`, not in grace period, not game over → `m_clientToServer->RequestPause()`; returns allowed |
-| `GamePaused()` | `m_location && (g_gameTimer.IsPaused() || m_clientToServer->m_outOfSyncClients.Size()>0 || (m_lostFocusPause && IsSinglePlayer()))` |
+| `GamePaused()` | `m_location && (g_gameTimer.IsPaused() \|\| m_clientToServer->m_outOfSyncClients.Size()>0 \|\| (m_lostFocusPause && IsSinglePlayer()))` |
 | `EarnedAchievement(id)` | returns false (stub) |
 | `CheckMasterAchievement()` | empty stub |
 | `GiveAchievement(id)` | for ids other than MasterPlayer/Carnage/Genocide: return if any of the level's first `m_numPlayers` teams is CPU; then `EarnedAchievement` (no effect) |
@@ -326,7 +326,20 @@ forever:
     else:                           EnterGlobalWorld()    # Darwinia world [B:LEGACY]; exits at once because it sets m_atMainMenu=true
     g_inputManager.Advance()
 ```
-[C]. `GlobalWorldGameLoop` sets `m_atMainMenu = true` then `break`s at the top of its loop when `m_atMainMenu` — in practice the program alternates **MainMenuLoop ↔ LocationGameLoop** [C] `code/main.cpp:GlobalWorldGameLoop`.
+[C]. `GlobalWorldGameLoop` sets `m_atMainMenu = true` then `break`s at the top of its loop when `m_atMainMenu` — in practice the program alternates **MainMenuLoop ↔ LocationGameLoop** [C] `code/main.cpp:GlobalWorldGameLoop`. After a match, `LocationGameLoop` exits because something set `m_requestedLocationId = -1` (in-game menu / results UI, P17b/P18); the next outer iteration finds `m_atMainMenu == false` and `m_requestedLocationId == -1`, enters `EnterGlobalWorld` → `GlobalWorldGameLoop`, which sets `m_atMainMenu = true` and returns at once — this is the path back to the front end.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Boot: AppMain / Initialise
+  Boot --> MainMenu: m_atMainMenu = true (ctor default)
+  MainMenu --> Loading: NET_DARWINIA_START_GAME (m_requestedLocationId=999, gameMode=Multiwinia, m_loadingLocation=true, GameTimer.Reset)
+  Loading --> InMatch: DoEnterLocation done (worker thread), LocationGameLoop starts, m_loadingLocation=false
+  InMatch --> FadeOut: m_requestedLocationId != m_locationId
+  FadeOut --> GlobalWorldStub: fade complete → ShutdownCurrentGame
+  GlobalWorldStub --> MainMenu: GlobalWorldGameLoop sets m_atMainMenu=true
+  MainMenu --> [*]: m_requestQuit → Finalise then exit(0)
+  InMatch --> [*]: m_requestQuit → Finalise then exit(0)
+```
 
 ### 2.2 `MainMenuLoop` (front end + lobby), per iteration [C]
 
@@ -381,7 +394,7 @@ Macros (`code/gametimer.h`): `SERVER_ADVANCE_PERIOD` ≡ `g_gameTimer.GetServerA
 | Function | Semantics [C] |
 |---|---|
 | `Reset()` | `m_estimatedServerStartTime=now`; `m_gameSpeed = Multiplayer()? 0.0 : 1.0`; `m_gameTime=0`; `m_lastClientAdvance=0`; requested speed/rate = -1; unlock. **Does not reset `m_requestedSpeedLength` or `m_accurateTime`** [C] |
-| `Tick()` | called once per processed server *update* (`ClientToServer::ProcessAllServerLetters`). `m_lastClientAdvance = now`; if `!g_app->GamePaused()`: `m_gameTime += GetServerAdvancePeriod()`. Then if `m_requestedSpeed ≥ 0`: `m_gameSpeed += (m_requestedSpeed − m_gameSpeed) × m_requestedSpeedOfChange`; if `|m_gameSpeed − m_requestedSpeed| < 0.01` snap and clear request. Then if no request pending (or reached) and `m_requestedSpeedLength ≥ 0`: `m_requestedSpeedLength −= 0.1`; when ≤ 0 → length = -1 and request speed 1.0 (rate stays as before). |
+| `Tick()` | called once per processed server *update* (`ClientToServer::ProcessAllServerLetters`). `m_lastClientAdvance = now`; if `!g_app->GamePaused()`: `m_gameTime += GetServerAdvancePeriod()`. Then if `m_requestedSpeed ≥ 0`: `m_gameSpeed += (m_requestedSpeed − m_gameSpeed) × m_requestedSpeedOfChange`; if `\|m_gameSpeed − m_requestedSpeed\| < 0.01` snap and clear request. Then if no request pending (or reached) and `m_requestedSpeedLength ≥ 0`: `m_requestedSpeedLength −= 0.1`; when ≤ 0 → length = -1 and request speed 1.0 (rate stays as before). |
 | `GetGameSpeed()` / `GetRequestedGameSpeed()` / `GetGameTime()` | accessors |
 | `GetAccurateTime()` | `m_accurateTime += (now − m_lastCallToAccurateTime) × m_gameSpeed`; NOT net-safe, NOT thread-safe |
 | `GetAccurateTime(futureTime)` | pure projection of the above; thread-safe |
@@ -430,7 +443,7 @@ Key design property: **the tick rate is fixed at 10 Hz of real time; game speed 
 - `GetNumSlicesToAdvance(catchUp)` [C] `code/network/clienttoserver.cpp`: catch-up → 20; otherwise `pending = (lastValidSeqFromServer − g_lastProcessedSequenceId) × 10 + (g_sliceNum ≠ -1 ? 10 − g_sliceNum : 0)`; `n = int(pending × 0.3)`; clamp to [0, 20]. (A time-based branch for `pending ≤ 10` assigns a shadowed local and has **no effect** — dead code [C].) So the client consumes ~30 % of its backlog per frame, at most 2 ticks' worth of slices per call.
 - `AdvanceAndCatchUp()` loops `Advance(); ProcessAllServerLetters(catchUp)` while `catchUp = (g_lastProcessedSequenceId < m_lastValidSequenceIdFromServer − 20) && clientId ≠ -1` and less than **0.3 s** real time has been spent [C].
 - **Rendering** uses `g_predictionTime = min(now − lastTick, 1.0) × speed` for extrapolation: each renderable is drawn at `pos + vel × predictionTime`; objects whose slot index is **greater than `SliceDArray::GetLastUpdated()`** (i.e. not yet advanced in the current tick) are drawn with `predictionTime + SERVER_ADVANCE_PERIOD` so both halves of a half-advanced array look consistent [C] `code/team.cpp:Team::RenderOthers`, `code/unit.cpp:Unit::Render`, `code/location.cpp:Location::RenderBuildings`. This is extrapolation (dead reckoning), not interpolation between two stored states.
-- Render rate is uncapped (one `Renderer::Render` per loop iteration); `MINIMUM_RENDER_PERIOD = 1.0` is defined but unused in this partition [C] `code/globals.h` / [I] grep shows no users.
+- Render rate is uncapped (one `Renderer::Render` per loop iteration); `MINIMUM_RENDER_PERIOD = 1.0` is defined but has no user anywhere [C] `code/globals.h` + grep.
 
 ### 2.6 `LocationGameLoop` — the in-match frame (`code/main.cpp:LocationGameLoop`)
 
@@ -761,6 +774,75 @@ Every render path uses the extrapolation rule of §2.5 (`t = g_predictionTime`, 
 - Team id 255 = "no team / neutral" everywhere (buildings, `m_myTeamId` when not in a match).
 - Ownership: an entity's team is `m_id.GetTeamId()` and is fixed by which team container holds it; buildings carry a team id that can change (`Building::SetTeamId`, e.g. captured spawn points, trunk ports released by `Eliminate`).
 
+```mermaid
+classDiagram
+  class App {
+    +Location* m_location
+    +Multiwinia* m_multiwinia
+    +GlobalWorld* m_globalWorld
+    +ClientToServer* m_clientToServer
+    +Server* m_server
+    +LocationInput* m_locationInput
+  }
+  class Multiwinia {
+    +LobbyTeam m_teams[6]
+  }
+  class LobbyTeam {
+    +int m_teamId
+    +int m_clientId
+    +int m_teamType
+    +int m_colourId
+    +RGBAColour m_colour
+    +int m_score
+  }
+  class Location {
+    +Team* m_teams[6]
+    +int m_teamPosition[6]
+    +SliceDArray~Building*~ m_buildings
+    +SliceDArray~Spirit~ m_spirits
+    +SliceDArray~Laser~ m_lasers
+    +SliceDArray~WorldObject*~ m_effects
+    +EntityGrid* m_entityGrid
+    +ObstructionGrid* m_obstructionGrid
+    +LevelFile* m_levelFile
+  }
+  class Team {
+    +int& m_teamId
+    +int& m_teamType
+    +RGBAColour& m_colour
+    +FastDArray~Unit*~ m_units
+    +SliceDArray~Entity*~ m_others
+    +TaskManager* m_taskManager
+    +int m_currentUnitId
+    +int m_currentEntityId
+    +int m_currentBuildingId
+  }
+  class Unit {
+    +int m_troopType
+    +SliceDArray~Entity*~ m_entities
+    +Vector3 m_centrePos
+    +Advance()
+    +AdvanceEntities()
+  }
+  class InsertionSquad
+  class AirstrikeUnit
+  class ViriiUnit
+  class TaskManager
+  class Entity
+  App *-- Location
+  App *-- Multiwinia
+  Multiwinia *-- "6" LobbyTeam
+  Location *-- "6" Team
+  Team ..> LobbyTeam : references fields
+  Team *-- "0..*" Unit
+  Team *-- "0..*" Entity : m_others
+  Team *-- TaskManager
+  Unit *-- "0..*" Entity
+  Unit <|-- InsertionSquad
+  Unit <|-- AirstrikeUnit
+  Unit <|-- ViriiUnit
+```
+
 Team types (`code/team.h` enum):
 
 | Value | Name | Meaning |
@@ -873,7 +955,7 @@ A `Unit` (`code/unit.h:Unit`) is a team-owned container of same-type entities mo
 | `AdvanceEntities(slice)` | this slice of members: enabled → `Advance(this)`; dead → `RemoveEntity`; else grid update |
 | `Advance(unitIndex)` (slice 0 only) | `m_centrePos = accumulated / n`; `m_vel = (centre − old) / SERVER_ADVANCE_PERIOD`; `m_radius = sqrt(maxR²)`; no used slots → radius 0, return true (unit dies); reset accumulators; follow route if any; LaserTroop: for each trooper within 0.2 (`leadDistance/5`, lead 1.0) of its `m_targetPos`, step its target 1.0 towards `m_unitTargetPos`, snap to ground, push from obstructions. **Note: dividing by `SERVER_ADVANCE_PERIOD` is a division by zero when game speed is 0** — avoided because `Location::Advance` is not called while paused [I] |
 | `Attack(pos, withGrenade)` | grenade: nearest live member throws `EffectThrowableGrenade` at pos; then all enabled, live, not-reloading members are candidates; `timeToWait = StatRate(type) / NumEntities()`; `m_attackAccumulator += SERVER_ADVANCE_PERIOD / timeToWait`; while ≥ 1 pick a random candidate (`syncfrand(count)` truncated) and `Attack(pos)` |
-| `UpdateEntityPosition(pos, r)` | accumulate centroid; max of `(|pos − centre| + r)²` |
+| `UpdateEntityPosition(pos, r)` | accumulate centroid; max of `(\|pos − centre\| + r)²` |
 | `GetWayPoint()` / `SetWayPoint(pos)` (virtual) | |
 | `GetFormationOffset(formation, index)` | index -1 → 0. Spacing `spacedOut = 4.0`; jitter `s_offsets[index % 100]` ∈ [0, 1). Rectangle: `rowLen = int(sqrt(NumEntities()))`; x = (index % rowLen − rowLen/2) × 4 + j; z = (index / rowLen − rowLen/2) × 4 + j; returns **(z, 0, x)** (axes swapped). Airstrike: rowLen 4; x = (i%4 − 2) × 24 + j; y = (i/4 − 2) × 12 + j; z = (i/4 − 2) × 24 + j; returns (x, −y, z). (`rowLen` 0 when the unit is empty → integer division by zero [I].) |
 | `GetOffset(formation, index)` | formation offset (the "obstruction-aware" comment is not implemented: it returns `(m_wayPoint + off) − m_wayPoint`) |
@@ -929,7 +1011,7 @@ Rules:
 | `m_leftButtonPressed` | 0x0400 | `ControlLeftButtonPressed` |
 | `m_mousePos` | – | `UserInput::GetMousePos3d()` (landscape hit), possibly snapped (§5.3) |
 | `m_directUnitMoveDx/Dy` (short) | – | stick vector rotated into world: `right = camera control vector`, `front = up × −right`; waypoint = right·(−x) + front·(−y); stores (x, z) |
-| `m_directUnitTargetDx/Dy` (short) | – | right-stick target vector; also steers `camera->m_wantedTargetVector` (acceleration 6, or 256 if |delta|² > 175, clamped to length 125 when |v|² > 15625); with a tracked squad point-man the target becomes `pointMan.pos + camera.m_targetVector` |
+| `m_directUnitTargetDx/Dy` (short) | – | right-stick target vector; also steers `camera->m_wantedTargetVector` (acceleration 6, or 256 if ‖delta‖² > 175, clamped to length 125 when ‖v‖² > 15625); with a tracked squad point-man the target becomes `pointMan.pos + camera.m_targetVector` |
 
 Flags are ORed over all frames between sends and cleared after each send (`Clear()` = memset). Wire format (`Pack`/`Unpack`): `uint16 flags`; if directUnitMove: `int16 dx, int16 dy`; if targetDirected or secondaryFireDirected: `int16 tdx, int16 tdy`; then `Vector3 m_mousePos` (`WriteNetworkValue`, P15) [C] `code/team.cpp:TeamControls::Pack`.
 
@@ -1008,7 +1090,7 @@ Action table (bindings: RTS default / Darwinia-style / XInput; "down" = press ed
 | 17 | Release turret | `TMTerminate` or turret ownership lost | selected GunTurret | `RequestSelectUnit(-1,-1,-1)`, camera free |
 | 18 | Officer: terminate (demote) | `TMTerminate` | selected Officer | `RequestTerminateEntity` + deselect + camera free (P09: Terminate → officer handling) |
 | 19 | Officer orders (Multiplayer) | `ControlIssueSpecialOrders` (mouse right down RTS & Darwinia-style; XInput A RTS / X Darwinia-style) or gamepad `ControlOrderSpecialMove` | selected Officer | preview route (direct if Ctrl or formation mode); `RequestOfficerOrders(team, highlightedPos, directRoute = Ctrl, forceOnlyMove = specialMove)` where specialMove = Shift held (`ControlOrderSpecialMove`), inverted on gamepad → `NET_DARWINIA_ORDERGOTO`: forceOnlyMove → `Officer::SetWaypoint(pos)` (walk there), else `SetOrders(pos, direct)` (goto orders for Darwinians). Darwinia-style (`MultiwiniaControlMethod 0`): `ControlUnitSetTarget` (left held) also sends `RequestOfficerOrders(…, true)` (move), and right-click on a formation officer first sends `RequestOfficerNone` (`NET_DARWINIA_NONE`) |
-| 20 | Officer orders (single-player) | QuickUnitLeft → `RequestOfficerFollow`; QuickUnitDown → `RequestOfficerNone`; `ControlIssueSpecialOrders` within 50 units (|d|² < 2500) of the officer → follow, else goto (radar dish snap) | single-player | [B:LEGACY] |
+| 20 | Officer orders (single-player) | QuickUnitLeft → `RequestOfficerFollow`; QuickUnitDown → `RequestOfficerNone`; `ControlIssueSpecialOrders` within 50 units (‖d‖² < 2500) of the officer → follow, else goto (radar dish snap) | single-player | [B:LEGACY] |
 | 21 | Armour orders (Multiplayer) | `ControlIssueSpecialOrders` or gamepad `ControlOrderSpecialMove`; Darwinia-style also `ControlUnitSetTarget` | selected Armour, target in landscape | preview direct route; `deploy = specialMove` (inverted when method 0); `RequestArmourOrders(team, pos, deploy)` → `NET_DARWINIA_ORDERGOTO`: forceOnlyMove(deploy flag) → `Armour::SetWayPoint(pos)`, else `SetOrders(pos)`; friendly → order marker; deploy → deselect; sound `SetOrders` |
 | 22 | Armour (single-player) | `ControlIssueSpecialOrders` → awaiting deployment; then `ControlUnitCreate` → `SetOrders(own pos)` | | **local direct mutation of sim state** (not networked) [B:LEGACY] |
 | 23 | Other entity selected (Multiplayer) | – | | direct preview route entity → highlightedPos |
@@ -1062,3 +1144,208 @@ Action table (bindings: RTS default / Darwinia-style / XInput; "down" = press ed
 | `RequestToggleReady` / `RequestSetTeamReady` (testbed) | `NET_DARWINIA_TOGGLE_READY` / `NET_DARWINIA_SET_TEAM_READY` | ready flags |
 | `RequestPause` | `NET_DARWINIA_PAUSE` | `m_userRequestsPause` toggle + speed request |
 
+## [→ 22_determinism_and_networking] 6. Determinism notes for X3 (from this partition)
+
+Lockstep model: every client runs the full simulation from the same ordered command stream; only commands and `TeamControls` travel on the wire; a per-tick sync value is compared (P15). Items below are what this partition contributes; each is tagged with its risk.
+
+| # | Item | Evidence | Assessment |
+|---|---|---|---|
+| D1 | x87 precision forced to 53-bit mantissa on the main thread and on every `WorkQueue` thread (`_control87(_PC_53, _MCW_PC)`) | `code/main.cpp:StandardiseCPUPrecision`, `code/lib/work_queue.cpp:WorkQueue::RunThread` | [C] required because the level is loaded on the loading thread (`Location::Init` consumes `syncrand`, builds spawn positions) |
+| D2 | Fixed sim step: one server tick per 0.1 s **real** time; dt = `0.1 × gameSpeed`; `m_gameTime` is an accumulated double (`+= dt`) | `code/network/server.cpp:Server::AdvanceIfNecessary`, `code/gametimer.cpp:GameTimer::Tick` | [C] deterministic as long as `m_gameSpeed` evolves identically (it is changed only inside `Tick` from requests issued by sim/network code) |
+| D3 | Game-speed blending is an exponential approach evaluated per tick (`speed += (target − speed) × rate`, snap within 0.01) and a duration counter decremented by 0.1 per tick | `GameTimer::Tick` | [C] deterministic; a port must keep the exact per-tick formula (not frame-based) |
+| D4 | `App::GamePaused()` gates both `GameTimer::Tick`'s time accumulation and `Location::Advance`; it includes `ClientToServer::m_outOfSyncClients.Size() > 0` and (single-player only) window focus | `code/app.cpp:App::GamePaused` | [I] risk: if `m_outOfSyncClients` is not updated at the same sequence id on every client, clients stop simulating at different ticks (only after a desync is already detected) — P15 to confirm |
+| D5 | `Multiwinia::Advance()` runs at slice 8 **even when paused** (outside the `!GamePaused()` check) | `code/network/clienttoserver.cpp:ProcessAllServerLetters` | [C] must be preserved (it drives the grace-period countdown and the un-pause) |
+| D6 | Commands of tick N are applied **before** slice 0 of tick N, and the sync value is generated right after applying them | same | [C] |
+| D7 | Strict serial update order: teams 0→5 (units' entities, then units at slice 0, then others), lasers, effects, buildings, spirits, clouds; then weather (slice 3), grid cache (7), crates (8); OpenMP pragma inert (`OpenMP="false"`) | `code/location.cpp:Location::Advance`, `targets/vs2005/Darwinia.vcproj` | [C] a parallel port must reproduce this order or make the steps order-independent |
+| D8 | Slice partitioning uses array **capacity** and `int(Size()/10.0f)` (float division); slot reuse is LIFO | `code/lib/slice_darray.cpp`, `contrib/systemiv/lib/tosser/fast_darray.cpp` | [C] creation/deletion order fully determines which slot (and thus which slice and which tick) a new object is advanced in |
+| D9 | Sync RNG = MT19937 (`_syncrand`) seeded once at client join (`NET_DARWINIA_RANDSEED`); **not reseeded at `Location::Init`** — the stream continues from whatever the lobby/previous matches consumed | `code/network/clienttoserver.cpp` (`syncrandseed`), `contrib/systemiv/lib/math/random_number.cpp` | [I] risk: any sync-RNG use outside lockstep (lobby UI, render) desynchronises the next match; X3 should grep all `syncrand` callers for non-sim contexts |
+| D10 | `Location::Init` reseeds the **non-synced** LCG (`AppSeedRandom(1)`, MSVC constants 214013/2531011) | `code/location.cpp:Location::Init` | [C] non-synced RNG must only feed cosmetics; in this partition it does (`Bang` particle counts/velocities via `frand/sfrand`; promote/demote flashes via `AppRandom`) |
+| D11 | `FRAND(x)`/`SFRAND(x)` are **synced** wrappers whose evaluation order inside `Vector3(...)` constructors is forced left-to-right | `code/lib/vector3.h`, `code/lib/vector3.cpp:FromRand` | [C] weather and crate placement use them; a port must keep argument evaluation order explicit |
+| D12 | `WorldObjectId::ResetUniqueIdSeed()` at match load; `GlobalWorld::s_nextUniqueBuildingId` reset then set to max level id + 1 | `code/main.cpp:DoEnterLocation`, `code/location.cpp:Init/InitBuildings` | [C] |
+| D13 | Start positions, CPU colours, coop pairing, Assault sides and starting power-ups consume `syncrand` during `Location::Init` (loading thread), in team-index order (`GetTeamPosition(i)` is called for all 6 slots in step 3) | `code/location.cpp:Init/GetTeamPosition/SetupCoop/SetupAssault/InitialiseTeam` | [C] all clients must load with identical `LobbyTeam` state (colour ids, types) at the same RNG position |
+| D14 | `Unit::s_offsets` (formation jitter) is generated lazily on first `GetFormationOffset` call from sim code with 100 `syncfrand` calls; reset at Init/Empty | `code/unit.cpp:Unit::GetFormationOffset` | [C] deterministic; a port should generate it eagerly at a fixed point to avoid hidden RNG consumption |
+| D15 | Local-only routes (preview lines) are allocated in the **same** `m_routingSystem` free-list that sim orders use; the preview route of the previous frame is still allocated while the sim runs `IssueDarwinianOrders → GenerateRoute` | `code/location_input.cpp:AdvanceTeamControl` (`m_routeId`), `code/location.cpp:IssueDarwinianOrders`, `code/routing_system.cpp` (`m_routes.PutData`) | [I] risk: route **ids** given to Darwinians can differ between clients; harmless only if route ids are never hashed/compared across clients (P03/X3) |
+| D16 | `FenceSwitch::Switch()` is executed directly from local input, not via the network | `code/location_input.cpp:SelectObjectUnderMouse` | [C] desync hazard if fence switches exist in Multiwinia maps (X4) |
+| D17 | Single-player armour deployment mutates sim state locally | `code/location_input.cpp:AdvanceTeamControl` (`m_awaitingDeployment`, `SetOrders`) | [B:LEGACY] no MP effect |
+| D18 | `Location::UpdateTeam` uses a function-static `unitMoved` shared by all teams | `code/location.cpp:UpdateTeam` | [C] affects only the local cursor marker |
+| D19 | Divisions by zero in sim paths: `IssueDarwinianOrders` centre when no Darwinian is controlled (NaN route start); `Unit::GetFormationOffset` rowLen 0; `IsWalkable` numSteps 0 (diff = inf, loop skipped → true) | `code/location.cpp`, `code/unit.cpp` | [I] deterministic under IEEE but fragile; a port should guard them |
+| D20 | `CreateRandomCrate` weighted mode with all scores 0 computes NaNs and falls back to random after consuming extra `syncfrand`s | `code/location.cpp:CreateRandomCrate` | [C] deterministic; keep RNG call count identical if bit-compatibility matters |
+| D21 | `Location::Bang` damage falloff `(_range*2.0 - d) / _range*2.0` (precedence) | `code/location.cpp:Bang` | [C] gameplay constant, reproduce exactly |
+| D22 | Real-time leaks into sim? `SetCurrentMessage` (real time, UI only); `Team::m_lastOrdersSet` (game time, local UI throttle); `GetNumSlicesToAdvance`/`AdvanceAndCatchUp` (real time, only decides *how many* slices run per frame) | various | [C] none affect sim results |
+| D23 | Render extrapolation reads sim state but never writes it (`g_predictionTime`) | `code/team.cpp`, `code/unit.cpp`, `code/location.cpp` render functions | [C] |
+| D24 | All `iv_*` math wrappers truncate the low nibble (global) | build_matrix §3 | see 22 |
+
+## [→ 20_architecture] 7. Constants table (every numeric constant in this partition)
+
+| Constant | Value | Unit | Kind | Meaning | Ref |
+|---|---|---|---|---|---|
+| `NUM_TEAMS` | 6 | teams | `#define` | team slots | `code/globals.h` |
+| `NUM_SLICES_PER_FRAME` | 10 | slices/tick | `#define` | work split of one tick | `code/globals.h` |
+| `IAMALIVE_PERIOD` | 0.1 | s (real) | `#define` | TeamControls send interval | `code/globals.h` |
+| `MINIMUM_RENDER_PERIOD` | 1.0 | s | `#define` | "render at least this often" — no user anywhere in `code/` [C] grep | `code/globals.h` |
+| `GRAVITY` | 10.0 | units/s² | `#define` | used by entity physics (P03) | `code/globals.h` |
+| server tick period | 0.1 | s (real) | literal | `m_nextServerAdvanceTime += 0.1f` | `code/network/server.cpp` |
+| `GetServerAdvancePeriod` | 0.1 × speed | game s | literal | sim dt | `code/gametimer.cpp` |
+| pause threshold | 0.01 | speed | literal | `IsPaused` and speed snap | `code/gametimer.cpp` |
+| speed-length decrement | 0.1 | s per tick | literal | | `code/gametimer.cpp` |
+| prediction clamp | 1.0 | s (real) | literal | max extrapolation | `code/gametimer.cpp` |
+| catch-up threshold | 20 | ticks behind | literal | enter catch-up | `code/network/clienttoserver.cpp:AdvanceAndCatchUp` |
+| catch-up budget | 0.3 | s (real) | literal | max per frame | same |
+| slices per call | ≤ 20; 30 % of backlog | slices | literal | `GetNumSlicesToAdvance` | same |
+| `g_advanceTime` clamp | 0.25 | s | literal | frame dt cap | `code/main.cpp:UpdateAdvanceTime` |
+| `DemoFrameRate` default | 25 | fps | pref | demo recording fixed step | `code/main.cpp` |
+| `TARGET_FRAME_RATE_INCREMENT` | 0.25 | – | `#define` | unused | `code/main.cpp` |
+| memory log interval | 60 | s | literal | | `code/main.cpp:AdvanceAvailableMemoryCheck` |
+| location fade-in | 0.6 | s | literal | | `code/main.cpp:LocationGameLoop` |
+| global-world fade-in | 0.25 | s | literal | | `code/main.cpp:GlobalWorldGameLoop` |
+| low-fps sound threshold | 15 | fps | literal | extra `SoundSystem::Advance` | `code/main.cpp` |
+| `ControlMouseButtons` default | 3 | buttons | pref | read, unused | `code/main.cpp:SendTeamControlsToNetwork` |
+| camera border | 200.0 | units | `const` | camera bounds margin | `code/main.cpp:DoEnterLocation` |
+| fallback camera | (maxX,1000,maxX) dir (-1,-0.7,-1) | units | literal | | same |
+| global-world camera height | 50.0 | | literal | | `code/main.cpp:EnterGlobalWorld` |
+| main / worker affinity | 0xAA / 0x55 | CPU mask | literal | | `code/app.cpp` |
+| `DelayedJob` counter for lang table | 5 | polls | literal | | `code/app.cpp:SetLanguage` |
+| font spacing | editor 0.91, title 1.03 | factor | literal | | `code/app.cpp:SetLanguage` |
+| font horiz scale | 0.6 (Latin) / 1.0 (CJK) | factor | literal | | same |
+| large menus option | 2 | pref value | literal | `OTHER_LARGEMENUS` | `code/app.cpp:Initialise` |
+| Christmas | Dec 24–26 (tm_mon 11) | dates | literal | | `code/app.cpp:UseChristmasMode` |
+| no-team id | 255 | id | literal | | everywhere |
+| Multiwinia location id | 999 | id | literal | | `code/network/clienttoserver.cpp` |
+| monster / future team id | 4 / 5 | team | literal | | `code/location.cpp` |
+| monster / future colour | (10,10,10) / (200,200,200); colour ids 8 / 9 | RGB | literal | | `code/location.cpp:InitMonsterTeam/InitFuturewinianTeam` |
+| `MULTIWINIA_NUM_TEAMCOLOURS` | 8 | colours | `#define` | | `code/multiwinia.h` |
+| `ASSAULT_ATTACKER_COLOURID` / `DEFENDER` | 1 / 0 | colour id | `#define` | | `code/multiwinia.h` |
+| entity grid cell | 32.0 × 32.0 | units | literal | | `code/location.cpp:Init` |
+| obstruction grid cell | 32.0 (MP) / 64.0 | units | literal | | same |
+| container step sizes | lights 1, buildings 10, spirits 100 (initial size 100), lasers 100, effects 100, team others 100, units 5, unit entities 100 | slots | literal | growth step | `Location::Location`, `Team::Team`, `Unit::Unit` |
+| forced research (MP) | all 3; Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4 | level | literal | | `code/location.cpp:Init` |
+| `m_christmasTimer` init / burst threshold | -99.9 / < -90 | s | literal | | `code/location.cpp` |
+| snow | 150 initial; 1 per 0.1 s at y 700–1000 | count, s, units | literal | | `AdvanceChristmas` |
+| soul rain | 1 per 1.0 s at y 700–1000 | | literal | | `AdvanceSoulRain` |
+| dust | vortex every 15–30 s, 1/10 chance; 300 initial; 2 per 0.1 s; size +0–20; vortex capture radius 50; land test height > 1.0; vortex y 0–500 | | literal | | `AdvanceDustWind` |
+| lightning | every 0–15 s at y 1200 | | literal | | `AdvanceLightning` |
+| crate cap | int(worldSizeX / 500) | crates | literal | | `AdvanceCrates` |
+| crate interval | CrateDropRate × U(0.5, 1.5] | s | option × literal | | `AdvanceCrates` |
+| crate placement | land height ≥ 20; weighted ±100 around a building; 1000 / 100 tries; separation `CRATE_SCAN_RANGE × 10`; height `CRATE_START_HEIGHT` + 0–200 | units | literal / P08 defines | | `CreateRandomCrate` |
+| spawn search | 10 tries; clamp 20 from edge | | literal | | `FindValidSpawnPosition` |
+| spirit spawn offset | +1 (up vector) | units | literal | | `SpawnSpirit` |
+| `IsVisible` tolerance | 20.0 | units | literal | | |
+| `GetWalkingDistance` | step 40; water limit 40; gradient weight 1.5; obstacle sphere 20 | units | literal | | |
+| `IsWalkable` | step 20; water limit 40; max gradient 2.4; min normal.y 0.8; wall sphere 13.2; fence sphere 10 | units | literal | | |
+| picking | unit sphere ×1.5, unit-entity ×1.5, entity ×1.0, building ×0.75, armour range 0.001 | factor | literal | | `GetUnitId/GetEntityId/GetBuildingId` |
+| throw force | sqrt(dist) × 8, capped by research max | | literal | | `ThrowWeapon` |
+| muzzle flashes | throw/rocket (20, 3); turret (60, 2) at +dt/2; laser (25 × life, 1.5) | size, life | literal | | |
+| turret shell life | research 0/1 → 0.5, 2 → 1.0, 3 → 1.5, 4 → 2.0; MP 0.6 | s | literal | | `FireTurretShell` |
+| laser life | research 0..4 → 0.2/0.4/0.6/0.8/1.0; ×2 mind-control | s | literal | | `FireLaser` |
+| promote flashes | 5 + rand%5; vel sfrand(5), frand(15), sfrand(5) | | literal | cosmetic | `PromoteDarwinian` |
+| `Bang` | damage radius 2 r (full ≤ 1.5 r); building radius 3 r; push y = damage (ground) / −1 (air); cores r·d·0.01 (+0–100 %); debris max(2, r·d·0.01) ≤ 30; shockwave r/20 | | literal | | `Bang` |
+| fog | start end/3; end max(4000, X+1000, Z+1000); linear | units | literal | | `SetupFog` |
+| lights | Christmas (1.3,1.2,1.2); special dir (0,1,0.5) colour (2.0,1.5,0.75), shininess 10 | | literal | | `SetupLights/SetupSpecialLights` |
+| AI link cull | 0.8 | ratio | literal | | `RecalculateAITargets` |
+| centre message | 3.0 s; size 40; y 370 @1280 width; last-2 s grow 15·sqrt(2−t) | s, px | literal | | `SetCurrentMessage/RenderCurrentMessage` |
+| chat | font 14 × scale; fade 55→60 s; wrap 40 % width; box 25 % width | | literal | | `RenderChatMessages` |
+| kill milestones | 500, 1000, 2000, 3000, 4000, 5000 | kills | literal | | `Team::Advance` |
+| IssueDarwinianOrders | armour search radius 30; particle colour (255,100,255); 1000 iterations | | literal | | |
+| starting power-ups | task start timer 30.0 | s | literal | | `InitialiseTeam` |
+| CPU AI entity spawn | (-100, 0, -100) | units | literal | | `InitialiseTeam` |
+| `EvolutionFormationSize` default | 90 | (officer formation cap) | literal | | `Team::Team` |
+| viriifull texture | 160 × 512; 32 copies; glow 128 | px | literal | | `Team::Initialise` |
+| turret select | `m_fireTimer = 0.5`; cursor boost 2.0 | s | literal | | `Team::SelectUnit` |
+| render LOD | virii 300/500/600/1000; darwinian 500/1000/99999.9; alpha refs 0.02 / 0.04 / 0.01; near plane ×1.05 (virii), ×1.2 (lasers) | units | literal | | `Team::Render*`, `Location::RenderWeapons` |
+| TeamControls camera | acceleration 6 / 256 when ‖δ‖² > 175; target length cap 125 (‖v‖² > 15625) | | literal | | `TeamControls::Advance` |
+| TeamControls flag bits | 0x0001 … 0x0400 (11 bits) | | literal | | `TeamControls::GetFlags` |
+| formation | 100 jitter values in [0, 1); spacing 4.0; airstrike row 4, ×6 (x,z), ×3 (y) | units | `const`/literal | | `Unit::GetFormationOffset` |
+| laser-trooper lead | 1.0 step, trigger 0.2 | units | literal | | `Unit::Advance` |
+| route waypoint reach | 10.0 | units | literal | | `Unit::FollowRoute` |
+| order throttle | 1.0 | game s | literal | Darwinian orders | `LocationInput::AdvanceTeamControl` |
+| selection circle | growth 100 /s (real), max radius 100 | units | literal | | same |
+| wall-buster direct route | ≥ 25 % of selection | ratio | literal | | same |
+| select sound throttle | 0.5 | s (real) | literal | | `SelectObjectUnderMouse` |
+| officer follow radius | 50 (2500 squared) | units | literal | single-player | same |
+| mouse fallback spheres | worldSize × 40; 36000 (global world) | units | literal | | `UserInput::RecalcMousePos3d` |
+
+## Cross-partition notes
+
+- **P15 network** — `ClientToServer::AdvanceAndCatchUp/ProcessAllServerLetters/GetNumSlicesToAdvance` own the tick/slice clock and call `Location::Advance`, `ParticleSystem::Advance`, `Multiwinia::Advance` (slice 8) and `GameTimer::Tick`; this draft documents them only as far as needed for the frame model (§2.5). `NET_DARWINIA_START_GAME` sets `m_requestedLocationId=999`, `m_gameMode=GameModeMultiwinia`, `m_loadingLocation=true`, `GameTimer::Reset()`, `m_atMainMenu=false`. The `NET_DARWINIA_TOGGLEENTITY` handler calls `RequestSelectUnit` **from inside update processing on every client**, so each client sends a duplicate select request (idempotent but extra traffic) [C] `code/network/clienttoserver.cpp`. Sync RNG seed is delivered at join (`NET_DARWINIA_RANDSEED`) and not reset per match (D9). Letters to a local server bypass sockets (`Server::ReceiveLetter` / `ClientToServer::ReceiveLetter`).
+- **P02 game modes** — `Multiwinia::InitialiseTeam` (sets `colourId=teamId` outside coop/Assault, `m_myTeamId` for the local player), `GetCPUColour`, `GetNextAvailableColour`, `GetColour`, `GetGroupColour`, `GameInGracePeriod`, `GameOver`, `ResetLocation` (`m_resetLevel`), `Reset`, `m_coopMode`, `m_gameType`, `m_aiType`, game options `CrateDropRate`, `CrateDropMode`, `StartingPowerups`; grace-period end requests speed 1.0; victory requests speed 0 and locks the timer.
+- **P03 entity core** — return value of `Entity::Advance(unit)` = "remove me"; `Entity::NewEntity`, `SetType`, `Begin`, `m_enabled`, `m_dead`, `m_formationIndex`, `ChangeHealth`, `DirectControl`; Darwinian states used here (`StateOperatingPort`, `StateBeingSacraficed`, `StateOnFire`, `StateInsideArmour`, `StateApproachingArmour`, `StateInVortex`, `StateFollowingOrders`, `StateCarryingBuilding`), `m_underPlayerControl`, `m_promoted`; Officer `m_demoted`, `SetOrders`, `SetWaypoint`, `CancelOrders`, `IsInFormationMode`; `EntityGrid::GetNeighbours/GetFriends/AddObject/UpdateObject/RemoveObject`; routing `GenerateRoute/DeleteRoute/HighlightRoute/SetRouteIntensity` (shared free-list, D15).
+- **P06/P07 buildings** — `Building::Advance` return = "remove me"; `CreateBuilding`, `Initialise(template)`, `SetDetail`, `Damage`, `PerformDepthSort`, `RenderAlphas`; SpawnPoint/SolarPanel `EvaluatePorts`, `RecalculateOwnership`; `ControlStation::LinkToPulseBomb`; `FenceSwitch::Switch` called locally (D16); RadarDish `Aim`, `GetEntrance`, `GetStartPoint`, `Connected`.
+- **P08 crates/AI** — `CRATE_START_HEIGHT`, `CRATE_SCAN_RANGE`, `Crate::s_crates`, `Crate::NumCrateRewards`, `Crate::IsValid`, `Crate::CaptureCrate`, the starting-power-up exclusion list (§3.3); CPU teams get an `Entity::TypeAI` at (-100,0,-100); `AITarget::RecalculateNeighbours` and the link-cull rule in `Location::RecalculateAITargets`.
+- **P09 task manager** — `TaskManager(teamId)` per team, advanced at slice 1; `RunTask/TargetTask/SelectTask/TerminateTask/StopAllTasks`, `m_verifyTargetting`, task `m_startTimer` (30 s with starting power-ups), `m_lifeTimer=-1`; `TaskManagerInterface::CreateTaskManager` variants; `TMTerminate` = `ControlIconsTaskManagerEndTask`.
+- **P10 input/camera** — `Camera::RecalcMousePos3d` caller, `GetClickRay`, `Get2DScreenPos` (screen-space picking), modes `ModeFreeMovement`, `ModeEntityTrack`, `ModeTurretAim`, `ModeSphereWorld`, `RequestRadarAimMode`, `RequestTurretAimMode`, camera mounts `"start"`, `"player<N>"`; input driver order (§1.4); `ControlControllerPlugged/Unplugged`.
+- **P11 terrain/level** — `LevelFile` fields consumed: `m_numPlayers`, `m_attacking[]`, `m_coopGroup1Positions`, `m_coopGroup2Positions`, `m_levelOptions[LevelOptionNoRadarControl, LevelOptionFuturewinianTeam]`, `m_effects[LevelEffectSnow, SoulRain, DustStorm, Lightning, SpecialLighting]`, `m_instantUnits`, `m_runningPrograms`, `m_buildings`, `m_lights`, `m_landscape`, `m_levelDifficulty`, `m_primaryObjectives`, `GetRoute`; building owners in the level file are **positions**, remapped to team ids.
+- **P12 rendering** — `Renderer` calls `Location::Render()` (several passes incl. water reflection `Render(false)`), `UserInput::Render`, `Location::RenderChatMessages`; all world rendering extrapolates with `g_predictionTime` (+ one period for not-yet-advanced slots).
+- **P14 platform/lib** — `WorkQueue` (one thread per queue, FIFO, `StandardiseCPUPrecision` per thread), `DelayedJob` (poll counter), `FastDArray` LIFO free list, `SliceDArray`, `GetHighResTime`/`IncrementFakeTime`, `PrefsManager`.
+- **P16 sound** — sound events triggered here: `EnterLocation`, `ExitLocation`, `EnterGlobalWorld` (Ambience), `LobbyAmbience` (MultiwiniaInterface), `Selected`, `GivenOrdersFromPlayer`, `TaskManagerSelectTask`, `TaskManagerDeselectTask`, `SelectUnit`, `MouseError`, `SelectionCircle`, `ToggleUnitState`, `SetOrderGoto`, `SetOrders`, `ChatMessage`; `SoundSystem::TriggerInitialize/Initialise/Advance`, `g_soundLibrary2d->TopupBuffer` per frame.
+- **P17b/P18 UI** — `LocationWindow` (Esc menu), `ChatInputWindow`, `ControllerUnpluggedWindow`, `MainMenuWindow`, `GameMenu::CreateMenu/DestroyMenu/m_maps`, `GameMenuWindow::PreloadTextures`; whoever ends a match sets `m_requestedLocationId = -1` (not in this partition for the FULL build).
+- **P20** — `LoadingScreen::Render` blocks until its work queue and GL job list are empty.
+
+## Contradictions / open questions
+
+1. `docs/Network.txt` says the server ticks at 25 FPS; the code ticks at 10 Hz (0.1 s) [C] `code/network/server.cpp:Server::AdvanceIfNecessary` — see discrepancies.
+2. `App::App` comment says main-thread affinity is "Even processors" but mask `0xAA` selects CPUs 1,3,5,7 (zero-based odd) [C]. Irrelevant for a port, noted for accuracy.
+3. `Location::ChristmasModEnabled` is commented "0 = unavailable, 1 = enabled, 2 = disabled" but returns a bool; callers compare `== 1` [C].
+4. `Unit::GetOffset` is documented "Takes into account formation AND obstructions" but ignores obstructions [C].
+5. `Location::GetMonsterTeamId` contains (commented-out) logic that would pick the first free slot; the live code hard-codes 4 [C].
+6. `GameTimer::Reset` does not reset `m_requestedSpeedLength`/`m_accurateTime`; a slow-down crate active at game end would carry its remaining duration into the next match's first ticks (then revert to speed 1.0). [I] from reading; harmless in practice because the next match starts at speed 0 and the grace-period request overrides the target.
+7. The in-match "game over → press ToggleReady to return to the menu" path in `LocationInput::Advance` exists only under `TESTBED_ENABLED`; in FULL the return to menu must be driven by UI elsewhere [C].
+
+## [U] Unknowns
+
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Whether anything throttles the frame loop (vsync / sleep in `Renderer::Render` or `WindowManager::Flip`) | P12/P13 read of renderer flip path |
+| U2 | Which `m_clientId` CPU teams are given (host client vs -1) | P02/P15: callers of `Multiwinia::InitialiseTeam` |
+| U3 | Whether route ids diverge across clients and matter (D15) | P03 Darwinian route following + X3 check of sync hash contents |
+| U4 | Whether `ClientToServer::m_outOfSyncClients` changes at the same sequence id on all clients (D4) | P15 |
+| U5 | Whether any shipped Multiwinia map contains a `FenceSwitch` (D16) | X4 level catalogue |
+| U6 | Whether every Multiwinia mission path runs `LevelFile::GenerateAutomaticObjectives` (else `LoadLevel` would dereference a NULL `GlobalLocation` for id 999) | P11 `LevelFile` constructor |
+| U7 | How the client leaves a finished match in the FULL build (who sets `m_requestedLocationId = -1`) | P17b/P18 game-over / in-game menu windows |
+| U8 | Exact semantics of `NET_DARWINIA_TERMINATE` when `RequestTerminateEntity` targets an officer vs a task | P15/P09 |
+
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code | Ref |
+|---|---|---|---|
+| `docs/Network.txt` | "Server ticks at 25 FPS", client "runs heavy weight physics at 25 fps", server sleeps until next 1/25 s | server tick every 0.1 s (10 Hz) of real time, no sleep; client spreads each tick over 10 slices consumed at ~30 % of backlog per frame | `code/network/server.cpp:AdvanceIfNecessary`, `code/network/clienttoserver.cpp:GetNumSlicesToAdvance` |
+| `docs/NetworkThreads.txt` | dedicated server/client **send** threads that suspend when idle | sends happen on the main thread: `AdvanceSender` (outbox drained under mutex) is called at the end of `ClientToServer::Advance` and inside `Server::Advance`; only receive/listen paths are threads [C] | `code/network/clienttoserver.cpp:ClientToServer::Advance`, `code/network/server.cpp:Server::Advance` |
+| `docs/NetworkThreads.txt` | main thread runs "client heavy weight advance" only when `time >= nextClientTimeSlice`, light-weight advance "if there is time" | heavy-weight work is sliced (10 slices/tick) and interleaved with every rendered frame; light-weight prediction is the render-time extrapolation `pos + vel × g_predictionTime` | §2.5 |
+| `docs/network overview.txt` | lobby over TCP, then UDP ports 4000/4001 | not verified here (P15) | – |
+| `code/globals.h` comment | `MINIMUM_RENDER_PERIOD` "Render at least this frequently" | macro unused | grep |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" (product name, profile folder `Introversion\Multiwinia\`, `DARWINIA_GAMETYPE "multiwinia"`) | brand/name | `code/app.cpp:GetProfileDirectory`, `code/lib/universal_include.h` | "<GameName>" |
+| "Darwinia" (`DARWINIA_VERSION`, Vista rich header game name, achievement enum prefix) | brand/name | `code/main.cpp:AppMain`, `code/app.cpp:SaveRichHeader`, `code/app.h` | "<GameName>" |
+| "Introversion" (company folder, store URL `http://store.introversion.co.uk`, metaserver host `metaserver-mwdev.introversion.co.uk`, websites `www.multiwinia.co.uk`, `www.darwinia.co.uk`) | brand | `code/app.cpp:GetBuyNowURL/InitMetaServer`, `code/main.cpp` | "<Studio>", own endpoints |
+| "Darwinian" (unit name; sprite `sprites/darwinian.bmp`) | name/art | `code/team.cpp:RenderDarwinians` | "Drone" |
+| "Virii" / virus team (`sprites/virii.bmp`, `sprites/viriifull.bmp`, `multiwinia_team_virus`) | name/art/text | `code/team.cpp` | "Swarm" |
+| "Futurewinian" team (`multiwinia_team_future`) | name/text | `code/team.cpp:GetTeamName`, `code/location.cpp` | "Neutral Hostile" |
+| Team colour names `multiwinia_team_{green,red,yellow,blue,orange,purple,cyan,pink}`, `teamtype_2` ("CPU"), `teamtype_left`, `teamtype_demo` | UI text | `code/team.cpp:GetTeamName` | own strings |
+| Kill-milestone strings `multiwinia_kills_500…5000`, `crate_drop`, `multiwinia_presstotalk`, `error_incompatible`, `error_parental`, `darwinia_vistaedition` | UI text | `code/team.cpp`, `code/location.cpp`, `code/main.cpp` | own strings |
+| Achievement names Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master Of Multiwinia, Explorer, Carnage, Blitz Master, Wrong Game, Genocide | names | `code/app.h` enum | own achievement names |
+| Game-mode names Domination ("Skirmish"), King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg ("Blitzkreig"), Tank Battle | names | `code/app.cpp:IsGameModePermitted` | descriptive neutral names |
+| Fonts `speccy`, `editor`, `square` (bitmap font textures) | art | `code/app.cpp:SetLanguage` | own fonts |
+| Textures `textures/glow.bmp`, `textures/laser.bmp` | art | `code/team.cpp`, `code/location.cpp` | own art |
+| Data archives `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`, `game.txt`, `game_unlockall.txt`, `gestures.txt` | asset packaging | `code/app.cpp` | own packaging |
+| Sound event names (`EnterLocation`, `LobbyAmbience`, `GivenOrdersFromPlayer`, …) and the samples bound to them | audio | §Cross-partition P16 | own audio |
+| Special profile names `AccessAllAreas`, `AttractMode` | text | `code/app.cpp:LoadProfile` | – (drop) |
+| Dr Sepulveda references (`m_sepulveda`, `PlayerSkipsMessage`, `Say("PrimaryObjectivesComplete")`) | character | `code/main.cpp`, `code/location.cpp` (dead) | – (drop) |
+| Vista Game Explorer GUID `F58175C7-E99C-4151-800D-7BB5E89E4960`; crash-report id `0B9432AF` | identifiers | `code/main.cpp:DoVistaChecks`, `AppMain` | own ids |
+| Unit/building names used in control code: Officer, Armour, Engineer, Shaman, Harvester, Tank, InsertionSquad/Squaddie, RadarDish, GunTurret, TrunkPort, SpawnPoint, SolarPanel, PulseBomb, ControlStation, WallBuster, FenceSwitch, ChessPiece | names | throughout | generic descriptive names (e.g. "Commander", "Transport", "Teleporter") |
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] `TESTBED_ENABLED`**: `TESTBED_MODE {ON, OFF}`, `TESTBED_TYPE {CLIENT, SERVER}`, `TESTBED_STATE {MAINMENU, HOST_GAME, JOIN_GAME, PICK_SERVER, WAIT_FOR_CLIENT_ID, SELECT_GAME, SELECT_MAP, SETGAMEOPTIONSDELAY, SETGAMEOPTIONS, WAITFORGAMEOPTIONS, WAIT_FOR_MAP, WAIT_FOR_CLIENTS, PLAY, IDLE, GAME_OVER_DELAY, MAKE_CLIENT_SPECTATOR, SEQUENCEID_DELAY, BUILD_GAME_ENTRIES}`; 24 App fields and accessors; `TestBedLogWrite` appends CSV `TestBedLog.txt` with Date, NumSyncErrors, GameMode, GameMap, GameIndex, ClientRandomSeed, LastGameIndex, GameTimer, SyncSeqId; `LocationInput` auto-ready, sync-error and termination-sequence handling that returns to the main menu; `ControlToggleRendering`; `Location::Render` skip; `GRACE_TIME` 20 s. [C] `code/app.h`, `code/app.cpp`, `code/location_input.cpp`.
+- **[B:DEAD] `USE_SEPULVEDA_HELP_TUTORIAL`**: HelpSystem/Tutorial/Sepulveda/DemoEndSequence members and all `PlayerDoneAction` calls.
+- **[B:EDITOR] `LOCATION_EDITOR`**: `LocationEditorLoop` (input/camera/editor advance + render until Esc; re-registers a `.mwm` map with `GameMenu::RemoveMap/AddMap`; tears down location like `ShutdownCurrentGame` without network) and `LocationEditor` creation in `EnterLocation`.
+- **[B:LEGACY] `GlobalWorldEditorLoop`**: compiled, but returns immediately (`if( true ) { m_editing = false; return; }`).
+- **[B:LEGACY] Darwinia campaign plumbing in FULL**: `GameModePrologue/Campaign`, `IsSinglePlayer()` branches, `LoadProfile/SaveProfile/ResetLevel`, `game.txt`, pref `StartMap`, `MissionComplete/DoMissionCompleteActions`, single-player `IsFriend` table, `RunningProgram`s, quick-run programs, single-player officer follow/none and armour deployment, Engineer bridge, `GlobalWorld::TransferSpirits`, `EnterGlobalWorld` camera (`ModeSphereWorld`, height 50), `UserInput` global-world sphere picking.
+- **[B:DEAD] `USE_LOADERS`**: `RunBootloader` (pref `BootLoader` "firsttime" → `StartSequence`, else `Loader::CreateLoader`), camera (1000,500,1000).
+- **[B:DEAD] `TARGET_OS_VISTA`**: `DoVistaChecks` (OS ≥ 6 workstation, Parental Controls `IsBlocked` with the GUID), `RICH_GAME_MEDIA_HEADER` (`RM_MAGICNUMBER 'HMGR'`, `RM_MAXLENGTH 1024`, thumbnail 256×192 PNG, `.dsg` file), Media Center relaunch of `ehshell.exe`, `g_saveFile`, `g_mediaCenter`.
+- **[B:DEAD]** `BENCHMARK_AND_FTP` (BenchMark Begin/End/Upload, DXDiag), `ATTRACTMODE_ENABLED`, `TEST_HARNESS_ENABLED` (pref `TestHarness`), `USE_DARWINIA_MOD_SYSTEM` (pref `Mod`, `ModSystemEnabled`), `DEMOBUILD`/`DEMO2` (`game_demo*.txt`, open website and exit after a location), `CHRISTMAS_DEMO`, `GIVE_ALL_LEVELS`, `FOG_LOGGING`/`FOG_PREFERENCE` (pref `RenderFog`) — none defined, `JAMES_FIX`, `NETWORKQUALITY_TESTING`.
+- **[B:DEBUG]** `SOUND_EDITOR` (`EffectProcessor`), `CHEATMENU_ENABLED` (F11 cheat menu, special-lighting toggles), `TRACK_SYNC_RAND` (`SyncRandLog`, `WatchEntities`, `TrackEntity`, `UntrackEntity`, entity/effect/building state logging around every Advance).
+- **[B:DEAD] macOS/Linux**: SDL event handler/drivers, profile paths `~/Library/Application Support/<APP>/<gametype>/`, `~/.<app>/<gametype>/`, x87 control-word asm, sound loading on the loading queue, `Finalise` queue draining.
+- **Inert**: `#pragma omp parallel for` in `Location::Advance` (OpenMP off); `GameTimer::DebugRender` (returns first); `Location::RenderParticles` (empty); `Location::WaterReflect` (loop with commented body); `UserInput::m_mousePosHistory`; `App::DoStartServer/DoCheckForPDLC` (no definitions); `m_steamInited`; `TARGET_FRAME_RATE_INCREMENT`; `MINIMUM_RENDER_PERIOD`.
