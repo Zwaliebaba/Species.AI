@@ -971,3 +971,334 @@ Exact order [C] `code/location.cpp:Location::Init` (runs on the loading worker t
 | `Render`, `RenderChatMessages`, `SetupFog`, `SetupLights`, `SetupSpecialLights`, `FlushOpenGlState`, `RegenerateOpenGlState`, `SetCurrentMessage`, `NewChatMessage`, `AddBurnPatch` | presentation ([24](24_rendering.md)) |
 | `MissionComplete`, `DoMissionCompleteActions` | [B:LEGACY] |
 | `GetLastProcessedSlice` / `SetLastProcessedSlice` | accessors |
+
+## 6 Spatial partitioning
+
+### 6.1 Overview
+
+Three independent structures, all owned by `Location` and created in `Location::Init` (not in editing mode) [C] `code/location.cpp:Location::Init`:
+
+| Structure | Construction | Cell size (world units) | Content | Rebuilt |
+|---|---|---|---|---|
+| `m_entityGrid` (`EntityGrid`) | `new EntityGrid(32.0, 32.0)` | 32 × 32 | entity ids, bucketed **per team** (team 255 never stored) | incrementally, by the container owners after every `Advance` |
+| `m_entityGridCache` (`EntityGridCache`) | `new EntityGridCache()` | — | memo of recent `GetEnemies` queries | entries evicted after 1.0 s game time (slice 7) |
+| `m_obstructionGrid` (`ObstructionGrid`) | `new ObstructionGrid(s, s)` | `s` = 64.0 single-player, **32.0 multiplayer** | building unique ids whose geometry overlaps the cell | fully (`CalculateAll`) on creation, after any building removal, and by runtime building creators |
+
+Buildings, effects, lasers and spirits are **not** in the entity grid; spirits and effects find targets by scanning their containers or querying the entity grid for entities [C] grep of `m_entityGrid->AddObject` (entities only).
+
+```mermaid
+flowchart LR
+    Q1["Entity, building or effect asks: who is near x, z?"] --> EG["EntityGrid: 6 team layers of 32-unit cells"]
+    Q2["Darwinian SearchForThreats"] --> EGC["EntityGridCache: per-team memo, half-range reuse, 1 s life"]
+    EGC -->|miss| EG
+    Q3["Collision, walkability, teleports: which buildings are here?"] --> OG["ObstructionGrid: building ids per 32 or 64-unit cell"]
+    OG --> BT["precise test delegated to Building DoesSphereHit, DoesShapeHit, DoesRayHit"]
+```
+
+### 6.2 `EntityGrid`
+
+[C] `code/entity_grid.h`, `code/entity_grid.cpp`.
+
+**Layout.** `m_cells[NUM_TEAMS]`, each a row-major array of `numCellsX × numCellsZ` `EntityGridCell`s with `numCellsX = int(worldSizeX / 32) + 1` (same for Z). Cell index of a world coordinate = `int(x × (1 / cellSize))` (truncation). `GetCell(world)` does **not** clamp — callers must pass on-map positions (`Entity::Advance` clamps entity x, z to [0, worldSize], and the `+1` cell makes x = worldSize valid); out-of-range indices only trip a debug assert [C] `EntityGrid::EntityGrid`, `EntityGrid::GetCell`.
+
+**Cell.** `EntityGridCell` = growable slot array: `WorldObjectId *m_objectIds`, `int *m_usageLists` (intrusive free list, `END_OF_LIST = −100000`), `m_arraySize`, `m_numSlotsFree`, `m_firstFree`. Starts with capacity 0 (`INITIAL_OBJECT_ID_ARRAY_SIZE = 0`); when full the capacity doubles (0 → 2 → 4 → 8 …), the new upper half is chained into the free list ascending. `AddObjectId` pops the free-list head; `RemoveObjectId` linear-scans and invalidates **every** matching slot (pushing each on the free list, LIFO) and returns whether any was found. **Capacity never shrinks** [C] `EntityGridCell::AddObjectId`, `RemoveObjectId`.
+
+**Insertion footprint.** `AddObject(id, x, z, radius)` / `RemoveObject(…)` [C]:
+- team 255 → ignored.
+- `radius == 0` (sprite entities) → the single cell containing (x, z).
+- `radius > 0` (shaped entities) → every cell overlapping the square `[x − r/2, x + r/2] × [z − r/2, z + r/2]` (note **r/2**), clamped to the grid.
+- A failed removal calls `LogEntityGridError` → `AppDebugAssert(false)` (debug only; the `DEBUG_ENTITY_GRID` visualiser is commented out).
+
+**Update.** `UpdateObject(id, oldX, oldZ, newX, newZ, radius)`: if the cell changed **or radius > 0**, remove at old and add at new — shaped entities are re-inserted every tick [C] `EntityGrid::UpdateObject`. Called by the container owners after every `Advance` that returned false (§5.6).
+
+**Exact query.** `GetNeighbours(out, x, z, r, &n, include[NUM_TEAMS])` [C] `EntityGrid::GetNeighbours`:
+
+```
+cells = every cell overlapping [x-r, x+r] x [z-r, z+r], clamped
+for cellX ascending, cellZ ascending, team 0..5 with include[team], slot 0..arraySize-1:
+    id = slot id; skip invalid ids
+    skip if id already in out[0..n-1]          # shaped entities occupy several cells; O(n^2)
+    e = Location.GetEntity(id); skip if NULL   # (+ debug assert)
+    if (e.x - x)^2 + (e.z - z)^2 < r^2: append id
+```
+
+The distance test uses the entity's **current** position (which may already have moved this tick), strict `<`. Output order is deterministic given identical insertion history: cell x, then z, then team, then cell slot order (which reflects LIFO slot re-use inside the cell). `out` grows through `EnsureMaxNeighbours` (+100, or + the requested count when larger) [C].
+
+**Query API** (all take world x, z and a range; team filtering through the `include` mask) [C] `code/entity_grid.cpp`:
+
+| Method | Teams | Range test | Result |
+|---|---|---|---|
+| `GetNeighbours(out, x, z, r, &n, include[])` | mask | circular, exact (above) | ids |
+| `GetNeighbours(out, x, z, r, &n)` | all | exact | ids |
+| `GetEnemies(out, x, z, r, &n, myTeam)` | `!IsFriend(t, myTeam)` | exact | ids; team 255 is never anyone's friend, so the enemy mask contains every non-friend team |
+| `GetFriends(out, x, z, r, &n, myTeam)` | `IsFriend(t, myTeam)` | exact | ids |
+| `GetBestEnemy(x, z, minR, maxR, myTeam)` | enemies | exact within `maxR`, then `minR² ≤ d² < best` | nearest enemy that is not `TypeAI` ("never a target") and not `m_dead`; ties → first found; invalid id if none; uses the grid's own scratch `m_neighbours` |
+| `GetNumNeighbours(x, z, r, include[])` | mask | **none** | count of distinct ids in every cell overlapping the `[x ± r]` square (square, cell-granular; entities up to `r + 32·√2` away are counted) |
+| `GetNumEnemies` / `GetNumFriends` | enemies / friends | **none** | as above |
+| `AreNeighboursPresent(x, z, r[, include])` | all / mask | **none** | true if any covered cell of an included team has `m_arraySize > 0` — i.e. **capacity**, so a cell that ever held an entity of that team reports true for the rest of the match |
+| `AreEnemiesPresent` / `AreFriendsPresent` | enemies / friends | **none** | as above |
+| `Render()` | — | — | debug: per team, per non-empty cell, a translucent quad at y = 100 + 30·team with the count (`DEBUG_RENDER_ENABLED`) |
+
+**Approximate queries are gameplay** (they decide behaviour, not just performance). Every caller in the live code [C] grep of `GetNumEnemies`, `GetNumFriends`, `GetNumNeighbours`, `AreEnemiesPresent`, `AreFriendsPresent`, `AreNeighboursPresent` over `code/`:
+
+| Caller | Query | Decision it drives |
+|---|---|---|
+| `Darwinian::SearchForThreats` | `AreEnemiesPresent(searchPos, range)` gates the cached `GetEnemies`; `AreFriendsPresent` | whether to look for threats at all; fear test |
+| `Darwinian` combat (grenade decision) | `GetNumNeighbours(threat, 50)`, `GetNumFriends(threat, 50)`, `GetNumEnemies(threat, 50)` | throw a grenade when > 5 enemies and < 2 friends near the target ([02 §4.7](02_units_and_entities.md#47-darwinian--combat-advancecombat)) |
+| `SpawnPopulationLock::Advance` | `GetNumFriends(m_pos, m_searchRadius, team)` per team on a staggered recount | population-lock counts ([03 §4.6](03_buildings_and_world_objects.md#46-spawnpopulationlock)) |
+| `MultiwiniaZone` | `GetNumEnemies(m_pos, m_size) > 0` | zone contest ([03 §8.1](03_buildings_and_world_objects.md#81-multiwiniazone)) |
+| `GunTurret` | `GetNumFriends(test, range)`; `AreEnemiesPresent(m_pos, GetMaxRange())` | friendly-fire guard; target search gate |
+| `AIObjective`, `AIObjectiveMarker` | `GetNumNeighbours(m_pos, m_scanRange)`, `GetNumFriends` per team | objective ownership ([07 §11](07_ai.md#11-ai-objectives--assault-objective-chain-and-rocket-riot-markers)) |
+| `AI` | `AreEnemiesPresent(marker, 450)`; `GetNumFriends(b, area) < 30 && GetNumEnemies(b, area) > 50` | under-attack and losing-position tests ([07](07_ai.md)) |
+| `Armour` | `GetNumFriends(b, 200)`, `GetNumNeighbours(marker, DARWINIAN_SEARCHRANGE_ARMOUR) > 25`, `GetNumFriends/GetNumEnemies(info, range)` | AI loading and drop decisions |
+| `InsertionSquad` | `GetNumEnemies(e, 75)` | squad target scoring |
+| `Virii` | `AreEnemiesPresent(centre, searchRadius)` | whether to search |
+| `Triffid` | `AreEnemiesPresent(trigger, m_triggerRadius)` | launch trigger |
+| `TaskManager` | `GetNumNeighbours(pos, POWERUP_EFFECT_RANGE)` | power-up target validity |
+| weapons (`code/worldobject/weapons.cpp` ≈L1935) | `GetNumEnemies(m_pos, 15)` | effect trigger |
+| `rocket.cpp` (Rocket Riot) | `GetNumEnemies(test, radius)` | escape-rocket logic |
+| `Cave` [B:LEGACY], tutorials `MultiwiniaHelp` (local UI) | counts | — |
+
+Consequences [C] code, [I] magnitude: (a) the count queries over-count by up to one cell (32 units) beyond the range in every direction; (b) the presence queries become permanently true once any entity of the team has passed through a covered cell, so they only skip work early in a match; (c) behaviour such as grenade throwing and zone contest therefore differs from what an exact-radius implementation would do. A new engine should either reproduce the approximation deliberately or retune the thresholds.
+
+### 6.3 `EntityGridCache`
+
+[C] `code/entity_grid_cache.h`, `code/entity_grid_cache.cpp`.
+
+- Element `EntityGridCacheElement`: `float m_timeIndex, m_worldX, m_worldZ, m_rangeSqd, m_halfRangeSqd; unsigned char m_teamId; int m_numFound; std::vector<WorldObjectId> m_ids` — positions, ranges and time are stored as **float** (binary32). Container `FastDArray`, initial size 20, step 20.
+- `GetEnemies(x, z, r, &n, team)`: `FindCacheHit` returns, among elements of the **same team**, the one whose centre is nearest to (x, z) among those with `d² < m_halfRangeSqd` (i.e. the query point lies within **half the cached range**); the *requested* range is ignored on a hit. On a miss it queries `EntityGrid::GetEnemies(x, z, r)` and stores `(x, z, r², (r/2)², team, n, gameTime)`. Returns a pointer to the cached id vector.
+- `Advance()` (slice 7 only): deletes elements whose age (game time) exceeds `ENTITYGRIDCACHE_MAXAGE = 1.0f` s.
+- Only caller: `Darwinian::SearchForThreats` [C] grep of `m_entityGridCache`.
+- Consequences: results can be up to ~1.1 s stale (entries are evicted once per tick at slice 7), may contain ids of entities that have since died or moved (callers re-resolve and re-check), may miss entities that are within the requester's range but outside the cached circle, and depend on which Darwinian queried first. Deterministic across peers because query order is deterministic [C]/[I]. Whether the staleness was intended is unknown (21-U2).
+- `Render()` (call commented out): fading team-coloured circle per element.
+
+### 6.4 `ObstructionGrid`
+
+[C] `code/obstruction_grid.h`, `code/obstruction_grid.cpp`, `code/lib/2d_surface_map.cpp`, `code/lib/2d_array.cpp`.
+
+**Storage.** `SurfaceMap2D<ObstructionGridCell>` over the world, origin (0, 0), `ceil(worldSize / cellSize)` cells per axis; each cell holds `LList<int> m_buildings` (building unique ids). Out-of-range cell coordinates read and write the map's single shared **outside cell** (`Array2D::GetPointer` returns `&m_outsideValue`).
+
+**Population — `CalculateAll()`**: clear every in-range cell, then for every building in `m_buildings` slot order `CalculateBuildingArea(uid)`:
+1. Building cell `(cx, cz)` from `m_centrePos`; `range = ceil(m_radius / cellSize)`; loop x ∈ [max(cx − range, 0), min(cx + range, **numRows**)], z ∈ [max(cz − range, 0), min(cz + range, **numColumns**)] — both upper bounds **inclusive** and with rows/columns swapped (harmless on square maps).
+2. For each cell: test `building->DoesSphereHit(cellCentre with y = terrain height, cellSize / 2)`; on a hit append the id (no duplicate check).
+3. A `LaserFence` with a link (`GetBuildingLink() ≠ −1`): sample the segment fence → linked fence at `numCells = int(|link − fence|) + 1` points (≈ one per world unit) and add the fence id to each sample's cell (with a duplicate check). A guard meant to also add the four neighbours only when consecutive samples skip diagonally is defeated by shadowing — `oldCellX`/`oldCellY` are re-declared inside the loop, so the outer ones stay −1 and the guard is true for every sample whose cellX and cellY are both non-zero — so **every sampled cell's 4-neighbours are added**, dilating the fence line by one cell. Fences are added whether or not they are enabled (`IsEnabled` is checked by the users).
+   "TODO: This is WAY too slow" — the whole grid is rebuilt on every building removal and on every runtime building creation [C] comment in `Location::AdvanceBuildings`; callers of `CalculateAll` in `code/worldobject/tree.cpp`, `crate.cpp` (4), `engineer.cpp`, `armour.cpp`.
+
+**The outside cell accumulates** [C] code, [I] impact: because the x/z loop runs up to and **including** the row/column count, a building whose bounding sphere reaches within half a cell beyond the far map edge has its id appended to the shared outside cell, and `CalculateAll` never clears that cell (its clear loop covers in-range cells only). Every rebuild therefore appends the same ids again, so the outside list grows for the whole match and keeps ids of deleted buildings. Positions with x or z ≥ `numCells × cellSize` (for example an entity clamped to exactly x = worldSize when the world size is a multiple of the cell size) read this list; the users re-resolve ids with `GetBuilding`; most skip NULL (extra collision candidates at the far edges, growing memory and CPU), but `Entity::EnterTeleports` only debug-asserts the result and then dereferences it, so a Release build would crash if an entity standing in the outside cell looked for a teleport while the list held a deleted building's id [C] `code/worldobject/entity.cpp:Entity::EnterTeleports`; [I] needs an edge-touching building that was later removed (crate, burnt tree). Whether any shipped map has an edge-touching building is unknown (21-U3).
+
+**Query.** `GetBuildings(x, z)` → the list of the cell `floor(x / cell), floor(z / cell)` (nearest cell, no interpolation; negative coordinates convert to an out-of-range `unsigned short` and read the outside cell) [C] `ObstructionGrid::GetBuildings`, `SurfaceMap2D::GetValueNearest`. Precise collision is always delegated to the building (`DoesSphereHit`, `DoesShapeHit`, `DoesRayHit`; [03 §3.14](03_buildings_and_world_objects.md#314-hit-test-overrides-and-shapes)).
+
+Users [C] grep of `m_obstructionGrid->GetBuildings`: `Entity::PushFromObstructions`, `Entity::EnterTeleports`, `Darwinian`, `Officer`, `Location::IsWalkable`, `Location::GetWalkingDistance`, `ai.cpp`, `armour.cpp`, `crate.cpp`, `engineer.cpp`, `gunturret.cpp`, `insertion_squad.cpp`, `laserfence.cpp`, `lightning.cpp`, `shaman.cpp`, `spirit.cpp`, `tree.cpp`, `wallbuster.cpp`, `weapons.cpp`.
+
+`Render()`: debug quads at y = 150 with alpha = numBuildings / 3.
+
+### 6.5 Hazard summary
+
+| # | Behaviour | Effect | Ref |
+|---|---|---|---|
+| H1 | count queries ignore the range (square of whole cells) | over-count up to one cell beyond the range | §6.2 |
+| H2 | presence queries test cell capacity | permanently true after first use of the cell | §6.2 |
+| H3 | cache answers within half the cached range and ignores the requested range | stale, range-mismatched threat lists | §6.3 |
+| H4 | shaped entities re-inserted every tick | CPU cost proportional to shaped entities × cells | §6.2 |
+| H5 | removal uses the current radius at the old position | radius changes between updates corrupt the grid | §4.2 |
+| H6 | obstruction grid rebuilt in full on every building removal/creation | CPU spikes when trees burn or crates land | §6.4 |
+| H7 | fence lines dilated by one cell | fences block a 3-cell-wide band for collision candidates | §6.4 |
+| H8 | outside cell accumulates ids | growing list at far edges | §6.4 |
+| H9 | AI-target links computed before the obstruction grid exists | AI links ignore walls at load ([07](07_ai.md)) | §5.9 |
+
+## 7 Pathfinding and routing
+
+[C] `code/routing_system.h`, `code/routing_system.cpp`, `code/location.cpp:Location::IsWalkable`, `Location::GetWalkingDistance`.
+
+### 7.1 Data model
+
+| Class | Members | Notes |
+|---|---|---|
+| `RoutingSystem` (abstract) | `DArray<RouteNode*> m_nodes`, `DArray<Route*> m_routes`, `bool m_walkableRoute` | `virtual Initialise() = 0` |
+| `LandRoutingSystem` | — | `Location::m_routingSystem`: Darwinian group orders, officers, statues, carryable buildings, wall-busters, Armour order preview, local mouse previews |
+| `SeaRoutingSystem` | — | `Location::m_seaRoutingSystem`: Armour (`code/worldobject/armour.cpp`) only; never rendered ("only ai use this") |
+| `RouteNode` | `WayPoint m_waypoint`, `LList<RoutingTableEntry*> m_routeTable`, `bool m_checkCliffs` (default true) | one per `AITarget` building |
+| `RoutingTableEntry` (struct) | `int m_targetNode`, `int m_nextNode`, `double m_totalDistance` | distance-vector entry: "to reach target, go to next first; total remaining distance" |
+| `WayPoint` | `int m_type` ∈ {`Type3DPos` = 0, `TypeGroundPos` = 1, `TypeBuilding` = 2}, `Vector3 m_pos`, `int m_buildingId` (−1) | `GetPos()`: `TypeBuilding` → the Teleport's (RadarDish or Bridge) entrance position (debug assert on the type); `TypeGroundPos` → raw position (the terrain-snapping code is commented out); otherwise `m_pos` |
+| `Route` | `int m_id`, `LList<WayPoint*> m_wayPoints`, `int m_status`, `double m_alpha` (0) | `ROUTE_OK = 1`, `ROUTEID_FAILURE = −1` (`#define`) |
+
+`Route` methods: `AddWayPoint(pos)` (Type3DPos, appended), `AddWayPoint(buildingId)` (TypeBuilding), `GetWayPoint(i)`, `GetIdOfNearestWayPoint(pos)` (3D squared distance), `GetIdOfNearestEdge(pos, *dist)` (2D point–segment distance; returns the index of the segment's first waypoint; `*dist` is **not written**), `GetWalkingDistance()` (sum of `Location::GetWalkingDistance` per leg; any negative leg returns that negative value), `GetEndPoint()`, `Render()` [C] `code/routing_system.cpp:Route::*`.
+
+### 7.2 Walkability primitives
+
+`Location::IsWalkable(from, to, evaluateCliffs = false, permitSteepDownhill = false, *laserFenceId = NULL)` [C] `code/location.cpp:Location::IsWalkable`:
+
+```
+if from.y <= 0 or to.y <= 0: return false          # uses the passed y, not the terrain
+numSteps = int(|to - from| / 20); diff = (to - from) / numSteps
+pos = from; under = 0
+repeat numSteps times (samples from, from+diff, ..., one step short of to):
+    pos.y = height(pos)
+    if pos.y <= 0: under += 20
+    if under >= 40: return false                    # two wet samples
+    if evaluateCliffs:
+        g = (pos.y - from.y) / 20                   # relative to the START point, never advanced
+        if g > 2.4: return false                    # i.e. more than 48 units above the start
+        if not permitSteepDownhill or g > 0:
+            if normal(pos).y < 0.8: return false
+    for b in obstructionGrid.GetBuildings(pos) (if the grid exists):
+        Wall and b.DoesSphereHit(pos, 20 * 0.66 = 13.2): return false
+        enabled LaserFence and b.DoesSphereHit(pos, 10): *laserFenceId = b.uid   # reported, does NOT block
+    pos += diff
+return true
+```
+
+- The slope test compares every sample with the **start point** (`oldPosition` is set to `from` and never advanced), so a long gentle climb fails once it is 48 units above the start, and a steep step that stays below that is accepted [C]. Resolved: S07 and P03 both report this; the code confirms it.
+- For segments shorter than 20 units, `numSteps = 0` and only the endpoint water test applies (`diff` is ∞/NaN but never used) [C].
+- The function is direction-dependent (`from` sets the slope reference) [C].
+
+`Location::GetWalkingDistance(from, to, checkObstructions = true)` [C] `code/location.cpp:Location::GetWalkingDistance`: `numSteps = int(|to − from| / 40)`; samples i = 1…numSteps at `from + (to − from)·i/numSteps` on the terrain; ≥ 40 units under water (one wet sample) → −1; with `checkObstructions`, a Wall or an **enabled** LaserFence with `DoesSphereHit(pos, 20)` → −1; cost per step = `|Δ3D| × (1 + max(0, 1.5 × gradient))` with the gradient taken between consecutive samples (uphill penalty only).
+
+### 7.3 Graph construction — `LandRoutingSystem::Initialise()`
+
+Called once from `Location::Init`, after the buildings and the obstruction grid exist (§5.9) and never again in a match [C] grep of `m_routingSystem.Initialise`.
+
+1. One `RouteNode` per `Building::TypeAITarget` in `m_buildings` slot order; `m_checkCliffs = AITarget::m_checkCliffs`; position = the target's position [C].
+2. Edges: for every ordered pair (i, j), **including i == j**, with straight distance < **600** and `walkableCache(i, j)` → `node_i.AddRoute(target = j, next = j, cost = walkableDistanceCache(i, j))`. `walkableCache(i, j) = IsWalkable(p_i, p_j, evaluateCliffs = checkCliffs_i && checkCliffs_j)`; `walkableDistanceCache(i, j) = GetWalkingDistance(p_i, p_j, checkObstructions = false)` (walls and fences ignored in the cost). Both are memoised in **symmetric** matrix caches (`WalkableRSCache`, `WalkableDistanceRSCache` derived from `SymmetricMatrixCache`), so (i, j) and (j, i) share one answer although `IsWalkable` is direction-dependent — the first-computed direction wins [C] `code/routing_system.cpp:WalkableRSCache`, `LandRoutingSystem::Initialise`.
+3. Propagation (distance-vector, Bellman-Ford style): repeat N = node count times: for every node i, for each entry e of i (first hop h = e.m_nextNode), for each entry k of node h: `i.AddRoute(k.target, h, walk(i, h) + k.total)`. `AddRoute` keeps an existing entry whose total ≤ the new total, otherwise removes it and appends the new one (so the table being iterated is modified during the iteration; the N passes make the result converge regardless) [C] `RouteNode::AddRoute`.
+4. Result: every node knows, for each reachable target, the next hop on the cheapest path.
+
+`SeaRoutingSystem::Initialise()`: same nodes but all `m_checkCliffs = false`; edge test `distance < 600 && Armour::IsRouteClear(p_i, p_j)`; edge cost = straight 3D distance; logs nodes whose table size ≠ node count [C] `SeaRoutingSystem::Initialise`.
+
+Consequence: walls destroyed and fences toggled during the match never change the node tables; only the per-query walkability tests in `GenerateRoute` see the current state [C].
+
+### 7.4 Path query — `RoutingSystem::GenerateRoute(from, to, directRoute = false, permitClimbing = true, noRounding = false)` → route id
+
+[C] `code/routing_system.cpp:RoutingSystem::GenerateRoute`.
+
+1. **Single-player returns −1** (no routing; Darwinia levels use level-file routes).
+2. Route starts with waypoint `from`.
+3. `targetNode = GetNearestNode(to, requireWalkable = true)`, `startNode = GetNearestNode(from, true)`; each falls back to `requireWalkable = false`. `GetNearestNode` is a linear scan for the minimum 3D distance; with `requireWalkable` a candidate must satisfy `IsWalkable(pos, node, evaluateCliffs = true, permitSteepDownhill = false, &fence)` **and** report no enabled laser fence on the way.
+4. `complexRoutePossible = both nodes found && !directRoute`. If so, a 3-lane corridor test: `IsWalkable(from, to)` and the same segment offset ±40 units perpendicular (`(from − to) × up`, length 40), all with `evaluateCliffs = true, permitSteepDownhill = permitClimbing`; and `straightLineWalkDistance = GetWalkingDistance(from, to)` (with obstructions).
+5. Not straight-line walkable and complex possible: append the start node position, then follow `GetRouteId(targetNode)` next hops appending each node position, until the next hop is the target; a missing table entry bails out with what was built; reaching 100 waypoints logs "Error in route planning!" and resets the route to `[from]`.
+6. Append `to`.
+7. **Corner smoothing** (more than 2 waypoints and `!noRounding`): for each interior waypoint i, with `fromPos` = the already-smoothed predecessor and `toPos` = the successor: `numSteps = int(|mid − fromPos| / 50)`; for j = numSteps − 1 down to 0, candidate `fromPos + (mid − fromPos)·j/numSteps`; accept it while the 3-lane corridor candidate → `toPos` is walkable (`evaluateCliffs = true, permitSteepDownhill = true`), stop at the first failure; waypoint i := last accepted candidate (pulls the corner back towards the predecessor).
+8. **Merge** consecutive waypoints closer than 50 units with `IsWalkable(p1, p2, true)` into their midpoint (repeated in place).
+9. Snap every waypoint's y to the terrain.
+10. **Direct-route override**: `climbing = !straightLineWalkable && straightLineWalkDistance > 0`; if `straightLineWalkDistance ≥ 0` and (`!climbing || permitClimbing`) and `straightLineWalkDistance ≤ route.GetWalkingDistance()` → replace the route by `[from, to]`.
+11. `id = m_routes.PutData(route)` — `DArray`: the **lowest** free slot. A > 10 ms wall-clock "Performance warning" is logged (no effect).
+
+No RNG is used; the result depends only on terrain, buildings and node tables [C]. The waypoints are `Type3DPos` positions; routes produced here never contain `TypeBuilding` waypoints (those come from level-file routes and teleport logic) [C].
+
+Callers [C] grep of `GenerateRoute`: land — `Location::IssueDarwinianOrders` (group orders, `code/location.cpp` ≈L3679), `Location::UpdateTeam` (Armour order: direct route generated and highlighted on every peer, ≈L3936), `Officer` (`SetOrders` ≈L1414, the route rebuild when more than 50 from the route start ≈L1064, a direct highlight route ≈L1555), `Statue` (`GenerateRoute(pos, target, false, false)` — no climbing), `WallBuster` (`GenerateRoute(pos, target, false, true)`), and six `LocationInput` preview sites (client-local, ≈L867–L1072); sea — `Armour` (`GenerateRoute(m_pos, target, false, true, true)`). `CarryableBuilding` only follows the route its subclass generated (`GetRoute`).
+
+### 7.5 Following a route
+
+- `Entity::FollowRoute()` [C] `code/worldobject/entity.cpp:Entity::FollowRoute`: route = `m_levelFile->GetRoute(m_routeId)`, **replaced in Multiplayer by `m_routingSystem.GetRoute(m_routeId)`**; a missing route clears `m_routeId`. `m_routeWayPointId == −1` → 0. The current waypoint → `SetWaypoint(pos)` and `m_spawnPoint = pos`. If the waypoint is not `TypeBuilding` and is within `m_routeTriggerDistance` (10.0) → next waypoint; past the end → `m_routeId = m_routeWayPointId = −1`. `TypeBuilding` waypoints are never "reached": the entity enters the teleport and the teleport's exit continues the route.
+- `Unit::FollowRoute()` (slice 0, in `Unit::Advance`): waypoint = route[m_routeWayPointId] (start 0); advance within 10.0 unless the waypoint is a building; route end clears it [C] `code/unit.cpp:Unit::FollowRoute`.
+- Darwinian and Officer have their own route following (orders, formation): [02 §4.8](02_units_and_entities.md#48-darwinian--movement-routes-and-orders), [02 §5.5](02_units_and_entities.md#55-officer--orders-and-formation-api-player-control).
+
+### 7.6 Route lifetime, ids and the slot-sharing hazard
+
+- `DeleteRoute(id)` frees a slot; it is called only by `LocationInput` (the local mouse-preview route, each frame before a new preview) and by `Armour` for sea routes [C] grep of `DeleteRoute`. **Routes generated by simulation code are never deleted**, so `m_routes` grows for the whole match (memory only; the renderer fades them) [C]/[I].
+- **Route ids are peer-local.** `LocationInput` (client UI, outside the lockstep) allocates and frees preview routes in the same `m_routes` array the simulation uses, and `DArray::PutData` hands out the lowest free slot. The id a simulated Darwinian or officer receives from `GenerateRoute` therefore depends on whether this peer currently holds a preview route — it can differ between peers [C] `code/location_input.cpp:LocationInput::AdvanceTeamControl`, `code/routing_system.cpp:RoutingSystem::GenerateRoute`. The routes' *contents* are identical on all peers (same inputs, no RNG), and route ids are never transmitted, hashed or compared across peers, so the simulation stays in step [I] (21-U4). The hazard becomes a desync the moment any code compares route ids, sorts by them, or lets the preview free a simulation slot. A new design must keep UI previews in a separate container.
+
+### 7.7 Rendering of routes (presentation only)
+
+- `HighlightRoute(id, team)`: two `Particle::TypeMuzzleFlash` particles (sizes 75 and 60, velocity up × 10) every 10 units along the route; colour = team colour + (100, 100, 100, 100) in Multiplayer, (255, 100, 255) otherwise. `SetRouteIntensity(id, a)`: `m_alpha = max(m_alpha, a)` [C] `RoutingSystem::HighlightRoute`, `SetRouteIntensity`.
+- `Render()`: for every route whose end lies inside the landscape, `m_alpha −= g_advanceTime × 0.25` (fades over 4 s), then a dotted sprite trail (`textures/particle.bmp`, spot size = camera distance / 100, pulsing alpha `0.5 + 0.5·sin(t·10 + i·0.7)` with **wall-clock** `GetHighResTime`); colour = the local team colour if `m_walkableRoute`, else black (alpha 100), + 50 grey [C] `RoutingSystem::Render`, `RenderRouteLine`.
+- `m_walkableRoute` is true when the local player's selected entity is Armour, Engineer or Harvester (can cross water) or every leg is `IsWalkable`; written in the render path and read by `GameCursor` — render state only [C] `code/gamecursor.cpp`.
+- `m_alpha` is written by `Render`, so it is a render field stored in a simulated container (sim-resident cosmetic, §10.1).
+
+### 7.8 Level-file routes [B:LEGACY]
+
+Single-player levels carry predefined routes (`Routes_StartDefinition`, read by `LevelFile`, [08](08_levels_and_level_design.md), [29](29_data_formats_reference.md)); `Entity::FollowRoute` and `Unit::FollowRoute` use them when `!Multiplayer()`. Instant units in Multiwinia levels may name a route id, but in Multiplayer `FollowRoute` would look the id up in the routing system instead, where it designates an unrelated (or no) generated route [C] `Entity::FollowRoute`, `code/level_file.cpp:LevelFile::ParseInstantUnits`. Harmless in shipped data: all 285 `InstantUnits` rows of the 57 `data/levels/mp_*.txt` files have route id −1 and route waypoint −1 [C] scan of the route columns.
+
+## 8 Collision and physics approximations
+
+There is no rigid-body physics and no entity–entity collision. Motion is explicit per-tick integration with `dt = SERVER_ADVANCE_PERIOD` (`0.1 × gameSpeed` s), terrain height look-ups, and push-out loops against building hit volumes [C] ([02 §2.9](02_units_and_entities.md#29-shared-physics-and-obstacle-rules) gives the per-class speed and slope rules).
+
+### 8.1 Integration model and time base
+
+| Rule | Detail | Ref |
+|---|---|---|
+| Step | every object integrates once per tick with `dt = SERVER_ADVANCE_PERIOD`; game speed scales `dt`, never the number of ticks (10 per real second) | [C] `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`; [20 §10.7](20_architecture.md#107-gametimer-api-and-semantics) |
+| Scheme | semi-implicit Euler where gravity is used (`v += g·dt; p += v·dt`), plain `p += v·dt` elsewhere | [C] `Entity::AdvanceInAir` |
+| Per-tick constants | several subclasses apply constants per tick rather than per second (egg and spider gravity, some counters), so they do not scale with game speed ([05 §8](05_economy_and_population.md#8-timer-granularity-effects), [02](02_units_and_entities.md)) | [C] per class |
+| Thrown weapons | `vel.y −= 9.8 × gameSpeed` per tick = 98 units/s² of game time | [C] `code/worldobject/weapons.cpp:ThrowableWeapon::Advance` ([04 §6.0](04_crates_powerups_and_weapons.md#60-conventions-class-inventory-and-fire-helpers)) |
+| Units | world units ≈ metres (stats.txt calls speeds "m/s"); sea level y = 0 | [C] `data/stats.txt`; [23 §9.4](23_terrain_and_landscape.md#94-sea-level) |
+
+### 8.2 Ground clamp and world clamp
+
+- **World clamp**: base `Entity::Advance` clamps x, z into [0, worldSizeX] × [0, worldSizeZ] every tick (classes that never call the base — SpaceInvader, Nuke, Centipede, Meteor, AI, DropShip, Tripod, Tentacle, Lander — get no clamp) [C] `Entity::Advance`, [02 §3.4](02_units_and_entities.md#34-entity--base-class-of-all-units).
+- **Ground clamp**: ground units set `m_pos.y = height(x, z)` in their own movement code (e.g. `Darwinian::AdvanceToTargetPosition`) and in `PushFromObstructions` when `m_onGround`; buildings snap `m_pos.y` to the height map in `Initialise` and `SetDetail` [C] `Entity::PushFromObstructions`, `Building::Initialise`.
+- **Spawn clamp**: `FindValidSpawnPosition` falls back to the requested point clamped 20 units inside the map edges (possibly in water) [C].
+- **Height source**: `Landscape::m_heightMap->GetValue(x, z)` (bilinear) and `m_normalMap->GetValue` ([23 §14](23_terrain_and_landscape.md#14-landscape-queries-used-by-gameplay)).
+
+### 8.3 Falling — `Entity::AdvanceInAir(unit)`
+
+[C] `code/worldobject/entity.cpp:Entity::AdvanceInAir`:
+
+```
+vel += (0, -15, 0) * dt                 # gravity 15 units/s^2
+pos += vel * dt
+PushFromObstructions(pos)               # result discarded: only its side effects remain (synced RNG draw over water, fence kill)
+if not dead:
+    ground = height(pos) + 0.1
+    if pos.y <= ground: onGround = true; vel = 0; pos.y = ground + 0.1
+    if pos.y <= 0:                     # sea level
+        if inWater < 0: inWater = 0    # start the drowning clock
+        vel = 0
+```
+
+- **Dead airborne entities never land**: the landing test is skipped for `m_dead`, so a corpse thrown into the air keeps falling (through the terrain) while `AdvanceDead` fades it at −2 health per tick (100 → 0 in 50 ticks = 5 s at normal speed); it is drawn below ground [C] `Entity::AdvanceInAir`, `Entity::AdvanceDead`; [I] visual only.
+- Who calls it: subclasses while `!m_onGround` (Darwinian, Officer, Squadie, ArmyAnt and others; [02](02_units_and_entities.md)) [C].
+- Knock-back: `Location::Bang` adds `normalise((dir.x, onGround ? damage : −1, dir.z)) × fraction` to velocity and sets `m_onGround = false` (except InsertionSquadie, Officer, Shaman) [C] `code/location.cpp:Location::Bang` ([04 §6.1](04_crates_powerups_and_weapons.md#61-shared-explosion-model--locationbang)).
+
+### 8.4 Water
+
+| Mechanism | Rule | Ref |
+|---|---|---|
+| Sea level | y = 0; terrain ≤ 0 is water | [C] `Location::IsWalkable` (`waterLevel = 0`) |
+| Entering | `AdvanceInAir` starts `m_inWater = 0` when y ≤ 0 | [C] |
+| Swimming | `Entity::AdvanceInWater`: `m_inWater += dt`; after **10 s** `ChangeHealth(−500)`; in a unit, steer to the unit waypoint + rectangle-formation offset at speed × 0.3; then `m_vel.SetLength(5.0)` unconditionally; `pos += vel·dt`; `pos.y = −sin(3·m_inWater) − 4` (bobbing); terrain > 0 under it → `m_inWater = −1` (out) | [C] `Entity::AdvanceInWater` |
+| Darwinians | own rules (instant death in deep water; [02 §4.9](02_units_and_entities.md#49-darwinian--terrain-and-obstacles-darwinianpushfromobstructionspos-killem--true)) | [C] `Darwinian::PushFromObstructions` |
+| Push to shore | `PushFromObstructions`: if `result.y ≤ 1.0`, `pushAngle = syncsfrand(1.0)`, spiral `d = 0..50` step 1, angle `d · pushAngle · π`, first sample with height > 1.0 becomes the result | [C] `Entity::PushFromObstructions` |
+| Path tests | `IsWalkable`: two wet 20-unit samples block; `GetWalkingDistance`: one wet 40-unit sample blocks | [C] §7.2 |
+
+### 8.5 Obstacle push and building contact
+
+`Entity::PushFromObstructions(pos, killem = true)` [C] `code/worldobject/entity.cpp:Entity::PushFromObstructions`:
+
+1. If `m_onGround`, `result.y = height(result)`.
+2. Water push (§8.4).
+3. For each building id in the obstruction cell of `result` (re-resolved; NULL skipped):
+   - hit if (`m_shape` and `building->DoesShapeHit(m_shape, Matrix34(m_front, up, result))`) or ((no shape or Officer) and `DoesSphereHit(result, 1.0)`); otherwise hit if `DoesRayHit(oldPos = m_pos − m_vel·dt, m_front, |m_pos − oldPos|)` (anti-tunnelling).
+   - Hit and the building is an **enabled** `LaserFence` and `killem`: if the fence's team is not a friend (team 255 is nobody's friend) → `ChangeHealth(−9999)` + `LaserFence::Electrocute(m_pos)`; a friendly enabled fence is passed through with no push.
+   - Any other hit: `pushForce = (building.pos − result)` flattened, length 4.0; `while DoesSphereHit(result, 2.0): result −= pushForce` (4-unit steps directly away from the building's base point; unbounded loop — a zero-length push vector, i.e. standing exactly on the building's base point, would never terminate [I]).
+4. Return `result` (y not re-snapped after the building push).
+
+Other push helpers [C]:
+
+| Helper | Rule | Live callers |
+|---|---|---|
+| `Darwinian::PushFromObstructions` | Darwinian-specific water, wall, fence (sets enemies on fire), tree and generic rules | Darwinian ([02 §4.9](02_units_and_entities.md#49-darwinian--terrain-and-obstacles-darwinianpushfromobstructionspos-killem--true)) |
+| `Building::PushFromBuilding(pos, r)` | while sphere (pos, r) hits the building, step 2.0 units directly away from `m_pos` | port placement (r = 5.0) and others ([03 §3.5](03_buildings_and_world_objects.md#35-virtual-and-member-function-catalogue)) |
+| `Entity::PushFromCliffs(pos, oldPos)` | slope `(pos.y − old.y) / horizDist > 1.0` → spiral `d = 0..50` step 0.2, angle `d·2π`, first point with slope < 1.0 | none in Multiwinia [B:LEGACY] |
+| `Entity::PushFromEachOther(pos)` | grid neighbours within 2.0: `result += normalise(pos − other) × 0.1 / |pos − other|`; y = terrain | only `LaserTrooper` [B:LEGACY]; commented out in `Entity::Advance` |
+
+### 8.6 Bounce
+
+`WorldObject::BounceOffLandscape()` [C] `code/worldobject/worldobject.cpp`: intended to place the object at the midpoint of its last and current positions, but the last-position term is commented out (`lastPos = m_pos`), so the impact point is the current position snapped to the terrain; velocity is reflected about the terrain normal n: `v' = 2(n·(−v))n − (−v)`, then × `COEF_OF_RESTITUTION = 0.85` (`#define`). Users: TriffidEgg ([02 §14](02_units_and_entities.md#14-triffidegg)) and throwables ([04 §6.2](04_crates_powerups_and_weapons.md#62-throwableweapon)).
+
+### 8.7 Teleports
+
+`Entity::EnterTeleports(requiredId = −1)` [C] `code/worldobject/entity.cpp:Entity::EnterTeleports`: for each building in the obstruction cell under `m_pos` (only `requiredId` when given): `RadarDish` — `ReadyToSend()`, distance to the entrance < 15 and `m_front · entranceFront < 0`; `Bridge` — entrance available, distance to the bridge position < 25, `ReadyToSend()`, same facing test. Success → `EnterTeleport(m_id)` (the teleport disables the entity, carries it, re-enables and re-inserts it into the grid at the exit — [03 §5.2](03_buildings_and_world_objects.md#52-teleport)), sound `EnterTeleport`, returns the building id; else −1.
+
+### 8.8 Ray tests (picking and hit scans)
+
+| Test | Rule | Ref |
+|---|---|---|
+| `Entity::RayHit(start, dir)` | shape ray test with `Matrix34(m_front, up, m_pos)`; sprite entities: ray–sphere radius 5.0 | [C] `Entity::RayHit` |
+| `Building::DoesRayHit(start, dir, len, pos, norm)` | shape ray test (`pos`/`norm` not filled); no shape: ray–sphere | [C] ([03 §3.14](03_buildings_and_world_objects.md#314-hit-test-overrides-and-shapes)) |
+| `Landscape::RayHit` | used by `Location::IsVisible` and the mouse cursor | [C] ([23 §14](23_terrain_and_landscape.md#14-landscape-queries-used-by-gameplay)) |
+| Mouse picking | `Location::GetEntityId`, `GetUnitId`, `GetBuildingId` (screen-space best, local only) | [C] §5.11 |
+
+### 8.9 Explosions and area effects
+
+`Location::Bang(pos, range, damage, team, fromBuilding)` is the only area-damage primitive: entities within 2 × range take `damage × clamp(2·(2r − d)/r, 0, 1)` (operator-precedence effect: full damage to d ≤ 1.5 r, linear to 0 at 2 r) and are knocked back; buildings within 3 × range take `damage × (1 − d/3r)`; a shockwave effect and (D3D) a deform punch are created; kills are counted. Entity iteration is in entity-grid order (§6.2), which decides kill credit order [C] `code/location.cpp:Location::Bang` ([04 §6.1](04_crates_powerups_and_weapons.md#61-shared-explosion-model--locationbang)).

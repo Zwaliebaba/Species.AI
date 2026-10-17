@@ -787,3 +787,163 @@ Each `LogState` returns a 1024-byte static buffer (not re-entrant).
 
 With the macro, `memory_leak.h` is included from `universal_include.h` and redefines `new` as `new(_NORMAL_BLOCK, __FILE__, __LINE__)` (CRT debug heap); `newStr` gains file/line tracking. On quit `AppPrintMemoryLeaks("leaks.txt")` sends `_CrtDumpMemoryLeaks` output to `leaks.txt.tmp`, parses it (`ParseMemoryLeakFile`) and accumulates bytes and counts per lower-cased source location in `BTree<int>`s, writing "Total recognised memory leaks   : %d Kbytes", "Total unrecognised memory leaks : %d Kbytes", then one line per location sorted by size, `"%-95s (%d Kbytes in %d leaks)"` above 2048 bytes or `"%-95s (%d  bytes in %d leaks)"`. `memory_leak.cpp` is compiled in the baseline but inert without the macro. `docs/todo.txt` lists "memory leaks" and "D3D resource leaks" as open issues [C].
 
+## 11 Debug renderers and visual debug aids
+
+### 11.1 Primitives (`DEBUG_RENDER_ENABLED`, defined globally → compiled into FULL) [C] `code/lib/debug_render.cpp`, `code/lib/persisting_debug_render.cpp`, `code/lib/sphere_renderer.cpp`; also [24 §4.23](24_rendering.md#423-debug-renderers-and-utilities-c)
+
+| Function | Draws |
+|---|---|
+| `RenderSquare2d` | 2-D square in its own ortho projection, depth test off |
+| `RenderCube` | line-loop cube, line smoothing, width 2 |
+| `RenderSphereRings` | three orthogonal 20-segment circles |
+| `RenderSphere` / `RenderSphereFilled` | wireframe / filled icosphere (80 triangles, one display list) |
+| `RenderVerticalCylinder` | 16-edge cylinder, lighting off then on |
+| `RenderArrow` | line of width `width / distToCamera × arrowLength`, two 20 % arrow-head lines |
+| `RenderPointMarker` | arrow from (+20, +20, +20) to the point plus 3-D text size 3 |
+| `PrintMatrix` / `PrintMatrices` | matrix to the debug log, at most 10 times |
+| `g_debugRenderer` (`PersistingDebugRenderer`) | queue of `Square2d`, `PointMarker`, `Sphere`, `Vector` items (`FastDArray`, initial 100), keyed by a formatted label ≤ 63 characters (case-insensitive prefix match), `life` in **frames** (0 = forever; decremented per render, removed at 1); `Sphere`/`Vector` never store their label, so find-by-label can match stale items; rendered every frame at pass 24 of [24 §3.2](24_rendering.md#32-ordered-pass-table--one-multiwinia-match-frame-bfull) and normally empty (no code queues items) |
+
+### 11.2 Where they are drawn, and whether a FULL player can see it [C] call sites as listed
+
+| Visual | Condition | Visible in FULL? | Ref |
+|---|---|---|---|
+| Sync-difference markers: 500-unit arrow (width 20) down to each differing object + two lines of 3-D text (name, description), size 5 | a received IFrame differs from the local one | **no** (no IFrame snapshots in FULL) | `code/network/syncdiff.cpp:SyncDiff::Render`, `code/team.cpp:Team::RenderSyncErrors` |
+| AI priority text and link arrows | pref `RenderAIInfo` | **yes, if the pref is set** (§5.8) | `code/worldobject/ai.cpp:AITarget::Render`, `AITarget::RenderAlphas` |
+| AISpawnPoint sphere + "Spawn %d %s's / Every %d seconds / Next spawn in %d seconds" (its editing check is commented out) | always when the building exists | no — `AISpawnPoint` is a blocked Darwinia object and occurs only in `data/levels/old/` and campaign maps | `code/worldobject/ai.cpp:AISpawnPoint::RenderAlphas` |
+| Building front arrows (Wall, PulseBomb, base `Building`), PylonStart / TrackStart requirement arrows, power-splitter links, radar-dish links, SafeArea / MultiwiniaZone / RestrictionZone / JumpPad / EruptionMarker / SmokeMarker / ScriptTrigger / StaticShape / GenericHub / Portal / EscapeRocket / SpawnPopulationLock spheres | `App::m_editing` | no (editor builds only) | the respective `Render` / `RenderAlphas` |
+| Shape hit-check spheres/cylinders, shape markers, tree hit-check spheres | callers commented out (only `code/location_editor.cpp` calls `RenderHitCheck`) | no | `code/lib/shape.cpp`, `code/worldobject/tree.cpp:Tree::RenderHitCheck`, `code/worldobject/building.cpp:Building::RenderHitCheck` |
+| Fence-switch and track-junction link arrows (`RenderLink`) | called from the editor only | no | `code/worldobject/switch.cpp:FenceSwitch::RenderLink`, `code/worldobject/mine.cpp:TrackJunction::RenderLink` |
+| Route-node spheres and labels (`RoutingSystem::RenderNodes`) | call commented out | no | `code/routing_system.cpp` |
+| Entity-grid / obstruction-grid / grid-cache renders | debug functions, `EntityGridCache::Render` call commented out; `DEBUG_ENTITY_GRID` off | no | `code/entity_grid.cpp` |
+| FPS / entity counter | `m_displayFPS` (forced off) | no | §3.5 |
+| Red "sync error" banner, "lost connection" banner | any client out of sync / > 5 s without server letters | **yes** (player-facing, not a debug aid) | `code/renderer.cpp:Renderer::RenderFrame` ([24](24_rendering.md)) |
+
+Commented-out debug draws worth knowing because they show what the developers inspected: tank and armour waypoint/attack-target arrows, air-strike approach/exit arrows, ant-hill health and occupancy text with objective spheres (`code/worldobject/tank.cpp`, `code/worldobject/armour.cpp`, `code/worldobject/airstrike.cpp`, `code/worldobject/anthill.cpp`) [C].
+
+## 12 Known performance hotspots and budgets
+
+### 12.1 Cross-check of `docs/cpu cycles.txt`
+
+The file is 4932 bytes of gameplay design with sections "CPU CYLES", "TASK MANAGER", "TERMINATION", "GESTURES", "NUMBER KEYS", "ZEPELLINS": programs consume a pool of "processor cycles" that capturing Processor buildings increases; ALT-TAB task switching; CTRL-BREAK termination freeing cycles at "1 every 2 seconds"; air-strike strength proportional to cycles; gesture launching; "Debug Zeppelins" that display information [C] `docs/cpu cycles.txt`. It contains **no measurement, budget or profiling note**, and none of these mechanics exists in Multiwinia's task manager ([06](06_player_control_and_input.md)). Every hotspot below is therefore established from code (instrumentation, caps, loop structure) and from the change logs / release notes in `docs/`, each cited.
+
+No measured frame-time or per-system cost exists anywhere in the tree (32-U2): the numbers below are budgets and limits **as coded**, and claims **as written** by the developers.
+
+### 12.2 Frame and tick structure — the time budget as coded [C]
+
+| Quantity | Value | Ref |
+|---|---|---|
+| Server tick | 10 Hz: `m_nextServerAdvanceTime += 0.1` per `Server::Advance` | `code/network/server.cpp:Server::AdvanceIfNecessary` |
+| Client "I am alive" (team controls) send period | `IAMALIVE_PERIOD` 0.1 s | `code/globals.h`, `code/main.cpp:LocationGameLoop` |
+| Slices per simulation frame | `NUM_SLICES_PER_FRAME` 10 — each tick's heavy work is split into 10 slices so a render frame runs only part of a tick | `code/globals.h` |
+| Slices advanced per render frame (normal) | `clamp(int(0.3 × pending), 0, 20)` with `pending = (lastValidSeq − lastProcessedSeq) × 10 + (10 − g_sliceNum)`; the intended time-based branch for `pending ≤ 10` declares a shadowing local and is discarded, so 1–3 pending slices advance **0** per frame | `code/network/clienttoserver.cpp:ClientToServer::GetNumSlicesToAdvance` ([22 §2.3](22_determinism_and_networking.md#23-slices-per-render-frame-client-pacing-controller)) |
+| Catch-up | when more than 20 sequence ids behind: 20 slices (2 ticks) per iteration, repeated until caught up or **0.3 s** of wall time has been spent in this render frame | `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp` |
+| Render-side delta clamp | `g_advanceTime ≤ 0.25 s` (camera, UI, sound, particles' render-side use) | `code/main.cpp:UpdateAdvanceTime` |
+| Slow-frame reaction | if `Renderer::m_fps < 15` the sound system is advanced a second time after rendering (keeps the 20 Hz audio tick fed) | `code/main.cpp:LocationGameLoop` |
+| Per-frame legacy work | `GlobalWorld::EvaluateEvents()` every render frame in a Multiwinia match ("DELETEME: for debug purposes only") | `code/main.cpp:LocationGameLoop` |
+| Main-thread GL jobs | `g_loadingScreen->RunJobs()` each frame compiles queued display lists | `code/main.cpp:LocationGameLoop` |
+| Memory report | every 60 s (`GlobalMemoryStatus` + sample-cache usage) to the debug log | `code/main.cpp:AdvanceAvailableMemoryCheck` |
+| Thread placement | main thread affinity mask `0x02 \| 0x08 \| 0x20 \| 0x80` (CPUs 1, 3, 5, 7); all simulation, rendering and network sending on that thread; level loading on a `WorkQueue` worker | `code/app.cpp:App::App`, [20](20_architecture.md) |
+| Profiler graph reference lines | 50 / 100 / 200 ms per frame (20 / 10 / 5 fps) — the range the developers expected to inspect | `code/interface/profilewindow.cpp:ProfileWindow::RenderFrameTimes` |
+| Sound CPU warning (dead code) | "Advance SoundSystem" share drawn red above 15 % | `code/interface/prefs_sound_window.cpp` ([27 §13.1](27_audio_engine.md#131-always-compiled-profiling-bfull)) |
+
+Design consequence: the simulation cost of one tick must fit, amortised over 10 slices, inside the render frames of 0.1 s; when it does not, the client falls behind, the catch-up loop spends up to 0.3 s per frame simulating, and the frame rate drops further (a spiral bounded only by the 0.3 s cap) [I from the code above].
+
+### 12.3 Hotspot catalogue
+
+Evidence column: *instrumented* = has its own `START_PROFILE` node (§9.5); *claim* = a developer note in `docs/`.
+
+| # | Hotspot | Mechanism and numbers | Evidence |
+|---|---|---|---|
+| H1 | **Entity count** (Darwinians dominate) | No global cap: the generic cap in `Location::SpawnEntities` is commented out. Shipped maps cap population per map (`PopulationCap`): 1400 (1 map), 1500 (9), 1600 (2), 1800 (15), 2000 (21); per team = cap / level `NumPlayers` = 350–1000; two co-op maps and the stress map are **uncapped**, `mp_sandbox` 2500 ([05 §4.6](05_economy_and_population.md#46-per-map-table-every-mp_-level-file-in-datalevels)). Reinforcements and crates can overshoot ([05 §4.4](05_economy_and_population.md#44-overshoot)). `Entity::s_entityPopulation` counts live entities. | [C] `code/location.cpp:Location::SpawnEntities`; [C] data; instrumented ("Advance Unit Entities", "Advance Others", per-type nodes); claim: Darwinia `docs/changes.txt` "Optimisations made to Darwinian combat code. Should help during big battles involving lots of Darwinians"; Multiwinia beta `docs/multiwiniachanges-beta.txt` "ASLT: Sudden Frame Rate Drop (Problem with lots of _stuck_ Darwinians?)"; `docs/betachanges.txt` "The population limit on Doomsday has been lowered to help with performance issues" |
+| H2 | **Darwinian AI searches** | Each Darwinian re-searches every `1.0 + syncfrand(1.0)` s (1–2 s, staggered): crates, flags, armour, officers, shamans, spirits, ports, carryables, random positions, and `SearchForThreats` (threat objects, trees, ant nests, AITargets, `GetEnemies`); per-tick movement (`AdvanceToTargetPosition`) and `PushFromObstructions` (water, buildings). At 2000 Darwinians ≈ 1000–2000 full searches per second | [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForNewTask` and the `Search*` functions; instrumented (16 nodes) |
+| H3 | **Spatial grid queries** | `EntityGrid(32.0, 32.0)` cells; `ObstructionGrid` 32 (multiplayer) / 64 (single-player) cells; `EntityGridCache` re-uses recent query results (staleness and range shortcuts change results — [21](21_simulation_and_entity_model.md), X3 U6); neighbour results go to shared static arrays (`s_neighbours`) and `std::vector`s | [C] `code/location.cpp:Location::Init`, `code/entity_grid.cpp`; instrumented ("GetEnemies", "FindThreatObjects") |
+| H4 | **Spirits (souls)** | `Location::m_spirits` is a `FastDArray<Spirit>` stored by value, initial 100, step 100, sliced; every death adds one; harvesting is the only sink | [C] `code/location.cpp:Location::Location`; instrumented ("Advance Spirits", "Render Spirits", `Spirit::PushFromBuildings`); claim: `docs/changes.txt` "Spirit code heavily optimised. Was causing serious slowdown after large battles due to large numbers of spirits floating around" |
+| H5 | **Lasers and effects** | `m_lasers`, `m_effects` step 100; every Darwinian shot is a laser object | [C] `code/location.cpp:Location::Location`; instrumented ("Advance Lasers", "Advance Effects", "Render Weapons"); claim: `docs/changes.txt` "Laser code optimised" |
+| H6 | **Particles** | array 1500 initial, +200 growth, **no cap**; advanced all at once in slice 0 of every tick (the per-slice loop is commented out); each `CreateParticle` is refused only while the game is paused; tree fire particle count `/= RenderBuildingDetail` | [C] `code/particle_system.cpp:ParticleSystem::ParticleSystem`, `ParticleSystem::Advance`, `ParticleSystem::CreateParticle`; instrumented; claim: `docs/newdemo.txt` "Lag in final fade to white due to particle density" |
+| H7 | **Explosions (shape shattering)** | up to about 501 source triangles scanned per fragment, perimeter < 6 skipped ([26](26_animation_and_vfx.md)) | [C] `code/explosion.cpp`; instrumented |
+| H8 | **Draw calls / immediate mode** | every Darwinian is drawn by its own `Render` call (immediate mode), with a high-detail factor `1 − d²/D²` where D = 99999.9 / 1000 / 500 for `RenderEntityDetail` 1 / 2 / 3; buildings per object (`Shape::Render` → display list or recursive fragments); alpha buildings depth-sorted with `qsort` every frame | [C] `code/team.cpp:Team::RenderDarwinians`, `code/lib/shape.cpp:Shape::Render`, `code/location.cpp:Location::RenderBuildingAlphas`; instrumented ("Render Darwinians", "Depth Sort", per-type nodes) |
+| H9 | **Display lists** | non-animating shapes, trees, sphere renderer and the landscape (display-list mode) compile GL display lists; compilation is marshalled to the main thread through the loading-screen job queue; `Resource::FlushOpenGlState` / `RegenerateOpenGlState` rebuild everything (resolution change, cheat 16); tree geometry and the tree hit-check radius are generated inside the display-list build | [C] `code/lib/resource.cpp`, `code/worldobject/tree.cpp:Tree::Generate`; P07 note; [24 §4.5](24_rendering.md#45-shape-rendering-shp-meshes-c-codelibshapeh-codelibshapecpp) |
+| H10 | **Landscape** | full triangle-strip mesh, **no LOD**, two passes (main + wireframe overlay); `RenderLandscapeMode` −1 → VBO when `GL_ARB_vertex_buffer_object` is supported, else display list (D3D: always VBO); `RenderLandscapeDetail` is read but replaced by the literal 1 | [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`; instrumented ("Render Landscape Main", "Render Landscape Overlay"); claim: `docs/changes.txt` VBOs "should be faster in most cases than Display Lists" ([23](23_terrain_and_landscape.md)) |
+| H11 | **Dynamic water** | wave mesh rebuilt every frame on the CPU (lookup tables, vertex heights, vertex buffer); `RenderWaterDetail` 1–3 sets mesh resolution | [C] `code/water.cpp:Water::UpdateDynamicWater`; instrumented (3 GL-only nodes, "Render Water" ×3, "Advance Water") |
+| H12 | **Buildings** | per-type profile node around each building's `Advance` and `Render`; decorative blob/star counts by `RenderBuildingDetail` (e.g. spawn point 20/10/3 blobs) | [C] `code/location.cpp:Location::AdvanceBuildings`, `Location::RenderBuildings`; [24](24_rendering.md) |
+| H13 | **Virii and other creatures** | history-position recording per Virii, per-state search nodes | [C] `code/worldobject/virii.cpp`; instrumented (10 nodes) |
+| H14 | **AI placement loops** | several AI task handlers loop `while (!IsValidTargetArea(task, pos))` drawing new positions with `syncsfrand(area radius)` around an area centre, with no iteration limit — deterministic, but a frame hitch (or a hang on every peer) when an area has few or no valid points | [C] `code/worldobject/ai.cpp` (task-target helpers) ([07](07_ai.md)) |
+| H15 | **Sound** | 20 Hz tick with sort/priority passes; doubled when fps < 15 | [C] [27 §3](27_audio_engine.md#3-update-rate-the-20-hz-tick); instrumented (15 nodes) |
+| H16 | **Debug-log I/O** | `AppDebugOut` opens and closes `debug.txt` on every call under a mutex; FTP verbose logging is on; the Dr S face writes one line per frame | [C] `contrib/systemiv/lib/debug_utils.cpp:AppDebugOut`, `code/network/ftp_manager.cpp`, `code/clouds.cpp:Clouds::RenderFace` |
+| H17 | **Network** | no bandwidth limiting or adaptation [C]; letters larger than 1500 bytes are probably dropped on receive and resent indefinitely [I] ([22](22_determinism_and_networking.md)); server sections "Advance Server", "UpdateClients", "Authentication", "SEND", "Advertise" | [C] `code/network/bandwidth.cpp`; instrumented |
+| H18 | **Legacy per-frame work in Multiwinia** | `GlobalWorld::EvaluateEvents()` each frame; task-manager gesture/icon interfaces would build a bitmap and texture per frame ("Create Bitmap", "ConvertToTexture") but are unreachable in Multiwinia | [C] `code/main.cpp:LocationGameLoop`, `code/taskmanager_interface_icons.cpp` |
+| H19 | **Profiler with glFinish** | opening the profiler turns on `glFinish` at every section boundary inside rendering | [C] §9.3 |
+
+Hardware target claimed by the publisher's EULA: Windows XP / Vista, 2.0 GHz CPU, GeForce 6200 or Radeon 9600, 512 MB RAM, 120 MB disk [C] `docs/IntroversionEULA.txt`.
+
+### 12.4 Budget guidance for the new game [I]
+
+| Area | Recommendation |
+|---|---|
+| Simulation tick | Keep a fixed simulation tick (10 Hz was the original; 20–30 Hz recommended), measured in **ticks** not wall time, with a hard per-tick CPU budget (e.g. ≤ 25 % of a 16.7 ms frame at the population cap on minimum-spec hardware) and per-system budgets taken from H1–H6 |
+| Population | Design for the shipped peak (2000 units on a map plus spirits and lasers, H1, H4, H5) and test at 2× with an uncapped stress map like `mp_benchmark_1` (4 × 150 start units, 24 spawn points); make the cap a hard engine limit, not only a map option |
+| Searches and grids | Keep the staggered 1–2 s re-search (H2) but make spatial queries exact (no cache shortcuts that change results) and data-oriented (SoA, SIMD over cell lists); budget queries per tick |
+| Particles and VFX | Fixed-capacity pools with a hard cap and graceful LOD; keep VFX entirely outside the deterministic simulation |
+| Rendering | Instanced rendering for units (one draw per unit type per pass), GPU-driven terrain LOD, compute-shader water; no immediate mode, no display lists; a draw-call budget per frame |
+| Catch-up | Bound catch-up by ticks per frame and show a "catching up" state instead of letting the frame rate collapse (12.2) |
+| Logging | Asynchronous, buffered logging thread; per-category levels; never open/close a file per line |
+
+## 13 Desync debugging tooling
+
+Full network and determinism specification: [22](22_determinism_and_networking.md) (IFrames: [22 §7](22_determinism_and_networking.md#7-iframes)). This section lists the **tools**.
+
+### 13.1 Detection in each build [C] `code/network/iframe.cpp:IFrame::Generate`, `code/network/server.cpp:Server::HandleSyncMessage`
+
+| Build | Per-frame sync value | What it detects |
+|---|---|---|
+| [B:FULL] | `(unsigned char)(255 × syncfrand(1))` — the next value of the synced RNG; no snapshot is kept (`m_data = NULL`) | only divergence in the **number or order of synced-RNG draws**; world-state drift that does not change RNG consumption goes unnoticed |
+| [B:DEBUG], `TARGET_BETATEST_GROUP` | low 8 bits of word 0 of SHA-1 over a serialised world snapshot (teams → units → entities pos/vel/front/uniqueId, others, lasers, effects, buildings incl. radius/front/up/centre, network time, a final `syncfrand(255)`); newest 50 IFrames kept | any position/velocity/orientation divergence of listed objects |
+
+Both variants draw exactly one synced-RNG value per frame, so the RNG stream stays aligned within a build type; DEBUG and FULL peers cannot be mixed anyway (`INCLUDE_THEBEAST`, tracked-`syncsfrand` arithmetic, §13.3) [C].
+
+The server compares all clients' values for a sequence id once every client has reported; a client whose value no other client shares is flagged and NETSYNCERROR is broadcast (in a two-client game both are flagged); the "fixed" notification is commented out, so **a desync is permanent** and every client that hears of it pauses its simulation (`App::GamePaused`) and shows the red banner [C].
+
+### 13.2 Forensics produced on desync [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessServerLetters`, `ClientToServer::SendIFrame`, `code/network/iframe.cpp:IFrame::CalculateDiff`, `code/network/syncdiff.h`
+
+1. First NETSYNCERROR: `SendIFrame(seq)` (upload "IFrame <myClientId> <seq>" through the FTP manager and keep a local copy), store `m_syncErrorSeqId`, write `syncerror-…txt` (§10.4).
+2. While desynced, each `ClientToServer::Advance` retrieves completed remote IFrame files; for frames whose hashes differ, `IFrame::CalculateDiff` does an index-aligned comparison of units, entities, others, lasers, effects and buildings and produces `SyncDiff {WorldObjectId id, Vector3 pos, char *name, char *description, RGBAColour colour}` records with descriptions "Local only", "Remote only", "[POS][VEL][FRONT][UP][CENTRE][RADIUS]" flags, "[CENTREPOS]", "[n ENTITY DIFFS]", "Network Time Different", "Sync Rand Different"; `DumpSyncDiffs` writes `syncdiff-…txt` and `Team::RenderSyncErrors` draws the markers (§11.2).
+3. The server relays each uploaded IFrame to every other client's FTP manager (blocks of 1024 bytes, window 10, acks ×3).
+
+In FULL steps 2–3 are inert: no snapshot exists and frames are matched by `SequenceId()`, which stays 0 [C]. The only FULL forensic artefact is the world-state dump of step 1.
+
+### 13.3 Sync-RNG call tracking (`TRACK_SYNC_RAND`) [B:DEBUG] [C] `contrib/systemiv/lib/math/random_number.h`, `contrib/systemiv/lib/math/random_number.cpp`, `code/lib/vector3.h`, `code/lib/vector3.cpp`
+
+- `syncrand()` → `DebugSyncRand(__FILE__, __LINE__)`; `syncfrand(x)` → `DebugSyncFrand(file, line, 0, x)`; `syncsfrand(x)` → `DebugSyncFrand(file, line, −x/2, x/2)` = `min + (_syncrand() × range) × 2⁻³²` — **not bit-identical** to the release formula `(r × 2⁻³² − 0.5) × x`, so tracked and untracked peers diverge numerically; `FRAND`/`SFRAND` (the `Vector3` helpers) carry file/line through `RandomFloat` / `SymmetricRandomFloat` wrappers.
+- Each call appends `"%8d | <HashDouble(value)> | <file basename> line %d"` (running call counter) to an `LList<char*>` capped at **100000** entries (oldest dropped). `syncrandseed` logs "SyncRandSeed called". `SyncRandLog(fmt, …)` (1024-character entries) and `SyncRandLogText` annotate the stream.
+- `DumpSyncRandLog(file)` writes "SyncRandSeed <seed> (as signed int: <seed>)" then every entry (Unix line endings, truncating the file); `FlushSyncRandLog()` empties the log when a client connects.
+- Annotations around every update: "EFFECT BEFORE/AFTER: " + `LogState` around each effect's `Advance` (except snow) (`code/location.cpp:Location::AdvanceWeapons`); building `LogState` around each building's `Advance` (`Location::AdvanceBuildings`); "ENTITY BEFORE/AFTER: " around each other-entity `Advance` (`code/team.cpp:Team::Advance`); "Seq ID: %d", per-letter `WriteSummary` with the `DecodeCmd` code → name table, "Handled as Server Letter: %d", "Handled as update: %d", "g_sliceNum = %d" for the first 1000 sequence ids (`code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`); crate list logging ([04](04_crates_powerups_and_weapons.md)).
+- Entity watch list (`code/location.cpp:TrackEntity`, `UntrackEntity`, `WatchEntities`): a `std::map<Entity*, std::string>` of last `LogState` per watched entity; `TrackEntity` (called from `Entity::NewEntity`) has its selection test commented out (`uniqueId == 3045`), so a developer edits the id to watch one object; `WatchEntities` (called after every entity/effect/building advance) logs "Watch Changed From/To" when the state string changes; deletion logs "Watch Deleted".
+- `code/worldobject/spirit.cpp` and `code/worldobject/snow.cpp` `#undef TRACK_SYNC_RAND`, so spirit and snow draws are never logged.
+- `docs/multiwiniareleasenotes-beta.txt` says a beta shipped with "debugging code … to track rand sync errors", which "may slow down Multiwinia"; in this tree `TRACK_SYNC_RAND` is commented out for the beta targets (Docs-vs-code).
+
+### 13.4 Reproduction aids [C]
+
+| Aid | Use | Ref |
+|---|---|---|
+| Command-stream record/replay | pref `RecordDemo` 1 saves `serverHistory.dat`, 2 replays `ServerHistory.dat`; the lockstep stream plus seed reproduces the match | `code/network/server.cpp:Server::SaveHistory`, `Server::LoadHistory` |
+| Fixed time step | `RecordDemo` forces `g_advanceTime = 1/DemoFrameRate` (default 25) | `code/main.cpp:UpdateAdvanceTime` |
+| Forced seed | testbed `SetRandSeed` / `AddSequenceItem`; `TestBedLog.txt` records the seed and the sync-error sequence id per game | §6 |
+| Packet drop | `DebugDropPacket` (F held) [B:DEBUG] | §3.1 |
+| Network window | per-client lag, catch-up, "out of sync" flag [B:FULL] | §5.1 |
+
+### 13.5 Network-quality simulator [B:DEAD] [C] `code/network/network_quality.cpp:NetworkQuality`, `code/network/clienttoserver.cpp`
+
+`NetworkQuality(latencyMs, lossProbability, bandwidthBytesPerSec)`; `Write`: run `Advance`, report the full length as written, silently drop if more than the byte budget was queued in the last second, else keep the packet with probability `1 − loss` (test `AppRandom() % 1000 > loss × 1000`, the shared unsynced LCG) and queue it with a timestamp. `Advance`: forget packets older than 1 s from the bandwidth window; send every queued packet older than the latency. Because `Advance` runs only inside `Write`, queued packets leave only when the next packet is written. Used only when `NETWORKQUALITY_TESTING` (commented out) wraps the client's socket writes with `NetworkQuality(200, 0.25, 8000)`.
+
+## 14 Recommendations for the new game's debug and test infrastructure
+
+1. **Cheats as network commands.** A sequenced `DebugCommand` message, accepted by the server only for sessions created with a cheats flag, applied by every peer on the same tick (fixes every "desync" row of §4.3). Show a session-wide "cheats used" marker.
+2. **Real sync hashing in every build.** A cheap rolling checksum of authoritative state each tick (and a full snapshot hash every N ticks) instead of hashing the RNG position; keep the last N snapshots; on mismatch automatically exchange snapshots, diff them at object/field level and write a desync report that names the first differing object and field. Support resync or rejoin.
+3. **Deterministic replay as the primary test tool.** Record seed + command stream for every match (local ring buffer), replay headless at maximum speed, and use replays as regression tests (state hash at the end must match) and as the benchmark scene.
+4. **Headless soak test (the testbed, done properly).** Command-line driven host/clients that join as spectators, play every mode × map with AI teams, and report sync errors, crashes, frame-time percentiles and peak population per game as CI artefacts; no UI button-pressing.
+5. **Always-available, low-overhead profiling.** Scoped CPU markers compatible with an external profiler (e.g. PIX / ETW markers) plus an in-game overlay with frame-time graph and per-system budgets; GPU timestamps instead of `glFinish`; thread-safe.
+6. **Console and debug UI** reachable in development builds (and optionally behind a launch flag in release): FPS/frame time, entity counts per type, network stats (rates with correct formatting, per-client lag in ticks, inbox gaps), AI overlays, grid/obstruction visualisers.
+7. **Logging and crash reporting.** Asynchronous buffered log with categories and levels; crash handler on every thread (vectored exception handler + `std::set_terminate`); full-thread minidumps; consented HTTPS upload; no credentials in the binary; symbol server for release builds (do not rely on frame-pointer walks).
+8. **Telemetry with consent** replacing the FTP benchmark (§8.6).
+9. **Data validators** in the content pipeline instead of run-time-only checks (the script test of §7.2 and the language test of §5.8 belong in the build).
+

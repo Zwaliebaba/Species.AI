@@ -39,27 +39,43 @@ for r in manifest:
         known_dirs.add('/'.join(parts[:i]))
 root_files = {r['path'].lower() for r in manifest if '/' not in r['path']}
 
+def _expand_braces(p):
+    """Expand shell-style {a,b,c} groups (one level, possibly several groups)."""
+    m = re.search(r'\{([^{}]*)\}', p)
+    if not m: return [p]
+    out = []
+    for alt in m.group(1).split(','):
+        out += _expand_braces(p[:m.start()] + alt.strip() + p[m.end():])
+    return out
+
 def extract_paths(text):
-    """Return set of lower-case manifest-relative paths (files or dirs) cited in text."""
+    """Return set of (kind, lower-case manifest-relative path or glob) cited in text."""
     found = set()
     cands = []
     # backticked spans may contain spaces (e.g. `docs/cpu cycles.txt`)
     for span in re.findall(r'`([^`\n]+)`', text):
         cands.append(span)
-    # bare paths (no spaces)
-    cands += re.findall(r'(?<![\w/])((?:code|data|contrib|tools|targets|docs)/[\w\-./+]+)', text)
+    # bare paths (no spaces); glob/brace characters are part of the path
+    cands += re.findall(r'(?<![\w/])((?:code|data|contrib|tools|targets|docs)/[\w\-./+*?{},\[\]]+)', text)
     for c in cands:
         c = c.strip().strip('"\'').replace('\\', '/')
         if c.startswith('multiwinia/'): c = c[len('multiwinia/'):]
         if not c.lower().startswith(ROOTS) and c.lower() not in root_files:
             continue
         # strip ":Symbol" / ":L123" / "#anchor" suffixes and trailing punctuation
-        base = re.split(r'[:#](?![/\\])', c, 1)[0].rstrip('.,;)')
+        base = re.split(r'[:#](?![/\\])', c, maxsplit=1)[0].rstrip('.,;)')
         low = base.lower()
-        # glob-ish citations like code/worldobject/darwinian.* or data/levels/mp_*
-        if any(ch in low for ch in '*?['):
-            found.add(('glob', low)); continue
-        found.add(('path', low.rstrip('/')))
+        # a bare match cut at a space inside a {a, b} group; the backticked form carries the full citation
+        if low.count('{') != low.count('}'):
+            continue
+        # descriptive patterns ("<name>", "1..5", "N") are references to a family of files, not citations
+        if '<' in low or '>' in low or re.search(r'[^./]\.\.[^/]', low):
+            found.add(('pattern', low)); continue
+        for g in _expand_braces(low):
+            if any(ch in g for ch in '*?['):
+                found.add(('glob', g))
+            else:
+                found.add(('path', g.rstrip('/')))
     return found
 
 cited_by_doc = {}
@@ -71,6 +87,8 @@ cited_dirs = collections.defaultdict(set)
 bad_citations = collections.defaultdict(set)
 for name, items in cited_by_doc.items():
     for kind, p in items:
+        if kind == 'pattern':
+            continue
         if kind == 'glob':
             hits = [m for m in by_lower if fnmatch.fnmatchcase(m, p)]
             if not hits: bad_citations[p].add(name)

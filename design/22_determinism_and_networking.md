@@ -751,3 +751,385 @@ sequenceDiagram
 - **Kick** [C]: host-only `KickPlayerButton` → `Server::KickClient(clientId)` → `RemoveClient(KickedByServer)`.
 - **Password** [C]: the host sets it via `Server::SetPassword` (`code/UI/GameMenuWindow.h`); the joiner types it on the password page; it is sent **in clear text** in CLIENT_JOIN.
 
+---
+
+## 9 Sync checking and desync handling
+
+### 9.1 What the per-frame sync byte covers
+
+| Build | Sync byte | Covers | Does **not** cover | Ref |
+|---|---|---|---|---|
+| Baseline FULL (`!TARGET_DEBUG && !TARGET_BETATEST_GROUP`) | `(unsigned char)(255 × syncfrand(1))` → 0…254 | only the **number of synced draws consumed so far** (and the seed): MT19937 outputs are a fixed sequence, so peers that made the same number of draws report the same byte whatever they used the values for | every world field; a divergence is noticed only once it changes the count of synced draws (for example a different number of units in range, or a branch that draws) | [C] `code/network/iframe.cpp:IFrame::Generate` |
+| `TARGET_DEBUG`, `TARGET_BETATEST_GROUP*` | low byte of SHA-1 word 0 over the snapshot (§7.2) | sequence id, `GetNetworkTime()`, per used team: every unit's `m_centrePos` and every unit entity's `m_pos/m_vel/m_front/uniqueId`, every `m_others` entity's `m_pos/m_vel/m_front/uniqueId`; every laser `m_pos/m_vel`; every effect `m_pos/m_vel`; every building `m_pos/m_vel/m_radius/uniqueId` and `m_front/m_up/m_centrePos` (zero vectors for crates); slot validity flags and array sizes; a `syncfrand(255)` sample | health and stats, entity/building **states and timers**, building **team ownership**, spirits, task managers, AI state, scores and mode state, game speed, entity-grid cache, routes | [C] `IFrame::Generate`, `ReadIFrameData` |
+
+**Cadence** [C] `ClientToServer::GenerateSyncValue`, `KeepAlive`, `SendSyncronisation`: one SYNCHRONISE per executed UPDATE frame (10 Hz in game and in the lobby, where the value is 0), plus 1-Hz KEEPALIVE repeats of the last value while a level loads. Each value consumes one synced draw in both build kinds, keeping the streams of same-kind builds aligned. A late joiner replaying history sends syncs for old sequence ids, which the server compares with the stored values — the replay itself is therefore sync-checked.
+
+**Detection statistics** [I arithmetic]: if two peers' draw counts differ, their next outputs are effectively independent, so the bytes collide with probability 1/255 per frame; the chance of escaping detection for k consecutive frames is 255^−k (≈ 0.4 % for one frame, 1.5·10^−5 for two). The real latency is dominated by how long a state divergence takes to alter the draw count — unbounded in principle (for example a divergent position that never changes a branch).
+
+### 9.2 Server decision algorithm [C] `code/network/server.cpp:Server::HandleSyncMessage`, `NotifyNetSyncError`
+
+1. Reject if the sequence id is not in the history (debug assert); store `client.m_sync[seq] = value`.
+2. Count clients holding a value for `seq` (`numResults`) and whether all equal the incoming value (`provisionalResult`).
+3. When `numResults == m_clients.NumUsed()` and the values differ: for every client A not already flagged, count clients B ≠ A (unflagged, or flagged at a later sequence id) whose value equals A's; if none → `A.m_syncErrorSeqId = seq` and broadcast sequenced NETSYNCERROR(A's **array index**, `"YYYY-MM-DD H.MM.S seq"` server local time, seq). In a 2-client game both are flagged (cannot tell who is wrong); with ≥ 3 clients only the odd ones out.
+4. When all agree and some client is flagged at ≤ seq: the loop body that would call `NotifyNetSyncFixed` is commented out — **a desync is permanent**.
+
+### 9.3 Client reaction [C] `ClientToServer::ProcessServerLetters` (NETSYNCERROR), `App::GamePaused`, `code/renderer.cpp`, `Multiwinia::SaveIFrame`
+
+1. `SetSyncState(id, false)` → id appended to `m_outOfSyncClients`.
+2. On the first notification only (`m_outOfSyncClients.Size() == 1`): `SendIFrame(seq)`, `m_syncErrorSeqId = seq`, `[B:DEBUG] DumpSyncRandLog`, and `Location::DumpWorldToSyncLog` writes `<profile>syncerror-<server start YYYY-MM-DD--HH-MM-SS>-client<id>-team<team>.txt` (header `Begin Final Object Positions`, then one `LogState()` line per unit entity, other entity, effect except snow, and building) [C] `ClientToServer::GetSyncFileName`, `code/location.cpp:Location::DumpWorldToSyncLog`.
+3. **The simulation freezes for everyone**: `App::GamePaused()` is true while `m_outOfSyncClients` is non-empty, so `Location::Advance`, particles and game-time accumulation stop; because NETSYNCERROR is sequenced, every peer freezes at the **same sequence id** (Resolved: P01 D4/U4 asked whether clients could stop at different ticks — they cannot) [C] `Server::SendLetter`. `Multiwinia::Advance` keeps running; the server keeps sequencing; a red centred "multiwinia_error_syncerror" banner is drawn [C] `code/renderer.cpp`.
+4. Each `ClientToServer::Advance` while desynced: retrieve completed IFrame files and diff them (§7.3) — inert in the baseline.
+5. Recovery: none. When a client leaves, CLIENTGOODBYE calls `SetSyncState(id, true)`; if the list empties the remaining players resume. Because NETSYNCERROR carries the server's array index while GOODBYE carries the client id, this matches only while no earlier client has left (array index = client id until the first removal) [I from `Server::RemoveClient` slot reuse].
+
+```mermaid
+sequenceDiagram
+    participant A as Client A
+    participant B as Client B
+    participant C as Client C
+    participant S as Server
+    A->>S: SYNCHRONISE seq k value 0x5A
+    B->>S: SYNCHRONISE seq k value 0x5A
+    C->>S: SYNCHRONISE seq k value 0x13
+    S->>S: all 3 responses for k present and not all equal, C matches nobody
+    S->>S: C.m_syncErrorSeqId = k
+    S-->>A: NETSYNCERROR index of C, date time k, k (sequenced)
+    S-->>B: NETSYNCERROR (same letter)
+    S-->>C: NETSYNCERROR (same letter)
+    A->>A: outOfSync adds C, GamePaused freezes the sim, red banner<br/>first time only dump syncerror file and SendIFrame k
+    C->>S: FTP blocks of file IFrame idC k (debug and beta builds only)
+    S-->>A: FTP relay of the IFrame files of the other clients
+    A->>A: SaveIFrame, CalculateDiff, syncdiff file and 3D markers
+    Note over A,C: no NETSYNCFIXED in the baseline, the game stays frozen until<br/>the desynced client leaves and CLIENTGOODBYE clears its flag
+```
+
+### 9.4 Consequences for players
+
+In the shipped build a desync is (a) detected late (only when it reaches the RNG draw count), (b) unrecoverable (permanent freeze for everyone), and (c) attributed to nobody in a 2-player game. The only ways out are for the flagged client(s) to leave or for everyone to quit [C §9.2–§9.3; I player experience].
+
+### 9.5 Forensic tooling
+
+| Tool | Build | Behaviour | Ref |
+|---|---|---|---|
+| Sync-rand call log | [B:DEBUG] (`TRACK_SYNC_RAND`, defined only by `TARGET_DEBUG`; commented out for `TARGET_BETATEST_GROUP_ALL`) | every synced draw appends `"%8d \| <value> \| <file basename> line %d"` (call counter since the last seed; value printed by `HashDouble`) to an `LList<char*>` ring of **100 000** lines (oldest dropped); the seed call logs `"SyncRandSeed called"`; frame markers (`Seq ID`, letter summaries via `WriteSummary`/`DecodeCmd` for the first 1000 sequence ids, slice numbers, "Advance Location", "Advance Multiwinia"); `ENTITY/UNIT ENTITY/EFFECT/Building BEFORE/AFTER` state lines around every advance; `DumpSyncRandLog(file)` writes `SyncRandSeed <n> (as signed int: <n>)` then the lines with Unix line endings; `FlushSyncRandLog()` empties the log when a client connects | [C] `contrib/systemiv/lib/math/random_number.cpp:DebugSyncRand`, `DumpSyncRandLog`; `code/network/clienttoserver.cpp:ProcessAllServerLetters`; `code/team.cpp`, `code/unit.cpp`, `code/location.cpp` |
+| Excluded streams | [B:DEBUG] | `code/worldobject/snow.cpp` and `code/worldobject/spirit.cpp` `#undef TRACK_SYNC_RAND` before including `random_number.h`, so their draws are not logged (and use the untracked formula) | [C] |
+| Entity watch list | [B:DEBUG] | `TrackEntity` (body commented out) / `WatchEntities` log `Watch Changed From/To` when a tracked entity's `LogState` changes | [C] `code/location.cpp`, `code/worldobject/entity.cpp:Entity::CreateEntity` |
+| `HashDouble` | all | prints the IEEE-754 bit pattern of a double as 16 lowercase hex digits, **least-significant nibble first** (byte-reversed text); `HashVector3` = `(h,h,h)`; `HashMatrix34` = `((r),(u),(f),(pos))` | [C] `contrib/systemiv/lib/debug_utils.cpp:HashDouble`, `code/worldobject/tree.cpp` |
+| `LogState()` formats | all | `WOBJ Type[t] Id[u] pos[x,y,z], vel[Σ]`; `ENT Type[name] Id pos vel[Σ] front[Σ]`; Darwinian adds `state`, `waypoint[x,y,z]`, `boxId`; Officer adds `state`, `waypoint[Σ]`; Building adds `front[Σ] centre[Σ] radius`; Crate `pos vel radius`; Tree adds `height`, `hitcheckCentre[Σ]`, `hitcheckRadius` (Σ = sum of components, hashed); `Building::LogState` is written before/after each building advance | [C] `code/worldobject/worldobject.cpp`, `entity.cpp`, `darwinian.cpp`, `officer.cpp`, `building.cpp`, `crate.cpp`, `tree.cpp` `::LogState`; `code/location.cpp:Location::AdvanceBuildings` |
+| Cost note | all | `Location::AdvanceBuildings` and `Unit::AdvanceEntities` call `LogState()` (two `sprintf`s with `HashDouble`) around **every** advance even in the baseline, where `SyncRandLogText` is an empty function | [C] |
+| IFrame exchange and diff | [B:DEBUG]/beta | §7 | [C] |
+| Network statistics window | [B:FULL] (`NETWORK_STATS_ENABLED`) | per client "out of sync" when the server has flagged it (§11.2) | [C] `code/interface/network_window.cpp` |
+| Command-history record/replay | all (pref `RecordDemo`) | §11.6 | [C] |
+
+Historical evidence of desync classes (release notes, supporting only): trees and height maps, laser fences, statues (Capture the Statue), the Tornado/dust-storm effect, Officers sending Darwinians into radar dishes [C] `docs/multiwiniareleasenotes-beta.txt`, `docs/multiwiniachanges-beta.txt`, `docs/multiwinia-changes.txt`.
+
+---
+
+## 10 Virtual (CPU) players in the network model
+
+- A CPU player is a **team slot** of `TeamTypeCPU` owned by the client that requested it — the host's client in practice: Play / quick start requests `numPlayers − filled` CPU teams then START_GAME (`code/UI/GameMenuWindow.cpp:UpdateGameOptions`, `code/UI/PlayGameButton.h`) [C].
+- The AI is not a network participant: when a CPU team is initialised in the world, every client spawns one `Entity::TypeAI` for it (`SpawnEntities` is asked for (−100, 0, −100) by `Location::InitialiseTeam`; [07](07_ai.md) records that the entity ends up at (20, 0, 20) after clamping) [C] `code/location.cpp:Location::InitialiseTeam`. That entity is simulated **identically on every client** as part of the lockstep simulation and sends no commands over the network — it calls simulation functions directly (`TaskManager::RunTask`, officer orders) [C: no `ClientToServer::Request*` call is made on behalf of CPU teams; AI internals in 07].
+- Monster and Futurewinian teams always get an AI entity as well (see [07](07_ai.md)).
+- When a human leaves mid-game, every client executing CLIENTGOODBYE converts that team to CPU, spawns an `Entity::TypeAI` for it, records `m_accurateCPUTakeOverTime` and shows "multiwinia_player_left" — deterministic because GOODBYE is sequenced [C] `code/multiwinia.cpp:Multiwinia::RemoveTeams`. In the lobby the slot is freed instead.
+- Server checks: CPU requests are ignored once `teams >= maxPlayers`; CPU teams count toward "server full" for humans (the browser's `NUMTEAMS` includes CPU teams) [C].
+- `docs/integrating virtual players into network system.txt` suggested a client could host "an AI running locally"; the code instead runs the AI inside the lockstep simulation on every peer [C] (docs-vs-code table).
+
+---
+
+## 11 Bandwidth, network quality, file transfer, demo limits, replay
+
+### 11.1 `BandwidthCounter` (`code/network/bandwidth.*`) [C]
+
+Fields `m_since` (s), `m_count` (bytes), `m_rate` (bytes/s). `Count(n)`: if `now − m_since > 5.0` then `m_rate = m_count / (now − m_since)`, reset the count, `m_since = now`; then `m_count += n`. `operator float` / `Rate()` return the last 5-second average (bytes/s); the rate only updates when `Count` is called. Instances: `Server::m_sendRate` (payload + 32 per datagram), `Server::m_receiveRate` (payload), `ClientToServer::m_sendRate` (payload per Advance, no header), `ClientToServer::m_receiveRate` (payload + 32). Consumers: the network statistics window (and the [B:DEAD] benchmark report). There is **no bandwidth limiting or adaptation** anywhere — only measurement.
+
+### 11.2 Network statistics window [B:FULL] (`NETWORK_STATS_ENABLED`; `code/interface/network_window.cpp`, toggled by `ControlToggleNetworkStats` in `code/user_input.cpp`, default F9 per [32](32_debug_test_and_performance.md))
+
+Shows: server sequence id and send/receive KB/s; per client id: IP:port, last acked sequence id, player name, status caption, "out of sync"; a strip of upcoming inbox sequence ids ("Ideal is 0 or 1 filled, no gaps", via `IsSequenceIdInQueue`); client last processed / server known / estimated server sequence ids, estimated latency, client sequence id and send/receive KB/s [C].
+
+### 11.3 `NetworkQuality` (`code/network/network_quality.*`) — a link simulator, not a measurement [C]
+
+Constructed as `NetworkQuality(latencyMs, packetLossProbability, bandwidthBytesPerSec)`. `Write(socket, data, len)`: calls `Advance()`; reports `len` written; if bytes queued in the last second exceed the budget the packet is silently dropped; otherwise with probability `1 − loss` (test `AppRandom() % 1000 > loss × 1000`) the packet is queued with a timestamp and counted. `Advance()`: forget packets older than 1 s from the bandwidth window; send every queued packet whose age ≥ latency. Used only when `NETWORKQUALITY_TESTING` is defined in `clienttoserver.cpp` (commented out) with `(200 ms, 0.25, 8000 B/s)` → **dead in the baseline**. The only network-quality indication shown to players is the 5-s lag banner (§8.7).
+
+### 11.4 FTP manager (`code/network/ftp_manager.*`) — reliable blob transfer over the letter channel [C]
+
+Purpose in the baseline: transfer **IFrame sync snapshots** between client and server after a desync (file name `"IFrame <clientId> <seqId>"`). It does not transfer maps, demos or benchmark results (the benchmark upload in `code/benchmark.cpp` uses an external `ncftpput` and is compiled out — `BENCHMARK_AND_FTP` [B:DEAD]). One `FTPManager("CLIENT")` per client; one `FTPManager("SERVER:<id>")` per `ServerToClient`, created lazily.
+
+- `FTP` (outgoing or incoming file): name, data, size, `numBlocks = ceil(size/1024)` (`FTP_BLOCK_SIZE` 1024), per-block `{sendTime = −1, done = false, timedOut = true}`.
+- Data letter: {COMMAND "fa", SEQID −1, FILENAME, FILESIZE int, BLOCKNUMBER int, BLOCKDATA void}. Ack letter: {COMMAND "fa", SEQID −1, FILENAME, BLOCKNUMBER ints[≤ 256]}. A letter is data iff it has BLOCKDATA.
+- Sender (`MakeSendLetters`, called each client Advance / server tick): per file, blocks unacked for > 3 × RTT become "timed out"; each such block shrinks `m_windowSize` by 1 (minimum 1) and frees a window slot; then not-done and timed-out blocks are sent while `windowUsed < windowSize`. Initial window 10, initial RTT 0.1 s.
+- Receiver: copy the block if its size matches; mark ack-to-send × 3 (`NUM_ACKS_TO_SEND`); a file is retrievable (`Retrieve`) once complete, after which duplicates are discarded via `m_finished`.
+- Ack emission (`MakeSendLettersAck`): `m_lastAckTime` is set to *now* before the timing test, so non-urgent re-acks never pass the "one RTT since last ack" test; in practice, whenever a newly received block is pending the loop emits ack letters back-to-back until every pending counter (3) is exhausted (3 identical ack letters), and an ack set is deleted on the first call where it had nothing left.
+- On ack: block done; if it had not timed out: `windowUsed−−`, `windowSize++`; RTT ← 0.9·RTT + 0.1·max(sample); completed outgoing files are removed.
+- `Reset` (on `ClientLeave`) cancels everything; the `Lock/Unlock` mutex exists but callers do not use it.
+
+### 11.5 Demo limitations (`code/network/demo_limitations.*`) [C]
+
+Filled from metaserver data type `"Demo2Limits"` (`ClientToServer::GetDemoLimitations` → `MetaServer_RequestData`), else defaults:
+
+| Field (metaserver key) | Default | Used by |
+|---|---|---|
+| `m_maxGameSize` ("MaxDemoGameSize", int) | 4 | no reader in the baseline |
+| `m_maxDemoPlayers` ("MaxDemoPlayers", int) | 4 | `App::MultiplayerPermitted` (a demo may play online iff > 0) |
+| `m_allowDemoServers` ("AllowDemoServers", bool) | true | `App::HostGamePermitted`; the WAN registration thread refuses to register a demo-key server when false |
+| `m_allowedGameModes` ("DMo", int bit mask by `Multiwinia::GameType`) | (1<<1)\|(1<<2)\|(1<<4) = 22 = KingOfTheHill, CaptureTheStatue, RocketRiot | `App::IsGameModePermitted` (demo only) |
+| `m_allowedMapCRCs` ("DMa", ints) | `0xfa61f648` MP_KOTH_2P_1, `0x88897d17` MP_KOTH_4P_1, `0x00486fb0` MP_CTS_2P_1, `0xc5dbe61e` MP_KOTH_3P_1, `0x847aae73` MP_ROCKETRIOT_3P_1 | `App::IsMapPermitted` (demo only, unless `PERMITTED_MAPS`) |
+
+All five keys must be present with the right types or the defaults are used. Demo = runtime `IS_DEMO` gate [B:DEMO runtime] (`!App::IsFullVersion()` = own key is a demo key) [C] `code/network/demo_limitations.cpp:DemoLimitations::Initialise`, `code/app.cpp`.
+
+### 11.6 Record / replay of the command stream [C]
+
+Preference `RecordDemo`: 1 ⇒ `Server::SaveHistory("serverHistory.dat")` on game shutdown (`code/app.cpp:App::ShutdownCurrentGame`); 2 ⇒ `Server::LoadHistory("ServerHistory.dat")` after a location loads (`code/main.cpp:DoEnterLocation`); both values also switch `UpdateAdvanceTime` to a fixed fake clock (`DemoFrameRate`, default 25) for AVI capture. File = raw host-endian `int` count + `Directory::Write` of every history letter. `LoadHistory` sets `m_sequenceId = seqId + 1` only when `seqId > m_sequenceId` (it skips the update when equal — a quirk).
+
+Resolved: P15 presented the history as a full replay "subject to identical code/data and sync seed", X3 as reproducing a match "only by accident". Code shows both caveats are real: the sync seed travels in the unsequenced CLIENTID and is **not** in the file, and the history is loaded **after** the replaying session's own START_GAME has already been processed, replacing the history the client is consuming mid-stream [C `Server::LoadHistory`, `DoEnterLocation`; I consequence]. It is therefore a developer tool that reproduces a match only if seed and alignment happen to match; not a player-facing replay feature.
+
+---
+
+## 12 Lobby and server discovery protocol
+
+The **server side** of the metaserver and matchmaker (directory, key validation, NAT relay) is an external Introversion service whose source is **not in this tree**; everything below is the client-side protocol as implemented in `contrib/systemiv/lib/metaserver/*` plus the game's use of it (22-U1). The screens built on it (browser, filters, quick match) are in [09 §5.8–§5.9](09_meta_systems.md#58-lanwan-server-browser-pagejoingame-4).
+
+### 12.1 Components and endpoints [C] `code/app.cpp:App::InitMetaServer`, `contrib/systemiv/lib/metaserver/metaserver_defines.h`
+
+| Component | Role | Endpoint |
+|---|---|---|
+| MetaServer (WAN directory, external service) | server registration/listing, key authentication, small data items (MOTD, latest version, demo limits) | host `metaserver-mwdev.introversion.co.uk` (the *dev* host is compiled in), UDP `PORT_METASERVER_LISTEN` = **5113** |
+| MatchMaker (same host and port) | tells a socket its public IP:port (STUN-like) and relays hole-punch requests | same |
+| MetaServer client listener (in game) | receives list results, auth results, data and LAN broadcasts | local UDP **5009** (`PORT_METASERVER_CLIENT_LISTEN`), falling back to an OS-chosen port (LAN discovery then cannot work) |
+| LAN discovery | game servers broadcast REGISTER every 5 s (`PERIOD_SERVER_REGISTER_LAN`) | `255.255.255.255:5009`, from the listener socket with `SO_BROADCAST` |
+| Game server / client | lockstep traffic | UDP 4000 / 4001 |
+
+Start-up [C] `App::InitMetaServer`: `Authentication_LoadKey("<profile>authkey.dev")`, `Authentication_SetKey`, `Authentication_RequestStatus(key, METASERVER_GAMETYPE_MULTIWINIA = 4)`, `MetaServer_Initialise` (WinSock), `MetaServer_Connect(host, 5009)`, `MatchMaker_LocateService(host, 5113)`. Game type ids: Defcon 2, Multiwinia 4; `PORT_DEFCON_METASERVER_LISTEN` = 5008 is also defined. All metaserver traffic is Directory-encoded (§4.2) with node name `NET_METASERVER_MESSAGE` = `"m"` and command field `"c"`; the matchmaker node name is `NET_MATCHMAKER_MESSAGE` = `"match"` [C].
+
+### 12.2 Metaserver / matchmaker message catalogue [C] `contrib/systemiv/lib/metaserver/metaserver.cpp`, `matchmaker.cpp`, `authentication.cpp`
+
+| Code | Symbol | Direction | Fields | Notes |
+|---|---|---|---|---|
+| ma | REGISTER | game server → metaserver (WAN, every TTL/3 ± 1.5 s or on change) and → LAN broadcast (every 5 s or on change) | server properties (§12.3) + COMMAND | demo-key servers skip WAN registration when Demo2Limits.AllowDemoServers is false |
+| mb | REQUEST_LIST | client → metaserver | AUTHKEY, GAMENAME, GAMEVERSION, [ORIGINVERSION "dH"] | refused locally if the own key fails the simple check |
+| mc | LISTRESULT | metaserver → client | one server's properties incl. IP "da", PORT "db" [+ metaserver-added fields, I: PROTOCOLMATCH "dp", DEMORESTRICTED "demo", DEMOSERVER "dz"] | `MetaServer_UpdateServerList(ip, port, WAN, dir)` |
+| mg | LISTRESULT_ENVELOPE | metaserver → client | any number of VOID fields, each a serialised LISTRESULT Directory | unpacked recursively |
+| md | REQUEST_AUTH | client/server → metaserver | AUTHKEY, AUTHKEYID, GAMENAME, GAMEVERSION, [IP of the joining client] | from the authentication thread |
+| me | AUTHRESULT | metaserver → requester | AUTHRESULT "me" int status, AUTHKEY, AUTHKEYID, [HASHTOKEN "ds" int] | sets the key status and the hash token |
+| mf | REQUEST_DATA | both directions | request: DataType, [LANGUAGE "ec"], GAMENAME, GAMEVERSION, AUTHKEY, ORIGINVERSION; reply: DataType + payload fields + optional DataTTL (s; < 0 never expires) | cached per type |
+| mh | REQUESTSERVERDETAILS | client → metaserver | client properties + IP, PORT | `MetaServer_RequestServerDetails` — no caller in `code/` |
+| mi | UNREGISTER | game server → metaserver (× 3) and LAN (× 3) | PORT (WAN: advertised port; LAN: the local port value under key PORT) | the receiver expects LOCALPORT and an AUTHKEY, neither of which is sent → LAN delisting never matches; entries simply expire [C] |
+| aa | REQUEST_IDENTITY ("match") | any listener → matchmaker, every 10 s (`PERIOD_MATCHMAKER_REQUESTID`) | UNIQUEID "ae" int, GAMENAME, GAMEVERSION, AUTHKEY | keeps the NAT mapping alive |
+| ab | IDENTIFY ("match") | matchmaker → listener | UNIQUEID, YOURIP "af" str, YOURPORT "ag" int | first answer per request id wins |
+| ac | REQUEST_CONNECT ("match") | joining client → matchmaker (every 1 s while connecting), relayed to the target server [I] | GAMENAME, GAMEVERSION, AUTHKEY, IP (client public IP), PORT (public port, or the local listener port with port forwarding), TARGETIP "ah", TARGETPORT "ai" | server side requires IP and PORT |
+| ad | RECEIVED_CONNECT ("match") | game server → client's public ip:port | — | the outbound packet punches the server's NAT; the client only logs it. Any other "match" command ⇒ `AppAbort("unrecognised matchmaker message")` — a **remote crash vector** [C] `matchmaker.cpp:MatchMaker_ReceiveMessage` |
+| sa…sh | STEAM_* | — | Steam authentication | **dead** (files not compiled) |
+
+Field keys for server/client properties [C] `metaserver_defines.h` ("unused" = no reader/writer in compiled code): IP da, PORT db, FROMIP dc, FROMPORT dd, LOCALIP de, LOCALPORT df, SERVERNAME dg, GAMENAME dh, GAMEVERSION di, NUMTEAMS dj, NUMDEMOTEAMS dk (unused), MAXTEAMS dl, NUMSPECTATORS dm, MAXSPECTATORS dn, PROTOCOL do (unused), PROTOCOLMATCH dp, AUTHKEY dq, AUTHKEYID dr, HASHTOKEN ds, PASSWORD dt (unused), RECEIVETIME du (unused), GAMEINPROGRESS dv, GAMEMODE dw, SCOREMODE dx (unused), GAMETIME dy (unused), DEMOSERVER dz, DELISTED dA, RANDOM dB, STARTTIME dC, SEARCHRESULT dD (unused), MAPCRC dE, MAPINDEX dF (unused), MASTERPLAYER dG (unused), ORIGINVERSION dH, HASPASSWORD dI, CUSTOMMAPNAME dJ ([B:EDITOR]), DEMORESTRICTED "demo", LANGAME "lan", PLAYERNAME pn / PLAYERSCORE ps / PLAYERALLIANCE pa (unused), NUMHUMANTEAMS ea, MODPATH eb (unused), LANGUAGE ec.
+
+Data types (`DataType` values) [C]: Time, MOTD (requested with the language), DemoLimits (unused), Demo2Limits (§11.5), KeyLimits (unused), LatestVersion (main menu shows "update available" when ≠ `APP_VERSION`), UpdateURL, StressServers / StressClients (unused), ServerTTL (string seconds; default 60, minimum 10). Reply fields DataTTL, DataExpired, TimeHours, TimeMinutes, MaxDemoGameSize, MaxDemoPlayers, AllowDemoServers, AllowDemoLanPlay (unused), DMo, DMa.
+
+`MetaServer_RequestData` caching [C]: the first call creates an empty entry expiring in 1 s and returns NULL; a request is only sent when an existing entry has expired (so the first network request goes out on a call ≥ 1 s after the first); retry interval 1 s, 60 s after more than 10 failed retries; expired-but-present data is still returned with a `DataExpired` counter.
+
+### 12.3 What a hosting server advertises — `Server::Advertise` (every server tick) [C] `code/network/server.cpp:Server::Advertise`
+
+Not advertised when: no map chosen (`m_requestedMap` "null"/empty), `m_noAdvertise` (set at server start; cleared when a non-null map is chosen on a multiplayer host), game type −1, own key fails the simple check, or single player. Otherwise both LAN and WAN registration run.
+
+| Field | Value |
+|---|---|
+| SERVERNAME | pref `ServerName`, default pref `PlayerName`, default `"NewServer"` |
+| GAMENAME / GAMEVERSION | `"Multiwinia"` / `APP_VERSION` (`DARWINIA_VERSION` = `"dev"` in this tree) |
+| STARTTIME / RANDOM | server wall-clock start (u64) / `m_random` — the browser's de-duplication key |
+| LOCALIP / LOCALPORT | `GetLocalHostIP()` / server listener port |
+| NUMTEAMS | `m_teams.NumUsed()` (humans + CPU), uchar |
+| MAXTEAMS | requested map's `m_numPlayers` (1 if the map is not found), uchar |
+| NUMHUMANTEAMS | `m_clients.NumUsed()` (connected clients incl. the host), uchar |
+| NUMSPECTATORS / MAXSPECTATORS | 0 / 0 |
+| GAMEINPROGRESS | `Multiwinia::GameRunning()` (0/1) |
+| GAMEMODE | `Multiwinia::m_gameType` (0 Domination/Skirmish, 1 KotH, 2 CtS, 3 Assault, 4 Rocket Riot, 5 Blitzkrieg, 6 Tank Battle) |
+| HASPASSWORD | 1 if a password is set (field absent otherwise) |
+| MAPCRC | map id/CRC of the requested map |
+| AUTHKEY | the host's **full plaintext key** |
+| PORT | local port if `NetworkUsePortForwarding`, else the matchmaker-identified public port if known, else absent |
+
+`MetaServer_SetServerProperties` stores a copy and signals both registration threads only when the properties changed (`Directory::operator!=`), so changes propagate immediately while unchanged properties are re-sent at the normal period [C].
+
+### 12.4 NAT traversal [C] `contrib/systemiv/lib/metaserver/matchmaker.cpp`, `Server::Advertise`, `ClientToServer::Advance`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::JoinServer`
+
+1. When a host starts WAN advertising it starts identity requests for its game listener; when a player opens the Join Game (or Quick Match) page the client starts identity requests for its client listener (stopped when leaving those pages unless moving to the connecting page, and on `ClientLeave`).
+2. The public IP:port learned through IDENTIFY becomes the server's advertised PORT and the client's "our details".
+3. While connecting, the client sends REQUEST_CONNECT via the matchmaker and CLIENT_JOIN directly every second (`PERIOD_MATCHMAKER_REQUESTCONNECTION` = 3 s is defined but unused); the server's RECEIVED_CONNECT reply to the client's public address opens the server-side NAT so the next JOIN gets through [I: standard UDP hole punch; matchmaker behaviour is server-side and not in the tree].
+4. LAN shortcut: if the client's own public IP equals the server's listed IP, it connects to the server's LOCALIP:LOCALPORT instead.
+5. `NetworkUsePortForwarding = 1` bypasses identification for the advertised/declared port.
+
+### 12.5 Authentication keys [C] `contrib/systemiv/lib/metaserver/authentication.*`, `contrib/systemiv/lib/math/hash.cpp:HashData`
+
+Status codes: −10 UnknownGame, −9 WrongPlatform, −8 KeyDead, −7 VersionNotFound, −6 KeyInactive, −5 VersionRevoked, −4 KeyNotFound, −3 KeyRevoked, −2 KeyBanned, −1 KeyInvalid, 0 Unknown, 1 Accepted (UI phrases `dialog_auth_*`).
+
+- Key format: `AUTHENTICATION_KEYLEN` 32 incl. NUL ⇒ 31 characters (pattern `XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXX`). In this source release `Authentication_SimpleKeyCheck` only checks the length and `Authentication_GenerateKey` always yields a fixed demo key — the real algorithm was stripped (22-U2).
+- Demo key ⇔ in a two-entry blacklist, or the metaserver says KeyNotFound, or (not a hash and) starts with `"DEMO"`. Ambrosia keys start with `"AMBR"` (unused).
+- Hash for transmission: `"hsh"` + 5 × `%04x` of SHA-1(`"<key>-<hashToken>"`), the token supplied by the metaserver in AUTHRESULT. Remote joiners send the hash + key id; the host's own client and demo keys send the plain key.
+- Authentication thread: every 2 s (`PERIOD_AUTHENTICATION_RETRY`), the first key with status Unknown and < 5 tries: simple-check failure ⇒ that status; demo key ⇒ Accepted locally; else REQUEST_AUTH. Results are cached per key string for the session.
+- Server use: §8.4. Key files: read `authkey.dev`, written `authkey` — which one shipped is open (see [09](09_meta_systems.md) / [31](31_platform_build_and_tools.md)).
+
+### 12.6 Client-side server list [C] `contrib/systemiv/lib/metaserver/metaserver.cpp`
+
+- Entries `GameServer {identity "ip:port", updateTime, authResult, receivedWan, receivedLan, Directory *data}` under `s_serverListMutex`.
+- Update: matched by identity, or by equal AUTHKEY (unless the entry is demo-restricted — "one key can only run one server at once"); a LAN receipt adds `"lan" = true`. LAN identity = broadcast source IP + LOCALPORT.
+- Purge on every `GetServerList`: drop entries not refreshed within `s_serverTTL` = **30 s** (`MetaServer_SetServerTTL` has no caller).
+- `GetServerList(authRequired, wan, lan, max)`: copies, adds AUTHRESULT, skips WAN entries without PORT.
+- `MetaServer_GraduallySortList` (one bubble pass; no caller in `code/`): score 0 open lobby with room, 10/20 otherwise; running 30 − players or 40; game over 50 (its spectator terms read the team fields — bug).
+
+### 12.7 Browser-side protocol rules (UI in 09)
+
+- Compatibility test: `PROTOCOLMATCH` if present (metaserver-supplied), else `GAMEVERSION == APP_VERSION`; with every build reporting `"dev"`, mixed builds (GL vs D3D, debug vs release, PC vs Mac) look compatible (§14.13) [C] `code/UI/GameMenuWindow.cpp`.
+- De-duplication: WAN duplicates of LAN entries (same STARTTIME + RANDOM) are dropped; delisted entries are dropped [C].
+- "Hide passworded" tests key `"dy"` while servers advertise `HASPASSWORD "dI"`, so it filters nothing [C].
+- Quick match joins the first protocol-compatible, not-full entry (no ping, region or skill matching); in [B:FULL] the Quick Match page is unreachable from the menus — see [09 §5.9](09_meta_systems.md#59-quick-match-pagequickmatchgame-5--unreachable).
+
+---
+
+## 13 Threads and locking
+
+| Thread | Created by | Loop | Shared data touched | Lock |
+|---|---|---|---|---|
+| Main (game) thread | process | menus/lobby/location loops call `Server::AdvanceIfNecessary` then `ClientToServer::AdvanceAndCatchUp`; all simulation, all sends (`AdvanceSender` of both sides), server sequencing, sync checks, advertising property updates | everything | `m_inboxMutex` / `m_outboxMutex` around queue operations |
+| Loading-screen pump | runs on the main thread while a `WorkQueue` worker loads the level (`LoadingScreen::Render` loops until its work queue is empty) [I] | renders, `ClientToServer::KeepAlive` (SYNCHRONISE 1/s) and `Server::AdvanceIfNecessary`; executes display-list jobs queued by the worker | client/server | `g_app->m_networkMutex.TryLock()` (skips if busy) |
+| Level-load worker | `WorkQueue` (`code/main.cpp:EnterLocation`) | `Location::Init` (draws synced RNG) | simulation state | `WorkQueue` mutex/events; never concurrent with frame execution [C] |
+| Server listener | `Server::Initialise` → `NetStartThread(ListenThread)` | blocking `recvfrom` on the server port (pref `NetworkServerPort`, default 4000); parse Directory; `Server::ReceiveLetter` | `Server::m_inbox`, matchmaker listener table, `m_receiveRate` (unlocked) | `m_inboxMutex`; `s_listenersMutex` |
+| Client listener | `ClientToServer::OpenConnections` → `WorkQueue::Add(ListenThread)` (once at start-up) | blocking `recvfrom` on the client port (pref `NetworkClientPort`, default 4001, else OS-chosen); `ClientToServer::ReceiveLetter` (sorted insert) | `m_inbox`, `m_lastValidSequenceIdFromServer`, `m_serverSequenceId` (written unlocked), `g_gameTimer.m_estimatedServerStartTime` (unlocked) | `m_inboxMutex` for the inbox only |
+| MetaServer listener | `MetaServer_Connect` | blocking `recvfrom` on port 5009 (else OS-chosen); `ReceiveDirectory` | server list, data cache, auth results | `s_serverListMutex`, `s_metaServerDataMutex`, `s_authResultsMutex` |
+| WAN registration | `MetaServer_StartRegisteringOverWAN` | send REGISTER, wait `TTL/3 + sfrand(3.0)` s or until properties change | `s_serverProperties`; the **global non-synced LCG** (`sfrand`) | `s_serverPropertiesMutex`; `s_wanRegisterEvent` |
+| LAN registration | `MetaServer_StartRegisteringOverLAN` | broadcast REGISTER, wait 5 s or until change | `s_serverProperties`, `s_socketToLAN` | `s_serverPropertiesMutex`, `s_socketToLANMutex`; `s_lanRegisterEvent` |
+| Authentication | first `Authentication_RequestStatus` | every 2 s: next Unknown key (< 5 tries) | `s_authResults` | `s_authResultsMutex` |
+| Matchmaker identity (one per identified listener) | `MatchMaker_StartRequestingIdentity` | every 10 s send REQUEST_IDENTITY from that listener's socket | `MatchMakerListener` record | `s_listenersMutex` (the thread later deletes its record without the lock) |
+
+`g_app->m_networkMutex` additionally guards `App::StartSinglePlayerServer` and the forced flush in `ClientLeave` [C] `code/app.cpp`, `code/network/clienttoserver.cpp`. Only the main and level-load threads ever run simulation code, and never concurrently [C]. x87 precision is standardised on the main thread and on every `WorkQueue` thread (which includes the client listener); the `NetStartThread` threads (server listener, metaserver threads) are not standardised and do no simulation math [C] `code/lib/work_queue.cpp:WorkQueue::RunThread`, `code/main.cpp:StandardiseCPUPrecision`. Full thread map: [20 §11](20_architecture.md#11-threading-model). `docs/NetworkThreads.txt` describes dedicated send threads that suspend when queues are empty; the code sends synchronously from the main thread (docs-vs-code table).
+
+---
+
+## 14 Determinism model
+
+### 14.1 Scope
+
+This section states every rule the lockstep model depends on, where the code follows it and where it breaks it. "Simulation" means everything executed from `ClientToServer::ProcessAllServerLetters` (command application, `GameTimer::Tick`, `Location::Advance`, `Multiwinia::Advance`) and `Location::Init` (level load); "cosmetic" means anything that may legitimately differ between peers.
+
+### 14.2 Random number generators — every generator in the live code
+
+| # | Generator (call form) | Algorithm and state | Seeding | Output (as implemented) | Synced? | Thread(s) that call it | Ref |
+|---|---|---|---|---|---|---|---|
+| G1 | `syncrand()` → `_syncrand()` | **MT19937** (Matsumoto–Nishimura 2002 `init_genrand`, N = 624, M = 397, `MATRIX_A 0x9908B0DF`, `UPPER_MASK 0x80000000`, `LOWER_MASK 0x7FFFFFFF`, tempering `y ^= y>>11; y ^= (y<<7) & 0x9D2C5680; y ^= (y<<15) & 0xEFC60000; y ^= y>>18`); state = file-static `unsigned long mt[624]`, `int mti` (625 = unseeded), `mag01[2]`, `s_randseed`, a call counter | `syncrandseed(s)`: `s == (unsigned long)−1` → 5489, else `s`; `mt[0] = s`, `mt[i] = 1812433253 × (mt[i−1] ^ (mt[i−1] >> 30)) + i` (32-bit) for i = 1…623; resets the call counter. If `_syncrand` runs before any seed it calls `syncrandseed()`, whose default argument is **0** (not 5489) | 32-bit unsigned `[0, 2³²−1]` (`unsigned long` is 32 bits on Win32) | **yes** | main thread (frames) and the loading worker thread (`Location::Init`) — never concurrently | [C] `contrib/systemiv/lib/math/random_number.cpp:syncrandseed`, `_syncrand` |
+| G2 | `syncfrand(r)` → `_syncfrand(r)` | `(_syncrand() × r) / 4294967296.0` in double | G1 | `[0, r)` for r > 0 | yes | as G1 | [C] `_syncfrand` |
+| G3 | `syncsfrand(r)` → `_syncsfrand(r)` | `(_syncfrand(1.0) − 0.5) × r` | G1 | **`[−r/2, r/2)`** (the header comment says `−range < result < range`; wrong) | yes | as G1 | [C] `_syncsfrand`, `random_number.h` |
+| G4 | `FRAND(x)`, `SFRAND(x)` inside `Vector3(…)` / `Vector3::Set(…)` | marker structs `RandomFloat{v}` / `SymmetricRandomFloat{v}`; the templated `Vector3` constructor / `Set` calls `FromRand` on x, then y, then z, which calls `_syncfrand(v)` / `_syncsfrand(v)`. Purpose: C++ leaves argument evaluation order unspecified, so draws written directly as constructor arguments would be consumed in compiler-dependent order | G1 | as G2/G3 | yes | as G1 | [C] `code/lib/vector3.h` (`RandomFloat`, template ctor), `code/lib/vector3.cpp:FromRand` |
+| G5 | `RandomNormalNumber(mean, range)`, `RandomApplyVariance(num, var)` | Irwin–Hall: sum of 12 `syncfrand(1.0)`, `s = (sum − 6) × range/3 + mean`, clamped to `mean ± range`; `RandomApplyVariance = num × (1 + RandomNormalNumber(0, var))` | G1 | clamped normal | yes | — | [C] `random_number.cpp`; **no callers** in the live code [C grep] |
+| G6 | `AppRandom()`, `frand(r)`, `sfrand(r)`, `AppSeedRandom(s)` | **MSVC `rand()` clone LCG**: `holdrand = holdrand × 214013 + 2531011` (`static long`, initial 1, wraps), returns `(holdrand >> 16) & 0x7FFF`; `frand(r) = r × AppRandom()/32767`, `sfrand(r) = (0.5 − AppRandom()/32767) × r` | `AppSeedRandom(1)` in `Location::Init` (after `LoadLevel`, before the landscape), in the `GlobalInternet` constructor (start-up); reseeded with `m_seed` by every tree geometry pass; `landscape_renderer` reseeds per vertex with `x \| (y + AppRandom())`; never reseeded otherwise | `AppRandom ∈ [0, 32767]` **inclusive** (header comment: `< APP_RAND_MAX`); `frand ∈ [0, r]` inclusive; `sfrand ∈ [−r/2, r/2]` (header comments claim `[0, r)` and `(−r, r)`) | **no** | main thread; loading worker thread (tree hit-sphere pass, landscape colours); **MetaServer WAN-registration thread** (`sfrand(3.0)`); sound code on the main thread | [C] `random_number.cpp:AppRandom/frand/sfrand`; `code/location.cpp:Location::Init`; `code/worldobject/tree.cpp:Tree::Generate`; `contrib/systemiv/lib/metaserver/metaserver.cpp` (WAN registration thread) |
+| G7 | CRT `rand()` | MSVC CRT LCG, per-thread state under the static multithreaded CRT (`RuntimeLibrary="0"`) [I: CRT behaviour] | `srand` is called only in dead code (`TESTBED_ENABLED` block of `GameMenuWindow.cpp`, `egames_loader.cpp`) → default seed 1 per thread | `[0, 32767]` | no | main thread | [C] `code/worldobject/tree.cpp:Tree::Advance` (leaf particles), `code/worldobject/darwinian.cpp:Darwinian::AdvanceInfection` (plague particles), `code/worldobject/randomiser.cpp:Randomiser::Render`, `code/multiwiniahelp.cpp:MultiwiniaHelp::AttachTo3d`, `code/worldobject/portal.cpp` [B:LEGACY] |
+| G8 | `LandscapeTile::LandscapeAppRandom/Landscapefrand/Landscapesfrand` | same LCG constants as G6 but a **per-tile private** `m_holdrand` | `LandscapeAppSeedRandom(m_randomSeed)` from the level file before each tile's generation | as G6 | deterministic by construction (simulation-relevant: height map) | loading worker thread | [C] `code/landscape.cpp`; [23](23_terrain_and_landscape.md) |
+| G9 | Orphan `::syncrand()` in `code/lib/math_utils.cpp` | a second MT19937 copy (`init_genrand(5489)` on first use, file-static state) | none exported | — | — | **never called**: every `syncrand()` in code is rewritten to `_syncrand` by the `random_number.h` macro; `math_utils.cpp` does not include that header and `math_utils.h` does not declare the function [C grep]; dead duplicate [I] | [C] `code/lib/math_utils.cpp:syncrand` |
+| G10 | Server session seed | `MakeRandom() = GetCurrentThreadId() XOR (low 32 bits of the bit pattern of the double GetHighResTime())`; `GenSyncRandSeed = (int) SHA1(LE32(random) ‖ LE64(bits(m_startTime)))[word 0]` where `m_startTime = GetHighResTime()` at `Server::Initialise` | per `Server::Initialise` | int | it *is* the seed | main thread | [C] `code/network/server.cpp:MakeRandom`, `GenSyncRandSeed`, `Server::Initialise`; `contrib/systemiv/lib/hash.h:Hash` |
+
+`m_random` and the wall-clock start time `time(NULL)` (`m_startTimeActual`) are also published (CLIENTHELLO, metaserver STARTTIME/RANDOM) and used as the server's identity key in the browser (`code/UI/GameMenuWindow.cpp:ServerKey`) [C]. Resolved: P04 described `syncfrand` as an LCG; it is MT19937 (G1) [C].
+
+**Debug-only forms** [B:DEBUG] (`TRACK_SYNC_RAND`): `syncrand()` → `DebugSyncRand(__FILE__, __LINE__)`, `syncfrand(x)` → `DebugSyncFrand(file, line, 0.0f, x)`, `syncsfrand(x)` → `DebugSyncFrand(file, line, −x/2.0, x/2.0)` computing `min + (r × range) × (1/2³²)`. Consequences [C code, I consequence]: (a) the tracked `syncsfrand` is **not bit-identical** to the untracked one (`−x/2 + r·x·2⁻³²` vs `(r·2⁻³² − 0.5)·x` round differently), so tracked and untracked builds cannot play together (in addition, `INCLUDE_THEBEAST` changes `Crate::NumCrateRewards` in debug builds); (b) the macro does not parenthesise `x` — harmless today because no call passes a top-level `+`/`−` expression [C: scripted check over all 148 `syncsfrand` arguments].
+
+### 14.3 Seeding and lifetime of the synced stream
+
+1. **One stream per server session = one match.** `App::ShutdownCurrentGame` calls `ClientToServer::ClientLeave` and deletes `m_server`; the next game creates a new `Server` with a new seed [C] `code/app.cpp:App::ShutdownCurrentGame`, `Server::Initialise`. Resolved: P01 (D9) and the coordinator log stated the sync RNG is "seeded only at client join, never per match"; both are true, but because every match runs in a fresh server session the client re-joins and re-seeds before each match, and no synced draw happens in the lobby (item 3), so no RNG state carries between matches [C].
+2. The seed travels in the **unsequenced** CLIENTID reply; on receipt every client calls `syncrandseed(randomSeed)`, resets `g_lastProcessedSequenceId = −1`, `Multiwinia::Reset()`, option versions, and then replays the server history from sequence 0 [C] `ClientToServer::ProcessServerLetters` (CLIENTID branch). This is the only `syncrandseed` call in `code/` [C grep].
+3. In the lobby no synced draw happens: `IFrame::Generate` returns before drawing when there is no `Location`, and `Location::Advance`/`Multiwinia::Advance` are not called without a location [C] `code/network/iframe.cpp:IFrame::Generate`, `ProcessAllServerLetters` (`if( loc )`). No synced call exists in UI, render, sound or input code [C: scripted census, §14.5 — 0 of 655 baseline sites are in `code/UI`, `code/interface` (except the `CHEATMENU_ENABLED` window), `code/sound`, or in functions whose name contains `Render`/`Draw`].
+4. START_GAME is processed inside an UPDATE letter; `m_loadingLocation` stops further letter processing until `Location::Init` (run on the loading-screen **worker thread** by `DoEnterLocation`) has finished; Init's synced draws (unused-team colours `syncrand() % MULTIWINIA_NUM_TEAMCOLOURS / 2` retry loop, start positions in team-index order — `GetTeamPosition(i)` is called for all 6 slots — CPU colours, co-op pairing, Assault sides, building/AI initialisation, starting power-ups) therefore occur at the same logical point on every peer, provided every peer loads with identical `LobbyTeam` state (colour ids, types) [C] `code/main.cpp:EnterLocation/DoEnterLocation`, `code/location.cpp:Location::Init/GetTeamPosition/SetupCoop/SetupAssault/InitialiseTeam`.
+5. Late joiners re-simulate the whole match from sequence 0 (§2.3, §8.8).
+6. Under `TESTBED_ENABLED` [B:DEBUG] the server can override the seed (`m_bRandSeedOverride`, `m_iRandSeed`) [C] `Server::SendClientId`.
+
+### 14.4 RNG discipline rules the code follows (and where it breaks them)
+
+| Rule | Status | Evidence |
+|---|---|---|
+| R1 Every gameplay decision draws from G1–G4 | Followed in all inspected simulation code (crate outcomes, AI choices, spawn timers, damage rolls, conversions, scatter) | [C] census §14.5; partition notes §14.15 |
+| R2 Fixed draw order inside an expression | Enforced by `FRAND/SFRAND` for `Vector3`; `GenerateTrees` explicitly sequences eight `syncrand()` calls for the same reason; spawners write `posY = syncfrand(...)` on its own line before x and z. **One violation**: `SpiritStore::AddSpirit` builds `Vector3(syncsfrand(a), syncsfrand(b), syncsfrand(c))` (three raw draws as constructor arguments → x/y/z permutation is compiler-dependent) — [B:LEGACY] (SpiritStore is used only by the blocked Factory) | [C] `code/worldobject/spiritstore.cpp:SpiritStore::AddSpirit`; scripted multi-draw-per-statement search found no other case |
+| R3 Draw *count* must not depend on local state | Followed except where local state leaks (§14.11). Cosmetic effects inside `Advance` sometimes draw from the synced stream (e.g. `ArmyAnt::Advance` leg shape `syncrand()%3` every tick per ant, `Snow`/`Zombie` wobble `syncsfrand(1)` × 3 + `syncfrand(20)` per object per tick, `Meteor` fire size `syncsfrand(60)` × 5 per tick, `Triffid` fire size, `GunTurret` shell casings `SFRAND(0.5)` × 3 + `syncfrand(20)` per shot and overheat smoke, `Squadie::Attack` brass, `Missile` trail size, `Darwinian::AdvanceBeingAbducted` spark `syncfrand(1) < 0.5`, `BoxKite` brightness `syncfrand(0.5)` per tick, `EruptionMarker` idle `syncrand()`) — harmless but they must be preserved draw-for-draw if bit-compatibility were ever wanted | [C] CSV column `cosmetic_hint`; P04, P05, P06, P07 notes |
+| R4 Variable-length rejection loops | Deterministic given identical inputs; several are unbounded: `Crate::CaptureCrate` if no valid type exists, `RunNuke` sea search (every shipped map has ≥ 26.2 % sea, so it terminates — [04](04_crates_powerups_and_weapons.md)), `RunSpaceShip` land search, AI target-area loops, StartingPowerups, `RunEggs`, `FindTargetBuilding` retries, squad/armour/harvester/engineer valid-point loops, `RunGunTurretBlitzkrieg` spacing, `RRFindDropoffPoint`, the `Location::Init` colour loop and `Multiwinia::GetCPUColour` (unbounded if all four CPU colours are taken) | [C] P08 §17, P02 D10; `Location::Init` |
+| R5 Short-circuit evaluation changes stream length | e.g. `syncfrand(1.0) < 0.9` is evaluated only when `m_rewardId == −1` in crate capture (a forced reward shortens the stream) | [C] P08 §17 |
+| R6 Unsynced generators never feed the sim | Followed, with one sanctioned exception: tree geometry (G6 reseeded from `Tree::m_seed`) produces the **simulation** hit sphere `m_hitcheckCentre/m_hitcheckRadius` used for fire spread (§14.7) | [C] `code/worldobject/tree.cpp:Tree::Generate`, `RenderBranch`, `Tree::Advance` |
+| R7 Constructors that draw | `AI::AI` (4 draws), `Darwinian::Darwinian` (2), `Engineer::Engineer`, `Snow::Snow` (4), `Zombie::Zombie` (4), `Triffid::Triffid`, `TriffidEgg::TriffidEgg`, `Virii::Virii`, `BoxKite::BoxKite`, `AIObjectiveMarker::AIObjectiveMarker`, `SpawnPoint` (2: `m_evaluateTimer`, `m_spawnTimer`), `SpawnPopulationLock` (1), `UnprocessedSpirit` (4), `GunTurret::Initialise` (3, `SearchForRandomPos`) draw from G1. `LevelFile::ParseBuildings` constructs a template object per level building and `Location::InitBuildings` constructs the real one again, so e.g. every map-placed AIObjectiveMarker (present in 16 `mp_*` maps) draws twice during load. Safe only because no UI/editor/preview code constructs these classes in the baseline (`Building::CreateBuilding` outside the sim occurs only in `LOCATION_EDITOR`, `CHEATMENU_ENABLED` and `SOUND_EDITOR` windows, plus the single-player tutorial's crates, whose constructor/`Initialise` do not draw). `Entity::SetType` draws `syncfrand(Rate)` on every spawn — **twice for Darwinians** (constructor `SetType` + `SpawnEntities → SetType`). `Unit::s_offsets` (formation jitter) is generated lazily on the first `Unit::GetFormationOffset` call with 100 `syncfrand(1.0)` draws (hidden RNG consumption; a port should generate it eagerly at a fixed point) | [C] CSV rows with `init/create`; `code/level_file.cpp:LevelFile::ParseBuildings`, `code/location.cpp:Location::InitBuildings`, `code/unit.cpp:Unit::GetFormationOffset`, `code/worldobject/entity.cpp:Entity::SetType` |
+
+### 14.5 Census of synced call sites (generated)
+
+Scripts: `_work/scripts/X3_rng_sites.py` (comment-stripping, evaluates every `#if/#ifdef/#elif/#else` against the baseline macro set, attributes each call to its enclosing function) → `_work/drafts/X3_syncrand_sites.csv` (684 rows; columns `file,line,function,generator,argument,context,decides,cosmetic_hint,liveness,build,compiled,kind,preproc_conditions,statement`). `decides` is a heuristic (assignment target, `condition`, or the callee the value is passed to); `cosmetic_hint` flags draws whose value feeds `CreateParticle` or a sound trigger within the next 8 lines; `liveness` marks files whose classes are Darwinia-only in Multiwinia. The tables below were generated from it by `_work/scripts/S_22_rng_tables.py`. **The CSV lists, per call site, what each draw decides; it is the authoritative list.**
+
+| Measure | Value |
+|---|---|
+| Baseline (`[B:FULL]`) call sites | **655** (`syncfrand` 268, `syncsfrand` 148, `syncrand` 110, `SFRAND` 80, `FRAND` 49) in **55** files (Resolved: X3 stated 56 files; the generated count over the CSV is 55) |
+| … in files with only live classes / mixed live+legacy files / legacy-only files | 410 / 179 / 66 |
+| … by enclosing-function class | `*Advance*`/tick 248, constructors/`Initialise`/`Read`/`Create*`/`Spawn*` 129, other simulation functions (`Damage`, `Explode`, AI `Run*`, crate `Run*`, …) 278, render/UI/sound **0** |
+| Non-baseline sites | 4: `code/interface/cheat_window.cpp` × 2 [B:DEBUG], the debug branch of `IFrame::Generate` [B:DEBUG], `code/loaders/gameoflife_loader.cpp` [B:DEAD] |
+| Wrapper definitions / declarations | 16 / 7 rows (`kind` column) |
+| Draws flagged `cosmetic_hint` (live/mixed files) | 35 (e.g. `Armour::Advance` exhaust, `GunTurret::Advance` sparks, `Squadie::Attack` brass, `Spirit::BreakSpirit`, `Missile::Advance`, `Meteor::Advance`, `Triffid::Advance`, `EscapeRocket::AdvanceExploding`) — heuristic, includes a few false positives (e.g. `Triffid::Launch` egg timer is gameplay) |
+| Per-frame fixed draws | exactly **one** per executed UPDATE frame for the sync value (`IFrame::Generate`), in every build |
+
+**Table A — synced call sites per file (baseline [B:FULL], 655 calls).** Columns: calls by generator; context of the enclosing function (advance = `*Advance*`/tick, init = constructor/`Initialise`/`Read`/`Create*`/`Spawn*`, other = other simulation functions); `cosm.` = draws flagged by the `cosmetic_hint` heuristic; liveness of the file's classes in Multiwinia.
+
+| File | Subsystem | Liveness | Calls | syncfrand | syncsfrand | syncrand | FRAND | SFRAND | advance | init | other | cosm. |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `code/location.cpp` | Core loop / rules | MIXED | 61 | 17 | 2 | 14 | 26 | 2 | 36 | 16 | 9 | 0 |
+| `code/multiwinia.cpp` | Core loop / rules | LIVE | 14 | 5 | 0 | 5 | 0 | 4 | 9 | 0 | 5 | 0 |
+| `code/network/iframe.cpp` | Core loop / rules | LIVE | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 |
+| `code/unit.cpp` | Core loop / rules | LIVE | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 0 |
+| `code/worldobject/ai.cpp` | Crates and AI | LIVE | 56 | 22 | 17 | 17 | 0 | 0 | 14 | 5 | 37 | 0 |
+| `code/worldobject/aiobjective.cpp` | Crates and AI | LIVE | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 1 | 0 | 0 |
+| `code/worldobject/anthill.cpp` | Creatures | LIVE | 13 | 10 | 0 | 3 | 0 | 0 | 4 | 2 | 7 | 1 |
+| `code/worldobject/armour.cpp` | Units and entities | LIVE | 18 | 10 | 0 | 4 | 0 | 4 | 3 | 0 | 15 | 3 |
+| `code/worldobject/armyant.cpp` | Creatures | LIVE | 9 | 2 | 4 | 1 | 0 | 2 | 5 | 0 | 4 | 3 |
+| `code/worldobject/bridge.cpp` | Buildings | LEGACY | 3 | 0 | 0 | 0 | 1 | 2 | 0 | 0 | 3 | 0 |
+| `code/worldobject/building.cpp` | Buildings | LIVE | 3 | 0 | 3 | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
+| `code/worldobject/cave.cpp` | Buildings | LEGACY | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| `code/worldobject/centipede.cpp` | Creatures | LIVE | 6 | 4 | 2 | 0 | 0 | 0 | 1 | 0 | 5 | 0 |
+| `code/worldobject/chess.cpp` | Buildings | LEGACY | 3 | 0 | 3 | 0 | 0 | 0 | 1 | 2 | 0 | 0 |
+| `code/worldobject/crate.cpp` | Crates and AI | LIVE | 76 | 25 | 14 | 20 | 9 | 8 | 1 | 27 | 48 | 0 |
+| `code/worldobject/darwinian.cpp` | Units and entities | MIXED | 84 | 55 | 12 | 11 | 0 | 6 | 48 | 3 | 33 | 3 |
+| `code/worldobject/engineer.cpp` | Units and entities | LEGACY | 4 | 0 | 2 | 0 | 0 | 2 | 0 | 1 | 3 | 0 |
+| `code/worldobject/entity.cpp` | Units and entities | MIXED | 4 | 1 | 3 | 0 | 0 | 0 | 0 | 0 | 4 | 0 |
+| `code/worldobject/eruptionmarker.cpp` | Buildings | LIVE | 2 | 1 | 0 | 1 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `code/worldobject/factory.cpp` | Buildings | LEGACY | 5 | 0 | 3 | 0 | 0 | 2 | 5 | 0 | 0 | 0 |
+| `code/worldobject/generator.cpp` | Buildings | MIXED | 2 | 2 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 1 |
+| `code/worldobject/gunturret.cpp` | Buildings | LIVE | 18 | 7 | 5 | 0 | 0 | 6 | 6 | 0 | 12 | 5 |
+| `code/worldobject/harvester.cpp` | Units and entities | LIVE | 5 | 1 | 4 | 0 | 0 | 0 | 3 | 0 | 2 | 0 |
+| `code/worldobject/incubator.cpp` | Buildings | LEGACY | 11 | 1 | 3 | 1 | 0 | 6 | 0 | 7 | 4 | 1 |
+| `code/worldobject/insertion_squad.cpp` | Units and entities | LIVE | 12 | 4 | 4 | 1 | 0 | 3 | 1 | 0 | 11 | 4 |
+| `code/worldobject/lander.cpp` | Units and entities | LEGACY | 2 | 1 | 1 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `code/worldobject/laserfence.cpp` | Buildings | LIVE | 2 | 2 | 0 | 0 | 0 | 0 | 1 | 1 | 0 | 0 |
+| `code/worldobject/lasertrooper.cpp` | Units and entities | LIVE | 2 | 2 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `code/worldobject/lightning.cpp` | Weapons and effects | LIVE | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| `code/worldobject/meteor.cpp` | Weapons and effects | LIVE | 1 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 | 1 |
+| `code/worldobject/mine.cpp` | Weapons and effects | LEGACY | 6 | 2 | 0 | 4 | 0 | 0 | 1 | 1 | 4 | 0 |
+| `code/worldobject/multiwiniazone.cpp` | Buildings | LIVE | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 |
+| `code/worldobject/officer.cpp` | Units and entities | LIVE | 6 | 3 | 1 | 0 | 0 | 2 | 1 | 0 | 5 | 0 |
+| `code/worldobject/radardish.cpp` | Buildings | LIVE | 3 | 0 | 0 | 0 | 1 | 2 | 0 | 0 | 3 | 0 |
+| `code/worldobject/randomiser.cpp` | Buildings | LIVE | 2 | 1 | 0 | 1 | 0 | 0 | 2 | 0 | 0 | 0 |
+| `code/worldobject/rocket.cpp` | Weapons and effects | MIXED | 14 | 6 | 2 | 6 | 0 | 0 | 8 | 0 | 6 | 2 |
+| `code/worldobject/snow.cpp` | Weapons and effects | LIVE | 8 | 5 | 3 | 0 | 0 | 0 | 4 | 4 | 0 | 0 |
+| `code/worldobject/souldestroyer.cpp` | Creatures | LIVE | 16 | 8 | 8 | 0 | 0 | 0 | 4 | 4 | 8 | 0 |
+| `code/worldobject/spaceship.cpp` | Creatures | LIVE | 5 | 1 | 0 | 0 | 2 | 2 | 2 | 0 | 3 | 0 |
+| `code/worldobject/spam.cpp` | Creatures | MIXED | 14 | 6 | 5 | 0 | 1 | 2 | 5 | 5 | 4 | 0 |
+| `code/worldobject/spawnpoint.cpp` | Buildings | LIVE | 10 | 6 | 4 | 0 | 0 | 0 | 4 | 6 | 0 | 0 |
+| `code/worldobject/spider.cpp` | Creatures | LIVE | 5 | 2 | 2 | 1 | 0 | 0 | 1 | 0 | 4 | 0 |
+| `code/worldobject/spirit.cpp` | Units and entities | LIVE | 14 | 7 | 4 | 0 | 3 | 0 | 7 | 0 | 7 | 3 |
+| `code/worldobject/spiritreceiver.cpp` | Buildings | LEGACY | 16 | 8 | 4 | 0 | 4 | 0 | 9 | 7 | 0 | 0 |
+| `code/worldobject/spiritstore.cpp` | Buildings | LEGACY | 3 | 0 | 3 | 0 | 0 | 0 | 0 | 0 | 3 | 0 |
+| `code/worldobject/sporegenerator.cpp` | Buildings | LIVE | 12 | 3 | 1 | 1 | 1 | 6 | 5 | 0 | 7 | 0 |
+| `code/worldobject/statue.cpp` | Buildings | LIVE | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 1 | 0 | 0 |
+| `code/worldobject/tank.cpp` | Units and entities | LIVE | 2 | 0 | 2 | 0 | 0 | 0 | 0 | 0 | 2 | 0 |
+| `code/worldobject/teleport.cpp` | Buildings | LIVE | 2 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 2 | 0 |
+| `code/worldobject/tentacle.cpp` | Creatures | LEGACY | 4 | 0 | 0 | 2 | 0 | 2 | 4 | 0 | 0 | 0 |
+| `code/worldobject/tree.cpp` | Buildings | LIVE | 14 | 9 | 3 | 1 | 1 | 0 | 9 | 5 | 0 | 0 |
+| `code/worldobject/triffid.cpp` | Creatures | LIVE | 36 | 9 | 4 | 13 | 0 | 10 | 3 | 29 | 4 | 2 |
+| `code/worldobject/tripod.cpp` | Creatures | LEGACY | 8 | 0 | 6 | 2 | 0 | 0 | 3 | 0 | 5 | 0 |
+| `code/worldobject/virii.cpp` | Creatures | LIVE | 8 | 5 | 1 | 0 | 0 | 2 | 3 | 1 | 4 | 3 |
+| `code/worldobject/weapons.cpp` | Weapons and effects | LIVE | 23 | 8 | 12 | 0 | 0 | 3 | 23 | 0 | 0 | 3 |
+
+**Table B — synced call sites rolled up by subsystem.**
+
+| Subsystem | Files | Calls | LIVE-file calls | MIXED-file calls | LEGACY-file calls |
+|---|---|---|---|---|---|
+| Core loop / rules | 4 | 78 | 17 | 61 | 0 |
+| Units and entities | 11 | 153 | 59 | 88 | 6 |
+| Creatures | 11 | 124 | 98 | 14 | 12 |
+| Weapons and effects | 6 | 53 | 33 | 14 | 6 |
+| Crates and AI | 3 | 133 | 133 | 0 | 0 |
+| Buildings | 20 | 114 | 70 | 2 | 42 |
+| **Total** | 55 | 655 | 410 | 179 | 66 |
+
