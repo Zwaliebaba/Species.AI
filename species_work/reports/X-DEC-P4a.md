@@ -65,3 +65,18 @@ Every report request (G00 to G11) has its own row in the triage table.
 - Items 89 and 93 are in X-DEC-P4b's list too; I amended DEC-567 and DEC-102 because they live in my files. Merge any X-DEC-P4b hand-off for them, and for DEC-016 (items 9, 16), onto the current text.
 - DEC-085 follows A-3 exactly; no other arbitration entry needs a DEC, and A-19 to A-24 hold no gameplay design choice for me.
 - The 21 new Open entries need their citations from the document fixers (the `cite_in` and `document_fix` columns). The readings in G02b and G03b were triaged "none" and left to the fidelity review.
+
+## Follow-up (coordinator request after X-ROUTE-a)
+
+- **DEC-081 formula (RA-015).** reference/05 has no proportional formula: R-ECON-034 to R-ECON-036 still state the step rule. `verdicts_and_fixes.md` had no room for the formula, so a new Resolved entry, **DEC-124 Proportional Catch-up bonus curve** in `verdicts_and_fixes_2.md`, states the simplest proportional rule under O16, and supersedes DEC-081. DEC-081 now has the status line "Resolved (superseded by DEC-124)" and a short pointer. The rule is H = 1 + (h ÷ 100) × max(0, 1 − m × s ÷ S), over the teams in play without the two factions and with allies counted separately; H = 1 when the bonus is off, h = 0, m < 2 or S = 0; H = 0 for no team. Item 5 of the entry leaves only the curve shape to "Decide by: playtest". The fixer of reference/05 drops `ref.econ.catch_up.share_factor`.
+- **DEC-080 orbs at the cap (RA-043).** reference/05 has no rule here, because its delivery is still uncapped. DEC-080 now states the rule: a Collector delivers only on a tick on which the node may produce (activation delay 0, not population-locked); otherwise it keeps its orbs and waits, so none is lost. Whether it should release them instead is left to playtest. DEC-453 is worded to match.
+- **DEC-079 pooling.** Option B now reads "per team and never pooled within an alliance", as O14, R-ECON-055 and R-MAP-062 state.
+- **The eight conflicts X-ROUTE-a flagged.** No DEC of mine states a losing version:
+  - DEC-107 already states O18 (R-VIS-124 is the document to change).
+  - DEC-017 already says 38 options.
+  - DEC-550 and DEC-862 fit either outcome of RA-166 and RA-219.
+  - The other conflicts (RA-066, RA-073, RA-030, RA-093) touch no DEC of mine; DEC-651 and DEC-652 belong to X-DEC-P4b.
+  - X-ARB had written no entry from A-26 on when I finished, so no further amendment is pending from me.
+- **Tables.** `dec_map_X-DEC-P4a.csv` has 25 rows (DEC-124 added). `p4_dec_triage_X-DEC-P4a.csv` has 162 rows: 69 new, 54 amend, 14 merged, 25 none.
+- **Sizes.** `verdicts_and_fixes.md` is 119,167 bytes and `verdicts_and_fixes_2.md` 8,538. Both pattern scans are clean. Gate 3 passes, and gate 6 lists only Open entries still uncited.
+- **Index.** The decisions index must list DEC-124 and the new status line of DEC-081.

@@ -601,24 +601,24 @@ The generated [register index](README.md) lists every entry of this file with it
 - Owner decision: O14 (2026-10-17): every player slot is occupied; empty slots are filled with bots by default, and the host may close slots before the match.
 - Affects: reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/README.md (R-MODE), reference/08_maps_and_level_design/rules_and_conventions.md (R-MAP)
 - Specified behaviour: Every open player slot of a map is occupied: at match start, empty open slots are filled with bots, and a participant who leaves is taken over by a bot. Before the match, the host may close slots. The per-team cap is the map's population cap divided by the number of **open** slots (the teams playing), so it never changes during a match. Alliances are not pooled. The bodies counted are listed explicitly: the team's bot controller, Transports, Leaders, Crawler eggs and fading corpses count; Crawlers do not. In Siege each defending team has the defender cap, and the attackers share (map cap − defenders × defender cap) ÷ attackers by integer division; a Siege map with no defender cap uses map cap ÷ open slots for both sides. A map that sets no population cap states "no cap" explicitly (DEC-120).
-- Options: A — the reference rule; B — a cap from the teams actually playing, pooled within alliances, with an explicit list of what counts as a body.
+- Options: A — the reference rule; B — a cap from the open slots, per team and never pooled within an alliance, with an explicit list of what counts as a body.
 - Recommendation: B, the stated default. It keeps army size proportional to the teams present and makes co-op caps explicit; confirm by playtest across player counts and on co-op maps.
 
 ### DEC-080 Collector collection of any team's Essence orbs
 - Status: Resolved
 - Owner decision: O15 (2026-10-17): option B.
 - Affects: reference/02_units/collector.md (R-UNIT), reference/05_population_flow.md (R-ECON)
-- Specified behaviour: A Collector collects Essence orbs of any team and delivers them to its own team. The delivery is subject to the receiving team's population cap (DEC-079) and to the activation rules of the receiving Spawn Node: orbs that would exceed the cap are not converted.
+- Specified behaviour: A Collector collects Essence orbs of any team and delivers them to its own team. The delivery is subject to the receiving team's population cap (DEC-079) and to the activation rules of the receiving Spawn Node: orbs that would exceed the cap are not converted. A Collector at its Spawn Node delivers an orb only on a tick on which that node may produce, that is, its activation delay is 0 and it is not population-locked (R-ECON-052); on any other tick it keeps its orbs and waits at the node, so no orb is lost and none becomes a Worker above the cap. A node that has no team still spawns nothing and the orb is still removed. Whether a waiting Collector releases its orbs instead is decided by playtest.
 - Options: A — the reference rule; B — keep any-team collection and apply the population cap on delivery; C — own-team orbs only.
 - Recommendation: B, the stated default. Any-team collection is a designed comeback lever, and the cap on delivery bounds it.
 
 ### DEC-081 Catch-up bonus curve
-- Status: Resolved
+- Status: Resolved (superseded by DEC-124)
 - Owner decision: O16 (2026-10-17): option B.
-- Affects: reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/spawn_control.md (R-MODE), reference/01_skirmish_rules_and_modes/zone_control.md (R-MODE), reference/01_skirmish_rules_and_modes/siege.md (R-MODE)
-- Specified behaviour: The Catch-up bonus is a proportional curve: a team's production multiplier is a function of its share deficit, which is the gap between the team's share of the Spawn Nodes held by teams in play and the even share. The Rogue and Visitor factions are excluded from the share. Allies count as other teams. The curve, its maximum and the modes and maps where it applies are tuning keys owned by reference/05_population_flow.md. The multiplier is 1 when the map disables the bonus.
-- Options: A — the reference step function; B — proportional catch-up: the multiplier is a function of the team's share deficit, with the Rogue and Visitor factions excluded.
-- Recommendation: B, the stated default. It gives a smooth, predictable catch-up in Spawn Control and Zone Control.
+- Affects: reference/05_population_flow.md (R-ECON), reference/01_skirmish_rules_and_modes/ (R-MODE)
+- Specified behaviour: The Catch-up bonus is a proportional curve of a team's share deficit, with the Rogue and Visitor factions excluded. DEC-124 states the curve.
+- Options: A — the reference step function; B — proportional catch-up.
+- Recommendation: B, by owner decision; see DEC-124.
 
 ### DEC-082 Rogue and Visitor factions never win and never block elimination
 - Status: Resolved

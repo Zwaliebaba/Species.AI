@@ -4,14 +4,14 @@
 
 Every decision uses the format in [CONVENTIONS](../CONVENTIONS.md) §7. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **300** decisions: 148 Open, 125 Resolved, 27 Dropped.
+Totals: **301** decisions: 148 Open, 126 Resolved, 27 Dropped.
 
 ## Register files
 
 | File | Scope | Id range | Entries |
 |---|---|---|---|
 | [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–119 | 119 |
-| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 4 |
+| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 5 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
 | [deferred/numerics_lobby_terrain_services.md](deferred/numerics_lobby_terrain_services.md) | Deferred: numerics, lobby, terrain runtime, services, persistence | DEC-240–259 | 12 |
@@ -152,6 +152,7 @@ Totals: **300** decisions: 148 Open, 125 Resolved, 27 Dropped.
 | DEC-121 | [Ownership of Brood creatures](verdicts_and_fixes_2.md#dec-121-ownership-of-brood-creatures) | Open | verdicts_and_fixes_2.md |
 | DEC-122 | [Bot and deputy actions outside the player command catalogue](verdicts_and_fixes_2.md#dec-122-bot-and-deputy-actions-outside-the-player-command-catalogue) | Open | verdicts_and_fixes_2.md |
 | DEC-123 | [Tutorial for the first playable](verdicts_and_fixes_2.md#dec-123-tutorial-for-the-first-playable) | Open | verdicts_and_fixes_2.md |
+| DEC-124 | [Proportional Catch-up bonus curve](verdicts_and_fixes_2.md#dec-124-proportional-catch-up-bonus-curve) | Resolved | verdicts_and_fixes_2.md |
 | DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Open | deferred/networking.md |
 | DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Open | deferred/networking.md |
 | DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Open | deferred/networking.md |
