@@ -34,3 +34,6 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 28 | FX-10 | ADR-030's debug-panel "immediate-mode library" is third-party code under R14 | coordinator ruling: no third-party debug UI; an own immediate-mode layer on the batched UI renderer; amend ADR-030 (FX-11 told for DBG) |
 | 29 | FX-10 | 190 gate-3 hits: links to the old input.md | `p4_fix_links.py --apply` |
 | 30 | FX-10 | new names for the ledger and CONVENTIONS §8 (reports/FX-10.md) | with residual 22 |
+| 31 | FX-09 | 254 links to the old audio_engine.md (anchor map in reports/FX-09.md §2) | `p4_fix_links.py --apply` |
+| 32 | FX-09 | manifest Opus rows (no third-party codec any more), ADR-022/059 notes, CONVENTIONS names, renderer and data-schema requests (reports/FX-09.md §13, §15) | X-AST-2b (manifest), coordinator (ADRs, CONVENTIONS) |
+| 33 | FX-09 | asset_pipeline_and_resources.md is 114.8 KB | split before any further addition |
