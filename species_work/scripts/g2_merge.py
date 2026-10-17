@@ -49,7 +49,7 @@ def parse_decs():
     ddir = os.path.join(NEXT, 'decisions')
     for path in sorted(glob.glob(os.path.join(ddir, '*.md')) + glob.glob(os.path.join(ddir, 'deferred', '*.md'))):
         rel = os.path.relpath(path, ddir).replace(os.sep, '/')
-        if rel == 'README.md':
+        if rel.endswith('README.md'):
             continue
         lines = open(path, encoding='utf-8').read().split('\n')
         lo, hi = RANGES.get(rel, (0, -1))

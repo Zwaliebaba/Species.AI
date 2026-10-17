@@ -4,23 +4,26 @@
 
 Every decision uses the format in [CONVENTIONS](../CONVENTIONS.md) §7. **Open** decisions state the behaviour the documents specify now (the reference default), so implementation never blocks on them. **Resolved** decisions state the fixed rule. **Dropped** entries record out-of-scope items. Decisions marked "Decide by: design phase" are answered by the Species design phase.
 
-Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
+Totals: **300** decisions: 148 Open, 125 Resolved, 27 Dropped.
 
 ## Register files
 
 | File | Scope | Id range | Entries |
 |---|---|---|---|
 | [verdicts_and_fixes.md](verdicts_and_fixes.md) | Verdicts, keep-list and fix-list | DEC-001–119 | 119 |
-| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 2 |
+| [verdicts_and_fixes_2.md](verdicts_and_fixes_2.md) | Verdicts (continued) and owner decisions | DEC-120–199 | 4 |
 | [deferred/networking.md](deferred/networking.md) | Deferred: networking | DEC-200–219 | 9 |
 | [deferred/process_tick_and_roadmap.md](deferred/process_tick_and_roadmap.md) | Deferred: process, tick rate and roadmap | DEC-220–239 | 10 |
 | [deferred/numerics_lobby_terrain_services.md](deferred/numerics_lobby_terrain_services.md) | Deferred: numerics, lobby, terrain runtime, services, persistence | DEC-240–259 | 12 |
+| [simulation_gap_rules.md](simulation_gap_rules.md) | Gap rules: simulation | DEC-260–299 | 7 |
 | [open_questions.md](open_questions.md) | Open questions | DEC-300–449 | 43 |
 | [units_buildings_crates_economy.md](units_buildings_crates_economy.md) | Units, buildings, crates and population | DEC-450–549 | 17 |
 | [controls_bots_maps_meta_audio.md](controls_bots_maps_meta_audio.md) | Controls, bots, maps, front end and audio | DEC-550–649 | 21 |
 | [simulation_terrain_render_assets.md](simulation_terrain_render_assets.md) | Simulation, terrain, rendering and assets | DEC-650–749 | 5 |
 | [vfx_audio_ui.md](vfx_audio_ui.md) | Animation and VFX, audio engine, UI | DEC-750–799 | 3 |
 | [data_sequences_platform_debug.md](data_sequences_platform_debug.md) | Data, sequences, platform and diagnostics | DEC-800–849 | 5 |
+| [gameplay_gap_rules.md](gameplay_gap_rules.md) | Gap rules: gameplay | DEC-850–899 | 22 |
+| [engine_gap_rules.md](engine_gap_rules.md) | Gap rules: engine | DEC-950–999 | 23 |
 
 ## Index
 
@@ -110,7 +113,7 @@ Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 | DEC-082 | [Rogue and Visitor factions never win and never block elimination](verdicts_and_fixes.md#dec-082-rogue-and-visitor-factions-never-win-and-never-block-elimination) | Resolved | verdicts_and_fixes.md |
 | DEC-083 | [Clickable power bar and wide power ids](verdicts_and_fixes.md#dec-083-clickable-power-bar-and-wide-power-ids) | Resolved | verdicts_and_fixes.md |
 | DEC-084 | [Hive Essence orbs and Hive ants](verdicts_and_fixes.md#dec-084-hive-essence-orbs-and-hive-ants) | Open | verdicts_and_fixes.md |
-| DEC-085 | [Builder Essence-orb collection without a destination](verdicts_and_fixes.md#dec-085-builder-essence-orb-collection-without-a-destination) | Open | verdicts_and_fixes.md |
+| DEC-085 | [Builder Essence-orb delivery to friendly Spawn Nodes](verdicts_and_fixes.md#dec-085-builder-essence-orb-delivery-to-friendly-spawn-nodes) | Resolved | verdicts_and_fixes.md |
 | DEC-086 | [Separate demote and scrap actions for Leaders](verdicts_and_fixes.md#dec-086-separate-demote-and-scrap-actions-for-leaders) | Resolved | verdicts_and_fixes.md |
 | DEC-087 | [Bot corrections](verdicts_and_fixes.md#dec-087-bot-corrections) | Resolved | verdicts_and_fixes.md |
 | DEC-088 | [Structure corrections](verdicts_and_fixes.md#dec-088-structure-corrections) | Resolved | verdicts_and_fixes.md |
@@ -141,12 +144,14 @@ Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 | DEC-113 | [Abductor wander-target area](verdicts_and_fixes.md#dec-113-abductor-wander-target-area) | Open | verdicts_and_fixes.md |
 | DEC-114 | [Position of score-weighted crate drops](verdicts_and_fixes.md#dec-114-position-of-score-weighted-crate-drops) | Open | verdicts_and_fixes.md |
 | DEC-115 | [Fixed match research levels](verdicts_and_fixes.md#dec-115-fixed-match-research-levels) | Open | verdicts_and_fixes.md |
-| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Open | verdicts_and_fixes.md |
+| DEC-116 | [Supply crates during the grace period](verdicts_and_fixes.md#dec-116-supply-crates-during-the-grace-period) | Resolved | verdicts_and_fixes.md |
 | DEC-117 | [Confirmed reference facts](verdicts_and_fixes.md#dec-117-confirmed-reference-facts) | Resolved | verdicts_and_fixes.md |
 | DEC-118 | [The seasonal state is decided once per match](verdicts_and_fixes.md#dec-118-the-seasonal-state-is-decided-once-per-match) | Resolved | verdicts_and_fixes.md |
 | DEC-119 | [Simulation code never issues player commands](verdicts_and_fixes.md#dec-119-simulation-code-never-issues-player-commands) | Resolved | verdicts_and_fixes.md |
 | DEC-120 | [Map values: absent, zero and unlimited are distinct](verdicts_and_fixes_2.md#dec-120-map-values-absent-zero-and-unlimited-are-distinct) | Resolved | verdicts_and_fixes_2.md |
 | DEC-121 | [Ownership of Brood creatures](verdicts_and_fixes_2.md#dec-121-ownership-of-brood-creatures) | Open | verdicts_and_fixes_2.md |
+| DEC-122 | [Bot and deputy actions outside the player command catalogue](verdicts_and_fixes_2.md#dec-122-bot-and-deputy-actions-outside-the-player-command-catalogue) | Open | verdicts_and_fixes_2.md |
+| DEC-123 | [Tutorial for the first playable](verdicts_and_fixes_2.md#dec-123-tutorial-for-the-first-playable) | Open | verdicts_and_fixes_2.md |
 | DEC-200 | [Replication and authority model](deferred/networking.md#dec-200-replication-and-authority-model) | Open | deferred/networking.md |
 | DEC-201 | [Replication bandwidth and population budget](deferred/networking.md#dec-201-replication-bandwidth-and-population-budget) | Open | deferred/networking.md |
 | DEC-202 | [Command validation and authority](deferred/networking.md#dec-202-command-validation-and-authority) | Open | deferred/networking.md |
@@ -178,6 +183,13 @@ Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 | DEC-249 | [Directory, rendezvous, relay and matchmaking services](deferred/numerics_lobby_terrain_services.md#dec-249-directory-rendezvous-relay-and-matchmaking-services) | Open | deferred/numerics_lobby_terrain_services.md |
 | DEC-250 | [Persisted data inventory and client-local storage](deferred/numerics_lobby_terrain_services.md#dec-250-persisted-data-inventory-and-client-local-storage) | Open | deferred/numerics_lobby_terrain_services.md |
 | DEC-251 | [World-state persistence, schema migration and rollback](deferred/numerics_lobby_terrain_services.md#dec-251-world-state-persistence-schema-migration-and-rollback) | Open | deferred/numerics_lobby_terrain_services.md |
+| DEC-260 | [Order within an actor-grid cell and container iteration order](simulation_gap_rules.md#dec-260-order-within-an-actor-grid-cell-and-container-iteration-order) | Resolved | simulation_gap_rules.md |
+| DEC-261 | [Multi-round Siege rebuilds the match world at a tick boundary](simulation_gap_rules.md#dec-261-multi-round-siege-rebuilds-the-match-world-at-a-tick-boundary) | Resolved | simulation_gap_rules.md |
+| DEC-262 | [Generations of laser-bolt and Essence-orb handles, and the team selection](simulation_gap_rules.md#dec-262-generations-of-laser-bolt-and-essence-orb-handles-and-the-team-selection) | Resolved | simulation_gap_rules.md |
+| DEC-263 | [Route and actor-group edge cases](simulation_gap_rules.md#dec-263-route-and-actor-group-edge-cases) | Open | simulation_gap_rules.md |
+| DEC-264 | [What runs while game speed is 0](simulation_gap_rules.md#dec-264-what-runs-while-game-speed-is-0) | Open | simulation_gap_rules.md |
+| DEC-265 | [Real duration of the speed-crate holds](simulation_gap_rules.md#dec-265-real-duration-of-the-speed-crate-holds) | Open | simulation_gap_rules.md |
+| DEC-266 | [Decorative objects in the simulated pools](simulation_gap_rules.md#dec-266-decorative-objects-in-the-simulated-pools) | Open | simulation_gap_rules.md |
 | DEC-300 | [Return of teams wiped out in sudden death](open_questions.md#dec-300-return-of-teams-wiped-out-in-sudden-death) | Open | open_questions.md |
 | DEC-301 | [Solar Array knock-out in Siege](open_questions.md#dec-301-solar-array-knock-out-in-siege) | Open | open_questions.md |
 | DEC-302 | [Transport unload order over sea](open_questions.md#dec-302-transport-unload-order-over-sea) | Open | open_questions.md |
@@ -230,7 +242,7 @@ Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 | DEC-456 | [Spawn networks are trees, and an Essence orb is on one edge at a time](units_buildings_crates_economy.md#dec-456-spawn-networks-are-trees-and-an-essence-orb-is-on-one-edge-at-a-time) | Resolved | units_buildings_crates_economy.md |
 | DEC-457 | [Structure links are type-checked](units_buildings_crates_economy.md#dec-457-structure-links-are-type-checked) | Resolved | units_buildings_crates_economy.md |
 | DEC-458 | [Linking a Command Console to the Core Device rebuilds its ports](units_buildings_crates_economy.md#dec-458-linking-a-command-console-to-the-core-device-rebuilds-its-ports) | Resolved | units_buildings_crates_economy.md |
-| DEC-459 | [Core Device with no linked Command Console](units_buildings_crates_economy.md#dec-459-core-device-with-no-linked-command-console) | Open | units_buildings_crates_economy.md |
+| DEC-459 | [Core Device with no linked Command Console](units_buildings_crates_economy.md#dec-459-core-device-with-no-linked-command-console) | Resolved | units_buildings_crates_economy.md |
 | DEC-460 | [A burning Hive releases ants only while it holds any](units_buildings_crates_economy.md#dec-460-a-burning-hive-releases-ants-only-while-it-holds-any) | Resolved | units_buildings_crates_economy.md |
 | DEC-461 | [Each turret type fires from the sockets of its own mesh](units_buildings_crates_economy.md#dec-461-each-turret-type-fires-from-the-sockets-of-its-own-mesh) | Resolved | units_buildings_crates_economy.md |
 | DEC-462 | [Turret facing from map data](units_buildings_crates_economy.md#dec-462-turret-facing-from-map-data) | Open | units_buildings_crates_economy.md |
@@ -272,3 +284,48 @@ Totals: **246** decisions: 113 Open, 107 Resolved, 26 Dropped.
 | DEC-802 | [Maps that match setup does not list](data_sequences_platform_debug.md#dec-802-maps-that-match-setup-does-not-list) | Open | data_sequences_platform_debug.md |
 | DEC-803 | [Camera animations without content](data_sequences_platform_debug.md#dec-803-camera-animations-without-content) | Open | data_sequences_platform_debug.md |
 | DEC-804 | [Soak-test sequence and timing rules](data_sequences_platform_debug.md#dec-804-soak-test-sequence-and-timing-rules) | Resolved | data_sequences_platform_debug.md |
+| DEC-850 | [Match-rule gap rules](gameplay_gap_rules.md#dec-850-match-rule-gap-rules) | Open | gameplay_gap_rules.md |
+| DEC-851 | [Population-flow rule details](gameplay_gap_rules.md#dec-851-population-flow-rule-details) | Open | gameplay_gap_rules.md |
+| DEC-852 | [Game-speed divisors in Worker rules](gameplay_gap_rules.md#dec-852-game-speed-divisors-in-worker-rules) | Open | gameplay_gap_rules.md |
+| DEC-853 | [Worker and Trooper rule details](gameplay_gap_rules.md#dec-853-worker-and-trooper-rule-details) | Open | gameplay_gap_rules.md |
+| DEC-854 | [Transport, Collector and Strike team rule details](gameplay_gap_rules.md#dec-854-transport-collector-and-strike-team-rule-details) | Open | gameplay_gap_rules.md |
+| DEC-855 | [Creature and hazard rule quirks](gameplay_gap_rules.md#dec-855-creature-and-hazard-rule-quirks) | Open | gameplay_gap_rules.md |
+| DEC-856 | [Creature presentation quirks](gameplay_gap_rules.md#dec-856-creature-presentation-quirks) | Open | gameplay_gap_rules.md |
+| DEC-857 | [Attempt caps of the bounded searches](gameplay_gap_rules.md#dec-857-attempt-caps-of-the-bounded-searches) | Resolved | gameplay_gap_rules.md |
+| DEC-858 | [Empty outcome lists](gameplay_gap_rules.md#dec-858-empty-outcome-lists) | Open | gameplay_gap_rules.md |
+| DEC-859 | [Tick counts chosen for reference durations](gameplay_gap_rules.md#dec-859-tick-counts-chosen-for-reference-durations) | Open | gameplay_gap_rules.md |
+| DEC-860 | [Structure rule details](gameplay_gap_rules.md#dec-860-structure-rule-details) | Open | gameplay_gap_rules.md |
+| DEC-861 | [Bot rule quirks](gameplay_gap_rules.md#dec-861-bot-rule-quirks) | Open | gameplay_gap_rules.md |
+| DEC-862 | [Bot rule details](gameplay_gap_rules.md#dec-862-bot-rule-details) | Open | gameplay_gap_rules.md |
+| DEC-863 | [Control details of the corrected command set](gameplay_gap_rules.md#dec-863-control-details-of-the-corrected-command-set) | Resolved | gameplay_gap_rules.md |
+| DEC-864 | [Pointer fallback and camera smoothing](gameplay_gap_rules.md#dec-864-pointer-fallback-and-camera-smoothing) | Open | gameplay_gap_rules.md |
+| DEC-865 | [Map data without a reference case](gameplay_gap_rules.md#dec-865-map-data-without-a-reference-case) | Open | gameplay_gap_rules.md |
+| DEC-866 | [Population-cap values of a map](gameplay_gap_rules.md#dec-866-population-cap-values-of-a-map) | Open | gameplay_gap_rules.md |
+| DEC-867 | [Closed player slots](gameplay_gap_rules.md#dec-867-closed-player-slots) | Open | gameplay_gap_rules.md |
+| DEC-868 | [Front-end reference quirks](gameplay_gap_rules.md#dec-868-front-end-reference-quirks) | Open | gameplay_gap_rules.md |
+| DEC-869 | [Reference sound options without a Species counterpart](gameplay_gap_rules.md#dec-869-reference-sound-options-without-a-species-counterpart) | Open | gameplay_gap_rules.md |
+| DEC-870 | [Tutorial director details](gameplay_gap_rules.md#dec-870-tutorial-director-details) | Open | gameplay_gap_rules.md |
+| DEC-871 | [Essence orb break operation](gameplay_gap_rules.md#dec-871-essence-orb-break-operation) | Dropped | gameplay_gap_rules.md |
+| DEC-950 | [Keyboard operation of the menus](engine_gap_rules.md#dec-950-keyboard-operation-of-the-menus) | Resolved | engine_gap_rules.md |
+| DEC-951 | [Repeat and increment timing of the UI and of input](engine_gap_rules.md#dec-951-repeat-and-increment-timing-of-the-ui-and-of-input) | Resolved | engine_gap_rules.md |
+| DEC-952 | [UI framework reference behaviours kept as defaults](engine_gap_rules.md#dec-952-ui-framework-reference-behaviours-kept-as-defaults) | Open | engine_gap_rules.md |
+| DEC-953 | [Input back-end rules](engine_gap_rules.md#dec-953-input-back-end-rules) | Resolved | engine_gap_rules.md |
+| DEC-954 | [Input reference behaviours kept as defaults](engine_gap_rules.md#dec-954-input-reference-behaviours-kept-as-defaults) | Open | engine_gap_rules.md |
+| DEC-955 | [Presentation clocks while the world is held, and camera shake](engine_gap_rules.md#dec-955-presentation-clocks-while-the-world-is-held-and-camera-shake) | Resolved | engine_gap_rules.md |
+| DEC-956 | [Pick-ray pixel convention](engine_gap_rules.md#dec-956-pick-ray-pixel-convention) | Open | engine_gap_rules.md |
+| DEC-957 | [Every draw sets its complete pipeline state](engine_gap_rules.md#dec-957-every-draw-sets-its-complete-pipeline-state) | Resolved | engine_gap_rules.md |
+| DEC-958 | [Renderer reference looks kept as defaults](engine_gap_rules.md#dec-958-renderer-reference-looks-kept-as-defaults) | Open | engine_gap_rules.md |
+| DEC-959 | [Renderer values the reference does not record](engine_gap_rules.md#dec-959-renderer-values-the-reference-does-not-record) | Open | engine_gap_rules.md |
+| DEC-960 | [Effects advance in fixed steps](engine_gap_rules.md#dec-960-effects-advance-in-fixed-steps) | Resolved | engine_gap_rules.md |
+| DEC-961 | [Explainer panels lay out again on every screen change](engine_gap_rules.md#dec-961-explainer-panels-lay-out-again-on-every-screen-change) | Resolved | engine_gap_rules.md |
+| DEC-962 | [Effect values the reference does not record](engine_gap_rules.md#dec-962-effect-values-the-reference-does-not-record) | Open | engine_gap_rules.md |
+| DEC-963 | [Animation and VFX reference looks kept as defaults](engine_gap_rules.md#dec-963-animation-and-vfx-reference-looks-kept-as-defaults) | Open | engine_gap_rules.md |
+| DEC-964 | [Accessibility limits for camera shake and flashes](engine_gap_rules.md#dec-964-accessibility-limits-for-camera-shake-and-flashes) | Open | engine_gap_rules.md |
+| DEC-965 | [Audio engine reference behaviours kept as defaults](engine_gap_rules.md#dec-965-audio-engine-reference-behaviours-kept-as-defaults) | Open | engine_gap_rules.md |
+| DEC-966 | [Terrain query edge cases](engine_gap_rules.md#dec-966-terrain-query-edge-cases) | Open | engine_gap_rules.md |
+| DEC-967 | [Reproducible terrain colours and no regeneration of the height field](engine_gap_rules.md#dec-967-reproducible-terrain-colours-and-no-regeneration-of-the-height-field) | Resolved | engine_gap_rules.md |
+| DEC-968 | [Content-build validation of terrain, map and record data](engine_gap_rules.md#dec-968-content-build-validation-of-terrain-map-and-record-data) | Resolved | engine_gap_rules.md |
+| DEC-969 | [Co-op group lists in ascending position order](engine_gap_rules.md#dec-969-co-op-group-lists-in-ascending-position-order) | Open | engine_gap_rules.md |
+| DEC-970 | [System summary and crash-context records](engine_gap_rules.md#dec-970-system-summary-and-crash-context-records) | Resolved | engine_gap_rules.md |
+| DEC-971 | [Reference test machine and minimum-specification hardware](engine_gap_rules.md#dec-971-reference-test-machine-and-minimum-specification-hardware) | Open | engine_gap_rules.md |
+| DEC-972 | [What the cheats-used marker suppresses](engine_gap_rules.md#dec-972-what-the-cheats-used-marker-suppresses) | Open | engine_gap_rules.md |

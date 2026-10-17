@@ -27,7 +27,7 @@ This file records the engine-baseline rules of the engine components that no oth
 | [DEC-966](#dec-966-terrain-query-edge-cases) | Terrain query edge cases | Open | TER |
 | [DEC-967](#dec-967-reproducible-terrain-colours-and-no-regeneration-of-the-height-field) | Reproducible terrain colours and no regeneration of the height field | Resolved | TER, RND |
 | [DEC-968](#dec-968-content-build-validation-of-terrain-map-and-record-data) | Content-build validation of terrain, map and record data | Resolved | TER, DAT, R-BLDG |
-| [DEC-969](#dec-969-co-op-group-lists-in-ascending-position-order) | Co-op group lists in ascending position order | Resolved | DAT, R-MODE |
+| [DEC-969](#dec-969-co-op-group-lists-in-ascending-position-order) | Co-op group lists in ascending position order | Open | DAT, R-MODE |
 | [DEC-970](#dec-970-system-summary-and-crash-context-records) | System summary and crash-context records | Resolved | PLT, DBG |
 | [DEC-971](#dec-971-reference-test-machine-and-minimum-specification-hardware) | Reference test machine and minimum-specification hardware | Open | DBG, RND, AST, BLD |
 | [DEC-972](#dec-972-what-the-cheats-used-marker-suppresses) | What the cheats-used marker suppresses | Open | DBG, R-META |
@@ -227,18 +227,19 @@ This file records the engine-baseline rules of the engine components that no oth
 - Specified behaviour: The content build (ADR-0059) applies these rules, each with a diagnostic naming the map and the record (DEC-015):
   1. **Terrain records** (TER-250). It rejects a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows, the size up to which the index semantics of TER-072 hold (reference grids have at most 334 samples per side, DEC-247); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, and a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp that is not 64 × 64; and a ramp, gradient or sea-tile file number that the asset manifest does not hold. It warns about a tile with *k* < *p* and a tile whose footprint lies wholly outside the grid.
   2. **Barrier Emitter rings.** A ring of Barrier Emitters whose every emitter starts in `relay_only` mode is a build error, because a forwarded request would circle the ring without end; every other loop of a chain is valid data (DAT-150, DEC-014).
-  3. **Hive contents.** A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error, so the run-time replacement by 0 of R-BLDG-633 never meets validated content (DAT-159).
+  3. **Hive contents.** A Hive's ants-inside value outside [0, `ref.bldg.hive.map_ants_max`] is a build error in an authored map (DAT-159). The reference rule, which replaces such a value by 0 when the map loads, stays the rule for any record that does not pass the content build (R-BLDG-633).
   4. **Spitter Plant reload.** A Spitter Plant's reload satisfies ⌊reload ÷ 10⌋ ≥ 1, so the first-deadline draw of R-BLDG-645 has at least one value (map_structure_records.md table 3.2-A).
   5. **Zero facing.** A structure facing of zero length is valid data and is normalised by the degenerate-vector rule of DEC-241 item 6 (map_structure_records.md table 3.1-A).
 - Options: A — as stated; B — the reference behaviour: each of these inputs is accepted, and its result is undefined or silent: the index semantics fail above 32 768 samples per side, the tile results of TER-112 and TER-124 are undefined, a relay-only ring forwards a request without end, an out-of-range ants value is replaced by 0 at run time, and a reload below 10 ticks leaves the first-deadline draw without a range.
 - Recommendation: A. None of these inputs occurs in the reference content, so validation changes no reference behaviour, and each turns an undefined or endless result into a diagnostic with a location.
 
 ### DEC-969 Co-op group lists in ascending position order
-- Status: Resolved
+- Status: Open
 - Affects: architecture/components/data_schemas/map_schema.md (DAT-087, DAT-088), reference/01_skirmish_rules_and_modes/README.md (R-MODE-020); DEC-560
-- Specified behaviour: A map's group-1 and group-2 position lists are derived from its start-position records, each list in ascending position order, and each co-op group holds at most 2 positions (DAT-087, DAT-088). Alliance assignment therefore reads G1[0] and G2[0] as the lower position of their group (R-MODE-020).
-- Options: A — as stated; B — the reference form: the map lists the group positions explicitly, and alliance assignment reads them in the order authored.
-- Recommendation: A. With typed start-position records (DEC-560) each position names its group, so the order of a group's list is derived, not authored, and ascending order is the one derived order that a validator can state. No reference map is reproduced (DEC-063), so no content depends on an authored order.
+- Specified behaviour: A map's group-1 and group-2 position lists are derived from its start-position records, each list in ascending position order; each co-op group holds at most 2 positions, and a position belongs to at most one group (DAT-087, DAT-088). Alliance assignment therefore reads G1[0] and G2[0] as the lower position of their group (R-MODE-020). The reference reads the lists in the order a map authors them; on every reference map that defines groups that order is ascending and no group holds more than 2 positions, so the derived lists reproduce every reference outcome. Only a map authored with a list out of ascending order would assign alliances differently, and only outside Siege, where the group is chosen by membership alone (R-SIM-419).
+- Options: A — lists derived in ascending position order, as stated; B — an authored order field in the map header, which alliance assignment reads.
+- Recommendation: A. With typed start-position records (DEC-560) each position names its group, so ascending order is the one order that needs no second field and that a validator can state; B preserves an order that no reference map uses.
+- Decide by: design phase
 
 ## 7 Platform and diagnostics
 
