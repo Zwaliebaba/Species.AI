@@ -224,3 +224,11 @@
 | U5 | Whether `data/mwhelp/background.bmp` is referenced indirectly (e.g. by a data file or eclipse skin) | full-text search of `data/` and `contrib/eclipse` (none found in `code/`) |
 | U6 | Visual layout of `AnimatedPanelRenderer` panels and the content of `data/animations/*.anim` | animation/UI partition |
 | U7 | Whether CPU team 2 reliably captures spawn 83 in T2 before the player (inferred: AITarget 92 at (1309.43, 1645.08) is 47 units from spawn 83 and gets team-2 priority 1.0 while `!AICanSpawn`; team 2 home = spawn 1 (545.70, 2528.04), team 1 home = spawn 2) — if the player takes 83 first, the FormationAttack/BreakFormation steps are skipped | runtime observation |
+
+<!-- from P20_sequences_loaders_bench -->
+## [U] Unknowns
+0. (Resolved while drafting — not counted) `TextFileReader::ReadLine` → `TextReader::CleanLine` strips `\n`/`\r` and truncates at `#` (comment) [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp`; on an empty line `GetRestOfLine()` returns NULL. Consequences: `BenchMark::BuildDxDiag` stops at the first blank line of `dxdiag.txt` — with dxdiag's usual layout (blank line between sections) [I] only `SYS` fields are captured, never `GFX`/`SND`; `CreditsLoader::GenerateBetaTesterList` would crash on a blank line (`strlen(NULL)`) — the shipped `betatesters.txt` has none [C]; a `#` in a name truncates it.
+1. [U] Units of `m_receiveRate/m_sendRate` recorded by the benchmark (bytes/s vs bits/s) — P15.
+2. [U] Exact appearance of `textures/program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp` (only dimensions checked: 256×256 each) — not needed for mechanics; art is IP anyway.
+3. [U] Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (state inherited from the caller) — determines whether the first 7 s smear. Resolve by tracing GL state at `Script::RunCommand_RunCredits` / outro camera.
+4. [U] Exact reachability of `PageDarwinia` (and therefore `CampaignButton`) in FULL — P18 to confirm; affects whether §1.6's bug is player-visible.

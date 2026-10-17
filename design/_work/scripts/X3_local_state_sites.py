@@ -160,6 +160,10 @@ PATTERNS = [
     ('ui', r'\bEclGetWindow\s*\(|m_taskManagerInterface\b|\bg_app->m_gameCursor\b|m_markerSystem\b|m_helpSystem\b|m_multiwiniaHelp\b'),
     ('pointer-order', r'std::(?:map|set|unordered_map|unordered_set)\s*<\s*[A-Za-z_]\w*\s*\*'),
     ('static-local', r'^\s*static\s+(?:double|float|int|bool|unsigned|Vector3|LList|DArray|std::)'),
+    ('raw-transcendental', r'(?<![\w.>])(?:sin|cos|tan|asin|acos|atan|atan2|exp|log|log10|pow|sinf|cosf|tanf|asinf|acosf|atanf|atan2f|expf|logf|powf)\s*\('),
+    ('raw-sqrt', r'(?<![\w.>])(?:sqrt|sqrtf)\s*\('),
+    ('fmod', r'(?<![\w.>])(?:fmod|fmodf)\s*\('),
+    ('float-decl', r'(?<![\w])float\s+[A-Za-z_]\w*\s*[=;,\[]'),
 ]
 SIMFILES = re.compile(r'^code/(worldobject/|location\.cpp|team\.cpp|unit\.cpp|taskmanager\.cpp|multiwinia\.cpp|routing_system\.cpp|entity_grid|obstruction_grid|gametimer\.cpp|global_world\.cpp|landscape\.cpp|level_file\.cpp|location_input\.cpp|global_research|achievement_tracker\.cpp|explosion\.cpp|particle_system\.cpp|clouds\.cpp|water\.cpp|camera\.cpp|network/)')
 

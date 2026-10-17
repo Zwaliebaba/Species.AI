@@ -437,7 +437,26 @@ P19_help_tutorial_script,IP register,meta:ip,3003
 P19_help_tutorial_script,Appendix — dead/legacy code,meta:appendix,1607
 P20_sequences_loaders_bench,[→ 09_meta_systems] 0. Build reality and reachability of every P20 feature,09,5731
 P20_sequences_loaders_bench,[→ 09_meta_systems] 1. Loading screen (`LoadingScreen`) [B:FULL],09,9978
-P20_sequences_loaders_bench,"[→ 09_meta_systems] 2. Animated game-mode panels (`AnimatedPanel`, `AnimatedPanelRenderer`) [B:FULL]",09,8592
-P20_sequences_loaders_bench,"[→ 09_meta_systems] 3. Boot-loader framework (`Loader`, `RunBootloader`) — [B:LEGACY] base / [B:DEAD] dispatcher",09,24298
+P20_sequences_loaders_bench,"[→ 09_meta_systems] 2. Animated game-mode panels (`AnimatedPanel`, `AnimatedPanelRenderer`) [B:FULL]",09,8622
+P20_sequences_loaders_bench,"[→ 09_meta_systems] 3. Boot-loader framework (`Loader`, `RunBootloader`) — [B:LEGACY] base / [B:DEAD] dispatcher",09,24780
 P20_sequences_loaders_bench,[→ 09_meta_systems] 4. Credits roll (`CreditsLoader`) — [B:LEGACY],09,7204
+P20_sequences_loaders_bench,[→ 09_meta_systems] 5. Attract mode (`AttractMode`) — [B:DEAD] (feature gate `ATTRACTMODE_ENABLED` defined nowhere),09,3819
+P20_sequences_loaders_bench,"[→ 30_scripting_tutorial_and_cutscenes] 6. Start sequence — first-time intro (`StartSequence`) — [B:LEGACY] (compiled; only constructed by `RunBootloader`, which is `USE_LOADERS`-only)",30,5746
+P20_sequences_loaders_bench,[→ 30_scripting_tutorial_and_cutscenes] 7. Demo end sequence (`DemoEndSequence`) — [B:DEAD] (`USE_SEPULVEDA_HELP_TUTORIAL` defined nowhere),30,1695
+P20_sequences_loaders_bench,[→ 32_debug_test_and_performance] 8. Benchmark recorder + FTP upload (`BenchMark`) — [B:DEAD] (`BENCHMARK_AND_FTP`),32,5647
+P20_sequences_loaders_bench,[→ 32_debug_test_and_performance] 9. Campaign test harness (`TestHarness`) — [B:DEAD] (`TEST_HARNESS_ENABLED`),32,4014
+P20_sequences_loaders_bench,[→ 09_meta_systems] 10. Constants table (all P20 tunables),09,8232
+P20_sequences_loaders_bench,Cross-partition notes,meta:cross,2837
+P20_sequences_loaders_bench,Contradictions / open questions,meta:contradictions,1394
+P20_sequences_loaders_bench,[U] Unknowns,meta:unknowns,1310
+P20_sequences_loaders_bench,Docs-vs-code discrepancies,meta:discrepancies,1669
+P20_sequences_loaders_bench,IP register,meta:ip,3803
+P20_sequences_loaders_bench,Appendix — dead/legacy code,meta:appendix,2286
 X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9656
+X4_level_catalogue,"[→ 08_levels_and_level_design] 1. Inventory, file kinds and how maps are found",08,7272
+X4_level_catalogue,"[→ 08_levels_and_level_design] 2. Master catalogue of the Multiwinia maps (`data/levels/mp_*.txt`, 57 files)",08,15302
+X4_level_catalogue,[→ 08_levels_and_level_design] 3. Availability per build target and runtime gate,08,5397
+X4_level_catalogue,"[→ 08_levels_and_level_design] 4. Hidden, test, stress, benchmark, sandbox and TankBattle maps [C] data, tags as stated",08,2950
+X4_level_catalogue,"[→ 08_levels_and_level_design] 5. Per-level option table (`MultiwiniaOptions`, all 57 `mp_*` files)",08,8701
+X4_level_catalogue,[→ 08_levels_and_level_design] 6. Notable objects per map,08,22524
+X4_level_catalogue,"[→ 08_levels_and_level_design] 7. Landscape parameters per level (all map-bearing files: 57 `mp_*`, 12 `map_*`, 30 `old/`)",08,16895

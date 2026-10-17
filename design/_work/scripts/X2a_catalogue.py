@@ -460,13 +460,13 @@ def scan_code_file(path, rel):
                     stack.pop()
             continue
         # strip comments, keep literal positions
-        code_part = []; comment_flag = False; i = 0; L = len(line); instr = False
+        code_part = []; comment_flag = False; i = 0; L = len(line); instr = False; blockbuf = []
         while i < L:
             ch = line[i]
             if in_block:
                 if line.startswith('*/', i):
                     in_block = False; i += 2; continue
-                comment_flag = True; i += 1; continue
+                comment_flag = True; blockbuf.append(ch); i += 1; continue
             if instr:
                 code_part.append(ch)
                 if ch == '\\' and i + 1 < L:
@@ -490,6 +490,11 @@ def scan_code_file(path, rel):
             if line.startswith('/*', i):
                 in_block = True; i += 2; continue
             code_part.append(ch); i += 1
+        if blockbuf:
+            for lit in LIT_RE.findall(re.sub(r'"\s*TEXTURE_EXTENSION', 'bmp"', ''.join(blockbuf))):
+                out.append((ln, lit, cur_func if func_depth is not None else (pending or cur_class or ''),
+                            ' && '.join(x[0] for x in stack), {c: all(x[1][c] for x in stack) for c in cfgs}, True, raw.strip()))
+            blockbuf = []
         code = ''.join(code_part)
         # function tracking (heuristic): a header line (name + '(' , no ';') arms `pending`;
         # the next '{' opened while not inside a function makes it the current symbol.
@@ -635,8 +640,10 @@ for c in code_lits:
         return site_state(c['file'], c['line'])
     if c['commented']:
         tgt = by_resname.get(L) or by_resname.get(L + '.bmp')
+        if not tgt and L.endswith('.shp') and 'shapes/' + L in by_resname:
+            tgt = by_resname['shapes/' + L]
         if tgt:
-            add_ref(tgt, 'commented-out', how='literal in // comment', **common)
+            add_ref(tgt, 'commented-out', how='literal inside a comment', **common)
         continue
     if L in by_resname:
         add_ref(by_resname[L], 'literal', how=fn or 'literal', flags=flags, state=st(), **common)
@@ -850,6 +857,88 @@ def summarise(rel):
     tags = sorted({ref_build(r) for r in strong}, key=['FULL', 'D3D', 'DEBUG', 'EDITOR', 'DEAD'].index)
     return rs, strong, tags
 
+# Icon stems passed to an "icons/%s.bmp" builder in the same file (ControlHelpSystem::RenderControlHelp /
+# RenderControlHelpDPad, MultiwiniaHelp::RenderControlHelp(int,...)) -> confirmed references at the stem site.
+ICON_STEM_BUILDERS = {
+    'code/control_help.cpp': 'code/control_help.cpp:ControlHelpSystem::RenderControlHelp / RenderControlHelpDPad build "icons/%s.bmp"',
+    'code/multiwiniahelp.cpp': 'code/multiwiniahelp.cpp:MultiwiniaHelp::RenderControlHelp(int,...) builds "icons/%s.bmp"',
+}
+for rel, rs in list(refs.items()):
+    if not rel.startswith('data/icons/'):
+        continue
+    for r in list(rs):
+        if r['kind'] == 'stem' and r['file'] in ICON_STEM_BUILDERS:
+            add_ref(rel, 'rule:icon-stem', r['file'], r['sym'], r['line'], r['cond'], r['live'], r['built'],
+                    'stem literal handed to ' + ICON_STEM_BUILDERS[r['file']], flags='mip=true mask=true')
+for c in sites('code/lib/shader.cpp', 'shaders/%s'):
+    add_ref('data/shaders/globals.h', 'rule:hlsl-include', c['file'], c['sym'], c['line'], c['cond'], c['live'], c['built'],
+            '#include "globals.h" in deformDiamond/deformFullscreen/deformSphere.ps resolved by MyD3DXInclude::Open as shaders/<name>')
+
+# Compiled-in code paths that cannot run in a Multiwinia match (manual, each verified by grep) ->
+# reference build tag downgraded from FULL.
+REACH = [
+    # (file, symbol regex, line range or None, new tag, reason)
+    ('code/taskmanager_interface_icons.cpp', r'.*', None, 'LEGACY',
+     'TaskManagerInterfaceIcons is created only when !App::Multiplayer() (code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager)'),
+    ('code/taskmanager_interface_gestures.cpp', r'.*', None, 'LEGACY',
+     'TaskManagerInterfaceGestures only for single-player keyboard ControlMethod 0 (code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager)'),
+    ('code/shaman_interface.cpp', r'.*', None, 'LEGACY',
+     'ShamanInterface is shown only from TaskManagerInterfaceIcons (code/taskmanager_interface_icons.cpp) - single-player only'),
+    ('code/global_internet.cpp', r'.*', None, 'LEGACY',
+     'GlobalInternet is drawn only by GlobalWorld::Render (Darwinia world map; code/global_world.cpp:GlobalWorld::Render)'),
+    ('code/global_world.cpp', r'.*Render.*|GlobalLocation.*|GlobalBuilding.*|SphereWorld.*', None, 'LEGACY',
+     'GlobalWorld/SphereWorld rendering = Darwinia world map (Renderer branch m_locationId == -1, see P12 24.2)'),
+    ('code/multiwiniahelp.cpp', r'MultiwiniaHelp::RenderControlHelp', (2781, 2994), 'LEGACY',
+     'MultiwiniaHelp::RenderControlHelp() (no-arg) has no caller (grep code/)'),
+    ('code/multiwiniahelp.cpp', r'MultiwiniaHelp::Render(BasicControlHelp|CurrentUnitHelp|CurrentTaskHelp)', None, 'LEGACY',
+     'no live caller (calls commented out in code/taskmanager_interface_multiwinia.cpp, RenderBasicControlHelp never called)'),
+    ('code/control_help.cpp', r'.*', None, 'LEGACY',
+     'ControlHelpSystem::Render returns at once when App::Multiplayer(); RenderHelp also requires App::IsSinglePlayer() (code/control_help.cpp:ControlHelpSystem::Render, ::RenderHelp)'),
+    ('code/clouds.cpp', r'Clouds::RenderFace', None, 'DEBUG',
+     'm_faceTime is set only by Clouds::ShowDrSFace, called only from code/interface/cheat_window.cpp (cheat builds)'),
+    ('code/interface/gesture_window.cpp', r'.*', None, 'DEBUG',
+     'GestureWindow is created only by code/interface/debugmenu.cpp (debug menu)'),
+    ('code/renderer.cpp', r'Renderer::RenderFrame', (795, 830), 'LEGACY',
+     'Darwin logo overlay shown only via Script command (code/script.cpp sets m_renderDarwinLogo) - Darwinia cutscene scripts'),
+    ('code/interface/helpandoptions_windows.cpp', r'CrateButton::.*|CrateHelp.*', None, 'DEBUG',
+     'CrateHelpWindow reachable only through CrateHelpWindowButton (#ifdef INCLUDE_CRATE_HELP_WINDOW, TARGET_DEBUG)'),
+]
+DATA_REACH = [
+    ('data/input/', 'LEGACY', 'icon bindings parsed by ControlBindings but InputManager::controlIcon has no caller (code/lib/input/input.cpp)'),
+    ('data/purity/', 'DEAD', 'purity files are not loaded (PURITY_CONTROL never defined)'),
+]
+
+def apply_reach(r):
+    if r['built'] == 'data':
+        for pre, tag, why in DATA_REACH:
+            if r['file'].startswith(pre):
+                return tag, why
+        return None
+    for f_, rx, rng, tag, why in REACH:
+        if r['file'] == f_ and re.match(rx, r['sym'] or '') and (rng is None or rng[0] <= r['line'] <= rng[1]):
+            return tag, why
+    return None
+
+for rel, rs in refs.items():
+    for r in rs:
+        o = apply_reach(r)
+        r['reach'] = o[1] if o else ''
+        r['reach_tag'] = o[0] if o else ''
+
+ORDER = ['FULL', 'D3D', 'DEBUG', 'EDITOR', 'LEGACY', 'DEAD']
+_ref_build_compiled = ref_build
+def ref_build(r):
+    b = _ref_build_compiled(r)
+    if b in ('FULL', 'D3D') and r.get('reach_tag'):
+        return r['reach_tag']
+    return b
+
+def summarise(rel):
+    rs = refs.get(rel, [])
+    strong = [r for r in rs if ref_strong(r)]
+    tags = sorted({ref_build(r) for r in strong}, key=ORDER.index)
+    return rs, strong, tags
+
 if os.environ.get('X2A_REVIEW'):
     want = os.environ['X2A_REVIEW']
     for rel, a in assets.items():
@@ -867,3 +956,362 @@ if os.environ.get('X2A_REVIEW'):
             seen.add(k)
             print('   ', r['strength'], r['kind'], r['file'], r['line'], r['sym'], '|', r['cond'][:60], '|', ref_build(r), '|', r['how'][:70])
     sys.exit(0)
+
+# ----------------------------------------------------------------------------------
+# 10. Packaging (tools/build_multiwinia_data.bat, tools/listfiles.pl, exclusion/inclusion lists)
+# ----------------------------------------------------------------------------------
+import fnmatch
+TOOLS = os.path.join(SRC, 'tools')
+def read_list(name):
+    try:
+        return [l.strip().replace('\\', '/') for l in open(os.path.join(TOOLS, name), encoding='latin-1').read().splitlines() if l.strip()]
+    except FileNotFoundError:
+        return []
+all_data = []
+for root, dirs, files in os.walk(DATA):
+    for d in dirs:
+        all_data.append(os.path.relpath(os.path.join(root, d), DATA).replace(os.sep, '/') + '/')
+    for f in files:
+        all_data.append(os.path.relpath(os.path.join(root, f), DATA).replace(os.sep, '/'))
+excl = read_list('sounds.txt') + read_list('menu_sounds.txt') + read_list('multiwinia_exclusions.txt')
+short_ex = [e[3:].lower() for e in excl if e.startswith('**/')]
+long_ex = [e.lower() for e in excl if not e.startswith('**/')]
+def excluded_by(relpath):
+    """listfiles.pl semantics: a path is pruned if its basename is a **/ short exclude, or the path (or an
+    ancestor directory) matches a (case-insensitive, Windows bsd_glob) exclude pattern."""
+    rp = relpath.lower(); parts = rp.split('/')
+    for k in range(1, len(parts) + 1):
+        sub = '/'.join(parts[:k])
+        if parts[k - 1] in short_ex:
+            return '**/' + parts[k - 1]
+        for e in long_ex:
+            if fnmatch.fnmatchcase(sub, e):
+                return e
+    return None
+MAIN_EXT = ('tex', 'bmp', 'jpg', 'shp', 'txt', 'vs', 'ps', 'ps3', 'h', 'anim')
+init_list = {x.lower() for x in read_list('init.list')} - {'textures/xboxlivearcade.bmp'}
+lang_all = {x.lower() for x in read_list('language.list')}
+lang_en = {x.lower() for x in read_list('englishlanguage.list')}
+lang_per = {}
+for ln_ in ('english', 'french', 'german', 'italian', 'spanish', 'portuguese', 'russian', 'japanese', 'korean'):
+    for x in read_list(ln_ + 'language.list'):
+        lang_per.setdefault(x.lower(), []).append(ln_)
+def archive_of(rel):
+    rp = rel[len('data/'):]; lo = rp.lower(); out = []
+    if lo in init_list:
+        out.append('init.dat')
+    ex = excluded_by(rp)
+    if ex is None and lo.rsplit('.', 1)[-1] in MAIN_EXT and 'sounds/' not in lo:
+        out.append('main.dat')
+    if lo in lang_all:
+        out.append('language.dat[%s]' % ('+'.join(lang_per.get(lo, [])) or 'all-language build only'))
+    if not out:
+        if ex:
+            return 'not packed (excluded by "%s")' % ex
+        return 'not packed (extension .%s not in main.dat list)' % lo.rsplit('.', 1)[-1]
+    return ' + '.join(out)
+
+# ----------------------------------------------------------------------------------
+# 11. Consumers, render passes, class bases, MP placements
+# ----------------------------------------------------------------------------------
+bases = {}
+try:
+    with open(os.path.join(OUT, 'drafts', 'P03_worldobject_classes.csv'), newline='') as fh:
+        for row in csv.DictReader(fh):
+            bases[row['class']] = row['base']
+except FileNotFoundError:
+    pass
+def root_kind(cls):
+    seen = 0
+    while cls in bases and seen < 20:
+        b = bases[cls]
+        if b in ('Building', 'Entity', 'WorldObject', 'Unit'):
+            return b
+        cls = b; seen += 1
+    return {'Building': 'Building', 'Entity': 'Entity', 'WorldObject': 'WorldObject'}.get(cls, '')
+mp_place = defaultdict(int)
+try:
+    with open(os.path.join(OUT, 'drafts', 'P06_level_building_usage.csv'), newline='') as fh:
+        for row in csv.DictReader(fh):
+            lv = 'data/levels/' + row['level']
+            if level_info.get(lv, ('',))[0] == 'live':
+                mp_place[row['type'].lower()] += 1
+except FileNotFoundError:
+    pass
+
+SYS = [  # (file prefix, system, pass per P12 24.2 numbering)
+    ('code/clouds.cpp', 'Sky/clouds (Clouds; also main-menu background)', '3a-3d'),
+    ('code/landscape_renderer.cpp', 'Landscape (LandscapeRenderer)', '4a/4b'),
+    ('code/landscape.cpp', 'Landscape', '4a/4b'),
+    ('code/water_reflection.cpp', 'Water reflection [D3D]', '5b'),
+    ('code/water.cpp', 'Water', '5a/5b'),
+    ('code/location.cpp', 'Location (weapons, lasers)', '10b'),
+    ('code/particle_system.cpp', 'ParticleSystem', '15'),
+    ('code/explosion.cpp', 'ExplosionManager', '14'),
+    ('code/deform.cpp', 'DeformEffect [D3D]', 'after 15 (deform)'),
+    ('code/renderer.cpp', 'Renderer (logo / transitions)', '31'),
+    ('code/markersystem.cpp', 'MarkerSystem (off-screen markers)', '16'),
+    ('code/multiwiniahelp.cpp', 'MultiwiniaHelp (tutorial/help overlay)', '17'),
+    ('code/animatedpanel', 'AnimatedPanel (game-mode help animation)', '17'),
+    ('code/shaman_interface.cpp', 'ShamanInterface', '18'),
+    ('code/interface/', 'Eclipse windows (menus/dialogs)', '19'),
+    ('code/UI/', 'GameMenuWindow front-end (Eclipse)', '19'),
+    ('code/game_menu.cpp', 'GameMenu front-end', '19'),
+    ('contrib/eclipse/', 'Eclipse window framework', '19'),
+    ('code/gamecursor.cpp', 'GameCursor / MouseCursor', '20'),
+    ('code/taskmanager_interface', 'Task-manager HUD', '23'),
+    ('code/control_help.cpp', 'ControlHelpSystem', '25'),
+    ('code/lib/text_renderer.cpp', 'TextRenderer (fonts)', 'all text (13,17,19,21,28,29,33)'),
+    ('code/multiwinia.cpp', 'Multiwinia match HUD', '28'),
+    ('code/rocket_status_panel.cpp', 'RocketStatusPanel (Rocket Riot HUD)', '28'),
+    ('code/startsequence.cpp', 'StartSequence', '30'),
+    ('code/loading_screen.cpp', 'LoadingScreen', 'loading-screen loop (outside RenderFrame)'),
+    ('code/team.cpp', 'Team (Virii sprite strip build)', '7c'),
+    ('code/global_world.cpp', 'GlobalWorld (Darwinia world map)', 'GlobalWorld branch'),
+    ('code/global_internet.cpp', 'GlobalInternet (Darwinia world map)', 'GlobalWorld branch'),
+    ('code/level_file.cpp', 'LevelFile (map defaults)', '4a/5a (via terrain consumers)'),
+    ('code/mapfile.cpp', 'MapFile (custom .mwm maps embed terrain bitmaps)', '-'),
+    ('code/location_editor.cpp', 'LocationEditor [EDITOR]', 'editor'),
+    ('code/lib/FixedPipeline.cpp', 'FixedPipeline [D3D] fixed-function emulation', 'every D3D draw'),
+    ('code/lib/shader.cpp', 'Shader loader [D3D]', '-'),
+    ('code/lib/3d_sprite.cpp', 'Render3DSprite', 'caller'),
+    ('code/sepulveda.cpp', 'Sepulveda (Darwinia help) [DEAD]', '-'),
+    ('code/loaders/', 'Loading-screen mini-programs [DEAD: USE_LOADERS]', '-'),
+    ('code/app.cpp', 'App', '-'),
+    ('code/main.cpp', 'main loop', '-'),
+    ('code/script.cpp', 'Script (cutscenes)', '-'),
+    ('code/sound/', 'Sound system', '-'),
+]
+def consumer_of(r, asset_dir):
+    f = r['file']; sym = r['sym'] or ''
+    if r['built'] == 'data':
+        if f.startswith('data/levels/'):
+            if r['sym'].lower() in ('landcolourfile',):
+                return 'LandscapeRenderer (terrain colour ramp)', '4a'
+            if r['sym'].lower() in ('wavescolourfile', 'watercolourfile'):
+                return 'Water (%s)' % r['sym'], '5a/5b'
+            return 'StaticShape building (level %s)' % r['sym'], '6'
+        if f.startswith('data/animations/'):
+            return 'AnimatedPanel keyframe (%s)' % f.rsplit('/', 1)[-1], '17'
+        if f.startswith('data/input/'):
+            return 'ControlBindings icon (never drawn)', '-'
+        return 'data ' + f, '-'
+    if f.startswith('code/worldobject/'):
+        cls = sym.split('::')[0] if '::' in sym else os.path.basename(f)[:-4]
+        rk = root_kind(cls)
+        meth = sym.split('::')[-1]
+        if asset_dir == 'shapes':
+            ps = {'Building': '6 (buildings)', 'Entity': '7a/7b (units/entities)', 'WorldObject': '10a (effects)'}.get(rk, '6/7')
+        else:
+            if 'Alphas' in meth or 'Light' in meth or 'Port' in meth:
+                ps = '8 (building alphas)'
+            elif cls == 'Darwinian':
+                ps = '7d (Darwinians)'
+            elif rk == 'Entity':
+                ps = '7a/7b'
+            elif rk == 'Building':
+                ps = '6/8'
+            elif rk == 'WorldObject':
+                ps = '10a (effects)'
+            else:
+                ps = '6-10'
+        place = ''
+        if rk == 'Building' and cls.lower() in mp_place:
+            place = ', placed in %d live MP maps' % mp_place[cls.lower()]
+        elif rk == 'Building':
+            place = ', placed in 0 live MP maps (may still be spawned by code)'
+        return '%s (%s%s)' % (cls, rk or 'worldobject', place), ps
+    for pre, sysname, ps in SYS:
+        if f.startswith(pre):
+            return sysname, ps
+    return f, '-'
+
+# ----------------------------------------------------------------------------------
+# 12. Per-asset rows
+# ----------------------------------------------------------------------------------
+def site_str(r):
+    return '%s:%s:L%d' % (r['file'], r['sym'] or '?', r['line'])
+
+lookup_names = defaultdict(set)   # file -> names passed to LookupFragment/LookupMarker
+for c in code_lits:
+    if not c['commented'] and re.search(r'Lookup(Fragment|Marker)\s*\(\s*"' + re.escape(c['lit']) + '"', c['text']):
+        lookup_names[c['file']].add(c['lit'])
+
+STATUS_ORDER = ['FULL', 'D3D', 'DEBUG', 'EDITOR', 'LEGACY', 'DEAD']
+rows = []
+for rel, a in assets.items():
+    info = a['info']
+    rs, strong, tags = summarise(rel)
+    weak = [r for r in rs if r not in strong]
+    if a['ext'] == 'max':
+        status, reach = 'unused', 'none (3ds Max authoring source)'
+        ev = 'no loader for .max anywhere in code/; data/shapes/source is excluded from packing (tools/multiwinia_exclusions.txt "shapes/source")'
+    elif a['ext'] == 'psp':
+        status, reach = 'unused', 'none (Paint Shop Pro source)'
+        ev = 'not a BMP; never requested; extension not packed into main.dat'
+    elif tags and tags != ['DEAD']:
+        status = 'referenced'
+        reach = tags[0] if tags[0] != 'DEAD' else tags[1]
+        ev = ''
+    elif tags == ['DEAD']:
+        status, reach = 'unused', 'DEAD'
+        ev = 'only referenced from code that is not compiled / commented out'
+    elif weak:
+        status, reach = 'unknown', 'none'
+        ev = 'only indirect evidence: ' + '; '.join(sorted({'%s %s:%s' % (r['kind'], r['file'], r['sym']) for r in weak if r['kind'] != 'format-pattern'}))[:300]
+        if all(r['kind'] == 'format-pattern' for r in weak):
+            status = 'unused'
+            ev = 'name never produced: only matched by generic printf patterns whose value sets exclude it (see rules)'
+    else:
+        status, reach = 'unused', 'none'
+        ev = 'no string, rule or data reference found'
+    live_sites = [r for r in strong if ref_build(r) == reach] or strong
+    sites_txt = []
+    for r in live_sites:
+        st_ = site_str(r)
+        if st_ not in sites_txt:
+            sites_txt.append(st_)
+    cons = []; passes = []
+    for r in live_sites:
+        cn, ps = consumer_of(r, a['dir'])
+        if cn not in cons:
+            cons.append(cn)
+        if ps not in passes:
+            passes.append(ps)
+    flags = sorted({r['flags'] for r in live_sites if r['flags']})
+    states = []
+    for r in live_sites:
+        if r['state'] and r['state'] not in states:
+            states.append(r['state'])
+    reach_notes = sorted({r['reach'] for r in strong if r.get('reach')})
+    if not ev:
+        kinds = sorted({r['kind'] for r in live_sites})
+        ev = '[C] ' + ', '.join(kinds)
+        if reach_notes:
+            ev += ' | reach: ' + '; '.join(reach_notes)
+        dead = sorted({site_str(r) for r in strong if ref_build(r) == 'DEAD'})
+        if dead:
+            ev += ' | also dead/commented: ' + '; '.join(dead[:3])
+    elif reach_notes:
+        ev += ' | ' + '; '.join(reach_notes)
+    a.update(status=status, reach=reach, sites=sites_txt, consumers=cons, passes=passes, flags=flags,
+             states=states, evidence=ev, archive=archive_of(rel), nrefs=len(strong))
+    if a['ext'] == 'shp':
+        names = {f['name'].lower(): f['name'] for f in info['frag_list']}
+        names.update({m['name'].lower(): m['name'] for m in info['marker_list']})
+        files = {r['file'] for r in strong}
+        lk = sorted({n for f_ in files for n in lookup_names.get(f_, set()) if n.lower() in names})
+        a['lookups'] = lk
+
+# max -> shp pairing
+shp_stems = {res_name(r).rsplit('/', 1)[-1][:-4]: r for r in assets if r.endswith('.shp')}
+for rel, a in assets.items():
+    if a['ext'] == 'max':
+        st_ = res_name(rel).rsplit('/', 1)[-1][:-4]
+        a['pair'] = shp_stems.get(st_, '')
+
+# ----------------------------------------------------------------------------------
+# 13. CSV outputs
+# ----------------------------------------------------------------------------------
+def j(xs, n=6):
+    xs = list(xs)
+    return '; '.join(xs[:n]) + (' (+%d more)' % (len(xs) - n) if len(xs) > n else '')
+
+tex_cols = ['path', 'dir', 'bytes', 'format', 'width', 'height', 'bpp', 'palette_colours_used', 'alpha_in_file',
+            'pink_key_pixels', 'pink_fraction', 'black_fraction', 'mean_luminance', 'pow2', 'loader_issues', 'archive',
+            'status', 'reach', 'load_sites', 'flags_at_load', 'gl_state_near_site', 'consumer', 'render_pass', 'evidence', 'extra']
+with open(os.path.join(OUT, 'drafts', 'X2a_textures.csv'), 'w', newline='') as fh:
+    w = csv.writer(fh); w.writerow(tex_cols)
+    for rel, a in assets.items():
+        if a['ext'] in ('shp', 'max'):
+            continue
+        i_ = a['info']
+        if a['ext'] == 'bmp':
+            fmt = 'BMP %d-bit %s' % (i_['bpp'], 'palettised' if i_['bpp'] <= 8 else ('BGR' if i_['bpp'] == 24 else 'BGRA'))
+            extra = ''
+            vals = [i_['w'], i_['h'], i_['bpp'], i_.get('palette_used', ''), i_['alpha'], i_['pink'],
+                    '%.3f' % i_['pink_frac'], '%.3f' % i_['black_frac'], '%.1f' % i_['mean_lum'], i_['pow2'], j(i_['issues'], 3)]
+        elif a['ext'] == 'anim':
+            fmt = 'AnimatedPanel text (%s x %s, t %s..%s s)' % (i_['w'], i_['h'], i_['start'], i_['stop'])
+            extra = '%d objects, %d keyframes, images: %s' % (i_['objects'], i_['keyframes'], ', '.join(i_['images']))
+            vals = [i_['w'], i_['h'], '', '', '', '', '', '', '', '', '']
+        else:
+            fmt = {'vs': 'HLSL vertex shader (vs_main)', 'ps': 'HLSL pixel shader (ps_main)', 'ps3': 'HLSL ps_3_0 pixel shader (ps_main)',
+                   'h': 'HLSL include', 'psp': 'Paint Shop Pro image'}.get(a['ext'], a['ext'])
+            extra = ''
+            vals = [''] * 11
+        w.writerow([rel, a['dir'], a['bytes'], fmt] + vals + [a['archive'], a['status'], a['reach'], j(a['sites']),
+                   j(a['flags'], 3), j(a['states'], 2), j(a['consumers'], 4), j(a['passes'], 4), a['evidence'], extra])
+
+shp_cols = ['path', 'kind', 'bytes', 'fragments', 'max_depth', 'positions', 'vertices', 'colours', 'triangles', 'geometry',
+            'markers', 'marker_names', 'hierarchy', 'parse_problems', 'code_looked_up_names', 'archive', 'status', 'reach',
+            'load_sites', 'consumer', 'render_pass', 'evidence', 'source_pair']
+with open(os.path.join(OUT, 'drafts', 'X2a_shapes.csv'), 'w', newline='') as fh:
+    w = csv.writer(fh); w.writerow(shp_cols)
+    for rel, a in assets.items():
+        if a['ext'] not in ('shp', 'max'):
+            continue
+        i_ = a['info']
+        if a['ext'] == 'shp':
+            vals = [i_['fragments'], i_['max_depth'], i_['positions'], i_['vertices'], i_['colours'], i_['triangles'],
+                    i_['format'], i_['markers'], i_['marker_names'], i_['hierarchy'], j(i_['problems'], 3), ', '.join(a.get('lookups', []))]
+            pair = ''
+        else:
+            vals = [''] * 12
+            pair = a.get('pair', '')
+        w.writerow([rel, a['ext'], a['bytes']] + vals + [a['archive'], a['status'], a['reach'], j(a['sites']),
+                   j(a['consumers'], 4), j(a['passes'], 3), a['evidence'], pair])
+
+with open(os.path.join(OUT, 'drafts', 'X2a_refs.csv'), 'w', newline='') as fh:
+    w = csv.writer(fh)
+    w.writerow(['asset', 'kind', 'strength', 'site', 'build', 'condition', 'reach_note', 'how', 'flags', 'gl_state'])
+    for rel in assets:
+        for r in refs.get(rel, []):
+            if r['kind'] == 'format-pattern':
+                continue
+            w.writerow([rel, r['kind'], r['strength'], site_str(r), ref_build(r), r['cond'], r.get('reach', ''),
+                        r['how'], r['flags'], r['state']])
+
+seen_m = set()
+with open(os.path.join(OUT, 'drafts', 'X2a_missing.csv'), 'w', newline='') as fh:
+    w = csv.writer(fh); w.writerow(['requested_name', 'site', 'build', 'condition', 'how'])
+    for m in missing:
+        key = (m['name'], m['where'], m['ln'])
+        if key in seen_m:
+            continue
+        seen_m.add(key)
+        b = 'DEAD' if m.get('built') == '' else next((t for t in ['FULL', 'D3D', 'DEBUG', 'EDITOR'] if m['live'].get(t)), 'DEAD')
+        w.writerow([m['name'], '%s:%s:L%s' % (m['where'], m.get('sym', ''), m['ln']), b, m.get('cond', ''), m.get('how', '')])
+
+# coverage
+with open(os.path.join(OUT, 'coverage', 'X2a_asset_catalogue_visual.csv'), 'w', newline='') as fh:
+    w = csv.writer(fh); w.writerow(['path', 'depth', 'reason', 'sections'])
+    for rel, a in assets.items():
+        sec = '25.4 Per-file catalogue (%s)' % a['dir']
+        if a['ext'] == 'max':
+            w.writerow([rel, 'skimmed', 'binary 3ds Max source: size and pairing recorded, contents not parsed (never loaded at run time)', sec])
+        elif a['ext'] == 'psp':
+            w.writerow([rel, 'skimmed', 'Paint Shop Pro source image: not loadable by BitmapRGBA, never referenced; header not parsed', sec])
+        else:
+            w.writerow([rel, 'full', '', sec])
+
+# summary for prose
+summ = {'n': len(assets), 'by_dir': defaultdict(lambda: defaultdict(int))}
+for rel, a in assets.items():
+    d = a['dir'] + ('/unicode' if '/unicode/' in rel else '')
+    summ['by_dir'][d]['files'] += 1
+    summ['by_dir'][d]['status:' + a['status']] += 1
+    summ['by_dir'][d]['reach:' + a['reach']] += 1
+    if a['ext'] == 'bmp':
+        i_ = a['info']
+        summ['by_dir'][d]['bpp%d' % i_['bpp']] += 1
+        summ['by_dir'][d]['pow2' if i_['pow2'] == 'yes' else 'npot'] += 1
+        if 'non-trivial' in i_['alpha']:
+            summ['by_dir'][d]['alpha8'] += 1
+        if i_['pink']:
+            summ['by_dir'][d]['pinkkey'] += 1
+        summ['by_dir'][d]['bytes'] += a['bytes']
+json.dump(summ, open(os.path.join(SCR, 'X2a_summary.json'), 'w'), indent=1, default=lambda o: dict(o))
+json.dump({rel: {k: v for k, v in a.items() if k not in ('abs',) and k != 'info'} for rel, a in assets.items()},
+          open(os.path.join(SCR, 'X2a_assets.json'), 'w'), indent=0, default=str)
+print('written', len(rows))

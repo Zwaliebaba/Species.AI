@@ -28,7 +28,7 @@ DEFINED = {
     'INCLUDEGAMEMODE_ROCKET', 'INCLUDEGAMEMODE_ASSAULT', 'INCLUDEGAMEMODE_BLITZ',
     'INCLUDE_CRATES_BASIC', 'INCLUDE_CRATES_ADVANCED', 'INCLUDE_TUTORIAL',
     'BLOCK_OLD_DARWINIA_OBJECTS', 'DUMP_DEBUG_LOG', 'DEBUG_RENDER_ENABLED',
-    'FLOAT_NUMERICS', 'USE_CRASHREPORTING', 'HAVE_DSOUND', 'INCLUDE_THEBEAST',
+    'FLOAT_NUMERICS', 'USE_CRASHREPORTING', 'HAVE_DSOUND',
     'USE_DISPLAY_LISTS', 'AUTHENTICATION_LEVEL', 'HAVE_REFRESH_RATES',
     'USE_PIXEL_EFFECT_GRID_OPTIMISATION', 'STRETCH_RECT',
     'WIN32_LEAN_AND_MEAN', 'NOMINMAX', 'DARWINIA_GAMETYPE', 'GRACE_TIME',
@@ -43,7 +43,30 @@ TAGS = {
     'INCLUDEGAMEMODE_TANKBATTLE': 'DEAD', 'INCLUDEGAMEMODE_PROLOGUE': 'DEAD',
     'INCLUDEGAMEMODE_CAMPAIGN': 'DEAD', 'TARGET_BETATEST_GROUP': 'DEAD',
     'MULTIWINIA_DEMOONLY': 'DEAD', 'TARGET_MULTIWINIA_DEMOONLY': 'DEAD',
+    'INCLUDE_THEBEAST': 'DEBUG',
 }
+# INCLUDE_THEBEAST is defined in code/worldobject/crate.h only under TARGET_DEBUG.
+# Files whose objects are unreachable in Multiwinia (Darwinia-only content), per P05/P06/P07
+# drafts and Building::BuildingIsBlocked; 'mixed' = file holds both live and legacy classes.
+LEGACY_FILES = {
+    'blueprintstore', 'bridge', 'cave', 'chess', 'factory', 'feedingtube', 'generichub',
+    'goddish', 'library', 'mine', 'researchitem', 'safearea', 'upgrade_port', 'switch',
+    'scripttrigger', 'powerstation', 'constructionyard', 'displayscreen', 'spiritreceiver',
+    'spiritstore', 'tripod', 'lander', 'dropship', 'shaman', 'tentacle', 'clonelab',
+    'controltower', 'incubator', 'portal', 'global_internet', 'global_world', 'sepulveda',
+    'demoendsequence', 'engineer', 'spam',
+}
+MIXED_FILES = {'generator', 'spam', 'darwinian', 'entity', 'location', 'rocket'}
+def liveness(rel):
+    base = os.path.splitext(os.path.basename(rel))[0]
+    if rel.startswith('code/loaders/'):
+        return 'DEAD(USE_LOADERS off)'
+    if base in LEGACY_FILES and base not in MIXED_FILES:
+        return 'LEGACY'
+    if base in MIXED_FILES:
+        return 'MIXED'
+    return 'LIVE'
+
 
 def eval_cond(expr):
     """Return (value or None if unknown, set_of_tag_macros_mentioned)."""
@@ -261,16 +284,25 @@ for root in roots:
                             if re.match(r'\s*(?:unsigned\s+long|double|int|void)\s+\w+\s*\(', line) and line.strip().endswith(';'):
                                 kind = 'declaration'
                             stmt = rawlines[ln - 1].strip() if ln - 1 < len(rawlines) else s
+                            win = ' '.join(lines[max(0, ln - 1):min(len(lines), ln + 8)])
+                            tgt = decides(line, col)
+                            var = tgt.split(':', 1)[1].split('.')[-1].split('->')[-1] if tgt.startswith('assign:') else ''
+                            feeds = ''
+                            if 'CreateParticle' in win and (not var or re.search(r'CreateParticle[^;]*\b' + re.escape(var) + r'\b', win)):
+                                feeds = 'particle?'
+                            if 'TriggerEntityEvent' in win or 'TriggerBuildingEvent' in win or 'TriggerOtherEvent' in win:
+                                feeds = (feeds + ' sound?').strip()
                             out.append({
                                 'file': rel, 'line': ln, 'function': func, 'generator': name,
                                 'argument': arg[:80], 'context': classify(rel, func),
                                 'decides': decides(line, col), 'build': build,
                                 'preproc_conditions': conds[:120], 'compiled': is_comp,
                                 'kind': kind, 'statement': stmt[:140],
+                                'liveness': liveness(rel), 'cosmetic_hint': feeds,
                             })
 
 FIELDS = ['file', 'line', 'function', 'generator', 'argument', 'context', 'decides',
-          'build', 'compiled', 'kind', 'preproc_conditions', 'statement']
+          'cosmetic_hint', 'liveness', 'build', 'compiled', 'kind', 'preproc_conditions', 'statement']
 for path, rows in ((OUT_SYNC, sync_rows), (OUT_UNSYNC, unsync_rows)):
     with open(path, 'w', newline='') as fh:
         w = csv.DictWriter(fh, fieldnames=FIELDS)

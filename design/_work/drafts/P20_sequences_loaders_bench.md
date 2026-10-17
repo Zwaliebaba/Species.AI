@@ -204,7 +204,7 @@ A small keyframed 2D "cartoon" (sprites moving, rotating, fading) shown in a fra
 | `m_flipHoriz` | int bool | 0 | no |
 | `m_alpha` | int 0–255 | 255 | linear (integer truncation on assignment) |
 
-Colour enum: `ColourNone`=0 (white 255,255,255), `ColourFriendly`=1 (local team's `Team::m_colour`), `ColourEnemy`=2 (colour of the first team index `i` in `0..NUM_TEAMS-1` that is not `TeamTypeUnused` and not a friend of `g_globalWorld->m_myTeamId`; white if none), `ColourInvisible`=3 (RGBA 255,255,255,0 — alpha forced 0, keyframe alpha ignored) [C] `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`.
+Colour enum: `ColourNone`=0 (white 255,255,255), `ColourFriendly`=1 (local team's `Team::m_colour`), `ColourEnemy`=2 (colour of the first team index `i` in `0..NUM_TEAMS-1` that is not `TeamTypeUnused` and not a friend (`Location::IsFriend`) of `g_app->m_globalWorld->m_myTeamId`; white if none), `ColourInvisible`=3 (RGBA 255,255,255,0 — alpha forced 0, keyframe alpha ignored) [C] `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`.
 
 Editing API present but unused by the game (no editor in this tree calls it) [I from grep]: `NewObject`, `DeleteObject`, `NewKeyframe(obj, t)` (samples current properties at t and appends), `GetKeyframe(obj, t, maxDiff)` (first keyframe within ±maxDiff), `DeleteKeyframe` (removes from list **without deleting** — leak), `Write(TextFileWriter*)` (serialiser — the inverse of `Read`).
 
@@ -231,7 +231,7 @@ For object `o` at time `t`:
 ### 3.2 Dispatcher `RunBootloader()` [B:DEAD] (`#ifdef USE_LOADERS`) [C] `code/main.cpp:RunBootloader`
 Called from the top of the main loop in `RunTheGame` when `requestBootloader` is set (by `RequestBootloaderSequence`, i.e. `CampaignButton::LoadCampaign`):
 1. `g_loadingScreen->Render()` (finish any pending load first).
-2. `name = prefs "BootLoader"` (default here `"none"`; `data`-less default prefs write `BootLoader = firsttime` [C] `code/lib/preferences.cpp`; Other-Options UI writes `none`/`random`/`firsttime` — owned by P17b).
+2. `name = prefs "BootLoader"` (lookup default `"none"`; but `PrefsManager::CreateDefaultValues` writes `BootLoader = firsttime` in non-`DEMOBUILD` builds, so a fresh install would get the intro [C] `code/lib/preferences.cpp`; Other-Options apply writes `none`/`random`/`firsttime` — owned by P17b).
 3. `name == "firsttime"` (case-insensitive) → construct `StartSequence`, loop `{ UpdateAdvanceTime(); if (StartSequence::Advance()) break; }`, delete it; camera `SetTarget((1000,500,1000), (0,−0.5,−1))` + `CutToTarget()`; set prefs `BootLoader = "random"` and save (the intro plays once).
 4. Else `idx = Loader::GetLoaderIndex(name)`; if `idx != −1`: `CreateLoader(idx)->Run()`, delete.
 5. `g_RenderingFirstTimeBL = false`.
@@ -399,6 +399,9 @@ A 1990s "cracktro": starfield, bouncing two-part logo, sine-wave scroller and a 
 - **Scroller**: text `bootloader_amiga` (wraps modulo length), `g_editorFont` in a 1024×768 ortho; speed 450 px/s; pitch 32 px; glyph height 55 with a 63-px shadow glyph in (32,64,64) behind; 34 glyphs per screen; glyph x from the sub-pixel scroll offset; `phase = 0.01x + scrollPhase` (`scrollPhase += 10·dt`); `y = 40 + 20·sin(phase)`; colour `c = 100·sin(4·phase) + 101` → RGB `(255−c, 255−c, c+20)`.
 - Fade to black over 15 s starting at 72 s (`alpha = (now − (start+72))/15`); ends at 89 s. Music `LoaderAmiga`.
 
+### 3.13 Distributor loaders (`EgamesLoader`, `OberonLoader`) [B:DEAD]
+Full algorithms (AVI-on-a-tilted-screen intro with creature crowd; two-logo cross-fade splash) are in the Appendix — compiled out (`EGAMESBUILD`, `OBERONBUILD` defined nowhere) and without a call site even when enabled [C] `code/loaders/egames_loader.cpp`, `code/loaders/oberon_loader.cpp`, `code/main.cpp` (includes only).
+
 ## [→ 09_meta_systems] 4. Credits roll (`CreditsLoader`) — [B:LEGACY]
 
 **Reachability.** Darwinia-campaign only: script op `RunCredits` (`code/script.cpp:Script::RunCommand_RunCredits`; no shipped script uses it [C grep `data/scripts`]) and the Darwinia ending camera `Camera::AdvanceSphereWorldOutroMode` once its running time exceeds 70 s (entered via script op `GameOver` in `data/scripts/gameover.txt`) — after the credits the camera returns to `ModeSphereWorld` at pos (0,0,100) [C] `code/camera.cpp`. **Multiwinia's own credits** are a static scrolling text page in the front-end menu (`GameMenuWindow::SetupCreditsPage`, `ReadCredits` concatenating `multiwinia_credits_<n>` phrases and the beta-tester list) — owned by P18 [C] `code/UI/GameMenuWindow.cpp`.
@@ -490,7 +493,7 @@ While carrying, `item.pos = carrier.pos − (0, size/2)` (item rides just above 
 | Location 3 | `EnterLocation biosphere`; `attract1..attract6` at 10 s each with `WaitCam`, final `Wait 7`; `ExitLocation` |
 | End | `CamReset`, `CamReset`, `ExitLocation` |
 
-(`CamMove <mount> <seconds>` flies the camera to a named camera mount defined in the map; mounts `attract1..6` live in the three `mission_*_attract.txt` files — grammar owned by P19/X agents.) Approximate run time: 5×10+7 + 20+5×10+7 + 6×10+7 ≈ 201 s plus level-load time [I].
+(`CamMove <mount> <seconds>` flies the camera to a named camera mount defined in the map; mounts `attract1..6` live in the three `mission_*_attract.txt` files — grammar owned by P19/X agents.) Approximate run time (the last `CamMove` of each location is cut short by `Wait 7` instead of `WaitCam`): mine 4×10+7 = 47 s, pattern_buffer 20+4×10+7 = 67 s, biosphere 5×10+7 = 57 s → ≈ 171 s plus level-load time [I].
 
 `EndAttractMode()`: `Script::m_waitForCamera = false`; `RunScript("endattract.txt")` (2 lines: `CamReset`, `ExitLocation`); restore the saved profile name and `LoadProfile()`; unlock the task manager; `m_running = false`, profile name buffer := `"none"`.
 
@@ -504,3 +507,321 @@ stateDiagram-v2
 ### 5.3 Notes for the new game
 Attract mode = "idle → cinematic fly-through of scripted camera mounts over live levels with an unlocked throw-away profile; any input returns to the menu". Worth re-implementing for kiosk/demo builds; the original never shipped it.
 
+## [→ 30_scripting_tutorial_and_cutscenes] 6. Start sequence — first-time intro (`StartSequence`) — [B:LEGACY] (compiled; only constructed by `RunBootloader`, which is `USE_LOADERS`-only)
+
+### 6.1 Trigger
+Only from `RunBootloader` when prefs `BootLoader == "firsttime"`, i.e. (with `USE_LOADERS`) the first time the player launches the **Darwinia campaign** from the Multiwinia front end; afterwards the pref becomes `"random"` (§3.2) [C] `code/main.cpp:RunBootloader`. There is no Multiwinia-mode intro in this tree.
+
+### 6.2 Driver loop [C] `code/startsequence.cpp:StartSequence::Advance` (returns true when finished)
+1. First call per process (static `started`): trigger music `StartSequence`; camera `SetDebugMode(DebugModeAuto)`, `RequestMode(Camera::ModeSphereWorldIntro)`.
+2. `PollForEvents`. If the window lacks focus: `Sleep(1)`, `UserInput::Advance()`, return false — the sequence clock (`now − m_startTime`) keeps running, so time spent unfocused is lost, not paused [C].
+3. Finish (stop `"Music StartSequence"`, return true) when `ControlSkipMessage`, `g_app->m_requestQuit`, or elapsed > **90 s**.
+4. Else: `UserInput::Advance`, `Camera::Advance`, `SoundSystem::Advance` (if initialised), profiler advance; set additive blending (`SRC_ALPHA, ONE`); `Renderer::Render()` — the full sphere-world render, which calls `StartSequence::Render()` as an overlay (`code/renderer.cpp:Renderer::Render`, `if (g_app->m_startSequence)`). Islands are not drawn in intro/outro camera modes (`SphereWorld::RenderIslands` early-out) and the promotional logo is suppressed [C] `code/global_world.cpp`, `code/renderer.cpp`.
+
+### 6.3 Camera flight (owned by P10; summarised) [C] `code/camera.cpp:Camera::AdvanceSphereWorldIntroMode`
+Target FOV 70. First frame (static `fixMeUp`, once per process): pos (−965 852, 1 720 000, 2 600 000), front (−1,0,0), up normalise(0.15, 0.93, 0.31). Look-at target (−1 000 000, 4 000 000, 397 000) for the first 30 s, then (1000, 500, 1000). `forwardSpeed = 3000`, reduced to `3000·distance/1 070 000` when distance < 2 000 000 and t > 30. Each frame: `front = front·(1−k) + targetDir·k` with `k = frameTime·4000/30000`; `up` rotated about `front` by `frameTime·(4000/30000)·sin(0.1t + 0.4)·1.6`; `pos += front·forwardSpeed·frameTime·62`. After the sequence `RunBootloader` cuts the camera to target (1000,500,1000), front (0,−0.5,−1).
+
+### 6.4 Overlay timeline [C] `StartSequence::StartSequence`, `StartSequence::Render`
+Virtual canvas 800 × `screenH = 800·ScreenH/ScreenW` (480 at 4:3). Caption origin x = 150, `y0 = screenH·4/5`.
+
+| Key | Content category (text is IP — not reproduced) | x | y | size | visible from (s) | to (s) |
+|---|---|---|---|---|---|---|
+| `intro_1` | publisher "presents" credit | 150 | y0 | 10 | 3 | 15 |
+| `intro_2` | game title | 150 | y0+15 | 20 | 8 | 15 |
+| `intro_3` | fictional "connecting to project server…" log line | 150 | y0+40 | 10 | 30 | 45 |
+| `intro_4` | "data stream established" log line | 150 | y0+50 | 10 | 42 | 45 |
+| `intro_5` | in-fiction welcome line | 150 | y0 | 10 | 54 | 65 |
+| `intro_6` | in-fiction advice about the native creatures | 150 | y0 | 10 | 66 | 74 |
+| `intro_7` | "errors detected in data stream" warning | 150 | y0+15 | 10 | 72 | 74 |
+| `intro_8` | in-fiction farewell naming the scientist character | 150 | y0 | 10 | 74 | 90 |
+| `intro_9` | repeat of the error warning | 150 | y0+15 | 15 | 82 | 90 |
+| `intro_10` | the same warning with deliberately corrupted spelling | 150 | y0+30 | 15 | 86 | 90 |
+
+- **Typewriter**: a caption active at time `t` shows its first `floor((t − start)·20)` characters (20 chars/s), `g_gameFont.DrawText2D`, colour (1,1,1,0.8).
+- **Cursor**: the *last* active caption in registration order owns a block cursor at `(x + width(visibleChars, size), y − 7.25)`, size `0.7·size × 0.88·size` (same colour). Solid while typing; once the whole string is shown (`visibleCount > length`) it blinks: drawn when `fmod(t, 1) < 0.5`. No cursor if no caption is active (detected as `cursorPos == (0,0)`).
+- **Fades**: t < 3 s black full-canvas quad alpha `1 − t/3` (fade in); t > 87 s white quad alpha `(t − 87)/2` (fade to white, opaque at 89 s; sequence ends at 90 s).
+- **Grid**: from t > 50 s, after `SetupMatricesFor3D`, a line grid drawn in world space scaled ×1000 (`glScalef(1000)`): height −400, spacing 100, both axes from −8000 to `xEnd = 4000 − 8000·p` with `p = max(1 − (t − 50)/10, 0)` (grows from a 4000-wide to a 12 000-wide square over 10 s; final world extent −8 000 000 … +4 000 000 on X and Z at y = −400 000). Lines colour (0.5, 0.5, 1.0, 0.5), additive, smoothed, depth-tested, linear fog 0 … 5 810 000 to black. Restores `GlobalWorld::SetupFog()` and disables fog afterwards.
+
+```mermaid
+gantt
+    dateFormat s
+    axisFormat %S
+    title StartSequence overlay (seconds)
+    section Fades
+    Fade from black      :0, 3s
+    Fade to white        :87, 3s
+    section Captions
+    intro_1              :3, 12s
+    intro_2              :8, 7s
+    intro_3              :30, 15s
+    intro_4              :42, 3s
+    intro_5              :54, 11s
+    intro_6              :66, 8s
+    intro_7              :72, 2s
+    intro_8              :74, 16s
+    intro_9              :82, 8s
+    intro_10             :86, 4s
+    section 3D
+    Grid grows (50-60) then stays :50, 40s
+    Camera target switch at 30 s  :milestone, 30, 0s
+```
+
+### 6.5 Design notes
+Narrative device: a fake boot/connection log typed onto the screen while the camera dives from deep space into the world, with escalating "data corruption" foreshadowing the plot. A new game should keep the *mechanism* (timed typewriter captions, cursor, fades, camera spline) data-driven rather than hard-coded, and must replace all text, title and character names.
+
+## [→ 30_scripting_tutorial_and_cutscenes] 7. Demo end sequence (`DemoEndSequence`) — [B:DEAD] (`USE_SEPULVEDA_HELP_TUTORIAL` defined nowhere)
+
+**Trigger** (if compiled): script op `ShowDemoEndSequence` — used by `data/scripts/launchpad_victory.txt` L38 (end of the Prologue level) [C]. In [B:FULL] `Script::RunCommand_ShowDemoEndSequence` is compiled with an empty body, and `App::m_demoEndSequence` does not exist (member also gated) [C] `code/script.cpp`, `code/app.h`.
+
+**Behaviour** (as written) [C] `code/demoendsequence.cpp`:
+- Constructor: `m_timer = now`; first creature spawn after 20 s (0 s if not single-player); in single-player delete the profile's saved mission file (`<profileDir>users/<profile>/<missionFile>`) and `game_demo2.txt` → the prologue restarts fresh next time; `g_app->m_levelReset = true`.
+- `Render()` each frame (800-wide canvas): full-screen white quad, alpha `min(0.2·t, 1)` in single-player (`min(…, 0.8)` otherwise) → fades to white over 5 s.
+- Every 3 s (first after 20 s): a "ghost" sprite spawned at (850, frand(screenH)) moving left at 10–20 px/s with vertical drift `sfrand(10)` (±5 px/s), spinning at ±(0.3–0.6) rad/s, size 50 ± 12.5; drawn as `sprites/ghost.bmp` (colour (0.8,0.3,0.8,0), blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`) plus a 70 %-size `sprites/darwinian.bmp` (0.3,1,0.3,0.1); removed when x < −100.
+- After 20 s (single-player, Sepulveda not talking): centred prompt `multiwinia_spacetoexit` (keyboard) or `multiwinia_atoexit` (gamepad) at (ScreenW/2, 0.9·ScreenH), `g_titleFont` size 0.05·ScreenH, outline + fill; `ControlToggleReady` → `m_requestedLocationId = −1`, `m_atMainMenu = true`.
+- Deleted in `GameMenu::CreateMenu` (also gated).
+
+## [→ 32_debug_test_and_performance] 8. Benchmark recorder + FTP upload (`BenchMark`) — [B:DEAD] (`BENCHMARK_AND_FTP`)
+
+### 8.1 Build tag
+`benchmark.cpp` is entirely inside `#ifdef BENCHMARK_AND_FTP`; the only mention of the macro in `universal_include.h` is a commented-out `//#define BENCHMARK_AND_FTP` inside the `TARGET_BETATEST_GROUP` block → off in every target in this tree [C]. `App::m_benchMark` and all call sites are gated [C] `code/app.h`, `code/app.cpp`, `code/main.cpp`. The beta release notes describe it as live in a beta build (see Docs-vs-code).
+
+### 8.2 What it measures
+It is a **telemetry logger**, not a benchmark scene: there is no scoring, no fixed test scene and no pass/fail. While a Multiwinia match runs it appends one sample per second to a per-match text file, prefixed with a hardware/configuration header, and uploads the file when the match ends.
+
+| Sample field (in order) | Source | Units |
+|---|---|---|
+| time index | `BuildTimeIndex()` = local time `"%02d-%02d-%02d %02d.%02d.%02d"` (year 4-digit) → `YYYY-MM-DD hh.mm.ss` | wall clock |
+| frames rendered | `Renderer::m_fps` | frames/s (P12 owns the counter) |
+| bandwidth in | `Server::m_receiveRate` if hosting, else `ClientToServer::m_receiveRate` | P15 units [U] (bytes/s assumed) |
+| bandwidth out | `…m_sendRate` likewise | as above |
+| latency | `ClientToServer::GetEstimatedLatency()·1000` | ms (int) |
+| entity count | `Entity::s_entityPopulation` | count |
+
+Line format `"%s,%5d,%6d,%6d,%5d,%5d"` [C] `code/benchmark.cpp:BenchMark::BuildBenchmark`.
+
+### 8.3 Life cycle [C]
+1. **App construction** (`App::App`): `m_benchMark = new BenchMark(); RequestDXDiag()` → `ShellExecute("open", "dxdiag.exe", "/t <profileDir>dxdiag.txt", SW_SHOWNORMAL)` inside SEH `__try/__except` (exceptions swallowed) — DirectX Diagnostic writes a text report asynchronously.
+2. **Begin()** — called at the start of each non-editor location (`code/main.cpp:EnterLocation`, before `LocationGameLoop`) and retried every frame from `Advance()` while not recording:
+   - `CreateDirectory(<profileDir>benchmarks)`.
+   - `BuildDxDiag()`; if `dxdiag.txt` cannot be opened → return (retry next frame).
+   - If `g_app->m_gameMode != GameModeMultiwinia` → return ("Don't bother in single player").
+   - `authKey` = `Authentication_GetKey` (P15/metaserver); `m_filename = "<profileDir>benchmarks/game <authKey> <timeIndex>.txt"` (comment notes newline characters in the key should be stripped — they are not [C]). If the file already exists → return.
+   - `m_recording = true`; append header lines `USR AuthKey , <key>`, `USR Build , <DARWINIA_VERSION_STRING>`, `USR Game , <blueprint name>`, `USR Map , <g_app->m_requestedMap>`, `USR Screen , "<w> x <h> <windowed|fullscreen>, <bpp> bit Colour, <hz> hz, <zDepth> zDepth"` (prefs `ScreenWidth`, `ScreenHeight`, `ScreenWindowed`, `ScreenColourDepth`, `ScreenZDepth`, `ScreenRefresh` [C] `code/lib/preference_names.h` — refresh read only with `HAVE_REFRESH_RATES`, which is defined only inside `code/interface/prefs_screen_window.cpp`, so it is always 0 here [I]), then the filtered dxdiag lines, then a blank line.
+3. **Advance()** — every frame in the location loop (`code/main.cpp`, gated): if recording and `now ≥ m_timer` → `m_timer = now + 1.0`, append a sample line (file opened/closed per write).
+4. **End()** — after `LocationGameLoop` returns: append `@` line.
+5. **Upload()** — immediately after `End()`: if the file exists, `ShellExecute("open", "ncftpput.exe", "-t 60 -u <user> -p <password> <ftp host> . \"<file>\"", SW_HIDE)` — external NcFTP client, 60 s timeout, upload to the root of an Introversion FTP account. Credentials are hard-coded in the source (not reproduced here; a new game must never embed credentials).
+
+### 8.4 dxdiag filter [C] `BenchMark::BuildDxDiag`
+Reads `dxdiag.txt` line by line (`TextFileReader`, which strips line terminators, `#`-comments and leading separator characters ` \t\n\r:,`); the loop condition also requires `GetRestOfLine()` non-NULL, so reading **stops at the first blank line** [C] (see Unknowns item 0 for the practical effect). Section headers switch the permitted-field list (each field is accepted once per header, then removed):
+
+| Header substring | Tag | Permitted identifiers (exact, case-insensitive, before the first `:`) |
+|---|---|---|
+| `System Information` | `SYS` | Operating System, Language, System Manufacturer, System Model, BIOS, Processor, Memory, DirectX Version |
+| `Display Devices` | `GFX` | Card name, Chip type, Display Memory, Driver Version, Driver Date/Size |
+| `Sound Devices` | `SND` | Description, Driver Version, Date and Size |
+
+Commas in values are replaced by spaces; output line `"<TAG> %0-20s,<value>"` (identifier left-justified to 20).
+
+### 8.5 Related data: the stress-test map
+`data/levels/mp_benchmark_1.txt` (`MAPID_MP_BENCHMARK_1 = 0x49bda3c0` [C] `code/mapcrc.h`; English name "Stress Test", description: spawns units indefinitely [C] `data/language/english.txt` L2989–2990) declares `GameTypes none` and 4 players. `none` matches no game blueprint so `LevelFile::m_gameTypes` keeps its default [C] `code/level_file.cpp` → not selectable in any mode [I]; it is whitelisted only in `TARGET_PC_HARDWARECOMPAT`'s `PERMITTED_MAPS` [C]. `BenchMark` does not reference it. Owned by P02/P11.
+
+### 8.6 Re-implementation guidance
+Keep the idea (opt-in per-second telemetry: fps, net in/out, latency, entity count + hardware summary) but: use an in-process hardware query (DXGI adapter desc, `GetSystemInfo`, `GlobalMemoryStatusEx`) instead of shelling out to dxdiag; upload over HTTPS with per-build tokens; require explicit user consent.
+
+## [→ 32_debug_test_and_performance] 9. Campaign test harness (`TestHarness`) — [B:DEAD] (`TEST_HARNESS_ENABLED`)
+
+### 9.1 Activation [C] `code/main.cpp:RunTheGame`
+`#ifdef TEST_HARNESS_ENABLED`: after `Initialise()`, if prefs `TestHarness == 1` → `g_app->m_testHarness = new TestHarness(); TestHarnessLoop()` (= `RunTest()`); `Finalise(); exit(0)`. Never renders.
+
+### 9.2 What it automates
+An offline, exhaustive **mission-graph explorer** for the Darwinia campaign's global world: it simulates "completing" missions in every possible order (depth-first over all available missions), applying each mission's objectives to the global state and re-evaluating global events, and reports every reachable end state plus data errors. It does not run the simulation or AI.
+
+### 9.3 Algorithm [C] `code/testharness.cpp`
+- Output `test_log.txt` (cwd), unbuffered; `m_indent` = pointer into a 255-space buffer (starts at the end = empty string; indenting moves it back 3 chars).
+- `ExploreStates(world)`:
+  1. `PrintGlobalState`: for each location `"%-16s %-37s %-8s"` name, mission file, `available|unavailable`.
+  2. `FindAvailableMissions`: locations with `m_available` and mission ≠ `"null"`; missions whose name starts with `cutscene` → `PrintError("Cutscene mission file left hanging around in <loc>")` and skipped.
+  3. None → end state: print "Game Over. Missions done: N" and the list; store a `CompletedGame` with each mission name minus its first 8 characters (the `mission_` prefix).
+  4. Else, for each available mission: deep-copy the world (`GlobalWorld` copy constructor), temporarily make it `g_app->m_globalWorld`, `DoMission`, recurse, pop the mission name, print "End of mission in <loc>", delete the copy, restore.
+- `DoMission(world, loc)`: log; push mission name; indent; load `LevelFile(missionFile, mapFile)`; `AchieveObjective` for every primary then every secondary objective; set the location's mission file to `"null"`; `while (world->EvaluateEvents());` (with `TEST_HARNESS_ENABLED`, `GlobalEventAction::Execute` logs `SetMission`, `RunScript`, `MakeAvailable` actions [C] `code/global_world.cpp`).
+- `AchieveObjective` per `GlobalEventCondition` type: `AlwaysTrue`, `DebugKey`, `NotInLocation` → nothing; `BuildingOffline` → global building offline (error if bad id); `BuildingOnline` → online, and if it is a `TrunkPort` the port's target location becomes available (error if invalid); `ResearchOwned` → `GlobalResearch::AddResearch(id)`; `NeverTrue` → not handled (nothing).
+- `RunTest`: explore from the live world, then a summary: each completed game's mission count and list, and "Number of errors: N".
+- Script errors (`SCRIPT_TEST_ENABLED`) are routed to `TestHarness::PrintError` when a harness exists [C] `code/script.cpp`; `Script::IsRunningScript()` returns false whenever `m_testHarness` exists (compiled in FULL; always NULL there).
+- Defects: destructor `delete[] m_indent` frees the moved pointer (undefined behaviour); indent underflows after 85 levels; search is factorial in the number of simultaneously available missions (no memoisation) [C/I].
+
+### 9.4 Related test/benchmark gates enumerated (for 32)
+| Macro | Defined | Effect in this partition |
+|---|---|---|
+| `USE_LOADERS` | commented out | removes 8 loaders, `RunBootloader` |
+| `ATTRACTMODE_ENABLED` | nowhere | attract mode never constructed |
+| `BENCHMARK_AND_FTP` | commented out (beta block) | benchmark recorder |
+| `TEST_HARNESS_ENABLED` | nowhere | campaign explorer |
+| `SCRIPT_TEST_ENABLED` | nowhere | script error routing |
+| `EGAMESBUILD`, `OBERONBUILD`, `DEMOBUILD`, `DEMO2` | nowhere | distributor loaders/credit lines; `CreateLoader` returns NULL under `DEMOBUILD` |
+| `USE_SEPULVEDA_HELP_TUTORIAL` | nowhere | demo end sequence |
+| `USE_DIRECT3D` | `ReleaseDirect3D` | ray-tracer clears each frame; GoL GL-trace; loading screen waits for `GeneratingMipmaps()` |
+| `WAN_PLAY_ENABLED` | FULL | ESRB line on the loading logo |
+| `TARGET_OS_MACOSX` | Mac | 5 s platform logo on the loading screen |
+
+## [→ 09_meta_systems] 10. Constants table (all P20 tunables)
+
+Kind: `#define` = preprocessor; `literal` = inline constant in code; `static` = function-static; `data` = from `data/`; `pref` = preferences.
+
+| Subsystem | Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|---|
+| LoadingScreen | frame budget | 1/60 | s | literal | `code/loading_screen.cpp:LoadingScreen::Render` |
+| LoadingScreen | worker affinity mask | 0x01\|0x04\|0x10\|0x40 | CPUs 0,2,4,6 | literal | `SetWorkingThreadProcessor` (both files) |
+| LoadingScreen | logo fade-in / fade-out | 1.0 / 1.0 | s | literal | `RenderFrame` |
+| LoadingScreen | logo size | 500·ScreenH/1024 | px | literal | `RenderIVLogo` |
+| LoadingScreen | ESRB text y, size, alpha | 0.95·H, 0.02·H, logoAlpha−0.5 | — | literal | `RenderIVLogo` |
+| LoadingScreen | spinner size, centre | 100×100, (W−100, H−100) | px | literal | `RenderSpinningDarwinian` |
+| LoadingScreen | spinner colour, rate | (0.2,0.8,0.2,1), 90 | °/s | literal | same |
+| LoadingScreen | Mac platform-logo duration | 5.0 | s | literal [B:DEAD] | `RenderFrame` |
+| AnimatedPanel | defaults width/height/start/stop | 600/300/0/30 | units, s | literal | `AnimatedPanel::AnimatedPanel` |
+| AnimatedPanel | keyframe defaults x,y,scale,angle,alpha,image | 100,100,0.3,0,255,`darwinian.bmp` | — | literal | `AnimatedPanelKeyframe::AnimatedPanelKeyframe` |
+| AnimatedPanel | coincident-key threshold | 0.01 | s | literal | `CalculateObjectProperties` |
+| AnimatedPanel | placement scale | ScreenH/1300 | — | literal | `MultiwiniaHelp::InitialiseAnimatedPanel` |
+| AnimatedPanel | bottom offset | 1.15·height·scale | px | literal | same |
+| AnimatedPanel | border/title/caption heights | 5 / 25 / 15 | px | literal | same |
+| AnimatedPanel | background alpha | 0.9 (lines 0.45, 0.225) | — | literal | `MultiwiniaHelp::RenderAnimatedPanel`, `RenderBackground` |
+| AnimatedPanel | title font / caption font | 30 (`g_titleFont`) / 18 (`g_editorFont`, wrap 18/1.7) | px | literal | `RenderTitle`, `RenderCaption` |
+| AnimatedPanel | visibility | grace timer ≥ `GRACE_TIME` (3.0 s) | s | `#define` | `code/lib/universal_include.h` |
+| Loader | random weights (USE_LOADERS) | Matrix 10, Raytrace 10, Soul 10, GoL-Glow 10, others 0 | — | literal | `Loader::GetRandomLoaderIndex` |
+| Loader | random weight (FULL) | Credits 10 | — | literal | same |
+| Loader | virtual canvas width | 800 | px | literal | `SetupFor2D(800)` callers |
+| Speccy | phase durations | 1.5, 4.8, 0.07, 1.1, 2.0, 1.85, 1.01, 5.05, 0.07, 0.99, 1.9 | s | literal | `SpeccyLoader::Run` |
+| Speccy | first line delay / per-line | 0.192 / 0.194 | s | literal | `SpeccyLoader::Screen` |
+| Speccy | lines | 192 | — | literal | same |
+| Speccy | header stripe pitch / data pitch | 7 / 2–5 | lines | literal | `Header`, `Data` |
+| Speccy | silence swap chance | 1/200 | per frame | literal | `Silence` |
+| Speccy | canvas / paper | 320×256 / (32,32)–(288,224) | px | literal | `StartFrame`, all modes |
+| Matrix | update period | 0.02 | s | `#define MATRIXLOADER_UPDATEPERIOD` | `matrix_loader.h` |
+| Matrix | grid | 40×30, 20×20 px cells | — | literal | `MatrixLoader` |
+| Matrix | trail decay / post-head value | 0.05 / 0.5 | per step | literal | `Run` |
+| Matrix | mask cap | 100 (×2 per head) | — | literal | `Run` |
+| Matrix | phase times | 1, 15, 20, 23 | s | literal | `Run` |
+| Fodder | fade-in | 5 | s | literal | `FodderLoader::Run` |
+| Fodder | text y / size | 215, 265, 320 / 35 | px | literal | same |
+| Raytrace | max objects / depth / max res | 10 / 2 / 5 | — | `#define` | `raytrace_loader.h` |
+| Raytrace | base resolution | 160×120 × res | px | literal | many |
+| Raytrace | refraction coefficient | 1.4 (unused) | — | `#define REFRACTION_COEFFICIENT` | `raytrace_loader.cpp` |
+| Raytrace | FOV | 90 (h), 90·H/W (v) | ° | literal | `SetupMatrices` |
+| Raytrace | sphere radii | 10, 5×5 | units | literal | ctor |
+| Raytrace | floor y / checker size / scroll | −40 / 32 / 100 | units, units/s | literal | ctor, `GetFloorColour` |
+| Raytrace | floor falloff | min(100000/\|P\|², 1) | — | literal | `CastRay` |
+| Raytrace | defaults res, refl, wave, mblur, pblur, bright | 2, 1.0, 0, 0.1, 2.0, 1.2 | — | literal | ctor |
+| Raytrace | approach | z = max(700 − 150√t, 0); after 60 s z = −2(t−60) | units | literal | `AdvanceObjects` |
+| Raytrace | axis spin | 0.75 | rad/s (X and Y) | literal | same |
+| Raytrace | camera move speed | 20 | units/s | literal | `AdvanceControls` |
+| Raytrace | message window | in 30–40 s, out 60–70 s | s | literal | `RenderMessage` |
+| Soul | FOV / near / far | 20° / 1 / 10000 | — | literal | ctor |
+| Soul | fog start / end | 50 / 1500 | units | literal | ctor |
+| Soul | spawn interval | 0.6 | s | literal | `AdvanceAllSpirits` |
+| Soul | spawn box / kill height | x ±100, y −170, z −1000..0 / y > 200 | units | literal | same |
+| Soul | rise speed | 3–6 | units/s | literal | `SoulLoaderSpirit::Advance` |
+| Soul | spirit sizes / alphas | 1 & 3 / 255 & 150, fade-in 10 s | — | literal | `Render` |
+| Soul | message schedule | first at 10 + gaps 5·(1±0.2); dur 30/30/20; sizes 3/5/2; growth 0.7/0.15/0.3 | s | static | `RenderMessage` |
+| GoL | `CELLSIZE`, `MAXAGE`, `MAXSPAWNAGE`, `MAXSPIRITAGE` | 20, 50, 30, 20 | px / generations | `#define` | `gameoflife_loader.cpp` |
+| GoL | grid width / initial density | 128 / 20 % | cells | literal | ctor, `RandomiseCells` |
+| GoL | zoom law / speed law | 0.08 + t²/500 / max(0.02/zoom, 0.1) | — / s per gen | literal | `Run` |
+| GoL | all-dead fade | 5 | s | literal | `Run` |
+| Amiga | stars | 4000; speed 20–220 px/s; grey 127–255 | — | literal | ctor |
+| Amiga | pyramid points / vertex size | 10000 / 20 | — / units | literal | ctor, `Sierpinski3D` |
+| Amiga | pyramid start / spin accel / initial phase | 10 s / 2.1 / 20 | s / units·s⁻² / — | literal | `RenderFracTri` |
+| Amiga | scroller speed / pitch / height | 450 / 32 / 55 (+8 shadow) | px/s, px | literal | `RenderScrollText` |
+| Amiga | fade start / fade length / end | 72 / 15 / 89 | s | literal | `Run` |
+| Credits | carrier speed | 150 | px/s | literal | `AdvanceToTargetPos` |
+| Credits | arrive / slow-down radius | 2 / 10 | px | literal | same |
+| Credits | axis weighting | 0.3 | — | literal | same |
+| Credits | spawn distances (new item / carrier / removal target / removal carrier / leave / invalid) | 1000+rand%200 / 200+rand%100 / 150 / 40+rand%50 / 100 / 30 | px beyond edge | literal | `AddString`, `GenerateWords/Chars`, `RemoveUnusedStrings`, `CreditsDarwinian::Advance` |
+| Credits | screen bounds | 800×600 | px | literal | `IsOffscreen`, `GenerateOffscreenPosition` |
+| Credits | carrier sprite | 30×30, (100,255,100) | px | literal | `RenderDarwinian` |
+| Credits | clear fade-in | 7 | s | literal | `Run` |
+| Credits | beta list | 2 columns at x 200/600, y0 75, text = gap·2/3 | px | literal | `GenerateBetaTesterList` |
+| StartSequence | max length | 90 | s | literal | `Advance` |
+| StartSequence | typewriter rate | 20 | chars/s | literal | `Render` |
+| StartSequence | cursor | 0.7·size × 0.88·size, offset −7.25, blink 0.5 s of each 1 s | px | literal | `Render` |
+| StartSequence | fade in / fade to white | 0–3 s / 87–89 s | s | literal | `Render` |
+| StartSequence | grid | start 50 s, grow 10 s, height −400, spacing 100, ×1000, colour (0.5,0.5,1,0.5), fog end 5 810 000 | — | literal | `Render` |
+| Intro camera | start pos/front/up; targets; speeds | see §6.3 | world units | literal/static | `Camera::AdvanceSphereWorldIntroMode` |
+| DemoEnd | white fade | 0.2/s, cap 1.0 (SP) / 0.8 (MP) | — | literal [B:DEAD] | `DemoEndSequence::Render` |
+| DemoEnd | ghost spawn | first 20 s, every 3 s | s | literal [B:DEAD] | same |
+| Attract | idle start (commented) | 60 | s | data | `data/input/input_preferences.txt` |
+| Benchmark | sample period | 1.0 | s | literal [B:DEAD] | `BenchMark::Advance` |
+| Benchmark | FTP timeout | 60 | s | literal [B:DEAD] | `BenchMark::Upload` |
+| TestHarness | indent step / buffer | 3 / 255 | chars | literal [B:DEAD] | `testharness.cpp` |
+| Prefs | `BootLoader` | `none` / `random` / `firsttime` / loader name | — | pref | `RunBootloader`, `prefs_other_window.cpp` |
+| Prefs | `TestHarness` | 1 enables | — | pref [B:DEAD] | `RunTheGame` |
+
+## Cross-partition notes
+- **P01 (app core / main loop)**: `LoadingScreen` is created in `Initialise` before `App`; `App::App` queues `App::Initialise` on the loader worker and sounds on `m_soundsWorkQueue`; `RunTheGame` clears `m_initialLoad`; the main loop's bootloader hook is `USE_LOADERS`-only; `UpdateAdvanceTime` is called by the loading screen [C] `code/main.cpp`, `code/app.cpp`.
+- **P12/P13 (render, GL backend)**: GL calls from worker threads are marshalled through `LoadingScreen::QueueJob` (`TextureToConvert`, `DeleteTextureByName`, display-list jobs, `LandscapeRenderer::DoBindBuffers`); `g_openGLMutex` locked per loading frame; `GeneratingMipmaps()` [B:D3D] extends the loading loop. `Renderer::Render` contains the `m_startSequence` overlay hook and the `IsFirsttimeSequencing()` fade-out suppression (§1.6).
+- **P14 (platform lib)**: `WorkQueue`, `Job`, `RunnableJob`, `NetEvent`, `NetMutex`, `SetThreadAffinityMask` usage; `StandardiseCPUPrecision` per worker thread.
+- **P15 (network)**: loading screen calls `ClientToServer::KeepAlive()` and `Server::AdvanceIfNecessary()` under `App::m_networkMutex.TryLock()`; benchmark reads `m_receiveRate/m_sendRate/GetEstimatedLatency` and `Authentication_GetKey`.
+- **P16 (sound)**: `SoundSystem::NotReadyForGameSoundsYet()` drops events while `LoadingScreen::IsRendering()`; `m_requireSoundsLoaded`/`m_soundsLoaded` gate the loading loop; loader music events (§3.5); `LoaderAmiga` missing from `GetEventNames`.
+- **P17b (options)**: `BootLoader` preference semantics (UI row hidden) — consistent with §3.2.
+- **P18 (front-end)**: Multiwinia credits page (`SetupCreditsPage`/`ReadCredits`) is the live credits; `CampaignButton` (`PageDarwinia`, edge-reachable in FULL) triggers `RequestBootloaderSequence` and the latent fade-out bug (§1.6); `SetupMapSelectPage` uses the loading screen for thumbnail preloading.
+- **P19 (help/tutorial/script)**: `MultiwiniaHelp` owns the animated panel lifecycle; script ops `RunCredits`, `GameOver` (→ outro → credits), `ShowDemoEndSequence` (empty in FULL); attract scripts use `CamMove`/`WaitCam`/`EnterLocation`/`ExitLocation`/`CamReset`/`SetMission`/`Wait`.
+- **P10 (camera)**: `ModeSphereWorldIntro` / `ModeSphereWorldOutro` flights (outro calls the credits loader after 70 s).
+- **P02 (game modes)**: grace-period timer semantics drive panel visibility; `mp_benchmark_1` (`GameTypes none`).
+- **`.anim` grammar owner**: in-memory semantics in §2.4–2.6 must agree with the grammar doc (`WIDTH/HEIGHT/START/STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; parser takes only the first token after a command, so image names cannot contain spaces) [C] `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.
+
+## Contradictions / open questions
+1. `LoadingScreen::m_rendering` is never initialised in the constructor; `IsRendering()` before the first `Render()` returns an indeterminate value (affects `Resource` locking and `SoundSystem` event suppression during early start-up) [C]. Probably harmless because the first `Render()` happens inside `App::App`, but unverified.
+2. `CreditsLoader::Run` starts `Credits` but stops `Music Cutscene3` [C]; `MatrixLoader::Run` returns at 23 s without stopping its music [C]. Intent unclear — likely bugs.
+3. Raytrace help prints motion blur with a missing `swprintf` argument [C] (undefined behaviour).
+4. `GameOfLifeLoader` speed keys are overridden every frame (no effect) [C]; it seeds from `syncrand` (network RNG) [C].
+5. `GetRandomLoaderIndex` reseeds `AppRandom` from wall-clock time — affects every later non-synced random consumer in the session [C].
+6. `AnimatedPanel::DeleteKeyframe` removes without freeing; `BeginRender/EndRender` declared, undefined [C].
+7. `animatedpanel.cpp` includes `lib/render/renderer.h`, which resolves (via the `..\..\contrib\SystemIV` include path) to the uncompiled SystemIV renderer header [I] — nothing from it appears to be used; a re-implementation can ignore it.
+8. `RequestBootloaderSequence` leaves `g_RenderingFirstTimeBL = true` forever in FULL builds → fade-outs suppressed after a Campaign launch (§1.6) [C].
+
+## [U] Unknowns
+0. (Resolved while drafting — not counted) `TextFileReader::ReadLine` → `TextReader::CleanLine` strips `\n`/`\r` and truncates at `#` (comment) [C] `contrib/systemiv/lib/filesys/text_stream_readers.cpp`; on an empty line `GetRestOfLine()` returns NULL. Consequences: `BenchMark::BuildDxDiag` stops at the first blank line of `dxdiag.txt` — with dxdiag's usual layout (blank line between sections) [I] only `SYS` fields are captured, never `GFX`/`SND`; `CreditsLoader::GenerateBetaTesterList` would crash on a blank line (`strlen(NULL)`) — the shipped `betatesters.txt` has none [C]; a `#` in a name truncates it.
+1. [U] Units of `m_receiveRate/m_sendRate` recorded by the benchmark (bytes/s vs bits/s) — P15.
+2. [U] Exact appearance of `textures/program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp` (only dimensions checked: 256×256 each) — not needed for mechanics; art is IP anyway.
+3. [U] Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (state inherited from the caller) — determines whether the first 7 s smear. Resolve by tracing GL state at `Script::RunCommand_RunCredits` / outro camera.
+4. [U] Exact reachability of `PageDarwinia` (and therefore `CampaignButton`) in FULL — P18 to confirm; affects whether §1.6's bug is player-visible.
+
+## Docs-vs-code discrepancies
+| Doc | Claim | Code | Ref |
+|---|---|---|---|
+| `docs/multiwiniareleasenotes-beta.txt` L35 | Beta records benchmarks and uploads them via FTP "when you exit"; files in a `benchmarks` profile folder | Feature compiled out in every target of this tree (`//#define BENCHMARK_AND_FTP`); when enabled, upload happens at the **end of each match** (after `LocationGameLoop`), not at exit; folder name matches | `code/lib/universal_include.h`, `code/main.cpp:EnterLocation`, `code/benchmark.cpp` |
+| `docs/changes.txt` L82–84 | "Show First Time Intro" option makes the intro play "the next time you start Darwinia" | Intro only runs from `RunBootloader`, i.e. when the Campaign is launched (and only with `USE_LOADERS`); the option row is not built in the Multiwinia options UI | `code/main.cpp:RunBootloader`, `code/interface/prefs_other_window.cpp` |
+| `docs/detailed schedule.txt` L19 | "(OPTIONAL) Intro bootloaders" planned | Implemented but compiled out (`USE_LOADERS`) | `code/lib/universal_include.h` |
+| `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | Bootloader issues (GoL-glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | Loaders not compiled in Multiwinia; widescreen stretching is consistent with fixed 320×256 / 800×600 canvases in Speccy/Amiga/Credits (`IsOffscreen` 800×600) | loader sources |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)`: −range < result < range | Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects Soul/DemoEnd spawn spreads quoted above) | `contrib/systemiv/lib/math/random_number.cpp:sfrand` |
+
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| Publisher logo bitmap | art/brand | `data/textures/ivlogo.bmp` (`LoadingScreen::RenderIVLogo`, `OberonLoader`) | `textures/publisher_logo.png` |
+| "Darwinian" creature sprite used as spinner, matrix glyph, life cell, carrier | art/name | `data/sprites/darwinian.bmp` | generic "unit" sprite / "Sprite" |
+| `esrb_warning` rating notice text | text (rating-board wording) | `data/language/english.txt` L2851 | regenerate from the new game's actual rating |
+| Game-mode panel art (`armour, cloudyglow, darwinian, darwinian_ouch4, flag, flag_down, flag_locked, flag_up, fuelpump, fuelpumper, island, laser, muzzleflash, plusone, rocket, solarpanel, spawnpoint, statue, trunkport, turretbarrel, turretbase, water, wmd, zone-back, zone-front`.bmp) and the 6 `.anim` choreographies | art/animation | `data/animations/` | new sprite set + new choreographies (`mode_<id>.anim`) |
+| Panel captions `multiwinia_animdesc_*` and mode names | text | `data/language/english.txt` L2356–2361 | rewrite |
+| Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character name) | text/character | `data/language/english.txt` L1412–1421 | new intro script text; no "Dr Sepulveda", no "Darwin Research Associates" |
+| Product name as block-letter mask | brand | `code/loaders/matrix_loader.cpp:MatrixLoader::s_highlights` | new game logo mask |
+| Credits text `bootloader_credits_1..44`, `multiwinia_credits_*` (real staff names, roles, third parties) | text/personal data | `data/language/english.txt` | new credits |
+| Beta-tester names (38) | personal data | `data/betatesters.txt` | own tester list (with consent) |
+| Loader texts `bootloader_amiga`, `bootloader_fodder_1..3` (names a third-party developer), `bootloader_raytrace_1..23`, `bootloader_life*` (20), `bootloader_soul_0..9` (incl. company name and slogan) | text/brand | `data/language/english.txt` | new texts |
+| Spectrum banner / loading picture / font | art (and third-party platform homage) | `data/textures/program_darwinia.bmp`, `speccy_screen.bmp`, `speccy_font_*.bmp`, `textures/unicode/speccy.*.bmp` | new retro art |
+| Demo-group style logo | art | `data/textures/dmacrew.bmp` | new logo |
+| Glow sprite, ghost sprite | art | `data/textures/glow.bmp`, `data/sprites/ghost.bmp` | new FX sprites |
+| Music: `speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`, `tresk_-_faces-of-a-fashion` (names indicate third-party chiptune artists) | audio (third-party licence) | `data/sounds/*.ogg`, `data/sounds.txt` Music events | licensed/commissioned tracks, events `LoaderA..`, `Credits`, `Intro` |
+| Distributor splash and video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`) | brand (third party) | `code/loaders/oberon_loader.cpp`, `egames_loader.cpp` | none (drop) |
+| Attract levels and scripts (`mine`, `pattern_buffer`, `biosphere`, `mission_*_attract.txt`, camera mounts `attract1..6`) | names/levels | `data/scripts/attractmode.txt`, `data/levels/` | new level ids |
+| "Stress Test" map name/description, `mp_benchmark_1` | text/level | `data/language/english.txt` L2989–2990, `data/levels/mp_benchmark_1.txt` | `stress_test_01` |
+| Introversion FTP host and hard-coded account | brand/credential | `code/benchmark.cpp:BenchMark::Upload` | none — use a token-based telemetry endpoint |
+| `APP_NAME` shown by the ray tracer, `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/loaders/raytrace_loader.cpp:RenderMessage`, `code/benchmark.cpp` | new product constant |
+| Profile names `AttractMode`, `AccessAllAreas`, `game_unlockall.txt` | names | `code/app.cpp:App::LoadProfile` | `__attract__`, `__unlockall__` |
+
+## Appendix — dead/legacy code
+- **`EgamesLoader`** [B:DEAD] (`EGAMESBUILD`, no call site): plays `cinemaware.avi` (absent from `data/`) through `AviPlayer`; each frame decodes the frame for `now − start`, uploads it as a 512×256 RGB texture (video occupies 320×240 → texcoords 0.625 × 0.9375), and draws it in a 60° perspective as a tilted screen centred at `(0, min(2t, 200), −300 − 35t)` with half-extents right `(320, 0, −106.7)`, up `(0, 240, 0)`, behind a grey (0.3,0.3,0.3,0.5) frame 5 % larger, plus a crowd of creature sprites (`srand(0)` every frame → static layout; grid x ∈ [−0.9, 0.9) step 0.2 × y ∈ [0,1) step 0.07, 65 % occupancy, swaying ±0.2 rad with `sinf(now)`). Audio: replaces `SoundLibrary3d`'s main callback with AVI audio on channel 0 (silence fill has a double-scaled pointer offset bug `_buffer + n*sizeof(short)` [C]); afterwards `RestartSoundLibrary()` and 1 s of black frames. Ends when the video finishes or on skip.
+- **`OberonLoader`** [B:DEAD] (`OBERONBUILD`, no call site, not skippable): returns if either `textures/msn_oberon_combosplash.bmp` or `textures/ivlogo.bmp` is missing; on the 800×600 canvas: 0–1 s distributor splash (full canvas) fades in, 1–2.5 s hold, 2.5–3.5 s cross-fade to the publisher logo (400×400 at (200,100) with black surround quads), 3.5–5 s hold, 5–6.5 s fade out, then return.
+- **`CreditsLoader::GenerateEGamesList`**, credits line `_15` (`OBERONBUILD`), GoL help `_16b` hidden under `OBERONBUILD` [B:DEAD].
+- **`Loader::CreateLoader` under `DEMOBUILD`** returns NULL [B:DEAD].
+- **Mac platform logo** in `LoadingScreen::RenderFrame` / `RenderPlatformLogo` [B:DEAD on PC].
+- **D3D-only bits** [B:D3D]: `RayTraceLoader` clears colour each frame; `GameOfLifeLoader` `glTraceEnable`; `LoadingScreen::Render` waits for `GeneratingMipmaps()` (this last one is live in the secondary D3D build).
+- **`SpeccyLoader` unused members** (`m_monoBmp`, `m_currentPixel`, `m_startJ`, `EndFrame`) and **`AmigaLoader` unused mode enum** (`ModeSilence/Header/Data/Screen`, copied from the Speccy loader) [C].
+- **Commented code**: ray-tracer refraction and floor reflection, pixel-wave auto-ramp after 45 s, FPS readout; credits target-ghost; spinner stepped rotation; Intro camera's earlier implementation (block comment in `camera.cpp`).

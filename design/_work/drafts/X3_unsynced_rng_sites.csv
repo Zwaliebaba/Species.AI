@@ -1,418 +1,418 @@
-file,line,function,generator,argument,context,decides,build,compiled,kind,preproc_conditions,statement
-code/3d_sierpinski_gasket.cpp,29,Sierpinski3D::Sierpinski3D,AppRandom,,init/create,arg:switch,FULL,Y,call,,switch( AppRandom()%5 )
-code/camera.cpp,2466,Camera::Advance,sfrand,m_cameraShake * 0.05f,advance,arg:RotateAroundY,FULL,Y,call,,m_front.RotateAroundY( sfrand(m_cameraShake * 0.05f) );
-code/camera.cpp,2468,Camera::Advance,sfrand,m_cameraShake,advance,arg:RotateAround,FULL,Y,call,,up.RotateAround( m_front * sfrand(m_cameraShake) * 0.3f );
-code/clouds.cpp,96,Clouds::RenderFace,frand,6.0f,render,condition,FULL,Y,call,,if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
-code/clouds.cpp,96,Clouds::RenderFace,frand,0.1f,render,assign:zoomFactor,FULL,Y,call,,if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
-code/clouds.cpp,97,Clouds::RenderFace,frand,6.0f,render,condition,FULL,Y,call,,if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
-code/clouds.cpp,97,Clouds::RenderFace,sfrand,0.1f,render,assign:offsetX,FULL,Y,call,,if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
-code/clouds.cpp,99,Clouds::RenderFace,frand,10.0f,render,condition,FULL,Y,call,,if      ( frand(10.0f) < 1.0f ) picIndex = 5;           // mouth open
-code/clouds.cpp,100,Clouds::RenderFace,frand,10.0f,render,condition,FULL,Y,call,,else if ( frand(10.0f) < 1.0f ) picIndex = 4;           // eyes shut
-code/clouds.cpp,101,Clouds::RenderFace,AppRandom,,render,assign:picIndex,FULL,Y,call,,else                            picIndex = 1 + ( AppRandom() % 3 );
-code/demoendsequence.cpp,110,DemoEndSequence::Render,frand,screenH,render,arg:Set,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_pos.Set( 850, 0, frand(screenH) );"
-code/demoendsequence.cpp,112,DemoEndSequence::Render,frand,10,render,arg:Set,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_vel.Set( -10-frand(10), 0, sfrand(10) );"
-code/demoendsequence.cpp,112,DemoEndSequence::Render,sfrand,10,render,,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_vel.Set( -10-frand(10), 0, sfrand(10) );"
-code/demoendsequence.cpp,113,DemoEndSequence::Render,frand,0.3f,render,assign:darwinian->m_turnRate,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),darwinian->m_turnRate = 0.3f+frand(0.3f);
-code/demoendsequence.cpp,114,DemoEndSequence::Render,sfrand,,render,condition,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( sfrand() > 0.0f ) darwinian->m_turnRate *= -1.0f;
-code/demoendsequence.cpp,115,DemoEndSequence::Render,sfrand,25,render,assign:darwinian->m_size,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),darwinian->m_size = 50 + sfrand(25);
-code/explosion.cpp,41,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.x,FULL,Y,call,,m_angVel.x = sfrand(MAX_ANG_VEL);
-code/explosion.cpp,42,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.y,FULL,Y,call,,m_angVel.y = sfrand(MAX_ANG_VEL);
-code/explosion.cpp,43,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.z,FULL,Y,call,,m_angVel.z = sfrand(MAX_ANG_VEL);
-code/explosion.cpp,79,Explosion::Explosion,frand,1.0,vfx-system,condition,FULL,Y,call,,if( _fraction < 1.0 && frand(1.0) > _fraction )
-code/explosion.cpp,124,Explosion::Explosion,AppRandom,,vfx-system,assign:tri.m_tumbler,FULL,Y,call,,tri.m_tumbler = &m_tumblers[AppRandom() % NUM_TUMBLERS];
-code/global_internet.cpp,55,GlobalInternet::GlobalInternet,AppSeedRandom,1,init/create,,FULL,Y,call,,AppSeedRandom(1);
-code/global_internet.cpp,89,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:z,FULL,Y,call,,float z = sfrand(distance);
-code/global_internet.cpp,90,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:y,FULL,Y,call,,float y = sfrand(distance);
-code/global_internet.cpp,91,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:x,FULL,Y,call,,float x = sfrand(distance);
-code/global_internet.cpp,334,GlobalInternet::TriggerPacket,AppRandom,,other,assign:newLinkIndex,FULL,Y,call,,int newLinkIndex = AppRandom() % newNode->m_numLinks;
-code/global_internet.cpp,357,GlobalInternet::RenderPackets,frand,100.0,render,condition,FULL,Y,call,,if( frand(100.0) < 11.0 )
-code/global_internet.cpp,359,GlobalInternet::RenderPackets,frand,m_leafs.Size(),render,assign:leafIndex,FULL,Y,call,,int leafIndex = frand( m_leafs.Size() );
-code/global_world.cpp,909,SphereWorld::AddLocation,frand,,other,assign:value,FULL,Y,call,,double value = frand();
-code/global_world.cpp,917,SphereWorld::AddLocation,frand,,other,assign:value,FULL,Y,call,,double value = frand();
-code/global_world.cpp,970,SphereWorld::RenderSpirits,frand,30,render,condition,FULL,Y,call,,if( isReceiver && frand(30) < 1.0 )
-code/global_world.cpp,974,SphereWorld::RenderSpirits,frand,300,render,condition,FULL,Y,call,,else if( !isReceiver && frand(300) < 1.0 )
-code/global_world.cpp,979,SphereWorld::RenderSpirits,frand,20,render,condition,FULL,Y,call,,if( location->m_numSpirits > 0 && frand(20) < 1.0)
-code/global_world.cpp,2317,GlobalWorld::TransferSpirits,frand,0.04,other,assign:position,FULL,Y,call,,position -= frand(0.04);
-code/landscape_renderer.cpp,190,LandscapeRenderer::GetLandscapeColour,AppRandom,,render,arg:AppSeedRandom,FULL,Y,call,,AppSeedRandom(_x | _y + AppRandom());
-code/landscape_renderer.cpp,190,LandscapeRenderer::GetLandscapeColour,AppSeedRandom,_x | _y + AppRandom(),render,,FULL,Y,call,,AppSeedRandom(_x | _y + AppRandom());
-code/landscape_renderer.cpp,192,LandscapeRenderer::GetLandscapeColour,sfrand,0.45 / (heightAboveSea + 2.0),render,assign:v,FULL,Y,call,,v += sfrand(0.45 / (heightAboveSea + 2.0));
-code/level_file.cpp,752,LevelFile::ParseInstantUnits,sfrand,60,other,assign:copy->m_posX,FULL,Y,call,,copy->m_posX = iu->m_posX + sfrand(60);
-code/level_file.cpp,753,LevelFile::ParseInstantUnits,sfrand,60,other,assign:copy->m_posZ,FULL,Y,call,,copy->m_posZ = iu->m_posZ + sfrand(60);
-code/location.cpp,185,Location::Init,AppSeedRandom,1,init/create,,FULL,Y,call,,AppSeedRandom( 1 );
-code/location.cpp,4443,Location::PromoteDarwinian,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/location.cpp,4446,Location::PromoteDarwinian,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4446,Location::PromoteDarwinian,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4446,Location::PromoteDarwinian,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4485,Location::DemoteOfficer,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/location.cpp,4488,Location::DemoteOfficer,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4488,Location::DemoteOfficer,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4488,Location::DemoteOfficer,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/location.cpp,4525,Location::Bang,frand,numCores,other,assign:numCores,FULL,Y,call,,numCores += frand(numCores);
-code/location.cpp,4528,Location::Bang,sfrand,30.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand( 30.0 ),"
-code/location.cpp,4529,Location::Bang,frand,10.0,other,,FULL,Y,call,,"10.0 + frand( 10.0 ),"
-code/location.cpp,4530,Location::Bang,sfrand,30.0,other,,FULL,Y,call,,sfrand( 30.0 ) );
-code/location.cpp,4531,Location::Bang,frand,120.0,other,assign:size,FULL,Y,call,,double size = 120.0 + frand(120.0);
-code/location.cpp,4544,Location::Bang,frand,2.0,other,assign:vel.y,FULL,Y,call,,vel.y = 2.0 + frand(2.0);
-code/location.cpp,4545,Location::Bang,frand,30.0,other,arg:SetLength,FULL,Y,call,,vel.SetLength( 20.0 + frand(30.0) );
-code/location.cpp,4547,Location::Bang,frand,20.0,other,assign:size,FULL,Y,call,,double size = 20.0 + frand(20.0);
-code/multiwiniahelp.cpp,243,MultiwiniaHelp::AttachTo3d,rand,,other,assign:randomTeam,FULL,Y,call,,int randomTeam = rand() % g_app->m_location->m_levelFile->m_numPlayers;
-code/multiwiniahelp.cpp,246,MultiwiniaHelp::AttachTo3d,rand,,other,assign:randomTeam,FULL,Y,call,,randomTeam = rand() % g_app->m_location->m_levelFile->m_numPlayers;
-code/particle_system.cpp,62,Particle::Initialise,frand,,vfx-system,assign:amount,FULL,Y,call,,float amount = frand();
-code/particle_system.cpp,120,Particle::Advance,frand,,vfx-system,condition,FULL,Y,call,,if( frand() < 0.5 * SERVER_ADVANCE_PERIOD * 10.0 )
-code/sepulveda.cpp,935,Sepulveda::RenderFace,frand,6.0f,render,condition,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
-code/sepulveda.cpp,935,Sepulveda::RenderFace,frand,0.1f,render,assign:zoomFactor,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
-code/sepulveda.cpp,936,Sepulveda::RenderFace,frand,6.0f,render,condition,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
-code/sepulveda.cpp,936,Sepulveda::RenderFace,sfrand,0.1f,render,assign:offsetX,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
-code/sepulveda.cpp,938,Sepulveda::RenderFace,frand,10.0f,render,condition,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if      ( frand(10.0f) < 1.0f ) picIndex = 5;           // mouth open
-code/sepulveda.cpp,939,Sepulveda::RenderFace,frand,10.0f,render,condition,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),else if ( frand(10.0f) < 1.0f ) picIndex = 4;           // eyes shut
-code/sepulveda.cpp,940,Sepulveda::RenderFace,AppRandom,,render,assign:picIndex,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),else                            picIndex = 1 + ( AppRandom() % 3 );
-code/taskmanager.cpp,294,Task::Promote,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/taskmanager.cpp,297,Task::Promote,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager.cpp,297,Task::Promote,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager.cpp,297,Task::Promote,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager.cpp,332,Task::Demote,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/taskmanager.cpp,335,Task::Demote,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager.cpp,335,Task::Demote,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager.cpp,335,Task::Demote,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/taskmanager_interface_icons.cpp,440,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,0.015f,advance,assign:m_objectiveParticles[i].alpha,FULL,Y,call,,m_objectiveParticles[i].alpha -= frand(0.015f)+0.015f;
-code/taskmanager_interface_icons.cpp,464,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,2.0f,advance,assign:lineSpeed,FULL,Y,call,,lineSpeed = frand(2.0f);
-code/taskmanager_interface_icons.cpp,465,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,2*M_PI,advance,assign:angle,FULL,Y,call,,angle = frand(2*M_PI);
-code/water.cpp,512,Water::BuildTriangleStrips,sfrand,shoreness,other,assign:whiteness,FULL,Y,call,,float whiteness = shoreness + sfrand(shoreness) * shoreNoiseFactor;
-code/UI/GameMenuWindow.cpp,739,GameMenuWindow::UpdateTestBed,srand,time(NULL),ui,,DEAD,Y,call,defined(TESTBED_ENABLED),srand ( time(NULL) );
-code/UI/GameMenuWindow.cpp,1210,GameMenuWindow::AdvanceTestBedGame,rand,,ui,arg:SetTestBedGameIndex,DEAD,Y,call,defined(TESTBED_ENABLED),g_app->SetTestBedGameIndex( rand()% (int)g_vGameEntries.size() );
-code/UI/GameMenuWindow.cpp,3414,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:port,DEAD,Y,call,defined(FAKE_SERVERS),int port = rand() % 65000;
-code/UI/GameMenuWindow.cpp,3415,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:gameType,DEAD,Y,call,defined(FAKE_SERVERS),"int gameType = rand() % Multiwinia::NumGameTypes - 1;	// No tank battle, please!"
-code/UI/GameMenuWindow.cpp,3424,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 5 == 1 ) gameType = -1;
-code/UI/GameMenuWindow.cpp,3444,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 500 <= 1 )
-code/UI/GameMenuWindow.cpp,3471,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:usedTeams,DEAD,Y,call,defined(FAKE_SERVERS),usedTeams = (rand() % maxTeams)+1;
-code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,arg:sprintf,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
-code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
-code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
-code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
-code/UI/GameMenuWindow.cpp,3474,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 2 == 1 )
-code/UI/GameMenuWindow.cpp,3489,GameMenuWindow::SetupJoinGamePage,rand,,ui,,DEAD,Y,call,defined(FAKE_SERVERS),"server->CreateData( NET_METASERVER_NUMHUMANTEAMS,   (unsigned char) (rand() % (usedTeams+1)) );"
-code/UI/GameMenuWindow.cpp,3493,GameMenuWindow::SetupJoinGamePage,rand,,ui,,DEAD,Y,call,defined(FAKE_SERVERS),"server->CreateData( NET_METASERVER_GAMEINPROGRESS,	(unsigned char) ((bool)(rand() % 2)) );"
-code/interface/camera_anim_window.cpp,36,,AppRandom,,ui,arg:sprintf,EDITOR,Y,call,defined(LOCATION_EDITOR),"sprintf(anim->m_name, ""CamAnim%d"", AppRandom() & 0x3ff);"
-code/interface/camera_mount_window.cpp,36,,AppRandom,,ui,arg:sprintf,EDITOR,Y,call,defined(LOCATION_EDITOR),"sprintf(mount->m_name, ""blah%d"", AppRandom());"
-code/interface/tree_window.cpp,51,,frand,99999,ui,assign:tree->m_seed,EDITOR,Y,call,defined(LOCATION_EDITOR),tree->m_seed = (int) frand(99999);
-code/interface/tree_window.cpp,69,,AppSeedRandom,time(NULL),ui,,EDITOR,Y,call,defined(LOCATION_EDITOR),AppSeedRandom(time(NULL));
-code/interface/tree_window.cpp,72,,frand,99999,ui,assign:newTree->m_seed,EDITOR,Y,call,defined(LOCATION_EDITOR),newTree->m_seed = (int) frand(99999);
-code/interface/tree_window.cpp,73,,sfrand,0.3,ui,assign:newTree->m_height,EDITOR,Y,call,defined(LOCATION_EDITOR),newTree->m_height = tree->m_height * (1.0 + sfrand(0.3) );
-code/loaders/amiga_loader.cpp,46,AmigaLoader::AmigaLoader,frand,1024,loader,assign:m_stars[i].m_pos.x,DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_pos.x = frand(1024);
-code/loaders/amiga_loader.cpp,47,AmigaLoader::AmigaLoader,frand,768,loader,assign:m_stars[i].m_pos.y,DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_pos.y = frand(768);
-code/loaders/amiga_loader.cpp,48,AmigaLoader::AmigaLoader,frand,200,loader,assign:m_stars[i].m_speed,DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_speed = -(frand(200) + 20);
-code/loaders/amiga_loader.cpp,49,AmigaLoader::AmigaLoader,frand,128,loader,assign:m_stars[i].m_brightness,DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_brightness = frand(128) + 127;
-code/loaders/credits_loader.cpp,72,CreditsLoader::AddString,AppRandom,,loader,assign:item->m_pos,FULL,Y,call,,item->m_pos = GenerateOffscreenPosition( 1000.0f + (AppRandom() % 200) );
-code/loaders/credits_loader.cpp,107,CreditsLoader::GenerateWords,AppRandom,,loader,assign:darwinian->m_pos,FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 200.0f + (AppRandom() % 100) );
-code/loaders/credits_loader.cpp,150,CreditsLoader::GenerateChars,AppRandom,,loader,assign:darwinian->m_pos,FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 200.0f + (AppRandom() % 100) );
-code/loaders/credits_loader.cpp,174,CreditsLoader::RemoveUnusedStrings,AppRandom,,loader,assign:darwinian->m_pos,FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 40 + (AppRandom() % 50) );
-code/loaders/credits_loader.cpp,188,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:switch,FULL,Y,call,,switch( AppRandom() % 4 )
-code/loaders/credits_loader.cpp,190,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,FULL,Y,call,,"case 0 :    result.Set( -1 * _distanceOut, AppRandom() % 600 );         break;"
-code/loaders/credits_loader.cpp,191,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,FULL,Y,call,,"case 1 :    result.Set( AppRandom() % 800, -1 * _distanceOut );         break;"
-code/loaders/credits_loader.cpp,192,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,FULL,Y,call,,"case 2 :    result.Set( 800 + _distanceOut, AppRandom() % 600 );        break;"
-code/loaders/credits_loader.cpp,193,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,FULL,Y,call,,"case 3 :    result.Set( AppRandom() % 800, 600 + _distanceOut );        break;"
-code/loaders/egames_loader.cpp,98,EgamesLoader::RenderDarwinians,srand,0,loader,,DEAD,Y,call,defined(EGAMESBUILD),srand(0);
-code/loaders/egames_loader.cpp,106,EgamesLoader::RenderDarwinians,rand,,loader,condition,DEAD,Y,call,defined(EGAMESBUILD),if( rand() % 100 < 65 )
-code/loaders/egames_loader.cpp,117,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisPos,DEAD,Y,call,defined(EGAMESBUILD),"thisPos += Vector3( rand()%10, 0, rand()%10 );"
-code/loaders/egames_loader.cpp,117,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisPos,DEAD,Y,call,defined(EGAMESBUILD),"thisPos += Vector3( rand()%10, 0, rand()%10 );"
-code/loaders/egames_loader.cpp,118,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisRight.x,DEAD,Y,call,defined(EGAMESBUILD),thisRight.x += rand()%10;
-code/loaders/egames_loader.cpp,119,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisUp.y,DEAD,Y,call,defined(EGAMESBUILD),thisUp.y += rand()%10;
-code/loaders/loader.cpp,148,Loader::GetRandomLoaderIndex,AppSeedRandom,(unsigned int) time(NULL),loader,,FULL,Y,call,,AppSeedRandom( (unsigned int) time(NULL) );
-code/loaders/loader.cpp,172,Loader::GetRandomLoaderIndex,AppRandom,,loader,assign:chosenChance,FULL,Y,call,,int chosenChance = AppRandom() % totalChance;
-code/loaders/matrix_loader.cpp,94,MatrixLoader::Run,AppRandom,,loader,condition,DEAD,Y,call,defined(USE_LOADERS),if( AppRandom() % 2 == 0 )
-code/loaders/matrix_loader.cpp,119,MatrixLoader::Run,AppRandom,,loader,assign:randomColumn,DEAD,Y,call,defined(USE_LOADERS),int randomColumn = AppRandom() % 40;
-code/loaders/soul_loader.cpp,81,SoulLoader::AdvanceAllSpirits,frand,1000.0f,loader,assign:spirit->m_pos,DEAD,Y,call,defined(USE_LOADERS),"spirit->m_pos = Vector3( sfrand(200.0f), -170.0f, -frand(1000.0f) );"
-code/loaders/soul_loader.cpp,81,SoulLoader::AdvanceAllSpirits,sfrand,200.0f,loader,assign:spirit->m_pos,DEAD,Y,call,defined(USE_LOADERS),"spirit->m_pos = Vector3( sfrand(200.0f), -170.0f, -frand(1000.0f) );"
-code/loaders/soul_loader.cpp,143,SoulLoader::RenderMessage,sfrand,0.4f,loader,assign:time,DEAD,Y,call,defined(USE_LOADERS),time += gap * ( 1.0f + sfrand(0.4f) );
-code/loaders/soul_loader.cpp,148,SoulLoader::RenderMessage,sfrand,80.0f,loader,arg:Set,DEAD,Y,call,defined(USE_LOADERS),"position[i].Set( sfrand(80.0f), sfrand(60.0f), -700.0f );"
-code/loaders/soul_loader.cpp,148,SoulLoader::RenderMessage,sfrand,60.0f,loader,,DEAD,Y,call,defined(USE_LOADERS),"position[i].Set( sfrand(80.0f), sfrand(60.0f), -700.0f );"
-code/loaders/soul_loader.cpp,150,SoulLoader::RenderMessage,sfrand,150.0f,loader,arg:Set,DEAD,Y,call,defined(USE_LOADERS),"spirits[i]->m_pos.Set( sfrand(150.0f), -170.0f, -700.0f );"
-code/loaders/soul_loader.cpp,236,SoulLoaderSpirit::SoulLoaderSpirit,frand,10.0f,loader,assign:m_positionOffset,DEAD,Y,call,defined(USE_LOADERS),m_positionOffset = frand(10.0f);
-code/loaders/soul_loader.cpp,237,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_xaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_xaxisRate = frand(2.0f);
-code/loaders/soul_loader.cpp,238,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_yaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_yaxisRate = frand(2.0f);
-code/loaders/soul_loader.cpp,239,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_zaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_zaxisRate = frand(2.0f);
-code/loaders/soul_loader.cpp,254,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_xaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_xaxisRate += frand(1.0f);
-code/loaders/soul_loader.cpp,255,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_yaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_yaxisRate += frand(1.0f);
-code/loaders/soul_loader.cpp,256,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_zaxisRate,DEAD,Y,call,defined(USE_LOADERS),m_zaxisRate += frand(1.0f);
-code/loaders/soul_loader.cpp,269,SoulLoaderSpirit::Advance,frand,3.0f,loader,assign:vel.y,DEAD,Y,call,defined(USE_LOADERS),vel.y = 3.0f + frand(3.0f);
-code/loaders/speccy_loader.cpp,82,SpeccyLoader::Header,AppRandom,,loader,assign:nextSwitch,DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
-code/loaders/speccy_loader.cpp,89,SpeccyLoader::Header,AppRandom,,loader,assign:x,DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
-code/loaders/speccy_loader.cpp,142,SpeccyLoader::Data,AppRandom,,loader,assign:nextSwitch,DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
-code/loaders/speccy_loader.cpp,149,SpeccyLoader::Data,AppRandom,,loader,assign:x,DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
-code/loaders/speccy_loader.cpp,154,SpeccyLoader::Data,AppRandom,,loader,assign:nextSwitch,DEAD,Y,call,defined(USE_LOADERS),nextSwitch += 2 + AppRandom() % 4;
-code/loaders/speccy_loader.cpp,202,SpeccyLoader::Silence,AppRandom,,loader,condition,DEAD,Y,call,defined(USE_LOADERS),if (AppRandom() % 200 == 0)
-code/loaders/speccy_loader.cpp,254,SpeccyLoader::Screen,AppRandom,,loader,assign:nextSwitch,DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
-code/loaders/speccy_loader.cpp,261,SpeccyLoader::Screen,AppRandom,,loader,assign:x,DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
-code/loaders/speccy_loader.cpp,266,SpeccyLoader::Screen,AppRandom,,loader,assign:nextSwitch,DEAD,Y,call,defined(USE_LOADERS),nextSwitch += 2 + AppRandom() % 4;
-code/network/network_quality.cpp,26,NetworkQuality::Write,AppRandom,,other,condition,FULL,Y,call,,if( AppRandom() % 1000 > m_packetLoss * 1000 )
-code/sound/sound_instance.cpp,572,SoundInstance::OpenStream,AppRandom,,sound,assign:sampleIndex,FULL,Y,call,,int sampleIndex = AppRandom() % numSamples;
-code/sound/sound_instance.cpp,1107,SoundInstance::GetAttachedObject,AppRandom,,sound,assign:index,FULL,Y,call,,int index = AppRandom() % m_objIds.Size();
-code/sound/sound_parameter.cpp,74,SoundParameter::Recalculate,frand,double(diff),sound,assign:random,FULL,Y,call,,float random = frand( double(diff) );
-code/worldobject/anthill.cpp,473,AntHill::Advance,frand,0.75,advance,assign:m_renderDamaged,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*1.2) > healthFraction );
-code/worldobject/anthill.cpp,490,AntHill::Render,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/armour.cpp,1795,Armour::Render,frand,,render,condition,FULL,Y,call,,if( frand() > 0.5 )
-code/worldobject/centipede.cpp,325,Centipede::Advance,frand,0.75,advance,assign:m_renderDamaged,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*0.8) > healthFraction );
-code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
-code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
-code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
-code/worldobject/crate.cpp,2037,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.x,FULL,Y,call,,pos.x += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
-code/worldobject/crate.cpp,2038,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.z,FULL,Y,call,,pos.z += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
-code/worldobject/crate.cpp,2042,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.x,FULL,Y,call,,pos.x += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
-code/worldobject/crate.cpp,2043,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.z,FULL,Y,call,,pos.z += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
-code/worldobject/crate.cpp,2046,Crate::RunExtinguisher,frand,100.0,other,assign:size,FULL,Y,call,,double size = 50.0 + frand(100.0);
-code/worldobject/darwinian.cpp,1536,Darwinian::AdvanceOpeningCrate,frand,10,advance,assign:size,FULL,Y,call,,double size = 20.0 + frand(10);
-code/worldobject/darwinian.cpp,3021,Darwinian::SearchForThreats,frand,200,other,condition,FULL,Y,call,,if( frand(200) < 1.0 &&
-code/worldobject/darwinian.cpp,3524,Darwinian::TakeControl,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3541,Darwinian::LoseControl,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,sfrand,5.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,sfrand,5.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
-code/worldobject/darwinian.cpp,3577,Darwinian::AdvanceOnFire,AppRandom,,advance,assign:numFireParticles,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
-code/worldobject/darwinian.cpp,3580,Darwinian::AdvanceOnFire,frand,5,advance,assign:fireSpawn,FULL,Y,call,,Vector3 fireSpawn = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,3582,Darwinian::AdvanceOnFire,frand,30.0,advance,assign:fireSize,FULL,Y,call,,double fireSize = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,3583,Darwinian::AdvanceOnFire,frand,3,advance,assign:fireVel,FULL,Y,call,,Vector3 fireVel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,3589,Darwinian::AdvanceOnFire,AppRandom,,advance,condition,FULL,Y,call,,if( AppRandom() % 30 == 0 )
-code/worldobject/darwinian.cpp,3654,Darwinian::AdvanceSacraficing,AppRandom,,advance,assign:numFireParticles,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
-code/worldobject/darwinian.cpp,3657,Darwinian::AdvanceSacraficing,frand,5,advance,assign:fireSpawn,FULL,Y,call,,Vector3 fireSpawn = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,3659,Darwinian::AdvanceSacraficing,frand,30.0,advance,assign:fireSize,FULL,Y,call,,double fireSize = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,3660,Darwinian::AdvanceSacraficing,frand,3,advance,assign:fireVel,FULL,Y,call,,Vector3 fireVel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,3666,Darwinian::AdvanceSacraficing,AppRandom,,advance,condition,FULL,Y,call,,if( AppRandom() % 100 == 0 )
-code/worldobject/darwinian.cpp,3854,Darwinian::AdvanceHotFeet,AppRandom,,advance,assign:numFireParticles,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
-code/worldobject/darwinian.cpp,3860,Darwinian::AdvanceHotFeet,frand,30.0,advance,assign:fireSize,FULL,Y,call,,double fireSize = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,3886,Darwinian::AdvanceInfection,rand,,advance,condition,FULL,Y,call,,if( rand() % 2 == 0 )
-code/worldobject/darwinian.cpp,3889,Darwinian::AdvanceInfection,frand,1.0,advance,assign:vel.x,FULL,Y,call,,vel.x += frand(1.0);
-code/worldobject/darwinian.cpp,3890,Darwinian::AdvanceInfection,frand,1.0,advance,assign:vel.z,FULL,Y,call,,vel.z += frand(1.0);
-code/worldobject/darwinian.cpp,3891,Darwinian::AdvanceInfection,frand,3.0,advance,assign:vel.y,FULL,Y,call,,vel.y += frand(3.0);
-code/worldobject/darwinian.cpp,3893,Darwinian::AdvanceInfection,frand,20.0,advance,assign:size,FULL,Y,call,,double size = 20.0 + frand(20.0);
-code/worldobject/darwinian.cpp,4902,Darwinian::SetBooster,frand,5,other,assign:pos,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,4903,Darwinian::SetBooster,frand,30.0,other,assign:size,FULL,Y,call,,double size = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,4904,Darwinian::SetBooster,frand,3,other,assign:vel,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,4905,Darwinian::SetBooster,sfrand,6.0,other,assign:vel.x,FULL,Y,call,,vel.x += sfrand(6.0);
-code/worldobject/darwinian.cpp,4906,Darwinian::SetBooster,sfrand,6.0,other,assign:vel.z,FULL,Y,call,,vel.z += sfrand(6.0);
-code/worldobject/darwinian.cpp,4925,Darwinian::GiveHotFeet,frand,5,other,assign:pos,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,4926,Darwinian::GiveHotFeet,frand,30.0,other,assign:size,FULL,Y,call,,double size = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,4927,Darwinian::GiveHotFeet,frand,3,other,assign:vel,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,4928,Darwinian::GiveHotFeet,sfrand,6.0,other,assign:vel.x,FULL,Y,call,,vel.x += sfrand(6.0);
-code/worldobject/darwinian.cpp,4929,Darwinian::GiveHotFeet,sfrand,6.0,other,assign:vel.z,FULL,Y,call,,vel.z += sfrand(6.0);
-code/worldobject/darwinian.cpp,4954,Darwinian::GiveMindControl,frand,5,other,assign:pos,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,4955,Darwinian::GiveMindControl,frand,30.0,other,assign:size,FULL,Y,call,,double size = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,4956,Darwinian::GiveMindControl,frand,3,other,assign:vel,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,4957,Darwinian::GiveMindControl,sfrand,6.0,other,assign:vel.x,FULL,Y,call,,vel.x += sfrand(6.0);
-code/worldobject/darwinian.cpp,4958,Darwinian::GiveMindControl,sfrand,6.0,other,assign:vel.z,FULL,Y,call,,vel.z += sfrand(6.0);
-code/worldobject/darwinian.cpp,4977,Darwinian::GiveRage,frand,5,other,assign:pos,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
-code/worldobject/darwinian.cpp,4978,Darwinian::GiveRage,frand,30.0,other,assign:size,FULL,Y,call,,double size = 20 + frand(30.0);
-code/worldobject/darwinian.cpp,4979,Darwinian::GiveRage,frand,3,other,assign:vel,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
-code/worldobject/darwinian.cpp,4980,Darwinian::GiveRage,sfrand,6.0,other,assign:vel.x,FULL,Y,call,,vel.x += sfrand(6.0);
-code/worldobject/darwinian.cpp,4981,Darwinian::GiveRage,sfrand,6.0,other,assign:vel.z,FULL,Y,call,,vel.z += sfrand(6.0);
-code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,frand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
-code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,sfrand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
-code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,sfrand,,advance,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
-code/worldobject/entity.cpp,414,Entity::Advance,frand,0.75,advance,assign:m_renderDamaged,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*0.8) > healthFraction );
-code/worldobject/eruptionmarker.cpp,35,EruptionMarker::Advance,sfrand,,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand();
-code/worldobject/eruptionmarker.cpp,36,EruptionMarker::Advance,sfrand,,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand();
-code/worldobject/eruptionmarker.cpp,39,EruptionMarker::Advance,frand,200.0,advance,assign:size,FULL,Y,call,,double size = 300.0 + frand(200.0);
-code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,frand,20,advance,,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
-code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,sfrand,10,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
-code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,sfrand,10,advance,,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
-code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
-code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
-code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
-code/worldobject/harvester.cpp,257,Harvester::AdvanceEngines,sfrand,20,advance,assign:size,FULL,Y,call,,float size = 50 + sfrand(20);
-code/worldobject/incubator.cpp,233,Incubator::SpawnEntity,AppRandom,,init/create,assign:numFlashes,FULL,Y,call,,int numFlashes = 4 + AppRandom() % 4;
-code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,frand,35.0,init/create,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,sfrand,15.0,init/create,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,sfrand,15.0,init/create,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/insertion_squad.cpp,829,Squadie::Render,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/laserfence.cpp,89,LaserFence::Spark,frand,m_scale*50.0,other,assign:sparkPos.y,FULL,Y,call,,sparkPos.y += frand( m_scale*50.0 );
-code/worldobject/laserfence.cpp,93,LaserFence::Spark,frand,5.0,other,assign:numSparks,FULL,Y,call,,int numSparks = 5.0 + frand(5.0);
-code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,10.0,other,assign:particleVel,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
-code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,5.0,other,assign:particleVel,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
-code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,10.0,other,assign:particleVel,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
-code/worldobject/laserfence.cpp,100,LaserFence::Spark,frand,20.0,other,arg:SetLength,FULL,Y,call,,particleVel.SetLength( 40.0+frand(20.0) );
-code/worldobject/laserfence.cpp,101,LaserFence::Spark,frand,,other,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
-code/worldobject/laserfence.cpp,101,LaserFence::Spark,sfrand,,other,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
-code/worldobject/laserfence.cpp,101,LaserFence::Spark,sfrand,,other,assign:particleVel,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
-code/worldobject/laserfence.cpp,102,LaserFence::Spark,frand,25.0,other,assign:size,FULL,Y,call,,double size = 25.0 + frand(25.0);
-code/worldobject/lightning.cpp,57,Lightning::Advance,sfrand,60.0,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand( 60.0 ),"
-code/worldobject/lightning.cpp,58,Lightning::Advance,frand,60.0,advance,,FULL,Y,call,,"60.0 + frand( 60.0 ),"
-code/worldobject/lightning.cpp,59,Lightning::Advance,sfrand,60.0,advance,,FULL,Y,call,,sfrand( 60.0 ) );
-code/worldobject/lightning.cpp,60,Lightning::Advance,frand,100.0,advance,assign:size,FULL,Y,call,,double size = 150.0 + frand(100.0);
-code/worldobject/lightning.cpp,67,Lightning::Advance,frand,5,advance,assign:fireSpawn,FULL,Y,call,,Vector3 fireSpawn = pos + g_upVector * frand(5);
-code/worldobject/lightning.cpp,68,Lightning::Advance,frand,120.0,advance,assign:fireSize,FULL,Y,call,,double fireSize = 160 + frand(120.0);
-code/worldobject/lightning.cpp,69,Lightning::Advance,sfrand,60.0,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand( 60.0 ),"
-code/worldobject/lightning.cpp,70,Lightning::Advance,frand,5.0,advance,,FULL,Y,call,,"5.0 + frand( 5.0 ),"
-code/worldobject/lightning.cpp,71,Lightning::Advance,sfrand,60.0,advance,,FULL,Y,call,,sfrand( 60.0 ) );
-code/worldobject/meteor.cpp,60,Meteor::Advance,sfrand,m_radius,advance,assign:pos.x,FULL,Y,call,,pos.x += sfrand( m_radius );
-code/worldobject/meteor.cpp,61,Meteor::Advance,sfrand,m_radius,advance,assign:pos.y,FULL,Y,call,,pos.y += sfrand( m_radius );
-code/worldobject/meteor.cpp,62,Meteor::Advance,sfrand,m_radius,advance,assign:pos.z,FULL,Y,call,,pos.z += sfrand( m_radius );
-code/worldobject/meteor.cpp,65,Meteor::Advance,sfrand,10.0f,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand(10.0f);
-code/worldobject/meteor.cpp,66,Meteor::Advance,sfrand,10.0f,advance,assign:vel.y,FULL,Y,call,,vel.y += sfrand(10.0f);
-code/worldobject/meteor.cpp,67,Meteor::Advance,sfrand,10.0f,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand(10.0f);
-code/worldobject/officer.cpp,472,Officer::RenderShape,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/portal.cpp,225,Portal::RenderAlphas,rand,,render,condition,FULL,Y,call,,if( rand() % 20 == 0 )
-code/worldobject/portal.cpp,233,Portal::RenderAlphas,frand,150.0,render,assign:size,FULL,Y,call,,double size = frand(150.0) + 150.0;
-code/worldobject/portal.cpp,236,Portal::RenderAlphas,rand,,render,condition,FULL,Y,call,,if( rand() % 4 == 0 )
-code/worldobject/portal.cpp,248,Portal::RenderAlphas,frand,g_gameTime,render,assign:d,FULL,Y,call,,double d = frand(g_gameTime);
-code/worldobject/portal.cpp,249,Portal::RenderAlphas,frand,m_portalRadius,render,assign:centrePos,FULL,Y,call,,centrePos += iv_sin(d) * right * frand(m_portalRadius);
-code/worldobject/portal.cpp,250,Portal::RenderAlphas,frand,m_portalRadius,render,assign:centrePos,FULL,Y,call,,centrePos += iv_cos(d) * m_front * frand(m_portalRadius);
-code/worldobject/portal.cpp,253,Portal::RenderAlphas,frand,50.0,render,assign:size,FULL,Y,call,,double size = frand(50.0) + 150.0;
-code/worldobject/portal.cpp,256,Portal::RenderAlphas,rand,,render,condition,FULL,Y,call,,if( rand() % 4 == 0 )
-code/worldobject/randomiser.cpp,72,Randomiser::Render,rand,,render,assign:teamId,FULL,Y,call,,int teamId = rand() % NUM_TEAMS;
-code/worldobject/randomiser.cpp,79,Randomiser::Render,rand,,render,assign:teamId,FULL,Y,call,,teamId = rand() % NUM_TEAMS;
-code/worldobject/researchitem.cpp,44,ResearchItem::ResearchItem,frand,2.0 * M_PI,init/create,arg:RotateAroundY,FULL,Y,call,,m_front.RotateAroundY( frand(2.0 * M_PI) );
-code/worldobject/rocket.cpp,345,FuelGenerator::Advance,sfrand,10.0,advance,assign:pumpPos.x,FULL,Y,call,,pumpPos.x += sfrand(10.0);
-code/worldobject/rocket.cpp,346,FuelGenerator::Advance,sfrand,10.0,advance,assign:pumpPos.z,FULL,Y,call,,pumpPos.z += sfrand(10.0);
-code/worldobject/rocket.cpp,351,FuelGenerator::Advance,frand,10,advance,assign:pumpVel,FULL,Y,call,,pumpVel += g_upVector * frand(10);
-code/worldobject/rocket.cpp,355,FuelGenerator::Advance,frand,150.0,advance,assign:size,FULL,Y,call,,double size = 150.0 + frand(150.0);
-code/worldobject/rocket.cpp,611,FuelStation::BoardRocket,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 4 + AppRandom() % 4;
-code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,frand,35.0f,other,,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
-code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,sfrand,15.0f,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
-code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,sfrand,15.0f,other,,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
-code/worldobject/rocket.cpp,1620,EscapeRocket::Advance,sfrand,20,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
-code/worldobject/rocket.cpp,1620,EscapeRocket::Advance,sfrand,20,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
-code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,frand,150,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,sfrand,50,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,sfrand,50,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/shaman.cpp,272,Shaman::Render,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/shaman.cpp,482,Shaman::SacraficeDarwinians,AppRandom,,other,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,frand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,sfrand,15.0,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,sfrand,15.0,other,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/smokemarker.cpp,24,SmokeMarker::Advance,sfrand,0.4f,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand(0.4f);
-code/worldobject/smokemarker.cpp,25,SmokeMarker::Advance,sfrand,0.4f,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand(0.4f);
-code/worldobject/smokemarker.cpp,28,SmokeMarker::Advance,frand,100.0f,advance,assign:size,FULL,Y,call,,float size = 200.0f + frand(100.0f);
-code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
-code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
-code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
-code/worldobject/souldestroyer.cpp,276,SoulDestroyer::Attack,AppRandom,,other,assign:index,FULL,Y,call,,int index = AppRandom() % SOULDESTROYER_MAXSPIRITS;
-code/worldobject/spaceship.cpp,139,SpaceShip::AdvanceEngines,frand,80,advance,assign:size,FULL,Y,call,,float size = 80.0f + frand(80);
-code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,frand,50,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
-code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,sfrand,50,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
-code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,sfrand,50,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
-code/worldobject/spaceship.cpp,147,SpaceShip::AdvanceEngines,sfrand,20,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
-code/worldobject/spaceship.cpp,147,SpaceShip::AdvanceEngines,sfrand,20,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
-code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,frand,150,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,sfrand,50,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,sfrand,50,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
-code/worldobject/spam.cpp,45,Spam::Spam,frand,2.0 * M_PI,init/create,arg:RotateAroundY,FULL,Y,call,,m_front.RotateAroundY( frand(2.0 * M_PI) );
-code/worldobject/spam.cpp,542,SpamInfection::AdvanceAttackingEntity,AppRandom,,advance,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,frand,15.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,sfrand,15.0,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,sfrand,15.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spam.cpp,606,SpamInfection::AdvanceAttackingSpirit,AppRandom,,advance,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,frand,15.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,sfrand,15.0,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,sfrand,15.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
-code/worldobject/spider.cpp,790,Spider::Render,frand,,render,condition,FULL,Y,call,,if( frand() > 0.5 ) mat.r *= ( 1.0 + iv_sin(timeIndex) * 0.5 );
-code/worldobject/sporegenerator.cpp,366,SporeGenerator::Render,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/tank.cpp,510,Tank::Render,frand,,render,condition,FULL,Y,call,,if( frand() > 0.5 )
-code/worldobject/tank.cpp,544,Tank::Render,frand,,render,condition,FULL,Y,call,,if( frand() > 0.5 )
-code/worldobject/tentacle.cpp,279,Tentacle::AdvanceSlam,sfrand,5.0,advance,assign:p.x,FULL,Y,call,,p.x += sfrand(5.0);
-code/worldobject/tentacle.cpp,280,Tentacle::AdvanceSlam,sfrand,5.0,advance,assign:p.z,FULL,Y,call,,p.z += sfrand(5.0);
-code/worldobject/tentacle.cpp,284,Tentacle::AdvanceSlam,frand,20.0,advance,assign:size,FULL,Y,call,,double size = 15.0 + frand( 20.0 );
-code/worldobject/tentacle.cpp,347,Tentacle::HandleGroundCollision,sfrand,5.0,other,assign:p.x,FULL,Y,call,,p.x += sfrand(5.0);
-code/worldobject/tentacle.cpp,348,Tentacle::HandleGroundCollision,sfrand,5.0,other,assign:p.z,FULL,Y,call,,p.z += sfrand(5.0);
-code/worldobject/tentacle.cpp,352,Tentacle::HandleGroundCollision,frand,20.0,other,assign:size,FULL,Y,call,,double size = 15.0 + frand( 20.0 );
-code/worldobject/tree.cpp,162,Tree::Advance,frand,actualHeight * 0.6,advance,assign:distance,FULL,Y,call,,double distance = frand( actualHeight * 0.6);
-code/worldobject/tree.cpp,163,Tree::Advance,frand,actualHeight,advance,assign:height,FULL,Y,call,,double height = 0.7 * actualHeight + frand(actualHeight) * 0.3;
-code/worldobject/tree.cpp,165,Tree::Advance,frand,2.0 * M_PI,advance,arg:RotateAroundY,FULL,Y,call,,fireSpawn.RotateAroundY( frand(2.0 * M_PI) );
-code/worldobject/tree.cpp,168,Tree::Advance,sfrand,0.5,advance,assign:fireSize,FULL,Y,call,,fireSize *= (1.0 + sfrand(0.5) );
-code/worldobject/tree.cpp,283,Tree::Advance,rand,,advance,condition,FULL,Y,call,,if( rand() % (51-m_leafDropRate) == 0 )
-code/worldobject/tree.cpp,287,Tree::Advance,sfrand,actualHeight*1.0,advance,assign:fireSpawn,FULL,Y,call,,"fireSpawn += Vector3( sfrand(actualHeight*1.0),"
-code/worldobject/tree.cpp,288,Tree::Advance,sfrand,actualHeight*0.25,advance,,FULL,Y,call,,"sfrand(actualHeight*0.25),"
-code/worldobject/tree.cpp,289,Tree::Advance,sfrand,actualHeight*1.0,advance,,FULL,Y,call,,sfrand(actualHeight*1.0) );
-code/worldobject/tree.cpp,583,Tree::GenerateBranches,AppSeedRandom,m_seed,init/create,,FULL,Y,call,,AppSeedRandom( m_seed );
-code/worldobject/tree.cpp,597,Tree::GenerateLeaves,AppSeedRandom,m_seed,init/create,,FULL,Y,call,,AppSeedRandom( m_seed );
-code/worldobject/tree.cpp,645,Tree::Generate,AppSeedRandom,m_seed,init/create,,FULL,Y,call,,AppSeedRandom( m_seed );
-code/worldobject/tree.cpp,1028,Tree::RenderBranch,frand,0.6,render,assign:distance,FULL,Y,call,,double distance = 0.3 + frand(0.6);
-code/worldobject/triffid.cpp,162,Triffid::Render,frand,,render,assign:thefrand,FULL,Y,call,,double thefrand = frand();
-code/worldobject/triffid.cpp,380,Triffid::Advance,sfrand,10.0*m_size,advance,assign:fireSpawn,FULL,Y,call,,"fireSpawn += Vector3( sfrand(10.0*m_size),"
-code/worldobject/triffid.cpp,381,Triffid::Advance,sfrand,10.0*m_size,advance,,FULL,Y,call,,"sfrand(10.0*m_size),"
-code/worldobject/triffid.cpp,382,Triffid::Advance,sfrand,10.0*m_size,advance,,FULL,Y,call,,sfrand(10.0*m_size) );
-code/worldobject/triffid.cpp,386,Triffid::Advance,sfrand,10.0*m_size,advance,assign:fireSpawn,FULL,Y,call,,"fireSpawn = m_pos + Vector3( sfrand(10.0*m_size),"
-code/worldobject/triffid.cpp,387,Triffid::Advance,sfrand,10.0*m_size,advance,,FULL,Y,call,,"sfrand(10.0*m_size),"
-code/worldobject/triffid.cpp,388,Triffid::Advance,sfrand,10.0*m_size,advance,,FULL,Y,call,,sfrand(10.0*m_size) );
-code/worldobject/triffid.cpp,391,Triffid::Advance,frand,100.0,advance,condition,FULL,Y,call,,if( frand(100.0) < 10.0 )
-code/worldobject/triffid.cpp,469,Triffid::Advance,frand,0.75,advance,assign:m_renderDamaged,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*1.2) > healthFraction );
-code/worldobject/weapons.cpp,359,ControllerGrenade::Advance,AppRandom,,advance,assign:numFlashes,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
-code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,frand,35.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,sfrand,15.0,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,sfrand,15.0,advance,,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
-code/worldobject/weapons.cpp,525,Rocket::Explode,frand,numCores,other,assign:numCores,FULL,Y,call,,numCores += frand(numCores);
-code/worldobject/weapons.cpp,526,Rocket::Explode,frand,,other,,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
-code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,arg:colour,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
-code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
-code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
-code/worldobject/weapons.cpp,529,Rocket::Explode,sfrand,30.0f,other,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand( 30.0f ),"
-code/worldobject/weapons.cpp,530,Rocket::Explode,frand,10.0f,other,,FULL,Y,call,,"10.0f + frand( 10.0f ),"
-code/worldobject/weapons.cpp,531,Rocket::Explode,sfrand,30.0f,other,,FULL,Y,call,,sfrand( 30.0f ) );
-code/worldobject/weapons.cpp,532,Rocket::Explode,frand,120.0f,other,assign:size,FULL,Y,call,,float size = 120.0f + frand(120.0f);
-code/worldobject/weapons.cpp,575,Rocket::Render,sfrand,8.0,render,assign:vel.x,FULL,Y,call,,vel.x += sfrand(8.0);
-code/worldobject/weapons.cpp,576,Rocket::Render,sfrand,8.0,render,assign:vel.y,FULL,Y,call,,vel.y += sfrand(8.0);
-code/worldobject/weapons.cpp,577,Rocket::Render,sfrand,8.0,render,assign:vel.z,FULL,Y,call,,vel.z += sfrand(8.0);
-code/worldobject/weapons.cpp,578,Rocket::Render,frand,0.05,render,assign:pos,FULL,Y,call,,Vector3 pos = predictedPos - m_vel * (0.05+frand(0.05));
-code/worldobject/weapons.cpp,579,Rocket::Render,sfrand,8.0,render,assign:pos.x,FULL,Y,call,,pos.x += sfrand(8.0);
-code/worldobject/weapons.cpp,580,Rocket::Render,sfrand,8.0,render,assign:pos.y,FULL,Y,call,,pos.y += sfrand(8.0);
-code/worldobject/weapons.cpp,581,Rocket::Render,sfrand,8.0,render,assign:pos.z,FULL,Y,call,,pos.z += sfrand(8.0);
-code/worldobject/weapons.cpp,582,Rocket::Render,frand,50.0,render,assign:size,FULL,Y,call,,double size = 50.0 + frand(50.0);
-code/worldobject/weapons.cpp,674,Laser::Advance,sfrand,10.0,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand(10.0);
-code/worldobject/weapons.cpp,675,Laser::Advance,sfrand,10.0,advance,assign:vel.y,FULL,Y,call,,vel.y += sfrand(10.0);
-code/worldobject/weapons.cpp,676,Laser::Advance,sfrand,10.0,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand(10.0);
-code/worldobject/weapons.cpp,1311,Missile::Render,frand,20.0,render,assign:m_fire.m_size,FULL,Y,call,,m_fire.m_size = 30.0 + frand(20.0);
-code/worldobject/weapons.cpp,1318,Missile::Render,sfrand,8.0,render,assign:vel.x,FULL,Y,call,,vel.x += sfrand(8.0);
-code/worldobject/weapons.cpp,1319,Missile::Render,sfrand,8.0,render,assign:vel.y,FULL,Y,call,,vel.y += sfrand(8.0);
-code/worldobject/weapons.cpp,1320,Missile::Render,sfrand,8.0,render,assign:vel.z,FULL,Y,call,,vel.z += sfrand(8.0);
-code/worldobject/weapons.cpp,1321,Missile::Render,frand,0.1,render,assign:pos,FULL,Y,call,,Vector3 pos = predictedPos - m_vel * (0.1+frand(0.1));
-code/worldobject/weapons.cpp,1322,Missile::Render,sfrand,8.0,render,assign:pos.x,FULL,Y,call,,pos.x += sfrand(8.0);
-code/worldobject/weapons.cpp,1323,Missile::Render,sfrand,8.0,render,assign:pos.y,FULL,Y,call,,pos.y += sfrand(8.0);
-code/worldobject/weapons.cpp,1324,Missile::Render,sfrand,8.0,render,assign:pos.z,FULL,Y,call,,pos.z += sfrand(8.0);
-code/worldobject/weapons.cpp,1325,Missile::Render,frand,200.0,render,assign:size,FULL,Y,call,,double size = 200.0 + frand(200.0);
-code/worldobject/weapons.cpp,1481,TurretShell::Advance,sfrand,10.0f,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand(10.0f);
-code/worldobject/weapons.cpp,1482,TurretShell::Advance,frand,10.0f,advance,assign:vel.y,FULL,Y,call,,vel.y += frand(10.0f);
-code/worldobject/weapons.cpp,1483,TurretShell::Advance,sfrand,10.0f,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand(10.0f);
-code/worldobject/weapons.cpp,1485,TurretShell::Advance,frand,10.0f,advance,assign:size,FULL,Y,call,,float size = 10.0f + frand(10.0f);
-code/worldobject/weapons.cpp,1514,TurretShell::Advance,sfrand,0.5f,advance,assign:vel.x,FULL,Y,call,,vel.x += sfrand(0.5f);
-code/worldobject/weapons.cpp,1515,TurretShell::Advance,frand,1.0f,advance,assign:vel.y,FULL,Y,call,,vel.y += frand(1.0f);
-code/worldobject/weapons.cpp,1516,TurretShell::Advance,sfrand,0.5f,advance,assign:vel.z,FULL,Y,call,,vel.z += sfrand(0.5f);
-code/worldobject/weapons.cpp,1518,TurretShell::Advance,frand,20.0f,advance,assign:size,FULL,Y,call,,float size = 15.0f + frand(20.0f);
-code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
-code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
-code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
-code/worldobject/weapons.cpp,1624,Fireball::Advance,sfrand,25.0,advance,assign:size,FULL,Y,call,,double size = 50 + sfrand(25.0);
-code/worldobject/weapons.cpp,1626,Fireball::Advance,frand,0.2,advance,arg:CreateParticle,FULL,Y,call,,"g_app->m_particleSystem->CreateParticle( m_pos + frand(0.2) * vel, vel, particleType, size );"
-code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,50.0f,advance,arg:vel,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
-code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,20.0f,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
-code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,50.0f,advance,,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
-code/worldobject/weapons.cpp,2039,FlameGrenade::Advance,sfrand,50.0f,advance,assign:vel,FULL,Y,call,,"vel = Vector3( sfrand(50.0f), 0.0f, sfrand(50.0f) );"
-code/worldobject/weapons.cpp,2039,FlameGrenade::Advance,sfrand,50.0f,advance,assign:vel,FULL,Y,call,,"vel = Vector3( sfrand(50.0f), 0.0f, sfrand(50.0f) );"
-code/worldobject/weapons.cpp,2047,FlameGrenade::Advance,frand,100.0f,advance,assign:size,FULL,Y,call,,float size = 150.0f + frand(100.0f);
-code/worldobject/weapons.cpp,2049,FlameGrenade::Advance,frand,0.2f,advance,arg:CreateParticle,FULL,Y,call,,"g_app->m_particleSystem->CreateParticle( m_pos + frand(0.2f) * vel, vel, particleType, size );"
-contrib/systemiv/lib/eclipse/eclipse.cpp,420,EclRegisterWindow,rand,,other,assign:window->m_x,FULL,N,call,,if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) rand() / (float) RAND_MAX );
-contrib/systemiv/lib/eclipse/eclipse.cpp,421,EclRegisterWindow,rand,,other,assign:window->m_x,FULL,N,call,,else                            window->m_x = int( parent->m_x - window->m_w * (float) rand() / (float) RAND_MAX );
-contrib/systemiv/lib/eclipse/eclipse.cpp,422,EclRegisterWindow,rand,,other,assign:window->m_y,FULL,N,call,,if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) rand() / (float) RAND_MAX );
-contrib/systemiv/lib/eclipse/eclipse.cpp,423,EclRegisterWindow,rand,,other,assign:window->m_y,FULL,N,call,,else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) rand() / (float) RAND_MAX );
-contrib/systemiv/lib/math/random_number.cpp,18,AppSeedRandom,AppSeedRandom,unsigned int seed,other,,FULL,Y,definition/wrapper,,void AppSeedRandom (unsigned int seed)
-contrib/systemiv/lib/math/random_number.cpp,23,AppRandom,AppRandom,,other,,FULL,Y,definition/wrapper,,int AppRandom ()
-contrib/systemiv/lib/math/random_number.cpp,288,frand,frand,double range,other,,FULL,Y,definition/wrapper,,double frand(double range)
-contrib/systemiv/lib/math/random_number.cpp,290,frand,AppRandom,,other,return,FULL,Y,definition/wrapper,,return range * ((double)AppRandom() / (double)APP_RAND_MAX);
-contrib/systemiv/lib/math/random_number.cpp,294,sfrand,sfrand,double range,other,,FULL,Y,definition/wrapper,,double sfrand(double range)
-contrib/systemiv/lib/math/random_number.cpp,296,sfrand,AppRandom,,other,return,FULL,Y,definition/wrapper,,return (0.5 - (double)AppRandom() / (double)(APP_RAND_MAX)) * range;
-contrib/systemiv/lib/math/random_number.h,14,,AppSeedRandom,unsigned int seed,other,,FULL,Y,declaration,!defined(_included_randomnumbers_h),void    AppSeedRandom   (unsigned int seed);
-contrib/systemiv/lib/math/random_number.h,15,,AppRandom,,other,,FULL,Y,declaration,!defined(_included_randomnumbers_h),int     AppRandom       ();                                                 // 0 <= result < APP_RAND_MAX
-contrib/systemiv/lib/math/random_number.h,17,,frand,double range = 1.0f,other,,FULL,Y,declaration,!defined(_included_randomnumbers_h),double   frand           (double range = 1.0f);                               // 0 <= result < range
-contrib/systemiv/lib/math/random_number.h,18,,sfrand,double range = 1.0f,other,,FULL,Y,declaration,!defined(_included_randomnumbers_h),double   sfrand          (double range = 1.0f);                               // -range < result < range
-contrib/systemiv/lib/metaserver/metaserver.cpp,665,ServerRegisterWANThread,sfrand,3.0,init/create,assign:timeToSleep,FULL,Y,call,defined(WAN_PLAY_ENABLED),timeToSleep += sfrand(3.0);
-contrib/systemiv/lib/sound/sound_instance.cpp,557,SoundInstance::OpenStream,AppRandom,,other,assign:sampleIndex,FULL,N,call,,int sampleIndex = AppRandom() % numSamples;
-contrib/systemiv/lib/sound/sound_instance.cpp,817,SoundInstance::Update3DPosition,sfrand,range,other,arg:Set,FULL,N,call,,"m_pos.Set( sfrand(range),"
-contrib/systemiv/lib/sound/sound_instance.cpp,818,SoundInstance::Update3DPosition,sfrand,range,other,,FULL,N,call,,"sfrand(range),"
-contrib/systemiv/lib/sound/sound_instance.cpp,819,SoundInstance::Update3DPosition,sfrand,range,other,,FULL,N,call,,sfrand(range) );
-contrib/systemiv/lib/sound/sound_instance.cpp,1041,SoundInstance::GetAttachedObject,AppRandom,,other,assign:index,FULL,N,call,,int index = AppRandom() % m_objIds.Size();
-contrib/systemiv/lib/sound/sound_parameter.cpp,75,SoundParameter::Recalculate,frand,diff,other,assign:random,FULL,N,call,,float random = frand( diff );
-contrib/systemiv/lib/sound/soundsystem.cpp,45,SoundSystem::SoundSystem,AppSeedRandom,(unsigned int) GetHighResTime(),init/create,,FULL,N,call,,AppSeedRandom( (unsigned int) GetHighResTime() );
-contrib/eclipse/eclipse.cpp,414,EclRegisterWindow,AppRandom,,ui,assign:window->m_x,FULL,Y,call,,if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) AppRandom() / (float) APP_RAND_MAX );
-contrib/eclipse/eclipse.cpp,415,EclRegisterWindow,AppRandom,,ui,assign:window->m_x,FULL,Y,call,,else                            window->m_x = int( parent->m_x - window->m_w * (float) AppRandom() / (float) APP_RAND_MAX );
-contrib/eclipse/eclipse.cpp,416,EclRegisterWindow,AppRandom,,ui,assign:window->m_y,FULL,Y,call,,if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) AppRandom() / (float) APP_RAND_MAX );
-contrib/eclipse/eclipse.cpp,417,EclRegisterWindow,AppRandom,,ui,assign:window->m_y,FULL,Y,call,,else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) AppRandom() / (float) APP_RAND_MAX );
+file,line,function,generator,argument,context,decides,cosmetic_hint,liveness,build,compiled,kind,preproc_conditions,statement
+code/3d_sierpinski_gasket.cpp,29,Sierpinski3D::Sierpinski3D,AppRandom,,init/create,arg:switch,,LIVE,FULL,Y,call,,switch( AppRandom()%5 )
+code/camera.cpp,2466,Camera::Advance,sfrand,m_cameraShake * 0.05f,advance,arg:RotateAroundY,,LIVE,FULL,Y,call,,m_front.RotateAroundY( sfrand(m_cameraShake * 0.05f) );
+code/camera.cpp,2468,Camera::Advance,sfrand,m_cameraShake,advance,arg:RotateAround,,LIVE,FULL,Y,call,,up.RotateAround( m_front * sfrand(m_cameraShake) * 0.3f );
+code/clouds.cpp,96,Clouds::RenderFace,frand,6.0f,render,condition,,LIVE,FULL,Y,call,,if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
+code/clouds.cpp,96,Clouds::RenderFace,frand,0.1f,render,assign:zoomFactor,,LIVE,FULL,Y,call,,if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
+code/clouds.cpp,97,Clouds::RenderFace,frand,6.0f,render,condition,,LIVE,FULL,Y,call,,if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
+code/clouds.cpp,97,Clouds::RenderFace,sfrand,0.1f,render,assign:offsetX,,LIVE,FULL,Y,call,,if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
+code/clouds.cpp,99,Clouds::RenderFace,frand,10.0f,render,condition,,LIVE,FULL,Y,call,,if      ( frand(10.0f) < 1.0f ) picIndex = 5;           // mouth open
+code/clouds.cpp,100,Clouds::RenderFace,frand,10.0f,render,condition,,LIVE,FULL,Y,call,,else if ( frand(10.0f) < 1.0f ) picIndex = 4;           // eyes shut
+code/clouds.cpp,101,Clouds::RenderFace,AppRandom,,render,assign:picIndex,,LIVE,FULL,Y,call,,else                            picIndex = 1 + ( AppRandom() % 3 );
+code/demoendsequence.cpp,110,DemoEndSequence::Render,frand,screenH,render,arg:Set,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_pos.Set( 850, 0, frand(screenH) );"
+code/demoendsequence.cpp,112,DemoEndSequence::Render,frand,10,render,arg:Set,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_vel.Set( -10-frand(10), 0, sfrand(10) );"
+code/demoendsequence.cpp,112,DemoEndSequence::Render,sfrand,10,render,,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),"darwinian->m_vel.Set( -10-frand(10), 0, sfrand(10) );"
+code/demoendsequence.cpp,113,DemoEndSequence::Render,frand,0.3f,render,assign:darwinian->m_turnRate,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),darwinian->m_turnRate = 0.3f+frand(0.3f);
+code/demoendsequence.cpp,114,DemoEndSequence::Render,sfrand,,render,condition,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( sfrand() > 0.0f ) darwinian->m_turnRate *= -1.0f;
+code/demoendsequence.cpp,115,DemoEndSequence::Render,sfrand,25,render,assign:darwinian->m_size,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),darwinian->m_size = 50 + sfrand(25);
+code/explosion.cpp,41,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.x,,LIVE,FULL,Y,call,,m_angVel.x = sfrand(MAX_ANG_VEL);
+code/explosion.cpp,42,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.y,,LIVE,FULL,Y,call,,m_angVel.y = sfrand(MAX_ANG_VEL);
+code/explosion.cpp,43,Tumbler::Tumbler,sfrand,MAX_ANG_VEL,vfx-system,assign:m_angVel.z,,LIVE,FULL,Y,call,,m_angVel.z = sfrand(MAX_ANG_VEL);
+code/explosion.cpp,79,Explosion::Explosion,frand,1.0,vfx-system,condition,,LIVE,FULL,Y,call,,if( _fraction < 1.0 && frand(1.0) > _fraction )
+code/explosion.cpp,124,Explosion::Explosion,AppRandom,,vfx-system,assign:tri.m_tumbler,,LIVE,FULL,Y,call,,tri.m_tumbler = &m_tumblers[AppRandom() % NUM_TUMBLERS];
+code/global_internet.cpp,55,GlobalInternet::GlobalInternet,AppSeedRandom,1,init/create,,,LEGACY,FULL,Y,call,,AppSeedRandom(1);
+code/global_internet.cpp,89,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:z,,LEGACY,FULL,Y,call,,float z = sfrand(distance);
+code/global_internet.cpp,90,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:y,,LEGACY,FULL,Y,call,,float y = sfrand(distance);
+code/global_internet.cpp,91,GlobalInternet::GenerateInternet,sfrand,distance,init/create,assign:x,,LEGACY,FULL,Y,call,,float x = sfrand(distance);
+code/global_internet.cpp,334,GlobalInternet::TriggerPacket,AppRandom,,other,assign:newLinkIndex,,LEGACY,FULL,Y,call,,int newLinkIndex = AppRandom() % newNode->m_numLinks;
+code/global_internet.cpp,357,GlobalInternet::RenderPackets,frand,100.0,render,condition,,LEGACY,FULL,Y,call,,if( frand(100.0) < 11.0 )
+code/global_internet.cpp,359,GlobalInternet::RenderPackets,frand,m_leafs.Size(),render,assign:leafIndex,,LEGACY,FULL,Y,call,,int leafIndex = frand( m_leafs.Size() );
+code/global_world.cpp,909,SphereWorld::AddLocation,frand,,other,assign:value,,LEGACY,FULL,Y,call,,double value = frand();
+code/global_world.cpp,917,SphereWorld::AddLocation,frand,,other,assign:value,,LEGACY,FULL,Y,call,,double value = frand();
+code/global_world.cpp,970,SphereWorld::RenderSpirits,frand,30,render,condition,,LEGACY,FULL,Y,call,,if( isReceiver && frand(30) < 1.0 )
+code/global_world.cpp,974,SphereWorld::RenderSpirits,frand,300,render,condition,,LEGACY,FULL,Y,call,,else if( !isReceiver && frand(300) < 1.0 )
+code/global_world.cpp,979,SphereWorld::RenderSpirits,frand,20,render,condition,,LEGACY,FULL,Y,call,,if( location->m_numSpirits > 0 && frand(20) < 1.0)
+code/global_world.cpp,2317,GlobalWorld::TransferSpirits,frand,0.04,other,assign:position,,LEGACY,FULL,Y,call,,position -= frand(0.04);
+code/landscape_renderer.cpp,190,LandscapeRenderer::GetLandscapeColour,AppRandom,,render,arg:AppSeedRandom,,LIVE,FULL,Y,call,,AppSeedRandom(_x | _y + AppRandom());
+code/landscape_renderer.cpp,190,LandscapeRenderer::GetLandscapeColour,AppSeedRandom,_x | _y + AppRandom(),render,,,LIVE,FULL,Y,call,,AppSeedRandom(_x | _y + AppRandom());
+code/landscape_renderer.cpp,192,LandscapeRenderer::GetLandscapeColour,sfrand,0.45 / (heightAboveSea + 2.0),render,assign:v,,LIVE,FULL,Y,call,,v += sfrand(0.45 / (heightAboveSea + 2.0));
+code/level_file.cpp,752,LevelFile::ParseInstantUnits,sfrand,60,other,assign:copy->m_posX,,LIVE,FULL,Y,call,,copy->m_posX = iu->m_posX + sfrand(60);
+code/level_file.cpp,753,LevelFile::ParseInstantUnits,sfrand,60,other,assign:copy->m_posZ,,LIVE,FULL,Y,call,,copy->m_posZ = iu->m_posZ + sfrand(60);
+code/location.cpp,185,Location::Init,AppSeedRandom,1,init/create,,,MIXED,FULL,Y,call,,AppSeedRandom( 1 );
+code/location.cpp,4443,Location::PromoteDarwinian,AppRandom,,other,assign:numFlashes,,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/location.cpp,4446,Location::PromoteDarwinian,frand,15.0,other,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4446,Location::PromoteDarwinian,sfrand,5.0,other,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4446,Location::PromoteDarwinian,sfrand,5.0,other,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4485,Location::DemoteOfficer,AppRandom,,other,assign:numFlashes,,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/location.cpp,4488,Location::DemoteOfficer,frand,15.0,other,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4488,Location::DemoteOfficer,sfrand,5.0,other,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4488,Location::DemoteOfficer,sfrand,5.0,other,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/location.cpp,4525,Location::Bang,frand,numCores,other,assign:numCores,,MIXED,FULL,Y,call,,numCores += frand(numCores);
+code/location.cpp,4528,Location::Bang,sfrand,30.0,other,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand( 30.0 ),"
+code/location.cpp,4529,Location::Bang,frand,10.0,other,,particle?,MIXED,FULL,Y,call,,"10.0 + frand( 10.0 ),"
+code/location.cpp,4530,Location::Bang,sfrand,30.0,other,,particle?,MIXED,FULL,Y,call,,sfrand( 30.0 ) );
+code/location.cpp,4531,Location::Bang,frand,120.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 120.0 + frand(120.0);
+code/location.cpp,4544,Location::Bang,frand,2.0,other,assign:vel.y,,MIXED,FULL,Y,call,,vel.y = 2.0 + frand(2.0);
+code/location.cpp,4545,Location::Bang,frand,30.0,other,arg:SetLength,particle?,MIXED,FULL,Y,call,,vel.SetLength( 20.0 + frand(30.0) );
+code/location.cpp,4547,Location::Bang,frand,20.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20.0 + frand(20.0);
+code/multiwiniahelp.cpp,243,MultiwiniaHelp::AttachTo3d,rand,,other,assign:randomTeam,,LIVE,FULL,Y,call,,int randomTeam = rand() % g_app->m_location->m_levelFile->m_numPlayers;
+code/multiwiniahelp.cpp,246,MultiwiniaHelp::AttachTo3d,rand,,other,assign:randomTeam,,LIVE,FULL,Y,call,,randomTeam = rand() % g_app->m_location->m_levelFile->m_numPlayers;
+code/particle_system.cpp,62,Particle::Initialise,frand,,vfx-system,assign:amount,,LIVE,FULL,Y,call,,float amount = frand();
+code/particle_system.cpp,120,Particle::Advance,frand,,vfx-system,condition,particle?,LIVE,FULL,Y,call,,if( frand() < 0.5 * SERVER_ADVANCE_PERIOD * 10.0 )
+code/sepulveda.cpp,935,Sepulveda::RenderFace,frand,6.0f,render,condition,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
+code/sepulveda.cpp,935,Sepulveda::RenderFace,frand,0.1f,render,assign:zoomFactor,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        zoomFactor = frand(0.1f);
+code/sepulveda.cpp,936,Sepulveda::RenderFace,frand,6.0f,render,condition,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
+code/sepulveda.cpp,936,Sepulveda::RenderFace,sfrand,0.1f,render,assign:offsetX,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if( frand(6.0f) < 1.0f )        offsetX = sfrand(0.1f);
+code/sepulveda.cpp,938,Sepulveda::RenderFace,frand,10.0f,render,condition,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),if      ( frand(10.0f) < 1.0f ) picIndex = 5;           // mouth open
+code/sepulveda.cpp,939,Sepulveda::RenderFace,frand,10.0f,render,condition,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),else if ( frand(10.0f) < 1.0f ) picIndex = 4;           // eyes shut
+code/sepulveda.cpp,940,Sepulveda::RenderFace,AppRandom,,render,assign:picIndex,,LEGACY,DEAD,Y,call,defined(USE_SEPULVEDA_HELP_TUTORIAL),else                            picIndex = 1 + ( AppRandom() % 3 );
+code/taskmanager.cpp,294,Task::Promote,AppRandom,,other,assign:numFlashes,,LIVE,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/taskmanager.cpp,297,Task::Promote,frand,15.0,other,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager.cpp,297,Task::Promote,sfrand,5.0,other,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager.cpp,297,Task::Promote,sfrand,5.0,other,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager.cpp,332,Task::Demote,AppRandom,,other,assign:numFlashes,,LIVE,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/taskmanager.cpp,335,Task::Demote,frand,15.0,other,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager.cpp,335,Task::Demote,sfrand,5.0,other,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager.cpp,335,Task::Demote,sfrand,5.0,other,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/taskmanager_interface_icons.cpp,440,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,0.015f,advance,assign:m_objectiveParticles[i].alpha,,LIVE,FULL,Y,call,,m_objectiveParticles[i].alpha -= frand(0.015f)+0.015f;
+code/taskmanager_interface_icons.cpp,464,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,2.0f,advance,assign:lineSpeed,,LIVE,FULL,Y,call,,lineSpeed = frand(2.0f);
+code/taskmanager_interface_icons.cpp,465,TaskManagerInterfaceIcons::AdvanceProgressBar,frand,2*M_PI,advance,assign:angle,,LIVE,FULL,Y,call,,angle = frand(2*M_PI);
+code/water.cpp,512,Water::BuildTriangleStrips,sfrand,shoreness,other,assign:whiteness,,LIVE,FULL,Y,call,,float whiteness = shoreness + sfrand(shoreness) * shoreNoiseFactor;
+code/UI/GameMenuWindow.cpp,739,GameMenuWindow::UpdateTestBed,srand,time(NULL),ui,,,LIVE,DEAD,Y,call,defined(TESTBED_ENABLED),srand ( time(NULL) );
+code/UI/GameMenuWindow.cpp,1210,GameMenuWindow::AdvanceTestBedGame,rand,,ui,arg:SetTestBedGameIndex,,LIVE,DEAD,Y,call,defined(TESTBED_ENABLED),g_app->SetTestBedGameIndex( rand()% (int)g_vGameEntries.size() );
+code/UI/GameMenuWindow.cpp,3414,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:port,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),int port = rand() % 65000;
+code/UI/GameMenuWindow.cpp,3415,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:gameType,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"int gameType = rand() % Multiwinia::NumGameTypes - 1;	// No tank battle, please!"
+code/UI/GameMenuWindow.cpp,3424,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 5 == 1 ) gameType = -1;
+code/UI/GameMenuWindow.cpp,3444,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 500 <= 1 )
+code/UI/GameMenuWindow.cpp,3471,GameMenuWindow::SetupJoinGamePage,rand,,ui,assign:usedTeams,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),usedTeams = (rand() % maxTeams)+1;
+code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,arg:sprintf,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
+code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
+code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
+code/UI/GameMenuWindow.cpp,3473,GameMenuWindow::SetupJoinGamePage,rand,,ui,,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"sprintf(ip, ""%d.%d.%d.%d"", rand() % 255, rand() % 255, rand() % 255, rand() % 255);"
+code/UI/GameMenuWindow.cpp,3474,GameMenuWindow::SetupJoinGamePage,rand,,ui,condition,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),if( rand() % 2 == 1 )
+code/UI/GameMenuWindow.cpp,3489,GameMenuWindow::SetupJoinGamePage,rand,,ui,,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"server->CreateData( NET_METASERVER_NUMHUMANTEAMS,   (unsigned char) (rand() % (usedTeams+1)) );"
+code/UI/GameMenuWindow.cpp,3493,GameMenuWindow::SetupJoinGamePage,rand,,ui,,,LIVE,DEAD,Y,call,defined(FAKE_SERVERS),"server->CreateData( NET_METASERVER_GAMEINPROGRESS,	(unsigned char) ((bool)(rand() % 2)) );"
+code/interface/camera_anim_window.cpp,36,,AppRandom,,ui,arg:sprintf,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),"sprintf(anim->m_name, ""CamAnim%d"", AppRandom() & 0x3ff);"
+code/interface/camera_mount_window.cpp,36,,AppRandom,,ui,arg:sprintf,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),"sprintf(mount->m_name, ""blah%d"", AppRandom());"
+code/interface/tree_window.cpp,51,,frand,99999,ui,assign:tree->m_seed,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),tree->m_seed = (int) frand(99999);
+code/interface/tree_window.cpp,69,,AppSeedRandom,time(NULL),ui,,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),AppSeedRandom(time(NULL));
+code/interface/tree_window.cpp,72,,frand,99999,ui,assign:newTree->m_seed,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),newTree->m_seed = (int) frand(99999);
+code/interface/tree_window.cpp,73,,sfrand,0.3,ui,assign:newTree->m_height,,LIVE,EDITOR,Y,call,defined(LOCATION_EDITOR),newTree->m_height = tree->m_height * (1.0 + sfrand(0.3) );
+code/loaders/amiga_loader.cpp,46,AmigaLoader::AmigaLoader,frand,1024,loader,assign:m_stars[i].m_pos.x,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_pos.x = frand(1024);
+code/loaders/amiga_loader.cpp,47,AmigaLoader::AmigaLoader,frand,768,loader,assign:m_stars[i].m_pos.y,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_pos.y = frand(768);
+code/loaders/amiga_loader.cpp,48,AmigaLoader::AmigaLoader,frand,200,loader,assign:m_stars[i].m_speed,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_speed = -(frand(200) + 20);
+code/loaders/amiga_loader.cpp,49,AmigaLoader::AmigaLoader,frand,128,loader,assign:m_stars[i].m_brightness,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_stars[i].m_brightness = frand(128) + 127;
+code/loaders/credits_loader.cpp,72,CreditsLoader::AddString,AppRandom,,loader,assign:item->m_pos,,DEAD(USE_LOADERS off),FULL,Y,call,,item->m_pos = GenerateOffscreenPosition( 1000.0f + (AppRandom() % 200) );
+code/loaders/credits_loader.cpp,107,CreditsLoader::GenerateWords,AppRandom,,loader,assign:darwinian->m_pos,,DEAD(USE_LOADERS off),FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 200.0f + (AppRandom() % 100) );
+code/loaders/credits_loader.cpp,150,CreditsLoader::GenerateChars,AppRandom,,loader,assign:darwinian->m_pos,,DEAD(USE_LOADERS off),FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 200.0f + (AppRandom() % 100) );
+code/loaders/credits_loader.cpp,174,CreditsLoader::RemoveUnusedStrings,AppRandom,,loader,assign:darwinian->m_pos,,DEAD(USE_LOADERS off),FULL,Y,call,,darwinian->m_pos = GenerateOffscreenPosition( 40 + (AppRandom() % 50) );
+code/loaders/credits_loader.cpp,188,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:switch,,DEAD(USE_LOADERS off),FULL,Y,call,,switch( AppRandom() % 4 )
+code/loaders/credits_loader.cpp,190,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,,DEAD(USE_LOADERS off),FULL,Y,call,,"case 0 :    result.Set( -1 * _distanceOut, AppRandom() % 600 );         break;"
+code/loaders/credits_loader.cpp,191,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,,DEAD(USE_LOADERS off),FULL,Y,call,,"case 1 :    result.Set( AppRandom() % 800, -1 * _distanceOut );         break;"
+code/loaders/credits_loader.cpp,192,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,,DEAD(USE_LOADERS off),FULL,Y,call,,"case 2 :    result.Set( 800 + _distanceOut, AppRandom() % 600 );        break;"
+code/loaders/credits_loader.cpp,193,CreditsLoader::GenerateOffscreenPosition,AppRandom,,loader,arg:Set,,DEAD(USE_LOADERS off),FULL,Y,call,,"case 3 :    result.Set( AppRandom() % 800, 600 + _distanceOut );        break;"
+code/loaders/egames_loader.cpp,98,EgamesLoader::RenderDarwinians,srand,0,loader,,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),srand(0);
+code/loaders/egames_loader.cpp,106,EgamesLoader::RenderDarwinians,rand,,loader,condition,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),if( rand() % 100 < 65 )
+code/loaders/egames_loader.cpp,117,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisPos,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),"thisPos += Vector3( rand()%10, 0, rand()%10 );"
+code/loaders/egames_loader.cpp,117,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisPos,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),"thisPos += Vector3( rand()%10, 0, rand()%10 );"
+code/loaders/egames_loader.cpp,118,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisRight.x,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),thisRight.x += rand()%10;
+code/loaders/egames_loader.cpp,119,EgamesLoader::RenderDarwinians,rand,,loader,assign:thisUp.y,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(EGAMESBUILD),thisUp.y += rand()%10;
+code/loaders/loader.cpp,148,Loader::GetRandomLoaderIndex,AppSeedRandom,(unsigned int) time(NULL),loader,,,DEAD(USE_LOADERS off),FULL,Y,call,,AppSeedRandom( (unsigned int) time(NULL) );
+code/loaders/loader.cpp,172,Loader::GetRandomLoaderIndex,AppRandom,,loader,assign:chosenChance,,DEAD(USE_LOADERS off),FULL,Y,call,,int chosenChance = AppRandom() % totalChance;
+code/loaders/matrix_loader.cpp,94,MatrixLoader::Run,AppRandom,,loader,condition,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),if( AppRandom() % 2 == 0 )
+code/loaders/matrix_loader.cpp,119,MatrixLoader::Run,AppRandom,,loader,assign:randomColumn,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int randomColumn = AppRandom() % 40;
+code/loaders/soul_loader.cpp,81,SoulLoader::AdvanceAllSpirits,frand,1000.0f,loader,assign:spirit->m_pos,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),"spirit->m_pos = Vector3( sfrand(200.0f), -170.0f, -frand(1000.0f) );"
+code/loaders/soul_loader.cpp,81,SoulLoader::AdvanceAllSpirits,sfrand,200.0f,loader,assign:spirit->m_pos,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),"spirit->m_pos = Vector3( sfrand(200.0f), -170.0f, -frand(1000.0f) );"
+code/loaders/soul_loader.cpp,143,SoulLoader::RenderMessage,sfrand,0.4f,loader,assign:time,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),time += gap * ( 1.0f + sfrand(0.4f) );
+code/loaders/soul_loader.cpp,148,SoulLoader::RenderMessage,sfrand,80.0f,loader,arg:Set,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),"position[i].Set( sfrand(80.0f), sfrand(60.0f), -700.0f );"
+code/loaders/soul_loader.cpp,148,SoulLoader::RenderMessage,sfrand,60.0f,loader,,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),"position[i].Set( sfrand(80.0f), sfrand(60.0f), -700.0f );"
+code/loaders/soul_loader.cpp,150,SoulLoader::RenderMessage,sfrand,150.0f,loader,arg:Set,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),"spirits[i]->m_pos.Set( sfrand(150.0f), -170.0f, -700.0f );"
+code/loaders/soul_loader.cpp,236,SoulLoaderSpirit::SoulLoaderSpirit,frand,10.0f,loader,assign:m_positionOffset,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_positionOffset = frand(10.0f);
+code/loaders/soul_loader.cpp,237,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_xaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_xaxisRate = frand(2.0f);
+code/loaders/soul_loader.cpp,238,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_yaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_yaxisRate = frand(2.0f);
+code/loaders/soul_loader.cpp,239,SoulLoaderSpirit::SoulLoaderSpirit,frand,2.0f,loader,assign:m_zaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_zaxisRate = frand(2.0f);
+code/loaders/soul_loader.cpp,254,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_xaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_xaxisRate += frand(1.0f);
+code/loaders/soul_loader.cpp,255,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_yaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_yaxisRate += frand(1.0f);
+code/loaders/soul_loader.cpp,256,SoulLoaderSpirit::Advance,frand,1.0f,loader,assign:m_zaxisRate,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),m_zaxisRate += frand(1.0f);
+code/loaders/soul_loader.cpp,269,SoulLoaderSpirit::Advance,frand,3.0f,loader,assign:vel.y,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),vel.y = 3.0f + frand(3.0f);
+code/loaders/speccy_loader.cpp,82,SpeccyLoader::Header,AppRandom,,loader,assign:nextSwitch,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
+code/loaders/speccy_loader.cpp,89,SpeccyLoader::Header,AppRandom,,loader,assign:x,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
+code/loaders/speccy_loader.cpp,142,SpeccyLoader::Data,AppRandom,,loader,assign:nextSwitch,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
+code/loaders/speccy_loader.cpp,149,SpeccyLoader::Data,AppRandom,,loader,assign:x,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
+code/loaders/speccy_loader.cpp,154,SpeccyLoader::Data,AppRandom,,loader,assign:nextSwitch,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),nextSwitch += 2 + AppRandom() % 4;
+code/loaders/speccy_loader.cpp,202,SpeccyLoader::Silence,AppRandom,,loader,condition,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),if (AppRandom() % 200 == 0)
+code/loaders/speccy_loader.cpp,254,SpeccyLoader::Screen,AppRandom,,loader,assign:nextSwitch,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int nextSwitch = AppRandom() % 4;
+code/loaders/speccy_loader.cpp,261,SpeccyLoader::Screen,AppRandom,,loader,assign:x,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),int x = AppRandom() % 1000;
+code/loaders/speccy_loader.cpp,266,SpeccyLoader::Screen,AppRandom,,loader,assign:nextSwitch,,DEAD(USE_LOADERS off),DEAD,Y,call,defined(USE_LOADERS),nextSwitch += 2 + AppRandom() % 4;
+code/network/network_quality.cpp,26,NetworkQuality::Write,AppRandom,,other,condition,,LIVE,FULL,Y,call,,if( AppRandom() % 1000 > m_packetLoss * 1000 )
+code/sound/sound_instance.cpp,572,SoundInstance::OpenStream,AppRandom,,sound,assign:sampleIndex,,LIVE,FULL,Y,call,,int sampleIndex = AppRandom() % numSamples;
+code/sound/sound_instance.cpp,1107,SoundInstance::GetAttachedObject,AppRandom,,sound,assign:index,,LIVE,FULL,Y,call,,int index = AppRandom() % m_objIds.Size();
+code/sound/sound_parameter.cpp,74,SoundParameter::Recalculate,frand,double(diff),sound,assign:random,,LIVE,FULL,Y,call,,float random = frand( double(diff) );
+code/worldobject/anthill.cpp,473,AntHill::Advance,frand,0.75,advance,assign:m_renderDamaged,,LIVE,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*1.2) > healthFraction );
+code/worldobject/anthill.cpp,490,AntHill::Render,frand,,render,assign:thefrand,,LIVE,FULL,Y,call,,double thefrand = frand();
+code/worldobject/armour.cpp,1795,Armour::Render,frand,,render,condition,,LIVE,FULL,Y,call,,if( frand() > 0.5 )
+code/worldobject/centipede.cpp,325,Centipede::Advance,frand,0.75,advance,assign:m_renderDamaged,,LIVE,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*0.8) > healthFraction );
+code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
+code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
+code/worldobject/controltower.cpp,149,ControlTower::Advance,sfrand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 10.0, sfrand() * 5.0, sfrand() * 10.0 );"
+code/worldobject/crate.cpp,2037,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.x,,LIVE,FULL,Y,call,,pos.x += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
+code/worldobject/crate.cpp,2038,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.z,,LIVE,FULL,Y,call,,pos.z += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
+code/worldobject/crate.cpp,2042,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.x,,LIVE,FULL,Y,call,,pos.x += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
+code/worldobject/crate.cpp,2043,Crate::RunExtinguisher,sfrand,POWERUP_EFFECT_RANGE * 4.0,other,assign:pos.z,,LIVE,FULL,Y,call,,pos.z += sfrand( POWERUP_EFFECT_RANGE * 4.0 );
+code/worldobject/crate.cpp,2046,Crate::RunExtinguisher,frand,100.0,other,assign:size,particle?,LIVE,FULL,Y,call,,double size = 50.0 + frand(100.0);
+code/worldobject/darwinian.cpp,1536,Darwinian::AdvanceOpeningCrate,frand,10,advance,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20.0 + frand(10);
+code/worldobject/darwinian.cpp,3021,Darwinian::SearchForThreats,frand,200,other,condition,sound?,MIXED,FULL,Y,call,,if( frand(200) < 1.0 &&
+code/worldobject/darwinian.cpp,3524,Darwinian::TakeControl,AppRandom,,other,assign:numFlashes,sound?,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,frand,15.0,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,sfrand,5.0,other,arg:vel,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3527,Darwinian::TakeControl,sfrand,5.0,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3541,Darwinian::LoseControl,AppRandom,,other,assign:numFlashes,sound?,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,frand,15.0,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,sfrand,5.0,other,arg:vel,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3544,Darwinian::LoseControl,sfrand,5.0,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(5.0), frand(15.0), sfrand(5.0) );"
+code/worldobject/darwinian.cpp,3577,Darwinian::AdvanceOnFire,AppRandom,,advance,assign:numFireParticles,,MIXED,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
+code/worldobject/darwinian.cpp,3580,Darwinian::AdvanceOnFire,frand,5,advance,assign:fireSpawn,particle?,MIXED,FULL,Y,call,,Vector3 fireSpawn = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,3582,Darwinian::AdvanceOnFire,frand,30.0,advance,assign:fireSize,particle?,MIXED,FULL,Y,call,,double fireSize = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,3583,Darwinian::AdvanceOnFire,frand,3,advance,assign:fireVel,particle? sound?,MIXED,FULL,Y,call,,Vector3 fireVel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,3589,Darwinian::AdvanceOnFire,AppRandom,,advance,condition,sound?,MIXED,FULL,Y,call,,if( AppRandom() % 30 == 0 )
+code/worldobject/darwinian.cpp,3654,Darwinian::AdvanceSacraficing,AppRandom,,advance,assign:numFireParticles,,MIXED,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
+code/worldobject/darwinian.cpp,3657,Darwinian::AdvanceSacraficing,frand,5,advance,assign:fireSpawn,particle?,MIXED,FULL,Y,call,,Vector3 fireSpawn = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,3659,Darwinian::AdvanceSacraficing,frand,30.0,advance,assign:fireSize,particle?,MIXED,FULL,Y,call,,double fireSize = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,3660,Darwinian::AdvanceSacraficing,frand,3,advance,assign:fireVel,particle? sound?,MIXED,FULL,Y,call,,Vector3 fireVel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,3666,Darwinian::AdvanceSacraficing,AppRandom,,advance,condition,sound?,MIXED,FULL,Y,call,,if( AppRandom() % 100 == 0 )
+code/worldobject/darwinian.cpp,3854,Darwinian::AdvanceHotFeet,AppRandom,,advance,assign:numFireParticles,,MIXED,FULL,Y,call,,int numFireParticles = AppRandom() % 8;
+code/worldobject/darwinian.cpp,3860,Darwinian::AdvanceHotFeet,frand,30.0,advance,assign:fireSize,particle?,MIXED,FULL,Y,call,,double fireSize = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,3886,Darwinian::AdvanceInfection,rand,,advance,condition,,MIXED,FULL,Y,call,,if( rand() % 2 == 0 )
+code/worldobject/darwinian.cpp,3889,Darwinian::AdvanceInfection,frand,1.0,advance,assign:vel.x,,MIXED,FULL,Y,call,,vel.x += frand(1.0);
+code/worldobject/darwinian.cpp,3890,Darwinian::AdvanceInfection,frand,1.0,advance,assign:vel.z,,MIXED,FULL,Y,call,,vel.z += frand(1.0);
+code/worldobject/darwinian.cpp,3891,Darwinian::AdvanceInfection,frand,3.0,advance,assign:vel.y,,MIXED,FULL,Y,call,,vel.y += frand(3.0);
+code/worldobject/darwinian.cpp,3893,Darwinian::AdvanceInfection,frand,20.0,advance,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20.0 + frand(20.0);
+code/worldobject/darwinian.cpp,4902,Darwinian::SetBooster,frand,5,other,assign:pos,particle?,MIXED,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,4903,Darwinian::SetBooster,frand,30.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,4904,Darwinian::SetBooster,frand,3,other,assign:vel,particle?,MIXED,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,4905,Darwinian::SetBooster,sfrand,6.0,other,assign:vel.x,,MIXED,FULL,Y,call,,vel.x += sfrand(6.0);
+code/worldobject/darwinian.cpp,4906,Darwinian::SetBooster,sfrand,6.0,other,assign:vel.z,,MIXED,FULL,Y,call,,vel.z += sfrand(6.0);
+code/worldobject/darwinian.cpp,4925,Darwinian::GiveHotFeet,frand,5,other,assign:pos,particle?,MIXED,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,4926,Darwinian::GiveHotFeet,frand,30.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,4927,Darwinian::GiveHotFeet,frand,3,other,assign:vel,particle?,MIXED,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,4928,Darwinian::GiveHotFeet,sfrand,6.0,other,assign:vel.x,,MIXED,FULL,Y,call,,vel.x += sfrand(6.0);
+code/worldobject/darwinian.cpp,4929,Darwinian::GiveHotFeet,sfrand,6.0,other,assign:vel.z,,MIXED,FULL,Y,call,,vel.z += sfrand(6.0);
+code/worldobject/darwinian.cpp,4954,Darwinian::GiveMindControl,frand,5,other,assign:pos,particle?,MIXED,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,4955,Darwinian::GiveMindControl,frand,30.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,4956,Darwinian::GiveMindControl,frand,3,other,assign:vel,particle?,MIXED,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,4957,Darwinian::GiveMindControl,sfrand,6.0,other,assign:vel.x,,MIXED,FULL,Y,call,,vel.x += sfrand(6.0);
+code/worldobject/darwinian.cpp,4958,Darwinian::GiveMindControl,sfrand,6.0,other,assign:vel.z,,MIXED,FULL,Y,call,,vel.z += sfrand(6.0);
+code/worldobject/darwinian.cpp,4977,Darwinian::GiveRage,frand,5,other,assign:pos,particle?,MIXED,FULL,Y,call,,Vector3 pos = m_pos + g_upVector * frand(5);
+code/worldobject/darwinian.cpp,4978,Darwinian::GiveRage,frand,30.0,other,assign:size,particle?,MIXED,FULL,Y,call,,double size = 20 + frand(30.0);
+code/worldobject/darwinian.cpp,4979,Darwinian::GiveRage,frand,3,other,assign:vel,particle?,MIXED,FULL,Y,call,,Vector3 vel = m_vel * 0.3 + g_upVector * (3+frand(3));
+code/worldobject/darwinian.cpp,4980,Darwinian::GiveRage,sfrand,6.0,other,assign:vel.x,,MIXED,FULL,Y,call,,vel.x += sfrand(6.0);
+code/worldobject/darwinian.cpp,4981,Darwinian::GiveRage,sfrand,6.0,other,assign:vel.z,,MIXED,FULL,Y,call,,vel.z += sfrand(6.0);
+code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,frand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
+code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,sfrand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
+code/worldobject/engineer.cpp,899,Engineer::AdvanceResearching,sfrand,,advance,assign:particleVel,particle?,LEGACY,FULL,Y,call,,"particleVel += Vector3( sfrand() * 15.0, frand() * 10.0, sfrand() * 15.0 );"
+code/worldobject/entity.cpp,414,Entity::Advance,frand,0.75,advance,assign:m_renderDamaged,,MIXED,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*0.8) > healthFraction );
+code/worldobject/eruptionmarker.cpp,35,EruptionMarker::Advance,sfrand,,advance,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand();
+code/worldobject/eruptionmarker.cpp,36,EruptionMarker::Advance,sfrand,,advance,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand();
+code/worldobject/eruptionmarker.cpp,39,EruptionMarker::Advance,frand,200.0,advance,assign:size,particle?,LIVE,FULL,Y,call,,double size = 300.0 + frand(200.0);
+code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,frand,20,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
+code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,sfrand,10,advance,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
+code/worldobject/harvester.cpp,249,Harvester::AdvanceEngines,sfrand,10,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(10), -10-frand(20), sfrand(10) );"
+code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,particle?,LIVE,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
+code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,particle?,LIVE,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
+code/worldobject/harvester.cpp,256,Harvester::AdvanceEngines,sfrand,10,advance,assign:pos,particle?,LIVE,FULL,Y,call,,"pos += Vector3(sfrand(10), sfrand(10), sfrand(10) );"
+code/worldobject/harvester.cpp,257,Harvester::AdvanceEngines,sfrand,20,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 50 + sfrand(20);
+code/worldobject/incubator.cpp,233,Incubator::SpawnEntity,AppRandom,,init/create,assign:numFlashes,,LEGACY,FULL,Y,call,,int numFlashes = 4 + AppRandom() % 4;
+code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,frand,35.0,init/create,,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,sfrand,15.0,init/create,arg:vel,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/incubator.cpp,236,Incubator::SpawnEntity,sfrand,15.0,init/create,,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/insertion_squad.cpp,829,Squadie::Render,frand,,render,assign:thefrand,,LIVE,FULL,Y,call,,double thefrand = frand();
+code/worldobject/laserfence.cpp,89,LaserFence::Spark,frand,m_scale*50.0,other,assign:sparkPos.y,,LIVE,FULL,Y,call,,sparkPos.y += frand( m_scale*50.0 );
+code/worldobject/laserfence.cpp,93,LaserFence::Spark,frand,5.0,other,assign:numSparks,,LIVE,FULL,Y,call,,int numSparks = 5.0 + frand(5.0);
+code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,10.0,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
+code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,5.0,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
+code/worldobject/laserfence.cpp,98,LaserFence::Spark,sfrand,10.0,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"else            particleVel = Vector3( sfrand(10.0), sfrand(5.0), sfrand(10.0) );"
+code/worldobject/laserfence.cpp,100,LaserFence::Spark,frand,20.0,other,arg:SetLength,particle? sound?,LIVE,FULL,Y,call,,particleVel.SetLength( 40.0+frand(20.0) );
+code/worldobject/laserfence.cpp,101,LaserFence::Spark,frand,,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
+code/worldobject/laserfence.cpp,101,LaserFence::Spark,sfrand,,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
+code/worldobject/laserfence.cpp,101,LaserFence::Spark,sfrand,,other,assign:particleVel,particle? sound?,LIVE,FULL,Y,call,,"particleVel += Vector3( frand() * 20.0, sfrand() * 20.0, sfrand() * 20.0 );"
+code/worldobject/laserfence.cpp,102,LaserFence::Spark,frand,25.0,other,assign:size,particle? sound?,LIVE,FULL,Y,call,,double size = 25.0 + frand(25.0);
+code/worldobject/lightning.cpp,57,Lightning::Advance,sfrand,60.0,advance,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand( 60.0 ),"
+code/worldobject/lightning.cpp,58,Lightning::Advance,frand,60.0,advance,,particle?,LIVE,FULL,Y,call,,"60.0 + frand( 60.0 ),"
+code/worldobject/lightning.cpp,59,Lightning::Advance,sfrand,60.0,advance,,particle?,LIVE,FULL,Y,call,,sfrand( 60.0 ) );
+code/worldobject/lightning.cpp,60,Lightning::Advance,frand,100.0,advance,assign:size,particle?,LIVE,FULL,Y,call,,double size = 150.0 + frand(100.0);
+code/worldobject/lightning.cpp,67,Lightning::Advance,frand,5,advance,assign:fireSpawn,particle?,LIVE,FULL,Y,call,,Vector3 fireSpawn = pos + g_upVector * frand(5);
+code/worldobject/lightning.cpp,68,Lightning::Advance,frand,120.0,advance,assign:fireSize,particle?,LIVE,FULL,Y,call,,double fireSize = 160 + frand(120.0);
+code/worldobject/lightning.cpp,69,Lightning::Advance,sfrand,60.0,advance,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand( 60.0 ),"
+code/worldobject/lightning.cpp,70,Lightning::Advance,frand,5.0,advance,,particle?,LIVE,FULL,Y,call,,"5.0 + frand( 5.0 ),"
+code/worldobject/lightning.cpp,71,Lightning::Advance,sfrand,60.0,advance,,particle?,LIVE,FULL,Y,call,,sfrand( 60.0 ) );
+code/worldobject/meteor.cpp,60,Meteor::Advance,sfrand,m_radius,advance,assign:pos.x,,LIVE,FULL,Y,call,,pos.x += sfrand( m_radius );
+code/worldobject/meteor.cpp,61,Meteor::Advance,sfrand,m_radius,advance,assign:pos.y,,LIVE,FULL,Y,call,,pos.y += sfrand( m_radius );
+code/worldobject/meteor.cpp,62,Meteor::Advance,sfrand,m_radius,advance,assign:pos.z,,LIVE,FULL,Y,call,,pos.z += sfrand( m_radius );
+code/worldobject/meteor.cpp,65,Meteor::Advance,sfrand,10.0f,advance,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(10.0f);
+code/worldobject/meteor.cpp,66,Meteor::Advance,sfrand,10.0f,advance,assign:vel.y,,LIVE,FULL,Y,call,,vel.y += sfrand(10.0f);
+code/worldobject/meteor.cpp,67,Meteor::Advance,sfrand,10.0f,advance,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(10.0f);
+code/worldobject/officer.cpp,472,Officer::RenderShape,frand,,render,assign:thefrand,,LIVE,FULL,Y,call,,double thefrand = frand();
+code/worldobject/portal.cpp,225,Portal::RenderAlphas,rand,,render,condition,,LEGACY,FULL,Y,call,,if( rand() % 20 == 0 )
+code/worldobject/portal.cpp,233,Portal::RenderAlphas,frand,150.0,render,assign:size,particle?,LEGACY,FULL,Y,call,,double size = frand(150.0) + 150.0;
+code/worldobject/portal.cpp,236,Portal::RenderAlphas,rand,,render,condition,particle?,LEGACY,FULL,Y,call,,if( rand() % 4 == 0 )
+code/worldobject/portal.cpp,248,Portal::RenderAlphas,frand,g_gameTime,render,assign:d,,LEGACY,FULL,Y,call,,double d = frand(g_gameTime);
+code/worldobject/portal.cpp,249,Portal::RenderAlphas,frand,m_portalRadius,render,assign:centrePos,,LEGACY,FULL,Y,call,,centrePos += iv_sin(d) * right * frand(m_portalRadius);
+code/worldobject/portal.cpp,250,Portal::RenderAlphas,frand,m_portalRadius,render,assign:centrePos,,LEGACY,FULL,Y,call,,centrePos += iv_cos(d) * m_front * frand(m_portalRadius);
+code/worldobject/portal.cpp,253,Portal::RenderAlphas,frand,50.0,render,assign:size,particle?,LEGACY,FULL,Y,call,,double size = frand(50.0) + 150.0;
+code/worldobject/portal.cpp,256,Portal::RenderAlphas,rand,,render,condition,particle?,LEGACY,FULL,Y,call,,if( rand() % 4 == 0 )
+code/worldobject/randomiser.cpp,72,Randomiser::Render,rand,,render,assign:teamId,,LIVE,FULL,Y,call,,int teamId = rand() % NUM_TEAMS;
+code/worldobject/randomiser.cpp,79,Randomiser::Render,rand,,render,assign:teamId,,LIVE,FULL,Y,call,,teamId = rand() % NUM_TEAMS;
+code/worldobject/researchitem.cpp,44,ResearchItem::ResearchItem,frand,2.0 * M_PI,init/create,arg:RotateAroundY,,LEGACY,FULL,Y,call,,m_front.RotateAroundY( frand(2.0 * M_PI) );
+code/worldobject/rocket.cpp,345,FuelGenerator::Advance,sfrand,10.0,advance,assign:pumpPos.x,,MIXED,FULL,Y,call,,pumpPos.x += sfrand(10.0);
+code/worldobject/rocket.cpp,346,FuelGenerator::Advance,sfrand,10.0,advance,assign:pumpPos.z,,MIXED,FULL,Y,call,,pumpPos.z += sfrand(10.0);
+code/worldobject/rocket.cpp,351,FuelGenerator::Advance,frand,10,advance,assign:pumpVel,particle?,MIXED,FULL,Y,call,,pumpVel += g_upVector * frand(10);
+code/worldobject/rocket.cpp,355,FuelGenerator::Advance,frand,150.0,advance,assign:size,particle?,MIXED,FULL,Y,call,,double size = 150.0 + frand(150.0);
+code/worldobject/rocket.cpp,611,FuelStation::BoardRocket,AppRandom,,other,assign:numFlashes,sound?,MIXED,FULL,Y,call,,int numFlashes = 4 + AppRandom() % 4;
+code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,frand,35.0f,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
+code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,sfrand,15.0f,other,arg:vel,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
+code/worldobject/rocket.cpp,614,FuelStation::BoardRocket,sfrand,15.0f,other,,particle? sound?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0f), frand(35.0f), sfrand(15.0f) );"
+code/worldobject/rocket.cpp,1620,EscapeRocket::Advance,sfrand,20,advance,assign:pos,,MIXED,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
+code/worldobject/rocket.cpp,1620,EscapeRocket::Advance,sfrand,20,advance,assign:pos,,MIXED,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
+code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,frand,150,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,sfrand,50,advance,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/rocket.cpp,1622,EscapeRocket::Advance,sfrand,50,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/shaman.cpp,272,Shaman::Render,frand,,render,assign:thefrand,,LEGACY,FULL,Y,call,,double thefrand = frand();
+code/worldobject/shaman.cpp,482,Shaman::SacraficeDarwinians,AppRandom,,other,assign:numFlashes,,LEGACY,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,frand,15.0,other,,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,sfrand,15.0,other,arg:vel,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/shaman.cpp,485,Shaman::SacraficeDarwinians,sfrand,15.0,other,,particle?,LEGACY,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/smokemarker.cpp,24,SmokeMarker::Advance,sfrand,0.4f,advance,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(0.4f);
+code/worldobject/smokemarker.cpp,25,SmokeMarker::Advance,sfrand,0.4f,advance,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(0.4f);
+code/worldobject/smokemarker.cpp,28,SmokeMarker::Advance,frand,100.0f,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 200.0f + frand(100.0f);
+code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],,LIVE,FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
+code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],,LIVE,FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
+code/worldobject/souldestroyer.cpp,57,SoulDestroyer::SoulDestroyer,sfrand,range,init/create,assign:m_spiritPosition[i],,LIVE,FULL,Y,call,,"m_spiritPosition[i] = Vector3( sfrand(range), sfrand(range), sfrand(range) );"
+code/worldobject/souldestroyer.cpp,276,SoulDestroyer::Attack,AppRandom,,other,assign:index,,LIVE,FULL,Y,call,,int index = AppRandom() % SOULDESTROYER_MAXSPIRITS;
+code/worldobject/spaceship.cpp,139,SpaceShip::AdvanceEngines,frand,80,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 80.0f + frand(80);
+code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,frand,50,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
+code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,sfrand,50,advance,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
+code/worldobject/spaceship.cpp,141,SpaceShip::AdvanceEngines,sfrand,50,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(50), sfrand(50) );"
+code/worldobject/spaceship.cpp,147,SpaceShip::AdvanceEngines,sfrand,20,advance,assign:pos,,LIVE,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
+code/worldobject/spaceship.cpp,147,SpaceShip::AdvanceEngines,sfrand,20,advance,assign:pos,,LIVE,FULL,Y,call,,"pos += Vector3( sfrand(20), 10, sfrand(20) );"
+code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,frand,150,advance,,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,sfrand,50,advance,arg:vel,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/spaceship.cpp,149,SpaceShip::AdvanceEngines,sfrand,50,advance,,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50), -frand(150), sfrand(50) );"
+code/worldobject/spam.cpp,45,Spam::Spam,frand,2.0 * M_PI,init/create,arg:RotateAroundY,,MIXED,FULL,Y,call,,m_front.RotateAroundY( frand(2.0 * M_PI) );
+code/worldobject/spam.cpp,542,SpamInfection::AdvanceAttackingEntity,AppRandom,,advance,assign:numFlashes,,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,frand,15.0,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,sfrand,15.0,advance,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spam.cpp,545,SpamInfection::AdvanceAttackingEntity,sfrand,15.0,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spam.cpp,606,SpamInfection::AdvanceAttackingSpirit,AppRandom,,advance,assign:numFlashes,,MIXED,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,frand,15.0,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,sfrand,15.0,advance,arg:vel,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spam.cpp,609,SpamInfection::AdvanceAttackingSpirit,sfrand,15.0,advance,,particle?,MIXED,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(15.0), sfrand(15.0) );"
+code/worldobject/spider.cpp,790,Spider::Render,frand,,render,condition,,LIVE,FULL,Y,call,,if( frand() > 0.5 ) mat.r *= ( 1.0 + iv_sin(timeIndex) * 0.5 );
+code/worldobject/sporegenerator.cpp,366,SporeGenerator::Render,frand,,render,assign:thefrand,,LIVE,FULL,Y,call,,double thefrand = frand();
+code/worldobject/tank.cpp,510,Tank::Render,frand,,render,condition,,LIVE,FULL,Y,call,,if( frand() > 0.5 )
+code/worldobject/tank.cpp,544,Tank::Render,frand,,render,condition,,LIVE,FULL,Y,call,,if( frand() > 0.5 )
+code/worldobject/tentacle.cpp,279,Tentacle::AdvanceSlam,sfrand,5.0,advance,assign:p.x,,LEGACY,FULL,Y,call,,p.x += sfrand(5.0);
+code/worldobject/tentacle.cpp,280,Tentacle::AdvanceSlam,sfrand,5.0,advance,assign:p.z,,LEGACY,FULL,Y,call,,p.z += sfrand(5.0);
+code/worldobject/tentacle.cpp,284,Tentacle::AdvanceSlam,frand,20.0,advance,assign:size,particle?,LEGACY,FULL,Y,call,,double size = 15.0 + frand( 20.0 );
+code/worldobject/tentacle.cpp,347,Tentacle::HandleGroundCollision,sfrand,5.0,other,assign:p.x,,LEGACY,FULL,Y,call,,p.x += sfrand(5.0);
+code/worldobject/tentacle.cpp,348,Tentacle::HandleGroundCollision,sfrand,5.0,other,assign:p.z,,LEGACY,FULL,Y,call,,p.z += sfrand(5.0);
+code/worldobject/tentacle.cpp,352,Tentacle::HandleGroundCollision,frand,20.0,other,assign:size,particle?,LEGACY,FULL,Y,call,,double size = 15.0 + frand( 20.0 );
+code/worldobject/tree.cpp,162,Tree::Advance,frand,actualHeight * 0.6,advance,assign:distance,,LIVE,FULL,Y,call,,double distance = frand( actualHeight * 0.6);
+code/worldobject/tree.cpp,163,Tree::Advance,frand,actualHeight,advance,assign:height,,LIVE,FULL,Y,call,,double height = 0.7 * actualHeight + frand(actualHeight) * 0.3;
+code/worldobject/tree.cpp,165,Tree::Advance,frand,2.0 * M_PI,advance,arg:RotateAroundY,particle?,LIVE,FULL,Y,call,,fireSpawn.RotateAroundY( frand(2.0 * M_PI) );
+code/worldobject/tree.cpp,168,Tree::Advance,sfrand,0.5,advance,assign:fireSize,particle?,LIVE,FULL,Y,call,,fireSize *= (1.0 + sfrand(0.5) );
+code/worldobject/tree.cpp,283,Tree::Advance,rand,,advance,condition,particle?,LIVE,FULL,Y,call,,if( rand() % (51-m_leafDropRate) == 0 )
+code/worldobject/tree.cpp,287,Tree::Advance,sfrand,actualHeight*1.0,advance,assign:fireSpawn,particle?,LIVE,FULL,Y,call,,"fireSpawn += Vector3( sfrand(actualHeight*1.0),"
+code/worldobject/tree.cpp,288,Tree::Advance,sfrand,actualHeight*0.25,advance,,particle?,LIVE,FULL,Y,call,,"sfrand(actualHeight*0.25),"
+code/worldobject/tree.cpp,289,Tree::Advance,sfrand,actualHeight*1.0,advance,,particle?,LIVE,FULL,Y,call,,sfrand(actualHeight*1.0) );
+code/worldobject/tree.cpp,583,Tree::GenerateBranches,AppSeedRandom,m_seed,init/create,,,LIVE,FULL,Y,call,,AppSeedRandom( m_seed );
+code/worldobject/tree.cpp,597,Tree::GenerateLeaves,AppSeedRandom,m_seed,init/create,,,LIVE,FULL,Y,call,,AppSeedRandom( m_seed );
+code/worldobject/tree.cpp,645,Tree::Generate,AppSeedRandom,m_seed,init/create,,,LIVE,FULL,Y,call,,AppSeedRandom( m_seed );
+code/worldobject/tree.cpp,1028,Tree::RenderBranch,frand,0.6,render,assign:distance,,LIVE,FULL,Y,call,,double distance = 0.3 + frand(0.6);
+code/worldobject/triffid.cpp,162,Triffid::Render,frand,,render,assign:thefrand,,LIVE,FULL,Y,call,,double thefrand = frand();
+code/worldobject/triffid.cpp,380,Triffid::Advance,sfrand,10.0*m_size,advance,assign:fireSpawn,particle?,LIVE,FULL,Y,call,,"fireSpawn += Vector3( sfrand(10.0*m_size),"
+code/worldobject/triffid.cpp,381,Triffid::Advance,sfrand,10.0*m_size,advance,,particle?,LIVE,FULL,Y,call,,"sfrand(10.0*m_size),"
+code/worldobject/triffid.cpp,382,Triffid::Advance,sfrand,10.0*m_size,advance,,particle?,LIVE,FULL,Y,call,,sfrand(10.0*m_size) );
+code/worldobject/triffid.cpp,386,Triffid::Advance,sfrand,10.0*m_size,advance,assign:fireSpawn,particle?,LIVE,FULL,Y,call,,"fireSpawn = m_pos + Vector3( sfrand(10.0*m_size),"
+code/worldobject/triffid.cpp,387,Triffid::Advance,sfrand,10.0*m_size,advance,,particle?,LIVE,FULL,Y,call,,"sfrand(10.0*m_size),"
+code/worldobject/triffid.cpp,388,Triffid::Advance,sfrand,10.0*m_size,advance,,particle?,LIVE,FULL,Y,call,,sfrand(10.0*m_size) );
+code/worldobject/triffid.cpp,391,Triffid::Advance,frand,100.0,advance,condition,particle?,LIVE,FULL,Y,call,,if( frand(100.0) < 10.0 )
+code/worldobject/triffid.cpp,469,Triffid::Advance,frand,0.75,advance,assign:m_renderDamaged,,LIVE,FULL,Y,call,,m_renderDamaged = ( frand(0.75) * (1.0 - iv_abs(iv_sin(timeIndex))*1.2) > healthFraction );
+code/worldobject/weapons.cpp,359,ControllerGrenade::Advance,AppRandom,,advance,assign:numFlashes,,LIVE,FULL,Y,call,,int numFlashes = 5 + AppRandom() % 5;
+code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,frand,35.0,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,sfrand,15.0,advance,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/weapons.cpp,362,ControllerGrenade::Advance,sfrand,15.0,advance,,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(15.0), frand(35.0), sfrand(15.0) );"
+code/worldobject/weapons.cpp,525,Rocket::Explode,frand,numCores,other,assign:numCores,,LIVE,FULL,Y,call,,numCores += frand(numCores);
+code/worldobject/weapons.cpp,526,Rocket::Explode,frand,,other,,particle?,LIVE,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
+code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,arg:colour,particle?,LIVE,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
+code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,,particle?,LIVE,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
+code/worldobject/weapons.cpp,526,Rocket::Explode,sfrand,255.0f,other,,particle?,LIVE,FULL,Y,call,,"RGBAColour colour(sfrand(255.0f), sfrand(255.0f), sfrand(255.0f), 1.0f-frand());"
+code/worldobject/weapons.cpp,529,Rocket::Explode,sfrand,30.0f,other,arg:vel,particle?,LIVE,FULL,Y,call,,"Vector3 vel( sfrand( 30.0f ),"
+code/worldobject/weapons.cpp,530,Rocket::Explode,frand,10.0f,other,,particle?,LIVE,FULL,Y,call,,"10.0f + frand( 10.0f ),"
+code/worldobject/weapons.cpp,531,Rocket::Explode,sfrand,30.0f,other,,particle? sound?,LIVE,FULL,Y,call,,sfrand( 30.0f ) );
+code/worldobject/weapons.cpp,532,Rocket::Explode,frand,120.0f,other,assign:size,particle? sound?,LIVE,FULL,Y,call,,float size = 120.0f + frand(120.0f);
+code/worldobject/weapons.cpp,575,Rocket::Render,sfrand,8.0,render,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(8.0);
+code/worldobject/weapons.cpp,576,Rocket::Render,sfrand,8.0,render,assign:vel.y,,LIVE,FULL,Y,call,,vel.y += sfrand(8.0);
+code/worldobject/weapons.cpp,577,Rocket::Render,sfrand,8.0,render,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(8.0);
+code/worldobject/weapons.cpp,578,Rocket::Render,frand,0.05,render,assign:pos,particle?,LIVE,FULL,Y,call,,Vector3 pos = predictedPos - m_vel * (0.05+frand(0.05));
+code/worldobject/weapons.cpp,579,Rocket::Render,sfrand,8.0,render,assign:pos.x,,LIVE,FULL,Y,call,,pos.x += sfrand(8.0);
+code/worldobject/weapons.cpp,580,Rocket::Render,sfrand,8.0,render,assign:pos.y,,LIVE,FULL,Y,call,,pos.y += sfrand(8.0);
+code/worldobject/weapons.cpp,581,Rocket::Render,sfrand,8.0,render,assign:pos.z,,LIVE,FULL,Y,call,,pos.z += sfrand(8.0);
+code/worldobject/weapons.cpp,582,Rocket::Render,frand,50.0,render,assign:size,particle?,LIVE,FULL,Y,call,,double size = 50.0 + frand(50.0);
+code/worldobject/weapons.cpp,674,Laser::Advance,sfrand,10.0,advance,assign:vel.x,sound?,LIVE,FULL,Y,call,,vel.x += sfrand(10.0);
+code/worldobject/weapons.cpp,675,Laser::Advance,sfrand,10.0,advance,assign:vel.y,sound?,LIVE,FULL,Y,call,,vel.y += sfrand(10.0);
+code/worldobject/weapons.cpp,676,Laser::Advance,sfrand,10.0,advance,assign:vel.z,sound?,LIVE,FULL,Y,call,,vel.z += sfrand(10.0);
+code/worldobject/weapons.cpp,1311,Missile::Render,frand,20.0,render,assign:m_fire.m_size,,LIVE,FULL,Y,call,,m_fire.m_size = 30.0 + frand(20.0);
+code/worldobject/weapons.cpp,1318,Missile::Render,sfrand,8.0,render,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(8.0);
+code/worldobject/weapons.cpp,1319,Missile::Render,sfrand,8.0,render,assign:vel.y,,LIVE,FULL,Y,call,,vel.y += sfrand(8.0);
+code/worldobject/weapons.cpp,1320,Missile::Render,sfrand,8.0,render,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(8.0);
+code/worldobject/weapons.cpp,1321,Missile::Render,frand,0.1,render,assign:pos,particle?,LIVE,FULL,Y,call,,Vector3 pos = predictedPos - m_vel * (0.1+frand(0.1));
+code/worldobject/weapons.cpp,1322,Missile::Render,sfrand,8.0,render,assign:pos.x,,LIVE,FULL,Y,call,,pos.x += sfrand(8.0);
+code/worldobject/weapons.cpp,1323,Missile::Render,sfrand,8.0,render,assign:pos.y,,LIVE,FULL,Y,call,,pos.y += sfrand(8.0);
+code/worldobject/weapons.cpp,1324,Missile::Render,sfrand,8.0,render,assign:pos.z,,LIVE,FULL,Y,call,,pos.z += sfrand(8.0);
+code/worldobject/weapons.cpp,1325,Missile::Render,frand,200.0,render,assign:size,particle?,LIVE,FULL,Y,call,,double size = 200.0 + frand(200.0);
+code/worldobject/weapons.cpp,1481,TurretShell::Advance,sfrand,10.0f,advance,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(10.0f);
+code/worldobject/weapons.cpp,1482,TurretShell::Advance,frand,10.0f,advance,assign:vel.y,,LIVE,FULL,Y,call,,vel.y += frand(10.0f);
+code/worldobject/weapons.cpp,1483,TurretShell::Advance,sfrand,10.0f,advance,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(10.0f);
+code/worldobject/weapons.cpp,1485,TurretShell::Advance,frand,10.0f,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 10.0f + frand(10.0f);
+code/worldobject/weapons.cpp,1514,TurretShell::Advance,sfrand,0.5f,advance,assign:vel.x,,LIVE,FULL,Y,call,,vel.x += sfrand(0.5f);
+code/worldobject/weapons.cpp,1515,TurretShell::Advance,frand,1.0f,advance,assign:vel.y,,LIVE,FULL,Y,call,,vel.y += frand(1.0f);
+code/worldobject/weapons.cpp,1516,TurretShell::Advance,sfrand,0.5f,advance,assign:vel.z,,LIVE,FULL,Y,call,,vel.z += sfrand(0.5f);
+code/worldobject/weapons.cpp,1518,TurretShell::Advance,frand,20.0f,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 15.0f + frand(20.0f);
+code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,,LIVE,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
+code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,,LIVE,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
+code/worldobject/weapons.cpp,1619,Fireball::Advance,sfrand,20.0,advance,assign:pos,,LIVE,FULL,Y,call,,"pos += Vector3( sfrand(20.0), sfrand(20.0), sfrand(20.0) );"
+code/worldobject/weapons.cpp,1624,Fireball::Advance,sfrand,25.0,advance,assign:size,particle?,LIVE,FULL,Y,call,,double size = 50 + sfrand(25.0);
+code/worldobject/weapons.cpp,1626,Fireball::Advance,frand,0.2,advance,arg:CreateParticle,particle?,LIVE,FULL,Y,call,,"g_app->m_particleSystem->CreateParticle( m_pos + frand(0.2) * vel, vel, particleType, size );"
+code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,50.0f,advance,arg:vel,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
+code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,20.0f,advance,,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
+code/worldobject/weapons.cpp,2034,FlameGrenade::Advance,sfrand,50.0f,advance,,,LIVE,FULL,Y,call,,"Vector3 vel( sfrand(50.0f), sfrand(20.0f), sfrand(50.0f) );"
+code/worldobject/weapons.cpp,2039,FlameGrenade::Advance,sfrand,50.0f,advance,assign:vel,,LIVE,FULL,Y,call,,"vel = Vector3( sfrand(50.0f), 0.0f, sfrand(50.0f) );"
+code/worldobject/weapons.cpp,2039,FlameGrenade::Advance,sfrand,50.0f,advance,assign:vel,,LIVE,FULL,Y,call,,"vel = Vector3( sfrand(50.0f), 0.0f, sfrand(50.0f) );"
+code/worldobject/weapons.cpp,2047,FlameGrenade::Advance,frand,100.0f,advance,assign:size,particle?,LIVE,FULL,Y,call,,float size = 150.0f + frand(100.0f);
+code/worldobject/weapons.cpp,2049,FlameGrenade::Advance,frand,0.2f,advance,arg:CreateParticle,particle?,LIVE,FULL,Y,call,,"g_app->m_particleSystem->CreateParticle( m_pos + frand(0.2f) * vel, vel, particleType, size );"
+contrib/systemiv/lib/eclipse/eclipse.cpp,420,EclRegisterWindow,rand,,other,assign:window->m_x,,LIVE,FULL,N,call,,if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) rand() / (float) RAND_MAX );
+contrib/systemiv/lib/eclipse/eclipse.cpp,421,EclRegisterWindow,rand,,other,assign:window->m_x,,LIVE,FULL,N,call,,else                            window->m_x = int( parent->m_x - window->m_w * (float) rand() / (float) RAND_MAX );
+contrib/systemiv/lib/eclipse/eclipse.cpp,422,EclRegisterWindow,rand,,other,assign:window->m_y,,LIVE,FULL,N,call,,if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) rand() / (float) RAND_MAX );
+contrib/systemiv/lib/eclipse/eclipse.cpp,423,EclRegisterWindow,rand,,other,assign:window->m_y,,LIVE,FULL,N,call,,else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) rand() / (float) RAND_MAX );
+contrib/systemiv/lib/math/random_number.cpp,18,AppSeedRandom,AppSeedRandom,unsigned int seed,other,,,LIVE,FULL,Y,definition/wrapper,,void AppSeedRandom (unsigned int seed)
+contrib/systemiv/lib/math/random_number.cpp,23,AppRandom,AppRandom,,other,,,LIVE,FULL,Y,definition/wrapper,,int AppRandom ()
+contrib/systemiv/lib/math/random_number.cpp,288,frand,frand,double range,other,,,LIVE,FULL,Y,definition/wrapper,,double frand(double range)
+contrib/systemiv/lib/math/random_number.cpp,290,frand,AppRandom,,other,return,,LIVE,FULL,Y,definition/wrapper,,return range * ((double)AppRandom() / (double)APP_RAND_MAX);
+contrib/systemiv/lib/math/random_number.cpp,294,sfrand,sfrand,double range,other,,,LIVE,FULL,Y,definition/wrapper,,double sfrand(double range)
+contrib/systemiv/lib/math/random_number.cpp,296,sfrand,AppRandom,,other,return,,LIVE,FULL,Y,definition/wrapper,,return (0.5 - (double)AppRandom() / (double)(APP_RAND_MAX)) * range;
+contrib/systemiv/lib/math/random_number.h,14,,AppSeedRandom,unsigned int seed,other,,,LIVE,FULL,Y,declaration,!defined(_included_randomnumbers_h),void    AppSeedRandom   (unsigned int seed);
+contrib/systemiv/lib/math/random_number.h,15,,AppRandom,,other,,,LIVE,FULL,Y,declaration,!defined(_included_randomnumbers_h),int     AppRandom       ();                                                 // 0 <= result < APP_RAND_MAX
+contrib/systemiv/lib/math/random_number.h,17,,frand,double range = 1.0f,other,,,LIVE,FULL,Y,declaration,!defined(_included_randomnumbers_h),double   frand           (double range = 1.0f);                               // 0 <= result < range
+contrib/systemiv/lib/math/random_number.h,18,,sfrand,double range = 1.0f,other,,,LIVE,FULL,Y,declaration,!defined(_included_randomnumbers_h),double   sfrand          (double range = 1.0f);                               // -range < result < range
+contrib/systemiv/lib/metaserver/metaserver.cpp,665,ServerRegisterWANThread,sfrand,3.0,init/create,assign:timeToSleep,,LIVE,FULL,Y,call,defined(WAN_PLAY_ENABLED),timeToSleep += sfrand(3.0);
+contrib/systemiv/lib/sound/sound_instance.cpp,557,SoundInstance::OpenStream,AppRandom,,other,assign:sampleIndex,,LIVE,FULL,N,call,,int sampleIndex = AppRandom() % numSamples;
+contrib/systemiv/lib/sound/sound_instance.cpp,817,SoundInstance::Update3DPosition,sfrand,range,other,arg:Set,,LIVE,FULL,N,call,,"m_pos.Set( sfrand(range),"
+contrib/systemiv/lib/sound/sound_instance.cpp,818,SoundInstance::Update3DPosition,sfrand,range,other,,,LIVE,FULL,N,call,,"sfrand(range),"
+contrib/systemiv/lib/sound/sound_instance.cpp,819,SoundInstance::Update3DPosition,sfrand,range,other,,,LIVE,FULL,N,call,,sfrand(range) );
+contrib/systemiv/lib/sound/sound_instance.cpp,1041,SoundInstance::GetAttachedObject,AppRandom,,other,assign:index,,LIVE,FULL,N,call,,int index = AppRandom() % m_objIds.Size();
+contrib/systemiv/lib/sound/sound_parameter.cpp,75,SoundParameter::Recalculate,frand,diff,other,assign:random,,LIVE,FULL,N,call,,float random = frand( diff );
+contrib/systemiv/lib/sound/soundsystem.cpp,45,SoundSystem::SoundSystem,AppSeedRandom,(unsigned int) GetHighResTime(),init/create,,,LIVE,FULL,N,call,,AppSeedRandom( (unsigned int) GetHighResTime() );
+contrib/eclipse/eclipse.cpp,414,EclRegisterWindow,AppRandom,,ui,assign:window->m_x,,LIVE,FULL,Y,call,,if( left > window->m_w / 2 )    window->m_x = int( parent->m_x + parent->m_w * (float) AppRandom() / (float) APP_RAND_MAX );
+contrib/eclipse/eclipse.cpp,415,EclRegisterWindow,AppRandom,,ui,assign:window->m_x,,LIVE,FULL,Y,call,,else                            window->m_x = int( parent->m_x - window->m_w * (float) AppRandom() / (float) APP_RAND_MAX );
+contrib/eclipse/eclipse.cpp,416,EclRegisterWindow,AppRandom,,ui,assign:window->m_y,,LIVE,FULL,Y,call,,if( above > window->m_h / 2 )   window->m_y = int( parent->m_y + parent->m_h * (float) AppRandom() / (float) APP_RAND_MAX );
+contrib/eclipse/eclipse.cpp,417,EclRegisterWindow,AppRandom,,ui,assign:window->m_y,,LIVE,FULL,Y,call,,else                            window->m_y = int( parent->m_y - window->m_h/2 * (float) AppRandom() / (float) APP_RAND_MAX );

@@ -296,3 +296,17 @@
 - **Language table**: `LANGUAGEPHRASE`, `ISLANGUAGEPHRASE(_ANY)`, `DoesPhraseExist`; `_kbd`/`_xin` suffixed ids in `english.txt` imply input-mode-dependent resolution inside the table [I].
 - **Data build** (31): `tools/multiwinia_exclusions.txt` excludes `scripts/*`, `levels/map_*`, `levels/mission_*`, `gesture_demos/*`, `mwhelp/360_controller.bmp` from the PC `main.dat` — corroborates that scripts and Darwinia levels are not shipped.
 - **Loaders**: `RunCredits` uses `Loader::GetLoaderIndex("credits")` (P20 / `USE_LOADERS`).
+
+<!-- from P20_sequences_loaders_bench -->
+## Cross-partition notes
+- **P01 (app core / main loop)**: `LoadingScreen` is created in `Initialise` before `App`; `App::App` queues `App::Initialise` on the loader worker and sounds on `m_soundsWorkQueue`; `RunTheGame` clears `m_initialLoad`; the main loop's bootloader hook is `USE_LOADERS`-only; `UpdateAdvanceTime` is called by the loading screen [C] `code/main.cpp`, `code/app.cpp`.
+- **P12/P13 (render, GL backend)**: GL calls from worker threads are marshalled through `LoadingScreen::QueueJob` (`TextureToConvert`, `DeleteTextureByName`, display-list jobs, `LandscapeRenderer::DoBindBuffers`); `g_openGLMutex` locked per loading frame; `GeneratingMipmaps()` [B:D3D] extends the loading loop. `Renderer::Render` contains the `m_startSequence` overlay hook and the `IsFirsttimeSequencing()` fade-out suppression (§1.6).
+- **P14 (platform lib)**: `WorkQueue`, `Job`, `RunnableJob`, `NetEvent`, `NetMutex`, `SetThreadAffinityMask` usage; `StandardiseCPUPrecision` per worker thread.
+- **P15 (network)**: loading screen calls `ClientToServer::KeepAlive()` and `Server::AdvanceIfNecessary()` under `App::m_networkMutex.TryLock()`; benchmark reads `m_receiveRate/m_sendRate/GetEstimatedLatency` and `Authentication_GetKey`.
+- **P16 (sound)**: `SoundSystem::NotReadyForGameSoundsYet()` drops events while `LoadingScreen::IsRendering()`; `m_requireSoundsLoaded`/`m_soundsLoaded` gate the loading loop; loader music events (§3.5); `LoaderAmiga` missing from `GetEventNames`.
+- **P17b (options)**: `BootLoader` preference semantics (UI row hidden) — consistent with §3.2.
+- **P18 (front-end)**: Multiwinia credits page (`SetupCreditsPage`/`ReadCredits`) is the live credits; `CampaignButton` (`PageDarwinia`, edge-reachable in FULL) triggers `RequestBootloaderSequence` and the latent fade-out bug (§1.6); `SetupMapSelectPage` uses the loading screen for thumbnail preloading.
+- **P19 (help/tutorial/script)**: `MultiwiniaHelp` owns the animated panel lifecycle; script ops `RunCredits`, `GameOver` (→ outro → credits), `ShowDemoEndSequence` (empty in FULL); attract scripts use `CamMove`/`WaitCam`/`EnterLocation`/`ExitLocation`/`CamReset`/`SetMission`/`Wait`.
+- **P10 (camera)**: `ModeSphereWorldIntro` / `ModeSphereWorldOutro` flights (outro calls the credits loader after 70 s).
+- **P02 (game modes)**: grace-period timer semantics drive panel visibility; `mp_benchmark_1` (`GameTypes none`).
+- **`.anim` grammar owner**: in-memory semantics in §2.4–2.6 must agree with the grammar doc (`WIDTH/HEIGHT/START/STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; parser takes only the first token after a command, so image names cannot contain spaces) [C] `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.

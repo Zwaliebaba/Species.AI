@@ -96,3 +96,8 @@
 - Critical: GL vs D3D determinism (/fp:fast + no FPU_PRESERVE) and lobby checks only version string "dev"; default_preferences.txt read before main.dat loaded → packaged install likely only hard-coded defaults; authkey.dev read vs authkey written.
 - Correction applied: targets/macosx/Multiwinia is a maintained Multiwinia Mac project.
 ## Phase 3 launched: S20, S31
+
+## P20_sequences_loaders_bench — done
+- 09: compiled/reachable table; loading screen; animated game-mode panels; loader framework/registry; 10 loader mini-programs; credits structure (keys only); attract mode; ~95 constants. 30: start sequence (captions, timings, fades, grid, camera) + demo end sequence. 32: benchmark recorder + FTP upload (credentials omitted), test harness, build flags. ~31 classes, 9 music events, 6 .anim files. [U]=4.
+- Only loading screen + animated panels player-visible in FULL; loading on background worker thread, main thread runs GL jobs + network tick, no progress reporting; USE_LOADERS off → 7 loaders + RunBootloader dead; credits loader [B:LEGACY]; StartSequence compiled never constructed; attract, benchmark, test harness [B:DEAD].
+## Phase 3 launched: S09, S30 (S32 pending a slot)

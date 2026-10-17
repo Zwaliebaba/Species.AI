@@ -809,8 +809,11 @@ def main():
             grp = 'ENTITY' if s['call'] == 'TriggerEntityEvent' else 'BUILDING'
             if lit and s['obj'].strip() == 'this':
                 fcls, _, meth = (s['func'] or '').partition('::')
+                restrict = notes.get('BASE_APPLIES', {}).get(key)
                 for (g, t), c in all_types.items():
                     if g != grp or not c:
+                        continue
+                    if restrict is not None and '%s|%s' % (g, t) not in restrict:
                         continue
                     ok, why = base_site_applies(c, fcls, meth, parent, bodies)
                     if ok:
@@ -858,8 +861,15 @@ def main():
                 p = 'data/%s/%s' % r
                 if p not in smp:
                     smp.append(p)
-        statuses = sorted(set(st for _r, st in sitel))
-        fired = 'yes' if any(st == 'FULL' for _r, st in sitel) else ('no-live-site' if sitel else 'no-site')
+        tr = reach.get('%s|%s' % (g, t), '')
+        if any(st == 'FULL' for _r, st in sitel):
+            fired = 'yes' if (tr.startswith('FULL') or not tr) else 'site-live/type-%s' % tr.split(':')[0]
+        elif sitel:
+            fired = 'no(' + ','.join(sorted(set(st.split('(')[0] for _r, st in sitel))) + ')'
+        else:
+            fired = 'no(no-site)'
+        if not evs:
+            gd = notes.get('GENERIC_DESC', {}).get('%s|%s' % (g, evname), '')
         rows.append({
             'group': g, 'object_type': t, 'event': evname, 'in_data': 'yes' if evs else 'no',
             'blocks': len(evs),
@@ -870,7 +880,7 @@ def main():
             'fired_in_FULL': fired,
             'type_reach': reach.get('%s|%s' % (g, t), ''),
             'listed_in_ListSoundEvents': '',
-            'gameplay_trigger': descr.get('%s|%s|%s' % (g, t, evname), descr.get('%s|%s|%s' % (g, t, el), '')),
+            'gameplay_trigger': descr.get('%s|%s|%s' % (g, t, evname), '') if evs else gd,
         })
         cls = name_to_class.get((g, t), '')
         if cls:
@@ -891,9 +901,9 @@ def main():
     # liveness of each event pair for sample reachability
     live_pair = set()
     for r in rows:
-        tr = r['type_reach']
-        if r['in_data'] == 'yes' and r['fired_in_FULL'] == 'yes' and (tr.startswith('FULL') or tr == ''):
+        if r['in_data'] == 'yes' and r['fired_in_FULL'] == 'yes':
             live_pair.add('%s %s %s' % (r['group'], r['object_type'], r['event']))
+    summary.append('live data pairs: %d of %d' % (len(live_pair), sum(1 for r in rows if r['in_data'] == 'yes')))
 
     # ---------------- samples table
     srows = []

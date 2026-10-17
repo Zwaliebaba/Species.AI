@@ -240,3 +240,13 @@
 - `docs/help system.txt` describes a Sepulveda context-help design with F1 to request help, "fixed messages" (BuildingCaptured, BuildingOnline, NewGestureAvailable, objective complete…) and "failure help" (SquadCreationOutOfBounds…), and action items GestureBasics, ThrowAirstrike, FireRocket, Persuadatron, EngineerBuildBridge, EngineerHarvestSpirits, EngineerCaptureBuilding, AimRadarDish, PopulateWithDarwinians. Code: key is `SepulvedaHelp = key h`, the enum is the 20 items of §6, no fixed-message or failure-help classes exist, and the whole system is compiled out of Multiwinia. [C] `code/helpsystem.h`, `data/input/input_preferences.txt` L255.
 - `docs/multiwinia-changes.txt` ("Power-ups in the Advanced Tutorial will now terminate correctly upon use") is consistent with code only after the T2 End step (`TerminateTask` is blocked while `!m_tutorial2AICanSpawn`). [C+I]
 - `docs/multiwiniachanges-beta.txt` / `multiwiniareleasenotes-beta.txt` mention a "quick tutorial" and an "Advanced Concepts tutorial" — match Tutorial 1/2. No discrepancy.
+
+<!-- from P20_sequences_loaders_bench -->
+## Docs-vs-code discrepancies
+| Doc | Claim | Code | Ref |
+|---|---|---|---|
+| `docs/multiwiniareleasenotes-beta.txt` L35 | Beta records benchmarks and uploads them via FTP "when you exit"; files in a `benchmarks` profile folder | Feature compiled out in every target of this tree (`//#define BENCHMARK_AND_FTP`); when enabled, upload happens at the **end of each match** (after `LocationGameLoop`), not at exit; folder name matches | `code/lib/universal_include.h`, `code/main.cpp:EnterLocation`, `code/benchmark.cpp` |
+| `docs/changes.txt` L82–84 | "Show First Time Intro" option makes the intro play "the next time you start Darwinia" | Intro only runs from `RunBootloader`, i.e. when the Campaign is launched (and only with `USE_LOADERS`); the option row is not built in the Multiwinia options UI | `code/main.cpp:RunBootloader`, `code/interface/prefs_other_window.cpp` |
+| `docs/detailed schedule.txt` L19 | "(OPTIONAL) Intro bootloaders" planned | Implemented but compiled out (`USE_LOADERS`) | `code/lib/universal_include.h` |
+| `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | Bootloader issues (GoL-glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | Loaders not compiled in Multiwinia; widescreen stretching is consistent with fixed 320×256 / 800×600 canvases in Speccy/Amiga/Credits (`IsOffscreen` 800×600) | loader sources |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)`: −range < result < range | Implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects Soul/DemoEnd spawn spreads quoted above) | `contrib/systemiv/lib/math/random_number.cpp:sfrand` |

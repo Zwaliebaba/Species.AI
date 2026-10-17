@@ -243,3 +243,14 @@
 5. `WaitSay` and `WaitPlayerNotBusy` silently stop blocking in FULL because their checks are compiled out; any script relying on them would race. [C]
 6. `MultiwiniaHelp::Reset` does not reset the T1 score-help latches (second run of T1 loses the Scores tab). [C]
 7. T1 rule B can request two different tabs in one frame; the second is rejected by the 0.5 s limiter (first spawn in iteration order wins). [C]
+
+<!-- from P20_sequences_loaders_bench -->
+## Contradictions / open questions
+1. `LoadingScreen::m_rendering` is never initialised in the constructor; `IsRendering()` before the first `Render()` returns an indeterminate value (affects `Resource` locking and `SoundSystem` event suppression during early start-up) [C]. Probably harmless because the first `Render()` happens inside `App::App`, but unverified.
+2. `CreditsLoader::Run` starts `Credits` but stops `Music Cutscene3` [C]; `MatrixLoader::Run` returns at 23 s without stopping its music [C]. Intent unclear — likely bugs.
+3. Raytrace help prints motion blur with a missing `swprintf` argument [C] (undefined behaviour).
+4. `GameOfLifeLoader` speed keys are overridden every frame (no effect) [C]; it seeds from `syncrand` (network RNG) [C].
+5. `GetRandomLoaderIndex` reseeds `AppRandom` from wall-clock time — affects every later non-synced random consumer in the session [C].
+6. `AnimatedPanel::DeleteKeyframe` removes without freeing; `BeginRender/EndRender` declared, undefined [C].
+7. `animatedpanel.cpp` includes `lib/render/renderer.h`, which resolves (via the `..\..\contrib\SystemIV` include path) to the uncompiled SystemIV renderer header [I] — nothing from it appears to be used; a re-implementation can ignore it.
+8. `RequestBootloaderSequence` leaves `g_RenderingFirstTimeBL = true` forever in FULL builds → fade-outs suppressed after a Campaign launch (§1.6) [C].

@@ -394,3 +394,28 @@ All English strings behind the phrase ids below are Introversion text (`data/lan
 | Gesture demos `squad.txt`, `engineer.txt`, `officer.txt`, `armour.txt` | data | `data/gesture_demos/` | not needed |
 | `textures/godray.bmp` beam texture | art | Sepulveda highlights | generic beam |
 | Cheat/profile names `AccessAllAreas`, `AttractMode`; `PurityControl` kill-switch + buy-now URL | name/behaviour | `code/script.cpp`, `code/app.cpp` | drop |
+
+<!-- from P20_sequences_loaders_bench -->
+## IP register
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| Publisher logo bitmap | art/brand | `data/textures/ivlogo.bmp` (`LoadingScreen::RenderIVLogo`, `OberonLoader`) | `textures/publisher_logo.png` |
+| "Darwinian" creature sprite used as spinner, matrix glyph, life cell, carrier | art/name | `data/sprites/darwinian.bmp` | generic "unit" sprite / "Sprite" |
+| `esrb_warning` rating notice text | text (rating-board wording) | `data/language/english.txt` L2851 | regenerate from the new game's actual rating |
+| Game-mode panel art (`armour, cloudyglow, darwinian, darwinian_ouch4, flag, flag_down, flag_locked, flag_up, fuelpump, fuelpumper, island, laser, muzzleflash, plusone, rocket, solarpanel, spawnpoint, statue, trunkport, turretbarrel, turretbase, water, wmd, zone-back, zone-front`.bmp) and the 6 `.anim` choreographies | art/animation | `data/animations/` | new sprite set + new choreographies (`mode_<id>.anim`) |
+| Panel captions `multiwinia_animdesc_*` and mode names | text | `data/language/english.txt` L2356–2361 | rewrite |
+| Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character name) | text/character | `data/language/english.txt` L1412–1421 | new intro script text; no "Dr Sepulveda", no "Darwin Research Associates" |
+| Product name as block-letter mask | brand | `code/loaders/matrix_loader.cpp:MatrixLoader::s_highlights` | new game logo mask |
+| Credits text `bootloader_credits_1..44`, `multiwinia_credits_*` (real staff names, roles, third parties) | text/personal data | `data/language/english.txt` | new credits |
+| Beta-tester names (38) | personal data | `data/betatesters.txt` | own tester list (with consent) |
+| Loader texts `bootloader_amiga`, `bootloader_fodder_1..3` (names a third-party developer), `bootloader_raytrace_1..23`, `bootloader_life*` (20), `bootloader_soul_0..9` (incl. company name and slogan) | text/brand | `data/language/english.txt` | new texts |
+| Spectrum banner / loading picture / font | art (and third-party platform homage) | `data/textures/program_darwinia.bmp`, `speccy_screen.bmp`, `speccy_font_*.bmp`, `textures/unicode/speccy.*.bmp` | new retro art |
+| Demo-group style logo | art | `data/textures/dmacrew.bmp` | new logo |
+| Glow sprite, ghost sprite | art | `data/textures/glow.bmp`, `data/sprites/ghost.bmp` | new FX sprites |
+| Music: `speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`, `tresk_-_faces-of-a-fashion` (names indicate third-party chiptune artists) | audio (third-party licence) | `data/sounds/*.ogg`, `data/sounds.txt` Music events | licensed/commissioned tracks, events `LoaderA..`, `Credits`, `Intro` |
+| Distributor splash and video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`) | brand (third party) | `code/loaders/oberon_loader.cpp`, `egames_loader.cpp` | none (drop) |
+| Attract levels and scripts (`mine`, `pattern_buffer`, `biosphere`, `mission_*_attract.txt`, camera mounts `attract1..6`) | names/levels | `data/scripts/attractmode.txt`, `data/levels/` | new level ids |
+| "Stress Test" map name/description, `mp_benchmark_1` | text/level | `data/language/english.txt` L2989–2990, `data/levels/mp_benchmark_1.txt` | `stress_test_01` |
+| Introversion FTP host and hard-coded account | brand/credential | `code/benchmark.cpp:BenchMark::Upload` | none — use a token-based telemetry endpoint |
+| `APP_NAME` shown by the ray tracer, `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/loaders/raytrace_loader.cpp:RenderMessage`, `code/benchmark.cpp` | new product constant |
+| Profile names `AttractMode`, `AccessAllAreas`, `game_unlockall.txt` | names | `code/app.cpp:App::LoadProfile` | `__attract__`, `__unlockall__` |

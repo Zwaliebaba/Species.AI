@@ -3,18 +3,18 @@
 
 | Path | s | KiB | Archive | Use |
 |---|---|---|---|---|
-| `data/sounds/ablaster.ogg` | 0.384 | 6 | sounds | ref:live (Library Create) |
-| `data/sounds/airstrike_alarm.ogg` | 0.946 | 10 | sounds | ref:live (Squadie ThrowAirStrike) |
-| `data/sounds/airstrike_boom1.ogg` | 5.875 | 49 | sounds | ref:dead-data (AirStrikeBomb Explode) |
-| `data/sounds/airstrike_boom2.ogg` | 5.898 | 48 | sounds | ref:dead-data (AirStrikeBomb Explode) |
-| `data/sounds/airstrike_boom3.ogg` | 5.991 | 49 | sounds | ref:dead-data (AirStrikeBomb Explode) |
-| `data/sounds/airstrike_boom4.ogg` | 5.921 | 49 | sounds | ref:dead-data (AirStrikeBomb Explode) |
-| `data/sounds/airstrike_boom5.ogg` | 6.014 | 49 | sounds | ref:dead-data (AirStrikeBomb Explode) |
+| `data/sounds/ablaster.ogg` | 0.384 | 6 | sounds | ref:dead-data (Library Create) |
+| `data/sounds/airstrike_alarm.ogg` | 0.946 | 10 | sounds | ref:dead-data (Squadie ThrowAirStrike) |
+| `data/sounds/airstrike_boom1.ogg` | 5.875 | 49 | sounds | ref:live (AirStrikeBomb Explode) |
+| `data/sounds/airstrike_boom2.ogg` | 5.898 | 48 | sounds | ref:live (AirStrikeBomb Explode) |
+| `data/sounds/airstrike_boom3.ogg` | 5.991 | 49 | sounds | ref:live (AirStrikeBomb Explode) |
+| `data/sounds/airstrike_boom4.ogg` | 5.921 | 49 | sounds | ref:live (AirStrikeBomb Explode) |
+| `data/sounds/airstrike_boom5.ogg` | 6.014 | 49 | sounds | ref:live (AirStrikeBomb Explode) |
 | `data/sounds/airstrike_drop.ogg` | 4.000 | 32 | sounds | ref:live (SpaceInvader DropGrenade) |
 | `data/sounds/airstrike_hover2.ogg` | 3.878 | 22 | sounds | ref:live (SpaceInvader Create) |
-| `data/sounds/alien_lands1.ogg` | 17.740 | 137 | sounds | ref:live (Ambience EnterGlobalWorld) |
+| `data/sounds/alien_lands1.ogg` | 17.740 | 137 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
 | `data/sounds/alien_lands3.ogg` | 30.465 | 204 | menusounds | ref:live (Ambience EnterGlobalWorld, Ambience EnterLocation, MultiwiniaInterface LobbyAmbience) |
-| `data/sounds/altitude1.ogg` | 91.304 | 587 | sounds | ref:live (Ambience EnterGlobalWorld) |
+| `data/sounds/altitude1.ogg` | 91.304 | 587 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
 | `data/sounds/ant_attack.ogg` | 0.145 | 4 | sounds | ref:live (ArmyAnt Attack) |
 | `data/sounds/ant_attack2.ogg` | 0.123 | 4 | sounds | ref:live (ArmyAnt Attack) |
 | `data/sounds/ant_attack3.ogg` | 0.089 | 4 | sounds | ref:live (ArmyAnt Attack) |
@@ -52,13 +52,13 @@
 | `data/sounds/ants_create6.ogg` | 0.082 | 4 | sounds | ref:live (ArmyAnt Create) |
 | `data/sounds/ants_create7.ogg` | 0.081 | 4 | sounds | ref:live (ArmyAnt Create) |
 | `data/sounds/ants_create8.ogg` | 0.117 | 4 | sounds | ref:live (ArmyAnt Create) |
-| `data/sounds/aquire_research.ogg` | 2.356 | 20 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research2.ogg` | 2.336 | 20 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research3.ogg` | 1.949 | 17 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research4.ogg` | 2.020 | 17 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research5.ogg` | 2.108 | 19 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research6.ogg` | 2.020 | 18 | sounds | ref:live (ResearchItem AquireResearch) |
-| `data/sounds/aquire_research7.ogg` | 2.297 | 20 | sounds | ref:live (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research.ogg` | 2.356 | 20 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research2.ogg` | 2.336 | 20 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research3.ogg` | 1.949 | 17 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research4.ogg` | 2.020 | 17 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research5.ogg` | 2.108 | 19 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research6.ogg` | 2.020 | 18 | sounds | ref:dead-data (ResearchItem AquireResearch) |
+| `data/sounds/aquire_research7.ogg` | 2.297 | 20 | sounds | ref:dead-data (ResearchItem AquireResearch) |
 | `data/sounds/armour_to_turret.ogg` | 6.827 | 52 | sounds | ref:live (GunTurret Create) |
 | `data/sounds/armour_to_turret2.ogg` | 6.525 | 49 | sounds | ref:live (GunTurret Create) |
 | `data/sounds/armour_to_turret3.ogg` | 6.548 | 49 | sounds | ref:live (GunTurret Create) |
@@ -111,12 +111,12 @@
 | `data/sounds/choir4.ogg` | 6.249 | 96 | sounds | ref:live (EscapeRocket Flight, PulseBomb Create) |
 | `data/sounds/choir5.ogg` | 6.191 | 95 | sounds | ref:live (EscapeRocket Flight, PulseBomb Create) |
 | `data/sounds/choir6.ogg` | 5.939 | 92 | sounds | ref:live (EscapeRocket Flight, PulseBomb Create) |
-| `data/sounds/chug1.ogg` | 5.654 | 38 | sounds | ref:live (Refinery Create) |
-| `data/sounds/chug2.ogg` | 5.933 | 41 | sounds | ref:live (Refinery Create) |
-| `data/sounds/chug3.ogg` | 9.242 | 61 | sounds | ref:live (Refinery Create) |
-| `data/sounds/chug4.ogg` | 8.081 | 53 | sounds | ref:live (Refinery Create) |
-| `data/sounds/chug5.ogg` | 9.138 | 61 | sounds | ref:live (Refinery Create) |
-| `data/sounds/chug6.ogg` | 7.105 | 47 | sounds | ref:live (Refinery Create) |
+| `data/sounds/chug1.ogg` | 5.654 | 38 | sounds | ref:dead-data (Refinery Create) |
+| `data/sounds/chug2.ogg` | 5.933 | 41 | sounds | ref:dead-data (Refinery Create) |
+| `data/sounds/chug3.ogg` | 9.242 | 61 | sounds | ref:dead-data (Refinery Create) |
+| `data/sounds/chug4.ogg` | 8.081 | 53 | sounds | ref:dead-data (Refinery Create) |
+| `data/sounds/chug5.ogg` | 9.138 | 61 | sounds | ref:dead-data (Refinery Create) |
+| `data/sounds/chug6.ogg` | 7.105 | 47 | sounds | ref:dead-data (Refinery Create) |
 | `data/sounds/darwin_burn_death.ogg` | 3.216 | 49 | sounds | unused |
 | `data/sounds/darwin_burn_death1.ogg` | 3.216 | 50 | sounds | ref:live (Darwinian OnFire) |
 | `data/sounds/darwin_burn_death2.ogg` | 3.692 | 57 | sounds | ref:live (Darwinian OnFire) |
@@ -203,7 +203,7 @@
 | `data/sounds/darwinian_threat_run8.ogg` | 1.004 | 11 | sounds | ref:live (Darwinian SeenThreatRunAway) |
 | `data/sounds/darwinian_threat_run9.ogg` | 0.697 | 8 | sounds | ref:live (Darwinian SeenThreatRunAway) |
 | `data/sounds/deselect1.ogg` | 2.508 | 38 | sounds | ref:live (Interface DeleteTask) |
-| `data/sounds/dma_sc-visitors_from_dreams.ogg` | 325.251 | 2285 | NOT-SHIPPED(sounds/dma_sc*) | ref:live (Music LoaderRaytrace, Music StartSequence) |
+| `data/sounds/dma_sc-visitors_from_dreams.ogg` | 325.251 | 2285 | NOT-SHIPPED(sounds/dma_sc*) | ref:dead-data (Music LoaderRaytrace, Music StartSequence) |
 | `data/sounds/eggsplat.ogg` | 2.485 | 23 | sounds | ref:dead-data (Egg Die) |
 | `data/sounds/eggsplat2.ogg` | 2.194 | 21 | sounds | ref:dead-data (Egg Die) |
 | `data/sounds/eggsplat3.ogg` | 1.962 | 19 | sounds | ref:dead-data (Egg Die) |
@@ -233,7 +233,7 @@
 | `data/sounds/engineer_losehealth7.ogg` | 1.449 | 12 | sounds | ref:live (Engineer LoseHealth) |
 | `data/sounds/engineer_losehealth8.ogg` | 1.733 | 13 | sounds | ref:live (Engineer LoseHealth) |
 | `data/sounds/engineer_losehealth9.ogg` | 1.471 | 12 | sounds | ref:live (Engineer LoseHealth) |
-| `data/sounds/engineer_repog_radar_loop_end.ogg` | 1.132 | 12 | sounds | ref:live (Engineer EndReprogramming) |
+| `data/sounds/engineer_repog_radar_loop_end.ogg` | 1.132 | 12 | sounds | ref:dead-data (Engineer EndReprogramming) |
 | `data/sounds/engineer_reprog_radar_loop.ogg` | 7.987 | 67 | sounds | ref:live (Crate BeginCapture, Engineer BeginReprogramming, Incubator Reprogramming) |
 | `data/sounds/engineexplode.ogg` | 5.253 | 82 | sounds | ref:live (EscapeRocket Explode) |
 | `data/sounds/engneignite1.ogg` | 6.408 | 101 | sounds | unused |
@@ -244,12 +244,12 @@
 | `data/sounds/enter_teleport5.ogg` | 0.679 | 8 | sounds | ref:live (Officer EnterTeleport, Squadie EnterTeleport) |
 | `data/sounds/enter_teleport6.ogg` | 0.628 | 8 | sounds | ref:live (Officer EnterTeleport, Squadie EnterTeleport) |
 | `data/sounds/evil.ogg` | 53.870 | 313 | menusounds | ref:live (Ambience EnterGlobalWorld, Ambience EnterLocation, MultiwiniaInterface LobbyAmbience) |
-| `data/sounds/exit_teleport.ogg` | 0.678 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
-| `data/sounds/exit_teleport2.ogg` | 0.628 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
-| `data/sounds/exit_teleport3.ogg` | 0.679 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
-| `data/sounds/exit_teleport4.ogg` | 0.682 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
-| `data/sounds/exit_teleport5.ogg` | 0.676 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
-| `data/sounds/exit_teleport6.ogg` | 0.677 | 8 | sounds | ref:dead-data (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport.ogg` | 0.678 | 8 | sounds | ref:live (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport2.ogg` | 0.628 | 8 | sounds | ref:live (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport3.ogg` | 0.679 | 8 | sounds | ref:live (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport4.ogg` | 0.682 | 8 | sounds | ref:live (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport5.ogg` | 0.676 | 8 | sounds | ref:live (Squadie ExitTeleport) |
+| `data/sounds/exit_teleport6.ogg` | 0.677 | 8 | sounds | ref:live (Squadie ExitTeleport) |
 | `data/sounds/fence_damage.ogg` | 1.023 | 12 | sounds | ref:live (LaserFence Damage) |
 | `data/sounds/fence_damage10.ogg` | 1.063 | 12 | sounds | ref:live (LaserFence Damage) |
 | `data/sounds/fence_damage11.ogg` | 1.623 | 15 | sounds | ref:live (LaserFence Damage) |
@@ -292,43 +292,43 @@
 | `data/sounds/fuelpumpdown1.ogg` | 2.685 | 34 | sounds | unused |
 | `data/sounds/fuelpumpexhale1.ogg` | 5.590 | 87 | sounds | ref:live (FuelGenerator PumpUp) |
 | `data/sounds/fuelpumpup1.ogg` | 2.891 | 34 | sounds | ref:live (FuelGenerator PumpDown) |
-| `data/sounds/generator_burst.ogg` | 0.856 | 10 | sounds | ref:live (Generator TriggerSurge) |
-| `data/sounds/generator_burst2.ogg` | 0.833 | 10 | sounds | ref:live (Generator TriggerSurge) |
-| `data/sounds/generator_burst3.ogg` | 0.740 | 9 | sounds | ref:live (Generator TriggerSurge) |
-| `data/sounds/generator_burst4.ogg` | 1.457 | 16 | sounds | ref:live (Generator TriggerSurge) |
-| `data/sounds/generator_burst5.ogg` | 0.996 | 12 | sounds | ref:live (Generator TriggerSurge) |
+| `data/sounds/generator_burst.ogg` | 0.856 | 10 | sounds | ref:dead-data (Generator TriggerSurge) |
+| `data/sounds/generator_burst2.ogg` | 0.833 | 10 | sounds | ref:dead-data (Generator TriggerSurge) |
+| `data/sounds/generator_burst3.ogg` | 0.740 | 9 | sounds | ref:dead-data (Generator TriggerSurge) |
+| `data/sounds/generator_burst4.ogg` | 1.457 | 16 | sounds | ref:dead-data (Generator TriggerSurge) |
+| `data/sounds/generator_burst5.ogg` | 0.996 | 12 | sounds | ref:dead-data (Generator TriggerSurge) |
 | `data/sounds/generator_online.ogg` | 27.683 | 152 | sounds | ref:dead-data (Generator ReprogramComplete) |
-| `data/sounds/gesturefail.ogg` | 2.215 | 15 | sounds | ref:live (Gesture GestureFail) |
+| `data/sounds/gesturefail.ogg` | 2.215 | 15 | sounds | ref:dead-data (Gesture GestureFail) |
 | `data/sounds/gesturestart.ogg` | 5.754 | 44 | sounds | unused |
 | `data/sounds/gesturesuccess.ogg` | 2.215 | 16 | sounds | ref:live (Gesture GestureSuccess) |
-| `data/sounds/god_dish_disconnect.ogg` | 6.536 | 52 | sounds | ref:live (GodDish DisconnectFromGod) |
-| `data/sounds/god_dish_disconnect2.ogg` | 7.000 | 55 | sounds | ref:live (GodDish DisconnectFromGod) |
-| `data/sounds/god_dish_disconnect3.ogg` | 5.793 | 46 | sounds | ref:live (GodDish DisconnectFromGod) |
-| `data/sounds/god_dishconnect.ogg` | 8.074 | 56 | sounds | ref:live (GodDish ConnectToGod) |
-| `data/sounds/god_dishconnect2.ogg` | 7.888 | 55 | sounds | ref:live (GodDish ConnectToGod) |
-| `data/sounds/god_dishconnect3.ogg` | 8.038 | 56 | sounds | ref:live (GodDish ConnectToGod) |
-| `data/sounds/goddish_create.ogg` | 3.706 | 27 | sounds | ref:live (GodDish Create) |
-| `data/sounds/goddish_create2.ogg` | 3.708 | 28 | sounds | ref:live (GodDish Create) |
-| `data/sounds/goddish_create3.ogg` | 3.708 | 28 | sounds | ref:live (GodDish Create) |
-| `data/sounds/goddish_create4.ogg` | 3.708 | 27 | sounds | ref:live (GodDish Create) |
-| `data/sounds/goddish_create5.ogg` | 3.708 | 27 | sounds | ref:live (GodDish Create) |
+| `data/sounds/god_dish_disconnect.ogg` | 6.536 | 52 | sounds | ref:dead-data (GodDish DisconnectFromGod) |
+| `data/sounds/god_dish_disconnect2.ogg` | 7.000 | 55 | sounds | ref:dead-data (GodDish DisconnectFromGod) |
+| `data/sounds/god_dish_disconnect3.ogg` | 5.793 | 46 | sounds | ref:dead-data (GodDish DisconnectFromGod) |
+| `data/sounds/god_dishconnect.ogg` | 8.074 | 56 | sounds | ref:dead-data (GodDish ConnectToGod) |
+| `data/sounds/god_dishconnect2.ogg` | 7.888 | 55 | sounds | ref:dead-data (GodDish ConnectToGod) |
+| `data/sounds/god_dishconnect3.ogg` | 8.038 | 56 | sounds | ref:dead-data (GodDish ConnectToGod) |
+| `data/sounds/goddish_create.ogg` | 3.706 | 27 | sounds | ref:dead-data (GodDish Create) |
+| `data/sounds/goddish_create2.ogg` | 3.708 | 28 | sounds | ref:dead-data (GodDish Create) |
+| `data/sounds/goddish_create3.ogg` | 3.708 | 28 | sounds | ref:dead-data (GodDish Create) |
+| `data/sounds/goddish_create4.ogg` | 3.708 | 27 | sounds | ref:dead-data (GodDish Create) |
+| `data/sounds/goddish_create5.ogg` | 3.708 | 27 | sounds | ref:dead-data (GodDish Create) |
 | `data/sounds/gren_boom1.ogg` | 3.704 | 36 | sounds | ref:live (AntHill Explode, Grenade Explode) |
 | `data/sounds/gren_boom2.ogg` | 4.075 | 38 | sounds | ref:live (AntHill Explode, Grenade Explode) |
 | `data/sounds/gren_boom3.ogg` | 4.040 | 38 | sounds | ref:live (AntHill Explode, Grenade Explode) |
 | `data/sounds/gren_boom4.ogg` | 3.820 | 35 | sounds | ref:live (AntHill Explode, Grenade Explode) |
 | `data/sounds/gren_boom5.ogg` | 3.831 | 35 | sounds | ref:live (AntHill Explode, Grenade Explode) |
-| `data/sounds/gren_bounce1.ogg` | 0.372 | 6 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_bounce2.ogg` | 0.430 | 6 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_bounce3.ogg` | 0.594 | 7 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_bounce4.ogg` | 0.475 | 6 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_bounce5.ogg` | 0.728 | 8 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_bounce6.ogg` | 0.445 | 6 | sounds | ref:dead-data (Grenade Bounce) |
-| `data/sounds/gren_fire1.ogg` | 3.250 | 25 | sounds | ref:dead-data (Grenade Create) |
-| `data/sounds/gren_fire2.ogg` | 3.251 | 27 | sounds | ref:dead-data (Grenade Create) |
-| `data/sounds/gren_fire3.ogg` | 3.251 | 28 | sounds | ref:dead-data (Grenade Create) |
-| `data/sounds/gren_fire4.ogg` | 3.248 | 28 | sounds | ref:dead-data (Grenade Create) |
-| `data/sounds/gren_fire5.ogg` | 3.251 | 28 | sounds | ref:dead-data (Grenade Create) |
-| `data/sounds/grenade_beep.ogg` | 1.004 | 10 | sounds | ref:dead-data (AirStrikeBomb Flash, Grenade Flash) |
+| `data/sounds/gren_bounce1.ogg` | 0.372 | 6 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_bounce2.ogg` | 0.430 | 6 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_bounce3.ogg` | 0.594 | 7 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_bounce4.ogg` | 0.475 | 6 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_bounce5.ogg` | 0.728 | 8 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_bounce6.ogg` | 0.445 | 6 | sounds | ref:live (Grenade Bounce) |
+| `data/sounds/gren_fire1.ogg` | 3.250 | 25 | sounds | ref:live (Grenade Create) |
+| `data/sounds/gren_fire2.ogg` | 3.251 | 27 | sounds | ref:live (Grenade Create) |
+| `data/sounds/gren_fire3.ogg` | 3.251 | 28 | sounds | ref:live (Grenade Create) |
+| `data/sounds/gren_fire4.ogg` | 3.248 | 28 | sounds | ref:live (Grenade Create) |
+| `data/sounds/gren_fire5.ogg` | 3.251 | 28 | sounds | ref:live (Grenade Create) |
+| `data/sounds/grenade_beep.ogg` | 1.004 | 10 | sounds | ref:live (AirStrikeBomb Flash, Grenade Flash) |
 | `data/sounds/grenade_return3.ogg` | 0.517 | 8 | sounds | ref:live (Squadie WeaponReturns) |
 | `data/sounds/gun_turret_fire.ogg` | 1.022 | 11 | sounds | ref:live (GunTurret FireShell, Squadie FireLaser) |
 | `data/sounds/gun_turret_fire2.ogg` | 1.004 | 11 | sounds | ref:live (GunTurret FireShell, Squadie FireLaser) |
@@ -336,7 +336,7 @@
 | `data/sounds/gun_turret_fire4.ogg` | 0.997 | 11 | sounds | ref:live (GunTurret FireShell, Squadie FireLaser) |
 | `data/sounds/gun_turret_fire5.ogg` | 0.994 | 11 | sounds | ref:live (GunTurret FireShell, Squadie FireLaser) |
 | `data/sounds/gun_turret_fire6.ogg` | 0.926 | 10 | sounds | ref:live (GunTurret FireShell, Squadie FireLaser) |
-| `data/sounds/hypno_loop_run.ogg` | 8.568 | 57 | sounds | ref:live (Grenade ExplodeController) |
+| `data/sounds/hypno_loop_run.ogg` | 8.568 | 57 | sounds | ref:dead-data (Grenade ExplodeController) |
 | `data/sounds/ident1.ogg` | 10.151 | 137 | sounds | unused |
 | `data/sounds/ignitionzap1.ogg` | 0.615 | 13 | sounds | ref:live (EscapeRocket EngineBurn) |
 | `data/sounds/incubator_addspirit.ogg` | 1.120 | 11 | sounds | ref:live (Harvester DropSpirit, Incubator AddSpirit) |
@@ -345,12 +345,12 @@
 | `data/sounds/incubator_addspirit4.ogg` | 1.541 | 14 | sounds | ref:live (Harvester DropSpirit, Incubator AddSpirit) |
 | `data/sounds/incubator_addspirit5.ogg` | 1.588 | 14 | sounds | ref:live (Harvester DropSpirit, Incubator AddSpirit) |
 | `data/sounds/incubator_addspirit6.ogg` | 1.277 | 12 | sounds | ref:live (Harvester DropSpirit, Incubator AddSpirit) |
-| `data/sounds/incubator_birth.ogg` | 1.390 | 13 | sounds | ref:live (Incubator SpawnEntity) |
-| `data/sounds/incubator_birth2.ogg` | 1.382 | 13 | sounds | ref:live (Incubator SpawnEntity) |
-| `data/sounds/incubator_birth3.ogg` | 1.434 | 13 | sounds | ref:live (Incubator SpawnEntity) |
-| `data/sounds/incubator_birth4.ogg` | 1.480 | 14 | sounds | ref:live (Incubator SpawnEntity) |
-| `data/sounds/incubator_birth5.ogg` | 1.466 | 14 | sounds | ref:live (Incubator SpawnEntity) |
-| `data/sounds/incubator_birth6.ogg` | 1.440 | 13 | sounds | ref:live (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth.ogg` | 1.390 | 13 | sounds | ref:dead-data (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth2.ogg` | 1.382 | 13 | sounds | ref:dead-data (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth3.ogg` | 1.434 | 13 | sounds | ref:dead-data (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth4.ogg` | 1.480 | 14 | sounds | ref:dead-data (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth5.ogg` | 1.466 | 14 | sounds | ref:dead-data (Incubator SpawnEntity) |
+| `data/sounds/incubator_birth6.ogg` | 1.440 | 13 | sounds | ref:dead-data (Incubator SpawnEntity) |
 | `data/sounds/kickverb1.ogg` | 2.508 | 39 | sounds | ref:live (FuelGenerator PumpDown) |
 | `data/sounds/kickverb2.ogg` | 2.968 | 42 | sounds | ref:live (FuelGenerator PumpDown) |
 | `data/sounds/kickverb3.ogg` | 2.038 | 32 | sounds | ref:live (FuelGenerator PumpDown) |
@@ -408,55 +408,55 @@
 | `data/sounds/matrix.ogg` | 24.000 | 188 | NOT-SHIPPED(sounds/matrix.ogg) | ref:dead-data (Music LoaderMatrix) |
 | `data/sounds/menuscroll1.ogg` | 2.171 | 32 | menusounds | ref:live (MultiwiniaInterface MenuCancel) |
 | `data/sounds/menuscroll2.ogg` | 1.862 | 27 | menusounds | ref:live (Interface Slide, MultiwiniaInterface MenuSelect) |
-| `data/sounds/mine_cart_creak.ogg` | 2.548 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak10.ogg` | 2.084 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak11.ogg` | 1.980 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak12.ogg` | 2.101 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak13.ogg` | 2.026 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak14.ogg` | 2.247 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak15.ogg` | 1.956 | 17 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak16.ogg` | 2.177 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak17.ogg` | 1.503 | 14 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak18.ogg` | 1.956 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak19.ogg` | 2.078 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak2.ogg` | 2.676 | 23 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak20.ogg` | 1.974 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak21.ogg` | 2.020 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak22.ogg` | 1.921 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak23.ogg` | 2.183 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak24.ogg` | 1.921 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak25.ogg` | 1.631 | 15 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak26.ogg` | 1.753 | 16 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak27.ogg` | 2.202 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak28.ogg` | 2.249 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak29.ogg` | 2.486 | 24 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak3.ogg` | 2.130 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak30.ogg` | 2.525 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak31.ogg` | 2.490 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak32.ogg` | 2.223 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak33.ogg` | 2.072 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak34.ogg` | 2.084 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak35.ogg` | 1.794 | 17 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak36.ogg` | 1.811 | 17 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak37.ogg` | 2.206 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak38.ogg` | 2.334 | 22 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak39.ogg` | 2.009 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak4.ogg` | 2.315 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak40.ogg` | 2.334 | 22 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak41.ogg` | 2.067 | 19 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak42.ogg` | 2.450 | 22 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak5.ogg` | 2.421 | 20 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak6.ogg` | 1.939 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak7.ogg` | 2.154 | 18 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak8.ogg` | 2.368 | 21 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cart_creak9.ogg` | 1.939 | 17 | sounds | ref:live (TrackLink CogTurn) |
-| `data/sounds/mine_cog.ogg` | 2.409 | 23 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog2.ogg` | 2.406 | 24 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog3.ogg` | 2.415 | 24 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog4.ogg` | 2.409 | 24 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog5.ogg` | 2.415 | 23 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog6.ogg` | 2.426 | 24 | sounds | ref:live (Mine CogTurn) |
-| `data/sounds/mine_cog7.ogg` | 2.368 | 22 | sounds | ref:live (Mine CogTurn) |
+| `data/sounds/mine_cart_creak.ogg` | 2.548 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak10.ogg` | 2.084 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak11.ogg` | 1.980 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak12.ogg` | 2.101 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak13.ogg` | 2.026 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak14.ogg` | 2.247 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak15.ogg` | 1.956 | 17 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak16.ogg` | 2.177 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak17.ogg` | 1.503 | 14 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak18.ogg` | 1.956 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak19.ogg` | 2.078 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak2.ogg` | 2.676 | 23 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak20.ogg` | 1.974 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak21.ogg` | 2.020 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak22.ogg` | 1.921 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak23.ogg` | 2.183 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak24.ogg` | 1.921 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak25.ogg` | 1.631 | 15 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak26.ogg` | 1.753 | 16 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak27.ogg` | 2.202 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak28.ogg` | 2.249 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak29.ogg` | 2.486 | 24 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak3.ogg` | 2.130 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak30.ogg` | 2.525 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak31.ogg` | 2.490 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak32.ogg` | 2.223 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak33.ogg` | 2.072 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak34.ogg` | 2.084 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak35.ogg` | 1.794 | 17 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak36.ogg` | 1.811 | 17 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak37.ogg` | 2.206 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak38.ogg` | 2.334 | 22 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak39.ogg` | 2.009 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak4.ogg` | 2.315 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak40.ogg` | 2.334 | 22 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak41.ogg` | 2.067 | 19 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak42.ogg` | 2.450 | 22 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak5.ogg` | 2.421 | 20 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak6.ogg` | 1.939 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak7.ogg` | 2.154 | 18 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak8.ogg` | 2.368 | 21 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cart_creak9.ogg` | 1.939 | 17 | sounds | ref:dead-data (TrackLink CogTurn) |
+| `data/sounds/mine_cog.ogg` | 2.409 | 23 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog2.ogg` | 2.406 | 24 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog3.ogg` | 2.415 | 24 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog4.ogg` | 2.409 | 24 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog5.ogg` | 2.415 | 23 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog6.ogg` | 2.426 | 24 | sounds | ref:dead-data (Mine CogTurn) |
+| `data/sounds/mine_cog7.ogg` | 2.368 | 22 | sounds | ref:dead-data (Mine CogTurn) |
 | `data/sounds/mouse.ogg` | 0.085 | 5 | sounds | unused |
 | `data/sounds/mouse1.ogg` | 0.056 | 5 | sounds | unused |
 | `data/sounds/mouse2.ogg` | 0.056 | 5 | menusounds | ref:live (Interface MouseOverIcon, MultiwiniaInterface MenuRollOver) |
@@ -464,7 +464,7 @@
 | `data/sounds/mouse4.ogg` | 0.070 | 5 | sounds | unused |
 | `data/sounds/mouse5.ogg` | 0.055 | 5 | sounds | unused |
 | `data/sounds/mouse6.ogg` | 0.110 | 5 | sounds | unused |
-| `data/sounds/ocean1.ogg` | 23.499 | 163 | sounds | ref:live (Ambience EnterGlobalWorld) |
+| `data/sounds/ocean1.ogg` | 23.499 | 163 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
 | `data/sounds/officer_create10.ogg` | 0.265 | 6 | sounds | ref:live (Darwinian GivenOrders, Officer Create, Officer Selected, Officer SetOrderFormation, Officer SetOrderGoto) |
 | `data/sounds/officer_create11.ogg` | 0.339 | 6 | sounds | ref:live (Darwinian GivenOrders, Officer Create, Officer Selected, Officer SetOrderFormation, Officer SetOrderGoto) |
 | `data/sounds/officer_create4.ogg` | 0.529 | 7 | sounds | ref:live (Darwinian GivenOrders, Officer Create, Officer Selected, Officer SetOrderFormation, Officer SetOrderGoto) |
@@ -488,12 +488,12 @@
 | `data/sounds/officer_order7.ogg` | 3.000 | 11 | sounds | ref:live (Officer SetOrderFormation, Officer SetOrderGoto) |
 | `data/sounds/officer_order8.ogg` | 3.000 | 12 | sounds | ref:live (Officer SetOrderFormation, Officer SetOrderGoto) |
 | `data/sounds/officer_order9.ogg` | 3.001 | 12 | sounds | ref:live (Officer SetOrderFormation, Officer SetOrderGoto) |
-| `data/sounds/officer_order_goto.ogg` | 4.876 | 26 | sounds | ref:dead-data (Armour SetOrders) |
-| `data/sounds/officer_order_goto2.ogg` | 4.667 | 24 | sounds | ref:dead-data (Armour SetOrders) |
-| `data/sounds/officer_order_goto3.ogg` | 4.540 | 24 | sounds | ref:dead-data (Armour SetOrders) |
-| `data/sounds/officer_order_goto4.ogg` | 4.859 | 24 | sounds | ref:dead-data (Armour SetOrders) |
+| `data/sounds/officer_order_goto.ogg` | 4.876 | 26 | sounds | ref:live (Armour SetOrders) |
+| `data/sounds/officer_order_goto2.ogg` | 4.667 | 24 | sounds | ref:live (Armour SetOrders) |
+| `data/sounds/officer_order_goto3.ogg` | 4.540 | 24 | sounds | ref:live (Armour SetOrders) |
+| `data/sounds/officer_order_goto4.ogg` | 4.859 | 24 | sounds | ref:live (Armour SetOrders) |
 | `data/sounds/pang.ogg` | 87.121 | 626 | NOT-SHIPPED(sounds/pang*) | ref:dead-data (Music LoaderAmiga) |
-| `data/sounds/power_station_online.ogg` | 22.375 | 113 | sounds | ref:live (Powerstation Create) |
+| `data/sounds/power_station_online.ogg` | 22.375 | 113 | sounds | ref:dead-data (Powerstation Create) |
 | `data/sounds/pylon_surge.ogg` | 0.377 | 6 | sounds | ref:live (Pylon TriggerSurge) |
 | `data/sounds/pylon_surge10.ogg` | 0.337 | 6 | sounds | ref:live (Pylon TriggerSurge) |
 | `data/sounds/pylon_surge11.ogg` | 0.342 | 6 | sounds | ref:live (Pylon TriggerSurge) |
@@ -521,7 +521,7 @@
 | `data/sounds/radar_lose_connection3.ogg` | 1.174 | 12 | sounds | ref:live (RadarDish ConnectionLost) |
 | `data/sounds/radar_lose_connection4.ogg` | 1.778 | 15 | sounds | ref:live (RadarDish ConnectionLost) |
 | `data/sounds/radar_motor_run.ogg` | 0.675 | 8 | sounds | ref:live (RadarDish BeginRotation) |
-| `data/sounds/radar_reprog_complete.ogg` | 0.635 | 7 | sounds | ref:live (RadarDish ReprogramComplete) |
+| `data/sounds/radar_reprog_complete.ogg` | 0.635 | 7 | sounds | ref:dead-data (RadarDish ReprogramComplete) |
 | `data/sounds/radar_start_turn.ogg` | 1.503 | 14 | sounds | ref:live (RadarDish BeginRotation) |
 | `data/sounds/radar_stop_turn.ogg` | 3.219 | 26 | sounds | ref:live (RadarDish EndRotation) |
 | `data/sounds/radar_transmission.ogg` | 1.038 | 13 | sounds | ref:live (RadarDish ConnectionEstablished) |
@@ -535,23 +535,23 @@
 | `data/sounds/redvirus_losehealth3.ogg` | 0.280 | 5 | sounds | ref:live (Virii Die) |
 | `data/sounds/redvirus_losehealth4.ogg` | 0.418 | 6 | sounds | ref:live (Virii Die) |
 | `data/sounds/redvirus_losehealth7.ogg` | 0.245 | 5 | sounds | ref:live (Virii Die) |
-| `data/sounds/refinery_cog.ogg` | 2.409 | 19 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog2.ogg` | 2.412 | 18 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog3.ogg` | 2.417 | 19 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog4.ogg` | 2.417 | 19 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog5.ogg` | 2.413 | 19 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog6.ogg` | 2.418 | 18 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog7.ogg` | 2.420 | 18 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/refinery_cog8.ogg` | 2.369 | 17 | sounds | ref:live (Refinery CogTurn) |
-| `data/sounds/research_create.ogg` | 3.216 | 26 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create10.ogg` | 2.624 | 22 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create3.ogg` | 3.035 | 25 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create4.ogg` | 3.340 | 27 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create5.ogg` | 3.394 | 28 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create6.ogg` | 2.584 | 22 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create7.ogg` | 2.785 | 23 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create8.ogg` | 2.540 | 22 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
-| `data/sounds/research_create9.ogg` | 2.375 | 20 | sounds | ref:live (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/refinery_cog.ogg` | 2.409 | 19 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog2.ogg` | 2.412 | 18 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog3.ogg` | 2.417 | 19 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog4.ogg` | 2.417 | 19 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog5.ogg` | 2.413 | 19 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog6.ogg` | 2.418 | 18 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog7.ogg` | 2.420 | 18 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/refinery_cog8.ogg` | 2.369 | 17 | sounds | ref:dead-data (Refinery CogTurn) |
+| `data/sounds/research_create.ogg` | 3.216 | 26 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create10.ogg` | 2.624 | 22 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create3.ogg` | 3.035 | 25 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create4.ogg` | 3.340 | 27 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create5.ogg` | 3.394 | 28 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create6.ogg` | 2.584 | 22 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create7.ogg` | 2.785 | 23 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create8.ogg` | 2.540 | 22 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
+| `data/sounds/research_create9.ogg` | 2.375 | 20 | sounds | ref:dead-data (ResearchItem Create, Spam CreateResearch) |
 | `data/sounds/rocket_boom1.ogg` | 5.689 | 54 | sounds | ref:live (Rocket Explode) |
 | `data/sounds/rocket_boom2.ogg` | 5.492 | 54 | sounds | ref:live (Rocket Explode) |
 | `data/sounds/rocket_boom3.ogg` | 4.330 | 42 | sounds | ref:live (Rocket Explode) |
@@ -562,19 +562,19 @@
 | `data/sounds/sepulveda_appear.ogg` | 0.559 | 7 | sounds | ref:dead-data (Sepulveda Appear) |
 | `data/sounds/sepulveda_disappear.ogg` | 0.560 | 6 | sounds | ref:dead-data (Sepulveda Disappear) |
 | `data/sounds/shipheartbeat1.ogg` | 1.436 | 20 | menusounds | ref:live (EscapeRocket Happy, MultiwiniaInterface LobbyAmbience) |
-| `data/sounds/shiphungry1.ogg` | 5.063 | 79 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry2.ogg` | 6.517 | 99 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry3.ogg` | 5.815 | 87 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry4.ogg` | 5.820 | 88 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry5.ogg` | 7.215 | 110 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry6.ogg` | 5.437 | 84 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shiphungry7.ogg` | 4.497 | 70 | sounds | ref:dead-data (EscapeRocket Unhappy) |
-| `data/sounds/shipmalfunction1.ogg` | 1.219 | 20 | sounds | ref:dead-data (EscapeRocket Malfunction) |
-| `data/sounds/shippurr1.ogg` | 3.599 | 50 | sounds | ref:dead-data (EscapeRocket Happy) |
-| `data/sounds/shippurr2.ogg` | 3.413 | 47 | sounds | ref:dead-data (EscapeRocket Happy) |
-| `data/sounds/shippurr3.ogg` | 3.251 | 46 | sounds | ref:dead-data (EscapeRocket Happy) |
-| `data/sounds/shippurr4.ogg` | 3.529 | 50 | sounds | ref:dead-data (EscapeRocket Happy) |
-| `data/sounds/shippurr5.ogg` | 3.135 | 44 | sounds | ref:dead-data (EscapeRocket Happy) |
+| `data/sounds/shiphungry1.ogg` | 5.063 | 79 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry2.ogg` | 6.517 | 99 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry3.ogg` | 5.815 | 87 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry4.ogg` | 5.820 | 88 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry5.ogg` | 7.215 | 110 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry6.ogg` | 5.437 | 84 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shiphungry7.ogg` | 4.497 | 70 | sounds | ref:live (EscapeRocket Unhappy) |
+| `data/sounds/shipmalfunction1.ogg` | 1.219 | 20 | sounds | ref:live (EscapeRocket Malfunction) |
+| `data/sounds/shippurr1.ogg` | 3.599 | 50 | sounds | ref:live (EscapeRocket Happy) |
+| `data/sounds/shippurr2.ogg` | 3.413 | 47 | sounds | ref:live (EscapeRocket Happy) |
+| `data/sounds/shippurr3.ogg` | 3.251 | 46 | sounds | ref:live (EscapeRocket Happy) |
+| `data/sounds/shippurr4.ogg` | 3.529 | 50 | sounds | ref:live (EscapeRocket Happy) |
+| `data/sounds/shippurr5.ogg` | 3.135 | 44 | sounds | ref:live (EscapeRocket Happy) |
 | `data/sounds/shipscream1.ogg` | 3.781 | 55 | sounds | ref:live (EscapeRocket Damage) |
 | `data/sounds/shipscream2.ogg` | 3.931 | 59 | sounds | ref:live (EscapeRocket Damage) |
 | `data/sounds/silence1.ogg` | 0.250 | 4 | sounds | ref:live (Darwinian OnFire) |
@@ -638,34 +638,34 @@
 | `data/sounds/soulpain7.ogg` | 2.264 | 16 | sounds | ref:live (SoulDestroyer Create, SoulDestroyer LoseHealth) |
 | `data/sounds/soulpain8.ogg` | 1.689 | 15 | sounds | ref:live (SoulDestroyer Create, SoulDestroyer LoseHealth) |
 | `data/sounds/soulpain9.ogg` | 2.769 | 22 | sounds | ref:live (SoulDestroyer Create, SoulDestroyer LoseHealth) |
-| `data/sounds/spam_attack.ogg` | 6.200 | 50 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack2.ogg` | 6.372 | 51 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack3.ogg` | 6.618 | 52 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack4.ogg` | 8.104 | 64 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack5.ogg` | 6.409 | 51 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack6.ogg` | 7.814 | 61 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_attack7.ogg` | 6.467 | 51 | sounds | ref:live (Spam Attack) |
-| `data/sounds/spam_create.ogg` | 3.692 | 32 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create2.ogg` | 2.520 | 23 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create3.ogg` | 3.864 | 33 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create4.ogg` | 2.851 | 25 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create5.ogg` | 2.720 | 26 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create6.ogg` | 2.893 | 29 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create7.ogg` | 1.977 | 19 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_create8.ogg` | 2.434 | 22 | sounds | ref:live (Spam Create) |
-| `data/sounds/spam_damage.ogg` | 3.947 | 33 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage2.ogg` | 3.500 | 29 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage3.ogg` | 3.796 | 30 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage4.ogg` | 3.721 | 32 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage5.ogg` | 3.982 | 33 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage6.ogg` | 4.296 | 36 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_damage7.ogg` | 4.296 | 35 | sounds | ref:live (Spam Damage) |
-| `data/sounds/spam_death.ogg` | 4.574 | 37 | sounds | ref:live (Spam Explode) |
-| `data/sounds/spam_death2.ogg` | 4.400 | 35 | sounds | ref:live (Spam Explode) |
-| `data/sounds/spam_death3.ogg` | 4.690 | 37 | sounds | ref:live (Spam Explode) |
-| `data/sounds/spam_death4.ogg` | 4.644 | 37 | sounds | ref:live (Spam Explode) |
-| `data/sounds/spam_death5.ogg` | 4.574 | 37 | sounds | ref:live (Spam Explode) |
-| `data/sounds/spam_death6.ogg` | 4.702 | 39 | sounds | ref:live (Spam Explode) |
+| `data/sounds/spam_attack.ogg` | 6.200 | 50 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack2.ogg` | 6.372 | 51 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack3.ogg` | 6.618 | 52 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack4.ogg` | 8.104 | 64 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack5.ogg` | 6.409 | 51 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack6.ogg` | 7.814 | 61 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_attack7.ogg` | 6.467 | 51 | sounds | ref:dead-data (Spam Attack) |
+| `data/sounds/spam_create.ogg` | 3.692 | 32 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create2.ogg` | 2.520 | 23 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create3.ogg` | 3.864 | 33 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create4.ogg` | 2.851 | 25 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create5.ogg` | 2.720 | 26 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create6.ogg` | 2.893 | 29 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create7.ogg` | 1.977 | 19 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_create8.ogg` | 2.434 | 22 | sounds | ref:dead-data (Spam Create) |
+| `data/sounds/spam_damage.ogg` | 3.947 | 33 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage2.ogg` | 3.500 | 29 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage3.ogg` | 3.796 | 30 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage4.ogg` | 3.721 | 32 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage5.ogg` | 3.982 | 33 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage6.ogg` | 4.296 | 36 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_damage7.ogg` | 4.296 | 35 | sounds | ref:dead-data (Spam Damage) |
+| `data/sounds/spam_death.ogg` | 4.574 | 37 | sounds | ref:dead-data (Spam Explode) |
+| `data/sounds/spam_death2.ogg` | 4.400 | 35 | sounds | ref:dead-data (Spam Explode) |
+| `data/sounds/spam_death3.ogg` | 4.690 | 37 | sounds | ref:dead-data (Spam Explode) |
+| `data/sounds/spam_death4.ogg` | 4.644 | 37 | sounds | ref:dead-data (Spam Explode) |
+| `data/sounds/spam_death5.ogg` | 4.574 | 37 | sounds | ref:dead-data (Spam Explode) |
+| `data/sounds/spam_death6.ogg` | 4.702 | 39 | sounds | ref:dead-data (Spam Explode) |
 | `data/sounds/speccyloader.ogg` | 58.979 | 235 | NOT-SHIPPED(sounds/speccyloader.ogg) | ref:dead-data (Music LoaderSpeccy) |
 | `data/sounds/spider_create.ogg` | 2.253 | 22 | sounds | ref:live (Spider Create) |
 | `data/sounds/spider_create1e.ogg` | 1.460 | 16 | sounds | ref:live (Spider Create) |
@@ -720,31 +720,31 @@
 | `data/sounds/spider_pounce4.ogg` | 3.419 | 29 | sounds | ref:live (Spider Attack, Spider Pounce) |
 | `data/sounds/spider_pounce5.ogg` | 4.162 | 34 | sounds | ref:live (Spider Attack, Spider Pounce) |
 | `data/sounds/spider_pounce6.ogg` | 3.460 | 29 | sounds | ref:live (Spider Attack, Spider Pounce) |
-| `data/sounds/spirit_descent.ogg` | 1.679 | 11 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent10.ogg` | 2.302 | 8 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent11.ogg` | 10.865 | 24 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent12.ogg` | 1.494 | 9 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent13.ogg` | 3.169 | 12 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent14.ogg` | 4.067 | 15 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent15.ogg` | 1.632 | 7 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent16.ogg` | 1.494 | 6 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent17.ogg` | 1.506 | 6 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent18.ogg` | 2.284 | 7 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent19.ogg` | 2.280 | 7 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent2.ogg` | 3.268 | 14 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent20.ogg` | 2.269 | 7 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent21.ogg` | 2.428 | 8 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent22.ogg` | 0.864 | 5 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent23.ogg` | 4.665 | 14 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent24.ogg` | 4.945 | 14 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent25.ogg` | 4.748 | 14 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent3.ogg` | 1.329 | 6 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent4.ogg` | 2.081 | 8 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent5.ogg` | 4.084 | 12 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent6.ogg` | 4.444 | 14 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent7.ogg` | 3.473 | 11 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent8.ogg` | 3.174 | 10 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
-| `data/sounds/spirit_descent9.ogg` | 2.414 | 9 | sounds | ref:live (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent.ogg` | 1.679 | 11 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent10.ogg` | 2.302 | 8 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent11.ogg` | 10.865 | 24 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent12.ogg` | 1.494 | 9 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent13.ogg` | 3.169 | 12 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent14.ogg` | 4.067 | 15 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent15.ogg` | 1.632 | 7 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent16.ogg` | 1.494 | 6 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent17.ogg` | 1.506 | 6 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent18.ogg` | 2.284 | 7 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent19.ogg` | 2.280 | 7 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent2.ogg` | 3.268 | 14 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent20.ogg` | 2.269 | 7 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent21.ogg` | 2.428 | 8 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent22.ogg` | 0.864 | 5 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent23.ogg` | 4.665 | 14 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent24.ogg` | 4.945 | 14 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent25.ogg` | 4.748 | 14 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent3.ogg` | 1.329 | 6 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent4.ogg` | 2.081 | 8 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent5.ogg` | 4.084 | 12 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent6.ogg` | 4.444 | 14 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent7.ogg` | 3.473 | 11 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent8.ogg` | 3.174 | 10 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
+| `data/sounds/spirit_descent9.ogg` | 2.414 | 9 | sounds | ref:dead-data (SpiritProcessor Create, SpiritReceiver Create) |
 | `data/sounds/spore_gen_death.ogg` | 4.017 | 34 | sounds | ref:live (SporeGenerator Die) |
 | `data/sounds/spore_gen_death2.ogg` | 5.120 | 39 | sounds | ref:live (SporeGenerator Die) |
 | `data/sounds/spore_gen_death3.ogg` | 4.015 | 32 | sounds | ref:live (SporeGenerator Die) |
@@ -821,9 +821,9 @@
 | `data/sounds/tank_death8.ogg` | 4.017 | 33 | sounds | ref:live (Armour Die, Tank Die) |
 | `data/sounds/tank_death9.ogg` | 5.335 | 42 | sounds | ref:live (Armour Die, Tank Die) |
 | `data/sounds/tank_hover.ogg` | 17.748 | 67 | sounds | ref:live (Armour Create) |
-| `data/sounds/taskin.ogg` | 3.126 | 43 | sounds | ref:live (Interface Show) |
-| `data/sounds/taskout.ogg` | 0.972 | 16 | sounds | ref:live (Interface Hide) |
-| `data/sounds/trash80_-_pain-fade-down.ogg` | 213.943 | 1533 | NOT-SHIPPED(sounds/trash80*) | ref:live (Music Credits, Music Cutscene3, Music Demo2Intro) |
+| `data/sounds/taskin.ogg` | 3.126 | 43 | sounds | ref:dead-data (Interface Show) |
+| `data/sounds/taskout.ogg` | 0.972 | 16 | sounds | ref:dead-data (Interface Hide) |
+| `data/sounds/trash80_-_pain-fade-down.ogg` | 213.943 | 1533 | NOT-SHIPPED(sounds/trash80*) | ref:dead-data (Music Credits, Music Cutscene3, Music Demo2Intro) |
 | `data/sounds/tree_atmos1.ogg` | 8.000 | 63 | sounds | ref:live (Tree CreateMagic, Tree CreateNormal) |
 | `data/sounds/tree_atmos2.ogg` | 8.001 | 64 | sounds | ref:live (Tree CreateMagic, Tree CreateNormal) |
 | `data/sounds/tree_atmos3.ogg` | 8.000 | 59 | sounds | ref:live (Tree CreateMagic, Tree CreateNormal) |
@@ -874,30 +874,30 @@
 | `data/sounds/triffid_egg_launch3.ogg` | 1.239 | 12 | sounds | ref:live (TriffidEgg Create) |
 | `data/sounds/triffid_egg_launch4.ogg` | 1.158 | 12 | sounds | ref:live (TriffidEgg Create) |
 | `data/sounds/triffid_egg_launch5.ogg` | 0.990 | 10 | sounds | ref:live (TriffidEgg Create) |
-| `data/sounds/tripod_attack1.ogg` | 2.908 | 26 | sounds | ref:live (Tripod Attack) |
-| `data/sounds/tripod_attack2.ogg` | 2.287 | 21 | sounds | ref:live (Tripod Attack) |
-| `data/sounds/tripod_attack3.ogg` | 1.916 | 18 | sounds | ref:live (Tripod Attack) |
-| `data/sounds/tripod_attack4.ogg` | 2.206 | 20 | sounds | ref:live (Tripod Attack) |
-| `data/sounds/tripod_attack5.ogg` | 2.560 | 23 | sounds | ref:live (Tripod Attack) |
-| `data/sounds/tripod_create.ogg` | 1.361 | 14 | sounds | ref:live (Tripod Create) |
-| `data/sounds/tripod_create2.ogg` | 1.791 | 17 | sounds | ref:live (Tripod Create) |
-| `data/sounds/tripod_create3.ogg` | 1.588 | 15 | sounds | ref:live (Tripod Create) |
-| `data/sounds/tripod_death1.ogg` | 2.914 | 26 | sounds | ref:live (Tripod Die) |
-| `data/sounds/tripod_death2.ogg` | 3.495 | 31 | sounds | ref:live (Tripod Die) |
-| `data/sounds/tripod_death3.ogg` | 3.019 | 29 | sounds | ref:live (Tripod Die) |
-| `data/sounds/tripod_death4.ogg` | 2.746 | 25 | sounds | ref:live (Tripod Die) |
-| `data/sounds/tripod_lose_health.ogg` | 1.533 | 16 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health2.ogg` | 1.416 | 14 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health3.ogg` | 2.003 | 19 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health4.ogg` | 1.718 | 15 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health5.ogg` | 2.119 | 19 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health6.ogg` | 1.447 | 13 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/tripod_lose_health7.ogg` | 1.149 | 12 | sounds | ref:live (Tripod LoseHealth) |
-| `data/sounds/trunk_create.ogg` | 3.730 | 27 | sounds | ref:live (TrunkPort ReprogramComplete) |
-| `data/sounds/trunk_create2.ogg` | 3.722 | 28 | sounds | ref:live (TrunkPort ReprogramComplete) |
-| `data/sounds/trunk_create3.ogg` | 3.729 | 27 | sounds | ref:live (TrunkPort ReprogramComplete) |
-| `data/sounds/trunk_create4.ogg` | 3.675 | 27 | sounds | ref:live (TrunkPort ReprogramComplete) |
-| `data/sounds/trunk_create5.ogg` | 3.743 | 27 | sounds | ref:live (TrunkPort ReprogramComplete) |
+| `data/sounds/tripod_attack1.ogg` | 2.908 | 26 | sounds | ref:dead-data (Tripod Attack) |
+| `data/sounds/tripod_attack2.ogg` | 2.287 | 21 | sounds | ref:dead-data (Tripod Attack) |
+| `data/sounds/tripod_attack3.ogg` | 1.916 | 18 | sounds | ref:dead-data (Tripod Attack) |
+| `data/sounds/tripod_attack4.ogg` | 2.206 | 20 | sounds | ref:dead-data (Tripod Attack) |
+| `data/sounds/tripod_attack5.ogg` | 2.560 | 23 | sounds | ref:dead-data (Tripod Attack) |
+| `data/sounds/tripod_create.ogg` | 1.361 | 14 | sounds | ref:dead-data (Tripod Create) |
+| `data/sounds/tripod_create2.ogg` | 1.791 | 17 | sounds | ref:dead-data (Tripod Create) |
+| `data/sounds/tripod_create3.ogg` | 1.588 | 15 | sounds | ref:dead-data (Tripod Create) |
+| `data/sounds/tripod_death1.ogg` | 2.914 | 26 | sounds | ref:dead-data (Tripod Die) |
+| `data/sounds/tripod_death2.ogg` | 3.495 | 31 | sounds | ref:dead-data (Tripod Die) |
+| `data/sounds/tripod_death3.ogg` | 3.019 | 29 | sounds | ref:dead-data (Tripod Die) |
+| `data/sounds/tripod_death4.ogg` | 2.746 | 25 | sounds | ref:dead-data (Tripod Die) |
+| `data/sounds/tripod_lose_health.ogg` | 1.533 | 16 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health2.ogg` | 1.416 | 14 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health3.ogg` | 2.003 | 19 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health4.ogg` | 1.718 | 15 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health5.ogg` | 2.119 | 19 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health6.ogg` | 1.447 | 13 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/tripod_lose_health7.ogg` | 1.149 | 12 | sounds | ref:dead-data (Tripod LoseHealth) |
+| `data/sounds/trunk_create.ogg` | 3.730 | 27 | sounds | ref:dead-data (TrunkPort ReprogramComplete) |
+| `data/sounds/trunk_create2.ogg` | 3.722 | 28 | sounds | ref:dead-data (TrunkPort ReprogramComplete) |
+| `data/sounds/trunk_create3.ogg` | 3.729 | 27 | sounds | ref:dead-data (TrunkPort ReprogramComplete) |
+| `data/sounds/trunk_create4.ogg` | 3.675 | 27 | sounds | ref:dead-data (TrunkPort ReprogramComplete) |
+| `data/sounds/trunk_create5.ogg` | 3.743 | 27 | sounds | ref:dead-data (TrunkPort ReprogramComplete) |
 | `data/sounds/twoataris.ogg` | 87.484 | 848 | NOT-SHIPPED(sounds/twoataris*) | ref:dead-data (Music LoaderGameOfLife) |
 | `data/sounds/virus_attack.ogg` | 0.392 | 7 | sounds | ref:live (Virii Attack) |
 | `data/sounds/virus_attack2.ogg` | 0.473 | 8 | sounds | ref:live (Virii Attack) |
@@ -940,23 +940,23 @@
 | `data/sounds/virus_lose_health2.ogg` | 0.467 | 6 | sounds | ref:live (Virii LoseHealth) |
 | `data/sounds/virus_lose_health3.ogg` | 0.721 | 9 | sounds | ref:live (Virii LoseHealth) |
 | `data/sounds/white_noise.ogg` | 28.979 | 134 | sounds | ref:live (Ambience EnterLocation) |
-| `data/sounds/world1.ogg` | 8.983 | 55 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world2.ogg` | 5.816 | 31 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world3.ogg` | 4.644 | 26 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world4.ogg` | 5.712 | 34 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world5.ogg` | 5.631 | 42 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world6.ogg` | 6.269 | 41 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world7.ogg` | 5.596 | 40 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/world8.ogg` | 6.484 | 45 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry1.ogg` | 3.736 | 29 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry2.ogg` | 9.262 | 60 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry3.ogg` | 3.621 | 29 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry4.ogg` | 3.682 | 28 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry5.ogg` | 5.028 | 36 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry6.ogg` | 4.471 | 32 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry7.ogg` | 3.513 | 27 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/worlddry8.ogg` | 1.910 | 18 | sounds | ref:live (Ambience EnterGlobalWorld) |
-| `data/sounds/yard.ogg` | 4.807 | 36 | sounds | ref:live (Yard Create) |
+| `data/sounds/world1.ogg` | 8.983 | 55 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world2.ogg` | 5.816 | 31 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world3.ogg` | 4.644 | 26 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world4.ogg` | 5.712 | 34 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world5.ogg` | 5.631 | 42 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world6.ogg` | 6.269 | 41 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world7.ogg` | 5.596 | 40 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/world8.ogg` | 6.484 | 45 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry1.ogg` | 3.736 | 29 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry2.ogg` | 9.262 | 60 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry3.ogg` | 3.621 | 29 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry4.ogg` | 3.682 | 28 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry5.ogg` | 5.028 | 36 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry6.ogg` | 4.471 | 32 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry7.ogg` | 3.513 | 27 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/worlddry8.ogg` | 1.910 | 18 | sounds | ref:dead-data (Ambience EnterGlobalWorld) |
+| `data/sounds/yard.ogg` | 4.807 | 36 | sounds | ref:dead-data (Yard Create) |
 
 ### `data/mwsounds/` (378 files)
 
@@ -1030,10 +1030,10 @@
 | `data/mwsounds/Crate_CaptureOtherTeam.ogg` | 5.299 | 80 | sounds | ref:live (Crate BeginCapture) |
 | `data/mwsounds/Crate_LostCapture.ogg` | 2.525 | 31 | sounds | ref:live (Crate LostCapture) |
 | `data/mwsounds/CrateCapture_10a.ogg` | 16.475 | 251 | sounds | ref:live (Crate Capturing_0pc) |
-| `data/mwsounds/CrateCapture_20a.ogg` | 11.936 | 188 | sounds | ref:dead-data (Crate Capturing_20pc) |
-| `data/mwsounds/CrateCapture_30a.ogg` | 15.406 | 237 | sounds | ref:dead-data (Crate Capturing_40pc) |
-| `data/mwsounds/CrateCapture_40a.ogg` | 12.358 | 189 | sounds | ref:dead-data (Crate Capturing_60pc) |
-| `data/mwsounds/CrateCapture_50a.ogg` | 14.769 | 226 | sounds | ref:dead-data (Crate Capturing_80pc) |
+| `data/mwsounds/CrateCapture_20a.ogg` | 11.936 | 188 | sounds | ref:live (Crate Capturing_20pc) |
+| `data/mwsounds/CrateCapture_30a.ogg` | 15.406 | 237 | sounds | ref:live (Crate Capturing_40pc) |
+| `data/mwsounds/CrateCapture_40a.ogg` | 12.358 | 189 | sounds | ref:live (Crate Capturing_60pc) |
+| `data/mwsounds/CrateCapture_50a.ogg` | 14.769 | 226 | sounds | ref:live (Crate Capturing_80pc) |
 | `data/mwsounds/CrateCapturedAccent.ogg` | 3.565 | 47 | sounds | ref:live (Crate Captured) |
 | `data/mwsounds/CrateFall1.ogg` | 12.707 | 192 | sounds | ref:live (Crate Falling) |
 | `data/mwsounds/CrateFall2.ogg` | 12.746 | 193 | sounds | ref:live (Crate Falling) |
@@ -1043,57 +1043,57 @@
 | `data/mwsounds/CrateFall6.ogg` | 12.774 | 192 | sounds | ref:live (Crate Falling) |
 | `data/mwsounds/CrateFall7.ogg` | 13.260 | 196 | sounds | ref:live (Crate Falling) |
 | `data/mwsounds/CrateLand1.ogg` | 4.025 | 64 | sounds | ref:live (Crate Land) |
-| `data/mwsounds/CrateReward_Airstrike1.ogg` | 4.834 | 73 | sounds | ref:dead-data (CratePowerup Airstrike) |
-| `data/mwsounds/CrateReward_AntsNest1.ogg` | 5.213 | 78 | sounds | ref:dead-data (CratePowerup AntNest) |
-| `data/mwsounds/CrateReward_Armour1.ogg` | 3.511 | 48 | sounds | ref:dead-data (CratePowerup Armour) |
+| `data/mwsounds/CrateReward_Airstrike1.ogg` | 4.834 | 73 | sounds | ref:live (CratePowerup Airstrike) |
+| `data/mwsounds/CrateReward_AntsNest1.ogg` | 5.213 | 78 | sounds | ref:live (CratePowerup AntNest) |
+| `data/mwsounds/CrateReward_Armour1.ogg` | 3.511 | 48 | sounds | ref:live (CratePowerup Armour) |
 | `data/mwsounds/CrateReward_Armour2.ogg` | 3.511 | 48 | sounds | unused |
-| `data/mwsounds/CrateReward_Bitzkrieg.ogg` | 5.726 | 90 | sounds | ref:dead-data (CratePowerup Bitzkreig) |
+| `data/mwsounds/CrateReward_Bitzkrieg.ogg` | 5.726 | 90 | sounds | ref:live (CratePowerup Bitzkreig) |
 | `data/mwsounds/CrateReward_CrateMania1.ogg` | 1.142 | 19 | sounds | unused |
 | `data/mwsounds/CrateReward_CrateMania2.ogg` | 4.162 | 62 | sounds | unused |
-| `data/mwsounds/CrateReward_CrateMania3.ogg` | 4.162 | 63 | sounds | ref:dead-data (CratePowerup CrateMania) |
-| `data/mwsounds/CrateReward_DarkForest1.ogg` | 5.219 | 83 | sounds | ref:dead-data (CratePowerup DarkForest) |
+| `data/mwsounds/CrateReward_CrateMania3.ogg` | 4.162 | 63 | sounds | ref:live (CratePowerup CrateMania) |
+| `data/mwsounds/CrateReward_DarkForest1.ogg` | 5.219 | 83 | sounds | ref:live (CratePowerup DarkForest) |
 | `data/mwsounds/CrateReward_Egg1.ogg` | 3.747 | 60 | sounds | unused |
 | `data/mwsounds/CrateReward_Egg2.ogg` | 4.209 | 63 | sounds | unused |
 | `data/mwsounds/CrateReward_Egg3.ogg` | 4.910 | 73 | sounds | unused |
-| `data/mwsounds/CrateReward_Egg4.ogg` | 3.063 | 37 | sounds | ref:dead-data (CratePowerup Eggs) |
+| `data/mwsounds/CrateReward_Egg4.ogg` | 3.063 | 37 | sounds | ref:live (CratePowerup Eggs) |
 | `data/mwsounds/CrateReward_Extinguisher.ogg` | 8.127 | 128 | sounds | ref:dead-data (CratePowerup FireExtinguisher) |
 | `data/mwsounds/CrateReward_Extinguisher2.ogg` | 3.808 | 57 | sounds | unused |
 | `data/mwsounds/CrateReward_Extinguisher3.ogg` | 4.040 | 64 | sounds | unused |
-| `data/mwsounds/CrateReward_Forest1.ogg` | 4.001 | 59 | sounds | ref:dead-data (CratePowerup MagicalForest) |
+| `data/mwsounds/CrateReward_Forest1.ogg` | 4.001 | 59 | sounds | ref:live (CratePowerup MagicalForest) |
 | `data/mwsounds/CrateReward_Forest2.ogg` | 12.055 | 189 | sounds | ref:live (Tree Create) |
 | `data/mwsounds/CrateReward_Formation1.ogg` | 1.122 | 20 | sounds | unused |
 | `data/mwsounds/CrateReward_Formation2.ogg` | 3.235 | 46 | sounds | ref:dead-data (CratePowerup FormationBooster) |
-| `data/mwsounds/CrateReward_Futurewinians.ogg` | 6.284 | 89 | sounds | ref:dead-data (CratePowerup SpaceShip) |
-| `data/mwsounds/CrateReward_GunTurret1.ogg` | 5.017 | 78 | sounds | ref:dead-data (CratePowerup FlameTurret, CratePowerup GunTurret) |
+| `data/mwsounds/CrateReward_Futurewinians.ogg` | 6.284 | 89 | sounds | ref:live (CratePowerup SpaceShip) |
+| `data/mwsounds/CrateReward_GunTurret1.ogg` | 5.017 | 78 | sounds | ref:live (CratePowerup FlameTurret, CratePowerup GunTurret) |
 | `data/mwsounds/CrateReward_Harvester1.ogg` | 2.000 | 29 | sounds | unused |
-| `data/mwsounds/CrateReward_Harvester2.ogg` | 5.953 | 88 | sounds | ref:dead-data (CratePowerup Harvester) |
+| `data/mwsounds/CrateReward_Harvester2.ogg` | 5.953 | 88 | sounds | ref:live (CratePowerup Harvester) |
 | `data/mwsounds/CrateReward_Harvester3.ogg` | 4.986 | 76 | sounds | unused |
-| `data/mwsounds/CrateReward_HotFeet1.ogg` | 2.912 | 34 | sounds | ref:dead-data (CratePowerup HotFeet) |
-| `data/mwsounds/Cratereward_Infection.ogg` | 4.000 | 59 | sounds | ref:dead-data (CratePowerup Infection) |
+| `data/mwsounds/CrateReward_HotFeet1.ogg` | 2.912 | 34 | sounds | ref:live (CratePowerup HotFeet) |
+| `data/mwsounds/Cratereward_Infection.ogg` | 4.000 | 59 | sounds | ref:live (CratePowerup Infection) |
 | `data/mwsounds/CrateReward_Meteor2.ogg` | 6.874 | 108 | sounds | unused |
 | `data/mwsounds/CrateReward_Meteor3.ogg` | 7.651 | 119 | sounds | unused |
-| `data/mwsounds/CrateReward_Meteor4.ogg` | 4.575 | 70 | sounds | ref:dead-data (CratePowerup Meteor) |
-| `data/mwsounds/CrateReward_Nuke.ogg` | 8.125 | 122 | sounds | ref:dead-data (CratePowerup Nuke) |
+| `data/mwsounds/CrateReward_Meteor4.ogg` | 4.575 | 70 | sounds | ref:live (CratePowerup Meteor) |
+| `data/mwsounds/CrateReward_Nuke.ogg` | 8.125 | 122 | sounds | ref:live (CratePowerup Nuke) |
 | `data/mwsounds/CrateReward_OtherTeam.ogg` | 2.077 | 28 | sounds | unused |
-| `data/mwsounds/CrateReward_Plague.ogg` | 6.875 | 111 | sounds | ref:dead-data (CratePowerup Plague) |
+| `data/mwsounds/CrateReward_Plague.ogg` | 6.875 | 111 | sounds | ref:live (CratePowerup Plague) |
 | `data/mwsounds/CrateReward_Rage1.ogg` | 3.309 | 56 | sounds | unused |
 | `data/mwsounds/CrateReward_Rage2.ogg` | 3.231 | 56 | sounds | unused |
 | `data/mwsounds/CrateReward_Rage3.ogg` | 1.616 | 30 | sounds | unused |
-| `data/mwsounds/CrateReward_Rage4.ogg` | 4.313 | 66 | sounds | ref:dead-data (CratePowerup Rage) |
-| `data/mwsounds/CrateReward_Randomiser.ogg` | 3.241 | 56 | sounds | ref:dead-data (CratePowerup Randomiser) |
-| `data/mwsounds/CrateReward_Rocketwinians.ogg` | 3.628 | 49 | sounds | ref:dead-data (CratePowerup Rocketwinians) |
-| `data/mwsounds/CrateReward_Shield.ogg` | 3.088 | 43 | sounds | ref:dead-data (CratePowerup PersonalShield) |
-| `data/mwsounds/CrateReward_SpawnMania.ogg` | 8.078 | 120 | sounds | ref:dead-data (CratePowerup SpawnMania) |
+| `data/mwsounds/CrateReward_Rage4.ogg` | 4.313 | 66 | sounds | ref:live (CratePowerup Rage) |
+| `data/mwsounds/CrateReward_Randomiser.ogg` | 3.241 | 56 | sounds | ref:live (CratePowerup Randomiser) |
+| `data/mwsounds/CrateReward_Rocketwinians.ogg` | 3.628 | 49 | sounds | ref:live (CratePowerup Rocketwinians) |
+| `data/mwsounds/CrateReward_Shield.ogg` | 3.088 | 43 | sounds | ref:live (CratePowerup PersonalShield) |
+| `data/mwsounds/CrateReward_SpawnMania.ogg` | 8.078 | 120 | sounds | ref:live (CratePowerup SpawnMania) |
 | `data/mwsounds/CrateReward_SpawnMania2.ogg` | 8.078 | 121 | sounds | unused |
 | `data/mwsounds/CrateReward_Squaddies.ogg` | 2.084 | 34 | sounds | unused |
 | `data/mwsounds/CrateReward_Squaddies2.ogg` | 3.403 | 47 | sounds | unused |
 | `data/mwsounds/CrateReward_Squaddies3.ogg` | 3.000 | 42 | sounds | unused |
-| `data/mwsounds/CrateReward_Squaddies4.ogg` | 2.031 | 32 | sounds | ref:dead-data (CratePowerup Squad) |
-| `data/mwsounds/CrateReward_Subversion2.ogg` | 8.188 | 117 | sounds | ref:dead-data (CratePowerup Subversion) |
+| `data/mwsounds/CrateReward_Squaddies4.ogg` | 2.031 | 32 | sounds | ref:live (CratePowerup Squad) |
+| `data/mwsounds/CrateReward_Subversion2.ogg` | 8.188 | 117 | sounds | ref:live (CratePowerup Subversion) |
 | `data/mwsounds/CrateReward_Tank.ogg` | 2.260 | 32 | sounds | ref:dead-data (CratePowerup Tank) |
-| `data/mwsounds/CrateReward_Triffid.ogg` | 3.269 | 45 | sounds | ref:dead-data (CratePowerup Triffids) |
+| `data/mwsounds/CrateReward_Triffid.ogg` | 3.269 | 45 | sounds | ref:live (CratePowerup Triffids) |
 | `data/mwsounds/CrateRewrad_Darwinians1.ogg` | 3.077 | 34 | sounds | unused |
-| `data/mwsounds/CrateRewrad_Darwinians2.ogg` | 6.620 | 71 | sounds | ref:dead-data (CratePowerup Darwinians) |
+| `data/mwsounds/CrateRewrad_Darwinians2.ogg` | 6.620 | 71 | sounds | ref:live (CratePowerup Darwinians) |
 | `data/mwsounds/CreateReward_AntsNest1.ogg` | 5.213 | 78 | sounds | unused |
 | `data/mwsounds/CreateReward_Harvester1.ogg` | 2.000 | 29 | sounds | unused |
 | `data/mwsounds/CreateReward_Harvester2.ogg` | 5.953 | 88 | sounds | unused |
@@ -1312,7 +1312,7 @@
 | `data/mwsounds/StatueDrop3.ogg` | 5.906 | 89 | sounds | ref:live (Statue Drop) |
 | `data/mwsounds/StatueDrop4.ogg` | 5.906 | 90 | sounds | unused |
 | `data/mwsounds/StatueSpawn1.ogg` | 1.277 | 21 | sounds | ref:live (Statue Create) |
-| `data/mwsounds/TankEngineFar.ogg` | 3.518 | 46 | sounds | ref:live (Tank Create) |
+| `data/mwsounds/TankEngineFar.ogg` | 3.518 | 46 | sounds | ref:dead-data (Tank Create) |
 | `data/mwsounds/TankEngineNear.ogg` | 2.001 | 31 | sounds | unused |
 | `data/mwsounds/theramin1.ogg` | 16.000 | 219 | sounds | ref:live (SpaceShip Create) |
 | `data/mwsounds/theramin2.ogg` | 19.598 | 257 | sounds | ref:live (SpaceShip Create) |
