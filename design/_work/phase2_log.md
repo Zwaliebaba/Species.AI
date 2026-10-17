@@ -101,3 +101,8 @@
 - 09: compiled/reachable table; loading screen; animated game-mode panels; loader framework/registry; 10 loader mini-programs; credits structure (keys only); attract mode; ~95 constants. 30: start sequence (captions, timings, fades, grid, camera) + demo end sequence. 32: benchmark recorder + FTP upload (credentials omitted), test harness, build flags. ~31 classes, 9 music events, 6 .anim files. [U]=4.
 - Only loading screen + animated panels player-visible in FULL; loading on background worker thread, main thread runs GL jobs + network tick, no progress reporting; USE_LOADERS off → 7 loaders + RunBootloader dead; credits loader [B:LEGACY]; StartSequence compiled never constructed; attract, benchmark, test harness [B:DEAD].
 ## Phase 3 launched: S09, S30 (S32 pending a slot)
+
+## X4_level_catalogue — done
+- 57 mp_* (49 in retail menu: Domination 9, KOTH 9, CTS 9, Assault 8, Rocket Riot 7, Blitzkrieg 7; 8 excluded from retail data); 12 map_*, 17 mission_*, 30 old/. All map ids match mapcrc.h (86/86); building counts match P06 exactly. Tables: drafts/X4_levels.csv (116×125), X4_level_buildings.csv, X4_thumbnails.csv, X4_mode_maplists.csv. [U]=7.
+- Critical: level_enum.txt excluded from every data build yet sole source of achievement level ids → "Master of Multiwinia" never awardable unless patched; benchmark/stress maps declare GameTypes none → menu discards them; OrderedInsert off-by-one → tie order depends on archive index order.
+## Phase 3 launched: S01

@@ -419,3 +419,70 @@ All English strings behind the phrase ids below are Introversion text (`data/lan
 | Introversion FTP host and hard-coded account | brand/credential | `code/benchmark.cpp:BenchMark::Upload` | none — use a token-based telemetry endpoint |
 | `APP_NAME` shown by the ray tracer, `DARWINIA_VERSION_STRING` in benchmark files | brand | `code/loaders/raytrace_loader.cpp:RenderMessage`, `code/benchmark.cpp` | new product constant |
 | Profile names `AttractMode`, `AccessAllAreas`, `game_unlockall.txt` | names | `code/app.cpp:App::LoadProfile` | `__attract__`, `__unlockall__` |
+
+<!-- from X4_level_catalogue -->
+## IP register
+
+Every English map name and its `_description` lore text is Introversion IP (all in `data/language/english.txt`, and translated in the 8 other language files). Placeholders use `<MODE>-<players>P-<letter>` with neutral mode words (DOM = territory, HILL = zone control, RELIC = carry-the-object, SIEGE = attack/defend, LAUNCH = rocket race, FLAGS = chained flags, ARENA = tank duel, TEST = test maps).
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Beneath the Baleful Eye" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2P_1.txt` | SIEGE-2P-A |
+| "The Woeful Plateau" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2P_2.txt` | SIEGE-2P-B |
+| "Dog Green Sector" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2p_3.txt` | SIEGE-2P-C |
+| "The Third Kind" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3p_1.txt` | SIEGE-2P-D |
+| "The Hard Way" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3P_2.txt` | SIEGE-3P-A |
+| "Fort Zulu" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3p_3.txt` | SIEGE-3P-B |
+| "Beyond the Pale" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_4P_1.txt` | SIEGE-4P-A |
+| "The Last Stand" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_4P_2.txt` | SIEGE-4P-B |
+| "Assault Stress Test" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_stress.txt` | TEST-2P-A |
+| "Stress Test" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_benchmark_1.txt` | TEST-4P-A |
+| "Confrontation Point" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2p_1.txt` | FLAGS-2P-A |
+| "The Bleak Mountains" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2p_2.txt` | FLAGS-2P-B |
+| "The Eye of the World" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2P_3.txt` | FLAGS-2P-C |
+| "The Apex of Infinity" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2P_4.txt` | FLAGS-2P-D |
+| "Upon the Blazing Sea" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_3P_1.txt` | FLAGS-3P-A |
+| "The Wheel" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_3P_2.txt` | FLAGS-3P-B |
+| "Gridlock" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_4P_2.txt` | FLAGS-4P-A |
+| "Mountain of Lost Souls" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_1.txt` | RELIC-2P-A |
+| "The Bloody Shrine" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_2.txt` | RELIC-2P-B |
+| "Price of War" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_3.txt` | RELIC-2P-C |
+| "The Unending Peaks" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_4.txt` | RELIC-2P-D |
+| "Melting Pot" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3p_1.txt` | RELIC-3P-A |
+| "The Tortured Expanse" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3P_2.txt` | RELIC-3P-B |
+| "The Outreach Peaks" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3p_3.txt` | RELIC-3P-C |
+| "Field of Unlife" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4P_1.txt` | RELIC-4P-A |
+| "Scorched Earth" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4P_2.txt` | RELIC-4P-B |
+| "Maze of Despair" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4p_3.txt` | RELIC-4P-C |
+| "Barriers to Progress" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_2P_1.txt` | DOM-2P-A |
+| "The Eternal Guardians" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_2P_2.txt`, `mp_koth_2P_1.txt` | DOM-2P-B / HILL-2P-A |
+| "Field of Unending Dawn" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_3P_1.txt`, `mp_koth_3P_2.txt` | DOM-3P-A / HILL-3P-B |
+| "The Holy Tree" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_4P_1.txt`, `mp_koth_4P_1.txt` | DOM-4P-A / HILL-4P-A |
+| "A Monument to the Heavens" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_4P_2.txt`, `mp_koth_4P_3.txt` | DOM-4P-B / HILL-4P-B |
+| "Shrine of Memory" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_2P_2.txt` | DOM-2P-C |
+| "The Bitter Front" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_2P_3.txt`, `mp_koth_2P_3b.txt` | DOM-2P-D / HILL-2P-B |
+| "Pursuit of Victory" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_1.txt` | HILL-3P-A |
+| "The Deceitful Vale" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_3.txt` | HILL-3P-C |
+| "The Walled Garden" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_4.txt` | HILL-3P-D |
+| "Barbs of Madness" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_4P_4.txt` | HILL-4P-C |
+| "Echoes of the Future" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2P_2.txt` | LAUNCH-2P-A |
+| "Stairway to Heaven" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2p_3.txt` | LAUNCH-2P-B |
+| "Bridge of Light" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2P_4.txt` | LAUNCH-2P-C |
+| "The Second Beginning" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3p_1.txt` | LAUNCH-3P-A |
+| "Wake of Eternity" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3P_2.txt` | LAUNCH-3P-B |
+| "Heart of Chaos" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3P_3.txt` | LAUNCH-3P-C |
+| "Threads of Fate" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_4P_1.txt` | LAUNCH-4P-A |
+| "Hamburger Hill" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_skirmish_2p_4.txt` | DOM-2P-E |
+| "Leap of Faith" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_skirmish_3P_1.txt` | DOM-3P-B |
+| "2P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_2P.txt` | ARENA-2P-A |
+| "3P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_3P.txt` | ARENA-3P-A |
+| "4P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_4P.txt` | ARENA-4P-A |
+| "Stairway to Heaven" (`mp_skirmish_2P_3_name`, no level) and "Pillar of Light" (`mp_koth_2P_4_name`, old/ only) | map names (text) | `data/language/english.txt` | drop |
+| Level file names `mp_<mode>_<N>P_<k>.txt`, `map_<location>.txt`, `mission_<location>_<name>.txt` and Darwinia location names garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad, sandbox | names | `data/levels/`, `data/game*.txt` | `lvl_<mode>_<players>p_<nn>.<ext>`; drop Darwinia locations |
+| Lore vocabulary inside descriptions: "Darwinians", "Multiwinians", "Futurewinians", "Sepulveda", "Soul Repository", "Soul Destroyers", "the Virus", "Shamans/Shamen", "the Great War"/"Unending War", tribe colours as factions | names/characters/text | `data/language/english.txt` `mp_*_description` | neutral faction/setting terms |
+| Thumbnail images (56 `mp_*.bmp` + `default.bmp`) | art | `data/thumbnails/` | regenerate from new maps |
+| Terrain colour ramps named after Darwinia places (`landscape_launchpad/mine/containment…`, `waves_*`, `water_*`) | art | `data/terrain/` (referenced by every level's `Landscape` block) | new ramps, neutral names |
+| Static decoration shapes `temple2.shp`, `temple3.shp`, `temple4.shp`, `rockhead.shp`, `beachheadobstruction.shp`, `spaceship.shp` | art (3D shapes) | `data/shapes/` via `StaticShape` rows | new props |
+| Mode names as level keys `KingOfTheHill`, `CaptureTheStatue`, `RocketRiot`, `Blitzkrieg`, `Domination`, `Assault`, `TankBattle`, legacy `Skirmish`, `Shaman`, `Chess` | names | `GameTypes` lines, `data/multiwinia.txt` | neutral mode ids |
+| "Multiwinia" brand in file/achievement names (`DarwiniaAchievementMasterOfMultiwinia`) | brand | `code/achievement_tracker.cpp` | drop |
+| Every map layout itself (terrain seeds + guide grids + building placements) | level design (art/data) | `data/levels/**` | design new maps; reuse only the envelope in §8 |

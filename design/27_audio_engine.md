@@ -505,6 +505,674 @@ Other public operations [C] `code/sound/soundsystem.cpp`:
 
 Caveat for game code [C]: `m_objId` (used by `StopAllSounds`, `NumInstances`, `NumInstancesPlaying`) is filled only by `GetAttachedObject()` during a tick, and never for 2D or stationary sounds. A "keep this loop alive" poll made before the next tick, or for a non-attached sound, sees 0 and may re-trigger (possible duplicate loops) [I]. A new engine should record the emitter id at trigger time.
 
+## 5 Voice (channel) management
+
+### 5.1 Channel counts
+
+| Rule | Value / formula | Ref |
+|---|---|---|
+| Requested channels | pref `SoundChannels` (generated default 32 by `GetDefaultSoundChannels`; code fallback 32; options 8 / 16 / 32 / 64; a 48 option is commented out because the software mixer needs powers of two) | [C] `code/sound/soundsystem.cpp:SoundSystem::RestartSoundLibraryInternal`, `code/lib/preferences.cpp:GetDefaultSoundChannels`, `code/interface/prefs_sound_window.cpp:PrefsSoundWindow::Create` |
+| DirectSound effect channels | `min(SoundChannels, GetMaxChannels()) − 1`; `GetMaxChannels()` = 64, or `dwMaxHw3DStreamingBuffers − 2` when HW3D is desired **and** `Hardware3DSupport()` (`dwMaxHw3DStreamingBuffers > 3`). The music buffer is created in addition, so DirectSound owns `min(SoundChannels, max)` buffers in total | [C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise`, `GetMaxChannels`, `Hardware3DSupport` |
+| Software effect channels | `SoundChannels` must be a power of two (release-assert "Num channels must be a power of 2"); channel N−1 is music; `GetNumMainChannels()` = N−1 | [C] `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::Initialise`, `GetNumMainChannels` |
+| Result at defaults | **31 effect voices + 1 music voice** (7/15/31/63 + 1 for the four options) | [C] from the two rows above |
+| `SoundSystem::m_numChannels` | `g_soundLibrary3d->GetNumMainChannels()` — effect channels only; indices 0..N−2 | [C] `RestartSoundLibraryInternal` |
+
+### 5.2 Perceived volume
+
+[C] `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume`:
+
+- `Type2D` and `TypeInEditor`: `perceived = 10.0` (the maximum), regardless of `VOLUME`.
+- 3D (`Type3DStationary`, `Type3DAttachedToObject`): `d = |m_pos − cameraPos|`; `f = 1` if `d ≤ m_minDistance`, else `m_minDistance / d`; `base = m_channelVolume` (current envelope output) **if playing**, else `m_volume.GetOutput()` (peak target); `perceived = base × f`.
+
+The units mix a logarithmic volume with a linear distance factor; the comparison is only used for ordering. Using the envelope output for playing sounds means a voice in a long release tail loses priority as it fades (the code comment explains this was added because long `RELEASE` values for echo tails were filling channels) [C].
+
+### 5.3 Priority and the start rule
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `FindBestAvailableChannel`:
+
+```
+sort live instances by perceived volume, descending
+M := empty map  eventName -> multiplier
+for inst in sorted order:
+    k := M.get(inst.eventName)              // full name, e.g. "Darwinian Attack"
+    if k missing: inst.priority := inst.perceived ; M[name] := 0.75
+    else:         inst.priority := inst.perceived * k ; M[name] := k * 0.75
+    if not inst.playing and inst.priority > best: best := inst.priority ; candidate := inst   // best starts at 0.0
+```
+
+i.e. `priority = perceived × 0.75^k`, where k = number of louder instances of the same full event name this tick (1, 0.75, 0.5625, 0.421875, …). The decay map uses the event name exactly as stored (`BTree` keyed by string) [C].
+
+| Rule | Value | Ref |
+|---|---|---|
+| Starts per tick | **at most 1** → ≤ 20 voice starts per second system-wide (more only when `Advance` runs twice per frame, §3.1) | [C] `SoundSystem::Advance` |
+| Candidate | Highest-priority **non-playing** instance with priority **strictly > 0** (an instance whose volume evaluates to 0 never starts; a one-shot then expires) | [C] |
+| Channel choice | First channel whose id does not resolve to a live instance; otherwise the channel whose occupant has the **lowest** `m_calculatedPriority` (strict `<`, so ties → lowest index; search seed 999999.9) | [C] `FindBestAvailableChannel` |
+| Steal test | **None.** Verified: `Advance` never compares the candidate's priority with the victim's. When all channels are busy the candidate *always* replaces the lowest-priority occupant, even if the candidate's priority is lower. "Lowest priority" is perceived volume × same-event decay, so the victim is the quietest-*ranked* voice, not necessarily the quietest | [C] |
+| Victim handling | One-shot (`SinglePlay`) victim → `ShutdownSound` (destroyed). Looping victim (`Looped`, `LoopedADSR`) → `StopPlaying()` (DSP disabled, channel slot cleared) and stays queued; when it next wins a channel, `OpenStream(false)` rewinds a single sample or picks a new random group member | [C] `SoundSystem::Advance`; `code/sound/sound_instance.cpp:SoundInstance::OpenStream` |
+| Failed start | `StartPlaying` returns false only for an unset editor name containing `"???"`; the candidate is then destroyed. `ResetChannel(ch)` runs in every case | [C] `SoundInstance::StartPlaying` |
+
+Design notes [I]:
+
+- In a dense battle the lowest-ranked voice is replaced by the best queued sound every 50 ms regardless of relative loudness. The per-event 0.75 decay is the only "voice limit per sound type"; there is no hard per-event cap, no category budget and no authored priority (`PRIORITY` is ignored, §2.1).
+- A parked loop and a queued candidate can alternate on a channel: the evicted loop is itself the best candidate on a later tick and steals back the lowest channel — nothing prevents this ping-pong, and each restart rewinds the loop.
+- 2D sounds (perceived 10) outrank every 3D sound below volume 10 at any distance.
+
+### 5.4 One-shot patience, orphans and monophonic emitters
+
+| Rule | Behaviour | Ref |
+|---|---|---|
+| One-shot patience | `m_restartAttempts = 3` at `InitialiseSound`; pass 1 decrements it on every tick the one-shot is **not playing** (before the start attempt of that tick) and destroys it when it goes below 0. A one-shot therefore gets the start attempts of 3 ticks (it is first eligible on the first tick after triggering, 0–50 ms later) and is discarded on the 4th, i.e. 0.15–0.20 s after triggering. Looping sounds never expire while queued | [C] `SoundSystem::InitialiseSound`, `SoundSystem::Advance` |
+| Orphans | A `Type3DAttachedToObject` instance whose `GetAttachedObject()` returns NULL (all emitters gone, or no emitter selectable, or `g_app->m_locationId == -1`) is destroyed in pass 1 **without release** (a hard cut). The graceful path in `Update3DPosition` (convert to stationary, final release) is therefore reached only if the emitter disappears between pass 1 and step 8 of the same tick | [C] `SoundSystem::Advance`; `SoundInstance::GetAttachedObject`, `Update3DPosition` |
+| Monophonic merge | §4: one shared instance per event name; new triggers add emitter ids | [C] `SoundSystem::InitialiseSound` |
+| Emitter selection | Re-selected when the current `m_objId` no longer resolves, or every tick for `MonophonicNearest`, or right after a (re)start for `MonophonicRandom`. Dead ids are pruned first. `Polyphonic` → first id; `MonophonicRandom` → `AppRandom() % n`; `MonophonicNearest` → id with the smallest squared camera distance, **seeded at 99999.9**, so only emitters closer than √99999.9 ≈ 316.2 wu can be chosen | [C] `SoundInstance::GetAttachedObject` |
+| Consequence of the 316 wu seed | If the instance has no valid current emitter (always true on its first tick) and no emitter is within 316.2 wu of the camera, `m_objId` stays invalid → `GetAttachedObject()` returns NULL → the instance is culled in the same pass 1. With the shipped data this affects the three `MonophonicNearest` blocks (`Darwinian Create`, `Darwinian Attack`, `EscapeRocket Unhappy`): they are audible only while the camera is within ≈ 316 wu of an emitting object (27-U8) | [C] mechanism; [I] audible effect |
+
+### 5.5 Worked example
+
+31 effect channels are busy; the occupants' priorities range 0.40–9.0. During one tick three instances are queued (generic event names): `Explosion` (one-shot, perceived 6.0), a second copy of the polyphonic one-shot `Gunfire` (perceived 4.0; a louder copy is already playing, so its priority is 4.0 × 0.75 = 3.0) and an ambient loop that was evicted last tick (perceived 0.30).
+
+- Pass 2 picks `Explosion` (6.0). `FindBestAvailableChannel` returns the channel of the 0.40 occupant; it is a one-shot, so it is destroyed; `Explosion` starts there; `ResetChannel` starts its audio at the DirectSound write cursor.
+- Next tick: the `Gunfire` copy (3.0) steals the next-lowest channel. If the lowest occupant were a loop at 0.50, that loop would be parked.
+- The tick after: the ambient loop (0.30) is the only candidate and **still** steals the lowest occupant (say 0.45), although it is quieter — the no-compare rule.
+- Had the `Gunfire` copy lost on three consecutive ticks, it would have been discarded on the fourth.
+
+## 6 Sound instances and parameters
+
+### 6.1 Enumerations (engine values)
+
+[C] `code/sound/sound_instance.h:SoundInstance`, `code/sound/sound_parameter.h:SoundParameter`; names as printed by the `Get*TypeName` functions (and written to `sounds.txt`):
+
+| Enum | Values |
+|---|---|
+| Position type | 0 `Type2D`, 1 `Type3DStationary`, 2 `Type3DAttachedToObject` (constructor default), 3 `TypeInEditor` |
+| Instance type | 0 `Polyphonic` (default), 1 `MonophonicRandom`, 2 `MonophonicNearest` |
+| Loop type | 0 `SinglePlay` ("PlayOnce", default), 1 `Looped` ("Loop"), 2 `LoopedADSR` ("LoopADSR") |
+| Source type | 0 `Sample` (default), 1 `SampleGroupRandom` |
+| ADSR state | 0 `StateAttack` (initial), 1 `StateDecay` (never entered), 2 `StateSustain`, 3 `StateRelease` |
+| Team match type | 0 `AllTeams` (default), 1 `MyTeamOnly`, 2 `EnemyTeamOnly` |
+| Parameter type | 0 `TypeFixedValue`, 1 `TypeRangedRandom`, 2 `TypeLinked` |
+| Parameter link | 0 `Nothing`, 1 `HeightAboveGround`, 2 `Xpos`, 3 `Ypos`, 4 `Zpos`, 5 `Velocity`, 6 `CameraDistance` |
+| Parameter update type | 0 `UpdateConstantly`, 1 `UpdateOnceEveryRestart` (written `UpdateOncePerLoop`) |
+
+Constructor defaults [C] `code/sound/sound_instance.cpp:SoundInstance::SoundInstance`: sound name `"[???]"` (never plays), min distance 100.0 wu, VOLUME fixed 7.0, FREQUENCY fixed 1.0, ATTACK/SUSTAIN/RELEASE/LOOPDELAY fixed 0, `m_calculatedPriority` 128.0, `m_channelIndex` −1, `m_restartOccured` true, `m_restartAttempts` 0 (set to 3 by `InitialiseSound`), `m_adsrTimer = GetHighResTime()`.
+
+### 6.2 Instance state machine
+
+The code stores only `m_adsrState`, `m_channelIndex` and `m_loopDelayTimer`; the outer states below are derived [C] `code/sound/sound_instance.cpp`, `code/sound/soundsystem.cpp`:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Queued : "Trigger*Event, InitialiseSound"
+    Queued --> Discarded : "one-shot not started within 3 ticks, or attached emitter lost"
+    Queued --> Playing : "wins a channel (StartPlaying)"
+    Playing --> Queued : "evicted, looping only (StopPlaying)"
+    Playing --> Discarded : "evicted one-shot, or attached emitter lost (hard cut)"
+    state Playing {
+        [*] --> Attack
+        Attack --> Sustain : "t >= ATTACK"
+        Attack --> Release : "BeginRelease"
+        Sustain --> Release : "SUSTAIN > 0 and t >= SUSTAIN, or BeginRelease"
+        Release --> [*] : "t >= RELEASE and no pending loop-delay re-trigger"
+    }
+    Playing --> Finished : "envelope finished"
+    Finished --> [*] : "ShutdownSound"
+    Discarded --> [*]
+```
+
+`StopPlaying()` disables channel DSP if the instance has DSP handles, sets `m_channelIndex = −1` and invalidates every channel slot holding this id. `IsPlaying()` ≡ `GetChannelIndex() != −1`, where `GetChannelIndex()` returns the index only if `0 ≤ idx < m_numChannels` **and** `m_channels[idx] == m_id` — so eviction by another instance silently makes the old one "not playing" [C] `SoundInstance::StopPlaying`, `GetChannelIndex`.
+
+### 6.3 Envelope (ADSR) — exact
+
+Evaluated in `UpdateChannelVolume()` at `StartPlaying` and on every tick while playing; all times from `GetHighResTime()` (wall clock) [C] `code/sound/sound_instance.cpp:SoundInstance::UpdateChannelVolume`:
+
+| State | Output `vol` | Transition |
+|---|---|---|
+| Attack | `frac = ATTACK > 0 ? min(t / ATTACK, 1) : 1`; `vol = VOLUME × frac` | when `|frac − 1| < 1e-6` → timer := now, state Sustain |
+| Sustain | `vol = VOLUME` | if `SUSTAIN > 0` and `now ≥ timer + SUSTAIN` → `BeginRelease(false)` (SUSTAIN is a **hold duration**; 0 = hold until stopped or the sample ends) |
+| Release | `frac = RELEASE > 0 ? min(t / RELEASE, 1) : 1`; `vol = VOLUME × (1 − frac)` | finished when `frac ≈ 1` **and** `m_loopDelayTimer ≈ 0` |
+
+- `t = now − m_adsrTimer`. The timer starts in the **constructor** (trigger time), so time spent queued eats into the attack.
+- `m_channelVolume = clamp(vol, 0, 10)` → `SetChannelVolume(channel, m_channelVolume)`.
+- `NearlyEquals(a, b)` ≡ `|a − b| < 1e-6` [C] `code/lib/math_utils.h`.
+- Because the device maps vol units logarithmically (§11.3), linear-in-vol ramps are **linear in dB** (exponential in amplitude), and they are quantised to the 20 Hz tick. A release ends at vol 0 = −50 dB on DirectSound and the voice is then cut.
+- VOLUME, ATTACK, SUSTAIN and RELEASE are re-evaluated on each call (subject to their update type), so linked or random values move the envelope live.
+
+`BeginRelease(final)` [C] `SoundInstance::BeginRelease`: if not already in Release → state Release, timer := now, and for `LoopedADSR` with `final == false`: if `LOOPDELAY ≈ 0` → `SoundSystem::TriggerDuplicateSound(this)` immediately, else arm `m_loopDelayTimer = now`. Independently, `final == true` on a `LoopedADSR` instance already in Release clears `m_loopDelayTimer` (cancels the pending re-trigger). Callers: sustain timeout (non-final); end of a one-shot's silence tail (non-final); `StopAllSounds` (final); music replacement (final); emitter lost in `Update3DPosition` (final, loops only); editor Stop (final).
+
+### 6.4 Loop logic and end-of-sample handling (inside the PCM callback)
+
+`SoundSystem::SoundLibraryMainCallback(channel, buf, capacity, n, &silenceRemaining)` [C] `code/sound/soundsystem.cpp`:
+
+1. Look up the instance on `m_channels[channel]`; if none or no sample handle → write silence, return false.
+2. `written = handle->Read(buf, n)`. If `written < n`, by loop type:
+
+| LOOPTYPE | End-of-sample behaviour |
+|---|---|
+| 0 `SinglePlay` | First short read: write silence for the rest and set `silenceRemaining = GetChannelBufSize(channel) − remainder`. Later fills (read returns 0): write silence and `silenceRemaining −= n`; when ≤ 0 → `BeginRelease(false)`; the instance finishes after RELEASE. On DirectSound the voice therefore keeps its channel for ≈ one ring of silence (20000 samples) so the already-buffered tail plays out. On the software mixer `GetChannelBufSize()` returns 0 and the counter is a per-call local initialised to −1, so release starts on the **next** fill after the end (≈ one waveOut block) |
+| 1 `Looped` | Repeatedly call `AdvanceLoop()`: if `LOOPDELAY ≈ 0` → `OpenStream(false)` and keep filling (a `Sample` rewinds; a `SampleGroupRandom` source **picks a new random member**). Else arm `m_loopDelayTimer = now` and write silence; on later fills, once `now ≥ timer + LOOPDELAY` → `OpenStream(false)`, timer := 0, continue. Runs until stopped |
+| 2 `LoopedADSR` | Each pass: if a loop-delay re-trigger is armed and due → `TriggerDuplicateSound(this)`, timer := 0. Then `OpenStream(true)` (rewind the **same** sample) and keep filling |
+
+3. Return true (audio written). The per-event profiler brackets the work.
+
+Notes [C/I]:
+
+- `LoopedADSR` + `SUSTAIN > 0` produces overlapping "notes": at the start of each Release a duplicate is spawned (immediately, or at the first sample wrap after `LOOPDELAY` has elapsed — the due check runs only inside the fill), so notes cross-fade; with a sample group each duplicate picks a new random member. The releasing original stays alive (silently) until its re-trigger has fired.
+- On DirectSound the fill runs up to ≈ 0.45 s ahead of playback (§11.2), so loop and end decisions are made that far ahead, while volume changes take effect at the next tick.
+- A zero-length sample in a `Looped` block with `LOOPDELAY = 0` would spin forever in the fill loop [I] (no shipped instance).
+- `SoundLibraryMusicCallback` applies the identical logic to `m_music` (§8).
+
+`OpenStream(keepCurrent)` [C] `SoundInstance::OpenStream`: sets `m_restartOccured = true`; if a handle exists and (`keepCurrent` or source is `Sample`) → `Restart()` (rewind cursor) and return. Otherwise delete the handle; for `SampleGroupRandom` look up the group (release-assert if missing), `n = groupSize`, `n × 0.5` if pref `SoundMemoryUsage` = 2, `n × 0.25` if 3 (truncated), `n = max(n, 1)`, choose member `AppRandom() % n` — lower memory settings only ever use the **first** ½ or ¼ of each group; then `g_cachedSampleManager.GetSample(name)`.
+
+### 6.5 StartPlaying, per-tick Advance and 3D position
+
+`StartPlaying(ch)` [C] `SoundInstance::StartPlaying`:
+
+1. Refuse (return false) if the sound name contains `"???"`.
+2. `OpenStream(false)`; `m_channelIndex = ch`.
+3. `SetChannel3DMode(ch, 1)` (head-relative) for `Type2D` / `TypeInEditor`, else `SetChannel3DMode(ch, 0)` (world).
+4. `SetChannelMinDistance(ch, m_minDistance)`.
+5. Evaluate FREQUENCY; `SetChannelFrequency(ch, nativeRate × FREQUENCY × GetFrequencyModifier(positionType))` (§7).
+6. `UpdateChannelVolume()`; `Update3DPosition()`; `SetChannelPosition(ch, m_pos, m_vel)`.
+7. If the instance has DSP handles: `Initialise` each and `EnableDspFX(ch, n, types[])` (local array of 16 ints, no bound check).
+
+`Advance()` per tick while playing [C] `SoundInstance::Advance`: envelope (return true = finished, stop here); recompute frequency the same way — values `< 0` or `> 144000` (3 × 48000) are skipped with a debug log; `DspHandle::Advance()` for each effect (§12.3); `Update3DPosition()`; clear `m_restartOccured`.
+
+`Update3DPosition()` [C] `SoundInstance::Update3DPosition`:
+
+| Position type | Behaviour |
+|---|---|
+| `Type2D` | `m_pos = m_vel = 0`; no device call (head-relative at the listener) |
+| `Type3DStationary` | Unchanged (position captured at trigger time) |
+| `Type3DAttachedToObject` | Follow the selected emitter's `m_pos` / `m_vel`; buildings use `Building::m_centrePos`; `SetChannelPosition` every tick. If the emitter is gone: become `Type3DStationary`, velocity 0, send position, and loops get `BeginRelease(true)` (normally pre-empted by the pass-1 hard cull, §5.4) |
+| `TypeInEditor` | `(m_editorPos.x, 0, m_editorPos.z)`, velocity 0, head-relative |
+
+### 6.6 Memory-usage preference
+
+Pref `SoundMemoryUsage` (1 high = default, 2 medium, 3 low) is read at every `OpenStream` in the baseline even though its options-screen control is compiled out (`USE_SOUND_MEMORY`) [C] `code/sound/sound_instance.cpp:SoundInstance::OpenStream`, `code/interface/prefs_sound_window.cpp`. It does not change the cache limit; it only restricts group variety (§6.4).
+
+### 6.7 `SoundParameter` evaluation (engine semantics)
+
+The design meaning of each parameter and the shipped usages are in [10_audio_design](10_audio_design.md). Engine rules [C] `code/sound/sound_parameter.cpp:SoundParameter::Recalculate`, `code/sound/sound_instance.cpp:SoundInstance::UpdateParameter`:
+
+| Type | Stored fields | Output per evaluation |
+|---|---|---|
+| `TypeFixedValue` | `m_outputLower` | `out = m_outputLower` |
+| `TypeRangedRandom` | `lo, hi, smooth` | `target = lo + frand(hi − lo)` with `frand(r) = r × AppRandom() / 32767` (can equal `hi`); `out = target × (1 − √smooth) + out_prev × √smooth` |
+| `TypeLinked` | `inLo, outLo, inHi, outHi, smooth, link` | `x` from the link; if `x ≤ inLo` and `x ≤ inHi` → `target = (inLo < inHi) ? outLo : outHi`; if `x ≥ inHi` and `x ≥ inLo` → `target = (inLo < inHi) ? outHi : outLo`; else `target = outLo + (x − inLo)/(inHi − inLo) × (outHi − outLo)`; smoothed as above |
+
+Link inputs, evaluated at the instance position — or at the **camera** position/velocity for `Type2D` sounds: `Nothing` → 0; `HeightAboveGround` → `pos.y − landscape height(pos.x, pos.z)` (0 height without a location); `Xpos`, `Ypos`, `Zpos` → coordinates; `Velocity` → `|vel|`; `CameraDistance` → `|camera − pos|` [C] `SoundInstance::UpdateParameter`.
+
+Evaluation schedule [C]:
+
+| When | Parameters evaluated |
+|---|---|
+| `SoundInstance::Copy` (trigger) | all six, once each (`m_restartOccured` is still true from the constructor) |
+| `StartPlaying` | FREQUENCY, then ATTACK, SUSTAIN, RELEASE, VOLUME (via `UpdateChannelVolume`) |
+| Every tick while playing (`Advance`) | ATTACK, SUSTAIN, RELEASE, VOLUME, FREQUENCY, then all 13 parameters of every DSP handle |
+| Inside the fill on sample end (`AdvanceLoop`) | LOOPDELAY |
+| While queued | none (perceived volume uses the VOLUME output from `Copy`) |
+
+`UpdateOnceEveryRestart` parameters are evaluated only when `m_restartOccured` is set — at trigger, at start and on the first tick after each `OpenStream` (start or loop restart); the flag is cleared at the end of `Advance` [C].
+
+Smoothing state (resolved — the P16 draft said every smoothed parameter starts from 0): `SoundParameter::Copy` copies type, link, update type, ranges and smooth but **not** `m_output`. The previous output used by the first evaluation of a fresh instance is therefore: FREQUENCY **1.0** (the constructor's own evaluation of fixed 1.0), ATTACK / SUSTAIN / RELEASE / LOOPDELAY **0**, VOLUME **the prototype's last output** (`SoundInstance::Copy` first assigns the whole struct `m_volume = prototype.m_volume`), DSP parameters **the prototype's last output** (whole-struct copy in `DspHandle::Copy`) [C] `code/sound/sound_parameter.cpp:SoundParameter::Copy`, `code/sound/sound_instance.cpp:SoundInstance::Copy`, `DspHandle::Copy`. Consequence [I]: a smoothed `UpdateOncePerLoop` FREQUENCY gets three evaluations before the first tick ends and then one per loop; e.g. the shipped ambience pitch `TypeRangedRandom 0.75 1.35 0.66 UpdateOncePerLoop` (√0.66 ≈ 0.812) starts each note at ≈ 0.54 × 1.0 + 0.46 × target, i.e. 0.88–1.16 instead of 0.75–1.35. Ten shipped parameter definitions use smoothing > 0 [C] `data/sounds.txt` (counted from the P16 parsed event table).
+
+## 7 Pitch handling and the game-speed modifier
+
+Channel playback frequency (Hz) = `sample native rate × FREQUENCY.GetOutput() × GetFrequencyModifier(positionType)`, sent at `StartPlaying` and every tick [C] `code/sound/sound_instance.cpp:SoundInstance::StartPlaying`, `SoundInstance::Advance`. Samples are never resampled by the engine on DirectSound: data is written at the native rate and the buffer's `SetFrequency` sets the playback rate (DirectSound's own resampler) [C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelFrequency`. The software mixer resamples itself (nearest-lower sample, §11.4).
+
+`GetFrequencyModifier(positionType)` [C] `code/sound/sound_instance.cpp:GetFrequencyModifier`:
+
+- Returns 1.0 if not `App::Multiplayer()` (≡ `m_gameMode == GameModeMultiwinia`, i.e. any Multiwinia match including vs-CPU), or during the pre-game grace period (`Multiwinia::GameInGracePeriod()`), or for `Type2D` sounds.
+- Otherwise updates a function-static smoother `s := 0.99 × s + 0.01 × g_gameTimer.GetGameSpeed()` (initial 1.0) **on every call** and returns `iv_sqrt(max(s, 0.01))`. It is called once per playing non-2D instance per tick plus once per start, so the effective smoothing time constant shrinks as the number of active 3D voices grows (with 30 voices ≈ 600 updates/s, τ ≈ 0.17 s; with 1 voice ≈ 20 updates/s, τ ≈ 5 s) [C/I].
+- Effect [I]: world sounds pitch-bend with game speed. The game-over slow-down to speed 0 (`code/multiwinia.cpp`, game-over block) yields a "tape stop" down to √0.01 = 0.1× pitch; slow/fast game-speed effects bend proportionally to √speed. 2D/UI sounds and music are unaffected.
+- Interactions [C]: `TypeInEditor` is not exempt (only `Type2D` is). The smoother state is global and never reset between matches.
+
+Limits [C]: instance code skips frequencies outside 0–144000 Hz (3 × 48000) with a debug log; the software mixer clamps to 144000 Hz; DirectSound itself accepts `DSBFREQUENCY_MIN`..`DSBFREQUENCY_MAX` (100–200000 Hz per the DirectSound documentation [I]); the editor range for FREQUENCY is 0.0–3.0 [C] `code/interface/soundeditor_window.cpp:SoundEditorWindow::CreateInstanceEditor`.
+
+## 8 Music channel
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::TriggerOtherEvent`, `SoundSystem::Advance`, `SoundSystem::SoundLibraryMusicCallback`, `SoundSystem::StopAllSounds`; `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise`; `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::Initialise`:
+
+| Aspect | Behaviour |
+|---|---|
+| Slots | Exactly one playing music instance (`m_music`) plus one pending request (`m_requestedMusic`). Music = any block of the `OTHER Music` source triggered through `TriggerOtherEvent(WorldObject*, …)` |
+| Separation | Music instances never enter `m_sounds`, never compete for effect channels and never pass through `StartPlaying` (so no 3D mode change, no min-distance, no DSP enable) |
+| Trigger | If the current music has the **same sound file name** → ignore (keeps playing; the freshly copied instance is leaked [C]). Else store as `m_requestedMusic` (a previous pending request is overwritten and leaked [C]) and `BeginRelease(true)` the current music |
+| Swap | At the first tick after the old music reports finished (`m_music->Advance()` true): promote the request, `OpenStream(false)`, `m_channelIndex = m_musicChannelId`, `ResetChannel`, `SetChannelFrequency(native rate)`. No cross-fade: the old track fades by its own RELEASE (the shipped music blocks all have RELEASE 0 → immediate cut), the new one fades in by its ATTACK (timer started at trigger time) |
+| Per-tick | `m_music->Advance()` — the full instance advance: envelope → `SetChannelVolume(musicId)`, FREQUENCY → `SetChannelFrequency(musicId)` (modifier 1.0 because music is `Type2D`), DSP parameter updates if any, position (2D no-op) |
+| Fill | `SoundLibraryMusicCallback` with the same loop / one-shot logic as effect channels (§6.4), using `GetChannelBufSize(m_musicChannelId)` for the silence tail |
+| Stop | `StopAllSounds(id, name)` with `strstr(name, "Music")` → `m_music->BeginRelease(true)` regardless of which track; `StopAllSounds(…, NULL)` does **not** stop music |
+| Device | DirectSound: separate looping buffer of `bufSize × 10` = 200000 samples (≈ 4.5 s at 44.1 kHz), `m_musicChannelId = −1`, 3D disabled (mode 2), initial volume 10, initial frequency 44100 Hz. Software mixer: channel N−1, mode 2, volume 10 |
+| Volume | Same 0–10 VOLUME/envelope and the global master volume; **no separate music volume** exists |
+
+Reachability [C/I]: every `TypeMusic` trigger site is either Darwinia script content (`code/script.cpp:Script::RunCommand_TriggerSound`, scripts classified [B:LEGACY] in [30](30_scripting_tutorial_and_cutscenes.md)) or loader / start-sequence code compiled out by `USE_LOADERS` (`code/loaders/*_loader.cpp`, `code/startsequence.cpp`, [B:DEAD]). In a Multiwinia session the music channel therefore stays silent; what players hear as front-end "music" is the 2D lobby-ambience bed on effect channels ([10_audio_design](10_audio_design.md)). See 27-U2.
+
+## 9 Sample cache
+
+[C] `code/sound/sample_cache.cpp`, `code/sound/sample_cache.h`, `code/lib/resource.cpp:Resource::GetSoundStreamDecoder`:
+
+| Aspect | Behaviour |
+|---|---|
+| Key | The sample name as passed (lower-case stem from the blueprint parser), `std::string` in `stdext::hash_map`; `m_cache[name]` creates the entry on first use |
+| Lookup path | `"sounds/<name>"` first, then `"mwsounds/<name>"`. `Resource::GetSoundStreamDecoder` appends **`.ogg`** and opens a `BinaryReader` (loose file `data/<path>` first, then the archive table). Failure on both → release-assert "Failed to open sound stream decoder". Resolved: the P16 draft said the resource layer resolves `.ogg` or `.wav`; code only ever requests `.ogg`, so the WAV decoder is unreachable from the cache |
+| Case | Blueprint names are lower case while files on disk are mixed case (e.g. `data/mwsounds/CrateFall1.ogg`); lookups rely on the case-insensitive Windows file system for loose files and on the archive lookup for packed files [I] (archive name matching is documented in [31](31_platform_build_and_tools.md)) |
+| Construction | `CachedSample(name)` opens a decoder, reads channels / frames / rate and **allocates the full PCM buffer immediately** (`channels × frames × 2` bytes) but decodes nothing. Release-asserts: `0 < channels ≤ 8`, `0 < frames ≤ 268435456`, `0 < rate ≤ 192000`, `channels × frames ≤ 536870912` (1 GiB of 16-bit samples) — "probably a corrupted file" |
+| Decode policy | **Incremental, on demand**: `CachedSample::Read(start, n)` decodes forward until `start + n − 1` is cached; once the whole file is decoded the decoder is deleted. First playback streams from the archive; later playbacks (and simultaneous handles) share the RAM copy |
+| Mono only | `Read` release-asserts `m_numChannels == 1` ("%s is not mono audio") on every read — music included. All 1332 shipped Ogg files are mono; 1330 are 44.1 kHz and two are 22.05 kHz (`data/sounds/fodder.ogg`, `data/mwsounds/chat.ogg`) [C] Ogg header scan of `data/sounds/` and `data/mwsounds/` (helper S_27_ogg_scan.py in _work/scripts) |
+| Handle | `CachedSampleHandle` = read cursor; ctor `Lock()`s the sample, dtor `Unlock()`s it and, when the lock count reaches 0, stamps `m_lastUsedTime = GetHighResTime()`. `Read(dst, n)` clamps to the remaining frames; `Restart()` rewinds to 0. Each `SoundInstance` owns at most one handle; switching sample or deleting the instance releases it |
+| Eviction | `CachedSampleManager::CleanUp()`, called every frame from `App::CheckSounds`: `maxSize = 60 × 1024 × 1024` bytes (comment "Largest song takes 13 MB"); while total > max, evict the **unlocked** sample with the oldest `m_lastUsedTime` strictly older than now; stop when none is evictable. Locked (in-use) samples are never evicted, so the cache can exceed 60 MiB. Accounting counts the full allocation, decoded or not |
+| Empty | `EmptyCache()` deletes everything (static destruction; and on a `SoundMemoryUsage` change under `USE_SOUND_MEMORY` [B:DEAD]) |
+| Statistics | `GetMemoryUsage(total, unused)` → debug log every 60 s from `code/main.cpp:PrintAvailableMemory`; the options-screen readout that would show it is unreachable code |
+| Mac | `Preload()` (2048- or 512-sample chunks on a low-priority thread) and LRU disabled (`maxSize = 0`) — [B:DEAD] |
+
+Sizing facts [C] (same header scan, decoded size = frames × channels × 2 bytes): fully decoded, `data/sounds/` = 350.1 MiB and `data/mwsounds/` = 123.7 MiB, so the 60 MiB budget holds about one eighth of the library; the largest single file, `data/sounds/tresk_-_excuses.ogg` (344.6 s), decodes to 29.0 MiB — more than twice the "13 MB" in the comment.
+
+## 10 Streaming decoder (Ogg Vorbis / WAV)
+
+[C] `code/sound/sound_stream_decoder.cpp:SoundStreamDecoder`:
+
+| Aspect | Behaviour |
+|---|---|
+| Format choice | By the `BinaryReader` file type (extension): `wav` → RIFF/WAVE parser; `ogg` → libvorbisfile; anything else → release-assert "Unknown sound file format" |
+| Ogg open | `ov_open_callbacks(reader, …)` with read / seek / tell callbacks over the engine's `BinaryReader` (archive-backed memory or file) and a no-op close; non-zero result → release-assert "Ogg file corrupt"; `frames = ov_pcm_total(-1)` (release-assert > 0, "Ogg file contains no data"), `rate = vi->rate`, `channels = vi->channels` |
+| Ogg read | Loop `ov_read(buf, bytes, host endianness, 16-bit, signed)` until the request is satisfied or a 0-byte read (EOF); `OV_HOLE` / `OV_EBADLINK` → release-assert "Ogg file corrupt". Other negative returns are not handled [I] |
+| WAV (unreachable, §9) | Accepts only PCM (`fmt` tag 1), 1 or 2 channels, 8 or 16 bits (header fields otherwise leave the decoder half-initialised); 8-bit converted `(u8 − 128) << 8`; other chunks skipped; `frames = dataBytes / (channels × bits/8)`; the 16-bit path divides bytes by 2 regardless of channel count (correct only for mono) |
+| Restart | WAV: seek to the data chunk; Ogg: `ov_raw_seek(0)`. Not used by the cache (handles rewind the RAM copy instead) |
+| Output | Always signed 16-bit host-endian |
+| Libraries | `vorbis_static`, `vorbisfile_static`, `ogg_static` sub-projects (libvorbis 1.1.2, libogg 1.1.3) [C] `targets/vs2005/Darwinia.sln`, `contrib/libvorbis-1.1.2/lib/vorbisfile.c` |
+
+Pipeline: archive or loose file → `BinaryReader` → `SoundStreamDecoder` → `CachedSample` PCM buffer (filled on demand) → `CachedSampleHandle::Read` inside the PCM callback → device buffer. There is no separate streaming path for long files: the 344.6 s music track is "streamed" only in the sense that its decode is spread over the fills that first reach each region, while its whole 29 MiB buffer is allocated at open.
+
+## 11 Device back-ends (2D/3D library abstraction)
+
+### 11.1 The `SoundLibrary3d` contract
+
+[C] `code/sound/sound_library_3d.h:SoundLibrary3d`. Channel index `m_musicChannelId` addresses the music channel; all other indices are effect channels `0..GetNumMainChannels()−1`.
+
+| Method | Contract | DirectSound | Software | Null |
+|---|---|---|---|---|
+| `Initialise(mixFreq, numChannels, hw3d, mainBufSamples, musicBufSamples)` | Create device and channels; false on failure | §11.2 | power-of-two check, allocate channels | true |
+| `SetMainCallback`, `SetMusicCallback` (base) | Install the PCM pull callbacks `bool(*)(channel, int16* buf, capacity, numSamples, int* silenceRemaining)` / music variant without channel | stored | stored | stored |
+| `SetMasterVolume(0..255)` (base) | `m_masterVolume = (255 − v) × −32` mB; sets `m_forceVolumeUpdate` | — | — | — |
+| `Hardware3DSupport()` | HW 3D streaming buffers available | `dwMaxHw3DStreamingBuffers > 3` | false | false |
+| `GetMaxChannels()` | Upper bound on channels | 64 or HW count − 2 | 64 | 0 |
+| `GetCPUOverhead()` | Stats only | `DSCAPS.dwPlayCpuOverheadSwBuffers` + Σ per-buffer `dwPlayCpuOverhead` | 1 | 0 |
+| `GetChannelHealth(ch)` | 0 = bad, 1 = good | `h ≥ 0.5 → 1, else 2h` with `h = 1 − written/bufferSize` of the last refill | 1.0 | 1.0 |
+| `GetChannelBufSize(ch)` | Ring size in samples (drives the one-shot silence tail) | 20000 (music 200000) | **0** | 0 |
+| `GetNumMainChannels()` | Effect channel count | `m_numChannels` | `m_numChannels − 1` | 0 |
+| `ResetChannel(ch)` | Refill immediately (new sound) | §11.2 | sets `m_forceVolumeJump` | no-op |
+| `SetChannel3DMode(ch, mode)` | 0 = world 3D, 1 = head-relative, 2 = disabled | `DS3DMODE_NORMAL` / `HEADRELATIVE` / `DISABLE` | 0 → pan+distance; 1, 2 → centred | no-op |
+| `SetChannelPosition(ch, pos, vel)` | World position and velocity | deferred, 5 % threshold | stored | no-op |
+| `SetChannelFrequency(ch, hz)` | Playback rate | `SetFrequency` on change | clamp ≤ 144000, stored | no-op |
+| `SetChannelMinDistance(ch, d)` | Full-volume radius | deferred, asserts 1 ≤ d ≤ 1e9 | stored | no-op |
+| `SetChannelVolume(ch, 0..10)` | Logarithmic volume | §11.3 | stored | no-op |
+| `EnableDspFX`, `UpdateDspFX`, `DisableDspFX` | Per-channel DSP | §12 | §12 | no-op |
+| `SetListenerPosition(pos, front, up, vel)` | Listener | deferred | stored; `right = up × front` | no-op |
+| `Advance()` | Device pump | commit + refill all rings | `g_soundLibrary2d->TopupBuffer()` | no-op |
+| `WriteSilence(buf, n)` (base) | memset 0 | — | — | — |
+| `StartRecordToFile`, `EndRecordToFile` | Record output | no-op | forwards to 2D library | no-op |
+
+### 11.2 DirectSound (`SoundLibrary3dDirectSound`) — the live back-end [B:FULL]
+
+[C] `code/sound/sound_library_3d_dsound.cpp`:
+
+**Initialisation**
+
+1. Release-assert DirectX ≥ 9 and `numChannels > 0`. `CoInitialize(NULL)` (needed for DirectX FX). `DirectSoundCreate8(NULL)` (default device). `SetCooperativeLevel(game window, DSSCL_PRIORITY)`. Cache `DSCAPS`.
+2. `m_sampleRate = mixFreq` (pref `SoundMixFreq`, default 22050), `m_hw3dDesired = hw3d`, `m_numChannels = min(numChannels, GetMaxChannels()) − 1`, `m_musicChannelId = −1`.
+3. Primary buffer `DSBCAPS_PRIMARYBUFFER | DSBCAPS_CTRL3D` (+ `LOCHARDWARE` if HW3D desired and available, else `LOCSOFTWARE`), format stereo 16-bit at `mixFreq`.
+4. One **mono 16-bit looping secondary buffer per effect channel**: `DSBCAPS_CTRL3D | CTRLFX | CTRLFREQUENCY | CTRLVOLUME | GETCURRENTPOSITION2` (+ `LOCHARDWARE` or `LOCSOFTWARE`), nominal rate `mixFreq`, size 20000 samples (40000 bytes), 3D algorithm `DS3DALG_DEFAULT`; zero-filled and started (`Play(…, DSBPLAY_LOOPING)`) at creation; `m_lastSampleWritten = size − 1`; simulated cursor −1; cached freq = `mixFreq`; `IDirectSound3DBuffer` queried. A creation failure returns false (→ restart logic, §2.5).
+5. Music buffer: same flags, 200000 samples; `SetChannel3DMode(music, 2)`, `SetChannelVolume(music, 10)`, `SetChannelFrequency(music, 44100)`.
+6. Listener: `SetDopplerFactor(0, DS3D_IMMEDIATE)` — velocities have no audible effect. Rolloff factor and max distance are left at DirectSound defaults (1.0 and 1e9) [I from the absence of calls].
+
+**Streaming (per tick, `Advance`)**
+
+```
+CommitDeferredSettings()                       // listener + all DS3D_DEFERRED channel changes
+frame := (frame + 1) mod 4                     // function-static
+for ch in effect channels, then music:
+    if ch.simCursor == -1 or (ch & 1) == (frame & 1):
+        playCursor := GetCurrentPosition()     // real cursor, every other tick per channel
+        ch.simCursor := playCursor
+    else:
+        ch.simCursor := (ch.simCursor + elapsed * ch.freq * 2) mod bufBytes, even-aligned
+        playCursor := (ch.simCursor - 1000 bytes) mod bufBytes          // 500-sample safety margin
+        if playCursor is behind lastWritten: playCursor := lastWritten*2 + 2   // write nothing
+    first := lastWritten + 1 ; count := playCursorAhead - first - 1      // samples [last+1, play-2]
+    if count > 0: PopulateBuffer(ch, first mod size, count)
+```
+
+`PopulateBuffer` locks the region (two parts on wrap), calls the main or music callback for each part (`capacity = numSamples = part/2`), applies the channel's in-house filters in type order (§12.2), unlocks, sets `m_lastSampleWritten` and `m_channelHealth = 1 − count/size`. The ring is therefore kept almost **full ahead of the play cursor**: ≈ 20000 samples ≈ 0.45 s at a 44.1 kHz playback rate of look-ahead per channel, refilled by ≈ 0.05 s × rate samples per tick [C/I].
+
+**New sound (`ResetChannel`)**: reads the real play and write cursors and refills from the **write cursor** up to the play cursor, overwriting the previous occupant's buffered audio, so a new sound starts after only the driver's play-to-write gap (27-U10) instead of 0.45 s. `m_channelHealth := 1` [C].
+
+**Parameter calls** (values cached per channel; device calls only on change, volume also when `m_forceVolumeUpdate`):
+
+| Call | DirectSound mapping |
+|---|---|
+| `SetChannelVolume` | `IDirectSoundBuffer::SetVolume(mB)` (§11.3), `DSERR_BUFFERLOST` → `Restore()` |
+| `SetChannelFrequency` | `SetFrequency(hz)` |
+| `SetChannelMinDistance` | `SetMinDistance(d, DS3D_DEFERRED)`; release-assert `DS3D_DEFAULTMINDISTANCE (1.0) ≤ d ≤ DS3D_DEFAULTMAXDISTANCE (1e9)` |
+| `SetChannelPosition` | Skipped unless `|new − last sent|² > 0.0025 × |new − listener|²` (moved > 5 % of the listener distance); then `SetPosition` + `SetVelocity` deferred |
+| `SetChannel3DMode` | `SetMode(…, DS3D_IMMEDIATE)` |
+| `SetListenerPosition` | `SetPosition`, `SetOrientation(front, up)` (skipped when either vector is zero — "Find the reason why sometime _up equals (0,0,0)"), `SetVelocity`, all deferred. The listener interface is obtained with `QueryInterface` on every call and never released (COM reference leak per tick) [C] |
+
+Distance model [I from DirectSound's documented model with rolloff 1.0]: amplitude ∝ `minDist / d` beyond `minDist`, flat inside, no maximum distance in practice — the same law the software mixer and the priority calculation use. Panning/HRTF of `DS3DALG_DEFAULT` on software buffers is the driver's default (27-U1).
+
+Errors: in Release `SOUNDASSERT` only logs (`AppDebugOut` with `DXGetErrorString9`); in `_DEBUG` it release-asserts. Lost buffers are restored. `DSEnumProc` / `m_hwDescription` exist but nothing calls `DirectSoundEnumerate` [C].
+
+The 5 % position threshold has an edge case for head-relative (2D) sounds, whose position is (0,0,0): if the channel's last sent world position happened to lie within 5 % of the listener distance of the world origin, the update is skipped and the 2D sound plays at that stale offset [I] (not observed).
+
+### 11.3 Volume curves (verified)
+
+Input: channel volume `v` ∈ 0..10 vol units, master `m` ∈ 0..255 (pref `SoundMasterVolume`, default 255) [C] `code/sound/sound_library_3d.cpp:SoundLibrary3d::SetMasterVolume`, `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelVolume`, `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::CalcChannelVolumes`:
+
+| Back-end | Formula | Per vol unit | v = 10 | v = 5 | v = 0 | Master step | m = 0 (with v = 10) | Floor |
+|---|---|---|---|---|---|---|---|---|
+| DirectSound | `mB = clamp(−(5 − v/2) × 1000 + M, −10000, 0)`, `M = (255 − m) × −32` | **500 mB = 5.00 dB** | 0 dB | −25 dB | −50 dB | 0.32 dB | −81.6 dB | −100 dB (`DSBVOLUME_MIN`, silence) |
+| Software | `amp = exp(clamp(−(5 − v/2) + M/1000, −10, 0))` | **e^0.5 = 4.343 dB** | 1.0 (0 dB) | e^−2.5 (−21.7 dB) | e^−5 (−43.4 dB) | 0.278 dB | e^−8.16 (−70.9 dB) | e^−10 (−86.9 dB) |
+| XAudio [B:DEAD] | same mB formula as DirectSound | 5 dB | | | | | | |
+
+Verification: DirectSound `Δv = 1 → ΔmB = 0.5 × 1000 = 500 mB = 5 dB`; software `Δv = 1 → Δln(amp) = 0.5 → 20·log10(e^0.5) = 4.343 dB`; the master offset is added in mB (DirectSound) or as `M/1000` natural-log units (software, i.e. 0.032 neper ≈ 0.278 dB per step). The two curves therefore differ by 13 % in slope and the software mixer's master range is shallower. Additionally the software mixer's linear pan law gives each side 0.5 (−6.02 dB) for a centred 3D source but 1.0 for 2D/head-relative sources, so on that back-end 3D sounds sit 6 dB below 2D sounds of equal volume [C]. Recommendation for a new engine: adopt the DirectSound curve (what shipped) — 5 dB per unit, −50 dB at 0 — and treat 0 as "−50 dB", not silence (the header comment's "silence" is wrong, see Docs-vs-code discrepancies).
+
+Master-volume changes apply immediately from the options slider (`VolumeControl::MouseDown` → `SetMasterVolume`, every channel re-sends its volume on the next tick via `m_forceVolumeUpdate`); the pref is written and saved on mouse-up [C] `code/UI/soundsliderbutton.h:VolumeControl`.
+
+### 11.4 Software mixer (`SoundLibrary3dSoftware` + `SoundLibrary2dWin32`) [B:FULL, non-default]
+
+[C] `code/sound/sound_library_3d_software.cpp`, `code/sound/sound_library_2d_win32.cpp`:
+
+**Output device (`SoundLibrary2dWin32`)**: `waveOutOpen(WAVE_MAPPER, stereo 16-bit, SoundMixFreq — fallback 44100 here, CALLBACK_FUNCTION)`; release-asserts with a decoded error string when a device exists. 10 `SoundLib2dBuf` buffers of `SoundBufferSize` stereo samples (generated default 512, code fallback 2000), each `waveOutPrepareHeader`'d; only the first 4 ever created are queued with silence (function-static counter, never reset — so after a library restart nothing is primed and the new device may stay silent, 27-U4). `WaveOutProc` (driver thread) increments `m_fillsRequested` on `WOM_DONE`. `TopupBuffer()` (main thread) loops while `m_fillsRequested`: call the mixer callback for `m_buffers[m_nextBuffer]`, `waveOutWrite`, advance `m_nextBuffer` mod 10, decrement. Steady state: 4 buffers in flight ≈ 93 ms at 512 / 22050 (363 ms at the 2000 fallback). `Stop()` is empty. Record mode (`StartRecordToFile`): instead of waveOut, mixes `SoundMixFreq/20` samples 20 times per second (wall clock) into a raw headerless PCM file; nothing in the tree calls it (resolved: P16 attributed it to `AVI_GENERATOR`; no caller exists) [C].
+
+**Mixer (`Callback(buf, n)`)**, invoked per waveOut buffer:
+
+1. `duration = n / outputRate`.
+2. `GetChannelData`: for every channel (music = N−1 uses the music callback), request `ceil(freq × duration + 0.5)` source samples if `freq < outputRate`, else `ceil(freq × duration − 0.5)`, into the channel's mono buffer (`samplesPerBuffer × 48000/outputRate × 3.1` samples); `m_containsSilence = !callbackResult`. The one-shot silence-tail counter is a per-call local (§6.4).
+3. `ApplyDspFX`: for each channel, for each filter **type index** 0..13 with an in-house filter, `Process(buffer, samplesNeeded)`.
+4. Zero float `m_left`, `m_right`; for each channel compute `(volL, volR)` with `CalcChannelVolumes`:
+   - `amp` from §11.3;
+   - mode 0 (world): `to = normalise(pos − listener)` (skip normalise at distance 0), `right = (to · listenerRight + 1)/2`, `left = 1 − right`; if `dist > minDist` both × `minDist/dist`; modes 1, 2: `left = right = 1`;
+   - × `amp`.
+5. Mix non-silent channels: if the channel was just reset (`m_forceVolumeJump`) **and** the gain changed by ≥ 0.003 on either side → linear ramp from the previous gains to the new ones across the block; otherwise constant gain. The member comment says the flag is meant to *prevent* ramping on a new sound — the logic is inverted, so ordinary volume changes step at block boundaries (zipper) while new sounds ramp in from the previous occupant's gain [C]. Resampling: `src[(int)(j × freq/outRate)]` (nearest-lower, no interpolation); a separate fast path when `freq == outRate`.
+6. Block peak normalisation: if the block's largest |sample| > 32766 the **whole block** is scaled by `32766/peak` (acts as a block-rate limiter), then rounded to int16.
+
+Probable crash [I]: `GetChannelData`, `ApplyDspFX` and `Callback` call `m_profiler->StartProfile/EndProfile`, but `SoundLibrary3d::m_profiler` is allocated only under `PROFILER_ENABLED`, which no baseline target defines — the pointer is uninitialised, so selecting the software library by hand-editing `SoundLibrary` almost certainly crashes in the first mix (27-U3).
+
+### 11.5 Null device
+
+`SoundLibrary3dNoSound` / `SoundLibrary2dNoSound` are used when no waveOut device exists (`m_preferredDevice == −1`) or pref `SoundLibrary = none` (the latter release-asserts "Too few channels" when a device does exist, §1.2). With no device, `RestartSoundLibraryInternal` allocates a zero-length (but non-NULL) channel table, so `Trigger*Event` still passes its `m_channels` check and queues instances, while `SoundSystem::Advance` returns before the tick (§3.1) — no pass ever runs, so **queued instances are never expired or freed** and `m_sounds` grows with every trigger for the whole session [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `RestartSoundLibraryInternal`, `TriggerEntityEvent`. A new engine's null device must still retire requests.
+
+### 11.6 Back-end comparison
+
+| Property | DirectSound (live) | Software mixer | Null |
+|---|---|---|---|
+| Effect channels at default prefs | 31 | 31 | 0 |
+| Data look-ahead per channel | ≈ 0.45 s (20000 samples @ 44.1 kHz) | 1 waveOut block per fill; 4 blocks in flight (≈ 93 ms) | — |
+| New-sound latency | ≤ 1 tick (50 ms) + queue wait + DirectSound write-cursor gap | ≤ 1 tick + ≈ 4 blocks | — |
+| Volume law | 5 dB / unit | 4.343 dB / unit | — |
+| 3D | DirectSound 3D (inverse distance, driver pan, Doppler off) | inverse distance + linear pan | — |
+| Resampling | DirectSound | nearest-lower sample | — |
+| DirectX FX (types 0–8) | yes | no (ignored) | — |
+| In-house DSP (types 9–13) | yes | yes | — |
+| Output limiter | none (DirectSound mixer) | block peak normalisation | — |
+
+## 12 DSP filter chain
+
+### 12.1 Gating — DSP is off in the shipped configuration
+
+[C] `code/sound/sound_instance.cpp:SoundInstance::Copy`, `code/lib/preferences.cpp:GetDefaultSoundDSP`, `code/interface/prefs_sound_window.cpp:RestartSoundButton::MouseUp`:
+
+- The runtime switch is the preference `SoundDSP`, read in `SoundInstance::Copy`: only when it is non-zero are the prototype's `DspHandle`s copied into a new instance. Default `SoundDSP = 0` on PC (`GetDefaultSoundDSP`: 0 unless Mac on a fast CPU).
+- `USE_SOUND_DSPEFFECTS` (commented out in every target) compiles only the options-screen check box `dialog_realtimeeffects` and its write of `SoundDSP`. In the baseline the Apply button still reads `SoundDSP` and calls `SoundSystem::PropagateBlueprints()` when it is non-zero (re-copies every live instance's DSP list from its prototype, restarting instances whose effect list changed) or `SoundSystem::StopAllDSPEffects()` when zero (deletes every instance's `DspHandle`s; channels keep their filters until the instance stops).
+- Net effect: **no DSP runs in the shipped game** unless `preferences.txt` is edited to `SoundDSP = 1` [C]. The shipped data nevertheless contains 22 effect uses in 21 blocks (Echo ×12, DSound_Echo ×5, Gargle ×3, DSound_I3DL2Reverb ×1, DSound_WavesReverb ×1); the per-event list is in [10_audio_design](10_audio_design.md).
+
+### 12.2 Chain structure
+
+[C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::EnableDspFX`, `PopulateBuffer`; `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::EnableDspFX`, `ApplyDspFX`:
+
+| Aspect | Behaviour |
+|---|---|
+| Per instance | Any number of `DspHandle`s in data (the editor shows 3 slots); `StartPlaying` packs their types into a local `int[16]` and calls `EnableDspFX(ch, n, types)` |
+| Per channel | One slot per filter **type** (`NUM_FILTERS` = 14). Two effects of the same type on one sound share the slot: the second `new` overwrites (and leaks) the first filter object, and both handles feed parameters to the same slot each tick (last writer wins) |
+| Order | In-house filters (types 9–13) run in **type-index order** on each freshly written block, not in data order. On DirectSound the DirectX FX (types 0–8) are attached to the buffer with `SetFX` in data order and process the audio at playback, i.e. **after** the in-house filters |
+| Back-end support | DirectSound: types 0–13. Software mixer: types 9–13 only (0–8 are silently ignored). XAudio [B:DEAD]: DSP functions empty |
+| Disable | `StopPlaying` → `DisableDspFX(ch)`: delete in-house filters, `SetFX(0)` if any DX filter was flagged; on DirectSound the buffer is **stopped and restarted** even if only in-house filters were present (audible glitch risk) |
+| Enable on DirectSound | If the channel already has filters → `DisableDspFX` first. DX types: buffer `Stop()`, `SetFX(n, desc[], results[])` with `DSFX_LOCSOFTWARE`, `Play(LOOPING)`; release-assert each result is `DSFXR_LOCSOFTWARE` |
+
+### 12.3 Parameter feeding
+
+`DspHandle::Advance()` (every tick while playing) [C] `code/sound/sound_instance.cpp:DspHandle::Advance`: for `i = 0..12` evaluate `m_params[i]` like any `SoundParameter` (fixed, random or linked, §6.7), look up `dataType` from `m_filterBlueprints[type]->GetParameter(i)` and store the output into a 13-slot array **as a float (type 0) or as the bits of a `long` (type 1)**; then `g_soundLibrary3d->UpdateDspFX(ch, type, 13, params)`.
+
+- DirectX types: `GetObjectInPath(GUID_DSFX_…, 0, IID_…)` and `SetAllParameters((DSFX<Type>*) params)` — the 13-slot array is **reinterpreted as the DirectX parameter struct**, so the order and data types in `data/effects.txt` must match the struct layout field by field (they do, table §12.4). `I3DL2Reverb` additionally calls `SetQuality(params[12])`.
+- In-house types: `m_userFilter->SetParameters(params)`.
+- Defect: for `i` ≥ the type's parameter count, `GetParameter` returns NULL without writing `dataType`, which is an uninitialised local → undefined behaviour; in practice the previous iteration's value persists and a zero is packed [I]. A type id of −1 (unknown effect name in data) would index `m_filterBlueprints[-1]` [I].
+
+### 12.4 The 14 filter types
+
+Enum order = `data/effects.txt` order = type id [C] `code/sound/sound_library_3d.h:SoundLibrary3d`, `data/effects.txt` (every value below re-read from the file):
+
+| Id | Enum | `effects.txt` name | Implementation | Parameters: name min..max default (L = long, else float) | DirectX struct |
+|---|---|---|---|---|---|
+| 0 | `DSP_DSOUND_CHORUS` | DSound_Chorus | DirectX FX | WetDryMix 0..100 50; Depth 0..100 10; Feedback −99..99 25; Frequency 0..10 1.1; Waveform 0..1 1 L; Delay 0..20 16; Phase 0..4 3 L | `DSFXChorus` |
+| 1 | `DSP_DSOUND_COMPRESSOR` | DSound_Compressor | DirectX FX | Gain −60..60 0; Attack 0.01..500 10; Release 50..3000 200; Threshold −60..0 −20; Ratio 1..100 3; PreDelay 0..4 4 | `DSFXCompressor` |
+| 2 | `DSP_DSOUND_DISTORTION` | DSound_Distortion | DirectX FX | Gain −60..0 −18; Edge 0..100 15; PostEQCentreFreq 100..8000 2400; PostEQBandwidth 100..8000 2400; PreLowpassCutoff 100..8000 8000 | `DSFXDistortion` |
+| 3 | `DSP_DSOUND_ECHO` | DSound_Echo | DirectX FX | WetDryMix 0..100 50; Feedback 0..100 50; LeftDelay 1..2000 500; RightDelay 1..2000 500; PanDelay 0..1 0 L | `DSFXEcho` |
+| 4 | `DSP_DSOUND_FLANGER` | DSound_Flanger | DirectX FX | WetDryMix 0..100 50; Depth 0..100 100; Feedback −99..99 −50; Frequency 0..10 0.25; Waveform 0..1 1 L; Delay 0..4 2; Phase 0..4 2 L | `DSFXFlanger` |
+| 5 | `DSP_DSOUND_GARGLE` | DSound_Gargle | DirectX FX | RateHz 1..100 20 L; WaveShape 0..1 0 L | `DSFXGargle` |
+| 6 | `DSP_DSOUND_I3DL2REVERB` | DSound_I3DL2Reverb | DirectX FX + `SetQuality` | Room −10000..0 −1000 L; RoomHF −10000..0 −100 L; RoomRolloffFactor 0..10 0; DecayTime 0.1..20 1.49; DecayHFRatio 0.1..2 0.83; Reflections −10000..1000 −2602 L; ReflectionsDelay 0..0.3 0.01; Reverb −10000..2000 200 L; ReverbDelay 0..0.1 0.01; Diffusion 0..100 100; Density 0..100 100; HFReference 20..20000 5000; Quality 0..3 2 L | `DSFXI3DL2Reverb` (first 12) |
+| 7 | `DSP_DSOUND_PARAMEQ` | DSound_ParamEQ | DirectX FX | Centre 80..16000 8000; Bandwidth 1..36 12; Gain −15..15 0 | `DSFXParamEq` |
+| 8 | `DSP_DSOUND_WAVESREVERB` | DSound_WavesReverb | DirectX FX | InGain −96..0 0; ReverbMix −96..0 0; ReverbTime 0.01..3000 1000; HighFreqRTRatio 0.01..0.99 0.01 | `DSFXWavesReverb` |
+| 9 | `DSP_RESONANTLOWPASS` | ResonantLowPass | `DspResLowPass` | CutoffFrequency 100..20000 2500; Resonance 0.1..20 7; Gain 0..10 1 | — |
+| 10 | `DSP_BITCRUSHER` | BitCrusher | `DspBitCrusher` | BitRate 1..16 16 | — |
+| 11 | `DSP_GARGLE` | Gargle | `DspGargle` | WetDryMix 0..100 50; RateHz 0.01..100 20; WaveShape 0..1 0 L | — |
+| 12 | `DSP_ECHO` | Echo | `DspEcho` | WetDryMix 0..100 50; Delay 1..3000 (ms) 200; Attenuation 0..100 50 | — |
+| 13 | `DSP_SIMPLE_REVERB` | SimpleReverb | `DspReverb` | WetDryMix 0..100 50 (ignored by the code) | — |
+
+`docs/ThoughtsOnSoundSystem.txt` records why: Distortion and ParamEq were judged too expensive and Compressor pointless to re-implement in software; the DirectX Gargle lacks a wet/dry mix and fractional rates and the DirectX Echo is needlessly stereo, hence the in-house Gargle and Echo [C].
+
+### 12.5 In-house algorithms
+
+All process mono signed 16-bit in place, per channel block; `sampleRate` is the library's `m_sampleRate` = pref `SoundMixFreq` [C] `code/sound/sound_filter.cpp`:
+
+| Filter | Algorithm |
+|---|---|
+| `DspResLowPass` | RBJ biquad low-pass. `SetParameters`: `f = exp(p0/3850 + 4.7)` Hz (p0 = 100 → 113 Hz, 2500 → 210 Hz, 20000 → 19.9 kHz), `Q = exp(p1/4) − 1` (floor 1e-5), `gain = p2`. `CalcCoefs`: `ratio = min(f / 44100, 0.499)` — **44100 hard-coded**; `ω = 2π·ratio`; `α = sin ω / (2Q)`; `a0 = a2 = (1 − cos ω)/2/(1 + α)`, `a1 = (1 − cos ω)/(1 + α)`, `b1 = −2 cos ω/(1 + α)`, `b2 = (1 − α)/(1 + α)`. Per sample `y = a0·x + a1·x₁ + a2·x₂ − b1·y₁ − b2·y₂`, output `Round(clamp(y·gain, ±32765))` (two-sample unrolled with variable permutation); after each block `y₁ += 1e-26` (denormal guard). Constructor coefficients: 1000 Hz, Q 1, gain 1 |
+| `DspBitCrusher` | `step = 65536 / 2^bits` (`iv_pow`); `out = step × trunc(x / step)`, clamped ±32767. Default 16 bits |
+| `DspGargle` | Amplitude modulation, phase 0..2 advancing `2·rate/sampleRate` per sample. Triangle (WaveShape 0): `x·(1 − w) + x·tri·w` with `w = mix/100`, `tri` rising 0→1 then falling 1→0. Square (1): zero the second half of each period (wet/dry ignored). WaveShape is read as the bits of a `long`. Defaults mix 50, 20 Hz, triangle |
+| `DspEcho` | Float delay line of `3 × sampleRate` samples; `D = delay_ms × sampleRate / 1000`; per sample `out = x·(1 − w) + buf[j]·w` (clamp ±32766, `w = mix/100`), `buf[j] = buf[j]·(att/100) + x` (attenuation = feedback); the circular index wraps at `D`, not at the buffer length; growing the delay zeroes the newly exposed region. Defaults 200 ms, 50 % wet, 50 % feedback |
+| `DspReverb` | 6 parallel taps on a shared int16 history of `3 × sampleRate` samples: delays {1.1, 3, 11, 19, 29, 46} ms, gains {0.36, 0.25, 0.34, 0.23, 0.32, 0.21}; `y = 0.23·x + 0.67·Σ gainᵢ·hist[n − delayᵢ]` (sum accumulated in an `int`, truncating each product), clamped ±32766, written back to the history (feedback). `SetParameters` is empty: WetDryMix is ignored |
+
+Sample-rate mismatch [C/I]: on both back-ends the channel data the filters see is at the **source** rate × pitch (44.1 kHz assets, written unresampled), while the filters' time constants are computed from `SoundMixFreq` (default 22050). With defaults, Echo delays and Reverb tap times therefore play at half their nominal length and the Gargle rate at twice its nominal value; the low-pass is correct for 44.1 kHz material only because 44100 is hard-coded [I: perceptual consequence derived from the rates].
+
+### 12.6 DSP defects (do not copy)
+
+[C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::EnableDspFX`, `UpdateDspFX`:
+
+1. `EnableDspFX` flags DX filters in slot `i` (the loop index) instead of slot `type`, so `GetNumFilters`/`DisableDspFX` bookkeeping can mark the wrong slot.
+2. `DSEFFECTDESC desc[DSP_DSOUND_WAVESREVERB]` has 8 entries for up to 9 DX types (overflow if all nine are used on one sound).
+3. `results[i]` is read with the index of the full type list while `SetFX` filled it only for the compacted DX entries — with a mixed list (in-house type before a DX type) an uninitialised value is tested and the release-assert can fire [I].
+4. `SetQuality(params[12])` passes a float whose bits encode a `long` (Quality has data type 1) and converts it to `LONG` — a tiny denormal → 0, so the I3DL2 quality is always 0 [I].
+5. Same-type duplicates share a slot and leak the first filter (§12.2).
+6. `DspEcho` / `DspReverb` destructors use scalar `delete` on arrays (undefined behaviour) [C] `code/sound/sound_filter.cpp`.
+
+## 13 Profiles, statistics, debug and editor tooling
+
+### 13.1 Always-compiled profiling [B:FULL]
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::SoundSystem`, `SoundSystem::Advance`, `SoundLibraryMainCallback`; `contrib/systemiv/lib/profiler.h`:
+
+| Profiler | Contents | Advanced |
+|---|---|---|
+| `SoundSystem::m_mainProfiler` | Sections `TriggerEntityEvent`, `TriggerBuildingEvent`, `TriggerOtherEvent` | every `SoundSystem::Advance` call |
+| `SoundSystem::m_eventProfiler` | One entry per full event name, measured **inside the PCM callback** (fill cost per event) | every `SoundSystem::Advance` call |
+| Global `g_profiler` | "Advance SoundSystem" with children "Shutdown Music", "Propagate Blueprints", "Allocate Sorted Array", "Perceived Volumes", "Sort Samples", "Recalculate Priorities", "Find best Channel", "Stop Old Sound", "Start New Sound", "Reset Channel", "Advance All Channels", "Shutdown Sound", "UpdateListener", "SoundLibrary3d Advance"; inside `StartPlaying`: "StartPlaying", "OpenStream", "Set Parameters", "Set freq/vol/pos", "Setup DSP Effects"; DirectSound: "Commit", "GetPlayCursor", "PopulateBuf", "LockBuf", "FillBuf", "UnlockBuf"; filters: "DspResLowPass", "DspGargle", "DspEcho" | by the main loop |
+| `SoundLibrary3d::m_profiler` | Software mixer "GetChannelData", "ApplyDspFX", "Mix" | only allocated under `PROFILER_ENABLED` (off) — see 27-U3 |
+
+The options screen contains code to print the audio device name, the sound CPU share of "Advance SoundSystem" (red above 15 %) and sample-cache memory "Mb (unused …)", but it sits after an unconditional `return` in `PrefsSoundWindow::Render` and never runs [C] `code/interface/prefs_sound_window.cpp`. A memory log including `GetMemoryUsage` is printed every 60 s (`code/main.cpp:PrintAvailableMemory`) [C].
+
+### 13.2 Reachability of the tools [B:DEBUG]
+
+All windows below compile only with `SOUND_EDITOR`, defined by `TARGET_DEBUG` [C] `code/lib/universal_include.h`. Entry points [C]:
+
+| Entry point | Opens | Reachable in TARGET_DEBUG? |
+|---|---|---|
+| Cheat window (`CHEATMENU_ENABLED`): "Sound Editor", "Sound Stats" | `SoundEditorWindow`, `SoundStatsWindow` | **yes** (`code/interface/cheat_window.cpp`) |
+| Debug menu: "Pokey Playground", "Sound Stats (F7)", "Sound Editor (F8)", "Sound Profile (F9)" (caption string "Sound Profile (F8)") | `PokeyWindow`, `SoundStatsWindow`, `SoundEditorWindow`, `SoundProfileWindow` | **no** — each is inside `if( modsEnabled )`, and `modsEnabled` is `false` unless `USE_DARWINIA_MOD_SYSTEM` (never defined) (`code/interface/debugmenu.cpp`) |
+| Hot-keys F7 / F9 / F11 | stats / profile / editor | **no** — commented out in `code/user_input.cpp:UserInput::Advance` |
+| `PokeyWindow` | — | the class is not defined anywhere in the tree, so a debug build that compiled this path would fail [C: grep] |
+
+Resolved: the P16 draft said the windows "are opened from the debug menu"; P17a said "DebugMenu (if modsEnabled — never)". Code confirms P17a — only the cheat window reaches the Sound Editor and Sound Stats; Sound Profile is unreachable even in debug builds [C].
+
+### 13.3 Tool windows
+
+| Window (name) | Class(es) | Function | Ref |
+|---|---|---|---|
+| Sound Editor (`"Sound Editor"`) | `SoundEditorWindow`; buttons/menus `SoundEventButton`, `ObjectGroupMenu`, `ObjectTypeMenu`, `NewSoundEventMenu`, `PlayButton`, `StopButton`, `SelectObjectButton`, `SaveAllButton`, `DeleteEventButton`, `SoundSelector` (file dialog on `sounds/`), `SoundSelectorButton`, `DspEffectButton`, `DeleteDspEffectButton`; compiled but not registered: `SoundPositionButton`, `PlayRepeatButton`, `PurgeSoundsButton`, `ConvertVolumesButton` | Choose Entity / Building / Other → type → event, or click an entity/building in the world while both menus are unset; add events from the type's `ListSoundEvents`; edit PositionType, LoopType, InstanceType, TeamMatchType, SourceType, sound name or sample group, MinDistance (value control, step 0.5, range 1.0–10000), and the six parameters with output ranges VOLUME 0–10, FREQUENCY 0–3, ATTACK 0–60, SUSTAIN 0–300, RELEASE 0–60, LOOPDELAY 0–60; up to 3 DSP effects. **Play** spawns a copy as `TypeInEditor` with the loop type forced to PlayOnce (the unused Loop button would force Loop), at `m_editorPos` (never set because `SoundPositionButton` is not registered → head-relative at the listener); **Stop** = final release. **Save** → `SaveBlueprints("sounds.txt")` (canonical rewrite). While the window exists `m_propagateBlueprints = true` (§13.4). Its `Render` draws every playing 3D voice as a camera-facing `sprites/sound.bmp` billboard of size `0.5 × √distance × √channelVolume`, alpha `0.5 + 0.05 × priority` (max 0.9), and shows the current editor instance (sample, volume, ADSR state, frequency) | [C] `code/interface/soundeditor_window.cpp` |
+| Effect Editor (`"Effect Editor"`) | `DspEffectEditor`, `DspEffectTypeMenu` | Choose a filter type from `m_filterBlueprints`; one `SoundParameterButton` per parameter with min/max from `effects.txt`; changing type resets the params to the type defaults | same |
+| Sample-group editor | `SampleGroupEditor`, `SampleGroupSelector`, `NewSampleGroupButton` (auto-name `newsamplegroup<N>`), `RenameSampleGroupButton`, `RenameSampleGroupWindow`, `RenameSampleGroupCommit` (unique-name check; renames every blueprint that uses the group), `SampleGroupAddSample`, `SampleGroupFileDialog`, `SampleGroupSampleName`, `SampleGroupSampleDelete` | Create, rename and edit groups; file adds validated by `IsSoundSourceOK` (checks spaces, existence, mono — only in `_DEBUG`) | same; `code/sound/soundsystem.cpp:SoundSystem::RenameSampleGroup`, `IsSoundSourceOK` |
+| Purge Sounds (`"Purge Sounds"`) | `PurgeSoundsWindow`, `DeleteSoundButton`, `RefreshFileListButton`, `DeleteAllButton` | Lists files in `data/sounds/` not referenced by any blueprint or group (`IsSampleUsed`) and deletes them (two-click confirm); its opening button is commented out | same |
+| Parameter editor | `SoundParameterButton`, `SoundParameterEditor`, `SoundParameterGraph`, `LinkTypeMenu`, `UpdateTypeMenu`; `SoundParameterGraphScaleToggle` compiled but not registered | Edit one `SoundParameter`: type, link, smooth (0–0.99, step 0.05), update type; a graph where LMB / RMB set the lower / upper points (output axis drawn with a √ scale); clicking left of the axis forces the linked input on the playing editor instance (`SoundInstance::ForceParameter`). Input axis ranges: HeightAboveGround / Ypos 0–1000, Xpos / Zpos / CameraDistance 0–5000, Velocity 0–100, fixed / random 0–1; stored values are clamped to these ranges and to the output range | [C] `code/interface/soundparameter_window.cpp` |
+| Sound Stats (`"Sound Stats"`) | `SoundStatsWindow` (400 × 550, scroll bar) | CPU overhead, max channels, channels used, sounds total, discarded, "Hardware 3D Sound: Enabled / Disabled / Unavailable", device name, one row per channel with a health swatch and `SoundInstance::GetDescriptor()` (`name pri vol fxN looptype editor`). Defect: the swatch reads `GetChannelHealth(i)` (screen row) instead of `channelIndex` when scrolled | [C] `code/interface/soundstats_window.cpp` |
+| Sound Profile (`"Sound Profile"`) | `SoundProfileWindow`, `ResetHistoryButton` | Per-section and per-event timings (calls × ms/call = ms, history average), "Other" remainder vs the global "Advance SoundSystem", library profiler section, reset buttons | [C] `code/interface/sound_profile_window.cpp` |
+| Pokey Playground / `EffectProcessor` | `EffectProcessor` (POKEY-chip envelope sequencer, instance created in `App::Initialise` under `SOUND_EDITOR`) | Not part of the PCM pipeline; documented in [26](26_animation_and_vfx.md) §2 | [C] `code/effect_processor.cpp` |
+
+### 13.4 Live blueprint propagation and save/verify tooling
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::PropagateBlueprints`, `code/sound/sound_instance.cpp:SoundInstance::PropagateBlueprints`:
+
+- While `m_propagateBlueprints` is set, each tick every live instance re-syncs from `m_parent`: if the DSP list length or any type differs, or the sound name changed, the instance is stopped and its sample handle dropped (it re-queues and restarts); min distance is re-sent if playing; loop / source / instance / team-match types and the six parameters are re-copied and re-evaluated; the DSP handle list is resized and re-copied.
+- `SaveBlueprints(file)` writes ENTITY, BUILDING, OTHER (only sources with ≥ 1 event) and SAMPLEGROUP blocks in canonical form; it silently does nothing when the file cannot be opened for writing (packed release data).
+- `AreBlueprintsModified()` returns false unconditionally ("Currently broken due to mod support"), so the save-on-quit prompt `SaveOnQuitWindow` never appears [C] `code/sound/soundsystem.cpp:SoundSystem::AreBlueprintsModified`, `code/interface/save_on_quit_window.cpp`.
+- `LoadtimeVerify()` (call commented out), `RuntimeVerify()` (only under `SOUNDSYSTEM_VERIFY`), `IsSoundSourceOK` (checks only in `_DEBUG`).
+- Editor defects worth not copying [C]: new events get a doubled event name (`"<Type> <Event> <Event>"`) until reload (`NewSoundEventMenu::SelectOption` builds the full name then passes it again as the entity part); a new DSP effect is always `DSound_Chorus` initialised from each parameter's **minimum** (`DspEffectButton::MouseUp` passes `&defaultVal` as the `_min` out-parameter); the stats-window health index bug above.
+- `ConvertVolume` (legacy migration from an older 0–3 volume scale: ≤1 → 0, ≤1.25 → 0.5, ≤1.5 → 1.8, ≤1.75 → 3.6, ≤2.0 → 5.0, ≤2.25 → 6.1, ≤2.5 → 7.0, ≤2.75 → 7.65, ≤3.0 → 8.5, else 10) exists behind the unregistered `ConvertVolumesButton` [C] `code/interface/soundeditor_window.cpp`.
+
+## 14 Data flow: game event to audible output
+
+```mermaid
+flowchart LR
+  subgraph Data
+    ST["data/sounds.txt"] --> BP["SoundSourceBlueprints: entity types, building types, 12 Other sources"]
+    EF["data/effects.txt"] --> DB["14 DspBlueprints"]
+    AR["sounds.dat, sounds2.dat, menusounds.dat: sounds/*.ogg, mwsounds/*.ogg"]
+  end
+  G["Game or UI code: Trigger*Event(obj, name)"] --> GATE{"gate: loaded, main thread, no loading screen"}
+  GATE -->|"dropped"| X["nothing"]
+  GATE --> TM{"per matching EVENT block: TeamMatch"}
+  BP --> TM
+  TM --> CP["SoundInstance::Copy: params evaluated, DSP if SoundDSP"]
+  CP -->|"Music source"| MU["m_requestedMusic, music slot"]
+  CP --> IS["InitialiseSound: merge monophonic or enqueue in m_sounds"]
+  IS --> TK["20 Hz tick: perceived volume, priority, 1 start per tick"]
+  TK --> CH["effect channel 0..N-2: StartPlaying, ResetChannel"]
+  CH --> CB["PCM callback: CachedSampleHandle::Read, loop and end logic"]
+  MU --> CB
+  AR --> DEC["SoundStreamDecoder (Ogg)"] --> CS["CachedSample RAM, 60 MiB LRU"] --> CB
+  CB --> FX["in-house DSP, type order"] --> DEV["DirectSound ring buffer (live) or software mixer"]
+  DB --> FX
+  CAM["camera pos, front, up"] --> DEV
+  PREF["prefs: SoundMasterVolume, SoundChannels, SoundMixFreq, SoundSwapStereo, SoundDSP, SoundMemoryUsage"] --> DEV
+  DEV --> OUT["speakers"]
+```
+
+Walk-through for one 3D one-shot on the live DirectSound path, with the delays each step adds [C/I]:
+
+| # | Step | Where | Added delay |
+|---|---|---|---|
+| 1 | Simulation or UI code calls e.g. `TriggerBuildingEvent(building, "Explode")` on the main thread | caller | — |
+| 2 | Gate (§2.2), source lookup, `TeamMatch`, `Copy`, `InitialiseSound` → queued with `m_restartAttempts = 3` | `code/sound/soundsystem.cpp` | 0 |
+| 3 | Next 20 Hz tick: pass 1 computes perceived volume; pass 2 ranks it | `SoundSystem::Advance` | 0–50 ms (tick phase) |
+| 4 | If it is the best non-playing candidate: channel chosen (free or lowest-ranked victim), `StartPlaying` sets 3D mode, min distance, frequency, volume, position | `SoundInstance::StartPlaying` | 0, or +50 ms per tick it loses (max 3 ticks, then discarded) |
+| 5 | `ResetChannel`: the main callback decodes (first use) and writes from the DirectSound write cursor to the play cursor | `SoundLibrary3dDirectSound::ResetChannel` → `SoundLibraryMainCallback` → `CachedSample::Read` | decode time (main thread) |
+| 6 | Same tick: `Advance` sends envelope volume / pitch / position; listener updated; `CommitDeferredSettings`; ring refills | `SoundSystem::Advance` steps 8–11 | — |
+| 7 | DirectSound mixes the buffer (3D attenuation, pan, master already folded into each buffer's volume) | DirectSound | driver play-to-write gap (27-U10) |
+| 8 | Each later tick: envelope and pitch updates (volume takes effect immediately), ring refill ≈ 0.45 s ahead | §11.2 | — |
+| 9 | Sample data ends inside a fill → one ring of silence → `BeginRelease(false)` → RELEASE → `ShutdownSound` → handle unlocked → sample becomes evictable | §6.4, §9 | ≈ 0.45 s + RELEASE after the data ends |
+
+Total start latency ≈ 0–50 ms tick phase + queue wait (0–150 ms) + driver gap; a 2D UI sound is never out-ranked by 3D sounds below volume 10, so under load it typically starts on the next tick [I].
+
+## 15 Determinism boundary
+
+[C] `code/sound/sound_instance.cpp`, `code/sound/soundsystem.cpp`, `contrib/systemiv/lib/math/random_number.cpp:AppRandom`; full treatment in [22](22_determinism_and_networking.md):
+
+- **Write direction**: the sound system never writes simulation state. It reads world objects (`Location::GetWorldObject`), positions, velocities, team ids, `GlobalWorld::m_myTeamId`, landscape height, `g_gameTimer.GetGameSpeed()`, grace-period state and the camera.
+- **Randomness**: sample-group choice, `MonophonicRandom` emitter choice and `TypeRangedRandom` parameters use `AppRandom()` / `frand()` — the non-synchronised LCG `holdrand = holdrand × 214013 + 2531011`, output `(holdrand >> 16) & 0x7fff` — separate from the network-synchronised `syncrand`. The LCG is a shared global, so audio perturbs every other non-synced consumer's sequence [I]; give audio its own RNG.
+- **Per-peer divergence by design**: team-matched sounds depend on the local team; camera-relative priority, monophonic-nearest selection, `CameraDistance` links, discarded voices and gate drops all differ between peers. Game code queries sound state only to decide whether to (re)trigger sounds (`code/worldobject/rocket.cpp`, `code/script.cpp`); nothing in the simulation may branch on it.
+- **Clocks**: wall clock (`GetHighResTime`) for envelopes, loop delays and LRU stamps; frame delta (`g_advanceTime`) for the tick accumulator; never the simulation tick. Triggers raised inside simulation `Advance` calls only enqueue.
+
+## 16 Constants
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| Sound tick period | 0.05 s (20 Hz), one tick per call, no catch-up | `#define SOUNDSYSTEM_UPDATEPERIOD` | `code/sound/soundsystem.cpp:SoundSystem::Advance` |
+| Frame delta cap | 0.25 s | literal | `code/main.cpp:UpdateAdvanceTime` |
+| Low-fps double pump | `m_renderer->m_fps < 15` → second `Advance` per frame | literal | `code/main.cpp:LocationGameLoop` |
+| New voices per tick | 1 | code structure | `SoundSystem::Advance` |
+| Same-event priority decay | × 0.75 per louder instance of the same full event name | literal | `SoundSystem::Advance` |
+| Candidate threshold | priority > 0.0 | literal | `SoundSystem::Advance` |
+| Channel search seed | 999999.9 | literal | `SoundSystem::FindBestAvailableChannel` |
+| Sort array initial size | 128 (doubles) | function-static | `SoundSystem::Advance` |
+| One-shot restart attempts | 3 ticks | literal | `SoundSystem::InitialiseSound` |
+| Monophonic-nearest seed | 99999.9 (squared wu) → 316.2 wu selection radius | literal | `SoundInstance::GetAttachedObject` |
+| Default min distance | 100.0 wu | constructor | `SoundInstance::SoundInstance` |
+| Default VOLUME / FREQUENCY | 7.0 vol units / 1.0 | constructor | same |
+| Initial calculated priority | 128.0 | constructor | same |
+| Volume scale | 0.0–10.0 (clamped) | code | `SoundInstance::UpdateChannelVolume` |
+| Perceived volume of 2D / editor sounds | 10.0 | literal | `SoundInstance::CalculatePerceivedVolume` |
+| Float equality epsilon | 1e-6 | `NearlyEquals` | `code/lib/math_utils.h` |
+| Max DSP params per effect | 13 (`MAX_PARAMS`) | `#define` | `code/sound/sound_instance.h` |
+| Max DSP types per instance at start | 16 (local array) | literal | `SoundInstance::StartPlaying` |
+| DSP filter types | 14 (`NUM_FILTERS`) | enum | `code/sound/sound_library_3d.h` |
+| Frequency sanity window | 0–144000 Hz (3 × 48000) | literal | `SoundInstance::Advance`; `SoundLibrary3dSoftware::SetChannelFrequency` |
+| Game-speed pitch smoothing | `s = 0.99 s + 0.01 speed` per call; floor 0.01; pitch × √s | literals | `GetFrequencyModifier` |
+| DirectSound effect buffer | 20000 samples / channel (`bufSize`) | literal | `SoundSystem::RestartSoundLibraryInternal` |
+| DirectSound music buffer | 200000 samples (`bufSize × 10`) | literal | same |
+| DirectSound max channels (software buffers) | 64 | literal | `SoundLibrary3dDirectSound::GetMaxChannels` |
+| HW3D threshold | `dwMaxHw3DStreamingBuffers > 3`; usable = that − 2 | literal | `Hardware3DSupport`, `GetMaxChannels` |
+| Music channel initial state | mode 2 (no 3D), volume 10, 44100 Hz | literals | `SoundLibrary3dDirectSound::Initialise` |
+| Position update threshold | moved > 5 % of listener distance (`0.0025` on squares) | literal | `SoundLibrary3dDirectSound::SetChannelPosition` |
+| Simulated play-cursor margin | 1000 bytes (500 samples) | literal | `SoundLibrary3dDirectSound::AdvanceChannel` |
+| Real play-cursor polling | every other tick per channel (frame counter 0..3, parity) | literal | `AdvanceChannel`, `Advance` |
+| Channel health | `1 − written/size`; reported `h ≥ 0.5 → 1 else 2h` | formula | `PopulateBuffer`, `GetChannelHealth` |
+| Volume → mB (DirectSound) | `−(5 − v/2) × 1000 + master`, clamp [−10000, 0] | formula | `SoundLibrary3dDirectSound::SetChannelVolume` |
+| Volume → amplitude (software) | `exp(clamp(−(5 − v/2) + master/1000, −10, 0))` | formula | `SoundLibrary3dSoftware::CalcChannelVolumes` |
+| Master volume → mB | `(255 − m) × −32` | formula | `SoundLibrary3d::SetMasterVolume` |
+| Listener velocity scale | 0.2 | literal | `SoundSystem::Advance` |
+| Doppler factor | 0.0 | literal | `SoundLibrary3dDirectSound::Initialise` |
+| Min-distance legal range (DirectSound) | 1.0–1e9 (`DS3D_DEFAULTMINDISTANCE`..`DS3D_DEFAULTMAXDISTANCE`) | release-assert | `SoundLibrary3dDirectSound::SetChannelMinDistance` |
+| Sample cache limit | 60 MiB (62914560 bytes), LRU, unlocked only | `const` | `CachedSampleManager::CleanUp` |
+| Sample sanity limits | ≤ 8 channels, ≤ 268435456 frames, ≤ 192000 Hz, ≤ 536870912 samples | literals | `CachedSample::CachedSample` |
+| waveOut buffers | 10 × `SoundBufferSize` stereo samples, first 4 ever created primed | literals | `SoundLibrary2dWin32`, `SoundLib2dBuf` |
+| Software channel buffer | `samplesPerBuffer × 48000/outRate × 3.1` samples | formula | `SoftwareChannel::SoftwareChannel` |
+| Software ramp threshold | 0.003 gain | literal | `SoundLibrary3dSoftware::Callback` |
+| Software output limiter | block peak > 32766 → scale whole block | literal | `SoundLibrary3dSoftware::Callback` |
+| Record-to-file rate | 20 blocks/s of `SoundMixFreq/20` samples | literal | `SoundLibrary2dWin32::TopupBuffer` |
+| Low-pass mapping | `f = e^(p/3850 + 4.7)`, `Q = e^(r/4) − 1` (≥ 1e-5), reference 44100, ratio ≤ 0.499, clamp ±32765, denormal 1e-26 | literals | `DspResLowPass` |
+| Echo | buffer 3 s; defaults 200 ms, 50 % wet, 50 % feedback; clamp ±32766 | literals | `DspEcho` |
+| Reverb | taps 1.1 / 3 / 11 / 19 / 29 / 46 ms × 0.36 / 0.25 / 0.34 / 0.23 / 0.32 / 0.21; dry 0.23, wet 0.67; history 3 s | literals | `DspReverb` |
+| Gargle | defaults 50 % wet, 20 Hz, triangle | literals | `DspGargle` |
+| BitCrusher | default 16 bits | literal | `DspBitCrusher` |
+| Preference defaults (generated file / code fallback) | `SoundLibrary` dsound / dsound; `SoundMixFreq` 22050 / 22050 (44100 in the waveOut library); `SoundMasterVolume` 255 / 255; `SoundChannels` 32 / 32 (16 in the options window); `SoundHW3D` 0 / 0; `SoundSwapStereo` 0 / 0; `SoundMemoryUsage` 1 / 1; `SoundBufferSize` 512 / 2000; `SoundDSP` 0 / 0 | prefs | `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues` and the readers cited in §2.5, §11 |
+
+## 17 Mapping to a modern engine (XAudio2 / WASAPI)
+
+Brief per-component notes for a Windows / C++23 / DirectX 12 target; the keep/adapt/replace decision and risk analysis belong to [40_carry_forward_assessment](40_carry_forward_assessment.md).
+
+| Component (here) | Modern equivalent | Notes |
+|---|---|---|
+| `SoundSystem` 20 Hz tick on the main thread | Game-thread "audio update" at frame rate (or fixed 60 Hz) that only edits a command queue; a dedicated audio thread or the XAudio2 engine thread applies it | Keep the event → blueprint → instance model; remove the "1 start per tick" throttle (or make it per-frame and configurable); timestamp triggers so start latency is not tick-quantised |
+| Voice allocation (perceived volume × 0.75^k, steal lowest without compare) | Virtual-voice system: unlimited virtual instances, N real `IXAudio2SourceVoice`s, steal only when the candidate outranks the victim by a margin; per-event and per-bus voice caps; authored priority | Keep the per-event decay idea; add hysteresis to avoid loop ping-pong; keep the one-shot patience window |
+| `SoundLibrary3dDirectSound` (polled ring buffers, `SetFX`) | XAudio2 2.9: one source voice per playing sound (submitting decoded buffers or streaming packets via `OnBufferEnd`), submix voices for categories, one mastering voice | Removes the 0.45 s look-ahead; per-voice `SetVolume`/`SetFrequencyRatio` are sample-accurate with `OperationSet` |
+| DirectSound 3D (`DS3DALG_DEFAULT`, inverse distance, Doppler 0) | X3DAudio `X3DAudioCalculate` → output matrix + Doppler + LPF per voice; or HRTF via Windows Sonic / Spatial Audio (`ISpatialAudioClient`) | Reproduce the shipped law: flat to `minDistance`, then `minDistance/d`, no max distance (add one) |
+| `SoundLibrary3dSoftware` + waveOut | Own mixer on WASAPI shared-mode event-driven `IAudioClient3` (low-latency periods), float pipeline | Only if a custom mixer is wanted; fix nearest-sample resampling (use polyphase/cubic), ramp every gain change, replace block normalisation by a true limiter on the master bus |
+| Volume law (5 dB per unit, master −32 mB/step) | dB-native parameters on voices/buses (`XAudio2DecibelsToAmplitudeRatio`) | Keep 0–10 authoring scale if data compatibility matters: `dB = 5 × (v − 10)` |
+| Music slot | Dedicated streaming music voice on a music submix with its own volume and cross-fade | Add the missing music/SFX/UI bus volumes |
+| `CachedSampleManager` (full-buffer alloc, lazy decode, 60 MiB LRU) | Asset-system-owned PCM/ADPCM/xWMA/Opus banks; short sounds fully resident (pre-decoded or XMA/ADPCM decoded by XAudio2), long sounds streamed in fixed-size packets from disk | Do not allocate the whole PCM buffer for streamed music; budget per category |
+| `SoundStreamDecoder` (libvorbisfile on main thread) | Streaming decode on a worker (libvorbis/Opus) feeding packets; or Media Foundation / XAudio2 native formats | Decode off the game thread; support stereo |
+| `SoundParameter` (fixed / random / linked + smoothing) | Same concept as RTPCs / modulators bound to game parameters, evaluated at a fixed control rate with time-based (not tick-count) smoothing | Fix the smoothing-start state and the per-call game-speed smoother |
+| DSP chain (`SetFX` DirectX FX, in-house filters on int16) | XAPO effects (`IXAPO`) on source/submix voices, built-in `FXReverb`, `FXEQ`, `FXEcho`, `FXMasteringLimiter`; float processing at the voice rate | Bind filter time constants to the actual voice sample rate; per-voice reverb sends instead of per-voice reverbs |
+| Profilers / Sound Stats / Sound Editor | Runtime debug overlay (voices, virtual voices, budget), live-tuning tool over a network link, data hot-reload | Keep the billboard visualisation; make tools reachable in development builds |
+| Threading (`NetMutex` around the cache, main-thread callbacks) | Lock-free SPSC command queue game → audio; XAudio2 callbacks must not block | — |
+
 <!-- BODY -->
 
 ## Open questions and unknowns

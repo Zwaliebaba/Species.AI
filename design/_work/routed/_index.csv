@@ -452,11 +452,39 @@ P20_sequences_loaders_bench,[U] Unknowns,meta:unknowns,1310
 P20_sequences_loaders_bench,Docs-vs-code discrepancies,meta:discrepancies,1669
 P20_sequences_loaders_bench,IP register,meta:ip,3803
 P20_sequences_loaders_bench,Appendix — dead/legacy code,meta:appendix,2286
-X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9656
-X4_level_catalogue,"[→ 08_levels_and_level_design] 1. Inventory, file kinds and how maps are found",08,7272
-X4_level_catalogue,"[→ 08_levels_and_level_design] 2. Master catalogue of the Multiwinia maps (`data/levels/mp_*.txt`, 57 files)",08,15302
+X1a_text_formats,[→ 29_data_formats_reference] 1. Shared line reader and tokeniser (`TextReader` family),29,9684
+X1a_text_formats,"[→ 29_data_formats_reference] [→ 08_levels_and_level_design] 2. Level files (`map_*.txt`, `mp_*.txt`, `mission_*.txt`)",29,21040
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B1 Shared text-file conventions (`TextReader`),29,3727
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B2 ""redshirt2"" obfuscated text",29,1827
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B3 `.shp` — hierarchical flat-shaded mesh (""shape"")",29,16292
+X1b_asset_formats,"[→ 29_data_formats_reference] 29.B4 `.max` sources and the shape tool chain (`tools/ShapeExporter`, `tools/3DGeometry`)",29,3657
+X1b_asset_formats,[→ 29_data_formats_reference] 29.B5 BMP bitmaps and textures (+ PNG output),29,8025
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.A Method and verification of P16,10,2990
+X2b_asset_catalogue_audio,"[→ 10_audio_design] 10.B How a sample name becomes a file (resolution, precedence, archives)",10,6506
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.C Complete event table — every object type × event bound in `data/sounds.txt`,10,3776
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.D Events fired by code that have no data (silent in the shipped game),10,1732
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.E Stop / keep-alive sites (how looping sounds end),10,4703
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.F Music — confirmed never heard in Multiwinia,10,5014
+X2b_asset_catalogue_audio,"[→ 10_audio_design] 10.G Menu, HUD and UI sounds (complete, with files)",10,4643
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.H Voice / speech content,10,3547
+X2b_asset_catalogue_audio,[→ 10_audio_design] 10.I Statistics,10,2154
+X2b_asset_catalogue_audio,"[→ 10_audio_design] 10.J Unused samples, dead data and the `tools/` checking scripts",10,5782
+X4_level_catalogue,"[→ 08_levels_and_level_design] 1. Inventory, file kinds and how maps are found",08,7429
+X4_level_catalogue,"[→ 08_levels_and_level_design] 2. Master catalogue of the Multiwinia maps (`data/levels/mp_*.txt`, 57 files)",08,15465
 X4_level_catalogue,[→ 08_levels_and_level_design] 3. Availability per build target and runtime gate,08,5397
-X4_level_catalogue,"[→ 08_levels_and_level_design] 4. Hidden, test, stress, benchmark, sandbox and TankBattle maps [C] data, tags as stated",08,2950
+X4_level_catalogue,"[→ 08_levels_and_level_design] 4. Hidden, test, stress, benchmark, sandbox and TankBattle maps [C] data, tags as stated",08,2975
 X4_level_catalogue,"[→ 08_levels_and_level_design] 5. Per-level option table (`MultiwiniaOptions`, all 57 `mp_*` files)",08,8701
 X4_level_catalogue,[→ 08_levels_and_level_design] 6. Notable objects per map,08,22524
 X4_level_catalogue,"[→ 08_levels_and_level_design] 7. Landscape parameters per level (all map-bearing files: 57 `mp_*`, 12 `map_*`, 30 `old/`)",08,16895
+X4_level_catalogue,[→ 08_levels_and_level_design] 8. Level-design capabilities evidenced by the shipped data,08,7760
+X4_level_catalogue,[→ 01_game_modes] 9. Per-mode map lists and per-mode level conventions,01,13202
+X4_level_catalogue,"[→ 08_levels_and_level_design] 10. Thumbnails (`data/thumbnails/`, 57 files)",08,6373
+X4_level_catalogue,[→ 08_levels_and_level_design] 11. Darwinia `map_*` / `mission_*` files [B:LEGACY],08,10816
+X4_level_catalogue,[→ 08_levels_and_level_design] 12. `data/levels/old/` (30 superseded maps) — never loaded,08,7332
+X4_level_catalogue,"[→ 08_levels_and_level_design] 13. `level_enum.txt`, achievements and PDLC remnants",08,2010
+X4_level_catalogue,Cross-partition notes,meta:cross,2170
+X4_level_catalogue,Contradictions / open questions,meta:contradictions,1745
+X4_level_catalogue,[U] Unknowns,meta:unknowns,1024
+X4_level_catalogue,Docs-vs-code discrepancies,meta:discrepancies,1065
+X4_level_catalogue,IP register,meta:ip,11004
+X4_level_catalogue,Appendix — dead/legacy code and data,meta:appendix,1100

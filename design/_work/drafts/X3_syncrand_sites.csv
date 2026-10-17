@@ -78,7 +78,7 @@ code/unit.cpp,338,Unit::Attack,syncfrand,canAttack.Size(),other,assign:randomInd
 code/unit.cpp,393,Unit::GetFormationOffset,syncfrand,spacedOut/4.0,other,assign:s_offsets[i],,LIVE,FULL,Y,call,,s_offsets[i] = syncfrand(spacedOut/4.0);
 code/interface/cheat_window.cpp,162,,SFRAND,20.0,ui,assign:spiritPos,,LIVE,DEBUG,Y,call,defined(CHEATMENU_ENABLED),"Vector3 spiritPos = _pos + Vector3( SFRAND(20.0), 0.0, SFRAND(20.0) );"
 code/interface/cheat_window.cpp,162,,SFRAND,20.0,ui,assign:spiritPos,,LIVE,DEBUG,Y,call,defined(CHEATMENU_ENABLED),"Vector3 spiritPos = _pos + Vector3( SFRAND(20.0), 0.0, SFRAND(20.0) );"
-code/lib/math_utils.cpp,175,syncrand,syncrand,,other,,,LIVE,FULL,Y,call,,unsigned long syncrand()
+code/lib/math_utils.cpp,175,syncrand,syncrand,,other,,,LIVE,FULL,Y,definition/wrapper,,unsigned long syncrand()
 code/lib/vector3.cpp,18,FromRand,DebugSyncFrand,"(char *)frandWrapper.file, frandWrapper.line, 0.0, frandWrapper.v",other,return,,LIVE,DEBUG,Y,definition/wrapper,defined(TRACK_SYNC_RAND),"return DebugSyncFrand((char *)frandWrapper.file, frandWrapper.line, 0.0, frandWrapper.v);"
 code/lib/vector3.cpp,20,FromRand,_syncfrand,frandWrapper.v,other,return,,LIVE,FULL,Y,definition/wrapper,!(defined(TRACK_SYNC_RAND)),return _syncfrand(frandWrapper.v);
 code/lib/vector3.cpp,28,FromRand,DebugSyncFrand,"(char *)sfrandWrapper.file, sfrandWrapper.line, -val/2.0, val/2.0",other,return,,LIVE,DEBUG,Y,definition/wrapper,defined(TRACK_SYNC_RAND),"return DebugSyncFrand((char *)sfrandWrapper.file, sfrandWrapper.line, -val/2.0, val/2.0);"

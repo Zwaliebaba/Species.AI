@@ -580,13 +580,16 @@ def site_state(rel, ln):
     L = flines(rel); st = []
     for k in range(max(0, ln - 5), min(len(L), ln + 14)):
         for m in GLP.finditer(L[k]):
-            a = re.sub(r'\s+', '', m.group(1)).replace('GL_TEXTURE_2D,', '').replace('GL_TEXTURE_', '').replace('GL_', '')
-            fn = m.group(0).split('(')[0].replace('gl', '')
-            if fn in ('Enable', 'Disable') and a not in ('BLEND', 'TEXTURE_2D', 'ALPHA_TEST', 'DEPTH_TEST', 'CULL_FACE'):
-                continue
+            raw_a = re.sub(r'\s+', '', m.group(1))
+            fn = m.group(0).split('(')[0].strip()[2:]
             if fn in ('Enable', 'Disable'):
-                st.append('%s(%s)' % (fn, a))
-            elif fn.startswith('TexParameter'):
+                a = raw_a.replace('GL_', '')
+                if a in ('BLEND', 'TEXTURE_2D', 'ALPHA_TEST'):
+                    st.append('%s(%s)' % (fn, a))
+                continue
+            a = raw_a.replace('GL_TEXTURE_2D,', '').replace('GL_TEXTURE_ENV,', '').replace('GL_TEXTURE_ENV_MODE,', '') \
+                     .replace('GL_TEXTURE_', '').replace('GL_', '')
+            if fn.startswith('TexParameter'):
                 st.append(a.replace(',', '='))
             elif fn == 'BlendFunc':
                 st.append('Blend(%s)' % a)
@@ -900,6 +903,10 @@ REACH = [
      'GestureWindow is created only by code/interface/debugmenu.cpp (debug menu)'),
     ('code/renderer.cpp', r'Renderer::RenderFrame', (795, 830), 'LEGACY',
      'Darwin logo overlay shown only via Script command (code/script.cpp sets m_renderDarwinLogo) - Darwinia cutscene scripts'),
+    ('code/UI/GameTypeImageButton.h', r'GameTypeImageButton::Render', (20, 30), 'LEGACY',
+     'GAMETYPE_PROLOGUE/GAMETYPE_CAMPAIGN are highlighted only by PrologueButton/CampaignButton on PageDarwinia, entered only from PageDemoSinglePlayer (code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupDarwiniaPage, P18)'),
+    ('code/renderer.cpp', r'Renderer::RenderFlatTexture', None, 'LEGACY',
+     'only call is commented out (code/renderer.cpp:Renderer::Render ~L659)'),
     ('code/interface/helpandoptions_windows.cpp', r'CrateButton::.*|CrateHelp.*', None, 'DEBUG',
      'CrateHelpWindow reachable only through CrateHelpWindowButton (#ifdef INCLUDE_CRATE_HELP_WINDOW, TARGET_DEBUG)'),
 ]
@@ -1003,8 +1010,9 @@ def archive_of(rel):
     ex = excluded_by(rp)
     if ex is None and lo.rsplit('.', 1)[-1] in MAIN_EXT and 'sounds/' not in lo:
         out.append('main.dat')
-    if lo in lang_all:
-        out.append('language.dat[%s]' % ('+'.join(lang_per.get(lo, [])) or 'all-language build only'))
+    if lo in lang_all or lo in lang_per:
+        out.append('language.dat[%s%s]' % ('+'.join(lang_per.get(lo, [])) or 'all-language retail build only',
+                                          '' if lo in lang_all else '; NOT in the all-language list'))
     if not out:
         if ex:
             return 'not packed (excluded by "%s")' % ex
@@ -1022,6 +1030,8 @@ try:
 except FileNotFoundError:
     pass
 def root_kind(cls):
+    if cls in ('Building', 'Entity', 'WorldObject'):
+        return cls
     seen = 0
     while cls in bases and seen < 20:
         b = bases[cls]
@@ -1116,10 +1126,8 @@ def consumer_of(r, asset_dir):
             else:
                 ps = '6-10'
         place = ''
-        if rk == 'Building' and cls.lower() in mp_place:
-            place = ', placed in %d live MP maps' % mp_place[cls.lower()]
-        elif rk == 'Building':
-            place = ', placed in 0 live MP maps (may still be spawned by code)'
+        if rk == 'Building':
+            place = ', MP-map placements %d' % mp_place.get(cls.lower(), 0)
         return '%s (%s%s)' % (cls, rk or 'worldobject', place), ps
     for pre, sysname, ps in SYS:
         if f.startswith(pre):
@@ -1137,6 +1145,14 @@ for c in code_lits:
     if not c['commented'] and re.search(r'Lookup(Fragment|Marker)\s*\(\s*"' + re.escape(c['lit']) + '"', c['text']):
         lookup_names[c['file']].add(c['lit'])
 
+MANUAL_UNUSED = {  # assets whose only evidence is a coincidental bare word (reviewed by hand)
+    'data/textures/plusmenu/darwinia.bmp': 'only the bare words "darwinia" (Vista rich-save header, page names) occur; no code builds a "plusmenu/" path; directory excluded from packing (tools/multiwinia_exclusions.txt "textures/plusmenu/*")',
+    'data/textures/plusmenu/multiwinia.bmp': 'only the bare word "multiwinia" (window title, metaserver game name) occurs; no "plusmenu/" path is built; excluded from packing',
+    'data/shapes/gunturret.shp': '"GunTurret" occurs only as a building/crate/research type name; GunTurret uses battlecannon*.shp and cannon_*.shp (code/worldobject/gunturret.cpp:GunTurret::GetTurretModelName)',
+    'data/shapes/help.shp': '"help" occurs only as a page/button name (code/game_menu.cpp page names)',
+    'data/shapes/portal.shp': '"Portal" occurs only as a building type name; the Portal::Portal GetShape call is commented out',
+    'data/shapes/spam.shp': '"Spam" occurs only as a building type name (code/worldobject/building.cpp type-name table)',
+}
 STATUS_ORDER = ['FULL', 'D3D', 'DEBUG', 'EDITOR', 'LEGACY', 'DEAD']
 rows = []
 for rel, a in assets.items():
@@ -1153,7 +1169,10 @@ for rel, a in assets.items():
         status = 'referenced'
         reach = tags[0] if tags[0] != 'DEAD' else tags[1]
         ev = ''
-    elif tags == ['DEAD']:
+    elif rel in MANUAL_UNUSED:
+        status, reach = 'unused', 'none'
+        ev = MANUAL_UNUSED[rel]
+    elif tags == ['DEAD'] or (weak and all(r['kind'] in ('commented-out', 'format-pattern') for r in weak)):
         status, reach = 'unused', 'DEAD'
         ev = 'only referenced from code that is not compiled / commented out'
     elif weak:
@@ -1171,13 +1190,16 @@ for rel, a in assets.items():
         st_ = site_str(r)
         if st_ not in sites_txt:
             sites_txt.append(st_)
-    cons = []; passes = []
+    cons = []; passes = []; pairs = []
     for r in live_sites:
         cn, ps = consumer_of(r, a['dir'])
+        if (cn, ps) not in pairs:
+            pairs.append((cn, ps))
         if cn not in cons:
             cons.append(cn)
         if ps not in passes:
             passes.append(ps)
+    a['pairs'] = pairs
     flags = sorted({r['flags'] for r in live_sites if r['flags']})
     states = []
     for r in live_sites:
@@ -1315,3 +1337,228 @@ json.dump(summ, open(os.path.join(SCR, 'X2a_summary.json'), 'w'), indent=1, defa
 json.dump({rel: {k: v for k, v in a.items() if k not in ('abs',) and k != 'info'} for rel, a in assets.items()},
           open(os.path.join(SCR, 'X2a_assets.json'), 'w'), indent=0, default=str)
 print('written', len(rows))
+
+# ----------------------------------------------------------------------------------
+# 14. Markdown tables
+# ----------------------------------------------------------------------------------
+def md(x):
+    return str(x).replace('|', '\\|').replace('\n', ' ')
+def short_site(st_):
+    # code/x/y.cpp:Sym:L12 -> `code/x/y.cpp:Sym` L12
+    m = re.match(r'(.*):(.*):L(\d+)$', st_)
+    if not m:
+        return '`%s`' % st_
+    return '`%s:%s` L%s' % (m.group(1), m.group(2) or '?', m.group(3))
+def reach_lbl(a):
+    r = a['reach']
+    lab = {'FULL': 'B:FULL', 'D3D': 'B:D3D', 'DEBUG': 'B:DEBUG', 'EDITOR': 'B:EDITOR', 'LEGACY': 'B:LEGACY', 'DEAD': 'B:DEAD'}.get(r, r)
+    return '%s [%s]' % (a['status'], lab)
+def alpha_lbl(i_, rel):
+    parts = []
+    if i_['bpp'] == 32:
+        parts.append(i_['alpha'].replace('A8 non-trivial', 'A8').replace('A8 present, ', 'A8 '))
+    if i_['pink']:
+        parts.append('pink key %.0f%%' % (100 * i_['pink_frac']) if i_['pink_frac'] >= 0.005 else 'pink key %d px' % i_['pink'])
+    if i_['black_frac'] >= 0.25:
+        parts.append('black bg %.0f%%' % (100 * i_['black_frac']))
+    return '; '.join(parts) or '-'
+DIR_TITLES = OrderedDict([
+    ('textures', 'data/textures (excluding unicode atlases)'), ('textures/unicode', 'data/textures/unicode (font atlases)'),
+    ('sprites', 'data/sprites'), ('animations', 'data/animations'), ('terrain', 'data/terrain'), ('icons', 'data/icons'),
+    ('thumbnails', 'data/thumbnails'), ('mwhelp', 'data/mwhelp'), ('sepulveda', 'data/sepulveda'), ('shaders', 'data/shaders'),
+    ('shapes', 'data/shapes (.shp meshes)'), ('shapes/source', 'data/shapes/source (.max authoring files)')])
+def group_of(rel):
+    if rel.startswith('data/textures/unicode/'):
+        return 'textures/unicode'
+    if rel.startswith('data/shapes/source/'):
+        return 'shapes/source'
+    return assets[rel]['dir']
+groups = OrderedDict((k, []) for k in DIR_TITLES)
+for rel in assets:
+    groups[group_of(rel)].append(rel)
+
+out = []
+W = out.append
+W('## [→ 25_textures_and_assets] 25.4 Per-directory summary (generated by `OUT/_work/scripts/X2a_catalogue.py`)\n')
+W('Counts are files on disk. "Referenced" = at least one confirmed reference from compiled code or a loaded data file; the bracket gives the best build in which it is reachable (B:FULL baseline match, B:D3D only in the Direct3D build, B:DEBUG cheat/debug builds, B:EDITOR editor builds, B:LEGACY compiled into FULL but unreachable in a Multiwinia match, B:DEAD only in non-compiled or commented code). "Packed" = archive that `tools/build_multiwinia_data.bat` (retail, all-language) puts the file in.\n')
+W('| Directory | Files | Bytes | Bit depths | Pow2 / NPOT | 32-bit with real alpha | Pink-key files | Referenced FULL | Ref. D3D | Ref. DEBUG/EDITOR | LEGACY only | Unused | Unknown | Not packed |')
+W('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+for g, rels in groups.items():
+    if not rels:
+        continue
+    bpp = defaultdict(int); p2 = np_ = al = pk = 0; tb = 0
+    st = defaultdict(int); notp = 0
+    for rel in rels:
+        a = assets[rel]; tb += a['bytes']
+        if a['ext'] == 'bmp':
+            i_ = a['info']; bpp[i_['bpp']] += 1
+            if i_['pow2'] == 'yes': p2 += 1
+            else: np_ += 1
+            if 'non-trivial' in i_['alpha']: al += 1
+            if i_['pink']: pk += 1
+        if a['status'] == 'referenced':
+            st[{'FULL': 'full', 'D3D': 'd3d', 'DEBUG': 'dbg', 'EDITOR': 'dbg', 'LEGACY': 'leg'}.get(a['reach'], 'x')] += 1
+        else:
+            st[a['status']] += 1
+        if a['archive'].startswith('not packed'): notp += 1
+    W('| `data/%s` | %d | %d | %s | %s | %d | %d | %d | %d | %d | %d | %d | %d | %d |' % (
+        g, len(rels), tb, ', '.join('%d-bit ×%d' % (k, v) for k, v in sorted(bpp.items())) or 'n/a',
+        ('%d / %d' % (p2, np_)) if bpp else 'n/a', al, pk, st['full'], st['d3d'], st['dbg'], st['leg'], st['unused'], st['unknown'], notp))
+W('')
+W('## [→ 25_textures_and_assets] 25.5 Per-file catalogue — bitmaps, animation scripts and shaders\n')
+W('Columns: **Size** W×H px as stored; **Fmt** BMP bit depth (P = palettised) — every file has a 40-byte BITMAPINFOHEADER and BI_RGB compression unless noted; **Alpha/key** = alpha channel in file (32-bit only), exact (255,0,255) colour-key pixels (made transparent only when loaded with the mask flag), large pure-black area (additive-blend art); **P2** power-of-two both axes; **Packed**; **Status**; **Consumer → pass** (pass numbers = P12 §24.2 frame table); **Load site(s)** first sites in the best build; **Flags** = arguments of the load call (`Resource::GetTexture` defaults mip=true mask=true) and GL state set within ±14 lines of the site ([I] heuristic window).\n')
+for g, rels in groups.items():
+    if g in ('shapes', 'shapes/source'):
+        continue
+    W('### %s (%d files)\n' % (DIR_TITLES[g], len(rels)))
+    W('| Path | Size | Fmt | Alpha / key | P2 | Packed | Status | Consumer → pass | Load site(s) | Flags / GL state |')
+    W('|---|---|---|---|---|---|---|---|---|---|')
+    for rel in rels:
+        a = assets[rel]; i_ = a['info']
+        if a['ext'] == 'bmp':
+            size = '%d×%d' % (i_['w'], i_['h'])
+            fmt = '%d%s' % (i_['bpp'], 'P' if i_['bpp'] <= 8 else '') + ('' if not i_['issues'] else ' ⚠ ' + '; '.join(i_['issues']))
+            ak = alpha_lbl(i_, rel); p2 = 'Y' if i_['pow2'] == 'yes' else 'N'
+        elif a['ext'] == 'anim':
+            size = '%s×%s panel' % (i_['w'], i_['h']); fmt = 'anim (%d obj, %d kf, %s–%s s)' % (i_['objects'], i_['keyframes'], i_['start'], i_['stop'])
+            ak = 'images: ' + ', '.join(i_['images']); p2 = '-'
+        else:
+            size = '%d B' % a['bytes']; fmt = a['ext']; ak = '-'; p2 = '-'
+        cp = '; '.join('%s → %s' % (c, pp) for c, pp in a['pairs'][:2]) if a['pairs'] else '-'
+        if len(a['pairs']) > 2:
+            cp += ' (+%d)' % (len(a['pairs']) - 2)
+        sites = '; '.join(short_site(x) for x in a['sites'][:2]) + (' (+%d)' % (len(a['sites']) - 2) if len(a['sites']) > 2 else '')
+        fl = '; '.join(a['flags'][:2]) + ((' · ' + a['states'][0][:80]) if a['states'] else '')
+        status = reach_lbl(a)
+        if a['status'] != 'referenced':
+            status += ' — ' + a['evidence'][:140]
+        W('| `%s` | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (md(rel), size, md(fmt), md(ak), p2, md(a['archive']), md(status), md(cp), md(sites or '-'), md(fl or '-')))
+    W('')
+W('## [→ 25_textures_and_assets] 25.6 Per-file catalogue — shapes\n')
+W('Columns: **Frags** fragments excluding the synthetic `SceneRoot`; **Depth** deepest fragment level (1 = child of SceneRoot); **Pos/Verts/Tris** summed over fragments (triangles after strip→triangle conversion with degenerate removal, exactly as `ShapeFragment::ParseStripBlock`); **Geom** `triangles` (explicit list) or `strips`; **Markers** count; **Looked-up** fragment/marker names the consuming code fetches by name (`LookupFragment`/`LookupMarker` literals in the consumer files that exist in this shape). Hierarchies and marker lists follow in §25.7.\n')
+W('| Path | Frags | Depth | Pos | Verts | Tris | Geom | Markers | Packed | Status | Consumer → pass | Load site(s) | Looked-up names |')
+W('|---|---|---|---|---|---|---|---|---|---|---|---|---|')
+for rel in groups['shapes']:
+    a = assets[rel]; i_ = a['info']
+    cp = '; '.join('%s → %s' % (c, pp) for c, pp in a['pairs'][:2]) if a['pairs'] else '-'
+    if len(a['pairs']) > 2:
+        cp += ' (+%d)' % (len(a['pairs']) - 2)
+    sites = '; '.join(short_site(x) for x in a['sites'][:2]) + (' (+%d)' % (len(a['sites']) - 2) if len(a['sites']) > 2 else '')
+    status = reach_lbl(a)
+    if a['status'] != 'referenced':
+        status += ' — ' + a['evidence'][:140]
+    prob = (' ⚠ ' + '; '.join(i_['problems'])) if i_['problems'] else ''
+    W('| `%s` | %d | %d | %d | %d | %d | %s | %d | %s | %s | %s | %s | %s |' % (md(rel), i_['fragments'], i_['max_depth'], i_['positions'], i_['vertices'], i_['triangles'], i_['format'] + md(prob), i_['markers'], md(a['archive']), md(status), md(cp), md(sites or '-'), md(', '.join(a.get('lookups', [])) or '-')))
+W('')
+W('### data/shapes/source (.max authoring files, %d files)\n' % len(groups['shapes/source']))
+W('3ds Max scene files from which the `.shp` exporter output was produced. No code reads `.max`; `shapes/source` is excluded from every archive (`tools/multiwinia_exclusions.txt`). Status for all: **unused [none — authoring source]**. Pairing is by case-insensitive stem.\n')
+W('| Path | Bytes | Exported .shp (same stem) |')
+W('|---|---|---|')
+for rel in groups['shapes/source']:
+    a = assets[rel]
+    W('| `%s` | %d | %s |' % (md(rel), a['bytes'], ('`%s`' % a['pair']) if a.get('pair') else 'none (no shipped .shp with this stem)'))
+W('')
+W('## [→ 25_textures_and_assets] 25.7 Shape hierarchies and markers (every .shp)\n')
+W('Notation: `fragment<parent` in file order (parent `sceneroot`/`SceneRoot` = root); markers as `marker@parentFragment`. Marker `Depth` values were checked against the hierarchy (mismatches listed as ⚠).\n')
+for rel in groups['shapes']:
+    i_ = assets[rel]['info']
+    W('- `%s` — %d fragments: %s. Markers (%d): %s.%s' % (rel, i_['fragments'], md(i_['hierarchy']) or 'none', i_['markers'], md(i_['marker_names']) or 'none',
+                                                     (' ⚠ ' + md('; '.join(i_['problems']))) if i_['problems'] else ''))
+W('')
+# missing names
+W('## [→ 25_textures_and_assets] 25.8 Names requested by code/data that have no file in `data/`\n')
+W('A request for a missing texture through `Resource::GetTexture*` is fatal (`AppReleaseAssert("Failed to load texture %s")`, `code/lib/resource.cpp:Resource::GetTextureWithFlags`) unless the call is guarded by `DoesTextureExist`; a missing shape is fatal in `Resource::GetShapeCopy`. Runtime-generated names (registered with `Resource::AddBitmap`) are listed in §25.10 and excluded here. [C] unless marked.\n')
+W('| Requested name | Site | Compiled in | Reachability note | How built |')
+W('|---|---|---|---|---|')
+seen_m = set()
+for m in missing:
+    if m['name'] in ('sprites/viriifull.bmp',):
+        continue
+    b = 'DEAD' if m.get('built') == '' else next((t for t in ['FULL', 'D3D', 'DEBUG', 'EDITOR'] if m['live'].get(t)), 'DEAD')
+    o = apply_reach({'built': m.get('built'), 'file': m['where'], 'sym': m.get('sym', ''), 'line': m['ln'] if isinstance(m['ln'], int) else 0})
+    key = (m['name'], b, m['where'])
+    if key in seen_m:
+        continue
+    seen_m.add(key)
+    W('| `%s` | `%s:%s` L%s | %s | %s | %s |' % (md(m['name']), m['where'], m.get('sym', '') or '?', m['ln'], b, md(o[1] if o else ''), md(m.get('how', ''))))
+W('')
+
+# ---- 25.9 unused / not-baseline list
+W('## [→ 25_textures_and_assets] 25.9 Assets not used by a Multiwinia match in the baseline build (enumerated)\n')
+W('Every file whose status is not "referenced [B:FULL]". Grouped by reason; `.max` sources are listed in §25.6.\n')
+cats = OrderedDict([('unused-none', 'No reference anywhere (unused)'), ('unused-dead', 'Referenced only from non-compiled or commented-out code (unused, B:DEAD)'),
+                    ('legacy', 'Compiled into FULL but unreachable in a Multiwinia match (B:LEGACY)'),
+                    ('d3d', 'Direct3D build only (B:D3D)'), ('debug', 'Debug/cheat builds only (B:DEBUG)'), ('editor', 'Editor build only (B:EDITOR)'),
+                    ('unknown', 'Unknown (indirect evidence only)')])
+buck = defaultdict(list)
+for rel, a in assets.items():
+    if a['ext'] == 'max':
+        continue
+    if a['status'] == 'referenced' and a['reach'] == 'FULL':
+        continue
+    if a['status'] == 'unused':
+        k = 'unused-dead' if a['reach'] == 'DEAD' else 'unused-none'
+    elif a['status'] == 'unknown':
+        k = 'unknown'
+    else:
+        k = {'LEGACY': 'legacy', 'D3D': 'd3d', 'DEBUG': 'debug', 'EDITOR': 'editor'}.get(a['reach'], 'unknown')
+    buck[k].append(rel)
+for k, title in cats.items():
+    if not buck[k]:
+        continue
+    W('### %s — %d files\n' % (title, len(buck[k])))
+    W('| Path | Packed | Evidence |')
+    W('|---|---|---|')
+    for rel in buck[k]:
+        a = assets[rel]
+        W('| `%s` | %s | %s |' % (rel, md(a['archive']), md(a['evidence'][:260] + ((' — sites: ' + '; '.join(a['sites'][:2])) if a['sites'] and a['status'] == 'referenced' else ''))))
+    W('')
+
+# ---- tools/FindUnusedResources.sh emulation
+code_names = set()
+for root, dirs, files in os.walk(os.path.join(SRC, 'code')):
+    for f in files:
+        if not f.endswith(('.cpp', '.h')):
+            continue
+        for line in open(os.path.join(root, f), encoding='latin-1').read().split('\n'):
+            for kind in ('shape', 'sound', 'texture'):
+                if re.search(r'get' + kind + r'[ \t]*\(', line, re.I) and '"' in line:
+                    t = re.sub(r'^.*Get' + kind + r'[\t (\"]*', '', line, flags=re.I)
+                    t = re.sub(r'.*[/\\]', '', t)
+                    t = t.split('"')[0]
+                    code_names.add(t.lower())
+data_names = set()
+for root, dirs, files in os.walk(DATA):
+    for f in files:
+        if f.rsplit('.', 1)[-1] in ('BMP', 'SHP', 'OGG', 'JPG', 'WAV', 'bmp', 'shp', 'ogg', 'jpg', 'wav'):
+            data_names.add(f.lower())
+exc = [l.strip() for l in open(os.path.join(TOOLS, 'FindUnusedResourcesExceptions.txt'), encoding='latin-1').read().splitlines() if l.strip()]
+def exc_hit(n):
+    return any(re.search(e, n) for e in exc)
+tool_redundant = {n for n in data_names - code_names if not exc_hit(n)}
+tool_missing = {n for n in code_names - data_names if not exc_hit(n)}
+W('## [→ 25_textures_and_assets] 25.11 Cross-check with `tools/FindUnusedResources.sh`\n')
+W('Emulation of the shell tool (same grep/sed pipeline: only lines containing `GetShape(`/`GetSound(`/`GetTexture(` *and* a quote, last call on the line, directory stripped, compared case-insensitively by **basename** against every `.bmp/.shp/.ogg/.jpg/.wav` under `data/`, exception regexes from `tools/FindUnusedResourcesExceptions.txt`: %s). The tool also counts commented-out code and cannot see names built with `sprintf`, `DoesTextureExist`-guarded paths, arrays, or data-file references, so it disagrees with this catalogue as follows (in-scope visual assets only).\n' % ', '.join('`%s`' % e for e in exc))
+agree_r = []; tool_says_unused_but_used = []; tool_says_used_but_not = []
+for rel, a in assets.items():
+    if a['ext'] not in ('bmp', 'shp'):
+        continue
+    bn = rel.rsplit('/', 1)[-1].lower()
+    tool_unused = bn in tool_redundant
+    mine_used = a['status'] == 'referenced' and a['reach'] == 'FULL'
+    if tool_unused and mine_used:
+        tool_says_unused_but_used.append(rel)
+    elif (not tool_unused) and not mine_used and not exc_hit(bn):
+        tool_says_used_but_not.append(rel)
+    elif tool_unused:
+        agree_r.append(rel)
+W('| Outcome | Count | Files |')
+W('|---|---|---|')
+W('| Tool reports "Reduntant" and this catalogue agrees (not used in FULL) | %d | %s |' % (len(agree_r), ', '.join('`%s`' % r for r in agree_r)))
+W('| Tool reports "Reduntant" but the file **is** used in FULL (dynamic name, data reference or non-`Get*(` call) | %d | %s |' % (len(tool_says_unused_but_used), ', '.join('`%s`' % r for r in tool_says_unused_but_used)))
+W('| Tool considers used but the file is **not** used in a FULL Multiwinia match (basename collision, comment, legacy/D3D/debug-only path) | %d | %s |' % (len(tool_says_used_but_not), ', '.join('`%s`' % r for r in tool_says_used_but_not)))
+vis_missing = sorted(n for n in tool_missing if n.endswith(('.bmp', '.shp')))
+W('| Tool "Missing:" names (visual extensions only) | %d | %s |' % (len(vis_missing), ', '.join('`%s`' % n for n in vis_missing)))
+W('')
+open(os.path.join(SCR, 'X2a_generated_tables.md'), 'w').write('\n'.join(out) + '\n')
+print('markdown lines', len(out))

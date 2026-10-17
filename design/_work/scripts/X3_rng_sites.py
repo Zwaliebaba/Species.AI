@@ -147,7 +147,8 @@ UNSYNC_PATTERNS = [
     ('rand', r'(?<![\w.>])rand\s*\('), ('srand', r'(?<![\w.>])srand\s*\('),
 ]
 DEF_FILES = {'contrib/systemiv/lib/math/random_number.cpp', 'contrib/systemiv/lib/math/random_number.h',
-             'code/lib/vector3.h', 'code/lib/vector3.cpp'}
+             'code/lib/vector3.h', 'code/lib/vector3.cpp',
+             'code/lib/math_utils.cpp'}  # math_utils.cpp holds an orphan MT19937 'syncrand' definition
 
 def balanced_arg(s, start):
     depth, j = 0, start

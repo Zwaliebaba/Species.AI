@@ -126,7 +126,7 @@ def main():
         rows = []
         for r in L:
             if r['dir'] != 'levels/old': continue
-            rows.append([short(r['file']), r['english_name'] or '—', r['gametypes_tokens'] or '(no GameTypes / no options block)',
+            rows.append([short(r['file']), r['english_name'] or '—', r['gametypes_tokens'] or ('(empty GameTypes line)' if 'multiwiniaoptions' in r['sections'] else '(no options block)'),
                          r['numplayers'] or '—', r['populationcap'] or '—', r['worldSizeX'], r['cellSize'], r['tiles'], r['buildings_total'],
                          r['blocked_buildings_FULL'], r['spawnpoints_by_team'] or '—', r['instantunits'] or '—',
                          r['leveloptions'] or '—', r['mapid_define'] or '—'])

@@ -42,7 +42,7 @@ Cross-checks: building counts equal `drafts/P06_level_building_usage.csv` for ev
 | A ("old writer") | `MultiwiniaOptions, Landscape, LandscapeTiles, LandFlattenAreas, Lights, Buildings, CameraMounts, CameraAnimations, Buildings(empty), InstantUnits, PrimaryObjectives` | 47 top-level + all 28 `old/` files that have options | an earlier `SaveMapFile` that also wrote camera animations, dynamic buildings and objectives [I] |
 | B ("current writer") | `MultiwiniaOptions, Landscape, LandscapeTiles, LandFlattenAreas, Lights, Buildings, CameraMounts, InstantUnits` | 10: `mp_assault_2p_3`, `mp_assault_3p_1`, `mp_assault_3p_3`, `mp_assault_4P_2`, `mp_blitzkrieg_4P_2`, `mp_domination_2P_1`, `mp_domination_4P_1`, `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_skirmish_3P_1` | exactly what `LevelFile::SaveMapFile` emits today when `g_app->m_multiwinia` is set (camera-anim, dynamic-building and objective writers are commented out) [C] `code/level_file.cpp:SaveMapFile` |
 
-Forensic corollary [C]: the same 10 files — and only they — carry `Name NewLevel` and an explicit `DefenderPopulationCap` line, because `WriteMultiwiniaOptions` always writes `Name` (default `"NewLevel"`) and always writes `DefenderPopulationCap` [C] `WriteMultiwiniaOptions`. Layout A files have `PrimaryObjectives NeverTrue` (or nothing); the second, empty `Buildings_StartDefinition` block is parsed as **static** buildings (the map parser's first `Buildings` branch wins) and contains no rows in any shipped file [C] (column `buildings_in_2nd_block` = 0 everywhere).
+Forensic corollary [C]: the same 10 files — and only they — carry `Name NewLevel`, because the current `WriteMultiwiniaOptions` always writes `Name` (default `"NewLevel"`) [C] `WriteMultiwiniaOptions`; the older writer evidently did not (an explicit `DefenderPopulationCap` line, also always written today, appears in 31 top-level layout-A files too but in none of the 30 `old/` files, so the intermediate writer already had it) [I]. Layout A files have `PrimaryObjectives NeverTrue` (or nothing); the second, empty `Buildings_StartDefinition` block is parsed as **static** buildings (the map parser's first `Buildings` branch wins) and contains no rows in any shipped file [C] (column `buildings_in_2nd_block` = 0 everywhere).
 
 ### 1.4 How the menu finds maps [C] `code/game_menu.cpp:GameMenu::CreateMapList`, `AddMap`
 
@@ -126,7 +126,7 @@ Summary [C]:
 - **49 maps are menu-listed in the retail product**: Domination 9 (5 `mp_domination_*`, 2 `mp_koth_*` whose `GameTypes` is `Domination` — `mp_koth_2P_2`, `mp_koth_2P_3` — and 2 `mp_skirmish_*`), King of the Hill 9, Capture the Statue 9, Assault 8, Rocket Riot 7, Blitzkrieg 7. No shipped file lists more than one game type. This equals `level_enum.txt` ids 1–49 and `VALID_ACHIEVEMENT_LEVELS = 49` (`code/achievement_tracker.cpp`, with `INCLUDEGAMEMODE_ASSAULT`).
 - **8 files are in the tree but not in retail data**: `mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all`, `mp_tankbattle_2P/3P/4P`, `mp_cts_3p_3` (details §4).
 - Player counts: 2-player 22 maps, 3-player 15, 4-player 12 among the 49 (`NumPlayers`; note `mp_assault_3p_1` is named 3p but declares `NumPlayers 2`).
-- Name collisions (same English name, shared terrain): `mp_koth_2P_1`/`mp_domination_2P_2` "The Eternal Guardians", `mp_koth_3P_2`/`mp_domination_3P_1` "Field of Unending Dawn", `mp_koth_4P_1`/`mp_domination_4P_1` "The Holy Tree", `mp_koth_4P_3`/`mp_domination_4P_2` "A Monument to the Heavens", `mp_koth_2P_3`/`mp_koth_2P_3b` "The Bitter Front"; `mp_rocketriot_2p_3` shares "Stairway to Heaven" with the thumbnail-only `mp_skirmish_2P_3` string. Identical `LandscapeTiles` blocks (byte-identical after whitespace normalisation) [C]: koth_2P_1≡domination_2P_2, koth_3P_2≡domination_3P_1, koth_4P_1≡domination_4P_1, koth_4P_3≡domination_4P_2, benchmark_1≡koth_4P_4, sandbox≡sandbox_all, koth_2P_3b≡old/mp_shaman_2P_3, old/mp_temple≡map_temple (Darwinia terrain reused). Designers therefore re-skinned one terrain for two modes by swapping the objective buildings.
+- Name collisions (same English name; terrain shared except where noted): `mp_koth_2P_1`/`mp_domination_2P_2` "The Eternal Guardians", `mp_koth_3P_2`/`mp_domination_3P_1` "Field of Unending Dawn", `mp_koth_4P_1`/`mp_domination_4P_1` "The Holy Tree", `mp_koth_4P_3`/`mp_domination_4P_2` "A Monument to the Heavens", `mp_koth_2P_3`/`mp_koth_2P_3b` "The Bitter Front" (same `Landscape` block and lights, **different** tiles and flatten areas); `mp_rocketriot_2p_3` shares "Stairway to Heaven" with the thumbnail-only `mp_skirmish_2P_3` string. Identical `LandscapeTiles` blocks (byte-identical after whitespace normalisation) [C]: koth_2P_1≡domination_2P_2, koth_3P_2≡domination_3P_1, koth_4P_1≡domination_4P_1, koth_4P_3≡domination_4P_2, benchmark_1≡koth_4P_4, sandbox≡sandbox_all, koth_2P_3b≡old/mp_shaman_2P_3, old/mp_temple≡map_temple (Darwinia terrain reused). Designers therefore re-skinned one terrain for two modes by swapping the objective buildings [I] (each KOTH/Domination pair shares 25–95 identical building rows).
 
 ## [→ 08_levels_and_level_design] 3. Availability per build target and runtime gate
 
@@ -167,7 +167,7 @@ Per-file results are columns `ships_retail … ships_beta_c` of `X4_levels.csv` 
 
 | File | Class | Why it is not a normal map | Contents worth knowing | Build tag |
 |---|---|---|---|---|
-| `mp_assault_stress.txt` ("Assault Stress Test") | stress test | `GameTypes none` → discarded by `AddMap` in every build; excluded from retail data; included + permitted only for `TARGET_ASSAULT_STRESSTEST` | Assault layout: 1 PulseBomb (pos 1, `startTime 600`), 3 ControlStation, 7 GunTurret, 26 LaserFence (pos 1), 30 Wall, 6 SolarPanel/5 Pylon/2 PylonEnd, TrunkPort ×5 (pos 0) + ×2 (pos 1), 3 AIObjective/10 AIObjectiveMarker/30 AITarget; `AttackingTeams 0`; `trunkportreinforcements 250`, `defenderreinforcementtype Armour`; 90 Darwinians at pos 1 | stress target only; in FULL [B:DEAD-data] |
+| `mp_assault_stress.txt` ("Assault Stress Test") | stress test | `GameTypes none` → discarded by `AddMap` in every build; excluded from retail data; included + permitted only for `TARGET_ASSAULT_STRESSTEST` | Assault layout: 1 PulseBomb (pos 1, `startTime 600`), 3 ControlStation, 7 GunTurret, 26 LaserFence (pos 1), 30 Wall, 6 SolarPanel/5 Pylon/2 PylonEnd, TrunkPort ×5 (pos 0) + ×2 (pos 1), 3 AIObjective/10 AIObjectiveMarker/30 AITarget; `AttackingTeams 0`; `trunkportreinforcements 250`, `defenderreinforcementtype Armour`; 90 Darwinians at pos 1 | stress target only; FULL code would discard it (data not packaged) |
 | `mp_benchmark_1.txt` ("Stress Test" — "spawn Multiwinians indefinitely") | benchmark | `GameTypes none` (never menu-listed); excluded from retail; included + permitted for `TARGET_PC_HARDWARECOMPAT` | terrain/zones copied from `mp_koth_4P_4` (identical tiles); 5 SpawnPoint per position + 4 neutral, 15 MultiwiniaZone (neutral), 4 neutral TrunkPort, 1 SpawnPopulationLock (radius 1169.84, max 1200), 150 Darwinians per position; `PopulationCap -1`, `CoopMode` | hwcompat only [U] how it is launched (no code references the id except `PERMITTED_MAPS`) |
 | `mp_sandbox.txt` | developer sandbox | `GameTypes none`; excluded from retail | 11 buildings: ControlTower, Incubator, **Statue** (blocked by `BuildingIsBlocked` → dropped at parse), 3 Wall, 5 AITarget; `PopulationCap 2500`, `NumPlayers 2`, `AttackingTeams 1`; `PrimaryObjectives BuildingOnline :sandbox,2` (Darwinia condition; `GetLocationId("sandbox")` = −1 in Multiwinia → debug assert only) | none |
 | `mp_sandbox_all.txt` | developer sandbox | as above; also **no `NumPlayers`** (→ −1) | same terrain as `mp_sandbox`; 2 ControlTower, 2 Incubator, 4 SpawnPoint (pos 1), 11 SpawnLink, 1 SpawnPointMaster, 2 Tree | none |
@@ -480,7 +480,7 @@ What the designers actually used (top-level `mp_*`, 57 files, unless stated) —
 | `generationMethod` | 0 ×30, 1 ×356, 2 ×59 | all three methods used |
 | `lowlandSmoothingFactor` | 0.0–3.0 | |
 | Guide-grid power | 0 ×71, 1 ×26, 2 ×209, 3 ×30, 4 ×93, 5 ×16 → hand-painted guide grids on 374/445 tiles | grid side = 2^power (P11 §23.5) |
-| Flatten areas | 53 areas in 21 files (0–6 per file); types 0 Absolute ×17, 1 Add ×1, 2 Subtract ×5, 3 Smooth ×27, 4 Subtract2 ×3; half-size 8.4–1000; centre y −26 … 886.2; threshold −3.9 … 348.9 | Smooth is the most-used type |
+| Flatten areas | 53 areas in 19 files (0–6 per file); types 0 Absolute ×17, 1 Add ×1, 2 Subtract ×5, 3 Smooth ×27, 4 Subtract2 ×3; half-size 8.4–1000; centre y −26 … 886.2; threshold −3.9 … 348.9 | Smooth is the most-used type |
 
 ### 8.2 Lighting and effects
 - **Exactly two directional lights in every top-level map** (and in every `map_*`; only `old/mp_knightspatch` and `old/mp_shaman_2P_1` have one). Colours are over-bright multipliers: component range 0.26–5.23 (R), 0.26–3.15 (G), 0.00–2.07 (B); the common pattern is one neutral grey "fill" light (equal RGB, 0.33–1.25) plus one warm "key" light (R > G > B, e.g. `2.77 1.07 0`, `3.19 2.07 1.22`) [C] data, [I] the fill/key reading. Direction vectors are normalised at load; the `y` component used is 0.00–0.86 [C].
@@ -492,13 +492,438 @@ What the designers actually used (top-level `mp_*`, 57 files, unless stated) —
 - AI hints: `AITarget` (1112 in 53 files: link id −1…206, priority modifier −1…1, `checkCliffs` 0/1); Assault-style `AIObjective` chains (95 in 9 files, `nextObjective` link) with `AIObjectiveMarker`s (340 in 16 files: scan range 0–306.6, objective id, armour-objective flag, pickup-only flag); P08 owns their use.
 - Fortification kit: `Wall` 356 (11 files; optional objective link), `LaserFence` 703 (15 files; next-fence id chain, scale 0.25–3.0, mode 2 Enabled ×658 / 0 Disabled ×20 / 5 AlwaysOn ×23 / 4 NeverOn ×2 — `LaserFence::Mode*`), `GunTurret` 207 (14 files, **all neutral**, turret type in the `state` field: 0 Standard ×196, 3 Flame ×11 — `GunTurret::GunTurretType*`; target pos/radius/force all 0), `RestrictionZone` 35 (14 files; size 300–1118.8; `blockPowerups` 0/1), `JumpPad` 23 (3 files; force 76.17–227.38, angle 0.51–1.08), `RadarDish` 46 (7 files; flags `forceConnection`, `autoConnectAtStart`, optional valid-link list).
 - Power/fuel chains: `SolarPanel` 231, `Pylon` 301, `PylonEnd` 88, `PowerSplitter` 26 (each line = next power link; splitter = link list) feed `FuelGenerator` 57 → `FuelPipe` 178 → `FuelStation` 57 → `EscapeRocket` 19 (Rocket Riot), and appear decoratively/functionally on several Assault and Blitzkrieg maps.
-- Set dressing: `Tree` 755 (45 files; 11 extra tokens: height, budsize, pushUp, pushOut, iterations, seed, two colour words, flags — P07), `StaticShape` 193 (19 files; scale 0.83–6.1; shapes `beachheadobstruction.shp` 67, `temple2.shp` 56, `rockhead.shp` 32, `temple4.shp` 27, `temple3.shp` 8, `spaceship.shp` 1), effect markers `EruptionMarker` (1, `mp_blitzkrieg_3P_2`), `SmokeMarker` (6, `mp_assault_3p_1`), `WallBuster` (3, `mp_assault_2P_1`).
+- Set dressing: `Tree` 755 (45 files; extra tokens `height budsize pushOut pushUp iterations seed branchColour leafColour [leafDropRate [spiritDropRate [evil]]]` — `code/worldobject/tree.cpp:Tree::Read`; 753 rows give all 11, 2 give 9; height 43.54–272.65; P07), `StaticShape` 193 (19 files; scale 0.83–6.1; shapes `beachheadobstruction.shp` 67, `temple2.shp` 56, `rockhead.shp` 32, `temple4.shp` 27, `temple3.shp` 8, `spaceship.shp` 1), effect markers `EruptionMarker` (1, `mp_blitzkrieg_3P_2`), `SmokeMarker` (6, `mp_assault_3p_1`), `WallBuster` (3, `mp_assault_2P_1`).
 
 ### 8.4 Starting units, camera, scripting
-- `InstantUnits`: starting Darwinians per position are 8–150 (40 on most 2–4P maps; 45 on `mp_domination_2P_1`, `mp_koth_3P_1`); Assault gives only the defending side(s) starting Darwinians (+1–2 `Armour`); `Tank` ×1 per position on TankBattle; `Darwinian@5×35` on `mp_assault_3p_1` = a Futurewinian (team 5) garrison. No instant unit uses a route, waypoint or `runAsTask` [C].
+- `InstantUnits`: starting Darwinians per position on non-Assault maps are 8–150 (40 on most 2–4P maps; 45 on `mp_domination_2P_1`, `mp_koth_3P_1`; 8 on `mp_blitzkrieg_2p_2`, `mp_rocketriot_3P_3`; 150 on `mp_benchmark_1`; none on 15 files: 6 of 7 Rocket Riot, `mp_blitzkrieg_2P_3/3P_2/4P_2`, `mp_koth_2P_2`, `mp_koth_3P_4`, `mp_skirmish_2p_4`, `mp_cts_3p_3`, both sandboxes — these start players with trunk-port reinforcements or spawn points only); Assault gives the **defending** position(s) 63–325 Darwinians (+1–2 `Armour` on 4 maps: 2P_1, 3p_1, 3P_2, 4P_1) and the attackers none — sole exception `mp_assault_2p_3` (attacker pos 0 gets 8); `Tank` ×1 per position on TankBattle; `Darwinian@5×35` on `mp_assault_3p_1` = a Futurewinian (team 5) garrison. No instant unit uses a route, waypoint or `runAsTask` [C].
 - Camera mounts: `player<p>` for each start position (`main.cpp` cuts to `"player%d"` of the local team's position on game start) and optionally `start` (6 maps; `DoEnterLocation` targets `"start"` after load, fallback position `(maxX, 1000, maxX)` looking `(-1, -0.7, -1)`) [C] `code/main.cpp`. Missing mounts: `mp_assault_3p_3`, `mp_tankbattle_3P/4P` have none; `mp_blitzkrieg_2p_1`, `mp_skirmish_2p_4` define a spurious `player2` on 2-player maps.
-- **Unused by any shipped level** (`data/levels/**`): `Routes` blocks, camera-animation entries (47 `CameraAnimations` blocks, all empty), `RunningPrograms`, `LeaderboardStats`, `Difficulty` (except 3 Darwinia attract missions: `CreatedAsDifficulty 1`) [C]. `PrimaryObjectives` in Multiwinia maps is `NeverTrue` or absent — level files never script a Multiwinia win condition [C].
+- **Unused by any shipped level** (`data/levels/**`): `Routes` blocks, camera-animation entries (every `CameraAnimations` block — 47 top-level `mp_*`, 17 missions, `map_sandbox`, 30 `old/` — is empty), `RunningPrograms`, `LeaderboardStats`, `Difficulty` (except 3 Darwinia attract missions: `CreatedAsDifficulty 1`) [C]. `PrimaryObjectives` in Multiwinia maps is `NeverTrue` or absent — level files never script a Multiwinia win condition [C].
 
 ### 8.5 Map editor
-The in-game editor that produced these files (`LocationEditor`, editor windows, `MultiwiniaWindow`/`NewMapWindow` with default file `mp_blank.txt`/`mp_newmap.txt` — neither present in the tree) is compiled only under `LOCATION_EDITOR` [B:EDITOR]; specified by P17a. `LevelFile::Save` writes to `levels/<map>` only under `TARGET_DEBUG`, else to `<profile>/maps/` [C] `code/level_file.cpp:Save`.
+The in-game editor that produced these files (`LocationEditor` and its windows) is compiled only under `LOCATION_EDITOR` [B:EDITOR]; the Multiwinia map chooser `MultiwiniaWindow`/`NewMapWindow` (`code/interface/multiwinia_window.cpp`, default files `mp_blank.txt`/`mp_newmap.txt` — neither present in the tree) is compiled in but unreachable in FULL (P17a: [B:EDITOR], opened only by `MultiwiniaButton` in the Darwinia-era `MainMenuWindow`). Specified by P17a. `LevelFile::Save` writes to `levels/<map>` only under `TARGET_DEBUG`, else to `<profile>/maps/` [C] `code/level_file.cpp:Save`.
 
+## [→ 01_game_modes] 9. Per-mode map lists and per-mode level conventions
+
+### 9.1 Menu lists in menu order (retail data set)
+
+Order reproduced from `GameMenu::CreateMapList`: alphabetical base order of the lower-cased archive names, then stable sort by `NumPlayers`, then difficulty rank (basic < intermediate < advanced) [C] for the sort keys; [I] for ties, because `OrderedInsert`'s off-by-one can perturb the base order (§1.4). Mode index = blueprint index (`data/multiwinia.txt` order, = `Multiwinia::GameType*` enum). TankBattle shown with the full tree (no retail data; mode not compiled in FULL). Generated by `X4_md_tables.py modes` from `X4_mode_maplists.csv`.
+
+**0 Domination** (retail, 9 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_domination_2P_2.txt | The Eternal Guardians | 2 | basic | — |
+| 1 | mp_skirmish_2p_4.txt | Hamburger Hill | 2 | basic | — |
+| 2 | mp_domination_2P_1.txt | Barriers to Progress | 2 | intermediate | — |
+| 3 | mp_koth_2P_2.txt | Shrine of Memory | 2 | intermediate | 10 |
+| 4 | mp_koth_2P_3.txt | The Bitter Front | 2 | intermediate | 10 |
+| 5 | mp_domination_3P_1.txt | Field of Unending Dawn | 3 | basic | 10 |
+| 6 | mp_skirmish_3P_1.txt | Leap of Faith | 3 | advanced | — |
+| 7 | mp_domination_4P_1.txt | The Holy Tree | 4 | intermediate | 15 |
+| 8 | mp_domination_4P_2.txt | A Monument to the Heavens | 4 | advanced | 10 |
+
+**1 KingOfTheHill** (retail, 9 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_koth_2P_1.txt | The Eternal Guardians | 2 | basic | — |
+| 1 | mp_koth_2P_3b.txt | The Bitter Front | 2 | intermediate | 10 |
+| 2 | mp_koth_3P_2.txt | Field of Unending Dawn | 3 | basic | 5 |
+| 3 | mp_koth_3P_1.txt | Pursuit of Victory | 3 | intermediate | 10 |
+| 4 | mp_koth_3P_3.txt | The Deceitful Vale | 3 | intermediate | 10 |
+| 5 | mp_koth_3P_4.txt | The Walled Garden | 3 | intermediate | 10 |
+| 6 | mp_koth_4P_4.txt | Barbs of Madness | 4 | basic | — |
+| 7 | mp_koth_4P_1.txt | The Holy Tree | 4 | intermediate | 10 |
+| 8 | mp_koth_4P_3.txt | A Monument to the Heavens | 4 | advanced | 10 |
+
+**2 CaptureTheStatue** (retail, 9 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_cts_2p_1.txt | Mountain of Lost Souls | 2 | basic | — |
+| 1 | mp_cts_2p_4.txt | The Unending Peaks | 2 | basic | — |
+| 2 | mp_cts_2p_2.txt | The Bloody Shrine | 2 | intermediate | — |
+| 3 | mp_cts_2p_3.txt | Price of War | 2 | intermediate | — |
+| 4 | mp_cts_3p_1.txt | Melting Pot | 3 | intermediate | — |
+| 5 | mp_cts_3P_2.txt | The Tortured Expanse | 3 | intermediate | — |
+| 6 | mp_cts_4P_1.txt | Field of Unlife | 4 | advanced | — |
+| 7 | mp_cts_4P_2.txt | Scorched Earth | 4 | advanced | — |
+| 8 | mp_cts_4p_3.txt | Maze of Despair | 4 | advanced | — |
+
+**3 Assault** (retail, 8 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_assault_2P_1.txt | Beneath the Baleful Eye | 2 | basic | 15 |
+| 1 | mp_assault_2p_3.txt | Dog Green Sector | 2 | intermediate | 15 |
+| 2 | mp_assault_2P_2.txt | The Woeful Plateau | 2 | advanced | 15 |
+| 3 | mp_assault_3p_1.txt | The Third Kind | 2 | advanced | 15 |
+| 4 | mp_assault_3p_3.txt | Fort Zulu | 3 | intermediate | 15 |
+| 5 | mp_assault_3P_2.txt | The Hard Way | 3 | advanced | 15 |
+| 6 | mp_assault_4P_1.txt | Beyond the Pale | 4 | advanced | 15 |
+| 7 | mp_assault_4P_2.txt | The Last Stand | 4 | advanced | 20 |
+
+**4 RocketRiot** (retail, 7 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_rocketriot_2P_4.txt | Bridge of Light | 2 | basic | — |
+| 1 | mp_rocketriot_2P_2.txt | Echoes of the Future | 2 | intermediate | — |
+| 2 | mp_rocketriot_2p_3.txt | Stairway to Heaven | 2 | intermediate | — |
+| 3 | mp_rocketriot_3p_1.txt | The Second Beginning | 3 | basic | — |
+| 4 | mp_rocketriot_3P_2.txt | Wake of Eternity | 3 | intermediate | — |
+| 5 | mp_rocketriot_3P_3.txt | Heart of Chaos | 3 | advanced | — |
+| 6 | mp_rocketriot_4P_1.txt | Threads of Fate | 4 | advanced | — |
+
+**5 Blitzkrieg** (retail, 7 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_blitzkrieg_2p_1.txt | Confrontation Point | 2 | basic | — |
+| 1 | mp_blitzkrieg_2P_3.txt | The Eye of the World | 2 | intermediate | — |
+| 2 | mp_blitzkrieg_2p_2.txt | The Bleak Mountains | 2 | advanced | — |
+| 3 | mp_blitzkrieg_2P_4.txt | The Apex of Infinity | 2 | advanced | — |
+| 4 | mp_blitzkrieg_3P_2.txt | The Wheel | 3 | basic | — |
+| 5 | mp_blitzkrieg_3P_1.txt | Upon the Blazing Sea | 3 | intermediate | — |
+| 6 | mp_blitzkrieg_4P_2.txt | Gridlock | 4 | advanced | — |
+
+**6 TankBattle** (all_in_tree, 3 maps)
+
+| Menu index | File | Name | Players | Difficulty | PlayTime |
+|---|---|---|---|---|---|
+| 0 | mp_tankbattle_2P.txt | 2P TankBattle Arena | 2 | basic | — |
+| 1 | mp_tankbattle_3P.txt | 3P TankBattle Arena | 3 | basic | — |
+| 2 | mp_tankbattle_4P.txt | 4P TankBattle Arena | 4 | basic | — |
+
+### 9.2 Domination (`GameTypes Domination`, blueprint 0, `GameTypeSkirmish`) — 9 maps
+- Objects: spawn-point economy only — 1–3 `SpawnPoint` per start position + 3–9 neutral ones, one `SpawnPointMaster`, `SpawnLink` tree; no `MultiwiniaZone` [C] (§6). `mp_koth_2P_2` adds 6 neutral `RadarDish`es and a neutral `TrunkPort`; `mp_domination_4P_2` 8 `RadarDish`; `mp_skirmish_2p_4` a neutral `TrunkPort`; `mp_skirmish_3P_1` 18 `JumpPad`s, 6 neutral GunTurrets, 95 LaserFences and **no SpawnLinks** (master links straight to spawn points).
+- Naming: files are `mp_domination_*`, `mp_skirmish_*` (legacy name of the mode: old maps use `GameTypes … Skirmish`, §12) and two `mp_koth_*` files whose `GameTypes` was switched to Domination (`mp_koth_2P_2`, `mp_koth_2P_3`) [C].
+- Twin terrains with KOTH (`2P_2`≡`koth_2P_1`, `3P_1`≡`koth_3P_2`, `4P_1`≡`koth_4P_1`, `4P_2`≡`koth_4P_3`): the Domination twin replaces hill zones by extra neutral spawn points (§2).
+
+### 9.3 King of the Hill (`KingOfTheHill`, blueprint 1) — 9 maps
+- Hills = `MultiwiniaZone` rows: 1–15 per map, almost always neutral (255), sizes 50–555.24 [C].
+- Convention: **concentric zones** — several zones at the same centre (distance < 10 units) with different radii, so the central area counts as 2–3 zones: `mp_koth_3P_3` (zones 20+6: 101.17 & 140), `mp_koth_4P_1` (one triple + four pairs), `mp_koth_4P_3` (two pairs), `mp_koth_4P_4` (one triple + four pairs; same layout in `mp_benchmark_1`) [C] data; [I] intent (score per owned zone, P02 §4.2).
+- Team-owned zones: only `mp_koth_3P_3` tags three 150-unit zones with positions 0/1/2 (zone ids 0/1/2) [C] — placed one per player sector [I]; at load the team field is converted to the real team via `GetTeamFromPosition` (`Location::InitBuildings`), so those hills start owned [I] (ownership then follows occupancy, P02).
+- Economy: spawn-point graph as Domination on all KOTH maps except `mp_koth_3P_4` (2 `TrunkPort` per position + `trunkportreinforcements 100`, 6 neutral GunTurrets, 1 central zone 86.2). `mp_koth_3P_1` adds 12 neutral `RadarDish` and 6 neutral `ControlStation`s (radar control) and a neutral TrunkPort; `mp_koth_3P_3` also has one neutral TrunkPort; `mp_koth_4P_3` 8 neutral `RadarDish`.
+- Tutorials: Tutorial 1 = `mp_koth_2P_1`, Tutorial 2 = `mp_koth_3P_1` (§3.1).
+
+### 9.4 Capture the Statue (`CaptureTheStatue`, blueprint 2) — 9 maps (+ cut `mp_cts_3p_3`)
+- Convention [C] data + `Multiwinia::EnsureStartingStatue` / `MultiwiniaZone::Advance_CaptureTheStatue` (P02 §4.3): **exactly one team-owned `MultiwiniaZone` per start position = that player's drop (capture) zone** (size 80/100/109.27; 75 on the cut map), plus **1–6 neutral zones = statue spawn points** (size 40–75). The statue itself is never placed in the level (`Statue` is a blocked level type); the rules object spawns it at a random neutral zone (`syncrand() % statueSpawns.Size()`) when none exists [C].
+- Economy: spawn-point graph (1–3 per position, plus up to 8 neutral on `mp_cts_4P_1`); 4 maps set `instantspawnpointcapture`; `mp_cts_3p_3` uses trunk ports + reinforcements instead.
+- Starting force: 40 Darwinians per position on every shipped CTS map.
+
+### 9.5 Assault (`Assault`, blueprint 3) — 8 maps (+ `mp_assault_stress`)
+- **Attackers/defenders are start positions**: `AttackingTeams` lists attacker positions; `Location::SetupAssault` assigns each lobby team a free attacker or defender position (`GetFreeAttackerPosition/GetFreeDefenderPosition`, chosen with `syncrand`) and the attacker/defender colour; with co-op, `CoopGroup1Positions` decides group 1 vs 2 [C] `code/location.cpp:SetupAssault`.
+
+| Map | Players | Attacker positions | Defender positions | PulseBomb owner pos / `startTime` (s) | PlayTime (min) | ControlStations linked to bomb | TrunkPorts (pos:n) | DefenderPopCap | Reinforcements |
+|---|---|---|---|---|---|---|---|---|---|
+| mp_assault_2P_1 | 2 | 1 | 0 | 0 / 900 | 15 | 3 | 0:1 1:4 | 350 | tpr 100 |
+| mp_assault_2P_2 | 2 | 1 | 0 | 0 / 900 | 15 | 3 | 0:1 1:5 | 275 | tpr 100, armour 1 |
+| mp_assault_2p_3 | 2 | 0 | 1 | 1 / 900 | 15 | 3 (+2 radar-control stations) | 0:3 | −1 | tpr 100, armour 3, defender type AirStrike, forceradarteammatch, noradarcontrol |
+| mp_assault_3p_1 | 2 (file says 2) | 1 | 0 | 0 / 900 | 15 | 3 | 0:1 1:6 | 250 | tpr 75 |
+| mp_assault_3P_2 | 3 | 1 2 | 0 | 0 / 900 | 15 | 3 | 0:1 1:4 2:4 | 250 | tpr 75 |
+| mp_assault_3p_3 | 3 | 1 2 | 0 | 0 / 900 | 15 | 3 (stations owned by pos 0) | 1:4 2:4 | −1 | tpr 100 |
+| mp_assault_4P_1 | 4 | 0 1 | 2 3 | 2 / 900 | 15 | 4 | 0:3 1:3 2:1 3:1 | 200 | tpr 75 |
+| mp_assault_4P_2 | 4 | 2 3 | 0 1 | 1 / 1200 | 20 | 3 | 0:1 1:1 2:4 3:4 | 200 | tpr 60, armour 3 |
+| mp_assault_stress | 2 | 0 | 1 | 1 / 600 | — | 3 | 0:5 1:2 | — | tpr 250, defender type Armour |
+
+  Conventions [C] data: one `PulseBomb` per map, owned by a defender position, whose link list names the `ControlStation`s (3, or 4 on 4P_1) that `Location::InitBuildings` binds with `LinkToPulseBomb` in Assault; `startTime` = PlayTime × 60 (the bomb countdown equals the match length); attackers get more trunk ports (3–6 per attacker position) than defenders (0–1 per defender position) and no starting Darwinians; defenders get 63–325 starting Darwinians, the fortification kit (walls/laser fences owned by defender positions or neutral, 7–40 neutral GunTurrets incl. Flame turrets on 2p_3/3p_1/3p_3), `AIObjective` chains (3–18) and markers for the CPU; `InvalidCrates` on 6 of 8 shipped maps removes either `Armour` (3p_1, 3P_2, 4P_1, 4P_2) or `Squad Airstrike Nuke Meteor` (2P_1, 2p_3). `mp_assault_3p_1` ("The Third Kind") places 35 Darwinians on **team 5** (Futurewinian team, auto-initialised as a CPU team by `Location::SpawnEntities/InitFuturewinianTeam`) [C].
+
+### 9.6 Rocket Riot (`RocketRiot`, blueprint 4) — 7 maps
+- Convention [C] data, for every map: per start position **1 `EscapeRocket`** (extra tokens `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), **3 `FuelStation`s**, **1 `TrunkPort`** (the only Darwinian source — no spawn points, no starting Darwinians except 8/position on 3P_3), **3 team-owned `Pylon`s**; fuel supply as **3 `FuelGenerator`s per position** (team-owned on 2P_2, 2p_3, 3p_1; neutral on 2P_4, 3P_2, 3P_3, 4P_1), `FuelPipe` chains (team-owned or neutral), shared neutral power grid (`SolarPanel` 15–24, `PowerSplitter` 3–5, `PylonEnd` 3 per position, neutral `Pylon`s).
+- No `LevelOptions` are needed (trunk-port reinforcements are intrinsic to the mode, P02 §6.1); `mp_rocketriot_3P_3` sets `nogunturrets` and has 6 neutral GunTurrets; `mp_rocketriot_2P_4` bans `Armour` crates.
+
+### 9.7 Blitzkrieg (`Blitzkrieg`, blueprint 5) — 7 maps
+- Flags = `MultiwiniaZone` rows (size 100; 75 on 3P_2) with **adjacency link lists** (extra tokens after size). **One team-owned zone per position = that player's base flag** (recorded in `s_blitzkriegBaseZone[team]` and reset to neutral at init, `MultiwiniaZone::Initialise`), plus 1–5 neutral flags [C]. Links are written one-way in the files and made bidirectional on the first advance (P02 §4.6).
+
+| Map | Flags (id:pos→links) |
+|---|---|
+| mp_blitzkrieg_2p_1 | 4:255→6, 5:p0→4, 6:p1→— |
+| mp_blitzkrieg_2p_2 | 0:p0→—, 1:255→0, 2:255→1, 3:p1→4, 4:255→2 |
+| mp_blitzkrieg_2P_3 | 0:255→1, 1:p0→—, 2:p1→0 |
+| mp_blitzkrieg_2P_4 | 0:p0→2,4; 1:p1→—; 2:255→3; 3:255→1; 4:255→5; 5:255→1 |
+| mp_blitzkrieg_3P_1 | 0:p0→4; 1:p1→5; 2:p2→5,3; 3:255→0; 4:255→1; 5:255→6; 6:255→4,3 |
+| mp_blitzkrieg_3P_2 | 0:p0→2,3,1; 1:255→6; 2:255→6; 3:255→4; 4:p1→2,5; 5:255→6; 6:p2→— |
+| mp_blitzkrieg_4P_2 | 1:p1→8,11; 2:p0→10; 4:p2→—; 6:p3→9; 8:255→4; 9:255→4; 10:255→6; 11:255→2; 12:255→10,9,8,11 |
+
+- Economy: 1 `TrunkPort` per position on all 7 (+1 neutral on 2P_3, 2P_4); 2P maps also have spawn points (2p_2: 2 per position + 2 neutral; others 1–4 neutral); 2P maps use `trunkportreinforcements 100` + `trunkportarmour 3` (2P_4 instead `nogunturrets`); 3P/4P maps use `airstrikecapturezones 3` [C].
+
+### 9.8 Tank Battle (`TankBattle`, blueprint 6) [B:DEBUG]
+- 3 arenas, Trees only, one `Tank` instant unit per position, `PopulationCap -1`; no mode objects [C].
+
+## [→ 08_levels_and_level_design] 10. Thumbnails (`data/thumbnails/`, 57 files)
+
+Lookup rule §1.4 (`thumbnails/<lower-cased level stem>.bmp`, fallback `default.bmp`). Format from the BMP header [C]: 53 files are 400×300 8-bit palettised (52 × 121 078 bytes; `default.bmp` 120 778 bytes), 4 are 400×300 24-bit (360 056 bytes: `mp_cts_3p_3`, `mp_cts_4p_3`, `mp_koth_2P_2`, `mp_koth_3P_4`). Displayed at `thumbnailW = rightW × 0.8`, `H = W × 0.75` (4:3) in the map-select page [C] `GameMenuWindow::SetupMapSelectPage`. The only in-engine screenshot-to-thumbnail routine, `App::SaveThumbnailScreenshot` (256×192 RGBA), is compiled only under `TARGET_OS_VISTA` for the Vista rich saved-game header [B:DEAD] [C] `code/app.cpp`, `code/app.h` — it is unrelated to map thumbnails, so the 400×300 files were produced outside the engine [I]. Generated by `X4_md_tables.py thumbs`.
+
+| Thumbnail | Bytes | Format | Level (case-insensitive stem match) | Note | Data shipped in |
+|---|---|---|---|---|---|
+| default.bmp | 120778 | 400×300×8bpp | — | fallback (MapImageButton) when thumbnails/<stem>.bmp missing | retail prev hw stress βA βB βC |
+| mp_assault_2P_1.bmp | 121078 | 400×300×8bpp | mp_assault_2P_1.txt |  | retail |
+| mp_assault_2P_2.bmp | 121078 | 400×300×8bpp | mp_assault_2P_2.txt |  | retail |
+| mp_assault_2p_3.bmp | 121078 | 400×300×8bpp | mp_assault_2p_3.txt |  | retail βA |
+| mp_assault_3P_1.bmp | 121078 | 400×300×8bpp | mp_assault_3p_1.txt |  | retail |
+| mp_assault_3P_2.bmp | 121078 | 400×300×8bpp | mp_assault_3P_2.txt |  | retail βA |
+| mp_assault_3P_3.bmp | 121078 | 400×300×8bpp | mp_assault_3p_3.txt |  | retail βA |
+| mp_assault_4P_1.bmp | 121078 | 400×300×8bpp | mp_assault_4P_1.txt |  | retail |
+| mp_assault_4P_2.bmp | 121078 | 400×300×8bpp | mp_assault_4P_2.txt |  | retail βA |
+| mp_benchmark_1.bmp | 121078 | 400×300×8bpp | mp_benchmark_1.txt |  | hw |
+| mp_blitzkrieg_2p_1.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_2p_1.txt |  | retail |
+| mp_blitzkrieg_2p_2.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_2p_2.txt |  | retail βB |
+| mp_blitzkrieg_2p_3.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_2P_3.txt |  | retail |
+| mp_blitzkrieg_2p_4.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_2P_4.txt |  | retail |
+| mp_blitzkrieg_3P_1.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_3P_1.txt |  | retail |
+| mp_blitzkrieg_3P_2.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_3P_2.txt |  | retail βB |
+| mp_blitzkrieg_4P_2.bmp | 121078 | 400×300×8bpp | mp_blitzkrieg_4P_2.txt |  | retail βB |
+| mp_cts_2p_1.bmp | 121078 | 400×300×8bpp | mp_cts_2p_1.txt |  | retail prev |
+| mp_cts_2p_2.bmp | 121078 | 400×300×8bpp | mp_cts_2p_2.txt |  | retail βA |
+| mp_cts_2p_3.bmp | 121078 | 400×300×8bpp | mp_cts_2p_3.txt |  | retail |
+| mp_cts_2p_4.bmp | 121078 | 400×300×8bpp | mp_cts_2p_4.txt |  | retail βA |
+| mp_cts_3p_1.bmp | 121078 | 400×300×8bpp | mp_cts_3p_1.txt |  | retail βA |
+| mp_cts_3P_2.bmp | 121078 | 400×300×8bpp | mp_cts_3P_2.txt |  | retail |
+| mp_cts_3p_3.bmp | 360056 | 400×300×24bpp | mp_cts_3p_3.txt |  | — |
+| mp_cts_4P_1.bmp | 121078 | 400×300×8bpp | mp_cts_4P_1.txt |  | retail βA |
+| mp_cts_4P_2.bmp | 121078 | 400×300×8bpp | mp_cts_4P_2.txt |  | retail |
+| mp_cts_4p_3.bmp | 360056 | 400×300×24bpp | mp_cts_4p_3.txt |  | retail |
+| mp_domination_2P_1.bmp | 121078 | 400×300×8bpp | mp_domination_2P_1.txt |  | retail |
+| mp_domination_2P_2.bmp | 121078 | 400×300×8bpp | mp_domination_2P_2.txt |  | retail |
+| mp_domination_3P_1.bmp | 121078 | 400×300×8bpp | mp_domination_3P_1.txt |  | retail |
+| mp_domination_4P_1.bmp | 121078 | 400×300×8bpp | mp_domination_4P_1.txt |  | retail |
+| mp_domination_4P_2.bmp | 121078 | 400×300×8bpp | mp_domination_4P_2.txt |  | retail |
+| mp_koth_2P_1.bmp | 121078 | 400×300×8bpp | mp_koth_2P_1.txt |  | retail prev hw βA |
+| mp_koth_2P_2.bmp | 360056 | 400×300×24bpp | mp_koth_2P_2.txt |  | retail |
+| mp_koth_2P_3.bmp | 121078 | 400×300×8bpp | mp_koth_2P_3.txt |  | retail |
+| mp_koth_2P_3b.bmp | 121078 | 400×300×8bpp | mp_koth_2P_3b.txt |  | retail |
+| mp_koth_2P_4.bmp | 121078 | 400×300×8bpp | — | level only in data/levels/old: data/levels/old/mp_koth_2P_4.txt | retail |
+| mp_koth_3P_1.bmp | 121078 | 400×300×8bpp | mp_koth_3P_1.txt |  | retail βA |
+| mp_koth_3P_2.bmp | 121078 | 400×300×8bpp | mp_koth_3P_2.txt |  | retail |
+| mp_koth_3P_3.bmp | 121078 | 400×300×8bpp | mp_koth_3P_3.txt |  | retail |
+| mp_koth_3P_4.bmp | 360056 | 400×300×24bpp | mp_koth_3P_4.txt |  | retail |
+| mp_koth_4P_1.bmp | 121078 | 400×300×8bpp | mp_koth_4P_1.txt |  | retail prev hw |
+| mp_koth_4P_3.bmp | 121078 | 400×300×8bpp | mp_koth_4P_3.txt |  | retail |
+| mp_koth_4P_4.bmp | 121078 | 400×300×8bpp | mp_koth_4P_4.txt |  | retail |
+| mp_rocketriot_2P_2.bmp | 121078 | 400×300×8bpp | mp_rocketriot_2P_2.txt |  | retail |
+| mp_rocketriot_2p_3.bmp | 121078 | 400×300×8bpp | mp_rocketriot_2p_3.txt |  | retail βA βC |
+| mp_rocketriot_2P_4.bmp | 121078 | 400×300×8bpp | mp_rocketriot_2P_4.txt |  | retail βC |
+| mp_rocketriot_3p_1.bmp | 121078 | 400×300×8bpp | mp_rocketriot_3p_1.txt |  | retail βC |
+| mp_rocketriot_3P_2.bmp | 121078 | 400×300×8bpp | mp_rocketriot_3P_2.txt |  | retail βA |
+| mp_rocketriot_3P_3.bmp | 121078 | 400×300×8bpp | mp_rocketriot_3P_3.txt |  | retail |
+| mp_rocketriot_4P_1.bmp | 121078 | 400×300×8bpp | mp_rocketriot_4P_1.txt |  | retail βA |
+| mp_skirmish_2p_3.bmp | 121078 | 400×300×8bpp | — | no level file in tree | retail |
+| mp_skirmish_2p_4.bmp | 121078 | 400×300×8bpp | mp_skirmish_2p_4.txt |  | retail |
+| mp_skirmish_3P_1.bmp | 121078 | 400×300×8bpp | mp_skirmish_3P_1.txt |  | retail |
+| mp_tankbattle_2P.bmp | 121078 | 400×300×8bpp | mp_tankbattle_2P.txt |  | — |
+| mp_tankbattle_3P.bmp | 121078 | 400×300×8bpp | mp_tankbattle_3P.txt |  | — |
+| mp_tankbattle_4P.bmp | 121078 | 400×300×8bpp | mp_tankbattle_4P.txt |  | — |
+
+Mismatches [C]: every one of the 57 top-level `mp_*` files except `mp_assault_stress`, `mp_sandbox`, `mp_sandbox_all` has a thumbnail (those three fall back to `default.bmp`); two thumbnails have no top-level level: `mp_koth_2P_4.bmp` (level only in `old/`, "Pillar of Light") and `mp_skirmish_2p_3.bmp` (no level anywhere; language file has `mp_skirmish_2P_3_name` "Stairway to Heaven" with description "INSERT DESCRIPTION HERE" — probably the precursor of `mp_rocketriot_2p_3` "Stairway to Heaven" [I]). Both ship in retail data although nothing can display them.
+
+## [→ 08_levels_and_level_design] 11. Darwinia `map_*` / `mission_*` files [B:LEGACY]
+
+All 29 files are Darwinia (2005) campaign levels kept in the tree. They are **excluded from every Multiwinia data build** (`levels/map_*`, `levels/mission_*` in all three exclusion lists) and reachable in code only through the Darwinia global world: `App::LoadProfile` → `GlobalWorld::LoadGame(game*.txt)` (which also loads every `map_*` of the `Locations` table and every `mission_<loc>*.txt`), called from the Prologue/Campaign buttons (`PrologueButton` sets `game_demo2.txt`, `CampaignButton` `game.txt`; page `PageDarwinia` only reachable in `TARGET_DEBUG`, P18), attract mode (`ATTRACTMODE_ENABLED`, [B:DEAD]), `Script::RunCommand_EnterLocation`, user-profile/mods windows [C] `code/app.cpp:LoadProfile`, `code/global_world.cpp:LoadGame`, `code/UI/PrologueButton.h`, `code/UI/CampaignButton.h`. Under `BLOCK_OLD_DARWINIA_OBJECTS` most of their building types are dropped at parse (column "Blocked in FULL"). `map_sandbox.txt` contains a `CarryableBuilding` row — not a building type name, so `Building::CreateBuilding(name)` returns NULL and the row is skipped [C].
+
+References (exact file-name matches; `data/scripts/gameover.txt` references are commented out with `#`) [C]:
+- `data/game.txt` (`Locations`: 1 sandbox, 2 garden+`mission_garden_liberate`, 3 containment, 4 generator, 5 mine, 6 yard, 7 escort+`mission_escort_escort`, 8 pattern_buffer, 9 biosphere, 10 receiver, 11 temple; `Events … Action SetMission` for containment_enable, mine_enable, generator_enable, yard_enable, receiver_recapture, pattern_buffer_recapture, biosphere_recapture, temple_cutscene);
+- `data/game_unlockall.txt` (all 11 locations, each with a mission incl. `mission_sandbox_tutorial`);
+- `data/game_demo.txt` (location 5 mine + `mission_mine_demo`); `data/game_demo2.txt` (Prologue: 2,3,4,5,7,9,11 with null missions + 12 `map_launchpad` + `mission_launchpad`);
+- `data/purity/game.txt` (copy of an older `game.txt`; `purity` excluded from data builds);
+- `data/scripts/attractmode.txt` (`SetMission` mine/pattern_buffer/biosphere `_attract`), `data/scripts/temple_intro.txt` (`mission_temple_recapture`);
+- `data/locations.txt`: 12 island positions `id x y z` (ids 1–12; id 12 = launchpad only in `game_demo2.txt`).
+- `code/global_world.cpp:GetLocationIdFromMapFilename` contains `*mapName += 4;` (adds 4 to the first character instead of advancing the pointer), so it never finds a location → −1 [C]; used by `GenerateAutomaticObjectives` for secondary objectives (Darwinia only).
+
+Generated by `X4_md_tables.py darwinia`:
+
+| File | Kind | Paired with | Sections | Bldgs | Blocked in FULL | Unknown types | Cam mounts | Cam anims | Instant units | Routes | Primary objectives | CreatedAsDifficulty | Referenced by |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| map_biosphere.txt | map | mission_biosphere_attract.txt mission_biosphere_recapture.txt | landscape landscapetiles landflattenareas lights buildings | 144 | 13 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_containment.txt | map | mission_containment_enable.txt | landscape landscapetiles landflattenareas lights buildings | 87 | 2 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_escort.txt | map | mission_escort_escort.txt | landscape landscapetiles landflattenareas lights buildings | 16 | 1 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_garden.txt | map | mission_garden_liberate.txt | landscape landscapetiles landflattenareas lights buildings | 11 | 1 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_generator.txt | map | mission_generator_enable.txt | landscape landscapetiles landflattenareas lights buildings | 70 | 1 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_launchpad.txt | map | mission_launchpad.txt | landscape landscapetiles landflattenareas lights buildings | 91 | 3 | — | — | — | 0 | 0 | — | — | data/game_demo2.txt |
+| map_mine.txt | map | mission_mine_attract.txt mission_mine_demo.txt mission_mine_enable.txt | landscape landscapetiles landflattenareas lights buildings | 93 | 71 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_pattern_buffer.txt | map | mission_pattern_buffer_attract.txt mission_pattern_buffer_recapture.txt | landscape landscapetiles landflattenareas lights buildings | 60 | 20 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| map_receiver.txt | map | mission_receiver_recapture.txt | landscape landscapetiles landflattenareas lights buildings | 143 | 122 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| map_sandbox.txt | map | mission_sandbox_tutorial.txt | landscape landscapetiles landflattenareas lights buildings cameramounts cameraanimations buildings instantunits primaryobjectives | 11 | 0 | CarryableBuilding | 10 | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| map_temple.txt | map | mission_temple_cutscene.txt mission_temple_recapture.txt | landscape landscapetiles landflattenareas lights buildings | 78 | 1 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_demo2.txt data/game_unlockall.txt data/purity/game.txt |
+| map_yard.txt | map | mission_yard_enable.txt | landscape landscapetiles landflattenareas lights buildings | 99 | 56 | — | — | — | 0 | 0 | — | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| mission_biosphere_attract.txt | mission | map_biosphere.txt | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 0 | 0 | — | 7 | 0 | 1158 | 0 | BuildingOnline :biosphere,90 biosphere_objective1 biosphere_intro.txt // Buildin | 1 | data/scripts/attractmode.txt |
+| mission_biosphere_recapture.txt | mission | map_biosphere.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 1 | 1 | — | 6 | 0 | 678 | 0 | BuildingOnline :biosphere,90 biosphere_objective1 biosphere_intro.txt // Buildin | — | data/game.txt data/game_unlockall.txt data/scripts/gameover.txt |
+| mission_containment_enable.txt | mission | map_containment.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 4 | — | 5 | 0 | 589 | 0 | BuildingOnline :containment,85 containment_objective_2 containment_primary1.txt  | — | data/game.txt data/game_unlockall.txt data/purity/game.txt data/scripts/gameover.txt |
+| mission_escort_escort.txt | mission | map_escort.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 8 | 1 | — | 3 | 0 | 636 | 0 | BuildingOnline :escort,1 biospherealpha_objective biospherealpha_primary.txt | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| mission_garden_liberate.txt | mission | map_garden.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 3 | 3 | — | 1 | 0 | 229 | 0 | BuildingOnline :garden,8 objective_capture_trunk // ResearchOwned :Grenade objec | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| mission_generator_enable.txt | mission | map_generator.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 4 | 0 | — | 3 | 0 | 436 | 0 | BuildingOnline :generator,0 generator_objective1 generator_primary1.txt | — | data/game.txt data/game_unlockall.txt |
+| mission_launchpad.txt | mission | map_launchpad.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 9 | 6 | — | 41 | 0 | 407 | 0 | BuildingOnline :launchpad,1 launchpad_objective1 launchpad_primary1.txt // Build | — | data/game_demo2.txt |
+| mission_mine_attract.txt | mission | map_mine.txt | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 0 | — | 6 | 0 | 504 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // BuildingOnlin | 1 | data/scripts/attractmode.txt |
+| mission_mine_demo.txt | mission | map_mine.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 4 | — | 13 | 0 | 434 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // BuildingOnlin | — | data/game_demo.txt |
+| mission_mine_enable.txt | mission | map_mine.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 11 | 4 | — | 4 | 0 | 434 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // BuildingOnlin | — | data/game.txt data/game_unlockall.txt data/purity/game.txt |
+| mission_pattern_buffer_attract.txt | mission | map_pattern_buffer.txt | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 9 | 0 | — | 7 | 0 | 940 | 0 | BuildingOnline :pattern_buffer,1 patternbuffer_objective1 patternbuffer_primary1 | 1 | data/scripts/attractmode.txt |
+| mission_pattern_buffer_recapture.txt | mission | map_pattern_buffer.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 8 | 1 | — | 3 | 0 | 598 | 0 | BuildingOnline :pattern_buffer,1 patternbuffer_objective1 patternbuffer_primary1 | — | data/game.txt data/game_unlockall.txt |
+| mission_receiver_recapture.txt | mission | map_receiver.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 13 | 0 | — | 4 | 0 | 646 | 0 | BuildingOnline :receiver,1 receiver_objective1 receiver_primary1.txt // Building | — | data/game.txt data/game_unlockall.txt data/scripts/gameover.txt |
+| mission_sandbox_tutorial.txt | mission | map_sandbox.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 0 | 0 | — | 10 | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | — | data/game_unlockall.txt |
+| mission_temple_cutscene.txt | mission | map_temple.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 4 | 1 | — | 9 | 0 | 378 | 0 | NeverTrue -1 -1 | — | data/game.txt data/game_unlockall.txt |
+| mission_temple_recapture.txt | mission | map_temple.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 6 | 3 | — | 2 | 0 | 434 | 0 | BuildingOnline :temple,81 temple_objective temple_primary.txt // BuildingOnline  | — | data/scripts/temple_intro.txt |
+| mission_yard_enable.txt | mission | map_yard.txt | cameramounts cameraanimations buildings instantunits primaryobjectives | 14 | 1 | — | 2 | 0 | 781 | 0 | BuildingOnline :yard,5 yard_objective_1 yard_primary1.txt // BuildingOnline :yar | — | data/game.txt data/game_unlockall.txt |
+
+## [→ 08_levels_and_level_design] 12. `data/levels/old/` (30 superseded maps) — never loaded
+
+Status [C]: not listed by `CreateMapList` (non-recursive scan, §1.4); excluded by `levels/old/*` in every exclusion list; no code or data file references any of them by file name (the only textual hits are language strings: `mp_koth_2P_4_name/_description`, and `mp_assault_3P_1_*`, which case-insensitively belongs to the top-level `mp_assault_3p_1`); none of their CRCs equals a `MAPID_*` (they are not in `code/mapcrc.h`). Even if listed, most would be discarded or truncated by the current parsers: `GameTypes` tokens `Skirmish` (former name of Domination), `Shaman` (a removed mode) and `Chess` match no blueprint (`AddMap` keeps only matching tokens; `KingOfTheHill Skirmish` files would appear under KOTH only); `none`/empty lines discard the map; `Portal`, `ChessBase`, `GodDish`, `AISpawnPoint` rows are blocked types; `Shaman` and `AI` instant units are blocked entities (`Entity::EntityIsBlocked`) [C]. They document the design history (prototype modes, renamed modes, map evolution). Generated by `X4_md_tables.py old`:
+
+| File | English name | GameTypes | Players | PopCap | worldSize | cell | tiles | Bldgs | Blocked in FULL | SpawnPoint by pos | InstantUnits | LevelOptions | CRC equals a MAPID? |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| old/mp_assault1.txt | — | (no options block) | — | — | 2000 | 12.00 | 7 | 25 | 2 | — | Darwinian@1x150 | — | — |
+| old/mp_assault_3P_1.txt | The Third Kind | Assault | 3 | 1000 | 4000 | 20.00 | 7 | 126 | 0 | — | Darwinian@2x135 | trunkportreinforcements=100 defenderreinforcementtype=DropShip attackerreinforcementtype=AirStrike futurewinianteam=2 attackreinforcementoption=2 attackreinforcementoption=1 | — |
+| old/mp_cauldron.txt | — | none | — | 800 | 2220 | 12.00 | 3 | 29 | 0 | 1:8 | — | — | — |
+| old/mp_chess1.txt | — | (no options block) | — | — | 2676 | 12.00 | 1 | 8 | 2 | — | — | — | — |
+| old/mp_crossroads.txt | — | Assault | — | -1 | 3000 | 14.00 | 1 | 33 | 4 | — | Darwinian@1x200 | — | — |
+| old/mp_crucible.txt | — | none | — | 1000 | 2000 | 12.00 | 2 | 49 | 0 | 1:3;255:10 | — | — | — |
+| old/mp_firetop.txt | — | none | — | -1 | 2000 | 12.00 | 1 | 25 | 0 | — | — | — | — |
+| old/mp_gateway.txt | — | Shaman | — | -1 | 2950 | 16.00 | 3 | 42 | 1 | 1:6 | Darwinian@0x40 Darwinian@1x40 Shaman@0x1[blocked] Shaman@1x1[blocked] | — | — |
+| old/mp_ghosttown.txt | — | none | — | 1500 | 3000 | 16.00 | 1 | 65 | 0 | 1:11 | — | — | — |
+| old/mp_hamburgerhill.txt | — | KingOfTheHill Skirmish | — | 1000 | 2000 | 12.00 | 1 | 35 | 0 | 255:8 | — | — | — |
+| old/mp_kingspass.txt | — | Assault | — | -1 | 2533 | 18.00 | 1 | 31 | 3 | — | Darwinian@1x120 | — | — |
+| old/mp_knightspatch.txt | — | KingOfTheHill Skirmish | — | 1000 | 2000 | 12.00 | 3 | 19 | 0 | 1:9 | Darwinian@0x10 Darwinian@1x10 | — | — |
+| old/mp_koth_2P_4.txt | Pillar of Light | (empty GameTypes line) | 2 | -1 | 3000 | 16.00 | 16 | 43 | 0 | 255:8 | Darwinian@0x100 Darwinian@1x80 | nohandicap instantspawnpointcapture | — |
+| old/mp_marblecanyon.txt | — | Skirmish | — | 1500 | 3000 | 12.00 | 2 | 43 | 0 | 1:13 | — | — | — |
+| old/mp_rocketriot_2p_1.txt | — | RocketRiot | 2 | -1 | 5372 | 20.00 | 5 | 87 | 4 | — | — | — | — |
+| old/mp_sabrepoint.txt | — | KingOfTheHill Skirmish | — | 1500 | 2500 | 12.00 | 4 | 48 | 0 | — | Engineer@1x2 Engineer@2x2 Engineer@3x2 | — | — |
+| old/mp_shaman.txt | — | Shaman | — | -1 | 2393 | 16.00 | 10 | 5 | 1 | — | Shaman@0x1[blocked] Shaman@1x1[blocked] Shaman@2x1[blocked] Shaman@3x1[blocked] | — | — |
+| old/mp_shaman2.txt | — | Shaman | — | -1 | 1500 | 12.00 | 1 | 24 | 1 | 1:6 | Shaman@0x1[blocked] Shaman@1x1[blocked] | — | — |
+| old/mp_shaman_2P.txt | — | Shaman | 2 | -1 | 2300 | 14.00 | 2 | 54 | 7 | 255:3 | Darwinian@0x10 Darwinian@1x10 | — | — |
+| old/mp_shaman_2P_1.txt | — | Shaman | 2 | -1 | 2500 | 16.00 | 11 | 78 | 11 | 255:8 | Darwinian@0x40 Darwinian@1x40 | — | — |
+| old/mp_shaman_2P_2.txt | — | Shaman | 2 | -1 | 4000 | 20.00 | 13 | 119 | 15 | 255:10 | Darwinian@0x45 Darwinian@1x45 | — | — |
+| old/mp_shaman_2P_3.txt | — | Shaman | 2 | -1 | 2754 | 16.00 | 11 | 65 | 11 | 255:10 | Darwinian@0x40 Darwinian@1x40 | — | — |
+| old/mp_shaman_3P_1.txt | — | Shaman | 3 | -1 | 3000 | 16.00 | 23 | 101 | 16 | 255:10 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — |
+| old/mp_shaman_3P_2.txt | — | Shaman | 3 | -1 | 2300 | 12.00 | 2 | 77 | 16 | 255:6 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — |
+| old/mp_shaman_3P_3.txt | — | Shaman | 3 | -1 | 3000 | 12.00 | 12 | 101 | 12 | 255:9 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — |
+| old/mp_silverisle.txt | — | KingOfTheHill Skirmish | — | -1 | 3391 | 20.00 | 13 | 68 | 0 | 1:4 | — | — | — |
+| old/mp_taintedflats.txt | — | none | — | -1 | 3000 | 12.00 | 1 | 16 | 0 | — | — | — | — |
+| old/mp_temple.txt | — | KingOfTheHill Skirmish | — | -1 | 4360 | 14.29 | 9 | 78 | 1 | 1:8 | Shaman@0x1[blocked] | — | — |
+| old/mp_thestretch.txt | — | Assault | — | 2000 | 3252 | 16.00 | 1 | 56 | 3 | — | AI@0x1[blocked] Darwinian@1x260 | — | — |
+| old/mp_twistedhighlands.txt | — | none | — | -1 | 2570 | 12.00 | 1 | 12 | 0 | — | — | — | — |
+
+Families and lineage [C] data, [I] lineage:
+- **Shaman mode prototypes** (10): `mp_gateway`, `mp_shaman`, `mp_shaman2`, `mp_shaman_2P`, `_2P_1`, `_2P_2`, `_2P_3`, `_3P_1`, `_3P_2`, `_3P_3` — `GameTypes Shaman`, built around `Portal`s (91 rows) and `Shaman` instant units; `mp_shaman_2P_3` terrain was reused verbatim for shipped KOTH `mp_koth_2P_3b`.
+- **Early Skirmish/KOTH maps** with `KingOfTheHill Skirmish` or `Skirmish`: `mp_hamburgerhill` (the English string "Hamburger Hill" now belongs to shipped `mp_skirmish_2p_4`), `mp_knightspatch`, `mp_marblecanyon`, `mp_sabrepoint` (Engineer instant units, CloneLab, Triffid), `mp_silverisle`, `mp_temple` (Darwinia `map_temple` terrain).
+- **Assault prototypes**: `mp_assault1` (no options block), `mp_crossroads`, `mp_kingspass`, `mp_thestretch` (all use blocked `AISpawnPoint` enemy generators and Darwinia-style AI), and `mp_assault_3P_1` — the 3-player precursor of "The Third Kind" (`NumPlayers 3`, `AttackingTeams 0 1`, `ForceCoop`, groups `0 1 / 2`, `futurewinianteam 2`, `defenderreinforcementtype DropShip`, `attackerreinforcementtype AirStrike`, `InvalidCrates SpaceShip`).
+- **Others**: `mp_koth_2P_4` ("Pillar of Light": empty `GameTypes`, `nohandicap instantspawnpointcapture`, `snow`; its thumbnail still ships), `mp_rocketriot_2p_1` (2-rocket Rocket Riot precursor), `mp_chess1` (`GameTypes Chess` written as a bare line before the Landscape block; ChessBase pieces), `mp_cauldron` (non-square 2220×2200), `mp_crucible`, `mp_firetop`, `mp_ghosttown`, `mp_taintedflats`, `mp_twistedhighlands` (`GameTypes none`).
+- **Writer-bug fingerprint** [C]: `old/mp_assault_3P_1` contains `futurewinianteam 2 attackreinforcementoption 2 attackreinforcementoption 1`. `LevelFile::WriteMultiwiniaOptions` has no `break` after the `LevelOptionFuturewinianTeam` case, so saving a level with a Futurewinian team also writes `attackreinforcementoption <same value>`; the genuine `attackreinforcementoption` (1) follows and wins on re-load because the parser overwrites [C] `code/level_file.cpp:WriteMultiwiniaOptions`, `ParseMultiwiniaOptions`. A re-implementation must not replicate this.
+
+## [→ 08_levels_and_level_design] 13. `level_enum.txt`, achievements and PDLC remnants
+
+- `data/levels/level_enum.txt`: 59 lines `<file name> <id>`; ids **1–49** = exactly the 49 retail menu maps (same set as §9.1; `mp_cts_3p_3` has none); ids **50–59** name PDLC maps `mp_PDLC1_skirmish_2p_1`, `mp_PDLC1_koth_4p_2`, `mp_PDLC1_cts_4p_3`, `mp_PDLC1_rocketriot_4p_2`, `mp_PDLC1_blitzkrieg_4p_1`, `mp_PDLC2_blitzkrieg_3P_1`, `mp_PDLC2_cts_3P_1`, `mp_PDLC2_domination_3P_1`, `mp_PDLC2_koth_3P_1`, `mp_PDLC2_rocketriot_3P_1` — **none of these files exists** in the tree (and `levels/pdlc/*` is excluded from builds) [C].
+- Consumer [C] `code/achievement_tracker.cpp`: `AchievementTracker::AchievementTracker` loads `ACHIEVEMENT_LEVEL_ENUM` = `levels/level_enum.txt` into a case-insensitive `HashTable<int>`; `AddVictoryOnLevel(map)` / `AddVisitedLevel(map)` set bit `id` in `m_won[]`/`m_visited[]` for `id ≤ MAX_LEVEL_ID = 49`; when `NumWonLevels() == VALID_ACHIEVEMENT_LEVELS` (49 with `INCLUDEGAMEMODE_ASSAULT`, else 41) → `DarwiniaAchievementMasterOfMultiwinia`. `GameMenu::CreateMapList` separately counts official maps into `SetNumLevels`.
+- **Contradiction**: `tools/multiwinia_exclusions.txt` (retail) and `_beta_test` / `_hwcompat` all exclude `levels/level_enum.txt`, and it is not in `tools/init.list`, so a retail `main.dat` built by these scripts lacks the file → the tracker logs "Failed to load level_enum.txt", every lookup returns −1 and no level is ever recorded [C] data/scripts + code, [I] effect on the shipped product (a later patch archive could have supplied it [U]).
+- PDLC (premium downloadable content) remnants [C]: menu page names `"Downloaded PDLC"`, `"PDLC Upsell"` (`code/game_menu.cpp:s_pageNames`), `Server::Disconnect_ClientNeedsPDLC`, network option `NET_DARWINIA_GAMEOPTION_PDLC_BITMASK` ("hj"), `App::m_checkedForPDLC` and a declared-but-undefined `App::DoCheckForPDLC()`; no loading code for PDLC maps exists [C] grep. Treated as Xbox Live Arcade-era remnants [I] → appendix.
+
+## Cross-partition notes
+- **X1a (grammar)** — quirks observed in shipped files that a grammar must tolerate: CRLF line endings; `#` header-comment lines inside blocks (written by every `Write*`); trailing tabs/spaces after values; empty blocks; a second, empty `Buildings` block after `CameraAnimations` (layout A, §1.3); `GameTypes` with zero tokens (`old/mp_koth_2P_4`) or as a bare line outside any block (`old/mp_chess1`); duplicate scalar keys (`PopulationCap` twice in `mp_cts_4p_3`, last wins); objective lines containing `:` and `,` (`BuildingOnline :sandbox,2`); unknown building type names (`CarryableBuilding`) silently skipped.
+- **P11** — loading sequence, MapCRC, `MultiwiniaOptions` semantics (§8.1–8.8). This draft's CRC re-computation (X4_levels.py) agrees 86/86 with `code/mapcrc.h`. P11 §8.1 states "57 files" for `mp_*` (agrees) and counts PrimaryObjectives 65 (agrees: 47 mp + 1 map_sandbox + 17 missions).
+- **P02** — mode rules. P02 §1.3 lists 10 CTS maps including `mp_cts_3p_3`; that file is excluded from retail data (§4), so the shipped product has 9. All per-mode conventions in §9 are consistent with P02's mechanics (zones, statues, flags, pulse bomb, rockets).
+- **P06/P07** — building fields (`SpawnPoint` links, `SpawnPopulationLock`, `Tree`, `StaticShape`, `LaserFence`, `GunTurret`); building counts here equal `P06_level_building_usage.csv`.
+- **P08** — `InvalidCrates` per level (§5) and AI marker counts (§6, §8.3).
+- **P17a/P18** — map-select page (`SetupMapSelectPage`, `LevelSelectButton`, `MapImageButton`, `MapInfoButton`), demo-restricted map rendering, tutorial buttons; editor windows (`MultiwiniaWindow`, `NewMapWindow`).
+- **P01/P17b** — `AchievementTracker` and `level_enum.txt` (§13); `App::IsMapPermitted`, `IsGameModePermitted`, `GetMapID`, `GetMaxNumberofPlayers` (returns `MapData::m_numPlayers` of the requested map).
+- **P14/X-packaging** — `tools/build_multiwinia_data.bat` exclusion/inclusion mechanics (§3.2).
+- **P16** — no per-level music field exists.
+- **P11 note** — P11 §8.1 tags `level_enum.txt` [B:FULL]; its consumer code is FULL but the data file is excluded from every Multiwinia data build (§13).
+
+## Contradictions / open questions
+1. `level_enum.txt` is excluded from every Multiwinia data build but is the only source of achievement level ids (§13) → Master of Multiwinia unreachable with script-built data [C]/[I].
+2. Beta group A: `PERMITTED_MAPS {CTS_2P_1, CTS_3P_1, CTS_4P_3}` vs `multiwinia_inclusions_beta_test_group_a.txt` shipping 13 maps of which only `mp_cts_3p_1` is in that whitelist (the inclusion list equals the commented-out `GROUP_ALL` list); with only `INCLUDEGAMEMODE_CTS` compiled, a group-A build would show 1 CTS map [I].
+3. `TARGET_PC_HARDWARECOMPAT` and `TARGET_ASSAULT_STRESSTEST` whitelist `MP_BENCHMARK_1` / `MP_ASSAULT_STRESS`, whose files say `GameTypes none` → `AddMap` discards them, so they cannot be picked in the menu [C]; how those builds launched them is [U].
+4. `LevelFile::ParseMultiwiniaOptions` keeps only the first `GameTypes` token whereas `GameMenu::AddMap` honours all; harmless for shipped data (every file has ≤1 type) and `LevelFile::m_gameTypes` is only read by the editor options window [C].
+5. `mp_assault_3p_1` is named "3p" but declares `NumPlayers 2` (its `old/` precursor had 3) [C].
+6. `mp_blitzkrieg_2p_1` and `mp_skirmish_2p_4` define a `player2` camera mount on 2-player maps; `mp_assault_3p_3`, `mp_tankbattle_3P`, `mp_tankbattle_4P` have no `player<p>` mounts (camera stays at the post-load target) [C].
+7. `WriteMultiwiniaOptions` fall-through after `futurewinianteam` (§12) [C].
+8. `GlobalWorld::GetLocationIdFromMapFilename` pointer bug (`*mapName += 4`) (§11) [C].
+9. `OrderedInsert` never compares against the last list element, so map-list base order is only approximately alphabetical (§1.4) [C].
+10. Two thumbnails without a loadable level ship in retail data (§10) [C].
+
+## [U] Unknowns
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Did the shipped retail data contain `levels/level_enum.txt` (e.g. via a patch archive)? | inspect a retail `main.dat` / `patch.dat` |
+| U2 | How `mp_benchmark_1` and `mp_assault_stress` were started in the hwcompat / stress builds despite `GameTypes none` | data of those builds, or a launcher/testbed path not in this tree |
+| U3 | Contents of `tools/multiwinia_inclusions_ambx.txt` (referenced by `build_multiwinia_data.bat`, absent) | the missing file |
+| U4 | Exact tie order inside each menu list (depends on archive index order through `OrderedInsert`) | run `CreateMapList` against a real `main.dat` |
+| U5 | Content of the 10 PDLC maps named in `level_enum.txt` | PDLC data (not in tree) |
+| U6 | Whether the released game's metaserver sent a demo map list different from the 5-map default | metaserver data / retail logs |
+| U7 | Tool used to make the 400×300 thumbnails (no in-engine map-thumbnail writer exists) | art pipeline notes |
+
+## Docs-vs-code discrepancies
+- `docs/multiwiniareleasenotes-beta.txt` (e.g. "VERSION 1.9.24": Assault "The Woeful Plateau, The Third Kind, Beyond the Pale", Rocket Riot "Echoes of the Future, Heart of Chaos, Threads of Fate"; later CTS "Price of War, The Tortured Expanse, Scorched Earth", Blitzkrieg "The Apex of Infinity, Upon the Blazing Sea, Gridlock", KOTH "The Bitter Front, The Walled Garden, Barbs of Madness", Domination "Barriers to Progress, Leap of Faith, A Monument to the Heavens") describes beta map rotations that match neither the beta-group `PERMITTED_MAPS` in `code/lib/universal_include.h` nor the `tools/multiwinia_inclusions_beta_test_group_*.txt` lists; the code/data reflect a different (probably final) rotation. Documented: the code.
+- `docs/multiwinia-changes.txt` "Co-op Mode can no longer be selected for … 'Field of Unlife'" — consistent with data (`mp_cts_4P_1` has no `CoopMode`) [C]; "Fixed small gaps in laser fences on 'The Last Stand' and 'Stairway to Heaven'" — both maps carry laser fences (124 and 31 rows) [C], consistent.
+
+## IP register
+
+Every English map name and its `_description` lore text is Introversion IP (all in `data/language/english.txt`, and translated in the 8 other language files). Placeholders use `<MODE>-<players>P-<letter>` with neutral mode words (DOM = territory, HILL = zone control, RELIC = carry-the-object, SIEGE = attack/defend, LAUNCH = rocket race, FLAGS = chained flags, ARENA = tank duel, TEST = test maps).
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Beneath the Baleful Eye" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2P_1.txt` | SIEGE-2P-A |
+| "The Woeful Plateau" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2P_2.txt` | SIEGE-2P-B |
+| "Dog Green Sector" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_2p_3.txt` | SIEGE-2P-C |
+| "The Third Kind" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3p_1.txt` | SIEGE-2P-D |
+| "The Hard Way" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3P_2.txt` | SIEGE-3P-A |
+| "Fort Zulu" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_3p_3.txt` | SIEGE-3P-B |
+| "Beyond the Pale" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_4P_1.txt` | SIEGE-4P-A |
+| "The Last Stand" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_4P_2.txt` | SIEGE-4P-B |
+| "Assault Stress Test" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_assault_stress.txt` | TEST-2P-A |
+| "Stress Test" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_benchmark_1.txt` | TEST-4P-A |
+| "Confrontation Point" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2p_1.txt` | FLAGS-2P-A |
+| "The Bleak Mountains" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2p_2.txt` | FLAGS-2P-B |
+| "The Eye of the World" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2P_3.txt` | FLAGS-2P-C |
+| "The Apex of Infinity" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_2P_4.txt` | FLAGS-2P-D |
+| "Upon the Blazing Sea" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_3P_1.txt` | FLAGS-3P-A |
+| "The Wheel" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_3P_2.txt` | FLAGS-3P-B |
+| "Gridlock" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_blitzkrieg_4P_2.txt` | FLAGS-4P-A |
+| "Mountain of Lost Souls" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_1.txt` | RELIC-2P-A |
+| "The Bloody Shrine" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_2.txt` | RELIC-2P-B |
+| "Price of War" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_3.txt` | RELIC-2P-C |
+| "The Unending Peaks" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_2p_4.txt` | RELIC-2P-D |
+| "Melting Pot" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3p_1.txt` | RELIC-3P-A |
+| "The Tortured Expanse" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3P_2.txt` | RELIC-3P-B |
+| "The Outreach Peaks" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_3p_3.txt` | RELIC-3P-C |
+| "Field of Unlife" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4P_1.txt` | RELIC-4P-A |
+| "Scorched Earth" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4P_2.txt` | RELIC-4P-B |
+| "Maze of Despair" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_cts_4p_3.txt` | RELIC-4P-C |
+| "Barriers to Progress" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_2P_1.txt` | DOM-2P-A |
+| "The Eternal Guardians" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_2P_2.txt`, `mp_koth_2P_1.txt` | DOM-2P-B / HILL-2P-A |
+| "Field of Unending Dawn" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_3P_1.txt`, `mp_koth_3P_2.txt` | DOM-3P-A / HILL-3P-B |
+| "The Holy Tree" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_4P_1.txt`, `mp_koth_4P_1.txt` | DOM-4P-A / HILL-4P-A |
+| "A Monument to the Heavens" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_domination_4P_2.txt`, `mp_koth_4P_3.txt` | DOM-4P-B / HILL-4P-B |
+| "Shrine of Memory" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_2P_2.txt` | DOM-2P-C |
+| "The Bitter Front" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_2P_3.txt`, `mp_koth_2P_3b.txt` | DOM-2P-D / HILL-2P-B |
+| "Pursuit of Victory" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_1.txt` | HILL-3P-A |
+| "The Deceitful Vale" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_3.txt` | HILL-3P-C |
+| "The Walled Garden" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_3P_4.txt` | HILL-3P-D |
+| "Barbs of Madness" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_koth_4P_4.txt` | HILL-4P-C |
+| "Echoes of the Future" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2P_2.txt` | LAUNCH-2P-A |
+| "Stairway to Heaven" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2p_3.txt` | LAUNCH-2P-B |
+| "Bridge of Light" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_2P_4.txt` | LAUNCH-2P-C |
+| "The Second Beginning" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3p_1.txt` | LAUNCH-3P-A |
+| "Wake of Eternity" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3P_2.txt` | LAUNCH-3P-B |
+| "Heart of Chaos" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_3P_3.txt` | LAUNCH-3P-C |
+| "Threads of Fate" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_rocketriot_4P_1.txt` | LAUNCH-4P-A |
+| "Hamburger Hill" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_skirmish_2p_4.txt` | DOM-2P-E |
+| "Leap of Faith" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_skirmish_3P_1.txt` | DOM-3P-B |
+| "2P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_2P.txt` | ARENA-2P-A |
+| "3P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_3P.txt` | ARENA-3P-A |
+| "4P TankBattle Arena" | map name (text) + its `_description` lore text | `data/language/english.txt` `<stem>_name/_description` for `mp_tankbattle_4P.txt` | ARENA-4P-A |
+| "Stairway to Heaven" (`mp_skirmish_2P_3_name`, no level) and "Pillar of Light" (`mp_koth_2P_4_name`, old/ only) | map names (text) | `data/language/english.txt` | drop |
+| Level file names `mp_<mode>_<N>P_<k>.txt`, `map_<location>.txt`, `mission_<location>_<name>.txt` and Darwinia location names garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad, sandbox | names | `data/levels/`, `data/game*.txt` | `lvl_<mode>_<players>p_<nn>.<ext>`; drop Darwinia locations |
+| Lore vocabulary inside descriptions: "Darwinians", "Multiwinians", "Futurewinians", "Sepulveda", "Soul Repository", "Soul Destroyers", "the Virus", "Shamans/Shamen", "the Great War"/"Unending War", tribe colours as factions | names/characters/text | `data/language/english.txt` `mp_*_description` | neutral faction/setting terms |
+| Thumbnail images (56 `mp_*.bmp` + `default.bmp`) | art | `data/thumbnails/` | regenerate from new maps |
+| Terrain colour ramps named after Darwinia places (`landscape_launchpad/mine/containment…`, `waves_*`, `water_*`) | art | `data/terrain/` (referenced by every level's `Landscape` block) | new ramps, neutral names |
+| Static decoration shapes `temple2.shp`, `temple3.shp`, `temple4.shp`, `rockhead.shp`, `beachheadobstruction.shp`, `spaceship.shp` | art (3D shapes) | `data/shapes/` via `StaticShape` rows | new props |
+| Mode names as level keys `KingOfTheHill`, `CaptureTheStatue`, `RocketRiot`, `Blitzkrieg`, `Domination`, `Assault`, `TankBattle`, legacy `Skirmish`, `Shaman`, `Chess` | names | `GameTypes` lines, `data/multiwinia.txt` | neutral mode ids |
+| "Multiwinia" brand in file/achievement names (`DarwiniaAchievementMasterOfMultiwinia`) | brand | `code/achievement_tracker.cpp` | drop |
+| Every map layout itself (terrain seeds + guide grids + building placements) | level design (art/data) | `data/levels/**` | design new maps; reuse only the envelope in §8 |
+
+## Appendix — dead/legacy code and data
+- **Darwinia levels** (29 `map_*`/`mission_*`) and their loaders (`GlobalWorld::LoadGame`, `ParseMissionFile`, `RunningPrograms`, `LeaderboardStats`, `Difficulty`, mission save-games under `<profile>/users/`) [B:LEGACY]; data excluded from Multiwinia builds (§11).
+- **`data/levels/old/`** (30 files) — never listed or packaged by any build (data only); documents removed `Shaman` and `Chess` modes and the `Skirmish` → `Domination` rename (§12).
+- **TankBattle maps** (3) — mode only with `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`) [B:DEBUG].
+- **Test maps** `mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress` — unreachable from the FULL menu (§4).
+- **PDLC** — level ids 50–59, `levels/pdlc/*`, page names, disconnect reason and network option; no implementation (§13).
+- **Editor-only**: `.mwm` custom maps (`CreateMapList` under `LOCATION_EDITOR`), `MultiwiniaWindow` default `mp_blank.txt` / `mp_newmap.txt` (absent), `LevelFile::m_gameTypes` editing [B:EDITOR]. `App::SaveThumbnailScreenshot` (Vista saved-game thumbnail) [B:DEAD].

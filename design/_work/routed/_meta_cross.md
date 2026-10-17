@@ -310,3 +310,16 @@
 - **P10 (camera)**: `ModeSphereWorldIntro` / `ModeSphereWorldOutro` flights (outro calls the credits loader after 70 s).
 - **P02 (game modes)**: grace-period timer semantics drive panel visibility; `mp_benchmark_1` (`GameTypes none`).
 - **`.anim` grammar owner**: in-memory semantics in §2.4–2.6 must agree with the grammar doc (`WIDTH/HEIGHT/START/STOP`, `BEGIN Object … END`, `BEGIN Keyframe … END` with `TIMEINDEX IMAGENAME XPOS YPOS COLOUR SCALE ANGLE FLIPHORIZ ALPHA`; unknown commands ignored; parser takes only the first token after a command, so image names cannot contain spaces) [C] `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`.
+
+<!-- from X4_level_catalogue -->
+## Cross-partition notes
+- **X1a (grammar)** — quirks observed in shipped files that a grammar must tolerate: CRLF line endings; `#` header-comment lines inside blocks (written by every `Write*`); trailing tabs/spaces after values; empty blocks; a second, empty `Buildings` block after `CameraAnimations` (layout A, §1.3); `GameTypes` with zero tokens (`old/mp_koth_2P_4`) or as a bare line outside any block (`old/mp_chess1`); duplicate scalar keys (`PopulationCap` twice in `mp_cts_4p_3`, last wins); objective lines containing `:` and `,` (`BuildingOnline :sandbox,2`); unknown building type names (`CarryableBuilding`) silently skipped.
+- **P11** — loading sequence, MapCRC, `MultiwiniaOptions` semantics (§8.1–8.8). This draft's CRC re-computation (X4_levels.py) agrees 86/86 with `code/mapcrc.h`. P11 §8.1 states "57 files" for `mp_*` (agrees) and counts PrimaryObjectives 65 (agrees: 47 mp + 1 map_sandbox + 17 missions).
+- **P02** — mode rules. P02 §1.3 lists 10 CTS maps including `mp_cts_3p_3`; that file is excluded from retail data (§4), so the shipped product has 9. All per-mode conventions in §9 are consistent with P02's mechanics (zones, statues, flags, pulse bomb, rockets).
+- **P06/P07** — building fields (`SpawnPoint` links, `SpawnPopulationLock`, `Tree`, `StaticShape`, `LaserFence`, `GunTurret`); building counts here equal `P06_level_building_usage.csv`.
+- **P08** — `InvalidCrates` per level (§5) and AI marker counts (§6, §8.3).
+- **P17a/P18** — map-select page (`SetupMapSelectPage`, `LevelSelectButton`, `MapImageButton`, `MapInfoButton`), demo-restricted map rendering, tutorial buttons; editor windows (`MultiwiniaWindow`, `NewMapWindow`).
+- **P01/P17b** — `AchievementTracker` and `level_enum.txt` (§13); `App::IsMapPermitted`, `IsGameModePermitted`, `GetMapID`, `GetMaxNumberofPlayers` (returns `MapData::m_numPlayers` of the requested map).
+- **P14/X-packaging** — `tools/build_multiwinia_data.bat` exclusion/inclusion mechanics (§3.2).
+- **P16** — no per-level music field exists.
+- **P11 note** — P11 §8.1 tags `level_enum.txt` [B:FULL]; its consumer code is FULL but the data file is excluded from every Multiwinia data build (§13).

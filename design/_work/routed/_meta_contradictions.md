@@ -254,3 +254,16 @@
 6. `AnimatedPanel::DeleteKeyframe` removes without freeing; `BeginRender/EndRender` declared, undefined [C].
 7. `animatedpanel.cpp` includes `lib/render/renderer.h`, which resolves (via the `..\..\contrib\SystemIV` include path) to the uncompiled SystemIV renderer header [I] — nothing from it appears to be used; a re-implementation can ignore it.
 8. `RequestBootloaderSequence` leaves `g_RenderingFirstTimeBL = true` forever in FULL builds → fade-outs suppressed after a Campaign launch (§1.6) [C].
+
+<!-- from X4_level_catalogue -->
+## Contradictions / open questions
+1. `level_enum.txt` is excluded from every Multiwinia data build but is the only source of achievement level ids (§13) → Master of Multiwinia unreachable with script-built data [C]/[I].
+2. Beta group A: `PERMITTED_MAPS {CTS_2P_1, CTS_3P_1, CTS_4P_3}` vs `multiwinia_inclusions_beta_test_group_a.txt` shipping 13 maps of which only `mp_cts_3p_1` is in that whitelist (the inclusion list equals the commented-out `GROUP_ALL` list); with only `INCLUDEGAMEMODE_CTS` compiled, a group-A build would show 1 CTS map [I].
+3. `TARGET_PC_HARDWARECOMPAT` and `TARGET_ASSAULT_STRESSTEST` whitelist `MP_BENCHMARK_1` / `MP_ASSAULT_STRESS`, whose files say `GameTypes none` → `AddMap` discards them, so they cannot be picked in the menu [C]; how those builds launched them is [U].
+4. `LevelFile::ParseMultiwiniaOptions` keeps only the first `GameTypes` token whereas `GameMenu::AddMap` honours all; harmless for shipped data (every file has ≤1 type) and `LevelFile::m_gameTypes` is only read by the editor options window [C].
+5. `mp_assault_3p_1` is named "3p" but declares `NumPlayers 2` (its `old/` precursor had 3) [C].
+6. `mp_blitzkrieg_2p_1` and `mp_skirmish_2p_4` define a `player2` camera mount on 2-player maps; `mp_assault_3p_3`, `mp_tankbattle_3P`, `mp_tankbattle_4P` have no `player<p>` mounts (camera stays at the post-load target) [C].
+7. `WriteMultiwiniaOptions` fall-through after `futurewinianteam` (§12) [C].
+8. `GlobalWorld::GetLocationIdFromMapFilename` pointer bug (`*mapName += 4`) (§11) [C].
+9. `OrderedInsert` never compares against the last list element, so map-list base order is only approximately alphabetical (§1.4) [C].
+10. Two thumbnails without a loadable level ship in retail data (§10) [C].

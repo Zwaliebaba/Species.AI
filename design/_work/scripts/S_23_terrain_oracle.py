@@ -5,6 +5,8 @@ Usage:
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> survey            # one CSV row per landscape-bearing level
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> detail <file.txt>  # per-tile derived values for one level
   python3 -I S_23_terrain_oracle.py <SRC_ROOT> dump <file.txt> <out.f64>  # raw little-endian float64 grid, row-major (z outer)
+  python3 -I S_23_terrain_oracle.py <SRC_ROOT> trace <file.txt> <tileIndex> <N>  # first N RNG draws / noise calls / writes of one tile
+  python3 -I S_23_terrain_oracle.py <SRC_ROOT> table <survey.csv>  # markdown digest table (mp_* rows) from a survey CSV
 
 Survey columns:
   file, cols, rows, cell, worldSize, tiles, flats, min, max,
@@ -22,6 +24,9 @@ Survey columns:
                       (integer exponent, e.g. pow(x,2) of a float x) and lies exactly on the midpoint: such a
                       call is reproducible iff the CRT returns the exact result
   exp_fragile, log_fragile   same test for exp() (2 per tile) and log() (GetPowerOfTwo)
+  edge_max            highest sample on the outermost rows/columns of the world grid (> 0 means land
+                      touches the map edge, where SurfaceMap2D::GetValue's wrap-to-column-0 rule is visible)
+  land_frac           fraction of world samples with height > 0
 """
 import sys, os, math, struct, hashlib, importlib.util
 from fractions import Fraction
@@ -97,6 +102,11 @@ def build_instrumented(land, tiles, flats):
     finally:
         S.sampling = False
 
+def edge_max(W):
+    e = [W.get(x, 0) for x in range(W.cols)] + [W.get(x, W.rows - 1) for x in range(W.cols)]
+    e += [W.get(0, z) for z in range(W.rows)] + [W.get(W.cols - 1, z) for z in range(W.rows)]
+    return max(e)
+
 def digest(W):
     h = hashlib.sha256()
     h.update(struct.pack('<%dd' % len(W.d), *W.d))
@@ -125,7 +135,7 @@ def levels(src):
 
 def survey(src):
     print('file,cols,rows,cell,worldSize,tiles,flats,min,max,sha256_16,neg_tile_origin,off_edge_tiles,k_lt_p,'
-          'samp_frac_neg,samp_le_minus1,samp_far_wrap,pow_calls,pow_fragile,pow_tie_exact,exp_fragile,log_fragile')
+          'samp_frac_neg,samp_le_minus1,samp_far_wrap,pow_calls,pow_fragile,pow_tie_exact,exp_fragile,log_fragile,edge_max,land_frac')
     for fn, p in levels(src):
         land, tiles, flats, _b = ref.parse(p)
         if not tiles and land['wx'] == 2000 and land['cell'] == f32(12.0):
@@ -143,7 +153,8 @@ def survey(src):
         W = build_instrumented(land, tiles, flats)
         print(f"{fn},{W.cols},{W.rows},{cell!r},{cell*W.cols:.3f},{len(tiles)},{len(flats)},"
               f"{min(W.d):.3f},{max(W.d):.3f},{digest(W)},{neg},{off},{klp},"
-              f"{S.frac_neg},{S.le_m1},{S.far},{S.pow_calls},{S.pow_fragile},{S.pow_tie},{S.exp_fragile},{S.log_fragile}")
+              f"{S.frac_neg},{S.le_m1},{S.far},{S.pow_calls},{S.pow_fragile},{S.pow_tie},{S.exp_fragile},{S.log_fragile},"
+              f"{edge_max(W):.3f},{sum(1 for v in W.d if v > 0.0) / len(W.d):.3f}")
 
 def detail(src, name):
     p = os.path.join(src, 'data', 'levels', name)
@@ -184,9 +195,50 @@ def dump(src, name, out):
         fh.write(struct.pack('<%dd' % len(W.d), *W.d))
     print(f'{W.cols}x{W.rows} float64 written to {out}; sha256_16={digest(W)}')
 
+def trace(src, name, idx, limit):
+    p = os.path.join(src, 'data', 'levels', name)
+    land, tiles, flats, _b = ref.parse(p)
+    t = tiles[idx]
+    events = []
+    orig_rnd, orig_noise = t.rnd, t.noise
+    def rnd():
+        v = orig_rnd(); events.append(f'rng -> {v}'); return v
+    def noise(half, height):
+        v = orig_noise(half, height)
+        events.append(f'noise(half={half!r}, base={height!r}) = {v!r}')
+        return v
+    t.rnd = rnd; t.noise = noise
+    # log writes once the tile map exists: wrap Map2D.put for this tile only
+    orig_put = ref.Map2D.put
+    def put(self, x, y, v):
+        if self is getattr(t, 'hm', None) and logging[0]: events.append(f'put({x},{y}) = {v!r}')
+        return orig_put(self, x, y, v)
+    logging = [False]
+    ref.Map2D.put = put
+    orig_seed_assign = None
+    # enable logging after guide grid placement: approximate by enabling always (guide writes are listed too)
+    logging[0] = True
+    t.generate(land['cell'], land['outside'])
+    ref.Map2D.put = orig_put
+    for e in events[:limit]: print(e)
+    print(f'... {len(events)} events total; tile highest after posY = {t.hm.highest()!r}')
+
+def table(csvpath):
+    rows = [l.rstrip('\n').split(',') for l in open(csvpath)]
+    hdr = rows[0]; ix = {h: i for i, h in enumerate(hdr)}
+    print('| Map file | Grid | cellSize (f32) | Extent | Tiles | Flatten | Min h | Max h | Land % | SHA-256/16 of grid |')
+    print('|---|---|---|---|---|---|---|---|---|---|')
+    for r in rows[1:]:
+        if not r[0].startswith('mp_'): continue
+        land = f"{100 * float(r[ix['land_frac']]):.1f}" if 'land_frac' in ix else ''
+        print(f"| `{r[0][:-4]}` | {r[ix['cols']]}×{r[ix['rows']]} | {float(r[ix['cell']]):.6g} | {r[ix['worldSize']]} | {r[ix['tiles']]} | {r[ix['flats']]} | "
+              f"{r[ix['min']]} | {r[ix['max']]} | {land} | `{r[ix['sha256_16']]}` |")
+
 if __name__ == '__main__':
     src, mode = sys.argv[1], sys.argv[2]
     if mode == 'survey': survey(src)
     elif mode == 'detail': detail(src, sys.argv[3])
     elif mode == 'dump': dump(src, sys.argv[3], sys.argv[4])
+    elif mode == 'trace': trace(src, sys.argv[3], int(sys.argv[4]), int(sys.argv[5]))
+    elif mode == 'table': table(sys.argv[3])
     else: print(__doc__)

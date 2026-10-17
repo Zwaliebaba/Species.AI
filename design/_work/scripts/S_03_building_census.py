@@ -37,18 +37,22 @@ def main():
     official = [files[e] for e in enum if e in files]
     stats = collections.defaultdict(lambda: collections.defaultdict(int))
     modes = collections.defaultdict(set)
+    modecount = collections.defaultdict(collections.Counter)
+    modetotal = collections.Counter()
     permap = []
     for fn in sorted(files.values()):
         if fn == 'level_enum.txt': continue
         types, gt = parse(os.path.join(d, fn))
         low = fn.lower()
+        if fn in official:
+            for g in gt: modetotal[g] += 1
         if fn in official: cat = 'official'
         elif low.startswith('mp_'): cat = 'dev'
         else: cat = 'campaign'
         for t, c in types.items():
             stats[t][cat + '_maps'] += 1; stats[t][cat + '_lines'] += c
             if cat == 'official':
-                for g in gt: modes[t].add(g)
+                for g in gt: modes[t].add(g); modecount[t][g] += 1
             if per == t: permap.append((cat, fn, ' '.join(gt), c))
     od = os.path.join(d, 'old')
     if os.path.isdir(od):
@@ -61,7 +65,8 @@ def main():
     print('type\tofficial_maps\tofficial_lines\tdev_mp_maps\tdev_mp_lines\tcampaign_maps\tcampaign_lines\told_maps\tmodes')
     for t in sorted(stats):
         s = stats[t]
-        print(f"{t}\t{s['official_maps']}\t{s['official_lines']}\t{s['dev_maps']}\t{s['dev_lines']}\t{s['campaign_maps']}\t{s['campaign_lines']}\t{s['old_maps']}\t{','.join(sorted(modes[t]))}")
+        mc = ' '.join(f"{g}:{modecount[t][g]}/{modetotal[g]}" for g in sorted(modecount[t]))
+        print(f"{t}\t{s['official_maps']}\t{s['official_lines']}\t{s['dev_maps']}\t{s['dev_lines']}\t{s['campaign_maps']}\t{s['campaign_lines']}\t{s['old_maps']}\t{mc}")
     print(f"# official files: {len(official)}; dev mp files: {sum(1 for f in files if f.startswith('mp_') and files[f] not in official)}")
     for row in permap: print('#', *row, sep='\t')
 

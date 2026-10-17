@@ -232,3 +232,15 @@
 2. [U] Exact appearance of `textures/program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp` (only dimensions checked: 256×256 each) — not needed for mechanics; art is IP anyway.
 3. [U] Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (state inherited from the caller) — determines whether the first 7 s smear. Resolve by tracing GL state at `Script::RunCommand_RunCredits` / outro camera.
 4. [U] Exact reachability of `PageDarwinia` (and therefore `CampaignButton`) in FULL — P18 to confirm; affects whether §1.6's bug is player-visible.
+
+<!-- from X4_level_catalogue -->
+## [U] Unknowns
+| # | Unknown | What would resolve it |
+|---|---|---|
+| U1 | Did the shipped retail data contain `levels/level_enum.txt` (e.g. via a patch archive)? | inspect a retail `main.dat` / `patch.dat` |
+| U2 | How `mp_benchmark_1` and `mp_assault_stress` were started in the hwcompat / stress builds despite `GameTypes none` | data of those builds, or a launcher/testbed path not in this tree |
+| U3 | Contents of `tools/multiwinia_inclusions_ambx.txt` (referenced by `build_multiwinia_data.bat`, absent) | the missing file |
+| U4 | Exact tie order inside each menu list (depends on archive index order through `OrderedInsert`) | run `CreateMapList` against a real `main.dat` |
+| U5 | Content of the 10 PDLC maps named in `level_enum.txt` | PDLC data (not in tree) |
+| U6 | Whether the released game's metaserver sent a demo map list different from the 5-map default | metaserver data / retail logs |
+| U7 | Tool used to make the 400×300 thumbnails (no in-engine map-thumbnail writer exists) | art pipeline notes |

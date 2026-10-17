@@ -361,3 +361,12 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - **D3D-only bits** [B:D3D]: `RayTraceLoader` clears colour each frame; `GameOfLifeLoader` `glTraceEnable`; `LoadingScreen::Render` waits for `GeneratingMipmaps()` (this last one is live in the secondary D3D build).
 - **`SpeccyLoader` unused members** (`m_monoBmp`, `m_currentPixel`, `m_startJ`, `EndFrame`) and **`AmigaLoader` unused mode enum** (`ModeSilence/Header/Data/Screen`, copied from the Speccy loader) [C].
 - **Commented code**: ray-tracer refraction and floor reflection, pixel-wave auto-ramp after 45 s, FPS readout; credits target-ghost; spinner stepped rotation; Intro camera's earlier implementation (block comment in `camera.cpp`).
+
+<!-- from X4_level_catalogue -->
+## Appendix — dead/legacy code and data
+- **Darwinia levels** (29 `map_*`/`mission_*`) and their loaders (`GlobalWorld::LoadGame`, `ParseMissionFile`, `RunningPrograms`, `LeaderboardStats`, `Difficulty`, mission save-games under `<profile>/users/`) [B:LEGACY]; data excluded from Multiwinia builds (§11).
+- **`data/levels/old/`** (30 files) — never listed or packaged by any build (data only); documents removed `Shaman` and `Chess` modes and the `Skirmish` → `Domination` rename (§12).
+- **TankBattle maps** (3) — mode only with `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`) [B:DEBUG].
+- **Test maps** `mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress` — unreachable from the FULL menu (§4).
+- **PDLC** — level ids 50–59, `levels/pdlc/*`, page names, disconnect reason and network option; no implementation (§13).
+- **Editor-only**: `.mwm` custom maps (`CreateMapList` under `LOCATION_EDITOR`), `MultiwiniaWindow` default `mp_blank.txt` / `mp_newmap.txt` (absent), `LevelFile::m_gameTypes` editing [B:EDITOR]. `App::SaveThumbnailScreenshot` (Vista saved-game thumbnail) [B:DEAD].

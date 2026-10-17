@@ -978,29 +978,62 @@ def main():
     # ---------------- markdown helpers
     def md_esc(s):
         return str(s).replace('|', '\\|')
+    def short_ev(e):
+        return ' '.join(e.split(' ')[1:])
     with open(os.path.join(drafts, 'X2b_md_samples.md'), 'w') as fh:
         for fo in ('sounds', 'mwsounds'):
             rs = [r for r in srows if r['folder'] == fo]
             fh.write('\n### `data/%s/` (%d files)\n\n' % (fo, len(rs)))
-            fh.write('| Path | s | KiB | Archive | Use |\n|---|---|---|---|---|\n')
+            fh.write('Columns: duration s; size KiB; archive (menusounds / sounds / sounds2 / NOT-SHIPPED); status (live = referenced by an event fired in FULL, dead = referenced only by unreachable/never-fired events, unused = no blueprint reference); referenced by (sample group -> events).\n\n')
+            fh.write('| Path | s | KiB | Archive | Status | Referenced by |\n|---|---|---|---|---|---|\n')
             for r in rs:
-                use = r['status']
                 if r['status'] == 'referenced':
-                    use = 'ref:%s' % r['event_liveness']
-                    evs = r['referenced_by'].split(';')
-                    short = ', '.join(sorted(set(' '.join(e.split(' ')[1:]) for e in evs)))
-                    use += ' (' + short + ')'
-                elif r['orphan_groups']:
-                    use = 'unused (orphan group %s)' % r['orphan_groups']
+                    st = 'live' if r['event_liveness'] == 'live' else 'dead'
+                    evs = '; '.join(short_ev(e) for e in r['referenced_by'].split(';'))
+                    ref = ('`%s` -> ' % r['via_groups'].replace(';', '`, `') if r['via_groups'] else '') + evs
+                else:
+                    st = 'unused'
+                    ref = ('orphan group `%s`' % r['orphan_groups']) if r['orphan_groups'] else ''
                 arch = r['archive'].replace('.dat', '')
-                fh.write('| `%s` | %s | %.0f | %s | %s |\n' % (r['path'], r['duration_s'], int(r['bytes']) / 1024.0, md_esc(arch), md_esc(use)))
+                fh.write('| `%s` | %s | %.0f | %s | %s | %s |\n' % (r['path'], r['duration_s'], int(r['bytes']) / 1024.0,
+                                                                  md_esc(arch), st, md_esc(ref)))
+
+    def site_short(sites):
+        out = []
+        for part in sites.split(' ; '):
+            if not part:
+                continue
+            ref, _, st = part.rpartition(' [')
+            st = st.rstrip(']')
+            out.append('`%s`' % ref + ('' if st == 'FULL' else ' [%s]' % st))
+        return '<br>'.join(out) if out else '—'
     with open(os.path.join(drafts, 'X2b_md_events.md'), 'w') as fh:
-        fh.write('| # | Source | Event | Data blocks (src name; pos/loop/... params) | Files | Code trigger site(s) [status] | Fired in FULL | Gameplay trigger |\n')
+        fh.write('| # | Source | Event | Data blocks: [Sample\\|Group name] pos/loop/inst/team md=min-distance v=volume f=pitch a/s/r/ld=ADSR,loop-delay fx | Files | Fired in FULL | Gameplay trigger | Code trigger site(s) |\n')
         fh.write('|---|---|---|---|---|---|---|---|\n')
-        for i, r in enumerate(rows, 1):
+        i = 0
+        for r in rows:
+            if r['in_data'] != 'yes':
+                continue
+            i += 1
             fh.write('| %d | %s %s | %s | %s | %d | %s | %s | %s |\n' % (
-                i, r['group'], r['object_type'], r['event'], md_esc(r['blueprint'] or '— (no data: silent)'),
-                r['n_samples'], md_esc(r['code_sites'] or '—'), r['fired_in_FULL'], md_esc(r['gameplay_trigger'])))
+                i, r['group'], r['object_type'], r['event'], md_esc(r['blueprint']).replace(' || ', '<br>'),
+                r['n_samples'], r['fired_in_FULL'], md_esc(r['gameplay_trigger']), md_esc(site_short(r['code_sites']))))
+    with open(os.path.join(drafts, 'X2b_md_events_codeonly.md'), 'w') as fh:
+        agg = collections.OrderedDict()
+        for r in rows:
+            if r['in_data'] == 'yes':
+                continue
+            k = (r['group'], r['event'])
+            a = agg.setdefault(k, {'types': [], 'sites': [], 'fired': set(), 'desc': r['gameplay_trigger']})
+            a['types'].append(r['object_type'])
+            a['fired'].add(r['fired_in_FULL'])
+            for part in r['code_sites'].split(' ; '):
+                if part and part not in a['sites']:
+                    a['sites'].append(part)
+        fh.write('| # | Group | Event (fired, no data -> silent) | Object types (with a blueprint in sounds.txt) | Fired in FULL | Meaning | Code site(s) |\n|---|---|---|---|---|---|---|\n')
+        for i, (k, a) in enumerate(agg.items(), 1):
+            fh.write('| %d | %s | %s | %s | %s | %s | %s |\n' % (i, k[0], k[1], ', '.join(a['types']), '/'.join(sorted(a['fired'])),
+                                                          md_esc(a['desc']), md_esc(site_short(' ; '.join(a['sites'])))))
     print('\n'.join(summary))
 
 

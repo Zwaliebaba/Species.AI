@@ -73,6 +73,12 @@ def parse_level(path):
     return res
 
 
+TAKES_ARG = {'trunkportreinforcements', 'trunkportarmour', 'attackerreinforcements',
+             'defenderreinforcements', 'defenderreinforcementtype', 'attackerreinforcementtype',
+             'airstrikecapturezones', 'futurewinianteam', 'attackreinforcementoption',
+             'defendreinforcementoption'}
+
+
 def level_options(opts):
     """Turn the LevelOptions token list into a dict (mirrors LevelFile::ParseMultiwiniaOptions)."""
     takes_arg = {'trunkportreinforcements', 'trunkportarmour', 'attackerreinforcements',
@@ -143,6 +149,10 @@ def main():
         for b in sps:
             if b[2] != 255 and b[2] != -1:
                 sp_owned[b[2]] = sp_owned.get(b[2], 0) + 1
+        seeded = {}
+        for b in L['buildings']:
+            if b[0] in ('spawnpoint', 'solarpanel') and b[2] not in (255, -1):
+                seeded[b[2]] = seeded.get(b[2], 0) + 5
         tp_owned = {}
         for b in tps:
             tp_owned[b[2]] = tp_owned.get(b[2], 0) + 1
@@ -152,23 +162,24 @@ def main():
             numplayers=n, popcap=cap if len(L['popcap_lines']) <= 1 else f"{cap} (lines {' '.join(map(str, L['popcap_lines']))})",
             percap=per if per is not None else 'none', assault=assault,
             coop='Y' if L['coop'] else '', attacking=' '.join(map(str, L['attacking'])),
-            options=' '.join(f"{k}{'=' + v if v != '1' else ''}" for k, v in opts.items()),
+            options=' '.join(f"{k}={v}" if k in TAKES_ARG else k for k, v in opts.items()),
             effects=' '.join(L['effects']),
             spawnpoints=len(sps), sp_start=' '.join(f"t{k}:{v}" for k, v in sorted(sp_owned.items())),
             hops=f"{h[0]}–{h[1]}" if h else '',
             locks=len(locks),
             trunkports=len(tps), tp_owners=' '.join(f"t{k}:{v}" for k, v in sorted(tp_owned.items())),
             darwinians=' '.join(f"t{k}:{v}" for k, v in sorted(darw.items())),
+            seeded=' '.join(f"t{k}:{v}" for k, v in sorted(seeded.items())),
             other_units='; '.join(other)))
     keys = list(rows[0].keys())
     if csv_out:
         with open(csv_out, 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=keys); w.writeheader(); w.writerows(rows)
     # Table 1
-    print('| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | Hops | Pop-locks | TrunkPorts (owners) | Start Darwinians per position | Other start units |')
-    print('|' + '---|' * 15)
+    print('| Level | GameTypes | Off. | NumPlayers | PopulationCap | Per-team cap | Assault caps | Co-op | LevelOptions | SpawnPoints (owned at start) | Hops | Pop-locks | TrunkPorts (owners) | InstantUnits Darwinians per position | Port-seeded Darwinians per position | Other start units |')
+    print('|' + '---|' * 16)
     for r in rows:
-        print(f"| `{r['level']}` | {r['gametypes']} | {r['official']} | {r['numplayers']} | {r['popcap']} | {r['percap']} | {r['assault']} | {r['coop']} | {r['options']} | {r['spawnpoints']}{' (' + r['sp_start'] + ')' if r['sp_start'] else ''} | {r['hops']} | {r['locks']} | {r['trunkports']}{' (' + r['tp_owners'] + ')' if r['tp_owners'] else ''} | {r['darwinians']} | {r['other_units']} |")
+        print(f"| `{r['level']}` | {r['gametypes']} | {r['official']} | {r['numplayers']} | {r['popcap']} | {r['percap']} | {r['assault']} | {r['coop']} | {r['options']} | {r['spawnpoints']}{' (' + r['sp_start'] + ')' if r['sp_start'] else ''} | {r['hops']} | {r['locks']} | {r['trunkports']}{' (' + r['tp_owners'] + ')' if r['tp_owners'] else ''} | {r['darwinians']} | {r['seeded']} | {r['other_units']} |")
     # Table 2: trunk-port configuration
     print()
     print('| Level | GameTypes | AdvanceTrunkPorts calls / tick | Darwinians per owned port per wave | Armour cap | Turrets | Side tasks per wave |')
