@@ -655,3 +655,223 @@ Crash-report helpers [C]: `code/lib/GetWinVer.cpp:GetWinVer` maps `GetVersionEx`
 
 OS checks [C] `code/main.cpp`: `IsRunningAtLeast2k` (major version ≥ 5) gates the profile directory; `IsRunningVista` (major ≥ 6 and workstation) is used only by the dead `DoVistaChecks` (Vista-only check and parental-controls check with the Darwinia Game Explorer GUID) [B:DEAD].
 
+---
+
+## 7 Build configurations and flags
+
+This section incorporates and supersedes `_work/build_matrix.md` (which was corrected twice during Phase 2: `INCLUDE_THEBEAST` is debug-only; `targets/macosx/Multiwinia` is a maintained Multiwinia Mac project).
+
+### 7.1 Solution and projects [C] `targets/vs2005/Darwinia.sln`
+
+`targets/vs2005/Darwinia.sln` is a **Visual Studio 2008** solution (`Format Version 10.00`, `# Visual Studio 2008`) despite the folder name; `Darwinia.vcproj` is `Version="9.00"`. The property sheets say `Version="8.00"`.
+
+| Project | File | Kind | Configurations used | Depends on |
+|---|---|---|---|---|
+| `darwinia` | `targets/vs2005/Darwinia.vcproj` | application (`ConfigurationType=1`), MBCS (`CharacterSet=2`), no MFC | `Debug`, `Release`, `DebugDirect3D`, `ReleaseDirect3D` | all seven below |
+| `unrar` | `contrib/unrar/Unrar.vcproj` | static lib (`WIN32;_LIB;_CRT_SECURE_NO_DEPRECATE`) | Debug `/MTd /Od`, Release `/MT /O2` | – |
+| `eclipse` | `contrib/eclipse/eclipse.vcproj` | static lib (UI window framework, live — [28](28_ui_framework.md)); adds `TARGET_MSVC` | Debug `/MTd`, Release `/MT /O2` | – |
+| `vorbis_static` | `contrib/libvorbis-1.1.2/win32/vorbis_static.vcproj` | static lib | Debug `/MTd`, Release `/MT /Ox` | – |
+| `vorbisfile_static` | `contrib/libvorbis-1.1.2/win32/vorbisfile_static.vcproj` | static lib | Debug `/MTd`, Release `/MT /O2` | – |
+| `ogg_static` | `contrib/libogg-1.1.3/win32/ogg_static.vcproj` | static lib | Debug `/MTd`, Release `/MT /O2` | – |
+| `libpng` | `contrib/lpng1215/projects/visualc71/libpng.vcproj` | static lib (`libpngd.lib` in Debug, `PNG_DEBUG=1`) | Debug `/MTd`, Release `/MT` | `zlib` |
+| `zlib` | `contrib/lpng1215/projects/visualc71/zlib.vcproj` | static lib (`zlibd.lib` in Debug) | Debug `/MTd`, Release `/MT` | – |
+
+Solution configurations [C]: `Debug`, `DebugDirect3D`, `PC OpenGL (Debug)` (→ project `Debug`), `PC OpenGL (Release)` (→ project `Release`), `Release`, `ReleaseDirect3D`. Sub-projects always build their own `Debug` or `Release` configuration (the two D3D solution configurations map them to Debug/Release), so only the game project itself is ever compiled with the D3D-specific flags [C]. None of the sub-projects sets a floating-point model (default `/fp:precise`) [C].
+
+### 7.2 Property sheets (applied to every configuration) [C]
+
+| Sheet | Contents | Evidence |
+|---|---|---|
+| `Common.vsprops` | Include path **in this order**: `contrib/libogg-1.1.3/include`, `contrib/libvorbis-1.1.2/include`, `contrib/steam/` (absent from the tree), **`code`**, `contrib`, `contrib/unrar`, `.\`, **`contrib/SystemIV`**, `contrib/SystemIV/lib/netlib`, `contrib/eclipse`, four Windows SDK v6.0 locations, DirectX SDK include directories (June 2008, February 2007, December 2006 ×3, November 2007, unversioned, April 2007), `contrib/lpng1215`, `contrib/zlib`. Defines `WIN32;TARGET_MSVC;_CRT_SECURE_NO_DEPRECATE`. Links `vfw32.lib winmm.lib dxguid.lib dxerr9.lib dsound.lib wsock32.lib dbghelp.lib xinput.lib`; library paths include `contrib/oggvorbis/lib`, `contrib/unrar`, `contrib/eclipse` and the same SDK roots; **delay-loads `xinput1_3.dll`**. Resource compiler include adds `code` | `targets/vs2005/Common.vsprops` |
+| `OpenGL.vsprops` | links `opengl32.lib glu32.lib`; user macro `GraphicsLibrary=OpenGL` | `targets/vs2005/OpenGL.vsprops` |
+| `Direct3D.vsprops` | defines `USE_DIRECT3D`; links `d3dxof.lib d3dx9.lib d3d9.lib`; `GraphicsLibrary=Direct3D` | `targets/vs2005/Direct3D.vsprops` |
+
+**Header shadowing rule (design-relevant).** Because `code` precedes `contrib/SystemIV` in the include path, every `#include "lib/X.h"` resolves to `code/lib/X.h` when it exists and to `contrib/systemiv/lib/X.h` otherwise [C] `targets/vs2005/Common.vsprops`. Hence the SystemIV duplicates `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}` are **not used** (not in the vcproj); Multiwinia uses `code/lib/{preferences,language_table,hi_res_time}`. Exception: files inside `contrib/systemiv/lib` that use a same-directory quoted include (e.g. `contrib/systemiv/lib/profiler.cpp` includes `"hi_res_time.h"`) pick up the SystemIV header first (MSVC searches the includer's directory first); that header declares the same `InitialiseHighResTime()`/`GetHighResTime()` prototypes, so it links against `code/lib/hi_res_time.cpp` [I: MSVC quoted-include order + identical prototypes]. Two classes named `Vector3` (`code/lib/vector3.h`, `contrib/systemiv/lib/math/vector3.h`) therefore coexist in one program with identical `double x, y, z` layouts (latent ODR hazard, [24](24_rendering.md)).
+
+### 7.3 The four project configurations — complete compiler and linker settings [C] `targets/vs2005/Darwinia.vcproj` (Configurations block)
+
+Switch names in parentheses are the MSVC 2008 meanings of the stored enum values [I: VS2008 project-file enum mapping].
+
+| Setting | `Debug` | `Release` (**baseline**) | `DebugDirect3D` | `ReleaseDirect3D` |
+|---|---|---|---|---|
+| Property sheets | Common + OpenGL | Common + OpenGL | Common + Direct3D | Common + Direct3D |
+| Character set / MFC | MBCS / none | MBCS / none | MBCS / none | MBCS / none |
+| Pre-build event | `"../../tools/MapCRC/MapCRC.exe" ../../data/levels/ ../../code/mapcrc.h` ("Generating Map CRCs...") | same | same | same |
+| `Optimization` | 0 (`/Od`) | 2 (`/O2`; on x86 implies `/Oy` frame-pointer omission [I]) | 0 (`/Od`) | 2 (`/O2`) |
+| `InlineFunctionExpansion` | – | 2 (`/Ob2`) | – | 2 (`/Ob2`) |
+| `OmitFramePointers` | – | – | – | true (`/Oy`) |
+| `FloatingPointModel` | default (`/fp:precise`) | default (`/fp:precise`) | default (`/fp:precise`) | **2 (`/fp:fast`)** |
+| `BufferSecurityCheck` | default (`/GS`) | default (`/GS`) | default (`/GS`) | **false (`/GS-`)** |
+| `StringPooling` | – | false | – | true (`/GF`) |
+| `EnableFunctionLevelLinking` | – | true (`/Gy`) | – | true (`/Gy`) |
+| `OpenMP` | – | – | – | false |
+| `RuntimeLibrary` | 1 (`/MTd`, defines `_DEBUG`) | 0 (`/MT`, static CRT) | 1 (`/MTd`) | 0 (`/MT`) |
+| `BasicRuntimeChecks` | 3 (`/RTC1`) | – | 3 (`/RTC1`) | – |
+| `MinimalRebuild` | false | – | true (`/Gm`) | – |
+| `TreatWChar_tAsBuiltInType` | **false** (`/Zc:wchar_t-`, `wchar_t` = `unsigned short`) | **false** | default (native `wchar_t`) | default (native) |
+| Extra compiler `PreprocessorDefinitions` | – | – | `_CRT_NON_CONFORMING_SWPRINTFS` | `_CRT_NON_CONFORMING_SWPRINTFS` |
+| Compiler `NDEBUG` | not defined | **not defined** (only MIDL/RC get `NDEBUG`) | not defined | not defined |
+| MIDL / RC defines | `_DEBUG` / `_DEBUG` (RC culture 1033) | `NDEBUG` / `NDEBUG` (1033) | `_DEBUG` / `_DEBUG` (culture 0) | `NDEBUG` / `NDEBUG` (1033) |
+| Precompiled header | `/Yu` through `lib/universal_include.h`, file `$(IntDir)\darwinia_d_gl.pch` | `/Yu`, `$(IntDir)\Darwinia.pch` | `/Yu`, `Darwinia.pch` | `/Yu`, `Darwinia.pch` |
+| Warning level | 3 | **2** | 3 | 3 |
+| Debug information | 4 (`/ZI`, edit-and-continue) | 3 (`/Zi`) | 3 (`/Zi`) | 3 (`/Zi`) |
+| Browse information | 1 (`/FR`) | 1 | 1 | 1 |
+| Extra include dirs | DX SDK March 2008, Windows SDK v6.0, `contrib/XCrashReport`, DX SDK April 2007 | DX SDK March 2008, Windows SDK v6.0, `contrib/XCrashReport` | same as Release | same as Release |
+| Linker output (`$(OutDir)\..\..\..` = repository root) | `darwinia_d_gl.exe`, `darwinia_d_gl.pdb`, map `darwinia_d_gl.map` | `darwinia_gl.exe`, PDB `Darwinia.pdb`, map file generated (default name) | `darwinia_d.exe`, `Darwinia.pdb`, map `Darwinia.map` | `darwinia.exe`, `darwinia.pdb`, no map, manifest `darwinia.exe.intermediate.manifest` |
+| Incremental link | 2 (yes) | 1 (no) | 2 (yes) | 1 (no) |
+| `OptimizeReferences` | – | 2 (`/OPT:REF`) | – | 2 (`/OPT:REF`) |
+| `RandomizedBaseAddress` | 1 (`/DYNAMICBASE:NO`) | 1 | 1 | 1 |
+| `DataExecutionPrevention` | 0 (default) | 0 | 0 | 0 |
+| SubSystem / machine | Windows / X86 | Windows / X86 | Windows / X86 | Windows / X86 |
+| Linker `/PROFILE` | – | – | – | **true** |
+| Status | developer | **ships as `multiwinia.exe`** | developer | secondary; probably does not compile (§7.9) |
+
+The output directory `$(OutDir)\..\..\..` resolves to the repository root, which is why the packaging scripts copy `darwinia_gl.exe` and `save_symbols.cmd` copies `Darwinia.pdb` from the root [C] `tools/build_multiwinia.bat`, `tools/save_symbols.cmd`.
+
+### 7.4 Per-file overrides in the vcproj [C] (`_work/scripts/P14_vcproj_overrides.py`)
+
+| File | Override |
+|---|---|
+| `code/lib/universal_include.cpp` | `UsePrecompiledHeader=1` (creates the PCH; the file is a single `#include`) in all four configurations |
+| `code/lib/input/xbox_eventhandler.cpp` | `ExcludedFromBuild` in all four configurations |
+| `code/network/x360_qnet.cpp` | `ExcludedFromBuild` in all four configurations (file absent from the tree) |
+| `contrib/systemiv/lib/unicode/unicode_string.cpp`, `contrib/systemiv/lib/unicode/unicode_text_stream_reader.cpp` | object file renamed `$(InputName)1.obj` (avoids a clash with same-named objects) |
+
+Files referenced by the vcproj but absent from the tree (14): Xbox 360 `code/network/x360_qnet.cpp`, `multiwinia.spa.h`, XBLA/PDLC UI headers (`code/UI/XBLASelectSessionType.h`, `CustomGameTypeSelection.h`, `InvitePlayersButton.h`, `DownloadPDLCButton.h`, `PDLCOptionsButton.h`), `preferences.txt`, `targets/vs2005/version_resource.h`, cursor/resource headers [C] build_matrix §6. 47 source files under `code/` exist but are not in the vcproj (§2.2 lists the platform ones; the full list is in `_work/manifest.csv`, rows with empty `vcproj_build`).
+
+### 7.5 Resource scripts compiled into the exe [C]
+
+| File | Content | Evidence |
+|---|---|---|
+| `targets/vs2005/version.rc` | `VS_VERSION_INFO`: `FILEVERSION`/`PRODUCTVERSION` `DARWINIA_EXE_VERSION` = **6,0,0,0**; strings `CompanyName "Introversion Software"`, `FileDescription`/`InternalName`/`ProductName` = `APP_NAME` ("Multiwinia"), `FileVersion "6, 0, 0, 0"`, `LegalCopyright "Copyright (C) 2008"`, `OriginalFilename "Multiwinia.exe"`, translation 0x409 / 1200. Includes `lib/universal_include.h` and `afxres.h` | `targets/vs2005/version.rc`, `code/lib/universal_include.h` |
+| `targets/vs2005/GDF/Darwinia.rc` | Windows **Game Explorer** resources: `ID_GDF_XML DATA` and `ID_GDF_THUMBNAIL DATA` per language (NEU, DEU, ENU, ESP, FRA, ITA) pointing at `<LANG>\Darwinia.gdf.xml` / `boxart_<LANG>.png`; `ID_ICON ICON "NEU\gameicon_NEU.ico"`. These are **Darwinia: Vista Edition** definitions (name "Darwinia", version 1.5.4.0, executable `darwinia.exe`, saved games `Darwinia\users`) still compiled into Multiwinia | `targets/vs2005/GDF/Darwinia.rc`, `targets/vs2005/GDF/NEU/Darwinia.gdf.xml` |
+| `targets/vs2005/resource.h` | 622 `#define`s: an accidental resource-editor dump of CRT and OpenGL constants plus `IDI_ICON1 101` ("Used by icon_resource.rc", file absent). Functionally only `IDI_ICON1=101` matters (the D3D window class loads icon 101) | `targets/vs2005/resource.h`, `code/lib/window_manager_directx.cpp:WindowManagerDirectX::CreateWin` |
+| `targets/vs2005/darwinia.ico` | 32×32 and 16×16 16-colour icon (also the installers' `SetupIconFile`) | file inspection |
+| `targets/vs2005/version_resource.h` | referenced by the vcproj, **absent** | vcproj file list |
+
+The Win32 OpenGL window class uses `LoadIcon(NULL, IDI_APPLICATION)` (generic icon) [C] `code/lib/window_manager_win32.cpp:WindowManagerWin32::CreateWin`; the Explorer file icon comes from the only `ICON` resource, `ID_ICON` = `NEU\gameicon_NEU.ico` [I: Explorer uses the first icon resource].
+
+### 7.6 Product targets and the feature macros each sets [C] `code/lib/universal_include.h` (verified line by line)
+
+`TARGET_PC_FULLGAME` is the only uncommented target. The header sums `TARGET_DEBUG + TARGET_PC_HARDWARECOMPAT + TARGET_MULTIWINIA_DEMOONLY + TARGET_BETATEST_GROUP_ALL + TARGET_BETATEST_GROUP_A + TARGET_BETATEST_GROUP_B + TARGET_BETATEST_GROUP_C + TARGET_PC_PREVIEW + TARGET_PC_FULLGAME + TARGET_ASSAULT_STRESSTEST` and `#error`s ("One and only one target should be defined.") unless it equals 1. Each `TARGET_BETATEST_GROUP_*` also defines `TARGET_BETATEST_GROUP`, whose block adds the "group" column entries below.
+
+| Macro | FULLGAME (baseline) | DEBUG | PC_PREVIEW | MULTIWINIA_DEMOONLY | PC_HARDWARECOMPAT | ASSAULT_STRESSTEST | BETATEST_GROUP_ALL | GROUP_A | GROUP_B | GROUP_C |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `DARWINIA_GAMETYPE` | "multiwinia" | "debug" | "pc-preview" | "multiwinia-demo" | "hwcompat" | "assault-stress" | "beta-group-all" (defined twice, identically) | "beta-group-a" | "beta-group-b" | "beta-group-c" |
+| `TARGET_BETATEST_GROUP` | – | – | – | – | – | – | Y | Y | Y | Y |
+| `LAN_PLAY_ENABLED` | Y | Y | – | – | – | – | Y | – | – | – |
+| `LAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE` | – | – | – | – | Y | Y | Y (group) | Y | Y | Y |
+| `WAN_PLAY_ENABLED` | Y | Y | – | – | – | – | Y | Y | Y | Y |
+| `WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE` | – | Y | – | – | Y | Y | Y (group) | Y (group) | Y (group) | Y (group) |
+| `MULTIPLAYER_DISABLED` | – | – | Y | Y | Y | Y | – | – | – | – |
+| `NETWORK_STATS_ENABLED` | Y | Y | – | – | – | – | Y | – | – | – |
+| `INCLUDEGAMEMODE_DOMINATION` | Y | Y | – | – | – | – | Y | – | – | – |
+| `INCLUDEGAMEMODE_KOTH` | Y | Y | Y | Y | Y | – | Y | – | – | – |
+| `INCLUDEGAMEMODE_CTS` | Y | Y | Y | Y | – | – | Y | Y | – | – |
+| `INCLUDEGAMEMODE_ROCKET` | Y | Y | – | – | – | – | Y | – | – | Y |
+| `INCLUDEGAMEMODE_ASSAULT` | Y | Y | – | – | – | Y | Y | – | – | – |
+| `INCLUDEGAMEMODE_BLITZ` | Y | Y | – | – | – | – | Y | – | Y | – |
+| `INCLUDEGAMEMODE_TANKBATTLE` | – (commented out) | Y | – | – | – | – | – (commented) | – | – | – |
+| `INCLUDEGAMEMODE_PROLOGUE`, `INCLUDEGAMEMODE_CAMPAIGN` | – | Y | – | – | – | – | – | – | – | – |
+| `INCLUDE_CRATES_BASIC` | Y | Y | Y | Y | Y | Y | Y | Y (group) | Y (group) | Y (group) |
+| `INCLUDE_CRATES_ADVANCED` | Y | Y | – | – | – | – | Y | Y | – | – |
+| `INCLUDE_TUTORIAL` | Y | Y | Y | – | – | – | Y | – | – | – |
+| `AUTHENTICATION_LEVEL` | 1 | 1 | – | – | – | – | 1 | 1 (group) | 1 (group) | 1 (group) |
+| `BLOCK_OLD_DARWINIA_OBJECTS` | Y | Y | – | – | – | – | Y | – | – | – |
+| `DUMP_DEBUG_LOG` | Y | – (commented out) | – | Y | Y | Y | Y | Y (group) | Y (group) | Y (group) |
+| `PERMITTED_MAPS` | – (all maps) | – | `MAPID_MP_KOTH_2P_1, MAPID_MP_KOTH_4P_1, MAPID_MP_CTS_2P_1` | – | `MAPID_MP_KOTH_2P_1, MAPID_MP_BENCHMARK_1, MAPID_MP_KOTH_4P_1` | `MAPID_MP_ASSAULT_STRESS` | – (a 13-map list is commented out) | `MAPID_MP_CTS_2P_1, MAPID_MP_CTS_3P_1, MAPID_MP_CTS_4P_3` | `MAPID_MP_BLITZKRIEG_2P_2, _3P_2, _4P_2` | `MAPID_MP_ROCKETRIOT_2P_4, _2P_3, _3P_1` |
+| `SPECTATOR_ONLY` | – | – (commented) | – | – | Y | Y | – | – | – | – |
+| `HIDE_INVALID_GAMETYPES` | – | – | – | – | Y | Y | – | Y | Y | Y |
+| `MULTIWINIA_DEMOONLY` | – | – | – | Y | – | – | – | – | – | – |
+| `CHEATMENU_ENABLED`, `SOUND_EDITOR`, `GESTURE_EDITOR`, `AVI_GENERATOR`, `TRACK_SYNC_RAND`, `INCLUDE_CRATE_HELP_WINDOW` | – | Y | – | – | – | – | – | – | – | – |
+| `LOCATION_EDITOR` | – (commented) | – (commented) | – | – | – | – | – (commented twice) | – | – | – |
+| Other commented-out lines | `CHRISTMAS_DEMO` | `TRACK_MEMORY_LEAKS`, `TESTBED_ENABLED`, `RENDER_CURSOR_3D` | `LAN_PLAY_ENABLED`, `WAN_PLAY_ENABLED` | `DEMOBUILD` | `LAN/WAN_PLAY_ENABLED`, all other game modes, `INCLUDE_CRATES_ADVANCED` | same | `TRACK_SYNC_RAND` | `INCLUDE_TUTORIAL` | `INCLUDE_TUTORIAL` | `INCLUDE_TUTORIAL` |
+
+The group block also contains commented `PERMITTED_MAPS {0}` ("Beta now allows all maps"), `INCLUDE_CRATES_ADVANCED` and `BENCHMARK_AND_FTP`. `PERMITTED_MAPS` lists must end with `0` (comment "Must ends with 0") [C]. `INCLUDE_THEBEAST` (crate outcome) is defined in `code/worldobject/crate.h` inside `#ifdef TARGET_DEBUG` ⇒ off in FULL [C] ([04](04_crates_powerups_and_weapons.md)). Resolved: the build matrix §3 omitted `LAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE`, `WAN_PLAY_IF_NOT_ENABLED_NO_MESSAGE` and `TARGET_BETATEST_GROUP`, and did not note that `TARGET_BETATEST_GROUP_ALL` also pulls in the group block; all other cells were confirmed.
+
+### 7.7 Other global compile-time configuration [C] `code/lib/universal_include.h`
+
+| Item | Value / behaviour |
+|---|---|
+| `DARWINIA_VERSION` / `APP_VERSION` | `"dev"` — used as the network protocol/version string in lobby compatibility checks and crash reports ([22](22_determinism_and_networking.md)) |
+| `DARWINIA_EXE_VERSION` | `6,0,0,0` ("Gold Master"); `STR_DARWINIA_EXE_VERSION "6, 0, 0, 0\0"` |
+| `APP_NAME` / `APP_NAME_W` | `"Multiwinia"` / `L"Multiwinia"` (window title and window-class name) |
+| `APP_SYSTEM`, `DARWINIA_PLATFORM`, `DARWINIA_VERSION_STRING` | §2.1 |
+| Always-on | `DEBUG_RENDER_ENABLED`, `FLOAT_NUMERICS`, `USE_CRASHREPORTING` |
+| Commented out globally | `USE_SOUND_DSPEFFECTS`, `USE_SOUND_HW3D`, `USE_SOUND_MEMORY`, `USE_LOADERS` |
+| `TEXTURE_EXTENSION` | `"bmp"` |
+| `GRACE_TIME` | `3.0f` s (`20.0f` under `TESTBED_ENABLED`) ([01](01_game_modes.md)) |
+| Deterministic math wrappers | `iv_sin, iv_cos, iv_tan, iv_sqrt, iv_pow, iv_exp, iv_log, iv_asin, iv_acos, iv_atan` = `iv_trunc_low_nibble(<crt fn>(double(x)))`; `iv_abs` inline; `iv_atof` declared ([22](22_determinism_and_networking.md)) |
+| `TARGET_MSVC` block | disables warnings 4244 4305 4800 4018 4996; **`#define for if (0) ; else for`** (VC6 for-scope emulation); `MESSAGE()` pragma helper; includes `crtdbg.h`; `snprintf→_snprintf`, `stricmp/strupr/strnicmp/strlwr/strdup/itoa` → underscored CRT names; `DARWINIA_PLATFORM "win32"`; `WIN32_LEAN_AND_MEAN`; `_WIN32_WINDOWS 0x0500` (for `IsDebuggerPresent`); `_WIN32_WINNT 0x500` (for `TryEnterCriticalSection`); `TRACK_MEMORY_LEAKS` → `lib/memory_leak.h`; `NOMINMAX` + `using std::min/max`; `windows.h`; `HAVE_DSOUND` |
+| `TARGET_MINGW` block (no project defines it) | `WIN32_LEAN_AND_MEAN`, `windows.h`, `HAVE_INET_NTOA`, `HAVE_DSOUND` |
+| `TARGET_OS_LINUX` block | `stricmp/strnicmp` → POSIX, template `min/max`, inline `strlwr/strupr`, `Sleep` → `sleep` (seconds!), `DARWINIA_PLATFORM "linux"`, `#undef AVI_GENERATOR`, `#undef SOUND_EDITOR` |
+| `TARGET_OS_MACOSX` block | `Sleep(t)` → `sleep(t/1000.0)`, `HRESULT` typedef, `HAVE_INET_NTOA`, `acosf/asinf` → double versions, `#undef AVI_GENERATOR/SOUND_EDITOR`, `INVOKE_CALLBACK_FROM_SOUND_THREAD`, `SINGLE_THREADED_PROFILER`, `OPENGL_DEBUG_ASSERTS` |
+| Graphics headers | Mac: `OpenGL/gl.h`, `OpenGL/glu.h`, `lib/safegl.h` (`GL_GLEXT_LEGACY`); `USE_DIRECT3D`: `d3d9.h`, `d3dx9.h`, `lib/opengl_directx.h`, `lib/safegl.h`; else `GL/gl.h`, `GL/glu.h` |
+| Helpers | `SAFE_FREE`, `SAFE_DELETE`, `SAFE_DELETE_ARRAY`, `SAFE_RELEASE`, `GL_DEBUG()` (prints every pending `glGetError`; the macro body has an unbalanced `do{` and would not compile if used — it is unused [C grep]) |
+
+Other conditional-compilation families (state in the baseline; file counts are the Phase-1 scan of `code/`, `contrib/systemiv/lib`, `contrib/eclipse`):
+
+| Macro | Defined where | Baseline state | Files | Meaning / consequence |
+|---|---|---|---|---|
+| `USE_SEPULVEDA_HELP_TUTORIAL` | nowhere | **off** | 49 | Darwinia help/tutorial paths — dead in every Multiwinia build ([30](30_scripting_tutorial_and_cutscenes.md)) |
+| `LOCATION_EDITOR` | commented out in every target | **off** | 39 | in-game level editor compiled out of the shipped exe ([08](08_levels_and_level_design.md)) |
+| `TESTBED_ENABLED` | nowhere | off | 16 | automated test bed ([32](32_debug_test_and_performance.md)) |
+| `TRACK_SYNC_RAND` | `TARGET_DEBUG` | off | 9 | per-call synced-RNG log ([22](22_determinism_and_networking.md)) |
+| `SOUND_EDITOR` | `TARGET_DEBUG` | off | 16 | sound editor windows ([27](27_audio_engine.md)) |
+| `TARGET_OS_VISTA` | nowhere | off | 10 | Vista Game Explorer, parental controls, Media Center |
+| `TARGET_OS_MACOSX`, `TARGET_OS_LINUX` | Xcode / makefile | off | many | §2 |
+| `USE_DIRECT3D` | `Direct3D.vsprops` | off (on in the secondary configs) | ~50 | D3D9 GL emulation ([24](24_rendering.md)) |
+| `USE_DIRECT3D_TRILIST` | `code/landscape_renderer.cpp`, `code/water.cpp` (inside the D3D path) | secondary only | 2 | strip→list conversion |
+| `USE_DISPLAY_LISTS` | `code/global_internet.cpp`, `code/worldobject/tree.cpp`, `code/lib/shape.cpp` | on | 3+ | GL display lists |
+| `INVOKE_CALLBACK_FROM_SOUND_THREAD` | `TARGET_OS_MACOSX` | off | 7 | sound threading variant |
+| `DEBUG_RENDER_ENABLED` | global | **on** | 17 | debug overlay renderers in the shipping exe ([32](32_debug_test_and_performance.md)) |
+| `USE_LOADERS` | commented out | **off** | 17 | loading-screen mini-programs ([09](09_meta_systems.md)) |
+| `INCLUDE_THEBEAST` | `code/worldobject/crate.h` inside `#ifdef TARGET_DEBUG` | **off** | 3 | crate outcome [B:DEBUG] |
+| `USE_FIXED`, `FIXED64_NUMERICS` | nowhere | off | 3 / – | fixed-point numerics alternative |
+| `DEMOBUILD`, `DEMO2`, `EGAMESBUILD`, `OBERONBUILD`, `AMBROSIA_REGISTRATION` | nowhere / Darwinia era | off | 7/7/8/4/2 | Darwinia demo and distributor variants |
+| `BENCHMARK_AND_FTP` | commented out | off | 4 | benchmark upload |
+| `USE_DARWINIA_MOD_SYSTEM` | nowhere | off | 7 | mods |
+| `HAVE_XAUDIO`, `_XBOX` | nowhere on PC | off | 3 / 2 | Xbox 360 remnants |
+| `USE_SOUND_DSPEFFECTS`, `USE_SOUND_HW3D`, `USE_SOUND_MEMORY` | commented out | off | 2 each | sound variants |
+| `TEST_HARNESS_ENABLED`, `ATTRACTMODE_ENABLED`, `PURITY_CONTROL`, `SCRIPT_TEST_ENABLED`, `PROFILER_ENABLED` | nowhere on PC (`PROFILER_ENABLED` is set by the Mac project) | off | 4/2/2/3/3 | developer features |
+| `HAVE_REFRESH_RATES` | `code/interface/prefs_screen_window.cpp` (`TARGET_MSVC`) | on | 1 | refresh-rate option (§3.2) |
+| `USE_PIXEL_EFFECT_GRID_OPTIMISATION` | `code/renderer.cpp` | on | 1 | pixel-effect optimisation |
+| `STRETCH_RECT` | `code/deform.cpp` | D3D only | 1 | deform copy via StretchRect |
+| `USE_PENTIUM_COUNTER` | `code/lib/hi_res_time.cpp` (= 0) | off | 1 | RDTSC timer (§4.3) |
+| `XCRASHREPORT_WRITE_MINIDUMP` | `code/lib/exception_handler.cpp` (= 1) | on | 1 | minidump (§6.2) |
+
+Runtime gates inside the baseline binary (compiled in ≠ reachable) [C]: `App::m_gameMode` ∈ {`GameModeNone`, `GameModePrologue`, `GameModeCampaign`, `GameModeMultiwinia`} with Prologue/Campaign menu entries compiled only under their `INCLUDEGAMEMODE_*` macros (`code/app.h`, `code/UI/GameMenuWindow.cpp`); Multiwinia game types Skirmish(=Domination), KingOfTheHill, CaptureTheStatue, Assault, RocketRiot, Blitzkreig, TankBattle (TankBattle compiled out) (`code/multiwinia.h`); `Building::BuildingIsBlocked` / `Entity::EntityIsBlocked` for Darwinia-only types under `BLOCK_OLD_DARWINIA_OBJECTS`; `IS_DEMO` ≡ `!g_app->IsFullVersion()` (runtime authentication gate, `code/game_menu.h`) — see [01](01_game_modes.md), [09](09_meta_systems.md).
+
+### 7.8 Non-Windows targets
+
+| Target | What it builds | Status | Evidence |
+|---|---|---|---|
+| `targets/macosx/Multiwinia/Multiwinia.xcodeproj` | Multiwinia 1.3.1 for Mac OS X (Ambrosia port; SDL + Cocoa + Sparkle); details §2.4 | maintained Mac port, not buildable from this tree (26 missing references) [B:DEAD on PC] | [C] `targets/macosx/Multiwinia/Multiwinia.xcodeproj/project.pbxproj` |
+| `targets/macosx/Darwinia/Darwinia.xcode/project.pbxproj` | Darwinia Mac (Xcode 2) | [B:LEGACY/DEAD] | [C] |
+| `targets/linux/Makefile` | Darwinia-era Linux (§2.5) | cannot build this tree (23 absent sources) [B:DEAD] | [C] |
+| `targets/linux/Makefile.keygen-1` | Darwinia `keygen-1` registration tool | [B:DEAD] | [C] |
+
+### 7.9 Evidence that `ReleaseDirect3D` does not compile at this commit
+
+Resolved: P13, P12 and P11 each found breakages independently; `phase2_log.md` counted three, there are four. None is behind a further `#ifdef`; all four files are compiled only with `USE_DIRECT3D`.
+
+| # | Location | Defect | Why it breaks | Tag |
+|---|---|---|---|---|
+| 1 | `code/lib/window_manager.h:WindowManager::CreateWin` vs `code/lib/window_manager_directx.h:WindowManagerDirectX::CreateWin` | base pure virtual takes `const wchar_t *_title`; the D3D class declares `const char *_title` | the derived function hides instead of overriding, so `WindowManagerDirectX` stays abstract and `new WindowManagerDirectX()` in `code/lib/window_manager_directx.cpp:WinMain` is ill-formed (MSVC C2259). `WindowManagerWin32` was updated to `wchar_t` (`RegisterClassW`/`CreateWindowW`); the D3D variant was not | [C] (pure C++) |
+| 2 | `code/lib/opengl_directx.cpp:glLineWidth` | `SetRenderState( D3DRS_LINEWIDTH, *(DWORD*)&width )` | `D3DRS_LINEWIDTH` is defined nowhere in the tree and is not a member of the PC D3D9 `D3DRENDERSTATETYPE` (it is an Xbox-family render state); comment `// autogenmipmap ignored by xbox` in the same layer corroborates Xbox 360 heritage | [I] (needs the SDK header to confirm) |
+| 3 | `code/deform.cpp:DeformEffect::Stop` | `OpenGLD3D::g_pd3dDevice->Resolve( D3DRESOLVE_RENDERTARGET0, … )` on an `LPDIRECT3DDEVICE9` | `Resolve` and `D3DRESOLVE_RENDERTARGET0` are Xbox 360 D3D APIs; PC `IDirect3DDevice9` has no such method and no shim exists in the tree | [C] call and type; [I] SDK content |
+| 4 | `code/water.cpp:Water::Water` (L119, `#else` branch of `#ifndef USE_DIRECT3D`) | `RGBAColour col = bmp.GetPixel( x, 1 );` where `bmp` is `const BitmapRGBA *` | member access with `.` on a pointer — a hard compile error | [C] (pure C++) |
+
+Consequence for this design set: the D3D path is documented in [24](24_rendering.md) as the intended secondary renderer, but nothing in this tree proves it was shipped from this commit; it may have been last built on an Xbox 360 branch or with uncommitted fixes [I]. 31-U1/31-U2.
+
+### 7.10 Determinism consequences of the build flags
+
+| Difference | GL baseline | D3D secondary | Consequence |
+|---|---|---|---|
+| Floating-point model | `/fp:precise` | `/fp:fast` (game code only; libraries stay precise) | different instruction selection/reassociation of float expressions [I] |
+| x87 precision | `_control87(_PC_53, _MCW_PC)` per thread (`StandardiseCPUPrecision`) | same at start-up, but `CreateDevice` without `D3DCREATE_FPU_PRESERVE` switches the creating thread to 24-bit precision (documented D3D9 behaviour) and resets it on every device reset [I] | simulation arithmetic on the main thread runs at different precision [I] |
+| Frame pointers / security | `/O2` (implicit `/Oy`), `/GS` | explicit `/Oy`, `/GS-`, `/PROFILE` | no semantic effect; affects crash stack quality |
+| Version check | `DARWINIA_VERSION "dev"` | identical | the lobby cannot tell the binaries apart, so GL and D3D clients can join one lockstep game and desync [I] ([22](22_determinism_and_networking.md)) |
+
+The Mac target compensates explicitly (`-mfpmath=387` on i386, `-mno-fused-madd` on PPC, x87 precision bit cleared at start-up) [C] §2.4, §2.3 — evidence that Introversion relied on cross-platform x87 bit-compatibility for lockstep [I].
+

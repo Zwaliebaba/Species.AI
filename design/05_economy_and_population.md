@@ -48,13 +48,13 @@ Rates are mean values at normal speed; *k* = number of owned, activated, unlocke
 
 ```mermaid
 flowchart LR
-    T["Territory: k owned spawn points<br/>(capture: >=3 of 5 ports, no enemy on any port;<br/>re-evaluated every 2-3 s; 30 s activation)"]
+    T["Territory: k owned spawn points<br/>(capture: >=3 of 5 ports, no enemy on any port,<br/>re-evaluated every 2-3 s, 30 s activation)"]
     M["Master spawn point<br/>(virtual spirit source)"]
     SP["Spawn point door"]
     TP["Owned trunk ports<br/>(fixed by level)"]
     ST["Start of game<br/>InstantUnits + 5 per owned SpawnPoint/SolarPanel"]
     CR["Crates / creatures<br/>Darwinians crate 50-99, triffid egg 10-19,<br/>rocket passengers, Futurewinians"]
-    D(("Darwinians<br/>(team m_others; counted vs cap)"))
+    D(("Darwinians<br/>(team m_others, counted vs cap)"))
     CAP{"Population cap<br/>PopulationCap / NumPlayers<br/>(Assault: defender/attacker split)"}
     C["Combat and hazards"]
     S(("Spirits<br/>Birth 6.1 s, Floating 30-50 s,<br/>Ascent 90.1 s then gone"))
@@ -64,17 +64,17 @@ flowchart LR
     X["Sinks: eggs to Virii, army ants,<br/>centipede, soul destroyer, spam"]
 
     T -->|"k x 1.22 /s (H=1) .. 1.90 /s (H=1.9) per point<br/>bursts of int(20H) every 0.2 s, pause 10-15 s"| M
-    M -->|"latency ~h s (10h+1 ticks max); lost if point neutral on arrival"| SP
+    M -->|"latency ~h s (10h+1 ticks max), lost if point neutral on arrival"| SP
     SP -->|"1 Darwinian per spirit"| D
-    TP -->|"count per port per wave: RR/Blitz 40, Assault 60-100,<br/>KOTH/CTS 100; wave every 66 s (33 s on 3 Blitzkrieg maps)"| D
+    TP -->|"count per port per wave: RR/Blitz 40, Assault 60-100,<br/>KOTH/CTS 100, wave every 66 s (33 s on 3 Blitzkrieg maps)"| D
     ST -->|"once at t=0"| D
     CR -->|"event-driven"| D
-    CAP -.->|"freezes spawn timer; skips whole trunk wave"| T
+    CAP -.->|"freezes spawn timer, skips whole trunk wave"| T
     CAP -.-> TP
     D -->|"deaths"| C
     C -->|"1 spirit per death via Entity::ChangeHealth<br/>(none for monster team, armour, engineer, harvester, squaddie, egg)"| S
     S -->|"floating, any team, within 75 of harvester"| H
-    H -->|"1 spirit per tick at a friendly spawn point;<br/>no cap, no activation check"| D
+    H -->|"1 spirit per tick at a friendly spawn point,<br/>no cap, no activation check"| D
     S -->|"birth or floating, any team"| E
     E -->|"only if a friendly incubator exists"| I
     I -->|"1 Darwinian per 0.2 s"| D
@@ -176,16 +176,16 @@ Render feedback: the glow blobs above the point lerp from grey (100,100,100,200)
 stateDiagram-v2
     [*] --> Neutral : team 255 in level file
     [*] --> Active : team-owned in level file (5 port Darwinians seeded, activation forced to 0)
-    Neutral --> Activating : evaluation finds owner T; activationTimer = 30
+    Neutral --> Activating : evaluation finds owner T, activationTimer = 30
     Activating --> Active : timer reaches 0 (immediately if T owns only this point, or instantspawnpointcapture)
-    Activating --> Neutral : evaluation fails (fewer than 3 or enemy on a port); timer = 30
-    Active --> Neutral : evaluation fails; timer = 30
-    Active --> Activating : evaluation finds different owner U; timer = 30
-    Activating --> Activating : evaluation finds different owner U; timer = 30
+    Activating --> Neutral : evaluation fails (fewer than 3 or enemy on a port), timer = 30
+    Active --> Neutral : evaluation fails, timer = 30
+    Active --> Activating : evaluation finds different owner U, timer = 30
+    Activating --> Activating : evaluation finds different owner U, timer = 30
     state Active {
         [*] --> Burst
         Burst --> Burst : every 0.2 s request 1 spirit (counter below N)
-        Burst --> Pause : counter reaches N = int(20 x H); timer = 10 + syncfrand(5)
+        Burst --> Pause : counter reaches N = int(20 x H), timer = 10 + syncfrand(5)
         Pause --> Burst : timer reaches 0
         Burst --> Locked : PopulationLocked()
         Pause --> Locked : PopulationLocked()

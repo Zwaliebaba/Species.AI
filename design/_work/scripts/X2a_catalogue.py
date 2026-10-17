@@ -1360,6 +1360,29 @@ with open(os.path.join(OUT, 'coverage', 'X2a_asset_catalogue_visual.csv'), 'w', 
             w.writerow([rel, 'skimmed', 'Paint Shop Pro source image: not loadable by BitmapRGBA, never referenced; header not parsed', sec])
         else:
             w.writerow([rel, 'full', '', sec])
+    EXTRA = [  # out-of-scope files read to resolve questions
+        ('code/lib/bitmap.cpp', 'full', '', '25.2 Texture loading pipeline'),
+        ('code/lib/resource.cpp', 'full', '', '25.2 Texture loading pipeline; 25.3 Resource archives and their packing'),
+        ('code/lib/shape.cpp', 'skimmed', 'parser functions read in full (Load, fragment/marker constructors, strip/triangle blocks); rendering/hit-test code via P12', '25.6 Per-file catalogue — shapes'),
+        ('code/lib/text_renderer.cpp', 'skimmed', 'atlas discovery and legacy path only', '25.14 Fonts and atlases'),
+        ('code/animatedpanel_renderer.cpp', 'skimmed', 'texture load/blit path only', '25.5 Per-file catalogue — bitmaps, animation scripts and shaders'),
+        ('code/team.cpp', 'skimmed', 'Team::Initialise viriifull generation only', '25.10 Run-time-generated textures and registered bitmaps'),
+        ('code/worldobject/flag.cpp', 'skimmed', 'Flag::Render team-colour variants only', '25.10 Run-time-generated textures and registered bitmaps'),
+        ('code/taskmanager_interface.cpp', 'skimmed', 'CreateTaskManager only', '25.0 Method and provenance'),
+        ('code/control_help.cpp', 'skimmed', 'Render/RenderHelp gates and icon names only', '25.0 Method and provenance'),
+        ('tools/build_multiwinia_data.bat', 'full', '', '25.3 Resource archives and their packing'),
+        ('tools/build_language_dat.bat', 'full', '', '25.3 Resource archives and their packing'),
+        ('tools/listfiles.pl', 'full', '', '25.3 Resource archives and their packing'),
+        ('tools/multiwinia_exclusions.txt', 'full', '', '25.3 Resource archives and their packing'),
+        ('tools/init.list', 'full', '', '25.3 Resource archives and their packing'),
+        ('tools/language.list', 'full', '', '25.3 Resource archives and their packing; 25.14 Fonts and atlases'),
+        ('tools/FindUnusedResources.sh', 'full', '', '25.11 Cross-check with tools/FindUnusedResources.sh'),
+        ('tools/FindUnusedResourcesExceptions.txt', 'full', '', '25.11 Cross-check with tools/FindUnusedResources.sh'),
+        ('docs/RussianFontRequest.txt', 'full', '', 'Docs-vs-code discrepancies'),
+        ('docs/landscape lightmap.txt', 'skimmed', 'compared with Water::GenerateLightMap only', 'Docs-vs-code discrepancies'),
+    ]
+    for row in EXTRA:
+        w.writerow(list(row))
 
 # summary for prose
 summ = {'n': len(assets), 'by_dir': defaultdict(lambda: defaultdict(int))}

@@ -978,7 +978,7 @@ Observations [C] (from the survey):
 
 - **Shared terrains.** Five pairs of `mp_*` files have identical terrain digests because they reuse the same landscape blocks: `mp_koth_2P_1` = `mp_domination_2P_2`; `mp_koth_3P_2` = `mp_domination_3P_1`; `mp_koth_4P_3` = `mp_domination_4P_2`; `mp_koth_4P_4` = `mp_benchmark_1`; `mp_sandbox` = `mp_sandbox_all`.
 - **Tile counts** 1 – 25 per `mp_*` map (445 tiles in total); **flatten areas** 0 – 6 (53 in total).
-- **Pits below the sea floor** are produced only by flatten types 2/4: `mp_skirmish_3P_1` (minimum −537.05), `mp_assault_4P_1` (−130.86), `mp_cts_3P_2` (−38.22); every other map's minimum equals its `outsideHeight` (or −18.32 … −26 where a type 0 area sits on the sea floor).
+- **Terrain below the sea floor** occurs in four `mp_*` maps only, all through flatten areas: `mp_skirmish_3P_1` (minimum −537.05, type 2), `mp_assault_4P_1` (−130.86, type 4), `mp_cts_3P_2` (−38.22 versus `outsideHeight` −18.32, type 4) and `mp_koth_4P_1` (−26.00, a type 0 area with t = −26.0); in every other `mp_*` map the minimum equals `outsideHeight`.
 - **Sea everywhere at the border**: `edge_max` ≤ 0 for all files (§9.3, §9.4).
 
 ## 19 Constants
