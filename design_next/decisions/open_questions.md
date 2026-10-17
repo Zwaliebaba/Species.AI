@@ -171,7 +171,7 @@ This file records the decisions that arise from the open questions of the refere
 ### DEC-313 Dead airborne actors
 - Status: Open
 - Affects: reference/12_simulation_model/05_space_routing_and_physics.md (R-SIM), reference/02_units/README.md (R-UNIT)
-- Specified behaviour: An actor that dies while airborne skips the landing test and sinks through the terrain while it fades. Exact actor-grid queries skip dead actors, but the cell-based approximate counts include them (DEC-094), so a falling corpse still counts where approximate counts are used.
+- Specified behaviour: An actor that dies while airborne skips the landing test and sinks through the terrain while it fades. Most actor-grid queries skip dead actors, but the cell-based approximate counts include them (DEC-094), so a falling corpse still counts where approximate counts are used.
 - Options: A — keep both behaviours; B — every count excludes dead actors, and the corpse still sinks while it fades; C — as B, and a dead airborne actor falls to the terrain before it fades.
 - Recommendation: B. Excluding dead actors from counts follows the recommendation of DEC-094; whether the corpse sinks or lands is a presentation choice with no effect on play, so the reference look is kept.
 - Decide by: design phase
