@@ -66,7 +66,7 @@ D3D / D3D9 / D3DX	abbreviation	Direct3D, Microsoft's 3-D API; version 9 is the [
 DLL	abbreviation	Windows dynamic-link library (for example the delay-loaded `xinput1_3.dll`).	06:11.6.6	no
 DSP	abbreviation	Digital signal processing; the audio filter chain configured by `effects.txt`, compiled but off in the shipped build (`USE_SOUND_DSPEFFECTS` commented out).	27:12;10:10	no
 dt	abbreviation	The time step of one simulation update: `SERVER_ADVANCE_PERIOD`, a macro for `0.1 × m_gameSpeed` game seconds (`GameTimer::GetServerAdvancePeriod`), applied once per tick to every slice-advanced object.	20:10.3;21:8.1	no
-DX12	abbreviation	DirectX 12, the target graphics API of the new game.	24:9;40:	no
+DX12	abbreviation	DirectX 12, the target graphics API of the new game.	24:9;40:3	no
 EBNF	abbreviation	Extended Backus-Naur form, the grammar notation used in 29.	29:1.2	no
 EMA	abbreviation	Exponential moving average, as in fuel and power throughput smoothing `t = 0.8·t + 0.2·n`.	03:6.6	no
 EOF	abbreviation	End of file.	29:3.1	no
@@ -90,7 +90,7 @@ IK	abbreviation	Inverse kinematics; the two-bone leg solver of `EntityLeg`.	26:5
 IME	abbreviation	Input method editor for typing non-Latin text.	28:10.6	no
 INI	abbreviation	Key-value configuration file (`MultiwiniaSupport.ini`).	29:11.14	no
 IP (network)	abbreviation	Internet Protocol address; the server stamps `FROMIP`/`FROMPORT` on every received letter.	22:5	no
-IP (rights)	abbreviation	Intellectual property; every Introversion name, text, art and audio asset is listed for replacement (see §3 and "IP items").	40:	no
+IP (rights)	abbreviation	Intellectual property; every Introversion name, text, art and audio asset is listed for replacement (see §3 and "IP items").	40:6;41:	no
 KOTH	abbreviation	King of the Hill, game type `GameTypeKingOfTheHill`.	01:4.2	yes → Zone Control
 LAN / WAN	abbreviation	Local-area network (broadcast discovery on UDP 5009) and wide-area network (Internet play through the metaserver).	22:12;09:5.2	no
 LCG	abbreviation	Linear congruential generator; the unsynced `AppRandom` family (`holdrand × 214013 + 2531011`) and the per-tile landscape generator use one.	22:14.2;23:5.1	no
@@ -105,7 +105,7 @@ MSVC / VS2005	abbreviation	Microsoft Visual C++ and Visual Studio 2005, the ship
 MT19937	abbreviation	Mersenne Twister generator (Matsumoto–Nishimura); the algorithm behind the synced `syncrand` stream.	22:14.2	yes → `std::mt19937` or own generator (attribution if reference code is copied)
 MW	abbreviation	Multiwinia, used as a prefix in tables and asset names (`mwhelp`, `mwsounds`, `mwtitle`).	25:1.1	yes → `<GAME_TITLE>`
 NAT	abbreviation	Network address translation; the matchmaker helps peers behind NAT routers connect (hole punching).	22:12.4	no
-NN-U<n>	abbreviation	Identifier of an unknown or design-critical inference in document NN (for example 05-U5), listed in that document's "Open questions and unknowns".	00:Open questions and unknowns	no
+NN-U<n>	abbreviation	Identifier of an unknown or design-critical inference in document NN (for example 05-U5), listed in that document's "Open questions and unknowns".	41:;00:Open questions and unknowns	no
 NPOT / POT	abbreviation	Non-power-of-two and power-of-two texture dimensions.	25:2.8	no
 NSIS / Inno Setup	abbreviation	Windows installer generators; the Multiwinia installer scripts use Inno Setup (`tools/InstallerScript.iss`).	31:9.2	no
 OS	abbreviation	Operating system.	31:2	no
