@@ -159,3 +159,41 @@ Every wave B agent also:
 - rewrites every C++ interface sketch, type, enumerator, function, member, parameter, constant, macro, namespace and source-file name in its files to AGENTS.md §1 (PascalCase types, functions, namespaces and files; `_camelCase` parameters; `m_` private members of classes with invariants and plain `camelCase` fields of public aggregates; `UPPER_CASE` constants; PascalCase enumerators; no `I`/`C`/`Base`/`Impl`/`_t` affixes; acronyms as words, `HlslSource`; American spelling in identifiers, R11), with namespace `Engine` for engine components and `Species` for game code and the simulation model, engine macros `ENGINE_*`, and C++ source files named for their primary type (`BuildIdentity.h`, not `species_build_identity.h`). SDK identifiers keep the SDK spelling. Data names (asset ids, string ids, tuning keys, setting keys, schema roots) are not C++ identifiers and keep their spelling; schema **field** names that generate C++ fields use American spelling. Prose stays British English. Sketches use the `.clang-format` layout (2-space indent, Allman braces, 140 columns, `T* p` and `T& r`).
 - aligns its components with the amended ADRs (`design_next/ADR/`, three-digit ids such as ADR-054) and the "Second pass" component fixes in `species_work/reports/X-ADR-P4.md`: MSBuild, Debug and Release only, embedded shaders, no third-party code except the allow-list, the Microsoft C++ Unit Test Framework, the CI of `build.yml`.
 - cites ADRs only by the three-digit ids.
+
+---
+
+## X-AST-2b — Asset pass 2, part b (after the document fixes)
+
+**Inputs:** `design_next/assets/asset_manifest.csv`, every reference document and component, `species_work/p4_residuals.md` (asset items), the X-AST-2a report.
+
+**You own:** `design_next/assets/*` and `species_work/asset_origin_map.csv`.
+
+**Task (prompt §8.1 Phase 4):**
+1. Replace each manifest row's document-level `consumers` with the requirement ids that use the asset (find each citation of the asset id and take the requirement it sits in; a citation outside a requirement — a table, a diagram — names the nearest requirement of that section, or the document path when there is none). Keep the column name; separate ids with `;`.
+2. Add a row for every asset id that a document cites but the manifest lacks, or, where the citation is the defect, list it in your report for the coordinator.
+3. Remove rows that nothing consumes, and list them (they move to the "does not need recreating" count of GameAssets.md).
+4. Keep GameAssets.md, the README counts and the art briefs consistent with the manifest.
+5. Run `check_design.py` (gate 7 must pass) and both pattern scans on your files.
+
+**Output:** the asset files and your report `species_work/reports/X-AST-2b.md`.
+
+## X-TOOLS — Retained gate tooling (prompt §9.4, owner decision O27)
+
+**Inputs:** `species_work/scripts/check_design.py`, `scan_patterns.py`, `mermaid_check.js`, `species_work/forbidden_patterns.tsv`, `species_work/soft_patterns.tsv`, `species_work/ip_tokens.txt`, `species_work/original_strings.txt`, `species_work/scripts/C-TER_generator.py`, `AGENTS.md`, `.github/workflows/build.yml` (the `design` job).
+
+**You own:** `Tools/DesignCheck/` and `Tools/DesignModels/` (both new), and your report.
+
+**Deliver `Tools/DesignCheck/`:**
+- `CheckDesign.py`: the structural gates of prompt §7.3 items 1–11, generalised: `python3 Tools/DesignCheck/CheckDesign.py <design root> [--write-index] [--report <file>] [--skip-mermaid]`. It reads the prefix registry from `<root>/CONVENTIONS.md` §3.1 and the allowed terms from §9 (Paths column), so new prefixes and allowed terms need no code change; it finds the vision and prompts folders relative to the design root's parent. It applies the technology and provenance patterns of `TechPatterns.tsv` and the hashed denylists below, and prints the per-gate table; exit status 1 on any failure.
+- `TechPatterns.tsv`: the provenance and legacy-technology patterns of §7.1 and the soft-flag patterns of §7.2 in plain text, **with no product, studio, character, map or other IP name in it** (take the rows of the two pattern files whose class is provenance, legacy technology, history, scoped, unfinished or renamed-term; leave every IP row to the denylist).
+- `IpDenylist.sha256`: one SHA-256 per normalised token and per n-gram of 1–5 words from `ip_tokens.txt` (normalise: lower case, ASCII-folded, punctuation removed, whitespace collapsed); the scan hashes the n-grams of the scanned text the same way. `OriginalStrings.sha256`: the same for every line of `original_strings.txt` (whole normalised strings), checked against quoted strings of three or more words. The repository never holds the names or strings in plain text.
+- `MermaidCheck.js`, `package.json` and a committed `package-lock.json` pinning `mermaid` 11.4.1 and `playwright` 1.56.1 (install with `npm install --prefix Tools/DesignCheck` once to produce the lock file; never commit `node_modules/`). `CheckDesign.py` looks for `Tools/DesignCheck/node_modules/mermaid/dist/mermaid.min.js` and Chromium through Playwright (`PLAYWRIGHT_BROWSERS_PATH` honoured), and fails, never skips, when they are missing unless `--skip-mermaid` is given. The `design` job of `build.yml` runs `npm ci --prefix Tools/DesignCheck`, `npx --prefix Tools/DesignCheck playwright install --with-deps chromium` and `python3 Tools/DesignCheck/CheckDesign.py Design`: match it exactly.
+- `SelfTest.py`: proves that the hashed scan finds every token of `ip_tokens.txt` and every line of `original_strings.txt` (pass the two files as arguments; they are deleted at the cutover), and that it finds nothing in a clean sample paragraph made of Species terms.
+- `README.md`: usage, the gates, how to extend the patterns and the allowed terms, and how to update the pinned Mermaid build. It says only that the denylist covers "names and text of the reference product and its IP".
+- Python and JavaScript file names follow the `AGENTS.md` style (`CheckDesign.py`, `SelfTest.py`, `MermaidCheck.js`); Python is LF, 2-space indent, 120 columns (`.editorconfig`).
+
+**Deliver `Tools/DesignModels/`:** `TerrainGenerator.py` (from `species_work/scripts/C-TER_generator.py`, scanned clean, citing `Design/architecture/components/terrain/`) and `README.md` (what it is: an independent generator written from the terrain specification that reproduces its test values; how to run it; that the design phase adds its quantitative models here).
+
+**Checks:** run `CheckDesign.py design_next` and `species_work/scripts/check_design.py` on the same tree: the gate results must be equal (report both tables); run `SelfTest.py`; run both pattern scans over `Tools/` (the hard scan must print nothing: the denylist must not leak a name).
+
+**Output:** the two folders and `species_work/reports/X-TOOLS.md`.
