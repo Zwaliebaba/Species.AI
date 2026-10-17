@@ -303,7 +303,7 @@ flowchart TD
 | `ref.unit.transport.bot_gate_friends` | 20 | Workers | more than this | R-UNIT-406, R-UNIT-407 | DEC-094 |
 | `ref.unit.transport.bot_gate_radius` | 200 | wu | | R-UNIT-406, R-UNIT-407 | DEC-094 |
 | `ref.unit.transport.bot_turret_search_factor` | 1.2 | × Flag post size | | R-UNIT-406 | — |
-| `ref.unit.transport.bot_turret_search_default` | 200 | wu | the search radius for a default Flag post | R-UNIT-406 | — |
+| `ref.unit.transport.bot_turret_search_default` | 200 | wu | the search radius when the target is not a Flag post | R-UNIT-406 | — |
 | `ref.unit.transport.bot_overlap_radius` | 150 | wu | | R-UNIT-407 | — |
 | `ref.unit.transport.bot_ferry_min_idle` | 10 | Workers | more than this | R-UNIT-407 | — |
 | `ref.unit.transport.bot_ferry_min_range` | 400 | wu | from the Launch Vessel | R-UNIT-407 | — |

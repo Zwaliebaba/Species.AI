@@ -7,7 +7,7 @@ Each component specification states what the component owns and must not do, its
 | Component | Prefix | Scope |
 |---|---|---|
 | [Renderer](renderer/README.md) | `RND` | Direct3D 12 renderer: frame graph and passes, view, lighting and fog, world and entity renderers, shaders, visual language, options and budgets |
-| [Terrain](terrain.md) | `TER` | terrain generation, height field, surface and the queries the simulation uses |
+| [Terrain](terrain/README.md) | `TER` | terrain generation, height field, surface and the queries the simulation uses |
 | [Asset pipeline and resources](asset_pipeline_and_resources.md) | `AST` | import, cooking, packs, content identity, residency and resource lifetime |
 | [Animation and VFX](animation_and_vfx/README.md) | `VFX` | effect events, explainers, sprites, procedural animation, particles, shatter and screen effects |
 | [Audio engine](audio_engine.md) | `AEN` | voices, buses, effects, residency, the command queue and spatialisation |

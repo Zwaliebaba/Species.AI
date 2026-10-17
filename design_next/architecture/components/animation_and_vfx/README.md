@@ -333,7 +333,7 @@ The particle entries sample `fx.particle_dot` through its `point` view, whose po
 
 ### 4.1 The presentation clock and the frame step
 
-**VFX-016** (MUST) At the start of each frame the presentation clock reads the platform clock and takes the step Δ = min(real now − real time of the previous frame, `ref.sim.frame.delta_clamp` (0.25 s)). While the world is held (R-SIM-550) both presentation readings stop: Δ counts as 0 for them. Otherwise the scaled reading advances by Δ × the game speed of the snapshot and the unscaled reading by Δ (ADR-036). The real reading always follows the platform clock.
+**VFX-016** (MUST) At the start of each frame the presentation clock reads the platform clock and takes the step Δ = min(real now − real time of the previous frame, `ref.sim.frame.delta_clamp` (0.25 s)). While the world is held (R-SIM-550) both presentation readings stop: Δ counts as 0 for them. Otherwise the scaled reading advances by Δ × the game speed of the snapshot and the unscaled reading by Δ (ADR-036, DEC-955). The real reading always follows the platform clock.
 
 **VFX-017** (MUST) Each frame runs these steps in this order:
 

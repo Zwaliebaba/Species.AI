@@ -177,7 +177,7 @@ public:
 | State | Initial value | Meaning |
 |---|---|---|
 | frames-per-second counter | `ref.sim.frame.fps_initial` (60) in [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | frames completed in the last `ref.sim.frame.fps_window` of real time (R-SIM-576) |
-| frame-rate overlay flag | off; exists in Debug builds only (ADR-056) | development overlay of frame rate and entity counts ([../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md)) |
+| frame-rate overlay flag | off; exists in Debug builds only (ADR-056) | development overlay of frame rate and entity counts ([developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#44-development-overlay)) |
 | input-mode overlay flag | off; exists in Debug builds only (ADR-056) | development box that shows whether keyboard or gamepad input is active |
 | poster state | `PosterState::Inactive` | `Inactive` or `Tiling` (RND-110) |
 | poster tile index | 0 | the tile being rendered (RND-111) |

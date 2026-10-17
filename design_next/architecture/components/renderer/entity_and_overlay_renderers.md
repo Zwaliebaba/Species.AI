@@ -332,7 +332,7 @@ The Builder draws no beam in a match: none of its match states (R-UNIT-453) draw
 
 **RND-329** (MUST) Most billboards (particles, Essence orbs, structure lights and ports, glow quads) are `CameraFacing` quads centred on their position. The bottom-anchored billboard is a `CameraFacing` quad with the anchor `BottomCenter`, of a given width and height, whose texture is mapped upright and mirrored left to right; its users are the dust vortex (`fx.glow_cloudy`) and the snowflake (`fx.starburst`) ([README.md](../animation_and_vfx/README.md)). Its texture is sampled with linear filtering through all mip levels, and it is drawn with no culling, with the blend and colour its user names.
 
-**RND-330** (MUST) The development sphere (`DevSphereMesh`) is an icosahedron of 12 vertices, built from the constants `rnd.sphere.ico_x` (0.5257311121) and `rnd.sphere.ico_z` (0.85065080835) as the twelve points (±*x*, 0, ±*z*), (0, ±*z*, ±*x*) and (±*z*, ±*x*, 0), with its 20 faces, subdivided `rnd.sphere.subdivisions` (1) time: each face becomes four by its edge midpoints pushed out to the unit sphere, which gives 80 triangles. It is built once, scaled and moved per draw, and drawn either as `rnd.sphere.line_width` (1 px) lines along its triangle edges or filled. Its users are the development drawing of pass 24 ([../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md)) and the sphere hooks of the map editor (RND-174).
+**RND-330** (MUST) The development sphere (`DevSphereMesh`) is an icosahedron of 12 vertices, built from the constants `rnd.sphere.ico_x` (0.5257311121) and `rnd.sphere.ico_z` (0.85065080835) as the twelve points (±*x*, 0, ±*z*), (0, ±*z*, ±*x*) and (±*z*, ±*x*, 0), with its 20 faces, subdivided `rnd.sphere.subdivisions` (1) time: each face becomes four by its edge midpoints pushed out to the unit sphere, which gives 80 triangles. It is built once, scaled and moved per draw, and drawn either as `rnd.sphere.line_width` (1 px) lines along its triangle edges or filled. Its users are the development drawing of pass 24 ([developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing)) and the sphere hooks of the map editor (RND-174).
 
 ### 4.6 Effects (pass 10a)
 
@@ -418,7 +418,7 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 **RND-358** (MUST) The 3-D parts of the markers are drawn in pass 16 with the in-shader depth test of RND-309: the ground highlight of a Transport order marker is the highlight effect of R-CTRL-363 with the `cursor_ring` entry, and a local Leader's marker draws the Leader's banner (R-CTRL-388, R-UNIT-191) with the cloth-flag entries of [README.md](../animation_and_vfx/README.md).
 
-**RND-359** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [../diagnostics_test_and_performance/README.md](../diagnostics_test_and_performance/README.md), drawn in pass 16 in Debug builds only, when its development setting is on.
+**RND-359** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [developer_tools.md](../diagnostics_test_and_performance/developer_tools.md#47-development-drawing), drawn in pass 16 in Debug builds only, when its development setting is on.
 
 ### 4.10 World cursor (pass 20)
 

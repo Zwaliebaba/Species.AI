@@ -468,7 +468,7 @@ Table 3.6-A Texture usage conventions.
 
 ### 3.7 Mesh import record and the tint attribute
 
-**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; the **asset class**, which selects the socket schema (§3.8); the unit scale from glTF metres to world units; the tint marking (AST-034); the primitives declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts glTF axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
+**AST-033** (MUST) A mesh import record declares (ADR-019): the asset id and member; its role, `render` or `collision` (AST-077); for a `render` record the **asset class**, which selects the socket schema (§3.8); the unit scale from glTF metres to world units; the tint marking (AST-034); the primitives declared smooth-shaded, if any (AST-036); and, for a collidable mesh, the asset id of its collision asset (§3.9). The cooker converts glTF axes and units to Species world axes once, at cook time, with the conventions of ADR-016.
 
 **AST-034** (MUST) Team regions of a mesh are marked explicitly, in one of the two ways of ADR-020, and the import record names which:
 1. **vertex weight**: the application-specific glTF vertex attribute `_SPECIES_TINT`, a `SCALAR` accessor of `FLOAT`, or of normalised `UNSIGNED_BYTE` or `UNSIGNED_SHORT`, with values from 0 (keep the facet colour) to 1 (full team tint);
@@ -733,12 +733,12 @@ convert every node transform and position to Species world axes and units (unit 
 for each mesh node n, for each primitive p of n:
     for each triangle (i0, i1, i2) of p:
         corner colour k(i) := baseColorFactor(p.material) * COLOR_0[i]      # linear glTF values; COLOR_0 absent = 1
-        e(i) := quantise8(srgb_encode(k(i)))                                  # exact sRGB curve, per channel
+        e(i) := Quantize8(SrgbEncode(k(i)))                                  # exact sRGB curve, per channel
         if p is faceted:
             require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
             facet colour f := e(i0)
             facet normal m := normalise(cross(P(i1) - P(i0), P(i2) - P(i0)))
-        f.rgb := quantise8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
+        f.rgb := Quantize8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
         tint weight t := per AST-034: the corners' _SPECIES_TINT values, which must be equal after
                          quantisation to 8 bits; 1 for a flagged material; 0 for no marking
         emit three vertices, each with its position, f, m, t and the barycentric corner

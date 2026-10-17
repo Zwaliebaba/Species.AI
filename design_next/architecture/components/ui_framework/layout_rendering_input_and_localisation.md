@@ -12,7 +12,7 @@ This document specifies how the UI framework lays out, draws, navigates and loca
 
 ## 2 Interfaces
 
-C++23 interface sketch (declarations only), in namespace `species::ui`; the geometry types are those of [core_and_widgets.md](core_and_widgets.md) §2.
+C++23 interface sketch (declarations only), in namespace `Engine`; the geometry types are those of [core_and_widgets.md](core_and_widgets.md) §2, and `InputMode` is the input component's (INP-150).
 
 ```cpp
 namespace Engine
@@ -202,7 +202,7 @@ The development windows and the message dialog use this layout; no options scree
 
 **UI-168** (MUST) Two player settings scale the UI (ADR-033, ADR-064): the **UI scale** multiplies element sizes around their anchors, and the **text scale** multiplies text sizes. They default to `ui.scale.ui_default` (1.0) and `ui.scale.text_default` (1.0), at which every layout of this folder is the reference layout; their ranges are a design-phase input (§8).
 
-**UI-169** (MUST) The platform layer reports the window's DPI scale (ADR-075). Line widths, borders, focus outlines and text-outline offsets are their pixel values × the DPI scale, rounded to whole pixels and at least 1 px; icons use the source size closest to their final pixel size; and every element rectangle is snapped to whole pixels after conversion (ADR-031).
+**UI-169** (MUST) The platform layer reports the window's DPI scale (ADR-075). Line widths, borders, focus outlines and text-outline offsets are their pixel values × the DPI scale, rounded to whole pixels and at least 1 px; icons use the source size closest to their final pixel size; and every element rectangle is snapped to whole pixels after conversion (ADR-031). Layout reads the display size of UI art authored at 2x from `TextureSize`, which `AssetCache::Size` reports, never the stored pixel size ([asset pipeline](../asset_pipeline_and_resources.md) AST-024, AST-113). A UI element that needs a grey, recoloured or colour-replaced form of a picture uses a derived texture variant (`Derivation::Grayscale`, `ToColor` or `ReplaceColor`, AST-075), which the content build makes; the UI never processes a texture at run time.
 
 **UI-170** (MUST) A tool-window length v in pixels becomes *m*(v) × the DPI scale × the UI scale. A front-end length is its fraction of W or H × the UI scale about its anchor; at a UI scale of 1 the page grid of UI-163 is unchanged. HUD lengths are the renderer's (RND-377).
 
@@ -319,8 +319,8 @@ The backdrop's corner glow is `ref.meta.backdrop.glow_colour` of [reference/09](
 **UI-194** (MUST) **Draw variants.** The glyph renderer draws text:
 
 1. in 2-D at a draw point, left-aligned, centred or right-aligned by its measured width; the justification form takes a number, below 0 for right-aligned, 0 for centred and above 0 for left-aligned;
-2. in 2-D rotated by a quarter turn, reading upwards or reading downwards; the upward form draws no outline pass;
-3. in 3-D, facing the camera at a world position, with the depth test off, left-aligned, centred or right-aligned, with outline offsets of ±`ui.text.outline_offset_3d` (5 %) of the size; the centred and right-aligned forms shift the text by (the CJK horizontal scale × the count of characters at or above U+3000) × (the Latin horizontal scale × the count of the other characters) × 0.5 × the size, a product of the two terms, so text made only of Latin characters, or only of CJK characters, is drawn left-aligned (§8);
+2. in 2-D rotated by a quarter turn, reading upwards or reading downwards; the upward form draws no outline pass (see DEC-952);
+3. in 3-D, facing the camera at a world position, with the depth test off, left-aligned, centred or right-aligned, with outline offsets of ±`ui.text.outline_offset_3d` (5 %) of the size; the centred and right-aligned forms shift the text by (the CJK horizontal scale × the count of characters at or above U+3000) × (the Latin horizontal scale × the count of the other characters) × 0.5 × the size, a product of the two terms, so text made only of Latin characters, or only of CJK characters, is drawn left-aligned (§8; see DEC-952);
 4. in 3-D at a world position, oriented by a front and an up vector, with the depth test left on.
 
 World-space text uses the same glyph quads and blend states as UI text, in the world passes that the renderer assigns (ADR-031).
@@ -353,26 +353,26 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 ### 4.10 Keyboard, gamepad and pointer navigation
 
-**UI-203** (MUST) The UI consumes these actions, whose bindings live in the input component's binding graph (ADR-029; [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-035). The gamepad column is the reference control scheme; the keyboard column is UI-204:
+**UI-203** (MUST) The UI consumes these actions. Their bindings belong to the input component: table 3.6-B of [input](../input/controls_and_default_bindings.md) is the one binding table of every `action.menu.*` action, and its table 3.6-A binds the match actions that also act on UI windows (ADR-029; [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-035, R-CTRL-047). This document states what each action means to the UI and its context rules:
 
-| Action | Gamepad | Keyboard and mouse | Consumer |
-|---|---|---|---|
-| `action.menu.up`, `action.menu.down` | d-pad up and down, and both sticks up and down, each with repeat | arrow up and down, with repeat | window navigation ([core_and_widgets.md](core_and_widgets.md) UI-051) |
-| `action.menu.left`, `action.menu.right` | d-pad left and right, and both sticks left and right, with repeat | arrow left and right, with repeat | numeric page text fields (UI-120) |
-| `action.menu.activate` | south face button, down | Enter, down | the click of the navigation cursor (UI-051) |
-| `action.menu.front_end_activate` | menu button, down; only while the application is at the front end | — | as activate |
-| `action.menu.close` | view button or east face button, down | Esc, down, outside a match | the back action (UI-051, UI-111, UI-112) |
-| `action.match.menu` | menu button, down | Esc, down | screen level: in a match it closes every window or opens the in-match menu ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-014, R-META-062); it leaves the map-editor loop |
-| `action.menu.dismiss` | south face button, down | the primary pointer button, Space, Enter or Esc, down | dismisses in-page dialogs (UI-100) and the gamepad-disconnected dialog (R-META-066) |
-| `action.ui.pointer_down`, `action.ui.pointer_held` | `action.ui.show_cursor` held with the south face button | primary pointer button, down and held | the UI core ([README](README.md) UI-006) |
-| `action.ui.alt_pointer_down` | — | secondary pointer button, down | the UI core (UI-033) |
-| `action.ui.show_cursor` | left shoulder, held | — | gamepad pointer emulation (README UI-011) |
-| `action.menu.scroll_speedup` | — | Shift, held | five-fold increment steps (UI-071) |
-| `action.match.chat` | — | Enter, down | the chat field on the match setup page (UI-092) |
+| Action | Meaning and context | Consumer |
+|---|---|---|
+| `action.menu.up`, `action.menu.down` | move the navigation cursor; repeat while held (UI-216) | window navigation ([core_and_widgets.md](core_and_widgets.md) UI-051) |
+| `action.menu.left`, `action.menu.right` | step a value; repeat while held | numeric page text fields (UI-120) |
+| `action.menu.activate` | activate the navigation cursor | the click of the navigation cursor (UI-051) |
+| `action.menu.front_end_activate` | as activate, only while the application is at the front end | as activate |
+| `action.menu.close` | Back; its Esc binding applies only outside a match | the back action (UI-051, UI-111, UI-112) |
+| `action.match.menu` | screen level: in a match it closes every window or opens the in-match menu ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-014, R-META-062); it leaves the map-editor loop | the application loops |
+| `action.menu.dismiss` | dismiss a dialog | in-page dialogs (UI-100) and the gamepad-disconnected dialog (R-META-066) |
+| `action.ui.pointer_down`, `action.ui.pointer_held` | the primary pointer button, also on the gamepad while `action.ui.show_cursor` is held | the UI core ([README](README.md) UI-006) |
+| `action.ui.alt_pointer_down` | the secondary pointer button | the UI core (UI-033) |
+| `action.ui.show_cursor` | gamepad pointer emulation while held | README UI-011 |
+| `action.menu.scroll_speedup` | five-fold increment steps while held | UI-071 |
+| `action.match.chat` | start editing the chat field when no text edit is active | the chat field on the match setup page (UI-092) |
 
-**UI-204** (MUST) Every screen must be usable with the keyboard alone (ADR-032, ADR-064), so the keyboard defaults are: the arrow keys for `action.menu.up`, `action.menu.down`, `action.menu.left` and `action.menu.right`, Enter for `action.menu.activate`, and Esc for `action.menu.close` outside a match. In a match Esc stays `action.match.menu`, which closes every window at once (R-META-014). The reference's own control scheme binds the menu actions to the gamepad only, and keyboard players navigate with the pointer; its alternative control set, which is never selected, holds the arrow keys and Enter given here (§8).
+**UI-204** (MUST) Every screen must be usable with the keyboard alone (ADR-032, ADR-064), so the menu actions have keyboard defaults beside their gamepad ones: the arrow keys for the four directions, Enter for `action.menu.activate` and Esc for `action.menu.close`, bound in table 3.6-B of the input component (see DEC-950). The UI applies the Esc binding of `action.menu.close` only outside a match; in a match Esc stays `action.match.menu`, which closes every window at once (R-META-014). The reference's own control scheme binds the menu actions to the gamepad only, and keyboard players navigate with the pointer; its alternative control set, which is never selected, holds the arrow keys and Enter given here (§8).
 
-**UI-205** (MUST) The **input mode** is keyboard and mouse or gamepad, chosen by the input router from the device class used last, with the gamepad preferred when both are active in one frame (ADR-029). It controls hover-to-cursor ([core_and_widgets.md](core_and_widgets.md) UI-056), the gamepad glyph hints (UI-111, UI-112), the string variants (UI-223) and the gamepad-disconnected dialog (R-META-066).
+**UI-205** (MUST) The **input mode** is keyboard and mouse or gamepad, chosen by the input router from the device class used last, with the gamepad preferred when both are active in one frame (`InputRouter::Mode`, INP-150; ADR-029). It controls hover-to-cursor ([core_and_widgets.md](core_and_widgets.md) UI-056), the gamepad glyph hints (UI-111, UI-112), the string variants (UI-223) and the gamepad-disconnected dialog (R-META-066).
 
 **UI-206** (MUST) Each standard window has one navigation order, chosen by its screen, and one cursor in it; only the focused window navigates (UI-050, UI-051).
 
@@ -394,7 +394,7 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-215** (MUST) When the cursor moves to a widget inside a scrolling list, the list scrolls so that the widget is visible (UI-053; ADR-032).
 
-**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in presentation time; both are tuning values of the input component ([input](../input/README.md); ADR-029), so navigation repeats at the same rate at every frame rate.
+**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in real time on the platform clock (ADR-074, ADR-029), so menus keep repeating while a match is paused; the delay and the period are `inp.repeat.initial_delay` and `inp.repeat.period` of the [input](../input/README.md) component (INP-133; see DEC-951), so navigation repeats at the same rate at every frame rate.
 
 **UI-217** (MUST) Back and Escape never apply a change: only an explicit confirmation does, such as the Apply button of an options page ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-412 item 4) or Enter in a text field (UI-064) (ADR-032, DEC-102).
 
@@ -402,7 +402,7 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-218** (MUST) Every text a widget shows comes from the string table of the current language by its string id (ADR-063; R-META-460): `Lookup(id, mode)` returns the text of the id for the current input mode (UI-223).
 
-**UI-219** (MUST) A string id that the current language's table lacks returns, per id, the text of the base language `ref.meta.lang.base` (DEC-099; R-META-464). No widget ever shows a string id as text. An id that the base language also lacks cannot pass the content build (ADR-059, DEC-015); if one reaches a development build through loose content, the look-up returns an empty text and the miss is logged once per id.
+**UI-219** (MUST) A string id that the current language's table lacks returns, per id, the text of the base language `ref.meta.lang.base` (DEC-099; R-META-464). No widget ever shows a string id as text. An id that the base language also lacks cannot pass the content build (ADR-059, DEC-015); if one reaches a Debug build through loose content, the look-up returns an empty text and the miss is logged once per id.
 
 **UI-220** (MUST) `Exists(id)` is true when the current language or the base language has the id. Counts that come from data use it, such as the number of help pages of a mode and the lines of the credits page (R-META-471).
 
@@ -460,7 +460,7 @@ flowchart TB
   B -- yes --> C["take the current table's entry"]
   B -- no --> D{"base-language table has the id?"}
   D -- yes --> E["take the base-language entry"]
-  D -- no --> F["empty text; log once (development builds only)"]
+  D -- no --> F["empty text; log once (Debug builds only)"]
   C --> G{"variant for this input mode?"}
   E --> G
   G -- yes --> H["the variant"]
@@ -525,7 +525,7 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 | L9 | unit | A 20 px text at the draw point (50, 50) has its glyph box top-left at (47, 43); in a 30 px row at y = 0, the text row convention places the box top at 5. | UI-165, UI-193 |
 | L10 | unit | With a test face of uniform advances, the string "AB" at 20 px in body role is 2 × 20 × 0.6 × 0.91 px wide in en-GB; in ja-JP a kana character is 20 × 1.0 × 0.91 px wide and "AB" inside Japanese text keeps 0.6. | UI-196, UI-197 |
 | L11 | unit | The coverage check fails for a table that holds U+0E01 when no face of its chain covers it, and passes for U+20AC in every language. | UI-199 |
-| L12 | unit | An id missing in de-DE shows its en-GB text; an id missing everywhere shows an empty text in a development build and fails the content build. | UI-219 |
+| L12 | unit | An id missing in de-DE shows its en-GB text; an id missing everywhere shows an empty text in a Debug build and fails the content build. | UI-219 |
 | L13 | unit | An id with only a gamepad variant shows that variant in gamepad mode and an empty text in keyboard-and-mouse mode; an id with plain text and a gamepad variant shows the plain text in keyboard-and-mouse mode. Switching the input mode changes a bound caption at the next update. | UI-223, UI-226 |
 | L14 | unit | A caption with a binding argument shows the new key after the binding changes; an embedded id is expanded; a cycle of two ids fails the content build. | UI-224 |
 | L15 | unit | A message formatted with an argument "100% {done}" shows exactly that text. | UI-227 |
@@ -547,6 +547,9 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 - **DEC-221** (Open): the hand-over of resources by reference-counted generations rather than frame counts (UI-239).
 - **DEC-245** (Open): the session browser, whose row geometry UI-164 item 5 gives.
 - **DEC-050** (Open): a rebinding screen, which the binding argument of UI-224 follows when bindings change.
+- **DEC-950** (Resolved): the keyboard defaults of the menu actions, bound in the input component's table 3.6-B (UI-204).
+- **DEC-951** (Resolved): the menu repeat on real time (UI-216).
+- **DEC-952** (Open): reference text-drawing behaviours kept as defaults (UI-194 items 2 and 3).
 - ADR-034 is Proposed; its default is the text stack of §4.9.
 
 **Design-phase inputs.**
@@ -558,7 +561,7 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 5. Whether right-to-left languages are offered; the text stack supports them (UI-202), but the page grid and the widgets are laid out left to right.
 6. Chinese, which the reference code anticipates for the title face but for which no table exists (UI-234).
 7. Cyrillic glyph design: in the reference all three faces carry one and the same Cyrillic glyph set, that of the stylised face, so Cyrillic text looks alike in every role; whether the Species faces share one Cyrillic design is an art-direction choice ([GameAssets](../../../assets/GameAssets.md) §17).
-8. The centring of centred and right-aligned 3-D text (UI-194 item 3), which multiplies the CJK and Latin terms instead of adding them, so single-script 3-D labels are drawn left-aligned; whether Species keeps it depends on which world labels it draws.
+8. The centring of centred and right-aligned 3-D text (UI-194 item 3), which multiplies the CJK and Latin terms instead of adding them, so single-script 3-D labels are drawn left-aligned; whether Species keeps it depends on which world labels it draws (DEC-952).
 
 ## 9 Tuning table
 
@@ -662,6 +665,6 @@ The palette tokens of UI-187 and UI-188 are the `ui.palette.*` rows; their value
 | `ref.meta.lang.base` | [reference/09 options_localisation_and_hooks.md](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `rnd.hud.ortho_height` | [renderer/entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377 |
 | `ui.chrome.title_height`, `ui.chrome.close_box`, `ui.button.auto_char_width`, `ui.button.auto_padding`, `ui.button.auto_height`, `ui.core.auto_grow_margin` | [core_and_widgets.md](core_and_widgets.md) §9 |
-| the repeat delay and rate of the menu directions | [input](../input/README.md) |
+| `inp.repeat.initial_delay`, `inp.repeat.period` (the repeat of the menu directions) | [input](../input/README.md) §4.18 |
 
 String ids cited: `ui.title.game_name` ([reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md)). Asset ids cited: `font.ui.primary`, `font.ui.primary_ja`, `font.ui.primary_ko`, `font.ui.stylised`, `font.ui.compact`, `strings.en_gb`, `strings.fr_fr`, `strings.de_de`, `strings.it_it`, `strings.es_es`, `strings.pt_br`, `strings.ru_ru`, `strings.ja_jp`, `strings.ko_kr`, `uitex.panel_accent`, `uitex.fill_blur`, `fx.glow_cloudy`, `glyph.pad.*`, `glyph.key.tab`.

@@ -670,9 +670,9 @@ TrackStart	identifier				drop	campaign, cut or unreachable content
 TripodNavData	identifier				drop	campaign, cut or unreachable content
 UnprocessedSpirit	identifier				drop	campaign, cut or unreachable content
 UpgradePort	identifier				drop	campaign, cut or unreachable content
-NUM_TEAMS	identifier	team slots per match	kMaxTeams		rename	tuning key ref.sim.max_teams
-NUM_SLICES_PER_FRAME	identifier	update slices per tick	kUpdateSlicesPerTick		rename	tuning key ref.sim.update_slices
-SERVER_ADVANCE_PERIOD	identifier	tick period	kTickPeriod		rename	tuning key ref.sim.tick_period
+NUM_TEAMS	identifier	team slots per match	MAX_TEAMS		rename	tuning key ref.sim.max_teams
+NUM_SLICES_PER_FRAME	identifier	update slices per tick	UPDATE_SLICES_PER_TICK		rename	tuning key ref.sim.update_slices
+SERVER_ADVANCE_PERIOD	identifier	tick period	TICK_PERIOD_SECONDS		rename	tuning key ref.sim.tick_period
 GRACE_TIME	identifier	grace period	GracePeriod		rename	tuning key ref.match.grace_period
 syncrand	identifier	simulation random integer	SimRng::NextUint		rename	
 syncfrand	identifier	simulation random fraction	SimRng::NextUnit		rename	

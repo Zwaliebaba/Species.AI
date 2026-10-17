@@ -45,7 +45,7 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 
 ## 2 Interfaces
 
-C++23 interface sketch (declarations only). Every type is in namespace `species::ui`; `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
+C++23 interface sketch (declarations only). Every type is in namespace `Engine`; `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
 namespace species::ui {
@@ -186,7 +186,7 @@ Table 3.1-A — the page catalogue. "Entered by" and "Back" are the page-stack o
 | `QuickMatch` | hook: no page leads to it (R-META-028; DEC-249, DEC-050) | never | — | — | — | — |
 | `Achievements` | hook: R-META-491, R-META-492 (DEC-047) | never | UnwindTo `Title` | left only | the row loader, which never completes (R-META-491) | discards the rows |
 | `LeaderboardSelect` | hook: R-META-499 (DEC-047) | never | Pop | — | — | — |
-| `Leaderboard` | hook: R-META-498, R-META-500, R-META-501 (DEC-047) | never | Pop | — | — | — |
+| `Leaderboard` | hook: R-META-498, R-META-500 to R-META-502 (DEC-047); its board and view selectors and its period toggle take `action.menu.cycle_up`, `action.menu.cycle_down`, `action.menu.select_previous`, `action.menu.select_next` and `action.menu.toggle_period` ([input](../input/controls_and_default_bindings.md) table 3.6-B, DEC-553) | never | Pop | — | — | — |
 
 **UI-321** (MUST) The hook pages `QuickMatch`, `Achievements`, `LeaderboardSelect` and `Leaderboard` are in the catalogue so that the design phase can design them on their entry points (DEC-047, DEC-050, DEC-249), but no widget, page hook or controller requests them: the page host refuses a request for a hook page (UI-364). The 15 reachable ids are the 15 specified pages of R-META-003 (`ref.meta.front_end.specified_pages`). The key-rebinding page, which no player can reach (R-META-410, DEC-050), belongs to the settings branch: it is an options screen (recipe B) and has no page id.
 
@@ -220,7 +220,7 @@ A page id appears on the stack at most once: a Push or a Replace whose target is
 
 **UI-335** (MUST) These assets are resident before the first frame of the front end, so that no page change waits for a load: the gamepad glyphs `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.shoulder_left`, `glyph.pad.shoulder_right`, `glyph.pad.shoulder_left_shadow` and `glyph.pad.shoulder_right_shadow`; the fill-box texture `uitex.fill_blur`; the backdrop figure `sprite.worker.front` and wheel `uitex.backdrop_wheel`; the beam strip `fx.beam_short`; and the cloud layer `fx.sky_cloud`. The mode cards are loaded when the mode-select page is set up (R-META-033), and the map thumbnails in the background (R-META-034, DEC-226).
 
-**UI-336** (MUST) Windows that open over the front end, the help and options windows, the settings screen and its option screens (R-META-061), an open drop-down list, a message dialog, the leave confirmation, the chat input and the gamepad-disconnected dialog (R-META-004, R-META-066), are layers of the UI core's window stack above the front-end screen ([core_and_widgets.md](core_and_widgets.md) §4.1, R-META-015). The top layer has the focus and receives navigation and Back (ADR-032). A modal layer (an open list, a message dialog, a confirmation, the gamepad-disconnected dialog) passes no input to any layer beneath it until it closes. The page stack of UI-331 lives inside the front-end screen and is unchanged by the layers above it.
+**UI-336** (MUST) Windows that open over the front end, the help and options windows, the settings screen and its option screens (R-META-061), an open drop-down list, a message dialog, the leave confirmation, the chat input and the gamepad-disconnected dialog (R-META-004, R-META-066), are layers of the UI core's window stack above the front-end screen ([core_and_widgets.md](core_and_widgets.md) §4.1, R-META-015). The top layer has the focus and receives navigation and Back (ADR-032). A modal layer (an open list, a message dialog, a confirmation, the gamepad-disconnected dialog) passes no input to any layer beneath it until it closes. The gamepad-disconnected dialog closes on reconnection (`action.device.pad_connected`, [input](../input/devices_frames_and_queries.md) INP-148), when its message is dismissed (`action.menu.dismiss`) and on `action.match.menu` (R-META-066). The page stack of UI-331 lives inside the front-end screen and is unchanged by the layers above it.
 
 **UI-337** (MUST) The front-end screen draws only while it has the focus or while the chat input window is open ([core_and_widgets.md](core_and_widgets.md) UI-037). An options screen or the open-list window above it draws the backdrop figure layer itself (R-META-205), and while a page drop-down list is open only the widget that owns the list is drawn of the page's widgets (R-META-204). When it draws, the screen draws, in the front-end frame order of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-176: the backdrop figure layer (R-META-205, `RenderBackdrop`); the title bar (R-META-207, `uitex.title_wordmark`, `uitex.logo_emblem`); the page's fill boxes (UI-323), drawn as the fill boxes of [core_and_widgets.md](core_and_widgets.md) with `uitex.fill_blur` and the glow `fx.glow_cloudy` (R-META-208); the page overlays (UI-392); the widgets.
 
@@ -425,7 +425,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 **UI-383** (MUST) The front-end screen is not closeable (UI-330), so its Back is a page rule: when `action.menu.close` fires in step 3, the screen runs the current page's back handler (table 3.1-A), which acts as a click on the page's Back button: the Back button's cues and backwards transition (R-META-016, R-META-017), then the page's navigation request. The target of the page's Back button ([core_and_widgets.md](core_and_widgets.md) UI-111) is this request: Pop, or UnwindTo a named page. The back handler runs in the update phase whether or not the page's Back button is drawn, so Back works while the button is hidden, covered or unfocused (DEC-102, DT-19; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-209). A page without a back handler (`Title`, `WaitForStart`) ignores the action. On an open drop-down list, `action.menu.close` closes the list and keeps the current value (UI-336).
 
-**UI-384** (MUST) A focused row inside a scrolling list is kept in view ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-215). When `action.menu.down` fires with the cursor on the last visible row and more entries below, the list scrolls by one row and the cursor stays on the row position; when `action.menu.up` fires with the cursor on the first visible row and the list scrolled, the list scrolls back by one row. The cursor's own widget decides this through its scroll hook ([core_and_widgets.md](core_and_widgets.md) UI-052), and the scroll position is always set through the scroll bar's clamped setter ([core_and_widgets.md](core_and_widgets.md) UI-075), so it stays within 0 to max(0, rows − visible rows) (DT-05, DT-20).
+**UI-384** (MUST) A focused row inside a scrolling list is kept in view ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-215). When `action.menu.down` fires with the cursor on the last visible row and more entries below, the list scrolls by one row and the cursor stays on the row position; when `action.menu.up` fires with the cursor on the first visible row and the list scrolled, the list scrolls back by one row. The cursor's own widget decides this through its scroll hook ([core_and_widgets.md](core_and_widgets.md) UI-052), and the scroll position is always set through the scroll bar's clamped setter ([core_and_widgets.md](core_and_widgets.md) UI-075), so it stays within 0 to max(0, rows − visible rows) (DT-05, DT-20; see DEC-102).
 
 **UI-385** (MUST) A page's initial focus is the first entry of its navigation order, unless its layout record names another: the match setup page's initial focus is its primary button (R-META-044).
 
@@ -479,7 +479,7 @@ The text is word-wrapped at the wrap width with the widths that the glyph cache 
 
 **UI-403** (MUST) A line whose text starts with "-" is a heading: it is drawn without the dash at `ref.meta.credits.heading_scale` (1.25) × s.
 
-**UI-404** (MUST) With n wrapped lines, the content height is ⌊`ui.scroll_text.top_margin` × h⌋ + n × g. When the content height is at most h, the text does not scroll. Otherwise, with t the time since the widget's scroll timer started, the scroll offset is 0 while t < `ui.scroll_text.hold_time` (1.5 s) and `ui.scroll_text.scroll_speed` (30 px/s) × (t − `ui.scroll_text.hold_time`) after it; once the offset exceeds n × g, so that the whole text has scrolled above its starting top, the timer restarts, the text is back at its top and holds again, in an endless loop (diagram 4-D).
+**UI-404** (MUST) With n wrapped lines, the content height is ⌊`ui.scroll_text.top_margin` × h⌋ + n × g, with the top margin before UI-401 raises it (see DEC-952). When the content height is at most h, the text does not scroll. Otherwise, with t the time since the widget's scroll timer started, the scroll offset is 0 while t < `ui.scroll_text.hold_time` (1.5 s) and `ui.scroll_text.scroll_speed` (30 px/s) × (t − `ui.scroll_text.hold_time`) after it; once the offset exceeds n × g, so that the whole text has scrolled above its starting top, the timer restarts, the text is back at its top and holds again, in an endless loop (diagram 4-D).
 
 **UI-405** (MUST) Unless the widget's layout entry marks it independent of focus, its scroll timer restarts whenever the cursor of its window moves to another widget, so a description starts again from its top when the focus moves.
 
@@ -589,7 +589,7 @@ void OpenExampleTool(UiCore& ui, ExampleToolModel& model, PanelId parent) {
 
 A tool window draws the standard window chrome ([core_and_widgets.md](core_and_widgets.md) §4.12), whose body is the accent panel strip `uitex.panel_accent`.
 
-**UI-431** (MUST) A tool window is never a page of the front-end screen and never opens in a player build unless its owner document says so: the development windows exist in development builds only ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)), and the map editor's windows only in an editor build ([reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301).
+**UI-431** (MUST) A tool window is never a page of the front-end screen and never opens in a player build unless its owner document says so: the development windows exist in Debug builds only ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md), ADR-056), and the map editor's windows only in an editor build ([reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-301).
 
 ### 4.11 Recipe B: a full-screen options screen
 
@@ -689,7 +689,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-481** (MUST) When the row under the cursor is removed from a list, the cursor moves to the row that takes its place or, when none does, to the last remaining row, or to the Back button when no row remains; it never rests on a removed widget.
 
-**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-067), with the operation, the page left, the page entered and the frame. Development builds show in the diagnostics overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-066, ADR-068).
+**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-067), with the operation, the page left, the page entered and the frame. Debug builds (ADR-056) show in the diagnostics overlay ([diagnostics, test and performance](../diagnostics_test_and_performance/README.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-066, ADR-068).
 
 ## 7 Acceptance tests
 
@@ -798,11 +798,12 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DEC-244, DEC-248 | Open | the password page and admission; no credential page (UI-322, UI-341) |
 | DEC-226 | Open | background loading of thumbnails and pictures (UI-314, UI-470) |
 | DEC-106 | Open | the page-level millisecond budgets (UI-473) |
+| DEC-952 | Open | the scrolling-text content height with the unraised top margin (UI-401, UI-404) |
 | DEC-221, DEC-222 | Open | the owner of the front-end controller and the read-only match view (UI-301, UI-332) |
 | DEC-045 | Open | a map editor, whose windows follow recipe A (UI-430, UI-431) |
 | DEC-333 | Dropped | trial-edition gating: no trial page, upsell or overlay (UI-322, UI-341, UI-411) |
 
-ADR-030 and ADR-034 are Proposed; the default each names is the baseline of this document.
+ADR-030 is Accepted; ADR-034 is Proposed, and the default it names is the baseline of this document.
 
 **Design-phase inputs.**
 

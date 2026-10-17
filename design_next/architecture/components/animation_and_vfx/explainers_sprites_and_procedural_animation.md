@@ -216,12 +216,12 @@ The Collector, the Builder, the Worker, the Crawler and every other object never
 
 ```text
 hip     = root socket under the frame (spider front, world up, spider position)   # ignores body pitch and roll
-home(H) = hip + horizontalNormalise(hip - body) * terrainNormal(body).y * (idealSlope * H)
+home(H) = hip + HorizontalNormalize(hip - body) * TerrainNormal(body).y * (idealSlope * H)
           then home.y -= H
 desire  = |foot - home(H)|
 Lift(H):
-    target   = home(H) + rotateY(body velocity, 0.5 * ref.unit.spider.leg.yaw_prediction * angularVelocity.y) * lookAhead
-    target.y = terrainHeight(target)
+    target   = home(H) + RotateY(body velocity, 0.5 * ref.unit.spider.leg.yaw_prediction * angularVelocity.y) * lookAhead
+    target.y = TerrainHeight(target)
     state = Swinging; liftTime = t; lastGround = foot
 Swing (each frame while Swinging):
     f = ease((t - liftTime) / swingDuration)          # VFX-012, completion value ref.unit.spider.leg.swing_done
@@ -234,7 +234,7 @@ arc(f) = vfx.leg.arc_rise * f * lift          for f < vfx.leg.arc_knee_low
 
 The lift profile is a trapezoid that rises with slope `vfx.leg.arc_rise` (3) up to `vfx.leg.arc_knee_low` (0.33), holds the lift and falls from `vfx.leg.arc_knee_high` (0.67); at its knees it reaches 0.99 × the lift. The swing is re-evaluated every frame, so feet move smoothly between decision steps.
 
-**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = normalise(horizontalNormalise(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(normalise(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-035).
+**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = normalise(HorizontalNormalize(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(normalise(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-035).
 
 **VFX-131** (MUST) While the spider is not pouncing, the gait's decision step runs once per `ref.sim.tick_period` (0.1 s) of scaled presentation time, the cadence of the reference tick:
 
@@ -270,7 +270,7 @@ Caption: the states of one procedural foot; the transitions run in presentation 
 
 ```text
 p = the Crawler's position at the slice-aware time of RND-082
-if detail == 1: p.y = terrainHeight(p) + ref.unit.crawler.hover_height
+if detail == 1: p.y = TerrainHeight(p) + ref.unit.crawler.hover_height
 alphaWorm = ref.unit.crawler.worm_alpha; alphaGlow = ref.unit.crawler.glow_alpha; v = 0; carried = 0
 for each sample s of the drawn share of the history, newest first (R-UNIT-539):
     if detail > 1 and s is not required: carried += s.distance; continue
@@ -289,7 +289,7 @@ The worm texture coordinate advances by `vfx.crawler.worm_v_per_wu` (6 ÷ 512, s
 **VFX-138** (MUST) A Brood Drifter's body is drawn at its extrapolated position with a fixed orientation, front (0, 0, 1) and up the world up: it never turns. Its four tails (R-UNIT-547) start at the sockets `tail_01` to `tail_04` of `mesh.creature.brood_drifter_body` and share one smoothed velocity *u* for all Brood Drifters (DEC-856 item 4), updated once per drawn Brood Drifter at every step of VFX-018 as *u* = `vfx.brood.tail_smoothing` (0.95) × *u* + (1 − 0.95) × the Brood Drifter's velocity. With t the unscaled presentation time, tail i (0 to 3) is one strip of `ref.unit.brood_drifter.tail_segments` (3) segments:
 
 ```text
-p0  = socket i; dir = horizontalNormalise(socket i - body position)
+p0  = socket i; dir = HorizontalNormalize(socket i - body position)
 for j in 1..3:
     pj  = p(j-1) + dir * vfx.brood.tail_step
     pj += sin(t + i + j + unit id * 10) * vfx.brood.tail_sway      on each of x, y and z

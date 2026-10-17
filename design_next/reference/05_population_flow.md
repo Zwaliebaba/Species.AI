@@ -66,7 +66,7 @@ For the player this reads as a tug of war over places. Workers wander onto the p
 
 ### 2.3 Spawn Node ports and occupancy
 
-**R-ECON-012** (MUST) A Spawn Node has `ref.econ.spawn_node.port_count` (5) ports at the port sockets of its mesh (reference/03). Every tick the port evaluation clears each port's occupant and then sets it to the first Worker in the operating-port state that operates that very port on that structure and lies strictly within `ref.econ.spawn_node.port_radius_wu` (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may be of any team (see DEC-088, DEC-094).
+**R-ECON-012** (MUST) A Spawn Node has `ref.econ.spawn_node.port_count` (5) ports at the port sockets of its mesh (reference/03). Every tick the port evaluation clears each port's occupant and then sets it to the first Worker in the operating-port state that operates that very port on that structure and lies strictly within `ref.bldg.port.radius_wu` (reference/03 README) (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may be of any team (see DEC-088, DEC-094).
 
 **R-ECON-013** (MUST) When several Workers qualify, the first in actor-grid result order wins: grid cell x ascending, then grid cell z ascending, then team slot 0 to 5, then slot order within the cell, where freed slots are reused first. The query visits every actor-grid cell (`ref.sim.actor_grid.cell_size` of reference/12, 32 × 32 wu) that overlaps the square of half-side 5 wu around the port, and an actor registered in several cells is listed once (see DEC-016).
 
@@ -74,7 +74,7 @@ For the player this reads as a tug of war over places. Workers wander onto the p
 
 **R-ECON-015** (MUST) The port search considers every structure with ports whose distance from the Worker minus the structure's radius is below `ref.unit.worker.port_search_range` (100 wu, reference/02), that has at least one unoccupied port and that the Worker can walk to, and it picks the nearest of them. The search applies no team test, so Workers walk onto the free ports of enemy-held Spawn Nodes.
 
-**R-ECON-016** (MUST) A port is available to a team when it has no occupant and that team's reservation count for the port is below `ref.econ.port.reservation_limit` (1). A Worker approaching a port adds 1 to its team's reservation count for that port every tick, up to `ref.econ.port.reservation_cap` (50). Every tick the port evaluation sets every reservation count of an occupied port to 0 and reduces each reservation count of an unoccupied port by `ref.econ.port.reservation_decay` (4).
+**R-ECON-016** (MUST) A port is available to a team when it has no occupant and that team's reservation count for the port is below `ref.bldg.port.reservation_limit` (1). A Worker approaching a port adds 1 to its team's reservation count for that port every tick, up to `ref.bldg.port.reservation_cap` (50). Every tick the port evaluation sets every reservation count of an occupied port to 0 and reduces each reservation count of an unoccupied port by `ref.bldg.port.reservation_decay_per_tick` (4).
 
 **R-ECON-017** (MUST) On arrival the Worker enters the operating-port state and stays in it, without searching for threats, until it is no longer the port's occupant, the structure is removed, or the Worker dies. Selection and crowd orders reach an operating Worker as reference/06 specifies, with no special case (see DEC-308).
 
@@ -645,10 +645,6 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.econ.spawn_node.port_count` | 5 | ports | at the port sockets of the mesh | R-ECON-012 | DEC-018 |
-| `ref.econ.spawn_node.port_radius_wu` | 5 | wu | strict, horizontal: dx² + dz² < 25 | R-ECON-012 | DEC-094 |
-| `ref.econ.port.reservation_limit` | 1 | reservations | a port is available to a team below this count | R-ECON-016 | — |
-| `ref.econ.port.reservation_cap` | 50 | reservations | per team and port | R-ECON-016 | — |
-| `ref.econ.port.reservation_decay` | 4 | per tick | applied to an unoccupied port | R-ECON-016 | — |
 | `ref.econ.spawn_node.capture_min_operators` | 3 | operators | of 5 ports | R-ECON-019, R-ECON-020 | DEC-018 |
 | `ref.econ.spawn_node.first_evaluation_ticks` | 1–20 | ticks | uniform; 0.1–2.0 s; drawn at initialisation | R-ECON-018 | DEC-002, DEC-652 |
 | `ref.econ.spawn_node.evaluation_interval_ticks` | 21–30 | ticks | uniform; 2.1–3.0 s | R-ECON-018 | DEC-002 |
