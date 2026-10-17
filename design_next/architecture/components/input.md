@@ -402,21 +402,21 @@ Table 3.6-A Default bindings of the match actions.
 
 **INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-0028, ADR-0075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
 
-**INP-077** (MUST) The default binding set of the UI navigation and hook-page actions is table 3.6-B. The UI framework consumes these actions in its update phase (ADR-0032); the three leaderboard actions serve a hook page with no data source (DEC-047, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
+**INP-077** (MUST) The default binding set of the UI navigation and hook-page actions is table 3.6-B. The UI framework consumes these actions in its update phase and owns their context rules ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md), ADR-0032); the five leaderboard actions serve a hook page with no data source (DEC-047, R-META-500 to R-META-502). The keyboard bindings of `action.menu.left`, `action.menu.right`, `action.menu.up`, `action.menu.down`, `action.menu.activate` and `action.menu.close` are Species baseline bindings for keyboard-only use (ADR-0064); the reference binds those actions on the gamepad only, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
 
 Table 3.6-B Default bindings of the UI navigation and hook-page actions.
 
 | # | Action id | Kind | Keyboard and mouse | Gamepad | Glyph override | Use |
 |---|---|---|---|---|---|---|
-| 1 | `action.menu.left` | Boolean | — | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | d-pad left and right (no asset) | moves focus left |
-| 2 | `action.menu.right` | Boolean | — | `pad:dpad_right:repeat` · `pad:stick_left_right:repeat` · `pad:stick_right_right:repeat` | — | moves focus right |
-| 3 | `action.menu.up` | Boolean | — | `pad:dpad_up:repeat` · `pad:stick_left_up:repeat` · `pad:stick_right_up:repeat` | — | moves focus up |
-| 4 | `action.menu.down` | Boolean | — | `pad:dpad_down:repeat` · `pad:stick_left_down:repeat` · `pad:stick_right_down:repeat` | — | moves focus down |
-| 5 | `action.menu.activate` | Boolean | — | `pad:face_south:down` | `glyph.pad.face_south` | presses the focused widget |
-| 6 | `action.menu.close` | Boolean | — | `pad:view:down` · `pad:face_east:down` | — | invokes the window's Back |
-| 7 | `action.menu.start` | Boolean | — | `pad:menu:down` | — | the gamepad menu button on a front-end window |
-| 8 | `action.menu.dismiss_help` | Boolean | `mouse:primary:down` · `key:space:down` · `key:enter:down` · `key:escape:down` | `pad:face_south:down` | — | closes a front-end help pop-up |
-| 9 | `action.menu.scroll_speedup` | Boolean | `key:shift:held` | — | — | speeds up a held scroller or spinner |
+| 1 | `action.menu.left` | Boolean | `key:left:repeat` | `pad:dpad_left:repeat` · `pad:stick_left_left:repeat` · `pad:stick_right_left:repeat` | d-pad left and right (no asset) | moves the cursor left; numeric text fields |
+| 2 | `action.menu.right` | Boolean | `key:right:repeat` | `pad:dpad_right:repeat` · `pad:stick_left_right:repeat` · `pad:stick_right_right:repeat` | — | moves the cursor right; numeric text fields |
+| 3 | `action.menu.up` | Boolean | `key:up:repeat` | `pad:dpad_up:repeat` · `pad:stick_left_up:repeat` · `pad:stick_right_up:repeat` | — | moves the cursor up |
+| 4 | `action.menu.down` | Boolean | `key:down:repeat` | `pad:dpad_down:repeat` · `pad:stick_left_down:repeat` · `pad:stick_right_down:repeat` | — | moves the cursor down |
+| 5 | `action.menu.activate` | Boolean | `key:enter:down` | `pad:face_south:down` | `glyph.pad.face_south` | clicks the cursor's widget |
+| 6 | `action.menu.front_end_activate` | Boolean | — | `pad:menu:down` | — | as activate, while at the front end |
+| 7 | `action.menu.close` | Boolean | `key:escape:down` | `pad:view:down` · `pad:face_east:down` | — | the back action; Escape outside a match only |
+| 8 | `action.menu.dismiss` | Boolean | `mouse:primary:down` · `key:space:down` · `key:enter:down` · `key:escape:down` | `pad:face_south:down` | — | dismisses an in-page dialog and the gamepad-disconnected dialog |
+| 9 | `action.menu.scroll_speedup` | Boolean | `key:shift:held` | — | — | speeds up a held increment button |
 | 10 | `action.menu.cycle_up` | Boolean | — | `pad:shoulder_left:repeat` | — | `PadMenuCycleUp`: previous board on the leaderboard page |
 | 11 | `action.menu.cycle_down` | Boolean | — | `pad:shoulder_right:repeat` | — | `PadMenuCycleDown`: next board on the leaderboard page |
 | 12 | `action.menu.select_previous` | Boolean | — | `pad:trigger_left:down` | — | previous view on the leaderboard page |
@@ -473,29 +473,29 @@ Table 3.8-A Physical input to actions, default binding set.
 | `key:c` | `action.camera.zoom_out` (held), `action.power.cancel` (down), `action.order.demote` (down), `action.order.scrap` (down) | 4 |
 | `key:control` | `action.order.straight_route` (held) | 1 |
 | `key:d` | `action.camera.pan_right` (held) | 1 |
-| `key:down` | `action.camera.pan_back` (held) | 1 |
+| `key:down` | `action.camera.pan_back` (held), `action.menu.down` (repeat) | 2 |
 | `key:e` | `action.camera.lower` (held) | 1 |
-| `key:enter` | `action.power.activate_slot` (down), `action.match.chat` (down), `action.menu.dismiss_help` (down) | 3 |
-| `key:escape` | `action.match.menu` (down), `action.menu.dismiss_help` (down) | 2 |
+| `key:enter` | `action.power.activate_slot` (down), `action.match.chat` (down), `action.menu.activate` (down), `action.menu.dismiss` (down) | 4 |
+| `key:escape` | `action.match.menu` (down), `action.menu.close` (down), `action.menu.dismiss` (down) | 3 |
 | `key:f2` | `action.camera.look_around` (held) | 1 |
 | `key:f9` | `action.debug.network_stats` (down) | 1 |
 | `key:l` | `action.view.chat_log` (held) | 1 |
-| `key:left` | `action.camera.pan_left` (held) | 1 |
+| `key:left` | `action.camera.pan_left` (held), `action.menu.left` (repeat) | 2 |
 | `key:p` | `action.view.screenshot` (down) | 1 |
 | `key:pause` | `action.match.pause` (down) | 1 |
 | `key:q` | `action.camera.raise` (held) | 1 |
-| `key:right` | `action.camera.pan_right` (held) | 1 |
+| `key:right` | `action.camera.pan_right` (held), `action.menu.right` (repeat) | 2 |
 | `key:s` | `action.camera.pan_back` (held) | 1 |
 | `key:shift` | `action.camera.fast_pan` (held), `action.order.move_modifier` (held), `action.menu.scroll_speedup` (held) | 3 |
-| `key:space` | `action.select.clear` (down), `action.match.ready` (down), `action.menu.dismiss_help` (down) | 3 |
+| `key:space` | `action.select.clear` (down), `action.match.ready` (down), `action.menu.dismiss` (down) | 3 |
 | `key:tab` | `action.power.next` (down), `action.power.panel_show` (down), `action.power.panel_hide` (up) | 3 |
-| `key:up` | `action.camera.pan_forward` (held) | 1 |
+| `key:up` | `action.camera.pan_forward` (held), `action.menu.up` (repeat) | 2 |
 | `key:w` | `action.camera.pan_forward` (held) | 1 |
 | `key:x` | `action.view.hide_interface` (down, operand of all) | 1 |
 | `key:z` | `action.camera.zoom` (held) | 1 |
 | `mouse:middle` | `action.camera.zoom` (held) | 1 |
 | `mouse:motion` | `action.camera.aim` (move) | 1 |
-| `mouse:primary` | `action.select.pick` (down), `action.select.pick_idle` (down), `action.select.circle_begin` (down), `action.select.circle_grow` (held), `action.select.circle_end` (up), `action.power.activate_slot` (up), `action.power.place` (down), `action.direct.move_hold` (held), `action.direct.secondary_fire` (down, operand of all), `action.ui.pointer_down` (down), `action.ui.pointer_held` (held), `action.menu.dismiss_help` (down) | 12 |
+| `mouse:primary` | `action.select.pick` (down), `action.select.pick_idle` (down), `action.select.circle_begin` (down), `action.select.circle_grow` (held), `action.select.circle_end` (up), `action.power.activate_slot` (up), `action.power.place` (down), `action.direct.move_hold` (held), `action.direct.secondary_fire` (down, operand of all), `action.ui.pointer_down` (down), `action.ui.pointer_held` (held), `action.menu.dismiss` (down) | 12 |
 | `mouse:secondary` | `action.order.crowd` (down), `action.order.promote` (down), `action.order.special` (down), `action.direct.fire` (held), `action.direct.secondary_fire` (held, operand of all), `action.direct.set_target` (held), `action.direct.set_target_end` (up), `action.ui.alt_pointer_down` (down) | 8 |
 | `mouse:wheel` | `action.camera.height_wheel` (move) | 1 |
 | `pad:connection` | `action.device.pad_disconnected` (up), `action.device.pad_connected` (down) | 2 |
@@ -505,9 +505,9 @@ Table 3.8-A Physical input to actions, default binding set.
 | `pad:dpad_up` | `action.camera.track_closer` (held), `action.menu.up` (repeat) | 2 |
 | `pad:face_east` | `action.select.clear` (down), `action.power.panel_hide` (down), `action.match.ready` (down), `action.menu.close` (down) | 4 |
 | `pad:face_north` | `action.power.cancel` (down), `action.order.demote` (down), `action.order.scrap` (down), `action.menu.toggle_period` (down) | 4 |
-| `pad:face_south` | `action.select.pick` (down), `action.select.pick_idle` (down), `action.select.circle_begin` (down), `action.select.circle_grow` (held), `action.select.circle_end` (up), `action.power.activate_slot` (up), `action.power.place` (down), `action.order.special` (down), `action.match.ready` (down), `action.ui.pointer_down` (down, operand of all), `action.ui.pointer_held` (held, operand of all), `action.menu.activate` (down), `action.menu.dismiss_help` (down) | 13 |
+| `pad:face_south` | `action.select.pick` (down), `action.select.pick_idle` (down), `action.select.circle_begin` (down), `action.select.circle_grow` (held), `action.select.circle_end` (up), `action.power.activate_slot` (up), `action.power.place` (down), `action.order.special` (down), `action.match.ready` (down), `action.ui.pointer_down` (down, operand of all), `action.ui.pointer_held` (held, operand of all), `action.menu.activate` (down), `action.menu.dismiss` (down) | 13 |
 | `pad:face_west` | `action.order.crowd` (down), `action.order.promote` (down), `action.order.move_modifier` (down), `action.direct.set_target` (held), `action.direct.set_target_end` (up) | 5 |
-| `pad:menu` | `action.match.menu` (down), `action.menu.start` (down) | 2 |
+| `pad:menu` | `action.match.menu` (down), `action.menu.front_end_activate` (down) | 2 |
 | `pad:shoulder_left` | `action.power.previous` (down), `action.ui.show_cursor` (held), `action.menu.cycle_up` (repeat) | 3 |
 | `pad:shoulder_right` | `action.power.next` (down), `action.menu.cycle_down` (repeat) | 2 |
 | `pad:stick_left` | `action.camera.pan_stick` (position), `action.camera.fast_pan` (held), `action.direct.move_stick` (position), `action.direct.move_direction_change` (move) | 4 |
@@ -950,7 +950,7 @@ Caption: Diagram 4.13-A, building the action bindings from their layers, and reb
 
 **INP-181** (MUST) The default set overlaps heavily on a few inputs (table 3.8-A): the south face button feeds 13 actions, the primary mouse button 12, the secondary mouse button 8 and the west face button 5. The consumers' context decides the meaning of each press: one secondary press means promote, toggle, order, fire or move by the resolver of reference/06 (R-CTRL-050), and never more than one of them.
 
-**INP-182** (MUST) 22 actions have gamepad bindings only: the stick actions (`action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick`, `action.direct.move_direction_change`), the tracking distance actions, `action.ui.show_cursor`, the two connection actions, and every action of table 3.6-B except `action.menu.dismiss_help` and `action.menu.scroll_speedup`. On the keyboard, front-end navigation is pointer-driven, and the analogue camera and unit controls have key and button equivalents. 26 actions have keyboard and mouse bindings only (tables 3.6-A and 3.6-B); 33 have both.
+**INP-182** (MUST) 16 actions have gamepad bindings only: the stick actions (`action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick`, `action.direct.move_direction_change`), the tracking distance actions, `action.ui.show_cursor`, the two connection actions, `action.menu.front_end_activate` and the five leaderboard actions. The analogue camera and unit controls have key and button equivalents. 26 actions have keyboard and mouse bindings only and 39 have both (tables 3.6-A and 3.6-B).
 
 **INP-183** (MUST) Value conventions of the default set: `action.camera.pan_stick`, `action.camera.aim_stick`, `action.direct.move_stick`, `action.direct.aim_stick` and `action.direct.move_direction_change` carry stick units, x positive to the right and y negative forward, up to `inp.pad.stick_left.scale` for the left stick and `inp.pad.stick_right.scale` for the right stick at sensitivity 100; `action.camera.aim` carries client pixels per frame; `action.camera.height_wheel` carries wheel notches per frame, forward positive; `action.camera.raise` and `action.camera.lower` are `Boolean` actions fed by trigger `position` bindings, true while the trigger is above its threshold. The camera's stick gain `ref.ctrl.camera.stick_gain` ([camera](../../reference/06_controls_camera_and_commands/camera.md)) and the movement and aiming vectors of the team command state (R-SIM-440, R-CTRL-101) are defined on these units.
 
@@ -1191,7 +1191,7 @@ Three rules have no register entry yet and keep the behaviour stated: the glyph 
 
 1. **Local players.** How many local players a Species client has, and how a player chooses or changes a gamepad; the baseline has one local player and assigns by first press (INP-145, INP-146).
 2. **Command timing** (DEC-203): the delay buffer, whether commands carry input timestamps, and the coalescing of continuous control on a server-run world.
-3. **Keyboard navigation of the front end** (ADR-0064, XAG 112): default key bindings for the actions of table 3.6-B, which the reference binds only on the gamepad.
+3. **Keyboard navigation of the front end** (ADR-0064, XAG 112): whether the baseline keyboard bindings of the menu actions (INP-077) are enough for keyboard-only play, and which keys the leaderboard actions get.
 4. **Rebinding** (DEC-050, ADR-0064, XAG 107): a reachable rebinding page for every device, conflicts between actions that share an input (INP-181), hold-or-toggle options through latches, and whether the gamepad response (dead zones, curve, sensitivity, inversion) becomes a player option (DEC-044, R-META-458).
 5. **Stored bindings** (DEC-250): the user layer's schema version, migration and whether bindings follow the player across devices.
 6. **Devices** (ADR-0028): extra mouse buttons, other game controllers through GameInput, and whether keyboard and mouse move onto GameInput as well.

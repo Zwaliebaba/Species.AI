@@ -33,7 +33,7 @@ This component is the runtime of each participant's match camera (`MatchCamera`)
 
 **CAM-004** (MUST) The camera reads simulation state only through the read-only presentation inputs of the simulation and presentation boundary (DEC-222): the presentation snapshot of the newest tick, the extrapolation time of R-SIM-560, and the presentation events addressed to the participant's own team (R-SIM-666). How Species enforces that boundary is open (DEC-222); whatever the mechanism, the camera module includes no interface that writes simulation state, and the conformance test T18 runs the simulation with the camera and timelines replaced by stubs.
 
-**CAM-005** (MUST NOT) The component neither owns nor changes: the projection, the near and far planes, the field-of-view clamp, the view tests, fog and lighting ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-208 to RND-236); the shake intensity, its decay and its random draws ([particles, shatter and screen effects](animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-232); the map's camera-view and camera-animation records and their limits ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-125 to R-MAP-128, [data schemas](data_schemas.md)); the action bindings and the pointer ([input](input.md)); the UI windows and their text ([UI framework](ui_framework/README.md)).
+**CAM-005** (MUST NOT) The component neither owns nor changes: the projection, the near and far planes, the field-of-view clamp, the view tests, fog and lighting ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-208 to RND-236); the shake intensity, its decay and its random draws ([particles, shatter and screen effects](animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-232); the map's camera-view and camera-animation records and their limits ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-125 to R-MAP-128, [data schemas](data_schemas/README.md)); the action bindings and the pointer ([input](input.md)); the UI windows and their text ([UI framework](ui_framework/README.md)).
 
 **CAM-006** (MUST NOT) The component has no mode, operation or service for: the spherical-world orbit, the world-map focus orbit (which includes the front-end focus mode that R-META-007 names), the scripted world-map orbit, the intro and outro flights, the first-person mode, the entity-follow mode, the replay camera, the debug-advancer grace frames after a mode request, or recording and restoring a camera pose outside a camera animation (DEC-024); a script interpreter (DEC-053); a narrator, and the "best structure in view" query whose only reader is the narrator's help (DEC-052); the intro start sequence (DEC-054); or a reflected camera pose for water reflections (DEC-059).
 
@@ -48,7 +48,7 @@ Table 1-A Neighbours and contracts.
 | terrain ([terrain](terrain.md)) | terrain height queries | nothing | change the terrain |
 | UI framework ([README](ui_framework/README.md)) | caption drawing; whether a UI window is open | caption requests of a timeline (CAM-110) | lay out widgets |
 | audio engine ([audio engine](audio_engine.md)) | nothing | the camera frame output, which the listener reads; the sound events of a timeline (CAM-113) | start a voice directly |
-| map data ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md), [data schemas](data_schemas.md)) | the validated camera views, camera animations and start-position records (DEC-560) | nothing | write a map; the map editor does (R-MAP-370) |
+| map data ([map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md), [data schemas](data_schemas/README.md)) | the validated camera views, camera animations and start-position records (DEC-560) | nothing | write a map; the map editor does (R-MAP-370) |
 
 ## 2 Interfaces
 
@@ -177,7 +177,7 @@ public:
 
 **CAM-013** (MUST) Camera requests that the player rules attach to simulation events reach the camera as presentation events of the participant's own team, consumed in tick order before the next advance (R-SIM-666, DEC-007): for example, the request to enter turret aim when the own team selects one of its turrets (R-SIM-405 step 6). A request about another participant's team never reaches this camera. Shake requests go to the screen effects of VFX-232, not to the camera.
 
-**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: the camera views and the camera animations in record order, the camera view of each start-position record by start position (DEC-560, R-MAP-042), and the world size x of the terrain definition. The record schemas are those of [data schemas](data_schemas.md) (ADR-0061), and the content build has already validated their names, references and durations (ADR-0059, DEC-015, DEC-801). The camera never parses authoring text.
+**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: the camera views and the camera animations in record order, the camera view of each start-position record by start position (DEC-560, R-MAP-042), and the world size x of the terrain definition. The record schemas are those of [data schemas](data_schemas/README.md) (ADR-0061), and the content build has already validated their names, references and durations (ADR-0059, DEC-015, DEC-801). The camera never parses authoring text.
 
 **CAM-015** (MUST) In each frame the camera provides its control vector (R-CTRL-451, R-CTRL-487) and its looking-around and tracking state (R-CTRL-472) to the match input pump, which converts every camera-relative quantity to world space before it enters the team command state (R-SIM-440, DEC-008). The camera never writes the team command state.
 
@@ -270,7 +270,7 @@ Table 3.2-A Camera state.
 
 ### 3.3 Presentation timelines
 
-**CAM-025** (MUST) A presentation timeline is a record of its own schema in [data schemas](data_schemas.md) (ADR-0061): an id and an ordered list of statements, each with a kind of table 3.3-A, its typed arguments and the source location of its authoring line. A timeline names structures by role tag, never by a fixed structure id or team (DEC-103), and names text by string id (ADR-0063).
+**CAM-025** (MUST) A presentation timeline is a record of its own schema in [data schemas](data_schemas/README.md) (ADR-0061): an id and an ordered list of statements, each with a kind of table 3.3-A, its typed arguments and the source location of its authoring line. A timeline names structures by role tag, never by a fixed structure id or team (DEC-103), and names text by string id (ADR-0063).
 
 Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carries no meaning.
 
