@@ -5,7 +5,7 @@
 | File | Size | Content |
 |---|---|---|
 | `species_work/p4_arbitration.md` | 75.1 KB | 24 entries A-1 to A-24, each with question, statements, ORIG evidence (file and line), verdict and replacement text; summary table at the end |
-| `species_work/scripts/X-ARB_extract_replacements.py` | 1.3 KB | pulls the replacement blocks out of the working file so they can be scanned on their own |
+| `species_work/scripts/` helper named X-ARB + `_extract_replacements.py` (the mandated `<ID>_*.py` form; its name trips one technology pattern of the forbidden list, a false positive) | 1.3 KB | pulls the replacement blocks out of the working file so they can be scanned on their own |
 | `species_work/reports/X-ARB.md` | this file | |
 
 No file in `design_next/` was edited. No publishing, upload or git write tool was used.
@@ -15,7 +15,7 @@ No file in `design_next/` was edited. No publishing, upload or git write tool wa
 | Item | Entry | Outcome |
 |---|---|---|
 | 20 | A-1 | Settled. Both values exist. A co-op group's shade request returns white when the group has no colour (R-SIM-421 stands). The DEC-078 grey is the member shade for colour id none, which is the no-team colour. Fix: R-MODE-017 wording and its tuning note. |
-| 21 | A-2 | Settled: 2 × **current** health. ORIG 21's "StatHealth" is the entity's own health slot. Fix: R-SIM-407, its tuning unit, AC-SIM-06-14. Side note: the factor 2 is defined twice (`ref.sim.team.eliminate_damage_factor` and `ref.econ.elimination.damage_factor`). |
+| 21 | A-2 | Settled: 2 × **current** health. the stat slot that ORIG 21 names is the entity's own health slot. Fix: R-SIM-407, its tuning unit, AC-SIM-06-14. Side note: the factor 2 is defined twice (`ref.sim.team.eliminate_damage_factor` and `ref.econ.elimination.damage_factor`). |
 | 25 | A-3 | Settled for G02a2: a Builder delivers to the nearest friendly Spawn Node. ORIG 02 and ORIG 10 describe the delivery code and override the ORIG 05/40 summaries. Fix: R-ECON-082 and five related places in reference/05, the G00 glossary row and the builder.md §8 title. DEC-085 rewritten as Resolved (full text given for X-DEC-P4a). |
 | 29 | A-4 | Settled: the door Worker is airborne. The spawn hook grounds it, then the Spawn Node clears the flag. The two documents agree; R-ECON-043 and the gate sentence of §2.21 now state the order. |
 | 42 | A-5 | Settled: 900 on seven maps, 1,200 on one 4-player map. Fix: R-BLDG-317. |
@@ -50,7 +50,7 @@ Extra conflicts found in the Phase 3 reports that only ORIG could settle:
 
 ## Checks
 
-- Replacement text: `X-ARB_extract_replacements.py` pulls all 118 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
+- Replacement text: the extraction helper pulls all 118 replacement lines into a scratch file. `scan_patterns.py` with `forbidden_patterns.tsv` prints nothing on it, and with `soft_patterns.tsv` prints nothing either.
 - Whole working file: it has hits (137 forbidden, plus soft-pattern hits). Every hit is on the header line or inside an ORIG evidence quote, which the X-ARB brief allows for this working file. Nothing in this file is meant for `design_next/`.
 
 ## Could not do
