@@ -1226,7 +1226,7 @@ All values [C] at the cited symbol; "derived" = computed from screen size at run
 | Store URL | `http://store.introversion.co.uk` | literal | `code/app.cpp:GetBuyNowURL` |
 | Error overlay (dead) | W/3 × H/3 centred | literal | `RenderErrorDialogue` |
 | Help image (dead) | 600 × 400 px | literal | `SetupHelpPage` |
-| Prefs read/written | `PlayerName`, `PlayerPreferedColour` (default −1), `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (default 1), `Server1..30`, `NetworkServerPort`, `TextLanguage`, `ScreenWindowed`, `ScreenWidth`, `ScreenHeight` | pref keys | various |
+| Prefs read/written | `PlayerName`, `PlayerPreferedColour` (default −1), `FilterShowDemos`, `FilterShowIncompatible`, `FilterShowFullGames`, `FilterShowCustomMaps`, `FilterShowPassworded` (default 1), `Server1..30`, `NetworkServerPort`, `TextLanguage`, `ScreenWindowed`, `ScreenWidth`, `ScreenHeight` | pref keys | ctor, `SaveFiltersButton`, `ApplyNameButton`, `FancyColourButton`, `UpdateJoinGamePage`, `MOTDButton`, `UnlockFullGameButton` |
 | Files | `<profile>authkey`, `<profile>authkey.dev`, `multiwinia_betatesters.txt`, `autopatch.exe`; (dead) `testbedconfig.txt` | literal | `AuthInputField.h`, `PasteFromClipboard`, `PlayDemoAuthkeyButton.h`, `ReadMultiwiniaBetaTesters`, `update_page_buttons.h` |
 
 ---

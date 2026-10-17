@@ -619,6 +619,17 @@ No draw, no elimination, no sudden death; retribution never fires (IsEliminated 
 
 Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (TARGET_DEBUG). Per mode second: `score = NumTanks − m_tankDeaths[t]`; if a live team has no `Entity::TypeTank` in `m_specials` → `m_tankDeaths++`; when ≥ NumTanks → `EliminateTeam`; else "*T loses a Tank!" and a new `GlobalResearch::TypeTank` task targeted at the team's InstantUnit tank position from the level; last team standing wins. No time limit [C] `code/multiwinia.cpp:AdvanceTankBattle`.
 
+### 4.9 AI differences per mode (pointers only; P08 owns `code/worldobject/ai.cpp`)
+
+| Mode | Mode-specific AI entry points [C] `code/worldobject/ai.cpp` | Rules-side hooks in this partition |
+|---|---|---|
+| Assault | `AI::AdvanceAssaultAI` (L~824), Assault branches in `AdvanceMultiwiniaAI` (L~545–672), `FindTargetBuilding` (L~135), `RunGunTurret` (L~1895); no officers (`AdvanceOfficerAI` returns, L~1132) | AIObjective/AIObjectiveMarker buildings (P08); defenders' turrets |
+| Rocket Riot | `AI::AdvanceRocketRiotAI` (L~1291), `RunGunTurretRocketRiot` (L~1769); no officers | FuelStation AITarget during loading; rocket attract-attackers |
+| CTS | `AI::AdvanceCaptureTheStatueAI` (L~1319), officer limit 150 (L~1140) | Statue AITarget (`m_statueTarget`) |
+| KOTH | score-zone targeting (`GetClosestScoreZonePos` L~1399, L~2525) | zone ownership |
+| Blitzkrieg | `RunGunTurretBlitzkrieg` (L~2005), Blitzkrieg ranges in `AI::Advance` (L~383–389); no officers | `MultiwiniaZone::GetBlitzkriegPriority` writes `AITarget::m_priority[team]` (Standard/Hard AI only) |
+| All | difficulty `m_aiType` Easy/Standard/Hard (L~56–126, 531–535, 2037 turret limit 1 on Easy, 3058) ; `code/worldobject/armour.cpp` AI timers (Easy 20/10 s, Standard 10/5 s) | `RemoveTeams` spawns an `Entity::TypeAI` for a leaving human |
+
 ### 4.8 Retribution (Domination, KOTH, CTS, Blitzkrieg; technically runs in all modes) — `AdvanceRetribution` [C]
 
 Per tick for each used, non-special team:
@@ -833,6 +844,7 @@ In multiplayer:
 2. Else if `PopulationCap != -1`: locked at `pop >= PopulationCap / NumPlayers`.
 3. Fallback (and when no cap): the first `SpawnPopulationLock` within its `m_searchRadius` of the port (cached); locked when that lock's `m_teamCount[team] >= m_maxPopulation` (P06). The cached id is only queried when `> 0`, so a lock with unique id 0 is ignored [C].
 Worked example `mp_assault_2P_1` (PopulationCap 2000, DefenderPopulationCap 350, 1 attacker): defender 350, attacker 1650 [C level file, I arithmetic]. `pop` counts every non-unit entity of the team (Darwinians, plus other `m_others` such as engineers/armour?) minus Virii [I: `m_others` contents are P01/P03].
+Official-map caps (from `MultiwiniaOptions`, [C] level files): Domination 1500–2000 (one map −1 = uncapped), KOTH 1500–2000 (4P_3 uncapped), CTS 1500–2000, Assault 1500–2000 with DefenderPopulationCap 200–350 (two maps −1), Rocket Riot 1500–1800, Blitzkrieg 1400–2000, TankBattle uncapped. Spawn-point production obeys the same caps (P06).
 The same Assault formula is duplicated in `SpawnPoint` (P06) [C] `code/worldobject/spawnpoint.cpp` (L~715).
 
 ### 6.3 Handicap (option `Handicap`) — consumer `SpawnPoint::CalculateHandicap` (P06) [C] `code/worldobject/spawnpoint.cpp`

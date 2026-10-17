@@ -470,7 +470,7 @@ sequenceDiagram
   Rec->>Rec: append verts, push CommandDrawPrimitive(type, start, count)
   Game->>Emu: glPushMatrix/glTranslatef/glMultMatrix/glPopMatrix/glLoadMatrix
   Emu->>Rec: RecordPushMatrix / RecordMultMatrix / RecordPopMatrix / RecordLoadTransform (bound to the *actual* stacks)
-  Game->>Emu: glEnable(GL_BLEND) etc.
+  Game->>Emu: device-state call, e.g. glEnable(GL_BLEND)
   Emu->>Rec: SetRenderState → DLIST_DEV_NOT_IMPLEMENTED (debug assert, release no-op)
   Game->>Emu: glEndList()  (safeGlEndList: unlock)
   Emu->>DL: Compile(): VB (MANAGED, WRITEONLY) + NULL-terminated Command* array
@@ -577,6 +577,8 @@ Constants are set **by name** through the D3DX constant tables of both VS and PS
 Sign conventions [C/I]: normals are negated on input (`glNormal3f_impl`) and `L = −vDir` where `vDir` is the eye-space GL light "position" vector (pointing *towards* the light); the two negations cancel, so `N·L` equals the standard GL Lambert term. Likewise both `H` and `N` are negated in the specular term, so the Blinn term matches GL's sign. Colour is carried in a TEXCOORD interpolator, so `D3DRS_SHADEMODE` has no effect — everything is Gouraud-interpolated [I].
 
 ### Behavioural differences / defects of the emulator vs the GL baseline
+
+Ref = symbol in `code/lib/opengl_directx.cpp` unless another file is named.
 
 | # | Area | D3D behaviour | GL baseline | Ref | Tag |
 |---|---|---|---|---|---|

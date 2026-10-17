@@ -140,7 +140,7 @@ stateDiagram-v2
     ScoutArea --> CollectSpirit: SearchForTargets found spirit within 10m
     ScoutArea --> AttackEnemy: SearchForTargets found non-Darwinian non-Harvester enemy within 10m
     CollectSpirit --> ReturnToBase: arrived (spirit -> StateAttached) or spirit gone/dead/attached/in egg
-    CollectEntity --> ReturnToBase: arrived (Darwinian::AntCapture) or target dead/already captured
+    CollectEntity --> ReturnToBase: arrived (Darwinian.AntCapture) or target dead/already captured
     AttackEnemy --> ReturnToBase: target dead or gone
     AttackEnemy --> AttackEnemy: arrived: target -1 HP, 3 muzzle-flash particles, sound Attack
     ReturnToBase --> [*]: arrived at hill (ant stored, entity removed)
@@ -171,7 +171,7 @@ stateDiagram-v2
 
 **`Crate::RunEggs(pos, teamId)`** [C] `code/worldobject/crate.cpp:Crate::RunEggs`
 - Spawns `2 + syncrand()%3` (**2–4**) TriffidEggs **owned by `teamId`** (the player who used the task — so the hatched creatures fight *for* that player, except Soul Destroyers which are forced to the Monster team in multiplayer, see `TriffidEgg::Spawn`). Start = `pos + (0,20,0)`, velocity direction `(SFRAND(1), 4, SFRAND(1))` with length `50 + syncfrand(50)`.
-- Each egg: spawn type drawn with `syncrand()%NumSpawnTypes` until it is **not** Spirits, Eggs, SoulDestroyer, Ants or Darwinians → one of **Virii, Centipede, Spider, TriffidEggs, SporeGenerator** (uniform over these 5); `m_size = 1.0`; burst timer `4 + syncfrand(4)` s; `m_spawnPoint = pos`; `m_roamRange = 300`.
+- Each egg: spawn type drawn with `syncrand()%NumSpawnTypes` until it is **not** Spirits, Eggs, SoulDestroyer, Ants or Darwinians → one of **Virii, Centipede, Spider, TriffidEggs, SporeGenerator** (uniform over these 5); `m_size = 1.0`; burst timer `4 + syncfrand(4)` s; `m_spawnPoint = pos`; `m_roamRange = 300` — these last two have **no effect** on the hatched creatures: `TriffidEgg` declares its own `m_spawnPoint` (shadowing `Entity::m_spawnPoint`) and `TriffidEgg::Spawn` spawns at the egg's `m_pos` with fixed roam ranges (see spawn table). [C] `code/worldobject/triffid.h:TriffidEgg`, `TriffidEgg::Spawn`.
 - Marker `icons/icon_egg.bmp`; message `crate_message_auto_eggs` (monster team) or `crate_message_run_eggs` (team name); sound for `CrateRewardEggs`.
 
 ### Triffid fields, stats and constants
@@ -207,7 +207,7 @@ stateDiagram-v2
 | 2 | `SpawnSpider` | 1 Spider | 1 | 1 | 0, 150 | |
 | 3 | `SpawnSpirits` | spirits, horizontal speed `20 + syncfrand(20)` | `5 + rand%5` | same | – | |
 | 4 | `SpawnEggs` | Virii `Egg`s, velocity up+random, length `20 + syncfrand(20)` | `5 + rand%5` | same | 0, 0 | |
-| 5 | `SpawnTriffidEggs` | TriffidEggs, speed `75 + syncfrand(50)`; each egg type = `syncrand() % 9` (never Darwinians); in MP a SoulDestroyer roll is re-rolled in Assault or when ≥ 2 Soul Destroyers exist | `2 + rand%3` (2–4) | same | 0, 0 | |
+| 5 | `SpawnTriffidEggs` | TriffidEggs, speed `75 + syncfrand(50)`; each egg type = `syncrand() % 9` (never Darwinians); in MP a SoulDestroyer roll is re-rolled in Assault or when ≥ 2 Soul Destroyers exist; these sub-eggs keep the default burst timer **20–30 s** (no `SetTimer`) | `2 + rand%3` (2–4) | same | 0, 0 | |
 | 6 | `SpawnAnts` | ArmyAnts thrown up, speed `10 + syncfrand(20)` (no hill: they roam via `BaseDestroyed`) | `20 + rand%10` (20–29) | same | 0, 0 | |
 | 7 | `SpawnSporeGenerator` | 1 SporeGenerator | 1 | 1 | 0, 200 | |
 | 8 | `SpawnSoulDestroyer` | 1 SoulDestroyer **on the Monster team in MP**; allowed if (not Assault **and** `SoulDestroyer::s_numSoulDestroyers < 2`) or single-player; otherwise **falls through to `SpawnVirii`** | 1 | 1 | 0, 200 | |
@@ -259,12 +259,12 @@ Small sprite egg that, when a spirit is placed inside it, hatches 4 Virii after 
 stateDiagram-v2
     [*] --> Dormant
     Dormant --> Dormant: timer += dt, health capped to 10*(1 - timer/120) (decays to 0 at 120 s)
-    Dormant --> Fertilised: Egg::Fertilise(spiritId) (spirit -> StateInEgg, health reset 10, timer 0)
+    Dormant --> Fertilised: Egg.Fertilise(spiritId) (spirit -> StateInEgg, health reset 10, timer 0)
     Fertilised --> Dormant: held spirit index no longer valid
     Fertilised --> [*]: timer >= 15 -> spirit removed, 4 Virii spawned (if pop < 250), egg removed
     Dormant --> Dead: health < 0 / falls below y=0 (ChangeHealth -500)
     Fertilised --> Dead: health < 0
-    Dead --> [*]: held spirit -> Spirit::EggDestroyed (floating again), fade 2.5 s
+    Dead --> [*]: held spirit -> Spirit.EggDestroyed (floating again), fade 2.5 s
 ```
 - `StateOpen` is declared but never entered. [C] `code/worldobject/egg.h`, `Egg::Advance`.
 - **Death override**: `Egg::ChangeHealth` kills only when `health + amount < 0` (strictly), does **not** spawn a spirit and plays no sound (unlike `Entity::ChangeHealth`). [C] `Egg::ChangeHealth`.
@@ -313,9 +313,9 @@ stateDiagram-v2
     Attacking --> Idle: enemy gone/dead
     Attacking --> Attacking: arrived -> enemy -20 HP, 3 muzzle flashes, sound Attack, re-search (next enemy 30..60m)
     ToSpirit --> Idle: spirit gone/dead/attached/in egg
-    ToSpirit --> ToEgg: arrived -> Spirit::CollectorArrives (attached)
+    ToSpirit --> ToEgg: arrived -> Spirit.CollectorArrives (attached)
     ToEgg --> Idle: no egg found (drops spirit) or spirit invalid
-    ToEgg --> Idle: arrived -> Egg::Fertilise(spirit)
+    ToEgg --> Idle: arrived -> Egg.Fertilise(spirit)
 ```
 [C] `code/worldobject/virii.cpp:Virii::AdvanceIdle`, `AdvanceAttacking`, `AdvanceToSpirit`, `AdvanceToEgg`, `SearchForEnemies`, `SearchForSpirits`, `SearchForEggs`, `FindNearbyEgg(Vector3)`.
 - **Bite cadence**: after a bite the Virii looks for the nearest enemy at ≥ 30 m; if none is found it keeps the current target and, being on top of it, bites again on the next tick (−20 HP per 0.1 s). [I] from `Virii::AdvanceAttacking` + `EntityGrid::GetBestEnemy` min-range rule (`code/entity_grid.cpp:EntityGrid::GetBestEnemy`).
@@ -568,10 +568,10 @@ Ownership/capture by carrying, lifter movement and drop rules are in `CarryableB
 ```mermaid
 sequenceDiagram
     participant P as Player (task)
-    participant C as Crate::RunMeteorShower
+    participant C as Crate.RunMeteorShower
     participant M as Meteor (x5-9)
     participant T as GameTimer
-    participant L as Location::Bang
+    participant L as Location.Bang
     P->>C: target point
     C->>M: spawn at random map XZ, y 1500-2000, target = point +/-210m
     loop every tick (0.1 s)
@@ -1010,3 +1010,4 @@ Event names are passed to `SoundSystem::TriggerEntityEvent` / `TriggerBuildingEv
 - **[B:EDITOR] Triffid trajectory/trigger preview** in `Triffid::RenderAlphas` under `LOCATION_EDITOR`.
 - **[B:DEBUG] Cheat window Virii spawn** (`CHEATMENU_ENABLED`): 20 Monster Virii, roam 1000. `code/interface/cheat_window.cpp`.
 - **Dead code inside live classes**: `Virii::AdvanceDead()`, `Virii::AdvanceDeadPositionVector`, commented `Virii::RenderLowDetail/RenderGlow`, `Spider::StompFoot`, `SpaceShip::FindNewTarget` enemy-seeking block (commented), `WallBuster` AI-target creation (commented), `DustBall` alternative vortex steering (commented), Centipede D3D tearing (commented), Triffid `SpawnTripod` case (commented), `Egg::StateOpen` (never set), `Meteor::m_life` decrement after `return`, `SporeGenerator` constructor shape code (commented).
+

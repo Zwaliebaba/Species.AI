@@ -1103,7 +1103,7 @@ Field semantics: 03 (P06/P07). Unused class: `IsGlobalButton` (defined, never in
 |---|---|---|---|---|---|
 | 25 | `editor_generate` | button | `Tree::Generate()` | | |
 | 43 | `editor_randomise` | button | `m_seed = (int) frand(99999)` (local RNG); `Generate` | | |
-| 61 | `editor_clonesimilar` | button | `CreateBuilding(TypeTree)`, `Initialise(source)`, `SetDetail(1)`, new id, appended; **`AppSeedRandom(time(NULL))`**; position = crosshair hit; `m_seed = frand(99999)`; `m_height = source height × (1 + sfrand(0.3))` (×0.7…1.3); `Generate` | | |
+| 61 | `editor_clonesimilar` | button | `CreateBuilding(TypeTree)`, `Initialise(source)`, `SetDetail(1)`, new id, appended; **`AppSeedRandom(time(NULL))`**; position = crosshair hit; `m_seed = frand(99999)`; `m_height = source height × (1 + sfrand(0.3))`, where `sfrand(r) ∈ (−r/2, r/2)` (local RNG) → ×0.85…1.15 [C] `contrib/systemiv/lib/math/random_number.cpp:sfrand`; `Generate` | | |
 | 79 | `editor_branchcolour` | ColourWidget | `m_branchColour` (packed RGBA int) — no regenerate callback | | 0–255 per byte |
 | 97 | `editor_leafcolour` | ColourWidget | `m_leafColour` | | |
 | 115 | `editor_height` | VC double | `m_height` | 1.0 | [1, 1000] |
@@ -1234,3 +1234,240 @@ Darwinia campaign-world editor: `editor_editlocations` (GlobalWorld `m_editorMod
 | D-E15 | Camera-animation authoring and the global-world editor are unreachable even in editor builds | E4.10, E4.13 |
 | D-E16 | New-map flow defaults to `.txt` while the edit list filters `*.mwm` | E1.3 |
 | D-E17 | No editing UI for routes, waypoints, `m_subSelectionId`, flags/statues/other per-mode objects beyond generic building params (routes exist in level files — see 08/23 P11) [I: no route controls in scope] | location_editor.h comment |
+
+---
+
+## [→ 32_debug_test_and_performance] D1. Debug tool windows — build tags and reachability
+
+| Tool | Window name | Compiled | Opened by (live caller) | Hot-key | Tag |
+|---|---|---|---|---|---|
+| Network stats | `Network Stats` | always | `DebugKeyBindings::NetworkButton` from `UserInput::Advance` under `NETWORK_STATS_ENABLED` (defined in FULL, DEBUG, BETATEST_GROUP_ALL) | **F9** (`ToggleNetworkStats = key f9 down`) — opens only; close with its close box | **[B:FULL]** |
+| Cheat window | `Cheat Window` | class always; `Create()` body only with `CHEATMENU_ENABLED` | `DebugKeyBindings::CheatButton` from `UserInput::Advance`, only when **no Eclipse window is open** | **F11** (`ToggleCheatMenu = key f11 down`; pad Back binding commented out) | [B:DEBUG] |
+| Tools menu (DebugMenu) | `dialog_toolsmenu` | always | `DebugKeyBindings::DebugMenu` — the F1 call in `UserInput::AdvanceMenus` is commented out; `UserInput::m_removeTopLevelMenu` still closes it if open | none | compiled-in, unreachable in all builds |
+| Profiler | `Profiler` | always (`ProfileWindow`, P14) | DebugMenu, CheatWindow buttons | none live (F10 commented) | [B:DEBUG] via cheat window |
+| Grabber (AVI capture) | `Grabber` | `AVI_GENERATOR` (TARGET_DEBUG) | `DebugKeyBindings::GrabberButton` — **no caller** | none | [B:DEBUG], unreachable |
+| Gesture editor | `Gesture Editor` | `GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL` | — | — | [B:DEAD] |
+| Sound editor / stats / profile / Pokey | `SOUND_EDITOR_WINDOW_NAME` etc. | `SOUND_EDITOR` (TARGET_DEBUG) | CheatWindow (editor, stats); DebugMenu (if modsEnabled — never) | none live (F7/F8/F9/F11 commented) | [B:DEBUG] (P16 specifies the windows) |
+| Editor toggle | — | `LOCATION_EDITOR` | DebugMenu (if modsEnabled) | F9 `ToggleEditor` (commented out) | [B:EDITOR], unreachable |
+
+[C] `code/user_input.cpp:UserInput::Advance`, `UserInput::AdvanceMenus`; `code/interface/debugmenu.cpp`; `data/input/input_preferences.txt`; `code/lib/universal_include.h` (macro table in `build_matrix.md`).
+
+Note: `ToggleEditor` and `ToggleNetworkStats` are both bound to F9 — harmless only because the editor toggle is commented out [C].
+
+## [→ 32_debug_test_and_performance] D2. `DebugKeyBindings` (static entry points) [C] `code/interface/debugmenu.*`
+
+| Function | Action | Gate |
+|---|---|---|
+| `DebugMenu()` | toggle `::DebugMenu("dialog_toolsmenu")` | — |
+| `NetworkButton()` | if `"Network Stats"` not open → `new NetworkWindow("Network Stats")` | — |
+| `DebugCameraButton()` | `Camera::SetNextDebugMode()` — cycles `DebugModeNever (0) → Always (1) → Auto (2) → Never` [C] `code/camera.cpp`, `camera.h` | — |
+| `FollowCameraButton()`, `InputLogButton()`, `SoundVisualiserButton()` | declared, **no definition** (would not link if called) | — |
+| `FPSButton()` | toggle `Renderer::m_displayFPS` | — |
+| `ProfileButton()` | toggle `ProfileWindow("Profiler")` 570×600 at (ScreenW − 590, 30) | — |
+| `EditorButton()` | `m_requestToggleEditing = true` | `LOCATION_EDITOR` |
+| `GrabberButton()` | open `GrabberWindow("Grabber")` 200×50 at (10, ScreenH − 50) | `AVI_GENERATOR` |
+| `GestureButton()` | open `GestureWindow("Gesture Editor")` 660×660 at (30,30) | `GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL` |
+| `CheatButton()` | if not open → `CheatWindow("Cheat Window")` 200×200 at (250,50) | `CHEATMENU_ENABLED` |
+| `PokeyButton()` | open `PokeyWindow("Pokey Playground")` 400×480 at (10,40) | `SOUND_EDITOR` |
+| `SoundStatsButton()` / `SoundProfileButton()` / `SoundEditorButton()` | toggle the respective sound windows (editor 500×550 at (50,25)) | `SOUND_EDITOR` |
+| `ReallyQuitButton()` | open `ReallyQuitWindow` if not open | — (no caller in Win32 build) |
+| `ToggleFullscreenButton()` | `SetWindowed(!windowed, true, …)` | — (only caller `code/lib/input_sdl.cpp`, not built on Win32) |
+
+## [→ 32_debug_test_and_performance] D3. DebugMenu "Tools Menu" (`dialog_toolsmenu`) [compiled, unreachable]
+
+Window at (10, 20), 170×75 (+growth). Buttons (x 10, w 150, pitch 18, all literal English): "Profile (F6)" → `ProfileButton`; "Network Stats" → `NetworkButton`; "Display FPS (F5)" → `FPSButton`; (gap) "Dbg Cam (F2)" → `DebugCameraButton`, with the current camera debug mode ("Always"/"Auto"/"Never") drawn at its right (size 10); [LOCATION_EDITOR && modsEnabled] "Toggle Editor (F3)"; [CHEATMENU_ENABLED] "Cheat Menu (F4)" (not added to `m_buttonOrder`); [GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL && modsEnabled] "Gesture Editor"; [SOUND_EDITOR && modsEnabled] "Pokey Playground", "Sound Stats (F7)", "Sound Editor (F8)", "Sound Profile (F9)" (caption says F8). The F-key labels are stale: none of those keys are bound to these actions in `data/input/input_preferences.txt` (F1–F8 are task-manager hot-keys) [C].
+
+## [→ 32_debug_test_and_performance] D4. Cheat window — every cheat [B:DEBUG] [C] `code/interface/cheat_window.cpp`
+
+All cheats mutate the **local** simulation directly (no network message), so using any of them in a networked game desynchronises clients [I: no `ClientToServer` calls in any cheat; several use the synced RNG `SFRAND` locally]. Captions are literal English. Layout: x 10, full-width buttons w = 180, half-width `(m_w − 25)/2` = 87 (second column at x = 102), pitch 20 from y 25; all in `m_buttonOrder` (pad-navigable).
+
+| # | Caption | Action |
+|---|---|---|
+| 1 | Kill All Enemies | For every team *t* not friendly with `GlobalWorld::m_myTeamId`: every entity in every unit and every "other" entity takes `ChangeHealth(−2 × maxHealth)` (`m_stats[StatHealth]`); additionally every AntHill and Triffid building in the location gets `Damage(−999)` (regardless of team) |
+| 2–7 | Spawn Green / Spawn Red / Spawn Yellow / Spawn Blue / Spawn Virus / Spawn Future | `SpawnEntities(crosshairHit, team, unit −1, TypeDarwinian, 20, zero velocity, spread 30)` with team = 0 / 1 / 2 / 3 / `GetMonsterTeamId()` (4, or −1→255 if monsters disallowed) / `GetFuturewinianTeamId()` (5, or −1). ("Spawn Red"'s team is left uninitialised when the window is opened outside a location — harmless because the click checks for a location.) |
+| 8 | Spawn Armour | `SpawnEntities(crosshairHit, team 2, −1, TypeArmour, 1, zero, 0)` — always team 2 (yellow) |
+| 9 | Spawn Virii | `SpawnEntities(crosshairHit, monster team, −1, TypeVirii, 20, zero, spread 0, range 1000)` |
+| 10 | Spawn Spirits | 10 × `SpawnSpirit(crosshairHit + (SFRAND(20), 0, SFRAND(20)), zero velocity, team 2, null id)` |
+| 11 | Allow Arbitrary Placement | `GetMyTaskManager()->m_verifyTargetting = false` (tasks/units can be placed anywhere) |
+| 12 | Enable Generator and Mine | Darwinia campaign: mark global buildings online — `TypeGenerator` at location "generator", `TypeRefinery` at "mine"; `GlobalWorld::EvaluateEvents()` [B:LEGACY] |
+| 13 | Enable Receiver and Buffer | same for `TypeSpiritProcessor` at "receiver", `TypeBlueprintStore` at "pattern_buffer" [B:LEGACY] |
+| 14 | Open All Locations | every `GlobalLocation::m_available = true` [B:LEGACY] |
+| 15 | Give all research | for every research item: `AddResearch(i)`; if single-player `SetCurrentProgress(i, 400)`; `EvaluateLevel(i)` |
+| 16 | Clear Resources | `Resource::FlushOpenGlState()` then `RegenerateOpenGlState()` (reload all GPU resources — tests device-loss path) |
+| 17 | Spawn Ports | for every building port: `SpawnEntities(portPos, team 0, −1, TypeDarwinian, 3, zero, 30)` |
+| 18 | GoodCrate + Crates drop-down (multiplayer only) | drop-down lists every `Crate::GetName(p)` (raw names), value p, bound to the button's `m_reward` (default −1 = random [I]); button: create a `Crate` building at the crosshair hit with y = 300 (falls from the sky), `Initialise` from a template, `SetDetail(1)`, id `(team 255, UNIT_BUILDINGS, −1, GenerateBuildingId())`, `m_rewardId = m_reward`, register a crate marker (`MarkerSystem::RegisterMarker_Crate`). `m_good` is set but unused |
+| 19 | Profiler | `DebugKeyBindings::ProfileButton()` |
+| 20 | Sound Editor [SOUND_EDITOR] | `SoundEditorButton()` |
+| 21 | Sound Stats [SOUND_EDITOR] | `SoundStatsButton()` |
+| 22 | Network Stats | `NetworkButton()` |
+| 23 | Show Dr S Face | `Clouds::ShowDrSFace()` (sky easter-egg face; button reuses the name "Network Stats" → name lookups collide) |
+
+Without `CHEATMENU_ENABLED` (FULL) `CheatWindow::Create()` is empty — the window would be a bare frame, but nothing opens it [C].
+
+## [→ 32_debug_test_and_performance] D5. Network stats window (`Network Stats`) [B:FULL] [C] `code/interface/network_window.cpp`
+
+Size 600 × 200, or 600 × (170 + 6×20 + 15) = 600 × 305 on a server (adds an `InvertedBox` panel at (10,110) for the client table); positioned bottom-left `(10, ScreenH − h)`. All text `g_editorFont`, literal English.
+
+Server-side block (if `g_app->m_server`):
+- "Server SeqID %d" = `Server::m_sequenceId`; "Server Send … Kb/sec" and "Server Receive … Kb/sec" from `m_sendRate`/`m_receiveRate` ÷ 1024 — **format string `"%2.1 Kb/sec"` lacks a conversion letter** and the argument is a double after an int cast, so the printed numbers are garbage/undefined [C].
+- Table header: ID, IP:Port, SeqID, Name, Status (size 14) at x offsets client+0, +60, +200, +260, +410; sync flag at +500.
+- Up to **6** client slots (`maxClients = 6` hard-coded); per valid `ServerToClient`: client id; `ip:port`; last known sequence id; player name = translated team-type name of the lobby team owned by that client, in team colour; status:
+  - `timeBehind = now − m_lastMessageReceived > 2.0 s` → red "Lost Con...%ds"
+  - else not `m_caughtUp` → yellow (200,200,30) "Synching...%d" with `percent = 100 × lastKnownSeq / serverSeq`
+  - else "Ping %dms" with `latencyMs = (serverSeq − lastKnownSeq) × 100` (assumes 100 ms per sequence step [I] = 10 Hz net tick, see 22) and colour `red = min(255, 20 × latencySteps)`, `green = 255 − red`.
+  - `m_syncErrorSeqId ≠ −1` → red "out of sync".
+  - empty slot → "Empty" at alpha 50.
+Client-side block (if `g_app->m_clientToServer`):
+- If `g_lastProcessedSequenceId ≥ 0`: caption "Sequence messages in queue. Ideal is 0 or 1 filled, no gaps." and a strip of 10 boxes for sequence ids `last+1 … last+10`: background (20,20,50), green (0,255,0) if `ClientToServer::IsSequenceIdInQueue(id)`, frame (255,255,255,100); first label "SeqID %d".
+- Non-server clients: "Server Known SeqID" (`m_serverSequenceId`), "Server Estimated SeqID" (`GetEstimatedServerSeqId()`), centred "Estimated Latency : … secs" (`GetEstimatedLatency()`, same broken format).
+- Right column (x + 250): "Client SEQID" (`m_lastValidSequenceIdFromServer`), "Client Send/Receive … Kb/sec" (same broken format).
+
+Performance/diagnostic value for 22/32: the window exposes exactly the lockstep health indicators (sequence lag per client, catch-up state, last-message age with a **2.0 s** lost-connection display threshold, sync-error flag, client-side receive queue gaps).
+
+## [→ 32_debug_test_and_performance] D6. Grabber window (AVI capture) [B:DEBUG, unreachable] [C] `code/interface/grabber_window.cpp`
+
+Buttons "Start" (10,30,70,15) and "Stop" (90,30,70,15). Start (if no generator): `SetFakeTimeMode()` (fixed-step time so capture is frame-perfect, `code/lib/hi_res_time.cpp`), create `AVIGenerator` with a `BITMAPINFOHEADER` of screen width × height, 24 bpp, `BI_RGB`, `InitEngine()`. Stop: `SetRealTimeMode()`, `ReleaseEngine()`, delete. Frame grabbing itself is done elsewhere (`code/lib/avi_generator.*`, P14) [I].
+
+## [→ 32_debug_test_and_performance] D7. Gesture editor [B:DEAD] [C] `code/interface/gesture_window.cpp`
+
+Training tool for the Darwinia mouse-gesture recogniser: a 4:3 drawing box (`DrawBox`, h = m_h − 180) whose `MouseDown` begins/extends a gesture sample with the cursor position and `MouseUp` ends it; `(m_w − 100)/110` status tiles (90×120) each showing gesture *i*'s task name (`TaskManager::MapGestureToTask`), icon `icons/gesture_<taskname>.bmp` (64×64, additive), number of training samples, confidence % and Mahalanobis deviation, with a yellow frame on the recognised symbol; buttons "Record Demo" (`RecordGestureDemo()`), "New Gesture" (caption "New Demo", `NewSymbol()`), "Load Data"/"Save Data" (`gestures.txt`). Compiled out everywhere (requires `USE_SEPULVEDA_HELP_TUTORIAL`). Gesture system itself: 06/26.
+
+---
+
+## Constants table
+
+| Constant | Value | Kind | Ref |
+|---|---|---|---|
+| `SIZE_ECLWINDOW_NAME`, `SIZE_ECLWINDOW_TITLE`, `SIZE_ECLBUTTON_NAME` | 256 | `#define` | `contrib/eclipse/eclwindow.h`, `eclbutton.h` |
+| Tooltip delay | 1000 ms | literal | `eclipse.cpp:EclUpdateMouse` |
+| Resize grab band | ±4 px (exclusive) around bottom/right edge | literal | `EclUpdateMouse` |
+| Minimum window size on drag-resize | 60 × 40 px | literal | `EclUpdateMouse` |
+| Auto-grow margin | 10 px below lowest button | literal | `EclWindow::RegisterButton` |
+| Default button font size | 11.0 | ctor | `DarwiniaButton::DarwiniaButton` |
+| Auto button width | `chars × 7 + 9` px; height 15 | literal | `DarwiniaButton::SetShortProperties` |
+| Title-bar height | `GetMenuSize(15)` px | literal | `DarwiniaWindow::GetClientRectY1` |
+| Close box | 10 × 10 at (w − 12, 2) | literal | `DarwiniaWindow::Create` |
+| Large-menu scale | `0.96 × screenH / 460` | literal | `DarwiniaWindow::GetMenuSize` |
+| Large-menu preference | `LargeMenus` == 2 | pref | `code/app.cpp`, `prefs_other_window.h:OTHER_LARGEMENUS` |
+| Window body tint alpha | 0.96 | literal | `DarwiniaWindow::Render` |
+| Body texture repeat | s × 8 (assumes 512×64 texture) | literal | `DarwiniaWindow::Render` |
+| Value-control field width | `w − 37` (numeric); scrollers 15×15 at +5 and +22 | literal | `CreateValueControl` |
+| `PIXELS_PER_CHAR` | 7 | `#define` | `input_field.cpp` |
+| Input box width | `len × 7 + 7` | literal | `InputField::Keypress/Render` |
+| Edit well | right 40 % of field | literal | `InputField::Render` |
+| Caret blink | 1 Hz, 50 % duty | literal | `InputField::Render` |
+| `INTEGER_INCREMENT_PERIOD` | 0.1 s (10 steps/s) | `#define` | `input_field.cpp` |
+| Float scroller rate | `change × elapsed × 0.2` per frame | literal | `InputScroller::CheckInput` |
+| Scroll speed-up | × 5 (Shift) | literal | `InputScroller::CheckInput` |
+| Default numeric bounds | [0, 1.0e4] | default args | `InputField::Register*` |
+| `DEF_FONT_SIZE` | 12.0 | `#define` | `code/lib/text_renderer.h` |
+| `GetTextWidth` default size | 13.0; horiz scale 0.6 (CJK 1.0) | default arg / ctor | `text_renderer.h/.cpp` |
+| Scrollbar arrow height | 18 px | literal | `ScrollBar::Create` |
+| Drop-down column threshold | 0.8 × screen height | literal | `DropDownMenu::CreateMenu` |
+| MessageDialog | ≤ 20 lines; w ≥ 100; h = 65 + 12·lines ≥ 85; button 40×18 at h − 30 | literal | `message_dialog.cpp` |
+| FileDialog row | 13 px pitch, 12 px high; rows = (h − 60)/13 | literal | `FileDialog::Create` |
+| Double-click window | 0.2 s | literal | `FileButton::MouseUp`, `MultiwiniaFileButton::MouseUp` |
+| MultiwiniaFileDialog rows | 10 | literal | `MultiwiniaFileDialog::Create` |
+| Front-end fonts | large 0.095 H, med 0.04 H, small 0.022 H | literal | `code/game_menu.cpp:GetFontSizes` |
+| Front-end buttons | w = 0.9 × left box w, h = 1.3 × med font, gap = 0.1 × med font | literal | `game_menu.cpp:GetButtonSizes` |
+| Editor magic location id | 999 | literal | `multiwinia_window.cpp` |
+| Default research level for editor test games | 3 | literal | `MultiwiniaWindow::MultiwiniaWindow` |
+| `INSTANT_UNIT_SIZE_FACTOR` | 6.0 (pick/sphere radius = √n × 6) | `#define` | `location_editor.cpp` |
+| Instant-unit dot pitch / half-size | 10 / 5 world units | literal | `LocationEditor::RenderUnit` |
+| New instant unit | 40 units, team 0, spread 200.0 | literal / ctor | `CreateButton::MouseUp`, `level_file.h` |
+| Camera-mount gizmo cull distance | 20.0 | literal | `LocationEditor::Render` |
+| Building rotate rate | 0.01 rad / pixel | literal | `AdvanceModeBuilding` |
+| Light rotate rate | 0.05 rad / pixel | literal | `AdvanceModeLight` |
+| New tile size | 384 | literal | `NewTileButton::MouseUp` |
+| New flatten-area half-size | 40.0 | literal | `NewFlattenAreaButton::MouseUp`, `LandscapeFlattenArea` ctor |
+| Landscape scale factors | 0.95 / 1.05 | literal | `LandscapeEditWindow::Create` |
+| Light brightness factors | 0.9 / 1.1 | literal | `LightsEditWindow::Create` |
+| Guide-grid flatten pivot | 20 (of 255) | literal | `GuideGrid::HandleMouseInput` |
+| Guide-grid resolution power | [0, 5] | literal | `LandscapeGuideGridWindow::Create` |
+| Tree clone height jitter | × (1 ± 0.15) (`sfrand(0.3)`) | literal | `TreeButton::MouseUp` |
+| Crosshair half-length | 30 px | literal | `LocationEditor::Render` |
+| New GlobalLocation position | (−96.25, −274.02, 75.16) | literal | `NewLocationButton::MouseUp` |
+| Cheat spawn counts | Darwinians 20 (spread 30); Virii 20 (range 1000); spirits 10 (x/z jitter ±10 via synced `SFRAND(20)` = `(syncfrand − 0.5) × 20`); ports 3 per port | literal | `cheat_window.cpp` |
+| Cheat crate drop height | y = 300 | literal | `CrateCreateButton::MouseUp` |
+| Network window client slots | 6 | literal | `NetworkWindow::Create/Render` |
+| Lost-connection display threshold | 2.0 s | literal | `NetworkWindow::Render` |
+| Assumed ms per sequence step | 100 | literal | `NetworkWindow::Render` |
+| Monster / Futurewinian team ids | 4 / 5 (−1 if `m_allowMonsterTeam` false) | literal | `code/location.cpp:GetMonsterTeamId`, `GetFuturewinianTeamId` |
+
+## Cross-partition notes
+
+- **P10 (input/camera)**: all bindings in §6 and §E2.2 come from `data/input/input_preferences.txt`; `UserInput::AdvanceMenus` pumps Eclipse; `WM_CHAR` feeds `EclUpdateKeyboard`; editor uses `Camera::DebugModeAlways`, `GetClickRay`, `SetTarget/CutToTarget`, `PlayAnimation/StopAnimation`, `SetNextDebugMode`.
+- **P11 (terrain/levels)**: editor writes `LevelFile` (`m_buildings`, `m_instantUnits`, `m_cameraMounts`, `m_cameraAnimations`, `m_landscape.{m_tiles, m_flattenAreas, cellSize, worldSize, outsideHeight, maxHeight}`, colour filenames, `m_invalidCrates`, `m_levelOptions`, `m_effects`, co-op/assault fields) and calls `Landscape::Init`, `Landscape::DeleteTile`, `LandscapeTile::GuideGridSetPower/GetPower`, `LevelFile::Save`, `LevelFile::RemoveBuilding`, `MapFile::Save` (.mwm). Lights are persisted from `Location::m_lights`.
+- **P06/P07 (buildings)**: `Building::CreateBuilding`, `Initialise`, `SetDetail`, `DoesRayHit`, `RenderHitCheck`, `RenderLink`, `SetBuildingLink/GetBuildingLink`, `BuildingIsBlocked`, `Tree::Generate`, per-type editor gizmos inside `#ifdef LOCATION_EDITOR`.
+- **P03 (entities)**: `Entity::GetTypeName/GetTypeId/EntityIsBlocked`, `ChangeHealth`; `Location::SpawnEntities/SpawnSpirit`.
+- **P08 (crates)**: `Crate::NumCrateRewards`, `GetName`, `GetNameTranslated`; `m_invalidCrates` semantics; cheat crate spawn.
+- **P15 (network)**: Network window reads `Server::m_sequenceId/m_sendRate/m_receiveRate/m_clients`, `ServerToClient::{m_ip, m_port, m_clientId, m_lastKnownSequenceId, m_lastMessageReceived, m_caughtUp, m_syncErrorSeqId}`, `ClientToServer::{IsSequenceIdInQueue, m_serverSequenceId, GetEstimatedServerSeqId, GetEstimatedLatency, m_lastValidSequenceIdFromServer, m_sendRate, m_receiveRate}`, `g_lastProcessedSequenceId`. `InputField::RegisterNetworkValue` / `CheckBox::RegisterNetworkInt` / `DropDownMenu::RegisterNetworkInt` bind lobby options (`NetworkGameOption*` writes go through `ClientToServer::RequestSetGameOptionInt`).
+- **P17b/P18 (menus)**: `GameOptionsWindow`, `GameMenuWindow`, `GameMenuButton`, `MenuCloseButton`, `CreateMenuControl`, `CreateErrorDialogue`, `GetPosition_*` are built on this framework; `MultiwiniaEditorButton` lives in `GameMenuWindow` (LOCATION_EDITOR); `MainMenuWindow`'s `MultiwiniaButton` is unreachable.
+- **P12/P13 (render)**: UI pass state and fonts (`TextRenderer` blend modes, `BeginText2D` ortho); `Renderer::m_displayFPS`; `Resource::FlushOpenGlState/RegenerateOpenGlState` (cheat 16); editor render hook in `Renderer::Render` when `m_editing`.
+- **P01 (app/main)**: `MainMenuLoop`/`EnterLocation`/`LocationEditorLoop`/`GlobalWorldEditorLoop`/`GlobalWorldGameLoop` control flow, `m_requestToggleEditing`, `m_editing`, `m_requestedLocationId = 999`, `RemoveAllWindows`, `WindowsOnScreen`.
+- **P14 (platform)**: `ProfileWindow`, `AVIGenerator`, `SetFakeTimeMode/SetRealTimeMode`, `ListDirectory`, `Resource::ListResources`, `GetProfileDirectory` (`<profile>/maps/`).
+- **P16 (sound)**: sound editor windows reuse `FileDialog`, `CreateValueControl`, `ScrollBar`; UI sounds "MenuSelect"/"MenuCancel" (`TypeMultiwiniaInterface`).
+
+## Contradictions / open questions
+
+1. `docs/changes.txt` ("Editor changes") says the move-buildings-with-tile option is "in the land tiles menu"; code puts `editor_movebuildings` in `LandscapeEditWindow` (the main landscape window), not `LandscapeTileEditWindow` [C] — wording ambiguity, logged below.
+2. `DarwiniaWindow` computes a translated per-window title but `Render` always prints "MULTIWINIA" — intentional rebrand shortcut or bug? [I: rebrand shortcut when Darwinia windows were reused for Multiwinia].
+3. Reinforcement-mode drop-down values collide (airstrike 0 = gun turret 0; napalm 1 = rocket turret 1) — presumably interpreted per reinforcement type [I]; P02 should confirm how `LevelOptionAttack/DefendReinforcementMode` is consumed.
+4. `LevelFile::m_gameTypes` is a single int edited with a single-choice drop-down although named plural; P11 should confirm whether it is a bitmask elsewhere [U].
+5. Whether `MapFile` can open a `.mwm` created by `NewMapWindow` (which writes `LevelFile` text) [U] (see E1.3).
+
+## [U] Unknowns
+
+| # | Unknown | Resolution |
+|---|---|---|
+| U1 | Format/reading path of `.mwm` written by "Publish" vs plain text from `NewMapWindow` | P11: `code/mapfile.cpp:MapFile::Save`, `MapFile::MapFile` |
+| U2 | `m_gameTypes` single value vs bitmask | P11/P02: readers of `LevelFile::m_gameTypes` |
+| U3 | What `CrateCreateButton` `m_reward = −1` does (random reward?) | P08: `Crate` reward selection when `m_rewardId == −1` |
+| U4 | Exact visual effect of the `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR` "ink" text over the gradient (verify by rendering) | run the game / P12 |
+| U5 | Whether `RGBAColour` default (instant unit with team −1 in editor) is white or black | `code/lib/rgb_colour.cpp` (P13) |
+
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | Ref |
+|---|---|---|---|
+| `docs/changes.txt` "Editor changes" | moving a land tile moves its buildings; option "in the land tiles menu" | behaviour confirmed (`MoveBuildingsInTile`), but the toggle is in the Landscape window, not the per-tile window | `LocationEditor::AdvanceModeLandTile`, `LandscapeEditWindow::Create` |
+| `docs/detailed schedule.txt` "Translation System… Missed out: … Network Window, Grabber Window, Gesture Window, Debug Menu, Cheat Window, Camera Anim Window" | these windows are untranslated | consistent: they use literal English captions | §D3–D7, §E4.10 |
+| `docs/donelist.txt` "made it possible to add new gestures from editor" | gesture editor exists | present but compiled out (`USE_SEPULVEDA_HELP_TUTORIAL`) | §D7 |
+| `docs/new building docs.txt` (FenceSwitch "Linking from the editor occurs in the following order: first set of fences, second set") | link order matters | editor link tool calls `Building::SetBuildingLink(id)` per click; ordering semantics live in the building (P07) | `AdvanceModeBuilding` |
+| DebugMenu captions "(F2)…(F9)" | hot-keys | no such bindings; F-keys are task-manager keys in `data/input/input_preferences.txt` | §D3 |
+
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "MULTIWINIA" window title (`multiwinia_mainmenu_title`) | brand/text | `code/interface/darwinia_window.cpp:DarwiniaWindow::Render`, `multiwinia_window.cpp`, `multiwinia_filedialog.cpp` | product title token `app.title` |
+| Class/brand names `DarwiniaWindow`, `DarwiniaButton`, `MultiwiniaWindow`, `MultiwiniaFileDialog`, `MultiwiniaOptionsWindow`, `MultiwiniaEditorButton`, `dialog_multiwinia` | name | `code/interface/*` | `UiWindow`, `UiButton`, `MapEditorHubPage`, `MapFilePicker`, `MapOptionsPanel` |
+| "Eclipse" library name (Introversion in-house, author credit "Christopher Delay") | name | `contrib/eclipse/*` | `ui-core` |
+| "Darwinian(s)", "Spawn Green/Red/Yellow/Blue/Virus/Future", "Spawn Virii", "Spawn Spirits", "Futurewinian" | name/text | `cheat_window.cpp`, `multiwiniaoptions_window.cpp` | "unit", "Spawn Team 1–4", "Spawn Hostile", "Spawn Souls", "alt-faction" |
+| "Show Dr S Face" / `Clouds::ShowDrSFace` (Dr Sepulveda) | character/text | `cheat_window.cpp` | drop |
+| Darwinia campaign location names "generator", "mine", "receiver", "pattern_buffer"; buttons "Enable Generator and Mine", "Enable Receiver and Buffer", "Open All Locations" | name/text | `cheat_window.cpp` | drop (no campaign) |
+| Building names exposed in editor (GunTurret, RocketTurret, GrenadeTurret, FlameTurret, Subversion Turret, TrunkPort, LaserFence, Triffid, AntHill, SafeArea, Incubator, CloneLab, EscapeRocket, BlueprintRelay/Console, RadarDish, PulseBomb, JumpPad, ChessBase, MultiwiniaZone, DynamicHub/Node, FenceSwitch, …) via `Building::GetTypeName` / `buildingname_*` | name | `buildings_window.cpp` | generic type ids (see 03 register) |
+| Entity type names in editor lists (`Entity::GetTypeName`) | name | `instant_unit_window.cpp`, `buildings_window.cpp` | generic ids (see 02 register) |
+| Crate reward names (`Crate::GetName`, `cratename_*`) | name/text | `cheat_window.cpp`, `invalidcrates_window.cpp`, `multiwiniaoptions_window.cpp` | see 04 register |
+| Editor UI strings (`editor_*`, `dialog_*`, `multiwinia_editor_*`, `taskmanager_mapeditor`) — full list with English text in `drafts/P17a_ui_framework_editor_ui_strings.csv` (221 rows) | text | `data/language/english.txt` + scope files | rewrite all UI copy; keep only generic verbs (Save, Cancel, OK) |
+| Literal debug captions ("Kill All Enemies", "Allow Arbitrary Placement", "Give all research", "Clear Resources", "Spawn Ports", "GoodCrate", "Profile (F6)", "Dbg Cam (F2)", "Pokey Playground", "CameStart", "Create New Anim", "Record Demo", …) | text | `cheat_window.cpp`, `debugmenu.cpp`, `camera_anim_window.cpp`, `gesture_window.cpp` | rewrite |
+| "Pokey Playground" (sound toy name) | name | `debugmenu.cpp` | "Synth sandbox" |
+| Magic camera mount name "CamPosBefore" | name | `code/level_file.h:MAGIC_MOUNT_NAME_START_POS` | `__start_pose` |
+| Default names "NewLevel", "mp_blank.txt", "mp_newmap.txt", "blah<n>", "CamAnim<n>", "map_<name>.txt"/"mission_<name>.txt", "mp_*" filter | text | `globalworldeditor_window.cpp`, `multiwinia_window.cpp`, `camera_*_window.cpp` | neutral defaults |
+| Textures `textures/interface_red.bmp`, `icons/selectionarrow.bmp`, `icons/tick.bmp`, `icons/button_b.bmp`, `icons/gesture_*.bmp`; shape `camera.shp` | art | `darwinia_window.cpp`, `scrollbar.cpp`, `checkbox.cpp`, `mainmenus.h`, `gesture_window.cpp`, `location_editor.cpp` | new art |
+| Fonts "speccy", "editor", "square" (`data/textures/*font*`) | art | `code/app.cpp` | licensed/open fonts |
+| UI palette (red glass panel + steel-blue highlight, §5) | art direction | `darwinia_window.cpp` | new palette (keep structure) |
+| Sound events "MenuSelect", "MenuCancel" (`TypeMultiwiniaInterface`) | audio | `multiwinia_window.cpp`, `mainmenus.h` | `ui.select`, `ui.back` |
+| URLs `http://www.multiwinia.co.uk/` etc. (seen in `mainmenus.cpp`, P17b) | brand | `code/interface/mainmenus.cpp` | drop |
+
+## Appendix — dead/legacy code
+
+- **[B:DEAD] GestureWindow** (`code/interface/gesture_window.*`): see §D7; needs `USE_SEPULVEDA_HELP_TUTORIAL`.
+- **[B:DEBUG], unreachable: GrabberWindow** (§D6) — no caller of `DebugKeyBindings::GrabberButton`.
+- **Unreachable everywhere: DebugMenu** (§D3) — opener commented out.
+- **[B:EDITOR] unreachable: CameraAnimMainEditWindow/SecondaryEditWindow** (§E4.10).
+- **[B:LEGACY] GlobalWorldEditorWindow** (§E4.13) — Darwinia global-world editor; `GlobalWorldEditorLoop` returns immediately.
+- **[B:LEGACY] cheats 12–14** (Darwinia campaign globals).
+- **Unused framework API**: `EclMaximiseWindow/UnMaximise`, `EclRegisterPopup`, `EclRegisterTooltipCallback`, `EclRegisterClearFunction`, `EclResetDirtyRectangles`, `EclGetDirtyRects`, `EclGenerateUniqueWindowName`, `EclButton::MouseMove`; `DebugMenu::Advance` (empty); `IsGlobalButton`, `PlayMapButton`, `EditMapButton`, `CurrentMapButton`, commented `SelectMapFileDialog`; `DebugKeyBindings::FollowCameraButton/InputLogButton/SoundVisualiserButton` (declared only), `ReallyQuitButton`/`ToggleFullscreenButton` (no Win32 caller).
+- **Non-Win32 path**: `EclGetAccurateTime` `gettimeofday` branch (Linux/Mac).
+- `MultiwiniaFileButton::SpecialScroll` (commented-out list scrolling for pad navigation of file rows).

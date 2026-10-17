@@ -1,0 +1,108 @@
+path,depth,reason,sections
+code/UI/AchievementButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/AdvancedOptionsModeButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built
+code/UI/AnyLevelSelectButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/ApplyNameButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/AuthInputField.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;13. Constants table
+code/UI/AuthPageButton.h,full,,3. Screen-flow diagram;4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/AuthStatusButton.h,full,,4. Page-by-page specification;10. Metaserver-driven front-end content;12. How GameMenuWindow is built
+code/UI/BuyNowInfoButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/BuyNowModeButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built
+code/UI/CSpectatorButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/CampaignButton.h,full,,3. Screen-flow diagram;4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/ConnectButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/DarwiniaModeButton.h,full,,3. Screen-flow diagram;4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/DarwiniaPlusMPButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/DarwiniaPlusSPButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/EnterAuthKeyButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/FancyColourButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/FiltersPageButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/FinishMultiwiniaButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Contradictions / open questions
+code/UI/GameMenuOptionsButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/GameMenuWindow.cpp,full,,"1. Front-end lifecycle and global structure;2. Page enumeration;3. Screen-flow diagram;4. Page-by-page specification;5. Start sequences;6. Lobby state model;7. Demo / full-game gating;8. Game-setup options as data;9. Lobby chat;10. Metaserver-driven front-end content;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built;13. Constants table;Contradictions / open questions;IP register;Appendix — dead/legacy code"
+code/UI/GameMenuWindow.h,full,,2. Page enumeration;6. Lobby state model;12. How GameMenuWindow is built;13. Constants table;Appendix — dead/legacy code
+code/UI/GameServerButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built;13. Constants table;Contradictions / open questions
+code/UI/GameTypeAnyButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/GameTypeButton.h,full,,"4. Page-by-page specification;7. Demo / full-game gating;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built"
+code/UI/GameTypeImageButton.h,full,,"4. Page-by-page specification;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built"
+code/UI/GameTypeInfoButton.h,full,,"4. Page-by-page specification;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built"
+code/UI/GamerTagButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/HelpImageButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/HelpModeButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/HelpSelectButton.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/ImageButton.cpp,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/ImageButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/JoinGameButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/KickPlayerButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/LevelSelectButton.h,full,,"4. Page-by-page specification;8. Game-setup options as data;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built;Contradictions / open questions"
+code/UI/LevelSelectButtonBase.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;13. Constants table
+code/UI/MapData.cpp,full,,"11. Map metadata, thumbnails and game-type presentation"
+code/UI/MapData.h,full,,"11. Map metadata, thumbnails and game-type presentation"
+code/UI/MapImageButton.h,full,,"4. Page-by-page specification;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built"
+code/UI/MapInfoButton.h,full,,"4. Page-by-page specification;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built"
+code/UI/MapListTitlesButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/MapSelectModeButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/MultiwiniaEditorButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/MultiwiniaModeButton.h,full,,5. Start sequences;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/MultiwiniaVersusCpuButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/NewOrJoinButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built
+code/UI/NewServerButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/NextHelpButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/OptionDetailsButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/PasteKeyButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/PlayDemoAuthkeyButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built
+code/UI/PlayGameButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/PrevHelpButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/PrologueButton.h,full,,3. Screen-flow diagram;4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/QuickMatchButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/QuickStartButton.h,full,,5. Start sequences;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/QuitAuthKeyButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/QuitButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/RequestAIButton.h,full,,5. Start sequences;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/ResearchModeButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/RollingDemoButton.h,full,,5. Start sequences;12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/ScrollingTextButton.h,full,,12. How GameMenuWindow is built;13. Constants table
+code/UI/ServerTitleInfoButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/TestBedButtons.h,full,,12. How GameMenuWindow is built;Appendix — dead/legacy code
+code/UI/TutorialButton.h,full,,4. Page-by-page specification;5. Start sequences;12. How GameMenuWindow is built
+code/UI/UnlockFullGameButton.h,full,,4. Page-by-page specification;7. Demo / full-game gating;12. How GameMenuWindow is built
+code/UI/WaitingButton.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/credits_button.h,full,,4. Page-by-page specification;12. How GameMenuWindow is built
+code/UI/mapDetailsButton.h,full,,"11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built;Appendix — dead/legacy code"
+code/UI/motdButton.h,full,,10. Metaserver-driven front-end content;12. How GameMenuWindow is built
+code/UI/update_page_buttons.h,full,,4. Page-by-page specification;10. Metaserver-driven front-end content;12. How GameMenuWindow is built
+code/UI/ErrorDialog.cpp,full,outside partition list; same directory; not in vcproj,Appendix — dead/legacy code
+code/UI/ErrorDialog.h,full,outside partition list; same directory; not in vcproj,Appendix — dead/legacy code
+code/UI/soundsliderbutton.h,skimmed,outside partition list; never included (dead),Appendix — dead/legacy code
+code/game_menu.cpp,skimmed,"P17b-owned; read s_pageNames, base buttons, CreateMenu, AddMap, layout helpers only","1. Front-end lifecycle and global structure;2. Page enumeration;4. Page-by-page specification;11. Map metadata, thumbnails and game-type presentation;12. How GameMenuWindow is built;13. Constants table"
+code/game_menu.h,full,P17b-owned; constants and base class declarations,12. How GameMenuWindow is built;13. Constants table
+code/interface/darwinia_window.cpp,skimmed,P17a-owned; navigation/Remove/highlight only,12. How GameMenuWindow is built
+code/interface/darwinia_window.h,skimmed,P17a-owned; navigation members,12. How GameMenuWindow is built
+code/interface/chatinput_window.cpp,skimmed,P17b-owned; Keypress (/name) only,9. Lobby chat
+code/interface/chatinput_window.h,skimmed,P17b-owned; ChatInputField decl,9. Lobby chat;12. How GameMenuWindow is built
+code/interface/helpandoptions_windows.cpp,skimmed,P17b-owned; HelpAndOptionsWindow::Create only,3. Screen-flow diagram;4. Page-by-page specification
+code/interface/helpandoptions_windows.h,skimmed,P17b-owned; TextButton decl,4. Page-by-page specification;12. How GameMenuWindow is built
+code/interface/mainmenus.cpp,skimmed,P17b-owned; leave-game and HelpAndOptionsButton/Achievements/Leaderboard buttons,1. Front-end lifecycle and global structure;4. Page-by-page specification;Contradictions / open questions
+code/interface/mainmenus.h,skimmed,P17b-owned; button decls,4. Page-by-page specification
+code/interface/leaderboards_window.cpp,skimmed,P17b-owned; grep for GameMenuWindow use,2. Page enumeration
+code/interface/scrollbar.h,skimmed,P17a-owned; Create signature,4. Page-by-page specification;12. How GameMenuWindow is built
+code/multiwinia.cpp,skimmed,"P02-owned; LoadBlueprints, params, colours, GetDifficulty, RemoveTeams",4. Page-by-page specification;8. Game-setup options as data;9. Lobby chat
+code/multiwinia.h,skimmed,P02-owned; enums and constants,8. Game-setup options as data;13. Constants table
+data/multiwinia.txt,full,option tables cross-check (P02 owns semantics),8. Game-setup options as data
+code/app.cpp,skimmed,"P01-owned; permission predicates, StartNetwork, ShutdownCurrentGame, GetBuyNowURL",4. Page-by-page specification;7. Demo / full-game gating
+code/main.cpp,skimmed,P01-owned; MainMenuLoop only,1. Front-end lifecycle and global structure
+code/location_input.cpp,skimmed,game-over return path only,1. Front-end lifecycle and global structure
+code/network/demo_limitations.cpp,full,demo defaults,7. Demo / full-game gating
+code/network/demo_limitations.h,full,demo limitations fields,7. Demo / full-game gating
+code/network/networkvalue.h,skimmed,P15-owned; NetworkGameOption classes,6. Lobby state model
+code/network/networkvalue.cpp,skimmed,P15-owned; Set implementations,6. Lobby state model;8. Game-setup options as data
+code/network/clienttoserver.cpp,skimmed,"P15-owned; menu-facing handlers (disconnect, chat, coop, start game, options request)",1. Front-end lifecycle and global structure;4. Page-by-page specification;6. Lobby state model;9. Lobby chat
+code/network/network_defines.h,skimmed,"P15-owned; GAMEOPTION ids, password key",4. Page-by-page specification;6. Lobby state model
+contrib/systemiv/lib/metaserver/metaserver_defines.h,skimmed,P15-owned; directory keys,4. Page-by-page specification;Contradictions / open questions
+contrib/systemiv/lib/metaserver/authentication.h,skimmed,P15-owned; key length and status enum,4. Page-by-page specification;13. Constants table
+contrib/systemiv/lib/metaserver/authentication.cpp,skimmed,P15-owned; status phrase mapping only,4. Page-by-page specification
+contrib/eclipse/eclwindow.cpp,skimmed,RegisterButton/GetButton ordering only,12. How GameMenuWindow is built
+code/renderer.cpp,skimmed,P12-owned; menu transition entry points only,12. How GameMenuWindow is built
+data/language/english.txt,skimmed,phrase-id existence checks via script P18_phrases.py,8. Game-setup options as data;IP register
+docs/multiwinia-changes.txt,skimmed,docs-vs-code check,Docs-vs-code discrepancies
+docs/multiwiniachanges-beta.txt,skimmed,docs-vs-code check,Docs-vs-code discrepancies

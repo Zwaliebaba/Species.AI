@@ -35,3 +35,8 @@
 ## P12_render_core — done
 - 24.1–24.9: renderer init/GL baseline, lighting, matrices/fades, ordered 35-row pass table + Mermaid pipeline, pixel effect, ~20 graphics prefs, shapes/team colouring/hit-test, billboards/debug, text + 138 Unicode/CJK font atlases, prediction convention, deform, 14 shaders. 25: BMP decode, upload, resource manager. 26: 19 particle types, shattering, EffectProcessor (= sound-chip envelope tool, debug-only). P12_shapes.csv (140 .shp). [U]=7, 14 contradictions.
 - Critical: D3D build probably doesn't compile (deform.cpp calls Xbox 360 Resolve(); never restores RT); App::Multiplayer() true in every MW game → pixel effect, deform, water-reflection pre-render never run (D3D water samples never-rendered reflection texture); flat-shade provoking vertex last (GL) vs first (D3D); texture cache ignores flags → first requester fixes mip/mask.
+
+## P19_help_tutorial_script — done
+- Script language: grammar, 43 opcodes, one-line-per-frame execution, 6 start paths; 42 scripts (39 [B:LEGACY], 3 [B:DEAD]); scripts cannot run in MW (all triggers blocked/compiled out; scripts/* excluded from PC data build). 31 tutorial tabs, 49 help enum values; Demo1 38 chapters, Demo2 50. [U]=7.
+- Key: live MW tutorials are a help-tab director inside MultiwiniaHelp running on mp_koth_2P_1 and mp_koth_3P_1; tutorial*.cpp, Sepulveda, HelpSystem are [B:DEAD]; data/mwhelp has no .txt files.
+- Uncertain: how radar dish 4 becomes player-owned at Tutorial 2 start; whether CPU team 2 reliably takes spawn 83 first; whether mapcrc.h CRCs match current KOTH maps (else tutorial buttons disabled).

@@ -804,6 +804,14 @@ Starts identity discovery; every 1.0 s rebuilds the filtered list; joins the **f
 - The host's "versus CPU"/quick start fills remaining slots with CPU teams before START_GAME (§11). The server enforces only slot counts; host-only rules for options are UI-side [I].
 - Game-mode/map availability for demo keys is limited by Demo2Limits (§12.5); in-progress games remain listed (GAMEINPROGRESS) and joinable (§9.7).
 
+## [→ 22_determinism_and_networking] 15b. Determinism observations from the network layer
+- Inputs are transmitted bit-exactly (positions as raw doubles, controls as raw shorts/flags), so every client executes identical inputs; no quantisation step exists that could differ between machines [C] §4.1, §5.2.
+- Lobby floating-point options typed into the UI are truncated with `iv_trunc_low_nibble` on parse (`NetworkFloat/NetworkDouble::FromUnicodeString`) before being sent [C].
+- The only sync-RNG seeding is at handshake; the RNG then runs through lobby and match. Any `syncrand` use outside sequenced execution (UI, rendering, sound) would desync — enforce this by API separation in the new engine [C seeding; I risk].
+- Command handlers read some local, non-simulation state: `TOGGLE_READY` branches on `g_app->m_atMainMenu`; `REQUEST_TEAMNAME`/`SEND_CHATMESSAGE`/`CHRISTMASMODE` touch UI windows; `ORDERGOTO` adds a marker only for friends of the local team; the `COOPMODE` handler dereferences the main-menu window without a null check [C `ProcessServerUpdates`]. These are presentation side effects, but a replacement should separate "simulation effects" (deterministic) from "local presentation effects".
+- `TOGGLEENTITY` on an officer makes **every** client issue a new SELECTUNIT command from inside the simulation step, i.e. N identical commands appear in a later frame [C]. New design: never emit network commands from simulation code.
+- Time: simulation must use `GetNetworkTime()` (= `GameTimer::m_gameTime`, advanced only by `Tick`) and `SERVER_ADVANCE_PERIOD`; `GetHighResTime()` appears in network code only for transport timing [C].
+
 ## [→ 22_determinism_and_networking] 16. Constants
 
 | Constant | Value | Kind | Ref |
@@ -911,7 +919,7 @@ Starts identity discovery; every 1.0 s rebuilds the filtered list; joins the **f
 | Default server name `"NewServer"`, fallback `"Multiwinia"` | text | `Server::Advertise` | `"New Server"` |
 | Map ids `MAPID_MP_KOTH_2P_1`, `_KOTH_3P_1`, `_KOTH_4P_1`, `_CTS_2P_1`, `_ROCKETRIOT_3P_1` (demo map list) | level names | `demo_limitations.cpp`, `code/mapcrc.h` | new map ids |
 | Game-mode names (Domination/Skirmish, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle) in `GAMEMODE` | names | `code/multiwinia.h` | generic mode names |
-| Message code names "DARWINIA" etc. (`NET_DARWINIA_*`) | brand in identifiers | `network_defines*.h` | `NET_GAME_*` |
+| Identifier prefix `NET_DARWINIA_*` and the readable codes "DARWINIA"/"CMD" in `network_defines_debug.h` | brand in identifiers | `network_defines*.h` | `NET_GAME_*` |
 
 ## Appendix — dead/legacy code
 - `code/network/network_defines_debug.h` [B:DEAD]: human-readable alternative codes ("DARWINIA", "CMD", "ClientJoin", …, incl. obsolete fields X/Y/Z/Flags/DUMoveDX…); not included anywhere.
