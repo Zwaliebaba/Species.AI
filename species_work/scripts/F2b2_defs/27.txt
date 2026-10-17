@@ -39,7 +39,10 @@ H2:10 Streaming decoder | KEEP | architecture/components/audio_engine.md | §4 B
 = | TO-ADR | adr/ | audio decoder | X-ADR | decoder choice (current Vorbis or Opus on a worker thread, or XAudio2-native ADPCM and xWMA); stereo support
 I2:11 Device back-ends | KEEP | architecture/components/audio_engine.md | §2 Interfaces — voice back-end | C-AEN | section intro
 H3:11.1 The `SoundLibrary3d` contract | KEEP | architecture/components/audio_engine.md | §2 Interfaces — voice back-end contract (channels, music voice, listener, per-channel volume, frequency, position) | C-AEN | contract becomes the Species voice back-end interface
-H3:11.2 DirectSound | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: DirectSound buffers, cooperative level, ring-buffer refill and FX objects; the distance law (flat to minimum distance, then minimum/d), Doppler 0 and listener update are restated from §17 and 40 T12
+L818-828 | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: DirectSound device, primary and secondary buffer creation and music buffer flags
+L829-830 | KEEP | architecture/components/audio_engine.md | §4 Behaviour and algorithms — spatialisation: Doppler off, default roll-off | C-AEN | listener settings are audible behaviour (40 T12)
+L831-851 | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: polled ring-buffer streaming and write-cursor refill of the DirectSound back-end
+L852-868 | KEEP | architecture/components/audio_engine.md | §4 Behaviour and algorithms — per-voice parameter updates (change-only calls, 5 % position threshold and its head-relative edge case, listener orientation, distance model flat inside the minimum distance then minimum/d, no maximum) | C-AEN | DirectSound call names dropped; behaviour restated on the Species voice back-end
 = | TO-ADR | adr/ | XAudio2 voice back-end | X-ADR | XAudio2 2.9 source voices per sound, submix per bus, one mastering voice, X3DAudio for panning, Doppler and low-pass; reproduce the distance law and add a maximum distance (40 T12)
 H3:11.3 Volume curves | KEEP | architecture/components/audio_engine.md | §4 Behaviour and algorithms — volume law (0-10 authoring scale, 5 dB per unit, master volume steps) | C-AEN | expressed in dB on voices and buses
 H3:11.4 Software mixer | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: software mixer over waveOut (non-default, probable crash, 27-U3, U4, U13)

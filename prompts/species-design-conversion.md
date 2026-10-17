@@ -380,7 +380,7 @@ Output each item as: current fact, source URL, date checked, and the implication
 ### 9.2 Phase 2 briefs
 
 **X-DEC — Decision register.**
-Inputs: `ORIG/40` §1.2, §2.3 and §5 (the keep-list and the 61-row fix-list); `ORIG/41` §1.3, §2 and §3; every routing row with `TO-DEC` or `DEFER-DESIGN`; `WORK/rename_map.tsv`; §0 "Superseded verdicts".
+Inputs: `ORIG/40` §1.2, §2.3 and §5 (the keep-list and the 59-row fix-list, F1–F59); `ORIG/41` §1.3, §2 and §3; every routing row with `TO-DEC` or `DEFER-DESIGN`; `WORK/rename_map.tsv`; §0 "Superseded verdicts".
 Output: `NEXT/decisions/decision_register.md`, with an index table at the top and one entry per decision (§6.5). Rules:
 - Where 40 or another document gives a recommendation, the status is **Resolved** and the recommendation is applied. Example: integer tick timers, with the mode second kept at 11 ticks as an explicit constant (40 D6).
 - Where there is no recommendation, the status is **Open**. The default is the reference behaviour, and you add your recommendation.

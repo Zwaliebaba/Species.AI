@@ -1,0 +1,313 @@
+section	original	kind	placeholder	note
+2	Achievement	player concept	per §3 achievement row	
+2	Achievement names	IP name	see §3	
+2	.anim	data format	new choreographies	
+2	Animated panel	player concept	new explainer animations	
+2	AntHill (ant hill)	engine (class)	Hive	
+2	Ants Nest	player concept	Hive	
+2	Armour	player concept; engine (class)	Transport	
+2	Armour (crate outcome)	player concept	Transport	
+2	ASLT / DOM / RR / BLITZ / TANK	abbreviation	Siege, Spawn Control, Launch Race, Flag Chain, Armour Duel	
+2	Assault	player concept	Siege	
+2	Authentication (keys)	engine	platform entitlements	
+2	Authentication key	player concept	platform entitlements	
+2	Blitzkrieg	player concept	Flag Chain	
+2	BlueprintBuilding / BlueprintStore / BlueprintConsole / BlueprintRelay	engine (class)	drop	
+2	.bmp (BMP)	data format; abbreviation	new art	
+2	Boot-loader	engine	drop	
+2	Camera mount / camera animation	engine	`spawn_view_<n>`, `default_view`	
+2	Capture the Statue	player concept	Relic Run	
+2	Christmas mode	player concept	optional seasonal theme with new art	
+2	Colour ramp	data format	`ramp_<theme>`	
+2	ControlStation (control station)	player concept; engine (class)	Uplink Console	
+2	Crash reporter (MultiwiniaSupport.exe)	engine	own crash reporter	
+2	Crate	player concept; engine (class)	Supply crate	
+2	Crate Mania	player concept	Supply Storm	
+2	Credit lists (betatesters)	data format	do not ship	
+2	CTS	abbreviation	Relic Run	
+2	Cut-scene script	data format	new scripts	
+2	Dark Forest	player concept	Blight Grove	
+2	Darwin Research Associates	IP name	omit (product logo placeholder if needed)	
+2	Darwinia	IP name	"""legacy campaign"" in prose, `<GAME_TITLE>` in identifiers"	
+2	Darwinian	player concept; engine (class)	Worker	
+2	"Darwinians (""Multiwinians"")"	player concept	Reinforcements	
+2	DarwiniaWindow / DarwiniaButton	engine (class)	`UiWindow`, `UiButton`	
+2	.dat (archive)	data format	own packaging names	
+2	Distributor and partner names	IP name	omit	
+2	Domination	player concept	Spawn Control	
+2	Dr Sepulveda	IP name	Advisor (drop)	
+2	Drop zone / statue spawn zone	player concept	Relic Base	
+2	Eclipse	engine	UI core	
+2	EffectProcessor	engine (class)	drop	
+2	Eggs	player concept	Brood	
+2	Engineer	player concept; engine (class)	Builder	
+2	Engineer (crate outcome)	player concept	Builder	
+2	EscapeRocket (escape rocket)	player concept; engine (class)	Launch Vessel	
+2	EULA	abbreviation	own licence	
+2	Evilinians	IP name	Rogue faction	
+2	Flag (Blitzkrieg)	player concept	Flag post / Home post	
+2	Font atlas	data format	licensed open fonts	
+2	Futurewinian team	player concept	Visitor faction	
+2	Futurewinians	IP name	Visitor faction	
+2	Game type	player concept; engine	mode names in §3	
+2	GDF	abbreviation	own ids	
+2	Gesture recognition	engine	drop	
+2	gestures.txt / gesture demos	data format	drop	
+2	GOTO (order)	abbreviation	Waypoint beacon	
+2	Gq/s	IP name	units/s	
+2	Handicap	player concept	Catch-up bonus	
+2	Harvester	player concept; engine (class)	Collector	
+2	Harvester (crate outcome)	player concept	Collector	
+2	Hill (zone)	player concept	Control Zone	
+2	HLSL shader files	data format	re-author in HLSL SM6 from 24	
+2	Hot Feet	player concept	Speed Boost	
+2	Incubator	engine (class)	Hatchery	
+2	Infection	player concept	Swarm	
+2	InsertionSquad (squad)	engine (class)	Strike team	
+2	Introversion Software	IP name	`<STUDIO>`	
+2	King of the Hill	player concept	Zone Control	
+2	KOTH	abbreviation	Zone Control	
+2	Language file	data format	own string table	
+2	LaserFence (laser fence)	player concept; engine (class)	Barrier Emitter	
+2	Level file	data format	new maps	
+2	level_enum.txt	data format	new ids	
+2	Magical Forest	player concept	Spirit Grove	
+2	Map	player concept	new maps named `map_<mode>_<players>p_<nn>`	
+2	Map CRC (mapcrc.h)	data format	new map ids	
+2	Map names	IP name	`map_<mode>_<players>p_<nn>` and new names	
+2	MasterSpawnPoint (master spawn point)	engine (class)	Source Node	
+2	Matchmaker	engine	own relay or platform service	
+2	.max	data format	new sources	
+2	Mega Rage	player concept	Frenzy	
+2	Metaserver	engine	own directory service	
+2	Monster team	player concept	Rogue faction	
+2	MT19937	abbreviation	`std::mt19937` or own generator (attribution if reference code is copied)	
+2	Multiwinia	IP name	`<GAME_TITLE>`	
+2	Multiwinia (rules object)	engine (class)	MatchRules	
+2	Multiwinian(s)	IP name	Worker(s)	
+2	MultiwiniaOfficerOrders	engine (class)	`OrderMarker`	
+2	MultiwiniaOptions (block)	data format	`MatchOptions`	
+2	MultiwiniaSupport.ini	data format	own crash reporter	
+2	MultiwiniaZone (mode zone)	engine (class)	Control Zone	
+2	MW	abbreviation	`<GAME_TITLE>`	
+2	Napalm Strike	player concept	Firebomb Run	
+2	NET_DARWINIA_*	IP name	`NET_GAME_*`	
+2	Officer	player concept; engine (class)	Leader	
+2	.ogg	data format	new audio	
+2	PDLC	abbreviation	new map names	
+2	Pecan / Hummingbird	IP name	`AlwaysTrue`, `FeatureFlagX`	
+2	Personal Shield	player concept	Shield	
+2	Phrase id	data format	own string table	
+2	Plague	player concept	Sickness	
+2	POKEY	abbreviation	drop	
+2	Portal	engine (class)	Rift (Rift Horror)	
+2	Power-up slot (task slot)	player concept	Power slot	
+2	Profile directory (`<P>`)	engine	`<STUDIO>\<GAME_TITLE>\`	
+2	Promotion / demotion	player concept	Leader	
+2	PulseBomb (pulse bomb)	player concept; engine (class)	Core Device	
+2	RadarDish (radar dish)	player concept; engine (class)	Relay Dish	
+2	Randomiser	engine (class)	Allegiance Scrambler	
+2	Randomiser (crate outcome)	player concept	Allegiance Scrambler	
+2	redshirt2	data format	signed or hashed assets	
+2	Retribution	player concept	Comeback Bonus	
+2	Rocket Riot	player concept	Launch Race	
+2	Rocketwinians	player concept	Rocket Troops	
+2	Sepulveda	engine (class)	Advisor (drop)	
+2	SHA-1	abbreviation	any public-domain hash	
+2	Shaman	engine (class)	Summoner	
+2	.shp (shape)	data format	new meshes (format may be kept)	
+2	Slow Down	player concept	Time Dilation	
+2	SolarPanel (solar panel)	player concept; engine (class)	Energy Collector	
+2	Soul	player concept	Essence orb	
+2	SoulDestroyer (Soul Destroyer)	engine (class)	Reaper Serpent	
+2	sounds.txt	data format	new event set	
+2	Space Invader (name)	IP name	Bomber	
+2	Space Ship	player concept	Abductor	
+2	SpaceInvader	engine (class)	Bomber	
+2	SpaceShip	engine (class)	Abductor	
+2	Spam	engine (class)	drop (legacy building; the Infection effect is Swarm)	
+2	SpamInfection	engine (class)	Swarm	
+2	Spawn Mania	player concept	Spawn Surge	
+2	Spawn network	player concept	Source Node, Relays, Spawn Nodes	
+2	SpawnLink (spawn link)	engine (class)	Relay	
+2	SpawnPoint (spawn point)	engine (class)	Spawn Node	
+2	SpawnPopulationLock (population lock)	engine (class)	Population Limiter	
+2	Speccy / editor / square (fonts)	IP name	licensed open fonts	
+2	Speed Up	player concept	Time Rush	
+2	Spirit	player concept; engine (class)	Essence orb	
+2	SporeGenerator (Spore Generator)	engine (class)	Brood Drifter	
+2	Squadie	engine (class)	Trooper	
+2	Statue	player concept; engine (class)	Relic	
+2	Subversion	player concept	Convert	
+2	SystemIV	engine	own or standard libraries	
+2	Tank Battle	player concept	Armour Duel	
+2	Task (power, power-up)	player concept; engine	Power	
+2	TaskManager / Task	engine (class)	Power slots / Power	
+2	The Beast	player concept	Rift Horror	
+2	Thumbnails / mwhelp / icons naming	data format	new art	
+2	TM	abbreviation	Power slots	
+2	Triffid	engine (class)	Spitter Plant	
+2	Triffid (name)	IP name	Spitter Plant	
+2	TriffidEgg	engine (class)	Seed Pod	
+2	Triffids	player concept	Spitter Plants	
+2	Tripod	engine (class)	Tri-walker	
+2	TrueSkill	IP name	Skill rating	
+2	TrunkPort (trunk port)	player concept; engine (class)	Warp Gate	
+2	Tutorial	player concept	new tutorial maps and copy	
+2	URL	abbreviation	own endpoints	
+2	Virii	engine (class)	Crawler	
+2	WallBuster (wall buster)	player concept; engine (class)	Breach Charge	
+2	WMD	abbreviation	Core Device	
+2	XBLA / Xbox 360	abbreviation	platform-neutral glyphs	
+2	Zombie	engine (class)	Wisp	
+3.2	Darwinian (unit, class, sprite)	name / art	**Worker**	"00 choice; ""Trooper"" is the squad member"
+3.2	Multiwinian(s)	name	**Worker(s)**	same unit as Darwinian
+3.2	"""Evil Darwinians"" (monster-team Darwinians)"	text	**hostile workers**	05 wording
+3.2	Officer	name	**Leader**	00 choice
+3.2	GOTO officer / signpost	concept	**Waypoint beacon**	00 choice
+3.2	Insertion squad (whole squad)	name	**Strike team**	00 choice
+3.2	Squadie (squad member)	name	**Trooper**	02 and 10 proposal
+3.2	Armour	name	**Transport**	00 choice
+3.2	Harvester	name	**Collector**	00 choice
+3.2	Engineer	name	**Builder**	00 choice
+3.2	Spirit / soul	concept / art	**Essence orb**	00 choice
+3.2	"Monster team, ""Evilinians"""	name	**Rogue faction**	00 choice
+3.2	"Futurewinian team, ""Futurewinians"""	name	**Visitor faction**	00 choice
+3.2	Team colour names (green, red, yellow, blue, orange, purple, cyan, pink)	text	generic, may be kept	01, 21, 24 agree
+3.2	"CPU player, ""(CPU)"""	text	**Bot**	00 and 07
+3.3	Virii	name / art	**Crawler**	collision rule: Swarm is the Infection outcome
+3.3	Soul Destroyer	name	**Reaper Serpent**	owning document 02
+3.3	Spore Generator	name	**Brood Drifter**	owning document 02
+3.3	Triffid (plant)	name (third-party literary)	**Spitter Plant**	00 and 04 chose Spitter Plants for the outcome
+3.3	TriffidEgg	name	**Seed Pod**	02 proposal
+3.3	Army ant	name	"generic (""Ant"")"	02
+3.3	Centipede	name	generic, may be kept	collision with Crawler avoided by keeping the generic word
+3.3	Spider	name	generic, may be kept	
+3.3	Egg (Virii egg)	name	generic, may be kept	
+3.3	SpaceInvader (bomber)	name (third-party trademark echo)	**Bomber**	02
+3.3	Space Ship (UFO)	name / presentation	**Abductor**	00 and 04
+3.3	Zombie (ghost effect)	name	**Wisp**	owning document 02
+3.3	The Beast / Portal / Tentacle	name	**Rift Horror** (portal: Rift)	00 and 03; [B:DEBUG]
+3.3	Shaman	name	**Summoner** (cut; drop)	03 and 24
+3.3	Tripod	name	**Tri-walker** (legacy; drop)	26
+3.4	Spawn point (`SpawnPoint`)	name	**Spawn Node**	00 and 03
+3.4	Master spawn point (`SpawnPointMaster`)	name	**Source Node**	00
+3.4	Spawn link	name	**Relay** (plural Relays)	00
+3.4	Spawn population lock	name	**Population Limiter**	05
+3.4	Trunk port	name	**Warp Gate**	00
+3.4	"Pulse bomb, ""WMD"""	name	**Core Device**	00
+3.4	"Control station, ""WMD Control Panel"""	name	**Uplink Console**	00
+3.4	Escape rocket	name	**Launch Vessel**	00
+3.4	Fuel station	name	"generic (""fuel depot"")"	00
+3.4	Solar panel	name	**Energy Collector**	00
+3.4	Radar dish	name	**Relay Dish**	00
+3.4	Laser fence	name	**Barrier Emitter**	00
+3.4	Wall buster	name	**Breach Charge**	00
+3.4	Statue (CTS)	name	**Relic**	00
+3.4	CTS drop zone	name	**Relic Base**	00
+3.4	KOTH hill (`MultiwiniaZone`)	name	**Control Zone**	00
+3.4	Blitzkrieg flag / home flag	name	**Flag post / Home post**	00
+3.4	Ant hill (Ants Nest)	name	**Hive**	00
+3.4	Incubator	name	**Hatchery**	05
+3.4	Gun turret, wall, tree, jump pad	name	generic, may be kept	00
+3.4	Darwinia buildings (Pattern Buffer and Blueprint buildings, Control Tower, Clone Lab, GodDish, Spam, ResearchItem)	name	drop (legacy)	03
+3.5	Domination (code `Skirmish`)	name	**Spawn Control**	00 and 01
+3.5	King of the Hill (KOTH)	name	**Zone Control**	00 and 01
+3.5	Capture the Statue (CTS)	name	**Relic Run**	00 and 01
+3.5	Assault	name	**Siege**	00 and 01
+3.5	Rocket Riot	name	**Launch Race**	00 and 01
+3.5	Blitzkrieg (code `Blitzkreig`)	name	**Flag Chain**	00 and 01
+3.5	Tank Battle	name	**Armour Duel**	00 and 01; [B:DEBUG]
+3.5	"""Sudden Death"", ""Ready"", ""Grace period"""	text	generic, may be kept	01
+3.6	"Crate (""Crate Drop!"")"	name / text	**Supply crate**	00
+3.6	"Task, power-up, ""program"""	name / fiction	**Power**	00
+3.6	Task Manager, task slots	name	**Power slots**	00
+3.6	Retribution	name	**Comeback Bonus**	00, 01, 05
+3.6	Handicap	name	**Catch-up bonus**	00
+3.6	Squad (outcome)	name	"generic (""Strike team"")"	00
+3.6	Armour / Harvester / Engineer (outcomes)	name	Transport / Collector / Builder	00
+3.6	Airstrike	name	generic, may be kept	00
+3.6	Napalm Strike	name	**Firebomb Run**	00 and 04
+3.6	"Napalm messages (""I love the smell of Napalm in the morning..."", film quote)"	text	"""Firebombs inbound!"""	04
+3.6	Nuke (Nuke Barrage)	name	"generic (""Missile Barrage"")"	00
+3.6	Meteor (Meteor Shower)	name	generic, may be kept	00
+3.6	Gun Turret / Rocket Turret / Flame Turret	name	generic, may be kept	00
+3.6	Personal Shield	name	**Shield**	00
+3.6	Subversion	name	**Convert**	00
+3.6	Hot Feet	name	**Speed Boost**	00, 01, 03
+3.6	Rage	name	"generic (""Fury"")"	00; Frenzy is Mega Rage
+3.6	"Darwinians (""Multiwinians"")"	name	**Reinforcements**	00
+3.6	Spawn Mania	name	**Spawn Surge**	00, 01, 03, 05
+3.6	Rocketwinians	name	**Rocket Troops**	00
+3.6	Crate Mania	name	**Supply Storm**	00
+3.6	Mega Rage (code `Bitzkreig`)	name	**Frenzy**	00
+3.6	Slow Down	name	**Time Dilation**	00
+3.6	Speed Up	name	**Time Rush**	00
+3.6	Magical Forest	name	**Spirit Grove**	00 and 03
+3.6	Dark Forest	name	**Blight Grove**	00
+3.6	Ants Nest	name	**Hive**	00
+3.6	Eggs	name	**Brood**	00
+3.6	Infection (code `Spam`, `SpamInfection`)	name	**Swarm**	00 and 04
+3.6	Randomiser	name	**Allegiance Scrambler**	00 and 03
+3.6	Plague	name	**Sickness**	00 and 04
+3.6	Space Ship	name	**Abductor**	00
+3.6	Triffids	name (third-party literary)	**Spitter Plants**	00 and 04
+3.6	The Beast	name	**Rift Horror**	00 and 03; [B:DEBUG]
+3.6	"Task-manager fiction strings (""RUN PROGRAM"", ""SYNTAX ERROR"", ""PROGRAM TERMINATED"", ""ACQUIRED"", ""UPGRADED"", ""OBJECTIVES COMPLETED"", ""Powerup Limit Reached!"", ""Retribution : Two powerups max"")"	text	"""Ready"", ""Not available"", ""Cancelled"", ""Unlocked"", ""Improved"", ""Objectives complete"", ""All power slots full"", ""Comeback powers: slots full"""	06
+3.7	`Multiwinia` (rules class)	identifier	**MatchRules**	07
+3.7	`MultiwiniaOptions` (level block)	identifier	**MatchOptions**	08
+3.7	`MultiwiniaZone`	identifier	**ControlZone**	consistent with §3.4
+3.7	`MultiwiniaOfficerOrders`	identifier	**OrderMarker**	21
+3.7	`NET_DARWINIA_*` network identifiers	identifier	**`NET_GAME_*`**	22
+3.7	Eclipse (UI framework), `EclipseLMouseDown` and similar controls	identifier / brand	**UI core**; `UiPointerDown`, `UiPointerHeld`, `UiAltPointerDown`	06 and 28
+3.7	`DarwiniaWindow`, `DarwiniaButton`, `MultiwiniaWindow`, `MultiwiniaFileDialog`, `RenderBigDarwinian`	identifier	`UiWindow`, `UiButton`, `MapEditorHubPage`, `MapFilePicker`, `RenderBackdrop`	28
+3.7	`MultiwiniaControlMethod`, `input_preferences_darwinia*`	identifier	`ControlScheme`, `bindings_classic.txt`	06
+3.7	Codenames `Pecan`, `Hummingbird`	identifier	`AlwaysTrue`, `FeatureFlagX`	06
+3.7	Camera mounts `player0`–`player3`, `start`, `CamPosBefore`	identifier	`spawn_view_<n>`, `default_view`, `previous_view`	06, 08, 30
+3.7	`SepulvedaHelp` control, `Sepulveda` sound source	identifier	`AdvisorHelp`, `Narrator`	06, 10, 27
+3.7	`MultiwiniaInterface` sound source	identifier	`MatchUI`	10, 27
+3.7	Special profiles `AccessAllAreas`, `AttractMode`, `game_unlockall.txt`	identifier	drop	20 and 30
+3.7	"""Futurewar Shape Format"" (exporter description)"	text	"""Shape format v1"""	31
+3.7	"""Gq/s"" output unit"	text	"""units/s"""	03
+3.7	"""DWs"" in the FPS overlay"	text	"""Units"""	32
+3.7	`MT19937` reference code, SHA-1 from unrar	third-party code	`std::mt19937` or own generator (with attribution if reference code is copied); any public-domain hash (xxHash, BLAKE3)	22
+3.7	`.mwm` extension	identifier	own extension	29
+3.8	"""Multiwinia"" (title, `APP_NAME`, window class, profile folder)"	brand	**`<GAME_TITLE>`**	00 and 24
+3.8	"Subtitle ""Survival of the flattest"""	text	own tagline	00, 09, 28
+3.8	Title, logo, box and price art (`textures/mwtitle.bmp`, `icons/mwlogo.bmp`, `textures/ivlogo.bmp`, `textures/multiwinia.bmp`, `prices*.bmp`)	art	`game_title_wordmark`, `studio_logo_placeholder`; no store art	25 and 40
+3.8	"""Darwinia"" (prequel, `DARWINIA_*` macros, `darwinia_gl.exe`)"	brand	"""legacy campaign"" in prose; `<GAME_TITLE>` in identifiers"	03
+3.8	"""Introversion Software"", company folder `Introversion\Multiwinia\`, registry key, Mac bundle id, version resource"	brand	**`<STUDIO>`** (folder `<STUDIO>\<GAME_TITLE>\`)	upper case to match `<GAME_TITLE>`
+3.8	Product and partner identifiers (`METASERVER_GAMETYPE_MULTIWINIA` = 4, Steam app id 1520, crash-report id `0B9432AF`, Game Explorer GUID)	identifier	own ids	20, 22, 31
+3.8	Licensing material (fixed demo key, blacklisted keys, `DEMO` / `AMBR` key prefixes, `hsh` hash prefix, key format, `redshirt2` cipher)	key strings	platform entitlements; never copy	09, 22, 23
+3.8	Store, metaserver, crash-report and FTP hosts	service	own endpoints from configuration (for example `directory.example.net`)	22, 31, 32
+3.8	Dr Sepulveda (mentor) and portraits	character / art	**Advisor**; feature dropped	00 drops it
+3.8	"""Darwin Research Associates"" logo"	art	omit (product logo placeholder if needed)	24 and 30
+3.8	Achievement names Dominator, Hoarder, Hail To The King, Unclad Skies, Aggravated Assault, Master Player, Master Of Multiwinia, Explorer, Carnage, Blitz Master, Wrong Game, Genocide	name	Total Control, **Stockpiler**, Crowned, Clean Launch, Iron Defence, Giant Slayer, Completionist, Tourist, Massacre, Lightning War, Friendly Fire, Annihilator	01's list; collision rule for Hoarder
+3.8	TrueSkill (Microsoft trademark)	brand	**Skill rating**	09
+3.8	Map file names `mp_<mode>_<n>P_<k>`, `MAPID_*`	identifier	**`map_<mode>_<players>p_<nn>`**	08
+3.8	Map display names and descriptions, layouts	text / level design	new names and new maps	00, 08
+3.8	Map thumbnails	art	engine-generated thumbnails `map_<mode>_<players>p_<nn>_thumb`	08 and 25
+3.8	Terrain colour ramps `landscape_*` and their theme words (icecaps, launchpad, containment, stronghold, jailbreak)	art	**`ramp_<theme>`** with neutral theme names	08, 23, 24
+3.8	Wave tables `waves_*`, water tiles `water_*`	art	`wavegrad_<theme>`, `seabed_<theme>`	23
+3.8	Fonts `speccy`, `editor`, `square` (incl. CJK pages)	art	licensed open fonts (an OFL UI font plus Noto CJK) in a glyph cache	20, 24, 25, 28, 31 agree
+3.8	Darwinian sprite family, shapes, icons, help art, panel animations	art	new art with role names (`unit_*`, `fx_*`, `ui_*`, `icon_<ability>`, `help_<mode>_<page>`, `mode_<mode>`)	25
+3.8	All 1,332 audio samples, sound event and sample-group names	audio	new audio named by function (`sfx_<event>`, `vo_<role>_<line>`, `amb_<bed>`); neutral event ids may stay	10, 25, 27
+3.8	Licensed music (`tresk_*`, `trash80_*`, `dma_sc*`) and retro loader tunes	audio	commissioned `music_*`; never reuse	00, 10, 27, 31
+3.8	Christmas mode (Santa hats, ice ramps)	art / theme	optional seasonal theme with new art	02, 03, 24
+3.8	Gesture symbols and training data	design / data	drop	26
+3.8	"POKEY (""Pokey Playground"")"	third-party chip name	drop	27
+3.8	Distributors and partners (Ambrosia `AMBR`, Buka `origin`, eGames/Cinemaware, Steam app id 1520, Xbox Live Arcade, Logitech)	brand	omit; platform entitlements instead of key prefixes	09, 22, 31
+3.8	Beta-tester credit lists	personal data	never ship	01, 31
+3.8	Developer names in comments	personal data	do not carry over	04, 07
+3.8	All UI and narration text (`data/language/*.txt`)	text	own string table (phrase ids may be kept as neutral keys, texts not)	28
+3.8	"Literal English captions hard-coded in code (""PAUSED"", ""Master Volume"", debug and editor captions)"	text	new string-table entries	27, 28, 32
+3.8	Credits (`multiwinia_credits_*`, `bootloader_credits_*`)	text	own credits (with consent)	09
+3.8	Cut-scene scripts, narration and tutorial text	text	author new scripts and copy	30
+3.8	Darwinia campaign location names (garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad)	name	drop; generic sector names if ever needed	08, 09, 30
+3.8	EULAs, legal texts and the rating notice `esrb_warning`	text	own licence; rating text from the new game's own rating	09, 31
+3.8	Controller glyphs and Xbox naming (`icons/button_*.bmp`, `ControlXBoxMenuCycle*`, `_xbox` phrase suffixes, XBLA pages)	third-party brand	platform-neutral glyphs `input_glyph_<button>`; `PadMenuCycleUp`, `PadMenuCycleDown`	06, 09, 25
+3.8	Shader sources `data/shaders/*` (14 files)	code / art	re-author in HLSL SM6 from [24](24_rendering.md)	24, 25
+3.8	Menu palettes and art direction (red glass panel, steel-blue highlight, green and red captions on blue-glow boxes)	art direction	new palette keeping the token structure	28
+3.8	Voice, bark and announcer sets (`darwin_*`, `DSelect*`, `Attack*`, `CrateReward_*`) and signature ambiences (`MultiLobbyAmb*`, `High*`)	audio	`vo_unit_select_01`, `vo_reward_<function>`, `vo_match_win`; `amb_lobby_pad_01`, `amb_altitude_01`	10, 25
+3.8	Distinctive design expressions (submarine-launched multi-warhead nuke with ground symbol, UFO abduction event, giant-unit menu backdrop)	design expression	keep the mechanic, new presentation	02, 09
+3.8	Introversion tools and binaries (`animator.exe` / `animator.dat`, `MultiwiniaSupport.exe`, `autopatch.exe`)	software	own tools (panel editor, crash reporter, updater)	20, 26, 31

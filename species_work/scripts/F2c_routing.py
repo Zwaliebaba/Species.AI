@@ -401,6 +401,34 @@ def anchor_for(heads, f, s, e):
     return best[1]
 
 
+def split_rows(rows):
+    """Cut every row at the boundaries of the rows it contains, so that any two
+    rows either have identical ranges or do not overlap (gate G1 rule)."""
+    bounds = set()
+    for r in rows:
+        bounds.add(r[1])
+        bounds.add(r[2] + 1)
+    out = []
+    for r in rows:
+        f, s, e, action, tfile, tsec, owner, note, shared, anchor = r
+        cuts = sorted(b for b in bounds if s < b <= e)
+        starts = [s] + cuts
+        ends = [c - 1 for c in cuts] + [e]
+        n = len(starts)
+        if n == 1:
+            out.append(r)
+            continue
+        m = CODE_RE.match(note)
+        lead = (m.group(0) + " — ") if m and (action.startswith(("DROP", "DEFER")) or action == "KEEP-HOOKS") else ""
+        for k, (ps, pe) in enumerate(zip(starts, ends), start=1):
+            if k == 1:
+                pnote = f"{note} [part 1/{n} of lines {s}–{e}]"
+            else:
+                pnote = f"{lead}part {k}/{n} of lines {s}–{e}; full note on part 1"
+            out.append((f, ps, pe, action, tfile, tsec, owner, pnote, shared, anchor))
+    return out
+
+
 def main():
     orig, headings_csv, out = sys.argv[1], sys.argv[2], sys.argv[3]
     heads = load_headings(headings_csv)
@@ -416,8 +444,16 @@ def main():
             h1_start, h1_end = h1[2], h1[3]
             if h1_end != len(lines):
                 errors.append(f"{f}: H1 end {h1_end} != {len(lines)} split lines")
-            rows = [r for r in ROWS if r[0] == f]
+            rows = split_rows([r for r in ROWS if r[0] == f])
             rows.sort(key=lambda r: (r[1], r[8], -r[2]))
+            spans = sorted({(r[1], r[2]) for r in rows})
+            cursor = h1_start
+            for s, e in spans:
+                if s != cursor:
+                    errors.append(f"{f}: span {s}-{e} does not start at {cursor} (gap or partial overlap)")
+                cursor = max(cursor, e + 1)
+            if cursor != h1_end + 1:
+                errors.append(f"{f}: spans end at {cursor - 1}, H1 ends at {h1_end}")
             cover = defaultdict(list)
             for r in rows:
                 _, s, e, action, tfile, tsec, owner, note, shared, anchor = r

@@ -61,6 +61,9 @@ def main():
             for h in heads:
                 if h['start_line'] == a:
                     anchor = h['anchor']
+            if not anchor:
+                inner = [h for h in heads if h['start_line'] <= a <= h['end_line']]
+                anchor = max(inner, key=lambda h: h['level'])['anchor']
         elif ref[0] in 'HI':
             lvl, prefix = ref[1:].split(':', 1)
             h = find(int(lvl), prefix)
@@ -68,10 +71,9 @@ def main():
             if ref[0] == 'I':
                 kids = [k['start_line'] for k in heads if k['level'] > h['level'] and a < k['start_line'] <= b]
                 b = min(kids) - 1
-                anchor = h['anchor'] + ' (intro)'
+                anchor = h['anchor']
         else:
             sys.exit(f'bad ref {ref}')
-        prev = (a, b, anchor.replace(' (intro)', '') if ref != '=' else anchor)
         prev = (a, b, anchor)
         size = sum(len(x.encode('utf-8')) + 1 for x in text[a - 1:b])
         if action.startswith('DROP'):

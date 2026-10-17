@@ -2,20 +2,20 @@
 
 ## Files written
 
-- `species_work/routing_F2c.csv`: 220 rows (40: 129, 41: 80, 90: 11). Columns as briefed. `target_file` is relative to `design_next/`, and `adr/` stands for the ADR set.
+- `species_work/routing_F2c.csv`: 372 rows (40: 245, 41: 116, 90: 11). Columns as briefed. `target_file` is relative to `design_next/`, and `adr/` stands for the ADR set.
 - `species_work/scripts/F2c_routing.py`: the row specs, the CSV writer and the coverage check. To re-run: `python3 -I F2c_routing.py design species_work/headings.csv species_work/routing_F2c.csv`.
 - `species_work/scripts/F2c_packages.py`: sizes of the proposed package splits.
+- `species_work/scripts/F2c_gatecheck.py`: a read-only replica of the G1 checks in `check_routing.py`, run on my CSV only. It imports that script's constants without running its `main()`, so neither `routing.csv` nor `package_budget.csv` is written. **Result: errors=0.**
 
 ## Coverage (gate G1)
 
 - For each file, the rows cover every line from the H1 heading to the H1 end line in `headings.csv`: 40 to line 806, 41 to 1042 and 90 to 1111. Each of these is one past `wc -l`, because of the trailing newline. `bytes` is computed exactly as `headings.py` computes it.
 - Every line has exactly one **primary** row. The primary rows' bytes sum to the file size: 201,649, 338,850 and 215,669.
-- Every overlap is deliberate, and its note says "(shared)" or "shared with …". There are two kinds:
-  - A single-line or sub-range row that gives one table row of a primary H3 row a second consumer. Examples: a D-row going to X-ADR, or an F-row going to the DD-NET DEC.
-  - A full-range pair:
-    - DP-CLOSING + TO-DEC for 40's open questions;
-    - KEEP + TO-DEC for 40 §5.1;
-    - DP-CLOSING + TO-ASSETS for 41 §5.2.
+- `check_routing.py` allows an overlap only between rows with identical ranges, so ranges are either identical or disjoint.
+  - **Two primary pairs share a full range:** KEEP + TO-DEC for 40 §5.1, and DP-CLOSING + TO-ASSETS for 41 §5.2.
+  - **Shared rows give a table row a second consumer.** Examples: a D-row going to X-ADR, or an F-row going to the DD-NET DEC.
+  - **Primary rows are split around shared rows.** Where a shared row sits inside a primary row, the primary is cut at the shared row's boundaries into "part k/N" rows. Part 1 carries the full note, and the other parts repeat the reason code and point to it. 178 rows are such parts. The pair DP-CLOSING + TO-DEC for 40's open questions was split this way too, because of its shared DEFER rows.
+  - Notes on the shared rows say "(shared)" or "shared with …".
 - Routing is at H2 by default and at H3 where an H2 mixes actions. Where one H3 table mixes actions, I split it into contiguous line ranges, one per table row group:
   - 40 §2.2 and §3.1;
   - 40 §4.8;
@@ -24,27 +24,29 @@
 
 ## Counts
 
+Row counts include the "part k/N" rows.
+
 | action | rows (40 / 41 / 90) | bytes, all rows | bytes, primary rows |
 |---|---|---|---|
-| TO-DEC | 44 (15 / 29 / 0) | 247,937 | 233,439 |
-| DEFER-DESIGN | 78 (56 / 22 / 0) | 92,725 | 66,806 |
+| TO-DEC | 158 (95 / 63 / 0) | 247,937 | 233,439 |
+| DEFER-DESIGN | 98 (76 / 22 / 0) | 92,725 | 66,806 |
 | TO-ADR | 25 (24 / 1 / 0) | 49,371 | 36,903 |
-| KEEP | 4 (2 / 0 / 2) | 186,817 | 185,944 |
+| KEEP | 6 (4 / 0 / 2) | 186,817 | 185,944 |
 | KEEP-HOOKS | 17 (15 / 2 / 0) | 8,681 | 0 (all shared) |
 | MERGE | 6 (0 / 6 / 0) | 2,936 | 0 (all shared) |
 | TO-ASSETS | 4 (1 / 3 / 0) | 8,035 | 0 (all shared) |
-| DROP-PROVENANCE | 41 (15 / 17 / 9) | 233,076 | 233,076 |
+| DROP-PROVENANCE | 57 (29 / 19 / 9) | 233,076 | 233,076 |
 | DROP-LEGACY | 1 (1 / 0 / 0) | 929 | 0 (shared) |
 
 | owner_package | rows | bytes, all rows | unique-line input |
 |---|---|---|---|
-| X-DEC | 139 | 349,343 | about 300 KB, so it needs a split (below) |
-| X-GLO | 2 | 178,941 | 178,941, so it needs a split (below) |
+| X-DEC | 273 | 349,343 | about 300 KB, so it needs a split (below) |
+| X-GLO | 2 | 178,941 | 174.7 KiB, which `check_routing.py` prints as over budget; split below |
 | X-ADR | 25 | 49,371 | 48.2 KiB |
 | X-AST | 4 | 8,035 | 7.8 KiB |
-| G00 | 2 | 7,876 | 7.7 KiB |
+| G00 | 4 | 7,876 | 7.7 KiB |
 | G02a / G02b / G04 / G10 | 2 / 2 / 1 / 1 | 850 / 875 / 1,060 / 151 | MERGE rows only |
-| (none: DROP rows) | 42 | 234,005 | — |
+| (none: DROP rows) | 58 | 234,005 | — |
 
 ## Proposed package split (each 150 KB of input or less)
 
@@ -60,10 +62,13 @@ Sizes are unique-line bytes from `F2c_packages.py`, counting only my three files
 
 - **X-DEC-2 may need a further split.** F2b's DEFER rows for 22 (300 KB of netcode) will land in X-DEC-2. If they do, split it by topic: DD-NET in one package, and DD-LOBBY, DD-NUMERIC, DD-THREADS, DD-SERVICES and DD-TERRAIN-RUNTIME in the other.
 - **The three X-DEC agents share one register.** The coordinator assigns each a range of DEC numbers.
+- **Why the split is not in the CSV.** `check_routing.py` accepts only the package names of §9.3, plus numbered G and C variants. So the CSV keeps `X-DEC` and `X-GLO`, and these sub-packages are a proposal for the package JSONs.
 
 ## DEFER-DESIGN topics and the rows that feed them
 
 Format: `file:start-end`. A `*` marks a row whose note names the topic second, after another DD code. X-DEC writes one Open DEC per topic, with "Decide by: design phase".
+
+Ranges are given before the split into parts. In the CSV, a range such as 40:371-392 appears as several "part k/N" rows.
 
 - **DD-NET** (39 rows): the failure modes the networking model must prevent, plus the bandwidth and population figures.
   - 40:44 (D2), 40:84 (C10), 40:120 (R17), 40:168, 170, 174 (G28, G30, G34), 40:196, 40:198-199, 40:207 (G56, G58–G59, G67), 40:243 (T21).
