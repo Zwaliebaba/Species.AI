@@ -15,3 +15,7 @@
 | 11 | C-SIM-c | new | how game-speed tick scheduling works at speed 0 (and the other gaps listed in reports/C-SIM-c.md: six requests in total) | new Open DECs with C-SIM-c's defaults |
 | 12 | C-SIM-c | DEC-116 | conflict between DEC-116 and the start hold | reconcile in DEC-116 |
 | 13 | C-SIM-c | — | the mode-second constant is owned by reference/01 (G01), and 01_tick_timing names it without a key until G01 defines one | Phase 4: link 01_tick_timing to G01's key |
+| 14 | C-SIM-a | DEC-011 | **conflict resolved from ORIG:** the stale Source Node id has no effect. It is rewritten at the start of every Source Node advance; the first Spawn Node request comes ≥ 20 ticks in; with no Source Node, a stale id fails the kind check (R-SIM-024) | correct DEC-011's wording to match R-SIM-024 |
+| 15 | C-SIM-a | new | multi-round Siege rebuild at a tick boundary; a per-slot generation for laser-bolt and Essence-orb handles (actor serials unchanged); the team selection as a generational handle; where the offset-table step goes | new DECs (see reports/C-SIM-a.md) |
+| 16 | C-SIM-a | DEC-016 vs DEC-455 | iteration order | reconcile together with item 9 |
+| 17 | C-SIM-a → C-SIM-c | — | order of initialisation draws; which rules read the Control Zone counter | cross-document fix between 02/04 and 07 |

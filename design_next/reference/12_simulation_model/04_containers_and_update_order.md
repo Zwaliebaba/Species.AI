@@ -144,15 +144,15 @@ Table 2.5-A Work per slice.
 | Slice | Work |
 |---|---|
 | every slice | the slice share of every team's ungrouped actors and of every group's members; the slice share of the laser-bolt, effect, structure and Essence-orb pools |
-| `ref.sim.slice.group_advance` (0) | the advance of every actor group (centre, radius, velocity, route, empty-group removal) |
-| `ref.sim.slice.selection_latch` (0) | each team latches its selected-Worker count and centre |
-| `ref.sim.slice.particles` (0) | every particle advances (presentation) |
-| `ref.sim.slice.power_slots` (1) | every team's Power slots advance; kill-milestone events |
-| `ref.sim.slice.sky` (3) | the sky offset (presentation) |
-| `ref.sim.slice.map_effects` (3) | the snow, dust-storm and lightning spawners |
-| `ref.sim.grid_cache.evict_slice` (7) | actor-grid cache eviction |
-| `ref.sim.slice.supply_crates` (8) | Supply crate drops; the Spawn Surge and Frenzy timers |
-| `ref.sim.slice.match_rules` (8) | the match-rules update, after the world step and the particle step |
+| slice 0: `ref.sim.slice.group_advance` | the advance of every actor group (centre, radius, velocity, route, empty-group removal) |
+| slice 0: `ref.sim.slice.selection_latch` | each team latches its selected-Worker count and centre |
+| slice 0: `ref.sim.slice.particles` | every particle advances (presentation) |
+| slice 1: `ref.sim.slice.power_slots` | every team's Power slots advance; kill-milestone events |
+| slice 3: `ref.sim.slice.sky` | the sky offset (presentation) |
+| slice 3: `ref.sim.slice.map_effects` | the snow, dust-storm and lightning spawners |
+| slice 7: `ref.sim.grid_cache.evict_slice` | actor-grid cache eviction |
+| slice 8: `ref.sim.slice.supply_crates` | Supply crate drops; the Spawn Surge and Frenzy timers |
+| slice 8: `ref.sim.slice.match_rules` | the match-rules update, after the world step and the particle step |
 
 **R-SIM-221** (MUST) A team advance in slice s runs only for a used team slot, and runs these steps in order:
 
