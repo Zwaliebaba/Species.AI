@@ -52,7 +52,7 @@ Proposed option: **1, Enhanced-Barrier model with a resource-state fallback**. *
 ### Confirmation
 
 - Unit tests run the translation table over every triple used by the pass table and compare the result with the expected resource states.
-- The CI test configuration renders the reference frame twice, once on each path (the enhanced path forced off by a development setting), with the debug layer and GPU-based validation enabled, and compares both images with the golden image.
+- A Debug test run on a GPU agent ([ADR-070](ADR-070-continuous-integration.md)) renders the reference frame twice, once on each path (the enhanced path forced off by a development setting), with the debug layer and GPU-based validation enabled, and compares both images with the golden image.
 - QA's hardware matrix includes at least one GPU without Enhanced-Barrier support.
 
 ## Pros and Cons of the Options
@@ -77,3 +77,4 @@ Proposed option: **1, Enhanced-Barrier model with a resource-state fallback**. *
 
 - Technology baseline item 4.4 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/api/d3d12/ns-d3d12-d3d12_feature_data_d3d12_options12 · https://learn.microsoft.com/windows-hardware/drivers/display/enhanced-barriers · https://learn.microsoft.com/windows-hardware/drivers/ddi/d3d12umddi/nc-d3d12umddi-pfnd3d12ddi_barrier_0094 · https://devblogs.microsoft.com/directx/directx12agility/.
 - Related: ADR-002 (minimum capability), ADR-004 (frame graph), ADR-008 (copy-queue uploads).
+- **Amendment 2026-10-17 (AGENTS.md, O21).** The two-path validation runs as a Debug test run on a GPU agent, since the build has no separate test configuration.

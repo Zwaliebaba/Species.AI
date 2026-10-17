@@ -9,7 +9,8 @@ This folder specifies every structure of the reference game: the static and semi
 | [README.md](README.md) | the structure kinds, shared structure rules, ports, capture model, lifecycle, damage, ownership changes, hit tests, meshes and sockets, presentation, sound events | R-BLDG-001 to R-BLDG-099 |
 | [economy_and_spawn_objects.md](economy_and_spawn_objects.md) | the spawn network (Spawn Nodes, the Source Node, Relays and transit orbs), the Population Limiter, Transit Gates, Beam Dishes, the energy grid (Solar Arrays, grid pylons, grid terminals, grid splitters) and the fuel chain (fuel pumps, fuel lines, fuel depots) | R-BLDG-100 to R-BLDG-249 |
 | [mode_objects.md](mode_objects.md) | Control Zones and the kinds that share their type (Relic Base, Relic Spawn Zone, Flag post, Home post), the cloth flag, carryable structures, Relics, Breach Charges, Command Consoles, the Core Device, the Launch Vessel and the mode usage matrix | R-BLDG-250 to R-BLDG-399 |
-| [defences_and_props.md](defences_and_props.md) | turrets, Barrier Emitters, walls, trees, scenery meshes, exclusion zones, jump pads, smoke columns, volcano vents, Hives, Spitter Plants and the Allegiance Scrambler effect | R-BLDG-400 to R-BLDG-799 |
+| [defences_and_props.md](defences_and_props.md) | turrets, Barrier Emitters, walls, scenery meshes, exclusion zones, jump pads, smoke columns and volcano vents, and the rules shared with its companion | R-BLDG-400 to R-BLDG-599 |
+| [trees_and_crate_structures.md](trees_and_crate_structures.md) | trees, Hives, Spitter Plants and the Allegiance Scrambler effect | R-BLDG-600 to R-BLDG-799 |
 
 ## 1 Purpose and player experience
 
@@ -29,7 +30,7 @@ The building layer of the reference game consists of these parts:
 2. **The spawn network**: transit orbs that travel from the Source Node over Relays to owned Spawn Nodes in at most 10h + 1 ticks for h hops, about one second per hop, with a 300-tick activation delay after every capture ([05 Population flow](../05_population_flow.md)).
 3. **Proximity capture**: Control Zones in Zone Control, Flag posts with capture progress in Flag Chain, and carryable structures (Relics and Breach Charges).
 4. **The energy grid**: discrete energy surges tagged with the team of the Solar Array that emitted them, Barrier Emitters powered only by friendly surges, and grid splitters that route surges by team.
-5. **Barriers**: Barrier Emitters (lethal and route-blocking), walls (destroyed only by a heavy single hit), trees (fire spread and regrowth), scenery meshes and invisible exclusion zones ([defences and props](defences_and_props.md)).
+5. **Barriers**: Barrier Emitters (lethal and route-blocking), walls (destroyed only by a heavy single hit), scenery meshes and invisible exclusion zones ([defences and props](defences_and_props.md)), and trees (fire spread and regrowth, [trees and crate structures](trees_and_crate_structures.md)).
 6. **Mode objects**: Transit Gates, the Core Device and its Command Consoles, Relics, Breach Charges, the fuel chain and the Launch Vessel state machine.
 7. **Bot scaffolding**: bot navigation nodes, bot objectives and bot objective markers, which are structures that only bots read ([07 Bots](../07_bots/README.md)).
 
@@ -50,7 +51,7 @@ The building layer of the reference game consists of these parts:
 
 **R-BLDG-002** (MUST) A structure that a rule appends to the pool during a tick advances in that same tick exactly when its index falls in a slice range that has not yet been advanced; otherwise it first advances in the next tick (R-SIM-225; see DEC-455).
 
-**R-BLDG-003** (MUST) Every structure timer is an integer number of ticks, read from the tick counter (DEC-002, DEC-009). A recount that a structure performs with a period written as one second runs every `ref.mode.recount.one_second` (11 ticks), and one written as two seconds every `ref.mode.recount.two_second` (21 ticks), both keys of reference/01 (DEC-064). Every other structure timer states its tick count with its own key in the file that owns the structure.
+**R-BLDG-003** (MUST) Every structure timer is an integer number of ticks, read from the tick counter (DEC-002, DEC-009). A recount that a structure re-arms from the match clock with a period written as one second runs every `ref.mode.recount.one_second` (11 ticks), and one written as two seconds every `ref.mode.recount.two_second` (21 ticks), both keys of reference/01 (DEC-064). Every other structure timer, including the countdowns of the bot navigation node and the bot objective marker (20 ticks, reference/07), states its tick count with its own key in the file that owns the structure.
 
 **R-BLDG-004** (MUST) Game speed is tick scheduling: every tick has the same length and the same arithmetic at every game speed (DEC-039). Every per-tick rule of a structure (a per-tick probability, a per-tick growth or decay, a transit step) therefore runs once per tick at every game speed and scales with game speed exactly like the timers (see DEC-092). Where a structure rule reads time, it reads match time, the number of ticks the world has run since match start × `ref.sim.tick_period` (R-SIM-547).
 
@@ -102,14 +103,14 @@ Table 2.4-A Structure kinds. "Maps" counts the reference maps of each mode that 
 | turret | `Turret` | 1 + crate | 1 + crate | crate | 8 + crate | 1 + crate + wave | 2 + crate + wave | 200 (13) | [defences and props](defences_and_props.md) |
 | Barrier Emitter | `BarrierEmitter` | 2 | – | – | 6 | 1 | 5 | 677 (14) | [defences and props](defences_and_props.md) |
 | wall | `WallObject` | – | 1 | – | 7 | – | 1 | 323 (9) | [defences and props](defences_and_props.md) |
-| tree | `TreeObject` | 9 + crate | 9 + crate | 8 + crate | 5 + crate | 4 + crate | 4 + crate | 661 (39); trees also create offspring at run time | [defences and props](defences_and_props.md) |
+| tree | `TreeObject` | 9 + crate | 9 + crate | 8 + crate | 5 + crate | 4 + crate | 4 + crate | 661 (39); trees also create offspring at run time | [trees and crate structures](trees_and_crate_structures.md) |
 | scenery mesh | `SceneryMesh` | 6 | 5 | 1 | 6 | – | 1 | 193 (19) | [defences and props](defences_and_props.md) |
 | exclusion zone | `ExclusionZone` | 1 | 1 | – | 6 | 4 | 2 | 35 (14) | [defences and props](defences_and_props.md) |
 | jump pad | `JumpPadObject` | 1 | – | – | 1 | – | 1 | 23 (3) | [defences and props](defences_and_props.md) |
 | smoke column | `SmokeColumn` | – | – | – | 1 | – | – | 6 (1) | [defences and props](defences_and_props.md) |
 | volcano vent | `VolcanoVent` | – | – | – | – | – | 1 | 1 (1) | [defences and props](defences_and_props.md) |
-| Hive | `Hive` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [defences and props](defences_and_props.md) |
-| Spitter Plant | `SpitterPlant` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [defences and props](defences_and_props.md) |
+| Hive | `Hive` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [trees and crate structures](trees_and_crate_structures.md) |
+| Spitter Plant | `SpitterPlant` | crate | crate | crate | crate | crate | crate | 0; a map may place one | [trees and crate structures](trees_and_crate_structures.md) |
 | Supply crate | `SupplyCrate` | rt | rt | rt | rt | rt | rt | 0 | [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | bot navigation node | `BotNavNode` | 9 + rt | 9 + rt | 9 + rt | 8 + rt | 7 + rt | 7 + rt | 1029 (49) | [07 Bots](../07_bots/README.md) |
 | bot objective | `BotObjective` | – | – | – | 8 | – | – | 92 (8) | [07 Bots](../07_bots/README.md) |
@@ -131,7 +132,7 @@ Table 2.4-B Helper objects without a structure kind.
 | fuel-chain structure | `FuelStructure` | structure base | fuel pump, fuel line, fuel depot, Launch Vessel | [economy and spawn objects](economy_and_spawn_objects.md), [mode objects](mode_objects.md) |
 | carryable structure | `CarryableStructure` | structure base | Relic, Breach Charge | [mode objects](mode_objects.md) |
 | cloth flag | `ClothFlag` | presentation primitive, not a simulated object | Flag posts, Leaders, Transports | [mode objects](mode_objects.md) |
-| Allegiance Scrambler effect | `AllegianceScramblerEffect` | effect | the Allegiance Scrambler outcome | [defences and props](defences_and_props.md) |
+| Allegiance Scrambler effect | `AllegianceScramblerEffect` | effect | the Allegiance Scrambler outcome | [trees and crate structures](trees_and_crate_structures.md) |
 | turret aim marker | — | effect | the turret | [defences and props](defences_and_props.md) |
 
 ### 2.5 Structure state
@@ -162,17 +163,17 @@ Table 2.5-A Structure state.
 
 ### 2.6 Ports, occupancy and reservation
 
-**R-BLDG-019** (MUST) A structure port (`StructurePort`) holds: the port socket it was created from; its occupant, the handle of the Worker operating it, or none; its world transform; and one reservation count for each team slot, from 0 to `ref.econ.port.reservation_cap` (50) of reference/05.
+**R-BLDG-019** (MUST) A structure port (`StructurePort`) holds: the port socket it was created from; its occupant, the handle of the Worker operating it, or none; its world transform; and one reservation count for each team slot, from 0 to `ref.bldg.port.reservation_cap` (50).
 
 **R-BLDG-020** (MUST) A port's world transform is the socket's transform in the structure's world frame. Its position is then pushed clear of the structure by the structure push of R-BLDG-033 with a radius of `ref.bldg.port.clearance_wu` (5 wu), and its height is set to the terrain height there. Every reservation count starts at 0. Ports are built once, at the structure's initialisation (R-SIM-118), and are rebuilt only where a structure's own rule says so (the Command Console, R-BLDG-299); a change of render detail never rebuilds them (DEC-007).
 
-**R-BLDG-021** (MUST) Every tick, the port evaluation of the base advance (R-BLDG-031) clears each port's occupant and then sets it to the first Worker, in actor-grid result order, that is in the operating-port state, operates that very port on that very structure, and lies strictly within `ref.econ.spawn_node.port_radius_wu` (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may belong to any team (see DEC-088; R-ECON-012). The result order is grid cell x ascending, then grid cell z ascending, then team slot 0 to 5, then slot order within the cell (DEC-016; R-ECON-013).
+**R-BLDG-021** (MUST) Every tick, the port evaluation of the base advance (R-BLDG-031) clears each port's occupant and then sets it to the first Worker, in actor-grid result order, that is in the operating-port state, operates that very port on that very structure, and lies strictly within `ref.bldg.port.radius_wu` (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may belong to any team (see DEC-088; R-ECON-012). The result order is grid cell x ascending, then grid cell z ascending, then team slot 0 to 5, then actor serial ascending within the cell, an order that never depends on when the Workers registered in the cell (DEC-016, DEC-260; R-ECON-013).
 
-**R-BLDG-022** (MUST) In the same evaluation, every reservation count of an occupied port is set to 0, and every reservation count of an unoccupied port is reduced by `ref.econ.port.reservation_decay` (4), and kept at 0 or above.
+**R-BLDG-022** (MUST) In the same evaluation, every reservation count of an occupied port is set to 0, and every reservation count of an unoccupied port is reduced by `ref.bldg.port.reservation_decay_per_tick` (4), and kept at 0 or above.
 
-**R-BLDG-023** (MUST) A Worker approaching a port adds 1 to its team's reservation count for that port every tick, up to `ref.econ.port.reservation_cap` (50). A port is available to a team when it has no occupant and that team's reservation count for it is below `ref.econ.port.reservation_limit` (1). A port query with an index that names no port returns no occupant, no position and a reservation count of −1.
+**R-BLDG-023** (MUST) A Worker approaching a port adds 1 to its team's reservation count for that port every tick, up to `ref.bldg.port.reservation_cap` (50). A port is available to a team when it has no occupant and that team's reservation count for it is below `ref.bldg.port.reservation_limit` (1). A port query with an index that names no port returns no occupant, no position and a reservation count of −1.
 
-**R-BLDG-024** (MUST) A Worker finds ports as reference/05 R-ECON-014 and R-ECON-015 and the Worker document specify ([02 Worker](../02_units/worker.md)): among the structures with at least one port, at least one unoccupied port and a walkable path, whose distance from the Worker minus the structure's radius is below `ref.econ.worker.port_search_range_wu` (100 wu), it takes the nearest, and then picks one of that structure's ports that are available to its team, uniformly at random. On arrival it enters the operating-port state, and it stays there until it is no longer the port's occupant, the structure no longer exists, or it dies (R-ECON-017). Orders given to an operating Worker apply as reference/06 specifies (see DEC-308).
+**R-BLDG-024** (MUST) A Worker finds ports as reference/05 R-ECON-014 and R-ECON-015 and the Worker document specify ([02 Worker](../02_units/worker.md)): among the structures with at least one port, at least one unoccupied port and a walkable path, whose distance from the Worker minus the structure's radius is below `ref.unit.worker.port_search_range` (100 wu, [02 Worker](../02_units/worker.md) R-UNIT-090), it takes the nearest, and then picks one of that structure's ports that are available to its team, uniformly at random. On arrival it enters the operating-port state, and it stays there until it is no longer the port's occupant, the structure no longer exists, or it dies (R-ECON-017). Orders given to an operating Worker apply as reference/06 specifies (see DEC-308).
 
 **R-BLDG-025** (MUST) These rules have the following consequences, which the acceptance criteria test. At most one Worker of a team walks to a given free port at a time, and a port's counts drain at 4 per tick once nobody approaches it. Workers of different teams may race for the same port, and the first Worker of any team that operates the port and stands within 5 wu of it is its occupant. Because occupancy is bound to the (structure, port) pair, two structures whose ports lie within 5 wu of each other never share an occupant (DEC-088).
 
@@ -187,15 +188,15 @@ Table 2.7-A Capture model of every capturable kind.
 | Kind | Ports (mesh) | Period | Rule | Result when no team qualifies | Specified in |
 |---|---|---|---|---|---|
 | Spawn Node | 5 (`mesh.structure.spawn_node`) | `ref.econ.spawn_node.evaluation_interval_ticks` (21 to 30 ticks); the first after `ref.econ.spawn_node.first_evaluation_ticks` (1 to 20 ticks) | the one team that operates at least 3 ports, and every other operator a friend of it | no team | [05](../05_population_flow.md) R-ECON-018 to R-ECON-022 |
-| turret | 4 (`mesh.structure.turret_mount`) | the turret's ownership period | the team with the most operators (at least 1; ties to the lowest team slot), and every operator a friend of it | no team | [defences and props](defences_and_props.md) |
+| turret | 4 (`mesh.structure.turret_mount`) | `ref.bldg.turret.recount_ticks` (11 ticks) | the team with the most operators (at least 1; ties to the lowest team slot), and every operator a friend of it | no team | [defences and props](defences_and_props.md) R-BLDG-408 |
 | Solar Array | 5 (`mesh.structure.solar_array`) | every tick | the team with the most operators (strictly most; ties to the lowest team slot); enemies may share the ports | no team when no port is occupied | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-178 |
 | Command Console | 5 (`mesh.structure.command_console`), or 3 when linked to the Core Device (`mesh.structure.command_console_linked`) | every tick | the first team in slot order with more than 2 operators (more than 1 when linked), replaced by a later team above the threshold with strictly more; enemies may share the ports; the owner is also given to the controlled structure | no team for the console; the controlled structure keeps its team | [mode objects](mode_objects.md) R-BLDG-301 |
 | carryable structure (Relic, Breach Charge) | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the most living Workers within 50 wu, if that count is at least the kind's minimum lifters; the team changes only to a team that is not a friend of the current one | no team | [mode objects](mode_objects.md) R-BLDG-275 |
 | Control Zone in Zone Control | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the strictly highest count of counted Workers within the zone's size (ties to the lowest team slot) | no team | [mode objects](mode_objects.md) R-BLDG-258 |
 | Flag post and Home post in Flag Chain | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | capture progress 0 to 100, accumulated by the leading team within 40 wu; owner at 100, no team at 0 | progress decays while no team leads | [mode objects](mode_objects.md) R-BLDG-262 |
 | Beam Dish | 0 | — | no rule of its own: a Command Console that controls it gives it its owner | — | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-152 |
-| bot navigation node | 0 | 21 ticks | the team with the strictly highest friend count within range; an owner for the bots only | no team | [07 Bots](../07_bots/README.md) |
-| bot objective marker | 0 | 21 ticks | the bound structure's team, or the majority in its scan range | no team | [07 Bots](../07_bots/README.md) |
+| bot navigation node | 0 | `ref.bot.node.recount_ticks` (20 ticks) | the team with the strictly highest friend count within range; an owner for the bots only | no team | [07 Bots](../07_bots/README.md) |
+| bot objective marker | 0 | `ref.bot.marker.period_ticks` (20 ticks) | the bound structure's team, or the majority in its scan range | no team | [07 Bots](../07_bots/README.md) |
 
 The Control Zone keeps its team in Relic Run, where its map team makes it a Relic Base or, with no team, a Relic Spawn Zone (R-BLDG-260). The Transit Gate is never captured; its team becomes no team only through the silent writes of R-BLDG-039 (R-ECON-089).
 
@@ -236,7 +237,7 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 | objective counter | no text | fuel pump, Launch Vessel (their HUD counters) |
 | hit tests | R-BLDG-041 to R-BLDG-043 | table 2.12-A |
 | sound events | R-BLDG-049 | most kinds add events |
-| link get and set | no link (map editor link tool) | link get: bot navigation node, bot objective, bot objective marker, Command Console, energy-grid structures (the grid splitter included), Barrier Emitter, Control Zone, fuel-chain structures, wall. Link set: spawn-network structures append an edge; the Beam Dish appends a valid receiver; the Core Device appends a Command Console |
+| link get and set | no link (map editor link tool) | link get: bot navigation node, bot objective, bot objective marker, Command Console, energy-grid structures (the grid splitter included), Barrier Emitter, Control Zone, fuel-chain structures, wall. Link set: spawn-network structures append an edge; the Beam Dish appends a valid receiver; the Core Device appends a Command Console; the Control Zone appends a Flag post link ([mode objects](mode_objects.md) R-BLDG-253) |
 | display name | `<prefix>.name` (R-BLDG-012) | — |
 
 ### 2.10 Damage and destruction
@@ -253,8 +254,8 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 | fireball | trees | [04 weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | firebomb canister | trees and Spitter Plants within its reach (its computed falloff is not applied) | [04 weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | lightning strike | trees in its obstacle-grid cell | [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| turret removal | in modes with a turret cap (Launch Race, Flag Chain), a turret power that is removed destroys its own turret with a lethal hit | [defences and props](defences_and_props.md) |
-| Breach Charge breach | every wall within its break radius takes a lethal hit | [mode objects](mode_objects.md) R-BLDG-292 |
+| turret removal | in modes with a turret cap (Launch Race, Flag Chain), a turret power that is removed destroys its own turret with a lethal hit of −`ref.bldg.turret.self_destruct_damage` (1000) | [defences and props](defences_and_props.md) R-BLDG-424 |
+| Breach Charge breach | every wall within its break radius takes a lethal hit, beyond the wall's destruction threshold `ref.bldg.wall.destroy_threshold` (300) | [mode objects](mode_objects.md) R-BLDG-292 |
 
 **R-BLDG-037** (MUST) Destroying a structure with an intensity i sets its destroyed flag; creates `ref.bldg.structure.destroy_shatter_count` (3) shatter explosions of its mesh; runs an explosion at its position with range i and damage i ÷ `ref.bldg.structure.destroy_damage_divisor` (4) (R-SIM-388); emits `<source>.explode`; and creates ⌊i ÷ `ref.bldg.structure.destroy_particle_divisor` (4)⌋ explosion-core particles (an integer conversion that truncates, DEC-241) of size `ref.bldg.structure.destroy_particle_size` (100), each with a velocity drawn per axis from `ref.bldg.structure.destroy_particle_speed` (U[−50, 50)) from the presentation generator (DEC-013). The fuel-chain structures also shatter their line mesh, and the Hive sets its health to 0 first. The Relic, the Breach Charge and the Core Device have their own destroy operation ([mode objects](mode_objects.md)).
 
@@ -287,47 +288,51 @@ Table 2.12-A Hit-test overrides.
 | jump pad | never hit | never hit | ray against a sphere of `ref.sim.structure.default_radius` (13 wu) | [defences and props](defences_and_props.md) |
 | smoke column | see the smoke-column obstacle (DEC-089) | never hit | see DEC-089 | [defences and props](defences_and_props.md) |
 | Beam Dish | mesh test with the probe radius multiplied by `ref.bldg.beam_dish.probe_radius_factor` (1.5), so that its door registers in the obstacle cells | mesh | mesh, with up (0, 1, 0) | [economy and spawn objects](economy_and_spawn_objects.md) |
-| turret | mesh | mesh | the turret mesh, the barrel mesh, and a sphere above the turret's position | [defences and props](defences_and_props.md) |
-| wall | a rectangle flattened to y = 0 (an infinite vertical prism) | exact mesh | a vertical quad from the base up to the wall's ray height | [defences and props](defences_and_props.md) |
-| Barrier Emitter | the post when lowered; the field curtain (two rays) and the post when raised | its root sphere | the curtain triangles and the post | [defences and props](defences_and_props.md) |
-| tree | the trunk sphere and the crown sphere | the same | the same | [defences and props](defences_and_props.md) |
+| turret | mesh | mesh | the turret mesh, the barrel mesh, and a sphere of `ref.bldg.turret.ray_sphere_radius` (12 wu) centred `ref.bldg.turret.ray_sphere_height` (10 wu) above the turret's position | [defences and props](defences_and_props.md) R-BLDG-407 |
+| wall | a rectangle `ref.bldg.wall.length` (100 wu) by `ref.bldg.wall.depth` (20 wu) flattened to y = 0 (an infinite vertical prism) | exact mesh | a vertical quad from the base up to the wall's ray height, `ref.bldg.wall.height` × `ref.bldg.wall.ray_height_fraction` (37.5 wu) | [defences and props](defences_and_props.md) R-BLDG-451, R-BLDG-452 |
+| Barrier Emitter | the post when lowered; the field curtain (two rays of `ref.bldg.barrier_emitter.sphere_ray_factor` × r) and the post when raised | its root sphere | the curtain triangles and the post | [defences and props](defences_and_props.md) R-BLDG-441 |
+| tree | the trunk sphere of `ref.bldg.tree.trunk_radius` (10 wu) and the crown sphere | the same | the same | [trees and crate structures](trees_and_crate_structures.md) R-BLDG-607 |
 | Core Device | its scaled mesh | its scaled mesh | its scaled mesh | [mode objects](mode_objects.md) |
 
-**R-BLDG-044** (MUST) The structure meshes carry the sockets of table 2.12-B, and the rules of each kind read them by these names. The content build rejects a mesh that lacks a socket that its kind requires (DEC-015). Every socket that a reference mesh carries is treated as used (see DEC-330).
+**R-BLDG-044** (MUST) The structure meshes carry the sockets of table 2.12-B, and the rules of each kind read them by these names. The content build rejects a mesh that lacks a socket that its kind requires (DEC-015). Every socket that a reference mesh carries is treated as used (see DEC-330); the Transit Gate's `gate_exit_01` and `gate_exit_02` sockets and the Spitter Plant's `stem` socket are read by no rule. The last column names the collision asset of each mesh: the sphere, mesh and ray tests of R-BLDG-041 to R-BLDG-043 read that asset, never the drawn geometry (DEC-012; [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) AST-044). A mesh whose last cell is "none" belongs to a kind that no sphere, mesh or ray test of a match reads (table 2.12-A).
 
-Table 2.12-B Structure meshes and their sockets (asset ids from `assets/asset_manifest.csv`).
+Table 2.12-B Structure meshes, their sockets and their collision assets (asset ids from `assets/asset_manifest.csv`).
 
-| Mesh | Port sockets | Light sockets | Other sockets and nodes | Kind |
-|---|---|---|---|---|
-| `mesh.structure.spawn_node` | 5 | 3 | `door` (required), `essence_link` | Spawn Node |
-| `mesh.structure.source_node` | 0 | 0 | `essence_link` | Source Node |
-| `mesh.structure.relay_mast` | 0 | 0 | `essence_link` | Relay |
-| `mesh.structure.beam_dish` | 0 | 2 | `gate_entrance` (required), `beam_focus`; node `dish` (pitch) and node `upper_mount` (yaw) | Beam Dish |
-| `mesh.structure.command_console` | 5 | 0 | — | Command Console, unlinked |
-| `mesh.structure.command_console_linked` | 3 | 0 | `dish_direction` | Command Console linked to the Core Device |
-| `mesh.structure.solar_array` | 5 | 0 | `status_01` to `status_05`, `glow_01` to `glow_04`, `grid_link` | Solar Array |
-| `mesh.structure.grid_pylon` | 0 | 1 | `grid_link` (required) | grid pylon, grid terminal, grid splitter |
-| `mesh.structure.structure_default` | 0 | 0 | `status` (required) | the port pad under every port |
-| `mesh.structure.transit_gate` | 0 | 0 | `gate_surface`, `gate_exit_01`, `gate_exit_02` | Transit Gate |
-| `mesh.structure.core_device` | 0 | 0 | — (drawn scaled) | Core Device |
-| `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm` | 0 | 0 | `fuel_point`; `arm_tip` | fuel pump |
-| `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span` | 0 | 0 | `fuel_point`; the span mesh has none | fuel line and the line between fuel-chain structures |
-| `mesh.structure.fuel_depot` | 0 | 0 | `entrance`, `fuel_point` | fuel depot |
-| `mesh.structure.launch_vessel` | 0 | 0 | `fuel_point`, `thruster`, `window_01` to `window_03` | Launch Vessel |
-| `mesh.structure.breach_charge` | 0 | 0 | — | Breach Charge |
-| `mesh.relic.variant` (8 variants) | 0 | 0 | — | Relic |
-| `mesh.structure.turret_mount`, turret head and barrels | 4 | 0 | status sockets, barrel and muzzle sockets | turret ([defences and props](defences_and_props.md)) |
-| the Barrier Emitter, wall, Hive and Spitter Plant meshes | 0 | — | as [defences and props](defences_and_props.md) specifies | those kinds |
+| Mesh | Port sockets | Light sockets | Other sockets and nodes | Kind | Collision asset |
+|---|---|---|---|---|---|
+| `mesh.structure.spawn_node`, and its variant `mesh.structure.spawn_node_alt` | 5 | 3 | `door` (required), `essence_link` | Spawn Node | `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt` |
+| `mesh.structure.source_node` | 0 | 0 | `essence_link` | Source Node | `mesh.collision.source_node` |
+| `mesh.structure.relay_mast` | 0 | 0 | `essence_link` | Relay | `mesh.collision.relay_mast` |
+| `mesh.structure.beam_dish` | 0 | 2 | `gate_entrance` (required), `beam_focus`; node `dish` (pitch) and node `upper_mount` (yaw) | Beam Dish | `mesh.collision.beam_dish` |
+| `mesh.structure.command_console` | 5 | 0 | — | Command Console, unlinked | `mesh.collision.command_console` |
+| `mesh.structure.command_console_linked` | 3 | 0 | `dish_direction` | Command Console linked to the Core Device | `mesh.collision.command_console_linked` |
+| `mesh.structure.solar_array` | 5 | 0 | `status_01` to `status_05`, `glow_01` to `glow_04`, `grid_link` | Solar Array | `mesh.collision.solar_array` |
+| `mesh.structure.grid_pylon` | 0 | 1 | `grid_link` (required) | grid pylon, grid terminal, grid splitter | `mesh.collision.grid_pylon` |
+| `mesh.structure.structure_default` | 0 | 0 | `status` (required) | the port pad under every port | none |
+| `mesh.structure.transit_gate`, and its variant `mesh.structure.transit_gate_alt` | 0 | 0; 2 on the variant | `gate_surface`, `gate_exit_01`, `gate_exit_02` | Transit Gate | `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt` |
+| `mesh.structure.core_device` | 0 | 0 | — (drawn scaled) | Core Device | `mesh.collision.core_device`, at the Core Device's scale |
+| `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm` | 0 | 0 | `fuel_point`; `arm_tip` | fuel pump | `mesh.collision.fuel_pump_housing`, for the housing |
+| `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span` | 0 | 0 | `fuel_point`; the span mesh has none | fuel line and the line between fuel-chain structures | `mesh.collision.fuel_line_foot`, for the foot |
+| `mesh.structure.fuel_depot` | 0 | 0 | `entrance`, `fuel_point` | fuel depot | `mesh.collision.fuel_depot` |
+| `mesh.structure.launch_vessel` | 0 | 0 | `fuel_point`, `thruster`, `window_01` to `window_03` | Launch Vessel | none |
+| `mesh.structure.breach_charge` | 0 | 0 | — | Breach Charge | none |
+| `mesh.relic.variant` (8 variants) | 0 | 0 | — | Relic | none |
+| `mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel` | 4 | 0 | status sockets, barrel and muzzle sockets | turret ([defences and props](defences_and_props.md) R-BLDG-405) | `mesh.collision.turret_head`, and `mesh.collision.turret_barrel` with one member per barrel variant |
+| `mesh.structure.barrier_emitter` | 0 | — | as [defences and props](defences_and_props.md) R-BLDG-432 specifies | Barrier Emitter | `mesh.collision.barrier_emitter` |
+| `mesh.structure.wall_section` | 0 | — | — | wall ([defences and props](defences_and_props.md) R-BLDG-449) | `mesh.collision.wall_section` |
+| `mesh.scenery.prop` (7 pieces), and `mesh.creature.abductor_hull` where a map places it as a scenery mesh | 0 | 0 | — | scenery mesh ([defences and props](defences_and_props.md) R-BLDG-459) | `mesh.collision.scenery_prop` with one member per piece, `mesh.collision.abductor_hull` |
+| `mesh.structure.hive_mound` | 0 | — | — | Hive ([trees and crate structures](trees_and_crate_structures.md) R-BLDG-631) | `mesh.collision.hive_mound` |
+| `mesh.structure.spitter_plant_head` | 0 | — | `launch_point`, `stem` | Spitter Plant ([trees and crate structures](trees_and_crate_structures.md) R-BLDG-642) | `mesh.collision.spitter_plant_head` |
 
 ### 2.13 Presentation
 
 **R-BLDG-045** (MUST) When a structure has a team and light sockets, the translucent pass draws at each light `ref.bldg.structure.light_quads` (10) nested additive quads of `fx.starburst`, up to `ref.bldg.structure.light_size_wu` (6 wu) across, in the team colour. They are drawn only on ticks where ⌊(t mod `ref.bldg.structure.light_cycle_ticks`) ÷ `ref.bldg.structure.light_ticks_per_team`⌋ equals the team slot, with t the number of the last completed tick and the keys 10 and 2: teams 0 to 4 flash on 2 of every 10 ticks, and team slot 5 never flashes. In the map editor they are always drawn. The Barrier Emitter draws no lights.
 
-**R-BLDG-046** (MUST) For each port the translucent pass draws the port pad mesh `ref.bldg.port.pad_height_wu` (0.5 wu) above the ground while the structure-detail setting is below `ref.bldg.port.pad_detail_limit` (3), and a status star of `fx.starburst`, `ref.bldg.port.status_star_size_wu` (6 wu) across, at the pad's `status` socket: `ref.bldg.port.status_occupied_rgb` (0.3, 1.0, 0.3) when the port is occupied and `ref.bldg.port.status_empty_rgb` (1.0, 0.3, 0.3) when it is not. The Spawn Node, the turret, the Solar Array and the Command Console draw their ports in their own way. The visual change of each structure-detail branch is decided with the renderer's quality levels (see DEC-327).
+**R-BLDG-046** (MUST) For each port the translucent pass draws the port pad mesh `ref.bldg.port.pad_height_wu` (0.5 wu) above the ground while the structure-detail setting is below `ref.bldg.port.pad_detail_limit` (3), and a status star of `fx.starburst`, `ref.bldg.port.status_star_size_wu` (6 wu) across, at the pad's `status` socket: `ref.bldg.port.status_occupied_rgb` (0.3, 1.0, 0.3) when the port is occupied and `ref.bldg.port.status_empty_rgb` (1.0, 0.3, 0.3) when it is not. The Spawn Node ([economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-131), the Solar Array (R-BLDG-183), the Command Console ([mode objects](mode_objects.md) R-BLDG-303) and the turret, whose mount carries the status sockets `status_01` to `status_04` ([defences and props](defences_and_props.md) R-BLDG-405), draw their ports in their own way. The visual change of each structure-detail branch is decided with the renderer's quality levels (see DEC-327).
 
 **R-BLDG-047** (MUST) Drawing, the in-view test, the depth sort and every other presentation step read simulation state and never write it (DEC-007). In particular, a change of the structure-detail setting never re-snaps a structure to the terrain and never rebuilds its ports (R-SIM-367).
 
-**R-BLDG-048** (MUST) The no-team colour of structures is an opaque grey (DEC-078).
+**R-BLDG-048** (MUST) The no-team colour of structures is the opaque grey `ref.match.colour.no_group` (153, 153, 153, 255) of reference/01, the member shade of colour id none ([01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) R-MODE-017; DEC-078).
 
 ### 2.14 Sound events
 
@@ -376,10 +381,14 @@ flowchart TD
 
 ## 4 Tuning table
 
-Every value is a reference tuning value that Species may adopt as its baseline (DEC-004). Values that another document owns are cited in the rules by that document's key and are not repeated here: `ref.sim.tick_period`, `ref.sim.update_slices`, `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.structure.default_radius` and `ref.sim.explosion.structure_reach` (reference/12); `ref.mode.recount.one_second` and `ref.mode.recount.two_second` (reference/01); `ref.econ.spawn_node.port_radius_wu`, `ref.econ.port.reservation_limit`, `ref.econ.port.reservation_cap`, `ref.econ.port.reservation_decay`, `ref.econ.worker.port_search_range_wu`, `ref.econ.start.operators_per_port`, `ref.econ.spawn_node.evaluation_interval_ticks` and `ref.econ.spawn_node.first_evaluation_ticks` (reference/05).
+Every value is a reference tuning value that Species may adopt as its baseline (DEC-004). Values that another document owns are cited in the rules by that document's key and are not repeated here: `ref.sim.tick_period`, `ref.sim.update_slices`, `ref.sim.max_teams`, `ref.sim.team.rogue_slot`, `ref.sim.team.visitor_slot`, `ref.sim.structure.default_radius` and `ref.sim.explosion.structure_reach` (reference/12); `ref.mode.recount.one_second`, `ref.mode.recount.two_second` and `ref.match.colour.no_group` (reference/01); `ref.unit.worker.port_search_range` (reference/02); `ref.econ.start.operators_per_port`, `ref.econ.spawn_node.evaluation_interval_ticks` and `ref.econ.spawn_node.first_evaluation_ticks` (reference/05); `ref.bot.node.recount_ticks` and `ref.bot.marker.period_ticks` (reference/07). The keys of the other files of this folder that the rules cite (the turret, wall, Barrier Emitter and tree keys of R-BLDG-036 and table 2.12-A) are defined in [defences and props](defences_and_props.md), [trees and crate structures](trees_and_crate_structures.md) and [mode objects](mode_objects.md).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
+| `ref.bldg.port.radius_wu` | 5 | wu | strict, horizontal: dx² + dz² < 25; every port of every structure | R-BLDG-021 | DEC-094 |
+| `ref.bldg.port.reservation_limit` | 1 | reservations | a port is available to a team below this count | R-BLDG-023 | — |
+| `ref.bldg.port.reservation_cap` | 50 | reservations | per team and port | R-BLDG-019, R-BLDG-023 | — |
+| `ref.bldg.port.reservation_decay_per_tick` | 4 | reservations per tick | applied to an unoccupied port | R-BLDG-022 | DEC-092 |
 | `ref.bldg.port.clearance_wu` | 5 | wu | radius by which a port position is pushed clear of its structure | R-BLDG-020 | — |
 | `ref.bldg.structure.push_step_wu` | 2 | wu | step of the structure push, directly away from the structure's position | R-BLDG-020, R-BLDG-033 | — |
 | `ref.bldg.structure.destroy_shatter_count` | 3 | shatter explosions | of the structure's mesh | R-BLDG-037 | — |
@@ -452,9 +461,9 @@ All criteria run headless at game speed 1 with a fixed seed.
 
 ## 7 Dependencies
 
-- **Reference documents:** [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (recount periods, elimination); [02 Units](../02_units/README.md) and [02 Worker](../02_units/worker.md) (the Worker's port search and operating state); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the Supply crate, weapon damage to structures); [05 Population flow](../05_population_flow.md) (Spawn Node capture, port keys, port seeding); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (orders to operating Workers); [07 Bots](../07_bots/README.md) (bot navigation nodes, objectives and markers); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records and validation); [10 Audio design](../10_audio_design/README.md) (sound bindings); [12 Simulation model](../12_simulation_model/README.md) (structure pool, slices, handles, the explosion primitive, the obstacle grid).
-- **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (map records); [renderer](../../architecture/components/renderer/README.md) (structure drawing, detail levels); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter effects, particles); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) (mesh and socket validation).
-- **Assets:** `fx.starburst`, `mesh.structure.structure_default`, `sfx.building.command_console.presence_loop`, `sfx.building.control_zone.presence_loop`, and the structure meshes of table 2.12-B (`mesh.structure.spawn_node`, `mesh.structure.source_node`, `mesh.structure.relay_mast`, `mesh.structure.beam_dish`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.solar_array`, `mesh.structure.grid_pylon`, `mesh.structure.transit_gate`, `mesh.structure.core_device`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `mesh.structure.fuel_depot`, `mesh.structure.launch_vessel`, `mesh.structure.breach_charge`, `mesh.relic.variant`, `mesh.structure.turret_mount`).
+- **Reference documents:** [economy and spawn objects](economy_and_spawn_objects.md), [mode objects](mode_objects.md), [defences and props](defences_and_props.md) and [trees and crate structures](trees_and_crate_structures.md) (the kinds of this folder); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (recount periods, elimination, the no-team colour); [02 Units](../02_units/README.md) and [02 Worker](../02_units/worker.md) (the Worker's port search and operating state); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the Supply crate, weapon damage to structures); [05 Population flow](../05_population_flow.md) (Spawn Node capture, port seeding); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (orders to operating Workers); [07 Bots](../07_bots/README.md) (bot navigation nodes, objectives and markers, and their countdowns); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records and validation); [10 Audio design](../10_audio_design/README.md) (sound bindings); [12 Simulation model](../12_simulation_model/README.md) (structure pool, slices, handles, the explosion primitive, the obstacle grid).
+- **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (map records); [renderer](../../architecture/components/renderer/README.md) (structure drawing, detail levels); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter effects, particles); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) (mesh and socket validation, collision assets).
+- **Assets:** `fx.starburst`, `mesh.structure.structure_default`, `sfx.building.command_console.presence_loop`, `sfx.building.control_zone.presence_loop`; the structure meshes of table 2.12-B (`mesh.structure.spawn_node`, `mesh.structure.spawn_node_alt`, `mesh.structure.source_node`, `mesh.structure.relay_mast`, `mesh.structure.beam_dish`, `mesh.structure.command_console`, `mesh.structure.command_console_linked`, `mesh.structure.solar_array`, `mesh.structure.grid_pylon`, `mesh.structure.transit_gate`, `mesh.structure.transit_gate_alt`, `mesh.structure.core_device`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `mesh.structure.fuel_depot`, `mesh.structure.launch_vessel`, `mesh.structure.breach_charge`, `mesh.relic.variant`, `mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, `mesh.structure.barrier_emitter`, `mesh.structure.wall_section`, `mesh.scenery.prop`, `mesh.creature.abductor_hull`, `mesh.structure.hive_mound`, `mesh.structure.spitter_plant_head`); and their collision assets (`mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.source_node`, `mesh.collision.relay_mast`, `mesh.collision.beam_dish`, `mesh.collision.command_console`, `mesh.collision.command_console_linked`, `mesh.collision.solar_array`, `mesh.collision.grid_pylon`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.core_device`, `mesh.collision.fuel_pump_housing`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_depot`, `mesh.collision.turret_head`, `mesh.collision.turret_barrel`, `mesh.collision.barrier_emitter`, `mesh.collision.wall_section`, `mesh.collision.scenery_prop`, `mesh.collision.abductor_hull`, `mesh.collision.hive_mound`, `mesh.collision.spitter_plant_head`).
 
 ## 8 Open decisions
 
@@ -469,4 +478,4 @@ Each default is the behaviour that §2 specifies.
 - DEC-330 — mesh sockets referenced only by data (R-BLDG-044).
 - DEC-455 — same-tick advance of objects created during a tick (R-BLDG-002).
 
-Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-012, DEC-013, DEC-015, DEC-016, DEC-020, DEC-025, DEC-028, DEC-034, DEC-039, DEC-052, DEC-064, DEC-078, DEC-088, DEC-092, DEC-095, DEC-117, DEC-457, DEC-464 and DEC-652. DEC-466 is Dropped: the structures and fields it lists are not specified. Every value of this folder is a reference tuning value that Species may adopt as its baseline (DEC-004), the folder is the specification of record (DEC-005), and each kept quirk is an explicit rule (DEC-006).
+Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-012, DEC-013, DEC-015, DEC-016, DEC-020, DEC-025, DEC-028, DEC-034, DEC-039, DEC-052, DEC-064, DEC-078, DEC-088, DEC-092, DEC-095, DEC-117, DEC-260, DEC-457, DEC-464 and DEC-652. DEC-466 is Dropped: the structures and fields it lists are not specified. Every value of this folder is a reference tuning value that Species may adopt as its baseline (DEC-004), the folder is the specification of record (DEC-005), and each kept quirk is an explicit rule (DEC-006).

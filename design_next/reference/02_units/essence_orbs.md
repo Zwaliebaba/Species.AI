@@ -30,9 +30,9 @@ This document specifies the Essence orb object: its creation, its states and tim
 |---|---|---|
 | an actor that dies through the standard damage path, unless its kind or its team releases none | the corpse velocity × `ref.econ.orb.death_velocity_factor` (0.5) | [Units](README.md), [population flow](../05_population_flow.md) R-ECON-067 |
 | a tree of the Essence Grove outcome while it is healthy | as that rule states | [population flow](../05_population_flow.md) R-ECON-067, [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| a Brood Drifter laying a Crawler egg that it fertilises at once | as that rule states | [README.md](README.md) |
-| a Seed Pod of the essence kind; no Supply crate outcome launches Seed Pods of that kind | as that rule states | [README.md](README.md) |
-| a destroyed Hive, one orb per ant and per orb inside; a Hive always belongs to the Rogue faction, so this creates none | — | [defences and props](../03_buildings_and_world_objects/defences_and_props.md) |
+| a Brood Drifter laying a Crawler egg that it fertilises at once | as that rule states | [creatures.md](creatures.md) |
+| a Seed Pod of the essence kind; no outcome launches an essence-kind Seed Pod directly, but the nested Seed Pods (kind 5, whose kinds are drawn from 0 to 8) of the Brood and Spitter Plants outcomes can be of the essence kind ([creatures.md](creatures.md) R-UNIT-514) | as that rule states | [creatures.md](creatures.md) |
+| a destroyed Hive, one orb per ant and per orb inside; a Hive always belongs to the Rogue faction, so this creates none | — | [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) |
 
 Troopers, Transports, Collectors and Builders release no Essence orb when they die ([strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md)).
 
@@ -59,7 +59,7 @@ Troopers, Transports, Collectors and Builders release no Essence orb when they d
 
 **R-UNIT-307** (MUST) The start step of an orb sets its state to Birth and its timer to `ref.econ.orb.birth_ticks` (61 ticks, nominal 6.0 s); it then makes four simulation draws, one statement each, in this order: the phase from `ref.unit.essence_orb.wobble_phase_range` (U[0, 10)), then the x, y and z axis rates from `ref.econ.orb.wobble_rate_range` (U[0, 2)). It records the terrain height under the orb as its ground height and turns the structure push on. These draws belong to the spawn step that creates the orb, never to a constructor (DEC-652, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-626).
 
-**R-UNIT-308** (MUST) An Essence orb carries a broken marker, unset at creation. The Collector and the Builder skip an orb whose marker is set when they search ([collector.md](collector.md), [builder.md](builder.md)). No rule in a match sets the marker, so every orb is unbroken and the test never excludes one.
+**R-UNIT-308** (MUST) An Essence orb carries a broken marker, unset at creation. The Collector and the Builder skip an orb whose marker is set when they search ([collector.md](collector.md), [builder.md](builder.md)). No rule in a match sets the marker, so every orb is unbroken and the test never excludes one; the break operation that would set it is outside the reference (DEC-871, Dropped).
 
 **R-UNIT-309** (MUST) An orb answers the question "which Crawler eggs are near me" from its nearby-egg list. When asked, it rebuilds the list if `ref.unit.essence_orb.egg_search_ticks` (30 ticks, nominal 3.0 s) have passed since its last rebuild, or if it has never built one: the list then holds up to `ref.econ.crawler.egg_cache_max` (8) dormant Crawler eggs that rest on the ground within `ref.econ.crawler.egg_cache_range_wu` (60 wu, measured horizontally) of the orb. Crawlers use the list to choose orbs ([README.md](README.md), [population flow](../05_population_flow.md) R-ECON-083).
 
@@ -302,3 +302,4 @@ Keys cited from other documents (their values are defined there):
 | DEC-305 | Essence Grove orbs of team slots not in play | such orbs behave like every other orb (R-UNIT-305) |
 | DEC-307 | Essence orbs held by a removed Collector | Collected orbs float again; Harvested orbs stay stranded (R-UNIT-316, R-UNIT-327) |
 | DEC-455 | Same-tick advance of objects created or handed over during a tick | slot-order same-tick advance (§5 item 9) |
+| DEC-871 | Essence orb break operation (Dropped) | no match breaks an orb, so the broken marker stays clear (R-UNIT-308) |

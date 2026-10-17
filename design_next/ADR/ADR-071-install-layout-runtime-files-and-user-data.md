@@ -30,15 +30,16 @@ What does a Species client installation contain, and where does the client write
 Chosen option: "A relocatable, read-only install directory with user data in known folders".
 
 * **Install directory:**
-  * `species.exe` (the client) and first-party DLLs;
+  * `species.exe` (the client, with its shaders compiled in, [ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md)) and first-party DLLs; no shader file is installed;
+  * `WinPixEventRuntime.dll` from the pinned WinPixEventRuntime package, because the markers stay in Release builds ([ADR-068](ADR-068-profiling-and-gpu-timing.md));
   * `D3D12\` with `D3D12Core.dll` from **Agility SDK 1.619.6** (chosen in [ADR-001](ADR-001-direct3d-12-renderer-on-the-agility-sdk.md)); `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`. `D3D12SDKLayers.dll` and preview SDKs are never distributed;
   * `packs\` with the pack files, the mount manifest and the content manifest of exactly one edition ([ADR-058](ADR-058-pack-files-and-mount-policy.md), [ADR-060](ADR-060-content-identity-by-hash.md));
   * `build_identity.json`, the full build identity written by packaging ([ADR-057](ADR-057-version-identity.md));
   * `channel_tag.txt`, the tag of the channel that delivered the install, written by the channel wrapper (channel packages only);
-  * `licences\` with the third-party licence notices.
-* **Prerequisites** run by the installer or channel wrapper: `GameInputRedist.msi` from the pinned GameInput package (it never downgrades a newer installed runtime), and the Visual C++ redistributable for the pinned toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled: Direct3D 12 and XAudio 2.9 are in-box.
+  * `licences\` with the licence notices of the three allow-listed packages and of licensed content ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)).
+* **Prerequisites** run by the installer or channel wrapper: `GameInputRedist.msi` from the pinned GameInput package (it never downgrades a newer installed runtime; the installer runs it, never the game), and the Visual C++ redistributable for the pinned toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled: Direct3D 12 and XAudio 2.9 are in-box.
 * **No writes** to the install directory or the registry at run time. The client runs as a standard user, installs no service and no driver.
-* **User data** (from `SHGetKnownFolderPath`): `%LOCALAPPDATA%\<Studio>\Species\` with `settings\`, `logs\` ([ADR-067](ADR-067-logging.md)), `crashes\` (local dumps, [ADR-065](ADR-065-crash-reporting.md)), `maps\` (the player's map folder) and `diagnostics\` (development outputs, in `Debug` and `Development` builds only); screenshots in the user's Pictures folder under `Species\` ([ADR-076](ADR-076-screenshot-encoding.md)). Saved worlds and replays follow the persistence design (design phase), under the same rule: never in the install directory.
+* **User data** (from `SHGetKnownFolderPath`): `%LOCALAPPDATA%\<Studio>\Species\` with `settings\`, `logs\` ([ADR-067](ADR-067-logging.md)), `crashes\` (local dumps, [ADR-065](ADR-065-crash-reporting.md)), `maps\` (the player's map folder) and `diagnostics\` (development outputs, in Debug builds only); screenshots in the user's Pictures folder under `Species\` ([ADR-076](ADR-076-screenshot-encoding.md)). Saved worlds and replays follow the persistence design (design phase), under the same rule: never in the install directory.
 * **Uninstall** removes the install directory only; user data stays unless the player chooses to delete it.
 * **Dedicated server:** a plain archive of the `server` product and its packs; its packaging for community hosts is a design-phase decision.
 
@@ -75,4 +76,5 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
 * Facts and sources: technology baseline items 4.1, 6, 7 and 11.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Agility SDK getting-started page, the GameInput NuGet and redistribution pages, and the XAudio2 versions page.
 * `<Studio>` is the publisher-name parameter, the studio-name placeholder of CONVENTIONS §8.11; the same form names the user-data folder in the [ADR index](README.md#technology-baseline) and in the decision register.
 * Component: build tooling and distribution (`BLD`); runtime paths belong to the platform layer (`PLT`).
-* **Amendment 2026-10-17.** The install list gains `build_identity.json` and `channel_tag.txt` and names the licence folder (BLD-020, BLD-021, BLD-023); the user-data root gains `maps\` (R-MAP-391) and `diagnostics\` (development builds only), as the platform layer specifies (PLT-017).
+* **Amendment 2026-10-17.** The install list gains `build_identity.json` and `channel_tag.txt` and names the licence folder (BLD-020, BLD-021, BLD-023); the user-data root gains `maps\` (R-MAP-391) and `diagnostics\` (Debug builds only), as the platform layer specifies (PLT-017).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** The install directory gains `WinPixEventRuntime.dll`, since the markers stay in Release, and holds no shader file, since shaders are compiled into the executable; the Agility SDK stays beside the executable; the GameInput redistributable runs from the installer; the licence notices cover the three allow-listed packages.

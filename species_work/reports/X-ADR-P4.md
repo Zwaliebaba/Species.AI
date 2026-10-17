@@ -137,3 +137,118 @@ Sources: Microsoft Learn only, checked 2026-10-17.
 - **ADR-077 WinHTTP details are not verified.** The brief allows Microsoft documentation only for the Windows SDK, so I did not check the WinHTTP behaviours the record relies on: system and automatic proxy, OS certificate validation, and disabling automatic logon. This is listed under "Items not verified" in the README and in ADR-077; confirm it before accepting the record.
 - **No status changes.** ADR-025 stays Proposed (item 87). No other status was changed.
 - **Component and asset documents were not edited.** They are not my files; the fixes are listed in §4 and in the X-AST-2a notes under items 83, 84 and 85.
+
+---
+
+## 8 Second pass (AGENTS.md)
+
+Brief: `phase4_brief.md` section "X-ADR-P4, second pass". Owner decisions O21–O23. Files are now `design_next/ADR/ADR-NNN-<slug>.md`. Every amended record keeps its number and MADR 4 form and gains an "Amendment 2026-10-17 (AGENTS.md, O21)" note as a bullet of *More Information*. Microsoft documentation was used to verify the Microsoft facts stated; each one cites its URL. No git writes and no publishing.
+
+### 8.1 One line per ADR
+
+Status changes:
+- ADR-030, ADR-054, ADR-055, ADR-056 and ADR-069 are now **Accepted**, decided by the owner's AGENTS.md.
+- ADR-053 is now **Rejected**.
+- ADR-025, ADR-065, ADR-076 and ADR-077 stay **Proposed**: AGENTS.md narrows them but leaves an in-box choice open.
+
+| ADR | Change |
+|---|---|
+| 001 | The Agility SDK is an allow-listed NuGet package restored from `packages.config`. No `d3dx12.h` and no DirectX-Headers; barriers and heap descriptions are written by hand; COM objects are held in `Microsoft::WRL::ComPtr` (R12, R14). The debug layer runs only in Debug, on developer machines and in a GPU CI job. The DirectX-Headers source is removed. |
+| 003 | Shaders are compiled by `FXCompile` with the Windows SDK's `dxc` (SM 6.6, `-HV 2021`, warnings as errors). Settings are identical in Debug and Release. Sources: `<Lib>/Shader/<Shader><Stage>.hlsl`. Output: `<Lib>/CompiledShader/<Shader><Stage>.h` with `g_<Shader><Stage>` byte arrays embedded in the exe. Not used: shaders in packs, `.cso`, `dxcompiler.dll`, `d3dcompiler_47.dll`, a pinned redistributable DXC. Each permutation is its own `<Shader><Permutation><Stage>.hlsl`. Cost noted: a larger executable with resident bytecode. Verified: Visual Studio uses `dxc` for SM 6 and writes headers with `/Fh` and `/Vn`. |
+| 005 | Pipeline creation outside start-up is an error in Debug and is logged in Release. |
+| 007 | The two-path validation runs as a Debug test run on a GPU agent. |
+| 010 | Third-party VFX middleware is excluded by R14. |
+| 017 | DirectXTex is a dependency of the content build tool only (NuGet, development tool). The executable reads DDS with Species code. |
+| 022 | Definitions reload in Debug only. Audio middleware is excluded by R14. |
+| 025 | Retitled. Long sounds are streamed MS-ADPCM, decoded by XAudio 2.9 and encoded by the content build tool (AdpcmEncode distribution unconfirmed). Seek and loop work on 32–512-sample blocks. No third-party codec; Opus is removed. xWMA is not used (encoder unconfirmed). Status stays Proposed. Verified: XAudio 2.9 formats on PC (PCM, float, ADPCM, xWMA) and ADPCM 4:1 with 32–512 samples per block. |
+| 026 | Drop counts are shown in Debug. |
+| 030 | **Accepted**: R14 excludes UI middleware, so `UiCore` is the decision. |
+| 036 | Effect definitions reload in Debug only. |
+| 050 | AVX2 CPU floor (Haswell 2013, Excavator 2015) set by `/arch:AVX2` (R16). The illegal-instruction failure cannot be reported by the start-up check. |
+| 051 | Retitled. Toolset `v145` (VS 2026; MSVC 14.50+, minor version not pinned, printed by CI). Settings identical in both configurations: `/std:c++latest`, `/permissive-`, `/W4` with `/WX` always, `/fp:precise`, `/arch:AVX2`, x64, plus `/Zi` (never `/ZI`, because `/guard:cf` excludes it) and the mitigations. Allowed differences: `/MDd` vs `/MD`, incremental linking vs `/OPT:REF`/`/OPT:ICF`/LTCG. Removed: clang-cl, the analysis configuration and the server compilers; a non-Windows server needs a later ADR. The FMA-contraction caveat of R16 is recorded against the numeric model (DEC-240/241). Verified: `v145` and the `/guard:cf`–`/ZI` incompatibility. |
+| 052 | Retitled. `/std:c++latest` everywhere; code is written to C++23, and a newer facility needs an amendment. One ABI unit (everything built from source). The portable subset is guidance only. Accepted (switch decided by AGENTS.md). |
+| 053 | **Rejected**: R7 allows only `.h`/`.cpp` and §4 fixes hand-ordered standard includes, so there are no module interface units and no `import std`. The option and its CI job are removed. |
+| 054 | **Accepted**, retitled "one MSBuild solution (`.slnx`) of `.vcxproj` projects, with the x64 configurations Debug and Release only" (no pipe character in the title, so the index table stays intact). Contents: functional filters, flat folders with the two shader subfolders, `v145`, the exact Debug/Release differences of §3, built through the solution (`/t:<Project>`), `$(SolutionDir)` paths, NuGet restore, never-committed outputs, and `Build\CheckProjectFiles.py`. The first projects' layout goes in a later ADR (§2). CMake, Ninja, presets and the extra flavours are removed. Verified: `.slnx` needs MSBuild 17.12+. |
+| 055 | **Accepted**, retitled. Allow-list table with pins: `Microsoft.Direct3D.D3D12` 1.619.6, `Microsoft.GameInput` 3.5.283, `WinPixEventRuntime` 1.0.240308001. `packages.config` restored with `/t:Restore /p:RestorePackagesConfig=true` into `packages\` (never committed). Explicit exclusion list follows R14. Tools under `Tools/` and `Build/` keep their own pinned dependencies. The licence list covers the three packages. vcpkg is removed. Verified: `packages.config` restore needs MSBuild 16.5+. |
+| 056 | **Accepted**, retitled. Products are projects (client, server, content build tool, `<Project>Tests`). Debug and Release only. A table lists what each configuration compiles in. Development features sit under `ENGINE_DEVELOPMENT`, derived from `NDEBUG`. Logging, black box, crash context, PIX markers and telemetry are in both. The cost is stated: no optimised build with development tools. `SPECIES_PRODUCT` and the extra flavours are removed. |
+| 057 | Identity records product and configuration. The header is `BuildIdentity.h`, generated by a solution build step (R7). |
+| 058 | The default chunk codec is the in-box Compression API, XPRESS with Huffman encoding (`Cabinet.dll`, Windows 8+, buffer mode, one call per chunk). Stored chunks are used where compression does not help. No Zstandard. Packs hold no shaders. Loose files are Debug-only. A DirectStorage back-end needs an allow-list decision. Verified on Learn: the algorithms and the selection guidance. |
+| 059 | The content build tool is a project of the solution under `Tools/`, a development tool outside R14. Shaders are no longer content. Its CI job comes by amendment. The Mermaid label edit removes only the word "shaders"; the syntax is unchanged. |
+| 062 | The generator is part of the Tools/ content build tool. Generated C++ follows AGENTS naming (R8 camelCase aggregate fields, R9 namespaces, R11 American spelling, e.g. schema `colour` → field `color`; schema names keep their spelling). |
+| 065 | The dedicated server is a Windows build, so WER covers it. The third-party crash SDK option is marked as excluded by R14 and its source is removed. |
+| 066 | Telemetry is in both configurations. The analytics SDK option is excluded by R14. |
+| 067 | Log levels per configuration (Release: info and above; Debug: debug and trace). The logging-library option is excluded by R14. |
+| 068 | Markers come from `ENGINE_PROFILE_SCOPE(name)` and `ENGINE_PROFILE_GPU_SCOPE(commandList, name)`. They stay in Debug and Release, so `WinPixEventRuntime.dll` ships. The overlay is Debug-only. Confirmations changed accordingly. |
+| 069 | **Accepted**, retitled. Microsoft C++ Unit Test Framework, run by `vstest.console.exe`. One `<Project>Tests` per library, `namespace <Project>Tests`, `SuiteSmoke` placeholder. Requirement id in the PascalCase method name and as a test-method attribute. Property and golden tests in Species code. Fuzz harnesses are `<Project>Fuzz` projects with `/fsanitize=address` and `/fsanitize=fuzzer` (experimental; verified). The third-party framework, CTest and the presets are removed. |
+| 070 | Retitled. CI is the committed `build.yml`. Windows job: toolchain print, solution locate, `CheckProjectFiles`, `Debug\|x64` build with `/warnaserror`, vstest suites requiring DLLs, pinned clang-tidy 22.1.8. Linux job: clang-format 18. Release is not built. A NuGet restore step and further guarded jobs come by amendment: design checks, content build, soak, fuzzing, reproducibility, performance, GPU golden-image and validation. Preset jobs, analysis and `import std` builds are removed. |
+| 071 | The install gains `WinPixEventRuntime.dll` and holds no shader files. The Agility SDK stays in `D3D12\`. The GameInput redistributable is run by the installer, never by the game. Licences cover the three packages. `diagnostics\` is Debug-only. |
+| 073 | Signing applies to Release builds where they are built; CI builds Debug only. |
+| 074 | The command-history time-source replacement is Debug-only. |
+| 076 | The encoder choice is fixed by R14 (libpng and single-header writers excluded). The record stays Proposed for the video-capture part only. |
+| 077 | The server is a Windows build and uses WinHTTP. The libcurl option is excluded by R14. The record stays Proposed (the in-box WinRT HTTP client remains an alternative). |
+| README | Index regenerated from the files (11 titles or statuses changed, see below). Baseline: removed CMake, Ninja, presets, vcpkg, the Linux server compilers, GoogleTest, Zstandard, Opus, the redistributable DXC, DirectX-Headers and the Sentry option. Added: rows 1.3 (AVX2), 2.3 (settings), 3.3 (clang-tidy 22.1.8 / clang-format 18 from `build.yml`), 3.4 (tests), 5.4 (Compression API). Rewrote rows 2.1, 2.2, 3.1, 3.2, 4.5, 4.7, 5.1, 5.2, 8.3 and 11.1. Rewrote §2 and §3; edited §1, §4, §5, §8 and §11. "Items not verified" lost the GCC, cppreference and cmake.org lines and gained the SDK `dxc` version. Intro: AGENTS.md wins (O21). |
+
+Index changes: ADR-025, 030, 051, 052, 053, 054, 055, 056, 058, 069 and 070.
+
+The other records need no change: 002, 004, 006, 008, 009, 011–016, 018–021, 023, 024, 027–029, 031–035, 060, 061, 063, 064 and 072. Their only "development" mentions name the development overlay or a development command, which are Debug features. Code identifiers in all 64 ADRs were checked against AGENTS §1. The only non-conforming names were `SPECIES_PROFILE_SCOPE`, `SPECIES_PRODUCT` and `SPECIES_IMPORT_STD`; all are gone. SDK names and data names (`_SPECIES_TINT`, `species_team_tint`, asset ids, keys) are unchanged.
+
+### 8.2 Verification on Microsoft documentation (2026-10-17)
+
+- **Toolset and solution:**
+  - VS 2026 ships `v145` with MSVC 14.50, and 14.51 is the default since May 2026.
+  - MSBuild builds `.slnx` from 17.12.
+  - `msbuild -t:restore -p:RestorePackagesConfig=true` restores `packages.config` projects (MSBuild 16.5+).
+- **Shaders:**
+  - Visual Studio uses `dxc` when Shader Model 6 is selected and writes byte arrays in headers (`/Fh`, `/Vn`).
+  - The Windows SDK provides the DXC compiler for Direct3D 12.
+  - SM 6.6 was announced on 2021-04-20.
+- **Tests:** the CppUnitTest header and library sit under `VC\Auxiliary\VS\UnitTest` and support test-method attributes; `vstest.console.exe` returns 0 when it finds no tests; `/fsanitize=fuzzer` is experimental, from VS 2022 17.0.
+- **Compression API:** MSZIP, XPRESS, XPRESS_HUFF and LZMS from Windows 8 (`Cabinet.dll`), with the selection guidance.
+- **XAudio2:** XAudio 2.9 on PC accepts 16-bit PCM, float, 16-bit ADPCM and xWMA; ADPCM has 32–512 samples per block, up to 4:1, and is decoded in software.
+- **Linker:** `/guard:cf` is incompatible with `/ZI`.
+- **Not verifiable:** the exact `dxc` version that SDK 10.0.26100.9457 installs is not published on Learn. It is recorded under "Items not verified"; ADR-003 relies only on SM 6.6 support, which predates the SDK series, and CI records the toolchain.
+
+### 8.3 Proposals for AGENTS.md (owner decisions; not applied)
+
+1. **Compute shader suffix:** `CS` (compute) as a third stage suffix next to `VS` and `PS` in §2; the renderer and VFX have compute shaders.
+2. **Permutation files:** each permutation as its own `<Shader><Permutation><Stage>.hlsl` file in `<Lib>/Shader/`, with one shared include file per shader (for example `.hlsli`) in the same folder; §2 names only `.hlsl` sources.
+3. **Fuzz projects:** `<Project>Fuzz` projects for fuzz harnesses, with ASan and fuzzer settings identical in both configurations of that project.
+4. **The content build tool's own dependency:** §2 says "The build depends on the Windows SDK, the MSVC standard library and the three Microsoft packages", while R14 exempts development tools. The content build tool (a solution project under `Tools/`) needs DirectXTex for BC7 encoding. I propose §2 says "the executable's build", or that the tool gets a solution of its own under `Tools/`. ADR-017, ADR-055 and ADR-059 follow the R14 tool exception.
+5. **Restore step in CI:** `build.yml` needs a guarded NuGet restore step, `/t:Restore /p:RestorePackagesConfig=true` before the build, once a project has a `packages.config`. Today the Build step does not restore. ADR-070 records it as an amendment to come.
+6. **The `ENGINE_DEVELOPMENT` switch** derived from `NDEBUG` in one engine header (ADR-056). It is a macro family of its own; it may want a line in §4 next to the Windows macro header rule.
+
+### 8.4 Coordinator notes
+
+- File slugs no longer match three titles. Suggested renames, which need link repointing, so I did not do them:
+  - `ADR-054-build-system-cmake-presets.md` → `ADR-054-build-system-msbuild-solution.md`;
+  - `ADR-055-dependencies-vcpkg-manifest-mode.md` → `ADR-055-dependencies-three-nuget-packages.md`;
+  - `ADR-056-editions-build-flavours-and-feature-flags.md` → `ADR-056-products-configurations-and-feature-flags.md`.
+- `species_work/standards_baseline.md` (not mine) still holds the CMake, vcpkg, server-compiler, Opus and DXC-redistributable lines; the README copy is now the aligned one.
+- The `decision-makers` front matter of the records decided by AGENTS.md reads "Species technology lead; decided by the owner's AGENTS.md (O21)".
+
+### 8.5 Checks (second pass)
+
+- `scan_patterns.py forbidden_patterns.tsv design_next/ADR/*.md`: no output.
+- `soft_patterns.tsv`: only allowed terms remain (CONVENTIONS §9 `ADR/*.md` paths): `Linux` in ADR-070 (CI hosting), `immediate-mode` in ADR-030, `retail` in `ADR/README.md`. "porting" in ADR-052 and "Explorer" in ADR-069 were reworded.
+- `check_design.py --skip-mermaid`: no failure names an ADR file (gates 1, 3, 7, 9 and 10 pass). The failures elsewhere are other packages' items: one soft hit in `reference/03`, three undefined requirement ids, 14 uncited Open DECs and two uncited tuning keys.
+- The ids helper finds 0 undefined requirement or DEC ids in the ADRs; the paths helper finds no broken link.
+- Largest file: `ADR/README.md` at 52.5 KB.
+
+### 8.6 Component fixes needed (second pass, F12 onwards)
+
+These are for the wave B fixers. The general AGENTS.md naming rewrite of every sketch (O23) is the "Wave B addition" of the brief and is not repeated here; the lines below are the changes the amended ADRs require.
+
+| # | Target | Fix |
+|---|---|---|
+| F12 | `architecture/components/build_tooling_and_distribution.md`, the whole document. Ids: BLD-001, BLD-003, BLD-005 to BLD-008, BLD-013, BLD-014, BLD-017, BLD-019, BLD-020, BLD-023, BLD-024, BLD-027 to BLD-038, BLD-043, BLD-044, BLD-046, BLD-048, BLD-082, BLD-086, BLD-089 to BLD-091, BLD-095, BLD-096, BLD-100, BLD-118, the §4.13 tuning table, §6, §7, §8 | Rewrite to ADR-054/055/056/070. One `.slnx` with `.vcxproj` and filters; `v145`; Debug and Release only, differing only in AGENTS §3 settings. Replace the preset tables 2.1-A and 2.1-B by solution, projects and configurations. Products are projects (client, server, content build tool, `<Project>Tests`), with no `SPECIES_PRODUCT`. Switches derive from `NDEBUG` (`ENGINE_DEVELOPMENT`). NuGet `packages.config` for the three packages replaces the vcpkg manifest and triplets. BLD-028: `/std:c++latest` in place of `/std:c++23`. BLD-033: drop clang-cl and the analysis builds. CI jobs follow `build.yml` plus the amendments of ADR-070. BLD-043: the texture library is a NuGet dependency of the content build tool; the shader compiler is the SDK `dxc` via `FXCompile`, not pinned through a manifest. BLD-019/020: the generated header is `BuildIdentity.h` from a build step; rename `SPECIES_BUILD_NUMBER` and `SPECIES_SOURCE_REVISION` to `ENGINE_*` (or build-step properties). Sketch namespace `species::build` → `Engine` (O23). F9 (`bld.pin.windows_sdk` = 10.0.26100.9457) still applies. |
+| F13 | `diagnostics_test_and_performance.md` (or its split folder, item 113). Ids: DBG-004, DBG-020, DBG-041, DBG-049, DBG-064, DBG-070, DBG-072, DBG-080, DBG-095, DBG-098, DBG-140, DBG-181, DBG-206, the §4.11 tuning table, §7, §8.3, and the macro block | DBG-004 table: two columns (Debug, Release). The development facilities are Debug-only. PIX markers, GPU timestamps, logging at info and above, the black box and telemetry are in both. Debug-level records are Debug-only. Rename the macros: `SPECIES_ASSERT` → `ENGINE_ASSERT`, `SPECIES_CHECK` → `ENGINE_CHECK`, `SPECIES_CHECK_INDEX` → `ENGINE_CHECK_INDEX`, `SPECIES_PROFILE_SCOPE` → `ENGINE_PROFILE_SCOPE`, `SPECIES_PROFILE_GPU_SCOPE` → `ENGINE_PROFILE_GPU_SCOPE`. DBG-140: tests on the Microsoft C++ Unit Test Framework with `vstest.console.exe`, `<Project>Tests`, `SuiteSmoke`, requirement-id attributes (ADR-069). Fuzzing uses `<Project>Fuzz` projects. Soak and performance CI jobs follow ADR-070 (guarded, added by amendment). |
+| F14 | `architecture/components/asset_pipeline_and_resources.md`: table 3.11-A shader row, AST-051, AST-057 table 3.13-A, AST-055, AST-095, the `ast.pack.zstd_level` key, AST-080, AST-006, AST-105 to AST-107, AST-121, §8 | Shaders are not content: remove the `Shader` content type, the shader row and the "shader blobs" of the `startup` pack (ADR-003, ADR-058). AST-055: codecs become stored and XPRESS with Huffman encoding (Windows Compression API). Replace `ast.pack.zstd_level` by the Compression API setting, if any. AST-080: streamed sounds are MS-ADPCM, not Opus (ADR-025). AST-006/105–107/121: "Profile and shipping builds" → "Release builds"; loose files are Debug-only. |
+| F15 | `architecture/components/audio_engine.md`: AEN-060, AEN-072 (stream format), AEN-246, §4.20, AEN-323, the streaming requirements (§4.18, AEN-252 and the `aen.stream.*` keys) | Streams are MS-ADPCM decoded by XAudio2. Remove the Opus packets, pre-skip, packet duration and the Species decoder task. Seek and loop work at block granularity; the samples per block is a key (32–512, default 512); loop points sit on block boundaries (ADR-025). AEN-323: "Development builds" → "Debug builds". |
+| F16 | `architecture/components/renderer/shaders.md` RND-260, RND-261, RND-263; `renderer/README.md` RND-011, RND-041; `frame_graph_and_passes.md` RND-076 | RND-260: compiled by `FXCompile` with the SDK `dxc` into embedded byte arrays (ADR-003), not "the pinned DXC". RND-261/263: one source file per shader, stage and permutation, `<Shader><Permutation><Stage>.hlsl` in PascalCase (`SkyVS`, `TerrainInvertedPS`, `MeshLitFogPS`, `SeaWavesUpdateCS`), each producing `g_<Shader><Stage>`. RND-011/076: development flags and banners are Debug-only; "shipping builds" → "Release builds". The shared C++/HLSL header (RND-262) is a `.h` in the renderer project folder. |
+| F17 | `architecture/components/platform_layer.md`: PLT-017, PLT-022, PLT-026, PLT-049, PLT-051, PLT-107, PLT-130, §7 | `Debug` and `Development` → Debug only; `Profile`/`Shipping` → Release (ADR-056, ADR-074). The server is a Windows build (ADR-051). |
+| F18 | `architecture/components/camera_and_sequences.md` CAM-080, CAM-125; `ui_framework/pages_and_screen_recipes.md` UI-482; `animation_and_vfx/` and `ui_framework/` hot-reload lines | Developer fly mode, diagnostics overlay and hot reload exist in Debug builds only (ADR-056). |
+| F19 | `architecture/components/data_schemas/README.md` DAT-052 and §2 | Loose files and the development record overlay are Debug-only. "`tools` product" → the content build tool project under `Tools/`. Remove the vcpkg mention. The generated C++ follows AGENTS naming: aggregate fields in camelCase, American spelling, `Engine`/`Species` namespaces (ADR-062). |
+| F20 | `architecture/components/input.md`, `ui_framework/`, `renderer/`, `audio_engine.md`, `platform_layer.md` | Wherever a requirement says "development builds" or names the `Development`/`Profile`/`Shipping` flavours, use Debug/Release (the scan found the ids in F13–F19; the coordinator's gate scan can list any rest). |
+| F21 | `design_next/CONVENTIONS.md` §8.12 (FX-12) | Engine macros are `ENGINE_*` (`ENGINE_ASSERT`, `ENGINE_CHECK`, `ENGINE_CHECK_INDEX`, `ENGINE_PROFILE_SCOPE`, `ENGINE_PROFILE_GPU_SCOPE`, `ENGINE_DEVELOPMENT`); `SPECIES_*` macros are removed; C++ files are named for their primary type (`BuildIdentity.h`); shader file names follow `<Shader><Stage>.hlsl`. `_SPECIES_TINT` stays a glTF attribute (data). |
+| F22 | `design_next/glossary/a_to_l.md` §A and `m_to_z.md` §P (X-GLO) | Entries that name the build flavours (`Development`, `Profile`, `Shipping`) become Debug and Release; add "content build tool" as a development tool under `Tools/` if the glossary names the `tools` product. |
+| F23 | `decisions/data_sequences_platform_debug.md` DEC-803 and `decisions/deferred/networking.md` DEC-204 (decision owners) | Replace the flavour names in their text with Debug/Release. |

@@ -78,7 +78,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 ### 2.8 Priorities and voices
 
-**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level while it plays, and its level target while it waits. A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-074).
+**R-AUD-215** (MUST) **Audibility.** At every audio update each live instance has an audibility: full level for a two-dimensional instance; otherwise base × g(d), where base is the instance's current envelope level once it has played, that is once it has ever had a voice, including while it is kept virtual after losing its voice (R-AUD-218), and its level target while it has never had a voice ([audio engine](../../architecture/components/audio_engine.md) AEN-140). A playing instance in a long release tail therefore ranks lower as it fades (R-AUD-074). In the reference allocation (R-AUD-219) an instance that loses its voice is removed or restarts from its beginning, so there the two cases are an instance with a voice and an instance waiting for one.
 
 **R-AUD-216** (MUST) **Copies of one event.** The instances are ranked by audibility, loudest first, and each further instance of the same full event id is multiplied by `ref.aud.rank.copy_decay` (0.75) once per louder copy: priority = audibility × 0.75^k, with k the number of louder instances of the same event in this update (1, 0.75, 0.5625, 0.421875 for the first four). Copies of one event therefore limit themselves as a group without a hard cap.
 

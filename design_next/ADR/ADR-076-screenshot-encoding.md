@@ -27,7 +27,7 @@ Which encoder writes Species screenshots, and does the engine capture video?
 
 ## Decision Outcome
 
-Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the default the team proceeds with.
+Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the default the team proceeds with; the choice of encoder is fixed by `AGENTS.md` R14, which excludes the third-party alternatives, and the record stays Proposed only for the video-capture part.
 
 * **Format:** PNG, 8-bit sRGB RGBA for SDR frames; HDR frames are tone-mapped to SDR before encoding.
 * **Pipeline:** the renderer copies the frame or tile into a readback buffer, a worker thread maps it after its fence completes and encodes it with WIC, and the file is written as `species_<UTC date and time>.png` under `Pictures\Species\`.
@@ -56,12 +56,12 @@ Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the de
 ### A current libpng
 
 * Good, because it is portable.
-* Bad, because it is a dependency to pin and service for something Windows already provides.
+* Bad, because it is a dependency to pin and service for something Windows already provides, and `AGENTS.md` R14 excludes it.
 
 ### A single-header PNG writer
 
 * Good, because it is tiny and portable.
-* Bad, because compression is weaker and large poster images need extra work.
+* Bad, because compression is weaker, large poster images need extra work, and `AGENTS.md` R14 excludes it.
 
 ### An engine video recorder
 
@@ -71,4 +71,5 @@ Chosen option: "The Windows Imaging Component (WIC) PNG encoder". This is the de
 
 * The standards baseline lists no WIC version; WIC is part of every supported Windows version and of the Windows SDK pinned by [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md).
 * Components: renderer (`RND`, readback), platform layer (`PLT`, encoding and file output).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** WIC is the only PNG encoder `AGENTS.md` R14 leaves; libpng and single-header writers are excluded.
 * **Amendment 2026-10-17.** Posters are written with opaque alpha (RND-114); the file name gains a numeric suffix when a file of that name exists (PLT-097).

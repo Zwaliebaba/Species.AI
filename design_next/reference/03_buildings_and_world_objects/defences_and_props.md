@@ -44,7 +44,7 @@ Table 1-A The objects of both files.
 
 **R-BLDG-400** (MUST) The rules of §2.1 apply to every object of table 1-A, in this document and in its [companion](trees_and_crate_structures.md). The values of both files are the reference tuning baseline that Species may adopt (DEC-004), and the two files are the specification of record for these objects (DEC-005). Every reference behaviour that looks accidental and that no Resolved decision corrects is stated as an explicit rule with a named key (DEC-006). The function, capture rules, ports and links of these kinds are kept, with the structure corrections applied (DEC-020, DEC-088).
 
-**R-BLDG-401** (MUST) The shared structure rules of the [README](README.md) apply to every structure of table 1-A: one advance per tick (R-BLDG-001, R-BLDG-002); integer tick timers, with every recount written with a one-second period running every `ref.mode.recount.one_second` (11 ticks) of reference/01 (R-BLDG-003); game speed as tick scheduling (R-BLDG-004); teams and friendship (R-BLDG-005 to R-BLDG-008); the damage sign convention (R-BLDG-009); ports, occupancy and reservation (R-BLDG-019 to R-BLDG-025); the lifecycle (R-BLDG-028 to R-BLDG-032); damage and destruction (R-BLDG-034 to R-BLDG-037); ownership changes (R-BLDG-038, R-BLDG-039); hit tests and meshes (R-BLDG-041 to R-BLDG-044); presentation (R-BLDG-045 to R-BLDG-048); sound events (R-BLDG-049); and map records (R-BLDG-050). This document states only what each kind adds or changes.
+**R-BLDG-401** (MUST) The shared structure rules of the [README](README.md) apply to every structure of table 1-A: one advance per tick (R-BLDG-001, R-BLDG-002); integer tick timers, each with its own key in the file that owns the structure (R-BLDG-003); game speed as tick scheduling (R-BLDG-004); teams and friendship (R-BLDG-005 to R-BLDG-008); the damage sign convention (R-BLDG-009); ports, occupancy and reservation (R-BLDG-019 to R-BLDG-025); the lifecycle (R-BLDG-028 to R-BLDG-032); damage and destruction (R-BLDG-034 to R-BLDG-037); ownership changes (R-BLDG-038, R-BLDG-039); hit tests and meshes (R-BLDG-041 to R-BLDG-044); presentation (R-BLDG-045 to R-BLDG-048); sound events (R-BLDG-049); and map records (R-BLDG-050). This document states only what each kind adds or changes.
 
 **R-BLDG-402** (MUST) The notation of the README applies: `U[a, b)` is a uniform real draw and `U{a..b}` a uniform integer draw, both from the simulation generator unless a rule names the presentation generator. Every draw is its own statement, made in the step that the rule names, and the draws of one step are made in the order in which the rule lists them (DEC-013, DEC-652). Cosmetic draws (particles, sparks, smoke, flicker, sound choice) come from the presentation generator and never reach simulation state (DEC-013, DEC-222; reference/12 R-SIM-622 and R-SIM-640). The simulation draws of these objects are listed in reference/12 R-SIM-630 Table 1.
 
@@ -56,7 +56,7 @@ Table 1-A The objects of both files.
 
 #### 2.2.1 Structure and types
 
-**R-BLDG-405** (MUST) A turret (`Turret`) is a manned weapon emplacement. It consists of a fixed mount, `mesh.structure.turret_mount`, which carries `ref.bldg.turret.ports` (4) port sockets `port_01` to `port_04` and the status sockets `status_01` to `status_04`; a head, `mesh.structure.turret_head`, which turns towards the aim point and carries the sockets `barrel_mount` and `kill_counter`; and a barrel set chosen by the turret's type, one variant of `mesh.structure.turret_barrel`, with `ref.bldg.turret.barrels` (4) barrels. Barrel i belongs to port i. The turret is owned by the team that mans its ports (R-BLDG-408), engages enemies on its own (§2.2.3, §2.2.4) and can be aimed by its owner (§2.2.8).
+**R-BLDG-405** (MUST) A turret (`Turret`) is a manned weapon emplacement. It consists of a fixed mount, `mesh.structure.turret_mount`, which carries `ref.bldg.turret.ports` (4) port sockets `port_01` to `port_04` and the status sockets `status_01` to `status_04`; a head, `mesh.structure.turret_head`, which turns towards the aim point and carries the sockets `barrel_mount` and `kill_counter`, with the collision asset `mesh.collision.turret_head`; and a barrel set chosen by the turret's type, one variant of `mesh.structure.turret_barrel`, with `ref.bldg.turret.barrels` (4) barrels and the matching member of `mesh.collision.turret_barrel` (README table 2.12-B). Barrel i belongs to port i. The turret is owned by the team that mans its ports (R-BLDG-408), engages enemies on its own (§2.2.3, §2.2.4) and can be aimed by its owner (§2.2.8).
 
 **R-BLDG-406** (MUST) A turret has one of five types (`TurretType`), listed in this order, which is also the order of the type field of its map record (R-BLDG-407). The display name of each type is new text under the string id given.
 
@@ -84,7 +84,7 @@ The reload tick counts are those of DEC-002 (rocket turret 1.5 s = 15 ticks, Con
 
 The four mortar fields are given together or not at all. A turret ignores the facing of its map record: initialisation sets its up to (0, 1, 0) and its front to (0, 0, 1), whatever the map says (see DEC-462). Its centre is its position and its radius is `ref.bldg.turret.radius` (30 wu). Its sphere and mesh tests are against its meshes; its ray test hits the head mesh, the barrel mesh or a sphere of radius `ref.bldg.turret.ray_sphere_radius` (12 wu) centred `ref.bldg.turret.ray_sphere_height` (10 wu) above its position, and picking a turret uses this ray test (README table 2.12-A).
 
-**R-BLDG-408** (MUST) A turret is a structure of the README's capture model (table 2.7-A). Its ownership evaluation runs on its first advance and then every `ref.mode.recount.one_second` (11 ticks): it counts the operators of its four ports per team; the candidate is the first team in slot order with at least one operator, replaced by any later team with strictly more operators; if any operator is not a friend of the candidate, the result is no team; with no operator at all the result is no team. A single Worker therefore owns a turret, and co-op allies may man it together. The result is applied through the team-assignment operation (R-BLDG-038).
+**R-BLDG-408** (MUST) A turret is a structure of the README's capture model (table 2.7-A). Its ownership evaluation runs on its first advance and then every `ref.bldg.turret.recount_ticks` (11 ticks, the tick count of a 1.0 s countdown, DEC-002): it counts the operators of its four ports per team; the candidate is the first team in slot order with at least one operator, replaced by any later team with strictly more operators; if any operator is not a friend of the candidate, the result is no team; with no operator at all the result is no team. A single Worker therefore owns a turret, and co-op allies may man it together. The result is applied through the team-assignment operation (R-BLDG-038).
 
 **R-BLDG-409** (MUST) A Convert Turret owned by a team that is not the Visitor faction, and a turret of any other type owned by the Visitor faction, damages itself by −`ref.bldg.turret.self_destruct_damage` (1000) at that ownership evaluation and is destroyed (R-BLDG-423).
 
@@ -93,7 +93,7 @@ The four mortar fields are given together or not at all. A turret ignores the fa
 **R-BLDG-410** (MUST) Each tick a turret's advance runs these steps in order:
 
 1. On its first advance, it creates its bot navigation node (R-BLDG-426).
-2. Its ownership timer counts down; at 0 it runs the ownership evaluation (R-BLDG-408) and restarts at `ref.mode.recount.one_second`.
+2. Its ownership timer counts down; at 0 it runs the ownership evaluation (R-BLDG-408) and restarts at `ref.bldg.turret.recount_ticks`.
 3. Its fire timer decreases by 1 tick.
 4. While it has a team and is not selected by its owner: targeting, aiming and the automatic fire decision (§2.2.3 and §2.2.4).
 5. While it is selected by its owner: player control (§2.2.8).
@@ -106,7 +106,7 @@ A turret with no team only evaluates ownership and its ports; it neither searche
 
 #### 2.2.3 Targeting
 
-**R-BLDG-411** (MUST) A turret with a team searches for a target on its first eligible advance and then every `ref.mode.recount.one_second` (11 ticks):
+**R-BLDG-411** (MUST) A turret with a team searches for a target on its first eligible advance and then every `ref.bldg.turret.recount_ticks` (11 ticks):
 
 - **Mortar turret.** The target point is the turret's position + (mortar target x, 0, mortar target z). The target is `NearestEnemy(target point, 0, mortar target radius, team)` of the actor grid (reference/12 R-SIM-311): the nearest living enemy that is not a bot controller, the first in result order on equal distance. While it has a target, its aim point is the target point.
 - **Every other type.** When `EnemiesInCells(position, maximum range, team)` reports no enemy (reference/12 R-SIM-313), there is no target. Otherwise it takes the exact enemy list `Enemies(position, maximum range, team)` in result order, skips every bot controller, every Collector and every dead actor, and keeps the nearest candidate whose distance is at least the type's minimum range and to which the line of sight is clear (R-BLDG-413). A candidate replaces the best so far only when it is strictly nearer, so on equal distance the first in result order wins.
@@ -121,7 +121,7 @@ When the chosen target differs from the previous one, the turret raises `turret.
 
 **R-BLDG-414** (MUST) While a turret has a target that exists and is alive, its aim point is the target's position + (`ref.bldg.turret.wobble_xz` × sin(`ref.bldg.turret.wobble_rate_xz` × t), |`ref.bldg.turret.wobble_y` × sin(`ref.bldg.turret.wobble_rate_y` × t)|, `ref.bldg.turret.wobble_xz` × cos(`ref.bldg.turret.wobble_rate_xz` × t)), with t the match time in seconds (R-BLDG-403): a wobble of ±20 wu in x and z and 0 to 10 wu up, at 3 and 2 rad per second. The mortar turret's aim point is its target point (R-BLDG-411).
 
-**R-BLDG-415** (MUST) The automatic fire decision runs the fire step (R-BLDG-418) when the turret has a target, the horizontal angle between its front and the direction to its aim point is below `ref.bldg.turret.fire_cone` (0.3 rad), and its friendly-fire flag is clear. The angle is the arccosine of the dot product of the two horizontal unit vectors, clamped to [−1, 1] before the arccosine (DEC-653 item 8). Every tick on which the turret has a target records that tick; for `ref.bldg.turret.hose_window_ticks` (10 ticks) after the last such tick the turret keeps running the fire step at its last aim point although it has no target ("hosing").
+**R-BLDG-415** (MUST) The automatic fire decision runs the fire step (R-BLDG-418) when the turret has a target, the horizontal angle between its front and the direction to its aim point is below `ref.bldg.turret.fire_cone` (0.3 rad), and its friendly-fire flag is clear. The angle is the arccosine of the dot product of the two horizontal unit vectors, clamped to [−1, 1] before the arccosine (DEC-653 item 8). Every tick on which the turret has a target records that tick; for `ref.bldg.turret.hose_window_ticks` (10 ticks) after the last such tick the turret keeps running the fire step at its last aim point although it has no target ("hosing", see DEC-859).
 
 **R-BLDG-416** (MUST) Every tick, an aim point closer than `ref.bldg.turret.min_aim_distance` (75 wu) to the turret is moved outward along the direction from the turret to `ref.bldg.turret.min_aim_distance`. The head then turns towards the aim point by `ref.bldg.turret.yaw_gain` (0.2) × the horizontal angle between its front and the aim direction, and the barrel's up vector blends towards the aim direction as up = up × (1 − `ref.bldg.turret.pitch_blend`) + aim direction × `ref.bldg.turret.pitch_blend` (0.2 per tick, 2 per second × the tick period). The muzzle sockets follow the head and the barrels.
 
@@ -145,9 +145,9 @@ The second examined barrel fires in the same step even though the first has set 
 | Type | Weapon | Launch |
 |---|---|---|
 | gun turret | turret round (`TurretRound`, `mesh.projectile.turret_round`) of the turret's team | velocity v = barrel front × `ref.bldg.turret.gun.round_speed` (500 wu/s); start = muzzle − v × `ref.sim.tick_period` × `ref.bldg.turret.gun.start_back_fraction` (half a tick of travel behind the muzzle) |
-| rocket turret | rocket (`RocketProjectile`) of the turret's team | from the muzzle towards the point muzzle + barrel front × `ref.bldg.turret.rocket.aim_distance` (500 wu), with a life of `ref.bldg.turret.rocket.life_ticks` (10 ticks) |
+| rocket turret | rocket (`RocketProjectile`) of the turret's team | from the muzzle towards the point muzzle + barrel front × `ref.bldg.turret.rocket.aim_distance` (500 wu), with a life of `ref.bldg.turret.rocket.life_ticks` (11 ticks: the first tick on which the rocket's age exceeds 1.0 s, as in R-CRATE-431) |
 | mortar turret | grenade (`GrenadeProjectile`) of the turret's team | thrown from the muzzle at the point turret position + (mortar target x + dx, 0, mortar target z + dz) with force = mortar force + df (R-BLDG-418 step 1), a fuse of `ref.bldg.turret.mortar.fuse_ticks` (10,000 ticks, so it never times out in practice), exploding on impact |
-| flame turret | fireball (`FireballProjectile`) with no team, so it harms every team | velocity barrel front × `ref.bldg.turret.flame.fireball_speed` (100 wu/s), with a life of `ref.bldg.turret.flame.fireball_life_ticks` (10 ticks) |
+| flame turret | fireball (`FireballProjectile`) with no team, so it harms every team | velocity barrel front × `ref.bldg.turret.flame.fireball_speed` (100 wu/s), with a life of `ref.bldg.turret.flame.fireball_life_ticks` (11 ticks) |
 | Convert Turret | Convert laser bolt (`LaserBolt`, converting) of the turret's team | velocity barrel front × `ref.bldg.turret.convert.bolt_speed` (125 wu/s, a quarter of the turret-round speed); its life is the laser life `ref.weapon.laser.life_ticks` of reference/04 at the fixed match laser level (6 ticks) × 2, so 12 ticks and about 150 wu of range (see DEC-115) |
 
 A turret round, a rocket and a grenade also create the shot's muzzle flash (reference/12 R-SIM-228).
@@ -171,13 +171,13 @@ A turret power's target point is invalid inside an exclusion zone that blocks po
 
 #### 2.2.8 Player control
 
-**R-BLDG-425** (MUST) The owner of a turret may select it; the selection is local input of the owning team only, and the `Select` command sets the turret's fire timer to `ref.sim.team.turret_select_delay` (6 ticks) and puts the owner's camera into turret-aim mode (reference/12 R-SIM-405). While the turret is selected by its team, it makes no automatic search, aim or fire decision. Each tick its aim point is the `pointer_position` of its team's command state, and the fire step runs when that state carries `move_target`, `primary_fire` or `primary_held` (reference/12 R-SIM-439). Player-controlled fire is not blocked by the friendly-fire flag. The aiming cursor is `cursor.turret_aim` ([06 Controls, camera and commands](../06_controls_camera_and_commands/README.md)). Deselecting returns the turret to automatic control.
+**R-BLDG-425** (MUST) The owner of a turret may select it; the selection is local input of the owning team only, and the `Select` command sets the turret's fire timer to `ref.sim.team.turret_select_delay` (6 ticks) and puts the owner's camera into turret-aim mode (reference/12 R-SIM-405). While the turret is selected by its team, it makes no automatic search, aim or fire decision. Each tick its aim point is the `pointerPosition` of its team's command state, and the fire step runs when that state carries `moveTarget`, `primaryFire` or `primaryHeld` (reference/12 R-SIM-439). Player-controlled fire is not blocked by the friendly-fire flag. The aiming cursor is `cursor.turret_aim` ([06 Controls, camera and commands](../06_controls_camera_and_commands/README.md)). Deselecting returns the turret to automatic control.
 
 #### 2.2.9 Bot navigation node and kill counter
 
 **R-BLDG-426** (MUST) On its first advance a turret creates a bot navigation node (`BotNavNode`) at its own position, marked as a turret node, with a new serial, and the bot navigation links are recomputed ([07 Bots](../07_bots/README.md)), so that bots contest the turret. The node is destroyed with the turret.
 
-**R-BLDG-427** (MUST) A turret keeps a kill count per team slot. A kill made by a weapon that carries the turret's handle adds 1 to the count of the turret's team when the victim is an enemy and subtracts 1 when the victim is a friend, and raises `turret.kill_tick` (presentation); the kill also counts for the team (reference/12 R-SIM-221). The head's `kill_counter` socket shows the count of the turret's team at text size `ref.bldg.turret.kill_text_size` (2), or `ref.bldg.turret.kill_text_size_large` (1.5) when the count exceeds `ref.bldg.turret.kill_text_threshold` (999); while the friendly-fire flag is set it shows the new text `building.turret.friendly_fire_warning` ("Allies in the line of fire") instead.
+**R-BLDG-427** (MUST) A turret keeps a kill count per team slot. A kill made by a weapon that carries the turret's handle adds 1 to the count of the turret's team when the victim is an enemy and subtracts 1 when the victim is a friend, and raises `turret.kill_tick` (presentation); the kill also counts for the team (reference/12 R-SIM-221). The kill sound of a turret round, `sfx.weapon.laser_bolt.kill`, is the weapon's own event ([04 Weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) R-CRATE-451). The head's `kill_counter` socket shows the count of the turret's team at text size `ref.bldg.turret.kill_text_size` (2), or `ref.bldg.turret.kill_text_size_large` (1.5) when the count exceeds `ref.bldg.turret.kill_text_threshold` (999); while the friendly-fire flag is set it shows the new text `building.turret.friendly_fire_warning` ("Allies in the line of fire") instead.
 
 #### 2.2.10 Presentation
 
@@ -193,17 +193,17 @@ A turret power's target point is invalid inside an exclusion zone that blocks po
 
 ### 2.3 Barrier Emitter
 
-**R-BLDG-432** (MUST) A Barrier Emitter (`BarrierEmitter`) is a post, `mesh.structure.barrier_emitter` (sockets `field_anchor_01`, `field_anchor_02` and `light_01`), that while raised projects an energy field to the **next** emitter named by its link; chains of linked emitters form barrier lines. An enemy actor that touches a raised field dies or, if it is a Worker, catches fire (R-BLDG-442); every raised field, of any team, blocks walking routes (R-BLDG-443). Its team comes from its map record and never changes; it has no ports and is never captured; it is indestructible (R-BLDG-034); it draws no lights (R-BLDG-045).
+**R-BLDG-432** (MUST) A Barrier Emitter (`BarrierEmitter`) is a post, `mesh.structure.barrier_emitter` (sockets `field_anchor_01`, `field_anchor_02` and `light_01`; collision asset `mesh.collision.barrier_emitter`), that while raised projects an energy field to the **next** emitter named by its link; chains of linked emitters form barrier lines. An enemy actor that touches a raised field dies or, if it is a Worker, catches fire (R-BLDG-442); every raised field, of any team, blocks walking routes (R-BLDG-443). Its team comes from its map record and never changes; it has no ports and is never captured; it is indestructible (R-BLDG-034); it draws no lights (R-BLDG-045).
 
 **R-BLDG-433** (MUST) A Barrier Emitter's map record holds the base fields and then:
 
 | Field | Default | Meaning |
 |---|---|---|
-| link | none (required field) | the structure id of the next emitter; none ends the chain, and this post then draws and tests no field |
+| link | absent: no next emitter, so the chain ends ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) DAT-146) | the structure id of the next emitter; an emitter without a link ends the chain and draws and tests no field |
 | scale | `ref.bldg.barrier_emitter.default_scale` (1.0) | uniform scale of the post, and so of the field height |
 | initial mode | Lowered | one of the modes of R-BLDG-435 |
 
-The content build rejects a link that names no structure or a structure that is not a Barrier Emitter (DEC-015). If such a link reached the simulation, every rule would treat it as no link; presentation never changes the link (DEC-007, DEC-222; reference/12 R-SIM-656).
+The content build rejects a link that names no structure or a structure that is not a Barrier Emitter (DEC-015), and a ring of linked emitters whose every emitter starts in RelayOnly mode, because a forwarded request would circle it without end (DEC-968). If such a link reached the simulation, every rule would treat it as no link; presentation never changes the link (DEC-007, DEC-222; reference/12 R-SIM-656).
 
 **R-BLDG-434** (MUST) Initialisation copies the three fields, sets the field status to 1 when the mode is Raised or AlwaysRaised and to 0 otherwise, and draws the first spark delay ⌈U[0, `ref.bldg.barrier_emitter.first_spark_spread_ticks`)⌉ ticks (0 to 100 ticks) from the simulation generator (reference/12 R-SIM-630 Table 1).
 
@@ -255,7 +255,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-442** (MUST) A raised field acts on the actors that touch it, whatever its team, through the actor rules: an actor of a team that is not a friend of the emitter's team that touches a raised field with the kill flag set takes −`ref.sim.push.emitter_kill_damage` (9999) and is never pushed by the field (reference/12 R-SIM-381); a Worker is set on fire or pushed clear instead ([02 Worker](../02_units/worker.md) R-UNIT-113); a Transport is destroyed ([02 Transport](../02_units/transport.md) R-UNIT-377). Each kill raises `barrier_emitter.electrocute` at the actor's position. A friendly or lowered field is passed through.
 
-**R-BLDG-443** (MUST) A raised field of any team blocks walking: the walkability test reports it, the walking cost treats it as an obstacle and the nearest-node scan does not take a node behind it (reference/12 R-SIM-335, R-SIM-338, R-SIM-346); the bot navigation graph treats a link that crosses the field of an emitter of a team that is not a friend as blocked while that field is raised, without a rebuild when the field changes (DEC-087; [07 Bots](../07_bots/README.md)); and the Transport's sea-route test refuses a crossing of a raised field of a team that is not a friend (R-UNIT-384). Raising or lowering a field rebuilds no route table (reference/12 R-SIM-343).
+**R-BLDG-443** (MUST) A raised field of any team blocks walking: the walkability test reports it, the walking cost treats it as an obstacle and the nearest-node scan does not take a node behind it (reference/12 R-SIM-335, R-SIM-338, R-SIM-346); a bot navigation link keeps the emitter it crosses whatever the emitter's state, and each bot rule that uses the link tests that emitter's current state and team by one of the use-time tests of [07 Bots](../07_bots/01_navigation_graph.md) R-BOT-033, so raising or lowering a field needs no rebuild (R-BOT-031, DEC-087); and the Transport's sea-route test refuses a crossing of a raised field of a team that is not a friend (R-UNIT-384). Raising or lowering a field rebuilds no route table (reference/12 R-SIM-343).
 
 **R-BLDG-444** (MUST) A Barrier Emitter is in view during the grace period whatever the camera sees, and its translucent pass is depth-sorted at its centre (README table 2.9-A). Its drawing reads simulation state only (DEC-007).
 
@@ -279,7 +279,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 - **Sphere test:** the four corners of the rectangle and the sphere centre are all moved to y = 0, and the sphere is tested against the two triangles (t1, t2, t3) and (t2, t3, t4) of the rectangle with an exact sphere-to-triangle test; the wall is therefore an infinitely tall vertical prism for spheres.
 - **Ray test:** a vertical quad along right, `ref.bldg.wall.length` long, centred on the position, whose bottom corners lie on the terrain under each end and whose top edge lies at the position's height + 37.5 wu.
-- **Mesh test:** exact against the wall mesh's collision data (DEC-012).
+- **Mesh test:** exact against the wall mesh's collision asset `mesh.collision.wall_section` (DEC-012).
 
 **R-BLDG-453** (MUST) A wall's advance requests its removal when its destroyed flag is set; it never runs the base advance (R-BLDG-031). The removal recomputes the bot navigation links at once and updates the obstacle grid and the affected route-graph edges (R-BLDG-032).
 
@@ -297,7 +297,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-459** (MUST) A scenery mesh's map record holds the base fields and then its scale (default `ref.bldg.scenery_mesh.default_scale`, 1.0) and its mesh, one of the pieces of `mesh.scenery.prop` or none (the default). The content build rejects a record that names a mesh that does not exist (DEC-015).
 
-**R-BLDG-460** (MUST) Initialisation copies the scale, assigns the mesh, and computes the centre and radius from the mesh at the scaled transform. Its advance is the base advance. Its hit tests are exact against the scaled mesh's collision data (DEC-012); with no mesh they are the default tests with radius `ref.sim.structure.default_radius` (13 wu; R-BLDG-042). It is drawn as its scaled mesh with renormalised normals; with no mesh nothing is drawn in a match.
+**R-BLDG-460** (MUST) Initialisation copies the scale, assigns the mesh, and computes the centre and radius from the mesh at the scaled transform. Its advance is the base advance. Its hit tests are exact against the scaled collision asset of its mesh (DEC-012): the member of `mesh.collision.scenery_prop` for a `mesh.scenery.prop` piece, and `mesh.collision.abductor_hull` for the Abductor hull (README table 2.12-B); with no mesh they are the default tests with radius `ref.sim.structure.default_radius` (13 wu; R-BLDG-042). It is drawn as its scaled mesh with renormalised normals; with no mesh nothing is drawn in a match.
 
 ### 2.6 Exclusion zone
 
@@ -305,9 +305,9 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-462** (MUST) An exclusion zone's map record holds the base fields and then its size, the horizontal radius (default `ref.bldg.exclusion_zone.default_size`, 300 wu), and its power flag (default false).
 
-**R-BLDG-463** (MUST) Every exclusion zone joins the match world's exclusion-zone list when it is created and leaves it when it is destroyed (reference/12 02, per-match state). The exclusion test IsExcluded(p, forPowers) is true when some zone of the list lies at a horizontal distance below its size from p (the zone's height replaces p's) and either forPowers is false or the zone's power flag is set.
+**R-BLDG-463** (MUST) Every exclusion zone joins the match world's exclusion-zone list when it is created and leaves it when it is destroyed (reference/12 02, per-match state). The exclusion test `IsExcluded(_point, _forPowers)` is true when some zone of the list lies at a horizontal distance below its size from the point (the zone's height replaces the point's) and either `_forPowers` is false or the zone's power flag is set.
 
-**R-BLDG-464** (MUST) The exclusion test has exactly two callers: the random placement of a Supply crate, which rejects an excluded point with forPowers false ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); and the target validity of a power whose target area is the whole map, which rejects a target point with forPowers true. The powers with a whole-map target area are the Shield, Speed Boost, the gun turret, rocket turret and flame turret powers, Swarm, Essence Grove, Blight Grove, Hive, Sickness, Brood, meteor shower and Fury (reference/04).
+**R-BLDG-464** (MUST) The exclusion test has exactly two callers: the random placement of a Supply crate, which rejects an excluded point with `_forPowers` false ([04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)); and power targeting, which rejects a target point with `_forPowers` true for the turret powers (gun turret, rocket turret and flame turret), as one of their placement conditions, and for the powers whose target area is the whole map: the airstrike, Firebomb Run, Missile Barrage, Swarm, Essence Grove, Blight Grove, Hive, Brood and meteor shower powers. The Shield, Speed Boost, Convert and Fury powers need an own actor near the target point and ignore exclusion zones ([04 README](../04_supply_crates_powers_and_weapons/README.md) table 2.5-A, R-CRATE-034).
 
 **R-BLDG-465** (MUST) An exclusion zone's advance does nothing. Its sphere and mesh tests never hit and its ray test hits only in the map editor (README table 2.12-A); it is drawn only in the map editor.
 
@@ -317,7 +317,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-467** (MUST) A smoke column has no hit-test override, so the default tests of a structure without a mesh apply (R-BLDG-042): it is an invisible obstacle, a sphere of radius `ref.sim.structure.default_radius` (13 wu) at its position, registered in the obstacle grid like every structure. It pushes actors out and blocks rays, turret lines of sight included (reference/12 R-SIM-328; see DEC-089).
 
-**R-BLDG-468** (MUST) Each tick a smoke column releases `ref.bldg.smoke_column.particles_per_tick` (3) missile-trail particles at its position, each with velocity (U[−s ÷ 2, s ÷ 2], 1, U[−s ÷ 2, s ÷ 2]), s = `ref.bldg.smoke_column.lateral_spread` (0.4), scaled to the length `ref.bldg.smoke_column.particle_speed` (50 wu/s) and size `ref.bldg.smoke_column.particle_size_base` + U[0, `ref.bldg.smoke_column.particle_size_spread`] (200 to 300), all from the presentation generator. The missile-trail particle kind is specified in [animation and VFX](../../architecture/components/animation_and_vfx/README.md); its values are listed in §4.7.
+**R-BLDG-468** (MUST) Each tick a smoke column releases `ref.bldg.smoke_column.particles_per_tick` (3) missile-trail particles at its position, each with velocity (U[−s ÷ 2, s ÷ 2], 1, U[−s ÷ 2, s ÷ 2]), s = `ref.bldg.smoke_column.lateral_spread` (0.4), scaled to the length `ref.bldg.smoke_column.particle_speed` (50 wu/s) and size `ref.bldg.smoke_column.particle_size_base` + U[0, `ref.bldg.smoke_column.particle_size_spread`] (200 to 300), all from the presentation generator. The missile-trail particle kind is specified in [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) (`vfx.particle.missile_trail.*`); its values are listed in §4.7.
 
 ### 2.8 Volcano vent
 
@@ -325,7 +325,7 @@ The obstacle grid registers a linked emitter along its whole line, as reference/
 
 **R-BLDG-470** (MUST) A volcano vent's eruption state is presentation state. Each tick of the world step while it is idle, it starts an eruption when a presentation-generator integer draw modulo `ref.bldg.volcano_vent.eruption_odds` (1000) is 0 (a chance of 0.001 per tick, a mean wait of 1,000 ticks, 100 s at game speed 1); the eruption lasts `ref.bldg.volcano_vent.eruption_base_ticks` + ⌈U[0, `ref.bldg.volcano_vent.eruption_spread_ticks`)⌉ ticks (30 to 70 ticks), drawn from the presentation generator. The roll is made once per tick and therefore scales with game speed (DEC-092). Its draws are presentation draws (DEC-013, DEC-222; reference/12 R-SIM-622).
 
-**R-BLDG-471** (MUST) Each tick of an eruption the vent releases `ref.bldg.volcano_vent.particles_per_tick` (10) volcano particles at its position, each with velocity (U[−s ÷ 2, s ÷ 2], 1, U[−s ÷ 2, s ÷ 2]), s = `ref.bldg.volcano_vent.lateral_spread` (1), scaled to `ref.bldg.volcano_vent.particle_speed` (100 wu/s) and size `ref.bldg.volcano_vent.particle_size_base` + U[0, `ref.bldg.volcano_vent.particle_size_spread`] (300 to 500), all from the presentation generator. The volcano particle kind is specified in [animation and VFX](../../architecture/components/animation_and_vfx/README.md); its values are listed in §4.7.
+**R-BLDG-471** (MUST) Each tick of an eruption the vent releases `ref.bldg.volcano_vent.particles_per_tick` (10) volcano particles at its position, each with velocity (U[−s ÷ 2, s ÷ 2], 1, U[−s ÷ 2, s ÷ 2]), s = `ref.bldg.volcano_vent.lateral_spread` (1), scaled to `ref.bldg.volcano_vent.particle_speed` (100 wu/s) and size `ref.bldg.volcano_vent.particle_size_base` + U[0, `ref.bldg.volcano_vent.particle_size_spread`] (300 to 500), all from the presentation generator. The volcano particle kind is specified in [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) (`vfx.particle.volcano.*`); its values are listed in §4.7.
 
 ### 2.9 Jump pad
 
@@ -349,7 +349,7 @@ Table 2.10-A Presentation events and their sample groups.
 | `turret.target_sighted` | a search finds a new target (R-BLDG-411) | silent |
 | `turret.fire_gun` | a turret round or a gun-turret Convert bolt (R-BLDG-420, R-BLDG-421) | `sfx.unit.trooper.fire_laser` |
 | `turret.fire_rocket` | a rocket | silent |
-| `turret.fire_grenade` | a mortar grenade | none in the manifest |
+| `turret.fire_grenade` | a mortar grenade | none: never raised in a match, because no reference map places a mortar turret and no power creates one ([10 Audio design](../10_audio_design/event_catalogue.md) R-AUD-136) |
 | `turret.fire_flame` | a fireball | `sfx.building.turret.fire_flame` |
 | `turret.kill_tick` | a credited kill (R-BLDG-427) | `sfx.ui.match_ui.countdown_tick` |
 | `barrier_emitter.spawn` | initialisation; starts the presence loop | `sfx.building.barrier_emitter.presence_loop` |
@@ -528,6 +528,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.turret.barrels_per_fire_step` | 2 | barrels | every type except the rocket turret | R-BLDG-406, R-BLDG-418 | — |
 | `ref.bldg.turret.rocket.barrels_per_fire_step` | 1 | barrels | | R-BLDG-406, R-BLDG-418 | — |
 | `ref.bldg.turret.self_destruct_damage` | 1000 | health | the Visitor faction rule and the turret-cap rule | R-BLDG-409, R-BLDG-424 | — |
+| `ref.bldg.turret.recount_ticks` | 11 | ticks | the countdown of the ownership evaluation and of the target search; the tick count of a 1.0 s countdown | R-BLDG-408, R-BLDG-410, R-BLDG-411 | DEC-002 |
 | `ref.bldg.turret.sweep_distance_base` | 200 | wu | first idle aim distance 200 to 400 | R-BLDG-412 | DEC-652 |
 | `ref.bldg.turret.sweep_distance_spread` | 200 | wu | | R-BLDG-412 | DEC-652 |
 | `ref.bldg.turret.sweep_height_first` | 100 | wu | first idle aim height 0 to 100 | R-BLDG-412 | DEC-652 |
@@ -539,7 +540,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.turret.wobble_rate_xz` | 3 | rad/s | over match time | R-BLDG-414 | — |
 | `ref.bldg.turret.wobble_rate_y` | 2 | rad/s | over match time | R-BLDG-414 | — |
 | `ref.bldg.turret.fire_cone` | 0.3 | rad | horizontal; cosine clamped | R-BLDG-415 | DEC-653 |
-| `ref.bldg.turret.hose_window_ticks` | 10 | ticks | 1.0 s after the last tick with a target | R-BLDG-415 | DEC-002 |
+| `ref.bldg.turret.hose_window_ticks` | 10 | ticks | 1.0 s after the last tick with a target | R-BLDG-415 | DEC-002, DEC-859 |
 | `ref.bldg.turret.min_aim_distance` | 75 | wu | | R-BLDG-416 | — |
 | `ref.bldg.turret.yaw_gain` | 0.2 | per tick | × the remaining angle | R-BLDG-416 | — |
 | `ref.bldg.turret.pitch_blend` | 0.2 | per tick | 2 per second × the tick period | R-BLDG-416 | — |
@@ -550,10 +551,10 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.turret.gun.round_speed` | 500 | wu/s | | R-BLDG-420 | — |
 | `ref.bldg.turret.gun.start_back_fraction` | 0.5 | ticks of travel | the round starts behind the muzzle | R-BLDG-420 | — |
 | `ref.bldg.turret.rocket.aim_distance` | 500 | wu | ahead of the muzzle | R-BLDG-420 | — |
-| `ref.bldg.turret.rocket.life_ticks` | 10 | ticks | 1.0 s | R-BLDG-420 | DEC-002 |
+| `ref.bldg.turret.rocket.life_ticks` | 11 | ticks | nominal 1.0 s; the first tick on which the age exceeds 1.0 s | R-BLDG-420 | DEC-002 |
 | `ref.bldg.turret.mortar.fuse_ticks` | 10000 | ticks | 1000 s; explodes on impact | R-BLDG-420 | — |
 | `ref.bldg.turret.flame.fireball_speed` | 100 | wu/s | | R-BLDG-420 | — |
-| `ref.bldg.turret.flame.fireball_life_ticks` | 10 | ticks | 1.0 s | R-BLDG-420 | DEC-002 |
+| `ref.bldg.turret.flame.fireball_life_ticks` | 11 | ticks | nominal 1.0 s; removed on the 11th tick | R-BLDG-420 | DEC-002 |
 | `ref.bldg.turret.convert.bolt_speed` | 125 | wu/s | 500 ÷ 4 | R-BLDG-420 | DEC-115 |
 | `ref.bldg.turret.health` | 60 | health | | R-BLDG-422 | — |
 | `ref.bldg.turret.kill_text_size` | 2 | text size | | R-BLDG-427 | — |
@@ -658,7 +659,6 @@ These follow from the keys above and are given for tests and balance; they are n
 
 | Owner | Keys |
 |---|---|
-| [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) | `ref.mode.recount.one_second` |
 | [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` |
 | [12 entity model](../12_simulation_model/03_entity_model_and_identity.md) | `ref.sim.structure.default_radius` |
 | [12 space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.push.emitter_kill_damage` |
@@ -673,8 +673,8 @@ These values are restated in the rules for readability; their owners define them
 | Value | Owner |
 |---|---|
 | the Breach Charge's breach and its scuttle explosion (range 50 wu, damage 500) | [mode objects](mode_objects.md) |
-| the missile-trail particle: life 5.0 s, size 200, gravity 1.0, no friction, colour (100, 100, 100) to (200, 200, 200) | [animation and VFX](../../architecture/components/animation_and_vfx/README.md) |
-| the volcano particle: life 12.0 s, size 400, gravity 10.0, no friction, colour (150, 50, 50) to (150, 120, 50), dies on touching the ground | [animation and VFX](../../architecture/components/animation_and_vfx/README.md) |
+| the missile-trail particle `vfx.particle.missile_trail.*`: life 5.0 s, size 200, gravity 1.0, no friction, colour (100, 100, 100) to (200, 200, 200) | [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) |
+| the volcano particle `vfx.particle.volcano.*`: life 12.0 s, size 400, gravity 10.0, no friction, colour (150, 50, 50) to (150, 120, 50), dies on touching the ground | [particles, shatter and screen effects](../../architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md) |
 
 ## 5 Edge cases and interactions
 
@@ -721,7 +721,7 @@ All criteria run headless at game speed 1 with a fixed seed, unless they test pr
 
 **AC-DP-09 Turret-cap rule** (R-BLDG-424). Given Launch Race and a gun turret placed by a team-1 power, when team 2 captures it, then it is destroyed in the next tick of the power; given Spawn Control, when team 2 captures a placed turret, then it is team 2's and stands.
 
-**AC-DP-10 Selection** (R-BLDG-425). Given a team-1 turret selected by team 1, then its fire timer is 6 ticks, it makes no automatic search, and it fires at the pointer position on a tick with `primary_fire` once the timer has run out.
+**AC-DP-10 Selection** (R-BLDG-425). Given a team-1 turret selected by team 1, then its fire timer is 6 ticks, it makes no automatic search, and it fires at the pointer position on a tick with `primaryFire` once the timer has run out.
 
 **AC-DP-11 Barrier Emitter chain** (R-BLDG-437 to R-BLDG-439). Given three linked team-1 emitters, all Lowered, when a team-1 surge reaches the first, then the first is Raised 34 ticks after it starts raising, the second starts raising 17 ticks after the first and the third 17 ticks after the second (each within one tick, by structure order); when no further surge arrives, the first starts lowering on the first tick on which more than 50 ticks have passed since the surge, and the second starts lowering 18 ticks after the first; a team-2 surge has no effect, and an emitter with no team ignores every surge.
 
@@ -741,7 +741,7 @@ All criteria run headless at game speed 1 with a fixed seed, unless they test pr
 
 - **Reference documents:** [README](README.md) (shared structure rules, ports, capture model, lifecycle, damage, hit tests, sockets, presentation, sound events); [trees and crate structures](trees_and_crate_structures.md); [economy and spawn objects](economy_and_spawn_objects.md) (the energy grid and grid terminals); [mode objects](mode_objects.md) (the Breach Charge); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (the recount period, the turret-cap rule R-MODE-077); [02 Worker](../02_units/worker.md) (operating ports, the convert tag, the Barrier Emitter and wall push); [02 Transport](../02_units/transport.md) (Barrier Emitter contact and routes); [04 Crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (turret outcomes, Supply crate placement, power target areas); [04 Weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (turret rounds, rockets, grenades, fireballs, laser bolts); [05 Population flow](../05_population_flow.md) (reinforcement turrets); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (turret selection and aiming); [07 Bots](../07_bots/README.md) (turret navigation nodes, Barrier Emitter links); [08 Maps and level design](../08_maps_and_level_design/README.md); [10 Audio design](../10_audio_design/README.md); [12 Simulation model](../12_simulation_model/README.md) (actor-grid queries, obstacle grid, walkability, the obstacle push, the command catalogue, the randomness tables).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (translucent passes, detail levels); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter effects, particles); [audio engine](../../architecture/components/audio_engine.md); [data schemas](../../architecture/components/data_schemas/README.md) (map records); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md) (mesh sockets and collision data). ADR-020 (flat shading and team tint), ADR-021 (mesh sockets), ADR-059 (content build validators).
-- **Assets:** `mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, `mesh.projectile.turret_round`, `mesh.projectile.shell_casing`, `cursor.turret_aim`, `icon.power.gun_turret`, `mesh.structure.barrier_emitter`, `fx.barrier_field`, `fx.barrier_field_wide`, `mesh.structure.wall_section`, `mesh.scenery.prop`, `mesh.creature.abductor_hull`, `marker.jump_pad`, `sfx.building.turret.spawn`, `sfx.building.turret.fire_flame`, `sfx.unit.trooper.fire_laser`, `sfx.ui.match_ui.countdown_tick`, `sfx.building.barrier_emitter.presence_loop`, `sfx.building.barrier_emitter.spark`, `sfx.building.barrier_emitter.damaged`.
+- **Assets:** `mesh.structure.turret_mount`, `mesh.structure.turret_head`, `mesh.structure.turret_barrel`, `mesh.projectile.turret_round`, `mesh.projectile.shell_casing`, `cursor.turret_aim`, `icon.power.gun_turret`, `mesh.structure.barrier_emitter`, `fx.barrier_field`, `fx.barrier_field_wide`, `mesh.structure.wall_section`, `mesh.scenery.prop`, `mesh.creature.abductor_hull`, `marker.jump_pad`; the collision assets `mesh.collision.turret_head`, `mesh.collision.turret_barrel`, `mesh.collision.barrier_emitter`, `mesh.collision.wall_section`, `mesh.collision.scenery_prop`, `mesh.collision.abductor_hull` (and, for the companion's Hive and Spitter Plant, `mesh.collision.hive_mound` and `mesh.collision.spitter_plant_head`); `sfx.weapon.laser_bolt.kill`; `sfx.building.turret.spawn`, `sfx.building.turret.fire_flame`, `sfx.unit.trooper.fire_laser`, `sfx.ui.match_ui.countdown_tick`, `sfx.building.barrier_emitter.presence_loop`, `sfx.building.barrier_emitter.spark`, `sfx.building.barrier_emitter.damaged`.
 
 ## 8 Open decisions
 

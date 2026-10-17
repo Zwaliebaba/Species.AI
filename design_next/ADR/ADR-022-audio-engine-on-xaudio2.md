@@ -42,7 +42,7 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 - **Threading.** The game thread only enqueues commands; the audio engine applies them on its own update and in XAudio2 callbacks that never block (ADR-026).
 - **Device changes and errors.** `IXAudio2EngineCallback::OnCriticalError` and `XAUDIO2_E_DEVICE_INVALIDATED` cause the voices and the graph to be rebuilt on the new default device, with playing instances resubmitted from their stored play positions, so loops and one-shots continue where they were. Device changes are also tested while the game is paused.
 - **Isolation.** Audio code never writes simulation state and never draws from the simulation random generator; it uses the presentation random generator (`FxRng`), through its own instance, shared with no other system; its draws choose sample-group members, random emitters and ranged-random parameters (DEC-013). The dedicated server target does not link the audio engine.
-- **Development tools.** A development overlay shows real and virtual voices, bus levels and memory per category; definitions reload while the game runs in development builds.
+- **Development tools.** A development overlay shows real and virtual voices, bus levels and memory per category; definitions reload while the game runs in Debug builds.
 
 ### Consequences
 
@@ -75,10 +75,12 @@ Chosen option: **1, in-box XAudio2 2.9 with X3DAudio**, because it provides the 
 
 - Good, because it brings authoring tools, profiling and a mature runtime.
 - Bad, because Species' binding model is already data-driven and small; a middleware's own event model would replace it or duplicate it, and adds licence cost.
+- Bad, because `AGENTS.md` R14 excludes third-party code from the executable.
 
 ## More Information
 
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-versions · https://learn.microsoft.com/uwp/win32-and-com/win32-apis#apis-from-xaudio2_9dll · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-redistributable · https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-023 (virtual voices), ADR-024 (buses and effects), ADR-025 (codecs and residency), ADR-026 (command queue and callbacks), ADR-027 (spatialisation).
 - The audio engine component (`architecture/components/audio_engine.md`) specifies each layer; the audio design (`reference/10_audio_design/`) specifies the binding model and the sound data.
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Definitions reload in Debug builds only; commercial audio middleware is excluded by `AGENTS.md` R14.
 - **Amendment 2026-10-17.** The layer names and numbers follow the audio engine component (AEN-002): `SoundVoice` is the sound instance of layer 4, as the naming ledger defines it, and the pooled source voice of layer 2 is `SourceVoiceSlot`.

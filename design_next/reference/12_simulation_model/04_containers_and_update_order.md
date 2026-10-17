@@ -105,7 +105,7 @@ Table 2.2-A Simulation containers.
 
 **R-SIM-210** (MUST) No simulation code iterates a hash map, sorts by address or depends on where an object is allocated in memory. The only sort that touches simulated objects is the far-to-near depth sort of the structure alpha pass, which is presentation.
 
-**R-SIM-211** (MUST) Every outcome that the iteration order decides is an explicit rule over a stable key (DEC-016). The stable key of iteration is the slot order that R-SIM-206 to R-SIM-209 produce, which every participant computes identically because every creation and removal happens inside the tick. The register of such outcomes is §2.9. Whether an object created or handed over during a tick advances in that same tick is DEC-455; its default is [01](01_tick_timing_and_main_loop.md) R-SIM-516.
+**R-SIM-211** (MUST) Every outcome that the iteration order decides is an explicit rule over a stable key (DEC-016; see DEC-260). The stable key of iteration is the slot order that R-SIM-206 to R-SIM-209 produce, which every participant computes identically because every creation and removal happens inside the tick. The register of such outcomes is §2.9. Whether an object created or handed over during a tick advances in that same tick is DEC-455; its default is [01](01_tick_timing_and_main_loop.md) R-SIM-516.
 
 **R-SIM-212** (MUST) A 2-D grid of the simulation (`Grid2D`, `SurfaceGrid`) returns its one shared outside value for a read outside its range and ignores a write outside its range. Its nearest-cell look-up is the integer part of coordinate ÷ cell size without subtracting the grid origin, which is correct because every simulation grid has its origin at 0. Value reads between cells interpolate bilinearly ([05](05_space_routing_and_physics.md), [terrain](../../architecture/components/terrain.md)).
 
@@ -160,7 +160,7 @@ Table 2.5-A Work per slice.
 2. in every slice: for each used group slot in ascending order, the group's member advance for slice s (R-SIM-222);
 3. in slice `ref.sim.slice.group_advance` only: for each used group slot in ascending order, the group's advance ([03](03_entity_model_and_identity.md) R-SIM-129); a group that requests removal is removed and destroyed;
 4. in slice `ref.sim.slice.selection_latch` only: the selected-Worker count becomes the count accumulated during the previous tick, and the selected-Worker centre becomes the accumulated position sum ÷ that count when the count is at least 1; with no Worker selected, the team has no centre (DEC-653). The accumulators are then cleared;
-5. for each used slot of the slice-s range of the team's ungrouped actors whose actor is enabled: remember the actor's position and handle; run its advance with no group; if the actor is a live Worker under player control, add it to the selection accumulators; then, if the advance requested removal, remove the actor from the actor grid by its recorded footprint (DEC-650), free its slot and destroy it; else, if the actor has disabled itself, remove it from the actor grid; else update its actor-grid registration from the remembered position to its new position.
+5. for each used slot of the slice-s range of the team's ungrouped actors whose actor is enabled: remember the actor's position and handle; run its advance with no group; if the actor is a live Worker under player control, add it to the selection accumulators; then, if the advance requested removal, remove the actor from the actor grid by its recorded footprint ([05](05_space_routing_and_physics.md) R-SIM-308, DEC-650), free its slot and destroy it; else, if the actor has disabled itself, remove it from the actor grid; else update its actor-grid registration from the remembered position to its new position.
 
 **R-SIM-222** (MUST) A group's member advance for slice s takes each used slot of the slice-s range of the member pool whose actor is enabled: it remembers the actor's position, runs the actor's advance with the group, and then either removes the member (actor-grid removal by the recorded footprint, and destruction) when removal was requested, or updates its actor-grid registration from the remembered position to its new position. A member that disabled itself during its advance stays registered in the actor grid ([03](03_entity_model_and_identity.md) R-SIM-114).
 
@@ -172,11 +172,11 @@ Table 2.5-A Work per slice.
 
 ### 2.6 Creation rules
 
-**R-SIM-226** (MUST) Actors are created only by the spawn operation `MatchWorld::spawnActors(position, team, group, kind, count, velocity, spread, roam range = none, route = none, route waypoint = none)`. When the team is the Rogue faction slot or the Visitor faction slot and that slot is unused, the slot is initialised first ([06](06_teams_and_player_commands.md)). For each of the count actors, in order:
+**R-SIM-226** (MUST) Actors are created only by the spawn operation `MatchWorld::SpawnActors(_position, _team, _group, _kind, _count, _velocity, _spread, _roamRange = none, _route = none, _routeWaypoint = none)`. When the team is the Rogue faction slot or the Visitor faction slot and that slot is unused, the slot is initialised first ([06](06_teams_and_player_commands.md)). For each of the count actors, in order:
 
 1. the team's actor creation ([03](03_entity_model_and_identity.md) R-SIM-108), into the group when one is given, else among the ungrouped actors;
 2. set its kind ([03](03_entity_model_and_identity.md) R-SIM-109);
-3. its position: the valid-spawn-position search around the position with the spread ([05](05_space_routing_and_physics.md) R-SIM-368); each attempt draws a distance `SimRng::NextUnit(spread)` and then an angle `SimRng::NextUnit(2π)` around the position, and is accepted when it lies on the map and the terrain height there is above `ref.sim.physics.sea_level`;
+3. its position: the valid-spawn-position search around the position with the spread ([05](05_space_routing_and_physics.md) R-SIM-368); each attempt draws a distance `SimRng::NextUnit(_spread)` and then an angle `SimRng::NextUnit(2π)` around the position, and is accepted when it lies on the map and the terrain height there is above `ref.sim.physics.sea_level`;
 4. clear its on-ground flag;
 5. its velocity: the given velocity;
 6. its front: for a Worker, a random horizontal direction from two signed unit-fraction draws of the simulation generator; for every other kind, the normalised velocity, or `ref.sim.spawn.default_front` when the velocity is zero;
@@ -205,7 +205,7 @@ Table 2.7-A Removal.
 
 | Kind | Removed by | Side effects |
 |---|---|---|
-| actor | its container's owner, after the actor's advance requested removal (dead, or destroyed) | actor-grid removal by the recorded footprint (DEC-650); destruction, which lowers the actor population count and unregisters a special unit ([03](03_entity_model_and_identity.md) R-SIM-116) |
+| actor | its container's owner, after the actor's advance requested removal (dead, or destroyed) | actor-grid removal by the recorded footprint ([05](05_space_routing_and_physics.md) R-SIM-308, DEC-650); destruction, which lowers the actor population count and unregisters a special unit ([03](03_entity_model_and_identity.md) R-SIM-116) |
 | dead actor that is still fading | not removed | it stays in its container and in the actor grid, visible to grid queries; most queries skip dead actors explicitly ([05](05_space_routing_and_physics.md)) |
 | a whole team | the match rules eliminate it ([skirmish rules](../01_skirmish_rules_and_modes/README.md)) | the elimination of [06](06_teams_and_player_commands.md) R-SIM-407 applies: every group member and ungrouped actor of the team receives a lethal health change, every Power of the team stops, and every Transit Gate it owns becomes neutral; removal then follows the normal death path |
 | actor group | its team, in slice `ref.sim.slice.group_advance`, when the group reports that no member slot is in use | destroying the group clears the team's selected group when it names this group |
@@ -232,22 +232,22 @@ Table 2.7-A Removal.
 
 ### 2.9 Order-dependent outcomes
 
-**R-SIM-239** (MUST) The outcomes of table 2.9-A depend on the update or query order. Each is an explicit rule of its owning document with the stable key given here (DEC-016).
+**R-SIM-239** (MUST) The outcomes of table 2.9-A depend on the update or query order. Each is an explicit rule of its owning document with the stable key given here (DEC-016). Every outcome that reads actor-grid result order uses the history-free key of [05](05_space_routing_and_physics.md) R-SIM-310, which orders the entries of one cell by actor serial, never by cell slot (see DEC-260).
 
 Table 2.9-A Order-dependent outcomes.
 
 | Outcome | Rule and stable key | Owning document |
 |---|---|---|
-| port occupant | the first operating Worker in actor-grid result order: cell x, then cell z, then team 0 to 5, then cell slot | [buildings](../03_buildings_and_world_objects/README.md); [05](05_space_routing_and_physics.md) R-SIM-310 |
+| port occupant | the first operating Worker in actor-grid result order: cell x, then cell z, then team 0 to 5, then actor serial | [buildings](../03_buildings_and_world_objects/README.md); [05](05_space_routing_and_physics.md) R-SIM-310 |
 | ownership ties of Spawn Nodes, turrets, Solar Arrays and Control Zones | the lowest team index | [buildings](../03_buildings_and_world_objects/README.md); [Zone Control](../01_skirmish_rules_and_modes/zone_control.md) |
 | simultaneous Launch Vessel launches | the lowest team index | [Launch Race](../01_skirmish_rules_and_modes/launch_race.md) |
 | single-round Siege winner | the first slot of the winning side | [Siege](../01_skirmish_rules_and_modes/siege.md) |
 | Relic Run co-op winner | the last slot of the winning group | [Relic Run](../01_skirmish_rules_and_modes/relic_run.md) |
-| Launch Vessel look-up | the last matching structure in structure order | [mode objects](../03_buildings_and_world_objects/mode_objects.md) |
+| Launch Vessel look-up | the last matching structure in structure order | [mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-339 |
 | Relic spawn zone | the first Relic Spawn Zone, in structure order, at the greatest distance | [Relic Run](../01_skirmish_rules_and_modes/relic_run.md) |
-| Population Limiter of a Spawn Node | the first Population Limiter in structure order | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) |
-| Beam Dish receiver | the nearest receiver by distance | [buildings](../03_buildings_and_world_objects/README.md) |
-| Command Console ownership | the first qualifying team in slot order; it changes only to a team with strictly more operators | [mode objects](../03_buildings_and_world_objects/mode_objects.md) |
+| Population Limiter of a Spawn Node | the first Population Limiter in structure order | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-136 |
+| Beam Dish receiver | the nearest receiver by distance | [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-157 |
+| Command Console ownership | the first qualifying team in slot order; it changes only to a team with strictly more operators | [mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-301 |
 | bot structure choices | structures in structure order; the first found wins; comparisons are strict | [bots](../07_bots/README.md) |
 | area damage and its kill credit | actors in actor-grid result order | [05](05_space_routing_and_physics.md) R-SIM-389 |
 | nearest-actor selections | strict less-than comparisons, so the first actor found in result order wins a tie | [05](05_space_routing_and_physics.md) |
@@ -440,4 +440,4 @@ The slice keys `ref.sim.slice.power_slots`, `ref.sim.slice.sky`, `ref.sim.slice.
 - DEC-223 — world, region and match state ownership.
 - DEC-304 — Spawn Surge request count.
 - DEC-651 — lifetime of simulation routes.
-- Resolved and applied here: DEC-002, DEC-004, DEC-006, DEC-007, DEC-008, DEC-013, DEC-014, DEC-016, DEC-028, DEC-087, DEC-095, DEC-103, DEC-117, DEC-118, DEC-650, DEC-652, DEC-653.
+- Resolved and applied here: DEC-002, DEC-004, DEC-006, DEC-007, DEC-008, DEC-013, DEC-014, DEC-016, DEC-028, DEC-087, DEC-095, DEC-103, DEC-117, DEC-118, DEC-260, DEC-650, DEC-652, DEC-653.

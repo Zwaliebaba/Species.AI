@@ -23,7 +23,7 @@ How does the Species client capture and report crashes?
 ## Considered Options
 
 * Windows Error Reporting (WER) with registered context and the Windows Desktop Application Program
-* An in-process handler with a self-hosted collector (Crashpad, for example through the Sentry Native SDK)
+* An in-process handler with a self-hosted collector (a third-party crash SDK)
 * An own exception filter, dump writer and uploader
 
 ## Decision Outcome
@@ -38,14 +38,14 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 * **Symbols:** every CI build publishes its PDBs and binaries to a private symbol store keyed by the build identity; release builds also upload symbols to Partner Center. Executables carry accurate `VERSIONINFO`.
 * **Development and QA:** a CI-provided registry file enables WER `LocalDumps` for the Species executables on test machines (custom dumps with data segments and thread data).
 * **Rule for any later uploader** (for example for a dedicated server): explicit opt-in, HTTPS only, no credentials in the binary or in the report.
-* **Dedicated server:** its crash path is a design-phase decision together with server operations.
+* **Dedicated server:** the dedicated server is a Windows build ([ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md)), so WER with the same registered context covers it; where its reports go is a design-phase decision together with server operations. A crash path for another server operating system needs a later ADR.
 
 ### Consequences
 
 * Good, because WER covers every thread and hangs without first-party upload code or a collection service.
 * Good, because consent is handled by the operating system's diagnostic-data settings.
 * Bad, because Partner Center shows data only after an application is installed on at least 100 devices, and keeps failure hits for 30 days through its analytics API.
-* Bad, because a non-Windows dedicated server needs a second solution.
+* Bad, because a dedicated server for another operating system would need a second solution, decided with that server.
 
 ### Confirmation
 
@@ -63,6 +63,7 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 ### In-process handler with a self-hosted collector
 
 * Good, because data arrives immediately and the same path could serve a non-Windows server.
+* Bad, because a third-party crash SDK is excluded from the executable by `AGENTS.md` R14.
 * Bad, because Species would run a collection service, which is an online-service decision for the design phase, and would need its own consent prompt.
 
 ### Own filter, dump writer and uploader
@@ -71,6 +72,7 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 
 ## More Information
 
-* Facts and sources: technology baseline item 11.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the WER guide and API pages, the `LocalDumps` settings, the Windows Desktop Application Program, the Partner Center health report and the Sentry Native releases.
+* Facts and sources: technology baseline item 11.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the WER guide and API pages, the `LocalDumps` settings, the Windows Desktop Application Program, the Partner Center health report.
 * Components: the platform layer (`PLT`) owns the crash path (the terminate, invalid-parameter and pure-call handlers, the WER registrations, the exclusions and thread naming); build tooling and distribution (`BLD`) owns the symbols, signatures, version resources and the test-machine `LocalDumps` settings; diagnostics, test and performance (`DBG`) owns the black box and the crash debug commands.
+* **Amendment 2026-10-17 (AGENTS.md, O21).** The dedicated server is a Windows build, so WER covers it too; a third-party crash SDK is excluded by `AGENTS.md` R14.
 * **Amendment 2026-10-17.** The crash path is the platform layer's (PLT-118 to PLT-125), as the build tooling (BLD-004) and diagnostics components state; the system summary and the crash context hold no Windows user name and write paths relative to placeholders (PLT-035, PLT-125).

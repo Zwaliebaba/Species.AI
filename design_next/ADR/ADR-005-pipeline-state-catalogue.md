@@ -65,7 +65,7 @@ Darkening is order-independent (each layer multiplies the destination by one min
 **Catalogue rules.**
 
 - A catalogue entry is keyed by a hash of its full descriptor: shader permutation identifiers, blend, depth and rasteriser state, render-target formats, sample count and topology type. Keys are generated at build time from the pass table and the material permutation list.
-- Every entry is created during start-up or the loading screen. Creating a pipeline state at any other time is an error in development builds and is logged in release builds.
+- Every entry is created during start-up or the loading screen. Creating a pipeline state at any other time is an error in Debug builds and is logged in Release builds.
 - A draw names exactly one catalogue key. A key that is not in the catalogue is a build error, never a fallback.
 - Dynamic state is limited to viewport, scissor rectangle, blend factor and primitive topology.
 - Created states are stored in a pipeline library under the user's local data folder and reloaded on the next start. The library is discarded when the driver, the Agility SDK version or the shader build changes.
@@ -109,4 +109,5 @@ Darkening is order-independent (each layer multiplies the destination by one min
 
 - Related: ADR-003 (material shaders and permutations), ADR-004 (frame graph and pass table), ADR-014 (HDR formats), ADR-015 (sample counts), ADR-016 (depth convention), ADR-018 (alpha modes), ADR-031 (UI blend states).
 - The renderer component (`architecture/components/renderer/`) lists the ordered pass table with each pass's catalogue keys.
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Pipeline creation outside start-up is an error in Debug builds and is logged in Release builds, the two configurations of ADR-054.
 - **Amendment 2026-10-17.** The blend list gains the `ghost` state (`ONE`, `SRC_COLOR`) that the renderer component uses for the world cursor's placement ghost models (RND-058, RND-365). The front-facing rule is stated on the render target, as the renderer's default state gives it (RND-055).

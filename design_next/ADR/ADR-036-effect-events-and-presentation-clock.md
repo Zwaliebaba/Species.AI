@@ -19,7 +19,7 @@ The problem is how the simulation asks for effects, which clock effects and proc
 - Effects never write simulation state or use the simulation's random generator.
 - Effect behaviour independent of frame rate, and pausable with the game.
 - Effects reproducible on replay on the same client.
-- Particle types and bursts described as data, reloadable in development builds.
+- Particle types and bursts described as data, reloadable in Debug builds.
 - Flash intensity and camera motion bounded by the accessibility settings.
 - Independence from the deferred transport of simulation state.
 
@@ -38,7 +38,7 @@ Chosen option: **1, effect events, a presentation clock and data-defined effects
 - **Randomness.** The VFX runtime seeds the presentation random generator (`FxRng::Seed`) per effect from the event identity, so the same event looks the same on replay on the same client. The simulation random generator is never visible to VFX code.
 - **Presentation clock.** One presentation clock drives VFX, particles (ADR-010) and procedural animation (ADR-035). It reads the platform clock (ADR-074) once per frame, clamps a single frame's step to a maximum after a stall, and gives three readings of that one time source: the **scaled** reading advances by the step times the game speed, the **unscaled** reading advances by the step, and both stop while the game is paused (the world is held); the **real** reading always follows the platform clock and drives UI animation and explainers. Each motion and effect names the reading it uses. The camera keeps its own clock from the same platform source, unscaled and running while the game is paused, so the camera stays live during a pause. Because the platform clock accepts injected time, captures and replays can drive presentation at a fixed rate.
 - **Screen effects.** Camera shake is an additive rotation offset applied to each frame's view and never stored in the camera's pose, with linear decay over unscaled presentation time; flashes are a full-screen additive pass with an intensity curve over presentation time. Requests are accumulated per event, not per frame, so their strength never depends on the frame rate. Flash intensity is capped by the photosensitivity rule and shake is scaled by the player's motion setting (ADR-064).
-- **Effect definitions.** Each effect kind maps to an **effect definition** in data (in the schema of ADR-061): the particle types it uses, with their parameter sets (lifetime, speed, size, colour ramp, gravity, terrain behaviour, blend class, priority, cap, LOD distance), its emitter bursts (counts, spread, timing), its attachments to sockets (ADR-021) or positions, and its screen effects. Definitions are validated by the content build and reload while the game runs in development builds.
+- **Effect definitions.** Each effect kind maps to an **effect definition** in data (in the schema of ADR-061): the particle types it uses, with their parameter sets (lifetime, speed, size, colour ramp, gravity, terrain behaviour, blend class, priority, cap, LOD distance), its emitter bursts (counts, spread, timing), its attachments to sockets (ADR-021) or positions, and its screen effects. Definitions are validated by the content build and reload while the game runs in Debug builds.
 
 ### Consequences
 
@@ -77,4 +77,5 @@ Chosen option: **1, effect events, a presentation clock and data-defined effects
 
 - Related: ADR-010 (particle pool and caps), ADR-021 (sockets), ADR-035 (procedural animation), ADR-061 (data schemas), ADR-064 (photosensitivity and motion settings), ADR-074 (platform clock with injectable time).
 - The animation and VFX component (`architecture/components/animation_and_vfx/`) specifies the effect event kinds, the effect-definition schema and the particle parameter sets; the networking and threading models are deferred to the design phase (see [the index](README.md#deferred-to-the-design-phase)).
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Effect definitions reload in Debug builds only.
 - **Amendment 2026-10-17.** The presentation clock has three readings of one platform time source, scaled, unscaled and real (VFX-009, VFX-016); the camera clock is separate, unscaled and keeps running while the world is held (CAM-030, R-SIM-571); camera shake is a view offset that is never stored (VFX-232, CAM-012).

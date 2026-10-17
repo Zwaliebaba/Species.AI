@@ -39,10 +39,10 @@ Table 2.1-A Actor kinds.
 | Transport | `Transport` | [transport.md](transport.md) | the Transport outcome; Transit Gate Transport reinforcements; the map's instant units, granted as a Power | **no** | allowed |
 | Collector | `Collector` | [collector.md](collector.md) | the Collector outcome | **no** | allowed |
 | Builder | `Builder` | [builder.md](builder.md) | the Builder outcome; the map's instant units, granted as a Power | **no** | allowed |
-| Bomber | `Bomber` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | each airstrike target marker summons one airstrike flight of 2 Bombers (airstrike and Firebomb Run outcomes, including their unopened-crate variants) | **no** | not allowed |
+| Bomber | `Bomber` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | each airstrike target marker summons one airstrike flight of 2 Bombers (the airstrike and Firebomb Run Powers, and the airstrike Power of a Transit Gate reinforcement wave) | **no** | not allowed |
 | barrage missile | `BarrageMissile` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the Missile Barrage outcome, which launches 10 barrage missiles | yes in principle; its own advance never checks for death | not allowed |
 | meteor | `MeteorRock` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the meteor shower outcome (5 to 9 meteors); bot meteor use | none: removed on impact | not allowed |
-| Abductor | `Abductor` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the Abductor outcome of an unopened Supply crate, at most once per match and never in Siege | none: invulnerable | not allowed |
+| Abductor | `Abductor` | [hazards_and_projectiles.md](hazards_and_projectiles.md) | the Abductor outcome of the bad branch of an opened Supply crate, at most once per match and never in Siege | none: invulnerable | not allowed |
 | Crawler | `Crawler` | [creatures.md](creatures.md) | Seed Pods of the Crawler kind (also the fallback for a refused Reaper Serpent); hatching Crawler eggs; the Swarm streak's conversion of Essence orbs | yes | allowed |
 | Crawler egg | `CrawlerEgg` | [creatures.md](creatures.md) | laid by Brood Drifters and spiders; thrown by Seed Pods of the egg kind | **no** | not allowed |
 | Brood Drifter | `BroodDrifter` | [creatures.md](creatures.md) | Seed Pods of the Brood Drifter kind | yes | allowed |
@@ -79,7 +79,7 @@ Table 2.1-A Actor kinds.
 | Crawler trail sample | `CrawlerTrailSample` | record | one sample of a Crawler's trail | [creatures.md](creatures.md) |
 | spider gait | `SpiderGait` | record | a gait parameter set of the spider | [creatures.md](creatures.md) |
 | procedural leg, procedural foot | `ProceduralLeg`, `ProceduralFoot` | helpers | the procedural legs of the spider | [creatures.md](creatures.md) |
-| Wisp | `Wisp` | effect | the ghost left by a Worker that a Reaper Serpent kills | [creatures.md](creatures.md) |
+| Wisp | `Wisp` | effect | the ghost left by a Worker that a Reaper Serpent kills, or that a blight tree of the Blight Grove kills ([reference/03](../03_buildings_and_world_objects/trees_and_crate_structures.md) R-BLDG-620) | [creatures.md](creatures.md) |
 
 ### 2.3 Ticks, timers and game speed
 
@@ -87,7 +87,7 @@ Table 2.1-A Actor kinds.
 
 **R-UNIT-006** (MUST) Game speed is tick scheduling: every tick has the same length and the same arithmetic at every game speed, and game speed changes only how many ticks run per unit of real time (DEC-039, [reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md)). Every per-tick constant of the units is therefore a per-second rate scheduled in ticks and scales with game speed like every other rule (DEC-092). The unit rules of this kind are: the Seed Pod's gravity, the spider's pounce gravity, the Transport's fall, the Leader's corpse sink, the centipede's and the Reaper Serpent's per-tick retreat rolls, the ant's per-tick bite, the Crawler's per-tick bite, the Abductor's integration and the sick Worker's per-tick stop roll. The lightning strike roll and the empty-Hive counter, which are not units, follow the same rule in their own documents.
 
-**R-UNIT-007** (MUST) Two Worker rules read the game speed *s* of the tick clock directly: the burning damage roll and the fire roll outside a formation ([worker.md](worker.md)); the carried-structure lift test of the Worker also scales by *s*. These rules keep the reference formulas. They are never evaluated at *s* = 0, because no world tick runs while the world is held, and each division by *s* carries an explicit guard (DEC-653).
+**R-UNIT-007** (MUST) Two Worker rules read the game speed *s* of the tick clock directly: the burning damage roll and the fire roll outside a formation ([worker.md](worker.md)); the carried-structure lift test of the Worker also scales by *s*. These rules keep the reference formulas. They are never evaluated at *s* = 0, because no world tick runs while the world is held, and each division by *s* carries an explicit guard (DEC-653, see DEC-852).
 
 ### 2.4 Research levels in a match
 
@@ -119,7 +119,7 @@ Table 2.1-A Actor kinds.
 
 **R-UNIT-013** (MUST) The Abductor's speed stat is `ref.unit.abductor.speed` (244), its effective reference speed (DEC-090). The meteor reads its speed stat `ref.unit.meteor.speed` (350) directly. Neither value is truncated.
 
-**R-UNIT-014** (MUST) A Trooper's own reload timer uses the per-actor rate `ref.unit.trooper.actor_rate` (0), so the reload gate never delays a single Trooper's shot. The Strike team's fire accumulator reads the Trooper's table rate `ref.unit.trooper.rate` (0.5) ([strike_team.md](strike_team.md)). Both values are kept, so the Strike team's rate of fire is the reference rate under floating-point stats.
+**R-UNIT-014** (MUST) A Trooper's own reload timer uses the per-actor rate `ref.unit.trooper.actor_rate` (0), so the reload gate never delays a single Trooper's shot. The Strike team's fire accumulator reads the Trooper's table rate `ref.unit.trooper.rate` (0.5) ([strike_team.md](strike_team.md)). Both values are kept, so the Strike team's rate of fire is the reference rate under floating-point stats (see DEC-853).
 
 **R-UNIT-015** (MUST) Setting an actor's kind draws its initial reload timer uniformly from [0, rate) from the simulation generator, once per spawn (DEC-652; [reference/12](../12_simulation_model/03_entity_model_and_identity.md)). The reload timer counts down by one tick per tick in the base actor advance and stops at 0; an actor may fire only while it is 0.
 
@@ -240,7 +240,7 @@ Table 2.8-A Resistance and death rules per kind.
 
 **R-UNIT-037** (MUST) A Leader's corpse sinks: its vertical velocity falls by `ref.unit.leader.corpse_sink_per_tick` (20 wu/s) per tick while it fades ([leader_and_formations.md](leader_and_formations.md)). A Worker's corpse on the ground slides: its velocity is multiplied by 0.9 each tick and it moves by that velocity ([worker.md](worker.md)).
 
-**R-UNIT-038** (MUST) An actor releases an Essence orb only through a death in the base health change, or in a kind's health change that calls it, and only one per death. The Rogue faction releases none (DEC-084). The orb's start position and velocity are those of [reference/05](../05_population_flow.md) (`ref.econ.orb.spawn_lift_wu`, `ref.econ.orb.death_velocity_factor`), and its life cycle is [essence_orbs.md](essence_orbs.md).
+**R-UNIT-038** (MUST) An actor releases an Essence orb only through a death in the base health change, or in a kind's health change that calls it, and only one per death. The Rogue faction releases none (DEC-084). The orb's start position and velocity are those of [reference/05](../05_population_flow.md) (R-ECON-066, R-ECON-067: the lift `ref.sim.spawn.orb_lift` and `ref.econ.orb.death_velocity_factor`), and its life cycle is [essence_orbs.md](essence_orbs.md).
 
 **R-UNIT-039** (MUST) These removals release no Essence orb, because they bypass the health change: a Worker's promotion to Leader; a Worker boarding a Launch Vessel; a Worker's abduction; a conversion by a Convert laser bolt, by the Swarm streak or by the Visitor faction's Core Device pulse wave; a Leader's demotion; a Reaper Serpent's kill (the orb is created and then deleted); and the death of every kind that table 2.8-A marks "no Essence orb".
 
@@ -292,7 +292,7 @@ Table 2.12-A Colouring per kind.
 | ant, centipede, Reaper Serpent | region tint | [creatures.md](creatures.md) |
 | spider, Seed Pod | whole-model tint | [creatures.md](creatures.md) |
 | Brood Drifter | region tint of the body; tails in team colour | [creatures.md](creatures.md) |
-| Crawler | body in team colour × health fraction; glow in team colour; the Rogue faction's are white or transparent | [creatures.md](creatures.md) |
+| Crawler | worm strip in team colour × health fraction, and the glow strip in the same colour; the Rogue faction's are white or transparent | [creatures.md](creatures.md) |
 | Crawler egg | its card drawn white | [creatures.md](creatures.md) |
 | meteor, Abductor | authored colours; the Abductor's beam rings in team colour | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
 
@@ -306,9 +306,9 @@ Cards, Essence orb quads, Crawler strips, laser bolts, barrage missile cards, Br
 
 **R-UNIT-049** (MUST) A unit mesh that takes damage or dies may shatter: the shatter effects (`ShatterEffects`) release a share of the mesh's facets as debris, given by the fraction the caller passes ([../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md)).
 
-**R-UNIT-050** (MUST) A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured (0.6, 0.6, 0.6, 0) and blended with source factor source alpha and destination factor one minus source colour.
+**R-UNIT-050** (MUST) A unit's ground shadow is a blob of `fx.glow_round` draped on the terrain, coloured `ref.unit.shadow.colour` (0.6, 0.6, 0.6, 0) and blended with source factor source alpha and destination factor one minus source colour ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-325).
 
-**R-UNIT-051** (MUST) A unit flickers to show damage: each render frame it is drawn damaged when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(presentation time + `ref.unit.flicker.phase_per_id` × unit id)| × `ref.unit.flicker.sine_weight`) > its health fraction, with chance scale 0.75, phase 10 per unit id and sine weight 0.8. The flicker is presentation state: it draws only from the presentation generator, reads only the presentation clock, and no simulation rule reads it (DEC-007, DEC-013).
+**R-UNIT-051** (MUST) A unit flickers to show damage. Its damaged flag is evaluated once per tick period of scaled presentation time, the reference cadence of one evaluation per simulation tick, and not every render frame ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-126; see DEC-963): the flag is set when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(t + `ref.unit.flicker.phase_per_id` × unit id)| × `ref.unit.flicker.sine_weight`) > its health fraction, with t the unscaled presentation time, chance scale 0.75, phase 10 per unit id and sine weight 0.8. Every render frame draws the unit by its current flag. The flicker is presentation state: it draws only from the presentation generator, reads only the presentation clock, and no simulation rule reads it (DEC-007, DEC-013).
 
 ### 2.14 Weapons used by units
 
@@ -334,12 +334,12 @@ Table 2.14-A Weapons used by units. The values are summaries; the owning documen
 
 | Weapon | Fired by | Damage | Reach or radius | Speed and life | Damage kind | Hits | Document |
 |---|---|---|---|---|---|---|---|
-| laser bolt (base attack) | Worker | 20 + `NextUnit(20)`, that is 20–39, one target; hit when the 2-D point-to-segment distance is below 5 wu and the height difference below 5 wu; knock-back `NextUnit(10)` along the bolt with a vertical component of 7 + `NextUnit(5)` | — | 150 wu/s for 0.6 s, about 90 wu | laser | enemies of the shooter only | R-UNIT-052, [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| Trooper laser bolt | Trooper | as the base laser bolt | — | 200 wu/s for 0.6 s, 120 wu | laser | enemies only | [strike_team.md](strike_team.md) |
-| Convert laser bolt | a Worker under the Convert power, a Visitor faction Worker | none: it converts an enemy Worker | — | 75 wu/s for 1.2 s, about 90 wu | — | enemies only | [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| grenade | Worker (Worker research above 3), Trooper | 50 | explosion range 12.5 wu | throw force 8 × √distance, at most 110; 3 s fuse | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| rocket | Workers of a team with the Rocket Troops upgrade | 25 | explosion range 15 wu | 50 wu/s, × 1.2 per tick (about 179 wu/s at most), 0.75 s | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
-| airstrike bomb, firebomb | Bomber | 100; the firebomb ignites Workers within 62.5 wu | explosion range 25 wu | 1.5 s fuse | explosive, or fire for the firebomb | every actor in reach | [hazards_and_projectiles.md](hazards_and_projectiles.md) |
+| laser bolt (base attack) | Worker | `ref.weapon.laser.damage_base` (20) + `NextUnit`(`ref.weapon.laser.damage_spread`) (20), that is 20–39, one target; hit when the 2-D point-to-segment distance is below `ref.weapon.laser.hit_radius` (5 wu) and the height difference below `ref.weapon.laser.hit_height` (5 wu); knock-back `NextUnit`(`ref.weapon.laser.push_spread`) (10) along the bolt with a vertical component of `ref.weapon.laser.push_lift_base` (7) + `NextUnit`(`ref.weapon.laser.push_lift_spread`) (5) | — | `ref.unit.attack.laser_speed` (150 wu/s) for `ref.weapon.laser.life_ticks` (6 ticks, 0.6 s), about 90 wu | laser | enemies of the shooter only | R-UNIT-052, [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| Trooper laser bolt | Trooper | as the base laser bolt | — | `ref.unit.trooper.laser_speed` (200 wu/s) for `ref.weapon.laser.life_ticks` (6 ticks), 120 wu | laser | enemies only | [strike_team.md](strike_team.md) |
+| Convert laser bolt | a Worker under the Convert power, a Visitor faction Worker | none: it converts an enemy Worker | — | `ref.unit.worker.convert_speed` (75 wu/s) for `ref.unit.worker.convert_life_factor` (2) × `ref.weapon.laser.life_ticks` (12 ticks, 1.2 s), about 90 wu | — | enemies only | [worker.md](worker.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| grenade | Worker (Worker research above 3), Trooper | `ref.weapon.grenade.power` (25) × `ref.weapon.grenade.damage_factor` (2) = 50 | explosion range 25 × `ref.weapon.grenade.range_factor` (0.5) = 12.5 wu | throw force `ref.weapon.throw.force_factor` (8) × √distance, at most `ref.weapon.throw.max_force` (110 at grenade level 2); `ref.weapon.grenade.fuse_ticks` (30 ticks, 3 s) fuse | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| rocket | Workers of a team with the Rocket Troops upgrade | `ref.weapon.rocket.damage` (25) | explosion range `ref.weapon.rocket.range` (15 wu) | `ref.weapon.rocket.launch_speed` (50 wu/s), × `ref.weapon.rocket.accel_factor` (1.2) per tick (about 179 wu/s at most), `ref.weapon.rocket.life_ticks` (8 ticks, 0.75 s) | explosive | every actor in reach | [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+| airstrike bomb, firebomb | Bomber | 100 (`ref.weapon.airstrike_bomb.power`, 50); the firebomb (`ref.weapon.firebomb.power`, 50) ignites Workers within `ref.weapon.firebomb.ignite_factor` (1.25) × 50 = 62.5 wu | explosion range 25 wu | `ref.weapon.airstrike_bomb.fuse_ticks` and `ref.weapon.firebomb.fuse_ticks` (15 ticks, 1.5 s) fuse | explosive, or fire for the firebomb | every actor in reach | [hazards_and_projectiles.md](hazards_and_projectiles.md), [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | contact attacks | Crawler (20 per tick), ant (1 per tick), centipede ((radius − d) × 10), Reaper Serpent ((25 − d) × 50), spider squash (100 × fraction, at most 20) | as stated | contact | — | unresistable | per kind | [creatures.md](creatures.md) |
 
 ### 2.15 Control model
@@ -358,7 +358,7 @@ Table 2.15-A Control category per kind.
 | Collector | direct move only | a move order, which deselects it; otherwise autonomous | [collector.md](collector.md) |
 | Builder | direct move only | a move order, which deselects it | [builder.md](builder.md) |
 | airstrike, Firebomb Run, Missile Barrage, meteor shower | targeted Power | the player chooses a target point once; the units then act on their own | [hazards_and_projectiles.md](hazards_and_projectiles.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Brood, Hive, Swarm and Blight Grove outcomes | targeted Power | the player chooses a point; the creatures act on their own (Brood creatures belong to the placing team, DEC-107; Hive ants and Swarm creatures to the Rogue faction) | [creatures.md](creatures.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
+| Brood, Hive, Swarm and Blight Grove outcomes | targeted Power | the player chooses a point; the creatures act on their own (Brood creatures belong to the placing team, see DEC-121; Hive ants and Swarm creatures to the Rogue faction) | [creatures.md](creatures.md), [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | creatures, Abductor, Wisp, Essence orb | none | — | [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md), [essence_orbs.md](essence_orbs.md) |
 | bot controller | bot player | issues the same unit operations as a player through the bot hooks of special units and through waypoint orders to Workers | [../07_bots/README.md](../07_bots/README.md) |
 
@@ -396,7 +396,7 @@ Table 2.17-A Actor hooks.
 
 ### 2.18 Explosion presentation and the shockwave ring
 
-**R-UNIT-195** (MUST) Every explosion of this folder also creates presentation particles and a shockwave ring as [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) specifies: for an explosion of range R and damage D, about R × D × 0.01 explosion cores plus a presentation-random share of that count, and clamp(R × D × 0.01, 2, 30) debris particles; and a shockwave ring of size R ÷ 20 s, whose active radius is 35 + 40 × (size − remaining life) wu after the life is counted down at the start of each tick, which hits a target whose distance d satisfies |d − r| < 10 with 40 × (remaining life ÷ size) damage, and knocks it back by 25 × that fraction with a vertical component of 3. The ring radii and active ticks for the explosions of units are the vectors of AC-UNIT-14.
+**R-UNIT-195** (MUST) Every explosion of this folder also creates presentation particles and a shockwave ring as [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) specifies: for an explosion of range R and damage D, about R × D × `ref.weapon.explosion.particle_factor` (0.01) explosion cores plus a presentation-random share of that count, and clamp(R × D × 0.01, `ref.weapon.explosion.debris_min` (2), `ref.weapon.explosion.debris_max` (30)) debris particles; and a shockwave ring of size R ÷ `ref.weapon.shockwave.size_divisor` (20) s, whose active radius is `ref.weapon.shockwave.start_radius` (35) + `ref.weapon.shockwave.growth` (40) × (size − remaining life) wu after the life is counted down at the start of each tick, which hits a target whose distance d satisfies |d − r| < `ref.weapon.shockwave.band` (10) with `ref.weapon.shockwave.damage` (40) × (remaining life ÷ size) damage, and knocks it back by `ref.weapon.shockwave.push` (25) × that fraction with a vertical component of `ref.weapon.shockwave.push_lift` (3). A Worker in the band catches fire instead when its draw `NextUnit`(`ref.weapon.shockwave.ignite_draw_range`) (4) is below `ref.weapon.shockwave.ignite_threshold` (0.1) (R-UNIT-033). These keys belong to [reference/04](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (R-CRATE-406, R-CRATE-470, R-CRATE-471). The ring radii and active ticks for the explosions of units are the vectors of AC-UNIT-14.
 
 ## 3 States and flows
 
@@ -459,21 +459,21 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.leader.health` | 255 | health | | R-UNIT-011 | DEC-019 |
 | `ref.unit.leader.speed` | 30 | wu/s | | R-UNIT-011 | DEC-019 |
 | `ref.unit.leader.rate` | 3 | s | unused: a Leader never shoots | R-UNIT-017 | — |
-| `ref.unit.trooper.health` | 75 | health | | R-UNIT-011 | — |
-| `ref.unit.trooper.speed` | 30 | wu/s | | R-UNIT-011 | — |
-| `ref.unit.trooper.rate` | 0.5 | s | read by the Strike team's fire accumulator only | R-UNIT-014 | DEC-090 |
-| `ref.unit.trooper.actor_rate` | 0 | s | the Trooper's own reload timer | R-UNIT-014 | DEC-090 |
-| `ref.unit.transport.health` | 200 | health | | R-UNIT-011 | — |
-| `ref.unit.transport.speed` | 60 | wu/s | | R-UNIT-011 | — |
-| `ref.unit.transport.rate` | 5 | s | unused | R-UNIT-017 | — |
-| `ref.unit.collector.health` | 255 | health | | R-UNIT-011 | — |
-| `ref.unit.collector.speed` | 28 | wu/s | | R-UNIT-011 | DEC-111 |
+| `ref.unit.trooper.health` | 75 | health | | R-UNIT-011, R-UNIT-340 | DEC-090 |
+| `ref.unit.trooper.speed` | 30 | wu/s | × the slope factor ([strike_team.md](strike_team.md)) | R-UNIT-011, R-UNIT-340, R-UNIT-347 | DEC-090 |
+| `ref.unit.trooper.rate` | 0.5 | s | read by the Strike team's fire accumulator only | R-UNIT-014, R-UNIT-340, R-UNIT-352 | DEC-090, DEC-853 |
+| `ref.unit.trooper.actor_rate` | 0 | s | the Trooper's own reload timer: a Trooper never reloads on its own | R-UNIT-014, R-UNIT-341 | DEC-090, DEC-853 |
+| `ref.unit.transport.health` | 200 | health | also the divisor of the Transport's shatter fraction ([transport.md](transport.md)) | R-UNIT-011, R-UNIT-371, R-UNIT-374 | DEC-090 |
+| `ref.unit.transport.speed` | 60 | wu/s | the Transport's maximum speed ([transport.md](transport.md)) | R-UNIT-011, R-UNIT-371, R-UNIT-379 | DEC-090 |
+| `ref.unit.transport.rate` | 5 | s | unused | R-UNIT-017, R-UNIT-371 | — |
+| `ref.unit.collector.health` | 255 | health | | R-UNIT-011, R-UNIT-417 | DEC-090 |
+| `ref.unit.collector.speed` | 28 | wu/s | never more than the remaining distance per second ([collector.md](collector.md)) | R-UNIT-011, R-UNIT-417, R-UNIT-429 | DEC-090, DEC-111 |
 | `ref.unit.collector.rate` | 0 | s | | R-UNIT-011 | — |
-| `ref.unit.builder.health` | 255 | health | | R-UNIT-011 | — |
-| `ref.unit.builder.speed` | 28 | wu/s | | R-UNIT-011 | — |
+| `ref.unit.builder.health` | 255 | health | | R-UNIT-011, R-UNIT-450 | DEC-090 |
+| `ref.unit.builder.speed` | 28 | wu/s | | R-UNIT-011, R-UNIT-450, R-UNIT-460 | DEC-090 |
 | `ref.unit.builder.rate` | 0 | s | | R-UNIT-011 | — |
 | `ref.unit.bomber.health` | 10 | health | | R-UNIT-011 | — |
-| `ref.unit.bomber.speed` | 40 | wu/s | its cruise speed is a multiple of this stat ([creatures.md](creatures.md)) | R-UNIT-011 | — |
+| `ref.unit.bomber.speed` | 40 | wu/s | its cruise speed is a multiple of this stat ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-011 | — |
 | `ref.unit.bomber.rate` | 1 | s | | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.health` | 255 | health | | R-UNIT-011 | — |
 | `ref.unit.barrage_missile.speed` | 100 | wu/s | its flight speed rises from half of this to this ([hazards_and_projectiles.md](hazards_and_projectiles.md)) | R-UNIT-011 | — |
@@ -525,22 +525,23 @@ Speeds are at difficulty level 0 (DEC-010). Rates are the seconds between shots;
 | `ref.unit.attack.muzzle_height` | 3 | wu | above the shooter's position | R-UNIT-052 | — |
 | `ref.unit.attack.laser_speed` | 150 | wu/s | about 90 wu of range at a 0.6 s bolt life | R-UNIT-052 | DEC-111 |
 | `ref.unit.tint.attenuation` | 0.7 | × colour | applied after the team tint | R-UNIT-044 | — |
-| `ref.unit.flicker.chance_scale` | 0.75 | — | presentation only | R-UNIT-051 | DEC-007 |
+| `ref.unit.shadow.colour` | 0.6, 0.6, 0.6, 0 | RGBA | the ground blob shadow; presentation only | R-UNIT-050 | DEC-007 |
+| `ref.unit.flicker.chance_scale` | 0.75 | — | presentation only; evaluated once per tick period | R-UNIT-051 | DEC-007, DEC-963 |
 | `ref.unit.flicker.phase_per_id` | 10 | rad per unit id | presentation only | R-UNIT-051 | DEC-007 |
 | `ref.unit.flicker.sine_weight` | 0.8 | — | presentation only | R-UNIT-051 | DEC-007 |
-| `ref.unit.trooper.slope_divisor` | 3 | wu | | R-UNIT-042 | — |
-| `ref.unit.trooper.slope_min` | 0.2 | × speed | | R-UNIT-042 | — |
-| `ref.unit.trooper.slope_max` | 2.0 | × speed | | R-UNIT-042 | — |
-| `ref.unit.trooper.slope_block_normal_y` | 0.6 | normal y | uphill on steeper terrain stops a Trooper | R-UNIT-042 | — |
+| `ref.unit.trooper.slope_divisor` | 3 | wu | slope factor = 1 + Δh ÷ 3 | R-UNIT-042, R-UNIT-347 | — |
+| `ref.unit.trooper.slope_min` | 0.2 | × speed | | R-UNIT-042, R-UNIT-347 | — |
+| `ref.unit.trooper.slope_max` | 2.0 | × speed | | R-UNIT-042, R-UNIT-347 | — |
+| `ref.unit.trooper.slope_block_normal_y` | 0.6 | normal y | uphill on steeper terrain stops a Trooper | R-UNIT-042, R-UNIT-347 | — |
 | `ref.unit.crawler.slope_divisor` | 5 | wu | | R-UNIT-042 | — |
 | `ref.unit.crawler.slope_min` | 0.1 | × speed | | R-UNIT-042 | — |
 | `ref.unit.crawler.slope_max` | 2.0 | × speed | | R-UNIT-042 | — |
 | `ref.unit.centipede.slope_divisor` | 10 | wu | | R-UNIT-042 | — |
 | `ref.unit.centipede.slope_min` | 0.6 | × speed | | R-UNIT-042 | — |
 | `ref.unit.centipede.slope_max` | 1.0 | × speed | downhill never speeds a centipede up | R-UNIT-042 | — |
-| `ref.unit.trooper.colour_primary` | 228, 214, 153 | RGB | authored, untinted | R-UNIT-046 | — |
-| `ref.unit.trooper.colour_secondary` | 177, 88, 26 | RGB | authored, untinted | R-UNIT-046 | — |
-| `ref.unit.transport.hull_tint` | 0.1 | × team colour | whole hull | R-UNIT-046 | — |
+| `ref.unit.trooper.colour_primary` | 228, 214, 153 | RGB | authored, untinted: the sand colour | R-UNIT-046, R-UNIT-363 | — |
+| `ref.unit.trooper.colour_secondary` | 177, 88, 26 | RGB | authored, untinted: the rust colour | R-UNIT-046, R-UNIT-363 | — |
+| `ref.unit.transport.hull_tint` | 0.1 | × team colour | whole hull, every facet at tint weight 1 | R-UNIT-046, R-UNIT-408 | DEC-029 |
 | `ref.unit.bomber.colour` | 128, 128, 128 | RGB | authored, untinted | R-UNIT-046 | — |
 
 The Worker's slope factors and formation factor are keyed in [worker.md](worker.md) (`ref.unit.worker.slope_divisor`, `ref.unit.worker.slope_min`, `ref.unit.worker.slope_max`, `ref.unit.worker.formation_explosive_factor`), and the Leader's slope factors and corpse sink in [leader_and_formations.md](leader_and_formations.md) (`ref.unit.leader.slope_divisor`, `ref.unit.leader.slope_min`, `ref.unit.leader.slope_max`, `ref.unit.leader.corpse_sink_per_tick`).
@@ -634,8 +635,8 @@ This index is informative and defines no tuning key. It lists the named constant
 |---|---|---|
 | any death through the base health change, outside the Rogue faction | one Essence orb of the dead actor's team | [essence_orbs.md](essence_orbs.md) |
 | Trooper, Transport, Collector, Builder, Bomber, Crawler egg | die without an Essence orb | table 2.8-A |
-| Collector | collects up to 100 floating Essence orbs of any team; each delivered orb becomes one Worker at a friendly Spawn Node, past the population cap and the activation delay | [collector.md](collector.md), [reference/05](../05_population_flow.md) |
-| Builder | the same with 25 Essence orbs, delivered one by one in a train | [builder.md](builder.md) |
+| Collector | collects up to 100 floating Essence orbs of any team; each delivered orb becomes one Worker at a friendly Spawn Node, delivered only while the node may produce and within the receiving team's population cap; otherwise the Collector keeps its orbs and waits (DEC-080) | [collector.md](collector.md), [reference/05](../05_population_flow.md) |
+| Builder | collects up to 25 Essence orbs of any team in Birth or Floating, carried in a train, and delivers one per tick at the nearest friendly Spawn Node, each becoming one Worker with no population-cap or activation check (DEC-085) | [builder.md](builder.md) |
 | ant | carries Essence orbs and captured Workers home to its Hive; Rogue faction Hives produce no Essence orbs | [creatures.md](creatures.md) |
 | Crawler, Crawler egg | Crawlers ferry Essence orbs into Crawler eggs; one Essence orb becomes 4 Crawlers after 15 s | [creatures.md](creatures.md) |
 | Brood Drifter | lays Crawler eggs; a quarter of them come with a newly created Essence orb | [creatures.md](creatures.md) |
@@ -733,5 +734,10 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 | DEC-313 | Dead airborne actors | corpses sink and still count (R-UNIT-036) |
 | DEC-079 | Per-team population cap | the bot controller counts towards its team (R-UNIT-056) |
 | DEC-202 | Command validation and authority | handlers check the named actor (R-UNIT-055) |
+| DEC-852 | Game-speed divisors in Worker rules | the Worker rules keep their division by the game speed (R-UNIT-007) |
+| DEC-853 | Worker and Trooper rule details | a Trooper's own reload is 0 while the Strike team reads the table rate of 0.5 (R-UNIT-014) |
+| DEC-121 | Ownership of Brood creatures | Brood creatures belong to the placing team (table 2.15-A) |
+| DEC-963 | Animation and VFX reference looks kept as defaults | the damage flicker is evaluated once per tick period (R-UNIT-051) |
+| DEC-453 | Population-cap enforcement points and uncapped sources | the spawn step tests no cap (R-UNIT-021); a Collector delivery is capped, a Builder delivery is not (§5.3) |
 
-Resolved and Dropped decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-013, DEC-019, DEC-039, DEC-062, DEC-084, DEC-090, DEC-092, DEC-093, DEC-107, DEC-117, DEC-453, DEC-652, DEC-653.
+Resolved and Dropped decisions applied here: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-010, DEC-013, DEC-019, DEC-039, DEC-062, DEC-080, DEC-084, DEC-085, DEC-090, DEC-092, DEC-093, DEC-107, DEC-117, DEC-652, DEC-653.

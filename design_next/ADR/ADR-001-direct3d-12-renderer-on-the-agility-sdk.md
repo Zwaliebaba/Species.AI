@@ -35,9 +35,10 @@ The problem is which Direct3D 12 runtime the client is built against and how tha
 
 Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the only option that gives every supported OS build the same, current Direct3D 12 runtime while staying inside the Direct3D 12 constraint of the vision brief.
 
-- The client ships **Agility SDK 1.619.6** (NuGet `Microsoft.Direct3D.D3D12`, D3D12SDKVersion **619**). `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`, and the install directory carries `D3D12\D3D12Core.dll`. Agility SDK headers are included before Windows SDK headers.
-- No preview Agility SDK is ever distributed, and `D3D12SDKLayers.dll` is never distributed. The debug layer and GPU-based validation run in development and in a CI test configuration only.
-- The SDK version is pinned in exactly one place (the package version), and the exported constant is generated from it.
+- The client ships **Agility SDK 1.619.6** (NuGet `Microsoft.Direct3D.D3D12`, D3D12SDKVersion **619**), one of the three packages `AGENTS.md` R14 allows ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)). `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`, and the install directory carries `D3D12\D3D12Core.dll`. Agility SDK headers are included before Windows SDK headers.
+- No preview Agility SDK is ever distributed, and `D3D12SDKLayers.dll` is never distributed. The debug layer and GPU-based validation run only in Debug builds, enabled by a development setting at start-up, on developer machines and in a CI job on a GPU agent ([ADR-070](ADR-070-continuous-integration.md)).
+- The SDK version is pinned in exactly one place (the package version in `packages.config`), and a build check asserts that the exported constant equals it.
+- The headers are those of the Windows SDK and the Agility SDK package (`d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `wrl/client.h`); `Microsoft::WRL::ComPtr` holds every COM object, so lifetimes are RAII. The `d3dx12.h` helpers and DirectX-Headers are not used (`AGENTS.md` R12, R14): resource barriers and heap descriptions are written by hand.
 - The renderer is an explicit Direct3D 12 renderer: it owns all GPU state, builds each frame from a frame graph (ADR-004), draws only through catalogued pipeline state objects (ADR-005), binds resources through one bindless root signature (ADR-006), and expresses synchronisation through the barrier model of ADR-007. Resource upload, residency and device-removal handling follow ADR-008.
 - The renderer is a client-only module. The dedicated server target does not link `d3d12.lib`, `dxgi.lib` or any renderer code.
 
@@ -55,7 +56,7 @@ Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the onl
 
 - A build check fails when the exported `D3D12SDKVersion` differs from the minor version of the packaged `D3D12Core.dll`.
 - A start-up test on the minimum OS build (24H2, 26100) creates the device through the Agility runtime and logs the loaded runtime version.
-- The CI test configuration runs the golden-image and frame-graph tests of the renderer component with the debug layer and GPU-based validation enabled, and fails on any validation message.
+- A Debug test run on a GPU agent runs the golden-image and frame-graph tests of the renderer component with the debug layer and GPU-based validation enabled, and fails on any validation message ([ADR-070](ADR-070-continuous-integration.md) adds the job).
 - The dedicated-server link map is checked in CI for the absence of `d3d12`, `dxgi` and renderer symbols.
 
 ## Pros and Cons of the Options
@@ -88,7 +89,8 @@ Chosen option: **1, Direct3D 12 through the Agility SDK**, because it is the onl
 
 ## More Information
 
-- Technology baseline items 4.1 and 4.7 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://devblogs.microsoft.com/directx/directx12agility/ · https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/ · https://github.com/microsoft/DirectX-Headers/releases.
+- Technology baseline items 4.1 and 4.7 (see [the index](README.md#technology-baseline)); sources checked 2026-10-17: https://devblogs.microsoft.com/directx/directx12agility/ · https://devblogs.microsoft.com/directx/gettingstarted-dx12agility/.
 - Related: ADR-002 (minimum GPU capability), ADR-004 (frame graph), ADR-005 (pipeline state catalogue), ADR-006 (root signature), ADR-007 (barriers), ADR-008 (memory, uploads, device removal), ADR-012 (swap chain).
 - The renderer component (`architecture/components/renderer/`) specifies the frame, the pass table and each sub-renderer on top of this decision.
 - Re-check the Agility SDK version at every milestone; an upgrade is a new revision of this ADR.
+- **Amendment 2026-10-17 (AGENTS.md, O21).** The Agility SDK is restored by NuGet from `packages.config` as an allow-listed package; the renderer uses no `d3dx12.h` helpers and no DirectX-Headers, and holds COM objects in `Microsoft::WRL::ComPtr` (`AGENTS.md` R12, R14). The debug layer runs in Debug builds only, since the build has no other test configuration.

@@ -28,11 +28,11 @@ This document specifies the Transport (`Transport`, an actor): acquisition, stat
 
 The Supply crate validity rule that excludes the Transport outcome in Launch Race and on maps with a Transit Gate Transport cap belongs to [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md).
 
-**R-UNIT-370** (MUST) A Transport's Power ends when the Transport is dead or no longer exists. Cancelling a Transport's Power frees its Power slot and leaves the Transport in the world, where it stays with no slot (see DEC-551).
+**R-UNIT-370** (MUST) A Transport's Power ends when the Transport is dead or no longer exists. Stopping a Transport's Power, by its owner's cancel command or by a stop of all of the team's Powers, gives the Transport a health change of −`ref.power.stop.damage` (1000), which destroys it ([reference/04 README](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-020). In a tutorial the Transport refuses the stop: the Power's slot is freed and the Transport stays in the world with no slot (see DEC-551).
 
 ### 2.3 Stats
 
-**R-UNIT-371** (MUST) A Transport has health `ref.unit.transport.health` (200), kept within `ref.unit.transport.health_range` ([0, 255]), and a maximum speed of `ref.unit.transport.speed_max` (60 wu/s). Its stat-table rate `ref.unit.transport.fire_rate_s` (5 s) is read by no rule. Actor stats are floating-point values (DEC-090).
+**R-UNIT-371** (MUST) A Transport has health `ref.unit.transport.health` (200), kept within `ref.unit.transport.health_range` ([0, 255]), and a maximum speed of its speed stat `ref.unit.transport.speed` (60 wu/s); both keys belong to the actor stat table ([Units](README.md) §4.1). Its stat-table rate `ref.unit.transport.rate` (5 s) is read by no rule. Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-372** (MUST) A Transport is drawn with the mesh `mesh.unit.transport_hull`. Its `entrance` socket is the door that Workers board and leave by (R-UNIT-397, R-UNIT-398) and the point of the entrance clearance test (R-UNIT-382); the content build rejects a Transport mesh without it (DEC-015, ADR-021). Nothing is drawn at its `flag` socket.
 
@@ -62,10 +62,10 @@ The Supply crate validity rule that excludes the Transport outcome in Launch Rac
 
 | Distance | Speed change per tick |
 |---|---|
-| d > `ref.unit.transport.cruise_distance` (100 wu), heading error below `ref.unit.transport.cruise_heading_max` (1 rad) | + `ref.unit.transport.acceleration` (10 wu/s²) × `ref.sim.tick_period`, that is +1 wu/s, up to `ref.unit.transport.speed_max` |
+| d > `ref.unit.transport.cruise_distance` (100 wu), heading error below `ref.unit.transport.cruise_heading_max` (1 rad) | + `ref.unit.transport.acceleration` (10 wu/s²) × `ref.sim.tick_period`, that is +1 wu/s, up to `ref.unit.transport.speed` |
 | d > 100 wu, heading error at least 1 rad | unchanged |
 | `ref.unit.transport.brake_distance` (10 wu) < d ≤ 100 wu | speed := `ref.unit.transport.approach_keep` (0.95) × speed + (1 − 0.95) × (`ref.unit.transport.approach_gain` (0.2 per second) × d) |
-| d ≤ 10 wu | − `ref.unit.transport.deceleration` (5 wu/s²) × `ref.sim.tick_period`, that is −0.5 wu/s |
+| d ≤ 10 wu | − `ref.unit.transport.deceleration` (5 wu/s²) × `ref.sim.tick_period`, that is −0.5 wu/s, with no floor, a kept reference rule (DEC-006, see DEC-854) |
 
 **R-UNIT-380** (MUST) **Step.** Each tick a Transport moves by facing × speed × `ref.sim.tick_period`. It then calls the obstacle push `PushFromObstacles` on the new position and **discards** the result ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-380): a Transport is never pushed out of structures, and only the push's side effects remain, the shore-search draw (R-SIM-379) and the Barrier Emitter kill (R-UNIT-377). Its ground level is max(terrain height, `ref.sim.physics.sea_level`), so it hovers over water at sea level. Then:
 
@@ -82,7 +82,7 @@ Its velocity is then (new position − old position) ÷ `ref.sim.tick_period`.
 2. if a sphere of radius `ref.unit.transport.entrance_test_radius` (20 wu) at its `entrance` socket hits a structure, moves away from that structure in steps of `ref.unit.transport.entrance_shift_step` (3 wu) until a sphere of `ref.unit.transport.entrance_clear_radius` (5 wu) at the entrance is clear;
 3. moves its waypoint by the same displacement when the waypoint is within `ref.unit.transport.waypoint_carry_range` (40 wu).
 
-**R-UNIT-383** (MUST) **Routes.** Only a bot's arrival point creates a route for a Transport (R-UNIT-403). The route is the straight line when the sea-route-clear test (R-UNIT-384) passes, and otherwise a route on the sea route graph built with `permitClimbing` and `noRounding` ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-353), which the Transport then follows point by point (R-SIM-354). A player's order never gives a Transport a route to follow: a player-driven Transport flies straight at its waypoint, and the land route built while the player has it selected is a highlight for display (R-SIM-353). A Transport's sea routes are the only simulation routes that are freed before the match world is destroyed (R-SIM-357, see DEC-651).
+**R-UNIT-383** (MUST) **Routes.** Only a bot's arrival point creates a route for a Transport (R-UNIT-403). The route is the straight line when the sea-route-clear test (R-UNIT-384) passes, and otherwise a route on the sea route graph built with climbing permitted and corner smoothing off ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-345, R-SIM-353), which the Transport then follows point by point (R-SIM-354). A player's order never gives a Transport a route to follow: a player-driven Transport flies straight at its waypoint, and the land route built while the player has it selected is a highlight for display (R-SIM-353). A Transport's sea routes are the only simulation routes that are freed before the match world is destroyed: a Transport frees its previous sea route when it creates a new route for itself, and its current sea route when it is removed (R-SIM-357, see DEC-651).
 
 **R-UNIT-384** (MUST) The sea-route-clear test between two points samples the segment every `ref.unit.transport.route_clear_step` (20 wu) and fails if the segment crosses an enabled Barrier Emitter that is not a friend of the Transport's team. The sea route graph uses this test for its edges ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-342).
 
@@ -114,13 +114,13 @@ Its velocity is then (new position − old position) ÷ `ref.sim.tick_period`.
 
 **R-UNIT-396** (MUST) A Transport is **loading** when it is Loading, its count is below its capacity and its order lockout permits it (R-UNIT-393). It is **unloading** when it is Unloading, its count is above 0, its order lockout permits it and at least `ref.unit.transport.unload_interval_ticks` (1 tick, nominal 0.1 s) has passed since the last exit, so at most one Worker leaves per tick (10 per second).
 
-**R-UNIT-397** (MUST) **Boarding.** Workers board by the Worker rules ([worker.md](worker.md)): an idle Worker within `ref.unit.worker.transport_search_range` (150 wu) of a loading friendly Transport may choose it; a crowd order whose target lies within `ref.unit.worker.transport_order_range` (30 wu) of a friendly Transport with room sends the ordered Workers to board it, also when that Transport is Unloading, which then becomes Idle; a Worker boards when the entrance socket is within `ref.unit.worker.transport_board_distance` (20 wu) or it has arrived. Inside, a Worker's position is held at the Transport.
+**R-UNIT-397** (MUST) **Boarding.** Workers board by the Worker rules ([worker.md](worker.md)): an idle Worker within `ref.unit.worker.transport_search_range` (150 wu) of a loading friendly Transport may choose it; a crowd order whose target lies within `ref.unit.worker.order_transport_radius` (30 wu) of a friendly Transport with room sends the ordered Workers to board it, also when that Transport is Unloading, which then becomes Idle; a Worker boards when the entrance socket is within `ref.unit.worker.transport_board_distance` (20 wu) or it has arrived. Inside, a Worker's position is held at the Transport.
 
 **R-UNIT-398** (MUST) **Leaving.** While its Transport is unloading and the terrain under the entrance socket is above sea level, one Worker per tick jumps out of the entrance by the Worker's exit jump ([worker.md](worker.md)).
 
 **R-UNIT-399** (MUST) **No unloading over sea.** While the terrain under the entrance socket is at or below sea level, a Worker inside an unloading Transport does not register for that tick, so the Transport's rebuilt count drops to 0 and the automatic change of R-UNIT-392 makes it Idle; the passengers register again on the next tick. A Transport therefore never unloads over sea: an unload order there is lost, and the Transport is Idle with its passengers still inside (see DEC-302).
 
-**R-UNIT-400** (MUST) A Worker that boards raises the Transport's boarding event, and a Worker that leaves raises its leaving event; neither event has a sound binding (DEC-565).
+**R-UNIT-400** (MUST) A Worker that boards raises the Transport's event `transport.load_worker`, and a Worker that leaves raises `transport.unload_worker`; both are silent (DEC-565).
 
 ### 2.8 Player control
 
@@ -129,18 +129,18 @@ Its velocity is then (new position − old position) ÷ `ref.sim.tick_period`.
 | Input | Command | Effect |
 |---|---|---|
 | select the Transport | `PlayerCommand::Select` naming it | it becomes the team's current actor |
-| move order (primary pointer action on the terrain) | `PlayerCommand::OrderUnit` with move-only set | move order to the position (R-UNIT-387) |
-| deploy order (special-orders pointer action on the terrain) | `PlayerCommand::OrderUnit` with move-only clear | deploy order to the position (R-UNIT-388); the Transport raises its ordered sound event; an order-marker presentation event is emitted for every viewer whose team is a friend of the commanding team; the Transport is deselected and its land route is highlighted |
-| click the Transport | `PlayerCommand::ToggleUnit`, secondary flag clear | toggle loading (R-UNIT-390); the match UI plays its unit-toggle sound for the local player |
+| move order (row O8 of [actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-042) | `PlayerCommand::OrderUnit` with move-only set | move order to the position (R-UNIT-387) |
+| deploy order (row O9 of R-CTRL-042) | `PlayerCommand::OrderUnit` with move-only clear | deploy order to the position (R-UNIT-388); the Transport raises `transport.ordered`; an order-marker presentation event is emitted for every viewer whose team is a friend of the commanding team; the Transport is deselected and its land route is highlighted |
+| click the Transport | `PlayerCommand::ToggleUnit`, secondary flag clear | toggle loading (R-UNIT-390); the match UI plays `match_ui.toggle_state` for the local player |
 | click the Transport's order marker | `PlayerCommand::ToggleUnit`, secondary flag set | toggle the arrival action (R-UNIT-391), and the Transport is deselected |
 | weapon-cycle keys | none sent | no effect (R-UNIT-394) |
-| cancel the Power | `PlayerCommand::CancelPower` | the slot is freed; the Transport stays (R-UNIT-370) |
+| cancel the Power | `PlayerCommand::CancelPower` | the Transport is destroyed; in a tutorial the slot is freed and the Transport stays (R-UNIT-370) |
 
-An order always carries the straight-route flag (R-SIM-450).
+An order always carries the straight-route flag (R-SIM-450). Which input gives the move order and which the deploy order depends on the input mode: with a gamepad the two inputs swap their meaning ([actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-043).
 
 ### 2.9 Bot behaviour
 
-**R-UNIT-402** (MUST) A bot team's Transport thinks at an interval set by the bot's difficulty: `ref.unit.transport.bot_think_hard_ticks` (11 ticks) for the hard bot, `ref.unit.transport.bot_think_standard_ticks` (101 ticks; `ref.unit.transport.bot_think_standard_siege_ticks`, 51 ticks, in Siege) for the standard bot, and `ref.unit.transport.bot_think_easy_ticks` (200 ticks; `ref.unit.transport.bot_think_easy_siege_ticks`, 101 ticks, in Siege) for the easy bot (DEC-022). While it moves it re-checks its route every `ref.unit.transport.bot_route_check_ticks` (11 ticks). It runs the behaviour of its mode: Launch Race (R-UNIT-407), Siege (R-UNIT-405), Flag Chain (R-UNIT-406), and the standard behaviour (R-UNIT-404) in every other mode. Strategy context is in [bots](../07_bots/README.md).
+**R-UNIT-402** (MUST) A bot team's Transport thinks at an interval set by the bot's difficulty: `ref.unit.transport.bot_think_hard_ticks` (11 ticks) for the hard bot, `ref.unit.transport.bot_think_standard_ticks` (101 ticks; `ref.unit.transport.bot_think_standard_siege_ticks`, 51 ticks, in Siege) for the standard bot, and `ref.unit.transport.bot_think_easy_ticks` (200 ticks; `ref.unit.transport.bot_think_easy_siege_ticks`, 101 ticks, in Siege) for the easy bot (DEC-022). While it moves it re-checks its route every `ref.unit.transport.bot_route_check_ticks` (11 ticks). It runs the behaviour of its mode: Launch Race (R-UNIT-407), Siege (R-UNIT-405), Flag Chain (R-UNIT-406), and the standard behaviour (R-UNIT-404) in every other mode. Strategy context is in [bots](../07_bots/README.md). Setting a Transport's arrival point, its loading and unloading, and its self-destruct target are bot-only operations with no player command ([bots](../07_bots/README.md) R-BOT-015; see DEC-122).
 
 **R-UNIT-403** (MUST) A bot sets a Transport's arrival point by pushing the chosen point out of obstacles, displacing it by two draws from `ref.unit.transport.bot_point_jitter` (U[−5, 5] wu), first on x, then on z, and building its route by R-UNIT-383. Every count that these behaviours make with "within" uses the cell-granular counts of [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-313 (DEC-094). "Nobody approaching" means that no Worker is on its way to board the Transport.
 
@@ -151,7 +151,7 @@ An order always carries the straight-route flag (R-SIM-450).
 3. A Transport with more than `ref.unit.transport.bot_standard_full` (50) passengers and no arrival point sets an arrival point to unload behind the nearest enemy Spawn Node, at its position − its front × 100 wu.
 4. A Transport that has just emptied by unloading makes one simulation integer draw; if the draw modulo 2 is 0 (50 %), it takes the nearest enemy Spawn Node farther than `ref.unit.transport.bot_self_destruct_min_range` (200 wu) as its self-destruct target and drives into it; otherwise it stays Idle.
 
-**R-UNIT-405** (MUST) **Siege behaviour.** The Siege behaviour runs in every Siege match (DEC-087).
+**R-UNIT-405** (MUST) **Siege behaviour.** The bot's Siege Transport objective list is filled once every Transport marker has registered ([bots](../07_bots/05_mode_strategies_and_tutorials.md) R-BOT-127), so the mobile-bomb branch of item 1 runs in every Siege match whose map has Transport markers (DEC-087; its effect on bot strength is calibrated under DEC-112).
 
 1. When the bot's Siege objectives include Transport objectives, an empty Transport whose current objective has no Transport marker becomes a mobile bomb: it drives to the nearest enemy gun turret or Spawn Node and self-destructs as in R-UNIT-404 item 1 within `ref.unit.transport.bot_bomb_distance` (20 wu).
 2. A stopped Transport with more than `ref.unit.transport.bot_carry_threshold` (20) passengers and nobody approaching unloads at the current objective's Transport marker, or else at a random valid objective marker: one that is not friendly for an attacker, any for a defender.
@@ -163,18 +163,18 @@ An order always carries the straight-route flag (R-SIM-450).
 
 1. A carrying Transport within `ref.unit.transport.bot_flag_unload_range` (100 wu) of its arrival point becomes Unloading and, to rush a turret, keeps driving to a point `ref.unit.transport.bot_rush_forward` (100 wu) ahead and `ref.unit.transport.bot_rush_right` (50 wu) to the right, so its passengers drop onto the turret.
 2. An empty Transport loads in front of one of its team's Transit Gates that has more than `ref.unit.transport.bot_gate_friends` (20) friends within `ref.unit.transport.bot_gate_radius` (200 wu).
-3. A stationary Transport with more than 20 passengers and nobody approaching chooses an enemy Flag post linked to one of its team's Flag posts, preferring a linked enemy Home post whose team is not eliminated. When its own Home post is under threat, the easy bot always, and the standard bot with a 50 % draw, chooses instead among the Flag posts linked to its own Home post. The choice among the candidates is random. The easy bot drives to the chosen Flag post's centre; the other bots drive to its drop point: the last enemy gun turret found within `ref.unit.transport.bot_turret_search_factor` (1.2) × the Flag post's size, which is `ref.unit.transport.bot_turret_search_default` (200 wu) for a default Flag post, so that it rushes that turret.
+3. A stationary Transport with more than 20 passengers and nobody approaching chooses an enemy Flag post linked to one of its team's Flag posts, preferring a linked enemy Home post whose team is not eliminated. When its own Home post is under threat, the easy bot always, and the standard bot with a 50 % draw, chooses instead among the Flag posts linked to its own Home post. The choice among the candidates is random. The easy bot drives to the chosen Flag post's centre; the other bots drive to its drop point: the last enemy gun turret found within `ref.unit.transport.bot_turret_search_factor` (1.2) × the Flag post's size, which is `ref.unit.transport.bot_turret_search_default` (200 wu) for a default Flag post, so that it rushes that turret (see DEC-854).
 
 **R-UNIT-407** (MUST) **Launch Race behaviour.**
 
 1. A Transport does not start loading while another Transport of its team within `ref.unit.transport.bot_overlap_radius` (150 wu) is loading.
-2. While its team's Launch Vessel is in its loading state, the Transport ferries: it collects from the bot navigation node that has the most idle Workers of its team, provided they number more than `ref.unit.transport.bot_ferry_min_idle` (10), the node is more than `ref.unit.transport.bot_ferry_min_range` (400 wu) from the vessel and no other Transport of its team is loading or heading for an arrival point within `ref.unit.transport.bot_ferry_exclusion` (100 wu) of it; or else at its team's Transit Gate. It drops at the vessel, on a ring of `ref.unit.transport.bot_ring_radius` (100 wu) round it for the standard and hard bots.
+2. While its team's Launch Vessel is in its loading state, the Transport ferries: it collects from the first bot navigation node, in structure order, at which its team has more than `ref.unit.transport.bot_ferry_min_idle` (10) idle Workers, that is more than `ref.unit.transport.bot_ferry_min_range` (400 wu) from the vessel and that has no other Transport of its team loading, or heading for an arrival point, within `ref.unit.transport.bot_ferry_exclusion` (100 wu) of it; when no node qualifies, it collects at its team's Transit Gate. It drops at the vessel, on a ring of `ref.unit.transport.bot_ring_radius` (100 wu) round it for the standard and hard bots.
 3. Otherwise it picks up, in this order of preference, at its team's Transit Gate, at a bot navigation node within `ref.unit.transport.bot_vessel_node_range` (250 wu) of the vessel, or at a Spawn Node of its team with more than 20 friends within 200 wu (at the node's position + front × 100 wu).
 4. A stationary Transport with more than 20 passengers and nobody approaching chooses its drop-off point, in this order: an enemy Launch Vessel holding at least `ref.unit.transport.bot_enemy_fuel_min` (75) fuel and more fuel than its own; else an uncontrolled Solar Array objective; else the enemy-held Solar Array group with the most arrays where enemies exceed `ref.unit.transport.bot_enemy_ratio` (1.3) × friends; else the friendly Solar Array group with the fewest friends, preferring groups with at most `ref.unit.transport.bot_friends_per_array` (5) friends per array. The standard and hard bots add a random offset on the 100 wu ring, drawn again until the point is walkable; the redraw is bounded with a deterministic fallback (DEC-014).
 
 ### 2.10 Presentation and sound
 
-**R-UNIT-408** (MUST) A Transport's whole hull takes its team colour: every facet has tint weight 1, and the tinted colour is the team colour × `ref.unit.transport.tint_scale` (0.1), which the lighting brightens (ADR-020). No banner is drawn.
+**R-UNIT-408** (MUST) A Transport's whole hull takes its team colour: every facet has tint weight 1, and the tinted colour is the team colour × `ref.unit.transport.hull_tint` (0.1) ([Units](README.md) R-UNIT-046), which the lighting brightens (ADR-020). No banner is drawn.
 
 **R-UNIT-409** (MUST) Each tick a Transport emits 1 + trunc(speed ÷ `ref.unit.transport.exhaust_speed_step` (20 wu/s)) exhaust smoke particles; their direction and size are presentation draws ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-622).
 
@@ -182,17 +182,16 @@ An order always carries the straight-route flag (R-SIM-450).
 
 **R-UNIT-411** (MUST) A Transport's Power slot shows its state with `icon.hud.transport_state`: the boarding icon while it is Loading, the unloading icon while it is Unloading and the travelling icon while it is Idle ([crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-UNIT-412** (MUST) A Transport raises these sound events, bound as listed (reference/10):
+**R-UNIT-412** (MUST) A Transport raises these sound events, bound as listed ([event catalogue](../10_audio_design/event_catalogue.md) table 2.2-D and R-AUD-141):
 
 | Event | When | Binding |
 |---|---|---|
-| spawn | the Transport appears | `sfx.unit.transport.spawn` |
-| presence | while the Transport exists | `sfx.unit.transport.presence_loop` |
-| hurt | a health loss that does not kill | `sfx.unit.transport.hurt` |
-| die | death (R-UNIT-375) | `sfx.unit.transport.die` |
-| ordered | a deploy order (R-UNIT-401) | `sfx.unit.transport.ordered` |
-| boarding, leaving | a Worker boards or leaves (R-UNIT-400) | unbound (DEC-565) |
-| selected | the Transport is selected | unbound (DEC-565) |
+| `transport.spawn` | the Transport appears; it plays while the Transport exists | layer 1 `sfx.unit.transport.presence_loop`, looped; layer 2 `sfx.unit.transport.spawn`, once |
+| `transport.hurt` | a health loss that does not kill | `sfx.unit.transport.hurt` |
+| `transport.die` | death (R-UNIT-375) | `sfx.unit.transport.die` |
+| `transport.ordered` | a deploy order (R-UNIT-401) | `sfx.unit.transport.ordered` |
+| `transport.load_worker`, `transport.unload_worker` | a Worker boards or leaves (R-UNIT-400) | silent (DEC-565) |
+| `transport.selected` | the Transport is selected | silent (DEC-565) |
 
 ## 3 States and flows
 
@@ -245,10 +244,7 @@ flowchart TD
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
 | `ref.unit.transport.capacity` | 100 | Workers | | R-UNIT-368, R-UNIT-392, R-UNIT-396 | — |
-| `ref.unit.transport.health` | 200 | health | also the divisor of the shatter fraction | R-UNIT-371, R-UNIT-374 | DEC-090 |
 | `ref.unit.transport.health_range` | [0, 255] | health | clamp after every health change | R-UNIT-371 | DEC-241 |
-| `ref.unit.transport.speed_max` | 60 | wu/s | | R-UNIT-371, R-UNIT-379 | DEC-090 |
-| `ref.unit.transport.fire_rate_s` | 5 | s | stat-table rate; no rule reads it | R-UNIT-371 | — |
 | `ref.unit.transport.turret_round_divisor` | 3 | — | integer truncation of the result | R-UNIT-373 | — |
 | `ref.unit.transport.shatter_band` | 20 | health | | R-UNIT-374 | — |
 | `ref.unit.transport.shatter_scale` | 0.5 | fraction | × (1 − health ÷ 200) | R-UNIT-374 | — |
@@ -317,7 +313,6 @@ flowchart TD
 | `ref.unit.transport.bot_enemy_fuel_min` | 75 | fuel | | R-UNIT-407 | — |
 | `ref.unit.transport.bot_enemy_ratio` | 1.3 | × friends | | R-UNIT-407 | — |
 | `ref.unit.transport.bot_friends_per_array` | 5 | Workers per Solar Array | preferred at most | R-UNIT-407 | — |
-| `ref.unit.transport.tint_scale` | 0.1 | × team colour | whole-hull tint | R-UNIT-408 | DEC-029 |
 | `ref.unit.transport.exhaust_speed_step` | 20 | wu/s | one extra particle per 20 wu/s | R-UNIT-409 | DEC-013 |
 | `ref.unit.transport.up_wobble` | 0.05 | up-vector units | drawing only | R-UNIT-410 | — |
 
@@ -325,11 +320,13 @@ Keys cited from other documents (their values are defined there):
 
 | Owning document | Keys | Used by |
 |---|---|---|
+| [Units](README.md) §4.1 and §4.2 | `ref.unit.transport.health` (also the divisor of the shatter fraction), `ref.unit.transport.speed` (the maximum speed), `ref.unit.transport.rate` (read by no rule), `ref.unit.transport.hull_tint` | R-UNIT-371, R-UNIT-374, R-UNIT-379, R-UNIT-408 |
+| [reference/04 README](../04_supply_crates_powers_and_weapons/README.md) | `ref.power.stop.damage` | R-UNIT-370 |
 | [population flow](../05_population_flow.md) | `ref.econ.gate.transport_cap`, `ref.econ.gate.transport_target_wu`, `ref.econ.gate.transport_target_height_wu` | R-UNIT-369 |
 | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-379, R-UNIT-380 |
 | [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.sea_level` | R-UNIT-380, R-UNIT-398, R-UNIT-399 |
 | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.state.transport_cycle_debounce` | R-UNIT-394 |
-| [worker.md](worker.md) | `ref.unit.worker.transport_search_range`, `ref.unit.worker.transport_order_range`, `ref.unit.worker.transport_board_distance` | R-UNIT-397 |
+| [worker.md](worker.md) | `ref.unit.worker.transport_search_range`, `ref.unit.worker.order_transport_radius`, `ref.unit.worker.transport_board_distance` | R-UNIT-397 |
 
 ## 5 Edge cases and interactions
 
@@ -340,7 +337,7 @@ Keys cited from other documents (their values are defined there):
 5. **Barrier Emitters.** Touching an enemy enabled Barrier Emitter destroys the Transport, and a bot route avoids crossing one (R-UNIT-377, R-UNIT-384).
 6. **Death over the sea.** Passengers thrown out over the sea land in the water and die by the Worker's water rules ([worker.md](worker.md)).
 7. **Own explosion.** The death explosion damages the Transport's own team, including Workers thrown out beside it (R-UNIT-375, R-UNIT-376).
-8. **Cancelled Power.** A cancelled Transport Power leaves the Transport in the world, outside the Power-slot limit (R-UNIT-370, DEC-551).
+8. **Cancelled Power.** A cancelled Transport Power destroys the Transport, except in a tutorial, where the Transport stays in the world outside the Power-slot limit (R-UNIT-370, DEC-551).
 9. **Weapon-cycle keys.** Pressing the weapon-cycle keys with a Transport selected sends nothing; a participant that sends `NextMode` or `PreviousMode` anyway toggles loading at most once per 3 ticks per Transport (R-UNIT-394).
 10. **Lasers.** Worker and Trooper lasers cannot harm a Transport; turret rounds, grenades, airstrikes, fire and explosions can (R-UNIT-373).
 
@@ -378,7 +375,7 @@ Keys cited from other documents (their values are defined there):
 
 ## 7 Dependencies
 
-- **Reference documents:** [Units](README.md); [worker.md](worker.md) (boarding, inside, leaving, thrown out on fire); [essence_orbs.md](essence_orbs.md); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Transport outcome, its validity, Power slots); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (explosion filters, turret-round credit); [population flow](../05_population_flow.md) (Transit Gate waves, starting units); [controls, camera and commands](../06_controls_camera_and_commands/README.md) (bindings, control schemes); [bots](../07_bots/README.md) (difficulty, navigation nodes, objective markers); [mode objects](../03_buildings_and_world_objects/mode_objects.md) (Launch Vessel, Solar Arrays, Flag posts); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle push, sea route graph, route lifetime, explosion); [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (per-Transport debounce); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
+- **Reference documents:** [Units](README.md); [worker.md](worker.md) (boarding, inside, leaving, thrown out on fire); [essence_orbs.md](essence_orbs.md); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Transport outcome, its validity, Power slots); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (explosion filters, turret-round credit); [population flow](../05_population_flow.md) (Transit Gate waves, starting units); [controls, camera and commands](../06_controls_camera_and_commands/README.md) (bindings, control schemes); [bots](../07_bots/README.md) (difficulty, navigation nodes, objective markers); [mode objects](../03_buildings_and_world_objects/mode_objects.md) (Launch Vessel, Solar Arrays, Flag posts); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle push, sea route graph, route lifetime, explosion); [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (per-Transport debounce); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); [actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) (order rows and input modes); [event catalogue](../10_audio_design/event_catalogue.md) (audio events).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-hull tint, ADR-020; route highlight); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust smoke, debris); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (Power slot state icon).
 - **Assets:** `mesh.unit.transport_hull`; `icon.power.transport` (the Transport Power); `icon.hud.transport_state` (3 files: boarding, travelling, unloading); `sfx.unit.transport.spawn`, `sfx.unit.transport.presence_loop`, `sfx.unit.transport.hurt`, `sfx.unit.transport.die`, `sfx.unit.transport.ordered`.
 
@@ -387,7 +384,10 @@ Keys cited from other documents (their values are defined there):
 | DEC | Title | Default specified in §2 |
 |---|---|---|
 | DEC-302 | Transport unload order over sea | the order is lost and the Transport goes Idle (R-UNIT-399) |
-| DEC-551 | Units that outlive their Power slot | a cancelled Transport Power frees its slot and the Transport stays (R-UNIT-370) |
-| DEC-651 | Lifetime of simulation routes | only a Transport's sea routes are freed before the match world is destroyed (R-UNIT-383) |
+| DEC-551 | Units that outlive their Power slot | in a tutorial a cancelled Transport Power frees its slot and the Transport stays (R-UNIT-370) |
+| DEC-651 | Lifetime of simulation routes | only a Transport's sea routes are freed before the match world is destroyed: the previous one when it creates a new route, the current one when it is removed (R-UNIT-383) |
 | DEC-565 | Sounds for the other silent gameplay events | boarding, leaving and selection are silent (R-UNIT-400, R-UNIT-412) |
 | DEC-094 | Exact or approximate actor-grid queries | the bot counts are cell-granular (R-UNIT-403) |
+| DEC-854 | Transport, Collector and Strike team rule details | the braking has no floor; the Flag Chain turret search is 200 wu for a default Flag post (R-UNIT-379, R-UNIT-406) |
+| DEC-112 | Bot strength calibration | the corrected Siege behaviour, with the mobile-bomb branch live (R-UNIT-405) |
+| DEC-122 | Bot and deputy actions outside the player command catalogue | the bot's Transport orders are bot-only operations (R-UNIT-402) |

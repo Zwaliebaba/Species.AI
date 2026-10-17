@@ -27,24 +27,24 @@ The table lists the mechanics that give the reference its character, with the ro
 | Mechanic | Reference rule (summary) | Role in play | Specified in |
 |---|---|---|---|
 | Population-flow economy | No build queue and no currency; the army is the Workers that held territory produces, capped per team | Defines the reference's identity | [05](05_population_flow.md) |
-| Spawn Node capture | A single team with at least 3 operators on the 5 ports and no enemy on any port; ownership re-evaluated every 20–30 ticks | Readable, contestable territory | [05](05_population_flow.md) |
+| Spawn Node capture | A single team with at least 3 operators on the 5 ports and no enemy on any port; ownership re-evaluated every 21–30 ticks | Readable, contestable territory | [05](05_population_flow.md) |
 | Activation delay | 300 ticks after an ownership change; skipped for a team's only Spawn Node and with the instant-capture map option | Prevents capture flip-flop farming and protects a team's last Spawn Node | [05](05_population_flow.md) |
 | Burst and pause production | One request every 2 ticks for int(20 × H) requests, then a pause of 101–150 ticks; transit orbs travel along Relays in at most 10h + 1 ticks for h hops (11 for the first hop, 10 for each further hop) and are discarded if the Spawn Node has turned neutral | A rhythmic, visible reinforcement flow | [05](05_population_flow.md) |
-| Autonomous Workers | Every Worker re-plans every 10–20 ticks among ports, Supply crates, Relics, Launch Vessels, Leaders and threats, and fights on its own | Crowds do useful local work without micro-management | [02](02_units/worker.md) |
+| Autonomous Workers | Every Worker re-plans every 11–20 ticks among ports, Supply crates, Relics, Launch Vessels, Leaders and threats, and fights on its own | Crowds do useful local work without micro-management | [02](02_units/worker.md) |
 | Leaders | Promote a Worker; set it as a Waypoint beacon (a conveyor for idle Workers within 100 wu) or a formation (up to 90 Workers gathered within 150 wu) | The strategic verb set | [06](06_controls_camera_and_commands/README.md), [02](02_units/leader_and_formations.md) |
 | Selection circle and crowd orders | Hold the primary button to grow a circle of up to 100 wu at 100 wu/s; the secondary button gives the destination; at least 10 ticks between crowd orders | Simple, physical crowd control | [06](06_controls_camera_and_commands/README.md) |
 | Direct control only for special units | Strike team, Transport, Collector, Builder, turret and Beam Dish | Micro-management stays rare and meaningful | [06](06_controls_camera_and_commands/README.md) |
 | Supply crate timing and catch-up placement | Drop interval U(0.5, 1.5] × the drop-rate option; at most one Supply crate per 500 wu of map width; placement weighted towards lower-scoring teams | A wildcard that also helps the trailing side | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
-| Opening by local majority | A strict majority within 35 wu; at least 51 ticks with 50 or more Workers; a neutral Supply crate expires after 600 ticks | Forces converging fights | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
+| Opening by local majority | The team with the most Workers within 35 wu, ties to the lower team slot; at least 51 ticks with 50 or more Workers; a Supply crate with no owner expires after 600 ticks on the ground | Forces converging fights | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | 90/10 outcome split | Hostile outcomes are events against everyone, owned by the Rogue faction | Risk on every Supply crate | [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | Six Power slots, lost when full | 6 slots, 2 while eliminated; every pending, placed or running power occupies one | Hoarding tension | [06](06_controls_camera_and_commands/README.md), [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | Transit Gate reinforcement waves | Every 60 mode seconds; 40 Workers per owned Transit Gate in Launch Race and Flag Chain; Transport, turret and airstrike variants | Pacing in the objective modes | [05](05_population_flow.md) |
-| Essence loop | One Essence orb per death, collectable for 300–500 ticks; a Collector recycles orbs into its own team's Workers | Combat feeds the economy | [05](05_population_flow.md) |
+| Essence loop | One Essence orb per death, collectable for 301–500 ticks; a Collector, within its team's population cap, and a Builder recycle any team's orbs into their own side's Workers | Combat feeds the economy | [05](05_population_flow.md) |
 | One rules skeleton, six territory variants | Spawn Nodes, Control Zones, carried Relics, the Core Device with its Command Consoles, the Launch Vessel with its fuel chain, chains of Flag posts | Variety on one rule set | [01](01_skirmish_rules_and_modes/README.md) |
 | Ready-up barrier | World frozen; a 30-tick countdown once every human is ready, restarted if anyone withdraws readiness | Every participant starts from the same state | [01](01_skirmish_rules_and_modes/README.md) |
 | Leaver replaced by a bot | A human who leaves during a match is replaced by a bot at once | No slot goes dead | [01](01_skirmish_rules_and_modes/README.md) |
 | Bots | Node graph, priority fields, a dispatcher in which only friendly nodes release troops, Leader conveyors, one handler per power, one strategy per mode; difficulty is tempo (200, 101 or 11 ticks) and randomness (100 %, 50 % or 0 %); perfect information and no other advantage | Fair-feeling opponents | [07](07_bots/README.md) |
-| Lobby option set and per-map overrides | 39 option definitions; map options for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps | The tuning surface of every mode | [01](01_skirmish_rules_and_modes/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
+| Lobby option set and per-map overrides | 38 option definitions; map options for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps | The tuning surface of every mode | [01](01_skirmish_rules_and_modes/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
 | Start positions remapped at load | A map's team column is a map position, remapped to the match teams at load; one map serves 2 to 4 players | Map reuse | [03](03_buildings_and_world_objects/README.md), [08](08_maps_and_level_design/rules_and_conventions.md) |
 | Free camera | Cursor-follow pan at 250 wu/s (1,000 wu/s with the speed modifier); zoom narrows the field of view from 60° to 15°; one camera view per player slot at match start | A readable view of the crowd | [06](06_controls_camera_and_commands/README.md) |
 | Visual language | Flat facets, additive glow on black, darkening layers, black fog, 8 team colours, sprite cards scaled with distance | A distinctive look at crowd scale | [renderer visual language](../architecture/components/renderer/visual_language.md) |
@@ -65,13 +65,13 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 | Waypoint beacon | A Leader order that redirects every idle Worker of its team passing within 100 wu | [06](06_controls_camera_and_commands/README.md) |
 | formation | A block of up to 90 Workers marching in front of a Leader, in rows of 6 to 15 | [06](06_controls_camera_and_commands/README.md) |
 | selection circle | The growing circle, up to 100 wu, drawn with the primary button to gather Workers | [06](06_controls_camera_and_commands/README.md) |
-| Essence orb | The green orb a dead unit leaves; floats for 300–500 ticks, can be collected by Collectors, then ascends | [02](02_units/essence_orbs.md), [05](05_population_flow.md) |
+| Essence orb | The orb a dead unit leaves, drawn in its team's colour (white for no team); floats for 301–500 ticks (`ref.econ.orb.floating_ticks`), can be collected by Collectors and Builders, then ascends | [02](02_units/essence_orbs.md), [05](05_population_flow.md) |
 | Spawn Node | The capturable structure with 5 ports that produces Workers for its owner | [03](03_buildings_and_world_objects/economy_and_spawn_objects.md), [05](05_population_flow.md) |
 | Source Node, Relays | The invisible source and the beam network of the spawn network, along which new Workers travel to the Spawn Nodes | [03](03_buildings_and_world_objects/economy_and_spawn_objects.md) |
 | port, operator | A slot on a structure that a Worker occupies to operate or capture it; the Worker in it is its operator | [03](03_buildings_and_world_objects/README.md) |
 | activation delay | The 300 ticks before a newly captured Spawn Node produces | [05](05_population_flow.md) |
-| population cap | The per-team limit on bodies that stops production | [05](05_population_flow.md) |
-| Catch-up bonus | A lobby option that enlarges the production bursts of a team far behind on Spawn Nodes, but only while no Spawn Node on the map is neutral | [05](05_population_flow.md) |
+| population cap | The per-team limit on bodies, the map's population cap divided by the number of open slots, that stops production (DEC-079) | [05](05_population_flow.md) |
+| Catch-up bonus | A lobby option that enlarges the production bursts of a team below the even share of the owned Spawn Nodes, in proportion to its deficit (DEC-124) | [05](05_population_flow.md) |
 | Transit Gate | A fixed gate that releases reinforcement waves for its owner | [03](03_buildings_and_world_objects/mode_objects.md), [05](05_population_flow.md) |
 | reinforcement wave | A timed Transit Gate wave of Workers, Transports, turrets or airstrikes, with an on-screen countdown | [05](05_population_flow.md) |
 | Rogue faction | The hostile bot faction that owns the hostile Supply crate outcomes, Hives, Spitter Plants and hostile workers | [01](01_skirmish_rules_and_modes/README.md), [04](04_supply_crates_powers_and_weapons/crates_and_powers.md) |
@@ -85,13 +85,13 @@ Every concept a player meets, in Species terms. The [glossary](../glossary/a_to_
 |---|---|---|
 | Strike team | 3 directly controlled Troopers with lasers and grenades that live 600 ticks | [02](02_units/strike_team.md) |
 | Transport | A troop carrier that loads and unloads Workers | [02](02_units/transport.md) |
-| Collector | A flying collector that turns any team's Essence orbs into Workers of its own team | [02](02_units/collector.md) |
-| Builder | A hovering Essence-orb collector; on the reference maps the orbs it collects reach no destination (DEC-085) | [02](02_units/builder.md) |
+| Collector | A flying collector that turns any team's Essence orbs into Workers of its own team, within that team's population cap (DEC-080) | [02](02_units/collector.md) |
+| Builder | A hovering Essence-orb collector that carries the orbs it collects to the nearest friendly Spawn Node, where each becomes a Worker (DEC-085) | [02](02_units/builder.md) |
 | turret (gun, rocket and flame types) | A capturable or crate-placed turret, captured by occupying its 4 ports, aimed and fired directly by its owner | [03](03_buildings_and_world_objects/defences_and_props.md) |
 | Beam Dish | A teleport between linked dishes, aimed by its owner | [03](03_buildings_and_world_objects/defences_and_props.md) |
 | Solar Array | An energy source captured by occupation; feeds the fuel chain in Launch Race and, through the energy grid, Barrier Emitters | [03](03_buildings_and_world_objects/mode_objects.md) |
 | Barrier Emitter, wall | Barriers: a Barrier Emitter is switched by energy; a wall is breached by the Siege Breach Charge | [03](03_buildings_and_world_objects/defences_and_props.md) |
-| tree | Scenery that burns; the grove outcomes release or consume Essence orbs | [03](03_buildings_and_world_objects/defences_and_props.md) |
+| tree | Scenery that burns; the grove outcomes release or consume Essence orbs | [03](03_buildings_and_world_objects/trees_and_crate_structures.md) |
 
 #### 1.4.3 Mode objectives
 
@@ -122,7 +122,7 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 ### 1.5 Conventions of this overview
 
 - Distances are in world units (`wu`). Simulation durations are in ticks; seconds are derived display values at normal game speed. The reference tick rate is defined in [reference/12](12_simulation_model/README.md).
-- The values in this overview restate the values of the owning documents. Each value has a tuning key in §4; the owning document's key is authoritative, and a difference between the two is a defect of this overview.
+- The values in this overview restate the values of the owning documents and cite the owning document's tuning key; §4 lists the cited keys by owner and defines keys only for the figures that no other document defines. A difference between a value here and its owner's value is a defect of this overview.
 - Player-facing text is new text keyed by Species string ids; this overview names an id only where the ledger already defines it.
 
 ## 2 Rules
@@ -131,11 +131,11 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-001** (MUST) The reference has no build queue and no currency. A team's army is the population of Workers that the Spawn Nodes it holds produce, plus the special units it receives as granted powers (R-VIS-092); territory creates the army and combat destroys it (see DEC-001).
 
-**R-VIS-002** (MUST) A Spawn Node is captured by a single team with at least `ref.vis.spawn_node.capture_operators` (3) operators on its `ref.vis.spawn_node.ports` (5) ports and no enemy on any port, starts producing `ref.vis.spawn_node.activation_delay` (300 ticks) after an ownership change, and produces in bursts and pauses up to the team's population cap, as R-VIS-060 to R-VIS-066 state (DEC-001, DEC-018).
+**R-VIS-002** (MUST) A Spawn Node is captured by a single team with at least `ref.econ.spawn_node.capture_min_operators` (3) operators on its `ref.econ.spawn_node.port_count` (5) ports and no enemy on any port, starts producing `ref.econ.spawn_node.activation_ticks` (300 ticks) after an ownership change, and produces in bursts and pauses up to the team's population cap, as R-VIS-060 to R-VIS-066 state (DEC-001, DEC-018).
 
 **R-VIS-003** (MUST) Workers fight and re-plan on their own. The player steers crowds, never single Workers, and promotes Workers to Leaders that act as Waypoint beacons and formation leaders (R-VIS-090, R-VIS-110 to R-VIS-112; DEC-030, DEC-031).
 
-**R-VIS-004** (MUST) Supply crates open to outcomes that are `ref.vis.crate.beneficial_share` (90 %) beneficial and `ref.vis.crate.hostile_share` (10 %) hostile, and beneficial outcomes feed the `ref.vis.power_slots.count` (6) Power slots of a team (R-VIS-077, R-VIS-078; DEC-021, DEC-033).
+**R-VIS-004** (MUST) Supply crates open to outcomes that are `ref.crate.open.good_share` (90 %) beneficial and 10 % hostile, and beneficial outcomes feed the `ref.power.slots.capacity` (6) Power slots of a team (R-VIS-077, R-VIS-078; DEC-021, DEC-033).
 
 **R-VIS-005** (MUST) The six match modes share one rules skeleton and differ only in their territory unit and their score (R-VIS-130, R-VIS-131; DEC-017).
 
@@ -143,7 +143,7 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-007** (MUST) Every rule and value that a reference document states is the reference behaviour, and no requirement depends on a comparison with another edition or build of the reference (DEC-005). Every reference tuning value is kept as the starting tuning baseline (DEC-004). A reference behaviour that looks accidental and that no Resolved decision corrects is specified as an explicit rule with a named tuning key or constant (DEC-006).
 
-**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.vis.scope.team_colours` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (DEC-029).
+**R-VIS-008** (MUST) The look is flat-shaded facets with additive glow on a black background, darkening layers and black fog, `ref.sim.team.player_colour_count` (8) team colours, and small figures drawn as camera-facing sprite cards that scale with distance. All art is authored new (DEC-029).
 
 **R-VIS-009** (MUST) Game rules fire (source, event) pairs and data decides what plays: each pair resolves to layered sound blocks with friend and foe variants, sample groups, generative looping ambience and an ambience crossfade driven by camera altitude (DEC-027).
 
@@ -151,23 +151,23 @@ The 31 outcomes fall into the nine families of Table 2 (§2.14).
 
 **R-VIS-010** (MUST) The reference has exactly `ref.vis.scope.mode_count` (6) match modes, listed here in the reference enumeration order: Spawn Control, Zone Control, Relic Run, Siege, Launch Race and Flag Chain. A seventh, debug-only mode is not specified (DEC-058).
 
-**R-VIS-011** (MUST) **Spawn Control.** Teams own Spawn Nodes. A team that owns none for `ref.vis.mode.spawn_control.elimination_delay` (30 mode seconds, 330 ticks) is eliminated. The match ends when one team is left standing, or on score at time-up. The time-limit option `ref.vis.mode.spawn_control.time_limit` runs from 0 to 60 match-clock minutes with a default of 10, and 0 means no time limit. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
+**R-VIS-011** (MUST) **Spawn Control.** Teams own Spawn Nodes. A team that owns none for `ref.mode.spawn_control.elimination_mode_seconds` (30 mode seconds, 330 ticks) is eliminated. The match ends when one team is left standing, or on score at time-up. The time-limit option `ref.mode.spawn_control.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 10, and 0 means no time limit. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
 
-**R-VIS-012** (MUST) **Zone Control.** Teams hold Control Zones. The match ends on score at time-up and never by elimination. The time-limit option `ref.vis.mode.zone_control.time_limit` runs from 1 to 60 match-clock minutes with a default of 5. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
+**R-VIS-012** (MUST) **Zone Control.** Teams hold Control Zones. The match ends on score at time-up and never by elimination. The time-limit option `ref.mode.zone_control.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 5. Play is free-for-all for 2 to 4 players, with 2v2 co-op on the maps that allow it. Complexity label: simple.
 
-**R-VIS-013** (MUST) **Relic Run.** Teams carry Relics into their own Relic Base, for `ref.vis.mode.relic_run.delivery_points` (1 point) per delivery. The match ends on score at time-up. The time-limit option `ref.vis.mode.relic_run.time_limit` runs from 1 to 60 match-clock minutes with a default of 10. Play is free-for-all for 2 to 4 players, with co-op on the map that allows it. Complexity label: medium.
+**R-VIS-013** (MUST) **Relic Run.** Teams carry Relics into their own Relic Base, for `ref.mode.relic_run.points_per_delivery` (1 point) per delivery. The match ends on score at time-up. The time-limit option `ref.mode.relic_run.option.time_limit` runs from 1 to 60 match-clock minutes with a default of 10. Play is free-for-all for 2 to 4 players, with co-op on the map that allows it. Complexity label: medium.
 
-**R-VIS-014** (MUST) **Siege.** The attackers must capture every Command Console linked to the defenders' Core Device before it detonates. The match ends when the Core Device is destroyed, and the attackers win, or when it detonates, and the defenders win. Siege has no time-limit option: the Core Device's countdown, which the map sets to `ref.vis.mode.siege.core_device_timer` (900 or 1,200 mode seconds, about 990 or 1,320 s), is the longest a match can last. Play is 1v1, 1v2 or 2v2, and some maps force co-op. Complexity label: medium.
+**R-VIS-014** (MUST) **Siege.** The attackers must capture every Command Console linked to the defenders' Core Device before it detonates. The match ends when the Core Device is destroyed, and the attackers win, or when it detonates, and the defenders win. Siege has no time-limit option: the Core Device's countdown, which the map sets to `ref.vis.mode.siege.core_device_timer` (900 or 1,200 mode seconds, about 990 or 1,320 s; [siege](01_skirmish_rules_and_modes/siege.md) R-MODE-351), is the longest a match can last. Play is 1v1, 1v2 or 2v2, and some maps force co-op. Complexity label: medium.
 
-**R-VIS-015** (MUST) **Launch Race.** Each team refuels its Launch Vessel through a fuel chain powered by Solar Arrays, loads `ref.vis.mode.launch_race.passengers` (100) Workers and launches. The first Launch Vessel to climb above a height of `ref.vis.mode.launch_race.launch_height` (600 wu) wins. Launch Race has no time-limit option. Play is free-for-all for 2 to 4 players. Complexity label: hard.
+**R-VIS-015** (MUST) **Launch Race.** Each team refuels its Launch Vessel through a fuel chain powered by Solar Arrays, loads `ref.bldg.launch_vessel.launch_passengers` (100) Workers and launches. The first Launch Vessel to climb above a height of `ref.mode.launch_race.win_height` (600 wu) wins. Launch Race has no time-limit option. Play is free-for-all for 2 to 4 players. Complexity label: hard.
 
-**R-VIS-016** (MUST) **Flag Chain.** A team eliminates an enemy by capturing a connected chain of Flag posts into that enemy's Home post. The match ends when one team is left standing, or at time-up on Flag posts held plus `ref.vis.mode.flag_chain.elimination_weight` (10) points per elimination. The time-limit option `ref.vis.mode.flag_chain.time_limit` runs from 0 to 60 match-clock minutes with a default of 15, and 0 means no time limit. Play is free-for-all for 2 to 4 players. Complexity label: hard.
+**R-VIS-016** (MUST) **Flag Chain.** A team eliminates an enemy by capturing a connected chain of Flag posts into that enemy's Home post. The match ends when one team is left standing, or at time-up on Flag posts held plus `ref.mode.flag_chain.elimination_points` (10) points per elimination. The time-limit option `ref.mode.flag_chain.option.time_limit` runs from 0 to 60 match-clock minutes with a default of 15, and 0 means no time limit. Play is free-for-all for 2 to 4 players. Complexity label: hard.
 
-**R-VIS-017** (MUST) A time-limit option counts minutes of the match clock, which advances once per mode second (R-VIS-051); a match-clock minute is therefore 60 mode seconds.
+**R-VIS-017** (MUST) A time-limit option counts minutes of the match clock, which advances once per mode second (R-VIS-051); a match-clock minute is therefore `ref.match.option.time_limit_unit` (60) mode seconds.
 
-**R-VIS-018** (MUST) Match setup shows each mode's complexity label (simple, medium or hard) as R-VIS-011 to R-VIS-016 assign it. The label text is new text, owned by reference/09.
+**R-VIS-018** (MUST) Match setup shows each mode's complexity label (simple, medium or hard) as R-VIS-011 to R-VIS-016 assign it, with the string ids `mode.complexity.simple`, `mode.complexity.medium` and `mode.complexity.hard` of reference/01 and reference/09.
 
-**R-VIS-019** (MUST) The match options comprise `ref.vis.scope.option_definitions` (39) option definitions, plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps (DEC-017, DEC-073).
+**R-VIS-019** (MUST) The match options comprise `ref.vis.scope.option_definitions` (38) option definitions, those of the six mode schemas ([01](01_skirmish_rules_and_modes/README.md) R-MODE-073), plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps (DEC-017, DEC-073).
 
 Table 1 summarises R-VIS-011 to R-VIS-016.
 
@@ -184,13 +184,13 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 ### 2.3 Scope: maps and player counts
 
-**R-VIS-020** (MUST) Match setup lists `ref.vis.scope.maps_total` (49) maps: `ref.vis.scope.maps_spawn_control` (9) for Spawn Control, `ref.vis.scope.maps_zone_control` (9) for Zone Control, `ref.vis.scope.maps_relic_run` (9) for Relic Run, `ref.vis.scope.maps_siege` (8) for Siege, `ref.vis.scope.maps_launch_race` (7) for Launch Race and `ref.vis.scope.maps_flag_chain` (7) for Flag Chain. Every map is authored new, and no reference map name, shape or layout is carried (DEC-063). Reference/08 owns the distribution of maps per mode and per player count.
+**R-VIS-020** (MUST) Match setup lists `ref.map.reference.map_count` (49) maps: `ref.map.reference.count.spawn_control` (9) for Spawn Control, `ref.map.reference.count.zone_control` (9) for Zone Control, `ref.map.reference.count.relic_run` (9) for Relic Run, `ref.map.reference.count.siege` (8) for Siege, `ref.map.reference.count.launch_race` (7) for Launch Race and `ref.map.reference.count.flag_chain` (7) for Flag Chain. Every map is authored new, and no reference map name, shape or layout is carried (DEC-063). Reference/08 owns the distribution of maps per mode and per player count.
 
-**R-VIS-021** (MUST) By each map's declared player count, `ref.vis.scope.maps_2p` (22) of the 49 maps are for 2 players, `ref.vis.scope.maps_3p` (15) for 3 players and `ref.vis.scope.maps_4p` (12) for 4 players.
+**R-VIS-021** (MUST) By each map's declared player count, `ref.map.reference.count.players_2` (22) of the 49 maps are for 2 players, `ref.map.reference.count.players_3` (15) for 3 players and `ref.map.reference.count.players_4` (12) for 4 players.
 
 **R-VIS-022** (MUST) Every map is a square world of `ref.vis.scope.map_side` (2,000 to 7,000 wu) on a side.
 
-**R-VIS-023** (MUST) `ref.vis.scope.maps_with_cap` (47) of the 49 maps set a map population cap within `ref.vis.scope.map_population_cap` (1,400 to 2,000). The other `ref.vis.scope.maps_without_cap` (2), a 4-player Spawn Control co-op map and a 4-player Zone Control co-op map, set none (DEC-079, DEC-454).
+**R-VIS-023** (MUST) `ref.vis.scope.maps_with_cap` (47) of the 49 maps set a map population cap within `ref.vis.scope.map_population_cap` (1,400 to 2,000). The other `ref.vis.scope.maps_without_cap` (2), a 4-player Spawn Control co-op map and a 4-player Zone Control co-op map, state an unlimited cap (DEC-079, DEC-120, DEC-454).
 
 **R-VIS-024** (MUST) `ref.vis.scope.maps_with_spawn_nodes` (32) of the 49 maps contain Spawn Nodes.
 
@@ -202,15 +202,15 @@ Table 1 summarises R-VIS-011 to R-VIS-016.
 
 ### 2.4 Scope: who is in every match
 
-**R-VIS-030** (MUST) Every match has `ref.vis.scope.team_slots` (6) team slots. Slots 0 to 3 are player slots, of which a map uses slots 0 to its declared player count minus 1. Slot `ref.vis.scope.rogue_slot` (4) is the Rogue faction, which owns the hostile Supply crate outcomes and the creatures they bring. Slot `ref.vis.scope.visitor_slot` (5) is the Visitor faction, which the Abductor outcome brings.
+**R-VIS-030** (MUST) Every match has `ref.sim.max_teams` (6) team slots. Slots 0 to 3 are player slots, of which a map uses slots 0 to its declared player count minus 1. Slot `ref.sim.team.rogue_slot` (4) is the Rogue faction, which owns the hostile Supply crate outcomes and the creatures they bring. Slot `ref.sim.team.visitor_slot` (5) is the Visitor faction, which the Abductor outcome brings.
 
 **R-VIS-031** (MUST) The Rogue faction and the Visitor faction are created as bot teams in every match, and each has one bot controller (DEC-558).
 
-**R-VIS-032** (MUST) At match start the host fills every empty player slot with a bot team (DEC-450). One bot difficulty, easy, standard or hard, applies to every bot team of the match.
+**R-VIS-032** (MUST) At match start the host fills every empty open player slot with a bot team; before the match the host may close slots (DEC-079, DEC-450). One bot difficulty, easy, standard or hard, applies to every bot team of the match.
 
 **R-VIS-033** (MUST) A human who leaves during a match is replaced immediately by a bot that takes over the team. No mode treats a leaving player as eliminated (DEC-035).
 
-**R-VIS-034** (MUST) Players choose among `ref.vis.scope.team_colours` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers.
+**R-VIS-034** (MUST) Players choose among `ref.sim.team.player_colour_count` (8) team colours. In Siege the colour is the side: green for the defenders and red for the attackers.
 
 ### 2.5 Scope: features present only as hooks
 

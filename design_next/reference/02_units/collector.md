@@ -6,7 +6,7 @@
 
 The Collector is a flying vacuum for Essence orbs. It hovers high over the battlefield, finds a cloud of floating orbs, stops above it and draws the orbs up in a spiralling funnel of team-coloured rings. Then it flies to the nearest friendly Spawn Node and releases them one per tick, each becoming a new Worker. It takes the orbs of any team, so the enemy's dead become the player's reinforcements. Nothing shoots it down. Its single weakness is a grenade lying on the ground under it while it harvests: the Collector sucks the grenade up with the orbs, and it explodes inside.
 
-This document specifies the Collector (`Collector`, an actor): acquisition, stats, states, movement, the transport of orbs and grenades, damage and the grenade counter, control, the bot hook and presentation. The population-flow view (conversion ratio, cap bypass, delivery ownership) is [population flow](../05_population_flow.md) §2.18.
+This document specifies the Collector (`Collector`, an actor): acquisition, stats, states, movement, the transport of orbs and grenades, damage and the grenade counter, control, the bot hook and presentation. The population-flow view (conversion ratio, the population cap at delivery, delivery ownership) is [population flow](../05_population_flow.md) §2.18.
 
 ## 2 Rules
 
@@ -62,7 +62,7 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-424** (MUST) **Harvesting.** A Harvesting Collector stands still. Each tick it harvests every Floating Essence orb whose horizontal distance is below `ref.econ.collector.collection_range_wu` (75 wu) while it holds fewer orbs than its capacity ([essence_orbs.md](essence_orbs.md) R-UNIT-316), and it captures grenades (R-UNIT-434). It stays Harvesting while any orb it holds is still Harvested, and becomes Idle once every orb it holds is Collected.
 
-**R-UNIT-425** (MUST) **ToSpawnNode.** The Collector's target is its chosen Spawn Node's position at its hover height. On arrival within 5 wu, each tick it removes `ref.econ.collector.delivery_per_tick` (1) held orb, the first in its list, and the Spawn Node spawns one Worker of its current owner at its door ([population flow](../05_population_flow.md) R-ECON-043, R-ECON-074), with the drop sound event (R-UNIT-445). Delivery checks neither the population cap nor the Spawn Node's activation delay (see DEC-080, DEC-453); a Spawn Node that now has no team spawns nothing, and the orb is still removed (R-ECON-075). A Collector at a Spawn Node therefore yields 1 Worker per tick, 10 per second at game speed 1. When it has delivered its last orb, it becomes ToWaypoint.
+**R-UNIT-425** (MUST) **ToSpawnNode.** The Collector's target is its chosen Spawn Node's position at its hover height. On arrival within 5 wu, it delivers on each tick on which that node may produce, that is, while the node's activation delay is 0 and the node is not population-locked under the receiving team's population cap ([population flow](../05_population_flow.md) R-ECON-052, DEC-079): it removes `ref.econ.collector.delivery_per_tick` (1) held orb, the first in its list, and the Spawn Node spawns one Worker of its current owner at its door ([population flow](../05_population_flow.md) R-ECON-043, R-ECON-074), with the drop sound event (R-UNIT-445). On any other tick it keeps its orbs and waits at the node, so no orb is lost and none becomes a Worker above the cap (DEC-080, DEC-453). A Spawn Node that now has no team spawns nothing, and the orb is still removed (R-ECON-075). A Collector at an active Spawn Node of a team below its cap therefore yields 1 Worker per tick, 10 per second at game speed 1. When it has delivered its last orb, it becomes ToWaypoint.
 
 **R-UNIT-426** (MUST) If the chosen Spawn Node no longer exists, the Collector searches again, but this time accepts only a Spawn Node of its **own** team, not an ally's; if there is none, it becomes Idle.
 
@@ -94,7 +94,7 @@ The hover height is max(terrain height, `ref.sim.physics.sea_level`) + `ref.econ
 
 ### 2.6 Transport of orbs and grenades
 
-**R-UNIT-431** (MUST) **Orb transport.** Each tick, for each held orb i (its index in the list) that is Harvested, with t = the simulation time in seconds + 20 × the Collector's serial and s = (`ref.econ.collector.hover_wu` − (orb height − the ground height under the orb)) ÷ `ref.econ.collector.hover_wu`, the orb steers towards a point that circles the Collector at horizontal radius `ref.econ.collector.collection_range_wu` × s and angle t + i, a funnel that narrows as the orb rises. Its speed is `ref.unit.collector.suck_speed` (40 wu/s) × (1 − horizontal distance to the Collector ÷ `ref.unit.collector.suck_falloff_range` (150 wu)), and `ref.unit.collector.suck_speed_level` (20 wu/s) once its height differs from the collector point's by less than `ref.econ.orb.harvest_alt_dy_wu` (5 wu). When it is within `ref.econ.orb.harvest_arrival_wu` (2 wu) of its orbit point, or within `ref.econ.orb.harvest_alt_range_wu` (50 wu) with a height difference below 5 wu, it becomes Collected ([essence_orbs.md](essence_orbs.md) R-UNIT-317) and is placed at the collector point displaced by three draws from `ref.unit.collector.collected_jitter` (U[−3.75, 3.75] wu), on x, y and z in that order.
+**R-UNIT-431** (MUST) **Orb transport.** Each tick, for each held orb i (its index in the list) that is Harvested, with t = the simulation time in seconds + 20 × the Collector's serial and s = (`ref.econ.collector.hover_wu` − (orb height − the ground height under the orb)) ÷ `ref.econ.collector.hover_wu`, the orb steers towards a point that circles the Collector at horizontal radius `ref.econ.collector.collection_range_wu` × s and angle t + i, a funnel that narrows as the orb rises. Its speed is `ref.unit.collector.suck_speed` (40 wu/s) × (1 − horizontal distance to the Collector ÷ `ref.unit.collector.suck_falloff_range` (150 wu)), and `ref.unit.collector.suck_speed_level` (20 wu/s) once its height differs from the collector point's by less than `ref.econ.orb.harvest_alt_dy_wu` (5 wu), the height test of the collection rule (see DEC-854). When it is within `ref.econ.orb.harvest_arrival_wu` (2 wu) of its orbit point, or within `ref.econ.orb.harvest_alt_range_wu` (50 wu) with a height difference below 5 wu, it becomes Collected ([essence_orbs.md](essence_orbs.md) R-UNIT-317) and is placed at the collector point displaced by three draws from `ref.unit.collector.collected_jitter` (U[−3.75, 3.75] wu), on x, y and z in that order.
 
 **R-UNIT-432** (MUST) A Collected orb rides with the Collector (its velocity is the Collector's) and never expires; Harvested orbs still in the funnel when the Collector is removed without releasing them stay where they are ([essence_orbs.md](essence_orbs.md) R-UNIT-316, R-UNIT-317).
 
@@ -118,24 +118,24 @@ The hover height is max(terrain height, `ref.sim.physics.sea_level`) + `ref.econ
 
 **R-UNIT-440** (MUST) A Collector targets only Essence orbs and resting grenades. Workers never choose a Collector as a threat ([worker.md](worker.md)), and no weapon of the reference aims at it.
 
-**R-UNIT-441** (MUST) A player controls a Collector only by selecting it (`PlayerCommand::Select`) and giving it a move order: a team command state with `move_target` while the Collector is the team's selected actor ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-442) sets its waypoint to `pointer_position`, makes it ToWaypoint, sets its search timer to 0 and clears the team's selection inside the same step. Everything else it does is autonomous. Cancelling its Power is R-UNIT-416.
+**R-UNIT-441** (MUST) A player controls a Collector only by selecting it (`PlayerCommand::Select`) and giving it a move order: a team command state with `moveTarget` while the Collector is the team's selected actor ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-442) sets its waypoint to `pointerPosition`, makes it ToWaypoint, sets its search timer to 0 and clears the team's selection inside the same step, so the Collector takes one move order per selection ([actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-104, R-CTRL-106). Everything else it does is autonomous. Cancelling its Power is R-UNIT-416.
 
-**R-UNIT-442** (MUST) A bot team's Collector thinks every `ref.unit.collector.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state ([bots](../07_bots/README.md)). It then follows R-UNIT-421 to R-UNIT-426 like a player's Collector.
+**R-UNIT-442** (MUST) A bot team's Collector thinks every `ref.unit.collector.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state, a bot-only operation with no player command ([bots](../07_bots/README.md) R-BOT-015; see DEC-122). It then follows R-UNIT-421 to R-UNIT-426 like a player's Collector.
 
 ### 2.9 Presentation and sound
 
 **R-UNIT-443** (MUST) A Collector's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.collector.tint_scale` (0.7) (ADR-020). Each tick each engine socket emits `ref.unit.collector.exhaust_fire_count` (5) blue fire particles of size `ref.unit.collector.exhaust_fire_size` (75) and colour `ref.unit.collector.exhaust_colour` (50, 50, 250) and one smoke trail particle, from the presentation generator ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)).
 
-**R-UNIT-444** (MUST) A Collector draws a collector bubble, `fx.bubble_sphere`, of size `ref.unit.collector.bubble_size` (16 wu), additive, at opacity `ref.unit.collector.bubble_alpha` (150 of 255), `ref.unit.collector.bubble_offset` (3 wu) above its collector point. While Harvesting it draws `ref.unit.collector.beam_ring_count` (5) animated rings in its team colour, each of radius `ref.econ.collector.collection_range_wu` × the funnel scale s at its height, cycling from the ground up to its hover height; and it casts the base blob shadow ([Units](README.md)). These render paths read the presentation clock only (DEC-009, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
+**R-UNIT-444** (MUST) A Collector draws a collector bubble, `fx.bubble_sphere`, of size `ref.unit.collector.bubble_size` (16 wu), additive, at opacity `ref.unit.collector.bubble_alpha` (150 of 255), `ref.unit.collector.bubble_offset` (3 wu) above its collector point. While Harvesting it draws `ref.unit.collector.beam_ring_count` (5) animated rings in its team colour, each of radius `ref.econ.collector.collection_range_wu` × the funnel scale s at its height, cycling from the ground up to its hover height; and it casts the base blob shadow ([Units](README.md) R-UNIT-050) of half-size `rnd.shadow.blob.collector_size` (10 wu) ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-324). These render paths read the presentation clock only (DEC-009, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
 
-**R-UNIT-445** (MUST) A Collector shows its activity with these string ids: `unit.collector.action.idle` (new text "Idle") while Idle, Harvesting or ToSpawnNode; `unit.collector.action.to_waypoint` (new text "Moving to waypoint") while ToWaypoint; `unit.collector.action.to_essence_orb` (new text "Heading for Essence orbs") while ToEssenceOrb. It raises these sound events (reference/10):
+**R-UNIT-445** (MUST) A Collector shows its activity with these string ids: `unit.collector.action.idle` (new text "Idle") while Idle, Harvesting or ToSpawnNode, a kept reference rule (DEC-006, see DEC-854); `unit.collector.action.to_waypoint` (new text "Moving to waypoint") while ToWaypoint; `unit.collector.action.to_essence_orb` (new text "Heading for Essence orbs") while ToEssenceOrb. It raises these sound events ([event catalogue](../10_audio_design/event_catalogue.md) table 2.2-E and R-AUD-141):
 
 | Event | When | Binding |
 |---|---|---|
-| presence | while the Collector exists | `sfx.unit.collector.presence_loop` |
-| drop essence | each orb delivered (R-UNIT-425) | `sfx.unit.collector.drop_essence` |
-| hurt, die | a health loss; death | unbound (DEC-565) |
-| selected | the Collector is selected | unbound (DEC-565) |
+| `collector.spawn` | while the Collector exists | three loops: layers 1 and 2 the engine groups `sfx.creature.abductor.presence_loop_b` and `sfx.creature.abductor.presence_loop_c`, layer 3 `sfx.unit.collector.presence_loop` |
+| `collector.drop_essence` | each orb delivered (R-UNIT-425) | `sfx.unit.collector.drop_essence` |
+| `collector.hurt`, `collector.die` | a health loss; death | silent (DEC-565) |
+| `collector.selected` | the Collector is selected | silent (DEC-565) |
 
 ## 3 States and flows
 
@@ -177,8 +177,6 @@ flowchart TD
 |---|---|---|---|---|---|
 | `ref.unit.collector.spawn_height` | 50 | wu | above the targeted position | R-UNIT-415 | — |
 | `ref.unit.collector.stop_damage` | 1000 | health | after the Power stop makes it vulnerable | R-UNIT-416 | DEC-307 |
-| `ref.unit.collector.health` | 255 | health | | R-UNIT-417 | DEC-090 |
-| `ref.unit.collector.speed` | 28 | wu/s | never more than the remaining distance per second | R-UNIT-417, R-UNIT-429 | DEC-090, DEC-111 |
 | `ref.unit.collector.retarget_ticks` | 11 | ticks | nominal 1.0 s | R-UNIT-417, R-UNIT-421 | DEC-002 |
 | `ref.unit.collector.arrival_distance` | 5 | wu | horizontal | R-UNIT-417, R-UNIT-422, R-UNIT-423, R-UNIT-425, R-UNIT-429 | DEC-111 |
 | `ref.unit.collector.wander_distance` | 30 | wu | | R-UNIT-417, R-UNIT-421 | — |
@@ -211,6 +209,8 @@ Keys cited from other documents (their values are defined there):
 
 | Owning document | Keys | Used by |
 |---|---|---|
+| [Units](README.md) §4.1 (the actor stat table) | `ref.unit.collector.health`, `ref.unit.collector.speed` | R-UNIT-417, R-UNIT-429 |
+| [renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) | `rnd.shadow.blob.collector_size` | R-UNIT-444 |
 | [population flow](../05_population_flow.md) | `ref.econ.collector.idle_speed_factor`, `ref.econ.collector.capacity`, `ref.econ.collector.search_range_wu`, `ref.econ.collector.collection_range_wu`, `ref.econ.collector.cluster_threshold`, `ref.econ.collector.hover_wu`, `ref.econ.collector.collector_height_wu`, `ref.econ.collector.delivery_per_tick`, `ref.econ.collector.grenade_capture_wu`, `ref.econ.collector.self_destruct_damage`, `ref.econ.collector.release_speed_max_wu_s` | R-UNIT-417, R-UNIT-421 to R-UNIT-437 |
 | [population flow](../05_population_flow.md) | `ref.econ.orb.harvest_arrival_wu`, `ref.econ.orb.harvest_alt_range_wu`, `ref.econ.orb.harvest_alt_dy_wu` | R-UNIT-431 |
 | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.init.power_level_default` | R-UNIT-417 |
@@ -220,7 +220,7 @@ Keys cited from other documents (their values are defined there):
 ## 5 Edge cases and interactions
 
 1. **Enemy dead.** A Collector parked over a battle converts both sides' dead into its own side's Workers (R-UNIT-421, DEC-080).
-2. **Cap bypass.** Deliveries ignore the population cap and the Spawn Node's activation delay, so a Collector can raise a team above its cap (R-UNIT-425, DEC-453).
+2. **Capped delivery.** A Collector delivers only while its Spawn Node may produce: at the population cap, or while the node's activation delay runs, it keeps its orbs and waits at the node, so it never raises a team above its cap (R-UNIT-425, DEC-080, DEC-453).
 3. **Node changes hands.** A Spawn Node that turns enemy while the Collector delivers produces the enemy's Workers; one that turns neutral swallows each orb without a Worker (R-UNIT-425).
 4. **Ally's node lost.** If the chosen ally's Spawn Node is destroyed, the re-search ignores allies and finds only own-team nodes (R-UNIT-426).
 5. **Orb clouds.** A trip towards one orb turns into a stop at the centroid when the cloud around the Collector holds more than 30 Floating orbs, at most once per trip (R-UNIT-423).
@@ -232,7 +232,7 @@ Keys cited from other documents (their values are defined there):
 
 ## 6 Acceptance criteria
 
-**AC-CO-01 — Delivery yield** (R-UNIT-425). Given a Collector holding 40 Collected orbs at a friendly active Spawn Node, then exactly one Worker appears per tick for 40 ticks, the Collector then becomes ToWaypoint, and the population cap is not checked.
+**AC-CO-01 — Delivery yield** (R-UNIT-425). Given a Collector holding 40 Collected orbs at a friendly active Spawn Node of a team at least 40 Workers below its population cap, then exactly one Worker appears per tick for 40 ticks and the Collector then becomes ToWaypoint. Given the same Collector at a node that is population-locked, then no Worker appears, the Collector keeps its 40 orbs and waits at the node, and it delivers again on the first tick on which the node may produce.
 
 **AC-CO-02 — Any team** (R-UNIT-421, R-UNIT-424). Given Floating orbs of teams 0, 1 and 2 within 75 wu of a Harvesting team-0 Collector with room, then all of them are harvested.
 
@@ -252,7 +252,7 @@ Keys cited from other documents (their values are defined there):
 
 ## 7 Dependencies
 
-- **Reference documents:** [Units](README.md) (base advance, blob shadow); [essence_orbs.md](essence_orbs.md); [builder.md](builder.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.18 (delivery, cap bypass, ownership); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Collector outcome, validity, Power stop); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (grenades, fuse, thrown-weapon physics); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
+- **Reference documents:** [Units](README.md) (base advance, blob shadow, actor stat table); [essence_orbs.md](essence_orbs.md); [builder.md](builder.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.18 (delivery, population cap, ownership); [actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) (move order and deselection); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Collector outcome, validity, Power stop); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (grenades, fuse, thrown-weapon physics); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); [event catalogue](../10_audio_design/event_catalogue.md) (audio events).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-020; bubble and rings); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust, debris); [audio engine](../../architecture/components/audio_engine.md).
 - **Assets:** `mesh.unit.collector_body`; `fx.bubble_sphere` (the collector bubble); `icon.power.collector` (the Collector Power); `sfx.unit.collector.presence_loop`, `sfx.unit.collector.drop_essence`.
 
@@ -260,8 +260,10 @@ Keys cited from other documents (their values are defined there):
 
 | DEC | Title | Default specified in §2 |
 |---|---|---|
-| DEC-080 | Collector collection of any team's Essence orbs | any team's orbs, delivered with no cap or activation check (R-UNIT-421, R-UNIT-425) |
+| DEC-080 | Collector collection of any team's Essence orbs | any team's orbs, delivered only while the node may produce and within the receiving team's population cap (R-UNIT-421, R-UNIT-425) |
 | DEC-307 | Essence orbs held by a removed Collector | a stopped Power strands Harvested orbs (R-UNIT-416, R-UNIT-432) |
-| DEC-453 | Population-cap enforcement points and uncapped sources | Collector deliveries are uncapped (R-UNIT-425) |
+| DEC-453 | Population-cap enforcement points and uncapped sources | a Collector delivery is a cap enforcement point: at the cap the Collector keeps its orbs and waits (R-UNIT-425) |
+| DEC-122 | Bot and deputy actions outside the player command catalogue | the bot's Collector waypoint is a bot-only operation (R-UNIT-442) |
+| DEC-854 | Transport, Collector and Strike team rule details | the suck speed's height test and the idle status text are kept (R-UNIT-431, R-UNIT-445) |
 | DEC-565 | Sounds for the other silent gameplay events | hurt, death and selection are silent (R-UNIT-439, R-UNIT-445) |
 | DEC-111 | Values derived from flat-terrain calculation | the movement law is the specification; throughput is derived from it (R-UNIT-429) |

@@ -1,76 +1,79 @@
 ---
 status: accepted
 date: 2026-10-17
-decision-makers: Species technology lead
+decision-makers: Species technology lead; workflow decided by the owner's AGENTS.md (O21)
 ---
 
-# Continuous integration: preset-driven pipelines with content validation, analysis builds and a headless bot soak
+# Continuous integration: the committed `build.yml` workflow, with further jobs added by amendment and guarded the same way
 
 ## Context and Problem Statement
 
-Every change to Species code or content must be built, validated and tested before it is merged, with the same configurations developers use. Long-running checks (a soak of many matches, fuzzing, GPU validation) must run regularly without slowing every change. A headless soak that plays matches between bots on every mode and map, and reports crashes, timing and peak population as artefacts, replaces manual test passes. The CI service and its hosting are infrastructure choices outside this ADR.
+Every change to Species code or content must be built, checked and tested before it is merged. The repository holds its CI workflow, `.github/workflows/build.yml`, which the engineering rules describe (`AGENTS.md` §6): a Windows job and a Linux job, every step that has something to run blocks, and a step whose input does not exist yet is skipped and says so, never faked. CI builds `Debug|x64` only; the static check of the two configurations stands in for a Release build ([ADR-054](ADR-054-build-system-cmake-presets.md)). Long-running checks (a soak of many matches, fuzzing, GPU validation, performance runs) and the design checks are needed too, without slowing every change and without weakening the guard rule. The CI service is GitHub Actions, as the workflow file implies; agent hosting beyond the hosted runners is an infrastructure choice outside this ADR.
 
-What does Species' continuous integration run, and when?
+What does Species' continuous integration run, and how does it grow?
 
 ## Decision Drivers
 
-* CI runs exactly the presets developers run ([ADR-054](ADR-054-build-system-cmake-presets.md)).
-* Content errors fail the change ([ADR-059](ADR-059-content-build-and-validators.md)).
-* Crashes and performance regressions are found automatically, with artefacts.
-* Server and shared code stay buildable by a second front end ([ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md)).
+* CI runs what developers run: the solution build, the test suites and the checkers (`AGENTS.md` §3).
+* Every step that has something to run blocks; nothing is `continue-on-error`.
+* A step whose input does not exist yet is skipped, not faked, and starts gating the moment its input lands.
+* Toolchain versions that can turn a build red on their own are pinned; the rest is printed.
+* Crashes, content errors and performance regressions are found with artefacts.
 
 ## Considered Options
 
-* Two tiers: required per-change jobs and nightly long-running jobs, all as workflow presets
-* One tier: everything on every change
+* The committed workflow as the baseline, with further jobs added by amendment of this record and guarded the same way
+* A two-tier design written in advance (per-change and nightly jobs) for a tree that has no code yet
 * Manual release testing only
 
 ## Decision Outcome
 
-Chosen option: "Two tiers: required per-change jobs and nightly long-running jobs, all as workflow presets".
+Chosen option: "The committed workflow as the baseline, with further jobs added by amendment". Accepted: the workflow is decided by the owner's `AGENTS.md` (O21).
 
-* **Per change (required):**
-  * the `windows-msvc-development-<product>` and `windows-msvc-shipping-<product>` builds of every product, with warnings as errors;
-  * the `windows-clangcl-analysis-<product>` builds of the `server` and `tools` products, which cover the shared and server code, with static analysis;
-  * the content build of every edition, with all validators;
-  * unit, property and golden-hash tests ([ADR-069](ADR-069-test-framework.md));
-  * binary checks: mitigation flags, symbols in the symbol store, version resource, no developer or loose-file code in shipping binaries ([ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md), [ADR-057](ADR-057-version-identity.md)).
-* **Nightly:**
-  * the headless bot soak: the `server` product plays matches between bots on every mode and map of each edition at maximum speed, and reports crashes, assertion failures, simulation update-time percentiles and peak population per match as artefacts;
-  * golden-image tests on the pinned reference configuration;
-  * a client test pass with the Direct3D 12 debug layer and GPU-based validation;
-  * AddressSanitizer and `/analyze` builds with their test runs;
-  * fuzzing of loaders;
-  * the reproducibility check of the content build;
-  * the `SPECIES_IMPORT_STD=ON` client build ([ADR-053](ADR-053-modules-and-import-std.md));
-  * performance tests against component budgets.
-* **Artefacts:** test reports, soak reports, performance results, crash dumps from test machines ([ADR-065](ADR-065-crash-reporting.md)) and the dependency licence list.
-* **Build agents:** Windows agents with the Visual Studio Build Tools at the pinned toolset; at least one agent with a GPU for golden-image and validation jobs. A non-Windows server build would add its own agents.
-* **Replays:** if the design phase gives Species reproducible match replays, recorded matches become nightly regression tests that compare end-of-match state hashes; the pipeline reserves a job for them.
+* **Triggers:** pushes and pull requests to `main`, and manual runs; a newer run of the same ref cancels an older one.
+* **Windows job** (`Debug|x64`, on the hosted Windows runner):
+  * print the toolchain it got: the runner image, Visual Studio, MSBuild, clang-tidy and Python;
+  * locate the solution: exactly one `.slnx` or `.sln` at the repository root, or none while the tree is empty; two fail the job;
+  * check the build shape and the project registries with `Build\CheckProjectFiles.py`, guarded on the script;
+  * build `Debug|x64` through the solution with MSBuild warnings as errors, guarded on the solution;
+  * run the test suites: one suite per `*Tests.vcxproj`, each of which must have produced its DLL, run by `vstest.console.exe` with a `.trx` log ([ADR-069](ADR-069-test-framework.md)), guarded on the solution;
+  * run clang-tidy over the tree with `Build\RunClangTidy.py`, guarded on the script; clang-tidy is pinned (22.1.8, installed from pip) so that a runner-image change cannot turn the build red;
+  * upload the build log and the test results.
+* **Linux job:** check formatting with `Build\CheckFormat.py` on clang-format 18 (installed from the Ubuntu packages, 18.1.3), guarded on the script.
+* **Release is not built in CI.** Before a release, whoever ships builds `Release|x64` and runs the release checks of the other records (mitigation flags, symbols, version resource, no development or loose-file code, install contents).
+* **Restore:** the first project that references an allow-listed package ([ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)) adds a NuGet restore step (`/t:Restore /p:RestorePackagesConfig=true`) before the build, guarded on a `packages.config` file, by amendment of the workflow and of this record.
+* **Further jobs** are added by amendment of this record and of the workflow, each guarded on the file it needs, in this order of need:
+  * the design checks (`Tools/DesignCheck/`) on every change under the design library;
+  * the content build of every edition with all validators ([ADR-059](ADR-059-content-build-and-validators.md));
+  * a scheduled job for the headless bot soak (the server plays matches between bots on every mode and map at maximum speed and reports crashes, assertion failures, simulation update-time percentiles and peak population per match), fuzzing ([ADR-069](ADR-069-test-framework.md)), the reproducibility check of the content build, and performance tests against component budgets;
+  * on an agent with a GPU, golden-image tests and a client run with the Direct3D 12 debug layer and GPU-based validation.
+* **Artefacts:** build logs and test results now; soak reports, performance results and crash dumps from test machines ([ADR-065](ADR-065-crash-reporting.md)) with the jobs that produce them.
+* **Replays:** if the design phase gives Species reproducible match replays, recorded matches become regression tests that compare end-of-match state hashes, in a job added the same way.
 
 ### Consequences
 
-* Good, because every change is built, validated and tested with developer configurations.
-* Good, because crashes, soak results and timing trends are visible every day.
-* Bad, because the nightly tier needs GPU agents and several hours of machine time.
+* Good, because the workflow is honest about an empty tree: every gate starts blocking the moment its input exists, with no edit to the workflow.
+* Good, because the clang-tidy and clang-format pins stop a runner-image change from failing unchanged code.
+* Bad, because Release is never compiled in CI; a defect that appears only under optimisation is found by whoever builds Release.
+* Bad, because the soak, fuzzing, golden-image and performance checks do not exist until their jobs are added, and the GPU checks need an agent the hosted runners do not provide.
 
 ### Confirmation
 
-* Each job is a `workflowPreset`; a check fails when a CI definition runs a command outside the presets.
-* The merge rule requires every per-change job to pass.
-* The nightly soak report is reviewed in the team's daily triage; a crash opens a defect automatically.
+* The workflow has no `continue-on-error` step; every skipped step names its missing input in the log.
+* The merge rule requires the Windows and Linux jobs to pass.
+* Each amendment that adds a job states its guard and its input, and removes the guard once the input is permanently present.
 
 ## Pros and Cons of the Options
 
-### Two tiers
+### The committed workflow, grown by amendment
 
-* Good, because changes are checked quickly and long checks still run every day.
-* Neutral, because a nightly failure is found up to a day after the change that caused it.
+* Good, because CI matches the tree as it is and as `AGENTS.md` describes it.
+* Neutral, because long-running checks wait for their jobs.
 
-### One tier
+### A two-tier design written in advance
 
-* Good, because every problem is found before merge.
-* Bad, because a soak and fuzzing on every change would make each change take hours.
+* Good, because the target pipeline is visible from the start.
+* Bad, because jobs without inputs would be faked or permanently skipped, which `AGENTS.md` §6 forbids, and they describe configurations the build no longer has.
 
 ### Manual release testing
 
@@ -78,6 +81,8 @@ Chosen option: "Two tiers: required per-change jobs and nightly long-running job
 
 ## More Information
 
+* Rules: `AGENTS.md` §6 (what CI runs, guards, CI does not build Release) and §3 (build and test commands).
+* Source: `.github/workflows/build.yml` (the committed workflow; the clang-tidy and clang-format pins and their reasons are in it).
 * Components: diagnostics, test and performance (`DBG`), build tooling and distribution (`BLD`).
-* The CI service, agent hosting and the binary-cache host are infrastructure choices made by the team operating the project.
 * **Amendment 2026-10-17.** Job presets carry the product suffix of ADR-054 (`<os>-<compiler>-<flavour>-<product>`, BLD-006); the build tooling component lists the jobs and their workflow presets.
+* **Amendment 2026-10-17 (AGENTS.md, O21).** CI is the committed `build.yml`: a Windows job (build shape check, `Debug|x64` build, test suites, clang-tidy) and a Linux job (pinned clang-format); Release is not built in CI; the design checks, content build, nightly soak, fuzzing, GPU and performance jobs are added by amendment, guarded the same way. The preset-based jobs of the earlier amendment above, the analysis builds and the `import std` build are removed.

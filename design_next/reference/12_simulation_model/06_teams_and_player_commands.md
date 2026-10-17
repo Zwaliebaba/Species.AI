@@ -71,6 +71,7 @@ An effect that harms everyone, such as a fireball, carries the no-team value.
 | name | empty | the player's name |
 | bot takeover time | none | the game time at which a bot took over a departed player's team (R-SIM-436) |
 | achievement mask | 0 | the achievement hook mask ([../09_front_end_and_match_flow/options_localisation_and_hooks.md](../09_front_end_and_match_flow/options_localisation_and_hooks.md)) |
+| open | true | whether the slot is open; a closed slot stays unused for the whole match (R-SIM-461) |
 
 **R-SIM-399** (MUST) A match team holds:
 
@@ -96,7 +97,7 @@ Kill totals and kill milestones reach the presentation as events (DEC-007).
 
 **R-SIM-400** (MUST) A team's list of ungrouped actors holds every actor of the team that was spawned without an actor group, its bot controller included: Workers, Leaders, Transports, Builders, Collectors and every creature that is not in a group. Strike teams, Bombers, centipedes and Hive ants live inside actor groups. Each special unit registers in the special-unit list when it starts and unregisters when it is removed, so the list never holds a removed actor (DEC-117).
 
-**R-SIM-401** (MUST) A team's current selection changes only through the execution of a command (R-SIM-450) and through the effects that executing a command has inside the same simulation step; no other simulation rule and no presentation or input code writes it (DEC-008, DEC-119).
+**R-SIM-401** (MUST) A team's current selection changes only through the execution of a command (R-SIM-450) and through the effects that executing a command has inside the same simulation step; no other simulation rule and no presentation or input code writes it (DEC-008, DEC-119). The selected actor is held as a generational handle and resolved again on every use, so a selection whose actor has been removed resolves to none and never designates a later occupant of the same slot ([03_entity_model_and_identity.md](03_entity_model_and_identity.md) R-SIM-142, DEC-028; see DEC-262).
 
 **R-SIM-402** (MUST) Selected Workers add their position to their team's selected-Worker accumulators as they advance. In update slice 0 the team latches the count and the centre (sum ÷ count) from the previous tick's accumulation and resets the accumulators. With a count of 0 the team has no centre, and the user-interface elements that read it (the route preview, the selection arrows and the Power icon position) show nothing (DEC-653 item 1).
 
@@ -107,7 +108,7 @@ Kill totals and kill milestones reach the presentation as events (DEC-007).
 **R-SIM-405** (MUST) Selecting (group g, actor a, structure s) on a team:
 
 1. is ignored entirely while the team's block-selection-change flag is set;
-2. sets the team's current selection to (g, a, s);
+2. sets the team's current selection to (g, a, s), with the actor held as a generational handle (R-SIM-401);
 3. when the selected actor is a Leader, clears the team's current Power;
 4. when any of the team's Workers were selected, clears the selected state of all of them;
 5. when the selected structure is a turret, sets the turret's fire timer to `ref.sim.team.turret_select_delay` (6 ticks, the 0.5 s countdown of DEC-002);
@@ -115,7 +116,7 @@ Kill totals and kill milestones reach the presentation as events (DEC-007).
 
 **R-SIM-406** (MUST) A team's displayed name is its lobby name; a bot team's name is prefixed with the bot label `bot.label`, and after game over the departed label `match.team_left` replaces it. A team without a lobby name is named `faction.rogue.name` for the Rogue faction, `faction.visitor.name` for the Visitor faction, and otherwise by its colour id 0 to 7 with the team-colour names `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan` and `team.colour.pink` (with the bot label for a bot team); any other colour id shows `ui.team.invalid_name`. A team is the Visitor faction when the map's Visitor-faction option names this team's position, or when its Visitor faction flag is set.
 
-**R-SIM-407** (MUST) Eliminating a team changes the health of every member of its actor groups and of every ungrouped actor by −`ref.sim.team.eliminate_damage_factor` × that actor's health stat (2 × health), stops all of its Powers, and sets every Transit Gate it owns to the no-team value.
+**R-SIM-407** (MUST) Eliminating a team changes the health of every member of its actor groups and of every ungrouped actor by −`ref.sim.team.eliminate_damage_factor` × that actor's current health (2 × current health), as unresistable damage, stops all of its Powers, and sets every Transit Gate it owns to the no-team value.
 
 ### 2.4 Ownership of objects
 
@@ -129,7 +130,7 @@ Kill totals and kill milestones reach the presentation as events (DEC-007).
 | map-placed structure | the map stores a start position, which load maps to the team at that position (R-SIM-418) | at load | — |
 | effect | the firing team: turret rounds, rockets and grenades carry it, and a laser bolt carries its source team; weather effects carry the no-team value; fireballs carry the no-team value and harm everyone | never | — |
 | Essence orb | the team that released it | never; a Collector may take any team's Essence orbs (DEC-080, [../02_units/collector.md](../02_units/collector.md)) | — |
-| creature created by a Supply crate outcome | the team that placed the Power, except the Reaper Serpent and the Hive, which belong to the Rogue faction (DEC-107) | never | — |
+| creature created by a Supply crate outcome | the team that placed the Power, except the Reaper Serpent and the Hive, which belong to the Rogue faction (DEC-107); the creatures of the Brood outcome belong to the placing team (see DEC-121) | never | — |
 
 **R-SIM-409** (MUST) A change of an actor's team destroys the actor and spawns a new one (DEC-028). The conversions are: Convert laser bolts, the Visitor faction's pulse wave and the Swarm streak ([../04_supply_crates_powers_and_weapons/crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md), [../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)).
 
@@ -142,10 +143,10 @@ Kill totals and kill milestones reach the presentation as events (DEC-007).
 **R-SIM-412** (MUST) Friendship between two team ids a and b is:
 
 ```
-IsFriend(a, b):
-    if a is the no-team value or b is the no-team value: return false
-    if the match is co-op: return coopGroup[a] == coopGroup[b]
-    return a == b
+IsFriend(_a, _b):
+    if _a is the no-team value or _b is the no-team value: return false
+    if the match is co-op: return coopGroup[_a] == coopGroup[_b]
+    return _a == _b
 ```
 
 Outside co-op a team is a friend only of itself. In a co-op match the co-op group of a team is 0, 1 or 2.
@@ -171,7 +172,7 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 | 8 | `faction.rogue.name` | 10, 10, 10 | 10, 10, 10 | 10, 10, 10 |
 | 9 | `faction.visitor.name` | 200, 200, 200 | 200, 200, 200 | 200, 200, 20 |
 
-**R-SIM-416** (MUST) Outside co-op and Siege a team's colour id starts equal to its team id; a human's own choice arrives through the `SetColour` command (R-SIM-451). At match-world initialisation every bot team chooses, with the simulation generator, a colour from 0 to `ref.sim.team.bot_colour_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, DEC-450); in a tutorial a bot team's colour is its team index. A team that still has no colour after initialisation receives the first colour from 0 to 7 that no team holds.
+**R-SIM-416** (MUST) Outside co-op and Siege a team's colour id starts equal to its team id; a human's own choice arrives through the `SetColor` command (R-SIM-451). At match-world initialisation every bot team chooses, with the simulation generator, a colour from 0 to `ref.sim.team.bot_colour_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, DEC-450); in a tutorial a bot team's colour is its team index. A team that still has no colour after initialisation receives the first colour from 0 to 7 that no team holds.
 
 **R-SIM-417** (MUST) Outside Siege and co-op, a team's start position is assigned when the match first needs it: the team receives the free position at index (simulation draw mod number of free positions) of the list of positions 0 to (player count − 1) that no team holds, in ascending order, or none when no position is free. Match initialisation asks for the positions in team-slot order, so the draws happen in slot order. In a tutorial, and for the Rogue and Visitor factions, the position equals the team id. This reference behaviour is the default of the Open DEC-450.
 
@@ -186,11 +187,11 @@ Outside co-op a team is a friend only of itself. In a co-op match the co-op grou
 3. Without predefined groups, a team is paired with a team that chose the same colour. The two further fallback steps, pairing with a team that has no colour and then with any unpaired team with the random free colour (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, never apply, because their test for an existing partner also matches the candidate itself; a player slot that no earlier step pairs stays in co-op group 0 (R-SIM-413, DEC-451).
 4. With a predefined group, the partner takes the group's other position and the shared colour id, and the two members take shade 1 and shade 2.
 
-Co-op setup applies the resulting colour inside the setup step on every participant. In the reference the local participant then also sends a `SetColour` command for its own team with the same colour, which re-applies the same value; the setup itself issues no command (DEC-119).
+Co-op setup applies the resulting colour inside the setup step on every participant. In the reference the local participant then also sends a `SetColor` command for its own team with the same colour, which re-applies the same value; the setup itself issues no command (DEC-119).
 
 **R-SIM-421** (MUST) The shade of a co-op group is chosen when it is first asked for: the first request for a group returns its member-1 shade and every later request its member-2 shade; a group without a colour returns `ref.sim.team_colour.no_group_shade` (white).
 
-**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
+**R-SIM-422** (MUST) On a map with fewer than four players, each unused slot draws a colour from 0 to 3 that no player slot holds, by the free-colour draw of R-SIM-420 step 3: colour = (simulation draw mod `ref.sim.team.player_colour_count`) div `ref.sim.team.coop_colour_divisor`, which gives 0 to 3, and only the colour changes, so that the effects that pick a random team colour, such as the Essence Grove and the Allegiance Scrambler, have a colour for every slot. A colour drawn for an unused slot is not reserved, so two unused slots can share a colour (DEC-450).
 
 **R-SIM-423** (MUST) Every colour, position and alliance draw of §2.6 is a simulation draw made during match-world initialisation in team-index order, so every participant must start the match with identical lobby-slot state ([07_randomness_and_integrity.md](07_randomness_and_integrity.md)).
 
@@ -202,9 +203,9 @@ Co-op setup applies the resulting colour inside the setup step on every particip
 
 **R-SIM-426** (MUST) Destroying an actor group clears its team's current group selection when that selection named the group, and destroys its members. Removing a member from the group also unregisters it from the actor grid at the position given.
 
-**R-SIM-427** (MUST) In update slice 0 an actor group advances: centre := position sum ÷ count; velocity := (centre − previous centre) ÷ `ref.sim.tick_period`; radius := √(largest squared radius). When no member reported a position, the division is not evaluated and the centre and velocity keep their values. A group with no used member slot sets its radius to 0 and requests its own removal. Otherwise it resets its accumulators and follows its route ([05_space_routing_and_physics.md](05_space_routing_and_physics.md)). No tick runs while the match is paused, so the division by the tick period never meets a game speed of 0 (DEC-038).
+**R-SIM-427** (MUST) In update slice 0 an actor group advances: centre := position sum ÷ count; velocity := (centre − previous centre) ÷ `ref.sim.tick_period`; radius := √(largest squared radius). When no member reported a position, the division is not evaluated and the centre and velocity keep their values (see DEC-653). A group with no used member slot sets its radius to 0 and requests its own removal. Otherwise it resets its accumulators and follows its route ([05_space_routing_and_physics.md](05_space_routing_and_physics.md)). No tick runs while the match is paused, so the division by the tick period never meets a game speed of 0 (DEC-038).
 
-**R-SIM-428** (MUST) `ActorGroup::Attack(position, withGrenade)`: with a grenade, the nearest live member throws a grenade at the position. Then every member that is enabled, alive and not reloading is a candidate; waitTime := the kind's rate stat ÷ the member count; the attack accumulator grows by `ref.sim.tick_period` ÷ waitTime; and while the accumulator is at least 1, it is reduced by 1 and a candidate chosen by a simulation draw (a unit fraction × the candidate count, truncated) attacks the position. With no candidate, no member attacks and no candidate draw is made.
+**R-SIM-428** (MUST) `ActorGroup::Attack(_position, _withGrenade)`: with a grenade, the nearest live member throws a grenade at the position. Then every member that is enabled, alive and not reloading is a candidate; waitTime := the kind's rate stat ÷ the member count; the attack accumulator grows by `ref.sim.tick_period` ÷ waitTime; and while the accumulator is at least 1, it is reduced by 1 and a candidate chosen by a simulation draw (a unit fraction × the candidate count, truncated) attacks the position. With no candidate, no member attacks and no candidate draw is made (see DEC-263).
 
 **R-SIM-429** (MUST) Each member, when it advances, adds its position to its group's position sum and count, and raises the group's largest squared radius to (|position − centre| + member radius)² when that is larger, where centre is the group's centre from slice 0 of this tick.
 
@@ -233,40 +234,40 @@ The group offset of a member is its formation offset; it takes no account of obs
 
 ### 2.8 Bots as team slots
 
-**R-SIM-433** (MUST) A bot is a team slot of kind `TeamKind::Bot`, owned by the participant that requested it, which in practice is the host. Starting a match fills every empty slot below the map's player count with a bot team: the host requests (player count − filled slots) bot teams through the session ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)) and then issues `StartMatch` (R-SIM-460).
+**R-SIM-433** (MUST) A bot is a team slot of kind `TeamKind::Bot`, owned by the participant that requested it, which in practice is the host. Starting a match fills every empty open slot below the map's player count with a bot team, and a closed slot gets none (R-SIM-461): the host requests one bot team for every unused open slot below the player count through the session ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md)) and then issues `StartMatch` (R-SIM-460).
 
-**R-SIM-434** (MUST) The bot is not a participant. When a bot team is initialised in the match world, the simulation spawns one bot controller (`BotController`) for it, placed inside the map (DEC-087; the position is specified in [../07_bots/README.md](../07_bots/README.md)). In the reference the spawn asks for the off-map point (−100, 0, −100) of `ref.sim.bot.controller_spawn_request`, so the spawn search of [05_space_routing_and_physics.md](05_space_routing_and_physics.md) makes all its draws (20) and falls back to (20, 0, 20) at the map's corner. The Rogue and Visitor factions always receive a bot controller as well (DEC-558).
+**R-SIM-434** (MUST) The bot is not a participant. When a bot team is initialised in the match world, the simulation spawns one bot controller (`BotController`) for it, inside the map, at the position of [../07_bots/README.md](../07_bots/README.md) R-BOT-008: its team's start position, or the centre of the map for the Rogue and Visitor factions and for a slot with no start position; the placement makes no spawn search and no draw (DEC-087). `ref.sim.bot.controller_spawn_request` records only the reference request, the off-map point (−100, 0, −100), for which the spawn search of [05_space_routing_and_physics.md](05_space_routing_and_physics.md) makes all its draws (20) and falls back to (20, 0, 20) at the map's corner; it is not the Species placement. The Rogue and Visitor factions always receive a bot controller as well (DEC-558).
 
-**R-SIM-435** (MUST) A bot controller is simulated identically on every participant as part of the simulation step. It sends no network traffic (DEC-200): it acts through the same simulation operations that the commands of §2.11 execute, and each of its actions passes the same validation path as a player command (DEC-119, DEC-202). It reads the full simulation state ([../07_bots/README.md](../07_bots/README.md)).
+**R-SIM-435** (MUST) A bot controller is simulated identically on every participant as part of the simulation step, and it sends nothing over the network (DEC-200). A bot is an authorised command source of its own team (DEC-119): in its bot step it issues the actions that the player command catalogue expresses (targeting a Power, stopping a Power and aiming a Beam Dish) as catalogue commands, which execute at once through the command's operation, with the command's validation and no-op rules (DEC-202), and never enter the command batch of a tick ([../07_bots/README.md](../07_bots/README.md) R-BOT-014). Every other bot action is a bot-only operation of R-BOT-015, which applies the named simulation operation directly after checking that the object still exists and belongs to the bot's team (see DEC-122). It reads the full simulation state.
 
 **R-SIM-436** (MUST) When a human leaves during a match, every participant, at the same tick, changes that team's kind to `TeamKind::Bot`, spawns a bot controller for it, records the bot takeover time in the lobby slot and emits the presentation event `match.player_left` (DEC-035). When a player leaves in the lobby, the slot is freed instead. The departed player's team stays reserved and counts toward capacity, and nothing returns it to a rejoining player; join, reconnection and capacity are DEC-244 and DEC-205.
 
-**R-SIM-437** (MUST) A request for a bot team is ignored once the team count has reached the map's player count, and bot teams count toward the "server full" test for humans (DEC-244).
+**R-SIM-437** (MUST) A request for a bot team is ignored once every open slot below the map's player count is held, and bot teams count toward the "server full" test for humans, which counts open slots only: a session is full once every open slot is held, and a closed slot is never offered to a joining player (R-SIM-461, DEC-244).
 
 ### 2.9 The team command state
 
-**R-SIM-438** (MUST) Player control splits into the discrete commands of §2.11 and a continuous control state sampled at the simulation rate (DEC-023). The team command state (`TeamCommandState`) is the continuous control state of one team. Each participant samples it for its own team and sends it once every `ref.sim.command.control_state_period` (1 tick, 0.1 s) while a match is running; it is executed as the `ControlState` command (R-SIM-450). Bot teams send none: their bot controller acts directly (R-SIM-435).
+**R-SIM-438** (MUST) Player control splits into the discrete commands of §2.11 and a continuous control state sampled at the simulation rate (DEC-023). The team command state (`TeamCommandState`) is the continuous control state of one team. Each participant samples it for its own team and sends it once every `ref.sim.command.control_state_period` (1 tick, 0.1 s) while a match is running; it is executed as the `ControlState` command (R-SIM-450). Bot teams send none: a bot issues its catalogue commands inside its own bot step and applies its bot-only operations directly (R-SIM-435).
 
-**R-SIM-439** (MUST) The team command state holds these fields. The input layer decides when each is set ([../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md), [../../architecture/components/input.md](../../architecture/components/input.md)); the summary below gives the meaning.
+**R-SIM-439** (MUST) The team command state, a public aggregate, holds these fields. The input layer decides when each is set ([../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md), [../../architecture/components/input.md](../../architecture/components/input.md)); the summary below gives the meaning.
 
 | Field | Kind | Meaning |
 |---|---|---|
-| `move_target` | one-shot flag | the player set a move target for the selected unit (not while secondary fire is held, and never with a gamepad while a Strike team is selected) |
-| `direct_move` | flag | a direct movement vector is present |
-| `primary_fire` | one-shot flag | primary fire at the pointer target (not while the camera looks around) |
-| `secondary_fire` | one-shot flag | secondary fire at the pointer target |
-| `target_directed` | one-shot flag | a directed target vector is present |
-| `secondary_fire_directed` | one-shot flag | directed secondary fire |
-| `camera_tracking` | flag | the sender's camera is tracking the selected unit |
-| `special_orders` | one-shot flag | the special-orders modifier is held |
-| `end_set_target` | one-shot flag | the set-target action ended |
+| `moveTarget` | one-shot flag | the player set a move target for the selected unit (not while secondary fire is held, and never with a gamepad while a Strike team is selected) |
+| `directMove` | flag | a direct movement vector is present |
+| `primaryFire` | one-shot flag | primary fire at the pointer target (not while the camera looks around) |
+| `secondaryFire` | one-shot flag | secondary fire at the pointer target |
+| `targetDirected` | one-shot flag | a directed target vector is present |
+| `secondaryFireDirected` | one-shot flag | directed secondary fire |
+| `cameraTracking` | flag | the sender's camera is tracking the selected unit |
+| `specialOrders` | one-shot flag | the special-orders action `action.order.special` fired; it is set when the action goes down, never held as a modifier ([../06_controls_camera_and_commands/actions_and_bindings.md](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-051, R-CTRL-101) |
+| `endSetTarget` | one-shot flag | the set-target action ended |
 | `gamepad` | flag | the sender's input mode is the gamepad |
-| `primary_held` | flag | the primary pointer button is held |
-| `pointer_position` | position | the world position under the pointer (the terrain hit), which the input layer may snap |
-| `direct_move_vector` | world-space (x, z) | the movement-stick vector; present with `direct_move` |
-| `direct_target_vector` | world-space (x, z) | the aiming-stick vector; present with `target_directed` or `secondary_fire_directed` |
+| `primaryHeld` | flag | the primary pointer button is held |
+| `pointerPosition` | position | the world position under the pointer (the terrain hit), which the input layer may snap |
+| `directMoveVector` | world-space (x, z) | the movement-stick vector; present with `directMove` |
+| `directTargetVector` | world-space (x, z) | the aiming-stick vector; present with `targetDirected` or `secondaryFireDirected` |
 
-**R-SIM-440** (MUST) The sender converts every camera-relative quantity to world space before it enters the team command state, and the simulation never reads a participant's camera, devices, user-interface state or preferences (DEC-008). The movement vector is right × (−stick x) + front × (−stick y), with right the camera's control vector and front = up × (−right), stored as its (x, z) components; the aiming vector is converted the same way, and it also steers the sender's own camera target, which is presentation. The `camera_tracking` flag is part of the state the sender sends, so the Strike team's direct-control rule reads the sender's flag and never the local camera ([../02_units/strike_team.md](../02_units/strike_team.md)).
+**R-SIM-440** (MUST) The sender converts every camera-relative quantity to world space before it enters the team command state, and the simulation never reads a participant's camera, devices, user-interface state or preferences (DEC-008). The movement vector is right × (−stick x) + front × (−stick y), with right the camera's control vector ([../06_controls_camera_and_commands/camera.md](../06_controls_camera_and_commands/camera.md) R-CTRL-451, R-CTRL-487) and front = up × (−right), stored as its (x, z) components; the aiming vector is converted the same way, and it also steers the sender's own camera target, which is presentation. The `cameraTracking` flag is part of the state the sender sends, so the Strike team's direct-control rule reads the sender's flag and never the local camera ([../02_units/strike_team.md](../02_units/strike_team.md)).
 
 **R-SIM-441** (MUST) On the sender, the one-shot flags accumulate (logical OR) over every frame between two sends and are cleared after each send. While a window, the Power slots panel or the chat log is open, the sender clears every flag before sending.
 
@@ -279,9 +280,9 @@ The group offset of a member is its formation offset; it takes no account of obs
 **R-SIM-444** (MUST) Commands execute in one batch per tick. Within the batch:
 
 1. every discrete command, in the order in which the sequencer received it, except the latest-only kinds;
-2. then, for each participant in participant order (the order in which the participants joined the session), its latest `ControlState`, then its latest `Select`, then its latest `SetColour`, each only if one arrived in that tick.
+2. then, for each participant in participant order (the order in which the participants joined the session), its latest `ControlState`, then its latest `Select`, then its latest `SetColor`, each only if one arrived in that tick.
 
-A participant's earlier `ControlState`, `Select` or `SetColour` of the same tick is discarded without merging. Because `Select` and `SetColour` set state, dropping an earlier one changes only intermediate effects; the last one decides the result.
+A participant's earlier `ControlState`, `Select` or `SetColor` of the same tick is discarded without merging. Because `Select` and `SetColor` set state, dropping an earlier one changes only intermediate effects; the last one decides the result.
 
 **R-SIM-445** (MUST) Every tick has exactly one batch, which may be empty, and every participant executes the batches strictly in tick order, before the tick's update slices ([01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md)).
 
@@ -300,7 +301,7 @@ A participant's earlier `ControlState`, `Select` or `SetColour` of the same tick
 | Command | Parameters | Effect when executed | Coalescing | Issued by |
 |---|---|---|---|---|
 | `PlayerCommand::ControlState` | team, team command state | applies the state to the team (R-SIM-442) | latest per participant per tick | the participant's input layer, every tick |
-| `PlayerCommand::Select` | team; actor group, actor and structure handles, each possibly none | selects them on the team (R-SIM-405); then, even while the team's selection is blocked, the team's Power slots select the Power bound to the named group or actor, if there is one | latest per participant per tick | selecting a unit, a structure or nothing in the world |
+| `PlayerCommand::Select` | team; actor group, actor and structure handles, each possibly none | selects them on the team (R-SIM-405); then, even while the team's selection is blocked, the team's Power slots select the Power bound to the named group or actor, if there is one; when no Power tracks the named group or actor, the team's current Power becomes none ([../06_controls_camera_and_commands/selection_and_power_slots.md](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-202) | latest per participant per tick | selecting a unit, a structure or nothing in the world |
 | `PlayerCommand::AimBeamDish` | team, structure, position | if the structure exists, belongs to the team and is a Beam Dish, aims it at the position ([../03_buildings_and_world_objects/README.md](../03_buildings_and_world_objects/README.md)) | — | aiming a selected Beam Dish |
 | `PlayerCommand::ToggleBarrierEmitter` | structure | if the structure is a Barrier Emitter, switches it on or off ([../03_buildings_and_world_objects/defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md)); the command carries no team | — | toggling a Barrier Emitter |
 | `PlayerCommand::TargetPower` | team, Power id, position | targets that Power at the position: the target-area test, then the Power's effect (R-SIM-457) | — | placing or firing the current Power |
@@ -323,8 +324,9 @@ A participant's earlier `ControlState`, `Select` or `SetColour` of the same tick
 |---|---|---|---|---|
 | `PlayerCommand::StartMatch` | none | starts loading the selected map as a match, resets the tick clock and leaves the lobby; command execution pauses until the map has loaded (R-SIM-460) | only the first per session (R-SIM-446) | the host's start action and quick start |
 | `PlayerCommand::SetTeamName` | team, name | sets the lobby slot's name; if the name was empty and the participants are at the main menu, adds the chat line `ui.lobby.player_joined` | — | the lobby, repeated while the name differs from the confirmed one (DEC-243 item 9) |
-| `PlayerCommand::SetColour` | team, colour id | if the colour id is below `ref.sim.team.player_colour_count` (8), sets the team's colour | latest per participant per tick | the lobby, repeated while the colour differs from the confirmed one; not in co-op or Siege, except at the main menu (DEC-243 item 9) |
+| `PlayerCommand::SetColor` | team, colour id | if the colour id is below `ref.sim.team.player_colour_count` (8), sets the team's colour | latest per participant per tick | the lobby, repeated while the colour differs from the confirmed one; not in co-op or Siege, except at the main menu (DEC-243 item 9) |
 | `PlayerCommand::SetAchievementMask` | team, mask | sets the lobby slot's achievement mask | — | periodically, once the participant holds a team (DEC-243 item 9) |
+| `PlayerCommand::SetSlotOpen` | team slot, open flag | before the match starts, opens or closes the slot under the rules of R-SIM-461 | — | the host's open-and-close control beside a slot row ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-090); a match-setup change under DEC-243 |
 | `PlayerCommand::ReportScores` | the scores of the six slots, the winning team | none: every participant ignores it | — | the end of a match |
 | `PlayerCommand::SetMatchOption` | version, option, integer value | sets one integer option of the match setup under the version rule (DEC-243 item 5) | — | the lobby controls |
 | `PlayerCommand::SetMatchOptionElement` | version, option, index, integer value | sets one element of an option array, the mode parameters or the research levels | — | the lobby controls |
@@ -345,7 +347,7 @@ Because no input issues `NextMode` or `PreviousMode`, weapon cycling is not avai
 
 **R-SIM-454** (MUST) Executing a command, or advancing the simulation, never issues a further player command (DEC-119). A rule that needs a follow-up change applies it inside the same simulation step: a Leader toggle selects the Leader directly, so one `ToggleUnit` yields one command and one selection change on every participant.
 
-**R-SIM-455** (MUST) A crowd order (`OrderWorkers`) executes against the Workers that the team controls at the tick of execution: a route from the mean position of those Workers to the target position is built on the land route graph with the command's straight-route flag ([05_space_routing_and_physics.md](05_space_routing_and_physics.md)), and the Workers receive the order ([../02_units/worker.md](../02_units/worker.md)). If no Worker remains under control, because they all died or the group was released after the order was given, the order does nothing: no route is created and no Worker receives an order (DEC-555).
+**R-SIM-455** (MUST) A crowd order (`OrderWorkers`) executes against the Workers that the team controls at the tick of execution: a route from the mean position of those Workers to the target position is built on the land route graph with the command's straight-route flag ([05_space_routing_and_physics.md](05_space_routing_and_physics.md)), and the Workers receive the order ([../02_units/worker.md](../02_units/worker.md)). As the last part of its step the order sets the team's selection to none, which releases the group ([../06_controls_camera_and_commands/selection_and_power_slots.md](../06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-160 step 5). If no Worker remains under control, because they all died or the group was released after the order was given, the order does nothing: no route is created and no Worker receives an order (DEC-555).
 
 **R-SIM-456** (MUST) Promoting, demoting and scrapping are three separate commands (DEC-086). `PromoteWorker` turns a Worker into a Leader and selects it; `DemoteLeader` turns a Leader back into a Worker and clears the team's selection; `ScrapActor` damages one of the team's own ungrouped actors by 999. The input layer decides which action issues which command; the cancel action never scraps a Leader ([../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md)).
 
@@ -356,6 +358,19 @@ Because no input issues `NextMode` or `PreviousMode`, weapon cycling is not avai
 **R-SIM-459** (MUST) `ToggleReady` toggles the lobby slot's ready flag while the participants are at the main menu, and the team's in-match ready flag during a match, which drives the ready-up barrier ([../01_skirmish_rules_and_modes/README.md](../01_skirmish_rules_and_modes/README.md), DEC-036).
 
 **R-SIM-460** (MUST) `StartMatch` sets every participant to load the map that the match setup names, as a match, and resets the tick clock ([01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md)); no further command executes until the map has loaded ([02_match_lifecycle_and_state_reset.md](02_match_lifecycle_and_state_reset.md)).
+
+**R-SIM-461** (MUST) **Open and closed slots.** Every lobby slot is open by default (DEC-079). Before the match starts, executing `SetSlotOpen` sets the open flag of a slot that holds no human; a command that would close a slot that a human holds, or leave fewer than `ref.map.players.min` (2) open slots, does nothing, and after `StartMatch` the command does nothing ([../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-090; see DEC-867). A closed slot stays `TeamKind::Unused` for the whole match: match start fills no bot into it (R-SIM-433), it is never offered to a joining player, and the session is full once every open slot is held (R-SIM-437). A closed slot below the map's player count still receives a start position, so the structures at its position belong to that unused team (DEC-867 item 2). The per-team population cap counts the open slots ([../01_skirmish_rules_and_modes/README.md](../01_skirmish_rules_and_modes/README.md) R-MODE-087).
+
+**R-SIM-462** (MUST) **Tutorial events.** Every world-changing effect of a tutorial is a sequenced tutorial event, never a player command and never an action of the frame loop or of a real-clock timer (DEC-103; [../11_tutorial_and_help.md](../11_tutorial_and_help.md) R-TUT-062). The tutorial director of the tutorial player's participant issues the events (R-TUT-061); each enters the command batch of a tick as a discrete command, in arrival order (R-SIM-444 step 1), and every participant executes it at that tick. Executing an event a second time changes nothing more. The events are:
+
+| Event | Parameters | Effect when executed |
+|---|---|---|
+| insert the tutorial Supply crate | position, forced outcome | creates one Supply crate of no team at the position, as a new structure of the structure pool, with the forced outcome, so it draws no outcome (R-TUT-098, R-TUT-116) |
+| limit the Beam Dish receivers | Beam Dish, receiver dish | reduces the valid receivers of the Beam Dish to the one receiver dish (R-TUT-114) |
+| allow bot actions | none | sets the bots-may-act gate (R-TUT-115) |
+| end step | none | switches basic crates only on, sets crate placement to random, sets the bot difficulty to Standard and sets the bots-may-spawn gate (R-TUT-117) |
+
+The two gates are match state with their reset point at match-world creation ([02_match_lifecycle_and_state_reset.md](02_match_lifecycle_and_state_reset.md) R-SIM-032).
 
 ## 3 States and flows
 
@@ -412,10 +427,10 @@ sequenceDiagram
     participant W as Simulation on every participant
     P->>S: discrete commands, at any time
     P->>S: ControlState, once per tick
-    P->>S: Select and SetColour, at any time
-    Note over S: keeps only the latest ControlState, Select and SetColour of each participant
+    P->>S: Select and SetColor, at any time
+    Note over S: keeps only the latest ControlState, Select and SetColor of each participant
     S->>W: one batch per tick, discrete commands in arrival order
-    S->>W: then for each participant in join order its ControlState, Select and SetColour
+    S->>W: then for each participant in join order its ControlState, Select and SetColor
     W->>W: execute the batch, then run the tick's update slices
 ```
 
@@ -451,25 +466,25 @@ flowchart TD
 
 ## 4 Tuning table
 
-The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update_slices` are defined in [01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md).
+The tick period `ref.sim.tick_period` and the update slice count `ref.sim.update_slices` are defined in [01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md); the minimum number of open slots `ref.map.players.min` is defined in [../08_maps_and_level_design/rules_and_conventions.md](../08_maps_and_level_design/rules_and_conventions.md).
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.sim.max_teams` | 6 | team slots | `kMaxTeams`; also the number of actor-grid layers | R-SIM-392 | DEC-200 |
+| `ref.sim.max_teams` | 6 | team slots | the constant `MAX_TEAMS`; also the number of actor-grid layers | R-SIM-392 | DEC-200 |
 | `ref.sim.team.player_slots` | 4 | slots | team ids 0 to 3 | R-SIM-393 | — |
 | `ref.sim.team.rogue_slot` | 4 | team id | | R-SIM-393 | DEC-082 |
 | `ref.sim.team.visitor_slot` | 5 | team id | | R-SIM-393 | DEC-082 |
 | `ref.sim.team.rogue_colour_id` | 8 | colour id | | R-SIM-393, R-SIM-415 | — |
 | `ref.sim.team.visitor_colour_id` | 9 | colour id | | R-SIM-393, R-SIM-415 | — |
-| `ref.sim.team.player_colour_count` | 8 | colours | colour ids 0 to 7 | R-SIM-415, R-SIM-416, R-SIM-420, R-SIM-451 | — |
+| `ref.sim.team.player_colour_count` | 8 | colours | colour ids 0 to 7 | R-SIM-415, R-SIM-416, R-SIM-420, R-SIM-422, R-SIM-451 | — |
 | `ref.sim.team.bot_colour_count` | 4 | colours | colour ids 0 to 3, for bot teams, solo co-op teams and unused slots | R-SIM-416, R-SIM-420, R-SIM-422 | DEC-450 |
 | `ref.sim.team.siege_defender_colour_id` | 0 | colour id | green | R-SIM-419 | — |
 | `ref.sim.team.siege_attacker_colour_id` | 1 | colour id | red | R-SIM-419 | — |
-| `ref.sim.team.coop_colour_divisor` | 2 | — | random free colour (draw mod 8) div 2, in a fallback step that never applies | R-SIM-420 | DEC-451 |
+| `ref.sim.team.coop_colour_divisor` | 2 | — | random free colour (draw mod 8) div 2: the unused-slot colours, and a co-op fallback step that never applies | R-SIM-420, R-SIM-422 | DEC-450, DEC-451 |
 | `ref.sim.team.formation_size_upgrade` | 90 | members | initial Leader formation cap of every team | R-SIM-399 | DEC-031 |
 | `ref.sim.team.rocket_upgrade` | 0 | level | initial Rocket Troops upgrade | R-SIM-399 | — |
 | `ref.sim.team.turret_select_delay` | 6 | ticks | nominal 0.5 s | R-SIM-405 | DEC-002 |
-| `ref.sim.team.eliminate_damage_factor` | 2 | × health stat | | R-SIM-407 | — |
+| `ref.sim.team.eliminate_damage_factor` | 2 | × current health | | R-SIM-407 | — |
 | `ref.sim.team_colour.green.base` | 100, 255, 100 | RGB | colour id 0 | R-SIM-415 | — |
 | `ref.sim.team_colour.green.shade_1` | 0, 150, 20 | RGB | | R-SIM-415, R-SIM-421 | — |
 | `ref.sim.team_colour.green.shade_2` | 90, 200, 100 | RGB | | R-SIM-415, R-SIM-421 | — |
@@ -598,7 +613,7 @@ String ids that this document uses, with their new text:
 
 **AC-SIM-06-13 — Departure** (R-SIM-436). Given a human leaves at tick T of a match, then on every participant the team has kind `TeamKind::Bot` and a bot controller from tick T on; given a human leaves in the lobby, then the slot becomes `TeamKind::Unused`.
 
-**AC-SIM-06-14 — Elimination** (R-SIM-407). Eliminating a team gives every one of its actors a health change of −2 × its health stat, stops all of its Powers and sets each of its Transit Gates to the no-team value.
+**AC-SIM-06-14 — Elimination** (R-SIM-407). Eliminating a team gives every one of its actors a health change of −2 × its current health, stops all of its Powers and sets each of its Transit Gates to the no-team value.
 
 **AC-SIM-06-15 — Selection effects** (R-SIM-405). Selecting a turret sets its fire timer to 6 ticks; selecting a Leader clears the team's current Power; with the block flag set, a `Select` changes none of the team's selection fields.
 
@@ -608,9 +623,15 @@ String ids that this document uses, with their new text:
 
 **AC-SIM-06-18 — No simulation-issued commands** (R-SIM-454, R-SIM-435). In a bot-only soak match, the command batches contain no command that any participant's input layer did not send.
 
+**AC-SIM-06-19 — Closed slots** (R-SIM-433, R-SIM-437, R-SIM-461). On a four-player map with one human, the host closes slot 3 and starts the match: slots 1 and 2 hold bot teams, slot 3 stays `TeamKind::Unused`, and a `SetSlotOpen` that would close the human's slot, or leave one open slot, does nothing.
+
+**AC-SIM-06-20 — Tutorial events** (R-SIM-462). In the second tutorial, the end step issued by the director executes at the tick of its batch on every participant and sets the bots-may-spawn gate; the same event executed again changes nothing.
+
+**AC-SIM-06-21 — Bot placement** (R-SIM-434). A bot controller of a player slot stands at its team's start position and that of the Rogue faction at the map centre, and no simulation draw is made for either placement.
+
 ## 7 Dependencies
 
-- **Reference documents:** [README.md](README.md), [01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md) (tick, slices, pause ramp, tick clock), [02_match_lifecycle_and_state_reset.md](02_match_lifecycle_and_state_reset.md) (match start and per-match reset), [03_entity_model_and_identity.md](03_entity_model_and_identity.md) (handles), [04_containers_and_update_order.md](04_containers_and_update_order.md) (team initialisation, containers, slices), [05_space_routing_and_physics.md](05_space_routing_and_physics.md) (grids, routes, spawn search), [07_randomness_and_integrity.md](07_randomness_and_integrity.md) (simulation generator, integrity rules); [../01_skirmish_rules_and_modes/README.md](../01_skirmish_rules_and_modes/README.md), [../01_skirmish_rules_and_modes/siege.md](../01_skirmish_rules_and_modes/siege.md); [../02_units/worker.md](../02_units/worker.md), [../02_units/leader_and_formations.md](../02_units/leader_and_formations.md), [../02_units/strike_team.md](../02_units/strike_team.md), [../02_units/transport.md](../02_units/transport.md), [../02_units/collector.md](../02_units/collector.md); [../03_buildings_and_world_objects/README.md](../03_buildings_and_world_objects/README.md), [../03_buildings_and_world_objects/defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md); [../04_supply_crates_powers_and_weapons/crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md), [../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); [../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md) (the input actions that issue each command); [../07_bots/README.md](../07_bots/README.md); [../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby and match setup), [../09_front_end_and_match_flow/options_localisation_and_hooks.md](../09_front_end_and_match_flow/options_localisation_and_hooks.md) (achievement hooks).
+- **Reference documents:** [README.md](README.md), [01_tick_timing_and_main_loop.md](01_tick_timing_and_main_loop.md) (tick, slices, pause ramp, tick clock), [02_match_lifecycle_and_state_reset.md](02_match_lifecycle_and_state_reset.md) (match start and per-match reset), [03_entity_model_and_identity.md](03_entity_model_and_identity.md) (handles), [04_containers_and_update_order.md](04_containers_and_update_order.md) (team initialisation, containers, slices), [05_space_routing_and_physics.md](05_space_routing_and_physics.md) (grids, routes, spawn search), [07_randomness_and_integrity.md](07_randomness_and_integrity.md) (simulation generator, integrity rules); [../01_skirmish_rules_and_modes/README.md](../01_skirmish_rules_and_modes/README.md), [../01_skirmish_rules_and_modes/siege.md](../01_skirmish_rules_and_modes/siege.md); [../02_units/worker.md](../02_units/worker.md), [../02_units/leader_and_formations.md](../02_units/leader_and_formations.md), [../02_units/strike_team.md](../02_units/strike_team.md), [../02_units/transport.md](../02_units/transport.md), [../02_units/collector.md](../02_units/collector.md); [../03_buildings_and_world_objects/README.md](../03_buildings_and_world_objects/README.md), [../03_buildings_and_world_objects/defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md); [../04_supply_crates_powers_and_weapons/crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md), [../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md); [../06_controls_camera_and_commands/README.md](../06_controls_camera_and_commands/README.md) (the input actions that issue each command); [../06_controls_camera_and_commands/selection_and_power_slots.md](../06_controls_camera_and_commands/selection_and_power_slots.md), [../06_controls_camera_and_commands/actions_and_bindings.md](../06_controls_camera_and_commands/actions_and_bindings.md) and [../06_controls_camera_and_commands/camera.md](../06_controls_camera_and_commands/camera.md) (Select, the crowd order, the special-orders action and the control vector); [../07_bots/README.md](../07_bots/README.md) (bot placement and bot actions); [../08_maps_and_level_design/rules_and_conventions.md](../08_maps_and_level_design/rules_and_conventions.md) (`ref.map.players.min`); [../09_front_end_and_match_flow/screen_flow_and_match_setup.md](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby and match setup, the slot control), [../11_tutorial_and_help.md](../11_tutorial_and_help.md) (the tutorial director and its events), [../09_front_end_and_match_flow/options_localisation_and_hooks.md](../09_front_end_and_match_flow/options_localisation_and_hooks.md) (achievement hooks).
 - **Engine components:** [../../architecture/components/input.md](../../architecture/components/input.md) (sampling of the team command state), [../../architecture/components/ui_framework/pages_and_screen_recipes.md](../../architecture/components/ui_framework/pages_and_screen_recipes.md) (power bar and lobby pages).
 - **Assets:** none.
 
@@ -618,14 +639,18 @@ String ids that this document uses, with their new text:
 
 | DEC | Topic | Default specified in §2 |
 |---|---|---|
+| DEC-121 | Ownership of Brood creatures | the placing team (R-SIM-408) |
+| DEC-122 | Bot and deputy actions outside the player command catalogue | bot-only operations with an existence-and-team check (R-SIM-435) |
 | DEC-200 | Replication and authority model | every participant runs the simulation and executes the same batches (R-SIM-435, R-SIM-448) |
 | DEC-202 | Command validation and authority | no sender or phase check; each handler decides at execution (R-SIM-447, R-SIM-449, R-SIM-452, R-SIM-453) |
 | DEC-203 | Input timing, coalescing and latency | latest control state per participant per tick (R-SIM-443) |
 | DEC-243 | Lobby authority and the match-setup state | lobby changes as ordered commands with per-option versions (R-SIM-447, R-SIM-451) |
 | DEC-244 | Session join, admission, reconnection and spectators | a departed player's team stays a reserved bot team; bot requests capped by the player count (R-SIM-436, R-SIM-437) |
+| DEC-263 | Route and actor-group edge cases | a group attack with no candidate makes no draw (R-SIM-428) |
 | DEC-311 | Bot controller as a target | only the nearest-enemy query skips it (§5 item 23) |
 | DEC-450 | Start positions and the colours of bot and unused slots | positions drawn on first need in slot order; unused slots may share colours (R-SIM-416, R-SIM-417, R-SIM-422) |
 | DEC-451 | Co-op friendship of slots outside the two alliances | group-0 teams are friends of each other (R-SIM-413, R-SIM-420) |
 | DEC-558 | Bot controller of the Rogue and Visitor factions | the full bot controller (R-SIM-394, R-SIM-434) |
+| DEC-867 | Closed player slots | open by default; a human's slot cannot be closed; at least two slots stay open (R-SIM-461) |
 
-Resolved decisions applied in §2: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-011, DEC-014, DEC-023, DEC-028, DEC-031, DEC-032, DEC-035, DEC-036, DEC-038, DEC-082, DEC-083, DEC-086, DEC-087, DEC-117, DEC-118, DEC-119, DEC-464, DEC-555, DEC-652, DEC-653.
+Resolved decisions applied in §2: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-011, DEC-014, DEC-023, DEC-028, DEC-031, DEC-032, DEC-035, DEC-036, DEC-038, DEC-082, DEC-083, DEC-086, DEC-087, DEC-079, DEC-103, DEC-117, DEC-118, DEC-119, DEC-262, DEC-464, DEC-555, DEC-652, DEC-653.

@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Every Species asset is newly authored (vision brief §5) and turned into runtime form by a content build: data records, maps, meshes, textures, audio, string tables, fonts and shaders are cooked and written into pack files ([ADR-058](ADR-058-pack-files-and-mount-policy.md)). Each product edition ships a defined subset. Errors in content (a missing reference, a schema error, an untranslated string, a map that breaks its mode's rules) must be found at build time with a precise location, never at run time. The cooked output must be reproducible, because its hashes are the content identity ([ADR-060](ADR-060-content-identity-by-hash.md)).
+Every Species asset is newly authored (vision brief §5) and turned into runtime form by a content build: data records, maps, meshes, textures, audio, string tables and fonts are cooked and written into pack files ([ADR-058](ADR-058-pack-files-and-mount-policy.md)). Shaders are not content: the solution build compiles them into the executable ([ADR-003](ADR-003-shader-language-compiler-and-material-shaders.md)). Each product edition ships a defined subset. Errors in content (a missing reference, a schema error, an untranslated string, a map that breaks its mode's rules) must be found at build time with a precise location, never at run time. The cooked output must be reproducible, because its hashes are the content identity ([ADR-060](ADR-060-content-identity-by-hash.md)).
 
 How is Species content built, validated and selected per edition?
 
@@ -28,11 +28,11 @@ How is Species content built, validated and selected per edition?
 
 ## Decision Outcome
 
-Chosen option: "A Species content build tool in C++23, sharing schema code with the engine". It is a command-line program built from the same CMake project (`tools` product, [ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)) and run by developers and CI.
+Chosen option: "A Species content build tool in C++23, sharing schema code with the engine". It is a command-line program, a project of the solution in `Tools/` (the content build tool, [ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)), run by developers and by CI once its job is added ([ADR-070](ADR-070-continuous-integration.md)). As a development tool it never ships and never links into the executable, so it may use pinned dependencies of its own (`AGENTS.md` R14, [ADR-055](ADR-055-dependencies-vcpkg-manifest-mode.md)); the schema code it shares with the engine is Species code, so the shared part uses none.
 
 ```mermaid
 flowchart LR
-  SRC["content/ sources: data records, maps, glTF meshes, textures, audio, string tables, fonts, shaders"] --> VAL["validate against schemas and references"]
+  SRC["content/ sources: data records, maps, glTF meshes, textures, audio, string tables, fonts"] --> VAL["validate against schemas and references"]
   VAL --> COOK["cook per asset type"]
   MAN["edition manifests"] --> SEL["select entries per edition"]
   COOK --> SEL
@@ -57,7 +57,7 @@ flowchart LR
   * texture, mesh and audio import settings (rules in the asset-pipeline ADRs).
 * **Generated outputs:** map thumbnails rendered by the engine from a top-down view; the map index and other indexes the front end needs; the content manifest.
 * **Reproducibility:** entries are written in sorted key order, with no timestamps or host paths in any output.
-* **Enforcement:** CI runs the content build on every change; a validation error fails the change.
+* **Enforcement:** CI runs the content build on every change once its guarded job is added ([ADR-070](ADR-070-continuous-integration.md)); a validation error fails the change.
 
 ### Consequences
 
@@ -94,3 +94,4 @@ flowchart LR
 
 * Related: [ADR-062](ADR-062-authoring-syntax-and-schema-language.md) (authoring syntax), [ADR-070](ADR-070-continuous-integration.md) (CI jobs).
 * Components: asset pipeline and resources (`AST`), build tooling and distribution (`BLD`), data schemas (`DAT`).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** The content build tool is a project of the solution under `Tools/`, a development tool outside the allow-list rule of `AGENTS.md` R14; shaders are no longer content, because the solution build compiles them into the executable; the CI job for the content build is added by amendment of ADR-070.

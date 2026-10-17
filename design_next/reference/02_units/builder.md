@@ -59,7 +59,7 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-456** (MUST) **ToEssenceOrb.** The Builder's target is its chosen orb's position. If the orb no longer exists, is in Ascent or is already Attached, the Builder becomes ToWaypoint. On arrival within 5 wu, it attaches the orb ([essence_orbs.md](essence_orbs.md) R-UNIT-313), which raises the orb's collected sound, adds it to the end of its train and becomes Idle.
 
-**R-UNIT-457** (MUST) **ToSpawnNode.** The Builder's target is its delivery point. On arrival within 5 wu, each tick it removes one carried orb, the first in its train, and the Spawn Node spawns one Worker of its current owner at its door ([population flow](../05_population_flow.md) R-ECON-043), raising the Builder's drop event (unbound, DEC-565). As for the Collector, this spawn checks neither the population cap nor the Spawn Node's activation delay, and a node that has no team spawns nothing (DEC-453). When it has delivered its last orb, the Builder becomes ToWaypoint; if its Spawn Node no longer exists, it becomes Idle (see DEC-085).
+**R-UNIT-457** (MUST) **ToSpawnNode.** The Builder's target is its delivery point. On arrival within 5 wu, each tick it removes one carried orb, the first in its train, and the Spawn Node spawns one Worker of its current owner at its door ([population flow](../05_population_flow.md) R-ECON-043), raising the Builder's drop event (silent, DEC-565). Unlike a Collector delivery ([collector.md](collector.md) R-UNIT-425, DEC-080), this spawn checks neither the population cap nor the Spawn Node's activation delay, and a node that has no team spawns nothing (DEC-085, DEC-453). When it has delivered its last orb, the Builder becomes ToWaypoint; if its Spawn Node no longer exists, it becomes Idle (see DEC-085).
 
 **R-UNIT-458** (MUST) **Orb train.** A Builder records its position every tick in a position history of capacity + 1 entries. Its carried orb i (counting from 0) is placed each tick at the history entry i + 1, the Builder's position i + 1 ticks ago, so the orbs follow it one tick apart in a train. Attached orbs have no timer, so a Builder's orbs never expire while it carries them ([essence_orbs.md](essence_orbs.md) R-UNIT-313).
 
@@ -77,25 +77,25 @@ Actor stats are floating-point values (DEC-090).
 
 **R-UNIT-462** (MUST) A Builder targets nothing but Essence orbs. Workers never choose a Builder as a threat ([worker.md](worker.md)).
 
-**R-UNIT-463** (MUST) A player controls a Builder only by selecting it (`PlayerCommand::Select`) and giving it a move order: a team command state with `move_target` while the Builder is the team's selected actor ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-442) sets its waypoint to `pointer_position`, makes it ToWaypoint and clears the team's selection inside the same step. Secondary fire with a Builder selected has no effect. Cancelling its Power is R-UNIT-449.
+**R-UNIT-463** (MUST) A player controls a Builder only by selecting it (`PlayerCommand::Select`) and giving it a move order: a team command state with `moveTarget` while the Builder is the team's selected actor ([teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-442) sets its waypoint to `pointerPosition`, makes it ToWaypoint and clears the team's selection inside the same step, so the Builder takes one move order per selection ([actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-104, R-CTRL-106). Secondary fire with a Builder selected has no effect. Cancelling its Power is R-UNIT-449.
 
-**R-UNIT-464** (MUST) A bot team's Builder thinks every `ref.unit.builder.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state ([bots](../07_bots/README.md)).
+**R-UNIT-464** (MUST) A bot team's Builder thinks every `ref.unit.builder.bot_think_ticks` (11 ticks): when it is Idle, its waypoint becomes the position of the nearest Essence orb anywhere on the map, in any state, a bot-only operation with no player command ([bots](../07_bots/README.md) R-BOT-015; see DEC-122).
 
 ### 2.8 Presentation and sound
 
-**R-UNIT-465** (MUST) A Builder's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.builder.tint_scale` (0.7) (ADR-020). Its render path reads the presentation clock only ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
+**R-UNIT-465** (MUST) A Builder's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.builder.tint_scale` (0.7) (ADR-020). It casts the base blob shadow ([Units](README.md) R-UNIT-050) of half-size `rnd.shadow.blob.builder_size` (10 wu) ([renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) RND-324). Its render path reads the presentation clock only ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
 
 **R-UNIT-466** (MUST) A Builder shows its activity with these string ids: `unit.builder.action.idle` (new text "Idle") while Idle; `unit.builder.action.to_waypoint` (new text "Moving to waypoint") while ToWaypoint; `unit.builder.action.to_essence_orb` (new text "Fetching an Essence orb") while ToEssenceOrb; `unit.builder.action.delivering` (new text "Delivering Essence orbs") while ToSpawnNode.
 
-**R-UNIT-467** (MUST) A Builder raises these sound events (reference/10):
+**R-UNIT-467** (MUST) A Builder raises these sound events ([event catalogue](../10_audio_design/event_catalogue.md) table 2.2-F and R-AUD-141):
 
 | Event | When | Binding |
 |---|---|---|
-| presence | while the Builder exists | `sfx.unit.builder.presence_loop` |
-| hurt | a health loss that does not kill | `sfx.unit.builder.hurt` |
-| die | death (R-UNIT-461) | `sfx.unit.builder.die` |
-| drop | each orb delivered (R-UNIT-457) | unbound (DEC-565) |
-| selected | the Builder is selected | unbound (DEC-565) |
+| `builder.spawn` | while the Builder exists | `sfx.unit.builder.presence_loop`, looped |
+| `builder.hurt` | a health loss that does not kill | `sfx.unit.builder.hurt` |
+| `builder.die` | death (R-UNIT-461) | `sfx.unit.builder.die` |
+| `builder.drop_essence` | each orb delivered (R-UNIT-457) | silent (DEC-565) |
+| `builder.selected` | the Builder is selected | silent (DEC-565) |
 
 The attached orb raises its own collected sound ([essence_orbs.md](essence_orbs.md) R-UNIT-333).
 
@@ -133,8 +133,6 @@ flowchart LR
 |---|---|---|---|---|---|
 | `ref.unit.builder.spawn_height` | 10 | wu | above the targeted position | R-UNIT-448 | — |
 | `ref.unit.builder.stop_damage` | 1000 | health | when the Power stops | R-UNIT-449 | — |
-| `ref.unit.builder.health` | 255 | health | | R-UNIT-450 | DEC-090 |
-| `ref.unit.builder.speed` | 28 | wu/s | | R-UNIT-450, R-UNIT-460 | DEC-090 |
 | `ref.unit.builder.idle_speed_factor` | 0.25 | × speed | while Idle | R-UNIT-450, R-UNIT-460 | — |
 | `ref.unit.builder.retarget_ticks` | 11 | ticks | nominal 1.0 s | R-UNIT-450, R-UNIT-454 | DEC-002 |
 | `ref.unit.builder.hover_height` | 15 | wu | above max(terrain, sea level) | R-UNIT-450, R-UNIT-460 | — |
@@ -151,6 +149,8 @@ Keys cited from other documents (their values are defined there):
 
 | Owning document | Keys | Used by |
 |---|---|---|
+| [Units](README.md) §4.1 (the actor stat table) | `ref.unit.builder.health`, `ref.unit.builder.speed` | R-UNIT-450, R-UNIT-460 |
+| [renderer](../../architecture/components/renderer/entity_and_overlay_renderers.md) | `rnd.shadow.blob.builder_size` | R-UNIT-465 |
 | [population flow](../05_population_flow.md) | `ref.econ.builder.capacity`, `ref.econ.builder.search_range_wu` | R-UNIT-450, R-UNIT-454 |
 | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.init.power_level_default` | R-UNIT-450 |
 | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-460 |
@@ -163,7 +163,7 @@ Keys cited from other documents (their values are defined there):
 3. **Enemy orbs.** A Builder's orbs become Workers of the Spawn Node's owner, whatever team they came from (R-UNIT-457, DEC-080).
 4. **Exactly zero health.** A hit that brings a Builder to exactly 0 health leaves it alive; the next hit of any non-laser damage kills it (R-UNIT-461).
 5. **Over water.** A Builder flies over the sea at 15 wu above sea level and cannot drown (R-UNIT-460).
-6. **Cap bypass.** Builder deliveries, like Collector deliveries, are not checked against the population cap (R-UNIT-457, DEC-453).
+6. **Cap bypass.** Builder deliveries, unlike Collector deliveries, are not checked against the population cap or the Spawn Node's activation delay (R-UNIT-457, DEC-085, DEC-453).
 7. **Secondary fire.** A player's secondary fire with a Builder selected changes nothing (R-UNIT-463).
 
 ## 6 Acceptance criteria
@@ -184,7 +184,7 @@ Keys cited from other documents (their values are defined there):
 
 ## 7 Dependencies
 
-- **Reference documents:** [Units](README.md) (base advance); [essence_orbs.md](essence_orbs.md); [collector.md](collector.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.19 (Builder as an orb taker); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Builder outcome, its validity, Power stop); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (structure push of the delivery point); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
+- **Reference documents:** [Units](README.md) (base advance, blob shadow, actor stat table); [essence_orbs.md](essence_orbs.md); [collector.md](collector.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.19 (Builder as an orb taker); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Builder outcome, its validity, Power stop); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (structure push of the delivery point); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); [actions and bindings](../06_controls_camera_and_commands/actions_and_bindings.md) (move order and deselection); [event catalogue](../10_audio_design/event_catalogue.md) (audio events).
 - **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (debris, muzzle flash); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (status text).
 - **Assets:** `mesh.unit.builder_body`; `icon.power.builder` (the Builder Power; also drawn over the Builder); `sfx.unit.builder.presence_loop`, `sfx.unit.builder.hurt`, `sfx.unit.builder.die`.
 
@@ -192,7 +192,8 @@ Keys cited from other documents (their values are defined there):
 
 | DEC | Title | Default specified in §2 |
 |---|---|---|
-| DEC-085 | Builder Essence-orb collection without a destination | in a match the Builder delivers its orbs to the nearest friendly Spawn Node, where each becomes a Worker (R-UNIT-447, R-UNIT-454, R-UNIT-457) |
+| DEC-085 | Builder Essence-orb delivery to friendly Spawn Nodes | in a match the Builder delivers its orbs to the nearest friendly Spawn Node, where each becomes a Worker (R-UNIT-447, R-UNIT-454, R-UNIT-457) |
 | DEC-080 | Collector collection of any team's Essence orbs | the Builder, like every taker, ignores an orb's team (R-UNIT-454) |
 | DEC-453 | Population-cap enforcement points and uncapped sources | Builder deliveries are uncapped (R-UNIT-457) |
 | DEC-565 | Sounds for the other silent gameplay events | the delivery and selection are silent (R-UNIT-467) |
+| DEC-122 | Bot and deputy actions outside the player command catalogue | the bot's Builder waypoint is a bot-only operation (R-UNIT-464) |

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-10-17
 decision-makers: Species technology lead
 ---
@@ -30,7 +30,7 @@ The problem is whether Species builds its own UI framework or adopts a third-par
 
 ## Decision Outcome
 
-Proposed option: **1, an own retained UI framework**. **Default while Proposed:** the team builds `UiCore`, because the UI's needs are specific (three blend modes, glyph cache, focus graph, kept page patterns) and modest in size, and an own framework meets them with no integration seams. Middleware remains acceptable if a candidate meets every decision driver; choosing one is a revision of this ADR.
+Chosen option: **1, an own retained UI framework**, decided by the owner's `AGENTS.md` (O21, R14), which excludes third-party UI middleware from the executable. The team builds `UiCore`, because the UI's needs are specific (three blend modes, glyph cache, focus graph, kept page patterns) and modest in size, and an own framework meets them with no integration seams. Middleware would need an owner decision that adds it to the allow-list of `AGENTS.md` R14, recorded as an ADR.
 
 - **Retained tree.** The UI is a retained tree of widgets with **typed handles**; names exist only for debugging and as localisation keys, never for lookup.
 - **Data-driven layouts.** Every page is described in data (in the schema of ADR-061): its widgets, their layout on the screen-fraction grid (ADR-033), their string ids, their focus neighbours (ADR-032) and their bindings to the page's view-model.
@@ -48,7 +48,7 @@ Proposed option: **1, an own retained UI framework**. **Default while Proposed:*
 - Good, because there is no licence cost and no third-party release cycle.
 - Good, because accessibility and localisation hooks exist from the first widget.
 - Bad, because the framework (layout, focus, text service, widgets) is engine work that a middleware would provide.
-- Bad, because there is no ready-made visual authoring tool; layouts are authored as data, with a hot-reload preview in development builds.
+- Bad, because there is no ready-made visual authoring tool; layouts are authored as data, with a hot-reload preview in Debug builds.
 
 ### Confirmation
 
@@ -67,6 +67,7 @@ Proposed option: **1, an own retained UI framework**. **Default while Proposed:*
 
 - Good, because widgets, layout and tooling come ready-made.
 - Bad, because the three UI blend modes, the glyph cache and the focus graph must be integrated into or around its renderer, and the licence and release cycle are outside Species' control.
+- Bad, because `AGENTS.md` R14 excludes third-party code from the executable.
 
 ### 3. Web-technology UI
 
@@ -82,3 +83,4 @@ Proposed option: **1, an own retained UI framework**. **Default while Proposed:*
 
 - Related: ADR-028 (text input), ADR-031 (batched UI rendering), ADR-032 (focus graph and page stack), ADR-033 (layout, scaling and DPI), ADR-034 (text rendering), ADR-061 (data schemas), ADR-063 (localisation), ADR-064 (accessibility), ADR-068 (profiling overlay).
 - The UI framework component (`architecture/components/ui_framework/`) specifies the widget set, the page patterns and the screen recipes.
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Status Accepted, decided by the owner's `AGENTS.md`: R14 excludes third-party UI middleware, so the own retained framework `UiCore` is the decision, no longer a default.

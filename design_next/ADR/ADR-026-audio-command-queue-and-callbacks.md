@@ -47,7 +47,7 @@ Chosen option: **1, a lock-free command queue, a fixed-rate audio update and sig
 - Good, because smoothing, fades and starts behave the same at any frame rate.
 - Good, because the decision does not constrain the design phase's threading model beyond the audio engine's own update.
 - Bad, because every interaction with audio is asynchronous, so game code cannot query audio state synchronously.
-- Bad, because queue capacities are tuning values; a burst beyond capacity loses triggers (counted and visible in development builds).
+- Bad, because queue capacities are tuning values; a burst beyond capacity loses triggers (counted, and visible in Debug builds).
 
 ### Confirmation
 
@@ -77,4 +77,5 @@ Chosen option: **1, a lock-free command queue, a fixed-rate audio update and sig
 - Technology baseline item 7 (see [the index](README.md#technology-baseline)); source checked 2026-10-17: https://learn.microsoft.com/windows/win32/xaudio2/xaudio2-audio-graph.
 - Related: ADR-022 (audio engine), ADR-023 (ranking and starts), ADR-025 (decode task), ADR-027 (spatialisation).
 - The threading model of the simulation and of presentation is deferred to the design phase (see [the index](README.md#deferred-to-the-design-phase)).
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Dropped-command counts are shown in Debug builds, the configuration with the development overlay.
 - **Amendment 2026-10-17.** A command's issue time is read from the real-time audio clock, not from the game-speed-scaled presentation clock, and a trigger starts at its issue time plus the scheduling latency, as the audio engine component specifies (AEN-006, AEN-024, AEN-148).

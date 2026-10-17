@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Every Species program (client, dedicated server, tools) logs start-up, configuration, content mounting, errors and warnings, and in development builds much more. Logging must never stall a frame or a simulation update: high-frequency logging that opens a file per line, or writes under a global lock, is itself a performance hazard. Logs travel with crash reports ([ADR-065](ADR-065-crash-reporting.md)), so they must not contain personal data or credentials. Developers want live, filterable output and system-wide traces alongside PIX captures. The server may run on a host without ETW.
+Every Species program (client, dedicated server, tools) logs start-up, configuration, content mounting, errors and warnings, and in Debug builds much more. Logging must never stall a frame or a simulation update: high-frequency logging that opens a file per line, or writes under a global lock, is itself a performance hazard. Logs travel with crash reports ([ADR-065](ADR-065-crash-reporting.md)), so they must not contain personal data or credentials. Developers want live, filterable output and system-wide traces alongside PIX captures. The server may run on a host without ETW.
 
 How does Species log?
 
@@ -33,7 +33,7 @@ Chosen option: "An asynchronous logger with pluggable sinks: TraceLogging (ETW) 
 * **API:** `log(category, level, std::format_string, args...)`; format strings are compile-time constants, so text from content, players or the network is always an argument and never a format string. Levels: trace, debug, info, warning, error, fatal. Categories are a fixed enumeration per subsystem (platform, render, audio, input, ui, content, simulation, network, tools), extended only in code.
 * **Pipeline:** callers write records into per-thread lock-free buffers; one logging thread drains them to the sinks. A full buffer drops trace and debug records first and counts the drops; warnings and errors are never dropped.
 * **Sinks:** a TraceLogging provider (self-describing ETW events, so system-wide traces in Windows Performance Analyzer show log events next to thread and I/O activity, see [ADR-068](ADR-068-profiling-and-gpu-timing.md)); a rotating UTF-8 text file in the logs folder of [ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md) (one file per run, the last ten kept); the debugger output in `Debug` and `Development` builds. A non-Windows server build replaces the ETW sink with a host sink that the design phase chooses.
-* **Levels per flavour:** `Shipping` and `Profile` record info and above to file and ETW; `Development` and `Debug` record debug and above, with trace enabled per category at run time.
+* **Levels per configuration:** Release records info and above to file and ETW; Debug records debug and above, with trace enabled per category at run time ([ADR-056](ADR-056-editions-build-flavours-and-feature-flags.md)).
 * **Header:** every file starts with the full build identity ([ADR-057](ADR-057-version-identity.md)), OS build and adapter description.
 * **Privacy:** logs never contain chat text, account tokens or passwords; identifiers of other players are logged only as session-local numbers.
 * **Fatal path:** a fatal record flushes synchronously before the process ends, so the crash report has the last lines.
@@ -65,8 +65,10 @@ Chosen option: "An asynchronous logger with pluggable sinks: TraceLogging (ETW) 
 
 * Good, because asynchronous sinks exist off the shelf.
 * Bad, because ETW integration, the privacy filter and the drop policy would still be custom, and runtime-format-string APIs would need to be banned.
+* Bad, because `AGENTS.md` R14 excludes third-party code from the executable.
 
 ## More Information
 
 * The standards baseline does not list TraceLogging or ETW versions; both are part of the Windows SDK pinned by [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md).
 * Component: diagnostics, test and performance (`DBG`).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** Log levels follow the two configurations, Debug and Release; a third-party logging library is excluded by `AGENTS.md` R14.

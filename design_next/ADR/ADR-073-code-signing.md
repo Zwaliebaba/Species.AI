@@ -32,7 +32,7 @@ Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hard
 
 * **What is signed:** `species.exe`, the dedicated server's Windows executable, every first-party DLL and tool executable distributed with the game, and every installer or publisher-signed package.
 * **How:** `SignTool sign /fd SHA256 /tr <timestamp URL> /td SHA256 <certificate or signing-service options> <file>`, so every signature has an RFC 3161 timestamp.
-* **Where:** a CI signing step on release-candidate and release builds only; development builds are unsigned or self-signed for local testing.
+* **Where:** a CI signing step on release-candidate and release builds only; Debug builds and local builds are unsigned or self-signed for local testing.
 * **Keys:** held by the signing service or the key store; the CI step is the only path to them.
 * **Registration:** the publisher registers the certificate with the Windows Desktop Application Program, so crash data covers every signed executable.
 * **MSIX in the Store:** the Store signs the package; no certificate is needed for that channel.
@@ -75,3 +75,4 @@ Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hard
 * Facts and sources: technology baseline items 11.2 and 11.3 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): Microsoft's code-signing options page, the first-app publishing guide and the MSIX signing guides on learn.microsoft.com.
 * Related: [ADR-072](ADR-072-distribution-channels-and-package-formats.md).
 * Component: build tooling and distribution (`BLD`).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** Signing applies to Release builds only, since CI builds Debug only and the build has no other configuration ([ADR-054](ADR-054-build-system-cmake-presets.md), [ADR-070](ADR-070-continuous-integration.md)); the signing step runs where Release is built.

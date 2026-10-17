@@ -48,7 +48,7 @@ Table 2.1-A Lifetime classes.
 
 **R-SIM-006** (MUST) Before a match starts, the host's match setup fills every empty team slot below the map's player count with a bot team (`TeamKind::Bot`), one per missing player, and then issues the match-start command. The match setup is specified in [screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md); lobby authority and the match-setup state are DEC-243.
 
-**R-SIM-007** (MUST) A session acts on its first match-start command only. A further match-start command in the same session has no effect.
+**R-SIM-007** (MUST) A session acts on its first match-start command only. A further match-start command in the same session has no effect. A match-start command that names a map outside the permitted maps of the edition starts no match, and the refusal is logged with the map id ([build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) BLD-053); the reference edition permits every map it holds.
 
 **R-SIM-008** (MUST) When a participant executes the match-start command, it enters the loading state, switches the application to match mode, resets the tick clock, which starts at game speed `ref.sim.speed.stopped` ([01](01_tick_timing_and_main_loop.md) R-SIM-551), and executes no further tick until the match world has loaded. Ticks that arrive during the load wait in arrival order (01).
 
@@ -78,7 +78,7 @@ Table 2.3-A Match entry steps.
 | 6 | Set up the team-tinted turret meshes (presentation). |
 | 7 | Set the current match id to the fixed match id. Every match uses the same fixed match id (DEC-223). |
 | 8 | Update the camera's object-tracking mode. If command-stream replay is enabled and this participant hosts, load the recorded command history (replay hook: DEC-046, [07](07_randomness_and_integrity.md)). Set the camera bounds on both horizontal axes to −`ref.sim.match_entry.camera_border` to the world size + `ref.sim.match_entry.camera_border`. Set the fallback camera position to (world size x, `ref.sim.match_entry.fallback_camera_height`, world size x), looking along `ref.sim.match_entry.fallback_camera_direction`; then move the camera to the map's default camera view (`default_view`) and cut to it. |
-| 9 | Outside the map editor, the camera switches to automatic mode, requests free movement, and the match loop starts (01). In the map editor the editor loop runs instead ([map editor hooks](../08_maps_and_level_design/map_editor_hooks.md)). |
+| 9 | Outside the map editor, the camera enters free movement and the match loop starts (01). In the map editor the camera enters the developer fly mode and the editor loop runs instead ([map editor hooks](../08_maps_and_level_design/map_editor_hooks.md)). The camera part of this step is step 6 of [camera and sequences](../../architecture/components/camera_and_sequences.md) CAM-060. |
 
 **R-SIM-015** (MUST) The match world is the current match world from the moment it is created in step 4, before its initialisation runs. Every initialisation step that spawns objects (team initialisation, the bot controllers of bot teams, the Rogue faction and the Visitor faction) therefore reaches the match world that is being initialised.
 
@@ -148,6 +148,7 @@ Table 2.5-A State that outlives a single object.
 | actor-group offset table | empty | cleared at initialisation step 3 and when the match world is destroyed; generated at initialisation step 11 (R-SIM-023) | simulation |
 | Control Zone counter | 0 | match-world creation (R-SIM-019) | simulation |
 | Transport weapon-cycle debounce | none | per Transport, at its creation (R-SIM-021) | simulation |
+| tutorial gates *bots may act* and *bots may spawn* | clear | match-world creation; set only by tutorial events and never cleared during the match (R-SIM-032) | simulation |
 | tick-clock speed state | normal speed, no speed hold | match start (R-SIM-008, R-SIM-025) | simulation |
 | Strike team trail-point id counter (`TrailPoint`) | 0 | match-world creation | simulation |
 | presentation generator state | `ref.sim.match.presentation_seed` | initialisation step 2 | presentation |
@@ -181,6 +182,8 @@ Table 2.5-A State that outlives a single object.
 
 **R-SIM-027** (MUST) Playing match A and then match B in one process, and playing match B alone in a fresh process, with the same match setup, seed and commands for B, give identical simulation state for B after every tick (DEC-223 item 4). The Species run-time divergence check is DEC-206.
 
+**R-SIM-032** (MUST) The two gates of the second tutorial, *bots may act* and *bots may spawn*, are match state ([tutorial and help](../11_tutorial_and_help.md) R-TUT-082). Both are clear when the match world is created, in every match; only the tutorial events of the command order set them ([06](06_teams_and_player_commands.md) R-SIM-462), and once set a gate stays set until the match world is destroyed. While the bots-may-spawn gate is clear in the second tutorial, the match-rules update of every tick (R-SIM-004) sets the time remaining to `ref.tut.second.held_time_remaining` (R-TUT-081); from the tick at which the gate is set, the time remaining counts down as in every Zone Control match.
+
 ### 2.6 Teardown
 
 **R-SIM-028** (MUST) Teardown runs once, at the end of the match loop, after the fade-out has completed, the match ambience has stopped and the match-exit sound event has fired ([audio design](../10_audio_design/README.md)). Its steps run in the order of table 2.6-A, and the application then returns to the front end.
@@ -207,7 +210,7 @@ Table 2.6-A Teardown steps.
 
 **R-SIM-029** (MUST) Multi-round Siege is not selectable in any match setup (DEC-066). When it is enabled, the match rules raise a rebuild request at the end of a round that has further rounds to play, and the rebuild runs these steps in order: rotate the team positions; destroy the match world, then create a new one and initialise it (§2.4) without a loading view; restore the last processed slice index; reset the tick clock; set the grace timer to `ref.match.grace_period`. The rebuild does not reset the object serial counter (DEC-066).
 
-**R-SIM-030** (MUST) The rebuild runs at a tick boundary: after every slice of the tick in which the round ended has run, and before the commands of the next tick apply. No participant advances the old match world after the rebuild request (DEC-066).
+**R-SIM-030** (MUST) The rebuild runs at a tick boundary: after every slice of the tick in which the round ended has run, and before the commands of the next tick apply. No participant advances the old match world after the rebuild request, so every participant rebuilds from the same state and none consumes a simulation draw that another does not (see DEC-261).
 
 ### 2.8 Persistence
 
@@ -308,7 +311,7 @@ Caption: Diagram 3-C, match entry (table 2.3-A) with match-world initialisation 
 | `ref.sim.init.power_level.worker` | 4 | level | | R-SIM-016 | — |
 | `ref.sim.state.transport_cycle_debounce` | 3 | ticks | 0.3 s of game time; a toggle needs strictly more than this since the same Transport's previous toggle | R-SIM-021 | DEC-011 |
 
-The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.sim.slice.match_rules` and the game speeds `ref.sim.speed.stopped` and `ref.sim.speed.normal` are defined in [01](01_tick_timing_and_main_loop.md); the offset-table size `ref.sim.group.offset_table_size` and the team keys `ref.sim.team.player_slots`, `ref.sim.team.bot_colour_count`, `ref.sim.team.rogue_slot` and `ref.sim.team.visitor_slot` are defined in [06](06_teams_and_player_commands.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
+The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.sim.slice.match_rules` and the game speeds `ref.sim.speed.stopped` and `ref.sim.speed.normal` are defined in [01](01_tick_timing_and_main_loop.md); the offset-table size `ref.sim.group.offset_table_size` and the team keys `ref.sim.team.player_slots`, `ref.sim.team.bot_colour_count`, `ref.sim.team.rogue_slot` and `ref.sim.team.visitor_slot` are defined in [06](06_teams_and_player_commands.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md); the held time remaining `ref.tut.second.held_time_remaining` is defined in [tutorial and help](../11_tutorial_and_help.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
 
 ## 5 Edge cases and interactions
 
@@ -341,11 +344,13 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 | AC-14 | every human team ready during the frozen start | ticks continue | the grace countdown of `ref.match.grace_period` runs, then game speed becomes `ref.sim.speed.normal` | R-SIM-012 |
 | AC-15 | multi-round Siege enabled in a test build | a round ends | the rebuild runs at the next tick boundary on every participant, and the object serial counter keeps its value | R-SIM-029, R-SIM-030 |
 | AC-16 | a match in progress | the process is restarted | no match, lobby or session state is restored | R-SIM-031 |
+| AC-17 | a second tutorial whose bots-may-spawn gate was set, followed by a new match | the new match world is created | both tutorial gates are clear, and in a second tutorial the time remaining is held at `ref.tut.second.held_time_remaining` until the gate is set | R-SIM-032 |
+| AC-18 | an edition whose permitted maps exclude map M | a match-start command names M | no match starts and the refusal is logged with M's id | R-SIM-007 |
 
 ## 7 Dependencies
 
-- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md) (tick period, slices, catch-up, pause, speed changes), [03 Entity model and identity](03_entity_model_and_identity.md) (serial counters), [04 Containers and update order](04_containers_and_update_order.md) (emptying the match world, creation rules), [05 Space, routing and physics](05_space_routing_and_physics.md) (grids and route graphs), [06 Teams and player commands](06_teams_and_player_commands.md) (start positions, colours, alliances, the Ready command, formation offsets), [07 Randomness and integrity](07_randomness_and_integrity.md) (generators, replay hooks), [skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (grace period, end conditions, multi-round Siege), [Transport](../02_units/transport.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [population flow](../05_population_flow.md), [bots](../07_bots/README.md), [map editor hooks](../08_maps_and_level_design/map_editor_hooks.md), [screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md), [options, localisation and hooks](../09_front_end_and_match_flow/options_localisation_and_hooks.md), [audio design](../10_audio_design/README.md).
-- Engine components: [terrain](../../architecture/components/terrain.md) (the terrain height field built at initialisation step 5), [platform layer](../../architecture/components/platform_layer.md) (process lifetime).
+- Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md) (tick period, slices, catch-up, pause, speed changes), [03 Entity model and identity](03_entity_model_and_identity.md) (serial counters), [04 Containers and update order](04_containers_and_update_order.md) (emptying the match world, creation rules), [05 Space, routing and physics](05_space_routing_and_physics.md) (grids and route graphs), [06 Teams and player commands](06_teams_and_player_commands.md) (start positions, colours, alliances, the Ready command, formation offsets), [07 Randomness and integrity](07_randomness_and_integrity.md) (generators, replay hooks), [skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (grace period, end conditions, multi-round Siege), [Transport](../02_units/transport.md), [buildings and world objects](../03_buildings_and_world_objects/README.md), [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [population flow](../05_population_flow.md), [bots](../07_bots/README.md), [map editor hooks](../08_maps_and_level_design/map_editor_hooks.md), [screen flow and match setup](../09_front_end_and_match_flow/screen_flow_and_match_setup.md), [options, localisation and hooks](../09_front_end_and_match_flow/options_localisation_and_hooks.md), [audio design](../10_audio_design/README.md), [tutorial and help](../11_tutorial_and_help.md) (the tutorial gates and the held time remaining).
+- Engine components: [terrain](../../architecture/components/terrain.md) (the terrain height field built at initialisation step 5), [platform layer](../../architecture/components/platform_layer.md) (process lifetime), [camera and sequences](../../architecture/components/camera_and_sequences.md) (CAM-060, the camera part of match entry), [build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) (BLD-053, the permitted maps of an edition).
 - Assets: none.
 
 ## 8 Open decisions
@@ -358,4 +363,4 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 - DEC-066 — multi-round Siege.
 - DEC-250 — persisted data inventory and client-local storage.
 - DEC-251 — world-state persistence, schema migration and rollback.
-- Resolved and applied here: DEC-004, DEC-010, DEC-011, DEC-013, DEC-028, DEC-087, DEC-118, DEC-652.
+- Resolved and applied here: DEC-004, DEC-010, DEC-011, DEC-013, DEC-028, DEC-087, DEC-103, DEC-118, DEC-261, DEC-652.

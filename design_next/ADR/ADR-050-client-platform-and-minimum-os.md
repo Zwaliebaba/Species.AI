@@ -34,6 +34,7 @@ Chosen option: "Windows 11 x64, minimum version 24H2 (OS build 10.0.26100)", bec
 * **Application manifest:** the executable declares Windows 10 and 11 in `<supportedOS>` so that version queries report the real version.
 * **Start-up check:** Species has no launcher. The platform layer's start-up check reads the OS build number and, below 26100, shows a clear notice with the build found and the minimum, logs it and continues. Hard failures come only from capability checks (for example the Direct3D 12 checks of [ADR-002](ADR-002-minimum-gpu-capability.md)), following Microsoft's advice to test for features rather than versions.
 * **Architecture:** x64 only. Arm64 is not a target of this baseline.
+* **CPU floor:** AVX2, because every project compiles with `/arch:AVX2` (`AGENTS.md` R16, [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md)): Intel Haswell (2013) and AMD Excavator (2015) or newer. An older CPU meets an illegal instruction, not a message, so the start-up check cannot report it; the floor is stated in the minimum specification and on every store page.
 
 ### Consequences
 
@@ -78,4 +79,5 @@ Chosen option: "Windows 11 x64, minimum version 24H2 (OS build 10.0.26100)", bec
 * Related: [ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md) (toolchain and Windows SDK), [ADR-075](ADR-075-application-window-and-dpi-awareness.md) (application manifest settings).
 * Component: platform layer (`PLT`).
 * Re-check trigger: any Windows 11 version leaving consumer service.
+* **Amendment 2026-10-17 (AGENTS.md, O21).** The client has an AVX2 CPU floor (Intel Haswell, AMD Excavator), set by `/arch:AVX2` (`AGENTS.md` R16).
 * **Amendment 2026-10-17.** The below-minimum message is a notice of the platform layer's start-up check, which continues afterwards (PLT-040, `plt.os.minimum_build`); the install directory has no launcher ([ADR-071](ADR-071-install-layout-runtime-files-and-user-data.md)).

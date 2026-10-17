@@ -75,9 +75,11 @@ Chosen option: **1, a GPU-simulated particle pool with shard buffers for debris*
 - Good, because authoring tools come ready-made.
 - Bad, because the look is a small, fixed set of particle types and blend classes that needs no general authoring system.
 - Bad, because a middleware renderer would sit outside the frame graph and the pipeline state catalogue.
+- Bad, because `AGENTS.md` R14 excludes third-party code from the executable.
 
 ## More Information
 
 - Related: ADR-003 (edge mask), ADR-005 (additive and darkening blend states), ADR-009 (quad expansion and indirect draws), ADR-011 (terrain height-field texture), ADR-036 (effect events, presentation clock and effect definitions).
 - The animation and VFX component (`architecture/components/animation_and_vfx/`) specifies the particle types and their parameter sets, the caps, priorities and LOD distances, and the shatter parameters.
+- **Amendment 2026-10-17 (AGENTS.md, O21).** Third-party VFX middleware is excluded by `AGENTS.md` R14.
 - **Amendment 2026-10-17.** "One instanced draw per explosion" is realised as one `ExecuteIndirect` call with one argument record per live explosion (VFX-237, RND-455).

@@ -1,23 +1,22 @@
 ---
-status: proposed
+status: rejected
 date: 2026-10-17
-decision-makers: Species technology lead
+decision-makers: Species technology lead; rejected under the owner's AGENTS.md (O21)
 ---
 
-# Modules: `import std` behind a build option; first-party code stays header-based
+# Modules: not used; `.h` and `.cpp` files only, no module interface units and no `import std`
 
 ## Context and Problem Statement
 
-C++23 standardises `import std` and `import std.compat`. MSVC implements them fully, and they can shorten build times. Build-system support is not yet stable: CMake 4.4 offers `import std` only behind an experimental gate, with Ninja generators only, and CMake 4.5 (now at release candidate) makes it non-experimental. Shared and server code must stay compilable without modules, so that a non-MSVC server build remains possible ([ADR-052](ADR-052-cpp23-language-standard.md)).
+C++23 standardises `import std` and `import std.compat`, and MSVC implements them; C++20 named modules and header units can shorten build times further. The repository's engineering rules limit source files to `.h` and `.cpp` (`AGENTS.md` R7), give every project one precompiled header (`pch.h`), and make include order load-bearing and hand-grouped, with the standard library included last (`AGENTS.md` §4). This record proposed `import std` behind a build option, with first-party code header-based.
 
-How does Species use C++ modules?
+Does Species use C++ modules or `import std`?
 
 ## Decision Drivers
 
-* Faster builds where modules are reliable.
-* No dependence on an experimental build-system feature in shipping builds.
-* Shared and server code buildable with and without modules.
-* Tooling (IDE, static analysis, the clang-cl analysis build) keeps working.
+* Source files are `.h` and `.cpp` only (`AGENTS.md` R7).
+* One way to reach the standard library, in the include order of `AGENTS.md` §4.
+* Tooling (IDE, clang-tidy, the debugger) works on every translation unit without module support.
 
 ## Considered Options
 
@@ -28,49 +27,43 @@ How does Species use C++ modules?
 
 ## Decision Outcome
 
-Chosen option: "`import std` behind a build option; first-party code header-based". This is the default the team proceeds with until the option is reviewed at the CMake 4.5 release.
-
-* **Option:** `SPECIES_IMPORT_STD`, default **OFF** while CMake offers `import std` only experimentally. When CMake 4.5 is released, the team re-checks its documentation and switches the default to **ON** for client-only targets.
-* **Rules when ON:** a translation unit uses either `import std;` or standard headers, never both. Macros are not exported by named modules, so `assert`, `errno` and `offsetof` come from `<cassert>`, `<cerrno>` and `<cstddef>`. Third-party headers that include standard headers are wrapped in their own translation units or kept out of importing units.
-* **Shared and server code** compiles in both modes; CI builds it with the option OFF on every change.
-* **First-party named modules** are not part of this baseline. A later ADR may introduce them library by library once the IDE, the analysis build and the debugger handle them on the pinned toolset.
-* **Header units** are not used.
+The proposed option, "`import std` behind a build option", is **rejected**, and so are named modules and header units. Species uses headers only: every translation unit includes the standard headers it needs, after `pch.h`, the Windows and SDK headers and the project headers (`AGENTS.md` §4). No module interface unit (`.ixx`) exists, because `AGENTS.md` R7 allows `.h` and `.cpp` files only, and no translation unit uses `import std`, because a build option for it would add a second way to reach the standard library and a project setting outside the alignment rules of [ADR-054](ADR-054-build-system-cmake-presets.md). Using modules later needs a new ADR and a change to `AGENTS.md`.
 
 ### Consequences
 
-* Good, because client builds gain `import std` without making any shipping build depend on an experimental gate.
-* Good, because every target still builds header-only, which keeps a non-MSVC server build possible.
-* Bad, because the build-time benefit of first-party modules is deferred.
-* Bad, because two build modes must both stay green while the option exists.
+* Good, because every translation unit is an ordinary header-based unit that every tool understands.
+* Good, because there is one include order and no second build mode to keep green.
+* Bad, because the build-time benefit of `import std` and of named modules is forgone; precompiled headers carry the build-time load instead.
 
 ### Confirmation
 
-* CI runs one client build with `SPECIES_IMPORT_STD=ON` (nightly) and every per-change build with it OFF, until the default changes.
-* A lint step rejects translation units that both `import std` and include a standard header.
-* The CMake 4.5 release is a tracked milestone item for re-checking this ADR.
+* `Build\CheckProjectFiles.py` rejects `.ixx`, `.cppm` and other module source files, and project settings that build standard-library modules.
+* clang-tidy and review reject `import` declarations.
 
 ## Pros and Cons of the Options
 
 ### `import std` behind an option, headers for first-party code
 
-* Good, because it adopts the standard library module where the toolchain is mature.
-* Neutral, because it needs Ninja generators, which [ADR-054](ADR-054-build-system-cmake-presets.md) uses anyway.
+* Good, because it would adopt the standard library module where the toolchain supports it.
+* Bad, because it adds a second way to reach the standard library and a build option, against `AGENTS.md` R7 and §4.
 
 ### Headers only
 
-* Good, because it is the simplest and most portable.
-* Bad, because it forgoes a supported build-time improvement on the client.
+* Good, because it is the simplest form and the one `AGENTS.md` describes.
+* Bad, because it forgoes a supported build-time improvement.
 
 ### First-party named modules and `import std` everywhere
 
 * Good, because it gives the largest build-time and isolation benefit.
-* Bad, because CMake module support is incomplete (Visual Studio generators cannot export or install module information), and shared code would need module support from every server compiler.
+* Bad, because module interface units are not `.h` or `.cpp` files (`AGENTS.md` R7).
 
 ### Header units
 
-* Bad, because CMake does not support them.
+* Bad, because they change how headers are compiled and how macros reach a translation unit, which conflicts with the hand-grouped include order of `AGENTS.md` §4.
 
 ## More Information
 
-* Facts and sources: technology baseline items 2.2 and 3.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the MSVC modules overview and `import std` tutorial, and the CMake 4.4 and development (4.5) `cmake-cxxmodules` manuals.
-* A non-Windows server build that turns the option on needs a standard library with working module metadata; the baseline notes that Ubuntu releases before 26.04 ship broken `libstdc++.modules.json` files.
+* Rules: `AGENTS.md` R7 (file kinds) and §4 (include order).
+* Facts and sources: technology baseline item 2.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the MSVC modules overview and `import std` tutorial.
+* Related: [ADR-052](ADR-052-cpp23-language-standard.md) (language mode).
+* **Amendment 2026-10-17 (AGENTS.md, O21).** Status Rejected: `AGENTS.md` R7 allows `.h` and `.cpp` files only and §4 fixes the standard library as hand-ordered includes, so no module interface unit exists and `import std` is not used. The build option and its CI job are removed.

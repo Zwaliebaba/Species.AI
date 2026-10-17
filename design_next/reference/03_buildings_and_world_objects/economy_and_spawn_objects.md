@@ -90,13 +90,13 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 ### 2.3 Relay
 
-**R-BLDG-114** (MUST) A Relay (`Relay`) is a pure inner node of the spawn network: it receives transit orbs and passes them on, 10 advances per edge and 11 on the first edge of a transit (R-BLDG-101). Its mesh is `mesh.structure.relay_mast`, with no ports and no lights. Its team comes from its map record and has no effect; it is never captured and is indestructible.
+**R-BLDG-114** (MUST) A Relay (`Relay`) is a pure inner node of the spawn network: it receives transit orbs and passes them on, 10 advances per edge and 11 on the first edge of a transit (R-BLDG-101). Its mesh is `mesh.structure.relay_mast`, with no ports and no lights, and its collision asset `mesh.collision.relay_mast`. Its team comes from its map record and has no effect; it is never captured and is indestructible.
 
 **R-BLDG-115** (MUST) A Relay's map record holds the base fields and its links (R-BLDG-108). 21 reference maps place Relays: Spawn Control 8 of 9, Zone Control 8 of 9, Flag Chain 3 of 7 and Relic Run 2 of 9, with 261 records in all.
 
 ### 2.4 Source Node
 
-**R-BLDG-116** (MUST) The Source Node (`SourceNode`) is the source of every transit orb. Each of the 32 reference maps with a spawn network places exactly one.
+**R-BLDG-116** (MUST) The Source Node (`SourceNode`) is the source of every transit orb. Each of the 32 reference maps with a spawn network places exactly one, and no rule creates a Source Node during a match (README table 2.4-A).
 
 **R-BLDG-117** (MUST) The Source Node registry id is match state, with the initial value "none". Each Source Node writes its own structure id into the registry at the start of each of its advances. A Spawn Node's request resolves the registry id by a structure look-up followed by a kind check; an id that names no live Source Node resolves to "no Source Node", and the request then creates nothing (DEC-011; R-SIM-024, R-ECON-032). A stale id therefore has no effect: no request is made before the first tick has ended, in which every Source Node has advanced, so the registry names the map's Source Node whenever a request reads it (R-SIM-024).
 
@@ -104,7 +104,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-119** (MUST) A request addressed to Spawn Node n creates a transit orb with address n and progress 0 and places it on the Source Node (R-BLDG-110).
 
-**R-BLDG-120** (MUST) A Source Node uses the mesh `mesh.structure.source_node`. It is drawn only when its global flag is set, or in the map editor (see DEC-309). The reference maps mostly leave the flag clear, so their Source Nodes are invisible; 11 reference map files set it.
+**R-BLDG-120** (MUST) A Source Node uses the mesh `mesh.structure.source_node`, with the collision asset `mesh.collision.source_node`. It is drawn only when its global flag is set, or in the map editor (see DEC-309). The reference maps mostly leave the flag clear, so their Source Nodes are invisible; 11 reference map files set it.
 
 **R-BLDG-121** (MUST) A Source Node is never captured and is indestructible. Its map record holds the base fields and its links (R-BLDG-108).
 
@@ -114,7 +114,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-123** (MUST) A Spawn Node that receives a transit orb addressed to itself spawns one Worker for its current owner when it has one, and removes the orb; with no team the orb is lost (R-ECON-041, R-ECON-042). Arrival does not check the population cap: only the request does (R-ECON-059; see DEC-453). The Worker appears at the `door` socket as R-ECON-043 specifies. An orb addressed to another node is passed on (R-BLDG-110).
 
-**R-BLDG-124** (MUST) A Spawn Node uses the mesh `mesh.structure.spawn_node`, with `ref.econ.spawn_node.port_count` (5) port sockets, 3 light sockets, the `door` socket, which its mesh must carry, and the `essence_link` socket. The mesh `mesh.structure.spawn_node_alt` carries the same sockets; no reference match selects it.
+**R-BLDG-124** (MUST) A Spawn Node uses the mesh `mesh.structure.spawn_node`, with `ref.econ.spawn_node.port_count` (5) port sockets, 3 light sockets, the `door` socket, which its mesh must carry, and the `essence_link` socket; its collision asset is `mesh.collision.spawn_node`. The mesh `mesh.structure.spawn_node_alt`, with the collision asset `mesh.collision.spawn_node_alt`, carries the same sockets; no reference match selects it.
 
 **R-BLDG-125** (MUST) A Spawn Node evaluates its ownership as R-ECON-018 to R-ECON-022 specify: it belongs to the one team that operates at least `ref.econ.spawn_node.capture_min_operators` (3) of its 5 ports, provided no operator belongs to a team that is not a friend of that team; otherwise to no team. Allies do not pool: a team with 2 operators and an ally with 2 leave the node with no team.
 
@@ -130,7 +130,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-131** (MUST) A Spawn Node draws its ports itself: a status star of `fx.starburst` per port, in the grey `ref.bldg.spawn_node.port_star_empty_rgb` (150, 150, 150) when the port is unoccupied and in the occupant's team colour when occupied. Above the structure it draws glow blobs of `fx.glow_cloudy`: `ref.bldg.spawn_node.glow_blobs_by_detail` (20, 10 and 3 at structure-detail levels 1, 2 and 3), with an opacity of (occupied ports ÷ 5) and a colour that goes from `ref.econ.spawn_node.glow_start_rgba` (100, 100, 100, 200) of reference/05 to the owner's team colour as the activation delay runs from 300 to 0 (R-ECON-025).
 
-**R-BLDG-132** (MUST) A Spawn Node's map record holds the base fields and its links (R-BLDG-108). Across the reference maps, 162 Spawn Nodes start owned by a map position (position 0: 53, position 1: 57, position 2: 33, position 3: 19) and 124 start with no team; none has its global flag set. A reference map places 1 to 15 Spawn Nodes. The hint overlay explains Spawn Node capture with the picture `help.hint.spawn_nodes` ([11 Tutorial and help](../11_tutorial_and_help.md)).
+**R-BLDG-132** (MUST) A Spawn Node's map record holds the base fields and its links (R-BLDG-108). The 49 reference match maps place 258 Spawn Nodes on 32 maps: 138 start owned by a map position (position 0: 48, position 1: 48, position 2: 28, position 3: 14) and 120 start with no team; none has its global flag set. A reference map that places Spawn Nodes places 1 to 15. Spawn Node capture has the objective-card picture `help.hint.spawn_nodes`, which feeds the objective-card hook only and is drawn by no rule in a match ([11 Tutorial and help](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 
 ### 2.6 Population Limiter
 
@@ -150,7 +150,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-139** (MUST) A Transit Gate (`TransitGate`) is a fixed reinforcement gate: an owned Transit Gate releases reinforcement waves of Workers and grants Transport, turret and airstrike powers as [05 Population flow](../05_population_flow.md) §2.21 to §2.25 specify (R-ECON-088 to R-ECON-105).
 
-**R-BLDG-140** (MUST) A Transit Gate uses the mesh `mesh.structure.transit_gate`, with the `gate_surface`, `gate_exit_01` and `gate_exit_02` sockets. The mesh `mesh.structure.transit_gate_alt` carries the same sockets and two light sockets; no reference match selects it.
+**R-BLDG-140** (MUST) A Transit Gate uses the mesh `mesh.structure.transit_gate`, with the `gate_surface`, `gate_exit_01` and `gate_exit_02` sockets and the collision asset `mesh.collision.transit_gate`; no rule reads the two exit sockets (see DEC-330). The mesh `mesh.structure.transit_gate_alt`, with the collision asset `mesh.collision.transit_gate_alt`, carries the same sockets and two light sockets; no reference match selects it.
 
 **R-BLDG-141** (MUST) A Transit Gate's owner is fixed by its map record (its map position remapped to the match team), and it is never captured (R-ECON-089). Its team is set to no team, silently, by exactly these events (R-BLDG-039): the elimination of its owning team; the destruction of the Core Device, for every Transit Gate not owned by the defending team ([mode objects](mode_objects.md) R-BLDG-314); and the detonation of the Core Device, for every Transit Gate not owned by the Core Device's team ([mode objects](mode_objects.md) R-BLDG-313). A Transit Gate with no team never reinforces.
 
@@ -168,11 +168,11 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-147** (MUST) A teleport structure answers: connected (false unless its kind says otherwise); ready to send (its ready countdown is 0, and its kind may add conditions); its entrance; its exit; the start point and the end point of the transit; and the per-tick transit update of an actor, which every teleport kind defines.
 
-**R-BLDG-148** (MUST) Entry is started by the actor: the movement steps of Workers, Leaders and Strike team members try teleport entry as reference/12 R-SIM-386 specifies. A Beam Dish qualifies when it is ready to send, the actor is less than `ref.sim.teleport.entry_distance` (15 wu) from its entrance and the dot product of the actor's front with the entrance's front is negative, that is, the actor walks into the door.
+**R-BLDG-148** (MUST) Entry is started by the actor: the movement steps of Workers, Leaders and Strike team members try teleport entry as reference/12 R-SIM-386 specifies. A Beam Dish qualifies when it is ready to send, the actor is less than `ref.sim.teleport.entry_distance` (15 wu) from its entrance and the dot product of the actor's front with the entrance's front is negative, that is, the actor walks into the door. A Strike team move order whose target point lies within `ref.unit.strike_team.dish_snap_range` (5 wu) of a Beam Dish that is linked to a receiving dish makes that Beam Dish the Strike team's teleport target, with its waypoint at the dish's entrance ([02 Strike team](../02_units/strike_team.md) R-UNIT-343).
 
-**R-BLDG-149** (MUST) When an actor enters a teleport structure, these steps run in order:
+**R-BLDG-149** (MUST) When an actor enters a teleport structure, these steps run in order; the direction of the exit jitter of step 1 is DEC-860 item 4:
 
-1. If the actor belongs to an actor group (a Strike team) and the entry is not marked as relayed, the destination group is the one that the teleport transit table gives for (team, source group), or, when there is none, a new group of the same kind and size, created at the structure's position and entered in the table. For a Strike team the Power that owns the group is registered again on the new group (see DEC-551): the old registration is removed, the remaining life is carried over, the Power is selected, and its weapon kind and controller are copied; the controller's route gains this structure as a waypoint. The new group takes over the source group's route at its next waypoint, or, with no route, receives a waypoint `ref.bldg.teleport.exit_waypoint_wu` (50 wu) beyond the exit, offset by a draw from `ref.bldg.teleport.exit_waypoint_jitter_wu` (U[−17.5, 17.5)). The actor is moved into the new group, with a new slot and serial, disabled, airborne and with velocity 0, and the group's formation offsets are recomputed.
+1. If the actor belongs to an actor group (a Strike team) and the entry is not marked as relayed, the destination group is the one that the teleport transit table gives for (team, source group), or, when there is none, a new group of the same kind and size, created at the structure's position and entered in the table. For a Strike team the Power that owns the group is registered again on the new group (see DEC-551): the old registration is removed, the remaining life is carried over, the Power is selected, and its weapon kind and controller are copied; the controller's route gains this structure as a waypoint. The new group takes over the source group's route at its next waypoint, or, with no route, receives a waypoint `ref.bldg.teleport.exit_waypoint_wu` (50 wu) beyond the exit, offset across the exit direction, in the horizontal plane, by a single draw from `ref.bldg.teleport.exit_waypoint_jitter_wu` (U[−17.5, 17.5)) (see DEC-860). The actor is moved into the new group, with a new slot and serial, disabled, airborne and with velocity 0, and the group's formation offsets are recomputed.
 2. The actor is placed at the start point and given one transit update; it is added to the structure's in-transit list; and the ready countdown is set to the send period.
 
 **R-BLDG-150** (MUST) Each tick, the advance of a teleport structure reduces its ready countdown by 1, keeping it at 0 or above; gives every actor in transit its transit update and removes from the list each actor whose update reports arrival and each actor that no longer exists; removes from the teleport transit table every entry whose source group no longer exists; and then runs the base advance.
@@ -196,19 +196,19 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 axis  ← horizontal(current front) × horizontal(target front)
 axis.y ← axis.y ÷ ref.bldg.beam_dish.yaw_axis_divisor             # 4
 if |axis.y| > ref.bldg.beam_dish.yaw_deadband_rad:                 # π / 3000
-    upper_mount.angular_velocity.y ← sign(axis.y) × √|axis.y|
+    upper_mount.angularVelocity.y ← sign(axis.y) × √|axis.y|
 else: yaw aligned
 # pitch: node dish, after the yaw is aligned
-target_front.y ← clamp(target_front.y, ref.bldg.beam_dish.pitch_clamp)   # [−0.2, +0.3]
-dish.angular_velocity ← dish.right × (world up of the dish · target_front)
-if |dish.angular_velocity| < ref.bldg.beam_dish.pitch_stop: pitch aligned  # 0.001
+targetFront.y ← clamp(targetFront.y, ref.bldg.beam_dish.pitch_clamp)     # [−0.2, +0.3]
+dish.angularVelocity ← dish.right × (world up of the dish · targetFront)
+if |dish.angularVelocity| < ref.bldg.beam_dish.pitch_stop: pitch aligned  # 0.001
 ```
 
 When both are aligned it raises `beam_dish.rotate_stop`. The square root and the angle results follow the Species maths library at full precision, pinned by acceptance vectors (see DEC-241).
 
 **R-BLDG-157** (MUST) Every tick once a target is set, the dish tests for a connection. Among all other Beam Dishes it takes those for which: the ray from its `beam_focus` along the focus front hits the other dish's bounding sphere; the other dish's focus front faces back (the dot product of the two fronts is negative); and the other dish's focus is visible over the terrain from its own focus. Of these it takes the nearest, comparing distances strictly in structure order so that the first of equal distances wins (DEC-016), and it accepts it only when the receiver validity test of R-BLDG-158 passes.
 
-**R-BLDG-158** (MUST) A Beam Dish is a valid receiver when: on the tutorial map, it is not the structure with id 11, which is never valid ([11 Tutorial and help](../11_tutorial_and_help.md)); with the map option "Beam Dish team match", its team equals the sending dish's team; and otherwise, when the sending dish's list of valid receivers is empty, any dish is valid, and when it is not empty, only the listed dishes are.
+**R-BLDG-158** (MUST) A Beam Dish is a valid receiver when: on the second tutorial's map, it is not the dish with the role tag `final_dish`, which is never valid ([11 Tutorial and help](../11_tutorial_and_help.md) tables 2.9-A and 2.10-A; DEC-103); with the map option "Beam Dish team match", its team equals the sending dish's team; and otherwise, when the sending dish's list of valid receivers is empty, any dish is valid, and when it is not empty, only the listed dishes are.
 
 **R-BLDG-159** (MUST) A connected Beam Dish holds its receiver, its range (the distance from focus to focus) and a signal of 1; it is connected while it has a receiver and a signal above 0, and ready to send while it is connected and its ready countdown is 0. Gaining a receiver raises `beam_dish.link_up`; a connection test that no longer finds a valid receiver clears the receiver, sets the signal to 0 and raises `beam_dish.link_lost`.
 
@@ -220,7 +220,7 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 **R-BLDG-163** (MUST) While a Beam Dish is connected, a bot navigation node is kept at its entrance and linked to the bot navigation node of its receiver; the node is removed when the connection is lost ([07 Bots](../07_bots/README.md)).
 
-**R-BLDG-164** (MUST) A Beam Dish answers sphere tests against its mesh with the probe radius multiplied by `ref.bldg.beam_dish.probe_radius_factor` (1.5), so that its door registers in the obstacle-grid cells around it, and ray tests against its mesh with up (0, 1, 0) (README table 2.12-A). It is indestructible.
+**R-BLDG-164** (MUST) A Beam Dish answers sphere tests against its collision asset `mesh.collision.beam_dish` with the probe radius multiplied by `ref.bldg.beam_dish.probe_radius_factor` (1.5), so that its door registers in the obstacle-grid cells around it, and ray tests against its mesh with up (0, 1, 0) (README table 2.12-A). It is indestructible.
 
 **R-BLDG-165** (MUST) The translucent pass of a connected Beam Dish draws its beam as 4 nested tubes with radii `ref.bldg.beam_dish.beam_tube_radii_wu` (10, 9, 8 and 4 wu) and alphas `ref.bldg.beam_dish.beam_tube_alphas` (0.4, 0.2, 0.2 and 0.5), textured with `fx.barrier_field` combined with `fx.dish_signal` and clipped by the planes of the two dishes. While its owner hovers over it or selects it, preview beams are drawn to every valid receiver ([renderer](../../architecture/components/renderer/README.md)).
 
@@ -246,7 +246,7 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 ### 2.11 Solar Array
 
-**R-BLDG-175** (MUST) A Solar Array (`SolarArray`) is the capturable source of energy surges. Its mesh is `mesh.structure.solar_array`, with `ref.bldg.solar_array.port_count` (5) port sockets, the status sockets `status_01` to `status_05`, the glow sockets `glow_01` to `glow_04` and the `grid_link` socket. At initialisation its up vector is set to the terrain normal at its position and its front to (1, 0, 0) × that normal.
+**R-BLDG-175** (MUST) A Solar Array (`SolarArray`) is the capturable source of energy surges. Its mesh is `mesh.structure.solar_array`, with `ref.bldg.solar_array.port_count` (5) port sockets, the status sockets `status_01` to `status_05`, the glow sockets `glow_01` to `glow_04` and the `grid_link` socket, and its collision asset is `mesh.collision.solar_array`. At initialisation its up vector is set to the terrain normal at its position and its front to (1, 0, 0) × that normal.
 
 **R-BLDG-176** (MUST) A Solar Array records its starting team at initialisation: its team after the map-position remap, or no starting team when it starts with no team. The starting team and the current team use one no-team value (DEC-464).
 
@@ -273,13 +273,15 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 ### 2.12 Grid pylon, grid terminal and grid splitter
 
-**R-BLDG-185** (MUST) A grid pylon (`GridPylon`) is a relay segment of the energy grid: it stores and passes on surges as R-BLDG-172 specifies. Its mesh is `mesh.structure.grid_pylon`, with 1 light socket and the `grid_link` socket. Its team comes from its map record and is never recomputed; on the Launch Race maps the pylons belong to teams, so that grid splitters can route by team. 16 reference maps place grid pylons (Launch Race 7, Siege 5, Flag Chain 3, Spawn Control 1; 296 records).
+**R-BLDG-185** (MUST) A grid pylon (`GridPylon`) is a relay segment of the energy grid: it stores and passes on surges as R-BLDG-172 specifies. Its mesh is `mesh.structure.grid_pylon`, with 1 light socket and the `grid_link` socket, and the collision asset `mesh.collision.grid_pylon`, which the grid terminal and the grid splitter share. Its team comes from its map record and is never recomputed; on the Launch Race maps the pylons belong to teams, so that grid splitters can route by team. 16 reference maps place grid pylons (Launch Race 7, Siege 5, Flag Chain 3, Spawn Control 1; 296 records).
 
 **R-BLDG-186** (MUST) A grid terminal (`GridTerminal`) ends a grid line. Triggering a surge on it stores nothing and raises no surge event: it delivers the surge at once to its linked structure, by the kind of that structure:
 
 1. a fuel pump receives one surge (R-BLDG-197), with no team test;
 2. a Barrier Emitter is powered only when the surge's team and the emitter's team are friends, so an emitter with no team is never powered and an enemy surge never powers an emitter ([defences and props](defences_and_props.md));
 3. a structure of any other kind receives nothing.
+
+A grid terminal's link is a typed link: the content build rejects a grid terminal whose link names a structure that is not a fuel pump or a Barrier Emitter ([data schemas](../../architecture/components/data_schemas/map_structure_records.md) table 3.2-A; DEC-457), so item 3 applies only to records that bypass validation.
 
 **R-BLDG-187** (MUST) A grid terminal draws no translucent pass: no line beam and no surge sprite. Its team comes from its map record. 16 reference maps place grid terminals (86 records).
 
@@ -313,7 +315,7 @@ It runs once for each structure that feeds it in a tick, so a Launch Vessel fed 
 
 ### 2.14 Fuel pump
 
-**R-BLDG-197** (MUST) A fuel pump (`FuelPump`) turns energy surges into fuel pressure. Its meshes are `mesh.structure.fuel_pump_housing`, with the `fuel_point` socket, and `mesh.structure.fuel_pump_arm`, with the `arm_tip` socket. Each surge that a grid terminal delivers adds 1 to its surge store, with no team test (R-BLDG-186).
+**R-BLDG-197** (MUST) A fuel pump (`FuelPump`) turns energy surges into fuel pressure. Its meshes are `mesh.structure.fuel_pump_housing`, with the `fuel_point` socket and the collision asset `mesh.collision.fuel_pump_housing`, and `mesh.structure.fuel_pump_arm`, with the `arm_tip` socket. Each surge that a grid terminal delivers adds 1 to its surge store, with no team test (R-BLDG-186).
 
 **R-BLDG-198** (MUST) Each tick a fuel pump: reduces its surge store by `ref.bldg.fuel_pump.surge_decay_per_tick` (0.1, one surge per second) and keeps it between 0 and `ref.bldg.fuel_pump.max_surges` (20); passes the pressure (surge store ÷ 20) to its own fuel intake (R-BLDG-194), so that its current level follows the pressure; and then runs the fuel-chain advance, which passes that level down the line (R-BLDG-193). The simulation and the drawing of the pump use the one limit of 20 (DEC-463).
 
@@ -323,13 +325,13 @@ It runs once for each structure that feeds it in a tick, so a Launch Vessel fed 
 
 ### 2.15 Fuel line
 
-**R-BLDG-201** (MUST) A fuel line (`FuelLine`) is a relay segment of the fuel chain with the fuel-chain behaviour only (R-BLDG-193, R-BLDG-194). Its mesh is `mesh.structure.fuel_line_foot`, with the `fuel_point` socket. It starts the loop `fuel_line.flow` (bound to `sfx.building.fuel_line.flow`) while its current level is above `ref.bldg.fuel_line.flow_sound_level` (0.2) and stops it at or below 0.2. Only the Launch Race maps place fuel lines (7 of 7, 178 records).
+**R-BLDG-201** (MUST) A fuel line (`FuelLine`) is a relay segment of the fuel chain with the fuel-chain behaviour only (R-BLDG-193, R-BLDG-194). Its mesh is `mesh.structure.fuel_line_foot`, with the `fuel_point` socket and the collision asset `mesh.collision.fuel_line_foot`. It starts the loop `fuel_line.flow` (bound to `sfx.building.fuel_line.flow`) while its current level is above `ref.bldg.fuel_line.flow_sound_level` (0.2) and stops it at or below 0.2. Only the Launch Race maps place fuel lines (7 of 7, 178 records).
 
 ### 2.16 Fuel depot
 
-**R-BLDG-202** (MUST) A fuel depot (`FuelDepot`) is the boarding gate of a Launch Vessel and the last hop of its fuel. Its mesh is `mesh.structure.fuel_depot`, with the `entrance` and `fuel_point` sockets. Its fuel link is its team's Launch Vessel.
+**R-BLDG-202** (MUST) A fuel depot (`FuelDepot`) is the boarding gate of a Launch Vessel and the last hop of its fuel. Its mesh is `mesh.structure.fuel_depot`, with the `entrance` and `fuel_point` sockets and the collision asset `mesh.collision.fuel_depot`. Its fuel link is its team's Launch Vessel.
 
-**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Loading state ([mode objects](mode_objects.md) R-BLDG-321), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots/README.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the idle state or in the state of watching an Essence orb, the Worker is ordered to board ([02 Worker](../02_units/worker.md)): it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Loading ([mode objects](mode_objects.md) R-BLDG-322). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Loading, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
+**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Boarding state ([mode objects](mode_objects.md) R-BLDG-321), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots/README.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the idle state or in the state of watching an Essence orb, the Worker is ordered to board ([02 Worker](../02_units/worker.md)): it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Boarding ([mode objects](mode_objects.md) R-BLDG-322). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Boarding, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
 
 **R-BLDG-204** (MUST) A fuel depot gives at most one boarding order per tick, so the 3 depots of a team give at most 30 boarding orders per second at game speed 1, fewer by the share of picks that are not idle Workers.
 
@@ -429,31 +431,31 @@ classDiagram
     FuelStructure <|-- FuelDepot
     FuelStructure <|-- LaunchVessel
     class FuelStructure {
-        +StructureId fuelLink
-        +double currentLevel
-        +MeshSocket fuelPoint
-        +fuelIntake(level)
-        +linkedStructure()
+        -StructureId m_fuelLink
+        -double m_currentLevel
+        -MeshSocket m_fuelPoint
+        +FuelIntake(_level)
+        +LinkedStructure()
     }
     class FuelPump {
-        +double surgeStore
-        +MeshSocket armTip
-        +receiveSurge()
+        -double m_surgeStore
+        -MeshSocket m_armTip
+        +ReceiveSurge()
     }
     class FuelDepot {
-        +MeshSocket entrance
-        +BotNavNode botNode
-        +isLoading()
-        +board(worker)
+        -MeshSocket m_entrance
+        -BotNavNode m_botNode
+        +IsBoarding()
+        +Board(_worker)
     }
     class LaunchVessel {
-        +LaunchVesselState state
-        +double fuel
-        +int intakeCount
-        +int passengers
-        +double countdown
-        +double damage
-        +double refuelRate
+        -LaunchVesselState m_state
+        -double m_fuel
+        -int m_intakeCount
+        -int m_passengers
+        -double m_countdown
+        -double m_damage
+        -double m_refuelRate
     }
 ```
 
@@ -505,7 +507,7 @@ Every value is a reference tuning value that Species may adopt as its baseline (
 | `ref.bldg.fuel_pump.max_surges` | 20 | surges | one constant for simulation and drawing | R-BLDG-198 | DEC-463 |
 | `ref.bldg.fuel_pump.surge_decay_per_tick` | 0.1 | surges per tick | 1 surge per second | R-BLDG-198 | DEC-092 |
 | `ref.bldg.fuel_line.flow_sound_level` | 0.2 | level | flow loop above | R-BLDG-201 | — |
-| `ref.bldg.fuel_depot.bot_node_priority` | 1.0 | priority modifier | while the vessel is Loading | R-BLDG-203 | — |
+| `ref.bldg.fuel_depot.bot_node_priority` | 1.0 | priority modifier | while the vessel is Boarding | R-BLDG-203 | — |
 | `ref.bldg.fuel_depot.boarding_radius_wu` | 300 | wu | own-team actors searched | R-BLDG-203 | — |
 | `ref.bldg.fuel_depot.countdown_screen_wu` | 60 × 60 | wu | | R-BLDG-205 | — |
 | `ref.bldg.fuel_depot.countdown_screen_height_wu` | 150 | wu | above the depot | R-BLDG-205 | — |
@@ -556,13 +558,13 @@ All criteria run headless at game speed 1 with a fixed seed; tick 0 is the first
 
 **AC-ECO-13 Fuel blending** (R-BLDG-194, R-BLDG-198). Given a fuel pump receiving no surges with a store of 20, its store is 19 after 10 ticks and 0 after 200 ticks; a fuel line fed with level 1.0 from level 0 reaches level 0.02 after 1 tick, and a line at level 1.0 fed with 0 falls to 0.94 after 1 tick.
 
-**AC-ECO-14 Boarding** (R-BLDG-203, R-BLDG-204). Given a Loading Launch Vessel with 3 depots and 200 idle own-team Workers around each depot, at most 3 boarding orders are given per tick, and a depot whose pick is a Transport gives none in that tick.
+**AC-ECO-14 Boarding** (R-BLDG-203, R-BLDG-204). Given a Boarding Launch Vessel with 3 depots and 200 idle own-team Workers around each depot, at most 3 boarding orders are given per tick, and a depot whose pick is a Transport gives none in that tick.
 
 ## 7 Dependencies
 
-- **Reference documents:** [README](README.md) (shared structure rules, ports, damage, hit tests, sockets); [mode objects](mode_objects.md) (Command Console, Core Device, Launch Vessel); [defences and props](defences_and_props.md) (Barrier Emitter, Hive); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (map options, elimination); [02 Units](../02_units/README.md) (Worker boarding and operating states, Strike team, actor groups); [05 Population flow](../05_population_flow.md) (Spawn Node capture, activation, production, transit, population lock, Transit Gate waves, Collector delivery); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (Beam Dish selection and aiming); [07 Bots](../07_bots/README.md) (bot navigation nodes at Beam Dishes and fuel depots, bot aiming); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records, Launch Race validation); [10 Audio design](../10_audio_design/README.md) (sound bindings); [11 Tutorial and help](../11_tutorial_and_help.md) (the Spawn Node hint, the tutorial dish); [12 Simulation model](../12_simulation_model/README.md) (registry, teleport transit table, teleport entry, structure order).
+- **Reference documents:** [README](README.md) (shared structure rules, ports, damage, hit tests, sockets); [mode objects](mode_objects.md) (Command Console, Core Device, Launch Vessel); [defences and props](defences_and_props.md) (Barrier Emitter); [trees and crate structures](trees_and_crate_structures.md) (Hive); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (map options, elimination); [02 Units](../02_units/README.md) (Worker boarding and operating states, Strike team, actor groups); [05 Population flow](../05_population_flow.md) (Spawn Node capture, activation, production, transit, population lock, Transit Gate waves, Collector delivery); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (Beam Dish selection and aiming); [07 Bots](../07_bots/README.md) (bot navigation nodes at Beam Dishes and fuel depots, bot aiming); [08 Maps and level design](../08_maps_and_level_design/README.md) (map records, Launch Race validation); [10 Audio design](../10_audio_design/README.md) (sound bindings); [11 Tutorial and help](../11_tutorial_and_help.md) (the Spawn Node objective card, the tutorial dish); [02 Strike team](../02_units/strike_team.md) (the dish snap of a move order); [12 Simulation model](../12_simulation_model/README.md) (registry, teleport transit table, teleport entry, structure order).
 - **Engine components:** [data schemas](../../architecture/components/data_schemas/README.md) (typed links and records); [renderer](../../architecture/components/renderer/README.md) (beams, portal surface, glow, preview beams); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (particles, scrolling beams).
-- **Assets:** `mesh.structure.spawn_node`, `mesh.structure.spawn_node_alt`, `mesh.structure.source_node`, `mesh.structure.relay_mast`, `mesh.structure.transit_gate`, `mesh.structure.transit_gate_alt`, `mesh.structure.beam_dish`, `mesh.structure.solar_array`, `mesh.structure.grid_pylon`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `mesh.structure.fuel_depot`, `fx.beam_short`, `fx.starburst`, `fx.glow_cloudy`, `fx.glow_round`, `fx.barrier_field`, `fx.dish_signal`, `fx.fuel_flow`, `uitex.panel_neutral`, `help.hint.spawn_nodes`, `sfx.building.spawn_node.activate`, `sfx.building.spawn_node.deactivate`, `sfx.building.beam_dish.rotate_start`, `sfx.building.beam_dish.rotate_start_b`, `sfx.building.beam_dish.rotate_stop`, `sfx.building.beam_dish.link_up`, `sfx.building.beam_dish.link_lost`, `sfx.building.solar_array.surge`, `sfx.building.solar_array.charging`, `sfx.building.grid_pylon.surge`, `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow`, `sfx.building.fuel_depot.load_passenger`.
+- **Assets:** `mesh.structure.spawn_node`, `mesh.structure.spawn_node_alt`, `mesh.structure.source_node`, `mesh.structure.relay_mast`, `mesh.structure.transit_gate`, `mesh.structure.transit_gate_alt`, `mesh.structure.beam_dish`, `mesh.structure.solar_array`, `mesh.structure.grid_pylon`, `mesh.structure.fuel_pump_housing`, `mesh.structure.fuel_pump_arm`, `mesh.structure.fuel_line_foot`, `mesh.structure.fuel_line_span`, `mesh.structure.fuel_depot`; the collision assets `mesh.collision.spawn_node`, `mesh.collision.spawn_node_alt`, `mesh.collision.source_node`, `mesh.collision.relay_mast`, `mesh.collision.transit_gate`, `mesh.collision.transit_gate_alt`, `mesh.collision.beam_dish`, `mesh.collision.solar_array`, `mesh.collision.grid_pylon`, `mesh.collision.fuel_pump_housing`, `mesh.collision.fuel_line_foot`, `mesh.collision.fuel_depot`; `fx.beam_short`, `fx.starburst`, `fx.glow_cloudy`, `fx.glow_round`, `fx.barrier_field`, `fx.dish_signal`, `fx.fuel_flow`, `uitex.panel_neutral`, `help.hint.spawn_nodes`, `sfx.building.spawn_node.activate`, `sfx.building.spawn_node.deactivate`, `sfx.building.beam_dish.rotate_start`, `sfx.building.beam_dish.rotate_start_b`, `sfx.building.beam_dish.rotate_stop`, `sfx.building.beam_dish.link_up`, `sfx.building.beam_dish.link_lost`, `sfx.building.solar_array.surge`, `sfx.building.solar_array.charging`, `sfx.building.grid_pylon.surge`, `sfx.building.fuel_pump.pump_up`, `sfx.building.fuel_pump.pump_up_b`, `sfx.building.fuel_pump.pump_down`, `sfx.building.fuel_pump.pump_down_b`, `sfx.building.fuel_line.flow`, `sfx.building.fuel_depot.load_passenger`.
 
 ## 8 Open decisions
 
@@ -576,5 +578,8 @@ Each default is the behaviour that §2 specifies.
 - DEC-455 — same-tick advance of objects handed over during a tick: spawn-network transit and energy-grid hops (R-BLDG-101, R-BLDG-172).
 - DEC-045 — the map editor; the Population Limiter drawing is an editor hook (R-BLDG-137).
 - DEC-551 — Strike teams registered again after a Beam Dish (R-BLDG-149).
+- DEC-860 — structure rule details: the teleport exit jitter is one draw across the exit direction (R-BLDG-149).
+- DEC-330 — mesh sockets that no rule reads: the Transit Gate's exit sockets (R-BLDG-140).
+- DEC-050 — front-end features that exist only as hooks: the objective card of Spawn Node capture (R-BLDG-132).
 
-Resolved decisions applied in this document: DEC-002, DEC-004, DEC-008, DEC-011, DEC-013, DEC-015, DEC-016, DEC-018, DEC-020, DEC-024, DEC-065, DEC-088, DEC-092, DEC-117, DEC-456, DEC-457, DEC-463, DEC-464, DEC-561 and DEC-652. DEC-306 is Dropped, superseded by DEC-455.
+Resolved decisions applied in this document: DEC-002, DEC-004, DEC-008, DEC-011, DEC-012, DEC-013, DEC-015, DEC-016, DEC-018, DEC-020, DEC-024, DEC-065, DEC-088, DEC-092, DEC-103, DEC-117, DEC-456, DEC-457, DEC-463, DEC-464, DEC-561 and DEC-652. DEC-306 is Dropped, superseded by DEC-455.
