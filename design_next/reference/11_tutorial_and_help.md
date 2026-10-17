@@ -178,7 +178,7 @@ Table 2.5-A Tutorial set-up.
 
 **R-TUT-063** (MUST) Every ownership test and every count of the director uses the tutorial player's team, the local player's team of the tutorial match, and never a fixed team id (DEC-103). "Owned" in §2.9 and §2.10 means owned by the tutorial player's team; "a bot" means a bot team of the tutorial.
 
-**R-TUT-064** (MUST) At the start of each evaluation the director hides every instruction tab, except that the scores tab and the win tab stay shown while each is the current tab. Each step rule may then request a tab with an anchor point and an up-offset; the request passes through the rate limiter of R-TUT-066.
+**R-TUT-064** (MUST) At the start of each evaluation the director hides every instruction tab, except that the scores tab and the win tab stay shown while each is the current tab. Each step rule may then request a tab with an anchor point and an up-offset, one of `ref.tut.tab.up_offsets` (20, 30, 40, 60 or 80 wu) as the step tables of §2.9 and §2.10 give it ("up 40"); the request passes through the rate limiter of R-TUT-066.
 
 **R-TUT-065** (MUST) The director keeps one **current tab** (none at the start) and one **step timer** in ticks (0 at the start). The step timer holds the tick of the last accepted request; it is refreshed by every accepted request, not only by a change of tab, and every delay in §2.9 and §2.10 that counts "since the step timer" counts from it.
 
@@ -596,4 +596,221 @@ Table 2.11-D Help page texts (en-GB source).
 | `ui.help.page.flag_chain.1` | Knock other teams out by taking their Flag posts. | — |
 | `ui.help.page.flag_chain.2` | Your Home post starts empty, so claim it first. If an enemy chain of Flag posts reaches it and takes it, you are out. | — |
 | `ui.help.page.flag_chain.3` | Knock out every other team to win the match. | — |
+
+## 3 States and flows
+
+```mermaid
+sequenceDiagram
+    participant P as Player
+    participant F as Tutorials page
+    participant S as Private local session
+    participant D as Tutorial director
+    participant H as Hint overlay
+    P->>F: press the first or the second tutorial button
+    Note over F: ignored while inactive or while a quick start is pending
+    F->>F: set the single-player, quick-start and tutorial flags and the tutorial type, lock navigation
+    F->>S: the title-page update starts the private local session
+    F->>S: match setup applies the tutorial set-up, fades out, requests the bot teams, StartMatch
+    loop every tick of the match
+        S->>D: the tick has run
+        D->>D: evaluate the step rules through the rate limiter
+        D->>S: tutorial events, executed at a tick
+        D->>H: the shown tab and its anchor
+    end
+    H->>P: the camera-controls picture in the grace period, then the instruction tabs
+    S->>F: the match ends by its Zone Control result and the player leaves
+    F->>F: the front end opens at the tutorials page and clears the current instruction
+```
+
+Caption: Diagram 3-A, the start and end of a tutorial (R-TUT-054 to R-TUT-056, R-META-036, R-META-037).
+
+```mermaid
+flowchart TD
+    A["Evaluation, once per tick"] --> B["Hide every tab, except scores or win while current"]
+    B --> C["Step rules of the running tutorial"]
+    C --> E["Tutorial events, executed at a tick"]
+    C --> R{"A tab request"}
+    R -->|"the current tab"| S1["Show it at its new anchor, step timer becomes now"]
+    R -->|"another tab"| G{"Less than 5 ticks since the step timer?"}
+    G -->|yes| X["Refused, no tab shown"]
+    G -->|no| M{"Current is a movement tab, less than 100 ticks since the step timer?"}
+    M -->|yes| X
+    M -->|no| L{"Current is launch_airstrike, less than 200 ticks since the step timer?"}
+    L -->|yes| X
+    L -->|no| S2["Show it, it becomes current, step timer becomes now"]
+```
+
+Caption: Diagram 3-B, one director evaluation and the rate limiter (R-TUT-061 to R-TUT-067).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Calm
+    Calm --> Suspicious : stray action, v becomes -0.75
+    Suspicious --> Calm : v decays to 0 at 0.33 per second
+    Suspicious --> Showing : another stray action while v is below -0.25, v becomes 3
+    Calm --> Showing : immediate trigger, v becomes 3
+    Suspicious --> Showing : immediate trigger, v becomes 3
+    Showing --> Showing : trigger, v grows by 1 up to 3
+    Showing --> Calm : v runs down to 0
+```
+
+Caption: Diagram 3-C, the deselect hint timer v in seconds (R-TUT-024, R-TUT-025).
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    state "Grace period, camera-controls picture" as Grace
+    state "Second node, select_group at home_gather, then capture_node at second_node" as Second
+    state "Centre zone, select_group at home_gather, then move_to_zone" as Centre
+    state "Third node, select_group at second_gather, then capture_node at third_node" as Third
+    state "Leaders at home_gather and second_gather, promote or promote_advanced, then leader_to_zone" as Leaders
+    state "Far zone, capture_far_zone" as Far
+    state "Crate and airstrike, crate_falling, crate_open, select_airstrike, launch_airstrike" as Crate
+    state "Scores tab, up to 400 ticks" as Scores
+    [*] --> Grace
+    Grace --> Second : countdown ends
+    Second --> Centre : second_node owned or 10 heading there
+    Centre --> Third : 10 heading to centre_zone
+    Third --> Leaders : centre_zone owned or more than 5 inside, next node dealt with
+    Leaders --> Far : 3 nodes owned, Leaders with waypoints at 2 gather points
+    Far --> Crate : far zone taken or at most 10 idle at third_gather
+    Crate --> Scores : crate lesson done, far zone taken
+    Scores --> [*] : window over, the match runs to its result
+```
+
+Caption: Diagram 3-D, the usual path through the first tutorial. The rules of §2.9 are normative; the director can return to any earlier step (R-TUT-099).
+
+```mermaid
+stateDiagram-v2
+    [*] --> DishLesson
+    state DishLesson {
+        [*] --> WaitOwn
+        WaitOwn --> SelectDish : idle Workers capture first_console
+        SelectDish --> AimDish : first_dish selected
+        AimDish --> Deselect : linked to target_dish
+        Deselect --> Gather : nothing selected
+        Gather --> UseDish : Workers selected
+        UseDish --> Transit : actors in transit
+        Transit --> [*] : more than 10 idle at target_dish
+    }
+    DishLesson --> FormationLesson
+    state FormationLesson {
+        state "promote at target_dish" as PromoteAtDish
+        [*] --> Promote
+        Promote --> LeaderToDish : Leader selected
+        LeaderToDish --> FormUp : waypoint to first_dish given, Leader still selected
+        LeaderToDish --> PromoteAtDish : waypoint given, nothing selected, no formation
+        FormUp --> PromoteAtDish : nothing selected, no formation
+        PromoteAtDish --> FormUp : new Leader selected
+        FormUp --> MoveFormation : formation exists
+        MoveFormation --> FormationInfo : formation heading to centre_zone, bots may act
+        FormationInfo --> [*] : centre_zone owned and a formation exists
+        MoveFormation --> [*] : fail-safe, centre_zone owned and a formation exists
+    }
+    FormationLesson --> TransportLesson
+    state TransportLesson {
+        [*] --> FormationAttack : attack_node owned by a bot
+        [*] --> CrateDrop : the player took attack_node directly
+        FormationAttack --> BreakFormation : formation near, fewer than 10 enemies
+        BreakFormation --> CrateDrop : attack_node owned
+        CrateDrop --> CrateOpen : crate landed
+        CrateOpen --> SelectTransport : crate opened
+        SelectTransport --> PlaceTransport : Power selected
+        PlaceTransport --> LoadTransport : Transport idle and empty
+        LoadTransport --> MoveTransport : 20 or more aboard
+        MoveTransport --> UnloadTransport : within 200 wu of transport_goal_node
+        UnloadTransport --> [*] : transport_goal_node owned
+    }
+    TransportLesson --> FinalStep
+    state FinalStep {
+        [*] --> CaptureConsole
+        CaptureConsole --> SelectFinalDish : final_console owned
+        SelectFinalDish --> AimFinalDish : final_dish selected
+        AimFinalDish --> WinTab : final_dish linked
+    }
+    FinalStep --> [*] : win tab for 200 ticks, then bots spawn and crates drop
+```
+
+Caption: Diagram 3-E, the usual path through the second tutorial. The phase tables of §2.10 are normative: a sub-state is entered again whenever its row matches again, and the fail-safe of phase F ends the formation lesson from any sub-state (R-TUT-112 to R-TUT-117).
+
+## 4 Tuning table
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ref.tut.director.min_gap_ticks` | 5 | ticks | 0.5 s; minimum gap before a different tab | R-TUT-066 | DEC-103 |
+| `ref.tut.director.breather_ticks` | 100 | ticks | 10 s; pause after a movement tab | R-TUT-066 | DEC-103 |
+| `ref.tut.director.airstrike_breather_ticks` | 200 | ticks | 20 s; pause after `launch_airstrike` | R-TUT-066 | DEC-103 |
+| `ref.tut.director.crate_delay_ticks` | 100 | ticks | 10 s; the crate is inserted when strictly more have passed since the step timer; both tutorials | R-TUT-097, R-TUT-116 | DEC-103 |
+| `ref.tut.count.idle_radius` | 100 | wu | idle(p, r) around gather points and `home_node` | R-TUT-068, R-TUT-094 to R-TUT-097, R-TUT-113 | DEC-094 |
+| `ref.tut.count.heading_tolerance` | 80 | wu | pending order position near p | R-TUT-068 | — |
+| `ref.tut.count.leader_radius` | 100 | wu | Leader near p for beacons(p, q) | R-TUT-068 | — |
+| `ref.tut.count.leader_target_tolerance` | 100 | wu | Leader's order position near q | R-TUT-068 | — |
+| `ref.tut.count.formation_waypoint_tolerance` | 150 | wu | formation Leader's waypoint near p | R-TUT-068, R-TUT-115 | — |
+| `ref.tut.count.formation_anchor_ahead` | 30 | wu | formation anchor ahead of the Leader | R-TUT-068 | — |
+| `ref.tut.tab.up_offsets` | 20, 30, 40, 60, 80 | wu | per request of the step tables | R-TUT-064 | — |
+| `ref.tut.tab.screen_anchor` | (0.5, 0.85) | fraction of (width, height) | while the current tab is `select_airstrike` or `select_transport` | R-TUT-070 | — |
+| `ref.tut.tab.width` | 280 | px | 8 × 35 | R-TUT-071 | — |
+| `ref.tut.tab.pulse` | 0.02 | fraction | width × (1 + 0.02 sin(8 t)) | R-TUT-071 | — |
+| `ref.tut.tab.pulse_rate` | 8 | rad/s | real clock; also the border flash, period about 0.785 s | R-TUT-071, R-TUT-074 | — |
+| `ref.tut.tab.title_font` | 0.12 | × tab width | wrap at 0.6 × the text height per character | R-TUT-071 | — |
+| `ref.tut.tab.body_font` | 0.06 | × tab width | wrap at 0.55 × the text height per character | R-TUT-071 | — |
+| `ref.tut.tab.padding` | 25 | px | added to the box height; title bar + 10 px; text inset 13 px | R-TUT-072 | — |
+| `ref.tut.tab.top_clamp` | 2 | × half-height | anchor y at or above this: arrow up, title only | R-TUT-073 | — |
+| `ref.tut.tab.box_lift` | 1.5 | × half-height | box centre above the anchor | R-TUT-073 | — |
+| `ref.tut.tab.alpha` | 0.9 | alpha | base; fill × 0.8; border × 128/255, flashing × 255/255; title bar × 64/255 | R-TUT-074 | — |
+| `ref.tut.tab.border` | 2 | px | border width | R-TUT-074 | — |
+| `ref.tut.camera_picture.width` | 0.3 | × screen height | 0.2 × 1.5 | R-TUT-021 | — |
+| `ref.tut.camera_picture.aspect` | 128 ÷ 304 | height ÷ width | the picture's visible area | R-TUT-021 | — |
+| `ref.tut.camera_picture.top` | 0.70 | × screen height | top edge of the picture box | R-TUT-021 | — |
+| `ref.tut.camera_picture.flash` | 0.3 of every 1 | s of real time | black alpha 0.6, grey (0.4, 0.4, 0.4) alpha 0.8 during the flash; outline 1 px white alpha 0.2 | R-TUT-021 | — |
+| `ref.tut.hint.layout.width` | 0.35 | × screen height | message box width | R-TUT-023 | — |
+| `ref.tut.hint.layout.font` | 0.02 | × screen height | text height; box height (lines + 1) × text height | R-TUT-023 | — |
+| `ref.tut.hint.layout.centre` | (0.5, 0.78) | fraction of (width, height) | centre layout | R-TUT-023 | — |
+| `ref.tut.hint.layout.structure_x` | 0.1 | × screen width | structure layout centre x | R-TUT-023 | — |
+| `ref.tut.hint.layout.structure_lift` | 1.5 | × box height | structure layout centre y = height − 1.5 × box height | R-TUT-023 | — |
+| `ref.tut.hint.layout.fill_alpha` | 0.75 | alpha | × the hint's alpha | R-TUT-023 | — |
+| `ref.tut.hint.layout.border_alpha` | 0.5 | alpha | × the hint's alpha | R-TUT-023 | — |
+| `ref.tut.hint.layout.flash_alpha` | 0.6 | alpha | additive white, structure layout, while panning | R-TUT-023 | — |
+| `ref.tut.hint.deselect.show_s` | 3.0 | s of real time | display time; also the cap of an extension | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.deselect.extend_s` | 1.0 | s of real time | added by a trigger while showing | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.deselect.suspicion_step` | 0.75 | s | subtracted by a stray action | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.deselect.suspicion_limit` | −1.0 | s | below it the hint shows; two strays within about 1.5 s | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.deselect.decay_per_s` | 0.33 | per second | recovery of a negative timer | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.fast_pan.show_s` | 3.0 | s of real time | re-armed every frame while the condition holds | R-TUT-026 | DEC-037 |
+| `ref.tut.help_page.picture_divisor` | 3.5 | divisor | picture side = left box height ÷ 3.5 | R-TUT-041 | — |
+| `ref.tut.help_page.mode_pages` | 1, 2, 3, 3, 4, 3 | pages | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain; follows the strings that exist | R-TUT-043 | — |
+| `ref.tut.first.map_positions` | 2 | positions | first tutorial map | R-TUT-051 | — |
+| `ref.tut.first.map_population_cap` | 2,000 | Workers | map cap; per team ÷ open slots (R-MODE-258) | R-TUT-051 | DEC-079 |
+| `ref.tut.first.zone_radius` | 150 | wu | both Control Zones of the first tutorial map | R-TUT-090 | — |
+| `ref.tut.first.scores_latch_ticks` | 100 | ticks | 10 s; the window latches within this time of the score time | R-TUT-093 | DEC-103 |
+| `ref.tut.first.scores_window_ticks` | 400 | ticks | 40 s; the scores tab is requested before this time after the score time | R-TUT-093 | DEC-103 |
+| `ref.tut.first.scores_lift` | 50 | wu | above `centre_zone` | R-TUT-093 | — |
+| `ref.tut.first.heading_count` | 10 | Workers | taken: ≥ 10 heading; still to send: < 10; dealt with (rule C): > 10 | R-TUT-094 to R-TUT-097 | — |
+| `ref.tut.first.zone_group_idle` | 15 | Workers | rule A: more than | R-TUT-094 | — |
+| `ref.tut.first.node_group_idle` | 20 | Workers | rule B: at least | R-TUT-095 | — |
+| `ref.tut.first.promote_idle` | 10 | Workers | rule C: at least | R-TUT-096 | — |
+| `ref.tut.first.zone_presence` | 5 | Workers | rule C: zone count more than | R-TUT-096 | — |
+| `ref.tut.first.beacon_points` | 2 | gather points | rule D: at least, of 3 | R-TUT-097 | — |
+| `ref.tut.first.far_zone_idle` | 10 | Workers | rule D1: more than, at `third_gather` | R-TUT-097 | — |
+| `ref.tut.first.crate_offset` | (−100, +800, −200) | wu | (x, y, z) from `crate_point` | R-TUT-098 | DEC-103 |
+| `ref.tut.second.map_positions` | 3 | positions | second tutorial map | R-TUT-051 | — |
+| `ref.tut.second.map_population_cap` | 1,800 | Workers | map cap; no defender cap (DEC-120) | R-TUT-051 | DEC-079, DEC-120 |
+| `ref.tut.second.zone_radius` | 160 | wu | `centre_zone` of the second tutorial map | R-TUT-110 | — |
+| `ref.tut.second.held_time_remaining` | 300 | mode seconds | 5 minutes; held while the bots may not spawn | R-TUT-081 | DEC-103 |
+| `ref.tut.second.dish_idle_radius` | 50 | wu | idle Workers at `target_dish` | R-TUT-113, R-TUT-114 | — |
+| `ref.tut.second.dish_idle_count` | 10 | Workers | more than: the dish lesson is done | R-TUT-113, R-TUT-114 | — |
+| `ref.tut.second.home_idle_count` | 10 | Workers | more than, within 100 wu of `home_node` | R-TUT-113, R-TUT-115 | — |
+| `ref.tut.second.home_front_offset` | 100 | wu | `home_node` + its front × 100 | R-TUT-113 | — |
+| `ref.tut.second.dish_front_offset` | 30 | wu | `target_dish` + its front × 30 | R-TUT-113 | — |
+| `ref.tut.second.formation_move_offset` | (0, 0, 100) | wu | `centre_zone` + this | R-TUT-113 | — |
+| `ref.tut.second.attack_radius` | 200 | wu | formation anchor near `attack_node` | R-TUT-116 | — |
+| `ref.tut.second.attack_enemy_radius` | 100 | wu | enemies near `attack_node` (approximate count) | R-TUT-116 | DEC-094 |
+| `ref.tut.second.attack_enemy_limit` | 10 | actors | fewer than: `break_formation` | R-TUT-116 | — |
+| `ref.tut.second.crate_offset` | (+100, +300, 0) | wu | (x, y, z) from `crate_point` | R-TUT-116 | DEC-103 |
+| `ref.tut.second.transport_passengers` | 20 | Workers | at least, for `move_transport` | R-TUT-116 | — |
+| `ref.tut.second.transport_far` | 150 | wu | more than: `move_transport` | R-TUT-116 | — |
+| `ref.tut.second.transport_near` | 200 | wu | within: `unload_transport` | R-TUT-116 | — |
+| `ref.tut.second.end_tab_ticks` | 200 | ticks | 20 s; the director stops when strictly more have passed after the win tab was accepted | R-TUT-055, R-TUT-117 | DEC-051 |
+
+Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.option.comeback_bonus`, `ref.match.option.sudden_death`, `ref.match.option.crate_placement` and `ref.mode.zone_control.option.time_limit` ([reference/01](01_skirmish_rules_and_modes/README.md)); `ref.econ.catch_up.option_percent`, `ref.econ.crate.drop_rate_s`, `ref.econ.start.powers`, `ref.econ.tutorial.second_max_requests` and `ref.econ.tutorial.second_player_limit` ([reference/05](05_population_flow.md)); `ref.hazard.airstrike.tutorial_marker_count` ([hazards and projectiles](02_units/hazards_and_projectiles.md)); `ref.unit.worker.port_search_range` ([Worker](02_units/worker.md)); `ref.bldg.command_console.capture_threshold`, `ref.bldg.relic.min_lifters`, `ref.bldg.launch_vessel.full_fuel` and `ref.bldg.launch_vessel.attack_fuel` ([mode objects](03_buildings_and_world_objects/mode_objects.md)); `ref.ctrl.camera.speed_hint_hold` ([camera](06_controls_camera_and_commands/camera.md)); `ref.meta.help.general_pages` ([screen flow and match setup](09_front_end_and_match_flow/screen_flow_and_match_setup.md)); `ref.sim.tick_period` ([tick timing](12_simulation_model/01_tick_timing_and_main_loop.md)).
 
