@@ -41,7 +41,7 @@ The Leader's stats are in the actor stat table of [README.md](README.md) §4.1: 
 
 **R-UNIT-159** (MUST) A Leader's actor-grid radius is its mesh radius × `ref.unit.leader.radius_factor` (2), and its centre is its mesh centre raised by `ref.unit.leader.centre_lift` (1 wu).
 
-**R-UNIT-160** (MUST) A Leader moves with the obstacle push of [reference/12](../12_simulation_model/05_space_routing_and_physics.md), where it is tested as a sphere of radius `ref.sim.push.contact_radius` (1 wu) rather than by its mesh; an enabled enemy Barrier Emitter kills it outright (R-SIM-381). It enters a teleport at its waypoint (R-UNIT-163 step 9).
+**R-UNIT-160** (MUST) A Leader moves with the obstacle push of [reference/12](../12_simulation_model/05_space_routing_and_physics.md), where it is tested as a sphere of radius `ref.sim.push.contact_radius` (1 wu) rather than by its mesh; an enabled enemy Barrier Emitter kills it outright (R-SIM-381). It enters a teleport at its waypoint (R-UNIT-163 step 7).
 
 **R-UNIT-161** (MUST) A Leader runs the water step of [reference/12](../12_simulation_model/05_space_routing_and_physics.md) twice per tick: once inside the base actor advance and once after it. Its in-water count therefore rises by 2 per tick, so its first drowning damage lands on its 51st tick in water (about 5 s), and its swimming displacement is applied twice per tick.
 
@@ -354,7 +354,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 
 **AC-UNIT-L02 — Demotion** (R-UNIT-154). Given a selected Leader, when `DemoteLeader` executes, then a Worker of its team appears at its position, the team has no selection, and on its next advance the Leader is removed without an Essence orb.
 
-**AC-UNIT-L03 — Formation slot positions** (R-UNIT-182). Given a Leader at (0, 0, 0) facing (0, 0, 1) on flat ground with a slot array of size 20, then index 0 lies at (−18, 0, 12) relative to the Leader... with right = front × up = (0, 0, 1) × (0, 1, 0) = (−1, 0, 0), index 0 lies at p + f × 12 + right × (0 − 18) = (18, 0, 12), index 5 at (18 − 30, 0, 12) = (−12, 0, 12), and index 6 at (18, 0, 18).
+**AC-UNIT-L03 — Formation slot positions** (R-UNIT-182). Given a Leader at (0, 0, 0) facing f = (0, 0, 1) on flat ground with a slot array of size 20, the row size is 6 and right = normalise(f × up) = (−1, 0, 0). Then index 0 lies at f × 12 + right × (0 − 18) = (18, 0, 12), index 5 at f × 12 + right × (30 − 18) = (−12, 0, 12), and index 6 at f × 18 + right × (−18) = (18, 0, 18).
 
 **AC-UNIT-L04 — Row sizes** (R-UNIT-182). The row size is 6 for array sizes 1 and 24, 9 for 25 and 47, 12 for 48 and 89, 15 for 90 and 199, and 25 for 200.
 
@@ -370,7 +370,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 
 **AC-UNIT-L10 — Order markers** (R-UNIT-163, R-UNIT-185, R-UNIT-186). Given a Leader that holds a waypoint order for 100 ticks, then it creates an order marker every 20 ticks, each marker drops a trail mark every 2 ticks while it travels, and every trail mark is removed 10 ticks after its creation.
 
-**AC-UNIT-L11 — Drowning** (R-UNIT-161). Given a Leader that lands in water at tick t, then its first drowning damage lands at tick t + 51 and it dies then.
+**AC-UNIT-L11 — Drowning** (R-UNIT-161). Given a Leader that comes down in water at tick t, so that tick t is its first tick in water, then its first drowning damage lands at tick t + 50, its 51st tick in water, and it dies then.
 
 **AC-UNIT-L12 — Bot defence facing** (R-UNIT-188). Given a bot Leader holding at a navigation node that needs defending, with one enemy-owned neighbour to the east, then its bot target front points east.
 
