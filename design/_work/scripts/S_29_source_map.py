@@ -95,7 +95,8 @@ def main():
     doc = open(doc_path, encoding='utf-8').read()
     cut = doc.find('\n## Source map')
     if cut > 0:
-        doc = doc[:cut]
+        end = doc.find('\n## Appendix', cut)
+        doc = doc[:cut] + (doc[end:] if end > 0 else '')
     manifest = [r['path'] for r in csv.DictReader(open(man_path, encoding='utf-8'))]
     by_lower = {p.lower(): p for p in manifest}
     root_files = {p.lower() for p in manifest if '/' not in p}
