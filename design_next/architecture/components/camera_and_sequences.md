@@ -369,7 +369,7 @@ Caption: Diagram 4.2-A, the camera modes; the transitions among the player modes
 
 ### 4.4 Scripted move
 
-**CAM-045** (MUST) `StartMove(T)`, with a duration T ≥ 0 seconds, records the start pose (the current position, front and up), the start time (the camera clock now) and T, and enters the scripted-move mode (CAM-035). The move goes to the target set before the call (CAM-040, CAM-041, CAM-053).
+**CAM-045** (MUST) `StartMove(T)`, with a duration T ≥ 0 seconds, records the start pose (the current position, front and up), the start time (the camera clock now) and T, and enters the scripted-move mode (CAM-035). The move goes to the target set before the call (CAM-040, CAM-041, CAM-053). `EnterMode(ScriptedMove)` without a duration, as the restoring of a saved mode does (CAM-067, CAM-068), starts a move from the current pose to the current target with the duration that `StartMove` last recorded; `EnterMode(StructureFocus)` keeps the recorded structure, range and height and runs the entry actions of CAM-056 again.
 
 **CAM-046** (MUST) Each advance in the scripted-move mode, with f = (now − start time) ÷ T, or f = 1 when T = 0:
 

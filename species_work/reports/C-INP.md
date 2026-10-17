@@ -4,11 +4,15 @@
 
 | File | Bytes | Requirements | Tuning keys | Diagrams | Acceptance tests |
 |---|---|---|---|---|---|
-| `design_next/architecture/components/input.md` | 114,993 | 134 (INP-001 to INP-244, increasing, with gaps by section) | 18 (`inp.*`) | 6 | 31 (T1 to T31) |
+| `design_next/architecture/components/input.md` | 115,440 | 134 (INP-001 to INP-244, increasing, with gaps by section) | 18 (`inp.*`) | 6 | 31 (T1 to T31) |
 
 Scripts: `species_work/scripts/C-INP_tables.py` (the default binding set as data; generates tables 3.6-A, 3.6-B and the reverse index 3.8-A, so they agree), `species_work/scripts/C-INP_check.py` (ids, keys, cited INP/R-*/DEC/ADR/asset/`PlayerCommand` ids, action ids against reference/06 table 2.1-A, headings, truncation words).
 
 Checks: forbidden scan 0 hits; soft scan 0 hits; `C-INP_check.py` 0 problems (every cited `ref.*` key and R-* requirement exists in `design_next/`; every one of the 70 action ids of reference/06 has a catalogue row, `action.app.quit` stated as a platform close request); 6 of 6 Mermaid blocks parse with mermaid 11.4.1 (`G06_mermaid.mjs`); template headings present; file under 120 KB.
+
+## Coordinator follow-up (C-UI menu actions)
+
+Applied after the coordinator's note. input.md defines no UI navigation action of its own: INP-003, INP-009 and INP-077 cite the UI framework's UI-203 (the nine `action.menu.*` actions, their meanings and context rules) and UI-204 (the keyboard defaults: arrows, Enter, Escape outside a match). Rows 1 to 9 of table 3.6-B only state those defaults as binding nodes (order and primary binding), and their "Defined by" column cites UI-203 and UI-204. The only input-side additions are the five leaderboard hook-page actions in rows 10 to 14 (`action.menu.cycle_up` = `PadMenuCycleUp`, `action.menu.cycle_down` = `PadMenuCycleDown`, `select_previous`, `select_next`, `toggle_period`). They cite R-META-500 to R-META-502 and DEC-553, because no UI requirement lists them; C-UI or G09b may adopt them, or the coordinator may move them. Re-checked: `C-INP_check.py` 0 problems, both pattern scans 0 hits, `accept_package.py` PASS.
 
 ## Counts
 
