@@ -24,6 +24,7 @@
 - [ ] `python Build\RunClangTidy.py`
 - [ ] Release built locally (CI does not build it — AGENTS.md §6)
 - [ ] Ran the executable (**required** if this touches rendering, input, audio or presentation)
+- [ ] `python Tools\DesignCheck\CheckDesign.py Design` (**required** if this touches `Design/`)
 
 <!-- A checker that is not written yet is not a box to tick. Strike it and say so below. -->
 

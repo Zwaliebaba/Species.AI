@@ -2,19 +2,32 @@
 
 Operating instructions for every agent (and human) writing code in this repository. **Read this before generating a single line.**
 
-This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in a design document that does not exist yet.
+This repository is a greenfield C++23 game and a hobby project with one developer: a Direct3D 12 game built on Windows with MSVC. This file is about **how code is written here** — naming, layout, build settings and the standing rules of the codebase. It is not the design: what the game *is* belongs in `Design/` and `vision/` (see "What is authoritative" below).
 
-**The tree is empty.** This repository holds this file, the root configuration files, `.gitignore` and `.github/` — no solution, no projects, no source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any checker comes back clean — trivially today, and by conformance from then on.
+**There is no code yet.** This repository holds this file, the root configuration files, `.gitignore`, `.github/` and the design material — no solution, no projects, no source. Nothing below is a target to migrate towards; it describes the code as it must be written from the first line. There is no legacy here and nothing is grandfathered, so a whole-tree run of any code checker comes back clean — trivially today, and by conformance from then on.
+
+**What the tree holds today (2026-10-17):**
+
+| Path | What it is |
+|---|---|
+| `vision/species-vision-brief.md` | The Species pitch and the owner's decisions O1–O24. |
+| `Design/` | The **Species reference library**: `reference/` (the reference mechanics of a skirmish match, engine-agnostic), `architecture/components/` (the engine baseline, one specification per component), `ADR/` (the baseline architecture decision records), `decisions/` (the decision register, `DEC-NNN`), `assets/` (every asset to create, `GameAssets.md`), `glossary/`, `CONVENTIONS.md` and `REQUIREMENTS_INDEX.md`. It is a reference for the design phase, not yet the Species game design. |
+| `prompts/species-design-phase.md` | The run that turns the reference library and the vision into the Species game design. |
+| `Tools/DesignCheck/`, `Tools/DesignModels/` | The design gate checker (run on every change under `Design/`) and the design phase's quantitative models. They never ship and never link (R14). |
+
+While the conversion run that builds the library is in progress, the library is assembled in `design_next/`, next to its source corpus `design/` and the run's working folder `species_work/`; the cutover replaces `design/` with `Design/` and removes the other two. Until then, read `design_next/` wherever this file says `Design/`.
 
 **Where these rules come from.** They are carried over from two sibling repositories: `Outpost.Warzone`, where the formatter and linter settings were measured against roughly 223,000 lines, and `Nomad-Commander`. That lineage is why `.clang-format` and `.clang-tidy` are what they are, and it is why code can move between the trees without a rename or a reflow pass. **What did not come across is the other trees' design, their decisions or their plan.** A decision taken there binds nothing here.
 
-**What is authoritative, in order:**
+**What is authoritative for how code is written, in order:**
 
 1. **This file** — conformance: naming, style, build settings, and how to work here.
-2. **`Design/ADR/`** — engineering decisions taken while building, one file per decision (§6). **There are none yet**; numbering starts at `ADR-001` in this repository and does not continue another's.
+2. **`Design/ADR/`** — engineering decisions, one file per decision (§6). The baseline holds **ADR-001 to ADR-077**, written when the reference library was built (the index and the pinned technology baseline are in `Design/ADR/README.md`); new records continue from the highest id. Where a baseline ADR and this file disagree, this file wins and the ADR is amended.
 3. **The surrounding code** — for anything neither of the above covers, match the file you are editing.
 
-A design document, when there is one, sits alongside rather than above: it says what is built and this file says how. Until it exists there is no design authority, and a task that needs a design answer asks the owner and gets the answer written down before the code is.
+**What is authoritative for what is built:** the owner's decisions in `vision/species-vision-brief.md`, then the Species game design when the design phase has written it, then `Design/`: the engine component specifications are the engine baseline, and the reference mechanics are adopted, adapted or dropped by the design phase requirement by requirement. Open questions are entries in the decision register (`Design/decisions/`); an Open entry states the behaviour to build until it is decided.
+
+The design sits alongside this file rather than above it: the design says what is built and this file says how. A task that needs a design answer the design does not give asks the owner, and the answer is written down (in the design or the decision register) before the code is.
 
 If a rule here conflicts with a habit from another codebase, this file wins. If you think a rule is wrong or your task cannot be done without deviating, **say so in your report — never deviate silently.**
 
@@ -67,7 +80,7 @@ clang-tidy can require an *absent* prefix but cannot see a *present* suffix, so 
 
 **R8 — `m_` marks encapsulated state, not every field.** A `class` with invariants prefixes private members `m_`. A public aggregate — a `Desc` config struct, a wire record, a POD handed to the renderer — uses plain `camelCase` fields so brace initialization reads naturally.
 
-**R9 — One namespace per layer, and the engine does not know the game.** Reusable engine code gets its own namespace; game code gets another. The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
+**R9 — One namespace per layer, and the engine does not know the game.** Reusable engine code gets its own namespace, `Engine`; game code gets another, `Species`. The split is a rule rather than a filing preference: if an engine type has to know a game concept by name in order to do its job, it is in the wrong layer. Test suites use `namespace <Project>Tests`.
 
 **R10 — No `using namespace` at file scope in a header.** It leaks into every translation unit that includes it, and the failure it causes appears somewhere else. In a `.cpp` it is allowed for the unit-test framework and nothing else; otherwise qualify the name or write a local alias.
 
@@ -152,7 +165,7 @@ The concrete layout — the solution, the projects and the edges between them �
 
 **Filters are functional.** A `.filters` file groups a project by what the code *does* — `Rendering`, `Audio`, `Input`, `Shader` — never by what kind of file it is. The Visual Studio defaults `Source Files`, `Header Files` and `Resource Files` are deleted when a project is created and never come back, and a `.h` sits in the same filter as its `.cpp`.
 
-**There are no vendored SDKs and no package manager.** The build depends on the Windows SDK and the MSVC standard library, and on nothing else. See R14.
+**There are no vendored SDKs and no package manager beyond NuGet restore.** The build depends on the Windows SDK, the MSVC standard library and the three Microsoft packages R14 allows, which NuGet restores into `packages/` at build time; restored packages are build output and are never committed. See R14.
 
 **Build and IDE output is never committed** — `x64/`, `.vs/`, `*.user`, and anything a build step generates.
 
@@ -171,6 +184,9 @@ That alignment matters more than it looks, because **CI builds Debug only** (§6
 **Build through the solution, never a `.vcxproj` directly.** Output paths and cross-project include directories are anchored on `$(SolutionDir)`, and MSBuild defines `SolutionDir` only for a solution build. Building a project file directly resolves every one of those paths against the *project* folder instead of the repository root. **It does not fail — that is the problem.** Output lands in the wrong folder, so the next solution build links against whichever copy is staler, and every cross-project include path becomes a directory that does not exist. The breakage is latent: it bites the first time a file reaches across projects, which may be weeks after someone got into the habit. To build one project, use `/t:<ProjectName>` on the solution.
 
 ```powershell
+# Restore the NuGet packages R14 allows (once a project references one).
+msbuild <Solution>.slnx /t:Restore /p:RestorePackagesConfig=true /nologo
+
 # Everything, from the repository root, naming the solution.
 msbuild <Solution>.slnx /p:Configuration=Debug /p:Platform=x64 /m /v:minimal /nologo
 
@@ -216,13 +232,21 @@ python Build\RunClangTidy.py          # needs a Developer PowerShell (INCLUDE mu
 
 ## 5. Rules for this codebase
 
-**R12 — Graphics is Direct3D 12.** COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is not settled here; it is a design and engineering decision taken when the renderer is built, and recorded as an ADR (§6).
+**R12 — Graphics is Direct3D 12**, through the DirectX Agility SDK (R14). COM lifetimes are RAII from the first line — a raw `AddRef`/`Release` pair in new code is a defect, not a style. How the renderer is shaped — passes, render targets, resolution, scaling, window style, multisampling, text — is decided in the baseline ADRs (`Design/ADR/`, ADR-001 to ADR-016) and specified in `Design/architecture/components/renderer/`; a change to it is a new or amended ADR (§6).
 
-**R14 — No third-party dependencies and no package manager.** The Windows SDK and the MSVC standard library, and nothing else. If you believe something is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar.
+**R14 — No third-party dependencies and no package manager, except three Microsoft packages.** The executable is built from the Windows SDK, the MSVC standard library and this allow-list, and nothing else:
+
+| Package (NuGet) | What it provides | Why it is allowed |
+|---|---|---|
+| `Microsoft.Direct3D.D3D12` (DirectX Agility SDK) | the current Direct3D 12 runtime (`D3D12Core.dll`, installed beside the executable) and its headers | one, current Direct3D 12 runtime on every supported Windows build (ADR-001) |
+| `Microsoft.GameInput` | the GameInput header, library and the `GameInputRedist.msi` the installer runs | the supported controller API and its updated runtime (ADR-028) |
+| `WinPixEventRuntime` | `pix3.h` and `WinPixEventRuntime.dll` | PIX markers and captures (ADR-068) |
+
+The pinned versions are in the technology baseline of `Design/ADR/README.md`. If you believe anything else is unavoidable, propose it in your report with what it buys and what it costs — do not add it. This is a closed list, not a high bar; adding to it is an owner decision recorded as an ADR.
 
 **It binds what the executable is built from, not what a development tool needs.** Scripts under `Build/` and `Tools/` never ship and never link, so a baker that needs Pillow does not reopen this rule. **Third-party *content* is a different question and it is the owner's**: art, fonts and sound are allowed, and anything under a licence needs the owner's approval before it lands, with the licence text travelling with the bytes.
 
-For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `wrl/client.h` (`Microsoft::WRL::ComPtr` is the COM smart pointer R12 asks for) and the `fxc`/`dxc` compilers that `FXCompile` drives. It excludes what a D3D12 sample reaches for by reflex, because each is NuGet or GitHub content and not SDK content: the DirectX Agility SDK and its `d3dx12.h`, DirectX-Headers, DirectXTK12, DirectXTex, and the DirectX Shader Compiler as a redistributable. Resource barriers and heap descriptions are written by hand.
+For Direct3D the list means what the Windows SDK and the Agility SDK install: `d3d12.h`, `dxgi1_6.h`, `DirectXMath.h`, `wrl/client.h` (`Microsoft::WRL::ComPtr` is the COM smart pointer R12 asks for) and the `fxc`/`dxc` compilers of the Windows SDK that `FXCompile` drives. It excludes what a D3D12 sample reaches for by reflex: the `d3dx12.h` helpers (even where a package carries them), DirectX-Headers, DirectXTK12, DirectXTex, and the DirectX Shader Compiler as a redistributable. Resource barriers and heap descriptions are written by hand.
 
 **R15 — Memory is plain C++.** `new`/`delete` where it must be, RAII everywhere, standard containers by default. No pool, slab or free-list allocator without a decision recorded in `Design/ADR/`.
 
@@ -236,13 +260,17 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 
 **R18 and up are reserved.** A design document does not only say what to build; some of what it says constrains how the code is *shaped* — which state a decision routine may read, what an emitted event has to carry with it, where tuning values live. Those are conformance rules with a design source, and they are written here as R18 onward when there is a design to cite, without renumbering anything above. Until then, do not invent one and do not import one from another tree: a rule with no source behind it is a rule nobody can settle an argument with.
 
+
+The reference library already states rules of this kind, and the design phase decides which become R18 onward when it writes the Species design. The candidates are: the presentation layer never writes simulation state; the simulation core is deterministic (the tick is the clock, randomness comes from named streams with recorded seeds, iteration order never depends on allocation history: `Design/reference/12_simulation_model/` and the numeric-model decisions DEC-240 and DEC-241); and every tuning value lives in data with a stable key, never as a literal in code (`Design/CONVENTIONS.md` §4). Until the design phase writes them here, treat them as the specification of the component that states them, not as conformance rules.
 ---
 
 ## 6. Working rules
 
 **Stay in scope.** Do what the task asks. Adjacent code that offends you is not part of the task — note it in your report and move on. Unrequested "while I was in there" changes are the main way a young tree acquires regressions it cannot bisect.
 
-**Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, numbered in order from `ADR-001-<slug>.md`, stating the context, the decision and what it forecloses, in the same commit as the change that implements it. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it.
+**Record decisions as ADRs.** An engineering decision — a file format, a wire protocol, a subsystem's shape, an exception to a rule here — goes in `Design/ADR/` as one file per decision, `ADR-NNN-<slug>.md`, numbered in order from the highest existing id (the baseline ends at ADR-077), in the MADR 4 form the baseline uses (context, options, decision, consequences: what it forecloses), in the same commit as the change that implements it. A change to a baseline ADR is an amendment note in that ADR, never a silent edit. Figures in an ADR are measured, not estimated — if you quote one, say how you measured it. A decision nobody wrote down gets re-litigated every few months by whoever forgot it. Design questions (what the game does, as opposed to how it is built) go in the decision register, `Design/decisions/`, as `DEC-NNN` entries.
+
+**Run the design checks on every change under `Design/`.** `python Tools/DesignCheck/CheckDesign.py Design` checks links, requirement ids, decision and ADR references, asset ids, tuning keys, sizes, templates and banned terms; it must pass before a design change is pushed.
 
 **Write the checkers early.** `Build/CheckFormat.py`, `Build/CheckProjectFiles.py` and `Build/RunClangTidy.py` are what §1, §2 and §3 lean on, and **none of them exists yet.** Until each one lands, the rules it would enforce are review's problem — which is exactly why they are early work rather than housekeeping.
 
@@ -266,4 +294,5 @@ For Direct3D that list means what the Windows SDK installs: `d3d12.h`, `dxgi1_6.
 - [ ] It builds Debug|x64, and every test suite runs and passes.
 - [ ] If it touches rendering, input, audio or presentation: it was **run**, not just built.
 - [ ] `Design/ADR/` has a new file if the change *was* a decision.
+- [ ] If it touches `Design/`: `python Tools/DesignCheck/CheckDesign.py Design` passes.
 - [ ] Your report states plainly what you verified, what you assumed, and any rule here you had to bend.

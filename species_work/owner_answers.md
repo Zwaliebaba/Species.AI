@@ -22,3 +22,14 @@ Owner information only (no decision asked): the title "Species" overlaps the *Sp
 | O18 | Hostile crate outcomes (DEC-107) | **Hazards team-blind; every outcome respects map exclusions; Brood ownership in playtest** | DEC-107 Resolved; DEC-121 (Open) split out |
 | O19 | Map value 0 (new) | **Explicit values: absent = lobby default, 0 = none, explicit unlimited** | DEC-120 Resolved |
 | O20 | First playable mode | **Spawn Control** (2 players), confirming the GameAssets.md assumption | GameAssets priorities stand; design phase B9 |
+
+## Batch 4: code standards (Phase 4, 2026-10-17)
+
+The owner added `AGENTS.md`, `.clang-format`, `.clang-tidy`, `.editorconfig`, `.github/pull_request_template.md` and `.github/workflows/build.yml` (commit 1b54ae7, merged into the branch). `AGENTS.md` contradicted nine engine ADRs, the ADR home and the design's code naming.
+
+| O | Question | Answer | Applied |
+|---|---|---|---|
+| O21 | AGENTS.md against the engine ADRs (build system, dependencies, shaders, flavours) | **AGENTS.md wins, with a Microsoft allow-list**: the Agility SDK, the GameInput redistributable and WinPixEventRuntime (NuGet); everything else as AGENTS.md says | AGENTS.md R14 amended; X-ADR-P4 follow-up amends ADR-0003, 0050, 0051, 0052, 0053, 0054, 0055, 0056, 0058, 0059, 0062, 0068, 0069, 0070, 0071 and the baseline; wave B aligns the components |
+| O22 | ADR home | **`Design/ADR/ADR-NNN-<slug>.md`**, three-digit ids keeping the numbers; library root `Design/` at the cutover | coordinator renames and rewrites every citation; prompt §8.2 cutover target `Design/` |
+| O23 | Code naming in the design | **Convert now** to AGENTS.md naming (`Engine` and `Species` namespaces; American spelling in identifiers; prose British) | wave B fixers; FX-12 rewrites CONVENTIONS §8 |
+| O24 | AGENTS.md scope | **Status and authority**; R18+ reserved for the design phase, with candidates listed | AGENTS.md updated by the coordinator |

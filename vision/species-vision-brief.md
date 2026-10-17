@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3)
+## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1, O14–O20 during the conversion Phase 3, O21–O24 when the code standards (`AGENTS.md`) were adopted)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -41,6 +41,10 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O18 | Hostile crate outcomes | Hazards team-blind; every outcome respects the map's exclusion list; Brood ownership decided in playtest (DEC-107, DEC-121). | — |
 | O19 | Map values | Absent = lobby default, 0 = none, unlimited is explicit (DEC-120). | Typed map schema. |
 | O20 | First playable | Spawn Control, 2 players, core Supply crate pool. | Matches the GameAssets.md priorities. |
+| O21 | Build rules and dependencies | **`AGENTS.md` governs how code is written and built**: MSBuild solution (`.slnx`), toolset v145, `/std:c++latest`, Debug and Release only, x64 only, no CMake, no package manager beyond NuGet restore, and no third-party code except a **Microsoft allow-list: the DirectX Agility SDK, the GameInput redistributable and WinPixEventRuntime**. Shaders are compiled by `FXCompile` with the Windows SDK's compiler into byte arrays inside the executable. | The engine ADRs and components follow it: no vcpkg, no CMake presets, no build flavours beyond Debug and Release, no third-party libraries in the executable (compression, codecs, test framework, texture tools); the dedicated server is a Windows build until a later ADR decides another host. |
+| O22 | ADR home | Architecture decision records live in **`Design/ADR/` as `ADR-NNN-<slug>.md`** (three-digit ids, MADR 4 content). The design library becomes **`Design/`** at the cutover. | The baseline ADRs keep their numbers (ADR-0050 becomes ADR-050); new ADRs continue from the highest id. |
+| O23 | Code naming in the design | The C++ sketches, type, file and macro names in the design follow the `AGENTS.md` naming rules now: PascalCase types, functions, namespaces and files, `_camelCase` parameters, `m_` members, `UPPER_CASE` constants, American spelling in identifiers, namespace `Engine` for engine code and `Species` for game code. Prose stays British English. | Every component sketch is rewritten; CONVENTIONS §8 follows `AGENTS.md`. |
+| O24 | AGENTS.md scope | `AGENTS.md` states the repository's current status and which document decides what. **R18 onwards stays reserved** for conformance rules that the Species design phase derives from the Species design. | The design phase proposes R18+ rules (candidates: presentation never writes simulation state; the determinism rules of the simulation core; tuning values in data, never in code). |
 
 ## 4 What carries over from the reference library
 
