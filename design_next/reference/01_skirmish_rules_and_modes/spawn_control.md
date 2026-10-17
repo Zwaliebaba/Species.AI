@@ -12,9 +12,9 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-200** (MUST) Spawn Control is free-for-all for 2 to 4 players. Co-op, 2 against 2, exists on maps that allow it, with fixed alliances where the map defines group positions (positions 0 and 2 against 1 and 3 on the one reference map that does) (README R-MODE-018 to R-MODE-025).
 
-**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object; it is the first playable mode of Species, and the rest of the build order is DEC-229.
+**R-MODE-201** (MUST) The objective is the spawn network: Spawn Nodes, Relays, the Source Node and Population Limiters ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [reference/05](../05_population_flow.md)); it uses `mesh.structure.spawn_node`. Maps may also place Beam Dishes, jump pads, gun turrets, Barrier Emitters and neutral Transit Gates; the gates stay inactive, because no Spawn Control map enables reinforcement waves. The mode needs no mode-specific object; it is the first playable mode of Species, with two players and the core Supply crate pool (owner decision O20), and the rest of the build order is DEC-229. Whether the first playable has a tutorial is DEC-123, whose default is none, because the two reference tutorials run Zone Control (README R-MODE-083).
 
-**R-MODE-202** (MUST) The options are score mode, time limit (0 to 60 minutes, default `ref.mode.spawn_control.option.time_limit`, 10; 0 means none), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-081).
+**R-MODE-202** (MUST) The options are score mode, time limit (none or 1 to 60 minutes, default `ref.mode.spawn_control.option.time_limit`, 10; none is the explicit no-limit value, never 0, DEC-120), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-124).
 
 ### 2.2 Timers
 
@@ -53,7 +53,7 @@ Spawn Control is the territory mode in its plainest form. Teams capture and hold
 
 **R-MODE-209** (MUST) Supply crates follow the standard rules; the Collector, Builder and Spawn Surge outcomes are valid, because every Spawn Control map has Spawn Nodes ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)).
 
-**R-MODE-210** (MUST) Bots use the standard priority model, form Leader formations when they have enough friendly Workers and set Waypoint beacons at Spawn Nodes ([reference/07](../07_bots/README.md)).
+**R-MODE-210** (MUST) Bots use the standard priority model, form a Leader formation at a node that has at least `ref.bot.leader.formation_friends` (70) friendly actors ([reference/07](../07_bots/03_decision_loop_and_leaders.md) R-BOT-091) and set Waypoint beacons at Spawn Nodes ([reference/07](../07_bots/README.md)).
 
 ### 2.5 HUD and end of match
 
@@ -127,7 +127,7 @@ String ids that this file uses, with their new text:
 2. **Sudden-death survivors return.** A team wiped by sudden death is not eliminated; it still owns its Spawn Nodes, keeps its countdown and can win if it retakes the lead (DEC-300).
 3. **Factions on Spawn Nodes.** The Rogue and Visitor factions can own Spawn Nodes and score, but the last player team in play wins at once; the factions never block that win (DEC-082).
 4. **Losing the last Spawn Node early.** A team that loses every Spawn Node during the protection period is not warned until post-grace tick 308; from then its 30 mode seconds count.
-5. **Unlimited matches.** With a time limit of 0 the match ends only by elimination, and the estimate on the HUD is not shown (README R-MODE-065).
+5. **Unlimited matches.** With the time limit at none the match ends only by elimination, and the estimate on the HUD is not shown (README R-MODE-065).
 6. **Co-op last alliance.** When one alliance remains, the declared winner is its higher-scoring member, and a tie between the two allies is declared a draw (R-MODE-205 step 5).
 
 ## 6 Acceptance criteria
@@ -155,7 +155,8 @@ String ids that this file uses, with their new text:
 ## 8 Open decisions
 
 - DEC-229 — the build order after the Spawn Control first playable (R-MODE-201).
+- DEC-123 — the tutorial for the first playable (R-MODE-201).
 - DEC-300 — the return of teams wiped out in sudden death (§5 item 2).
 - DEC-047 — the Total Control hook (R-MODE-212).
 
-Resolved decisions applied: DEC-002, DEC-039, DEC-070, DEC-079, DEC-081, DEC-082, DEC-120.
+Resolved decisions applied: DEC-002, DEC-039, DEC-070, DEC-079, DEC-082, DEC-120, DEC-124.

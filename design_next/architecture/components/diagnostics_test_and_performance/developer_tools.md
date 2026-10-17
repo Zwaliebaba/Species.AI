@@ -14,7 +14,7 @@ The development drawing queue and the debug-command declarations are those of Li
 
 ## 3 Data model
 
-**Development text.** Development captions are developer-facing, in the base language only, and live in a development string table that no player edition contains (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
+**Development text.** Development captions are developer-facing, in the base language only, and live in the development string table, which uses `strings.dev_en_gb`: only the editions that are never released hold it, and no player edition contains it (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
 
 | String id | Text |
 |---|---|
@@ -40,25 +40,28 @@ The development drawing queue and the debug-command declarations are those of Li
 | `ui.dev.command.kill_all`, `.spawn_workers`, `.spawn_transport`, `.spawn_crawlers`, `.spawn_orbs`, `.arbitrary_placement`, `.spawn_at_ports`, `.spawn_crate`, `.crate_normal` | Defeat enemies · Add Workers ({team}) · Add Transport · Add Crawlers · Add Essence orbs · Free placement · Fill structure ports · Drop Supply crate · Random outcome |
 | `ui.dev.command.profile_view`, `.network_stats`, `.reset_render` | Profile · Network · Rebuild GPU resources |
 | `ui.dev.command.crash_main`, `.crash_worker`, `.crash_terminate`, `.crash_invalid_parameter`, `.crash_pure_call`, `.hang_main` | Fault: main thread · Fault: worker thread · Fault: terminate · Fault: invalid parameter · Fault: pure call · Hang: main thread |
+| `ui.dev.command.dump_bindings` | Write bindings to the log |
 | `ui.match.cheats_used` | Debug commands were used in this session |
 
 ## 4 Behaviour and algorithms
 
 ### 4.4 Development overlay
 
-**DBG-095** (MUST) The **frame-rate line** of the overlay is drawn in pass 29 (RND-076) in the body text role ([layout](../ui_framework/layout_rendering_input_and_localisation.md) §4), right-aligned at (W − `dbg.overlay.frame_rate_right` (10), H − `dbg.overlay.frame_rate_bottom` (40)), and only while the interface is shown. While a match world exists it shows the frame rate and the number of live simulated objects (`ui.dev.overlay.frame_rate_entities`); elsewhere it shows the frame rate alone (`ui.dev.overlay.frame_rate`). The frame rate is the renderer's counter of frames completed in the last `ref.sim.frame.fps_window` (RND-011, R-SIM-576). Its visibility is the renderer's frame-rate overlay flag of RND-011, off by default and absent from `Shipping` builds; in the reference player build the line exists but is forced off and nothing can show it.
+**DBG-095** (MUST) The **frame-rate line** of the overlay is drawn in pass 29 (RND-076) in the body text role ([layout](../ui_framework/layout_rendering_input_and_localisation.md) §4), right-aligned at (W − `dbg.overlay.frame_rate_right` (10), H − `dbg.overlay.frame_rate_bottom` (40)), and only while the interface is shown. While a match world exists it shows the frame rate and the number of live simulated objects (`ui.dev.overlay.frame_rate_entities`); elsewhere it shows the frame rate alone (`ui.dev.overlay.frame_rate`). The frame rate is the renderer's counter of frames completed in the last `ref.sim.frame.fps_window` (RND-011, R-SIM-576). Its visibility is the renderer's frame-rate overlay flag of RND-011, off by default and absent from Release builds; in the reference player build the line exists but is forced off and nothing can show it.
 
 **DBG-096** (MUST) The **frame page** shows, besides the frame-rate line: the frame-time graph of DBG-089; the percentiles `dbg.telemetry.percentiles` (50th, 95th and 99th) of the frame-time history; the CPU share of each root profile node, as its last-period time × 100 ÷ the length of the last period, in percent; and the live entity counts per actor kind and per structure kind, with the counts of Essence orbs, laser bolts, effects and particles.
 
 **DBG-097** (MUST) A **budget row** shows a measured value against its budget (`CounterSink::Budget`); a value above its budget is drawn in the warning colour `dbg.overlay.warning_rgb` (255, 64, 64), and nothing else changes. The `audio.update` share of the frame page is drawn in the warning colour above `dbg.overlay.audio_share_warning` (15 %) of the frame.
 
-**DBG-098** (MUST) The overlay shows one page at a time; `action.debug.overlay` shows and hides it, and the page list of DBG-023 is stepped with the menu actions while the overlay holds the focus. In `Profile` builds only the frame, render and simulation pages exist (DBG-004).
+**DBG-098** (MUST) The overlay shows one page at a time; `action.debug.overlay` shows and hides it, and the page list of DBG-023 is stepped with the menu actions while the overlay holds the focus. The overlay and every page of it exist in Debug builds only (DBG-004).
 
-**DBG-099** (MUST) The **world layers** of the overlay are drawn with the development drawing primitives of §4.7, each switched on separately in development builds: the bot overlay (DBG-135); hit volumes of structures, trees and actors; route nodes and routes; the actor grid, the obstacle grid and the actor-grid cache, each as cell outlines with their counts; the spider foot homes, targets and states, the cloth-flag bounding spheres and the Crawler trail samples ([animation and VFX](../animation_and_vfx/explainers_sprites_and_procedural_animation.md) §6); Transport waypoint and attack-target arrows; airstrike approach and exit arrows; and Hive health and occupancy text. The reference has drawing functions for each of these that no player-build path calls.
+**DBG-099** (MUST) The **world layers** of the overlay are drawn with the development drawing primitives of §4.7, each switched on separately in Debug builds: the bot overlay (DBG-135); hit volumes of structures, trees and actors; route nodes and routes; the actor grid, the obstacle grid and the actor-grid cache, each as cell outlines with their counts; the spider foot homes, targets and states, the cloth-flag bounding spheres and the Crawler trail samples ([animation and VFX](../animation_and_vfx/explainers_sprites_and_procedural_animation.md) §6); Transport waypoint and attack-target arrows; airstrike approach and exit arrows; and Hive health and occupancy text. The reference has drawing functions for each of these that no player-build path calls.
+
+**DBG-100** (MUST) The development overlay and the developer tools of this document also host the developer tools of other components, each in Debug builds only (DBG-004): the developer fly mode of the camera (CAM-080 to CAM-084), driven by the development bindings of DBG-020; the camera overlay (CAM-125) on the camera page; the page host's current page, stack, waiting state, pending request and last refused request (UI-482) on the ui page; the input counters (INP-241) on the input page; and the binding dump of the input router (INP-242) as a local command of the debug-command window (DBG-117 row 23).
 
 ### 4.5 Network statistics window
 
-**DBG-105** (MUST) The network statistics window is a tool window (UI-166) of development builds (DEC-041). It shows the reference metric set of DBG-106 to DBG-110, in correct units, until the design phase defines the Species networking metrics (DEC-208), whose per-client and per-server metrics then replace the rows; its captions use `ui.dev.netstats.*` string ids (§4.11).
+**DBG-105** (MUST) The network statistics window is a tool window (UI-166) of Debug builds (DEC-041). It shows the reference metric set of DBG-106 to DBG-110, in correct units, until the design phase defines the Species networking metrics (see DEC-208), whose per-client and per-server metrics then replace the rows; its captions use `ui.dev.netstats.*` string ids (§4.11).
 
 **DBG-106** (MUST) The window is `dbg.netstats.width` × `dbg.netstats.height` (600 × 200 px). On a host its height is `dbg.netstats.host_height_base` + (`dbg.netstats.max_client_rows` × `dbg.netstats.row_pitch` + `dbg.netstats.table_padding`) = 170 + (6 × 20 + 15) = 305 px, and an inset panel (UI-061) at (`dbg.netstats.inset_x`, `dbg.netstats.inset_y`) = (10, 110), as wide as the window less 2 × `dbg.netstats.margin` (10 px) and `dbg.netstats.inset_height` (135 px) high, holds the participant table. The window is placed at (`dbg.netstats.margin`, H − its height) = (10, H − h). Text uses the body role, and text lines are `dbg.netstats.line_pitch` (15 px) apart, the first one line pitch below the window top.
 
@@ -78,7 +81,7 @@ The divergence column shows the diverged text in red while the participant has a
 
 ### 4.6 Debug commands and the debug-command window
 
-**DBG-115** (MUST) The debug-command window exists in development builds only. `action.debug.command_window` opens it while no other UI window is open. It is a tool window of `dbg.commands.window_size` (200 × 200 px) at `dbg.commands.window_pos` (250, 50); buttons that do not fit grow it (UI-025). Buttons start at y = `dbg.commands.first_row_y` (25) with a row pitch of `dbg.commands.row_pitch` (20 px). With m = `dbg.commands.margin` (10 px) and g = `dbg.commands.pair_gap` (5 px): a full-width button is at x = m and the window width − 2m = 180 px wide; a pair of buttons is each (window width − 2m − g) ÷ 2 = 87 px wide, the second at x = m + 87 + g = 102; the Supply crate row has its button at x = m, the window width ÷ 2 − 2m = 80 px wide, and the outcome drop-down at x = the window width ÷ 2 = 100, the window width ÷ 2 − m = 90 px wide. Every button is in the window's navigation order, so a gamepad reaches it (UI-032). Captions are `ui.dev.command.*` string ids.
+**DBG-115** (MUST) The debug-command window exists in Debug builds only. `action.debug.command_window` opens it while no other UI window is open. It is a tool window of `dbg.commands.window_size` (200 × 200 px) at `dbg.commands.window_pos` (250, 50); buttons that do not fit grow it (UI-025). Buttons start at y = `dbg.commands.first_row_y` (25) with a row pitch of `dbg.commands.row_pitch` (20 px). With m = `dbg.commands.margin` (10 px) and g = `dbg.commands.pair_gap` (5 px): a full-width button is at x = m and the window width − 2m = 180 px wide; a pair of buttons is each (window width − 2m − g) ÷ 2 = 87 px wide, the second at x = m + 87 + g = 102; the Supply crate row has its button at x = m, the window width ÷ 2 − 2m = 80 px wide, and the outcome drop-down at x = the window width ÷ 2 = 100, the window width ÷ 2 − m = 90 px wide. Every button is in the window's navigation order, so a gamepad reaches it (UI-032). Captions are `ui.dev.command.*` string ids.
 
 **DBG-116** (MUST) Every spawn command targets the point P where the pick ray through the screen centre (W ÷ 2, H ÷ 2) meets the terrain ([camera](../camera_and_sequences.md) CAM-090, [terrain](../terrain/README.md)); without a hit, no command is sent.
 
@@ -98,10 +101,11 @@ The divergence column shows the diverged text in red while the participant has a
 | 15 | network statistics | opens the network statistics window (§4.5) | local |
 | 16 | reset render resources | releases and rebuilds every GPU resource through the device-removal path (ADR-008); trees rebuild their geometry from the same per-tree seed, and their hit volumes are baked data (R-SIM-651), so nothing in the simulation changes | local |
 | 17–22 | crash tests | a fault on the main thread, a fault on a worker thread, a call of the terminate handler, an invalid parameter, a pure call, and a hang of the main thread, for the crash-capture tests of ADR-065 and the platform layer | local |
+| 23 | dump bindings | writes every action with its bindings, its glyph override and the binding count to the log, through the input router's `DumpBindings` (INP-242) | local |
 
-**DBG-118** (MUST) A sequenced debug command is a player command (DBG-024) that the authority accepts only in a session created with cheats enabled, and only from a participant authorised to send it; until DEC-202 is decided, the host's own participant is the only authorised sender. The authority validates the team slot, that P lies on the map and that a forced outcome is in the catalogue; a rejected command is dropped, logged and counted. An accepted command executes on its tick on every participant, like any command (R-SIM-670). The first accepted debug command sets the session's cheats-used marker, which the lobby and the match results show (`ui.match.cheats_used`) and which the match statistics carry ([reference/09](../../../reference/09_front_end_and_match_flow/README.md) hooks).
+**DBG-118** (MUST) A sequenced debug command is a player command (DBG-024) that the authority accepts only in a session created with cheats enabled, and only from a participant authorised to send it; until DEC-202 is decided, the host's own participant is the only authorised sender. The authority validates the team slot, that P lies on the map and that a forced outcome is in the catalogue; a rejected command is dropped, logged and counted. An accepted command executes on its tick on every participant, like any command (R-SIM-670). The first accepted debug command sets the session's cheats-used marker, which the lobby and the match results show (`ui.match.cheats_used`) and which the match statistics carry ([reference/09](../../../reference/09_front_end_and_match_flow/README.md) hooks). The marker suppresses nothing: the achievement, leaderboard and statistics hooks run as in any other session (see DEC-972).
 
-**DBG-119** (MUST) Local commands (rows 14 to 22) and the special-lighting actions of DBG-020 never travel as commands and never touch simulation state.
+**DBG-119** (MUST) Local commands (rows 14 to 23) and the special-lighting actions of DBG-020 never travel as commands and never touch simulation state.
 
 **DBG-120** (MUST NOT) The window has no campaign command (enabling campaign world buildings or opening campaign locations, DEC-052), no command that grants research, because match start fixes the research levels and such a command has no effect in a match (DEC-041, DEC-115), no narrator portrait command, and no sound-editor or sound-statistics window, whose content the audio page of the overlay shows (AEN-323).
 
@@ -109,7 +113,7 @@ The divergence column shows the diverged text in red while the participant has a
 
 ### 4.7 Development drawing
 
-**DBG-130** (MUST) The development drawing primitives are drawn in pass 24 (RND-076), in development builds only, unlit:
+**DBG-130** (MUST) The development drawing primitives are drawn in pass 24 (RND-076), in Debug builds only, unlit:
 
 | Primitive | Drawing |
 |---|---|
@@ -166,10 +170,11 @@ The failures of the developer tools are rows of the failure table of DBG-220 ([R
 | T17 | unit | A forced-outcome Supply crate skips the capture roll; the normal choice draws it. | DBG-117 |
 | T18 | unit | The drawing queue removes a life-1 item after one drawing, keeps a life-0 item, and a label-prefix search never matches a removed item. | DBG-131 |
 | T19 | golden-image | With the bot overlay at 1 and team position 1, every navigation node shows that team's priority with two decimals at 60 + 15 × slot wu and half-length link arrows; at 2 only the arrows. | DBG-135 |
+| T32 | integration | In a Debug build the camera page shows the camera overlay fields of CAM-125, the ui page shows the page host's fields of UI-482, and the dump-bindings command writes the binding dump of INP-242 to the log; a Release build holds none of them. | DBG-100, DBG-117 |
 
 ## 8 Open decisions
 
-DEC-041 (Resolved), DEC-202 (Open) and DEC-208 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the decisions and design-phase inputs of the whole component.
+DEC-041 (Resolved), DEC-202 (Open), DEC-208 (Open) and DEC-972 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the decisions and design-phase inputs of the whole component.
 
 ## 9 Tuning table
 

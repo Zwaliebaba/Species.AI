@@ -817,5 +817,9 @@ Open decisions whose default this file specifies:
 - DEC-115 — the fixed match research levels (R-MODE-082).
 - DEC-241 — numeric semantics of the integer divisions (R-MODE-091).
 - DEC-244 — session admission and spectators (R-MODE-010).
+- DEC-264 — what runs while game speed is 0 (R-MODE-006).
+- DEC-867 — closed player slots (R-MODE-010).
+- DEC-868 — front-end reference quirks, among them the play-time format (§5 item 1).
+- DEC-969 — co-op group lists in ascending position order (R-MODE-020).
 
-Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-081 (the proportional Catch-up curve), DEC-082, DEC-107, DEC-119, DEC-120, DEC-465, DEC-560 and DEC-561. DEC-003 carries the owner's decision to keep 11 ticks for the first playable. DEC-058 records why the debug-only mode is absent. The Open decisions of the mode files are listed in each of them.
+Resolved decisions applied in this file: DEC-002, DEC-004, DEC-005, DEC-006, DEC-007, DEC-008, DEC-009, DEC-011, DEC-014, DEC-015, DEC-016, DEC-017, DEC-033, DEC-034, DEC-035, DEC-036, DEC-064, DEC-065, DEC-067, DEC-069, DEC-072, DEC-073, DEC-074, DEC-077, DEC-078, DEC-079 (the cap from the open slots), DEC-082, DEC-097, DEC-107, DEC-116 (no Supply crate drops while the world is held), DEC-119, DEC-120, DEC-124 (the proportional Catch-up curve, which supersedes DEC-081), DEC-465, DEC-560, DEC-561 and DEC-801. DEC-003 carries the owner's decision to keep 11 ticks for the first playable. DEC-058 records why the debug-only mode is absent. The Open decisions of the mode files are listed in each of them.

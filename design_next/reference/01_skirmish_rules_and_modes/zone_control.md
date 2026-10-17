@@ -12,11 +12,11 @@ Zone Control is a king-of-the-hill mode. The map has Control Zones, drawn as col
 
 **R-MODE-250** (MUST) Zone Control is free-for-all for 2 to 4 players, with co-op, 2 against 2, on maps that allow it, including fixed alliances (positions 0 and 2 against 1 and 3) on one reference map (README §2.4). The two tutorials run on Zone Control maps ([reference/11](../11_tutorial_and_help.md); README R-MODE-083).
 
-**R-MODE-251** (MUST) The mode objects are Control Zones ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). A Control Zone is recounted every `ref.mode.recount.one_second` (11 ticks, DEC-064): it counts, through the actor grid, every Worker of any team within its radius (a map value, default in reference/03) that is not dead, not on fire and not inside a Transport, per team and in total. Its owner is the team with the strictly highest count; a tie keeps the lower team index (DEC-016); no Worker leaves it with no team. Ownership changes at once: there is no capture progress and no contested state. The counting query is an actor-grid query whose exactness is DEC-094.
+**R-MODE-251** (MUST) The mode objects are Control Zones ([reference/03](../03_buildings_and_world_objects/mode_objects.md)). A Control Zone is recounted every `ref.mode.recount.one_second` (11 ticks, DEC-064): it counts, through the actor grid, every Worker of any team within its radius (a map value, default `ref.bldg.control_zone.default_size_wu`, 50 wu, of reference/03) that is not dead, not on fire and not inside a Transport, per team and in total. Its owner is the team with the strictly highest count; a tie keeps the lower team index (DEC-016); no Worker leaves it with no team. Ownership changes at once: there is no capture progress and no contested state. The counting query is an actor-grid query whose exactness is DEC-094.
 
 **R-MODE-252** (MUST) Maps may add a spawn network (every reference Zone Control map but one has Spawn Nodes), Command Consoles that capture Beam Dishes, and Transit Gates whose waves the map enables (README R-MODE-037 step 7).
 
-**R-MODE-253** (MUST) The options are score mode (four formulas), time limit (1 to 60 minutes, default `ref.mode.zone_control.option.time_limit`, 5; it cannot be unlimited), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-081).
+**R-MODE-253** (MUST) The options are score mode (four formulas), time limit (1 to 60 minutes, default `ref.mode.zone_control.option.time_limit`, 5; it cannot be unlimited), Catch-up bonus, crate drop period, starting powers, Comeback Bonus, sudden death and crate placement (README R-MODE-074). The proportional Catch-up bonus applies (README R-MODE-051, DEC-124).
 
 ### 2.2 The mode step
 
@@ -24,7 +24,7 @@ Zone Control is a king-of-the-hill mode. The map has Control Zones, drawn as col
 
 1. If the time remaining is above 0, decrease it by 1. Back up the scores. With score mode 2, zero the scores.
 2. Set the Control Zone counter to 0. For every Control Zone: with score mode 1 or 2, add the zone's count of each of the six teams to that team's score, the Rogue and Visitor factions included; add 1 to the counter; when the zone has an owner, add 1 to that owner's zones owned. The counter is match state and starts at 0 in every match (DEC-011).
-3. Notify the hint overlay of the Control Zone event for the local team ([reference/11](../11_tutorial_and_help.md)).
+3. Notify the hint overlay of the Control Zone event for the local team. The notification feeds the objective-card hook only and has no visible effect in a match ([reference/11](../11_tutorial_and_help.md) R-TUT-013, DEC-050).
 4. For each used slot, the factions included: with score mode 0, add its zones owned to its score; with score mode 3, add 1 when its zones owned equals the counter. Then track the leader as Spawn Control does ([spawn_control.md](spawn_control.md) R-MODE-205 step 2.5, the high score starting at 0), over the player teams only: the factions never become the leader (DEC-082).
 5. When the time remaining is at or below 0: if the leader is the draw value and sudden death is on, set the time remaining to `ref.mode.zone_control.sudden_death_extension` (60 mode seconds), set the sudden-death flag, emit `match.sudden_death.start` and wipe every used team whose score differs from the highest (README R-MODE-048); this repeats each time an extension ends tied. Otherwise declare the leader. When the local team wins with a highest score above `ref.mode.zone_control.crowned_margin` (1.5) × the second-highest score, emit the Crowned achievement event (DEC-047); the second-highest score is the largest score strictly below the highest over all used slots.
 
@@ -51,7 +51,7 @@ Zone Control is a king-of-the-hill mode. The map has Control Zones, drawn as col
 
 **R-MODE-260** (MUST) The score line is the generic score line of README R-MODE-065; its estimate is shown with score modes 0, 1 and 3. The game-over list shows name and score.
 
-**R-MODE-261** (MUST) A Control Zone is drawn as a ring whose segments are proportional to each team's share of the zone's total count, in team colours, the owner's segment animated and opaque and the others at reduced alpha, with the remainder grey, and a faint vertical glow column; the ring fades as the camera comes close. The values belong to [reference/03](../03_buildings_and_world_objects/mode_objects.md): owner alpha 255, others 100, column 1,200 wu tall, fade within 500 wu to a minimum alpha of 0.4. The ring uses `fx.beam_long`; the zone's ownership change plays `sfx.building.control_zone.owner_changed` and `sfx.building.control_zone.owner_changed_b`, and an occupied zone loops `sfx.building.control_zone.presence_loop`. The hint `help.hint.zone_control` explains the mode.
+**R-MODE-261** (MUST) A Control Zone is drawn as a ring whose segments are proportional to each team's share of the zone's total count, in team colours, the owner's segment animated and opaque and the others at reduced alpha, with the remainder grey, and a faint vertical glow column; the ring fades as the camera comes close. The values belong to [reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-257: owner alpha `ref.bldg.control_zone.ring_owner_alpha` (255), others `ref.bldg.control_zone.ring_other_alpha` (100), a column `ref.bldg.control_zone.column_height_wu` (1,200 wu) tall, and a fade within `ref.bldg.control_zone.fade_distance_wu` (500 wu) of the camera to an alpha factor of `ref.bldg.control_zone.fade_min_alpha` (0.4). The ring uses `fx.beam_long`; the zone's ownership change plays `sfx.building.control_zone.owner_changed` and `sfx.building.control_zone.owner_changed_b`, and an occupied zone loops `sfx.building.control_zone.presence_loop`. The picture `help.hint.zone_control` belongs to the objective-card hook, which draws nothing in a match (R-TUT-013); the mode is explained by its help pages (R-TUT-043, `ref.tut.help_page.mode_pages`) and its explainer panel (R-TUT-020).
 
 **R-MODE-262** (MUST) The Crowned hook fires only for a win at time-up by the local team by more than the margin; no achievement is awarded (DEC-047).
 
@@ -125,5 +125,6 @@ This file uses the string ids of the README (`match.sudden_death.start`, `match.
 - DEC-315 — concentric and pre-owned Control Zones (R-MODE-256).
 - DEC-300 — the return of teams wiped out in sudden death (§5 item 6).
 - DEC-047 — the Crowned hook (R-MODE-262).
+- DEC-050 — the objective-card hook that the Control Zone event feeds (R-MODE-254).
 
-Resolved decisions applied: DEC-011, DEC-016, DEC-064, DEC-079, DEC-081, DEC-082, DEC-120.
+Resolved decisions applied: DEC-011, DEC-016, DEC-064, DEC-079, DEC-082, DEC-120, DEC-124.
