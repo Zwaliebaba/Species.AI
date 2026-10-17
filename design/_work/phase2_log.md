@@ -246,3 +246,7 @@
 
 ## REVIEW TOTALS (R1–R8, recomputed): 562 claims — 462 Correct (82.2 %), 86 Partly, 14 Wrong, 0 Unverifiable; gaps 2 High, 42 Med, 118 Low. (An earlier line here mis-added the totals.)
 ## Fix pass launched: F1–F8 (review/FIX_BRIEF.md with coordinator verdicts V1–V12). F9 (Part C: 40/41/90/README/91) after 41 completes and F1–F8 land.
+
+## S41 (41_risks_and_open_questions.md) — done, ~319 KB, checks pass, 1,506 links resolve
+- 322 source open-question rows → 235 de-duplicated (196 open, 39 resolved; 88 merged); inline [U] all covered; resolved by S41: 02-U5, 02-U6, 02-U7/03-U4, 02-U12, 03-U14, 04-U2, 04-U3, 04-U10, 05-U1, 07-U6, 07-U11 (three via terrain-port scripts S_41_* — re-run after F7 fixes the port); 03-U7 closed from R3; 07-U1 narrowed. Docs-vs-code 306 → 225; Cyrillic font contradiction resolved by MD5 (byte-identical). IP: 345 rows → 50 categories + 90 §3 placeholders + 57 mp_ map names.
+- ALL 31 final documents now exist. Pending: F1–F8 fixes, then F9 Part C sync (41 re-collect + re-run S_41_* after port fix, 40 V1/V2, README, regenerate 91/99, final checks).
