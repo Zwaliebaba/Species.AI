@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0010 GPU particles and shatter debris
+# GPU particles and shatter debris
 
 ## Context and Problem Statement
 

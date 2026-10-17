@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0022 Audio engine on XAudio2 2.9 and X3DAudio
+# Audio engine on XAudio2 2.9 and X3DAudio
 
 ## Context and Problem Statement
 

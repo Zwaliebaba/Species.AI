@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0006 Root signature and bindless resource access
+# Root signature and bindless resource access
 
 ## Context and Problem Statement
 

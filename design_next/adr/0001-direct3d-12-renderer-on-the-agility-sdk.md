@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0001 Direct3D 12 renderer on the Agility SDK
+# Direct3D 12 renderer on the Agility SDK
 
 ## Context and Problem Statement
 

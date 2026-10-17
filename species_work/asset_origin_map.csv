@@ -326,77 +326,77 @@ content/fonts/ui_primary_ja.otf,font.ui.primary_ja,data/textures/unicode/square.
 content/fonts/ui_primary_ko.otf,font.ui.primary_ko,data/textures/unicode/square.ac00.acff.bmp;data/textures/unicode/square.ad00.adff.bmp;data/textures/unicode/square.ae00.aeff.bmp;data/textures/unicode/square.af00.afff.bmp;data/textures/unicode/square.b000.b0ff.bmp;data/textures/unicode/square.b100.b1ff.bmp;data/textures/unicode/square.b200.b2ff.bmp;data/textures/unicode/square.b300.b3ff.bmp;data/textures/unicode/square.b400.b4ff.bmp;data/textures/unicode/square.b500.b5ff.bmp;data/textures/unicode/square.b600.b6ff.bmp;data/textures/unicode/square.b700.b7ff.bmp;data/textures/unicode/square.b800.b8ff.bmp;data/textures/unicode/square.b900.b9ff.bmp;data/textures/unicode/square.ba00.baff.bmp;data/textures/unicode/square.bb00.bfff.bmp;data/textures/unicode/square.bc00.bcff.bmp;data/textures/unicode/square.bd00.bdff.bmp;data/textures/unicode/square.be00.beff.bmp;data/textures/unicode/square.bf00.bfff.bmp;data/textures/unicode/square.c000.c0ff.bmp;data/textures/unicode/square.c100.c1ff.bmp;data/textures/unicode/square.c200.c2ff.bmp;data/textures/unicode/square.c300.c3ff.bmp;data/textures/unicode/square.c400.c4ff.bmp;data/textures/unicode/square.c500.c5ff.bmp;data/textures/unicode/square.c600.c6ff.bmp;data/textures/unicode/square.c700.c7ff.bmp;data/textures/unicode/square.c800.c8ff.bmp;data/textures/unicode/square.c900.c9ff.bmp;data/textures/unicode/square.ca00.caff.bmp;data/textures/unicode/square.cb00.cbff.bmp;data/textures/unicode/square.cc00.ccff.bmp;data/textures/unicode/square.cd00.cdff.bmp;data/textures/unicode/square.ce00.ceff.bmp;data/textures/unicode/square.cf00.cfff.bmp;data/textures/unicode/square.d000.d0ff.bmp;data/textures/unicode/square.d100.d1ff.bmp;data/textures/unicode/square.d200.d2ff.bmp;data/textures/unicode/square.d300.d3ff.bmp;data/textures/unicode/square.d400.d4ff.bmp;data/textures/unicode/square.d500.d5ff.bmp;data/textures/unicode/square.d600.d6ff.bmp;data/textures/unicode/square.d700.d7ff.bmp,44,FULL
 content/fonts/ui_stylised.otf,font.ui.stylised,data/textures/unicode/speccy.0020.00ff.bmp;data/textures/unicode/speccy.0410.042f.bmp;data/textures/unicode/speccy.0430.044f.bmp;data/textures/unicode/speccy.20a0.20af.bmp,4,FULL
 content/fonts/ui_compact.otf,font.ui.compact,data/textures/unicode/editor.0020.00ff.bmp;data/textures/unicode/editor.0410.042f.bmp;data/textures/unicode/editor.0430.044f.bmp;data/textures/unicode/editor.20a0.20af.bmp,4,FULL
-content/meshes/structures/bot_nav_node.glb,mesh.structure.bot_nav_node,data/shapes/aitarget.shp,1,FULL
-content/meshes/structures/hive_mound.glb,mesh.structure.hive_mound,data/shapes/anthill.shp,1,FULL
+content/meshes/units/worker_figure.glb,mesh.unit.worker_figure,data/shapes/darwinian.shp,1,FULL
+content/meshes/units/leader_figure.glb,mesh.unit.leader_figure,data/shapes/officer.shp,1,FULL
+content/meshes/units/trooper_figure.glb,mesh.unit.trooper_figure,data/shapes/squad.shp,1,FULL
+content/meshes/units/builder_body.glb,mesh.unit.builder_body,data/shapes/engineer.shp,1,FULL
 content/meshes/units/transport_hull.glb,mesh.unit.transport_hull,data/shapes/armour.shp,1,FULL
+content/meshes/units/collector_body.glb,mesh.unit.collector_body,data/shapes/harvester.shp,1,FULL
+content/meshes/units/bomber_body.glb,mesh.unit.bomber_body,data/shapes/spaceinvader.shp,1,FULL
+content/meshes/projectiles/thrown_weapon.glb,mesh.projectile.thrown_weapon,data/shapes/throwable.shp,1,FULL
+content/meshes/projectiles/turret_round.glb,mesh.projectile.turret_round,data/shapes/turretshell.shp,1,FULL
+content/meshes/projectiles/shell_casing.glb,mesh.projectile.shell_casing,data/shapes/emptyshell.shp,1,FULL
+content/meshes/projectiles/meteor_rock.glb,mesh.projectile.meteor_rock,data/shapes/meteor.shp,1,FULL
 content/meshes/creatures/ant_body_01.glb,mesh.creature.ant_body,data/shapes/armyant.shp,1,FULL
 content/meshes/creatures/ant_body_02.glb,mesh.creature.ant_body,data/shapes/armyant2.shp,1,FULL
 content/meshes/creatures/ant_body_03.glb,mesh.creature.ant_body,data/shapes/armyant3.shp,1,FULL
-content/meshes/structures/turret_barrel_cannon.glb,mesh.structure.turret_barrel,data/shapes/battlecannonbarrel.shp,1,FULL
+content/meshes/creatures/centipede_segment.glb,mesh.creature.centipede_segment,data/shapes/centipede.shp,1,FULL
+content/meshes/creatures/centipede_head_segment.glb,mesh.creature.centipede_head_segment,data/shapes/centipedehead.shp,1,FULL
+content/meshes/creatures/spider_body.glb,mesh.creature.spider_body,data/shapes/spider.shp,1,FULL
+content/meshes/creatures/spider_thigh.glb,mesh.creature.spider_thigh,data/shapes/spider_leg_upper.shp,1,FULL
+content/meshes/creatures/spider_shin.glb,mesh.creature.spider_shin,data/shapes/spider_leg_lower.shp,1,FULL
+content/meshes/creatures/reaper_serpent_head.glb,mesh.creature.reaper_serpent_head,data/shapes/souldestroyerhead.shp,1,FULL
+content/meshes/creatures/reaper_serpent_tail.glb,mesh.creature.reaper_serpent_tail,data/shapes/souldestroyertail.shp,1,FULL
+content/meshes/creatures/brood_drifter_body.glb,mesh.creature.brood_drifter_body,data/shapes/sporegenerator.shp,1,FULL
+content/meshes/creatures/abductor_hull.glb,mesh.creature.abductor_hull,data/shapes/spaceship.shp,1,FULL
+content/meshes/creatures/seed_pod.glb,mesh.creature.seed_pod,data/shapes/triffidegg.shp,1,FULL
+content/meshes/structures/spitter_plant_head.glb,mesh.structure.spitter_plant_head,data/shapes/triffidhead.shp,1,FULL
+content/meshes/structures/hive_mound.glb,mesh.structure.hive_mound,data/shapes/anthill.shp,1,FULL
+content/meshes/structures/spawn_node.glb,mesh.structure.spawn_node,data/shapes/spawnpointmultiwinia.shp,1,FULL
+content/meshes/structures/spawn_node_alt.glb,mesh.structure.spawn_node_alt,data/shapes/spawnpoint.shp,1,FULL
+content/meshes/structures/source_node.glb,mesh.structure.source_node,data/shapes/masterspawnpoint.shp,1,FULL
+content/meshes/structures/relay_mast.glb,mesh.structure.relay_mast,data/shapes/spawnlink.shp,1,FULL
+content/meshes/structures/transit_gate.glb,mesh.structure.transit_gate,data/shapes/trunkport_mp.shp,1,FULL
+content/meshes/structures/transit_gate_alt.glb,mesh.structure.transit_gate_alt,data/shapes/trunkport.shp,1,FULL
+content/meshes/structures/command_console.glb,mesh.structure.command_console,data/shapes/controlstation.shp,1,FULL
+content/meshes/structures/command_console_linked.glb,mesh.structure.command_console_linked,data/shapes/pulsebombcontrolstation.shp,1,FULL
+content/meshes/structures/core_device.glb,mesh.structure.core_device,data/shapes/pulsebomb.shp,1,FULL
+content/meshes/structures/breach_charge.glb,mesh.structure.breach_charge,data/shapes/wallbuster.shp,1,FULL
+content/meshes/structures/launch_vessel.glb,mesh.structure.launch_vessel,data/shapes/rocket.shp,1,FULL
+content/meshes/structures/fuel_pump_housing.glb,mesh.structure.fuel_pump_housing,data/shapes/fuelgenerator.shp,1,FULL
+content/meshes/structures/fuel_pump_arm.glb,mesh.structure.fuel_pump_arm,data/shapes/fuelgeneratorpump.shp,1,FULL
+content/meshes/structures/fuel_line_foot.glb,mesh.structure.fuel_line_foot,data/shapes/fuelpipebase.shp,1,FULL
+content/meshes/structures/fuel_line_span.glb,mesh.structure.fuel_line_span,data/shapes/fuelpipe.shp,1,FULL
+content/meshes/structures/fuel_depot.glb,mesh.structure.fuel_depot,data/shapes/fuelstation.shp,1,FULL
+content/meshes/structures/solar_array.glb,mesh.structure.solar_array,data/shapes/solarpanel.shp,1,FULL
+content/meshes/structures/grid_pylon.glb,mesh.structure.grid_pylon,data/shapes/pylon.shp,1,FULL
+content/meshes/structures/beam_dish.glb,mesh.structure.beam_dish,data/shapes/radardish.shp,1,FULL
+content/meshes/structures/barrier_emitter.glb,mesh.structure.barrier_emitter,data/shapes/laserfence.shp,1,FULL
 content/meshes/structures/turret_mount.glb,mesh.structure.turret_mount,data/shapes/battlecannonbase.shp,1,FULL
 content/meshes/structures/turret_head.glb,mesh.structure.turret_head,data/shapes/battlecannonturret.shp,1,FULL
-content/meshes/scenery/scenery_prop_01.glb,mesh.scenery.prop,data/shapes/beachheadobstruction.shp,1,FULL
 content/meshes/structures/turret_barrel_gun.glb,mesh.structure.turret_barrel,data/shapes/cannon_bullets.shp,1,FULL
-content/meshes/structures/turret_barrel_flame.glb,mesh.structure.turret_barrel,data/shapes/cannon_flame.shp,1,FULL
 content/meshes/structures/turret_barrel_rocket.glb,mesh.structure.turret_barrel,data/shapes/cannon_rocket.shp,1,FULL
-content/meshes/relics/relic_08.glb,mesh.relic.variant,data/shapes/carrybillboard.shp,1,FULL
+content/meshes/structures/turret_barrel_flame.glb,mesh.structure.turret_barrel,data/shapes/cannon_flame.shp,1,FULL
+content/meshes/structures/turret_barrel_cannon.glb,mesh.structure.turret_barrel,data/shapes/battlecannonbarrel.shp,1,FULL
+content/meshes/structures/wall_section.glb,mesh.structure.wall_section,data/shapes/wall.shp,1,FULL
+content/meshes/structures/supply_crate.glb,mesh.structure.supply_crate,data/shapes/researchitem.shp,1,FULL
+content/meshes/structures/bot_nav_node.glb,mesh.structure.bot_nav_node,data/shapes/aitarget.shp,1,FULL
+content/meshes/structures/structure_default.glb,mesh.structure.structure_default,data/shapes/controlpad.shp,1,FULL
+content/meshes/relics/relic_01.glb,mesh.relic.variant,data/shapes/carrystatue.shp,1,FULL
 content/meshes/relics/relic_02.glb,mesh.relic.variant,data/shapes/carrycube.shp,1,FULL
 content/meshes/relics/relic_03.glb,mesh.relic.variant,data/shapes/carryglobe.shp,1,FULL
-content/meshes/scenery/scenery_prop_02.glb,mesh.scenery.prop,data/shapes/carryspider.shp,1,FULL
 content/meshes/relics/relic_04.glb,mesh.relic.variant,data/shapes/carrysquaddie.shp,1,FULL
-content/meshes/relics/relic_01.glb,mesh.relic.variant,data/shapes/carrystatue.shp,1,FULL
 content/meshes/relics/relic_05.glb,mesh.relic.variant,data/shapes/carryteapot.shp,1,FULL
 content/meshes/relics/relic_06.glb,mesh.relic.variant,data/shapes/carrytelescope.shp,1,FULL
 content/meshes/relics/relic_07.glb,mesh.relic.variant,data/shapes/carryweights.shp,1,FULL
-content/meshes/creatures/centipede_segment.glb,mesh.creature.centipede_segment,data/shapes/centipede.shp,1,FULL
-content/meshes/creatures/centipede_head_segment.glb,mesh.creature.centipede_head_segment,data/shapes/centipedehead.shp,1,FULL
-content/meshes/structures/structure_default.glb,mesh.structure.structure_default,data/shapes/controlpad.shp,1,FULL
-content/meshes/structures/command_console.glb,mesh.structure.command_console,data/shapes/controlstation.shp,1,FULL
-content/meshes/units/worker_figure.glb,mesh.unit.worker_figure,data/shapes/darwinian.shp,1,FULL
-content/meshes/projectiles/shell_casing.glb,mesh.projectile.shell_casing,data/shapes/emptyshell.shp,1,FULL
-content/meshes/units/builder_body.glb,mesh.unit.builder_body,data/shapes/engineer.shp,1,FULL
-content/meshes/structures/fuel_pump_housing.glb,mesh.structure.fuel_pump_housing,data/shapes/fuelgenerator.shp,1,FULL
-content/meshes/structures/fuel_pump_arm.glb,mesh.structure.fuel_pump_arm,data/shapes/fuelgeneratorpump.shp,1,FULL
-content/meshes/structures/fuel_line_span.glb,mesh.structure.fuel_line_span,data/shapes/fuelpipe.shp,1,FULL
-content/meshes/structures/fuel_line_foot.glb,mesh.structure.fuel_line_foot,data/shapes/fuelpipebase.shp,1,FULL
-content/meshes/structures/fuel_depot.glb,mesh.structure.fuel_depot,data/shapes/fuelstation.shp,1,FULL
-content/meshes/units/collector_body.glb,mesh.unit.collector_body,data/shapes/harvester.shp,1,FULL
-content/meshes/structures/barrier_emitter.glb,mesh.structure.barrier_emitter,data/shapes/laserfence.shp,1,FULL
-content/meshes/structures/source_node.glb,mesh.structure.source_node,data/shapes/masterspawnpoint.shp,1,FULL
-content/meshes/projectiles/meteor_rock.glb,mesh.projectile.meteor_rock,data/shapes/meteor.shp,1,FULL
-content/meshes/units/leader_figure.glb,mesh.unit.leader_figure,data/shapes/officer.shp,1,FULL
-content/meshes/structures/core_device.glb,mesh.structure.core_device,data/shapes/pulsebomb.shp,1,FULL
-content/meshes/structures/command_console_linked.glb,mesh.structure.command_console_linked,data/shapes/pulsebombcontrolstation.shp,1,FULL
-content/meshes/structures/grid_pylon.glb,mesh.structure.grid_pylon,data/shapes/pylon.shp,1,FULL
-content/meshes/structures/beam_dish.glb,mesh.structure.beam_dish,data/shapes/radardish.shp,1,FULL
-content/meshes/structures/supply_crate.glb,mesh.structure.supply_crate,data/shapes/researchitem.shp,1,FULL
-content/meshes/structures/launch_vessel.glb,mesh.structure.launch_vessel,data/shapes/rocket.shp,1,FULL
+content/meshes/relics/relic_08.glb,mesh.relic.variant,data/shapes/carrybillboard.shp,1,FULL
+content/meshes/scenery/scenery_prop_01.glb,mesh.scenery.prop,data/shapes/beachheadobstruction.shp,1,FULL
+content/meshes/scenery/scenery_prop_02.glb,mesh.scenery.prop,data/shapes/carryspider.shp,1,FULL
 content/meshes/scenery/scenery_prop_03.glb,mesh.scenery.prop,data/shapes/rockhead.shp,1,FULL
-content/meshes/structures/solar_array.glb,mesh.structure.solar_array,data/shapes/solarpanel.shp,1,FULL
-content/meshes/creatures/reaper_serpent_head.glb,mesh.creature.reaper_serpent_head,data/shapes/souldestroyerhead.shp,1,FULL
-content/meshes/creatures/reaper_serpent_tail.glb,mesh.creature.reaper_serpent_tail,data/shapes/souldestroyertail.shp,1,FULL
-content/meshes/units/bomber_body.glb,mesh.unit.bomber_body,data/shapes/spaceinvader.shp,1,FULL
-content/meshes/creatures/abductor_hull.glb,mesh.creature.abductor_hull,data/shapes/spaceship.shp,1,FULL
-content/meshes/structures/relay_mast.glb,mesh.structure.relay_mast,data/shapes/spawnlink.shp,1,FULL
-content/meshes/structures/spawn_node_alt.glb,mesh.structure.spawn_node_alt,data/shapes/spawnpoint.shp,1,FULL
-content/meshes/structures/spawn_node.glb,mesh.structure.spawn_node,data/shapes/spawnpointmultiwinia.shp,1,FULL
-content/meshes/creatures/spider_body.glb,mesh.creature.spider_body,data/shapes/spider.shp,1,FULL
-content/meshes/creatures/spider_shin.glb,mesh.creature.spider_shin,data/shapes/spider_leg_lower.shp,1,FULL
-content/meshes/creatures/spider_thigh.glb,mesh.creature.spider_thigh,data/shapes/spider_leg_upper.shp,1,FULL
-content/meshes/creatures/brood_drifter_body.glb,mesh.creature.brood_drifter_body,data/shapes/sporegenerator.shp,1,FULL
-content/meshes/units/trooper_figure.glb,mesh.unit.trooper_figure,data/shapes/squad.shp,1,FULL
 content/meshes/scenery/scenery_prop_04.glb,mesh.scenery.prop,data/shapes/statue.shp,1,FULL
 content/meshes/scenery/scenery_prop_05.glb,mesh.scenery.prop,data/shapes/temple2.shp,1,FULL
 content/meshes/scenery/scenery_prop_06.glb,mesh.scenery.prop,data/shapes/temple3.shp,1,FULL
 content/meshes/scenery/scenery_prop_07.glb,mesh.scenery.prop,data/shapes/temple4.shp,1,FULL
-content/meshes/projectiles/thrown_weapon.glb,mesh.projectile.thrown_weapon,data/shapes/throwable.shp,1,FULL
-content/meshes/creatures/seed_pod.glb,mesh.creature.seed_pod,data/shapes/triffidegg.shp,1,FULL
-content/meshes/structures/spitter_plant_head.glb,mesh.structure.spitter_plant_head,data/shapes/triffidhead.shp,1,FULL
-content/meshes/structures/transit_gate_alt.glb,mesh.structure.transit_gate_alt,data/shapes/trunkport.shp,1,FULL
-content/meshes/structures/transit_gate.glb,mesh.structure.transit_gate,data/shapes/trunkport_mp.shp,1,FULL
-content/meshes/projectiles/turret_round.glb,mesh.projectile.turret_round,data/shapes/turretshell.shp,1,FULL
-content/meshes/structures/wall_section.glb,mesh.structure.wall_section,data/shapes/wall.shp,1,FULL
-content/meshes/structures/breach_charge.glb,mesh.structure.breach_charge,data/shapes/wallbuster.shp,1,FULL
 content/audio/sfx/builder/builder_presence_loop.wav,sfx.unit.builder.presence_loop,data/sounds/engineer_hover.ogg,1,live
 content/audio/sfx/builder/builder_hurt_01.wav,sfx.unit.builder.hurt,data/sounds/engineer_losehealth.ogg,1,live
 content/audio/sfx/builder/builder_hurt_02.wav,sfx.unit.builder.hurt,data/sounds/engineer_losehealth2.ogg,1,live
@@ -572,19 +572,19 @@ content/audio/sfx/spider/spider_presence_loop_14.wav,sfx.creature.spider.presenc
 content/audio/sfx/spider/spider_presence_loop_15.wav,sfx.creature.spider.presence_loop,data/sounds/spider_create8e.ogg,1,live
 content/audio/sfx/spider/spider_presence_loop_16.wav,sfx.creature.spider.presence_loop,data/sounds/spider_create9.ogg,1,live
 content/audio/sfx/spider/spider_presence_loop_17.wav,sfx.creature.spider.presence_loop,data/sounds/spider_create9e.ogg,1,live
-content/audio/sfx/spider/spider_die_01.wav,sfx.creature.spider.die,data/sounds/spider_death.ogg,1,live
-content/audio/sfx/spider/spider_die_02.wav,sfx.creature.spider.die,data/sounds/spider_death2.ogg,1,live
-content/audio/sfx/spider/spider_die_03.wav,sfx.creature.spider.die,data/sounds/spider_death3.ogg,1,live
-content/audio/sfx/spider/spider_die_04.wav,sfx.creature.spider.die,data/sounds/spider_death4.ogg,1,live
-content/audio/sfx/spider/spider_die_05.wav,sfx.creature.spider.die,data/sounds/spider_death5.ogg,1,live
-content/audio/sfx/spider/spider_die_06.wav,sfx.creature.spider.die,data/sounds/spider_death6.ogg,1,live
-content/audio/sfx/spider/spider_die_07.wav,sfx.creature.spider.die,data/sounds/spider_death7.ogg,1,live
+content/audio/sfx/spider/spider_die_01.wav,sfx.creature.spider.die,data/sounds/spider_death3.ogg,1,live
+content/audio/sfx/spider/spider_die_02.wav,sfx.creature.spider.die,data/sounds/spider_death4.ogg,1,live
+content/audio/sfx/spider/spider_die_03.wav,sfx.creature.spider.die,data/sounds/spider_death5.ogg,1,live
+content/audio/sfx/spider/spider_die_04.wav,sfx.creature.spider.die,data/sounds/spider_death6.ogg,1,live
+content/audio/sfx/spider/spider_die_05.wav,sfx.creature.spider.die,data/sounds/spider_death7.ogg,1,live
 content/audio/sfx/spider/spider_leap_01.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce.ogg,1,live
 content/audio/sfx/spider/spider_leap_02.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce2.ogg,1,live
 content/audio/sfx/spider/spider_leap_03.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce3.ogg,1,live
 content/audio/sfx/spider/spider_leap_04.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce4.ogg,1,live
 content/audio/sfx/spider/spider_leap_05.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce5.ogg,1,live
 content/audio/sfx/spider/spider_leap_06.wav,sfx.creature.spider.pounce,data/sounds/spider_pounce6.ogg,1,live
+content/audio/sfx/spider/spider_hurt_01.wav,sfx.creature.spider.hurt,data/sounds/spider_death.ogg,1,live
+content/audio/sfx/spider/spider_hurt_02.wav,sfx.creature.spider.hurt,data/sounds/spider_death2.ogg,1,live
 content/audio/sfx/spider/spider_footstep_01.wav,sfx.creature.spider.footstep,data/sounds/spider_foot.ogg,1,live
 content/audio/sfx/spider/spider_footstep_02.wav,sfx.creature.spider.footstep,data/sounds/spider_foot10.ogg,1,live
 content/audio/sfx/spider/spider_footstep_03.wav,sfx.creature.spider.footstep,data/sounds/spider_foot11.ogg,1,live
@@ -1312,9 +1312,9 @@ content/strings/ja_jp.json,strings.ja_jp,,0,
 content/strings/ko_kr.json,strings.ko_kr,,0,
 (not created: unused (never named)),,data/textures/ambrosia_logo.bmp,1,texture
 (not created: dropped feature (dropped crate outcome and its structure)),,data/textures/beam.bmp,1,texture
-(not created: Direct3D 9 only),,data/textures/deform1c.bmp,1,texture
-(not created: Direct3D 9 only),,data/textures/deform3.bmp,1,texture
-(not created: Direct3D 9 only),,data/textures/deform36c.bmp,1,texture
+(not created: previous graphics back-end only),,data/textures/deform1c.bmp,1,texture
+(not created: previous graphics back-end only),,data/textures/deform3.bmp,1,texture
+(not created: previous graphics back-end only),,data/textures/deform36c.bmp,1,texture
 (not created: unused (named only in dead code or data)),,data/textures/dmacrew.bmp,1,texture
 (not created: unused (never named)),,data/textures/editor_font.bmp,1,texture
 (not created: unused (never named)),,data/textures/editor_font_french.bmp,1,texture
@@ -1406,20 +1406,20 @@ content/strings/ko_kr.json,strings.ko_kr,,0,
 "(not created: campaign, single-player or unreachable code path)",,data/mwhelp/mode_campaign.bmp,1,texture
 "(not created: campaign, single-player or unreachable code path)",,data/mwhelp/mode_prologue.bmp,1,texture
 (not created: dropped feature (dropped mode)),,data/mwhelp/mode_tankbattle.bmp,1,texture
-(not created: Direct3D 9 only),,data/shaders/deform.vs,1,texture
-(not created: Direct3D 9 only),,data/shaders/deformDiamond.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/deformFullscreen.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/deformSphere.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc0.vs,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc0Maps.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc1.vs,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc1Maps.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc2.vs,1,texture
-(not created: Direct3D 9 only),,data/shaders/FixedFunc2Maps.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/globals.h,1,texture
-(not created: Direct3D 9 only),,data/shaders/water-meshwaves.ps,1,texture
-(not created: Direct3D 9 only),,data/shaders/water-meshwaves.ps3,1,texture
-(not created: Direct3D 9 only),,data/shaders/water-meshwaves.vs,1,texture
+(not created: previous graphics back-end only),,data/shaders/deform.vs,1,texture
+(not created: previous graphics back-end only),,data/shaders/deformDiamond.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/deformFullscreen.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/deformSphere.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc0.vs,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc0Maps.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc1.vs,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc1Maps.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc2.vs,1,texture
+(not created: previous graphics back-end only),,data/shaders/FixedFunc2Maps.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/globals.h,1,texture
+(not created: previous graphics back-end only),,data/shaders/water-meshwaves.ps,1,texture
+(not created: previous graphics back-end only),,data/shaders/water-meshwaves.ps3,1,texture
+(not created: previous graphics back-end only),,data/shaders/water-meshwaves.vs,1,texture
 (not created: debug only),,data/sepulveda/sepulveda1.bmp,1,texture
 (not created: debug only),,data/sepulveda/sepulveda2.bmp,1,texture
 (not created: debug only),,data/sepulveda/sepulveda3.bmp,1,texture

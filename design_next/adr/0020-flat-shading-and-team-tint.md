@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0020 Flat shading and team tint
+# Flat shading and team tint
 
 ## Context and Problem Statement
 

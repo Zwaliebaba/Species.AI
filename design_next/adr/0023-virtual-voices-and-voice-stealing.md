@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0023 Virtual voices, priorities and voice stealing
+# Virtual voices, priorities and voice stealing
 
 ## Context and Problem Statement
 

@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0021 Mesh socket schema
+# Mesh socket schema
 
 ## Context and Problem Statement
 

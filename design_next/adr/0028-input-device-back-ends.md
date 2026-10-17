@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0028 Input device back-ends
+# Input device back-ends
 
 ## Context and Problem Statement
 

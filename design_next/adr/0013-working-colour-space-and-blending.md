@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0013 Working colour space and blending
+# Working colour space and blending
 
 ## Context and Problem Statement
 

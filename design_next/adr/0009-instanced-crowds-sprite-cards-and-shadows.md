@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0009 Instanced crowds, sprite cards and shadows
+# Instanced crowds, sprite cards and shadows
 
 ## Context and Problem Statement
 

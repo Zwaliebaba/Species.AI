@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0005 Pipeline state catalogue derived from the pass table
+# Pipeline state catalogue derived from the pass table
 
 ## Context and Problem Statement
 
@@ -50,8 +50,8 @@ Chosen option: **1, a build-time catalogue derived from the pass table**, becaus
 |---|---|---|---|
 | opaque | — | — | facets, terrain, opaque scenery |
 | alpha | `SRC_ALPHA` | `INV_SRC_ALPHA` | alpha-blended buildings and panels |
-| premultiplied | `ONE` | `INV_SRC_ALPHA` | glyph atlases and premultiplied textures (ADR-0018, ADR-0034) |
-| additive | `SRC_ALPHA` | `ONE` | glow, sprites, particles, normal text |
+| premultiplied | `ONE` | `INV_SRC_ALPHA` | textures whose alpha mode is premultiplied (ADR-0018) |
+| additive | `SRC_ALPHA` | `ONE` | glow, sprites, particles, normal text (ADR-0031) |
 | darkening | `ZERO` | `INV_SRC_COLOR` | darkening layers, dark smoke, text outlines and shadows |
 | ink | `SRC_ALPHA` | `INV_SRC_COLOR` | UI content whose darkening also depends on source alpha |
 

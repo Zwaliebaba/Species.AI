@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0008 GPU memory, uploads and device-removal handling
+# GPU memory, uploads and device-removal handling
 
 ## Context and Problem Statement
 

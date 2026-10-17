@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0017 Texture container and block-compression formats
+# Texture container and block-compression formats
 
 ## Context and Problem Statement
 

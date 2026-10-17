@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0007 Barrier model: Enhanced Barriers with a resource-state fallback
+# Barrier model: Enhanced Barriers with a resource-state fallback
 
 ## Context and Problem Statement
 

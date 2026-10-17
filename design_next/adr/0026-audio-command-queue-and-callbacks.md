@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0026 Audio engine command queue, control rate and callbacks
+# Audio engine command queue, control rate and callbacks
 
 ## Context and Problem Statement
 

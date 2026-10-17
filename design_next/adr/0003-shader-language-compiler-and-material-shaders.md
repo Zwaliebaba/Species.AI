@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0003 Shader language, compiler and material shader set
+# Shader language, compiler and material shader set
 
 ## Context and Problem Statement
 
@@ -46,7 +46,7 @@ Chosen option: **1, HLSL 2021, offline DXC, fixed material set**, because it is 
   4. lit by two directional lights with no ambient term, light colours up to 2.0 per channel;
   5. lit, one texture, with a wire-grid edge mask.
   The other shaders are: terrain, water, sky, sprite cards and particles, shatter debris, UI, glyphs, and the full-screen passes (fade, screen transition, resolve, tone mapping).
-- **Lighting and fog inputs.** Light directions are given in world space in the per-frame constants, never derived from the previous frame's camera. Fog is linear, evaluated per pixel on view-space distance, towards the level's fog colour.
+- **Lighting and fog inputs.** Light directions are given in world space in the per-frame constants, independent of the camera. Fog is linear, evaluated per pixel on view-space distance, towards the level's fog colour.
 - **Flat shading.** Facet colour and facet normal are baked per triangle by the mesh cooker (ADR-0020), so no shader depends on a provoking-vertex convention.
 - **Edge mask.** The wire-grid edge term is computed in the pixel shader from barycentric coordinates that the cooker writes as a vertex attribute (meshes are already split per triangle for flat colour). `SV_Barycentrics` may be used only as an optional path behind `D3D12_FEATURE_DATA_D3D12_OPTIONS3.BarycentricsSupported`.
 - **Permutations.** Each shader declares its permutation axes (for example fog on or off, alpha cut-out on or off) in a list that the build expands. A permutation that is not declared does not exist. Each compiled permutation is referenced by at least one pipeline state in the catalogue (ADR-0005); the build rejects unreferenced ones.

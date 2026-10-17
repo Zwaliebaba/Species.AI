@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0011 World-surface rendering: chunked terrain, edge-term wire overlay and GPU water
+# World-surface rendering: chunked terrain, edge-term wire overlay and GPU water
 
 ## Context and Problem Statement
 

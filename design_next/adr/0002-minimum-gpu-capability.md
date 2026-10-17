@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0002 Minimum GPU capability: feature level 12_1, Shader Model 6.6, Resource Binding Tier 3 and wave operations
+# Minimum GPU capability: feature level 12_1, Shader Model 6.6, Resource Binding Tier 3 and wave operations
 
 ## Context and Problem Statement
 

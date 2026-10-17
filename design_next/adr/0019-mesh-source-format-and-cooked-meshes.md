@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0019 Mesh source format and cooked runtime meshes
+# Mesh source format and cooked runtime meshes
 
 ## Context and Problem Statement
 

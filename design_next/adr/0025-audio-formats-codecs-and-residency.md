@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0025 Audio source formats, runtime codecs and residency
+# Audio source formats, runtime codecs and residency
 
 ## Context and Problem Statement
 

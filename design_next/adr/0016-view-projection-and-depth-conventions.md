@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0016 View, projection and depth conventions
+# View, projection and depth conventions
 
 ## Context and Problem Statement
 

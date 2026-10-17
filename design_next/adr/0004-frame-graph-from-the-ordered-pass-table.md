@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0004 Frame graph built from the ordered pass table
+# Frame graph built from the ordered pass table
 
 ## Context and Problem Statement
 

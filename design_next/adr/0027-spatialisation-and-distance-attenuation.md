@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0027 Spatialisation and distance attenuation
+# Spatialisation and distance attenuation
 
 ## Context and Problem Statement
 

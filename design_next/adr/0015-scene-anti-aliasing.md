@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0015 Scene anti-aliasing
+# Scene anti-aliasing
 
 ## Context and Problem Statement
 

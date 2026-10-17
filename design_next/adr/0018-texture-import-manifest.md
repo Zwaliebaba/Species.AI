@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0018 Texture import manifest: colour space, alpha modes, mips, samplers and tint masks
+# Texture import manifest: colour space, alpha modes, mips, samplers and tint masks
 
 ## Context and Problem Statement
 

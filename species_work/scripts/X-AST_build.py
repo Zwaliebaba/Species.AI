@@ -110,23 +110,12 @@ PROFILES = {
               'opaque', 'thumb'),
 }
 
-PLACEHOLDER = {
-    'sprite': 'generated flat-colour figure or shape filling the role silhouette, with an alpha outline',
-    'gradient': 'generated white-on-black radial or linear gradient of the stated size',
-    'glyph': 'generated white geometric glyph (circle, arrow or ring) with the asset id initials',
-    'panel': 'generated flat panel of the stated size with the asset id printed on it',
-    'ramp': 'generated two-axis colour gradient (slope x height)',
-    'noise': 'generated seamless value-noise tile',
-    'thumb': 'auto-rendered top-down capture of the placeholder map',
-    'mesh': 'primitive-built mesh (box, cylinder or cone) at the role bounding size, with every socket present',
-    'audio': 'synthesised per sample group: sine or noise burst of the stated duration, looping where marked',
-    'voice': 'text-to-speech line of the stated duration',
-    'silence': 'silence of the stated length, looping where marked',
-    'font': 'open-licence fallback font with the same script coverage',
-    'strings': 'pseudo-localised text generated from each string id',
-    'map': 'generated flat test map with the objects the mode requires for its player count',
-    'explainer': 'static card that shows the mode name and the explainer id',
-    'help': 'generated diagram card with the asset id and page number',
+PLACEHOLDER = {  # short labels; README.md "Placeholder rule" defines each one
+    'sprite': 'generated figure', 'gradient': 'generated gradient', 'glyph': 'generated glyph',
+    'panel': 'generated panel', 'ramp': 'generated ramp', 'noise': 'generated noise tile',
+    'thumb': 'auto-rendered capture', 'mesh': 'primitive mesh with sockets', 'audio': 'synthesised tone',
+    'voice': 'text-to-speech line', 'silence': 'silence', 'font': 'fallback font', 'strings': 'pseudo-localised text',
+    'map': 'generated test map', 'explainer': 'static mode card', 'help': 'diagram card',
 }
 
 BRIEF = {
@@ -182,7 +171,7 @@ textures/bubble.bmp|vfx|textures/fx/fx_bubble_sphere|fx.bubble_sphere|Translucen
 textures/clouds.bmp|vfx|textures/fx/fx_sky_cloud|fx.sky_cloud|Sky cloud layer (also the front-end background clouds)|r_world,frontend|fp|add|blobby layer MAG LINEAR / MIN NEAREST, flat layer NEAREST; wrap repeat; small tile magnified on purpose
 textures/cloudyglow.bmp|vfx|textures/fx/fx_glow_cloudy|fx.glow_cloudy|Soft cloudy glow: front-end fill boxes, Supply crate glow, dust vortex, Spawn Node glow|crates,econ,vfx,frontend|fp|add|wrap repeat in front-end fill boxes
 textures/fuel.bmp|vfx|textures/fx/fx_fuel_flow|fx.fuel_flow|Scrolling fuel-flow strip on fuel lines|modeobj,m_launch_race,vfx|launch|add|wrap repeat, scrolled along the line
-textures/glow.bmp|vfx|textures/fx/fx_glow_round|fx.glow_round|Round soft glow: Worker glow, blob shadows, lights, Essence orbs carried by Leaders, Core Device, Solar Array|worker,essence,r_entity,vfx|fp|add|also drawn as a darkening blob shadow
+textures/glow.bmp|vfx|textures/fx/fx_glow_round|fx.glow_round|Round soft glow: Worker glow, blob shadows, lights, Essence orb glow, Core Device, Solar Array|worker,essence,r_entity,vfx|fp|add|also drawn as a darkening blob shadow
 textures/laser-long.bmp|vfx|textures/fx/fx_beam_long|fx.beam_long|Long beam strip: Launch Race status panel, Control Zone edge, Core Device pulse wave|modeobj,m_zone_control,m_siege,vfx|launch|add|
 textures/laser.bmp|vfx|textures/fx/fx_beam_short|fx.beam_short|Beam strip: laser bolts, the sky grid lines and front-end decoration|weapons,r_world,vfx|fp|add|wrap repeat for the sky grid; drawn without mips by the sky and laser-bolt passes
 textures/laserfence.bmp|vfx|textures/fx/fx_barrier_field|fx.barrier_field|Barrier Emitter field and the base layer of the Beam Dish signal|defences,vfx|fp|add|wrap repeat
@@ -357,7 +346,7 @@ TEX_EXCLUDE_FULL['icons/gestureguide.bmp'] = 'dropped feature (gesture input)'
 
 REACH_CLASS = {
     'none': 'unused (never named)', 'DEAD': 'unused (named only in dead code or data)',
-    'LEGACY': 'campaign, single-player or unreachable code path', 'D3D': 'Direct3D 9 only',
+    'LEGACY': 'campaign, single-player or unreachable code path', 'D3D': 'previous graphics back-end only',
     'DEBUG': 'debug only', 'EDITOR': 'editor only',
 }
 
@@ -627,6 +616,8 @@ def docs(keys):
         k = k.strip()
         if not k:
             continue
+        if k == 'ast':
+            continue   # the asset pipeline consumes every row; not listed per row
         if k not in DOCS:
             raise SystemExit('unknown consumer key %r' % k)
         if DOCS[k] not in out:
@@ -707,6 +698,10 @@ def build_textures(b, rows):
         wh = size_of(r)
         twox = cat in ('ui', 'hud', 'glyphs') or spath.startswith('textures/icons/cursors/')
         sz = ui_size(*wh) if twox else '%dx%d px' % wh
+        if extra:
+            g.setdefault('extra', extra)
+        else:
+            extra = g.get('extra', '')
         spec = sz + ('; ' + extra if extra else '')
         if 'spec' not in g or not g.get('spec'):
             g['spec'] = spec
@@ -746,9 +741,9 @@ def build_terrain(b, rows, seen):
                 spec += '; the wave colour runs along x'
             if key == 'sea':
                 spec += '; wrap repeat'
-            spec += ('; ' + ', '.join(notes) if notes else '')
             if not g.get('spec'):
                 g['spec'] = spec
+            spec += ('; ' + ', '.join(notes) if notes else '')
             prio_file = 'skirmish-first-playable' if i == 1 else 'launch'
             b.add_file(aid, 'content/textures/%s.png' % (spat % i), [orig], [r['reach']], spec)
             g['files'][-1]['priority'] = prio_file
@@ -920,7 +915,7 @@ def build_thumbs_and_maps(b, tex_rows, levels, seen):
 def build_fonts(b, rows, seen):
     fonts = collections.OrderedDict([
         ('square_latin', ('font.ui.primary', 'content/fonts/ui_primary.otf',
-                          'Primary UI face: the face that every language uses, Latin and Cyrillic scripts',
+                          'Primary UI face, Latin and Cyrillic scripts (the reference face that also carries Japanese and Korean)',
                           'U+0020-00FF, U+0410-044F, U+20A0-20AF', 'fp')),
         ('square_ja', ('font.ui.primary_ja', 'content/fonts/ui_primary_ja.otf',
                        'Japanese companion of the primary face (kana and CJK ideographs)',
@@ -967,12 +962,12 @@ def build_meshes(b, rows):
             raise SystemExit('bad MESH_TABLE line %s' % line)
         table[p[0]] = p
     in_scope = set()
-    for r in rows:
-        if r['kind'] != 'shp':
-            continue
-        stem = r['path'].split('/')[-1][:-4]
-        if stem not in table:
-            continue
+    by_stem = {r['path'].split('/')[-1][:-4]: r for r in rows if r['kind'] == 'shp'}
+    missing = set(table) - set(by_stem)
+    if missing:
+        raise SystemExit('mesh table names unknown shapes %s' % missing)
+    for stem in table:
+        r = by_stem[stem]
         if r['reach'] != 'FULL':
             raise SystemExit('mesh table names non-FULL %s' % stem)
         _, grp, sstem, aid, role, cons, prio = table[stem]
@@ -988,6 +983,7 @@ def build_meshes(b, rows):
             if parent != 'sceneroot':
                 s += ' (on node %s)' % NODE_NAME.get(parent, 'node_' + parent.lower())
             sockets.append(s)
+        sockets.sort(key=lambda x: (re.sub(r'_\d+.*$', '', x), x))
         tris = int(r['triangles'] or 0)
         nodes = int(r['fragments'] or 0)
         spec = '%s triangles budget; %d node%s, depth %s; sockets: %s' % (
@@ -1002,9 +998,6 @@ def build_meshes(b, rows):
         b.add_file(aid, 'content/meshes/%s/%s.glb' % (grp, sstem), [r['path']], [r['reach']], spec)
         b.groups[aid]['files'][-1]['priority'] = PRIO[prio]
         in_scope.add(r['path'])
-    missing = set(table) - set(r['path'].split('/')[-1][:-4] for r in rows)
-    if missing:
-        raise SystemExit('mesh table names unknown shapes %s' % missing)
     for r in rows:
         if r['path'] in in_scope:
             continue
@@ -1053,6 +1046,12 @@ def build_audio(b, samples, events):
         primary = pp[0] if pp else pairs[0]
         primaries[bank] = primary
         owned[(primary[0], primary[1])].append((primary[2], bank, primary[3]))
+    # each live sample belongs to exactly one Species file: the smallest live bank that holds it owns it
+    owner = {}
+    for bank in sorted(bank_pairs, key=lambda k: len([x for x in members[k] if x['event_liveness'] == 'live'])):
+        for smp in members[bank]:
+            if smp['event_liveness'] == 'live' and smp['name'] not in owner:
+                owner[smp['name']] = bank
     suffix_of = {}
     for key, lst in owned.items():
         lst.sort()
@@ -1099,8 +1098,8 @@ def build_audio(b, samples, events):
             raise SystemExit('duplicate audio asset id %s' % aid)
         bank_ids[bank] = aid
         mem = [s for s in members[bank] if s['event_liveness'] == 'live']
-        own = [s for s in mem if s['name'] not in assigned]
-        shared = [s for s in mem if s['name'] in assigned]
+        own = [s for s in mem if owner[s['name']] == bank]
+        shared = [s for s in mem if owner[s['name']] != bank]
         durs = [float(s['duration_s']) for s in mem]
         loop = 'Loop' in mode
         spatial = '2-D (not positional)' if mode.startswith('2D') else (
@@ -1121,12 +1120,15 @@ def build_audio(b, samples, events):
                     spec=spec, sample_count=len(mem), loop=loop, spatial=spatial, voice=voice,
                     primary=(otype, ev))
         g['bindings'] = pairs
-        g['shared_files'] = [assigned[s['name']] for s in shared]
+        g['shared_samples'] = [s['name'] for s in shared]
         n = len(own)
         for i, s in enumerate(sorted(own, key=lambda s: s['name']), 1):
             fn = '%s/%s.wav' % (folder, stem) if n == 1 else '%s/%s_%02d.wav' % (folder, stem, i)
             b.add_file(aid, fn, [s['path']], ['live'], '%.2f s reference length' % float(s['duration_s']))
             assigned[s['name']] = fn
+    for g in b.groups.values():
+        if 'shared_samples' in g:
+            g['shared_files'] = [assigned[n] for n in g.pop('shared_samples')]
     # exclusions
     for s in samples:
         if s['name'] in assigned:

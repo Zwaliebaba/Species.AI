@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0024 Audio buses, per-bus effects and the mix
+# Audio buses, per-bus effects and the mix
 
 ## Context and Problem Statement
 

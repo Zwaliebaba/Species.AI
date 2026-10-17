@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0012 Swap chain, presentation and frame pacing
+# Swap chain, presentation and frame pacing
 
 ## Context and Problem Statement
 

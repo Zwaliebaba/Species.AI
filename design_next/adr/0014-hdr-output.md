@@ -4,7 +4,7 @@ date: 2026-10-17
 decision-makers: Species technology lead
 ---
 
-# ADR-0014 HDR output
+# HDR output
 
 ## Context and Problem Statement
 

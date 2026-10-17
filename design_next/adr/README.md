@@ -4,7 +4,7 @@ This folder holds the engine-technology decisions of the Species reference libra
 
 - **Accepted** records state a decision the engine baseline is built on.
 - **Proposed** records state a choice that is still open. Each one names the **default** the team proceeds with until the decision is confirmed or changed.
-- A record flagged `owner-decision: blocking` in its front matter has no defensible default and waits for the owner. No record carries that flag at present.
+- A record flagged `owner-decision: blocking` in its front matter has no defensible default and waits for the owner. No record numbered 0001–0049 carries that flag.
 
 ADRs cover engine technology only. Game design lives in `reference/` and `decisions/`; the engine components in `architecture/components/` cite these records by number. The topics listed in [Deferred to the design phase](#deferred-to-the-design-phase) have no ADR: the Species design phase decides them (see [the vision brief](../../vision/species-vision-brief.md)).
 
@@ -15,6 +15,41 @@ Numbers 0001–0049 cover the engine runtime (renderer, textures, meshes, audio,
 | Number | Title | Status | Date |
 |---|---|---|---|
 | [ADR-0001](0001-direct3d-12-renderer-on-the-agility-sdk.md) | Direct3D 12 renderer on the Agility SDK | Accepted | 2026-10-17 |
+| [ADR-0002](0002-minimum-gpu-capability.md) | Minimum GPU capability: feature level 12_1, Shader Model 6.6, Resource Binding Tier 3 and wave operations | Proposed | 2026-10-17 |
+| [ADR-0003](0003-shader-language-compiler-and-material-shaders.md) | Shader language, compiler and material shader set | Accepted | 2026-10-17 |
+| [ADR-0004](0004-frame-graph-from-the-ordered-pass-table.md) | Frame graph built from the ordered pass table | Proposed | 2026-10-17 |
+| [ADR-0005](0005-pipeline-state-catalogue.md) | Pipeline state catalogue derived from the pass table | Accepted | 2026-10-17 |
+| [ADR-0006](0006-root-signature-and-bindless-resource-access.md) | Root signature and bindless resource access | Proposed | 2026-10-17 |
+| [ADR-0007](0007-barrier-model.md) | Barrier model: Enhanced Barriers with a resource-state fallback | Proposed | 2026-10-17 |
+| [ADR-0008](0008-gpu-memory-uploads-and-device-removal.md) | GPU memory, uploads and device-removal handling | Accepted | 2026-10-17 |
+| [ADR-0009](0009-instanced-crowds-sprite-cards-and-shadows.md) | Instanced crowds, sprite cards and shadows | Accepted | 2026-10-17 |
+| [ADR-0010](0010-gpu-particles-and-shatter-debris.md) | GPU particles and shatter debris | Accepted | 2026-10-17 |
+| [ADR-0011](0011-world-surface-rendering.md) | World-surface rendering: chunked terrain, edge-term wire overlay and GPU water | Accepted | 2026-10-17 |
+| [ADR-0012](0012-swap-chain-presentation-and-frame-pacing.md) | Swap chain, presentation and frame pacing | Accepted | 2026-10-17 |
+| [ADR-0013](0013-working-colour-space-and-blending.md) | Working colour space and blending | Proposed | 2026-10-17 |
+| [ADR-0014](0014-hdr-output.md) | HDR output | Proposed | 2026-10-17 |
+| [ADR-0015](0015-scene-anti-aliasing.md) | Scene anti-aliasing | Proposed | 2026-10-17 |
+| [ADR-0016](0016-view-projection-and-depth-conventions.md) | View, projection and depth conventions | Proposed | 2026-10-17 |
+| [ADR-0017](0017-texture-container-and-block-compression.md) | Texture container and block-compression formats | Accepted | 2026-10-17 |
+| [ADR-0018](0018-texture-import-manifest.md) | Texture import manifest: colour space, alpha modes, mips, samplers and tint masks | Accepted | 2026-10-17 |
+| [ADR-0019](0019-mesh-source-format-and-cooked-meshes.md) | Mesh source format and cooked runtime meshes | Accepted | 2026-10-17 |
+| [ADR-0020](0020-flat-shading-and-team-tint.md) | Flat shading and team tint | Accepted | 2026-10-17 |
+| [ADR-0021](0021-mesh-socket-schema.md) | Mesh socket schema | Accepted | 2026-10-17 |
+| [ADR-0022](0022-audio-engine-on-xaudio2.md) | Audio engine on XAudio2 2.9 and X3DAudio | Accepted | 2026-10-17 |
+| [ADR-0023](0023-virtual-voices-and-voice-stealing.md) | Virtual voices, priorities and voice stealing | Accepted | 2026-10-17 |
+| [ADR-0024](0024-audio-buses-and-per-bus-effects.md) | Audio buses, per-bus effects and the mix | Accepted | 2026-10-17 |
+| [ADR-0025](0025-audio-formats-codecs-and-residency.md) | Audio source formats, runtime codecs and residency | Proposed | 2026-10-17 |
+| [ADR-0026](0026-audio-command-queue-and-callbacks.md) | Audio engine command queue, control rate and callbacks | Accepted | 2026-10-17 |
+| [ADR-0027](0027-spatialisation-and-distance-attenuation.md) | Spatialisation and distance attenuation | Accepted | 2026-10-17 |
+| [ADR-0028](0028-input-device-back-ends.md) | Input device back-ends | Proposed | 2026-10-17 |
+| [ADR-0029](0029-input-event-model-and-binding-contract.md) | Input event model and the binding-graph contract | Accepted | 2026-10-17 |
+| [ADR-0030](0030-ui-framework-build-or-buy.md) | UI framework: an own retained framework | Proposed | 2026-10-17 |
+| [ADR-0031](0031-batched-ui-rendering.md) | Batched UI rendering | Accepted | 2026-10-17 |
+| [ADR-0032](0032-ui-focus-graph-page-stack-and-input.md) | UI focus graph, page stack and input handling | Accepted | 2026-10-17 |
+| [ADR-0033](0033-ui-layout-scaling-and-dpi.md) | UI layout, scaling and DPI | Accepted | 2026-10-17 |
+| [ADR-0034](0034-text-rendering-and-glyph-cache.md) | Text rendering: DirectWrite shaping and a glyph cache | Proposed | 2026-10-17 |
+| [ADR-0035](0035-procedural-animation-runtime.md) | Procedural animation runtime | Accepted | 2026-10-17 |
+| [ADR-0036](0036-effect-events-and-presentation-clock.md) | Effect events, presentation clock and effect definitions | Accepted | 2026-10-17 |
 <!-- X-ADR-b rows -->
 
 ## Technology baseline
@@ -27,22 +62,22 @@ Confidence: **high** means a primary source was read directly and the recommenda
 
 | # | Item | Baseline for Species | Confidence | Decided in |
 |---|---|---|---|---|
-| 1.1 | OS (client) | Windows 11 x64, **minimum 24H2, build 10.0.26100**; primary test targets 25H2 (26200) and 26H2 (26300) | high | toolchain ADRs (0050–0099) |
-| 1.2 | Windows 10 | Not supported (out of support since 2025-10-14; consumer ESU ended 2026-10-13) | high | toolchain ADRs (0050–0099) |
-| 2.1 | Visual Studio and MSVC | Visual Studio 2026 (18.11 current); **MSVC Build Tools 14.51** pinned, move to 14.52 when it becomes the default | high | toolchain ADRs (0050–0099) |
-| 2.2 | Language | **C++23**: `/std:c++23preview` on 14.51, `/std:c++23` from 14.52; no `/std:c++latest`; no C++26 features | high | toolchain ADRs (0050–0099) |
-| 2.2 | `import std` | Supported by MSVC (since Visual Studio 2022 17.5); allowed behind a build option until CMake 4.5 makes it non-experimental | medium | toolchain ADRs (0050–0099) |
-| 2.3 | Dedicated-server compilers (Linux) | **Clang 23 (LLVM 23.1.3) + libc++** primary, **GCC 16 (16.2.0)** secondary; shared code uses the intersection with MSVC | medium | toolchain ADRs (0050–0099) |
-| 3.1 | Build | **CMake 4.4 or later** (4.4.4 current), presets schema 10, **Ninja Multi-Config** | high | toolchain ADRs (0050–0099) |
-| 3.2 | Dependencies | **vcpkg manifest mode**, pinned `builtin-baseline`, overlay triplets per toolset | high | toolchain ADRs (0050–0099) |
+| 1.1 | OS (client) | Windows 11 x64, **minimum 24H2, build 10.0.26100**; primary test targets 25H2 (26200) and 26H2 (26300) | high | [ADR-0050](0050-client-platform-and-minimum-os.md) |
+| 1.2 | Windows 10 | Not supported (out of support since 2025-10-14; consumer ESU ended 2026-10-13) | high | [ADR-0050](0050-client-platform-and-minimum-os.md) |
+| 2.1 | Visual Studio and MSVC | Visual Studio 2026 (18.11 current); **MSVC Build Tools 14.51** pinned, move to 14.52 when it becomes the default | high | [ADR-0051](0051-windows-toolchain-and-compiler-policy.md) |
+| 2.2 | Language | **C++23**: `/std:c++23preview` on 14.51, `/std:c++23` from 14.52; no `/std:c++latest`; no C++26 features | high | [ADR-0052](0052-cpp23-language-standard.md) |
+| 2.2 | `import std` | Supported by MSVC (since Visual Studio 2022 17.5); allowed behind a build option until CMake 4.5 makes it non-experimental | medium | [ADR-0053](0053-modules-and-import-std.md) |
+| 2.3 | Dedicated-server compilers (Linux) | **Clang 23 (LLVM 23.1.3) + libc++** primary, **GCC 16 (16.2.0)** secondary; shared code uses the intersection with MSVC | medium | [ADR-0052](0052-cpp23-language-standard.md), [ADR-0051](0051-windows-toolchain-and-compiler-policy.md) |
+| 3.1 | Build | **CMake 4.4 or later** (4.4.4 current), presets schema 10, **Ninja Multi-Config** | high | [ADR-0054](0054-build-system-cmake-presets.md) |
+| 3.2 | Dependencies | **vcpkg manifest mode**, pinned `builtin-baseline`, overlay triplets per toolset | high | [ADR-0055](0055-dependencies-vcpkg-manifest-mode.md) |
 | 4.1 | Agility SDK | **1.619.6 (D3D12SDKVersion 619)**, `D3D12SDKPath .\D3D12\` | high | [ADR-0001](0001-direct3d-12-renderer-on-the-agility-sdk.md) |
 | 4.2 | Feature level | **12_1 minimum** + Shader Model 6.6 + Resource Binding Tier 3 + WaveOps; 12_2 not required (its hardware reach not verified) | medium | [ADR-0002](0002-minimum-gpu-capability.md) |
 | 4.3 | Shader Model | **Minimum 6.6** (bindless dynamic resources); current release 6.9, 6.10 in preview | high | [ADR-0002](0002-minimum-gpu-capability.md), [ADR-0006](0006-root-signature-and-bindless-resource-access.md) |
 | 4.4 | Enhanced Barriers | Frame graph in Enhanced-Barrier terms; `Barrier()` when `EnhancedBarriersSupported`, the `ResourceBarrier` API otherwise | high | [ADR-0007](0007-barrier-model.md) |
 | 4.5 | Shader compiler | **DXC v1.9.2609**, offline, `-HV 2021`, 202x-clean | high | [ADR-0003](0003-shader-language-compiler-and-material-shaders.md) |
 | 4.6 | Swap chain, VRR, HDR | `FLIP_DISCARD`, waitable object, `ALLOW_TEARING` when supported, no exclusive full screen; HDR optional through scRGB FP16 | high | [ADR-0012](0012-swap-chain-presentation-and-frame-pacing.md), [ADR-0014](0014-hdr-output.md) |
-| 4.7 | Profiling | **PIX 2603.25**; **WinPixEventRuntime 1.0.240308001** (MIT), markers compiled out of shipping builds | high | toolchain ADRs (0050–0099) |
-| 5.1 | DirectStorage | **Not adopted in v1**; package format chunked (at most 256 KiB, 64 KiB-aligned) so 1.3.0 (stable) or 1.4 (preview now) can be added later | medium | content-pipeline ADRs (0050–0099) |
+| 4.7 | Profiling | **PIX 2603.25**; **WinPixEventRuntime 1.0.240308001** (MIT), markers compiled out of shipping builds | high | [ADR-0068](0068-profiling-and-gpu-timing.md) |
+| 5.1 | DirectStorage | **Not adopted in v1**; package format chunked (at most 256 KiB, 64 KiB-aligned) so 1.3.0 (stable) or 1.4 (preview now) can be added later | medium | [ADR-0058](0058-pack-files-and-mount-policy.md) |
 | 5.2 | Texture tools | **DirectXTex `may2026`** in the cooker; texconv for inspection; CI cooks BC7 with the software codec | high | [ADR-0017](0017-texture-container-and-block-compression.md) |
 | 5.3 | Block compression | BC7 sRGB colour, BC5 normals, BC4 single-channel; uncompressed for exact data and glyphs | high | [ADR-0017](0017-texture-container-and-block-compression.md) |
 | 6 | Input | **GameInput** for gamepads (pin 3.5.283 / `GameInput::v3` now, 4.0.x after its first point release) + redistributable in the installer; Win32 messages for mouse, keyboard, text and IME | medium | [ADR-0028](0028-input-device-back-ends.md) |
@@ -51,11 +86,11 @@ Confidence: **high** means a primary source was read directly and the recommenda
 | 8.2 | Texture container | **DDS with the DX10 header** for every cooked texture | high | [ADR-0017](0017-texture-container-and-block-compression.md) |
 | 8.3 | Audio formats | Sources 48 kHz 24-bit WAV; runtime 16-bit PCM 48 kHz for effects, streamed **Opus 1.5.2** for music; MS-ADPCM only once its encoder's distribution is confirmed; no xWMA | medium | [ADR-0025](0025-audio-formats-codecs-and-residency.md) |
 | 9 | Glyph rasterisation | DirectWrite layout → custom renderer → `IDWriteFactory3::CreateGlyphRunAnalysis` (grayscale) → `CreateAlphaTexture` → `R8_UNORM` atlas | medium | [ADR-0034](0034-text-rendering-and-glyph-cache.md) |
-| 10.1 | Accessibility | **XAG 3.2** as checklist; text scale, 7:1 high-contrast mode, remapping, photosensitivity check | high | toolchain and operations ADRs (0050–0099) |
-| 10.2 | Localisation | UTF-8 everywhere, **BCP 47** tags, in-box ICU (`icu.dll`) on the client; data level Unicode 17 / CLDR 48 | medium | toolchain and operations ADRs (0050–0099) |
-| 11.1 | Crash reporting | **WER** + Windows Desktop Application Program + symbol store; the dedicated-server crash path is a design-phase decision | high | operations ADRs (0050–0099) |
-| 11.2 | Packaging | One relocatable install directory, MSIX-compatible; storefront choice is a design-phase decision | medium | operations ADRs (0050–0099) |
-| 11.3 | Code signing | Sign every PE file and installer, SHA-256 + RFC 3161 timestamp, in CI; **Azure Artifact Signing** if eligible, else an OV certificate | high | operations ADRs (0050–0099) |
+| 10.1 | Accessibility | **XAG 3.2** as checklist; text scale, 7:1 high-contrast mode, remapping, photosensitivity check | high | [ADR-0064](0064-accessibility-baseline-xag.md) |
+| 10.2 | Localisation | UTF-8 everywhere, **BCP 47** tags, in-box ICU (`icu.dll`) on the client; data level Unicode 17 / CLDR 48 | medium | [ADR-0063](0063-localisation.md) |
+| 11.1 | Crash reporting | **WER** + Windows Desktop Application Program + symbol store; the dedicated-server crash path is a design-phase decision | high | [ADR-0065](0065-crash-reporting.md) |
+| 11.2 | Packaging | One relocatable install directory, MSIX-compatible; storefront choice is a design-phase decision | medium | [ADR-0071](0071-install-layout-runtime-files-and-user-data.md), [ADR-0072](0072-distribution-channels-and-package-formats.md) |
+| 11.3 | Code signing | Sign every PE file and installer, SHA-256 + RFC 3161 timestamp, in CI; **Azure Artifact Signing** if eligible, else an OV certificate | high | [ADR-0073](0073-code-signing.md) |
 
 ### Recommendations and sources by area
 
