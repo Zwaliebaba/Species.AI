@@ -38,12 +38,12 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `TER` | Terrain | `architecture/components/terrain.md` |
 | `RND` | Renderer | `architecture/components/renderer/` |
 | `AST` | Asset pipeline and resources | `architecture/components/asset_pipeline_and_resources.md` |
-| `VFX` | Animation and VFX | `architecture/components/animation_and_vfx.md` |
+| `VFX` | Animation and VFX | `architecture/components/animation_and_vfx/` |
 | `AEN` | Audio engine | `architecture/components/audio_engine.md` |
 | `UI` | UI framework | `architecture/components/ui_framework/` |
 | `INP` | Input | `architecture/components/input.md` |
 | `CAM` | Camera and sequences | `architecture/components/camera_and_sequences.md` |
-| `DAT` | Data schemas | `architecture/components/data_schemas.md` |
+| `DAT` | Data schemas | `architecture/components/data_schemas/` |
 | `PLT` | Platform layer | `architecture/components/platform_layer.md` |
 | `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance.md` |

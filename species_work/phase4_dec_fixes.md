@@ -91,3 +91,5 @@
 | 87 | C-AEN | ADR-0025 | the reference 60 MiB LRU sample cache is the reference model, not carried; resident set about 173 MiB, so the match bank budget is 192 MiB | amend ADR-0025 with the budgets and bank rules |
 | 88 | C-AEN | ADR-0024, 0027, 0022, 0026 | six buses (ADR-0024); maximum distance defaults to 10⁹ wu, keeping DEC-566; copy decay is a design value owned by G10 (ADR-0023); small wording fixes in 0022 and 0026 | amend the ADRs (closes item 80) |
 | 89 | C-AEN | DEC-567 | an omitted DSP parameter takes its declared default, not 0.0; 21 of 63 parameters have ranges excluding 0.0 | confirm in DEC-567; C-DAT schema default |
+| 90 | C-VFX folder | — | 45 files still link to `animation_and_vfx.md`; the report maps each topic to its new file | global link update |
+| 91 | C-VFX | new | 10 DEC requests (explainer layout recomputed on resize, flicker evaluated every 0.1 s, per-frame effects as 60 Hz steps); camera shake applied as a view offset (C-CAM) | DEC triage; C-CAM alignment |

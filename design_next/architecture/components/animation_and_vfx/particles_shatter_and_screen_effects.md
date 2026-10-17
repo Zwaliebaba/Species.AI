@@ -17,7 +17,7 @@ The GPU records below are a declaration sketch in the shared C++ and HLSL header
 ```cpp
 namespace species::vfx::gpu {
 
-struct Particle {                 // one slot of the pool's structured buffer
+struct ParticleSlot {             // one slot of the pool's structured buffer
   float3 position;  float birth;  // birth on the scaled presentation clock
   float3 velocity;  float size;
   uint colour;                    // RGBA8

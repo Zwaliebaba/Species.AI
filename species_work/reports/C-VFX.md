@@ -259,7 +259,7 @@ These are proposals. All are new Species identifiers, and none is a rename of an
   - the rest: `VfxRuntime`, `ShatterExplosion`, `ProceduralAnimator`, `FootState`, `LegTuning`.
 
   `ParticlePool`, `ShatterEffects` and `FxRng` are already in the glossary.
-- **GPU structs:** `Particle`, `ParticleType`, `Shard`, `Tumbler`.
+- **GPU structs:** `ParticleSlot`, `ParticleType`, `Shard`, `Tumbler`. The slot struct is named `ParticleSlot` so that it does not reuse an original class name.
 - **`ParticleKind` enumerators:** RocketTrail, ExplosionCore, ExplosionDebris, MuzzleFlare, Fire, ControlFlash, Spark, BlueSpark, Casing, MissileTrail, MissileFire, WorkerFire, Leaf, Sickness, SpeedBoostTrail, FireballFlame, Volcano. `MuzzleFlare` avoids a forbidden pattern; `MuzzleFlashEffect` stays the weapons document's name.
 - **`EffectKind` enumerators:** Explosion, RocketBurst, StructureDestroyed, LaserHitStructure, RoundHitStructure, RoundHitTerrain, ThrownWeaponTrail, AirstrikeMarkerSmoke, RocketFlame, FireballLaunched, FirebombBurst, LightningStrike, SwarmHit, TurretCooling, TurretShot, TrooperShot, BarrierSpark, ControlGained, ControlLost, LeaderPromoted, LeaderDemoted, CrowdOrder, LeaderOrder, LeaderFormUp, OrderMarkerStep, WorkerBurning, WorkerSpeedBoost, WorkerSick, PowerReachedWorker, WorkerOpeningCrate, WorkerAbducted, ActorHit, Bite, TransportExhaust, CollectorEngine, AbductorEngine, MeteorFire, OrbBroken, TreeBurning, TreeLeaf, SpitterPlantBurning, SmokeColumn, VolcanoEruption, FuelPumpStroke, FuelDepotBoarding, VesselBooster, VesselWrecked, CameraShake, Shatter.
 - **Catalogue entries:**

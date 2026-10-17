@@ -616,3 +616,113 @@ This component cites these keys of other documents and defines none of them: `re
 | `cam.timeline.trigger_poll_s` | 1 | s of the camera clock | camera triggers; one-shot | CAM-114 | DEC-051 |
 | `cam.budget.advance_ms` | 0.05 | ms per frame | CPU time of one camera advance | CAM-120 | — |
 | `cam.budget.timeline_ms` | 0.05 | ms per frame | CPU time of one timeline advance | CAM-120 | DEC-051 |
+
+## 5 Concurrency and performance budget
+
+**CAM-120** (MUST) One camera advance takes at most `cam.budget.advance_ms` (0.05 ms) of CPU time per frame, and one timeline advance at most `cam.budget.timeline_ms` (0.05 ms), measured by test T22. The costliest camera step is the cliff probe of R-CTRL-471 (40 terrain samples) together with the five ground samples. After match entry neither advance allocates memory, except when a timeline starts.
+
+**CAM-121** (MUST) Name look-ups use an index that `EnterMatch` builds: the case-folded name of every camera view and camera animation maps to the first record with that name, so a look-up costs one hash look-up; `previous_view` is a separate slot of the camera state, not an index entry.
+
+**CAM-122** (MUST) The camera never waits on the simulation: it reads the newest snapshot that the frame holds (R-SIM-583). The renderer, the audio listener and the overlays read the frame output by value after the camera advance of the same frame, so the frame that is rendered always shows the pose of that frame's advance.
+
+## 6 Failure modes, diagnostics and telemetry
+
+Table 6-A Failure modes.
+
+| Failure | Behaviour | Requirement |
+|---|---|---|
+| a view name does not resolve at run time (a start view, a timeline statement or an animation node) | the target is unchanged and the call returns false; in development builds a warning names the view and its caller; a player build shows nothing | CAM-040, CAM-061, CAM-066 |
+| `previous_view` is named before any play request has saved a pose | it does not resolve, as above | CAM-040 |
+| an animation name does not resolve, or the animation has no nodes | it is not played, and the call returns false | CAM-065 |
+| a camera view with a zero-length front or up vector, an unknown transition, a duration outside its range, or a node naming a view defined after the animation | a content-build error with file and line (DEC-015); never met at run time | CAM-020 |
+| front and up become parallel after a pose change | up becomes the level up vector of the front; with a vertical front, the previous up re-orthogonalised against the front is kept | CAM-034 |
+| the camera stands at the focus of `SetTargetAround` | dir is the negated horizontal front, or (0, 0, 1) when that has zero length | CAM-053 |
+| the camera stands directly above the structure when the structure focus begins | the track vector is the negated horizontal front, or (0, 0, 1) when that has zero length | CAM-056 |
+| the structure of a focus or an approach no longer resolves | the focus keeps the last centre it read; an approach statement does nothing; development builds warn | CAM-054, CAM-057 |
+| a move of duration 0 | it lands at its first advance | CAM-046 |
+| the window loses focus during a move, an animation or a timeline | the camera clock stops and everything resumes where it stood | CAM-031 |
+| a timeline refers to content that a map or data set lacks | a content-build error with file and line | CAM-102 |
+
+**CAM-125** (MUST) In builds of the `Debug` and `Development` flavours (ADR-0056) a camera overlay shows: the mode; the pose; the target; the field of view and its target; the camera clock; the current camera animation with its node index and the remaining node time; the saved mode; and the running timeline with its current statement, its current wait and its abort permission. Warnings and state changes are logged in the `camera` and `sequence` categories (ADR-0067).
+
+**CAM-126** (MUST NOT) The camera emits no telemetry: its pose, views, animations and timelines are not part of the telemetry data set (ADR-0066).
+
+## 7 Acceptance tests
+
+Tests run under the test framework of ADR-0069 with the manual time source of ADR-0074, so every camera step is set by the test.
+
+Table 7-A Acceptance tests.
+
+| Test | Kind | Checks | Requirements |
+|---|---|---|---|
+| T1 cut | unit | after `SetTargetView` and `Cut`, the pose equals the view's pose re-orthonormalised, the height equals the view's y, and the mode and field of view are unchanged | CAM-040, CAM-042 |
+| T2 view look-up | unit | look-up ignores case and returns the first match in record order; a missing name returns false and leaves the target; `previous_view` fails before a play request and resolves to the saved pose after one | CAM-021, CAM-040 |
+| T3 exact landing | property | for random start and target poses, durations from 0 to 59.9 s and random step sequences of at most 0.25 s, the pose after the landing advance equals the target exactly, no intermediate position leaves the start-to-target segment, and the distance from the start never decreases | CAM-046, CAM-047 |
+| T4 speed profile | unit | a move of 400 wu over 4 s at 1,000 steps per second peaks at 200 wu/s at 2 s, within 0.5 %, and its speed rises and falls linearly | CAM-047 |
+| T5 orientation | property | interpolated quaternions stay unit length; the shorter rotation is taken; a 179° turn and a roll-only change both land on the target's front and up | CAM-048 |
+| T6 field of view during a move | unit | a 30° change of the target field of view during a move at 100 frames per second leaves 36.8 % ± 0.1 % of the difference after 10 s | CAM-049 |
+| T7 animation vector | unit | the animation [move to view A over 2 s, cut to view B after 1 s, move to `previous_view` over 1 s] at 50 frames per second: the pose equals A when node 0 ends, holds A during node 1, equals B when node 1 ends, equals the saved pose when node 2 ends, and the saved mode is then restored | CAM-065 to CAM-070 |
+| T8 stop and empty | unit | a stop during a move restores the saved mode at once without snapping the pose; an animation without nodes is not played and returns false | CAM-065, CAM-068 |
+| T9 busy | unit | `IsBusy` is true while an animation plays and during a scripted move outside an animation, and false after the landing | CAM-069 |
+| T10 node timing | unit | with a step of 0.3 s clamped to 0.25 s, a node ends at the first advance whose elapsed time exceeds its duration; at most one node ends per advance; each node of duration 0 takes exactly one advance | CAM-030, CAM-067, CAM-070 |
+| T11 match start | integration | on a map with `default_view` and a start view for position 2, the team at position 2 sees a cut to `default_view` at entry, free movement, a cut to its start view in the first frame with its team, and the same cut after a multi-round reset; on a map without views the pose stays at (world size x, 1,000, world size x) | CAM-060, CAM-061 |
+| T12 structure focus | golden vector | a recorded 10 s focus at 60 frames per second reproduces a vector set of positions and fronts; the goal never rises above y = 1,000 wu through the lift; the position stays at least 10 wu above the terrain; a negative range looks away from the structure | CAM-056, CAM-057 |
+| T13 approach | unit | a camera at (0, 300, 400) approaching a focus at the origin with d = 100 and h = 50 targets the point (0, 50, 80) with the front normalise(0, −50, −80) | CAM-053 |
+| T14 developer fly | unit | with a world size x of 3,000 wu the speed is 100 wu/s, 1,000 wu/s with the fast action and 10 wu/s with the slow action; 100 px of pointer movement with the rotate action turns the camera by 0.5 rad; the editor's target field of view is 60° | CAM-081 to CAM-083 |
+| T15 pick ray | unit | for a recorded frame view, `PickRayAt` passes through the world points that `ProjectToScreen` maps to (pₓ, p_y + 1); its origin lies on the near plane and its direction has unit length | CAM-090, CAM-092 |
+| T16 shake offset | unit | after a frame with shake the stored pose is unchanged, and the frame output differs from it by exactly the yaw and roll of the frame's offset | CAM-012 |
+| T17 camera clock | unit | the clock advances only in advances, ignores game speed, advances while the world is held, and never advances by more than 0.25 s per advance | CAM-030, CAM-031 |
+| T18 integrity | conformance | a simulation run headless with the camera and timelines replaced by stubs produces the same per-tick state hashes as a full client that plays a timeline, a camera animation and random camera input (DEC-222) | CAM-003, CAM-004, CAM-101 |
+| T19 timeline execution | unit | all statements between two waits execute in one frame; each wait holds and releases as CAM-104 states; skip ends Wait, WaitCamera and WaitCondition but not WaitFade; an abort while permitted stops the timeline's sounds and animation and releases the camera; the end of a timeline releases a claimed camera; a new timeline replaces a running one | CAM-103 to CAM-109 |
+| T20 camera triggers | unit | a camera-enter and a camera-view trigger are polled once per second of the camera clock, fire once, and emit no command or simulation event | CAM-114 |
+| T21 content validation | content-build fixture | an unknown transition, a duration of 60 s, a node naming a view defined after its animation, an unknown timeline statement and a missing string id each fail the content build with file and line | CAM-020, CAM-102 |
+| T22 performance | performance | over a recorded 20-minute match the camera advance stays within 0.05 ms per frame and, with a timeline running, the timeline advance within 0.05 ms per frame | CAM-120 |
+| T23 map round trip | integration | a map with two camera views and a two-node camera animation reads back identical after a save and a reload | CAM-022 |
+
+## 8 Open decisions
+
+### 8.1 Decisions and architecture records
+
+Table 8.1-A Decisions and records that apply.
+
+| Reference | Status | Where it applies |
+|---|---|---|
+| DEC-008 | Resolved | the camera is never read by the simulation; look-around reaches it only through the sender's control state (CAM-003, CAM-015) |
+| DEC-024 | Resolved | one presentation clock; moves that land exactly with spherical orientation interpolation; the modes not specified (CAM-002, CAM-006, CAM-030, CAM-046 to CAM-050, CAM-061) |
+| DEC-051 | Open | the presentation-timeline baseline; the default is no timeline in a match (CAM-100 to CAM-115) |
+| DEC-096 | Resolved | the horizontal clamp and the floating-point tracking distance (CAM-002, CAM-060) |
+| DEC-222 | Open | the camera reads only presentation inputs; how the boundary is enforced (CAM-004, T18) |
+| DEC-247 | Open | arena-scale camera coordinates; the strategic zoom (CAM-095) |
+| DEC-310 | Open | the stale orbit centre when tracking a Leader or a Transport is the default (CAM-038) |
+| DEC-560 | Resolved | start views come from typed start-position records (CAM-014, CAM-021, CAM-061) |
+| DEC-803 | Open | camera-animation playback kept with no content (CAM-065 to CAM-071) |
+| DEC-007, DEC-009, DEC-015, DEC-103, DEC-800, DEC-801 | Resolved | presentation events, presentation time, content validation, sequenced tutorial effects, lossless writers, duplicate and over-long values |
+| DEC-045, DEC-240 | Open | the map editor (§8.2); the numeric model behind camera-relative coordinates (CAM-095) |
+| DEC-052, DEC-053, DEC-054, DEC-059 | Dropped | no narrator, script interpreter, intro start sequence or reflected camera pose (CAM-006) |
+| ADR-0016 | Proposed | axes, reversed Z, the Hor+ field of view and one picking helper (CAM-090 to CAM-093) |
+| ADR-0036 | Accepted | the shake as an additive view offset (CAM-012) |
+| ADR-0074 | Accepted | the camera clock reads the platform clock; tests inject time (CAM-030, §7) |
+| ADR-0056 | Accepted | the developer fly mode and overlay in the `Debug` and `Development` flavours (CAM-080, CAM-125) |
+| ADR-0059, ADR-0061, ADR-0062 | Accepted, Accepted, Proposed | validated camera records and timelines (CAM-014, CAM-020, CAM-102) |
+| ADR-0063, ADR-0064 | Accepted, Proposed | caption text and caption accessibility (CAM-110) |
+
+### 8.2 Map-editor hooks
+
+The map editor is designed fresh by the design phase (DEC-045). These are its hooks on this component, recorded and not designed:
+
+1. the camera-view panel: create appends a camera view from the current camera pose; go to targets a view's pose and cuts to it (`SetTargetPose`, `Cut`); update overwrites a view's pose with the current pose (R-MAP-370);
+2. the camera-animation panels, which exist in editor builds and are never opened: create, delete and select animations; arm the adding of nodes; append a node by selecting a camera view or by the previous-view operation; delete the first node that names a view; and preview and stop, which call `PlayCameraAnimation` and `StopCameraAnimation` (R-MAP-371, R-MAP-373);
+3. the pick ray of the editor's viewport operations (R-MAP-321, CAM-093);
+4. the developer fly camera of the editor session (R-MAP-309, CAM-080 to CAM-083).
+
+### 8.3 Design-phase inputs
+
+1. **Presentation timelines (DEC-051).** Whether Species has them; their statement set beyond table 3.3-A; the condition set of WaitCondition; who may start a timeline (tutorial steps, camera triggers, mode or settlement intros); and whether a running timeline pauses when the world is held, which by CAM-030 it does not.
+2. **Camera animations (DEC-803).** Keep them without content, remove them with the timeline, or give them a match use such as a camera sweep before the start-view cut.
+3. **Intro and outro sequences.** Whether a match, a settlement visit or a world session opens or closes with a timeline, and its skip and abort rules.
+4. **Reduced motion (ADR-0064).** Whether a scripted move or a structure focus becomes a cut, or slows, under the motion setting, as the camera shake is scaled (VFX-232).
+5. **World scale (DEC-247, DEC-240).** Camera-relative coordinates; the strategic zoom of a large world with its height range and terrain levels of detail; the far plane, which is the renderer's input; and what replaces per-map start views in a persistent world, for example views per settlement or region instead of per start position (DEC-560).
+6. **Tracking (DEC-310).** Keep the stale orbit centre, or recompute it when the tracked entity changes.
+7. **Simulation and presentation boundary (DEC-222).** The snapshot that the camera reads, and whether interpolation with a one-tick display delay changes the tracking prediction of R-CTRL-483 step 2.
+8. **Other cameras.** Which camera a spectator, a replay viewer (DEC-046) or the deputy uses; the reference has none of them.
+9. **Bindings.** The default bindings of `action.sequence.skip` and of the three developer actions (CAM-084).
