@@ -8,7 +8,7 @@ decision-makers: Species technology lead
 
 ## Context and Problem Statement
 
-Species depends on third-party libraries: DirectX headers, DirectXTex, the PIX event runtime, GameInput, a compression codec, a JSON parser and schema validator, Opus, a test framework and others. Each must be built with the pinned toolset, the same C++ mode and the same C runtime as Species itself ([ADR-0051](0051-windows-toolchain-and-compiler-policy.md), [ADR-0052](0052-cpp23-language-standard.md)), and every developer and CI agent must get exactly the same versions.
+Species depends on third-party libraries. The baseline set is: the DirectX headers, DirectXTex, the PIX event runtime, GameInput, a Zstandard codec, a JSON parser and schema validator, Opus and a test framework; the component specifications add to it through this ADR. Each must be built with the pinned toolset, the same C++ mode and the same C runtime as Species itself ([ADR-0051](0051-windows-toolchain-and-compiler-policy.md), [ADR-0052](0052-cpp23-language-standard.md)), and every developer and CI agent must get exactly the same versions.
 
 How does Species declare, build and pin third-party dependencies?
 
