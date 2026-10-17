@@ -131,8 +131,8 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | Resource | Format and size | Written by | Read by |
 |---|---|---|---|
 | `scene_colour` | `R8G8B8A8_UNORM` (SDR) or `R16G16B16A16_FLOAT` (HDR); render size; the configured sample count | passes 2 to 15 | the resolve |
-| `scene_depth` | `D32_FLOAT`; render size; the configured sample count | passes 2 to 15 | passes 3 to 15 |
-| `scene_resolved` | as `scene_colour`, one sample | the resolve before the first full-screen or 2-D pass | the overlay passes 16 to 34, the final pass |
+| `scene_depth` | `D32_FLOAT`; render size; the configured sample count | passes 2 to 15 | passes 3 to 15, the depth copy |
+| `scene_resolved` | as `scene_colour`, one sample | the resolve after pass 15 | the final pass |
 | `final_image` | the back-buffer format; client-area size | the final pass (scaling, brightness and HDR conversion, ADR-0012, ADR-0014), then passes 16 to 34 at native resolution | the capture copy, the screenshot read-back, the present copy |
 | `captured_frame` | as `final_image` | the capture copy (RND-095) | pass 34 |
 | `screenshot_readback` | read-back buffer of `final_image` | the screenshot copy (RND-112) | the screenshot encoder (ADR-0076) |
@@ -160,7 +160,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | poster tile | a screenshot with a poster resolution above 1 | a match or main-menu frame per tile, with the tile's sub-projection (RND-111) |
 | map-editor frame | the map editor is open | the match frame plus the editor's overlays ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)); hooks only |
 
-**RND-068** (MUST NOT) No other frame type exists: no screen-space pixelation pre-pass, no campaign world view and no start-up intro sequence (see DEC-059).
+**RND-068** (MUST NOT) No other frame type exists: no screen-space pixelation pre-pass, no campaign world view and no start-up intro sequence (see DEC-059, DEC-052).
 
 ### 4.3 The ordered pass table of a match frame
 
@@ -170,7 +170,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 |---|---|---|---|---|---|---|---|
 | 0 | frame constants | nothing; the per-frame constants are written: matrices, the two lights (RND-226), the fog parameters (RND-222) | this document | — | parameters set | lights set | — |
 | 1 | camera | nothing; the frame-rate counter advances (R-SIM-576); the projection and view are set up (RND-210, RND-211) | [view_lighting_and_fog.md](view_lighting_and_fog.md) | — | — | — | — |
-| 2 | clear | `scene_colour` to the background colour `rnd.frame.clear_colour` (0, 0, 0), white (1, 1, 1) in the inverted style (see DEC-040); outside a match `rnd.frame.clear_colour_no_match` (0.05, 0, 0.05); `scene_depth` to 0 | this document | — | — | — | — |
+| 2 | clear | `scene_colour` to the background colour `rnd.frame.clear_colour` (0, 0, 0), `rnd.frame.clear_colour_inverted` (1, 1, 1) in the inverted style (see DEC-040); outside a match `rnd.frame.clear_colour_no_match` (0.05, 0, 0.05); `scene_depth` to 0 | this document | — | — | — | — |
 | 3 | sky | the sky grid and the blobby and flat cloud layers, in one instanced draw | [world_renderers.md](world_renderers.md) §4.3 | `sky`: `Additive` · `None` · `Back` | per layer, black | unlit | unsorted |
 | 4 | terrain | the terrain surface and its wire-grid overlay, in one pass | [world_renderers.md](world_renderers.md) §4.1 | `terrain`: `Opaque` · `TestWrite` · `Back`; inverted: `Darkening` · `TestWrite` · `Back` | level | lit, terrain materials (RND-230) | chunks unsorted |
 | 5a | flat sea layer | the textured, shore-masked sea layer at its fixed depth | [world_renderers.md](world_renderers.md) §4.2 | `sea_flat`: `Opaque` · `Test` · `None`; inverted: `Darkening` · `Test` · `None` | level | unlit | unsorted |
@@ -195,7 +195,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 21 | chat | the chat log and the talk hint (RND-075) | [ui_framework/README.md](../ui_framework/README.md) | text styles · `None` · `None` | off | unlit | — |
 | 23 | Power slots panel | target-area particles, the Power bar, pop-ups and messages | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha` and `Additive` · `None` · `None` | off | unlit | — |
 | 24 | development drawing | queued debug shapes, development builds only | [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | as that document states | off | unlit | — |
-| 26 | 2-D block start | nothing; the HUD projection of RND-215 is set up for passes 27 to 31 | this document | — | — | — | — |
+| 26 | 2-D block start | nothing; the 2-D overlay projection of RND-215 is set up for passes 27 to 31 | this document | — | — | — | — |
 | 27 | fade | the full-screen black fade (RND-085) | this document | `fade`: `Alpha` · `None` · `None` | off | unlit | — |
 | 28 | match HUD | scores, timers and the mode HUD | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) | `Alpha` · `None` · `None` | off | unlit | — |
 | 29 | text overlays | the development overlays and the version string (RND-076) | this document, [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | text styles · `None` · `None` | off | unlit | — |
@@ -205,7 +205,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 
 The pass numbers keep gaps where the reference frame has a pass that draws nothing or that the reference library does not specify (RND-071). Passes 16 to 34 draw into `final_image` at the client area's native resolution, after the resolve of `scene_colour` and the final pass (RND-063).
 
-**RND-071** (MUST NOT) The match frame has no pass for: a debug face picture in the sky; synchronisation-error markers; an empty particle pass; a summon-wheel interface; an empty camera-debug pass; the control-hint system, which draws nothing in a match; a start-up intro sequence; a studio logo overlay of the campaign. None of them draws anything in a match (see DEC-059).
+**RND-071** (MUST NOT) The match frame has no pass for: a debug face picture in the sky; synchronisation-error markers; an empty particle pass; a summon-wheel interface; an empty camera-debug pass; the control-hint system, which draws nothing in a match; a start-up intro sequence; a studio logo overlay of the campaign. None of them draws anything in a match (see DEC-059, DEC-052).
 
 **RND-072** (MUST) Passes 3 to 15 are the only passes that write `scene_depth`, and they draw into `scene_colour` at the render size, in table order; the match message of pass 13 is therefore overdrawn by the debris and particles of passes 14 and 15. Passes 16 to 34 never use the hardware depth test, except that the world cursor's 3-D rings, ghost models and formation dots in pass 20 compare their depth in the pixel shader with `scene_depth_single` at the corresponding scene position and are discarded where they lie behind the scene, which keeps their reference order after the UI windows.
 
@@ -227,7 +227,7 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-079** (MUST) Every match, including matches against bots and the tutorials, takes the match path: the match frame of RND-067 is drawn, and the Essence orbs take their match sizes and alphas ([animation_and_vfx.md](../animation_and_vfx.md)). Launch Race matches force the special lighting for structures (RND-229).
 
-**RND-080** (MUST NOT) No match draws the control-hint system's hints, a start-up sequence, a studio logo of the campaign, a campaign world view, a pixelation effect, a deform effect or a water reflection (see DEC-059, DEC-336).
+**RND-080** (MUST NOT) No match draws the control-hint system's hints, a start-up sequence, a studio logo of the campaign, a campaign world view, a pixelation effect, a deform effect or a water reflection (see DEC-059, DEC-336, DEC-052).
 
 ### 4.6 Render-time extrapolation
 
@@ -240,6 +240,18 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 ### 4.7 Fade, paused banner and screen transition
 
 **RND-085** (MUST) The fade has an amount (0 clear, 1 black), a rate per second and a delay. Each frame, with *dt* = min(real clock − the fade's last update time, `rnd.fade.max_step` (0.05 s)): if the delay is above 0, the delay decreases by *dt*; otherwise the amount increases by rate × *dt* and is clamped to [0, 1], and when it reaches 0 or 1 the rate becomes 0. `StartFadeOut()` sets the rate to +`rnd.fade.rate` (1 per second) with no delay. `StartFadeIn(delay)` sets the amount to 1, the rate to −`rnd.fade.rate` and the delay to the given value.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> FadingOut: StartFadeOut, rate plus 1 per second
+    Idle --> Delayed: StartFadeIn with a delay, amount 1
+    Delayed --> FadingIn: delay used up, rate minus 1 per second
+    FadingOut --> Idle: amount reaches 1, rate 0, screen black
+    FadingIn --> Idle: amount reaches 0, rate 0, screen clear
+```
+
+Caption: the fade states; `IsFadeComplete()` is true in `Idle`, where the rate is 0, whatever the amount.
 
 **RND-086** (MUST) While the amount is above `rnd.fade.visible_threshold` (0.0001), pass 27 draws a full-screen black quad with alpha = the amount, using the `fade` entry. `IsFadeComplete()` is true exactly when the rate is 0. Because pass 27 precedes passes 28 to 34, the match HUD, the text overlays, the paused banner and the screen transition are drawn over the fade, and passes 3 to 24 under it.
 
@@ -295,14 +307,6 @@ Both draws use the `transition` entry.
 
 ```mermaid
 flowchart TD
-    E["Frame entry"] -->|"screenshot control"| P["Poster loop: N x N tile frames, read-back after each"]
-    E --> F["Render frame"]
-    F --> C0["Pass 0: frame constants, lights and fog parameters"]
-    C0 --> C1["Pass 1: camera, near and far planes, projection and view"]
-    C1 --> C2["Pass 2: clear colour and depth"]
-    C2 --> K{"Frame type"}
-    K -->|"main menu"| MS["Main-menu sky"]
-    K -->|"match"| W
     subgraph W["Match world: passes 3 to 15"]
       S3["3 Sky: grid and clouds, additive, black fog"] --> S4["4 Terrain: lit facets and additive grid term, fogged"]
       S4 --> S5["5a Flat sea layer, 5b coastline waves"]
@@ -313,7 +317,15 @@ flowchart TD
       S10 --> S11["11 Essence orbs"] --> S12["12 Route lines"] --> S13["13 Match message"]
       S13 --> S14["14 Shatter debris"] --> S15["15 Particles: darkening, then additive"]
     end
-    W --> R["Resolve and final pass"]
+    E["Frame entry"] -->|"screenshot control"| P["Poster loop: N x N tile frames, read-back after each"]
+    E --> F["Render frame"]
+    F --> C0["Pass 0: frame constants, lights and fog parameters"]
+    C0 --> C1["Pass 1: camera, near and far planes, projection and view"]
+    C1 --> C2["Pass 2: clear colour and depth"]
+    C2 --> K{"Frame type"}
+    K -->|"main menu"| MS["Main-menu sky"]
+    K -->|"match"| S3
+    S15 --> R["Resolve and final pass"]
     MS --> R
     R --> O["Passes 16 to 24: markers, hints, UI windows, cursor, chat, Power slots, development drawing"]
     O --> T["Passes 26 to 32: 2-D block with fade, match HUD and text overlays"]
@@ -359,6 +371,7 @@ Every pass carries its marker and timestamps (ADR-0068); a development view show
 |---|---|---|
 | DEC-038 | Resolved | the pause command that shows the paused banner (RND-090) |
 | DEC-040 | Open | the inverted style and its clear colour (pass 2) |
+| DEC-052 | Dropped | campaign frame types and overlays are not specified (RND-068, RND-071, RND-080) |
 | DEC-059 | Dropped | the frame types and passes that are not specified (RND-068, RND-071, RND-080) |
 | DEC-200 | Open | network-state banners (RND-076) |
 | DEC-222 | Open | extrapolation or interpolation (RND-081) |
@@ -376,7 +389,8 @@ Every pass carries its marker and timestamps (ADR-0068); a development view show
 | `rnd.pso.default_cutout` | 0.01 | alpha | a pixel is kept only if its alpha is greater | RND-055, RND-060 | |
 | `rnd.pso.strike_team_cutout` | 0.02 | alpha | pass 7a | RND-060 | |
 | `rnd.pso.worker_cutout` | 0.04 | alpha | pass 7d | RND-060 | |
-| `rnd.frame.clear_colour` | 0, 0, 0 | RGB | match background; white (1, 1, 1) in the inverted style | RND-070 | DEC-040 |
+| `rnd.frame.clear_colour` | 0, 0, 0 | RGB | match background and level fog colour | RND-070 | |
+| `rnd.frame.clear_colour_inverted` | 1, 1, 1 | RGB | background and level fog colour in the inverted style | RND-070 | DEC-040 |
 | `rnd.frame.clear_colour_no_match` | 0.05, 0, 0.05 | RGB | background outside a match | RND-070 | |
 | `rnd.frame.menu_camera_position` | 0, 600, 0 | wu | main-menu sky camera | RND-077 | |
 | `rnd.frame.menu_fov` | 90 | degrees, vertical | main-menu sky camera | RND-077 | |

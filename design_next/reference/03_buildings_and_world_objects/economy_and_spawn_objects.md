@@ -142,7 +142,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-136** (MUST) The lock checks of the Spawn Node and the Transit Gate, and the sortie check of a Hive, consult a Population Limiter as R-ECON-052, R-ECON-056 and R-ECON-062 specify: the first limiter in structure order whose search radius contains the structure, found on the first check and kept for the match; a limiter whose structure id is 0 is never consulted.
 
-**R-BLDG-137** (MUST) A Population Limiter's team comes from its map record; no match rule reads it. It has no hit volume (table 2.12-A of the README). It is drawn only in the map editor, as a sphere of `ref.bldg.population_limiter.editor_sphere_wu` (30 wu) labelled with its values.
+**R-BLDG-137** (MUST) A Population Limiter's team comes from its map record; no match rule reads it. It has no hit volume (table 2.12-A of the README). It is drawn only in the map editor, as a sphere of `ref.bldg.population_limiter.editor_sphere_wu` (30 wu) labelled with its values (see DEC-045).
 
 **R-BLDG-138** (MUST) A Population Limiter's map record holds the base fields, then its search radius (a decimal, default 500 wu) and its maximum population (an integer, default 100). 21 reference maps place Population Limiters (Zone Control 7, Relic Run 6, Flag Chain 4, Siege 2, Spawn Control 2; 86 records), and every one of them sets a population cap, so no reference Population Limiter takes effect.
 
@@ -152,7 +152,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-140** (MUST) A Transit Gate uses the mesh `mesh.structure.transit_gate`, with the `gate_surface`, `gate_exit_01` and `gate_exit_02` sockets. The mesh `mesh.structure.transit_gate_alt` carries the same sockets and two light sockets; no reference match selects it.
 
-**R-BLDG-141** (MUST) A Transit Gate's owner is fixed by its map record (its map position remapped to the match team), and it is never captured (R-ECON-089). Its team is set to no team, silently, by exactly these events (R-BLDG-039): the elimination of its owning team; the destruction of the Core Device, for every Transit Gate not owned by the defending team (@@ref:core_destroy@@); and the detonation of the Core Device, for every Transit Gate not owned by the Core Device's team (@@ref:core_detonate@@). A Transit Gate with no team never reinforces.
+**R-BLDG-141** (MUST) A Transit Gate's owner is fixed by its map record (its map position remapped to the match team), and it is never captured (R-ECON-089). Its team is set to no team, silently, by exactly these events (R-BLDG-039): the elimination of its owning team; the destruction of the Core Device, for every Transit Gate not owned by the defending team ([mode objects](mode_objects.md) R-BLDG-314); and the detonation of the Core Device, for every Transit Gate not owned by the Core Device's team ([mode objects](mode_objects.md) R-BLDG-313). A Transit Gate with no team never reinforces.
 
 **R-BLDG-142** (MUST) A Transit Gate's population lock is decided like a Spawn Node's (R-ECON-052 rules 2 to 5; the tutorial rule 1 applies to Spawn Nodes only), with the Population Limiter found and kept as R-ECON-062 specifies. It is checked once per gate and wave, before the gate releases its whole count (R-ECON-095; see DEC-453).
 
@@ -181,7 +181,7 @@ Table 2.1-A Spawn networks of the reference maps (one row per map).
 
 **R-BLDG-151** (MUST) A Beam Dish (`BeamDish`) is a one-way long-range transporter: actors that walk into its door are carried along its beam to the receiving Beam Dish it is aimed at, and leave by the receiver's door. Its send period is `ref.bldg.beam_dish.send_period_ticks` (1 tick), so at most one actor enters a dish per tick (10 per second at game speed 1). It has no capacity limit.
 
-**R-BLDG-152** (MUST) A Beam Dish has no capture rule of its own. A Command Console whose controlled structure it is sets its team to the console's new owner (@@ref:cc_capture@@). On the reference maps every Beam Dish starts with no team, except two dishes of team position 0 on one Siege map, which connect automatically and use the "Beam Dish team match" map option.
+**R-BLDG-152** (MUST) A Beam Dish has no capture rule of its own. A Command Console whose controlled structure it is sets its team to the console's new owner ([mode objects](mode_objects.md) R-BLDG-301). On the reference maps every Beam Dish starts with no team, except two dishes of team position 0 on one Siege map, which connect automatically and use the "Beam Dish team match" map option.
 
 **R-BLDG-153** (MUST) A Beam Dish draws a per-instance copy of the mesh `mesh.structure.beam_dish`, recoloured to its team colour on every team change, and white while it has no team. The node `dish` pitches and the node `upper_mount` yaws; the `beam_focus` socket is the beam's origin and the `gate_entrance` socket its door. It has 2 light sockets and no ports.
 
@@ -287,11 +287,11 @@ When both are aligned it raises `beam_dish.rotate_stop`. The square root and the
 
 **R-BLDG-189** (MUST) A grid splitter's map record holds the base fields, its grid link (read, unused) and then the ids of its candidate grid pylons, repeated. Only the Launch Race maps place grid splitters (7 of 7, 26 records).
 
-**R-BLDG-190** (MUST) The energy grids of the reference maps have this shape. Solar Arrays are daisy-chained: their links go to another Solar Array 155 times, to a grid pylon 35 times, to a grid splitter 39 times and to a grid terminal 2 times. Grid pylon links go to a grid pylon 211 times, to a grid terminal 87 times and to a grid splitter 3 times. Grid terminals feed a Barrier Emitter 31 times (Siege, Flag Chain and Spawn Control maps) or a fuel pump 57 times (Launch Race maps), and the 26 grid splitters of the Launch Race maps route to team pylons. A chain from a Solar Array to its grid terminal holds 3 to 14 structures.
+**R-BLDG-190** (MUST) The energy grids of the reference maps have this shape. Solar Arrays are daisy-chained: their links go to another Solar Array 155 times, to a grid pylon 35 times, to a grid splitter 39 times and to a grid terminal 2 times. Grid pylon links go to a grid pylon 211 times, to a grid terminal 87 times and to a grid splitter 3 times. Grid terminals feed a Barrier Emitter 31 times (Siege, Flag Chain and Spawn Control maps) or a fuel pump 57 times (Launch Race maps), and the 26 grid splitters of the Launch Race maps route to team pylons. A chain from a Solar Array to its grid terminal holds 3 to 14 structures, so a surge needs at most 5 ticks for each structure that stores it, 15 to 70 ticks (1.5 to 7 s) along such a chain.
 
 ### 2.13 The fuel chain
 
-**R-BLDG-191** (MUST) On every Launch Race map the fuel chain runs: Solar Arrays (one or more, daisy-chained) → grid splitter → team grid pylon (one or more) → grid terminal → fuel pump → fuel line (one or more) → fuel depot → Launch Vessel. Each team has its own fuel pump, 3 fuel depots, each of whose fuel link is the team's Launch Vessel, and one Launch Vessel ([mode objects](mode_objects.md); DEC-561).
+**R-BLDG-191** (MUST) On every Launch Race map the fuel chain runs: Solar Arrays (one or more, daisy-chained) → grid splitter → team grid pylon (one or more) → grid terminal → fuel pump → fuel line (one or more) → fuel depot → Launch Vessel. Each team has its own fuel pumps, 3 fuel depots, each of whose fuel link is the team's Launch Vessel, and one Launch Vessel: the 7 Launch Race maps place 57 fuel pumps and 57 fuel depots for 19 Launch Vessels ([mode objects](mode_objects.md); DEC-561).
 
 **R-BLDG-192** (MUST) A fuel-chain structure (`FuelStructure`) is the base of the fuel pump, the fuel line, the fuel depot and the Launch Vessel. It holds its fuel link, the id of the next structure downstream (default none); its current fuel level, from 0 to 1; and its `fuel_point` socket.
 
@@ -329,7 +329,7 @@ It runs once for each structure that feeds it in a tick, so a Launch Vessel fed 
 
 **R-BLDG-202** (MUST) A fuel depot (`FuelDepot`) is the boarding gate of a Launch Vessel and the last hop of its fuel. Its mesh is `mesh.structure.fuel_depot`, with the `entrance` and `fuel_point` sockets. Its fuel link is its team's Launch Vessel.
 
-**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Loading state (@@ref:lv_states@@), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the idle state or in the state of watching an Essence orb, the Worker is ordered to board ([02 Worker](../02_units/worker.md)): it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Loading (@@ref:lv_boarding@@). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Loading, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
+**R-BLDG-203** (MUST) Each tick, while its linked Launch Vessel is in the Loading state ([mode objects](mode_objects.md) R-BLDG-321), a fuel depot keeps a bot navigation node at its position with a priority modifier of `ref.bldg.fuel_depot.bot_node_priority` (1.0) ([07 Bots](../07_bots.md)), and it picks **one** actor of its own team within `ref.bldg.fuel_depot.boarding_radius_wu` (300 wu), uniformly by a U{0..n − 1} draw over the n found. When that actor is a Worker in the idle state or in the state of watching an Essence orb, the Worker is ordered to board ([02 Worker](../02_units/worker.md)): it walks to the `entrance` socket, and on arrival the depot boards it into the Launch Vessel, which adds 1 to its passengers only while it is Loading ([mode objects](mode_objects.md) R-BLDG-322). Each boarding emits 4 to 7 control-flash particles from the presentation generator (DEC-013) and raises `fuel_depot.load_passenger` (bound to `sfx.building.fuel_depot.load_passenger`). While the vessel is not Loading, the depot removes its bot navigation node. The fuel-chain advance then passes the depot's level to the Launch Vessel.
 
 **R-BLDG-204** (MUST) A fuel depot gives at most one boarding order per tick, so the 3 depots of a team give at most 30 boarding orders per second at game speed 1, fewer by the share of picks that are not idle Workers.
 
@@ -571,9 +571,10 @@ Each default is the behaviour that §2 specifies.
 - DEC-241 — numeric semantics; the Beam Dish yaw speed uses a rounded square root in the reference (R-BLDG-156).
 - DEC-301 — the Solar Array knock-out in Siege (R-BLDG-181).
 - DEC-309 — the global flag on Source Nodes (R-BLDG-120).
-- DEC-453 — population-cap enforcement points; transit orbs already travelling are not checked on arrival (R-BLDG-123, R-BLDG-127).
+- DEC-453 — population-cap enforcement points: transit orbs already travelling are not checked on arrival, and a Transit Gate is checked once per wave (R-BLDG-123, R-BLDG-142).
 - DEC-454 — the Population Limiter as a fallback cap (R-BLDG-133 to R-BLDG-138).
 - DEC-455 — same-tick advance of objects handed over during a tick: spawn-network transit and energy-grid hops (R-BLDG-101, R-BLDG-172).
+- DEC-045 — the map editor; the Population Limiter drawing is an editor hook (R-BLDG-137).
 - DEC-551 — Strike teams registered again after a Beam Dish (R-BLDG-149).
 
 Resolved decisions applied in this document: DEC-002, DEC-004, DEC-008, DEC-011, DEC-013, DEC-015, DEC-016, DEC-018, DEC-020, DEC-024, DEC-065, DEC-088, DEC-092, DEC-117, DEC-456, DEC-457, DEC-463, DEC-464, DEC-561 and DEC-652. DEC-306 is Dropped, superseded by DEC-455.

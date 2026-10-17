@@ -55,3 +55,20 @@ print("exploding ticks (empty from start)", n)
 print("refuel steady", 3*1.0*0.4)
 # 11. fuel EMA: f = 0.2*dt
 print("fuel ema f", 0.2*dt, 3*0.2*dt)
+# 12. Launch Vessel refuel from fuel 0, rate 0, target 1.2 per second
+fuel = 0.0; rate = 0.0; n = 0
+while fuel < 95:
+    rate = 0.99 * rate + 0.01 * (3 * 1.0 * 0.4)
+    fuel = min(fuel + rate * 0.1, 100.0); n += 1
+print("refuel ticks to 95", n)
+# 13. wrecked recovery: damage 100.5, 100 passengers, fuel 100
+d = 100.5; p = 100; f = 100.0; floor = 50.0; n = 0
+while True:
+    n += 1
+    d -= 0.33 * 0.1
+    d -= 0.1
+    f = max(f - 0.5, floor)
+    if p > 0: p -= 1
+    if p == 0 and f <= floor: d -= 0.2
+    if d <= 0: break
+print("wrecked ticks", n)

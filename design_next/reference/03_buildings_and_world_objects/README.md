@@ -62,7 +62,7 @@ The building layer of the reference game consists of these parts:
 
 **R-BLDG-007** (MUST) Two teams are friends when they are the same team, or when the match is co-op and both belong to one co-op group (DEC-034; R-SIM-412). No team is never a friend of any team, itself included.
 
-**R-BLDG-008** (MUST) The Rogue faction and the Visitor faction are bot teams in every match. Supply crate outcomes create actors and structures for them, and the structure rules that treat them specially say so in the owning file (for example the Relic's choice of goal, R-BLDG-292).
+**R-BLDG-008** (MUST) The Rogue faction and the Visitor faction are bot teams in every match. Supply crate outcomes create actors and structures for them, and the structure rules that treat them specially say so in the owning file (for example the Relic's choice of goal, R-BLDG-286).
 
 ### 2.3 Damage sign convention
 
@@ -164,9 +164,9 @@ Table 2.5-A Structure state.
 
 **R-BLDG-019** (MUST) A structure port (`StructurePort`) holds: the port socket it was created from; its occupant, the handle of the Worker operating it, or none; its world transform; and one reservation count for each team slot, from 0 to `ref.econ.port.reservation_cap` (50) of reference/05.
 
-**R-BLDG-020** (MUST) A port's world transform is the socket's transform in the structure's world frame. Its position is then pushed clear of the structure by the structure push of R-BLDG-033 with a radius of `ref.bldg.port.clearance_wu` (5 wu), and its height is set to the terrain height there. Every reservation count starts at 0. Ports are built once, at the structure's initialisation (R-SIM-118), and are rebuilt only where a structure's own rule says so (the Command Console, R-BLDG-330); a change of render detail never rebuilds them (DEC-007).
+**R-BLDG-020** (MUST) A port's world transform is the socket's transform in the structure's world frame. Its position is then pushed clear of the structure by the structure push of R-BLDG-033 with a radius of `ref.bldg.port.clearance_wu` (5 wu), and its height is set to the terrain height there. Every reservation count starts at 0. Ports are built once, at the structure's initialisation (R-SIM-118), and are rebuilt only where a structure's own rule says so (the Command Console, R-BLDG-299); a change of render detail never rebuilds them (DEC-007).
 
-**R-BLDG-021** (MUST) Every tick, the port evaluation of the base advance (R-BLDG-031) clears each port's occupant and then sets it to the first Worker, in actor-grid result order, that is in the operating-port state, operates that very port of that very structure, and lies strictly within `ref.econ.spawn_node.port_radius_wu` (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may belong to any team (see DEC-088; R-ECON-012). The result order is grid cell x ascending, then grid cell z ascending, then team slot 0 to 5, then slot order within the cell (DEC-016; R-ECON-013).
+**R-BLDG-021** (MUST) Every tick, the port evaluation of the base advance (R-BLDG-031) clears each port's occupant and then sets it to the first Worker, in actor-grid result order, that is in the operating-port state, operates that very port on that very structure, and lies strictly within `ref.econ.spawn_node.port_radius_wu` (5 wu) of the port position, measured horizontally (dx² + dz² < 25). The occupant may belong to any team (see DEC-088; R-ECON-012). The result order is grid cell x ascending, then grid cell z ascending, then team slot 0 to 5, then slot order within the cell (DEC-016; R-ECON-013).
 
 **R-BLDG-022** (MUST) In the same evaluation, every reservation count of an occupied port is set to 0, and every reservation count of an unoccupied port is reduced by `ref.econ.port.reservation_decay` (4), and kept at 0 or above.
 
@@ -188,12 +188,12 @@ Table 2.7-A Capture model of every capturable kind.
 |---|---|---|---|---|---|
 | Spawn Node | 5 (`mesh.structure.spawn_node`) | `ref.econ.spawn_node.evaluation_interval_ticks` (21 to 30 ticks); the first after `ref.econ.spawn_node.first_evaluation_ticks` (1 to 20 ticks) | the one team that operates at least 3 ports, and every other operator a friend of it | no team | [05](../05_population_flow.md) R-ECON-018 to R-ECON-022 |
 | turret | 4 (`mesh.structure.turret_mount`) | the turret's ownership period | the team with the most operators (at least 1; ties to the lowest team slot), and every operator a friend of it | no team | [defences and props](defences_and_props.md) |
-| Solar Array | 5 (`mesh.structure.solar_array`) | every tick | the team with the most operators (strictly most; ties to the lowest team slot); enemies may share the ports | no team when no port is occupied | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-195 |
-| Command Console | 5 (`mesh.structure.command_console`), or 3 when linked to the Core Device (`mesh.structure.command_console_linked`) | every tick | the first team in slot order with more than 2 operators (more than 1 when linked), replaced by a later team above the threshold with strictly more; enemies may share the ports; the owner is also given to the controlled structure | no team for the console; the controlled structure keeps its team | [mode objects](mode_objects.md) R-BLDG-331 |
-| carryable structure (Relic, Breach Charge) | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the most living Workers within 50 wu, if that count is at least the kind's minimum lifters; the team changes only to a team that is not a friend of the current one | no team | [mode objects](mode_objects.md) R-BLDG-274 |
+| Solar Array | 5 (`mesh.structure.solar_array`) | every tick | the team with the most operators (strictly most; ties to the lowest team slot); enemies may share the ports | no team when no port is occupied | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-178 |
+| Command Console | 5 (`mesh.structure.command_console`), or 3 when linked to the Core Device (`mesh.structure.command_console_linked`) | every tick | the first team in slot order with more than 2 operators (more than 1 when linked), replaced by a later team above the threshold with strictly more; enemies may share the ports; the owner is also given to the controlled structure | no team for the console; the controlled structure keeps its team | [mode objects](mode_objects.md) R-BLDG-301 |
+| carryable structure (Relic, Breach Charge) | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the most living Workers within 50 wu, if that count is at least the kind's minimum lifters; the team changes only to a team that is not a friend of the current one | no team | [mode objects](mode_objects.md) R-BLDG-275 |
 | Control Zone in Zone Control | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | the team with the strictly highest count of counted Workers within the zone's size (ties to the lowest team slot) | no team | [mode objects](mode_objects.md) R-BLDG-258 |
 | Flag post and Home post in Flag Chain | 0 (proximity) | `ref.mode.recount.one_second` (11 ticks) | capture progress 0 to 100, accumulated by the leading team within 40 wu; owner at 100, no team at 0 | progress decays while no team leads | [mode objects](mode_objects.md) R-BLDG-262 |
-| Beam Dish | 0 | — | no rule of its own: a Command Console that controls it gives it its owner | — | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-158 |
+| Beam Dish | 0 | — | no rule of its own: a Command Console that controls it gives it its owner | — | [economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-152 |
 | bot navigation node | 0 | 21 ticks | the team with the strictly highest friend count within range; an owner for the bots only | no team | [07 Bots](../07_bots.md) |
 | bot objective marker | 0 | 21 ticks | the bound structure's team, or the majority in its scan range | no team | [07 Bots](../07_bots.md) |
 
@@ -201,7 +201,7 @@ The Control Zone keeps its team in Relic Run, where its map team makes it a Reli
 
 ### 2.8 Lifecycle
 
-**R-BLDG-028** (MUST) Each structure that a map places is created once, at match-world initialisation step 7, directly from its map record, with no template object and no simulation draw outside its initialisation step (DEC-652; R-SIM-016, R-SIM-017). Its team is the remapped map position (R-BLDG-006), and it is then initialised (R-BLDG-029). After every map structure exists, the structure serial counter is set to the highest map structure id + 1 (R-SIM-018), and in Siege every Command Console that the Core Device lists is linked to the Core Device (R-BLDG-330), so the console shows its linked mesh during the grace period. The content build rejects a map in which two records share a structure id (DEC-015).
+**R-BLDG-028** (MUST) Each structure that a map places is created once, at match-world initialisation step 7, directly from its map record, with no template object and no simulation draw outside its initialisation step (DEC-652; R-SIM-016, R-SIM-017). Its team is the remapped map position (R-BLDG-006), and it is then initialised (R-BLDG-029). After every map structure exists, the structure serial counter is set to the highest map structure id + 1 (R-SIM-018), and in Siege every Command Console that the Core Device lists is linked to the Core Device (R-BLDG-300), so the console shows its linked mesh during the grace period. The content build rejects a map in which two records share a structure id (DEC-015).
 
 **R-BLDG-029** (MUST) Initialising a structure sets its id, position, front, up and global flag from its map record or from the values its creator gives; sets its height to the terrain height; computes its centre and radius (R-BLDG-014); collects its lights and builds its ports (§2.6); copies its kind-specific values; and emits its `<source>.spawn` presentation event (§2.14). Loading a map emits no team-change event (DEC-088).
 
@@ -236,12 +236,12 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 | objective counter | no text | fuel pump, Launch Vessel (their HUD counters) |
 | hit tests | R-BLDG-041 to R-BLDG-043 | table 2.12-A |
 | sound events | R-BLDG-049 | most kinds add events |
-| link get and set | no link (map editor link tool) | link set: spawn-network structures append an edge; the Beam Dish appends a valid receiver; the Core Device appends a Command Console. Link get: the kinds with a link field |
+| link get and set | no link (map editor link tool) | link get: bot navigation node, bot objective, bot objective marker, Command Console, energy-grid structures (the grid splitter included), Barrier Emitter, Control Zone, fuel-chain structures, wall. Link set: spawn-network structures append an edge; the Beam Dish appends a valid receiver; the Core Device appends a Command Console |
 | display name | `<prefix>.name` (R-BLDG-012) | — |
 
 ### 2.10 Damage and destruction
 
-**R-BLDG-034** (MUST) The base damage operation only emits the structure's `<source>.damaged` event: a structure of a kind without its own damage rule is indestructible (R-SIM-123). The damageable kinds are exactly the turret, the wall, the tree, the Hive, the Spitter Plant ([defences and props](defences_and_props.md)) and the Launch Vessel ([mode objects](mode_objects.md) R-BLDG-372). Every other kind, the Supply crate included, cannot be destroyed by weapons.
+**R-BLDG-034** (MUST) The base damage operation only emits the structure's `<source>.damaged` event: a structure of a kind without its own damage rule is indestructible (R-SIM-123). The damageable kinds are exactly the turret, the wall, the tree, the Hive, the Spitter Plant ([defences and props](defences_and_props.md)) and the Launch Vessel ([mode objects](mode_objects.md) R-BLDG-323). Every other kind, the Supply crate included, cannot be destroyed by weapons.
 
 **R-BLDG-035** (MUST) An explosion of range r and damage D (the explosion primitive of reference/12 R-SIM-388) damages every structure whose position, its base point, lies at a distance d < `ref.sim.explosion.structure_reach` × r (3r) from the explosion, with the amount −D × (1 − d ÷ 3r). The explosion applies no team filter to structures: a structure of the exploding team takes the damage too. Explosions are the main source of structure damage.
 
@@ -254,7 +254,7 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 | firebomb canister | trees and Spitter Plants within its reach (its computed falloff is not applied) | [04 weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
 | lightning strike | trees in its obstacle-grid cell | [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) |
 | turret removal | in modes with a turret cap (Launch Race, Flag Chain), a turret power that is removed destroys its own turret with a lethal hit | [defences and props](defences_and_props.md) |
-| Breach Charge breach | every wall within its break radius takes a lethal hit | [mode objects](mode_objects.md) R-BLDG-311 |
+| Breach Charge breach | every wall within its break radius takes a lethal hit | [mode objects](mode_objects.md) R-BLDG-292 |
 
 **R-BLDG-037** (MUST) Destroying a structure with an intensity i sets its destroyed flag; creates `ref.bldg.structure.destroy_shatter_count` (3) shatter explosions of its mesh; runs an explosion at its position with range i and damage i ÷ `ref.bldg.structure.destroy_damage_divisor` (4) (R-SIM-388); emits `<source>.explode`; and creates ⌊i ÷ `ref.bldg.structure.destroy_particle_divisor` (4)⌋ explosion-core particles of size `ref.bldg.structure.destroy_particle_size` (100), each with a velocity drawn per axis from `ref.bldg.structure.destroy_particle_speed` (U[−50, 50)) from the presentation generator (DEC-013). The fuel-chain structures also shatter their line mesh, and the Hive sets its health to 0 first. The Relic, the Breach Charge and the Core Device have their own destroy operation ([mode objects](mode_objects.md)).
 
@@ -264,9 +264,9 @@ Table 2.9-A Structure behaviour and the kinds that specialise it.
 
 **R-BLDG-039** (MUST) These paths write a structure's team directly, with no team-change event:
 
-1. the destruction and the detonation of the Core Device, which set Transit Gates to no team ([mode objects](mode_objects.md) R-BLDG-354, R-BLDG-356);
+1. the destruction and the detonation of the Core Device, which set Transit Gates to no team ([mode objects](mode_objects.md) R-BLDG-313, R-BLDG-314);
 2. the elimination of a team, which sets the team's owned Transit Gates to no team ([01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md); R-SIM-407);
-3. a Solar Array whose ports are all unoccupied, which takes no team ([economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-195);
+3. a Solar Array whose ports are all unoccupied, which takes no team ([economy and spawn objects](economy_and_spawn_objects.md) R-BLDG-178);
 4. the rules that create structures during a match, which give the new structure its team at creation.
 
 **R-BLDG-040** (MUST) A Solar Array that already has no team and still has no operator keeps no team and raises no event (DEC-117, DEC-464).
@@ -365,7 +365,7 @@ flowchart TD
     B -->|"yes"| R["Request removal"]
     B -->|"no"| P["For each port: clear the occupant"]
     P --> Q["Query the actor grid around the port position"]
-    Q --> O{"First Worker in result order that operates this port of this structure, strictly within 5 wu horizontally?"}
+    Q --> O{"First Worker in result order that operates this port on this structure, strictly within 5 wu horizontally?"}
     O -->|"found"| OC["Occupant = that Worker; every reservation count of the port = 0"]
     O -->|"none"| UN["No occupant; every reservation count of the port minus 4, kept at 0 or above"]
     OC --> N["Request no removal"]
@@ -401,14 +401,28 @@ The Beam Dish key `ref.bldg.beam_dish.probe_radius_factor` of table 2.12-A is de
 
 ## 5 Edge cases and interactions
 
-1. **Adjacent ports.** Two structures whose ports lie within 5 wu of each other each evaluate their own ports; a Worker that operates a port of one is never the occupant of a port of the other (R-BLDG-021, R-BLDG-025, DEC-088).
+1. **Adjacent ports.** Two structures whose ports lie within 5 wu of each other each evaluate their own ports; a Worker that operates a port on one is never the occupant of a port on the other (R-BLDG-021, R-BLDG-025, DEC-088).
 2. **Explosions and own structures.** A team's grenade or rocket damages its own damageable structures, because the structure part of an explosion has no team filter (R-BLDG-035).
 3. **Created during a tick.** A turret or a tree that a rule creates during a tick, and that lands in a slice range not yet advanced, already evaluates its ports in that tick (R-BLDG-002, DEC-455).
 4. **Wall removal.** Removing a wall recomputes the bot navigation links at once, in the slice of the removal, so bots see the opened route in the same tick (R-BLDG-032).
 5. **Empty Solar Array.** An empty Solar Array keeps no team silently every tick; a Solar Array whose last operator leaves changes to no team without an event (R-BLDG-039, R-BLDG-040).
 6. **Bad port index.** A port query with an index outside the port list returns none, no position and −1, and never fails (R-BLDG-023).
-7. **Structure damage ceilings.** With the structure reach of 3r, the largest damage an explosion of damage D deals to a structure is D, at the structure's base point, falling linearly to 0 at 3r. The explosion parameters belong to their owning documents; for example the Breach Charge's breach explosion (range 50 wu, damage 150) damages structures up to 150 wu away, its scuttle explosion (damage 500) reaches as far, and the Core Device's destruction explosion (range 75 wu, damage 5) reaches 225 wu ([mode objects](mode_objects.md)).
-8. **Aim at the base point.** Explosion distance is measured to a structure's position, its base point, not to its centre, so an explosion high on a tall structure (the Launch Vessel) deals less than one at its foot (R-BLDG-035; [mode objects](mode_objects.md) R-BLDG-375).
+7. **Structure damage ceilings.** With the structure reach of 3r, the largest damage an explosion of range r and damage D deals to a structure is D, at the structure's base point, falling linearly to 0 at 3r. The explosion sources of a match give these ceilings; the range and damage of each are owned by the document named, and the table only derives the ceiling from them (R-BLDG-035):
+
+   | Source | Range r (wu) | Damage D | Structure damage | Owning document |
+   |---|---|---|---|---|
+   | Worker grenade (power 25) | 12.5 | 50 | up to 50, within 37.5 wu | [04 weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+   | rocket (turret and Strike team) | 15 | 25 | up to 25, within 45 wu | [04 weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) |
+   | Missile Barrage warhead | 50 | 100 | up to 100, within 150 wu | [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) |
+   | meteor | 50 | 100 | up to 100, within 150 wu | [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) |
+   | Transport destroyed | 20 | 50 | up to 50, within 60 wu | [02 Transport](../02_units/transport.md) |
+   | Worker burst by Sickness | 5 | 25 | up to 25, within 15 wu | [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) |
+   | Breach Charge breach | 50 | 150 | up to 150, within 150 wu | [mode objects](mode_objects.md) R-BLDG-292 |
+   | Breach Charge scuttle | 50 | 500 | up to 500, within 150 wu | [mode objects](mode_objects.md) R-BLDG-293 |
+   | Core Device destroyed | 75 | 5 | up to 5, within 225 wu | [mode objects](mode_objects.md) R-BLDG-314 |
+   | structure destroyed with intensity i | i | i ÷ 4 | up to i ÷ 4, within 3i | R-BLDG-037 |
+
+8. **Aim at the base point.** Explosion distance is measured to a structure's position, its base point, not to its centre, so an explosion high on a tall structure (the Launch Vessel) deals less than one at its foot (R-BLDG-035; [mode objects](mode_objects.md) R-BLDG-326).
 
 ## 6 Acceptance criteria
 

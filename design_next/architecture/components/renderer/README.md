@@ -65,7 +65,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. Names are Species identifiers; the types that are not in the naming ledger yet are listed in the agent report for approval.
+The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
 namespace species::render {
@@ -78,7 +78,7 @@ enum class PresentMode : std::uint8_t { VerticalSync, Uncapped };
 struct RenderConfig {                       // a change triggers Reconfigure (RND-030)
   std::uint32_t windowWidth = 0, windowHeight = 0;   // client area from the platform layer
   std::uint32_t renderWidth = 0, renderHeight = 0;   // scene-target size (RND-025)
-  std::uint32_t sampleCount = 4;                      // ADR-0015
+  std::uint32_t sampleCount = 1;                      // set from the anti-aliasing setting, ADR-0015
   bool hdr = false;                                   // ADR-0014
   bool lowLatency = false;                            // ADR-0012
   PresentMode presentMode = PresentMode::VerticalSync;
@@ -88,7 +88,7 @@ struct RenderConfig {                       // a change triggers Reconfigure (RN
 
 struct ViewParams {                          // supplied by MatchCamera each frame
   Vec3 position, front, up;
-  float fovYDegrees = 60.0f;                 // value owned by the camera component
+  float fovYDegrees = 0.0f;                  // value owned by the camera component
 };
 
 struct FrameInputs {
@@ -171,7 +171,7 @@ public:
 
 **RND-015** (MUST) Per-draw data travels in root constants (ADR-0006): a world transform (`Mat3x4`), a tint colour, a team palette index (ADR-0020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms, colours and palette indices in a structured buffer and pass only its index (ADR-0009).
 
-**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match: ids 0 to 7 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id 8 is the Rogue faction and id 9 the Visitor faction.
+**RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match: ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
 
 ### 3.4 GPU resources and their lifetimes
 
@@ -277,6 +277,7 @@ Diagnostics: PIX markers and GPU timestamps per pass (ADR-0068); the development
 | DEC-007 | Resolved | presentation never writes simulation state (RND-002, RND-006) |
 | DEC-012 | Resolved | collision volumes are baked data (RND-004) |
 | DEC-013 | Resolved | presentation randomness (RND-005) |
+| DEC-052 | Dropped | campaign content: its frame types, logo overlays and structures are not specified |
 | DEC-059 | Dropped | the pixel effect, the deform effect, the water reflection and an emulation layer are not specified |
 | DEC-098 | Resolved | the texture cache is keyed by asset and variant (RND-007, RND-017) |
 | DEC-222 | Open | how the snapshot is produced; extrapolation or interpolation (RND-002) |
@@ -312,7 +313,7 @@ Diagnostics: PIX markers and GPU timestamps per pass (ADR-0068); the development
 | depth offsets for coplanar layers | depth-biased catalogue variants | ADR-0005, ADR-0016 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.2 |
 | text | a glyph cache from licensed fonts with shaping and kerning | ADR-0034 | [ui_framework/README.md](../ui_framework/README.md) |
 | UI | a batched UI vertex stream with alpha, additive and ink catalogue entries | ADR-0031 | [ui_framework/README.md](../ui_framework/README.md) |
-| screen effects | full-screen passes that read a declared frame-graph copy of an earlier image | ADR-0004 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.6 |
+| screen effects | full-screen passes that read a declared frame-graph copy of an earlier image | ADR-0004 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.7 |
 | shadows | decal blobs and flattened sprite shadows as instanced, depth-biased darkening quads | ADR-0009 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.6 |
 | screenshots | a read-back pass that copies the final image into a read-back buffer, encoded off the frame thread | ADR-0004, ADR-0076 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.8 |
 | device loss | full device recreation | ADR-0008 | RND-034 |

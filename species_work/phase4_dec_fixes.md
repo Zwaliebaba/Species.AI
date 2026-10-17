@@ -38,3 +38,8 @@
 | 34 | G02b | DEC-014 | search caps of 256 and 2000 attempts are G02b's own values, sized from DEC-014's acceptance rates | confirm in DEC-014, or flag as provisional |
 | 35 | G02b | new | seven DEC requests (the Crawler's 20-per-tick bite, the Abductor's double time step, others); missing assets: the Abductor beam ring and the Reaper Serpent eaten-orb card | DEC triage; X-AST pass 2 |
 | 36 | G02b split | — | links to `creatures_and_hazards.md` remain in decisions, the glossary, G00, `essence_orbs.md`, reference/12 and the manifest | global link update to the two new files |
+| 37 | C-RND-a | ADR-0011 vs DEC-326 | the terrain grid is built from triangle edges (ADR-0011) or a grid texture (DEC-326 default); C-RND-a made both a shader option, with the texture as default | amend ADR-0011 |
+| 38 | C-RND-a | ADR-0005 | no blend state for the cursor's ghost models | amend the PSO catalogue |
+| 39 | C-RND-a | ADR-0018 | the fixed sampler set has no point-wrap sampler for the clouds | amend ADR-0018 |
+| 40 | C-RND-a | ADR-0003, ADR-0013 | specular lighting for the terrain grid and the special lighting is not mentioned | amend the ADRs |
+| 41 | C-RND-a | new | five DEC requests (team slot 5 never shows ownership lights; poster screenshots use a different FOV); two manifest rows need corrections | DEC triage; X-AST pass 2 |
