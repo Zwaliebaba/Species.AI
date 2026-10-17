@@ -37,6 +37,8 @@
   "code/routing_system.h",
   "code/testharness.cpp",
   "code/testharness.h",
+  "code/unicode/sound_library_2d_sdl.h",
+  "code/unicode/sound_library_3d.h",
   "code/unicode/unicode_text_file_writer.h",
   "contrib/systemiv/lib/filesys/file_system.h",
   "contrib/systemiv/lib/filesys/filesys_utils.h",
@@ -183,43 +185,6 @@
   "data/mwhelp/spawnpoint_assault.bmp",
   "data/mwhelp/starthere.bmp",
   "data/mwhelp/wallbuster.bmp",
-  "data/mwsounds/Attack1.ogg",
-  "data/mwsounds/Attack10.ogg",
-  "data/mwsounds/Attack11.ogg",
-  "data/mwsounds/Attack12.ogg",
-  "data/mwsounds/Attack13.ogg",
-  "data/mwsounds/Attack14.ogg",
-  "data/mwsounds/Attack15.ogg",
-  "data/mwsounds/Attack16.ogg",
-  "data/mwsounds/Attack17.ogg",
-  "data/mwsounds/Attack18.ogg",
-  "data/mwsounds/Attack19.ogg",
-  "data/mwsounds/Attack2.ogg",
-  "data/mwsounds/Attack20.ogg",
-  "data/mwsounds/Attack21.ogg",
-  "data/mwsounds/Attack23.ogg",
-  "data/mwsounds/Attack3.ogg",
-  "data/mwsounds/Attack32.ogg",
-  "data/mwsounds/Attack33.ogg",
-  "data/mwsounds/Attack34.ogg",
-  "data/mwsounds/Attack35.ogg",
-  "data/mwsounds/Attack36.ogg",
-  "data/mwsounds/Attack37.ogg",
-  "data/mwsounds/Attack38.ogg",
-  "data/mwsounds/Attack39.ogg",
-  "data/mwsounds/Attack4.ogg",
-  "data/mwsounds/Attack40.ogg",
-  "data/mwsounds/Attack41.ogg",
-  "data/mwsounds/Attack42.ogg",
-  "data/mwsounds/Attack43.ogg",
-  "data/mwsounds/Attack44.ogg",
-  "data/mwsounds/Attack45.ogg",
-  "data/mwsounds/Attack46.ogg",
-  "data/mwsounds/Attack5.ogg",
-  "data/mwsounds/Attack6.ogg",
-  "data/mwsounds/Attack7.ogg",
-  "data/mwsounds/Attack8.ogg",
-  "data/mwsounds/Attack9.ogg",
   "data/mwsounds/Attention1.ogg",
   "data/mwsounds/Attention2.ogg",
   "data/mwsounds/Attention3.ogg",
@@ -239,7 +204,6 @@
   "data/mwsounds/Carrying3c.ogg",
   "data/mwsounds/Carrying3d.ogg",
   "data/mwsounds/CountdownBeep1.ogg",
-  "data/mwsounds/CountdownBeep3.ogg",
   "data/mwsounds/CountdownEndBeep.ogg",
   "data/mwsounds/CrateCapture_10a.ogg",
   "data/mwsounds/CrateCapture_20a.ogg",
@@ -254,65 +218,15 @@
   "data/mwsounds/CrateFall6.ogg",
   "data/mwsounds/CrateFall7.ogg",
   "data/mwsounds/CrateLand1.ogg",
-  "data/mwsounds/CrateReward_Airstrike1.ogg",
-  "data/mwsounds/CrateReward_AntsNest1.ogg",
-  "data/mwsounds/CrateReward_Armour1.ogg",
-  "data/mwsounds/CrateReward_Armour2.ogg",
-  "data/mwsounds/CrateReward_Bitzkrieg.ogg",
-  "data/mwsounds/CrateReward_CrateMania1.ogg",
-  "data/mwsounds/CrateReward_CrateMania2.ogg",
-  "data/mwsounds/CrateReward_CrateMania3.ogg",
-  "data/mwsounds/CrateReward_DarkForest1.ogg",
-  "data/mwsounds/CrateReward_Egg1.ogg",
-  "data/mwsounds/CrateReward_Egg2.ogg",
-  "data/mwsounds/CrateReward_Egg3.ogg",
-  "data/mwsounds/CrateReward_Egg4.ogg",
-  "data/mwsounds/CrateReward_Extinguisher.ogg",
-  "data/mwsounds/CrateReward_Extinguisher2.ogg",
-  "data/mwsounds/CrateReward_Extinguisher3.ogg",
-  "data/mwsounds/CrateReward_Forest1.ogg",
-  "data/mwsounds/CrateReward_Forest2.ogg",
-  "data/mwsounds/CrateReward_Formation1.ogg",
-  "data/mwsounds/CrateReward_Formation2.ogg",
-  "data/mwsounds/CrateReward_Futurewinians.ogg",
-  "data/mwsounds/CrateReward_GunTurret1.ogg",
-  "data/mwsounds/CrateReward_Harvester1.ogg",
-  "data/mwsounds/CrateReward_Harvester2.ogg",
-  "data/mwsounds/CrateReward_Harvester3.ogg",
-  "data/mwsounds/CrateReward_HotFeet1.ogg",
-  "data/mwsounds/CrateReward_Meteor2.ogg",
-  "data/mwsounds/CrateReward_Meteor3.ogg",
-  "data/mwsounds/CrateReward_Meteor4.ogg",
-  "data/mwsounds/CrateReward_Nuke.ogg",
-  "data/mwsounds/CrateReward_OtherTeam.ogg",
-  "data/mwsounds/CrateReward_Plague.ogg",
-  "data/mwsounds/CrateReward_Rage1.ogg",
-  "data/mwsounds/CrateReward_Rage2.ogg",
-  "data/mwsounds/CrateReward_Rage3.ogg",
-  "data/mwsounds/CrateReward_Rage4.ogg",
-  "data/mwsounds/CrateReward_Randomiser.ogg",
-  "data/mwsounds/CrateReward_Rocketwinians.ogg",
-  "data/mwsounds/CrateReward_Shield.ogg",
-  "data/mwsounds/CrateReward_SpawnMania.ogg",
-  "data/mwsounds/CrateReward_SpawnMania2.ogg",
-  "data/mwsounds/CrateReward_Squaddies.ogg",
-  "data/mwsounds/CrateReward_Squaddies2.ogg",
-  "data/mwsounds/CrateReward_Squaddies3.ogg",
-  "data/mwsounds/CrateReward_Squaddies4.ogg",
-  "data/mwsounds/CrateReward_Subversion2.ogg",
-  "data/mwsounds/CrateReward_Tank.ogg",
-  "data/mwsounds/CrateReward_Triffid.ogg",
   "data/mwsounds/CrateRewrad_Darwinians1.ogg",
   "data/mwsounds/CrateRewrad_Darwinians2.ogg",
   "data/mwsounds/Crate_CaptureMyTeam.ogg",
   "data/mwsounds/Crate_CaptureOtherTeam.ogg",
   "data/mwsounds/Crate_LostCapture.ogg",
-  "data/mwsounds/Cratereward_Infection.ogg",
   "data/mwsounds/CreateReward_AntsNest1.ogg",
   "data/mwsounds/CreateReward_Harvester1.ogg",
   "data/mwsounds/CreateReward_Harvester2.ogg",
   "data/mwsounds/CreateReward_Harvester3.ogg",
-  "data/mwsounds/DSelect1.ogg",
   "data/mwsounds/DSelect10.ogg",
   "data/mwsounds/DSelect2.ogg",
   "data/mwsounds/DSelect3.ogg",
@@ -346,7 +260,6 @@
   "data/mwsounds/Drop_Statue2.ogg",
   "data/mwsounds/EnemyCaptureBugle1.ogg",
   "data/mwsounds/Enemy_Capture_Statue.ogg",
-  "data/mwsounds/FilterSweep.ogg",
   "data/mwsounds/FlameTurret1.ogg",
   "data/mwsounds/FlameTurret10.ogg",
   "data/mwsounds/FlameTurret2.ogg",
@@ -361,32 +274,13 @@
   "data/mwsounds/FlameTurretLoop1.ogg",
   "data/mwsounds/Formation1.ogg",
   "data/mwsounds/Formation2.ogg",
-  "data/mwsounds/GDSpeech10.ogg",
-  "data/mwsounds/GDSpeech11.ogg",
-  "data/mwsounds/GDSpeech12.ogg",
-  "data/mwsounds/GDSpeech13.ogg",
-  "data/mwsounds/GDSpeech14.ogg",
-  "data/mwsounds/GDSpeech15.ogg",
-  "data/mwsounds/GDSpeech16.ogg",
-  "data/mwsounds/GDSpeech17.ogg",
-  "data/mwsounds/GDSpeech18.ogg",
-  "data/mwsounds/GDSpeech2.ogg",
-  "data/mwsounds/GDSpeech3.ogg",
-  "data/mwsounds/GDSpeech4.ogg",
-  "data/mwsounds/GDSpeech5.ogg",
-  "data/mwsounds/GDSpeech6.ogg",
-  "data/mwsounds/GDSpeech7.ogg",
-  "data/mwsounds/GDSpeech8.ogg",
-  "data/mwsounds/GDSpeech9.ogg",
   "data/mwsounds/GameOver2.ogg",
-  "data/mwsounds/High1.ogg",
   "data/mwsounds/High2.ogg",
   "data/mwsounds/High3.ogg",
   "data/mwsounds/High4.ogg",
   "data/mwsounds/High5.ogg",
   "data/mwsounds/High6.ogg",
   "data/mwsounds/High7.ogg",
-  "data/mwsounds/Hit1.ogg",
   "data/mwsounds/Hit10.ogg",
   "data/mwsounds/Hit11.ogg",
   "data/mwsounds/Hit12.ogg",
@@ -466,7 +360,6 @@
   "data/mwsounds/Marching5.ogg",
   "data/mwsounds/MeteorHitClose1.ogg",
   "data/mwsounds/MeteorHitFar1.ogg",
-  "data/mwsounds/MultiLobbyAmb1.ogg",
   "data/mwsounds/MultiLobbyAmb10.ogg",
   "data/mwsounds/MultiLobbyAmb2.ogg",
   "data/mwsounds/MultiLobbyAmb3.ogg",
@@ -481,32 +374,6 @@
   "data/mwsounds/PinkNoiseLoop.ogg",
   "data/mwsounds/PlayerCaptureBugle5.ogg",
   "data/mwsounds/Player_Capture_Statue.ogg",
-  "data/mwsounds/Retreat1.ogg",
-  "data/mwsounds/Retreat10.ogg",
-  "data/mwsounds/Retreat11.ogg",
-  "data/mwsounds/Retreat12.ogg",
-  "data/mwsounds/Retreat13.ogg",
-  "data/mwsounds/Retreat14.ogg",
-  "data/mwsounds/Retreat15.ogg",
-  "data/mwsounds/Retreat16.ogg",
-  "data/mwsounds/Retreat17.ogg",
-  "data/mwsounds/Retreat18.ogg",
-  "data/mwsounds/Retreat19.ogg",
-  "data/mwsounds/Retreat2.ogg",
-  "data/mwsounds/Retreat20.ogg",
-  "data/mwsounds/Retreat21.ogg",
-  "data/mwsounds/Retreat22.ogg",
-  "data/mwsounds/Retreat23.ogg",
-  "data/mwsounds/Retreat24.ogg",
-  "data/mwsounds/Retreat25.ogg",
-  "data/mwsounds/Retreat26.ogg",
-  "data/mwsounds/Retreat3.ogg",
-  "data/mwsounds/Retreat4.ogg",
-  "data/mwsounds/Retreat5.ogg",
-  "data/mwsounds/Retreat6.ogg",
-  "data/mwsounds/Retreat7.ogg",
-  "data/mwsounds/Retreat8.ogg",
-  "data/mwsounds/Retreat9.ogg",
   "data/mwsounds/RocketThrust2Loop.ogg",
   "data/mwsounds/RocketThrustLoop.ogg",
   "data/mwsounds/Rumble2_Loop.ogg",
@@ -540,13 +407,10 @@
   "data/mwsounds/YesSir9.ogg",
   "data/mwsounds/YouLost2.ogg",
   "data/mwsounds/YouWon.ogg",
-  "data/mwsounds/beep_harsh_malfunction.ogg",
   "data/mwsounds/carry1.ogg",
   "data/mwsounds/carry2.ogg",
   "data/mwsounds/carry3.ogg",
   "data/mwsounds/carry4.ogg",
-  "data/mwsounds/mouseclick1.ogg",
-  "data/mwsounds/rollover1a.ogg",
   "data/mwsounds/rollover1b.ogg",
   "data/mwsounds/rollover1c.ogg",
   "data/mwsounds/theramin1.ogg",
@@ -1256,7 +1120,6 @@
   "data/mwsounds/Carrying3c.ogg",
   "data/mwsounds/Carrying3d.ogg",
   "data/mwsounds/CountdownBeep1.ogg",
-  "data/mwsounds/CountdownBeep3.ogg",
   "data/mwsounds/CountdownEndBeep.ogg",
   "data/mwsounds/CrateCapture_10a.ogg",
   "data/mwsounds/CrateCapture_20a.ogg",
@@ -1364,7 +1227,6 @@
   "data/mwsounds/Drop_Statue2.ogg",
   "data/mwsounds/EnemyCaptureBugle1.ogg",
   "data/mwsounds/Enemy_Capture_Statue.ogg",
-  "data/mwsounds/FilterSweep.ogg",
   "data/mwsounds/FlameTurret1.ogg",
   "data/mwsounds/FlameTurret10.ogg",
   "data/mwsounds/FlameTurret2.ogg",
@@ -1558,14 +1420,10 @@
   "data/mwsounds/YesSir9.ogg",
   "data/mwsounds/YouLost2.ogg",
   "data/mwsounds/YouWon.ogg",
-  "data/mwsounds/beep_harsh_malfunction.ogg",
   "data/mwsounds/carry1.ogg",
   "data/mwsounds/carry2.ogg",
   "data/mwsounds/carry3.ogg",
   "data/mwsounds/carry4.ogg",
-  "data/mwsounds/chat.ogg",
-  "data/mwsounds/mouseclick1.ogg",
-  "data/mwsounds/rollover1a.ogg",
   "data/mwsounds/rollover1b.ogg",
   "data/mwsounds/rollover1c.ogg",
   "data/mwsounds/theramin1.ogg",
@@ -2067,7 +1925,6 @@
   "data/sounds/darwinian_threat_run7.ogg",
   "data/sounds/darwinian_threat_run8.ogg",
   "data/sounds/darwinian_threat_run9.ogg",
-  "data/sounds/deselect1.ogg",
   "data/sounds/dma_sc-visitors_from_dreams.ogg",
   "data/sounds/eggsplat.ogg",
   "data/sounds/eggsplat2.ogg",
@@ -2165,7 +2022,6 @@
   "data/sounds/generator_online.ogg",
   "data/sounds/gesturefail.ogg",
   "data/sounds/gesturestart.ogg",
-  "data/sounds/gesturesuccess.ogg",
   "data/sounds/god_dish_disconnect.ogg",
   "data/sounds/god_dish_disconnect2.ogg",
   "data/sounds/god_dish_disconnect3.ogg",
@@ -2271,8 +2127,6 @@
   "data/sounds/laser_hitgnd8.ogg",
   "data/sounds/laser_hitgnd9.ogg",
   "data/sounds/matrix.ogg",
-  "data/sounds/menuscroll1.ogg",
-  "data/sounds/menuscroll2.ogg",
   "data/sounds/mine_cart_creak.ogg",
   "data/sounds/mine_cart_creak10.ogg",
   "data/sounds/mine_cart_creak11.ogg",
@@ -2324,7 +2178,6 @@
   "data/sounds/mine_cog7.ogg",
   "data/sounds/mouse.ogg",
   "data/sounds/mouse1.ogg",
-  "data/sounds/mouse2.ogg",
   "data/sounds/mouse3.ogg",
   "data/sounds/mouse4.ogg",
   "data/sounds/mouse5.ogg",
@@ -3140,23 +2993,41 @@
   "data/input/keyboards/<layout>.txt": [
    "09_meta_systems.md"
   ],
-  "data/terrain/water_": [
-   "23_terrain_and_landscape.md"
+  "data/mwsounds/attack": [
+   "10_audio_design.md"
+  ],
+  "data/mwsounds/retreat": [
+   "10_audio_design.md"
+  ],
+  "data/mwsounds/gdspeech": [
+   "10_audio_design.md"
+  ],
+  "data/mwsounds/cratereward_": [
+   "10_audio_design.md"
   ],
   "data/terrain/landscape_": [
    "23_terrain_and_landscape.md",
    "24_rendering.md"
   ],
-  "data/terrain/waves_": [
+  "data/terrain/water_": [
    "23_terrain_and_landscape.md"
   ],
   "data/levels/map_": [
    "23_terrain_and_landscape.md"
   ],
-  "code/lib/opengl_directx_dlist.{h,cpp}": [
+  "data/terrain/waves_": [
+   "23_terrain_and_landscape.md"
+  ],
+  "data/icons/mouse_": [
    "24_rendering.md"
   ],
-  "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
+  "code/lib/texture.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "data/shapes/<lowercased name>": [
+   "24_rendering.md"
+  ],
+  "code/lib/opengl_directx_dlist.{h,cpp}": [
    "24_rendering.md"
   ],
   "code/lib/shader.{h,cpp}": [
@@ -3165,7 +3036,7 @@
   "code/lib/opengl_trace.{h,cpp}": [
    "24_rendering.md"
   ],
-  "data/sepulveda/sepulveda1..5.bmp": [
+  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
    "24_rendering.md"
   ],
   "code/lib/fixedpipeline.{h,cpp}": [
@@ -3174,25 +3045,19 @@
   "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
    "24_rendering.md"
   ],
-  "data/icons/mouse_": [
-   "24_rendering.md"
-  ],
   "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
    "24_rendering.md"
   ],
-  "code/lib/texture.{h,cpp}": [
+  "data/sepulveda/sepulveda1..5.bmp": [
    "24_rendering.md"
   ],
   "code/lib/window_manager_sdl.{cpp,h}": [
    "24_rendering.md"
   ],
-  "data/shapes/<lowercased name>": [
-   "24_rendering.md"
-  ],
   "data/shaders/fixedfunc": [
    "24_rendering.md"
   ],
-  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
+  "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
    "24_rendering.md"
   ],
   "contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}": [
@@ -3200,229 +3065,13 @@
   ],
   "contrib/systemiv/lib/{debug_utils, memory_leak, network_stream, profiler, string_utils, filesys/*, netlib/*, metaserver/{authentication, matchmaker, metaserver}, math/{filecrc, hash, math_stubs, random_number}, tosser/*, unicode/*}": [
    "28_ui_framework.md"
-  ],
-  "data/<dir>": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/pdlcoptionsbutton.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/<name>": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/text_stream_readers.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/unicode/sound_library_": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/macosx/add-svn-revision.rb": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.{h,cpp}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/inviteplayersbutton.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_inclusions_ambx.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/passwordgenerator/main.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/downloadpdlcbutton.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/animations/{cloudyglow,darwinian,laser,plusone,spawnpoint,zone-back,zone-front,zone}.bmp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/aswsdlringbuffer.*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_inclusions_": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/interface/pokey_window": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/x360_qnet.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/multiwinia.spa.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/autopatch.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/{preferences,language_table,hi_res_time}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/netclass": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/contrib/xcrashreport/client/{exception_handler,getwinver,miniversion}.*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/window_manager_xbox.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/invisible.cur": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/upx --best build/multiwinia.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/{aswsdlringbuffer,caringbuffer}.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/dialogs/{animator-controlpanel,animator-mainmenu,animator-panel,file-dialog,mainmenu}.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/steam": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_multiwinia_pc_preview.bat [lang]": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/pokey.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/xblaselectsessiontype.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/interface/pokey_window.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/oggvorbis/lib": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/aswsdlringbuffer": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/convert_bmp_to_tex.cmd": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/command_buffer.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/{debug_utils,math_utils,matrix33,\u2026}.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/multiwinia_exclusions_xbox.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/textures/unicode/{editor,square}.0410.042f.bmp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/macosx/cabitoperations.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/version_resource.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/profilelocatorwin32/profilelocator.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/x.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/ui/customgametypeselection.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/{autopatch,copy_assist}.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/english_demo.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_multiwinia_retail.bat [lang]": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/x360_qnet.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/crypticon/ccrypticon.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/command_buffer": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/macosx/add-appcast-url.rb": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/systemiv/lib/crypticon/ccrypticon": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/autopatcher/copy_assist.exe": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/resource1.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/sound/pokey": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/debug_xbox.{cpp,h}": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/network/networkupdate.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "contrib/binreloc": [
-   "31_platform_build_and_tools.md"
-  ],
-  "tools/build_ambx_dat.bat": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/debug_xbox": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/english.txt": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/x.h": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/fonts/verdana-bold.bmp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "code/lib/{debug_utils,text_stream_readers,\u2026}.cpp": [
-   "31_platform_build_and_tools.md"
-  ],
-  "data/n": [
-   "31_platform_build_and_tools.md"
-  ],
-  "targets/vs2005/gdf/resource": [
-   "31_platform_build_and_tools.md"
   ]
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 4350,
-  "[I]": 505,
-  "[U]": 89
+  "[C]": 4400,
+  "[I]": 510,
+  "[U]": 90
  },
  "classes": {
   "AI": [

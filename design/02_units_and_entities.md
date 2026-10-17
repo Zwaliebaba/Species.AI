@@ -2435,6 +2435,8 @@ stateDiagram-v2
 
 `class LaserTrooper : Entity`, type `TypeLaserTroop` (1) [C] `code/worldobject/lasertrooper.h`, `code/worldobject/lasertrooper.cpp`. **[B:LEGACY]**: compiled in FULL but unreachable — `TypeLaserTroop` is in `EntityIsBlocked` (no level placement) and the only runtime creator is `Lander::AdvanceLanded`, and no code creates Landers [C] `code/worldobject/lander.cpp`, grep of `SpawnEntities`.
 
+### 26.1 LaserTrooper — specification
+
 | Template item | Specification |
 |---|---|
 | Role | Darwinia's basic laser infantry, landed in groups by a Lander |
@@ -2498,6 +2500,8 @@ Shown when the local player's current entity is a Shaman and the task-manager ke
 
 `class DropShip : Entity`, type `TypeDropShip` (26) [C] `code/worldobject/dropship.h`, `code/worldobject/dropship.cpp`. **[B:LEGACY]** (dormant reinforcement transport).
 
+### 28.1 DropShip — specification
+
 | Template item | Specification |
 |---|---|
 | Role | small transport (0.2-scale `spaceship.shp`) that flies from the map corner nearest the target to 250 above it, drops 20 Darwinians of its team one per tick, and leaves |
@@ -2552,6 +2556,8 @@ stateDiagram-v2
 
 `class Tentacle : Entity`, type `TypeTentacle` (22) [C] `code/worldobject/tentacle.h`, `code/worldobject/tentacle.cpp`. **[B:DEBUG] / [B:LEGACY]**: spawned only by `Portal::AdvanceStateExpanding` (6 tentacles × 12 segments on the Monster team, `NUM_TENTACLES` 6); portals come from Darwinia/Shaman maps (`levels/old/`, excluded from the shipped data) or the *The Beast* crate (`Crate::RunTheBeast`), which exists only when `INCLUDE_THEBEAST` is defined — inside `#ifdef TARGET_DEBUG` in `code/worldobject/crate.h` [C] `code/worldobject/portal.cpp:Portal::AdvanceStateExpanding`, `code/worldobject/portal.h`, `code/worldobject/crate.cpp:Crate::RunTheBeast`. `TypeTentacle` is blocked.
 
+### 30.1 Tentacle — specification
+
 | Template item | Specification |
 |---|---|
 | Role | portal tentacles that slam and swipe, flinging and killing anything near |
@@ -2570,6 +2576,8 @@ stateDiagram-v2
 ## 31 Lander
 
 `class Lander : Entity`, type `TypeLander` (7) [C] `code/worldobject/lander.h`, `code/worldobject/lander.cpp`. **[B:LEGACY]**: creatable only via level-file instant units, which `EntityIsBlocked` forbids; no code spawns it [C] grep of `TypeLander`.
+
+### 31.1 Lander — specification
 
 | Template item | Specification |
 |---|---|
