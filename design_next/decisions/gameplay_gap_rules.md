@@ -266,7 +266,7 @@ This file records the gameplay rules that the reference documents had to choose 
 ### DEC-869 Reference sound options without a Species counterpart
 - Status: Open
 - Affects: reference/09_front_end_and_match_flow/options_localisation_and_hooks.md (R-META-429, R-META-430, R-META-431)
-- Specified behaviour: The sound options page keeps three reference options whose subject the Species audio engine fixes: the audio output list, which offers exactly one choice, the platform back end (R-META-430, ADR-0022); the mixing rate, with the choices 11 025, 22 050 and 44 100 Hz, while the engine runs at one fixed rate (R-META-431, ADR-0025); and the number of sound voices, while the engine has a fixed budget of 64 real voices (R-META-429, DEC-570).
+- Specified behaviour: The sound options page keeps three reference options whose subject the Species audio engine fixes: the audio output list, which offers exactly one choice, the platform back end (R-META-430, ADR-022); the mixing rate, with the choices 11 025, 22 050 and 44 100 Hz, while the engine runs at one fixed rate (R-META-431, ADR-025); and the number of sound voices, while the engine has a fixed budget of 64 real voices (R-META-429, DEC-570).
 - Options: A — keep the three options as the reference offers them; B — drop them from the Species sound page, which then holds the volume sliders of DEC-570 and the swap of left and right.
 - Recommendation: B. An option whose choices the engine ignores, or that offers a single choice, misleads the player; DEC-100 already records that the mixing rate has no Species equivalent.
 - Decide by: design phase

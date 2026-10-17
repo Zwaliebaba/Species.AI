@@ -380,7 +380,7 @@ Diagram 3-D The signpost conveyor (R-UNIT-171, worker.md R-UNIT-096).
 
 - **Reference documents:** [README.md](README.md) (stats, base advance, health change, team tint, flicker); [worker.md](worker.md) (Leader search, formation membership, volley rhythm); [reference/06](../06_controls_camera_and_commands/README.md) (bindings, world markers, Leader cursor badge, pointer facing); [reference/07](../07_bots/README.md) (bot navigation nodes, bot promotion); [reference/10](../10_audio_design/README.md) (sound events); [reference/11](../11_tutorial_and_help.md) (first tutorial); [reference/12](../12_simulation_model/README.md) (commands, team command state, routes, obstacle push, water step, effects).
 - **Engine components:** [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (Leader mesh, banner, trail marks), [../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md) (cloth flag, particles).
-- **ADRs:** ADR-0020 (team tint), ADR-0021 (mesh socket schema: the flag socket).
+- **ADRs:** ADR-020 (team tint), ADR-021 (mesh socket schema: the flag socket).
 - **Assets:** `mesh.unit.leader_figure`, `marker.leader_banner`, `marker.flag_pointer`, `marker.order_trail`, `icon.power.leader`, `sfx.unit.leader.spawn`, `sfx.unit.leader.order_waypoint`, `sfx.unit.worker.hurt`, `sfx.unit.worker.die`, `sfx.unit.trooper.enter_gate`.
 
 ## 8 Open decisions

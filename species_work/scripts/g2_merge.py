@@ -7,7 +7,7 @@ Usage: python3 -I g2_merge.py <REPO>
 - writes design_next/decisions/README.md (generated index);
 - merges species_work/dec_map_*.csv into species_work/dec_map.csv;
 - inserts species_work/adr_index_X-ADR-b.md rows at the README marker (once);
-- checks that every DEC-NNN and ADR-NNNN cited anywhere in design_next exists.
+- checks that every DEC-NNN and ADR-NNN cited anywhere in design_next exists.
 Exit status 1 on any error.
 """
 import csv
@@ -115,7 +115,7 @@ def merge_maps():
 
 
 def merge_adr_index():
-    readme = os.path.join(NEXT, 'adr', 'README.md')
+    readme = os.path.join(NEXT, 'ADR', 'README.md')
     t = open(readme, encoding='utf-8').read()
     marker = '<!-- X-ADR-b rows -->'
     if marker not in t:
@@ -129,16 +129,16 @@ def merge_adr_index():
 
 def check_refs(decs):
     dec_ids = {d['n'] for d in decs}
-    adr_ids = {int(os.path.basename(p)[:4]) for p in glob.glob(os.path.join(NEXT, 'adr', '[0-9][0-9][0-9][0-9]-*.md'))}
+    adr_ids = {int(os.path.basename(p)[4:7]) for p in glob.glob(os.path.join(NEXT, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))}
     for path in glob.glob(os.path.join(NEXT, '**', '*.md'), recursive=True):
         rel = os.path.relpath(path, NEXT)
         text = open(path, encoding='utf-8').read()
         # id ranges such as 'DEC-450 to DEC-549' describe a file's block, not a citation
-        text = re.sub(r'(DEC|ADR)-\d{3,4}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3,4}', ' ', text)
+        text = re.sub(r'(DEC|ADR)-\d{3}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3}', ' ', text)
         for m in set(re.findall(r'DEC-(\d{3})\b', text)):
             if int(m) not in dec_ids:
                 errors.append(f'{rel}: cites DEC-{m}, which does not exist')
-        for m in set(re.findall(r'ADR-(\d{4})\b', text)):
+        for m in set(re.findall(r'ADR-(\d{3})\b', text)):
             if int(m) not in adr_ids:
                 errors.append(f'{rel}: cites ADR-{m}, which does not exist')
     return len(adr_ids)

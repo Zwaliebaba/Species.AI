@@ -1,6 +1,6 @@
 # UI framework
 
-> Status: Engine baseline · Prefix: UI · ADRs: [ADR-0030](../../../adr/0030-ui-framework-build-or-buy.md), [ADR-0031](../../../adr/0031-batched-ui-rendering.md), [ADR-0032](../../../adr/0032-ui-focus-graph-page-stack-and-input.md), [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md), [ADR-0034](../../../adr/0034-text-rendering-and-glyph-cache.md), [ADR-0063](../../../adr/0063-localisation.md), [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md), [ADR-0028](../../../adr/0028-input-device-back-ends.md), [ADR-0029](../../../adr/0029-input-event-model-and-binding-contract.md), [ADR-0075](../../../adr/0075-application-window-and-dpi-awareness.md)
+> Status: Engine baseline · Prefix: UI · ADRs: [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md), [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md), [ADR-028](../../../ADR/ADR-028-input-device-back-ends.md), [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md)
 
 This folder specifies the Species UI framework: a retained, batched UI with typed widget handles, an explicit focus graph for gamepad and keyboard navigation, screen-fraction layout with DPI and UI scale, and text drawn from a glyph cache over licensed fonts. It is the engine baseline that every menu, dialog, options screen, lobby and HUD window of the reference library is built on.
 
@@ -27,9 +27,9 @@ Tool-style windows (the development windows of the [diagnostics](../diagnostics_
 
 **UI-002** (MUST NOT) The UI framework never writes simulation state. It reads only the presentation state it is given (DEC-007), every player intent it produces leaves it as a player command of the command catalogue ([reference/12](../../../reference/12_simulation_model/06_teams_and_player_commands.md)), and an option widget bound to a shared match option only requests a change (§3, [core_and_widgets.md](core_and_widgets.md) §4.23). How the build enforces this boundary, and whether the UI reads per-tick snapshots, is the design phase's decision (DEC-222); until then the UI reads the read-only presentation view that DEC-222 option A describes and never includes a simulation header that grants write access.
 
-**UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-0031), which the renderer records in its UI passes.
+**UI-003** (MUST NOT) The UI framework draws nothing directly to the GPU and owns no GPU resource of its own except the glyph-cache atlas pages: widgets emit quads, gradients, lines and glyph runs into the batched UI stream ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.6; ADR-031), which the renderer records in its UI passes.
 
-**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-0075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-0029, [input.md](../input.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
+**UI-004** (MUST NOT) The UI framework does not own the window, the swap chain, the binding system or the string-table file format. The platform layer owns the application window and reports size, DPI and focus changes (ADR-075); the renderer owns presentation and the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095); the input component owns devices, bindings and the input mode (ADR-029, [input.md](../input.md)); the data schemas own the string-table schema and its markup syntax ([data schemas](../data_schemas/README.md)).
 
 **UI-005** (MUST) The UI core is one service with an explicit owner and lifetime, never reached through a process-wide global. Its owner is the client's composition root, which the design phase defines (DEC-221); until then the UI core lives for the process, from start-up to shutdown, and is passed by reference to the systems that open windows. Panels are owned by the UI core; widgets are owned by their panel; a scroll bar's helper object is owned by the window that created it.
 
@@ -66,23 +66,23 @@ Diagram 1-A — the three layers of the UI framework, the platform calls that dr
 
 ## 2 Interfaces
 
-**UI-006** (MUST) The UI is advanced once per main-loop iteration, in every loop (front end, match and map editor), by the UI input pump (`UiInputPump`), in the update phase and before any drawing (ADR-0032). In a match the pump runs at the steps of the in-match loop that [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 gives (step 5 and step 11.5). One advance does, in order:
+**UI-006** (MUST) The UI is advanced once per main-loop iteration, in every loop (front end, match and map editor), by the UI input pump (`UiInputPump`), in the update phase and before any drawing (ADR-032). In a match the pump runs at the steps of the in-match loop that [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-581 gives (step 5 and step 11.5). One advance does, in order:
 
-1. pass the pointer position and the frame's pointer events to the UI core: the position is that of the game pointer, which follows the mouse or the gamepad-emulated pointer; the primary button is `action.ui.pointer_held` with its down edge `action.ui.pointer_down`, and the secondary button is `action.ui.alt_pointer_down` ([reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row M6). The pump delivers the frame's pointer events in their order, so a press and a release within one frame both reach the UI core (ADR-0029);
+1. pass the pointer position and the frame's pointer events to the UI core: the position is that of the game pointer, which follows the mouse or the gamepad-emulated pointer; the primary button is `action.ui.pointer_held` with its down edge `action.ui.pointer_down`, and the secondary button is `action.ui.alt_pointer_down` ([reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row M6). The pump delivers the frame's pointer events in their order, so a press and a release within one frame both reach the UI core (ADR-029);
 2. run the UI core's update (the pointer state machine, then every panel's update; [core_and_widgets.md](core_and_widgets.md) §4.3 and §4.7);
 3. when `action.ui.pointer_down` fired over any panel, withhold that press from the match actions for the rest of the frame, so the world does not also receive the click ([reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row M6).
 
-**UI-007** (MUST) Text input reaches the UI core as characters, never as keys: each character the application window receives (a Unicode scalar value, with the state of Shift, Ctrl and Alt) is routed to the focused panel ([core_and_widgets.md](core_and_widgets.md) §4.5). Committed input-method text arrives as characters in the same way, and the composition string is shown inline in the focused text field (ADR-0028, ADR-0032). Text input never passes through the binding graph.
+**UI-007** (MUST) Text input reaches the UI core as characters, never as keys: each character the application window receives (a Unicode scalar value, with the state of Shift, Ctrl and Alt) is routed to the focused panel ([core_and_widgets.md](core_and_widgets.md) §4.5). Committed input-method text arrives as characters in the same way, and the composition string is shown inline in the focused text field (ADR-028, ADR-032). Text input never passes through the binding graph.
 
 **UI-008** (MUST) The UI is drawn in the UI windows pass of the ordered pass table (pass 19, [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070), in a 2-D pixel space over the viewport with the origin at the top-left (RND-215), with blending on, no culling and no depth test or depth writes. Its place in the frame is: after the world markers (pass 16) and the hint overlay (pass 17); before the world cursor (pass 20), the chat (pass 21), the Power slots panel (pass 23), the 2-D block with the fade and the match HUD (passes 26 to 32), the paused banner (pass 33) and the screen transition with the present (pass 34). The match message (pass 13), the chat (pass 21), the match HUD (pass 28) and the paused banner (pass 33) draw their text in the UI framework's text styles ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.8).
 
-**UI-009** (MUST) The UI core is initialised with the client-area size and DPI scale when it is created, and receives every later size and DPI change from the platform layer as a resize event (ADR-0075); a resize never re-creates the UI core, a panel or a widget ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.4). Shutting the UI core down destroys every panel and, through each panel, every widget.
+**UI-009** (MUST) The UI core is initialised with the client-area size and DPI scale when it is created, and receives every later size and DPI change from the platform layer as a resize event (ADR-075); a resize never re-creates the UI core, a panel or a widget ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.4). Shutting the UI core down destroys every panel and, through each panel, every widget.
 
 **UI-010** (MUST) The UI core answers two queries for the application loops: **windows on screen** is true when the panel list is not empty; **remove all windows** first, when a match is running, moves the pointer to the centre of the screen, and then removes the front-most panel until no panel remains.
 
 **UI-011** (MUST) While the gamepad pointer emulation action `action.ui.show_cursor` is held, the south face button acts as the primary pointer button; this is the binding of [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) row M6, which the UI consumes as `action.ui.pointer_down` and `action.ui.pointer_held`.
 
-**Threading contract.** Every UI call runs on the main thread, which also runs the window message loop and the frame (ADR-0075). The UI's state is never read or written by another thread; a worker thread that has a result for the UI (a loaded picture, a session list) hands it to the main thread through a queue that the owning view-model drains in its update. Glyph rasterisation for new glyphs runs on the main thread inside the UI's draw, and the atlas upload goes through the renderer's upload ring (ADR-0034, ADR-0008).
+**Threading contract.** Every UI call runs on the main thread, which also runs the window message loop and the frame (ADR-075). The UI's state is never read or written by another thread; a worker thread that has a result for the UI (a loaded picture, a session list) hands it to the main thread through a queue that the owning view-model drains in its update. Glyph rasterisation for new glyphs runs on the main thread inside the UI's draw, and the atlas upload goes through the renderer's upload ring (ADR-034, ADR-008).
 
 ```mermaid
 sequenceDiagram
@@ -106,11 +106,11 @@ Diagram 2-A — one frame of the UI: input is handled in the update phase, and d
 
 ## 3 Data model
 
-**UI-012** (MUST) Panels and widgets are identified by typed handles with a generation count; a stale handle resolves to nothing, so an action on a removed panel or widget is a no-op. A panel or widget may carry a debug name, which is never used for look-up. Every caption, title and label is a Species string id ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.11), and every widget carries an accessible-name string id and a role, so screen narration can be added (ADR-0064).
+**UI-012** (MUST) Panels and widgets are identified by typed handles with a generation count; a stale handle resolves to nothing, so an action on a removed panel or widget is a no-op. A panel or widget may carry a debug name, which is never used for look-up. Every caption, title and label is a Species string id ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.11), and every widget carries an accessible-name string id and a role, so screen narration can be added (ADR-064).
 
-**UI-013** (MUST) Widget state that must survive a relayout lives in the view-model of the page or window that owns the widget, not in the widget (ADR-0030): a value-bound widget holds a binding to its view-model field ([core_and_widgets.md](core_and_widgets.md) §4.23), so a resize, a DPI change, a scale-setting change or a language change never loses a value, a scroll position or a focus position.
+**UI-013** (MUST) Widget state that must survive a relayout lives in the view-model of the page or window that owns the widget, not in the widget (ADR-030): a value-bound widget holds a binding to its view-model field ([core_and_widgets.md](core_and_widgets.md) §4.23), so a resize, a DPI change, a scale-setting change or a language change never loses a value, a scroll position or a focus position.
 
-The type, ownership and lifetime of every UI object are listed in [core_and_widgets.md](core_and_widgets.md) §3 and [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §3. Page layouts, palettes, text styles and string tables are content records in the schemas of [data schemas](../data_schemas/README.md) (ADR-0061).
+The type, ownership and lifetime of every UI object are listed in [core_and_widgets.md](core_and_widgets.md) §3 and [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §3. Page layouts, palettes, text styles and string tables are content records in the schemas of [data schemas](../data_schemas/README.md) (ADR-061).
 
 ## 4 Behaviour and algorithms
 
@@ -118,7 +118,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 
 **UI-015** (MUST) The look of the UI keeps the reference token structure and blend modes: windows and buttons on an accent panel with a light-to-dark highlight gradient; front-end pages of glowing fill boxes with positive (green) and focus (red) captions over the animated backdrop; normal text additive, and outlines and shadows in the darkening ink mode ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.7 to §4.9; [visual_language.md](../renderer/visual_language.md) RND-403, RND-416, RND-425).
 
-**UI-016** (MUST) Every screen of the framework is fully usable with the pointer alone, with the keyboard alone and with the gamepad alone, through one focus cursor that pointer hover and navigation share ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.10; ADR-0032, ADR-0064).
+**UI-016** (MUST) Every screen of the framework is fully usable with the pointer alone, with the keyboard alone and with the gamepad alone, through one focus cursor that pointer hover and navigation share ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.10; ADR-032, ADR-064).
 
 ## 5 Concurrency and performance budget
 
@@ -126,7 +126,7 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 
 ## 6 Failure modes, diagnostics and telemetry
 
-**UI-018** (MUST) No UI failure is fatal. A missing picture draws as its content-build placeholder; a missing string falls back per id to the base language (DEC-099); a stale handle is a no-op; a layout that does not fit applies its cell's overflow rule (ADR-0033). Each of these is logged once per item in the UI log category (ADR-0067), and development builds show a counter of them in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)). The detailed failure tables are in each document's §6.
+**UI-018** (MUST) No UI failure is fatal. A missing picture draws as its content-build placeholder; a missing string falls back per id to the base language (DEC-099); a stale handle is a no-op; a layout that does not fit applies its cell's overflow rule (ADR-033). Each of these is logged once per item in the UI log category (ADR-067), and development builds show a counter of them in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)). The detailed failure tables are in each document's §6.
 
 ## 7 Acceptance tests
 
@@ -150,11 +150,11 @@ The type, ownership and lifetime of every UI object are listed in [core_and_widg
 - **DEC-221** (Open): the composition root, service lifetimes and the application state machine; the UI core's owner and lifetime follow it (UI-005).
 - **DEC-222** (Open): the simulation and presentation boundary; how the UI's read-only view of the match is enforced and fed (UI-002).
 - **DEC-045** (Open): a map editor, whose windows would be tool windows of the UI window layer (UI-001).
-- ADR-0030 and ADR-0034 are Proposed; the default each names is the baseline of this folder.
+- ADR-030 and ADR-034 are Proposed; the default each names is the baseline of this folder.
 
 **Design-phase inputs.**
 
 1. The world game's HUD and its settlement-scale screens: which of them are pages of the front-end screen, which are tool windows, and which are HUD panels drawn in the renderer's HUD space (RND-377).
-2. Whether menus are narrated (XAG 106); the accessible names of UI-012 exist either way (ADR-0064).
+2. Whether menus are narrated (XAG 106); the accessible names of UI-012 exist either way (ADR-064).
 3. The ranges of the UI-scale and text-scale settings and the high-contrast palette ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §8).
 4. The owner and lifetime of the UI core in each process role (DEC-221), and whether the integrated server's lifetime affects any UI window.

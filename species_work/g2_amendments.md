@@ -16,8 +16,8 @@ Source: RUN_LOG Phase 2 entries plus the "extra facts" and "cross-document reque
 10. **06-U9** (orders given with no Workers under control): confirm an entry covers it (`dec_map_X-DEC-3.csv`). If none does, add an Open entry in the open-questions range from DEC-343.
 11. **The Collector/Builder loop that can spin on an invalid entry** (a possible hang) must be **Resolved** wherever it appears (DEC-014 and any X-DEC-3 entry).
 12. **H7** (the obstacle-grid band around Barrier Emitter lines): confirm DEC-088 covers it. If it does not, extend DEC-088.
-13. **ADR index (`design_next/adr/README.md`):**
-    - Reconcile the user-data path. The README says `%LOCALAPPDATA%\Species`; the ledger and ADR-0071 may say `<STUDIO>\Species\`. Use one form everywhere (`%LOCALAPPDATA%\<Studio>\Species\`, where `<Studio>` is the publisher-name parameter), and update ADR-0071 and the README.
+13. **ADR index (`design_next/ADR/README.md`):**
+    - Reconcile the user-data path. The README says `%LOCALAPPDATA%\Species`; the ledger and ADR-071 may say `<STUDIO>\Species\`. Use one form everywhere (`%LOCALAPPDATA%\<Studio>\Species\`, where `<Studio>` is the publisher-name parameter), and update ADR-071 and the README.
     - Fill the "Decided in" column of the baseline table with the 0050+ ADR numbers.
 
 ## B. Extra facts (apply each where it is consistent)

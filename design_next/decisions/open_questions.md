@@ -2,7 +2,7 @@
 
 > Status: Reference decisions · Range: DEC-300 to DEC-449 · Related: [decisions index](README.md), [verdicts and fixes](verdicts_and_fixes.md), [conventions](../CONVENTIONS.md)
 
-This file records the decisions that arise from the open questions of the reference library: behaviours whose design intent is not recorded, figures that are estimated rather than established, edge cases whose reachability is unknown, and inferences that a design choice depends on. Each **Open** entry states the faithful reference behaviour as its default, which is what the reference documents specify now, and gives options, a recommendation and the point by which it is decided. A **Resolved** entry states a settled reference fact or a corrected rule as a rule. Each **Dropped** entry records a group of questions that concern only content the library does not specify, with the reason, or an entry superseded by the entry it names. Questions that another register already decides are not repeated here: the headline verdicts, simulation-integrity rules, scope verdicts, fix-list decisions and design-critical uncertainties are in `decisions/verdicts_and_fixes.md` (DEC-001 to DEC-119); the networking model, process architecture, tick rate, numeric model, lobby, sessions and services, terrain runtime model and persistence are in `decisions/deferred/` (DEC-200 to DEC-251); engine-technology choices are ADRs under `adr/`. Entries here cite those decisions by number.
+This file records the decisions that arise from the open questions of the reference library: behaviours whose design intent is not recorded, figures that are estimated rather than established, edge cases whose reachability is unknown, and inferences that a design choice depends on. Each **Open** entry states the faithful reference behaviour as its default, which is what the reference documents specify now, and gives options, a recommendation and the point by which it is decided. A **Resolved** entry states a settled reference fact or a corrected rule as a rule. Each **Dropped** entry records a group of questions that concern only content the library does not specify, with the reason, or an entry superseded by the entry it names. Questions that another register already decides are not repeated here: the headline verdicts, simulation-integrity rules, scope verdicts, fix-list decisions and design-critical uncertainties are in `decisions/verdicts_and_fixes.md` (DEC-001 to DEC-119); the networking model, process architecture, tick rate, numeric model, lobby, sessions and services, terrain runtime model and persistence are in `decisions/deferred/` (DEC-200 to DEC-251); engine-technology choices are ADRs under `ADR/`. Entries here cite those decisions by number.
 
 ## Index
 
@@ -196,7 +196,7 @@ This file records the decisions that arise from the open questions of the refere
 - Affects: architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI), architecture/components/ui_framework/pages_and_screen_recipes.md (UI), architecture/components/renderer/visual_language.md (RND)
 - Specified behaviour: Ink text is drawn with a blend of source alpha and one minus source colour over the menu highlight gradient and the fill boxes; only the blend arithmetic is established, not the on-screen look. Every page change plays a 1.0 s slide transition of a captured frame: with the transition's progress value f, the curve value is c = 3.6 × f, the slide offset is c⁶ × the screen width and the alpha is 1 − 0.2 × c. Which frame the transition captures, the previous frame or undefined back-buffer content, depends on the graphics driver.
 - Options: A — reproduce the blend and the transition, with an explicit capture of the last presented frame; B — design the text style and the page transition anew.
-- Recommendation: A. The transition curve is fully specified and is part of the front-end feel; capturing the last presented frame removes the driver dependence. Confirm the ink-text look visually in the Species working colour space (ADR-0013).
+- Recommendation: A. The transition curve is fully specified and is part of the front-end feel; capturing the last presented frame removes the driver dependence. Confirm the ink-text look visually in the Species working colour space (ADR-013).
 - Decide by: design phase
 
 ## 7 Audio
@@ -310,7 +310,7 @@ This file records the decisions that arise from the open questions of the refere
 - Status: Open
 - Affects: architecture/components/asset_pipeline_and_resources.md (AST), assets/asset_manifest.csv
 - Specified behaviour: Some reference meshes carry sockets that no rule names directly: island markers, Transit Gate route markers and float markers. Whether code reaches them through a name pattern is not established, so every socket kind that the reference meshes carry is treated as used.
-- Options: A — every socket kind of the reference meshes is part of its asset class's socket schema (ADR-0021); B — only socket kinds with a confirmed consumer are part of the schemas.
+- Options: A — every socket kind of the reference meshes is part of its asset class's socket schema (ADR-021); B — only socket kinds with a confirmed consumer are part of the schemas.
 - Recommendation: B. The asset pipeline component lists the consumer of each socket kind, and a kind without a consumer is left out.
 - Decide by: design phase
 
@@ -358,42 +358,42 @@ This file records the decisions that arise from the open questions of the refere
 - Affects: architecture/components/renderer/README.md (RND), architecture/components/animation_and_vfx/ (VFX)
 - Specified behaviour: Not specified. Whether the reference's alternative graphics build compiles, its dynamic-water look, its shader register allocation, its automatic mip generation, its doubled projection depth range, its deform render-target handling, its effect on floating-point precision, and its debris and deform look are outside the reference.
 - Options: none.
-- Recommendation: Dropped: no match runs on that build; the Species renderer is specified by its component and ADRs (DEC-059, ADR-0001).
+- Recommendation: Dropped: no match runs on that build; the Species renderer is specified by its component and ADRs (DEC-059, ADR-001).
 
 ### DEC-337 Graphics-driver, cursor and glyph-atlas behaviour
 - Status: Dropped
 - Affects: architecture/components/renderer/README.md (RND), architecture/components/ui_framework/layout_rendering_input_and_localisation.md (UI)
 - Specified behaviour: Not specified. The transparency of the cursor background on another operating system's drivers, the code-point range that one glyph-atlas page of the reference claims, and how period graphics drivers treat edge clamping and mip filtering of textures without mip levels are outside the reference.
 - Options: none.
-- Recommendation: Dropped: these are properties of the reference's drivers and font atlases. Species uses its own glyph cache (ADR-0034) and texture pipeline (ADR-0017, ADR-0018) on its own graphics back end.
+- Recommendation: Dropped: these are properties of the reference's drivers and font atlases. Species uses its own glyph cache (ADR-034) and texture pipeline (ADR-017, ADR-018) on its own graphics back end.
 
 ### DEC-338 Input-stack implementation details
 - Status: Dropped
 - Affects: architecture/components/input.md (INP)
 - Specified behaviour: Not specified. The controller dead-zone and trigger-threshold constants built into the reference, the overflow behaviour of its trigger-byte conversion, the character conversion of its binding descriptions, and whether an extra input update between its loops can swallow a button edge are outside the reference.
 - Options: none.
-- Recommendation: Dropped: these are details of the reference's input implementation. Species defines its dead zones and thresholds (ADR-0029), and DEC-096 requires that no press is ever lost.
+- Recommendation: Dropped: these are details of the reference's input implementation. Species defines its dead zones and thresholds (ADR-029), and DEC-096 requires that no press is ever lost.
 
 ### DEC-339 Audio driver, software mixer and effect-processing details
 - Status: Dropped
 - Affects: architecture/components/audio_engine.md (AEN)
 - Specified behaviour: Not specified. The driver-level panning and distance roll-off of the reference's positional voices, its software mixer and that mixer's restart, the quality parameter and the assertion of its effect processing, the start latency that depends on each driver's buffer cursors, the sample-rate mismatch of its built-in effects, the case-insensitive look-up of samples in its archives, and whether its effect processing is ever enabled for players are outside the reference.
 - Options: none.
-- Recommendation: Dropped: the normative distance and panning laws are fixed in reference/10, and the Species audio engine is specified by its component and ADRs (ADR-0022 to ADR-0027).
+- Recommendation: Dropped: the normative distance and panning laws are fixed in reference/10, and the Species audio engine is specified by its component and ADRs (ADR-022 to ADR-027).
 
 ### DEC-340 Data formats, archives and production tools
 - Status: Dropped
 - Affects: architecture/components/data_schemas/ (DAT), architecture/components/build_tooling_and_distribution.md (BLD), architecture/components/asset_pipeline_and_resources.md (AST)
 - Specified behaviour: Not specified. The version and compression method of the reference's archive tool, the provenance of its crash-report tool, what its panel-animation tool writes, the forward-axis sign convention of its mesh exporter, the behaviour of its absent tools (updater, copy helper, profile locator, upload client, data-build and release scripts), the role of a memory-log sorting tool, and the name of the linker map file are outside the reference.
 - Options: none.
-- Recommendation: Dropped: Species defines its own pack files (ADR-0058), data schemas (ADR-0061), mesh and axis conventions (ADR-0016, ADR-0019, ADR-0021), crash reporting (ADR-0065) and tools; no reference data or tool output is imported.
+- Recommendation: Dropped: Species defines its own pack files (ADR-058), data schemas (ADR-061), mesh and axis conventions (ADR-016, ADR-019, ADR-021), crash reporting (ADR-065) and tools; no reference data or tool output is imported.
 
 ### DEC-341 Runtime-library, compiler and debug-build details
 - Status: Dropped
 - Affects: architecture/components/diagnostics_test_and_performance.md (DBG), architecture/components/platform_layer.md (PLT)
 - Specified behaviour: Not specified. How the reference's runtime library handles a rethrow without an active exception inside a release assertion, which system-information lines its benchmark capture records, whether its crash-time stack walk works in optimised builds, what it prints for malformed format strings in two development windows, whether its menu-driving test bed builds, and whether its compiler zero-initialises the camera-view record are outside the reference.
 - Options: none.
-- Recommendation: Dropped: these are properties of the reference's toolchain and debug builds. Species defines crash handling (ADR-0065), its test harness and soak test (DEC-041, ADR-0069, ADR-0070) and its own data types.
+- Recommendation: Dropped: these are properties of the reference's toolchain and debug builds. Species defines crash handling (ADR-065), its test harness and soak test (DEC-041, ADR-069, ADR-070) and its own data types.
 
 ### DEC-342 Provenance of reference art and audio
 - Status: Dropped

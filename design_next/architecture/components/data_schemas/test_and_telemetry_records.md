@@ -1,6 +1,6 @@
 # Test and telemetry records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0057](../../../adr/0057-version-identity.md) · [ADR-0060](../../../adr/0060-content-identity-by-hash.md) · [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0066](../../../adr/0066-telemetry-with-consent.md) · [ADR-0070](../../../adr/0070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [platform layer](../platform_layer.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [platform layer](../platform_layer.md)
 
 This document specifies the schemas of the three record types of the soak test and of telemetry: the soak configuration, which an author writes and the soak runner reads; the soak report, which the soak runner writes as a CI artefact; and the telemetry session record, which the client forms once per session and sends only with the player's consent. The meaning of every field, the soak procedure and the telemetry rules belong to [diagnostics, test and performance](../diagnostics_test_and_performance.md) (DBG-025, DBG-026, DBG-160 to DBG-167, DBG-180 to DBG-183); this document gives the fields their keys, types, presence rules and checks.
 
@@ -8,11 +8,11 @@ This document specifies the schemas of the three record types of the soak test a
 
 **DAT-370** (MUST) This document owns the record types `test.soak_configuration`, `test.soak_report` and `telemetry.session` (README table 1-A): their keys, logical types, presence rules, ranges, their written forms and the checks that the content build, the soak runner and the client apply to them.
 
-**DAT-371** (MUST NOT) This document defines no soak procedure, no soak timing, no telemetry consent rule, no sampling or reduction rule, no transport and no collection service: those are DBG-160 to DBG-167, DBG-180 to DBG-183 and ADR-0066, and the collection endpoint, its batch envelope, storage and retention are design-phase decisions (ADR-0066). The soak report and the telemetry session record are diagnostic output, not match state, so DAT-003 of the [README](README.md) does not exclude them.
+**DAT-371** (MUST NOT) This document defines no soak procedure, no soak timing, no telemetry consent rule, no sampling or reduction rule, no transport and no collection service: those are DBG-160 to DBG-167, DBG-180 to DBG-183 and ADR-066, and the collection endpoint, its batch envelope, storage and retention are design-phase decisions (ADR-066). The soak report and the telemetry session record are diagnostic output, not match state, so DAT-003 of the [README](README.md) does not exclude them.
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (ADR-0062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types and their readers and writers are generated from the schemas (ADR-062).
 
 ```cpp
 namespace species::data::diag {
@@ -40,7 +40,7 @@ std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySess
 }  // namespace species::data::diag
 ```
 
-**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-0070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTP client (DBG-182). No simulation rule reads any of these records.
+**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTP client (DBG-182). No simulation rule reads any of these records.
 
 **Threading contract.** The soak runner writes its report from its own thread, outside every simulation tick (DBG-030). The telemetry session record is formed and serialised on the main thread at the end of a session; only the send runs on the HTTP client's thread (DBG-182).
 
@@ -69,7 +69,7 @@ Table 3.1-B Fields of a sequence item.
 | Field | Key | Type | Presence and default | Rules |
 |---|---|---|---|---|
 | map | `map` | record reference to a map, by map id | required | with `mode`, names one entry of the pass (DAT-373) |
-| mode | `mode` | mode enumerator: `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain` | required | the edition enables the mode (ADR-0056) |
+| mode | `mode` | mode enumerator: `spawn_control`, `zone_control`, `relic_run`, `siege`, `launch_race`, `flag_chain` | required | the edition enables the mode (ADR-056) |
 | forced seed | `seed` | integer, 1 to 2^64 − 1 | absence-meaningful: the authority's own seed stays in place (DBG-162, DBG-163) | the seed the authority takes before the entry runs |
 
 Table 3.1-C Fields of a test-map item.
@@ -103,12 +103,12 @@ Table 3.2-A Columns of the soak match table, in order (DBG-166).
 | previous entry index | `previous_entry_index` | count | absence-meaningful: an empty cell for the first match of the pass | the entry index of the match run just before |
 | match time | `match_ticks` | ticks | required | — |
 | first divergence | `first_divergence_tick` | ticks | absence-meaningful: an empty cell when the match did not diverge | the tick of the first divergence (DEC-206) |
-| content hash | `content_hash` | text, the map's full SHA-256 entry hash as 64 lower-case hexadecimal digits | required | the hash checked against the content manifest (ADR-0060, DBG-161) |
-| build identity | `build_identity` | text, the full identity text of BLD-061 | required | ADR-0057, BLD-062 |
+| content hash | `content_hash` | text, the map's full SHA-256 entry hash as 64 lower-case hexadecimal digits | required | the hash checked against the content manifest (ADR-060, DBG-161) |
+| build identity | `build_identity` | text, the full identity text of BLD-061 | required | ADR-057, BLD-062 |
 | crashes | `crashes` | count | required | participants of the match that crashed (DBG-167) |
 | failed checks | `failed_checks` | count | required | assertion failures of the match (DBG-025) |
-| update-time percentiles | `sim_update_us_p<n>`, one column for each n of `dbg.telemetry.percentiles` in its order | count, microseconds, rounded to nearest | required | the simulation update-time percentiles of the match (DBG-166, ADR-0070) |
-| peak population | `peak_population` | count | required | ADR-0070 |
+| update-time percentiles | `sim_update_us_p<n>`, one column for each n of `dbg.telemetry.percentiles` in its order | count, microseconds, rounded to nearest | required | the simulation update-time percentiles of the match (DBG-166, ADR-070) |
+| peak population | `peak_population` | count | required | ADR-070 |
 
 **DAT-377** (MUST) No cell of the match table holds a marker value: a value that does not exist is an empty cell, never −1 or 0. The empty first-divergence cell is the column that DBG-166 writes as −1, and the empty previous-entry cell is the first match's.
 
@@ -134,14 +134,14 @@ Table 3.2-B Fields of the pass summary.
 
 ### 3.3 The telemetry session record
 
-**DAT-379** (MUST) A telemetry session record (`telemetry.session`) is one JSON document per session with the top-level `schema` and `version` fields of README DAT-016 and exactly the fields of table 3.3-A, which are the data set of DBG-181 and the identifiers of DBG-182 (DBG-026, ADR-0066). The `schema` and `version` fields name the record's form and are not data; the `notes` field that README DAT-016 allows elsewhere is not accepted in this record type.
+**DAT-379** (MUST) A telemetry session record (`telemetry.session`) is one JSON document per session with the top-level `schema` and `version` fields of README DAT-016 and exactly the fields of table 3.3-A, which are the data set of DBG-181 and the identifiers of DBG-182 (DBG-026, ADR-066). The `schema` and `version` fields name the record's form and are not data; the `notes` field that README DAT-016 allows elsewhere is not accepted in this record type.
 
 Table 3.3-A Fields of a telemetry session record.
 
 | Field | Key | Type | Presence | Rules |
 |---|---|---|---|---|
 | installation id | `installation_id` | text, 32 lower-case hexadecimal digits | required | DAT-381 |
-| build identity | `build_identity` | text, as in table 3.2-A | required | ADR-0057, DBG-182 |
+| build identity | `build_identity` | text, as in table 3.2-A | required | ADR-057, DBG-182 |
 | frame time | `frame_time_us` | object with one field `p<n>` for each n of `dbg.telemetry.percentiles`, each a count of microseconds rounded to nearest | required | frame-time percentiles, not a frame rate (DBG-181) |
 | simulation update time | `sim_update_time_us` | object, as `frame_time_us` | absence-meaningful: the session ran no simulation tick | DBG-181 |
 | entity counts | `entity_count` | object: `peak` (count), `mean` (presentation decimal) | required | DBG-181 |
@@ -152,7 +152,7 @@ Table 3.3-A Fields of a telemetry session record.
 | memory | `memory` | object: `physical_total` (count, in units of `plt.sysinfo.memory_unit`) | required | from the memory group of PLT table 3.6-A |
 | display mode | `display` | object: `width`, `height` (counts, px), `refresh_rate_hz` (count) | required | the mode of the window's monitor (PLT-027) |
 
-**DAT-380** (MUST) The writer of a telemetry session record is generated from table 3.3-A and cannot write any other field. Before a record is queued, the schema check of README DAT-024 and DAT-026 runs on the serialised record; a field outside table 3.3-A, a missing required field or an over-long text rejects the record, which is logged and never queued (DBG-026, ADR-0066). Every text field holds at most `dat.text.max_chars` characters, and no field holds a player name, a chat text, an account id, an IP address, a Windows user name or a path (DBG-181, PLT-035).
+**DAT-380** (MUST) The writer of a telemetry session record is generated from table 3.3-A and cannot write any other field. Before a record is queued, the schema check of README DAT-024 and DAT-026 runs on the serialised record; a field outside table 3.3-A, a missing required field or an over-long text rejects the record, which is logged and never queued (DBG-026, ADR-066). Every text field holds at most `dat.text.max_chars` characters, and no field holds a player name, a chat text, an account id, an IP address, a Windows user name or a path (DBG-181, PLT-035).
 
 **DAT-381** (MUST) The installation id is 128 random bits from the operating system's cryptographic generator, written as 32 lower-case hexadecimal digits, and stored as the setting `telemetry.installation_id` ([config_input_and_strings.md](config_input_and_strings.md) table 3.1-A). It is created when consent is first given, replaced when the player resets it, and is not the run id of PLT-036 (DBG-182).
 
@@ -219,11 +219,11 @@ Caption: Figure 4-A, from the soak configuration to the soak report (DAT-372 to 
 | DEC-801 | Resolved | unique configuration ids (table 3.1-A) |
 | DEC-802 | Open | test maps and configurations outside player editions (DAT-372) |
 | DEC-804 | Resolved | every entry runs once; maps by map id and hash (DAT-373) |
-| ADR-0057, ADR-0060, ADR-0066, ADR-0070 | Accepted | build identity, content hash, the telemetry data set and the soak artefacts |
+| ADR-057, ADR-060, ADR-066, ADR-070 | Accepted | build identity, content hash, the telemetry data set and the soak artefacts |
 
 ### 8.2 Design-phase inputs
 
-1. **Telemetry collection service** (ADR-0066): the endpoint, the batch envelope that carries the records of table 3.3-A, storage and retention.
+1. **Telemetry collection service** (ADR-066): the endpoint, the batch envelope that carries the records of table 3.3-A, storage and retention.
 2. **Forced seed 0**: once the soak entry of DBG Listing 2.1-A holds an optional seed, the range of `seed` in table 3.1-B widens to include 0 (DAT-374).
 
 ## 9 Tuning table

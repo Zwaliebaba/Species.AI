@@ -12,7 +12,7 @@ The camera is local to each participant, is never sent, and is never read by the
 
 ### 2.1 Model and conventions
 
-**R-CTRL-450** (MUST) Each participant has one match camera (`MatchCamera`). The world is right-handed with +Y up and sea level at y = 0 (ADR-0016); distances are in wu.
+**R-CTRL-450** (MUST) Each participant has one match camera (`MatchCamera`). The world is right-handed with +Y up and sea level at y = 0 (ADR-016); distances are in wu.
 
 **R-CTRL-451** (MUST) The camera holds a unit front vector and an up vector, re-orthonormalised every frame. Its **left vector** is up × front, which points to the screen's left; its horizontal left vector is that vector projected onto the ground plane and normalised. The camera's **control vector** is the left vector that the stick conversion of the team command state uses (R-SIM-440, R-CTRL-487).
 
@@ -255,7 +255,7 @@ This file cites `ref.sim.frame.delta_clamp` ([Tick timing](../12_simulation_mode
 
 - **Reference documents:** [actions and bindings](actions_and_bindings.md) (camera actions, the team command state); [selection and Power slots](selection_and_power_slots.md) (Power selection switch, Strike team placement); [cursor and markers](cursor_and_markers.md); [Tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (presentation clock, extrapolation); [Match lifecycle](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (match entry, bounds); [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (start positions); [Randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) (presentation generator); [Maps](../08_maps_and_level_design/README.md) (camera views per map); [Tutorial and help](../11_tutorial_and_help.md) (hints); [options and hooks](../09_front_end_and_match_flow/options_localisation_and_hooks.md).
 - **Engine components:** [camera and sequences](../../architecture/components/camera_and_sequences.md) (views, scripted moves, picking and projection services); [frame view](../../architecture/components/renderer/view_lighting_and_fog.md) (projection, planes, field-of-view clamp); [input](../../architecture/components/input.md).
-- **ADRs:** ADR-0016 (view, projection and depth conventions), ADR-0036 (presentation clock), ADR-0074 (platform clock).
+- **ADRs:** ADR-016 (view, projection and depth conventions), ADR-036 (presentation clock), ADR-074 (platform clock).
 - **Assets:** `help.hint.camera_controls` (the camera-controls hint shown during the grace period, [Tutorial and help](../11_tutorial_and_help.md)).
 
 ## 8 Open decisions

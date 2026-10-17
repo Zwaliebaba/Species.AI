@@ -50,15 +50,15 @@ item 91; C-VFX 6,"accessibility defaults for shake and flashes (VFX-232, VFX-235
 item 91; C-VFX 7,shard edge line width (VFX-229),merged,DEC-962,particles_shatter_and_screen_effects.md VFX-229,VFX-229 cites DEC-962
 item 91; C-VFX 8,eaten-orb orbit offset (VFX-122),merged,DEC-962,explainers_sprites_and_procedural_animation.md VFX-122,VFX-122 cites DEC-962
 item 91; C-VFX 9,"reference quirks kept as the default look (Brood Drifter shared tail velocity, flag relaxation factor, frame-quantised explainer loop)",new,DEC-963,explainers_sprites_and_procedural_animation.md VFX-139; README VFX-025 input 7,VFX-139 cites DEC-963; the Brood Drifter quirk is DEC-856 item 4 (X-DEC-P4a) and VFX-138 cites DEC-856; the explainer loop is DEC-750
-item 91; C-VFX 10,particle sub-step limit of 30 per frame (VFX-209),merged,DEC-106,particles_shatter_and_screen_effects.md VFX-209,none: VFX-209 cites ADR-0010; DEC-960 records the sub-step cap under DEC-106
-item 91; C-VFX ADR notes,"ADR-0036 three readings, ADR-0010 one draw per explosion, ADR-0064 Proposed",none,,,ADR wording for X-ADR-P4; the three readings are recorded in DEC-955 item 1
+item 91; C-VFX 10,particle sub-step limit of 30 per frame (VFX-209),merged,DEC-106,particles_shatter_and_screen_effects.md VFX-209,none: VFX-209 cites ADR-010; DEC-960 records the sub-step cap under DEC-106
+item 91; C-VFX ADR notes,"ADR-036 three readings, ADR-010 one draw per explosion, ADR-064 Proposed",none,,,ADR wording for X-ADR-P4; the three readings are recorded in DEC-955 item 1
 C-AEN 1,next-note re-trigger timing (AEN-178),new,DEC-965,audio_engine.md AEN-178,AEN-178 cites DEC-965
 C-AEN 2,audibility during an attack (AEN-140),merged,DEC-965,audio_engine.md AEN-140,AEN-140 cites DEC-965
 C-AEN 3,shared note layers merge and play no next note (AEN-133),merged,DEC-965,audio_engine.md AEN-133,AEN-133 cites DEC-965
 C-AEN 4,audio during pause and suspension (AEN-138),merged,DEC-965,audio_engine.md AEN-138,AEN-138 cites DEC-965
 item 89; C-AEN DSP defaults,an omitted DSP parameter takes its declared default (AEN-071),amend,DEC-567,audio_engine.md AEN-071,none: X-DEC-P4a already amended DEC-567
 item 92; C-UI-a 1,keyboard bindings of the menu actions (UI-204),new,DEC-950,layout_rendering_input_and_localisation.md UI-204; input.md INP-077,UI-204 and INP-077 cite DEC-950
-C-UI-a 2,scroll-arrow repeat timing (UI-077),new,DEC-951,core_and_widgets.md UI-077,"UI-077: ""of presentation time"" becomes ""of real time (ADR-0074)""; cites DEC-951"
+C-UI-a 2,scroll-arrow repeat timing (UI-077),new,DEC-951,core_and_widgets.md UI-077,"UI-077: ""of presentation time"" becomes ""of real time (ADR-074)""; cites DEC-951"
 C-UI-a 3,float increment curve normalised at 60 updates per second (UI-072),merged,DEC-951,core_and_widgets.md UI-072,UI-072 cites DEC-951
 C-UI-a 4,Caps Lock in text fields (UI-066),new,DEC-952,core_and_widgets.md UI-066,UI-066 cites DEC-952
 item 93; C-UI-a 5,percent sign is an ordinary character in text fields (UI-066),amend,DEC-102,core_and_widgets.md UI-066,"none: X-DEC-P4a already amended DEC-102 (""a percent sign is an ordinary character of message text and text fields"")"
@@ -66,13 +66,13 @@ C-UI-a 6,initial value of the drop-down counter (UI-082),merged,DEC-952,core_and
 C-UI-a 7,Select of a value that no option has (UI-083),merged,DEC-952,core_and_widgets.md UI-083,UI-083 cites DEC-952
 C-UI-a 8,3-D text centring by a product (UI-194 item 3),merged,DEC-952,layout_rendering_input_and_localisation.md UI-194,UI-194 cites DEC-952
 C-UI-a 9,upward rotated text has no outline (UI-194 item 2),merged,DEC-952,layout_rendering_input_and_localisation.md UI-194,UI-194 cites DEC-952
-item 94; C-UI-a ADR notes,"ADR-0033 tool windows, ADR-0064 text size interpolation, ADR-0031 ink equivalence, UI budget values",none,,,ADR wording for X-ADR-P4
+item 94; C-UI-a ADR notes,"ADR-033 tool windows, ADR-064 text size interpolation, ADR-031 ink equivalence, UI budget values",none,,,ADR wording for X-ADR-P4
 item 99; C-UI-b 1,"scrolling-text overflow quirk (UI-401, UI-404)",merged,DEC-952,pages_and_screen_recipes.md UI-404,UI-404 cites DEC-952
 item 99; C-UI-b 2,Back on an open drop-down list (UI-383),merged,DEC-102,pages_and_screen_recipes.md UI-383,none: UI-383 already cites DEC-102 (defect suite DT-19); DEC-102 Affects via hand-off H3
 item 99; C-UI-b 3,"session-list edge scrolling (UI-384, UI-420)",merged,DEC-102,pages_and_screen_recipes.md UI-384,UI-384 cites DEC-102 (defect suite DT-20)
 "item 98, 99; C-UI-b 4","colour picker availability, one rule for drawing and pressing (UI-416, F18)",merged,DEC-102,pages_and_screen_recipes.md UI-416; reference/09 screen_flow_and_match_setup.md R-META-080,"X-DEC-P4a already added the colour-row rule to DEC-102; R-META-080: drop ""counting the local slot when the row is pressed""; only used slots other than the local one count, for drawing and pressing alike (DEC-102)"
 C-UI-b cross-document 6,add pages_and_screen_recipes.md to the Affects of DEC-102 and DEC-801,amend,DEC-801,,DEC-801 Affects amended here (UI-372); DEC-102 Affects via hand-off H3
-item 100,menu repeat clock: presentation time (UI-216) vs real time (input.md),merged,DEC-951,layout_rendering_input_and_localisation.md UI-216; input.md INP-133,"UI-216: ""measured in presentation time"" becomes ""measured in real time (ADR-0074)"" and cites DEC-951; UI-203 cites input.md table 3.6-B for the bindings (routed by X-ROUTE-b)"
+item 100,menu repeat clock: presentation time (UI-216) vs real time (input.md),merged,DEC-951,layout_rendering_input_and_localisation.md UI-216; input.md INP-133,"UI-216: ""measured in presentation time"" becomes ""measured in real time (ADR-074)"" and cites DEC-951; UI-203 cites input.md table 3.6-B for the bindings (routed by X-ROUTE-b)"
 item 97; C-INP 1,gamepad assignment by the first press (INP-146 to INP-149),new,DEC-953,input.md INP-146,INP-146 cites DEC-953; DEC-554 item 5 via hand-off H6
 item 97; C-INP 2,pointer speed of the aiming stick scales with the frame rate (INP-157),new,DEC-954,input.md INP-157,INP-157 cites DEC-954
 item 97; C-INP 3,glyphs of the camera height actions (INP-082),merged,DEC-954,input.md INP-082,INP-082 cites DEC-954

@@ -78,7 +78,7 @@ orig_file,anchor,start_line,end_line,bytes,action,target_file,target_section,own
 06_player_control_and_input.md,114-controlbindings--storage-and-acceptance,1507,1517,1850,KEEP,architecture/components/input.md,§3 Data model,C-INP,binding storage and acceptance
 06_player_control_and_input.md,115-inputmanager-api-semantics,1518,1535,1756,KEEP,architecture/components/input.md,§2 Interfaces,C-INP,input manager API semantics
 06_player_control_and_input.md,116-driver-catalogue,1536,1649,16347,KEEP,architecture/components/input.md,§4 Behaviour — drivers,C-INP,"driver catalogue: composite operators and leaf drivers (also TO-ADR, same range); attract-mode idle use is DL-DEAD"
-06_player_control_and_input.md,116-driver-catalogue,1536,1649,16347,TO-ADR,adr/README.md,input ADR,X-ADR,keyboard/mouse and gamepad back ends map to the Species input API (GameInput); legacy driver mechanism dropped (DL-LEGACY-TECH)
+06_player_control_and_input.md,116-driver-catalogue,1536,1649,16347,TO-ADR,ADR/README.md,input ADR,X-ADR,keyboard/mouse and gamepad back ends map to the Species input API (GameInput); legacy driver mechanism dropped (DL-LEGACY-TECH)
 06_player_control_and_input.md,117-filters-blegacy,1650,1653,1020,DROP-LEGACY,,,,DL-DEAD: input filters compiled but never registered (unreachable)
 06_player_control_and_input.md,118-helper-abstractions,1654,1661,1490,KEEP,architecture/components/input.md,§2 Interfaces,C-INP,helper abstractions
 06_player_control_and_input.md,119-event-handling,1662,1670,1496,KEEP,architecture/components/input.md,§4 Behaviour — events,C-INP,event handling
@@ -210,7 +210,7 @@ orig_file,anchor,start_line,end_line,bytes,action,target_file,target_section,own
 08_levels_and_level_design.md,73-datalevelslevel_enumtxt-achievements-and-pdlc-remnants,1421,1422,369,DROP-LEGACY,,,,DL-DEMO: downloadable-content entitlement remnants
 08_levels_and_level_design.md,8-the-map-editor-beditor,1423,2000,58552,KEEP-HOOKS,reference/08_maps_and_level_design.md,§ Map-editor hooks,G08,"KH-EDITOR: editor entry/exit, editing modes and windows, save round trip, custom-map container, editor defects as input for the fresh design"
 08_levels_and_level_design.md,9-level-design-guide-for-the-new-game,2001,2016,3285,TO-DEC,decisions/decision_register.md,DEC entries,X-DEC,"level-design recommendations: content-hash map identity (DD-NET), start-position records, typed mode objects, baked terrain plus hash (DD-TERRAIN-RUNTIME), typed per-map overrides, lossless editor round trip"
-08_levels_and_level_design.md,9-level-design-guide-for-the-new-game,2001,2016,3285,TO-ADR,adr/README.md,data schema ADR,X-ADR,"structured, versioned single-file map format; engine-generated thumbnails"
+08_levels_and_level_design.md,9-level-design-guide-for-the-new-game,2001,2016,3285,TO-ADR,ADR/README.md,data schema ADR,X-ADR,"structured, versioned single-file map format; engine-generated thumbnails"
 08_levels_and_level_design.md,open-questions-and-unknowns,2017,2034,2319,DROP-PROVENANCE,,,,"DP-CLOSING: open questions and unknowns (also routed TO-DEC, same range)"
 08_levels_and_level_design.md,open-questions-and-unknowns,2017,2034,2319,TO-DEC,decisions/decision_register.md,DEC entries,X-DEC,open questions on maps and level data that concern in-scope content
 08_levels_and_level_design.md,docs-vs-code-discrepancies,2035,2047,1807,DROP-PROVENANCE,,,,DP-CLOSING: docs-vs-code discrepancies

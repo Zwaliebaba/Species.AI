@@ -48,7 +48,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance.md` |
 
-Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNNN` (`adr/`).
+Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNN` (`ADR/ADR-NNN-<slug>.md`, AGENTS.md §6).
 
 ## 4 Tuning tables
 
@@ -485,6 +485,6 @@ Soft-flagged words that are allowed in a specific context, with the justificatio
 | Term | Where allowed | Justification | Paths |
 |---|---|---|---|
 | lockstep | `decisions/deferred/*.md` and decision entries that record what the design phase must decide | names the reference networking model so that the design phase can decide against it; never used as a Species requirement | `decisions/deferred/*.md` `CONVENTIONS.md` |
-| Linux | ADRs, decision entries and the "Design-phase inputs" of component specifications, about dedicated-server or CI hosting | community hosts mostly run Linux (vision brief §6 item 10); the client is Windows-only | `adr/*.md` `decisions/deferred/*.md` `architecture/components/*.md` `CONVENTIONS.md` |
-| immediate-mode | developer-tool UI only (`adr/`, `architecture/components/diagnostics_test_and_performance.md`) | the standard name of the debug-overlay UI pattern; the game UI is retained | `adr/*.md` `architecture/components/diagnostics_test_and_performance.md` `CONVENTIONS.md` |
-| retail | vendor release-channel names in `adr/README.md` §"Technology baseline" (for example a retail SDK or Shader Model release) | quotes the vendor's own channel name, with its source URL | `adr/README.md` `CONVENTIONS.md` |
+| Linux | ADRs, decision entries and the "Design-phase inputs" of component specifications, about dedicated-server or CI hosting | community hosts mostly run Linux (vision brief §6 item 10); the client is Windows-only | `ADR/*.md` `decisions/deferred/*.md` `architecture/components/*.md` `CONVENTIONS.md` |
+| immediate-mode | developer-tool UI only (`ADR/`, `architecture/components/diagnostics_test_and_performance.md`) | the standard name of the debug-overlay UI pattern; the game UI is retained | `ADR/*.md` `architecture/components/diagnostics_test_and_performance.md` `CONVENTIONS.md` |
+| retail | vendor release-channel names in `ADR/README.md` §"Technology baseline" (for example a retail SDK or Shader Model release) | quotes the vendor's own channel name, with its source URL | `ADR/README.md` `CONVENTIONS.md` |

@@ -45,7 +45,7 @@ A 3-vector built from draws takes its x draw first, then y, then z.
 - that generator is shared by audio, terrain colours, tree geometry and an online-service thread, and it is not safe for concurrent use;
 - a second, per-thread runtime generator, never seeded in a match, serves tree leaf particles, Sickness particles, the Allegiance Scrambler's particles and the hint overlay's choice of tab.
 
-**R-SIM-608** (MUST) Every presentation consumer draws from its own presentation generator instance, and no generator instance is shared between threads: one presentation generator per thread at least, with the audio engine owning its own instance (ADR-0022). No presentation generator is reachable from simulation code (DEC-013, DEC-224, DEC-242).
+**R-SIM-608** (MUST) Every presentation consumer draws from its own presentation generator instance, and no generator instance is shared between threads: one presentation generator per thread at least, with the audio engine owning its own instance (ADR-022). No presentation generator is reachable from simulation code (DEC-013, DEC-224, DEC-242).
 
 **R-SIM-609** (MUST) Each terrain tile owns a private generator, re-seeded from the tile's seed in the map definition at the start of every generation of that tile. Its output, the height field, is simulation static data, independent of call history and of every other consumer. The terrain algorithm and its generator are specified by the [terrain component](../../architecture/components/terrain.md); the terrain runtime model is DEC-246.
 
@@ -496,7 +496,7 @@ Keys cited here and defined elsewhere: `ref.sim.match.presentation_seed` and `re
 
 - Reference documents: [01 Tick timing and main loop](01_tick_timing_and_main_loop.md); [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md); [03 Entity model and identity](03_entity_model_and_identity.md); [04 Containers and update order](04_containers_and_update_order.md); [05 Space, routing and physics](05_space_routing_and_physics.md); [06 Teams and player commands](06_teams_and_player_commands.md); the owners of the draws in Table 1: [reference/01](../01_skirmish_rules_and_modes/README.md), [reference/02](../02_units/README.md), [reference/03](../03_buildings_and_world_objects/README.md), [reference/04](../04_supply_crates_powers_and_weapons/README.md), [reference/07](../07_bots/README.md), [reference/08](../08_maps_and_level_design/README.md); [reference/09](../09_front_end_and_match_flow/README.md) (seasonal date rule, achievements and statistics hooks); [reference/11](../11_tutorial_and_help.md) (tutorial events).
 - Engine components: [terrain](../../architecture/components/terrain.md) (private tile generators); [renderer](../../architecture/components/renderer/README.md) (read-only presentation); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (presentation draws, effect events); [audio engine](../../architecture/components/audio_engine.md) (own presentation generator); [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (per-tick hashes, draw tracking, determinism corpus).
-- ADRs: [ADR-0022](../../adr/0022-audio-engine-on-xaudio2.md) (the audio engine's own generator); [ADR-0036](../../adr/0036-effect-events-and-presentation-clock.md) (effect events).
+- ADRs: [ADR-022](../../ADR/ADR-022-audio-engine-on-xaudio2.md) (the audio engine's own generator); [ADR-036](../../ADR/ADR-036-effect-events-and-presentation-clock.md) (effect events).
 - Assets: none.
 
 ## 8 Open decisions

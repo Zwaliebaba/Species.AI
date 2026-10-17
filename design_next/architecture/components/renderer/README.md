@@ -1,6 +1,6 @@
 # Renderer
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-0001](../../../adr/0001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-0002](../../../adr/0002-minimum-gpu-capability.md) · [ADR-0003](../../../adr/0003-shader-language-compiler-and-material-shaders.md) · [ADR-0004](../../../adr/0004-frame-graph-from-the-ordered-pass-table.md) · [ADR-0005](../../../adr/0005-pipeline-state-catalogue.md) · [ADR-0006](../../../adr/0006-root-signature-and-bindless-resource-access.md) · [ADR-0007](../../../adr/0007-barrier-model.md) · [ADR-0008](../../../adr/0008-gpu-memory-uploads-and-device-removal.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0010](../../../adr/0010-gpu-particles-and-shatter-debris.md) · [ADR-0011](../../../adr/0011-world-surface-rendering.md) · [ADR-0012](../../../adr/0012-swap-chain-presentation-and-frame-pacing.md) · [ADR-0013](../../../adr/0013-working-colour-space-and-blending.md) · [ADR-0014](../../../adr/0014-hdr-output.md) · [ADR-0015](../../../adr/0015-scene-anti-aliasing.md) · [ADR-0016](../../../adr/0016-view-projection-and-depth-conventions.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0068](../../../adr/0068-profiling-and-gpu-timing.md) · [ADR-0075](../../../adr/0075-application-window-and-dpi-awareness.md) · [ADR-0076](../../../adr/0076-screenshot-encoding.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-001](../../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-002](../../../ADR/ADR-002-minimum-gpu-capability.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-004](../../../ADR/ADR-004-frame-graph-from-the-ordered-pass-table.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-006](../../../ADR/ADR-006-root-signature-and-bindless-resource-access.md) · [ADR-007](../../../ADR/ADR-007-barrier-model.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md)
 
 This folder specifies the Species renderer: the Direct3D 12 component that turns the presentation state of a match, the front end and the loading view into frames. It states the reference look and behaviour (pass order, blend and depth states, fog, lighting, sort orders, shadow decals) precisely, in the terms of the engine ADRs listed above.
 
@@ -37,7 +37,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 ## 1 Responsibilities and boundaries
 
-**RND-001** (MUST) The renderer owns the Direct3D 12 device, the swap chain, the two global root signatures, the pipeline-state catalogue, the frame graph and every GPU resource of the client, on the Agility SDK runtime of ADR-0001 and the minimum capability of ADR-0002. Every frame is assembled by the frame graph from the ordered pass table of [frame_graph_and_passes.md](frame_graph_and_passes.md) (ADR-0004), and every draw names exactly one pipeline-state catalogue entry (ADR-0005).
+**RND-001** (MUST) The renderer owns the Direct3D 12 device, the swap chain, the two global root signatures, the pipeline-state catalogue, the frame graph and every GPU resource of the client, on the Agility SDK runtime of ADR-001 and the minimum capability of ADR-002. Every frame is assembled by the frame graph from the ordered pass table of [frame_graph_and_passes.md](frame_graph_and_passes.md) (ADR-004), and every draw names exactly one pipeline-state catalogue entry (ADR-005).
 
 **RND-002** (MUST) The renderer MUST NOT write simulation state. It reads an immutable presentation snapshot of the simulation and the extrapolation time of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` (R-SIM-560 to R-SIM-564), and never stores an extrapolated value back (see DEC-007). How the snapshot is produced, and whether Species extrapolates or interpolates between two snapshots, is decided by the design phase (see DEC-222, R-SIM-565); until then the renderer extrapolates as R-SIM-562 specifies.
 
@@ -56,12 +56,12 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 | simulation (`reference/12_simulation_model/`) | the presentation snapshot, the extrapolation time, the last processed update slice, the number of the last command frame taken | write any field; draw from the simulation generator |
 | terrain component ([terrain.md](../terrain.md)) | the height field, the outside height, the cell size, the per-triangle colour-ramp look-up, the sea shore mask, the depth map, the flat-water tile mask, the coastline wave formulae | generate or modify terrain |
 | camera component ([camera_and_sequences.md](../camera_and_sequences.md)) | position, front and up vectors and the vertical field of view of the frame | move the camera |
-| animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-0010, ADR-0036) | emit particles on its own from simulation state |
-| UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-0031, ADR-0034) | lay out widgets |
+| animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-010, ADR-036) | emit particles on its own from simulation state |
+| UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-031, ADR-034) | lay out widgets |
 | asset pipeline ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)) | cooked meshes and textures, each texture keyed by (asset id, processing variant) (see DEC-098) | change another requester's texture processing |
-| platform layer ([platform_layer.md](../platform_layer.md)) | the window, its client-area size, resize, DPI and focus events, and the platform clock (ADR-0074, ADR-0075) | create or style the window |
+| platform layer ([platform_layer.md](../platform_layer.md)) | the window, its client-area size, resize, DPI and focus events, and the platform clock (ADR-074, ADR-075) | create or style the window |
 
-**RND-008** (MUST) The renderer is a client-only module: the dedicated-server build links no renderer code and no Direct3D library (ADR-0001).
+**RND-008** (MUST) The renderer is a client-only module: the dedicated-server build links no renderer code and no Direct3D library (ADR-001).
 
 ## 2 Interfaces
 
@@ -78,9 +78,9 @@ enum class PresentMode : std::uint8_t { VerticalSync, Uncapped };
 struct RenderConfig {                       // a change triggers Reconfigure (RND-030)
   std::uint32_t windowWidth = 0, windowHeight = 0;   // client area from the platform layer
   std::uint32_t renderWidth = 0, renderHeight = 0;   // scene-target size (RND-025)
-  std::uint32_t sampleCount = 1;                      // set from the anti-aliasing setting, ADR-0015
-  bool hdr = false;                                   // ADR-0014
-  bool lowLatency = false;                            // ADR-0012
+  std::uint32_t sampleCount = 1;                      // set from the anti-aliasing setting, ADR-015
+  bool hdr = false;                                   // ADR-014
+  bool lowLatency = false;                            // ADR-012
   PresentMode presentMode = PresentMode::VerticalSync;
   std::optional<float> frameRateCap;
   bool invertedStyle = false;                         // DEC-040, options_and_budgets.md
@@ -131,11 +131,11 @@ public:
 }  // namespace species::render
 ```
 
-**Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-0075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-0008), so that dependants can re-register GPU-side data.
+**Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), so that dependants can re-register GPU-side data.
 
 **Data contracts.** The presentation snapshot (`PresentationSnapshot`) is defined with the simulation–presentation boundary of DEC-222. The renderer needs from it, per drawn object: position, velocity, orientation (front and up), the angular velocity and velocity of every animated mesh node, team, kind and the kind-specific state named in the sub-renderer sections; per sliced pool: which slots the current tick has already advanced (R-SIM-562).
 
-**Threading contract.** Every public call is made from the frame thread. Within `RenderFrame`, passes or groups of adjacent passes may record their own command lists in parallel (ADR-0004); which threads record them follows the threading model of the design phase (see DEC-224). No loader thread ever blocks on the frame thread: uploads go through the copy queue (ADR-0008).
+**Threading contract.** Every public call is made from the frame thread. Within `RenderFrame`, passes or groups of adjacent passes may record their own command lists in parallel (ADR-004); which threads record them follows the threading model of the design phase (see DEC-224). No loader thread ever blocks on the frame thread: uploads go through the copy queue (ADR-008).
 
 ## 3 Data model
 
@@ -167,9 +167,9 @@ public:
 
 ### 3.3 Per-frame and per-draw constants
 
-**RND-014** (MUST) The per-frame constant buffer, bound once per command list through the root constant-buffer view of ADR-0006 and declared once in the shared C++ and HLSL header (ADR-0003), holds: the view, projection and view-projection matrices (row-major, ADR-0016); the camera position and the camera front vector; the fog colour and the fog start and end of the frame (RND-222); the two directional lights, each a world-space direction and a colour (RND-226, RND-227); the real clock, the presentation frame time and the smooth presentation time of the frame; the extrapolation time; and the render-target size in pixels.
+**RND-014** (MUST) The per-frame constant buffer, bound once per command list through the root constant-buffer view of ADR-006 and declared once in the shared C++ and HLSL header (ADR-003), holds: the view, projection and view-projection matrices (row-major, ADR-016); the camera position and the camera front vector; the fog colour and the fog start and end of the frame (RND-222); the two directional lights, each a world-space direction and a colour (RND-226, RND-227); the real clock, the presentation frame time and the smooth presentation time of the frame; the extrapolation time; and the render-target size in pixels.
 
-**RND-015** (MUST) Per-draw data travels in root constants (ADR-0006): a world transform (`Mat3x4`), a tint colour, a team palette index (ADR-0020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms, colours and palette indices in a structured buffer and pass only its index (ADR-0009).
+**RND-015** (MUST) Per-draw data travels in root constants (ADR-006): a world transform (`Mat3x4`), a tint colour, a team palette index (ADR-020) and the heap indices of the draw's instance buffer, textures and material parameters. Instanced draws keep per-instance transforms, colours and palette indices in a structured buffer and pass only its index (ADR-009).
 
 **RND-016** (MUST) The team palette is one constant buffer with one entry per colour id of the colour table of `reference/12_simulation_model/06_teams_and_player_commands.md` (R-SIM-415, keys `ref.sim.team_colour.*`), written once per match: ids 0 to `ref.sim.team.player_colour_count` − 1 are the player colours (green, red, yellow, blue, orange, purple, cyan and pink, in that order), id `ref.sim.team.rogue_colour_id` is the Rogue faction and id `ref.sim.team.visitor_colour_id` the Visitor faction.
 
@@ -179,11 +179,11 @@ public:
 
 | Resource | Lifetime | Created from |
 |---|---|---|
-| static mesh, terrain-chunk and wave-mesh buffers | the match (terrain, sea) or the asset's residency (meshes) | the asset system and the terrain component, uploaded through the copy queue (ADR-0008) |
+| static mesh, terrain-chunk and wave-mesh buffers | the match (terrain, sea) or the asset's residency (meshes) | the asset system and the terrain component, uploaded through the copy queue (ADR-008) |
 | tree geometry buffers | the match | generated at map load from each tree's parameters (RND-180) |
 | textures | the asset's residency | the asset cache, one entry per (asset id, processing variant) (see DEC-098) |
-| per-frame constants, instance buffers, dynamic vertex data | one frame in flight | the upload ring (ADR-0008) |
-| scene colour and depth targets | the render configuration | the frame graph (ADR-0004), sized by the render size and sample count (ADR-0015) |
+| per-frame constants, instance buffers, dynamic vertex data | one frame in flight | the upload ring (ADR-008) |
+| scene colour and depth targets | the render configuration | the frame graph (ADR-004), sized by the render size and sample count (ADR-015) |
 | captured-frame target | from the screen-transition capture to the end of the transition | a copy of the final image (RND-095) |
 | screenshot read-back buffer | one frame in flight | the frame graph's read-back pass (RND-112) |
 
@@ -191,7 +191,7 @@ public:
 
 ### 4.1 Initialisation
 
-**RND-020** (MUST) Start-up runs in this order: the capability checks and device creation of ADR-0002 (an adapter that fails a check is skipped; if none passes, the client shows a localised message `ui.error.gpu_unsupported` naming the missing capability and the adapter, logs it and exits without a swap chain); the swap chain of ADR-0012 at the window's client-area size; the two root signatures (ADR-0006); every pipeline-state catalogue entry, from the pipeline library where it is valid (ADR-0005); the frame-graph compilation (ADR-0004); then the first frame.
+**RND-020** (MUST) Start-up runs in this order: the capability checks and device creation of ADR-002 (an adapter that fails a check is skipped; if none passes, the client shows a localised message `ui.error.gpu_unsupported` naming the missing capability and the adapter, logs it and exits without a swap chain); the swap chain of ADR-012 at the window's client-area size; the two root signatures (ADR-006); every pipeline-state catalogue entry, from the pipeline library where it is valid (ADR-005); the frame-graph compilation (ADR-004); then the first frame.
 
 **RND-021** (MUST) The display preferences ([options_and_budgets.md](options_and_budgets.md), [platform_layer.md](../platform_layer.md)) are read before the swap chain is created. When the preferred render width and height are both 0 (the first run), the renderer uses the current desktop resolution of the window's monitor and writes it back to the preferences.
 
@@ -201,43 +201,43 @@ public:
 
 ### 4.2 Resolution and aspect handling
 
-**RND-025** (MUST) The swap chain always matches the window's client area, and the display mode is never changed (ADR-0012, ADR-0075). The preferred render size sets the size of the scene colour and depth targets; when it is smaller than the client area, the scene is scaled to the client area in the final pass, and the UI is always drawn at the client area's native resolution.
+**RND-025** (MUST) The swap chain always matches the window's client area, and the display mode is never changed (ADR-012, ADR-075). The preferred render size sets the size of the scene colour and depth targets; when it is smaller than the client area, the scene is scaled to the client area in the final pass, and the UI is always drawn at the client area's native resolution.
 
 **RND-026** (MUST) The offered render sizes are the display-mode sizes of the window's monitor that are at least `rnd.init.min_render_width` (640) wide and `rnd.init.min_render_height` (480) high and not larger than the monitor, de-duplicated by size.
 
-**RND-027** (MUST) The 3-D aspect ratio is always the render width divided by the render height. The vertical field of view is fixed by the camera and the horizontal field of view widens with the aspect ratio (Hor+, ADR-0016); there is no letter-boxing and no fixed virtual resolution.
+**RND-027** (MUST) The 3-D aspect ratio is always the render width divided by the render height. The vertical field of view is fixed by the camera and the horizontal field of view widens with the aspect ratio (Hor+, ADR-016); there is no letter-boxing and no fixed virtual resolution.
 
 **RND-028** (MUST) Screen-space layouts scale as follows:
 
 | Element | Rule |
 |---|---|
-| UI windows and text | pixel-unit orthographic space over the viewport; menu layouts scale by the UI framework's own size rules ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-0033) |
-| Power slots panel and match HUD | an orthographic space `rnd.hud.ortho_height` (600) units high whose width is 600 × the aspect ratio, independent of resolution (ADR-0016) |
+| UI windows and text | pixel-unit orthographic space over the viewport; menu layouts scale by the UI framework's own size rules ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-033) |
+| Power slots panel and match HUD | an orthographic space `rnd.hud.ortho_height` (600) units high whose width is 600 × the aspect ratio, independent of resolution (ADR-016) |
 | match messages (pass 13) | scale = render width ÷ `rnd.hud.message.reference_width` (1280) |
 | chat log (pass 21) | scale = `rnd.hud.chat.tiny_scale` (0.75) when the render width is at most `rnd.hud.chat.tiny_width` (640) px; render width ÷ `rnd.hud.chat.reference_width` (1024) when it is above 640 px and at most `rnd.hud.chat.small_width` (800) px; otherwise the match-message scale |
 | world markers and cursors | sizes from the render height and in physical pixels, as [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) specifies |
 
-**RND-029** (MUST) In windowed mode the window is centred on its monitor when first created; a restored window larger than the monitor's work area is clamped to it (ADR-0075).
+**RND-029** (MUST) In windowed mode the window is centred on its monitor when first created; a restored window larger than the monitor's work area is clamped to it (ADR-075).
 
 ### 4.3 Reconfiguration
 
-**RND-030** (MUST) A change of window size, render size, sample count or HDR output reconfigures the renderer: it waits for the GPU, releases its back-buffer references, resizes the swap chain (ADR-0012), creates the pipeline-state entries whose target formats or sample counts changed behind a loading indicator (ADR-0005), and recompiles the frame graph (ADR-0004). The device, the asset resources, the terrain and sea buffers, the tree geometry and the remaining catalogue entries survive.
+**RND-030** (MUST) A change of window size, render size, sample count or HDR output reconfigures the renderer: it waits for the GPU, releases its back-buffer references, resizes the swap chain (ADR-012), creates the pipeline-state entries whose target formats or sample counts changed behind a loading indicator (ADR-005), and recompiles the frame graph (ADR-004). The device, the asset resources, the terrain and sea buffers, the tree geometry and the remaining catalogue entries survive.
 
 **RND-031** (MUST) A change of the inverted style (see DEC-040) or of a detail option ([options_and_budgets.md](options_and_budgets.md)) rebuilds no terrain, sea or tree geometry: each is a choice of catalogue entry, shader permutation or per-pass constant, and takes effect on the next frame.
 
-**RND-032** (MUST) While the window is minimised, or a present reports the window occluded, the renderer stops rendering and polls at a low rate until the window is visible again; the simulation is unaffected (ADR-0012).
+**RND-032** (MUST) While the window is minimised, or a present reports the window occluded, the renderer stops rendering and polls at a low rate until the window is visible again; the simulation is unaffected (ADR-012).
 
 ### 4.4 Device removal
 
-**RND-034** (MUST) Device removal or reset, however detected, starts the rebuild of ADR-0008: the removal reason and the DRED breadcrumb and page-fault data go to the log and the crash-report attachments; every device object is released; a new device (with the checks of RND-020), swap chain, root signatures and catalogue are created; static GPU resources are reloaded from the asset system and regenerated from the terrain data and the tree parameters behind a loading indicator; presentation resumes. The simulation keeps running throughout. A second removal during the rebuild, or a failed recreation, ends the client with a report.
+**RND-034** (MUST) Device removal or reset, however detected, starts the rebuild of ADR-008: the removal reason and the DRED breadcrumb and page-fault data go to the log and the crash-report attachments; every device object is released; a new device (with the checks of RND-020), swap chain, root signatures and catalogue are created; static GPU resources are reloaded from the asset system and regenerated from the terrain data and the tree parameters behind a loading indicator; presentation resumes. The simulation keeps running throughout. A second removal during the rebuild, or a failed recreation, ends the client with a report.
 
 ## 5 Concurrency and performance budget
 
-**RND-040** (MUST) Per-frame CPU work outside the frame thread's recording is bounded by the frame graph's precompiled pass list (ADR-0004); the terrain costs only chunk culling (ADR-0011), and crowds cost a fixed number of calls per type and pass (ADR-0009). No pipeline state is created during a frame (ADR-0005).
+**RND-040** (MUST) Per-frame CPU work outside the frame thread's recording is bounded by the frame graph's precompiled pass list (ADR-004); the terrain costs only chunk culling (ADR-011), and crowds cost a fixed number of calls per type and pass (ADR-009). No pipeline state is created during a frame (ADR-005).
 
-**RND-041** (MUST) The renderer's GPU and CPU budgets, the quality presets and the reference performance figures are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker and one pair of GPU timestamps (ADR-0068), and the development overlay shows per-pass GPU times against those budgets.
+**RND-041** (MUST) The renderer's GPU and CPU budgets, the quality presets and the reference performance figures are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker and one pair of GPU timestamps (ADR-068), and the development overlay shows per-pass GPU times against those budgets.
 
-**RND-042** (MUST) Loading and streaming follow the asset pipeline component: static uploads go through the copy queue, an asset becomes visible only after its upload fence has completed (ADR-0008), and how Species loads and streams world content is decided by the design phase (see DEC-226).
+**RND-042** (MUST) Loading and streaming follow the asset pipeline component: static uploads go through the copy queue, an asset becomes visible only after its upload fence has completed (ADR-008), and how Species loads and streams world content is decided by the design phase (see DEC-226).
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -245,13 +245,13 @@ public:
 |---|---|---|
 | no adapter passes the capability checks | localised message naming the missing capability and the adapter; log; exit | RND-020 |
 | the window or swap chain cannot be created | the fallback chain, then a fatal error | RND-023 |
-| device removed or reset | the rebuild of ADR-0008; log and crash-report attachments | RND-034 |
-| a pipeline state is created outside start-up, loading or reconfiguration | an error in development builds, a log entry in release builds | ADR-0005 |
-| the frame graph fails validation | the renderer stops with a diagnostic naming the pass | ADR-0004 |
-| a texture or mesh is missing at run time | a diagnostic and the default resource at heap index 0 (ADR-0006), never a fatal assertion (DEC-015) | RND-017 |
-| an upload-ring segment overflows | a one-off overflow buffer, a log entry, and a larger ring at the next reconfiguration (ADR-0008) | RND-017 |
+| device removed or reset | the rebuild of ADR-008; log and crash-report attachments | RND-034 |
+| a pipeline state is created outside start-up, loading or reconfiguration | an error in development builds, a log entry in release builds | ADR-005 |
+| the frame graph fails validation | the renderer stops with a diagnostic naming the pass | ADR-004 |
+| a texture or mesh is missing at run time | a diagnostic and the default resource at heap index 0 (ADR-006), never a fatal assertion (DEC-015) | RND-017 |
+| an upload-ring segment overflows | a one-off overflow buffer, a log entry, and a larger ring at the next reconfiguration (ADR-008) | RND-017 |
 
-Diagnostics: PIX markers and GPU timestamps per pass (ADR-0068); the development overlay of frame rate and entity counts and the input-mode box (RND-011); the debug layer and GPU-based validation in the CI test configuration (ADR-0001). Telemetry, when the player consents, carries the frame-time distribution and the adapter and capability summary (ADR-0066).
+Diagnostics: PIX markers and GPU timestamps per pass (ADR-068); the development overlay of frame rate and entity counts and the input-mode box (RND-011); the debug layer and GPU-based validation in the CI test configuration (ADR-001). Telemetry, when the player consents, carries the frame-time distribution and the adapter and capability summary (ADR-066).
 
 ## 7 Acceptance tests
 
@@ -298,25 +298,25 @@ Diagnostics: PIX markers and GPU timestamps per pass (ADR-0068); the development
 
 | Component | Species mapping | Decided in | Specified in |
 |---|---|---|---|
-| renderer core | an explicit renderer: per-frame upload ring, batched and instanced draws, one catalogue entry per blend, depth and cull combination of the pass table | ADR-0001, ADR-0004, ADR-0005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) |
-| state contract | immutable pipeline states derived from the default state plus per-pass differences; one root signature with per-frame constants (view, projection, fog, two lights) and per-draw root constants (world transform, tint) | ADR-0005, ADR-0006 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3 |
-| material shading | five material shaders: unlit vertex colour; one texture; two textures with an explicit combine mode; lit by two directional lights with no ambient term; lit with one texture; every material honours its fog colour and alpha | ADR-0003 | [shaders.md](shaders.md) |
-| flat shading | facet colour and facet normal baked per triangle; no shader depends on a provoking-vertex convention | ADR-0020 | [world_renderers.md](world_renderers.md) §4.4 |
-| terrain | static vertex and index buffers in a default heap, split into culled chunks; the wire-grid overlay added in the same pass | ADR-0011 | [world_renderers.md](world_renderers.md) §4.1 |
-| sea | a static flat layer drawn once with two textures; the coastline wave mesh animated on the GPU every frame | ADR-0011 | [world_renderers.md](world_renderers.md) §4.2 |
-| sky and clouds | one additive instanced draw with fog computed in the shader | ADR-0011 | [world_renderers.md](world_renderers.md) §4.3 |
-| meshes | static buffers per mesh, per-node transforms in a structured buffer, instancing for repeated structures, team colour from a per-instance palette index | ADR-0009, ADR-0019, ADR-0020 | [world_renderers.md](world_renderers.md) §4.4 |
-| trees | geometry generated at map load as data and drawn instanced; crown hit volumes baked by the content build | ADR-0009, DEC-012 | [world_renderers.md](world_renderers.md) §4.6 |
-| sprites, particles, Essence orbs, Workers | instanced quads expanded in the vertex shader from per-instance data with an orientation mode; additive and darkening catalogue entries | ADR-0009, ADR-0010 | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [README.md](../animation_and_vfx/README.md) |
-| darkening layers | the darkening blend (zero, inverse source colour) | ADR-0005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3.2 |
-| shatter debris | a shard buffer advanced on the GPU, with a barycentric edge mask | ADR-0010 | [README.md](../animation_and_vfx/README.md) |
-| depth offsets for coplanar layers | depth-biased catalogue variants | ADR-0005, ADR-0016 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.2 |
-| text | a glyph cache from licensed fonts with shaping and kerning | ADR-0034 | [ui_framework/README.md](../ui_framework/README.md) |
-| UI | a batched UI vertex stream with alpha, additive and ink catalogue entries | ADR-0031 | [ui_framework/README.md](../ui_framework/README.md) |
-| screen effects | full-screen passes that read a declared frame-graph copy of an earlier image | ADR-0004 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.7 |
-| shadows | decal blobs and flattened sprite shadows as instanced, depth-biased darkening quads | ADR-0009 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.6 |
-| screenshots | a read-back pass that copies the final image into a read-back buffer, encoded off the frame thread | ADR-0004, ADR-0076 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.8 |
-| device loss | full device recreation | ADR-0008 | RND-034 |
+| renderer core | an explicit renderer: per-frame upload ring, batched and instanced draws, one catalogue entry per blend, depth and cull combination of the pass table | ADR-001, ADR-004, ADR-005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) |
+| state contract | immutable pipeline states derived from the default state plus per-pass differences; one root signature with per-frame constants (view, projection, fog, two lights) and per-draw root constants (world transform, tint) | ADR-005, ADR-006 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3 |
+| material shading | five material shaders: unlit vertex colour; one texture; two textures with an explicit combine mode; lit by two directional lights with no ambient term; lit with one texture; every material honours its fog colour and alpha | ADR-003 | [shaders.md](shaders.md) |
+| flat shading | facet colour and facet normal baked per triangle; no shader depends on a provoking-vertex convention | ADR-020 | [world_renderers.md](world_renderers.md) §4.4 |
+| terrain | static vertex and index buffers in a default heap, split into culled chunks; the wire-grid overlay added in the same pass | ADR-011 | [world_renderers.md](world_renderers.md) §4.1 |
+| sea | a static flat layer drawn once with two textures; the coastline wave mesh animated on the GPU every frame | ADR-011 | [world_renderers.md](world_renderers.md) §4.2 |
+| sky and clouds | one additive instanced draw with fog computed in the shader | ADR-011 | [world_renderers.md](world_renderers.md) §4.3 |
+| meshes | static buffers per mesh, per-node transforms in a structured buffer, instancing for repeated structures, team colour from a per-instance palette index | ADR-009, ADR-019, ADR-020 | [world_renderers.md](world_renderers.md) §4.4 |
+| trees | geometry generated at map load as data and drawn instanced; crown hit volumes baked by the content build | ADR-009, DEC-012 | [world_renderers.md](world_renderers.md) §4.6 |
+| sprites, particles, Essence orbs, Workers | instanced quads expanded in the vertex shader from per-instance data with an orientation mode; additive and darkening catalogue entries | ADR-009, ADR-010 | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [README.md](../animation_and_vfx/README.md) |
+| darkening layers | the darkening blend (zero, inverse source colour) | ADR-005 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §3.2 |
+| shatter debris | a shard buffer advanced on the GPU, with a barycentric edge mask | ADR-010 | [README.md](../animation_and_vfx/README.md) |
+| depth offsets for coplanar layers | depth-biased catalogue variants | ADR-005, ADR-016 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.2 |
+| text | a glyph cache from licensed fonts with shaping and kerning | ADR-034 | [ui_framework/README.md](../ui_framework/README.md) |
+| UI | a batched UI vertex stream with alpha, additive and ink catalogue entries | ADR-031 | [ui_framework/README.md](../ui_framework/README.md) |
+| screen effects | full-screen passes that read a declared frame-graph copy of an earlier image | ADR-004 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.7 |
+| shadows | decal blobs and flattened sprite shadows as instanced, depth-biased darkening quads | ADR-009 | [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.6 |
+| screenshots | a read-back pass that copies the final image into a read-back buffer, encoded off the frame thread | ADR-004, ADR-076 | [frame_graph_and_passes.md](frame_graph_and_passes.md) §4.8 |
+| device loss | full device recreation | ADR-008 | RND-034 |
 
 ### 8.3 Design-phase inputs
 
@@ -324,7 +324,7 @@ The Species design phase must answer these questions for the renderer:
 
 1. **Snapshot and smoothing.** What the presentation snapshot holds, and whether the renderer extrapolates from one snapshot (the reference) or interpolates between two with a one-tick display delay (DEC-222, R-SIM-565, DEC-227).
 2. **Threading.** Which threads record the frame's command lists, and how presentation receives snapshots and effect events from the simulation thread or the network (DEC-224).
-3. **World scale.** How the terrain, the sea and the sky scale beyond an arena map: chunk streaming, levels of detail for the strategic zoom, camera-relative coordinates beyond a few tens of thousands of wu, and a far plane and fog distance for a world that is larger than `rnd.view.far_plane` (DEC-247, DEC-226, ADR-0011).
+3. **World scale.** How the terrain, the sea and the sky scale beyond an arena map: chunk streaming, levels of detail for the strategic zoom, camera-relative coordinates beyond a few tens of thousands of wu, and a far plane and fog distance for a world that is larger than `rnd.view.far_plane` (DEC-247, DEC-226, ADR-011).
 4. **Lighting.** Whether maps keep per-map lights or select named presets, and whether lights keep the one-frame lag (DEC-562, DEC-325).
 5. **Visibility.** How fog of war (the vision brief's equal visibility for players, bots and the deputy) is drawn, which the reference does not have.
 6. **Detail levels.** Which structure detail variants Species keeps (DEC-327) and what the terrain grid overlay follows (DEC-326).

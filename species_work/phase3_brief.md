@@ -17,7 +17,7 @@ You are one rewrite agent of the Species reference-library conversion run. You t
 3. Shared reads:
    - `species_work/rename_map.tsv` and `design_next/CONVENTIONS.md`. §8 is the Species vocabulary; §3 is the prefix registry; §9 is the allowed terms;
    - `design_next/decisions/README.md` (the index of all 240+ decisions) and `species_work/dec_map.csv`;
-   - `design_next/adr/README.md` (the ADR index and technology baseline);
+   - `design_next/ADR/README.md` (the ADR index and technology baseline);
    - `design_next/assets/GameAssets.md` and `design_next/assets/asset_manifest.csv`;
    - component packages (`C-*`) also read `species_work/standards_baseline.md`.
 
@@ -37,7 +37,7 @@ Rewrite **every** KEEP, MERGE and KEEP-HOOKS input range of your package into yo
 - **Tuning-key ownership.** Define keys only for values your own document owns. When you need a value another document owns, cite that document's key by name (for example "`ref.unit.worker.move_speed` in reference/02_units/worker.md") instead of defining a duplicate key.
 - **Units.** Use `wu` for distance and ticks for durations, with seconds only as a derived display value.
 - **Decisions.** Cite DEC ids where they apply, for example "(see DEC-016)". Every Open DEC in your `decs_to_cite` must be cited by at least one of your requirements. A Resolved DEC is stated as the fixed rule and cited. Never invent a DEC. If you find a new decision, put it in your report.
-- **ADRs.** Components cite the ADRs that decide their technology (`adr/README.md`) and never contradict them. A conflict goes in your report.
+- **ADRs.** Components cite the ADRs that decide their technology (`ADR/README.md`) and never contradict them. A conflict goes in your report.
 - **Assets.** Cite asset ids from `assets_for_you` where the rule uses them, for example "uses `sprite.worker.front`". Never write a Species filename that is not in `asset_manifest.csv`. If you need an asset that is missing, put it in your report.
 - **Diagrams.** Carry the state machines, flows and sequences over in Mermaid, using Species names only, each with a caption line.
 - **Sizes.** No file over 120 KB. If your output will exceed that, split it by sub-topic into the files named in your package, or into a folder with a `README.md` index, and report it.

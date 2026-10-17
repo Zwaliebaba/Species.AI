@@ -32,7 +32,7 @@ This document specifies the Strike team (`StrikeTeam`, an actor group) and its m
 
 **R-UNIT-341** (MUST) A Trooper's own reload interval is `ref.unit.trooper.reload_ticks` (0 ticks): no Trooper is ever reloading, so its own reload never blocks a shot, and the Strike team's fire rate comes from the accumulator alone (R-UNIT-352). This is an explicit rule, not a consequence of the stat-table rate (DEC-006).
 
-**R-UNIT-342** (MUST) A Trooper is drawn with the mesh `mesh.unit.trooper_figure`, whose `muzzle` socket is the origin of its laser bolts and grenades and whose `casing_eject` socket is the origin of its shell casings. The content build rejects a Trooper mesh without both sockets (DEC-015, ADR-0021).
+**R-UNIT-342** (MUST) A Trooper is drawn with the mesh `mesh.unit.trooper_figure`, whose `muzzle` socket is the origin of its laser bolts and grenades and whose `casing_eject` socket is the origin of its shell casings. The content build rejects a Trooper mesh without both sockets (DEC-015, ADR-021).
 
 ### 2.4 Movement and formation
 
@@ -113,7 +113,7 @@ A handle found in the obstacle cell of a point off the map is resolved like ever
 
 **R-UNIT-362** (MUST) Every damage type affects a Trooper alike. A Trooper whose health reaches 0 or below dies: its health becomes the corpse fade value `ref.unit.base.corpse_fade_start` and it fades by the base corpse rule (`ref.unit.base.corpse_fade_ground_ticks`, [Units](README.md); airborne, `ref.sim.physics.dead_fade_per_tick`), it raises the die sound event, and its mesh shatters into debris ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)). A Trooper releases **no** Essence orb, so a Strike team adds nothing to the essence economy ([essence_orbs.md](essence_orbs.md) R-UNIT-304).
 
-**R-UNIT-363** (MUST) A Trooper is not team-coloured. Its mesh keeps its authored colours, a sand colour (228, 214, 153) and a rust colour (177, 88, 26), and carries no team tint weight (ADR-0020). A Strike team's team is shown only by the selection interface and the world markers ([controls, camera and commands](../06_controls_camera_and_commands/README.md)).
+**R-UNIT-363** (MUST) A Trooper is not team-coloured. Its mesh keeps its authored colours, a sand colour (228, 214, 153) and a rust colour (177, 88, 26), and carries no team tint weight (ADR-020). A Strike team's team is shown only by the selection interface and the world markers ([controls, camera and commands](../06_controls_camera_and_commands/README.md)).
 
 **R-UNIT-364** (MUST) A Trooper is drawn as a lit mesh. While damaged it flickers by the base damaged-flicker rule, which uses the presentation generator and the presentation clock ([Units](README.md), DEC-007).
 
@@ -267,7 +267,7 @@ Keys cited from other documents (their values are defined there):
 ## 7 Dependencies
 
 - **Reference documents:** [Units](README.md) (damage types, corpse fade, damaged flicker); [essence_orbs.md](essence_orbs.md); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Strike team outcome, Power slots, cancellation); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (laser bolt, grenade, thrown weapons, shell casings); [buildings and world objects](../03_buildings_and_world_objects/README.md) (Beam Dish transit); [controls, camera and commands](../06_controls_camera_and_commands/README.md) (bindings, camera tracking); [bots](../07_bots/README.md) (navigation nodes and priorities); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (actor groups, commands, control state); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle push, airborne and swimming steps, grid queries, teleport entry); [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (power levels, trail-point counter); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (mesh, no team tint, ADR-0020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter debris, shell casings); [audio engine](../../architecture/components/audio_engine.md); [input](../../architecture/components/input.md) (world-space conversion of stick vectors).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (mesh, no team tint, ADR-020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (shatter debris, shell casings); [audio engine](../../architecture/components/audio_engine.md); [input](../../architecture/components/input.md) (world-space conversion of stick vectors).
 - **Assets:** `mesh.unit.trooper_figure`; `icon.power.strike_team` (the Strike team Power); `icon.power.grenade` (the Strike team's grenade weapon); `sfx.unit.trooper.presence_loop`, `sfx.unit.trooper.hurt`, `sfx.unit.trooper.die`, `sfx.unit.trooper.enter_gate`, `sfx.unit.trooper.exit_gate`, `sfx.unit.trooper.fire_laser`, `sfx.unit.trooper.weapon_ready`.
 
 ## 8 Open decisions

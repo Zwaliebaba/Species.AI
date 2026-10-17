@@ -26,7 +26,7 @@ The verdict on the editor is that it is designed fresh (DEC-045): the Species de
 
 **R-MAP-301** (MUST) The reference has no reachable map editor. In every player build: the main menu offers no map-editor entry; no key binding and no developer menu opens the editor; a request to enter the editor loads the requested map for play instead; match setup lists no custom map; and no participant advertises or requests a custom map. A player build can load a custom map only when it is given that map's id, which no player-facing screen does. The editor's own panels are absent from player builds; the excluded-outcomes panel, the map-editor hub page and the map file picker are present but never opened. This is the reference default of DEC-045.
 
-**R-MAP-302** (MUST) The map editor is designed fresh in the design phase (DEC-045). The requirements of this document are the hooks that such a design adopts, adapts or drops: they state what the reference editor reads, writes and offers, never how a Species editor presents it. In the reference the editor is part of the game program and exists only in builds made with it; which Species product carries a map editor, if any, is part of DEC-045 ([ADR-0056](../../adr/0056-editions-build-flavours-and-feature-flags.md) names a `tools` product beside the client and the server).
+**R-MAP-302** (MUST) The map editor is designed fresh in the design phase (DEC-045). The requirements of this document are the hooks that such a design adopts, adapts or drops: they state what the reference editor reads, writes and offers, never how a Species editor presents it. In the reference the editor is part of the game program and exists only in builds made with it; which Species product carries a map editor, if any, is part of DEC-045 ([ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) names a `tools` product beside the client and the server).
 
 **R-MAP-303** (MUST) The reference editor authors every block of a map definition (rules and conventions table 2.4-A) except three: routes, for which it has no operation (§2.9); camera animations, whose authoring panels are never opened (§2.10, DEC-803); and primary objectives, which it neither edits nor writes (R-MAP-033). It authors the content of the start-position records (DEC-560) through two other operations: the Siege side and the co-op group in the map-options panel (§2.11), and the start camera view through the reserved camera-view names (§2.10).
 
@@ -459,7 +459,7 @@ The camera-view marker mesh, which the drawing and the picking test of table 2.3
 **R-MAP-388** (MUST) A map tool writes a map definition by the rules of DEC-800:
 
 1. **Lossless round trip.** Loading a map and saving it again reproduces every value exactly; a number is written in the shortest decimal form that parses back to the same value. A save writes every record that the loaded map holds: terrain tiles with their guide grids, flatten areas, map lights, structure records, start-position records, camera views, camera animations, routes, starting-forces records and every per-map override. A field is omitted only when its value equals the schema default.
-2. **Canonical output.** Each field is written once, in schema order, with a separator between every two values, so that saving unchanged data gives the same content hash ([ADR-0060](../../adr/0060-content-identity-by-hash.md)).
+2. **Canonical output.** Each field is written once, in schema order, with a separator between every two values, so that saving unchanged data gives the same content hash ([ADR-060](../../ADR/ADR-060-content-identity-by-hash.md)).
 3. **Atomic replacement.** The writer writes a complete new file beside the old one, flushes it and then replaces the old file in one step. A failed write leaves the previous file intact and is reported to the author and in the log.
 4. **Values are data.** A text value is written literally; no character in it is interpreted as a formatting directive.
 
@@ -469,7 +469,7 @@ The camera-view marker mesh, which the drawing and the picking test of table 2.3
 
 ### 2.14 Custom maps and the custom-map container
 
-**R-MAP-391** (MUST) A **custom map** is a map read from the player's map folder, a per-user folder of user data (rules and conventions R-MAP-015; [ADR-0071](../../adr/0071-install-layout-runtime-files-and-user-data.md) places user data in per-user known folders). In the reference it is stored as a **custom-map container**: one file that holds, compressed behind a stored length, one key-value tree with the entries of table 2.14-A. The container carries no checksum. Species defines its own container format, which DEC-207 places in the typed container family of the data schemas (DEC-207 default: no format specified).
+**R-MAP-391** (MUST) A **custom map** is a map read from the player's map folder, a per-user folder of user data (rules and conventions R-MAP-015; [ADR-071](../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) places user data in per-user known folders). In the reference it is stored as a **custom-map container**: one file that holds, compressed behind a stored length, one key-value tree with the entries of table 2.14-A. The container carries no checksum. Species defines its own container format, which DEC-207 places in the typed container family of the data schemas (DEC-207 default: no format specified).
 
 Table 2.14-A Entries of the reference custom-map container.
 
@@ -486,7 +486,7 @@ Table 2.14-A Entries of the reference custom-map container.
 
 ### 2.15 Validation when a map tool saves
 
-**R-MAP-400** (MUST) The reference editor validates nothing when it saves. A map tool validates a map when it saves it, with the rules and the implementation of the content build ([ADR-0059](../../adr/0059-content-build-and-validators.md)), and rejects the map with a diagnostic that names the rule when one fails (DEC-561, DEC-015). The rules are:
+**R-MAP-400** (MUST) The reference editor validates nothing when it saves. A map tool validates a map when it saves it, with the rules and the implementation of the content build ([ADR-059](../../ADR/ADR-059-content-build-and-validators.md)), and rejects the map with a diagnostic that names the rule when one fails (DEC-561, DEC-015). The rules are:
 
 1. the schema of the map definition: types, ranges, the forms of DEC-120 and the declared maximum lengths (rules and conventions R-MAP-003, R-MAP-005, R-MAP-006);
 2. one record per id and one value per field: unique structure ids, no repeated block or field (R-MAP-004, R-MAP-031, R-MAP-047; DEC-801);
@@ -529,7 +529,7 @@ Table 2.16-A Defects and gaps of the reference editor.
 
 ### 2.17 String ids
 
-**R-MAP-410** (MUST) The editor's author-facing text is new text under the string ids of table 2.17-A ([ADR-0063](../../adr/0063-localisation.md)). The main-menu entry is labelled `ui.power_slots.map_editor` of reference/06.
+**R-MAP-410** (MUST) The editor's author-facing text is new text under the string ids of table 2.17-A ([ADR-063](../../ADR/ADR-063-localisation.md)). The main-menu entry is labelled `ui.power_slots.map_editor` of reference/06.
 
 Table 2.17-A String ids of the map editor.
 
@@ -844,7 +844,7 @@ The criteria apply to a map tool that adopts the hooks, and to the reference beh
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md) and [rules and conventions](rules_and_conventions.md) (the map definition, its blocks and fields, the map catalogue, custom maps, start positions, map options, map effects, the per-mode validation rules); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) (structure kinds, record fields, behaviour hooks and link-set rules, hit tests), [defences and props](../03_buildings_and_world_objects/defences_and_props.md), [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md), [mode objects](../03_buildings_and_world_objects/mode_objects.md) and [trees and crate structures](../03_buildings_and_world_objects/trees_and_crate_structures.md) (the fields that the structure panel and the tree panel edit); [02 Units](../02_units/README.md) (actor kinds of starting forces); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/README.md) (the outcome catalogue, excluded outcomes, power kinds); [05 Population flow](../05_population_flow.md) (the cap input ranges, reinforcement powers and their options); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the main-menu entry's label, the camera modes); [07 Bots](../07_bots/README.md) (navigation nodes, objectives, objective markers, the bot controller marker); [12 Simulation model](../12_simulation_model/README.md) (match entry and match-world initialisation in the editor, the presentation generators).
-- **Engine components:** [terrain](../../architecture/components/terrain.md) (the generator that the editor runs, the guide-grid encoding); [renderer](../../architecture/components/renderer/README.md) (the map-editor frame RND-078, the editor's sea RND-148, map-light defaults RND-012); [data schemas](../../architecture/components/data_schemas/README.md) (the map-definition schema family and the custom-map container); [camera and sequences](../../architecture/components/camera_and_sequences.md) (camera views, camera-animation playback); [UI framework](../../architecture/components/ui_framework/README.md) (panels, value controls, pickers); [build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) (the content build, map-editor tooling). ADR-0056 (products and build flavours), ADR-0059 (content build and validators), ADR-0060 (content identity by hash), ADR-0061 (data schemas and versioning), ADR-0063 (localisation), ADR-0071 (user data folders).
+- **Engine components:** [terrain](../../architecture/components/terrain.md) (the generator that the editor runs, the guide-grid encoding); [renderer](../../architecture/components/renderer/README.md) (the map-editor frame RND-078, the editor's sea RND-148, map-light defaults RND-012); [data schemas](../../architecture/components/data_schemas/README.md) (the map-definition schema family and the custom-map container); [camera and sequences](../../architecture/components/camera_and_sequences.md) (camera views, camera-animation playback); [UI framework](../../architecture/components/ui_framework/README.md) (panels, value controls, pickers); [build tooling and distribution](../../architecture/components/build_tooling_and_distribution.md) (the content build, map-editor tooling). ADR-056 (products and build flavours), ADR-059 (content build and validators), ADR-060 (content identity by hash), ADR-061 (data schemas and versioning), ADR-063 (localisation), ADR-071 (user data folders).
 - **Assets:** `terrain.ramp`, `terrain.shore_wave_gradient` and `terrain.sea_tile` (the terrain pickers). The camera-view marker mesh that the editor draws and picks is not in the asset manifest.
 
 ## 8 Open decisions
@@ -865,7 +865,7 @@ Resolved decisions applied in this document: DEC-002, DEC-004, DEC-005, DEC-006,
 
 These are the open items of the map editor that the design phase decides under DEC-045; the hooks above are their inputs.
 
-1. Whether Species has a map editor, in which product (ADR-0056), and for whom: the team only, or players too.
+1. Whether Species has a map editor, in which product (ADR-056), and for whom: the team only, or players too.
 2. Undo, unsaved-change tracking and the save prompt (table 2.16-A item 14).
 3. Selection by stable id instead of list index, and picking of the nearest object (table 2.16-A items 2, 3 and 5).
 4. Play test of the real simulation from the editor (table 2.16-A item 14).
@@ -873,6 +873,6 @@ These are the open items of the map editor that the design phase decides under D
 6. Link tools with removal and per-kind link checks, for Flag post adjacency and Command Console lists (R-MAP-349).
 7. Whether the editor regenerates the terrain on every change or on demand, and whether it bakes the height field (R-MAP-325, DEC-246), with unbiased generator variants (DEC-324).
 8. Whether a map tool can keep an unfinished map that fails the validation of R-MAP-400.
-9. The custom-map container, its identity, listing, transfer and the player's map folder (R-MAP-391 to R-MAP-394; DEC-204, DEC-207; ADR-0071), and a custom map's thumbnail (R-MAP-392).
+9. The custom-map container, its identity, listing, transfer and the player's map folder (R-MAP-391 to R-MAP-394; DEC-204, DEC-207; ADR-071), and a custom map's thumbnail (R-MAP-392).
 10. Input ranges aligned with the content-build limits (§5 item 1), and a map with more than one mode (§5 item 4).
 11. The camera-view marker mesh and the editor's drawing style (R-MAP-380).

@@ -63,7 +63,7 @@ Information-only bullets (answers, "already done" notes, "no change") were not r
 | 76 | RB-294 open; **the proposed path `tools/` + `reference-models/` fails forbidden pattern line 147**: use `tools/design-models/terrain_generator.py` |
 | 77 | RB-051 open, with X-ARB A-16 text |
 | 83 | RB-098 open (renderer side; X-ADR-P4 F5 wording) |
-| 84 | RB-295 superseded by the ADR-0018 amendment; RB-296 open (AST-021, sampler, AST-027, RND-262: X-ADR-P4 F1 to F4, F7) |
+| 84 | RB-295 superseded by the ADR-018 amendment; RB-296 open (AST-021, sampler, AST-027, RND-262: X-ADR-P4 F1 to F4, F7) |
 | 86 | the 15 C-AST requests are RB-098 to RB-116 |
 | 89 | done inside RB-144 (DAT-271) |
 | 91 | RB-328 done (CAM-012); reference side RB-130 open |

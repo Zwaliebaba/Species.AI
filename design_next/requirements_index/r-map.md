@@ -187,4 +187,4 @@ Scope: Maps and level design. Back to the [requirements index](../REQUIREMENTS_I
 | R-MAP-394 | The editor and every custom map use one reserved map-world id, distinct from the ids of content-set maps. | [map_editor_hooks.md](../reference/08_maps_and_level_design/map_editor_hooks.md#214-custom-maps-and-the-custom-map-container) |
 | R-MAP-400 | The reference editor validates nothing when it saves. | [map_editor_hooks.md](../reference/08_maps_and_level_design/map_editor_hooks.md#215-validation-when-a-map-tool-saves) |
 | R-MAP-405 | Table 2.16-A lists the defects and gaps of the reference editor. | [map_editor_hooks.md](../reference/08_maps_and_level_design/map_editor_hooks.md#216-defects-and-gaps-of-the-reference-editor) |
-| R-MAP-410 | The editor's author-facing text is new text under the string ids of table 2.17-A (ADR-0063). | [map_editor_hooks.md](../reference/08_maps_and_level_design/map_editor_hooks.md#217-string-ids) |
+| R-MAP-410 | The editor's author-facing text is new text under the string ids of table 2.17-A (ADR-063). | [map_editor_hooks.md](../reference/08_maps_and_level_design/map_editor_hooks.md#217-string-ids) |

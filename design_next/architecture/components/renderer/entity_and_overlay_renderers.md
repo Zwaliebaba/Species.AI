@@ -1,6 +1,6 @@
 # Entity and overlay renderers
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-0005](../../../adr/0005-pipeline-state-catalogue.md) · [ADR-0006](../../../adr/0006-root-signature-and-bindless-resource-access.md) · [ADR-0008](../../../adr/0008-gpu-memory-uploads-and-device-removal.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0010](../../../adr/0010-gpu-particles-and-shatter-debris.md) · [ADR-0013](../../../adr/0013-working-colour-space-and-blending.md) · [ADR-0016](../../../adr/0016-view-projection-and-depth-conventions.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0021](../../../adr/0021-mesh-socket-schema.md) · [ADR-0031](../../../adr/0031-batched-ui-rendering.md) · [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md) · [ADR-0035](../../../adr/0035-procedural-animation-runtime.md) · [ADR-0036](../../../adr/0036-effect-events-and-presentation-clock.md) · [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Visual language](visual_language.md) · [Options and budgets](options_and_budgets.md) · [Animation and VFX](../animation_and_vfx/README.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-006](../../../ADR/ADR-006-root-signature-and-bindless-resource-access.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md) · [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md) · [ADR-035](../../../ADR/ADR-035-procedural-animation-runtime.md) · [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Visual language](visual_language.md) · [Options and budgets](options_and_budgets.md) · [Animation and VFX](../animation_and_vfx/README.md)
 
 This document specifies how the renderer draws everything that moves or points: the crowds of actors (Workers, Crawlers, Troopers, creatures and vehicles) as instanced sprite cards, billboards and lit meshes; their blob shadows; the effects pass with its shockwave rings and lightning; laser bolts; route lines; world markers; the world cursor with its highlight rings and placement previews; and the Power slots panel and match HUD overlays. It uses the pass numbers, catalogue blend states and depth-bias variants of [frame_graph_and_passes.md](frame_graph_and_passes.md) and [view_lighting_and_fog.md](view_lighting_and_fog.md), and defines the catalogue entries of its own passes (§3.3).
 
@@ -10,9 +10,9 @@ This document specifies how the renderer draws everything that moves or points: 
 
 **RND-301** (MUST) These renderers MUST NOT write simulation state (see DEC-007). Every value that the reference look computes while drawing and keeps from frame to frame is presentation state that the renderer owns, keyed by the object's handle (`SimObjectId`) or the route handle, and never stored in a simulated object (DEC-222 item 2). The values are listed in §3.2: the Worker colour cross-fade after a conversion, the fade value of each drawn route, the walkable flag of the route preview and the Crawler detail level of each group. The world markers' list and timers are the presentation state of the world markers ([cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-380).
 
-**RND-302** (MUST) A renderer draws exactly the state that the presentation snapshot holds and never caps a list that the simulation tracks. In particular the energy-grid and fuel-chain renderers draw every energy surge that a fuel pump tracks; the one limit is `ref.bldg.fuel_pump.max_surges` (20) of [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-198, used by the simulation and the drawing alike (see DEC-463). When a frame has more instances than an instance buffer holds, the upload-ring overflow rule of the renderer applies (README RND-017, ADR-0008); no instance is dropped.
+**RND-302** (MUST) A renderer draws exactly the state that the presentation snapshot holds and never caps a list that the simulation tracks. In particular the energy-grid and fuel-chain renderers draw every energy surge that a fuel pump tracks; the one limit is `ref.bldg.fuel_pump.max_surges` (20) of [economy_and_spawn_objects.md](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) R-BLDG-198, used by the simulation and the drawing alike (see DEC-463). When a frame has more instances than an instance buffer holds, the upload-ring overflow rule of the renderer applies (README RND-017, ADR-008); no instance is dropped.
 
-**RND-303** (MUST) Every draw of these passes names one complete catalogue entry (ADR-0005, RND-052). The reference look draws the actors of passes 7a and 7b one after another, and an actor that sets no state of its own inherits what the previous actor left; the Species renderer reproduces only the states that §4.4 lists for each actor kind, never a state left by an earlier draw.
+**RND-303** (MUST) Every draw of these passes names one complete catalogue entry (ADR-005, RND-052). The reference look draws the actors of passes 7a and 7b one after another, and an actor that sets no state of its own inherits what the previous actor left; the Species renderer reproduces only the states that §4.4 lists for each actor kind, never a state left by an earlier draw.
 
 **RND-304** (MUST) Every random choice these renderers make, such as the team colour of an Allegiance Scrambler muzzle flash, draws from the presentation generator (`FxRng`), never from the simulation generator (RND-005, DEC-013).
 
@@ -23,7 +23,7 @@ The interface below is a C++23 declaration sketch, not an implementation.
 ```cpp
 namespace species::render {
 
-enum class OrientationMode : std::uint8_t {   // the quad orientation modes of ADR-0009
+enum class OrientationMode : std::uint8_t {   // the quad orientation modes of ADR-009
   CameraFacing,     // corners along the camera right and up vectors
   UprightCard,      // turns about the world vertical axis towards the camera
   WorldOriented,    // explicit right and up axes, optionally blended into a billboard with distance
@@ -39,7 +39,7 @@ struct QuadInstance {                 // shared header layout (shaders.md RND-26
   float blendStart = 0, blendLength = 0;   // WorldOriented: billboard blend; length 0 = never
   float rotation = 0;                 // radians about the view axis (CameraFacing)
   ColourRgba colour, endColour;       // endColour is used by Segment only
-  std::uint32_t textureIndex = 0;     // descriptor-heap index (ADR-0006)
+  std::uint32_t textureIndex = 0;     // descriptor-heap index (ADR-006)
   std::uint32_t uvRect = 0;           // index into the UV-rectangle table (atlas cells, mirrored maps)
   OrientationMode mode = OrientationMode::CameraFacing;
   QuadAnchor anchor = QuadAnchor::Centre;
@@ -51,7 +51,7 @@ struct InstanceType {                 // one per drawn kind and catalogue entry,
   std::optional<float> maxDistance;   // per-type distance limit
 };
 
-class CrowdRenderer {                 // ADR-0009
+class CrowdRenderer {                 // ADR-009
 public:
   InstanceTypeId RegisterType(const InstanceType& type);
   std::span<QuadInstance> BeginInstances(InstanceTypeId type, std::uint32_t count);  // upload ring
@@ -93,7 +93,7 @@ DevSphereMesh BuildDevSphere();
 }  // namespace species::render
 ```
 
-**Events.** The renderers consume these presentation events (DEC-007, ADR-0036): a Worker's team change (for the colour cross-fade, RND-317); a route highlight and a route intensity request (RND-350, RND-351); the registration and removal of world markers ([reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md)). They raise one request of their own: the camera shake of a laser bolt that passes near the camera, which they hand to the VFX screen effects (RND-340).
+**Events.** The renderers consume these presentation events (DEC-007, ADR-036): a Worker's team change (for the colour cross-fade, RND-317); a route highlight and a route intensity request (RND-350, RND-351); the registration and removal of world markers ([reference/06_controls_camera_and_commands/cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md)). They raise one request of their own: the camera shake of a laser bolt that passes near the camera, which they hand to the VFX screen effects (RND-340).
 
 **Data contracts.** Per drawn actor the snapshot holds the fields of README §2 (position, velocity, front and up, team, kind, health) and the kind-specific fields named in §4.4; per route its points and its end point; per world marker its target, kind, icon, owner, persistence and progress fraction; per effect its kind, position, velocity, age and kind-specific fields.
 
@@ -103,7 +103,7 @@ DevSphereMesh BuildDevSphere();
 
 ### 3.1 Quad conventions
 
-**RND-305** (MUST) A quad's size in this document is its half-size: its corners lie at its centre ± half-width along its right axis and ± half-height along its up axis, or, with the anchor `BottomCentre`, from its anchor point up to 2 × half-height along its up axis. A quad is two triangles with the index pattern 0, 1, 2, 0, 2, 3 (RND-055), and every quad of this document is expanded in the vertex shader from one `QuadInstance` (ADR-0009).
+**RND-305** (MUST) A quad's size in this document is its half-size: its corners lie at its centre ± half-width along its right axis and ± half-height along its up axis, or, with the anchor `BottomCentre`, from its anchor point up to 2 × half-height along its up axis. A quad is two triangles with the index pattern 0, 1, 2, 0, 2, 3 (RND-055), and every quad of this document is expanded in the vertex shader from one `QuadInstance` (ADR-009).
 
 **RND-306** (MUST) The vertex shader builds the four corners of each orientation mode as follows, with *R* and *U* the frame's camera right and up vectors:
 
@@ -188,7 +188,7 @@ Sprite cards, billboards, segments and strips are drawn by `unlit_textured` and 
 
 ### 4.1 Crowd rendering and instancing
 
-**RND-311** (MUST) Crowds are drawn by GPU-driven instancing (ADR-0009). Each frame, for every instance type of a pass, the CPU writes the presentation view of every visible candidate (position, axes or facing, size, colour, team palette index, orientation mode, texture and UV cell) into the type's instance buffer in the upload ring (ADR-0008). The `instance_cull` compute pass then tests each instance against the view frustum with its type's cull radius and distance limit, compacts the survivors with wave operations and writes the indirect arguments, and one `ExecuteIndirect` call draws each type in each pass that draws it. The CPU cost of a crowd is therefore a fixed number of calls per type and pass, whatever the number of figures (RND-040).
+**RND-311** (MUST) Crowds are drawn by GPU-driven instancing (ADR-009). Each frame, for every instance type of a pass, the CPU writes the presentation view of every visible candidate (position, axes or facing, size, colour, team palette index, orientation mode, texture and UV cell) into the type's instance buffer in the upload ring (ADR-008). The `instance_cull` compute pass then tests each instance against the view frustum with its type's cull radius and distance limit, compacts the survivors with wave operations and writes the indirect arguments, and one `ExecuteIndirect` call draws each type in each pass that draws it. The CPU cost of a crowd is therefore a fixed number of calls per type and pass, whatever the number of figures (RND-040).
 
 ```mermaid
 flowchart LR
@@ -235,13 +235,13 @@ The procedure uses the high-detail distances `rnd.crowd.worker_detail_distance` 
 
 **RND-317** (MUST) A Worker's card colour is the colour of R-UNIT-146: team colour × (`ref.unit.worker.colour_base` + `ref.unit.worker.colour_health_weight` × health fraction); a dead Worker's RGB × `ref.unit.worker.corpse_colour` with alpha `ref.unit.worker.corpse_alpha_per_health` × health. After a team change the renderer starts a cross-fade record (§3.2) on the presentation team-change event and draws the team colour as lerp(previous team colour, new team colour, min(elapsed real time ÷ `ref.unit.worker.convert_fade`, 1)); it deletes the record when the fade completes. The cross-fade never changes a field of the simulated Worker (RND-301).
 
-**RND-318** (MUST) The Worker cards use the team palette through their vertex colour, not the mesh tint of ADR-0020: the card art is white or light grey and the instance colour multiplies it ([visual_language.md](visual_language.md) RND-404).
+**RND-318** (MUST) The Worker cards use the team palette through their vertex colour, not the mesh tint of ADR-020: the card art is white or light grey and the instance colour multiplies it ([visual_language.md](visual_language.md) RND-404).
 
 ### 4.3 Crawlers (pass 7c)
 
 **RND-319** (MUST) Every in-view Crawler group draws, for each Crawler, a worm strip and a glow strip along its trail samples, with the widths, colours and alphas of [reference/02_units/creatures.md](../../../reference/02_units/creatures.md) R-UNIT-539 and the trail geometry of [README.md](../animation_and_vfx/README.md), as `Segment` instances with a colour at each end. Strips of every team except the Rogue faction use the `crawler_trail` entry; the Rogue faction's strips use `crawler_trail_rogue`, whose worm colour has alpha 0 and so darkens like the `Darkening` blend, while its glow (alpha 50 of 255) darkens in proportion to its alpha (RND-058).
 
-**RND-320** (MUST) The worm strip samples the Crawler trail texture, a derived variant of `sprite.crawler.segment` produced by the cooker (ADR-0018): a column `rnd.crawler.trail_column_width` (32 px) wide and `rnd.crawler.trail_column_height` (512 px) tall, cleared to black, holding copies of the segment art stacked from the top, copy *i* (from 0) being (32 − ⌊*i* ÷ 2⌋ × `rnd.crawler.trail_copy_shrink` (1 px)) px square, while the next copy fits in the column; that is 18 copies, 504 px in all. The glow strip samples `fx.glow_round`.
+**RND-320** (MUST) The worm strip samples the Crawler trail texture, a derived variant of `sprite.crawler.segment` produced by the cooker (ADR-018): a column `rnd.crawler.trail_column_width` (32 px) wide and `rnd.crawler.trail_column_height` (512 px) tall, cleared to black, holding copies of the segment art stacked from the top, copy *i* (from 0) being (32 − ⌊*i* ÷ 2⌋ × `rnd.crawler.trail_copy_shrink` (1 px)) px square, while the next copy fits in the column; that is 18 copies, 504 px in all. The glow strip samples `fx.glow_round`.
 
 **RND-321** (MUST) The worm and glow strips are drawn with no depth write, no culling and the `bias_crawler` variant (RND-219), so a trail lying on the terrain wins its depth ties against the terrain.
 
@@ -271,7 +271,7 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 | Transport (7b) | `mesh.unit.transport_hull`, object lighting; flicker on its right or front axis | — | `actor_mesh_lit`; flicker `actor_flicker_additive` |
 | Builder (7b) | `mesh.unit.builder_body`, object lighting | shadow of half-size `rnd.shadow.blob.builder_size` | `actor_mesh_lit`, `blob_shadow` |
 | Collector (7b) | `mesh.unit.collector_body`, object lighting | the bubble `fx.bubble_sphere` as a `CameraFacing` card ([collector.md](../../../reference/02_units/collector.md) R-UNIT-444); while Harvesting, its beam (R-UNIT-444); shadow of half-size `rnd.shadow.blob.collector_size` | `actor_mesh_lit`, `actor_glow`, `actor_beam_alpha`, `blob_shadow` |
-| spider (7b) | `mesh.creature.spider_body`, object lighting; flicker with the darkening blend | eight legs, each `mesh.creature.spider_thigh` and `mesh.creature.spider_shin`, object lighting, posed by the procedural legs ([creatures.md](../../../reference/02_units/creatures.md) R-UNIT-580, ADR-0035) | `actor_mesh_lit`; flicker `actor_flicker_darkening` |
+| spider (7b) | `mesh.creature.spider_body`, object lighting; flicker with the darkening blend | eight legs, each `mesh.creature.spider_thigh` and `mesh.creature.spider_shin`, object lighting, posed by the procedural legs ([creatures.md](../../../reference/02_units/creatures.md) R-UNIT-580, ADR-035) | `actor_mesh_lit`; flicker `actor_flicker_darkening` |
 | Brood Drifter (7b) | `mesh.creature.brood_drifter_body`, object lighting; flicker | four team-coloured tail strips with the object lighting and their vertex colours (R-UNIT-547); shadow of half-size `ref.unit.brood_drifter.shadow_size` | `actor_mesh_lit`, `actor_flicker_additive`, `actor_strip_lit`, `blob_shadow` |
 | Reaper Serpent (7b) | `mesh.creature.reaper_serpent_head` and its `mesh.creature.reaper_serpent_tail` segments, object lighting, renormalised normals | shadows: the head `ref.unit.reaper_serpent.head_shadow`, each tail segment `ref.unit.reaper_serpent.tail_shadow` (R-UNIT-594); its carried Essence orbs as `CameraFacing` quads with no depth test | `actor_mesh_lit`, `blob_shadow`, `actor_glow_nodepth` |
 | Seed Pod (7b) | `mesh.creature.seed_pod`, object lighting, renormalised normals | shadow of half-size the pod's size × `ref.unit.seed_pod.shadow_scale` (R-UNIT-521) | `actor_mesh_lit`, `blob_shadow` |
@@ -281,7 +281,7 @@ A higher level draws fewer samples, and level 4 draws no glow strip.
 | Abductor (7b) | `mesh.creature.abductor_hull`, special lighting | while Abducting or Dropping: its beam rings (R-UNIT-710) | `actor_mesh_lit`, `actor_beam_alpha` |
 | bot controller (7b) | nothing in a match; the map editor draws its hook ([map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)) | — | — |
 
-The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are drawn with interpolated shading in the reference look; on meshes whose facets carry one normal and one colour at every corner (ADR-0020) that gives the image of flat shading, so the Species renderer draws them flat like every mesh.
+The Builder draws no beam in a match: none of its match states (R-UNIT-453) draws one. The Leader and the meteor are drawn with interpolated shading in the reference look; on meshes whose facets carry one normal and one colour at every corner (ADR-020) that gives the image of flat shading, so the Species renderer draws them flat like every mesh.
 
 **RND-325** (MUST) A blob shadow of half-size *s* under a caster at *p* is one quad of `fx.glow_round` whose four corners lie at (*p.x* ± *s*, *y*, *p.z* ± *s*), each at *y* = max(terrain height at the corner + `rnd.shadow.blob.lift` (0.9 wu), `rnd.shadow.blob.min_height` (1.0 wu)), in the colour of [reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-050, with the `blob_shadow` entry (RND-242). The shadow is skipped when all four corner heights are above *p.y*.
 
@@ -387,9 +387,9 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 **RND-365** (MUST) Pass 20 draws, in the order of [cursor_and_markers.md](../../../reference/06_controls_camera_and_commands/cursor_and_markers.md) R-CTRL-355 to R-CTRL-357, first the world-cursor pass in world space and then the always-on-top pass in the 2-D overlay space. The world-space items use the in-shader depth test of RND-309 and write no depth: the highlight effect of R-CTRL-363 (rings and glow cylinder) and the promotable-Worker ring with `cursor_ring`; the formation previews of R-CTRL-374 with `cursor_dots`; the area cylinder of R-CTRL-366 (row 1c) with `cursor_area`; and the placement ghost model of R-CTRL-366 (row 1b) with `cursor_ghost`, the `Ghost` blend (source factor one, destination factor source colour). The selection-circle particles of R-CTRL-370 belong to the particle pool of [README.md](../animation_and_vfx/README.md) and are drawn in pass 15.
 
-**RND-366** (MUST) Every cursor of table 2.1-A of R-CTRL-350 is a 2-D quad placed and rotated as R-CTRL-352 states; none is drawn as a 3-D object. A shadowed cursor first draws its shadow, the blurred variant of its art produced offline by the cooker with the blur radius `ref.ctrl.cursor.shadow_blur` (RND-243, ADR-0018), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for the crosshair. The icon near the pointer (R-CTRL-366) and the entering effect (R-CTRL-371) use the marker layers and entries of RND-357.
+**RND-366** (MUST) Every cursor of table 2.1-A of R-CTRL-350 is a 2-D quad placed and rotated as R-CTRL-352 states; none is drawn as a 3-D object. A shadowed cursor first draws its shadow, the blurred variant of its art produced offline by the cooker with the blur radius `ref.ctrl.cursor.shadow_blur` (RND-243, ADR-018), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for the crosshair. The icon near the pointer (R-CTRL-366) and the entering effect (R-CTRL-371) use the marker layers and entries of RND-357.
 
-**RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-0033), and the size itself is not scaled by the render size.
+**RND-367** (MUST) Cursor sizes are physical pixels at every render size: the standard pointer is 35 px (`ref.ctrl.cursor.set`) whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-033), and the size itself is not scaled by the render size.
 
 **RND-368** (MUST) The rings and the glow cylinder of the highlight effect are generated each frame as vertex-colour strips from the rule of R-CTRL-363, draped on the terrain heights of `terrain_heights` (RND-063), and drawn with the `bias_cursor` variant factor `rnd.depth_bias.cursor` applied in the shader (RND-309).
 
@@ -412,7 +412,7 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 | pop-up halo (R-CTRL-238) | `overlay_ink` with source alpha 0, which darkens | `icon.hud.icon_halo` |
 | pop-up box and its gradient (R-CTRL-238) | `overlay_alpha`; the gradient `overlay_gradient_alpha`; the Supply crate icon `overlay_additive`, clipped to the box by a scissor rectangle | `marker.supply_crate` |
 | placement sparkles (R-CTRL-235) | the particle pool of [README.md](../animation_and_vfx/README.md) | `fx.muzzle_flash` |
-| text | the outline style (alpha 0) and then the fill style of the UI framework ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-0034) | the glyph cache |
+| text | the outline style (alpha 0) and then the fill style of the UI framework ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-034) | the glyph cache |
 
 **RND-379** (MUST) The match HUD of pass 28 draws its panels with `overlay_alpha`, its gradients with `overlay_gradient_alpha` and its text in the UI framework's text styles, inside the 2-D block of passes 26 to 32 and therefore over the fade of pass 27 (RND-086).
 
@@ -420,9 +420,9 @@ Caption: the fade record of one drawn route; a held route keeps its fade value a
 
 ## 5 Concurrency and performance budget
 
-**RND-385** (MUST) Per frame, the CPU work of these renderers is proportional to the number of visible candidates whose instance data it writes, and the number of draw and dispatch calls is fixed per instance type and pass (ADR-0009); no pipeline state is created during a frame (ADR-0005). Instance buffers live in the upload ring for one frame in flight (README RND-017).
+**RND-385** (MUST) Per frame, the CPU work of these renderers is proportional to the number of visible candidates whose instance data it writes, and the number of draw and dispatch calls is fixed per instance type and pass (ADR-009); no pipeline state is created during a frame (ADR-005). Instance buffers live in the upload ring for one frame in flight (README RND-017).
 
-**RND-386** (MUST) The frame budgets of these passes (CPU time to write instances, GPU time of `instance_cull` and of each pass, and the instance counts at the design and stress populations) are the budgets of [options_and_budgets.md](options_and_budgets.md); every pass carries its marker and GPU timestamps (ADR-0068), and the development overlay shows the compacted instance count of every instance type (ADR-0009).
+**RND-386** (MUST) The frame budgets of these passes (CPU time to write instances, GPU time of `instance_cull` and of each pass, and the instance counts at the design and stress populations) are the budgets of [options_and_budgets.md](options_and_budgets.md); every pass carries its marker and GPU timestamps (ADR-068), and the development overlay shows the compacted instance count of every instance type (ADR-009).
 
 **RND-387** (MUST) Instance writing for different instance types MAY run on several threads where the threading model allows (DEC-224); the writes of one type keep the pool order of RND-313.
 
@@ -482,8 +482,8 @@ Diagnostics: a development view lists, per instance type, the written and compac
 | DEC-337 | Dropped | driver and pointer properties (RND-369) |
 | DEC-463 | Resolved | every tracked surge is drawn; one limit (RND-302) |
 | DEC-651 | Open | how the route fade gets its points (RND-352) |
-| ADR-0005 | Accepted | the `Ghost` blend (one, source colour) of RND-365 is a blend state of the renderer's catalogue (RND-058) |
-| ADR-0009 | Accepted | instancing, orientation modes and decal shadows |
+| ADR-005 | Accepted | the `Ghost` blend (one, source colour) of RND-365 is a blend state of the renderer's catalogue (RND-058) |
+| ADR-009 | Accepted | instancing, orientation modes and decal shadows |
 
 **Design-phase inputs.**
 

@@ -367,7 +367,7 @@ Sections that describe a legacy implementation of an in-scope behaviour are spli
 Also propose the package split for your documents (`owner_package` values from §9.3), keeping each package at 150 KB of input or less.
 
 **F3 — Standards baseline.** You may use Microsoft Learn and primary vendor and standards sources. Never state a version from memory. Record the URL and the date checked for every fact.
-Output: `WORK/standards_baseline.md`. The design phase reuses it, so X-ADR copies it into `NEXT/adr/README.md` §"Technology baseline". Determine the current state, as of the run date, of:
+Output: `WORK/standards_baseline.md`. The design phase reuses it, so X-ADR copies it into `NEXT/ADR/README.md` §"Technology baseline". Determine the current state, as of the run date, of:
 - the Windows 11 servicing baseline. Note that Windows 10 is out of mainstream support, and say what minimum OS build to require.
 - MSVC and Visual Studio: current release, C++23 conformance and `import std` support, and C++26 feature availability. Recommend C++23 as the language baseline, using C++26 features only where MSVC ships them as stable. Also note Clang and GCC C++23 status, because a dedicated server may be built for Linux.
 - CMake presets and vcpkg manifest mode as the build and dependency baseline.
@@ -396,9 +396,9 @@ Also write `WORK/dec_map.csv` (`dec_id, orig_ref, affects_prefix`), so rewrite a
 
 **X-ADR — Engine architecture decision records.**
 Inputs: `ORIG/40` §3 (T1–T38 and §3.2–§3.3) and §1.2 D5, D8 (content pipeline part) and D9; `WORK/standards_baseline.md`; every routing row with `TO-ADR`; §0 "Superseded verdicts".
-Output: `NEXT/adr/README.md` (index: number, title, status, date; plus §"Technology baseline" copied from `WORK/standards_baseline.md`) and one MADR 4 file per decision, `NEXT/adr/NNNN-<slug>.md`, with YAML front matter `status`, `date` and `decision-makers`, and the sections *Context and Problem Statement*, *Decision Drivers*, *Considered Options*, *Decision Outcome* (with *Consequences* and *Confirmation*), *Pros and Cons of the Options*, and *More Information*.
+Output: `NEXT/ADR/README.md` (index: number, title, status, date; plus §"Technology baseline" copied from `WORK/standards_baseline.md`) and one MADR 4 file per decision, `NEXT/ADR/NNNN-<slug>.md`, with YAML front matter `status`, `date` and `decision-makers`, and the sections *Context and Problem Statement*, *Decision Drivers*, *Considered Options*, *Decision Outcome* (with *Consequences* and *Confirmation*), *Pros and Cons of the Options*, and *More Information*.
 **Cover engine technology only:** the platform and toolchain baseline; the language standard and modules; build and dependency management; the renderer architecture (frame graph, PSO catalogue, root-signature and bindless policy, the barrier model, instancing of crowds, GPU particles, swap chain and presentation); the minimum feature level and Shader Model; the texture pipeline (BCn and DDS, colour space, alpha modes); the mesh pipeline (glTF import, socket schema, flat shading, team tint); the audio engine (XAudio2 voices, buses, virtual voices, codec); input (GameInput); the UI framework (retained, batched, focus graph, DPI, glyph cache); the pack-file format and the no-loose-override rule for shipping; the data schema format and its versioning; localisation; accessibility (XAG); crash reporting and telemetry with consent; logging (ETW and TraceLogging); profiling (PIX); the test framework and CI; and client packaging and distribution.
-**Do not write ADRs on** the topics of §0 "Superseded verdicts": networking, simulation numeric model and threading, tick rate, persistence, sessions, online services, hosting, or the terrain runtime model. List them in `NEXT/adr/README.md` §"Deferred to the design phase", each with a one-line problem statement.
+**Do not write ADRs on** the topics of §0 "Superseded verdicts": networking, simulation numeric model and threading, tick rate, persistence, sessions, online services, hosting, or the terrain runtime model. List them in `NEXT/ADR/README.md` §"Deferred to the design phase", each with a one-line problem statement.
 Rules:
 - Context sections describe Species' needs and constraints. They never name or describe the legacy technology, so "Considered Options" lists only current options.
 - Status is Accepted where 40 decides, and Proposed where 40 leaves a choice. Every Proposed ADR states the default the team proceeds with.
@@ -406,7 +406,7 @@ Rules:
 
 ### 9.3 Phase 3 rewrite packages
 
-Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, targets, ID ranges); and the shared reads `WORK/rename_map.tsv`, `NEXT/CONVENTIONS.md`, `NEXT/decisions/` (the `README.md` index plus the register files, with `WORK/dec_map.csv`) and `NEXT/adr/README.md`. Component agents also read `WORK/standards_baseline.md`.
+Each package agent receives: §4; §6; its package JSON (`ORIG` line ranges, targets, ID ranges); and the shared reads `WORK/rename_map.tsv`, `NEXT/CONVENTIONS.md`, `NEXT/decisions/` (the `README.md` index plus the register files, with `WORK/dec_map.csv`) and `NEXT/ADR/README.md`. Component agents also read `WORK/standards_baseline.md`.
 **Packages at G1.** The coordinator splits and re-targets packages at G1 to respect the input budget and the 120 KB output limit. `WORK/packages/INDEX.md` and each package JSON are authoritative for targets, ID ranges and notes; the table below is the starting plan.
 **Common task for every package agent:** rewrite every KEEP and MERGE range of your package into your target files. Apply the templates of §6.3 or §6.4. Rename everything through the ledger. Cite DEC and ADR ids where they apply. Drop provenance and legacy material. Never lose an in-scope fact.
 

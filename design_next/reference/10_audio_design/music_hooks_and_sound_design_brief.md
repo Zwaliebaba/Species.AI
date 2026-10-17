@@ -20,7 +20,7 @@ The reference game plays **no music** in any session. Its audio engine neverthel
 
 **R-AUD-404** (MUST) **Attack timing.** The attack of a requested track is timed from the request, not from its start, so the fade-in that is left when the track starts is max(0, attack − time waited). In the reference data 14 of the 17 music layers have releases of 3.29 s to 20.71 s and five have attacks of 2.71 s to 5.23 s, so after any release of at least 5.23 s the next track starts at almost full level; a real fade-in happens only from silence, after the one short release of 3.29 s, or after a track with no release. When Species plays music, a track's attack starts when the track starts.
 
-**R-AUD-405** (MUST) **Loops and level.** A looping music layer loops seamlessly; a one-shot music layer plays once and then releases. Music uses the same envelope rules and the master volume, has no volume of its own in the reference, and is never bent by game speed. In Species, music plays on the music bus with its own player volume and its default level `ref.aud.bus.music.level` (R-AUD-221), streamed by a voice pair that cross-fades with sample-accurate timing (ADR-0024, ADR-0025).
+**R-AUD-405** (MUST) **Loops and level.** A looping music layer loops seamlessly; a one-shot music layer plays once and then releases. Music uses the same envelope rules and the master volume, has no volume of its own in the reference, and is never bent by game speed. In Species, music plays on the music bus with its own player volume and its default level `ref.aud.bus.music.level` (R-AUD-221), streamed by a voice pair that cross-fades with sample-accurate timing (ADR-024, ADR-025).
 
 **R-AUD-406** (MUST) The reference music events belong to content that the reference library does not include: single-player sequences and their scripts, retro loading screens, a start-up sequence, credits and demonstration pieces. None is reachable in a skirmish session, and none is carried into Species; their tracks, names and envelopes are not reproduced.
 
@@ -107,7 +107,7 @@ The acceptance checks of the Species sound set:
 ## 7 Dependencies
 
 - **Reference documents:** [event catalogue](event_catalogue.md) (the event set); [event model and sound data](event_model_and_sound_data.md) (entry kinds, stops, the validator); [positional, priorities and mix](positional_priorities_and_mix.md) (the music bus); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (beds, match end); [01 Skirmish rules and modes](../01_skirmish_rules_and_modes/README.md) (the one-minute warning).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (the music path of ADR-0024; streaming of ADR-0025).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (the music path of ADR-024; streaming of ADR-025).
 - **Assets:** `music.front_end.theme`, `music.match.bed`, `music.match.sting_victory`, `music.match.sting_defeat`; [assets/art_and_audio_briefs.md](../../assets/art_and_audio_briefs.md) §12 to §15 (the style of the sound set and the music). Groups requested and not yet in the manifest: the laser-bolt fire, structure-hit and kill sounds, the Trooper grenade throw and the game-over announcement (R-AUD-413).
 
 ## 8 Open decisions

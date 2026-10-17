@@ -1,6 +1,6 @@
 # Map structure records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [map definition](map_schema.md) · [buildings and world objects](../../../reference/03_buildings_and_world_objects/README.md) · [economy and spawn objects](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) · [mode objects](../../../reference/03_buildings_and_world_objects/mode_objects.md) · [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) · [trees and crate structures](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md) · [bots](../../../reference/07_bots/README.md) · [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [map definition](map_schema.md) · [buildings and world objects](../../../reference/03_buildings_and_world_objects/README.md) · [economy and spawn objects](../../../reference/03_buildings_and_world_objects/economy_and_spawn_objects.md) · [mode objects](../../../reference/03_buildings_and_world_objects/mode_objects.md) · [defences and props](../../../reference/03_buildings_and_world_objects/defences_and_props.md) · [trees and crate structures](../../../reference/03_buildings_and_world_objects/trees_and_crate_structures.md) · [bots](../../../reference/07_bots/README.md) · [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md)
 
 This document specifies the structure records of a map definition: the base fields every record holds, the fields of each structure kind that a map may place, the typed links between records and their validation. The meaning and the default value of every field belong to [reference/03](../../../reference/03_buildings_and_world_objects/README.md) and, for the bot structures, to [reference/07](../../../reference/07_bots/README.md); this document gives each field its key, its type, its presence rule and its checks.
 
@@ -14,7 +14,7 @@ This document specifies the structure records of a map definition: the base fiel
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schema (ADR-0062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schema (ADR-062).
 
 ```cpp
 namespace species::data::map {

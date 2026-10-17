@@ -75,7 +75,7 @@ Outside a match, and on a participant with no local team, the own and enemy audi
 
 **R-AUD-036** (MUST) **Stop.** Game code stops sounds by emitter and by event: a stop names an emitter, or no emitter, and an event id, a source id, or nothing. It stops every instance whose emitter is the named one and whose full event id equals the named event, starts with the named source, or, when nothing is named, every instance of that emitter. A playing instance is released by its own release (R-AUD-058); a waiting instance is removed. A stop with no emitter acts only on instances raised with no emitter. A stop never reaches the music channel unless it names the `music` source ([music hooks and brief](music_hooks_and_sound_design_brief.md) R-AUD-403).
 
-**R-AUD-037** (MUST) **Counts.** Game code can ask how many live instances of an event exist for an emitter or for any emitter, and whether an emitter has any playing instance. A count counts only live instances and is defined in every voice state (DEC-752). Results come back through the audio engine's result queue (ADR-0026), so no rule of the simulation depends on them.
+**R-AUD-037** (MUST) **Counts.** Game code can ask how many live instances of an event exist for an emitter or for any emitter, and whether an emitter has any playing instance. A count counts only live instances and is defined in every voice state (DEC-752). Results come back through the audio engine's result queue (ADR-026), so no rule of the simulation depends on them.
 
 **R-AUD-038** (MUST) Every instance records its emitter when it is triggered, so a stop or a count made before the next audio update, or for a two-dimensional or world-fixed instance, finds it (DEC-323). Looping sounds are started and stopped by explicit events, never kept alive by polling counts.
 
@@ -175,7 +175,7 @@ The reference sound data has no authored priority: a priority field, where prese
 
 **R-AUD-053** (MUST) Each modulatable value has an update mode: **continuous**, evaluated at every audio update, so a random value draws a new target at every update, filtered by its smoothing; or **per note**, evaluated when the instance is triggered, when it starts and after each loop restart or new note only, so a random value gives one value per note. A value whose mode the data omits is continuous. In the catalogue tables, `/note` marks a per-note value.
 
-**R-AUD-054** (MUST) **Smoothing.** A smoothing s lies in [0, `ref.aud.param.smoothing_max`] (0.99). Per `ref.sim.frame.audio_update_period` (0.05 s) of audio time, a value moves as out = target × (1 − √s) + out_previous × √s; over an elapsed audio time Δt the retention is (√s)^(Δt ÷ 0.05 s), so the smoothing depends on elapsed time, not on the update rate (ADR-0026). A smoothing of 0.6 keeps 0.775 of the previous value per 0.05 s.
+**R-AUD-054** (MUST) **Smoothing.** A smoothing s lies in [0, `ref.aud.param.smoothing_max`] (0.99). Per `ref.sim.frame.audio_update_period` (0.05 s) of audio time, a value moves as out = target × (1 − √s) + out_previous × √s; over an elapsed audio time Δt the retention is (√s)^(Δt ÷ 0.05 s), so the smoothing depends on elapsed time, not on the update rate (ADR-026). A smoothing of 0.6 keeps 0.775 of the previous value per 0.05 s.
 
 **R-AUD-055** (MUST) A smoothed value starts from the field's default (pitch 1.0) and is evaluated only a few times before the instance starts, so an authored random pitch range is compressed towards 1.0 at the start of a note: a range of 0.75 to 1.35 with smoothing 0.66 is heard as about 0.88 to 1.16. This is the reference default of DEC-322.
 
@@ -191,7 +191,7 @@ The reference sound data has no authored priority: a priority field, where prese
 
 **R-AUD-060** (MUST) **Note loop.** A `note` layer is a re-triggering note: at each release a new copy of the layer starts after its loop delay, with a new group member and new per-note values, and cross-fades with the fading previous note. This is the generative-pad mechanism of the ambience beds ([front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) R-AUD-320).
 
-**R-AUD-061** (MUST) **One-shot patience.** A `once` instance that gets no voice within `ref.aud.layer.one_shot_patience_updates` (3 audio updates, 0.15 to 0.20 s after the event) is retired unheard; a looping instance waits for a voice for as long as it lives. The Species engine keeps waiting instances virtual for the event's patience window, whose default is this value (ADR-0023).
+**R-AUD-061** (MUST) **One-shot patience.** A `once` instance that gets no voice within `ref.aud.layer.one_shot_patience_updates` (3 audio updates, 0.15 to 0.20 s after the event) is retired unheard; a looping instance waits for a voice for as long as it lives. The Species engine keeps waiting instances virtual for the event's patience window, whose default is this value (ADR-023).
 
 **R-AUD-062** (MUST) Envelope ramps change level smoothly in elapsed audio time; the reference steps them once per audio update, and the exact ramp arithmetic is the [audio engine](../../architecture/components/audio_engine.md)'s.
 
@@ -258,7 +258,7 @@ The members of `sfx.creature.spider.die` include the two members of `sfx.creatur
 
 ### 2.11 Filters and effects
 
-**R-AUD-076** (MUST) No audio effect runs by default, so the reference is heard **dry**: the effects that the sound data names are not applied unless the effects setting is switched on, which no options page offers ([09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454). This is the default of DEC-567. Where Species applies effects, they run on buses, not on individual voices (DEC-027, ADR-0024), and switching effects off leaves no effect processing on any voice or bus (DEC-752).
+**R-AUD-076** (MUST) No audio effect runs by default, so the reference is heard **dry**: the effects that the sound data names are not applied unless the effects setting is switched on, which no options page offers ([09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454). This is the default of DEC-567. Where Species applies effects, they run on buses, not on individual voices (DEC-027, ADR-024), and switching effects off leaves no effect processing on any voice or bus (DEC-752).
 
 **R-AUD-077** (MUST) The effect kinds are these fourteen, in this order; the order carries meaning, because it is the order in which a chain processes its own-algorithm effects (R-AUD-080). Ranges and declared defaults:
 
@@ -293,11 +293,11 @@ Kinds 0 to 8 are standard effects whose processing is defined by their parameter
 | echo | a single feedback delay line of up to 3 s: the delay in ms, the wet/dry mix, and the attenuation as the feedback percentage |
 | simple reverb | a fixed six-tap feedback reverb with taps at 1.1, 3, 11, 19, 29 and 46 ms and no controls |
 
-Every effect computes its time constants and coefficients from the sample rate at which it actually runs, so delays, rates and cut-offs sound the same at every device rate (ADR-0024).
+Every effect computes its time constants and coefficients from the sample rate at which it actually runs, so delays, rates and cut-offs sound the same at every device rate (ADR-024).
 
 **R-AUD-080** (MUST) **Chains.** A layer holds at most one effect of each kind; a second effect of the same kind on one layer is a content-build error. The own-algorithm effects of a chain run in kind order, whatever their order in the data, and the standard effects run after them. Every effect parameter is a modulatable value (R-AUD-051), evaluated like the layer's own values.
 
-**R-AUD-081** (MUST) In Species, an effect that the design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has the effect, or by a send to such a bus ([audio engine](../../architecture/components/audio_engine.md), ADR-0024); no voice carries its own effect chain.
+**R-AUD-081** (MUST) In Species, an effect that the design attaches to a group of sounds is realised by routing those sounds to a bus whose chain has the effect, or by a send to such a bus ([audio engine](../../architecture/components/audio_engine.md), ADR-024); no voice carries its own effect chain.
 
 **R-AUD-082** (MUST) The event set names these 15 effects, one per layer; with effects enabled they would apply, and with the default of DEC-567 none runs:
 
@@ -429,7 +429,7 @@ Keys cited here and defined elsewhere: `ref.crate.open.full_progress` in [04 cra
 ## 7 Dependencies
 
 - **Reference documents:** [event catalogue](event_catalogue.md) (the events and their layer data); [positional, priorities and mix](positional_priorities_and_mix.md) (position kinds, ranking, buses); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (note-loop beds); [02 Units](../02_units/README.md) R-UNIT-047 and [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) R-BLDG-049 (base events); [03 mode objects](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-337 (Launch Vessel loops); [04 crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-117 and R-CRATE-145 (crate sounds); [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-454 (effects setting); [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (audio update period).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-0022, ADR-0023, ADR-0024, ADR-0026); [data schemas](../../architecture/components/data_schemas/README.md) (the sound-event schema and its domains); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-022, ADR-023, ADR-024, ADR-026); [data schemas](../../architecture/components/data_schemas/README.md) (the sound-event schema and its domains); [asset pipeline and resources](../../architecture/components/asset_pipeline_and_resources.md).
 - **Assets:** the groups named in R-AUD-067, `sfx.unit.worker.burning`, `sfx.unit.worker.die`, `sfx.unit.worker.die_b`, `sfx.creature.spider.pounce`, `sfx.creature.spider.die`, `sfx.creature.spider.hurt`; every other group is cited where it is bound in the [event catalogue](event_catalogue.md).
 
 ## 8 Open decisions

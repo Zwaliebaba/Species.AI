@@ -25,7 +25,7 @@ This folder specifies the player-facing rules:
 | [cursor_and_markers.md](cursor_and_markers.md) | the world cursor, highlights, previews, the crosshair and the world markers | 350 to 449 |
 | [camera.md](camera.md) | the match camera: model, per-frame update, live modes, components, free movement, tracking, structure aim, and the start-of-match camera views | 450 to 599 |
 
-The input architecture, the device back-ends, the binding grammar and the complete control catalogue belong to the [input component](../../architecture/components/input.md) (ADR-0028, ADR-0029). The command catalogue (`PlayerCommand`) belongs to [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); this folder cites its members and defines no second catalogue. Units and Leaders, with their tuning keys, are specified in [reference/02_units](../02_units/README.md). Scripted camera moves and camera views as data belong to the [camera and sequences component](../../architecture/components/camera_and_sequences.md).
+The input architecture, the device back-ends, the binding grammar and the complete control catalogue belong to the [input component](../../architecture/components/input.md) (ADR-028, ADR-029). The command catalogue (`PlayerCommand`) belongs to [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); this folder cites its members and defines no second catalogue. Units and Leaders, with their tuning keys, are specified in [reference/02_units](../02_units/README.md). Scripted camera moves and camera views as data belong to the [camera and sequences component](../../architecture/components/camera_and_sequences.md).
 
 ## 2 Rules
 
@@ -45,9 +45,9 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 ### 2.2 Input conventions and global gates
 
-**R-CTRL-010** (MUST) Bindings use these conditions on a control: **down**, the control became pressed in this frame; **up**, it became released in this frame; **held**, it is pressed now; **axis**, an analogue value (stick, trigger, mouse movement, wheel). A press and a release within one frame make both down and up true for that frame, so no press is lost (ADR-0029, DEC-096). The binding grammar and its parser belong to the [input component](../../architecture/components/input.md); an unknown condition word is rejected at load (DEC-096, DEC-553).
+**R-CTRL-010** (MUST) Bindings use these conditions on a control: **down**, the control became pressed in this frame; **up**, it became released in this frame; **held**, it is pressed now; **axis**, an analogue value (stick, trigger, mouse movement, wheel). A press and a release within one frame make both down and up true for that frame, so no press is lost (ADR-029, DEC-096). The binding grammar and its parser belong to the [input component](../../architecture/components/input.md); an unknown condition word is rejected at load (DEC-096, DEC-553).
 
-**R-CTRL-011** (MUST) The **input mode** is the class of the last active device: keyboard and mouse, or gamepad (ADR-0029). Rules that depend on the input mode say so.
+**R-CTRL-011** (MUST) The **input mode** is the class of the last active device: keyboard and mouse, or gamepad (ADR-029). Rules that depend on the input mode say so.
 
 **R-CTRL-012** (MUST) These gates are used by the action tables of [actions and bindings](actions_and_bindings.md):
 
@@ -67,7 +67,7 @@ The input architecture, the device back-ends, the binding grammar and the comple
 
 **R-CTRL-020** (MUST) During a match, each rendered frame runs these input steps in this order:
 
-1. the input router (`InputRouter`) takes the frame's device events (ADR-0029);
+1. the input router (`InputRouter`) takes the frame's device events (ADR-029);
 2. the escape and interface actions (`action.match.menu`, `action.view.hide_interface`) are handled;
 3. while no UI window is open, the team command state is sampled for the local team ([actions and bindings](actions_and_bindings.md));
 4. when `ref.sim.command.control_state_period` has elapsed since the last send, the team command state is sent as `PlayerCommand::ControlState` and its one-shot flags are cleared (R-SIM-438, R-SIM-441);
@@ -152,7 +152,7 @@ The tuning keys of this folder are defined in the tuning table of each sub-file:
 
 - **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (the command catalogue, the team command state, command execution order); [Tick timing and main loop](../12_simulation_model/01_tick_timing_and_main_loop.md) (tick period, presentation clocks); [reference/02_units](../02_units/README.md); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (grace period, game over); [Tutorial and help](../11_tutorial_and_help.md) (hints and tutorial notifications); [Bots](../07_bots/README.md).
 - **Engine components:** [input](../../architecture/components/input.md) (device events, binding graph, control catalogue); [camera and sequences](../../architecture/components/camera_and_sequences.md) (camera views, scripted moves, picking and projection services); [UI framework](../../architecture/components/ui_framework/README.md); [platform layer](../../architecture/components/platform_layer.md).
-- **ADRs:** ADR-0028 (input device back-ends), ADR-0029 (input event model and binding contract), ADR-0036 (presentation clock).
+- **ADRs:** ADR-028 (input device back-ends), ADR-029 (input event model and binding contract), ADR-036 (presentation clock).
 - **Assets:** listed in each sub-file.
 
 ## 8 Open decisions

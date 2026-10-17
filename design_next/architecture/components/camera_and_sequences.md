@@ -1,12 +1,12 @@
 # Camera and sequences
 
-> Status: Engine baseline · Prefix: CAM · ADRs: [ADR-0016](../../adr/0016-view-projection-and-depth-conventions.md) · [ADR-0036](../../adr/0036-effect-events-and-presentation-clock.md) · [ADR-0074](../../adr/0074-platform-clock-with-injectable-time.md) · [ADR-0052](../../adr/0052-cpp23-language-standard.md) · [ADR-0056](../../adr/0056-editions-build-flavours-and-feature-flags.md) · [ADR-0059](../../adr/0059-content-build-and-validators.md) · [ADR-0061](../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0063](../../adr/0063-localisation.md) · [ADR-0064](../../adr/0064-accessibility-baseline-xag.md) · [ADR-0067](../../adr/0067-logging.md) · [ADR-0069](../../adr/0069-test-framework.md) · Related: [Camera rules](../../reference/06_controls_camera_and_commands/camera.md) · [View, lighting and fog](renderer/view_lighting_and_fog.md) · [Map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Tutorial and help](../../reference/11_tutorial_and_help.md) · [Randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [Animation and VFX](animation_and_vfx/README.md) · [Input](input.md)
+> Status: Engine baseline · Prefix: CAM · ADRs: [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-036](../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-074](../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-052](../../ADR/ADR-052-cpp23-language-standard.md) · [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-063](../../ADR/ADR-063-localisation.md) · [ADR-064](../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-067](../../ADR/ADR-067-logging.md) · [ADR-069](../../ADR/ADR-069-test-framework.md) · Related: [Camera rules](../../reference/06_controls_camera_and_commands/camera.md) · [View, lighting and fog](renderer/view_lighting_and_fog.md) · [Map rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Tutorial and help](../../reference/11_tutorial_and_help.md) · [Randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [Animation and VFX](animation_and_vfx/README.md) · [Input](input.md)
 
 This component is the runtime of each participant's match camera (`MatchCamera`) and of the scripted camera sequences built on it. It executes the player-camera rules of [camera rules](../../reference/06_controls_camera_and_commands/camera.md); holds the camera views and camera animations of the loaded map; cuts the camera to the default view and the start view when a match begins; plays camera animations; provides the scripted operations that a sequence needs (the cut, the scripted move that lands exactly on its target, the approach and the structure-focus orbit); runs the developer fly mode of development builds and the map editor; and provides the camera's picking and projection services. It also specifies the presentation-timeline baseline that DEC-051 would build.
 
 **Notation and units.**
 
-- Distances are in world units (`wu`), in the right-handed, +Y-up world frame of ADR-0016; world up is (0, 1, 0).
+- Distances are in world units (`wu`), in the right-handed, +Y-up world frame of ADR-016; world up is (0, 1, 0).
 - Camera time is in seconds of the camera clock (CAM-030), a presentation clock. No camera duration is a simulation duration, and no simulation rule reads camera time (DEC-009).
 - Fields of view are vertical and in degrees; every other angle is in radians.
 - dt is the camera step of the current advance (CAM-030); lerp(a, b, k) = a + (b − a) × k; normalise(v) = v ÷ |v|; vector products are right-handed.
@@ -90,7 +90,7 @@ struct MapCameraData {                          // built once at match entry (CA
 };
 
 struct CameraFrameInputs {
-  double realNow;                               // platform clock, seconds (ADR-0074)
+  double realNow;                               // platform clock, seconds (ADR-074)
   const PresentationSnapshot* snapshot;         // DEC-222; null without a match world
   float extrapolationSeconds;                   // R-SIM-560
   const InputRouter* input;                     // actions, pointer, input mode
@@ -171,13 +171,13 @@ public:
 
 **CAM-010** (MUST) Every call of `MatchCamera` and `TimelinePlayer` runs on the frame thread, which is the main thread of the frame loop (R-SIM-581). The component has no thread, no lock and no asynchronous work. The presentation snapshot, the frame view and the map camera data are read-only for the duration of a call.
 
-**CAM-011** (MUST) An advance reads only its `CameraFrameInputs`, the camera's own state and the map camera data: the platform clock reading, the presentation snapshot (positions, velocities and centres of actors and structures, the local team's selection and current Power), the extrapolation time, the actions and pointer of the participant's input router, the UI-window state, whether the map editor runs, and terrain heights. It reads no other clock, device or global state (ADR-0074).
+**CAM-011** (MUST) An advance reads only its `CameraFrameInputs`, the camera's own state and the map camera data: the platform clock reading, the presentation snapshot (positions, velocities and centres of actors and structures, the local team's selection and current Power), the extrapolation time, the actions and pointer of the participant's input router, the UI-window state, whether the map editor runs, and terrain heights. It reads no other clock, device or global state (ADR-074).
 
-**CAM-012** (MUST) `FrameOutput` returns the stored pose with the frame's shake offset applied and the stored pose itself unchanged: the front is turned by the offset's yaw about the world vertical, the up vector is rolled about the front by the offset's roll, and both are re-orthogonalised (VFX-232, ADR-0036). This realises step 5 of R-CTRL-456 and the shake of R-CTRL-463 as the additive view offset of ADR-0036; the shake never accumulates in the camera's pose. The field of view is passed unclamped; the renderer clamps it (RND-212) and sets the planes (RND-211).
+**CAM-012** (MUST) `FrameOutput` returns the stored pose with the frame's shake offset applied and the stored pose itself unchanged: the front is turned by the offset's yaw about the world vertical, the up vector is rolled about the front by the offset's roll, and both are re-orthogonalised (VFX-232, ADR-036). This realises step 5 of R-CTRL-456 and the shake of R-CTRL-463 as the additive view offset of ADR-036; the shake never accumulates in the camera's pose. The field of view is passed unclamped; the renderer clamps it (RND-212) and sets the planes (RND-211).
 
 **CAM-013** (MUST) Camera requests that the player rules attach to simulation events reach the camera as presentation events of the participant's own team, consumed in tick order before the next advance (R-SIM-666, DEC-007): for example, the request to enter turret aim when the own team selects one of its turrets (R-SIM-405 step 6). A request about another participant's team never reaches this camera. Shake requests go to the screen effects of VFX-232, not to the camera.
 
-**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: the camera views and the camera animations in record order, the camera view of each start-position record by start position (DEC-560, R-MAP-042), and the world size x of the terrain definition. The record schemas are those of [data schemas](data_schemas/README.md) (ADR-0061), and the content build has already validated their names, references and durations (ADR-0059, DEC-015, DEC-801). The camera never parses authoring text.
+**CAM-014** (MUST) At match entry the camera receives `MapCameraData`, built once from the validated map definition: the camera views and the camera animations in record order, the camera view of each start-position record by start position (DEC-560, R-MAP-042), and the world size x of the terrain definition. The record schemas are those of [data schemas](data_schemas/README.md) (ADR-061), and the content build has already validated their names, references and durations (ADR-059, DEC-015, DEC-801). The camera never parses authoring text.
 
 **CAM-015** (MUST) In each frame the camera provides its control vector (R-CTRL-451, R-CTRL-487) and its looking-around and tracking state (R-CTRL-472) to the match input pump, which converts every camera-relative quantity to world space before it enters the team command state (R-SIM-440, DEC-008). The camera never writes the team command state.
 
@@ -270,7 +270,7 @@ Table 3.2-A Camera state.
 
 ### 3.3 Presentation timelines
 
-**CAM-025** (MUST) A presentation timeline is a record of its own schema in [data schemas](data_schemas/README.md) (ADR-0061): an id and an ordered list of statements, each with a kind of table 3.3-A, its typed arguments and the source location of its authoring line. A timeline names structures by role tag, never by a fixed structure id or team (DEC-103), and names text by string id (ADR-0063).
+**CAM-025** (MUST) A presentation timeline is a record of its own schema in [data schemas](data_schemas/README.md) (ADR-061): an id and an ordered list of statements, each with a kind of table 3.3-A, its typed arguments and the source location of its authoring line. A timeline names structures by role tag, never by a fixed structure id or team (DEC-103), and names text by string id (ADR-063).
 
 Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carries no meaning.
 
@@ -297,7 +297,7 @@ Table 3.3-A Timeline statements. The order is the order of `TimelineOp`; it carr
 
 ### 4.1 Camera clock and the frame advance
 
-**CAM-030** (MUST) The camera clock is the one presentation clock of all camera motion (DEC-024). It starts at 0 when the camera is created and, at the start of each camera advance, advances by the camera step dt: the real time since the previous frame from the platform clock (ADR-0074, R-SIM-573), clamped to `ref.sim.frame.delta_clamp`, which is the presentation frame delta of R-SIM-570. Game speed never scales it, and it keeps advancing while the world is held, so the camera stays live during a pause (R-SIM-571). The scripted-move progress, the animation node timers, the structure-focus oscillations and the timeline waits all read this clock; no camera mode keeps a timer of its own, and no camera code reads another clock (R-CTRL-453).
+**CAM-030** (MUST) The camera clock is the one presentation clock of all camera motion (DEC-024). It starts at 0 when the camera is created and, at the start of each camera advance, advances by the camera step dt: the real time since the previous frame from the platform clock (ADR-074, R-SIM-573), clamped to `ref.sim.frame.delta_clamp`, which is the presentation frame delta of R-SIM-570. Game speed never scales it, and it keeps advancing while the world is held, so the camera stays live during a pause (R-SIM-571). The scripted-move progress, the animation node timers, the structure-focus oscillations and the timeline waits all read this clock; no camera mode keeps a timer of its own, and no camera code reads another clock (R-CTRL-453).
 
 **CAM-031** (MUST) The camera clock advances only when the camera advances. While the window has no focus, or while the camera is not advanced (the front end), neither the clock nor any camera timer moves, and a scripted move, a camera animation or a timeline resumes where it stood. The first step after such a gap is the clamped frame step, never the length of the gap.
 
@@ -524,7 +524,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 ### 4.9 Developer fly mode
 
-**CAM-080** (MUST) The developer fly mode exists only in builds of the `Debug` and `Development` flavours, which compile in developer commands (ADR-0056), and in the map editor, whose session runs the camera in it (R-MAP-309, CAM-060). It is a developer tool, not a player-camera mode: the live modes of R-CTRL-457 are unchanged, and no player build reaches it. It advances only while a match world exists.
+**CAM-080** (MUST) The developer fly mode exists only in builds of the `Debug` and `Development` flavours, which compile in developer commands (ADR-056), and in the map editor, whose session runs the camera in it (R-MAP-309, CAM-060). It is a developer tool, not a player-camera mode: the live modes of R-CTRL-457 are unchanged, and no player build reaches it. It advances only while a match world exists.
 
 **CAM-081** (MUST) Each advance in the developer fly mode moves the camera at the speed v = world size x ÷ `cam.developer.speed_divisor` (30) per second, × `cam.developer.fast_factor` (10) while `action.debug.camera_fast` is held, and × `cam.developer.slow_factor` (0.1) while `action.debug.camera_slow` is held; both factors apply when both actions are held. The six camera movement actions give the direction, only while no UI window is open or while the map editor runs: `action.camera.pan_left` along the camera's left vector, `action.camera.pan_right` along its right vector, `action.camera.raise` along its up vector, `action.camera.lower` against it, `action.camera.pan_forward` along its front and `action.camera.pan_back` against it. The position changes by the sum of the held directions × v × dt.
 
@@ -536,13 +536,13 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 ### 4.10 Picking and projection
 
-**CAM-090** (MUST) `PickRayAt(p, view)` returns the ray from the camera through the pointer position p, in pixels of the 2-D overlay space with its origin at the top-left corner and y growing downwards (RND-215), for the frame view of the last rendered frame (RND-218, ADR-0016). With W × H the render size, the pointer maps to the normalised device point x = 2 × pₓ ÷ W − 1 and y = 1 − 2 × (p_y + `cam.pick.row_offset`) ÷ H, so the ray passes through the lower-left corner of the pointer's pixel, as in the reference. The ray's origin is that point unprojected at the near plane (reversed-Z depth 1), and its direction is normalise(the point unprojected at the far plane (depth 0) − the origin), both through the inverse of the frame view's view-projection matrix.
+**CAM-090** (MUST) `PickRayAt(p, view)` returns the ray from the camera through the pointer position p, in pixels of the 2-D overlay space with its origin at the top-left corner and y growing downwards (RND-215), for the frame view of the last rendered frame (RND-218, ADR-016). With W × H the render size, the pointer maps to the normalised device point x = 2 × pₓ ÷ W − 1 and y = 1 − 2 × (p_y + `cam.pick.row_offset`) ÷ H, so the ray passes through the lower-left corner of the pointer's pixel, as in the reference. The ray's origin is that point unprojected at the near plane (reversed-Z depth 1), and its direction is normalise(the point unprojected at the far plane (depth 0) − the origin), both through the inverse of the frame view's view-projection matrix.
 
 **CAM-091** (MUST) The ray uses the frame view that the renderer last built. When the camera supplied a degenerate front or up vector, the renderer kept the previous valid view ([view, lighting and fog](renderer/view_lighting_and_fog.md) §6, RND-213), and the ray uses that view.
 
 **CAM-092** (MUST) The screen position of a world point is the renderer's `ProjectToScreen` (RND-216), which uses the frame's cached view-projection matrix. Where a rule must project with the camera's pose inside one advance, before and after the camera moves (the cursor lock of R-CTRL-464), it uses `ViewProjectionFor(pose, view)`: the view matrix built from that pose by RND-213 and the projection of the frame view by RND-210 to RND-212, mapped to pixels as RND-216 maps them.
 
-**CAM-093** (MUST) One screen-to-world helper serves the cursor, unit selection and the camera (ADR-0016): the pointer ground point of R-CTRL-058, the selection picking of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) and the map editor's pick ray (R-MAP-321) all use `PickRayAt`.
+**CAM-093** (MUST) One screen-to-world helper serves the cursor, unit selection and the camera (ADR-016): the pointer ground point of R-CTRL-058, the selection picking of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) and the map editor's pick ray (R-MAP-321) all use `PickRayAt`.
 
 ### 4.11 Precision and world scale
 
@@ -554,7 +554,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 **CAM-101** (MUST NOT) A timeline is presentation, not a gameplay script. It never changes the world, the match rules, a team or an option, and it never issues a player command. An effect that changes the world, such as a tutorial inserting a Supply crate, is a sequenced simulation event at a tick (DEC-103), never a timeline statement (R-SIM-660). Camera moves, captions, fades, overlays and sounds stay local to the participant.
 
-**CAM-102** (MUST) A timeline is data: an ordered list of the typed statements of table 3.3-A, written in the authoring syntax of ADR-0062 against the schema of ADR-0061. The content build validates every timeline as a whole before it ships (ADR-0059, DEC-015): an unknown statement, a missing or mistyped argument, a negative duration, and a reference to a camera view, camera animation, role tag, string id, overlay effect, sound event or condition that the maps and data using the timeline do not hold are build errors that name the file and the line. A runtime loader never parses authoring text and never meets an invalid timeline.
+**CAM-102** (MUST) A timeline is data: an ordered list of the typed statements of table 3.3-A, written in the authoring syntax of ADR-062 against the schema of ADR-061. The content build validates every timeline as a whole before it ships (ADR-059, DEC-015): an unknown statement, a missing or mistyped argument, a negative duration, and a reference to a camera view, camera animation, role tag, string id, overlay effect, sound event or condition that the maps and data using the timeline do not hold are build errors that name the file and the line. A runtime loader never parses authoring text and never meets an invalid timeline.
 
 **CAM-103** (MUST) A running timeline advances once per rendered frame, before the camera advance (between steps 11.8 and 11.9 of R-SIM-581), so the camera statements of a frame take effect in that frame's camera advance (CAM-035). In each advance it executes statements in order, from its current statement, until it reaches a wait whose condition does not yet hold, or its end: every statement that does not block runs in the same frame, so the statements between two waits take one frame however many there are.
 
@@ -575,7 +575,7 @@ Caption: Listing 4.8-B, camera-animation playback (CAM-065 to CAM-068).
 
 **CAM-109** (MUST) The camera statements map onto the camera operations: CameraCut v is `SetTargetView(v)` and then `Cut()`; CameraMove v T is `SetTargetView(v)` and then `StartMove(T)`; CameraApproach s d h T is the approach of CAM-054 to the structure with role tag s; CameraFocus s r h is `FocusStructure` on the structure with role tag s; CameraAnimation a is `PlayCameraAnimation(a)`; CameraFov f sets the field of view to f at once when its immediate flag is set, and otherwise sets the target field of view, which the zoom component eases (R-CTRL-460, CAM-049); CameraRelease is `ReleaseToPlayer()`, which stops a playing camera animation (CAM-068) and enters free movement (R-CTRL-470). A timeline's camera path is therefore a camera animation or a series of camera statements on camera views; no spline or key-frame camera format is needed.
 
-**CAM-110** (MUST) A Caption statement shows the text of a string id (ADR-0063) through the UI framework, revealed character by character at its reveal rate, with a text cursor after the last revealed character when its cursor flag is set, in its layout, for its display time. Captions are the subtitles of a timeline and follow the subtitle and caption guidance of the accessibility baseline (ADR-0064). A caption never blocks; a timeline that waits for a caption uses Wait.
+**CAM-110** (MUST) A Caption statement shows the text of a string id (ADR-063) through the UI framework, revealed character by character at its reveal rate, with a text cursor after the last revealed character when its cursor flag is set, in its layout, for its display time. Captions are the subtitles of a timeline and follow the subtitle and caption guidance of the accessibility baseline (ADR-064). A caption never blocks; a timeline that waits for a caption uses Wait.
 
 **CAM-111** (MUST) A Fade statement starts the renderer's fade: "out" calls `StartFadeOut()` and "in" calls `StartFadeIn(delay)` ([frame graph and passes](renderer/frame_graph_and_passes.md) RND-085), at the fade rate `rnd.fade.rate`; WaitFade waits for it to complete.
 
@@ -643,13 +643,13 @@ Table 6-A Failure modes.
 | the window loses focus during a move, an animation or a timeline | the camera clock stops and everything resumes where it stood | CAM-031 |
 | a timeline refers to content that a map or data set lacks | a content-build error with file and line | CAM-102 |
 
-**CAM-125** (MUST) In builds of the `Debug` and `Development` flavours (ADR-0056) a camera overlay shows: the mode; the pose; the target; the field of view and its target; the camera clock; the current camera animation with its node index and the remaining node time; the saved mode; and the running timeline with its current statement, its current wait and its abort permission. Warnings and state changes are logged in the `camera` and `sequence` categories (ADR-0067).
+**CAM-125** (MUST) In builds of the `Debug` and `Development` flavours (ADR-056) a camera overlay shows: the mode; the pose; the target; the field of view and its target; the camera clock; the current camera animation with its node index and the remaining node time; the saved mode; and the running timeline with its current statement, its current wait and its abort permission. Warnings and state changes are logged in the `camera` and `sequence` categories (ADR-067).
 
-**CAM-126** (MUST NOT) The camera emits no telemetry: its pose, views, animations and timelines are not part of the telemetry data set (ADR-0066).
+**CAM-126** (MUST NOT) The camera emits no telemetry: its pose, views, animations and timelines are not part of the telemetry data set (ADR-066).
 
 ## 7 Acceptance tests
 
-Tests run under the test framework of ADR-0069 with the manual time source of ADR-0074, so every camera step is set by the test.
+Tests run under the test framework of ADR-069 with the manual time source of ADR-074, so every camera step is set by the test.
 
 Table 7-A Acceptance tests.
 
@@ -699,12 +699,12 @@ Table 8.1-A Decisions and records that apply.
 | DEC-007, DEC-009, DEC-015, DEC-103, DEC-800, DEC-801 | Resolved | presentation events, presentation time, content validation, sequenced tutorial effects, lossless writers, duplicate and over-long values |
 | DEC-045, DEC-240 | Open | the map editor (§8.2); the numeric model behind camera-relative coordinates (CAM-095) |
 | DEC-052, DEC-053, DEC-054, DEC-059 | Dropped | no narrator, script interpreter, intro start sequence or reflected camera pose (CAM-006) |
-| ADR-0016 | Proposed | axes, reversed Z, the Hor+ field of view and one picking helper (CAM-090 to CAM-093) |
-| ADR-0036 | Accepted | the shake as an additive view offset (CAM-012) |
-| ADR-0074 | Accepted | the camera clock reads the platform clock; tests inject time (CAM-030, §7) |
-| ADR-0056 | Accepted | the developer fly mode and overlay in the `Debug` and `Development` flavours (CAM-080, CAM-125) |
-| ADR-0059, ADR-0061, ADR-0062 | Accepted, Accepted, Proposed | validated camera records and timelines (CAM-014, CAM-020, CAM-102) |
-| ADR-0063, ADR-0064 | Accepted, Proposed | caption text and caption accessibility (CAM-110) |
+| ADR-016 | Proposed | axes, reversed Z, the Hor+ field of view and one picking helper (CAM-090 to CAM-093) |
+| ADR-036 | Accepted | the shake as an additive view offset (CAM-012) |
+| ADR-074 | Accepted | the camera clock reads the platform clock; tests inject time (CAM-030, §7) |
+| ADR-056 | Accepted | the developer fly mode and overlay in the `Debug` and `Development` flavours (CAM-080, CAM-125) |
+| ADR-059, ADR-061, ADR-062 | Accepted, Accepted, Proposed | validated camera records and timelines (CAM-014, CAM-020, CAM-102) |
+| ADR-063, ADR-064 | Accepted, Proposed | caption text and caption accessibility (CAM-110) |
 
 ### 8.2 Map-editor hooks
 
@@ -720,7 +720,7 @@ The map editor is designed fresh by the design phase (DEC-045). These are its ho
 1. **Presentation timelines (DEC-051).** Whether Species has them; their statement set beyond table 3.3-A; the condition set of WaitCondition; who may start a timeline (tutorial steps, camera triggers, mode or settlement intros); and whether a running timeline pauses when the world is held, which by CAM-030 it does not.
 2. **Camera animations (DEC-803).** Keep them without content, remove them with the timeline, or give them a match use such as a camera sweep before the start-view cut.
 3. **Intro and outro sequences.** Whether a match, a settlement visit or a world session opens or closes with a timeline, and its skip and abort rules.
-4. **Reduced motion (ADR-0064).** Whether a scripted move or a structure focus becomes a cut, or slows, under the motion setting, as the camera shake is scaled (VFX-232).
+4. **Reduced motion (ADR-064).** Whether a scripted move or a structure focus becomes a cut, or slows, under the motion setting, as the camera shake is scaled (VFX-232).
 5. **World scale (DEC-247, DEC-240).** Camera-relative coordinates; the strategic zoom of a large world with its height range and terrain levels of detail; the far plane, which is the renderer's input; and what replaces per-map start views in a persistent world, for example views per settlement or region instead of per start position (DEC-560).
 6. **Tracking (DEC-310).** Keep the stale orbit centre, or recompute it when the tracked entity changes.
 7. **Simulation and presentation boundary (DEC-222).** The snapshot that the camera reads, and whether interpolation with a one-tick display delay changes the tracking prediction of R-CTRL-483 step 2.

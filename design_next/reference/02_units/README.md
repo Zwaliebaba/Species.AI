@@ -266,7 +266,7 @@ Table 2.11-A Slope speed factors.
 
 **R-UNIT-043** (MUST) An actor takes the colour of its team from the team colour table of [reference/12](../12_simulation_model/06_teams_and_player_commands.md) (`ref.sim.team_colour.*`). The Rogue faction is drawn in `ref.sim.team_colour.rogue.base` (10, 10, 10) and the Visitor faction in `ref.sim.team_colour.visitor.base` (200, 200, 200). An actor of the no-team value is drawn in its authored colours.
 
-**R-UNIT-044** (MUST) A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-0020):
+**R-UNIT-044** (MUST) A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-020):
 
 1. **whole-model tint**: every facet of the mesh takes the team colour, attenuated by `ref.unit.tint.attenuation` (0.7);
 2. **region tint**: only the marked regions are tinted, with a luminance-preserving tint, team colour × (sum of the facet's authored red, green and blue ÷ sum of the team colour's red, green and blue), then attenuated by `ref.unit.tint.attenuation` (0.7); every other facet keeps its authored colour.
@@ -718,7 +718,7 @@ The ring grows by 4 wu per tick, so a stationary target at distance d is hit onc
 
 - **Reference documents:** [worker.md](worker.md), [leader_and_formations.md](leader_and_formations.md), [essence_orbs.md](essence_orbs.md), [strike_team.md](strike_team.md), [transport.md](transport.md), [collector.md](collector.md), [builder.md](builder.md), [creatures.md](creatures.md), [hazards_and_projectiles.md](hazards_and_projectiles.md); [reference/05](../05_population_flow.md) (Essence orb release, population cap); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (weapons, projectiles, Powers, conversions); [reference/06](../06_controls_camera_and_commands/README.md) (bindings); [reference/07](../07_bots/README.md) (bot controller, bot hooks); [reference/08](../08_maps_and_level_design/README.md) (instant units); [reference/09](../09_front_end_and_match_flow/README.md) (research settings of the match setup); [reference/10](../10_audio_design/README.md) (sound events); [reference/12](../12_simulation_model/README.md) (entity model, spawn order, base advance, actor grid, physics, explosions, team colours, commands).
 - **Engine components:** [../../architecture/components/data_schemas/README.md](../../architecture/components/data_schemas/README.md) (actor stat schema), [../../architecture/components/animation_and_vfx/README.md](../../architecture/components/animation_and_vfx/README.md) (particles, shatter effects), [../../architecture/components/renderer/entity_and_overlay_renderers.md](../../architecture/components/renderer/entity_and_overlay_renderers.md) (unit rendering, shadows, flicker).
-- **ADRs:** ADR-0020 (flat shading and team tint), ADR-0021 (mesh socket schema).
+- **ADRs:** ADR-020 (flat shading and team tint), ADR-021 (mesh socket schema).
 - **Assets:** `mesh.unit.worker_figure`, `mesh.unit.leader_figure`, `fx.glow_round`, `fx.muzzle_flash`.
 
 ## 8 Open decisions

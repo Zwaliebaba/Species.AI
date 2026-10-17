@@ -222,11 +222,11 @@ Whether the world is held depends on game speed alone, never on local or transpo
 
 **R-SIM-572** (MUST) The smooth presentation time is neither safe for simulation use nor safe for concurrent use; only presentation code on the frame loop reads it.
 
-**R-SIM-573** (MUST) In Species, every clock reads the platform clock, which accepts injected time for capture and replay (ADR-0074). Camera motion uses one presentation clock (DEC-024), visual effects use the presentation clock of ADR-0036, and the frame delta clamp `ref.sim.frame.delta_clamp` is kept (ADR-0012). R-SIM-571 states the reference behaviour of the frame delta while the world is held.
+**R-SIM-573** (MUST) In Species, every clock reads the platform clock, which accepts injected time for capture and replay (ADR-074). Camera motion uses one presentation clock (DEC-024), visual effects use the presentation clock of ADR-036, and the frame delta clamp `ref.sim.frame.delta_clamp` is kept (ADR-012). R-SIM-571 states the reference behaviour of the frame delta while the world is held.
 
 ### 2.9 Render rate and the frame-rate counter
 
-**R-SIM-575** (MUST) The reference in-match loop renders exactly once per iteration and never sleeps, so its frame rate is limited only by presentation; vertical sync follows the display driver's setting, and the vertical-sync preference has no effect. In Species, presentation and frame pacing follow the swap chain's present interval (ADR-0012).
+**R-SIM-575** (MUST) The reference in-match loop renders exactly once per iteration and never sleeps, so its frame rate is limited only by presentation; vertical sync follows the display driver's setting, and the vertical-sync preference has no effect. In Species, presentation and frame pacing follow the swap chain's present interval (ADR-012).
 
 **R-SIM-576** (MUST) The frames-per-second counter counts the frames completed in the last `ref.sim.frame.fps_window` (1 s); until the first window completes it reads `ref.sim.frame.fps_initial` (60). Its readers are the debug overlay, the low-frame-rate audio rule (R-SIM-581 step 11.16), the frame-rate caption of the graphics options, and the lobby's backdrop detail switch ([reference/09](../09_front_end_and_match_flow/README.md)).
 
@@ -503,7 +503,7 @@ Keys cited here and defined elsewhere: the mode second in [reference/01](../01_s
 
 - Reference documents: [Simulation model](README.md); [02 Match lifecycle and state reset](02_match_lifecycle_and_state_reset.md) (match start, multi-round reset, shutdown); [04 Containers and update order](04_containers_and_update_order.md) (the order inside each slice, slot re-use); [06 Teams and player commands](06_teams_and_player_commands.md) (command catalogue, batching, the team command state); [07 Randomness and integrity](07_randomness_and_integrity.md) (clock and random-stream integrity rules); [reference/01](../01_skirmish_rules_and_modes/README.md) (the grace period, mode-second rules, the match won); [reference/04](../04_supply_crates_powers_and_weapons/README.md) (Time Dilation, Time Rush, meteor shower); [reference/06](../06_controls_camera_and_commands/README.md) (continuous control input, camera views); [reference/09](../09_front_end_and_match_flow/README.md) (front end, lobby, loading view); [reference/10](../10_audio_design/README.md) (ambience events, audio logic rate).
 - Engine components: [platform layer](../../architecture/components/platform_layer.md) (clock, window messages); [renderer](../../architecture/components/renderer/README.md) (render pass, extrapolation inputs); [audio engine](../../architecture/components/audio_engine.md); [input](../../architecture/components/input.md); [camera and sequences](../../architecture/components/camera_and_sequences.md); [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md).
-- ADRs: [ADR-0012](../../adr/0012-swap-chain-presentation-and-frame-pacing.md) (presentation and frame pacing, frame delta clamp); [ADR-0036](../../adr/0036-effect-events-and-presentation-clock.md) (presentation clock); [ADR-0074](../../adr/0074-platform-clock-with-injectable-time.md) (platform clock with injectable time).
+- ADRs: [ADR-012](../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) (presentation and frame pacing, frame delta clamp); [ADR-036](../../ADR/ADR-036-effect-events-and-presentation-clock.md) (presentation clock); [ADR-074](../../ADR/ADR-074-platform-clock-with-injectable-time.md) (platform clock with injectable time).
 - Assets: none.
 
 ## 8 Open decisions

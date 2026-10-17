@@ -10,12 +10,12 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-002 | The platform layer never steps the simulation and never reads or writes simulation state. | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-003 | No other component calls an operating-system service of table 1-A directly. | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-004 | The platform layer does not own: | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
-| PLT-005 | The headless server product (`server`, ADR-0056) uses only the portable platform services: | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
+| PLT-005 | The headless server product (`server`, ADR-056) uses only the portable platform services: | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-006 | The baseline covers the platform facts of the reference as table 1-C states. | [platform_layer.md](../architecture/components/platform_layer.md#1-responsibilities-and-boundaries) |
 | PLT-007 | The window raises the events of the `WindowEvent` set on the main thread, inside `PumpMessages`, in the order of the messages that cause | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-008 | Every keyboard, system-key, pointer, button, wheel, raw-mouse, character and input-method message reaches the keyboard and mouse back-end | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-009 | A close request of the window, which Alt+F4 also produces, raises `action.app.quit` through the input router (INP-076; | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
-| PLT-010 | The keyboard-layout notice carries the BCP 47 language tag of the newly active keyboard layout (ADR-0063), and `ActiveKeyboardLayoutTag` | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
+| PLT-010 | The keyboard-layout notice carries the BCP 47 language tag of the newly active keyboard layout (ADR-063), and `ActiveKeyboardLayoutTag` | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-011 | Audio-endpoint notices reach the audio engine's listener on the main thread, once per frame, in arrival order (PLT-103). | [platform_layer.md](../architecture/components/platform_layer.md#22-events-and-data-contracts) |
 | PLT-012 | These run on the main thread only: | [platform_layer.md](../architecture/components/platform_layer.md#23-threading-contract) |
 | PLT-013 | These are safe on any thread: | [platform_layer.md](../architecture/components/platform_layer.md#23-threading-contract) |
@@ -31,7 +31,7 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-023 | `--write-build-identity` is handled before the clock, the user-data root, the logger or any other service is created: | [platform_layer.md](../architecture/components/platform_layer.md#33-start-up-options) |
 | PLT-024 | `--verify-content` runs start-up steps 1 to 10 of PLT-038 unchanged, then hands over to the repair check of build tooling BLD-103 instead | [platform_layer.md](../architecture/components/platform_layer.md#33-start-up-options) |
 | PLT-025 | `--user-data <directory>` makes the given directory the user-data root for every user file: | [platform_layer.md](../architecture/components/platform_layer.md#33-start-up-options) |
-| PLT-026 | In `Profile` and `Shipping` builds the `--loose-content` option is not compiled in (ADR-0056, AST-105, AST-006) and is therefore an unknown | [platform_layer.md](../architecture/components/platform_layer.md#33-start-up-options) |
+| PLT-026 | In `Profile` and `Shipping` builds the `--loose-content` option is not compiled in (ADR-056, AST-105, AST-006) and is therefore an unknown | [platform_layer.md](../architecture/components/platform_layer.md#33-start-up-options) |
 | PLT-027 | A monitor record (`MonitorInfo`) holds: | [platform_layer.md](../architecture/components/platform_layer.md#34-display-data-and-display-settings) |
 | PLT-028 | The window placement is kept in the settings store as three settings: | [platform_layer.md](../architecture/components/platform_layer.md#34-display-data-and-display-settings) |
 | PLT-029 | The reference reads the display preferences of table 3.4-A when it creates its window and renderer, with the reader defaults shown. | [platform_layer.md](../architecture/components/platform_layer.md#34-display-data-and-display-settings) |
@@ -63,9 +63,9 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-055 | The simulation never reads the platform clock, the calendar or any per-participant time: | [platform_layer.md](../architecture/components/platform_layer.md#42-platform-clock) |
 | PLT-056 | The platform layer gives the frame loop explicit pacing tools and no implicit pacing: | [platform_layer.md](../architecture/components/platform_layer.md#42-platform-clock) |
 | PLT-057 | The platform layer registers one window class with the wide-character Win32 API and creates one window from it on the main thread | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
-| PLT-058 | The window has two modes (ADR-0075, ADR-0012): | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
+| PLT-058 | The window has two modes (ADR-075, ADR-012): | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
 | PLT-059 | The window opens on the stored monitor when a monitor with that device name exists, otherwise on the primary monitor, in the stored mode | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
-| PLT-060 | The window is per-monitor DPI aware v2 (ADR-0075). | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
+| PLT-060 | The window is per-monitor DPI aware v2 (ADR-075). | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
 | PLT-061 | `SetMode(mode, permanence)` does nothing when the window is already in that mode. | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
 | PLT-062 | Size changes are coalesced: | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
 | PLT-063 | Minimising the window raises `Minimised` and restoring it raises `Restored`. | [platform_layer.md](../architecture/components/platform_layer.md#43-application-window) |
@@ -83,7 +83,7 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-075 | The platform layer reads the operating system's preferred user-interface languages, in preference order, as BCP 47 tags | [platform_layer.md](../architecture/components/platform_layer.md#46-language-detection-at-start-up) |
 | PLT-076 | At start-up the client chooses the language by trying, in order, until one loads (options, localisation and hooks R-META-465, DEC-099): | [platform_layer.md](../architecture/components/platform_layer.md#46-language-detection-at-start-up) |
 | PLT-077 | Only the languages that the edition's packs contain can be chosen, so an edition that contains the base language only always starts in the | [platform_layer.md](../architecture/components/platform_layer.md#46-language-detection-at-start-up) |
-| PLT-078 | Case mapping, collation and number formatting use the in-box ICU with the chosen language's locale (ADR-0063); | [platform_layer.md](../architecture/components/platform_layer.md#46-language-detection-at-start-up) |
+| PLT-078 | Case mapping, collation and number formatting use the in-box ICU with the chosen language's locale (ADR-063); | [platform_layer.md](../architecture/components/platform_layer.md#46-language-detection-at-start-up) |
 | PLT-079 | Loading reads the settings file with the reader of data schemas DAT-200 to DAT-202 and checks each entry against the settings schema: | [platform_layer.md](../architecture/components/platform_layer.md#47-settings-store) |
 | PLT-080 | When the settings file cannot be opened, which is the first run, the store takes every default from the one defaults table (DEC-100), then | [platform_layer.md](../architecture/components/platform_layer.md#47-settings-store) |
 | PLT-081 | The store saves only on the events of R-META-406. | [platform_layer.md](../architecture/components/platform_layer.md#47-settings-store) |
@@ -101,7 +101,7 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-093 | A query that fails leaves its field marked unknown and is written to the log; | [platform_layer.md](../architecture/components/platform_layer.md#410-system-information) |
 | PLT-094 | The summary reports the audio endpoints and scores none of them: | [platform_layer.md](../architecture/components/platform_layer.md#410-system-information) |
 | PLT-095 | The system summary feeds: | [platform_layer.md](../architecture/components/platform_layer.md#410-system-information) |
-| PLT-096 | The screenshot writer encodes images with the Windows Imaging Component PNG encoder as 8-bit sRGB RGBA (ADR-0076). | [platform_layer.md](../architecture/components/platform_layer.md#411-screenshots) |
+| PLT-096 | The screenshot writer encodes images with the Windows Imaging Component PNG encoder as 8-bit sRGB RGBA (ADR-076). | [platform_layer.md](../architecture/components/platform_layer.md#411-screenshots) |
 | PLT-097 | A screenshot or poster is written to the Pictures folder under `Species\`, created when missing, as `species_<date>-<time>.png`, where | [platform_layer.md](../architecture/components/platform_layer.md#411-screenshots) |
 | PLT-098 | A poster is one PNG of *N* × render width by *N* × render height pixels, written through `PosterWriter` one tile row at a time with the | [platform_layer.md](../architecture/components/platform_layer.md#411-screenshots) |
 | PLT-099 | The HTTPS client sends requests on its own worker thread and completes a future for each. | [platform_layer.md](../architecture/components/platform_layer.md#412-network-services) |
@@ -109,7 +109,7 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-101 | `ClipboardText` returns the clipboard's Unicode text converted to UTF-8, or nothing when the clipboard holds no text; | [platform_layer.md](../architecture/components/platform_layer.md#413-clipboard-and-web-addresses) |
 | PLT-102 | `OpenWebAddress` opens an `https` address in the default browser through the shell and refuses every other scheme. | [platform_layer.md](../architecture/components/platform_layer.md#413-clipboard-and-web-addresses) |
 | PLT-103 | Before the audio engine is created, the platform layer registers for audio-endpoint notifications with the system's endpoint enumerator. | [platform_layer.md](../architecture/components/platform_layer.md#414-audio-endpoint-notices) |
-| PLT-104 | The platform layer reads the build identity that the build generates (ADR-0057): | [platform_layer.md](../architecture/components/platform_layer.md#415-build-identity-products-and-flavours) |
+| PLT-104 | The platform layer reads the build identity that the build generates (ADR-057): | [platform_layer.md](../architecture/components/platform_layer.md#415-build-identity-products-and-flavours) |
 | PLT-105 | Once the packs are mounted (PLT-038 step 11), the platform layer reads the content manifest hash from the mounted content manifest, | [platform_layer.md](../architecture/components/platform_layer.md#415-build-identity-products-and-flavours) |
 | PLT-106 | At start-up the platform layer reads the channel tag from the first line of `channel_tag.txt` in the install directory, with the rules and | [platform_layer.md](../architecture/components/platform_layer.md#415-build-identity-products-and-flavours) |
 | PLT-107 | The platform features that depend on the build flavour are: | [platform_layer.md](../architecture/components/platform_layer.md#415-build-identity-products-and-flavours) |
@@ -134,6 +134,6 @@ Scope: Platform layer. Back to the [requirements index](../REQUIREMENTS_INDEX.md
 | PLT-126 | The check levels, the flavours in which each is compiled in, and what a failure records are the diagnostics component's (diagnostics | [platform_layer.md](../architecture/components/platform_layer.md#63-crash-handling) |
 | PLT-127 | The platform's fatal path (`FailFast`), which a failed release check, a container bounds check, an abort and the handlers of PLT-118 reach | [platform_layer.md](../architecture/components/platform_layer.md#63-crash-handling) |
 | PLT-128 | The platform layer reacts to the failures of table 6.4-A as stated. | [platform_layer.md](../architecture/components/platform_layer.md#64-start-up-and-run-time-failures) |
-| PLT-129 | The platform layer logs in the `platform` category of ADR-0067: | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |
+| PLT-129 | The platform layer logs in the `platform` category of ADR-067: | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |
 | PLT-130 | The platform layer provides the logger with the `logs\` folder, the run id for the file name and, in `Debug` and `Development` builds, the | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |
 | PLT-131 | Telemetry's hardware summary is taken from the system summary and is sent only with the player's consent, through the HTTPS client | [platform_layer.md](../architecture/components/platform_layer.md#65-diagnostics-and-telemetry) |

@@ -1,6 +1,6 @@
 # Import records and build records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0019](../../../adr/0019-mesh-source-format-and-cooked-meshes.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0025](../../../adr/0025-audio-formats-codecs-and-residency.md) · [ADR-0056](../../../adr/0056-editions-build-flavours-and-feature-flags.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · Folder: [data schemas](README.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [asset manifest](../../../assets/asset_manifest.csv)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-025](../../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-056](../../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · Folder: [data schemas](README.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [asset manifest](../../../assets/asset_manifest.csv)
 
 This document specifies the schemas of the records that the content build reads and that no runtime loads as such: the import record beside each texture, mesh and audio source, the engine asset table that the code contributes, and the edition manifests. The meaning of every field belongs to the [asset pipeline](../asset_pipeline_and_resources.md) for the import records and the engine asset table, and to [build tooling and distribution](../build_tooling_and_distribution.md) for the edition manifests; this document gives the fields their keys, types, presence rules and checks.
 
@@ -8,11 +8,11 @@ This document specifies the schemas of the records that the content build reads 
 
 **DAT-350** (MUST) This document owns the record types `import.texture`, `import.mesh`, `import.audio`, `assets.engine_table` and `edition.manifest` (README table 1-A): their keys, logical types, presence rules, ranges and the checks that the content build applies to them.
 
-**DAT-351** (MUST NOT) This document defines no cooking step, no texture or audio format, no edition and no feature flag: those are the [asset pipeline](../asset_pipeline_and_resources.md)'s (AST-018 to AST-050), the texture and audio ADRs' (ADR-0017, ADR-0018, ADR-0025) and [build tooling and distribution](../build_tooling_and_distribution.md)'s (BLD-015 to BLD-018).
+**DAT-351** (MUST NOT) This document defines no cooking step, no texture or audio format, no edition and no feature flag: those are the [asset pipeline](../asset_pipeline_and_resources.md)'s (AST-018 to AST-050), the texture and audio ADRs' (ADR-017, ADR-018, ADR-025) and [build tooling and distribution](../build_tooling_and_distribution.md)'s (BLD-015 to BLD-018).
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-0062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
 namespace species::data::build {
@@ -21,7 +21,7 @@ enum class TextureKind : std::uint8_t { Colour, Ui, Normal, Mask, ExactData, Cpu
 enum class ColourSpace : std::uint8_t { Srgb, Linear };
 enum class AlphaMode : std::uint8_t { Opaque, Straight, Premultiplied, Additive, Cutout };
 enum class MipPolicy : std::uint8_t { Full, None };
-enum class SamplerKind : std::uint8_t { LinearClamp, LinearWrap, PointClamp };             // ADR-0018
+enum class SamplerKind : std::uint8_t { LinearClamp, LinearWrap, PointClamp };             // ADR-018
 enum class TintMarking : std::uint8_t { None, VertexWeight, MaterialFlag };                // AST-034
 enum class MeshRole : std::uint8_t { Render, Collision };
 
@@ -49,7 +49,7 @@ public:
 
 ### 3.1 The texture import record
 
-**DAT-352** (MUST) Every texture source has one import record beside it, sharing its stem, with the fields of table 3.1-A, whose meanings and closed value sets are AST table 3.3-A, ADR-0018 and AST-025 to AST-031. The content tools create the record from the source's manifest row and the defaults per kind; an author edits only the fields that the row leaves open (AST-018). A texture without an import record is a build error (ADR-0018).
+**DAT-352** (MUST) Every texture source has one import record beside it, sharing its stem, with the fields of table 3.1-A, whose meanings and closed value sets are AST table 3.3-A, ADR-018 and AST-025 to AST-031. The content tools create the record from the source's manifest row and the defaults per kind; an author edits only the fields that the row leaves open (AST-018). A texture without an import record is a build error (ADR-018).
 
 Table 3.1-A Fields of a texture import record.
 
@@ -60,8 +60,8 @@ Table 3.1-A Fields of a texture import record.
 | alpha mode | `alpha_mode` | enumeration `opaque`, `straight`, `premultiplied`, `additive`, `cutout` | defaulted: from the row's `alpha_mode` through AST table 3.3-C | must agree with the row |
 | cut-out threshold | `cutout_threshold` | integer alpha value | required with `cutout`, absent otherwise | the threshold of the pipeline-state entry that draws the art (AST-019) |
 | mip policy | `mip_policy` | enumeration `full`, `none` | defaulted: from the row's `target_format` | — |
-| sampler | `sampler` | enumeration `linear_clamp`, `linear_wrap`, `point_clamp` | defaulted: `linear_clamp`; `linear_wrap` where the row says "wrap repeat"; `point_clamp` when pixel-exact | the closed set of ADR-0018 |
-| tint mask | `tint_mask` | asset reference to a single-channel mask | absence-meaningful: none | ADR-0020 |
+| sampler | `sampler` | enumeration `linear_clamp`, `linear_wrap`, `point_clamp` | defaulted: `linear_clamp`; `linear_wrap` where the row says "wrap repeat"; `point_clamp` when pixel-exact | the closed set of ADR-018 |
+| tint mask | `tint_mask` | asset reference to a single-channel mask | absence-meaningful: none | ADR-020 |
 | pixel-exact | `pixel_exact` | boolean | defaulted: false | — |
 | authoring scale | `authoring_scale` | integer: 1 or `ast.texture.ui_authoring_scale` | defaulted: `ast.texture.ui_authoring_scale` where the row says "author at 2x", otherwise 1 | — |
 | derived variants | `derived_variants` | list of objects: `variant` (stable id), `derivation` (enumeration `blurred_shadow`, `stacked_copies`, `greyscale`, `to_colour`, `replace_colour`), `parameters` (object of the derivation's parameters of AST table 3.5-A) | defaulted: none | variant ids unique within the record; each variant has its own manifest row (AST-028) |
@@ -71,7 +71,7 @@ Table 3.1-A Fields of a texture import record.
 
 ### 3.2 The mesh import record
 
-**DAT-354** (MUST) Every mesh source, and every collision source, has one import record beside it with the fields of table 3.2-A (AST-033, ADR-0019).
+**DAT-354** (MUST) Every mesh source, and every collision source, has one import record beside it with the fields of table 3.2-A (AST-033, ADR-019).
 
 Table 3.2-A Fields of a mesh import record.
 
@@ -81,7 +81,7 @@ Table 3.2-A Fields of a mesh import record.
 | member | `member` | asset member | required | must equal the source's member number in its row |
 | role | `role` | enumeration `render`, `collision` | defaulted: `render` | a collision source is cooked into `geometry.collision` (AST-044) |
 | asset class | `asset_class` | stable id | required for `render` | selects the socket schema of the row's `spec` (AST-040) |
-| unit scale | `unit_scale` | presentation decimal, wu per glTF metre | required | above 0; applied once at cook time (ADR-0016) |
+| unit scale | `unit_scale` | presentation decimal, wu per glTF metre | required | above 0; applied once at cook time (ADR-016) |
 | tint marking | `tint_marking` | enumeration `none`, `vertex_weight`, `material_flag` | defaulted: `none` | AST-034, AST-035 |
 | smooth primitives | `smooth_primitives` | list of objects: `node` (the glTF node name), `primitive` (count) | defaulted: none | each names a primitive that carries normals (AST-036) |
 | collision asset | `collision` | asset reference to a collision asset | required for a collidable render mesh, absent otherwise | AST-044; DEC-012 |
@@ -126,7 +126,7 @@ Table 3.5-A Field types of an edition manifest.
 | languages | `languages` | either a list of distinct BCP 47 tags or one language-group enumerator, `all` or `efigs` (BLD table 4.7-A) | required | the base language `ref.meta.lang.base` is always included, whether or not it is listed (BLD-078) |
 | selection | `select` | list of selectors, each an object with exactly one of `asset` (asset reference), `folder` (a folder under the content root) or `tag` (an asset tag, among them the manifest's `priority` values) | required | positive selection only (BLD-049) |
 | maps | `maps` | either the enumerator `all` or a list of distinct map ids | required | each listed map id must be a map of the edition (BLD-053) |
-| feature flags | `features` | object with exactly the six fields of table 3.5-B | required: every flag named | an unknown or missing flag is a build error (ADR-0056, BLD-016) |
+| feature flags | `features` | object with exactly the six fields of table 3.5-B | required: every flag named | an unknown or missing flag is a build error (ADR-056, BLD-016) |
 
 Table 3.5-B Types of the runtime feature flags of BLD table 3.2-B.
 
@@ -139,7 +139,7 @@ Table 3.5-B Types of the runtime feature flags of BLD table 3.2-B.
 | internet play | `play_internet` | enumeration `on`, `off` | no |
 | map editor | `map_editor` | enumeration `on`, `off` | no |
 
-**DAT-359** (MUST) The content build writes the feature flags of each edition into its packs as the edition's flag record, the cooked `Record` of README table 1-A, which the client and the server read once at start-up and never change while the process runs (BLD-016, ADR-0056). The flags that BLD table 3.2-B marks simulation-relevant are part of that record's simulation-relevant entry and of the simulation content identity (ADR-0060, AST-100); a client edition and its server edition have equal values of those flags (BLD-051).
+**DAT-359** (MUST) The content build writes the feature flags of each edition into its packs as the edition's flag record, the cooked `Record` of README table 1-A, which the client and the server read once at start-up and never change while the process runs (BLD-016, ADR-056). The flags that BLD table 3.2-B marks simulation-relevant are part of that record's simulation-relevant entry and of the simulation content identity (ADR-060, AST-100); a client edition and its server edition have equal values of those flags (BLD-051).
 
 ## 4 Behaviour and algorithms
 
@@ -163,7 +163,7 @@ Caption: Figure 4-A, how the build records feed the content build (DAT-352 to DA
 
 ## 5 Concurrency and performance budget
 
-**DAT-361** (MUST) Import records and build records are small and are read once per content-build run; their validation is part of the content-build budgets `dat.perf.full_build_s` and `dat.perf.incremental_s` of the [README](README.md), and a change to one import record rebuilds only the entries of its source (ADR-0059).
+**DAT-361** (MUST) Import records and build records are small and are read once per content-build run; their validation is part of the content-build budgets `dat.perf.full_build_s` and `dat.perf.incremental_s` of the [README](README.md), and a change to one import record rebuilds only the entries of its source (ADR-059).
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -196,8 +196,8 @@ Caption: Figure 4-A, how the build records feed the content build (DAT-352 to DA
 | DEC-012 | Resolved | collision assets named by the mesh import record (DAT-354) |
 | DEC-317 | Open | per-language audio sets (DAT-356) |
 | DEC-801 | Resolved | unique ids, variant ids and edition ids (DAT-352, DAT-358) |
-| ADR-0018, ADR-0019, ADR-0020, ADR-0025 | Accepted | the import manifests of textures, meshes and audio |
-| ADR-0056, ADR-0059 | Accepted | editions, feature flags and the validating content build |
+| ADR-018, ADR-019, ADR-020, ADR-025 | Accepted | the import manifests of textures, meshes and audio |
+| ADR-056, ADR-059 | Accepted | editions, feature flags and the validating content build |
 
 ### 8.2 Design-phase inputs
 

@@ -1,14 +1,14 @@
 # Settings, input bindings and string tables
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0063](../../../adr/0063-localisation.md) · [ADR-0029](../../../adr/0029-input-event-model-and-binding-contract.md) · [ADR-0071](../../../adr/0071-install-layout-runtime-files-and-user-data.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [options, localisation and hooks](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [input](../input.md) · [UI layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) · [renderer options](../renderer/options_and_budgets.md) · [audio engine](../audio_engine.md) · [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-063](../../../ADR/ADR-063-localisation.md) · [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md) · [ADR-071](../../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [options, localisation and hooks](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [input](../input.md) · [UI layout, rendering, input and localisation](../ui_framework/layout_rendering_input_and_localisation.md) · [renderer options](../renderer/options_and_budgets.md) · [audio engine](../audio_engine.md) · [actions and bindings](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md)
 
-This document specifies three schema families of configuration and text: the settings schema, which is the one defaults table of the settings (DEC-100), together with the text form of the settings file that the settings store reads and writes; the binding-set schema of the input bindings and the keyboard-layout table; and the string tables with their input-mode variants and their caption markup. Which settings exist, what they do and where they are shown belong to [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) and to the components that read them; what a binding means belongs to [input](../input.md); how strings are looked up, fall back and are drawn belongs to the [UI framework](../ui_framework/layout_rendering_input_and_localisation.md) and ADR-0063.
+This document specifies three schema families of configuration and text: the settings schema, which is the one defaults table of the settings (DEC-100), together with the text form of the settings file that the settings store reads and writes; the binding-set schema of the input bindings and the keyboard-layout table; and the string tables with their input-mode variants and their caption markup. Which settings exist, what they do and where they are shown belong to [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) and to the components that read them; what a binding means belongs to [input](../input.md); how strings are looked up, fall back and are drawn belongs to the [UI framework](../ui_framework/layout_rendering_input_and_localisation.md) and ADR-063.
 
 ## 1 Responsibilities and boundaries
 
 **DAT-190** (MUST) This document owns: the record type `settings.defaults` and its setting keys; the text form of the settings file, its reader rules and its writer rules; the record types `input.binding_set` and `input.keyboard_layouts`, with the field layout that [input](../input.md) INP-070 to INP-073 defines; and the record type `text.string_table` with the caption-markup syntax that [UI framework](../ui_framework/layout_rendering_input_and_localisation.md) UI-224 and [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-468 leave to the data schemas.
 
-**DAT-191** (MUST NOT) This document does not define what a setting does, which page shows it or its default value (the owners of table 3.1-A do); the settings store, its notifications and its file location (the [platform layer](../platform_layer.md), ADR-0071); the meaning of a binding node (INP-060); or the look-up, fallback and language selection of strings (UI-218 to UI-222, R-META-465, ADR-0063).
+**DAT-191** (MUST NOT) This document does not define what a setting does, which page shows it or its default value (the owners of table 3.1-A do); the settings store, its notifications and its file location (the [platform layer](../platform_layer.md), ADR-071); the meaning of a binding node (INP-060); or the look-up, fallback and language selection of strings (UI-218 to UI-222, R-META-465, ADR-063).
 
 **DAT-192** (MUST NOT) No setting is a simulation input. No simulation rule reads a setting, and a value that would change simulation results exists only as a match option of the match setup (DEC-010, R-META-401).
 
@@ -128,7 +128,7 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 | command history | `debug.command_history` | integer: 0 off, 1 record, 2 play back ([reference/12](../../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-740) | `dbg.setting.command_history.default` | immediate | DBG-041, DBG-241 |
 | capture frame rate | `debug.capture_frame_rate` | integer, presentation frames per second of the fixed step of command-history modes 1 and 2 | `dbg.replay.capture_frame_rate` | immediate | DBG-041, DBG-241 |
 | soak session name | `debug.soak_session_name` | text | the empty text; a soak configuration's session name replaces it | immediate | DBG-041, DBG-162 |
-| telemetry consent | `telemetry.consent` | boolean | off: telemetry is opt-in (ADR-0066) | immediate; withdrawing deletes the unsent records | DBG-180 |
+| telemetry consent | `telemetry.consent` | boolean | off: telemetry is opt-in (ADR-066) | immediate; withdrawing deletes the unsent records | DBG-180 |
 | telemetry installation id | `telemetry.installation_id` | text, 32 lower-case hexadecimal digits, a random id that the player can reset ([test_and_telemetry_records.md](test_and_telemetry_records.md) DAT-381) | absent: created when consent is first given | immediate | DBG-182 |
 | user bindings | `binding.<action id>`, one per action of INP-067 | binding node in canonical form (INP-072) | absent: the action keeps the bindings of the earlier layers | immediate, with a binding rebuild | INP-070, INP-171 |
 
@@ -136,7 +136,7 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 
 ### 3.2 The settings file
 
-**DAT-196** (MUST) The settings file holds the player's stored settings in the `settings\` folder of the per-user data folder (ADR-0071, R-META-400); the platform layer names the file ([platform layer](../platform_layer.md) PLT-031). Until DEC-250 is decided its text form is that of table 3.2-A: UTF-8 without a byte-order mark, one line per entry, comment or blank line, with line feeds as line endings. The file carries no schema version and is never migrated (R-META-409); its versioning, migration and synchronisation are DEC-250's, and DEC-800 item 5 applies whatever DEC-250 decides.
+**DAT-196** (MUST) The settings file holds the player's stored settings in the `settings\` folder of the per-user data folder (ADR-071, R-META-400); the platform layer names the file ([platform layer](../platform_layer.md) PLT-031). Until DEC-250 is decided its text form is that of table 3.2-A: UTF-8 without a byte-order mark, one line per entry, comment or blank line, with line feeds as line endings. The file carries no schema version and is never migrated (R-META-409); its versioning, migration and synchronisation are DEC-250's, and DEC-800 item 5 applies whatever DEC-250 decides.
 
 Table 3.2-A Lines of the settings file.
 
@@ -185,7 +185,7 @@ Table 3.3-A Fields of a binding set.
 
 **DAT-207** (MUST) A string id is a Species string id (CONVENTIONS §8): lower-case, dotted, at most `ui.lang.max_id_length` (96) characters, compared exactly. Two entries with one id in one language, in one source or in two sources of the language, are a build error (DEC-801 item 2, UI-222); no source overrides another by load order.
 
-**DAT-208** (MUST) An entry is either a JSON string, its plain text, or an object with the fields of table 3.5-A. Text is UTF-8 in ICU MessageFormat syntax (ADR-0063), so a value inserted at run time is a named argument such as `{seconds}`, never a placeholder letter, and no character of a text or of an inserted value is a formatting directive (R-META-469, UI-227). A line break is the JSON escape `\n`; no other escape exists beyond JSON's, and the characters `#`, `:`, `,`, leading blanks and single square brackets are ordinary text.
+**DAT-208** (MUST) An entry is either a JSON string, its plain text, or an object with the fields of table 3.5-A. Text is UTF-8 in ICU MessageFormat syntax (ADR-063), so a value inserted at run time is a named argument such as `{seconds}`, never a placeholder letter, and no character of a text or of an inserted value is a formatting directive (R-META-469, UI-227). A line break is the JSON escape `\n`; no other escape exists beyond JSON's, and the characters `#`, `:`, `,`, leading blanks and single square brackets are ordinary text.
 
 Table 3.5-A Fields of a string entry.
 
@@ -208,7 +208,7 @@ Table 3.5-B The text of an entry in input mode M.
 | plain text and the other variant only | the plain text |
 | the other variant only | the empty text: the caption disappears in mode M |
 
-**DAT-210** (MUST) The base language is `ref.meta.lang.base` (en-GB), the source language of every string (ADR-0063). The content build reports, for every other language, the ids that it lacks and the ids that the base language lacks, and fails on an id that is missing from the base language (UI-219, R-META-462, R-META-473, DEC-099).
+**DAT-210** (MUST) The base language is `ref.meta.lang.base` (en-GB), the source language of every string (ADR-063). The content build reports, for every other language, the ids that it lacks and the ids that the base language lacks, and fails on an id that is missing from the base language (UI-219, R-META-462, R-META-473, DEC-099).
 
 ### 3.6 Caption markup
 
@@ -227,7 +227,7 @@ Table 3.6-A Caption markers.
 
 **DAT-212** (MUST) A marker that is not one of table 3.6-A, an unterminated marker, a marker longer than `ui.lang.max_marker_length` (64) characters, a mode passage without `[[end]]` and an `[[end]]` without a passage are build errors with the file, the id and the character position; expansion never loops, never re-reads a marker and never truncates silently (DEC-015). An expanded text longer than `ui.lang.max_expanded_length` (1,024) characters is a build error (UI-225, DEC-801 item 5).
 
-**DAT-213** (MUST) Markers are expanded when the table is built, once per input mode, and again whenever the bindings change (UI-224); an expanded binding argument or embedded string is quoted for ICU MessageFormat, so that no character of it is read as message syntax (DEC-800 item 4). ICU formatting of named arguments happens after expansion, at display time (ADR-0063).
+**DAT-213** (MUST) Markers are expanded when the table is built, once per input mode, and again whenever the bindings change (UI-224); an expanded binding argument or embedded string is quoted for ICU MessageFormat, so that no character of it is read as message syntax (DEC-800 item 4). ICU formatting of named arguments happens after expansion, at display time (ADR-063).
 
 ### 3.7 Ids that code builds
 
@@ -332,8 +332,8 @@ Caption: Figure 4.3-A, building one language's string table (DAT-217; UI-222 to 
 | DEC-010, DEC-056 | Resolved, Dropped | no setting feeds the simulation; one control scheme (DAT-192, table 3.1-A) |
 | DEC-245 | Open | the session-browser settings are stored for the browser's use (table 3.1-A) |
 | DEC-567 | Open | the effects switch defaults to off (table 3.1-A) |
-| ADR-0063 | Accepted | UTF-8 string tables, BCP 47 tags, ICU MessageFormat, per-key fallback |
-| ADR-0029 | Accepted | the binding contract and its canonical form |
+| ADR-063 | Accepted | UTF-8 string tables, BCP 47 tags, ICU MessageFormat, per-key fallback |
+| ADR-029 | Accepted | the binding contract and its canonical form |
 
 ### 8.2 Design-phase inputs
 

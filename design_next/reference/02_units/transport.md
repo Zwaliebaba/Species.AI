@@ -34,7 +34,7 @@ The Supply crate validity rule that excludes the Transport outcome in Launch Rac
 
 **R-UNIT-371** (MUST) A Transport has health `ref.unit.transport.health` (200), kept within `ref.unit.transport.health_range` ([0, 255]), and a maximum speed of `ref.unit.transport.speed_max` (60 wu/s). Its stat-table rate `ref.unit.transport.fire_rate_s` (5 s) is read by no rule. Actor stats are floating-point values (DEC-090).
 
-**R-UNIT-372** (MUST) A Transport is drawn with the mesh `mesh.unit.transport_hull`. Its `entrance` socket is the door that Workers board and leave by (R-UNIT-397, R-UNIT-398) and the point of the entrance clearance test (R-UNIT-382); the content build rejects a Transport mesh without it (DEC-015, ADR-0021). Nothing is drawn at its `flag` socket.
+**R-UNIT-372** (MUST) A Transport is drawn with the mesh `mesh.unit.transport_hull`. Its `entrance` socket is the door that Workers board and leave by (R-UNIT-397, R-UNIT-398) and the point of the entrance clearance test (R-UNIT-382); the content build rejects a Transport mesh without it (DEC-015, ADR-021). Nothing is drawn at its `flag` socket.
 
 ### 2.4 Damage and death
 
@@ -174,7 +174,7 @@ An order always carries the straight-route flag (R-SIM-450).
 
 ### 2.10 Presentation and sound
 
-**R-UNIT-408** (MUST) A Transport's whole hull takes its team colour: every facet has tint weight 1, and the tinted colour is the team colour × `ref.unit.transport.tint_scale` (0.1), which the lighting brightens (ADR-0020). No banner is drawn.
+**R-UNIT-408** (MUST) A Transport's whole hull takes its team colour: every facet has tint weight 1, and the tinted colour is the team colour × `ref.unit.transport.tint_scale` (0.1), which the lighting brightens (ADR-020). No banner is drawn.
 
 **R-UNIT-409** (MUST) Each tick a Transport emits 1 + trunc(speed ÷ `ref.unit.transport.exhaust_speed_step` (20 wu/s)) exhaust smoke particles; their direction and size are presentation draws ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-622).
 
@@ -379,7 +379,7 @@ Keys cited from other documents (their values are defined there):
 ## 7 Dependencies
 
 - **Reference documents:** [Units](README.md); [worker.md](worker.md) (boarding, inside, leaving, thrown out on fire); [essence_orbs.md](essence_orbs.md); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Transport outcome, its validity, Power slots); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (explosion filters, turret-round credit); [population flow](../05_population_flow.md) (Transit Gate waves, starting units); [controls, camera and commands](../06_controls_camera_and_commands/README.md) (bindings, control schemes); [bots](../07_bots/README.md) (difficulty, navigation nodes, objective markers); [mode objects](../03_buildings_and_world_objects/mode_objects.md) (Launch Vessel, Solar Arrays, Flag posts); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (obstacle push, sea route graph, route lifetime, explosion); [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) (per-Transport debounce); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-hull tint, ADR-0020; route highlight); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust smoke, debris); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (Power slot state icon).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-hull tint, ADR-020; route highlight); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust smoke, debris); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (Power slot state icon).
 - **Assets:** `mesh.unit.transport_hull`; `icon.power.transport` (the Transport Power); `icon.hud.transport_state` (3 files: boarding, travelling, unloading); `sfx.unit.transport.spawn`, `sfx.unit.transport.presence_loop`, `sfx.unit.transport.hurt`, `sfx.unit.transport.die`, `sfx.unit.transport.ordered`.
 
 ## 8 Open decisions

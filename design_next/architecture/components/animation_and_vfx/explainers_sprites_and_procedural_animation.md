@@ -1,12 +1,12 @@
 # Explainers, sprites and procedural animation
 
-> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-0035](../../../adr/0035-procedural-animation-runtime.md) · [ADR-0036](../../../adr/0036-effect-events-and-presentation-clock.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0021](../../../adr/0021-mesh-socket-schema.md) · [ADR-0030](../../../adr/0030-ui-framework-build-or-buy.md) · [ADR-0031](../../../adr/0031-batched-ui-rendering.md) · [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · Related: [Animation and VFX](README.md) · [Particles, shatter and screen effects](particles_shatter_and_screen_effects.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Creatures](../../../reference/02_units/creatures.md) · [Worker](../../../reference/02_units/worker.md)
+> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-035](../../../ADR/ADR-035-procedural-animation-runtime.md) · [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md) · [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md) · [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · Related: [Animation and VFX](README.md) · [Particles, shatter and screen effects](particles_shatter_and_screen_effects.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Creatures](../../../reference/02_units/creatures.md) · [Worker](../../../reference/02_units/worker.md)
 
 This document specifies the explainer player, the conventions of sprite cards and billboards, the animation of Worker cards and their overlays, the seasonal theme's presentation, team colour in effects, the other animated billboards, the damage flicker, the procedural legs and the spider gait, segment chains, trails and tails, cloth flags and the other procedural motions. The clocks, the presentation generators and the frame step are those of the [folder README](README.md).
 
 ## 1 Responsibilities and boundaries
 
-**VFX-100** (MUST) This document owns the presentation behaviour of the explainer animations, the sprite and billboard recipes, the Worker overlays and ground shadow, the damage flicker, the procedural legs, the segment chains, trails and tails, and the cloth flags. Every motion here reads only the presentation snapshot and the presentation clock and writes only presentation state, instance data and GPU buffers; it never changes a simulated body, a simulated timer or a draw of the simulation generator (VFX-005, VFX-011, ADR-0035).
+**VFX-100** (MUST) This document owns the presentation behaviour of the explainer animations, the sprite and billboard recipes, the Worker overlays and ground shadow, the damage flicker, the procedural legs, the segment chains, trails and tails, and the cloth flags. Every motion here reads only the presentation snapshot and the presentation clock and writes only presentation state, instance data and GPU buffers; it never changes a simulated body, a simulated timer or a draw of the simulation generator (VFX-005, VFX-011, ADR-035).
 
 **VFX-101** (MUST) The states, timers and decisions that select a recipe (a Worker's state, a spider's pounce, a Leader's order, a Crawler's samples) are simulation rules of the reference documents named in each requirement; this document only draws and animates them.
 
@@ -38,7 +38,7 @@ public:
 
 **Data contracts.** The animator reads the snapshot fields of [README.md](README.md) §2 and the match's seasonal state; the explainer player reads the `anim.explainer` record of the mode and the local team's colours.
 
-**Threading contract.** Everything here runs on the frame thread. The strip, tail and cloth vertices MAY be built in a vertex or compute shader from the history buffers (ADR-0035).
+**Threading contract.** Everything here runs on the frame thread. The strip, tail and cloth vertices MAY be built in a vertex or compute shader from the history buffers (ADR-035).
 
 ## 3 Data model
 
@@ -66,7 +66,7 @@ Trail histories are simulation state that this component reads: the Crawler trai
 
 ### 4.1 Explainer animations
 
-**VFX-104** (MUST) The explainer animation of the mode explainer panel ([front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220, [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020) is played by the explainer player, a UI timeline component hosted by the UI framework (ADR-0030, ADR-0035) and drawn by the hint overlay in pass 17 (RND-070). The match's mode selects the `anim.explainer` of that mode (R-META-221); each of the six modes has one, and a mode without one shows no panel.
+**VFX-104** (MUST) The explainer animation of the mode explainer panel ([front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220, [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020) is played by the explainer player, a UI timeline component hosted by the UI framework (ADR-030, ADR-035) and drawn by the hint overlay in pass 17 (RND-070). The match's mode selects the `anim.explainer` of that mode (R-META-221); each of the six modes has one, and a mode without one shows no panel.
 
 **VFX-105** (MUST) The panel's lifecycle follows this diagram, with the creation, visibility and teardown conditions of R-META-222 and R-META-223:
 
@@ -87,9 +87,9 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 **VFX-107** (MUST) The playback clock runs on the real clock and ignores pause and game speed (R-META-229). On the first draw the playback time is 0, not the loop start, and the timer is set to now; on every draw the playback time grows by now − timer and the timer becomes now; when the playback time exceeds the loop end it is set to the loop start and the excess is discarded. The timer is refreshed only by a draw, so after a hidden span the first draw adds the whole span and the playback restarts at the loop start. These are the rules of the Open DEC-750; its default is the reference behaviour stated here.
 
-**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference computes them once, when the panel is created; the Species panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (ADR-0033).
+**VFX-108** (MUST) The panel's place and size are those of R-META-224. The reference computes them once, when the panel is created; the Species panel is a widget of the UI framework and is laid out again whenever the screen size, the DPI or the text scale changes (ADR-033).
 
-**VFX-109** (MUST) The panel draws its background, frame, objects, title and caption by R-META-230 to R-META-233, through the batched UI renderer (ADR-0031) with standard alpha blending: each object is one textured quad of its picture, rotated about its centre by its angle, mirrored when its flip is on, inside the panel's clip rectangle. Colour roles are resolved at draw time against the local player's team colour (R-META-227, ADR-0035).
+**VFX-109** (MUST) The panel draws its background, frame, objects, title and caption by R-META-230 to R-META-233, through the batched UI renderer (ADR-031) with standard alpha blending: each object is one textured quad of its picture, rotated about its centre by its angle, mirrored when its flip is on, inside the panel's clip rectangle. Colour roles are resolved at draw time against the local player's team colour (R-META-227, ADR-035).
 
 **VFX-110** (MUST) An explainer animation is validated against its schema by the content build; a malformed record, an over-long name or an unknown picture role is a build error, never a run-time fault (DEC-015). At run time an explainer animation that is missing or fails to load gives no panel for that match (R-META-222).
 
@@ -99,7 +99,7 @@ Caption: the explainer panel exists at most once per match and shows while the p
 
 **VFX-112** (MUST) No sprite is animated frame by frame from a sheet. Every sprite is one image whose quad is transformed procedurally; the "frames" of a figure are state textures chosen by a condition, such as the hurt variants of `sprite.worker.hurt` (§4.3).
 
-**VFX-113** (MUST) Sprites carry authored alpha by the alpha modes of ADR-0018; additive sprites rely on a black background, so black adds nothing.
+**VFX-113** (MUST) Sprites carry authored alpha by the alpha modes of ADR-018; additive sprites rely on a black background, so black adds nothing.
 
 **VFX-114** (MUST) A billboard is a `CameraFacing` quad (RND-306). A square billboard of half-extent s has half-width and half-height s; a diamond billboard, whose corners lie at p ± U × s and p ± R × s on the camera up and right vectors, is the square billboard of half-size s ÷ √2 rotated by π ÷ 4 about the view axis. The bottom-anchored, horizontally mirrored billboard is that of RND-329.
 
@@ -163,7 +163,7 @@ No other seasonal theme exists.
 | Source | Users |
 |---|---|
 | the team colour of the colour table (RND-016), as 8-bit RGBA | sprites, laser bolts, Essence orbs, rings, beams, cloth flags, particles given an explicit colour |
-| the team palette index of a mesh instance (ADR-0020) | shatter debris, which keeps the tinted facet colours of the mesh it came from ([particles](particles_shatter_and_screen_effects.md) §4.10) |
+| the team palette index of a mesh instance (ADR-020) | shatter debris, which keeps the tinted facet colours of the mesh it came from ([particles](particles_shatter_and_screen_effects.md) §4.10) |
 | the red-channel team area of a cloth-flag texture (`marker.leader_banner`, `marker.flag_post_state`) | cloth flags (§4.10) |
 
 The Rogue faction's colour is near black, so its additive figures are drawn instead with the darkening or ink blend, or in white with alpha 0: Rogue faction Essence orbs, Crawler strips and laser bolts follow RND-327, RND-319 and RND-339.
@@ -199,7 +199,7 @@ The Collector, the Builder, the Worker, the Crawler and every other object never
 
 ### 4.8 Procedural legs and the spider gait
 
-**VFX-128** (MUST) The spider's eight procedural legs run on the client from the spider's presentation transform, entirely in presentation (DEC-007, ADR-0035, R-UNIT-578); their state is that of VFX-102. Each leg's root is a socket `leg_00` to `leg_07` of `mesh.creature.spider_body`, and each segment's length is the distance from its mesh origin to the `segment_end` socket of `mesh.creature.spider_thigh` or `mesh.creature.spider_shin` (R-UNIT-580, R-UNIT-581, ADR-0021); the content build rejects a spider mesh without these sockets (ADR-0059).
+**VFX-128** (MUST) The spider's eight procedural legs run on the client from the spider's presentation transform, entirely in presentation (DEC-007, ADR-035, R-UNIT-578); their state is that of VFX-102. Each leg's root is a socket `leg_00` to `leg_07` of `mesh.creature.spider_body`, and each segment's length is the distance from its mesh origin to the `segment_end` socket of `mesh.creature.spider_thigh` or `mesh.creature.spider_shin` (R-UNIT-580, R-UNIT-581, ADR-021); the content build rejects a spider mesh without these sockets (ADR-059).
 
 **VFX-129** (MUST) With H the spider's hover height `ref.unit.spider.hover_height` (3 wu), positions in world space and t the unscaled presentation time, a leg works as follows (R-UNIT-582 to R-UNIT-585):
 
@@ -223,7 +223,7 @@ arc(f) = vfx.leg.arc_rise * f * lift          for f < vfx.leg.arc_knee_low
 
 The lift profile is a trapezoid that rises with slope `vfx.leg.arc_rise` (3) up to `vfx.leg.arc_knee_low` (0.33), holds the lift and falls from `vfx.leg.arc_knee_high` (0.67); at its knees it reaches 0.99 × the lift. The swing is re-evaluated every frame, so feet move smoothly between decision steps.
 
-**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-0035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = normalise(horizontalNormalise(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(normalise(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-0035).
+**VFX-130** (MUST) The knee is placed by a two-bone solve that keeps both segment lengths (ADR-035). With thigh length a, shin length b, L = |hip − foot| clamped to [|a − b|, a + b], the bend axis k = normalise(horizontalNormalise(hip − body centre) × world up), the axis of the reference knee rule (R-UNIT-584), and α = acos(clamp((b² + L² − a²) ÷ (2 × b × L), −1, 1)), the knee is foot + rotate(normalise(hip − foot) × b, k, −α), which bends the knee outward and upward as the reference does. When the foot lies beyond a + b from the hip, the leg is drawn straight from the hip towards the foot with its full length a + b, and the foot's planned position is unchanged. The reference rule, in which the shin keeps its length and the thigh stretches to reach the hip, is not reproduced (ADR-035).
 
 **VFX-131** (MUST) While the spider is not pouncing, the gait's decision step runs once per `ref.sim.tick_period` (0.1 s) of scaled presentation time, the cadence of the reference tick:
 
@@ -311,7 +311,7 @@ for x in 0..5, z in 0..5:
     if x > 0: the link from vertex[x - 1][z] is shortened to at most size / 2
 ```
 
-with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A flag larger than 40 wu, such as a Flag post's, therefore relaxes with the fixed factor 0.7 and looks stiffer. In the reference a flag keeps relaxing while the game speed is 0, with a step of `vfx.cloth.still_step` (0.1 s) per frame; the Species clock stops instead (ADR-0036).
+with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A flag larger than 40 wu, such as a Flag post's, therefore relaxes with the fixed factor 0.7 and looks stiffer. In the reference a flag keeps relaxing while the game speed is 0, with a step of `vfx.cloth.still_step` (0.1 s) per frame; the Species clock stops instead (ADR-036).
 
 **VFX-140** (MUST) Each frame the flag's bounding sphere is recomputed: its centre is the mean of the 36 vertices and its radius the largest distance from the centre to a vertex. The local picking ray test of a Leader's or Transport's flag uses it as a pre-test before testing two triangles per cell (R-BLDG-273); picking is presentation and input, never simulation (DEC-008).
 
@@ -343,7 +343,7 @@ with `vfx.cloth.wobble_phases` (1.5, 1.1, 1.3) and `vfx.cloth.lift_gain` (3). A 
 
 ## 5 Concurrency and performance budget
 
-**VFX-144** (MUST) The CPU work of this document per frame is: the Worker and actor instance data (written with the renderer's instance types, RND-311); one gait decision step per spider per 0.1 s of scaled presentation time and eight leg poses per spider per frame; one 6 × 6 relaxation per visible cloth flag; and the explainer's one batched draw. Crawler strips, Brood Drifter tails and cloth vertices MAY move to the GPU (ADR-0035). Their cost belongs to the actor and effect pass groups of RND-454.
+**VFX-144** (MUST) The CPU work of this document per frame is: the Worker and actor instance data (written with the renderer's instance types, RND-311); one gait decision step per spider per 0.1 s of scaled presentation time and eight leg poses per spider per frame; one 6 × 6 relaxation per visible cloth flag; and the explainer's one batched draw. Crawler strips, Brood Drifter tails and cloth vertices MAY move to the GPU (ADR-035). Their cost belongs to the actor and effect pass groups of RND-454.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -391,7 +391,7 @@ Diagnostics: the development overlay can draw each spider's foot homes, targets 
 | DEC-118 | Resolved | the seasonal state is match state (VFX-119) |
 | DEC-328 | Open | saturated bubble colours (VFX-121) |
 | DEC-750 | Open | the explainer loop and visibility rules (VFX-107) |
-| ADR-0035 | Accepted | client-side procedural animation, two-bone legs, explainer timelines |
+| ADR-035 | Accepted | client-side procedural animation, two-bone legs, explainer timelines |
 
 The design-phase inputs of this component are listed in the [folder README](README.md) §8.
 

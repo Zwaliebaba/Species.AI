@@ -49,7 +49,7 @@ Scope: Units, creatures, hazards, projectiles. Back to the [requirements index](
 | R-UNIT-041 | Actors never push each other apart and never push themselves away from cliffs; | [README.md](../reference/02_units/README.md#211-movement-obstacles-and-slopes) |
 | R-UNIT-042 | A walking actor of the kinds in table 2.11-A scales its speed by the slope factor f = 1 + (h_now − h_next) ÷ k, clamped to [f_min, f_max], | [README.md](../reference/02_units/README.md#211-movement-obstacles-and-slopes) |
 | R-UNIT-043 | An actor takes the colour of its team from the team colour table of reference/12 (`ref.sim.team_colour.*`). | [README.md](../reference/02_units/README.md#212-team-colouring) |
-| R-UNIT-044 | A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-0020): | [README.md](../reference/02_units/README.md#212-team-colouring) |
+| R-UNIT-044 | A team-tinted unit mesh is tinted in one of two ways, with the tint regions marked explicitly in the asset (ADR-020): | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-045 | When a team's lobby colour id is 0, the Worker figure mesh `mesh.unit.worker_figure` halves the team colour before it applies the tint. | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-046 | Each kind is coloured as table 2.12-A states. | [README.md](../reference/02_units/README.md#212-team-colouring) |
 | R-UNIT-047 | Units raise sounds as presentation events named by source and event, for example `worker.attack` (DEC-007; | [README.md](../reference/02_units/README.md#213-presentation-binding) |

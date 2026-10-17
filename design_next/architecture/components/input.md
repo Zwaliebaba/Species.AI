@@ -1,36 +1,36 @@
 # Input
 
-> Status: Engine baseline · Prefix: INP · ADRs: [ADR-0028](../../adr/0028-input-device-back-ends.md) · [ADR-0029](../../adr/0029-input-event-model-and-binding-contract.md) · [ADR-0032](../../adr/0032-ui-focus-graph-page-stack-and-input.md) · [ADR-0064](../../adr/0064-accessibility-baseline-xag.md) · [ADR-0074](../../adr/0074-platform-clock-with-injectable-time.md) · [ADR-0075](../../adr/0075-application-window-and-dpi-awareness.md) · [ADR-0059](../../adr/0059-content-build-and-validators.md) · [ADR-0061](../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0063](../../adr/0063-localisation.md) · [ADR-0067](../../adr/0067-logging.md) · [ADR-0069](../../adr/0069-test-framework.md) · Related: [Controls, camera and commands](../../reference/06_controls_camera_and_commands/README.md) · [Actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) · [Camera](../../reference/06_controls_camera_and_commands/camera.md) · [Teams and player commands](../../reference/12_simulation_model/06_teams_and_player_commands.md) · [UI framework](ui_framework/README.md) · [Platform layer](platform_layer.md) · [Data schemas](data_schemas/README.md)
+> Status: Engine baseline · Prefix: INP · ADRs: [ADR-028](../../ADR/ADR-028-input-device-back-ends.md) · [ADR-029](../../ADR/ADR-029-input-event-model-and-binding-contract.md) · [ADR-032](../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md) · [ADR-064](../../ADR/ADR-064-accessibility-baseline-xag.md) · [ADR-074](../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-075](../../ADR/ADR-075-application-window-and-dpi-awareness.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-063](../../ADR/ADR-063-localisation.md) · [ADR-067](../../ADR/ADR-067-logging.md) · [ADR-069](../../ADR/ADR-069-test-framework.md) · Related: [Controls, camera and commands](../../reference/06_controls_camera_and_commands/README.md) · [Actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) · [Camera](../../reference/06_controls_camera_and_commands/camera.md) · [Teams and player commands](../../reference/12_simulation_model/06_teams_and_player_commands.md) · [UI framework](ui_framework/README.md) · [Platform layer](platform_layer.md) · [Data schemas](data_schemas/README.md)
 
 This component turns device input into Species actions. It owns the device back-ends, the ordered event queue, the device state of each frame, the assignment of gamepads to local players, the binding graph that maps device conditions to action ids, the binding sets and their layers, the name table of every bindable control, the pointer, the input mode and the idle time. It answers one question for the rest of the client: did action *X* fire in this frame, and with which value. What each action means, and which player command it produces, is specified by [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md); this component never defines a second list of match actions.
 
 Notation used throughout:
 
-- A **frame** is one rendered frame of the client loop. Input timings (repeat, idle) are seconds of real time read from the platform clock (ADR-0074): they are presentation timings, never simulation durations, and they keep running while a match is paused (R-CTRL-006).
+- A **frame** is one rendered frame of the client loop. Input timings (repeat, idle) are seconds of real time read from the platform clock (ADR-074): they are presentation timings, never simulation durations, and they keep running while a match is paused (R-CTRL-006).
 - **Binding notation.** This document writes a device condition as `device:control:condition`, for example `key:a:held`, `mouse:primary:down` or `pad:stick_left:position`, and composite bindings as `all(x, y)`, `chord(key:control, key:c)`, `not(x)`, `alias(<action id>)` and `latch(on: x, off: y)`, where x and y stand for operand bindings. Bindings of one action are listed in order and separated by `·`; the first is the **primary** binding. §3.5 maps the notation one to one onto the binding-set schema.
 - **Stick units** are the unit of stick payloads after the response curve (§4.6); pushing a stick forward gives a negative y.
 
 ## 1 Responsibilities and boundaries
 
-**INP-001** (MUST) The input component owns: the gamepad back-end on GameInput and the keyboard and mouse back-end (ADR-0028, §4.2); the per-frame ordered event queue (ADR-0029, §4.3); the device state derived from it (§4.4); the local players and their gamepad assignment (§4.10); the binding graph, its node kinds and their evaluation (§3.3, §4.5 to §4.9); the action bindings (`ActionBindings`) of every action, with their glyph overrides and suppression flags (§3.4); the name table of every bindable key, mouse control and gamepad control (§3.2); the binding layers and the keyboard-layout table (§4.13); the pointer (§4.12); the input mode and the idle time (§4.11); and the rebinding services that the rebinding hook uses (§4.15).
+**INP-001** (MUST) The input component owns: the gamepad back-end on GameInput and the keyboard and mouse back-end (ADR-028, §4.2); the per-frame ordered event queue (ADR-029, §4.3); the device state derived from it (§4.4); the local players and their gamepad assignment (§4.10); the binding graph, its node kinds and their evaluation (§3.3, §4.5 to §4.9); the action bindings (`ActionBindings`) of every action, with their glyph overrides and suppression flags (§3.4); the name table of every bindable key, mouse control and gamepad control (§3.2); the binding layers and the keyboard-layout table (§4.13); the pointer (§4.12); the input mode and the idle time (§4.11); and the rebinding services that the rebinding hook uses (§4.15).
 
 **INP-002** (MUST) Game code never reads a device. It asks the input router (`InputRouter`) whether an action fired in the current frame and may receive the action's value: its kind, its axis values and the device that produced it. Every answer comes from the state that the router built at the start of the frame; asking is free of side effects (DEC-554).
 
-**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A). The UI navigation actions are those that the UI framework defines, with their keyboard defaults ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203, UI-204; R-CTRL-035); this component binds them in table 3.6-B and defines no menu action of its own, except the five leaderboard hook-page actions that no UI requirement lists (INP-077). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-0029).
+**INP-003** (MUST) The match actions are exactly the action ids of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) table 2.1-A (R-CTRL-030). This component binds them (table 3.6-A). The UI navigation actions are those that the UI framework defines, with their keyboard defaults ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203, UI-204; R-CTRL-035); this component binds them in table 3.6-B and defines no menu action of its own, except the five leaderboard hook-page actions that no UI requirement lists (INP-077). Action ids are the stable names that bindings, rebinding and saved settings use (ADR-029).
 
 **INP-004** (MUST) Player commands originate only in the input layer. The match input pump (`MatchInputPump`) and the sampler of the team command state (`TeamCommandState`) turn actions into members of `PlayerCommand` and into fields of the team command state, by the rules of [actions and bindings](../../reference/06_controls_camera_and_commands/actions_and_bindings.md) (DEC-023); the router itself produces actions, never commands. Simulation code links no input interface, never queries an action, never reads the pointer, a device, the input mode or the camera, and never issues a player command (DEC-008, DEC-119, R-CTRL-003, R-CTRL-004). One click therefore yields one command on the sender and one effect on every participant.
 
 **INP-005** (MUST NOT) The input component never writes simulation state, never reads it, and never changes a Power, a selection or a unit locally. Local feedback (sounds, previews, camera modes) is the consumers' business (R-CTRL-022, DEC-007).
 
-**INP-006** (MUST) Text entry does not pass through the binding graph. Text characters and input-method composition go to the focused text field through the UI framework's text service, with the modifier state of each character (ADR-0028, ADR-0032).
+**INP-006** (MUST) Text entry does not pass through the binding graph. Text characters and input-method composition go to the focused text field through the UI framework's text service, with the modifier state of each character (ADR-028, ADR-032).
 
-**INP-007** (MUST) The headless server links neither GameInput nor any input back-end (ADR-0028). Bots issue no input actions (R-CTRL-005).
+**INP-007** (MUST) The headless server links neither GameInput nor any input back-end (ADR-028). Bots issue no input actions (R-CTRL-005).
 
-**INP-008** (MUST) The neighbours of this component own: the window, its focus, its close request and the system cursor's visibility over the client area ([platform layer](platform_layer.md), ADR-0075); widget focus, page navigation, UI repeat timers and input-mode captions ([UI framework](ui_framework/README.md), ADR-0032); the meaning, context and command of every match action (reference/06); the file format of the binding sets ([data schemas](data_schemas/README.md), ADR-0061, ADR-0062); and the settings store (`SettingsStore`) that holds the user layer (DEC-250).
+**INP-008** (MUST) The neighbours of this component own: the window, its focus, its close request and the system cursor's visibility over the client area ([platform layer](platform_layer.md), ADR-075); widget focus, page navigation, UI repeat timers and input-mode captions ([UI framework](ui_framework/README.md), ADR-032); the meaning, context and command of every match action (reference/06); the file format of the binding sets ([data schemas](data_schemas/README.md), ADR-061, ADR-062); and the settings store (`SettingsStore`) that holds the user layer (DEC-250).
 
 **INP-009** (MUST) The default binding set binds only the actions of tables 3.6-A and 3.6-B, that is the actions of reference/06 table 2.1-A, those of UI-203 and the leaderboard hook-page actions. It holds the one match control scheme (`ControlScheme`, R-CTRL-002): no alternative scheme (DEC-056), no gesture input and no icon Power bar (DEC-055), no loader mini-programs or attract mode (DEC-054), and no developer key other than `action.debug.network_stats`.
 
-**INP-010** (MUST) Every device class is remapped through the same binding graph, and the graph offers a latch node for hold-or-toggle options (§4.8), so remapping and toggle options are done once for every device (ADR-0064).
+**INP-010** (MUST) Every device class is remapped through the same binding graph, and the graph offers a latch node for hold-or-toggle options (§4.8), so remapping and toggle options are done once for every device (ADR-064).
 
 ## 2 Interfaces
 
@@ -60,7 +60,7 @@ struct InputEvent {                                // INP-115
   DeviceClass   device_class;
   DeviceId      device;
   std::uint16_t control;                           // a KeyCode, MouseControl or PadControl value
-  std::int64_t  timestamp_ns;                      // platform clock (ADR-0074)
+  std::int64_t  timestamp_ns;                      // platform clock (ADR-074)
   float         x, y;                              // Axis: a sample (stick, trigger) or a delta (motion, wheel)
 };
 
@@ -154,15 +154,15 @@ public:
 
 **INP-022** (MUST) The router's outputs are: action results and values (by query); the pointer state; the input mode of each local player and its change notice; the idle state; the active keyboard layout and its change notice; the assignment and connection state of each local player's gamepad; and text events, which it forwards unchanged to the UI framework's text service (INP-006).
 
-**INP-023** (MUST) The default binding set and the layout layers are content: authored as JSON records, validated by the content build and loaded as cooked records (ADR-0059, ADR-0061, ADR-0062, DEC-015). The user layer is a run-time settings file in the settings store (DEC-250) and is validated by the router when it loads (§4.14).
+**INP-023** (MUST) The default binding set and the layout layers are content: authored as JSON records, validated by the content build and loaded as cooked records (ADR-059, ADR-061, ADR-062, DEC-015). The user layer is a run-time settings file in the settings store (DEC-250) and is validated by the router when it loads (§4.14).
 
-**INP-024** (MUST) Every display text of input (key names, control names, condition words, the chord separator) is a string id of the string table with its fallback (ADR-0063, DEC-099), never a name that the parser accepts, and display text is never fed back into parsing (ADR-0029).
+**INP-024** (MUST) Every display text of input (key names, control names, condition words, the chord separator) is a string id of the string table with its fallback (ADR-063, DEC-099), never a name that the parser accepts, and display text is never fed back into parsing (ADR-029).
 
 ### 2.4 Threading contract
 
-**INP-025** (MUST) The router lives on the main thread, which runs the platform layer's window and event loop (ADR-0075). `AdvanceFrame`, `AdvanceRepeatPass`, every query, `Suppress`, `WarpPointer`, `ConfinePointer` and every binding operation run on the main thread only. Between two `AdvanceFrame` calls the router's frame state is immutable.
+**INP-025** (MUST) The router lives on the main thread, which runs the platform layer's window and event loop (ADR-075). `AdvanceFrame`, `AdvanceRepeatPass`, every query, `Suppress`, `WarpPointer`, `ConfinePointer` and every binding operation run on the main thread only. Between two `AdvanceFrame` calls the router's frame state is immutable.
 
-**INP-026** (MUST) The keyboard and mouse back-end receives its input on the main thread, forwarded by the platform layer (ADR-0075). The gamepad back-end reads gamepad readings on the main thread inside `AdvanceFrame`; GameInput's device notices may arrive on another thread and are written into a single-producer, single-consumer mailbox that `AdvanceFrame` drains. No other thread touches router state.
+**INP-026** (MUST) The keyboard and mouse back-end receives its input on the main thread, forwarded by the platform layer (ADR-075). The gamepad back-end reads gamepad readings on the main thread inside `AdvanceFrame`; GameInput's device notices may arrive on another thread and are written into a single-producer, single-consumer mailbox that `AdvanceFrame` drains. No other thread touches router state.
 
 **INP-027** (MUST) Events that arrive while the main thread is busy (a loading view, a long frame) stay in their back-end's buffer until the next `AdvanceFrame`; the platform layer keeps pumping the window during loading views, so no event is lost while a frame is not running.
 
@@ -205,13 +205,13 @@ No match rule of reference/06 uses the three axis helpers; the stateful hold-or-
 | `zero` | an analogue control | the control is at rest at the end of the frame | — |
 | `read` | an analogue control | always | the current value |
 
-**INP-052** (MUST) A press and a release of one control within one frame make both `down` and `up` true for that frame, and `held` false, so a press shorter than a frame is never lost (ADR-0029, DEC-096, R-CTRL-010). Two presses within one frame make `down` true once; the router keeps the count of presses for diagnostics.
+**INP-052** (MUST) A press and a release of one control within one frame make both `down` and `up` true for that frame, and `held` false, so a press shorter than a frame is never lost (ADR-029, DEC-096, R-CTRL-010). Two presses within one frame make `down` true once; the router keeps the count of presses for diagnostics.
 
-**INP-053** (MUST) An event that the operating system's keyboard auto-repeat produces never satisfies `down`, never creates a new press and never changes `held`; the `repeat` condition uses the router's own timers (§4.7, ADR-0029).
+**INP-053** (MUST) An event that the operating system's keyboard auto-repeat produces never satisfies `down`, never creates a new press and never changes `held`; the `repeat` condition uses the router's own timers (§4.7, ADR-029).
 
 ### 3.2 Device controls and the name table
 
-**INP-055** (MUST) One name table maps every bindable control to exactly one canonical name, and every name to exactly one control; the binding parser, the binding writer, display and saving all use it (DEC-554, ADR-0029). Names are lower case. The parser matches control names without regard to case, and the writer always writes the canonical name, so a binding written and read back is the same binding.
+**INP-055** (MUST) One name table maps every bindable control to exactly one canonical name, and every name to exactly one control; the binding parser, the binding writer, display and saving all use it (DEC-554, ADR-029). Names are lower case. The parser matches control names without regard to case, and the writer always writes the canonical name, so a binding written and read back is the same binding.
 
 **INP-056** (MUST) Keys are identified by the key the active keyboard layout reports, so letter and punctuation keys follow the labels of the active layout; the keyboard-layout layer (§4.13) restores the reference key positions for camera control. Each modifier name covers both of its keys (`shift`, `control`, `alt`). The keyboard names are those of table 3.2-A; a key outside the table has no name, cannot be bound and produces no event.
 
@@ -236,7 +236,7 @@ Table 3.2-B Mouse controls (display text `ui.input.mouse.<name>`).
 |---|---|---|---|
 | `primary`, `secondary`, `middle` | Boolean | `down`, `up`, `held`, `repeat` | — |
 | `motion` | Axis2 | `move`, `read` | the pointer's movement since the previous frame, in client pixels, y positive downwards |
-| `raw_motion` | Axis2 | `move`, `read` | the unaccelerated device movement since the previous frame, in device counts (ADR-0028) |
+| `raw_motion` | Axis2 | `move`, `read` | the unaccelerated device movement since the previous frame, in device counts (ADR-028) |
 | `wheel` | Axis1 | `move`, `read` | wheel notches since the previous frame, forward positive, fractional for fine-resolution wheels (`inp.mouse.wheel_units_per_notch`) |
 
 Table 3.2-C Gamepad controls, named by position (display text `ui.input.pad.<name>`).
@@ -300,7 +300,7 @@ A `Boolean` binding on an `Axis1` or `Axis2` action is rejected when it loads (�
 
 ### 3.5 Binding-set schema
 
-**INP-070** (MUST) The default binding set and each layout layer are records of one binding-set schema ([data schemas](data_schemas/README.md), ADR-0061, ADR-0062) with these fields: the schema version; the layer kind (`default` or `layout`); for a layout layer, its layout tag (§4.13); and a list of entries, each with an action id, a list of binding nodes and an optional glyph asset id. A layout-layer entry holds exactly one binding, which replaces the action's primary binding. The user layer is a group of settings-store entries, one per action, whose value is one binding node in canonical form (DEC-250).
+**INP-070** (MUST) The default binding set and each layout layer are records of one binding-set schema ([data schemas](data_schemas/README.md), ADR-061, ADR-062) with these fields: the schema version; the layer kind (`default` or `layout`); for a layout layer, its layout tag (§4.13); and a list of entries, each with an action id, a list of binding nodes and an optional glyph asset id. A layout-layer entry holds exactly one binding, which replaces the action's primary binding. The user layer is a group of settings-store entries, one per action, whose value is one binding node in canonical form (DEC-250).
 
 **INP-071** (MUST) Each node is a JSON object with exactly one node-kind property; the notation of this document maps onto it one to one:
 
@@ -318,7 +318,7 @@ A `Boolean` binding on an `Axis1` or `Axis2` action is rejected when it loads (�
 | `setting:Name`, `setting:not:Name` | `{"setting": "Name"}`, `{"setting": "Name", "negate": true}` |
 | `value:AlwaysTrue`, `value:FeatureFlagX` | `{"value": "AlwaysTrue"}`, `{"value": "FeatureFlagX"}` |
 
-**INP-072** (MUST) The canonical writer writes the properties in the order of the table, the canonical control names, and the sensitivity only when it differs from the default. Writing a binding and parsing it back yields the same binding (ADR-0029, DEC-800).
+**INP-072** (MUST) The canonical writer writes the properties in the order of the table, the canonical control names, and the sensitivity only when it differs from the default. Writing a binding and parsing it back yields the same binding (ADR-029, DEC-800).
 
 **INP-073** (MUST) A node with an unknown property, with no or with two node-kind properties, or without a required property is rejected (§6.1); nothing falls back to a default condition (DEC-096).
 
@@ -400,9 +400,9 @@ Table 3.6-A Default bindings of the match actions.
 | 68 | `action.device.pad_disconnected` | Boolean | — | `pad:connection:up` | — | M7 |
 | 69 | `action.device.pad_connected` | Boolean | — | `pad:connection:down` | — | M7 |
 
-**INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-0028, ADR-0075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
+**INP-076** (MUST) `action.app.quit` has no binding. The platform layer raises it when the window receives a close request, which Alt+F4 also produces (ADR-028, ADR-075, R-CTRL-047 row M8). The key events of Alt and F4 still reach the router as ordinary events.
 
-**INP-077** (MUST) The UI navigation actions, their meanings, their context rules and their default bindings are defined by the UI framework ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203 and UI-204, ADR-0032, ADR-0064): `action.menu.up`, `action.menu.down`, `action.menu.left`, `action.menu.right`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss` and `action.menu.scroll_speedup`. Rows 1 to 9 of table 3.6-B state those defaults as binding nodes, with their order and their primary binding, and add nothing to them; the keyboard bindings are the Species baseline of UI-204, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). Rows 10 to 14 bind the leaderboard hook page, which no UI requirement lists: `action.menu.cycle_up` (`PadMenuCycleUp`) and `action.menu.cycle_down` (`PadMenuCycleDown`) on the shoulder buttons with repeat, the view selector on the trigger presses and the period toggle on the north face button (DEC-047, DEC-553, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
+**INP-077** (MUST) The UI navigation actions, their meanings, their context rules and their default bindings are defined by the UI framework ([layout, rendering, input and localisation](ui_framework/layout_rendering_input_and_localisation.md) UI-203 and UI-204, ADR-032, ADR-064): `action.menu.up`, `action.menu.down`, `action.menu.left`, `action.menu.right`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss` and `action.menu.scroll_speedup`. Rows 1 to 9 of table 3.6-B state those defaults as binding nodes, with their order and their primary binding, and add nothing to them; the keyboard bindings are the Species baseline of UI-204, and the UI framework applies the Escape binding of `action.menu.close` only outside a match, where Escape is `action.match.menu` (R-META-014). Rows 10 to 14 bind the leaderboard hook page, which no UI requirement lists: `action.menu.cycle_up` (`PadMenuCycleUp`) and `action.menu.cycle_down` (`PadMenuCycleDown`) on the shoulder buttons with repeat, the view selector on the trigger presses and the period toggle on the north face button (DEC-047, DEC-553, R-META-500 to R-META-502). The match actions `action.match.menu`, `action.ui.pointer_down`, `action.ui.pointer_held` and `action.ui.alt_pointer_down` also act on UI windows (R-CTRL-047 rows M4 and M6).
 
 Table 3.6-B Default bindings of the UI navigation actions of UI-203 and UI-204, and of the leaderboard hook-page actions.
 
@@ -529,7 +529,7 @@ Table 3.8-A Physical input to actions, default binding set.
 
 **INP-090** (MUST) An action value (`ActionValue`) holds the value kind, the x and y components and the device that produced it. The value of a fired action is the value of its first satisfied binding (INP-020): a device leaf gives its control's value under its condition (INP-051); `all` gives its first operand's value, replaced by its analogue operand's value when it has one; `alias` gives the target action's value; the other composite nodes give no axis value.
 
-**INP-091** (MUST) Values are floating-point and never truncated or rounded (ADR-0029). A Boolean action fed by an analogue binding carries that binding's value; an `Axis1` action reads x; an `Axis2` action fed by an `Axis1` binding has y = 0 (INP-061).
+**INP-091** (MUST) Values are floating-point and never truncated or rounded (ADR-029). A Boolean action fed by an analogue binding carries that binding's value; an `Axis1` action reads x; an `Axis2` action fed by an `Axis1` binding has y = 0 (INP-061).
 
 **INP-092** (MUST) A value carries the identity of the device that produced it; a gamepad value always names the player's assigned gamepad (§4.10), and a keyboard or mouse value names the keyboard or the mouse.
 
@@ -630,7 +630,7 @@ Caption: Diagram 3.10-A, the input component's types: two back-ends feed one eve
 
 **INP-100** (MUST) Start-up runs in this order:
 
-1. The platform layer creates the window and begins forwarding its keyboard, pointer and wheel input to the keyboard and mouse back-end (ADR-0075).
+1. The platform layer creates the window and begins forwarding its keyboard, pointer and wheel input to the keyboard and mouse back-end (ADR-075).
 2. The router is created. It registers its node kinds in this fixed order, which is also the enumeration order of node kinds in cooked binding records: `all`, `chord`, `not`, `idle`, keyboard and mouse leaves, gamepad leaves, `setting`, `value`, `alias`, `latch`. A node contains only nodes of later kinds, with three exceptions: a `not` may contain a `not`; a `chord` contains only condition-free parts; and a `latch` may contain any `Boolean` node except a `latch`. So `all` is the outermost operator, a chord sits inside a conjunction, and a negation applies to a single operand.
 3. The gamepad back-end creates its GameInput instance and registers for device notices (INP-106); a failure is handled by INP-107.
 4. The settings store loads (DEC-250), and the control-scheme setting is set to the match control scheme (INP-168).
@@ -681,15 +681,15 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 
 ### 4.2 Device back-ends
 
-**INP-105** (MUST) Two back-ends feed the router: the keyboard and mouse back-end and the gamepad back-end (ADR-0028). Each implements `DeviceBackEnd`: `Collect` appends every event since its previous call, in the order the events happened, each with its device identity and a platform-clock timestamp; `ReleaseAll` appends a release event for every control the back-end holds pressed and a rest sample for every analogue control away from rest. The router collects from the keyboard and mouse back-end first and from the gamepad back-end second, then orders the frame's events by timestamp, keeping that back-end order for equal timestamps. Each back-end keeps the pressed state of its controls, so that `ReleaseAll` and the reconciliation of INP-117 can use it.
+**INP-105** (MUST) Two back-ends feed the router: the keyboard and mouse back-end and the gamepad back-end (ADR-028). Each implements `DeviceBackEnd`: `Collect` appends every event since its previous call, in the order the events happened, each with its device identity and a platform-clock timestamp; `ReleaseAll` appends a release event for every control the back-end holds pressed and a rest sample for every analogue control away from rest. The router collects from the keyboard and mouse back-end first and from the gamepad back-end second, then orders the frame's events by timestamp, keeping that back-end order for equal timestamps. Each back-end keeps the pressed state of its controls, so that `ReleaseAll` and the reconciliation of INP-117 can use it.
 
-**INP-106** (MUST) The gamepad back-end uses GameInput, built against the pinned package and API namespace of ADR-0028 (3.5.283 with `GameInput::v3`, moving to the 4.0 line after its first point release); the installer carries the redistributable of the same version or newer (ADR-0028, ADR-0071). It creates its GameInput instance during initialisation and registers for device connection and disconnection notices. In each `AdvanceFrame` it reads every reading since the previous frame, in order, for every connected gamepad, compares each reading with the gamepad's previous reading, and emits a press or a release event for every button whose state changed and an axis sample for every stick or trigger whose value changed, so a transition between two frames is never lost. It maps the gamepad reading by position: the south, east, west and north face buttons; the left and right shoulder buttons; the four d-pad directions; the menu and view buttons; the two stick presses; the two triggers, in 0 to 1; and the two sticks, in −1 to 1 per axis with y positive upwards. It tracks every connected gamepad, with no fixed device count, and each gamepad keeps its GameInput device identity while it is connected and when it reconnects.
+**INP-106** (MUST) The gamepad back-end uses GameInput, built against the pinned package and API namespace of ADR-028 (3.5.283 with `GameInput::v3`, moving to the 4.0 line after its first point release); the installer carries the redistributable of the same version or newer (ADR-028, ADR-071). It creates its GameInput instance during initialisation and registers for device connection and disconnection notices. In each `AdvanceFrame` it reads every reading since the previous frame, in order, for every connected gamepad, compares each reading with the gamepad's previous reading, and emits a press or a release event for every button whose state changed and an axis sample for every stick or trigger whose value changed, so a transition between two frames is never lost. It maps the gamepad reading by position: the south, east, west and north face buttons; the left and right shoulder buttons; the four d-pad directions; the menu and view buttons; the two stick presses; the two triggers, in 0 to 1; and the two sticks, in −1 to 1 per axis with y positive upwards. It tracks every connected gamepad, with no fixed device count, and each gamepad keeps its GameInput device identity while it is connected and when it reconnects.
 
 **INP-107** (MUST) If GameInput cannot be created, the client runs without gamepads: the gamepad back-end reports no device and logs one error (§6.4), every gamepad binding still loads, and none is ever satisfied. Whether a binding is valid never depends on which devices are present.
 
-**INP-108** (MUST) The keyboard and mouse back-end receives the window's keyboard, pointer and wheel input that the platform layer forwards (ADR-0075), and the raw, unaccelerated mouse movement that ADR-0028 specifies. It turns them into press and release events of keys and mouse buttons, pointer-movement and raw-movement samples and wheel samples, with the keyboard's or the mouse's device identity. Characters and input-method composition go to the UI framework's text service (INP-112).
+**INP-108** (MUST) The keyboard and mouse back-end receives the window's keyboard, pointer and wheel input that the platform layer forwards (ADR-075), and the raw, unaccelerated mouse movement that ADR-028 specifies. It turns them into press and release events of keys and mouse buttons, pointer-movement and raw-movement samples and wheel samples, with the keyboard's or the mouse's device identity. Characters and input-method composition go to the UI framework's text service (INP-112).
 
-**INP-109** (MUST) Keyboard rules (DEC-096, ADR-0028):
+**INP-109** (MUST) Keyboard rules (DEC-096, ADR-028):
 
 1. Every key of table 3.2-A, including `alt`, `f10` and the numeric-pad keys, produces a press event when it goes down and a release event when it goes up, whether or not another key is held; keys pressed and released while Alt is held produce their events like every other key.
 2. Auto-repeat of a held key produces events marked as repeats (INP-053), which never produce a press: holding Alt and X fires `action.view.hide_interface` once.
@@ -697,7 +697,7 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 4. The router never captures Alt+Tab: switching to another application is a focus loss (INP-111).
 5. A change of the keyboard layout is reported to the router, which applies INP-166.
 
-**INP-110** (MUST) Mouse rules (ADR-0028):
+**INP-110** (MUST) Mouse rules (ADR-028):
 
 1. Pressing a mouse button captures the pointer to the window, and releasing the last held button ends the capture, so a release outside the window still arrives.
 2. A click shorter than one frame produces both its press and its release event (INP-052).
@@ -705,13 +705,13 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 4. `motion` is the pointer movement that the platform reports, in client pixels; `raw_motion` is the device movement, which no default binding uses.
 5. Three buttons are bindable, primary, secondary and middle, following the system's assignment of the physical buttons.
 
-**INP-111** (MUST) When the window loses focus, both back-ends emit release events for every held key and button and rest samples for every analogue control (ADR-0028), so nothing stays held, including an Alt held through Alt+Tab. While the window has no focus, the back-ends deliver no presses and no analogue samples away from rest; device connection and disconnection notices still apply. When focus returns, a control that is physically held produces no press until it is released and pressed again.
+**INP-111** (MUST) When the window loses focus, both back-ends emit release events for every held key and button and rest samples for every analogue control (ADR-028), so nothing stays held, including an Alt held through Alt+Tab. While the window has no focus, the back-ends deliver no presses and no analogue samples away from rest; device connection and disconnection notices still apply. When focus returns, a control that is physically held produces no press until it is released and pressed again.
 
-**INP-112** (MUST) Text characters and input-method composition never enter the event queue and never satisfy a binding; the router forwards them to the UI framework's text service with the modifier state of each character (ADR-0032). A key that produces a character produces its key events as well, and the consumers' gates decide whether a match action applies while text is being entered (R-CTRL-012, R-CTRL-047 row M2).
+**INP-112** (MUST) Text characters and input-method composition never enter the event queue and never satisfy a binding; the router forwards them to the UI framework's text service with the modifier state of each character (ADR-032). A key that produces a character produces its key events as well, and the consumers' gates decide whether a match action applies while text is being entered (R-CTRL-012, R-CTRL-047 row M2).
 
 ### 4.3 Event queue
 
-**INP-115** (MUST) The router keeps one ordered event queue per frame (ADR-0029). An event is a press, a release (keyboard events carry the auto-repeat flag), an axis sample (a stick, a trigger, pointer movement, raw movement or the wheel), or a device connection or disconnection; every event carries its device identity and its timestamp. Events are applied in queue order.
+**INP-115** (MUST) The router keeps one ordered event queue per frame (ADR-029). An event is a press, a release (keyboard events carry the auto-repeat flag), an axis sample (a stick, a trigger, pointer movement, raw movement or the wheel), or a device connection or disconnection; every event carries its device identity and its timestamp. Events are applied in queue order.
 
 **INP-116** (MUST) The queue holds at most `inp.queue.capacity` events per frame. When it is full, a new axis sample merges into the newest queued sample of the same control on the same device: a stick or trigger sample replaces its value, and a movement or wheel sample adds its delta, so no motion is lost. A press, release, connection or disconnection that does not fit is counted and dropped.
 
@@ -743,7 +743,7 @@ Caption: Diagram 4.1-A, one frame of input: the back-ends deliver ordered events
 
 ### 4.6 Analogue processing
 
-**INP-128** (MUST) Each stick sample (x, y), as the gamepad back-end reports it, is processed in floating point as follows (ADR-0029):
+**INP-128** (MUST) Each stick sample (x, y), as the gamepad back-end reports it, is processed in floating point as follows (ADR-029):
 
 1. m = the length of (x, y), limited to 1;
 2. with d the stick's dead zone (`inp.pad.stick_left.dead_zone` or `inp.pad.stick_right.dead_zone`), the stick is at rest when m ≤ d, and its processed value is (0, 0);
@@ -756,11 +756,11 @@ The dead zone is radial and rescaled, so the value is continuous at the dead-zon
 
 **INP-130** (MUST) The sensitivity of a stick or trigger leaf multiplies its `position`, `move` and `read` values by the sensitivity ÷ 100 (INP-122, INP-123); it is accepted on the Boolean conditions of those controls, where it has no effect. Stick-direction controls use sensitivity 100 and take no option.
 
-**INP-131** (MUST) The dead zones, thresholds, curve exponents and output scales are data: the binding-set schema carries one gamepad profile record whose defaults are the tuning values of §4.18, so a changed response needs no code change (ADR-0029).
+**INP-131** (MUST) The dead zones, thresholds, curve exponents and output scales are data: the binding-set schema carries one gamepad profile record whose defaults are the tuning values of §4.18, so a changed response needs no code change (ADR-029).
 
 ### 4.7 Repeat timers
 
-**INP-133** (MUST) Each `repeat` leaf keeps its own timer for each device it reads; no timer is shared between bindings, controls or devices, and a query never changes a timer (DEC-554, ADR-0029). In `AdvanceFrame`, for each `repeat` leaf and device:
+**INP-133** (MUST) Each `repeat` leaf keeps its own timer for each device it reads; no timer is shared between bindings, controls or devices, and a query never changes a timer (DEC-554, ADR-029). In `AdvanceFrame`, for each `repeat` leaf and device:
 
 1. if the control went down in this frame, the leaf fires once, and its next due time is the press's timestamp + `inp.repeat.initial_delay`;
 2. otherwise, if the control is held, the leaf fires once for every due time at or before the frame's time, and each firing moves the next due time on by `inp.repeat.period`;
@@ -768,7 +768,7 @@ The dead zone is radial and rescaled, so the value is continuous at the dead-zon
 
 A press and a release within one frame therefore fire once, by step 1.
 
-**INP-134** (MUST) The number of firings in the frame is the leaf's value x (INP-051). A consumer that steps once per firing steps at the same rate at every frame rate. A UI widget's own hold-to-repeat behaviour is the UI framework's (ADR-0032).
+**INP-134** (MUST) The number of firings in the frame is the leaf's value x (INP-051). A consumer that steps once per firing steps at the same rate at every frame rate. A UI widget's own hold-to-repeat behaviour is the UI framework's (ADR-032).
 
 ### 4.8 Composite and environment nodes
 
@@ -780,7 +780,7 @@ A press and a release within one frame therefore fire once, by step 1.
 
 **INP-139** (MUST) `alias` is the query of its target action for the same player, including the target's suppression (INP-093), and carries the target's value.
 
-**INP-140** (MUST) A `latch` keeps one Boolean state per binding and player, updated once per frame in `AdvanceFrame` (INP-101 step 7) as state := (state ∧ ¬off) ∨ (¬state ∧ on), and evaluates to that state. It starts false, `Rebuild` resets it, and a query never changes it. It implements the hold-or-toggle option of ADR-0064 for any held action; no default binding uses it.
+**INP-140** (MUST) A `latch` keeps one Boolean state per binding and player, updated once per frame in `AdvanceFrame` (INP-101 step 7) as state := (state ∧ ¬off) ∨ (¬state ∧ on), and evaluates to that state. It starts false, `Rebuild` resets it, and a query never changes it. It implements the hold-or-toggle option of ADR-064 for any held action; no default binding uses it.
 
 **INP-141** (MUST) `idle` reads the idle time of INP-153: `at_least` N is true when the idle time is N seconds or more, with the idle time as its value; `reaches` N is true in the frame in which the idle time passes N, that is when the previous frame's idle time is below N and this frame's is above N; `no_longer` is true in every frame in which the idle time is 0, not only on the frame in which input resumes. No default binding uses it.
 
@@ -844,11 +844,11 @@ Caption: Diagram 4.10-A, a local player's gamepad slot: assignment by the first 
 
 ### 4.11 Input mode and idle
 
-**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-0029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change raises `on_mode_changed`.
+**INP-150** (MUST) Each local player has an input mode, the class of its last active device: `KeyboardMouse` or `Gamepad` (ADR-029, R-CTRL-011). In `AdvanceFrame`, the mode becomes `Gamepad` when the player's assigned gamepad was active in the frame, otherwise `KeyboardMouse` when the keyboard or the mouse was active (player 0 only), and otherwise stays as it was; when both were active in one frame, `Gamepad` wins. The initial mode is `KeyboardMouse`. A change raises `on_mode_changed`.
 
 **INP-151** (MUST) A device is active in a frame when: for the keyboard, a key is held or had an event; for the mouse, a button is held or had an event, or the pointer, the raw movement or the wheel moved; for a gamepad, a button is held or had an event, a stick is outside its dead zone or a trigger is above its threshold.
 
-**INP-152** (MUST) The input mode is read by: the UI framework's input-mode captions and string variants (ADR-0032); the automatic camera tracking and the gamepad rules of the Strike team and of Leader and Transport orders (reference/06, R-CTRL-043); the availability of the chat input (R-CTRL-047 row M2); the `gamepad` field of the team command state (R-CTRL-101); and the Power slots panel, whose variant is re-created when the mode changes while the panel is hidden ([UI framework](ui_framework/README.md)).
+**INP-152** (MUST) The input mode is read by: the UI framework's input-mode captions and string variants (ADR-032); the automatic camera tracking and the gamepad rules of the Strike team and of Leader and Transport orders (reference/06, R-CTRL-043); the availability of the chat input (R-CTRL-047 row M2); the `gamepad` field of the team command state (R-CTRL-101); and the Power slots panel, whose variant is re-created when the mode changes while the panel is hidden ([UI framework](ui_framework/README.md)).
 
 **INP-153** (MUST) The client is idle in a frame when no connected device was active. The idle time grows by the frame's elapsed real time when the previous frame was idle, and is 0 otherwise; the idle leaf reads it (INP-141), and `IsIdle()` reports the current frame.
 
@@ -878,7 +878,7 @@ Caption: Diagram 4.10-A, a local player's gamepad slot: assignment by the first 
 
 **INP-163** (MUST) Within a replacing layer, several entries for one action overwrite each other, the last one winning, and never add a binding; each overwrite is logged as a warning naming the action. An entry for an action that has no binding becomes its only binding.
 
-**INP-164** (MUST) The active keyboard layout is a layout tag: the value of the keyboard-layout setting when it is set (R-META-455), otherwise the language tag (BCP 47, ADR-0063) of the operating system's active keyboard layout, looked up in table 4.13-A. A tag that the table does not list, or one whose layer does not exist, gives no layout layer and is logged at information level; the default bindings then apply unchanged.
+**INP-164** (MUST) The active keyboard layout is a layout tag: the value of the keyboard-layout setting when it is set (R-META-455), otherwise the language tag (BCP 47, ADR-063) of the operating system's active keyboard layout, looked up in table 4.13-A. A tag that the table does not list, or one whose layer does not exist, gives no layout layer and is logged at information level; the default bindings then apply unchanged.
 
 Table 4.13-A Keyboard-layout table.
 
@@ -928,11 +928,11 @@ Caption: Diagram 4.13-A, building the action bindings from their layers, and reb
 
 ### 4.14 Loading and validation
 
-**INP-170** (MUST) The content build validates the default set and every layout layer against the binding-set schema and the rules of §3, and fails with a diagnostic that names the layer, the action, the path of the node inside the binding and the offending word (ADR-0059, DEC-015). A default binding that relies on an unknown word therefore never reaches a build.
+**INP-170** (MUST) The content build validates the default set and every layout layer against the binding-set schema and the rules of §3, and fails with a diagnostic that names the layer, the action, the path of the node inside the binding and the offending word (ADR-059, DEC-015). A default binding that relies on an unknown word therefore never reaches a build.
 
 **INP-171** (MUST) At run time the router validates each user-layer entry by the same rules. A rejected entry is skipped with a warning that names the settings key, the offending word and the diagnostic class (§6.1), and the action keeps the bindings of the earlier layers. A bad entry never stops loading and never stops the client from starting (DEC-015).
 
-**INP-172** (MUST) Validation never falls back to a default: an unknown device word, control name, condition word, node property, action id or setting is an error naming the word and the binding (ADR-0029, DEC-096, DEC-553), and no validation step reads past a table, leaves a field unset or throws (DEC-554).
+**INP-172** (MUST) Validation never falls back to a default: an unknown device word, control name, condition word, node property, action id or setting is an error naming the word and the binding (ADR-029, DEC-096, DEC-553), and no validation step reads past a table, leaves a field unset or throws (DEC-554).
 
 ### 4.15 Rebinding hook services
 
@@ -1035,7 +1035,7 @@ Input timings are seconds of real time and never simulation durations (R-CTRL-00
 
 ### 6.1 Load diagnostics and binding parse outcomes
 
-**INP-220** (MUST) Every load diagnostic names its class (table 6.1-A), the layer, the action, the path of the node inside the binding, the offending word, and its location: line and column in an authoring file (ADR-0062), the settings key in the user layer.
+**INP-220** (MUST) Every load diagnostic names its class (table 6.1-A), the layer, the action, the path of the node inside the binding, the offending word, and its location: line and column in an authoring file (ADR-062), the settings key in the user layer.
 
 Table 6.1-A Load diagnostic classes.
 
@@ -1058,7 +1058,7 @@ Table 6.1-A Load diagnostic classes.
 
 **INP-221** (MUST) The default set states every binding with its effective meaning, so no default binding depends on lenient parsing (DEC-553): the trigger press bindings and the aliases of INP-079 are explicit. These inputs of the reference default set bind nothing and are not part of it: bindings for a three-dimensional mouse device on `action.select.clear`, `action.power.next` and `action.match.ready` (two); a glyph entry for an action that does not exist; and an entry that declares a value kind without an assignment. The gesture bindings, among them one with a misspelt condition word and a two-key chord, are not specified (DEC-055). Authored as entries, each of these cases fails the content build with its class of table 6.1-A (T6, T31).
 
-**INP-222** (MUST) The content build checks every glyph override and every glyph of table 3.7-A against the asset manifest (ADR-0059), so the input layer never asks for a texture that does not exist.
+**INP-222** (MUST) The content build checks every glyph override and every glyph of table 3.7-A against the asset manifest (ADR-059), so the input layer never asks for a texture that does not exist.
 
 ### 6.2 Run-time failure modes
 
@@ -1115,19 +1115,19 @@ Table 6.3-A Fixed rules of the input layer.
 
 ### 6.4 Diagnostics and telemetry
 
-**INP-240** (MUST) The router logs in the input category (ADR-0067): at information level, the load summary of each layer (entries, bindings, warnings), the active layout and its changes, and each gamepad connection, disconnection, claim and transfer; at debug level, input-mode changes; warnings for rejected user entries, duplicate entries and dropped events; and an error when GameInput is not available.
+**INP-240** (MUST) The router logs in the input category (ADR-067): at information level, the load summary of each layer (entries, bindings, warnings), the active layout and its changes, and each gamepad connection, disconnection, claim and transfer; at debug level, input-mode changes; warnings for rejected user entries, duplicate entries and dropped events; and an error when GameInput is not available.
 
 **INP-241** (MUST) The router keeps counters for the diagnostics overlay ([diagnostics, test and performance](diagnostics_test_and_performance.md)): events per frame (latest and maximum), dropped events, reconciliations, and the age of the oldest event at `AdvanceFrame`.
 
 **INP-242** (MUST) `DumpBindings` writes every action with its bindings in canonical form, its glyph override and the total number of bindings; development builds expose it as a console command.
 
-**INP-243** (MUST) Test builds can record every frame's events and every query result, and replay the recorded events through `AdvanceFrame` with the platform clock's fixed-step source (ADR-0074), so input tests are exact and repeatable. Match replays record commands, not device events (DEC-046).
+**INP-243** (MUST) Test builds can record every frame's events and every query result, and replay the recorded events through `AdvanceFrame` with the platform clock's fixed-step source (ADR-074), so input tests are exact and repeatable. Match replays record commands, not device events (DEC-046).
 
-**INP-244** (MUST NOT) The input component sends no telemetry of its own and never records key presses, text or pointer positions in telemetry; its counters can enter the consented performance telemetry as aggregates only (ADR-0066).
+**INP-244** (MUST NOT) The input component sends no telemetry of its own and never records key presses, text or pointer positions in telemetry; its counters can enter the consented performance telemetry as aggregates only (ADR-066).
 
 ## 7 Acceptance tests
 
-Tests run under the test framework of ADR-0069 with recorded or synthetic events (INP-243) and an injected clock (ADR-0074).
+Tests run under the test framework of ADR-069 with recorded or synthetic events (INP-243) and an injected clock (ADR-074).
 
 | Test | Kind | Checks | Requirements |
 |---|---|---|---|
@@ -1180,10 +1180,10 @@ Tests run under the test framework of ADR-0069 with recorded or synthetic events
 | DEC-004, DEC-007, DEC-009, DEC-015, DEC-024, DEC-083, DEC-095, DEC-555, DEC-564, DEC-800 | Resolved | reference values as baseline; presentation never writes simulation state; tick time; build-time validation; the camera; Power ids and the power bar; route previews; empty crowd orders; local selection sounds; lossless writers |
 | DEC-338 | Dropped | the reference's dead zones, thresholds and input-implementation details; Species defines its own (§4.18) |
 | DEC-054, DEC-055, DEC-056 | Dropped | attract mode and loader mini-programs, gesture input and the icon Power bar, the alternative control scheme (INP-009) |
-| ADR-0028 | Proposed | GameInput for gamepads; the keyboard and mouse back-end and text path (INP-105 to INP-112) |
-| ADR-0029 | Accepted | ordered events, event-by-event evaluation, one name table, strict parsing, float analogue processing (§3, §4) |
-| ADR-0032, ADR-0064, ADR-0074, ADR-0075 | Accepted, Proposed, Accepted, Accepted | UI input in the update phase; remapping and hold-or-toggle; the platform clock; the window |
-| ADR-0059, ADR-0061, ADR-0062, ADR-0063, ADR-0066, ADR-0067, ADR-0069 | — | validation, schemas, authoring syntax, string ids, telemetry, logging, tests |
+| ADR-028 | Proposed | GameInput for gamepads; the keyboard and mouse back-end and text path (INP-105 to INP-112) |
+| ADR-029 | Accepted | ordered events, event-by-event evaluation, one name table, strict parsing, float analogue processing (§3, §4) |
+| ADR-032, ADR-064, ADR-074, ADR-075 | Accepted, Proposed, Accepted, Accepted | UI input in the update phase; remapping and hold-or-toggle; the platform clock; the window |
+| ADR-059, ADR-061, ADR-062, ADR-063, ADR-066, ADR-067, ADR-069 | — | validation, schemas, authoring syntax, string ids, telemetry, logging, tests |
 
 Three rules have no register entry yet and keep the behaviour stated: the glyph overrides of the camera height actions (INP-082); the frame-rate-dependent pointer speed of the aiming stick (INP-157); and the assignment of a gamepad by its first button press (INP-146).
 
@@ -1191,8 +1191,8 @@ Three rules have no register entry yet and keep the behaviour stated: the glyph 
 
 1. **Local players.** How many local players a Species client has, and how a player chooses or changes a gamepad; the baseline has one local player and assigns by first press (INP-145, INP-146).
 2. **Command timing** (DEC-203): the delay buffer, whether commands carry input timestamps, and the coalescing of continuous control on a server-run world.
-3. **Keyboard navigation of the front end** (ADR-0064, XAG 112): whether the baseline keyboard bindings of the menu actions (INP-077) are enough for keyboard-only play, and which keys the leaderboard actions get.
-4. **Rebinding** (DEC-050, ADR-0064, XAG 107): a reachable rebinding page for every device, conflicts between actions that share an input (INP-181), hold-or-toggle options through latches, and whether the gamepad response (dead zones, curve, sensitivity, inversion) becomes a player option (DEC-044, R-META-458).
+3. **Keyboard navigation of the front end** (ADR-064, XAG 112): whether the baseline keyboard bindings of the menu actions (INP-077) are enough for keyboard-only play, and which keys the leaderboard actions get.
+4. **Rebinding** (DEC-050, ADR-064, XAG 107): a reachable rebinding page for every device, conflicts between actions that share an input (INP-181), hold-or-toggle options through latches, and whether the gamepad response (dead zones, curve, sensitivity, inversion) becomes a player option (DEC-044, R-META-458).
 5. **Stored bindings** (DEC-250): the user layer's schema version, migration and whether bindings follow the player across devices.
-6. **Devices** (ADR-0028): extra mouse buttons, other game controllers through GameInput, and whether keyboard and mouse move onto GameInput as well.
+6. **Devices** (ADR-028): extra mouse buttons, other game controllers through GameInput, and whether keyboard and mouse move onto GameInput as well.
 7. **Glyphs:** stick, d-pad and keyboard glyphs in the platform-neutral set, and the glyphs of the camera height actions (INP-081, INP-082).

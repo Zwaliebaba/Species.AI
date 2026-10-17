@@ -42,7 +42,7 @@ This document specifies the Collector (`Collector`, an actor): acquisition, stat
 
 Actor stats are floating-point values (DEC-090).
 
-**R-UNIT-418** (MUST) A Collector is drawn with the mesh `mesh.unit.collector_body`. Its engine sockets `engine_01` to `engine_04` are optional; each socket present emits engine exhaust (R-UNIT-443) (ADR-0021).
+**R-UNIT-418** (MUST) A Collector is drawn with the mesh `mesh.unit.collector_body`. Its engine sockets `engine_01` to `engine_04` are optional; each socket present emits engine exhaust (R-UNIT-443) (ADR-021).
 
 ### 2.4 States
 
@@ -124,7 +124,7 @@ The hover height is max(terrain height, `ref.sim.physics.sea_level`) + `ref.econ
 
 ### 2.9 Presentation and sound
 
-**R-UNIT-443** (MUST) A Collector's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.collector.tint_scale` (0.7) (ADR-0020). Each tick each engine socket emits `ref.unit.collector.exhaust_fire_count` (5) blue fire particles of size `ref.unit.collector.exhaust_fire_size` (75) and colour `ref.unit.collector.exhaust_colour` (50, 50, 250) and one smoke trail particle, from the presentation generator ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)).
+**R-UNIT-443** (MUST) A Collector's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.collector.tint_scale` (0.7) (ADR-020). Each tick each engine socket emits `ref.unit.collector.exhaust_fire_count` (5) blue fire particles of size `ref.unit.collector.exhaust_fire_size` (75) and colour `ref.unit.collector.exhaust_colour` (50, 50, 250) and one smoke trail particle, from the presentation generator ([animation and VFX](../../architecture/components/animation_and_vfx/README.md)).
 
 **R-UNIT-444** (MUST) A Collector draws a collector bubble, `fx.bubble_sphere`, of size `ref.unit.collector.bubble_size` (16 wu), additive, at opacity `ref.unit.collector.bubble_alpha` (150 of 255), `ref.unit.collector.bubble_offset` (3 wu) above its collector point. While Harvesting it draws `ref.unit.collector.beam_ring_count` (5) animated rings in its team colour, each of radius `ref.econ.collector.collection_range_wu` × the funnel scale s at its height, cycling from the ground up to its hover height; and it casts the base blob shadow ([Units](README.md)). These render paths read the presentation clock only (DEC-009, [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
 
@@ -253,7 +253,7 @@ Keys cited from other documents (their values are defined there):
 ## 7 Dependencies
 
 - **Reference documents:** [Units](README.md) (base advance, blob shadow); [essence_orbs.md](essence_orbs.md); [builder.md](builder.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.18 (delivery, cap bypass, ownership); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Collector outcome, validity, Power stop); [weapons and projectiles](../04_supply_crates_powers_and_weapons/weapons_and_projectiles.md) (grenades, fuse, thrown-weapon physics); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-0020; bubble and rings); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust, debris); [audio engine](../../architecture/components/audio_engine.md).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-020; bubble and rings); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (exhaust, debris); [audio engine](../../architecture/components/audio_engine.md).
 - **Assets:** `mesh.unit.collector_body`; `fx.bubble_sphere` (the collector bubble); `icon.power.collector` (the Collector Power); `sfx.unit.collector.presence_loop`, `sfx.unit.collector.drop_essence`.
 
 ## 8 Open decisions

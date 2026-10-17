@@ -1,6 +1,6 @@
 # Map definition and match-option schemas
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · [ADR-0060](../../../adr/0060-content-identity-by-hash.md) · [ADR-0058](../../../adr/0058-pack-files-and-mount-policy.md) · [ADR-0063](../../../adr/0063-localisation.md) · [ADR-0071](../../../adr/0071-install-layout-runtime-files-and-user-data.md) · Folder: [data schemas](README.md) · Related: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) · [map editor hooks](../../../reference/08_maps_and_level_design/map_editor_hooks.md) · [skirmish rules and modes](../../../reference/01_skirmish_rules_and_modes/README.md) · [terrain](../terrain.md) · [camera and sequences](../camera_and_sequences.md) · [structure records](map_structure_records.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-058](../../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-063](../../../ADR/ADR-063-localisation.md) · [ADR-071](../../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · Folder: [data schemas](README.md) · Related: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) · [map editor hooks](../../../reference/08_maps_and_level_design/map_editor_hooks.md) · [skirmish rules and modes](../../../reference/01_skirmish_rules_and_modes/README.md) · [terrain](../terrain.md) · [camera and sequences](../camera_and_sequences.md) · [structure records](map_structure_records.md)
 
 This document specifies the schema of the map definition (`MapDefinition`, schema id `maps.definition`): its blocks, its map header with the match options of the map, the map options and map effects, the terrain records, the map lights, the start-position records, the camera views and camera animations, the starting forces, the routes and the primary objectives. It also specifies the generated map index (`maps.index`), the match-option schema of the modes (`mode.options`), and two hooks: the custom-map container and the map ids that the achievement hooks count. The structure records of a map are [map_structure_records.md](map_structure_records.md). The meaning of every field is the owning document's: [maps: rules and conventions](../../../reference/08_maps_and_level_design/rules_and_conventions.md) for the map, [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) for the match options of the modes, and [terrain](../terrain.md) for the terrain records.
 
@@ -16,7 +16,7 @@ This document specifies the schema of the map definition (`MapDefinition`, schem
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-0062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
 namespace species::data::map {
@@ -299,7 +299,7 @@ Table 3.9-A Route points.
 
 ### 3.12 The match-option schema of the modes
 
-**DAT-098** (MUST) The record type `mode.options` holds, in one record, the option catalogue of table 3.12-A and, for each of the six modes of R-MODE-029, the ordered option list of table 3.12-B. The mode order is the enumeration order of `MatchMode` (R-MODE-029); a map, a match setup and a command name a mode by its enumerator, never by the position of a record in a file, so adding a mode renumbers nothing. The record is required in every edition whose `modes` flag offers a mode ([import_and_build_records.md](import_and_build_records.md) table 3.5-B); an edition without it fails the content build (ADR-0059).
+**DAT-098** (MUST) The record type `mode.options` holds, in one record, the option catalogue of table 3.12-A and, for each of the six modes of R-MODE-029, the ordered option list of table 3.12-B. The mode order is the enumeration order of `MatchMode` (R-MODE-029); a map, a match setup and a command name a mode by its enumerator, never by the position of a record in a file, so adding a mode renumbers nothing. The record is required in every edition whose `modes` flag offers a mode ([import_and_build_records.md](import_and_build_records.md) table 3.5-B); an edition without it fails the content build (ADR-059).
 
 Table 3.12-A The option catalogue. Each option's type and unit come from [reference/01](../../../reference/01_skirmish_rules_and_modes/README.md) R-MODE-074; its typed default, which a mode that lacks the option reads, is R-MODE-076's (DEC-073).
 
@@ -388,7 +388,7 @@ Caption: Figure 4.1-A, the validation of one map (DAT-103, DAT-104; DEC-561).
 
 **DAT-107** (MUST) One loader reads the header for the catalogue and the whole map for play, with the same keys and rules; the reference's two readers, which differ in case sensitivity and in where they stop, have no Species counterpart (DEC-045).
 
-**DAT-108** (MUST) A map is identified by its map id together with the hash of its cooked entry: the catalogue, the map index and every other list of maps key their entries by both (DEC-204, ADR-0060). No code holds a compiled-in table of map hashes (ADR-0060).
+**DAT-108** (MUST) A map is identified by its map id together with the hash of its cooked entry: the catalogue, the map index and every other list of maps key their entries by both (DEC-204, ADR-060). No code holds a compiled-in table of map hashes (ADR-060).
 
 ### 4.3 Writing a map
 
@@ -415,7 +415,7 @@ Caption: Figure 4.1-A, the validation of one map (DAT-103, DAT-104; DEC-561).
 | a per-mode rule that fails | build error naming the mode and the rule | DAT-103 |
 | a map that cannot be loaded at run time | diagnostic; the match does not start | DAT-106 |
 
-The content build's report lists, for every map, its id, its modes, its player count, its record counts per block and its entry hash; the log of match entry writes the map id and the first 16 hexadecimal digits of the hash (ADR-0060).
+The content build's report lists, for every map, its id, its modes, its player count, its record counts per block and its entry hash; the log of match entry writes the map id and the first 16 hexadecimal digits of the hash (ADR-060).
 
 ## 7 Acceptance tests
 
@@ -450,7 +450,7 @@ The content build's report lists, for every map, its id, its modes, its player c
 | DEC-065, DEC-073, DEC-079, DEC-456, DEC-457, DEC-800, DEC-801 | Resolved | map values over lobby values; typed option defaults; the explicit population cap; the spawn-network tree; typed links; the canonical writer; duplicates as errors |
 | DEC-047, DEC-250 | Open | how achievement progress is stored (DAT-102) |
 | DEC-243 | Open | who may change the match options (DAT-100) |
-| ADR-0061, ADR-0062, ADR-0059, ADR-0060 | Accepted, Proposed | the schema, its syntax, its validation and the map identity |
+| ADR-061, ADR-062, ADR-059, ADR-060 | Accepted, Proposed | the schema, its syntax, its validation and the map identity |
 
 ### 8.2 Design-phase inputs
 

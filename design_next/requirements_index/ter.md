@@ -117,8 +117,8 @@ Scope: Terrain. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | TER-241 | A height sample takes 8 bytes and a normal 24 bytes. | [terrain.md](../architecture/components/terrain.md#5-concurrency-and-performance-budget) |
 | TER-242 | Generation runs during match-world initialisation, outside every tick and frame budget: | [terrain.md](../architecture/components/terrain.md#5-concurrency-and-performance-budget) |
 | TER-243 | `Height`, `HeightAt`, `Normal`, `NormalAt` and `IsInside` take constant time; | [terrain.md](../architecture/components/terrain.md#5-concurrency-and-performance-budget) |
-| TER-250 | The content build validates every map's terrain records against the map schema (DEC-015, ADR-0059) and rejects, with a diagnostic naming | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
+| TER-250 | The content build validates every map's terrain records against the map schema (DEC-015, ADR-059) and rejects, with a diagnostic naming | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
 | TER-251 | At run time, a terrain loader never passes a missing token on as a value, never hangs on malformed data and never stops the process: | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
 | TER-252 | The canonical digest of a height grid is the SHA-256 of its samples encoded as little-endian binary64, rows in order (z outer) and columns | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
-| TER-253 | After every generation the terrain logs, in the terrain log category (ADR-0067): | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
+| TER-253 | After every generation the terrain logs, in the terrain log category (ADR-067): | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |
 | TER-254 | The terrain sends no telemetry of its own; | [terrain.md](../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry) |

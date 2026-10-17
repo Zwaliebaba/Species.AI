@@ -83,7 +83,7 @@ Actor stats are floating-point values (DEC-090).
 
 ### 2.8 Presentation and sound
 
-**R-UNIT-465** (MUST) A Builder's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.builder.tint_scale` (0.7) (ADR-0020). Its render path reads the presentation clock only ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
+**R-UNIT-465** (MUST) A Builder's whole mesh takes its team colour: every facet has tint weight 1, with the team colour × `ref.unit.builder.tint_scale` (0.7) (ADR-020). Its render path reads the presentation clock only ([randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md) R-SIM-701).
 
 **R-UNIT-466** (MUST) A Builder shows its activity with these string ids: `unit.builder.action.idle` (new text "Idle") while Idle; `unit.builder.action.to_waypoint` (new text "Moving to waypoint") while ToWaypoint; `unit.builder.action.to_essence_orb` (new text "Fetching an Essence orb") while ToEssenceOrb; `unit.builder.action.delivering` (new text "Delivering Essence orbs") while ToSpawnNode.
 
@@ -185,7 +185,7 @@ Keys cited from other documents (their values are defined there):
 ## 7 Dependencies
 
 - **Reference documents:** [Units](README.md) (base advance); [essence_orbs.md](essence_orbs.md); [collector.md](collector.md); [worker.md](worker.md) (threat search exclusion); [population flow](../05_population_flow.md) §2.19 (Builder as an orb taker); [crates and powers](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (the Builder outcome, its validity, Power stop); [economy and spawn objects](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Spawn Node door spawn); [bots](../07_bots/README.md); [teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (structure push of the delivery point); [randomness and integrity](../12_simulation_model/07_randomness_and_integrity.md); reference/10 (audio events).
-- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-0020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (debris, muzzle flash); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (status text).
+- **Engine components:** [renderer](../../architecture/components/renderer/README.md) (whole-mesh tint, ADR-020); [animation and VFX](../../architecture/components/animation_and_vfx/README.md) (debris, muzzle flash); [audio engine](../../architecture/components/audio_engine.md); [UI framework](../../architecture/components/ui_framework/README.md) (status text).
 - **Assets:** `mesh.unit.builder_body`; `icon.power.builder` (the Builder Power; also drawn over the Builder); `sfx.unit.builder.presence_loop`, `sfx.unit.builder.hurt`, `sfx.unit.builder.die`.
 
 ## 8 Open decisions

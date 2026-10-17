@@ -1,6 +1,6 @@
 # Deferred decisions: process architecture, tick rate and build order
 
-> Status: Decision register, deferred to the design phase · IDs: DEC-220 to DEC-229 · Related: [`reference/12_simulation_model/`](../../reference/12_simulation_model/README.md), [`decisions/deferred/networking.md`](networking.md), [`decisions/deferred/numerics_lobby_terrain_services.md`](numerics_lobby_terrain_services.md), [`adr/README.md`](../../adr/README.md)
+> Status: Decision register, deferred to the design phase · IDs: DEC-220 to DEC-229 · Related: [`reference/12_simulation_model/`](../../reference/12_simulation_model/README.md), [`decisions/deferred/networking.md`](networking.md), [`decisions/deferred/numerics_lobby_terrain_services.md`](numerics_lobby_terrain_services.md), [`ADR/README.md`](../../ADR/README.md)
 
 ## Scope
 
@@ -138,7 +138,7 @@ Every entry has the status **Open**. Its specified behaviour is the reference de
   7. A lobby or pre-match phase is a state of the server's state machine, not a reduced simulation tick; the lobby protocol is decided with `decisions/deferred/numerics_lobby_terrain_services.md`.
   8. One monotonic clock with an injectable fake clock serves capture and replay (`architecture/components/platform_layer.md`).
   9. The window message pump belongs to the platform layer and runs once per frame, not inside the input update.
-  10. Frame budget: the reference renders as fast as it can, with no sleep in the match loop; clamps the presentation frame delta to 0.25 s; advances audio a second time after rendering when the frame rate is below 15; writes a memory report to the log every 60 s; pins its main thread to four alternate cores; and marks 50, 100 and 200 ms per frame on its profiler graph. Of these, only the 0.25 s presentation clamp has a Species counterpart to state (ADR-0012).
+  10. Frame budget: the reference renders as fast as it can, with no sleep in the match loop; clamps the presentation frame delta to 0.25 s; advances audio a second time after rendering when the frame rate is below 15; writes a memory report to the log every 60 s; pins its main thread to four alternate cores; and marks 50, 100 and 200 ms per frame on its profiler graph. Of these, only the 0.25 s presentation clamp has a Species counterpart to state (ADR-012).
 - Options: A — a fixed-rate server tick loop that sleeps to its deadline, plus a variable-rate client frame loop with snapshot interpolation and bounded, visible catch-up, for both the integrated and the dedicated server. B — client-driven stepping for the integrated server (the client frame calls the server step) and A for the dedicated server. C — the reference model (sequencer updates spread over frames as slices).
 - Recommendation: A. The integrated server runs its tick loop on its own thread, so the host's frame rate never changes world time and the integrated and dedicated servers behave identically, which the single-codebase constraint (vision O10) needs. B is simpler for the first playable but makes world time depend on the host's frame rate and gives the integrated server a second pacing path to test.
 - Decide by: design phase
@@ -153,7 +153,7 @@ Every entry has the status **Open**. Its specified behaviour is the reference de
   2. Completion and results are signalled explicitly (a completion event or future), never inferred from an idle queue with the results published through shared pointers.
   3. Loads report progress.
   4. GPU uploads go through the copy queue with batched I/O, and no loader thread ever blocks on the presentation thread (DEC-224 item 11).
-  5. Content readers are safe for concurrent reads (`architecture/components/asset_pipeline_and_resources.md` and the pack-file ADR in `adr/`). Lesson: the reference archive decompressor is not thread-safe, and the two loaders are kept apart only by start-up order.
+  5. Content readers are safe for concurrent reads (`architecture/components/asset_pipeline_and_resources.md` and the pack-file ADR in `ADR/`). Lesson: the reference archive decompressor is not thread-safe, and the two loaders are kept apart only by start-up order.
   6. Audio readiness is a defined state: the audio device and the sound banks each have a ready point, and what happens to a cue issued before it (dropped or deferred) is specified.
   7. A level load that draws from the simulation generator keeps a fixed draw order (DEC-224 item 3).
   8. A large persistent world streams terrain and content and never loads the whole world (vision §6 item 6). The server never blocks a region's tick while it loads another region, and a region hand-over loads ahead of need. Whether terrain is generated at load or baked is decided with `decisions/deferred/numerics_lobby_terrain_services.md`.

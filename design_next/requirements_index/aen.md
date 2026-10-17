@@ -7,12 +7,12 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | Id | Requirement (first sentence) | Defined in |
 |---|---|---|
 | AEN-001 | The audio engine (`AudioEngine`) owns: | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
-| AEN-002 | The engine is built in five layers, each depending only on the layers below it (ADR-0022): | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
+| AEN-002 | The engine is built in five layers, each depending only on the layers below it (ADR-022): | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
 | AEN-003 | The audio engine never writes simulation state, never reads simulation or presentation objects directly, and never includes a simulation | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
 | AEN-004 | The audio engine never draws from the simulation generator. | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
 | AEN-005 | What a participant hears may differ from what another hears, by design: | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
-| AEN-006 | The audio engine runs on its own clock (the audio clock), never on the simulation tick or on the presentation clock of ADR-0036. | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
-| AEN-007 | The dedicated server and every headless build link no part of the audio engine (ADR-0022). | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
+| AEN-006 | The audio engine runs on its own clock (the audio clock), never on the simulation tick or on the presentation clock of ADR-036. | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
+| AEN-007 | The dedicated server and every headless build link no part of the audio engine (ADR-022). | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
 | AEN-008 | The audio design is the authority for every design rule this component implements: | [audio_engine.md](../architecture/components/audio_engine.md#1-responsibilities-and-boundaries) |
 | AEN-020 | Game code never calls XAudio2 and never waits for audio. | [audio_engine.md](../architecture/components/audio_engine.md#22-commands-results-and-the-threading-contract) |
 | AEN-021 | When a queue is full, the newest command is dropped, the call returns false and the drop is counted per command kind in the development | [audio_engine.md](../architecture/components/audio_engine.md#22-commands-results-and-the-threading-contract) |
@@ -43,7 +43,7 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-100 | The engine is created after the settings store (options R-META-402, R-META-478) and initialises in this order: | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
 | AEN-101 | In the reference model the engine object is created on the loading worker with no device; | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
 | AEN-102 | A match load requests the match bank. | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
-| AEN-103 | The content build applies the reference loader's rules as validation (DEC-015, DEC-801, ADR-0059): | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
+| AEN-103 | The content build applies the reference loader's rules as validation (DEC-015, DEC-801, ADR-059): | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
 | AEN-104 | The engine has three readiness points, each reported once in the result queue: | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
 | AEN-106 | Teardown is the reverse of creation (DEC-221 item 3): | [audio_engine.md](../architecture/components/audio_engine.md#41-lifecycle) |
 | AEN-110 | In the reference model a trigger returns at once, and is dropped, not queued, when: | [audio_engine.md](../architecture/components/audio_engine.md#42-the-trigger-gate) |
@@ -66,14 +66,14 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-138 | `Pause` stops the XAudio2 engine and freezes the advance of every instance; | [audio_engine.md](../architecture/components/audio_engine.md#45-from-a-command-to-an-instance) |
 | AEN-140 | Audibility. At step 5 of every update each started instance gets an audibility in dB (positional, priorities and mix R-AUD-215): | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-141 | Score. The instances of each full event id are ordered by audibility, loudest first (ties: | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
-| AEN-142 | Voice pools. Source voices are pooled per format, one pool for mono and one for stereo 16-bit PCM at `aen.format.sample_rate` (ADR-0023). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
+| AEN-142 | Voice pools. Source voices are pooled per format, one pool for mono and one for stereo 16-bit PCM at `aen.format.sample_rate` (ADR-023). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-143 | Budget and caps (DEC-570). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-144 | Allocation. The rank order is the class order of `AudioBus` (UI first), then score (highest first), then start time (earlier first), then | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-145 | Stealing. The victim of a candidate is the lowest-ranked real instance whose removal makes room in the first full limit: | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-146 | Patience. A `once` instance is retired when it is virtual at an update at or after its start time + its patience window (AEN-062; | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-147 | No per-update start quota limits the starts; | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-148 | Starts. A pending instance starts at the first update whose time T satisfies start time ≤ T + `aen.update.period`; | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
-| AEN-149 | Every volume and pitch change of a real voice reaches its new value over one update period, never as a step (ADR-0023). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
+| AEN-149 | Every volume and pitch change of a real voice reaches its new value over one update period, never as a step (ADR-023). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-150 | Worked example (Species). | [audio_engine.md](../architecture/components/audio_engine.md#46-ranking-virtual-voices-and-stealing) |
 | AEN-156 | Reference model. The reference allocation is positional, priorities and mix R-AUD-219, with these engine details: | [audio_engine.md](../architecture/components/audio_engine.md#47-the-reference-allocation-and-emitter-selection) |
 | AEN-157 | Emitter selection (both models). | [audio_engine.md](../architecture/components/audio_engine.md#47-the-reference-allocation-and-emitter-selection) |
@@ -106,7 +106,7 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-197 | Bend (DEC-569, DEC-751, R-AUD-211; | [audio_engine.md](../architecture/components/audio_engine.md#413-pitch-and-the-game-speed-bend) |
 | AEN-198 | In the reference model the bend applies in any match after its grace period to every instance that is not two-dimensional (music is | [audio_engine.md](../architecture/components/audio_engine.md#413-pitch-and-the-game-speed-bend) |
 | AEN-199 | Pitch values outside the design range are content-build errors; | [audio_engine.md](../architecture/components/audio_engine.md#413-pitch-and-the-game-speed-bend) |
-| AEN-201 | Distance gain (ADR-0027, R-AUD-202). | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
+| AEN-201 | Distance gain (ADR-027, R-AUD-202). | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-202 | Maximum distance. G(d) = g(d) × h(d), with dmax the event's maximum distance (AEN-062) and f = `aen.spatial.max_distance_fade_fraction` × | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-203 | The same G(d) feeds the audibility (AEN-140) and the voice volume (AEN-214). | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-204 | Stereo output. When the mastering voice has two channels, the engine computes each real mono positioned voice's output matrix with the | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
@@ -115,13 +115,13 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-207 | Doppler, distance filtering and distance reverb. | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-208 | Two-dimensional instances, and music, bypass every spatial calculation. | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-209 | Listener. The listener is the camera of the latest `SetListener` (R-AUD-200, DEC-566): | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
-| AEN-210 | Every real positioned voice is recalculated at every update, whatever its movement (ADR-0027, R-AUD-208); | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
+| AEN-210 | Every real positioned voice is recalculated at every update, whatever its movement (ADR-027, R-AUD-208); | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-211 | The engine accepts every minimum distance of the design's range `ref.aud.layer.min_distance_range`; | [audio_engine.md](../architecture/components/audio_engine.md#414-spatialisation) |
 | AEN-214 | A real voice's volume is the amplitude of its envelope level (AEN-166) + 20 log₁₀ G(d) (0 for two-dimensional voices), converted with | [audio_engine.md](../architecture/components/audio_engine.md#415-volume-law-and-gain-stages) |
 | AEN-215 | Bus and master gains. | [audio_engine.md](../architecture/components/audio_engine.md#415-volume-law-and-gain-stages) |
 | AEN-216 | Ducking. When an instance on the announcer bus starts, the world bus is ducked by `ref.aud.bus.announcer.duck_world_db` until | [audio_engine.md](../architecture/components/audio_engine.md#415-volume-law-and-gain-stages) |
 | AEN-217 | In the reference model there is one gain stage above the voices: | [audio_engine.md](../architecture/components/audio_engine.md#415-volume-law-and-gain-stages) |
-| AEN-220 | Bus graph (ADR-0024, DEC-570). | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
+| AEN-220 | Bus graph (ADR-024, DEC-570). | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
 | AEN-221 | Effects switch (DEC-567, DEC-752, R-AUD-076). | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
 | AEN-222 | Until DEC-567 is decided, the reference is heard dry: | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
 | AEN-223 | Effect buses. The content build creates one effect bus for each distinct combination of a parent player bus and a chain of effect kinds | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
@@ -138,18 +138,18 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-235 | Each standard kind realised by a Species XAPO (AEN-070) implements its parameter set of R-AUD-077 and is written when the audio data first | [audio_engine.md](../architecture/components/audio_engine.md#416-buses-routing-and-effects) |
 | AEN-240 | Reference model: the sample cache. | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
 | AEN-241 | Reference eviction. Every frame the cache runs this clean-up, with B = `aen.reference.cache.budget`: | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
-| AEN-243 | Species model (ADR-0025). | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
-| AEN-244 | `LoadBank` asks the asset system to read the bank's groups from the pack files (ADR-0058) asynchronously; | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
+| AEN-243 | Species model (ADR-025). | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
+| AEN-244 | `LoadBank` asks the asset system to read the bank's groups from the pack files (ADR-058) asynchronously; | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
 | AEN-245 | Group residency is counted by reference across banks, so a group of two resident banks is loaded once and freed with the last of them. | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
 | AEN-246 | The reference elements map onto the Species model as follows: | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
 | AEN-247 | A trigger whose group is not resident is dropped (AEN-111); | [audio_engine.md](../architecture/components/audio_engine.md#417-sample-residency) |
 | AEN-251 | Reference model: the decoder. | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
-| AEN-252 | Species streams (ADR-0025). | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
+| AEN-252 | Species streams (ADR-025). | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
 | AEN-253 | Stream heads. The first block of every member of a streamed group is decoded when its bank loads and kept with the bank (AEN-074), so a | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
 | AEN-254 | A streamed instance that becomes real at a position p > 0 seeks to the seek-table entry at or before p, decodes from there and discards the | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
 | AEN-255 | Loop start and loop end are sample-accurate: | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
 | AEN-256 | A corrupt packet, a bad seek table or a missing stream retires the instance with a diagnostic; | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
-| AEN-257 | No decoding runs on a game thread or inside an XAudio2 callback (ADR-0025, ADR-0026). | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
+| AEN-257 | No decoding runs on a game thread or inside an XAudio2 callback (ADR-025, ADR-026). | [audio_engine.md](../architecture/components/audio_engine.md#418-decoding-and-streaming) |
 | AEN-259 | On `RestartDevice`, on `IXAudio2EngineCallback::OnCriticalError` and on `XAUDIO2_E_DEVICE_INVALIDATED`, the engine rebuilds the graph and | [audio_engine.md](../architecture/components/audio_engine.md#419-device-loss-and-restart) |
 | AEN-260 | Reference model: restart from the options. | [audio_engine.md](../architecture/components/audio_engine.md#419-device-loss-and-restart) |
 | AEN-261 | Applying the Species sound options writes the settings, applies the volumes, swap and effects switch directly, and issues `RestartDevice` | [audio_engine.md](../architecture/components/audio_engine.md#419-device-loss-and-restart) |
@@ -163,9 +163,9 @@ Scope: Audio engine. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | AEN-305 | In the reference model the whole audio logic and the mixing run on the main thread, the sample cache is guarded by a lock, triggers from | [audio_engine.md](../architecture/components/audio_engine.md#5-concurrency-and-performance-budget) |
 | AEN-320 | Failures and their handling; | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
 | AEN-321 | Silent device (R-AUD-044). | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
-| AEN-322 | Profiling (ADR-0068). | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
-| AEN-323 | Development overlay (ADR-0022). | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
-| AEN-324 | The engine logs in its own category (ADR-0067): | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
+| AEN-322 | Profiling (ADR-068). | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
+| AEN-323 | Development overlay (ADR-022). | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
+| AEN-324 | The engine logs in its own category (ADR-067): | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
 | AEN-325 | The engine sends no telemetry of its own; | [audio_engine.md](../architecture/components/audio_engine.md#6-failure-modes-diagnostics-and-telemetry) |
 | AEN-360 | Until DEC-049 is decided, the engine provides the music channel of music hooks and brief R-AUD-400 to R-AUD-405 as a hook: | [audio_engine.md](../architecture/components/audio_engine.md#82-music-hook-kh-music) |
 | AEN-361 | The music bus's `aen.voice.bus_cap.music` voices are reserved for the music channel, so that a music system can cross-fade two streams with | [audio_engine.md](../architecture/components/audio_engine.md#82-music-hook-kh-music) |

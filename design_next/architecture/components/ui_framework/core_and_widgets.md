@@ -1,6 +1,6 @@
 # UI core and widgets
 
-> Status: Engine baseline · Prefix: UI · ADRs: [ADR-0030](../../../adr/0030-ui-framework-build-or-buy.md), [ADR-0031](../../../adr/0031-batched-ui-rendering.md), [ADR-0032](../../../adr/0032-ui-focus-graph-page-stack-and-input.md), [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md), [ADR-0034](../../../adr/0034-text-rendering-and-glyph-cache.md), [ADR-0028](../../../adr/0028-input-device-back-ends.md), [ADR-0063](../../../adr/0063-localisation.md), [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md) · Folder: [UI framework](README.md)
+> Status: Engine baseline · Prefix: UI · ADRs: [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md), [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-028](../../../ADR/ADR-028-input-device-back-ends.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · Folder: [UI framework](README.md)
 
 This document specifies the lower two layers of the UI framework and the widget family of the front-end layer: the UI core, the standard window and button, the widget set, value binding, the options screen and the page widgets. Layout formulas, the palette, text styles, navigation input and localisation are in [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md); the page framework of the front-end screen is in [pages_and_screen_recipes.md](pages_and_screen_recipes.md).
 
@@ -10,7 +10,7 @@ This document specifies the lower two layers of the UI framework and the widget 
 
 **UI-020** (MUST) This document owns: the UI core (`UiCore`) with its panel base (`UiPanelBase`) and button base (`UiButtonBase`) types; the standard window (`UiWindow`) and button (`UiButton`) and their variants; the widget set (value-bound controls, text field, increment glyphs, scroll bar, check box, drop-down, message dialog, chat entry); the value-binding model; and the front-end widget family (the options screen `OptionsScreen`, page buttons, Back and close buttons, page titles, the highlight beam, fill boxes, page drop-downs, page text fields, page increment glyphs and page check boxes). What each front-end page holds is [reference/09_front_end_and_match_flow/](../../../reference/09_front_end_and_match_flow/README.md)'s; how pages are hosted and switched is [pages_and_screen_recipes.md](pages_and_screen_recipes.md)'s.
 
-**UI-021** (MUST NOT) No widget reads input while it is drawn, and no draw changes widget, focus or view-model state: highlight decisions, focus moves caused by hover, Back handling, repeat stepping and roll-over sounds all happen in the update phase, and drawing only reads the state the update left (ADR-0032, DEC-102).
+**UI-021** (MUST NOT) No widget reads input while it is drawn, and no draw changes widget, focus or view-model state: highlight decisions, focus moves caused by hover, Back handling, repeat stepping and roll-over sounds all happen in the update phase, and drawing only reads the state the update left (ADR-032, DEC-102).
 
 ## 2 Interfaces
 
@@ -186,7 +186,7 @@ Registration does not give focus; creating a standard window does (UI-036).
 
 **UI-023** (MUST) `RemovePanel(panel)` unlinks the panel, resets the pressed-panel slot and the focus slot to none when either holds it, and destroys the panel. A stale handle is a no-op. `BringToFront(panel)` moves the panel to the front of the list; every primary press that lands on a panel does this (UI-031). `SetPanelPosition(panel, p)` moves the panel to p without clamping.
 
-**UI-024** (MUST) `SetPanelSize(panel, size)` sets the size and lays the panel out again; its widgets keep their state, because every value they show lives in a binding or a view-model (ADR-0033, DEC-102). A widget is rebuilt only when the layout data says that the widget set itself changes.
+**UI-024** (MUST) `SetPanelSize(panel, size)` sets the size and lays the panel out again; its widgets keep their state, because every value they show lives in a binding or a view-model (ADR-033, DEC-102). A widget is rebuilt only when the layout data says that the widget set itself changes.
 
 **UI-025** (MUST) `RegisterWidget(widget)` sets the widget's parent and places it at the front of the panel's widget list, so the newest widget receives input first and is drawn last. When the widget's bottom edge plus `ui.core.auto_grow_margin` (10 px) lies below the panel's height, the panel's height becomes that value and the panel is kept on screen (UI-022 step 3), so a window grows downwards to fit its content and is pushed up to stay on screen. `RemoveWidget(widget)` removes exactly the widget its handle names (DEC-102).
 
@@ -204,7 +204,7 @@ Registration does not give focus; creating a standard window does (UI-036).
 
 **UI-030** (MUST) `UpdatePointer(position, events)` stores the new pointer position and then processes the frame's pointer events in order; when there is no event, it runs the move branch (UI-032) or the held branch (UI-034), as the primary button's state gives. Exactly one primary-button branch runs per event (diagram 4-A).
 
-**UI-031** (MUST) **Press** (a primary down edge): the press position is recorded. When a panel lies under the pointer, it gets the focus, it is brought to the front and it becomes the pressed panel. When a widget of that panel lies under the pointer, it becomes the hover widget and the **captured widget**, and receives `OnPress()`. When no widget lies under the pointer, the hover widget becomes none, the panel receives `OnBackgroundPointer(true)`, and, when the panel is movable, the grab offset = pointer − the panel's origin is recorded. When no panel lies under the pointer, the focus becomes none. A **click** is a press and a release on the same widget: the captured widget receives `OnClick()` only when the release happens while the pointer is inside it (DEC-102, ADR-0032).
+**UI-031** (MUST) **Press** (a primary down edge): the press position is recorded. When a panel lies under the pointer, it gets the focus, it is brought to the front and it becomes the pressed panel. When a widget of that panel lies under the pointer, it becomes the hover widget and the **captured widget**, and receives `OnPress()`. When no widget lies under the pointer, the hover widget becomes none, the panel receives `OnBackgroundPointer(true)`, and, when the panel is movable, the grab offset = pointer − the panel's origin is recorded. When no panel lies under the pointer, the focus becomes none. A **click** is a press and a release on the same widget: the captured widget receives `OnClick()` only when the release happens while the pointer is inside it (DEC-102, ADR-032).
 
 **UI-032** (MUST) **Move** (no primary button held): only the focused panel is examined.
 
@@ -261,7 +261,7 @@ The consequences for widgets are:
 
 ### 4.5 Keyboard and text routing
 
-**UI-038** (MUST) `UiCore::OnText(input)` passes the character to the focused panel's `OnText()`, whose default forwards it to the panel's text-edit target, when it has one. `BeginTextEdit(widget)` sets the target and `EndTextEdit()` clears it. Editing commands (`EditCommand`: caret movement, delete forward, select all, copy, cut and paste) are routed the same way (ADR-0032). The UI core has no tab order and no focus traversal of its own: moving between widgets is the standard window's navigation (§4.11).
+**UI-038** (MUST) `UiCore::OnText(input)` passes the character to the focused panel's `OnText()`, whose default forwards it to the panel's text-edit target, when it has one. `BeginTextEdit(widget)` sets the target and `EndTextEdit()` clears it. Editing commands (`EditCommand`: caret movement, delete forward, select all, copy, cut and paste) are routed the same way (ADR-032). The UI core has no tab order and no focus traversal of its own: moving between widgets is the standard window's navigation (§4.11).
 
 **UI-039** (MUST) `IsTextEditing()` is true when a panel has the focus and that panel has a text-edit target. The match setup page uses it so that the chat action does not reopen the chat field while the player is typing, and the chat field uses it to choose between its prompt and the typed text (UI-093).
 
@@ -302,7 +302,7 @@ Every window of the framework derives from the standard window (`UiWindow`), and
 
 ### 4.11 Navigation in standard windows
 
-The navigation order is the reference's ordering concept, kept as the default of the focus graph (ADR-0032): its order gives each entry's up and down neighbours, with wrap-around, and the cycling order of the window.
+The navigation order is the reference's ordering concept, kept as the default of the focus graph (ADR-032): its order gives each entry's up and down neighbours, with wrap-around, and the cycling order of the window.
 
 **UI-050** (MUST) Every standard window holds:
 
@@ -346,7 +346,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 **UI-052** (MUST) `ConsumeScroll(direction)` is a hook through which a widget consumes an up or down move; the base returns false. A session-browser row uses it to scroll the list when the cursor is on its first or last visible row ([pages_and_screen_recipes.md](pages_and_screen_recipes.md)).
 
-**UI-053** (MUST) `SetCursor(widget)` sets the cursor to the widget's index in the navigation order when the widget is in it, and leaves the cursor unchanged otherwise. When the cursor's widget lies inside a scrolling list, the list scrolls it into view (ADR-0032).
+**UI-053** (MUST) `SetCursor(widget)` sets the cursor to the widget's index in the navigation order when the widget is in it, and leaves the cursor unchanged otherwise. When the cursor's widget lies inside a scrolling list, the list scrolls it into view (ADR-032).
 
 ### 4.12 Window chrome look
 
@@ -404,7 +404,7 @@ The scroll hook asks the cursor's own widget, and the search for the next active
 
 - **Display → Editing**: a click makes the field its window's text-edit target (`BeginTextEdit`).
 - **Editing → Display, applied**: Enter ends the edit, parses the text into the value (UI-068) and refreshes the field.
-- **Editing → Display, cancelled**: Escape ends the edit, discards the typed text and shows the value again; nothing is applied (DEC-102, ADR-0032).
+- **Editing → Display, cancelled**: Escape ends the edit, discards the typed text and shows the value again; nothing is applied (DEC-102, ADR-032).
 - **Editing → Display, abandoned**: the window's `Remove()` ends the edit with nothing applied; a click on another text field of the same window makes that field the target, and this field's typed text is not applied.
 
 ```mermaid
@@ -438,9 +438,9 @@ Diagram 4-B — the text field's editing states.
 
 A percent sign is an ordinary character: no text path of the UI reads formatting directives ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-227; DEC-102). A text-type field's value therefore changes, and its callback runs, on every keystroke.
 
-**UI-067** (MUST) A text field being edited supports a caret that the caret commands move (left, right, start and end), deletion forward, selection of all text, and the clipboard (copy, cut and paste), with UTF-16 only at the Win32 boundary and UTF-8 inside; an input method's composition string is shown inline at the caret until it is committed or cancelled (ADR-0032, ADR-0028; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.15).
+**UI-067** (MUST) A text field being edited supports a caret that the caret commands move (left, right, start and end), deletion forward, selection of all text, and the clipboard (copy, cut and paste), with UTF-16 only at the Win32 boundary and UTF-8 inside; an input method's composition string is shown inline at the caret until it is committed or cancelled (ADR-032, ADR-028; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §4.15).
 
-**UI-068** (MUST) Validation runs while typing and again when the edit is applied (ADR-0032). A numeric field accepts any character while typing; on applying, the text is parsed, a value that does not parse leaves the stored value unchanged and the field shows it again, and a value that parses is clamped to the field's bounds before it is stored (DEC-102). A text value is limited to its binding's maximum length; characters beyond it are not inserted.
+**UI-068** (MUST) Validation runs while typing and again when the edit is applied (ADR-032). A numeric field accepts any character while typing; on applying, the text is parsed, a value that does not parse leaves the stored value unchanged and the field shows it again, and a value that parses is clamped to the field's bounds before it is stored (DEC-102). A text value is limited to its binding's maximum length; characters beyond it are not inserted.
 
 **UI-069** (MUST) Refreshing the field sets its display buffer to the value's text and invokes its callback. While the field is not being edited, it shows the bound value as it is now, so a change made elsewhere appears at the next update.
 
@@ -448,7 +448,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 1. an edit well over the right `ui.field.well_fraction` (0.4) of its width: a quad of `ui.palette.well_fill`, top and left lines black, right and bottom lines `ui.palette.inset_edge_light`;
 2. its label with the borderless look of UI-059, drawn highlighted while the field is being edited;
-3. the value text in the body role at size *m*(`ui.text.default_size` (12)), right-aligned: its draw point is x + w − *m*(measured width + `ui.field.box_padding` (7 px)) + `ui.field.value_offset` (2 px), y + `ui.field.value_baseline` (10 px), with the width measured by the text layout (ADR-0034);
+3. the value text in the body role at size *m*(`ui.text.default_size` (12)), right-aligned: its draw point is x + w − *m*(measured width + `ui.field.box_padding` (7 px)) + `ui.field.value_offset` (2 px), y + `ui.field.value_baseline` (10 px), with the width measured by the text layout (ADR-034);
 4. while editing, the caret: a 1 px vertical line at the text's draw x + the measured advance of the text before the caret + `ui.field.value_offset`, from y + `ui.field.caret_margin` (2 px) to y + h − 2 px, visible while the fractional part of the presentation time ÷ `ui.field.caret_blink_period` (1.0 s) is below `ui.field.caret_duty` (0.5).
 
 ### 4.17 Increment glyphs
@@ -477,7 +477,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 **UI-076** (MUST) The track draws a quad of `ui.palette.scroll_track` with an outline of `ui.palette.scroll_outline`. The thumb spans from the track top + h_t × first ÷ rows to the track top + min(h_t × (first + visible) ÷ rows, h_t − 1), where h_t is the track height, inset `ui.scroll.thumb_inset` (1 px) at the left and the top, in `ui.palette.scroll_thumb_pressed` while dragged, `ui.palette.scroll_thumb_hot` while highlighted and `ui.palette.scroll_thumb` otherwise. With no rows the thumb fills the track (DEC-102). An arrow draws as a standard button with the arrow art `cursor.pointer` inside it, inset `ui.scroll.arrow_inset` (5 %) on each side, flipped vertically for the up arrow, in white with the additive blend; the arrow's blend applies to its own batch only ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-183).
 
-**UI-077** (MUST) An arrow steps once when it is pressed and then once every `ui.scroll.arrow_repeat_period` (1/60 s) of presentation time while it holds the capture and the pointer is inside it, with no initial delay (DEC-102, ADR-0032).
+**UI-077** (MUST) An arrow steps once when it is pressed and then once every `ui.scroll.arrow_repeat_period` (1/60 s) of presentation time while it holds the capture and the pointer is inside it, with no initial delay (DEC-102, ADR-032).
 
 **UI-078** (MUST) Track interaction:
 
@@ -516,7 +516,7 @@ A percent sign is an ordinary character: no text path of the UI reads formatting
 
 **UI-088** (MUST) A message dialog (`UiMessageDialog`) shows a message of any number of lines, split at line breaks; it holds no fixed-size line store (DEC-102). Its width is the measured width of the longest line in the body role at `ui.message_dialog.measure_size` (13) + `ui.message_dialog.width_padding` (10 px), at least `ui.message_dialog.min_width` (100 px); its height is `ui.message_dialog.base_height` (65 px) + lines × `ui.message_dialog.line_height` (12 px), at least `ui.message_dialog.min_height` (85 px); the size goes through `SetMenuSize`, and the dialog is centred on the screen. It does not call the base creation, so it has no close box.
 
-**UI-089** (MUST) The dialog has one close button captioned `ui.dialog.close`, *m*(`ui.message_dialog.button_size` (40 × 18 px)), centred horizontally at y = h − *m*(`ui.message_dialog.button_offset` (30 px)), with font size *m*(`ui.message_dialog.button_font` (11)); clicking it removes the dialog. The close button is the dialog's navigation entry and its back action, so a gamepad dismisses it with activate or close (DEC-102), and the dialog is a modal layer that owns the focus and Back until it is dismissed (ADR-0032).
+**UI-089** (MUST) The dialog has one close button captioned `ui.dialog.close`, *m*(`ui.message_dialog.button_size` (40 × 18 px)), centred horizontally at y = h − *m*(`ui.message_dialog.button_offset` (30 px)), with font size *m*(`ui.message_dialog.button_font` (11)); clicking it removes the dialog. The close button is the dialog's navigation entry and its back action, so a gamepad dismisses it with activate or close (DEC-102), and the dialog is a modal layer that owns the focus and Back until it is dismissed (ADR-032).
 
 **UI-090** (MUST) The dialog draws the standard chrome and then each line i in the body role at the draw point (x + `ui.message_dialog.text_inset` (10 px), y + *m*(`ui.message_dialog.text_top` (32 px)) + i × *m*(`ui.message_dialog.line_height`)), size *m*(`ui.text.default_size`). The message text is drawn literally: a percent sign or brace in it is shown as written (DEC-102). Its callers pass a string id with named arguments, for example the screen-mode failure `ui.dialog.screen_mode_failed` ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-423); where a caller places the dialog is that caller's rule.
 
@@ -550,7 +550,7 @@ The chat entry is the framework's free-text entry. The transport of chat lines a
 | player name | text of at most `ref.meta.player.name_max_length` (16) characters, truncating | also stores the name in the player-name setting and sends it when connected (R-META-052) | the player options page |
 | session password | text of at most `ref.match.option.password_max_length` (16) characters ([reference/01](../../../reference/01_skirmish_rules_and_modes/README.md)), truncating | hands the password to the hosted session on the host (DEC-244) | the password field |
 
-**UI-097** (MUST) A widget bound to a match option shows the confirmed value and sends the requested value (ADR-0032), so a host's change appears when the authority confirms it, one round trip later in a networked session. A participant that is not the host does not see these controls; whether the authority rejects a request from such a participant is DEC-243's.
+**UI-097** (MUST) A widget bound to a match option shows the confirmed value and sends the requested value (ADR-032), so a host's change appears when the authority confirms it, one round trip later in a networked session. A participant that is not the host does not see these controls; whether the authority rejects a request from such a participant is DEC-243's.
 
 **UI-098** (MUST) A local binding's value lives in the view-model, never in the widget, so a widget can be rebuilt or laid out again without losing it (UI-013, UI-024).
 
@@ -595,7 +595,7 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 ### 4.26 Back and close buttons
 
-**UI-111** (MUST) A page Back button (`PageBackButton`) has a target page and the caption `ui.common.back`. Its click runs the base press (the menu-select cue and a forward transition), then plays the menu-back cue and starts a backward transition, which replaces the forward one, and then requests the change to its target page ([pages_and_screen_recipes.md](pages_and_screen_recipes.md); R-META-017). In gamepad input mode it also draws `glyph.pad.face_east`, at a size of its font size, at x + the measured caption width + `ui.page_back.glyph_offset` (60 px), + w ÷ 2 when centred. The page handles the close action in its update and clicks its Back button then; nothing polls input while drawing (ADR-0032, DEC-102).
+**UI-111** (MUST) A page Back button (`PageBackButton`) has a target page and the caption `ui.common.back`. Its click runs the base press (the menu-select cue and a forward transition), then plays the menu-back cue and starts a backward transition, which replaces the forward one, and then requests the change to its target page ([pages_and_screen_recipes.md](pages_and_screen_recipes.md); R-META-017). In gamepad input mode it also draws `glyph.pad.face_east`, at a size of its font size, at x + the measured caption width + `ui.page_back.glyph_offset` (60 px), + w ÷ 2 when centred. The page handles the close action in its update and clicks its Back button then; nothing polls input while drawing (ADR-032, DEC-102).
 
 **UI-112** (MUST) A screen close button (`ScreenCloseButton`) closes an options screen: its click plays the menu-back cue, starts a backward transition of `ref.meta.nav.transition_time`, removes its screen and asks for a transition when the next page is shown. In gamepad input mode it draws the same east-face glyph. The close action reaches it through the standard navigation (closeable, back action; UI-051), because every options screen sets its Back or Cancel button as its back action ([reference/09](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-014). The in-match menu's close button is a screen close button.
 
@@ -642,7 +642,7 @@ The options screen (`OptionsScreen`) is the full-screen page style of the help, 
 
 **UI-126** (MUST) The UI core's update and draw take time proportional to the number of panels and widgets: one front-to-back scan for hit tests, one front-to-back update pass and one back-to-front draw pass per frame. In steady state no frame allocates: widget lists, navigation orders and the batch builder reuse their storage. The draw-count, CPU and vertex budget of the busiest screen is [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §5.
 
-**UI-127** (MUST) No widget storage has a fixed capacity that player data or content can overflow (ADR-0030): message lines, drop-down options, navigation orders and widget lists grow as needed, and text values are limited only by the maximum lengths their bindings declare (DEC-801).
+**UI-127** (MUST) No widget storage has a fixed capacity that player data or content can overflow (ADR-030): message lines, drop-down options, navigation orders and widget lists grow as needed, and text values are limited only by the maximum lengths their bindings declare (DEC-801).
 
 All work is on the main thread (README §2).
 
@@ -713,7 +713,7 @@ The UI core counts, per frame, panels, widgets, clicks and cancelled presses for
 
 1. **Tooltips.** The UI core times tooltips (UI-045), but the framework shows none; whether Species has tooltips, and their look and content, is front-end design.
 2. **Editor pages in the front-end style (hook).** The reference map editor builds three pages in the options-screen style: its hub page (`MapEditorHubPage`), a new-map page and a map file picker (`MapFilePicker`). Each is a full-screen options screen (UI-099) with a page title at the standard title place (R-META-201), page buttons stacked one button step apart in the medium font and added to the navigation order, and a screen close button as its back action at the standard Back place. The new-map page takes the map file name through a menu control (UI-103) and reports success or failure through the in-page dialog (UI-101) with the file name inserted as an argument. The file picker follows the file-list model of a tool-window file dialog on an options screen: a fixed number of rows in the title role, a selected-row fill (RGBA 191, 191, 255, 127; the tool-window file list uses 0.3, 0.3, 1.0, 0.5 as fractions), a scroll bar at the left box's right edge, and OK and Back buttons in the navigation order; its file rows are not in the navigation order, so a gamepad cannot pick a file. It lists the maps in the mounted packs, and the files of the map folder when the packs hold none; choosing a file writes the name into the hub page. Whether Species builds a map editor, and its UI, is DEC-045.
-3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204 are the Species baseline that ADR-0032 requires, for the design phase to confirm.
+3. **Keyboard navigation bindings.** The reference binds the menu actions to the gamepad only; the keyboard defaults of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-204 are the Species baseline that ADR-032 requires, for the design phase to confirm.
 4. **Text-entry details for chat and names in the world game**: profanity filtering, length limits beyond the bindings' maximums, and whether chat is rate-limited, which depend on the networking and moderation decisions (DEC-200).
 
 ## 9 Tuning table

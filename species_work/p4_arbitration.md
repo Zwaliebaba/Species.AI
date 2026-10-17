@@ -538,6 +538,102 @@ Not on the item list; C-TER asked G08b to check a statement that only ORIG settl
   > **R-UNIT-051** (MUST) A unit flickers to show damage. Its damaged flag is evaluated once per tick period of scaled presentation time, the reference cadence of one evaluation per simulation tick, and not every render frame ([animation and VFX](../../architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md) VFX-126): the flag is set when FxRng `NextUnit(ref.unit.flicker.chance_scale)` × (1 − |sin(t + `ref.unit.flicker.phase_per_id` × unit id)| × `ref.unit.flicker.sine_weight`) > its health fraction, with t the unscaled presentation time, chance scale 0.75, phase 10 per unit id and sine weight 0.8. Every render frame draws the unit by its current flag. The flicker is presentation state: it draws only from the presentation generator, reads only the presentation clock, and no simulation rule reads it (DEC-007, DEC-013).
 - No change to VFX-126.
 
+## A-26 Does the Frenzy timer give the Fury damage factor? (route RA-066)
+
+**Question.** While the Frenzy outcome's match-wide timer runs, does every Worker take 0.75 of its damage, as with a Fury link (worker.md), or only get the Fury combat behaviours (reference/04)?
+
+**Statements.**
+- `reference/02_units/worker.md` **R-UNIT-125**: "the Frenzy timer gives every other effect of Fury but no speed change. A Worker with Fury takes 0.75 of its damage (R-UNIT-116) …".
+- `reference/04_supply_crates_powers_and_weapons/crates_and_powers.md` **R-CRATE-213**: under the Frenzy timer every Worker fires every tick with scatter, fires volleys four times as often and ignores projectile threats; "it does not get the Fury damage factor or the Fury speed bonus, which only a Fury link gives".
+
+**ORIG evidence.**
+- `04_crates_powerups_and_weapons.md` l.865 (Frenzy effect): while the timer is above 0 the raging test is true for every Worker of every team (fire every tick at a target jittered ±30, formation fire 4×, no flight from threats); "It does **not** give the Rage damage reduction or speed bonus (those depend on `m_rageTaskId`)", citing the Worker's health-change function.
+- l.886 (Fury link): speed × 1.5, "damage taken × 0.75", and the raging behaviours.
+- `02_units_and_entities.md` l.872 ("Rage → × 0.75") and l.881 (a summary row that lists the Frenzy timer under the Fury row with every Fury effect) do not separate the two paths.
+
+**Verdict.** ORIG settles it: the damage factor follows the **Fury link only**, not the Frenzy timer (reference/04 is right). ORIG does not say whether the Frenzy timer also drives the Fury glow and size pulse, so R-UNIT-125 keeps its presentation clause as it stands.
+
+**Replacements.**
+- `reference/02_units/worker.md`, R-UNIT-125:
+  > **R-UNIT-125** (MUST) **Fury.** A Fury Power links the Workers it reaches, and every Worker has the Fury behaviours while the Frenzy outcome's match-wide timer runs ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-213). On linking a Fury Power, a Worker's speed stat is multiplied by `ref.unit.worker.fury_speed_factor` (1.5) when its current speed ÷ its stat-table speed is below `ref.unit.worker.fury_cap_ratio` (3), giving 30, 45 and then 67.5 wu/s, and the Worker takes 0.75 of its damage (R-UNIT-116); the Frenzy timer gives neither the speed change nor the damage factor. A Worker with Fury, from a link or from the Frenzy timer, ignores projectile threats (R-UNIT-098 step 3), fires every tick with scatter and no reload (R-UNIT-103), fires denser formation volleys (R-UNIT-103), and is drawn pulsing in size (R-UNIT-147). When the link is cleared, the speed returns to the stat-table speed.
+- Same file, R-UNIT-116 step 4: "With a Fury link: amount × `ref.unit.worker.fury_damage_factor` (0.75); …" (the step now says "With Fury", which reads as including the Frenzy timer).
+- Closes: RA-066.
+
+## A-27 The Worker's stand distance at a Flag post (route RA-073)
+
+**Question.** R-UNIT-095 lets a Worker stay put when it is within "the Flag post capture range (20 wu)", while reference/03 gives the Flag post's capture radius as 40 wu. Is the 20 wu value the capture radius?
+
+**Statements.**
+- `reference/02_units/worker.md` **R-UNIT-095** (Flag search): "If the Worker is within the Flag post capture range (20 wu, [reference/01](…flag_chain.md)), its waypoint is its own position".
+- `reference/03_buildings_and_world_objects/mode_objects.md` (Flag post recount, step 2): counts the Workers within `ref.bldg.flag_post.capture_radius_wu` (40 wu, not its size).
+
+**ORIG evidence.**
+- `02_units_and_entities.md` l.627 (Worker constants): "`BLITZKRIEG_FLAGCAPTURE_RANGE` (external) | 20.0", defined with the mode object; l.796 (flag search): "first non-own, unlocked `MultiwiniaZone` with distance < `zone->m_size`; waypoint = stay if < 20, else zone ± `SFRAND(20)` (±10)".
+- `03_buildings_and_world_objects.md` l.1507 (the Flag post recount): "count Darwinians within **40** units (not `m_size`)", a literal; no capture rule uses the 20.0 constant.
+
+**Verdict.** ORIG settles it: the two values are different. **40 wu** is the Flag post's capture radius (reference/03 is right). **20 wu** is a separate constant that only the Worker's flag search reads, as its stand distance; ORIG names it a capture range, but no capture rule uses it. R-UNIT-095 must stop calling it the capture range and key it.
+
+**Replacements.**
+- `reference/02_units/worker.md`, R-UNIT-095, second sentence:
+  > If the Worker is within `ref.unit.worker.flag_stand_range` (20 wu) of the Flag post, its waypoint is its own position; otherwise the Flag post's position + (`NextSigned(20)`, 0, `NextSigned(20)`), each offset in (−10, 10) wu. This stand distance is not the Flag post's capture radius (40 wu, [reference/03](../03_buildings_and_world_objects/mode_objects.md)).
+- Same file, new tuning row: `| ref.unit.worker.flag_stand_range | 20 | wu | flag search: closer than this, the Worker stays where it is | R-UNIT-095 | — |`
+- No change to reference/03 or flag_chain.md.
+- Closes: RA-073.
+
+## A-28 Number of match option definitions (route RA-324)
+
+**Question.** The overview gives 39 match option definitions; reference/01 gives 38. Which is the reference count?
+
+**Statements.**
+- `reference/00_reference_overview.md` **R-VIS-019** and tuning row `ref.vis.scope.option_definitions` (39).
+- `reference/01_skirmish_rules_and_modes/README.md` **R-MODE-073**: "The six mode schemas hold 38 options."
+
+**ORIG evidence.**
+- `01_game_modes.md` l.535 (heading): "Every option definition (39 = 38 shipped + 1 debug)"; l.537: "8 + 8 + 5 + 2 + 6 + 9 = **38** parameters in the six shipped blueprints plus 1 in [the debug-only mode] = **39**".
+
+**Verdict.** ORIG settles it: **38** options in the six in-scope modes; the 39th belongs to the debug-only mode, which the library drops (item 22). R-VIS-019 must use 38 (DEC-017's own count is X-DEC-P4a's item 22).
+
+**Replacements.**
+- `reference/00_reference_overview.md`, R-VIS-019: "The match options comprise `ref.vis.scope.option_definitions` (38) option definitions, those of the six mode schemas ([01](01_skirmish_rules_and_modes/README.md) R-MODE-073), plus the lobby settings and the per-map overrides for reinforcements, Transports, turrets, instant capture, Beam Dish rules, the Visitor faction, the airstrike threshold, excluded Supply crate outcomes and population caps (DEC-017, DEC-073)."
+- Same file, tuning row: `| ref.vis.scope.option_definitions | 38 | match option definitions | the six mode schemas (R-MODE-073); plus the lobby settings and the per-map overrides | R-VIS-019 | DEC-017, DEC-073 |`
+- Closes: RA-324.
+
+## A-29 Hostile outcomes and the map's excluded outcomes (route RA-117, owner decision O18)
+
+**Question.** R-VIS-124 says hostile outcomes ignore a map's excluded-outcome list; Resolved DEC-107 (owner decision O18) says every outcome, hostile ones included, respects it. Which statement stands?
+
+**Statements.**
+- `reference/00_reference_overview.md` **R-VIS-124**: "A map can exclude outcomes, and hostile outcomes ignore a map's exclusions (DEC-107)"; §8 row: "DEC-107 | Hostile outcomes: ownership and exclusion filtering".
+- `decisions/verdicts_and_fixes.md` **DEC-107** (Resolved, O18): "Every Supply crate outcome, hostile ones included, respects the map's list of excluded outcomes"; `reference/01` R-MODE-084 already states this rule.
+
+**ORIG evidence.**
+- `04_crates_powerups_and_weapons.md` l.337 (bad pool): "**`IsValid`/`InvalidCrates` are not consulted** — the AntNest limit and per-level exclusions do not apply to bad outcomes". This is the reference behaviour that R-VIS-124 states.
+
+**Verdict.** ORIG confirms that R-VIS-124 describes the reference behaviour, but the question is not one ORIG decides: owner decision O18 is fixed and DEC-107 applies it, so the documents state the decided rule. **DEC-107 stands**; R-VIS-124 must change. The overview makes no statement about Brood ownership, so DEC-121 needs no citation there.
+
+**Replacements.**
+- `reference/00_reference_overview.md`, R-VIS-124, first sentence: "A map can exclude outcomes, and every outcome, hostile ones included, respects the map's exclusions (DEC-107)." The rest stays.
+- Same file, §8 row: `| DEC-107 | Hostile outcomes: team-blind hazards; every outcome respects the map's exclusions | R-VIS-124 |`
+- Closes: RA-117.
+
+## A-30 When the second tutorial switches basic outcomes on (route RA-030)
+
+**Question.** Does the second tutorial switch "basic outcomes only" on "when its bot phase starts" (reference/04) or at its end step (reference/01, reference/11)? Are these different moments?
+
+**Statements.**
+- `reference/04_supply_crates_powers_and_weapons/README.md` **R-CRATE-031**: "the second tutorial switches it on when its bot phase starts".
+- `reference/01_skirmish_rules_and_modes/README.md` **R-MODE-083** and `reference/11_tutorial_and_help.md` **R-TUT-117** / AC-TUT-08: at the end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released.
+
+**ORIG evidence.**
+- `30_scripting_tutorial_and_cutscenes.md` l.631 (second tutorial, end row): "`HelpTutorial2End` …; `m_basicCratesOnly = true`; `SetGameOption(7, 0)` …; `m_aiType = AITypeStandard`; `AICanSpawn = true`", all in the one end step.
+- l.470 (overrides table): random crate drops are off "before End" and on "after End (and `m_basicCratesOnly = true`, CrateDropMode 0)", where l.466 defines "T2 before End" as "`!m_tutorial2AICanSpawn`", that is, before the bots may spawn.
+
+**Verdict.** ORIG settles it: the switch happens **at the end step**, the same step that releases the bots, so "when its bot phase starts" means that moment. R-CRATE-031 is reworded to name it.
+
+**Replacements.**
+- `reference/04_supply_crates_powers_and_weapons/README.md`, R-CRATE-031, last clause: "…; the second tutorial switches it on at its end step, the same step that releases its bots ([reference/11](../11_tutorial_and_help.md) R-TUT-117)."
+- Closes: RA-030.
+
 ---
 
 ## Summary

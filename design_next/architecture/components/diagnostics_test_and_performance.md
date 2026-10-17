@@ -1,16 +1,16 @@
 # Diagnostics, test and performance
 
-> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-0067](../../adr/0067-logging.md) · [ADR-0068](../../adr/0068-profiling-and-gpu-timing.md) · [ADR-0069](../../adr/0069-test-framework.md) · [ADR-0070](../../adr/0070-continuous-integration.md) · [ADR-0066](../../adr/0066-telemetry-with-consent.md) · [ADR-0065](../../adr/0065-crash-reporting.md) · [ADR-0056](../../adr/0056-editions-build-flavours-and-feature-flags.md) · [ADR-0057](../../adr/0057-version-identity.md) · [ADR-0074](../../adr/0074-platform-clock-with-injectable-time.md) · [ADR-0059](../../adr/0059-content-build-and-validators.md) · [ADR-0060](../../adr/0060-content-identity-by-hash.md) · [ADR-0001](../../adr/0001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-0008](../../adr/0008-gpu-memory-uploads-and-device-removal.md) · Related: [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [platform layer](platform_layer.md) · [build tooling and distribution](build_tooling_and_distribution.md) · [renderer options and budgets](renderer/options_and_budgets.md)
+> Status: Engine baseline · Prefix: DBG · ADRs: [ADR-067](../../ADR/ADR-067-logging.md) · [ADR-068](../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../ADR/ADR-069-test-framework.md) · [ADR-070](../../ADR/ADR-070-continuous-integration.md) · [ADR-066](../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-065](../../ADR/ADR-065-crash-reporting.md) · [ADR-056](../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-057](../../ADR/ADR-057-version-identity.md) · [ADR-074](../../ADR/ADR-074-platform-clock-with-injectable-time.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-001](../../ADR/ADR-001-direct3d-12-renderer-on-the-agility-sdk.md) · [ADR-008](../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · Related: [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [platform layer](platform_layer.md) · [build tooling and distribution](build_tooling_and_distribution.md) · [renderer options and budgets](renderer/options_and_budgets.md)
 
 This component is the Species engine's developer and quality infrastructure. It specifies the logging system, the assertion levels and the black-box record, the profiling layer and its in-game views, the development overlay, the development windows and debug commands that the engine keeps, the development drawing queue, the test harness with its headless simulation tests, the headless soak test and the opt-in telemetry data set. It also holds the **reference performance figures**: the population per map, the frame and tick structure, the hotspot catalogue, the stress populations and the budgets that the Species design phase starts from.
 
 **Notation and units.**
 
-- **Costs** (frame time, tick cost, call cost) are real time on the platform clock (ADR-0074), in milliseconds (ms), microseconds (µs) or nanoseconds (ns), measured on the reference test machine (§5.5).
+- **Costs** (frame time, tick cost, call cost) are real time on the platform clock (ADR-074), in milliseconds (ms), microseconds (µs) or nanoseconds (ns), measured on the reference test machine (§5.5).
 - **Simulation durations** are in ticks at the reference tick rate, one tick per `ref.sim.tick_period` (0.1 s) of [reference/12](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md); a duration in seconds next to a tick count is a derived display value. Delays of developer tools that run while no match world exists are counted in milliseconds of the platform clock, never accumulated from frame-time differences (DEC-804).
 - **Distances** are in world units (`wu`). Positions and sizes of developer windows and overlays are in pixels of the 2-D overlay space, origin at the top-left corner and y growing downwards (RND-215), before the UI scale of UI-166; W × H is the render size.
 - **Colours** are RGBA8 tuples (red, green, blue, alpha), or RGB triples when the alpha is 255.
-- **Development builds** are the `Debug` and `Development` flavours of ADR-0056. **Test builds** are the development builds and every CI test configuration that runs the test harness (ADR-0070).
+- **Development builds** are the `Debug` and `Development` flavours of ADR-056. **Test builds** are the development builds and every CI test configuration that runs the test harness (ADR-070).
 
 ## 1 Responsibilities and boundaries
 
@@ -35,8 +35,8 @@ This component is the Species engine's developer and quality infrastructure. It 
 
 | Part | Owner |
 |---|---|
-| crash capture: no top-level exception filter, the terminate, invalid-parameter and pure-call handlers, fail-fast termination, the files and memory blocks registered with Windows Error Reporting, thread naming and dump contents | [platform layer](platform_layer.md), ADR-0065 |
-| the symbol store, the CI pipeline definitions, binary checks, the edition manifests and the dedicated-server build | [build tooling and distribution](build_tooling_and_distribution.md), ADR-0070, ADR-0056 |
+| crash capture: no top-level exception filter, the terminate, invalid-parameter and pure-call handlers, fail-fast termination, the files and memory blocks registered with Windows Error Reporting, thread naming and dump contents | [platform layer](platform_layer.md), ADR-065 |
+| the symbol store, the CI pipeline definitions, binary checks, the edition manifests and the dedicated-server build | [build tooling and distribution](build_tooling_and_distribution.md), ADR-070, ADR-056 |
 | drawing of the development drawing pass (pass 24) and the text overlays (pass 29); the development sphere | [frame graph and passes](renderer/frame_graph_and_passes.md) RND-076; [entity and overlay renderers](renderer/entity_and_overlay_renderers.md) RND-330 |
 | the bot overlay's pass (pass 16) | [entity and overlay renderers](renderer/entity_and_overlay_renderers.md) RND-359 |
 | tool-window chrome, close box, inset panel and layout | [UI framework](ui_framework/README.md) UI-001, [core and widgets](ui_framework/core_and_widgets.md) UI-060, UI-061, [layout](ui_framework/layout_rendering_input_and_localisation.md) UI-166 |
@@ -50,7 +50,7 @@ This component is the Species engine's developer and quality infrastructure. It 
 
 This component composes those parts into one developer view and one test harness.
 
-**DBG-004** (MUST) Each facility exists in these build flavours (ADR-0056); a facility marked "no" is absent from the binary, not merely disabled:
+**DBG-004** (MUST) Each facility exists in these build flavours (ADR-056); a facility marked "no" is absent from the binary, not merely disabled:
 
 | Facility | `Debug` | `Development` | `Profile` | `Shipping` |
 |---|---|---|---|---|
@@ -72,7 +72,7 @@ This component composes those parts into one developer view and one test harness
 | network statistics window | yes | a key opens it in menus, the lobby and a match (DBG-020) | development builds (DBG-105) |
 | debug log | yes | always written to the profile folder, truncated at start-up | the logging system, every flavour (§4.1) |
 | release assertions and the assertion record | yes | any failed release assertion or container bounds check | release checks and the black box (§4.2) |
-| crash log and minidump | yes | any unhandled exception on the main thread | crash capture on every thread ([platform layer](platform_layer.md), ADR-0065) |
+| crash log and minidump | yes | any unhandled exception on the main thread | crash capture on every thread ([platform layer](platform_layer.md), ADR-065) |
 | world-state dump on divergence | yes | the first divergence notice | design phase (DEC-206) |
 | development drawing | compiled in; only the bot overlay is drawn | a hidden setting (§3.2) | development builds (§4.7) |
 | profile tree | compiled in; not reachable | — | the profile view (§4.3) |
@@ -83,13 +83,13 @@ This component composes those parts into one developer view and one test harness
 **DBG-006** (MUST) The Species debug and test baseline is:
 
 1. **Debug commands.** Every developer cheat that changes simulation state is a sequenced debug command, which the authority accepts only in a session created with cheats enabled and every participant applies on the same tick; such a session carries a session-wide cheats-used marker (§4.6, DEC-041, DEC-202).
-2. **Replay as the regression tool.** When the design phase gives Species reproducible replays (DEC-046), every match records its seed and command stream into a local ring buffer, the headless runner replays it at maximum speed, the end-of-match state hash must match, and a recorded match serves as the repeatable performance scene of ADR-0066 (§8.2).
-3. **Headless soak test.** Bot teams play complete matches on every mode and map in CI, with no user interface driven (§4.9, DEC-804, ADR-0070).
-4. **Profiling.** Scoped CPU markers that PIX and ETW traces show, GPU timestamps per pass, and an in-game overlay with a frame-time graph and per-system budgets; every marker is safe to use from any thread (§4.3, ADR-0068).
+2. **Replay as the regression tool.** When the design phase gives Species reproducible replays (DEC-046), every match records its seed and command stream into a local ring buffer, the headless runner replays it at maximum speed, the end-of-match state hash must match, and a recorded match serves as the repeatable performance scene of ADR-066 (§8.2).
+3. **Headless soak test.** Bot teams play complete matches on every mode and map in CI, with no user interface driven (§4.9, DEC-804, ADR-070).
+4. **Profiling.** Scoped CPU markers that PIX and ETW traces show, GPU timestamps per pass, and an in-game overlay with a frame-time graph and per-system budgets; every marker is safe to use from any thread (§4.3, ADR-068).
 5. **Development console and overlays,** reachable in development builds: frame time, entity counts per type, network statistics with correct units, per-client lag in ticks and gaps in the incoming frame queue, bot overlays, and actor-grid and obstacle-grid visualisers (§4.4 to §4.7).
-6. **Logging and crash reporting.** An asynchronous, buffered, categorised log; crash capture on every thread and through the terminate path; dumps with every thread; a symbol store for every build; no stack walk that depends on frame pointers; no credentials in a binary or a report (§4.1, §4.2, ADR-0065, ADR-0067).
-7. **Telemetry with consent** (§4.10, ADR-0066).
-8. **Validators in the content build** instead of run-time-only checks: the language completeness test and the content checks run in the content build (ADR-0059, R-META-473).
+6. **Logging and crash reporting.** An asynchronous, buffered, categorised log; crash capture on every thread and through the terminate path; dumps with every thread; a symbol store for every build; no stack walk that depends on frame pointers; no credentials in a binary or a report (§4.1, §4.2, ADR-065, ADR-067).
+7. **Telemetry with consent** (§4.10, ADR-066).
+8. **Validators in the content build** instead of run-time-only checks: the language completeness test and the content checks run in the content build (ADR-059, R-META-473).
 
 Run-time state hashing for divergence detection is DEC-206; the per-tick state hash of the test harness (DBG-144) is a test tool.
 
@@ -100,7 +100,7 @@ Run-time state hashing for divergence detection is DEC-206; the per-tick state h
 ```cpp
 namespace species::diag {
 
-// Logging (ADR-0067). LogLevel is in severity order; LogCategory is fixed and extended only in code.
+// Logging (ADR-067). LogLevel is in severity order; LogCategory is fixed and extended only in code.
 enum class LogLevel : std::uint8_t { Trace, Debug, Info, Warning, Error, Fatal };
 enum class LogCategory : std::uint8_t { Platform, Render, Audio, Input, Ui, Content, Simulation, Network, Tools, Diagnostics, Test };
 template <class... Args> void Log(LogCategory, LogLevel, std::format_string<Args...>, Args&&...);
@@ -111,7 +111,7 @@ struct LogStats { std::uint64_t written, dropped_trace, dropped_debug; };
 LogStats GetLogStats();
 void FlushLogSynchronously();                                                 // fatal path only (DBG-073)
 
-// Checks and the black box (§4.2, ADR-0065)
+// Checks and the black box (§4.2, ADR-065)
 #define SPECIES_ASSERT(condition)            /* development check: Debug and Development */
 #define SPECIES_CHECK(condition, fmt, ...)   /* release check: every flavour, fatal */
 #define SPECIES_CHECK_INDEX(index, size)     /* container bounds check: every flavour, fatal */
@@ -125,7 +125,7 @@ public:
   std::span<const std::byte> MemoryBlock() const;      // registered by the platform layer
 };
 
-// Profiling (ADR-0068)
+// Profiling (ADR-068)
 #define SPECIES_PROFILE_SCOPE(name)                   /* CPU marker; nothing in Shipping */
 #define SPECIES_PROFILE_GPU_SCOPE(command_list, name) /* GPU marker and a timestamp pair */
 struct ProfileNodeStats {
@@ -178,7 +178,7 @@ struct SoakConfig { SoakProgression progression; std::vector<SoakEntry> entries;
                     std::string session_name; std::uint64_t terminate_at_tick; std::uint8_t clients; bool rendering; };
 class SoakRunner { public: explicit SoakRunner(SoakConfig); SoakReport Run(); };  // owns all soak state
 
-// Telemetry (ADR-0066)
+// Telemetry (ADR-066)
 struct TelemetrySessionRecord;                                // the data set of DBG-181
 void SubmitTelemetry(const TelemetrySessionRecord&);         // queued; sent only with consent
 
@@ -225,9 +225,9 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 
 **DBG-024** (MUST) **Debug commands** travel as player commands of the command catalogue ([teams and player commands](../../reference/12_simulation_model/06_teams_and_player_commands.md)) with the payload of `DebugCommand`: the sender's team, the command kind, the target team slot, the target point and the forced outcome. Who may send one and how it is validated is DBG-118 and DEC-202.
 
-**DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report: one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. The report is a CI artefact (ADR-0070).
+**DBG-025** (MUST) **Soak artefacts.** Each soak pass produces one soak report: one row per match (DBG-166) plus the pass totals, the crash dumps of the pass ([platform layer](platform_layer.md)), the assertion failures, the simulation update-time percentiles and the peak population per match. The report is a CI artefact (ADR-070).
 
-**DBG-026** (MUST) **Telemetry record.** One `TelemetrySessionRecord` per session holds exactly the data set of DBG-181; a schema check rejects any field outside it (ADR-0066).
+**DBG-026** (MUST) **Telemetry record.** One `TelemetrySessionRecord` per session holds exactly the data set of DBG-181; a schema check rejects any field outside it (ADR-066).
 
 ### 2.4 Threading contract
 
@@ -273,24 +273,24 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | poster resolution | 1 | screenshots as N × N tiles | RND-110, RND-442 |
 | `debug.soak_session_name` | empty | the session name a soak host advertises and soak clients look for; a soak configuration's name replaces it | DBG-162 |
 
-**DBG-042** (MUST) The reference's terrain storage-mode setting has no Species meaning (RND-443), and its campaign test-harness switch is not specified (DEC-052). The reference start-up switches with a diagnostic role belong to the platform layer: writing the build identity to a file and exiting (PLT-023, ADR-0057), and moving every log and user file out of the profile folder (PLT-025).
+**DBG-042** (MUST) The reference's terrain storage-mode setting has no Species meaning (RND-443), and its campaign test-harness switch is not specified (DEC-052). The reference start-up switches with a diagnostic role belong to the platform layer: writing the build identity to a file and exiting (PLT-023, ADR-057), and moving every log and user file out of the profile folder (PLT-025).
 
 ### 3.3 Log records and categories
 
-**DBG-043** (MUST) A log record holds: the platform-clock time (ADR-0074) and the UTC calendar time used only for display; the thread name; the category; the level; and the message, formatted from a compile-time format string with arguments. Categories are the fixed set of Listing 2.1-A: the nine of ADR-0067 plus `Diagnostics` (this component) and `Test` (the test harness and the soak runner). Levels are ordered trace < debug < info < warning < error < fatal.
+**DBG-043** (MUST) A log record holds: the platform-clock time (ADR-074) and the UTC calendar time used only for display; the thread name; the category; the level; and the message, formatted from a compile-time format string with arguments. Categories are the fixed set of Listing 2.1-A: the nine of ADR-067 plus `Diagnostics` (this component) and `Test` (the test harness and the soak runner). Levels are ordered trace < debug < info < warning < error < fatal.
 
-**DBG-044** (MUST) A log file starts with a header that holds the full build identity (ADR-0057), the OS build, the adapter description, the channel tag (BLD-021) and the date and time of the start of the run (ADR-0067). This replaces the reference header line of product name, version and build date.
+**DBG-044** (MUST) A log file starts with a header that holds the full build identity (ADR-057), the OS build, the adapter description, the channel tag (BLD-021) and the date and time of the start of the run (ADR-067). This replaces the reference header line of product name, version and build date.
 
 ### 3.4 Profile marker catalogue
 
-**DBG-045** (MUST) Every engine subsystem update, every frame-graph pass (RND-041) and every content-loading stage carries a marker (ADR-0068). The catalogue below is the Species marker set for the systems that the reference instruments; a row's "per kind" marker is one marker per actor kind or structure kind, named by the kind's identifier. Markers nest by call order on their thread.
+**DBG-045** (MUST) Every engine subsystem update, every frame-graph pass (RND-041) and every content-loading stage carries a marker (ADR-068). The catalogue below is the Species marker set for the systems that the reference instruments; a row's "per kind" marker is one marker per actor kind or structure kind, named by the kind's identifier. Markers nest by call order on their thread.
 
 | Area | Species markers (the reference section each replaces is implied by the name) |
 |---|---|
 | frame and loop | `frame.match_loop` (the whole simulation advance of a frame, around the world step); `render.frame`; `render.clear`; `render.present` |
 | camera and input | `camera.advance`; `input.advance`; `render.match_input` |
 | sky | `render.sky`; `render.sky.blobby_layers`; `render.sky.flat_layers`; `render.sky.advance`; `render.clouds` |
-| terrain and sea | `render.terrain.surface`; `render.terrain.wire_overlay`; `render.sea`; `render.sea.advance`; `render.sea.wave_build` (the coastline wave mesh, built on the GPU in Species, ADR-0011) |
+| terrain and sea | `render.terrain.surface`; `render.terrain.wire_overlay`; `render.sea`; `render.sea.advance`; `render.sea.wave_build` (the coastline wave mesh, built on the GPU in Species, ADR-011) |
 | simulation, world step | `sim.laser_bolts.advance`; `sim.effects.advance`; `sim.structures.advance` with one marker per structure kind; `sim.essence_orbs.advance`; `sim.teams.advance_group_members`; `sim.teams.advance_groups`; `sim.teams.advance_ungrouped` with one marker per actor kind; `sim.actor_group.advance` with one marker per actor kind |
 | Workers | `sim.worker.task_search`; `sim.worker.search.threats` with `.projectiles`, `.trees`, `.hives`, `.bot_nodes`, `.enemies`; `sim.worker.search.ports`; `sim.worker.search.carryables`; `sim.worker.search.supply_crates`; `sim.worker.search.transports`; `sim.worker.search.flags`; `sim.worker.search.leaders`; `sim.worker.search.random_position`; `sim.worker.combat`; `sim.worker.throw_grenade`; `sim.worker.move_to_target`; `sim.worker.push.sea`; `sim.worker.push.structures` |
 | creatures | `sim.crawler.record_trail`; `sim.crawler.move_to_target`; `sim.crawler.idle`; `sim.crawler.attacking`; `sim.crawler.to_essence_orb`; `sim.crawler.to_egg`; `sim.crawler.search.enemies`; `sim.crawler.search.essence_orbs`; `sim.crawler.search.eggs`; `sim.crawler.search.idle_direction`; `sim.centipede.search_essence_orbs`; `sim.spider.search_essence_orbs` |
@@ -301,23 +301,23 @@ Caption: Listing 2.1-A, the diagnostics interface (declarations only). `ProfileN
 | overlays and UI | `render.world_cursor`; `render.world_markers`; `render.centre_message`; `render.mode_hud`; `render.hint_overlay`; `render.power_slots_panel`; `devtools.profile_view.render` |
 | audio | `audio.update` and one marker per update step of AEN-123, `audio.decode`, `audio.bank_load` (AEN-322); the reference's instance-start sections map onto `audio.instance.start`, `audio.instance.open_stream`, `audio.instance.set_parameters`, `audio.instance.set_frequency_volume_position` and `audio.instance.setup_effects`, and its effect sections onto `audio.effect.resonant_low_pass`, `audio.effect.gargle` and `audio.effect.echo` |
 
-**DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059), for the gesture and icon Power interfaces (DEC-055), or for the reference's device-buffer locking in audio output, which the Species audio engine does not have (ADR-0022). The reference instruments 186 call sites in its compiled code; the rows above keep every one whose system Species specifies.
+**DBG-046** (MUST NOT) The catalogue has no marker for campaign-only systems (DEC-052), for the pixelation, deform and reflection effects (DEC-059), for the gesture and icon Power interfaces (DEC-055), or for the reference's device-buffer locking in audio output, which the Species audio engine does not have (ADR-022). The reference instruments 186 call sites in its compiled code; the rows above keep every one whose system Species specifies.
 
 ### 3.5 Black-box contents
 
-**DBG-047** (MUST) The black box is a fixed-size block of `dbg.blackbox.block_bytes` (4096 bytes) registered with Windows Error Reporting by the platform layer (ADR-0065). It holds:
+**DBG-047** (MUST) The black box is a fixed-size block of `dbg.blackbox.block_bytes` (4096 bytes) registered with Windows Error Reporting by the platform layer (ADR-065). It holds:
 
 1. a fixed marker text, so that the block can be found in a dump;
-2. the full build identity (ADR-0057);
+2. the full build identity (ADR-057);
 3. the UTC date and time of the start of the run, and of the failure when one is recorded;
 4. the most recent `dbg.blackbox.recent_markers` (16) frame and tick markers, each with its frame index or tick;
 5. the current map id, or the world region id once the design phase defines regions;
 6. the most recent `dbg.blackbox.recent_checks` (8) failed-check and warning messages;
 7. for a failed check or a fatal exit, the black-box record: the product name, the build identity, the UTC date and time, the message truncated to `dbg.blackbox.check_message_max_chars` (512 characters; the full message goes to the log), the condition text, the source file and line, and the thread name.
 
-It never holds chat text, account tokens or the names of other players (ADR-0065, ADR-0067), and it does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
+It never holds chat text, account tokens or the names of other players (ADR-065, ADR-067), and it does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
 
-**DBG-048** (MUST) The reference's assertion record is a text report with a banner, the product name, version and build date, the date as hour and minute and as day, month and year, the error message, and a stack trace of return addresses that a frame-pointer walk collects and an offline script resolves through a linker map; the walk stops at a misaligned, non-increasing or unreadable frame and is short or wrong in optimised builds. Species keeps the content (identity, time, message, stack) and takes the stack from the dump, symbolised through the symbol store of every build ([build tooling and distribution](build_tooling_and_distribution.md), ADR-0065); no Species code walks frame pointers.
+**DBG-048** (MUST) The reference's assertion record is a text report with a banner, the product name, version and build date, the date as hour and minute and as day, month and year, the error message, and a stack trace of return addresses that a frame-pointer walk collects and an offline script resolves through a linker map; the walk stops at a misaligned, non-increasing or unreadable frame and is short or wrong in optimised builds. Species keeps the content (identity, time, message, stack) and takes the stack from the dump, symbolised through the symbol store of every build ([build tooling and distribution](build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
 
 ### 3.6 Diagnostic outputs
 
@@ -325,16 +325,16 @@ It never holds chat text, account tokens or the names of other players (ADR-0065
 
 | Output | Writer | Content | Flavours |
 |---|---|---|---|
-| log files in the logs folder (ADR-0071), one per run, the last `dbg.log.files_kept` (10) kept | logging system (§4.1) | the log | every flavour |
+| log files in the logs folder (ADR-071), one per run, the last `dbg.log.files_kept` (10) kept | logging system (§4.1) | the log | every flavour |
 | ETW events of the Species TraceLogging provider | logging system | the same records | every flavour |
 | black-box block | this component and the platform layer | DBG-047 | every flavour |
-| crash report and dump; on test machines also a local dump in the `crashes` folder (PLT-122) | platform layer, through WER (ADR-0065) | dump of every thread, registered files, the black box and the crash-context record (PLT-124) | every flavour |
+| crash report and dump; on test machines also a local dump in the `crashes` folder (PLT-122) | platform layer, through WER (ADR-065) | dump of every thread, registered files, the black box and the crash-context record (PLT-124) | every flavour |
 | language completeness report, in the `diagnostics` folder (PLT) | the client's language test (R-META-473) | three lists per language | development |
 | command-history recording, in the `diagnostics` folder | the replay hook (§8.2) | the command frames of a match | development |
 | soak report | the soak runner (DBG-166) | one row per match and the pass totals | CI |
 | telemetry queue | the telemetry service (§4.10) | unsent session records | every flavour, with consent |
 | PIX captures and ETW traces | PIX and Windows Performance Analyzer | captures taken by a developer | `Debug`, `Development`, `Profile` |
-| test reports and performance results | the test harness | CI artefacts (ADR-0070) | test builds |
+| test reports and performance results | the test harness | CI artefacts (ADR-070) | test builds |
 
 Key-binding parse errors go to the log ([input](input.md)). The world-state dump on divergence is DEC-206. The version file is the platform layer's (PLT-023).
 
@@ -342,7 +342,7 @@ Key-binding parse errors go to the log ([input](input.md)). The world-state dump
 
 ### 4.1 Logging
 
-**DBG-060** (MUST) Logging follows ADR-0067: `Log(category, level, format, arguments)` with a compile-time format string, so text from content, players or the network is always an argument and is logged verbatim, a percent sign or a brace included. No log call formats into a fixed-size buffer; a long message is logged whole.
+**DBG-060** (MUST) Logging follows ADR-067: `Log(category, level, format, arguments)` with a compile-time format string, so text from content, players or the network is always an argument and is logged verbatim, a percent sign or a brace included. No log call formats into a fixed-size buffer; a long message is logged whole.
 
 **DBG-061** (MUST) A log call writes its record into the calling thread's lock-free buffer of `dbg.log.thread_buffer_kib` (256 KiB) and returns; one logging thread drains every buffer to the sinks. When a buffer is full, trace records are dropped first, then debug records; warnings, errors and fatal records are never dropped, and the caller waits only when its buffer holds nothing but such records. The cost on the calling thread stays within `dbg.budget.log_call_us` (DBG-206).
 
@@ -350,11 +350,11 @@ Key-binding parse errors go to the log ([input](input.md)). The world-state dump
 
 **DBG-063** (MUST) `LogHexDump` writes `dbg.log.hex_bytes_per_line` (16) bytes per line in hexadecimal; `LogValueDump` writes 32-bit integers in decimal, `dbg.log.hex_bytes_per_line` ÷ 4 values per line.
 
-**DBG-064** (MUST) Sinks and levels per flavour are those of ADR-0067: the rotating UTF-8 file (DBG-049), the TraceLogging provider, and the debugger output in `Debug` and `Development` builds. `Shipping` and `Profile` builds record info and above; development builds record debug and above, with trace enabled per category at run time. If the log file cannot be opened, records go to the remaining sinks, and the failure is reported once, with the path, on those sinks.
+**DBG-064** (MUST) Sinks and levels per flavour are those of ADR-067: the rotating UTF-8 file (DBG-049), the TraceLogging provider, and the debugger output in `Debug` and `Development` builds. `Shipping` and `Profile` builds record info and above; development builds record debug and above, with trace enabled per category at run time. If the log file cannot be opened, records go to the remaining sinks, and the failure is reported once, with the path, on those sinks.
 
 **DBG-065** (MUST) The log records at least the content that the reference debug log carries, as categorised records: the start-up header (DBG-044); content mounting with entry counts and durations, and every missing resource ([asset pipeline and resources](asset_pipeline_and_resources.md) AST-126); every settings entry that fails to parse or is out of range (DEC-800); network connection, divergence and disconnection events (DEC-206); audio readiness, bank loads and device changes (AEN-324); key-binding parse outcomes ([input](input.md)); and a memory report every `ref.sim.frame.memory_log_interval` (60 s, [tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md)) giving the available physical memory, the process's committed memory and working set, and the audio engine's memory summary (AEN-324).
 
-**DBG-066** (MUST NOT) No record holds chat text, account tokens, passwords, or an identifier of another player other than a session-local number (ADR-0067). No diagnostic is formatted while its level is disabled: a disabled record costs the level test only. In the reference a state line is formatted before and after every body and structure update even where the log discards it (DEC-206).
+**DBG-066** (MUST NOT) No record holds chat text, account tokens, passwords, or an identifier of another player other than a session-local number (ADR-067). No diagnostic is formatted while its level is disabled: a disabled record costs the level test only. In the reference a state line is formatted before and after every body and structure update even where the log discards it (DEC-206).
 
 ### 4.2 Checks, the black box and the fatal path
 
@@ -369,15 +369,15 @@ Key-binding parse errors go to the log ([input](input.md)). The world-state dump
 | abort | release assertion that is always false, with a message | every flavour | as a release check |
 | fatal exit `FatalExit(string id, arguments)` | logged exit with a message dialog and the assertion record | every flavour | DBG-074 |
 
-**DBG-071** (MUST) Content errors never reach a check: the content build rejects them (DEC-015, ADR-0059), and a load path reports and recovers. A check states a program invariant; a failed check is a defect.
+**DBG-071** (MUST) Content errors never reach a check: the content build rejects them (DEC-015, ADR-059), and a load path reports and recovers. A check states a program invariant; a failed check is a defect.
 
 **DBG-072** (MUST) The test builds' simulation checks of §4.8 are development checks that the test harness turns into test failures; they never run in `Profile` or `Shipping` builds.
 
 **DBG-073** (MUST) The fatal path of a failed release check, a container bounds check or an abort runs in this order; the terminate, invalid-parameter and pure-call handlers enter it at step 1 with their reason ([platform layer](platform_layer.md) PLT-118):
 
 1. write the black-box record of the failure (DBG-047 item 7);
-2. write the full message as a fatal log record and flush the log synchronously (ADR-0067), so the registered log file holds it;
-3. hand over to the platform layer's `FailFast` (PLT-127), which breaks into an attached debugger, or shows `ui.error.internal` with the run id when a window exists, and ends the process with a fail-fast exception, which Windows Error Reporting captures with the registered files and the black box (ADR-0065).
+2. write the full message as a fatal log record and flush the log synchronously (ADR-067), so the registered log file holds it;
+3. hand over to the platform layer's `FailFast` (PLT-127), which breaks into an attached debugger, or shows `ui.error.internal` with the run id when a window exists, and ends the process with a fail-fast exception, which Windows Error Reporting captures with the registered files and the black box (ADR-065).
 
 In the reference a failed release assertion shows its own message in a fatal-error message box, writes the assertion record and ends through the runtime's terminate path; whether its crash handler also runs is a property of its runtime library (DEC-341).
 
@@ -387,7 +387,7 @@ In the reference a failed release assertion shows its own message in a fatal-err
 
 ### 4.3 Profiling
 
-**DBG-080** (MUST) The profiling layer is ADR-0068's: `SPECIES_PROFILE_SCOPE` and its GPU counterpart emit PIX events through WinPixEventRuntime in `Debug`, `Development` and `Profile` builds and expand to nothing in `Shipping` builds; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
+**DBG-080** (MUST) The profiling layer is ADR-068's: `SPECIES_PROFILE_SCOPE` and its GPU counterpart emit PIX events through WinPixEventRuntime in `Debug`, `Development` and `Profile` builds and expand to nothing in `Shipping` builds; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
 
 **DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's is a debug assertion. The trees exist whenever markers are compiled in; the reference creates its tree only while its profile window is open. Every node is timed whether or not the view shows it; the reference times a node only while its parent is expanded in the view, so a collapsed subtree costs a look-up per call and shows no time.
 
@@ -461,8 +461,8 @@ The divergence column shows the diverged text in red while the participant has a
 | 13 | spawn a Supply crate, with an outcome drop-down | creates a Supply crate at (P.x, `dbg.commands.crate_height` (300 wu), P.z) at render detail 1, with a new structure id and its world marker; the drop-down lists every outcome of the catalogue in catalogue order ([crates and powers](../../reference/04_supply_crates_powers_and_weapons/crates_and_powers.md)) after the default entry, normal choice; a chosen outcome is forced, so the crate's capture roll is skipped (R-SIM-624); offered only while a match world exists | sequenced |
 | 14 | profile view | opens the profile view (§4.3) | local |
 | 15 | network statistics | opens the network statistics window (§4.5) | local |
-| 16 | reset render resources | releases and rebuilds every GPU resource through the device-removal path (ADR-0008); trees rebuild their geometry from the same per-tree seed, and their hit volumes are baked data (R-SIM-651), so nothing in the simulation changes | local |
-| 17–22 | crash tests | a fault on the main thread, a fault on a worker thread, a call of the terminate handler, an invalid parameter, a pure call, and a hang of the main thread, for the crash-capture tests of ADR-0065 and the platform layer | local |
+| 16 | reset render resources | releases and rebuilds every GPU resource through the device-removal path (ADR-008); trees rebuild their geometry from the same per-tree seed, and their hit volumes are baked data (R-SIM-651), so nothing in the simulation changes | local |
+| 17–22 | crash tests | a fault on the main thread, a fault on a worker thread, a call of the terminate handler, an invalid parameter, a pure call, and a hang of the main thread, for the crash-capture tests of ADR-065 and the platform layer | local |
 
 **DBG-118** (MUST) A sequenced debug command is a player command (DBG-024) that the authority accepts only in a session created with cheats enabled, and only from a participant authorised to send it; until DEC-202 is decided, the host's own participant is the only authorised sender. The authority validates the team slot, that P lies on the map and that a forced outcome is in the catalogue; a rejected command is dropped, logged and counted. An accepted command executes on its tick on every participant, like any command (R-SIM-670). The first accepted debug command sets the session's cheats-used marker, which the lobby and the match results show (`ui.match.cheats_used`) and which the match statistics carry ([reference/09](../../reference/09_front_end_and_match_flow/README.md) hooks).
 
@@ -497,21 +497,21 @@ The divergence column shows the diverged text in red while the participant has a
 
 ### 4.8 Test harness
 
-**DBG-140** (MUST) Tests use GoogleTest through CTest (ADR-0069). Every test case name starts with the requirement id it verifies (for example `DBG_143_FiniteStateAfterTick`), and a lint step rejects a name whose prefix is not an existing requirement id; a test executable that registers no test case fails CI.
+**DBG-140** (MUST) Tests use GoogleTest through CTest (ADR-069). Every test case name starts with the requirement id it verifies (for example `DBG_143_FiniteStateAfterTick`), and a lint step rejects a name whose prefix is not an existing requirement id; a test executable that registers no test case fails CI.
 
 **DBG-141** (MUST) The test kinds are:
 
 | Kind | Rule |
 |---|---|
-| unit | fixtures and mocks per library; deterministic time through the manual clock source (ADR-0074) |
+| unit | fixtures and mocks per library; deterministic time through the manual clock source (ADR-074) |
 | property | parameterised over seeded generators; a failing seed is printed and added as a permanent regression case |
-| golden-hash | output hashes compared with checked-in expectations: the content build (ADR-0059, ADR-0060) and the simulation (DBG-145) |
-| golden-image | fixed scenes rendered on the pinned reference configuration and compared with per-test tolerances; reference images are reviewed on change (ADR-0069) |
+| golden-hash | output hashes compared with checked-in expectations: the content build (ADR-059, ADR-060) and the simulation (DBG-145) |
+| golden-image | fixed scenes rendered on the pinned reference configuration and compared with per-test tolerances; reference images are reviewed on change (ADR-069) |
 | fuzz | harnesses for the pack-file reader, every binary record loader and the authoring parser, run nightly in a sanitiser configuration |
 | performance | fixed scenes on the reference test machine against the budgets of the component specifications; results are CI artefacts (§5.4) |
 | headless simulation | DBG-142 |
 
-**DBG-142** (MUST) A **headless simulation test** runs the simulation step with the transport, renderer, audio and UI replaced by stubs (R-SIM-673), in the headless server product (DEC-220), from a match setup, a seed and a command stream, on the fixed-step or manual clock source (ADR-0074), at maximum speed. The same runner serves the soak test (§4.9), replay validation (DEC-046) and the performance scenes of §5.4.
+**DBG-142** (MUST) A **headless simulation test** runs the simulation step with the transport, renderer, audio and UI replaced by stubs (R-SIM-673), in the headless server product (DEC-220), from a match setup, a seed and a command stream, on the fixed-step or manual clock source (ADR-074), at maximum speed. The same runner serves the soak test (§4.9), replay validation (DEC-046) and the performance scenes of §5.4.
 
 **DBG-143** (MUST) In test builds, after every tick, the harness runs these checks and fails the test with the tick, the object handle and the field on the first violation: no simulation field holds NaN or an infinity (R-SIM-107, R-SIM-717, DEC-653); every actor-grid entry names a live actor whose recorded cell set contains that cell (DEC-650); every handle lies within `ref.sim.handle.max_slots` and `ref.sim.handle.max_group_slots` (R-SIM-131, R-SIM-144); every pool received its slices in ascending order (R-SIM-214); no grid look-up was outside its grid (R-SIM-306).
 
@@ -523,19 +523,19 @@ The divergence column shows the diverged text in red while the participant has a
 
 **DBG-147** (MUST) A golden hash changes only with a reviewed change that names the rule it implements. Until DEC-240 fixes the determinism scope, the golden hashes must agree across the CI agents of one build; the cross-machine corpus run of DEC-240 item 9 (two CPU generations of two x64 vendors, and every server build) is a design-phase input (§8.3).
 
-**DBG-148** (MUST) Soak and stress maps are test maps: loadable in development builds and CI and never listed in match setup or packed into a player edition (DEC-802, ADR-0056). The reference's own sandbox, benchmark and stress maps are not reproduced (DEC-334); Species test maps are authored new.
+**DBG-148** (MUST) Soak and stress maps are test maps: loadable in development builds and CI and never listed in match setup or packed into a player edition (DEC-802, ADR-056). The reference's own sandbox, benchmark and stress maps are not reproduced (DEC-334); Species test maps are authored new.
 
 **DBG-149** (MUST) When the design phase defines persisted data (DEC-250, DEC-251), the harness checks that saving and reloading a state reproduces its simulation state hash, and that a settings file round-trips losslessly (DEC-800).
 
-**DBG-150** (MUST) A nightly client pass runs with the Direct3D 12 debug layer and GPU-based validation (ADR-0001, ADR-0068); `D3D12SDKLayers.dll` is never distributed.
+**DBG-150** (MUST) A nightly client pass runs with the Direct3D 12 debug layer and GPU-based validation (ADR-001, ADR-068); `D3D12SDKLayers.dll` is never distributed.
 
 ### 4.9 Soak test
 
-**DBG-160** (MUST) The soak test is an unattended test of complete matches between bot teams (DEC-041, DEC-804, ADR-0070). One host and any number of client participants take part; the host walks through the soak entries, every participant takes part as a spectator, so bot teams play every match to its end, and divergences, crashes and failed checks are counted and logged per match. CI runs it nightly at maximum speed as the job `ci-nightly-soak`, on the headless `server` product with the `soak` edition, which holds every mode and map of the full edition and the soak and stress test maps ([build tooling](build_tooling_and_distribution.md) tables 3.2-D and 4.9-A, BLD-057; DEC-220 item 3); a developer can also run rendered clients. The reference runs the same procedure by pressing the front-end buttons of every machine; Species drives the session and lobby interfaces directly, with no UI (DEC-804 item 3 applies wherever a soak drives a UI).
+**DBG-160** (MUST) The soak test is an unattended test of complete matches between bot teams (DEC-041, DEC-804, ADR-070). One host and any number of client participants take part; the host walks through the soak entries, every participant takes part as a spectator, so bot teams play every match to its end, and divergences, crashes and failed checks are counted and logged per match. CI runs it nightly at maximum speed as the job `ci-nightly-soak`, on the headless `server` product with the `soak` edition, which holds every mode and map of the full edition and the soak and stress test maps ([build tooling](build_tooling_and_distribution.md) tables 3.2-D and 4.9-A, BLD-057; DEC-220 item 3); a developer can also run rendered clients. The reference runs the same procedure by pressing the front-end buttons of every machine; Species drives the session and lobby interfaces directly, with no UI (DEC-804 item 3 applies wherever a soak drives a UI).
 
-**DBG-161** (MUST) A soak pass follows the rules of DEC-804: each entry names a map by stable map id, a mode, its bot teams and a seed, and the map's content hash is checked against the content manifest before the match runs (ADR-0060); a pass runs every entry exactly once, from the first to the last; delays and timeouts are counted in ticks or in integer milliseconds of the platform clock; the soak state belongs to the `SoakRunner`, which creates and resets it; and each match logs its seed, map id, content hash and build identity, so a failing match can be replayed.
+**DBG-161** (MUST) A soak pass follows the rules of DEC-804: each entry names a map by stable map id, a mode, its bot teams and a seed, and the map's content hash is checked against the content manifest before the match runs (ADR-060); a pass runs every entry exactly once, from the first to the last; delays and timeouts are counted in ticks or in integer milliseconds of the platform clock; the soak state belongs to the `SoakRunner`, which creates and resets it; and each match logs its seed, map id, content hash and build identity, so a failing match can be replayed.
 
-**DBG-162** (MUST) The entries are built from the edition: one entry for every pair of a mode the edition enables (ADR-0056) and a map that match setup lists for it, plus the test maps the soak configuration names (DBG-148). The progression orders them: `Linear` in declared order; `Random` as a permutation drawn from `progression_seed`, which is logged; `Sequence` as the configuration's explicit list, each item naming an entry and a forced seed. A seed of 0 leaves the authority's own seed in place. The configuration also names the soak session name, which replaces `debug.soak_session_name`, and a termination tick (0 = off) at which every match ends. The reference builds the entries from every map list of its mode menu except one list that has no mode button, and its linear progression skips the first entry and reads past the last; DEC-804 fixes both.
+**DBG-162** (MUST) The entries are built from the edition: one entry for every pair of a mode the edition enables (ADR-056) and a map that match setup lists for it, plus the test maps the soak configuration names (DBG-148). The progression orders them: `Linear` in declared order; `Random` as a permutation drawn from `progression_seed`, which is logged; `Sequence` as the configuration's explicit list, each item naming an entry and a forced seed. A seed of 0 leaves the authority's own seed in place. The configuration also names the soak session name, which replaces `debug.soak_session_name`, and a termination tick (0 = off) at which every match ends. The reference builds the entries from every map list of its mode menu except one list that has no mode button, and its linear progression skips the first entry and reads past the last; DEC-804 fixes both.
 
 **DBG-163** (MUST) Before every step of the host, the authority's seed is set to the current entry's seed when that seed is not 0, and every participant sets its team name to the soak session name. The host then runs:
 
@@ -604,19 +604,19 @@ Caption: Diagram 4.9-B, the soak client (DBG-164).
 3. when the termination tick is set and reached: leaves the match, writes a report row and enters its end delay;
 4. at game over: leaves the match, writes a report row unless it is already in its end delay, and enters its end delay.
 
-**DBG-166** (MUST) The soak report has one row per match, after a header row, with these columns in this order: the UTC date and time; the pass's divergence count so far; the mode; the map id; the entry index; the seed; the previous entry index; the match time in ticks; the tick of the first divergence, or −1; then the content hash and the build identity (DEC-804); the crashes and the failed checks of the match; the simulation update-time percentiles of `dbg.telemetry.percentiles`; and the peak population (ADR-0070). The reference log has the first nine columns and writes the date in local time.
+**DBG-166** (MUST) The soak report has one row per match, after a header row, with these columns in this order: the UTC date and time; the pass's divergence count so far; the mode; the map id; the entry index; the seed; the previous entry index; the match time in ticks; the tick of the first divergence, or −1; then the content hash and the build identity (DEC-804); the crashes and the failed checks of the match; the simulation update-time percentiles of `dbg.telemetry.percentiles`; and the peak population (ADR-070). The reference log has the first nine columns and writes the date in local time.
 
 **DBG-167** (MUST) A crashed participant's dump is collected ([platform layer](platform_layer.md)), its row records the crash, and the runner continues with the next entry in a new process. Soak participants start with rendering and sound off; a rendered client toggles them with `action.debug.soak_rendering`. Once the transport exists, the soak runs with the link simulator of DEC-208 at the soak target that DEC-208 names.
 
 ### 4.10 Telemetry
 
-**DBG-180** (MUST) Telemetry is opt-in and off by default (ADR-0066): the first-run screen and the options screen ask, the choice is stored in the settings and can be withdrawn at any time, and withdrawing deletes the unsent records. With consent off, no request is made and nothing is queued.
+**DBG-180** (MUST) Telemetry is opt-in and off by default (ADR-066): the first-run screen and the options screen ask, the choice is stored in the settings and can be withdrawn at any time, and withdrawing deletes the unsent records. With consent off, no request is made and nothing is queued.
 
-**DBG-181** (MUST) The data set per session is fixed (ADR-0066): frame-time percentiles (`dbg.telemetry.percentiles`: 50th, 95th and 99th) rather than a frame-rate integer; simulation update-time percentiles; peak and mean entity counts; network bytes in and out per second and the round-trip latency; the build identity (ADR-0057); the active renderer settings and preset (RND-457); and a hardware summary read in-process (the adapter description and driver version, the processor and memory information of the operating system, and the display mode). Samples are taken every `dbg.telemetry.sample_period_ms` (1000 ms) and reduced to the percentiles at the end of the session. No player name, chat, account id or IP address is part of the data set.
+**DBG-181** (MUST) The data set per session is fixed (ADR-066): frame-time percentiles (`dbg.telemetry.percentiles`: 50th, 95th and 99th) rather than a frame-rate integer; simulation update-time percentiles; peak and mean entity counts; network bytes in and out per second and the round-trip latency; the build identity (ADR-057); the active renderer settings and preset (RND-457); and a hardware summary read in-process (the adapter description and driver version, the processor and memory information of the operating system, and the display mode). Samples are taken every `dbg.telemetry.sample_period_ms` (1000 ms) and reduced to the percentiles at the end of the session. No player name, chat, account id or IP address is part of the data set.
 
 **DBG-182** (MUST) Records are sent over HTTPS through the platform layer's HTTP client, batched and retried with back-off; at most `dbg.telemetry.queue_max_records` (16) unsent records are kept, the oldest dropped first. The client embeds no credential: a record carries the build identity and a random per-installation id that the player can reset. The collection service is a design-phase decision.
 
-**DBG-183** (MUST) The repeatable performance scene of ADR-0066 is a recorded match that the client runs headless or rendered and that reports the data set of DBG-181. Until the replay decision (DEC-046) gives Species recorded command streams, the scene is a bot-only match from a fixed match setup and seed on a test map.
+**DBG-183** (MUST) The repeatable performance scene of ADR-066 is a recorded match that the client runs headless or rendered and that reports the data set of DBG-181. Until the replay decision (DEC-046) gives Species recorded command streams, the scene is a bot-only match from a fixed match setup and seed on a test map.
 
 ### 4.11 Tuning table
 
@@ -734,7 +734,7 @@ A value whose notes say "Species" is a Species engine-baseline value; every othe
 | `dbg.soak.discovery_period_ms` | 3000 | ms | | DBG-164 | DEC-804 |
 | `dbg.soak.connect_timeout_ms` | 10 000 | ms | | DBG-164 | DEC-804 |
 | `dbg.soak.client_end_delay_ms` | 40 000 | ms | | DBG-164 | DEC-804 |
-| `dbg.telemetry.percentiles` | 50, 95, 99 | percentiles | Species; ADR-0066 | DBG-096, DBG-166, DBG-181 | — |
+| `dbg.telemetry.percentiles` | 50, 95, 99 | percentiles | Species; ADR-066 | DBG-096, DBG-166, DBG-181 | — |
 | `dbg.telemetry.sample_period_ms` | 1000 | ms | reference: one sample per second | DBG-181 | — |
 | `dbg.telemetry.queue_max_records` | 16 | session records | Species; oldest dropped | DBG-182 | DEC-250 |
 | `dbg.budget.log_call_us` | 1 | µs per call | Species; calling-thread cost, reference test machine | DBG-061, DBG-206 | — |
@@ -751,7 +751,7 @@ A value whose notes say "Species" is a Species engine-baseline value; every othe
 
 Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.frame.fps_window` and `ref.sim.frame.memory_log_interval` in [tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md); `ref.sim.handle.max_slots` and `ref.sim.handle.max_group_slots` in [entity model](../../reference/12_simulation_model/03_entity_model_and_identity.md); `ref.bot.link.range` in [navigation graph](../../reference/07_bots/01_navigation_graph.md); `rnd.budget.target_frame_rate` in [renderer options and budgets](renderer/options_and_budgets.md).
 
-**Development text.** Development captions are developer-facing, in the base language only, and live in a development string table that no player edition contains (ADR-0056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-0063):
+**Development text.** Development captions are developer-facing, in the base language only, and live in a development string table that no player edition contains (ADR-056). New text, keyed as follows; arguments are ICU MessageFormat arguments (ADR-063):
 
 | String id | Text |
 |---|---|
@@ -838,7 +838,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | H12 | Crawlers and creatures | a trail-sample history per Crawler; per-state searches | 10 Crawler markers |
 | H13 | bot placement loops | several bot target-area loops draw positions until one is valid, with no iteration limit: deterministic, but a frame hitch, or a hang on every participant, when an area has few or no valid points; DEC-014 bounds them | — |
 | H14 | audio | a 20 Hz logic update with sort and priority passes, run twice per frame below 15 frames per second | 15 audio markers |
-| H15 | log output | the reference opens and closes its log file on every line under a lock, and writes one line per frame in some states | — (ADR-0067 removes it) |
+| H15 | log output | the reference opens and closes its log file on every line under a lock, and writes one line per frame in some states | — (ADR-067 removes it) |
 | H16 | network | no bandwidth limiting or adaptation; messages above about 1,500 bytes are probably dropped on receipt and resent without end (DEC-207) | host markers |
 
 ### 5.4 Species budget baseline
@@ -856,16 +856,16 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | simulation tick | a fixed tick counted in ticks, 20 to 30 per second recommended (DEC-227), with the budget of DBG-205 | design phase |
 | population | DBG-204 | design phase (DEC-228) |
 | searches and grids | keep the staggered 11-to-20-tick task search; spatial queries exact, with no cache shortcut that changes a result, data-oriented (structure of arrays, vectorised over cell lists), with a query budget per tick | [space, routing and physics](../../reference/12_simulation_model/05_space_routing_and_physics.md), DEC-094 |
-| particles and visual effects | fixed-capacity pools with a hard cap and graceful level of detail, wholly outside the simulation | [animation and VFX](animation_and_vfx/README.md), ADR-0010 |
+| particles and visual effects | fixed-capacity pools with a hard cap and graceful level of detail, wholly outside the simulation | [animation and VFX](animation_and_vfx/README.md), ADR-010 |
 | rendering | instanced drawing, a fixed number of calls per instance type and pass, a per-frame budget; 60 frames per second at the design population on minimum-specification hardware | RND-454, RND-455, RND-456 |
 | catch-up | bounded in ticks per frame and shown to the player as a catching-up state | DEC-225 |
-| logging | asynchronous and buffered, per-category levels, no file opened per line | ADR-0067, §4.1 |
+| logging | asynchronous and buffered, per-category levels, no file opened per line | ADR-067, §4.1 |
 
-**DBG-208** (MUST) Performance tests run on the reference test machine in the nightly CI job `ci-nightly-performance`, together with the build budgets of [build tooling](build_tooling_and_distribution.md) table 5-A (BLD-117, ADR-0070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). A result above its budget fails the nightly job and never changes run-time behaviour.
+**DBG-208** (MUST) Performance tests run on the reference test machine in the nightly CI job `ci-nightly-performance`, together with the build budgets of [build tooling](build_tooling_and_distribution.md) table 5-A (BLD-117, ADR-070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). A result above its budget fails the nightly job and never changes run-time behaviour.
 
 ### 5.5 Reference test machine
 
-**DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build at the minimum of ADR-0050 and ADR-0002. Every performance budget of the component specifications refers to it, and a change of the machine re-baselines every recorded result. Its exact hardware is a design-phase input (DEC-228 items 6 and 7); until it is chosen, CI records the hardware of the agent that ran each performance job with the result. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
+**DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build at the minimum of ADR-050 and ADR-002. Every performance budget of the component specifications refers to it, and a change of the machine re-baselines every recorded result. Its exact hardware is a design-phase input (DEC-228 items 6 and 7); until it is chosen, CI records the hardware of the agent that ran each performance job with the result. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -905,7 +905,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | profile view, sound editor, sound statistics, network statistics | no; audio is outside the simulation | none | local, or the audio overlay page (rows 14, 15) |
 | narrator portrait in the sky | no: sky drawing only, on a real-time timer | none | not specified (DBG-120) |
 
-**DBG-222** (MUST) Crash capture is the platform layer's ([platform layer](platform_layer.md) PLT-117 to PLT-125, ADR-0065): this component supplies the black box (DBG-047) and the registered log file (DBG-049), and the CI-provided local-dump setting on test machines collects soak and test crashes (DBG-167). The dedicated-server crash path is a design-phase decision (ADR-0065).
+**DBG-222** (MUST) Crash capture is the platform layer's ([platform layer](platform_layer.md) PLT-117 to PLT-125, ADR-065): this component supplies the black box (DBG-047) and the registered log file (DBG-049), and the CI-provided local-dump setting on test machines collects soak and test crashes (DBG-167). The dedicated-server crash path is a design-phase decision (ADR-065).
 
 **DBG-223** (MUST) This component sends no telemetry other than the data set of DBG-181, and it sends that only with consent; component counters reach telemetry only through that data set (AEN-325, AST-126).
 
@@ -975,19 +975,19 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 **DBG-240** (MUST) No player-facing replay exists in the reference. Its development hook is the command-history recording of [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-740 to R-SIM-742, switched by `debug.command_history` (DBG-041): mode 1 saves, when a match hosted on this machine shuts down, a file holding the number of command frames and then every frame in sequence order, lobby commands and match start included; mode 2 loads such a file after a map has loaded and replaces the host's history, which the normal sending path then streams to the participants. The file has no version header and plays back only with identical code and data, the same team and participant layout, the same seed and no conflicting live commands; it holds no seed, so it does not reproduce a match (R-SIM-741). Species defines its own recording format with the replay decision (DEC-046).
 
-**DBG-241** (MUST) While `debug.command_history` is 1 or 2, every presentation frame advances by 1 ÷ `dbg.replay.capture_frame_rate` (1 ÷ 25 s) through the fixed-step clock source of ADR-0074, and the match is not held by pause. In the reference the fixed step also advances an unused fake clock while match time still reads the real clock; with the fixed-step source both read one time. Late joining by re-simulating the command stream from its first frame belongs to the networking model (DEC-200); the reference's other recording mechanisms (video capture, input-event logs, gesture recordings and the per-second performance recorder) are not specified (DEC-060).
+**DBG-241** (MUST) While `debug.command_history` is 1 or 2, every presentation frame advances by 1 ÷ `dbg.replay.capture_frame_rate` (1 ÷ 25 s) through the fixed-step clock source of ADR-074, and the match is not held by pause. In the reference the fixed step also advances an unused fake clock while match time still reads the real clock; with the fixed-step source both read one time. Late joining by re-simulating the command stream from its first frame belongs to the networking model (DEC-200); the reference's other recording mechanisms (video capture, input-event logs, gesture recordings and the per-second performance recorder) are not specified (DEC-060).
 
 ### 8.3 Design-phase inputs
 
 1. **Tick budget and stress population** (DEC-227, DEC-228): the per-tick CPU budget, per system and per region, its client and server forms, and the design and stress populations of DBG-204.
 2. **Performance envelope** (DEC-106): the measured cost at the population cap on the prototype, and whether the reference caps stand.
 3. **Reference test machine and server specification** (DBG-209): the client minimum-specification hardware and the named community-host specification.
-4. **Replays** (DEC-046): a formal replay file with build identity, content hashes, seed, team layout, command stream and periodic snapshots; the replay corpus as nightly regression tests (ADR-0070); its storage (DEC-250).
+4. **Replays** (DEC-046): a formal replay file with build identity, content hashes, seed, team layout, command stream and periodic snapshots; the replay corpus as nightly regression tests (ADR-070); its storage (DEC-250).
 5. **Divergence detection** (DEC-206) and **determinism scope** (DEC-240): whether the state hash of DBG-144 also runs in released builds, and which builds must agree bit for bit.
 6. **Network diagnostics** (DEC-208, DEC-201): the Species metric set, a view for many participants, the link simulator, and whether community operators receive the metrics as live telemetry.
 7. **Debug-command authority** (DEC-202): who may send a debug command in a world or skirmish session.
-8. **Process roles and threading** (DEC-220, DEC-224, DEC-225): the headless runner's process form, the job model whose task groups receive markers (ADR-0068), and catch-up pacing.
-9. **Field captures**: whether PIX markers stay in `Shipping` builds (ADR-0068, ADR-0056); the dedicated-server crash path (ADR-0065).
+8. **Process roles and threading** (DEC-220, DEC-224, DEC-225): the headless runner's process form, the job model whose task groups receive markers (ADR-068), and catch-up pacing.
+9. **Field captures**: whether PIX markers stay in `Shipping` builds (ADR-068, ADR-056); the dedicated-server crash path (ADR-065).
 10. **Build order** (DEC-229): QA and performance work from the simulation core onward, with the nightly soak and the replay corpus as its first milestone.
 11. **Test maps** (DEC-802): the visibility field that keeps soak and stress maps out of player editions.
 12. **World persistence** (DEC-251): round-trip and migration tests of the world database.

@@ -1,6 +1,6 @@
 # Particles, shatter and screen effects
 
-> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-0010](../../../adr/0010-gpu-particles-and-shatter-debris.md) · [ADR-0036](../../../adr/0036-effect-events-and-presentation-clock.md) · [ADR-0003](../../../adr/0003-shader-language-compiler-and-material-shaders.md) · [ADR-0008](../../../adr/0008-gpu-memory-uploads-and-device-removal.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0011](../../../adr/0011-world-surface-rendering.md) · [ADR-0015](../../../adr/0015-scene-anti-aliasing.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md) · Related: [Animation and VFX](README.md) · [Explainers, sprites and procedural animation](explainers_sprites_and_procedural_animation.md) · [Frame graph and passes](../renderer/frame_graph_and_passes.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Weapons and projectiles](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)
+> Status: Engine baseline · Prefix: VFX · ADRs: [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md) · [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-008](../../../ADR/ADR-008-gpu-memory-uploads-and-device-removal.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · Related: [Animation and VFX](README.md) · [Explainers, sprites and procedural animation](explainers_sprites_and_procedural_animation.md) · [Frame graph and passes](../renderer/frame_graph_and_passes.md) · [Entity and overlay renderers](../renderer/entity_and_overlay_renderers.md) · [Weapons and projectiles](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)
 
 This document specifies the particle pool and its particle types, their integration, caps, level of detail and drawing; the effect kinds that the simulation raises and what each one shows; the presentation emitters; the drawing of muzzle flashes, pulse waves, weather objects and Essence orbs; the shatter effects; and camera shake and full-screen flashes. The clocks, the presentation generators and the frame step are those of the [folder README](README.md).
 
@@ -68,16 +68,16 @@ Particles have no spin, no fade-in and no type-specific fade-out: the fade of VF
 
 ### 3.2 Shatter records
 
-**VFX-204** (MUST) A shatter explosion (`ShatterExplosion`) is the set of released triangles of one mesh node. It holds `vfx.shatter.tumblers` (5) shard tumblers, each a rotation and an angular velocity shared by the shards that use it, its death time on the unscaled presentation clock, and one shard record per released triangle: the triangle's three corners relative to its centre, its facet normal, its facet colour (with the team tint applied, ADR-0020), its centre position, its velocity and its tumbler index. All shards of an explosion die together at its death time.
+**VFX-204** (MUST) A shatter explosion (`ShatterExplosion`) is the set of released triangles of one mesh node. It holds `vfx.shatter.tumblers` (5) shard tumblers, each a rotation and an angular velocity shared by the shards that use it, its death time on the unscaled presentation clock, and one shard record per released triangle: the triangle's three corners relative to its centre, its facet normal, its facet colour (with the team tint applied, ADR-020), its centre position, its velocity and its tumbler index. All shards of an explosion die together at its death time.
 
 
 ## 4 Behaviour and algorithms
 
 ### 4.1 The particle pool
 
-**VFX-205** (MUST) One particle pool (`ParticlePool`) exists per client process. It is created at start-up and emptied at match teardown, so it holds particles of the current match only (R-SIM-005). It is simulated on the GPU (ADR-0010): every live particle sits in one structured buffer with a free list and a live list managed by compute work, and every particle's type parameters come from one parameter buffer built from the effect definitions ([README.md](README.md) VFX-013).
+**VFX-205** (MUST) One particle pool (`ParticlePool`) exists per client process. It is created at start-up and emptied at match teardown, so it holds particles of the current match only (R-SIM-005). It is simulated on the GPU (ADR-010): every live particle sits in one structured buffer with a free list and a live list managed by compute work, and every particle's type parameters come from one parameter buffer built from the effect definitions ([README.md](README.md) VFX-013).
 
-**VFX-206** (MUST) Each frame the runtime writes the frame's emission requests into an upload buffer (ADR-0008); an emit pass allocates their slots from the free list, and a request that finds no slot under the caps of §4.4 is dropped. No simulation code can read particle state: the pool offers only emission, simulation, drawing, emptying and a development read-back of its counts.
+**VFX-206** (MUST) Each frame the runtime writes the frame's emission requests into an upload buffer (ADR-008); an emit pass allocates their slots from the free list, and a request that finds no slot under the caps of §4.4 is dropped. No simulation code can read particle state: the pool offers only emission, simulation, drawing, emptying and a development read-back of its counts.
 
 ```mermaid
 flowchart LR
@@ -129,7 +129,7 @@ Each type's keys are `.life`, `.size`, `.gravity`, `.friction` and `.colours` (�
 
 ### 4.3 Integration
 
-**VFX-209** (MUST) The simulate pass advances every live particle in fixed sub-steps of h = `vfx.particle.sub_step` (1/60 s of scaled presentation time), as many as the frame's scaled clock advance holds and at most `vfx.particle.max_sub_steps` (30) per frame, which covers a 0.25 s frame at the highest game speed, 2.0 (`ref.sim.speed.time_rush_min` + `ref.sim.speed.time_rush_spread`), carrying the remainder to the next frame (ADR-0010). Particle motion is therefore independent of the simulation tick and of the frame rate.
+**VFX-209** (MUST) The simulate pass advances every live particle in fixed sub-steps of h = `vfx.particle.sub_step` (1/60 s of scaled presentation time), as many as the frame's scaled clock advance holds and at most `vfx.particle.max_sub_steps` (30) per frame, which covers a 0.25 s frame at the highest game speed, 2.0 (`ref.sim.speed.time_rush_min` + `ref.sim.speed.time_rush_spread`), carrying the remainder to the next frame (ADR-010). Particle motion is therefore independent of the simulation tick and of the frame rate.
 
 **VFX-210** (MUST) Each sub-step, with T = `ref.sim.tick_period` (0.1 s), the reference integration step at game speed 1, P the scaled presentation time and H, N the terrain height and normal sampled from `terrain_heights` (RND-063, [terrain.md](../terrain.md)):
 
@@ -157,7 +157,7 @@ With h = T this reproduces the reference trajectories exactly at game speed 1: f
 
 ### 4.4 Caps, priorities and level of detail
 
-**VFX-212** (MUST) The pool holds at most `vfx.particle.pool_capacity` (65 536) live particles, and each type at most `vfx.particle.type_cap` (16 384) unless its effect definition sets a lower cap; both are fixed capacities allocated at load (DEC-228). The types fall into the priority classes of table 4.2-A: 0 command feedback, 1 combat and hazards, 2 trails and engines, 3 ambient. A particle of class *c* is allocated only while the pool's live count is below its capacity × the class's fill limit `vfx.particle.class_fill_limits` (1.0, 0.95, 0.9, 0.8), so that, as the pool fills, ambient particles are dropped first and command feedback last (ADR-0010). A dropped emission is not retried.
+**VFX-212** (MUST) The pool holds at most `vfx.particle.pool_capacity` (65 536) live particles, and each type at most `vfx.particle.type_cap` (16 384) unless its effect definition sets a lower cap; both are fixed capacities allocated at load (DEC-228). The types fall into the priority classes of table 4.2-A: 0 command feedback, 1 combat and hazards, 2 trails and engines, 3 ambient. A particle of class *c* is allocated only while the pool's live count is below its capacity × the class's fill limit `vfx.particle.class_fill_limits` (1.0, 0.95, 0.9, 0.8), so that, as the pool fills, ambient particles are dropped first and command feedback last (ADR-010). A dropped emission is not retried.
 
 **VFX-213** (MUST) Emission is scaled down with camera distance d from the emission point: a burst of n particles emits n × clamp((`vfx.particle.lod.cutoff_distance` (8000 wu) − d) ÷ (`vfx.particle.lod.cutoff_distance` − `vfx.particle.lod.full_distance` (4000 wu)), 0, 1) particles, the fractional part kept by a presentation draw, so nothing is emitted beyond the cut-off distance. An effect definition may set its own distances for a type. Particles of the presentation emitters of §4.8 are not scaled.
 
@@ -165,7 +165,7 @@ With h = T this reproduces the reference trajectories exactly at game speed 1: f
 
 ### 4.5 Drawing
 
-**VFX-215** (MUST) Particles are drawn in pass 15 at the frame's presentation time (ADR-0010): each at its integrated position + its velocity × the sub-step remainder, with age = scaled presentation time − birth. Their alpha, of 255, is `vfx.particle.alpha` (90) while age < `vfx.particle.fade_start` (0.75) × life, and then 90 − 90 × (age − 0.75 × life) ÷ (0.25 × life), truncated to an integer and floored at 0: a linear fade over the last quarter of life and no fade-in.
+**VFX-215** (MUST) Particles are drawn in pass 15 at the frame's presentation time (ADR-010): each at its integrated position + its velocity × the sub-step remainder, with age = scaled presentation time − birth. Their alpha, of 255, is `vfx.particle.alpha` (90) while age < `vfx.particle.fade_start` (0.75) × life, and then 90 − 90 × (age − 0.75 × life) ÷ (0.25 × life), truncated to an integer and floored at 0: a linear fade over the last quarter of life and no fade-in.
 
 **VFX-216** (MUST) With the camera up and right vectors U and R each scaled by size ÷ `vfx.particle.size_divisor`, a particle's quad has the corners p − U (texture coordinates 0, 0), p + R (0, 1), p + U (1, 1) and p − R (1, 0), a diamond.
 
@@ -272,7 +272,7 @@ Every sound that accompanies these effects is a sound event of its owner's rule 
 
 ### 4.10 Shatter effects
 
-**VFX-226** (MUST) The shatter effects (`ShatterEffects`) turn a shatter request (mesh, transform, fraction, palette index) into tumbling shards (ADR-0010). They use the unscaled presentation clock and the presentation generator; nothing in the simulation reads them; they do not advance while the world is held; and they are reset at match teardown (R-SIM-005). Their constants are:
+**VFX-226** (MUST) The shatter effects (`ShatterEffects`) turn a shatter request (mesh, transform, fraction, palette index) into tumbling shards (ADR-010). They use the unscaled presentation clock and the presentation generator; nothing in the simulation reads them; they do not advance while the world is held; and they are reset at match teardown (R-SIM-005). Their constants are:
 
 | Quantity | Key | Value |
 |---|---|---|
@@ -310,18 +310,18 @@ ShatterExplosion(node, T, fraction):
         if any two corners are equal: continue
         if |v1 - v2| + |v2 - v3| + |v3 - v1| < vfx.shatter.min_perimeter: continue
         c = (v1 + v2 + v3) * vfx.shatter.centre_factor
-        store the corners minus c, the facet normal and the tinted facet colour (ADR-0020)
+        store the corners minus c, the facet normal and the tinted facet colour (ADR-020)
         velocity = (c - nodeCentre) * vfx.shatter.initial_speed; velocity.y += vfx.shatter.rise
         position = c; tumbler = NextUint() mod 5
         keep the shard
         if j > vfx.shatter.triangle_cap_index: stop
 ```
 
-A node therefore releases at most 502 shards: those of source indices 0 to 500 and the first kept one beyond. A fraction of 1 or more releases every triangle, so a wall's 3.0 and a damage fraction of 1.0 both shatter the whole mesh, and a lightly damaged actor sheds a few shards. The facet normal is the cooked facet normal (ADR-0020); no per-index sign correction applies, because cooked meshes have one winding. An explosion with no kept shard is not drawn.
+A node therefore releases at most 502 shards: those of source indices 0 to 500 and the first kept one beyond. A fraction of 1 or more releases every triangle, so a wall's 3.0 and a damage fraction of 1.0 both shatter the whole mesh, and a lightly damaged actor sheds a few shards. The facet normal is the cooked facet normal (ADR-020); no per-index sign correction applies, because cooked meshes have one winding. An explosion with no kept shard is not drawn.
 
 **VFX-228** (MUST) Every frame, with Δ the unscaled step, a compute pass advances each tumbler by rotation ← rotation × R(angular velocity × Δ) and angular velocity × (1 − `vfx.shatter.spin_drag` × Δ), and each shard by position += velocity × Δ, then velocity × (1 − min(1, |velocity| × `vfx.shatter.drag` × Δ)), then velocity.y −= `vfx.shatter.gravity` × Δ. Shards do not collide with the terrain; they fall through it. An explosion is finished, and freed, when the unscaled time passes its death time.
 
-**VFX-229** (MUST) Pass 14 draws each explosion as one instanced draw of its shards with `shard_lit` (VFX-014), the object lighting and the depth test and write on. A shard's corner is rotation × corner + position and its normal rotation × facet normal, with rotation its tumbler's; its colour is its facet colour at alpha 1 − age, with age = (`vfx.shatter.lifetime` + now − death time) ÷ `vfx.shatter.lifetime`, so it fades linearly over its life. The edge mask gives every shard white edge lines: with *m* the smallest barycentric coordinate of the fragment and *e* = 1 − smoothstep(0, `vfx.shatter.edge_width` (1 ÷ 64), *m*), widened with screen-space derivatives so that the lines do not alias (ADR-0003, ADR-0015), the fragment colour is lerp(lit facet colour, white, *e*) with the shard's alpha; the lines are unlit. No edge texture is sampled at run time (ADR-0010); the edge pattern `fx.shard_edges` is the art reference against which the edge mask is checked (T15).
+**VFX-229** (MUST) Pass 14 draws each explosion as one instanced draw of its shards with `shard_lit` (VFX-014), the object lighting and the depth test and write on. A shard's corner is rotation × corner + position and its normal rotation × facet normal, with rotation its tumbler's; its colour is its facet colour at alpha 1 − age, with age = (`vfx.shatter.lifetime` + now − death time) ÷ `vfx.shatter.lifetime`, so it fades linearly over its life. The edge mask gives every shard white edge lines: with *m* the smallest barycentric coordinate of the fragment and *e* = 1 − smoothstep(0, `vfx.shatter.edge_width` (1 ÷ 64), *m*), widened with screen-space derivatives so that the lines do not alias (ADR-003, ADR-015), the fragment colour is lerp(lit facet colour, white, *e*) with the shard's alpha; the lines are unlit. No edge texture is sampled at run time (ADR-010); the edge pattern `fx.shard_edges` is the art reference against which the edge mask is checked (T15).
 
 **VFX-230** (MUST) The live explosions hold at most `vfx.shatter.max_explosions` (1024) explosions and `vfx.shatter.max_shards` (131 072) shards, fixed capacities allocated at load (DEC-228); a new explosion that does not fit retires the oldest live explosions until it fits.
 
@@ -351,7 +351,7 @@ Table 4.10-A Shatter sources.
 
 ### 4.11 Camera shake and full-screen flashes
 
-**VFX-232** (MUST) Camera shake is one scalar of this component's screen effects. A request of intensity i sets shake := max(shake, i), so requests never accumulate and a request repeated every frame has the effect of one; while shake is above 0 it falls by 1 per second of unscaled presentation time (R-CTRL-463). At each step of [README.md](README.md) VFX-018 the screen effects draw a yaw and a roll from the presentation generator by `ref.ctrl.camera.shake` (yaw `FxRng::NextSigned`(0.05 × shake) rad, roll 0.3 × `FxRng::NextSigned`(shake) rad) and hold them until the next step; the camera turns its front by the yaw about the world vertical and rolls its up vector about the front by the roll, re-orthogonalises, and applies the result as an additive rotation offset of the frame's view, never stored in its state (ADR-0036). The offset is scaled by the motion setting: × 1 at full motion and × `vfx.screen.reduced_motion_scale` (0.25) with reduced motion (ADR-0064).
+**VFX-232** (MUST) Camera shake is one scalar of this component's screen effects. A request of intensity i sets shake := max(shake, i), so requests never accumulate and a request repeated every frame has the effect of one; while shake is above 0 it falls by 1 per second of unscaled presentation time (R-CTRL-463). At each step of [README.md](README.md) VFX-018 the screen effects draw a yaw and a roll from the presentation generator by `ref.ctrl.camera.shake` (yaw `FxRng::NextSigned`(0.05 × shake) rad, roll 0.3 × `FxRng::NextSigned`(shake) rad) and hold them until the next step; the camera turns its front by the yaw about the world vertical and rolls its up vector about the front by the roll, re-orthogonalises, and applies the result as an additive rotation offset of the frame's view, never stored in its state (ADR-036). The offset is scaled by the motion setting: × 1 at full motion and × `vfx.screen.reduced_motion_scale` (0.25) with reduced motion (ADR-064).
 
 **VFX-233** (MUST) The shake sources are exactly:
 
@@ -369,7 +369,7 @@ Table 4.10-A Shatter sources.
 | a shockwave ring | its first `ref.weapon.shockwave.flash_time` (0.1 s), age taken with the extrapolation time | (1 − age ÷ 0.1) × max(0, 1 − distance to the camera ÷ `ref.weapon.shockwave.flash_range` (500 wu)) | its centre in the view frustum; not game over; not paused |
 | the Core Device pulse wave | its first `ref.weapon.pulse_wave.flash_time` (0.3 s) of unscaled presentation time | `vfx.screen.pulse_flash_alpha` (1); the distance factor is not applied | not game over |
 
-**VFX-235** (MUST) Flashes obey the photosensitivity rule (ADR-0064, RND-248): a flash whose alpha reaches `vfx.screen.flash_count_threshold` (0.1), a luminance change of 10 %, counts as a flash onset; at most `vfx.screen.flash_onsets` (3) onsets are shown in any `vfx.screen.flash_window` (1 s) of real time, and a further onset inside the window is not drawn. The reduced-flash setting multiplies every flash alpha by `vfx.screen.reduced_flash_scale` (0.25). The settings themselves are stored by the settings store, and this component reads them (RND-440).
+**VFX-235** (MUST) Flashes obey the photosensitivity rule (ADR-064, RND-248): a flash whose alpha reaches `vfx.screen.flash_count_threshold` (0.1), a luminance change of 10 %, counts as a flash onset; at most `vfx.screen.flash_onsets` (3) onsets are shown in any `vfx.screen.flash_window` (1 s) of real time, and a further onset inside the window is not drawn. The reduced-flash setting multiplies every flash alpha by `vfx.screen.reduced_flash_scale` (0.25). The settings themselves are stored by the settings store, and this component reads them (RND-440).
 
 ### 4.12 Other screen-space effects
 
@@ -377,7 +377,7 @@ Table 4.10-A Shatter sources.
 
 ## 5 Concurrency and performance budget
 
-**VFX-237** (MUST) The per-frame GPU work of this document is a fixed set of dispatches and draws: one emit, one or more simulate sub-steps, one compact and one shard update dispatch, the two particle batches of pass 15 and one `ExecuteIndirect` call in pass 14 whose argument buffer holds one instanced draw per live explosion, so the number of calls never grows with the number of particles or explosions (RND-455, ADR-0010). Its cost belongs to the effect pass group of RND-454 and is bounded by the caps of VFX-212 and VFX-230.
+**VFX-237** (MUST) The per-frame GPU work of this document is a fixed set of dispatches and draws: one emit, one or more simulate sub-steps, one compact and one shard update dispatch, the two particle batches of pass 15 and one `ExecuteIndirect` call in pass 14 whose argument buffer holds one instanced draw per live explosion, so the number of calls never grows with the number of particles or explosions (RND-455, ADR-010). Its cost belongs to the effect pass group of RND-454 and is bounded by the caps of VFX-212 and VFX-230.
 
 ## 6 Failure modes, diagnostics and telemetry
 
@@ -390,7 +390,7 @@ Table 4.10-A Shatter sources.
 | more flash onsets than the photosensitivity limit | the extra onsets are not drawn | VFX-235 |
 | a terrain height field is not yet resident | particles with a terrain rule fall without terrain contact until it is | VFX-210 |
 
-Diagnostics: the counts of live and dropped particles per type and class, live explosions and shards, the shake scalar and the flash onsets of the last second, in the development overlay (ADR-0068).
+Diagnostics: the counts of live and dropped particles per type and class, live explosions and shards, the shake scalar and the flash onsets of the last second, in the development overlay (ADR-068).
 
 ## 7 Acceptance tests
 
@@ -425,7 +425,7 @@ Diagnostics: the counts of live and dropped particles per type and class, live e
 | DEC-461 | Resolved | turret casings from each turret's own sockets (VFX-219) |
 | DEC-562 | Open | per-map weather switches or presets (VFX-224) |
 | DEC-059 | Dropped | no screen-space distortion or pixelation (VFX-236) |
-| ADR-0010, ADR-0036, ADR-0064 | Accepted, Accepted, Proposed | the particle pool and shard buffers; effect events and the presentation clock; photosensitivity and motion settings |
+| ADR-010, ADR-036, ADR-064 | Accepted, Accepted, Proposed | the particle pool and shard buffers; effect events and the presentation clock; photosensitivity and motion settings |
 
 The design-phase inputs of this component are listed in the [folder README](README.md) §8.
 

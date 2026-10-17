@@ -1,6 +1,6 @@
 # Data schemas
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · [ADR-0060](../../../adr/0060-content-identity-by-hash.md) · [ADR-0058](../../../adr/0058-pack-files-and-mount-policy.md) · [ADR-0063](../../../adr/0063-localisation.md) · [ADR-0055](../../../adr/0055-dependencies-vcpkg-manifest-mode.md) · [ADR-0056](../../../adr/0056-editions-build-flavours-and-feature-flags.md) · [ADR-0057](../../../adr/0057-version-identity.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0019](../../../adr/0019-mesh-source-format-and-cooked-meshes.md) · [ADR-0021](../../../adr/0021-mesh-socket-schema.md) · [ADR-0029](../../../adr/0029-input-event-model-and-binding-contract.md) · [ADR-0069](../../../adr/0069-test-framework.md) · [ADR-0071](../../../adr/0071-install-layout-runtime-files-and-user-data.md) · [ADR-0076](../../../adr/0076-screenshot-encoding.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [terrain](../terrain.md) · [audio engine](../audio_engine.md) · [input](../input.md) · [UI framework](../ui_framework/README.md) · [camera and sequences](../camera_and_sequences.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-058](../../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-063](../../../ADR/ADR-063-localisation.md) · [ADR-055](../../../ADR/ADR-055-dependencies-vcpkg-manifest-mode.md) · [ADR-056](../../../ADR/ADR-056-editions-build-flavours-and-feature-flags.md) · [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-021](../../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md) · [ADR-069](../../../ADR/ADR-069-test-framework.md) · [ADR-071](../../../ADR/ADR-071-install-layout-runtime-files-and-user-data.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md) · Related: [asset pipeline and resources](../asset_pipeline_and_resources.md) · [terrain](../terrain.md) · [audio engine](../audio_engine.md) · [input](../input.md) · [UI framework](../ui_framework/README.md) · [camera and sequences](../camera_and_sequences.md)
 
 This folder specifies the Species data schemas: how every kind of Species content record is defined, authored, validated, cooked, versioned, written back and loaded. A schema here is typed, versioned and validated; it binds every field by name, never by its position in a row or a block; it has no sentinel values; and no authoring mistake, a blank line included, can stop a loader. The meaning of each field stays with the document that owns the mechanic, and the schemas use that document's field names.
 
@@ -31,23 +31,23 @@ flowchart LR
   WR["Canonical writer: map tools, schema migration, settings store"] --> SRC
 ```
 
-Caption: Figure 0-A, the path of a record from its authoring file to a loaded record view, and the writer that produces authoring files (ADR-0059, ADR-0061, DEC-800).
+Caption: Figure 0-A, the path of a record from its authoring file to a loaded record view, and the writer that produces authoring files (ADR-059, ADR-061, DEC-800).
 
 ## 1 Responsibilities and boundaries
 
-**DAT-001** (MUST) This component owns: the schema language subset and its Species annotations; the logical field types and the presence rules; the registry of record types, with their schema ids, versions, cooked content types and simulation-relevant flags; the strict authoring parser; the schema, duplicate, length and reference validators; the cooked record format and the record loaders; the canonical writer; the migration step of the content build; and the diagnostics of all of these. Each record type has exactly one schema, which the content build, the map editor and the runtime share (ADR-0061, ADR-0059).
+**DAT-001** (MUST) This component owns: the schema language subset and its Species annotations; the logical field types and the presence rules; the registry of record types, with their schema ids, versions, cooked content types and simulation-relevant flags; the strict authoring parser; the schema, duplicate, length and reference validators; the cooked record format and the record loaders; the canonical writer; the migration step of the content build; and the diagnostics of all of these. Each record type has exactly one schema, which the content build, the map editor and the runtime share (ADR-061, ADR-059).
 
 **DAT-002** (MUST) The meaning of a field, its rule and its default value belong to the document that owns the mechanic. A schema of this folder gives the field its key, logical type, unit, presence rule and range, and cites the owner's tuning key for its default instead of defining a second one. A field key is the owner's field name written in lower-case snake_case; where an owner gives no name, the key chosen here is listed in the field table and is used by every tool.
 
 **DAT-003** (MUST NOT) This component defines no network message format, no transport container and no format for state that a running game writes about a world or a match: saved worlds, replays, achievement progress and the synchronisation of settings are design-phase topics (DEC-207, DEC-250, DEC-251). The runtime-written files this folder specifies are the settings file of [config_input_and_strings.md](config_input_and_strings.md), whose versioning is DEC-250's, and the soak report and the telemetry session record of [test_and_telemetry_records.md](test_and_telemetry_records.md), which are diagnostic output, not match state. The custom-map container is recorded as a hook only ([map_schema.md](map_schema.md)).
 
-**DAT-004** (MUST NOT) No client and no server parses authoring text at run time. Loaders read cooked records only, check their header, version and hash, and never accept text (ADR-0061). No reference data file, archive or tool output is imported into Species content (DEC-340).
+**DAT-004** (MUST NOT) No client and no server parses authoring text at run time. Loaders read cooked records only, check their header, version and hash, and never accept text (ADR-061). No reference data file, archive or tool output is imported into Species content (DEC-340).
 
 **DAT-005** (MUST) Loaded records are immutable. A record view holds no simulation, match or session state, so one loaded record set can be shared by every state owner of a process, a skirmish match beside a world region included, and nothing loaded from content is ever reset between matches (DEC-223, DEC-011).
 
-**DAT-006** (MUST) The record types of Species content are those of table 1-A. A file under the content root that holds a record of no registered type, or of a type other than the one its folder holds, is a build error (ADR-0059). The folders under `content/` that are not yet listed in [GameAssets §2.1](../../../assets/GameAssets.md#21-content-root-and-folders) are proposed in this table as `content/records/<family>/`.
+**DAT-006** (MUST) The record types of Species content are those of table 1-A. A file under the content root that holds a record of no registered type, or of a type other than the one its folder holds, is a build error (ADR-059). The folders under `content/` that are not yet listed in [GameAssets §2.1](../../../assets/GameAssets.md#21-content-root-and-folders) are proposed in this table as `content/records/<family>/`.
 
-Table 1-A Record-type registry. "Sim" marks the record types whose cooked entries carry the simulation-relevant flag (AST-098, ADR-0060). "Fields" names the document that lists the fields: this folder, or the component that owns them.
+Table 1-A Record-type registry. "Sim" marks the record types whose cooked entries carry the simulation-relevant flag (AST-098, ADR-060). "Fields" names the document that lists the fields: this folder, or the component that owns them.
 
 | Record type (schema id) | Content | Authoring source | Cooked entry | Sim | Fields |
 |---|---|---|---|---|---|
@@ -79,7 +79,7 @@ Table 1-A Record-type registry. "Sim" marks the record types whose cooked entrie
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation (ADR-0052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator (ADR-0062); generated files are build outputs and are never edited.
+The interface below is a C++23 declaration sketch, not an implementation (ADR-052). The schema registry, the record types and their loaders are generated from the schemas by the Species code generator (ADR-062); generated files are build outputs and are never edited.
 
 ```cpp
 namespace species::data {
@@ -114,7 +114,7 @@ struct RecordSchema {
   SchemaVersion version;
   std::span<const FieldSpec> fields;      // schema order = canonical write order (DAT-042)
   bool simulationRelevant;
-  ContentType cookedAs;                   // the pack content type (ADR-0058)
+  ContentType cookedAs;                   // the pack content type (ADR-058)
 };
 
 class SchemaRegistry {                    // generated, compiled into every product
@@ -176,7 +176,7 @@ public:
 
 **Events.** The component raises no gameplay or presentation events. In `Debug` and `Development` builds a changed record reloads through the asset cache's `AssetReloaded` notification ([asset pipeline](../asset_pipeline_and_resources.md) §2.2), and the reader of the record type decides whether it can take the new version while a match runs.
 
-**Data contracts.** A cooked record entry is the header of DAT-014 followed by the generated payload of its schema version. The pack table of contents carries the schema id and version of every data entry (ADR-0058). The content manifest lists every entry with its hash and its simulation-relevant flag (ADR-0060).
+**Data contracts.** A cooked record entry is the header of DAT-014 followed by the generated payload of its schema version. The pack table of contents carries the schema id and version of every data entry (ADR-058). The content manifest lists every entry with its hash and its simulation-relevant flag (ADR-060).
 
 **Threading contract.** The parser, the validator and the cooker run on the content build's worker threads, one authoring file per task; their output does not depend on the number of threads or on task order (DAT-048). Loaders run on the loading thread (DEC-226); a loaded record view is read-only and may be read from any thread without a lock. The canonical writer of a running program, the map editor's or the settings store's, runs on the thread that owns the edited data and writes the file from a worker without blocking a frame.
 
@@ -216,7 +216,7 @@ Table 3.1-A Logical field types.
 
 **DAT-009** (MUST) Every text field and every id has a maximum length that its schema declares; the validator enforces it with the file, line, column and field, and refuses a longer value instead of truncating it (DEC-801 item 5). The maxima are the owning documents' where they state one, for example `ref.map.header.name_max_chars` and `ref.map.camera.view_name_max_chars` of [maps](../../../reference/08_maps_and_level_design/rules_and_conventions.md) and `ui.lang.max_id_length` of the [UI framework](../ui_framework/layout_rendering_input_and_localisation.md); otherwise `dat.id.max_chars` (64) for ids and `dat.text.max_chars` (1,024) for text. Content keys are bounded by `ast.pack.max_key_bytes` of the [asset pipeline](../asset_pipeline_and_resources.md) (AST-014). No cooked or loaded structure holds content text in a fixed-size buffer.
 
-**DAT-010** (MUST) A simulation decimal declares its precision. Until the design phase decides the numeric model (DEC-240), the precision is that of the reference semantics of DEC-241: a simulation-feeding decimal is parsed to binary64 by one platform-independent, correctly rounded conversion, rounded once to binary32 and widened back, and a few fields keep the full binary64 value, each marked "binary64" in its field table (for example the Control Zone size and the bot navigation node's priority modifier). The rounding happens once, in the content build; clients and servers never parse content numbers, so every process reads the same bits (ADR-0061, DEC-241 item 12).
+**DAT-010** (MUST) A simulation decimal declares its precision. Until the design phase decides the numeric model (DEC-240), the precision is that of the reference semantics of DEC-241: a simulation-feeding decimal is parsed to binary64 by one platform-independent, correctly rounded conversion, rounded once to binary32 and widened back, and a few fields keep the full binary64 value, each marked "binary64" in its field table (for example the Control Zone size and the bot navigation node's priority modifier). The rounding happens once, in the content build; clients and servers never parse content numbers, so every process reads the same bits (ADR-061, DEC-241 item 12).
 
 ### 3.2 Presence and defaults
 
@@ -231,17 +231,17 @@ Table 3.1-A Logical field types.
 
 **DAT-012** (MUST) A defaulted field that the authoring file omits takes the declared default of its schema, and only that value: no loader substitutes 0, an empty value or the caller's own fallback for an omitted field (DEC-567, DEC-073). Each record type has one defaults table, generated from its schema, whose values are the owners' tuning keys named in the field tables. The settings defaults are compiled into every product, so they exist before any pack is mounted (DEC-100).
 
-**DAT-013** (MUST) A list field declares whether its order carries meaning. An ordered list is cooked in authored order and keeps it, as the structure records of a map do (R-MAP-104) and the keys of an explainer object do (R-META-226). An unordered list, and every keyed collection of records, is cooked in byte-wise order of its keys, so reordering it in the authoring file changes no cooked byte (ADR-0061). An enumeration whose order carries meaning, such as the outcome order of [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-007 or the effect-kind order of [reference/10](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-077, declares that order in its schema, never through the order of records in a file.
+**DAT-013** (MUST) A list field declares whether its order carries meaning. An ordered list is cooked in authored order and keeps it, as the structure records of a map do (R-MAP-104) and the keys of an explainer object do (R-META-226). An unordered list, and every keyed collection of records, is cooked in byte-wise order of its keys, so reordering it in the authoring file changes no cooked byte (ADR-061). An enumeration whose order carries meaning, such as the outcome order of [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-007 or the effect-kind order of [reference/10](../../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-077, declares that order in its schema, never through the order of records in a file.
 
 ### 3.3 Schemas, annotations and the authoring syntax
 
-**DAT-014** (MUST) A cooked record entry starts with a header that holds: the schema id of table 1-A as a length-prefixed UTF-8 string; the schema version (major, minor); the payload length in bytes; and the number of records in the payload. Every multi-byte value of a cooked record is little-endian; the payload holds no pointer and no host-dependent value, only offsets relative to the payload, so the same bytes are valid on every platform that reads the packs (ADR-0058, DEC-240 item 10). No cooked record carries a magic number of its own: the pack header carries the format identity (ADR-0058).
+**DAT-014** (MUST) A cooked record entry starts with a header that holds: the schema id of table 1-A as a length-prefixed UTF-8 string; the schema version (major, minor); the payload length in bytes; and the number of records in the payload. Every multi-byte value of a cooked record is little-endian; the payload holds no pointer and no host-dependent value, only offsets relative to the payload, so the same bytes are valid on every platform that reads the packs (ADR-058, DEC-240 item 10). No cooked record carries a magic number of its own: the pack header carries the format identity (ADR-058).
 
-**DAT-015** (MUST) Each record type is defined by one JSON Schema document in the restricted subset of ADR-0062 (object, array, string, integer, number, boolean, enumeration and reference), with the `$schema` keyword pinned to the draft `dat.schema.draft` (2020-12). Species annotations use the prefix `x-species-` and are, exactly: `x-species-type` (the logical type of table 3.1-A), `x-species-unit`, `x-species-precision` (`binary32-rounded` or `binary64`), `x-species-presence`, `x-species-ref` (the record type or asset category of a reference), `x-species-order` (`meaningful` or `none`), `x-species-max-chars`, `x-species-default-key` (the owner's tuning key) and `x-species-sim` (the simulation-relevant flag of the record type). The code generator rejects a schema that uses any other keyword or annotation (ADR-0062).
+**DAT-015** (MUST) Each record type is defined by one JSON Schema document in the restricted subset of ADR-062 (object, array, string, integer, number, boolean, enumeration and reference), with the `$schema` keyword pinned to the draft `dat.schema.draft` (2020-12). Species annotations use the prefix `x-species-` and are, exactly: `x-species-type` (the logical type of table 3.1-A), `x-species-unit`, `x-species-precision` (`binary32-rounded` or `binary64`), `x-species-presence`, `x-species-ref` (the record type or asset category of a reference), `x-species-order` (`meaningful` or `none`), `x-species-max-chars`, `x-species-default-key` (the owner's tuning key) and `x-species-sim` (the simulation-relevant flag of the record type). The code generator rejects a schema that uses any other keyword or annotation (ADR-062).
 
-**DAT-016** (MUST) Authoring files are UTF-8 JSON (ADR-0062), one record or one keyed collection of records per file, in the folders of table 1-A. The top-level object of every authoring file starts with two fields: `schema`, the schema id of table 1-A, and `version`, the schema version as the text `"<major>.<minor>"`; a file without them, or whose schema id does not match its folder, is a build error. Every object of every record type may carry a `notes` field, a text of at most `dat.notes.max_chars` (2,000) characters that tools keep and the cooker drops; JSON has no comments, and no other field holds author commentary.
+**DAT-016** (MUST) Authoring files are UTF-8 JSON (ADR-062), one record or one keyed collection of records per file, in the folders of table 1-A. The top-level object of every authoring file starts with two fields: `schema`, the schema id of table 1-A, and `version`, the schema version as the text `"<major>.<minor>"`; a file without them, or whose schema id does not match its folder, is a build error. Every object of every record type may carry a `notes` field, a text of at most `dat.notes.max_chars` (2,000) characters that tools keep and the cooker drops; JSON has no comments, and no other field holds author commentary.
 
-**DAT-017** (MUST) The schema version of a record type starts at major 1, minor 0 (`dat.schema.initial_version`). Adding an optional field with a default raises the minor version. Removing, renaming or re-typing a field, changing a default, tightening a range or changing what a field means raises the major version and needs a migration step (DAT-045). Cooked content and binaries are released together, so a loader accepts exactly the schema versions it was generated with (ADR-0061).
+**DAT-017** (MUST) The schema version of a record type starts at major 1, minor 0 (`dat.schema.initial_version`). Adding an optional field with a default raises the minor version. Removing, renaming or re-typing a field, changing a default, tightening a range or changing what a field means raises the major version and needs a migration step (DAT-045). Cooked content and binaries are released together, so a loader accepts exactly the schema versions it was generated with (ADR-061).
 
 ### 3.4 Ownership and lifetimes
 
@@ -259,9 +259,9 @@ Table 3.1-A Logical field types.
 
 ### 4.1 The authoring parser
 
-**DAT-019** (MUST) The authoring parser is a strict JSON parser of the Species content build (RFC 8259), with the restrictions of I-JSON (RFC 7493): the text is UTF-8, a single leading byte-order mark is accepted and ignored, invalid UTF-8 and unpaired surrogate escapes are errors, every number lies within the binary64 range, and no object holds a key twice. The parser and the validator are Species code generated with the schemas (ADR-0062), so the duplicate-key rule and the location of every value do not depend on a third-party parser mode; the published JSON Schema documents serve authors' editors only.
+**DAT-019** (MUST) The authoring parser is a strict JSON parser of the Species content build (RFC 8259), with the restrictions of I-JSON (RFC 7493): the text is UTF-8, a single leading byte-order mark is accepted and ignored, invalid UTF-8 and unpaired surrogate escapes are errors, every number lies within the binary64 range, and no object holds a key twice. The parser and the validator are Species code generated with the schemas (ADR-062), so the duplicate-key rule and the location of every value do not depend on a third-party parser mode; the published JSON Schema documents serve authors' editors only.
 
-**DAT-020** (MUST) The parser records the file, line and column of every value and every key, so every diagnostic names the exact location (ADR-0062). Whitespace, blank lines and line endings carry no meaning anywhere, so a blank line, a missing final line break, a carriage return or an unterminated last line can never change, truncate or stop a load (DEC-015).
+**DAT-020** (MUST) The parser records the file, line and column of every value and every key, so every diagnostic names the exact location (ADR-062). Whitespace, blank lines and line endings carry no meaning anywhere, so a blank line, a missing final line break, a carriage return or an unterminated last line can never change, truncate or stop a load (DEC-015).
 
 **DAT-021** (MUST) Malformed input is an error with a location, never a hang, a crash or a silently shortened record: an unterminated string, array or object, a missing value, a stray character after the top-level value and a nesting deeper than `dat.parse.max_depth` (64) levels are each reported and end the parse of that file only. The build sets no limit on line length or file size other than the declared maximums of the schemas (DEC-801 item 5).
 
@@ -271,11 +271,11 @@ Table 3.1-A Logical field types.
 
 ### 4.2 Validation
 
-**DAT-024** (MUST) The validator checks every authoring file in this order, and reports every error it finds in a file, not only the first: (1) the parse of DAT-019 to DAT-023; (2) the schema: unknown fields, missing required fields, derived fields that the file holds, types, ranges and the declared maximum lengths; (3) duplicates (DAT-025); (4) references (DAT-028 to DAT-030); (5) the rules of the record family stated in this folder and in the owning documents, such as the per-mode map rules; (6) the rules across record types, such as the completeness of the actor stat table. An error of any step fails the build (ADR-0059, DEC-015).
+**DAT-024** (MUST) The validator checks every authoring file in this order, and reports every error it finds in a file, not only the first: (1) the parse of DAT-019 to DAT-023; (2) the schema: unknown fields, missing required fields, derived fields that the file holds, types, ranges and the declared maximum lengths; (3) duplicates (DAT-025); (4) references (DAT-028 to DAT-030); (5) the rules of the record family stated in this folder and in the owning documents, such as the per-mode map rules; (6) the rules across record types, such as the completeness of the actor stat table. An error of any step fails the build (ADR-059, DEC-015).
 
 **DAT-025** (MUST) Two records of one record type with the same stable id are a build error that names both locations, within one file and across all the files of a content set: two maps with the same map id, two structure records with the same structure id in one map, two string-table entries with the same id in one language, two sound sources with the same source id, two sample-group entries with the same group, and two actor stat records for one actor kind are examples (DEC-801 item 2). A value that deliberately replaces another is an explicit, typed override field, such as a map's value for a match option, never a repeated key or a second record (DEC-801 item 4).
 
-**DAT-026** (MUST) An unknown field, an unknown enumerator, an unknown record type and a value of the wrong JSON form are build errors; nothing that the schema does not declare is ignored, skipped or read as a default (ADR-0059, DEC-802). Field keys and enumerators are compared exactly, in their lower-case form; no comparison ignores case, so one spelling of a name has one meaning in every tool (DEC-045).
+**DAT-026** (MUST) An unknown field, an unknown enumerator, an unknown record type and a value of the wrong JSON form are build errors; nothing that the schema does not declare is ignored, skipped or read as a default (ADR-059, DEC-802). Field keys and enumerators are compared exactly, in their lower-case form; no comparison ignores case, so one spelling of a name has one meaning in every tool (DEC-045).
 
 **DAT-027** (MUST) No record binds a value by its position in a row, a block or a file. A table whose rows describe the members of an enumeration names the member in each row, and the validator checks that the table holds exactly one row per member: a missing member and a member outside the enumeration are build errors, so a table with fewer or more rows than members can never shift its values onto the wrong members (DEC-019). Where a cooked layout stores values by position, for example the parameters of an effect binding in its kind's order, the authoring file still names each value, and the cooker places it ([entity_audio_geometry_and_panel_schemas.md](entity_audio_geometry_and_panel_schemas.md) DAT-272).
 
@@ -283,29 +283,29 @@ Table 3.1-A Logical field types.
 
 **DAT-029** (MUST) Every record reference resolves to an existing record of the declared type within its scope: a structure link within its map, an event's sample group within the asset manifest, an alias within the binding set, an embedded string id within the language. A reference to a record of another type is a build error, and at run time a missing or mismatched target counts as no reference, never as a reinterpretation of another kind (DEC-457). A reference chain that loops back on itself, where the record type forbids loops, is a build error.
 
-**DAT-030** (MUST) Every string id that a record names, a map's display name and description, a mode's option labels and help texts, an explainer caption, exists in the base language's string table (`ref.meta.lang.base` of [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); a missing one is a build error, so no screen shows a placeholder name or a raw id (DEC-802, ADR-0063).
+**DAT-030** (MUST) Every string id that a record names, a map's display name and description, a mode's option labels and help texts, an explainer caption, exists in the base language's string table (`ref.meta.lang.base` of [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md)); a missing one is a build error, so no screen shows a placeholder name or a raw id (DEC-802, ADR-063).
 
-**DAT-031** (MUST) Each validator class of table 6-A has a failing fixture in the content build's test suite that triggers exactly that class, and the fixture asserts the class, the file, the line, the column and the field of the diagnostic; the duplicate cases of DEC-801 items 1 and 2 each have their own fixture: a key twice in one object, two records with one id in one file, and two records with one id in two files (ADR-0059, ADR-0069).
+**DAT-031** (MUST) Each validator class of table 6-A has a failing fixture in the content build's test suite that triggers exactly that class, and the fixture asserts the class, the file, the line, the column and the field of the diagnostic; the duplicate cases of DEC-801 items 1 and 2 each have their own fixture: a key twice in one object, two records with one id in one file, and two records with one id in two files (ADR-059, ADR-069).
 
 **DAT-032** (MUST) The content build reports, as warnings that do not fail the build, the conditions that the owning documents declare as warnings: an asset that nothing references in an edition not marked for release (AST-090), a terrain tile with fewer generator levels than its guide grid (TER-111), a terrain tile outside the grid (TER-124), and a sample group that no event names (R-AUD-068). Every other content condition named in this folder is an error.
 
 ### 4.3 Cooking
 
-**DAT-033** (MUST) The cooker writes each validated record in the generated binary layout of its schema version: every field in schema order, every defaulted field with its value or its declared default, every absence-meaningful field with an explicit present flag, and every derived field computed. The cooked bytes are a pure function of the validated values and the schema version, with no timestamp, host path, thread order or memory address, so the same content gives the same entry hash on every build machine (ADR-0059, ADR-0060).
+**DAT-033** (MUST) The cooker writes each validated record in the generated binary layout of its schema version: every field in schema order, every defaulted field with its value or its declared default, every absence-meaningful field with an explicit present flag, and every derived field computed. The cooked bytes are a pure function of the validated values and the schema version, with no timestamp, host path, thread order or memory address, so the same content gives the same entry hash on every build machine (ADR-059, ADR-060).
 
 **DAT-034** (MUST) A direction is normalised at cook time; a direction whose three components are 0 is a build error, so no loader normalises a zero vector or substitutes a default for it. Every simulation decimal is finite: a value that rounds to an infinity or that is not a number is a build error (DEC-653).
 
-**DAT-035** (MUST) The cooker marks the entry simulation-relevant when its record type is marked "Sim" in table 1-A (AST-098). The simulation content identity covers every such entry (ADR-0060); a record type that the simulation reads and that is not marked is a defect that the registry test of T8 detects.
+**DAT-035** (MUST) The cooker marks the entry simulation-relevant when its record type is marked "Sim" in table 1-A (AST-098). The simulation content identity covers every such entry (ADR-060); a record type that the simulation reads and that is not marked is a defect that the registry test of T8 detects.
 
 ### 4.4 Loading
 
-**DAT-036** (MUST) A loader checks, before it reads any field, that the entry's schema id is the one it expects and that the schema version is one it was generated with, and checks the entry's hash for every simulation-relevant entry ([asset pipeline](../asset_pipeline_and_resources.md) §4.11, ADR-0058). A mismatch refuses the entry with a diagnostic that names the record type, the key and both versions (ADR-0061).
+**DAT-036** (MUST) A loader checks, before it reads any field, that the entry's schema id is the one it expects and that the schema version is one it was generated with, and checks the entry's hash for every simulation-relevant entry ([asset pipeline](../asset_pipeline_and_resources.md) §4.11, ADR-058). A mismatch refuses the entry with a diagnostic that names the record type, the key and both versions (ADR-061).
 
 **DAT-037** (MUST) A loader never fails fatally. A refused, truncated or malformed entry is a diagnostic, and the reader of the record type takes the fallback that its owning document states: a map that cannot be loaded is not offered and its match does not start, a missing string table falls back to the base language, a missing sound definition plays nothing, a missing explainer gives no panel (DEC-015). A loader reads every count and offset against the entry's length before it uses it, and never reads past the entry.
 
-**DAT-038** (MUST) A map header is readable on its own: the cooked map stores its header as the first section of the entry, with its own length, so the map catalogue reads every map header without reading or decoding the terrain or any other block (ADR-0061, DEC-045). One loader reads the header for the catalogue and the whole map for a match, with the same field names and rules (DEC-045).
+**DAT-038** (MUST) A map header is readable on its own: the cooked map stores its header as the first section of the entry, with its own length, so the map catalogue reads every map header without reading or decoding the terrain or any other block (ADR-061, DEC-045). One loader reads the header for the catalogue and the whole map for a match, with the same field names and rules (DEC-045).
 
-**DAT-039** (MUST) Every loader is fuzz-tested in CI with truncated, extended and bit-flipped entries, and must end every input with a record view or a load error, within a bounded time and without reading outside the entry (DEC-015, ADR-0069).
+**DAT-039** (MUST) Every loader is fuzz-tested in CI with truncated, extended and bit-flipped entries, and must end every input with a record view or a load error, within a bounded time and without reading outside the entry (DEC-015, ADR-069).
 
 ### 4.5 The canonical writer
 
@@ -313,7 +313,7 @@ Table 3.1-A Logical field types.
 
 **DAT-041** (MUST) **Lossless round trip.** Loading a file and saving it again reproduces every value exactly. A number is written in the shortest decimal form that reads back to the same binary64 value, the baseline being `std::to_chars` without a precision argument, never at a fixed number of decimals. A save writes every record that the loaded data holds. A field is omitted only when it is defaulted and its value equals the schema default, so that a load reads back the same value; a 0 is written whenever the default is not 0, and an absence-meaningful field that is absent stays absent (DEC-800 item 1, DEC-120).
 
-**DAT-042** (MUST) **Canonical output.** Each field is written once, in schema order, in UTF-8 without a byte-order mark, with line feeds as line endings, `dat.writer.indent_spaces` (2) spaces of indentation per level and a final line feed, so that saving unchanged data gives the same bytes and the same content hash (DEC-800 item 2, ADR-0060).
+**DAT-042** (MUST) **Canonical output.** Each field is written once, in schema order, in UTF-8 without a byte-order mark, with line feeds as line endings, `dat.writer.indent_spaces` (2) spaces of indentation per level and a final line feed, so that saving unchanged data gives the same bytes and the same content hash (DEC-800 item 2, ADR-060).
 
 **DAT-043** (MUST) **Atomic replacement.** The writer writes a complete new file beside the old one, flushes it to the device and then replaces the old file in one operation. A write that fails at any step leaves the previous file intact, and the failure is reported to the player or author and in the log; it is never skipped silently (DEC-800 item 3).
 
@@ -321,13 +321,13 @@ Table 3.1-A Logical field types.
 
 ### 4.6 Migration
 
-**DAT-045** (MUST) A change of major version ships with a migration step in the content build: a pure function from the authoring values of the previous major version to those of the new one. The content build runs it over the authoring files of the repository and writes the results with the canonical writer (DAT-041 to DAT-044), so the repository always holds files of the current version, and the change is reviewed as a text diff (ADR-0061).
+**DAT-045** (MUST) A change of major version ships with a migration step in the content build: a pure function from the authoring values of the previous major version to those of the new one. The content build runs it over the authoring files of the repository and writes the results with the canonical writer (DAT-041 to DAT-044), so the repository always holds files of the current version, and the change is reviewed as a text diff (ADR-061).
 
-**DAT-046** (MUST) A file whose schema version is newer than the content build knows is a build error; a file of an older major version without a migration step is a build error; and no loader ever migrates cooked records at run time (ADR-0061). The migration of runtime-written data, the settings file included, is DEC-250's and DEC-251's.
+**DAT-046** (MUST) A file whose schema version is newer than the content build knows is a build error; a file of an older major version without a migration step is a build error; and no loader ever migrates cooked records at run time (ADR-061). The migration of runtime-written data, the settings file included, is DEC-250's and DEC-251's.
 
 ### 4.7 Content identity
 
-**DAT-047** (MUST) The identity of a record is the SHA-256 of its cooked entry (ADR-0060), so an edit that changes only the formatting, the order of an unordered collection or the line endings of an authoring file changes no identity, and an edit of any value does. Lists of maps are keyed by the stable map id together with the map's content hash, and no list identifies a record by its file bytes or its file name alone (DEC-204).
+**DAT-047** (MUST) The identity of a record is the SHA-256 of its cooked entry (ADR-060), so an edit that changes only the formatting, the order of an unordered collection or the line endings of an authoring file changes no identity, and an edit of any value does. Lists of maps are keyed by the stable map id together with the map's content hash, and no list identifies a record by its file bytes or its file name alone (DEC-204).
 
 ### 4.8 The life of a record
 
@@ -352,15 +352,15 @@ Caption: Figure 4-A, the states of a record from authoring to loading (DAT-019 t
 
 ## 5 Concurrency and performance budget
 
-**DAT-048** (MUST) The content build parses, validates and cooks files in parallel, one file per task, and merges the per-file results in byte-wise order of the file keys; cross-file checks (DAT-025, DAT-029, DAT-030) run after every file of a content set has been validated. The output and the diagnostics are identical for every thread count, which the reproducibility job of ADR-0059 confirms.
+**DAT-048** (MUST) The content build parses, validates and cooks files in parallel, one file per task, and merges the per-file results in byte-wise order of the file keys; cross-file checks (DAT-025, DAT-029, DAT-030) run after every file of a content set has been validated. The output and the diagnostics are identical for every thread count, which the reproducibility job of ADR-059 confirms.
 
-**DAT-049** (MUST) Validation and cooking are incremental: a record is rebuilt when its authoring file, its schema version or a record that it references changes (ADR-0059). Changing one record of a family rebuilds that record and its dependants, never the whole content set.
+**DAT-049** (MUST) Validation and cooking are incremental: a record is rebuilt when its authoring file, its schema version or a record that it references changes (ADR-059). Changing one record of a family rebuilds that record and its dependants, never the whole content set.
 
 **DAT-050** (MUST) Loading a cooked record does no parsing: a loader validates the header and the counts and returns a view onto the entry's bytes. These budgets are starting values that the performance tests confirm on the reference test machine of the [diagnostics](../diagnostics_test_and_performance.md) component: reading the headers of `ref.map.reference.map_count` (49) maps for the map catalogue in at most `dat.perf.catalogue_ms` (20 ms); loading every non-map record type of an edition in at most `dat.perf.records_ms` (50 ms); and validating and cooking a full edition from a clean state in at most `dat.perf.full_build_s` (120 s), with incremental rebuilds of one record in at most `dat.perf.incremental_s` (5 s).
 
 ## 6 Failure modes, diagnostics and telemetry
 
-**DAT-051** (MUST) Every diagnostic carries its class of table 6-A, its severity, the file, line, column and field path of the value, and for a duplicate the location of the other occurrence. The validation report of the content build lists every diagnostic of a run, grouped by file, and CI fails a change on any error (ADR-0059).
+**DAT-051** (MUST) Every diagnostic carries its class of table 6-A, its severity, the file, line, column and field path of the value, and for a duplicate the location of the other occurrence. The validation report of the content build lists every diagnostic of a run, grouped by file, and CI fails a change on any error (ADR-059).
 
 Table 6-A Diagnostic classes.
 
@@ -388,7 +388,7 @@ Table 6-A Diagnostic classes.
 | `version` | an unknown, newer or unmigrated schema version | error | DAT-046 |
 | `content_warning` | a condition that an owning document declares as a warning | warning | DAT-032 |
 
-**DAT-052** (MUST) At run time a refused or malformed entry raises one diagnostic in the content log category ([logging](../../../adr/0067-logging.md)) with the record type, the key, the load error and, for a version mismatch, both versions; the same entry is reported once per load. In `Development` builds the validation of loose content files runs the same validators and shows their diagnostics in the development overlay of the [diagnostics](../diagnostics_test_and_performance.md) component.
+**DAT-052** (MUST) At run time a refused or malformed entry raises one diagnostic in the content log category ([logging](../../../ADR/ADR-067-logging.md)) with the record type, the key, the load error and, for a version mismatch, both versions; the same entry is reported once per load. In `Development` builds the validation of loose content files runs the same validators and shows their diagnostics in the development overlay of the [diagnostics](../diagnostics_test_and_performance.md) component.
 
 **DAT-053** (MUST) The content build records, per run, the number of files, records and diagnostics per record type and the time spent per stage, so that the budgets of DAT-050 can be tracked in CI.
 
@@ -436,9 +436,9 @@ Table 6-A Diagnostic classes.
 | DEC-800 | Resolved | the canonical, lossless, atomic writer (DAT-040 to DAT-044) |
 | DEC-801 | Resolved | duplicate keys and ids, repeated fields and over-long values are build errors (DAT-009, DAT-021, DAT-022, DAT-025, DAT-031) |
 | DEC-802 | Open | unknown content is an error, never ignored (DAT-026, DAT-030) |
-| ADR-0061 | Accepted | one schema per record type, text authoring, versioned binary at run time (§3, §4) |
-| ADR-0062 | Proposed | JSON with a restricted JSON Schema subset and a Species code generator; this folder pins the draft, the annotations and a Species-owned parser (DAT-015, DAT-019) |
-| ADR-0059, ADR-0060, ADR-0058 | Accepted | the validating content build, content identity by SHA-256, the pack format (§4) |
+| ADR-061 | Accepted | one schema per record type, text authoring, versioned binary at run time (§3, §4) |
+| ADR-062 | Proposed | JSON with a restricted JSON Schema subset and a Species code generator; this folder pins the draft, the annotations and a Species-owned parser (DAT-015, DAT-019) |
+| ADR-059, ADR-060, ADR-058 | Accepted | the validating content build, content identity by SHA-256, the pack format (§4) |
 
 ### 8.2 Design-phase inputs
 
@@ -447,7 +447,7 @@ Table 6-A Diagnostic classes.
 3. **Numeric model** (DEC-240, DEC-241): the cooked representation of simulation decimals (binary32-rounded binary64, strict binary64 or fixed point); the precision column of every field table is the input to that choice.
 4. **Network messages** (DEC-207): whether network messages reuse the schema language and code generator of this folder, with hard limits on every count, length and depth.
 5. **Modding** (vision §7): whether players may author records, which would make the authoring parser and validators part of a player tool, and how such records are identified (DEC-204).
-6. **A second authoring syntax** (ADR-0062 revisit trigger): whether flat tables may also be written in a syntax with comments, validated against the same schemas.
+6. **A second authoring syntax** (ADR-062 revisit trigger): whether flat tables may also be written in a syntax with comments, validated against the same schemas.
 
 ## 9 Tuning table
 

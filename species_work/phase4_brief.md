@@ -6,7 +6,7 @@ You are one integration agent of the Species reference-library conversion run. P
 
 1. `/home/user/Species.AI/prompts/species-design-conversion.md` §0, §2, **§4 (common rules, non-negotiable, including rule 11 No publishing)**, **§6 (writing standard)** and §7.1–§7.2.
 2. `design_next/CONVENTIONS.md` (prefix registry §3, tuning tables §4, units §5, templates and the DEC entry format §7, naming §8, allowed terms §9) and `species_work/rename_map.tsv` (the ledger).
-3. `design_next/decisions/README.md` (index of every DEC) and `design_next/adr/README.md` (ADR index and technology baseline).
+3. `design_next/decisions/README.md` (index of every DEC) and `design_next/ADR/README.md` (ADR index and technology baseline).
 4. `species_work/phase4_dec_fixes.md`: the numbered Phase 4 items collected from the Phase 3 reports (items 1–117 and later).
 5. The Phase 3 reports in `species_work/reports/` that your section names.
 
@@ -57,11 +57,11 @@ Triage outcomes, grouping, arbitration, owner decisions and outputs as for X-DEC
 
 **Inputs:** the "ADR conflicts" sections of every Phase 3 report, and the ADR items of `phase4_dec_fixes.md`: 37, 38, 39, 40, 64, 70, 80, 83, 84, 87, 88, 95 (note only), 102, 108, 112, 116 and any others you find.
 
-**You own:** `design_next/adr/*.md` and `design_next/adr/README.md` (index and technology baseline).
+**You own:** `design_next/ADR/*.md` and `design_next/ADR/README.md` (index and technology baseline).
 
-**Task:** amend each ADR so that it agrees with the component that implements it, or, where the component is wrong, record the component fix in your report for the document fixers. Keep MADR 4 structure and each ADR's number; add an amendment note under "More Information" with the date 2026-10-17. Where the items recommend a direction, follow it (item 70 and item 108: ADR-0063 covers only the technical fallback mechanism; which languages ship is product policy in DEC-099; drop the sign-off exception). Write **ADR-0077: client HTTP stack** (item 116; recommended default: the in-box WinHTTP, HTTPS only, OS certificate validation, system proxy; status Proposed unless the baseline already decides it) and add it to the index. Verify and add the Windows SDK release to the technology baseline (item 108): you may consult Microsoft's own documentation for this, and only for this; cite the source URL in the baseline, as the other baseline lines do.
+**Task:** amend each ADR so that it agrees with the component that implements it, or, where the component is wrong, record the component fix in your report for the document fixers. Keep MADR 4 structure and each ADR's number; add an amendment note under "More Information" with the date 2026-10-17. Where the items recommend a direction, follow it (item 70 and item 108: ADR-063 covers only the technical fallback mechanism; which languages ship is product policy in DEC-099; drop the sign-off exception). Write **ADR-077: client HTTP stack** (item 116; recommended default: the in-box WinHTTP, HTTPS only, OS certificate validation, system proxy; status Proposed unless the baseline already decides it) and add it to the index. Verify and add the Windows SDK release to the technology baseline (item 108): you may consult Microsoft's own documentation for this, and only for this; cite the source URL in the baseline, as the other baseline lines do.
 
-**Outputs:** the ADR files, `adr/README.md`, and your report with one line per item (item → ADR change, or component fix needed).
+**Outputs:** the ADR files, `ADR/README.md`, and your report with one line per item (item → ADR change, or component fix needed).
 
 ---
 
@@ -95,7 +95,7 @@ Triage outcomes, grouping, arbitration, owner decisions and outputs as for X-DEC
 
 **Task:**
 1. Add a manifest row (and the GameAssets.md and art-brief entries) for every missing asset the reports name, with a Species filename that follows the existing naming, and the citing document as consumer. Where a report proposes an id, use it, adjusted to the stem rules (for example `uitex.app_icon`).
-2. Fix the wrong rows the items name (wrong role, wrong consumer paths, the five ADR-0017 padding rows of item 85, the team-colour authoring of item 83: replace red key colours by the tint attribute or material flag of ADR-0020 in GameAssets, the briefs and the manifest; the look stays the same).
+2. Fix the wrong rows the items name (wrong role, wrong consumer paths, the five ADR-017 padding rows of item 85, the team-colour authoring of item 83: replace red key colours by the tint attribute or material flag of ADR-020 in GameAssets, the briefs and the manifest; the look stays the same).
 3. Add the string ids the reports name (`ui.repair.passed`, `ui.repair.failed`, the five `ui.error.*` ids of C-PLT, `ui.match.cheats_used`, and the others you find) wherever the asset set lists string-table content.
 4. Reconcile the row counts, and record the reconciliation in your report.
 5. Consumers stay document paths in this pass; part b (after the document fixes) replaces them with requirement ids.

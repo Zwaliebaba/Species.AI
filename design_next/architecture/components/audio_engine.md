@@ -1,14 +1,14 @@
 # Audio engine
 
-> Status: Engine baseline · Prefix: AEN · ADRs: [ADR-0022](../../adr/0022-audio-engine-on-xaudio2.md) · [ADR-0023](../../adr/0023-virtual-voices-and-voice-stealing.md) · [ADR-0024](../../adr/0024-audio-buses-and-per-bus-effects.md) · [ADR-0025](../../adr/0025-audio-formats-codecs-and-residency.md) · [ADR-0026](../../adr/0026-audio-command-queue-and-callbacks.md) · [ADR-0027](../../adr/0027-spatialisation-and-distance-attenuation.md) · [ADR-0016](../../adr/0016-view-projection-and-depth-conventions.md) · [ADR-0058](../../adr/0058-pack-files-and-mount-policy.md) · [ADR-0059](../../adr/0059-content-build-and-validators.md) · [ADR-0061](../../adr/0061-data-schemas-and-versioning.md) · [ADR-0067](../../adr/0067-logging.md) · [ADR-0068](../../adr/0068-profiling-and-gpu-timing.md) · [ADR-0069](../../adr/0069-test-framework.md) · [ADR-0074](../../adr/0074-platform-clock-with-injectable-time.md) · Related: [audio design](../../reference/10_audio_design/README.md) · [event model and sound data](../../reference/10_audio_design/event_model_and_sound_data.md) · [event catalogue](../../reference/10_audio_design/event_catalogue.md) · [positional, priorities and mix](../../reference/10_audio_design/positional_priorities_and_mix.md) · [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [options](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [asset pipeline and resources](asset_pipeline_and_resources.md) · [data schemas](data_schemas/README.md)
+> Status: Engine baseline · Prefix: AEN · ADRs: [ADR-022](../../ADR/ADR-022-audio-engine-on-xaudio2.md) · [ADR-023](../../ADR/ADR-023-virtual-voices-and-voice-stealing.md) · [ADR-024](../../ADR/ADR-024-audio-buses-and-per-bus-effects.md) · [ADR-025](../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-026](../../ADR/ADR-026-audio-command-queue-and-callbacks.md) · [ADR-027](../../ADR/ADR-027-spatialisation-and-distance-attenuation.md) · [ADR-016](../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-058](../../ADR/ADR-058-pack-files-and-mount-policy.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-067](../../ADR/ADR-067-logging.md) · [ADR-068](../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-069](../../ADR/ADR-069-test-framework.md) · [ADR-074](../../ADR/ADR-074-platform-clock-with-injectable-time.md) · Related: [audio design](../../reference/10_audio_design/README.md) · [event model and sound data](../../reference/10_audio_design/event_model_and_sound_data.md) · [event catalogue](../../reference/10_audio_design/event_catalogue.md) · [positional, priorities and mix](../../reference/10_audio_design/positional_priorities_and_mix.md) · [tick timing and main loop](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) · [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [options](../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) · [asset pipeline and resources](asset_pipeline_and_resources.md) · [data schemas](data_schemas/README.md)
 
 This component turns the sound events that game code raises into samples at the speakers: the binding of (source, event) pairs to layers and sample groups from data, the instances, the ranking onto a bounded set of real XAudio2 source voices with virtual voices and stealing, the buses, player volumes, limiter and effects, X3DAudio spatialisation, resident banks and streams, the decoder and the device. The [audio design](../../reference/10_audio_design/README.md) states what plays; this component states how, precisely enough to implement and test. Where the Species engine differs from the reference engine, the reference behaviour is stated as the **reference model** next to the Species rule.
 
 **Notation and units.**
 
 - **Levels** are in dB relative to a voice's full level, 0 dB (DEC-042); an amplitude is 10^(dB ÷ 20), computed with `XAudio2DecibelsToAmplitudeRatio`. A level of the reference ten-step scale v converts to `ref.aud.level.reference_step_db` × (v − 10) dB ([audio design](../../reference/10_audio_design/README.md) R-AUD-004). The **envelope floor** F = −10 × `ref.aud.level.reference_step_db` = −50 dB is the bottom of that scale: quiet, not silent.
-- **Distances** are in world units (`wu`), measured in three dimensions in the right-handed, +Y-up world frame of ADR-0016.
-- **Audio time** is real time in seconds on the audio clock, which reads the platform's monotonic clock (ADR-0074). Game speed and pausing never scale it. Audio durations are presentation durations; no simulation duration is ever measured in audio time.
+- **Distances** are in world units (`wu`), measured in three dimensions in the right-handed, +Y-up world frame of ADR-016.
+- **Audio time** is real time in seconds on the audio clock, which reads the platform's monotonic clock (ADR-074). Game speed and pausing never scale it. Audio durations are presentation durations; no simulation duration is ever measured in audio time.
 - **Frames** are sample frames at `aen.format.sample_rate`.
 - **Terms** follow the audio design ([audio design](../../reference/10_audio_design/README.md) §2.1): a **sound source**, an **event** `<source>.<event>`, a **layer**, an **instance** (type `SoundVoice`), an **emitter**. An instance is **real** while a source voice mixes it and **virtual** while it is tracked and advanced without one. A **voice** is one pooled XAudio2 source voice.
 
@@ -16,7 +16,7 @@ This component turns the sound events that game code raises into samples at the 
 
 **AEN-001** (MUST) The audio engine (`AudioEngine`) owns: the sound data at run time (source, event, layer, sample-group and effect-kind definitions, §3); the command queues from game code and the result queue back to it (§2); the sound instances, their envelopes, loops, play positions and modulatable values (§4.8 to §4.13); the ranking of instances, the real-voice budget, the per-bus and per-event caps, virtualisation and stealing (§4.6); the spatialisation (§4.14); the bus graph, the player volumes, ducking, the limiter and the bus effects (§4.15, §4.16); the residency of sample data in resident banks and streams and the decoder (§4.17, §4.18); the XAudio2 device, its loss and its rebuilding (§4.19); and its diagnostics (§6).
 
-**AEN-002** (MUST) The engine is built in five layers, each depending only on the layers below it (ADR-0022):
+**AEN-002** (MUST) The engine is built in five layers, each depending only on the layers below it (ADR-022):
 
 | Layer | Contents | Species types |
 |---|---|---|
@@ -28,15 +28,15 @@ This component turns the sound events that game code raises into samples at the 
 
 The reference engine has the same separation, with interchangeable device back-ends in place of layer 2; Species has exactly one voice back-end, on XAudio2 2.9 and X3DAudio.
 
-**AEN-003** (MUST NOT) The audio engine never writes simulation state, never reads simulation or presentation objects directly, and never includes a simulation header with write access. Everything it knows about the world arrives in commands that presentation code builds from the immutable per-tick snapshots and the presentation events of the simulation (DEC-007, DEC-222; §2.3). A build-time include check enforces this (ADR-0022).
+**AEN-003** (MUST NOT) The audio engine never writes simulation state, never reads simulation or presentation objects directly, and never includes a simulation header with write access. Everything it knows about the world arrives in commands that presentation code builds from the immutable per-tick snapshots and the presentation events of the simulation (DEC-007, DEC-222; §2.3). A build-time include check enforces this (ADR-022).
 
-**AEN-004** (MUST NOT) The audio engine never draws from the simulation generator. It owns one presentation generator instance (`FxRng`), shared with no other system and used only on its update thread; its draws choose sample-group members, shared-random emitters and random values (DEC-013, ADR-0022; [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-608). The instance is seeded with `aen.rng.match_seed` when the engine is created and again at every `BeginMatch`.
+**AEN-004** (MUST NOT) The audio engine never draws from the simulation generator. It owns one presentation generator instance (`FxRng`), shared with no other system and used only on its update thread; its draws choose sample-group members, shared-random emitters and random values (DEC-013, ADR-022; [randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) R-SIM-608). The instance is seeded with `aen.rng.match_seed` when the engine is created and again at every `BeginMatch`.
 
 **AEN-005** (MUST) What a participant hears may differ from what another hears, by design: audience filtering by the local team, camera-relative ranking, shared-nearest emitter choice, camera-distance links, virtualisation and dropped commands all depend on the local participant ([audio design](../../reference/10_audio_design/README.md) R-AUD-001). No simulation rule ever branches on an audio result; game code uses results only for presentation decisions.
 
-**AEN-006** (MUST) The audio engine runs on its own clock (the audio clock), never on the simulation tick or on the presentation clock of ADR-0036. In the reference model the audio logic advances from an accumulator of the presentation frame delta (`ref.sim.frame.audio_update_period`, `ref.sim.frame.delta_clamp`, [tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-570, R-SIM-571), while envelopes, loop delays and sample-use stamps read the real clock; §4.4 states the reference accumulator and the Species schedule.
+**AEN-006** (MUST) The audio engine runs on its own clock (the audio clock), never on the simulation tick or on the presentation clock of ADR-036. In the reference model the audio logic advances from an accumulator of the presentation frame delta (`ref.sim.frame.audio_update_period`, `ref.sim.frame.delta_clamp`, [tick timing](../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-570, R-SIM-571), while envelopes, loop delays and sample-use stamps read the real clock; §4.4 states the reference accumulator and the Species schedule.
 
-**AEN-007** (MUST) The dedicated server and every headless build link no part of the audio engine (ADR-0022). A headless participant raises the same presentation events and plays nothing.
+**AEN-007** (MUST) The dedicated server and every headless build link no part of the audio engine (ADR-022). A headless participant raises the same presentation events and plays nothing.
 
 **AEN-008** (MUST) The audio design is the authority for every design rule this component implements: the event set, layer data and defaults, audiences, sharing, envelopes and loops as heard, links, groups, the 14 effect kinds and their behaviour, the distance and panning laws, the buses, their levels and priority classes, and the music hooks ([audio design](../../reference/10_audio_design/README.md) R-AUD-006). This component cites the design's requirements and `ref.aud.*` keys and never redefines them; it owns the arithmetic, the scheduling and every engine value of its tuning table (§4.21).
 
@@ -47,7 +47,7 @@ The reference engine has the same separation, with interchangeable device back-e
 ```cpp
 namespace species::audio {
 
-using Seconds  = double;                     // audio time (platform clock, ADR-0074)
+using Seconds  = double;                     // audio time (platform clock, ADR-074)
 using Decibels = float;
 
 // Data tokens of the audio design in brackets; order kept where noted.
@@ -114,17 +114,17 @@ struct AudioResult { ResultKind kind; RequestId request; std::uint32_t count; bo
 class AudioEngine {
 public:
   static std::unique_ptr<AudioEngine> Create(const AudioSettings&, const SoundDataSet&, SampleCache&);
-  CommandWriter& Producer();                 // the calling thread's queue (ADR-0026)
+  CommandWriter& Producer();                 // the calling thread's queue (ADR-026)
   void DrainResults(std::function<void(const AudioResult&)>);  // game thread, once per frame
   ~AudioEngine();                            // AEN-106 teardown order
 };
 
-// Layer 2; the only code that includes XAudio2 or X3DAudio headers (ADR-0026).
+// Layer 2; the only code that includes XAudio2 or X3DAudio headers (ADR-026).
 class VoiceBackend {                         // Op = an XAudio2 operation set id
 public:
   bool Build(const BusGraphDef&);            // mastering voice on the default device and format, buses
   void Teardown();
-  SourceVoiceSlot* Acquire(VoiceFormat);     // pooled per format (ADR-0023)
+  SourceVoiceSlot* Acquire(VoiceFormat);     // pooled per format (ADR-023)
   void Release(SourceVoiceSlot*);            // resets every per-voice setting (DEC-752)
   void SetVolume(SourceVoiceSlot&, float amplitude, Op);   void SetFrequencyRatio(SourceVoiceSlot&, float, Op);
   void SetOutputMatrix(SourceVoiceSlot&, std::span<const float>, Op);
@@ -139,7 +139,7 @@ public:
 
 ### 2.2 Commands, results and the threading contract
 
-**AEN-020** (MUST) Game code never calls XAudio2 and never waits for audio. Every public operation of `CommandWriter` writes one command into the calling thread's bounded, lock-free single-producer single-consumer queue of `aen.queue.command_capacity` commands and returns (ADR-0026). Any thread may produce; each producing thread has its own queue.
+**AEN-020** (MUST) Game code never calls XAudio2 and never waits for audio. Every public operation of `CommandWriter` writes one command into the calling thread's bounded, lock-free single-producer single-consumer queue of `aen.queue.command_capacity` commands and returns (ADR-026). Any thread may produce; each producing thread has its own queue.
 
 **AEN-021** (MUST) When a queue is full, the newest command is dropped, the call returns false and the drop is counted per command kind in the development overlay (§6). The audio update drains every queue at each update.
 
@@ -149,7 +149,7 @@ public:
 
 **AEN-024** (MUST) Every command carries its issue time, the audio clock read by the producer when it writes the command. A trigger's **start time** is its issue time plus `aen.update.schedule_latency`, so the order and spacing of triggers are preserved into the mix (AEN-148).
 
-**AEN-025** (MUST) XAudio2 callbacks (`IXAudio2VoiceCallback`, `IXAudio2EngineCallback`) only set atomic flags or push to lock-free queues: a buffer start, buffer end, loop end or stream-end notice to the update, a stream-buffer-free notice to the decode task, a critical-error notice to the update. They never allocate, lock, log synchronously, create or destroy voices, or call game code (ADR-0026). The XAudio2 processing thread touches only the sample memory and buffers that the engine handed it.
+**AEN-025** (MUST) XAudio2 callbacks (`IXAudio2VoiceCallback`, `IXAudio2EngineCallback`) only set atomic flags or push to lock-free queues: a buffer start, buffer end, loop end or stream-end notice to the update, a stream-buffer-free notice to the decode task, a critical-error notice to the update. They never allocate, lock, log synchronously, create or destroy voices, or call game code (ADR-026). The XAudio2 processing thread touches only the sample memory and buffers that the engine handed it.
 
 | Command | Effect | Requirements |
 |---|---|---|
@@ -191,7 +191,7 @@ public:
 | per-channel volume on the ten-step scale | the voice volume in dB (AEN-214) |
 | per-channel playback frequency | the voice frequency ratio (AEN-196) |
 | per-channel world, head-relative or disabled positioning, position, velocity, minimum distance | the distance gain and output matrix computed by the engine (§4.14) |
-| per-channel effect enable, parameter update and disable | routing to effect buses (§4.16); no voice carries an effect chain (ADR-0024) |
+| per-channel effect enable, parameter update and disable | routing to effect buses (§4.16); no voice carries an effect chain (ADR-024) |
 | listener position, orientation and velocity | `SetListener` (AEN-209) |
 | reset a channel for a new sound | `Acquire` from the pool and a start with an offset (AEN-148, AEN-182) |
 | device pump: apply deferred settings and refill rings | one operation set per update, applied with `ApplyOperationSet` (AEN-123) |
@@ -276,11 +276,11 @@ public:
 3. no reference sound data is imported (R-AUD-003), so parity with omitted parameters has no value;
 4. effects are off by default (DEC-567, R-AUD-076), so no default is audible until effects are enabled.
 
-The content build rejects a binding with more parameters than its kind has, and a parameter value outside its kind's range (DEC-015, ADR-0059).
+The content build rejects a binding with more parameters than its kind has, and a parameter value outside its kind's range (DEC-015, ADR-059).
 
 ### 3.5 Sample groups, banks and the stream format
 
-**AEN-072** (MUST) Every group member is cooked to 16-bit PCM at `aen.format.sample_rate`, mono for every positioned layer and mono or stereo for two-dimensional layers (ADR-0025). The content build marks a group **streamed** when its longest member is longer than `aen.residency.stream_threshold`, and marks every music group streamed; every other group is **resident** and is stored in banks. A streamed member is stored as one Species stream: a header (channel count, sample rate, total frames, the Opus pre-skip, loop start and loop end frames, the seek-table interval `aen.stream.seek_interval`), a seek table from frame positions to packet offsets, and Opus packets of `aen.stream.packet_duration` (libopus 1.5.2, ADR-0025).
+**AEN-072** (MUST) Every group member is cooked to 16-bit PCM at `aen.format.sample_rate`, mono for every positioned layer and mono or stereo for two-dimensional layers (ADR-025). The content build marks a group **streamed** when its longest member is longer than `aen.residency.stream_threshold`, and marks every music group streamed; every other group is **resident** and is stored in banks. A streamed member is stored as one Species stream: a header (channel count, sample rate, total frames, the Opus pre-skip, loop start and loop end frames, the seek-table interval `aen.stream.seek_interval`), a seek table from frame positions to packet offsets, and Opus packets of `aen.stream.packet_duration` (libopus 1.5.2, ADR-025).
 
 **AEN-073** (MUST) With the asset manifest of this library, the streamed groups are `amb.lobby_bed`, `amb.match_bed`, `amb.match_bed_b`, `amb.match_bed_c` and `sfx.creature.abductor.presence_loop`, and the music groups `music.front_end.theme`, `music.match.bed`, `music.match.sting_victory` and `music.match.sting_defeat`; every other `sfx.` group is resident. The longest resident member is about 18 s (`sfx.building.spitter_plant.burning`).
 
@@ -301,7 +301,7 @@ The content build rejects a binding with more parameters than its kind has, and 
 | master volume | `aen.settings.volume_default` (255) | the pre-master gain (AEN-215) |
 | bus volumes, one per bus of R-AUD-221 | `aen.settings.volume_default` (255) | the bus gains (AEN-215) |
 | voices | `aen.settings.voices_default` (32) | none: the real-voice budget is `aen.voice.budget` (DEC-570) |
-| mixing rate | `aen.settings.mix_rate_reader_default` (22 050 Hz) at the engine's reader; `aen.settings.output_mix_rate_reader_default` (44 100 Hz) at the reader of the secondary output path | none: the mastering voice takes the device's format (ADR-0022) |
+| mixing rate | `aen.settings.mix_rate_reader_default` (22 050 Hz) at the engine's reader; `aen.settings.output_mix_rate_reader_default` (44 100 Hz) at the reader of the secondary output path | none: the mastering voice takes the device's format (ADR-022) |
 | output buffer length | `aen.settings.output_buffer_first_run` (512) written on first run; `aen.settings.output_buffer_reader_default` (2 000) at its readers | none |
 | hardware positioning | off | none |
 | swap left and right | `aen.settings.swap_stereo_default` (off) | AEN-205; read at every update |
@@ -326,7 +326,7 @@ The content build rejects a binding with more parameters than its kind has, and 
 
 **AEN-102** (MUST) A match load requests the match bank. The match loop starts only after the match bank and its stream heads are resident, so no match trigger is dropped for residency once the match runs; the wait is part of the load and is reported as load progress (DEC-226).
 
-**AEN-103** (MUST) The content build applies the reference loader's rules as validation (DEC-015, DEC-801, ADR-0059): sample names become asset ids; a priority field is ignored (R-AUD-049); an unknown effect kind, an unknown source, event or field, a duplicate key or group, a malformed block and a stray blank line inside a block are build errors with their location (R-AUD-068); effect parameters are taken by position, and a binding with more parameters than its kind is a build error (AEN-071). The reference loader resolves an unknown effect kind to an invalid index and only checks unknown sources and fields in development builds.
+**AEN-103** (MUST) The content build applies the reference loader's rules as validation (DEC-015, DEC-801, ADR-059): sample names become asset ids; a priority field is ignored (R-AUD-049); an unknown effect kind, an unknown source, event or field, a duplicate key or group, a malformed block and a stray blank line inside a block are build errors with their location (R-AUD-068); effect parameters are taken by position, and a binding with more parameters than its kind is a build error (AEN-071). The reference loader resolves an unknown effect kind to an invalid index and only checks unknown sources and fields in development builds.
 
 **AEN-104** (MUST) The engine has three readiness points, each reported once in the result queue: **device ready** (the graph is built, or the silent device is in use), **interface ready** (the interface bank is resident) and **match ready** (the match bank is resident). A trigger issued before the readiness point of its group is dropped, not deferred (AEN-111).
 
@@ -338,7 +338,7 @@ The content build rejects a binding with more parameters than its kind has, and 
 
 **AEN-111** (MUST) In Species a trigger is dropped, counted by reason, and never deferred, when: the bank or stream head of a group of its layers is not resident (AEN-104); the loading-view gate is set (`SetLoadingView(true)`), which drops every trigger (R-AUD-048, R-AUD-325, DEC-319); or the instance table is full (AEN-300). Stops, queries and every other command pass the gate.
 
-**AEN-112** (MUST) A trigger from any thread is accepted (AEN-020); the reference's main-thread-only contract is replaced by per-thread queues (ADR-0026, DEC-224 item 12).
+**AEN-112** (MUST) A trigger from any thread is accepted (AEN-020); the reference's main-thread-only contract is replaced by per-thread queues (ADR-026, DEC-224 item 12).
 
 ### 4.3 Where the audio update runs
 
@@ -377,7 +377,7 @@ The content build rejects a binding with more parameters than its kind has, and 
 5. for every started instance: evaluate its values (AEN-188), advance its envelope (AEN-166) and play position (AEN-173), and compute its distance gain and audibility (AEN-140, AEN-202);
 6. rank the instances and decide the real set (AEN-141 to AEN-147);
 7. for every real instance: compute and set its volume, frequency ratio, output matrix, filter and send levels (AEN-196, AEN-204, AEN-214, AEN-224) and submit its next buffers (AEN-174);
-8. apply every voice change of this update as one XAudio2 operation set, so they take effect at the same sample (ADR-0026);
+8. apply every voice change of this update as one XAudio2 operation set, so they take effect at the same sample (ADR-026);
 9. publish query answers, readiness changes, the tracked-emitter set (AEN-041) and statistics (AEN-137).
 
 ```mermaid
@@ -421,7 +421,7 @@ Diagram 4-A: one audio update (AEN-123).
 
 **AEN-141** (MUST) **Score.** The instances of each full event id are ordered by audibility, loudest first (ties: earlier start time, then lower slot), and the k-th louder copy (k = 0 for the loudest) scores audibility + k × 20 log₁₀ c, where c is the event's copy decay (AEN-062; R-AUD-216). With c = 0.75 each further copy loses about 2.5 dB.
 
-**AEN-142** (MUST) **Voice pools.** Source voices are pooled per format, one pool for mono and one for stereo 16-bit PCM at `aen.format.sample_rate` (ADR-0023). Each pool holds `aen.voice.budget` + `aen.voice.pool_headroom` voices, all created when the graph is built with a maximum frequency ratio of `aen.voice.max_frequency_ratio`; no voice is created or destroyed during a session. A voice that is fading out after a steal belongs to its pool, not to the budget.
+**AEN-142** (MUST) **Voice pools.** Source voices are pooled per format, one pool for mono and one for stereo 16-bit PCM at `aen.format.sample_rate` (ADR-023). Each pool holds `aen.voice.budget` + `aen.voice.pool_headroom` voices, all created when the graph is built with a maximum frequency ratio of `aen.voice.max_frequency_ratio`; no voice is created or destroyed during a session. A voice that is fading out after a steal belongs to its pool, not to the budget.
 
 **AEN-143** (MUST) **Budget and caps** (DEC-570). At most `aen.voice.budget` instances are real at once. Each bus has a cap: `aen.voice.bus_cap.ui`, `aen.voice.bus_cap.announcer`, `aen.voice.bus_cap.voice`, `aen.voice.bus_cap.world`, `aen.voice.bus_cap.ambience`; the music bus has `aen.voice.bus_cap.music` voices that only the music channel uses (§8.2). An event on the voice bus has at most `aen.voice.event_cap.voice` real instances; an event on the world bus has at most `aen.voice.event_cap.world_default`, which its data may raise to at most `aen.voice.event_cap.world_max`; events on the other buses have no cap beyond their bus cap.
 
@@ -437,15 +437,15 @@ Diagram 4-A: one audio update (AEN-123).
 3. the victim is not on the UI bus, whose instances are never stolen;
 4. the candidate is not a world-bus instance taking an ambience-bus voice.
 
-The victim becomes virtual and its voice fades to silence over `aen.voice.steal_fade` before it returns to the pool; the candidate starts at once on another voice of its pool. Every change between virtual and real, other than one caused by ending or by inaudibility, therefore happens at most once per hold time per instance (ADR-0023).
+The victim becomes virtual and its voice fades to silence over `aen.voice.steal_fade` before it returns to the pool; the candidate starts at once on another voice of its pool. Every change between virtual and real, other than one caused by ending or by inaudibility, therefore happens at most once per hold time per instance (ADR-023).
 
 **AEN-146** (MUST) **Patience.** A `once` instance is retired when it is virtual at an update at or after its start time + its patience window (AEN-062; R-AUD-061), or when its sound has ended (AEN-175). A `once` instance that has never been real does not advance its play position. A `loop` or `note` instance never expires while virtual; it ends by a stop, by losing its emitter, or by its envelope.
 
-**AEN-147** (MUST) No per-update start quota limits the starts; `aen.voice.max_starts_per_update` can cap the number of instances that become real in one update (highest rank first), and its default 0 means no cap (ADR-0023).
+**AEN-147** (MUST) No per-update start quota limits the starts; `aen.voice.max_starts_per_update` can cap the number of instances that become real in one update (highest rank first), and its default 0 means no cap (ADR-023).
 
 **AEN-148** (MUST) **Starts.** A pending instance starts at the first update whose time T satisfies start time ≤ T + `aen.update.period`; it then becomes virtual or real in the same update. A voice that starts at a start time s plays a leading silence of round((s − T) × `aen.format.sample_rate`) frames, at least 0 and at most one update period, so triggers keep their order and spacing; a start time already past plays at once and is counted as a late start. Any number of instances may start in one update.
 
-**AEN-149** (MUST) Every volume and pitch change of a real voice reaches its new value over one update period, never as a step (ADR-0023). An instance that becomes real at a play position above 0 fades in from silence over `aen.voice.steal_fade`; one that becomes real at position 0 starts at its envelope level.
+**AEN-149** (MUST) Every volume and pitch change of a real voice reaches its new value over one update period, never as a step (ADR-023). An instance that becomes real at a play position above 0 fades in from silence over `aen.voice.steal_fade`; one that becomes real at position 0 starts at its envelope level.
 
 **AEN-150** (MUST) **Worked example (Species).** The world bus is at its cap of 32 real instances; the three lowest score −30, −28 and −26 dB, and every instance has held its state longer than the hold time. In one update three instances start on the world bus: an explosion one-shot scoring −8 dB, a second copy of a gunfire one-shot whose audibility is −11.5 dB and which scores −14 dB after one copy decay, and a virtual ambient loop scoring −40 dB. In this update the explosion takes the −30 dB instance's place (margin 22 dB), the gunfire copy takes the −28 dB instance's place (margin 14 dB), and the loop stays virtual (−40 dB is below −26 + 3 dB). Both victims become virtual: a victim one-shot past its patience is retired at the next update, and a victim loop keeps advancing in time.
 
@@ -563,7 +563,7 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 **AEN-189** (MUST) A fixed value's target is its value; a random value's target is lo + `FxRng::NextUnit`(hi − lo), which can equal hi; a linked value's target is the piecewise map of [event model](../../reference/10_audio_design/event_model_and_sound_data.md) R-AUD-051 of its link's input (R-AUD-052), read from the latest emitter update and listener: `height` = the height above the terrain, `pos_x`, `altitude` and `pos_z` the position's coordinates, `speed` = \|velocity\|, `camera_distance` = \|camera − position\|, `object_age`, `teams_nearby` and `unit_count` from the emitter update, `time_remaining` from the match state; a two-dimensional instance reads the camera's position, velocity and height above the terrain.
 
-**AEN-190** (MUST) **Smoothing.** With a = √s for smoothing s, one step sets out := target × (1 − ρ) + out × ρ. The trigger, start and per-note evaluations, and the first update evaluation after the start, take one step with ρ = a; every later update evaluation takes ρ = a^(Δt ÷ `ref.sim.frame.audio_update_period`), Δt being the audio time since the previous update evaluation (R-AUD-054, ADR-0026). A value with s = 0 is its target.
+**AEN-190** (MUST) **Smoothing.** With a = √s for smoothing s, one step sets out := target × (1 − ρ) + out × ρ. The trigger, start and per-note evaluations, and the first update evaluation after the start, take one step with ρ = a; every later update evaluation takes ρ = a^(Δt ÷ `ref.sim.frame.audio_update_period`), Δt being the audio time since the previous update evaluation (R-AUD-054, ADR-026). A value with s = 0 is its target.
 
 **AEN-191** (MUST) **Start values** (DEC-322). Under the default, the previous output of a fresh instance is: level `ref.aud.layer.level_default`, pitch `ref.aud.layer.pitch_default`, attack, sustain, release and loop delay `ref.aud.layer.envelope_default`, and each effect parameter its schema default (AEN-071), so a smoothed random pitch is compressed towards 1.0 at the start of a note (R-AUD-055); a per-note pitch with s = 0.66 takes three steps before it is first heard, starting near 0.54 × 1.0 + 0.46 × its draws. Under option B the first evaluation sets the output to its target.
 
@@ -579,7 +579,7 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 ### 4.14 Spatialisation
 
-**AEN-201** (MUST) **Distance gain** (ADR-0027, R-AUD-202). For a positioned real or virtual instance, d = \|emitter position − listener position\| in wu and md is its layer's minimum distance: g(d) = 1 for d ≤ md and md ÷ d otherwise.
+**AEN-201** (MUST) **Distance gain** (ADR-027, R-AUD-202). For a positioned real or virtual instance, d = \|emitter position − listener position\| in wu and md is its layer's minimum distance: g(d) = 1 for d ≤ md and md ÷ d otherwise.
 
 **AEN-202** (MUST) **Maximum distance.** G(d) = g(d) × h(d), with dmax the event's maximum distance (AEN-062) and f = `aen.spatial.max_distance_fade_fraction` × dmax: h = 1 for d ≤ dmax − f, (dmax − d) ÷ f for dmax − f < d < dmax, and 0 for d ≥ dmax. The global default `aen.spatial.max_distance_default` is the reference engine's effective maximum distance, beyond every distance in a map, so with the defaults G = g and the default mix keeps DEC-566's default of no maximum distance; a per-event maximum is the mechanism of DEC-566's option B.
 
@@ -595,9 +595,9 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 **AEN-208** (MUST) Two-dimensional instances, and music, bypass every spatial calculation.
 
-**AEN-209** (MUST) **Listener.** The listener is the camera of the latest `SetListener` (R-AUD-200, DEC-566): its position, its front and up vectors and its velocity × `aen.listener.velocity_scale`. r = normalise(front × up) in the right-handed world frame (ADR-0016); z is negated once, at the boundary, for X3DAudio's left-handed convention. A listener command whose front or up vector has zero length, or whose front and up are parallel, is rejected, and the previous orientation is kept (ADR-0027).
+**AEN-209** (MUST) **Listener.** The listener is the camera of the latest `SetListener` (R-AUD-200, DEC-566): its position, its front and up vectors and its velocity × `aen.listener.velocity_scale`. r = normalise(front × up) in the right-handed world frame (ADR-016); z is negated once, at the boundary, for X3DAudio's left-handed convention. A listener command whose front or up vector has zero length, or whose front and up are parallel, is rejected, and the previous orientation is kept (ADR-027).
 
-**AEN-210** (MUST) Every real positioned voice is recalculated at every update, whatever its movement (ADR-0027, R-AUD-208); a value may be skipped only when it is bit-identical to the value already set. In the reference model a voice's settings are sent only when they change; a position is re-sent only when it has moved further than `aen.reference.voice.position_threshold` (5 %) of the listener distance (compared as squared distances, × 0.0025), so a two-dimensional voice whose last sent world position lies within that distance of the world origin keeps the stale offset; the orientation is not sent when either vector is zero; the Doppler factor is 0; and the roll-off is 1 with the maximum distance at `aen.spatial.max_distance_default`, so the distance law is g(d) with no maximum in practice.
+**AEN-210** (MUST) Every real positioned voice is recalculated at every update, whatever its movement (ADR-027, R-AUD-208); a value may be skipped only when it is bit-identical to the value already set. In the reference model a voice's settings are sent only when they change; a position is re-sent only when it has moved further than `aen.reference.voice.position_threshold` (5 %) of the listener distance (compared as squared distances, × 0.0025), so a two-dimensional voice whose last sent world position lies within that distance of the world origin keeps the stale offset; the orientation is not sent when either vector is zero; the Doppler factor is 0; and the roll-off is 1 with the maximum distance at `aen.spatial.max_distance_default`, so the distance law is g(d) with no maximum in practice.
 
 **AEN-211** (MUST) The engine accepts every minimum distance of the design's range `ref.aud.layer.min_distance_range`; the content build rejects other values. The reference engine accepts 1 wu up to its maximum distance.
 
@@ -613,7 +613,7 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 ### 4.16 Buses, routing and effects
 
-**AEN-220** (MUST) **Bus graph** (ADR-0024, DEC-570). The graph is: the mastering voice; under it the **pre-master** submix, which applies the pre-master gain and the built-in `FXMasteringLimiter` (release `aen.mix.limiter.release`, loudness `aen.mix.limiter.loudness`), set so that a signal below full scale passes unchanged; under it the six player buses of R-AUD-221, UI, announcer and stings, voice, world, ambience and music, each a submix; under the player buses the effect buses of AEN-223, each feeding the player bus of the sounds routed to it. Every submix has the mastering voice's channel count and sample rate, and processing stages order effect buses before player buses before the pre-master. Every source voice outputs to its event's bus (R-AUD-222) and, through sends, to effect buses.
+**AEN-220** (MUST) **Bus graph** (ADR-024, DEC-570). The graph is: the mastering voice; under it the **pre-master** submix, which applies the pre-master gain and the built-in `FXMasteringLimiter` (release `aen.mix.limiter.release`, loudness `aen.mix.limiter.loudness`), set so that a signal below full scale passes unchanged; under it the six player buses of R-AUD-221, UI, announcer and stings, voice, world, ambience and music, each a submix; under the player buses the effect buses of AEN-223, each feeding the player bus of the sounds routed to it. Every submix has the mastering voice's channel count and sample rate, and processing stages order effect buses before player buses before the pre-master. Every source voice outputs to its event's bus (R-AUD-222) and, through sends, to effect buses.
 
 **AEN-221** (MUST) **Effects switch** (DEC-567, DEC-752, R-AUD-076). With the switch off, which is the default (`aen.settings.effects_default`), every source voice has a send level of 0 and a direct level of 1 and every effect bus's chain is disabled, so no effect processes any signal. Switching takes effect at the next update for every live instance, with no restart; switching off leaves no processing on any voice or bus. In the reference model an instance copies its layer's effects only at its trigger and only with the switch on; applying the options with the switch on copies every live instance's effects again from its layer and restarts the instances whose effects changed, and with the switch off removes them while the voices keep processing them (DEC-752).
 
@@ -623,7 +623,7 @@ A per-note value is evaluated only while the restart flag is set: at the trigger
 
 **AEN-224** (MUST) **Routing.** A chain of one **send** kind (AEN-070) runs 100 % wet on its bus, and the voice's direct level is 1 − w and its send level w, where w = the binding's wet/dry mix ÷ 100, evaluated per instance (AEN-188); this equals the reference mixing x × (1 − w) + effect × w because the send kinds are linear. A chain of one **insert** kind, or of several kinds, takes the whole signal: the direct level is 0, the send level 1, and the send kinds in a multi-kind chain apply their own wet/dry mix inside the effect. Own-algorithm kinds run in kind order, then the standard kinds (R-AUD-080).
 
-**AEN-225** (MUST) Every Species XAPO processes 32-bit float at its bus's actual sample rate, with its own state per channel, and computes every time constant and coefficient from that rate (ADR-0024). Full scale ±1.0 corresponds to `aen.fx.full_scale` on the 16-bit scale on which the reference constants are stated. `StereoEchoFx` applies the left delay to the left and centre channels and the right delay to the right channels.
+**AEN-225** (MUST) Every Species XAPO processes 32-bit float at its bus's actual sample rate, with its own state per channel, and computes every time constant and coefficient from that rate (ADR-024). Full scale ±1.0 corresponds to `aen.fx.full_scale` on the 16-bit scale on which the reference constants are stated. `StereoEchoFx` applies the left delay to the left and centre channels and the right delay to the right channels.
 
 **AEN-226** (MUST) At every update each effect bus's parameters are evaluated (AEN-188) and set within the update's operation set; integer parameters are truncated toward zero (AEN-070).
 
@@ -641,7 +641,7 @@ The own-algorithm effects (R-AUD-079) compute, per sample x on the 16-bit scale 
 
 **AEN-233** (MUST) **Echo** (`EchoFx`). A float delay line of `aen.fx.echo.buffer_seconds` × rate samples; D = delay_ms × rate ÷ 1000 samples, truncated. Per sample: output = clamp(x × (1 − w) + line[j] × w, ±`aen.fx.echo.clamp`) with w = mix ÷ 100 (as a send, the bus outputs line[j]); then line[j] := line[j] × attenuation ÷ 100 + x; j advances and wraps at D, not at the line length. When D grows, the newly exposed part of the line is set to 0.
 
-**AEN-234** (MUST) **Simple reverb** (`SimpleReverbFx`). A history h of `aen.fx.reverb.history_seconds` × rate samples and six taps at the delays `aen.fx.reverb.tap_delays_ms` with the gains `aen.fx.reverb.tap_gains`: y = `aen.fx.reverb.dry` × x + `aen.fx.reverb.wet` × Σ gainᵢ × h[n − delayᵢ], clamped to ±`aen.fx.reverb.clamp` and written back to h[n]. The mix parameter is ignored. The reference accumulates the taps in integers and truncates each product; the float version does not (ADR-0024).
+**AEN-234** (MUST) **Simple reverb** (`SimpleReverbFx`). A history h of `aen.fx.reverb.history_seconds` × rate samples and six taps at the delays `aen.fx.reverb.tap_delays_ms` with the gains `aen.fx.reverb.tap_gains`: y = `aen.fx.reverb.dry` × x + `aen.fx.reverb.wet` × Σ gainᵢ × h[n − delayᵢ], clamped to ±`aen.fx.reverb.clamp` and written back to h[n]. The mix parameter is ignored. The reference accumulates the taps in integers and truncates each product; the float version does not (ADR-024).
 
 **AEN-235** (MUST) Each standard kind realised by a Species XAPO (AEN-070) implements its parameter set of R-AUD-077 and is written when the audio data first uses the kind; until then the content build rejects a binding of that kind.
 
@@ -671,9 +671,9 @@ while total allocated bytes > B:              // counts whole buffers, decoded o
 
 Samples in use are never evicted, so the cache can exceed B.
 
-**AEN-243** (MUST) **Species model** (ADR-0025). Resident groups are cooked to PCM and held in banks (AEN-074); a resident member is never decoded at play time and starts without delay. Streamed groups are decoded block by block (§4.18) and never decoded whole. Nothing is evicted while its bank's scope lasts; a bank is released with its scope. Each bank has a hard budget, and a bank whose resident groups exceed it is a content-build error: `aen.memory.interface_bank_budget` for the interface bank and `aen.memory.match_bank_budget` for the match bank, with `aen.memory.stream_budget` for every stream buffer and stream head together.
+**AEN-243** (MUST) **Species model** (ADR-025). Resident groups are cooked to PCM and held in banks (AEN-074); a resident member is never decoded at play time and starts without delay. Streamed groups are decoded block by block (§4.18) and never decoded whole. Nothing is evicted while its bank's scope lasts; a bank is released with its scope. Each bank has a hard budget, and a bank whose resident groups exceed it is a content-build error: `aen.memory.interface_bank_budget` for the interface bank and `aen.memory.match_bank_budget` for the match bank, with `aen.memory.stream_budget` for every stream buffer and stream head together.
 
-**AEN-244** (MUST) `LoadBank` asks the asset system to read the bank's groups from the pack files (ADR-0058) asynchronously; the bank is resident when every group and stream head is in memory (AEN-104). `ReleaseBank` first retires every live instance whose group would be freed, at once, and then frees the groups whose reference count falls to 0.
+**AEN-244** (MUST) `LoadBank` asks the asset system to read the bank's groups from the pack files (ADR-058) asynchronously; the bank is resident when every group and stream head is in memory (AEN-104). `ReleaseBank` first retires every live instance whose group would be freed, at once, and then frees the groups whose reference count falls to 0.
 
 **AEN-245** (MUST) Group residency is counted by reference across banks, so a group of two resident banks is loaded once and freed with the last of them.
 
@@ -695,7 +695,7 @@ Samples in use are never evicted, so the cache can exceed B.
 
 **AEN-251** (MUST) **Reference model: the decoder.** It chooses the format by the file type: a compressed stream or an uncompressed wave file; any other type stops the program. Opening a compressed stream that is corrupt, or that holds no frames, stops the program; reads loop until the request is met or the stream ends, a corrupt section stops the program and other read errors are not handled; output is always signed 16-bit in host byte order. The wave path accepts only integer PCM with 1 or 2 channels and 8 or 16 bits (an 8-bit sample becomes (u − 128) × 256), skips other chunks, counts frames as data bytes ÷ (channels × bytes per sample), and in its 16-bit read divides the byte count by 2 whatever the channel count, which is correct for mono only; the cache requests only the compressed format, so the wave path is never reached. Restarting seeks to the first frame; the cache never uses it. There is no streaming path: a long sample's decoding is only spread over the reads that first reach each part, while its whole buffer is allocated at open.
 
-**AEN-252** (MUST) **Species streams** (ADR-0025). A real streamed instance owns an `AudioStream`: a ring of `aen.stream.blocks_per_stream` blocks of `aen.stream.block_frames` 16-bit frames, which the decode task refills one block at a time when the voice's buffer-end notice frees one (AEN-025), and which it submits in order. At most `aen.stream.max_streams` streamed instances are real at once; a streamed instance that ranks for a voice beyond that stays virtual and is counted. A virtual streamed instance holds no stream and keeps only its play position.
+**AEN-252** (MUST) **Species streams** (ADR-025). A real streamed instance owns an `AudioStream`: a ring of `aen.stream.blocks_per_stream` blocks of `aen.stream.block_frames` 16-bit frames, which the decode task refills one block at a time when the voice's buffer-end notice frees one (AEN-025), and which it submits in order. At most `aen.stream.max_streams` streamed instances are real at once; a streamed instance that ranks for a voice beyond that stays virtual and is counted. A virtual streamed instance holds no stream and keeps only its play position.
 
 **AEN-253** (MUST) **Stream heads.** The first block of every member of a streamed group is decoded when its bank loads and kept with the bank (AEN-074), so a stream that starts at position 0 starts without waiting for the decode task.
 
@@ -705,11 +705,11 @@ Samples in use are never evicted, so the cache can exceed B.
 
 **AEN-256** (MUST) A corrupt packet, a bad seek table or a missing stream retires the instance with a diagnostic; nothing in decoding stops the program (DEC-015).
 
-**AEN-257** (MUST NOT) No decoding runs on a game thread or inside an XAudio2 callback (ADR-0025, ADR-0026).
+**AEN-257** (MUST NOT) No decoding runs on a game thread or inside an XAudio2 callback (ADR-025, ADR-026).
 
 ### 4.19 Device loss and restart
 
-**AEN-259** (MUST) On `RestartDevice`, on `IXAudio2EngineCallback::OnCriticalError` and on `XAUDIO2_E_DEVICE_INVALIDATED`, the engine rebuilds the graph and the voice pools on the current default device, resubmits every real instance from its stored play position with its current settings, and continues: loops and one-shots continue where they were, and no instance restarts from its beginning (ADR-0022). If the rebuild fails, the engine runs on the silent device (AEN-321) and tries again at the next `RestartDevice` or device-arrival notice.
+**AEN-259** (MUST) On `RestartDevice`, on `IXAudio2EngineCallback::OnCriticalError` and on `XAUDIO2_E_DEVICE_INVALIDATED`, the engine rebuilds the graph and the voice pools on the current default device, resubmits every real instance from its stored play position with its current settings, and continues: loops and one-shots continue where they were, and no instance restarts from its beginning (ADR-022). If the rebuild fails, the engine runs on the silent device (AEN-321) and tries again at the next `RestartDevice` or device-arrival notice.
 
 **AEN-260** (MUST) **Reference model: restart from the options.** Applying the sound options deletes the channel table and the devices, re-reads the settings (AEN-076), creates the device with the voice count and sets the master volume; when creation fails with hardware positioning requested, the setting is cleared and creation is tried again, and when it fails without, the program stops. The new channel table is empty, so every instance has lost its voice: a looping instance waits and starts again from the beginning of its sample, or with a new group member; a one-shot keeps the patience it had left, 0 to 2 of its `ref.aud.layer.one_shot_patience_updates` updates since a one-shot that started has used at least one, and plays again from its beginning if it wins a voice, a group one-shot drawing a new member; music keeps its read position. The apply then copies or removes the effects by the effects switch (AEN-221).
 
@@ -748,7 +748,7 @@ Every value is an engine value of this component; the reference values are the s
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `aen.format.sample_rate` | 48 000 | Hz | every cooked member (ADR-0025) | AEN-072, AEN-148 | — |
+| `aen.format.sample_rate` | 48 000 | Hz | every cooked member (ADR-025) | AEN-072, AEN-148 | — |
 | `aen.update.period` | 0.01 | s | 100 updates per second; one processing quantum | AEN-120, AEN-148 | DEC-224 |
 | `aen.update.schedule_latency` | 0.03 | s | added to every issue time | AEN-024, AEN-264 | DEC-570 |
 | `aen.queue.command_capacity` | 4 096 | commands | per producing thread | AEN-020 | — |
@@ -840,7 +840,7 @@ Every value is an engine value of this component; the reference values are the s
 
 **AEN-301** (MUST) Threads and what each touches: producing threads write only their own command queue; the update thread alone owns every instance, every definition at run time and every voice setting; the decode task alone writes stream blocks; the XAudio2 processing thread reads only submitted buffers and resident bank memory, which no thread writes while the bank is resident. No other thread touches audio memory (DEC-224 item 12).
 
-**AEN-302** (MUST) The decode task is a recurring task that the engine owns, woken by buffer-free notices and by seek requests; it refills blocks in the order of the notices. Which worker runs it follows the threading model (DEC-224, ADR-0025).
+**AEN-302** (MUST) The decode task is a recurring task that the engine owns, woken by buffer-free notices and by seek requests; it refills blocks in the order of the notices. Which worker runs it follows the threading model (DEC-224, ADR-025).
 
 **AEN-303** (MUST) An update costs O(n log n) in its n live instances (the ranking sort) plus O(r) in its r real voices, and stays within `aen.perf.update_cpu_budget` on the minimum CPU with the table full (test T27).
 
@@ -866,11 +866,11 @@ Every value is an engine value of this component; the reference values are the s
 
 **AEN-321** (MUST) **Silent device** (R-AUD-044). With no XAudio2 graph, the engine runs its full update with zero real voices: every instance is virtual, one-shots retire by their patience, loops live until they are stopped or lose their emitter, and queries are answered. In the reference model every device call is a no-op and no update runs, so waiting instances are never freed and accumulate for the whole session.
 
-**AEN-322** (MUST) **Profiling** (ADR-0068). The update, each of its steps (AEN-123), the decode task and each bank load are bracketed by profiling markers; the engine counts the cost of the triggers per entry kind and of decoding per event id. These replace the reference engine's always-compiled profile nodes: one per trigger entry kind, one per event measuring its buffer-fill cost, and one per update step.
+**AEN-322** (MUST) **Profiling** (ADR-068). The update, each of its steps (AEN-123), the decode task and each bank load are bracketed by profiling markers; the engine counts the cost of the triggers per entry kind and of decoding per event id. These replace the reference engine's always-compiled profile nodes: one per trigger entry kind, one per event measuring its buffer-fill cost, and one per update step.
 
-**AEN-323** (MUST) **Development overlay** (ADR-0022). Development builds show: real and virtual instances per bus; the highest-ranked instances with their scores; the peak level of each player bus; memory per bank and for streams; drops by reason; late starts; one-shots retired unheard; steals per second; stream underruns. Development builds also reload the cooked sound data while the game runs, at an update boundary; live instances keep the layer copy they started with.
+**AEN-323** (MUST) **Development overlay** (ADR-022). Development builds show: real and virtual instances per bus; the highest-ranked instances with their scores; the peak level of each player bus; memory per bank and for streams; drops by reason; late starts; one-shots retired unheard; steals per second; stream underruns. Development builds also reload the cooked sound data while the game runs, at an update boundary; live instances keep the layer copy they started with.
 
-**AEN-324** (MUST) The engine logs in its own category (ADR-0067): readiness, bank loads and releases, device changes and rebuilds, and every diagnostic of AEN-320; it writes a memory summary every `ref.sim.frame.memory_log_interval`, as the reference's memory log does.
+**AEN-324** (MUST) The engine logs in its own category (ADR-067): readiness, bank loads and releases, device changes and rebuilds, and every diagnostic of AEN-320; it writes a memory summary every `ref.sim.frame.memory_log_interval`, as the reference's memory log does.
 
 **AEN-325** (MUST) The engine sends no telemetry of its own; its counters are available to the diagnostics component ([diagnostics, test and performance](diagnostics_test_and_performance.md)).
 
@@ -944,18 +944,18 @@ Open: DEC-044, DEC-049, DEC-109, DEC-221, DEC-222, DEC-224, DEC-226, DEC-318, DE
 
 The audio ADRs are settled in this component as follows:
 
-- **ADR-0024 and DEC-570.** The bus graph is data-defined, and its baseline has the six player buses of DEC-570 and R-AUD-221 under the pre-master bus (AEN-220), not the four buses that ADR-0024's text lists. Room reverb uses the XAudio2 reverb with I3DL2 conversion (AEN-070), which ADR-0024's list of built-in effects does not name.
-- **ADR-0027 and DEC-566.** The per-event maximum distance exists, and its global default is the reference's effective maximum (AEN-202), so the default mix has no maximum distance until DEC-566 is decided.
-- **ADR-0023 and the copy decay.** The copy decay and the patience window are per-event design values whose defaults are the audio design's keys; the engine owns the arithmetic, the budget, the caps, the margin and the hold time (AEN-063).
-- **ADR-0022 and the type names.** `SoundVoice` names an instance (layer 4), and the pooled source voice is `SourceVoiceSlot` (layer 2).
-- **ADR-0026.** A command's issue time is the audio clock, a real-time reading of the platform clock, not the game-speed-scaled presentation clock.
-- **ADR-0025.** The streaming threshold applies to a group's longest member, the banks are those of AEN-074, and their budgets are those of AEN-243.
+- **ADR-024 and DEC-570.** The bus graph is data-defined, and its baseline has the six player buses of DEC-570 and R-AUD-221 under the pre-master bus (AEN-220), not the four buses that ADR-024's text lists. Room reverb uses the XAudio2 reverb with I3DL2 conversion (AEN-070), which ADR-024's list of built-in effects does not name.
+- **ADR-027 and DEC-566.** The per-event maximum distance exists, and its global default is the reference's effective maximum (AEN-202), so the default mix has no maximum distance until DEC-566 is decided.
+- **ADR-023 and the copy decay.** The copy decay and the patience window are per-event design values whose defaults are the audio design's keys; the engine owns the arithmetic, the budget, the caps, the margin and the hold time (AEN-063).
+- **ADR-022 and the type names.** `SoundVoice` names an instance (layer 4), and the pooled source voice is `SourceVoiceSlot` (layer 2).
+- **ADR-026.** A command's issue time is the audio clock, a real-time reading of the platform clock, not the game-speed-scaled presentation clock.
+- **ADR-025.** The streaming threshold applies to a group's longest member, the banks are those of AEN-074, and their budgets are those of AEN-243.
 
 ### 8.2 Music hook (KH-MUSIC)
 
 **AEN-360** (MUST) Until DEC-049 is decided, the engine provides the music channel of [music hooks and brief](../../reference/10_audio_design/music_hooks_and_sound_design_brief.md) R-AUD-400 to R-AUD-405 as a hook: one playing and one pending music instance; a request for the member that is playing is ignored; any other request replaces the pending one, which is retired, and releases the playing track finally; at the first update after the playing track has finished, the pending one starts, with its attack timed from its request (R-AUD-404); each update advances the music instance fully (envelope, pitch, loops and ends by AEN-166 and AEN-175 to AEN-178); music never enters the ranking and is never positioned, bent or effected; a stop reaches it only when it names the `music` source (R-AUD-403).
 
-**AEN-361** (MUST) The music bus's `aen.voice.bus_cap.music` voices are reserved for the music channel, so that a music system can cross-fade two streams with sample-accurate timing in one operation set (ADR-0024, R-AUD-405).
+**AEN-361** (MUST) The music bus's `aen.voice.bus_cap.music` voices are reserved for the music channel, so that a music system can cross-fade two streams with sample-accurate timing in one operation set (ADR-024, R-AUD-405).
 
 **AEN-362** (MUST) In the reference model the music channel is a separate device buffer that is never positioned, starts at full level, has no volume of its own beyond the master volume, and is reached by no skirmish rule (R-AUD-400).
 
@@ -969,4 +969,4 @@ The audio ADRs are settled in this component as follows:
 6. **Options** (DEC-044): which bus volumes the front end shows, and whether a voice-budget setting replaces the reference voices setting.
 7. **Pause**: whether a paused skirmish, or a suspended application, pauses audio (AEN-138).
 8. **Development tools**: a sound-tuning tool over the data reload of AEN-323; the reference's sound editor, parameter editors, statistics and profile windows are development tools that this library does not specify.
-9. **Accessibility** (ADR-0064): a mono output option and visual cues for important sounds.
+9. **Accessibility** (ADR-064): a mono output option and visual cues for important sounds.

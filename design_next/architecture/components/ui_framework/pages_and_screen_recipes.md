@@ -1,12 +1,12 @@
 # Pages and screen recipes
 
-> Status: Engine baseline · Prefix: UI · ADRs: [ADR-0030](../../../adr/0030-ui-framework-build-or-buy.md), [ADR-0031](../../../adr/0031-batched-ui-rendering.md), [ADR-0032](../../../adr/0032-ui-focus-graph-page-stack-and-input.md), [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md), [ADR-0034](../../../adr/0034-text-rendering-and-glyph-cache.md), [ADR-0029](../../../adr/0029-input-event-model-and-binding-contract.md), [ADR-0036](../../../adr/0036-effect-events-and-presentation-clock.md), [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md), [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md), [ADR-0063](../../../adr/0063-localisation.md), [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md) · Folder: [UI framework](README.md) · Related: [Core and widgets](core_and_widgets.md) · [Layout, rendering, input and localisation](layout_rendering_input_and_localisation.md) · [Front end and match flow](../../../reference/09_front_end_and_match_flow/README.md)
+> Status: Engine baseline · Prefix: UI · ADRs: [ADR-030](../../../ADR/ADR-030-ui-framework-build-or-buy.md), [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-036](../../../ADR/ADR-036-effect-events-and-presentation-clock.md), [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md), [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · Folder: [UI framework](README.md) · Related: [Core and widgets](core_and_widgets.md) · [Layout, rendering, input and localisation](layout_rendering_input_and_localisation.md) · [Front end and match flow](../../../reference/09_front_end_and_match_flow/README.md)
 
 This document specifies the page framework of the front-end screen and how every Species screen is built on the UI framework: the page ids and the page catalogue, the page host and its page stack, the page state machine with its per-frame order, page set-up and leaving, widget registration on pages, navigation on front-end pages, the page rendering conventions, the custom front-end widgets (scrolling text, image widgets, the colour and side picker, list rows, slot rows, the chat log and status widgets), the four screen recipes (a tool window, a full-screen options screen, a new front-end page and an in-match HUD panel), the page-level budget, and the framework defects as acceptance tests.
 
 What each page shows and where it leads is specified functionally in [reference/09_front_end_and_match_flow/](../../../reference/09_front_end_and_match_flow/README.md); this document specifies the mechanism and cites those rules. The UI core, the standard window and the front-end widget family (page buttons, Back and close buttons, page titles, the highlight beam, fill boxes, page drop-downs, page text fields and page check boxes) are [core_and_widgets.md](core_and_widgets.md); the layout grid, the palette, the text styles and font roles, the navigation input and localisation are [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md).
 
-**Notation.** W and H are the client-area width and height in pixels. lX, lY, lW, lH are the left box, rX, rY, rW, rH the right box, bx, bw and bh the standard button, as [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 define them with the `ref.meta.layout.*` keys. Every time in this document is real time on the presentation clock (ADR-0036), in seconds; no rule of this document uses a simulation duration. A widget's rectangle is (x, y, w, h) in pixels, and "font" is its font size in pixels.
+**Notation.** W and H are the client-area width and height in pixels. lX, lY, lW, lH are the left box, rX, rY, rW, rH the right box, bx, bw and bh the standard button, as [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 define them with the `ref.meta.layout.*` keys. Every time in this document is real time on the presentation clock (ADR-036), in seconds; no rule of this document uses a simulation duration. A widget's rectangle is (x, y, w, h) in pixels, and "font" is its font size in pixels.
 
 ## 1 Responsibilities and boundaries
 
@@ -18,9 +18,9 @@ What each page shows and where it leads is specified functionally in [reference/
 
 **UI-303** (MUST) The framework keeps these page patterns:
 
-1. the screen-fraction layout grid of R-META-200, as data (ADR-0033);
-2. a page is a full-screen panel built from a declarative widget list (§4.3; ADR-0030);
-3. one navigation cursor shared by pointer hover and gamepad navigation, with hover moving the cursor only in pointer mode (§4.4; ADR-0032);
+1. the screen-fraction layout grid of R-META-200, as data (ADR-033);
+2. a page is a full-screen panel built from a declarative widget list (§4.3; ADR-030);
+3. one navigation cursor shared by pointer hover and gamepad navigation, with hover moving the cursor only in pointer mode (§4.4; ADR-032);
 4. the split between the requested and the confirmed value of a shared match-setup option (UI-302);
 5. captions that change with the input mode ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md));
 6. the button entrance cascade ([core_and_widgets.md](core_and_widgets.md)), the map-row slide-in (R-META-039) and the page transition (§4.5), as presentation polish.
@@ -30,18 +30,18 @@ What each page shows and where it leads is specified functionally in [reference/
 | Mechanism | Rule | Where |
 |---|---|---|
 | typed page ids and widget handles; names only for debugging and as string-id stems | pages are found by `PageId`, widgets by handle; a duplicate widget id is a content-build error | UI-320, UI-372; [README](README.md) UI-012 |
-| an explicit page stack with a deferred switch | push, pop, replace, unwind and rebuild; a request takes effect at the start of the next frame; Back is a page-level handler whose default pops | UI-331, UI-350, UI-360 (ADR-0032) |
-| a view-model per page and one for the screen | widgets bind to view-model fields; a relayout keeps every value; a page change builds the new page from its layout | UI-333, UI-334 (ADR-0030, ADR-0033) |
-| a focus scope per page | the page's navigation order and its up, down, left and right neighbours are layout data; lists scroll the focused row into view | UI-380 to UI-384 (ADR-0032) |
+| an explicit page stack with a deferred switch | push, pop, replace, unwind and rebuild; a request takes effect at the start of the next frame; Back is a page-level handler whose default pops | UI-331, UI-350, UI-360 (ADR-032) |
+| a view-model per page and one for the screen | widgets bind to view-model fields; a relayout keeps every value; a page change builds the new page from its layout | UI-333, UI-334 (ADR-030, ADR-033) |
+| a focus scope per page | the page's navigation order and its up, down, left and right neighbours are layout data; lists scroll the focused row into view | UI-380 to UI-384 (ADR-032) |
 | Back handled in the update phase | the menu-close action reaches the top layer's back handler whether or not its Back button is drawn | UI-383 (DEC-102) |
-| modal layers | an open list, a message dialog, a confirmation and the gamepad-disconnected dialog own focus and Back while open | UI-336 (ADR-0032) |
+| modal layers | an open list, a message dialog, a confirmation and the gamepad-disconnected dialog own focus and Back while open | UI-336 (ADR-032) |
 | typed settings with change notification | options screens edit page copies of typed settings and apply them through the settings store, whose schema declares each setting's apply scope | UI-441, UI-442 |
 
 The pointer capture, the repeat timers, the batched draw, the text service, the glyph cache and the string fallback that the same table of mechanisms needs are specified in [core_and_widgets.md](core_and_widgets.md) and [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md).
 
 **UI-305** (MUST) The front end is one full-screen front-end screen (`FrontEndScreen`) whose content is one page at a time: a single-window page flow with one match setup page shared by single-player set-up, the host's lobby and a joining player's lobby, and a ready-up step (DEC-026; R-META-003). The windows of R-META-004 open over it as separate layers (UI-336).
 
-**UI-306** (MUST) Every Species screen is built by one of the four recipes of §4.10 to §4.13: development and editor tools as tool windows (recipe A); help, settings and in-match menu screens as full-screen options screens (recipe B); front-end pages as pages of the front-end screen (recipe C); in-match overlays as HUD panels (recipe D). The debug-panel library that ADR-0030 allows for development tools is never used for a player-facing screen.
+**UI-306** (MUST) Every Species screen is built by one of the four recipes of §4.10 to §4.13: development and editor tools as tool windows (recipe A); help, settings and in-match menu screens as full-screen options screens (recipe B); front-end pages as pages of the front-end screen (recipe C); in-match overlays as HUD panels (recipe D). The debug-panel library that ADR-030 allows for development tools is never used for a player-facing screen.
 
 ## 2 Interfaces
 
@@ -131,13 +131,13 @@ public:
 
 **UI-310** (MUST) The page host is the only way to change the page of the front-end screen. Widgets, page hooks, the front-end controller and session events all call `PageHost::Request`; nothing writes the current page directly.
 
-**UI-311** (MUST) A page reaches its environment only through its `PageContext`, which gives: the screen view-model (UI-334) and the page's own view-model; the match-setup view, which reads the confirmed match-setup state and turns requests into player commands (UI-301, UI-302); the settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)); the string table (`StringTable`, ADR-0063); the asset service for pictures and thumbnails ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)); the renderer's screen-transition control (UI-391); the cue sink of UI-315; the session services that a page starts and stops (UI-363); and the page host itself.
+**UI-311** (MUST) A page reaches its environment only through its `PageContext`, which gives: the screen view-model (UI-334) and the page's own view-model; the match-setup view, which reads the confirmed match-setup state and turns requests into player commands (UI-301, UI-302); the settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)); the string table (`StringTable`, ADR-063); the asset service for pictures and thumbnails ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)); the renderer's screen-transition control (UI-391); the cue sink of UI-315; the session services that a page starts and stops (UI-363); and the page host itself.
 
 **UI-312** (MUST) **Events.** The page host raises `PageEntered{page, from}` after an enter rule returns `Built`, `PageLeft{page, to}` after a leave hook runs and `NavigationRejected{request, reason}` when a request is refused (UI-364). These events feed the UI diagnostics and the log (§6); no gameplay system subscribes to them.
 
-**UI-313** (MUST) **Data contract.** Each page and each options screen has a layout record in the schema of [data schemas](../data_schemas/README.md) (ADR-0061, authored as JSON validated by its schema, ADR-0062). A page record holds: the page id; a debug name; the fill boxes (UI-323); the initial focus; the widget entries of UI-370 in registration order; the navigation order; and the overlay and back behaviour the page's code declares. The content build validates every record (UI-372) and rejects the build on any failure.
+**UI-313** (MUST) **Data contract.** Each page and each options screen has a layout record in the schema of [data schemas](../data_schemas/README.md) (ADR-061, authored as JSON validated by its schema, ADR-062). A page record holds: the page id; a debug name; the fill boxes (UI-323); the initial focus; the widget entries of UI-370 in registration order; the navigation order; and the overlay and back behaviour the page's code declares. The content build validates every record (UI-372) and rejects the build on any failure.
 
-**UI-314** (MUST) **Threading contract.** Every interface of this document runs on the main thread, in the UI's update phase or in its draw ([README](README.md) UI-006, ADR-0032). A page hook never blocks: a picture, a thumbnail or a session list that is not yet available arrives through a queue that the page's view-model drains in its update (DEC-226), and a page that needs data before it can be built returns `Waiting` (UI-362).
+**UI-314** (MUST) **Threading contract.** Every interface of this document runs on the main thread, in the UI's update phase or in its draw ([README](README.md) UI-006, ADR-032). A page hook never blocks: a picture, a thumbnail or a session list that is not yet available arrives through a queue that the page's view-model drains in its update (DEC-226), and a page that needs data before it can be built returns `Waiting` (UI-362).
 
 **UI-315** (MUST) Pages and widgets never play a sound directly. They raise the interface events of the match UI sound source, which the audio engine plays ([reference/10](../../../reference/10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-300; [audio_engine.md](../audio_engine.md)). The events that the screens of this document raise are:
 
@@ -156,7 +156,7 @@ public:
 
 The last five are raised by the match's input rules ([reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md)) and the match HUD, which recipe D builds; this table names them so that a HUD panel built by the recipe uses the same events.
 
-**UI-316** (MUST) The page host controls the screen transition only through the renderer's `InitialiseTransition(duration, direction)` and `StartTransition()` and its transition state ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095 to RND-098). The UI never reads or copies the presented image itself (ADR-0031).
+**UI-316** (MUST) The page host controls the screen transition only through the renderer's `InitialiseTransition(duration, direction)` and `StartTransition()` and its transition state ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095 to RND-098). The UI never reads or copies the presented image itself (ADR-031).
 
 ## 3 Data model
 
@@ -214,13 +214,13 @@ A page id appears on the stack at most once: a Push or a Replace whose target is
 
 **UI-332** (MUST) The front-end controller (`FrontEndController`) creates the front-end screen by the steps of R-META-007 and destroys it by R-META-010. A new screen's stack is (`Title`), or (`Title`, `Tutorials`) when the player returns from a tutorial (R-META-007 step 7); its first update enters the top page (UI-352). Destroying the screen removes the window and fades the screen out (R-META-010), except when the map editor is being entered in an editor build ([reference/08](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-305), where no fade-out starts. When the player returns from a match, a fresh screen is built: no page, widget or view-model state survives a match; only the settings store and the application's own state persist (R-META-011).
 
-**UI-333** (MUST) A page's view-model is created when the page is entered and discarded when it is left; entering a page builds its widgets from its layout record and initialises its view-model by its enter rule. A relayout of the same page (a resize, a DPI or scale change, a language change; ADR-0033) keeps the view-model, every bound value, the scroll positions and the focus. State that must outlive a page lives in the screen view-model (UI-334), in the match-setup state, reached only through player commands (UI-301), or in the settings store.
+**UI-333** (MUST) A page's view-model is created when the page is entered and discarded when it is left; entering a page builds its widgets from its layout record and initialises its view-model by its enter rule. A relayout of the same page (a resize, a DPI or scale change, a language change; ADR-033) keeps the view-model, every bound value, the scroll positions and the focus. State that must outlive a page lives in the screen view-model (UI-334), in the match-setup state, reached only through player commands (UI-301), or in the settings store.
 
 **UI-334** (MUST) The screen view-model holds, for the life of the screen, every value that reference/09 keeps across pages: the single-player flag (R-META-022); the quick-start flag, the tutorial flag and the tutorial type (R-META-025); the local map choice (R-META-041); the highlighted mode and the pressed mode (R-META-030, R-META-031); the mode the current page was built for (R-META-031, R-META-043); the highlighted map (R-META-040); the requested colour and the previous request (R-META-043 step 6); the waiting-for-team flag (R-META-043 step 2); whether the player name has been sent (R-META-082); the error message and its back page (R-META-058); the chat log (R-META-096); the session password (R-META-046); the leaving-while-ready flag (R-META-092); whether `Connecting` was entered from `SessionBrowser` (R-META-054); and the navigation lock (UI-388). The browser filter settings are read from the settings store when the screen is created (R-META-452).
 
 **UI-335** (MUST) These assets are resident before the first frame of the front end, so that no page change waits for a load: the gamepad glyphs `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.shoulder_left`, `glyph.pad.shoulder_right`, `glyph.pad.shoulder_left_shadow` and `glyph.pad.shoulder_right_shadow`; the fill-box texture `uitex.fill_blur`; the backdrop figure `sprite.worker.front` and wheel `uitex.backdrop_wheel`; the beam strip `fx.beam_short`; and the cloud layer `fx.sky_cloud`. The mode cards are loaded when the mode-select page is set up (R-META-033), and the map thumbnails in the background (R-META-034, DEC-226).
 
-**UI-336** (MUST) Windows that open over the front end, the help and options windows, the settings screen and its option screens (R-META-061), an open drop-down list, a message dialog, the leave confirmation, the chat input and the gamepad-disconnected dialog (R-META-004, R-META-066), are layers of the UI core's window stack above the front-end screen ([core_and_widgets.md](core_and_widgets.md) §4.1, R-META-015). The top layer has the focus and receives navigation and Back (ADR-0032). A modal layer (an open list, a message dialog, a confirmation, the gamepad-disconnected dialog) passes no input to any layer beneath it until it closes. The page stack of UI-331 lives inside the front-end screen and is unchanged by the layers above it.
+**UI-336** (MUST) Windows that open over the front end, the help and options windows, the settings screen and its option screens (R-META-061), an open drop-down list, a message dialog, the leave confirmation, the chat input and the gamepad-disconnected dialog (R-META-004, R-META-066), are layers of the UI core's window stack above the front-end screen ([core_and_widgets.md](core_and_widgets.md) §4.1, R-META-015). The top layer has the focus and receives navigation and Back (ADR-032). A modal layer (an open list, a message dialog, a confirmation, the gamepad-disconnected dialog) passes no input to any layer beneath it until it closes. The page stack of UI-331 lives inside the front-end screen and is unchanged by the layers above it.
 
 **UI-337** (MUST) The front-end screen draws only while it has the focus or while the chat input window is open ([core_and_widgets.md](core_and_widgets.md) UI-037). An options screen or the open-list window above it draws the backdrop figure layer itself (R-META-205), and while a page drop-down list is open only the widget that owns the list is drawn of the page's widgets (R-META-204). When it draws, the screen draws, in the front-end frame order of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-176: the backdrop figure layer (R-META-205, `RenderBackdrop`); the title bar (R-META-207, `uitex.title_wordmark`, `uitex.logo_emblem`); the page's fill boxes (UI-323), drawn as the fill boxes of [core_and_widgets.md](core_and_widgets.md) with `uitex.fill_blur` and the glow `fx.glow_cloudy` (R-META-208); the page overlays (UI-392); the widgets.
 
@@ -263,7 +263,7 @@ The match-setup Back buttons of single player, the host and a joining player, th
 
 **UI-350** (MUST) A navigation request names a stack operation and, except for Pop and Rebuild, a target page (UI-331). The page host holds at most one pending request: a request made while another is pending replaces it, so when several are made in one frame the last one wins.
 
-**UI-351** (MUST) A request takes effect at step 1 of the front-end screen's update in the next frame, `ui.pages.switch_delay_frames` (1) frame after the frame in which it was made, whatever made it: a pointer click, the activate action, the menu-close action, a page update hook or a session event (ADR-0032). A page is therefore never left while it is handling input, and a page change appears one frame after the request on every input device.
+**UI-351** (MUST) A request takes effect at step 1 of the front-end screen's update in the next frame, `ui.pages.switch_delay_frames` (1) frame after the frame in which it was made, whatever made it: a pointer click, the activate action, the menu-close action, a page update hook or a session event (ADR-032). A page is therefore never left while it is handling input, and a page change appears one frame after the request on every input device.
 
 **UI-352** (MUST) While the front-end screen exists, its update runs once per frame in the UI's update phase ([README](README.md) UI-006), in this order:
 
@@ -400,14 +400,14 @@ Caption: Diagram 4-C — one page change with its transition (UI-351, UI-360, UI
 **UI-370** (MUST) Every widget of a page is one entry of the page's layout record, and the page's enter rule builds the entries in record order, which is the registration order of [core_and_widgets.md](core_and_widgets.md) UI-025. Each entry gives, in five groups:
 
 1. **Kind and construction data**: the widget kind, of the front-end widget family of [core_and_widgets.md](core_and_widgets.md) or of table 3.3-A, and what the kind needs: a caption string id for a page button, a fixed target page for a Back button that has one, an asset id for a static image, a string id for a text label, a colour id or "none" for a colour picker row, a row index for a list row.
-2. **Identity and place**: the widget id, unique within the page; the rectangle, in the units of the layout grid (R-META-200, ADR-0033); the caption string id; an optional tooltip string id, which nothing shows ([core_and_widgets.md](core_and_widgets.md) UI-045).
+2. **Identity and place**: the widget id, unique within the page; the rectangle, in the units of the layout grid (R-META-200, ADR-033); the caption string id; an optional tooltip string id, which nothing shows ([core_and_widgets.md](core_and_widgets.md) UI-045).
 3. **Appearance and behaviour fields**: the font size; inactive (drawn greyed, skipped by navigation, never acting); centred; and the flags of its kind: no background and cycle mode for page drop-downs, shadow and centred for text labels, border for pictures, the alternate box style for page text fields, and the backwards transition direction for cancel-like buttons.
 4. **Binding** ([core_and_widgets.md](core_and_widgets.md) §4.23): a shared match-setup option, for page drop-downs and check boxes that edit the match setup; a local integer or boolean of the view-model, for local controls; or a typed text value with its maximum length, for page text fields: the session password at most `ref.match.option.password_max_length` (16) characters, the player name at most `ref.meta.player.name_max_length` (16) and a chat line at most `ref.meta.chat.max_length` (255).
 5. **Navigation**: whether the widget is in the page's navigation order, and its place there. Titles, pictures, information panels, status widgets and the chat log are never in it; every other widget that acts is.
 
-**UI-371** (MUST) A widget id serves debugging, the derivation of the help-text string id of an option control (R-META-050, keyed by the option) and accessible names (ADR-0064). Widgets are reached at run time only by their handles ([README](README.md) UI-012).
+**UI-371** (MUST) A widget id serves debugging, the derivation of the help-text string id of an option control (R-META-050, keyed by the option) and accessible names (ADR-064). Widgets are reached at run time only by their handles ([README](README.md) UI-012).
 
-**UI-372** (MUST) The content build validates every page and options-screen layout record, and fails on: a widget id that occurs twice in one page (DEC-801); a caption, tooltip or accessible-name string id that the base language lacks (DEC-099); an asset id that the asset manifest lacks; a navigation entry that is not focusable, or a focusable widget that is in no navigation order; an initial focus that is not in the navigation order; a focus neighbour that does not exist (ADR-0032); a binding to a field that the page's view-model does not declare; a page id of the catalogue without a record, or a record whose page id the catalogue lacks (UI-324).
+**UI-372** (MUST) The content build validates every page and options-screen layout record, and fails on: a widget id that occurs twice in one page (DEC-801); a caption, tooltip or accessible-name string id that the base language lacks (DEC-099); an asset id that the asset manifest lacks; a navigation entry that is not focusable, or a focusable widget that is in no navigation order; an initial focus that is not in the navigation order; a focus neighbour that does not exist (ADR-032); a binding to a field that the page's view-model does not declare; a page id of the catalogue without a record, or a record whose page id the catalogue lacks (UI-324).
 
 **UI-373** (MUST) A standard page follows the skeleton of R-META-201 and the grid conventions of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-163 and UI-164: the page title at (lX + `ref.meta.layout.title_inset`, lY + `ref.meta.layout.title_inset`, lW − 2 × `ref.meta.layout.title_inset`, `ref.meta.layout.title_height` × bh) in the medium font, over the highlight beam `uitex.menu_highlight`; stacked buttons centred in the left box at bx, the first at `ref.meta.layout.first_button_offset` below lY and each further one a button step lower; Back at y = lY + lH − `ref.meta.layout.back_offset` × bh; and the right box's information panels outside the navigation order.
 
@@ -419,7 +419,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 **UI-380** (MUST) Navigation acts only while the front-end screen has the focus and its navigation is not locked (UI-388), and only in step 3 of the screen's update (UI-352). While a layer is above the screen, navigation and Back belong to that layer (UI-336).
 
-**UI-381** (MUST) `action.menu.down` and `action.menu.up` move the cursor to the next and the previous entry of the page's navigation order, wrapping around and skipping inactive entries; when every entry is inactive the cursor stays and the step ends ([core_and_widgets.md](core_and_widgets.md) UI-051). The page's authored up and down neighbours, when its layout gives any, take precedence over the order (ADR-0032). `action.menu.left` and `action.menu.right` act only as [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-210 states.
+**UI-381** (MUST) `action.menu.down` and `action.menu.up` move the cursor to the next and the previous entry of the page's navigation order, wrapping around and skipping inactive entries; when every entry is inactive the cursor stays and the step ends ([core_and_widgets.md](core_and_widgets.md) UI-051). The page's authored up and down neighbours, when its layout gives any, take precedence over the order (ADR-032). `action.menu.left` and `action.menu.right` act only as [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-210 states.
 
 **UI-382** (MUST) `action.menu.activate`, and `action.menu.front_end_activate` while the participant is at the front end, act on the cursor's widget exactly as a click on it does, unless the widget is inactive or disabled.
 
@@ -435,7 +435,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 **UI-388** (MUST) The navigation lock is set when a tutorial is launched from the tutorials page (R-META-025, R-META-026) and lasts until the front-end screen is destroyed. While it is set, the cursor does not move, no widget of the page acts and Back is ignored; the page hooks still run, so the tutorial launch completes (R-META-023; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-213).
 
-**UI-389** (MUST) Pointer and gamepad share one cursor (ADR-0032). In pointer mode, hovering a focusable widget moves the cursor to it; in gamepad mode, only navigation moves the cursor, and no widget reacts to hover, the kick control and the map rows included. Any gamepad navigation switches the input mode to gamepad (ADR-0029). The menu-hover cue `match_ui.menu_hover` (R-AUD-300) follows the roll-over rule of [core_and_widgets.md](core_and_widgets.md) UI-110, for page text fields as for every other page widget (DT-16).
+**UI-389** (MUST) Pointer and gamepad share one cursor (ADR-032). In pointer mode, hovering a focusable widget moves the cursor to it; in gamepad mode, only navigation moves the cursor, and no widget reacts to hover, the kick control and the map rows included. Any gamepad navigation switches the input mode to gamepad (ADR-029). The menu-hover cue `match_ui.menu_hover` (R-AUD-300) follows the roll-over rule of [core_and_widgets.md](core_and_widgets.md) UI-110, for page text fields as for every other page widget (DT-16).
 
 ### 4.5 Page rendering conventions and animations
 
@@ -445,7 +445,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 **UI-392** (MUST) A page draws its overlays through its `DrawOverlay`, after its fill boxes and before its widgets (UI-337): the blinking captions of `SessionBrowser` while its list is empty (R-META-209) and the loading caption of the `Achievements` hook page (R-META-491), each with the blink of `ref.meta.blink.on_alpha`, `ref.meta.blink.on_time` and `ref.meta.blink.off_alpha`.
 
-**UI-393** (MUST) Every animation of the pages runs on the presentation clock in real seconds (ADR-0036) and is independent of the frame rate. The page animations, each specified where the table says, are:
+**UI-393** (MUST) Every animation of the pages runs on the presentation clock in real seconds (ADR-036) and is independent of the frame rate. The page animations, each specified where the table says, are:
 
 | Animation | Rule |
 |---|---|
@@ -462,7 +462,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 
 ### 4.6 Scrolling text
 
-**UI-400** (MUST) A scrolling text widget (`ScrollingText`) draws a text in the body role at its font size, clipped to its rectangle through the scissor stack ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-181; ADR-0031). The pages use it for the credits (R-META-060), the mode description (R-META-032), the map description on `MapSelect` and on the single-player `MatchSetup` (R-META-042, R-META-044) and the option details (R-META-046).
+**UI-400** (MUST) A scrolling text widget (`ScrollingText`) draws a text in the body role at its font size, clipped to its rectangle through the scissor stack ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-181; ADR-031). The pages use it for the credits (R-META-060), the mode description (R-META-032), the map description on `MapSelect` and on the single-player `MatchSetup` (R-META-042, R-META-044) and the option details (R-META-046).
 
 **UI-401** (MUST) With the widget's rectangle (x, y, w, h) and its font size s, the layout is:
 
@@ -473,7 +473,7 @@ The front-end screen's navigation is the standard window's ([core_and_widgets.md
 | left margin | `ui.scroll_text.left_margin` × w |
 | wrap width | `ui.scroll_text.wrap_width` × w |
 
-The text is word-wrapped at the wrap width with the widths that the glyph cache measures (ADR-0034); the line breaks of the text are kept.
+The text is word-wrapped at the wrap width with the widths that the glyph cache measures (ADR-034); the line breaks of the text are kept.
 
 **UI-402** (MUST) The wrapped lines are cached and wrapped again only when the text, the wrap width, the font size or the language changes. The mode description, the map description and the option details set their text from the view-model in every update; an unchanged text keeps its wrapping.
 
@@ -597,7 +597,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-441** (MUST) Every setting that an options screen edits is a typed entry of the preferences schema ([data schemas](../data_schemas/README.md)), with its key, type, default from the one defaults table (DEC-100), range and **apply scope**: immediate, a renderer reconfiguration, or a restart. The settings store (`SettingsStore`, [platform_layer.md](../platform_layer.md)) notifies the readers of a setting when it changes, so an applied setting reaches every reader at once; a reader that keeps a copy of a setting refreshes it on the notification, and no reader polls the store per frame for a change.
 
-**UI-442** (MUST) An options page follows R-META-412: it copies its settings into its view-model when it opens; its controls edit only the copies; its apply button is inactive, and drawn greyed, while every copy that the page compares equals the stored value, decided in the update, never while drawing; the apply action writes the copies, saves the settings file, applies each changed setting by its apply scope and re-reads the copies; Back closes the page and discards the copies, and never applies a change (ADR-0032).
+**UI-442** (MUST) An options page follows R-META-412: it copies its settings into its view-model when it opens; its controls edit only the copies; its apply button is inactive, and drawn greyed, while every copy that the page compares equals the stored value, decided in the update, never while drawing; the apply action writes the copies, saves the settings file, applies each changed setting by its apply scope and re-reads the copies; Back closes the page and discards the copies, and never applies a change (ADR-032).
 
 **UI-443** (MUST) An options screen is built in these steps:
 
@@ -609,7 +609,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 6. Open the screen from a page button: the button's base press raises the select cue and initialises the transition (UI-391), the screen is registered as a new layer above the page (UI-336), and the screen starts the transition when it is created.
 7. Readers of the settings react to the change notification of UI-441, so a setting with the immediate scope takes effect in the next frame without a rebuild.
 
-**UI-444** (MUST) The options screens are open to further settings by data: a new setting is one schema entry (UI-441) and one control entry in a page's layout record, with no new widget type. Whether the Species options add the settings that players commonly expect, among them vertical synchronisation, anti-aliasing, gamma, separate volumes, key rebinding and the UI-scale and text-scale settings of ADR-0033, is DEC-044; the reference option set has none of them, and the UI-scale and text-scale settings of ADR-0033 exist in the framework either way.
+**UI-444** (MUST) The options screens are open to further settings by data: a new setting is one schema entry (UI-441) and one control entry in a page's layout record, with no new widget type. Whether the Species options add the settings that players commonly expect, among them vertical synchronisation, anti-aliasing, gamma, separate volumes, key rebinding and the UI-scale and text-scale settings of ADR-033, is DEC-044; the reference option set has none of them, and the UI-scale and text-scale settings of ADR-033 exist in the framework either way.
 
 ### 4.12 Recipe C: a new front-end page
 
@@ -623,7 +623,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 6. **State.** Keep every value that must outlive the page in the screen view-model, in the match setup through player commands, or in the settings store (UI-333); the page's own view-model is discarded when the page is left.
 7. **Data that arrives later.** When the page needs data that arrives over the session, such as a confirmed mode or a team slot, return `Waiting` from the enter rule until it has arrived (UI-362), as `MapSelect` and `MatchSetup` do.
 
-**UI-451** (MUST) A page record is authored as JSON under the schema of [data schemas](../data_schemas/README.md) (ADR-0062). The record below is illustrative: the credits page (R-META-060), whose fields are those of UI-313 and UI-370; the schema's own field names belong to the data schemas.
+**UI-451** (MUST) A page record is authored as JSON under the schema of [data schemas](../data_schemas/README.md) (ADR-062). The record below is illustrative: the credits page (R-META-060), whose fields are those of UI-313 and UI-370; the schema's own field names belong to the data schemas.
 
 ```json
 {
@@ -647,7 +647,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-460** (MUST) A HUD panel (`HudPanel`) is an overlay of the match that is not a window: it holds no focus of its own, draws through the batched UI stream in the HUD space of [entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377 in its pass of the pass table (the Power slots panel in pass 23, the match HUD in pass 28), and advances once per frame in the UI's update phase, after the UI input pump ([README](README.md) UI-006). It reads only the presentation view of the match (UI-301) and issues player intent only as commands. Its background strips are the accent panel strip `uitex.panel_accent` and the neutral panel strip `uitex.panel_neutral`, the accent-panel and neutral-panel token roles of [visual_language.md](../renderer/visual_language.md) RND-403; the Power slots panel uses both.
 
-**UI-461** (MUST) A HUD panel's pointer-reachable elements are **screen zones** (R-CTRL-223). A panel produces its zones in its advance from its view-model, never while drawing (DEC-102, ADR-0032); the set produced in one frame is the set that hit testing and navigation use from the next frame, so a zone takes effect one frame after it appears, as R-CTRL-223 states.
+**UI-461** (MUST) A HUD panel's pointer-reachable elements are **screen zones** (R-CTRL-223). A panel produces its zones in its advance from its view-model, never while drawing (DEC-102, ADR-032); the set produced in one frame is the set that hit testing and navigation use from the next frame, so a zone takes effect one frame after it appears, as R-CTRL-223 states.
 
 **UI-462** (MUST) The Power slots panel (`PowerSlotsPanel`) is built by this recipe with the content of R-CTRL-220 to R-CTRL-239. Its power bar is clickable and shows one slot per unit of the team's capacity, the occupied slots first and then the empty slots drawn with `icon.hud.slot_empty` (DEC-083; R-CTRL-226, R-CTRL-230); it generates one "select Power" zone per bar slot in navigation group 2 (R-CTRL-225), and the bar stays selectable by the slot keys and the gamepad (DEC-083). The zone of each Power is its position in the slot order of R-CTRL-230, the reference order; when DEC-556 adopts stable slot positions, each Power keeps the zone of the slot it was granted in and each number key selects the same zone until the Power ends. The cycling hint shows `glyph.key.tab` in keyboard and pointer mode and `glyph.pad.shoulder_left` in gamepad mode (R-CTRL-234); Power icons draw over the darkening halo `icon.hud.icon_halo` (R-CTRL-238); the discard button `icon.hud.slot_discard` belongs to the overlay screen that a match never shows (R-CTRL-231).
 
@@ -659,7 +659,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-466** (MUST) A HUD panel that a feature of DEC-050 adds, such as objective cards or on-screen control help for gamepad players, is built by this recipe; its content and its entry points are the design phase's.
 
-**UI-467** (MUST) The explainer panel shown while the players ready up is a HUD panel without zones of the hint overlay (`HintOverlay`, pass 17 of [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070). It plays the mode's explainer animation `anim.explainer` through the explainer player of the animation runtime ([explainers_sprites_and_procedural_animation.md](../animation_and_vfx/explainers_sprites_and_procedural_animation.md), ADR-0035), and its creation, visibility and content are those of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220 to R-META-223 and [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020 (DEC-750).
+**UI-467** (MUST) The explainer panel shown while the players ready up is a HUD panel without zones of the hint overlay (`HintOverlay`, pass 17 of [frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-070). It plays the mode's explainer animation `anim.explainer` through the explainer player of the animation runtime ([explainers_sprites_and_procedural_animation.md](../animation_and_vfx/explainers_sprites_and_procedural_animation.md), ADR-035), and its creation, visibility and content are those of [front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-220 to R-META-223 and [reference/11](../../../reference/11_tutorial_and_help.md) R-TUT-020 (DEC-750).
 
 ## 5 Concurrency and performance budget
 
@@ -667,9 +667,9 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-471** (MUST) Applying a page change completes within the frame that applies it, with no blocking load: the art of every page is resident from the first front-end frame (UI-335), the mode cards are loaded when the mode-select page is set up (R-META-033), and a thumbnail that is not yet loaded shows its outline until it arrives. At the client's target frame rate (`rnd.budget.target_frame_rate`, [options_and_budgets.md](../renderer/options_and_budgets.md) RND-454), a page change never makes a frame miss its present.
 
-**UI-472** (MUST) In a frame in which no page changes, no list changes and no text changes, the page framework allocates no memory, wraps no text (UI-402) and builds no widget; its cost is the screen update of UI-352 and the quads and glyph runs that the widgets emit into the batched UI stream (ADR-0031).
+**UI-472** (MUST) In a frame in which no page changes, no list changes and no text changes, the page framework allocates no memory, wraps no text (UI-402) and builds no widget; its cost is the screen update of UI-352 and the quads and glyph runs that the widgets emit into the batched UI stream (ADR-031).
 
-**UI-473** (MUST) The UI's frame budget, its draw count and its vertex count are those of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §5 ([README](README.md) UI-017). The page-level costs, the time to apply a page change and the update time of the busiest page (`MatchSetup` with a full chat log and every slot row), are measured with one profiling marker per page apply and per page hook (ADR-0068), and their millisecond budgets are set from the prototype measurement together with the frame budgets (DEC-106).
+**UI-473** (MUST) The UI's frame budget, its draw count and its vertex count are those of [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) §5 ([README](README.md) UI-017). The page-level costs, the time to apply a page change and the update time of the busiest page (`MatchSetup` with a full chat log and every slot row), are measured with one profiling marker per page apply and per page hook (ADR-068), and their millisecond budgets are set from the prototype measurement together with the frame budgets (DEC-106).
 
 **UI-474** (SHOULD) The widget kinds of table 3.3-A emit their primitives in a fixed order per widget: background quads, then pictures, then every outline glyph of their text, then every fill glyph, so that consecutive primitives share their blend state and texture and one widget costs few batches ([layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-179). The order never changes what painter's order shows.
 
@@ -689,7 +689,7 @@ A tool window draws the standard window chrome ([core_and_widgets.md](core_and_w
 
 **UI-481** (MUST) When the row under the cursor is removed from a list, the cursor moves to the row that takes its place or, when none does, to the last remaining row, or to the Back button when no row remains; it never rests on a removed widget.
 
-**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-0067), with the operation, the page left, the page entered and the frame. Development builds show in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-0066, ADR-0068).
+**UI-482** (MUST) The page host writes every applied and every refused request to the UI log category (ADR-067), with the operation, the page left, the page entered and the frame. Development builds show in the diagnostics overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) the current page id, the stack, whether the page is waiting and for how many frames, the pending request and the last refused request. The page framework sends no telemetry of its own; its timings reach the profiling overlay only (ADR-066, ADR-068).
 
 ## 7 Acceptance tests
 
@@ -754,7 +754,7 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DT-09 | overflow or cut a long message | show a message dialog of 500 lines: every line is kept and the dialog is drawn | [core_and_widgets.md](core_and_widgets.md) UI-088 |
 | DT-10 | soft-lock a gamepad player in a message dialog | open a message dialog in gamepad mode: the south face button dismisses it, and no input reaches the page below it while it is open | [core_and_widgets.md](core_and_widgets.md) UI-089; UI-336 |
 | DT-11 | show string ids in an open drop-down list | open every drop-down list of every page in every supported language: no entry shows a string id | [core_and_widgets.md](core_and_widgets.md) UI-083; UI-372 |
-| DT-12 | let one widget's draw state leak into later widgets | draw a page with scroll-bar arrows followed by alpha-blended widgets: the result matches its reference image, and every batch carries its own blend and depth state | ADR-0031; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-183 |
+| DT-12 | let one widget's draw state leak into later widgets | draw a page with scroll-bar arrows followed by alpha-blended widgets: the result matches its reference image, and every batch carries its own blend and depth state | ADR-031; [layout_rendering_input_and_localisation.md](layout_rendering_input_and_localisation.md) UI-183 |
 | DT-13 | repeat at a speed that depends on the frame rate | hold an increment glyph, a float field's glyph and a scroll arrow for 2 s at 30 and at 144 frames per second: the number of steps and the change of value are equal | [core_and_widgets.md](core_and_widgets.md) UI-071, UI-072, UI-077 |
 | DT-14 | draw a degenerate scroll thumb for an empty list | show a scroll bar with no rows: no value is infinite or not a number, and the thumb fills the track | [core_and_widgets.md](core_and_widgets.md) UI-076 |
 | DT-15 | place a full-screen page beyond the screen | with large menus on, the front-end screen and every options screen cover exactly (0, 0) to (W, H) | UI-330; [core_and_widgets.md](core_and_widgets.md) UI-048 |
@@ -802,7 +802,7 @@ Every Species UI build passes these must-not tests (DEC-102). Each states a beha
 | DEC-045 | Open | a map editor, whose windows follow recipe A (UI-430, UI-431) |
 | DEC-333 | Dropped | trial-edition gating: no trial page, upsell or overlay (UI-322, UI-341, UI-411) |
 
-ADR-0030 and ADR-0034 are Proposed; the default each names is the baseline of this document.
+ADR-030 and ADR-034 are Proposed; the default each names is the baseline of this document.
 
 **Design-phase inputs.**
 
@@ -813,8 +813,8 @@ ADR-0030 and ADR-0034 are Proposed; the default each names is the baseline of th
 5. Whether the session browser becomes a directory of community world servers (DEC-245), and with it the row model, the visible row count and the filter page of `SessionBrowser`.
 6. Which of the features of DEC-050 are designed, and by which recipe: a key-rebinding page (C), on-screen control help (D), objective cards (D), a spectator view (C or D) and quick match (C).
 7. Whether the power bar keeps the reference slot order or stable slot positions (DEC-556), which fixes the zone identity of recipe D.
-8. The options set of the world game (DEC-044), including the ranges of the UI-scale and text-scale settings (ADR-0033).
-9. The accessibility of the pages: whether menus are narrated (XAG 106), the audit of each page's focus order (XAG 112, XAG 113), and confirmations for destructive actions such as leaving a match (XAG 115) (ADR-0064).
+8. The options set of the world game (DEC-044), including the ranges of the UI-scale and text-scale settings (ADR-033).
+9. The accessibility of the pages: whether menus are narrated (XAG 106), the audit of each page's focus order (XAG 112, XAG 113), and confirmations for destructive actions such as leaving a match (XAG 115) (ADR-064).
 10. The achievement and leaderboard pages, if the world game has them (DEC-047), on the hook pages of table 3.1-A.
 
 ## 9 Tuning table

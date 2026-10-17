@@ -1,14 +1,14 @@
 # Frame graph and passes
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-0004](../../../adr/0004-frame-graph-from-the-ordered-pass-table.md) · [ADR-0005](../../../adr/0005-pipeline-state-catalogue.md) · [ADR-0006](../../../adr/0006-root-signature-and-bindless-resource-access.md) · [ADR-0007](../../../adr/0007-barrier-model.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0012](../../../adr/0012-swap-chain-presentation-and-frame-pacing.md) · [ADR-0013](../../../adr/0013-working-colour-space-and-blending.md) · [ADR-0015](../../../adr/0015-scene-anti-aliasing.md) · [ADR-0016](../../../adr/0016-view-projection-and-depth-conventions.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0031](../../../adr/0031-batched-ui-rendering.md) · [ADR-0068](../../../adr/0068-profiling-and-gpu-timing.md) · [ADR-0076](../../../adr/0076-screenshot-encoding.md) · Related: [Renderer](README.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-004](../../../ADR/ADR-004-frame-graph-from-the-ordered-pass-table.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-006](../../../ADR/ADR-006-root-signature-and-bindless-resource-access.md) · [ADR-007](../../../ADR/ADR-007-barrier-model.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-012](../../../ADR/ADR-012-swap-chain-presentation-and-frame-pacing.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-016](../../../ADR/ADR-016-view-projection-and-depth-conventions.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md) · [ADR-068](../../../ADR/ADR-068-profiling-and-gpu-timing.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md) · Related: [Renderer](README.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md)
 
-This document holds the ordered pass table: the single source of truth for the order of the passes of a frame and for the blend, depth, cull and cut-out state of each, from which the frame graph (ADR-0004) and the pipeline-state catalogue (ADR-0005) are derived. It also specifies the frame types, render-time extrapolation, fades, the pause banner, the screen transition, the loading-view frame and screenshots.
+This document holds the ordered pass table: the single source of truth for the order of the passes of a frame and for the blend, depth, cull and cut-out state of each, from which the frame graph (ADR-004) and the pipeline-state catalogue (ADR-005) are derived. It also specifies the frame types, render-time extrapolation, fades, the pause banner, the screen transition, the loading-view frame and screenshots.
 
 ## 1 Responsibilities and boundaries
 
-**RND-050** (MUST) The frame graph is compiled from the ordered pass table of §4.3 at start-up and on every reconfiguration (RND-030). Each table entry names its pass, the catalogue entries it may use, the resources it reads and writes, its sort rule and the setting that enables it (ADR-0004).
+**RND-050** (MUST) The frame graph is compiled from the ordered pass table of §4.3 at start-up and on every reconfiguration (RND-030). Each table entry names its pass, the catalogue entries it may use, the resources it reads and writes, its sort rule and the setting that enables it (ADR-004).
 
-**RND-051** (MUST) Sub-renderers record draws only. They MUST NOT issue barriers, create pipeline states, change the order of passes or read the back buffer in place: barriers are derived by the compiled graph (ADR-0004, ADR-0007), pipeline states exist before the first frame (ADR-0005), and any pass that samples an earlier image reads a declared frame-graph target.
+**RND-051** (MUST) Sub-renderers record draws only. They MUST NOT issue barriers, create pipeline states, change the order of passes or read the back buffer in place: barriers are derived by the compiled graph (ADR-004, ADR-007), pipeline states exist before the first frame (ADR-005), and any pass that samples an earlier image reads a declared frame-graph target.
 
 **RND-052** (MUST) Every state that a pass uses is a complete, immutable pipeline state. No state leaks from one pass or draw to the next; where an owner document specifies a visible effect that depends on the state an earlier draw left behind, that effect is stated as an explicit state of the later draw.
 
@@ -18,13 +18,13 @@ This document holds the ordered pass table: the single source of truth for the o
 namespace species::render {
 
 enum class BlendState : std::uint8_t { Opaque, Alpha, Premultiplied, Additive, Darkening, Ink, Ghost };
-enum class DepthState : std::uint8_t { TestWrite, Test, None };   // comparison GREATER_EQUAL, ADR-0016
+enum class DepthState : std::uint8_t { TestWrite, Test, None };   // comparison GREATER_EQUAL, ADR-016
 enum class CullState  : std::uint8_t { Back, None };
 enum class SortRule   : std::uint8_t { Unsorted, BackToFront };
 
 struct DepthBiasVariant { float referenceFactor = 1.0f; };       // RND-219 to RND-221
 
-struct PipelineDescriptor {                 // one catalogue entry, ADR-0005
+struct PipelineDescriptor {                 // one catalogue entry, ADR-005
   ShaderPermutationId shader;               // shaders.md
   BlendState blend = BlendState::Opaque;
   DepthState depth = DepthState::TestWrite;
@@ -56,20 +56,20 @@ public:
 
 ### 3.1 The default pipeline state
 
-**RND-055** (MUST) Every catalogue entry starts from this default state and lists only its differences (ADR-0005):
+**RND-055** (MUST) Every catalogue entry starts from this default state and lists only its differences (ADR-005):
 
 | Group | Default |
 |---|---|
 | rasteriser | solid fill; back faces culled; a triangle whose vertices appear counter-clockwise on the render target is front-facing (`FrontCounterClockwise = TRUE`, the winding of the reference meshes and of glTF); depth clip on; no depth bias |
-| depth | `D32_FLOAT`, reversed Z, test on with `GREATER_EQUAL` (the reversed-Z form of less-or-equal), write on (ADR-0016) |
+| depth | `D32_FLOAT`, reversed Z, test on with `GREATER_EQUAL` (the reversed-Z form of less-or-equal), write on (ADR-016) |
 | stencil | off; no stencil format is created, because no pass uses one |
 | blend | off; when a pass enables blending with the default factors, they are source alpha and one minus source alpha (the `Alpha` blend state) |
 | alpha cut-out | off; when a material enables it, a pixel is kept only if its alpha is greater than `rnd.pso.default_cutout` (0.01) |
 | fog | the per-frame fog parameters are always set (RND-222); fog is off unless the pass enables it |
 | lighting | the two directional lights are always set in the per-frame constants (RND-226); lighting is off unless the pass uses a lit material |
 | texture | none bound; a bound texture is sampled with linear clamp-to-edge filtering through all its mip levels and is multiplied by the vertex colour |
-| shading | flat: every triangle has one facet colour and one facet normal (ADR-0020); lit shaders always use unit-length normals |
-| lines and points | no line or point smoothing; lines and points are drawn as quads (ADR-0009) |
+| shading | flat: every triangle has one facet colour and one facet normal (ADR-020); lit shaders always use unit-length normals |
+| lines and points | no line or point smoothing; lines and points are drawn as quads (ADR-009) |
 | topology | triangle lists; a quad is two triangles with the index pattern 0, 1, 2, 0, 2, 3 |
 | scissor | the full render target |
 
@@ -79,7 +79,7 @@ public:
 
 ### 3.2 Blend states
 
-**RND-058** (MUST) Each blend combination of the reference look maps to one catalogue blend state of ADR-0005:
+**RND-058** (MUST) Each blend combination of the reference look maps to one catalogue blend state of ADR-005:
 
 | Reference combination (source factor, destination factor) | Catalogue blend state |
 |---|---|
@@ -91,13 +91,13 @@ public:
 | source alpha, one minus source colour, with source alpha not 0 | `Ink` |
 | one, source colour | `Ghost` (the world cursor's ghost models, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md)) |
 
-Every blend result is clamped to [0, 1] per channel as it is written to the SDR scene target, so additive layers saturate and darkening layers multiply the clamped result (ADR-0013).
+Every blend result is clamped to [0, 1] per channel as it is written to the SDR scene target, so additive layers saturate and darkening layers multiply the clamped result (ADR-013).
 
 ### 3.3 Depth, cull and cut-out variants
 
 **RND-059** (MUST) The depth variants are `TestWrite`, `Test` (test without write, for transparent, additive and darkening draws) and `None` (no test and no write, for screen-space UI and text and for passes drawn before any depth exists), plus the depth-biased variants of [view_lighting_and_fog.md](view_lighting_and_fog.md) §4.2, which replace every change of the projection's near plane. The cull variants are `Back` and `None` (UI, text, sprite cards, curtains, two-sided meshes).
 
-**RND-060** (MUST) Alpha cut-out thresholds are part of the catalogue entry: `rnd.pso.default_cutout` (0.01) where a material enables cut-out without its own threshold, `rnd.pso.strike_team_cutout` (0.02) for pass 7a and `rnd.pso.worker_cutout` (0.04) for pass 7d. With multisampling on, cut-out materials use alpha-to-coverage (ADR-0015).
+**RND-060** (MUST) Alpha cut-out thresholds are part of the catalogue entry: `rnd.pso.default_cutout` (0.01) where a material enables cut-out without its own threshold, `rnd.pso.strike_team_cutout` (0.02) for pass 7a and `rnd.pso.worker_cutout` (0.04) for pass 7d. With multisampling on, cut-out materials use alpha-to-coverage (ADR-015).
 
 ### 3.4 The catalogue entries of the world passes
 
@@ -122,7 +122,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | `fade` | `fullscreen_fade` | `Alpha` | `None` | `None` | off | pass 27 |
 | `transition` | `screen_transition` | `Alpha` | `None` | `None` | off | pass 34 |
 
-**RND-062** (MUST) Every catalogue entry exists in an SDR and, where HDR output is offered, an HDR scene-target form, and in each enabled sample count (ADR-0005, ADR-0014, ADR-0015). Entries are created at start-up or during reconfiguration, never during a frame.
+**RND-062** (MUST) Every catalogue entry exists in an SDR and, where HDR output is offered, an HDR scene-target form, and in each enabled sample count (ADR-005, ADR-014, ADR-015). Entries are created at start-up or during reconfiguration, never during a frame.
 
 ### 3.5 Frame-graph resources
 
@@ -133,18 +133,18 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | `scene_colour` | `R8G8B8A8_UNORM` (SDR) or `R16G16B16A16_FLOAT` (HDR); render size; the configured sample count | passes 2 to 15 | the resolve |
 | `scene_depth` | `D32_FLOAT`; render size; the configured sample count | passes 2 to 15 | passes 3 to 15, the depth copy |
 | `scene_resolved` | as `scene_colour`, one sample | the resolve after pass 15 | the final pass |
-| `final_image` | the back-buffer format; client-area size | the final pass (scaling, brightness and HDR conversion, ADR-0012, ADR-0014), then passes 16 to 34 at native resolution | the capture copy, the screenshot read-back, the present copy |
+| `final_image` | the back-buffer format; client-area size | the final pass (scaling, brightness and HDR conversion, ADR-012, ADR-014), then passes 16 to 34 at native resolution | the capture copy, the screenshot read-back, the present copy |
 | `captured_frame` | as `final_image` | the capture copy (RND-095) | pass 34 |
-| `screenshot_readback` | read-back buffer of `final_image` | the screenshot copy (RND-112) | the screenshot encoder (ADR-0076) |
+| `screenshot_readback` | read-back buffer of `final_image` | the screenshot copy (RND-112) | the screenshot encoder (ADR-076) |
 | `scene_depth_single` | single-sample `R32_FLOAT` copy of `scene_depth` (the nearest sample); render size | the depth copy after pass 15 | pass 20 |
-| `terrain_heights` | single-channel float; one texel per height sample | terrain load | particles (ADR-0010), shadow projection (ADR-0009) |
-| `back_buffer` | the swap-chain format (ADR-0012) | the present copy | present |
+| `terrain_heights` | single-channel float; one texel per height sample | terrain load | particles (ADR-010), shadow projection (ADR-009) |
+| `back_buffer` | the swap-chain format (ADR-012) | the present copy | present |
 
 ## 4 Behaviour and algorithms
 
 ### 4.1 Frame entry
 
-**RND-065** (MUST) At each frame the renderer first checks the screenshot request (RND-110). Without one, it renders one frame of the current frame type (§4.2) and presents it. Every frame is bracketed by a profiling marker, and every pass by one CPU and GPU marker and one GPU timestamp pair (ADR-0068).
+**RND-065** (MUST) At each frame the renderer first checks the screenshot request (RND-110). Without one, it renders one frame of the current frame type (§4.2) and presents it. Every frame is bracketed by a profiling marker, and every pass by one CPU and GPU marker and one GPU timestamp pair (ADR-068).
 
 **RND-066** (MUST) The screen-transition step (RND-096) runs immediately before every present, in every frame type that presents through `RenderFrame`.
 
@@ -190,7 +190,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 15 | particles | the darkening batch, then the additive batch | [README.md](../animation_and_vfx/README.md) | `Darkening` · `Test` · `None`, then `Additive` · `Test` · `None` | off | unlit | darkening batch first |
 | 16 | world markers | world markers projected to screen icons, and off-screen direction arrows | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha`, icon layers `Additive` · `None` · `None` | off | unlit | — |
 | 17 | hint overlay | help overlays and the animated mode explainers | [ui_framework/README.md](../ui_framework/README.md), [reference/11_tutorial_and_help.md](../../../reference/11_tutorial_and_help.md) | `Alpha` · `None` · `None` | off | unlit | — |
-| 19 | UI windows | every menu, dialog, lobby and HUD window, back-most first | [ui_framework/README.md](../ui_framework/README.md) | per widget (ADR-0031) · `None` · `None` | off | unlit | back-most first |
+| 19 | UI windows | every menu, dialog, lobby and HUD window, back-most first | [ui_framework/README.md](../ui_framework/README.md) | per widget (ADR-031) · `None` · `None` | off | unlit | back-most first |
 | 20 | world cursor | 3-D highlight rings and cylinders, formation dots, ghost models; then the 2-D icon, entry marker, crosshair or pointer | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | rings `Alpha` · `Test` · `None` with the cursor bias variant; ghost models `Ghost` · `Test`; pointer shadow `Ink`, then `Additive` (the crosshair `Alpha`) | off | unlit | — |
 | 21 | chat | the chat log and the talk hint (RND-075) | [ui_framework/README.md](../ui_framework/README.md) | text styles · `None` · `None` | off | unlit | — |
 | 23 | Power slots panel | target-area particles, the Power bar, pop-ups and messages | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha` and `Additive` · `None` · `None` | off | unlit | — |
@@ -215,7 +215,7 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-075** (MUST) The chat log of pass 21 is drawn only while chat is shown in the match; each line lives `rnd.hud.chat.line_life` (60 s) and fades out over the last `rnd.hud.chat.line_fade` (5 s) of its life, that is from 55 s.
 
-**RND-076** (MUST) Pass 29 draws: the frame-rate overlay and the input-mode box when their development flags are set (RND-011); the build version string (ADR-0057) in the front end only, never while a match world exists in shipping builds; the editor banner in the map editor. Banners that report network state are presentation hooks of the networking model, which the design phase decides (DEC-200).
+**RND-076** (MUST) Pass 29 draws: the frame-rate overlay and the input-mode box when their development flags are set (RND-011); the build version string (ADR-057) in the front end only, never while a match world exists in shipping builds; the editor banner in the map editor. Banners that report network state are presentation hooks of the networking model, which the design phase decides (DEC-200).
 
 ### 4.4 Branches that replace passes 3 to 15
 
@@ -291,17 +291,17 @@ Both draws use the `transition` entry.
 
 **RND-111** (MUST) The poster path renders *N* × *N* complete frames in tile order *i* = 0 to *N*² − 1, each including every overlay pass, and each with the tile's sub-projection of [view_lighting_and_fog.md](view_lighting_and_fog.md) RND-214 while the state is `Tiling`. After each tile frame, the screenshot read-back copies `final_image`, the frame is presented, and the tile index increases. After the last tile the poster is saved and the state returns to `Inactive`.
 
-**RND-112** (MUST) The read-back is a frame-graph copy of `final_image` into `screenshot_readback` after the last overlay pass and before the present copy; the CPU maps it only after the frame's fence has completed, on a worker thread (ADR-0004, ADR-0076).
+**RND-112** (MUST) The read-back is a frame-graph copy of `final_image` into `screenshot_readback` after the last overlay pass and before the present copy; the CPU maps it only after the frame's fence has completed, on a worker thread (ADR-004, ADR-076).
 
 **RND-113** (MUST) The poster image is (*N* × render width) × (*N* × render height) pixels, initialised to black. Tile *i* covers the block whose lower-left corner is (*x* × render width, *y* × render height) with *x* = *i* mod *N* and *y* = ⌊*i* ÷ *N*⌋, counting rows from the bottom, so tile 0 is the bottom-left block; the saved image is top-down.
 
-**RND-114** (MUST) The poster is saved as one PNG through the encoder and the file naming of ADR-0076, encoded one tile row at a time; every pixel's alpha is written as fully opaque, so the image shows exactly the colour channels of the frames.
+**RND-114** (MUST) The poster is saved as one PNG through the encoder and the file naming of ADR-076, encoded one tile row at a time; every pixel's alpha is written as fully opaque, so the image shows exactly the colour channels of the frames.
 
 ### 4.9 The loading-view frame
 
 **RND-118** (MUST) Each loading-view frame (`LoadingView`), once the spinner art `sprite.worker.front` is resident, runs: clear `final_image` to black; if this is not the start-up load, no match is loading, the front end is showing and the fade is complete, draw the main-menu sky (RND-077) and the UI windows (pass 19) behind; then, in a 2-D block with the `Alpha` blend and no culling, the studio splash `uitex.studio_splash` during the start-up load and the spinning Worker, as [reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) specifies; then present. The reference loading view has no progress display; whether Species loads report progress is decided by the design phase (see DEC-226).
 
-**RND-119** (MUST) Loading-view frames are paced by `ref.sim.frame.loading_frame_period` of [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) (R-SIM-570). Uploads made during a load go through the copy queue and never through the loading-view frame (ADR-0008).
+**RND-119** (MUST) Loading-view frames are paced by `ref.sim.frame.loading_frame_period` of [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) (R-SIM-570). Uploads made during a load go through the copy queue and never through the loading-view frame (ADR-008).
 
 ### 4.10 Frame-graph diagram
 
@@ -342,12 +342,12 @@ Caption: the order of one frame; the main-menu branch replaces the match world, 
 
 | Failure | Behaviour | Requirement |
 |---|---|---|
-| a pass names a catalogue key that does not exist | a build error | RND-061, ADR-0005 |
-| a resource is read before it is written, or written and never read | frame-graph compilation fails with a diagnostic naming the pass | RND-050, ADR-0004 |
+| a pass names a catalogue key that does not exist | a build error | RND-061, ADR-005 |
+| a resource is read before it is written, or written and never read | frame-graph compilation fails with a diagnostic naming the pass | RND-050, ADR-004 |
 | a screenshot read-back cannot be mapped or encoded | the file is not written; a log entry; the frame continues | RND-112 |
 | `StartTransition()` is called in `Finished` | ignored; a development-build warning | RND-095 |
 
-Every pass carries its marker and timestamps (ADR-0068); a development view shows the pass list with per-pass GPU times.
+Every pass carries its marker and timestamps (ADR-068); a development view shows the pass list with per-pass GPU times.
 
 ## 7 Acceptance tests
 
@@ -378,7 +378,7 @@ Every pass carries its marker and timestamps (ADR-0068); a development view show
 | DEC-224 | Open | parallel pass recording (RND-120) |
 | DEC-226 | Open | load progress (RND-118) |
 | DEC-316 | Open | the screen transition and the captured frame (RND-095) |
-| ADR-0004, ADR-0005, ADR-0007 | Proposed, Accepted, Proposed | the frame graph, the catalogue and the barrier model this document feeds |
+| ADR-004, ADR-005, ADR-007 | Proposed, Accepted, Proposed | the frame graph, the catalogue and the barrier model this document feeds |
 
 **Design-phase inputs.** Whether the world game keeps the screen transition between front-end pages; whether poster renders are kept and at what maximum resolution; what the loading view shows while a region streams in (DEC-226).
 

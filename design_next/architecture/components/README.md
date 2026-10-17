@@ -1,6 +1,6 @@
 # Engine components
 
-> Status: Engine baseline · Index of the component specifications · Related: [Architecture](../README.md) · [Architecture decision records](../../adr/README.md) · [Reference mechanics](../../reference/README.md)
+> Status: Engine baseline · Index of the component specifications · Related: [Architecture](../README.md) · [Architecture decision records](../../ADR/README.md) · [Reference mechanics](../../reference/README.md)
 
 Each component specification states what the component owns and must not do, its C++23 interface sketch, data model, numbered requirements, concurrency and performance budget, failure modes and diagnostics, acceptance tests, and the open decisions and design-phase inputs that concern it. Components cite the reference requirements they serve and the ADRs that decide their technology, and never contradict an ADR.
 

@@ -1,6 +1,6 @@
 # UI layout, rendering, input and localisation
 
-> Status: Engine baseline · Prefix: UI · ADRs: [ADR-0031](../../../adr/0031-batched-ui-rendering.md), [ADR-0032](../../../adr/0032-ui-focus-graph-page-stack-and-input.md), [ADR-0033](../../../adr/0033-ui-layout-scaling-and-dpi.md), [ADR-0034](../../../adr/0034-text-rendering-and-glyph-cache.md), [ADR-0063](../../../adr/0063-localisation.md), [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md), [ADR-0029](../../../adr/0029-input-event-model-and-binding-contract.md), [ADR-0028](../../../adr/0028-input-device-back-ends.md), [ADR-0075](../../../adr/0075-application-window-and-dpi-awareness.md), [ADR-0005](../../../adr/0005-pipeline-state-catalogue.md) · Folder: [UI framework](README.md)
+> Status: Engine baseline · Prefix: UI · ADRs: [ADR-031](../../../ADR/ADR-031-batched-ui-rendering.md), [ADR-032](../../../ADR/ADR-032-ui-focus-graph-page-stack-and-input.md), [ADR-033](../../../ADR/ADR-033-ui-layout-scaling-and-dpi.md), [ADR-034](../../../ADR/ADR-034-text-rendering-and-glyph-cache.md), [ADR-063](../../../ADR/ADR-063-localisation.md), [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md), [ADR-029](../../../ADR/ADR-029-input-event-model-and-binding-contract.md), [ADR-028](../../../ADR/ADR-028-input-device-back-ends.md), [ADR-075](../../../ADR/ADR-075-application-window-and-dpi-awareness.md), [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · Folder: [UI framework](README.md)
 
 This document specifies how the UI framework lays out, draws, navigates and localises its widgets: the two layout systems and their formulas, DPI and scale settings and relayout; the UI pass, the batched UI renderer, the palette, text styles, font roles and the glyph cache; the navigation actions and rules for keyboard, gamepad and pointer; and the integration of the string tables. The widgets themselves are [core_and_widgets.md](core_and_widgets.md)'s, and the front-end page framework is [pages_and_screen_recipes.md](pages_and_screen_recipes.md)'s. Notation follows [core_and_widgets.md](core_and_widgets.md).
 
@@ -8,7 +8,7 @@ This document specifies how the UI framework lays out, draws, navigates and loca
 
 **UI-160** (MUST) This document owns: the layout functions of the framework and the tool-window layout values; the large-menu factor; the UI-scale, text-scale and DPI rules and relayout; the UI's use of the UI pass; the batched UI renderer's stream, batching and blend rules; the UI palette tokens and their reference values; text styles, the text draw point, font roles, the per-role spacing factors and the per-language horizontal scale; the glyph cache's tuning; the menu navigation actions the UI consumes and their navigation rules; and the string-table mechanism (look-up, fallback application, input-mode variants, markup expansion, widget use, case mapping, the font role per language, text entry of non-Latin text and the hand-over between tables at a language switch).
 
-**UI-161** (MUST NOT) This document does not define: which languages ship and when a language is offered (DEC-099; [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-460 to R-META-463); the fallback policy, which is per string id to the base language `ref.meta.lang.base` (`en-GB`; DEC-099, R-META-464); the start-up language choice (R-META-465); the page-grid values, which [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 own; the string-table schema and markup syntax ([data schemas](../data_schemas/README.md)); the binding grammar, the device back-ends and the input mode's source ([input.md](../input.md), ADR-0029); the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095, RND-096) and the HUD space (RND-377).
+**UI-161** (MUST NOT) This document does not define: which languages ship and when a language is offered (DEC-099; [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-460 to R-META-463); the fallback policy, which is per string id to the base language `ref.meta.lang.base` (`en-GB`; DEC-099, R-META-464); the start-up language choice (R-META-465); the page-grid values, which [reference/09 front_end_presentation.md](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 and R-META-201 own; the string-table schema and markup syntax ([data schemas](../data_schemas/README.md)); the binding grammar, the device back-ends and the input mode's source ([input.md](../input.md), ADR-029); the screen transition ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-095, RND-096) and the HUD space (RND-377).
 
 ## 2 Interfaces
 
@@ -61,7 +61,7 @@ public:
     void PopScissor();
 };
 
-class GlyphRenderer {                               // ADR-0034
+class GlyphRenderer {                               // ADR-034
 public:
     float MeasureWidth(std::u8string_view, const TextStyle&) const;      // UI-200
     void Draw(DrawContext&, PointF drawPoint, std::u8string_view, const TextStyle&, TextAlign);
@@ -83,7 +83,7 @@ public:
 }  // namespace species::ui
 ```
 
-**Events consumed.** Resize and DPI change (platform layer, ADR-0075); UI-scale and text-scale setting changes; input-mode change and binding change (input router, ADR-0029); language change (the other options apply, R-META-448). Each marks the open panels for relayout (UI-172).
+**Events consumed.** Resize and DPI change (platform layer, ADR-075); UI-scale and text-scale setting changes; input-mode change and binding change (input router, ADR-029); language change (the other options apply, R-META-448). Each marks the open panels for relayout (UI-172).
 
 **Threading contract.** Layout, drawing and look-ups run on the main thread. A string table is loaded on the loader thread and handed to the main thread through a completion signal (DEC-221 item 4); once handed over it is read-only.
 
@@ -91,19 +91,19 @@ public:
 
 | Record | Contents | Owner, lifetime | Schema |
 |---|---|---|---|
-| page layout | widgets, their cells on the page grid, string ids, accessible names, focus neighbours, overflow rules, view-model bindings | content; loaded with its page | [data schemas](../data_schemas/README.md) (ADR-0030, ADR-0061) |
+| page layout | widgets, their cells on the page grid, string ids, accessible names, focus neighbours, overflow rules, view-model bindings | content; loaded with its page | [data schemas](../data_schemas/README.md) (ADR-030, ADR-061) |
 | palette | one colour per token of §4.7; a default palette and a high-contrast variant | content; process | data schemas |
 | text style | font role, size, colour token, blend, pass | content or code | data schemas |
 | font-role map | per language and role: the face and its fallback chain | content; replaced on a language switch | data schemas; assets `font.ui.*` |
 | string table | per language (BCP 47 tag): id → plain text, keyboard-and-mouse variant, gamepad variant, after markup expansion | content; one generation per load, kept while viewed (UI-239) | data_schemas; assets `strings.*` |
 | UI scale state | DPI scale, UI scale, text scale | the UI core; process | settings (DEC-100) |
-| glyph cache | atlas pages and the glyph map | the glyph renderer; process; rebuilt after device removal | ADR-0034 |
+| glyph cache | atlas pages and the glyph map | the glyph renderer; process; rebuilt after device removal | ADR-034 |
 
 ## 4 Behaviour and algorithms
 
 ### 4.1 Layout systems and the page grid
 
-**UI-162** (MUST) The framework has two layout systems. Tool-style windows ([core_and_widgets.md](core_and_widgets.md) §4.10 to §4.21) are laid out in fixed pixels scaled by UI-170. Front-end pages and options screens are laid out in fractions of the client size, recomputed whenever a page is built or laid out again. HUD panels use the renderer's HUD space of `rnd.hud.ortho_height` (600) units high ([entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377), which one layout function converts to pixels together with the other two (ADR-0033).
+**UI-162** (MUST) The framework has two layout systems. Tool-style windows ([core_and_widgets.md](core_and_widgets.md) §4.10 to §4.21) are laid out in fixed pixels scaled by UI-170. Front-end pages and options screens are laid out in fractions of the client size, recomputed whenever a page is built or laid out again. HUD panels use the renderer's HUD space of `rnd.hud.ortho_height` (600) units high ([entity_and_overlay_renderers.md](../renderer/entity_and_overlay_renderers.md) RND-377), which one layout function converts to pixels together with the other two (ADR-033).
 
 **UI-163** (MUST) `ComputePageGrid(W, H)` computes the page grid of [reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-200 from its keys:
 
@@ -161,37 +161,37 @@ The development windows and the message dialog use this layout; no options scree
 
 ### 4.3 DPI, UI scale and text scale
 
-**UI-168** (MUST) Two player settings scale the UI (ADR-0033, ADR-0064): the **UI scale** multiplies element sizes around their anchors, and the **text scale** multiplies text sizes. They default to `ui.scale.ui_default` (1.0) and `ui.scale.text_default` (1.0), at which every layout of this folder is the reference layout; their ranges are a design-phase input (§8).
+**UI-168** (MUST) Two player settings scale the UI (ADR-033, ADR-064): the **UI scale** multiplies element sizes around their anchors, and the **text scale** multiplies text sizes. They default to `ui.scale.ui_default` (1.0) and `ui.scale.text_default` (1.0), at which every layout of this folder is the reference layout; their ranges are a design-phase input (§8).
 
-**UI-169** (MUST) The platform layer reports the window's DPI scale (ADR-0075). Line widths, borders, focus outlines and text-outline offsets are their pixel values × the DPI scale, rounded to whole pixels and at least 1 px; icons use the source size closest to their final pixel size; and every element rectangle is snapped to whole pixels after conversion (ADR-0031).
+**UI-169** (MUST) The platform layer reports the window's DPI scale (ADR-075). Line widths, borders, focus outlines and text-outline offsets are their pixel values × the DPI scale, rounded to whole pixels and at least 1 px; icons use the source size closest to their final pixel size; and every element rectangle is snapped to whole pixels after conversion (ADR-031).
 
 **UI-170** (MUST) A tool-window length v in pixels becomes *m*(v) × the DPI scale × the UI scale. A front-end length is its fraction of W or H × the UI scale about its anchor; at a UI scale of 1 the page grid of UI-163 is unchanged. HUD lengths are the renderer's (RND-377).
 
-**UI-171** (MUST) The final text size is the layout size × the text scale (× the UI scale where the element scales), clamped below by the accessibility minimum for the client height H: `ui.access.min_text_1080p` (9 px) × H ÷ 1080 for H ≤ 1080; linear between 9 px at 1080 and `ui.access.min_text_2160p` (19 px) at 2160; 19 px × H ÷ 2160 above (ADR-0064). The glyph cache rasterises at the final size (UI-198), so text is never scaled as a bitmap. When a string or a scaled element does not fit its cell, the cell's overflow rule applies (wrap, shrink to the minimum, or scroll); the shrink-to-fit of page titles ([core_and_widgets.md](core_and_widgets.md) UI-113) is the shrink rule. A cell without a rule is reported by the layout validator for every language that overflows it (ADR-0033).
+**UI-171** (MUST) The final text size is the layout size × the text scale (× the UI scale where the element scales), clamped below by the accessibility minimum for the client height H: `ui.access.min_text_1080p` (9 px) × H ÷ 1080 for H ≤ 1080; linear between 9 px at 1080 and `ui.access.min_text_2160p` (19 px) at 2160; 19 px × H ÷ 2160 above (ADR-064). The glyph cache rasterises at the final size (UI-198), so text is never scaled as a bitmap. When a string or a scaled element does not fit its cell, the cell's overflow rule applies (wrap, shrink to the minimum, or scroll); the shrink-to-fit of page titles ([core_and_widgets.md](core_and_widgets.md) UI-113) is the shrink rule. A cell without a rule is reported by the layout validator for every language that overflows it (ADR-033).
 
 ### 4.4 Relayout
 
-**UI-172** (MUST) A resize, a DPI change, a change of the UI scale or the text scale, a language change, an input-mode change and a binding change mark every open panel for relayout at the next update phase. Relayout recomputes positions and sizes from the layout data and re-resolves every bound caption; view-model state, scroll positions and the focus are untouched (ADR-0033, ADR-0030).
+**UI-172** (MUST) A resize, a DPI change, a change of the UI scale or the text scale, a language change, an input-mode change and a binding change mark every open panel for relayout at the next update phase. Relayout recomputes positions and sizes from the layout data and re-resolves every bound caption; view-model state, scroll positions and the focus are untouched (ADR-033, ADR-030).
 
 **UI-173** (MUST) When the client size changes from W × H to W′ × H′, every tool window keeps its size and moves so that its centre (cx, cy) becomes (cx × W′ ÷ W, cy × H′ ÷ H); full-screen pages lay themselves out again from the new size. The screen options apply of [reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-422 then rebuilds the menus as that requirement states.
 
-**UI-174** (MUST NOT) A size, window-mode or monitor change never re-creates the renderer, the UI core, a panel or a widget (ADR-0075, ADR-0012).
+**UI-174** (MUST NOT) A size, window-mode or monitor change never re-creates the renderer, the UI core, a panel or a widget (ADR-075, ADR-012).
 
 ### 4.5 The UI pass and the front-end frame composition
 
-**UI-175** (MUST) The UI is drawn in the UI windows pass (pass 19) at the window's native resolution, after the scene's resolve, tone mapping and brightness passes, independent of the scene's render scale and anti-aliasing; with HDR on, at the SDR reference white level (ADR-0031, ADR-0014). The other passes that draw UI text use the text styles of §4.8: the match message (pass 13, RND-074), the chat (pass 21, RND-075), the Power slots panel (pass 23, RND-378), the match HUD (pass 28, RND-379) and the paused banner (pass 33, RND-090).
+**UI-175** (MUST) The UI is drawn in the UI windows pass (pass 19) at the window's native resolution, after the scene's resolve, tone mapping and brightness passes, independent of the scene's render scale and anti-aliasing; with HDR on, at the SDR reference white level (ADR-031, ADR-014). The other passes that draw UI text use the text styles of §4.8: the match message (pass 13, RND-074), the chat (pass 21, RND-075), the Power slots panel (pass 23, RND-378), the match HUD (pass 28, RND-379) and the paused banner (pass 33, RND-090).
 
 **UI-176** (MUST) A front-end frame is composed in this order: the front-end controller's 3-D backdrop (the sky and its clouds, [reference/09](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) R-META-210); then, in the UI pass, only the focused full-screen page (the front-end screen or an options screen): the backdrop figure layer, the title bar with its title and emblems, the content boxes, the page overlays, the widgets back-most first and the in-page dialog (R-META-204; [core_and_widgets.md](core_and_widgets.md) UI-102); after the UI pass, the pointer, the fades and the screen transition, and then the present (RND-095, RND-096).
 
 ### 4.6 The batched UI renderer
 
-**UI-177** (MUST) Each frame the UI emits every visible primitive into one vertex stream in the renderer's upload ring, in painter's order (ADR-0031, ADR-0008). The stream is rebuilt every frame; no widget owns GPU memory.
+**UI-177** (MUST) Each frame the UI emits every visible primitive into one vertex stream in the renderer's upload ring, in painter's order (ADR-031, ADR-008). The stream is rebuilt every frame; no widget owns GPU memory.
 
-**UI-178** (MUST) A UI vertex holds a position in pixels with the origin at the top-left (two floats), texture coordinates (two floats), a colour of 8 bits per channel and a texture or glyph-atlas page index, 24 bytes in all; the vertex shader reads the texture through the bindless heap (ADR-0006).
+**UI-178** (MUST) A UI vertex holds a position in pixels with the origin at the top-left (two floats), texture coordinates (two floats), a colour of 8 bits per channel and a texture or glyph-atlas page index, 24 bytes in all; the vertex shader reads the texture through the bindless heap (ADR-006).
 
 **UI-179** (MUST) Consecutive primitives that share their blend state, their texture or atlas page and their scissor rectangle form one batch; a change of any of the three starts a new batch. Batching never reorders primitives, so blending stays exactly as painter's order gives it. Widget recipes order their primitives to keep batches long ([pages_and_screen_recipes.md](pages_and_screen_recipes.md)).
 
-**UI-180** (MUST) The UI uses three blend states of the pipeline-state catalogue (ADR-0005, ADR-0031): **alpha** (source alpha, one minus source alpha; `Alpha`), **additive** (source alpha, one; `Additive`) and **ink** (source alpha, one minus source colour; `Ink`). An ink primitive with source alpha 0 has the arithmetic of the catalogue's `Darkening` state, the destination × (1 − source colour) ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-058). Glyph coverage multiplies the colour and the alpha of a glyph quad, so text uses the same three states. Every result is clamped to [0, 1] per channel.
+**UI-180** (MUST) The UI uses three blend states of the pipeline-state catalogue (ADR-005, ADR-031): **alpha** (source alpha, one minus source alpha; `Alpha`), **additive** (source alpha, one; `Additive`) and **ink** (source alpha, one minus source colour; `Ink`). An ink primitive with source alpha 0 has the arithmetic of the catalogue's `Darkening` state, the destination × (1 − source colour) ([frame_graph_and_passes.md](../renderer/frame_graph_and_passes.md) RND-058). Glyph coverage multiplies the colour and the alpha of a glyph quad, so text uses the same three states. Every result is clamped to [0, 1] per channel.
 
 **UI-181** (MUST) The framework keeps a stack of scissor rectangles; each batch carries the intersection of the stack as its scissor rectangle. Clipped widgets (the chat field, scrolling lists and scrolling text) push their rectangle while they draw their content and pop it afterwards.
 
@@ -205,7 +205,7 @@ The development windows and the message dialog use this layout; no options scree
 
 **UI-185** (MUST) Every colour a widget draws, other than plain white and plain black, is a palette token ([core_and_widgets.md](core_and_widgets.md) §4.12 to §4.30). The window layer's tokens make a red glass panel with a steel-blue highlight gradient and dark red bevels; the front-end layer's make green captions that turn red under focus on blue-glowing fill boxes, with a green highlight beam behind page titles.
 
-**UI-186** (MUST) Palettes are content data. The reference values of the tokens of UI-187 and UI-188, in §9.1, form the default palette. The Species art direction replaces the values token by token while keeping each token's role ([visual_language.md](../renderer/visual_language.md) RND-403; [art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2). A high-contrast palette is a content variant in which every text token reaches a contrast of at least `ui.access.contrast_high` (7:1) against the background it is drawn on. The content build checks every palette against `ui.access.contrast_text` (4.5:1) for gameplay-relevant text and `ui.access.contrast_inactive` (3:1) for inactive elements, and the Species palette meets both (ADR-0064); the reference values are checked and reported, not enforced (§6).
+**UI-186** (MUST) Palettes are content data. The reference values of the tokens of UI-187 and UI-188, in §9.1, form the default palette. The Species art direction replaces the values token by token while keeping each token's role ([visual_language.md](../renderer/visual_language.md) RND-403; [art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2). A high-contrast palette is a content variant in which every text token reaches a contrast of at least `ui.access.contrast_high` (7:1) against the background it is drawn on. The content build checks every palette against `ui.access.contrast_text` (4.5:1) for gameplay-relevant text and `ui.access.contrast_inactive` (3:1) for inactive elements, and the Species palette meets both (ADR-064); the reference values are checked and reported, not enforced (§6).
 
 **UI-187** (MUST) The window-layer tokens are the following; their reference values are in §9.1:
 
@@ -284,11 +284,11 @@ The backdrop's corner glow is `ref.meta.backdrop.glow_colour` of [reference/09](
 3. in 3-D, facing the camera at a world position, with the depth test off, left-aligned, centred or right-aligned, with outline offsets of ±`ui.text.outline_offset_3d` (5 %) of the size; the centred and right-aligned forms shift the text by (the CJK horizontal scale × the count of characters at or above U+3000) × (the Latin horizontal scale × the count of the other characters) × 0.5 × the size, a product of the two terms, so text made only of Latin characters, or only of CJK characters, is drawn left-aligned (§8);
 4. in 3-D at a world position, oriented by a front and an up vector, with the depth test left on.
 
-World-space text uses the same glyph quads and blend states as UI text, in the world passes that the renderer assigns (ADR-0031).
+World-space text uses the same glyph quads and blend states as UI text, in the world passes that the renderer assigns (ADR-031).
 
 ### 4.9 Font roles, glyph cache and script coverage
 
-**UI-195** (MUST) Text has three font roles (ADR-0034), each drawn from a licensed font in the packs ([GameAssets](../../../assets/GameAssets.md) §17):
+**UI-195** (MUST) Text has three font roles (ADR-034), each drawn from a licensed font in the packs ([GameAssets](../../../assets/GameAssets.md) §17):
 
 | Role | Used for | Face |
 |---|---|---|
@@ -300,21 +300,21 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-196** (MUST) Each role has a horizontal spacing factor that multiplies every glyph advance: caption `ui.font.spacing_caption` (1.0), body `ui.font.spacing_body` (0.91) and title `ui.font.spacing_title` (1.03).
 
-**UI-197** (MUST) **Horizontal scale.** Glyphs are drawn narrower or wider than their height by a per-language horizontal scale. In every language written in Latin or Cyrillic, every character is drawn at `ui.text.horizontal_scale_latin` (0.6). In Japanese and Korean, characters at or above `ui.text.cjk_first_code_point` (U+3000) are drawn at `ui.text.horizontal_scale_cjk` (1.0), and characters below it keep 0.6, so Latin characters stay condensed inside CJK text ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-475). The scale is a horizontal transform of the glyph run, applied when the run is laid out and when it is rasterised, so advances and glyph shapes agree (ADR-0034). A glyph's advance is the font's shaped advance at size s × the horizontal scale × the role's spacing factor.
+**UI-197** (MUST) **Horizontal scale.** Glyphs are drawn narrower or wider than their height by a per-language horizontal scale. In every language written in Latin or Cyrillic, every character is drawn at `ui.text.horizontal_scale_latin` (0.6). In Japanese and Korean, characters at or above `ui.text.cjk_first_code_point` (U+3000) are drawn at `ui.text.horizontal_scale_cjk` (1.0), and characters below it keep 0.6, so Latin characters stay condensed inside CJK text ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-475). The scale is a horizontal transform of the glyph run, applied when the run is laid out and when it is rasterised, so advances and glyph shapes agree (ADR-034). A glyph's advance is the font's shaped advance at size s × the horizontal scale × the role's spacing factor.
 
-**UI-198** (MUST) The glyph cache follows ADR-0034: text is laid out and shaped by DirectWrite; each glyph not yet cached is rasterised in grayscale at its final pixel size into an `R8_UNORM` atlas page through the upload ring; the cache key is the font face, the glyph index, the final pixel size, the horizontal scale and the sub-pixel x offset quantised to 1 ÷ `ui.glyph.subpixel_steps` (4) of a pixel. Atlas pages are `ui.glyph.page_size` (1024 × 1024 px) and at most `ui.glyph.page_count` (8) exist; when the cache is full, the least recently used page is cleared and reused. The common characters of the current language are rasterised during loading (R-META-479). Atlas pages are never block-compressed, and are rebuilt rather than restored after device removal (ADR-0017, ADR-0008).
+**UI-198** (MUST) The glyph cache follows ADR-034: text is laid out and shaped by DirectWrite; each glyph not yet cached is rasterised in grayscale at its final pixel size into an `R8_UNORM` atlas page through the upload ring; the cache key is the font face, the glyph index, the final pixel size, the horizontal scale and the sub-pixel x offset quantised to 1 ÷ `ui.glyph.subpixel_steps` (4) of a pixel. Atlas pages are `ui.glyph.page_size` (1024 × 1024 px) and at most `ui.glyph.page_count` (8) exist; when the cache is full, the least recently used page is cleared and reused. The common characters of the current language are rasterised during loading (R-META-479). Atlas pages are never block-compressed, and are rebuilt rather than restored after device removal (ADR-017, ADR-008).
 
-**UI-199** (MUST) The faces cover at least: U+0020 to U+00FF (Latin-1), U+0410 to U+044F (Cyrillic) and U+20A0 to U+20AF (currency signs) in all three Latin faces; U+3000 to U+30FF (CJK punctuation and kana) and U+4E00 to U+9EFF (CJK ideographs) in `font.ui.primary_ja`; U+AC00 to U+D7FF (Hangul syllables) in `font.ui.primary_ko` ([asset manifest](../../../assets/asset_manifest.csv)). Every edition carries the currency signs. A content-build check walks every string table of every offered language and fails when a character is not covered by that language's font chain (ADR-0034). System fonts are appended to the chain only for player-entered text.
+**UI-199** (MUST) The faces cover at least: U+0020 to U+00FF (Latin-1), U+0410 to U+044F (Cyrillic) and U+20A0 to U+20AF (currency signs) in all three Latin faces; U+3000 to U+30FF (CJK punctuation and kana) and U+4E00 to U+9EFF (CJK ideographs) in `font.ui.primary_ja`; U+AC00 to U+D7FF (Hangul syllables) in `font.ui.primary_ko` ([asset manifest](../../../assets/asset_manifest.csv)). Every edition carries the currency signs. A content-build check walks every string table of every offered language and fails when a character is not covered by that language's font chain (ADR-034). System fonts are appended to the chain only for player-entered text.
 
-**UI-200** (MUST) Text widths are measured by the text layout, with the spacing factor and the horizontal scale applied (ADR-0034). Geometric rules that the reference states as a character count × a per-character width, such as the automatic widget size ([core_and_widgets.md](core_and_widgets.md) UI-055), stay geometric rules; wherever text must fit, align or place a caret, the measured width is used.
+**UI-200** (MUST) Text widths are measured by the text layout, with the spacing factor and the horizontal scale applied (ADR-034). Geometric rules that the reference states as a character count × a per-character width, such as the automatic widget size ([core_and_widgets.md](core_and_widgets.md) UI-055), stay geometric rules; wherever text must fit, align or place a caret, the measured width is used.
 
 **UI-201** (MUST) Text wraps to its cell's width by the line breaking of the text layout: lines break at spaces and between CJK characters in `ui.text.cjk_break_range` (U+3000 to U+D7FF), as in the reference, and at every other break opportunity of the script.
 
-**UI-202** (MUST) Text is shaped and kerned, bidirectional runs are ordered, and characters outside the Basic Multilingual Plane render like any other (ADR-0034). Text is UTF-8 inside the engine and UTF-16 only at the DirectWrite and Win32 boundaries (ADR-0063); no text is ever narrowed to an 8-bit form, so no character is replaced on its way to a widget.
+**UI-202** (MUST) Text is shaped and kerned, bidirectional runs are ordered, and characters outside the Basic Multilingual Plane render like any other (ADR-034). Text is UTF-8 inside the engine and UTF-16 only at the DirectWrite and Win32 boundaries (ADR-063); no text is ever narrowed to an 8-bit form, so no character is replaced on its way to a widget.
 
 ### 4.10 Keyboard, gamepad and pointer navigation
 
-**UI-203** (MUST) The UI consumes these actions, whose bindings live in the input component's binding graph (ADR-0029; [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-035). The gamepad column is the reference control scheme; the keyboard column is UI-204:
+**UI-203** (MUST) The UI consumes these actions, whose bindings live in the input component's binding graph (ADR-029; [reference/06](../../../reference/06_controls_camera_and_commands/actions_and_bindings.md) R-CTRL-035). The gamepad column is the reference control scheme; the keyboard column is UI-204:
 
 | Action | Gamepad | Keyboard and mouse | Consumer |
 |---|---|---|---|
@@ -331,9 +331,9 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 | `action.menu.scroll_speedup` | — | Shift, held | five-fold increment steps (UI-071) |
 | `action.match.chat` | — | Enter, down | the chat field on the match setup page (UI-092) |
 
-**UI-204** (MUST) Every screen must be usable with the keyboard alone (ADR-0032, ADR-0064), so the keyboard defaults are: the arrow keys for `action.menu.up`, `action.menu.down`, `action.menu.left` and `action.menu.right`, Enter for `action.menu.activate`, and Esc for `action.menu.close` outside a match. In a match Esc stays `action.match.menu`, which closes every window at once (R-META-014). The reference's own control scheme binds the menu actions to the gamepad only, and keyboard players navigate with the pointer; its alternative control set, which is never selected, holds the arrow keys and Enter given here (§8).
+**UI-204** (MUST) Every screen must be usable with the keyboard alone (ADR-032, ADR-064), so the keyboard defaults are: the arrow keys for `action.menu.up`, `action.menu.down`, `action.menu.left` and `action.menu.right`, Enter for `action.menu.activate`, and Esc for `action.menu.close` outside a match. In a match Esc stays `action.match.menu`, which closes every window at once (R-META-014). The reference's own control scheme binds the menu actions to the gamepad only, and keyboard players navigate with the pointer; its alternative control set, which is never selected, holds the arrow keys and Enter given here (§8).
 
-**UI-205** (MUST) The **input mode** is keyboard and mouse or gamepad, chosen by the input router from the device class used last, with the gamepad preferred when both are active in one frame (ADR-0029). It controls hover-to-cursor ([core_and_widgets.md](core_and_widgets.md) UI-056), the gamepad glyph hints (UI-111, UI-112), the string variants (UI-223) and the gamepad-disconnected dialog (R-META-066).
+**UI-205** (MUST) The **input mode** is keyboard and mouse or gamepad, chosen by the input router from the device class used last, with the gamepad preferred when both are active in one frame (ADR-029). It controls hover-to-cursor ([core_and_widgets.md](core_and_widgets.md) UI-056), the gamepad glyph hints (UI-111, UI-112), the string variants (UI-223) and the gamepad-disconnected dialog (R-META-066).
 
 **UI-206** (MUST) Each standard window has one navigation order, chosen by its screen, and one cursor in it; only the focused window navigates (UI-050, UI-051).
 
@@ -353,17 +353,17 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-214** (MUST) An open drop-down list is the front-most window and has the focus; its own navigation order holds its options, with the current value as the cursor, and choosing an option closes it (UI-085, UI-118).
 
-**UI-215** (MUST) When the cursor moves to a widget inside a scrolling list, the list scrolls so that the widget is visible (UI-053; ADR-0032).
+**UI-215** (MUST) When the cursor moves to a widget inside a scrolling list, the list scrolls so that the widget is visible (UI-053; ADR-032).
 
-**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in presentation time; both are tuning values of the input component ([input.md](../input.md); ADR-0029), so navigation repeats at the same rate at every frame rate.
+**UI-216** (MUST) The menu directions repeat while held through the binding graph's repeat condition, with an initial delay and a rate measured in presentation time; both are tuning values of the input component ([input.md](../input.md); ADR-029), so navigation repeats at the same rate at every frame rate.
 
-**UI-217** (MUST) Back and Escape never apply a change: only an explicit confirmation does, such as the Apply button of an options page ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-412 item 4) or Enter in a text field (UI-064) (ADR-0032, DEC-102).
+**UI-217** (MUST) Back and Escape never apply a change: only an explicit confirmation does, such as the Apply button of an options page ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-412 item 4) or Enter in a text field (UI-064) (ADR-032, DEC-102).
 
 ### 4.11 String look-up and fallback
 
-**UI-218** (MUST) Every text a widget shows comes from the string table of the current language by its string id (ADR-0063; R-META-460): `Lookup(id, mode)` returns the text of the id for the current input mode (UI-223).
+**UI-218** (MUST) Every text a widget shows comes from the string table of the current language by its string id (ADR-063; R-META-460): `Lookup(id, mode)` returns the text of the id for the current input mode (UI-223).
 
-**UI-219** (MUST) A string id that the current language's table lacks returns, per id, the text of the base language `ref.meta.lang.base` (DEC-099; R-META-464). No widget ever shows a string id as text. An id that the base language also lacks cannot pass the content build (ADR-0059, DEC-015); if one reaches a development build through loose content, the look-up returns an empty text and the miss is logged once per id.
+**UI-219** (MUST) A string id that the current language's table lacks returns, per id, the text of the base language `ref.meta.lang.base` (DEC-099; R-META-464). No widget ever shows a string id as text. An id that the base language also lacks cannot pass the content build (ADR-059, DEC-015); if one reaches a development build through loose content, the look-up returns an empty text and the miss is logged once per id.
 
 **UI-220** (MUST) `Exists(id)` is true when the current language or the base language has the id. Counts that come from data use it, such as the number of help pages of a mode and the lines of the credits page (R-META-471).
 
@@ -373,15 +373,15 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 ### 4.12 Input-mode variants and caption markup
 
-**UI-223** (MUST) A string id may have a keyboard-and-mouse variant and a gamepad variant beside its plain text; in each input mode, the variant of that mode replaces the plain text. An id that has a variant only for the other mode and no plain text resolves to an empty text in this mode, so its caption disappears (R-META-468; ADR-0063).
+**UI-223** (MUST) A string id may have a keyboard-and-mouse variant and a gamepad variant beside its plain text; in each input mode, the variant of that mode replaces the plain text. An id that has a variant only for the other mode and no plain text resolves to an empty text in this mode, so its caption disappears (R-META-468; ADR-063).
 
-**UI-224** (MUST) A caption may contain: a passage that appears in one input mode only, with an alternative passage for the other; a **binding argument**, replaced by the key or button currently bound to an action, shown as the key's name or inline as its glyph (`glyph.pad.*`, `glyph.key.tab`), as a DirectWrite inline object (ADR-0034); and another string by its id, expanded recursively. The markup is expanded when the table is built and again whenever the bindings change; a cycle of embedded ids is a build error. The syntax is the [data schemas](../data_schemas/README.md)' (R-META-468).
+**UI-224** (MUST) A caption may contain: a passage that appears in one input mode only, with an alternative passage for the other; a **binding argument**, replaced by the key or button currently bound to an action, shown as the key's name or inline as its glyph (`glyph.pad.*`, `glyph.key.tab`), as a DirectWrite inline object (ADR-034); and another string by its id, expanded recursively. The markup is expanded when the table is built and again whenever the bindings change; a cycle of embedded ids is a build error. The syntax is the [data schemas](../data_schemas/README.md)' (R-META-468).
 
 **UI-225** (MUST) An expanded text holds at most `ui.lang.max_expanded_length` (1 024 characters), a markup marker at most `ui.lang.max_marker_length` (64 characters) and a string id at most `ui.lang.max_id_length` (96 characters); the content build rejects a longer value and names its file, line and field (DEC-801 item 5).
 
 **UI-226** (MUST) Widgets hold string ids, never copies of text. A change of the input mode re-resolves every bound caption at the next update, so every caption with variants switches with no page code involved (UI-172).
 
-**UI-227** (MUST) Values inserted at run time are named arguments in ICU MessageFormat syntax, such as `{file}`, `{status}` or `{width}` (ADR-0063; R-META-469). Argument values and texts are inserted literally: no character of them, a percent sign or a brace included, is ever read as a formatting directive (DEC-102, DEC-800 item 4).
+**UI-227** (MUST) Values inserted at run time are named arguments in ICU MessageFormat syntax, such as `{file}`, `{status}` or `{width}` (ADR-063; R-META-469). Argument values and texts are inserted literally: no character of them, a percent sign or a brace included, is ever read as a formatting directive (DEC-102, DEC-800 item 4).
 
 ### 4.13 How widgets use the string table
 
@@ -395,19 +395,19 @@ There are no bitmap font atlases ([reference/09](../../../reference/09_front_end
 
 **UI-232** (MUST) Every player-facing caption has a string id ([reference/09](../../../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-470); the captions of the development windows are the [diagnostics](../diagnostics_test_and_performance.md) component's.
 
-**UI-233** (MUST) Upper-casing, as of window titles and page titles, uses the case mapping of the current language through ICU (ADR-0063), never a process-wide locale setting.
+**UI-233** (MUST) Upper-casing, as of window titles and page titles, uses the case mapping of the current language through ICU (ADR-063), never a process-wide locale setting.
 
 ### 4.14 Font role per language
 
-**UI-234** (MUST) In Japanese and Korean every font role uses `font.ui.primary` with its companion, `font.ui.primary_ja` or `font.ui.primary_ko` (R-META-475), and the horizontal scale of UI-197; in every other language each role uses its own face (UI-195). Each role's face and fallback chain per language are built with the DirectWrite font fallback builder (ADR-0034). Switching between a Japanese or Korean language and another language switches the role faces back. No Chinese table exists, so Chinese is not in the language set (R-META-475).
+**UI-234** (MUST) In Japanese and Korean every font role uses `font.ui.primary` with its companion, `font.ui.primary_ja` or `font.ui.primary_ko` (R-META-475), and the horizontal scale of UI-197; in every other language each role uses its own face (UI-195). Each role's face and fallback chain per language are built with the DirectWrite font fallback builder (ADR-034). Switching between a Japanese or Korean language and another language switches the role faces back. No Chinese table exists, so Chinese is not in the language set (R-META-475).
 
 **UI-235** (MUST) Every edition carries the fonts of every language it offers; there is no per-edition packaging of glyph images.
 
 ### 4.15 Non-Latin text entry
 
-**UI-236** (MUST) A text field accepts every character the platform delivers, so precomposed non-Latin characters are inserted as typed. Input-method composition is shown inline at the caret, and committed text arrives as characters (ADR-0028, ADR-0032; [core_and_widgets.md](core_and_widgets.md) UI-067).
+**UI-236** (MUST) A text field accepts every character the platform delivers, so precomposed non-Latin characters are inserted as typed. Input-method composition is shown inline at the caret, and committed text arrives as characters (ADR-028, ADR-032; [core_and_widgets.md](core_and_widgets.md) UI-067).
 
-**UI-237** (MUST) Caret movement, selection and the clipboard work in every text field (UI-067); the clipboard exchanges Unicode text at the Win32 boundary (ADR-0063).
+**UI-237** (MUST) Caret movement, selection and the clipboard work in every text field (UI-067); the clipboard exchanges Unicode text at the Win32 boundary (ADR-063).
 
 ### 4.16 Runtime language switch
 
@@ -451,7 +451,7 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 
 ## 5 Concurrency and performance budget
 
-**UI-240** (MUST) The busiest screen, the match setup page at 1920 × 1080 with the chat, a full slot list and an open page list, stays within: `ui.budget.draws` (32) draw calls in the UI pass; `ui.budget.vertices` (65 536) UI vertices; and `ui.budget.cpu_ms` (1.0 ms) of main-thread time for the UI's update and stream build together, on the minimum-specification CPU, in steady state, with every glyph already cached (ADR-0031).
+**UI-240** (MUST) The busiest screen, the match setup page at 1920 × 1080 with the chat, a full slot list and an open page list, stays within: `ui.budget.draws` (32) draw calls in the UI pass; `ui.budget.vertices` (65 536) UI vertices; and `ui.budget.cpu_ms` (1.0 ms) of main-thread time for the UI's update and stream build together, on the minimum-specification CPU, in steady state, with every glyph already cached (ADR-031).
 
 **UI-241** (MUST) Rasterising new glyphs is the one UI cost that varies with content; the common characters of the current language are rasterised during loading (UI-198) so that it does not occur in steady state. String tables are read-only after hand-over and are loaded on the loader thread (§2).
 
@@ -469,7 +469,7 @@ Diagram 4-B — the runtime language switch and the hand-over between string-tab
 | a palette text token below its contrast minimum | the content build warns for the default palette and fails for the high-contrast palette | build message naming the token | UI-186 |
 | the busiest screen exceeds a budget | nothing changes at run time | the performance test fails | UI-240 |
 
-The UI counts draws, vertices, batches and glyphs rasterised per frame for the development overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)); these counts are part of the opt-in performance telemetry set only if that set names them (ADR-0066).
+The UI counts draws, vertices, batches and glyphs rasterised per frame for the development overlay ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)); these counts are part of the opt-in performance telemetry set only if that set names them (ADR-066).
 
 ## 7 Acceptance tests
 
@@ -508,11 +508,11 @@ The UI counts draws, vertices, batches and glyphs rasterised per frame for the d
 - **DEC-221** (Open): the hand-over of resources by reference-counted generations rather than frame counts (UI-239).
 - **DEC-245** (Open): the session browser, whose row geometry UI-164 item 5 gives.
 - **DEC-050** (Open): a rebinding screen, which the binding argument of UI-224 follows when bindings change.
-- ADR-0034 is Proposed; its default is the text stack of §4.9.
+- ADR-034 is Proposed; its default is the text stack of §4.9.
 
 **Design-phase inputs.**
 
-1. The ranges of the UI-scale and text-scale settings, and whether the UI scale applies to the HUD space (ADR-0033, ADR-0064).
+1. The ranges of the UI-scale and text-scale settings, and whether the UI scale applies to the HUD space (ADR-033, ADR-064).
 2. The Species palette and its high-contrast variant, token by token (UI-186); whether dim captions and inactive states need new values to meet 3:1.
 3. Whether the new faces are monospaced: the reference glyphs are fixed-advance cells of width size × horizontal scale × spacing factor, and a face with uniform advances reproduces that look; the art brief asks for fixed-width numerals where the HUD counts.
 4. The keyboard defaults of UI-204, and whether Esc should also close front-end pages inside a match's menus.

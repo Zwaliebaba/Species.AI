@@ -12,7 +12,7 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-004 | Player commands originate only in the input layer. | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
 | INP-005 | The input component never writes simulation state, never reads it, and never changes a Power, a selection or a unit locally. | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
 | INP-006 | Text entry does not pass through the binding graph. | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
-| INP-007 | The headless server links neither GameInput nor any input back-end (ADR-0028). | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
+| INP-007 | The headless server links neither GameInput nor any input back-end (ADR-028). | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
 | INP-008 | The neighbours of this component own: | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
 | INP-009 | The default binding set binds only the actions of tables 3.6-A and 3.6-B, that is the actions of reference/06 table 2.1-A, those of UI-203 | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
 | INP-010 | Every device class is remapped through the same binding graph, and the graph offers a latch node for hold-or-toggle options (§4.8), so | [input.md](../architecture/components/input.md#1-responsibilities-and-boundaries) |
@@ -21,8 +21,8 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-022 | The router's outputs are: | [input.md](../architecture/components/input.md#23-events-and-data-contracts) |
 | INP-023 | The default binding set and the layout layers are content: | [input.md](../architecture/components/input.md#23-events-and-data-contracts) |
 | INP-024 | Every display text of input (key names, control names, condition words, the chord separator) is a string id of the string table with its | [input.md](../architecture/components/input.md#23-events-and-data-contracts) |
-| INP-025 | The router lives on the main thread, which runs the platform layer's window and event loop (ADR-0075). | [input.md](../architecture/components/input.md#24-threading-contract) |
-| INP-026 | The keyboard and mouse back-end receives its input on the main thread, forwarded by the platform layer (ADR-0075). | [input.md](../architecture/components/input.md#24-threading-contract) |
+| INP-025 | The router lives on the main thread, which runs the platform layer's window and event loop (ADR-075). | [input.md](../architecture/components/input.md#24-threading-contract) |
+| INP-026 | The keyboard and mouse back-end receives its input on the main thread, forwarded by the platform layer (ADR-075). | [input.md](../architecture/components/input.md#24-threading-contract) |
 | INP-027 | Events that arrive while the main thread is busy (a loading view, a long frame) stay in their back-end's buffer until the next | [input.md](../architecture/components/input.md#24-threading-contract) |
 | INP-028 | The component provides these helpers on top of `Query`; | [input.md](../architecture/components/input.md#25-helper-abstractions) |
 | INP-050 | Every action, binding and device condition has one value kind: | [input.md](../architecture/components/input.md#31-value-kinds-and-conditions) |
@@ -36,7 +36,7 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-065 | For each action the router holds an ordered list of bindings, an optional glyph override and a suppression flag. | [input.md](../architecture/components/input.md#34-action-bindings) |
 | INP-066 | The router owns the action bindings. | [input.md](../architecture/components/input.md#34-action-bindings) |
 | INP-067 | The action id table is built from tables 3.6-A and 3.6-B when bindings load; | [input.md](../architecture/components/input.md#34-action-bindings) |
-| INP-070 | The default binding set and each layout layer are records of one binding-set schema (data schemas, ADR-0061, ADR-0062) with these fields: | [input.md](../architecture/components/input.md#35-binding-set-schema) |
+| INP-070 | The default binding set and each layout layer are records of one binding-set schema (data schemas, ADR-061, ADR-062) with these fields: | [input.md](../architecture/components/input.md#35-binding-set-schema) |
 | INP-071 | Each node is a JSON object with exactly one node-kind property; | [input.md](../architecture/components/input.md#35-binding-set-schema) |
 | INP-072 | The canonical writer writes the properties in the order of the table, the canonical control names, and the sensitivity only when it differs | [input.md](../architecture/components/input.md#35-binding-set-schema) |
 | INP-073 | A node with an unknown property, with no or with two node-kind properties, or without a required property is rejected (§6.1); | [input.md](../architecture/components/input.md#35-binding-set-schema) |
@@ -50,7 +50,7 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-082 | The glyph overrides of `action.camera.raise` (the left-stick glyph) and `action.camera.lower` (the right-stick glyph) are part of the | [input.md](../architecture/components/input.md#37-glyphs) |
 | INP-085 | Several actions share one physical input. | [input.md](../architecture/components/input.md#38-reverse-index) |
 | INP-090 | An action value (`ActionValue`) holds the value kind, the x and y components and the device that produced it. | [input.md](../architecture/components/input.md#39-action-values-and-suppression) |
-| INP-091 | Values are floating-point and never truncated or rounded (ADR-0029). | [input.md](../architecture/components/input.md#39-action-values-and-suppression) |
+| INP-091 | Values are floating-point and never truncated or rounded (ADR-029). | [input.md](../architecture/components/input.md#39-action-values-and-suppression) |
 | INP-092 | A value carries the identity of the device that produced it; | [input.md](../architecture/components/input.md#39-action-values-and-suppression) |
 | INP-093 | `Suppress(action)` makes the action answer false, with a cleared value, for the rest of the frame; | [input.md](../architecture/components/input.md#39-action-values-and-suppression) |
 | INP-100 | Start-up runs in this order: | [input.md](../architecture/components/input.md#41-lifecycle-and-frame-order) |
@@ -58,14 +58,14 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-102 | `AdvanceFrame` runs exactly once per rendered frame, and every event is applied in exactly one advance, so no press is lost and none is | [input.md](../architecture/components/input.md#41-lifecycle-and-frame-order) |
 | INP-103 | A loading view renders frames and runs `AdvanceFrame` in each of them, so held states stay current and the loading view's actions work. | [input.md](../architecture/components/input.md#41-lifecycle-and-frame-order) |
 | INP-105 | Two back-ends feed the router: | [input.md](../architecture/components/input.md#42-device-back-ends) |
-| INP-106 | The gamepad back-end uses GameInput, built against the pinned package and API namespace of ADR-0028 (3.5.283 with `GameInput::v3`, moving | [input.md](../architecture/components/input.md#42-device-back-ends) |
+| INP-106 | The gamepad back-end uses GameInput, built against the pinned package and API namespace of ADR-028 (3.5.283 with `GameInput::v3`, moving | [input.md](../architecture/components/input.md#42-device-back-ends) |
 | INP-107 | If GameInput cannot be created, the client runs without gamepads: | [input.md](../architecture/components/input.md#42-device-back-ends) |
-| INP-108 | The keyboard and mouse back-end receives the window's keyboard, pointer and wheel input that the platform layer forwards (ADR-0075), and | [input.md](../architecture/components/input.md#42-device-back-ends) |
-| INP-109 | Keyboard rules (DEC-096, ADR-0028): | [input.md](../architecture/components/input.md#42-device-back-ends) |
-| INP-110 | Mouse rules (ADR-0028): | [input.md](../architecture/components/input.md#42-device-back-ends) |
+| INP-108 | The keyboard and mouse back-end receives the window's keyboard, pointer and wheel input that the platform layer forwards (ADR-075), and | [input.md](../architecture/components/input.md#42-device-back-ends) |
+| INP-109 | Keyboard rules (DEC-096, ADR-028): | [input.md](../architecture/components/input.md#42-device-back-ends) |
+| INP-110 | Mouse rules (ADR-028): | [input.md](../architecture/components/input.md#42-device-back-ends) |
 | INP-111 | When the window loses focus, both back-ends emit release events for every held key and button and rest samples for every analogue control | [input.md](../architecture/components/input.md#42-device-back-ends) |
 | INP-112 | Text characters and input-method composition never enter the event queue and never satisfy a binding; | [input.md](../architecture/components/input.md#42-device-back-ends) |
-| INP-115 | The router keeps one ordered event queue per frame (ADR-0029). | [input.md](../architecture/components/input.md#43-event-queue) |
+| INP-115 | The router keeps one ordered event queue per frame (ADR-029). | [input.md](../architecture/components/input.md#43-event-queue) |
 | INP-116 | The queue holds at most `inp.queue.capacity` events per frame. | [input.md](../architecture/components/input.md#43-event-queue) |
 | INP-117 | After a frame in which events were dropped, the router reconciles every Boolean control with its back-end's pressed state: | [input.md](../architecture/components/input.md#43-event-queue) |
 | INP-118 | For every control of every device the router keeps, for the current frame: | [input.md](../architecture/components/input.md#44-device-state) |
@@ -76,7 +76,7 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-123 | Triggers: `position` is true when the trigger is above its threshold at the end of the frame, with the processed value × the sensitivity | [input.md](../architecture/components/input.md#45-condition-evaluation-per-control) |
 | INP-124 | `connection`: `down` is true in the frame in which the player's assigned gamepad reconnects or a gamepad becomes assigned to the player, | [input.md](../architecture/components/input.md#45-condition-evaluation-per-control) |
 | INP-125 | Every other gamepad leaf of a player with no assigned gamepad, or whose assigned gamepad is disconnected, is false. | [input.md](../architecture/components/input.md#45-condition-evaluation-per-control) |
-| INP-128 | Each stick sample (x, y), as the gamepad back-end reports it, is processed in floating point as follows (ADR-0029): | [input.md](../architecture/components/input.md#46-analogue-processing) |
+| INP-128 | Each stick sample (x, y), as the gamepad back-end reports it, is processed in floating point as follows (ADR-029): | [input.md](../architecture/components/input.md#46-analogue-processing) |
 | INP-129 | Each trigger sample t in 0 to 1 is processed as follows: | [input.md](../architecture/components/input.md#46-analogue-processing) |
 | INP-130 | The sensitivity of a stick or trigger leaf multiplies its `position`, `move` and `read` values by the sensitivity ÷ 100 (INP-122, INP-123); | [input.md](../architecture/components/input.md#46-analogue-processing) |
 | INP-131 | The dead zones, thresholds, curve exponents and output scales are data: | [input.md](../architecture/components/input.md#46-analogue-processing) |
@@ -132,10 +132,10 @@ Scope: Input. Back to the [requirements index](../REQUIREMENTS_INDEX.md).
 | INP-203 | The threading contract of §2.4 holds: | [input.md](../architecture/components/input.md#5-concurrency-and-performance-budget) |
 | INP-220 | Every load diagnostic names its class (table 6.1-A), the layer, the action, the path of the node inside the binding, the offending word, | [input.md](../architecture/components/input.md#61-load-diagnostics-and-binding-parse-outcomes) |
 | INP-221 | The default set states every binding with its effective meaning, so no default binding depends on lenient parsing (DEC-553): | [input.md](../architecture/components/input.md#61-load-diagnostics-and-binding-parse-outcomes) |
-| INP-222 | The content build checks every glyph override and every glyph of table 3.7-A against the asset manifest (ADR-0059), so the input layer | [input.md](../architecture/components/input.md#61-load-diagnostics-and-binding-parse-outcomes) |
+| INP-222 | The content build checks every glyph override and every glyph of table 3.7-A against the asset manifest (ADR-059), so the input layer | [input.md](../architecture/components/input.md#61-load-diagnostics-and-binding-parse-outcomes) |
 | INP-225 | The router handles these run-time failures without stopping, and each is logged (§6.4): | [input.md](../architecture/components/input.md#62-run-time-failure-modes) |
 | INP-230 | The input layer upholds the rules of table 6.3-A. | [input.md](../architecture/components/input.md#63-input-layer-defects-stated-as-fixed-rules) |
-| INP-240 | The router logs in the input category (ADR-0067): | [input.md](../architecture/components/input.md#64-diagnostics-and-telemetry) |
+| INP-240 | The router logs in the input category (ADR-067): | [input.md](../architecture/components/input.md#64-diagnostics-and-telemetry) |
 | INP-241 | The router keeps counters for the diagnostics overlay (diagnostics, test and performance): | [input.md](../architecture/components/input.md#64-diagnostics-and-telemetry) |
 | INP-242 | `DumpBindings` writes every action with its bindings in canonical form, its glyph override and the total number of bindings; | [input.md](../architecture/components/input.md#64-diagnostics-and-telemetry) |
 | INP-243 | Test builds can record every frame's events and every query result, and replay the recorded events through `AdvanceFrame` with the platform | [input.md](../architecture/components/input.md#64-diagnostics-and-telemetry) |

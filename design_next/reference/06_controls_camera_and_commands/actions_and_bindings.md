@@ -12,7 +12,7 @@ This file gives every player action a Species action id and a default binding (�
 
 ### 2.1 Action ids and default bindings
 
-**R-CTRL-030** (MUST) Every player action has a Species action id of the form `action.<group>.<name>`. The [input component](../../architecture/components/input.md) binds each action id to device conditions through its binding graph; several action ids may share one physical input, and the context rules of §2.2 decide which of them applies. The ids of this document are the stable names that bindings, rebinding and saved settings use (ADR-0029).
+**R-CTRL-030** (MUST) Every player action has a Species action id of the form `action.<group>.<name>`. The [input component](../../architecture/components/input.md) binds each action id to device conditions through its binding graph; several action ids may share one physical input, and the context rules of §2.2 decide which of them applies. The ids of this document are the stable names that bindings, rebinding and saved settings use (ADR-029).
 
 **R-CTRL-031** (MUST) The default bindings of the match control scheme are those of table 2.1-A. Each binding is stated with its effective meaning (DEC-553). Gamepad controls are named by position: the south, east, west and north face buttons, the left and right shoulder buttons, the left and right triggers, the left and right sticks and their presses, the d-pad, and the menu and view buttons; their glyphs are `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.face_west`, `glyph.pad.face_north`, `glyph.pad.shoulder_left` and `glyph.pad.shoulder_right`.
 
@@ -105,7 +105,7 @@ Table 2.1-A Default bindings of the match control scheme.
 | A7 | `action.camera.track_closer`, `action.camera.track_farther` | tracking camera | changes the tracking distance ([camera](camera.md) R-CTRL-484) |
 | A8 | `action.view.chat_log` | no UI window open | shows the chat log; mouse-look is frozen, the match input pump issues no team action, and the team command state is sent with every flag cleared (R-CTRL-021) |
 | A9 | `action.view.hide_interface` | — | toggles the hidden-interface flag: the HUD, the world markers, the Power slots panel and the cursor effects are hidden |
-| A10 | `action.view.screenshot` | no UI window open | renders and saves a screenshot, tiled when the poster-resolution setting is above 1 ([renderer view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-214, ADR-0076) |
+| A10 | `action.view.screenshot` | no UI window open | renders and saves a screenshot, tiled when the poster-resolution setting is above 1 ([renderer view](../../architecture/components/renderer/view_lighting_and_fog.md) RND-214, ADR-076) |
 | A11 | `action.camera.zoom_out` | — | no effect: no rule reads it, so the field of view never widens beyond its base value |
 
 **R-CTRL-041** (MUST) The selection actions are:
@@ -417,7 +417,7 @@ This file cites `ref.sim.query.structure_pick_fraction`, `ref.sim.query.group_pi
 
 - **Reference documents:** [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md) (R-SIM-438 to R-SIM-460); [Containers and update order](../12_simulation_model/04_containers_and_update_order.md) (table 2.10-A picking operations); [Space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) (ray tests, routes); [Worker](../02_units/worker.md); [Leader and formations](../02_units/leader_and_formations.md); [Strike team](../02_units/strike_team.md); [Transport](../02_units/transport.md); [Builder](../02_units/builder.md); [Collector](../02_units/collector.md); [defences and props](../03_buildings_and_world_objects/defences_and_props.md) (turrets); [Skirmish rules](../01_skirmish_rules_and_modes/README.md) (readiness, pause); [Maps](../08_maps_and_level_design/README.md) (the Beam Dish control option); [front end](../09_front_end_and_match_flow/README.md) and [options and hooks](../09_front_end_and_match_flow/options_localisation_and_hooks.md); [Tutorial and help](../11_tutorial_and_help.md) (deselect, terminate and speed-up hints).
 - **Engine components:** [input](../../architecture/components/input.md) (binding graph, control catalogue, gamepad assignment); [UI framework](../../architecture/components/ui_framework/README.md); [platform layer](../../architecture/components/platform_layer.md); [diagnostics](../../architecture/components/diagnostics_test_and_performance.md); [frame view](../../architecture/components/renderer/view_lighting_and_fog.md) (poster screenshots).
-- **ADRs:** ADR-0028, ADR-0029, ADR-0076 (screenshot encoding).
+- **ADRs:** ADR-028, ADR-029, ADR-076 (screenshot encoding).
 - **Assets:** `glyph.pad.face_south`, `glyph.pad.face_east`, `glyph.pad.face_west`, `glyph.pad.face_north`, `glyph.pad.shoulder_left`, `glyph.pad.shoulder_right`, `marker.order_trail`; sound events `match_ui.error`, `match_ui.toggle_state`, `transport.ordered`.
 
 ## 8 Open decisions

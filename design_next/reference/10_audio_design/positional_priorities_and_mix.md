@@ -12,7 +12,7 @@ A reference match is heard from the camera. A sound plays at full level within i
 
 **R-AUD-200** (MUST) The listener is the game camera, updated at every audio update: its position is the camera's position, its orientation the camera's front and up vectors. There is no separate listening point on the ground, so a high camera hears every sound at the camera's distance. This is the reference default of DEC-566. The swap-left-and-right setting exchanges the left and right channels of every positioned sound ([09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-435).
 
-**R-AUD-201** (MUST) The listener applies no Doppler shift, and no sound has a cone, occlusion, obstruction, air absorption, distance low-pass filtering or a distance-dependent reverb send (DEC-566). The audio engine's per-event Doppler, filter and send factors default to off, which keeps this mix (ADR-0027).
+**R-AUD-201** (MUST) The listener applies no Doppler shift, and no sound has a cone, occlusion, obstruction, air absorption, distance low-pass filtering or a distance-dependent reverb send (DEC-566). The audio engine's per-event Doppler, filter and send factors default to off, which keeps this mix (ADR-027).
 
 ### 2.2 Distance attenuation
 
@@ -24,7 +24,7 @@ g(d) = 1           when d ≤ md
 heard level (dB) = envelope level (dB) + 20 × log10 g(d) + bus and master gains (dB)
 ```
 
-The roll-off is 1, and the design data sets no maximum distance (DEC-566). The same g(d) feeds the instance's audibility for ranking (R-AUD-215). Where the audio engine applies its maximum distance (ADR-0027), every event leaves it at the engine's global default.
+The roll-off is 1, and the design data sets no maximum distance (DEC-566). The same g(d) feeds the instance's audibility for ranking (R-AUD-215). Where the audio engine applies its maximum distance (ADR-027), every event leaves it at the engine's global default.
 
 **R-AUD-203** (MUST) The law gives these attenuations relative to full level:
 
@@ -42,9 +42,9 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 ### 2.3 Panning
 
-**R-AUD-205** (MUST) Stereo output uses a constant-power pan. With x = ((emitter − camera) ÷ |emitter − camera|) · listenerRight, in [−1, 1], where listenerRight comes from the camera's front and up vectors and is reversed by the swap-left-and-right setting, and p = (x + 1) ÷ 2: left = cos(p × π ÷ 2) and right = sin(p × π ÷ 2), applied on top of the distance gain. A centred source is −3 dB on each side. A two-dimensional instance takes the centred value, so a two-dimensional instance and a centred positioned instance of the same level within their minimum distance are equally loud (ADR-0027).
+**R-AUD-205** (MUST) Stereo output uses a constant-power pan. With x = ((emitter − camera) ÷ |emitter − camera|) · listenerRight, in [−1, 1], where listenerRight comes from the camera's front and up vectors and is reversed by the swap-left-and-right setting, and p = (x + 1) ÷ 2: left = cos(p × π ÷ 2) and right = sin(p × π ÷ 2), applied on top of the distance gain. A centred source is −3 dB on each side. A two-dimensional instance takes the centred value, so a two-dimensional instance and a centred positioned instance of the same level within their minimum distance are equally loud (ADR-027).
 
-**R-AUD-206** (MUST) The reference output is stereo, with no stereo-width control and no surround output. Other channel layouts and the system spatial-sound format are the audio engine's (ADR-0027); they carry the same distance gain.
+**R-AUD-206** (MUST) The reference output is stereo, with no stereo-width control and no surround output. Other channel layouts and the system spatial-sound format are the audio engine's (ADR-027); they carry the same distance gain.
 
 ### 2.4 Position kinds and sound lifetime
 
@@ -56,7 +56,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 | `fix` | fixed at the position where it was raised | outlives its emitter; stoppable by its emitter (R-AUD-038) | yes | level × g(d) | deaths, explosions, impacts, landings (31 layers) |
 | `att` | follows its emitter at every audio update; a structure's attached sounds follow its centre position | ends with its emitter (R-AUD-209) | yes | level × g(d) | loops, bodies, voices and most one-shots (133 layers) |
 
-**R-AUD-208** (MUST) Every real positioned voice is recalculated at every audio update, whatever its movement (ADR-0027).
+**R-AUD-208** (MUST) Every real positioned voice is recalculated at every audio update, whatever its movement (ADR-027).
 
 **R-AUD-209** (MUST) **Removal of an emitter.** An attached instance stops at once, without its release, on the first audio update after its emitter has left the match world, or when no emitter of a shared instance can be chosen (R-AUD-213). This is the reference default of DEC-321; a graceful path, in which the instance becomes world-fixed at the emitter's last position and plays its release, exists but almost never runs. Attached deaths (R-AUD-069) are therefore cut on the first audio update after their actor is deleted, and every vehicle and creature loop ends with a hard cut.
 
@@ -66,7 +66,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 ### 2.6 Game-speed pitch bend
 
-**R-AUD-211** (MUST) While a match runs after its grace period, the pitch of every positioned instance is multiplied by √max(s, `ref.aud.pitch_bend.speed_floor`), where s is the smoothed game speed, so the bend never goes below 0.1×. Two-dimensional instances, the interface and announcer stings are never bent; the bend is an effect of the world buses, the voice and world buses of R-AUD-221 (DEC-569). The smoothed game speed belongs to the match: it is 1.0 outside a match and throughout the grace period, starts every match at 1.0, and is discarded when the match ends. It follows elapsed audio time with one time constant, an audio engine tuning value whose starting value is DEC-751's, and its speed never depends on how many sounds are playing (DEC-751, ADR-0026).
+**R-AUD-211** (MUST) While a match runs after its grace period, the pitch of every positioned instance is multiplied by √max(s, `ref.aud.pitch_bend.speed_floor`), where s is the smoothed game speed, so the bend never goes below 0.1×. Two-dimensional instances, the interface and announcer stings are never bent; the bend is an effect of the world buses, the voice and world buses of R-AUD-221 (DEC-569). The smoothed game speed belongs to the match: it is 1.0 outside a match and throughout the grace period, starts every match at 1.0, and is discarded when the match ends. It follows elapsed audio time with one time constant, an audio engine tuning value whose starting value is DEC-751's, and its speed never depends on how many sounds are playing (DEC-751, ADR-026).
 
 **R-AUD-212** (MUST) The bend makes these moments audible: the Time Dilation and Time Rush outcomes and the slow motion of a meteor shower bend the world by √(game speed) ([12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-545); at match end, game speed is driven to 0, so the world's sounds fall towards 0.1× pitch like a tape slowing down, while the ambience, the interface and the stings keep their pitch. Keeping this drop is the default of DEC-320.
 
@@ -82,9 +82,9 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 
 **R-AUD-216** (MUST) **Copies of one event.** The instances are ranked by audibility, loudest first, and each further instance of the same full event id is multiplied by `ref.aud.rank.copy_decay` (0.75) once per louder copy: priority = audibility × 0.75^k, with k the number of louder instances of the same event in this update (1, 0.75, 0.5625, 0.421875 for the first four). Copies of one event therefore limit themselves as a group without a hard cap.
 
-**R-AUD-217** (MUST) **Authored priority.** Each event's authored priority is its bus's priority class (R-AUD-221); an instance's ranking score combines that class with its priority of R-AUD-216, and voices go to the best-ranked instances within the real-voice budget, the per-bus and the per-event caps that the audio engine sets from the starting values of DEC-570 (ADR-0023).
+**R-AUD-217** (MUST) **Authored priority.** Each event's authored priority is its bus's priority class (R-AUD-221); an instance's ranking score combines that class with its priority of R-AUD-216, and voices go to the best-ranked instances within the real-voice budget, the per-bus and the per-event caps that the audio engine sets from the starting values of DEC-570 (ADR-023).
 
-**R-AUD-218** (MUST) **Voice taking.** A waiting instance takes the voice of the lowest-ranked playing instance only when it outranks it by the steal margin of DEC-570; an instance that does not win a voice is kept virtual, not dropped, and a virtual loop keeps advancing its play position so that it resumes in time. Any number of instances may start in one update, and each trigger carries its time, so start latency is not quantised to the audio update (DEC-570, ADR-0023).
+**R-AUD-218** (MUST) **Voice taking.** A waiting instance takes the voice of the lowest-ranked playing instance only when it outranks it by the steal margin of DEC-570; an instance that does not win a voice is kept virtual, not dropped, and a virtual loop keeps advancing its play position so that it resumes in time. Any number of instances may start in one update, and each trigger carries its time, so start latency is not quantised to the audio update (DEC-570, ADR-023).
 
 **R-AUD-219** (MUST) **The reference allocation**, which R-AUD-217 and R-AUD-218 replace, is recorded for balancing the reference set: the voice setting N gives N − `ref.aud.reference.music_voices` effect voices and one music voice, at most `ref.aud.reference.max_voices` (64) in all, so 31 effect voices at the default setting ([09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) R-META-432); waiting requests are unlimited; at most `ref.aud.reference.starts_per_update` (1) voice starts per audio update, 20 per second; the candidate is the best-ranked waiting instance with a priority above 0; it takes the first free voice, or else the voice of the lowest-ranked occupant (the lowest voice index on a tie) with no comparison of priorities; a one-shot that loses its voice is removed, and a loop that loses it waits and restarts from its beginning, or with a new group member, when it wins a voice again; a waiting loop can win back the voice it lost at the next update. A two-dimensional instance ranks at the maximum and out-ranks every positioned instance below full level at any distance.
 
@@ -111,7 +111,7 @@ The roll-off is 1, and the design data sets no maximum distance (DEC-566). The s
 | ambience | ambience beds | `ref.aud.bus.ambience.level` (−10 dB) | low, but never stolen by world sounds |
 | music | the music hooks ([music hooks and brief](music_hooks_and_sound_design_brief.md)) | `ref.aud.bus.music.level` (−6 dB) | separate |
 
-The buses are submix buses of the audio engine's data-defined bus graph, which feeds a limiter before the output (ADR-0024).
+The buses are submix buses of the audio engine's data-defined bus graph, which feeds a limiter before the output (ADR-024).
 
 **R-AUD-222** (MUST) Every event names its bus. The default routing is:
 
@@ -176,7 +176,7 @@ Diagram 3-B: the Species buses (R-AUD-221); the pitch bend acts on the voice and
 |---|---|---|---|---|---|
 | `ref.aud.pitch_bend.speed_floor` | 0.01 | game speed | pitch floor √0.01 = 0.1× | R-AUD-211 | DEC-569, DEC-751 |
 | `ref.aud.crowd.nearest_radius` | 316.2 | wu | √99999.9; the crowd class radius | R-AUD-213 | DEC-109 |
-| `ref.aud.rank.copy_decay` | 0.75 | × per louder copy | the reference copy decay; the starting value of the engine's factor (ADR-0023) | R-AUD-216 | DEC-570 |
+| `ref.aud.rank.copy_decay` | 0.75 | × per louder copy | the reference copy decay; the starting value of the engine's factor (ADR-023) | R-AUD-216 | DEC-570 |
 | `ref.aud.reference.music_voices` | 1 | voices | reserved for music in the reference allocation | R-AUD-219 | DEC-570 |
 | `ref.aud.reference.max_voices` | 64 | voices | the reference cap of the voice setting | R-AUD-219 | DEC-570 |
 | `ref.aud.reference.starts_per_update` | 1 | voice starts per audio update | 20 per second in the reference; Species has no quota | R-AUD-219 | DEC-570 |
@@ -217,7 +217,7 @@ Keys cited here and defined elsewhere: `ref.meta.options.sound.volume_max` in [0
 ## 7 Dependencies
 
 - **Reference documents:** [event model and sound data](event_model_and_sound_data.md) (position kinds, sharing, levels); [event catalogue](event_catalogue.md) (the per-layer data); [front end, HUD, voice and ambience](front_end_hud_voice_and_ambience.md) (the countdown schedule, the altitude-driven beds); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the camera, the selection and highlight rate limits); [02 Worker](../02_units/worker.md) (horn and burning odds); [09 options](../09_front_end_and_match_flow/options_localisation_and_hooks.md) (master and bus volumes, swap left and right, voice count); [12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) (game speed).
-- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-0023 virtual voices and stealing, ADR-0024 buses and the limiter, ADR-0026 control rate, ADR-0027 spatialisation).
+- **Engine components:** [audio engine](../../architecture/components/audio_engine.md) (ADR-023 virtual voices and stealing, ADR-024 buses and the limiter, ADR-026 control rate, ADR-027 spatialisation).
 - **Assets:** none directly; the layers that use these rules cite their groups in the [event catalogue](event_catalogue.md).
 
 ## 8 Open decisions

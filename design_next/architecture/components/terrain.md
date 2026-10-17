@@ -1,6 +1,6 @@
 # Terrain
 
-> Status: Engine baseline · Prefix: TER · ADRs: [ADR-0011](../../adr/0011-world-surface-rendering.md) · [ADR-0052](../../adr/0052-cpp23-language-standard.md) · [ADR-0059](../../adr/0059-content-build-and-validators.md) · [ADR-0060](../../adr/0060-content-identity-by-hash.md) · [ADR-0061](../../adr/0061-data-schemas-and-versioning.md) · [ADR-0069](../../adr/0069-test-framework.md) · Related: [World renderers](renderer/world_renderers.md) · [Maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [Space, routing and physics](../../reference/12_simulation_model/05_space_routing_and_physics.md) · [Data schemas](data_schemas/README.md)
+> Status: Engine baseline · Prefix: TER · ADRs: [ADR-011](../../ADR/ADR-011-world-surface-rendering.md) · [ADR-052](../../ADR/ADR-052-cpp23-language-standard.md) · [ADR-059](../../ADR/ADR-059-content-build-and-validators.md) · [ADR-060](../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-069](../../ADR/ADR-069-test-framework.md) · Related: [World renderers](renderer/world_renderers.md) · [Maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) · [Map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) · [Randomness and integrity](../../reference/12_simulation_model/07_randomness_and_integrity.md) · [Space, routing and physics](../../reference/12_simulation_model/05_space_routing_and_physics.md) · [Data schemas](data_schemas/README.md)
 
 This component turns the terrain records of a map definition into the terrain that the simulation stands on and the renderer draws, precisely enough to re-implement the generator and reproduce its output bit for bit. The runtime model of a large world (generated at load or baked, streaming, content identity) is decided by the design phase (§8.3).
 
@@ -20,7 +20,7 @@ Notation used throughout: *r32*(*x*) rounds a binary64 value to the nearest bina
 
 **TER-006** (MUST) The height field and the normal grid are simulation static data. They depend only on the terrain records of the map definition, with decimal values rounded as TER-066 states, and on the integer tile seeds. They never depend on the simulation generator, a presentation generator, a clock, a setting, the hardware or the history of earlier calls (R-SIM-710, DEC-246).
 
-**TER-007** (MUST) The colour-ramp look-up, the shore mask, the depth map, the flat-water tile mask, the wave-mesh vertices and the coastline waves are presentation data: they never feed the simulation (R-SIM-601, DEC-007). The renderer owns their passes, pipeline-state entries and render keys ([world renderers](renderer/world_renderers.md) RND-130 to RND-148, ADR-0011); this component defines only the data and the formulae it derives them from, and never redefines a renderer key.
+**TER-007** (MUST) The colour-ramp look-up, the shore mask, the depth map, the flat-water tile mask, the wave-mesh vertices and the coastline waves are presentation data: they never feed the simulation (R-SIM-601, DEC-007). The renderer owns their passes, pipeline-state entries and render keys ([world renderers](renderer/world_renderers.md) RND-130 to RND-148, ADR-011); this component defines only the data and the formulae it derives them from, and never redefines a renderer key.
 
 **TER-008** (MUST NOT) The terrain component does not draw from the simulation generator (`SimRng`) or from any presentation generator that another consumer shares (R-SIM-608); it does not read a clock, an option, the local team or any other local state; and it never writes simulation state other than its own height field and normal grid, which it writes only while generating them.
 
@@ -140,7 +140,7 @@ The map editor's tile deletion and regeneration are hooks (§8.2).
 
 ## 3 Data model
 
-The map schema that carries these records is [data schemas](data_schemas/README.md) (ADR-0061, ADR-0062); this section states what the generator reads.
+The map schema that carries these records is [data schemas](data_schemas/README.md) (ADR-061, ADR-062); this section states what the generator reads.
 
 ### 3.1 Terrain definition
 
@@ -224,7 +224,7 @@ Table 3.4-A Guide-grid sizes.
 
 ### 3.6 Rendering inputs
 
-**TER-040** (MUST) A land colour ramp, one file of `terrain.ramp`, is an image of `ter.colour.ramp_size` × `ter.colour.ramp_size` (64 × 64) texels, read on the CPU from its cooked table (ADR-0018). Its x axis is the slope: column 0 is flat ground and column 63 vertical. Its y axis is the height, with the look-up row index counted from the **bottom** row of the image as viewed: row 0, the bottom row, is the highest terrain, and row 63, the top row, is sea level and below. The content build rejects a ramp of another size (DEC-015).
+**TER-040** (MUST) A land colour ramp, one file of `terrain.ramp`, is an image of `ter.colour.ramp_size` × `ter.colour.ramp_size` (64 × 64) texels, read on the CPU from its cooked table (ADR-018). Its x axis is the slope: column 0 is flat ground and column 63 vertical. Its y axis is the height, with the look-up row index counted from the **bottom** row of the image as viewed: row 0, the bottom row, is the highest terrain, and row 63, the top row, is sea level and below. The content build rejects a ramp of another size (DEC-015).
 
 **TER-041** (MUST) A shore-wave gradient, one file of `terrain.shore_wave_gradient`, provides the wave colour table: the pixel row `rnd.sea.wave_table_row` (1) of [world renderers](renderer/world_renderers.md) RND-144, counted from the bottom row of the image as viewed (the second row from the bottom), one colour per pixel column. The number of colours is the image's width, 400 for the gradients of the asset manifest, and any width is accepted. Every colour is opaque (alpha 0 in the inverted style, RND-144, DEC-040).
 
@@ -846,13 +846,13 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 
 ## 6 Failure modes, diagnostics and telemetry
 
-**TER-250** (MUST) The content build validates every map's terrain records against the map schema (DEC-015, ADR-0059) and rejects, with a diagnostic naming the map and the record: a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows (TER-072); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, or a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp whose size is not 64 × 64 (TER-040); and a land colour ramp, shore-wave gradient or sea tile file number that the asset manifest does not hold. It warns, without rejecting, about a tile with *k* < *p* (TER-111) and a tile whose footprint lies wholly outside the grid (TER-124).
+**TER-250** (MUST) The content build validates every map's terrain records against the map schema (DEC-015, ADR-059) and rejects, with a diagnostic naming the map and the record: a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows (TER-072); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, or a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp whose size is not 64 × 64 (TER-040); and a land colour ramp, shore-wave gradient or sea tile file number that the asset manifest does not hold. It warns, without rejecting, about a tile with *k* < *p* (TER-111) and a tile whose footprint lies wholly outside the grid (TER-124).
 
 **TER-251** (MUST) At run time, a terrain loader never passes a missing token on as a value, never hangs on malformed data and never stops the process: a map that fails validation is refused with a diagnostic (DEC-015). A missing ramp, sea tile or gradient file falls back to the map default, file 1 of its asset, with a diagnostic ([world renderers](renderer/world_renderers.md) §6).
 
-**TER-252** (MUST) The canonical digest of a height grid is the SHA-256 of its samples encoded as little-endian binary64, rows in order (z outer) and columns in order within a row (x inner), never the in-memory layout (DEC-246 item 10, ADR-0060); the normal grid's digest encodes the three components of each normal in the order x, y, z. Logs show the first 16 hexadecimal digits, and every comparison uses all 32 bytes (ADR-0060).
+**TER-252** (MUST) The canonical digest of a height grid is the SHA-256 of its samples encoded as little-endian binary64, rows in order (z outer) and columns in order within a row (x inner), never the in-memory layout (DEC-246 item 10, ADR-060); the normal grid's digest encodes the three components of each normal in the order x, y, z. Logs show the first 16 hexadecimal digits, and every comparison uses all 32 bytes (ADR-060).
 
-**TER-253** (MUST) After every generation the terrain logs, in the terrain log category (ADR-0067): the map id, the grid size, the world extent, the tile and flatten-area counts, the lowest and highest sample, the share of samples above sea level, the grid digest of TER-252 and the generation time. A test build can also record a per-tile trace: one record per guide pin, per draw, per noise value and per write, with every intermediate value, in the order of TER-107 (the trace of §7.2).
+**TER-253** (MUST) After every generation the terrain logs, in the terrain log category (ADR-067): the map id, the grid size, the world extent, the tile and flatten-area counts, the lowest and highest sample, the share of samples above sea level, the grid digest of TER-252 and the generation time. A test build can also record a per-tile trace: one record per guide pin, per draw, per noise value and per write, with every intermediate value, in the order of TER-107 (the trace of §7.2).
 
 **TER-254** (MUST) The terrain sends no telemetry of its own; its generation time is part of the load timing that the diagnostics component reports ([diagnostics, test and performance](diagnostics_test_and_performance.md)).
 
@@ -891,7 +891,7 @@ Every value is a reference value adopted as the Species engine baseline (DEC-004
 
 ### 7.2 Vector sets
 
-Each set is a self-contained parameter set. The expected values below are exact binary64 values, printed so that they parse back to the same value, and are checked by exact equality; they were produced by a conformance generator, an implementation of §4 written from this text alone, and every implementation is accepted only when it reproduces all of them. New vectors are produced the same way: the expected values of a new set come from the conformance generator kept with the test suite (ADR-0069), never from a reference map, whose shapes and digests are not reproduced (DEC-063).
+Each set is a self-contained parameter set. The expected values below are exact binary64 values, printed so that they parse back to the same value, and are checked by exact equality; they were produced by a conformance generator, an implementation of §4 written from this text alone, and every implementation is accepted only when it reproduces all of them. New vectors are produced the same way: the expected values of a new set come from the conformance generator kept with the test suite (ADR-069), never from a reference map, whose shapes and digests are not reproduced (DEC-063).
 
 **Vector set A** is a terrain of three tiles: world size 2700 × 2700 wu, cell size 15.76 wu, outside height −15.39 wu, maximum height absent (0), no flatten areas, and the tiles of table 7.2-A.
 
@@ -1025,9 +1025,9 @@ The asymmetry of step (5) comes from the in-place order (TER-141): sample (4, 4)
 | DEC-040 | Open | the inverted style's alpha (TER-041, TER-181) |
 | DEC-045 | Open | the map editor (§8.2) |
 | DEC-004, DEC-007, DEC-010, DEC-011, DEC-013, DEC-014, DEC-015, DEC-118, DEC-653, DEC-800 | Resolved | reference values as baseline; presentation never writes the field; no setting feeds it; per-match lifetime; presentation generators; bounded searches; build-time validation; the seasonal state; finite results; lossless writers |
-| ADR-0011 | Accepted | the renderer draws the field in chunked static buffers with an edge-term overlay and GPU water; it accepts any producer of height and colour data |
-| ADR-0060, ADR-0061, ADR-0059 | Accepted | content identity by SHA-256, the map schema and the content-build validators (TER-250, TER-252) |
-| ADR-0069 | Proposed | unit, property, golden-hash and performance tests (§7) |
+| ADR-011 | Accepted | the renderer draws the field in chunked static buffers with an edge-term overlay and GPU water; it accepts any producer of height and colour data |
+| ADR-060, ADR-061, ADR-059 | Accepted | content identity by SHA-256, the map schema and the content-build validators (TER-250, TER-252) |
+| ADR-069 | Proposed | unit, property, golden-hash and performance tests (§7) |
 
 Two points have no register entry yet and keep the behaviour stated: the grid walk of a ray with a zero horizontal component (TER-017), whose reference handling is not established, so the walk visits the column or row the ray lies in; and the highest-sample scan on a non-square grid (TER-076).
 
@@ -1042,11 +1042,11 @@ The map editor is designed fresh by the design phase (DEC-045); [map editor hook
 ### 8.3 Design-phase inputs
 
 1. **Runtime model** (DEC-246): keep generation at load (the baseline), bake the height grid in the content build (binary32, or 16-bit quantised with a scale and an offset, with or without the normal grid), generate at run time in integer arithmetic with a counter-based generator, or deliver server-owned terrain chunks; and whether the bit-exact reproduction of TER-061 and TER-065 is needed at all, which it is only where participants generate their own field.
-2. **Content identity** (DEC-246, DEC-204, ADR-0060): what the session handshake and the advertised session record compare: the digest of the baked grid (TER-252), of the terrain records, or of the whole map asset.
+2. **Content identity** (DEC-246, DEC-204, ADR-060): what the session handshake and the advertised session record compare: the digest of the baked grid (TER-252), of the terrain records, or of the whole map asset.
 3. **Numeric model** (DEC-240, DEC-241): binary64 with binary32-rounded transcendental results (the baseline), strict binary64 with an own maths library, or fixed point, and the precision of stored heights and normals.
 4. **Large world** (DEC-247, vision §6 item 6): a continuous world height field in chunks aligned with region boundaries; shared edge samples between chunks; how tiles and flatten areas that straddle chunk boundaries compose; grids beyond `ter.grid.max_samples_per_side` and the 16-bit index semantics of TER-072; coordinate precision far from the origin (binary64 or fixed point in the simulation, camera-relative binary32 in rendering); the memory per chunk and per region.
 5. **Streaming** (DEC-226): loading terrain ahead of a region hand-over without blocking any region's tick, and the load budget of T26.
-6. **Strategic zoom** (DEC-247 item 12, vision O9): coarse levels of detail of the height field in the same flat-shaded style, together with the renderer's level-of-detail scheme (ADR-0011, RND-138).
+6. **Strategic zoom** (DEC-247 item 12, vision O9): coarse levels of detail of the height field in the same flat-shaded style, together with the renderer's level-of-detail scheme (ADR-011, RND-138).
 7. **Off-map heights** (DEC-246 item 7): keep the reference edge semantics of TER-153, or clamp, or return the outside height; the Abductor wander area depends on it (DEC-113).
 8. **Cosmetic noise** (DEC-246 item 11): replace the colour and shore-noise chains by stateless functions of position (TER-187), which chunked or streamed colour builds need.
 9. **Generator variants** (DEC-324): unbiased method-2 and smooth variants for new maps.

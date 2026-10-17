@@ -1,6 +1,6 @@
 # Visual language
 
-> Status: Engine baseline · Prefix: RND · ADRs: [ADR-0003](../../../adr/0003-shader-language-compiler-and-material-shaders.md) · [ADR-0005](../../../adr/0005-pipeline-state-catalogue.md) · [ADR-0009](../../../adr/0009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-0010](../../../adr/0010-gpu-particles-and-shatter-debris.md) · [ADR-0011](../../../adr/0011-world-surface-rendering.md) · [ADR-0013](../../../adr/0013-working-colour-space-and-blending.md) · [ADR-0014](../../../adr/0014-hdr-output.md) · [ADR-0015](../../../adr/0015-scene-anti-aliasing.md) · [ADR-0018](../../../adr/0018-texture-import-manifest.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0064](../../../adr/0064-accessibility-baseline-xag.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md) · [Options and budgets](options_and_budgets.md) · [Art and audio briefs](../../../assets/art_and_audio_briefs.md)
+> Status: Engine baseline · Prefix: RND · ADRs: [ADR-003](../../../ADR/ADR-003-shader-language-compiler-and-material-shaders.md) · [ADR-005](../../../ADR/ADR-005-pipeline-state-catalogue.md) · [ADR-009](../../../ADR/ADR-009-instanced-crowds-sprite-cards-and-shadows.md) · [ADR-010](../../../ADR/ADR-010-gpu-particles-and-shatter-debris.md) · [ADR-011](../../../ADR/ADR-011-world-surface-rendering.md) · [ADR-013](../../../ADR/ADR-013-working-colour-space-and-blending.md) · [ADR-014](../../../ADR/ADR-014-hdr-output.md) · [ADR-015](../../../ADR/ADR-015-scene-anti-aliasing.md) · [ADR-018](../../../ADR/ADR-018-texture-import-manifest.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-064](../../../ADR/ADR-064-accessibility-baseline-xag.md) · Related: [Renderer](README.md) · [Frame graph and passes](frame_graph_and_passes.md) · [World renderers](world_renderers.md) · [View, lighting and fog](view_lighting_and_fog.md) · [Shaders](shaders.md) · [Entity and overlay renderers](entity_and_overlay_renderers.md) · [Options and budgets](options_and_budgets.md) · [Art and audio briefs](../../../assets/art_and_audio_briefs.md)
 
 This document states the look and feel that Species keeps, precisely and testably: flat-faceted low-poly geometry, glowing wire grids, additive neon glow on a black world, darkening layers, a fixed team palette, crowds of tiny figures drawn as cards that turn into billboards, and the camera's sense of scale. The look stays exactly as specified here (see DEC-029); every asset that carries it is newly authored. This document specifies the **style**, never the reference art: the style guide that artists work from is [art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2, and the per-file specifications are in [asset_manifest.csv](../../../assets/asset_manifest.csv).
 
@@ -10,11 +10,11 @@ This document states the look and feel that Species keeps, precisely and testabl
 
 **RND-391** (MUST) The look is reproduced from the techniques and values of this folder only. No reference texture, mesh, icon, cursor, panel, font or screenshot is traced, re-coloured, resampled or used as a template; every asset is authored new for its role, under the briefs of [art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §1 and §2.8 (see DEC-342).
 
-**RND-392** (MUST) The look is defined on display-encoded colour values in clamping 8-bit targets, the working colour space of ADR-0013: every colour constant of the tuning tables and every colour texel is an sRGB-encoded value, blends combine encoded values, and each blend result is clamped to [0, 1] per channel as it is written (RND-058). The SDR image is the reference image of every rule here; HDR output keeps it at and below SDR white and differs only for over-range glow (ADR-0014).
+**RND-392** (MUST) The look is defined on display-encoded colour values in clamping 8-bit targets, the working colour space of ADR-013: every colour constant of the tuning tables and every colour texel is an sRGB-encoded value, blends combine encoded values, and each blend result is clamped to [0, 1] per channel as it is written (RND-058). The SDR image is the reference image of every rule here; HDR output keeps it at and below SDR white and differs only for over-range glow (ADR-014).
 
 ## 2 Interfaces
 
-The look has no runtime interface of its own. Its contracts are the asset import rules that carry it (table below, ADR-0018) and the golden-image scenes that verify it (§7), which the test harness renders through this interface:
+The look has no runtime interface of its own. Its contracts are the asset import rules that carry it (table below, ADR-018) and the golden-image scenes that verify it (§7), which the test harness renders through this interface:
 
 ```cpp
 namespace species::render::look {
@@ -35,7 +35,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 }  // namespace species::render::look
 ```
 
-**RND-393** (MUST) Each asset family carries the look through these import-record values (ADR-0018); markers, cursors and icons are straight-alpha art that their passes also draw with the `Additive` blend (RND-423):
+**RND-393** (MUST) Each asset family carries the look through these import-record values (ADR-018); markers, cursors and icons are straight-alpha art that their passes also draw with the `Additive` blend (RND-423):
 
 | Asset family | Colour space | Alpha mode | Mip policy | Look it carries |
 |---|---|---|---|---|
@@ -43,7 +43,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 | darkening art (`icon.hud.icon_halo`, `sprite.missile_barrage.launcher_shadow`, blurred shadow variants) | sRGB | darkening: the destination × (1 − texel) | full | white means full darkening |
 | crowd cards (`sprite.worker.*`) | sRGB | `cutout` at the consumer threshold | full | hard-edged white or light-grey figures, tinted by the draw colour |
 | markers, cursors and icons (`marker.*`, `cursor.*`, `icon.*`) | sRGB | straight alpha, white art tinted by the draw colour | full; the compass views of mip level 0 (RND-378) | drawn additively or alpha-blended as their pass states |
-| meshes (`mesh.*`) | facet colours converted to sRGB-encoded values by the cooker (ADR-0013) | opaque | — | flat facets; team regions marked for the tint (RND-406) |
+| meshes (`mesh.*`) | facet colours converted to sRGB-encoded values by the cooker (ADR-013) | opaque | — | flat facets; team regions marked for the tint (RND-406) |
 
 ## 3 Data model
 
@@ -84,19 +84,19 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 
 **RND-405** (MUST) The colour of an object of no team is an opaque grey, `ref.match.colour.no_group` (153, 153, 153, alpha 255) of [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) and R-BLDG-048 (see DEC-078); the specific no-team greys of individual elements stay their owners' (for example `rnd.structure.spawn.orb_neutral_grey`, `rnd.barrier.neutral_colour`).
 
-**RND-406** (MUST) Meshes are tinted by the tint function of [shaders.md](shaders.md) RND-271 (ADR-0020): team regions are marked per facet with a tint weight, authored as "mostly red" key colours whose red channel exceeds twice each of the other two (RND-162) or as an explicit weight; only the root node and its direct children are tinted (RND-161); the tinted colour keeps the facet's brightness and is scaled by `rnd.tint.factor`. The special tint rules (convert-all meshes, the Transport hull, the Worker figure's palette entry 0) are those of RND-162. Cloth banners and flags mark their team area in pure red (255, 0, 0) ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.5).
+**RND-406** (MUST) Meshes are tinted by the tint function of [shaders.md](shaders.md) RND-271 (ADR-020): team regions are marked per facet with a tint weight, authored as "mostly red" key colours whose red channel exceeds twice each of the other two (RND-162) or as an explicit weight; only the root node and its direct children are tinted (RND-161); the tinted colour keeps the facet's brightness and is scaled by `rnd.tint.factor`. The special tint rules (convert-all meshes, the Transport hull, the Worker figure's palette entry 0) are those of RND-162. Cloth banners and flags mark their team area in pure red (255, 0, 0) ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.5).
 
 **RND-407** (MUST) The two factions have their own looks: the Rogue faction draws its laser bolts in white (`rnd.laser.rogue_colour`), its Crawlers, barrage missiles and any Essence orbs as darkening layers (RND-319, RND-324, RND-327), and its Workers with the hurt pose (R-UNIT-145); the Visitor faction draws its Workers with their own card and glow (RND-316) and takes the light grey of colour id 9 elsewhere.
 
 **RND-408** (MUST) The Shield bubble and the Visitor faction bubble take a saturated team colour: each channel of the team colour, read as an 8-bit value, is fully on when that value is at least 1 and fully off when it is 0, so most team colours draw a white bubble, orange (255, 150, 0) a yellow one and purple (150, 0, 255) a magenta one. This is the reference look and the default of the Open DEC-328 ([README.md](../animation_and_vfx/README.md) draws the bubbles).
 
-**RND-409** (MUST) Colour is never the only team cue: the team palette index that selects the tint also selects any per-team pattern or marker shape that the accessibility rules add (ADR-0020, ADR-0064, XAG 103).
+**RND-409** (MUST) Colour is never the only team cue: the team palette index that selects the tint also selects any per-team pattern or marker shape that the accessibility rules add (ADR-020, ADR-064, XAG 103).
 
 ### 4.2 Crowds and the camera's sense of scale
 
 **RND-410** (MUST) The world is read at a scale ladder in which the crowd figure is the unit: a Worker card is `ref.unit.worker.card_height` (6 wu) tall at the camera, an Essence orb's glow quads are `ref.unit.essence_orb.inner_size` (0.5 wu) and `ref.unit.essence_orb.outer_size` (1.5 wu), a structure's ownership light is at most `rnd.structure.light.max_half_size` (6 wu), the sky grid lies at `rnd.sky.grid_height` (1200 wu) with lines every `rnd.sky.grid_spacing` (80 wu), the clouds between `rnd.sky.layer3_height` (800 wu) and 1200 wu, the near plane at `rnd.view.near_plane` (5 wu), the fog end at least `rnd.fog.min_end` (4000 wu) and the far plane at `rnd.view.far_plane` (15000 wu). The free camera's vertical field of view is 60°, narrowing to 15° when zoomed (DEC-024, [camera_and_sequences.md](../camera_and_sequences.md)), and the horizontal field of view widens with the aspect ratio (RND-027).
 
-**RND-411** (MUST) Small figures are drawn as flat cards, not meshes: near the camera a Worker card faces the Worker's own direction and lies along the terrain normal; from `ref.unit.worker.card_face_start` (300 wu) it turns progressively towards the camera, and from 300 + `ref.unit.worker.card_scale_divisor` = 1300 wu it is a pure billboard ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-314, ADR-0009).
+**RND-411** (MUST) Small figures are drawn as flat cards, not meshes: near the camera a Worker card faces the Worker's own direction and lies along the terrain normal; from `ref.unit.worker.card_face_start` (300 wu) it turns progressively towards the camera, and from 300 + `ref.unit.worker.card_scale_divisor` = 1300 wu it is a pure billboard ([entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) RND-314, ADR-009).
 
 **RND-412** (MUST) Beyond `ref.unit.worker.card_scale_start` (100 wu) a Worker card grows linearly with camera distance by the player's distance scale factor *k* (default `rnd.option.worker_scale_factor.default`, [options_and_budgets.md](options_and_budgets.md)): its world height is 2 × `ref.unit.worker.card_half_width` × (1 + *k* × (*d* − 100) ÷ `ref.unit.worker.card_scale_divisor`) at distance *d*, before the per-individual variation of R-UNIT-142.
 
@@ -104,7 +104,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 
 **RND-414** (MUST) The on-screen height of a Worker card at distance *d* (*d* > 100 wu), with render height *H* in pixels and vertical field of view *φ*, is *h*(*d*) = *H* × 2*s*(*d*) ÷ (2*d* × tan(*φ* ÷ 2)), where 2*s*(*d*) is the world height of RND-412. With the default scale factor the card's screen height falls with distance only towards the limit *H* × `ref.unit.worker.card_height` × *k* ÷ (`ref.unit.worker.card_scale_divisor` × 2 tan(*φ* ÷ 2)): at the default field of view of 60° and 1080 lines, 56 px at 100 wu, 26 px at 300 wu, 16 px at 1000 wu, 13 px at 2000 wu and never less than 11 px. A Worker therefore reads as a figure of a few pixels at play distance and stays visible across the whole map, which is the crowd's sense of scale.
 
-**RND-415** (MUST) Crowds are drawn as instanced cards whose cost does not grow per figure (ADR-0009), so the look holds at the reference peak of about 2,000 bodies per map (see DEC-106) and at the stress populations of [options_and_budgets.md](options_and_budgets.md).
+**RND-415** (MUST) Crowds are drawn as instanced cards whose cost does not grow per figure (ADR-009), so the look holds at the reference peak of about 2,000 bodies per map (see DEC-106) and at the stress populations of [options_and_budgets.md](options_and_budgets.md).
 
 ### 4.3 Blend modes
 
@@ -117,7 +117,7 @@ std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& renderer, co
 | darkening | `Darkening` (the destination × (1 − source colour)) | smoke particles, the Rogue faction's Crawlers and orbs, text outlines and shadows, cursor and icon shadows, logo and icon halos, blob shadows |
 | ink | `Ink` (source alpha, one minus source colour, with source alpha above 0) | ink text in the front end (RND-425), the Rogue faction's Crawler glow, barrage marker shadows |
 | translucent | `Alpha` | Worker cards and their ground shadows, translucent structure layers, route lines, marker and panel shadows, HUD panels |
-| premultiplied | `Premultiplied` | textures whose alpha mode is premultiplied (ADR-0018) |
+| premultiplied | `Premultiplied` | textures whose alpha mode is premultiplied (ADR-018) |
 | ghost | `Ghost` (one, source colour) | placement ghost models (RND-365) |
 
 **RND-417** (MUST) Non-solid layers never write depth (RND-059). Additive layers saturate towards white where they overlap, and their order among themselves does not change the image; darkening layers multiply and are equally order-independent; both are therefore drawn unsorted. Only translucent alpha layers that the pass table marks as sorted are drawn back to front (RND-166).
@@ -150,23 +150,23 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 **RND-421** (MUST) A darkening layer multiplies the destination by one minus its colour: with a source colour *c* and alpha 0, the result is *dst* × (1 − *c*). Its art is greyscale in which white means full darkening; the layer needs no sorting.
 
-**RND-422** (MUST) Shadows of cursors, markers, crate landing markers and the barrage marker are blurred copies of their icons, derived offline by the cooker (RND-243, ADR-0018), with a separable five-tap kernel whose weights (2, 4, 7, 4, 2) are multiplied by `rnd.look.blur_normaliser` (0.0526, so that they sum to about 1), applied with the blur radius `rnd.shadow.icon_blur_radius` (10 px) as its scale, once horizontally and twice vertically; an artist MAY author such a shadow instead as greyscale art ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.3). A shadow is drawn first with source alpha 0 and its icon over it (RND-366).
+**RND-422** (MUST) Shadows of cursors, markers, crate landing markers and the barrage marker are blurred copies of their icons, derived offline by the cooker (RND-243, ADR-018), with a separable five-tap kernel whose weights (2, 4, 7, 4, 2) are multiplied by `rnd.look.blur_normaliser` (0.0526, so that they sum to about 1), applied with the blur radius `rnd.shadow.icon_blur_radius` (10 px) as its scale, once horizontally and twice vertically; an artist MAY author such a shadow instead as greyscale art ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.3). A shadow is drawn first with source alpha 0 and its icon over it (RND-366).
 
-**RND-423** (MUST) Icons, markers and cursors drawn with the `Additive` blend carry real alpha channels: the blend weights each texel by its alpha, so transparent texels add nothing and no black background stands in for transparency (ADR-0018). Their look on screen is that of glowing art over a darkened halo.
+**RND-423** (MUST) Icons, markers and cursors drawn with the `Additive` blend carry real alpha channels: the blend weights each texel by its alpha, so transparent texels add nothing and no black background stands in for transparency (ADR-018). Their look on screen is that of glowing art over a darkened halo.
 
 **RND-424** (MUST) Unit blob shadows are `fx.glow_round` drawn as a darkening layer in the colour of R-UNIT-050; they are the only shadows of units apart from the flattened sprite shadows of Workers (RND-240).
 
 ### 4.6 Ink text
 
-**RND-425** (MUST) Ink text in the front end is drawn with the `Ink` blend (source alpha, one minus source colour) over the menu highlight gradient and the fill boxes; with a text colour *c* and alpha *a* the result is *c* × *a* + *dst* × (1 − *c*). This is the reference default of the Open DEC-316, whose on-screen look is confirmed visually in the working colour space of ADR-0013; the page transition that accompanies it is RND-095 and RND-096.
+**RND-425** (MUST) Ink text in the front end is drawn with the `Ink` blend (source alpha, one minus source colour) over the menu highlight gradient and the fill boxes; with a text colour *c* and alpha *a* the result is *c* × *a* + *dst* × (1 − *c*). This is the reference default of the Open DEC-316, whose on-screen look is confirmed visually in the working colour space of ADR-013; the page transition that accompanies it is RND-095 and RND-096.
 
 ### 4.7 Flat-shaded low-poly
 
-**RND-426** (MUST) Every lit triangle has one facet normal and one facet colour, baked by the cooker (ADR-0020); terrain triangles take their facet colour from the map's ramp by slope and height (RND-134). No mesh is smooth-lit and none has a normal map, so the faceted image never depends on a vertex-ordering convention (RND-276). The gradients of the look (the shockwave ring, the highlight and area cylinders, the pop-up box) are unlit vertex-colour gradients, not smooth-lit meshes.
+**RND-426** (MUST) Every lit triangle has one facet normal and one facet colour, baked by the cooker (ADR-020); terrain triangles take their facet colour from the map's ramp by slope and height (RND-134). No mesh is smooth-lit and none has a normal map, so the faceted image never depends on a vertex-ordering convention (RND-276). The gradients of the look (the shockwave ring, the highlight and area cylinders, the pop-up box) are unlit vertex-colour gradients, not smooth-lit meshes.
 
 **RND-427** (MUST) Meshes are low-poly, built from a few large shapes that read at a distance: the reference mesh set averages about 1,085 triangles per mesh (RND-156), and each mesh's budget is its manifest row ([asset_manifest.csv](../../../assets/asset_manifest.csv)). Authored colours are final colours as seen through the engine's attenuation (`rnd.mesh.colour_attenuation`), tint (`rnd.tint.factor`) and the Transport and Worker-figure factors (RND-160 to RND-162).
 
-**RND-428** (MUST) Thin bright lines carry the wire look: the terrain wire grid, one outline per height-field cell drawn additively over the lit terrain (RND-135, `fx.terrain_grid`); the edge lines of shatter shards ([README.md](../animation_and_vfx/README.md), ADR-0010); and the Barrier Emitter's top edge line (RND-201).
+**RND-428** (MUST) Thin bright lines carry the wire look: the terrain wire grid, one outline per height-field cell drawn additively over the lit terrain (RND-135, `fx.terrain_grid`); the edge lines of shatter shards ([README.md](../animation_and_vfx/README.md), ADR-010); and the Barrier Emitter's top edge line (RND-201).
 
 ### 4.8 Black world, fog and light
 
@@ -180,7 +180,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 **RND-432** (MUST) World textures are filtered linearly through all their mip levels unless a rule names otherwise (RND-055). Point filtering is deliberate in exactly these places, for a blocky pixel look: the particle dot under magnification ([README.md](../animation_and_vfx/README.md)), the flat cloud layers (RND-154), and the captured frame of the screen transition, which is sampled with the point clamp-to-edge sampler. Cloud layers and the views that the passes name read mip level 0 only.
 
-**RND-433** (MUST) Multisampling follows ADR-0015, and its Off setting is the reference appearance of polygon edges; cut-out cards use alpha-to-coverage when multisampling is on (RND-060), so crowds keep their hard edges at every setting.
+**RND-433** (MUST) Multisampling follows ADR-015, and its Off setting is the reference appearance of polygon edges; cut-out cards use alpha-to-coverage when multisampling is on (RND-060), so crowds keep their hard edges at every setting.
 
 ### 4.10 The inverted style
 
@@ -188,7 +188,7 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 ### 4.11 Accessibility limits on the look
 
-**RND-435** (MUST) The look meets the accessibility baseline (ADR-0064): flash intensity and HDR highlight levels are capped by the photosensitivity rule and camera shake follows the motion setting (RND-248); gameplay-relevant text and icons keep the contrast of XAG 102 against their background, which dim glow on black can fail; the minimum text size of XAG 101 applies to every overlay ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.9).
+**RND-435** (MUST) The look meets the accessibility baseline (ADR-064): flash intensity and HDR highlight levels are capped by the photosensitivity rule and camera shake follows the motion setting (RND-248); gameplay-relevant text and icons keep the contrast of XAG 102 against their background, which dim glow on black can fail; the minimum text size of XAG 101 applies to every overlay ([art_and_audio_briefs.md](../../../assets/art_and_audio_briefs.md) §2.9).
 
 ## 5 Concurrency and performance budget
 
@@ -198,8 +198,8 @@ Caption: the pass order of RND-070 grouped by blend family; within an additive o
 
 | Failure | Behaviour | Requirement |
 |---|---|---|
-| an asset's import record pairs its alpha mode with another blend state | a content-build error (ADR-0018) | RND-393 |
-| a faceted mesh triangle has corners of different colours | a content-build error (ADR-0020) | RND-426 |
+| an asset's import record pairs its alpha mode with another blend state | a content-build error (ADR-018) | RND-393 |
+| a faceted mesh triangle has corners of different colours | a content-build error (ADR-020) | RND-426 |
 | a glow texture has non-black texels at its border | a content-build warning | RND-419 |
 | a golden image of §7 differs by more than its tolerance | a test failure naming the scene and the largest difference | RND-390 |
 
@@ -237,7 +237,7 @@ A development view toggles each element family of RND-416 off and on, so reviewe
 | DEC-316 | Open | the ink text blend and the page transition (RND-425) |
 | DEC-328 | Open | saturated bubble colours (RND-408) |
 | DEC-342 | Dropped | provenance of reference art: every asset is new (RND-391) |
-| ADR-0013 | Proposed | the display-referred working colour space (RND-392) |
+| ADR-013 | Proposed | the display-referred working colour space (RND-392) |
 
 **Design-phase inputs.**
 

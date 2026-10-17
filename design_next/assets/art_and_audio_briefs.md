@@ -49,7 +49,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 - A second family of effects darkens instead of brightening: smoke, the hostile Crawlers and their orbs, text outlines and shadows, cursor and icon shadows, logo halos and blob shadows under units.
 - Darkening art is greyscale too: white means full darkening. The result is the destination multiplied by one minus the texel, so darkening needs no sorting either.
-- Shadows of cursors, of the crate landing marker and of the barrage marker are blurred copies of their art: derived variants that the cooker produces offline, never at load or at run time (RND-422, ADR-0018), or greyscale darkening art that an artist authors instead. The compass and team-disc shadows and the glyph shadows are authored art.
+- Shadows of cursors, of the crate landing marker and of the barrage marker are blurred copies of their art: derived variants that the cooker produces offline, never at load or at run time (RND-422, ADR-018), or greyscale darkening art that an artist authors instead. The compass and team-disc shadows and the glyph shadows are authored art.
 
 ### 2.4 Crowds of small figures
 
@@ -61,7 +61,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 ### 2.5 Team tint and palette
 
 - Team identity is applied by tint, never painted into art. Worker cards, icons and markers are white or light grey and take the team colour from the vertex tint; lasers, glows and lights take it the same way.
-- Meshes mark team parts with explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-0020). The renderer tints them in the shader while keeping their brightness; the cooker never infers a weight from a colour. An artist who works in the "mostly red" key-colour style (red more than twice green and twice blue) runs the authoring helper, which writes explicit weights for review.
+- Meshes mark team parts with explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-020). The renderer tints them in the shader while keeping their brightness; the cooker never infers a weight from a colour. An artist who works in the "mostly red" key-colour style (red more than twice green and twice blue) runs the authoring helper, which writes explicit weights for review.
 - Cloth banners and flags carry the team area as grey levels (its intensity) and a companion tint mask whose white marks full team tint (AST-022). Nothing is recoloured at load and no per-team copy exists; the look is unchanged.
 - A match has eight team colours (green, red, yellow, blue, orange, purple, cyan, pink). Art must read correctly under all eight, including next to each other.
 - Colour is never the only team cue (XAG 103): banners, flags and markers also differ in shape or pattern where the design phase asks for it.
@@ -76,7 +76,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 - Some textures are magnified with point filtering on purpose, for a blocky pixel look (RND-432): the particle dot and the front-end backdrop figure through the point-magnify clamp-to-edge sampler (linear under minification), the flat cloud layers, and the captured frame of the screen transition. Their art is designed as clean pixel shapes at the stated size.
 - Front-end pictures are authored at twice their display size and drawn with linear filtering. Menu art has no mip-maps; the explainer pictures carry full mip chains, because the explainer panel samples them with mip-maps (R-META-231).
-- Block-compressed art is a whole number of 4x4 blocks: its authored size is a multiple of 4 in both dimensions, and the content build rejects any other size (ADR-0017).
+- Block-compressed art is a whole number of 4x4 blocks: its authored size is a multiple of 4 in both dimensions, and the content build rejects any other size (ADR-017).
 
 ### 2.8 What must be new
 

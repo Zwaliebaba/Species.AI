@@ -4,11 +4,11 @@
 |---|---|---|---|
 | 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
 | 2 Soft-flag patterns | PASS | 0 | 38 soft hits, 38 allowed by CONVENTIONS §9, 0 not allowed |
-| 3 Links and anchors | PASS | 0 | 12173 relative links checked |
+| 3 Links and anchors | PASS | 0 | 12252 relative links checked |
 | 4 Mermaid | FAIL | 1 | SKIPPED (--skip-mermaid) |
-| 5 Requirement ids | FAIL | 2 | 4918 requirement ids defined, 27036 citations, 25 prefixes registered |
-| 6 DEC and ADR references | FAIL | 38 | 300 DECs (148 Open, 110 of them cited by a requirement), 64 ADRs |
-| 7 Asset closure | PASS | 0 | 401 asset ids (1311 manifest rows), 2273 asset citations in reference and component documents |
+| 5 Requirement ids | FAIL | 2 | 4918 requirement ids defined, 27196 citations, 25 prefixes registered |
+| 6 DEC and ADR references | FAIL | 38 | 301 DECs (148 Open, 110 of them cited by a requirement), 64 ADRs |
+| 7 Asset closure | PASS | 0 | 453 asset ids (1412 manifest rows), 2273 asset citations in reference and component documents |
 | 8 Tuning keys | FAIL | 10 | 3869 tuning keys, 2 cited by no requirement |
 | 9 Truncation words | PASS | 0 | 0 truncation words |
 | 10 Sizes, READMEs, templates | PASS | 0 | 208 documents, 76 checked for template headings |

@@ -289,13 +289,13 @@ for f, t in TEXT.items():
                     st = s.group(1)
                     break
             dec_status[int(m.group(1))] = st
-adr_ids = {int(os.path.basename(p)[:4]) for p in glob.glob(os.path.join(ROOT, 'adr', '[0-9][0-9][0-9][0-9]-*.md'))}
+adr_ids = {int(os.path.basename(p)[4:7]) for p in glob.glob(os.path.join(ROOT, 'ADR', 'ADR-[0-9][0-9][0-9]-*.md'))}
 for f, t in TEXT.items():
-    t2 = re.sub(r'(DEC|ADR)-\d{3,4}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3,4}', ' ', t)
+    t2 = re.sub(r'(DEC|ADR)-\d{3}\s*(?:to|–|-|…)\s*(?:DEC-|ADR-)?\d{3}', ' ', t)
     for m in sorted(set(re.findall(r'DEC-(\d{3})\b', t2))):
         if int(m) not in dec_status:
             fail(6, f'{f}: cites DEC-{m}, which does not exist')
-    for m in sorted(set(re.findall(r'ADR-(\d{4})\b', t2))):
+    for m in sorted(set(re.findall(r'ADR-(\d{3})\b', t2))):
         if int(m) not in adr_ids:
             fail(6, f'{f}: cites ADR-{m}, which does not exist')
 req_text = '\n'.join(req_blocks.values())

@@ -39,7 +39,7 @@ The building layer of the reference game consists of these parts:
 - **Draws.** `U[a, b)` is a uniform real draw from the simulation generator; `U{a..b}` is a uniform integer draw with both ends included. Every draw follows the stream discipline of reference/12 (DEC-013): one draw per statement, in the explicit step that the rule names (DEC-652). Cosmetic draws come from the presentation generator.
 - **Team slots.** A match has `ref.sim.max_teams` (6) team slots, 0 to 5. Slot `ref.sim.team.rogue_slot` (4) is the Rogue faction and slot `ref.sim.team.visitor_slot` (5) the Visitor faction. A structure without an owner has **no team**, one value for every field (DEC-464).
 - **Structure order.** "Structure order" is the stable structure-index order of the match world's structure pool (DEC-016).
-- **Sockets.** Mesh sockets are named as in `assets/asset_manifest.csv` (for example `port_01`, `light_01`, `door`); the socket schema is ADR-0021.
+- **Sockets.** Mesh sockets are named as in `assets/asset_manifest.csv` (for example `port_01`, `light_01`, `door`); the socket schema is ADR-021.
 - **Keys.** Tuning keys of this folder are `ref.bldg.<object>.<parameter>`. A value that another document owns is cited by that document's key.
 
 ## 2 Rules

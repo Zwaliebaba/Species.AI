@@ -104,7 +104,7 @@ G09a-xdoc-2,"G01 still writes ""0 means no limit"" (item 67)",amend,DEC-120,"REA
 G09b-1,reference sound options without a Species counterpart,new,DEC-869,"options_localisation_and_hooks.md R-META-429, R-META-430, R-META-431",cite DEC-869 in each
 G09b-2,DEC-044 against DEC-570 (separate volumes),amend,DEC-044,options_localisation_and_hooks.md R-META-434,
 G09b-3,DEC-800 option B wording (settings writer and comment lines),none,DEC-800,,already corrected: DEC-800 option B says the writer re-emits blank and comment lines
-G09b-adr,ADR-0063 against DEC-099 (item 70),none,DEC-099,"options_localisation_and_hooks.md R-META-463, R-META-464, R-META-465",X-ADR-P4 amends ADR-0063 (item 108 drops its sign-off exception); DEC-099 unchanged
+G09b-adr,ADR-063 against DEC-099 (item 70),none,DEC-099,"options_localisation_and_hooks.md R-META-463, R-META-464, R-META-465",X-ADR-P4 amends ADR-063 (item 108 drops its sign-off exception); DEC-099 unchanged
 G10-1,sting for an owner change to no team (detail of DEC-097),amend,DEC-097,"event_model_and_sound_data.md R-AUD-025; event_catalogue.md R-AUD-134, R-AUD-137",
 G10-2,DEC-565 names the dropped Leader absorb mode,amend,DEC-565,,
 G10-xdoc-097,G04 R-CRATE-117 and G09 R-META-454 contradict DEC-097 (item 81),amend,DEC-097,crates_and_powers.md R-CRATE-117; options_localisation_and_hooks.md R-META-454,"DEC-097 is right. R-CRATE-117: while progress drains, the bucket tones play downwards (R-AUD-031); R-META-454 item 1: the sample-memory level is not honoured, every sample group uses all its members (R-AUD-064)"
@@ -143,7 +143,7 @@ item 60,DEC-801: R-MODE-084 lets a repeated cap line count,amend,DEC-801,README 
 item 63,G08a: nine DEC requests,merged,DEC-865;DEC-866;DEC-867,,see rows G08a-1 to G08a-9
 item 67,"DEC-120: G01 still writes ""0 means no limit""",amend,DEC-120,README R-MODE-074,see G09a-xdoc-2
 item 69,G09a: five DEC requests,merged,DEC-867;DEC-868;DEC-102,,see rows G09a-1 to G09a-5
-item 70,ADR-0063 against DEC-099,none,DEC-099,,see G09b-adr
+item 70,ADR-063 against DEC-099,none,DEC-099,,see G09b-adr
 item 71,"DEC-044, DEC-570, DEC-800 and the sound options",amend,DEC-044;DEC-570;DEC-800;DEC-869,,DEC-044 narrowed; DEC-570 unchanged; DEC-800 already correct; sound options DEC-869
 item 72,tutorial mode for the first playable (owner-level),new,DEC-123,reference/11 R-TUT-001,see G11-1
 item 73,DEC-050 objective cards and the routing of the front-end objective section,amend,DEC-050,reference/11 R-TUT-013,see G11-2
@@ -151,7 +151,7 @@ item 74,DEC-103: the tutorial director placement,amend,DEC-103,reference/11 R-TU
 item 81,"DEC-097, DEC-565 and the no-team sting",amend,DEC-097;DEC-565,,"see G10-1, G10-2 and G10-xdoc-097"
 item 89,DEC-567: an omitted DSP parameter takes its declared default,amend,DEC-567,audio_engine.md AEN-071; data_schemas README DAT-012,DEC-567 lives in a file of X-DEC-P4a and was amended here; X-DEC-P4b also lists the item
 item 93,DEC-102: the percent sign is an ordinary character in text fields,amend,DEC-102,,DEC-102 lives in a file of X-DEC-P4a and was amended here; X-DEC-P4b also lists the item
-item 98,"DEC-102 and ADR-0032 against R-META-080, R-CTRL-223, R-META-406",amend,DEC-102,screen_flow_and_match_setup.md R-META-080; selection_and_power_slots.md R-CTRL-223; options_localisation_and_hooks.md R-META-406,"DEC-102 now names the one availability rule of a colour or side row. R-META-080: see G09a-5; R-CTRL-223: the Power slots panel produces its screen zones in its advance, not while drawing, with the same one-frame delay (UI-461); R-META-406: add the settings save of the colour or side row press (UI-419, arbitration A-22); R-META-044: arbitration A-17"
+item 98,"DEC-102 and ADR-032 against R-META-080, R-CTRL-223, R-META-406",amend,DEC-102,screen_flow_and_match_setup.md R-META-080; selection_and_power_slots.md R-CTRL-223; options_localisation_and_hooks.md R-META-406,"DEC-102 now names the one availability rule of a colour or side row. R-META-080: see G09a-5; R-CTRL-223: the Power slots panel produces its screen zones in its advance, not while drawing, with the same one-frame delay (UI-461); R-META-406: add the settings save of the colour or side row press (UI-419, arbitration A-22); R-META-044: arbitration A-17"
 item 48 (A-9),cancelled Transport: destroyed outside a tutorial (arbitration A-9),amend,DEC-551,transport.md R-UNIT-370; README R-CRATE-020,DEC-551 now limits the Transport case to a tutorial; transport.md R-UNIT-370 and its rows follow A-9
 item 48 (A-10),Strike team life 601 ticks (arbitration A-10),none,DEC-859,strike_team.md R-UNIT-338,apply A-10; DEC-859 item 2 cites the 601-tick count as the single-precision alternative for the crate life
 item 101,"DEC-024 and DEC-803: building focus, approach and developer fly mode",amend,DEC-024,"camera_and_sequences.md CAM-053 to CAM-058, CAM-080 to CAM-084; reference/06 camera.md R-CTRL-457; map_editor_hooks.md R-MAP-309","DEC-024 amended; DEC-803 is X-DEC-P4b's. R-CTRL-457: the building-focus mode and the debug fly mode exist only as the timeline operations and the developer tool of the camera component (CAM-053 to CAM-058, CAM-080 to CAM-084; DEC-024); R-MAP-309 cites CAM-080"

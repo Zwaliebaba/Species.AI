@@ -1,8 +1,8 @@
 # Actor, audio, geometry and panel schemas
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-0061](../../../adr/0061-data-schemas-and-versioning.md) · [ADR-0062](../../../adr/0062-authoring-syntax-and-schema-language.md) · [ADR-0019](../../../adr/0019-mesh-source-format-and-cooked-meshes.md) · [ADR-0020](../../../adr/0020-flat-shading-and-team-tint.md) · [ADR-0021](../../../adr/0021-mesh-socket-schema.md) · [ADR-0024](../../../adr/0024-audio-buses-and-per-bus-effects.md) · [ADR-0025](../../../adr/0025-audio-formats-codecs-and-residency.md) · [ADR-0035](../../../adr/0035-procedural-animation-runtime.md) · [ADR-0076](../../../adr/0076-screenshot-encoding.md) · [ADR-0059](../../../adr/0059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [units](../../../reference/02_units/README.md) · [Supply crates](../../../reference/04_supply_crates_powers_and_weapons/README.md) · [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) · [audio engine](../audio_engine.md) · [asset pipeline and resources](../asset_pipeline_and_resources.md) · [terrain](../terrain.md) · [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) · [explainers](../animation_and_vfx/explainers_sprites_and_procedural_animation.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-019](../../../ADR/ADR-019-mesh-source-format-and-cooked-meshes.md) · [ADR-020](../../../ADR/ADR-020-flat-shading-and-team-tint.md) · [ADR-021](../../../ADR/ADR-021-mesh-socket-schema.md) · [ADR-024](../../../ADR/ADR-024-audio-buses-and-per-bus-effects.md) · [ADR-025](../../../ADR/ADR-025-audio-formats-codecs-and-residency.md) · [ADR-035](../../../ADR/ADR-035-procedural-animation-runtime.md) · [ADR-076](../../../ADR/ADR-076-screenshot-encoding.md) · [ADR-059](../../../ADR/ADR-059-content-build-and-validators.md) · Folder: [data schemas](README.md) · Related: [units](../../../reference/02_units/README.md) · [Supply crates](../../../reference/04_supply_crates_powers_and_weapons/README.md) · [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) · [audio engine](../audio_engine.md) · [asset pipeline and resources](../asset_pipeline_and_resources.md) · [terrain](../terrain.md) · [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) · [explainers](../animation_and_vfx/explainers_sprites_and_procedural_animation.md)
 
-This document specifies the schemas of the actor stat table, the Supply-crate outcome catalogue, the sound data (sound sources, their events and layers, modulatable values, effect bindings and sample-group weights) with the effect-kind table, the cooked mesh, collision and simulation data records, the image conventions of the terrain colour ramps, the screenshot output, and the explainer animations. The meaning of each field is the owning document's: [reference/02](../../../reference/02_units/README.md) for actor stats, [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) for the outcome catalogue, [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) and the [audio engine](../audio_engine.md) for sound, the [asset pipeline](../asset_pipeline_and_resources.md) with ADR-0019 to ADR-0021 for meshes, [terrain](../terrain.md) for the ramps and [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) for the explainer animations.
+This document specifies the schemas of the actor stat table, the Supply-crate outcome catalogue, the sound data (sound sources, their events and layers, modulatable values, effect bindings and sample-group weights) with the effect-kind table, the cooked mesh, collision and simulation data records, the image conventions of the terrain colour ramps, the screenshot output, and the explainer animations. The meaning of each field is the owning document's: [reference/02](../../../reference/02_units/README.md) for actor stats, [reference/04](../../../reference/04_supply_crates_powers_and_weapons/README.md) for the outcome catalogue, [event model and sound data](../../../reference/10_audio_design/event_model_and_sound_data.md) and the [audio engine](../audio_engine.md) for sound, the [asset pipeline](../asset_pipeline_and_resources.md) with ADR-019 to ADR-021 for meshes, [terrain](../terrain.md) for the ramps and [front-end presentation](../../../reference/09_front_end_and_match_flow/front_end_presentation.md) for the explainer animations.
 
 ## 1 Responsibilities and boundaries
 
@@ -12,7 +12,7 @@ This document specifies the schemas of the actor stat table, the Supply-crate ou
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-0062).
+The interface below is a C++23 declaration sketch, not an implementation. The record types are generated from the schemas (ADR-062).
 
 ```cpp
 namespace species::data {
@@ -47,7 +47,7 @@ struct ExplainerAnimation { MatchMode mode; std::uint32_t width, height; double 
 }  // namespace species::data
 ```
 
-**Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled effect-kind table (AEN-060). The renderer reads `geometry.mesh` (ADR-0019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
+**Data contracts.** The simulation reads `actor.stats`, `crate.outcomes`, `geometry.collision` and `geometry.sim_record` (simulation-relevant, README table 1-A). The audio engine reads `sound.sources`, `sound.groups` and the compiled effect-kind table (AEN-060). The renderer reads `geometry.mesh` (ADR-019). The terrain component and the sea renderer read the colour ramps as CPU tables (TER-040, TER-041). The explainer player reads `panels.explainer` (VFX-103).
 
 **Threading contract.** All of these records are loaded on the loading thread and are read-only afterwards (README DAT-005).
 
@@ -170,7 +170,7 @@ Table 3.5-A Effect kinds and parameter names, in the order of R-AUD-077; ranges 
 | 12 | `echo` | `wet_dry_mix`, `delay`, `attenuation` |
 | 13 | `simple_reverb` | `wet_dry_mix` |
 
-**DAT-273** (MUST) The effect-kind table (`sound.effect_kinds`, `DspFilterDef`) holds, for each kind in the order of table 3.5-A, each parameter's name, minimum, maximum, declared default, integer flag and schema default (AEN-070). It is a schema-defined record that the code generator compiles into the audio engine and that the content build's validator reads, so the engine and the validator share one definition (AEN-060, ADR-0061). The kind order is the processing order of a chain's own-algorithm effects (R-AUD-080); a kind is identified by its name, never by its position in a file, so a table of another length or order cannot re-bind the kinds.
+**DAT-273** (MUST) The effect-kind table (`sound.effect_kinds`, `DspFilterDef`) holds, for each kind in the order of table 3.5-A, each parameter's name, minimum, maximum, declared default, integer flag and schema default (AEN-070). It is a schema-defined record that the code generator compiles into the audio engine and that the content build's validator reads, so the engine and the validator share one definition (AEN-060, ADR-061). The kind order is the processing order of a chain's own-algorithm effects (R-AUD-080); a kind is identified by its name, never by its position in a file, so a table of another length or order cannot re-bind the kinds.
 
 **DAT-274** (MUST) The minimum and maximum of a parameter are enforced ranges: the validator rejects a fixed value, a random bound or a linked output bound outside them (AEN-071). The table holds no data type code: an integer parameter is marked by its flag, and a parameter of any other type does not exist.
 
@@ -180,22 +180,22 @@ Table 3.5-A Effect kinds and parameter names, in the order of R-AUD-077; ranges 
 
 ### 3.7 Meshes, collision assets and simulation data records
 
-**DAT-276** (MUST) The cooked mesh (`MeshAsset`, schema `geometry.mesh`) holds the data of table 3.7-A, which the mesh cooker writes (ADR-0019, AST-076, AST-052). Its source is binary glTF with its import record ([import_and_build_records.md](import_and_build_records.md)); no runtime reads the source.
+**DAT-276** (MUST) The cooked mesh (`MeshAsset`, schema `geometry.mesh`) holds the data of table 3.7-A, which the mesh cooker writes (ADR-019, AST-076, AST-052). Its source is binary glTF with its import record ([import_and_build_records.md](import_and_build_records.md)); no runtime reads the source.
 
 Table 3.7-A Content of a cooked mesh.
 
 | Part | Fields | Rules |
 |---|---|---|
 | node table | for each mesh node (`MeshNode`): its name; the index of its parent node, or none for a root node; its rest transform; its draw range; its axis-aligned bounding box; its vertical extent; its bounding sphere | node names are unique within the mesh (AST-045); every parent exists, so no node is left unattached; at most `rnd.mesh.max_nodes` nodes (AST-076) |
-| vertex stream | for each triangle corner: position, facet colour, facet normal, tint weight, barycentric corner | the facet colour is the triangle's colour attenuated by `rnd.mesh.colour_attenuation` at cook time (AST-076); the facet normal is computed at cook time for a faceted primitive (ADR-0020); the tint weight is explicit, never inferred from a colour (AST-034) |
-| socket table | for each socket kind of AST table 3.8-A in table order, the sockets in index order, each with its parent node, its transform relative to that node and its chain of nodes up to the root | at most `rnd.mesh.max_sockets` sockets; the socket kinds are the closed enumeration of AST-039 (ADR-0021) |
+| vertex stream | for each triangle corner: position, facet colour, facet normal, tint weight, barycentric corner | the facet colour is the triangle's colour attenuated by `rnd.mesh.colour_attenuation` at cook time (AST-076); the facet normal is computed at cook time for a faceted primitive (ADR-020); the tint weight is explicit, never inferred from a colour (AST-034) |
+| socket table | for each socket kind of AST table 3.8-A in table order, the sockets in index order, each with its parent node, its transform relative to that node and its chain of nodes up to the root | at most `rnd.mesh.max_sockets` sockets; the socket kinds are the closed enumeration of AST-039 (ADR-021) |
 | bounding sphere of a node | centre: the centre of its bounding box; radius: the largest distance from that centre to a vertex of the node | AST-076 |
 
-**DAT-277** (MUST) Code addresses a socket by its kind and index only (ADR-0021): no reader scans socket or node names by prefix, by a text pattern or without regard to case, and no socket is found by a name that code assembles at run time. Socket kinds that no rule reads are kept as DEC-330's default states (AST-041).
+**DAT-277** (MUST) Code addresses a socket by its kind and index only (ADR-021): no reader scans socket or node names by prefix, by a text pattern or without regard to case, and no socket is found by a name that code assembles at run time. Socket kinds that no rule reads are kept as DEC-330's default states (AST-041).
 
 **DAT-278** (MUST) A collision asset (schema `geometry.collision`) holds, per node, its triangles in world units relative to the asset origin and its bounding sphere; it is simulation-relevant and is cooked from its own source, never from render geometry (AST-044, AST-077, DEC-012). A triangle index outside its node's vertex count, and a node whose attribute counts differ, are build errors (AST-045).
 
-**DAT-279** (MUST) A simulation data record (`SimRecord`, schema `geometry.sim_record`) holds, for each simulation-relevant socket kind, the socket transforms in index order with the rest transforms of their node chains, in world units; the asset's member order where the simulation draws a member, as for `mesh.relic.variant`; and the bounding sphere of each collision asset (AST-043, AST-046, AST-016). The simulation reads this record and never the render mesh (ADR-0021).
+**DAT-279** (MUST) A simulation data record (`SimRecord`, schema `geometry.sim_record`) holds, for each simulation-relevant socket kind, the socket transforms in index order with the rest transforms of their node chains, in world units; the asset's member order where the simulation draws a member, as for `mesh.relic.variant`; and the bounding sphere of each collision asset (AST-043, AST-046, AST-016). The simulation reads this record and never the render mesh (ADR-021).
 
 ### 3.8 Terrain colour ramps and the sea tile
 
@@ -207,7 +207,7 @@ Table 3.7-A Content of a cooked mesh.
 
 ### 3.9 Screenshot output
 
-**DAT-283** (MUST) The client writes screenshots as PNG, 8-bit sRGB RGBA, encoded off the render thread with the in-box image encoder, under the file name and in the folder that ADR-0076 and ADR-0071 give; a poster render assembles `render.poster_resolution` × `render.poster_resolution` tiles of the frame ([config_input_and_strings.md](config_input_and_strings.md) table 3.1-A, default `rnd.option.poster_resolution.default`). Screenshots are output only: the game never reads one, and no schema of this folder describes their content.
+**DAT-283** (MUST) The client writes screenshots as PNG, 8-bit sRGB RGBA, encoded off the render thread with the in-box image encoder, under the file name and in the folder that ADR-076 and ADR-071 give; a poster render assembles `render.poster_resolution` × `render.poster_resolution` tiles of the frame ([config_input_and_strings.md](config_input_and_strings.md) table 3.1-A, default `rnd.option.poster_resolution.default`). Screenshots are output only: the game never reads one, and no schema of this folder describes their content.
 
 ### 3.10 Explainer animations
 
@@ -229,7 +229,7 @@ Table 3.10-B Fields of a key; their defaults are `ref.meta.explainer.key_default
 | time | `time` | presentation decimal, s | 0 or more |
 | picture | `picture` | asset member of `help.explainer_picture` | a member the manifest holds |
 | x, y | `x`, `y` | presentation decimals, canvas units | the picture's centre; y grows downwards |
-| colour role | `colour_role` | enumeration `none`, `friendly`, `enemy`, `invisible` | resolved at draw time (R-META-227, ADR-0035) |
+| colour role | `colour_role` | enumeration `none`, `friendly`, `enemy`, `invisible` | resolved at draw time (R-META-227, ADR-035) |
 | scale | `scale` | presentation decimal, × the picture's pixel size | 0 or more |
 | angle | `angle` | presentation decimal, degrees | any finite value; values beyond one turn make spins when interpolated |
 | horizontal flip | `flip` | boolean | — |
@@ -263,7 +263,7 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 
 **DAT-288** (MUST) The actor stat table and the outcome catalogue are validated for completeness against their enumerations (README DAT-027), and their entries are cooked in enumeration order, so a reader indexes them by kind or outcome with no search. Both records are required in every edition: an edition without them fails the content build, and a client or server whose cooked table is refused at load reports the diagnostic and starts no match, because no default stat or outcome table exists (DEC-015).
 
-**DAT-289** (MUST) A mesh, a collision asset and a simulation data record are cooked in one run of the mesh cooker from the same validated source (AST-078), and each carries the schema id and version of its record type (AST-046, ADR-0061).
+**DAT-289** (MUST) A mesh, a collision asset and a simulation data record are cooked in one run of the mesh cooker from the same validated source (AST-078), and each carries the schema id and version of its record type (AST-046, ADR-061).
 
 ## 5 Concurrency and performance budget
 
@@ -317,9 +317,9 @@ Caption: Figure 4.1-A, the sound data from its authoring file to the audio engin
 | DEC-750 | Open | keys after the loop end (DAT-285) |
 | DEC-452 | Open | the Comeback pool's membership (DAT-264) |
 | DEC-118 | Resolved | seasonal ramps (DAT-282) |
-| ADR-0019, ADR-0020, ADR-0021 | Accepted | the cooked mesh, facets and tint, sockets (DAT-276, DAT-277) |
-| ADR-0024, ADR-0025 | Accepted | effects on buses; resident and streamed groups |
-| ADR-0076 | Proposed | screenshot encoding (DAT-283) |
+| ADR-019, ADR-020, ADR-021 | Accepted | the cooked mesh, facets and tint, sockets (DAT-276, DAT-277) |
+| ADR-024, ADR-025 | Accepted | effects on buses; resident and streamed groups |
+| ADR-076 | Proposed | screenshot encoding (DAT-283) |
 
 ### 8.2 Design-phase inputs
 
