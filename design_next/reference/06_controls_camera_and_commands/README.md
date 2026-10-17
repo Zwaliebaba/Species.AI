@@ -17,13 +17,13 @@ Every player interaction with the world reaches the simulation as a command of t
 
 This folder specifies the player-facing rules:
 
-| File | Contents | Requirements |
+| File | Contents | R-CTRL numbers |
 |---|---|---|
-| [README.md](README.md) | purpose; general rules, input conventions and gates; the input pipeline and authority | R-CTRL-001 to R-CTRL-029 |
-| [actions_and_bindings.md](actions_and_bindings.md) | Species action ids and default bindings; every player action with its context and command; the secondary-button resolver; the object under the pointer; orders to Leaders and Transports; direct control and the team command state | R-CTRL-030 to R-CTRL-149 |
-| [selection_and_power_slots.md](selection_and_power_slots.md) | the selection model, group selection and crowd orders; the Power slots: the Power record, Power kinds, states, capacity and order, targeting, selection and cycling, cancellation; the Power slots panel | R-CTRL-150 to R-CTRL-349 |
-| [cursor_and_markers.md](cursor_and_markers.md) | the world cursor, highlights, previews, the crosshair and the world markers | R-CTRL-350 to R-CTRL-449 |
-| [camera.md](camera.md) | the match camera: model, per-frame update, live modes, components, free movement, tracking, structure aim, and the start-of-match camera views | R-CTRL-450 to R-CTRL-599 |
+| [README.md](README.md) | purpose; general rules, input conventions and gates; the input pipeline and authority | 001 to 029 |
+| [actions_and_bindings.md](actions_and_bindings.md) | Species action ids and default bindings; every player action with its context and command; the secondary-button resolver; the object under the pointer; orders to Leaders and Transports; direct control and the team command state | 030 to 149 |
+| [selection_and_power_slots.md](selection_and_power_slots.md) | the selection model, group selection and crowd orders; the Power slots: the Power record, Power kinds, states, capacity and order, targeting, selection and cycling, cancellation; the Power slots panel | 150 to 349 |
+| [cursor_and_markers.md](cursor_and_markers.md) | the world cursor, highlights, previews, the crosshair and the world markers | 350 to 449 |
+| [camera.md](camera.md) | the match camera: model, per-frame update, live modes, components, free movement, tracking, structure aim, and the start-of-match camera views | 450 to 599 |
 
 The input architecture, the device back-ends, the binding grammar and the complete control catalogue belong to the [input component](../../architecture/components/input.md) (ADR-0028, ADR-0029). The command catalogue (`PlayerCommand`) belongs to [Teams and player commands](../12_simulation_model/06_teams_and_player_commands.md); this folder cites its members and defines no second catalogue. Units and Leaders, with their tuning keys, are specified in [reference/02_units](../02_units/README.md). Scripted camera moves and camera views as data belong to the [camera and sequences component](../../architecture/components/camera_and_sequences.md).
 

@@ -399,7 +399,7 @@ This file cites `ref.sim.query.structure_pick_fraction`, `ref.sim.query.group_pi
 | Leader or Transport | gamepad | south face button | move-only set |
 | Leader or Transport | gamepad | west face button | move-only clear |
 
-**AC-CTRL-AB-03 — Screen-space picking** (R-CTRL-055). Of two own Transports hit by the ray, the earlier in container order is returned whatever their depths; of two own Builders hit, the one whose projected centre is nearer the projected hit point is returned.
+**AC-CTRL-AB-03 — Screen-space picking** (R-CTRL-055). Of two own Transports hit by the ray, the later in container order is returned whatever their depths, because each Transport hit sets the best score to `ref.sim.query.transport_pick_range`; of two own Builders hit, the one whose projected centre is nearer the projected hit point is returned.
 
 **AC-CTRL-AB-04 — Structure blocking** (R-CTRL-055 step 4). A Spawn Node whose score is not larger than an own Collector's score makes the pointer resolve to nothing.
 

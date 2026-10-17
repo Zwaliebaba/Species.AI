@@ -18,6 +18,7 @@ This document specifies those rules, the conventions that the maps of each mode 
 - **Map values.** A per-map value is **absent**, **0** or a number, and a per-map limit may also be **unlimited** (DEC-120). "Sets" means present.
 - **Identifiers.** Map structures use the structure kinds of [reference/03](../03_buildings_and_world_objects/README.md) table 2.4-A; map options and map effects use the `MapOption` and `MapEffect` enumerations of §2.7; Supply crate outcomes use the `CrateOutcome` identifiers of [reference/04](../04_supply_crates_powers_and_weapons/README.md) table 2.2-A.
 - **Text.** Player-facing text is new text under Species string ids (§4.2).
+- **Per-mode tables.** In the tables of §2.16 to §2.21, a cell that lists one value per map lists the maps of its row in the same order as every other such cell of that row, so the values of one map can be read across the row. The order itself carries no meaning.
 
 ## 2 Rules
 
@@ -442,7 +443,7 @@ Table 2.18-A Relic Run maps.
 | Players | Maps | Difficulty | Population cap → per team | Co-op | Spawn Nodes: per position; with no team | Relic Spawn Zones per map | Instant capture | World size (wu) |
 |---|---|---|---|---|---|---|---|---|
 | 2 | 4 | basic 2, intermediate 2 | 2,000 → 1,000 on all | none | 2 on 3 maps, 1 on 1; none on 2 maps, 2 on 2 | 2, 1, 2 and 2 | 1 map | 2,000 to 2,332 |
-| 3 | 2 | intermediate 2 | 1,800 → 600; 1,500 → 500 | none | 2 and 3; none | 3 and 5 | both | 2,999 and 3,000 |
+| 3 | 2 | intermediate 2 | 1,800 → 600; 1,500 → 500 | none | 2 and 3; none | 3 and 5 | both | 3,000 and 2,999 |
 | 4 | 3 | advanced 3 | 2,000 → 500 on all | allowed on 1 map | 1, 2 and 2; 8, none and none | 3, 6 and 3 | 1 map | 2,720 to 3,428 |
 
 No Relic Run map sets a play time.
@@ -467,7 +468,7 @@ Table 2.19-A Siege maps.
 
 | Players | Maps | Difficulty | Attackers : defenders | Population cap; defender cap → attacker share | Co-op | Transit Gates per attacking position; per defending position | Bot objectives; markers | World size (wu) |
 |---|---|---|---|---|---|---|---|---|
-| 2 | 4 | basic 1, intermediate 1, advanced 2 | 1 : 1 | 2,000; 350 → 1,650. 2,000; 275 → 1,725. 1,600; 250 → 1,350. 2,000; none → 1,000 each | none | 4, 3, 5 and 6; 1, 0, 1 and 1 | 12, 11, 9 and 10; 36, 25, 28 and 27 | 2,991 to 5,143 |
+| 2 | 4 | basic 1, intermediate 1, advanced 2 | 1 : 1 | 2,000; 350 → 1,650. 2,000; none → 1,000 each. 2,000; 275 → 1,725. 1,600; 250 → 1,350 | none | 4, 3, 5 and 6; 1, 0, 1 and 1 | 12, 11, 9 and 10; 36, 25, 28 and 27 | 2,991 to 5,143 |
 | 3 | 2 | intermediate 1, advanced 1 | 2 : 1 | 1,800; none → 600 each. 1,500; 250 → 625 | forced on both, groups (0 against 1, 2) | 4 on both; 0 and 1 | 6 and 12; 29 and 27 | 2,549 and 5,000 |
 | 4 | 2 | advanced 2 | 2 : 2 | 1,600; 200 → 600. 1,500; 200 → 550 | forced on both, groups (0, 1 against 2, 3) | 3 and 4; 1 on both | 14 and 18; 24 and 44 | 4,070 and 7,000 |
 
@@ -485,7 +486,7 @@ Table 2.20-A Launch Race maps.
 
 | Players | Maps | Difficulty | Population cap → per team | Spawn Nodes with no team | Bot objective markers | World size (wu) |
 |---|---|---|---|---|---|---|
-| 2 | 3 | basic 1, intermediate 2 | 1,500 → 750 on 2; 1,800 → 900 | 2 on 1 map | 6, 10 and 6 | 2,000, 3,756 and 5,000 |
+| 2 | 3 | basic 1, intermediate 2 | 1,500 → 750, 1,500 → 750 and 1,800 → 900 | none, 2 and none | 6, 10 and 6 | 2,000, 5,000 and 3,756 |
 | 3 | 3 | basic 1, intermediate 1, advanced 1 | 1,800 → 600 on all | none | 15, 21 and 15 | 4,285 to 5,000 |
 | 4 | 1 | advanced | 1,800 → 450 | 12 | 17 | 4,186 |
 
@@ -516,3 +517,103 @@ Table 2.21-A Flag Chain maps.
 | 4 | 1 | advanced | 1,400 → 350 | 9 (5) | none | none | 4,000 |
 
 No Flag Chain map sets a play time or allows co-op.
+
+### 2.22 The reference map distribution
+
+**R-MAP-180** (MUST) The reference map set has `ref.map.reference.map_count` (49) match maps, each listed under exactly one mode: Spawn Control `ref.map.reference.count.spawn_control` (9), Zone Control `ref.map.reference.count.zone_control` (9), Relic Run `ref.map.reference.count.relic_run` (9), Siege `ref.map.reference.count.siege` (8), Launch Race `ref.map.reference.count.launch_race` (7) and Flag Chain `ref.map.reference.count.flag_chain` (7). By player count, `ref.map.reference.count.players_2` (22) maps have 2 players, `ref.map.reference.count.players_3` (15) have 3 and `ref.map.reference.count.players_4` (12) have 4; the split per mode is the table of the [README](README.md). The player count of a map is the count its header declares. The map index of the reference set lists exactly these 49 maps (DEC-563).
+
+**R-MAP-181** (MUST) The Species map slots that recreate the reference distribution are the manifest entries `map.spawn_control`, `map.zone_control`, `map.relic_run`, `map.siege`, `map.launch_race` and `map.flag_chain`, one file `map_<mode>_<players>p_<nn>` per slot, each with its thumbnail of `thumb.<mode>` (R-MAP-022). Every slot is a new layout (DEC-063).
+
+**R-MAP-182** (MUST) The 49 maps are square, with world sizes from 2,000 to 7,000 wu, cell sizes from 9.00 to 27.08 wu, grids from 137 × 137 to 334 × 334 samples and 1 to 25 terrain tiles. Their extents, areas per player slot, height ranges and land shares are the figures of DEC-247.
+
+**R-MAP-183** (MUST) **Twin terrains** are two maps of two modes built on one terrain, with the mode's objective structures exchanged. Four pairs of a Spawn Control map and a Zone Control map have identical terrain tiles (one 2-player pair, one 3-player pair and two 4-player pairs); a fifth pair of 2-player Spawn Control and Zone Control maps shares the terrain definition and the lights but has its own tiles and flatten areas. Each twin pair shares 25 to 95 identical structure records. Twin terrains are a level-design tool (DEC-315).
+
+**R-MAP-184** (MUST) The match options of the reference maps are distributed as table 2.22-A.
+
+Table 2.22-A Match-option values on the reference maps.
+
+| Field | Distribution over the 49 maps |
+|---|---|
+| population cap | 2,000 on 20 maps, 1,800 on 15, 1,500 on 9, 1,600 on 2, 1,400 on 1; unlimited on 2, the two 4-player co-op maps with fixed groups (one Spawn Control, one Zone Control). One 4-player Relic Run map gives the cap twice, unset and then 2,000; a Species map gives the single value 2,000 (R-MAP-061) |
+| defender population cap | 350, 275, 250, 250, 200 and 200 on 6 of the 8 Siege maps; no other map sets one |
+| play time | set on 20 maps: 5 minutes on 1 (Zone Control), 10 on 10 (Spawn Control 4, Zone Control 6), 15 on 8 (Siege 7, Spawn Control 1), 20 on 1 (Siege) |
+| difficulty | basic 13, intermediate 20, advanced 16; per mode in tables 2.16-A to 2.21-A |
+| map effects | snow on 6 maps (Spawn Control 1, Zone Control 1, Relic Run 1, Siege 1, Flag Chain 2); special lighting on 3 (Spawn Control 1, Zone Control 2), two of them together with snow; lightning on 2 (Relic Run 1, Flag Chain 1); dust wind on 1 (Relic Run); Essence-orb rain on none |
+| Transit Gate reinforcement count | 12 maps: Siege 8 (100 on 4, 75 on 3, 60 on 1), Zone Control 1 (100), Flag Chain 3 (100) |
+| Transit Gate Transport cap | 6 maps: Siege 3 (1, 3 and 3), Flag Chain 3 (3 each) |
+| instant Spawn Node capture | 4 Relic Run maps |
+| airstrike threshold | 3 Flag Chain maps, each 3 |
+| defender reinforcement power | 1 Siege map: the airstrike |
+| no gun turrets | 2 maps: Launch Race 1, Flag Chain 1 |
+| same-team Beam Dish links; no Beam Dish aiming | 1 Siege map sets both |
+| map options never set | no Catch-up bonus, attacker reinforcement count, defender reinforcement count, attacker reinforcement power, Visitor-faction position, attacker reinforcement power option, defender reinforcement power option |
+| excluded outcomes | 2 Siege maps exclude the Strike team, airstrike, Missile Barrage and meteor shower; 4 Siege maps exclude the Transport; 1 Launch Race map excludes the Transport |
+| co-op | allowed on 6 maps, all 4-player (Spawn Control 2, Zone Control 3, Relic Run 1); forced on 4 Siege maps (two 3-player, two 4-player); fixed groups on 6 maps, the 4 forced Siege maps and the 2 uncapped 4-player maps |
+| official | all 49 |
+| author, description | never set |
+
+### 2.23 Supply crate context of the reference maps
+
+**R-MAP-190** (MUST) A map's world size limits its Supply crates: at most ⌊world size x ÷ `ref.crate.drop.map_width_per_crate`⌋ (500 wu) Supply crates exist at once ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-103), so 4 on a map 2,000 wu wide and 14 on a map 7,000 wu wide.
+
+**R-MAP-191** (MUST) 14 reference maps place 35 exclusion zones. Every exclusion zone of a Siege map blocks Powers (9 zones on 6 Siege maps); no exclusion zone of another mode blocks Powers (26 zones on 8 maps), so there they only keep random Supply crate drops out ([reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-032 to R-CRATE-034).
+
+**R-MAP-192** (MUST) The candidate pools of [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-124 to R-CRATE-126 have, at match start, the sizes of table 2.23-A on the reference maps: before any limit of the match applies (fewer than 4 Supply crates, the Hive limit not reached, the Abductor not yet seen), with basic outcomes only off for the good and bad pools and on for the basic pool. The pools follow from the mode, the map's Spawn Nodes, its Transport cap and its excluded outcomes (R-CRATE-125, R-CRATE-129).
+
+Table 2.23-A Supply crate context of the reference maps. Within a row, the values of each column are listed in the same map order.
+
+| Mode | Players | Maximum Supply crates at once | Exclusion zones (of which block Powers) | Good, bad and basic pool sizes |
+|---|---|---|---|---|
+| Spawn Control | 2 | 5, 4, 4, 5, 5 | none | 26, 7, 7 on all |
+| Spawn Control | 3 | 4, 12 | none; 3 (0) | 26, 7, 7 on both |
+| Spawn Control | 4 | 6, 6 | none | 26, 7, 7 on both |
+| Zone Control | 2 | 5, 5 | none | 26, 7, 7 on both |
+| Zone Control | 3 | 4, 6, 5, 5 | none; 3 (0); none; none | 26, 7, 7 on the first three; 23, 7, 6 on the map without Spawn Nodes |
+| Zone Control | 4 | 6, 6, 6 | none | 26, 7, 7 on all |
+| Relic Run | 2 | 4, 4, 4, 4 | none | 26, 7, 7 on all |
+| Relic Run | 3 | 6, 5 | none | 26, 7, 7 on both |
+| Relic Run | 4 | 6, 6, 5 | none | 26, 7, 7 on all |
+| Siege | 2 | 6, 10, 5, 10 | none; 1 (1); 1 (1); 2 (2) | 18, 6, 4; 17, 6, 3; 21, 6, 5; 21, 6, 5 |
+| Siege | 3 | 5, 10 | none; 2 (2) | 22, 6, 6; 21, 6, 5 |
+| Siege | 4 | 8, 14 | 1 (1); 2 (2) | 21, 6, 5 on both |
+| Launch Race | 2 | 4, 10, 7 | none; 2 (0); none | 22, 7, 5; 25, 7, 6; 22, 7, 5 |
+| Launch Race | 3 | 10, 8, 9 | 3 (0); 4 (0); none | 22, 7, 5 on all |
+| Launch Race | 4 | 8 | 4 (0) | 25, 7, 6 |
+| Flag Chain | 2 | 7, 6, 8, 6 | none | 25, 7, 6 on the first three; 26, 7, 7 on the map without a Transport cap |
+| Flag Chain | 3 | 5, 8 | 3 (0); none | 23, 7, 6 on both |
+| Flag Chain | 4 | 8 | 4 (0) | 23, 7, 6 |
+
+**R-MAP-193** (MUST) The pool sizes of table 2.23-A arise as follows. A map with Spawn Nodes, no Transport cap and no exclusions has the full pools of 26, 7 and 7. A map without Spawn Nodes loses the Collector, Builder and Spawn Surge (23, 7, 6). A Transport cap of 1 or more, or Launch Race, removes the Transport. Siege removes the rocket turret from the good pool and the Abductor from the bad pool, and no Siege map has Spawn Nodes, so a Siege map without exclusions or a Transport cap has 22, 6 and 6. The Siege maps' exclusions remove the Transport (good pool 21) or the Strike team, airstrike, Missile Barrage and meteor shower (good pool 18, and 17 with a Transport cap as well). On one Siege map the Transport exclusion repeats the effect of its Transport cap, and on the Launch Race map it repeats the mode's rule.
+
+### 2.24 Population caps of the reference maps
+
+**R-MAP-195** (MUST) With every slot open, the per-team caps of the reference maps are those of table 2.24-A (R-MAP-062; [reference/05](../05_population_flow.md) §2.12). When the host closes slots, each team's cap is the map cap ÷ the open slots: on a 4-player map with a cap of 2,000 and one slot closed, three teams play with 666 each for the whole match ([reference/01](../01_skirmish_rules_and_modes/README.md) §5 item 13; DEC-079).
+
+Table 2.24-A Per-team caps of the reference maps with every slot open.
+
+| Mode | 2 players | 3 players | 4 players |
+|---|---|---|---|
+| Spawn Control | 1,000 on 3 maps, 900, 750 | 600 on both | 500; no cap |
+| Zone Control | 1,000, 750 | 600 on all 4 | 500 on 2; no cap |
+| Relic Run | 1,000 on all 4 | 600, 500 | 500 on all 3 |
+| Siege | defenders 350, 275 and 250 with attacker shares 1,650, 1,725 and 1,350; one map without a defender cap, 1,000 for each side | defender 250 with an attacker share of 625; one map without a defender cap, 600 for each side | defenders 200 with attacker shares of 600 and 550 |
+| Launch Race | 750 on 2 maps, 900 | 600 on all 3 | 450 |
+| Flag Chain | 750, 1,000 on 2 maps, 900 | 666, 500 | 350 |
+
+On the two uncapped 4-player maps the Population Limiter fallback would apply, but neither places a Population Limiter (R-MAP-109, DEC-454).
+
+### 2.25 Transit Gate configuration of the reference maps
+
+**R-MAP-197** (MUST) On the reference maps the Transit Gate waves run as table 2.25-A gives, with every Transit Gate advanced exactly once per tick and every map value overriding the lobby default (R-MAP-071, DEC-065). Waves come every 60 mode seconds (660 ticks) on every reference map unless the host changes the interval of Launch Race or Flag Chain ([reference/05](../05_population_flow.md) R-ECON-090, R-ECON-100). A Transit Gate with no team never reinforces (R-ECON-089).
+
+Table 2.25-A Transit Gate waves on the reference maps.
+
+| Mode | Maps with waves | Workers per owned gate per wave | Transport cap | Reinforcement turrets | Side powers |
+|---|---|---|---|---|---|
+| Siege | all 8 | the map's count for both sides: 100 on 4 maps, 75 on 3, 60 on 1 | 1 on 1 map; 3 on 2 maps; none on 5, which grant no Transports | none | the defenders receive an airstrike per wave on 1 map (with a Transport cap of 3), so their gates grant no Transport (R-ECON-102) |
+| Launch Race | all 7 | the lobby option, default `ref.econ.gate.count` (40) | the lobby option, default `ref.econ.gate.transport_cap` (2) | every `ref.econ.gate.turret_frequency` (7) waves, cap `ref.econ.gate.turret_cap` (3), on 6 maps; none on the map that sets "no gun turrets" | none |
+| Flag Chain | all 7 | 100, the map's count, on three 2-player maps; the lobby option (default 40) on the other 4 | 3, the map's cap, on the same three maps; the lobby option (default 2) on the other 4 | every 2 waves, cap 2, as gun turrets that become airstrikes by Flag posts held (R-ECON-104), on 6 maps; none on the 2-player map that sets "no gun turrets" | none |
+| Zone Control | 1 (3-player, 2 gates per position) | 100 | none: no Transports | none | none |
+| Spawn Control, Relic Run | none | — | — | — | — |
+
+The Transit Gates of 3 other Zone Control maps and of 2 Spawn Control maps have no team, and no Relic Run map places one.

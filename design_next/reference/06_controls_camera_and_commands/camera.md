@@ -173,12 +173,12 @@ Caption: Diagram 3-B, the per-frame camera update (R-CTRL-456).
 sequenceDiagram
     participant LOAD as Match entry
     participant CAM as Match camera
-    participant LOOP as Match loop
+    participant ML as Match loop
     LOAD->>CAM: set bounds and the fallback pose
     LOAD->>CAM: cut to default_view, when the map has it
     LOAD->>CAM: request free movement
-    LOOP->>CAM: first frame with a local team: cut to spawn_view_n
-    LOOP->>CAM: after a reset that rebuilds the match world: cut to spawn_view_n again
+    ML->>CAM: first frame with a local team: cut to spawn_view_n
+    ML->>CAM: after a reset that rebuilds the match world: cut to spawn_view_n again
 ```
 
 Caption: Diagram 3-C, the start-of-match camera views (R-CTRL-495 to R-CTRL-497).

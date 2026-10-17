@@ -347,3 +347,164 @@ The order of this table carries no meaning. The spawn-network transit beams, the
 **RND-340** (MUST) A laser bolt that passes near the camera requests a camera shake through the VFX screen effects, with the distance and strength that [animation_and_vfx.md](../animation_and_vfx.md) specifies (RND-246); the request is presentation-only and local, and the renderer issues it while it writes the bolt's instances, never from the simulation.
 
 **RND-341** (MUST) The laser-bolt lifetime, its ricochet and its hits are simulation rules ([reference/02_units/README.md](../../../reference/02_units/README.md) R-UNIT-052, [weapons_and_projectiles.md](../../../reference/04_supply_crates_powers_and_weapons/weapons_and_projectiles.md)); the drawing reads them and never feeds them.
+
+### 4.8 Route lines (pass 12)
+
+**RND-350** (MUST) A route highlight is a presentation event naming a route and a team, raised for the routes that [reference/12_simulation_model/05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md) marks as highlighted for display and for the local route preview. On it the renderer emits, at every `rnd.route.highlight_step` (10 wu) along the route, two muzzle-flash particles of sizes `rnd.route.highlight_sizes` (75 and 60) with the velocity (0, `rnd.route.highlight_rise_speed` (10 wu/s), 0), in the team colour + `rnd.route.highlight_colour_offset` (100, 100, 100, alpha 100), each channel capped at 255, through the particle pool of [animation_and_vfx.md](../animation_and_vfx.md).
+
+**RND-351** (MUST) A route intensity request with the value *a* sets the route's fade value to max(fade, *a*), creating the fade record (§3.2) when the route has none.
+
+**RND-352** (MUST) Each frame, for every route with a fade record whose end point lies inside the land rectangle, the fade value decreases by the presentation frame delta × `rnd.route.fade_rate` (0.25 per s), so a route fades from 1 to 0 in 4 s; at 0 or below, the record is deleted and the route is no longer drawn. A route whose end point lies outside the land rectangle is neither faded nor drawn. The fade is renderer state, never a field of the simulation's route storage (RND-301, R-SIM-357). Under option A of DEC-651, the renderer reads the route's points from the route store by handle while its fade record lives; under option B, the presentation event that announces a route carries a copy of its points, which the fade record keeps, so freeing the route never cuts its fade short.
+
+**RND-353** (MUST) While its fade value is above 0, each leg of a route is drawn as a dotted line of `CameraFacing` spots of `fx.particle_dot`, spot *i* (counted from the route's start) having the half-size |camera position − spot position| ÷ `rnd.route.spot_size_divisor` (100) and placed one spot size after the previous one, with arrow heads along the leg showing the route's direction. Every spot's colour is the local team's colour when the preview is walkable (RND-354), otherwise `rnd.route.blocked_colour` (0, 0, 0, alpha 100 of 255), with `rnd.route.grey_offset` (50) added to each RGB channel and capped at 255; its alpha is that colour's alpha × the fade value × (`rnd.route.pulse_base` (0.5) + `rnd.route.pulse_amplitude` (0.5) × sin(`rnd.route.pulse_rate` (10 rad per s) × *r* + `rnd.route.pulse_phase_step` (0.7 rad) × *i*)), with *r* the real clock.
+
+**RND-354** (MUST) The route preview is walkable when the local team's selected actor is a Transport, a Builder or a Collector, which can cross water, or when every leg of the preview is walkable land ([05_space_routing_and_physics.md](../../../reference/12_simulation_model/05_space_routing_and_physics.md)). The flag is computed once per frame from the preview store (R-SIM-358, DEC-095), and the world cursor reads it to show the unavailable cursor for a route it cannot follow (RND-367).
+
+**RND-355** (MUST) Pass 12 draws with the `route_line` entry: alpha blending, no depth test, so a route is always visible over the terrain, and no culling.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NoRecord
+    NoRecord --> Visible: intensity request a above 0, fade = a
+    Visible --> Visible: intensity request, fade = max(fade, a)
+    Visible --> Visible: each frame, fade minus frame delta times 0.25, drawn
+    Visible --> NoRecord: fade at or below 0
+    Visible --> Held: route end leaves the land rectangle
+    Held --> Visible: route end inside the land rectangle
+```
+
+Caption: the fade record of one drawn route; a held route keeps its fade value and is not drawn.
+
+### 4.9 World markers (pass 16)
+
+**RND-356** (MUST) Pass 16 draws the local client's world markers (`WorldMarkers`), whose kinds and registration are specified in [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md) and [reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md), as 2-D icons over the 3-D view in the 2-D overlay space (RND-215), each clamped to the screen edge with a compass arrow when its target is off screen. Nothing is drawn without a match world, in the map editor or while the interface is hidden. In this section *H* is the height of the overlay target in pixels, which equals the render height at a render scale of 1 (RND-028), and *D* is the camera distance of the marker's target.
+
+**RND-357** (MUST) A marker's screen position follows this procedure:
+
+```text
+s = ProjectToScreen(target)                                  # RND-216
+if s exists and 0 <= s.x < W and 0 <= s.y < H:
+    onScreen = true; position = s − (0, rnd.marker.lift_factor × H ÷ D)   # lifted 5·H ÷ D px
+else:
+    q = camera position + camera front × rnd.marker.offscreen_probe_distance   # 1000 wu ahead
+    probe = q + normalise(target − q) × rnd.marker.offscreen_probe_step          # 100 wu towards the target
+    e = the point where the ray from the screen centre through ProjectToScreen(probe)
+        leaves the screen rectangle
+    position = e − edgeNormal(e) × rnd.marker.edge_inset                        # 50 px inward
+    compassAngle = the direction of edgeNormal(e)
+```
+
+**RND-358** (MUST) A marker accumulates its on-screen time *a* in real time while it is on screen; it is seen once *a* exceeds `rnd.marker.seen_time` (1 s).
+
+**RND-359** (MUST) A marker's alpha is, in this order:
+
+```text
+alpha = 1
+if seen and a > rnd.marker.fade_start:                       # 6 s
+    alpha = max(0, 1 − (a − rnd.marker.fade_start) ÷ rnd.marker.fade_length)   # over 9 s
+floor = max((D − rnd.marker.min_alpha_distance_start) ÷ rnd.marker.min_alpha_distance_range,   # (D − 350) ÷ 500
+            1 − distanceToScreenCentre ÷ (rnd.marker.min_alpha_centre_fraction × H))           # 0.5 × H
+alpha = max(alpha, floor)
+if the marker is not persistent and a > rnd.marker.fade_start:
+    alpha = alpha × max(0, 1 − (a − rnd.marker.fade_start) ÷ rnd.marker.transient_fade_length)   # over 2 s
+if the marker shows the local team's own Power or order: alpha = max(alpha, rnd.marker.own_min_alpha)   # 0.75
+if the marker is hovered or selected: alpha = 1
+alpha = clamp(alpha, 0, 1)
+```
+
+A transient marker therefore vanishes `ref.power.marker.lifetime_s` (8 s) after it is first seen ([reference/04_supply_crates_powers_and_weapons/README.md](../../../reference/04_supply_crates_powers_and_weapons/README.md) R-CRATE-028), the sum of `rnd.marker.fade_start` and `rnd.marker.transient_fade_length`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unseen
+    Unseen --> Seen: on-screen time above 1 s
+    Seen --> Fading: on-screen time above 6 s
+    Fading --> Fading: alpha falls over 9 s, never below the distance and centre floor
+    Fading --> Gone: transient marker, 2 s after 6 s
+```
+
+Caption: the visibility of one world marker; own Powers and orders never fall below alpha 0.75, and a hovered or selected marker is fully opaque.
+
+**RND-360** (MUST) A marker's icon size is *H* ÷ `rnd.marker.icon_divisor` (20) px, multiplied by (2 − *D* ÷ `rnd.marker.near_distance` (500 wu)) when *D* < 500 wu, and by `rnd.marker.hover_scale` (1.2) while it is hovered or selected. During its first `rnd.marker.flash_duration` (3 s) a flashing marker is drawn at × `rnd.marker.flash_scale` (1.3) and alternates its alpha between the two values of `rnd.marker.flash_alphas` (0.2 and 1.0) every `rnd.marker.flash_period` (0.2 s). Its shadow is `rnd.marker.shadow_extra` (10 px) larger than the icon, and its compass is *H* ÷ `rnd.marker.compass_divisor` (30) px larger.
+
+**RND-361** (MUST) A marker draws these layers, in order, centred on its screen position:
+
+1. the shadow `marker.team_disc_shadow` in black with alpha `rnd.marker.shadow_alpha` (0.9) × the marker alpha, with `overlay_alpha`;
+2. off screen, the compass shadow `marker.edge_compass_shadow` with `overlay_alpha` and then the compass arrow `marker.edge_compass` with `overlay_additive`, both rotated to the compass angle; on screen, the empty compass art with `overlay_additive`;
+3. the colour disc `marker.team_disc` in the owner's team colour (or the no-team grey, [visual_language.md](visual_language.md) RND-405) with `overlay_additive`, filled from the bottom up to the marker's progress fraction;
+4. the marker's icon (for example a Power icon `icon.power.*`, `marker.supply_crate` or `marker.relic`) with `overlay_additive`, its texture coordinates rotated by the marker's spin angle.
+
+**RND-362** (MUST) An order marker (`OrderMarker`) also draws a 3-D ground ring: the unit highlight of RND-370 at its target with radius `rnd.marker.order_ring_size` (10 wu) + sin(`rnd.marker.order_ring_pulse_rate` (5 rad per s) × *g*), *g* the presentation frame time, in its team colour, with the `cursor_ring` entry.
+
+**RND-363** (MUST) A marker of one of the local team's Leaders draws, in place of layers 3 and 4, the Leader's 3-D banner (R-UNIT-191) with the cloth-flag entries of [animation_and_vfx.md](../animation_and_vfx.md) and the in-shader depth test of RND-309.
+
+**RND-364** (MUST) The bot priority overlay (per-team target priorities as text and team-coloured arrows) is a development overlay of [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md), drawn in pass 16 only when its development setting is on.
+
+### 4.10 World cursor (pass 20)
+
+**RND-365** (MUST) A 2-D cursor is a textured quad in the 2-D overlay space (RND-215) at the pointer position (*x*, *y*) with a size *s* in pixels and a hotspot (*hx*, *hy*) given as fractions of the size: its top-left corner is (*x* − *s* × *hx*, *y* − *s* × *hy*), it is rotated by its angle about its centre, and its texture is upright. A cursor's defaults are the size `rnd.cursor.default_size` (20 px), the hotspot (0, 0), a shadow, the additive blend and white.
+
+**RND-366** (MUST) A shadowed cursor first draws its shadow, the blurred variant of its art (RND-243), over the same quad in colour (1, 1, 1, alpha 0) with `overlay_ink`, which with alpha 0 darkens the destination by the shadow texel (RND-058); then its art in its colour with `overlay_additive`, or with `overlay_alpha` for a cursor that is not additive. No cursor writes depth or is culled.
+
+**RND-367** (MUST) The cursors of a match are:
+
+| Cursor | Art | Hotspot | Size | Colour and blend | Shadow | Shown |
+|---|---|---|---|---|---|---|
+| pointer | `cursor.world` | `rnd.cursor.pointer_hotspot` (0.055, 0.070) | `rnd.cursor.pointer_size` (35 px) | white, additive | yes | the default pointer |
+| entry marker | `cursor.place` | `rnd.cursor.centre_hotspot` (0.5, 0.5) | `rnd.cursor.entry_marker_size` (40 px) | white, additive | yes | while the selected unit tries to enter a Transport or a Transit Gate |
+| unavailable | `cursor.unavailable` | (0.5, 0.5) | `rnd.cursor.unavailable_size` (60 px) | `rnd.cursor.unavailable_colour` (255, 0, 0), additive | yes | an invalid entry target, and a route the selected unit cannot follow (RND-354) |
+| crosshair | `cursor.turret_aim` | (0.5, 0.5) | set by the turret-aiming rule ([reference/06](../../../reference/06_controls_camera_and_commands.md)) | white, alpha | no | while a turret is aimed |
+
+The context rules that choose a cursor are [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md)'s. The move-here, selection and enter cursors are not drawn in a match; the highlight cursor art `cursor.highlight` serves the Power-slot focus of the Power slots panel (RND-378).
+
+**RND-368** (MUST) A cursor drawn animated has the size *s* + |sin(`rnd.cursor.pulse_rate` (4 rad per s) × *g*)| × *s* × `rnd.cursor.pulse_amplitude` (0.6), *g* the presentation frame time.
+
+**RND-369** (MUST) Cursor sizes are physical pixels at every render size: the pointer is 35 px whatever the resolution. Under per-monitor DPI scaling, a cursor's art is chosen at the source size closest to its final pixel size (ADR-0033), and the size itself is not scaled by the render size.
+
+**RND-370** (MUST) The unit highlight at position *p* with radius *ρ* and colour *c* is drawn with the `cursor_ring` entry (alpha blending, in-shader depth with `bias_cursor`, no depth write) as three rings and a glow cylinder:
+
+```text
+n     = max(rnd.cursor.ring_min_steps, rnd.cursor.ring_steps_per_radius × ρ)   # segments per ring: max(25, 2ρ)
+drape = min(1, rnd.cursor.ring_drape_distance ÷ camera distance)               # 75 wu ÷ distance
+ring 1: radii ρ − rnd.cursor.ring_team_band × ρ  to ρ,                               colour c
+ring 2: radii ρ − rnd.cursor.ring_inner_black × ρ to ρ − rnd.cursor.ring_team_band × ρ, black
+ring 3: radii ρ                                  to ρ + rnd.cursor.ring_outer_black × ρ, black
+ring vertex height = lerp(p.y, terrain height at the vertex, drape)   if drape > rnd.cursor.ring_drape_min
+                     p.y                                             otherwise
+glow cylinder: radius rnd.cursor.glow_radius_factor × ρ, height ρ × max(1, camera distance ÷ rnd.cursor.glow_height_distance),
+               colour c at its base and c with alpha 0 at its top, interpolated
+```
+
+The black rings take the alpha of *c*.
+
+**RND-371** (MUST) A started area Power shows its target area as a cylinder of `rnd.cursor.area_sides` (100) sides, drawn with `cursor_area`, with the radius and height of `rnd.cursor.area_default` (70 wu, 42 wu), or `rnd.cursor.area_meteor_shower` (280 wu, 70 wu) for a meteor shower and `rnd.cursor.area_missile_barrage` (210 wu, 70 wu) for a Missile Barrage, in the colour the world cursor passes, with alpha at its base and alpha 0 at its top. It blinks with the period `rnd.cursor.area_blink_period` (0.4 s): in the off half of each period its alpha is × `rnd.cursor.area_off_alpha` (0.5).
+
+**RND-372** (MUST) While a turret or a Hive is being placed, a ghost model of `mesh.structure.turret_head` or `mesh.structure.hive_mound` is drawn at the cursor's world point with its facet colours, unlit, with the `cursor_ghost` entry: the `Ghost` blend (source factor one, destination factor source colour), the in-shader depth test and no depth write.
+
+**RND-373** (MUST) While the selection circle grows (DEC-032), the cursor emits, every frame, `rnd.cursor.selection_particles` (30) control-flash particles evenly spaced on the circle at the circle's current radius, `rnd.cursor.selection_lift` (10 wu) above the terrain, the whole set rotated by the selection-circle phase, which advances by `rnd.cursor.selection_spin` (0.5 rad per s) of real time; the particles belong to the particle pool of [animation_and_vfx.md](../animation_and_vfx.md).
+
+**RND-374** (MUST) A formation preview draws, at each formation slot, a camera-facing diamond of `fx.particle_dot` whose corners are the slot position ± `rnd.cursor.formation_dot_size` (2 wu) × the camera up vector and ± 2 wu × the camera right vector, in the team colour, with the `cursor_dots` entry.
+
+**RND-375** (MUST) The badge beside the cursor (the icon of the selected unit or Power) draws the shadow, colour-disc and icon layers of RND-361 at the pointer position + `rnd.cursor.badge_offset` (5 px) × normalise(`rnd.cursor.badge_direction` (0.85, 1)), *y* downwards, with the size *H* ÷ `rnd.cursor.badge_divisor` (24) px.
+
+**RND-376** (MUST) The pointer art is drawn by the renderer with the operating system's pointer hidden over the match view, so its transparent texels show the scene; no driver or operating-system property of the pointer is specified (see DEC-337).
+
+### 4.11 Power slots panel and match HUD (passes 23 and 28)
+
+**RND-377** (MUST) The Power slots panel (`PowerSlotsPanel`, pass 23) and the match HUD (pass 28) are drawn in the HUD space of RND-028: an orthographic space `rnd.hud.ortho_height` (600) units high and 600 × the aspect ratio wide, origin top-left, independent of the render size. Their content and layout are [reference/06_controls_camera_and_commands.md](../../../reference/06_controls_camera_and_commands.md)'s (the Power bar, its pop-ups and messages), [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md)'s (scores, timers and the mode HUD) and [ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md)'s; this section states how they are drawn. Neither pass uses depth.
+
+**RND-378** (MUST) The panel's elements are drawn as follows:
+
+| Element | Entry | Art |
+|---|---|---|
+| Power-slot shadow | `overlay_alpha` | `marker.team_disc_shadow` |
+| Power-slot colour disc | `overlay_additive` | `marker.team_disc` in the team colour |
+| Power icon | `overlay_additive` | the Power's `icon.power.*` |
+| Power-slot focus | `overlay_additive` | `cursor.highlight` |
+| compass | shadow `overlay_alpha`, then arrow `overlay_additive` | `marker.edge_compass_shadow`, `marker.edge_compass`, both through a view of mip level 0 only |
+| pop-up box | `overlay_alpha`; its gradient `overlay_gradient_alpha`; the Supply crate icon `overlay_additive`, clipped to the box by a scissor rectangle | `marker.supply_crate` |
+| text | the outline style (alpha 0) and then the fill style of the UI framework ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-0034) | the glyph cache |
+
+**RND-379** (MUST) The match HUD of pass 28 draws its panels with `overlay_alpha`, its gradients with `overlay_gradient_alpha` and its text in the UI framework's text styles, inside the 2-D block of passes 26 to 32 and therefore over the fade of pass 27 (RND-086).
+
+**RND-380** (MUST NOT) The panel draws no gesture trail and no icon power bar (see DEC-055).

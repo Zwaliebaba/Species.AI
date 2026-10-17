@@ -59,23 +59,23 @@ Table 2.2-A The mechanisms of a bot.
 
 **R-BOT-006** (MUST) A bot team is a team slot of kind `TeamKind::Bot` ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-433) that owns exactly one **bot controller** (`BotController`): an invisible, immortal actor in its team's ungrouped actors. The bot controller holds the bot's state (table 2.3-A) and runs every bot rule of its team.
 
-**R-BOT-007** (MUST) A bot controller is created when its team is initialised in the match world, for every team of kind `TeamKind::Bot`: every bot team that fills an empty slot, the Rogue faction (slot 4) and the Visitor faction (slot 5), which are bot teams in every match (R-SIM-394, DEC-558), and every team that a departing player hands to a bot (R-BOT-012). The Rogue faction and the Visitor faction run the full bot controller of this folder; whether they keep it is the Open DEC-558. The number of bot controllers in a match is therefore the number of bot teams in the lobby + 2 + the number of players who left; a human team never has one, so there is no autopilot for a human team.
+**R-BOT-007** (MUST) A bot controller is created when its team is initialised in the match world, for every team of kind `TeamKind::Bot`: every bot team that fills an empty slot, the Rogue faction (slot 4) and the Visitor faction (slot 5), which are bot teams in every match (R-SIM-394, DEC-558), and every team that a departing player hands to a bot (R-BOT-012). The Rogue faction and the Visitor faction run the full bot controller of this folder; whether they keep it is the Open DEC-558. The number of bot controllers in a match is therefore the number of bot teams in the lobby + 2 + the number of players who left; a human team never has one, so there is no autopilot for a human team. A map cannot place a bot controller.
 
 **R-BOT-008** (MUST) The bot controller is placed inside the map, not at its corner (DEC-087): at match-world initialisation it is created at its team's start position for a player slot, and at the centre of the map, (world size x ÷ 2, terrain height, world size z ÷ 2), for the Rogue and Visitor factions and for a team whose slot has no start position. The placement makes no spawn-position search and no draw. The bot controller never moves, never runs the base actor advance and receives no world clamp (R-SIM-366); its only body effects are those of R-BOT-010.
 
-**R-BOT-009** (MUST) In the initialisation step that creates the bot controller (DEC-652), its state takes the initial values of table 2.3-A, with exactly two draws in this order: the Beam Dish phase, `NextUnit(ref.bot.dish.phase_ticks)` (100 ticks; R-BOT-174), and then the main-cycle phase, `NextUnit` of `ref.bot.cycle.phase_easy` (200 ticks), `ref.bot.cycle.phase_standard` (100 ticks) or `ref.bot.cycle.phase_hard` (10 ticks) for the easy, standard or hard bot. A phase p becomes a first countdown of max(1, ⌈p⌉) ticks, so bots of the same difficulty think on different ticks. The controller registers itself in the per-match bot registry under its team slot, which every node, marker and Leader rule uses to find a team's bot.
+**R-BOT-009** (MUST) In the initialisation step that creates the bot controller (DEC-652), its state takes the initial values of table 2.3-A, with exactly two draws in this order: the Beam Dish phase, `NextUnit(ref.bot.dish.phase_ticks)` (100 ticks; R-BOT-096), and then the main-cycle phase, `NextUnit` of `ref.bot.cycle.phase_easy` (200 ticks), `ref.bot.cycle.phase_standard` (100 ticks) or `ref.bot.cycle.phase_hard` (10 ticks) for the easy, standard or hard bot. A phase p becomes a first countdown of max(1, ⌈p⌉) ticks, so bots of the same difficulty think on different ticks. The controller registers itself in the per-match bot registry under its team slot, which every node, marker and Leader rule uses to find a team's bot.
 
 Table 2.3-A State of a bot controller.
 
 | Field | Initial value | Meaning |
 |---|---|---|
-| main-cycle countdown | the main-cycle phase (R-BOT-009) | ticks to the next main cycle ([03](03_decision_loop_and_leaders.md) R-BOT-148) |
-| Beam Dish countdown | the Beam Dish phase (R-BOT-009) | ticks to the next Beam Dish decision, never below 0 ([03](03_decision_loop_and_leaders.md) R-BOT-174) |
+| main-cycle countdown | the main-cycle phase (R-BOT-009) | ticks to the next main cycle ([03](03_decision_loop_and_leaders.md) R-BOT-075) |
+| Beam Dish countdown | the Beam Dish phase (R-BOT-009) | ticks to the next Beam Dish decision, never below 0 ([03](03_decision_loop_and_leaders.md) R-BOT-096) |
 | current objective | none | Siege: the bot objective this team works on ([05](05_mode_strategies_and_tutorials.md)) |
-| Solar Array field list | empty | Launch Race: one entry per bot objective marker of the team (marker position, Solar Array count, the marker, its scan range), filled once ([05](05_mode_strategies_and_tutorials.md) R-BOT-262) |
-| tutorial centre latch | false | first tutorial: set once its centre Control Zone has an owner ([05](05_mode_strategies_and_tutorials.md) R-BOT-280) |
+| Solar Array field list | empty | Launch Race: one entry per bot objective marker of the team (marker position, Solar Array count, the marker, its scan range), filled once ([05](05_mode_strategies_and_tutorials.md) R-BOT-138) |
+| tutorial centre latch | false | first tutorial: set once its centre Control Zone has an owner ([05](05_mode_strategies_and_tutorials.md) R-BOT-151) |
 
-**R-BOT-010** (MUST) A bot controller never dies: every health change is refused and its advance never requests its removal. It is not counted by the match's actor population counter (R-SIM table 2.5-A), but it is one of its team's ungrouped actors, so it counts towards its team's population (DEC-079, R-ECON-107). It stands in the actor grid at its position: node recounts count it like any actor (R-BOT-073), and enemy target searches may select it; the nearest-enemy query and the turret searches skip it, the Worker threat search and the creature searches do not, and the rule for all searches is the Open DEC-311.
+**R-BOT-010** (MUST) A bot controller never dies: every health change is refused and its advance never requests its removal. It is not counted by the match's actor population counter (R-SIM table 2.5-A), but it is one of its team's ungrouped actors, so it counts towards its team's population (DEC-079, R-ECON-107). It stands in the actor grid at its position: node recounts count it like any actor (R-BOT-042), and enemy target searches may select it; the nearest-enemy query and the turret searches skip it, the Worker threat search and the creature searches do not, and the rule for all searches is the Open DEC-311.
 
 **R-BOT-011** (MUST) Match-world initialisation clears the bot registry entry of every team slot 0 to 5, the bot-objectives-initialised flag and the Transport objective list, and match-world teardown resets the same state ([reference/12](../12_simulation_model/02_match_lifecycle_and_state_reset.md) R-SIM-016 step 3, R-SIM-232; DEC-011). A bot controller's Solar Array field list is destroyed with it.
 
@@ -93,7 +93,7 @@ Table 2.4-A Bot actions.
 
 | Action | Command or operation | Used by |
 |---|---|---|
-| start a promotion Power in a free Power slot | bot-only: the promotion Power of [04](04_powers_and_unit_policies.md) R-BOT-200 | formation and conveyor Leaders ([03](03_decision_loop_and_leaders.md)) |
+| start a promotion Power in a free Power slot | bot-only: the promotion Power of [04](04_powers_and_unit_policies.md) R-BOT-107 | formation and conveyor Leaders ([03](03_decision_loop_and_leaders.md)) |
 | target a Power at a ground point | `PlayerCommand::TargetPower(team, Power id, position)` | every Power handler; promotion |
 | stop a Power | `PlayerCommand::CancelPower(team, Power id)` | the Siege attacker's turret Powers ([04](04_powers_and_unit_policies.md)) |
 | aim a Beam Dish | `PlayerCommand::AimBeamDish(team, structure, position)` | Beam Dish aiming ([03](03_decision_loop_and_leaders.md)) |
@@ -115,15 +115,15 @@ Table 2.5-A Perfect-information register.
 
 | Id | What the bot reads | Scope | Rules that read it |
 |---|---|---|---|
-| PI-01 | the friend, enemy and idle-Worker counts of every team at every navigation node, from exact actor-grid queries of all teams | map-wide, every 20 ticks | node ownership and priorities ([01](01_navigation_graph.md) R-BOT-073, [02](02_priority_model.md)); the well-defended and send rules ([03](03_decision_loop_and_leaders.md)); Leader and Power decisions ([03](03_decision_loop_and_leaders.md), [04](04_powers_and_unit_policies.md)) |
+| PI-01 | the friend, enemy and idle-Worker counts of every team at every navigation node, from exact actor-grid queries of all teams | map-wide, every 20 ticks | node ownership and priorities ([01](01_navigation_graph.md) R-BOT-042, [02](02_priority_model.md)); the well-defended and send rules ([03](03_decision_loop_and_leaders.md)); Leader and Power decisions ([03](03_decision_loop_and_leaders.md), [04](04_powers_and_unit_policies.md)) |
 | PI-02 | the owner and the per-team priority of every node, including nodes inside enemy territory | map-wide | target selection, Beam Dish aiming, the Strike team policy |
-| PI-03 | every structure of every team, with its kind, team, position and state, by linear scans in structure order: Spawn Nodes, turrets, mode zones, Supply crates, Beam Dishes and their orientation and connection, Transit Gates, Launch Vessels, walls, Barrier Emitters and their switch state | map-wide | the importance test ([01](01_navigation_graph.md) R-BOT-080), link use, target selection, the Power handlers, Beam Dish aiming |
-| PI-04 | actor-grid counts and presence tests around points that the bot chooses anywhere on the map, for any team | map-wide | the meteor shower test, the Worker-Power fight test ([04](04_powers_and_unit_policies.md)); the Siege defender's commit test ([05](05_mode_strategies_and_tutorials.md)) |
+| PI-03 | every structure of every team, with its kind, team, position and state, by linear scans in structure order: Spawn Nodes, turrets, mode zones, Supply crates, Beam Dishes and their orientation and connection, Transit Gates, Launch Vessels, walls, Barrier Emitters and their switch state | map-wide | the importance test ([01](01_navigation_graph.md) R-BOT-049), link use, target selection, the Power handlers, Beam Dish aiming |
+| PI-04 | actor-grid counts and presence tests around points that the bot chooses anywhere on the map, for any team | map-wide | the meteor shower test, the Worker-Power fight test ([04](04_powers_and_unit_policies.md)); the Siege defender's engagement test ([05](05_mode_strategies_and_tutorials.md)) |
 | PI-05 | actor-grid queries around the bot's own units | within the named radius of the unit | the formation-Leader threat scan (R-UNIT-188, 270 wu); the Strike team scan (R-UNIT-360, 500 wu); the Transport counts (R-UNIT-403) |
 | PI-06 | the mode state of other teams: the Flag Chain status and elimination of every team, the team and lifter count of every Relic, the occupants of every Control Zone, the fuel and state of every Launch Vessel | map-wide | the Flag post pins ([02](02_priority_model.md)); the Relic Run and Zone Control priorities; the Launch Race Transport drop choice (R-UNIT-407) |
 | PI-07 | the position of every Essence orb of every team, in any state | map-wide | the Collector and Builder policies (R-UNIT-442, R-UNIT-464) |
 | PI-08 | the Solar Array count and the friend and enemy counts at every Launch Race field of the team | map-wide | the Launch Race field list ([05](05_mode_strategies_and_tutorials.md)); the Transport drop choice (R-UNIT-407) |
-| PI-09 | the enemy count of nearby navigation nodes, read by the threat search of every Worker of every team, human teams included | the node range around the Worker | [worker.md](../02_units/worker.md) R-UNIT-098 step 6; [01](01_navigation_graph.md) R-BOT-076 |
+| PI-09 | the enemy count of nearby navigation nodes, read by the threat search of every Worker of every team, human teams included | the node range around the Worker | [worker.md](../02_units/worker.md) R-UNIT-098 step 6; [01](01_navigation_graph.md) R-BOT-045 |
 
 **R-BOT-018** (MUST) The attacking and defending sides of a Siege map, the map's records and the match options are match-setup information that every participant holds; reading them is not a perfect-information read.
 
@@ -141,7 +141,7 @@ Table 2.5-A Perfect-information register.
 
 The bot controller is not a free unit: it counts towards its team's population (R-BOT-010).
 
-**R-BOT-021** (MUST) A bot has these structural weaknesses, which are part of its reference strength: an easy bot's priorities never change outside Siege (R-BOT-103); a bot keeps no memory of past fights; its Workers move in straight lines between nodes (DEC-557); and a Power handler that finds no target keeps its Power, and its Power slot, until a later cycle finds one ([04](04_powers_and_unit_policies.md) R-BOT-199), which can hold a slot for long periods (the Essence Grove without a Collector, the meteor shower without a losing enemy position).
+**R-BOT-021** (MUST) A bot has these structural weaknesses, which are part of its reference strength: an easy bot's priorities never change outside Siege (R-BOT-059); a bot keeps no memory of past fights; its Workers move in straight lines between nodes (DEC-557); and a Power handler that finds no target keeps its Power, and its Power slot, until a later cycle finds one ([04](04_powers_and_unit_policies.md) R-BOT-106), which can hold a slot for long periods (the Essence Grove without a Collector, the meteor shower without a losing enemy position).
 
 ### 2.7 Difficulty
 
@@ -154,22 +154,22 @@ Table 2.7-A Difficulty parameters.
 | Parameter | Easy | Standard | Hard | Rule |
 |---|---|---|---|---|
 | first main-cycle phase | `NextUnit(200)` ticks | `NextUnit(100)` ticks | `NextUnit(10)` ticks | R-BOT-009 |
-| main-cycle period | `ref.bot.cycle.period_easy` (200 ticks, 20 s) | `ref.bot.cycle.period_standard` (101 ticks, 10.1 s) | `ref.bot.cycle.period_hard` (11 ticks, 1.1 s) | R-BOT-148 |
-| main-cycle period in Siege | `ref.bot.cycle.period_siege` (30 ticks, 3 s) | `ref.bot.cycle.period_siege` (30 ticks) | `ref.bot.cycle.period_hard` (11 ticks) | R-BOT-148 |
-| node priorities recomputed | only in Siege; frozen in every other mode | yes | yes | R-BOT-103 |
-| target selection | always a random linked node | a random linked node when `NextUnit(1)` < `ref.bot.select.standard_random_chance` (0.5), else the best | always the best | R-BOT-163 |
-| target selection in Siege and Launch Race | the best | the best | the best | R-BOT-163 |
-| hold a node while any enemy is in range | no: only the ratio test | yes, except in Siege | yes, except in Siege | R-BOT-155 |
-| keep a garrison in a tagged zone node | no | yes | yes | R-BOT-160 |
-| Flag post pins | 1.0 at every Flag post | by the team's Flag Chain status | by the team's Flag Chain status | R-BOT-112 |
-| Flag Chain turret count at the Home post | `ref.bot.power.flag_turrets_easy` (1) | `ref.bot.power.flag_turrets` (2) | `ref.bot.power.flag_turrets` (2) | R-BOT-210 |
-| Launch Race turret placement | the standard placement | the Launch Vessel ring | the Launch Vessel ring | R-BOT-209 |
+| main-cycle period | `ref.bot.cycle.period_easy` (200 ticks, 20 s) | `ref.bot.cycle.period_standard` (101 ticks, 10.1 s) | `ref.bot.cycle.period_hard` (11 ticks, 1.1 s) | R-BOT-075 |
+| main-cycle period in Siege | `ref.bot.cycle.period_siege` (30 ticks, 3 s) | `ref.bot.cycle.period_siege` (30 ticks) | `ref.bot.cycle.period_hard` (11 ticks) | R-BOT-075 |
+| node priorities recomputed | only in Siege; frozen in every other mode | yes | yes | R-BOT-059 |
+| target selection | always a random linked node | a random linked node when `NextUnit(1)` < `ref.bot.select.standard_random_chance` (0.5), else the best | always the best | R-BOT-087 |
+| target selection in Siege and Launch Race | the best | the best | the best | R-BOT-087 |
+| hold a node while any enemy is in range | no: only the ratio test | yes, except in Siege | yes, except in Siege | R-BOT-079 |
+| keep a garrison in a tagged zone node | no | yes | yes | R-BOT-084 |
+| Flag post pins | 1.0 at every Flag post | by the team's Flag Chain status | by the team's Flag Chain status | R-BOT-069 |
+| Flag Chain turret count at the Home post | `ref.bot.power.flag_turrets_easy` (1) | `ref.bot.power.flag_turrets` (2) | `ref.bot.power.flag_turrets` (2) | R-BOT-117 |
+| Launch Race turret placement | the standard placement | the Launch Vessel ring | the Launch Vessel ring | R-BOT-116 |
 | Transport think period, Spawn Control, Zone Control, Relic Run, Flag Chain and Launch Race | 200 ticks | 101 ticks | 11 ticks | R-UNIT-402 |
 | Transport think period, Siege | 101 ticks | 51 ticks | 11 ticks | R-UNIT-402 |
 | Flag Chain Transport defends the Home post links when under threat | always | with a 50 % draw | never | R-UNIT-406 |
 | Flag Chain Transport drop point | the Flag post's centre | the turret rush point | the turret rush point | R-UNIT-406 |
 | Launch Race Transport drop offset | the exact point | the 100 wu ring | the 100 wu ring | R-UNIT-407 |
-| tutorial movement filters | yes (tutorials run easy bots) | — | — | [05](05_mode_strategies_and_tutorials.md) R-BOT-280 |
+| tutorial movement filters | yes (tutorials run easy bots) | — | — | [05](05_mode_strategies_and_tutorials.md) R-BOT-151 |
 
 **R-BOT-024** (MUST) The difficulty-independent rules include the stray recall, the well-defended thresholds, the send-chance formula, the formation-Leader thresholds, the conveyor Leaders, every Power handler except the two turret rows of table 2.7-A, Beam Dish aiming, the Strike team, Collector, Builder, Leader and Breach Charge policies, the Siege objective logic and every spawn, population and combat rule of the match. Bot strength at each difficulty, after the corrections of DEC-087, is calibrated by playtest in every mode, Siege attack and Siege defence included; the parameters above are the reference starting point of the Open DEC-112.
 
@@ -200,7 +200,7 @@ flowchart LR
     BOT -- "arrival points, loading, unloading" --> T["Transports"]
     BOT -- "AimBeamDish" --> D["Beam Dishes"]
     BOT -- "routes" --> B["Breach Charges"]
-    BOT -- "moves and attacks; waypoints" --> U["Strike teams, Collectors, Builders"]
+    BOT -- "moves and attacks, waypoints" --> U["Strike teams, Collectors, Builders"]
 ```
 
 Caption: Figure 3-1, the components of a bot and what it acts on (R-BOT-004, R-BOT-005, table 2.4-A).
@@ -209,7 +209,7 @@ Caption: Figure 3-1, the components of a bot and what it acts on (R-BOT-004, R-B
 stateDiagram-v2
     [*] --> Created : bot team initialised, or a player leaves during the match
     Created --> Active : placed inside the map, two phase draws, registered
-    Active --> Active : per-tick step; main cycle when its countdown ends
+    Active --> Active : per-tick step, main cycle when its countdown ends
     Active --> [*] : match world torn down
 ```
 
@@ -219,10 +219,10 @@ Caption: Figure 3-2, the lifetime of a bot controller; it is never killed (R-BOT
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
-| `ref.bot.cycle.period_easy` | 200 | ticks | 20 s; easy bot main cycle outside Siege | R-BOT-148, table 2.7-A | DEC-022, DEC-002 |
-| `ref.bot.cycle.period_standard` | 101 | ticks | 10.1 s; standard bot main cycle outside Siege | R-BOT-148, table 2.7-A | DEC-022, DEC-002 |
-| `ref.bot.cycle.period_hard` | 11 | ticks | 1.1 s; hard bot main cycle in every mode | R-BOT-148, table 2.7-A | DEC-022, DEC-002 |
-| `ref.bot.cycle.period_siege` | 30 | ticks | 3 s; easy and standard bot main cycle in Siege | R-BOT-148, table 2.7-A | DEC-022, DEC-112 |
+| `ref.bot.cycle.period_easy` | 200 | ticks | 20 s; easy bot main cycle outside Siege | R-BOT-075, table 2.7-A | DEC-022, DEC-002 |
+| `ref.bot.cycle.period_standard` | 101 | ticks | 10.1 s; standard bot main cycle outside Siege | R-BOT-075, table 2.7-A | DEC-022, DEC-002 |
+| `ref.bot.cycle.period_hard` | 11 | ticks | 1.1 s; hard bot main cycle in every mode | R-BOT-075, table 2.7-A | DEC-022, DEC-002 |
+| `ref.bot.cycle.period_siege` | 30 | ticks | 3 s; easy and standard bot main cycle in Siege | R-BOT-075, table 2.7-A | DEC-022, DEC-112 |
 | `ref.bot.cycle.phase_easy` | 200 | ticks | first countdown max(1, ⌈`NextUnit(200)`⌉) | R-BOT-009 | DEC-652 |
 | `ref.bot.cycle.phase_standard` | 100 | ticks | first countdown max(1, ⌈`NextUnit(100)`⌉) | R-BOT-009 | DEC-652 |
 | `ref.bot.cycle.phase_hard` | 10 | ticks | first countdown max(1, ⌈`NextUnit(10)`⌉) | R-BOT-009 | DEC-652 |
@@ -233,13 +233,14 @@ Keys cited here and defined elsewhere in this folder: `ref.bot.link.range` ([01]
 
 ## 5 Edge cases and interactions
 
-1. **The bot controller in head counts.** The bot controller is an actor in the actor grid, so the recount of a navigation node within the node's range of it counts one friend of its team (R-BOT-073). At its team's start position this adds one body to the team's own base node.
+1. **The bot controller in head counts.** The bot controller is an actor in the actor grid, so the recount of a navigation node within the node's range of it counts one friend of its team (R-BOT-042). At its team's start position this adds one body to the team's own base node.
 2. **An unkillable target.** Because the Worker threat search does not exclude a bot controller, enemy Workers near it can lock on to a target they cannot kill; turrets and the nearest-enemy query skip it (R-BOT-010, DEC-311).
 3. **Several departures.** Each departing player's team receives its own bot controller; a team that is already a bot team never receives a second one (R-BOT-012).
 4. **Rogue and Visitor bots.** The two factions run the full bot, including dispatch, Leaders and Power handlers; they never win and never block an elimination win (DEC-082). Their Workers are dispatched like any bot team's (R-BOT-007).
 5. **One difficulty for all.** A tutorial's easy bot also makes the Rogue faction and the Visitor faction easy bots; the second tutorial's switch to Standard changes them too (R-BOT-022).
 6. **Selection side effects.** A bot team's selection can name a unit or a Leader at any time, but nothing reads it: Power-slot keys and direct control belong to a human participant, and no participant owns a bot team (R-BOT-016).
 7. **Bot commands and validation.** A bot's `TargetPower` at an invalid point is refused like a player's, and the Power stays Waiting (R-CRATE-025); a bot's `AimBeamDish` at a dish that is no longer its team's does nothing (R-SIM-453).
+8. **The corrections of DEC-087 in this folder.** Each is stated as the rule: the current Power and the right object ids are used (R-BOT-090, R-BOT-118; the Leader's advance target, R-UNIT-188); no priority or send chance is ever NaN (R-BOT-071, R-BOT-083); promotion never waits for the team's selection (R-BOT-016, R-BOT-095); a promotion Power that promotes nobody ends at once (R-BOT-107); the initial navigation graph sees walls and Barrier Emitters (R-BOT-032); emitter crossings are stored whatever the emitter's state (R-BOT-031); a turret goes to the most threatened frontier node (R-BOT-114) and rings the whole Launch Vessel (R-BOT-116); the Worker-Power point divides by the Worker count (R-BOT-122); the Relic un-stick centre divides by the carryable count (R-BOT-140); a random pick of a sea node is drawn again (R-BOT-088); the stray recall follows the live actor count (R-BOT-076); the Siege Transport objectives are listed once markers register (R-BOT-127); defending formations face the threat (R-BOT-092, R-UNIT-188); a Siege defence marker is bound by map validation (R-BOT-135, DEC-561); a marker with no map team has no default team (table 2.1-B of [05](05_mode_strategies_and_tutorials.md)); the bot controller stands inside the map (R-BOT-008); and every bot loop is bounded (R-BOT-088, R-BOT-089, R-BOT-105, R-BOT-117, R-UNIT-407; DEC-014). The Missile Barrage's sea search is bounded by its owner, [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (DEC-014).
 
 ## 6 Acceptance criteria
 
@@ -271,8 +272,8 @@ Keys cited here and defined elsewhere in this folder: `ref.bot.link.range` ([01]
 | DEC-112 | Bot strength calibration | the difficulty parameters of table 2.7-A, after the DEC-087 corrections (R-BOT-024) |
 | DEC-200 | Replication and authority model | bots run inside the simulation step and send nothing over the network (R-BOT-003, R-BOT-014) |
 | DEC-311 | Bot controller as a target | only the nearest-enemy query and the turret searches skip it (R-BOT-010) |
-| DEC-312 | Bot decisions and node recounts within a tick | the order that their slots give ([03](03_decision_loop_and_leaders.md) R-BOT-145) |
-| DEC-557 | Bot troop movement between navigation nodes | straight lines along links ([03](03_decision_loop_and_leaders.md) R-BOT-162) |
+| DEC-312 | Bot decisions and node recounts within a tick | the order that their slots give ([03](03_decision_loop_and_leaders.md) R-BOT-073) |
+| DEC-557 | Bot troop movement between navigation nodes | straight lines along links ([03](03_decision_loop_and_leaders.md) R-BOT-086) |
 | DEC-558 | Bot controller of the Rogue and Visitor factions | the full bot controller (R-BOT-007) |
 | DEC-559 | Bot module structure | specified by function, no module structure (R-BOT-004) |
 

@@ -327,7 +327,7 @@ stateDiagram-v2
     Pending --> Removed: a one-shot Power targeted, it ends itself
     Running --> Pending: Leader Power, every tick
     Running --> Stopping: Strike team life reaches 0, stop runs
-    Running --> Removed: advance reports done: object gone, life out, no affected Worker, turret lost
+    Running --> Removed: advance reports done, for an object gone, life out, no affected Worker or a turret lost
     Stopping --> Removed: advance at the end of the tick
     Pending --> Removed: cancelled, stop runs
     Running --> Removed: cancelled, stop runs
