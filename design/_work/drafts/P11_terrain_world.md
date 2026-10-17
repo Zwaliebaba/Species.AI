@@ -542,3 +542,209 @@ SphereWorld (Darwinia's island-selection globe, scale ×120): `RenderWorldShape`
 | 6 | Flat (under-)water | `Water::RenderFlatWater` | OFF | ON / OFF | OFF | ON | OFF | unit0 water_*.bmp (repeat, scrolling), unit1 water_lightmap (combine modulate) |
 | 7 | Dynamic water | `Water::RenderDynamicWater` | ON (SRC_ALPHA, ONE) | ON / ON | ON | ON | OFF | – ([B:D3D]: water-meshwaves shader) |
 (Then buildings, teams, alphas, particles, weapons, spirits — other partitions.) Negative-renderer mode (`g_app->m_negativeRenderer`) switches passes 4–6 to `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` with zero alpha [C]. Main-menu frame: only passes 1–3 (via `GameMenu::Render`) [C].
+
+---
+
+## [→ 08_levels_and_level_design] 8.1 Level file kinds
+
+| Kind | Naming | Content | Who loads it | Build tag |
+|---|---|---|---|---|
+| Multiwinia map | `data/levels/mp_<mode>_<N>P_<k>.txt` (69 files incl. `mp_sandbox`, `mp_sandbox_all`, `mp_benchmark_1`, `mp_assault_stress`, 3 `mp_tankbattle_*`) | everything in one file: `MultiwiniaOptions`, `Landscape`, `LandscapeTiles`, `LandFlattenAreas`, `Lights`, `Buildings`, `CameraMounts`, `CameraAnimations`, `InstantUnits`, `PrimaryObjectives` | menu map list (`GameMenu::CreateMapList`, pattern `mp_*`) and `Location::LoadLevel` with mission `"null"` | [B:FULL] |
+| Darwinia map | `map_<location>.txt` (12) | landscape + static buildings + lights + camera mounts | `LevelFile(…)` via Darwinia global world | [B:LEGACY] |
+| Darwinia mission | `mission_<location>_<name>.txt` (17) | dynamic buildings, instant units, routes, objectives, camera anims, running programs, difficulty, leaderboard stats | `ParseMissionFile` | [B:LEGACY] |
+| Level enumeration | `level_enum.txt` | `<mp file name> <index>` pairs (1-based) | `code/achievement_tracker.cpp` (P17/P18) | [B:FULL] |
+| Custom map | `<profile>/maps/<name>.mwm` | zlib-compressed `Directory` with the map text + optional textures (§8.6) | `ParseMWMFile` when the map file extension is not `txt`; created/listed only by the editor | [B:EDITOR] (load path compiled in [B:FULL]) |
+
+Section counts across `data/levels/*` [C] (`scripts/P11_levelstats.py`): Landscape 69, LandscapeTiles 69, LandFlattenAreas 69, Lights 69, Buildings 134 (map + mission files), CameraMounts 75, CameraAnimations 65, InstantUnits 75, PrimaryObjectives 65, Difficulty 3, MultiwiniaOptions 57.
+
+## [→ 08_levels_and_level_design] 8.2 How a level is loaded
+
+```mermaid
+sequenceDiagram
+  participant Net as ClientToServer
+  participant Main as main loop (RunTheGame)
+  participant LS as loading-screen work queue
+  participant Loc as Location
+  participant LF as LevelFile
+  Net->>Main: NET_DARWINIA_START_GAME → m_requestedLocationId=999, m_gameMode=GameModeMultiwinia, m_requestedMission="null"
+  Note over Net: map name arrives earlier as game option GAMEOPTION_MAPNAME → g_app->m_requestedMap
+  Main->>LS: EnterLocation → Add(DoEnterLocation)
+  LS->>Loc: new Location(); (if PERMITTED_MAPS) IsMapPermitted(CalculeCRC(map))
+  LS->>Loc: Init(mission, map)
+  Loc->>LF: LoadLevel → new LevelFile(mission, map, ext=="txt")
+  LF->>LF: UpdateDifficultyFromPreferences (forces m_difficultyLevel = 0)
+  alt text map
+    LF->>LF: if mission != "null": ParseMissionFile
+    LF->>LF: ParseMapFile("levels/"+map, else <profile>/maps/+map)
+  else .mwm
+    LF->>LF: ParseMWMFile(<profile>/maps/+map)
+  end
+  LF->>LF: GenerateAutomaticObjectives
+  Loc->>Loc: AppSeedRandom(1); InitLights; InitLandscape (§23); new Water; teams/colours; InitBuildings; grids; new Clouds; routing systems
+```
+[C] `code/network/clienttoserver.cpp` (`NET_DARWINIA_START_GAME`, `GAMEOPTION_MAPNAME`), `code/main.cpp:RunTheGame`, `EnterLocation`, `DoEnterLocation`, `code/location.cpp:Location::Init`, `LoadLevel`, `code/level_file.cpp:LevelFile::LevelFile`.
+
+File lookup [C] `ParseMapFile(const char*)`, `ParseMissionFile`: maps → resource `levels/<name>` (data directory or packed `.dat`), else plain file `<profile>/maps/<name>`; missions → if not editing, first `<profile>/users/<user>/<name>` (Darwinia save game, Unicode or ASCII reader), else resource `levels/<name>`. `AppReleaseAssert` if neither opens ("Invalid level specified" / "Invalid map file specified").
+
+Block dispatch (first token of a line, case-insensitive) [C]:
+
+| Block start keyword | In map file (`ParseMapFile(TextReader*)`) | In mission file (`ParseMissionFile`) |
+|---|---|---|
+| `MultiwiniaOptions_StartDefinition` | `ParseMultiwiniaOptions` | – (falls to "damaged file" assert) |
+| `Landscape_StartDefinition` | `ParseLandscapeData` | `AppDebugAssert(0)`, ignored |
+| `LandscapeTiles_StartDefinition` | `ParseLandscapeTiles` | assert, ignored |
+| `LandFlattenAreas_StartDefinition` | `ParseLandFlattenAreas` | assert, ignored |
+| `Lights_StartDefinition` | `ParseLights` | assert, ignored |
+| `Buildings_StartDefinition` | `ParseBuildings(dynamic=false)` (a second branch with `dynamic=true` is unreachable) | `ParseBuildings(dynamic=true)` |
+| `CameraMounts_StartDefinition` | `ParseCameraMounts` | same |
+| `CameraAnimations_StartDefinition` | `ParseCameraAnims` | same |
+| `InstantUnits_StartDefinition` | `ParseInstantUnits` | same |
+| `Routes_StartDefinition` | `ParseRoutes` | same |
+| `PrimaryObjectives_StartDefinition` | `ParsePrimaryObjectives` | same |
+| `RunningPrograms_StartDefinition` | – (assert) | `ParseRunningPrograms` |
+| `Difficulty_StartDefinition` | – (assert) | `ParseDifficulty` |
+| `LeaderboardStats_StartDefinition` | – (assert) | `ParseLeaderboardStats` |
+| anything else | `AppDebugAssert(0)` (debug-only) and the line is skipped | same |
+Because mission-file `Lights` blocks are rejected, the "mission lights override map lights" logic inside `ParseLights` (`ignoreLights` when `m_lights` is non-empty) can only trigger if a map file contains two `Lights` blocks [C]+[I].
+
+## [→ 08_levels_and_level_design] 8.3 `MultiwiniaOptions_StartDefinition` (Multiwinia-specific)
+
+[C] `code/level_file.cpp:ParseMultiwiniaOptions`, `WriteMultiwiniaOptions`, defaults `LevelFile::LevelFile`. Keys compared case-insensitively; unknown keys silently ignored. The main-menu map list re-scans the same block with its own reader `GameMenu::AddMap` (keys compared **case-sensitively** with `strcmp`) [C] `code/game_menu.cpp:AddMap`.
+
+| Key | Arguments | Field | Default | Semantics / notes |
+|---|---|---|---|---|
+| `Name` | rest of line | `m_levelName[512]` | `"NewLevel"` | display/internal name (10 shipped files set it, mostly "NewLevel"); menu: `MapData::m_levelName` |
+| `GameTypes` | **first** token only | `m_gameTypes` (int) | −1 | index into `Multiwinia::s_gameBlueprints` (order of `GAMETYPE` blocks in `data/multiwinia.txt`): 0 Domination, 1 KingOfTheHill, 2 CaptureTheStatue, 3 Assault, 4 RocketRiot, 5 Blitzkrieg, 6 TankBattle; exact-case `strcmp`. `none` (4 files) matches nothing → −1. The menu parser accepts **several** tokens and lists the map under each matching mode |
+| `PopulationCap` | int | `m_populationCap` | −1 | per-team Darwinian cap (shipped 1500–2000; consumers P05/P02) |
+| `DefenderPopulationCap` | int | `m_defenderPopulationCap` | −1 | Assault defender cap (e.g. 200) |
+| `NumPlayers` | int | `m_numPlayers` | −1 | player slots (2–4) |
+| `Effects` | tokens: `snow`, `dustwind`, `soulrain`, `lightning`, `SpecialLighting` (exact case) | `m_effects[5]` | all false | enum `LevelEffectSnow=0, LevelEffectLightning=1, LevelEffectDustStorm=2, LevelEffectSoulRain=3, LevelEffectSpecialLighting=4`. Shipped: snow ×6, SpecialLighting ×3, lightning ×2, dustwind ×1 |
+| `LevelOptions` | token list, some with an argument | `m_levelOptions[15]` | −1 (memset), except NoHandicap, InstantSpawnPointCapture, NoGunTurrets, ForceRadarTeamMatch, NoRadarControl = 0 | table below |
+| `InvalidCrates` | crate names (`Crate::GetName`, case-insensitive) | `m_invalidCrates[NumCrateRewards]` | false | crate outcomes excluded on this level (P08). Shipped: Armour ×5, Squad ×2, Airstrike ×2, Nuke ×2, Meteor ×2 |
+| `Author` | rest of line | `m_author[64]` | `"Author"` | written only if changed |
+| `Description` | rest of line | `m_description[512]` | `"LevelDescription"` | |
+| `PlayTime` | int | `m_defaultPlayTime` | −1 | suggested time limit (shipped 5–20; minutes [I] — consumers in P02/P18) |
+| `Difficulty` | token | `m_difficultyRating` (strdup) | NULL | `basic` / `intermediate` / `advanced`; the menu sorts maps by player count then by this (substring match `basic`/`inter`/`advan`) [C] `GameMenu::CreateMapList` |
+| `AttackingTeams` | team indices | `m_attacking[NUM_TEAMS] = true` | false | Assault attackers (index unchecked) |
+| `CoopMode` | – | `m_coop = true` | false | co-op optional |
+| `ForceCoop` | – | `m_forceCoop = true` | false | co-op mandatory |
+| `CoopGroup1Positions` / `CoopGroup2Positions` | ints | `m_coopGroup{1,2}Positions` | empty | player positions per co-op group |
+| `OfficialLevel` | – | `m_official = true`, `m_mapId = 0` ("### CRC based method here") | false / −1 | official map (counted for achievements by the menu) |
+
+`LevelOptions` tokens (enum `LevelFile::LevelOption*`, header comments quoted as meaning) [C] `code/level_file.h`:
+
+| # | Token | Arg | Meaning |
+|---|---|---|---|
+| 0 | `nohandicap` | – | handicap forced to 0 regardless of game option |
+| 1 | `instantspawnpointcapture` | – | spawn points capture instantly (no 30 s timer) |
+| 2 | `trunkportreinforcements` | int | Rocket-Riot-style trunk-port reinforcements (value = amount, e.g. 60/100) |
+| 3 | `trunkportarmour` | int | trunk-port armour spawns (e.g. 3) |
+| 4 | `nogunturrets` | – | no GunTurret tasks from trunk ports (Rocket Riot) |
+| 5 | `attackerreinforcements` | int | Darwinians the Assault attackers receive as reinforcements |
+| 6 | `defenderreinforcements` | int | Darwinians the defenders receive |
+| 7 | `defenderreinforcementtype` | research name (`GlobalResearch::GetType`, e.g. `Armour`, `AirStrike`) | type of defender reinforcement (requires TrunkPortArmour) |
+| 8 | `attackerreinforcementtype` | research name (e.g. `HotFeet`) | type of attacker reinforcement |
+| 9 | `forceradarteammatch` | – | two radar dishes must belong to the same team to connect |
+| 10 | `noradarcontrol` | – | radar dishes cannot be aimed manually |
+| 11 | `airstrikecapturezones` | int | Blitzkrieg: zones needed before gun turrets become airstrikes |
+| 12 | `futurewinianteam` | int | that team id gets the alien variant instead of Darwinians |
+| 13 | `attackreinforcementoption` | int | option for the attack reinforcement task (e.g. napalm, flame turret) |
+| 14 | `defendreinforcementoption` | int | same for defence |
+Shipped usage: trunkportreinforcements ×14, trunkportarmour ×6, instantspawnpointcapture ×4, airstrikecapturezones ×3, defenderreinforcementtype ×2, nogunturrets ×2, attackerreinforcementtype ×1, forceradarteammatch ×1, noradarcontrol ×1 [C] survey. Consumers are other partitions (P02 modes, P06/P07 trunk port, radar dish, P08 crates).
+
+## [→ 08_levels_and_level_design] 8.4 Other blocks — grammar, fields, defaults
+
+Positional grammar (whitespace/`:`/`,` separated; `#` comments). X1a owns the formal EBNF.
+
+| Block | Line grammar | Fields / rules | Evidence |
+|---|---|---|---|
+| Landscape | `key value` | §23.3.1 | `ParseLandscapeData` |
+| LandscapeTiles | `x y z size fd hs dh method seed ls p [guide]` | §23.3.2 | `ParseLandscapeTiles` |
+| LandFlattenAreas | `x y z size [type threshold]` | §23.3.3 | `ParseLandFlattenAreas` |
+| Lights | `fx fy fz r g b` | §24.6 | `ParseLights` |
+| Buildings | `<TypeName> <type-specific fields…>` (header comment `Type id x z tm rx rz isGlobal …`) | `Building::CreateBuilding(name)`; NULL (unknown or `BLOCK_OLD_DARWINIA_OBJECTS`-blocked) → line skipped; else `building->Read(in, dynamic)` (P06). Release-assert if the unique id is already used; release-assert if a `TrunkPort`, `ControlTower`, `RadarDish`, `Incubator` or `FenceSwitch` is not `isGlobal`. Team-1 difficulty scaling (`SpawnPopulationLock::m_maxPopulation ×f`, `AntHill::m_numAntsInside ×f`, `AISpawnPoint::m_period ÷f`, `Triffid::m_reloadTime ÷f`, `f = 1 + difficulty/5` when the file has no Difficulty block) — **inert in Multiwinia** because difficulty is forced to 0 (`App::UpdateDifficultyFromPreferences`) | `ParseBuildings`, `code/app.cpp:UpdateDifficultyFromPreferences` |
+| CameraMounts | `name px py pz fx fy fz ux uy uz` | name ≤ 63 chars (`CAMERA_MOUNT_MAX_NAME_LEN`); front and up normalised. Shipped mp maps define `start`, `player0`…`player3` | `ParseCameraMounts` |
+| CameraAnimations | `name` then lines `Move|Cut <mountName> <duration>` until `End` | name ≤ 63; mode `TransitionMove=0`, `TransitionCut=1`; mount must exist unless `CamPosBefore` (`MAGIC_MOUNT_NAME_START_POS`); duration ∈ [0, 60) s (release-assert); the mode assert compares against `Camera::ModeNumModes` instead of `TransitionNumModes` (harmless bug). Shipped mp blocks are empty | `ParseCameraAnims` |
+| InstantUnits | `type team x z count inUnit state spread [wpX wpZ [routeId [routeWaypointId [runAsTask]]]]` | `InstantUnit` defaults: type −1, team −1, pos 0, number 0, inAUnit false, state −1, spread 200.0, waypoint 0, routeId −1, routeWaypointId −1, runAsTask false. Unknown/blocked entity types skipped; `InsertionSquadie` with inAUnit 0 skipped. Team-1 scaling (count ×f; centipede splitting with `maxLength = 10 + int(2f)`; spread ×1.2^(difficulty/5)) — inert in Multiwinia (f = 1). The split copies use the **non-synced** `sfrand(60)` [C] (inert) | `ParseInstantUnits` |
+| Routes | `Route <id>` then `<wpType> …` lines until `end` | id ∈ [0, 10000) (debug assert); `WayPoint::Type3DPos=0: x y z`, `TypeGroundPos=1: x z`, `TypeBuilding=2: buildingId` | `ParseRoutes`, `ParseRoute`, `code/routing_system.h:WayPoint` |
+| PrimaryObjectives | `<Condition> [args] [stringId [cutScene]]` | `GlobalEventCondition` types `AlwaysTrue=0` (assert), `BuildingOnline=1: <location> <buildingId>`, `BuildingOffline=2: same`, `ResearchOwned=3: <researchName>`, `NotInLocation=4` (assert), `DebugKey=5: <int>`, `NeverTrue=6`. Every shipped mp map contains exactly `NeverTrue`. No blank-line guard (NULL token → crash risk) | `ParsePrimaryObjectives`, `code/global_world.h` |
+| RunningPrograms [B:LEGACY] | `type count state data wpX wpZ (x z health)×count` | fixed arrays of 10 (no bound check) | `ParseRunningPrograms` |
+| Difficulty [B:LEGACY] | `CreatedAsDifficulty <n>` | `m_levelDifficulty = max(0, n−1)` (1-based in file) | `ParseDifficulty` |
+| LeaderboardStats [B:LEGACY] | `Time <t>`, `Kills <k>`, `Survivors <s>` | Time read with `sscanf("%f")` into a **double** (type mismatch); Kills written into team 2's `m_teamKills`; Survivors ignored | `ParseLeaderboardStats` |
+
+Other `LevelFile` defaults [C] `LevelFile::LevelFile`: `m_levelDifficulty = −1`, `m_leaderboardLevelTime = 0`, `m_lastLeaderboardLevelTime = 9999999`, `m_thumbnailFilename = "default.bmp"`, colour files as §23.3.1. Derived on load: `GenerateAutomaticObjectives` adds `NeverTrue` if there are no primary objectives, and secondary objectives for `ResearchItem`/`TrunkPort` buildings using `GlobalWorld::GetLocationIdFromMapFilename` — which **always returns −1** because it increments the first character instead of the pointer (`*mapName += 4`), so no trunk-port objective is ever created and research objectives get location −1 [C] `code/global_world.cpp:GetLocationIdFromMapFilename`.
+
+`HasEffect(char*)` always returns false (body commented out) [C].
+
+## [→ 08_levels_and_level_design] 8.5 Saving (editor and Darwinia save games)
+
+`LevelFile::Save()`: if mission name does not contain "null" → `SaveMissionFile`; if map name does not contain "null" → map written to `levels/<map>` through the resource writer under `TARGET_DEBUG`, else to `<profile>/maps/<map>` [C]. Callers are editor windows (`code/interface/editor_window.cpp`, `code/main.cpp` editor loop) → [B:EDITOR] [I].
+
+`SaveMapFile` order [C]: `MultiwiniaOptions` (when `g_app->m_multiwinia` exists — always in this build), `Landscape`, `LandscapeTiles`, `LandFlattenAreas`, `Lights` (taken from the **running Location's** lights, not the file's), `Buildings` (static only), then `CameraMounts`, `InstantUnits` (CameraAnimations, dynamic Buildings and PrimaryObjectives are commented out). Writer formats [C]:
+
+| Block | printf format per entry |
+|---|---|
+| Landscape | `worldSizeX %d`, `worldSizeZ %d`, `cellSize %.2f`, `outsideHeight %.2f`, `maxHeight %.2f`, `landColourFile %s`, `wavesColourFile %s`, `waterColourFile %s` |
+| LandscapeTiles | `%6d %6.2f %6d ` `%6d ` `%5.2f ` `%6.2f ` `%6.0f ` `%6d ` `%6d ` `%6.2f` `%6d` [`   %s` guide] — note `desiredHeight` is written with 0 decimals and `fd`/`ls` with 2, so saving quantises parameters |
+| LandFlattenAreas | `%6.1f %6.1f %6.1f %6.1f %6d %6.1f` (always writes type + threshold) |
+| Lights | `%6.2f %6.2f %6.2f   %6.2f %6.2f %6.2f` |
+| CameraMounts | `%-15s %7.2f %7.2f %7.2f %4.2f %4.2f %4.2f %4.2f %4.2f %4.2f` |
+| CameraAnimations | `\t%s` then `\t\t%-8s %-15s %.2f`, `\t\tEnd` |
+| InstantUnits | `%-15s %2d %7.1f %7.1f %6d %4d %7d %7.1f %7.1f %7.1f %4d %4d %4d` (13 columns) |
+| Routes | `Route %d`; `%-3d %6.2f %6.2f %6.2f` / `%-3d %6.2f %6.2f` / `%-3d %6d`; `End` |
+| MultiwiniaOptions | keys as §8.3; `LevelOptions` only for values > 0 (so explicit 0s are lost); **missing `break` after `futurewinianteam`** makes the writer also emit `attackreinforcementoption <same value>` |
+
+Because saving re-quantises `fd`, `ls`, `desiredHeight` and positions, a load→save→load round trip can change the generated terrain and therefore the map CRC [I].
+
+`SaveMissionFile` [B:LEGACY] order: Difficulty, CameraMounts, CameraAnimations, Buildings (dynamic), InstantUnits, Routes, PrimaryObjectives, RunningPrograms (`%8.2` formats missing the `f` conversion — malformed output), LeaderboardStats. `GenerateInstantUnits` / `GenerateDynamicBuildings` snapshot a running Darwinia level for save games [B:LEGACY] [C].
+
+## [→ 08_levels_and_level_design] 8.6 MapFile (`.mwm` custom map container)
+
+[C] `code/mapfile.{h,cpp}`. On-disk layout:
+```
+int32 little-endian   uncompressedLength        (WriteNetworkValue<int>; little-endian on PC)
+bytes                 zlib compress2(level 9) of Directory::Write() output
+```
+The `Directory` (tosser key/value tree, serialisation owned by P15/X1a) is named `"NewMap"` and holds:
+
+| Key | Type | Content |
+|---|---|---|
+| `MapData` | void (bytes) | the full map text as written by `LevelFile::Save(TextWriter*)` → `SaveMapFile` |
+| `MapLandscapeTexture` / `MapWavesTexture` / `MapWaterTexture` / `MapThumbnail` | void | raw `RGBAColour` pixels, `w·h·4` bytes, BitmapRGBA row order |
+| `<texKey>Filename` | string | resource name to register the bitmap under (e.g. `terrain/landscape_x.bmp`) |
+| `TextureHeight<n>`, `TextureWidth<n>` | int | dimensions; n = 1-based index over the textures actually stored, in the order landscape, waves, water, thumbnail |
+
+Save (`MapFile::Save`, [B:EDITOR]): file name = map name with the last 4 chars replaced by `.mwm` (done with an overlapping `sprintf` into the same buffer — undefined behaviour [I]); a terrain texture is embedded only if `Resource::GetUncompressedFile(terrain/<name>)` fails (i.e. it is not a stock file); the thumbnail is embedded if `m_thumbnailFilename != "default.bmp"` (read from `<profile>/maps/`). Load (`MapFile::MapFile(path, loadTextures)`): reads the length, inflates, copies `MapData`; with `loadTextures` registers each embedded bitmap via `Resource::AddBitmap(filename)` so the landscape/water code finds it under its normal name. `ParseMWMFile` always loads textures. Robustness: the reader passes the full file length (not length−4) to `uncompress` and reads 4 bytes past the end [I]; no checksum.
+
+## [→ 08_levels_and_level_design] 8.7 MapCRC (map identity)
+
+What is checksummed [C] `code/level_file.cpp:LevelFile::CalculeCRC`, `contrib/systemiv/lib/math/filecrc.cpp:FileCRC`, `ReadFileData`, `contrib/unrar/crc.cpp:CRC`:
+- the raw bytes of resource `levels/<filename>` as read by `BinaryReader::ReadU8` until EOF, **plus one trailing 0xFF byte** (the EOF read is stored before the loop notices EOF), capped at 100 001 bytes (static 100 000-byte buffer — a file > 100 000 bytes would overflow it by one byte [I]; the largest shipped level is 46 085 bytes);
+- CRC-32, reflected polynomial 0xEDB88320, **initial value 0, no final XOR** (unrar's `CRC(0, buf, len)`); returned as `int`; −1 if the file cannot be opened (menu then flags the map as custom: `MapData::m_customMap`).
+- Verified: recomputing all 87 `data/levels/*.txt` with this definition reproduces every `MAPID_*` constant in `code/mapcrc.h` exactly [C] (`scripts/P11_mapcrc.py`, 87/87 OK).
+
+`code/mapcrc.h` is generated by `tools/MapCRC/main.cpp:GenerateMapCRCs` (lists `*.txt`, macro name = file name minus `.txt`, `.`/`-`/space → `_`, upper-cased, `#define MAPID_<NAME> 0x%08x`) — "Auto-generated … DO NOT MODIFY" [C].
+
+Why [C]: a content-derived ID for maps used by (1) `MapData::m_mapId` (menu map list; `App::GetMapID(gameMode, crc)` → index), (2) the metaserver game listing (`NET_METASERVER_MAPCRC`; clients resolve the name with `GameMenu::GetMapName(mode, crc)`) `code/network/server.cpp`, `code/UI/GameMenuWindow.cpp`, (3) demo gating — `DemoLimitations::m_allowedMapCRCs`, default `{MP_KOTH_2P_1, MP_KOTH_4P_1, MP_CTS_2P_1, MP_KOTH_3P_1, MP_ROCKETRIOT_3P_1}` or a list from the metaserver (`NET_METASERVER_DEMOMAPS`) `code/network/demo_limitations.cpp`, (4) compile-time `PERMITTED_MAPS` whitelists of non-FULL targets (`code/lib/universal_include.h`, checked in `DoEnterLocation` and the menu), (5) hard-coded tutorial/quick-start map picks (`MAPID_MP_KOTH_2P_1`, `MAPID_MP_KOTH_3P_1` in `code/UI/GameMenuWindow.cpp`). The game itself is started by **file name** (`GAMEOPTION_MAPNAME`), and nothing compares map CRCs between peers before simulation [I] (grep shows no CRC exchange in the start-game path) — a modified local map file would desync rather than be rejected (see §D.4).
+
+## [→ 08_levels_and_level_design] 8.8 GlobalWorld and GlobalInternet in Multiwinia
+
+`App` constructs one `GlobalWorld` at start-up ("Inits 10") and never calls `LoadGame` in the Multiwinia flow (`App::LoadProfile` is only reached from Darwinia-era user-profile/mods windows, scripts and attract mode) [C] `code/app.cpp`, grep `LoadProfile()`. What remains live:
+
+| Part | Status in Multiwinia | Evidence |
+|---|---|---|
+| `GlobalResearch m_research` | **[B:FULL], simulation-relevant**: holds `m_researchLevel[29]` used by gameplay (e.g. `Location::Init` sets every level to 3, then Squad 1, Laser 2, Grenade 2, Rocket 2, AirStrike 2, Darwinian 4 when `Multiplayer()`; `Multiwinia::SetGameResearch`; network game option `GAMEOPTION_GAME_RESEARCH_LEVEL`) | [C] `code/location.cpp:Location::Init`, `code/multiwinia.cpp:SetGameResearch`, `code/network/clienttoserver.cpp` |
+| `GlobalResearch::GetType/GetTypeName` | **[B:FULL]** — the canonical research/task type names used by level options (`defenderreinforcementtype`) and elsewhere | [C] |
+| `GlobalWorld::s_nextUniqueBuildingId` | reset to 0 per level (`Location::Init`); `GenerateBuildingId` hands out sequential ids outside the editor | [C] |
+| `m_locations`, `m_buildings`, `m_events`, `LoadGame/SaveGame`, `LoadLocations` (`data/locations.txt`), `data/game*.txt`, sphere world, island selection, spirits transfer, level times | [B:LEGACY] — Darwinia campaign meta-map; lists stay empty in Multiwinia, so `GetLocationId` returns −1 | [C]/[I] |
+| `GlobalInternet` | generated at start-up (13 701 nodes, `AppSeedRandom(1)`) but only rendered by the unreachable `GlobalWorld::Render` → [B:LEGACY] (start-up cost only) | [C] §24.5 |
+| Global-world editor (`GlobalWorldEditorLoop`, `m_editorMode`) | [B:EDITOR]/dead (`if( true ) return`) | [C] `code/main.cpp` |
+
+`GlobalResearch` research types (index = enum, name = `GetTypeName`) [C] `code/global_world.h`, `code/global_world.cpp:GetTypeName`:
+0 Darwinian "Darwinian", 1 Officer "Officer", 2 Squad "Squad", 3 Laser "Laser", 4 Grenade "Grenade", 5 Rocket "Rocket", 6 Controller "Controller", 7 AirStrike "AirStrike", 8 Armour "Armour", 9 TaskManager "TaskManager", 10 Engineer "Engineer", 11 Harvester "Harvester", 12 Nuke "Nuke", 13 Subversion "Subversion", 14 Booster "PersonalShield", 15 HotFeet "HotFeet", 16 GunTurret "GunTurret", 17 Shaman "Shaman", 18 Infection "Infection", 19 MagicalForest "MagicalForest", 20 DarkForest "DarkForest", 21 AntsNest "AntNest", 22 Plague "Plague", 23 EggSpawn "Egg", 24 MeteorShower "MeteorShower", 25 Extinguisher "FireExtinguisher", 26 Rage "Rage", 27 Tank "Tank", 28 DropShip "DropShip" (`NumResearchItems = 29`). Name lookup is case-insensitive.
+
+Darwinia research progression [B:LEGACY] [C]: levels 0–4; progress needed for the next level `{1, 50, 100, 200}` for current level 0–3; `AdvanceResearch` converts one research point into one progress unit every `GLOBALRESEARCH_TIMEPERPOINT = 10` s; `GLOBALRESEARCH_POINTS_CONTROLTOWER = 22`; upgrades trigger `TaskManagerInterface::SetCurrentMessage(MessageResearchUpgrade, type, 4.0)`; Sepulveda lines are compiled out.
+
+Darwinia global-world file formats [B:LEGACY] [C] `GlobalWorld::Parse*`, `Write*`, `LoadLocations`:
+- `data/game.txt` (and `game_demo.txt`, `game_demo2.txt`, `game_unlockall.txt`): blocks `Locations` (`id avail mapFile missionFile`; location name = map file name minus `map_` and `.txt`), `Buildings` (`id teamId locId type link online`), `Research` (`Research <name> <progress> <level>`, `CurrentResearch <name>`, `CurrentPoints <n>`), `Events` (`Event <cond>…` then `Action SetMission <loc> <file>` / `Action RunScript <file>` / `Action MakeAvailable <loc>` … `End`), `Tutorial` (only with `USE_SEPULVEDA_HELP_TUTORIAL`), `LevelTimes` (`index time`), `SquaddiesUsed` (`index n` — parsed into `m_spLevelTimes` by mistake). Events are evaluated each frame; the first true event executes one action per call.
+- `data/locations.txt`: `id x y z` positions of the 12 Darwinia islands on the sphere (scaled ×120 at use); `SaveLocations` writes `%-8.2` (malformed format).
