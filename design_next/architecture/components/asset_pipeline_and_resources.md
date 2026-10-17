@@ -536,3 +536,196 @@ Table 3.15-A Caches and their keys.
 
 **AST-063** (MUST NOT) The captured frame of the screen transition and the screenshot read-back are frame-graph resources of the renderer, not run-time textures; the asset cache never holds them.
 
+## 4 Behaviour and algorithms
+
+### 4.1 Content-build flow
+
+**AST-064** (MUST) The content build runs these steps in this order; an error in any step fails the build, and CI runs the build on every change (ADR-0059, ADR-0070):
+1. read the asset manifest, the edition manifests and every import record;
+2. check every source (AST-076 to AST-078);
+3. cook every member whose inputs changed (§4.2 to §4.6), where an output is rebuilt when the hash of any of its inputs, of the tool version or of its cook options changes;
+4. produce the derived variants (§4.3);
+5. generate a placeholder for every row with no authored file (§4.7.1);
+6. cook the data records, maps, string tables and explainer scripts, and produce the generated outputs: thumbnails, the map index and the residency lists (§4.7.2, AST-066);
+7. check every reference and the unreferenced assets (AST-079 to AST-082);
+8. select the entries of each edition from its edition manifest, by asset id, folder or tag, never by exclusion;
+9. write the packs, their asset indexes and the mount manifests (§4.9);
+10. write the content manifest and the validation report (§4.10).
+
+**AST-065** (MUST) Identical inputs give bit-identical packs: entries are written in byte-wise key order; no output holds a timestamp or a host path; every cook option, including the compression level `ast.pack.zstd_level` (19), is fixed by the tool version or stated in the import record; and CI encodes BC7 with the software codec (ADR-0017, ADR-0059).
+
+**AST-066** (MUST) The content build writes a **residency list** for the start-up group, for the front end and for each map: the closure of the asset ids that it references, where a map's closure covers the map's records, the match rules of every mode the map supports, every Supply-crate outcome those rules can enable, and the entries of the engine asset table (AST-017) that are marked for that scope. Load groups request these lists (§4.12), and the audio engine's resident budgets are checked against them (ADR-0025).
+
+### 4.2 Texture cooking
+
+**AST-067** (MUST) The cooker decodes each texture source with the decoder of its `source_format` into an RGBA8 image (for a greyscale source, the grey value in every colour channel and an alpha of 255) and checks it:
+1. its size equals the size of its row's `spec` times its authoring scale (AST-024);
+2. neither dimension exceeds `ast.texture.max_dimension` (16384 px);
+3. for a block-compressed format, both top-level dimensions are multiples of `ast.texture.block_dimension` (4 px); dimensions need not be powers of two;
+4. a source whose alpha mode needs alpha (`straight`, `premultiplied`, `cutout`) has an alpha channel;
+5. a `Mask` or `CpuTable` source has the channel layout of its `source_format`.
+
+A source that fails a check is a build error naming the asset id, the member, the file and the check; nothing is padded or resampled (ADR-0017).
+
+**AST-068** (MUST) For a `premultiplied` texture the cooker multiplies the colour by the alpha before it generates the mip levels (ADR-0018).
+
+**AST-069** (MUST) With mip policy `full`, the cooker generates the full chain down to 1 × 1. sRGB-tagged levels are filtered with sRGB-aware filtering: decoded to linear values with the exact sRGB curve, averaged, and encoded again; linear levels are averaged on their stored values (ADR-0013). For a `cutout` texture, each level's alpha is scaled so that the share of texels whose alpha is above the declared threshold equals that share in level 0, which keeps alpha-test coverage at every distance (ADR-0018).
+
+**AST-070** (MUST) The cooker encodes each level in the format of its kind (table 3.3-B) with the DirectXTex library of ADR-0017 and writes a DDS with the DX10 header, which states the format, its sRGB tag, the resource dimension and the array size. The loader rejects a DDS without the DX10 header, with an unknown format or with a truncated payload, and names the asset id (ADR-0017).
+
+**AST-071** (MUST) A `CpuTable` entry is the decoded table in `R8G8B8A8_UNORM_SRGB`, one level, read by the component that uses it on the CPU (the terrain component for `terrain.ramp` and `terrain.shore_wave_gradient`); the asset cache never uploads it to the GPU.
+
+### 4.3 Derived variants
+
+**AST-072** (MUST) A `BlurredShadow` variant is computed from its parent's decoded RGBA8 image *S* of width *W* and height *H*, with the weights *w*ₖ = `ast.derive.blur_kernel`[*k*] × `rnd.shadow.icon_blur_radius` × `rnd.look.blur_normaliser` for *k* = −2 to 2, in two passes that add into cleared images and saturate every channel at 255:
+
+```
+# pass 1: horizontal, from S into T
+T := image(W, H) cleared to (0, 0, 0, 0)
+for y in 0 .. H-1, for x in 0 .. W-1:
+    if S(x, y).r = 0 and S(x, y).g = 0 and S(x, y).b = 0: continue      # black texels add nothing
+    for k in -2 .. 2:
+        if 0 <= x + k < W:
+            for c in (r, g, b, a): T(x+k, y).c := min(255, T(x+k, y).c + round(S(x, y).c * w[k]))
+
+# pass 2: vertical, from T into D, with the vertical gain
+D := image(W, H) cleared to (0, 0, 0, 0)
+for y in 0 .. H-1, for x in 0 .. W-1:
+    if T(x, y).r = 0 and T(x, y).g = 0 and T(x, y).b = 0: continue
+    for k in -2 .. 2:
+        if 0 <= y + k < H:
+            for c in (r, g, b, a):
+                D(x, y+k).c := min(255, D(x, y+k).c + round(T(x, y).c * w[k] * ast.derive.blur_vertical_gain))
+```
+
+The variant's value is the `Greyscale` mean of *D*'s red, green and blue, cooked as a `Mask` texture (§3.5). The parent's width and height lie between `ast.derive.blur_min_size` (1 px) and `ast.derive.blur_max_size` (1024 px); a parent outside that range is a build error.
+
+**AST-073** (MUST) A `StackedCopies` variant of a square parent of side *s*₀ is a column of width *W* = `rnd.crawler.trail_column_width` and height *H* = `rnd.crawler.trail_column_height`, cleared to (0, 0, 0, 0), into which copies of the parent are placed from the top:
+
+```
+y := 0; i := 0
+loop:
+    side := s0 - floor(i / 2) * rnd.crawler.trail_copy_shrink
+    if y + side >= H: stop
+    copy the parent, scaled bilinearly to side x side, to the rectangle
+         x from floor(W / 2) - floor(side / 2), y from y, width side, height side
+    y := y + side; i := i + 1
+```
+
+With *s*₀ = 32 px this places 18 copies, 32, 32, 31, 31 and so on down to 24 and 24 px, filling 504 px of the 512 (RND-320).
+
+**AST-074** (MUST) The colour derivations of table 3.5-A use integer arithmetic on 8-bit channels: `Greyscale` sets each of red, green and blue to ⌊(*r* + *g* + *b*) ÷ 3⌋; `ToColour` computes the mean the same way and, for a mean below *t*, sets each channel *c* of red, green and blue to ⌊*C*.*c* × (255 − mean) ÷ 255⌋, leaving other texels unchanged; `ReplaceColour` replaces the red, green and blue of a texel whose Euclidean distance from *O* in 8-bit red, green and blue is below `ast.derive.replace_colour_distance` (10) by those of *N* and keeps its alpha. A derived variant is then cooked with its parent's import record, except where table 3.5-A states another output.
+
+### 4.4 Mesh cooking
+
+**AST-075** (MUST) The mesh cooker first validates each source against the glTF 2.0 specification (for example with the Khronos glTF validator), then against the rules of AST-033 to AST-041 and AST-044, then cooks it as follows (ADR-0019, ADR-0020, ADR-0013, RND-157, RND-160):
+
+```
+convert every node transform and position to Species world axes and units (unit scale, ADR-0016)
+for each mesh node n, for each primitive p of n:
+    for each triangle (i0, i1, i2) of p:
+        corner colour k(i) := baseColorFactor(p.material) * COLOR_0[i]      # linear glTF values; COLOR_0 absent = 1
+        e(i) := quantise8(srgb_encode(k(i)))                                  # exact sRGB curve, per channel
+        if p is faceted:
+            require e(i0) = e(i1) = e(i2)                                     # else error: asset, node, triangle
+            facet colour f := e(i0)
+            facet normal m := normalise(cross(P(i1) - P(i0), P(i2) - P(i0)))
+        f.rgb := quantise8(f.rgb * rnd.mesh.colour_attenuation)               # alpha unchanged
+        tint weight t := per AST-033: the corners' _SPECIES_TINT values, which must be equal after
+                         quantisation to 8 bits; 1 for a flagged material; 0 for no marking
+        emit three vertices, each with its position, f, m, t and the barycentric corner
+             (1, 0, 0), (0, 1, 0), (0, 0, 1)
+    record n's rest transform, draw range, axis-aligned bounding box, vertical extent (lowest and
+        highest y) and bounding sphere (centre: the box centre; radius: the largest distance from it to
+        any vertex of n)
+write the socket table: for each kind in table 3.8-A order, the sockets in index order, each with its
+    parent node, its transform relative to that node and its chain of nodes up to the root
+```
+
+Smooth-shaded primitives (AST-035) keep their vertex normals and colours and take the same colour conversion and attenuation per vertex. A mesh whose node or socket count exceeds the capacity of the cooked format, which is at least `rnd.mesh.max_nodes` (100) nodes and `rnd.mesh.max_sockets` (100) sockets (RND-156), is a build error. A mesh whose triangle count exceeds the budget of its row's `spec` is a build error naming the budget and the count.
+
+### 4.5 Collision assets and simulation data records
+
+**AST-076** (MUST) The collision cooker converts a collision source to Species world axes and units as AST-075 does, keeps its node hierarchy, writes per node its triangles in world units relative to the asset origin and its bounding sphere, and stores the entry flagged simulation-relevant. Collision cooking reads no material, colour or texture data and no render mesh (DEC-012).
+
+**AST-077** (MUST) The simulation data record of a mesh asset (AST-045) is cooked from the same validated source as its render mesh, in one cooker run, so that the socket transforms of AST-042 always match the render mesh's sockets; it holds no render data.
+
+### 4.6 Audio cooking
+
+**AST-078** (MUST) The audio cooker checks every source: a WAV file at `ast.audio.sample_rate` (48 kHz), 24-bit integer or 32-bit float PCM, mono when its group is positional (AST-049), mono or stereo otherwise. The content build resamples nothing, and a source at another rate or in another format is a build error (ADR-0025).
+
+**AST-079** (MUST) A member whose row's `target_format` is resident is converted to `ast.audio.resident_bits` (16-bit) PCM at 48 kHz, each sample rounded to the nearest 16-bit value with no dither, so that the output is reproducible; a resident member longer than the audio engine's streaming threshold (ADR-0025, [audio engine](audio_engine.md)) is a build error. A member whose row's `target_format` is a stream is encoded to Opus at 48 kHz and stored in the Species stream format inside the pack: the Opus packets, a seek table and the loop points of its import record, so that seeking and looping are sample-accurate (ADR-0025). Stream entries use the stored codec (AST-054).
+
+**AST-080** (MUST) For every residency list (AST-066), the content build sums the resident sizes per audio-engine budget category and fails when a sum exceeds its budget, naming the list, the category and the largest members (ADR-0025).
+
+### 4.7 Placeholders and generated outputs
+
+#### 4.7.1 The placeholder rule
+
+**AST-081** (MUST) The content build generates a stand-in, a **placeholder**, for every manifest row that has no authored file, at the same key and in the same runtime format as the authored file would have, so that the game always builds and runs; an authored file replaces its placeholder when it appears, with no other change. The generator is the row's `placeholder` column, as table 4.7-A states.
+
+Table 4.7-A Placeholder generators.
+
+| `placeholder` | What the content build generates |
+|---|---|
+| generated figure | a flat-colour figure or shape that fills the role's silhouette, with an alpha outline, at the row's size |
+| generated gradient | a white-on-black radial or linear gradient of the row's size |
+| generated glyph | a white geometric glyph (circle, arrow or ring) with the initials of the asset id |
+| generated panel | a flat panel of the row's size with the asset id printed on it |
+| generated ramp | a two-axis colour gradient (slope by height) |
+| generated noise tile | a seamless value-noise tile |
+| diagram card | a card with the asset id and the page number |
+| static mode card | a still card that shows the mode's name and the explainer's asset id |
+| auto-rendered capture | the thumbnail rendered from the map that exists (AST-086), a generated test map until the map is authored |
+| primitive mesh with sockets | boxes, cylinders and cones at the bounding size of the role, with every socket of the row's `spec` present at plausible places, and a collision asset of the same primitives where the mesh is collidable |
+| synthesised tone | a sine or noise burst of the row's duration, looping where the row says loop |
+| text-to-speech line | a synthetic voice line of the row's duration |
+| silence | a silent file of the row's length, looping where the row says loop |
+| fallback font | an open-licence font with the same script coverage |
+| pseudo-localised text | text generated from each string id, padded to test layout |
+| generated test map | a flat map with the objects its mode needs for its player count |
+
+**AST-082** (MUST) A placeholder passes every check that an authored file of its row must pass, so the validators run on the full manifest at every stage of production. Its entries carry the placeholder flag in the TOC and in the content manifest (AST-053, AST-058), and the validation report lists the placeholders grouped by the rows' `priority`.
+
+**AST-083** (MUST) Placeholders are deterministic: each is a pure function of its row's columns and of the asset id, so they have stable entry hashes like any other content (AST-065).
+
+**AST-084** (MUST NOT) An edition that its edition manifest marks for release contains no placeholder; the content build fails such an edition and lists the rows that have no authored file. Every other edition may contain placeholders.
+
+#### 4.7.2 Thumbnails, the map index and the font coverage
+
+**AST-085** (MUST) The content build generates the map index: the map ids of every map that the edition lists, the ids that the Completionist achievement hook counts (DEC-047), in byte-wise order of map id, packaged in the same pack as the maps it lists. Map lists are keyed by the stable map id together with the map's content hash, never by a file name alone (DEC-563, DEC-204).
+
+**AST-086** (MUST) For every map that the edition lists, the content build renders the map's thumbnail with the engine, from a top-down view of the cooked map at the aspect ratio `ref.map.thumbnail.aspect` of [maps: rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) (4:3, R-MAP-022), at the size of the thumbnail row's `spec`, and cooks it as that row's member (DEC-563). The image written at the row's `species_filename` is an output of the build for review, never an input; a generated thumbnail always matches the map it shows.
+
+**AST-087** (MUST) For every language that an edition includes, the content build checks that the edition's bundled fonts cover every character of that language's string table and every character of the currency-symbol block `ast.font.currency_block` (U+20A0 to U+20AF), and fails naming the language, the font role and the first missing characters (ADR-0059, ADR-0063). A language is offered only when its string table is complete (DEC-099).
+
+### 4.8 Validation
+
+**AST-088** (MUST) The content build checks that **no name is missing**: every reference from a data record, a map, a sound-event layer, an explainer script, a material, an import record (tint masks, collision assets, derived variants) or the engine asset table resolves to an existing asset id of the expected category, member and variant. A missing or wrong-kind reference is a build error with the file, line and field of the reference (ADR-0059, DEC-015).
+
+**AST-089** (MUST) The content build checks that **no unused file is shipped**: every file under the content root belongs to a manifest row (AST-013), and every asset that an edition selects is referenced from that edition's maps, records, scripts or engine asset table, directly or through other referenced assets. An unreferenced asset is an error for an edition marked for release and a warning for any other edition (ADR-0059, DEC-563). Until DEC-329 is decided, an asset whose only consumer is an object that no map places but a rule may create during a match counts as referenced, through the record of that object.
+
+**AST-090** (MUST) The content build checks that **no undecodable format is shipped**: every source decodes with the decoder of its `source_format`, every glTF source passes the glTF validator, every audio source passes AST-078, and every cooked entry is read back by the runtime loader of its content type and compared with what the cooker wrote.
+
+**AST-091** (MUST) The content build also rejects, each with a diagnostic naming the asset id, the member and the rule: an import record that disagrees with its row (AST-012); a texture that breaks AST-019 to AST-024 or AST-067; a material pairing that breaks AST-021; a mesh that breaks AST-033 to AST-044 or AST-075; a collidable mesh without a collision asset (AST-043); keys or ids that differ only in case or are not canonical (AST-015); a key listed twice in one authoring object and two records with the same stable id (DEC-801); an unknown id or flag in an edition manifest (ADR-0056); and an edition marked for release that contains a placeholder (AST-084).
+
+**AST-092** (MUST) Each validator has a failing fixture in the content build's test suite (ADR-0059).
+
+### 4.9 Pack writing
+
+**AST-093** (MUST) The pack writer lays the entries of each pack out in byte-wise key order into chunks of at most `ast.pack.chunk_max_kib` (256 KiB) uncompressed, each chunk starting at a multiple of `ast.pack.chunk_alignment_kib` (64 KiB) in the file. An entry of at most the chunk size never straddles two chunks: it starts a new chunk when it does not fit in the rest of the current one. A larger entry starts a new chunk and fills consecutive chunks (ADR-0058).
+
+**AST-094** (MUST) A chunk that holds only stream entries is stored; every other chunk is compressed with Zstandard at `ast.pack.zstd_level`, and stored instead when compression does not make it smaller (AST-054).
+
+**AST-095** (MUST) The pack writer writes the TOC after the chunk area, computes the SHA-256 of the TOC, and writes the header last; it writes the asset index of the pack as an entry. Two base packs of one mount manifest never hold the same key; the content build fails when they would.
+
+### 4.10 Content hashing and identity
+
+**AST-096** (MUST) The hash of an entry is the SHA-256 of its uncompressed cooked bytes (ADR-0060). Because cooked output is canonical (AST-065), the same content always gives the same hash, and an edit of an authoring file that changes only its formatting or line endings leaves every hash unchanged.
+
+**AST-097** (MUST) These content types are **simulation-relevant**, and their entries carry the flag: `Map`, `Collision`, `SimRecord`, `MapIndex`, and every `Record` whose schema the data-schemas component marks as read by the simulation (statistics, rules, Supply-crate tables, match options). Textures, meshes, sounds, fonts, string tables, explainer scripts and shaders are not.
+
+**AST-098** (MUST) The identity of a map is the entry hash of its cooked map, which holds its header, every placed record, its baked collision data and every terrain input of the terrain runtime model; whichever terrain inputs the design phase chooses (see DEC-246), the hash covers what the cooked map contains. Code and data refer to a map by its map id (`map_<mode>_<players>p_<nn>`); the hash is the content version of that id, never a substitute name, and no source file embeds a map's hash (ADR-0060).
+
+**AST-099** (MUST) The **simulation content identity** of a mount set is the SHA-256 over the byte-wise sorted list of (key, entry hash) pairs of every effective simulation-relevant entry, followed by the simulation-relevant runtime feature flags of the edition (ADR-0056, ADR-0060). Logs and the build details show the first `ast.hash.display_hex_digits` (16) hexadecimal digits; every comparison uses all `ast.hash.digest_bytes` (32) bytes. When and how processes exchange and compare identities is a design-phase decision (see DEC-204).
+

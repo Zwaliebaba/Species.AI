@@ -32,7 +32,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `R-BOT` | Bots | `reference/07_bots/` |
 | `R-MAP` | Maps and level design | `reference/08_maps_and_level_design/` |
 | `R-META` | Front end and match flow | `reference/09_front_end_and_match_flow/` |
-| `R-AUD` | Audio design | `reference/10_audio_design.md` |
+| `R-AUD` | Audio design | `reference/10_audio_design/` |
 | `R-TUT` | Tutorial and help | `reference/11_tutorial_and_help.md` |
 | `R-SIM` | Simulation model | `reference/12_simulation_model/` |
 | `TER` | Terrain | `architecture/components/terrain.md` |

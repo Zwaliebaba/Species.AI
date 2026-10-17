@@ -164,7 +164,7 @@ pkg('G09a', 3, None, '§9.3', own('G09a'),
      'reference/09_front_end_and_match_flow/front_end_presentation.md'], {'R-META': '001-399'},
     notes='You also write the folder README (document map for both files).')
 pkg('G09b', 3, None, '§9.3', own('G09b'), ids={'R-META': '400-699'})
-pkg('G10', 3, None, '§9.3', own('G10'), ids={'R-AUD': '001-499'},
+pkg('G10', 3, None, '§9.3', own('G10'), ['reference/10_audio_design/' + f for f in ('README.md', 'event_catalogue.md', 'event_model_and_sound_data.md', 'front_end_hud_voice_and_ambience.md', 'music_hooks_and_sound_design_brief.md', 'positional_priorities_and_mix.md')], ids={'R-AUD': '001-499'},
     reads=COMMON + ['design/_work/drafts/X2b_sound_events.csv'],
     notes='The event catalogue is TO-ASSETS; read X2b_sound_events.csv for the event list and define Species source and event ids.')
 pkg('G11', 3, None, '§9.3', own('G11'), ids={'R-TUT': '001-299'}, notes='New text only.')
