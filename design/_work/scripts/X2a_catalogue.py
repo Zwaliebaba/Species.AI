@@ -365,3 +365,186 @@ json.dump({r: {k: v for k, v in a['info'].items() if k not in ('frag_list', 'mar
            for r, a in assets.items()},
           open(os.path.join(SCR, 'X2a_info.json'), 'w'), indent=0)
 print('inventory', len(assets))
+
+# ----------------------------------------------------------------------------------
+# 5. Code scan: string literals with enclosing symbol and #if condition stack
+# ----------------------------------------------------------------------------------
+manifest = {}
+with open(os.path.join(OUT, 'manifest.csv'), newline='') as fh:
+    for row in csv.DictReader(fh):
+        manifest[row['path']] = row['vcproj_build']
+
+BASE_DEFS = {'TARGET_PC_FULLGAME': 1, 'TARGET_MSVC': 1, 'WIN32': 1, '_WIN32': 1, 'NDEBUG': 1,
+             'LAN_PLAY_ENABLED': 1, 'WAN_PLAY_ENABLED': 1, 'NETWORK_STATS_ENABLED': 1,
+             'INCLUDEGAMEMODE_DOMINATION': 1, 'INCLUDEGAMEMODE_KOTH': 1, 'INCLUDEGAMEMODE_CTS': 1,
+             'INCLUDEGAMEMODE_ROCKET': 1, 'INCLUDEGAMEMODE_ASSAULT': 1, 'INCLUDEGAMEMODE_BLITZ': 1,
+             'INCLUDE_CRATES_BASIC': 1, 'INCLUDE_CRATES_ADVANCED': 1, 'INCLUDE_TUTORIAL': 1,
+             'AUTHENTICATION_LEVEL': 1, 'BLOCK_OLD_DARWINIA_OBJECTS': 1, 'DUMP_DEBUG_LOG': 1,
+             'DEBUG_RENDER_ENABLED': 1, 'FLOAT_NUMERICS': 1, 'USE_CRASHREPORTING': 1,
+             'USE_DISPLAY_LISTS': 1, 'HAVE_DSOUND': 1, 'HAVE_REFRESH_RATES': 1,
+             'USE_PIXEL_EFFECT_GRID_OPTIMISATION': 1, 'STRETCH_RECT': 1, 'TEXTURE_EXTENSION': 1,
+             '_MSC_VER': 1400, 'TARGET_OS_WINDOWS': 0}
+D3D_DEFS = dict(BASE_DEFS, USE_DIRECT3D=1, _CRT_NON_CONFORMING_SWPRINTFS=1)
+DEBUG_DEFS = dict(BASE_DEFS, TARGET_DEBUG=1, CHEATMENU_ENABLED=1, SOUND_EDITOR=1, GESTURE_EDITOR=1,
+                  INCLUDEGAMEMODE_TANKBATTLE=1, INCLUDEGAMEMODE_PROLOGUE=1, INCLUDEGAMEMODE_CAMPAIGN=1,
+                  INCLUDE_CRATE_HELP_WINDOW=1, INCLUDE_THEBEAST=1, TRACK_SYNC_RAND=1, AVI_GENERATOR=1)
+del DEBUG_DEFS['TARGET_PC_FULLGAME']
+EDITOR_DEFS = dict(BASE_DEFS, LOCATION_EDITOR=1)
+
+def eval_cond(expr, defs):
+    e = expr.split('//')[0].split('/*')[0].strip()
+    e = re.sub(r'defined\s*\(\s*(\w+)\s*\)', lambda m: '1' if m.group(1) in defs else '0', e)
+    e = re.sub(r'defined\s+(\w+)', lambda m: '1' if m.group(1) in defs else '0', e)
+    e = e.replace('&&', ' and ').replace('||', ' or ')
+    e = re.sub(r'!(?!=)', ' not ', e)
+    def ident(m):
+        w = m.group(0)
+        if w in ('and', 'or', 'not'):
+            return w
+        return str(defs.get(w, 0))
+    e = re.sub(r'\b[A-Za-z_]\w*\b', ident, e)
+    e = re.sub(r'(\d+)[uUlL]+', r'\1', e)
+    try:
+        return bool(eval(e, {'__builtins__': {}}, {}))
+    except Exception:
+        return None
+
+FUNC_RE = re.compile(r'^\s*(?:[\w:<>\*&~,]+\s+)*?([~\w]+(?:::[~\w]+)*)\s*\(([^;]*)$')
+CTRL = {'if', 'for', 'while', 'switch', 'return', 'else', 'sizeof', 'case', 'do', 'catch',
+        'defined', 'delete', 'new', 'throw', 'sprintf', 'strcpy', 'strcat'}
+LIT_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+def scan_code_file(path, rel):
+    """Return list of (line_no, literal, symbol, cond_text, live{FULL,D3D,DEBUG,EDITOR}, commented, linetext)."""
+    out = []
+    try:
+        lines = open(path, encoding='latin-1').read().split('\n')
+    except Exception:
+        return out
+    stack = []          # list of [cond_text, {cfg: active_bool}, taken{cfg}]
+    cfgs = {'FULL': BASE_DEFS, 'D3D': D3D_DEFS, 'DEBUG': DEBUG_DEFS, 'EDITOR': EDITOR_DEFS}
+    in_block = False
+    cur_func = ''; cur_class = ''; depth = 0; func_depth = None; pending = None; class_pending = False
+    for ln, raw in enumerate(lines, 1):
+        line = raw
+        s = line.strip()
+        if not in_block and s.startswith('#'):
+            m = re.match(r'#\s*(ifdef|ifndef|if|elif|else|endif)\b(.*)', s)
+            if m:
+                kw, rest = m.group(1), m.group(2).strip()
+                if kw in ('ifdef', 'ifndef', 'if'):
+                    if kw == 'ifdef':
+                        txt = rest.split()[0] if rest else ''
+                        vals = {c: (txt in d) for c, d in cfgs.items()}
+                    elif kw == 'ifndef':
+                        txt = '!' + (rest.split()[0] if rest else '')
+                        vals = {c: (txt[1:] not in d) for c, d in cfgs.items()}
+                    else:
+                        txt = rest
+                        vals = {c: eval_cond(rest, d) for c, d in cfgs.items()}
+                    stack.append([txt, vals, dict(vals)])
+                elif kw == 'elif' and stack:
+                    top = stack[-1]
+                    vals = {}
+                    for c, d in cfgs.items():
+                        v = eval_cond(rest, d)
+                        vals[c] = (not top[2][c]) and v if v is not None else None
+                        if vals[c]:
+                            top[2][c] = True
+                    top[0] = 'elif ' + rest; top[1] = vals
+                elif kw == 'else' and stack:
+                    top = stack[-1]
+                    top[1] = {c: (None if top[2][c] is None else not top[2][c]) for c in cfgs}
+                    top[0] = 'else of ' + top[0]
+                elif kw == 'endif' and stack:
+                    stack.pop()
+            continue
+        # strip comments, keep literal positions
+        code_part = []; comment_flag = False; i = 0; L = len(line); instr = False
+        while i < L:
+            ch = line[i]
+            if in_block:
+                if line.startswith('*/', i):
+                    in_block = False; i += 2; continue
+                comment_flag = True; i += 1; continue
+            if instr:
+                code_part.append(ch)
+                if ch == '\\' and i + 1 < L:
+                    code_part.append(line[i + 1]); i += 2; continue
+                if ch == '"':
+                    instr = False
+                i += 1; continue
+            if ch == '"':
+                instr = True; code_part.append(ch); i += 1; continue
+            if ch == "'" and i + 2 < L:
+                j = line.find("'", i + 1 if line[i + 1] != '\\' else i + 3)
+                if j > 0:
+                    code_part.append(line[i:j + 1]); i = j + 1; continue
+            if line.startswith('//', i):
+                rest = line[i + 2:]
+                if '"' in rest:
+                    for lit in LIT_RE.findall(rest.replace('" TEXTURE_EXTENSION', 'bmp"')):
+                        out.append((ln, lit, cur_func if func_depth is not None else (pending or cur_class or ''), ' && '.join(x[0] for x in stack),
+                                    {c: all(x[1][c] for x in stack) for c in cfgs}, True, raw.strip()))
+                break
+            if line.startswith('/*', i):
+                in_block = True; i += 2; continue
+            code_part.append(ch); i += 1
+        code = ''.join(code_part)
+        # function tracking (heuristic): a header line (name + '(' , no ';') arms `pending`;
+        # the next '{' opened while not inside a function makes it the current symbol.
+        cs = code.strip()
+        mcls = re.match(r'^\s*(?:class|struct)\s+(\w+)(?!.*;)', code)
+        if mcls and func_depth is None:
+            cur_class = mcls.group(1); pending = None; class_pending = True
+        if func_depth is None:
+            mf = FUNC_RE.match(code)
+            if mf and mf.group(1).split('::')[-1] not in CTRL and not cs.endswith(';') \
+                    and not cs.startswith(('return', 'else', '#')) and '=' not in code.split('(')[0]:
+                name = mf.group(1)
+                if '::' not in name and cur_class and rel.endswith('.h'):
+                    name = cur_class + '::' + name
+                pending = name; class_pending = False
+            elif cs.endswith(';'):
+                pending = None
+        for ch in code:
+            if ch == '{':
+                if func_depth is None and pending and not class_pending:
+                    cur_func = pending; func_depth = depth; pending = None
+                elif class_pending:
+                    class_pending = False
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if func_depth is not None and depth <= func_depth:
+                    func_depth = None
+        code2 = re.sub(r'"\s*TEXTURE_EXTENSION', 'bmp"', code)
+        for lit in LIT_RE.findall(code2):
+            out.append((ln, lit, cur_func if func_depth is not None else (pending or cur_class or ''),
+                        ' && '.join(x[0] for x in stack),
+                        {c: all(x[1][c] for x in stack) for c in cfgs}, comment_flag and False, raw.strip()))
+    return out
+
+code_lits = []      # dicts
+CODE_ROOTS = ['code', 'contrib/eclipse']
+for cr in CODE_ROOTS:
+    for root, dirs, files in os.walk(os.path.join(SRC, cr)):
+        dirs.sort()
+        for f in sorted(files):
+            if not f.endswith(('.cpp', '.h', '.inc')):
+                continue
+            p = os.path.join(root, f)
+            rel = os.path.relpath(p, SRC).replace(os.sep, '/')
+            built = manifest.get(rel, '?')
+            for (ln, lit, sym, cond, live, commented, txt) in scan_code_file(p, rel):
+                code_lits.append({'file': rel, 'line': ln, 'lit': lit, 'sym': sym, 'cond': cond,
+                                  'live': live, 'commented': commented, 'text': txt,
+                                  'built': built})
+print('code literals', len(code_lits))
+
+if os.environ.get('X2A_DEBUG_LITS'):
+    pat = os.environ['X2A_DEBUG_LITS'].lower()
+    for c in code_lits:
+        if pat in c['lit'].lower():
+            print(c['file'], c['line'], c['sym'], '|', c['cond'], c['live'], c['commented'], c['built'], '|', c['lit'])
+    sys.exit(0)

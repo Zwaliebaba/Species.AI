@@ -124,6 +124,19 @@
 4. The `Value` driver's uninitialised `spec.type` and the `Prefs` driver's off-by-one key index are latent bugs with no shipped trigger [C].
 5. Officer/armour entity-tracking uses a stale orbit centre (§3.6) [C]; is EntityTrack ever entered for non-squad entities in practice (via `Task::Start` with `AutomaticCamera = 2` for an officer task)? [I] yes, reachable on gamepad.
 
+<!-- from P11_terrain_world -->
+## Contradictions / open questions
+
+1. `LevelFile::ParseMultiwiniaOptions` keeps only the first `GameTypes` token while `GameMenu::AddMap` lists a map under every token; for a multi-mode map the running game's `m_gameTypes` may disagree with the mode chosen in the menu. No shipped map lists more than one mode (survey shows one token per file) [C]/[I].
+2. `GlobalWorld::GetLocationIdFromMapFilename` is broken (`*mapName += 4`), so `GenerateAutomaticObjectives` can never create trunk-port secondary objectives — a Darwinia regression that is invisible in Multiwinia [C].
+3. Under [B:D3D] in a Multiwinia match the water shader samples a reflection target that is never rendered (pre-pass gated by `!Multiplayer()`) [I] (agrees with P12).
+4. `RenderMainSlow` enables blending in negative-renderer mode and never disables it; the overlay pass happens to disable it afterwards [C].
+5. `Clouds::RenderFace` fade-out logic ramps alpha up again after 28 s [C] — likely a bug.
+6. `LevelFile::WriteMultiwiniaOptions` missing `break` after `futurewinianteam` [C]; `WriteRunningPrograms` and `GlobalWorld::SaveLocations` use `%8.2`/`%-8.2` without a conversion character [C].
+7. `ParseLeaderboardStats` reads `%f` into a double [C].
+8. Landscape VBO is uploaded with the array's capacity (`Size()`), not its used count [C] — harmless but wasteful.
+9. The strip builder adds no degenerate join at row ends; land touching the map edge would produce a stray wrap-around triangle [I].
+
 <!-- from P12_render_core -->
 ## Contradictions / open questions
 1. **D3D deform does not compile on PC as written** [I]: `DeformEffect::Stop` calls `g_pd3dDevice->Resolve(D3DRESOLVE_RENDERTARGET0, …)`, an Xbox 360 API absent from `IDirect3DDevice9`. Either the `ReleaseDirect3D` configuration was not buildable at this commit or a shim existed outside the tree.
@@ -151,6 +164,16 @@
 5. `SetOpenGLState` sets `glShadeModel(GL_FLAT)` but the D3D emulator ignores shade model; the baseline look relies on flat shading (P12's visual-style section should note that D3D renders Gouraud except for strips) [C/I].
 6. `gluPerspective`'s `_43 *= 2` ("Preserve OpenGL compatibility") doubles effective near/far distances [I]; deliberate?
 7. Whether `ReleaseDirect3D` builds at all at this commit (see 24 build-viability) [I].
+
+<!-- from P14_platform_lib -->
+## Contradictions / open questions
+
+1. `build_matrix.md` §6 says `targets/macosx/*` "still reference Darwinia and do not build Multiwinia". Only `targets/macosx/Darwinia/` is Darwinia; `targets/macosx/Multiwinia/Multiwinia.xcodeproj` is a maintained Multiwinia 1.3.1 Mac project (Ambrosia port) [C] `targets/macosx/Multiwinia/Info.plist`, `MultiwiniaCocoaBridge.cpp`.
+2. Authentication key file name: read `authkey.dev` (`code/app.cpp:InitMetaServer`, `code/UI/GameMenuWindow.cpp` L4989, `code/UI/PlayDemoAuthkeyButton.h`) vs written `authkey` (`code/UI/AuthInputField.h` L149); support INI and installers reference `authkey`. Which one shipped [U] — resolve by checking a retail install or the release branch.
+3. Beta group A: `tools/multiwinia_inclusions_beta_test_group_a.txt` (13 maps) ≠ `TARGET_BETATEST_GROUP_A` `PERMITTED_MAPS` (3 CTS maps) in `code/lib/universal_include.h`; it equals the commented list under `TARGET_BETATEST_GROUP_ALL` [C].
+4. Exe version metadata: `version.rc` says 6.0.0.0 while installers ship v1.0.3/1.0.4/1.2.3/1.9.x and the Game Explorer GDF says Darwinia 1.5.4.0 [C].
+5. `build_multiwinia_data.bat` names `sounds2.dat` step "Making sounds.dat" (cosmetic) and calls absent `build_ambx_dat`; `InstallerScript.iss` and the beta installer require `build\ambx.dat`, which no script in the tree produces [C].
+6. Is the debug menu (and so the profiler window) reachable in the shipped FULL exe? Depends on input bindings (P10/P17a) [U].
 
 <!-- from P15_network -->
 ## Contradictions / open questions

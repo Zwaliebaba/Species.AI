@@ -150,6 +150,22 @@
 - **P20 (sequences/loaders)**: loaders consume `LoaderHelp`, `GOL*`, `RTLoader*` (all `USE_LOADERS`, off); `StartSequence` uses `ModeSphereWorldIntro` and `SkipMessage`; outro runs the `credits` loader.
 - **P03/P04 (entities)**: `InsertionSquad::DirectControl` camera coupling (desync hazard above); `Squadie::GetCameraFocusPoint`; camera-shake sources (portal, rocket, weapons).
 
+<!-- from P11_terrain_world -->
+## Cross-partition notes
+
+- **Build matrix / P13**: `code/water.cpp:Water::Water` line 119 uses `bmp.GetPixel` on a `const BitmapRGBA *` inside the `USE_DIRECT3D` branch — a hard compile error, i.e. a third (and unambiguous) piece of evidence that `ReleaseDirect3D` does not build at this commit.
+- **P12 (render core)**: pass order clouds → landscape → water confirmed from `Location::Render`; the unit-1 texture of flat water is the **water shore mask** `"water_lightmap"`, not a landscape lightmap (P12's pass table calls it "landscape lightmap"). Max two effective lights for the landscape (LIGHT0/LIGHT1) agrees with P12. The menu path leaves `GL_FOG` enabled after clouds (no `Location`) — check effect on menu UI.
+- **P06 (buildings)**: `LevelFile::ParseBuildings` delegates per-type fields to `Building::Read`; global-flag requirement for TrunkPort/ControlTower/RadarDish/Incubator/FenceSwitch; building y is set from the height map in `Location::Init` (editor) / `InitBuildings`.
+- **P02 / P05 / P08 / P07**: consumers of `m_populationCap`, `m_defenderPopulationCap`, `m_levelOptions[]`, `m_attacking[]`, coop groups, `m_invalidCrates[]`, `m_effects[]` (snow, dust, soul rain, lightning, special lighting).
+- **P10 (camera)**: camera mounts (`player0..3`, `start`), camera animations (always empty in mp maps), camera bounds `[−200, sizeX+200]`.
+- **P15 (network)**: map chosen by `GAMEOPTION_MAPNAME` (file name); `NET_METASERVER_MAPCRC`, `NET_METASERVER_DEMOMAPS`; research levels via `GAMEOPTION_GAME_RESEARCH_LEVEL` write into `GlobalWorld::m_research`. No map-content hash is exchanged.
+- **P17a (editor)**: `LandscapeWindow` (tile/flatten editing, `DeleteTile`, terrain file pickers `landscape_*`, `waves_*`, `water_*`), `EditorWindow` save → `LevelFile::Save`, `MapFile::Save` (.mwm). All [B:EDITOR].
+- **P18 (game menu)**: `GameMenu::AddMap` re-parses `MultiwiniaOptions` with case-sensitive keys and multiple `GameTypes`; `LevelFile` takes only the first `GameTypes` token. `GameMenu::Render` draws the clouds/sky backdrop.
+- **P20 (loading)**: level load runs in `DoEnterLocation` on the loading-screen work queue; the landscape VBO upload is marshalled to the main thread via `g_loadingScreen->QueueJob`.
+- **P14 (prefs)**: `RenderLandscapeMode`, `RenderWaterDetail`, `RenderCloudDetail`, `RenderWaterEffect`, `RenderPixelShader` semantics as used here.
+- **X1a**: grammar of all `LevelFile` blocks and `game.txt`/`locations.txt` (this draft gives field tables, §8.3–8.4, §23.3). **X4**: catalogue of the 57 `mp_*` maps plus `data/levels/old/` (30 files not listed by the game). **X3**: §D.
+- **Achievements (P17/P18)**: `data/levels/level_enum.txt` maps mp file names to 1-based indices.
+
 <!-- from P12_render_core -->
 ## Cross-partition notes
 - **P11 (landscape/water/clouds)**: pass-table rows 3–5 summarise their GL state only; `Water::RenderDynamicWater` calls `g_waterReflectionEffect->Start/Stop` (shader binding documented here); `Water::GenerateLightMap` registers `LIGHTMAP_TEXTURE_NAME` via `Resource::AddBitmap`; `Clouds::RenderFace` / `ShowDrSFace` (face in the sky) is theirs; `Location::RegenerateOpenGlState` → `Landscape::BuildOpenGlState`, `Water::BuildOpenGlState`; landscape uses `TextureUV` (`code/lib/texture_uv.*`) as its per-vertex UV type.
@@ -175,6 +191,22 @@
 - **P15 (network) / 22**: `NetworkFloat/NetworkDouble::FromUnicodeString` apply `iv_trunc_low_nibble`; cross-build (GL vs D3D) lockstep is unsafe (FP model + D3D9 FPU precision); recommend the 22 author audit the raw-CRT call list above.
 - **P09 (gestures)**: only consumer of `InvertMatrix` (14×14).
 - **P01 (app core)**: `code/globals.h` constants; `App::m_aviGenerator`; `AppMain` calls `StandardiseCPUPrecision`.
+
+<!-- from P14_platform_lib -->
+## Cross-partition notes
+
+* **P01 (app/main):** `App::App` creates `Resource`, parses `init.dat`, then `PrefsManager` — before `main.dat`; first-run `default_preferences.txt` overrides therefore do not apply in packaged builds (§31.5.3). `SetThreadAffinityMask` main=0xAA. `--NoProfile`, `--write-version` command-line switches (`code/main.cpp`). `StandardiseCPUPrecision` lives in `code/main.cpp` but is required by `WorkQueue` threads. `AppMain` SEH wrapper protects only the main thread.
+* **P10 (input):** `docs/input_preferences_syntax.txt` `pref <name>` conditions depend on `PrefsManager::GetInt` typing rules (float-typed prefs read as false). Language captions call `g_inputManager->getControlID/getBoundInputDescription` for `[KEY…]` markers and `getInputMode()` for `_kbd`/`_xin` table selection (`code/lib/language_table.cpp`).
+* **P11 (terrain):** `SurfaceMap2D` interpolation details (wrap-to-zero at edges, `GetValueNearest` ignoring origin, double arithmetic) are determinism-relevant for height queries (§21.C).
+* **P12 (resources):** archive semantics (§31.5.2) and loose-file precedence; `Resource::GetTextReader` chooses UTF-16 vs 8-bit readers; text files packed in archives must end with a newline (§29.T.1).
+* **P13 (D3D backend):** device created without `D3DCREATE_FPU_PRESERVE` → x87 precision change in `[B:D3D]`; `ReleaseDirect3D` built with `/fp:fast`, `/Oy`, `/GS-`, linker `/PROFILE`.
+* **P15 (network):** `Directory` wire format (§29.D) incl. unchecked subdirectory count and VOID length; packed ints; sync seed via `syncrandseed`; `FlushSyncRandLog` on connect; `HashData` key hashing; `APP_VERSION` "dev" is the protocol version string.
+* **P16 (sound):** `SystemInfo::GetAudioDetails` preferred-device bug (always last device); `SoundBufferSize` default mismatch (prefs 512 vs call site 2000, see pref CSV); sound archives loaded on a dedicated serial queue.
+* **P17a/P17b/P18:** profiler window lifetime controls `g_profiler`; `AuthInputField` saves `authkey` while the game reads `authkey.dev`.
+* **X1a:** preferences/language grammars in §29.P/§29.L supersede sample-based inference; all text formats share §29.T tokenisation (colon and comma are separators; `#` comments; no quoting).
+* **X2a/X2b (asset catalogue):** `FindUnusedResources.sh` heuristic limitations (§31.12); `tools/sounds.txt` (1297) and `tools/menu_sounds.txt` (18) are the authoritative split of audio into `sounds.dat`/`menusounds.dat`, everything else Ogg → `sounds2.dat`.
+* **X3 (determinism):** RNG specifics (§22.R), `RandomNormalNumber`/`RandomApplyVariance` consume the synced stream; container slot-reuse policies (§21.C); `iv_*` float truncation.
+* **X4 (levels):** map IDs = `FileCRC` of level files (§29.B.2); per-SKU map subsets via inclusion lists (§31.6).
 
 <!-- from P15_network -->
 ## Cross-partition notes

@@ -29,11 +29,11 @@ P02_game_modes,IP register,meta:ip,2958
 P02_game_modes,Appendix — dead/legacy code,meta:appendix,2246
 P03_entity_core,[→ 21_simulation_and_entity_model] Object identity: WorldObjectId,21,3729
 P03_entity_core,[→ 21_simulation_and_entity_model] WorldObject base class,21,2678
-P03_entity_core,[→ 21_simulation_and_entity_model] Entity base class,21,16582
+P03_entity_core,[→ 21_simulation_and_entity_model] Entity base class,21,16584
 P03_entity_core,[→ 21_simulation_and_entity_model] Spatial partitioning,21,9717
 P03_entity_core,[→ 21_simulation_and_entity_model] Routing system (pathfinding),21,8061
-P03_entity_core,[→ 02_units_and_entities] Darwinian (the core unit),02,43047
-P03_entity_core,[→ 02_units_and_entities] Officer,02,13780
+P03_entity_core,[→ 02_units_and_entities] Darwinian (the core unit),02,43051
+P03_entity_core,[→ 02_units_and_entities] Officer,02,13786
 P03_entity_core,[→ 02_units_and_entities] Spirit (soul),02,6775
 P03_entity_core,"[→ 05_economy_and_population] Souls, deaths and population accounting (P03 view)",05,2658
 P03_entity_core,[→ 02_units_and_entities] EntityLeg — legged locomotion helper,02,3058
@@ -98,19 +98,19 @@ P05_entities_creatures,[U] Unknowns,meta:unknowns,849
 P05_entities_creatures,Docs-vs-code discrepancies,meta:discrepancies,872
 P05_entities_creatures,IP register,meta:ip,3465
 P05_entities_creatures,Appendix — dead/legacy code,meta:appendix,2713
-P06_buildings_core,"[→ 03_buildings_and_world_objects] Building base class (`Building`, `BuildingPort`)",03,35136
-P06_buildings_core,"[→ 03_buildings_and_world_objects] Spawn network buildings (SpawnBuilding, SpawnPoint, SpawnLink, MasterSpawnPoint, SpawnPopulationLock)",03,11335
-P06_buildings_core,[→ 03_buildings_and_world_objects] GunTurret (and GunTurretTarget),03,13539
-P06_buildings_core,[→ 03_buildings_and_world_objects] Teleport base and RadarDish,03,8735
-P06_buildings_core,[→ 03_buildings_and_world_objects] JumpPad,03,1366
-P06_buildings_core,"[→ 03_buildings_and_world_objects] Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)",03,6210
+P06_buildings_core,"[→ 03_buildings_and_world_objects] Building base class (`Building`, `BuildingPort`)",03,35142
+P06_buildings_core,"[→ 03_buildings_and_world_objects] Spawn network buildings (SpawnBuilding, SpawnPoint, SpawnLink, MasterSpawnPoint, SpawnPopulationLock)",03,11396
+P06_buildings_core,[→ 03_buildings_and_world_objects] GunTurret (and GunTurretTarget),03,13543
+P06_buildings_core,[→ 03_buildings_and_world_objects] Teleport base and RadarDish,03,8755
+P06_buildings_core,[→ 03_buildings_and_world_objects] JumpPad,03,1370
+P06_buildings_core,"[→ 03_buildings_and_world_objects] Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)",03,6214
 P06_buildings_core,"[→ 03_buildings_and_world_objects] CarryableBuilding (base of Statue, WallBuster, ChessPiece)",03,4060
 P06_buildings_core,[→ 03_buildings_and_world_objects] ControlTower,03,2136
 P06_buildings_core,[→ 03_buildings_and_world_objects] Incubator,03,814
 P06_buildings_core,"[→ 03_buildings_and_world_objects] Portal (""The Beast"")",03,2431
 P06_buildings_core,"[→ 03_buildings_and_world_objects] Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)",03,4423
-P06_buildings_core,[→ 05_economy_and_population] Spawn-point economy (territory → Darwinians),05,19027
-P06_buildings_core,[→ 03_buildings_and_world_objects] Consolidated constants table (non-economy),03,3300
+P06_buildings_core,[→ 05_economy_and_population] Spawn-point economy (territory → Darwinians),05,19310
+P06_buildings_core,[→ 03_buildings_and_world_objects] Consolidated constants table (non-economy),03,3303
 P06_buildings_core,[→ 22_determinism_and_sync] Determinism notes for X3 (this partition),22,4349
 P06_buildings_core,Cross-partition notes,meta:cross,4248
 P06_buildings_core,Contradictions / open questions,meta:contradictions,1876
@@ -177,13 +177,13 @@ P09_control_taskmanager,[U] Unknowns,meta:unknowns,835
 P09_control_taskmanager,Docs-vs-code discrepancies,meta:discrepancies,636
 P09_control_taskmanager,IP register,meta:ip,3118
 P09_control_taskmanager,Appendix — dead/legacy code,meta:appendix,2082
-P10_input_camera,[→ 06_player_control_and_input] 1. Input system architecture,06,39538
+P10_input_camera,[→ 06_player_control_and_input] 1. Input system architecture,06,39623
 P10_input_camera,[→ 06_player_control_and_input] 2. Logical controls (`ControlType`) and default bindings,06,36123
 P10_input_camera,[→ 06_player_control_and_input] 3. Camera,06,25215
 P10_input_camera,"[→ 24_rendering] Camera projection, view and frustum",24,3462
 P10_input_camera,[→ 06_player_control_and_input] 4. Control help (`ControlHelpSystem`),06,10885
 P10_input_camera,[→ 06_player_control_and_input] 5. Constants,06,7244
-P10_input_camera,"[→ 22_determinism_and_networking] Determinism notes (input & camera, for X3)",22,2799
+P10_input_camera,"[→ 22_determinism_and_networking] Determinism notes (input & camera, for X3)",22,4493
 P10_input_camera,Cross-partition notes,meta:cross,3422
 P10_input_camera,Contradictions / open questions,meta:contradictions,1157
 P10_input_camera,[U] Unknowns,meta:unknowns,1318
@@ -207,7 +207,7 @@ P11_terrain_world,[→ 23_terrain_and_landscape] 23.14 Landscape lightmap — do
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.15 Lifecycle and re-generation,23,1419
 P11_terrain_world,[→ 23_terrain_and_landscape] 23.16 Shipped terrain parameter survey (Multiwinia `mp_*` maps),23,1217
 P11_terrain_world,[→ 24_rendering] 24.1 Landscape renderer (`LandscapeRenderer`) [B:FULL],24,6412
-P11_terrain_world,[→ 24_rendering] 24.2 Water renderer (`Water`) [B:FULL],24,6869
+P11_terrain_world,[→ 24_rendering] 24.2 Water renderer (`Water`) [B:FULL],24,7452
 P11_terrain_world,[→ 24_rendering] 24.3 Water reflection (`WaterReflectionEffect`) [B:D3D] only,24,2443
 P11_terrain_world,[→ 24_rendering] 24.4 Clouds and sky (`Clouds`) [B:FULL],24,3968
 P11_terrain_world,[→ 24_rendering] 24.5 Global internet and sphere world renderers [B:LEGACY],24,2838
@@ -220,7 +220,15 @@ P11_terrain_world,"[→ 08_levels_and_level_design] 8.4 Other blocks — grammar
 P11_terrain_world,[→ 08_levels_and_level_design] 8.5 Saving (editor and Darwinia save games),08,2474
 P11_terrain_world,[→ 08_levels_and_level_design] 8.6 MapFile (`.mwm` custom map container),08,1793
 P11_terrain_world,[→ 08_levels_and_level_design] 8.7 MapCRC (map identity),08,2259
-P11_terrain_world,[→ 08_levels_and_level_design] 8.8 GlobalWorld and GlobalInternet in Multiwinia,08,4080
+P11_terrain_world,[→ 08_levels_and_level_design] 8.8 GlobalWorld and GlobalInternet in Multiwinia,08,4086
+P11_terrain_world,[→ 22_determinism_and_networking] D. Determinism notes for X3 (terrain must be identical on every peer),22,3250
+P11_terrain_world,Constants table (this partition),meta:constants,5884
+P11_terrain_world,Cross-partition notes,meta:cross,2710
+P11_terrain_world,Contradictions / open questions,meta:contradictions,1474
+P11_terrain_world,[U] Unknowns,meta:unknowns,1356
+P11_terrain_world,Docs-vs-code discrepancies,meta:discrepancies,1167
+P11_terrain_world,IP register,meta:ip,2929
+P11_terrain_world,Appendix — dead/legacy code,meta:appendix,1820
 P12_render_core,[→ 26_animation_and_vfx] Particle system,26,9609
 P12_render_core,[→ 26_animation_and_vfx] Explosions (shape shattering),26,4307
 P12_render_core,[→ 24_rendering] Deform effect (screen-space distortion) [B:D3D],24,5050
@@ -271,7 +279,7 @@ P14_platform_lib,[→ 31_platform_build_and_tools] 31.9 MapCRC tool and map IDs,
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.10 ShapeExporter (3ds Max → `.shp`),31,1722
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.11 Localisation build and QA,31,2270
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.12 Audit scripts (`FindUnusedResources.sh` and friends),31,1515
-P14_platform_lib,[→ 31_platform_build_and_tools] 31.13 Crash handling,31,4908
+P14_platform_lib,[→ 31_platform_build_and_tools] 31.13 Crash handling,31,5062
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.14 System information collection,31,1972
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.15 Root files,31,1717
 P14_platform_lib,[→ 31_platform_build_and_tools] 31.16 `targets/` inventory (one row per file),31,6316
@@ -285,7 +293,15 @@ P14_platform_lib,"[→ 29_data_formats_reference] 29.B Binary readers, CRCs, has
 P14_platform_lib,"[→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers",22,6211
 P14_platform_lib,[→ 32_debug_test_and_performance] 32.P Profiler,32,2300
 P14_platform_lib,"[→ 32_debug_test_and_performance] 32.D Debug output, asserts, black box, leak tracking",32,3781
-P14_platform_lib,[→ 21_simulation_and_entity_model] 21.C Core containers and their ordering semantics,21,5189
+P14_platform_lib,[→ 21_simulation_and_entity_model] 21.C Core containers and their ordering semantics,21,5195
+P14_platform_lib,[→ 31_platform_build_and_tools] 31.18 `docs/` inventory (supporting evidence only; skimmed),31,7610
+P14_platform_lib,Constants table (this partition),meta:constants,4225
+P14_platform_lib,Cross-partition notes,meta:cross,2779
+P14_platform_lib,Contradictions / open questions,meta:contradictions,1465
+P14_platform_lib,[U] Unknowns,meta:unknowns,1118
+P14_platform_lib,Docs-vs-code discrepancies,meta:discrepancies,2532
+P14_platform_lib,IP register,meta:ip,2770
+P14_platform_lib,Appendix — dead/legacy code (brief),meta:appendix,1426
 P15_network,[→ 22_determinism_and_networking] 1. Network model at a glance,22,5803
 P15_network,[→ 22_determinism_and_networking] 2. Timing model,22,4646
 P15_network,[→ 22_determinism_and_networking] 3. Transport layer — NetLib (contrib/systemiv/lib/netlib),22,3183

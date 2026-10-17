@@ -184,6 +184,28 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - Under `USE_SEPULVEDA_HELP_TUTORIAL` [B:DEAD] in `code/camera.cpp`: `HelpSystem::PlayerDoneAction(CameraMovement / CameraZoom / CameraHeight / UseRadarDish)` notifications. Under `_DEBUG` [B:DEBUG]: `DebugCameraFixUp` reset of intro/outro.
 - `docs/DarwiniaInput.rtf` and `docs/input_preferences_syntax.txt` describe the Darwinia-era system; still broadly accurate (see discrepancies).
 
+<!-- from P11_terrain_world -->
+## Appendix — dead/legacy code
+
+| Item | Status | Evidence |
+|---|---|---|
+| `Landscape(double, int, int)` constructor, `LandscapeRenderer::Initialise`, `Water::RenderReflectiveWater` | declared, never defined/called | [C] grep |
+| `Landscape::RenderHitNormals` | defined, no caller | [C] |
+| `LIGHTMAP_SCALEFACTOR` | unused | [C] |
+| `RenderLandscapeDetail` reads (landscape cell scaling, overlay skip at detail ≥ 4) | commented out → literal 1 | [C] |
+| Water D3D `UpdateWaterThread` | never started | [C] |
+| `USE_DIRECT3D` paths of landscape/water + `WaterReflectionEffect` | [B:D3D]; water.cpp does not compile under D3D | [C] |
+| Mac water update throttling (`TARGET_OS_MACOSX`) | [B:DEAD] on PC | [C] |
+| Mission-file parsing, `SaveMissionFile`, `RunningPrograms`, `Difficulty`, `LeaderboardStats`, `GenerateInstantUnits`, `GenerateDynamicBuildings` (called from `App::SaveProfile` for single-player only) | [B:LEGACY] | [C] `code/app.cpp:SaveProfile` |
+| GlobalWorld locations/buildings/events/tutorial/level-times, `LoadGame`, `SaveGame`, `LoadLocations`, `SaveLocations`, `TransferSpirits`, `GlobalWorld::Advance` (island picking), `SphereWorld`, `GlobalInternet` rendering | [B:LEGACY] (constructed, never shown) | [C] §8.8, §24.5 |
+| `GlobalEventCondition::DebugKey` evaluation | only under `JAMES_FIX` (never defined) → falls to `AppDebugAssert(false)` | [C] |
+| `GlobalWorld::WriteTutorial` body | `DEMO2 && USE_SEPULVEDA_HELP_TUTORIAL` → empty | [C] |
+| `WriteLevelTimes`, `WriteSquaddiesUsed` | empty bodies | [C] |
+| `LevelFile::HasEffect` | always false | [C] |
+| Burn patches (`Location::AddBurnPatch`, only from `Portal`) | [B:LEGACY] | [C] grep |
+| Editor water grid, `DeleteTile`, `.mwm` save/list, global-world editor | [B:EDITOR] | [C] |
+| `Clouds::RenderFace` | [B:DEBUG] (cheat window) | [C] |
+
 <!-- from P12_render_core -->
 ## Appendix — dead/legacy code
 | Item | State | Ref |
@@ -218,6 +240,20 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - **`TARGET_OS_VISTA` block** in `WindowManagerDirectX` `WinMain` (`-mediacenter`, save-file argument) [B:DEAD].
 - **Mac precision control** inline asm in `StandardiseCPUPrecision` [B:DEAD].
 - **Unreferenced in live builds**: `code/lib/math_utils.cpp:syncrand` (+ `init_genrand`); `OpenGLRegisterD3DTexture`; `Attributes`/`s_attributeStack` (no `glPushAttrib`); `WindowManagerWin32::m_hRC2` secondary context and the declared-but-undefined `Use/Release/DestroySecondaryContext`; `gglChoosePixelFormatARB`; `Renderer::SetScreenGamma`; `glTraceEnable` callers (`USE_LOADERS` off); `TriTriIntersection` (implementation file excluded); `Matrix34::InverseMultiplyVector`, `Matrix34::Transpose`, `Matrix33::Invert`, `Plane(normal, point)`; `FixedPipeline::m_state.m_environmentDiffuse/Specular` (never assigned); `fogColour` uniform in `FixedFunc2.vs`; triple-buffering block and NVPerfHUD adapter selection in `Direct3DInit` (commented out); `glFinish` back-buffer lock (after `return`).
+
+<!-- from P14_platform_lib -->
+## Appendix — dead/legacy code (brief)
+
+* `code/keygen.cpp` — Darwinia registration key generator, compiled but uncalled [B:LEGACY] (§29.B.4).
+* `code/lib/user_info.cpp:GetUserInfoData` — uncalled [B:LEGACY].
+* `contrib/systemiv/lib/filesys/file_system.cpp:FileSystem` — compiled, never instantiated (§31.5.4).
+* `contrib/systemiv/lib/memory_leak.cpp` — only with `TRACK_MEMORY_LEAKS` [B:DEAD].
+* RDTSC timer path in `code/lib/hi_res_time.cpp` (`USE_PENTIUM_COUNTER 0`) [B:DEAD]; `code/lib/hi_res_time_gcc.cpp`, `hi_res_time_sdl.cpp`, `system_info_macosx.cpp`, `macosx_hardware_detect.cpp`, `debug_logging.{h,cpp}`, `debug_fog_logging.cpp` — not in the vcproj [B:DEAD].
+* `contrib/systemiv/lib/{preferences,language_table,hi_res_time}.*` — shadowed by `code/lib` versions, not compiled [B:DEAD].
+* `contrib/systemiv/lib/tosser/hash_map_darwin.h` — GNU `hash_map<std::string>` shim for Mac [B:DEAD].
+* `TRACK_SYNC_RAND` logging, `SINGLE_THREADED_PROFILER`, Mac/Linux branches of `debug_utils`, `unicode_string`, `network_stream`, `unicode_text_file_writer` [B:DEBUG]/[B:DEAD].
+* `targets/linux/*`, `targets/macosx/Darwinia/*`, Darwinia-era tools (build_demo*, build_final, build_vista, build_tools, Loki, NSIS/GESetup, eGames/Demo Inno scripts, 3DGeometry) [B:LEGACY].
+* Xbox remnants in the data pipeline (`platxbox` branches, `convert_bmp_to_tex.cmd`, DXT conversions, `textures/xboxlivearcade.bmp` in `init.list`) [B:DEAD].
 
 <!-- from P15_network -->
 ## Appendix — dead/legacy code

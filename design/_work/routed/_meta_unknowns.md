@@ -112,6 +112,18 @@
 5. [U] `InputManager::Advance` is also called at the bottom of the top-level `while(true)` loop in `AppMain` after each sub-loop returns [C] `code/main.cpp`; whether this extra advance can swallow an edge between loops is unverified.
 6. [U] Real-world reachability of `ModeEntityTrack` for keyboard users: requires `AutomaticCamera = 2`, which no shipped UI widget sets; only by editing `preferences.txt`.
 
+<!-- from P11_terrain_world -->
+## [U] Unknowns
+
+1. **Bit-exactness of the reconstructed terrain** versus `multiwinia.exe` — resolve by dumping `Landscape::m_heightMap` from a running build for a few maps and diffing against `scripts/P11_terrain_ref.py --dump`.
+2. MSVC 2005 x86 behaviour of `(unsigned short)` conversion of doubles ≤ −1 (affects `GetValue` on far-negative coordinates) — resolve by disassembly or a test program built with the original toolchain.
+3. Whether MSVC 2005's `pow/exp/log` round identically (after float truncation) to a modern CRT for every tile parameter in the shipped data — resolve by running the reference generator with both CRTs.
+4. Whether the loading-screen thread consumes the global `AppRandom` while `GetLandscapeColour` runs (would make terrain colours vary between runs) — resolve by reviewing `code/loading_screen.cpp` (P20).
+5. Which texture flags win for `textures/clouds.bmp` (requested both with and without mip-maps; the resource cache is keyed by name) — resolve in `Resource::GetTextureWithFlags` (P12/X?).
+6. Units of `PlayTime` (assumed minutes) — resolve in P02/P18 consumers.
+7. Design intent of `triangleOutline.bmp` (2×2 sub-cells, three diagonals) mapped once per height-map cell — visual check in a running build.
+8. Whether `ReleaseDirect3D` was ever built from this tree (three compile blockers now known) — attempt a build.
+
 <!-- from P12_render_core -->
 ## [U] Unknowns
 1. [U] Whether `ReleaseDirect3D` builds at all (resolve: compile `code/deform.cpp` against the DirectX 9 SDK; check for an `IDirect3DDevice9` wrapper declaring `Resolve`).
@@ -137,6 +149,17 @@
 | U8 | Exact x87 control-word change performed by D3D9 `CreateDevice` without `FPU_PRESERVE` on the shipped driver/runtime | `_control87(0,0)` readback after `Direct3DInit` |
 | U9 | Whether `docs/HardwareComplianceIssues.txt` "mouse pointer background not transparent" was fixed in cursor code (P12 `targetcursor`) | P12 review of cursor texture alpha handling |
 | U10 | Whether the landscape D3D path restores the emulator's vertex declaration after drawing | P11 reading of `LandscapeRenderer::Render*` end |
+
+<!-- from P14_platform_lib -->
+## [U] Unknowns
+
+1. [U] Behaviour of `throw;` without an active exception under the VS2008 static CRT inside the `__try` of `AppMain` (expected: SEH 0xE06D7363 caught by `RecordExceptionInfo`, or `terminate()` → `abort()` bypassing it). Resolve by running an assert in a Release build.
+2. [U] Exact x87 control word after D3D9 device creation in `[B:D3D]` (expected 24-bit precision). Resolve by reading the control word after `CreateDevice` at run time.
+3. [U] Role of `tools/SlashSort.exe` (no script references it; only a usage banner is visible).
+4. [U] Contents/role of the absent `ambx.dat`, `branding.dat`, `patch.dat` builders and of `tools/autopatcher`, `tools/profilelocatorwin32` (referenced by packaging scripts, absent from the tree).
+5. [U] Which authentication key file name shipped (contradiction 2).
+6. [U] Whether `MultiwiniaSupport.exe` uploads automatically or only on user consent, and its protocol (binary only; strings mention `crashreports.introversion.co.uk`).
+7. [U] Whether shipped `default_preferences.txt` was ever placed loose next to the exe (would change first-run defaults, §31.5.3).
 
 <!-- from P15_network -->
 ## [U] Unknowns

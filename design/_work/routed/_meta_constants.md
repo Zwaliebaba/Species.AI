@@ -234,6 +234,62 @@
 | Marker flash | 3 s, 0.4 s period | literal | same |
 | Message duration | 3.0 s real time | literal | `Location::SetCurrentMessage` |
 
+<!-- from P11_terrain_world -->
+## Constants table (this partition)
+
+| Constant | Value | Kind | Where |
+|---|---|---|---|
+| Tile defaults: outsideHeight, size, guideGridPower, method, desiredHeight, fractalDimension, heightScale, lowlandSmoothing, seed | 0.0, 256, 0, 1, 200, 1.2, 1.0, 1.0, 1 | ctor | `code/landscape.cpp:LandscapeTile::LandscapeTile` |
+| `LandscapeDef` defaults: cellSize, worldSizeX/Z, outsideHeight, maxHeight | 12.0, 2000, 2000, −10, 0.0 | ctor | `code/level_file.h:LandscapeDef` |
+| `Landscape::m_outsideHeight` before Init | −20 | ctor | `code/landscape.cpp:Landscape::Landscape` |
+| Flatten defaults: size, type, threshold | 40.0, Absolute, 40.0 | ctor | `code/level_file.h:LandscapeFlattenArea` |
+| LCG multiplier / increment / output mask | 214013, 2531011, `(s>>16)&0x7FFF` | literal | `LandscapeTile::LandscapeAppRandom`, `AppRandom` |
+| `APP_RAND_MAX` | 32767 | `#define` | `contrib/systemiv/lib/math/random_number.h` |
+| Noise: length scale, length mult, envelope floor, envelope gain | 256.0, 10.0, 0.1, 0.15 | literal | `GenerateNoise` |
+| Compensation: 30.7·e^(−6.5·fd), 15.353·e^(−3.1·ls) | 30.7, −6.5, 15.353, −3.1 | literal | `Generate` |
+| Merge range epsilon | 0.001 | literal | `MergeTileIntoLandscape` |
+| Smooth divisor / passes | 6.0 / 2 | literal | `FlattenArea` |
+| `LIGHTMAP_SCALEFACTOR` | 1 (unused) | `#define` | `code/landscape.h` |
+| Render: near-sea sink threshold / depth | 0.3 → −10.0 | literal | `BuildVertArrayAndTriStrip` |
+| Colour: slope exponent, jitter numerator, jitter offset | 0.4, 0.45, +2.0 | literal | `GetLandscapeColour` |
+| Burn patch: outer radius factor, inner factor, colour | 1.5·r, r/2, (20,20,20) | literal | `BuildColourArray` |
+| Main material spec/diffuse/shininess | (0,0,0,0)/(1,1,1,0)/100 | literal | `RenderMainSlow` |
+| Overlay material spec/diffuse/shininess | (0.5,0.5,0.5,1)/(1.2,1.2,1.2,0)/40 | literal | `RenderOverlaySlow` |
+| Display list names | `"LandscapeMain"`, `"LandscapeOverlay"`, `"GlobalInternetLinks"`, `"GlobalInternetNodes"` | `#define` | renderer, global_internet |
+| Water: brightness scale, shore brightening, shore noise | 4.0, 250.0, 0.25 | `float const` | `code/water.cpp` |
+| Water mask size / blur taps / gain | 128 / 11 `{0.2,0.3,0.4,0.5,0.8,1.0,0.8,0.5,0.4,0.3,0.2}/5.4` / 855 | `#define`/literal | `GenerateLightMap` |
+| Flat water: tile ratio, height, texture repeats, scroll period | 4, −9.0, 30, 30 s | literal | `GenerateLightMap`, `RenderFlatWater` |
+| Water cell | `RenderWaterDetail × max(sizeX,sizeZ)/100` | pref-driven | `Water::Water` |
+| IsVertNeeded thresholds | land > 4.0, depth > 0.999 | literal | `IsVertNeeded` |
+| Wave amplitude scale | 7.0 | literal | `UpdateDynamicWater` |
+| Wave X terms (freq, speed, amp) | (0.01, 0.65, 1.2), (0.03, 1.5, 0.9) | literal | same |
+| Wave Z terms | (0.02, 0.75, 0.9), (0.03, 1.85, 0.65) | literal | same |
+| Wave colour mix | 0.7 / 0.3 | literal | same |
+| Waves table row / width | y = 1 / bitmap width (400 shipped) | literal | `Water::Water` |
+| D3D water buffers / thread rate | 10 / 120 Hz (thread never started) | `static const` | `water.h`, `UpdateWaterThread` |
+| Reflection RT size / clear grey / clip plane | ½ screen / 0.3 / `GL_CLIP_PLANE2 (0,1,0,0)` | literal | `water_reflection.cpp` |
+| Reflection shader: ripple amplitude, seam offset, blend | `0.001·1024/ScreenW`, 0.004, 0.7 | literal / shader | `WaterReflectionEffect::Start`, `water-meshwaves.ps*` |
+| Clouds initial / advance velocity | (0.04,0,0) / (0.03,0,−0.01) per second of `SERVER_ADVANCE_PERIOD` | literal | `Clouds::Clouds`, `Advance` |
+| Cloud layer heights / extents / detail | 1200, 1000, 800 / [−8000, 9000] / 9, 4.5, 1.8 | literal | `RenderBlobby`, `RenderFlat` |
+| Cloud colours | (0.7,0.7,0.9, 0.6 blobby / 0.3 flat / 0.5 flat at detail 3) | literal | same |
+| Sky grid: extent, spacing, half width, height, colour | [−4000, 6000], 80, 8, 1200, (0.5,0.5,1.0,0.3) | literal | `RenderSky` |
+| Sky/cloud fog | black; 2000–4000 sky, 2000–5000 clouds | literal | `RenderSky`, `RenderBlobby`, `RenderFlat` |
+| `RenderQuad` subdivision | 4 × 4 | literal | `Clouds::RenderQuad` |
+| Face: height, half size, delay, fade, end, frame time | 800, 800, 5 s, 1 s, 28/30 s, 0.4 s | literal | `RenderFace` [B:DEBUG] |
+| Location fog | start = end/3, end = max(4000, size+1000) | literal | `Location::SetupFog` |
+| Global internet: iterations, max nodes, max links, centre | 7, 13701, 13700, (−797,1949,−1135) | `#define`/literal | `global_internet.h/.cpp` |
+| Global internet render: scale, fog end, node size, packet size, burst, spawn prob | 1000, 5 810 000, 10, 30, 4.0 s, 11 % per frame | literal | `GlobalInternet::Render`, `RenderPackets` |
+| Global world: location scale, hit radius, attract radius | 120, 5000, 10000 | literal | `GetLocationPosition`, `LocationHit`, `Advance` |
+| Research thresholds / time per point / control-tower points | {1,50,100,200} / 10 s / 22 | literal / `#define` | `GlobalResearch`, `global_world.h` |
+| SP level-time default | 3 599 999 | literal | `GlobalWorld::GlobalWorld`, `WriteLeaderboardStats` |
+| Level file limits | mount/anim name 63, filename 512, route id < 10000, anim duration < 60 s, running program positions 10 | `#define`/literal | `level_file.h/.cpp` |
+| `MAGIC_MOUNT_NAME_START_POS` | `"CamPosBefore"` | `#define` | `level_file.h` |
+| InstantUnit default spread | 200.0 | ctor | `level_file.h:InstantUnit` |
+| Difficulty factor | `1 + difficulty/5` (difficulty forced 0) | literal | `ParseBuildings`, `ParseInstantUnits` |
+| Map CRC buffer | 100 000 bytes (+1 overflow) | `#define MAXSIZE` | `filecrc.cpp` |
+| CRC-32 polynomial / init / xorout | 0xEDB88320 / 0 / none | literal | `contrib/unrar/crc.cpp` |
+| MapFile keys | `MapData`, `MapLandscapeTexture`, `MapWavesTexture`, `MapWaterTexture`, `MapThumbnail`, `TextureWidth<n>`, `TextureHeight<n>`, `<key>Filename`; zlib level 9 | `#define`/literal | `mapfile.h/.cpp` |
+
 <!-- from P12_render_core -->
 ## Constants table (this partition)
 
@@ -337,6 +393,57 @@
 | MT19937 (dead copy) | N 624, M 397, MATRIX_A 0x9908b0df, default seed 5489 | `#define` | `math_utils.cpp` |
 | `Vector2::Compare` tolerance | `FLT_EPSILON` (float `fabsf`) | `<float.h>` | `vector2.cpp` |
 | `code/globals.h` | NUM_TEAMS 6, NUM_SLICES_PER_FRAME 10, IAMALIVE_PERIOD 0.1 s, MINIMUM_RENDER_PERIOD 1.0 s, GRAVITY 10.0 | `#define` | `code/globals.h` |
+
+---
+
+<!-- from P14_platform_lib -->
+## Constants table (this partition)
+
+| Constant | Value | Kind | Evidence |
+|---|---|---|---|
+| `APP_NAME` | "Multiwinia" | `#define` | `code/lib/universal_include.h` |
+| `DARWINIA_VERSION` / `APP_VERSION` | "dev" | `#define` | same |
+| `DARWINIA_EXE_VERSION` | 6,0,0,0 | `#define` | same |
+| `DARWINIA_GAMETYPE` (FULL) | "multiwinia" | `#define` | same |
+| `GRACE_TIME` | 3.0 s (20.0 s testbed) | `#define` | same |
+| `USE_PENTIUM_COUNTER` | 0 | `#define` | `code/lib/hi_res_time.cpp` |
+| `APP_RAND_MAX` | 32767 | `#define` | `contrib/systemiv/lib/math/random_number.h` |
+| LCG multiplier / increment | 214013 / 2531011 | literal | `random_number.cpp:AppRandom` |
+| MT19937 N, M, MATRIX_A, UPPER/LOWER masks | 624, 397, 0x9908B0DF, 0x80000000, 0x7FFFFFFF | `#define` | `random_number.cpp` |
+| MT init multiplier; default seed for −1 | 1812433253; 5489 | literal | `random_number.cpp:syncrandseed` |
+| MT tempering masks | 0x9D2C5680, 0xEFC60000 | literal | `random_number.cpp:_syncrand` |
+| syncfrand divisor | 4294967296.0 | literal | `random_number.cpp:_syncfrand` |
+| TRACK_SYNC_RAND log cap | 100000 entries | `static int` | `random_number.cpp` |
+| `RandomNormalNumber` samples | 12 | literal | `random_number.cpp` |
+| `FileCRC` MAXSIZE | 100000 bytes | `#define` | `contrib/systemiv/lib/math/filecrc.cpp` |
+| CRC32 polynomial / init | 0xEDB88320 / 0 (no xorout) | literal | `contrib/unrar/crc.cpp:InitCRC`, `filecrc.cpp` |
+| Text separators | `" \t\n\r:,"`; UTF-16 `L" \f\t\n\r:,"` | `#define DEFAULT_SEPERATOR_CHARS` | text/unicode stream readers |
+| Initial line buffer / max line | 128 / 65536 chars | `#define INITIAL_LINE_LEN`, assert | same |
+| Encryption marker / offsets | "redshirt2"; {31,7,9,1,11,2,5,5,3,17,40,12,35,22,27,2} | literal / `static unsigned int[]` | `text_file_writer.cpp`, `text_stream_readers.cpp` |
+| UTF-16 BOMs | FF FE (LE), FE FF (BE) | literal | `unicode_text_stream_reader.cpp` |
+| Language limits | 1024 phrase chars; 64 marker key; 96 final key | `#define` | `code/lib/language_table.cpp` |
+| Language mode suffixes | `_kbd`, `_xin`; prefix `part_` | literal | same |
+| Directory limits | 1024 data items; 10240 string length | `#define DIRECTORY_MAXDIRSIZE/MAXSTRINGLENGTH` | `contrib/systemiv/lib/tosser/directory.cpp` |
+| Directory markers | '<' / '>' (1 byte) | `#define` | same |
+| Directory type ids | 0 UNKNOWN,1 INT,2 FLOAT,3 CHAR,4 STRING,5 BOOL,6 VOID,7 FIXED,8 INTS,9 ULLONG,10 UNICODE | `#define` | `directory.h` |
+| Directory safe values | −1, −1.0f, '?', "[SAFESTRING]", L"[SAFESTRING", false, (ull)−1 | `#define` | `directory.h` |
+| PackedInt escape | 255 | literal | `contrib/systemiv/lib/network_stream.cpp:WritePackedInt` |
+| HashTable initial size / max | 4 / 65536 | literal/assert | `hash_table.cpp` |
+| HashTable hash case mask | 0xDF | literal | `hash_table.cpp:HashFunc` |
+| Profiler frame-time history | 200 frames | literal | `profiler.cpp:Advance` |
+| `PROFILE_HISTORY_LENGTH` | 10 (unused) | `#define` | `profiler.cpp` |
+| Crash handler stack dump / code bytes | 3072 DWORDs / 16 bytes / 4 columns | `const int` | `exception_handler.cpp` |
+| hprintf buffer | 8192 chars | `#define` | same |
+| Crash file names | CRASH.DMP, ERRORLOG.TXT, REGISTRY.TXT, MultiwiniaSupport.exe | `#define` | `contrib/XCrashReport/CrashFileNames.h` |
+| App magic passed to support tool | "0B9432AF" | literal | `code/main.cpp:AppMain` |
+| Thread affinity masks | main 0xAA; workers 0x55 | literal | `code/app.cpp`, `code/loading_screen.cpp`, `code/lib/opengl_directx.cpp` |
+| Loading-screen job frame budget | 1/60 s | literal | `code/loading_screen.cpp` |
+| Language-table deferred delete | 5 frames | literal | `code/app.cpp:SetLanguage` |
+| Archive max files | 16384 | `#define MAX_FILES` | `contrib/unrar/unrar.h` |
+| keygen | seed 28477717, 1710 rounds, sysinfo 184–500 B, userinfo 28–200 B | literal | `code/keygen.cpp` |
+| Auth key length | 31 chars (+NUL = 32) | `#define AUTHENTICATION_KEYLEN` | `contrib/systemiv/lib/metaserver/authentication.h` |
+| Prefs float precision on save | 2 decimals | format | `code/lib/preferences.cpp:SaveItem` |
+| ShapeExporter position merge threshold | (0.001)² | literal | `tools/ShapeExporter/ShapeExporter.cpp:LookupPosition` |
 
 ---
 

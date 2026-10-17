@@ -106,6 +106,17 @@
 | `code/lib/input/control_types.inc` comments | `CameraRotate` "rotate the cam in entity track mode"; `WeaponCycle*` "cycle weapons" | no consumer in the FULL build [C] |
 | `code/lib/input/control_bindings.cpp` comment | ControlBindings::replacePrimaryBinding | commented out; replace is a flag on `bind` [C] |
 
+<!-- from P11_terrain_world -->
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | 
+|---|---|---|
+| `docs/landscape lightmap.txt` | Landscape has `GenerateLightMap/ApplyLightmap/DeleteLightMap`: ray-cast shadows from a point light at (700,200,100), shade 255/50, optional 5×5 smoothing, texture | No such functions; terrain is only GL vertex-lit; the sole "lightmap" is the water shore mask (`Water::GenerateLightMap`). Only `LIGHTMAP_SCALEFACTOR` survives |
+| `docs/OpenGLState.txt` | Fog start 800, end 2000, colour = world background | `Location::SetupFog`: start = end/3, end = max(4000, size+1000) |
+| `docs/sphere world.txt`, `docs/top level map.txt` | Top-level sphere map is the hub between islands | Present in code but unreachable in Multiwinia (`GlobalWorldGameLoop` exits immediately); menu shows only clouds |
+| `code/water.h` header comment | sea plane twice the land size, depth darkens and shrinks waves | Matches; plus deep water is not drawn at all (flat tiles and dynamic verts culled where depth ≥ 1 / > 0.999) |
+| `code/level_file.cpp:ParseLights` comment | mission-file lights take precedence over map lights | Mission files cannot contain `Lights` (asserted and skipped) |
+
 <!-- from P12_render_core -->
 ## Docs-vs-code discrepancies
 | Doc | Doc says | Code does | Ref |
@@ -140,6 +151,26 @@
 | `random_number.h` comment: `_syncsfrand` "-range < result < range" | returns `(syncfrand(1) − 0.5)·range` ∈ [−range/2, range/2) | `random_number.cpp:_syncsfrand` |
 | `Matrix33/34::DecomposeToYDR()` comment "x = dive, y = yaw, z = roll" | returns (yaw, dive, roll) | matrix files |
 | `window_manager_win32.cpp` comment: secondary GL context "for loading thread" | never made current; no loading-thread GL use | `code/lib/window_manager_win32.cpp:WindowManagerWin32::EnableOpenGL` |
+
+<!-- from P14_platform_lib -->
+## Docs-vs-code discrepancies
+
+| Doc | Claim | Code reality |
+|---|---|---|
+| `README.TXT` | 6 configurations incl. "PC OpenGL (Release) produces darwinia_gl.exe" and "PC OpenGL (ReleaseDirect3D) produces darwinia.exe" | The vcproj has 4 configs; the sln adds `PC OpenGL (Debug)`/`(Release)` solution configs mapped to `Debug`/`Release`; no "PC OpenGL (ReleaseDirect3D)" [C] `targets/vs2005/Darwinia.sln` |
+| `README.TXT` | "Debug and Release build Darwinia to use the OpenGL engine" | correct, but the product is Multiwinia (`APP_NAME`) |
+| `tools/readme-linux.txt` | prefs in `~/.darwinia/demo` or `~/.darwinia/full` | Multiwinia Linux path is `~/.multiwinia/<DARWINIA_GAMETYPE>/` [C] `code/app.cpp:GetProfileDirectory` |
+| Installers `[UninstallDelete]`, `MultiwiniaSupport.ini` | user files in `{app}` | written to `%LOCALAPPDATA%\Introversion\Multiwinia\` on Win2000+ unless `--NoProfile` [C] `code/app.cpp:GetProfileDirectory` |
+| `MultiwiniaSupport.ini`, installers | files `userprefs.txt`, `game-history.txt`, `stdout.txt` | no code in `code/` or `contrib/systemiv/lib` writes these names [C grep] (likely autopatcher/old versions) |
+| `docs/vista installer check list.txt` | `TARGET_VISTA`, `ReleaseD3D`, `DarwiniaSupport.ini/.exe` | `TARGET_OS_VISTA`, `ReleaseDirect3D`, `MultiwiniaSupport.*` |
+| `docs/RussianFontRequest.txt` | only Speccy has Cyrillic | Cyrillic pages exist for editor, speccy, square in `data/textures/unicode/` |
+| `tools/language/README.txt` | inputs must be UCS-2 BE | `data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts both, report.pl only BE |
+| `contrib/systemiv/lib/math/random_number.h` comments | `AppRandom` < APP_RAND_MAX; `sfrand`, `syncsfrand` in (−range, range) | `AppRandom` ≤ 32767 inclusive; `sfrand`/`syncsfrand` ∈ [−range/2, range/2] (§22.R.1) |
+| `contrib/systemiv/lib/filesys/text_stream_readers.cpp` comment | "Returns 0 on EOF, 1 otherwise" | `TextDataReader` returns false on the last line when it lacks a newline |
+| `tools/FindUnusedResources.sh` | must run from `Darwinia` folder | repo folder is `multiwinia` |
+| `docs/cpu cycles.txt` | (requested as performance notes) | it is a gameplay design document (task manager/gestures), no performance data |
+| `docs/Network.txt` | server ticks at 25 FPS | not verified in P14 (see P15: `code/gametimer.h`) |
+| `targets/vs2005/GDF/*.gdf.xml` (compiled into exe) | "Darwinia" 1.5.4.0, `darwinia.exe`, saved games `Darwinia\users` | product is Multiwinia `multiwinia.exe`; Game Explorer metadata stale |
 
 <!-- from P15_network -->
 ## Docs-vs-code discrepancies

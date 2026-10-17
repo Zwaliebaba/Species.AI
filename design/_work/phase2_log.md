@@ -75,3 +75,12 @@
 - Critical: Darwinians watching a launching rocket take facing from wall clock (g_gameTime from GetHighResTime) → probable desync; Harvesters appear to collect any team's souls (no team check) → Darwinians at own spawns; grid shortcuts ignore range (cache ignores requested range; presence checks use cell capacity) → exact queries play differently.
 
 ## Phase 3 started (early): S07 (07_ai), S27 (27_audio_engine), S28 (28_ui_framework), S02 (02_units_and_entities), S04 (04_crates_powerups_and_weapons). Class→doc assignment: _work/class_assignment.csv.
+
+## P06_buildings_core — done
+- Building base (members, virtuals, ports/reservation counters, capture summary, damage, level-line format), 75-value type enum (+15 sub-enum) with class/blocked/forced-global/map counts, factory, 39-entry blocked list; spawn network; GunTurret 5 types (+crate turret); Teleport/RadarDish; JumpPad; power network; CarryableBuilding; ControlTower; Incubator; Portal ("The Beast"); legacy. Spawn economy: exact capture algorithm, 30 s activation delay, every cap rule, burst/pause spawn formula with handicap, table of 32 official levels with spawn points. 38 classes/structs, 9 diagrams. [U]=11.
+- Critical: per-team pop cap = PopulationCap / NumPlayers (level file), not actual playing teams; co-op maps mp_domination_4P_2 and mp_koth_4P_3 have no spawn cap; which Team::m_others count toward cap; GetNetworkTime vs GetGameTime same synced clock? each building once per 0.1 s tick?
+
+## P10_input_camera — done
+- 10 input drivers (9 registered; pipe driver never registered), stub filters, 10 conditions, 27 XInput controls, formal binding grammar, file layering/locales; all 164 control types with default KB/M + XInput bindings (scripts/P10_bindings.py re-implements parser; drafts/P10_input_camera_bindings.csv, P10_input_camera_preflines.csv); camera 15 modes + 3 debug, mount/animation playback SM, mount census; projection/frustum; control help (29 conditions, 11 icons, 4 panels; never displays in MW); ~95 constants; 12 docs-vs-code. [U]=6.
+- Critical: InsertionSquad::DirectControl reads local m_camLookAround while applying networked controls (confirmed desync path); unknown condition words silently = "down" (4 live bindings depend on it); analogue trigger value overflows a byte; XInput dead-zone constants from SDK headers; some rebinds save unreadable strings; squad camera zoom-out never moves at normal fps (integer distance).
+## Phase 3 launched: S03, S05, S06

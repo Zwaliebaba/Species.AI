@@ -190,6 +190,28 @@
 | Camera mount naming convention `player0..3`, `start`, `CamPosBefore` and Darwinia mount names (`intro*`, `outro*`, `attract*`, `tutorial*`, …) | level data | `data/levels/*.txt`; `code/level_file.h` | `spawn_view_<n>`, `default_view`, `previous_view` |
 | Weapon/unit names in hints (Squad, Engineer, Armour, Officer, grenade, rocket, airstrike) | names (generic but Introversion phrasing) | `code/control_help.cpp` | reuse own unit names |
 
+<!-- from P11_terrain_world -->
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" in file-format keywords (`MultiwiniaOptions_StartDefinition`), class names | brand | `code/level_file.cpp:ParseMultiwiniaOptions` | `MatchOptions` block |
+| "Darwinian" (research type 0, level/instant-unit type names) | name | `code/global_world.cpp:GlobalResearch::GetTypeName` | "Unit" |
+| "Futurewinian" (`futurewinianteam` option) | name | `code/level_file.h` LevelOption 12 | "alien faction" |
+| Dr Sepulveda face images and cheat (`ShowDrSFace`) | character / art | `data/sepulveda/sepulveda1..5.bmp`, `code/clouds.cpp:RenderFace` | drop |
+| Map file names and IDs (`mp_koth_2P_1` …, `MAPID_*`, `level_enum.txt`) | name | `data/levels/*`, `code/mapcrc.h` | `map_<mode>_<n>` (X4 catalogue) |
+| Darwinia location names: sandbox, garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad | name | `data/game*.txt`, `data/locations.txt`, `map_*`/`mission_*` | `region_01` … `region_12` |
+| Terrain colour ramps (23): landscape_beach, containment, dark, default, desert, earth, field, firetop, icecaps, icecaps_peaked, jailbreak, launchpad, marble, marble2, mine, mine2, ridges, shrine, silver, stronghold, trippy, volcanic, volcanicplain | art | `data/terrain/landscape_*.bmp` | new 64×64 ramps `ramp_<theme>` |
+| Water textures (4): water_default, icecaps, launchpad, yellow | art | `data/terrain/water_*.bmp` | new tileable textures |
+| Wave colour tables (9): waves_containmentfield, default, desert, dull, earth, generator, icecaps, launchpad, yellow | art | `data/terrain/waves_*.bmp` | new 1-D gradients |
+| Sky/cloud/grid textures: clouds.bmp, laser.bmp, triangleoutline.bmp, glow.bmp, starburst.bmp, laserfence2.bmp | art | `data/textures/` | new textures |
+| Global-world shapes: globalworld_outer/middle/inner.shp, trunkport.shp | art | `data/shapes/` | drop (legacy) |
+| "redshirt2" text-file cipher marker | text | `contrib/systemiv/lib/filesys/text_stream_readers.cpp:CleanLine` | new or none |
+| Research/crate type names that are distinctive: "TaskManager", "PersonalShield", "HotFeet", "MagicalForest", "DarkForest", "AntNest", "Rage", "Shaman", "Subversion" | name | `GlobalResearch::GetTypeName`, `Crate::GetName` | generic ability names |
+| Game type names "KingOfTheHill", "CaptureTheStatue", "RocketRiot", "Blitzkrieg", "Domination", "Assault", "TankBattle" | name (low risk, partly generic) | `data/multiwinia.txt` | `mode_hill`, `mode_relic`, `mode_race`, … |
+| Darwinia lore concepts used by global world: spirits, "heaven", digital islands, trunk ports | concept / text | `code/global_world.cpp`, `code/global_internet.cpp` | neutral meta-map or drop |
+| Language keys `location_%s`, `researchname_%s`, `research_%s_v%d`, `objective_research`, `objective_capture_trunk` | text ids | `code/global_world.cpp`, `code/level_file.cpp` | new string table |
+
 <!-- from P12_render_core -->
 ## IP register
 | Item | Kind | Where (ref) | Neutral placeholder |
@@ -221,6 +243,27 @@
 | `iv_` prefix ("Introversion") on numeric wrappers | naming | `universal_include.h`, `math_stubs.cpp` | `det_` / `dmath::` |
 | Shader file names `FixedFunc0/1/2(.vs, Maps.ps)` and `globals.h` content | asset (code-like) | `data/shaders/` | rewrite; names are generic |
 | Third-party (not Introversion, but licence-relevant): MT19937 (Matsumoto/Nishimura BSD notice) in `math_utils.cpp`; "AVIGenerator" by Jonathan de Halleux (CodeProject) in `avi_generator.*` incl. its error strings ("…Come on, join the 21th century!"); `math_stubs.cpp` "Copyright 2007 Ambrosia Software"; comp.graphics FAQ 1.03 segment/ray algorithm; Möller–Trumbore ray/triangle | third-party code/text | as listed | use standard libraries / own implementations |
+
+<!-- from P14_platform_lib -->
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia" product names, `APP_NAME`, `DARWINIA_*` macro names, `darwinia*.exe` | brand | `code/lib/universal_include.h`, `targets/vs2005/*`, `tools/*.bat` | `GAME_NAME`, `game.exe` |
+| "Introversion Software", web/support URLs (`introversion.co.uk`, `multiwinia.co.uk`, `darwinia.co.uk`, `crashreports.introversion.co.uk`, metaserver host) | brand | `targets/vs2005/version.rc`, installers, `MultiwiniaSupport.exe`, `code/app.cpp:InitMetaServer` | "Studio", `example.com` |
+| Ambrosia Software, Buka, eGames/Cinemaware Marquee (distributors), Logitech G15, amBX | brand (third-party) | targets/macosx, installers, exclusion lists | omit |
+| Dr Sepulveda, Protologic 68000, "Future War"/"Futurewar Shape Format", story documents | name/text | `docs/sepulveda_interview.txt`, `docs/story material.txt`, `tools/ShapeExporter/ShapeExporter.cpp:LongDesc` | omit / "Shape format v1" |
+| `"redshirt2"` encryption marker | text | `text_file_writer.cpp` | own marker (or drop obfuscation) |
+| UI/language strings (`data/language/*`, `LANGUAGEPHRASE` keys such as `multiwinia_enterauthkey`, `error_parental`) | text | `data/language/*.txt` | new string table |
+| Fonts `speccy`, `square`, `editor` font pages; `verdana-bold.bmp` in animator.dat | art | `data/textures/unicode/*`, `animator.dat` | licensed/open fonts |
+| Icons/box art: `darwinia.ico`, `DarwiniaVista.ico`, `GDF/*/boxart_*.png`, `gameicon_*.ico`, `Multiwinia.icns`, `darwinia.png`, NSIS `darwinia.bmp`/`header.bmp`, Loki `splash.xpm` | art | targets/, tools/, root | new art |
+| Sound lists naming assets (`mwsounds/*`, `sounds/*`, menu ambience) | audio | `tools/sounds.txt`, `tools/menu_sounds.txt` | new audio set |
+| Licensed retro music (Trash80, Tresk, DMA SC, Two Ataris…) | audio (third-party) | `docs/retro music.txt`, exclusion lists | do not reuse |
+| EULAs (`EULA.txt`, `docs/IntroversionEULA.txt`, Buka EULA, NSIS `licence.txt`) | text | root/docs/tools | own licence |
+| Beta tester handles/e-mails | personal data | `docs/betatesters.txt` | never reproduce |
+| Developer names in credits/comments (Mac port credits, "Hack by Chris", Bruce Dawson/Hans Dietrich headers) | name | targets/macosx rtfs, code comments | omit |
+| Third-party code: MT19937 (BSD-style notice), XCrashReport/ExceptionHandler (public domain/Dawson), GetWinVer/MiniVersion (Dietrich, public domain), auto_vector (Reliable Software), unrar (RARLAB licence), NSIS samples, Loki Setup | third-party | files listed | use standard libraries (`std::mt19937`, `minidumpwriter`, `std::vector<std::unique_ptr>`) |
+| Map ID names (`MAPID_MP_KOTH_2P_1` etc.) | name (level names) | `code/mapcrc.h`, inclusion lists | new map names |
 
 <!-- from P15_network -->
 ## IP register
