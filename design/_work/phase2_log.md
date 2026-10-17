@@ -271,3 +271,7 @@
 
 ## Fix F8 (25, 28, 29, 31, 32) — done: 41 findings (36 accepted incl. 2 self-found, 2 partly, 4 unchanged, 0 rejected); all 19 R8 gaps closed; checks clean
 - 25 regenerated (new §1.5 catalogue method replaces _work evidence; globalworld meshes FULL; MasterSpawnPoint 32 placements; CreditsLoader LEGACY; thumbnails/default.bmp LEGACY; 117 8-bit + 1 RLE8). 28 colour-request rule, loaded phrase counts, Grabber DEAD. 29 TankBattle compiled-in-not-permitted, ambx installers, commented-only icons, thumbnail fallback, _work refs removed. 31 47-file list inlined §7.4, Grabber DEAD, 31-U11 closed. 32 testbedconfig.txt ships (23 fields), H1/H18/slice formula. Requests for 09, 26, 41, 90, 23, 24 in F8.md.
+
+## Fix F2 (02, 04) — done: 31 accepted, 2 partly, 0 rejected, 8 n/a; checks clean
+- Shockwave 02 §2.7 ring 39, 10-wide band, 2–3 hits; Bang table recomputed (R2's own size 1.0/0.25 values were wrong — replay 39→75, 39→43). Difficulty writer added (no desync per V1; only speed scales). 02: immunity bypass (conversions, creature contact), dead IsInvincible, spawn-front rule, m_spawnPoint, 151-tick hold, corpse-fade truncation, NEXTWEAPON no-op (V2), AI table (V6), SpaceShip 244 decision. 04: rocket 8 or 9 moves (slot rule), full shield list, four new outcome tables, casing axis, max(1, life). 04-U2, 04-U6 closed; 04-U1 cites data.
+- Requests: 26 shockwave ring values, 03 turret self-destruct, 06 dish link, 21 fade formula, 41 resolved items, 07 optional.
