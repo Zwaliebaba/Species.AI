@@ -104,10 +104,17 @@ def resolve_text(p):
             parts.append(f'({a}) {rr}')
     return ' · '.join(x for x in parts if x)
 
+import difflib
 def question_text(p):
     q = byid[p]['question']
     if byid[p].get('why'):
         q += f" *Why it matters:* {byid[p]['why']}"
+    for a in sorted(alsos[p]):
+        qa = byid[a]['question']
+        if byid[a]['doc'] == '00' or not qa:
+            continue                      # 00 rows are explicit summaries of the owners' items
+        if difflib.SequenceMatcher(None, q.lower()[:300], qa.lower()[:300]).ratio() < 0.6:
+            q += f' · *As raised in {a}:* {qa}'
     return q
 
 def ids_text(p):

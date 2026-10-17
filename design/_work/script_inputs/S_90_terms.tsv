@@ -626,3 +626,16 @@ Keep / Adapt / Replace / Drop (verdicts)	engine	The four carry-forward verdicts 
 INTERNAL_STUDY (licence posture)	engine	The licence posture of this set: source and data may be studied and quoted in short marked excerpts (≤ 15 lines), but nothing that is Introversion IP may ship in the new game.	40:6;41:	no
 TARGET_FOR_NEW_GAME	engine	The target platform of the new game: Windows, C++23, DirectX 12, multiplayer.	40:3	no
 D<nnn> / IP<nn> (register ids)	abbreviation	Entry identifiers of 41's registers: docs-vs-code discrepancy rows (D…) and IP replacement categories (IP01–IP50).	41:	no
+# ---- Extra engine vocabulary ----
+NUM_SLICES_PER_FRAME	engine (build macro)	`#define` 10 in `code/globals.h`: the number of slices one simulation tick is split into.	20:10.3;21:5.4	no
+Main loops	engine	The busy loops on the main thread: the outer `RunTheGame`, `MainMenuLoop` for front end and lobby, `LocationGameLoop` for the in-match frame (input, network, simulation slices, render) and the loading-screen loop.	20:9	no
+GL job (main-thread hand-off)	engine	A `Job` a worker thread queues on the loading screen when it needs the GPU; the main thread runs it and the worker waits.	20:11.4	no
+START_GAME	engine	The lobby letter that starts a match on every peer: loading begins on a worker thread, the game timer is reset to speed 0 and buffered frames are caught up afterwards; the server relays only the first one of its lifetime.	22:8.5	no
+Session	engine	One hosted or joined network game from connection through lobby, matches and leaving; the lifetime class between process and match.	22:8;20:8.1	no
+Fixed-function pipeline	engine	OpenGL 1.1–1.3 rendering without programmable shaders (immediate mode, display lists, client vertex arrays, texture environment modes), the style the whole renderer is written in; emulated with HLSL in the D3D build.	24:1.3;40:3	no
+Voice (channel)	engine	One playback channel of the sound back-end; with DirectSound the effect channels number `min(SoundChannels preference, 64) − 1` (fewer with hardware 3-D), and sound instances compete for them by priority.	27:5;10:9	no
+AI priority (AITarget)	engine	The per-team value of an AI graph node, recomputed every 2 s by a mode-specific formula (standard, CTS, Assault and Blitzkrieg diffusion, Rocket Riot); CPU teams send officers and crowds toward high-priority nodes.	07:5	no
+Front end	player concept	All screens outside a match: title, mode and map selection, lobby, server browser, Help and Options, credits; driven by `GameMenu` and `GameMenuWindow` pages.	09:2	no
+Page (front-end page)	engine	One numbered state of `GameMenuWindow` (for example `PageMain` 0, `PageGameSetup` 6) with its own set-up, widgets and teardown.	28:6.2;09:3	no
+Profile directory (`<P>`)	engine	The per-user data folder (`%LOCALAPPDATA%\Introversion\Multiwinia\`, or the working directory with `--NoProfile`) holding preferences, keys, logs and dumps.	31:5.2	yes → `<STUDIO>\<GAME_TITLE>\`
+Shape shattering	engine	The explosion effect that breaks a destroyed mesh into tumbling triangles (`ExplosionManager`).	26:8	no

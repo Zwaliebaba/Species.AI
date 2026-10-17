@@ -84,7 +84,7 @@
 06-U2	L — input: trigger byte overflow	Open		
 06-U3	L — input: binding description strings	Open		
 06-U4				21-U4
-06-U5	H — determinism: camera state read by simulation code	Resolved	Only two simulation-side camera uses exist — L1 (squad direct control, live) and L18 (`ScriptTrigger`, blocked) — by the scripted classification of 1 941 local-state references ([22](22_determinism_and_networking.md) §14.11, `_work/drafts/X3_local_state_refs.csv`) [C grep + spot checks].	
+06-U5	H — determinism: camera state read by simulation code	Resolved	The only simulation-side camera uses found are L1 (squad direct control, live) and L18 (`ScriptTrigger`, blocked); the remaining camera reads were classified as render, LOD or sound uses by spot checks and the scripted classification of 1 941 local-state references ([22](22_determinism_and_networking.md) §14.11, `_work/drafts/X3_local_state_refs.csv`) [C grep + spot checks].	
 06-U6	L — input edge loss across loops	Open		
 06-U7				22-U8
 06-U8				02-U6
