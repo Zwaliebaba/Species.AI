@@ -240,7 +240,7 @@ EV = {
     ('EscapeRocket', 'Refueling'): ('refuelling', 'the refuelling loop of the vessel\'s sound selection'),
     # Control Zone
     ('MultiwiniaZone', 'Create'): ('spawn', 'initialisation; the presence loop'),
-    ('MultiwiniaZone', 'ChangeTeam'): ('owner_changed', 'the zone\'s owner changes (R-AUD-028)'),
+    ('MultiwiniaZone', 'ChangeTeam'): ('owner_changed', 'the owner of the zone or Flag post changes (R-AUD-027)'),
     ('MultiwiniaZone', 'CaptureStatue'): ('relic_scored', 'a Relic is delivered into the zone'),
     # Relic
     ('Statue', 'Create'): ('spawn', 'a Relic appears (not during the grace period)'),
@@ -302,8 +302,8 @@ EV = {
     ('Ambience', 'EnterLocation'): ('match_enter', 'every match start; stopped when the match loop exits'),
     ('Ambience', 'ExitLocation'): ('match_exit', 'after the match loop exits'),
     # match UI
-    ('MultiwiniaInterface', 'CountdownTick'): ('countdown_tick', 'the grace countdown and the match clock (R-AUD-350 to R-AUD-353)'),
-    ('MultiwiniaInterface', 'CountdownZeroTick'): ('countdown_zero', 'the grace countdown reaches 0; the match clock reaches time-up'),
+    ('MultiwiniaInterface', 'CountdownTick'): ('countdown_tick', 'the grace countdown and the match clock (R-AUD-310, R-AUD-312)'),
+    ('MultiwiniaInterface', 'CountdownZeroTick'): ('countdown_zero', 'the grace countdown reaches 0 (R-AUD-311); time-up (R-AUD-313)'),
     ('MultiwiniaInterface', 'SelectionCircle'): ('selection_circle', 'the player starts growing a selection circle; stopped when it ends'),
     ('MultiwiniaInterface', 'LobbyAmbience'): ('lobby_bed', 'the front end is built; stopped when the front end exits'),
     ('MultiwiniaInterface', 'MenuRollOver'): ('menu_hover', 'focus or the pointer enters a menu control'),
@@ -314,7 +314,7 @@ EV = {
     ('MultiwiniaInterface', 'MouseError'): ('error', 'an invalid click'),
     ('MultiwiniaInterface', 'ToggleUnitState'): ('toggle_state', 'a click on an own selected Transport or Leader'),
     ('MultiwiniaInterface', 'ChatMessage'): ('chat_message', 'a chat line arrives in the lobby or in a match'),
-    ('MultiwiniaInterface', 'GameOver'): ('game_over', 'a result is declared'),
+    ('MultiwiniaInterface', 'GameOver'): ('game_over', 'a result is declared (R-AUD-314)'),
     ('MultiwiniaInterface', 'YouWon'): ('victory', 'the declared winner is the local team'),
     ('MultiwiniaInterface', 'YouLost'): ('defeat', 'the declared winner is another team, or a draw'),
 }
@@ -457,10 +457,11 @@ FXID = {('Virii', 'LoseHealth'): 'FX-01', ('Virii', 'Die'): 'FX-02', ('Squadie',
 
 
 def db(v):
-    x = 5.0 * (float(v) - 10.0)
-    s = '%.1f' % x
-    if s == '-0.0':
-        s = '0.0'
+    x = round(5.0 * (float(v) - 10.0), 2)
+    s = '%.2f' % x
+    s = s.rstrip('0').rstrip('.')
+    if s in ('-0', ''):
+        s = '0'
     return s.replace('-', '−')
 
 
@@ -536,8 +537,36 @@ def envelope(f):
     return '; '.join(out)
 
 
+SILENT_STATUS = {
+    # Resolved bindings of events that the reference leaves silent
+    'laser_bolt.spawn': 'bound: new group (DEC-564)',
+    'laser_bolt.hit_structure': 'bound: new group (DEC-564)',
+    'laser_bolt.kill': 'bound: new group (DEC-564)',
+    'trooper.throw_grenade': 'bound: new group (DEC-097)',
+    'match_ui.game_over': 'bound: new game-over announcement (DEC-097)',
+    'match_ui.victory': 'bound: `music.match.sting_victory`, 2d, announcer bus (DEC-097, DEC-049)',
+    'match_ui.defeat': 'bound: `music.match.sting_defeat`, 2d, announcer bus (DEC-097, DEC-049)',
+}
+DEC565 = {
+    'supply_crate.expired', 'turret.target_sighted', 'turret.fire_rocket', 'barrier_emitter.electrocute',
+    'relic.lift', 'relic.carry', 'transport.load_worker', 'transport.unload_worker', 'leader.order_follow',
+    'leader.order_none', 'spider.pounce_land', 'centipede.grow', 'centipede.panic', 'centipede.enemy_sighted',
+    'reaper_serpent.panic', 'spitter_plant.launch', 'transit_gate.online', 'transport.selected',
+    'builder.selected', 'collector.selected', 'power_slots.select', 'power_slots.selection_set',
+    'power_slots.selection_cleared', 'match_ui.order_given', 'builder.drop_essence', 'collector.hurt',
+    'collector.die', 'bomber.hurt', 'bomber.die', 'barrage_missile.hurt', 'barrage_missile.die',
+    'meteor.hurt', 'meteor.die', 'ambience.match_exit',
+}
+# Species no-team layers (DEC-097): (event id) -> layer row values
+NOTEAM = {
+    'control_zone.owner_changed': ('sfx.building.control_zone.owner_changed_b', 'att \u00b7 once \u00b7 none', '300', '0'),
+    'relic.owner_changed': ('sfx.building.relic.owner_changed', '2d \u00b7 once \u00b7 none', '100', '\u221210.15'),
+}
+
+
 def main():
-    src_csv, manifest, out_md, out_rep = sys.argv[1:5]
+    import json
+    src_csv, manifest, out_json, out_rep = sys.argv[1:5]
     rows = list(csv.DictReader(open(src_csv, newline='', encoding='utf-8')))
     man_ids = []
     for r in csv.DictReader(open(manifest, newline='', encoding='utf-8')):
@@ -545,21 +574,13 @@ def main():
         if a.split('.')[0] in ('sfx', 'amb', 'music') and a not in man_ids:
             man_ids.append(a)
     bound_assets = Counter()
-    lines = []
-    rep = []
-    stats = Counter()
-    per_source = OrderedDict()
-    for key in SOURCES:
-        per_source[key] = {'live': [], 'silent': []}
-    unmapped = []
-    dropped = []
+    per_source = OrderedDict((k, {'live': [], 'silent': []}) for k in SOURCES)
+    unmapped, dropped = [], []
     for r in rows:
         key = (r['group'], r['object_type'])
-        if key not in SOURCES:
+        if key not in SOURCES or r['fired_in_FULL'] != 'yes':
             continue
-        live = r['fired_in_FULL'] == 'yes'
-        if not live:
-            continue
+        src = SOURCES[key][0]
         if r['object_type'] == 'CratePowerup':
             if r['event'] not in OUTCOMES:
                 continue
@@ -577,77 +598,53 @@ def main():
                 continue
             else:
                 sev, trig = EV[evkey]
-        if r['in_data'] == 'yes':
-            per_source[key]['live'].append((sev, trig, r))
-        else:
-            per_source[key]['silent'].append((sev, trig, r))
-    md = []
+        full = sev if '.' in sev else '%s.%s' % (src, sev)
+        per_source[key]['live' if r['in_data'] == 'yes' else 'silent'].append((full, trig, r))
+    out = {'tables': OrderedDict(), 'silent': [], 'summary': []}
+    total_layers = 0
     for key, d in per_source.items():
         src, kind, title = SOURCES[key]
-        if not d['live']:
-            continue
-        md.append('SOURCE %s | %s | %s | %d events' % (src, kind, title, len(d['live'])))
-        md.append('')
-        md.append('| Event | Raised when | Sample group | Playback | Min (wu) | Level (dB) | Pitch (×) | Envelope and loop (s) | Effect |')
-        md.append('|---|---|---|---|---|---|---|---|---|')
-        for sev, trig, r in d['live']:
+        lines = []
+        for full, trig, r in d['live']:
             blocks = [parse_block(t) for t in r['blueprint'].split('||')]
             for i, b in enumerate(blocks):
                 aid = ASSET.get(b['name'])
                 if src == 'crate_outcome':
-                    aid = 'sfx.crate.outcome.' + sev
+                    aid = 'sfx.crate.outcome.' + full.split('.', 1)[1]
                 if aid is None:
                     unmapped.append(('asset', b['name']))
                     aid = '??'
                 bound_assets[aid] += 1
                 f = b['fields']
-                stats['blocks'] += 1
-                stats['pos_' + b['pos']] += 1
-                stats['loop_' + b['loop']] += 1
-                stats['inst_' + (b['inst'] or 'poly')] += 1
-                stats['team_' + (b['team'] or 'all')] += 1
-                stats['md_%s' % f.get('md')] += 1
                 fx = ''
                 if 'fx' in f:
                     fx = '%s %s' % (FXID[(r['object_type'], r['event'])], FXNAME[f['fx']])
-                    stats['fx'] += 1
-                ev = '`%s.%s`' % (src, sev) if i == 0 else '″ layer %d' % (i + 1)
-                tr = trig if i == 0 else ''
-                md.append('| %s | %s | `%s` | %s | %s | %s | %s | %s | %s |' % (
-                    ev, tr, aid, playback(b), num(f.get('md', '100')),
-                    parse_spec(f['v'], True) if 'v' in f else '−15.0',
+                ev = '`%s`' % full if i == 0 else '\u2033 layer %d' % (i + 1)
+                lines.append('| %s | %s | `%s` | %s | %s | %s | %s | %s | %s |' % (
+                    ev, trig if i == 0 else '', aid, playback(b), num(f.get('md', '100')),
+                    parse_spec(f['v'], True) if 'v' in f else '\u221215.0',
                     parse_spec(f['f'], False) if 'f' in f else '',
                     envelope(f), fx))
-        md.append('')
-    # silent events
-    md.append('SILENT')
-    md.append('')
-    md.append('| Event | Raised when |')
-    md.append('|---|---|')
-    nsil = 0
-    for key, d in per_source.items():
-        src, kind, title = SOURCES[key]
-        for sev, trig, r in d['silent']:
-            full = sev if '.' in sev else '%s.%s' % (src, sev)
-            md.append('| `%s` | %s |' % (full, trig))
-            nsil += 1
-    md.append('')
-    open(out_md, 'w', encoding='utf-8').write('\n'.join(md) + '\n')
-    rep.append('SUMMARY')
-    for key, d in per_source.items():
-        src, kind, title = SOURCES[key]
-        nb = sum(len(r['blueprint'].split('||')) for _s, _t, r in d['live'])
-        rep.append('| `%s` | %s | %s | %d | %d | %d |' % (src, title, kind, len(d['live']), nb, len(d['silent'])))
-    rep.append('live pairs: %d' % sum(len(d['live']) for d in per_source.values()))
-    rep.append('silent pairs: %d' % nsil)
-    rep.append('stats: %s' % dict(stats))
-    rep.append('unmapped: %s' % unmapped)
-    rep.append('dropped: %s' % dropped)
-    no_event = [a for a in man_ids if a not in bound_assets]
-    rep.append('manifest audio ids: %d; bound: %d' % (len(man_ids), len(bound_assets)))
-    rep.append('assets with no event: %s' % no_event)
-    rep.append('bound ids not in manifest: %s' % [a for a in bound_assets if a not in man_ids])
-    rep.append('asset use counts: %s' % sorted(bound_assets.items()))
+                total_layers += 1
+            if full in NOTEAM:
+                a, pb, md, lv = NOTEAM[full]
+                lines.append('| \u2033 layer %d | no team (R-AUD-026, DEC-097) | `%s` | %s | %s | %s |  |  |  |' % (
+                    len(blocks) + 1, a, pb, md, lv))
+                total_layers += 1
+        out['tables'][src] = lines
+        for full, trig, r in d['silent']:
+            st = SILENT_STATUS.get(full) or ('silent (DEC-565)' if full in DEC565 else 'silent')
+            out['silent'].append('| `%s` | %s | %s |' % (full, trig, st))
+        nb = sum(len(r['blueprint'].split('||')) for _f, _t, r in d['live'])
+        nsil = len(d['silent'])
+        out['summary'].append([src, title, kind, len(d['live']), nb, nsil])
+    json.dump(out, open(out_json, 'w', encoding='utf-8'), ensure_ascii=False, indent=0)
+    rep = ['live pairs: %d' % sum(len(d['live']) for d in per_source.values()),
+           'silent pairs: %d' % len(out['silent']),
+           'layers incl. no-team: %d' % total_layers,
+           'unmapped: %s' % unmapped, 'dropped: %s' % dropped,
+           'assets with no event: %s' % [a for a in man_ids if a not in bound_assets],
+           'bound ids not in manifest: %s' % [a for a in bound_assets if a not in man_ids]]
     open(out_rep, 'w', encoding='utf-8').write('\n'.join(rep) + '\n')
 
 

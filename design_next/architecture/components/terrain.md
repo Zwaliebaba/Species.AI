@@ -230,9 +230,11 @@ Table 3.4-A Guide-grid sizes.
 
 **TER-042** (MUST) While the match's seasonal state is active, the renderer replaces the map's ramp, sea tile and shore-wave gradient by the seasonal files (RND-134, RND-142, RND-144; DEC-118). The seasonal state never changes a height, a normal or a sea mask.
 
+**TER-043** (MUST) The terrain sets the scale of the renderer's wire-grid overlay: the stylised grid texture `fx.terrain_grid` is mapped once onto each height-field cell, with the grid coordinates (world *x* ÷ cell size, world *z* ÷ cell size), so its lines do not follow the triangle diagonals of TER-017 (RND-135). Whether the overlay is drawn along the triangle edges instead is DEC-326; the terrain data is the same either way.
+
 ### 3.7 Data products
 
-**TER-043** (MUST) Generation and the presentation builds produce the data of table 3.7-A, with these lifetimes.
+**TER-044** (MUST) Generation and the presentation builds produce the data of table 3.7-A, with these lifetimes.
 
 Table 3.7-A Terrain data products.
 
@@ -526,3 +528,527 @@ Table 4.8-A Tile-sampler cases.
 - **Footprint quantisation.** The footprint starts at the world sample nearest to (posX, posZ) and is trunc(size ÷ cell size) samples wide, so tile edges snap to the world grid, while the tile itself is sampled at its true, unsnapped position.
 
 **TER-124** (MUST) A tile may hang off the map edge: its writes to samples outside the grid are dropped. The conversion of posX ÷ cell size + 0.5 (and the same on z) to an index truncates toward zero and is defined for values above −1. A tile whose footprint lies wholly outside the grid has no effect and is skipped; the reference content holds two such tiles, parked far outside their maps with a negative position y. The content build rejects a tile whose index value is −1 or below while its footprint overlaps the grid (DEC-015): the reference result is undefined there (the destination index wraps back onto the grid while the sampling coordinate does not, so the tile writes only its border value). No reference tile is in that situation; every on-map tile origin is at −1 wu or above.
+
+### 4.9 Flatten areas
+
+**TER-140** (MUST) A flatten area with centre (*cx*, *t*, *cz*) and half-width *s* visits the integer world samples *i* from *i*1 = `IndexX`(*cx* − *s*) + 1 to *i*2 − 1, with *i*2 = `IndexX`(*cx* + *s*) + 1, and *j* likewise on z with `IndexZ`. With truncation toward zero this is, for positive coordinates, the set of samples whose world position lies in (*cx* − *s*, *cx* + *s*] × (*cz* − *s*, *cz* + *s*]: an axis-aligned square of half-width *s*, hard-edged, with no falloff or blending at its boundary. The indices are not clamped: reads outside the grid return the outside height and writes there are dropped (TER-072).
+
+**TER-141** (MUST) The areas are applied after all tiles, in record order. Within an area *z* is the outer loop and *x* the inner loop, and every update is written in place, so the neighbours at *x* − 1 and *z* − 1 are already updated when the smooth operation reads them.
+
+**TER-142** (MUST) One area is applied by:
+
+```text
+ApplyFlattenArea(area):                       # t = centre y, T = threshold, s = half-width
+    passes := ter.flatten.smooth_passes if op == Smooth else 1     # 2 for Smooth
+    repeat passes times:
+        for j := j1 .. j2 - 1:                  # z outer
+            for i := i1 .. i2 - 1:              # x inner; writes are in place
+                cur := At(i, j) ;  v := t        # Absolute writes t
+                if   op == Add:       v := t + cur
+                elif op == Subtract:  v := (cur - t) if cur > T else cur
+                elif op == Subtract2: v := (cur - t) if cur < T else cur
+                elif op == Smooth:
+                    if cur > T:
+                        v := cur * (t / cur)         # t / cur first, then the product
+                        v := v + At(i - 1, j)        # one rounding per addition, in this order
+                        v := v + At(i + 1, j)
+                        v := v + At(i, j + 1)
+                        v := v + At(i, j - 1)
+                        v := v / ter.flatten.smooth_divisor     # 6.0
+                    if v > cur: v := cur
+                Set(i, j, v)
+```
+
+**TER-143** (MUST) Per sample, with *cur* the current height, the operations give the values of table 4.9-A.
+
+Table 4.9-A Flatten operations.
+
+| Value | Operation | New value | Passes | Use in the reference content |
+|---|---|---|---|---|
+| 0 | Absolute | *t* | 1 | levels pads to *t* from −26.0 to 68.2 wu |
+| 1 | Add | *t* + *cur* | 1 | raises an area by 24.1 wu |
+| 2 | Subtract | *cur* − *t* where *cur* > *T*, else *cur* | 1 | with *t* = 886.2 and *T* = 348.9, cuts a pit down to −537.05 wu, below the sea |
+| 3 | Smooth | where *cur* > *T*: *v* = *cur* × (*t* ÷ *cur*), about *t* after two roundings, then the four neighbours W (*i* − 1), E (*i* + 1), N (*j* + 1) and S (*j* − 1) added **one at a time, starting from the centre term** (never *v* + (the sum of the neighbours)), then ÷ 6.0; elsewhere *v* = *t*; finally min(*v*, *cur*) | 2 | softens and lowers hilltops; one area of half-width 1000 wu uses *t* = 62.0 and *T* = 11.7 |
+| 4 | Subtract2 | *cur* − *t* where *cur* < *T*, else *cur* | 1 | with *t* = 126.2 and *T* = 118.4, lowers everything below 118.4 wu by 126.2 wu |
+
+**TER-144** (MUST) The smooth operation keeps its arithmetic, biases included (DEC-324): it never raises terrain (min(*v*, *cur*)); samples at or below *T* are capped at *t*, so with *t* ≥ *T* they are unchanged; samples above *T* become (*t* + the sum of the four neighbours) ÷ 6, five terms over a divisor of six, so a plateau of height *H* much above *t* is pulled down to about (*t* + 4*H*) ÷ 6 per pass, about 0.44 *H* plus *t* terms after the two passes, as well as smoothed. Whether the map editor also offers a true blur and a separate lowering operation is DEC-324.
+
+**TER-145** (MUST) The order of the four additions matters: in the reference content, one smooth area makes 28 660 above-threshold evaluations in its two passes, and 3 635 of them give a different binary64 value when the neighbours are summed first (vector set C, §7.2).
+
+### 4.10 World grid, outside height and edge semantics
+
+**TER-150** (MUST) The world grid has the sizes of table 4.10-A.
+
+Table 4.10-A World-grid sizes.
+
+| Quantity | Rule |
+|---|---|
+| sample spacing | the cell size, rounded to binary32 (TER-066), on both axes |
+| grid size | columns = ⌈world size x ÷ cell size⌉, rows = ⌈world size z ÷ cell size⌉ (TER-038) |
+| world extent | *X* = cell size × columns, *Z* = cell size × rows, with the origin at (0, 0); vector set A: 2700 ÷ 15.760000228881836 = 171.32, so 172 samples and *X* = 2710.720039367676 wu |
+| sample positions | sample (*i*, *j*) lies at world (*i* × cell size, *j* × cell size); the last sample lies at (columns − 1) × cell size, one cell short of the extent |
+
+**TER-151** (MUST) The world extent sizes the simulation's spatial grids and route graphs ([reference/12](../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-304) and bounds the world clamp (R-SIM-366). It also sets the camera bounds, −`ref.sim.match_entry.camera_border` to *X* + `ref.sim.match_entry.camera_border` on both horizontal axes, the x extent serving for z as well ([camera](../../reference/06_controls_camera_and_commands/camera.md)); the fog range, from `rnd.fog.min_end` and `rnd.fog.edge_margin` ([view, lighting and fog](renderer/view_lighting_and_fog.md) RND-222); and the sea plane from (−*X*/2, −*Z*/2) to (1.5 *X*, 1.5 *Z*) (RND-140).
+
+**TER-152** (MUST) The outside height plays the four roles of TER-031: both grids carry it as their outside value, the normal grid with `ter.normal.outside`.
+
+**TER-153** (MUST) Because of TER-073, an interpolated read near or beyond the world grid's edges does **not** return the outside height. For the world grid (origin 0) with *fx* = *x* ÷ cell size, the read gives the results of table 4.10-B, and the same rules apply independently on z (rows).
+
+Table 4.10-B Edge semantics of `Height` and `Normal`.
+
+| Region of *fx* | Result |
+|---|---|
+| 0 ≤ *fx* < columns − 1 | bilinear inside the grid |
+| columns − 1 ≤ *fx* < columns, the last cell | a blend of column columns − 1 and **column 0** (*i*2 is reset to 0) |
+| columns ≤ *fx* < 65 536 | column 0 only (both indices are reset to 0) |
+| *fx* ≥ 65 536 | the column given by the low 16 bits of the truncated index, an aliasing that needs coordinates beyond 589 000 wu at the smallest reference cell size |
+| −1 < *fx* < 0 | *i*1 = 0, *i*2 = 1, with the weight *fx* + 1 on column 1; the result is discontinuous at *x* = 0 and approaches column 1 as *x* approaches 0 from below |
+| *fx* ≤ −1 | column 0 only |
+
+Off-map reads therefore return the terrain profile of row 0 and column 0. In every reference terrain every border sample is at or below sea level, so these rules alter only depths under water (for example a border maximum of −9.418 wu against an outside height of −27.89 wu) and never create land at the edge; every negative coordinate reads as sea, which is what restricts the Abductor's wander area (DEC-113). This reference behaviour is the default of DEC-246, which lets Species define off-map heights explicitly (item 7).
+
+**TER-154** (MUST) The sea surface lies at `ref.sim.physics.sea_level` (TER-005) for every consumer: walkability rejects water at it ([reference/12](../../reference/12_simulation_model/05_space_routing_and_physics.md) R-SIM-335), actors swim and drown at it (R-SIM-365, R-SIM-370), the renderer sinks every terrain vertex below `rnd.terrain.sink_threshold` to `rnd.terrain.sink_height` (RND-133), the shore mask counts a height above it as land (TER-196), and the wave mesh rests at it (TER-201).
+
+**TER-155** (MUST) Every reference terrain has sea along its whole border and on a large share of its samples, with the figures of [rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md) R-MAP-085 and DEC-247 item 6, so every bounded search for a sea or land position terminates there (DEC-014).
+
+### 4.11 Simulation normals
+
+**TER-170** (MUST) The simulation normal grid is a `SurfaceGrid<Vec3>` on the height grid's columns, rows, origin and cell size, with the outside value `ter.normal.outside`. It is computed once per generation, after the flatten areas, in binary64, with *c* the cell size and *h*(*i*, *j*) = `At`(*i*, *j*) of the height grid (off-grid reads give the outside height):
+
+```text
+for j := 0 .. rows - 1:                       # z outer
+    for i := 0 .. columns - 1:                # x inner
+        hN := h(i, j - 1) ;  hW := h(i + 1, j) ;  hE := h(i - 1, j) ;  hS := h(i, j + 1)
+        if hN == hW and hE == hS and hN == hE:          # the centre is not compared
+            normal(i, j) := ter.normal.outside           # (0, 1, 0)
+            continue
+        ctr := h(i, j)
+        vN := (0, ctr - hN, c) ;   vW := (-c, ctr - hW, 0)
+        vS := (0, ctr - hS, -c) ;  vE := ( c, ctr - hE, 0)
+        nA := Normalise(vW x vN)               # TER-077, TER-078
+        nB := Normalise(vE x vS)
+        normal(i, j) := Normalise(nA + nB)     # component-wise sum
+```
+
+**TER-171** (MUST) The labels N, W, E and S name neighbours, not compass directions (W is the +x neighbour and E the −x neighbour). For a plane *h* = *a* × *x* + *b* × *z* both half-normals equal (−*a*, 1, −*b*) ÷ \|(−*a*, 1, −*b*)\|: the true upward normal, leaning downhill. Each half is normalised before the sum, so on curved ground the result weights the (+x, −z) and (−x, +z) one-sided gradients equally, whatever their magnitudes. An isolated spike or pit whose four neighbours are equal gets the up vector. `Normal`(*x*, *z*) blends four grid normals without renormalising (TER-013).
+
+**TER-172** (MUST) The render facet normals are the renderer's (RND-134) and unrelated to the simulation normals, as table 4.11-A summarises; only the simulation normals feed the simulation.
+
+Table 4.11-A Simulation normals and render normals.
+
+| Aspect | Simulation normal grid | Render facet normals |
+|---|---|---|
+| defined at | every height sample | every terrain triangle |
+| precision | binary64 | binary32 |
+| input heights | the true heights | heights with vertices below `rnd.terrain.sink_threshold` sunk (RND-133) |
+| smoothing | two normalised one-sided cross products | none: the facet normal |
+| consumers | bounce physics, the centipede, impacts, particles, orientation to the ground | lighting and the slope axis of the colour ramp (TER-181) |
+| simulation relevance | yes | no |
+
+### 4.12 Colour-ramp look-up
+
+**TER-180** (MUST) The colour look-up's height normaliser *highest* (binary32) is the maximum height when it is above 0, and otherwise `Highest`() of the height grid (TER-076). With a maximum height below the real peak, every height above the maximum height uses ramp row 0; in the reference content one map does this, with a maximum height of 200 wu against a peak of 238.0 wu.
+
+**TER-181** (MUST) `FacetColour` gives each terrain triangle of the renderer's mesh (RND-132), in the mesh's build order, one colour from the map's land colour ramp (TER-040), using the render vertex positions after the sink of RND-133 and the triangle's facet normal of RND-134:
+
+```text
+(a, b, c) := the triangle's vertices: (p1, p2, q1) for the first triangle of a pair step,
+             (p2, q1, q2) for the second                           # RND-132 notation
+centre := (a + b + c) * ter.colour.centre_factor          # binary64, summed a, b, c; 0.33333, not 1/3
+g      := binary32(facet normal y)                         # 1 = flat, 0 = vertical
+u      := binary32(pow32(1 - g, ter.colour.slope_exponent))       # 0.4
+hgt    := binary32(centre.y)
+v      := binary32(1 - hgt / highest)
+r0     := colourVariation.NextUint()                       # TER-185
+colourVariation.Seed(uint32(trunc(centre.x)) OR (uint32(trunc(centre.z)) + r0))
+v      := binary32(v + colourVariation.NextSigned(ter.colour.jitter_numerator / (max(hgt, 0) + ter.colour.jitter_offset)))
+px     := clamp(trunc(u * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
+py     := clamp(trunc(v * ter.colour.ramp_size), 0, ter.colour.ramp_size - 1)
+colour := ramp texel (px, py), py counted from the bottom row as viewed      # TER-040
+```
+
+The jitter is one draw, uniform over ±0.225 ÷ (max(hgt, 0) + 2). The sum inside the seed is taken modulo 2³². The renderer lights the facet with this colour and, in the inverted style, gives it alpha 0 (RND-134, RND-136, DEC-040).
+
+**TER-182** (SHOULD) A ramp reads as follows, which artists of `terrain.ramp` follow ([art and audio briefs](../../assets/art_and_audio_briefs.md)):
+
+- **x axis, slope.** Column 0 is flat ground and column 63 vertical; the exponent 0.4 stretches gentle slopes, with *u* = (1 − cos θ)^0.4 for a facet tilted by θ: 10° uses column 11, 30° column 28, 45° column 39, 60° column 48 and a vertical facet column 63.
+- **y axis, height.** Row 0, the bottom row as viewed, is the highest terrain; row 63, the top row, is sea level and below (*v* ≥ 1 clamps there). Heights map linearly onto rows: row = trunc(64 × (1 − *h* ÷ *highest* + jitter)).
+- **Jitter.** The colour variation blurs the bands vertically by up to ±0.1125 of the ramp (±7.2 rows) at sea level, decaying to ±0.0022 (±0.14 rows) at a height of 100 wu.
+
+### 4.13 Colour-variation and shore-noise generators
+
+**TER-185** (MUST) The colour pass of one renderer build owns one presentation generator instance (`FxRng`), never shared with another consumer or thread and unreachable from simulation code (R-SIM-608, DEC-013). It uses the algorithm of TER-080, with `FxRng::NextUint` = `Next`() and `FxRng::NextSigned`(*R*) = `Signed`(*R*), and is seeded with `ref.sim.match.presentation_seed` (1, [match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)) at the start of every build. Each triangle draws *r*0, re-seeds the instance from its centre and *r*0, and draws its jitter (TER-181), so the colours form a chain in build order. Every build of the same field, after device removal included, therefore gives the same colours. The colours are presentation and need not equal the reference's bit for bit (R-SIM-601); their distribution is the reference's. In the reference one shared generator serves the colours, audio, tree geometry and a service thread, so concurrent draws can change the colours, and a mid-match regeneration redraws them without re-seeding; neither happens here (TER-221).
+
+**TER-186** (MUST) The shore noise of the wave mesh of each sea-detail level (TER-202) draws from its own copy of the colour instance, taken at the end of the colour pass, one draw per vertex in build order, as the reference's sea build continues the colour chain.
+
+**TER-187** (MAY) A stateless function of the triangle or vertex position and the presentation seed may replace these chains if the design phase so decides (DEC-246 item 11); the distributions stay those of TER-181 and TER-202.
+
+### 4.14 Sea derivations
+
+All of this section is presentation and is rebuilt from the height field (TER-007); the renderer's passes are RND-140 to RND-148.
+
+**TER-195** (MUST) The sea is built after the terrain mesh, in this order: (1) the sea masks: the shore mask (TER-196, TER-197), then the depth map (TER-198), then the flat-water tile mask (TER-199); (2) for each sea-detail level 1, 2 and 3 that the renderer builds (RND-448): the water cell (TER-200) and the wave-mesh vertex pairs with their depths and shore noise (TER-201, TER-202); then the depth map is released; (3) the wave colour table from the map's shore-wave gradient (TER-041). The wave heights and colours are evaluated once per rendered frame, never by the simulation (TER-204, TER-205, RND-145). At sea detail 0 no wave mesh exists and only the flat layer is drawn.
+
+**TER-196** (MUST) The shore mask has `ter.sea.mask_size` (*S* = 128) × *S* pixels over the sea plane. With the pixel sizes *sX* = 2 *X* ÷ *S* and *sZ* = 2 *Z* ÷ *S* (binary32, exact because the division is by a power of two) and the offset *o* = `ter.sea.mask_land_offset` (32 pixels, the plane's margin of *X*/2), pixel (*x*, *z*) corresponds to the world point (*x* × *sX* − *o* × *sX*, *z* × *sZ* − *o* × *sZ*), so the plane [−*X*/2, 1.5 *X*) × [−*Z*/2, 1.5 *Z*) is covered. The land value of a pixel is 1 when *o* ≤ *x* < *S* − *o*, *o* ≤ *z* < *S* − *o* and `Height` at its world point is above `ref.sim.physics.sea_level`, and 0 otherwise. The mask is computed in binary32.
+
+**TER-197** (MUST) The land values are blurred by the kernel *k*[0 to 10] = `ter.sea.blur_taps` (0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2), each divided by `ter.sea.blur_normaliser` (5.4, the sum of the taps), in scatter form: first horizontally, every pixel whose value is not within `ter.sea.blur_skip_tolerance` (10⁻⁶) of 0 adds value × *k*[*i*] to pixel (*x* + *i* − 5, *z*) for *i* from 0 to 10, contributions outside the image being dropped; then vertically, in the same form along z, on the result of the horizontal pass. Each blurred value *V* gives the grey level trunc(min(`ter.sea.mask_max` (255), *V* × `ter.sea.mask_gain` (855))), stored as an opaque grey texel of the shore-mask image at (*x*, *S* − 1 − *z*): the image is **vertically flipped**, so its row 0 (texture *v* = 0) holds mask row 127, at the edge *z* = 1.5 *Z*, in the orientation that RND-142 samples. The result is a soft "distance to the coast" mask, saturated at 255 on and near land and reaching 0 six pixels from a straight coast (one pixel is *X* ÷ 64 wu, so about 0.094 *X*).
+
+**TER-198** (MUST) The depth map is a `SurfaceGrid<float>` of width 2 *X* and height 2 *Z*, with origin (−*X*/2, −*Z*/2), the cell size 2 *X* ÷ *S* on **both** axes (on a square terrain this gives *S* × *S* samples) and the outside value `ter.sea.depth_outside` (1.0). Its sample (*x*, *z*) is 1 − grey(*x*, *z*) ÷ 255, the grey level of mask pixel (*x*, *z*), read back from the flipped image: 1.0 is open sea and 0.0 is on or next to land.
+
+**TER-199** (MUST) The flat-water tile mask is a `Grid2D<bool>` of (depth columns ÷ `ter.sea.flat_tile_ratio`) × (depth rows ÷ `ter.sea.flat_tile_ratio`), 32 × 32 tiles. Tile (*x*, *z*) is false, not drawn, exactly when all 16 depth samples of its block, columns 4*x* to 4*x* + 3 and rows 4*z* to 4*z* + 3, are at or above 1.0; it is stored at row 31 − *z*, the order in which RND-141 lays the tiles out.
+
+**TER-200** (MUST) The water cell of sea-detail level *d* is *wc* = *d* × max(*X*, *Z*) ÷ `ter.sea.cell_divisor` (100), so the twice-size plane is 200, 100 or about 67 cells across at levels 1, 2 and 3 ([options and budgets](renderer/options_and_budgets.md) RND-448).
+
+**TER-201** (MUST) The wave mesh of level *d* takes, for *zb* from 0 to trunc(2 *Z* ÷ *wc*) − 1 (outer) and *xb* from 0 to trunc(2 *X* ÷ *wc*) − 1 (inner), the vertex pair (*fx*, sea level, *fz*) and (*fx*, sea level, *fz* + *wc*) with *fx* = −*X*/2 + *xb* × *wc* and *fz* = −*Z*/2 + *zb* × *wc*. A pair is emitted when any of the six points (*fx* − *wc*, *fz*), (*fx*, *fz*), (*fx* + *wc*, *fz*), (*fx* − *wc*, *fz* + *wc*), (*fx*, *fz* + *wc*) and (*fx* + *wc*, *fz* + *wc*) is needed, where a point is needed unless `Height` there is above `ter.sea.vertex_land_limit` (4.0 wu) or the bilinear depth there is above `ter.sea.vertex_depth_limit` (0.999). The emitted pairs, in this order, form the triangles of RND-132 between consecutive emitted pairs (RND-144).
+
+**TER-202** (MUST) Each emitted vertex carries its bilinear depth *d*ᵥ and, with *s* = 1 − *d*ᵥ, its shore noise (*s* + `NextSigned`(*s*) × `ter.sea.wave.shore_noise` (0.25)) × `ter.sea.wave.shore_brightening` (250), one draw per vertex at build time, the first vertex of a pair before the second (TER-186).
+
+**TER-203** (MUST) The wave colour table holds the colours of TER-041, with *colours* entries.
+
+**TER-204** (MUST) At presentation time *t*, the time that the renderer supplies (the smooth presentation time, RND-145), the wave tables are, with the amplitude scale *A* = `ter.sea.wave.amplitude_scale` (7.0) and the sizes `tableX` = trunc(2 *X* ÷ *wc* + `ter.sea.wave.table_margin` (2)) and `tableZ` likewise:
+
+```text
+for i := 0 .. tableX - 1:  x := i * wc       # measured from the plane origin (-X/2, -Z/2)
+    waveX[i] := A * (1.2 * sin32(0.01 * x + 0.65 * t) + 0.9 * sin32(0.03 * x + 1.5 * t))
+for i := 0 .. tableZ - 1:  z := i * wc
+    waveZ[i] := A * (0.9 * sin32(0.02 * z + 0.75 * t) + 0.65 * sin32(0.03 * z + 1.85 * t))
+```
+
+The spatial frequencies, temporal frequencies and amplitudes of the two x terms are `ter.sea.wave.x_terms` (0.01, 0.65, 1.2 and 0.03, 1.5, 0.9) and of the two z terms `ter.sea.wave.z_terms` (0.02, 0.75, 0.9 and 0.03, 1.85, 0.65).
+
+**TER-205** (MUST) The heights and colours of the pairs are, in build order, with the brightness scale *B* = `ter.sea.wave.brightness_scale` (4.0) and the mix weights `ter.sea.wave.colour_mix` (0.7 and 0.3):
+
+```text
+prevH1 := 0 ;  prevH2 := 0                    # before the first pair of the mesh
+for each pair (v1, v2) with depths d1, d2 and shore noises n1, n2:
+    ix := trunc((v1.x + X/2) / wc + ter.sea.wave.index_bias)      # + 0.1
+    iz := trunc((v1.z + Z/2) / wc + ter.sea.wave.index_bias)
+    v1.y := (waveX[ix] + waveZ[iz]) * d1
+    b1   := (prevH1 + prevH2 + v1.y) * B * (1 - d1) + n1 ;  prevH1 := v1.y
+    v2.y := (waveX[ix] + waveZ[iz + 1]) * d2
+    b2   := (prevH2 + prevH1 + v2.y) * B * (1 - d2) + n2 ;  prevH2 := v2.y
+    colour(v1) := table[clamp(trunc(0.7 * b2 + 0.3 * b1), 0, colours - 1)]
+    colour(v2) := table[clamp(trunc(0.7 * b1 + 0.3 * b2), 0, colours - 1)]
+```
+
+*b*2 uses the updated prevH1. The colour index truncates toward zero, which biases it by half an entry towards the lower indices, the darker end of the reference gradients. The cross-mix of the two brightnesses softens the sawtooth of flat-shaded facets. The renderer evaluates each pair's predecessor from the same formulae, keeps duplicated join vertices at the heights of the vertices they duplicate, and assigns facet colours (RND-145); binary32 GPU arithmetic is acceptable for this presentation result.
+
+**TER-206** (SHOULD) The waves are two travelling sinusoids per axis, with peak amplitudes of 7 × (1.2 + 0.9) = 14.7 wu along x and 7 × (0.9 + 0.65) = 10.85 wu along z, ±25.55 wu combined, scaled by the depth so that they vanish at the shore. The brightness is a wave-height proxy times the "shoreness" 1 − depth plus the per-vertex shore whitening, so deep water is dark and coasts are bright.
+
+### 4.15 Lifecycle
+
+**TER-220** (MUST) The terrain follows the lifecycle of table 4.15-A.
+
+Table 4.15-A Terrain lifecycle.
+
+| Event | Effect |
+|---|---|
+| match-world initialisation | step 5 generates the field (TER-060) and the sea renderer builds; step 7 places the map-placed structures on the terrain (R-SIM-016) |
+| a presentation option change (sea, sky, structure or entity detail, inverted style) | nothing is regenerated or rebuilt: the field is unchanged, and the renderer selects among the meshes it built at initialisation (RND-031, RND-448) |
+| device removal | the renderer rebuilds its buffers from the unchanged field (RND-034); the colour chain is re-seeded (TER-185), so the colours are unchanged |
+| an edit in the map editor | the editor regenerates the field from the edited records (§8.2) |
+| match-world teardown | the field, its grids, the sea masks and the wave meshes are released with the match world (DEC-011) |
+
+**TER-221** (MUST) The height field is never regenerated during a match, and never under a different numeric environment (DEC-246 item 8, DEC-240). In the reference, applying graphics or other options in the middle of a match regenerates the field and the sea; the heights come out identical only because generation is a pure function and the numeric environment is unchanged, while the colours change because the colour chain is not re-seeded.
+
+**TER-222** (MUST) Generation may run on a loader or job thread. That thread runs with the numeric environment of TER-061, set and asserted there (DEC-224 item 4), and no reader sees the field before generation completes (TER-010). In the reference the whole map load runs on one loader thread while the main thread draws the loading view. How Species loads and streams world content is DEC-226.
+
+### 4.16 Conversions the output depends on
+
+**TER-230** (MUST) Implementation-defined and undefined conversions shape the output; table 4.16-A states the Species rule for each.
+
+Table 4.16-A Conversions and their rules.
+
+| Construct | Where | In the reference content | Rule |
+|---|---|---|---|
+| binary64 to sampler index for −1 < *v* < 0: truncation gives 0 | tile sampler (TER-121) | yes, on 22 771 merge reads | reproduce exactly; never use ⌊*v*⌋ (TER-071) |
+| binary64 to index for *v* ≤ −1, undefined; the reference keeps the low 16 bits | tile sampler; the start index of a parked tile | the sampler: never; parked tiles: 2, without effect | skip a tile wholly outside the grid; reject a partly overlapping one (TER-124) |
+| a negative integer index reduced to unsigned 16 bits in `At` and `Set` | every grid | yes: neighbour reads at row and column 0, flatten areas at the edges | every index outside the grid is outside (TER-072) |
+| the far-edge reset of `Sample` to column or row 0 | the tile sampler and the world queries | the tile sampler: yes, equivalent to clamping (TER-121); the world: only under water (TER-153) | reproduce for tiles (or clamp, which is equivalent); for the world, the reference rule is the default of DEC-246 |
+| signed 32-bit overflow in the generator | the tile generator | yes, constantly | unsigned 32-bit arithmetic (TER-068) |
+| the integer conversion of ceilLog2(0) = −∞ | tiles smaller than 2 cell sizes | no | reject at build (TER-112) |
+| an unset base value for a method other than 0, 1 or 2 | `Square`, `Diamond` | no | reject at build (TER-112) |
+| a guide grid with too few cells | the guide-grid decoder | no | reject at build (TER-112) |
+| the single-precision absolute value of the base height | the noise envelope | yes, on every call | reproduce (TER-065) |
+| binary32 rounding of decimal fields | the parser | yes; it moves footprints (TER-066) | reproduce (TER-066) |
+
+### 4.17 Tuning table
+
+Every value is a reference value adopted as the Species engine baseline (DEC-004). Values owned by other documents are cited by their keys and not repeated here: the map defaults `ref.map.terrain.*` ([rules and conventions](../../reference/08_maps_and_level_design/rules_and_conventions.md)), the editor values `ref.map.editor.*` ([map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md)), `ref.sim.physics.sea_level` ([space, routing and physics](../../reference/12_simulation_model/05_space_routing_and_physics.md)), `ref.sim.match.presentation_seed` and `ref.sim.match_entry.camera_border` ([match lifecycle](../../reference/12_simulation_model/02_match_lifecycle_and_state_reset.md)), and the renderer keys `rnd.terrain.*`, `rnd.sea.*` and `rnd.fog.*` ([world renderers](renderer/world_renderers.md), [view, lighting and fog](renderer/view_lighting_and_fog.md)).
+
+| key | value | unit | range or notes | requirement | DEC |
+|---|---|---|---|---|---|
+| `ter.generator.lcg.multiplier` | 214013 | — | the generator step, modulo 2³² | TER-080 | DEC-242 |
+| `ter.generator.lcg.increment` | 2531011 | — | | TER-080 | DEC-242 |
+| `ter.generator.lcg.output_shift` | 16 | bits | | TER-080 | DEC-242 |
+| `ter.generator.lcg.output_mask` | 0x7FFF | — | 32 767; also the divisor of `Signed` | TER-080 | DEC-242 |
+| `ter.generator.gain.fd_coefficient` | 30.7 | — | fd modifier = 30.7 × exp32(−6.5 × *fd*) | TER-091 | DEC-324 |
+| `ter.generator.gain.fd_exponent` | −6.5 | per unit of *fd* | | TER-091 | DEC-324 |
+| `ter.generator.gain.ls_coefficient` | 15.353 | — | ls modifier = 15.353 × exp32(−3.1 × *ls*) | TER-091 | DEC-324 |
+| `ter.generator.gain.ls_exponent` | −3.1 | per unit of *ls* | | TER-091 | DEC-324 |
+| `ter.generator.method2.choice_mask` | 0xFFFF | — | applied to a 15-bit draw | TER-100, TER-101 | DEC-324 |
+| `ter.generator.method2.thresholds` | 0x3FFF, 0x7FFF, 0xBFFF | — | A or W, B or E, C or N, otherwise D or S; D and S are never chosen | TER-100, TER-101 | DEC-324 |
+| `ter.generator.noise.length_scale` | 256.0 | — | the half-step as if the tile were 256 units wide | TER-105 | |
+| `ter.generator.noise.length_multiplier` | 10.0 | — | amplitude = pow32(10 × *L*, *fd*) | TER-105 | |
+| `ter.generator.noise.envelope_floor` | 0.1 | — | the envelope at a base height of 0 (for *ls* > 0) | TER-105 | DEC-324 |
+| `ter.generator.noise.envelope_gain` | 0.15 | — | × pow32(\|*b*\|, *ls*) | TER-105 | DEC-324 |
+| `ter.merge.index_rounding` | 0.5 | samples | added before truncation: the nearest world sample | TER-120, TER-124 | |
+| `ter.merge.range_epsilon` | 0.001 | wu | prevents a division by zero for a flat tile | TER-120, TER-122 | |
+| `ter.flatten.smooth_passes` | 2 | passes | Smooth only; every other type makes 1 | TER-142, TER-143 | DEC-324 |
+| `ter.flatten.smooth_divisor` | 6.0 | — | five terms over six | TER-142, TER-144 | DEC-324 |
+| `ter.tile.default_size` | 256 | wu | the record type's default size; every map field is mandatory | TER-032 | |
+| `ter.grid.index_bits` | 16 | bits | the reference index width; indices reduce modulo 2¹⁶ | TER-072, TER-073, TER-153 | DEC-246 |
+| `ter.grid.max_samples_per_side` | 32 768 | samples | the content-build limit on columns and rows | TER-072, TER-250 | DEC-247 |
+| `ter.math.normalise_min_length_sq` | 10⁻¹⁰ | wu² | below or at it, normalisation gives the fallback | TER-077 | DEC-241 |
+| `ter.math.normalise_fallback` | (0, 0, 1) | unit vector | | TER-077 | DEC-241 |
+| `ter.normal.outside` | (0, 1, 0) | unit vector | the normal grid's outside value and the flat-neighbourhood normal | TER-013, TER-031, TER-170 | |
+| `ter.query.ungenerated_world_size` | 1 000 000 | wu | world size reported without a generated field | TER-014 | |
+| `ter.query.ungenerated_outside_height` | −20 | wu | outside height reported without a generated field | TER-014 | |
+| `ter.query.ray_tri_range` | 10¹⁰ | wu | range of the ray–triangle test in the grid walk | TER-017 | DEC-241 |
+| `ter.query.los_margin` | 20 | wu | at both ends of the line of sight | TER-019 | |
+| `ter.colour.ramp_size` | 64 | texels | the ramp's width and height; the look-up scale | TER-040, TER-181, TER-182 | |
+| `ter.colour.centre_factor` | 0.33333 | — | not 1/3 | TER-181 | |
+| `ter.colour.slope_exponent` | 0.4 | — | *u* = (1 − *g*)^0.4 | TER-181, TER-182 | |
+| `ter.colour.jitter_numerator` | 0.45 | ramp fraction × wu | jitter range 0.45 ÷ (max(*h*, 0) + 2), uniform about 0 | TER-181, TER-182 | |
+| `ter.colour.jitter_offset` | 2.0 | wu | | TER-181 | |
+| `ter.sea.mask_size` | 128 | pixels per side | shore mask and depth map | TER-196, TER-197, TER-198 | |
+| `ter.sea.mask_land_offset` | 32 | pixels | land window [32, 96) on both axes | TER-196 | |
+| `ter.sea.blur_taps` | 0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2 | — | 11 taps centred on tap 5 | TER-197 | |
+| `ter.sea.blur_normaliser` | 5.4 | — | the sum of the taps | TER-197 | |
+| `ter.sea.blur_skip_tolerance` | 10⁻⁶ | — | pixels this close to 0 scatter nothing | TER-197 | DEC-241 |
+| `ter.sea.mask_gain` | 855 | grey levels | × the blurred value | TER-197 | |
+| `ter.sea.mask_max` | 255 | grey level | | TER-197 | |
+| `ter.sea.depth_outside` | 1.0 | depth | the depth map's outside value; at or above it a sample is open sea | TER-198, TER-199 | |
+| `ter.sea.flat_tile_ratio` | 4 | depth samples per tile side | 32 × 32 tiles | TER-199 | |
+| `ter.sea.cell_divisor` | 100 | — | water cell = detail × max(*X*, *Z*) ÷ 100 | TER-200 | |
+| `ter.sea.vertex_land_limit` | 4.0 | wu | a point above it is not needed | TER-201 | |
+| `ter.sea.vertex_depth_limit` | 0.999 | depth | a point deeper than it is not needed | TER-201 | |
+| `ter.sea.wave.shore_noise` | 0.25 | — | × the signed shore draw | TER-202 | |
+| `ter.sea.wave.shore_brightening` | 250.0 | colour-table entries | | TER-202 | |
+| `ter.sea.wave.table_margin` | 2 | entries | table size = trunc(2 × size ÷ cell + 2) | TER-204 | |
+| `ter.sea.wave.amplitude_scale` | 7.0 | wu | | TER-204, TER-206 | |
+| `ter.sea.wave.x_terms` | (0.01, 0.65, 1.2), (0.03, 1.5, 0.9) | (per wu, per s, —) | spatial frequency, temporal frequency, amplitude | TER-204 | |
+| `ter.sea.wave.z_terms` | (0.02, 0.75, 0.9), (0.03, 1.85, 0.65) | (per wu, per s, —) | | TER-204 | |
+| `ter.sea.wave.index_bias` | 0.1 | cells | added before truncation | TER-205 | |
+| `ter.sea.wave.brightness_scale` | 4.0 | — | | TER-205 | |
+| `ter.sea.wave.colour_mix` | 0.7, 0.3 | — | the other vertex's brightness weighs 0.7 | TER-205 | |
+| `ter.test.log2_check_limit` | 70 000 | — | ceilLog2 is exact below it | TER-067 | |
+
+## 5 Concurrency and performance budget
+
+**TER-240** (MUST) Generation is linear in the work of its passes: a tile of *n* × *n* samples makes Σ (3*c*² − 2*c*) square and diamond calls over its passes (TER-092), each with one or two draws and one envelope power, plus one amplitude power per call; the merge reads trunc(size ÷ cell size)² world samples per tile; the normals make three square roots per sample. Generating all the reference terrains makes about 39.7 million power calls, about 0.6 million per terrain on average (DEC-247 item 10); the largest tile, 257 × 257 samples with *p* = 2, makes 261 112 calls.
+
+**TER-241** (MUST) A height sample takes 8 bytes and a normal 24 bytes. The largest reference terrain, 334 × 334 samples, holds 0.89 MB of heights and 2.68 MB of normals (DEC-247 item 7). A tile grid exists only during its tile's generation and merge, at most 257 × 257 binary64 samples (0.53 MB) in the reference content. The sea masks take 64 KiB for the shore-mask image, 64 KiB for the depth map, which is released after the wave meshes are built (TER-195), and 1 024 flags for the flat-water tiles.
+
+**TER-242** (MUST) Generation runs during match-world initialisation, outside every tick and frame budget: no tick runs and no command frame is taken until initialisation has finished (R-SIM-612). It never runs inside a simulation update slice or a rendered frame. The load budget and its progress reporting are DEC-226; the performance test T26 measures generation on the minimum CPU.
+
+**TER-243** (MUST) `Height`, `HeightAt`, `Normal`, `NormalAt` and `IsInside` take constant time; `CastRay` and `LineOfSight` take time proportional to the number of cells the ray crosses. Every query runs concurrently with every other query on any thread (TER-010).
+
+## 6 Failure modes, diagnostics and telemetry
+
+**TER-250** (MUST) The content build validates every map's terrain records against the map schema (DEC-015, ADR-0059) and rejects, with a diagnostic naming the map and the record: a cell size that is not finite and above 0; a world size below 1 wu; a grid of more than `ter.grid.max_samples_per_side` (32 768) columns or rows (TER-072); a decimal field that is not finite; a whole-number field outside the 32-bit signed range; a tile smaller than 2 cell sizes, a generation method other than 0, 1 or 2, or a guide grid whose cell count is not (2^*p* − 1)² (TER-112); a tile whose start index is −1 or below while its footprint overlaps the grid (TER-124); a flatten type outside 0 to 4; a ramp whose size is not 64 × 64 (TER-040); and a land colour ramp, shore-wave gradient or sea tile file number that the asset manifest does not hold. It warns, without rejecting, about a tile with *k* < *p* (TER-111) and a tile whose footprint lies wholly outside the grid (TER-124).
+
+**TER-251** (MUST) At run time, a terrain loader never passes a missing token on as a value, never hangs on malformed data and never stops the process: a map that fails validation is refused with a diagnostic (DEC-015). A missing ramp, sea tile or gradient file falls back to the map default, file 1 of its asset, with a diagnostic ([world renderers](renderer/world_renderers.md) §6).
+
+**TER-252** (MUST) The canonical digest of a height grid is the SHA-256 of its samples encoded as little-endian binary64, rows in order (z outer) and columns in order within a row (x inner), never the in-memory layout (DEC-246 item 10, ADR-0060); the normal grid's digest encodes the three components of each normal in the order x, y, z. Logs show the first 16 hexadecimal digits, and every comparison uses all 32 bytes (ADR-0060).
+
+**TER-253** (MUST) After every generation the terrain logs, in the terrain log category (ADR-0067): the map id, the grid size, the world extent, the tile and flatten-area counts, the lowest and highest sample, the share of samples above sea level, the grid digest of TER-252 and the generation time. A test build can also record a per-tile trace: one record per guide pin, per draw, per noise value and per write, with every intermediate value, in the order of TER-107 (the trace of §7.2).
+
+**TER-254** (MUST) The terrain sends no telemetry of its own; its generation time is part of the load timing that the diagnostics component reports ([diagnostics, test and performance](diagnostics_test_and_performance.md)).
+
+## 7 Acceptance tests
+
+### 7.1 Tests
+
+| Test | Kind | Checks | Requirements |
+|---|---|---|---|
+| T1 tile generator | unit | after `Seed`(1), the first eight `Next`() results are those of TER-081; `Signed`(*R*) gives +*R*/2 for a draw of 0 | TER-080, TER-081 |
+| T2 decimal rounding | unit | the parser and *r32* give 15.76 → 15.760000228881836, −15.39 → −15.390000343322754, 1.2 → 1.2000000476837158, −26.13 → −26.1299991607666, 24.1 → 24.100000381469727 and 11.7 → 11.699999809265137 | TER-066 |
+| T3 ceilLog2 | property | ceilLog2(*x*) equals the exact ⌈log₂ *x*⌉ for every integer from 1 to 69 999 | TER-065, TER-067 |
+| T4 grid reads | unit | on a 4 × 3 grid with distinct values, `At` returns the outside value at columns −1, 4, 65 535 and −32 768 and at rows −1 and 3, and `Set` there changes nothing | TER-072 |
+| T5 bilinear sampler | unit | `Sample` on the same grid gives, for each row of table 4.10-B, the blend that row states, and its weights-first sum differs from a left-to-right product form on a recorded case | TER-073, TER-153 |
+| T6 highest scan | unit | on a 3 × 5 grid the scan covers columns 0 to 4 of rows 0 to 4, reading the outside value beyond column 2 | TER-076 |
+| T7 set A derived values | unit | the values of table 7.2-B | TER-066, TER-091, TER-120, TER-122, TER-150 |
+| T8 set A, method 0 trace | unit | the first ten events of tile 2 equal table 7.2-C; the tile makes 16 129 calls | TER-091, TER-092, TER-100, TER-105, TER-107 |
+| T9 set A, method 1 trace | unit | the pins and first four calls of tile 0 equal table 7.2-D; the tile makes 261 112 calls and 1 044 457 events | TER-091, TER-100, TER-102 |
+| T10 set B, method 2 trace | unit | the first five calls equal table 7.2-F; the tile makes 952 calls and 3 817 events, and its highest sample and height factor equal table 7.2-E | TER-091, TER-100, TER-101 |
+| T11 set A result | unit | the world range and probe samples of table 7.2-B; 259 merge reads hit the case −1 < *fx* < 0 | TER-060, TER-120, TER-121, TER-122 |
+| T12 set C, smooth sample | unit | the running sums and result of table 7.2-G, and the different neighbours-first result | TER-142, TER-143, TER-145 |
+| T13 set D, flatten operations | unit | the five operations applied in order to a flat field give the blocks of table 7.2-H, including the in-place order of the smooth passes | TER-140 to TER-144 |
+| T14 tile order | property | every permutation of the tiles of a random terrain without flatten areas gives the same digest | TER-123 |
+| T15 normals | property | on a plane *h* = *a* *x* + *b* *z* every interior normal is (−*a*, 1, −*b*) ÷ \|(−*a*, 1, −*b*)\| within 10⁻⁶ (for *a* = 0.5, *b* = 0.25: (−0.4364357865767628, 0.8728715731535256, −0.2182178932883814)); a flat field and an isolated spike give (0, 1, 0); off-grid `NormalAt` gives (0, 1, 0); `Normal` between unequal corners is shorter than 1 | TER-013, TER-170, TER-171 |
+| T16 validation | unit | each rejection and warning of TER-250 on a minimal map; a tile wholly outside the grid leaves every sample unchanged | TER-112, TER-124, TER-250 |
+| T17 colour look-up | unit | with the jitter forced to 0, facets tilted by 10°, 30°, 45°, 60° and 90° read columns 11, 28, 39, 48 and 63; a facet at the normaliser height reads row 0 and one at sea level row 63; with a maximum height below the peak every higher facet reads row 0; over a large build every jitter at height 0 lies within ±0.1125 | TER-180, TER-181, TER-182 |
+| T18 colour determinism | unit | two builds of one field, one of them while another thread draws from its own presentation generator, give identical facet colours and shore noise | TER-185, TER-186 |
+| T19 sea masks | unit | for a square island on a square terrain: the mask is 255 on the island, falls to 0 six pixels beyond a straight coast and is stored flipped (image row 0 = mask row 127); depth = 1 − grey ÷ 255; a tile is false exactly when its 16 depths are at or above 1.0, at row 31 − *z* | TER-196 to TER-199 |
+| T20 wave-mesh vertices | unit | the cells are 200, 100 and about 67 across at levels 1 to 3; the emitted pairs follow TER-201; every vertex makes one shore-noise draw | TER-200 to TER-202 |
+| T21 wave formulae | unit | a CPU evaluation of TER-204 and TER-205 at fixed times equals the renderer's GPU wave update within its tolerance (RND test T6); the colour index truncates | TER-204, TER-205 |
+| T22 golden grid digests | golden-hash | for every Species map, the digest of the generated height grid and of the normal grid equals the value that the content build recorded with the map asset; on a mismatch both grids are dumped, the first differing sample is located, and the terrain is regenerated one tile at a time to isolate the stage | TER-060, TER-061, TER-252 |
+| T23 cross-build determinism | golden-hash | the digests of T22 are identical on at least two CPU generations of each of two x64 vendors and in every build that generates terrain (DEC-240 item 9) | TER-061, TER-065 |
+| T24 immutability | property | the field's digest is unchanged after every presentation option change, after device removal and after a match of concurrent queries; no option change regenerates or rebuilds anything | TER-010, TER-220, TER-221 |
+| T25 rays and line of sight | unit | a vertical ray hits the triangle of TER-017 under it; a ray starting outside the grid enters through the facing edge; a ray from outside with *direction.x* = 0 gives a finite entry; the line-of-sight margin applies at both ends | TER-016 to TER-019 |
+| T26 performance | performance | on the minimum CPU, generation of a synthetic terrain at the reference envelope's maximum (334 × 334 samples, 25 tiles of 257 × 257 tile samples, 6 flatten areas) and of the largest Species map is timed and recorded against the load budget (DEC-226); memory matches TER-241 | TER-240, TER-241, TER-242 |
+
+### 7.2 Vector sets
+
+Each set is a self-contained parameter set. The expected values below are exact binary64 values, printed so that they parse back to the same value, and are checked by exact equality; they were produced by a conformance generator, an implementation of §4 written from this text alone, and every implementation is accepted only when it reproduces all of them. New vectors are produced the same way: the expected values of a new set come from the conformance generator kept with the test suite (ADR-0069), never from a reference map, whose shapes and digests are not reproduced (DEC-063).
+
+**Vector set A** is a terrain of three tiles: world size 2700 × 2700 wu, cell size 15.76 wu, outside height −15.39 wu, maximum height absent (0), no flatten areas, and the tiles of table 7.2-A.
+
+Table 7.2-A Set A tiles.
+
+| Tile | Position x | Position y | Position z | Size | *fd* | *hs* | Desired height | Method | Seed | *ls* | *p* | Guide grid |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0 | 204 | −3.98 | 260 | 2264 | 1.20 | 4.00 | 220 | 1 | 269491 | 1.00 | 2 | 3 × 3, every cell 0 |
+| 1 | 1274 | 1.57 | 132 | 1014 | 1.20 | 4.00 | 220 | 1 | 904945 | 1.00 | 2 | 3 × 3, every cell 0 |
+| 2 | 1129 | 0.00 | 985 | 834 | 1.20 | 1.00 | 300 | 0 | 1 | 1.00 | 0 | — |
+
+Table 7.2-B Set A derived values and result.
+
+| Quantity | Tile 0 | Tile 1 | Tile 2 |
+|---|---|---|---|
+| *req* = trunc(size ÷ cell size) | 143 (143.65) | 64 (64.34) | 52 (52.92) |
+| *k* = ceilLog2(*req* − 1), *n* | 8, 257 | 6, 65 | 6, 65 |
+| guide points | at 64, 128, 192 (scale 64), all 0 | at 16, 32, 48 (scale 16), all 0 | none |
+| passes, first step | 7, 64 | 5, 16 | 7, 64 |
+| *comp* | 0.03480018982936636 | 0.03480018982936636 | 0.00870004745734159 |
+| highest sample after the position-y shift | 11.67633525289311 | 27.39792619447322 | 39.5289374012995 |
+| range = highest − outside + 0.001 | 27.067335596215866 | 42.78892653779597 | 54.91993774462225 |
+| height factor | 8.696459963951211 | 5.501189662596465 | 5.742723194805618 |
+| posXi = trunc(posX ÷ cell size + 0.5) | 13 (12.944 + 0.5) | 81 (80.84 + 0.5) | 72 (71.64 + 0.5) |
+| posZi | 16 (16.497 + 0.5) | 8 (8.376 + 0.5) | **62** (62.4999991 + 0.5, TER-066) |
+| numCells | 143 | 64 | 52 |
+| tile cell = size ÷ *n* | 8.809338521400779 | 15.6 | 12.830769230769231 |
+| square and diamond calls | 261 112 | 16 120 | 16 129 |
+
+Terrain values: cell size 15.760000228881836 and outside height −15.390000343322754 after rounding; *fd* rounds to 1.2000000476837158, giving the fd modifier 0.012578859674977138, and *ls* = 1 gives the ls modifier 0.6916403936557471; the grid is 172 × 172 samples with the extent 2710.720039367676 wu. The heights range from −15.390000343322754 to 273.38014287056404, below tile 2's desired height of 300 because no world sample coincides with tile sample (32, 32) (TER-122). Probe samples: *h*(0, 0) = −15.390000343322754, *h*(43, 43) = 64.11465376675797, *h*(86, 86) = 99.71780778328521, *h*(129, 57) = 80.84683847539341. 259 merge reads hit the case −1 < *fx* < 0 of TER-121.
+
+Table 7.2-C Set A, tile 2 (method 0, seed 1, *n* = 65, *p* = 0): the first ten calls. Pass 1 (step 64) has one cell; pass 2 (step 32) has four. Each call is one draw, one noise and one write, so the tile's 16 129 calls are 48 387 events.
+
+| # | Call | Draw | Base | Noise | Written |
+|---|---|---|---|---|---|
+| 1 | Square(32, 32, 32) | 41 | −15.390000343322754 (the four corners) | +54.918937744622255 | 39.5289374012995, the tile's highest sample |
+| 2 | Square(16, 16, 16) | 18467 | −1.6602659071671901 = (3 × outside + 39.5289…) ÷ 4 | −0.4416614889824001 | −2.1019273961495903 |
+| 3 | Square(16, 48, 16) | 6334 | −1.6602659071671901 | +2.1302986002057267 | 0.47003269303853656 |
+| 4 | Diamond(16, 32, 16) | 26500 | 5.626760588716423 = (W + E + S + N) ÷ 4 | −5.800023064758535 | −0.17326247604211176 |
+| 5 | Square(48, 16, 16) | 19169 | −1.6602659071671901 | −0.5904718394818702 | −2.2507377466490603 |
+| 6 | Diamond(32, 16, 16), the low-x edge of the cell at *x* = 32 | 15724 | 4.9465679787945245 | +0.3372408885970395 | 5.2838088673915635 |
+| 7 | Square(48, 48, 16) | 11478 | −1.6602659071671901 | +1.0398706187680178 | −0.6203952883991724 |
+| 8 | Diamond(48, 32, 16) | 29358 | 5.316951005732128 | −7.072397743527255 | −1.7554467377951273 |
+| 9 | Diamond(32, 48, 16) | 26962 | 5.9971436156540285 | −6.421832127879571 | −0.4246885122255426 |
+| 10 | Square(8, 8, 8) | 24464 | −12.067982106529463 | −4.0803875962216285 | −16.14836970275109 |
+
+Table 7.2-D Set A, tile 0 (method 1, seed 269491, *n* = 257, *p* = 2, first step 64, half-step 32). The nine guide pins come first, at (64, 64), (128, 64), (192, 64), (64, 128), (128, 128), (192, 128), (64, 192), (128, 192) and (192, 192), each 0; then:
+
+| # | Call | Choice draw and base | Noise draw and noise | Written |
+|---|---|---|---|---|
+| 1 | Square(32, 32, 32) | 28114, even: (B + C) ÷ 2 = (*h*(0, 64) + *h*(64, 0)) ÷ 2 = −15.390000343322754 | 13609: +7.16513913931825 | (32, 32) = −8.224861204004505 |
+| 2 | Square(32, 96, 32) | 12878, even: (*h*(0, 128) + *h*(64, 64)) ÷ 2 = −7.695000171661377 | 28951: −16.901538996064705 | (32, 96) = −24.596539167726082 |
+| 3 | Diamond(32, 64, 32) | 17157, odd: (W + E) ÷ 2 = (*h*(0, 64) + *h*(64, 64)) ÷ 2 = −7.695000171661377 | 20365: −5.354563557814331 | (32, 64) = −13.049563729475707 |
+| 4 | Square(32, 160, 32) | 23403, odd: (A + D) ÷ 2 = (*h*(0, 128) + *h*(64, 192)) ÷ 2 = −7.695000171661377 | 14881: +2.020653458650265 | (32, 160) = −5.674346713011111 |
+
+The tile makes 261 112 calls of four events each (choice draw, noise draw, noise, write) after its 9 pins: 1 044 457 events.
+
+**Vector set B** is one method-2 tile on a terrain of world size 1000 × 1000 wu, cell size 20.0 wu and outside height −26.13 wu (−26.1299991607666 after rounding), no flatten areas: position (100, 0.0, 100), size 344 (so *req* = 17, *k* = 4, *n* = 17), *fd* 5.0, *hs* 1.0, desired height 391, method 2, seed 1, *ls* 1.0, *p* = 2, and the guide grid of table 7.2-E. Any cell size that gives 10 ≤ *req* ≤ 17 gives the same tile values.
+
+Table 7.2-E Set B guide grid and tile values.
+
+| Guide row | *x* = 0 (tile x 4) | *x* = 1 (tile x 8) | *x* = 2 (tile x 12) |
+|---|---|---|---|
+| *z* = 0 (tile z 4) | 0 | 0 | 255 |
+| *z* = 1 (tile z 8) | 0 | 255 | 255 |
+| *z* = 2 (tile z 12) | 0 | 255 | 0 |
+
+*comp* = 1.6309778697705958e-13; 3 passes with the first step 4; 952 calls, 3 817 events with the 9 pins; the highest sample after the position-y shift is 263.7423632514278 and the height factor 1.4390076952556121.
+
+Table 7.2-F Set B: the first five calls (first step 4, half-step 2).
+
+| # | Call | Choice draw and parent | Noise draw and noise | Written |
+|---|---|---|---|---|
+| 1 | Square(2, 2, 2) | 41, below 0x3FFF: A = *h*(0, 0) = −26.1299991607666 | 18467: −0.10329567230285541 | (2, 2) = −26.233294833069458 |
+| 2 | Square(2, 6, 2) | 6334: A = *h*(0, 4) = −26.1299991607666 | 26500: −0.5015553966171525 | (2, 6) = −26.631554557383755 |
+| 3 | Diamond(2, 4, 2) | 19169, from 0x3FFF to below 0x7FFF: E = *h*(4, 4) = 0.0 | 15724: +0.0008134510092106354 | (2, 4) = 0.0008134510092106354 |
+| 4 | Square(2, 10, 2) | 11478: A = *h*(0, 8) = −26.1299991607666 | 29358: −0.6432491962051347 | (2, 10) = −26.773248356971735 |
+| 5 | Diamond(2, 8, 2) | 26962: E = *h*(4, 8) = 0.0 | 24464: −0.009966779196249498 | (2, 8) = −0.009966779196249498 |
+
+**Vector set C** is one evaluation of the smooth operation: *t* = 62.0, *T* = 11.7, *cur* = 20.305899393655125 (above *T*), with the neighbours W = 6.921732493425324 and S = 2.4006731601979148, already rewritten earlier in the same pass, and E = 21.20888188060145 and N = 27.02387309504114, still at their merged heights.
+
+Table 7.2-G Set C.
+
+| Quantity | Value |
+|---|---|
+| *v* = *cur* × (*t* ÷ *cur*) | 61.99999999999999 |
+| after + W, + E, + N, + S | 68.92173249342531, 90.13061437402676, 117.1544874690679, 119.55516062926581 |
+| ÷ 6.0, written because it is below *cur* | **19.925860104877636** |
+| the neighbours summed first (wrong) | 19.92586010487764 |
+
+**Vector set D** applies five flatten areas, in this order, to a terrain of world size 120 × 120 wu, cell size 12 wu and outside height −10 wu with no tiles (10 × 10 samples, all −10): (1) Absolute, centre (60, 5, 60), half-width 20; (2) Add, centre (60, 24.1, 60), half-width 8; (3) Subtract, centre (60, 4, 60), half-width 20, threshold 10; (4) Subtract2, centre (60, 3, 60), half-width 20, threshold 6; (5) Smooth, centre (60, 1, 60), half-width 20, threshold 0.5. The half-width 20 covers columns and rows 4 to 6 (world 48 to 72); the half-width 8 covers only sample (5, 5).
+
+Table 7.2-H Set D: samples (*i*, *j*) for *i*, *j* from 4 to 6 after each step; every other sample stays −10.
+
+| After | Row *j* = 4 | Row *j* = 5 | Row *j* = 6 |
+|---|---|---|---|
+| (1) Absolute | 5, 5, 5 | 5, 5, 5 | 5, 5, 5 |
+| (2) Add | 5, 5, 5 | 5, 29.100000381469727, 5 | 5, 5, 5 |
+| (3) Subtract | 5, 5, 5 | 5, 25.100000381469727, 5 | 5, 5, 5 |
+| (4) Subtract2 | 2, 2, 2 | 2, 25.100000381469727, 2 | 2, 2, 2 |
+| (5) Smooth | −2.5, −2.0833333333333335, −2.5 | −2.0833333333333335, −0.9722222222222223, −1.3333333333333333 | −2.5, −1.3333333333333333, −3.611111111111111 |
+
+The asymmetry of step (5) comes from the in-place order (TER-141): sample (4, 4) is (1 − 10 + 2 + 2 − 10) ÷ 6 = −2.5 in the first pass and is kept by the second, while sample (6, 6) reads its W and S neighbours after they were lowered.
+
+### 7.3 Conformance procedure
+
+1. Implement generation as a pure function from the terrain records to (columns, rows, cell size, binary64 samples) (TER-010, TER-060).
+2. Pass the primitive tests T1 to T6.
+3. Pass one tile per generation method and the flatten vectors: T7 to T13 (a test build's trace of TER-253 prints as many events as needed).
+4. Pass T22 for every Species map, then T23.
+5. Pass the normal-grid digests of T22, and the property tests T14, T15 and T24.
+
+## 8 Open decisions
+
+### 8.1 Decisions and architecture records
+
+| Reference | Status | Where it applies |
+|---|---|---|
+| DEC-025 | Resolved | the generator look is kept: per-tile diamond-square with guide grids, max-composition and five flatten types (TER-003, TER-009) |
+| DEC-063 | Dropped | no reference terrain, map shape or map identity is reproduced; vectors use anonymous parameter sets (TER-009, §7.2) |
+| DEC-240 | Open | the numeric model of generation and its scope of bit-exactness (TER-061, TER-065, TER-221) |
+| DEC-241 | Open | rounding, parsing, normalisation, tolerances and degenerate geometric queries (TER-017, TER-065, TER-066, TER-077, TER-197) |
+| DEC-242 | Open | the simulation generator's algorithm; the private tile generator is fixed by TER-080 |
+| DEC-246 | Open | the terrain runtime model, terrain content identity, off-map heights and stateless cosmetics (TER-009, TER-061, TER-153, TER-187, TER-221, TER-252) |
+| DEC-247 | Open | terrain scale, large-world terrain and the grid-size limit (TER-009, TER-155, TER-240, TER-241) |
+| DEC-226 | Open | loading, streaming and the load budget (TER-222, TER-242) |
+| DEC-324 | Open | the parameter semantics, the method-2 bias and the smooth divisor; unbiased variants in the editor (TER-032, TER-101, TER-106, TER-144) |
+| DEC-326 | Open | the grid overlay's pattern relative to the triangle edges (TER-043) |
+| DEC-113 | Open | the off-map reads that make negative coordinates sea restrict the Abductor wander area (TER-153) |
+| DEC-224 | Open | the numeric environment of the thread that generates (TER-222) |
+| DEC-040 | Open | the inverted style's alpha (TER-041, TER-181) |
+| DEC-045 | Open | the map editor (§8.2) |
+| DEC-004, DEC-007, DEC-010, DEC-011, DEC-013, DEC-014, DEC-015, DEC-118, DEC-653, DEC-800 | Resolved | reference values as baseline; presentation never writes the field; no setting feeds it; per-match lifetime; presentation generators; bounded searches; build-time validation; the seasonal state; finite results; lossless writers |
+| ADR-0011 | Accepted | the renderer draws the field in chunked static buffers with an edge-term overlay and GPU water; it accepts any producer of height and colour data |
+| ADR-0060, ADR-0061, ADR-0059 | Accepted | content identity by SHA-256, the map schema and the content-build validators (TER-250, TER-252) |
+| ADR-0069 | Proposed | unit, property, golden-hash and performance tests (§7) |
+
+Two points have no register entry yet and keep the behaviour stated: the grid walk of a ray with a zero horizontal component (TER-017), whose reference handling is not established, so the walk visits the column or row the ray lies in; and the highest-sample scan on a non-square grid (TER-076).
+
+### 8.2 Map-editor hooks
+
+The map editor is designed fresh by the design phase (DEC-045); [map editor hooks](../../reference/08_maps_and_level_design/map_editor_hooks.md) records its reference behaviour. The terrain's part in it:
+
+- **Regeneration.** The editor regenerates the field with this generator and its reference arithmetic, biases included, whenever a terrain-panel, tile-panel or flatten-area control changes a value, a tile is added, cloned or deleted, a seed is randomised from the clock, the map is scaled or a guide-grid resolution is applied (R-MAP-325 to R-MAP-335; TER-060). The editor stores only the records; whether a map tool bakes the field is DEC-246.
+- **Guide-grid painting.** The painter edits the byte values of TER-036 (R-MAP-333, R-MAP-334).
+- **Writer precision.** The reference text writer (R-MAP-385 to R-MAP-387) writes the world size as whole numbers and the cell size, outside height and maximum height with 2 decimals; a tile's position x, position z, size, method, seed and guide power as whole numbers, its position y, fractal dimension, height scale and lowland smoothing factor with 2 decimals and its desired height with no decimals, followed by its guide grid when the power is above 0; and every flatten area with all six fields, the centre, size and threshold with 1 decimal. Because decimal fields are rounded to binary32 on reading (TER-066) and to decimals on writing, a load and save cycle changes every value that has more decimals than the writer keeps, and the terrain with it; values that already have at most those decimals survive. Species writers are lossless (DEC-800).
+
+### 8.3 Design-phase inputs
+
+1. **Runtime model** (DEC-246): keep generation at load (the baseline), bake the height grid in the content build (binary32, or 16-bit quantised with a scale and an offset, with or without the normal grid), generate at run time in integer arithmetic with a counter-based generator, or deliver server-owned terrain chunks; and whether the bit-exact reproduction of TER-061 and TER-065 is needed at all, which it is only where participants generate their own field.
+2. **Content identity** (DEC-246, DEC-204, ADR-0060): what the session handshake and the advertised session record compare: the digest of the baked grid (TER-252), of the terrain records, or of the whole map asset.
+3. **Numeric model** (DEC-240, DEC-241): binary64 with binary32-rounded transcendental results (the baseline), strict binary64 with an own maths library, or fixed point, and the precision of stored heights and normals.
+4. **Large world** (DEC-247, vision §6 item 6): a continuous world height field in chunks aligned with region boundaries; shared edge samples between chunks; how tiles and flatten areas that straddle chunk boundaries compose; grids beyond `ter.grid.max_samples_per_side` and the 16-bit index semantics of TER-072; coordinate precision far from the origin (binary64 or fixed point in the simulation, camera-relative binary32 in rendering); the memory per chunk and per region.
+5. **Streaming** (DEC-226): loading terrain ahead of a region hand-over without blocking any region's tick, and the load budget of T26.
+6. **Strategic zoom** (DEC-247 item 12, vision O9): coarse levels of detail of the height field in the same flat-shaded style, together with the renderer's level-of-detail scheme (ADR-0011, RND-138).
+7. **Off-map heights** (DEC-246 item 7): keep the reference edge semantics of TER-153, or clamp, or return the outside height; the Abductor wander area depends on it (DEC-113).
+8. **Cosmetic noise** (DEC-246 item 11): replace the colour and shore-noise chains by stateless functions of position (TER-187), which chunked or streamed colour builds need.
+9. **Generator variants** (DEC-324): unbiased method-2 and smooth variants for new maps.
+10. **Sea at world scale**: the shore mask (128 pixels over twice the map), the depth map and the wave cell (max(*X*, *Z*) ÷ 100 × detail) scale with the map; a world needs per-region or camera-following forms of them, together with the renderer's sea plane.
+11. **Terrain change during play**: the reference terrain never changes after generation (TER-002); whether the world game changes terrain during play (for example craters or levelled building sites), which would make the field persisted, replicated world state (DEC-251).

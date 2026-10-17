@@ -34,7 +34,7 @@ An event of the `music` source goes to the music hooks instead ([music hooks and
 
 **R-AUD-023** (MUST) An event id is matched exactly within its own source's definitions. Event ids and source ids are lower-case snake_case; no event of one source ever matches a definition of another source.
 
-**R-AUD-024** (MUST) **Layering.** Every matching layer whose audience accepts the event produces its own instance. Several layers of one event are how the data layers a body sound with a voice (for example `worker.die`), adds a loop to a one-shot (`transport.spawn`), or provides friend and foe variants (`control_zone.owner_changed`). In the event set of the [event catalogue](event_catalogue.md), 154 bound events have one layer, 22 have two, 5 have three and 1 has four (`abductor.spawn`), 217 layers in all.
+**R-AUD-024** (MUST) **Layering.** Every matching layer whose audience accepts the event produces its own instance. Several layers of one event are how the data layers a body sound with a voice (for example `worker.die`), adds a loop to a one-shot (`transport.spawn`), or provides friend and foe variants (`control_zone.owner_changed`). In the reference event set, 154 bound events have one layer, 22 have two, 5 have three and 1 has four (`abductor.spawn`), 217 layers in all; the two no-team layers of R-AUD-026 make 219 layers in the Species set of the [event catalogue](event_catalogue.md).
 
 **R-AUD-025** (MUST) **Audience.** Each layer has an audience, evaluated once, when the event is raised, on the local participant:
 
@@ -248,11 +248,11 @@ The members of `sfx.creature.spider.die` include the two members of `sfx.creatur
 
 **R-AUD-083** (MUST) Owner-only feedback uses own-audience layers, two-dimensional (`leader.spawn`, `leader.selected`) or attached (the acknowledgement layers of the Leader's order events). Friend and foe stings use own and enemy layer pairs: `supply_crate.capture_begin`, `relic.owner_changed`, `control_zone.owner_changed` and `control_zone.relic_scored`.
 
-**R-AUD-084** (MUST) Variety comes from pitch: 49 of the 217 layers randomise their pitch, mostly by 5 to 20 % and per note, besides the sample-group choice.
+**R-AUD-084** (MUST) Variety comes from pitch: 49 of the 217 reference layers randomise their pitch, mostly by 5 to 20 % and per note, besides the sample-group choice.
 
 **R-AUD-085** (MUST) Many one-shots carry a release of about 10 s, authored to let an echo tail ring. With effects off (R-AUD-087), such a release only holds the voice while the ended sample is silent; ranking playing instances by their current envelope level keeps these tails from crowding out new sounds ([positional, priorities and mix](positional_priorities_and_mix.md) R-AUD-250).
 
-**R-AUD-086** (MUST) Levels are authored near the top of the scale: of the 205 fixed levels of the event set, 187 lie between −10 dB and 0 dB, the range is −24.85 dB to 0 dB and the mean is −4.5 dB, so loudness differences come mostly from the minimum distance and the distance. Most layers use a minimum distance of 100 wu (110 layers) or 200 wu (30 layers); the range is 5.98 wu (the tree presence loops) to 10000 wu (`launch_vessel.flight`), and only `meteor.land` (450 wu), the white-noise layer of `ambience.match_enter` (500 wu) and `launch_vessel.flight` exceed 400 wu.
+**R-AUD-086** (MUST) Levels are authored near the top of the scale: of the 205 fixed levels of the reference event set, 187 lie between −10 dB and 0 dB, the range is −24.85 dB to 0 dB and the mean is −4.5 dB, so loudness differences come mostly from the minimum distance and the distance. Most layers use a minimum distance of 100 wu (110 layers) or 200 wu (30 layers); the range is 5.98 wu (the tree presence loops) to 10000 wu (`launch_vessel.flight`), and only `meteor.land` (450 wu), the white-noise layer of `ambience.match_enter` (500 wu) and `launch_vessel.flight` exceed 400 wu.
 
 ### 2.11 Filters and effects
 
@@ -329,7 +329,7 @@ flowchart LR
   T --> I["one instance per accepted layer, copied from the layer"]
   I --> M{"sharing"}
   M -->|"poly"| Q["new instance"]
-  M -->|"share-rnd or share-near"| SH["merged into the shared instance of the event; emitter added"]
+  M -->|"share-rnd or share-near"| SH["merged into the shared instance of the event, emitter added"]
   Q --> V["ranking and voices: positional, priorities and mix"]
   SH --> V
   V --> F["sample group chooses a member at start, at each loop and at each note"]
@@ -340,12 +340,12 @@ Diagram 3-A: from a raised event to a voice (R-AUD-020 to R-AUD-030).
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Waiting : event raised; instance created
+    [*] --> Waiting : event raised, instance created
     Waiting --> Retired : once, no voice within the patience window
     Waiting --> Attack : voice granted
     Attack --> Hold : attack elapsed
     Hold --> Release : sustain elapsed, stop, or one-shot sample ends
-    Hold --> Hold : loop, sample ends; loop delay; new member
+    Hold --> Hold : loop, sample ends, loop delay, new member
     Release --> Ended : release elapsed
     Release --> Attack : note loop, new note after the loop delay
     Ended --> [*]
@@ -363,10 +363,10 @@ sequenceDiagram
       C->>A: bucket changes: stop previous tone, capture_progress_NN
     end
     alt crate opens
-      C->>A: stop progress and capture_begin; captured; capture_progress_100 (silent)
+      C->>A: stop progress and capture_begin, captured, capture_progress_100 (silent)
     else majority lost, progress drains
       C->>A: bucket changes: stop previous tone, capture_progress_NN downwards
-      C->>A: owner becomes none: stop progress and capture_begin; capture_lost
+      C->>A: owner becomes none: stop progress and capture_begin, capture_lost
     end
 ```
 

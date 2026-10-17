@@ -19,7 +19,7 @@ All text of this document is new, functional text keyed by Species string ids (D
 
 ### 2.1 Content, text and values
 
-**R-TUT-001** (MUST) The help consists of exactly these parts: the help pages (§2.4), the contextual hints and the explainer panel of the hint overlay (§2.2, §2.3) and the two tutorials (§2.5 to §2.10). In a match no gamepad control prompts are drawn, and the contextual control-help panel and the in-match objective cards exist only as hooks (DEC-050). No help part runs a script, a narrator or a cut-scene (DEC-053).
+**R-TUT-001** (MUST) The help consists of exactly these parts: the help pages (§2.4), the contextual hints and the explainer panel of the hint overlay (§2.2, §2.3) and the two tutorials (§2.5 to §2.10). In a match no gamepad control prompts are drawn, and the contextual control-help panel and the in-match objective cards exist only as hooks (DEC-050). No help part runs a script, a narrator or a cut-scene (DEC-053), and no tutorial step plays a camera animation: a tutorial's camera is the start-of-match camera of every match (R-CTRL-495 to R-CTRL-497, DEC-803).
 
 **R-TUT-002** (MUST) Every text that this document shows is new text, keyed by the string ids of §2.11, written in plain functional British English in the source string table `strings.en_gb` and translated in `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru` (ADR-0063). Each string id is defined once per language; a second definition is a content-build error (DEC-801). The pictures that the hints and the explainer panels animate are new art; what a reference explainer animation depicts is a brief for that art, not a rule (DEC-037).
 
@@ -111,11 +111,11 @@ Table 2.4-A Help page topics.
 
 | Page | Picture | Text | Gamepad variant | Topic |
 |---|---|---|---|---|
-| General 1 | `help.general_page` 1 (150 × 150) | `ui.help.page.general.1` | yes | Workers make up the whole army |
-| General 2 | `help.general_page` 2 (150 × 150) | `ui.help.page.general.2` | yes | promoting a Worker to a Leader |
-| General 3 | `help.general_page` 3 (150 × 149) | `ui.help.page.general.3` | no | Workers come from Spawn Nodes |
-| General 4 | `help.general_page` 4 (150 × 150) | `ui.help.page.general.4` | no | Workers attack nearby enemies by themselves |
-| General 5 | `help.general_page` 5 (150 × 150) | `ui.help.page.general.5` | yes | Supply crates with random Powers drop from the sky |
+| General 1 | `help.general_page` 1 | `ui.help.page.general.1` | yes | Workers make up the whole army |
+| General 2 | `help.general_page` 2 | `ui.help.page.general.2` | yes | promoting a Worker to a Leader |
+| General 3 | `help.general_page` 3 | `ui.help.page.general.3` | no | Workers come from Spawn Nodes |
+| General 4 | `help.general_page` 4 | `ui.help.page.general.4` | no | Workers attack nearby enemies by themselves |
+| General 5 | `help.general_page` 5 | `ui.help.page.general.5` | yes | Supply crates with random Powers drop from the sky |
 | Spawn Control 1 | `help.mode_page` Spawn Control 1 | `ui.help.page.spawn_control.1` | no | holding as many Spawn Nodes as possible |
 | Zone Control 1 | `help.mode_page` Zone Control 1 | `ui.help.page.zone_control.1` | no | holding as many Control Zones as possible |
 | Zone Control 2 | `help.mode_page` Zone Control 2 | `ui.help.page.zone_control.2` | no | taking a zone by moving Workers into it |
@@ -135,7 +135,7 @@ Table 2.4-A Help page topics.
 
 ### 2.5 Tutorials: set-up, start and end
 
-**R-TUT-050** (MUST) There are two tutorials, the **first tutorial** (the basics) and the **second tutorial** (advanced controls), launched from the tutorials page by the buttons `ui.tutorials.part_1` and `ui.tutorials.part_2` (R-META-036). Each is a single-player Zone Control match in a private local session against Easy bots (R-MODE-083), with the tutorial director of §2.6 running on top of it. A tutorial has no rules of its own beyond the overrides of §2.8 and the effects of its director.
+**R-TUT-050** (MUST) There are two tutorials, the **first tutorial** (the basics) and the **second tutorial** (advanced controls), launched from the tutorials page by the buttons `ui.tutorials.part_1` and `ui.tutorials.part_2` (R-META-036). Each is a single-player Zone Control match in a private local session against Easy bots (R-MODE-083), with the tutorial director of §2.6 running on top of it. A tutorial has no rules of its own beyond the overrides of §2.8 and the effects of its director. This section and §2.6 to §2.10 are the reference tutorials; whether and how Species keeps tutorials is open (DEC-051).
 
 **R-TUT-051** (MUST) The tutorials are set up as table 2.5-A states. The match setup applies the set-up (R-META-037, R-MODE-083); this document owns the tutorial maps' contents (R-TUT-052) and the director.
 
@@ -147,7 +147,7 @@ Table 2.5-A Tutorial set-up.
 | map | the 2-player tutorial map, slot `map_zone_control_2p_01` | the 3-player tutorial map, slot `map_zone_control_3p_01` | R-MAP-158 |
 | map player count and population cap | `ref.tut.first.map_positions` (2) positions; map population cap `ref.tut.first.map_population_cap` (2,000) | `ref.tut.second.map_positions` (3) positions; map population cap `ref.tut.second.map_population_cap` (1,800); no defender cap (DEC-120) | this document; per-team cap R-MODE-258 |
 | teams | the tutorial player in slot 0 and one bot | the tutorial player in slot 0 and two bots | R-META-037 (player count − 1 bot teams) |
-| bot difficulty | Easy | Easy; Standard from the end step (R-TUT-117) | R-MODE-030, R-BOT-150 |
+| bot difficulty | Easy; the session start does not reset it to Standard | Easy, likewise; Standard from the end step (R-TUT-117) | R-MODE-030, R-BOT-022, R-BOT-150 |
 | match options | every Zone Control option at its default: score mode 0; time limit `ref.mode.zone_control.option.time_limit` (5 minutes); Catch-up bonus `ref.econ.catch_up.option_percent` (90 %); crate drop period `ref.econ.crate.drop_rate_s` (40 s); starting powers `ref.econ.start.powers` (0); Comeback Bonus `ref.match.option.comeback_bonus` (on); sudden death `ref.match.option.sudden_death` (on); crate placement `ref.match.option.crate_placement` (weighted) | the same; crate placement becomes random at the end step | R-MODE-074, R-MODE-083, R-MODE-253 |
 | colours | requested colour 0; bot colours equal their slot ids | slot colours 0, 1 and 2; bot colours equal their slot ids | R-MODE-016, R-SIM-416 |
 | start positions | position = slot id | position = slot id | R-MODE-011, R-SIM-417 |
@@ -160,19 +160,19 @@ Table 2.5-A Tutorial set-up.
 
 **R-TUT-053** (MUST) A tutorial's button is inactive while its map is not in the Zone Control map list (R-META-036). Maps are identified by their content identity (DEC-204), so a tutorial is offered exactly when its map is present and permitted.
 
-**R-TUT-054** (MUST) A tutorial starts as diagram 3-A shows: the button press (ignored while it is inactive or while a quick start is pending) sets the single-player, quick-start and tutorial flags and the tutorial type and locks the page navigation; the title-page update starts the private local session; the match setup applies the set-up of table 2.5-A, fades out, requests the bot teams and issues `PlayerCommand::StartMatch` (R-META-034, R-META-037). From the first tick of the match the director is evaluated every tick (R-TUT-061); its tabs are drawn only after the grace period (R-TUT-069).
+**R-TUT-054** (MUST) A tutorial starts as diagram 3-A shows: the button press (ignored while it is inactive or while a quick start is pending) sets the single-player, quick-start and tutorial flags and the tutorial type and locks the page navigation; the title-page update starts the private local session; the match setup applies the set-up of table 2.5-A, fades out, requests the bot teams and issues `PlayerCommand::StartMatch` (R-META-034, R-META-037). The world is held during the grace period, so the director is first evaluated after post-grace tick 0, the first world tick (R-MODE-040), and then after every tick (R-TUT-061).
 
 **R-TUT-055** (MUST) Neither tutorial raises a completion event. The first tutorial ends when its Zone Control match ends by the Zone Control result rules (R-MODE-257). In the second tutorial the director stops `ref.tut.second.end_tab_ticks` after its win tab was accepted (R-TUT-117); the match then goes on as a normal 3-player Zone Control match, whose time limit counts down from the held value of R-TUT-081 from the tick at which the bots may spawn.
 
 **R-TUT-056** (MUST) A tutorial has no skip control. The menu action opens the in-match menu exactly as in any match (row M4 of R-CTRL-047; no tutorial runs a script, DEC-053). Leaving the match returns to the front end at the tutorials page (R-MODE-035, R-META-011), whose set-up clears the current instruction (R-META-036). A tutorial may be played again at once.
 
-**R-TUT-057** (MUST) All director state is reset at the start of every tutorial run (DEC-103): no current tab, step timer 0, every tab hidden, the score time, the score-window latch and the score-started flag of the first tutorial clear, the three lesson flags of the second tutorial clear, both gates clear (R-TUT-082), and no tutorial Supply crate. A second run in the same session therefore behaves exactly like the first; in particular the first tutorial's scores tab shows on every run.
+**R-TUT-057** (MUST) All director state is reset at the start of every tutorial run (DEC-103): no current tab, the step timer unset, every tab hidden, the score time, the score-window latch and the score-started flag of the first tutorial clear, the three lesson flags of the second tutorial clear, both gates clear (R-TUT-082), and no tutorial Supply crate. A second run in the same session therefore behaves exactly like the first; in particular the first tutorial's scores tab shows on every run.
 
 ### 2.6 The tutorial director
 
 **R-TUT-060** (MUST) The **tutorial director** evaluates the step rules of the running tutorial (§2.9, §2.10) for the tutorial player's team. Each evaluation chooses at most one instruction tab, which it anchors to a world point, and decides the tutorial's world-changing effects. The tabs (table 2.11-A) are the only output the player sees.
 
-**R-TUT-061** (MUST) The director is evaluated once per tick of match time, on the tutorial player's participant, in step 10 of R-CTRL-020 of the first frame after the tick has run, from the state of that tick. Its clock *now* is the match tick counter (DEC-009); it never reads the real clock (DEC-103). While the world is held no tick runs, so the director is not evaluated and its timers do not advance.
+**R-TUT-061** (MUST) The director is evaluated once per tick of match time, on the tutorial player's participant, in step 10 of R-CTRL-020 of the first frame after the tick has run, from the state of that tick. Its clock *now* is the match tick counter (DEC-009); it never reads the real clock (DEC-103). While the world is held, during the grace period and during a pause, no world tick runs, so the director is not evaluated and its timers do not advance.
 
 **R-TUT-062** (MUST) Every world-changing effect that the director decides is issued as a **tutorial event**, which the simulation executes at a tick in the command order of [teams and player commands](12_simulation_model/06_teams_and_player_commands.md), never by the frame loop and never on a real-clock timer (DEC-103, R-SIM-727, R-SIM-230). The tutorial events are: insert the tutorial Supply crate with a forced outcome at a point (R-TUT-098, R-TUT-116); reduce a Beam Dish's valid receivers to one dish (R-TUT-114); set the bots-may-act gate (R-TUT-115); and the end step, which switches basic crates only on, sets crate placement to random, sets the bot difficulty to Standard and sets the bots-may-spawn gate (R-TUT-117). Executing an event again changes nothing more.
 
@@ -180,7 +180,7 @@ Table 2.5-A Tutorial set-up.
 
 **R-TUT-064** (MUST) At the start of each evaluation the director hides every instruction tab, except that the scores tab and the win tab stay shown while each is the current tab. Each step rule may then request a tab with an anchor point and an up-offset, one of `ref.tut.tab.up_offsets` (20, 30, 40, 60 or 80 wu) as the step tables of §2.9 and §2.10 give it ("up 40"); the request passes through the rate limiter of R-TUT-066.
 
-**R-TUT-065** (MUST) The director keeps one **current tab** (none at the start) and one **step timer** in ticks (0 at the start). The step timer holds the tick of the last accepted request; it is refreshed by every accepted request, not only by a change of tab, and every delay in §2.9 and §2.10 that counts "since the step timer" counts from it.
+**R-TUT-065** (MUST) The director keeps one **current tab** (none at the start) and one **step timer** in ticks (unset at the start; every test of R-TUT-066, R-TUT-097, R-TUT-116 and R-TUT-117 against an unset step timer passes). The step timer holds the tick of the last accepted request; it is refreshed by every accepted request, not only by a change of tab, and every delay in §2.9 and §2.10 that counts "since the step timer" counts from it.
 
 **R-TUT-066** (MUST) A tab request passes through this rate limiter:
 
@@ -216,7 +216,7 @@ Table 2.6-A Director counts and tests.
 | zone count | a Control Zone's count of the team's Workers at its latest recount (R-MODE-251) | — |
 | enemies near p | `CountEnemiesInCells(p, r, team)` (R-SIM-311; approximate by rule, R-SIM-312, DEC-094) | — |
 
-**R-TUT-069** (MUST) After the grace period of a tutorial, the hint overlay draws every shown instruction tab each frame, by R-TUT-070 to R-TUT-075. During the grace period no tab is drawn, although the director is already evaluated.
+**R-TUT-069** (MUST) After the grace period of a tutorial, the hint overlay draws every shown instruction tab each frame, by R-TUT-070 to R-TUT-075. During the grace period no tab is shown or drawn.
 
 ### 2.7 Drawing an instruction tab
 
@@ -252,6 +252,7 @@ Table 2.8-A Gameplay overrides in the tutorials.
 | bot Beam Dish aiming | unfiltered | filtered once the bots may act | filtered | R-BOT-153 |
 | bot gate node priority | — | forced to the pin value | 0 once the second bot owns exactly one Spawn Node | R-BOT-155 |
 | bot formation Leaders | none | none | none | R-BOT-154 |
+| bot conveyor Leaders | wherever the bot's random selection gives a target | only the second bot, once the bots may act, towards Beam Dish nodes, as its movement allows | normal | R-BOT-094, R-BOT-152 |
 | the final Beam Dish as a receiver | — | never valid | never valid | R-BLDG-158 |
 | bot colours | the slot id | the slot id | the slot id | R-MODE-016, R-SIM-416 |
 | start positions | the slot id | the slot id | the slot id | R-MODE-011, R-SIM-417 |
@@ -319,7 +320,7 @@ scores_latch is `ref.tut.first.scores_latch_ticks` (100 ticks), scores_window_le
 
 1. **D1.** When the far zone is not taken and idle(G2, 100 wu) > `ref.tut.first.far_zone_idle` (10), request `capture_far_zone` at `far_zone`, up 20.
 2. **D2.** Otherwise, while the crate lesson is not done:
-   1. when no tutorial crate has been inserted and now > step timer + `ref.tut.director.crate_delay_ticks` (100 ticks), issue the insertion event of R-TUT-098. Rule D requests no tab before the crate exists, so the crate arrives on the first evaluation after 100 ticks without an accepted request;
+   1. when no tutorial crate has been inserted and now > step timer + `ref.tut.director.crate_delay_ticks` (100 ticks), issue the insertion event of R-TUT-098. Rule D requests no tab before the crate exists, so the crate arrives once more than 100 ticks have passed without an accepted request;
    2. when the tutorial crate exists and is on the ground, request `crate_open` at the crate's position + its velocity × `ref.sim.tick_period`, up 80;
    3. when it exists and is still falling, request `crate_falling` at its position, up 80;
    4. when it has been inserted and no longer exists, no Power-received pop-up is showing and the team has no current Power, request `select_airstrike` (screen anchor, R-TUT-070);
@@ -418,7 +419,7 @@ When `attack_node` is owned: first, when no tutorial crate has been inserted and
 | connected, and the current tab is not `win` | request `win` at `centre_zone`, up 60, and issue the end-step event: basic crates only on (R-CRATE-031), crate placement random (`match.options.crate_placement.random`, R-MODE-074), bot difficulty Standard (R-MODE-030), the bots-may-spawn gate set. The event is issued at every evaluation until the win tab is accepted; repeating it changes nothing |
 | otherwise, when now > step timer + `ref.tut.second.end_tab_ticks` (200 ticks) | the current tab becomes none, and the preamble ends every later evaluation: the director has stopped |
 
-**R-TUT-118** (MUST) **How the dish lessons begin.** No tab sends the player to `first_console`. `first_dish` is the controlled structure of `first_console`, which recomputes its owner every tick from its port occupants: a team with more than `ref.bldg.command_console.capture_threshold` (2) occupants, the most if several and the lower team index on a tie, owns the console and its controlled Beam Dish; when no team qualifies, only the console loses its owner and the dish keeps its team (R-BLDG-301). Idle Workers man the free ports of structures within `ref.unit.worker.port_search_range` (100 wu) less the structure's radius by themselves (R-UNIT-090). The dish lessons therefore begin only once idle Workers of the player wander into port range of `first_console`, 224.6 wu from `home_node` in the reference layout, and capture it: the reference default of DEC-110.
+**R-TUT-118** (MUST) **How the dish lessons begin.** No tab sends the player to `first_console`. `first_dish` is the controlled structure of `first_console`, which recomputes its owner every tick from its port occupants: a team with more than `ref.bldg.command_console.capture_threshold` (2) occupants, the most if several and the lower team index on a tie, owns the console and its controlled Beam Dish (the lower threshold of a console linked to a Core Device never applies, because the tutorial maps have none); when no team qualifies, only the console loses its owner and the dish keeps its team (R-BLDG-301). Idle Workers man the free ports of structures within `ref.unit.worker.port_search_range` (100 wu) less the structure's radius by themselves (R-UNIT-090). The dish lessons therefore begin only once idle Workers of the player wander into port range of `first_console`, 224.6 wu from `home_node` in the reference layout, and capture it: the reference default of DEC-110.
 
 **R-TUT-119** (MUST) **Who takes the attack node.** Until the bots may act no bot moves. Afterwards, until the bots may spawn, the first bot never moves and the second bot moves only to Beam Dish nodes (R-BOT-152); `bot_gate_node`, 47.4 wu from `attack_node`, gives the second bot the pin priority (R-BOT-155); the second bot's home Beam Dish is linked to a dish about 212 wu from `attack_node`. `attack_node` lies about 1,138 wu from the second bot's home and 1,482 wu from the player's. The lessons expect the second bot to take `attack_node` first, which shows `formation_attack`; whether it does depends on play, and when the player takes it first, phase A goes straight to the Transport crate, so the lessons may come in another order (DEC-110).
 
@@ -775,7 +776,7 @@ Caption: Diagram 3-E, the usual path through the second tutorial. The phase tabl
 | `ref.tut.hint.deselect.extend_s` | 1.0 | s of real time | added by a trigger while showing | R-TUT-024 | DEC-037 |
 | `ref.tut.hint.deselect.suspicion_step` | 0.75 | s | subtracted by a stray action | R-TUT-024 | DEC-037 |
 | `ref.tut.hint.deselect.suspicion_limit` | −1.0 | s | below it the hint shows; two strays within about 1.5 s | R-TUT-024 | DEC-037 |
-| `ref.tut.hint.deselect.decay_per_s` | 0.33 | per second | recovery of a negative timer | R-TUT-024 | DEC-037 |
+| `ref.tut.hint.deselect.decay_per_s` | 0.33 | per second | a negative timer climbs back to 0 at this rate | R-TUT-024 | DEC-037 |
 | `ref.tut.hint.fast_pan.show_s` | 3.0 | s of real time | re-armed every frame while the condition holds | R-TUT-026 | DEC-037 |
 | `ref.tut.help_page.picture_divisor` | 3.5 | divisor | picture side = left box height ÷ 3.5 | R-TUT-041 | — |
 | `ref.tut.help_page.mode_pages` | 1, 2, 3, 3, 4, 3 | pages | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain; follows the strings that exist | R-TUT-043 | — |
@@ -814,3 +815,94 @@ Caption: Diagram 3-E, the usual path through the second tutorial. The phase tabl
 
 Keys cited here and defined elsewhere: `ref.match.grace_period`, `ref.match.option.comeback_bonus`, `ref.match.option.sudden_death`, `ref.match.option.crate_placement` and `ref.mode.zone_control.option.time_limit` ([reference/01](01_skirmish_rules_and_modes/README.md)); `ref.econ.catch_up.option_percent`, `ref.econ.crate.drop_rate_s`, `ref.econ.start.powers`, `ref.econ.tutorial.second_max_requests` and `ref.econ.tutorial.second_player_limit` ([reference/05](05_population_flow.md)); `ref.hazard.airstrike.tutorial_marker_count` ([hazards and projectiles](02_units/hazards_and_projectiles.md)); `ref.unit.worker.port_search_range` ([Worker](02_units/worker.md)); `ref.bldg.command_console.capture_threshold`, `ref.bldg.relic.min_lifters`, `ref.bldg.launch_vessel.full_fuel` and `ref.bldg.launch_vessel.attack_fuel` ([mode objects](03_buildings_and_world_objects/mode_objects.md)); `ref.ctrl.camera.speed_hint_hold` ([camera](06_controls_camera_and_commands/camera.md)); `ref.meta.help.general_pages` ([screen flow and match setup](09_front_end_and_match_flow/screen_flow_and_match_setup.md)); `ref.sim.tick_period` ([tick timing](12_simulation_model/01_tick_timing_and_main_loop.md)).
 
+## 5 Edge cases and interactions
+
+1. **An ignored instruction.** The tab stays, requested again at every evaluation with its pulsing border; there is no time-out, no reminder and no penalty (R-TUT-067).
+2. **Ground lost in the first tutorial.** When a captured Spawn Node is lost or the Workers die, the rules select an earlier instruction again, for example rule B for `second_node` (R-TUT-099).
+3. **No idle Workers at a gather point.** While the Workers near a gather point are moving or fighting, the gathering and promotion tabs wait until 15, 20 or 10 of them are idle there (rules A, B and C), so the tutorial can look stuck (R-TUT-094 to R-TUT-096).
+4. **The airstrike used elsewhere or lost.** The crate lesson needs only the crate gone and no airstrike Power left, so any use of the airstrike completes it (R-TUT-097).
+5. **Arrived Workers count as heading.** A Worker keeps its pending order position after arrival, so heading(p) also counts Workers that already stand at p (R-TUT-068).
+6. **Two requests in one evaluation.** Rules B and C may request for both iterations; only the first different tab can be accepted, and a second request for the same tab moves its anchor (R-TUT-067, R-TUT-092).
+7. **Silence after a step.** After a movement tab the next tab waits 100 ticks, and 200 ticks after the airstrike; the scores window, which counts from its own time, can therefore show the scores tab for less than 400 ticks (R-TUT-093).
+8. **The formation dissolved during phase A.** With no formation anchor, `break_formation` and `formation_attack` cannot be requested; only taking `attack_node` by other means moves the second tutorial on (R-TUT-116).
+9. **The player takes `attack_node` first.** Phase A skips `formation_attack` and `break_formation` and goes straight to the Transport crate (R-TUT-119, DEC-110).
+10. **The dish lessons do not start.** Until idle Workers of the player capture `first_console` by themselves, phase R shows no tab (R-TUT-118, DEC-110).
+11. **The Transport crate never opened, or the Transport lost.** A Transport cannot be stopped in a tutorial (table 2.8-A); if it is destroyed, `place_transport` comes back only while a Transport Power remains (DEC-550, DEC-551).
+12. **One-shot Powers in the blocked phases.** Because no Power can be stopped before the release, a one-shot Power that the player gains can be fired again (R-CTRL-210, DEC-550).
+13. **The world held.** No tick runs, so the director is not evaluated, its timers stand still and no tutorial event is issued; the hint timers of §2.3 still run on the presentation frame delta (R-TUT-061, R-SIM-571).
+14. **Losing ground during the win tab.** When `final_console` is lost or `final_dish` unlinked within the 200 ticks of the win tab, phase E requests the earlier tab again; the gates stay set and the bots keep spawning (R-TUT-082, R-TUT-117).
+15. **A second run.** All director state is reset, so a second run shows the same tabs, the scores tab included (R-TUT-057, DEC-103).
+16. **Forced outcomes and the random stream.** A tutorial crate draws no outcome and no good-or-bad roll, so the simulation stream of a tutorial is shorter by those draws (R-TUT-098).
+17. **The help-system setting off.** H3 to H7 never show, and the deselect and fast-pan timers keep their values; the tabs, the explainer and the camera-controls picture are unaffected (R-TUT-022).
+
+## 6 Acceptance criteria
+
+**AC-TUT-01 — Minimum gap** (R-TUT-066, R-TUT-067). Given the current tab `select_group` accepted at tick 100, when the rules request `promote` at ticks 101 to 104, then no tab is shown on those ticks; when they request it at tick 105, then `promote` is shown and the step timer is 105.
+
+**AC-TUT-02 — Breather** (R-TUT-066). Given the current tab `capture_node` last requested at tick 200, when `select_group` is requested at tick 299, then it is refused and no tab is shown; at tick 300 it is accepted. After `launch_airstrike` last requested at tick 500, a different tab is first accepted at tick 700.
+
+**AC-TUT-03 — Same tab** (R-TUT-066). Given the current tab `select_group` at G0, when one evaluation requests `select_group` at G0 and then at G1, then the tab is shown anchored at G1 and the step timer is now.
+
+**AC-TUT-04 — Crate delay** (R-TUT-097). Given rule D2 reached with no tutorial crate and the last accepted request at tick T, when no tab is accepted afterwards, then the insertion event is issued at tick T + 101 and the crate appears at `crate_point` + (−100, +800, −200) wu with the forced outcome airstrike.
+
+**AC-TUT-05 — Scores window** (R-TUT-093, R-TUT-057). Given the far zone taken and the crate lesson done at tick T with no breather pending, then the scores tab is requested from tick T + 1 to tick T + 399, the score time is cleared at tick T + 400, and no scores tab shows later in the run; when the tutorial is played again in the same session, then the scores tab shows again.
+
+**AC-TUT-06 — Local team, not team 0** (R-TUT-063, DEC-103). Given a test set-up of the second tutorial in which the tutorial player's team is not team 0, when the player's team owns `first_dish`, then phase R shows `select_dish`; when only team 0 owns it, then no tab shows.
+
+**AC-TUT-07 — Fail-safe** (R-TUT-115). Given n > 0 in phase F, when `centre_zone` is owned by the player and a formation exists, then the bots-may-act event is issued, the formation lesson is done, and in the same evaluation the n > 0 rows still request their tab.
+
+**AC-TUT-08 — End step** (R-TUT-117, R-TUT-081). Given phase E with `final_dish` linked, when the win tab is accepted at tick T, then basic crates only is on, crate placement is random, the bot difficulty is Standard and the bots may spawn; from the tick at which the end-step event executes, the time remaining counts down from 300 mode seconds; at tick T + 201 the current tab becomes none and no tab shows again.
+
+**AC-TUT-09 — Tutorial events are sequenced** (R-TUT-062, DEC-103). Given a recorded second tutorial, when it is replayed from its command stream including the tutorial events, then the Supply crates, the receiver list of `first_dish`, the gates and the end-step options are identical at every tick.
+
+**AC-TUT-10 — Deselect hint** (R-TUT-024, R-TUT-025). Given v = 0, when one stray select on empty ground occurs, then no hint shows; when a second follows 1.0 s later, then `ui.help.hint.move_or_deselect` shows for 3.0 s; when the special-orders action is pressed while placing a Power in keyboard and mouse mode with v = 0, then `ui.help.hint.deselect` shows at once.
+
+**AC-TUT-11 — Fast-pan hint** (R-TUT-026). Given keyboard and mouse mode after the grace period, when the forward pan is held alone for 4.1 s, then `ui.help.hint.fast_pan` shows; when it is released, then the hint disappears 3.0 s later.
+
+**AC-TUT-12 — Explainer only while waiting** (R-TUT-020). Given a Spawn Control match in its grace period with the countdown at 30 ticks, then the Spawn Control explainer panel shows with the title in capitals and `ui.help.explainer.spawn_control`; when every counted team is ready and the countdown starts, then it disappears; in a tutorial it never shows.
+
+**AC-TUT-13 — Camera-controls picture** (R-TUT-021). Given a tutorial in its grace period in keyboard and mouse mode, then `help.hint.camera_controls` shows with its top edge at 0.70 × the screen height and its labels showing the current pan keys; in gamepad mode nothing shows in its place.
+
+**AC-TUT-14 — Tab at the top edge** (R-TUT-073). Given a tab whose anchor projects to y = half-height, then the arrow points up and only the title bar is drawn.
+
+**AC-TUT-15 — Help pages follow the strings** (R-TUT-043). Given the reference strings, then the Launch Race help has 4 pages; when `ui.help.page.siege.3` is removed from the string table, then the Siege help closes after page 2.
+
+**AC-TUT-16 — Objective-card events draw nothing** (R-TUT-013). Given a Zone Control match after the grace period with the help-system setting on, when a Control Zone changes owner and a Supply crate is opened, then the hint overlay draws nothing that it would not draw otherwise.
+
+## 7 Dependencies
+
+- **Reference documents:**
+  - [Skirmish rules and modes](01_skirmish_rules_and_modes/README.md) (R-MODE-011, R-MODE-016, R-MODE-030, R-MODE-035, R-MODE-039 to R-MODE-041, R-MODE-063, R-MODE-066, R-MODE-074, R-MODE-083) and [Zone Control](01_skirmish_rules_and_modes/zone_control.md) (R-MODE-251, R-MODE-253, R-MODE-254, R-MODE-257, R-MODE-258);
+  - [Worker](02_units/worker.md) (Idle, pending orders, port search, grenades), [Leader and formations](02_units/leader_and_formations.md) (orders, formation mode, the first-tutorial block), [Transport](02_units/transport.md) (states, arrival action) and [hazards and projectiles](02_units/hazards_and_projectiles.md) (the tutorial airstrike markers);
+  - [economy and spawn objects](03_buildings_and_world_objects/economy_and_spawn_objects.md) (Beam Dishes, valid receivers, R-BLDG-158) and [mode objects](03_buildings_and_world_objects/mode_objects.md) (Command Console capture, Relic, Launch Vessel);
+  - [Supply crates and Powers](04_supply_crates_powers_and_weapons/crates_and_powers.md) and its [README](04_supply_crates_powers_and_weapons/README.md) (drops, forced outcomes, the stop block, basic crates);
+  - [Population flow](05_population_flow.md) (the second tutorial's Spawn Node limits, R-ECON-052);
+  - [Controls, camera and commands](06_controls_camera_and_commands/README.md): [actions and bindings](06_controls_camera_and_commands/actions_and_bindings.md) (action ids, rows S2, T2, O2 to O10, M4), [selection and Power slots](06_controls_camera_and_commands/selection_and_power_slots.md) (current Power, pop-up, R-CTRL-210), [cursor and markers](06_controls_camera_and_commands/cursor_and_markers.md) (projection, order marker, draw order) and [camera](06_controls_camera_and_commands/camera.md) (the fast-pan condition, start views);
+  - [Bot mode strategies and tutorials](07_bots/05_mode_strategies_and_tutorials.md) (R-BOT-150 to R-BOT-155);
+  - [Maps and level design](08_maps_and_level_design/rules_and_conventions.md) (R-MAP-158, the tutorial map slots);
+  - [Front end and match flow](09_front_end_and_match_flow/README.md): [screen flow and match setup](09_front_end_and_match_flow/screen_flow_and_match_setup.md) (tutorials page, help windows, explainer panel placement) and [options, localisation and hooks](09_front_end_and_match_flow/options_localisation_and_hooks.md) (the help-system setting, string tables);
+  - [Simulation model](12_simulation_model/README.md): [tick timing](12_simulation_model/01_tick_timing_and_main_loop.md) (ticks and clocks), [space, routing and physics](12_simulation_model/05_space_routing_and_physics.md) (actor-grid queries), [teams and player commands](12_simulation_model/06_teams_and_player_commands.md) (selection, command order) and [randomness and integrity](12_simulation_model/07_randomness_and_integrity.md) (R-SIM-727).
+- **Engine components:** [camera and sequences](../architecture/components/camera_and_sequences.md) (camera views, camera animations and the presentation-timeline baseline); [UI framework](../architecture/components/ui_framework/README.md) (fonts, windows, string tables and glyph arguments); [input](../architecture/components/input.md) (input mode, bindings); [animation and VFX](../architecture/components/animation_and_vfx.md) (explainer playback); [renderer](../architecture/components/renderer/README.md) (the 2-D overlay pass).
+- **ADRs:** ADR-0029 (input events and input mode), ADR-0034 (text rendering), ADR-0035 (explainer animations as a UI timeline), ADR-0036 (presentation clock), ADR-0063 (localisation, device variants and glyph arguments).
+- **Assets:**
+  - help pictures `help.general_page` (5 variants), `help.mode_page` (16 variants) and `help.hint.camera_controls`;
+  - explainers `anim.explainer` (6, one per mode) with `help.explainer_picture` (25);
+  - objective-card pictures with no drawing rule (R-TUT-013): `help.hint.start_here`, `help.hint.spawn_nodes`, `help.hint.reinforcements`, `help.hint.supply_crates`, `help.hint.zone_control`, `help.hint.relic_run_capture`, `help.hint.relic_run_lift`, `help.hint.siege_core_device`, `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_spawn_nodes`, `help.hint.siege_breach_charge`, `help.hint.launch_race_01`, `help.hint.launch_race_02`, `help.hint.flag_chain_01`, `help.hint.flag_chain_02`;
+  - string tables `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br` and `strings.ru_ru`;
+  - sound `match_ui.error` (R-TUT-025) and the tutorial maps `map_zone_control_2p_01` and `map_zone_control_3p_01`.
+
+## 8 Open decisions
+
+| DEC | Title | Default in this document |
+|---|---|---|
+| DEC-051 | Tutorials and presentation timelines | the two tutorials of §2.5 to §2.10 (R-TUT-050) |
+| DEC-110 | Second tutorial start condition | the dish lessons wait for idle Workers to capture `first_console`, and the bot may or may not take `attack_node` first (R-TUT-118, R-TUT-119) |
+| DEC-550 | Power cancellation in the tutorials | no Power can be stopped in the blocked phases (table 2.8-A) |
+| DEC-803 | Camera animations without content | no tutorial step plays a camera animation (R-TUT-001, §1) |
+| DEC-750 | Explainer-animation loop and visibility rules | the reference loop and visibility rules (R-TUT-020) |
+| DEC-050 | Front-end features designed new | no control prompts and no objective cards in a match (R-TUT-001, R-TUT-013) |
+| DEC-094 | Exact or approximate actor-grid queries | the approximate enemy count of phase A (R-TUT-116) |
+| DEC-204 | Content and version identity | tutorial maps offered by map identity (R-TUT-053) |
+| DEC-227 | Simulation tick rate | the tick counts of §4 at the reference tick rate |
+
+Resolved decisions applied: DEC-004, DEC-005, DEC-006 (R-TUT-004); DEC-007 (R-TUT-010); DEC-009 (R-TUT-061); DEC-015 (R-TUT-052); DEC-037 (R-TUT-002, §2.3); DEC-086 (R-TUT-028); DEC-103 (R-TUT-052, R-TUT-057, R-TUT-061 to R-TUT-063); DEC-120 (table 2.5-A); DEC-801 (R-TUT-002). Dropped: DEC-053 (R-TUT-001, R-TUT-056).

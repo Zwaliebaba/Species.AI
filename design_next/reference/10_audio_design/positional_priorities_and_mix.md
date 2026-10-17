@@ -150,8 +150,8 @@ flowchart TD
   R --> K["× 0.75 per louder copy of the same event"]
   K --> C["combine with the bus priority class"]
   C --> B{"within the real-voice budget, bus cap and event cap?"}
-  B -->|"yes"| P["real voice; steal only with the margin"]
-  B -->|"no"| V["virtual: position advances; one-shot retired after its patience"]
+  B -->|"yes"| P["real voice, steal only with the margin"]
+  B -->|"no"| V["virtual: position advances, one-shot retired after its patience"]
 ```
 
 Diagram 3-A: ranking and voices (R-AUD-250 to R-AUD-253).

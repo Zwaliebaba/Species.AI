@@ -60,13 +60,13 @@ The reference audio is **data-bound and event-driven**. Game and interface code 
 ```mermaid
 stateDiagram-v2
     [*] --> Loading : process start
-    Loading --> FrontEnd : sound set loaded; lobby bed starts
-    FrontEnd --> MatchLoading : front end exits; lobby bed releases
-    MatchLoading --> Grace : match loop starts; match ambience starts
-    Grace --> Running : countdown reaches 0; countdown-zero sound
-    Running --> GameOver : result declared; game-over, then victory or defeat; pitch drop
-    Running --> FrontEnd : player leaves; match sounds stop or release
-    GameOver --> FrontEnd : player leaves; match ambience releases; lobby bed starts
+    Loading --> FrontEnd : sound set loaded, lobby bed starts
+    FrontEnd --> MatchLoading : front end exits, lobby bed releases
+    MatchLoading --> Grace : match loop starts, match ambience starts
+    Grace --> Running : countdown reaches 0, countdown-zero sound
+    Running --> MatchOver : result declared, game-over, then victory or defeat, pitch drop
+    Running --> FrontEnd : player leaves, match sounds stop or release
+    MatchOver --> FrontEnd : player leaves, match ambience releases, lobby bed starts
 ```
 
 Diagram 3-A: the audio of a session (R-AUD-001, §1.2).

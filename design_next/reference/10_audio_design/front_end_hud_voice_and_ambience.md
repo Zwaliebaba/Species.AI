@@ -103,7 +103,7 @@ Between the battles the player hears an endless, slowly changing pad under the m
 
 **R-AUD-372** (MUST) **War horn.** At a threat check, a Worker raises `worker.attack_horn` with a presentation chance of 1 in `ref.unit.worker.horn_odds` (200), only if it is not already shouting and at least `ref.unit.worker.horn_cooldown` (40 ticks, 4 s of game time) have passed since the last horn of any Worker of the match ([02 Worker](../02_units/worker.md) R-UNIT-098).
 
-**R-AUD-373** (MUST) **Carry chant.** While carrying a Relic or another carryable structure, a lifting Worker repeats its chant with the period `ref.unit.worker.lift_sound_base` + ⌊(1 − lifters ÷ maximum lifters) × `ref.unit.worker.lift_sound_spread`⌋ ticks (15 to 35 ticks): `worker.lift_relic` at the start of each period and `worker.ordered_by_player` at its half, so fewer lifters chant more slowly ([02 Worker](../02_units/worker.md) R-UNIT-082).
+**R-AUD-373** (MUST) **Carry chant.** While carrying a Relic or another carryable structure, a lifting Worker repeats its chant with the period `ref.unit.worker.lift_sound_base` + ⌊(1 − lifters ÷ maximum lifters) × `ref.unit.worker.lift_sound_spread`⌋ ticks (15 to 34 ticks): `worker.lift_relic` at the start of each period and `worker.ordered_by_player` at its half, so fewer lifters chant more slowly ([02 Worker](../02_units/worker.md) R-UNIT-082).
 
 **R-AUD-374** (MUST) **Victory celebration.** Idle Workers celebrate with `worker.victory_jump` only when every primary objective of the map is complete. A map with no primary objectives receives one objective that never completes, so the celebration never starts on it (DEC-331).
 
@@ -134,7 +134,7 @@ sequenceDiagram
     loop displayed number changes: 2, 1, 0
       G->>A: countdown_tick
     end
-    G->>A: countdown reaches 0: countdown_zero; normal speed requested
+    G->>A: countdown reaches 0: countdown_zero, normal speed requested
     loop timed match running
       H->>A: whole minute, or each of the last 10 mode seconds: countdown_tick
     end
@@ -150,8 +150,8 @@ stateDiagram-v2
     [*] --> Silent : start-up and loading views
     Silent --> LobbyBed : first front-end update after the sound set loads
     LobbyBed --> Releasing : front-end loop exits
-    Releasing --> MatchBed : match loop starts; match_enter
-    MatchBed --> MatchReleasing : match loop exits; match_exit
+    Releasing --> MatchBed : match loop starts, match_enter
+    MatchBed --> MatchReleasing : match loop exits, match_exit
     MatchReleasing --> LobbyBed : front end built again
 ```
 
