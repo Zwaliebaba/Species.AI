@@ -558,6 +558,8 @@ CRATE_OUTCOME = {
     'Rage': 'fury', 'Triffids': 'spitter_plants', 'SpaceShip': 'abductor',
 }
 FP_OUTCOMES = {'reinforcements', 'strike_team', 'transport', 'airstrike', 'gun_turret', 'shield', 'speed_boost', 'fury'}
+# file stems that would echo a reference sample name; the asset id keeps the event name
+FILE_STEM_OVERRIDE = {'centipede_attack': 'centipede_bite', 'ant_attack': 'ant_bite', 'spider_pounce': 'spider_leap'}
 # primary binding overrides for banks shared by several bindings: bank -> (object type, event)
 PRIMARY = {
     ('Group', 'spideregglay'): ('Spider', 'LayEgg'), ('Group', 'spiderpounce'): ('Spider', 'Pounce'),
@@ -1090,7 +1092,7 @@ def build_audio(b, samples, events):
                 folder = 'content/audio/ui'
             else:
                 cat = 'sfx'
-                stem = src + '_' + evs + suffix
+                stem = FILE_STEM_OVERRIDE.get(src + '_' + evs, src + '_' + evs) + suffix
                 aid = 'sfx.%s.%s.%s' % (kind, src, evs + suffix)
                 folder = 'content/audio/sfx/%s' % src
         if aid in bank_ids.values():
