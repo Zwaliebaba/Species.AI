@@ -248,7 +248,7 @@ These features exist in the reference only as hooks. The owning documents record
 
 **R-VIS-063** (MUST) With these rules one active Spawn Node yields a mean of `ref.vis.spawn_node.mean_output` (about 1.22 Workers per second) at H = 1 and `ref.vis.spawn_node.mean_output_catch_up` (about 1.90 Workers per second) at H = 1.9, so a team's income is linear in the number of Spawn Nodes it holds.
 
-**R-VIS-064** (MUST) The Catch-up bonus multiplier H is 1 + the Catch-up bonus option ÷ 100, which is 1.9 at the default option value `ref.vis.catch_up.option_default` (90 %), when no Spawn Node on the map is neutral and the average Spawn Node count of the other teams in play exceeds `ref.vis.catch_up.deficit_ratio` (1.5) × the team's own count. Otherwise H is 1. H is always 1 on maps that disable the bonus and when the option is 0 or not set (DEC-073, DEC-081).
+**R-VIS-064** (MUST) The Catch-up bonus multiplier H is 1 + the Catch-up bonus option ÷ 100, which is 1.9 at the default option value `ref.vis.catch_up.option_default` (90 %), when no Spawn Node on the map is neutral and the average Spawn Node count of the other teams in use, which include the Rogue and Visitor factions and is taken by integer division, exceeds `ref.vis.catch_up.deficit_ratio` (1.5) × the team's own count. Otherwise H is 1. H is always 1 on maps that disable the bonus and when the option is 0 or not set (DEC-073, DEC-081).
 
 **R-VIS-065** (MUST) Each production request takes a transit orb from the invisible Source Node and routes it along the Relays of the spawn network to the requesting Spawn Node. A transit of h hops takes at most 10h + 1 ticks: `ref.vis.spawn_network.first_hop` (11 ticks) for the first hop and `ref.vis.spawn_network.further_hop` (10 ticks) for each further hop, so a new Worker appears at the door about one second per hop after its request. The new Worker belongs to whoever owns the Spawn Node when the orb arrives; an orb that arrives at a Spawn Node that has turned neutral is discarded (DEC-002, DEC-455).
 
@@ -522,7 +522,7 @@ flowchart TD
     MAIN -- "single player" --> SEL["Mode select: six modes"]
     MAIN -- "multiplayer" --> HJ["Host or join"]
     MAIN -- "tutorials" --> TUT["First or second tutorial on a fixed Zone Control map,<br/>easy bot; standard bot after the last step of the second tutorial"]
-    MAIN -- "help and options" --> HO[["Help pages; screen, graphics, sound and other options"]]
+    MAIN -- "help, options" --> HO[["Help pages; screen, graphics, sound and other options"]]
     HJ -- "host" --> SEL
     HJ -- "join" --> JOIN["Join a hosted lobby"]
     JOIN --> LOBBY
@@ -744,7 +744,7 @@ Every value in this table restates a value of the document that owns the mechani
 | AC-03 | A Spawn Node with 3 Workers of team A and 1 Worker of an enemy team B on its ports | Ownership checks run | Neither team owns it | R-VIS-060 |
 | AC-04 | An active Spawn Node of a team below its cap, H = 1 | A burst runs | Exactly 20 requests are issued 2 ticks apart, then a pause of 101 to 150 ticks follows | R-VIS-062 |
 | AC-05 | A single active Spawn Node at H = 1, uncapped, over 100,000 ticks | Production runs | The mean output is 1.22 ± 0.05 Workers per second; at H = 1.9 it is 1.90 ± 0.05 | R-VIS-063 |
-| AC-06 | Catch-up option 90 %, a team with 1 Spawn Node, the other teams averaging 2 | One Spawn Node on the map is neutral, then none is | H is 1 while the neutral Spawn Node exists and 1.9 once none is neutral | R-VIS-064 |
+| AC-06 | Catch-up option 90 %, a 2-player map with 7 Spawn Nodes, team A holding 1 | Team B holds 5 and one Spawn Node is neutral; then team B holds 6 | Team A's H is 1 while a Spawn Node is neutral, and 1.9 once team B holds 6 (average 6 ÷ 3 = 2 over team B and the Rogue and Visitor factions) | R-VIS-064 |
 | AC-07 | A Spawn Node 3 Relay hops from the Source Node | A request is issued | The new Worker appears no later than 31 ticks after the request | R-VIS-065 |
 | AC-08 | A transit orb in flight to a Spawn Node | The Spawn Node turns neutral before the orb arrives | The orb is discarded and no Worker appears | R-VIS-065 |
 | AC-09 | A 4-player map with a population cap of 2,000, and a 3-player map with a cap of 1,400 | Caps are computed | The per-team caps are 500 and 466 | R-VIS-066 |
@@ -759,7 +759,7 @@ Every value in this table restates a value of the document that owns the mechani
 | AC-18 | Default drop-rate option, map width 3,000 wu | Many drop intervals are sampled | Every interval lies in 200 to 600 ticks, and at most 6 Supply crates are on the map at once | R-VIS-075 |
 | AC-19 | A Supply crate on the ground with 50 Workers of team A and 10 of team B within 35 wu | Ticks pass | It opens for team A after 51 ticks and not earlier | R-VIS-076 |
 | AC-20 | A Supply crate that no team holds a strict majority at | 600 ticks pass | It expires with no effect | R-VIS-076 |
-| AC-21 | One million openings on a map that excludes no outcome | Outcomes are tallied | 90 ± 0.1 % are beneficial; each beneficial outcome occurs 3.462 ± 0.05 % of the time and each hostile outcome 1.429 ± 0.05 % | R-VIS-077, R-VIS-122 |
+| AC-21 | One million openings on a map that excludes no outcome | Outcomes are tallied | 90 ± 0.1 % are beneficial; each beneficial outcome occurs 3.462 ± 0.1 % of the time and each hostile outcome 1.429 ± 0.1 % | R-VIS-077, R-VIS-122 |
 | AC-22 | A team holding 6 pending powers | It opens a Supply crate with a beneficial power outcome | The power is lost | R-VIS-078 |
 | AC-23 | An eliminated team with a free Power slot, Comeback Bonus on | 900 ticks pass | It has received 2 Comeback Bonus powers, 450 ticks apart, and holds no more than 2 | R-VIS-078, R-VIS-079 |
 | AC-24 | A running match at normal speed | The rules declare a winner | Game speed reaches 0 after 21 ticks, stays at 0, and the game-over overlay appears | R-VIS-080 |
