@@ -1101,7 +1101,7 @@ Kind: `#define` (D), `static const` / class constant (S), literal in code (L), d
 
 ## Appendix — dead/legacy code
 
-- **SDL input** [B:DEAD] (Mac/Linux only; not in vcproj): `code/lib/input/inputdriver_sdl_key.{h,cpp}` (SDL key → Win32 VK mapping: punctuation, arrows, shifts → `KEY_SHIFT/CONTROL/ALT/META`, a–z −32, 0–9/backspace/tab unchanged, F-keys −170, others 0), `inputdriver_sdl_mouse.{h,cpp}` (same `mouse` grammar as W32), `sdl_eventhandler.{h,cpp}` (`SDL_QUIT` → quit; `WindowHasFocus` uses `(SDL_GetAppState() | SDL_APPACTIVE) != 0`, always true — bug), `sdl_eventproc.h`. Read fully except the middle of `inputdriver_sdl_mouse.cpp` (skimmed).
+- **SDL input** [B:DEAD] (Mac/Linux only; not in vcproj): `code/lib/input/inputdriver_sdl_key.{h,cpp}` (SDL key → Win32 VK mapping: punctuation, arrows, shifts → `KEY_SHIFT/CONTROL/ALT/META`, a–z −32, 0–9/backspace/tab unchanged, F-keys −170, others 0), `inputdriver_sdl_mouse.{h,cpp}` (same `mouse` grammar as W32), `sdl_eventhandler.{h,cpp}` (`SDL_QUIT` → quit; `WindowHasFocus` uses `(SDL_GetAppState() | SDL_APPACTIVE) != 0`, always true — bug), `sdl_eventproc.h`. `inputdriver_sdl_key.cpp` and `inputdriver_sdl_mouse.cpp` were skimmed (key mapping and grammar only); the event-handler files were read fully.
 - **Xbox event handler** [B:DEAD]: `code/lib/input/xbox_eventhandler.{h,cpp}` — `.cpp` `ExcludedFromBuild` in all configs (would duplicate `g_windowHasFocus`).
 - `code/lib/input/inputfilterspec.cpp` (`newFilterSpecID`) — not in vcproj [B:DEAD].
 - Pipe driver, filter manager, direction filter — compiled, never instantiated [B:LEGACY] (§1.6.10, §1.7).

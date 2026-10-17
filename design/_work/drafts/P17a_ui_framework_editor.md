@@ -799,7 +799,7 @@ sequenceDiagram
   participant LE as LocationEditor
   MM->>MW: MultiwiniaEditorButton.MouseUp (sound "MenuSelect", menu transition +1)
   alt Edit existing
-    MW->>FD: SelectMapButton (path = <profile>/maps/, filter "*.mwm") [DEBUG: 2nd button "Edit Official Maps", levels/, "mp_*"]
+    MW->>FD: SelectMapButton (path = PROFILE/maps/, filter "*.mwm") [DEBUG: 2nd button "Edit Official Maps", levels/, "mp_*"]
     FD->>MW: OK/double-click → m_mapFilename.Set(file)
     MW->>App: next Update: requestedMap=file, requestedMission="null", m_requestToggleEditing=true, requestedLocationId=999, RemoveAllWindows()
   else Create new
