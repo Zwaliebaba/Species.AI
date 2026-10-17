@@ -69,9 +69,9 @@ The sum runs left to right. Evaluating v × (1 − fx) × (1 − fz) left to rig
 
 **TER-075** (MUST) `Nearest`(*x*, *z*) = `At`(⌊*x* × *invX*⌋, ⌊*z* × *invZ*⌋); it ignores the grid's origin, so it serves only grids with origin (0, 0). The terrain does not use it.
 
-**TER-076** (MUST) `Highest`() starts with `At`(0, 0) and scans *z* from 0 to rows − 1 (outer) and *x* from 0 to rows − 1 (inner), the row count bounding both loops. On a square grid this is the highest sample of the grid. Tiles are always square, and so is every reference terrain; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value beyond the last column (§8.1).
+**TER-076** (MUST) `Highest`() starts with `At`(0, 0) and scans *z* from 0 to rows − 1 (outer) and *x* from 0 to rows − 1 (inner), the row count bounding both loops. On a square grid this is the highest sample of the grid. Tiles are always square, and so is every reference terrain; on a grid with more columns than rows the scan ignores the last columns, and with fewer columns it reads the outside value beyond the last column (see DEC-966 item 2).
 
-**TER-077** (MUST) `Normalise`(*v*) computes *l* = *v.x* × *v.x* + *v.y* × *v.y* + *v.z* × *v.z*, summed left to right. If *l* > `ter.math.normalise_min_length_sq` (10⁻¹⁰), it multiplies each component by *s* = 1 ÷ sqrt32(*l*); otherwise the result is `ter.math.normalise_fallback` (0, 0, 1) (DEC-241 item 6).
+**TER-077** (MUST) `Normalize`(*v*) computes *l* = *v.x* × *v.x* + *v.y* × *v.y* + *v.z* × *v.z*, summed left to right. If *l* > `ter.math.normalise_min_length_sq` (10⁻¹⁰), it multiplies each component by *s* = 1 ÷ sqrt32(*l*); otherwise the result is `ter.math.normalise_fallback` (0, 0, 1) (DEC-241 item 6).
 
 **TER-078** (MUST) The cross product is *a* × *b* = (*a.y* *b.z* − *a.z* *b.y*, *a.z* *b.x* − *a.x* *b.z*, *a.x* *b.y* − *a.y* *b.x*), each component evaluated as written.
 
@@ -209,7 +209,7 @@ Table 4.7-A Tile edge cases.
 
 **TER-111** (MUST) Two guide-grid cases have defined results that are not equivalent to the absence of a guide grid. With *p* > 0 and an all-zero guide grid, the guide points are pinned at height 0, above the negative border, which raises the tile's interior before any noise (vector set A, tiles 0 and 1). With *k* < *p*, *scale* is 0, so every guide value is written to sample (0, 0) and the last one (*x* = *z* = *r* − 1) remains; *iterations* ≤ 0, so there is no displacement, and the tile is flat at the outside height except that corner. The second case never occurs in the reference content.
 
-**TER-112** (MUST) The content build rejects, with a diagnostic, a tile whose result the reference leaves undefined (DEC-015): a size below 2 cell sizes (*req* ≤ 1, where ceilLog2(0) is −∞ and its integer conversion is undefined); a generation method other than 0, 1 or 2 (the base value is never set); and a guide grid whose cell count is not *r*². None of these occurs in the reference content.
+**TER-112** (MUST) The content build rejects, with a diagnostic, a tile whose result the reference leaves undefined (DEC-015; see DEC-968 item 1): a size below 2 cell sizes (*req* ≤ 1, where ceilLog2(0) is −∞ and its integer conversion is undefined); a generation method other than 0, 1 or 2 (the base value is never set); and a guide grid whose cell count is not *r*². None of these occurs in the reference content.
 
 ### 4.8 Composition of tiles
 
@@ -261,7 +261,7 @@ Table 4.8-A Tile-sampler cases.
 - **No smoothing between tiles.** The seams between overlapping tiles are creases of the maximum.
 - **Footprint quantisation.** The footprint starts at the world sample nearest to (posX, posZ) and is trunc(size ÷ cell size) samples wide, so tile edges snap to the world grid, while the tile itself is sampled at its true, unsnapped position.
 
-**TER-124** (MUST) A tile may hang off the map edge: its writes to samples outside the grid are dropped. The conversion of posX ÷ cell size + 0.5 (and the same on z) to an index truncates toward zero and is defined for values above −1. A tile whose footprint lies wholly outside the grid has no effect and is skipped; the reference content holds two such tiles, parked far outside their maps with a negative position y. The content build rejects a tile whose index value is −1 or below while its footprint overlaps the grid (DEC-015): the reference result is undefined there (the destination index wraps back onto the grid while the sampling coordinate does not, so the tile writes only its border value). No reference tile is in that situation; every on-map tile origin is at −1 wu or above.
+**TER-124** (MUST) A tile may hang off the map edge: its writes to samples outside the grid are dropped. The conversion of posX ÷ cell size + 0.5 (and the same on z) to an index truncates toward zero and is defined for values above −1. A tile whose footprint lies wholly outside the grid has no effect and is skipped; the reference content holds two such tiles, parked far outside their maps with a negative position y. The content build rejects a tile whose index value is −1 or below while its footprint overlaps the grid (DEC-015; see DEC-968 item 1): the reference result is undefined there (the destination index wraps back onto the grid while the sampling coordinate does not, so the tile writes only its border value). No reference tile is in that situation; every on-map tile origin is at −1 wu or above.
 
 ### 4.9 Flatten areas
 

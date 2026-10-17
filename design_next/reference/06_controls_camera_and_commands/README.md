@@ -167,6 +167,7 @@ The tuning keys of this folder are defined in the tuning table of each sub-file:
 | DEC-308 | Orders to Workers that operate a port | orders reach every controlled Worker | [selection and Power slots](selection_and_power_slots.md) |
 | DEC-310 | Camera tracking after selecting a Leader or a Transport | the stale orbit centre is kept | [camera](camera.md) |
 | DEC-803 | Camera animations without content | the structure focus, the approach and the developer fly mode exist outside the live camera modes (R-CTRL-457) | [camera](camera.md) |
+| DEC-854 | Transport, Collector and Strike team rule details | the sender converts and scales the direct-control vectors before sending (R-CTRL-101) | [actions and bindings](actions_and_bindings.md) |
 | DEC-864 | Pointer fallback and camera smoothing | the reversed ray meets a far sphere (R-CTRL-058); smoothing is not clamped where the reference does not clamp it (R-CTRL-454) | [actions and bindings](actions_and_bindings.md), [camera](camera.md) |
 | DEC-550 | Power cancellation in the tutorials | no Power can be cancelled in the blocked tutorial phases | [selection and Power slots](selection_and_power_slots.md) |
 | DEC-551 | Units that outlive their Power slot | a cancel frees the slot even when the unit stays | [selection and Power slots](selection_and_power_slots.md) |

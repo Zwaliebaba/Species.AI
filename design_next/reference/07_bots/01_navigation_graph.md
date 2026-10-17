@@ -10,7 +10,7 @@ A bot never path-finds over terrain. Its whole model of the map is a sparse, dir
 
 ### 2.1 The navigation node
 
-**R-BOT-025** (MUST) A **bot navigation node** (`BotNavNode`) is a structure that only bot rules and the Worker census shortcut (R-BOT-045) read. It is never hit by rays, spheres or weapons, cannot be damaged, has no ports, has no effect on the economy and is drawn only in the map editor, with its marker mesh `mesh.structure.bot_nav_node`, and by the bot overlay of [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md); a match never draws it. It holds the fields of table 2.1-A.
+**R-BOT-025** (MUST) A **bot navigation node** (`BotNavNode`) is a structure that only bot rules and the Worker census shortcut (R-BOT-045) read. It is never hit by rays, spheres or weapons, cannot be damaged, has no ports, has no effect on the economy and is drawn only in the map editor, with its marker mesh `mesh.structure.bot_nav_node`, and by the bot overlay of [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md); a match never draws it. It holds the fields of table 2.1-A.
 
 Table 2.1-A Fields of a navigation node.
 
@@ -227,7 +227,7 @@ Keys cited here and defined elsewhere: `ref.sim.physics.sea_level` and `ref.sim.
 ## 7 Dependencies
 
 - **Reference documents:** [README](README.md); [02 Priority model](02_priority_model.md); [03 Decision loop and Leaders](03_decision_loop_and_leaders.md); [reference/03](../03_buildings_and_world_objects/README.md) (structure records, ports, removal), [mode_objects.md](../03_buildings_and_world_objects/mode_objects.md) (Relic node, Breach Charge), [economy_and_spawn_objects.md](../03_buildings_and_world_objects/economy_and_spawn_objects.md) (Beam Dish node, fuel depot node), [defences_and_props.md](../03_buildings_and_world_objects/defences_and_props.md) (turret node, Barrier Emitters, walls); [crates_and_powers.md](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (Supply crate node); [worker.md](../02_units/worker.md) (census shortcut, idle state); [rules and conventions](../08_maps_and_level_design/rules_and_conventions.md) (map records R-MAP-111, census R-MAP-200); [reference/12](../12_simulation_model/README.md) (actor-grid queries R-SIM-311, walkability R-SIM-335 to R-SIM-337, initialisation order, update order R-SIM-224).
-- **Engine components:** [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance.md) (bot overlay).
+- **Engine components:** [diagnostics, test and performance](../../architecture/components/diagnostics_test_and_performance/README.md) (bot overlay).
 - **Assets:** `mesh.structure.bot_nav_node` (the map editor's marker mesh, R-BOT-025).
 
 ## 8 Open decisions

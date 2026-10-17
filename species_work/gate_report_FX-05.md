@@ -1,0 +1,376 @@
+# Gate report
+
+| Gate | Result | Failures | Summary |
+|---|---|---|---|
+| 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
+| 2 Soft-flag patterns | PASS | 0 | 35 soft hits, 35 allowed by CONVENTIONS §9, 0 not allowed |
+| 3 Links and anchors | FAIL | 338 | 13086 relative links checked |
+| 4 Mermaid | FAIL | 1 | SKIPPED (--skip-mermaid) |
+| 5 Requirement ids | FAIL | 1 | 4929 requirement ids defined, 27857 citations, 25 prefixes registered |
+| 6 DEC and ADR references | FAIL | 9 | 301 DECs (148 Open, 139 of them cited by a requirement), 64 ADRs |
+| 7 Asset closure | PASS | 0 | 453 asset ids (1412 manifest rows), 2487 asset citations in reference and component documents |
+| 8 Tuning keys | PASS | 0 | 3733 tuning keys, 0 cited by no requirement |
+| 9 Truncation words | PASS | 0 | 0 truncation words |
+| 10 Sizes, READMEs, templates | PASS | 0 | 214 documents, 80 checked for template headings |
+| 11 Requirements index | PASS | 0 | index not written (no --write-index) |
+
+## Gate 3 Links and anchors
+
+- architecture/components/README.md:10 broken link: terrain.md
+- architecture/components/README.md:20 broken link: diagnostics_test_and_performance.md
+- architecture/components/animation_and_vfx/explainers_sprites_and_procedural_animation.md:154 broken link: ../terrain.md
+- architecture/components/animation_and_vfx/particles_shatter_and_screen_effects.md:134 broken link: ../terrain.md
+- architecture/components/asset_pipeline_and_resources.md:3 broken link: terrain.md
+- architecture/components/asset_pipeline_and_resources.md:34 broken link: terrain.md
+- architecture/components/asset_pipeline_and_resources.md:470 broken link: terrain.md
+- architecture/components/asset_pipeline_and_resources.md:535 broken link: terrain.md
+- architecture/components/asset_pipeline_and_resources.md:846 broken link: terrain.md
+- architecture/components/asset_pipeline_and_resources.md:852 broken link: diagnostics_test_and_performance.md
+- architecture/components/audio_engine.md:875 broken link: diagnostics_test_and_performance.md
+- architecture/components/camera_and_sequences.md:48 broken link: terrain.md
+- architecture/components/input.md:1120 broken link: diagnostics_test_and_performance.md
+- architecture/components/renderer/README.md:180 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/entity_and_overlay_renderers.md:298 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/entity_and_overlay_renderers.md:384 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/frame_graph_and_passes.md:226 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/frame_graph_and_passes.md:230 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/options_and_budgets.md:3 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/options_and_budgets.md:72 broken link: ../terrain.md
+- architecture/components/renderer/options_and_budgets.md:77 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/options_and_budgets.md:82 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/renderer/shaders.md:100 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:3 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:11 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:68 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:72 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:86 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:94 broken link: ../terrain.md
+- architecture/components/renderer/world_renderers.md:96 broken link: ../terrain.md
+- architecture/components/terrain/README.md:422 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/README.md:26 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/README.md:129 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/core_and_widgets.md:384 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/core_and_widgets.md:665 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/layout_rendering_input_and_localisation.md:396 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/layout_rendering_input_and_localisation.md:472 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/pages_and_screen_recipes.md:550 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/pages_and_screen_recipes.md:592 broken link: ../diagnostics_test_and_performance.md
+- architecture/components/ui_framework/pages_and_screen_recipes.md:692 broken link: ../diagnostics_test_and_performance.md
+- assets/GameAssets.md:1132 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- assets/GameAssets.md:1147 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- assets/GameAssets.md:1169 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:13 broken link: ../architecture/components/terrain.md
+- glossary/a_to_l.md:74 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:117 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:118 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:146 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:166 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:174 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:176 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:177 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:178 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:223 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/a_to_l.md:280 broken link: ../architecture/components/terrain.md
+- glossary/a_to_l.md:350 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:62 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:86 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:109 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:139 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:164 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:177 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:207 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:239 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:240 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:281 broken link: ../architecture/components/diagnostics_test_and_performance.md
+- glossary/m_to_z.md:313 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:314 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:315 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:316 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:318 broken link: ../architecture/components/terrain.md
+- glossary/m_to_z.md:402 broken link: ../architecture/components/terrain.md
+- reference/08_maps_and_level_design/README.md:38 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:3 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:9 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:95 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:203 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:205 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:798 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/map_editor_hooks.md:847 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/rules_and_conventions.md:229 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/rules_and_conventions.md:235 broken link: ../../architecture/components/terrain.md
+- reference/08_maps_and_level_design/rules_and_conventions.md:837 broken link: ../../architecture/components/terrain.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:210 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:273 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:359 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:363 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:652 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/09_front_end_and_match_flow/options_localisation_and_hooks.md:804 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/01_tick_timing_and_main_loop.md:505 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/02_match_lifecycle_and_state_reset.md:97 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/02_match_lifecycle_and_state_reset.md:353 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/03_entity_model_and_identity.md:684 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/04_containers_and_update_order.md:37 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/04_containers_and_update_order.md:110 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/04_containers_and_update_order.md:431 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/04_containers_and_update_order.md:431 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/05_space_routing_and_physics.md:349 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/05_space_routing_and_physics.md:451 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/05_space_routing_and_physics.md:688 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/05_space_routing_and_physics.md:688 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:50 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:362 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:395 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:459 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:499 broken link: ../../architecture/components/terrain.md
+- reference/12_simulation_model/07_randomness_and_integrity.md:499 broken link: ../../architecture/components/diagnostics_test_and_performance.md
+- reference/12_simulation_model/README.md:9 broken link: ../../architecture/components/terrain.md
+- requirements_index/dbg.md:9 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:10 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:11 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:12 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:13 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:14 broken link: ../architecture/components/diagnostics_test_and_performance.md#1-responsibilities-and-boundaries
+- requirements_index/dbg.md:15 broken link: ../architecture/components/diagnostics_test_and_performance.md#22-debug-entry-points-and-development-bindings
+- requirements_index/dbg.md:16 broken link: ../architecture/components/diagnostics_test_and_performance.md#22-debug-entry-points-and-development-bindings
+- requirements_index/dbg.md:17 broken link: ../architecture/components/diagnostics_test_and_performance.md#22-debug-entry-points-and-development-bindings
+- requirements_index/dbg.md:18 broken link: ../architecture/components/diagnostics_test_and_performance.md#23-events-and-data-contracts
+- requirements_index/dbg.md:19 broken link: ../architecture/components/diagnostics_test_and_performance.md#23-events-and-data-contracts
+- requirements_index/dbg.md:20 broken link: ../architecture/components/diagnostics_test_and_performance.md#23-events-and-data-contracts
+- requirements_index/dbg.md:21 broken link: ../architecture/components/diagnostics_test_and_performance.md#23-events-and-data-contracts
+- requirements_index/dbg.md:22 broken link: ../architecture/components/diagnostics_test_and_performance.md#24-threading-contract
+- requirements_index/dbg.md:23 broken link: ../architecture/components/diagnostics_test_and_performance.md#24-threading-contract
+- requirements_index/dbg.md:24 broken link: ../architecture/components/diagnostics_test_and_performance.md#24-threading-contract
+- requirements_index/dbg.md:25 broken link: ../architecture/components/diagnostics_test_and_performance.md#24-threading-contract
+- requirements_index/dbg.md:26 broken link: ../architecture/components/diagnostics_test_and_performance.md#24-threading-contract
+- requirements_index/dbg.md:27 broken link: ../architecture/components/diagnostics_test_and_performance.md#31-types-ownership-and-lifetimes
+- requirements_index/dbg.md:28 broken link: ../architecture/components/diagnostics_test_and_performance.md#32-hidden-development-settings
+- requirements_index/dbg.md:29 broken link: ../architecture/components/diagnostics_test_and_performance.md#32-hidden-development-settings
+- requirements_index/dbg.md:30 broken link: ../architecture/components/diagnostics_test_and_performance.md#33-log-records-and-categories
+- requirements_index/dbg.md:31 broken link: ../architecture/components/diagnostics_test_and_performance.md#33-log-records-and-categories
+- requirements_index/dbg.md:32 broken link: ../architecture/components/diagnostics_test_and_performance.md#34-profile-marker-catalogue
+- requirements_index/dbg.md:33 broken link: ../architecture/components/diagnostics_test_and_performance.md#34-profile-marker-catalogue
+- requirements_index/dbg.md:34 broken link: ../architecture/components/diagnostics_test_and_performance.md#35-black-box-contents
+- requirements_index/dbg.md:35 broken link: ../architecture/components/diagnostics_test_and_performance.md#35-black-box-contents
+- requirements_index/dbg.md:36 broken link: ../architecture/components/diagnostics_test_and_performance.md#36-diagnostic-outputs
+- requirements_index/dbg.md:37 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:38 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:39 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:40 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:41 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:42 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:43 broken link: ../architecture/components/diagnostics_test_and_performance.md#41-logging
+- requirements_index/dbg.md:44 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:45 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:46 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:47 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:48 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:49 broken link: ../architecture/components/diagnostics_test_and_performance.md#42-checks-the-black-box-and-the-fatal-path
+- requirements_index/dbg.md:50 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:51 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:52 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:53 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:54 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:55 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:56 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:57 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:58 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:59 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:60 broken link: ../architecture/components/diagnostics_test_and_performance.md#43-profiling
+- requirements_index/dbg.md:61 broken link: ../architecture/components/diagnostics_test_and_performance.md#44-development-overlay
+- requirements_index/dbg.md:62 broken link: ../architecture/components/diagnostics_test_and_performance.md#44-development-overlay
+- requirements_index/dbg.md:63 broken link: ../architecture/components/diagnostics_test_and_performance.md#44-development-overlay
+- requirements_index/dbg.md:64 broken link: ../architecture/components/diagnostics_test_and_performance.md#44-development-overlay
+- requirements_index/dbg.md:65 broken link: ../architecture/components/diagnostics_test_and_performance.md#44-development-overlay
+- requirements_index/dbg.md:66 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:67 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:68 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:69 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:70 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:71 broken link: ../architecture/components/diagnostics_test_and_performance.md#45-network-statistics-window
+- requirements_index/dbg.md:72 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:73 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:74 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:75 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:76 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:77 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:78 broken link: ../architecture/components/diagnostics_test_and_performance.md#46-debug-commands-and-the-debug-command-window
+- requirements_index/dbg.md:79 broken link: ../architecture/components/diagnostics_test_and_performance.md#47-development-drawing
+- requirements_index/dbg.md:80 broken link: ../architecture/components/diagnostics_test_and_performance.md#47-development-drawing
+- requirements_index/dbg.md:81 broken link: ../architecture/components/diagnostics_test_and_performance.md#47-development-drawing
+- requirements_index/dbg.md:82 broken link: ../architecture/components/diagnostics_test_and_performance.md#47-development-drawing
+- requirements_index/dbg.md:83 broken link: ../architecture/components/diagnostics_test_and_performance.md#47-development-drawing
+- requirements_index/dbg.md:84 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:85 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:86 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:87 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:88 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:89 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:90 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:91 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:92 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:93 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:94 broken link: ../architecture/components/diagnostics_test_and_performance.md#48-test-harness
+- requirements_index/dbg.md:95 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:96 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:97 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:98 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:99 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:100 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:101 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:102 broken link: ../architecture/components/diagnostics_test_and_performance.md#49-soak-test
+- requirements_index/dbg.md:103 broken link: ../architecture/components/diagnostics_test_and_performance.md#410-telemetry
+- requirements_index/dbg.md:104 broken link: ../architecture/components/diagnostics_test_and_performance.md#410-telemetry
+- requirements_index/dbg.md:105 broken link: ../architecture/components/diagnostics_test_and_performance.md#410-telemetry
+- requirements_index/dbg.md:106 broken link: ../architecture/components/diagnostics_test_and_performance.md#410-telemetry
+- requirements_index/dbg.md:107 broken link: ../architecture/components/diagnostics_test_and_performance.md#51-diagnostics-and-concurrency
+- requirements_index/dbg.md:108 broken link: ../architecture/components/diagnostics_test_and_performance.md#52-frame-and-tick-structure-of-the-reference
+- requirements_index/dbg.md:109 broken link: ../architecture/components/diagnostics_test_and_performance.md#53-reference-performance-figures
+- requirements_index/dbg.md:110 broken link: ../architecture/components/diagnostics_test_and_performance.md#53-reference-performance-figures
+- requirements_index/dbg.md:111 broken link: ../architecture/components/diagnostics_test_and_performance.md#54-species-budget-baseline
+- requirements_index/dbg.md:112 broken link: ../architecture/components/diagnostics_test_and_performance.md#54-species-budget-baseline
+- requirements_index/dbg.md:113 broken link: ../architecture/components/diagnostics_test_and_performance.md#54-species-budget-baseline
+- requirements_index/dbg.md:114 broken link: ../architecture/components/diagnostics_test_and_performance.md#54-species-budget-baseline
+- requirements_index/dbg.md:115 broken link: ../architecture/components/diagnostics_test_and_performance.md#54-species-budget-baseline
+- requirements_index/dbg.md:116 broken link: ../architecture/components/diagnostics_test_and_performance.md#55-reference-test-machine
+- requirements_index/dbg.md:117 broken link: ../architecture/components/diagnostics_test_and_performance.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/dbg.md:118 broken link: ../architecture/components/diagnostics_test_and_performance.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/dbg.md:119 broken link: ../architecture/components/diagnostics_test_and_performance.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/dbg.md:120 broken link: ../architecture/components/diagnostics_test_and_performance.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/dbg.md:121 broken link: ../architecture/components/diagnostics_test_and_performance.md#82-replay-hooks
+- requirements_index/dbg.md:122 broken link: ../architecture/components/diagnostics_test_and_performance.md#82-replay-hooks
+- requirements_index/ter.md:9 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:10 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:11 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:12 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:13 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:14 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:15 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:16 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:17 broken link: ../architecture/components/terrain.md#1-responsibilities-and-boundaries
+- requirements_index/ter.md:18 broken link: ../architecture/components/terrain.md#21-interface-sketch
+- requirements_index/ter.md:19 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:20 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:21 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:22 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:23 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:24 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:25 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:26 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:27 broken link: ../architecture/components/terrain.md#22-queries-used-by-gameplay
+- requirements_index/ter.md:28 broken link: ../architecture/components/terrain.md#31-terrain-definition
+- requirements_index/ter.md:29 broken link: ../architecture/components/terrain.md#31-terrain-definition
+- requirements_index/ter.md:30 broken link: ../architecture/components/terrain.md#32-terrain-tiles
+- requirements_index/ter.md:31 broken link: ../architecture/components/terrain.md#32-terrain-tiles
+- requirements_index/ter.md:32 broken link: ../architecture/components/terrain.md#33-terrain-flatten-areas
+- requirements_index/ter.md:33 broken link: ../architecture/components/terrain.md#33-terrain-flatten-areas
+- requirements_index/ter.md:34 broken link: ../architecture/components/terrain.md#34-guide-grid
+- requirements_index/ter.md:35 broken link: ../architecture/components/terrain.md#34-guide-grid
+- requirements_index/ter.md:36 broken link: ../architecture/components/terrain.md#35-grids
+- requirements_index/ter.md:37 broken link: ../architecture/components/terrain.md#35-grids
+- requirements_index/ter.md:38 broken link: ../architecture/components/terrain.md#36-rendering-inputs
+- requirements_index/ter.md:39 broken link: ../architecture/components/terrain.md#36-rendering-inputs
+- requirements_index/ter.md:40 broken link: ../architecture/components/terrain.md#36-rendering-inputs
+- requirements_index/ter.md:41 broken link: ../architecture/components/terrain.md#36-rendering-inputs
+- requirements_index/ter.md:42 broken link: ../architecture/components/terrain.md#37-data-products
+- requirements_index/ter.md:43 broken link: ../architecture/components/terrain.md#41-pipeline
+- requirements_index/ter.md:44 broken link: ../architecture/components/terrain.md#41-pipeline
+- requirements_index/ter.md:45 broken link: ../architecture/components/terrain.md#41-pipeline
+- requirements_index/ter.md:46 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:47 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:48 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:49 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:50 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:51 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:52 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:53 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:54 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:55 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:56 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:57 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:58 broken link: ../architecture/components/terrain.md#42-numeric-primitives
+- requirements_index/ter.md:59 broken link: ../architecture/components/terrain.md#43-the-private-tile-generator
+- requirements_index/ter.md:60 broken link: ../architecture/components/terrain.md#43-the-private-tile-generator
+- requirements_index/ter.md:61 broken link: ../architecture/components/terrain.md#44-tile-generation
+- requirements_index/ter.md:62 broken link: ../architecture/components/terrain.md#44-tile-generation
+- requirements_index/ter.md:63 broken link: ../architecture/components/terrain.md#44-tile-generation
+- requirements_index/ter.md:64 broken link: ../architecture/components/terrain.md#44-tile-generation
+- requirements_index/ter.md:65 broken link: ../architecture/components/terrain.md#45-parents-and-the-generation-methods
+- requirements_index/ter.md:66 broken link: ../architecture/components/terrain.md#45-parents-and-the-generation-methods
+- requirements_index/ter.md:67 broken link: ../architecture/components/terrain.md#45-parents-and-the-generation-methods
+- requirements_index/ter.md:68 broken link: ../architecture/components/terrain.md#46-noise
+- requirements_index/ter.md:69 broken link: ../architecture/components/terrain.md#46-noise
+- requirements_index/ter.md:70 broken link: ../architecture/components/terrain.md#46-noise
+- requirements_index/ter.md:71 broken link: ../architecture/components/terrain.md#47-tile-edge-cases
+- requirements_index/ter.md:72 broken link: ../architecture/components/terrain.md#47-tile-edge-cases
+- requirements_index/ter.md:73 broken link: ../architecture/components/terrain.md#47-tile-edge-cases
+- requirements_index/ter.md:74 broken link: ../architecture/components/terrain.md#48-composition-of-tiles
+- requirements_index/ter.md:75 broken link: ../architecture/components/terrain.md#48-composition-of-tiles
+- requirements_index/ter.md:76 broken link: ../architecture/components/terrain.md#48-composition-of-tiles
+- requirements_index/ter.md:77 broken link: ../architecture/components/terrain.md#48-composition-of-tiles
+- requirements_index/ter.md:78 broken link: ../architecture/components/terrain.md#48-composition-of-tiles
+- requirements_index/ter.md:79 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:80 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:81 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:82 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:83 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:84 broken link: ../architecture/components/terrain.md#49-flatten-areas
+- requirements_index/ter.md:85 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:86 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:87 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:88 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:89 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:90 broken link: ../architecture/components/terrain.md#410-world-grid-outside-height-and-edge-semantics
+- requirements_index/ter.md:91 broken link: ../architecture/components/terrain.md#411-simulation-normals
+- requirements_index/ter.md:92 broken link: ../architecture/components/terrain.md#411-simulation-normals
+- requirements_index/ter.md:93 broken link: ../architecture/components/terrain.md#411-simulation-normals
+- requirements_index/ter.md:94 broken link: ../architecture/components/terrain.md#412-colour-ramp-look-up
+- requirements_index/ter.md:95 broken link: ../architecture/components/terrain.md#412-colour-ramp-look-up
+- requirements_index/ter.md:96 broken link: ../architecture/components/terrain.md#412-colour-ramp-look-up
+- requirements_index/ter.md:97 broken link: ../architecture/components/terrain.md#413-colour-variation-and-shore-noise-generators
+- requirements_index/ter.md:98 broken link: ../architecture/components/terrain.md#413-colour-variation-and-shore-noise-generators
+- requirements_index/ter.md:99 broken link: ../architecture/components/terrain.md#413-colour-variation-and-shore-noise-generators
+- requirements_index/ter.md:100 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:101 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:102 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:103 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:104 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:105 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:106 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:107 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:108 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:109 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:110 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:111 broken link: ../architecture/components/terrain.md#414-sea-derivations
+- requirements_index/ter.md:112 broken link: ../architecture/components/terrain.md#415-lifecycle
+- requirements_index/ter.md:113 broken link: ../architecture/components/terrain.md#415-lifecycle
+- requirements_index/ter.md:114 broken link: ../architecture/components/terrain.md#415-lifecycle
+- requirements_index/ter.md:115 broken link: ../architecture/components/terrain.md#416-conversions-the-output-depends-on
+- requirements_index/ter.md:116 broken link: ../architecture/components/terrain.md#5-concurrency-and-performance-budget
+- requirements_index/ter.md:117 broken link: ../architecture/components/terrain.md#5-concurrency-and-performance-budget
+- requirements_index/ter.md:118 broken link: ../architecture/components/terrain.md#5-concurrency-and-performance-budget
+- requirements_index/ter.md:119 broken link: ../architecture/components/terrain.md#5-concurrency-and-performance-budget
+- requirements_index/ter.md:120 broken link: ../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/ter.md:121 broken link: ../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/ter.md:122 broken link: ../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/ter.md:123 broken link: ../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry
+- requirements_index/ter.md:124 broken link: ../architecture/components/terrain.md#6-failure-modes-diagnostics-and-telemetry
+
+## Gate 4 Mermaid
+
+- Mermaid gate skipped
+
+## Gate 5 Requirement ids
+
+- architecture/components/renderer/frame_graph_and_passes.md:147 cites RND-176, which is not defined
+
+## Gate 6 DEC and ADR references
+
+- Open DEC-850 is not cited by any requirement
+- Open DEC-870 is not cited by any requirement
+- Open DEC-952 is not cited by any requirement
+- Open DEC-954 is not cited by any requirement
+- Open DEC-956 is not cited by any requirement
+- Open DEC-958 is not cited by any requirement
+- Open DEC-962 is not cited by any requirement
+- Open DEC-965 is not cited by any requirement
+- Open DEC-971 is not cited by any requirement

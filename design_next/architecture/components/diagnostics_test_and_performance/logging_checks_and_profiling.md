@@ -54,9 +54,9 @@ The logging, check, black-box and profiling declarations are those of Listing 2.
 6. the most recent `dbg.blackbox.recent_checks` (8) failed-check and warning messages;
 7. for a failed check or a fatal exit, the black-box record: the product name, the build identity, the UTC date and time, the message truncated to `dbg.blackbox.check_message_max_chars` (512 characters; the full message goes to the log), the condition text, the source file and line, and the thread name.
 
-It never holds chat text, account tokens or the names of other players (ADR-065, ADR-067), and it does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
+It never holds chat text, account tokens, the names of other players or the Windows user name, and every path in it is written relative to the install directory or the user-data root, with the root shown as a placeholder (ADR-065, ADR-067; see DEC-970). It does not hold the channel tag, which reaches the log header only (BLD-021, BLD-120).
 
-**DBG-048** (MUST) The reference's assertion record is a text report with a banner, the product name, version and build date, the date as hour and minute and as day, month and year, the error message, and a stack trace of return addresses that a frame-pointer walk collects and an offline script resolves through a linker map; the walk stops at a misaligned, non-increasing or unreadable frame and is short or wrong in optimised builds. Species keeps the content (identity, time, message, stack) and takes the stack from the dump, symbolised through the symbol store of every build ([build tooling and distribution](../build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
+**DBG-048** (MUST) The reference's assertion record is a text report with a banner, the product name, version and build date, the date as hour and minute and as day, month and year, the error message, and a stack trace of return addresses that a frame-pointer walk collects and an offline script resolves through a linker map; the walk stops at a misaligned, non-increasing or unreadable frame and is short or wrong in optimised builds. Species keeps the content (identity, time, message, stack) and takes the stack from the dump, symbolised through the symbol store of every distributed build ([build tooling and distribution](../build_tooling_and_distribution.md), ADR-065); no Species code walks frame pointers.
 
 ## 4 Behaviour and algorithms
 
@@ -70,7 +70,7 @@ It never holds chat text, account tokens or the names of other players (ADR-065,
 
 **DBG-063** (MUST) `LogHexDump` writes `dbg.log.hex_bytes_per_line` (16) bytes per line in hexadecimal; `LogValueDump` writes 32-bit integers in decimal, `dbg.log.hex_bytes_per_line` ÷ 4 values per line.
 
-**DBG-064** (MUST) Sinks and levels per flavour are those of ADR-067: the rotating UTF-8 file (DBG-049), the TraceLogging provider, and the debugger output in `Debug` and `Development` builds. `Shipping` and `Profile` builds record info and above; development builds record debug and above, with trace enabled per category at run time. If the log file cannot be opened, records go to the remaining sinks, and the failure is reported once, with the path, on those sinks.
+**DBG-064** (MUST) Sinks and levels per configuration are those of ADR-067: the rotating UTF-8 file (DBG-049) and the TraceLogging provider in both configurations, and the debugger output in Debug builds. Release builds record info and above; Debug builds record debug and above, with trace enabled per category at run time. If the log file cannot be opened, records go to the remaining sinks, and the failure is reported once, with the path, on those sinks.
 
 **DBG-065** (MUST) The log records at least the content that the reference debug log carries, as categorised records: the start-up header (DBG-044); content mounting with entry counts and durations, and every missing resource ([asset pipeline and resources](../asset_pipeline_and_resources.md) AST-126); every settings entry that fails to parse or is out of range (DEC-800); network connection, divergence and disconnection events (DEC-206); audio readiness, bank loads and device changes (AEN-324); key-binding parse outcomes ([input](../input.md)); and a memory report every `ref.sim.frame.memory_log_interval` (60 s, [tick timing](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md)) giving the available physical memory, the process's committed memory and working set, and the audio engine's memory summary (AEN-324).
 
@@ -80,18 +80,18 @@ It never holds chat text, account tokens or the names of other players (ADR-065,
 
 **DBG-070** (MUST) Species has these check levels; the reference level each replaces is named in the second column:
 
-| Species level | Reference counterpart | Flavours | On failure |
+| Species level | Reference counterpart | Configurations | On failure |
 |---|---|---|---|
-| development check `SPECIES_ASSERT(c)` | debug assertion, with no effect outside debug builds | `Debug`, `Development` | breaks into an attached debugger (PLT-121); otherwise logs an error record with the condition, file and line, notes it in the black box and continues, and the test harness turns it into a test failure (DBG-072) |
-| release check `SPECIES_CHECK(c, message)` | release assertion with a formatted message | every flavour | the fatal path of DBG-073 |
-| plain release check (no message) | assertion that reports the condition text, file and line | every flavour | as a release check; the message is the condition text, file and line |
-| container bounds check `SPECIES_CHECK_INDEX(i, n)` | the assertion with arguments that every container bounds check uses | every flavour | as a release check: an out-of-range container access is a fatal, reported error in every build |
-| abort | release assertion that is always false, with a message | every flavour | as a release check |
-| fatal exit `FatalExit(string id, arguments)` | logged exit with a message dialog and the assertion record | every flavour | DBG-074 |
+| development check `ENGINE_ASSERT(c)` | debug assertion, with no effect outside debug builds | Debug | breaks into an attached debugger (PLT-121); otherwise logs an error record with the condition, file and line, notes it in the black box and continues, and the test harness turns it into a test failure (DBG-072) |
+| release check `ENGINE_CHECK(c, message)` | release assertion with a formatted message | Debug and Release | the fatal path of DBG-073 |
+| plain release check (no message) | assertion that reports the condition text, file and line | Debug and Release | as a release check; the message is the condition text, file and line |
+| container bounds check `ENGINE_CHECK_INDEX(i, n)` | the assertion with arguments that every container bounds check uses | Debug and Release | as a release check: an out-of-range container access is a fatal, reported error in every build |
+| abort | release assertion that is always false, with a message | Debug and Release | as a release check |
+| fatal exit `FatalExit(string id, arguments)` | logged exit with a message dialog and the assertion record | Debug and Release | DBG-074 |
 
 **DBG-071** (MUST) Content errors never reach a check: the content build rejects them (DEC-015, ADR-059), and a load path reports and recovers. A check states a program invariant; a failed check is a defect.
 
-**DBG-072** (MUST) The test builds' simulation checks of §4.8 are development checks that the test harness turns into test failures; they never run in `Profile` or `Shipping` builds.
+**DBG-072** (MUST) The test builds' simulation checks of §4.8 are development checks that the test harness turns into test failures; they never run in Release builds.
 
 **DBG-073** (MUST) The fatal path of a failed release check, a container bounds check or an abort runs in this order; the terminate, invalid-parameter and pure-call handlers enter it at step 1 with their reason ([platform layer](../platform_layer.md) PLT-118):
 
@@ -107,9 +107,9 @@ In the reference a failed release assertion shows its own message in a fatal-err
 
 ### 4.3 Profiling
 
-**DBG-080** (MUST) The profiling layer is ADR-068's: `SPECIES_PROFILE_SCOPE` and its GPU counterpart emit PIX events through WinPixEventRuntime in `Debug`, `Development` and `Profile` builds and expand to nothing in `Shipping` builds; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
+**DBG-080** (MUST) The profiling layer is ADR-068's: `ENGINE_PROFILE_SCOPE` and its GPU counterpart `ENGINE_PROFILE_GPU_SCOPE` emit PIX events through WinPixEventRuntime in Debug and Release builds alike, and no other code calls the PIX runtime; a GPU scope also writes a timestamp query pair, resolved into a readback buffer and read `dbg.profile.gpu_readback_latency` (2) or more frames later, so the CPU never waits for the GPU to measure it. System-wide problems are captured as ETW traces with the TraceLogging provider of DBG-064.
 
-**DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's is a debug assertion. The trees exist whenever markers are compiled in; the reference creates its tree only while its profile window is open. Every node is timed whether or not the view shows it; the reference times a node only while its parent is expanded in the view, so a collapsed subtree costs a look-up per call and shows no time.
+**DBG-081** (MUST) The same markers feed the profile tree. Each thread's tree is rooted at a root node. Entering a marker finds or creates the child of the current node with the marker's name and starts its timer; leaving it adds one call and the elapsed time to the node, updates the node's shortest and longest call, and makes the parent current again. Nesting follows call order only; a leave whose name differs from the current node's fails a development check (`ENGINE_ASSERT`). The trees exist in every Debug build, where the profile view and the overlay read them, and in Release builds the markers feed PIX only (DBG-004); the reference creates its tree only while its profile window is open. Every node is timed whether or not the view shows it; the reference times a node only while its parent is expanded in the view, so a collapsed subtree costs a look-up per call and shows no time.
 
 **DBG-082** (MUST) Once every `dbg.profile.rollup_period_ms` (1000 ms) of the platform clock, checked once per frame, the profiling service rolls every node over: the current period's calls and time become the last period's, the last period's are added to the history (one more history period), and the current period restarts; the length of the period just ended is recorded as now − (end of period − `dbg.profile.rollup_period_ms`), and the next period ends `dbg.profile.rollup_period_ms` after now. The roll-over runs in every frame loop, the front-end loop included; the reference rolls over only in its match loops.
 
@@ -146,10 +146,10 @@ The failures of logging, checks and profiling are rows of the failure table of D
 | T3 | unit | A full buffer drops trace before debug records, never warnings; the drop counts appear in the next drain warning. | DBG-061, DBG-062 |
 | T4 | unit | A 20-byte hex dump gives two lines of 16 and 4 bytes. | DBG-063 |
 | T5 | crash | A failed release check on the main thread, on a worker thread and through the terminate path each produce a dump with the registered log ending in the fatal record and a black box holding the message, condition, file and line; the six crash-test commands each produce a report (platform layer T22). | DBG-047, DBG-073, DBG-117 |
-| T6 | unit | A captured dump and log of a session with a seeded chat message and account token contain neither string. | DBG-047, DBG-066 |
+| T6 | unit | A captured dump and log of a session with a seeded chat message, account token and Windows user name contain none of the three strings, and the black box shows paths only relative to their placeholders. | DBG-047, DBG-066 |
 | T8 | unit | With the manual clock, nested markers of known durations give the expected calls, current, last and history times, shortest and longest; after `ResetHistory` the history is empty. | DBG-081 to DBG-084 |
 | T9 | unit | With the manual clock, a roll-over 1.2 s after the previous one records a period of 1.2 s and schedules the next end 1 s later; it also runs in the front-end loop. | DBG-082 |
-| T12 | unit | GPU timestamps are read with no fence wait on the current frame. | DBG-080 |
+| T12 | unit | GPU timestamps are read with no fence wait on the current frame, in a Debug and in a Release build. | DBG-080 |
 | T13 | golden-image | The profile view with a fixed tree shows rows, bars of √ms × 10 px, brightness 105 to 255 and a 100 px graph where a 200 ms frame fills the height. | DBG-086 to DBG-089 |
 
 ## 8 Open decisions

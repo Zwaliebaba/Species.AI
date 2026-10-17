@@ -54,81 +54,110 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 | Neighbour | What the renderer receives | What the renderer never does |
 |---|---|---|
 | simulation (`reference/12_simulation_model/`) | the presentation snapshot, the extrapolation time, the last processed update slice, the number of the last command frame taken | write any field; draw from the simulation generator |
-| terrain component ([terrain.md](../terrain.md)) | the height field, the outside height, the cell size, the per-triangle colour-ramp look-up, the sea shore mask, the depth map, the flat-water tile mask, the coastline wave formulae | generate or modify terrain |
+| terrain component ([terrain/README.md](../terrain/README.md)) | the height field, the outside height, the cell size, the per-triangle colour-ramp look-up, the sea shore mask, the depth map, the flat-water tile mask, the coastline wave formulae | generate or modify terrain |
 | camera component ([camera_and_sequences.md](../camera_and_sequences.md)) | position, front and up vectors and the vertical field of view of the frame | move the camera |
 | animation and VFX ([README.md](../animation_and_vfx/README.md)) | the particle pool, shatter debris, camera-shake offsets and full-screen flash requests (ADR-010, ADR-036) | emit particles on its own from simulation state |
 | UI framework ([ui_framework/README.md](../ui_framework/README.md)) | batched UI and glyph draws for the UI pass (ADR-031, ADR-034) | lay out widgets |
 | asset pipeline ([asset_pipeline_and_resources.md](../asset_pipeline_and_resources.md)) | cooked meshes and textures, each texture keyed by (asset id, processing variant) (see DEC-098) | change another requester's texture processing |
 | platform layer ([platform_layer.md](../platform_layer.md)) | the window, its client-area size, resize, DPI and focus events, and the platform clock (ADR-074, ADR-075) | create or style the window |
 
-**RND-008** (MUST) The renderer is a client-only module: the dedicated-server build links no renderer code and no Direct3D library (ADR-001).
+**RND-008** (MUST) The renderer is a client-only module: the dedicated-server project links no renderer code and no Direct3D library (ADR-001, ADR-056).
 
 ## 2 Interfaces
 
 The interface below is a C++23 declaration sketch, not an implementation.
 
 ```cpp
-namespace species::render {
+namespace Engine
+{
 
-enum class FrameKind : std::uint8_t { Match, MainMenu, LoadingView, MapEditor };
-enum class PosterState : std::uint8_t { Inactive, Tiling };
-enum class TransitionState : std::uint8_t { Finished, Waiting, InProgress };
-enum class PresentMode : std::uint8_t { VerticalSync, Uncapped };
+enum class FrameKind : std::uint8_t
+{
+  Match,
+  MainMenu,
+  LoadingView,
+  MapEditor
+};
+enum class PosterState : std::uint8_t
+{
+  Inactive,
+  Tiling
+};
+enum class TransitionState : std::uint8_t
+{
+  Finished,
+  Waiting,
+  InProgress
+};
+enum class PresentMode : std::uint8_t
+{
+  VerticalSync,
+  Uncapped
+};
 
-struct RenderConfig {                       // a change triggers Reconfigure (RND-030)
-  std::uint32_t windowWidth = 0, windowHeight = 0;   // client area from the platform layer
-  std::uint32_t renderWidth = 0, renderHeight = 0;   // scene-target size (RND-025)
-  std::uint32_t sampleCount = 1;                      // set from the anti-aliasing setting, ADR-015
-  bool hdr = false;                                   // ADR-014
-  bool lowLatency = false;                            // ADR-012
+struct RenderConfig // a change triggers Reconfigure (RND-030)
+{
+  std::uint32_t windowWidth = 0; // client area from the platform layer
+  std::uint32_t windowHeight = 0;
+  std::uint32_t renderWidth = 0; // scene-target size (RND-025)
+  std::uint32_t renderHeight = 0;
+  std::uint32_t sampleCount = 1; // set from the anti-aliasing setting, ADR-015
+  bool hdr = false;              // ADR-014
+  bool lowLatency = false;       // ADR-012
   PresentMode presentMode = PresentMode::VerticalSync;
   std::optional<float> frameRateCap;
-  bool invertedStyle = false;                         // DEC-040, options_and_budgets.md
+  bool invertedStyle = false; // DEC-040, options_and_budgets.md
 };
 
-struct ViewParams {                          // supplied by MatchCamera each frame
-  Vec3 position, front, up;
-  float fovYDegrees = 0.0f;                  // value owned by the camera component
+struct ViewParams // supplied by MatchCamera each frame
+{
+  Vec3 position;
+  Vec3 front;
+  Vec3 up;
+  float fovYDegrees = 0.0f; // value owned by the camera component
 };
 
-struct FrameInputs {
+struct FrameInputs
+{
   FrameKind kind = FrameKind::Match;
-  const PresentationSnapshot* snapshot = nullptr;  // DEC-222; null outside a match
-  double extrapolationTime = 0.0;                  // R-SIM-560, seconds of game time
-  std::int32_t lastProcessedSlice = -1;            // R-SIM-511; -1 = none this tick
-  std::uint32_t lastCommandFrame = 0;              // R-SIM-531
-  double realNow = 0.0;                            // real clock, R-SIM-570
-  double presentationFrameTime = 0.0;              // R-SIM-570
-  double smoothPresentationTime = 0.0;             // R-SIM-570
+  const PresentationSnapshot* snapshot = nullptr; // DEC-222; null outside a match
+  double extrapolationTime = 0.0;                 // R-SIM-560, seconds of game time
+  std::int32_t lastProcessedSlice = -1;           // R-SIM-511; -1 = none this tick
+  std::uint32_t lastCommandFrame = 0;             // R-SIM-531
+  double realNow = 0.0;                           // real clock, R-SIM-570
+  double presentationFrameTime = 0.0;             // R-SIM-570
+  double smoothPresentationTime = 0.0;            // R-SIM-570
   ViewParams view;
   bool interfaceVisible = true;
   bool anyUiWindowOpen = false;
-  bool matchPaused = false;                        // the sequenced pause of DEC-038
+  bool matchPaused = false; // the sequenced pause of DEC-038
 };
 
-class FrameRenderer {
+class FrameRenderer
+{
 public:
-  static std::expected<std::unique_ptr<FrameRenderer>, StartupError>
-      Create(PlatformWindow& window, const RenderConfig& config, AssetCache& assets);
+  static std::expected<std::unique_ptr<FrameRenderer>, StartupError> Create(AppWindow& _window, const RenderConfig& _config,
+                                                                            AssetCache& _assets);
 
-  void Reconfigure(const RenderConfig& config);      // resize, render size, MSAA, HDR
-  void RenderFrame(const FrameInputs& inputs);       // record, execute, present
+  void Reconfigure(const RenderConfig& _config);       // resize, render size, MSAA, HDR
+  void ApplySettings(const RenderSettings& _settings); // options_and_budgets.md RND-447
+  void RenderFrame(const FrameInputs& _inputs);        // record, execute, present
 
-  void RequestScreenshot();                          // RND-110 to RND-114
-  void StartFadeOut();                               // RND-085
-  void StartFadeIn(double delaySeconds);             // RND-085
-  [[nodiscard]] bool IsFadeComplete() const;         // RND-086
-  void InitialiseTransition(double durationSeconds, float direction);  // RND-095
-  void StartTransition();                            // RND-095
+  void RequestScreenshot();                                             // RND-110 to RND-114
+  void StartFadeOut();                                                  // RND-085
+  void StartFadeIn(double _delaySeconds);                               // RND-085
+  [[nodiscard]] bool IsFadeComplete() const;                            // RND-086
+  void InitializeTransition(double _durationSeconds, float _direction); // RND-095
+  void StartTransition();                                               // RND-095
 
   // RND-216: x, y in pixels of the render target, z = clip-space w; nullopt when w <= 0.
-  [[nodiscard]] std::optional<Vec3> ProjectToScreen(const Vec3& world) const;
-  [[nodiscard]] Ray ScreenRay(float x, float y) const;                 // RND-218
-  [[nodiscard]] ScissorRect ScissorFromWorld(const Vec3& a, const Vec3& b) const;  // RND-217
-  [[nodiscard]] std::uint32_t FramesPerSecond() const;                 // R-SIM-576
+  [[nodiscard]] std::optional<Vec3> ProjectToScreen(const Vec3& _world) const;
+  [[nodiscard]] Ray ScreenRay(float _x, float _y) const;                            // RND-218
+  [[nodiscard]] ScissorRect ScissorFromWorld(const Vec3& _a, const Vec3& _b) const; // RND-217
+  [[nodiscard]] std::uint32_t FramesPerSecond() const;                              // R-SIM-576
 };
 
-}  // namespace species::render
+} // namespace Engine
 ```
 
 **Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), so that dependants can re-register GPU-side data.
@@ -148,8 +177,8 @@ public:
 | State | Initial value | Meaning |
 |---|---|---|
 | frames-per-second counter | `ref.sim.frame.fps_initial` (60) in [reference/12](../../../reference/12_simulation_model/01_tick_timing_and_main_loop.md) | frames completed in the last `ref.sim.frame.fps_window` of real time (R-SIM-576) |
-| frame-rate overlay flag | off; never on in shipping builds | development overlay of frame rate and entity counts ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) |
-| input-mode overlay flag | off | development box that shows whether keyboard or gamepad input is active |
+| frame-rate overlay flag | off; exists in Debug builds only (ADR-056) | development overlay of frame rate and entity counts ([diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md)) |
+| input-mode overlay flag | off; exists in Debug builds only (ADR-056) | development box that shows whether keyboard or gamepad input is active |
 | poster state | `PosterState::Inactive` | `Inactive` or `Tiling` (RND-110) |
 | poster tile index | 0 | the tile being rendered (RND-111) |
 | captured-frame target | empty | the image the screen transition samples (RND-095) |
@@ -193,7 +222,7 @@ public:
 
 **RND-020** (MUST) Start-up runs in this order: the capability checks and device creation of ADR-002 (an adapter that fails a check is skipped; if none passes, the client shows a localised message `ui.error.gpu_unsupported` naming the missing capability and the adapter, logs it and exits without a swap chain); the swap chain of ADR-012 at the window's client-area size; the two root signatures (ADR-006); every pipeline-state catalogue entry, from the pipeline library where it is valid (ADR-005); the frame-graph compilation (ADR-004); then the first frame.
 
-**RND-021** (MUST) The display preferences ([options_and_budgets.md](options_and_budgets.md), [platform_layer.md](../platform_layer.md)) are read before the swap chain is created. When the preferred render width and height are both 0 (the first run), the renderer uses the current desktop resolution of the window's monitor and writes it back to the preferences.
+**RND-021** (MUST) The display preferences ([options_and_budgets.md](options_and_budgets.md), [platform_layer.md](../platform_layer.md)) are read before the swap chain is created. When the stored render size is absent (the first run; DAT-008), the renderer uses the current desktop resolution of the window's monitor and writes it back to the preferences.
 
 **RND-022** (MUST) A preferred render size snaps to the closest entry of the offered render-size list (RND-026): an exact match if one exists, otherwise the entry with the smallest |Δw| + |Δh|.
 
@@ -212,9 +241,9 @@ public:
 | Element | Rule |
 |---|---|
 | UI windows and text | pixel-unit orthographic space over the viewport; menu layouts scale by the UI framework's own size rules ([ui_framework/layout_rendering_input_and_localisation.md](../ui_framework/layout_rendering_input_and_localisation.md), ADR-033) |
-| Power slots panel and match HUD | an orthographic space `rnd.hud.ortho_height` (600) units high whose width is 600 × the aspect ratio, independent of resolution (ADR-016) |
+| Power slots panel and match HUD | an orthographic space `ref.ctrl.panel.canvas_height` (600) units high whose width is 600 × the aspect ratio, independent of resolution ([selection_and_power_slots.md](../../../reference/06_controls_camera_and_commands/selection_and_power_slots.md) R-CTRL-222, ADR-016) |
 | match messages (pass 13) | scale = render width ÷ `rnd.hud.message.reference_width` (1280) |
-| chat log (pass 21) | scale = `rnd.hud.chat.tiny_scale` (0.75) when the render width is at most `rnd.hud.chat.tiny_width` (640) px; render width ÷ `rnd.hud.chat.reference_width` (1024) when it is above 640 px and at most `rnd.hud.chat.small_width` (800) px; otherwise the match-message scale |
+| chat log (pass 21) | the chat scale of [screen_flow_and_match_setup.md](../../../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-099: `ref.meta.chat.scale_tiny` (0.75) when the render width is at most `ref.meta.chat.tiny_screen_width` (640) px; render width ÷ `ref.meta.chat.scale_small_width` (1024) when it is above 640 px and at most `ref.meta.chat.small_screen_width` (800) px; otherwise render width ÷ `ref.meta.chat.scale_reference_width` (1280), which equals the match-message scale |
 | world markers and cursors | sizes from the render height and in physical pixels, as [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) specifies |
 
 **RND-029** (MUST) In windowed mode the window is centred on its monitor when first created; a restored window larger than the monitor's work area is clamped to it (ADR-075).
@@ -235,7 +264,7 @@ public:
 
 **RND-040** (MUST) Per-frame CPU work outside the frame thread's recording is bounded by the frame graph's precompiled pass list (ADR-004); the terrain costs only chunk culling (ADR-011), and crowds cost a fixed number of calls per type and pass (ADR-009). No pipeline state is created during a frame (ADR-005).
 
-**RND-041** (MUST) The renderer's GPU and CPU budgets, the quality presets and the reference performance figures are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker and one pair of GPU timestamps (ADR-068), and the development overlay shows per-pass GPU times against those budgets.
+**RND-041** (MUST) The renderer's GPU and CPU budgets, the quality presets and the reference performance figures are in [options_and_budgets.md](options_and_budgets.md). Every frame-graph pass carries one CPU and GPU marker (`ENGINE_PROFILE_SCOPE` and `ENGINE_PROFILE_GPU_SCOPE`) and one pair of GPU timestamps, in Debug and Release builds (ADR-068), and the development overlay of Debug builds shows per-pass GPU times against those budgets.
 
 **RND-042** (MUST) Loading and streaming follow the asset pipeline component: static uploads go through the copy queue, an asset becomes visible only after its upload fence has completed (ADR-008), and how Species loads and streams world content is decided by the design phase (see DEC-226).
 
@@ -246,12 +275,12 @@ public:
 | no adapter passes the capability checks | localised message naming the missing capability and the adapter; log; exit | RND-020 |
 | the window or swap chain cannot be created | the fallback chain, then a fatal error | RND-023 |
 | device removed or reset | the rebuild of ADR-008; log and crash-report attachments | RND-034 |
-| a pipeline state is created outside start-up, loading or reconfiguration | an error in development builds, a log entry in release builds | ADR-005 |
+| a pipeline state is created outside start-up, loading or reconfiguration | an error in Debug builds, a log entry in Release builds | ADR-005 |
 | the frame graph fails validation | the renderer stops with a diagnostic naming the pass | ADR-004 |
 | a texture or mesh is missing at run time | a diagnostic and the default resource at heap index 0 (ADR-006), never a fatal assertion (DEC-015) | RND-017 |
 | an upload-ring segment overflows | a one-off overflow buffer, a log entry, and a larger ring at the next reconfiguration (ADR-008) | RND-017 |
 
-Diagnostics: PIX markers and GPU timestamps per pass (ADR-068); the development overlay of frame rate and entity counts and the input-mode box (RND-011); the debug layer and GPU-based validation in the CI test configuration (ADR-001). Telemetry, when the player consents, carries the frame-time distribution and the adapter and capability summary (ADR-066).
+Diagnostics: PIX markers and GPU timestamps per pass, in both configurations (ADR-068); in Debug builds, the development overlay of frame rate and entity counts and the input-mode box (RND-011); the debug layer and GPU-based validation in Debug builds, on developer machines and in the GPU test job of CI (ADR-001, ADR-070). Telemetry, when the player consents, carries the frame-time distribution and the adapter and capability summary (ADR-066).
 
 ## 7 Acceptance tests
 
@@ -260,7 +289,7 @@ Diagnostics: PIX markers and GPU timestamps per pass (ADR-068); the development 
 | T1 boundary | build check | the simulation library cannot include a renderer header; the renderer has only const access to the snapshot; the dedicated-server link map has no Direct3D symbol | RND-002, RND-003, RND-008 |
 | T2 headless conformance | golden-hash | a match run headless and the same match run with the full renderer produce identical per-tick state hashes | RND-002 to RND-006 |
 | T3 capability probe | unit | recorded capability results (all pass, each single failure, unknown Shader Model) give the expected adapter choice and message | RND-020 |
-| T4 first run | unit | with both preferred sizes 0, the desktop resolution is used and written back | RND-021 |
+| T4 first run | unit | with no stored render size, the desktop resolution is used and written back | RND-021 |
 | T5 closest size | property | for random preferred sizes, the chosen entry minimises |Δw| + |Δh| and an exact match always wins | RND-022, RND-026 |
 | T6 fallback chain | unit | forced failures of each attempt give the next attempt, the write-back and the present mode `Uncapped` | RND-023 |
 | T7 reconfigure | integration | resize, render-size, sample-count and HDR changes during a match keep the device and the terrain buffers, and raise no validation message | RND-030, RND-031 |
@@ -339,9 +368,4 @@ The Species design phase must answer these questions for the renderer:
 | `rnd.init.fallback_window_size` | 800 × 600 | px | windowed fallback client area | RND-023 | |
 | `rnd.init.min_render_width` | 640 | px | smallest offered render width | RND-026 | |
 | `rnd.init.min_render_height` | 480 | px | smallest offered render height | RND-026 | |
-| `rnd.hud.ortho_height` | 600 | HUD units | height of the HUD space; width = 600 × aspect | RND-028 | |
 | `rnd.hud.message.reference_width` | 1280 | px | match messages scale by render width ÷ this | RND-028 | |
-| `rnd.hud.chat.reference_width` | 1024 | px | chat scale divisor on small render widths | RND-028 | |
-| `rnd.hud.chat.small_width` | 800 | px | at or below this width the chat uses its own divisor | RND-028 | |
-| `rnd.hud.chat.tiny_width` | 640 | px | at or below this width the chat scale is fixed | RND-028 | |
-| `rnd.hud.chat.tiny_scale` | 0.75 | × | chat scale at tiny widths | RND-028 | |

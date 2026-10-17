@@ -80,7 +80,7 @@ The divergence column shows the diverged text in red while the participant has a
 
 **DBG-115** (MUST) The debug-command window exists in development builds only. `action.debug.command_window` opens it while no other UI window is open. It is a tool window of `dbg.commands.window_size` (200 × 200 px) at `dbg.commands.window_pos` (250, 50); buttons that do not fit grow it (UI-025). Buttons start at y = `dbg.commands.first_row_y` (25) with a row pitch of `dbg.commands.row_pitch` (20 px). With m = `dbg.commands.margin` (10 px) and g = `dbg.commands.pair_gap` (5 px): a full-width button is at x = m and the window width − 2m = 180 px wide; a pair of buttons is each (window width − 2m − g) ÷ 2 = 87 px wide, the second at x = m + 87 + g = 102; the Supply crate row has its button at x = m, the window width ÷ 2 − 2m = 80 px wide, and the outcome drop-down at x = the window width ÷ 2 = 100, the window width ÷ 2 − m = 90 px wide. Every button is in the window's navigation order, so a gamepad reaches it (UI-032). Captions are `ui.dev.command.*` string ids.
 
-**DBG-116** (MUST) Every spawn command targets the point P where the pick ray through the screen centre (W ÷ 2, H ÷ 2) meets the terrain ([camera](../camera_and_sequences.md) CAM-090, [terrain](../terrain.md)); without a hit, no command is sent.
+**DBG-116** (MUST) Every spawn command targets the point P where the pick ray through the screen centre (W ÷ 2, H ÷ 2) meets the terrain ([camera](../camera_and_sequences.md) CAM-090, [terrain](../terrain/README.md)); without a hit, no command is sent.
 
 **DBG-117** (MUST) The window offers these commands, in this order; "sequenced" commands change simulation state and follow DBG-118:
 

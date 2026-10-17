@@ -15,41 +15,70 @@ This document holds the ordered pass table: the single source of truth for the o
 ## 2 Interfaces
 
 ```cpp
-namespace species::render {
+namespace Engine
+{
 
-enum class BlendState : std::uint8_t { Opaque, Alpha, Premultiplied, Additive, Darkening, Ink, Ghost };
-enum class DepthState : std::uint8_t { TestWrite, Test, None };   // comparison GREATER_EQUAL, ADR-016
-enum class CullState  : std::uint8_t { Back, None };
-enum class SortRule   : std::uint8_t { Unsorted, BackToFront };
+enum class BlendState : std::uint8_t
+{
+  Opaque,
+  Alpha,
+  Premultiplied,
+  Additive,
+  Darkening,
+  Ink,
+  Ghost
+};
+enum class DepthState : std::uint8_t
+{
+  TestWrite,
+  Test,
+  None
+}; // comparison GREATER_EQUAL, ADR-016
+enum class CullState : std::uint8_t
+{
+  Back,
+  None
+};
+enum class SortRule : std::uint8_t
+{
+  Unsorted,
+  BackToFront
+};
 
-struct DepthBiasVariant { float referenceFactor = 1.0f; };       // RND-219 to RND-221
+struct DepthBiasVariant // RND-219 to RND-221
+{
+  float referenceFactor = 1.0f;
+};
 
-struct PipelineDescriptor {                 // one catalogue entry, ADR-005
-  ShaderPermutationId shader;               // shaders.md
+struct PipelineDescriptor // one catalogue entry, ADR-005
+{
+  ShaderPermutationId shader; // shaders.md
   BlendState blend = BlendState::Opaque;
   DepthState depth = DepthState::TestWrite;
   CullState cull = CullState::Back;
-  std::optional<float> cutoutThreshold;     // keep a pixel only if alpha > threshold
-  DepthBiasVariant bias;                    // factor 1.0 = no bias
-  RenderTargetFormats targets;              // SDR or HDR scene format, sample count
+  std::optional<float> cutoutThreshold; // keep a pixel only if alpha > threshold
+  DepthBiasVariant bias;                // factor 1.0 = no bias
+  RenderTargetFormats targets;          // SDR or HDR scene format, sample count
 };
 
-struct PassTableEntry {
-  std::string_view id;                      // "P04_terrain", in table order
-  std::span<const CatalogueKey> catalogueKeys;
-  std::span<const ResourceAccess> reads, writes;
+struct PassTableEntry
+{
+  std::string_view id; // a data name, "pass_04_terrain", in table order
+  std::span<const CatalogKey> catalogKeys;
+  std::span<const ResourceAccess> reads;
+  std::span<const ResourceAccess> writes;
   SortRule sort = SortRule::Unsorted;
-  SettingGate enabledBy;                    // always, or a setting or frame kind
-  RecordFunction record;                    // the sub-renderer that records the pass
+  SettingGate enabledBy; // always, or a setting or frame kind
+  RecordFunction record; // the sub-renderer that records the pass
 };
 
-class FrameGraph {
+class FrameGraph
+{
 public:
-  static std::expected<CompiledFrameGraph, FrameGraphError>
-      Compile(std::span<const PassTableEntry> table, const RenderConfig& config);
+  static std::expected<CompiledFrameGraph, FrameGraphError> Compile(std::span<const PassTableEntry> _table, const RenderConfig& _config);
 };
 
-}  // namespace species::render
+} // namespace Engine
 ```
 
 ## 3 Data model
@@ -68,7 +97,7 @@ public:
 | fog | the per-frame fog parameters are always set (RND-222); fog is off unless the pass enables it |
 | lighting | the two directional lights are always set in the per-frame constants (RND-226); lighting is off unless the pass uses a lit material |
 | texture | none bound; a bound texture is sampled with linear clamp-to-edge filtering through all its mip levels and is multiplied by the vertex colour |
-| shading | flat: every triangle has one facet colour and one facet normal (ADR-020); lit shaders always use unit-length normals |
+| shading | flat: every triangle has one facet colour and one facet normal (ADR-020); lit shaders use unit-length normals, except for the centipede segments, whose scaled normals RND-326 keeps (see DEC-958 item 3) |
 | lines and points | no line or point smoothing; lines and points are drawn as quads (ADR-009) |
 | topology | triangle lists; a quad is two triangles with the index pattern 0, 1, 2, 0, 2, 3 |
 | scissor | the full render target |
@@ -105,22 +134,22 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 
 | Entry | Shader ([shaders.md](shaders.md)) | Blend | Depth | Cull | Fog | Used by |
 |---|---|---|---|---|---|---|
-| `sky` | `sky` | `Additive` | `None` | `Back` | per layer, in the shader | pass 3; the main-menu and loading-view sky |
-| `terrain` | `terrain` | `Opaque` | `TestWrite` | `Back` | level | pass 4 |
-| `terrain_inverted` | `terrain`, inverted | `Darkening` | `TestWrite` | `Back` | level | pass 4 in the inverted style |
-| `sea_flat` | `sea_flat` | `Opaque` | `Test` | `None` | level | pass 5a |
-| `sea_flat_inverted` | `sea_flat`, inverted | `Darkening` | `Test` | `None` | level | pass 5a in the inverted style |
-| `sea_waves` | `sea_waves` | `Additive` | `TestWrite` | `Back` | level | pass 5b |
-| `mesh_lit_fog` | `mesh_lit`, fog | `Opaque` | `TestWrite` | `Back` | level | pass 6 |
-| `port_pad` | `mesh_lit`, fog | `Opaque` | `Test` | `None` | level | pass 8, structure port pads |
-| `glow_additive_fog` | `unlit_textured`, fog | `Additive` | `Test` | `None` | level | pass 8: structure lights, port stars, spawn-network glows and beams, trees, Barrier Emitter burn layer |
-| `glow_additive_fog_nodepth` | `unlit_textured`, fog | `Additive` | `None` | `None` | level | pass 8: burning-tree flames |
-| `alpha_fog` | `unlit_textured`, fog | `Alpha` | `Test` | `None` | level | pass 8: blighted and burning trees |
-| `dual_alpha_fog` | `unlit_dual_texture`, fog, `replace_then_modulate` | `Alpha` | `Test` | `None` | level | pass 8: Barrier Emitter curtain |
-| `dual_additive_clip_fog` | `unlit_dual_texture`, fog, `modulate`, two clip planes | `Additive` | `Test` | `None` | level | pass 8: Beam Dish beam tubes |
-| `line_additive_fog` | `screen_line`, fog | `Additive` | `Test` | `None` | level | pass 8: Barrier Emitter top edge, power lines |
-| `fade` | `fullscreen_fade` | `Alpha` | `None` | `None` | off | pass 27 |
-| `transition` | `screen_transition` | `Alpha` | `None` | `None` | off | pass 34 |
+| `sky` | `Sky` | `Additive` | `None` | `Back` | per layer, in the shader | pass 3; the main-menu and loading-view sky |
+| `terrain` | `Terrain` | `Opaque` | `TestWrite` | `Back` | level | pass 4 |
+| `terrain_inverted` | `Terrain`, `INVERTED` | `Darkening` | `TestWrite` | `Back` | level | pass 4 in the inverted style |
+| `sea_flat` | `SeaFlat` | `Opaque` | `Test` | `None` | level | pass 5a |
+| `sea_flat_inverted` | `SeaFlat`, `INVERTED` | `Darkening` | `Test` | `None` | level | pass 5a in the inverted style |
+| `sea_waves` | `SeaWaves` | `Additive` | `TestWrite` | `Back` | level | pass 5b |
+| `mesh_lit_fog` | `MeshLit`, `FOG` | `Opaque` | `TestWrite` | `Back` | level | pass 6 |
+| `port_pad` | `MeshLit`, `FOG` | `Opaque` | `Test` | `None` | level | pass 8, structure port pads |
+| `glow_additive_fog` | `UnlitTextured`, `FOG` | `Additive` | `Test` | `None` | level | pass 8: structure lights, port stars, spawn-network glows and beams, trees, Barrier Emitter burn layer |
+| `glow_additive_fog_nodepth` | `UnlitTextured`, `FOG` | `Additive` | `None` | `None` | level | pass 8: burning-tree flames |
+| `alpha_fog` | `UnlitTextured`, `FOG` | `Alpha` | `Test` | `None` | level | pass 8: blighted and burning trees, the countdown screens (RND-176) |
+| `dual_alpha_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `REPLACE_THEN_MODULATE` | `Alpha` | `Test` | `None` | level | pass 8: Barrier Emitter curtain |
+| `dual_additive_clip_fog` | `UnlitDualTexture`, `FOG`, `COMBINE` = `MODULATE`, `CLIP_PLANES` = 2 | `Additive` | `Test` | `None` | level | pass 8: Beam Dish beam tubes |
+| `line_additive_fog` | `ScreenLine`, `FOG` | `Additive` | `Test` | `None` | level | pass 8: Barrier Emitter top edge, power lines |
+| `fade` | `FullscreenFade` | `Alpha` | `None` | `None` | off | pass 27 |
+| `transition` | `ScreenTransition` | `Alpha` | `None` | `None` | off | pass 34 |
 
 **RND-062** (MUST) Every catalogue entry exists in an SDR and, where HDR output is offered, an HDR scene-target form, and in each enabled sample count (ADR-005, ADR-014, ADR-015). Entries are created at start-up or during reconfiguration, never during a frame.
 
@@ -176,7 +205,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 5a | flat sea layer | the textured, shore-masked sea layer at its fixed depth | [world_renderers.md](world_renderers.md) §4.2 | `sea_flat`: `Opaque` · `Test` · `None`; inverted: `Darkening` · `Test` · `None` | level | unlit | unsorted |
 | 5b | coastline waves | the additive coastline wave mesh, when the sea detail is above 0 | [world_renderers.md](world_renderers.md) §4.2 | `sea_waves`: `Additive` · `TestWrite` · `Back` | level | unlit | unsorted |
 | 6 | structures, solid | the lit meshes of every structure in view | [world_renderers.md](world_renderers.md) §4.5 | `mesh_lit_fog`: `Opaque` · `TestWrite` · `Back` | level | object lighting, or the special lighting (RND-229) | unsorted |
-| 7a | Strike team members | every in-view member of each team's actor groups, that is the Troopers of the Strike teams | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha` · `TestWrite` · `Back`, cut-out `rnd.pso.strike_team_cutout` | off | per actor | unsorted |
+| 7a | actor groups | every in-view member of each team's actor groups, drawn by the instanced mesh path: the Troopers of its Strike teams, its centipede segments, the Bombers of its airstrike flights and the ants of its Hive groups (RND-323) | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `group_mesh_lit`: `Alpha` · `TestWrite` · `Back`, cut-out `rnd.pso.strike_team_cutout`; Troopers `trooper_mesh_lit`: `Opaque` · `TestWrite` · `Back`; damage flicker `Additive` with alpha 1 | off | object lighting | unsorted |
 | 7b | other actors | every in-view actor that is neither a Worker nor a Crawler | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | per actor kind: lit meshes `Opaque` · `TestWrite` · `Back`; damage flicker `Additive` with alpha 1; spider darkening `Darkening`; sprites and glows `Additive` · `Test` · `None`; overlays and beams `Test` · `None`; blob shadows `Darkening` · `Test` · `None` with the shadow bias variant; the meteor glow, the Reaper Serpent's captured orbs and the Missile Barrage ground marker `None` depth | off | lit meshes: object lighting; the Abductor: the special lighting; everything else unlit | unsorted |
 | 7c | Crawlers | the glowing trail strips of every in-view Crawler group | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Additive` · `Test` · `None` with the Crawler bias variant; the Rogue faction `Ink` · `Test` · `None` with the same bias | off | unlit | unsorted |
 | 7d | Workers | the facing-oriented Worker cards and their flat ground shadows | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [README.md](../animation_and_vfx/README.md) | cards `Alpha` · `TestWrite` · `None`, cut-out `rnd.pso.worker_cutout`; ground shadows `Alpha` · `Test` · `None` with the same cut-out | off | unlit | unsorted |
@@ -194,7 +223,7 @@ Every blend result is clamped to [0, 1] per channel as it is written to the SDR 
 | 20 | world cursor | 3-D highlight rings and cylinders, formation dots, ghost models; then the 2-D icon, entry marker, crosshair or pointer | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | rings `Alpha` · `Test` · `None` with the cursor bias variant; ghost models `Ghost` · `Test`; pointer shadow `Ink`, then `Additive` (the crosshair `Alpha`) | off | unlit | — |
 | 21 | chat | the chat log and the talk hint (RND-075) | [ui_framework/README.md](../ui_framework/README.md) | text styles · `None` · `None` | off | unlit | — |
 | 23 | Power slots panel | target-area particles, the Power bar, pop-ups and messages | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) | `Alpha` and `Additive` · `None` · `None` | off | unlit | — |
-| 24 | development drawing | queued debug shapes, development builds only | [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | as that document states | off | unlit | — |
+| 24 | development drawing | queued debug shapes, Debug builds only | [diagnostics_test_and_performance.md](../diagnostics_test_and_performance.md) | as that document states | off | unlit | — |
 | 26 | 2-D block start | nothing; the 2-D overlay projection of RND-215 is set up for passes 27 to 31 | this document | — | — | — | — |
 | 27 | fade | the full-screen black fade (RND-085) | this document | `fade`: `Alpha` · `None` · `None` | off | unlit | — |
 | 28 | match HUD | scores, timers and the mode HUD | [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md), [reference/01_skirmish_rules_and_modes/README.md](../../../reference/01_skirmish_rules_and_modes/README.md) | `Alpha` · `None` · `None` | off | unlit | — |
@@ -207,7 +236,7 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-071** (MUST NOT) The match frame has no pass for: a debug face picture in the sky; synchronisation-error markers; an empty particle pass; a summon-wheel interface; an empty camera-debug pass; the control-hint system, which draws nothing in a match; a start-up intro sequence; a studio logo overlay of the campaign. None of them draws anything in a match (see DEC-059, DEC-052).
 
-**RND-072** (MUST) Passes 3 to 15 are the only passes that write `scene_depth`, and they draw into `scene_colour` at the render size, in table order; the match message of pass 13 is therefore overdrawn by the debris and particles of passes 14 and 15. Passes 16 to 34 never use the hardware depth test, except that the world cursor's 3-D rings, ghost models and formation dots in pass 20 compare their depth in the pixel shader with `scene_depth_single` at the corresponding scene position and are discarded where they lie behind the scene, which keeps their reference order after the UI windows.
+**RND-072** (MUST) Passes 3 to 15 are the only passes that write `scene_depth`, and they draw into `scene_colour` at the render size, in table order; the match message of pass 13 is therefore overdrawn by the debris and particles of passes 14 and 15. Passes 16 to 34 never use the hardware depth test, except that the 3-D parts of the world markers in pass 16 (the ground highlights of order markers and the local team's Leader banners, RND-358) and the world cursor's 3-D rings, ghost models and formation dots in pass 20 compare their depth in the pixel shader with `scene_depth_single` at the corresponding scene position and are discarded where they lie behind the scene (RND-309), which keeps their reference order after the UI windows.
 
 **RND-073** (MUST) The sky pass draws before any depth exists in the frame. Its layers therefore pass every depth comparison, and the `sky` entry uses `DepthState::None` for every layer, which yields the image of a depth-tested sky grid over a cleared depth target.
 
@@ -215,13 +244,13 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-075** (MUST) The chat log of pass 21 is drawn only while chat is shown in the match; each line lives `rnd.hud.chat.line_life` (60 s) and fades out over the last `rnd.hud.chat.line_fade` (5 s) of its life, that is from 55 s.
 
-**RND-076** (MUST) Pass 29 draws: the frame-rate overlay and the input-mode box when their development flags are set (RND-011); the build version string (ADR-057) in the front end only, never while a match world exists in shipping builds; the editor banner in the map editor. Banners that report network state are presentation hooks of the networking model, which the design phase decides (DEC-200).
+**RND-076** (MUST) Pass 29 draws: in Debug builds, the frame-rate overlay and the input-mode box when their development flags are set (RND-011); the build version string (ADR-057) in the front end, and in Release builds never while a match world exists; the editor banner in the map editor. Banners that report network state are presentation hooks of the networking model, which the design phase decides (DEC-200).
 
 ### 4.4 Branches that replace passes 3 to 15
 
 **RND-077** (MUST) In the main-menu frame, passes 3 to 15 are replaced by the main-menu sky: the sky pass alone, drawn by the front end's own sky renderer (`SkyRenderer`), with a fixed camera at (0, 600, 0) (`rnd.frame.menu_camera_position`), a vertical field of view of `rnd.frame.menu_fov` (90°), and a front vector of (0, 0, 1) rotated by `rnd.frame.menu_yaw` (−1.899 rad) about the y axis and then by `rnd.frame.menu_roll` (−1.079 rad) about the z axis. The menu sky's extrapolation time is the negated real clock, so its clouds drift with real time ([world_renderers.md](world_renderers.md) RND-152). The near and far planes are those outside a match (RND-211). Passes 16 to 34 follow.
 
-**RND-078** (MUST) In the map-editor frame, the match frame is drawn and the map editor's overlays follow it. The editor's content is specified as hooks only ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md)); the sea's editor grid is in [world_renderers.md](world_renderers.md) RND-148.
+**RND-078** (MUST) In the map-editor frame, the match frame is drawn and the map editor's overlays follow it, in the order of the editor's drawing list ([reference/08_maps_and_level_design/map_editor_hooks.md](../../../reference/08_maps_and_level_design/map_editor_hooks.md) R-MAP-380, with its structure markers of table 2.12-A and its mode overlays of table 2.12-B). The editor's content is specified as hooks only; the sea's editor grid is in [world_renderers.md](world_renderers.md) RND-148.
 
 ### 4.5 Reachability in a match
 
@@ -233,7 +262,7 @@ The pass numbers keep gaps where the reference frame has a pass that draws nothi
 
 **RND-081** (MUST) Every renderer draws an object at the extrapolated position and orientation of `reference/12_simulation_model/01_tick_timing_and_main_loop.md` R-SIM-562: position + velocity × *t*, and for a mesh node its orientation advanced by its angular velocity × *t*, where *t* is the extrapolation time of R-SIM-560 (0 while the world is held). This is extrapolation from the last tick, not interpolation between two stored states (R-SIM-563); the choice for Species is DEC-222 (R-SIM-565).
 
-**RND-082** (MUST) The objects of a sliced pool are drawn with the slice-aware time of R-SIM-562: a slot the current tick has already advanced uses *t*, and a slot it has not yet advanced uses *t* + `ref.sim.tick_period` × *s*. This applies to the structures (passes 6 and 8), the laser bolts and effects (passes 10a and 10b), the Essence orbs (pass 11), each team's other actors (pass 7b), the Crawler groups (pass 7c), the Workers (pass 7d) and the particle pool (pass 15). The Essence orbs and the Reaper Serpent are additionally drawn one tick behind, as [README.md](../animation_and_vfx/README.md) specifies.
+**RND-082** (MUST) The objects of a sliced pool are drawn with the slice-aware time of R-SIM-562: a slot the current tick has already advanced uses *t*, and a slot it has not yet advanced uses *t* + `ref.sim.tick_period` × *s*. This applies to the structures (passes 6 and 8), the laser bolts and effects (passes 10a and 10b), the Essence orbs (pass 11), each team's other actors (pass 7b), the Crawler groups (pass 7c) and the Workers (pass 7d). The particle pool (pass 15) is not a sliced pool: it is drawn at presentation time from its GPU state ([particles_shatter_and_screen_effects.md](../animation_and_vfx/particles_shatter_and_screen_effects.md) VFX-217). The Essence orbs and the Reaper Serpent are additionally drawn one tick behind, as [README.md](../animation_and_vfx/README.md) specifies.
 
 **RND-083** (MUST) The sky offset uses the same rule with the update slice as its threshold: if the last processed update slice of the current tick is at or after `ref.sim.slice.sky` (slice 3), the sky is drawn with *t*, otherwise with *t* + `ref.sim.tick_period` × *s* ([world_renderers.md](world_renderers.md) RND-152).
 
@@ -261,12 +290,12 @@ Caption: the fade states; `IsFadeComplete()` is true in `Idle`, where the rate i
 
 **RND-091** (MUST) The new text `ui.match.paused` reads "Match paused".
 
-**RND-095** (MUST) The screen transition follows the state diagram below. `InitialiseTransition(duration, direction)` stores the duration and the direction (+1 or −1) and enters `Waiting`; the next frame's first pass copies the previous frame's `final_image` into `captured_frame` before anything overwrites it, so the transition always shows the last presented frame (see DEC-316). `StartTransition()` records the real clock as the start time and enters `InProgress`. The front end passes the duration of its page changes ([ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md)).
+**RND-095** (MUST) The screen transition follows the state diagram below. `InitializeTransition(duration, direction)` stores the duration and the direction (+1 or −1) and enters `Waiting`; the next frame's first pass copies the previous frame's `final_image` into `captured_frame` before anything overwrites it, so the transition always shows the last presented frame (see DEC-316). `StartTransition()` records the real clock as the start time and enters `InProgress`. The front end passes the duration of its page changes ([ui_framework/pages_and_screen_recipes.md](../ui_framework/pages_and_screen_recipes.md)).
 
 ```mermaid
 stateDiagram-v2
     [*] --> Finished
-    Finished --> Waiting: InitialiseTransition, the next frame captures the last presented frame
+    Finished --> Waiting: InitializeTransition, the next frame captures the last presented frame
     Waiting --> InProgress: StartTransition, start time is the real clock
     InProgress --> InProgress: f at most 1, draw the transition with f
     InProgress --> Finished: f above 1
@@ -277,7 +306,7 @@ Caption: the screen-transition states; f = (real clock − start time) ÷ durati
 **RND-096** (MUST) In `InProgress`, the transition step computes *f* = (real clock − start time) ÷ duration. If *f* > 1 the state becomes `Finished` and nothing is drawn. Otherwise, with *c* = *f* × `rnd.transition.curve_gain` (3.6) and the direction *d*, pass 34 draws over the new screen:
 
 1. a strip `rnd.transition.edge_strip_width` (20) px wide adjoining the right edge of the quad of step 2, shading from black at its left side to transparent at its right side;
-2. the captured frame as a quad equal to the full screen shrunk inward by `rnd.transition.shrink_rate` (0.2) × *c* × *d* × the screen width on the left and right sides and by the same factor × the screen height on the top and bottom sides, moved left by the screen width × *c*^`rnd.transition.slide_exponent` (6) × *d*, with alpha max(0, 1 − `rnd.transition.fade_rate` (0.2) × *c*), sampled upright with linear clamp-to-edge filtering.
+2. the captured frame as a quad equal to the full screen shrunk inward by `rnd.transition.shrink_rate` (0.2) × *c* × *d* × the screen width on the left and right sides and by the same factor × the screen height on the top and bottom sides, moved left by the screen width × *c*^`rnd.transition.slide_exponent` (6) × *d*, with alpha max(0, 1 − `rnd.transition.fade_rate` (0.2) × *c*), sampled upright with point (nearest) clamp-to-edge filtering, through the point clamp-to-edge sampler (ADR-018, [visual_language.md](visual_language.md) RND-432).
 
 Both draws use the `transition` entry.
 
@@ -345,9 +374,9 @@ Caption: the order of one frame; the main-menu branch replaces the match world, 
 | a pass names a catalogue key that does not exist | a build error | RND-061, ADR-005 |
 | a resource is read before it is written, or written and never read | frame-graph compilation fails with a diagnostic naming the pass | RND-050, ADR-004 |
 | a screenshot read-back cannot be mapped or encoded | the file is not written; a log entry; the frame continues | RND-112 |
-| `StartTransition()` is called in `Finished` | ignored; a development-build warning | RND-095 |
+| `StartTransition()` is called in `Finished` | ignored; a warning in Debug builds | RND-095 |
 
-Every pass carries its marker and timestamps (ADR-068); a development view shows the pass list with per-pass GPU times.
+Every pass carries its marker and timestamps in both configurations (ADR-068); a development view of Debug builds shows the pass list with per-pass GPU times.
 
 ## 7 Acceptance tests
 
@@ -363,7 +392,7 @@ Every pass carries its marker and timestamps (ADR-068); a development view shows
 | T8 transition | golden-image | frames at *f* = 0, 0.25, 0.5 and 1 match the reference images computed from RND-096; the captured image equals the last presented frame | RND-095, RND-096 |
 | T9 poster | golden-image | a 2 × 2 poster equals four renders of the tile sub-projections placed bottom-up, with opaque alpha | RND-110 to RND-114 |
 | T10 paused banner | golden-image | the banner appears only with the pause command active, the interface shown and no window open | RND-090 |
-| T11 debug-layer run | integration | a full match frame and a main-menu frame render with the debug layer and GPU-based validation and produce no message | RND-051, RND-120 |
+| T11 debug-layer run | integration | in a Debug build on a GPU test agent (ADR-070), a full match frame and a main-menu frame render with the debug layer and GPU-based validation and produce no message | RND-051, RND-120 |
 
 ## 8 Open decisions
 

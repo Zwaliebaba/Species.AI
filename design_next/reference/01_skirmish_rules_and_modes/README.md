@@ -24,12 +24,12 @@ Players meet the match in this order: a lobby where the host picks the mode, the
 
 | Mode | Objective | Ends by | Time limit | Player structure | Complexity label |
 |---|---|---|---|---|---|
-| [Spawn Control](spawn_control.md) | own Spawn Nodes; a team that owns none for 30 mode seconds is eliminated | last team standing, or score at time-up | option, 0 to 60 minutes; 0 means none | free-for-all, 2 to 4; co-op 2 against 2 on maps that allow it | simple |
+| [Spawn Control](spawn_control.md) | own Spawn Nodes; a team that owns none for 30 mode seconds is eliminated | last team standing, or score at time-up | option, none or 1 to 60 minutes | free-for-all, 2 to 4; co-op 2 against 2 on maps that allow it | simple |
 | [Zone Control](zone_control.md) | hold Control Zones | score at time-up; never by elimination | option, 1 to 60 minutes | free-for-all, 2 to 4; co-op 2 against 2 on maps that allow it | simple |
 | [Relic Run](relic_run.md) | carry Relics into the team's own Relic Base, 1 point each | score at time-up | option, 1 to 60 minutes | free-for-all, 2 to 4; co-op on maps that allow it | medium |
 | [Siege](siege.md) | the attackers capture every Command Console linked to the defenders' Core Device before it detonates | Core Device destroyed (attackers win) or detonated (defenders win) | the Core Device countdown from the map, in mode seconds | 1 against 1; 1 defender against 2 attackers and 2 against 2, both with forced co-op | medium |
 | [Launch Race](launch_race.md) | fuel the team's Launch Vessel with solar energy, load 100 Workers and launch | the first Launch Vessel to climb above the win height | none | free-for-all, 2 to 4 | hard |
-| [Flag Chain](flag_chain.md) | capture a connected chain of Flag posts into an enemy's Home post to eliminate that enemy | last team standing, or Flag posts and eliminations at time-up | option, 0 to 60 minutes; 0 means none | free-for-all, 2 to 4 | hard |
+| [Flag Chain](flag_chain.md) | capture a connected chain of Flag posts into an enemy's Home post to eliminate that enemy | last team standing, or Flag posts and eliminations at time-up | option, none or 1 to 60 minutes | free-for-all, 2 to 4 | hard |
 
 A seventh, debug-only mode of the reference is not part of the catalogue (DEC-058).
 
@@ -57,7 +57,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-005** (MUST) A recount that a mode object performs "every 1 second" runs every `ref.mode.recount.one_second` (11 ticks), and one written "every 2 seconds" runs every `ref.mode.recount.two_second` (21 ticks). This covers the Control Zone, Flag post and Relic ownership recounts and the Relic Base delivery check (DEC-064).
 
-**R-MODE-006** (MUST) While the world is held ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-550) no world object advances and match time does not advance, but the match-rules update still runs each tick. Every game-time timer therefore starts at post-grace tick 0, and the grace countdown counts command frames, not game time.
+**R-MODE-006** (MUST) While the world is held ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-550) no world object advances and match time does not advance, but the match-rules update still runs each tick. Every game-time timer therefore starts at post-grace tick 0, and the grace countdown counts command frames, not game time; the real-time cadence that keeps the command frames and the match-rules update running while the world is held is the default of DEC-264.
 
 ### 2.2 Teams, factions and start positions
 
@@ -67,7 +67,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-009** (MUST) Map-placed structures and actors name a start position. At load each start position is mapped to the team that holds it, or to the no-team value when no team holds it, and each start position is a typed record of the map definition that carries its camera view, its Siege side and its co-op group (DEC-560; R-SIM-411, R-SIM-418).
 
-**R-MODE-010** (MUST) The player slots of a match are 0 to (player count − 1) of the map, 2 to 4. Before the match the host may close slots; every slot that stays **open** is occupied for the whole match. At match start the host fills every empty open slot with a bot team (R-SIM-006, R-SIM-433), and a participant who leaves is taken over by a bot (R-MODE-069). A closed slot is an unused slot. The number of open slots is fixed at match start (DEC-079). The spectator team kind exists, but no match setup offers a spectator slot (DEC-244).
+**R-MODE-010** (MUST) The player slots of a match are 0 to (player count − 1) of the map, 2 to 4. Before the match the host may close slots with `PlayerCommand::SetSlotOpen` ([reference/12](../12_simulation_model/06_teams_and_player_commands.md) R-SIM-461; see DEC-867); every slot that stays **open** is occupied for the whole match. At match start the host fills every empty open slot with a bot team (R-SIM-006, R-SIM-433), and a participant who leaves is taken over by a bot (R-MODE-069). A closed slot is an unused slot. The number of open slots is fixed at match start (DEC-079). The spectator team kind exists, but no match setup offers a spectator slot (DEC-244).
 
 **R-MODE-011** (MUST) Outside Siege and co-op, a team's start position is drawn when the match first needs it, uniformly with the simulation generator from the positions that no team holds yet; match initialisation asks in team-slot order. In a tutorial the position equals the team slot, and the Rogue and Visitor factions use their own slot ids (R-SIM-417; DEC-450 is open on assigning every position once at match start).
 
@@ -77,7 +77,7 @@ A seventh, debug-only mode of the reference is not part of the catalogue (DEC-05
 
 **R-MODE-013** (MUST) When a slot is initialised for a match outside co-op and outside Siege, its colour id is set to its slot id. Initialising a local-player slot makes it the local team, and initialising any slot that is not a bot clears its disconnected flag. A slot initialised after the match world has initialised its teams is initialised in the match world at once.
 
-**R-MODE-014** (MUST) A request to set slot t to colour id c is decided by the first of these rules that applies:
+**R-MODE-014** (MUST) A request to set slot t to colour id c, which a human's lobby choice issues as `PlayerCommand::SetColor` (R-SIM-416, R-SIM-451), is decided by the first of these rules that applies:
 
 1. c is none: the slot takes its slot default colour from `ref.match.colour.slot_defaults` and its colour id becomes none.
 2. Siege: the request needs the map's player count, and is refused while the count is unknown. Let n be the number of slots that already hold c. On a 3-player map the defender colour (`ref.sim.team.siege_defender_colour_id`) is full when n ≥ `ref.match.colour.siege_3p_defender_limit` (1), and the attacker colour (`ref.sim.team.siege_attacker_colour_id`) is full when n ≥ `ref.match.colour.siege_3p_attacker_limit` (2). On any other map a colour is full when n ≥ player count ÷ `ref.match.colour.siege_side_divisor` (2). A full colour is refused.
@@ -90,7 +90,7 @@ An accepted request sets the slot's colour id to c and its colour to the table c
 
 **R-MODE-016** (MUST) At match-world initialisation each bot slot below the player count, in a match that is neither co-op nor Siege, chooses a colour from 0 to `ref.sim.team.bot_colour_count` − 1 (0 to 3) that no other team holds, as a uniform choice from the list of free colours (DEC-014, R-SIM-416); in a tutorial a bot's colour is its slot id. Each unused slot at or above the player count draws a colour from 0 to 3 that no player slot holds, so that the effects that pick a random team colour, the Essence Grove and the Allegiance Scrambler, have a colour for every slot; a colour drawn for an unused slot is not reserved, so two unused slots can share one (R-SIM-422, DEC-450).
 
-**R-MODE-017** (MUST) The colour of a co-op group that has no colour id is `ref.match.colour.no_group`, an opaque grey (DEC-078).
+**R-MODE-017** (MUST) The member shade of colour id none, which is the no-team colour, is `ref.match.colour.no_group`, an opaque grey (DEC-078). A shade request for a co-op group that has no colour returns white instead (R-SIM-421).
 
 ### 2.4 Co-op alliances
 
@@ -98,32 +98,32 @@ An accepted request sets the slot's colour id to c and its colour to the table c
 
 **R-MODE-019** (MUST) In co-op each player picks a colour for their alliance: at most `ref.match.coop.max_alliances` (2) colours are in use, with at most `ref.match.coop.members_per_alliance` (2) members each (R-MODE-015).
 
-**R-MODE-020** (MUST) At load, in a co-op match that is not Siege, alliance assignment runs `AssignAlliance(t)` for each slot t from 0 to (player count − 1) that is not the Rogue or Visitor faction and has co-op group 0, in slot order. `G1` and `G2` are the map's group-1 and group-2 position lists:
+**R-MODE-020** (MUST) At load, in a co-op match that is not Siege, alliance assignment runs `AssignAlliance(t)` for each slot t from 0 to (player count − 1) that is not the Rogue or Visitor faction and has co-op group 0, in slot order. `G1` and `G2` are the map's group-1 and group-2 position lists, each holding at most two start positions in ascending position order ([data schemas](../../architecture/components/data_schemas/map_schema.md) DAT-087, DAT-088; see DEC-969); a position belongs to at most one group:
 
 ```
-AssignAlliance(t):
-    pos   := PositionOf(t)                        # drawn now if t has none (R-MODE-011)
+AssignAlliance(_t):
+    pos   := PositionOf(_t)                       # drawn now if _t has none (R-MODE-011)
     n1, n2 := number of slots already in group 1, in group 2
     solo1 := (|G1| == 1);  solo2 := (|G2| == 1)
     group := 0
     if pos in G1:
         group := 1
-        if n1 == 2 or (n1 == 1 and solo1):           # group 1 full: t moves to group 2
+        if n1 == 2 or (n1 == 1 and solo1):           # group 1 full: _t moves to group 2
             group := 2
             pos := G2[0] if (TeamAtPosition(G2[0]) is no team or solo2) else G2[1]
-            position[t] := pos
+            position[_t] := pos
     else if pos in G2:                               # mirror image
         group := 2
         if n2 == 2 or (n2 == 1 and solo2):
             group := 1
             pos := G1[0] if (TeamAtPosition(G1[0]) is no team or solo1) else G1[1]
-            position[t] := pos
-    for every other slot i below the player count:   # evict whoever now shares t's position
-        if position[i] == position[t]: position[i] := none
+            position[_t] := pos
+    for every other slot i below the player count:   # evict whoever now shares _t's position
+        if position[i] == position[_t]: position[i] := none
         PositionOf(i)                             # an evicted slot draws a free position again
-    if (group == 1 and solo1) or (group == 2 and solo2): PlaceSoloMember(t, group)
-    else if group == 0:                              PairAllianceMembers(t)          # the map defines no groups
-    else:                                            PairAllianceMembers(t, group)   # fixed groups
+    if (group == 1 and solo1) or (group == 2 and solo2): PlaceSoloMember(_t, group)
+    else if group == 0:                              PairAllianceMembers(_t)          # the map defines no groups
+    else:                                            PairAllianceMembers(_t, group)   # fixed groups
 ```
 
 The resulting colours apply inside this step on every participant; alliance assignment issues no player command (DEC-119).
@@ -202,13 +202,13 @@ The complexity label is drawn with the badge `uitex.difficulty_badge` on the mod
 **R-MODE-040** (MUST) The grace step runs on every tick of the grace period:
 
 1. In Relic Run, ensure the starting Relic ([relic_run.md](relic_run.md) R-MODE-305).
-2. If every counted team is ready: on the first ready tick (countdown at 30) emit the countdown-tick sound; decrease the countdown by 1 per tick, a decrement per command frame that game speed does not change; and emit one countdown-tick sound per displayed number, when the displayed number changes.
+2. If every counted team is ready: on the first ready tick (countdown at 30) emit the sound event `match_ui.countdown_tick`; decrease the countdown by 1 per tick, a decrement per command frame that game speed does not change; and emit one `match_ui.countdown_tick` per displayed number, when the displayed number changes.
 3. Otherwise set the countdown back to 30, so withdrawing readiness restarts the countdown.
-4. When the countdown reaches 0: emit the countdown-zero sound, mark the grace period over, request game speed `ref.sim.speed.normal` at once ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-552), and emit the visited-map achievement event (the Tourist hook, DEC-047).
+4. When the countdown reaches 0: emit the sound event `match_ui.countdown_zero`, mark the grace period over, request game speed `ref.sim.speed.normal` at once ([reference/12](../12_simulation_model/01_tick_timing_and_main_loop.md) R-SIM-552), and emit the visited-map achievement event (the Tourist hook, DEC-047).
 
-The countdown sounds use `sfx.ui.match_ui.countdown_tick`. The world runs its first step on post-grace tick 0.
+The two sound events and their timing are [reference/10](../10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-303 and R-AUD-304. The world runs its first step on post-grace tick 0.
 
-**R-MODE-041** (MUST) A player toggles readiness with the Ready action ([reference/06](../06_controls_camera_and_commands/README.md)) during the grace period while no window is open; the action issues the `ToggleReady` command for the player's team, which flips the team's in-match ready flag on every participant (R-SIM-459). In the lobby the same command flips the lobby slot's ready flag.
+**R-MODE-041** (MUST) A player toggles readiness with the Ready action ([reference/06](../06_controls_camera_and_commands/README.md)) during the grace period while no window is open; the action issues the `PlayerCommand::ToggleReady` command for the player's team, which flips the team's in-match ready flag on every participant (R-SIM-459). In the lobby the same command flips the lobby slot's ready flag.
 
 **R-MODE-042** (MUST) The grace overlay is drawn at the top centre, in red, with a font height of `ref.match.grace_overlay.font_height` (4 % of the screen height). It shows, in this priority:
 
@@ -220,7 +220,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 **R-MODE-043** (MUST) During the grace period each scoreboard row of a bot team and of a ready human shows `match.grace_period.ready` in place of its score.
 
-**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). Supply crate drops are not suspended during the grace period; only a paused match stops them (DEC-116).
+**R-MODE-044** (MUST) A pause request is refused during the grace period, after game over, and whenever a remote human takes part (R-SIM-553). The Supply crate drop rule has no grace-period gate of its own, but no world tick runs during the grace period, so no Supply crate drops in it, and a paused match stops the drops in the same way ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) R-CRATE-102, DEC-116).
 
 ### 2.10 Scores and rank announcements
 
@@ -246,11 +246,11 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 ### 2.12 Catch-up bonus
 
-**R-MODE-051** (MUST) The Catch-up bonus option exists in Spawn Control, Zone Control and Siege (values 0 to 90 % in steps of 10, default `ref.econ.catch_up.option_percent`, 90). The bonus is a proportional curve: a team's Spawn Node output multiplier is a function of its share deficit, the gap between its share of the Spawn Nodes held by the teams in play and the even share; the Rogue and Visitor factions are excluded from the share, and allies count as other teams (DEC-081). The curve, its maximum and where it applies are owned by [reference/05](../05_population_flow.md). In Siege it has no effect on any reference map, because no Siege map has a Spawn Node. A map can switch it off with its no-catch-up option (§2.19), and the multiplier is then 1.
+**R-MODE-051** (MUST) The Catch-up bonus option exists in Spawn Control, Zone Control and Siege (values 0 to 90 % in steps of 10, default `ref.econ.catch_up.option_percent`, 90). The bonus is a proportional curve: a team's Spawn Node output multiplier is a function of its share deficit, the gap between its share of the Spawn Nodes held by the teams in play and the even share; the Rogue and Visitor factions are excluded from the share, and allies count as other teams (DEC-124, which supersedes DEC-081). The curve, its maximum and where it applies are owned by [reference/05](../05_population_flow.md) R-ECON-033 to R-ECON-037 (`ref.econ.catch_up.curve`, `ref.econ.catch_up.max_multiplier`, `ref.econ.catch_up.modes`). In Siege it has no effect on any reference map, because no Siege map has a Spawn Node. A map can switch it off with its no-catch-up option (§2.19), and the multiplier is then 1.
 
 ### 2.13 Comeback Bonus
 
-**R-MODE-052** (MUST) When the Comeback Bonus option is on, the Comeback step runs on every post-grace tick (R-MODE-037 step 8). For every used slot that is not the Rogue or Visitor faction, it counts the slot's Comeback timer down while the team counts as eliminated (R-MODE-048) and holds it at the interval otherwise; on expiry it grants one power from the Comeback pool when the team has a free Power slot. The timers, the pool and the grant are [reference/05](../05_population_flow.md) R-ECON-112 to R-ECON-116 (`ref.econ.comeback.first_ticks`, `ref.econ.comeback.interval_ticks`, `ref.econ.comeback.pool`). An eliminated team has two Power slots (DEC-033). The grant ignores the map's excluded outcomes (DEC-452 is open on filtering the pool).
+**R-MODE-052** (MUST) When the Comeback Bonus option is on, the Comeback step runs on every post-grace tick (R-MODE-037 step 8). For every used slot that is not the Rogue or Visitor faction, it counts the slot's Comeback timer down while the team counts as eliminated (R-MODE-048) and holds it at the interval otherwise; on expiry it grants one power from the Comeback pool when the team has a free Power slot. The timers and the grant are [reference/05](../05_population_flow.md) R-ECON-112 to R-ECON-116 (`ref.econ.comeback.first_ticks`, `ref.econ.comeback.interval_ticks`), and the pool is `ref.power.comeback.pool` of [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (R-CRATE-136). An eliminated team has two Power slots (DEC-033). The grant ignores the map's excluded outcomes (DEC-452 is open on filtering the pool).
 
 **R-MODE-053** (MUST) A Comeback grant marks the power's source as the Comeback Bonus for the Power slots panel. When the timer expires and both Power slots are occupied, no power is granted and the local team's player sees the notice `ui.power_slots.comeback_full`.
 
@@ -269,7 +269,7 @@ Texts 2 and 3 blink on the presentation clock: alpha `ref.match.grace_overlay.bl
 
 ### 2.14 Sudden death
 
-**R-MODE-056** (MUST) The sudden-death option exists in Spawn Control, Zone Control, Relic Run and Flag Chain (a switch, default `ref.match.option.sudden_death`, on). When the time limit expires with the top score tied and the option is on, sudden death starts: the announcement `match.sudden_death.start` is emitted, the sudden-death flag is set and every used team not on the top score is wiped (R-MODE-048); co-op Relic Run skips the wipe. The next per-second evaluation that finds a single leader declares it the winner. Zone Control instead adds `ref.mode.zone_control.sudden_death_extension` (60 mode seconds) and evaluates again at the end of each extra minute. With the option off, a tie at time-up is declared a draw. The lobby forces the option off and disables it whenever the time limit is 0 (none). Each mode file states its sudden-death policy.
+**R-MODE-056** (MUST) The sudden-death option exists in Spawn Control, Zone Control, Relic Run and Flag Chain (a switch, default `ref.match.option.sudden_death`, on). When the time limit expires with the top score tied and the option is on, sudden death starts: the announcement `match.sudden_death.start` is emitted, the sudden-death flag is set and every used team not on the top score is wiped (R-MODE-048); co-op Relic Run skips the wipe. The next per-second evaluation that finds a single leader declares it the winner. Zone Control instead adds `ref.mode.zone_control.sudden_death_extension` (60 mode seconds) and evaluates again at the end of each extra minute. With the option off, a tie at time-up is declared a draw. The lobby forces the option off and disables it whenever the time limit is none, the explicit value `match.options.time_limit.none`, never the number 0 (DEC-120, R-META-048). Each mode file states its sudden-death policy.
 
 ### 2.15 Ending a match
 
@@ -282,7 +282,7 @@ Only when t differs from the declared result so far:
 
 3. the declared result becomes t, and the match is over;
 4. the match rules request game speed `ref.sim.speed.stopped` at `ref.sim.speed.game_over_rate` and lock the tick clock, so the world slows to a halt over 21 ticks and is then held for good (R-SIM-555);
-5. emit the game-over sound, then the victory sound when the local team is t, otherwise the defeat sound; a draw plays the defeat sound;
+5. emit the sound event `match_ui.game_over`, which uses `sfx.ui.match_ui.game_over`, then `match_ui.victory` when the local team is t, otherwise `match_ui.defeat`; a draw plays `match_ui.defeat`; victory and defeat play the music stings ([reference/10](../10_audio_design/front_end_hud_voice_and_ambience.md) R-AUD-307, DEC-097);
 6. when the local team is t, emit the won-on-map achievement event and the Completionist check (DEC-047).
 
 Declaring "none" runs steps 1 and 2 only.
@@ -293,7 +293,7 @@ Declaring "none" runs steps 1 and 2 only.
 
 **R-MODE-060** (MUST) In a co-op match the game-over winner line shows the declared result: the alliance of the declared winner, named by its group colour (`team.colour.*`), or the draw line for a draw (DEC-069).
 
-**R-MODE-061** (MUST) The match clock emits the countdown-zero sound at time-up, on the mode second at which the time remaining reaches 0 (DEC-072).
+**R-MODE-061** (MUST) The match clock emits the sound event `match_ui.countdown_zero` at time-up, on the mode second at which the time remaining reaches 0 (DEC-072; R-AUD-306).
 
 ### 2.16 The match HUD
 
@@ -305,11 +305,13 @@ Declaring "none" runs steps 1 and 2 only.
 
 **R-MODE-065** (MUST) The generic **score line** (Zone Control, Relic Run) is `match.hud.score_line`: the team name, the score, the delta "(+d)" (R-MODE-046) and the estimate "(est. n)" with n = score + d × time remaining. The delta is blanked during the part of every game second from `ref.match.hud.delta_hidden_from` (0.5) onwards, except in Relic Run. The estimate is shown in Zone Control with a score mode other than 2 and in Spawn Control with score mode 1, while the match has a time limit. Spawn Control, Siege, Launch Race and Flag Chain have their own score lines (the mode files).
 
-**R-MODE-066** (MUST) The **match clock** box is drawn at the top centre, or right of the scoreboard when the screen width is at most `ref.match.hud.narrow_screen_width` (800); its size is `ref.match.hud.timer_box` (80) with a font of `ref.match.hud.timer_font` (30). It shows the time remaining in mode seconds as minutes:seconds, with the colon blinking on game time, while the time remaining is above 0, outside the grace period, and, in the second tutorial, only once its bots may spawn. It emits the countdown-tick sound at every whole minute and at every mode second of the last `ref.match.hud.timer_warning` (10 mode seconds), during which it is red and scaled by `ref.match.hud.timer_warning_scale` (1.2). The countdown-zero sound plays at time-up (R-MODE-061).
+**R-MODE-066** (MUST) The **match clock** box is drawn at the top centre, or right of the scoreboard when the screen width is at most `ref.match.hud.narrow_screen_width` (800); its size is `ref.match.hud.timer_box` (80) with a font of `ref.match.hud.timer_font` (30). It shows the time remaining in mode seconds as minutes:seconds, with the colon blinking on game time, while the time remaining is above 0, outside the grace period, and, in the second tutorial, only once its bots may spawn (the held time remaining of [reference/11](../11_tutorial_and_help.md) R-TUT-081). It emits the sound event `match_ui.countdown_tick` at every whole minute and at every mode second of the last `ref.match.hud.timer_warning` (10 mode seconds), during which it is red and scaled by `ref.match.hud.timer_warning_scale` (1.2) (R-AUD-305). `match_ui.countdown_zero` plays at time-up (R-MODE-061).
 
 **R-MODE-067** (MUST) The HUD also shows: the reinforcement countdown `ui.match.reinforcement_countdown` at a font of `ref.match.hud.reinforcement_font` (20) wherever waves run and the local team does not count as eliminated ([reference/05](../05_population_flow.md) R-ECON-097); the Comeback countdown (R-MODE-054); and, centred at a font of `ref.match.hud.crate_timer_font` (50), the remaining time of an active Spawn Surge (`match.hud.spawn_surge_timer`) and of an active Frenzy (`match.hud.frenzy_timer`), red below `ref.match.hud.crate_timer_warning` (2 s) ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md)). The Siege round overlay and the Launch Race status panel are in their mode files.
 
 **R-MODE-068** (MUST) After game over the HUD shows the title `match.game_over.title` at a font of `ref.match.hud.game_over_title_font` (70) at y = `ref.match.hud.game_over_title_y` (180), and the winner line at y = `ref.match.hud.game_over_winner_y` (250) with a font of `ref.match.hud.game_over_winner_font` (35): outside co-op `match.game_over.winner` with the winner's name in the winner's colour, or `match.game_over.draw` for a draw; in co-op R-MODE-060. Single-round Siege skips the winner line and shows its own overlay. A final score list in team colours is centred at `ref.match.hud.final_list_y` (73 % of the screen height), in a box scaled by `ref.match.hud.final_list_box_scale` (1.3): name and score in Spawn Control, Zone Control and Relic Run; names only in Launch Race; the defence times in multi-round Siege; neither list nor box in Flag Chain and single-round Siege. At the bottom a blinking prompt, `match.game_over.leave_prompt_keyboard` or `match.game_over.leave_prompt_pad`, names the menu action that leads to the leave action.
+
+**R-MODE-092** (MUST) The text announcements of the match rules are shown as the centre-screen **match message** to the participants they are addressed to: `match.one_minute_warning`, `match.eliminated.self` and `match.eliminated.other`, `match.sudden_death.start`, the rank announcements `match.rank.*`, `match.player_left`, `ui.power_slots.comeback_full`, and the announcements of the mode files: `mode.spawn_control.elimination_warning.self` and `.other`, `mode.relic_run.delivered`, `mode.relic_run.new_relic`, `mode.siege.core_destroyed`, `mode.siege.one_minute_warning`, `mode.launch_race.fuelled`, `mode.launch_race.preparing` and `mode.flag_chain.base_under_attack`. A message shows for `ref.sim.world.message_expiry` (3.0 s of real time, [reference/12](../12_simulation_model/04_containers_and_update_order.md) R-SIM-202) in the colour of its team, or in white when it has no team; a newer message replaces it, except that a no-overwrite message suppresses later messages while it shows ([reference/04](../04_supply_crates_powers_and_weapons/README.md) R-CRATE-028). The renderer draws it in its match-message pass ([frame graph and passes](../../architecture/components/renderer/frame_graph_and_passes.md) RND-074). The scoreboard lines, the clock and the overlays of R-MODE-063 to R-MODE-068 are not messages.
 
 ### 2.17 Players leaving
 
@@ -399,17 +401,17 @@ Declaring "none" runs steps 1 and 2 only.
 | Launch Race | crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency, turret cap |
 | Flag Chain | time limit, crate drop period, reinforcement interval, reinforcement count, Transport cap, turret frequency, Comeback Bonus, sudden death, turret cap |
 
-**R-MODE-074** (MUST) The option definitions are:
+**R-MODE-074** (MUST) The option definitions are below. The lowest step of the time-limit spinner and of the crate-drop-period spinner is the explicit value none, "no limit" or "no Supply crates", which the spinner shows by its own string id and never as the number 0 (DEC-120, [reference/09](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) R-META-048):
 
 | Option | Label | Control | Range and step | Default | Modes |
 |---|---|---|---|---|---|
 | score mode | `match.options.score_mode` | list | Spawn Control 0 to 1 (`mode.spawn_control.score_mode.held`, `mode.spawn_control.score_mode.per_second`); Zone Control 0 to 3 (`mode.zone_control.score_mode.zones_per_second`, `mode.zone_control.score_mode.population_per_second`, `mode.zone_control.score_mode.final_population`, `mode.zone_control.score_mode.total_control`) | 0: `ref.mode.spawn_control.option.score_mode`, `ref.mode.zone_control.option.score_mode` | Spawn Control, Zone Control |
-| time limit | `match.options.time_limit`; 0 shows `match.options.time_limit.none` | spinner | minutes in steps of 1: 0 to 60 in Spawn Control and Flag Chain, where 0 means no limit; 1 to 60 in Zone Control and Relic Run | `ref.mode.spawn_control.option.time_limit` (10), `ref.mode.zone_control.option.time_limit` (5), `ref.mode.relic_run.option.time_limit` (10), `ref.mode.flag_chain.option.time_limit` (15) | Spawn Control, Zone Control, Relic Run, Flag Chain |
+| time limit | `match.options.time_limit`; the value none shows `match.options.time_limit.none` | spinner | minutes in steps of 1: none (no limit), then 1 to 60, in Spawn Control and Flag Chain; 1 to 60 in Zone Control and Relic Run | `ref.mode.spawn_control.option.time_limit` (10), `ref.mode.zone_control.option.time_limit` (5), `ref.mode.relic_run.option.time_limit` (10), `ref.mode.flag_chain.option.time_limit` (15) | Spawn Control, Zone Control, Relic Run, Flag Chain |
 | Catch-up bonus | `match.options.catch_up_bonus` | spinner | 0 to 90 % in steps of 10 | `ref.econ.catch_up.option_percent` (90) | Spawn Control, Zone Control, Siege |
-| crate drop period | `match.options.crate_drop_period`; 0 shows `match.options.crate_drop_period.none` | spinner | 0 to 300 s in steps of 10; 0 means no Supply crates | `ref.econ.crate.drop_rate_s` (40) | all six |
+| crate drop period | `match.options.crate_drop_period`; the value none shows `match.options.crate_drop_period.none` | spinner | none (no Supply crates), then 10 to 300 s in steps of 10 | `ref.crate.drop.period_default_s` (40) | all six |
 | starting powers | `match.options.starting_powers` | spinner | 0 to 3 in steps of 1 | `ref.econ.start.powers` (0) | Spawn Control, Zone Control |
 | Comeback Bonus | `match.options.comeback_bonus` | switch | off, on | `ref.match.option.comeback_bonus` (on) | Spawn Control, Zone Control, Relic Run, Flag Chain |
-| sudden death | `match.options.sudden_death` | switch | off, on; forced off while the time limit is 0 | `ref.match.option.sudden_death` (on) | Spawn Control, Zone Control, Relic Run, Flag Chain |
+| sudden death | `match.options.sudden_death` | switch | off, on; forced off while the time limit is none | `ref.match.option.sudden_death` (on) | Spawn Control, Zone Control, Relic Run, Flag Chain |
 | crate placement | `match.options.crate_placement` | list | random (`match.options.crate_placement.random`), weighted (`match.options.crate_placement.weighted`) | `ref.match.option.crate_placement` (weighted) | Spawn Control, Zone Control, Relic Run |
 | reinforcement interval | `match.options.reinforcement_interval` | spinner | 10 to 300 mode seconds in steps of 10 | `ref.econ.gate.interval_mode_seconds` (60) | Launch Race, Flag Chain |
 | reinforcement count | `match.options.reinforcement_count` | spinner | 1 to 100 in steps of 1 | `ref.econ.gate.count` (40) | Launch Race, Flag Chain |
@@ -422,9 +424,9 @@ Declaring "none" runs steps 1 and 2 only.
 | Option | Meaning | Rules |
 |---|---|---|
 | score mode | the mode's scoring formula | [spawn_control.md](spawn_control.md), [zone_control.md](zone_control.md) |
-| time limit | when the options change, time remaining := v × `ref.match.option.time_limit_unit` (60 mode seconds) for v > 0, else none; at post-grace tick 0 the match is unlimited when the time remaining is none or at most 0 | R-MODE-037, R-MODE-084 |
+| time limit | when the options change, time remaining := v × `ref.match.option.time_limit_unit` (60 mode seconds) for a limit of v minutes, and none for the value none; at post-grace tick 0 the match is unlimited when the time remaining is none or at most 0 | R-MODE-037, R-MODE-084 |
 | Catch-up bonus | the Spawn Node output bonus of a team far behind on Spawn Nodes | R-MODE-051 |
-| crate drop period | the mean time between Supply crate drops; each interval is drawn afresh around it; 0 means none; the number of crates at once is capped by the map width | [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md), R-ECON-120 |
+| crate drop period | the mean time between Supply crate drops; each interval is drawn afresh around it; the value none means no drops; the number of crates at once is capped by the map width | [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md), R-ECON-120 |
 | crate placement | random: anywhere on the map; weighted: towards the structures of low-scoring teams | reference/04 (DEC-114, DEC-465) |
 | starting powers | that many random powers for each player team at start, from the valid outcomes minus an exclusion list | R-ECON-110, R-ECON-111 |
 | Comeback Bonus | §2.13 | R-MODE-052 |
@@ -447,7 +449,7 @@ Declaring "none" runs steps 1 and 2 only.
 | Transport cap | the map's Transport cap; no Transports when the map sets none |
 | turret frequency | 0: no reinforcement turrets |
 | turret cap | `ref.econ.gate.turret_cap_default` (2) |
-| crate drop period | 0: no Supply crates |
+| crate drop period | none: no Supply crates |
 | crate placement | random |
 | Catch-up bonus | 0: multiplier 1 |
 | starting powers | 0 |
@@ -473,32 +475,32 @@ Declaring "none" runs steps 1 and 2 only.
 | single-round Siege | none: no page offers it | on | multi-round Siege cannot be selected (DEC-066) |
 | research levels | none | — | overwritten at every match start: every level 3, then Strike team 1; laser, grenade, rocket and airstrike 2; Worker 4 (DEC-115) |
 
-**R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released.
+**R-MODE-083** (MUST) The two tutorials run Zone Control on their own maps ([reference/11](../11_tutorial_and_help.md)). At setup each uses the Zone Control defaults, its tutorial map, Easy bots and requested colour 0; the second tutorial also sets the slot colours 0, 1 and 2; start positions and bot colours equal the slot ids. The first tutorial drops no Supply crates, and the second drops none before its bots are released. At the second tutorial's end step basic crates only is switched on, crate placement becomes random, the bot difficulty becomes Standard and the bots are released. Every rule that a tutorial changes is listed in the overrides of reference/11 table 2.8-A (R-TUT-080). The first playable of Species is Spawn Control with two players (owner decision O20), and by default it has no tutorial; the two reference tutorials follow at launch (see DEC-123).
 
-**R-MODE-084** (MUST) The map options that change mode rules are listed below; the map option catalogue and its grammar are [reference/08](../08_maps_and_level_design/rules_and_conventions.md). Every per-map limit has three distinct forms: absent, which applies the lobby default; 0, which means none; and an explicit unlimited value, never encoded as 0 or a negative number (DEC-120). A map value overrides the lobby default (DEC-065).
+**R-MODE-084** (MUST) The map options that change mode rules are listed below, by the names of the map option catalogue; the catalogue, its identifiers and its grammar are [reference/08](../08_maps_and_level_design/rules_and_conventions.md) (R-MAP-070, table 2.7-A). Every per-map limit has three distinct forms: absent, which applies the lobby default; 0, which means none; and an explicit unlimited value, never encoded as 0 or a negative number (DEC-120). A map value overrides the lobby default (DEC-065, R-MAP-071). A field that a map gives twice fails the content build (DEC-801).
 
 | Map option | Mode effect |
 |---|---|
 | modes | the modes under which the map is listed |
 | player count | the player slots, of which the host may close some before the match (R-MODE-010) |
-| population cap | per-team cap = cap ÷ open slots, fixed for the match; alliances are not pooled; the bodies that count are listed in [reference/05](../05_population_flow.md) (DEC-079); a map without a cap states unlimited explicitly (DEC-120); when a map sets it twice the last value counts |
+| population cap | per-team cap = cap ÷ open slots, fixed for the match; alliances are not pooled; the bodies that count are listed in [reference/05](../05_population_flow.md) (DEC-079); a map without a cap states unlimited explicitly (DEC-120); a map that sets it twice fails the content build (DEC-801, DEC-015; R-ECON-053, R-MAP-061) |
 | defender population cap | Siege: each defender's cap; the attackers share the rest |
 | attacking positions | Siege: the attacking start positions |
 | co-op allowed, co-op forced | co-op offered, or forced |
 | group-1 positions, group-2 positions | fixed co-op alliances (R-MODE-020) |
 | play time | the default time limit, in minutes (R-MODE-079) |
 | excluded crate outcomes | Supply crate outcomes that never drop on the map; every outcome, hostile ones included, respects the list ([reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md); DEC-107) |
-| no catch-up | Catch-up multiplier 1 |
+| no Catch-up bonus | Catch-up multiplier 1 |
 | instant Spawn Node capture | Spawn Nodes skip their activation delay ([reference/05](../05_population_flow.md)) |
-| gate reinforcement count | enables Transit Gate waves in any mode; the count per gate where the mode has no count option |
-| gate Transport cap | enables waves; the Transport cap where the mode has no cap option; makes the Transport outcome invalid |
+| Transit Gate reinforcement count | enables Transit Gate waves in any mode; the count per gate per wave, which overrides the mode's option where it has one |
+| Transit Gate Transport cap | enables waves; the Transport cap of the waves, which overrides the mode's option where it has one; a value of 1 or more makes the Transport outcome invalid |
 | no gun turrets | waves grant no turret powers |
 | attacker reinforcement count, defender reinforcement count | Siege: per-side counts |
 | attacker reinforcement power, defender reinforcement power | a power kind granted per wave to each team of that side (outside Siege the attacker power goes to every team); that side's gates then grant no Transport (R-ECON-102) |
-| attacker power option, defender power option | the option of those powers (R-ECON-103) |
+| attacker reinforcement power option, defender reinforcement power option | the option of those powers (R-ECON-103) |
 | airstrike threshold | Flag Chain: an airstrike in place of a turret above that many Flag posts (R-ECON-104) |
-| Beam Dish team match, no Beam Dish control | Beam Dish rules ([reference/03](../03_buildings_and_world_objects/README.md)) |
-| Visitor faction position | the team that fields Visitor-faction Workers in place of Workers ([reference/02](../02_units/README.md)) |
+| same-team Beam Dish links, no Beam Dish aiming | two Beam Dishes connect only when one team owns both; no player or bot can aim a Beam Dish ([reference/03](../03_buildings_and_world_objects/economy_and_spawn_objects.md)) |
+| Visitor-faction position | the team that fields Visitor-faction Workers in place of Workers ([reference/02](../02_units/README.md)) |
 
 **R-MODE-085** (MUST) Which participant may change each option is decided by the lobby authority model, DEC-243; the default is the reference model, in which the user interface shows the option controls to the host only.
 
@@ -591,7 +593,7 @@ flowchart TD
 
 ## 4 Tuning table
 
-Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.match_rules`, `ref.sim.speed.normal`, `ref.sim.speed.stopped` and `ref.sim.speed.game_over_rate` in [reference/12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.sim.max_teams`, `ref.sim.team.*` and `ref.sim.team_colour.*` in [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md); `ref.econ.catch_up.option_percent`, `ref.econ.crate.drop_rate_s`, `ref.econ.start.powers`, `ref.econ.comeback.*` and `ref.econ.gate.*` in [reference/05](../05_population_flow.md); the mode keys `ref.mode.<mode>.*` in the mode files.
+Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.match_rules`, `ref.sim.speed.normal`, `ref.sim.speed.stopped` and `ref.sim.speed.game_over_rate` in [reference/12 tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md); `ref.sim.max_teams`, `ref.sim.team.*` and `ref.sim.team_colour.*` in [reference/12 teams](../12_simulation_model/06_teams_and_player_commands.md); `ref.sim.world.message_expiry` in [reference/12 containers](../12_simulation_model/04_containers_and_update_order.md); `ref.econ.catch_up.option_percent`, `ref.econ.catch_up.curve`, `ref.econ.catch_up.max_multiplier`, `ref.econ.catch_up.modes`, `ref.econ.start.powers`, `ref.econ.comeback.*` and `ref.econ.gate.*` in [reference/05](../05_population_flow.md); `ref.crate.drop.period_default_s` and `ref.power.comeback.pool` in [reference/04](../04_supply_crates_powers_and_weapons/crates_and_powers.md); the mode keys `ref.mode.<mode>.*` in the mode files.
 
 | key | value | unit | range or notes | requirement | DEC |
 |---|---|---|---|---|---|
@@ -603,20 +605,20 @@ Keys cited here and defined elsewhere: `ref.sim.tick_period`, `ref.sim.slice.mat
 | `ref.match.massacre_kills` | 2,000 | Workers killed | Massacre hook | R-MODE-037 | DEC-047 |
 | `ref.match.option.time_limit_unit` | 60 | mode seconds per time-limit minute | also the whole-minute ticks of the clock | R-MODE-066, R-MODE-075 | DEC-003 |
 | `ref.match.option.comeback_bonus` | on | switch | Spawn Control, Zone Control, Relic Run, Flag Chain; typed default on elsewhere | R-MODE-055, R-MODE-074 | DEC-073 |
-| `ref.match.option.sudden_death` | on | switch | Spawn Control, Zone Control, Relic Run, Flag Chain; forced off while the time limit is 0; typed default off elsewhere | R-MODE-056, R-MODE-074 | DEC-073 |
+| `ref.match.option.sudden_death` | on | switch | Spawn Control, Zone Control, Relic Run, Flag Chain; forced off while the time limit is none; typed default off elsewhere | R-MODE-056, R-MODE-074 | DEC-073, DEC-120 |
 | `ref.match.option.crate_placement` | weighted | random or weighted | Spawn Control, Zone Control, Relic Run; typed default random elsewhere | R-MODE-074, R-MODE-076 | DEC-073, DEC-114 |
 | `ref.match.option.password_max_length` | 16 | characters | | R-MODE-082 | — |
 | `ref.mode.spawn_control.option.score_mode` | 0 | list index | 0 to 1 | R-MODE-074 | — |
 | `ref.mode.zone_control.option.score_mode` | 0 | list index | 0 to 3 | R-MODE-074 | — |
-| `ref.mode.spawn_control.option.time_limit` | 10 | minutes | 0 to 60 in steps of 1; 0 means none | R-MODE-074 | DEC-073 |
+| `ref.mode.spawn_control.option.time_limit` | 10 | minutes | none (no limit), then 1 to 60 in steps of 1 | R-MODE-074 | DEC-073, DEC-120 |
 | `ref.mode.zone_control.option.time_limit` | 5 | minutes | 1 to 60 in steps of 1 | R-MODE-074 | — |
 | `ref.mode.relic_run.option.time_limit` | 10 | minutes | 1 to 60 in steps of 1 | R-MODE-074 | — |
-| `ref.mode.flag_chain.option.time_limit` | 15 | minutes | 0 to 60 in steps of 1; 0 means none | R-MODE-074 | DEC-073 |
+| `ref.mode.flag_chain.option.time_limit` | 15 | minutes | none (no limit), then 1 to 60 in steps of 1 | R-MODE-074 | DEC-073, DEC-120 |
 | `ref.match.colour.slot_defaults` | (100, 255, 100), (255, 50, 50), (255, 255, 50), (120, 180, 255), (255, 150, 0), (250, 250, 250) | RGB per slot 0 to 5 | a slot's colour while its colour id is none | R-MODE-014, R-MODE-071 | — |
 | `ref.match.colour.siege_3p_defender_limit` | 1 | slots | the defender colour is full at this count on a 3-player map | R-MODE-014 | — |
 | `ref.match.colour.siege_3p_attacker_limit` | 2 | slots | the attacker colour is full at this count on a 3-player map | R-MODE-014 | — |
 | `ref.match.colour.siege_side_divisor` | 2 | — | a side colour is full at player count ÷ 2 on other maps | R-MODE-014 | — |
-| `ref.match.colour.no_group` | (153, 153, 153, 255) | RGBA8 | 60 % grey, opaque | R-MODE-017 | DEC-078 |
+| `ref.match.colour.no_group` | (153, 153, 153, 255) | RGBA8 | 60 % grey, opaque; the no-team colour (member shade of colour id none) | R-MODE-017 | DEC-078 |
 | `ref.match.coop.max_alliances` | 2 | alliances | colours in use in co-op | R-MODE-015, R-MODE-019 | DEC-034 |
 | `ref.match.coop.members_per_alliance` | 2 | slots | | R-MODE-015, R-MODE-019 | DEC-034 |
 | `ref.match.grace_overlay.font_height` | 0.04 | × screen height | | R-MODE-042 | — |
@@ -690,7 +692,7 @@ String ids that this file uses, with their new text; a word in braces, such as `
 | `match.options.score_mode` | Scoring |
 | `mode.spawn_control.score_mode.held`, `mode.spawn_control.score_mode.per_second` | Spawn Nodes held now · Spawn Nodes held, added up each second |
 | `mode.zone_control.score_mode.zones_per_second`, `mode.zone_control.score_mode.population_per_second`, `mode.zone_control.score_mode.final_population`, `mode.zone_control.score_mode.total_control` | Zones held, added up each second · Workers in zones, added up each second · Workers in zones at the end · Holding every zone, added up each second |
-| `match.options.time_limit`, `match.options.time_limit.none` | Time limit (minutes) · None |
+| `match.options.time_limit`, `match.options.time_limit.none` | Time limit (minutes) · No limit |
 | `match.options.catch_up_bonus` | Catch-up bonus (%) |
 | `match.options.crate_drop_period`, `match.options.crate_drop_period.none` | Supply crate interval (seconds) · No Supply crates |
 | `match.options.starting_powers` | Starting powers |
@@ -711,7 +713,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 
 ## 5 Edge cases and interactions
 
-1. **Map play time and the default time limit.** Choosing a map requests the map's play time, and entering the lobby resets the options to their defaults. The host applies the map's defaults once, authoritatively, and lobby entry keeps a time limit set from the play time, so the map's play time always survives (R-MODE-079, R-MODE-080, DEC-067). The lobby's map row shows the play time as hours:minutes, so 10 minutes reads 0:10. On the reference maps the play time is 10 to 15 minutes in Spawn Control and 5 to 10 in Zone Control; Relic Run, Launch Race and Flag Chain maps set none; Siege maps set 15 or 20, which only the lobby shows, because Siege has no time-limit option and its clock is the Core Device countdown ([reference/08](../08_maps_and_level_design/rules_and_conventions.md)).
+1. **Map play time and the default time limit.** Choosing a map requests the map's play time, and entering the lobby resets the options to their defaults. The host applies the map's defaults once, authoritatively, and lobby entry keeps a time limit set from the play time, so the map's play time always survives (R-MODE-079, R-MODE-080, DEC-067). The lobby's map row shows the play time as "0:" followed by the minutes in two digits, so 10 minutes reads 0:10 (R-MAP-021; see DEC-868 item 3). On the reference maps the play time is 10 to 15 minutes in Spawn Control and 5 to 10 in Zone Control; Relic Run, Launch Race and Flag Chain maps set none; Siege maps set 15 or 20, which only the lobby shows, because Siege has no time-limit option and its clock is the Core Device countdown ([reference/08](../08_maps_and_level_design/rules_and_conventions.md) R-MAP-184, R-MAP-167).
 2. **Three timers on post-grace tick 0.** The rules timer, the wave timer and the rank timer all complete their first mode second on post-grace tick 0, so the first mode step, wave 1 and the first ranking all fall on that tick (R-MODE-003). The first ranking only stores ranks (R-MODE-047).
 3. **A repeated result declaration.** A second `DeclareResult` with the declared result adds the local kill total to the statistics hook again and issues another score report, but changes nothing else (R-MODE-057).
 4. **Sudden-death returns.** A team wiped by sudden death keeps its Spawn Nodes and may produce Workers again before the tie breaks; in Spawn Control it is not flagged eliminated, so it still counts as a team (R-MODE-050, DEC-300).
@@ -721,7 +723,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 8. **Options a mode lacks.** Launch Race has no time limit, so its time remaining stays none and the match is unlimited; Siege's time remaining is set by its Core Device at load; a turret power in a mode without the turret-cap option ends when its turret is placed (R-MODE-076, R-MODE-077).
 9. **A departed player.** The bot that takes over is a full bot team; it is not eliminated, its bot controller counts against the population cap ([reference/05](../05_population_flow.md) R-ECON-107), and the slot is not returned to a player who rejoins (DEC-205).
 10. **An unpaired co-op slot.** A player slot that alliance assignment leaves in co-op group 0 is a friend of the Rogue and Visitor factions and of every other group-0 slot (R-MODE-024, R-MODE-025, DEC-451).
-11. **No time limit and sudden death.** With a time limit of 0 the lobby forces sudden death off; the match can then end only by elimination, or not at all in a mode without elimination (R-MODE-056).
+11. **No time limit and sudden death.** With the time limit at none the lobby forces sudden death off; the match can then end only by elimination, or not at all in a mode without elimination (R-MODE-056).
 12. **Siege colour limits on a 3-player map.** One defender and two attackers: a second defender request is refused when one slot already defends, and a third attacker when two already attack (R-MODE-014).
 13. **Closed slots and departures.** On a 4-player map with a cap of 2,000 and one slot closed by the host, three teams play with a cap of 666 each for the whole match; a departure changes nothing, because a bot takes the team over (R-MODE-010, R-MODE-087, DEC-079).
 14. **The factions and winning.** A faction may lead the scores on the HUD, but no mode declares it the winner and no last-team-standing test waits for it (R-MODE-008, DEC-082).
@@ -734,7 +736,7 @@ String ids cited from other documents: `team.colour.*` and `match.player_left` (
 | Territory unit | Spawn Node | Control Zone | delivered Relic | Command Console | Solar Array, then fuel | Flag post |
 | Score (per mode second unless stated) | Spawn Nodes owned, set or added | zones owned, zone population, final population or the all-zones point | +1 per delivery, at the delivery | defence time in mode seconds | ⌊fuel⌋ + passengers + ⌊height⌋ | Home post status; at time-up Flag posts + 10 × eliminations |
 | Ends by | elimination of every other team, or time-up | time-up | time-up | Core Device destroyed or detonated | a Launch Vessel above the win height | elimination of every other team, or time-up |
-| Time limit option (default) | 0 to 60 minutes (10); 0 means none | 1 to 60 (5) | 1 to 60 (10) | none: the Core Device countdown, 900 or 1,200 mode seconds on reference maps | none | 0 to 60 (15); 0 means none |
+| Time limit option (default) | none or 1 to 60 minutes (10) | 1 to 60 (5) | 1 to 60 (10) | none: the Core Device countdown, 900 or 1,200 mode seconds on reference maps (R-MAP-167) | none | none or 1 to 60 (15) |
 | Hard elimination | no Spawn Node for 30 mode seconds, after the protection period | no | no | no | no | Home post captured through a connected chain |
 | Counts as eliminated (Comeback) | the hard flag | no Spawn Node and fewer than 50 Workers | as Zone Control | never | never | the hard flag |
 | Draw possible | yes, sudden death off | yes | yes | no | no | yes |
@@ -783,12 +785,14 @@ The number of reference maps per mode and per player count is [reference/08](../
 - **AC-16** (R-MODE-020 to R-MODE-024) Given a 4-player co-op map with group-1 positions {0, 2} and group-2 positions {1, 3}, two players on green and two on red, and a fixed seed, when alliance assignment runs, then each slot's group is the group of its final start position, each group has two members, and the assignment is identical on every participant.
 
 - **AC-17** (R-MODE-010, R-MODE-087) Given a 4-player map with a population cap of 2,000 and one slot closed before the match, then three teams play, each with a cap of 666 from match start to match end, and a team whose player leaves keeps the same cap under its bot.
+- **AC-18** (R-MODE-074, R-MODE-056) Given the Spawn Control time-limit spinner and the crate-drop-period spinner each at its lowest step, then they show `match.options.time_limit.none` and `match.options.crate_drop_period.none`, never 0; with the time limit at none, sudden death is off and cannot be switched on, and the match is unlimited.
+- **AC-19** (R-MODE-092) Given a match message showing, when a second message is emitted 1.0 s later, then the second replaces the first and shows for 3.0 s of real time; when the first is a no-overwrite message, then the second is not shown.
 
 ## 7 Dependencies
 
 - **Reference documents:** [00 Reference overview](../00_reference_overview.md) (core loop); [02 Units](../02_units/README.md) (Workers, Collectors, the Visitor faction's Workers); [03 Buildings and world objects](../03_buildings_and_world_objects/README.md) and [mode objects](../03_buildings_and_world_objects/mode_objects.md) (every mode object); [04 Supply crates, powers and weapons](../04_supply_crates_powers_and_weapons/crates_and_powers.md) (crate drops, outcome validity, Power slots); [05 Population flow](../05_population_flow.md) (Catch-up bonus, Comeback Bonus, reinforcement waves, caps, starting powers); [06 Controls, camera and commands](../06_controls_camera_and_commands/README.md) (the Ready action); [07 Bots](../07_bots/README.md); [08 Maps and level design](../08_maps_and_level_design/rules_and_conventions.md) (map options, per-mode validation); [09 Front end and match flow](../09_front_end_and_match_flow/screen_flow_and_match_setup.md) (lobby, loading, achievement hooks); [10 Audio design](../10_audio_design/README.md) (match sound events); [11 Tutorial and help](../11_tutorial_and_help.md) (tutorials, help pages, hints); [12 Simulation model](../12_simulation_model/README.md) (tick timing, teams, commands, match lifecycle).
 - **Engine components:** [UI framework](../../architecture/components/ui_framework/README.md) (HUD, lobby pages); [audio engine](../../architecture/components/audio_engine.md); [data schemas](../../architecture/components/data_schemas/README.md) (typed match options and map records).
-- **Assets:** `help.mode_card`, `help.mode_page`, `anim.explainer`, `uitex.difficulty_badge`, `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race`, `mapfile.flag_chain`, `sfx.ui.match_ui.countdown_tick`, `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br`, `strings.ru_ru`.
+- **Assets:** `help.mode_card`, `help.mode_page`, `anim.explainer`, `uitex.difficulty_badge`, `mapfile.spawn_control`, `mapfile.zone_control`, `mapfile.relic_run`, `mapfile.siege`, `mapfile.launch_race`, `mapfile.flag_chain`, `sfx.ui.match_ui.countdown_tick`, `sfx.ui.match_ui.game_over`, `strings.en_gb`, `strings.de_de`, `strings.es_es`, `strings.fr_fr`, `strings.it_it`, `strings.ja_jp`, `strings.ko_kr`, `strings.pt_br`, `strings.ru_ru`.
 
 ## 8 Open decisions
 
@@ -799,7 +803,7 @@ Open decisions whose default this file specifies:
 - DEC-047 — achievements, statistics and leaderboards; the hooks only (R-MODE-037, R-MODE-057, R-MODE-059).
 - DEC-048 — a post-match results screen (R-MODE-035, R-MODE-058).
 - DEC-121 — the owner of Brood creatures (R-MODE-008).
-- DEC-116 — Supply crates during the grace period (R-MODE-044).
+- DEC-123 — the tutorial for the first playable; none by default (R-MODE-083).
 - DEC-200 — the replication and authority model (R-MODE-032).
 - DEC-205 — join, reconnect, leave and session continuity (R-MODE-069).
 - DEC-228 — per-tick budget and population caps (R-MODE-087).

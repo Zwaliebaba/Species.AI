@@ -18,3 +18,6 @@ Items the wave B fixers could not apply, collected for one residual pass after r
 | 12 | FX-04 | RA-040 pair: reference/03 now defines the general port keys; reference/05 still defines its own (same values, two names) | remove reference/05's port keys and cite reference/03's (residual pass; reference/05 has about 0.6 KB room) |
 | 13 | FX-04 | RA-145: no document states how a turret draws its ports | X-ARB entry from ORIG, or a DEC |
 | 14 | FX-04 | small corrections in DEC-960, DEC-968, DEC-550 and the asset string table (see reports/FX-04.md) | coordinator |
+| 15 | FX-05 | two asset-manifest rows need reference/06 or 07 files as consumers (reports/FX-05.md §11) | X-AST pass 2b |
+| 16 | FX-05 | links to the diagnostics document broke when FX-11 split it into a folder | `p4_fix_links.py --apply` after wave B |
+| 17 | FX-05 | RA-249 not applied (reference/09 uses `ui.power_slots.map_editor` itself); RB-047 part (particle colour, 1,000 iterations of an out-of-scope effect) not applied | none (closed with reason) |

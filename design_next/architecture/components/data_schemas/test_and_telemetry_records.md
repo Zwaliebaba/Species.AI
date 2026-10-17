@@ -1,8 +1,8 @@
 # Test and telemetry records
 
-> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [platform layer](../platform_layer.md)
+> Status: Engine baseline · Prefix: DAT · ADRs: [ADR-057](../../../ADR/ADR-057-version-identity.md) · [ADR-060](../../../ADR/ADR-060-content-identity-by-hash.md) · [ADR-061](../../../ADR/ADR-061-data-schemas-and-versioning.md) · [ADR-062](../../../ADR/ADR-062-authoring-syntax-and-schema-language.md) · [ADR-066](../../../ADR/ADR-066-telemetry-with-consent.md) · [ADR-070](../../../ADR/ADR-070-continuous-integration.md) · Folder: [data schemas](README.md) · Related: [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) · [build tooling and distribution](../build_tooling_and_distribution.md) · [platform layer](../platform_layer.md)
 
-This document specifies the schemas of the three record types of the soak test and of telemetry: the soak configuration, which an author writes and the soak runner reads; the soak report, which the soak runner writes as a CI artefact; and the telemetry session record, which the client forms once per session and sends only with the player's consent. The meaning of every field, the soak procedure and the telemetry rules belong to [diagnostics, test and performance](../diagnostics_test_and_performance.md) (DBG-025, DBG-026, DBG-160 to DBG-167, DBG-180 to DBG-183); this document gives the fields their keys, types, presence rules and checks.
+This document specifies the schemas of the three record types of the soak test and of telemetry: the soak configuration, which an author writes and the soak runner reads; the soak report, which the soak runner writes as a CI artefact; and the telemetry session record, which the client forms once per session and sends only with the player's consent. The meaning of every field, the soak procedure and the telemetry rules belong to [diagnostics, test and performance](../diagnostics_test_and_performance/README.md) (DBG-025, DBG-026, DBG-160 to DBG-167, DBG-180 to DBG-183); this document gives the fields their keys, types, presence rules and checks.
 
 ## 1 Responsibilities and boundaries
 
@@ -40,7 +40,7 @@ std::expected<TelemetrySession, std::vector<Diagnostic>> ReadQueuedTelemetrySess
 }  // namespace species::data::diag
 ```
 
-**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTP client (DBG-182). No simulation rule reads any of these records.
+**Data contracts.** The soak runner of the [diagnostics](../diagnostics_test_and_performance/README.md) component reads the cooked soak configuration and writes the soak report; CI publishes the report as an artefact (BLD-092, ADR-070). The diagnostics component forms the telemetry session record and hands it to the platform layer's HTTP client (DBG-182). No simulation rule reads any of these records.
 
 **Threading contract.** The soak runner writes its report from its own thread, outside every simulation tick (DBG-030). The telemetry session record is formed and serialised on the main thread at the end of a session; only the send runs on the HTTP client's thread (DBG-182).
 
@@ -232,6 +232,6 @@ This document owns no tuning key.
 
 | owner | keys cited |
 |---|---|
-| [diagnostics](../diagnostics_test_and_performance.md) | `dbg.telemetry.percentiles`, `dbg.telemetry.sample_period_ms`, `dbg.soak.min_participants` |
+| [diagnostics](../diagnostics_test_and_performance/README.md) | `dbg.telemetry.percentiles`, `dbg.telemetry.sample_period_ms`, `dbg.soak.min_participants` |
 | [platform layer](../platform_layer.md) | `plt.sysinfo.memory_unit` |
 | [data schemas](README.md) | `dat.id.max_chars`, `dat.text.max_chars`, `dat.notes.max_chars`, `dat.perf.records_ms` |
