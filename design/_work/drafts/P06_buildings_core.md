@@ -493,7 +493,7 @@ Projectile characteristics (owned by the weapons agent; summarised for completen
 | Rocket | starts 50 u/s, ×1.2 per tick until ≥150 | 1.0 s (turret override) or ground/building contact | `Bang(pos, 15, 25, team, turretId)` | [C] `weapons.cpp:Rocket::Rocket/Advance/Explode` |
 | Grenade (mortar) | ballistic, `force` from level | explodes on impact (life 1000) | power 25 → `Bang(pos, 12.5, 50, team)` | [C] `weapons.cpp:Grenade::Advance`, `location.cpp:ThrowWeapon` |
 | Fireball | 100 u/s | 1.0 s; radius 20·min(1,|1−life|) | Darwinians in radius (once each): `FireDamage(30 · radius/dist · max(1, life))` | [C] `weapons.cpp:Fireball::Advance` |
-| Subversion laser | 125 u/s | Darwinia laser-research lifetime (0.2…1.0 s) × 2 | mind-control laser (converts) | [C] `location.cpp:FireLaser`; [U] MP research level of `TypeLaser` (set by `Multiwinia::SetGameResearch`, other agent) |
+| Subversion laser | 125 u/s | Darwinia laser-research lifetime (level 0–4: 0.2, 0.4, 0.6, 0.8, 1.0 s) × 2 | mind-control laser (converts) | [C] `location.cpp:FireLaser`; [U] MP research level of `TypeLaser` (set by `Multiwinia::SetGameResearch`, other agent) |
 
 ### Effective fire rate (derived)
 Barrel *i* fires only if **port *i*** is occupied. `PrimaryFire` returns at once if `m_fireTimer > 0`; otherwise it examines `m_nextBarrel` and the next barrel (one barrel for Rocket), firing each whose port is manned, and sets `m_fireTimer = reload` after a shot (the second barrel in the same call still fires). `m_fireTimer` is decremented by dt before `PrimaryFire` in the same tick. [C] `GunTurret::Advance/PrimaryFire`.
@@ -593,7 +593,7 @@ Source: `code/worldobject/teleport.{h,cpp}`, `code/worldobject/radardish.{h,cpp}
 Virtuals: `Connected()` (false), `ReadyToSend()` (`m_timeSync ≤ 0`), `GetEntrance` (entrance marker), `GetExit/GetStartPoint/GetEndPoint/UpdateEntityInTransit` (assert — must be overridden). [C].
 
 `EnterTeleport(id, relay)`:
-1. If the entity belongs to a **Unit** (squads etc.) and this is not a relay: find (or create via `Team::NewUnit(troopType, size, &id, m_pos)`) the destination unit through `m_teleportMap`; an Insertion Squad gets its squad Task re-created on the new unit (old task removed, its `m_lifeTimer` carried over in MP, task selected, weapon type and controller task copied, controller route gains this teleport as waypoint); the new unit inherits the route (next waypoint) or gets a waypoint 50 units past the exit ± SFRAND(35) (synced). The entity is copied into the new unit (new index/unique id), `m_enabled = false`, `m_onGround = false`, `vel = 0`; `RecalculateOffsets()`. [C] `Teleport::EnterTeleport`.
+1. If the entity belongs to a **Unit** (any entity whose `m_id` has a unit id, e.g. insertion squads) and this is not a relay: find (or create via `Team::NewUnit(troopType, size, &id, m_pos)`) the destination unit through `m_teleportMap`; an Insertion Squad gets its squad Task re-created on the new unit (old task removed, its `m_lifeTimer` carried over in MP, task selected, weapon type and controller task copied, controller route gains this teleport as waypoint); the new unit inherits the route (next waypoint) or gets a waypoint 50 units past the exit ± SFRAND(35) (synced). The entity is copied into the new unit (new index/unique id), `m_enabled = false`, `m_onGround = false`, `vel = 0`; `RecalculateOffsets()`. [C] `Teleport::EnterTeleport`.
 2. Entity position = `GetStartPoint()`; `UpdateEntityInTransit(entity)` once; push id on `m_inTransit`; `m_timeSync = m_sendPeriod`. [C].
 
 `Advance()`: `m_timeSync -= dt` (floor 0); advance every in-transit entity via `UpdateEntityInTransit` (remove when it returns true or the entity is gone); prune the static teleport map; `Building::Advance()`. [C].
@@ -975,7 +975,7 @@ if m_spawnTimer <= 0 or Location.m_spawnManiaTimer > 0:
 4. `average = others / n` — **integer division** (then converted to double);
 5. if `average > 1.5 × mine`: `factor = 1 − ((mine − 1) / total)` with integer division (total = all used teams' owned points incl. mine) — evaluates to **1** whenever mine ≥ 1 (always true when called from an owned SpawnPoint); return `1 + h/100 · factor`; else 1.0.
 
-So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer) average holding of the other teams exceeds 1.5 × yours; otherwise H = 1.** Burst size `N = int(20·H)`: h = 0…90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 (verified floating-point truncation). [C]+[I] arithmetic.
+So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer) average holding of the other teams exceeds 1.5 × yours; otherwise H = 1.** Burst size `N = int(20·H)`: h = 0, 10, …, 90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 (verified floating-point truncation). [C]+[I] arithmetic.
 
 **Timing per cycle** (in ticks of 0.1 s): emissions at ticks 0, 2, 4, …, 2(N−1) (0.2 s timer ⇒ exactly 2 ticks); then a pause of P = ⌈(10 + u)/0.1⌉ (+1 when float accumulation leaves a residue, e.g. 10.0 → 101 ticks), u ~ U[0,5). Cycle C = 2(N−1) + P ticks.
 
@@ -1142,7 +1142,7 @@ So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer
 |---|---|---|
 | U1 | MP research levels (`GlobalResearch::TypeLaser`, `TypeRocket`, `TypeArmour`) → subversion-laser lifetime; (TurretShell and turret rockets override research in MP) | `Multiwinia::SetGameResearch` callers / MP research table (modes agent) |
 | U2 | Whether `GetNetworkTime()` and `g_gameTimer.GetGameTime()` are the same synced clock | `code/gametimer.cpp` (timer agent) |
-| U3 | How Darwinians react to `EffectGunTurretTarget` (flee radius etc.) | `darwinian.cpp` threat search (units agent) |
+| U3 | How Darwinians react to `EffectGunTurretTarget` (flee radius, trigger conditions) | `darwinian.cpp` threat search (units agent) |
 | U4 | Whether GameTypes-none dev maps (`mp_sandbox*`) can be opened from the shipped UI (affects ControlTower/Incubator reachability) | `GameMenu::AddMap` (meta agent) |
 | U5 | `NUM_SLICES_PER_FRAME` and confirmation that each building advances exactly once per 0.1-s tick | core-loop agent (`main.cpp`/`clienttoserver.cpp`) |
 | U6 | Exact composition of `Team::m_others` (which entity types count against the population cap) | `team.cpp:NewEntity` (units/team agent) |

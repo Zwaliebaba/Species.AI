@@ -1,0 +1,65 @@
+path,depth,reason,sections
+code/worldobject/building.cpp,full,,"Building base class (`Building`, `BuildingPort`);Consolidated constants table (non-economy);Determinism notes for X3 (this partition)"
+code/worldobject/building.h,full,,"Building base class (`Building`, `BuildingPort`)"
+code/worldobject/carryablebuilding.cpp,full,,"CarryableBuilding (base of Statue, WallBuster, ChessPiece);Building base class (`Building`, `BuildingPort`)"
+code/worldobject/carryablebuilding.h,full,,"CarryableBuilding (base of Statue, WallBuster, ChessPiece)"
+code/worldobject/constructionyard.cpp,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore);Appendix — dead/legacy code (this partition)"
+code/worldobject/constructionyard.h,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)"
+code/worldobject/controltower.cpp,full,,ControlTower
+code/worldobject/controltower.h,full,,ControlTower
+code/worldobject/generator.cpp,full,,"Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)"
+code/worldobject/generator.h,full,,"Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)"
+code/worldobject/gunturret.cpp,full,,GunTurret (and GunTurretTarget);Determinism notes for X3 (this partition)
+code/worldobject/gunturret.h,full,,GunTurret (and GunTurretTarget)
+code/worldobject/incubator.cpp,full,,Incubator;Spawn-point economy (territory → Darwinians)
+code/worldobject/incubator.h,full,,Incubator
+code/worldobject/jumppad.cpp,full,,JumpPad;Spawn-point economy (territory → Darwinians)
+code/worldobject/jumppad.h,full,,JumpPad
+code/worldobject/portal.cpp,full,,"Portal (""The Beast"")"
+code/worldobject/portal.h,full,,"Portal (""The Beast"")"
+code/worldobject/powerstation.cpp,full,,"Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)"
+code/worldobject/powerstation.h,full,,"Power network (PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter; legacy Generator, PylonStart, Powerstation)"
+code/worldobject/radardish.cpp,full,,Teleport base and RadarDish;Spawn-point economy (territory → Darwinians)
+code/worldobject/radardish.h,full,,Teleport base and RadarDish
+code/worldobject/spawnpoint.cpp,full,,"Spawn network buildings (SpawnBuilding, SpawnPoint, SpawnLink, MasterSpawnPoint, SpawnPopulationLock);Spawn-point economy (territory → Darwinians)"
+code/worldobject/spawnpoint.h,full,,"Spawn network buildings (SpawnBuilding, SpawnPoint, SpawnLink, MasterSpawnPoint, SpawnPopulationLock)"
+code/worldobject/spiritreceiver.cpp,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore);Spawn-point economy (territory → Darwinians)"
+code/worldobject/spiritreceiver.h,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)"
+code/worldobject/spiritstore.cpp,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)"
+code/worldobject/spiritstore.h,full,,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)"
+code/worldobject/teleport.cpp,full,,Teleport base and RadarDish
+code/worldobject/teleport.h,full,,Teleport base and RadarDish
+code/level_file.cpp,skimmed,out of scope: ParseBuildings and ParseMultiwiniaOptions only,"Building base class (`Building`, `BuildingPort`);Spawn-point economy (territory → Darwinians)"
+code/level_file.h,skimmed,out of scope: LevelOption enum and population-cap members only,Spawn-point economy (territory → Darwinians)
+code/location.cpp,skimmed,"out of scope: Init reset loop, building instantiation, AdvanceBuildings, Advance, InitialiseTeam, UpdateTeam turret block, IsFriend, Bang, Fire* functions","Building base class (`Building`, `BuildingPort`);GunTurret (and GunTurretTarget);Spawn-point economy (territory → Darwinians);Cross-partition notes"
+code/worldobject/darwinian.cpp,skimmed,"out of scope: SearchForPorts, AdvanceApproachingPort, AdvanceOperatingPort, idle target search","Building base class (`Building`, `BuildingPort`);Cross-partition notes"
+code/worldobject/darwinian.h,skimmed,out of scope: DARWINIAN_SEARCHRANGE_PORTS only,"Building base class (`Building`, `BuildingPort`)"
+code/worldobject/entity.cpp,skimmed,out of scope: EnterTeleports and EntityIsBlocked only,Teleport base and RadarDish
+code/worldobject/weapons.cpp,skimmed,"out of scope: TurretShell, Rocket, Grenade, Fireball damage paths only",GunTurret (and GunTurretTarget)
+code/worldobject/crate.cpp,skimmed,"out of scope: RunGunTurret, RunTheBeast, RunSpawnMania, turret reward cases, spawn-point validity","GunTurret (and GunTurretTarget);Portal (""The Beast"");Spawn-point economy (territory → Darwinians)"
+code/worldobject/controlstation.cpp,skimmed,out of scope: RecalculateOwnership only,Teleport base and RadarDish
+code/worldobject/armour.cpp,skimmed,out of scope: ConvertToGunTurret only,GunTurret (and GunTurretTarget)
+code/worldobject/factory.cpp,skimmed,out of scope: SpiritStore usage only,"Legacy Darwinia buildings in this partition (ConstructionYard, DisplayScreen, spirit-receiver network, SpiritStore)"
+code/worldobject/worldobject.h,skimmed,out of scope: WorldObjectId team type only,"Building base class (`Building`, `BuildingPort`)"
+code/worldobject/trunkport.cpp,skimmed,out of scope: grep of population-cap formula only,Spawn-point economy (territory → Darwinians)
+code/taskmanager.cpp,skimmed,out of scope: TargetGunTurret and turret self-destruct cases,GunTurret (and GunTurretTarget)
+code/team.cpp,skimmed,out of scope: SelectUnit turret branch,GunTurret (and GunTurretTarget)
+code/location_input.cpp,skimmed,out of scope: building selection rules,GunTurret (and GunTurretTarget);Teleport base and RadarDish
+code/network/clienttoserver.cpp,skimmed,out of scope: NET_DARWINIA_AIMBUILDING handler only,Teleport base and RadarDish
+code/multiwinia.cpp,skimmed,"out of scope: GetGameOption, Domination scoring, IsEliminated, turret reinforcement block",Spawn-point economy (territory → Darwinians);Cross-partition notes
+code/app.cpp,skimmed,out of scope: Multiplayer/IsSinglePlayer only,"Building base class (`Building`, `BuildingPort`)"
+code/game_menu.cpp,skimmed,out of scope: CreateMapList only,"Building base class (`Building`, `BuildingPort`)"
+code/gametimer.cpp,skimmed,out of scope: GetServerAdvancePeriod only,"Building base class (`Building`, `BuildingPort`)"
+code/globals.h,skimmed,out of scope: NUM_TEAMS only,"Building base class (`Building`, `BuildingPort`)"
+code/lib/vector3.cpp,skimmed,out of scope: FRAND/SFRAND wrappers,Determinism notes for X3 (this partition)
+code/lib/vector3.h,skimmed,out of scope: FRAND/SFRAND macros,Determinism notes for X3 (this partition)
+contrib/systemiv/lib/math/random_number.cpp,skimmed,out of scope: sync and unsynced RNG definitions,Determinism notes for X3 (this partition)
+contrib/systemiv/lib/math/random_number.h,skimmed,out of scope: RNG macros,Determinism notes for X3 (this partition)
+targets/vs2005/Darwinia.vcproj,skimmed,out of scope: OpenMP setting only,Determinism notes for X3 (this partition)
+data/levels,full,all *.txt Buildings blocks scanned by scripts/P06_level_building_usage.py and P06_spawn_graph.py; MultiwiniaOptions of mp_* read,"Spawn-point economy (territory → Darwinians);Building base class (`Building`, `BuildingPort`)"
+data/levels/level_enum.txt,full,,"Building base class (`Building`, `BuildingPort`)"
+data/shapes,skimmed,only marker lists of the shapes used by this partition (scripts/P06_shape_markers.py),"Building base class (`Building`, `BuildingPort`)"
+data/multiwinia.txt,full,,Spawn-point economy (territory → Darwinians)
+docs/multiwinia-changes.txt,skimmed,grep for building/economy terms,Docs-vs-code discrepancies
+docs/multiwiniachanges-beta.txt,skimmed,grep for building/economy terms,Docs-vs-code discrepancies
+docs/spirit resource system.txt,full,,Docs-vs-code discrepancies

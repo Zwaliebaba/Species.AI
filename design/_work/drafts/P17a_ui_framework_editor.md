@@ -314,7 +314,7 @@ Order and exact parameters (all coordinates screen pixels):
 | 3 Border | Four 2 px lines on the rect edges | `(199,214,220,255)` |
 | 4 Outer frame | 1 px line loop at `(x−2, y−2)…(x+w+1, y+h+1)` | `(42,56,82,255)` |
 | 5 Title text | `g_gameFont` ("speccy" font), shadow mode on, centred at `x + w/2`, baseline `y + 9` (large menus: `y + fontSize/2`), size `GetMenuSize(12)`, drawn **twice** | `glColor4ub(255,255,150,30)`; text = `LANGUAGEPHRASE("multiwinia_mainmenu_title")` ("MULTIWINIA") whenever a language table exists, **ignoring `m_title`** (original title-draw lines are commented out); `m_title` only when no language table |
-| 6 Buttons | `EclWindow::Render` → each button back-to-front with `highlighted = EclMouseInButton || name == m_currentTextEdit`, `clicked = hasFocus && name == EclGetCurrentClickedButton()` | — |
+| 6 Buttons | `EclWindow::Render` → each button back-to-front with `highlighted = EclMouseInButton OR name == m_currentTextEdit`, `clicked = hasFocus && name == EclGetCurrentClickedButton()` | — |
 
 Text blend modes (from `TextRenderer`, [C] `code/lib/text_renderer.cpp`): normal text `GL_SRC_ALPHA, GL_ONE` (additive); shadow/outline text `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR` (darkening "ink" over light backgrounds); after drawing, `GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA` is restored. Fonts: `g_gameFont = "speccy"`, `g_editorFont = "editor"` (horizontal spacing factor 0.91), `g_titleFont = "square"` (spacing 1.03); for chinese-trad/simp, korean, japanese both game and editor fonts are replaced by copies of the title font [C] `code/app.cpp` font init. Font atlas/glyph details: see 24/25 (P12/P13).
 
@@ -881,7 +881,7 @@ Bindings [C] `data/input/input_preferences.txt`: `SelectLocation` = mouse left d
 | `DoesRayHitInstantUnit` | ray–sphere, centre `(posX, terrainH(posX,posZ), posZ)`, radius `√number × INSTANT_UNIT_SIZE_FACTOR (6.0)` | list index of first hit |
 | `DoesRayHitCameraMount` | ray–sphere, radius = bounding radius of `camera.shp` (identity transform) around mount position | list index |
 | `IsPosInLandTile(pos)` | `posX < x < posX+size` and same for z (strict) | index of the **smallest** containing tile |
-| `IsPosInFlattenArea(pos)` | `|x − cx| < size` and `|z − cz| < size` (`m_size` is a half-extent) | index of first |
+| `IsPosInFlattenArea(pos)` | `abs(x − cx) < size` and `abs(z − cz) < size` (`m_size` is a half-extent) | index of first |
 
 ### E2.4 Per-mode behaviour [C] `LocationEditor::AdvanceMode*`
 

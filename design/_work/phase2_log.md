@@ -64,3 +64,8 @@
 - 7 game types (TankBattle DEBUG-only); 39 option definitions + 5 other lobby options; full Multiwinia class (lifecycle SM, per-tick order, grace/ready, colours, ending, HUD); 11 world-object classes; rocket (7 states) + Blitzkrieg flag SMs; trunk-port reinforcement waves; 12 achievements; strings table drafts/P02_game_modes_strings.csv. [U]=8.
 - Critical: every "1-second" rule timer fires every 11 ticks (1.1 s) due to float rounding; s_numMultiwiniaZones never reset between games and feeds sim (cross-session desync); on 3 Blitzkrieg maps trunk-port reinforcements run twice per tick; achievements stubbed out in PC source; multi-round Assault unreachable (no UI sets option).
 - Uncertain: Darwinian port occupancy deciding control-station capture (P06); damage per shot vs escape rocket; whether shipped Steam/XBL build had a real achievement layer.
+
+## P17a_ui_framework_editor — done
+- 28 §1–10 (focus/mouse/keyboard rules, every widget, palette, controller bindings, localisation, new-screen walkthrough, class diagram); 08 E1–E5 (editor core: 9 modes, 5 tools; 16 editor windows, ~60 building-edit control rows); 32 D1–D7 (23 cheats, 17 debug entry points, network window fields); ~55 constants; UI string table (221 rows). [U]=5.
+- Editor unreachable in FULL (Map Editor button exists only in editor builds; other route via Darwinia loop exits immediately); custom .mwm maps editor-build-only; F9 network stats window ships in FULL.
+- Uncertain: "Create New Map" .txt readable as .mwm?; LevelFile::m_gameTypes single type vs bitmask; reinforcement-mode drop-down reuses values 0/1.

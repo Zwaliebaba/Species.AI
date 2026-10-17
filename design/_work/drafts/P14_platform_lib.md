@@ -1002,3 +1002,100 @@ Inputs: a *system info* text (184–500 bytes) whose lines must start, in order,
 * **Exclusion/inclusion lists**: §31.6.
 * **mapcrc.h**: §31.9.
 * **testbedconfig.txt**: commands `SetProgression RANDOM`, `SetTestBedName <name>`, `AddSequenceItem <gameIndex> <seed>` (parser owned by P20/X1a) [C file].
+
+---
+
+## [→ 22_determinism_and_networking] 22.R Random numbers, float discipline and hashing helpers
+
+### 22.R.1 Two generators [C] `contrib/systemiv/lib/math/random_number.{h,cpp}`
+
+| Property | Non-synced "App" RNG | Synced RNG |
+|---|---|---|
+| API | `AppSeedRandom(unsigned)`, `AppRandom()`, `frand(range=1)`, `sfrand(range=1)` | `syncrandseed(unsigned long seed=0)`, `getsyncrandseed()`, `syncrand()`, `syncfrand(x)`, `syncsfrand(x)` (macros → `_syncrand`, `_syncfrand`, `_syncsfrand`; or `Debug*` under `TRACK_SYNC_RAND`) |
+| Algorithm | Microsoft CRT LCG: `holdrand = holdrand*214013 + 2531011` (32-bit signed `long`, wraps), result `(holdrand >> 16) & 0x7FFF` | **MT19937** (Matsumoto–Nishimura 2002 init), N=624, M=397, `MATRIX_A 0x9908B0DF`, `UPPER_MASK 0x80000000`, `LOWER_MASK 0x7FFFFFFF`, tempering `y^=y>>11; y^=(y<<7)&0x9D2C5680; y^=(y<<15)&0xEFC60000; y^=y>>18` |
+| State | `static long holdrand = 1` (global, shared by all callers and threads) | `static unsigned long mt[624]`, `mti` (initial 625 = unseeded), `mag01[2]`, `s_randseed` |
+| Seeding | `AppSeedRandom(s)`: `holdrand = s`. Call sites reseed for cosmetic reproducibility, e.g. `AppSeedRandom(1)` in `code/location.cpp`, `code/global_internet.cpp`; per-tree `m_seed` in `code/worldobject/tree.cpp`; `landscape_renderer.cpp` reseeds from coordinates | `syncrandseed(s)`: if `s == 0xFFFFFFFF` use 5489; `mt[0]=s`, `mt[i] = 1812433253*(mt[i-1] ^ (mt[i-1]>>30)) + i` (32-bit) for i=1…623; resets the call counter. Unseeded first use calls `syncrandseed()` → **seed 0** (not 5489). Game seed: the server computes `GenSyncRandSeed(startTime, random)` = first word of SHA-1(random, startTime) (`code/network/server.cpp`) and clients call `syncrandseed(letter NET_DARWINIA_RANDSEED)` on join (`code/network/clienttoserver.cpp`) — P15 |
+| Integer range | `AppRandom` ∈ [0, 32767] **inclusive** (header comment says `< APP_RAND_MAX`) | `syncrand()` ∈ [0, 2³²−1] (`unsigned long` = 32 bits on Win32) |
+| Real ranges | `frand(r) = r × AppRandom()/32767` ∈ **[0, r]** inclusive; `sfrand(r) = (0.5 − AppRandom()/32767) × r` ∈ **[−r/2, +r/2]** (header claims (−r, r)) | `syncfrand(r) = syncrand()×r / 4294967296.0` ∈ [0, r); `syncsfrand(r) = (syncfrand(1.0) − 0.5)×r` ∈ [−r/2, r/2) |
+| Return type | `double` (callers usually store into `float`) | `double` |
+
+Statistics helpers (they consume the **synced** stream): `RandomNormalNumber(mean, range)` = sum of 12 `syncfrand(1.0)` (Irwin–Hall ≈ N(6,1)), `s = (sum − 6)×(range/3) + mean`, clamped to `[mean−range, mean+range]`; `RandomApplyVariance(num, v) = num × (1 + RandomNormalNumber(0, v))` [C].
+
+Usage volume in live code (for X3): 553 `syncrand/syncfrand/syncsfrand` call sites in 58 files; 479 `frand/sfrand/AppRandom` sites; CRT `rand()` appears only in UI/test code (`code/UI/GameMenuWindow.cpp`, `code/multiwiniahelp.cpp`) [C grep counts over `code/`]. Rule: every random draw that affects simulation must use the synced generator; the App generator is cosmetic and **must never be called from simulation code**, because its call count differs per peer (rendering-dependent) [I: design rule implied by the header comment "These must only be called in deterministic net-safe code"].
+
+### 22.R.2 Sync-rand forensic log (`TRACK_SYNC_RAND`, [B:DEBUG] only)
+`syncrand()` → `DebugSyncRand(__FILE__, __LINE__)`; `syncfrand(x)` → `DebugSyncFrand(file,line,0,x)`; `syncsfrand(x)` → `DebugSyncFrand(file,line,−x/2,x/2)` = `min + syncrand()×range/2³²` (numerically not bit-identical to the release formula `(r/2³² − 0.5)×x`, so DEBUG and release peers cannot be mixed [I]). Each call logs `"%8d | <HashDouble(value)> | <file basename> line %d"` into an `LList<char*>` capped at 100000 entries (oldest dropped); `syncrandseed` logs `"SyncRandSeed called"`; `DumpSyncRandLog(filename)` writes `SyncRandSeed <seed> (as signed int: <seed>)` + entries with Unix line endings; `FlushSyncRandLog()` empties (called when a client connects, `code/network/clienttoserver.cpp` L415); `SyncRandLog(fmt,…)`/`SyncRandLogText` are also used by location/network code to annotate the stream [C]. In release builds all logging functions compile to no-ops.
+
+### 22.R.3 Float determinism helpers [C] `contrib/systemiv/lib/math/math_stubs.cpp`, `code/lib/universal_include.h`
+* `iv_trunc_low_nibble(double x)`: `volatile float f = (float)x; return f;` — rounds every transcendental/sqrt result to IEEE single precision so that last-bit differences between CRT implementations (or x87 vs SSE paths) are usually masked. Applied by the `iv_sin…iv_atan` macros and by `iv_atof(str)`, `iv_wtof(wstr)` (via `swscanf %lf`); `iv_wtoi` = `swscanf %d` else 0. `code/network/networkvalue.cpp` also truncates values with it (P15).
+* x87 precision control: `StandardiseCPUPrecision()` sets 53-bit mantissa (`_control87(_PC_53,_MCW_PC)`) on the main thread and on every `WorkQueue` thread [C] `code/main.cpp`, `code/lib/work_queue.cpp:RunThread`. Network/listen threads started with `NetStartThread` do not call it (they are not supposed to simulate) [C].
+* Build differences: GL baseline `/fp:precise`, D3D `/fp:fast` (§31.1.3); the D3D9 device is created without `D3DCREATE_FPU_PRESERVE` (`code/lib/opengl_directx.cpp` CreateDevice flags), and Direct3D 9 then switches the creating thread's x87 unit to 24-bit precision [I: documented D3D9 behaviour], overriding `_PC_53`. Hence `[B:D3D]` and `[B:FULL]` peers can desynchronise; the design must use one build per match (the lobby only checks `APP_VERSION` = "dev" for both) [I].
+* `HashDouble(v, buf)`: 16 lowercase hex nibbles of the IEEE-754 double **least-significant nibble first** (byte-reversed text); `HashVector3` = `(h,h,h)`; `HashMatrix34` = `((r),(u),(f),(pos))`. Used to print exact values into sync logs [C] `contrib/systemiv/lib/debug_utils.cpp`, `code/worldobject/tree.cpp`.
+
+### 22.R.4 Container iteration orders that matter for determinism
+See §21.C (slot reuse in `DArray`/`FastDArray`/`SliceDArray`, BTree pre-order, HashTable slot order). All are deterministic functions of the operation sequence (no pointer-value hashing, no wall-clock), so identical inputs give identical orders on all peers [I: no address- or time-dependent ordering in the implementations].
+
+---
+
+## [→ 32_debug_test_and_performance] 32.P Profiler
+
+`contrib/systemiv/lib/profiler.{h,cpp}` [C]:
+
+* Global `g_profiler` (NULL by default). `Profiler::Start()` creates it, `Stop()` deletes it. Only `ProfileWindow`'s constructor/destructor call them (`code/interface/profilewindow.cpp`), i.e. profiling is active only while the debug "Profiler" window is open (`DebugKeyBindings::ProfileButton`, `code/interface/debugmenu.cpp`; reachability of the debug menu in FULL: P17a).
+* Macros `START_PROFILE(name)` / `END_PROFILE(name)` → `if(g_profiler) g_profiler->StartProfile/EndProfile(name)` (compiled out only with `NO_PROFILER`, never defined on PC); 192 `START_PROFILE` sites in `code/` [C grep].
+* Data model: tree of `ProfiledElement` (root "Root", always expanded). Children stored in `SortingHashTable<ProfiledElement*>` keyed by name (case-insensitive, alphabetical walk). `StartProfile(name)`: find/create child of the current element, start timing only if the current element `m_isExpanded` (collapsed subtrees are not timed), descend. `EndProfile`: if parent expanded, stop timing (`End()` accumulates `m_currentTotalTime`, `m_currentNumCalls`, `m_longest`, `m_shortest`), ascend. Nesting is by call order; the name passed to `EndProfile` is only checked by debug asserts.
+* `m_doGlFinish` (button "Toggle glFinish"): inside `RenderStarted()…RenderEnded()` brackets, `glFinish()` is called at each start/end so GPU time is attributed to the enclosing section.
+* `Profiler::Advance()` (called once per main-loop frame from `code/main.cpp` and `code/startsequence.cpp`): when wall time passes `m_endOfSecond`, every element rolls `current → last`, adds to history (`m_historyTotalTime`, `m_historyNumSeconds += 1`, `m_historyNumCalls`), resets current; also records frame time in ms into `m_frameTimes` (newest first, max 200 entries).
+* `ResetHistory()` clears history, longest (= `DBL_MIN`) and shortest (= `DBL_MAX`). `GetMaxChildTime()` = max child history total / first child's history seconds.
+* Output: on-screen only (`ProfileWindow::RenderElementProfile`, columns name : last-second ms × calls = per-call; Min/Avg/Max toggle), no file output [C].
+* Mac `SINGLE_THREADED_PROFILER` ignores calls from non-main threads; on PC calls from worker threads corrupt the tree (no locking) [C/I].
+
+## [→ 32_debug_test_and_performance] 32.D Debug output, asserts, black box, leak tracking
+
+### 32.D.1 `AppDebugOut` family [C] `contrib/systemiv/lib/debug_utils.{h,cpp}`
+| Function / macro | Behaviour |
+|---|---|
+| `AppDebugOut(fmt, …)` | `vsprintf` into a 10240-byte stack buffer (no bound check); if a redirect file is set, appends under a global `NetMutex` (opens/closes the file on every call, `"a"` mode); else `OutputDebugString`. On open failure the redirect is dropped. Compiled out with `NO_DEBUG_OUTPUT` (Mac release) |
+| `AppDebugOutData(ptr,len)` | hex dump, 16 bytes per line (int overload prints decimal) |
+| `AppDebugOutRedirect(file)` | path = `AppDebugLogPath(file)` (Win32: prefix set by `AppDebugLogPathPrefix`, i.e. the profile dir; Mac `~/Library/Logs/<bundle name>/`; Linux `/tmp/`); truncates the file. Baseline: `debug.txt` because `DUMP_DEBUG_LOG` is defined in `TARGET_PC_FULLGAME` |
+| `AppDebugAssert(cond)` | function; on failure `ShowCursor(true); _ASSERT(cond)` — **no effect in release** (`_ASSERT` is empty without `_DEBUG`) |
+| `AppReleaseAssert(cond, fmt, …)` | if false → `AppReleaseAssertFailed`: format (512-byte buffer), `MessageBox(NULL, msg, "Fatal Error")`, then in release `AppGenerateBlackBox("blackbox.txt", msg)` and `throw;` (rethrow with no active exception → process abort through the SEH/terminate path, §31.13.3) ; in `_DEBUG` `_ASSERT(false)` |
+| `AppAssert(x)` | `AppReleaseAssert(x, "Assertion failed : '%s'\n\n%s\nline number %d", #x, __FILE__, __LINE__)` — **active in release** |
+| `AppAssertArgs(x, fmt, …)` | as above plus extra formatted text — used by every DArray/FastDArray/BoundedArray bounds check |
+| `AppAbort(msg)` | `AppReleaseAssert(false, "Abort : '%s'\n\n%s\nline number %d", …)` |
+| `AppReleaseExit(fmt,…)` | log + `MessageBox "Exit"`, black box, `exit(-1)` |
+| `AppGenerateBlackBox(file,msg)` | writes `=   BLACK BOX REPORT    =`, `"<APP_NAME> <APP_VERSION> built <__DATE__>"`, `Date H:M, D/M/YYYY`, `ERROR : '<msg>'`, then `STACKTRACE` by walking saved-EBP frames (`retAddress = %p` per frame) stopping on misaligned/decreasing/unreadable frame pointers |
+
+### 32.D.2 Memory-leak tracking (`TRACK_MEMORY_LEAKS`, commented out in all targets [B:DEAD])
+`contrib/systemiv/lib/memory_leak.h` redefines `new` as `new(_NORMAL_BLOCK, __FILE__, __LINE__)` (CRT debug heap); `AppPrintMemoryLeaks(file)` dumps `_CrtDumpMemoryLeaks` to `<file>.tmp`, parses it with `ParseMemoryLeakFile`: per source location (lower-cased) total bytes and leak count accumulated in `BTree<int>`s, output sorted descending: header `Total recognised memory leaks : %d Kbytes`, `Total unrecognised memory leaks : %d Kbytes`, then `%-95s (%d Kbytes in %d leaks)` (> 2048 bytes) or `(%d  bytes in %d leaks)`. `newStr` gains file/line tracking under the same macro [C] `contrib/systemiv/lib/memory_leak.cpp`, `contrib/systemiv/lib/string_utils.h`. Note the file is compiled in the baseline but only meaningful with the macro.
+
+### 32.D.3 Other debug facilities in scope
+* Sync-rand log (§22.R.2) [B:DEBUG].
+* Language QA (`TextLanguageTest` → `language_errors.txt`, §31.11) [B:FULL, pref-gated].
+* `--write-version` command line (§31.4.2) [B:FULL].
+* `DarwiniaLogBuffer`/`DarwiniaLogMsg` ring buffer (`code/lib/debug_logging.h`, 100 messages) — not in the vcproj [B:DEAD].
+* String helpers worth knowing for logging: `StringReplace(target, repl, subject)` (1024-char buffer, and multi-character targets leave the tail of the target in the output because the index is not advanced past a match — bug), `SafetyString` (replaces `%` with space before printf-style use), `StripTrailingWhitespace` (space/`\n`/`\r`), `newStr` (strdup with `new[]`), `StrToLower/StrToUpper`, `ToString<T>`, `Join` [C] `contrib/systemiv/lib/string_utils.cpp`.
+
+---
+
+## [→ 21_simulation_and_entity_model] 21.C Core containers and their ordering semantics
+
+All are header templates; bodies live in the `.cpp` files that the headers `#include` [C] `contrib/systemiv/lib/tosser/*.h`, `code/lib/*.h`.
+
+| Container | Storage | Insert | Remove | Iteration order | Notes |
+|---|---|---|---|---|---|
+| `LList<T>` | doubly linked list + cached cursor (`m_previous`, `m_previousIndex`) | `PutData`=`PutDataAtEnd`, `PutDataAtStart`, `PutDataAtIndex` (O(n)) | `RemoveData(i)` | index order 0…n−1 (insertion order unless inserted at index) | `GetData(i)` walks from first/last/cursor, whichever is nearest; sequential access O(1) amortised; **const reads mutate the cursor** (not thread-safe); `GetData` on invalid index returns `(T)0` |
+| `DArray<T>` | array + `shadow` used-flags | `PutData(x)` takes the **lowest free index** (linear scan), else grows; `PutData(x, i)` grows until i fits | `RemoveData(i)` clears the flag (no compaction; indices stable) | slot index order 0…Size()−1 skipping unused (`ValidIndex`) | grow step default 1 (`SetStepDouble` → doubling); `Size()` = capacity, `NumUsed()` counts flags; all accessors bounds-check with **release asserts** |
+| `FastDArray<T>` : DArray | + free list | `PutData(x)`/`GetNextFree()` pop the **head of the free list** = most recently freed slot (LIFO); on growth new slots are linked in ascending order | `RemoveData(i)` pushes i on the free-list head | slot order | `PutData(x,i)`/`MarkUsed` rebuild the free list (ascending) |
+| `SliceDArray<T>` : FastDArray | + slice bookkeeping | as FastDArray | as FastDArray | slot order; `GetNextSliceBounds(slice, &lo, &hi)` splits `[0, Size()−1]` (capacity, including empty slots) into `totalNumSlices` inclusive ranges: slice 0 `lo=0`, slice k `lo = previous hi + 1`, `hi = lo + int(Size()/(float)N)`, last slice `hi = Size()−1` | Used for `Location::m_buildings`, `m_spirits`, `m_lasers`, `m_effects`, `Team::m_others`, `Unit::m_entities`, `ParticleSystem::m_particles` (spread updates over per-frame slices) [C] `code/location.h`, `code/team.h`, `code/unit.h`, `code/particle_system.h`. Constructor declared `(newstepsize, totalNumSlices)` but defined `(totalNumSlices, newstepsize)` — the first argument is the slice count |
+| `BoundedArray<T>` | fixed array | – | – | index | release-assert bounds check |
+| `PresizedArray<T,N>` | `T m_data[N]` | – | – | index | debug-only bounds assert (`AppDebugAssert`) |
+| `BTree<T>` | unbalanced binary search tree keyed by `char*` id, `stricmp` (case-insensitive) | `PutData` (equal keys go **left**, duplicates allowed) | `RemoveData` (replaces node with left child and appends right subtree; leaks nodes) | `ConvertToDArray`/`ConvertIndexToDArray` produce **pre-order** (node, left, right) — *not* sorted; depends on insertion order | `GetData` returns `0` if absent; used by language tables, archive maps (`Resource::m_resourceFiles`) |
+| `HashTable<T>` | open addressing, linear probing, `char*` keys, `stricmp` | `PutData` grows (×2) when `slotsFree*2 <= size` before inserting (load ≤ 50%); **inserting an existing key aborts** (`AppAbort("Error with HashTable")`) | `RemoveData` marks + full rehash | slot order (hash-dependent) | hash: 16-bit sum over char pairs `(c0 & 0xDF) + ~(c1 & 0xDF)` (+ last odd char), masked by `size−1`; initial size 4; max size 65536 (release assert) |
+| `SortingHashTable<T>` : HashTable | + `short` linked list in alphabetical (`stricmp`) order | O(n) ordered insert | buggy when removing the first element (walk runs off the list) | `StartOrderedWalk()`/`GetNextOrderedIndex()` alphabetical | used by the profiler |
+| `Array2D<T>` | row-major `T[cols*rows]` (`unsigned short` dims) | `PutData(x,y)` ignores out-of-range | – | – | out-of-range `GetData` returns `m_outsideValue` |
+| `SurfaceMap2D<T>` : Array2D | + world transform (`m_x0,m_y0`, cell sizes) | – | – | – | `GetValue(x,y)`: bilinear interpolation in double of the 4 neighbours after `(x−x0)/cell`; integer parts converted to `unsigned short` (negative coordinates wrap [I]); **indices ≥ size wrap to 0** (edge samples blend with column/row 0); `GetValueNearest`/`GetPointerNearest` use `floor(x/cell)` **without subtracting x0** (only correct for x0=y0=0); `GetHighestValue` iterates x up to `numRows` (bug for non-square maps). Used for the landscape height map (`double`), normal map, water depth, obstruction grid [C] `code/landscape.cpp`, `code/water.cpp`, `code/obstruction_grid.h` — determinism-critical (P11) |
+| `auto_vector<T>` | `std::vector<T*>` owning pointers (Reliable Software, 2003) | `push_back(auto_ptr)`, `insert` | `erase` deletes | vector order | input system lists (`code/lib/input/*`) |
+| `Directory` | DArrays of data and subdirs | `CreateData` (replace by name) | `RemoveData` | slot order | §29.D |
+
+Determinism notes: `DArray::PutData` (lowest free slot) and `FastDArray::PutData` (LIFO free slot) give **different slot assignment for the same operation sequence**; a re-implementation must replicate the exact policy of whichever container a system used, or (better) adopt a single documented policy for all simulation containers and accept that old replays/sync logs are not comparable [I].

@@ -311,10 +311,10 @@ flowchart LR
   GAME -->|query| CE
   CE --> CB
   CB -->|spec.driver| W32 & XI & IDLE & PREF & VAL & CONJ & CHORD & INV & ALIAS
-  CONJ -->|checkInput(sub-spec)| CE
-  CHORD -->|checkInput(conjunctions)| CE
+  CONJ -->|"checkInput(sub-spec)"| CE
+  CHORD -->|"checkInput(conjunctions)"| CE
   INV -->|checkInput| CE
-  ALIAS -->|controlEvent(other)| CE
+  ALIAS -->|"controlEvent(other)"| CE
   TC -->|TargetMove / TargetMoveSecondary / TargetMoveZ| CE
   GAME --> TC
   PIPE -. dead .-> CE
@@ -347,10 +347,46 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
-  class InputManager{-drivers: vector~InputDriver*~ -bindings: ControlBindings -m_idle -m_inputMode +controlEvent() +suppressEvent() +Advance() +PollForEvents() +parseInputPrefs() +checkInput() +getFirstActiveInput() +replacePrimaryBinding()}
-  class ControlBindings{-bindings[NumControlTypes] -icons[] -suppressed[] +bind() +suppress() +isActive() +getControlID()}
-  class InputDriver{<<abstract>> +parseInputSpecification() +getInput() +Advance() +isIdle() +getInputMode() +getInputDescription()}
-  class SimpleInputDriver{<<abstract>> #acceptDriver() #getControlID() #getControlType() #writeExtraSpecInfo() #parseExtraToken()}
+  class InputManager{
+    -drivers : vector~InputDriver*~
+    -bindings : ControlBindings
+    -m_idle : bool
+    -m_inputMode : InputMode
+    +controlEvent(type, details) bool
+    +suppressEvent(type)
+    +Advance()
+    +PollForEvents()
+    +parseInputPrefs(reader, replace)
+    +checkInput(spec, details) bool
+    +getFirstActiveInput(spec, instant) bool
+    +replacePrimaryBinding(type, str)
+  }
+  class ControlBindings{
+    -bindings[NumControlTypes]
+    -icons[NumControlTypes]
+    -suppressed[NumControlTypes]
+    +bind(type, spec, replace) bool
+    +suppress(type)
+    +isActive(type) bool
+    +getControlID(name) int
+  }
+  class InputDriver{
+    <<abstract>>
+    +parseInputSpecification(tokens, spec) InputParserState
+    +getInput(spec, details) bool
+    +Advance()
+    +isIdle() bool
+    +getInputMode() InputMode
+    +getInputDescription(spec, desc) bool
+  }
+  class SimpleInputDriver{
+    <<abstract>>
+    #acceptDriver(name) bool
+    #getControlID(name) int
+    #getControlType(id) int
+    #writeExtraSpecInfo(spec) InputParserState
+    #parseExtraToken(token, spec) InputParserState
+  }
   InputDriver <|-- SimpleInputDriver
   SimpleInputDriver <|-- W32InputDriver
   SimpleInputDriver <|-- XInputDriver
@@ -367,12 +403,16 @@ classDiagram
   W32EventProcessor <|-- W32EventHandler
   InputManager o-- InputDriver
   InputManager *-- ControlBindings
-  class InputFilter{<<abstract>>}
+  class InputFilter{
+    <<abstract>>
+  }
   InputFilter <|-- InputFilterWithDelta
   InputFilterWithDelta <|-- DirectionInputFilter
   InputFilterManager o-- InputFilter
   PipeInputDriver ..> InputFilterManager
-  class Movement2D{<<abstract>>}
+  class Movement2D{
+    <<abstract>>
+  }
   Movement2D <|-- Movement3D
   Movement3D <|-- DPadMovement
   Movement2D <|-- AnalogMovement2D
@@ -657,23 +697,23 @@ classDiagram
 
 ```mermaid
 flowchart TD
-  A[Advance] --> B{m_anim?}
-  B -- yes --> B1[AdvanceAnim: node timing / transitions]
-  B --> C{!m_camLookAround && mode != EntityTrack}
+  A["Advance"] --> B{"m_anim set?"}
+  B -- yes --> B1["AdvanceAnim: node timing and transitions"]
+  B -- no --> C{"not m_camLookAround and mode is not EntityTrack"}
   B1 --> C
-  C -- yes --> C1[AdvanceComponentZoom: FOV easing]
-  C --> D{mode in SphereWorld, FreeMovement, BuildingFocus,<br/>EntityTrack, RadarAim, FirstPerson, TurretAim}
+  C -- yes --> C1["AdvanceComponentZoom: FOV easing"]
+  C -- no --> D{"mode is SphereWorld, FreeMovement, BuildingFocus,<br/>EntityTrack, RadarAim, FirstPerson or TurretAim"}
   C1 --> D
-  D -- yes --> D1[AdvanceComponentMouseWheelHeight: m_height]
-  D --> E{no anim AND (debug==Always OR (debug==Auto AND any Eclipse window open) OR framesInThisMode < 2)}
+  D -- yes --> D1["AdvanceComponentMouseWheelHeight: m_height"]
+  D -- no --> E{"no anim and (debug Always, or debug Auto with an Eclipse window open,<br/>or framesInThisMode below 2)"}
   D1 --> E
-  E -- yes --> E1[uncapture mouse; AdvanceDebugMode]
-  E -- no --> E2[capture mouse (uncapture if GameModeNone); per-mode advancer;<br/>location modes only if landscape heightmap exists]
-  E1 --> F[camera shake]
+  E -- yes --> E1["uncapture mouse, AdvanceDebugMode"]
+  E -- no --> E2["capture mouse (uncapture if GameModeNone), per-mode advancer,<br/>location modes only if the landscape heightmap exists"]
+  E1 --> F["camera shake"]
   E2 --> F
-  F --> G[Normalise; assert sane]
-  G --> H[UserInput::RecalcMousePos3d]
-  H --> I[framesInThisMode++]
+  F --> G["Normalise, assert sane"]
+  G --> H["UserInput::RecalcMousePos3d"]
+  H --> I["framesInThisMode += 1"]
 ```
 
 Every mode request resets `m_framesInThisMode = 0`, so **the first two frames after any mode change run the debug advancer** (which, with no window open, lets the camera keys fly the camera at world-size/30 per second) [C].
@@ -792,10 +832,10 @@ Playback state machine [C] `Camera::PlayAnimation`, `AdvanceAnim`, `StopAnimatio
 ```mermaid
 stateDiagram-v2
   [*] --> Idle
-  Idle --> NodeActive: PlayAnimation(anim) [nodes>0] / save mode+pose; SetTarget(node0.mount); Move→RequestMode(MoveToTarget)+SetMoveDuration(d0); Cut→RequestMode(DoNothing)
-  NodeActive --> NodeActive: gameTime > start+duration AND next node exists / (if current node is Cut: CutToTarget); SetTarget(next.mount); start=now; Move→MoveToTarget(d) | Cut→DoNothing
-  NodeActive --> Idle: gameTime > start+duration AND last node / (Cut: CutToTarget); RequestMode(modeBefore); m_anim=NULL
-  NodeActive --> Idle: StopAnimation() / RequestMode(modeBefore)
+  Idle --> NodeActive : PlayAnimation(anim) if nodes > 0, save mode and pose, SetTarget(node0 mount), Move gives MoveToTarget with duration d0, Cut gives DoNothing
+  NodeActive --> NodeActive : node time elapsed and a next node exists, CutToTarget if the ending node is Cut, SetTarget(next mount), restart timer, Move gives MoveToTarget(d) or Cut gives DoNothing
+  NodeActive --> Idle : node time elapsed on the last node, CutToTarget if Cut, RequestMode(modeBefore), m_anim cleared
+  NodeActive --> Idle : StopAnimation(), RequestMode(modeBefore)
 ```
 
 Note the cut is applied when a Cut node *ends* (the camera holds its previous pose for the node's duration, then jumps) [C].
