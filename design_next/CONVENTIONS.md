@@ -99,7 +99,8 @@ Species names come from the rename ledger of the conversion run. A document uses
 
 - **Terms.** Proper Species terms are capitalised as listed (Worker, Spawn Node, Supply crate). Generic words (tree, wall, spider, turret) stay lower case in prose. §8.14 lists the generic and component terms that the documents use without a row of their own.
 - **Identifiers.** A code identifier (a type, enumerator, function, member, parameter, constant, macro, namespace or C++ source file), wherever a document writes it, in prose, a table, a diagram or an interface sketch, follows the naming convention of `AGENTS.md` §1, rules R1 to R11. The Identifier columns below are written to it. The design adds only these rules:
-  - *Namespaces.* One namespace per layer (R9): `Engine` for engine code, which the components of `architecture/components/` specify, and `Species` for game code, which the reference documents and the simulation model specify. A test project's namespace is `<Project>Tests`. A type that has to know a game concept by name to do its job is game code, whichever document describes it. Engine macros are `ENGINE_*` (`ENGINE_ASSERT`, `ENGINE_PROFILE_SCOPE`). Because a layer has one namespace, a name is unique within its layer; when two documents need the same name, this section settles which one owns it (§8.12).
+  - *Namespaces.* One namespace per layer (R9): `Engine` for engine code, which the components of `architecture/components/` specify, and `Species` for game code, which the reference documents and the simulation model specify. A test project's namespace is `<Project>Tests`. A type, enumeration or free function that has to know a game concept by name to do its job is game code in `Species`, whichever document describes it: its name, an enumerator or a type in its declaration names a game concept. The game concepts are the Species terms of §8.1 to §8.9 (factions and bots, units, creatures, the world objects other than the generic tree and wall, modes, match rules, Supply crates and their outcomes, Powers, achievements), the Power slots of §8.10 and the match HUD, teams, and the game types of table 8.12-A. The engine's own vocabulary names none of them: match, map, front end, page, session, tick, frame, camera, sound, effect, particle, mesh, terrain, sea, sky and tree. Game code builds on engine types and never the reverse: no `Engine` declaration names a `Species` type, and an engine type that carries a game value holds it as a generic engine value (an id, a handle, a palette index or an interface) that the game layer's presentation code fills, as the snapshot interface `SceneSnapshot`, the emitter id `EmitterId`, the audience group `AudienceGroup` and the particle-type id `ParticleTypeId` do. The identifiers of §8.1 to §8.10 are game code, except the UI core (`UiCore`), which is the UI framework's. Engine macros are `ENGINE_*` (`ENGINE_ASSERT`, `ENGINE_PROFILE_SCOPE`). Because a layer has one namespace, a name is unique within its layer; when two documents need the same name, this section settles which one owns it (§8.12).
+  - *Registry.* This section registers types, enumerations with their enumerators, public free functions, macros and constants. Member functions and fields of a type are not registered: the interface sketch of the type's owner is their record. An enumeration whose entry lists no enumerators has them in its owner's sketch. Table 8.12-A maps a term to its code form, which for a term of a member names that member (`FxRng::NextUnit`).
   - *Files.* A C++ source file is named for its primary type (R7, `BuildIdentity.h`). A shader name is PascalCase, because its source and compiled files carry it (`AGENTS.md` §2: `<Shader>VS.hlsl`, `<Shader>PS.hlsl`, `<Shader>CS.hlsl`, and `CompiledShader/<Shader>VS.h` with the byte array `g_<Shader>VS`; the permutation files of §8.11).
   - *Words of a term.* A generic word used as a type name takes its kind as a suffix (`TreeObject`, `SpiderCreature`). A term whose last word is one of the affixes AGENTS.md R2 bans (`Base`, `Impl`, `Abstract`) takes a different identifier, so the repository checker never needs an exception: the Relic Base is `RelicReceptacle`.
   - *Spelling.* An identifier spells the words of its term in American English (R11), while the term itself and all prose stay British: Iron Defence is `Achievement::IronDefense`, an RGBA colour is `ColorRgba`, a centre is a `Center`. Identifiers of an SDK keep the SDK's spelling (R4).
@@ -359,109 +360,117 @@ The Pattern column gives a data-name pattern, except where it gives a code patte
 
 ### 8.12 Engine and simulation types
 
+Table 8.12-A maps the terms of the engine and the simulation to their identifiers. The Kind column names the layer (R9): an engine type is declared in `Engine`, a game type in `Species`.
+
+Table 8.12-A Engine and game types.
+
 | Species term | Kind | Identifier | String-id prefix |
 |---|---|---|---|
 | 2-D grid | engine type | `Grid2D` | — |
 | 3-vector | engine type | `Vec3` | — |
 | 3x4 matrix | engine type | `Mat3x4` | — |
-| achievement events | engine type | `AchievementEvents` | — |
+| achievement events | game type | `AchievementEvents` | — |
 | action bindings | engine type | `ActionBindings` | — |
-| actor | engine type | `Actor` | — |
-| actor grid | engine type | `ActorGrid` | — |
-| actor grid cache | engine type | `ActorGridCache` | — |
-| actor group | engine type | `ActorGroup` | — |
-| actor kind | engine type | `ActorKind` | — |
-| actor stat table | engine type | `ActorStatTable` | — |
-| Airstrike bomb | engine type | `ThrownWeaponKind::AirstrikeBomb` | — |
-| airstrike flight | engine type | `AirstrikeFlight` | — |
-| airstrike target marker | engine type | `AirstrikeTargetMarker` | — |
-| airstrike threshold (map option) | engine type | `MapOption::AirstrikeThreshold` | — |
-| Allegiance Scrambler effect | engine type | `AllegianceScramblerEffect` | — |
+| actor | game type | `Actor` | — |
+| actor grid | game type | `ActorGrid` | — |
+| actor grid cache | game type | `ActorGridCache` | — |
+| actor group | game type | `ActorGroup` | — |
+| actor kind | game type | `ActorKind` | — |
+| actor stat table | game type | `ActorStatTable` | — |
+| Airstrike bomb | game type | `ThrownWeaponKind::AirstrikeBomb` | — |
+| airstrike flight | game type | `AirstrikeFlight` | — |
+| airstrike target marker | game type | `AirstrikeTargetMarker` | — |
+| airstrike threshold (map option) | game type | `MapOption::AirstrikeThreshold` | — |
+| Allegiance Scrambler effect | game type | `AllegianceScramblerEffect` | — |
 | always-on feature flag | engine type | `AlwaysTrue` | — |
-| application | engine type | `Application` | — |
+| application | game type | `Application` | — |
 | application window | engine type | `AppWindow` (owned by the platform layer; the renderer draws into it) | — |
 | asset cache | engine type | `AssetCache` | — |
-| attacker reinforcement count (map option) | engine type | `MapOption::AttackerReinforcementCount` | — |
-| attacker reinforcement power (map option) | engine type | `MapOption::AttackerReinforcementPower` | — |
-| attacker reinforcement power option (map option) | engine type | `MapOption::AttackerReinforcementPowerOption` | — |
+| attacker reinforcement count (map option) | game type | `MapOption::AttackerReinforcementCount` | — |
+| attacker reinforcement power (map option) | game type | `MapOption::AttackerReinforcementPower` | — |
+| attacker reinforcement power option (map option) | game type | `MapOption::AttackerReinforcementPowerOption` | — |
+| audience group | engine type | `AudienceGroup` | — |
 | audio engine | engine type | `AudioEngine` | — |
-| barrage missile | engine type | `BarrageMissile` | — |
-| bot navigation node | engine type | `BotNavNode` | — |
-| bot objective | engine type | `BotObjective` | — |
-| bot objective marker | engine type | `BotObjectiveMarker` | — |
-| bot team | engine type | `TeamKind::Bot` | — |
-| carryable structure | engine type | `CarryableStructure` | — |
-| cloth flag | engine type | `ClothFlag` | — |
-| control-hint overlay | engine type | `ControlHintOverlay` | — |
-| Core Device pulse wave | engine type | `CorePulseWave` | — |
+| barrage missile | game type | `BarrageMissile` | — |
+| bot navigation node | game type | `BotNavNode` | — |
+| bot objective | game type | `BotObjective` | — |
+| bot objective marker | game type | `BotObjectiveMarker` | — |
+| bot team | game type | `TeamKind::Bot` | — |
+| carryable structure | game type | `CarryableStructure` | — |
+| cloth flag | game type | `ClothFlag` | — |
+| control-hint overlay | game type | `ControlHintOverlay` | — |
+| Core Device pulse wave | game type | `CorePulseWave` | — |
 | crash reporter | engine type | `CrashReporter` | — |
-| Crawler group | engine type | `CrawlerGroup` | — |
-| Crawler trail sample | engine type | `CrawlerTrailSample` | — |
-| defender reinforcement count (map option) | engine type | `MapOption::DefenderReinforcementCount` | — |
-| defender reinforcement power (map option) | engine type | `MapOption::DefenderReinforcementPower` | — |
-| defender reinforcement power option (map option) | engine type | `MapOption::DefenderReinforcementPowerOption` | — |
+| Crawler group | game type | `CrawlerGroup` | — |
+| Crawler trail sample | game type | `CrawlerTrailSample` | — |
+| defender reinforcement count (map option) | game type | `MapOption::DefenderReinforcementCount` | — |
+| defender reinforcement power (map option) | game type | `MapOption::DefenderReinforcementPower` | — |
+| defender reinforcement power option (map option) | game type | `MapOption::DefenderReinforcementPowerOption` | — |
 | DSP filter definition | engine type | `DspFilterDef` | — |
-| dust object | engine type | `DustVortex` | — |
-| dust vortex | engine type | — (the vortex that the dust-storm spawner holds; no type of its own) | — |
-| dust wind (map effect) | engine type | `MapEffect::DustVortices` | — |
-| easy bot | engine type | `BotDifficulty::Easy` | — |
-| energy-grid structure | engine type | `GridStructure` | — |
-| Essence-orb rain (map effect) | engine type | `MapEffect::EssenceOrbRain` | — |
+| dust object | game type | `DustVortex` | — |
+| dust vortex | game type | — (the vortex that the dust-storm spawner holds; no type of its own) | — |
+| dust wind (map effect) | game type | `MapEffect::DustVortices` | — |
+| easy bot | game type | `BotDifficulty::Easy` | — |
+| emitter id | engine type | `EmitterId` | — |
+| energy-grid structure | game type | `GridStructure` | — |
+| Essence-orb rain (map effect) | game type | `MapEffect::EssenceOrbRain` | — |
 | feature flag | engine type | `FeatureFlagX` | — |
-| fireball | engine type | `FireballProjectile` | — |
-| firebomb canister | engine type | `FirebombCanister` | — |
-| formation slot | engine type | `FormationSlot` | — |
+| fireball | game type | `FireballProjectile` | — |
+| firebomb canister | game type | `FirebombCanister` | — |
+| formation slot | game type | `FormationSlot` | — |
 | frame renderer | engine type | `FrameRenderer` | — |
-| front-end controller | engine type | `FrontEndController` | — |
-| front-end screen | engine type | `FrontEndScreen` | — |
-| fuel-chain structure | engine type | `FuelStructure` | — |
+| front-end controller | game type | `FrontEndController` | — |
+| front-end screen | game type | `FrontEndScreen` | — |
+| fuel-chain structure | game type | `FuelStructure` | — |
 | glyph renderer | engine type | `GlyphRenderer` | — |
-| grace period | engine type | `GracePeriod` | — |
-| grenade | engine type | `GrenadeProjectile` | — |
-| hard bot | engine type | `BotDifficulty::Hard` | — |
-| hint overlay | engine type | `HintOverlay` | — |
+| grace period | game type | `GracePeriod` | — |
+| grenade | game type | `GrenadeProjectile` | — |
+| hard bot | game type | `BotDifficulty::Hard` | — |
+| hint overlay | game type | `HintOverlay` | — |
 | input router | engine type | `InputRouter` | — |
 | input source node | engine type | `InputSourceNode` | — |
-| instant Spawn Node capture (map option) | engine type | `MapOption::InstantSpawnNodeCapture` | — |
+| instant Spawn Node capture (map option) | game type | `MapOption::InstantSpawnNodeCapture` | — |
 | job queue | engine type | `JobQueue` | — |
-| land route graph | engine type | `LandRouteGraph` | — |
-| laser bolt | engine type | `LaserBolt` | — |
-| lightning (map effect) | engine type | `MapEffect::Lightning` | — |
-| lightning strike | engine type | `LightningStrike` | — |
-| loading view | engine type | `LoadingView` | — |
-| lobby slot | engine type | `LobbySlot` | — |
-| local player team | engine type | `TeamKind::LocalPlayer` | — |
-| map editor | engine type | `MapEditor` | — |
-| map editor hub page | engine type | `MapEditorHubPage` | — |
-| map editor window | engine type | `MapEditorWindow` | — |
-| map effect | engine type | `MapEffect` | — |
-| map file picker | engine type | `MapFilePicker` | — |
-| map light | engine type | `MapLight` | — |
-| map option | engine type | `MapOption` | — |
-| match camera | engine type | `MatchCamera` | — |
-| match input pump | engine type | `MatchInputPump` | — |
-| match statistics | engine type | `MatchStatistics` | — |
-| match world | engine type | `MatchWorld` | — |
+| land route graph | game type | `LandRouteGraph` | — |
+| laser bolt | game type | `LaserBolt` | — |
+| lightning (map effect) | game type | `MapEffect::Lightning` | — |
+| lightning strike | game type | `LightningStrike` | — |
+| loading view | game type | `LoadingView` | — |
+| lobby slot | game type | `LobbySlot` | — |
+| local player team | game type | `TeamKind::LocalPlayer` | — |
+| map editor | game type | `MapEditor` | — |
+| map editor hub page | game type | `MapEditorHubPage` | — |
+| map editor window | game type | `MapEditorWindow` | — |
+| map effect | game type | `MapEffect` | — |
+| map file picker | game type | `MapFilePicker` | — |
+| map light | game type | `MapLight` | — |
+| map option | game type | `MapOption` | — |
+| match camera | game type | `MatchCamera` | — |
+| match input pump | game type | `MatchInputPump` | — |
+| match statistics | game type | `MatchStatistics` | — |
+| match world | game type | `MatchWorld` | — |
 | mesh | engine type | `MeshAsset` | — |
+| mesh batch | engine type | `MeshRenderer` | — |
 | mesh node | engine type | `MeshNode` | — |
 | mesh socket | engine type | `MeshSocket` | — |
-| meteor | engine type | `MeteorRock` | — |
-| muzzle flash | engine type | `MuzzleFlashEffect` | — |
-| no Beam Dish aiming (map option) | engine type | `MapOption::NoBeamDishAiming` | — |
-| no Catch-up bonus (map option) | engine type | `MapOption::NoCatchUpBonus` | — |
-| no gun turrets (map option) | engine type | `MapOption::NoGunTurrets` | — |
-| no-team value | engine type | `TeamId::None` | — |
-| obstacle grid | engine type | `ObstacleGrid` | — |
+| meteor | game type | `MeteorRock` | — |
+| muzzle flash | game type | `MuzzleFlashEffect` | — |
+| no Beam Dish aiming (map option) | game type | `MapOption::NoBeamDishAiming` | — |
+| no Catch-up bonus (map option) | game type | `MapOption::NoCatchUpBonus` | — |
+| no gun turrets (map option) | game type | `MapOption::NoGunTurrets` | — |
+| no-team value | game type | `TeamId::None` | — |
+| obstacle grid | game type | `ObstacleGrid` | — |
 | options screen | engine type | `OptionsScreen` | — |
-| order trail mark | engine type | `OrderTrailMark` | — |
+| order trail mark | game type | `OrderTrailMark` | — |
 | pack file | engine type | `PackFile` | — |
 | pad menu cycle down | engine type | `PadMenuCycleDown` | — |
 | pad menu cycle up | engine type | `PadMenuCycleUp` | — |
 | particle | engine type | `ParticleInstance` | — |
 | particle pool | engine type | `ParticlePool` | — |
-| player command | engine type | `PlayerCommand` | — |
-| power and research levels | engine type | `PowerLevels` | — |
-| power slots panel | engine type | `PowerSlotsPanel` | — |
+| particle-type id | engine type | `ParticleTypeId` | — |
+| player command | game type | `PlayerCommand` | — |
+| power and research levels | game type | `PowerLevels` | — |
+| power slots panel | game type | `PowerSlotsPanel` | — |
 | presentation generator | engine type | `FxRng` | — |
 | presentation generator seed | engine type | `FxRng::Seed` | — |
 | presentation random fraction | engine type | `FxRng::NextUnit` | — |
@@ -470,68 +479,69 @@ The Pattern column gives a data-name pattern, except where it gives a code patte
 | procedural foot | engine type | `ProceduralFoot` | — |
 | procedural leg | engine type | `ProceduralLeg` | — |
 | product name | engine type | `PRODUCT_NAME` | — |
-| remote player team | engine type | `TeamKind::RemotePlayer` | — |
+| remote player team | game type | `TeamKind::RemotePlayer` | — |
 | render backdrop | engine type | `RenderBackdrop` | — |
 | RGBA colour | engine type | `ColorRgba` | — |
 | RGBA8 image | engine type | `ImageRgba8` | — |
-| rocket | engine type | `RocketProjectile` | — |
-| route graph | engine type | `RouteGraph` | — |
-| route graph node | engine type | `RouteGraphNode` | — |
-| route point | engine type | `RoutePoint` | — |
-| same-team Beam Dish links (map option) | engine type | `MapOption::SameTeamBeamDishLinks` | — |
+| rocket | game type | `RocketProjectile` | — |
+| route graph | game type | `RouteGraph` | — |
+| route graph node | game type | `RouteGraphNode` | — |
+| route point | game type | `RoutePoint` | — |
+| same-team Beam Dish links (map option) | game type | `MapOption::SameTeamBeamDishLinks` | — |
 | sample cache | engine type | `SampleCache` | — |
-| scenery mesh | engine type | `SceneryMesh` | — |
+| scenery mesh | game type | `SceneryMesh` | — |
 | sea renderer | engine type | `SeaRenderer` | — |
-| sea route graph | engine type | `SeaRouteGraph` | — |
+| sea route graph | game type | `SeaRouteGraph` | — |
 | settings store | engine type | `SettingsStore` | — |
 | shatter effects | engine type | `ShatterEffects` | — |
-| shell casing | engine type | `ShellCasing` | — |
-| shockwave ring | engine type | `ShockwaveRing` | — |
-| simulated object | engine type | `SimObject` | — |
-| simulated-object handle | engine type | `SimObjectId` | — |
-| simulation generator | engine type | `SimRng` | — |
-| simulation random fraction | engine type | `SimRng::NextUnit` | — |
-| simulation random integer | engine type | `SimRng::NextUint` | — |
-| simulation random signed fraction | engine type | `SimRng::NextSigned` | — |
+| shell casing | game type | `ShellCasing` | — |
+| shockwave ring | game type | `ShockwaveRing` | — |
+| simulated object | game type | `SimObject` | — |
+| simulated-object handle | game type | `SimObjectId` | — |
+| simulation generator | game type | `SimRng` | — |
+| simulation random fraction | game type | `SimRng::NextUnit` | — |
+| simulation random integer | game type | `SimRng::NextUint` | — |
+| simulation random signed fraction | game type | `SimRng::NextSigned` | — |
 | sky renderer | engine type | `SkyRenderer` | — |
-| sliced pool | engine type | `SlicedPool` | — |
-| smoke column | engine type | `SmokeColumn` | — |
-| snow (map effect) | engine type | `MapEffect::Snow` | — |
-| snowflake | engine type | `SnowFlake` | — |
+| sliced pool | game type | `SlicedPool` | — |
+| smoke column | game type | `SmokeColumn` | — |
+| snapshot interface | engine type | `SceneSnapshot` | — |
+| snow (map effect) | game type | `MapEffect::Snow` | — |
+| snowflake | game type | `SnowFlake` | — |
 | sound event definition | engine type | `SoundEventDef` | — |
 | sound parameter | engine type | `SoundParam` | — |
 | sound source definition | engine type | `SoundSourceDef` | — |
 | sound voice | engine type | `SoundVoice` | — |
-| spawn-network edge | engine type | `SpawnEdge` | — |
-| spawn-network structure | engine type | `SpawnStructure` | — |
-| special lighting (map effect) | engine type | `MapEffect::SpecialLightRig` | — |
-| spectator | engine type | `TeamKind::Spectator` | — |
-| spider gait | engine type | `SpiderGait` | — |
-| standard bot | engine type | `BotDifficulty::Standard` | — |
-| starting forces | engine type | `StartingForces` | `map.starting_forces` |
+| spawn-network edge | game type | `SpawnEdge` | — |
+| spawn-network structure | game type | `SpawnStructure` | — |
+| special lighting (map effect) | game type | `MapEffect::SpecialLightRig` | — |
+| spectator | game type | `TeamKind::Spectator` | — |
+| spider gait | game type | `SpiderGait` | — |
+| standard bot | game type | `BotDifficulty::Standard` | — |
+| starting forces | game type | `StartingForces` | `map.starting_forces` |
 | string table | engine type | `StringTable` | — |
-| structure | engine type | `Structure` | — |
-| structure kind | engine type | `StructureKind` | — |
-| structure port | engine type | `StructurePort` | — |
-| supply-crate outcome | engine type | `CrateOutcome` | — |
-| team | engine type | `MatchTeam` | — |
-| team command state | engine type | `TeamCommandState` | — |
-| team slots per match | engine type | `MAX_TEAMS` | — |
-| teleport | engine type | `TeleportStructure` | — |
+| structure | game type | `Structure` | — |
+| structure kind | game type | `StructureKind` | — |
+| structure port | game type | `StructurePort` | — |
+| supply-crate outcome | game type | `CrateOutcome` | — |
+| team | game type | `MatchTeam` | — |
+| team command state | game type | `TeamCommandState` | — |
+| team slots per match | game type | `MAX_TEAMS` | — |
+| teleport | game type | `TeleportStructure` | — |
 | terrain definition | engine type | `TerrainDefinition` | — |
 | terrain flatten area | engine type | `TerrainFlattenArea` | — |
 | terrain height field | engine type | `TerrainField` | — |
 | terrain renderer | engine type | `TerrainRenderer` | — |
 | terrain tile | engine type | `TerrainTile` | — |
-| thrown weapon | engine type | `ThrownWeapon` | — |
-| tick clock | engine type | `TickClock` | — |
-| tick period | engine type | `TICK_PERIOD_SECONDS` | — |
-| trail point | engine type | `TrailPoint` | — |
-| Transit Gate reinforcement count (map option) | engine type | `MapOption::GateReinforcementCount` | — |
-| Transit Gate Transport cap (map option) | engine type | `MapOption::GateTransportCap` | — |
-| transit orb | engine type | `TransitOrb` | — |
-| turret | engine type | `Turret` | — |
-| turret round | engine type | `TurretRound` | — |
+| thrown weapon | game type | `ThrownWeapon` | — |
+| tick clock | game type | `TickClock` | — |
+| tick period | game type | `TICK_PERIOD_SECONDS` | — |
+| trail point | game type | `TrailPoint` | — |
+| Transit Gate reinforcement count (map option) | game type | `MapOption::GateReinforcementCount` | — |
+| Transit Gate Transport cap (map option) | game type | `MapOption::GateTransportCap` | — |
+| transit orb | game type | `TransitOrb` | — |
+| turret | game type | `Turret` | — |
+| turret round | game type | `TurretRound` | — |
 | UI alt pointer down | engine type | `UiAltPointerDown` | — |
 | UI button | engine type | `UiButton` | — |
 | UI button base | engine type | `UiWidget` | — |
@@ -539,64 +549,65 @@ The Pattern column gives a data-name pattern, except where it gives a code patte
 | UI panel base | engine type | `UiPanel` | — |
 | UI pointer down | engine type | `UiPointerDown` | — |
 | UI pointer held | engine type | `UiPointerHeld` | — |
-| unused slot | engine type | `TeamKind::Unused` | — |
-| update slices per tick | engine type | `UPDATE_SLICES_PER_TICK` | — |
-| Visitor-faction position (map option) | engine type | `MapOption::VisitorFactionPosition` | — |
-| volcano vent | engine type | `VolcanoVent` | — |
-| waypoint order | engine type | `LeaderOrder::Waypoint` | — |
+| unused slot | game type | `TeamKind::Unused` | — |
+| update slices per tick | game type | `UPDATE_SLICES_PER_TICK` | — |
+| Visitor-faction position (map option) | game type | `MapOption::VisitorFactionPosition` | — |
+| volcano vent | game type | `VolcanoVent` | — |
+| waypoint order | game type | `LeaderOrder::Waypoint` | — |
 | window mode | engine type | `WindowMode` (owned by the platform layer; the renderer reads it) | — |
-| world cursor | engine type | `WorldCursor` | — |
-| world markers | engine type | `WorldMarkers` | — |
+| world cursor | game type | `WorldCursor` | — |
+| world markers | game type | `WorldMarkers` | — |
 | world surface grid | engine type | `SurfaceGrid` | — |
 
-Table 8.12-B registers the further names of the simulation model and the engine components, grouped by owner. A name is written once, under its owner; another document that uses it cites the owner. The namespace follows from the owner (R9). Names in the Data names group of a row are data names, not code identifiers.
+Table 8.12-B registers the further names of the simulation model and the engine components, grouped by owner. A name is written once, under its owner; another document that uses it cites the owner. The Namespace column names the layer (R9): a name that knows a game concept is in `Species`, whichever document owns it; the other names of a component are in `Engine`, and those of the simulation model in `Species`. Names in the data names group of an owner are data names, not code identifiers.
 
 Table 8.12-B Names by owner.
 
 | Owner | Namespace | Group | Names |
 |---|---|---|---|
-| Simulation model (R-SIM) | `Species` | core members (entity model, diagram 2.2-A) | `MatchWorld::Advance`, `MatchWorld::Resolve`, `MatchWorld::SpawnActors`; `MatchTeam::Advance`, `MatchTeam::CreateActor`; `ActorGroup::AdvanceMembers`, `ActorGroup::Advance`; `SimObjectId::IsValid`; `SimObject::Advance`, `SimObject::Render`; `Actor::OnSpawn`, `Actor::Advance`, `Actor::ApplyHealthChange`, `Actor::PushOutOfObstacles`, `Actor::AdvanceAlongRoute`, `Actor::CreateActor`; `Structure::InitializeFromRecord`, `Structure::Advance`, `Structure::AssignTeam`, `Structure::SphereHits`, `Structure::MeshHits`, `Structure::RayHits`, `Structure::CreateStructure` |
 | Simulation model (R-SIM) | `Species` | handles and kinds | `SimObjectId::Group` (`Ungrouped`, `StructurePool`, `EssenceOrbPool`, `LaserBoltPool`, `EffectPool`); `TeamId` (`TeamId::None`); `ThrownWeaponKind` (`AirstrikeBomb`) |
 | Simulation model (R-SIM) | `Species` | player commands | `PlayerCommand` with `ControlState`, `Select`, `AimBeamDish`, `ToggleBarrierEmitter`, `TargetPower`, `SelectPower`, `CancelPower`, `ScrapActor`, `SelectWorkers`, `OrderWorkers`, `PromoteWorker`, `DemoteLeader`, `OrderUnit`, `ToggleUnit`, `ToggleReady`, `Pause`, `Chat`, `StartMatch`, `SetTeamName`, `SetColor`, `SetAchievementMask`, `SetSlotOpen` (team slot, open flag), `ReportScores`, `SetMatchOption`, `SetMatchOptionElement`, `SetMatchOptionText`, `SetSeasonalTheme`, `SetMatchOptionArray`, `NextMode`, `PreviousMode` |
-| Simulation model (R-SIM) | `Species` | team command state fields (a public aggregate, R8) | `moveTarget`, `directMove`, `primaryFire`, `secondaryFire`, `targetDirected`, `secondaryFireDirected`, `cameraTracking`, `specialOrders`, `endSetTarget`, `gamepad`, `primaryHeld`, `pointerPosition`, `directMoveVector`, `directTargetVector` |
-| Simulation model (R-SIM) | `Species` | routes, formations, space and physics | `RoutePath`, `RouteHop`, `RoutePointKind` (`Position`, `GroundPosition`, `Structure`); `GroupFormation` (`Rectangle`, `Airstrike`); the friendship function `IsFriend`; `IsPathClear`, `WalkCost`, `BuildRoute`, `PushFromObstacles`, `TryEnterTeleport`, `Bounce`, `Explode`, `Structure::PushFrom`, `ObstacleGrid::StructuresAt`, `ActorGridCache::CachedEnemies`; `ActorGrid::InRange`, `ActorGrid::Enemies`, `ActorGrid::Friends`, `ActorGrid::NearestEnemy`, `ActorGrid::CountInCells`, `ActorGrid::CountEnemiesInCells`, `ActorGrid::CountFriendsInCells`, `ActorGrid::AnyInCells`, `ActorGrid::EnemiesInCells`, `ActorGrid::FriendsInCells` |
+| Simulation model (R-SIM) | `Species` | routes, formations, space and physics | `RoutePath`, `RouteHop`, `RoutePointKind` (`Position`, `GroundPosition`, `Structure`); `GroupFormation` (`Rectangle`, `Airstrike`); the friendship function `IsFriend`; `IsPathClear`, `WalkCost`, `PushFromObstacles`, `TryEnterTeleport`, `Bounce`, `Explode` |
 | Simulation model (R-SIM) | — | data names | the sound source name `airstrike_bomb` |
 | Terrain (TER) | `Engine` | types | `TileMethod` (`Average`, `RandomPair`, `CopyOne`), `FlattenOp` (`Absolute`, `Add`, `Subtract`, `Smooth`, `Subtract2`), `SeaMasks` (also read by the renderer), `WaveVertex`, `WaveMeshSource` |
-| Terrain (TER) | `Engine` | functions | `TerrainField::Generate`, `TerrainField::Height`, `TerrainField::HeightAt`, `TerrainField::Normal`, `TerrainField::NormalAt`, `TerrainField::IsInside`, `TerrainField::CastRay`, `TerrainField::LineOfSight`; the free functions `BuildSeaMasks`, `SelectWaveVertexPairs` and `FacetColor`; `SurfaceGrid::At`, `SurfaceGrid::Set`, `SurfaceGrid::Sample`, `SurfaceGrid::Nearest`, `SurfaceGrid::IndexX`, `SurfaceGrid::IndexZ`, `SurfaceGrid::PositionX`, `SurfaceGrid::PositionZ`, `SurfaceGrid::Highest`; the private tile generator's `Seed`, `Next`, `Signed` |
-| Renderer (RND) | `Engine` | frame, configuration and view | `FrameKind`, `PosterState`, `TransitionState`, `PresentMode`, `RenderConfig`, `ViewParams`, `FrameInputs`, `PresentationSnapshot`, `StartupError`, `ScissorRect`, `Ray`, `FrameView`, `DirectionalLight`, `LightRig`, `LitMaterial`, `Mat4`; the event `DeviceRebuilt` |
+| Terrain (TER) | `Engine` | free functions | `BuildSeaMasks`, `SelectWaveVertexPairs`, `FacetColor` |
+| Renderer (RND) | `Engine` | frame, configuration and view | `FrameKind`, `PosterState`, `TransitionState`, `PresentMode`, `RenderConfig`, `ViewParams`, `FrameInputs`, `StartupError`, `ScissorRect`, `Ray`, `FrameView`, `DirectionalLight`, `LightRig`, `LitMaterial`, `Mat4`; the event `DeviceRebuilt` |
 | Renderer (RND) | `Engine` | pipeline and frame graph | `BlendState` (`Opaque`, `Alpha`, `Premultiplied`, `Additive`, `Darkening`, `Ink`, `Ghost`), `DepthState`, `CullState`, `SortRule`, `DepthBiasVariant`, `PipelineDescriptor`, `PassTableEntry`, `FrameGraph`, `CompiledFrameGraph`, `FrameGraphError`, `ShaderPermutationId`, `RenderTargetFormats`, `CatalogKey`, `ResourceAccess`, `SettingGate`, `RecordFunction`, `PassContext` |
-| Renderer (RND) | `Engine` | world, entity and overlay renderers | `StructureRenderer`, `TreeGeometry`, `TreeQuad`, `TreeParameters`, `TerrainColorRamp`, `SeaLook`, `SkyDetail`; `CrowdRenderer`, `ActorRenderer`, `EffectRenderer`, `RouteLineRenderer`, `WorldMarkerRenderer`, `WorldCursorRenderer`, `PowerSlotsPanelRenderer`, `MatchHudRenderer`, `MatchHudView`, `RoutePreview`, `RouteHandle`, `DevSphereMesh`; `OrientationMode` (`CameraFacing`, `UprightCard`, `WorldOriented`, `Segment`), `QuadAnchor` (`Center`, `BottomCenter`), `InstanceType`, `InstanceTypeId` |
-| Renderer (RND) | `Engine` | shader layouts, options and look checks | `FrameConstants`, `DrawConstants`, `MeshInstance`, `QuadInstance`, `SkyLayerInstance`, `WaveVertexPair`, `CombineParams`; the sampler-index constants of the shared header `SAMPLER_LINEAR_CLAMP`, `SAMPLER_LINEAR_WRAP`, `SAMPLER_POINT_CLAMP`, `SAMPLER_POINT_MAGNIFY_CLAMP`; `RenderSettings`, `DetailLevel`, `AntiAliasing`, `QualityPreset`, `LookScene`, `LookCheck`, `LookError` |
-| Renderer (RND) | `Engine` | functions | `ProjectToScreen`, `ScreenRay`, `ScissorFromWorld`, `PointInView`, `SphereInView`, `GenerateTreeGeometry`, `BuildDevSphere`, `PresetOf`, `ApplyPreset`, `Validated`, `RenderLookScene`, `ApplySettings`, `InitializeTransition`, `OnTeamChanged`, `OnRouteHighlighted`, `OnRouteIntensity`, `PreviewWalkable`; the tree generator's `Next` and `NextScaled` |
+| Renderer (RND) | `Engine` | world renderers and batches | `TreeGeometry`, `TreeQuad`, `TreeParameters`, `TerrainColorRamp`, `SeaLook`, `SkyDetail`; `CrowdRenderer`, `DevSphereMesh`; `OrientationMode` (`CameraFacing`, `UprightCard`, `WorldOriented`, `Segment`), `QuadAnchor` (`Center`, `BottomCenter`), `InstanceType`, `InstanceTypeId` |
+| Renderer (RND) | `Engine` | shader layouts and options | `FrameConstants`, `DrawConstants`, `MeshInstance`, `QuadInstance`, `SkyLayerInstance`, `WaveVertexPair`, `CombineParams`; the sampler-index constants of the shared header `SAMPLER_LINEAR_CLAMP`, `SAMPLER_LINEAR_WRAP`, `SAMPLER_POINT_CLAMP`, `SAMPLER_POINT_MAGNIFY_CLAMP`; `RenderSettings`, `DetailLevel`, `AntiAliasing`, `QualityPreset` |
+| Renderer (RND) | `Engine` | free functions | `PointInView`, `SphereInView`, `GenerateTreeGeometry`, `BuildDevSphere`, `PresetOf`, `ApplyPreset`, `Validated` |
 | Renderer (RND) | `Engine` | shaders and permutation macros | `Sky`, `Terrain`, `SeaFlat`, `SeaWavesUpdate`, `SeaWaves`, `MeshLit`, `UnlitTextured`, `UnlitDualTexture`, `UnlitVertexColor`, `ScreenLine`, `DepthCopy`, `Final`, `FullscreenFade`, `ScreenTransition`, `InstanceCull`, `WorldOverlay`; the permutation axes `INVERTED`, `GRID_SOURCE` (`GRID_TEXTURE`, `BARYCENTRIC`), `FOG`, `EDGE_MASK`, `CUTOUT`, `ALPHA_ONE`, `COMBINE` (`MODULATE`, `REPLACE_THEN_MODULATE`), `CLIP_PLANES`, `SAMPLES`, `HDR`, `EDGE_STRIP` and `SOURCE` (`VERTEX_COLOR`, `TEXTURED`, `MESH`); file names as §8.11 |
+| Renderer (RND) | `Species` | game-object renderers, overlays and look checks (game concepts, R9) | `PresentationSnapshot` (the game's presentation snapshot of DEC-222, which implements `SceneSnapshot`); `StructureRenderer`, `ActorRenderer`, `EffectRenderer`, `RouteLineRenderer`, `WorldMarkerRenderer`, `WorldCursorRenderer`, `PowerSlotsPanelRenderer`, `MatchHudRenderer`, `MatchHudView`, `RoutePreview`, `RouteHandle`; `LookScene` (`GlowStack`, `DarkeningStack`, `InkText`, `TeamPalette`, `FogRamp`, `OverBrightFacet`, `CrowdAtDistance`, `CardToBillboard`, `InvertedStyle`, `SeasonalTheme`), `LookCheck`, `LookError`; the function `RenderLookScene` |
 | Renderer (RND) | — | data names | catalogue entries `sky`, `terrain`, `terrain_inverted`, `sea_flat`, `sea_flat_inverted`, `sea_waves`, `mesh_lit_fog`, `port_pad`, `glow_additive_fog`, `glow_additive_fog_nodepth`, `alpha_fog`, `dual_alpha_fog`, `dual_additive_clip_fog`, `line_additive_fog`, `fade`, `transition`, `group_mesh_lit`, `trooper_mesh_lit`, `actor_mesh_lit`, `actor_flicker_additive`, `actor_flicker_darkening`, `actor_strip_lit`, `actor_glow`, `actor_glow_nodepth`, `actor_ink_nodepth`, `actor_ink`, `actor_darkening`, `actor_beam_alpha`, `actor_beam_additive`, `blob_shadow`, `crawler_trail`, `crawler_trail_rogue`, `worker_card`, `worker_ground_shadow`, `worker_glow`, `effect_additive`, `effect_additive_nodepth`, `effect_gradient_nodepth`, `laser_bolt`, `route_line`, `overlay_alpha`, `overlay_additive`, `overlay_ink`, `overlay_gradient_alpha`, `cursor_ring`, `cursor_area`, `cursor_dots`, `cursor_ghost`; frame-graph resources `scene_colour`, `scene_depth`, `scene_resolved`, `scene_depth_single`, `final_image`, `captured_frame`, `screenshot_readback`, `terrain_heights`, `back_buffer`; combine modes `modulate`, `replace_then_modulate` |
 | Asset pipeline and resources (AST) | `Engine` | identity and mounting | `AssetId`, `VariantId`, `AssetKey`, `ContentKey`, `Sha256Digest`, `AssetError`; `MountOptions`, `MountOverride`, `MountManifest`, `MountSet`, `EntryRef`, `PackEntry` |
-| Asset pipeline and resources (AST) | `Engine` | content types and import records | `ContentType`, `TextureKind`, `ColorSpace`, `AlphaMode`, `MipPolicy`, `SamplerId` (`LinearClamp`, `LinearWrap`, `PointClamp`, `PointMagnifyClamp`), `Derivation` (`BlurredShadow`, `StackedCopies`, `Grayscale`, `ToColor`, `ReplaceColor`), `TextureView`, `DerivedVariant`, `TextureImportRecord`, `TintMarking`, `MeshRole` (`Render`, `Collision`), `MeshImportRecord`, `AudioImportRecord`, `PackCodec` (`Stored`, `XpressHuffman`) |
+| Asset pipeline and resources (AST) | `Engine` | content types and import records | `ContentType`, `TextureKind`, `ColorSpace`, `AlphaMode`, `MipPolicy`, `SamplerId` (`LinearClamp`, `LinearWrap`, `PointClamp`, `PointMagnifyClamp`), `Derivation` (`BlurredShadow`, `StackedCopies`, `Grayscale`, `ToColor`, `ReplaceColor`), `TextureView`, `DerivedVariant`, `TextureImportRecord`, `TintMarking`, `MeshImportRecord`, `AudioImportRecord`, `PackCodec` (`Stored`, `XpressHuffman`); `MeshRole` is the data schemas' |
 | Asset pipeline and resources (AST) | `Engine` | reading, caching and events | `ReadPriority`, `ContentReader`, `LoadState`, `TextureSize`, `LoadGroup`, `TextureHandle`, `MeshHandle`, `RuntimeTextureId`, `ImageProducer`; `AssetLoaded`, `AssetFailed`, `LoadGroupProgress`, `LoadGroupCompleted`, `AssetReloaded` |
 | Asset pipeline and resources (AST) | — | data names | pack ids `startup`, `locale`, `core`, `audio`, `update_<nn>`; the glTF attribute `_SPECIES_TINT`, the material member `species_team_tint`, the socket prefix `socket_`; variant ids `level0`, `point`, `shadow`, `trail` |
-| Animation and VFX (VFX) | `Engine` | types | `PresentationClock`, `PresentationTime`; `EffectKind`, `EffectEvent`, `EffectEventId`, `ShatterPayload`; `ParticleKind`, `ParticleBlend`, `TerrainRule`, `ParticleEmission`, `ParticleTypeParams`, `PoolCounts`; `ScreenEffects`, `ShakeOffset`; `ExplainerPlayer`, `ExplainerLayout`; `VfxRuntime`, `ShatterExplosion`, `ProceduralAnimator`, `FootState`, `LegTuning`; GPU structs `ParticleSlot`, `ParticleType`, `Shard`, `Tumbler` |
-| Animation and VFX (VFX) | `Engine` | `ParticleKind` enumerators | `RocketTrail`, `ExplosionCore`, `ExplosionDebris`, `MuzzleFlare`, `Fire`, `ControlFlash`, `Spark`, `BlueSpark`, `Casing`, `MissileTrail`, `MissileFire`, `WorkerFire`, `Leaf`, `Sickness`, `SpeedBoostTrail`, `FireballFlame`, `Volcano` |
-| Animation and VFX (VFX) | `Engine` | `EffectKind` enumerators | `Explosion`, `RocketBurst`, `StructureDestroyed`, `LaserHitStructure`, `RoundHitStructure`, `RoundHitTerrain`, `ThrownWeaponTrail`, `AirstrikeMarkerSmoke`, `RocketFlame`, `FireballLaunched`, `FirebombBurst`, `LightningStrike`, `SwarmHit`, `TurretCooling`, `TurretShot`, `TrooperShot`, `BarrierSpark`, `ControlGained`, `ControlLost`, `LeaderPromoted`, `LeaderDemoted`, `CrowdOrder`, `LeaderOrder`, `LeaderFormUp`, `OrderMarkerStep`, `WorkerBurning`, `WorkerSpeedBoost`, `WorkerSick`, `PowerReachedWorker`, `WorkerOpeningCrate`, `WorkerAbducted`, `ActorHit`, `Bite`, `TransportExhaust`, `CollectorEngine`, `AbductorEngine`, `MeteorFire`, `OrbBroken`, `TreeBurning`, `TreeLeaf`, `SpitterPlantBurning`, `SmokeColumn`, `VolcanoEruption`, `FuelPumpStroke`, `FuelDepotBoarding`, `VesselBooster`, `VesselWrecked`, `CameraShake`, `Shatter` |
+| Animation and VFX (VFX) | `Engine` | types | `PresentationClock`, `PresentationTime`; `ShatterPayload`; `ParticleBlend`, `TerrainRule`, `ParticleEmission`, `ParticleTypeParams`, `PoolCounts`; `ScreenEffects`, `ShakeOffset`; `ShatterExplosion`, `FootState`, `LegTuning`; GPU structs `ParticleSlot`, `ParticleType`, `Shard`, `Tumbler` |
+| Animation and VFX (VFX) | `Species` | types (game concepts, R9) | `EffectKind`, `EffectEvent`, `EffectEventId`; `ParticleKind`; `ExplainerPlayer`, `ExplainerLayout`; `VfxRuntime`, `ProceduralAnimator` |
+| Animation and VFX (VFX) | `Species` | `ParticleKind` enumerators | `RocketTrail`, `ExplosionCore`, `ExplosionDebris`, `MuzzleFlare`, `Fire`, `ControlFlash`, `Spark`, `BlueSpark`, `Casing`, `MissileTrail`, `MissileFire`, `WorkerFire`, `Leaf`, `Sickness`, `SpeedBoostTrail`, `FireballFlame`, `Volcano` |
+| Animation and VFX (VFX) | `Species` | `EffectKind` enumerators | `Explosion`, `RocketBurst`, `StructureDestroyed`, `LaserHitStructure`, `RoundHitStructure`, `RoundHitTerrain`, `ThrownWeaponTrail`, `AirstrikeMarkerSmoke`, `RocketFlame`, `FireballLaunched`, `FirebombBurst`, `LightningStrike`, `SwarmHit`, `TurretCooling`, `TurretShot`, `TrooperShot`, `BarrierSpark`, `ControlGained`, `ControlLost`, `LeaderPromoted`, `LeaderDemoted`, `CrowdOrder`, `LeaderOrder`, `LeaderFormUp`, `OrderMarkerStep`, `WorkerBurning`, `WorkerSpeedBoost`, `WorkerSick`, `PowerReachedWorker`, `WorkerOpeningCrate`, `WorkerAbducted`, `ActorHit`, `Bite`, `TransportExhaust`, `CollectorEngine`, `AbductorEngine`, `MeteorFire`, `OrbBroken`, `TreeBurning`, `TreeLeaf`, `SpitterPlantBurning`, `SmokeColumn`, `VolcanoEruption`, `FuelPumpStroke`, `FuelDepotBoarding`, `VesselBooster`, `VesselWrecked`, `CameraShake`, `Shatter` |
 | Animation and VFX (VFX) | — | data names | catalogue entries `orb_ink`, `orb_additive`, `shard_lit`, `particle_darkening`, `particle_additive`, `cloth_cells`, `cloth_cells_fog`, `cloth_pole`, `cloth_pole_fog`, `cloth_pointer`, `cloth_overlay`; the depth-bias variant `bias_flag_pointer` |
 | Audio engine (AEN) | `Engine` | types | `SoundLayerDef`, `SoundGroupDef`, `SoundVoiceId`, `SampleBank`, `AudioStream`, `BankId`, `SourceVoiceSlot`, `VoiceBackend`, `AudioBusGraph`, `CommandWriter`, `TriggerCommand`, `StopCommand`, `EmitterUpdate`, `ListenerUpdate`, `MatchState`, `AudioResult`; `EffectBinding` is the data schemas' |
-| Audio engine (AEN) | `Engine` | enumerations | `SoundPosition`, `SoundSharing`, `SoundLoop`, `SoundAudience`, `SoundParamKind`, `SoundParamUpdate`, `SoundLink`, `DspFilterKind`, `AudioBus`, `EnvelopeStage`, `VoiceState`, `StopMatch`, `MatchPhase` |
+| Audio engine (AEN) | `Engine` | enumerations | `SoundPosition`, `SoundSharing`, `SoundLoop`, `SoundAudience` (`All`, `OwnGroup`, `OtherGroup`, `NoGroup`), `SoundParamKind`, `SoundParamUpdate`, `SoundLink` (`None`, `Height`, `PosX`, `Altitude`, `PosZ`, `Speed`, `CameraDistance`, `ObjectAge`, `GroupsNearby`, `TimeRemaining`, `ObjectsNearby`), `DspFilterKind`, `AudioBus`, `EnvelopeStage`, `VoiceState`, `StopMatch`, `MatchPhase` (`NoMatch`, `Countdown`, `Running`, `Ended`) |
 | Audio engine (AEN) | `Engine` | Species XAPOs | `ChorusFx`, `CompressorFx`, `DistortionFx`, `StereoEchoFx`, `FlangerFx`, `StandardGargleFx`, `StudioReverbFx`, `ResonantLowPassFx`, `BitCrusherFx`, `GargleFx`, `EchoFx`, `SimpleReverbFx` |
 | UI framework (UI) | `Engine` | core, geometry and input | `PanelId`, `WidgetId`, `PointF`, `SizeF`, `RectF`; `PointerEvent`, `PointerEventKind`, `TextInput`, `EditCommand`, `Callback`; `InputMode` is the input component's |
 | UI framework (UI) | `Engine` | widgets and value binding | `UiBorderlessButton`, `UiCloseButton`, `UiInsetPanel`, `UiTextField`, `UiIncrementGlyph`, `UiScrollBar`, `UiCheckBox`, `UiDropDown`, `UiDropDownList`, `UiDropDownOption`, `UiMessageDialog`, `UiChatEntry`, `UiChatField`; `UiValueBinding`, `ValueType`; `PageButton`, `PageBackButton`, `ScreenCloseButton`, `PageTitle`, `PageDropDown`, `PageDropDownList`, `PageDropDownOption`, `PageTextField`, `PageIncrementGlyph`, `PageCheckBox` |
 | UI framework (UI) | `Engine` | layout, drawing and text | `PageGrid`, `UiScaleState`, `UiBlend`, `UiVertex`, `FontRole` (`Caption`, `Body`, `Title`), `TextPass`, `TextAlign`, `TextStyle`, `DrawContext`; `TextView`, `MessageArguments`, `LanguageTag`, `StringId`; `AssetId` is the asset pipeline's |
-| UI framework (UI) | `Engine` | public fields (R8) | `UiButton::fontSize`, `UiButton::centered`, `UiButton::disabled`; `TextStyle::role`, `TextStyle::size`, `TextStyle::color`, `TextStyle::blend`, `TextStyle::pass` |
-| UI framework (UI) | `Engine` | functions | `ComputePageGrid`, `LargeMenuScale`, `ToolWindowScale`, `FinalTextSize`; `RegisterPanel`, `RemovePanel`, `BringToFront`, `SetPanelPosition`, `SetPanelSize`, `PanelAt`, `WidgetAt`, `PointerInPanel`, `PointerInWidget`, `UpdatePointer`, `RegisterPopup`, `ClosePopup`, `Maximize`, `Unmaximize`, `SetFocus`, `IsTextEditing`, `WindowsOnScreen`, `RemoveAllWindows`, `SetTooltipHandler`; `MenuSize`, `SetMenuSize`, `ClientRect`, `AddToNavigation`, `SetCursor`, `SetBackAction`, `SkipNextUpdate`, `ConsumeScroll`, `AddValueControl`, `RemoveValueControl`, `AddColorControl`, `AddMenuControl`, `ShowDialog`; `MeasureWidth`, `Prerasterize`, `Lookup`, `Exists`, `Format` |
-| UI framework (UI) | `Engine` | pages and screen recipes | `PageId` (`Title`, `Tutorials`, `HostOrJoin`, `ModeSelect`, `MapSelect`, `MatchSetup`, `AdvancedOptions`, `PlayerOptions`, `SessionBrowser`, `BrowserFilters`, `Password`, `Connecting`, `WaitForStart`, `Error`, `Credits`, `QuickMatch`, `Achievements`, `LeaderboardSelect`, `Leaderboard`), `NavOp` (`Push`, `Pop`, `Replace`, `UnwindTo`, `Rebuild`), `NavRequest`, `TransitionDirection`, `EnterOutcome` (`Built`, `Waiting`, `Redirect`), `EnterResult`, `FillBoxes`, `FrontEndPage`, `PageHost`, `PageContext`, `FrontEndViewModel`, `WidgetBuilder`, `ToolWindow`, `ToolPlacement`, `HudPanel`, `HudContext`; `OpenToolOnce`, `CloseTool`, `ToolString`; the events `PageEntered`, `PageLeft`, `NavigationRejected` |
-| UI framework (UI) | `Engine` | front-end widget kinds | `ScrollingText`, `ModeDescription`, `MapDescription`, `OptionDetails`, `StaticImage`, `ModePicture`, `MapThumbnail`, `HelpPicture`, `ColorPickerRow`, `ModeRow`, `MapRow`, `MapListHeader`, `SessionRow`, `SessionListHeader`, `LobbySlotRow`, `KickControl`, `SlotOpenControl`, `PrimaryButton`, `MapNameLabel`, `ChatLog`, `ConnectionStatus`, `TextLabel` |
+| UI framework (UI) | `Engine` | free functions | `ComputePageGrid`, `LargeMenuScale`, `ToolWindowScale`, `FinalTextSize` |
+| UI framework (UI) | `Engine` | page navigation and tool windows | `NavOp` (`Push`, `Pop`, `Replace`, `UnwindTo`, `Rebuild`), `TransitionDirection`, `EnterOutcome` (`Built`, `Waiting`, `Redirect`), `FillBoxes`, `WidgetBuilder`, `ToolWindow`, `ToolPlacement`; `OpenToolOnce`, `CloseTool`, `ToolString` |
+| UI framework (UI) | `Species` | pages and HUD panels (game concepts, R9) | `PageId` (`Title`, `Tutorials`, `HostOrJoin`, `ModeSelect`, `MapSelect`, `MatchSetup`, `AdvancedOptions`, `PlayerOptions`, `SessionBrowser`, `BrowserFilters`, `Password`, `Connecting`, `WaitForStart`, `Error`, `Credits`, `QuickMatch`, `Achievements`, `LeaderboardSelect`, `Leaderboard`), `NavRequest`, `EnterResult`, `FrontEndPage`, `PageHost`, `PageContext`, `FrontEndViewModel`, `HudPanel`, `HudContext`; the events `PageEntered`, `PageLeft`, `NavigationRejected` |
+| UI framework (UI) | `Engine` | front-end widget kinds | `ScrollingText`, `MapDescription`, `OptionDetails`, `StaticImage`, `MapThumbnail`, `HelpPicture`, `MapRow`, `MapListHeader`, `SessionRow`, `SessionListHeader`, `KickControl`, `PrimaryButton`, `MapNameLabel`, `ChatLog`, `ConnectionStatus`, `TextLabel` |
+| UI framework (UI) | `Species` | front-end widget kinds (game concepts, R9) | `ModeDescription`, `ModePicture`, `ColorPickerRow`, `ModeRow`, `LobbySlotRow`, `SlotOpenControl` |
 | UI framework (UI) | — | data names | the action ids `action.menu.left`, `action.menu.right`, `action.menu.up`, `action.menu.down`, `action.menu.activate`, `action.menu.front_end_activate`, `action.menu.close`, `action.menu.dismiss`, `action.menu.scroll_speedup`; the string ids `ui.dialog.close`, `ui.dialog.error`, `ui.dialog.success` |
-| Input (INP) | `Engine` | types | `InputEvent`, `ActionValue`, `FrameGates`, `PointerState`, `InputPointer`, `DeviceBackEnd`, `GamepadBackEnd`, `KeyboardMouseBackEnd`, `InputEventQueue`, `DeviceState`, `BindingStateTable`, `PadAssignment`, `LoadDiagnostic`, `LoadReport`, `BindingSources`, `BindingDescription`, `DeviceClass`, `DeviceClassMask`, `DeviceId`, `LocalPlayerId`, `ActionId`, `KeyCode`, `MouseControl`, `PadControl`, `ValueKind`, `Condition`, `InputMode` (also used by the UI framework) |
-| Input (INP) | `Engine` | members and aggregate fields (R8) | `InputRouter::onModeChanged`, `InputRouter::onLayoutChanged` (public notification signals); `DeviceBackEnd::Initialize`; `InputEvent::Kind` (`Press`, `Release`, `Axis`, `Connect`, `Disconnect`); the fields of `InputEvent` (`kind`, `osRepeat`, `deviceClass`, `device`, `control`, `timestampNanoseconds`, `x`, `y`), `FrameGates` (`uiWindowOpen`, `textEntryOpen`, `windowFocused`) and `PointerState` (`positionPixels`, `wheelNotches`, `deltaPixels`, `wheelDeltaNotches`, `moved`) |
+| Input (INP) | `Engine` | types | `InputEvent` with its nested `InputEvent::Kind` (`Press`, `Release`, `Axis`, `Connect`, `Disconnect`), `ActionValue`, `FrameGates`, `PointerState`, `InputPointer`, `DeviceBackEnd`, `GamepadBackEnd`, `KeyboardMouseBackEnd`, `InputEventQueue`, `DeviceState`, `BindingStateTable`, `PadAssignment`, `LoadDiagnostic`, `LoadReport`, `BindingSources`, `BindingDescription`, `DeviceClass`, `DeviceClassMask`, `DeviceId`, `LocalPlayerId`, `ActionId`, `KeyCode`, `MouseControl`, `PadControl`, `ValueKind`, `Condition`, `InputMode` (also used by the UI framework) |
 | Input (INP) | `Engine` | binding nodes and helpers | `BindingNode`, `AllNode`, `ChordNode`, `NotNode`, `AliasNode`, `LatchNode`, `IdleNode`, `SettingNode`, `ValueNode`; `ActionAxis`, `StickAxis`, `PriorityAxis`, `ActionTrigger` |
 | Input (INP) | — | data names | the action ids `action.menu.cycle_up`, `action.menu.cycle_down`, `action.menu.select_previous`, `action.menu.select_next`, `action.menu.toggle_period` (with the nine of the UI framework); the control names of the input component's tables 3.2-A to 3.2-C; the layout tags `de-DE`, `en-US`, `fr-FR`, `en-GB`, `en-CA`; the binding-set layer kind `development` (INP-094) |
-| Camera and sequences (CAM) | `Engine` | types | `CameraMode` (`Static`, `ScriptedMove`, `FreeMovement`, `Tracking`, `BeamDishAim`, `TurretAim`, `StructureFocus`, `DeveloperFly`), `CameraTransition` (`Move`, `Cut`), `CameraPose`, `CameraView`, `CameraAnimationStep`, `CameraAnimationDef`, `MapCameraData`, `CameraFrameInputs`, `CameraFrameOutput`, `CameraState`, `PickRay`; `TimelineOp` (`Wait`, `WaitCamera`, `WaitFade`, `WaitCondition`, `CameraCut`, `CameraMove`, `CameraApproach`, `CameraFocus`, `CameraAnimation`, `CameraFov`, `CameraRelease`, `Caption`, `Fade`, `Overlay`, `Sound`, `PermitAbort`), `TimelineStatement`, `PresentationTimeline`, `TimelinePlayer`, `StatementArgs`, `SourceLocation`, `TimelineFrameInputs` |
-| Camera and sequences (CAM) | `Engine` | `MatchCamera` functions | `SetTargetView`, `SetTargetPose`, `SetTargetAround`, `Cut`, `StartMove`, `FocusStructure`, `EnterMode`, `ReleaseToPlayer`, `SetFieldOfView`, `SetTargetFieldOfView`, `PlayCameraAnimation`, `StopCameraAnimation`, `IsBusy`, `PickRayAt`, `ViewProjectionFor`, `EnterMatch`, `OnLocalTeamKnown`, `LeaveMatch` |
+| Camera and sequences (CAM) | `Engine` | types | `CameraTransition` (`Move`, `Cut`), `CameraPose`, `CameraView`, `CameraAnimationStep`, `CameraAnimationDef`, `MapCameraData`, `CameraFrameOutput`, `PickRay`; `TimelineOp` (`Wait`, `WaitCamera`, `WaitFade`, `WaitCondition`, `CameraCut`, `CameraMove`, `CameraApproach`, `CameraFocus`, `CameraAnimation`, `CameraFov`, `CameraRelease`, `Caption`, `Fade`, `Overlay`, `Sound`, `PermitAbort`), `TimelineStatement`, `PresentationTimeline`, `StatementArgs`, `SourceLocation` |
+| Camera and sequences (CAM) | `Species` | match camera and timeline player (game concepts, R9) | `CameraMode` (`Static`, `ScriptedMove`, `FreeMovement`, `Tracking`, `BeamDishAim`, `TurretAim`, `StructureFocus`, `DeveloperFly`), `CameraFrameInputs`, `CameraState`, `TimelinePlayer`, `TimelineFrameInputs`; `MatchCamera` is in table 8.12-A |
 | Camera and sequences (CAM) | — | data names | the action ids `action.debug.camera_fast`, `action.debug.camera_slow`, `action.debug.camera_rotate`, `action.sequence.skip` |
-| Data schemas (DAT) | `Engine` | types | `FieldType`, `SimPrecision`, `Presence`, `FieldSpec`, `RecordSchema`, `SchemaRegistry`, `Diagnostic`, `AuthoringParser`, `RecordValidator`, `RecordCooker`, `CanonicalWriter`, `SchemaMigration`, `RecordView`, `RecordLoader`, `MapHeaderView`, `MapDefinitionView`, `MapLoader`, `StructureRecord`, `StructureLink`, `SettingSpec`, `SettingsDefaults`, `SettingsFile`, `StringTableBuilder`, `StringTableView`, `EffectBinding` (also read by the audio engine), `DspParamDesc`, `ImportRecordReader` |
+| Data schemas (DAT) | `Engine` | types | `FieldType`, `SimPrecision`, `Presence`, `FieldSpec`, `RecordSchema`, `SchemaRegistry`, `Diagnostic`, `AuthoringParser`, `RecordValidator`, `RecordCooker`, `CanonicalWriter`, `SchemaMigration`, `RecordView`, `RecordLoader`, `SettingSpec`, `SettingsDefaults`, `SettingsFile`, `StringTableBuilder`, `StringTableView`, `EffectBinding` (also read by the audio engine), `DspParamDesc`, `MeshRole` (`Render`, `Collision`; also used by the asset pipeline's import record), `ImportRecordReader` |
+| Data schemas (DAT) | `Species` | map and structure records (game concepts, R9) | `MapHeaderView`, `MapDefinitionView`, `MapLoader`, `StructureRecord`, `StructureLink` |
 | Data schemas (DAT) | `Engine` | soak and telemetry records | `SoakProgressionKind`, `SoakEntryFailure`, `SoakParticipantRole`, `SoakSequenceItem`, `SoakTestMap`, `SoakConfigurationRecord`, `SoakMatchRow`, `SoakPassSummary`, `TelemetrySession`, `SoakMatchTableWriter` |
 | Data schemas (DAT) | — | data names | the schema ids `maps.definition`, `maps.index`, `mode.options`, `settings.defaults`, `input.binding_set`, `input.keyboard_layouts`, `text.string_table`, `actor.stats`, `crate.outcomes`, `sound.sources`, `sound.groups`, `sound.effect_kinds`, `geometry.mesh`, `geometry.collision`, `geometry.sim_record`, `panels.explainer`, `effects.definition`, `camera.timeline`, `interface.page_layout`, `interface.palette`, `interface.text_style`, `interface.font_roles`, `import.texture`, `import.mesh`, `import.audio`, `assets.engine_table`, `edition.manifest`, `test.soak_configuration`, `test.soak_report`, `telemetry.session`; the setting-key groups of table 8-A |
 | Platform layer (PLT) | `Engine` | clock and window | `PlatformClock`, `TimeSource`, `TimeSourceKind`, `ManualTimeSource`, `Nanoseconds`; `AppWindow`, `WindowMode`, `Permanence`, `WindowPlacement`, `WindowMessage`, `WindowInputSink`, `WindowEvent` (`Resized`, `DpiChanged`, `FocusChanged`, `Minimized`, `Restored`, `ModeChanged`, `MonitorChanged`, `DisplayConfigurationChanged`, `KeyboardLayoutChanged`, `EndOfSession`); `MonitorInfo`, `DesktopMode`, `ModeSize`; `PointPx`, `SizePx`, `RectPx`, `NativeWindowHandle` |

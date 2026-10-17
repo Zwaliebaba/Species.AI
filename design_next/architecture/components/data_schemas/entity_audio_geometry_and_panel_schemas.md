@@ -79,9 +79,9 @@ enum class ParamLink : std::uint8_t
   Speed,
   CameraDistance,
   ObjectAge,
-  TeamsNearby,
+  GroupsNearby,
   TimeRemaining,
-  UnitCount
+  ObjectsNearby
 };
 // One modulatable value (DAT-268).
 struct SoundParam

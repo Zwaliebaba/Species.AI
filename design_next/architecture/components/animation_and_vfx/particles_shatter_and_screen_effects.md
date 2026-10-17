@@ -25,10 +25,10 @@ struct ParticleSlot   // one slot of the pool's structured buffer
   float3 velocity;
   float size;
   uint color;    // RGBA8
-  uint kind;     // ParticleKind
+  uint kind;     // the particle type (ParticleTypeId)
 };
 
-struct ParticleType   // one entry per ParticleKind, from the effect definitions
+struct ParticleType   // one entry per particle type, from the effect definitions
 {
   float life, typeSize, gravity, friction;
   uint color1, color2;   // RGBA8

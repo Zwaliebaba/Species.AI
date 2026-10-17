@@ -12,6 +12,8 @@ This document specifies the renderers of the static world: the terrain (`Terrain
 
 ## 2 Interfaces
 
+The interface below is a C++23 declaration sketch, not an implementation. The terrain, sea and sky renderers, the tree generator and the mesh batch (`MeshRenderer`) are engine code in namespace `Engine`. The structure renderer reads the game's presentation snapshot and knows game concepts by name, so it is game-layer presentation code in `Species`, built on the mesh batch (`AGENTS.md` R9).
+
 ```cpp
 namespace Engine
 {
@@ -46,14 +48,26 @@ struct TreeGeometry // RND-180 to RND-184, unit space, trunk (0,0,0)-(0,1,0)
 };
 TreeGeometry GenerateTreeGeometry(const TreeParameters& _tree, std::uint32_t _leafAlphaBoostLevel);
 
-class StructureRenderer
+class MeshRenderer // lit, tinted mesh instances (ADR-009, ADR-020): the mesh batch that the game's renderers fill
 {
 public:
-  void RecordSolid(PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 6
-  void RecordAlpha(PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 8
+  std::span<MeshInstance> BeginInstances(const MeshHandle& _mesh, CatalogKey _entry, std::uint32_t _count); // upload ring
+  void RecordDraws(PassContext& _pass, std::span<const CatalogKey> _entries) const;
 };
 
 } // namespace Engine
+
+namespace Species
+{
+
+class StructureRenderer // game-layer presentation code (AGENTS.md R9), built on Engine::MeshRenderer
+{
+public:
+  void RecordSolid(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 6
+  void RecordAlpha(Engine::PassContext& _pass, const PresentationSnapshot& _snapshot, double _t) const; // pass 8
+};
+
+} // namespace Species
 ```
 
 ## 3 Data model

@@ -14,10 +14,10 @@ This document states the look and feel that Species keeps, precisely and testabl
 
 ## 2 Interfaces
 
-The look has no runtime interface of its own. Its contracts are the asset import rules that carry it (table below, ADR-018) and the golden-image scenes that verify it (§7), which the test harness renders through this interface:
+The look has no runtime interface of its own. Its contracts are the asset import rules that carry it (table below, ADR-018) and the golden-image scenes that verify it (§7), which the test harness renders through this interface. Its scenes name game concepts (the team palette, the seasonal theme), so the interface is game code in namespace `Species`, built on the engine's `FrameRenderer` and `RenderConfig` (`AGENTS.md` R9):
 
 ```cpp
-namespace Engine
+namespace Species
 {
 
 enum class LookScene : std::uint8_t
@@ -37,13 +37,13 @@ enum class LookScene : std::uint8_t
 struct LookCheck
 {
   LookScene scene;
-  RenderConfig config;        // README §2; sample count 1 for the reference edge look
-  std::uint8_t tolerance = 1; // largest allowed difference per 8-bit channel
+  Engine::RenderConfig config; // README §2; sample count 1 for the reference edge look
+  std::uint8_t tolerance = 1;  // largest allowed difference per 8-bit channel
 };
 
-std::expected<ImageRgba8, LookError> RenderLookScene(FrameRenderer& _renderer, const LookCheck& _check);
+std::expected<Engine::ImageRgba8, LookError> RenderLookScene(Engine::FrameRenderer& _renderer, const LookCheck& _check);
 
-} // namespace Engine
+} // namespace Species
 ```
 
 **RND-393** (MUST) Each asset family carries the look through these import-record values (ADR-018); markers, cursors and icons are straight-alpha art that their passes also draw with the `Additive` blend (RND-423), a pairing that ADR-018 allows for glowing icons, markers and cursors. The single-channel families hold intensity, not colour: their colour comes from the draw colour. Where a pass reads mip level 0 only it requests the view `level0`, and where it magnifies with point filtering the view `point` (AST-026, AST-027):

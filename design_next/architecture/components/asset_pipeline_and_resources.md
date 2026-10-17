@@ -163,10 +163,7 @@ enum class TintMarking : std::uint8_t
 {
   None, VertexWeight, MaterialFlag
 };
-enum class MeshRole : std::uint8_t
-{
-  Render, Collision
-};
+// MeshRole (Render, Collision): declared by data_schemas/import_and_build_records.md §2
 struct MeshImportRecord
 {
   AssetId asset;

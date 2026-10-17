@@ -132,94 +132,73 @@ Caption: the runtime reads the simulation's snapshot and events and feeds the re
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation. `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext`, `PresentationSnapshot` and `FrameView` the renderer's, `TeamPalette` the renderer's team palette (RND-016), `DrawContext` the UI framework's handle to the batched UI stream and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070). `InstanceWriter` and `MatchSetupView` are placeholders for the renderer's instance writer and the simulation's match-setup view until their owners declare them.
+The interface below is a C++23 declaration sketch, not an implementation. The clocks, the particle pool with its particle-type ids, the shatter effects and the screen effects are engine code in namespace `Engine`. The effect kinds and effect events, the particle kinds, the explainer player and the runtime that turns the game's snapshot and events into engine calls name game concepts (the simulation's objects and events, the team palette, the mode explainers), so they are game-layer presentation code in `Species`, built on those engine types (`AGENTS.md` R9). `TimeSource` is the platform layer's (ADR-074), `AssetId` the asset pipeline's, `PassContext` and `FrameView` the renderer's, `PresentationSnapshot` the game's presentation snapshot (DEC-222, [renderer/README.md](../renderer/README.md) §2), `DrawContext` the UI framework's handle to the batched UI stream, and `ExplainerAnimation` and `LoadError` the data schemas'; a pass is named by its id in the renderer's pass table (RND-070). `InstanceWriter`, `MatchSetupView` and `TeamPalette` are placeholders for the renderer's instance writer, the simulation's match-setup view and the team palette of RND-016 until their owners declare them.
 
 ```cpp
 namespace Engine
 {
 
-struct PresentationTime   // §3.1
+struct PresentationTime // §3.1
 {
-  double scaled = 0.0;     // frame step x game speed; stops while the world is held
-  double unscaled = 0.0;   // frame step; stops while the world is held
-  double real = 0.0;       // the real clock (R-SIM-570); never stops
+  double scaled = 0.0;   // frame step x game speed; stops while the world is held
+  double unscaled = 0.0; // frame step; stops while the world is held
+  double real = 0.0;     // the real clock (R-SIM-570); never stops
 };
 
-class PresentationClock   // ADR-036; time comes from the platform clock (ADR-074)
+class PresentationClock // ADR-036; time comes from the platform clock (ADR-074)
 {
 public:
   explicit PresentationClock(const TimeSource& _source);
-  void BeginFrame(double _gameSpeed, bool _worldHeld);   // VFX-016
+  void BeginFrame(double _gameSpeed, bool _worldHeld); // VFX-016
   [[nodiscard]] PresentationTime Now() const;
-  [[nodiscard]] double StepScaled() const;               // this frame's advance
+  [[nodiscard]] double StepScaled() const; // this frame's advance
   [[nodiscard]] double StepUnscaled() const;
 };
 
-enum class EffectKind : std::uint16_t;   // closed enumeration, particles table 4.7-A
-
-struct EffectEventId   // stable identity; seeds the presentation generator
-{
-  std::uint32_t tick = 0;
-  SimObjectId emitter;           // invalid for events with no emitter
-  std::uint16_t sequence = 0;    // order of the event among the emitter's events of the tick
-};
-
-struct ShatterPayload   // EffectKind::Shatter (particles §4.10)
+struct ShatterPayload // a shatter request (particles §4.10)
 {
   AssetId mesh;
   Mat3x4 transform;
-  float fraction = 1.0f;          // share of facets released; >= 1 releases all
-  std::uint8_t paletteIndex = 0;  // team palette entry for the facet tint (ADR-020)
+  float fraction = 1.0f;         // share of facets released; >= 1 releases all
+  std::uint8_t paletteIndex = 0; // team palette entry for the facet tint (ADR-020)
 };
 
-struct EffectEvent
+struct ParticleTypeId // a row of the pool's particle-type table (particles table 4.2-A), from the effect definitions
 {
-  EffectKind kind;
-  EffectEventId id;
-  SimObjectId subject;            // the object the effect follows or comes from
-  Vec3 position;
-  Vec3 velocity;
-  Vec3 direction;
-  std::uint8_t colorId = 0xFF;    // team colour id (RND-016); 0xFF = none
-  float a = 0.0f;                 // kind-specific scalars of particles table 4.7-A
-  float b = 0.0f;
-  std::optional<ShatterPayload> shatter;
-};
-
-enum class ParticleKind : std::uint8_t   // particles table 4.2-A, in this order
-{
-  RocketTrail, ExplosionCore, ExplosionDebris, MuzzleFlare, Fire, ControlFlash, Spark, BlueSpark, Casing, MissileTrail,
-  MissileFire, WorkerFire, Leaf, Sickness, SpeedBoostTrail, FireballFlame, Volcano
+  std::uint8_t index = 0;
 };
 enum class ParticleBlend : std::uint8_t
 {
-  Glow, Smoke
+  Glow,
+  Smoke
 };
 enum class TerrainRule : std::uint8_t
 {
-  None, Bounce, DieOnContact
+  None,
+  Bounce,
+  DieOnContact
 };
 
 struct ParticleEmission
 {
-  ParticleKind kind;
+  ParticleTypeId kind;
   Vec3 position;
   Vec3 velocity;
-  std::optional<float> size;        // none: the type size
-  std::optional<ColorRgba> color;   // none: the type's random colour (VFX-202)
+  std::optional<float> size;      // none: the type size
+  std::optional<ColorRgba> color; // none: the type's random colour (VFX-202)
 };
 
-class ParticlePool   // ADR-010
+class ParticlePool // ADR-010
 {
 public:
-  void Emit(std::span<const ParticleEmission> _requests);                   // into the frame's upload buffer
+  void Emit(std::span<const ParticleEmission> _requests); // into the frame's upload buffer
   void RecordSimulate(PassContext& _compute, const PresentationTime& _now);
-  void RecordDraw(PassContext& _pass15) const;                              // darkening batch, then additive
-  void Empty();                                                             // match teardown (R-SIM-005)
-  [[nodiscard]] PoolCounts Counts() const;                                  // Debug read-back
+  void RecordDraw(PassContext& _pass15) const; // darkening batch, then additive
+  void Empty();                                // match teardown (R-SIM-005)
+  [[nodiscard]] PoolCounts Counts() const;     // Debug read-back
 };
 
-class ShatterEffects   // ADR-010
+class ShatterEffects // ADR-010
 {
 public:
   void Shatter(const ShatterPayload& _request, FxRng& _rng, const PresentationTime& _now);
@@ -228,33 +207,83 @@ public:
   void Reset();
 };
 
-class ScreenEffects   // ADR-036, ADR-064
+class ScreenEffects // ADR-036, ADR-064
 {
 public:
-  void RequestShake(float _intensity);   // combined by maximum
+  void RequestShake(float _intensity); // combined by maximum
   void RequestFlash(float _alpha, const PresentationTime& _now);
   [[nodiscard]] ShakeOffset ShakeOffsetFor(const PresentationTime& _now) const;
   void RecordFlash(PassContext& _pass10a) const;
 };
 
-class ExplainerPlayer   // the explainer timeline, hosted by the UI framework
+} // namespace Engine
+
+namespace Species
 {
-public:
-  static std::expected<ExplainerPlayer, LoadError> Load(const ExplainerAnimation& _data);
-  void Draw(DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const TeamPalette& _roles);
+
+enum class EffectKind : std::uint16_t; // closed enumeration, particles table 4.7-A
+
+struct EffectEventId // stable identity; seeds the presentation generator
+{
+  std::uint32_t tick = 0;
+  SimObjectId emitter;        // invalid for events with no emitter
+  std::uint16_t sequence = 0; // order of the event among the emitter's events of the tick
 };
 
-class VfxRuntime
+struct EffectEvent
+{
+  EffectKind kind;
+  EffectEventId id;
+  SimObjectId subject; // the object the effect follows or comes from
+  Engine::Vec3 position;
+  Engine::Vec3 velocity;
+  Engine::Vec3 direction;
+  std::uint8_t colorId = 0xFF; // team colour id (RND-016); 0xFF = none
+  float a = 0.0f;              // kind-specific scalars of particles table 4.7-A
+  float b = 0.0f;
+  std::optional<Engine::ShatterPayload> shatter; // EffectKind::Shatter (particles §4.10)
+};
+
+// Particles table 4.2-A, in this order; each kind names one row of the pool's particle-type table (Engine::ParticleTypeId).
+enum class ParticleKind : std::uint8_t
+{
+  RocketTrail,
+  ExplosionCore,
+  ExplosionDebris,
+  MuzzleFlare,
+  Fire,
+  ControlFlash,
+  Spark,
+  BlueSpark,
+  Casing,
+  MissileTrail,
+  MissileFire,
+  WorkerFire,
+  Leaf,
+  Sickness,
+  SpeedBoostTrail,
+  FireballFlame,
+  Volcano
+};
+
+class ExplainerPlayer // the explainer timeline, hosted by the UI framework
 {
 public:
-  void OnMatchStart(const MatchSetupView& _setup);   // seasonal state, team palette
+  static std::expected<ExplainerPlayer, Engine::LoadError> Load(const ExplainerAnimation& _data);
+  void Draw(Engine::DrawContext& _batch, const ExplainerLayout& _layout, double _realNow, const TeamPalette& _roles);
+};
+
+class VfxRuntime // turns the game's snapshot and effect events into calls of the engine runtime above
+{
+public:
+  void OnMatchStart(const MatchSetupView& _setup); // seasonal state, team palette
   void ConsumeTick(std::uint32_t _tick, std::span<const EffectEvent> _events);
-  void Update(const PresentationSnapshot& _snap, const FrameView& _view);
-  void RecordPass(std::string_view _passId, PassContext& _context);   // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
+  void Update(const PresentationSnapshot& _snap, const Engine::FrameView& _view);
+  void RecordPass(std::string_view _passId, Engine::PassContext& _context); // pass-table ids of 7b, 7d, 8, 10a, 11, 14, 15, 16
   void OnMatchEnd();
 };
 
-} // namespace Engine
+} // namespace Species
 ```
 
 **Events.** The component consumes the effect events of every tick ([particles](particles_shatter_and_screen_effects.md) table 4.7-A) and the route-highlight request of the renderer (RND-350), which it serves through the particle pool. It raises these presentation events for the audio engine: the spider footstep at every foot plant (R-UNIT-578) and the thrown weapon's fuse blink once per second of its age (R-CRATE-414). It raises no event that the simulation reads.

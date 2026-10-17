@@ -17,17 +17,17 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 
 ## Document map
 
-221 documents, 8793 KB in total. Sizes include every file of a folder.
+221 documents, 8600 KB in total. Sizes include every file of a folder.
 
 | Area | Files | Size |
 |---|---|---|
 | [Reference mechanics](reference/README.md) | 61 | 3216 KB |
-| [Engine components](architecture/components/README.md) | 42 | 1947 KB |
-| [Architecture decision records](ADR/README.md) | 65 | 488 KB |
+| [Engine components](architecture/components/README.md) | 42 | 1954 KB |
+| [Architecture decision records](ADR/README.md) | 65 | 492 KB |
 | [Decision register](decisions/README.md) | 16 | 597 KB |
-| [Assets](assets/README.md) | 4 | 1176 KB |
+| [Assets](assets/README.md) | 4 | 972 KB |
 | [Glossary](glossary/README.md) | 3 | 190 KB |
-| [Requirements index pages](requirements_index/README.md) | 27 | 1097 KB |
+| [Requirements index pages](requirements_index/README.md) | 27 | 1098 KB |
 
 ### Reference mechanics
 
@@ -51,18 +51,18 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 
 | Component | Files | Size |
 |---|---|---|
-| [Animation and VFX](architecture/components/animation_and_vfx/README.md) | 3 | 163 KB |
+| [Animation and VFX](architecture/components/animation_and_vfx/README.md) | 3 | 165 KB |
 | [Asset pipeline and resources](architecture/components/asset_pipeline_and_resources.md) | 1 | 112 KB |
-| [Audio engine](architecture/components/audio_engine/README.md) | 3 | 123 KB |
+| [Audio engine](architecture/components/audio_engine/README.md) | 3 | 124 KB |
 | [Build tooling and distribution](architecture/components/build_tooling_and_distribution.md) | 1 | 115 KB |
-| [Camera and sequences](architecture/components/camera_and_sequences.md) | 1 | 76 KB |
+| [Camera and sequences](architecture/components/camera_and_sequences.md) | 1 | 77 KB |
 | [Data schemas](architecture/components/data_schemas/README.md) | 7 | 254 KB |
 | [Diagnostics, test and performance](architecture/components/diagnostics_test_and_performance/README.md) | 5 | 140 KB |
 | [Input](architecture/components/input/README.md) | 4 | 127 KB |
 | [Platform layer](architecture/components/platform_layer.md) | 1 | 113 KB |
-| [Renderer](architecture/components/renderer/README.md) | 8 | 304 KB |
+| [Renderer](architecture/components/renderer/README.md) | 8 | 307 KB |
 | [Terrain](architecture/components/terrain/README.md) | 3 | 122 KB |
-| [UI framework](architecture/components/ui_framework/README.md) | 4 | 295 KB |
+| [UI framework](architecture/components/ui_framework/README.md) | 4 | 297 KB |
 
 ## Ids in brief
 
@@ -72,7 +72,7 @@ How the code is written and built (naming, the MSBuild solution, the dependency 
 | Tuning key | `ref.unit.worker.move_speed`, `ter.generator.octaves` | the tuning table of the owning document | 3710 |
 | Decision | `DEC-NNN`, Open, Resolved or Dropped | [decisions/](decisions/README.md) | 301 (148 Open, 126 Resolved, 27 Dropped) |
 | Architecture decision | `ADR-NNN` (MADR 4) | [ADR/](ADR/README.md) | 64 (45 Accepted, 18 Proposed, 1 Rejected) |
-| Asset | `sprite.worker.front`, `sfx.unit.builder.presence_loop` | [assets/asset_manifest.csv](assets/asset_manifest.csv) | 453 ids, 1412 files |
+| Asset | `sprite.worker.front`, `sfx.unit.builder.presence_loop` | [assets/asset_manifest.csv](assets/asset_manifest.csv) | 452 ids, 1411 files |
 | String id | `ui.lobby.ready`, `unit.worker.name` | the string tables of [assets/](assets/GameAssets.md) | listed in GameAssets §18.1 |
 
 Ids are stable: they are never renumbered or reused, and the design phase cites them when it adopts, adapts or drops a rule.
@@ -85,12 +85,12 @@ The design gates (`python3 Tools/DesignCheck/CheckDesign.py Design` from the rep
 |---|---|---|---|
 | 1 Hard-fail patterns | PASS | 0 | 0 hard-fail hits |
 | 2 Soft-flag patterns | PASS | 0 | 43 soft hits, 43 allowed by CONVENTIONS §9, 0 not allowed |
-| 3 Links and anchors | PASS | 0 | 13266 relative links checked |
+| 3 Links and anchors | PASS | 0 | 13361 relative links checked |
 | 4 Mermaid | PASS | 0 | blocks=266 failed=0 |
-| 5 Requirement ids | PASS | 0 | 4942 requirement ids defined, 28352 citations, 25 prefixes registered |
+| 5 Requirement ids | PASS | 0 | 4942 requirement ids defined, 28432 citations, 25 prefixes registered |
 | 6 DEC and ADR references | PASS | 0 | 301 DECs (148 Open, 148 of them cited by a requirement), 64 ADRs |
-| 7 Asset closure | PASS | 0 | 453 asset ids (1412 manifest rows), 2622 asset citations in reference and component documents |
+| 7 Asset closure | PASS | 0 | 452 asset ids (1411 manifest rows), 2622 asset citations in reference and component documents |
 | 8 Tuning keys | PASS | 0 | 3710 tuning keys, 0 cited by no requirement |
 | 9 Truncation words | PASS | 0 | 0 truncation words |
-| 10 Sizes, READMEs, templates | PASS | 0 | 219 documents, 83 checked for template headings |
+| 10 Sizes, READMEs, templates | PASS | 0 | 221 documents, 83 checked for template headings |
 | 11 Requirements index | PASS | 0 | REQUIREMENTS_INDEX.md and 26 index pages written (largest 100 KB) |

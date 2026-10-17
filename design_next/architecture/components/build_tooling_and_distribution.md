@@ -90,7 +90,7 @@ Table 2.1-B Inputs that select a build.
 | `Configuration` | `Debug`, `Release` | the developer, CI (`Debug` only) or the release procedure | the configuration of table 2.1-A |
 | `Platform` | `x64` | always | the only platform |
 | `/t:<ProjectName>` | a project of the solution, or none | the developer | builds that project and what it references; none builds the whole solution |
-| `EngineBuildNumber` | an integer from 0 to `bld.version.part_max` | the CI service, once the workflow passes it (ADR-070); 0 in developer builds | the CI build number of the build identity (§4.4) |
+| `EngineBuildNumber` | an integer from 0 to `bld.version.part_max` | CI, which passes `/p:EngineBuildNumber=${{ github.run_number }}` (ADR-070); 0 in a local build | the CI build number of the build identity (§4.4) |
 
 Table 2.1-C Build commands, from the repository root.
 

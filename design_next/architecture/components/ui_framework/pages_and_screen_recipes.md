@@ -45,10 +45,65 @@ The pointer capture, the repeat timers, the batched draw, the text service, the 
 
 ## 2 Interfaces
 
-C++23 interface sketch (declarations only). Every type is in namespace `Engine`; `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
+C++23 interface sketch (declarations only). The navigation enumerations, the widget builder and the tool-window recipe are engine code in namespace `Engine`. The page ids of the front-end screen name game concepts (the modes, the tutorials, the match setup, the achievements), and the HUD panels read the match's presentation state, so the page ids, the page framework that is typed by them, the front-end screen and the HUD panel recipe are game-layer code in `Species`, built on the engine's UI types (`AGENTS.md` R9). `UiCore`, `UiWindow`, `UiWidget`, `PanelId`, `WidgetId`, `PointF`, `RectF`, `StringId` and `DrawContext` are those of [core_and_widgets.md](core_and_widgets.md) §2.
 
 ```cpp
 namespace Engine
+{
+
+enum class NavOp : std::uint8_t // UI-331
+{
+  Push,
+  Pop,
+  Replace,
+  UnwindTo,
+  Rebuild
+};
+enum class TransitionDirection : std::int8_t
+{
+  Backward = -1,
+  None = 0,
+  Forward = 1
+};
+
+enum class EnterOutcome : std::uint8_t // UI-362
+{
+  Built,
+  Waiting,
+  Redirect
+};
+
+enum class FillBoxes : std::uint8_t // UI-323
+{
+  LeftOnly,
+  LeftAndRight,
+  TitleWidth
+};
+
+class WidgetBuilder; // builds widgets from a layout record (UI-370)
+
+// Recipe A (UI-430).
+class ToolWindow : public UiWindow
+{
+public:
+  virtual void Build(WidgetBuilder& _builder) = 0; // runs when opened and when the widget set changes
+  virtual void OnClose() {}                        // teardown side effects
+};
+struct ToolPlacement
+{
+  float width = 0;
+  float height = 0;
+  PointF position{};
+  PanelId parent{};
+};
+template <class Tool, class... Args>
+PanelId OpenToolOnce(UiCore& _ui, const ToolPlacement& _placement, Args&&... _args); // no second instance
+template <class Tool> bool CloseTool(UiCore& _ui);
+[[nodiscard]] StringId ToolString(std::string_view _item); // the tool's string id ui.debug.<tool>.<item>
+
+} // namespace Engine
+
+namespace Species
 {
 
 // Page ids of the front-end screen (UI-320). The order of the enumerators carries no meaning.
@@ -75,49 +130,20 @@ enum class PageId : std::uint8_t
   Leaderboard
 };
 
-enum class NavOp : std::uint8_t // UI-331
-{
-  Push,
-  Pop,
-  Replace,
-  UnwindTo,
-  Rebuild
-};
-enum class TransitionDirection : std::int8_t
-{
-  Backward = -1,
-  None = 0,
-  Forward = 1
-};
-
 struct NavRequest // UI-350
 {
-  NavOp op = NavOp::Push;
+  Engine::NavOp op = Engine::NavOp::Push;
   PageId target = PageId::Title; // ignored by Pop and Rebuild
 };
 
-enum class EnterOutcome : std::uint8_t // UI-362
-{
-  Built,
-  Waiting,
-  Redirect
-};
 struct EnterResult
 {
-  EnterOutcome outcome = EnterOutcome::Built;
+  Engine::EnterOutcome outcome = Engine::EnterOutcome::Built;
   PageId redirectTo = PageId::Title;
-};
-
-enum class FillBoxes : std::uint8_t // UI-323
-{
-  LeftOnly,
-  LeftAndRight,
-  TitleWidth
 };
 
 class PageContext;       // UI-311
 class FrontEndViewModel; // UI-334
-class WidgetBuilder;     // builds widgets from a layout record (UI-370)
 class HudContext;        // a HUD panel's view of the presentation state (UI-460)
 
 class FrontEndPage // one per page id; built from its layout record (UI-323)
@@ -125,11 +151,11 @@ class FrontEndPage // one per page id; built from its layout record (UI-323)
 public:
   virtual ~FrontEndPage() = default;
   [[nodiscard]] virtual PageId Id() const noexcept = 0;
-  [[nodiscard]] virtual EnterResult OnEnter(PageContext& _context, PageId _from) = 0; // UI-361
-  virtual void OnUpdate(PageContext& _context) {}                                     // UI-352
-  virtual void OnLeave(PageContext& _context, PageId _to) {}                          // UI-361
-  [[nodiscard]] virtual std::optional<NavRequest> OnBack(PageContext& _context);      // default: Pop (UI-383)
-  virtual void DrawOverlay(const PageContext& _context, DrawContext& _out) const {}   // UI-392
+  [[nodiscard]] virtual EnterResult OnEnter(PageContext& _context, PageId _from) = 0;       // UI-361
+  virtual void OnUpdate(PageContext& _context) {}                                           // UI-352
+  virtual void OnLeave(PageContext& _context, PageId _to) {}                                // UI-361
+  [[nodiscard]] virtual std::optional<NavRequest> OnBack(PageContext& _context);            // default: Pop (UI-383)
+  virtual void DrawOverlay(const PageContext& _context, Engine::DrawContext& _out) const {} // UI-392
 };
 
 class PageHost // owned by the front-end screen (UI-330)
@@ -144,44 +170,25 @@ public:
   [[nodiscard]] bool NavigationLocked() const noexcept;
 };
 
-class FrontEndScreen final : public UiWindow // the one full-screen window of the front end
+class FrontEndScreen final : public Engine::UiWindow // the one full-screen window of the front end
 {
 public:
   [[nodiscard]] PageHost& Pages() noexcept;
-  [[nodiscard]] FrontEndViewModel& Model() noexcept;           // UI-334
-  void Update() override;                                      // the per-frame order of UI-352
-  void Draw(DrawContext& _out, bool _hasFocus) const override; // UI-337
+  [[nodiscard]] FrontEndViewModel& Model() noexcept;                   // UI-334
+  void Update() override;                                              // the per-frame order of UI-352
+  void Draw(Engine::DrawContext& _out, bool _hasFocus) const override; // UI-337
 };
-
-// Recipe A (UI-430).
-class ToolWindow : public UiWindow
-{
-public:
-  virtual void Build(WidgetBuilder& _builder) = 0; // runs when opened and when the widget set changes
-  virtual void OnClose() {}                        // teardown side effects
-};
-struct ToolPlacement
-{
-  float width = 0;
-  float height = 0;
-  PointF position{};
-  PanelId parent{};
-};
-template <class Tool, class... Args>
-PanelId OpenToolOnce(UiCore& _ui, const ToolPlacement& _placement, Args&&... _args); // no second instance
-template <class Tool> bool CloseTool(UiCore& _ui);
-[[nodiscard]] StringId ToolString(std::string_view _item); // the tool's string id ui.debug.<tool>.<item>
 
 // Recipe D (UI-460).
 class HudPanel
 {
 public:
   virtual ~HudPanel() = default;
-  virtual void Advance(HudContext& _context) = 0; // update phase: view-model and screen zones (UI-461)
-  virtual void Draw(DrawContext& _out) const = 0; // reads only what Advance left
+  virtual void Advance(HudContext& _context) = 0;         // update phase: view-model and screen zones (UI-461)
+  virtual void Draw(Engine::DrawContext& _out) const = 0; // reads only what Advance left
 };
 
-} // namespace Engine
+} // namespace Species
 ```
 
 **UI-310** (MUST) The page host is the only way to change the page of the front-end screen. Widgets, page hooks, the front-end controller and session events all call `PageHost::Request`; nothing writes the current page directly.
@@ -283,7 +290,7 @@ A page id appears on the stack at most once: a Push or a Replace whose target is
 
 **UI-340** (MUST) The pages are built from the front-end widget family of [core_and_widgets.md](core_and_widgets.md) (page buttons, Back and close buttons, page titles, page drop-downs, page text fields with their increment glyphs, page check boxes) and from the front-end widget kinds of table 3.3-A. Each kind is a subtype of the standard button or of a page button, as the table says; a page button's action (its target page, its stack operation and any view-model change) is data of its layout entry, executed by the page's view-model, not a subtype per action.
 
-Table 3.3-A — the front-end widget kinds. "Base" is the base type of [core_and_widgets.md](core_and_widgets.md); "Pages" names where the kind appears.
+Table 3.3-A — the front-end widget kinds. "Base" is the base type of [core_and_widgets.md](core_and_widgets.md); "Pages" names where the kind appears. The kinds that show a mode, a team colour or side, or a team slot (`ModeDescription`, `ModePicture`, `ColorPickerRow`, `ModeRow`, `LobbySlotRow`, `SlotOpenControl`) are game code in `Species`; the others are engine code in `Engine` (`AGENTS.md` R9).
 
 | Kind | Base | Pages | Purpose | Rules |
 |---|---|---|---|---|

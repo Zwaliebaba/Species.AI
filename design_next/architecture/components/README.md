@@ -2,7 +2,7 @@
 
 > Status: Engine baseline · Index of the component specifications · Related: [Architecture](../README.md) · [Architecture decision records](../../ADR/README.md) · [Reference mechanics](../../reference/README.md)
 
-Each component specification states what the component owns and must not do, its C++23 interface sketch, data model, numbered requirements, concurrency and performance budget, failure modes and diagnostics, acceptance tests, and the open decisions and design-phase inputs that concern it. Components cite the reference requirements they serve and the ADRs that decide their technology, and never contradict an ADR.
+Each component specification states what the component owns and must not do, its C++23 interface sketch, data model, numbered requirements, concurrency and performance budget, failure modes and diagnostics, acceptance tests, and the open decisions and design-phase inputs that concern it. Components cite the reference requirements they serve and the ADRs that decide their technology, and never contradict an ADR. What a component specifies is engine code in namespace `Engine`, except a type that has to know a game concept by name, such as the renderers of game objects, the match camera or the page catalogue of the front end: that is game-layer code in `Species`, whichever component describes it, built on the generic engine types (`AGENTS.md` R9; [conventions](../../CONVENTIONS.md#8-naming) §8).
 
 | Component | Prefix | Scope |
 |---|---|---|
@@ -16,5 +16,5 @@ Each component specification states what the component owns and must not do, its
 | [Camera and sequences](camera_and_sequences.md) | `CAM` | the camera rig, view state, timelines and scripted sequences |
 | [Data schemas](data_schemas/README.md) | `DAT` | the schema language and every authored and cooked record family |
 | [Platform layer](platform_layer.md) | `PLT` | process lifecycle, window, clock, user data, settings store, crash path and system services |
-| [Build tooling and distribution](build_tooling_and_distribution.md) | `BLD` | toolchain, build presets, content build, editions, CI, packaging and crash symbols |
+| [Build tooling and distribution](build_tooling_and_distribution.md) | `BLD` | toolchain, the solutions and their configurations, content build, editions, CI, packaging and crash symbols |
 | [Diagnostics, test and performance](diagnostics_test_and_performance/README.md) | `DBG` | logging, the black box, profiling, development overlays and commands, soak and performance tests |

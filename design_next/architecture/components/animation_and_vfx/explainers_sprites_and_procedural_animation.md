@@ -12,7 +12,7 @@ This document specifies the explainer player, the conventions of sprite cards an
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation.
+The interface below is a C++23 declaration sketch, not an implementation. The foot states and the leg tuning of the procedural legs are engine code in namespace `Engine`. The animator reads the game's presentation snapshot and draws game objects (actors, Crawler strips, cloth flags), so it is game-layer presentation code in `Species`, built on the engine's clocks, instance writer and pass context (`AGENTS.md` R9).
 
 ```cpp
 namespace Engine
@@ -20,10 +20,12 @@ namespace Engine
 
 enum class FootState : std::uint8_t
 {
-  OnGround, Swinging, Pouncing
+  OnGround,
+  Swinging,
+  Pouncing
 };
 
-struct LegTuning   // from the active SpiderGait
+struct LegTuning // from the active gait of the creature (SpiderGait)
 {
   float lift;
   float idealSlope;
@@ -31,18 +33,23 @@ struct LegTuning   // from the active SpiderGait
   float lookAhead;
 };
 
+} // namespace Engine
+
+namespace Species
+{
+
 class ProceduralAnimator
 {
 public:
-  void Update(const PresentationSnapshot& _snap, const PresentationTime& _now);       // flicker, legs, cloth
-  void WriteActorInstances(std::string_view _passId, InstanceWriter& _out) const;     // 7a, 7b, 7d bodies and overlays
-  void WriteCrawlerStrips(InstanceWriter& _out) const;                                // pass 7c (RND-319)
-  void RecordClothFlags(std::string_view _passId, PassContext& _context) const;       // 7b, 8, 16
-  [[nodiscard]] std::optional<float> PickClothFlag(const Ray& _ray, SimObjectId _owner) const;   // local picking
+  void Update(const PresentationSnapshot& _snap, const Engine::PresentationTime& _now);                // flicker, legs, cloth
+  void WriteActorInstances(std::string_view _passId, Engine::InstanceWriter& _out) const;              // 7a, 7b, 7d bodies and overlays
+  void WriteCrawlerStrips(Engine::InstanceWriter& _out) const;                                         // pass 7c (RND-319)
+  void RecordClothFlags(std::string_view _passId, Engine::PassContext& _context) const;                // 7b, 8, 16
+  [[nodiscard]] std::optional<float> PickClothFlag(const Engine::Ray& _ray, SimObjectId _owner) const; // local picking
   [[nodiscard]] bool Flickering(SimObjectId _object) const;
 };
 
-} // namespace Engine
+} // namespace Species
 ```
 
 **Events.** The animator raises the spider footstep presentation event at each foot plant (R-UNIT-578). The explainer player raises none.

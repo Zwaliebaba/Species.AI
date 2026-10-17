@@ -35,8 +35,8 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 * **Threads:** every thread is created through the platform layer, which names it, so dumps show thread names.
 * **GPU faults:** the device-removal path of [ADR-008](ADR-008-gpu-memory-uploads-and-device-removal.md) adds its DRED data to the same report.
 * **Collection:** reports reach the publisher through the Windows Desktop Application Program in Partner Center (free; requires the code signing of [ADR-073](ADR-073-code-signing.md)), or through the Partner Center health report for a Store package. Collection follows the player's Windows diagnostic-data settings; the client uploads nothing itself.
-* **Symbols:** every CI build publishes its PDBs and binaries to a private symbol store keyed by the build identity; release builds also upload symbols to Partner Center. Executables carry accurate `VERSIONINFO`.
-* **Development and QA:** a CI-provided registry file enables WER `LocalDumps` for the Species executables on test machines (custom dumps with data segments and thread data).
+* **Symbols:** every Release build that the release procedure packages publishes its PE files and PDBs to a private symbol store keyed by the build identity and uploads its symbols to Partner Center. CI builds publish symbols only once the symbol job that an amendment of [ADR-070](ADR-070-continuous-integration.md) adds exists; until then the workflow uploads the build log and the test results only. Executables carry accurate `VERSIONINFO`.
+* **Development and QA:** a registry file that the build provides with every build output enables WER `LocalDumps` for the Species executables on test machines (custom dumps with data segments and thread data).
 * **Rule for any later uploader** (for example for a dedicated server): explicit opt-in, HTTPS only, no credentials in the binary or in the report.
 * **Dedicated server:** the dedicated server is a Windows build ([ADR-051](ADR-051-windows-toolchain-and-compiler-policy.md)), so WER with the same registered context covers it; where its reports go is a design-phase decision together with server operations. A crash path for another server operating system needs a later ADR.
 
@@ -50,7 +50,7 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 ### Confirmation
 
 * A test build exposes debug commands that crash on the main thread, on a worker thread, through `std::terminate` and through a hang; QA checks that each produces a dump with the registered files and black box.
-* CI checks that every distributed PE file has symbols in the symbol store before a release is published.
+* The release procedure checks that every distributed PE file has symbols in the symbol store before a release is published.
 * A test scans a captured dump for the strings of a seeded chat message and account token and expects none.
 
 ## Pros and Cons of the Options
@@ -76,3 +76,4 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 * Components: the platform layer (`PLT`) owns the crash path (the terminate, invalid-parameter and pure-call handlers, the WER registrations, the exclusions and thread naming); build tooling and distribution (`BLD`) owns the symbols, signatures, version resources and the test-machine `LocalDumps` settings; diagnostics, test and performance (`DBG`) owns the black box and the crash debug commands.
 * **Amendment 2026-10-17 (AGENTS.md, O21).** The dedicated server is a Windows build, so WER covers it too; a third-party crash SDK is excluded by `AGENTS.md` R14.
 * **Amendment 2026-10-17.** The crash path is the platform layer's (PLT-118 to PLT-125), as the build tooling (BLD-004) and diagnostics components state; the system summary and the crash context hold no Windows user name and write paths relative to placeholders (PLT-035, PLT-125).
+* **Amendment 2026-10-17 (`build.yml`, `AGENTS.md` §6).** CI builds `Debug|x64` only and uploads the build log and the test results only, so publishing symbols is a step of the release procedure of the build tooling (BLD-111, BLD-122): every Release build that it packages publishes its PE files and PDBs to the symbol store and to Partner Center, and CI builds join once the symbol job of an ADR-070 amendment exists (BLD table 4.9-B). The symbol check before a release is a release-procedure check, and the test-machine `LocalDumps` registry file comes with every build output (BLD-113).

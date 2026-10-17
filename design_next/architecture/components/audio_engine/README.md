@@ -54,6 +54,8 @@ The reference engine has the same separation, with interchangeable device back-e
 
 ### 2.1 Interface sketch
 
+Everything in the sketch is engine code in namespace `Engine` (`AGENTS.md` R9). The audio design's game concepts reach it only as engine values: presentation code passes the simulation's object handle (`SimObjectId`) as an emitter id (`EmitterId`) and a team as an audience group (`AudienceGroup`), and the audiences, links and match phases are named for what the engine compares and counts.
+
 ```cpp
 namespace Engine
 {
@@ -76,7 +78,7 @@ enum class SoundLoop : std::uint8_t
 };
 enum class SoundAudience : std::uint8_t
 {
-  All, OwnTeam, Enemy, NoTeam   // [all, own, enemy, none]
+  All, OwnGroup, OtherGroup, NoGroup   // [all, own, enemy, none]
 };
 enum class SoundParamKind : std::uint8_t
 {
@@ -88,7 +90,7 @@ enum class SoundParamUpdate : std::uint8_t
 };
 enum class SoundLink : std::uint8_t
 {
-  None, Height, PosX, Altitude, PosZ, Speed, CameraDistance, ObjectAge, TeamsNearby, TimeRemaining, UnitCount
+  None, Height, PosX, Altitude, PosZ, Speed, CameraDistance, ObjectAge, GroupsNearby, TimeRemaining, ObjectsNearby
 };
 enum class EnvelopeStage : std::uint8_t
 {
@@ -115,7 +117,16 @@ enum class StopMatch : std::uint8_t
 };
 enum class MatchPhase : std::uint8_t
 {
-  NoMatch, Grace, Running, Ended
+  NoMatch, Countdown, Running, Ended   // Countdown: the match's grace period (R-AUD-303)
+};
+
+struct EmitterId   // the simulation's object handle as the engine names an emitter; EmitterId{} = no emitter
+{
+  std::uint64_t value = 0;
+};
+struct AudienceGroup   // the group that an audience compares; presentation code passes the team
+{
+  std::uint8_t value = 0;
 };
 
 struct SoundVoiceId   // generation 0 = invalid
@@ -126,18 +137,18 @@ struct SoundVoiceId   // generation 0 = invalid
 
 struct TriggerCommand   // AEN-130
 {
-  SourceId source;              // the full id is <source>.<event>
+  SourceId source;                      // the full id is <source>.<event>
   EventId event;
-  SimObjectId emitter;          // invalid = no emitter
-  std::optional<TeamId> team;   // nullopt = no team (R-AUD-025)
-  Vec3 position;                // world frame, wu
-  Vec3 velocity;                // wu/s
-  Seconds issueTime;            // audio clock at issue (AEN-024)
+  EmitterId emitter;                    // EmitterId{} = no emitter
+  std::optional<AudienceGroup> group;   // nullopt = no team (R-AUD-025)
+  Vec3 position;                        // world frame, wu
+  Vec3 velocity;                        // wu/s
+  Seconds issueTime;                    // audio clock at issue (AEN-024)
 };
 
 struct StopCommand
 {
-  SimObjectId emitter;
+  EmitterId emitter;
   StopMatch match;
   SourceId source;
   EventId event;
@@ -146,14 +157,14 @@ struct StopCommand
 
 struct EmitterUpdate   // AEN-041
 {
-  SimObjectId emitter;
+  EmitterId emitter;
   bool present;
   Vec3 position;
   Vec3 velocity;
   float heightAboveTerrain;
   float age;
-  std::uint16_t teamsNearby;
-  std::uint16_t unitCount;
+  std::uint16_t groupsNearby;
+  std::uint16_t objectsNearby;
 };
 
 struct ListenerUpdate
@@ -168,7 +179,7 @@ struct ListenerUpdate
 struct MatchState
 {
   MatchPhase phase;
-  std::optional<TeamId> localTeam;
+  std::optional<AudienceGroup> localGroup;
   float gameSpeed;
   float timeRemaining;
 };
@@ -181,7 +192,7 @@ public:
   bool UpdateEmitters(std::span<const EmitterUpdate> _updates);
   bool SetListener(const ListenerUpdate& _listener);
   bool SetMatchState(const MatchState& _state);
-  bool BeginMatch(TeamId _localTeam);           // per-match state starts (AEN-197)
+  bool BeginMatch(AudienceGroup _localGroup);   // per-match state starts (AEN-197)
   bool EndMatch();                              // per-match state discarded
   bool SetLoadingView(bool _shown);             // AEN-111
   bool SetMasterVolume(std::uint8_t _step);     // 0 to ref.meta.options.sound.volume_max
@@ -190,8 +201,8 @@ public:
   bool SetEffectsEnabled(bool _on);             // AEN-221
   bool LoadBank(BankId _bank);
   bool ReleaseBank(BankId _bank);
-  bool QueryCount(RequestId _request, SimObjectId _emitter, EventId _event);   // invalid emitter = any emitter
-  bool QueryPlaying(RequestId _request, SimObjectId _emitter);
+  bool QueryCount(RequestId _request, EmitterId _emitter, EventId _event);   // EmitterId{} = any emitter
+  bool QueryPlaying(RequestId _request, EmitterId _emitter);
   bool Pause();
   bool Resume();
   bool RestartDevice();                         // AEN-259
@@ -323,7 +334,7 @@ public:
 | `AudioBusGraph` | 2 | the submix voices of §4.16 | `VoiceBackend` |
 | `CommandWriter`, `AudioResult` | — | the queues of §2.2 | the engine; process lifetime |
 
-**AEN-061** (MUST) The engine holds no simulation object pointer. Emitters are named only by `SimObjectId`, and their state is the latest `EmitterUpdate` the engine has received (AEN-041).
+**AEN-061** (MUST) The engine holds no simulation object pointer. Emitters are named only by `EmitterId`, the engine form of the simulation's object handle (`SimObjectId`) that presentation code passes (`AGENTS.md` R9), and their state is the latest `EmitterUpdate` the engine has received (AEN-041).
 
 ### 3.2 Layer data used by the engine
 

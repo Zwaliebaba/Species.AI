@@ -54,21 +54,11 @@ Table 1-A Neighbours and contracts.
 
 ### 2.1 Interface sketch
 
+The camera records, the frame output, the pick ray and the timeline records are engine code in namespace `Engine`. The match camera, its modes and frame inputs and the timeline player know game concepts by name (the Beam Dish and turret aim modes, the structure focus, the local team, the presentation snapshot), so they are game-layer code in `Species`, built on those engine types (`AGENTS.md` R9).
+
 ```cpp
 namespace Engine
 {
-
-enum class CameraMode : std::uint8_t // the order carries no meaning
-{
-  Static,
-  ScriptedMove,
-  FreeMovement,
-  Tracking,
-  BeamDishAim,
-  TurretAim,
-  StructureFocus,
-  DeveloperFly
-};
 
 enum class CameraTransition : std::uint8_t // authoring order only
 {
@@ -110,17 +100,6 @@ struct MapCameraData // built once at match entry (CAM-014)
   float worldSizeX;                                   // wu
 };
 
-struct CameraFrameInputs
-{
-  double realNow;                       // platform clock, seconds (ADR-074)
-  const PresentationSnapshot* snapshot; // DEC-222; null without a match world
-  float extrapolationSeconds;           // R-SIM-560
-  const InputRouter* input;             // actions, pointer, input mode
-  bool uiWindowOpen;
-  bool editing;                // the map-editor loop runs
-  const TerrainField* terrain; // height queries; null without terrain
-};
-
 struct CameraFrameOutput // read by the renderer, the listener and the overlays
 {
   CameraPose pose;   // the stored pose with the shake offset applied (CAM-012)
@@ -132,43 +111,6 @@ struct PickRay // origin on the near plane; unit direction
 {
   Vec3 origin;
   Vec3 direction;
-};
-
-class MatchCamera
-{
-public:
-  // Lifecycle (§4.7)
-  void EnterMatch(const MapCameraData& _map, bool _editing);
-  void OnLocalTeamKnown(std::uint8_t _startPosition);
-  void LeaveMatch();
-
-  // Per frame (§4.1): frame thread, once per rendered frame while the window has focus
-  void Advance(const CameraFrameInputs& _in);
-  [[nodiscard]] CameraFrameOutput FrameOutput(const ShakeOffset& _shake) const;
-
-  // Targets and scripted operations (§4.3 to §4.6)
-  bool SetTargetView(std::string_view _name);                    // without regard to case; previous_view
-  void SetTargetPose(const Vec3& _position, const Vec3& _front); // up: the level up vector
-  void SetTargetPose(const CameraPose& _pose);
-  void SetTargetAround(const Vec3& _focus, float _distance, float _height);
-  void Cut();
-  void StartMove(float _durationSeconds);
-  void FocusStructure(SimObjectId _structure, float _range, float _height);
-  void EnterMode(CameraMode _mode);
-  void ReleaseToPlayer();                    // stops an animation, enters free movement
-  void SetFieldOfView(float _degrees);       // at once
-  void SetTargetFieldOfView(float _degrees); // eased by the zoom component (R-CTRL-460)
-
-  // Camera animations (§4.8)
-  bool PlayCameraAnimation(std::string_view _name);
-  void StopCameraAnimation();
-  [[nodiscard]] bool IsBusy() const; // an animation plays or a scripted move runs
-
-  // Picking and projection (§4.10)
-  [[nodiscard]] PickRay PickRayAt(Vec2 _pointerPixels, const FrameView& _view) const;
-  [[nodiscard]] Mat4 ViewProjectionFor(const CameraPose& _pose, const FrameView& _view) const;
-
-  [[nodiscard]] const CameraState& State() const; // read-only: overlays and tests
 };
 
 enum class TimelineOp : std::uint8_t // the closed set of table 3.3-A, in its order
@@ -203,16 +145,81 @@ struct PresentationTimeline
   std::vector<TimelineStatement> statements;
 };
 
+} // namespace Engine
+
+namespace Species
+{
+
+enum class CameraMode : std::uint8_t // the order carries no meaning
+{
+  Static,
+  ScriptedMove,
+  FreeMovement,
+  Tracking,
+  BeamDishAim,
+  TurretAim,
+  StructureFocus,
+  DeveloperFly
+};
+
+struct CameraFrameInputs
+{
+  double realNow;                       // platform clock, seconds (ADR-074)
+  const PresentationSnapshot* snapshot; // DEC-222; null without a match world
+  float extrapolationSeconds;           // R-SIM-560
+  const Engine::InputRouter* input;     // actions, pointer, input mode
+  bool uiWindowOpen;
+  bool editing;                        // the map-editor loop runs
+  const Engine::TerrainField* terrain; // height queries; null without terrain
+};
+
+class MatchCamera
+{
+public:
+  // Lifecycle (§4.7)
+  void EnterMatch(const Engine::MapCameraData& _map, bool _editing);
+  void OnLocalTeamKnown(std::uint8_t _startPosition);
+  void LeaveMatch();
+
+  // Per frame (§4.1): frame thread, once per rendered frame while the window has focus
+  void Advance(const CameraFrameInputs& _in);
+  [[nodiscard]] Engine::CameraFrameOutput FrameOutput(const Engine::ShakeOffset& _shake) const;
+
+  // Targets and scripted operations (§4.3 to §4.6)
+  bool SetTargetView(std::string_view _name);                                    // without regard to case; previous_view
+  void SetTargetPose(const Engine::Vec3& _position, const Engine::Vec3& _front); // up: the level up vector
+  void SetTargetPose(const Engine::CameraPose& _pose);
+  void SetTargetAround(const Engine::Vec3& _focus, float _distance, float _height);
+  void Cut();
+  void StartMove(float _durationSeconds);
+  void FocusStructure(SimObjectId _structure, float _range, float _height);
+  void EnterMode(CameraMode _mode);
+  void ReleaseToPlayer();                    // stops an animation, enters free movement
+  void SetFieldOfView(float _degrees);       // at once
+  void SetTargetFieldOfView(float _degrees); // eased by the zoom component (R-CTRL-460)
+
+  // Camera animations (§4.8)
+  bool PlayCameraAnimation(std::string_view _name);
+  void StopCameraAnimation();
+  [[nodiscard]] bool IsBusy() const; // an animation plays or a scripted move runs
+
+  // Picking and projection (§4.10)
+  [[nodiscard]] Engine::PickRay PickRayAt(Engine::Vec2 _pointerPixels, const Engine::FrameView& _view) const;
+  [[nodiscard]] Engine::Mat4 ViewProjectionFor(const Engine::CameraPose& _pose, const Engine::FrameView& _view) const;
+
+  [[nodiscard]] const CameraState& State() const; // read-only: overlays and tests
+};
+
 class TimelinePlayer
 {
 public:
-  void Start(const PresentationTimeline& _timeline);                  // CAM-108
+  void Start(const Engine::PresentationTimeline& _timeline);          // CAM-108
   void Advance(const TimelineFrameInputs& _in, MatchCamera& _camera); // before the camera (CAM-103)
   void Abort();                                                       // CAM-106
   [[nodiscard]] bool IsRunning() const;
 };
 
-} // namespace Engine
+} // namespace Species
 ```
 
 ### 2.2 Threading contract, inputs and outputs
