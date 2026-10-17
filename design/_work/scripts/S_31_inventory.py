@@ -125,7 +125,26 @@ for p in manifest:
     if p.startswith('docs/') and p not in seen:
         problems.append('docs file missing: ' + p)
 
-print('\n'.join(out))
+SECT = {'§20.T.2': '[20](20_architecture.md)', '§21.C': '[21](21_simulation_and_entity_model.md)',
+        '§29.P.1': '[29](29_data_formats_reference.md)', '§31.1.2': '§7.2', '§31.1.4': '§7.5',
+        '§31.13.2': '§6.4', '§31.4.2': '§5.3', '§31.1.6': '§7.8'}
+AGENT = {'P01': '20', 'P03': '21', 'P05': '02', 'P06': '03', 'P08': '04', 'P09': '06', 'P10': '06',
+         'P11': '23', 'P12': '24', 'P13': '24', 'P15': '22', 'P16': '27', 'P17b': '09', 'P19': '30',
+         'P20': '09', 'X1a': '29', 'X3': '22'}
+DOCNAME = {'20': '20_architecture', '21': '21_simulation_and_entity_model', '02': '02_units_and_entities',
+           '03': '03_buildings_and_world_objects', '04': '04_crates_powerups_and_weapons', '06': '06_player_control_and_input',
+           '23': '23_terrain_and_landscape', '24': '24_rendering', '22': '22_determinism_and_networking',
+           '27': '27_audio_engine', '09': '09_meta_systems', '30': '30_scripting_tutorial_and_cutscenes',
+           '29': '29_data_formats_reference'}
+text = '\n'.join(out)
+for k in sorted(SECT, key=len, reverse=True):
+    text = text.replace(k, SECT[k])
+def agent_sub(m):
+    d = AGENT[m.group(0)]
+    return '[%s](%s.md)' % (d, DOCNAME[d])
+text = re.sub(r'\b(P17b|P0[1-9]|P1[0-9]|P20|X1a|X3)\b(?![_.])', lambda m: agent_sub(m) if m.group(0) in AGENT else m.group(0), text)
+text = text.replace('grammar owned by X1a/[09](09_meta_systems.md)', 'grammar in [29](29_data_formats_reference.md) and [32](32_debug_test_and_performance.md)')
+print(text)
 for p in problems:
     print('PROBLEM:', p, file=sys.stderr)
 print('# rows: root %d targets %d tools %d docs %d; problems %d' % (len(root_rows), len(t_rows), len(tl_rows), len(d_rows), len(problems)), file=sys.stderr)

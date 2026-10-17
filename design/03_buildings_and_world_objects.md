@@ -731,3 +731,670 @@ stateDiagram-v2
 | 8 | searchRadius | float (`iv_atof`) | 500.0 | radius of the region | `%-8.2f` |
 | 9 | maxPopulation | int | 100 | per-team cap inside the region | `%-6d` |
 
+## 5 Contestable utility buildings
+
+### 5.1 GunTurret
+
+Source: `code/worldobject/gunturret.{h,cpp}`. Build tag **[B:FULL]**; the single-player lose-control branch and team-2 remap are [B:LEGACY]; mortar-arc and subversion editor previews are [B:EDITOR].
+
+**Function.** A Darwinian-manned automatic weapon emplacement: a fixed base (`battlecannonbase.shp`, 4 ports) with a rotating turret (`battlecannonturret.shp`) and a barrel model chosen by turret type. It is owned by whichever team mans its ports, automatically engages enemies in range, and can be steered manually by its owner. [C] `GunTurret::GunTurret`, `GunTurret::Advance`.
+
+**Turret types** (`GunTurret::GunTurretType*`, the level-file `state` field) [C] `GunTurret::GetReloadTime`, `GetMinRange`, `GetMaxRange`, `GetTurretTypeName`, `GetTurretModelName`, `PrimaryFire`:
+
+| Value | Type | Name key | MP barrel model | Weapon fired per manned barrel | Reload | Min range MP / SP | Max range MP / SP | Barrels examined per trigger |
+|---|---|---|---|---|---|---|---|---|
+| 0 | Standard | `buildingname_gunturret` | `cannon_bullets.shp` | `Location::FireTurretShell(barrelEnd − v·dt·0.5, v = barrelFront·500, team, turretId)` | 0.1 s | 50 / 100 (`GUNTURRET_MINRANGE` × 0.5 in MP) | 225 / 300 (`GUNTURRET_MAXRANGE` × 0.75 in MP) | 2 |
+| 1 | Rocket | `buildingname_rocketturret` | `cannon_rocket.shp` | `Location::FireRocket(barrelEnd, barrelEnd + barrelFront·500, team, life 1.0, turretId)` | 1.5 s | 100 | 200 | **1** (loop breaks) |
+| 2 | Mortar ("grenade turret") | `buildingname_grenadeturret` | `cannon_bullets.shp` (default branch) | `Location::ThrowWeapon(barrelEnd, pos + targetPos + (syncsfrand(targetRadius), 0, syncsfrand(targetRadius)), Grenade, team, force = targetForce + syncsfrand(0.1), life 1000, explodeOnImpact)` | 4.0 s | area-targeted (getter default 100) | area-targeted (getter default 300) | 2 |
+| 3 | Flame | `buildingname_flameturret` | `cannon_flame.shp` | `Location::LaunchFireball(barrelEnd, barrelFront·100, life 1.0, turretId)` (fireball has no team → hurts everyone) | 0.1 s | 10 | 150 | 2 |
+| 4 | Subversion | `buildingname_subversionturret` | `battlecannonbarrel.shp` | `Location::FireLaser(barrelEnd, barrelFront·500/4 = 125 u/s, team, mindControl = true)` | 0.5 s | 10 | 150 | 2 |
+
+Single-player always uses `battlecannonbarrel.shp`. A Standard turret fires a *subversion* laser instead of a shell from any barrel whose operating Darwinian has `m_subversionTaskId ≠ −1` (per-shot override; the origin of that task id is a crate/task feature, 03-U5). [C] `GunTurret::PrimaryFire`.
+
+Projectile characteristics (owned by [04](04_crates_powerups_and_weapons.md)/[02](02_units_and_entities.md); summarised) [C] `code/location.cpp:FireTurretShell`, `code/worldobject/weapons.cpp`:
+
+| Weapon | Speed | Lifetime | Damage model |
+|---|---|---|---|
+| TurretShell | 500 u/s straight | 0.6 s in MP (≈ 300 u); Darwinia 0.5/0.5/1.0/1.5/2.0 s by armour research 0–4 | each enemy entity whose `RayHit` intersects the swept segment: `ChangeHealth(−15, DamageTypeTurretShell)`, knock-back 20 u/s + airborne; Tree/AntHill/Triffid buildings −2; kills credited to the turret (`RegisterKill`) and team; MP shell team = turret team |
+| Rocket | starts 50 u/s, ×1.2 per tick until ≥ 150 | 1.0 s or ground/building contact | `Bang(pos, 15, 25, team, turretId)` |
+| Grenade (mortar) | ballistic, level `force` | explodes on impact (life 1000) | power 25 → `Bang(pos, 12.5, 50, team)` |
+| Fireball | 100 u/s | 1.0 s; radius `20 · min(1, |1 − life|)` | each Darwinian in radius once: `FireDamage(30 · radius/dist · max(1, life))` |
+| Subversion laser | 125 u/s | Darwinia laser-research lifetime (0.2, 0.4, 0.6, 0.8, 1.0 s for level 0–4) × 2 | mind-control laser (converts) — MP laser research level is [U] (03-U4) |
+
+**Firing cadence.** Barrel *i* fires only if **port *i*** is occupied. `PrimaryFire` returns immediately while `m_fireTimer > 0`; otherwise it examines `m_nextBarrel` and the next one (one barrel for Rocket), firing each manned barrel, and sets `m_fireTimer = reload` after a shot (the second barrel in the same call still fires). `m_fireTimer` is decremented by `SERVER_ADVANCE_PERIOD` before `PrimaryFire` in the same tick. Every examined manned barrel consumes three synced random numbers (mortar scatter, computed for all types) plus the cartridge-ejection draws. [C] `GunTurret::Advance`, `GunTurret::PrimaryFire`.
+⇒ Standard / Flame at 0.1 s ticks: 2 of the 4 barrels are examined per tick → **shots per second = 5 × (occupied ports)** (max 20 shells/s); Mortar: up to 2 grenades per volley, one volley per ≈ 4.0 s; Subversion: up to 2 lasers per ≈ 0.5 s; Rocket: 1 rocket per ≈ 1.5 s plus 0.1 s per skipped unmanned barrel. [I] arithmetic from the code.
+
+**Capture / ownership** [C] `GunTurret::RecalculateOwnership`:
+- Re-evaluated every **1.0 s** (`GUNTURRET_OWNERSHIPTIMER`); first evaluation on the first tick.
+- Count port occupants per team; winner = first team (by index) with ≥ 1 occupant, replaced by any later team with strictly more; if any occupant is not a friend of the winner → **neutral**. One Darwinian suffices; co-op allies may co-man.
+- Becoming neutral restores the neutral turret/barrel shapes. Becoming owned in MP swaps in team-coloured copies `battlecannonturret.shp_<colourId>_<coopGroupPosition>` and `<model>_<colourId>_<group>`, prepared once by `SetupTeamShapes()` for `MULTIWINIA_NUM_TEAMCOLOURS + 2` colours × 3 group variants (turret colours scaled ×0.2; barrel copies are not recoloured). [C] `GunTurret::SetupTeamShapes`, `ConvertColours`.
+- Futurewinian rules: a Subversion turret captured by a non-Futurewinian team, or any non-Subversion turret captured by the Futurewinian team, **self-destructs** (`Damage(−1000)`).
+- [B:LEGACY]: green (0) capture shown as team 2 (yellow) so the player controls it.
+
+**Targeting and aiming** (per tick, while owned and not under player control) [C] `GunTurret::Advance`, `SearchForTargets`, `SearchForRandomPos`, `ClearLOS`:
+1. Every **1.0 s** in MP (`GUNTURRET_MULTIWINIA_RETARGETTIMER`; 3.0 s SP `GUNTURRET_RETARGETTIMER`) `SearchForTargets()`:
+   - Mortar: `EntityGrid::GetBestEnemy(pos + targetPos, 0, targetRadius, team)`; aim point forced to `pos + targetPos`.
+   - Others: all enemies within `GetMaxRange()`; skip `TypeAI`, `TypeHarvester` and dead entities; choose the **nearest** with `dist ≥ GetMinRange()` and clear line of sight (samples every 30 units from the target back towards the turret, ray-testing buildings in each obstruction cell). Sound `TargetSighted` on a new target.
+   - No target and owned → `SearchForRandomPos()` idle sweep: first time a random angle `syncfrand(2π)`, distance `200 + syncfrand(200)`, height `syncfrand(100)`; later rotate the current aim by `syncsfrand(π/2)` (±π/4) and height `syncsfrand(50)`.
+2. With a valid target: aim point = target position + wobble `(sin(3t)·20, |sin(2t)·10|, cos(3t)·20)` (t = game time); fire if the horizontal angle between aim and turret front < **0.3 rad** and no friendly-fire warning. `m_hadTargetTimer = now`; for **1.0 s** after the last target the turret keeps firing ("hosing").
+3. Aim points closer than **75** units are pushed out to 75. Turret yaw turns by `angle × 0.2` per tick towards the aim; barrel pitch blends `barrelUp = barrelUp·(1 − 2dt) + target·2dt`.
+4. Flame friendly-fire guard: if > **10** friends within **20** units of `pos + turretFront·60`, `m_friendlyFireWarning` blocks firing and the kill counter shows "FF!".
+5. Overheat (cosmetic): each firing call sets `m_overheatTimer = now`, `temperature += 1` (cap 40); whenever > 0.2 s have passed since `m_overheatTimer` the timer resets and `temperature −= 0.3` (cooling 1.5/s after ≥ 0.2 s pause), clamped at 0; each cooling step emits `syncfrand(int(1 + temperature/10))` smoke particles per barrel — **synced RNG consumed for a visual effect**.
+
+**Player control.** The owner can select its turret (local input only if the turret's team is the local team) → `Team::m_currentBuildingId`; `Team::SelectUnit` sets `m_fireTimer = 0.5` and the camera enters `ModeTurretAim`. While selected, automatic targeting is off; team-controls processing sets the aim point to the networked mouse position and calls `PrimaryFire()` on move/fire/left-button. [C] `code/location_input.cpp`, `code/team.cpp:Team::SelectUnit`, `code/location.cpp:Location::UpdateTeam` (≈L4007–4024); input bindings in [06](06_player_control_and_input.md).
+
+**Health and damage.** `m_health = 60`; `Damage(d)` adds `d`; at ≤ 0 the turret and barrel shapes explode, `m_destroyed`, its AITarget is destroyed and `Advance` returns true. Sources: `Location::Bang` falloff (§3.8), task self-destruct (−1000) when a crate turret is captured by an enemy or its task ends. [C] `GunTurret::Damage`, `code/taskmanager.cpp`.
+
+**Companion objects.**
+- AITarget: on first Advance an `AITarget` building is created at the turret (`m_turretTarget = true`, new building id, `RecalculateAITargets`) so CPU players fight for it; destroyed with the turret. [C] `GunTurret::Advance`.
+- Kill counter `m_kills[team]` (rendered at `MarkerKills`, size 2, or 1.5 above 999): +kills on enemies, −kills on friends. [C] `GunTurret::RegisterKill`, `Render`.
+
+#### GunTurretTarget
+
+`EffectGunTurretTarget` world object in `Location::m_effects` ("a GunTurret target that darwinians can run from"): every tick it moves to the turret's aim point if any port is manned, else to (0,0,0); in MP it adopts the turret's team for Standard turrets only; it removes itself when the turret is gone. Its consumer is Darwinian threat avoidance ([02](02_units_and_entities.md); exact reaction 03-U6). [C] `GunTurretTarget::Advance`.
+
+**Level-file parameters** [C] `GunTurret::Read/Write/Initialise`. The level front vector is **discarded**: `Initialise` forces `up = (0,1,0)`, `front = (1,0,0) × up = (0,0,1)`; centre = pos, radius 30.
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | state | int, optional | 0 | turret type 0–4 | `%-4d` |
+| 9 | targetX | float, optional (with 10–12) | 0 | mortar target offset x from the turret | `%-2.2f ` |
+| 10 | targetZ | float | 0 | mortar target offset z | `%-2.2f ` |
+| 11 | targetRadius | float | 0 | mortar scatter / search radius | `%-2.2f ` |
+| 12 | targetForce | float | 0 | mortar throw force | `%-2.2f ` |
+
+**Stats / parameters** [C] `code/worldobject/gunturret.h` `#define`s and literals:
+
+| Parameter | Value | Kind |
+|---|---|---|
+| Health | 60 | ctor literal |
+| Ports / status markers | 4 / `GUNTURRET_NUMSTATUSMARKERS` 5 (4 present in the shape) | shape / `#define` |
+| Barrels | `GUNTURRET_NUMBARRELS` 4 | `#define` |
+| Ownership period | `GUNTURRET_OWNERSHIPTIMER` 1.0 s | `#define` |
+| Retarget period | `GUNTURRET_RETARGETTIMER` 3.0 s SP, `GUNTURRET_MULTIWINIA_RETARGETTIMER` 1.0 s MP | `#define` |
+| Ranges | `GUNTURRET_MINRANGE` 100, `GUNTURRET_MAXRANGE` 300, `FLAMETURRET_MINRANGE` 10, `FLAMETURRET_MAXRANGE` 150, `ROCKETTURRET_MINRANGE` 100, `ROCKETTURRET_MAXRANGE` 200, `SUBVERSIONTURRET_MINRANGE` 10, `SUBVERSIONTURRET_MAXRANGE` 150 | `#define` |
+| MP Standard range scaling | min × 0.5, max × 0.75 | code |
+| Fire cone / keep-firing window / minimum aim distance / LOS step | 0.3 rad / 1.0 s / 75 / 30 | literal |
+| Shell speed / rocket aim distance / fireball speed | 500 / 500 / 100 | literal |
+| Friendly-fire guard | > 10 friends within 20 of pos + front·60 | literal |
+| Selection pick sphere | r 12 at +10 y; default radius 30 | literal |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Owned : ownership eval every 1 s, all occupants friendly
+    Owned --> Neutral : ports empty or a non-allied Darwinian on a port
+    Owned --> Owned : a different team takes the ports, shapes recoloured
+    state Owned {
+        [*] --> Sweeping
+        Sweeping --> Engaging : SearchForTargets finds an enemy, every 1 s in MP
+        Engaging --> Hosing : target lost
+        Hosing --> Sweeping : 1 s after the last target
+        Hosing --> Engaging : new target
+        Sweeping --> PlayerControlled : owner selects the turret
+        Engaging --> PlayerControlled : owner selects the turret
+        PlayerControlled --> Sweeping : deselected
+    }
+    Owned --> Destroyed : health 0, wrong-faction capture, or task end
+    Neutral --> Destroyed : health 0
+    Destroyed --> [*]
+```
+
+**Mode usage and variants** [C] census, `code/worldobject/crate.cpp`, `code/multiwinia.cpp`:
+- Level-placed: 13 official maps — Assault 8/8 (12–40 per map), Blitzkrieg 2/7, Domination 1/9 (`mp_skirmish_3P_1`, 6), KOTH 1/9 (`mp_koth_3P_4`, 6), Rocket Riot 1/7 (`mp_rocketriot_3P_3`, 6); 200 official + 7 dev lines. All placed MP turrets start **neutral**; types used: Standard 196, Flame 11 (Assault `2p_3`, `3p_1`, `3p_3`); no level places Rocket, Mortar or Subversion.
+- Crate-delivered: rewards GunTurret / RocketTurret / FlameTurret start a `GlobalResearch::TypeGunTurret` task with `m_option` = Standard / Rocket / Flame; when the player targets a point, `Crate::RunGunTurret(pos, team, type)` builds a **neutral** turret from a template (must be manned), regenerates the obstruction grid, explodes its shapes as a build-in effect, registers map marker `icons/icon_gunturret.bmp` and shows `crate_message_run_gunturret`. The task self-destructs the turret if an enemy captures it. → [04](04_crates_powerups_and_weapons.md).
+- Reinforcement turrets: Rocket Riot / Blitzkrieg (and trunk-port maps with `TurretFrequency`) periodically grant GunTurret tasks (`TurretFrequency`, `MaxTurrets`; Blitzkrieg swaps to AirStrike after enough zones; level option `nogunturrets` disables) → [05](05_economy_and_population.md).
+- Armour conversion: `Armour::ConvertToGunTurret` builds a turret from a dynamic template. [C] `code/worldobject/armour.cpp`.
+
+Sounds: `TargetSighted`, `FireShell`, `FireFlame`, `FireGrenade`, `FireRocket`, `RegisterKill` (triggered) — the list function names it `RegisteredKill` (name mismatch, P06) + base. [C] `GunTurret::ListSoundEvents`.
+
+### 5.2 Teleport
+
+Source: `code/worldobject/teleport.{h,cpp}`. Abstract base of RadarDish and (legacy) Bridge. **[B:FULL]**.
+
+| Member | Meaning | Ref |
+|---|---|---|
+| `m_timeSync` | seconds until the next entity may enter (counts down to 0) | [C] `Teleport::Advance` |
+| `m_sendPeriod` | minimum time between sends (1.0 default; RadarDish and Bridge 0.1) | [C] ctor |
+| `m_entrance` | marker `MarkerTeleportEntrance` (asserted in `SetShape`) | [C] |
+| `m_inTransit : LList<WorldObjectId>` | entities currently inside the beam | [C] |
+| static `m_teleportMap : LList<TeleportMap{teamId, fromUnitId, toUnitId}>` | maps a unit entering a teleport onto the unit its members are re-assembled into on the far side; entries removed when the source unit no longer exists | [C] |
+
+Virtuals: `Connected()` (false), `ReadyToSend()` (`m_timeSync ≤ 0`), `GetEntrance` (entrance marker), `GetExit`, `GetStartPoint`, `GetEndPoint`, `UpdateEntityInTransit` (assert — must be overridden). [C].
+
+`EnterTeleport(id, relay)` [C] `Teleport::EnterTeleport`:
+1. If the entity belongs to a **Unit** (e.g. an insertion squad) and this is not a relay: find (or create via `Team::NewUnit(troopType, size, &id, m_pos)`) the destination unit through `m_teleportMap`; an Insertion Squad gets its squad Task re-created on the new unit (old task removed, `m_lifeTimer` carried over in MP, task selected, weapon type and controller task copied, controller route gains this teleport as a waypoint); the new unit inherits the route (next waypoint) or gets a waypoint 50 units past the exit ± `SFRAND(35)` (synced). The entity is copied into the new unit (new index / unique id), `m_enabled = false`, `m_onGround = false`, `vel = 0`; `RecalculateOffsets()`.
+2. Entity position = `GetStartPoint()`; `UpdateEntityInTransit(entity)` once; push id on `m_inTransit`; `m_timeSync = m_sendPeriod`.
+
+`Advance()`: `m_timeSync −= dt` (floor 0); advance every in-transit entity via `UpdateEntityInTransit` (remove when it returns true or the entity is gone); prune the static teleport map; `Building::Advance()`. [C].
+
+Entry is initiated by the entity: `Entity::EnterTeleports(requiredId)` scans buildings in the entity's obstruction cell; for a RadarDish it requires `ReadyToSend()`, distance to the entrance < **15** and `entity.front · entrance.front < 0` (walking into the door); Bridges use 25. Called from the movement code of Darwinians, officers, squads, laser troopers and shamans. [C] `code/worldobject/entity.cpp:Entity::EnterTeleports`.
+
+Hazard [I]: `m_teleportMap` is static (process-wide) and not cleared on level change except by pruning.
+
+### 5.3 RadarDish
+
+Source: `code/worldobject/radardish.{h,cpp}`. **[B:FULL]** (the D3D vertex-declaration reset in `RenderAlphas` is [B:D3D]; a multiplayer block of `ValidReceiverDish` is commented out).
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | one-way long-range transporter: entities walking into its door are carried along its beam to the **receiver** dish it is aimed at and exit from the receiver's door | [C] |
+| Shape | per-instance copy of `radardish.shp` (colours changed per team); fragments `Dish` (pitch) and `UpperMount` (yaw); markers `MarkerFocus` (beam origin), `MarkerTeleportEntrance`; 2 lights; no ports | [C] ctor |
+| Ownership | no own capture logic; in MP set by a linked **ControlStation** via `SetTeamId(winner)` (§5.4). MP dishes are placed neutral except two team-0 dishes in `mp_assault_2p_3` (auto-connected, with level option `forceradarteammatch`). On team change in MP the shape copy is recoloured to the team colour (white when neutral) | [C] `RadarDish::Advance`, `ControlStation::RecalculateOwnership`, data |
+| Aiming | `Aim(worldPos)`: if the dish has a valid-link list **and** `m_forceConnection`, the request is ignored unless the ray from the focus towards `worldPos` hits (ray–sphere on centre/radius) one of the listed dishes with terrain visibility. Otherwise store `m_target`, clear both alignment flags, sound `BeginRotation`. Aim requests come from the network command `NET_DARWINIA_AIMBUILDING` (accepted only if the dish's team equals the commanding team) and from the AI; humans can only select their own dish, and not at all with level option `noradarcontrol` | [C] `RadarDish::Aim`; `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates` (≈L2684); `code/location_input.cpp`; `code/worldobject/ai.cpp` |
+| Rotation | yaw first: axis = currentFront × targetFront (horizontal); `axis.y /= 4`; while `|axis.y| > π/3000`, `UpperMount.angVel.y = sign(axis.y)·sqrt(|axis.y|)`; then pitch: target direction y clamped to [−0.2, +0.3], `Dish.angVel = Dish.transform.r × (worldMat.u · targetFront)` until `|angVel| < 0.001`; both integrated with dt. Sounds `BeginRotation`, `EndRotation` | [C] `RadarDish::Advance` |
+| Connection test (every tick once a target exists) | among all other RadarDishes: the ray from this focus along the focus front must hit the other's bounding sphere, the other's dish front must face back (`dot < 0`), focus-to-focus terrain visibility (`Location::IsVisible`), the nearest such dish wins, and it must pass `ValidReceiverDish` | [C] |
+| `ValidReceiverDish(id)` | in the MP tutorial building 11 is never valid; with `forceradarteammatch`: receiver team must equal ours; else if the valid-link list is empty any dish is valid, otherwise only listed ids | [C] |
+| Connected state | `m_receiverId`, `m_range` (focus-to-focus distance), `m_signal = 1`; `Connected() = receiver ≠ −1 && signal > 0`; `ReadyToSend = Connected && m_timeSync ≤ 0`. Transitions play `ConnectionEstablished` / `ConnectionLost` and set `GlobalBuilding.m_link` | [C] |
+| Transport | `m_sendPeriod = RADARDISH_TRANSPORTPERIOD` 0.1 s → at most **10 entities/s** may enter one dish; each moves at `RADARDISH_TRANSPORTSPEED` **50 u/s** along the beam (`pos += front·50·dt`), disabled and airborne, unit position kept in sync. Travel time = range / 50 s. No capacity limit | [C] `radardish.h`, `RadarDish::UpdateEntityInTransit` |
+| Arrival | when distance travelled ≥ range: placed at the receiver's entrance, facing out, enabled, on ground, vel 0; Darwinians → `StateIdle`, waypoint = own position, orders cleared; insertion-squad members re-waypoint their unit to the exit; re-added to the entity grid; sound `ExitTeleport` | [C] |
+| Failure | if the signal drops (`m_signal == 0`) or a `PulseWave` is active, every entity in transit takes `ChangeHealth(−500)` (fatal for Darwinians), is re-enabled, gets a random kick (`SFRAND(10), FRAND(10), SFRAND(10)`, synced) and falls from the beam | [C] |
+| AI target | MP only: while connected an `AITarget` (`m_radarTarget = true`) is kept at the entrance and linked to the receiver dish's AI target; destroyed on disconnect | [C] `RadarDish::AdvanceAITarget` |
+| Hit tests | sphere test with probe radius ×1.5 (so the door registers in obstruction cells); ray test on the shape with up = (0,1,0) | [C] |
+| Damage | indestructible | [C] |
+| Rendering | 4 nested beam tubes (radius 10/9/8/4, alpha 0.4/0.2/0.2/0.5) textured `laserfence.bmp` × `radarsignal.bmp`, clipped by the two dish planes; preview beams to all valid links when the owner hovers/selects it → [24](24_rendering.md) | [C] `RenderAlphas`, `RenderSignal` |
+| Mode usage | 7 official maps: Assault 3/8 (`2p_3` 4, `3p_1` 2, `4P_1` 6), Domination 2/9 (`domination_4P_2` 8, `koth_2P_2` 6), KOTH 2/9 (`3P_1` 12, `4P_3` 8); 46 lines. Data patterns: sender dishes `force 1` with 1–3 valid links (often `auto 1`); plain receivers `force 0 auto 0` with no links; `mp_assault_2p_3` uses `forceradarteammatch noradarcontrol` with team-0 auto-connected dishes | [C] census, data |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | forceConnection | int, optional | 0 | 1 = only listed dishes may be aimed at (Aim filter) | `%-5d` |
+| 9 | autoConnectAtStart | int, optional | 0 | 1 = aim at the first valid link on the first tick (if there is no GlobalBuilding link) | `%-5d` |
+| 10… | validLinkId | int, repeated | none | dishes this one may connect to | `%-5d` each |
+
+isGlobal must be 1 (load assert; forced global). [C] `RadarDish::Read/Write`, `code/level_file.cpp:ParseBuildings`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle : no target
+    Idle --> Rotating : Aim, autoConnectAtStart, or saved GlobalBuilding link
+    Rotating --> Rotating : yaw then pitch alignment
+    Rotating --> Connected : ray hits a valid facing receiver with LOS
+    Connected --> Rotating : Aim at a new point
+    Connected --> Disconnected : receiver no longer hit or invalid
+    Disconnected --> Rotating : Aim
+    state Connected {
+        [*] --> Ready
+        Ready --> Cooldown : entity enters, timeSync 0.1 s
+        Cooldown --> Ready : timeSync reaches 0
+    }
+    note right of Disconnected : entities in transit take -500 health and fall
+```
+
+### 5.4 ControlStation
+
+Source: `code/worldobject/controlstation.{h,cpp}`. **[B:FULL]**.
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | port-operated console whose owner (a) is copied to a controlled building (`m_controlBuildingId`, e.g. a RadarDish) and (b) counts towards destroying the Assault PulseBomb | [C] |
+| Shape | `controlstation.shp` (5 ports `MarkerPort01–05`); after `LinkToPulseBomb(id)` (first call only) → `pulsebombcontrolstation.shp` (3 ports + `MarkerDishDirection`); lights cleared and ports re-created via `Building::Initialise(this)` (the old ports are removed with `Empty()`, not deleted — leak) | [C] `ControlStation::LinkToPulseBomb`, `data/shapes/*.shp` |
+| Linking | Assault stations listed by the bomb are linked at level load (`Location::Init`) and again by every `PulseBomb::Advance` (no-op after the first) | [C] `code/location.cpp:Location::Init`, `code/worldobject/pulsebomb.cpp:PulseBomb::Advance` |
+| Capture (every tick, before port evaluation, i.e. on last tick's occupants) | count port occupants per team; threshold `num = 2` (needs **≥ 3**), or `num = 1` when bomb-linked (needs **≥ 2**); winner = first team above threshold, replaced by a later team above threshold with strictly more; enemies may co-occupy; no winner → station team 255 (controlled building **keeps** its team); winner → station **and** controlled building take the winner's team | [C] `ControlStation::RecalculateOwnership` |
+| Inputs / outputs | Darwinians on ports → ownership of itself and of the controlled building | [C] |
+| Damage | indestructible | [C] |
+| Rendering | port lights (`textures/starburst.bmp`, grey free / occupant team colour); when bomb-linked, owned and the bomb intact: an animated team-coloured beam from `MarkerDishDirection` towards 75% of the way to the bomb (+100 up); always "in view" when linked | [C] `RenderPorts`, `RenderAlphas`, `IsInView` |
+| Mode usage | Assault 8/8 (3–4 bomb stations per map, link −1); KOTH 1/9: `mp_koth_3P_1` uses 6 stations controlling RadarDishes; 33 official lines | [C] census, level files |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | controlBuildingId | int | −1 | building whose team follows this station's owner | `%6d` |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Owned : a team exceeds the threshold, controlled building set to owner
+    Owned --> Owned : another team exceeds threshold with strictly more, both reassigned
+    Owned --> Neutral : no team above threshold, controlled building unchanged
+    Neutral --> BombLinked : LinkToPulseBomb, shape swap, threshold 2 of 3
+    Owned --> BombLinked : LinkToPulseBomb
+```
+
+### 5.5 JumpPad
+
+Source: `code/worldobject/jumppad.{h,cpp}`. **[B:FULL]** (trajectory preview [B:EDITOR]).
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | launches Darwinians standing on it into a ballistic jump | [C] |
+| Shape | none; `DoesSphereHit/DoesShapeHit` false; ray test = sphere `m_radius` 13 | [C] |
+| Ownership | none — works for every team | [C] |
+| Behaviour | `m_launchTimer −= dt`; when ≤ 0 → `m_launchTimer = 0.3`; launch vector = `m_front` rotated about `m_front × up` by `m_angle` (radians), length `m_force`; every Darwinian from the entity grid within `JUMPPAD_RADIUS` **40** that is on the ground and not `StateInsideArmour` gets `vel = launch`, `m_onGround = false`, `StateIdle`, waypoint cleared, orders cleared | [C] `JumpPad::Advance` |
+| Note | does **not** call `Building::Advance` (no port evaluation; `m_destroyed` never honoured) | [C] |
+| Damage | indestructible | [C] |
+| Rendering | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·|sin(g_gameTime)|` (render clock) | [C] `RenderAlphas` |
+| Mode usage | 23 placed in 3 official maps: Assault `mp_assault_2P_2` (3), Blitzkrieg `mp_blitzkrieg_2P_3` (2), Domination `mp_skirmish_3P_1` (18); force 76.17–227.38, angle 0.51–1.08 rad | [C] census, data |
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | force | float | 0.0 | launch speed (u/s) | `%-2.2f ` |
+| 9 | angle | float | 0.0 | elevation above `m_front`, radians | `%-2.2f ` |
+
+## 6 Power network
+
+Source: `code/worldobject/generator.{h,cpp}`, `code/worldobject/powerstation.{h,cpp}`. SolarPanel, Pylon, PylonEnd, PowerSplitter are **[B:FULL]**; Generator, PylonStart, Powerstation are **[B:LEGACY]** (blocked from level files, no runtime creator).
+
+Power in Multiwinia is a stream of discrete **surges**, each tagged with the team of the solar panel that emitted it. Surges hop along `m_powerLink` chains (0.5 s per hop in MP) to a terminal `PylonEnd`, which hands them to a consumer: a **LaserFence** (keeps it raised, friend-only), a **FuelGenerator** (Rocket Riot fuel pressure) or, in Darwinia, a ConstructionYard. [C] `PowerBuilding::Advance`, `PylonEnd::TriggerSurge`.
+
+```mermaid
+flowchart LR
+    SP1["SolarPanel A (owner T)"] -->|"surge tagged T"| SP2["SolarPanel B"] --> PS[PowerSplitter]
+    PS -->|"first Pylon with team == T"| P1["Pylon team 0"] --> PE1[PylonEnd] --> FG1["FuelGenerator team 0"]
+    PS --> P2["Pylon team 1"] --> PE2[PylonEnd] --> FG2["FuelGenerator team 1"]
+    SP3[SolarPanel] --> P3[Pylon] --> PE3[PylonEnd] -->|"only if IsFriend(T, fence team)"| LF[LaserFence]
+```
+
+### 6.1 PowerBuilding
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Members | `m_powerLink` (id of the next building), `m_powerLocation` (marker `MarkerPowerLocation`, asserted on first use), `m_surges : LList<PowerSurge{m_teamId, m_percent}>` | [C] `generator.h` |
+| `TriggerSurge(init, team)` | new surge at the **front** of the list with `percent = init`; sound `TriggerSurge` | [C] `PowerBuilding::TriggerSurge` |
+| `Advance` | each surge: `percent += SERVER_ADVANCE_PERIOD × 2` in Multiwinia (× 4 in Darwinia) → **0.5 s per hop** (0.25 s SP); at ≥ 1.0 the surge is deleted and `powerLink->TriggerSurge(0, surge.team)` is called on the linked building **cast to PowerBuilding without a type check** (a link to a non-power building would be undefined behaviour; all shipped links point to power buildings — §6.9); then `Building::Advance()` | [C] `PowerBuilding::Advance` |
+| Rendering | power-line beam between the two `MarkerPowerLocation`s; surges as star sprites (size 20) in the surge team's colour (MP; monster and Futurewinian teams skip the trail) with a 3-sprite trail → [24](24_rendering.md) | [C] `RenderAlphas` |
+| Link API | `GetBuildingLink/SetBuildingLink` = `m_powerLink` | [C] |
+| Damage | every power building is indestructible | [C] |
+| Level fields | `powerLink` (int, mandatory, `%-8d`) | [C] `PowerBuilding::Read/Write` |
+
+### 6.2 SolarPanel
+
+| Aspect | Specification | Ref |
+|---|---|---|
+| Function | the capturable power source | [C] |
+| Shape | `solarpanel.shp`: **5 ports**, 5 status markers, 4 glow markers; orientation forced to the terrain normal, front = (1,0,0) × normal (computed on the template in `Initialise`) | [C] ctor, `SolarPanel::Initialise` |
+| Starting team | `m_startingTeam` = level team if ≠ 255 (else −1) | [C] `Initialise` |
+| Capture | MP: every tick (after the surge roll) `RecalculateOwnership()`: no ports → 255; else owner = team with the most port occupants (strict max, ties → lower index); zero occupants → 255. **Enemies may share the panel** | [C] `SolarPanel::RecalculateOwnership` |
+| Output | each tick, if `syncfrand(20) ≤ fractionOccupied` (fraction = occupied/ports) → `TriggerSurge(0, panelTeam)`. Per-tick probability = fraction/20 → at 10 ticks/s the expected rate is **0.5 × fraction surges/s** (0.5/s with all 5 ports manned, 0.1/s per manned port). The synced random draw happens **every tick for every panel**; per-tick, so it does not scale with game speed | [C] `SolarPanel::Advance`; [I] rate arithmetic |
+| Operating flag | `fraction > 0.6` → operating (sound `Operate` on the transition); `< 0.3` → not operating (sound stopped) — cosmetic / AI only | [C] |
+| Assault knock-out rule | in Assault, if the panel has a starting team and is now owned by a **different** team, all its ports are deleted → next evaluation sets it neutral and it never produces again (attackers permanently knock out defender panels) | [C] `SolarPanel::Advance`; [I] design intent |
+| Start of game | `Location::InitialiseTeam` spawns one Darwinian per port on every SolarPanel owned by the team and evaluates ownership | [C] |
+| Defect | empty panels re-fire `ChangeTeam` every tick (§3.9) | [C] |
+| Rendering | status lights green/red; when occupied and owned, 4 glow quads (60 × 40) pulsing `0.5 + 0.5·|sin t|` in team colour (Darwinia blue (100,100,250)) | [C] `RenderPorts`, `RenderAlphas` |
+| Mode usage | 16 official maps: Rocket Riot 7/7, Assault 5/8, Blitzkrieg 3/7, Domination 1/9 (`mp_domination_2P_1`); 225 lines | [C] census |
+| Level fields | `powerLink` (§6.1) | [C] |
+
+```mermaid
+stateDiagram-v2
+    [*] --> Neutral
+    Neutral --> Owned : any occupant, plurality team T
+    Owned --> Owned : plurality changes to U
+    Owned --> Neutral : no occupants
+    Owned --> KnockedOut : Assault and owner differs from starting team, ports deleted
+    KnockedOut --> [*] : permanently neutral, never emits
+    state Owned {
+        [*] --> Emitting
+        Emitting --> Emitting : each tick P = occupied/(5 x 20), surge tagged T
+    }
+```
+
+### 6.3 Pylon
+
+Plain `PowerBuilding` relay segment (`pylon.shp`, 1 light). Team from the level file; Rocket Riot pylons are team-owned so PowerSplitters can route by team. Function, inputs and outputs as §6.1; no capture; indestructible. Level fields: `powerLink`. Mode usage: 16 official maps (Rocket Riot 7/7, Assault 5/8, Blitzkrieg 3/7, Domination 1/9; 296 lines). [C] `Pylon`, census.
+
+### 6.4 PylonEnd
+
+Line terminator, rendered invisibly (`RenderAlphas` does nothing). Its `TriggerSurge` does **not** store a surge (no travel time, no `TriggerSurge` sound); it delivers immediately to `m_powerLink`: [C] `PylonEnd::TriggerSurge`
+- `TypeYard` → `ConstructionYard::AddPowerSurge()` (legacy);
+- `TypeFuelGenerator` → `FuelGenerator::ProvideSurge()` (no team check);
+- `TypeLaserFence` → `LaserFence::ProvidePower()` **only if `IsFriend(surgeTeam, fenceTeam)`** — so neutral (255) fences can never be powered and enemy surges never power a fence.
+
+Team from level; indestructible; level fields `powerLink`. Mode usage: 16 official maps (86 lines). [C] census.
+
+### 6.5 PowerSplitter
+
+Router, rendered only in the editor. Extra member `m_links` (level-file tail tokens). `TriggerSurge(init, team)` forwards to the **first** linked building that is a `Pylon` whose team equals the surge's team (exact equality, not `IsFriend`); otherwise the surge is dropped. It ignores its own `m_powerLink` for routing (the field is still read). Mode usage: Rocket Riot 7/7 only (26 lines). [C] `PowerSplitter::TriggerSurge/Read`, census.
+
+| # | Field | Type | Default | Meaning | Write |
+|---|---|---|---|---|---|
+| 8 | powerLink | int | — | read but unused for routing | `%-8d` |
+| 9… | linkId | int, repeated | none | candidate team pylons | `%-4d` each |
+
+### 6.6 Generator
+
+[B:LEGACY] (blocked). `generator.shp` (MarkerPowerLocation, MarkerCounter). Power source enabled by `ReprogramComplete` (from a ControlTower) or by finding a ControlTower linked to it with the same team; emits surges only when enabled; throughput EMA per second `t = 0.8·t + 0.2·n`; GlobalBuilding online when `t > 6.5`; objective text `objective_output` "%d Gq/s" (throughput × 10); sound `Enable`. Level fields: `powerLink`. [C] `Generator::*`.
+
+### 6.7 PylonStart
+
+[B:LEGACY] (blocked). Emits a surge with probability 0.3 per tick (`syncfrand(1) > 0.7`) when the campaign Generator location's generator is online **and** its required building (`m_reqBuildingId`) is online. [C] `PylonStart::Advance/Read`.
+
+| # | Field | Type | Meaning | Write |
+|---|---|---|---|---|
+| 8 | powerLink | int | next building | `%-8d` |
+| 9 | reqBuildingId | int | GlobalBuilding that must be online | `%-8d` |
+
+### 6.8 Powerstation
+
+[B:LEGACY] (blocked). Not a PowerBuilding: `powerstation.shp` with 4 ports. The linked LaserFence (`m_linkedBuildingId`) is **enabled** when all ports are occupied and **disabled** when occupied ≤ 3/4 of the ports. Dereferences the link without a null check (crash if the id is invalid). Level field `linkedBuildingId` (int, `%-8d`). [C] `Powerstation::Advance`.
+
+### 6.9 Network topologies in shipped data
+
+[C] analysis of `mp_*` files (P06): SolarPanels are daisy-chained (SolarPanel→SolarPanel 155 links, →Pylon 35, →PowerSplitter 39, →PylonEnd 2); Pylons link to Pylon 211, PylonEnd 87, PowerSplitter 3; PylonEnds feed LaserFence (31 — Assault, Blitzkrieg, Domination) or FuelGenerator (57 — Rocket Riot); PowerSplitters (Rocket Riot only, 26) route to team pylons. Chain lengths panel→terminal: 3–14 buildings ⇒ surge latency 1.5–7 s at 0.5 s per hop [I].
+
+Design reading [I]: in Assault and Blitzkrieg, defender/base fences are kept up by the owner's panels; capturing (Assault: knocking out) the panels starves the fences, which fall 5 s after the last friendly surge. In Rocket Riot, panels are shared neutral objectives whose surges are routed by splitters to the capturing team's fuel generator.
+
+## 7 Barriers, scenery and markers
+
+### 7.1 LaserFence
+
+Source: `code/worldobject/laserfence.{h,cpp}`. **[B:FULL]**.
+
+**Function.** A post (`laserfence.shp`) that, when raised, projects an energy curtain to the **next** post named by its link id; chains of posts form barrier lines. Enemy units touching a raised curtain are killed (generic entities) or set on fire (Darwinians); raised curtains of any team also block walking routes and AI routing. [C].
+
+**Ownership.** Team from the level (slots 0: 288 lines, 1: 154, 2: 77, 3: 43, 255: 141; isGlobal always 0). Never captured, never changes team; indestructible (no `Damage` override). [C] census (P07), code.
+
+**Level-file parameters** [C] `LaserFence::Read/Write`:
+
+| # | Field | Type | Default | Meaning | Observed in `mp_*` (703 lines) | Write |
+|---|---|---|---|---|---|---|
+| 8 | nextLaserFenceId | int, mandatory | −1 | id of the next post (−1 = end of chain, no curtain from this post) | −1 on 36 lines | `%-8d` |
+| 9 | scale | float, optional | 1.0 | uniform scale of the post and therefore of curtain height | 0.30…2.50 (1.00 ×252, 2.00 ×137, 1.50 ×124) | `%-6.2f` |
+| 10 | mode | read with `iv_atof`, stored as int, optional | 0 (`ModeDisabled`) | initial mode | 0 ×20, 2 ×658, 4 ×2, 5 ×23 | `%d` |
+
+`Initialise` copies the three fields, sets `m_status = 1` for Enabled/AlwaysOn, and `m_sparkTimer = syncfrand(10)`. [C].
+
+**Modes** [C] `code/worldobject/laserfence.h`:
+
+| Value | Name | Meaning |
+|---|---|---|
+| 0 | `ModeDisabled` | down (status 0); responds to `Enable` |
+| 1 | `ModeEnabling` | rising at `LASERFENCE_RAISESPEED` |
+| 2 | `ModeEnabled` | up (status 1) |
+| 3 | `ModeDisabling` | falling |
+| 4 | `ModeNeverOn` | never raises; acts as a **relay**: `Enable()`/`Disable()` are forwarded immediately to the next fence; no curtain is drawn or tested (status stays 0); sparks still fire |
+| 5 | `ModeAlwaysOn` | permanently up; `Enable`/`Disable`/`Toggle` and solar loss have no effect |
+
+`IsEnabled()` = mode ∈ {Enabled, Enabling, AlwaysOn}. `Enable()`: if mode ∉ {Enabled, NeverOn, AlwaysOn} → Enabling; if NeverOn → forward `Enable()` to next; reset `m_nextToggled`. `Disable()` symmetric. `Toggle()`: Disabled/Disabling → Enable; Enabled/Enabling → Disable; resets `m_nextToggled`. [C].
+
+**Advance (per tick)** [C] `LaserFence::Advance`:
+1. First tick after `SetDetail`: if the link resolves, `m_centrePos = midpoint(this, next)`, `m_radius = |next − this|/2 + m_radius` (enlarged for visibility/obstruction).
+2. If mode ≠ Disabled: spark timer; at < 0 → `8 + syncfrand(4)` s and `Spark()` (unsynced `frand` particles `Particle::TypeSpark`, 5–10 sparks of size 25–50 flung perpendicular to the curtain at 40–60 u/s from height `frand(50 × scale)`, sound `Spark`).
+3. Solar mode (`m_solarMode`, set by the first `ProvidePower`): if `now − m_surgeReceived > 5.0` and (enabled or NeverOn) → `Disable()`; else if not enabled → `Enable()`.
+4. Mode machine: Enabling: `status += 0.3·dt`; when `status ≥ 0.5`, a link exists and not yet toggled → `next->Enable()` once; at ≥ 1 → status 1, Enabled. Disabling: when `status ≤ 0.5` (checked **before** the decrement) → `next->Disable()` once; `status −= 0.3·dt`; at ≤ 0 → 0, Disabled. Enabled/AlwaysOn force status 1; Disabled forces 0; NeverOn unchanged.
+5. `Building::Advance` (fences have no ports).
+
+**Who switches fences in Multiwinia** [C]:
+- **Solar power** is the only live runtime controller: `PylonEnd::TriggerSurge` calls `ProvidePower()` on its linked fence if `IsFriend(surgeTeam, fenceTeam)`. `ProvidePower` sets `m_solarMode = true`, stamps `m_surgeReceived = now`, and (once) `SetSolarLinked()`, which marks this fence and recursively every downstream fence along `nextLaserFenceId` as `m_solarLinked` (stops at AlwaysOn fences or already-linked ones). Only the directly powered fence runs the 5 s timeout; downstream fences follow by chain hand-off. Because `IsFriend(255, x)` is false, neutral fences can never be solar-powered. A fence that has never received a surge keeps its level mode indefinitely (`m_solarMode` starts false). [C] `LaserFence::ProvidePower`, `SetSolarLinked`, `code/worldobject/generator.cpp:PylonEnd::TriggerSurge`, `code/location.cpp:Location::IsFriend`.
+- `FenceSwitch` and `Powerstation` (both blocked, [B:LEGACY]) also call `Enable`/`Disable` — unreachable.
+- The network command `NET_DARWINIA_TOGGLELASERFENCE` ("cg") is handled by `ClientToServer::ProcessServerUpdates` (`Toggle()`), but its sender `ClientToServer::RequestToggleFence` has **no callers** → dead. [C] grep.
+
+```mermaid
+stateDiagram-v2
+    Disabled --> Enabling : Enable
+    Enabling --> Enabled : status reaches 1
+    Enabling --> Disabling : Disable
+    Enabled --> Disabling : Disable, or solar timeout 5 s
+    Disabling --> Disabled : status reaches 0
+    Disabling --> Enabling : Enable, or friendly surge received
+    NeverOn --> NeverOn : Enable and Disable forwarded to next
+    AlwaysOn --> AlwaysOn : ignores Enable and Disable
+    note right of Enabling : at status 0.5 call next.Enable once
+    note right of Disabling : at status 0.5 call next.Disable once
+```
+
+**Damage to crossing entities** (implemented by the entities) [C]:
+- Generic entities: `Entity::PushFromObstructions(pos, killem)` — if the entity's shape / sphere (1.0) / swept ray hits an **enabled** fence whose team is not a friend → `ChangeHealth(−9999)` and `fence->Electrocute(pos)` (sound `Electrocute`); otherwise ordinary push-out. [C] `code/worldobject/entity.cpp:Entity::PushFromObstructions`.
+- Darwinians: `Darwinian::PushFromObstructions` — enabled non-friendly fence: if `DoesSphereHit(m_pos, 1.0)` and `killem` → `SetFire()` + `Electrocute`; else if within `closest = 5 + uniqueId % 10` → pushed out perpendicular to the curtain in 20-unit steps. [C] `code/worldobject/darwinian.cpp:Darwinian::PushFromObstructions`.
+- Routing: `Location::GetWalkingDistance` returns −1 and `Location::IsWalkable` reports the fence id for any **enabled** fence on the path (any team); the AI target graph skips neighbours behind enabled non-friendly fences; `Armour::IsRouteClear` refuses routes through enabled enemy fences. [C] `code/location.cpp`, `code/worldobject/ai.cpp`, `code/worldobject/armour.cpp`.
+
+**Hit tests** [C] `LaserFence::DoesSphereHit/DoesRayHit/DoesShapeHit`:
+- Disabled (or editing): post shape only (scaled `laserfence.shp`).
+- Otherwise `DoesRayHit`: if linked and `status > 0`: two triangles (p1, p2, p4) and (p4, p3, p1) with p1/p2 = this post base − h/3 / + h and p3/p4 = next post base − h/3 / + h, **h = this fence's full height × status** (the next post's own height is ignored for collision but used for rendering); normal = (p1 − p3) × (p1 − p2) normalised; falls back to the scaled post shape.
+- `DoesSphereHit` approximates the sphere by two rays of length 2r through its centre along +X and +Z, then the post shape. `DoesShapeHit` = `DoesSphereHit(transform.pos, shape root radius)`.
+- Obstruction grid: linked fences are rasterised into every cell along the segment to the next post (samples = segment length + 1), with extra 4-neighbour cells when consecutive samples jump diagonally. [C] `code/obstruction_grid.cpp:ObstructionGrid::CalculateBuildingArea`.
+
+**Constants**:
+
+| Name | Value | Unit | Kind | Ref |
+|---|---|---|---|---|
+| `LASERFENCE_RAISESPEED` | 0.3 | status per second (full raise 3.33 s) | `#define` | `laserfence.h` |
+| chain hand-off | status 0.5 (≈ 1.67 s into a transition) | — | literal | `Advance` |
+| spark interval | first `syncfrand(10)`, then `8 + syncfrand(4)`; only while mode ≠ Disabled | s | literal | `Initialise`, `Advance` |
+| solar timeout | 5.0 since last `ProvidePower()` | s | literal | `Advance` |
+| curtain full height | `MarkerFence02.y − MarkerFence01.y` of the scaled shape = 48.28 × scale | world units | data | `data/shapes/laserfence.shp` |
+| curtain skirt | h/3 below each post base | — | literal | `RenderAlphas`, `DoesRayHit` |
+| curtain alpha | 150/255 | — | literal | `RenderAlphas` |
+| entity kill | `ChangeHealth(−9999)` | hp | literal | `Entity::PushFromObstructions` |
+| Darwinian push band | `5 + uniqueId % 10`, step 20 | world units | literal | `Darwinian::PushFromObstructions` |
+
+**Rendering** (→ [24](24_rendering.md)) [C] `LaserFence::Render/RenderAlphas`: post shape scaled with `GL_NORMALIZE`; curtain (alpha pass, only if mode ∉ {Disabled, NeverOn} and linked): cull off, alpha blend, depth write off; colour neutral (100,100,100,150), solar-linked = lerp((20,20,20), 0.9 × team colour, |sin(4·realTime)|) alpha 150, otherwise team colour alpha 150; predicted status ± 0.3 × predictionTime; quad BL = this − (0, h/3, 0), TL = this + (0, h, 0), TR = next + (0, h′, 0), BR = next − (0, h′/3, 0) with each post's own height × predicted status. At `RenderBuildingDetail` < 3 a two-texture pass (`laserfence.bmp` REPLACE, `laserfence2.bmp` MODULATE, scrolling `gameTime/15`; solar: `gameTime/1.5`, 7× tiling); always an additive `laserfence2.bmp` overlay and a smoothed `GL_LINES` top edge (width 2.0, 0.5 solar). `PerformDepthSort` at `m_centrePos`; `IsInView` true during the grace period; `RenderLights` empty. Render-path sim write: `RenderAlphas` resets `m_nextLaserFenceId = −1` if the link no longer resolves to a LaserFence (determinism hazard only for invalid links) [C]/[I].
+
+**Mode usage**: 14 official maps — Assault 6/8, Blitzkrieg 5/7, Domination 2/9 (`mp_domination_2P_1`, `mp_skirmish_3P_1`), Rocket Riot 1/7 (`mp_rocketriot_2p_3`); 677 official + 26 dev lines. Sounds: `Spark`, `Electrocute` + base. [C] census, `ListSoundEvents`.
+
+### 7.2 Wall
+
+Source: `code/worldobject/wall.{h,cpp}`. **[B:FULL]**.
+
+**Function.** A straight wall segment (`wall.shp`) that blocks movement and line of fire; destroyed only by a single heavy hit. Main use: Assault, where attackers breach walls with the WallBuster (§8.5). Always team 255; not capturable; team irrelevant. [C] census, code.
+
+| # | Field | Type | Default | Meaning | Observed | Write |
+|---|---|---|---|---|---|---|
+| 8 | objectiveLink | int, optional | −1 | id of an `AIObjective`; on the first `Advance` the wall writes its own id into `AIObjective::m_wallTarget` | −1 ×317, absent ×33, AIObjective ids 27, 33, 39, 41, 47, 50 ×6 | `%4d` |
+
+`AIObjective::m_wallTarget` is written but never read → the link is vestigial. `m_scale` (1.0), `m_fallSpeed`, `m_damage` exist but are not in the level file; the sinking/falling animation in `Advance` and damage accumulation are commented out. [C] grep `wallTarget`, `Wall::Advance`, `Wall::Damage`.
+
+| Constant | Value | Unit | Use | Ref |
+|---|---|---|---|---|
+| `WALL_LENGTH` | 100.0 | world units | collision length along `front × up` | `wall.cpp` `#define` |
+| `WALL_DEPTH` | 20.0 | world units | collision depth along `front` | `#define` |
+| `WALL_HEIGHT` | 75.0 | world units | ray-hit quad spans base → base + 37.5 (`WALL_HEIGHT/2`) | `#define` |
+| destruction threshold | single `Damage(d)` with `d ≤ −300.0` | damage | `Wall::Damage` | literal |
+| visual mesh | ±40.58 along local X, 0…70.93 high, ±1.38 thick | world units | collision footprint (100 × 20, infinite height for spheres) is deliberately larger than the visual (81 × 2.8) | `data/shapes/wall.shp` |
+
+**Behaviour** [C]:
+- `Advance`: if `m_destroyed` → return true (Location deletes it, rebuilds the obstruction grid and calls `RecalculateAITargets()`); registers the objective link once; does not call `Building::Advance`.
+- `Damage(d)`: if `d ≤ −300` → `g_explosionManager.AddExplosion(wall.shp, transform, 3.0)` and `m_destroyed = true`; records `m_lastDamageTime`. Smaller hits do nothing (no accumulation). Does **not** call `Building::Damage` (no `Damage` sound).
+- What can destroy a wall in FULL (resolves P07-U3 using the `Bang` table of §3.8): `WallBuster::BreakWalls` (every wall within 200, −1000) and the WallBuster defender-scuttle explosion `Bang(pos, 50, 500)` (≥ 300 for walls within 60 units of the buster: `500·(1 − d/150) ≥ 300 ⇔ d ≤ 60`). No other live explosion reaches 300 (maximum 255 from the debug-only Portal; nukes and meteors deliver ≤ 100). The cheat window (`Damage(−999)`) is [B:DEBUG]. [C] `code/worldobject/wallbuster.cpp`, `code/location.cpp:Location::Bang`, grep of `Bang(`.
+
+**Hit tests** [C] `Wall::DoesSphereHit/DoesRayHit/DoesShapeHit`: sphere = rectangle 100 × 20 centred on `m_pos` (axes `right = normalise(front × up)` and `front`), **flattened to y = 0** together with the sphere centre (infinite-height prism), tested as triangles (t1,t2,t3), (t2,t3,t4) with `SphereTriangleIntersection` (true if the wall has no shape); ray = vertical quad along `right`, 100 long, bottom corners on the terrain under each end, top at `m_pos.y + 37.5`; shape = exact mesh test on the scaled `wall.shp`.
+
+**Interaction elsewhere** [C]: Darwinians within 4 units (sphere test) are pushed along ±front in 5-unit steps until clear of radius 1 and `m_wallHits++` (`Darwinian::PushFromObstructions`); `Location::GetWalkingDistance` (sphere stepSize/2) and `Location::IsWalkable` (stepSize × 0.66) treat walls as impassable; `AIObjective` never binds to a Wall (`code/worldobject/aiobjective.cpp`).
+
+**Rendering**: shape with `Matrix34(front, up, pos − (0, fallSpeed·prediction, 0))` × `m_scale`; nothing once destroyed; destruction uses the shape-shattering explosion manager → [26](26_animation_and_vfx.md). [C] `Wall::Render`.
+
+**Mode usage**: 9 official maps — Assault 7/8 (`2P_1` 78, `2P_2` 14, `2p_3` 20, `3P_2` 29, `3p_1` 94, `3p_3` 25, `4P_2` 34), Blitzkrieg 1/7 (`2p_2` 17), KOTH 1/9 (`3P_4` 12); dev `mp_assault_stress` 30, `mp_sandbox` 3. [C] census.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Standing
+    Standing --> Standing : Damage above -300, ignored
+    Standing --> Destroyed : single Damage of -300 or less, shatter effect
+    Destroyed --> [*] : removed next Advance, obstruction grid and AI targets rebuilt
+```
+
+### 7.3 Tree
+
+Source: `code/worldobject/tree.{h,cpp}`. **[B:FULL]**.
+
+**Function.** Decorative but gameplay-relevant scenery: blocks movement and projectiles via two hit spheres, catches fire, burns down and regrows, sets nearby units on fire, can drop spirits ("magic" trees), can spread new trees, and in its *evil* variant kills Darwinians and corrupts nearby trees. Trees are the most numerous visible building in Multiwinia maps (661 lines in 39 official maps, 94 in 6 dev maps; only the invisible AITarget is more numerous). Also created at runtime by the Dark Forest / Magical Forest crate outcomes (`Crate::GenerateTrees`, `Crate::GenerateEvilTrees`) and by tree self-propagation (`Tree::CreateAnotherTree`). [C] census, `code/worldobject/crate.cpp`, `Tree::CreateAnotherTree`.
+
+**Ownership.** Always neutral in practice: level lines use 255 (704 lines) or team slot 1 (51 lines in `mp_domination_4P_2`, `mp_koth_4P_3`, `mp_skirmish_2p_4`, `mp_sandbox_all`); no tree logic reads the team id; runtime trees use 255. Not capturable, no ports. [C] census (P07), `code/worldobject/tree.cpp`.
+
+**Level-file parameters** [C] `Tree::Read/Write`:
+
+| # | Field | Type | Default | Meaning | Observed in `mp_*` (755 lines) |
+|---|---|---|---|---|---|
+| 8 | height | float | 50.0 | world-unit scale of the whole tree (geometry is generated at unit height) | 43.54 … 272.65 |
+| 9 | budsize | float | 1.0 | width multiplier of the **leaf** quads only (branch quads use 0.1, leaves 0.1 × budsize) | 0 … 43.97 (most common 1.00, 3.00, 0.00, 10.00) |
+| 10 | pushOut | float | 1.0 | sideways reach of child branches | 0.34 … 1.31 |
+| 11 | pushUp | float | 1.0 | upward reach of child branches | 0.43 … 1.32 |
+| 12 | iterations | int | 6 | recursion depth N (trunk = level 1, leaves = level N) | 4 (24), 5 (165), 6 (516), 7 (50) |
+| 13 | seed | int | 0 | seed of the generation RNG | 0 … 99992 |
+| 14 | branchColour | int (signed 32-bit, `%-12d`) | 0xffffffff | packed RGBA, **R in the low byte**: R = v & 0xFF, G = (v >> 8) & 0xFF, B = (v >> 16) & 0xFF, A = (v >> 24) & 0xFF (`intToArray`) | 33 distinct; −1 = (255,255,255,255) |
+| 15 | leafColour | int | 0xffffffff | same packing | 39 distinct |
+| 16 | leafDropRate | int, optional | 0 | 0 = off; visual leaf-particle rate; editor range 0–50 | 0 (737), 35 (18) |
+| 17 | spiritDropRate | int, optional (only if 16 present) | 0 | > 0 = "magic tree" spawning spirits (synced); editor range 0–50 | always 0 in `mp_*` |
+| 18 | evil | int, optional (only if 17 present); `== 1` → true | 0 | evil tree | 1 on 127 lines: all of `mp_cts_3P_2` (45), `mp_cts_4P_2` (59), `mp_tankbattle_4P` (23), all with colours −1/−1 |
+
+Fields 16–18 are read only while `TokenAvailable()`, each nested inside the previous, so a line may stop after 15, 16 or 17. Editor ranges ([B:EDITOR]) height 1–1000 step 1; budsize 0–50 step 0.05; pushUp/pushOut 0–5 step 0.01; iterations 1–10; seed 0–99999; leafDrop/spiritDrop 0–50; evil 0–1. [C] `Tree::Read`, `code/interface/tree_window.cpp:TreeWindow::Create`.
+
+Runtime-only state: `m_onFire` (burn/regrow phase), `m_fireDamage` (ignition accumulator), `m_spawnsRemaining` (propagation budget), `m_spawnTimer`, `m_destroyable`, `m_corruptCheckTimer` (initial 5.0), `m_corrupted`, `m_renderCorruptShadow`, `m_burnSoundPlaying`, hit-check `m_hitcheckCentre` (unit space), `m_hitcheckRadius`, `m_numLeafs`, display-list ids. [C] `code/worldobject/tree.h`.
+
+**Procedural generation (exact)** [C] `Tree::Generate`, `GenerateBranches`, `GenerateLeaves`, `RenderBranch`. The tree is generated once in unit space (trunk (0,0,0)→(0,1,0)); `height` is only a uniform scale at render/hit-test time. The RNG is the **unsynced** application LCG, re-seeded with the tree's seed at the start of every pass, so each pass reproduces identical geometry. Pseudocode (own notation):
+
+```
+RNG (AppSeedRandom / AppRandom):
+  uint32 s; seed(x): s = x
+  next():  s = s*214013 + 2531011 (mod 2^32); return (s >> 16) & 0x7FFF   // 0..32767
+  frand(r): r * next() / 32767.0                                         // 0..r inclusive
+
+Branch(from, to, n, pass):
+  if n == 0: return
+  n = n - 1
+  if n == 0:                                   // this segment is a LEAF
+      if pass == RADIUS: hitR = max(hitR, |to - hitC|)
+      elif pass == LEAF: hitC += to; numLeafs += 1
+  d = to - from; A = normalise(d x to); B = normalise(A x d)   // normalise: |v|^2 <= 1e-10 -> (0,0,1)
+  len = |d|; w = 0.1 * (n == 0 ? budsize : 1.0)
+  if (n == 0 and pass == LEAF) or (n != 0 and pass == BRANCH):
+      emit quad [from - A*len*w, from + A*len*w, to + A*len*w, to - A*len*w] uv (0,0),(0,1),(1,1),(1,0)
+      emit the same quad with B                 // two crossed planes per segment
+  for dir in [A, -A, B, -B]:                    // always 4 children, even below a leaf
+      t = 0.3 + frand(0.6)                      // one RNG draw per child
+      cFrom = from + d*t
+      cTo = cFrom + dir*len*0.4*pushOut + d*(1 - t)*pushUp
+      Branch(cFrom, cTo, n, pass)               // returns immediately when n == 0
+
+Generate():
+  hitC = 0; hitR = 0; numLeafs = 0; unpack colours (optional leaf-alpha boost)
+  seed(seed); BRANCH pass -> display list 1 (GL_QUADS)
+  seed(seed); LEAF pass   -> display list 2 (GL_QUADS; accumulates hitC)
+  hitC = hitC / numLeafs
+  seed(seed); RADIUS pass (no geometry)
+  hitR = hitR * 0.8
+```
+
+Derived for depth N: segments at level k (k = 0 trunk … N−1 leaves) = 4^k; leaf segments 4^(N−1) (N = 6 → 1024); branch segments (4^(N−1) − 1)/3 (N = 6 → 341); 2 quads per segment; RNG draws per pass = 4 × total segments. For the trunk, d × to = 0 so A = (0,0,1) and B = A × d = (−1,0,0) [C] `code/lib/vector3.h:Vector3::Normalise`. The leaf centroid/radius are computed **inside the display-list compile callbacks**, i.e. the simulation's hit volume is a by-product of render-list compilation; `Resource::CreateDisplayListAsync` runs the callback synchronously on the main thread or queues it to the loading thread and blocks. [C] `code/lib/resource.cpp:Resource::CreateDisplayListAsync`.
+
+After generation `Tree::SetDetail(1)` sets `m_centrePos = m_pos + hitC·m_height` and `m_radius = hitR·m_height·1.5`; `SetDetail` asserts `detail == 1` because other values change the iteration count (`iterations −= detail − 1`, min 3) and hence the hit volume ("causes a sync error", source comment). [C] `Tree::SetDetail`.
+
+**Hit volumes** [C] `Tree::DoesSphereHit/DoesShapeHit/DoesRayHit`, using the current (burnt) height `hA = GetActualHeight(0)`: (1) trunk sphere centre `m_pos`, radius 10.0 (constant); (2) crown sphere centre `m_pos + hitC·hA`, radius `hitR·hA`. A query hits if it hits either. `IsInView` uses sphere (`m_pos`, `m_height`). Quirk [I]: rendering rotates the tree by `m_front` while `hitC` is applied unrotated, so the crown sphere is slightly offset from the drawn crown for non-default facings (small because the 4-way branching is nearly symmetric).
+
+**Fire, burn-down and regrowth.** `GetActualHeight(p) = m_height × (1 − |m_onFire′|)`, clamped ≥ 0.01 × height, where `m_onFire′` = `m_onFire` (+ `p × regrow` when regrowing, render prediction only). [C] `Tree::GetActualHeight`.
+
+| Constant | Value | Unit | Kind | Ref |
+|---|---|---|---|---|
+| ignition threshold on `m_fireDamage` | > 50.0 | damage | literal | `Tree::Damage` |
+| `m_fireDamage` decay | −1.0 per second (−`SERVER_ADVANCE_PERIOD` per tick), clamped [0, 100] | /s | literal | `Tree::Advance` |
+| initial `m_onFire` on ignition from healthy | 0.01 | phase | literal | `Tree::Damage` |
+| burn progression | +0.02 per second | phase/s | literal | `Tree::Advance` |
+| full burn from ignition | (1.0 − 0.01)/0.02 = 49.5 s | s | derived | |
+| regrow single-player / multiplayer | +0.01/s (100 s) / +0.05/s (20 s) | phase/s | literal | `Tree::Advance`, `GetActualHeight` |
+| ignite-others test | `ourH·ourHitR·1.5 + theirH·theirHitR·1.5 ≥ distance` (H = actual heights) | world units | formula | `Tree::Advance` |
+| damage to neighbour trees | `Damage(−1.0)` per tick per burning neighbour | — | literal | `Tree::Advance` |
+| AntHill ignition | `ourH·ourHitR·1.5 + 100 ≥ distance` → `AntHill::Burn()` | — | literal | `Tree::Advance` |
+| unit burn radius | `actualHeight / 2` (= `GetBurnRange()`) | world units | formula | `Tree::Advance`, `GetBurnRange` |
+| unit burn effect | Darwinian → `SetFire()`; any other entity → `ChangeHealth(−1, DamageTypeFire)` per tick (all teams) | — | literal | `Tree::Advance` |
+
+`Tree::Damage(d)` (fire damage negative): `Building::Damage` (sound `Damage`); if `m_fireDamage < 50`: `m_fireDamage += −d`; if it now exceeds 50: `m_onFire == 0` → `0.01`; `m_onFire < 0` (regrowing) → `m_onFire = −m_onFire` (resumes burning at the same height); start the `Burn` loop once. A burning tree is unaffected. Neighbour spread needs > 50 net damage: +1/tick against −0.1/tick decay ⇒ ≈ 56 ticks ≈ 5.6 s of continuous contact [I]. [C] `Tree::Damage`.
+
+External ignition sources [C]: Darwinians under the Hot Feet powerup touching a tree (sphere radius 2, `Damage(−1)` per tick, `Darwinian::AdvanceHotFeet`); `Lightning::Advance` (`Damage(−100)` for trees in its obstruction cell); `Fireball::Advance` (`Damage(−100)`); `FlameGrenade::Advance` (`Damage(m_power × −4)` within `m_power × 2`); `TurretShell` (`Damage(−2)`); the Extinguisher crate flips burning trees to regrowing (`SetFireAmount(−GetFireAmount())` within `POWERUP_EFFECT_RANGE × 2` = 140). Darwinians flee burning trees within `2 × GetBurnRange()` (`Darwinian::SearchForThreats`). `code/worldobject/darwinian.cpp`, `code/worldobject/lightning.cpp`, `code/worldobject/weapons.cpp`, `code/worldobject/crate.cpp:Crate::RunExtinguisher`, `code/taskmanager.h:POWERUP_EFFECT_RANGE`.
+
+End of burn (`m_onFire > 1.0`): `m_onFire = −1.0` (stump at 1% height); if `m_corrupted && m_evil` both are cleared (fire cleanses a corrupted tree); if `m_destroyable` → stop the burn sound and return true (removed). Level trees are never destroyable (not in the level format); crate-created trees and their offspring are. [C] `Tree::Advance`, `Crate::GenerateTrees`.
+
+**Healthy-phase behaviours** (only while −0.3 < `m_onFire` ≤ 0, i.e. ≥ 70% regrown and not burning) [C] `Tree::Advance`:
+1. Leaf drop (visual, unsynced): if `leafDropRate > 0` and `rand() % (51 − leafDropRate) == 0` (CRT `rand`): one `Particle::TypeLeaf` at `m_pos + (0,h,0) + (sfrand(h), sfrand(h/4), sfrand(h))` in leaf colour (`sfrand(r)` ∈ [−r/2, r/2]).
+2. Spirit drop (synced, magic tree): if `!evil && spiritDropRate > 0` and `syncrand() % (51 − spiritDropRate) == 0`: position = `(syncfrand(h), h, 0)` rotated about Y by `syncfrand(2π)` + `m_pos`; team = `int(syncfrand(6))` re-drawn until it is not −1, not the Monster team and not the Futurewinian team; `Location::SpawnSpirit(pos, 0, team, none)`. Per-tick probability 1/(51 − rate) (rate 15 → 1/36 ≈ 0.28 spirits/s); spirits feed Engineers/Harvesters ([05](05_economy_and_population.md)).
+3. Propagation: if `m_spawnsRemaining > 0`: `m_spawnTimer < 0` → `now + 5 + syncfrand(5)`; when `now ≥ m_spawnTimer` → `--m_spawnsRemaining`, timer −1, `CreateAnotherTree()`.
+
+`CreateAnotherTree()` [C] `Tree::CreateAnotherTree`, `Tree::PushFromObstructions`:
+1. Centroid of all other trees within 100 units.
+2. `fullH = GetActualHeight(0)`; `range = fullH + syncfrand(fullH)` (drawn unconditionally).
+3. With neighbours: offset = `(m_pos − centroid)` set to length `fullH`, rotated about Y by `syncsfrand(π/4)` (±π/8); else offset = `(range, 0, 0)` rotated about Y by `syncfrand(2π)`.
+4. Push from obstructions: for each building in the obstruction cell, while its `DoesSphereHit(pos, 1.0)`, move `pos` 2.0 units directly away from that building's `m_pos`; resample Y; **abort if Y < 0** (underwater).
+5. Create a Tree (team 255, new building id), `Clone` this tree's parameters (height, budsize, pushOut, pushUp, iterations, seed, colours, leafDrop, spawnsRemaining (already decremented), destroyable, spiritDrop, evil), `Initialise`, then seed = `int(syncfrand(99999))`, height = `(height × 0.75) × (1 + syncsfrand(0.2))` (×0.65…0.85, evaluated through `volatile` temporaries for a fixed evaluation order), `SetFireAmount(−1)` (starts as a stump and regrows), `SetDetail(1)`, recompute the whole obstruction grid.
+
+**Evil trees and corruption** [C] `Tree::Advance`:
+- Kill aura: each tick with probability `syncfrand(10) < 0.2` (2%): `GetBestEnemy(pos, actualHeight/2, monster team)`; if that is a Darwinian not in `StateOperatingPort` → `ChangeHealth(−999)`; if this killed it, its spirit is removed from `m_spirits` and a `Zombie` effect spawns at its position (`vel.y = 20 + syncfrand(25)`, up-vector tilted by `syncsfrand(1)` about its front). Evil trees never drop spirits.
+- Corrupting: only when fully grown (`m_onFire == 0`): `m_corruptCheckTimer` counts down; at ≤ 0 it resets to `10 + syncfrand(5)` and the **first** tree (building-array order) that is not evil, not corrupted and within `actualHeight` becomes corrupted: `spiritDropRate = 0`, its `m_corruptCheckTimer = −10`, `m_corrupted = true` (one victim per check).
+- Becoming evil: a non-evil tree with `m_corruptCheckTimer < 0` adds dt each tick; when it passes 0 the timer resets to 5 and `m_evil = true` (10 s after corruption).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Healthy : level load, m_onFire 0
+    [*] --> Regrowing : runtime-created, SetFireAmount -1
+    Healthy --> Burning : fireDamage above 50, m_onFire 0.01
+    Burning --> Removed : m_onFire above 1 and destroyable
+    Burning --> Stump : m_onFire above 1, set -1, corrupted evil tree cleansed
+    Stump --> Regrowing : each tick m_onFire += dt x regrow
+    Regrowing --> Burning : fireDamage above 50, m_onFire = -m_onFire
+    Burning --> Regrowing : Extinguisher crate, m_onFire = -m_onFire
+    Regrowing --> Healthy : m_onFire reaches 0
+    note right of Healthy : leaf drop, spirit drop and propagation run while -0.3 < m_onFire <= 0
+```
+
+Orthogonal corruption sub-state: `Normal → Corrupted (timer −10) → Evil (after 10 s) → [burn-out] → Normal`; level-placed `evil = 1` trees start Evil and are only cleansed by burning if also corrupted (they are not), so they stay evil. [C].
+
+Sounds: `CreateNormal`, `CreateEvil`, `CreateMagic` (chosen in `Initialise`: evil → CreateEvil, spiritDropRate > 0 → CreateMagic, else CreateNormal), `Burn` (looping; stopped with `StopAllSounds(id, "Tree Burn")`), plus base `Create`, `Damage`. [C] `Tree::ListSoundEvents`, `Tree::Initialise`.
+
+**Rendering summary** (→ [24](24_rendering.md)) [C] `Tree::RenderAlphas`: everything in the alpha pass (`PerformDepthSort` at `m_pos + hitC·m_height`); `textures/tree.bmp`, additive blend, cull off, depth write off; transform `Matrix34(m_front, up, m_pos)` × `actualHeight`; branch list in branch colour then (unless Christmas mod or evil) leaf list in leaf colour. Sway = breathing scale `1 + sin((realTime + uniqueId·2)·2) × 0.003` (evil 0.01). Magic trees pulse the leaf blue channel. Evil: black branches (0,0,0,200), no leaves. Corrupting: drawn twice (darkening pass + silhouette). Burning: branches scaled to black by `min(m_onFire × 10, 1)`, leaves fading, 4 additive starburst billboards (0.8,0.2,0.1, alpha 0.5 × actualH/height), fire particles `int(actualHeight/12) / RenderBuildingDetail` per tick (unsynced). Regrowing: leaves invisible while |m_onFire| > 0.5. Christmas mod (`Location::ChristmasModEnabled`): branches (180,100,50), no leaves. `RenderTreeDetail` pref (default 1) > 1 boosts leaf alpha ×1.3^detail. D3D bakes colour into the display list ([B:D3D]). `Location::FlushOpenGlState` deletes tree display lists; regenerated lazily.
+
+**Mode usage**: official maps Domination 9/9, KOTH 9/9, CTS 8/9, Assault 5/8, Blitzkrieg 4/7, Rocket Riot 4/7 (39 maps). [C] census.
+
+### 7.4 StaticShape
+
+Source: `code/worldobject/staticshape.{h,cpp}`. **[B:FULL]**.
+
+**Function.** Places any `.shp` from `data/shapes` as a solid, non-interactive obstacle (rocks, temple ruins, landing obstructions). No team logic (all lines team 255), not capturable, indestructible, no ports, no lights (`SetShapeLights` never runs because the shape is set after `Building::Initialise`). [C].
+
+| # | Field | Type | Default | Meaning | Observed (193 official lines) | Write |
+|---|---|---|---|---|---|---|
+| 8 | scale | float | 1.0 | uniform scale of the shape transform | 1.00 ×163; 0.83–1.76; one 6.10 | `%6.2f` |
+| 9 | shapeName | token (no spaces) | "none" | file under `data/shapes/`; "none" = no shape | `beachheadobstruction.shp` 67, `temple2.shp` 56, `rockhead.shp` 32, `temple4.shp` 27, `temple3.shp` 8, `statue.shp` 1, `spaceship.shp` 1, `carryspider.shp` 1 | `%s` |
+
+**Behaviour** [C] `StaticShape::Initialise/SetDetail/Advance`: `Initialise` copies scale and calls `SetShapeName` (loads through `Resource::GetShape` and computes centre/radius with the scaled transform); `SetDetail` re-samples Y and recomputes centre/radius; `Advance` = `Building::Advance`. Hit tests are exact mesh tests on the scaled shape; with no shape, a sphere of `m_radius` (13.0). A missing shape file is fatal: `Resource::GetShapeCopy` searches `data/shapes/<name>` (lower-cased) on disk then in the archive and raises `AppReleaseAssert("Couldn't find shape file …")`. Shapes are cached by name, so all StaticShapes using a file share one Shape. `SetStringId` is declared but never defined. Rendering: scaled shape with `GL_NORMALIZE`; with no shape `RenderSphere(m_pos, 40)` (debug helper). [C] `code/lib/resource.cpp:Resource::GetShapeCopy`.
+
+**Mode usage**: 19 official maps — Assault 6/8, Domination 6/9, KOTH 5/9, Blitzkrieg 1/7, CTS 1/9. [C] census.
+
+### 7.5 RestrictionZone
+
+Source: `code/worldobject/restrictionzone.{h,cpp}`. **[B:FULL]**.
+
+**Function.** Invisible, non-colliding circle that (a) prevents random crates from landing inside it and (b) optionally blocks map-wide power-up targeting inside it (e.g. starting islands). Source comment: "doesn't do anything itself, although it prevents crates from dropping inside their area". All team 255; no capture; indestructible. [C].
+
+| # | Field | Type | Default | Meaning | Observed (35 lines) | Write |
+|---|---|---|---|---|---|---|
+| 8 | size | float | 300.0 | horizontal radius | 300.00 … 1118.80 | `%-2.2f` |
+| 9 | blockPowerups | int, optional | 0 | 1 = also blocks power-ups whose target area is "anywhere" | 0 ×26, 1 ×9 | `%5d` |
+
+**Behaviour** [C] `RestrictionZone::IsRestricted`, callers:
+- Static registry `s_restrictionZones` (unique ids): added in `Initialise`, removed in the destructor.
+- `IsRestricted(pos, powerups = false)`: for each registered zone, horizontal distance (`pos.y` replaced by the zone's y) `< size` → true if `!powerups` or the zone has `blockPowerups == 1`.
+- Callers: `Location::CreateRandomCrate` (random-position fallback re-rolls while height < 20 or `IsRestricted(pos)`, max 100 tries, then no crate) and `TaskManager::IsValidTargetArea` (GunTurret task: `IsRestricted(pos, true)` → invalid; any target area whose centre is (0,0,0), the radius-99999.9 "anywhere" area used by Booster, HotFeet, GunTurret, Shaman, Infection, MagicalForest, DarkForest, AntsNest, Plague, EggSpawn, MeteorShower, Extinguisher, Rage, DropShip). A commented-out use exists in `Multiwinia::AdvanceRetribution`. [C] `code/location.cpp:Location::CreateRandomCrate`, `code/taskmanager.cpp:TaskManager::IsValidTargetArea`.
+- `Advance` does nothing; sphere/shape hit false; ray only in the editor; rendered only under `LOCATION_EDITOR` ([B:EDITOR]).
+
+**Mode usage**: 14 official maps — Assault 6/8, Rocket Riot 4/7, Blitzkrieg 2/7, Domination 1/9, KOTH 1/9. [C] census.
+
+### 7.6 SmokeMarker
+
+Source: `code/worldobject/smokemarker.{h,cpp}`. **[B:FULL]**.
+
+**Function.** Emits a continuous rising column of grey smoke (atmospherics). No extra level fields (base 8 tokens only). Team irrelevant (all 255); not capturable; indestructible. [C].
+
+**Behaviour** [C] `SmokeMarker::Advance`: every tick 3 particles of `Particle::TypeMissileTrail` at `m_pos`, velocity `(sfrand(0.4), 1, sfrand(0.4))` set to length 50, size `200 + frand(100)` (unsynced RNG, visual only); does not call `Building::Advance`. `TypeMissileTrail`: life 5.0 s, base size 200, gravity 1.0, friction 0, colour (100,100,100)→(200,200,200). [C] `code/particle_system.cpp`.
+
+**Signature bug — collision is not disabled** [C]/[I]: the header declares `RenderAlphas(float)`, `DoesSphereHit(Vector3 const&, float)` and `DoesRayHit(…, float _rayLen, …)`, whereas the `Building` virtuals take `double`; they therefore **do not override** (only `DoesShapeHit(Shape*, Matrix34)` matches). In game the base `Building::DoesSphereHit/DoesRayHit` apply: with no shape, a sphere of radius 13.0 at `m_pos`, registered in the obstruction grid like every building → each SmokeMarker is an **invisible 13-unit obstacle** that pushes units and stops rays [I] (whether any of the six sit on routes is 03-U9). The intended editor sphere drawing is never called. Compare EruptionMarker (uses `double`, correctly non-colliding). A new design should make markers non-colliding explicitly.
+
+**Mode usage**: 6 lines, all in `mp_assault_3p_1` (Assault 1/8). [C] census.
+
+### 7.7 EruptionMarker
+
+Source: `code/worldobject/eruptionmarker.{h,cpp}`. **[B:FULL]**.
+
+**Function.** Atmospheric volcano vent; visual only, no damage. No extra level fields; team 255; not capturable; indestructible; non-colliding (all three hit tests use `double` and return false outside the editor). [C].
+
+| Parameter | Value | Kind |
+|---|---|---|
+| eruption start test (idle) | `syncrand() % 1000 == 0` per tick (p = 0.001/tick, mean wait 100 s at normal speed) | literal, **synced** |
+| eruption duration | `3.0 + syncfrand(4.0)` s (3–7 s) | literal, synced |
+| particles while erupting | 10 per tick, `Particle::TypeVolcano`, velocity `(sfrand(1), 1, sfrand(1))` set to length 100, size `300 + frand(200)` | literal, unsynced |
+| `TypeVolcano` particle | life 12.0 s, size 400, gravity 10.0, friction 0, colour (150,50,50)→(150,120,50); dies on touching the ground | `code/particle_system.cpp` |
+
+It consumes the synced RNG every idle tick, so it is part of the deterministic RNG stream ([22](22_determinism_and_networking.md)). [C] `EruptionMarker::Advance`.
+
+```mermaid
+stateDiagram-v2
+    Idle --> Erupting : syncrand mod 1000 == 0, timer 3 + syncfrand(4)
+    Erupting --> Idle : timer reaches 0
+```
+
+**Mode usage**: 1 line (`mp_blitzkrieg_3P_2`, id 80) — Blitzkrieg 1/7. [C] census.
+

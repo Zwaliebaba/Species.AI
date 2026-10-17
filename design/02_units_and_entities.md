@@ -410,7 +410,155 @@ Per-class result:
 
 ## 3 Framework classes
 
-_Pending — being written._
+The engine-level object model (containers, update order, spatial grids, routing) is specified in [21](21_simulation_and_entity_model.md); this section gives the behaviour contract every unit relies on.
+
+### 3.1 WorldObjectId — object handle
+
+[C] `code/worldobject/worldobject.h:WorldObjectId`, `code/worldobject/worldobject.cpp`. [B:FULL].
+
+| Field | Type | Invalid default | Meaning |
+|---|---|---|---|
+| `m_teamId` | `unsigned char` | 255 | owning team slot 0–5 (`NUM_TEAMS` = 6, `code/globals.h`); 255 = none |
+| `m_unitId` | `int` | −1 | index in the team's `m_units`; −1 = the team's loose `m_others` list; or a pseudo-unit code |
+| `m_index` | `int` | −1 | slot index inside the selected container |
+| `m_uniqueId` | `int` | −1 | serial number disambiguating re-used slots; buildings use their level-file id |
+
+Pseudo-unit codes (`#define`): `UNIT_BUILDINGS = −100` (resolved by `Location::GetBuilding(uniqueId)`, linear scan), `UNIT_SPIRITS = −101` (`Location::GetSpirit(index)`; spirits have uniqueId −1), `UNIT_LASERS = −102` (defined, not resolved), `UNIT_EFFECTS = −103` (`Location::GetEffect`: slot then uniqueId match) [C] `code/location.cpp:Location::GetWorldObject`.
+
+Behaviour:
+- `IsValid()` ⇔ `teamId != 255 || unitId != −1 || index != −1` (uniqueId ignored); `==`/`!=` compare all four fields; `Set()` debug-asserts `teamId < 256`, `unitId < 65536`, `index < 65536` (`ID_MAXTEAMS`, `ID_MAXUNITS`, `ID_MAXTROOPS`).
+- `GenerateUniqueId()`: `++s_nextUniqueId; m_uniqueId = s_nextUniqueId` (first id 1); one static counter shared by entities and effects (Zombie, OfficerOrders, MultiwiniaOfficerOrders every 2 s, OfficerOrderTrail every 0.2 s per order effect). `ResetUniqueIdSeed()` sets it to 0 before every `new Location` [C] `code/main.cpp`. Ids are therefore deterministic per match only if every peer creates the same objects in the same order — and unique ids feed gameplay (`uid % 20` worship distance, `uid % 10` fence clearance, abduction blend, formation slots, render variation) [C]/[I].
+- Handles are **weak**: every dereference (`Location::GetEntity`) re-resolves team → unit → slot and returns NULL when the slot is empty or its occupant's uniqueId differs; `GetEntitySafe(id, type)` additionally checks the type [C] `code/location.cpp:Location::GetEntity`, `GetEntitySafe`.
+
+### 3.2 WorldObject — base of all simulated objects
+
+[C] `code/worldobject/worldobject.h:WorldObject`, `code/worldobject/worldobject.cpp`. [B:FULL].
+
+| Member | Type | Default | Meaning |
+|---|---|---|---|
+| `m_id` | `WorldObjectId` | invalid | identity |
+| `m_type` | `int` | 0 | `Entity::Type*`, `Building::Type*`, or `WorldObject::Effect*` (for `UNIT_EFFECTS`) |
+| `m_pos`, `m_vel` | `Vector3` (double) | — | position (world units ≈ metres), velocity (units/s) |
+| `m_onGround` | `bool` | false | standing on terrain |
+| `m_enabled` | `bool` | true | disabled objects are frozen (`Entity::Advance` returns false at once) |
+
+Virtuals: `bool Advance()` (default false; **true = remove and delete me**), `void Render(double predictionTime)`, `bool RenderPixelEffect(double)` (true if it drew anything), `char *LogState(char *msg)` (sync-log fingerprint `"WOBJ Type[%d] Id[%d] pos[x,y,z], vel[sum]"` using `HashDouble`, [22](22_determinism_and_networking.md)).
+
+`BounceOffLandscape()`: intended to put the object at the midpoint of its last and current positions, but the last position term is commented out, so the impact point is the current position snapped to terrain height; velocity is reflected about the terrain normal `n`: `v' = 2(n·(−v))·n − (−v)`, then × `COEF_OF_RESTITUTION` = 0.85 (`#define`) [C] `WorldObject::BounceOffLandscape`. Used by TriffidEgg (§14) and throwables ([04](04_crates_powerups_and_weapons.md)).
+
+`WorldObject::Effect*` enum (values in order): 0 `TypeInvalid`, 1 `EffectThrowableGrenade`, 2 `EffectThrowableAirstrikeMarker`, 3 `EffectThrowableAirstrikeBomb`, 4 `EffectThrowableControllerGrenade`, 5 `EffectGunTurretTarget`, 6 `EffectGunTurretShell`, 7 `EffectSpamInfection`, 8 `EffectBoxKite`, 9 `EffectSnow`, 10 `EffectRocket`, 11 `EffectShockwave`, 12 `EffectMuzzleFlash`, 13 `EffectOfficerOrders`, 14 `EffectOfficerOrderTrail`, 15 `EffectZombie`, 16 `EffectRandomiser`, 17 `EffectDustBall`, 18 `EffectLightning`, 19 `EffectPulseWave`, 20 `EffectFlameGrenade`, 21 `EffectTurretEmptyShell`, 22 `EffectFireball` [C] `worldobject.h`.
+
+### 3.3 Light — level light record
+
+`class Light` (no base) [C] `code/worldobject/worldobject.h:Light`, `code/worldobject/worldobject.cpp`. [B:FULL]. Not a simulated object: a plain record of `double m_colour[4]` (default 1.3, 1.3, 1.3, 0) and `double m_front[4]` (default (0,0,1,0); w = 0 = directional "infinitely distant" light). Methods: `SetColour(double[4])`, `SetFront(double[4])`, `SetFront(Vector3)` (w = 0), `Normalise()` (normalises xyz). Level files supply the lights (`Lights_StartDefinition`, [08](08_levels_and_level_design.md), [29](29_data_formats_reference.md)); `Location::InitLights` copies them and `Location::SetupLights` binds light *i* to `GL_LIGHT0 + i` (diffuse = specular = colour; Christmas mode replaces the colour by (1.3, 1.2, 1.2)) [C] `code/location.cpp:Location::InitLights`, `Location::SetupLights`. Lighting model: [24](24_rendering.md).
+
+### 3.4 Entity — base class of all units
+
+`class Entity : WorldObject` [C] `code/worldobject/entity.h:Entity`, `code/worldobject/entity.cpp`. [B:FULL].
+
+Members:
+
+| Member | Type | Default | Meaning |
+|---|---|---|---|
+| `m_formationIndex` | int | −1 | offset inside its Unit's formation (not the array index) |
+| `m_buildingId` | int | −1 | building that created it (Darwinian shadows it with its own) |
+| `m_spawnPoint` | Vector3 | — | creation point; `FollowRoute` overwrites it with the current waypoint |
+| `m_roamRange` | double | 0 | how far it may wander from `m_spawnPoint` |
+| `m_stats[3]` | **unsigned char** | 0 | Health, Speed, Rate (§2.4) |
+| `m_dead` | bool | false | dying/fading (still in containers) |
+| `m_justFired` | bool | false | set by `Attack` |
+| `m_reloading` | double | 0 → `syncfrand(Rate)` | seconds until it may fire |
+| `m_inWater` | double | −1 | −1 = dry, else seconds in water |
+| `m_destroyed` | bool | false | removed outright: `Advance` returns true at once |
+| `m_front`, `m_angVel` | Vector3 | — | facing (unit vector), angular velocity |
+| `m_shape` | Shape* | NULL | 3-D model; NULL ⇒ sprite |
+| `m_centrePos`, `m_radius` | Vector3, double | —, 0 | shape centre/radius from `Begin`; radius drives entity-grid registration |
+| `m_renderDamaged` | bool | false | cosmetic flicker |
+| `m_routeId`, `m_routeWayPointId` | int | −1, −1 | route being followed |
+| `m_routeTriggerDistance` | double | 10.0 | waypoint reached distance |
+| `m_aiTimer` | double | 0 | subclass AI timer |
+| `static s_entityPopulation` | int | 0 | ++ctor/−−dtor (AI entities subtract themselves) |
+| `static s_neighbours` | `std::vector<WorldObjectId>` | — | shared, non-reentrant scratch for grid queries |
+
+Enums: `StatHealth = 0, StatSpeed, StatRate, NumStats`; `DamageType*` (§2.6); `Type*` (§1.1).
+
+Virtual interface and contracts [C] `entity.cpp`:
+
+| Method | Base behaviour | Contract |
+|---|---|---|
+| `Begin()` | sound "Create"; if `m_shape`, `m_centrePos = CalculateCentre`, `m_radius = CalculateRadius` | called once by `SpawnEntities` after ids/position are set, before grid insertion; team-coloured shapes must be set here, not in the constructor |
+| `bool Advance(Unit*)` | see the sequence below | **true = remove and delete me**; `Unit::AdvanceEntities` / `Team::Advance` then remove it from the grid, otherwise `EntityGrid::UpdateObject` moves it ([21](21_simulation_and_entity_model.md)) |
+| `bool AdvanceDead(Unit*)` | fade 4/tick on ground, 2/tick in air (§2.8) | |
+| `void AdvanceInAir(Unit*)` / `AdvanceInWater(Unit*)` | §2.9 | |
+| `void RunAI(AI*)` | nothing | called by the CPU `AI` entity for specials ([07](07_ai.md)) |
+| `bool ChangeHealth(int amount, int type = Unresistable)` | §2.6 | true = hit registered (knock-back applies) |
+| `void Attack(Vector3 pos)` | if `m_reloading == 0`: target ± `syncsfrand(15)` on x and z, from pos + (0,3,0), `Location::FireLaser(from, (to − from).SetLength(150), team)`, `m_reloading = Rate`, `m_justFired = true`, sound "Attack" | generic laser |
+| `bool IsInView()` | true | render culling hook |
+| `void SetWaypoint(Vector3)` | nothing | used by `FollowRoute` |
+| `PushFromObstructions`, `PushFromCliffs`, `PushFromEachOther`, `EnterTeleports` | §2.9 | |
+| `void DirectControl(TeamControls const&)` | nothing | direct-control hook (InsertionSquad) |
+| `bool IsSelectable()` | false | §2.5 |
+| `void ListSoundEvents(LList<char*>*)` | "Create", "Attack", "LoseHealth", "EnterTeleport", "ExitTeleport", "Die", "Selected" | sound-editor list |
+| `bool RayHit(start, dir)` | shape ray test with `Matrix34(front, up, pos)`; sprites: ray–sphere radius 5 | picking and turret shells |
+| `Vector3 GetCameraFocusPoint()` | `pos + vel` | camera entity tracking |
+| `void FollowRoute()` | level route (SP) or routing-system route (MP); index −1 → 0; `SetWaypoint(waypoint)`; `m_spawnPoint = waypoint`; non-building waypoint within `m_routeTriggerDistance` → next; past the end → route cleared. A building waypoint (teleport) is never passed — the teleport creates a new entity that continues | Darwinian overrides (§4.8) |
+| `char *LogState(msg)` | `"ENT Type[name] Id[uid] pos[...], vel[sum] front[sum]"` | sync log |
+| `void SetShape(name, colourAll = false)` | §2.10 | |
+| `void Render(double)` | nothing | |
+
+Base `Entity::Advance(Unit*)` sequence [C] `Entity::Advance`:
+1. `!m_enabled` → return false (frozen). `m_destroyed` → return true.
+2. If `m_dead`: `AdvanceDead()`; true → return true (removed); otherwise continue.
+3. `m_reloading −= dt`, clamped at 0.
+4. Cosmetic `m_renderDamaged` (unsynced `frand`, wall clock) — render only.
+5. `m_inWater != −1` → `AdvanceInWater(unit)`.
+6. Clamp x, z into [0, worldSize].
+7. In a unit and alive → `unit->UpdateEntityPosition(pos, radius)` (unit centre/radius accumulation).
+8. `m_routeId != −1` → `FollowRoute()`.
+9. return false.
+Subclasses call it either first (Darwinian, Officer, ArmyAnt) or last (Armour, Engineer, Spider, Egg and the other classes not listed next). `SpaceInvader`, `Nuke`, `Centipede` (which calls `AdvanceDead` directly for dead segments), `Meteor`, `AI`, `DropShip`, `Tripod`, `Tentacle` and `Lander` never call it, so they get no world clamp, reload countdown, base water handling or route following from the base class [C] grep of `Entity::Advance` in each class's `.cpp`.
+
+Static helpers: `NewEntity(type)` (class factory; `GenerateUniqueId`), `GetTypeName`/`GetTypeId`/`GetTypeNameTranslated` (§1.1), `EntityIsBlocked` (§1.1), `BeginRenderShadow`/`RenderShadow`/`EndRenderShadow` (§2.11), `ConvertShapeColoursToTeam`/`ConvertFragmentColours`/`SetupTeamShape` (§2.10).
+
+### 3.5 EntityBlueprint — the stats.txt table
+
+`class EntityBlueprint` (static members only) [C] `code/worldobject/entity.h:EntityBlueprint`, `code/worldobject/entity.cpp:EntityBlueprint::Initialise`, `EntityBlueprint::GetStat`. [B:FULL].
+
+- `Initialise()` (start-up, `code/main.cpp`; again on mod change, `code/lib/resource.cpp`): opens `stats.txt` through the resource system's `TextReader` (blank and `#` lines skipped), and assigns rows **positionally**: row *k* → entity type *k*. Token 1 (name) is `strdup`ed into `m_names[k]` but never used for lookup; tokens 2–4 → `m_stats[k][Health, Speed, Rate]` via `iv_atof`. Release-asserts if more than `NumEntityTypes` rows. Grammar: [29](29_data_formats_reference.md).
+- `GetStat(type, stat)`: `StatSpeed` for any type except `TypeSpaceInvader` → `value × (1 + m_difficultyLevel/10)`; otherwise the raw value (§2.4).
+- `GetName(type)`: the stored name.
+
+`data/stats.txt` (columns HLTH = health, SPED = speed "m/s", RATE = "secs to reload") [C] `data/stats.txt`:
+
+| Row | Name in file | HLTH | SPED | RATE | Byte value / use |
+|---|---|---|---|---|---|
+| 0 | Invalid | 0 | 0 | 0 | — |
+| 1 | LaserTroop | 20 | 15 | 1 | |
+| 2 | Engineer | 255 | 28 | 0 | |
+| 3 | Virii | 10 | 32 | 0 | |
+| 4 | InsertionSquadie | 75 | 30 | 0.5 | RATE byte → **0**; the squad accumulator reads 0.5 from the blueprint |
+| 5 | Egg | 10 | 0 | 0 | health = dormant-decay scale |
+| 6 | SporeGenerator | 200 | 20 | 10 | rate unused |
+| 7 | Lander | 255 | 40 | 1 | rate = landed spawn interval |
+| 8 | Tripod | 155 | 20 | 1 | speed/rate unused |
+| 9 | Centipede | 255 | 80 | 1 | health × 2 × segment size (cap 255) |
+| 10 | SpaceInvader | 10 | 40 | 1 | speed not difficulty-scaled; cruise × 10 |
+| 11 | Spider | 200 | 50 | 1 | speed unused (walks ≤ 30) |
+| 12 | Darwinian | 50 | 20 | 3 | |
+| 13 | Officer | 255 | 30 | 3 | rate unused |
+| 14 | ArmyAnt | 20 | 25 | 0 | speed × (1 ± 0.2) per ant |
+| 15 | Armour | 200 | 60 | 5 | rate unused |
+| 16 | SoulDestroyer | 255 | 150 | 1 | speed overridden to 130 |
+| 17 | TriffidEgg | 50 | 100 | 1 | speed/rate unused |
+| 18 | AI | 255 | 255 | 255 | unused |
+| 19 | Shaman | 200 | 25 | 2 | |
+| 20 | Harvester | 255 | 28 | 0 | |
+| 21 | Nuke | 255 | 100 | 0 | flight speed 50→100 |
+| 22 | Tentacle | 255 | 100 | 0 | invulnerable |
+| 23 | Meteor | 255 | **350** | 0 | byte out of range ([I] 94); code reads the blueprint value 350 |
+| 24 | Tank | 150 | 50 | 2 | |
+| 25 | SpaceShip | 255 | **500** | 0 | byte out of range ([I] 244), and the byte **is** used (§23) |
+| 26 | DropShip | 255 | 255 | 0 | invulnerable |
 
 ## 4 Darwinian
 

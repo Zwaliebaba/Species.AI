@@ -915,7 +915,13 @@ def main():
         livestat = ''
         if refs:
             livestat = 'live' if any(x in live_pair for x in refs) else 'dead-data'
-        tags = [c for c in inf.get('comments', []) if c.split('=')[0].upper() in ('ARTIST', 'TITLE', 'ALBUM', 'COMMENT', 'COPYRIGHT', 'ENCODER', 'DATE', 'GENRE')]
+        # all Vorbis comments; personal-name fields are redacted (ENGINEER/ARTIST/PERFORMER/COPYRIGHT values)
+        tags = []
+        for c in inf.get('comments', []):
+            k, eq, v = c.partition('=')
+            if eq and k.upper() in ('ENGINEER', 'ARTIST', 'PERFORMER', 'COPYRIGHT', 'CONTACT'):
+                v = '<redacted>'
+            tags.append(k + eq + v)
         srows.append({
             'path': 'data/%s/%s' % (fo, f), 'folder': fo, 'name': remove_ext(f.lower()),
             'channels': inf.get('channels', ''), 'rate': inf.get('rate', ''),
@@ -984,7 +990,7 @@ def main():
         for fo in ('sounds', 'mwsounds'):
             rs = [r for r in srows if r['folder'] == fo]
             fh.write('\n### `data/%s/` (%d files)\n\n' % (fo, len(rs)))
-            fh.write('Columns: duration s; size KiB; archive (menusounds / sounds / sounds2 / NOT-SHIPPED); status (live = referenced by an event fired in FULL, dead = referenced only by unreachable/never-fired events, unused = no blueprint reference); referenced by (sample group -> events).\n\n')
+            fh.write('Columns: duration s; size KiB; archive (`menusounds.dat` / `sounds.dat` / `sounds2.dat` / NOT-SHIPPED(exclusion pattern)); status (live = referenced by an event fired in FULL, dead = referenced only by unreachable/never-fired events, unused = no blueprint reference); referenced by (sample group -> events).\n\n')
             fh.write('| Path | s | KiB | Archive | Status | Referenced by |\n|---|---|---|---|---|---|\n')
             for r in rs:
                 if r['status'] == 'referenced':
@@ -994,7 +1000,7 @@ def main():
                 else:
                     st = 'unused'
                     ref = ('orphan group `%s`' % r['orphan_groups']) if r['orphan_groups'] else ''
-                arch = r['archive'].replace('.dat', '')
+                arch = r['archive']
                 fh.write('| `%s` | %s | %.0f | %s | %s | %s |\n' % (r['path'], r['duration_s'], int(r['bytes']) / 1024.0,
                                                                   md_esc(arch), st, md_esc(ref)))
 
@@ -1034,6 +1040,37 @@ def main():
         for i, (k, a) in enumerate(agg.items(), 1):
             fh.write('| %d | %s | %s | %s | %s | %s | %s |\n' % (i, k[0], k[1], ', '.join(a['types']), '/'.join(sorted(a['fired'])),
                                                           md_esc(a['desc']), md_esc(site_short(' ; '.join(a['sites'])))))
+    # ---------------- coverage fragment
+    cov = os.path.join(outw, 'coverage', 'X2b_asset_catalogue_audio.csv')
+    with open(cov, 'w', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow(['path', 'depth', 'reason', 'sections'])
+        for r in srows:
+            sec = ['25.B Per-directory audio catalogue (every file)', '10.I Statistics']
+            if r['status'] == 'referenced':
+                sec.append('10.C Complete event table')
+                if r['archive'].startswith('NOT'):
+                    sec.append('10.F Music')
+            else:
+                sec.append('10.J Unused samples dead data and the tools/ checking scripts')
+            w.writerow([r['path'], 'full', '', ';'.join(sec)])
+        for path, sec in (
+                ('data/sounds.txt', '10.A Method and verification of P16;10.B How a sample name becomes a file;10.C Complete event table;10.D Events fired by code that have no data;10.J Unused samples'),
+                ('tools/sounds.txt', '10.B How a sample name becomes a file (packaging);25.A Audio assets in the asset pipeline'),
+                ('tools/menu_sounds.txt', '10.B How a sample name becomes a file (packaging);10.F Music;25.A Audio assets in the asset pipeline'),
+                ('tools/unused_samples.sh', '10.J Unused samples dead data and the tools/ checking scripts'),
+                ('tools/unused_sample_groups.sh', '10.J Unused samples dead data and the tools/ checking scripts'),
+                ('tools/build_multiwinia_data.bat', '10.B How a sample name becomes a file (packaging)'),
+                ('tools/multiwinia_exclusions.txt', '10.B How a sample name becomes a file (packaging);10.F Music'),
+                ('tools/listfiles.pl', '10.B How a sample name becomes a file (packaging)'),
+                ('tools/patch.full.list', '10.B How a sample name becomes a file (packaging)'),
+                ('code/sound/sample_cache.cpp', '10.B How a sample name becomes a file'),
+                ('code/lib/resource.cpp', '10.B How a sample name becomes a file'),
+                ('contrib/systemiv/lib/tosser/hash_table.cpp', '10.B How a sample name becomes a file'),
+                ('contrib/systemiv/lib/filesys/filesys_utils.cpp', '10.B How a sample name becomes a file')):
+            w.writerow([path, 'full', '', sec])
+        for f in sorted(set(s['file'] for s in sites)):
+            w.writerow([f, 'skimmed', 'only Trigger*Event / StopAllSounds call sites and their enclosing functions read', '10.C Complete event table;10.D Events fired by code that have no data'])
     print('\n'.join(summary))
 
 

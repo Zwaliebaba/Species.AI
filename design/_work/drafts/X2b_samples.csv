@@ -71,11 +71,11 @@ data/sounds/battle_cannon_damage6.ogg,sounds,battle_cannon_damage6,1,44100,2.728
 data/sounds/battle_cannon_damage7.ogg,sounds,battle_cannon_damage7,1,44100,2.531,21158,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,223232
 data/sounds/battle_cannon_damage8.ogg,sounds,battle_cannon_damage8,1,44100,2.270,20053,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,200192
 data/sounds/battle_cannon_damage9.ogg,sounds,battle_cannon_damage9,1,44100,2.670,22274,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret Damage,battlecannondamage,,referenced,dead-data,sounds.dat,,235520
-data/sounds/bigmetal1.ogg,sounds,bigmetal1,1,44100,3.613,47489,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,318656
-data/sounds/bigmetal2.ogg,sounds,bigmetal2,1,44100,3.680,38091,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,324552
-data/sounds/bigmetal3.ogg,sounds,bigmetal3,1,44100,2.189,26302,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,193032
-data/sounds/bigmetal4.ogg,sounds,bigmetal4,1,44100,5.081,69322,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,448164
-data/sounds/bigmetal5.ogg,sounds,bigmetal5,1,44100,2.742,36705,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,241824
+data/sounds/bigmetal1.ogg,sounds,bigmetal1,1,44100,3.613,47489,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,318656
+data/sounds/bigmetal2.ogg,sounds,bigmetal2,1,44100,3.680,38091,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,324552
+data/sounds/bigmetal3.ogg,sounds,bigmetal3,1,44100,2.189,26302,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,193032
+data/sounds/bigmetal4.ogg,sounds,bigmetal4,1,44100,5.081,69322,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,448164
+data/sounds/bigmetal5.ogg,sounds,bigmetal5,1,44100,2.742,36705,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,bigmetalgroan,,referenced,live,sounds.dat,,241824
 data/sounds/blueprint_sateilte.ogg,sounds,blueprint_sateilte,1,44100,7.892,65966,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintConsole Create;BUILDING BlueprintRelay Create;BUILDING ControlStation Create,relayhover,,referenced,live,sounds.dat,,696108
 data/sounds/blueprint_sateilte2.ogg,sounds,blueprint_sateilte2,1,44100,7.885,65039,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintConsole Create;BUILDING BlueprintRelay Create;BUILDING ControlStation Create,relayhover,,referenced,live,sounds.dat,,695454
 data/sounds/blueprint_sateilte3.ogg,sounds,blueprint_sateilte3,1,44100,7.817,63772,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintConsole Create;BUILDING BlueprintRelay Create;BUILDING ControlStation Create,relayhover,,referenced,live,sounds.dat,,689494
@@ -101,26 +101,26 @@ data/sounds/centipede_losehealth2.ogg,sounds,centipede_losehealth2,1,44100,1.026
 data/sounds/centipede_losehealth3.ogg,sounds,centipede_losehealth3,1,44100,1.132,12080,65,Xiph.Org libVorbis I 20040920,,ENTITY Centipede LoseHealth,newsamplegroup28,,referenced,live,sounds.dat,,99840
 data/sounds/centipede_losehealth4.ogg,sounds,centipede_losehealth4,1,44100,1.663,16302,65,Xiph.Org libVorbis I 20040920,,ENTITY Centipede LoseHealth,newsamplegroup28,,referenced,live,sounds.dat,,146688
 data/sounds/centipede_losehealth5.ogg,sounds,centipede_losehealth5,1,44100,0.946,10435,65,Xiph.Org libVorbis I 20040920,,ENTITY Centipede LoseHealth,newsamplegroup28,,referenced,live,sounds.dat,,83456
-data/sounds/choir1.ogg,sounds,choir1,1,44100,6.001,95520,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,529272
-data/sounds/choir2.ogg,sounds,choir2,1,44100,5.802,91853,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,511744
-data/sounds/choir3.ogg,sounds,choir3,1,44100,5.875,91038,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,518192
-data/sounds/choir4.ogg,sounds,choir4,1,44100,6.249,98665,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,551200
-data/sounds/choir5.ogg,sounds,choir5,1,44100,6.191,97387,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,546048
-data/sounds/choir6.ogg,sounds,choir6,1,44100,5.939,93835,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,523776
+data/sounds/choir1.ogg,sounds,choir1,1,44100,6.001,95520,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,529272
+data/sounds/choir2.ogg,sounds,choir2,1,44100,5.802,91853,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,511744
+data/sounds/choir3.ogg,sounds,choir3,1,44100,5.875,91038,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,518192
+data/sounds/choir4.ogg,sounds,choir4,1,44100,6.249,98665,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,551200
+data/sounds/choir5.ogg,sounds,choir5,1,44100,6.191,97387,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,546048
+data/sounds/choir6.ogg,sounds,choir6,1,44100,5.939,93835,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Flight;BUILDING PulseBomb Create,choir1,,referenced,live,sounds.dat,,523776
 data/sounds/chug1.ogg,sounds,chug1,1,44100,5.654,39270,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,498688
 data/sounds/chug2.ogg,sounds,chug2,1,44100,5.933,41600,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,523264
 data/sounds/chug3.ogg,sounds,chug3,1,44100,9.242,62385,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,815104
 data/sounds/chug4.ogg,sounds,chug4,1,44100,8.081,54269,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,712704
 data/sounds/chug5.ogg,sounds,chug5,1,44100,9.138,62678,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,806012
 data/sounds/chug6.ogg,sounds,chug6,1,44100,7.105,48228,65,Xiph.Org libVorbis I 20040920,,BUILDING Refinery Create,mineambience,,referenced,dead-data,sounds.dat,,626688
-data/sounds/darwin_burn_death.ogg,sounds,darwin_burn_death,1,44100,3.216,49850,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,,unused,,sounds.dat,listed,283648
-data/sounds/darwin_burn_death1.ogg,sounds,darwin_burn_death1,1,44100,3.216,51458,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,283648
-data/sounds/darwin_burn_death2.ogg,sounds,darwin_burn_death2,1,44100,3.692,58241,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,325632
-data/sounds/darwin_burn_death3.ogg,sounds,darwin_burn_death3,1,44100,3.587,56853,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,316416
-data/sounds/darwin_burn_death4.ogg,sounds,darwin_burn_death4,1,44100,3.855,59901,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,339968
-data/sounds/darwin_burn_death5.ogg,sounds,darwin_burn_death5,1,44100,4.063,68042,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,358400
-data/sounds/darwin_burn_death6.ogg,sounds,darwin_burn_death6,1,44100,3.019,48766,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,266240
-data/sounds/darwin_burn_death7.ogg,sounds,darwin_burn_death7,1,44100,3.866,63985,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,,unused,,sounds.dat,listed,340992
+data/sounds/darwin_burn_death.ogg,sounds,darwin_burn_death,1,44100,3.216,49850,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,,unused,,sounds.dat,listed,283648
+data/sounds/darwin_burn_death1.ogg,sounds,darwin_burn_death1,1,44100,3.216,51458,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,283648
+data/sounds/darwin_burn_death2.ogg,sounds,darwin_burn_death2,1,44100,3.692,58241,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,325632
+data/sounds/darwin_burn_death3.ogg,sounds,darwin_burn_death3,1,44100,3.587,56853,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,316416
+data/sounds/darwin_burn_death4.ogg,sounds,darwin_burn_death4,1,44100,3.855,59901,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,339968
+data/sounds/darwin_burn_death5.ogg,sounds,darwin_burn_death5,1,44100,4.063,68042,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,358400
+data/sounds/darwin_burn_death6.ogg,sounds,darwin_burn_death6,1,44100,3.019,48766,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,266240
+data/sounds/darwin_burn_death7.ogg,sounds,darwin_burn_death7,1,44100,3.866,63985,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,,unused,,sounds.dat,listed,340992
 data/sounds/darwin_create.ogg,sounds,darwin_create,1,44100,0.167,4750,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Create,darwiniancreate,,referenced,live,sounds.dat,,14686
 data/sounds/darwin_create10.ogg,sounds,darwin_create10,1,44100,0.136,4406,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Create,darwiniancreate,,referenced,live,sounds.dat,,12000
 data/sounds/darwin_create11.ogg,sounds,darwin_create11,1,44100,0.086,4087,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Create,darwiniancreate,,referenced,live,sounds.dat,,7584
@@ -171,20 +171,20 @@ data/sounds/darwin_losehealth6.ogg,sounds,darwin_losehealth6,1,44100,0.441,6719,
 data/sounds/darwin_losehealth7.ogg,sounds,darwin_losehealth7,1,44100,0.223,4982,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian LoseHealth;ENTITY Officer LoseHealth,darwinianlosehealth,,referenced,live,sounds.dat,,19712
 data/sounds/darwin_losehealth8.ogg,sounds,darwin_losehealth8,1,44100,0.224,4974,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian LoseHealth;ENTITY Officer LoseHealth,darwinianlosehealth,,referenced,live,sounds.dat,,19776
 data/sounds/darwin_losehealth9.ogg,sounds,darwin_losehealth9,1,44100,0.430,6581,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian LoseHealth;ENTITY Officer LoseHealth,darwinianlosehealth,,referenced,live,sounds.dat,,37890
-data/sounds/darwin_on_fire.ogg,sounds,darwin_on_fire,1,44100,0.911,18214,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,,unused,,sounds.dat,listed,80384
-data/sounds/darwin_on_fire1.ogg,sounds,darwin_on_fire1,1,44100,0.911,18214,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,80384
-data/sounds/darwin_on_fire10.ogg,sounds,darwin_on_fire10,1,44100,1.480,27301,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,130512
-data/sounds/darwin_on_fire11.ogg,sounds,darwin_on_fire11,1,44100,1.120,21389,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,98816
-data/sounds/darwin_on_fire12.ogg,sounds,darwin_on_fire12,1,44100,1.097,20979,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,,,darwinnianonfire,unused,,sounds.dat,,96768
-data/sounds/darwin_on_fire13.ogg,sounds,darwin_on_fire13,1,44100,1.103,21135,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,,,darwinnianonfire,unused,,sounds.dat,,97280
-data/sounds/darwin_on_fire2.ogg,sounds,darwin_on_fire2,1,44100,1.016,19867,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,89600
-data/sounds/darwin_on_fire3.ogg,sounds,darwin_on_fire3,1,44100,1.167,21977,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,102912
-data/sounds/darwin_on_fire4.ogg,sounds,darwin_on_fire4,1,44100,0.891,17914,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,78592
-data/sounds/darwin_on_fire5.ogg,sounds,darwin_on_fire5,1,44100,1.144,23078,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,100864
-data/sounds/darwin_on_fire6.ogg,sounds,darwin_on_fire6,1,44100,0.787,16106,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,69376
-data/sounds/darwin_on_fire7.ogg,sounds,darwin_on_fire7,1,44100,0.977,20083,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,86202
-data/sounds/darwin_on_fire8.ogg,sounds,darwin_on_fire8,1,44100,1.116,22013,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,98444
-data/sounds/darwin_on_fire9.ogg,sounds,darwin_on_fire9,1,44100,0.996,20128,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-05,,,darwinnianonfire,unused,,sounds.dat,,87808
+data/sounds/darwin_on_fire.ogg,sounds,darwin_on_fire,1,44100,0.911,18214,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,,unused,,sounds.dat,listed,80384
+data/sounds/darwin_on_fire1.ogg,sounds,darwin_on_fire1,1,44100,0.911,18214,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,80384
+data/sounds/darwin_on_fire10.ogg,sounds,darwin_on_fire10,1,44100,1.480,27301,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,130512
+data/sounds/darwin_on_fire11.ogg,sounds,darwin_on_fire11,1,44100,1.120,21389,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,98816
+data/sounds/darwin_on_fire12.ogg,sounds,darwin_on_fire12,1,44100,1.097,20979,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,96768
+data/sounds/darwin_on_fire13.ogg,sounds,darwin_on_fire13,1,44100,1.103,21135,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,97280
+data/sounds/darwin_on_fire2.ogg,sounds,darwin_on_fire2,1,44100,1.016,19867,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,89600
+data/sounds/darwin_on_fire3.ogg,sounds,darwin_on_fire3,1,44100,1.167,21977,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,102912
+data/sounds/darwin_on_fire4.ogg,sounds,darwin_on_fire4,1,44100,0.891,17914,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,78592
+data/sounds/darwin_on_fire5.ogg,sounds,darwin_on_fire5,1,44100,1.144,23078,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,100864
+data/sounds/darwin_on_fire6.ogg,sounds,darwin_on_fire6,1,44100,0.787,16106,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,69376
+data/sounds/darwin_on_fire7.ogg,sounds,darwin_on_fire7,1,44100,0.977,20083,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,86202
+data/sounds/darwin_on_fire8.ogg,sounds,darwin_on_fire8,1,44100,1.116,22013,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,98444
+data/sounds/darwin_on_fire9.ogg,sounds,darwin_on_fire9,1,44100,0.996,20128,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-05 | ENGINEER=<redacted>,,,darwinnianonfire,unused,,sounds.dat,,87808
 data/sounds/darwinian_threat_attack.ogg,sounds,darwinian_threat_attack,1,44100,4.365,35213,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatAttackHorn;ENTITY Officer Attack,darwinseethreatattack,,referenced,live,sounds.dat,,385024
 data/sounds/darwinian_threat_attack2.ogg,sounds,darwinian_threat_attack2,1,44100,3.071,27123,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatAttackHorn;ENTITY Officer Attack,darwinseethreatattack,,referenced,live,sounds.dat,,270848
 data/sounds/darwinian_threat_attack3.ogg,sounds,darwinian_threat_attack3,1,44100,3.553,25584,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatAttackHorn;ENTITY Officer Attack,darwinseethreatattack,,referenced,live,sounds.dat,,313344
@@ -198,7 +198,7 @@ data/sounds/darwinian_threat_run6.ogg,sounds,darwinian_threat_run6,1,44100,1.019
 data/sounds/darwinian_threat_run7.ogg,sounds,darwinian_threat_run7,1,44100,0.650,8395,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatRunAway,darwinrunaway,,referenced,live,sounds.dat,,57344
 data/sounds/darwinian_threat_run8.ogg,sounds,darwinian_threat_run8,1,44100,1.004,11115,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatRunAway,darwinrunaway,,referenced,live,sounds.dat,,88576
 data/sounds/darwinian_threat_run9.ogg,sounds,darwinian_threat_run9,1,44100,0.697,8336,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian SeenThreatRunAway,darwinrunaway,,referenced,live,sounds.dat,,61440
-data/sounds/deselect1.ogg,sounds,deselect1,1,44100,2.508,39339,128,Xiph.Org libVorbis I 20020717,,OTHER Interface DeleteTask,,,referenced,live,sounds.dat,,221184
+data/sounds/deselect1.ogg,sounds,deselect1,1,44100,2.508,39339,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface DeleteTask,,,referenced,live,sounds.dat,,221184
 data/sounds/dma_sc-visitors_from_dreams.ogg,sounds,dma_sc-visitors_from_dreams,1,44100,325.251,2340073,65,Xiph.Org libVorbis I 20040920,,OTHER Music LoaderRaytrace;OTHER Music StartSequence,,,referenced,dead-data,NOT-SHIPPED(sounds/dma_sc*),,28687104
 data/sounds/eggsplat.ogg,sounds,eggsplat,1,44100,2.485,23636,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,219136
 data/sounds/eggsplat2.ogg,sounds,eggsplat2,1,44100,2.194,21655,65,Xiph.Org libVorbis I 20040920,,ENTITY Egg Die,eggsplat,,referenced,dead-data,sounds.dat,,193536
@@ -213,7 +213,7 @@ data/sounds/elec_cackle3.ogg,sounds,elec_cackle3,1,44100,0.882,11022,65,Xiph.Org
 data/sounds/elec_cackle4.ogg,sounds,elec_cackle4,1,44100,1.010,12766,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,89088
 data/sounds/elec_cackle5.ogg,sounds,elec_cackle5,1,44100,1.963,20168,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,173104
 data/sounds/elec_cackle6.ogg,sounds,elec_cackle6,1,44100,1.329,18052,65,Xiph.Org libVorbis I 20040920,,BUILDING BlueprintStore Create;BUILDING LaserFence Spark,elec_cackle,,referenced,live,sounds.dat,,117248
-data/sounds/engineburn.ogg,sounds,engineburn,1,44100,3.275,54757,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket EngineBurn,,,referenced,live,sounds.dat,,288864
+data/sounds/engineburn.ogg,sounds,engineburn,1,44100,3.275,54757,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket EngineBurn,,,referenced,live,sounds.dat,,288864
 data/sounds/engineer_die.ogg,sounds,engineer_die,1,44100,2.891,25833,65,Xiph.Org libVorbis I 20040920,,ENTITY Engineer Die,engineerdie,,referenced,live,sounds.dat,,254976
 data/sounds/engineer_die2.ogg,sounds,engineer_die2,1,44100,3.140,31023,65,Xiph.Org libVorbis I 20040920,,ENTITY Engineer Die,engineerdie,,referenced,live,sounds.dat,,276992
 data/sounds/engineer_die3.ogg,sounds,engineer_die3,1,44100,3.483,28472,65,Xiph.Org libVorbis I 20040920,,ENTITY Engineer Die,engineerdie,,referenced,live,sounds.dat,,307200
@@ -231,8 +231,8 @@ data/sounds/engineer_losehealth8.ogg,sounds,engineer_losehealth8,1,44100,1.733,1
 data/sounds/engineer_losehealth9.ogg,sounds,engineer_losehealth9,1,44100,1.471,12076,65,Xiph.Org libVorbis I 20040920,,ENTITY Engineer LoseHealth,engineerinjury,,referenced,live,sounds.dat,,129734
 data/sounds/engineer_repog_radar_loop_end.ogg,sounds,engineer_repog_radar_loop_end,1,44100,1.132,12563,65,Xiph.Org libVorbis I 20040920,,ENTITY Engineer EndReprogramming,,,referenced,dead-data,sounds.dat,,99840
 data/sounds/engineer_reprog_radar_loop.ogg,sounds,engineer_reprog_radar_loop,1,44100,7.987,68357,65,Xiph.Org libVorbis I 20040920,,BUILDING Crate BeginCapture;BUILDING Incubator Reprogramming;ENTITY Engineer BeginReprogramming,,,referenced,live,sounds.dat,,704464
-data/sounds/engineexplode.ogg,sounds,engineexplode,1,44100,5.253,84422,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Explode,,,referenced,live,sounds.dat,,463324
-data/sounds/engneignite1.ogg,sounds,engneignite1,1,44100,6.408,103629,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,565220
+data/sounds/engineexplode.ogg,sounds,engineexplode,1,44100,5.253,84422,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Explode,,,referenced,live,sounds.dat,,463324
+data/sounds/engneignite1.ogg,sounds,engneignite1,1,44100,6.408,103629,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,565220
 data/sounds/enter_teleport.ogg,sounds,enter_teleport,1,44100,0.678,8632,65,Xiph.Org libVorbis I 20040920,,ENTITY Officer EnterTeleport;ENTITY Squadie EnterTeleport,enterteleport,,referenced,live,sounds.dat,,59824
 data/sounds/enter_teleport2.ogg,sounds,enter_teleport2,1,44100,0.677,8115,65,Xiph.Org libVorbis I 20040920,,ENTITY Officer EnterTeleport;ENTITY Squadie EnterTeleport,enterteleport,,referenced,live,sounds.dat,,59754
 data/sounds/enter_teleport3.ogg,sounds,enter_teleport3,1,44100,0.676,8523,65,Xiph.Org libVorbis I 20040920,,ENTITY Officer EnterTeleport;ENTITY Squadie EnterTeleport,enterteleport,,referenced,live,sounds.dat,,59652
@@ -276,18 +276,18 @@ data/sounds/flag_wave7.ogg,sounds,flag_wave7,1,44100,5.342,38708,65,Xiph.Org lib
 data/sounds/flag_wave8.ogg,sounds,flag_wave8,1,44100,5.082,41945,65,Xiph.Org libVorbis I 20040920,,,,,unused,,sounds.dat,listed,448256
 data/sounds/flag_wave9.ogg,sounds,flag_wave9,1,44100,5.326,42380,65,Xiph.Org libVorbis I 20040920,,,,,unused,,sounds.dat,listed,469760
 data/sounds/fodder.ogg,sounds,fodder,1,22050,6.315,31462,33,Xiph.Org libVorbis I 20040920,,OTHER Music LoaderFodder,,,referenced,dead-data,NOT-SHIPPED(sounds/fodder.ogg),,278492
-data/sounds/fuel_load_passenger.ogg,sounds,fuel_load_passenger,1,44100,0.772,16564,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,68096
-data/sounds/fuel_load_passenger2.ogg,sounds,fuel_load_passenger2,1,44100,0.830,17686,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,73216
-data/sounds/fuel_load_passenger3.ogg,sounds,fuel_load_passenger3,1,44100,0.715,15569,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,63104
-data/sounds/fuel_load_passenger4.ogg,sounds,fuel_load_passenger4,1,44100,0.768,16225,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,67712
-data/sounds/fuel_load_passenger5.ogg,sounds,fuel_load_passenger5,1,44100,0.546,12369,128,Xiph.Org libVorbis I 20020717,DATE=2005-09-06,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,48128
-data/sounds/fuelpipe1_loop.ogg,sounds,fuelpipe1_loop,1,44100,6.768,104243,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,596956
-data/sounds/fuelpipe2_loop.ogg,sounds,fuelpipe2_loop,1,44100,4.226,67685,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelPipe PumpFuel,,,referenced,live,sounds.dat,,372736
-data/sounds/fuelpipe3_loop.ogg,sounds,fuelpipe3_loop,1,44100,4.403,69602,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,388376
-data/sounds/fuelpump1.ogg,sounds,fuelpump1,1,44100,3.743,46199,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,330110
-data/sounds/fuelpumpdown1.ogg,sounds,fuelpumpdown1,1,44100,2.685,35113,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,236820
-data/sounds/fuelpumpexhale1.ogg,sounds,fuelpumpexhale1,1,44100,5.590,88914,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpUp,,,referenced,live,sounds.dat,,493028
-data/sounds/fuelpumpup1.ogg,sounds,fuelpumpup1,1,44100,2.891,34322,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpDown,,,referenced,live,sounds.dat,,254956
+data/sounds/fuel_load_passenger.ogg,sounds,fuel_load_passenger,1,44100,0.772,16564,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,68096
+data/sounds/fuel_load_passenger2.ogg,sounds,fuel_load_passenger2,1,44100,0.830,17686,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,73216
+data/sounds/fuel_load_passenger3.ogg,sounds,fuel_load_passenger3,1,44100,0.715,15569,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,63104
+data/sounds/fuel_load_passenger4.ogg,sounds,fuel_load_passenger4,1,44100,0.768,16225,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,67712
+data/sounds/fuel_load_passenger5.ogg,sounds,fuel_load_passenger5,1,44100,0.546,12369,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final | DATE=2005-09-06 | ENGINEER=<redacted>,BUILDING FuelStation LoadPassenger,loadpassenger,,referenced,live,sounds.dat,,48128
+data/sounds/fuelpipe1_loop.ogg,sounds,fuelpipe1_loop,1,44100,6.768,104243,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,596956
+data/sounds/fuelpipe2_loop.ogg,sounds,fuelpipe2_loop,1,44100,4.226,67685,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelPipe PumpFuel,,,referenced,live,sounds.dat,,372736
+data/sounds/fuelpipe3_loop.ogg,sounds,fuelpipe3_loop,1,44100,4.403,69602,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,388376
+data/sounds/fuelpump1.ogg,sounds,fuelpump1,1,44100,3.743,46199,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,330110
+data/sounds/fuelpumpdown1.ogg,sounds,fuelpumpdown1,1,44100,2.685,35113,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,236820
+data/sounds/fuelpumpexhale1.ogg,sounds,fuelpumpexhale1,1,44100,5.590,88914,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpUp,,,referenced,live,sounds.dat,,493028
+data/sounds/fuelpumpup1.ogg,sounds,fuelpumpup1,1,44100,2.891,34322,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpDown,,,referenced,live,sounds.dat,,254956
 data/sounds/generator_burst.ogg,sounds,generator_burst,1,44100,0.856,9795,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,dead-data,sounds.dat,,75520
 data/sounds/generator_burst2.ogg,sounds,generator_burst2,1,44100,0.833,9760,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,dead-data,sounds.dat,,73472
 data/sounds/generator_burst3.ogg,sounds,generator_burst3,1,44100,0.740,9060,65,Xiph.Org libVorbis I 20040920,,BUILDING Generator TriggerSurge,generatorburst,,referenced,dead-data,sounds.dat,,65280
@@ -333,8 +333,8 @@ data/sounds/gun_turret_fire4.ogg,sounds,gun_turret_fire4,1,44100,0.997,10846,65,
 data/sounds/gun_turret_fire5.ogg,sounds,gun_turret_fire5,1,44100,0.994,11443,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret FireShell;ENTITY Squadie FireLaser,turretfire,,referenced,live,sounds.dat,,87704
 data/sounds/gun_turret_fire6.ogg,sounds,gun_turret_fire6,1,44100,0.926,10683,65,Xiph.Org libVorbis I 20040920,,BUILDING GunTurret FireShell;ENTITY Squadie FireLaser,turretfire,,referenced,live,sounds.dat,,81696
 data/sounds/hypno_loop_run.ogg,sounds,hypno_loop_run,1,44100,8.568,58238,65,Xiph.Org libVorbis I 20040920,,OTHER Grenade ExplodeController,,,referenced,dead-data,sounds.dat,,755730
-data/sounds/ident1.ogg,sounds,ident1,1,44100,10.151,139854,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,895312
-data/sounds/ignitionzap1.ogg,sounds,ignitionzap1,1,44100,0.615,13035,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket EngineBurn,,,referenced,live,sounds.dat,,54268
+data/sounds/ident1.ogg,sounds,ident1,1,44100,10.151,139854,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,895312
+data/sounds/ignitionzap1.ogg,sounds,ignitionzap1,1,44100,0.615,13035,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket EngineBurn,,,referenced,live,sounds.dat,,54268
 data/sounds/incubator_addspirit.ogg,sounds,incubator_addspirit,1,44100,1.120,11215,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator AddSpirit;ENTITY Harvester DropSpirit,incubatoraddspirit,,referenced,live,sounds.dat,,98816
 data/sounds/incubator_addspirit2.ogg,sounds,incubator_addspirit2,1,44100,1.384,12960,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator AddSpirit;ENTITY Harvester DropSpirit,incubatoraddspirit,,referenced,live,sounds.dat,,122112
 data/sounds/incubator_addspirit3.ogg,sounds,incubator_addspirit3,1,44100,1.408,13259,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator AddSpirit;ENTITY Harvester DropSpirit,incubatoraddspirit,,referenced,live,sounds.dat,,124160
@@ -347,9 +347,9 @@ data/sounds/incubator_birth3.ogg,sounds,incubator_birth3,1,44100,1.434,13404,65,
 data/sounds/incubator_birth4.ogg,sounds,incubator_birth4,1,44100,1.480,14259,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator SpawnEntity,incubatorspawn,,referenced,dead-data,sounds.dat,,130560
 data/sounds/incubator_birth5.ogg,sounds,incubator_birth5,1,44100,1.466,13837,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator SpawnEntity,incubatorspawn,,referenced,dead-data,sounds.dat,,129280
 data/sounds/incubator_birth6.ogg,sounds,incubator_birth6,1,44100,1.440,13651,65,Xiph.Org libVorbis I 20040920,,BUILDING Incubator SpawnEntity,incubatorspawn,,referenced,dead-data,sounds.dat,,126976
-data/sounds/kickverb1.ogg,sounds,kickverb1,1,44100,2.508,40070,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,221184
-data/sounds/kickverb2.ogg,sounds,kickverb2,1,44100,2.968,43027,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,261792
-data/sounds/kickverb3.ogg,sounds,kickverb3,1,44100,2.038,32733,128,Xiph.Org libVorbis I 20020717,,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,179712
+data/sounds/kickverb1.ogg,sounds,kickverb1,1,44100,2.508,40070,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,221184
+data/sounds/kickverb2.ogg,sounds,kickverb2,1,44100,2.968,43027,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,261792
+data/sounds/kickverb3.ogg,sounds,kickverb3,1,44100,2.038,32733,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING FuelGenerator PumpDown,kickverb,,referenced,live,sounds.dat,,179712
 data/sounds/laser1.ogg,sounds,laser1,1,44100,0.604,8533,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Attack;ENTITY LaserTroop Attack,0lasers,,referenced,live,sounds.dat,,53248
 data/sounds/laser10.ogg,sounds,laser10,1,44100,0.871,10394,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Attack;ENTITY LaserTroop Attack,0lasers,,referenced,live,sounds.dat,,76800
 data/sounds/laser11.ogg,sounds,laser11,1,44100,0.759,9399,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian Attack;ENTITY LaserTroop Attack,0lasers,,referenced,live,sounds.dat,,66944
@@ -402,8 +402,8 @@ data/sounds/laser_hitgnd7.ogg,sounds,laser_hitgnd7,1,44100,0.762,9245,65,Xiph.Or
 data/sounds/laser_hitgnd8.ogg,sounds,laser_hitgnd8,1,44100,0.689,8227,65,Xiph.Org libVorbis I 20040920,,,,laserhitgnd,unused,,sounds.dat,,60800
 data/sounds/laser_hitgnd9.ogg,sounds,laser_hitgnd9,1,44100,1.084,11064,65,Xiph.Org libVorbis I 20040920,,,,laserhitentity;laserhitgnd,unused,,sounds.dat,,95618
 data/sounds/matrix.ogg,sounds,matrix,1,44100,24.000,192718,65,Xiph.Org libVorbis I 20040920,,OTHER Music LoaderMatrix,,,referenced,dead-data,NOT-SHIPPED(sounds/matrix.ogg),,2116800
-data/sounds/menuscroll1.ogg,sounds,menuscroll1,1,44100,2.171,32951,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface MenuCancel,,,referenced,live,menusounds.dat,,191488
-data/sounds/menuscroll2.ogg,sounds,menuscroll2,1,44100,1.862,27683,128,Xiph.Org libVorbis I 20020717,,OTHER Interface Slide;OTHER MultiwiniaInterface MenuSelect,,,referenced,live,menusounds.dat,,164216
+data/sounds/menuscroll1.ogg,sounds,menuscroll1,1,44100,2.171,32951,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface MenuCancel,,,referenced,live,menusounds.dat,,191488
+data/sounds/menuscroll2.ogg,sounds,menuscroll2,1,44100,1.862,27683,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface Slide;OTHER MultiwiniaInterface MenuSelect,,,referenced,live,menusounds.dat,,164216
 data/sounds/mine_cart_creak.ogg,sounds,mine_cart_creak,1,44100,2.548,21876,65,Xiph.Org libVorbis I 20040920,,BUILDING TrackLink CogTurn,minecartcreak,,referenced,dead-data,sounds.dat,,224768
 data/sounds/mine_cart_creak10.ogg,sounds,mine_cart_creak10,1,44100,2.084,19276,65,Xiph.Org libVorbis I 20040920,,BUILDING TrackLink CogTurn,minecartcreak,,referenced,dead-data,sounds.dat,,183808
 data/sounds/mine_cart_creak11.ogg,sounds,mine_cart_creak11,1,44100,1.980,18191,65,Xiph.Org libVorbis I 20040920,,BUILDING TrackLink CogTurn,minecartcreak,,referenced,dead-data,sounds.dat,,174592
@@ -453,13 +453,13 @@ data/sounds/mine_cog4.ogg,sounds,mine_cog4,1,44100,2.409,24694,65,Xiph.Org libVo
 data/sounds/mine_cog5.ogg,sounds,mine_cog5,1,44100,2.415,23546,65,Xiph.Org libVorbis I 20040920,,BUILDING Mine CogTurn,minerun,,referenced,dead-data,sounds.dat,,212992
 data/sounds/mine_cog6.ogg,sounds,mine_cog6,1,44100,2.426,24163,65,Xiph.Org libVorbis I 20040920,,BUILDING Mine CogTurn,minerun,,referenced,dead-data,sounds.dat,,214016
 data/sounds/mine_cog7.ogg,sounds,mine_cog7,1,44100,2.368,22884,65,Xiph.Org libVorbis I 20040920,,BUILDING Mine CogTurn,minerun,,referenced,dead-data,sounds.dat,,208896
-data/sounds/mouse.ogg,sounds,mouse,1,44100,0.085,5159,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,7516
-data/sounds/mouse1.ogg,sounds,mouse1,1,44100,0.056,4904,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,4900
-data/sounds/mouse2.ogg,sounds,mouse2,1,44100,0.056,4904,128,Xiph.Org libVorbis I 20020717,,OTHER Interface MouseOverIcon;OTHER MultiwiniaInterface MenuRollOver,mouseovericon,,referenced,live,menusounds.dat,,4900
-data/sounds/mouse3.ogg,sounds,mouse3,1,44100,0.050,4791,128,Xiph.Org libVorbis I 20020717,,OTHER Interface MouseOverIcon;OTHER MultiwiniaInterface MenuRollOver,mouseovericon,,referenced,live,menusounds.dat,,4384
-data/sounds/mouse4.ogg,sounds,mouse4,1,44100,0.070,4955,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,6136
-data/sounds/mouse5.ogg,sounds,mouse5,1,44100,0.055,4661,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,4880
-data/sounds/mouse6.ogg,sounds,mouse6,1,44100,0.110,5558,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,listed,9688
+data/sounds/mouse.ogg,sounds,mouse,1,44100,0.085,5159,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,7516
+data/sounds/mouse1.ogg,sounds,mouse1,1,44100,0.056,4904,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,4900
+data/sounds/mouse2.ogg,sounds,mouse2,1,44100,0.056,4904,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface MouseOverIcon;OTHER MultiwiniaInterface MenuRollOver,mouseovericon,,referenced,live,menusounds.dat,,4900
+data/sounds/mouse3.ogg,sounds,mouse3,1,44100,0.050,4791,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface MouseOverIcon;OTHER MultiwiniaInterface MenuRollOver,mouseovericon,,referenced,live,menusounds.dat,,4384
+data/sounds/mouse4.ogg,sounds,mouse4,1,44100,0.070,4955,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,6136
+data/sounds/mouse5.ogg,sounds,mouse5,1,44100,0.055,4661,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,4880
+data/sounds/mouse6.ogg,sounds,mouse6,1,44100,0.110,5558,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,listed,9688
 data/sounds/ocean1.ogg,sounds,ocean1,1,44100,23.499,166810,65,Xiph.Org libVorbis I 20040920,,OTHER Ambience EnterGlobalWorld,worldamb,,referenced,dead-data,sounds.dat,,2072576
 data/sounds/officer_create10.ogg,sounds,officer_create10,1,44100,0.265,5643,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian GivenOrders;ENTITY Officer Create;ENTITY Officer Selected;ENTITY Officer SetOrderFormation;ENTITY Officer SetOrderGoto,officercreate,officercreate,referenced,live,sounds.dat,,23372
 data/sounds/officer_create11.ogg,sounds,officer_create11,1,44100,0.339,6386,65,Xiph.Org libVorbis I 20040920,,ENTITY Darwinian GivenOrders;ENTITY Officer Create;ENTITY Officer Selected;ENTITY Officer SetOrderFormation;ENTITY Officer SetOrderGoto,officercreate,officercreate,referenced,live,sounds.dat,,29922
@@ -557,35 +557,35 @@ data/sounds/rocketlauncher.ogg,sounds,rocketlauncher,1,44100,0.830,8669,65,Xiph.
 data/sounds/rumble1.ogg,sounds,rumble1,1,44100,22.105,99970,65,Xiph.Org libVorbis I 20040920,,OTHER Ambience EnterGlobalWorld;OTHER Ambience EnterLocation;OTHER MultiwiniaInterface LobbyAmbience,newsamplegroup8,,referenced,live,menusounds.dat,,1949696
 data/sounds/sepulveda_appear.ogg,sounds,sepulveda_appear,1,44100,0.559,7316,65,Xiph.Org libVorbis I 20040920,,OTHER Sepulveda Appear,,,referenced,dead-data,sounds.dat,,49272
 data/sounds/sepulveda_disappear.ogg,sounds,sepulveda_disappear,1,44100,0.560,6623,65,Xiph.Org libVorbis I 20040920,,OTHER Sepulveda Disappear,,,referenced,dead-data,sounds.dat,,49408
-data/sounds/shipheartbeat1.ogg,sounds,shipheartbeat1,1,44100,1.436,20134,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy;OTHER MultiwiniaInterface LobbyAmbience,,,referenced,live,menusounds.dat,,126672
-data/sounds/shiphungry1.ogg,sounds,shiphungry1,1,44100,5.063,80570,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,446598
-data/sounds/shiphungry2.ogg,sounds,shiphungry2,1,44100,6.517,101325,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,574818
-data/sounds/shiphungry3.ogg,sounds,shiphungry3,1,44100,5.815,88998,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,512872
-data/sounds/shiphungry4.ogg,sounds,shiphungry4,1,44100,5.820,89876,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,513302
-data/sounds/shiphungry5.ogg,sounds,shiphungry5,1,44100,7.215,112409,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,636386
-data/sounds/shiphungry6.ogg,sounds,shiphungry6,1,44100,5.437,85808,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,479552
-data/sounds/shiphungry7.ogg,sounds,shiphungry7,1,44100,4.497,72164,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,396592
-data/sounds/shipmalfunction1.ogg,sounds,shipmalfunction1,1,44100,1.219,20223,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Malfunction,,,referenced,live,sounds.dat,,107520
-data/sounds/shippurr1.ogg,sounds,shippurr1,1,44100,3.599,51435,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,317440
-data/sounds/shippurr2.ogg,sounds,shippurr2,1,44100,3.413,47966,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,301056
-data/sounds/shippurr3.ogg,sounds,shippurr3,1,44100,3.251,47080,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,286720
-data/sounds/shippurr4.ogg,sounds,shippurr4,1,44100,3.529,50829,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,311296
-data/sounds/shippurr5.ogg,sounds,shippurr5,1,44100,3.135,45143,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,276478
-data/sounds/shipscream1.ogg,sounds,shipscream1,1,44100,3.781,56024,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Damage,shipscream,,referenced,live,sounds.dat,,333500
-data/sounds/shipscream2.ogg,sounds,shipscream2,1,44100,3.931,60471,128,Xiph.Org libVorbis I 20020717,,BUILDING EscapeRocket Damage,shipscream,,referenced,live,sounds.dat,,346728
-data/sounds/silence1.ogg,sounds,silence1,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence2.ogg,sounds,silence2,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence3.ogg,sounds,silence3,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence4.ogg,sounds,silence4,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence5.ogg,sounds,silence5,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence6.ogg,sounds,silence6,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
-data/sounds/silence7.ogg,sounds,silence7,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/shipheartbeat1.ogg,sounds,shipheartbeat1,1,44100,1.436,20134,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy;OTHER MultiwiniaInterface LobbyAmbience,,,referenced,live,menusounds.dat,,126672
+data/sounds/shiphungry1.ogg,sounds,shiphungry1,1,44100,5.063,80570,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,446598
+data/sounds/shiphungry2.ogg,sounds,shiphungry2,1,44100,6.517,101325,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,574818
+data/sounds/shiphungry3.ogg,sounds,shiphungry3,1,44100,5.815,88998,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,512872
+data/sounds/shiphungry4.ogg,sounds,shiphungry4,1,44100,5.820,89876,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,513302
+data/sounds/shiphungry5.ogg,sounds,shiphungry5,1,44100,7.215,112409,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,636386
+data/sounds/shiphungry6.ogg,sounds,shiphungry6,1,44100,5.437,85808,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,479552
+data/sounds/shiphungry7.ogg,sounds,shiphungry7,1,44100,4.497,72164,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Unhappy,shiphungry,,referenced,live,sounds.dat,,396592
+data/sounds/shipmalfunction1.ogg,sounds,shipmalfunction1,1,44100,1.219,20223,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Malfunction,,,referenced,live,sounds.dat,,107520
+data/sounds/shippurr1.ogg,sounds,shippurr1,1,44100,3.599,51435,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,317440
+data/sounds/shippurr2.ogg,sounds,shippurr2,1,44100,3.413,47966,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,301056
+data/sounds/shippurr3.ogg,sounds,shippurr3,1,44100,3.251,47080,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,286720
+data/sounds/shippurr4.ogg,sounds,shippurr4,1,44100,3.529,50829,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,311296
+data/sounds/shippurr5.ogg,sounds,shippurr5,1,44100,3.135,45143,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Happy,shiphappy,,referenced,live,sounds.dat,,276478
+data/sounds/shipscream1.ogg,sounds,shipscream1,1,44100,3.781,56024,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Damage,shipscream,,referenced,live,sounds.dat,,333500
+data/sounds/shipscream2.ogg,sounds,shipscream2,1,44100,3.931,60471,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING EscapeRocket Damage,shipscream,,referenced,live,sounds.dat,,346728
+data/sounds/silence1.ogg,sounds,silence1,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence2.ogg,sounds,silence2,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence3.ogg,sounds,silence3,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence4.ogg,sounds,silence4,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence5.ogg,sounds,silence5,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence6.ogg,sounds,silence6,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
+data/sounds/silence7.ogg,sounds,silence7,1,44100,0.250,3804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian OnFire,darwinnianburncry,,referenced,live,sounds.dat,,22052
 data/sounds/solar_panel.ogg,sounds,solar_panel,1,44100,0.169,4711,65,Xiph.Org libVorbis I 20040920,,BUILDING SolarPanel TriggerSurge,solarpanelenable,,referenced,live,sounds.dat,,14880
 data/sounds/solar_panel2.ogg,sounds,solar_panel2,1,44100,1.384,15848,65,Xiph.Org libVorbis I 20040920,,BUILDING SolarPanel TriggerSurge,solarpanelenable,,referenced,live,sounds.dat,,122112
 data/sounds/solar_panel3.ogg,sounds,solar_panel3,1,44100,0.444,6819,65,Xiph.Org libVorbis I 20040920,,BUILDING SolarPanel TriggerSurge,solarpanelenable,,referenced,live,sounds.dat,,39168
 data/sounds/solar_panel4.ogg,sounds,solar_panel4,1,44100,0.446,6971,65,Xiph.Org libVorbis I 20040920,,BUILDING SolarPanel TriggerSurge,solarpanelenable,,referenced,live,sounds.dat,,39296
 data/sounds/solar_panel5.ogg,sounds,solar_panel5,1,44100,0.303,5683,65,Xiph.Org libVorbis I 20040920,,BUILDING SolarPanel TriggerSurge,solarpanelenable,,referenced,live,sounds.dat,,26752
-data/sounds/solarcharge.ogg,sounds,solarcharge,1,44100,3.713,40010,128,Xiph.Org libVorbis I 20020717,,BUILDING SolarPanel Operate,,,referenced,live,sounds.dat,,327488
+data/sounds/solarcharge.ogg,sounds,solarcharge,1,44100,3.713,40010,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING SolarPanel Operate,,,referenced,live,sounds.dat,,327488
 data/sounds/sonar.ogg,sounds,sonar,1,44100,1.970,18386,65,Xiph.Org libVorbis I 20040920,,OTHER Spirit PickedUp,,,referenced,live,sounds.dat,,173796
 data/sounds/soul_attack.ogg,sounds,soul_attack,1,44100,1.736,16215,65,Xiph.Org libVorbis I 20040920,,ENTITY SoulDestroyer Attack,soulattack,,referenced,live,sounds.dat,,153088
 data/sounds/soul_attack2.ogg,sounds,soul_attack2,1,44100,2.020,17264,65,Xiph.Org libVorbis I 20040920,,ENTITY SoulDestroyer Attack,soulattack,,referenced,live,sounds.dat,,178176
@@ -817,8 +817,8 @@ data/sounds/tank_death7.ogg,sounds,tank_death7,1,44100,3.541,29148,65,Xiph.Org l
 data/sounds/tank_death8.ogg,sounds,tank_death8,1,44100,4.017,33338,65,Xiph.Org libVorbis I 20040920,,ENTITY Armour Die;ENTITY Tank Die,tankdeath,,referenced,live,sounds.dat,,354304
 data/sounds/tank_death9.ogg,sounds,tank_death9,1,44100,5.335,43084,65,Xiph.Org libVorbis I 20040920,,ENTITY Armour Die;ENTITY Tank Die,tankdeath,,referenced,live,sounds.dat,,470560
 data/sounds/tank_hover.ogg,sounds,tank_hover,1,44100,17.748,68458,65,Xiph.Org libVorbis I 20040920,,ENTITY Armour Create,,,referenced,live,sounds.dat,,1565396
-data/sounds/taskin.ogg,sounds,taskin,1,44100,3.126,44242,128,Xiph.Org libVorbis I 20020717,,OTHER Interface Show,,,referenced,dead-data,sounds.dat,,275712
-data/sounds/taskout.ogg,sounds,taskout,1,44100,0.972,16099,128,Xiph.Org libVorbis I 20020717,,OTHER Interface Hide,,,referenced,dead-data,sounds.dat,,85760
+data/sounds/taskin.ogg,sounds,taskin,1,44100,3.126,44242,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface Show,,,referenced,dead-data,sounds.dat,,275712
+data/sounds/taskout.ogg,sounds,taskout,1,44100,0.972,16099,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Interface Hide,,,referenced,dead-data,sounds.dat,,85760
 data/sounds/trash80_-_pain-fade-down.ogg,sounds,trash80_-_pain-fade-down,1,44100,213.943,1569440,65,Xiph.Org libVorbis I 20040920,,OTHER Music Credits;OTHER Music Cutscene3;OTHER Music Demo2Intro,,,referenced,dead-data,NOT-SHIPPED(sounds/trash80*),,18869760
 data/sounds/tree_atmos1.ogg,sounds,tree_atmos1,1,44100,8.000,64762,65,Xiph.Org libVorbis I 20040920,,BUILDING Tree CreateMagic;BUILDING Tree CreateNormal,treeatmos,,referenced,live,sounds.dat,,705644
 data/sounds/tree_atmos2.ogg,sounds,tree_atmos2,1,44100,8.001,65067,65,Xiph.Org libVorbis I 20040920,,BUILDING Tree CreateMagic;BUILDING Tree CreateNormal,treeatmos,,referenced,live,sounds.dat,,705664
@@ -953,381 +953,381 @@ data/sounds/worlddry6.ogg,sounds,worlddry6,1,44100,4.471,32782,65,Xiph.Org libVo
 data/sounds/worlddry7.ogg,sounds,worlddry7,1,44100,3.513,27492,65,Xiph.Org libVorbis I 20040920,,OTHER Ambience EnterGlobalWorld,worldviewdry,,referenced,dead-data,sounds.dat,,309848
 data/sounds/worlddry8.ogg,sounds,worlddry8,1,44100,1.910,18556,65,Xiph.Org libVorbis I 20040920,,OTHER Ambience EnterGlobalWorld,worldviewdry,,referenced,dead-data,sounds.dat,,168464
 data/sounds/yard.ogg,sounds,yard,1,44100,4.807,37123,65,Xiph.Org libVorbis I 20040920,,BUILDING Yard Create,,,referenced,dead-data,sounds.dat,,423962
-data/mwsounds/Attack1.ogg,mwsounds,attack1,1,44100,0.748,16727,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,65964
-data/mwsounds/Attack10.ogg,mwsounds,attack10,1,44100,0.400,10447,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,35280
-data/mwsounds/Attack11.ogg,mwsounds,attack11,1,44100,0.600,13960,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
-data/mwsounds/Attack12.ogg,mwsounds,attack12,1,44100,0.398,10596,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,35086
-data/mwsounds/Attack13.ogg,mwsounds,attack13,1,44100,1.190,23806,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,104968
-data/mwsounds/Attack14.ogg,mwsounds,attack14,1,44100,0.900,18240,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,79380
-data/mwsounds/Attack15.ogg,mwsounds,attack15,1,44100,0.632,14551,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,55784
-data/mwsounds/Attack16.ogg,mwsounds,attack16,1,44100,0.664,15046,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,58546
-data/mwsounds/Attack17.ogg,mwsounds,attack17,1,44100,0.727,15643,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,64136
-data/mwsounds/Attack18.ogg,mwsounds,attack18,1,44100,0.700,15660,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack19.ogg,mwsounds,attack19,1,44100,1.100,22407,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,97020
-data/mwsounds/Attack2.ogg,mwsounds,attack2,1,44100,0.661,14584,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,58286
-data/mwsounds/Attack20.ogg,mwsounds,attack20,1,44100,0.700,15560,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack21.ogg,mwsounds,attack21,1,44100,0.700,15472,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack23.ogg,mwsounds,attack23,1,44100,0.700,15393,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack3.ogg,mwsounds,attack3,1,44100,0.801,16582,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,70648
-data/mwsounds/Attack32.ogg,mwsounds,attack32,1,44100,0.600,13933,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
-data/mwsounds/Attack33.ogg,mwsounds,attack33,1,44100,0.566,13135,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,49920
-data/mwsounds/Attack34.ogg,mwsounds,attack34,1,44100,0.700,15654,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack35.ogg,mwsounds,attack35,1,44100,0.697,15771,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61440
-data/mwsounds/Attack36.ogg,mwsounds,attack36,1,44100,0.701,15257,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61842
-data/mwsounds/Attack37.ogg,mwsounds,attack37,1,44100,0.460,11593,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,40594
-data/mwsounds/Attack38.ogg,mwsounds,attack38,1,44100,1.416,26514,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,124906
-data/mwsounds/Attack39.ogg,mwsounds,attack39,1,44100,1.416,27546,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,124880
-data/mwsounds/Attack4.ogg,mwsounds,attack4,1,44100,1.352,26444,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,119242
-data/mwsounds/Attack40.ogg,mwsounds,attack40,1,44100,1.142,22722,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,100702
-data/mwsounds/Attack41.ogg,mwsounds,attack41,1,44100,0.546,12617,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,48166
-data/mwsounds/Attack42.ogg,mwsounds,attack42,1,44100,1.024,20774,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,90274
-data/mwsounds/Attack43.ogg,mwsounds,attack43,1,44100,0.710,15527,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,62624
-data/mwsounds/Attack44.ogg,mwsounds,attack44,1,44100,0.700,15250,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack45.ogg,mwsounds,attack45,1,44100,0.800,16630,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,70560
-data/mwsounds/Attack46.ogg,mwsounds,attack46,1,44100,0.700,15129,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
-data/mwsounds/Attack5.ogg,mwsounds,attack5,1,44100,0.901,18650,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,79468
-data/mwsounds/Attack6.ogg,mwsounds,attack6,1,44100,0.580,13685,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,51114
-data/mwsounds/Attack7.ogg,mwsounds,attack7,1,44100,0.459,11679,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,40488
-data/mwsounds/Attack8.ogg,mwsounds,attack8,1,44100,1.001,20992,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,88288
-data/mwsounds/Attack9.ogg,mwsounds,attack9,1,44100,0.600,13161,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
-data/mwsounds/Attention1.ogg,mwsounds,attention1,1,44100,1.152,19274,128,Xiph.Org libVorbis I 20020717,,,,officerabsorb,unused,,sounds.dat,,101580
-data/mwsounds/Attention2.ogg,mwsounds,attention2,1,44100,0.912,19158,128,Xiph.Org libVorbis I 20020717,,,,officerabsorb,unused,,sounds.dat,,80412
-data/mwsounds/Attention3.ogg,mwsounds,attention3,1,44100,0.818,15523,128,Xiph.Org libVorbis I 20020717,,,,officerabsorb,unused,,sounds.dat,,72116
-data/mwsounds/Attention4.ogg,mwsounds,attention4,1,44100,0.648,14556,128,Xiph.Org libVorbis I 20020717,,,,officerabsorb,unused,,sounds.dat,,57132
-data/mwsounds/Aye1.ogg,mwsounds,aye1,1,44100,0.167,6590,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,14752
-data/mwsounds/Aye2.ogg,mwsounds,aye2,1,44100,0.117,6074,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,10284
-data/mwsounds/Aye3.ogg,mwsounds,aye3,1,44100,0.147,6197,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,12928
-data/mwsounds/Aye4.ogg,mwsounds,aye4,1,44100,0.154,6370,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,13572
-data/mwsounds/Aye5.ogg,mwsounds,aye5,1,44100,0.087,5608,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,7712
-data/mwsounds/Aye6.ogg,mwsounds,aye6,1,44100,0.133,6004,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,11720
-data/mwsounds/Aye7.ogg,mwsounds,aye7,1,44100,0.160,6620,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,14140
-data/mwsounds/Aye8.ogg,mwsounds,aye8,1,44100,0.188,6741,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,16544
-data/mwsounds/Aye9.ogg,mwsounds,aye9,1,44100,0.149,6599,128,Xiph.Org libVorbis I 20020717,,,,aye,unused,,sounds.dat,,13116
-data/mwsounds/beep_harsh_malfunction.ogg,mwsounds,beep_harsh_malfunction,1,44100,0.840,14592,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface MouseError,,,referenced,live,sounds2.dat,,74128
-data/mwsounds/Bleep3.ogg,mwsounds,bleep3,1,44100,3.046,33898,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,268660
-data/mwsounds/carry1.ogg,mwsounds,carry1,1,44100,2.321,39451,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,204742
-data/mwsounds/carry2.ogg,mwsounds,carry2,1,44100,2.361,39965,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,208256
-data/mwsounds/carry3.ogg,mwsounds,carry3,1,44100,2.399,42080,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,211552
-data/mwsounds/carry4.ogg,mwsounds,carry4,1,44100,2.423,42617,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,213728
-data/mwsounds/Carrying3a.ogg,mwsounds,carrying3a,1,44100,3.006,21593,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265172
-data/mwsounds/Carrying3b.ogg,mwsounds,carrying3b,1,44100,3.007,27892,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
-data/mwsounds/Carrying3c.ogg,mwsounds,carrying3c,1,44100,3.007,29491,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
-data/mwsounds/Carrying3d.ogg,mwsounds,carrying3d,1,44100,3.007,20420,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
+data/mwsounds/Attack1.ogg,mwsounds,attack1,1,44100,0.748,16727,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,65964
+data/mwsounds/Attack10.ogg,mwsounds,attack10,1,44100,0.400,10447,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,35280
+data/mwsounds/Attack11.ogg,mwsounds,attack11,1,44100,0.600,13960,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
+data/mwsounds/Attack12.ogg,mwsounds,attack12,1,44100,0.398,10596,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,35086
+data/mwsounds/Attack13.ogg,mwsounds,attack13,1,44100,1.190,23806,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,104968
+data/mwsounds/Attack14.ogg,mwsounds,attack14,1,44100,0.900,18240,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,79380
+data/mwsounds/Attack15.ogg,mwsounds,attack15,1,44100,0.632,14551,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,55784
+data/mwsounds/Attack16.ogg,mwsounds,attack16,1,44100,0.664,15046,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,58546
+data/mwsounds/Attack17.ogg,mwsounds,attack17,1,44100,0.727,15643,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,64136
+data/mwsounds/Attack18.ogg,mwsounds,attack18,1,44100,0.700,15660,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack19.ogg,mwsounds,attack19,1,44100,1.100,22407,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,97020
+data/mwsounds/Attack2.ogg,mwsounds,attack2,1,44100,0.661,14584,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,58286
+data/mwsounds/Attack20.ogg,mwsounds,attack20,1,44100,0.700,15560,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack21.ogg,mwsounds,attack21,1,44100,0.700,15472,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack23.ogg,mwsounds,attack23,1,44100,0.700,15393,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack3.ogg,mwsounds,attack3,1,44100,0.801,16582,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,70648
+data/mwsounds/Attack32.ogg,mwsounds,attack32,1,44100,0.600,13933,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
+data/mwsounds/Attack33.ogg,mwsounds,attack33,1,44100,0.566,13135,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,49920
+data/mwsounds/Attack34.ogg,mwsounds,attack34,1,44100,0.700,15654,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack35.ogg,mwsounds,attack35,1,44100,0.697,15771,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61440
+data/mwsounds/Attack36.ogg,mwsounds,attack36,1,44100,0.701,15257,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61842
+data/mwsounds/Attack37.ogg,mwsounds,attack37,1,44100,0.460,11593,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,40594
+data/mwsounds/Attack38.ogg,mwsounds,attack38,1,44100,1.416,26514,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,124906
+data/mwsounds/Attack39.ogg,mwsounds,attack39,1,44100,1.416,27546,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,124880
+data/mwsounds/Attack4.ogg,mwsounds,attack4,1,44100,1.352,26444,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,119242
+data/mwsounds/Attack40.ogg,mwsounds,attack40,1,44100,1.142,22722,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,100702
+data/mwsounds/Attack41.ogg,mwsounds,attack41,1,44100,0.546,12617,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,48166
+data/mwsounds/Attack42.ogg,mwsounds,attack42,1,44100,1.024,20774,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,90274
+data/mwsounds/Attack43.ogg,mwsounds,attack43,1,44100,0.710,15527,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,62624
+data/mwsounds/Attack44.ogg,mwsounds,attack44,1,44100,0.700,15250,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack45.ogg,mwsounds,attack45,1,44100,0.800,16630,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,70560
+data/mwsounds/Attack46.ogg,mwsounds,attack46,1,44100,0.700,15129,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,61740
+data/mwsounds/Attack5.ogg,mwsounds,attack5,1,44100,0.901,18650,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,79468
+data/mwsounds/Attack6.ogg,mwsounds,attack6,1,44100,0.580,13685,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,51114
+data/mwsounds/Attack7.ogg,mwsounds,attack7,1,44100,0.459,11679,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,40488
+data/mwsounds/Attack8.ogg,mwsounds,attack8,1,44100,1.001,20992,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,88288
+data/mwsounds/Attack9.ogg,mwsounds,attack9,1,44100,0.600,13161,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatAttack,CombatVoxAttack,,referenced,live,sounds.dat,,52920
+data/mwsounds/Attention1.ogg,mwsounds,attention1,1,44100,1.152,19274,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerabsorb,unused,,sounds.dat,,101580
+data/mwsounds/Attention2.ogg,mwsounds,attention2,1,44100,0.912,19158,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerabsorb,unused,,sounds.dat,,80412
+data/mwsounds/Attention3.ogg,mwsounds,attention3,1,44100,0.818,15523,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerabsorb,unused,,sounds.dat,,72116
+data/mwsounds/Attention4.ogg,mwsounds,attention4,1,44100,0.648,14556,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerabsorb,unused,,sounds.dat,,57132
+data/mwsounds/Aye1.ogg,mwsounds,aye1,1,44100,0.167,6590,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,14752
+data/mwsounds/Aye2.ogg,mwsounds,aye2,1,44100,0.117,6074,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,10284
+data/mwsounds/Aye3.ogg,mwsounds,aye3,1,44100,0.147,6197,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,12928
+data/mwsounds/Aye4.ogg,mwsounds,aye4,1,44100,0.154,6370,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,13572
+data/mwsounds/Aye5.ogg,mwsounds,aye5,1,44100,0.087,5608,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,7712
+data/mwsounds/Aye6.ogg,mwsounds,aye6,1,44100,0.133,6004,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,11720
+data/mwsounds/Aye7.ogg,mwsounds,aye7,1,44100,0.160,6620,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,14140
+data/mwsounds/Aye8.ogg,mwsounds,aye8,1,44100,0.188,6741,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,16544
+data/mwsounds/Aye9.ogg,mwsounds,aye9,1,44100,0.149,6599,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,aye,unused,,sounds.dat,,13116
+data/mwsounds/beep_harsh_malfunction.ogg,mwsounds,beep_harsh_malfunction,1,44100,0.840,14592,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface MouseError,,,referenced,live,sounds2.dat,,74128
+data/mwsounds/Bleep3.ogg,mwsounds,bleep3,1,44100,3.046,33898,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,268660
+data/mwsounds/carry1.ogg,mwsounds,carry1,1,44100,2.321,39451,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,204742
+data/mwsounds/carry2.ogg,mwsounds,carry2,1,44100,2.361,39965,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,208256
+data/mwsounds/carry3.ogg,mwsounds,carry3,1,44100,2.399,42080,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,211552
+data/mwsounds/carry4.ogg,mwsounds,carry4,1,44100,2.423,42617,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,213728
+data/mwsounds/Carrying3a.ogg,mwsounds,carrying3a,1,44100,3.006,21593,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265172
+data/mwsounds/Carrying3b.ogg,mwsounds,carrying3b,1,44100,3.007,27892,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
+data/mwsounds/Carrying3c.ogg,mwsounds,carrying3c,1,44100,3.007,29491,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
+data/mwsounds/Carrying3d.ogg,mwsounds,carrying3d,1,44100,3.007,20420,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian LiftBuilding,CarryStatue,,referenced,live,sounds.dat,,265204
 data/mwsounds/chat.ogg,mwsounds,chat,1,22050,0.216,4588,40,Xiph.Org libVorbis I 20030909,,OTHER MultiwiniaInterface ChatMessage,,,referenced,live,sounds2.dat,,9526
-data/mwsounds/CountdownBeep1.ogg,mwsounds,countdownbeep1,1,44100,1.991,27520,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,175616
-data/mwsounds/CountdownBeep3.ogg,mwsounds,countdownbeep3,1,44100,0.094,5098,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret RegisterKill;OTHER MultiwiniaInterface CountdownTick;OTHER MultiwiniaInterface CountdownZeroTick,,,referenced,live,sounds.dat,,8316
-data/mwsounds/CountdownEndBeep.ogg,mwsounds,countdownendbeep,1,44100,4.807,70219,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,423936
-data/mwsounds/Crate_CaptureMyTeam.ogg,mwsounds,crate_capturemyteam,1,44100,4.567,71094,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate BeginCapture,,,referenced,live,sounds.dat,,402784
-data/mwsounds/Crate_CaptureOtherTeam.ogg,mwsounds,crate_captureotherteam,1,44100,5.299,82117,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate BeginCapture,,,referenced,live,sounds.dat,,467352
-data/mwsounds/Crate_LostCapture.ogg,mwsounds,crate_lostcapture,1,44100,2.525,31236,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate LostCapture,,,referenced,live,sounds.dat,,222720
-data/mwsounds/CrateCapture_10a.ogg,mwsounds,cratecapture_10a,1,44100,16.475,257534,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Capturing_0pc,,,referenced,live,sounds.dat,,1453064
-data/mwsounds/CrateCapture_20a.ogg,mwsounds,cratecapture_20a,1,44100,11.936,192098,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Capturing_20pc,,,referenced,live,sounds.dat,,1052756
-data/mwsounds/CrateCapture_30a.ogg,mwsounds,cratecapture_30a,1,44100,15.406,242582,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Capturing_40pc,,,referenced,live,sounds.dat,,1358782
-data/mwsounds/CrateCapture_40a.ogg,mwsounds,cratecapture_40a,1,44100,12.358,193707,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Capturing_60pc,,,referenced,live,sounds.dat,,1089962
-data/mwsounds/CrateCapture_50a.ogg,mwsounds,cratecapture_50a,1,44100,14.769,231095,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Capturing_80pc,,,referenced,live,sounds.dat,,1302600
-data/mwsounds/CrateCapturedAccent.ogg,mwsounds,cratecapturedaccent,1,44100,3.565,47941,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Captured,,,referenced,live,sounds.dat,,314432
-data/mwsounds/CrateFall1.ogg,mwsounds,cratefall1,1,44100,12.707,196714,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1120784
-data/mwsounds/CrateFall2.ogg,mwsounds,cratefall2,1,44100,12.746,197985,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1124230
-data/mwsounds/CrateFall3.ogg,mwsounds,cratefall3,1,44100,12.725,183522,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1122314
-data/mwsounds/CrateFall4.ogg,mwsounds,cratefall4,1,44100,12.472,190613,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1100018
-data/mwsounds/CrateFall5.ogg,mwsounds,cratefall5,1,44100,12.783,198065,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1127432
-data/mwsounds/CrateFall6.ogg,mwsounds,cratefall6,1,44100,12.774,196901,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1126670
-data/mwsounds/CrateFall7.ogg,mwsounds,cratefall7,1,44100,13.260,200291,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1169572
-data/mwsounds/CrateLand1.ogg,mwsounds,crateland1,1,44100,4.025,65858,128,Xiph.Org libVorbis I 20020717,,BUILDING Crate Land,,,referenced,live,sounds.dat,,355042
-data/mwsounds/CrateReward_Airstrike1.ogg,mwsounds,cratereward_airstrike1,1,44100,4.834,74712,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Airstrike,,,referenced,live,sounds.dat,,426392
-data/mwsounds/CrateReward_AntsNest1.ogg,mwsounds,cratereward_antsnest1,1,44100,5.213,80143,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup AntNest,,,referenced,live,sounds.dat,,459776
-data/mwsounds/CrateReward_Armour1.ogg,mwsounds,cratereward_armour1,1,44100,3.511,49158,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Armour,,,referenced,live,sounds.dat,,309632
-data/mwsounds/CrateReward_Armour2.ogg,mwsounds,cratereward_armour2,1,44100,3.511,49040,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,309632
-data/mwsounds/CrateReward_Bitzkrieg.ogg,mwsounds,cratereward_bitzkrieg,1,44100,5.726,91668,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Bitzkreig,,,referenced,live,sounds.dat,,505036
-data/mwsounds/CrateReward_CrateMania1.ogg,mwsounds,cratereward_cratemania1,1,44100,1.142,19556,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,100736
-data/mwsounds/CrateReward_CrateMania2.ogg,mwsounds,cratereward_cratemania2,1,44100,4.162,63235,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,367100
-data/mwsounds/CrateReward_CrateMania3.ogg,mwsounds,cratereward_cratemania3,1,44100,4.162,64468,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup CrateMania,,,referenced,live,sounds.dat,,367100
-data/mwsounds/CrateReward_DarkForest1.ogg,mwsounds,cratereward_darkforest1,1,44100,5.219,84750,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup DarkForest,,,referenced,live,sounds.dat,,460284
-data/mwsounds/CrateReward_Egg1.ogg,mwsounds,cratereward_egg1,1,44100,3.747,61104,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,330480
-data/mwsounds/CrateReward_Egg2.ogg,mwsounds,cratereward_egg2,1,44100,4.209,64485,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,371244
-data/mwsounds/CrateReward_Egg3.ogg,mwsounds,cratereward_egg3,1,44100,4.910,74455,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,433104
-data/mwsounds/CrateReward_Egg4.ogg,mwsounds,cratereward_egg4,1,44100,3.063,38314,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Eggs,,,referenced,live,sounds.dat,,270128
-data/mwsounds/CrateReward_Extinguisher.ogg,mwsounds,cratereward_extinguisher,1,44100,8.127,130995,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup FireExtinguisher,,,referenced,dead-data,sounds.dat,,716800
-data/mwsounds/CrateReward_Extinguisher2.ogg,mwsounds,cratereward_extinguisher2,1,44100,3.808,58753,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,335868
-data/mwsounds/CrateReward_Extinguisher3.ogg,mwsounds,cratereward_extinguisher3,1,44100,4.040,65403,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,356368
-data/mwsounds/CrateReward_Forest1.ogg,mwsounds,cratereward_forest1,1,44100,4.001,60196,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup MagicalForest,,,referenced,live,sounds.dat,,352880
-data/mwsounds/CrateReward_Forest2.ogg,mwsounds,cratereward_forest2,1,44100,12.055,193824,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree Create,,,referenced,live,sounds.dat,,1063248
-data/mwsounds/CrateReward_Formation1.ogg,mwsounds,cratereward_formation1,1,44100,1.122,20118,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,98944
-data/mwsounds/CrateReward_Formation2.ogg,mwsounds,cratereward_formation2,1,44100,3.235,46717,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup FormationBooster,,,referenced,dead-data,sounds.dat,,285284
-data/mwsounds/CrateReward_Futurewinians.ogg,mwsounds,cratereward_futurewinians,1,44100,6.284,91144,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup SpaceShip,,,referenced,live,sounds.dat,,554250
-data/mwsounds/CrateReward_GunTurret1.ogg,mwsounds,cratereward_gunturret1,1,44100,5.017,79564,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup FlameTurret;OTHER CratePowerup GunTurret,,,referenced,live,sounds.dat,,442488
-data/mwsounds/CrateReward_Harvester1.ogg,mwsounds,cratereward_harvester1,1,44100,2.000,29826,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,176390
-data/mwsounds/CrateReward_Harvester2.ogg,mwsounds,cratereward_harvester2,1,44100,5.953,90092,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Harvester,,,referenced,live,sounds.dat,,525096
-data/mwsounds/CrateReward_Harvester3.ogg,mwsounds,cratereward_harvester3,1,44100,4.986,77800,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,439756
-data/mwsounds/CrateReward_HotFeet1.ogg,mwsounds,cratereward_hotfeet1,1,44100,2.912,34832,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup HotFeet,,,referenced,live,sounds.dat,,256880
-data/mwsounds/Cratereward_Infection.ogg,mwsounds,cratereward_infection,1,44100,4.000,59967,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Infection,,,referenced,live,sounds.dat,,352772
-data/mwsounds/CrateReward_Meteor2.ogg,mwsounds,cratereward_meteor2,1,44100,6.874,111066,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,606308
-data/mwsounds/CrateReward_Meteor3.ogg,mwsounds,cratereward_meteor3,1,44100,7.651,122031,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,674816
-data/mwsounds/CrateReward_Meteor4.ogg,mwsounds,cratereward_meteor4,1,44100,4.575,71836,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Meteor,,,referenced,live,sounds.dat,,403486
-data/mwsounds/CrateReward_Nuke.ogg,mwsounds,cratereward_nuke,1,44100,8.125,124878,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Nuke,,,referenced,live,sounds.dat,,716624
-data/mwsounds/CrateReward_OtherTeam.ogg,mwsounds,cratereward_otherteam,1,44100,2.077,29125,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,183224
-data/mwsounds/CrateReward_Plague.ogg,mwsounds,cratereward_plague,1,44100,6.875,113289,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Plague,,,referenced,live,sounds.dat,,606376
-data/mwsounds/CrateReward_Rage1.ogg,mwsounds,cratereward_rage1,1,44100,3.309,57053,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,291836
-data/mwsounds/CrateReward_Rage2.ogg,mwsounds,cratereward_rage2,1,44100,3.231,57778,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,284992
-data/mwsounds/CrateReward_Rage3.ogg,mwsounds,cratereward_rage3,1,44100,1.616,30964,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,142496
-data/mwsounds/CrateReward_Rage4.ogg,mwsounds,cratereward_rage4,1,44100,4.313,67631,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Rage,,,referenced,live,sounds.dat,,380438
-data/mwsounds/CrateReward_Randomiser.ogg,mwsounds,cratereward_randomiser,1,44100,3.241,57491,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Randomiser,,,referenced,live,sounds.dat,,285844
-data/mwsounds/CrateReward_Rocketwinians.ogg,mwsounds,cratereward_rocketwinians,1,44100,3.628,50657,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Rocketwinians,,,referenced,live,sounds.dat,,320032
-data/mwsounds/CrateReward_Shield.ogg,mwsounds,cratereward_shield,1,44100,3.088,44126,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup PersonalShield,,,referenced,live,sounds.dat,,272384
-data/mwsounds/CrateReward_SpawnMania.ogg,mwsounds,cratereward_spawnmania,1,44100,8.078,122557,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup SpawnMania,,,referenced,live,sounds.dat,,712496
-data/mwsounds/CrateReward_SpawnMania2.ogg,mwsounds,cratereward_spawnmania2,1,44100,8.078,123681,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,712496
-data/mwsounds/CrateReward_Squaddies.ogg,mwsounds,cratereward_squaddies,1,44100,2.084,35072,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,183808
-data/mwsounds/CrateReward_Squaddies2.ogg,mwsounds,cratereward_squaddies2,1,44100,3.403,48426,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,300180
-data/mwsounds/CrateReward_Squaddies3.ogg,mwsounds,cratereward_squaddies3,1,44100,3.000,43023,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,264568
-data/mwsounds/CrateReward_Squaddies4.ogg,mwsounds,cratereward_squaddies4,1,44100,2.031,33056,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Squad,,,referenced,live,sounds.dat,,179156
-data/mwsounds/CrateReward_Subversion2.ogg,mwsounds,cratereward_subversion2,1,44100,8.188,119798,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Subversion,,,referenced,live,sounds.dat,,722138
-data/mwsounds/CrateReward_Tank.ogg,mwsounds,cratereward_tank,1,44100,2.260,33018,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Tank,,,referenced,dead-data,sounds.dat,,199324
-data/mwsounds/CrateReward_Triffid.ogg,mwsounds,cratereward_triffid,1,44100,3.269,46533,128,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Triffids,,,referenced,live,sounds.dat,,288364
-data/mwsounds/CrateRewrad_Darwinians1.ogg,mwsounds,craterewrad_darwinians1,1,44100,3.077,34600,96,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,271372
-data/mwsounds/CrateRewrad_Darwinians2.ogg,mwsounds,craterewrad_darwinians2,1,44100,6.620,72389,96,Xiph.Org libVorbis I 20020717,,OTHER CratePowerup Darwinians,,,referenced,live,sounds.dat,,583852
-data/mwsounds/CreateReward_AntsNest1.ogg,mwsounds,createreward_antsnest1,1,44100,5.213,80143,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,459776
-data/mwsounds/CreateReward_Harvester1.ogg,mwsounds,createreward_harvester1,1,44100,2.000,29826,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,176390
-data/mwsounds/CreateReward_Harvester2.ogg,mwsounds,createreward_harvester2,1,44100,5.953,90092,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,525096
-data/mwsounds/CreateReward_Harvester3.ogg,mwsounds,createreward_harvester3,1,44100,4.986,77800,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,439756
-data/mwsounds/DroneLoop.ogg,mwsounds,droneloop,1,44100,5.957,86724,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface SelectionCircle,,,referenced,live,sounds.dat,,525434
-data/mwsounds/DroneLoop2.ogg,mwsounds,droneloop2,1,44100,3.619,42297,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,319204
-data/mwsounds/DroneLoop3.ogg,mwsounds,droneloop3,1,44100,2.175,22593,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,191808
-data/mwsounds/Drop_Statue.ogg,mwsounds,drop_statue,1,44100,2.508,37212,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,221184
-data/mwsounds/Drop_Statue2.ogg,mwsounds,drop_statue2,1,44100,3.054,36388,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,269356
-data/mwsounds/DSelect1.ogg,mwsounds,dselect1,1,44100,0.182,6828,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,16020
-data/mwsounds/DSelect10.ogg,mwsounds,dselect10,1,44100,0.292,8661,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,25736
-data/mwsounds/DSelect2.ogg,mwsounds,dselect2,1,44100,0.203,7263,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,17920
-data/mwsounds/DSelect3.ogg,mwsounds,dselect3,1,44100,0.163,6410,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,14400
-data/mwsounds/DSelect4.ogg,mwsounds,dselect4,1,44100,0.344,9494,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,30336
-data/mwsounds/DSelect5.ogg,mwsounds,dselect5,1,44100,0.354,9894,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,31216
-data/mwsounds/DSelect6.ogg,mwsounds,dselect6,1,44100,0.365,9993,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,32176
-data/mwsounds/DSelect7.ogg,mwsounds,dselect7,1,44100,0.221,7677,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,19456
-data/mwsounds/DSelect8.ogg,mwsounds,dselect8,1,44100,0.187,6904,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,16512
-data/mwsounds/DSelect9.ogg,mwsounds,dselect9,1,44100,0.146,6290,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,12896
-data/mwsounds/DStrain1.ogg,mwsounds,dstrain1,1,44100,1.081,19181,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,95380
-data/mwsounds/DStrain10.ogg,mwsounds,dstrain10,1,44100,0.536,11476,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,47268
-data/mwsounds/DStrain11.ogg,mwsounds,dstrain11,1,44100,1.225,24048,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,108012
-data/mwsounds/DStrain12.ogg,mwsounds,dstrain12,1,44100,0.941,20003,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,82968
-data/mwsounds/DStrain13.ogg,mwsounds,dstrain13,1,44100,1.193,23345,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,105194
-data/mwsounds/DStrain14.ogg,mwsounds,dstrain14,1,44100,1.387,25540,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,122368
-data/mwsounds/DStrain15.ogg,mwsounds,dstrain15,1,44100,1.340,25791,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,118176
-data/mwsounds/DStrain16.ogg,mwsounds,dstrain16,1,44100,0.733,15857,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,64644
-data/mwsounds/DStrain17.ogg,mwsounds,dstrain17,1,44100,0.721,15494,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,63616
-data/mwsounds/DStrain2.ogg,mwsounds,dstrain2,1,44100,1.478,27898,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,130356
-data/mwsounds/DStrain3.ogg,mwsounds,dstrain3,1,44100,0.948,19965,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,83656
-data/mwsounds/DStrain4.ogg,mwsounds,dstrain4,1,44100,0.881,18311,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,77748
-data/mwsounds/DStrain5.ogg,mwsounds,dstrain5,1,44100,1.172,22628,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,103332
-data/mwsounds/DStrain6.ogg,mwsounds,dstrain6,1,44100,1.050,21256,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,92640
-data/mwsounds/DStrain7.ogg,mwsounds,dstrain7,1,44100,1.242,23506,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,109568
-data/mwsounds/DStrain8.ogg,mwsounds,dstrain8,1,44100,0.743,16067,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,65536
-data/mwsounds/DStrain9.ogg,mwsounds,dstrain9,1,44100,1.657,30093,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,146164
-data/mwsounds/Enemy_Capture_Statue.ogg,mwsounds,enemy_capture_statue,1,44100,2.815,43253,128,Xiph.Org libVorbis I 20020717,,BUILDING Statue ChangeTeam,,,referenced,live,sounds.dat,,248320
-data/mwsounds/EnemyCaptureBugle1.ogg,mwsounds,enemycapturebugle1,1,44100,2.985,38498,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone CaptureStatue,,,referenced,live,sounds.dat,,263312
-data/mwsounds/FilterSweep.ogg,mwsounds,filtersweep,1,44100,3.538,53064,128,Xiph.Org libVorbis I 20020717,,OTHER Gesture GestureBegin;OTHER MultiwiniaInterface SelectionCircle,,,referenced,live,sounds.dat,,312044
-data/mwsounds/FlameTurret1.ogg,mwsounds,flameturret1,1,44100,0.810,16740,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,71424
-data/mwsounds/FlameTurret10.ogg,mwsounds,flameturret10,1,44100,0.993,19596,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,87616
-data/mwsounds/FlameTurret2.ogg,mwsounds,flameturret2,1,44100,0.770,16169,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,67912
-data/mwsounds/FlameTurret3.ogg,mwsounds,flameturret3,1,44100,0.636,13182,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,56122
-data/mwsounds/FlameTurret4.ogg,mwsounds,flameturret4,1,44100,0.589,12177,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,51978
-data/mwsounds/FlameTurret5.ogg,mwsounds,flameturret5,1,44100,0.477,11352,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,42048
-data/mwsounds/FlameTurret6.ogg,mwsounds,flameturret6,1,44100,0.675,14717,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,59520
-data/mwsounds/FlameTurret7.ogg,mwsounds,flameturret7,1,44100,0.471,11293,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,41558
-data/mwsounds/FlameTurret8.ogg,mwsounds,flameturret8,1,44100,0.497,11832,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,43808
-data/mwsounds/FlameTurret9.ogg,mwsounds,flameturret9,1,44100,0.541,12371,128,Xiph.Org libVorbis I 20020717,,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,47716
-data/mwsounds/FlameTurretFinal.ogg,mwsounds,flameturretfinal,1,44100,2.204,31897,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,194432
-data/mwsounds/FlameTurretLoop1.ogg,mwsounds,flameturretloop1,1,44100,7.213,115491,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,636196
-data/mwsounds/Formation1.ogg,mwsounds,formation1,1,44100,0.434,10538,128,Xiph.Org libVorbis I 20020717,,,,officersetorderformation,unused,,sounds.dat,,38304
-data/mwsounds/Formation2.ogg,mwsounds,formation2,1,44100,0.669,14623,128,Xiph.Org libVorbis I 20020717,,,,officersetorderformation,unused,,sounds.dat,,58984
-data/mwsounds/GameOver1.ogg,mwsounds,gameover1,1,44100,4.368,70105,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,385278
-data/mwsounds/GameOver2.ogg,mwsounds,gameover2,1,44100,4.389,52157,96,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,387072
-data/mwsounds/GDSpeech10.ogg,mwsounds,gdspeech10,1,44100,2.167,36159,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,191094
-data/mwsounds/GDSpeech11.ogg,mwsounds,gdspeech11,1,44100,5.070,83836,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,447182
-data/mwsounds/GDSpeech12.ogg,mwsounds,gdspeech12,1,44100,4.754,78940,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,419302
-data/mwsounds/GDSpeech13.ogg,mwsounds,gdspeech13,1,44100,2.990,47907,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,263738
-data/mwsounds/GDSpeech14.ogg,mwsounds,gdspeech14,1,44100,4.319,69680,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,380946
-data/mwsounds/GDSpeech15.ogg,mwsounds,gdspeech15,1,44100,3.493,56743,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,308092
-data/mwsounds/GDSpeech16.ogg,mwsounds,gdspeech16,1,44100,4.183,69302,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,368912
-data/mwsounds/GDSpeech17.ogg,mwsounds,gdspeech17,1,44100,5.400,88855,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,476280
-data/mwsounds/GDSpeech18.ogg,mwsounds,gdspeech18,1,44100,4.600,74636,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,405736
-data/mwsounds/GDSpeech2.ogg,mwsounds,gdspeech2,1,44100,4.471,74012,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,394344
-data/mwsounds/GDSpeech3.ogg,mwsounds,gdspeech3,1,44100,4.050,67637,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,357210
-data/mwsounds/GDSpeech4.ogg,mwsounds,gdspeech4,1,44100,4.543,74336,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,400650
-data/mwsounds/GDSpeech5.ogg,mwsounds,gdspeech5,1,44100,3.840,60897,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,338688
-data/mwsounds/GDSpeech6.ogg,mwsounds,gdspeech6,1,44100,5.270,82466,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,464814
-data/mwsounds/GDSpeech7.ogg,mwsounds,gdspeech7,1,44100,5.990,97565,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,528318
-data/mwsounds/GDSpeech8.ogg,mwsounds,gdspeech8,1,44100,6.690,110035,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,590058
-data/mwsounds/GDSpeech9.ogg,mwsounds,gdspeech9,1,44100,4.744,76841,128,Xiph.Org libVorbis I 20020717,,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,418416
-data/mwsounds/High1.ogg,mwsounds,high1,1,44100,15.315,240157,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1350754
-data/mwsounds/High2.ogg,mwsounds,high2,1,44100,16.230,268807,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1431486
-data/mwsounds/High3.ogg,mwsounds,high3,1,44100,37.511,611259,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3308476
-data/mwsounds/High4.ogg,mwsounds,high4,1,44100,15.511,249647,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1368064
-data/mwsounds/High5.ogg,mwsounds,high5,1,44100,39.563,634231,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3489482
-data/mwsounds/High6.ogg,mwsounds,high6,1,44100,35.229,560820,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3107230
-data/mwsounds/High7.ogg,mwsounds,high7,1,44100,20.248,318253,128,Xiph.Org libVorbis I 20020717,,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1785856
-data/mwsounds/Hit1.ogg,mwsounds,hit1,1,44100,0.400,10532,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit10.ogg,mwsounds,hit10,1,44100,0.400,10362,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit11.ogg,mwsounds,hit11,1,44100,0.700,15235,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
-data/mwsounds/Hit12.ogg,mwsounds,hit12,1,44100,0.311,9049,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,27392
-data/mwsounds/Hit13.ogg,mwsounds,hit13,1,44100,0.344,9688,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,30306
-data/mwsounds/Hit14.ogg,mwsounds,hit14,1,44100,0.400,10255,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit15.ogg,mwsounds,hit15,1,44100,0.281,8897,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,24792
-data/mwsounds/Hit16.ogg,mwsounds,hit16,1,44100,0.381,10010,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,33644
-data/mwsounds/Hit17.ogg,mwsounds,hit17,1,44100,0.700,15756,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
-data/mwsounds/Hit18.ogg,mwsounds,hit18,1,44100,0.344,9738,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,30336
-data/mwsounds/Hit19.ogg,mwsounds,hit19,1,44100,0.374,10214,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,32956
-data/mwsounds/Hit2.ogg,mwsounds,hit2,1,44100,0.416,10991,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,36686
-data/mwsounds/Hit20.ogg,mwsounds,hit20,1,44100,0.500,12314,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
-data/mwsounds/Hit21.ogg,mwsounds,hit21,1,44100,0.284,8551,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,25006
-data/mwsounds/Hit22.ogg,mwsounds,hit22,1,44100,0.800,16856,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,70560
-data/mwsounds/Hit23.ogg,mwsounds,hit23,1,44100,0.384,9869,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,33856
-data/mwsounds/Hit24.ogg,mwsounds,hit24,1,44100,0.511,11999,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,45056
-data/mwsounds/Hit25.ogg,mwsounds,hit25,1,44100,0.400,10319,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit26.ogg,mwsounds,hit26,1,44100,0.700,15308,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
-data/mwsounds/Hit27.ogg,mwsounds,hit27,1,44100,0.600,14051,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,52920
-data/mwsounds/Hit28.ogg,mwsounds,hit28,1,44100,0.234,7878,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,20608
-data/mwsounds/Hit29.ogg,mwsounds,hit29,1,44100,0.453,11092,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,39936
-data/mwsounds/Hit3.ogg,mwsounds,hit3,1,44100,0.579,13112,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,51088
-data/mwsounds/Hit30.ogg,mwsounds,hit30,1,44100,0.361,10231,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,31876
-data/mwsounds/Hit31.ogg,mwsounds,hit31,1,44100,0.302,9194,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,26624
-data/mwsounds/Hit32.ogg,mwsounds,hit32,1,44100,0.500,12183,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
-data/mwsounds/Hit33.ogg,mwsounds,hit33,1,44100,0.400,10478,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit34.ogg,mwsounds,hit34,1,44100,0.700,15742,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
-data/mwsounds/Hit35.ogg,mwsounds,hit35,1,44100,0.400,10734,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit36.ogg,mwsounds,hit36,1,44100,0.500,12046,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
-data/mwsounds/Hit4.ogg,mwsounds,hit4,1,44100,0.393,10444,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,34662
-data/mwsounds/Hit5.ogg,mwsounds,hit5,1,44100,0.487,12056,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,42960
-data/mwsounds/Hit6.ogg,mwsounds,hit6,1,44100,0.500,12562,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
-data/mwsounds/Hit7.ogg,mwsounds,hit7,1,44100,0.400,10689,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/Hit8.ogg,mwsounds,hit8,1,44100,0.200,7274,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,17640
-data/mwsounds/Hit9.ogg,mwsounds,hit9,1,44100,0.400,10475,128,Xiph.Org libVorbis I 20020717,,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
-data/mwsounds/KOH_Zone_Captured.ogg,mwsounds,koh_zone_captured,1,44100,1.951,26650,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone ChangeTeam,,,referenced,live,sounds.dat,,172092
-data/mwsounds/KOH_Zone_Lost.ogg,mwsounds,koh_zone_lost,1,44100,2.786,38206,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone ChangeTeam,,,referenced,live,sounds.dat,,245740
-data/mwsounds/KOH_ZoneActive.ogg,mwsounds,koh_zoneactive,1,44100,5.350,88102,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone Create,,,referenced,live,sounds.dat,,471852
-data/mwsounds/Laser_Cock1.ogg,mwsounds,laser_cock1,1,44100,0.617,14250,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,54392
-data/mwsounds/Laser_Cock10.ogg,mwsounds,laser_cock10,1,44100,0.471,11610,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,41528
-data/mwsounds/Laser_Cock2.ogg,mwsounds,laser_cock2,1,44100,0.401,10779,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,35392
-data/mwsounds/Laser_Cock3.ogg,mwsounds,laser_cock3,1,44100,0.647,13634,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,57036
-data/mwsounds/Laser_Cock4.ogg,mwsounds,laser_cock4,1,44100,0.672,14859,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,59264
-data/mwsounds/Laser_Cock5.ogg,mwsounds,laser_cock5,1,44100,0.230,7924,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,20288
-data/mwsounds/Laser_Cock6.ogg,mwsounds,laser_cock6,1,44100,0.423,10687,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,37304
-data/mwsounds/Laser_Cock7.ogg,mwsounds,laser_cock7,1,44100,0.659,14917,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,58112
-data/mwsounds/Laser_Cock8.ogg,mwsounds,laser_cock8,1,44100,0.380,10212,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,33536
-data/mwsounds/Laser_Cock9.ogg,mwsounds,laser_cock9,1,44100,0.478,11836,128,Xiph.Org libVorbis I 20020717,,,,lasercock,unused,,sounds.dat,,42168
-data/mwsounds/Laser_Reload1.ogg,mwsounds,laser_reload1,1,44100,0.726,15486,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,64000
-data/mwsounds/Laser_Reload2.ogg,mwsounds,laser_reload2,1,44100,0.900,17047,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,79360
-data/mwsounds/Laser_Reload3.ogg,mwsounds,laser_reload3,1,44100,0.894,17267,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,78848
-data/mwsounds/Laser_Reload4.ogg,mwsounds,laser_reload4,1,44100,1.068,16068,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,94208
-data/mwsounds/Laser_Reload5.ogg,mwsounds,laser_reload5,1,44100,1.403,19885,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,123774
-data/mwsounds/LaserHitDarwinian1.ogg,mwsounds,laserhitdarwinian1,1,44100,0.255,8342,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,22528
-data/mwsounds/LaserHitDarwinian10.ogg,mwsounds,laserhitdarwinian10,1,44100,0.627,14546,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,55296
-data/mwsounds/LaserHitDarwinian11.ogg,mwsounds,laserhitdarwinian11,1,44100,0.737,16011,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,65024
-data/mwsounds/LaserHitDarwinian12.ogg,mwsounds,laserhitdarwinian12,1,44100,0.612,14115,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,53980
-data/mwsounds/LaserHitDarwinian13.ogg,mwsounds,laserhitdarwinian13,1,44100,0.652,14580,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,57484
-data/mwsounds/LaserHitDarwinian14.ogg,mwsounds,laserhitdarwinian14,1,44100,0.647,14286,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,57040
-data/mwsounds/LaserHitDarwinian15.ogg,mwsounds,laserhitdarwinian15,1,44100,0.380,10370,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,33536
-data/mwsounds/LaserHitDarwinian16.ogg,mwsounds,laserhitdarwinian16,1,44100,0.325,9577,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,28672
-data/mwsounds/LaserHitDarwinian17.ogg,mwsounds,laserhitdarwinian17,1,44100,0.314,8968,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,27712
-data/mwsounds/LaserHitDarwinian18.ogg,mwsounds,laserhitdarwinian18,1,44100,0.369,9933,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,32512
-data/mwsounds/LaserHitDarwinian19.ogg,mwsounds,laserhitdarwinian19,1,44100,0.269,8559,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,23744
-data/mwsounds/LaserHitDarwinian2.ogg,mwsounds,laserhitdarwinian2,1,44100,0.512,12594,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,45184
-data/mwsounds/LaserHitDarwinian3.ogg,mwsounds,laserhitdarwinian3,1,44100,0.740,16251,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,65252
-data/mwsounds/LaserHitDarwinian4.ogg,mwsounds,laserhitdarwinian4,1,44100,1.124,22198,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,99104
-data/mwsounds/LaserHitDarwinian5.ogg,mwsounds,laserhitdarwinian5,1,44100,0.412,10799,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,36352
-data/mwsounds/LaserHitDarwinian6.ogg,mwsounds,laserhitdarwinian6,1,44100,0.787,16771,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,69376
-data/mwsounds/LaserHitDarwinian7.ogg,mwsounds,laserhitdarwinian7,1,44100,0.853,18322,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,75264
-data/mwsounds/LaserHitDarwinian8.ogg,mwsounds,laserhitdarwinian8,1,44100,0.559,13021,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,49276
-data/mwsounds/LaserHitDarwinian9.ogg,mwsounds,laserhitdarwinian9,1,44100,0.500,12085,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,44100
-data/mwsounds/Marching1.ogg,mwsounds,marching1,1,44100,1.600,17932,128,Xiph.Org libVorbis I 20020717,,,,officersetorderfollow,unused,,sounds.dat,,141120
-data/mwsounds/Marching2.ogg,mwsounds,marching2,1,44100,1.600,18169,128,Xiph.Org libVorbis I 20020717,,,,officersetorderfollow,unused,,sounds.dat,,141120
-data/mwsounds/Marching3.ogg,mwsounds,marching3,1,44100,1.600,15482,128,Xiph.Org libVorbis I 20020717,,,,officersetorderfollow,unused,,sounds.dat,,141120
-data/mwsounds/Marching4.ogg,mwsounds,marching4,1,44100,1.600,20402,128,Xiph.Org libVorbis I 20020717,,,,officersetorderfollow,unused,,sounds.dat,,141120
-data/mwsounds/Marching5.ogg,mwsounds,marching5,1,44100,1.600,17755,128,Xiph.Org libVorbis I 20020717,,,,officersetorderfollow,unused,,sounds.dat,,141120
-data/mwsounds/MeteorHitClose1.ogg,mwsounds,meteorhitclose1,1,44100,7.246,121832,128,Xiph.Org libVorbis I 20020717,,ENTITY Meteor Land,,,referenced,live,sounds.dat,,639134
-data/mwsounds/MeteorHitFar1.ogg,mwsounds,meteorhitfar1,1,44100,5.793,77530,128,Xiph.Org libVorbis I 20020717,,ENTITY Meteor Land,,,referenced,live,sounds.dat,,510976
-data/mwsounds/mouseclick1.ogg,mwsounds,mouseclick1,1,44100,0.107,5142,96,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface SelectUnit;OTHER MultiwiniaInterface ToggleUnitState,,,referenced,live,sounds2.dat,,9430
-data/mwsounds/MultiLobbyAmb1.ogg,mwsounds,multilobbyamb1,1,44100,31.113,490010,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2744164
-data/mwsounds/MultiLobbyAmb10.ogg,mwsounds,multilobbyamb10,1,44100,28.365,429951,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2501760
-data/mwsounds/MultiLobbyAmb2.ogg,mwsounds,multilobbyamb2,1,44100,24.142,382463,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2129340
-data/mwsounds/MultiLobbyAmb3.ogg,mwsounds,multilobbyamb3,1,44100,32.643,504656,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2879100
-data/mwsounds/MultiLobbyAmb4.ogg,mwsounds,multilobbyamb4,1,44100,36.021,548077,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,3177064
-data/mwsounds/MultiLobbyAmb5.ogg,mwsounds,multilobbyamb5,1,44100,21.658,344634,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1910224
-data/mwsounds/MultiLobbyAmb6.ogg,mwsounds,multilobbyamb6,1,44100,19.420,300756,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1712824
-data/mwsounds/MultiLobbyAmb7.ogg,mwsounds,multilobbyamb7,1,44100,21.002,321678,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1852352
-data/mwsounds/MultiLobbyAmb8.ogg,mwsounds,multilobbyamb8,1,44100,24.948,390654,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2200384
-data/mwsounds/MultiLobbyAmb9.ogg,mwsounds,multilobbyamb9,1,44100,32.704,518120,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2884506
-data/mwsounds/NukeDetonateFar.ogg,mwsounds,nukedetonatefar,1,44100,10.077,108033,96,Xiph.Org libVorbis I 20020717,,ENTITY Nuke Explode,,,referenced,live,sounds.dat,,888832
-data/mwsounds/NukeDetonateNear.ogg,mwsounds,nukedetonatenear,1,44100,7.246,85321,96,Xiph.Org libVorbis I 20020717,,ENTITY Nuke Explode,,,referenced,live,sounds.dat,,639136
-data/mwsounds/PinkNoiseLoop.ogg,mwsounds,pinknoiseloop,1,44100,5.000,80917,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,441000
-data/mwsounds/Player_Capture_Statue.ogg,mwsounds,player_capture_statue,1,44100,1.161,21809,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone CaptureStatue;BUILDING Statue ChangeTeam,,,referenced,live,sounds.dat,,102400
-data/mwsounds/PlayerCaptureBugle5.ogg,mwsounds,playercapturebugle5,1,44100,4.554,73187,128,Xiph.Org libVorbis I 20020717,,BUILDING MultiwiniaZone CaptureStatue,,,referenced,live,sounds.dat,,401678
-data/mwsounds/Retreat1.ogg,mwsounds,retreat1,1,44100,0.353,9751,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,31148
-data/mwsounds/Retreat10.ogg,mwsounds,retreat10,1,44100,0.539,12686,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47544
-data/mwsounds/Retreat11.ogg,mwsounds,retreat11,1,44100,0.409,10504,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,36096
-data/mwsounds/Retreat12.ogg,mwsounds,retreat12,1,44100,0.537,12704,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47348
-data/mwsounds/Retreat13.ogg,mwsounds,retreat13,1,44100,0.900,18493,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,79380
-data/mwsounds/Retreat14.ogg,mwsounds,retreat14,1,44100,0.600,13684,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,52920
-data/mwsounds/Retreat15.ogg,mwsounds,retreat15,1,44100,0.561,13407,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,49464
-data/mwsounds/Retreat16.ogg,mwsounds,retreat16,1,44100,0.527,12636,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,46520
-data/mwsounds/Retreat17.ogg,mwsounds,retreat17,1,44100,0.468,11461,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,41242
-data/mwsounds/Retreat18.ogg,mwsounds,retreat18,1,44100,1.070,21512,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,94344
-data/mwsounds/Retreat19.ogg,mwsounds,retreat19,1,44100,0.885,18506,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,78080
-data/mwsounds/Retreat2.ogg,mwsounds,retreat2,1,44100,0.300,9004,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,26460
-data/mwsounds/Retreat20.ogg,mwsounds,retreat20,1,44100,0.328,9251,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,28966
-data/mwsounds/Retreat21.ogg,mwsounds,retreat21,1,44100,0.540,13089,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47602
-data/mwsounds/Retreat22.ogg,mwsounds,retreat22,1,44100,1.682,31203,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,148348
-data/mwsounds/Retreat23.ogg,mwsounds,retreat23,1,44100,0.633,14055,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,55860
-data/mwsounds/Retreat24.ogg,mwsounds,retreat24,1,44100,0.500,11718,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,44100
-data/mwsounds/Retreat25.ogg,mwsounds,retreat25,1,44100,0.360,10055,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,31744
-data/mwsounds/Retreat26.ogg,mwsounds,retreat26,1,44100,0.455,11335,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,40116
-data/mwsounds/Retreat3.ogg,mwsounds,retreat3,1,44100,0.837,17587,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,73808
-data/mwsounds/Retreat4.ogg,mwsounds,retreat4,1,44100,0.587,13893,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,51760
-data/mwsounds/Retreat5.ogg,mwsounds,retreat5,1,44100,0.400,10475,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,35280
-data/mwsounds/Retreat6.ogg,mwsounds,retreat6,1,44100,0.801,17215,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,70654
-data/mwsounds/Retreat7.ogg,mwsounds,retreat7,1,44100,0.366,9950,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,32256
-data/mwsounds/Retreat8.ogg,mwsounds,retreat8,1,44100,0.364,9851,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,32126
-data/mwsounds/Retreat9.ogg,mwsounds,retreat9,1,44100,0.600,14152,128,Xiph.Org libVorbis I 20020717,,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,52920
-data/mwsounds/RocketThrust2Loop.ogg,mwsounds,rocketthrust2loop,1,44100,3.223,55228,128,Xiph.Org libVorbis I 20020717,,ENTITY Meteor Create,,,referenced,live,sounds.dat,,284256
-data/mwsounds/RocketThrustLoop.ogg,mwsounds,rocketthrustloop,1,44100,3.226,48804,128,Xiph.Org libVorbis I 20020717,,ENTITY Nuke Create,,,referenced,live,sounds.dat,,284504
-data/mwsounds/rollover1a.ogg,mwsounds,rollover1a,1,44100,0.018,4148,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface UnitHighlight,UnitHighlight,,referenced,live,sounds2.dat,,1628
-data/mwsounds/rollover1b.ogg,mwsounds,rollover1b,1,44100,0.024,4429,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds2.dat,,2092
-data/mwsounds/rollover1c.ogg,mwsounds,rollover1c,1,44100,0.018,4164,128,Xiph.Org libVorbis I 20020717,,OTHER MultiwiniaInterface UnitHighlight,UnitHighlight,,referenced,live,sounds2.dat,,1600
-data/mwsounds/Rumble2_Loop.ogg,mwsounds,rumble2_loop,1,44100,1.404,12726,128,Xiph.Org libVorbis I 20020717,,ENTITY Harvester Create;ENTITY Meteor Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,123816
-data/mwsounds/SpawnPoint_PlayerTurnsOff.ogg,mwsounds,spawnpoint_playerturnsoff,1,44100,2.908,44367,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,256512
-data/mwsounds/SpawnPoint_PlayerTurnsOff2.ogg,mwsounds,spawnpoint_playerturnsoff2,1,44100,7.883,112220,128,Xiph.Org libVorbis I 20020717,,BUILDING SpawnPoint TurnOff,,,referenced,live,sounds.dat,,695256
-data/mwsounds/SpawnPoint_PlayerTurnsOn.ogg,mwsounds,spawnpoint_playerturnson,1,44100,4.726,70220,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,416872
-data/mwsounds/SpawnPoint_PlayerTurnsOn2.ogg,mwsounds,spawnpoint_playerturnson2,1,44100,9.391,126323,128,Xiph.Org libVorbis I 20020717,,BUILDING SpawnPoint TurnOn,,,referenced,live,sounds.dat,,828312
-data/mwsounds/SpawnPointActivate5.ogg,mwsounds,spawnpointactivate5,1,44100,14.000,202292,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,1234800
-data/mwsounds/SpawnPointDeactivate4.ogg,mwsounds,spawnpointdeactivate4,1,44100,4.924,82053,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,434284
-data/mwsounds/StatueDrop.ogg,mwsounds,statuedrop,1,44100,3.250,42969,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,286664
-data/mwsounds/StatueDrop2.ogg,mwsounds,statuedrop2,1,44100,2.061,28978,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,181804
-data/mwsounds/StatueDrop3.ogg,mwsounds,statuedrop3,1,44100,5.906,90688,128,Xiph.Org libVorbis I 20020717,,BUILDING Statue Drop,,,referenced,live,sounds.dat,,520952
-data/mwsounds/StatueDrop4.ogg,mwsounds,statuedrop4,1,44100,5.906,92180,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,520952
-data/mwsounds/StatueSpawn1.ogg,mwsounds,statuespawn1,1,44100,1.277,21338,128,Xiph.Org libVorbis I 20020717,,BUILDING Statue Create,,,referenced,live,sounds.dat,,112640
-data/mwsounds/TankEngineFar.ogg,mwsounds,tankenginefar,1,44100,3.518,47459,128,Xiph.Org libVorbis I 20020717,,ENTITY Tank Create,,,referenced,dead-data,sounds.dat,,310272
-data/mwsounds/TankEngineNear.ogg,mwsounds,tankenginenear,1,44100,2.001,31302,128,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,176504
-data/mwsounds/theramin1.ogg,mwsounds,theramin1,1,44100,16.000,223877,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1411200
-data/mwsounds/theramin2.ogg,mwsounds,theramin2,1,44100,19.598,262993,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1728512
-data/mwsounds/theramin3.ogg,mwsounds,theramin3,1,44100,18.112,229850,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1597440
-data/mwsounds/theramin4.ogg,mwsounds,theramin4,1,44100,16.235,217223,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1431932
-data/mwsounds/theramin5.ogg,mwsounds,theramin5,1,44100,15.145,230703,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1335828
-data/mwsounds/theramin6.ogg,mwsounds,theramin6,1,44100,16.057,238954,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1416224
-data/mwsounds/theramin7.ogg,mwsounds,theramin7,1,44100,23.429,328762,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,2066464
-data/mwsounds/theramin8.ogg,mwsounds,theramin8,1,44100,16.872,243421,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1488108
-data/mwsounds/theramin9.ogg,mwsounds,theramin9,1,44100,17.067,261929,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1505280
-data/mwsounds/TractorBeam2.ogg,mwsounds,tractorbeam2,1,44100,3.994,63207,128,Xiph.Org libVorbis I 20020717,,ENTITY SpaceShip TractorBeam,,,referenced,live,sounds.dat,,352256
-data/mwsounds/UFO_Engine1.ogg,mwsounds,ufo_engine1,1,44100,6.628,73446,128,Xiph.Org libVorbis I 20020717,,ENTITY Harvester Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,584568
-data/mwsounds/UFO_Engine2.ogg,mwsounds,ufo_engine2,1,44100,1.387,12081,128,Xiph.Org libVorbis I 20020717,,ENTITY Harvester Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,122368
-data/mwsounds/YesSir1.ogg,mwsounds,yessir1,1,44100,0.300,8685,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,26500
-data/mwsounds/YesSir10.ogg,mwsounds,yessir10,1,44100,0.314,9226,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,27712
-data/mwsounds/YesSir11.ogg,mwsounds,yessir11,1,44100,0.309,9268,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,27256
-data/mwsounds/YesSir12.ogg,mwsounds,yessir12,1,44100,0.295,8441,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,26044
-data/mwsounds/YesSir2.ogg,mwsounds,yessir2,1,44100,0.204,7160,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,17996
-data/mwsounds/YesSir3.ogg,mwsounds,yessir3,1,44100,0.255,7891,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,22464
-data/mwsounds/YesSir4.ogg,mwsounds,yessir4,1,44100,0.293,8863,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,25860
-data/mwsounds/YesSir5.ogg,mwsounds,yessir5,1,44100,0.314,8883,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,27680
-data/mwsounds/YesSir6.ogg,mwsounds,yessir6,1,44100,0.284,8804,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,25036
-data/mwsounds/YesSir7.ogg,mwsounds,yessir7,1,44100,0.270,8413,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,23856
-data/mwsounds/YesSir8.ogg,mwsounds,yessir8,1,44100,0.270,8501,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,23856
-data/mwsounds/YesSir9.ogg,mwsounds,yessir9,1,44100,0.321,9437,128,Xiph.Org libVorbis I 20020717,,,,officerselected,unused,,sounds.dat,,28280
-data/mwsounds/YouLost2.ogg,mwsounds,youlost2,1,44100,7.148,88190,96,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,630454
-data/mwsounds/YouWon.ogg,mwsounds,youwon,1,44100,7.045,83931,96,Xiph.Org libVorbis I 20020717,,,,,unused,,sounds.dat,,621362
+data/mwsounds/CountdownBeep1.ogg,mwsounds,countdownbeep1,1,44100,1.991,27520,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,175616
+data/mwsounds/CountdownBeep3.ogg,mwsounds,countdownbeep3,1,44100,0.094,5098,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret RegisterKill;OTHER MultiwiniaInterface CountdownTick;OTHER MultiwiniaInterface CountdownZeroTick,,,referenced,live,sounds.dat,,8316
+data/mwsounds/CountdownEndBeep.ogg,mwsounds,countdownendbeep,1,44100,4.807,70219,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,423936
+data/mwsounds/Crate_CaptureMyTeam.ogg,mwsounds,crate_capturemyteam,1,44100,4.567,71094,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate BeginCapture,,,referenced,live,sounds.dat,,402784
+data/mwsounds/Crate_CaptureOtherTeam.ogg,mwsounds,crate_captureotherteam,1,44100,5.299,82117,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate BeginCapture,,,referenced,live,sounds.dat,,467352
+data/mwsounds/Crate_LostCapture.ogg,mwsounds,crate_lostcapture,1,44100,2.525,31236,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate LostCapture,,,referenced,live,sounds.dat,,222720
+data/mwsounds/CrateCapture_10a.ogg,mwsounds,cratecapture_10a,1,44100,16.475,257534,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Capturing_0pc,,,referenced,live,sounds.dat,,1453064
+data/mwsounds/CrateCapture_20a.ogg,mwsounds,cratecapture_20a,1,44100,11.936,192098,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Capturing_20pc,,,referenced,live,sounds.dat,,1052756
+data/mwsounds/CrateCapture_30a.ogg,mwsounds,cratecapture_30a,1,44100,15.406,242582,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Capturing_40pc,,,referenced,live,sounds.dat,,1358782
+data/mwsounds/CrateCapture_40a.ogg,mwsounds,cratecapture_40a,1,44100,12.358,193707,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Capturing_60pc,,,referenced,live,sounds.dat,,1089962
+data/mwsounds/CrateCapture_50a.ogg,mwsounds,cratecapture_50a,1,44100,14.769,231095,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Capturing_80pc,,,referenced,live,sounds.dat,,1302600
+data/mwsounds/CrateCapturedAccent.ogg,mwsounds,cratecapturedaccent,1,44100,3.565,47941,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Captured,,,referenced,live,sounds.dat,,314432
+data/mwsounds/CrateFall1.ogg,mwsounds,cratefall1,1,44100,12.707,196714,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1120784
+data/mwsounds/CrateFall2.ogg,mwsounds,cratefall2,1,44100,12.746,197985,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1124230
+data/mwsounds/CrateFall3.ogg,mwsounds,cratefall3,1,44100,12.725,183522,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1122314
+data/mwsounds/CrateFall4.ogg,mwsounds,cratefall4,1,44100,12.472,190613,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1100018
+data/mwsounds/CrateFall5.ogg,mwsounds,cratefall5,1,44100,12.783,198065,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1127432
+data/mwsounds/CrateFall6.ogg,mwsounds,cratefall6,1,44100,12.774,196901,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1126670
+data/mwsounds/CrateFall7.ogg,mwsounds,cratefall7,1,44100,13.260,200291,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Falling,cratefalling,,referenced,live,sounds.dat,,1169572
+data/mwsounds/CrateLand1.ogg,mwsounds,crateland1,1,44100,4.025,65858,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Crate Land,,,referenced,live,sounds.dat,,355042
+data/mwsounds/CrateReward_Airstrike1.ogg,mwsounds,cratereward_airstrike1,1,44100,4.834,74712,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Airstrike,,,referenced,live,sounds.dat,,426392
+data/mwsounds/CrateReward_AntsNest1.ogg,mwsounds,cratereward_antsnest1,1,44100,5.213,80143,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup AntNest,,,referenced,live,sounds.dat,,459776
+data/mwsounds/CrateReward_Armour1.ogg,mwsounds,cratereward_armour1,1,44100,3.511,49158,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Armour,,,referenced,live,sounds.dat,,309632
+data/mwsounds/CrateReward_Armour2.ogg,mwsounds,cratereward_armour2,1,44100,3.511,49040,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,309632
+data/mwsounds/CrateReward_Bitzkrieg.ogg,mwsounds,cratereward_bitzkrieg,1,44100,5.726,91668,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Bitzkreig,,,referenced,live,sounds.dat,,505036
+data/mwsounds/CrateReward_CrateMania1.ogg,mwsounds,cratereward_cratemania1,1,44100,1.142,19556,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,100736
+data/mwsounds/CrateReward_CrateMania2.ogg,mwsounds,cratereward_cratemania2,1,44100,4.162,63235,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,367100
+data/mwsounds/CrateReward_CrateMania3.ogg,mwsounds,cratereward_cratemania3,1,44100,4.162,64468,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup CrateMania,,,referenced,live,sounds.dat,,367100
+data/mwsounds/CrateReward_DarkForest1.ogg,mwsounds,cratereward_darkforest1,1,44100,5.219,84750,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup DarkForest,,,referenced,live,sounds.dat,,460284
+data/mwsounds/CrateReward_Egg1.ogg,mwsounds,cratereward_egg1,1,44100,3.747,61104,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,330480
+data/mwsounds/CrateReward_Egg2.ogg,mwsounds,cratereward_egg2,1,44100,4.209,64485,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,371244
+data/mwsounds/CrateReward_Egg3.ogg,mwsounds,cratereward_egg3,1,44100,4.910,74455,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,433104
+data/mwsounds/CrateReward_Egg4.ogg,mwsounds,cratereward_egg4,1,44100,3.063,38314,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Eggs,,,referenced,live,sounds.dat,,270128
+data/mwsounds/CrateReward_Extinguisher.ogg,mwsounds,cratereward_extinguisher,1,44100,8.127,130995,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup FireExtinguisher,,,referenced,dead-data,sounds.dat,,716800
+data/mwsounds/CrateReward_Extinguisher2.ogg,mwsounds,cratereward_extinguisher2,1,44100,3.808,58753,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,335868
+data/mwsounds/CrateReward_Extinguisher3.ogg,mwsounds,cratereward_extinguisher3,1,44100,4.040,65403,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,356368
+data/mwsounds/CrateReward_Forest1.ogg,mwsounds,cratereward_forest1,1,44100,4.001,60196,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup MagicalForest,,,referenced,live,sounds.dat,,352880
+data/mwsounds/CrateReward_Forest2.ogg,mwsounds,cratereward_forest2,1,44100,12.055,193824,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree Create,,,referenced,live,sounds.dat,,1063248
+data/mwsounds/CrateReward_Formation1.ogg,mwsounds,cratereward_formation1,1,44100,1.122,20118,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,98944
+data/mwsounds/CrateReward_Formation2.ogg,mwsounds,cratereward_formation2,1,44100,3.235,46717,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup FormationBooster,,,referenced,dead-data,sounds.dat,,285284
+data/mwsounds/CrateReward_Futurewinians.ogg,mwsounds,cratereward_futurewinians,1,44100,6.284,91144,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup SpaceShip,,,referenced,live,sounds.dat,,554250
+data/mwsounds/CrateReward_GunTurret1.ogg,mwsounds,cratereward_gunturret1,1,44100,5.017,79564,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup FlameTurret;OTHER CratePowerup GunTurret,,,referenced,live,sounds.dat,,442488
+data/mwsounds/CrateReward_Harvester1.ogg,mwsounds,cratereward_harvester1,1,44100,2.000,29826,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,176390
+data/mwsounds/CrateReward_Harvester2.ogg,mwsounds,cratereward_harvester2,1,44100,5.953,90092,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Harvester,,,referenced,live,sounds.dat,,525096
+data/mwsounds/CrateReward_Harvester3.ogg,mwsounds,cratereward_harvester3,1,44100,4.986,77800,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,439756
+data/mwsounds/CrateReward_HotFeet1.ogg,mwsounds,cratereward_hotfeet1,1,44100,2.912,34832,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup HotFeet,,,referenced,live,sounds.dat,,256880
+data/mwsounds/Cratereward_Infection.ogg,mwsounds,cratereward_infection,1,44100,4.000,59967,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Infection,,,referenced,live,sounds.dat,,352772
+data/mwsounds/CrateReward_Meteor2.ogg,mwsounds,cratereward_meteor2,1,44100,6.874,111066,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,606308
+data/mwsounds/CrateReward_Meteor3.ogg,mwsounds,cratereward_meteor3,1,44100,7.651,122031,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,674816
+data/mwsounds/CrateReward_Meteor4.ogg,mwsounds,cratereward_meteor4,1,44100,4.575,71836,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Meteor,,,referenced,live,sounds.dat,,403486
+data/mwsounds/CrateReward_Nuke.ogg,mwsounds,cratereward_nuke,1,44100,8.125,124878,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Nuke,,,referenced,live,sounds.dat,,716624
+data/mwsounds/CrateReward_OtherTeam.ogg,mwsounds,cratereward_otherteam,1,44100,2.077,29125,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,183224
+data/mwsounds/CrateReward_Plague.ogg,mwsounds,cratereward_plague,1,44100,6.875,113289,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Plague,,,referenced,live,sounds.dat,,606376
+data/mwsounds/CrateReward_Rage1.ogg,mwsounds,cratereward_rage1,1,44100,3.309,57053,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,291836
+data/mwsounds/CrateReward_Rage2.ogg,mwsounds,cratereward_rage2,1,44100,3.231,57778,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,284992
+data/mwsounds/CrateReward_Rage3.ogg,mwsounds,cratereward_rage3,1,44100,1.616,30964,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,142496
+data/mwsounds/CrateReward_Rage4.ogg,mwsounds,cratereward_rage4,1,44100,4.313,67631,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Rage,,,referenced,live,sounds.dat,,380438
+data/mwsounds/CrateReward_Randomiser.ogg,mwsounds,cratereward_randomiser,1,44100,3.241,57491,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Randomiser,,,referenced,live,sounds.dat,,285844
+data/mwsounds/CrateReward_Rocketwinians.ogg,mwsounds,cratereward_rocketwinians,1,44100,3.628,50657,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Rocketwinians,,,referenced,live,sounds.dat,,320032
+data/mwsounds/CrateReward_Shield.ogg,mwsounds,cratereward_shield,1,44100,3.088,44126,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup PersonalShield,,,referenced,live,sounds.dat,,272384
+data/mwsounds/CrateReward_SpawnMania.ogg,mwsounds,cratereward_spawnmania,1,44100,8.078,122557,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup SpawnMania,,,referenced,live,sounds.dat,,712496
+data/mwsounds/CrateReward_SpawnMania2.ogg,mwsounds,cratereward_spawnmania2,1,44100,8.078,123681,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,712496
+data/mwsounds/CrateReward_Squaddies.ogg,mwsounds,cratereward_squaddies,1,44100,2.084,35072,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,183808
+data/mwsounds/CrateReward_Squaddies2.ogg,mwsounds,cratereward_squaddies2,1,44100,3.403,48426,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,300180
+data/mwsounds/CrateReward_Squaddies3.ogg,mwsounds,cratereward_squaddies3,1,44100,3.000,43023,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,264568
+data/mwsounds/CrateReward_Squaddies4.ogg,mwsounds,cratereward_squaddies4,1,44100,2.031,33056,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Squad,,,referenced,live,sounds.dat,,179156
+data/mwsounds/CrateReward_Subversion2.ogg,mwsounds,cratereward_subversion2,1,44100,8.188,119798,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Subversion,,,referenced,live,sounds.dat,,722138
+data/mwsounds/CrateReward_Tank.ogg,mwsounds,cratereward_tank,1,44100,2.260,33018,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Tank,,,referenced,dead-data,sounds.dat,,199324
+data/mwsounds/CrateReward_Triffid.ogg,mwsounds,cratereward_triffid,1,44100,3.269,46533,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Triffids,,,referenced,live,sounds.dat,,288364
+data/mwsounds/CrateRewrad_Darwinians1.ogg,mwsounds,craterewrad_darwinians1,1,44100,3.077,34600,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,271372
+data/mwsounds/CrateRewrad_Darwinians2.ogg,mwsounds,craterewrad_darwinians2,1,44100,6.620,72389,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER CratePowerup Darwinians,,,referenced,live,sounds.dat,,583852
+data/mwsounds/CreateReward_AntsNest1.ogg,mwsounds,createreward_antsnest1,1,44100,5.213,80143,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,459776
+data/mwsounds/CreateReward_Harvester1.ogg,mwsounds,createreward_harvester1,1,44100,2.000,29826,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,176390
+data/mwsounds/CreateReward_Harvester2.ogg,mwsounds,createreward_harvester2,1,44100,5.953,90092,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,525096
+data/mwsounds/CreateReward_Harvester3.ogg,mwsounds,createreward_harvester3,1,44100,4.986,77800,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,439756
+data/mwsounds/DroneLoop.ogg,mwsounds,droneloop,1,44100,5.957,86724,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface SelectionCircle,,,referenced,live,sounds.dat,,525434
+data/mwsounds/DroneLoop2.ogg,mwsounds,droneloop2,1,44100,3.619,42297,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,319204
+data/mwsounds/DroneLoop3.ogg,mwsounds,droneloop3,1,44100,2.175,22593,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,191808
+data/mwsounds/Drop_Statue.ogg,mwsounds,drop_statue,1,44100,2.508,37212,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,221184
+data/mwsounds/Drop_Statue2.ogg,mwsounds,drop_statue2,1,44100,3.054,36388,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,269356
+data/mwsounds/DSelect1.ogg,mwsounds,dselect1,1,44100,0.182,6828,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,16020
+data/mwsounds/DSelect10.ogg,mwsounds,dselect10,1,44100,0.292,8661,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,25736
+data/mwsounds/DSelect2.ogg,mwsounds,dselect2,1,44100,0.203,7263,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,17920
+data/mwsounds/DSelect3.ogg,mwsounds,dselect3,1,44100,0.163,6410,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,14400
+data/mwsounds/DSelect4.ogg,mwsounds,dselect4,1,44100,0.344,9494,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,30336
+data/mwsounds/DSelect5.ogg,mwsounds,dselect5,1,44100,0.354,9894,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,31216
+data/mwsounds/DSelect6.ogg,mwsounds,dselect6,1,44100,0.365,9993,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,32176
+data/mwsounds/DSelect7.ogg,mwsounds,dselect7,1,44100,0.221,7677,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,19456
+data/mwsounds/DSelect8.ogg,mwsounds,dselect8,1,44100,0.187,6904,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,16512
+data/mwsounds/DSelect9.ogg,mwsounds,dselect9,1,44100,0.146,6290,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian GivenOrdersFromPlayer;ENTITY Darwinian Selected,DSelect,,referenced,live,sounds.dat,,12896
+data/mwsounds/DStrain1.ogg,mwsounds,dstrain1,1,44100,1.081,19181,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,95380
+data/mwsounds/DStrain10.ogg,mwsounds,dstrain10,1,44100,0.536,11476,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,47268
+data/mwsounds/DStrain11.ogg,mwsounds,dstrain11,1,44100,1.225,24048,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,108012
+data/mwsounds/DStrain12.ogg,mwsounds,dstrain12,1,44100,0.941,20003,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,82968
+data/mwsounds/DStrain13.ogg,mwsounds,dstrain13,1,44100,1.193,23345,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,105194
+data/mwsounds/DStrain14.ogg,mwsounds,dstrain14,1,44100,1.387,25540,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,122368
+data/mwsounds/DStrain15.ogg,mwsounds,dstrain15,1,44100,1.340,25791,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,118176
+data/mwsounds/DStrain16.ogg,mwsounds,dstrain16,1,44100,0.733,15857,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,64644
+data/mwsounds/DStrain17.ogg,mwsounds,dstrain17,1,44100,0.721,15494,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,63616
+data/mwsounds/DStrain2.ogg,mwsounds,dstrain2,1,44100,1.478,27898,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,130356
+data/mwsounds/DStrain3.ogg,mwsounds,dstrain3,1,44100,0.948,19965,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,83656
+data/mwsounds/DStrain4.ogg,mwsounds,dstrain4,1,44100,0.881,18311,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,77748
+data/mwsounds/DStrain5.ogg,mwsounds,dstrain5,1,44100,1.172,22628,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,103332
+data/mwsounds/DStrain6.ogg,mwsounds,dstrain6,1,44100,1.050,21256,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,92640
+data/mwsounds/DStrain7.ogg,mwsounds,dstrain7,1,44100,1.242,23506,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,109568
+data/mwsounds/DStrain8.ogg,mwsounds,dstrain8,1,44100,0.743,16067,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,65536
+data/mwsounds/DStrain9.ogg,mwsounds,dstrain9,1,44100,1.657,30093,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,146164
+data/mwsounds/Enemy_Capture_Statue.ogg,mwsounds,enemy_capture_statue,1,44100,2.815,43253,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Statue ChangeTeam,,,referenced,live,sounds.dat,,248320
+data/mwsounds/EnemyCaptureBugle1.ogg,mwsounds,enemycapturebugle1,1,44100,2.985,38498,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone CaptureStatue,,,referenced,live,sounds.dat,,263312
+data/mwsounds/FilterSweep.ogg,mwsounds,filtersweep,1,44100,3.538,53064,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Gesture GestureBegin;OTHER MultiwiniaInterface SelectionCircle,,,referenced,live,sounds.dat,,312044
+data/mwsounds/FlameTurret1.ogg,mwsounds,flameturret1,1,44100,0.810,16740,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,71424
+data/mwsounds/FlameTurret10.ogg,mwsounds,flameturret10,1,44100,0.993,19596,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,87616
+data/mwsounds/FlameTurret2.ogg,mwsounds,flameturret2,1,44100,0.770,16169,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,67912
+data/mwsounds/FlameTurret3.ogg,mwsounds,flameturret3,1,44100,0.636,13182,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,56122
+data/mwsounds/FlameTurret4.ogg,mwsounds,flameturret4,1,44100,0.589,12177,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,51978
+data/mwsounds/FlameTurret5.ogg,mwsounds,flameturret5,1,44100,0.477,11352,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,42048
+data/mwsounds/FlameTurret6.ogg,mwsounds,flameturret6,1,44100,0.675,14717,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,59520
+data/mwsounds/FlameTurret7.ogg,mwsounds,flameturret7,1,44100,0.471,11293,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,41558
+data/mwsounds/FlameTurret8.ogg,mwsounds,flameturret8,1,44100,0.497,11832,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,43808
+data/mwsounds/FlameTurret9.ogg,mwsounds,flameturret9,1,44100,0.541,12371,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING GunTurret FireFlame,flameturretfire,,referenced,live,sounds.dat,,47716
+data/mwsounds/FlameTurretFinal.ogg,mwsounds,flameturretfinal,1,44100,2.204,31897,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,194432
+data/mwsounds/FlameTurretLoop1.ogg,mwsounds,flameturretloop1,1,44100,7.213,115491,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,636196
+data/mwsounds/Formation1.ogg,mwsounds,formation1,1,44100,0.434,10538,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderformation,unused,,sounds.dat,,38304
+data/mwsounds/Formation2.ogg,mwsounds,formation2,1,44100,0.669,14623,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderformation,unused,,sounds.dat,,58984
+data/mwsounds/GameOver1.ogg,mwsounds,gameover1,1,44100,4.368,70105,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,385278
+data/mwsounds/GameOver2.ogg,mwsounds,gameover2,1,44100,4.389,52157,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,387072
+data/mwsounds/GDSpeech10.ogg,mwsounds,gdspeech10,1,44100,2.167,36159,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,191094
+data/mwsounds/GDSpeech11.ogg,mwsounds,gdspeech11,1,44100,5.070,83836,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,447182
+data/mwsounds/GDSpeech12.ogg,mwsounds,gdspeech12,1,44100,4.754,78940,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,419302
+data/mwsounds/GDSpeech13.ogg,mwsounds,gdspeech13,1,44100,2.990,47907,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,263738
+data/mwsounds/GDSpeech14.ogg,mwsounds,gdspeech14,1,44100,4.319,69680,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,380946
+data/mwsounds/GDSpeech15.ogg,mwsounds,gdspeech15,1,44100,3.493,56743,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,308092
+data/mwsounds/GDSpeech16.ogg,mwsounds,gdspeech16,1,44100,4.183,69302,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,368912
+data/mwsounds/GDSpeech17.ogg,mwsounds,gdspeech17,1,44100,5.400,88855,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,476280
+data/mwsounds/GDSpeech18.ogg,mwsounds,gdspeech18,1,44100,4.600,74636,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,405736
+data/mwsounds/GDSpeech2.ogg,mwsounds,gdspeech2,1,44100,4.471,74012,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,394344
+data/mwsounds/GDSpeech3.ogg,mwsounds,gdspeech3,1,44100,4.050,67637,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,357210
+data/mwsounds/GDSpeech4.ogg,mwsounds,gdspeech4,1,44100,4.543,74336,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,400650
+data/mwsounds/GDSpeech5.ogg,mwsounds,gdspeech5,1,44100,3.840,60897,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,338688
+data/mwsounds/GDSpeech6.ogg,mwsounds,gdspeech6,1,44100,5.270,82466,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,464814
+data/mwsounds/GDSpeech7.ogg,mwsounds,gdspeech7,1,44100,5.990,97565,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,528318
+data/mwsounds/GDSpeech8.ogg,mwsounds,gdspeech8,1,44100,6.690,110035,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,590058
+data/mwsounds/GDSpeech9.ogg,mwsounds,gdspeech9,1,44100,4.744,76841,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Tree CreateEvil,gdspeechgroup,,referenced,live,sounds.dat,,418416
+data/mwsounds/High1.ogg,mwsounds,high1,1,44100,15.315,240157,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1350754
+data/mwsounds/High2.ogg,mwsounds,high2,1,44100,16.230,268807,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1431486
+data/mwsounds/High3.ogg,mwsounds,high3,1,44100,37.511,611259,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3308476
+data/mwsounds/High4.ogg,mwsounds,high4,1,44100,15.511,249647,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1368064
+data/mwsounds/High5.ogg,mwsounds,high5,1,44100,39.563,634231,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3489482
+data/mwsounds/High6.ogg,mwsounds,high6,1,44100,35.229,560820,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,3107230
+data/mwsounds/High7.ogg,mwsounds,high7,1,44100,20.248,318253,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Ambience EnterLocation,highaltitude,,referenced,live,sounds.dat,,1785856
+data/mwsounds/Hit1.ogg,mwsounds,hit1,1,44100,0.400,10532,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit10.ogg,mwsounds,hit10,1,44100,0.400,10362,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit11.ogg,mwsounds,hit11,1,44100,0.700,15235,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
+data/mwsounds/Hit12.ogg,mwsounds,hit12,1,44100,0.311,9049,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,27392
+data/mwsounds/Hit13.ogg,mwsounds,hit13,1,44100,0.344,9688,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,30306
+data/mwsounds/Hit14.ogg,mwsounds,hit14,1,44100,0.400,10255,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit15.ogg,mwsounds,hit15,1,44100,0.281,8897,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,24792
+data/mwsounds/Hit16.ogg,mwsounds,hit16,1,44100,0.381,10010,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,33644
+data/mwsounds/Hit17.ogg,mwsounds,hit17,1,44100,0.700,15756,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
+data/mwsounds/Hit18.ogg,mwsounds,hit18,1,44100,0.344,9738,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,30336
+data/mwsounds/Hit19.ogg,mwsounds,hit19,1,44100,0.374,10214,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,32956
+data/mwsounds/Hit2.ogg,mwsounds,hit2,1,44100,0.416,10991,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,36686
+data/mwsounds/Hit20.ogg,mwsounds,hit20,1,44100,0.500,12314,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
+data/mwsounds/Hit21.ogg,mwsounds,hit21,1,44100,0.284,8551,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,25006
+data/mwsounds/Hit22.ogg,mwsounds,hit22,1,44100,0.800,16856,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,70560
+data/mwsounds/Hit23.ogg,mwsounds,hit23,1,44100,0.384,9869,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,33856
+data/mwsounds/Hit24.ogg,mwsounds,hit24,1,44100,0.511,11999,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,45056
+data/mwsounds/Hit25.ogg,mwsounds,hit25,1,44100,0.400,10319,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit26.ogg,mwsounds,hit26,1,44100,0.700,15308,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
+data/mwsounds/Hit27.ogg,mwsounds,hit27,1,44100,0.600,14051,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,52920
+data/mwsounds/Hit28.ogg,mwsounds,hit28,1,44100,0.234,7878,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,20608
+data/mwsounds/Hit29.ogg,mwsounds,hit29,1,44100,0.453,11092,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,39936
+data/mwsounds/Hit3.ogg,mwsounds,hit3,1,44100,0.579,13112,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,51088
+data/mwsounds/Hit30.ogg,mwsounds,hit30,1,44100,0.361,10231,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,31876
+data/mwsounds/Hit31.ogg,mwsounds,hit31,1,44100,0.302,9194,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,26624
+data/mwsounds/Hit32.ogg,mwsounds,hit32,1,44100,0.500,12183,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
+data/mwsounds/Hit33.ogg,mwsounds,hit33,1,44100,0.400,10478,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit34.ogg,mwsounds,hit34,1,44100,0.700,15742,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,61740
+data/mwsounds/Hit35.ogg,mwsounds,hit35,1,44100,0.400,10734,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit36.ogg,mwsounds,hit36,1,44100,0.500,12046,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
+data/mwsounds/Hit4.ogg,mwsounds,hit4,1,44100,0.393,10444,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,34662
+data/mwsounds/Hit5.ogg,mwsounds,hit5,1,44100,0.487,12056,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,42960
+data/mwsounds/Hit6.ogg,mwsounds,hit6,1,44100,0.500,12562,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,44100
+data/mwsounds/Hit7.ogg,mwsounds,hit7,1,44100,0.400,10689,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/Hit8.ogg,mwsounds,hit8,1,44100,0.200,7274,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,17640
+data/mwsounds/Hit9.ogg,mwsounds,hit9,1,44100,0.400,10475,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER Laser InjuredEntity,CombatVoxInjured,,referenced,live,sounds.dat,,35280
+data/mwsounds/KOH_Zone_Captured.ogg,mwsounds,koh_zone_captured,1,44100,1.951,26650,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone ChangeTeam,,,referenced,live,sounds.dat,,172092
+data/mwsounds/KOH_Zone_Lost.ogg,mwsounds,koh_zone_lost,1,44100,2.786,38206,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone ChangeTeam,,,referenced,live,sounds.dat,,245740
+data/mwsounds/KOH_ZoneActive.ogg,mwsounds,koh_zoneactive,1,44100,5.350,88102,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone Create,,,referenced,live,sounds.dat,,471852
+data/mwsounds/Laser_Cock1.ogg,mwsounds,laser_cock1,1,44100,0.617,14250,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,54392
+data/mwsounds/Laser_Cock10.ogg,mwsounds,laser_cock10,1,44100,0.471,11610,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,41528
+data/mwsounds/Laser_Cock2.ogg,mwsounds,laser_cock2,1,44100,0.401,10779,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,35392
+data/mwsounds/Laser_Cock3.ogg,mwsounds,laser_cock3,1,44100,0.647,13634,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,57036
+data/mwsounds/Laser_Cock4.ogg,mwsounds,laser_cock4,1,44100,0.672,14859,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,59264
+data/mwsounds/Laser_Cock5.ogg,mwsounds,laser_cock5,1,44100,0.230,7924,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,20288
+data/mwsounds/Laser_Cock6.ogg,mwsounds,laser_cock6,1,44100,0.423,10687,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,37304
+data/mwsounds/Laser_Cock7.ogg,mwsounds,laser_cock7,1,44100,0.659,14917,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,58112
+data/mwsounds/Laser_Cock8.ogg,mwsounds,laser_cock8,1,44100,0.380,10212,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,33536
+data/mwsounds/Laser_Cock9.ogg,mwsounds,laser_cock9,1,44100,0.478,11836,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,lasercock,unused,,sounds.dat,,42168
+data/mwsounds/Laser_Reload1.ogg,mwsounds,laser_reload1,1,44100,0.726,15486,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,64000
+data/mwsounds/Laser_Reload2.ogg,mwsounds,laser_reload2,1,44100,0.900,17047,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,79360
+data/mwsounds/Laser_Reload3.ogg,mwsounds,laser_reload3,1,44100,0.894,17267,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,78848
+data/mwsounds/Laser_Reload4.ogg,mwsounds,laser_reload4,1,44100,1.068,16068,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,94208
+data/mwsounds/Laser_Reload5.ogg,mwsounds,laser_reload5,1,44100,1.403,19885,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Attack,laserreload,,referenced,live,sounds.dat,,123774
+data/mwsounds/LaserHitDarwinian1.ogg,mwsounds,laserhitdarwinian1,1,44100,0.255,8342,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,22528
+data/mwsounds/LaserHitDarwinian10.ogg,mwsounds,laserhitdarwinian10,1,44100,0.627,14546,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,55296
+data/mwsounds/LaserHitDarwinian11.ogg,mwsounds,laserhitdarwinian11,1,44100,0.737,16011,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,65024
+data/mwsounds/LaserHitDarwinian12.ogg,mwsounds,laserhitdarwinian12,1,44100,0.612,14115,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,53980
+data/mwsounds/LaserHitDarwinian13.ogg,mwsounds,laserhitdarwinian13,1,44100,0.652,14580,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,57484
+data/mwsounds/LaserHitDarwinian14.ogg,mwsounds,laserhitdarwinian14,1,44100,0.647,14286,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,57040
+data/mwsounds/LaserHitDarwinian15.ogg,mwsounds,laserhitdarwinian15,1,44100,0.380,10370,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,33536
+data/mwsounds/LaserHitDarwinian16.ogg,mwsounds,laserhitdarwinian16,1,44100,0.325,9577,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,28672
+data/mwsounds/LaserHitDarwinian17.ogg,mwsounds,laserhitdarwinian17,1,44100,0.314,8968,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,27712
+data/mwsounds/LaserHitDarwinian18.ogg,mwsounds,laserhitdarwinian18,1,44100,0.369,9933,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,32512
+data/mwsounds/LaserHitDarwinian19.ogg,mwsounds,laserhitdarwinian19,1,44100,0.269,8559,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,23744
+data/mwsounds/LaserHitDarwinian2.ogg,mwsounds,laserhitdarwinian2,1,44100,0.512,12594,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,45184
+data/mwsounds/LaserHitDarwinian3.ogg,mwsounds,laserhitdarwinian3,1,44100,0.740,16251,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,65252
+data/mwsounds/LaserHitDarwinian4.ogg,mwsounds,laserhitdarwinian4,1,44100,1.124,22198,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,99104
+data/mwsounds/LaserHitDarwinian5.ogg,mwsounds,laserhitdarwinian5,1,44100,0.412,10799,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,36352
+data/mwsounds/LaserHitDarwinian6.ogg,mwsounds,laserhitdarwinian6,1,44100,0.787,16771,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,69376
+data/mwsounds/LaserHitDarwinian7.ogg,mwsounds,laserhitdarwinian7,1,44100,0.853,18322,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,75264
+data/mwsounds/LaserHitDarwinian8.ogg,mwsounds,laserhitdarwinian8,1,44100,0.559,13021,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,49276
+data/mwsounds/LaserHitDarwinian9.ogg,mwsounds,laserhitdarwinian9,1,44100,0.500,12085,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian Die,laserhitdarwinian,,referenced,live,sounds.dat,,44100
+data/mwsounds/Marching1.ogg,mwsounds,marching1,1,44100,1.600,17932,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderfollow,unused,,sounds.dat,,141120
+data/mwsounds/Marching2.ogg,mwsounds,marching2,1,44100,1.600,18169,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderfollow,unused,,sounds.dat,,141120
+data/mwsounds/Marching3.ogg,mwsounds,marching3,1,44100,1.600,15482,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderfollow,unused,,sounds.dat,,141120
+data/mwsounds/Marching4.ogg,mwsounds,marching4,1,44100,1.600,20402,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderfollow,unused,,sounds.dat,,141120
+data/mwsounds/Marching5.ogg,mwsounds,marching5,1,44100,1.600,17755,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officersetorderfollow,unused,,sounds.dat,,141120
+data/mwsounds/MeteorHitClose1.ogg,mwsounds,meteorhitclose1,1,44100,7.246,121832,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Meteor Land,,,referenced,live,sounds.dat,,639134
+data/mwsounds/MeteorHitFar1.ogg,mwsounds,meteorhitfar1,1,44100,5.793,77530,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Meteor Land,,,referenced,live,sounds.dat,,510976
+data/mwsounds/mouseclick1.ogg,mwsounds,mouseclick1,1,44100,0.107,5142,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface SelectUnit;OTHER MultiwiniaInterface ToggleUnitState,,,referenced,live,sounds2.dat,,9430
+data/mwsounds/MultiLobbyAmb1.ogg,mwsounds,multilobbyamb1,1,44100,31.113,490010,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2744164
+data/mwsounds/MultiLobbyAmb10.ogg,mwsounds,multilobbyamb10,1,44100,28.365,429951,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2501760
+data/mwsounds/MultiLobbyAmb2.ogg,mwsounds,multilobbyamb2,1,44100,24.142,382463,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2129340
+data/mwsounds/MultiLobbyAmb3.ogg,mwsounds,multilobbyamb3,1,44100,32.643,504656,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2879100
+data/mwsounds/MultiLobbyAmb4.ogg,mwsounds,multilobbyamb4,1,44100,36.021,548077,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,3177064
+data/mwsounds/MultiLobbyAmb5.ogg,mwsounds,multilobbyamb5,1,44100,21.658,344634,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1910224
+data/mwsounds/MultiLobbyAmb6.ogg,mwsounds,multilobbyamb6,1,44100,19.420,300756,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1712824
+data/mwsounds/MultiLobbyAmb7.ogg,mwsounds,multilobbyamb7,1,44100,21.002,321678,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,1852352
+data/mwsounds/MultiLobbyAmb8.ogg,mwsounds,multilobbyamb8,1,44100,24.948,390654,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2200384
+data/mwsounds/MultiLobbyAmb9.ogg,mwsounds,multilobbyamb9,1,44100,32.704,518120,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface LobbyAmbience,MultiLobbyAmbiences,,referenced,live,menusounds.dat,,2884506
+data/mwsounds/NukeDetonateFar.ogg,mwsounds,nukedetonatefar,1,44100,10.077,108033,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Nuke Explode,,,referenced,live,sounds.dat,,888832
+data/mwsounds/NukeDetonateNear.ogg,mwsounds,nukedetonatenear,1,44100,7.246,85321,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Nuke Explode,,,referenced,live,sounds.dat,,639136
+data/mwsounds/PinkNoiseLoop.ogg,mwsounds,pinknoiseloop,1,44100,5.000,80917,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,441000
+data/mwsounds/Player_Capture_Statue.ogg,mwsounds,player_capture_statue,1,44100,1.161,21809,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone CaptureStatue;BUILDING Statue ChangeTeam,,,referenced,live,sounds.dat,,102400
+data/mwsounds/PlayerCaptureBugle5.ogg,mwsounds,playercapturebugle5,1,44100,4.554,73187,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING MultiwiniaZone CaptureStatue,,,referenced,live,sounds.dat,,401678
+data/mwsounds/Retreat1.ogg,mwsounds,retreat1,1,44100,0.353,9751,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,31148
+data/mwsounds/Retreat10.ogg,mwsounds,retreat10,1,44100,0.539,12686,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47544
+data/mwsounds/Retreat11.ogg,mwsounds,retreat11,1,44100,0.409,10504,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,36096
+data/mwsounds/Retreat12.ogg,mwsounds,retreat12,1,44100,0.537,12704,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47348
+data/mwsounds/Retreat13.ogg,mwsounds,retreat13,1,44100,0.900,18493,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,79380
+data/mwsounds/Retreat14.ogg,mwsounds,retreat14,1,44100,0.600,13684,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,52920
+data/mwsounds/Retreat15.ogg,mwsounds,retreat15,1,44100,0.561,13407,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,49464
+data/mwsounds/Retreat16.ogg,mwsounds,retreat16,1,44100,0.527,12636,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,46520
+data/mwsounds/Retreat17.ogg,mwsounds,retreat17,1,44100,0.468,11461,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,41242
+data/mwsounds/Retreat18.ogg,mwsounds,retreat18,1,44100,1.070,21512,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,94344
+data/mwsounds/Retreat19.ogg,mwsounds,retreat19,1,44100,0.885,18506,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,78080
+data/mwsounds/Retreat2.ogg,mwsounds,retreat2,1,44100,0.300,9004,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,26460
+data/mwsounds/Retreat20.ogg,mwsounds,retreat20,1,44100,0.328,9251,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,28966
+data/mwsounds/Retreat21.ogg,mwsounds,retreat21,1,44100,0.540,13089,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,47602
+data/mwsounds/Retreat22.ogg,mwsounds,retreat22,1,44100,1.682,31203,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,148348
+data/mwsounds/Retreat23.ogg,mwsounds,retreat23,1,44100,0.633,14055,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,55860
+data/mwsounds/Retreat24.ogg,mwsounds,retreat24,1,44100,0.500,11718,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,44100
+data/mwsounds/Retreat25.ogg,mwsounds,retreat25,1,44100,0.360,10055,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,31744
+data/mwsounds/Retreat26.ogg,mwsounds,retreat26,1,44100,0.455,11335,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,40116
+data/mwsounds/Retreat3.ogg,mwsounds,retreat3,1,44100,0.837,17587,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,73808
+data/mwsounds/Retreat4.ogg,mwsounds,retreat4,1,44100,0.587,13893,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,51760
+data/mwsounds/Retreat5.ogg,mwsounds,retreat5,1,44100,0.400,10475,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,35280
+data/mwsounds/Retreat6.ogg,mwsounds,retreat6,1,44100,0.801,17215,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,70654
+data/mwsounds/Retreat7.ogg,mwsounds,retreat7,1,44100,0.366,9950,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,32256
+data/mwsounds/Retreat8.ogg,mwsounds,retreat8,1,44100,0.364,9851,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,32126
+data/mwsounds/Retreat9.ogg,mwsounds,retreat9,1,44100,0.600,14152,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Darwinian SeenThreatRunAway,CombatVoxRetreat,,referenced,live,sounds.dat,,52920
+data/mwsounds/RocketThrust2Loop.ogg,mwsounds,rocketthrust2loop,1,44100,3.223,55228,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Meteor Create,,,referenced,live,sounds.dat,,284256
+data/mwsounds/RocketThrustLoop.ogg,mwsounds,rocketthrustloop,1,44100,3.226,48804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Nuke Create,,,referenced,live,sounds.dat,,284504
+data/mwsounds/rollover1a.ogg,mwsounds,rollover1a,1,44100,0.018,4148,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface UnitHighlight,UnitHighlight,,referenced,live,sounds2.dat,,1628
+data/mwsounds/rollover1b.ogg,mwsounds,rollover1b,1,44100,0.024,4429,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds2.dat,,2092
+data/mwsounds/rollover1c.ogg,mwsounds,rollover1c,1,44100,0.018,4164,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,OTHER MultiwiniaInterface UnitHighlight,UnitHighlight,,referenced,live,sounds2.dat,,1600
+data/mwsounds/Rumble2_Loop.ogg,mwsounds,rumble2_loop,1,44100,1.404,12726,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Harvester Create;ENTITY Meteor Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,123816
+data/mwsounds/SpawnPoint_PlayerTurnsOff.ogg,mwsounds,spawnpoint_playerturnsoff,1,44100,2.908,44367,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,256512
+data/mwsounds/SpawnPoint_PlayerTurnsOff2.ogg,mwsounds,spawnpoint_playerturnsoff2,1,44100,7.883,112220,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING SpawnPoint TurnOff,,,referenced,live,sounds.dat,,695256
+data/mwsounds/SpawnPoint_PlayerTurnsOn.ogg,mwsounds,spawnpoint_playerturnson,1,44100,4.726,70220,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,416872
+data/mwsounds/SpawnPoint_PlayerTurnsOn2.ogg,mwsounds,spawnpoint_playerturnson2,1,44100,9.391,126323,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING SpawnPoint TurnOn,,,referenced,live,sounds.dat,,828312
+data/mwsounds/SpawnPointActivate5.ogg,mwsounds,spawnpointactivate5,1,44100,14.000,202292,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,1234800
+data/mwsounds/SpawnPointDeactivate4.ogg,mwsounds,spawnpointdeactivate4,1,44100,4.924,82053,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,434284
+data/mwsounds/StatueDrop.ogg,mwsounds,statuedrop,1,44100,3.250,42969,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,286664
+data/mwsounds/StatueDrop2.ogg,mwsounds,statuedrop2,1,44100,2.061,28978,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,181804
+data/mwsounds/StatueDrop3.ogg,mwsounds,statuedrop3,1,44100,5.906,90688,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Statue Drop,,,referenced,live,sounds.dat,,520952
+data/mwsounds/StatueDrop4.ogg,mwsounds,statuedrop4,1,44100,5.906,92180,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,520952
+data/mwsounds/StatueSpawn1.ogg,mwsounds,statuespawn1,1,44100,1.277,21338,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,BUILDING Statue Create,,,referenced,live,sounds.dat,,112640
+data/mwsounds/TankEngineFar.ogg,mwsounds,tankenginefar,1,44100,3.518,47459,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Tank Create,,,referenced,dead-data,sounds.dat,,310272
+data/mwsounds/TankEngineNear.ogg,mwsounds,tankenginenear,1,44100,2.001,31302,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,176504
+data/mwsounds/theramin1.ogg,mwsounds,theramin1,1,44100,16.000,223877,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1411200
+data/mwsounds/theramin2.ogg,mwsounds,theramin2,1,44100,19.598,262993,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1728512
+data/mwsounds/theramin3.ogg,mwsounds,theramin3,1,44100,18.112,229850,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1597440
+data/mwsounds/theramin4.ogg,mwsounds,theramin4,1,44100,16.235,217223,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1431932
+data/mwsounds/theramin5.ogg,mwsounds,theramin5,1,44100,15.145,230703,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1335828
+data/mwsounds/theramin6.ogg,mwsounds,theramin6,1,44100,16.057,238954,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1416224
+data/mwsounds/theramin7.ogg,mwsounds,theramin7,1,44100,23.429,328762,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,2066464
+data/mwsounds/theramin8.ogg,mwsounds,theramin8,1,44100,16.872,243421,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1488108
+data/mwsounds/theramin9.ogg,mwsounds,theramin9,1,44100,17.067,261929,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip Create,theramins,,referenced,live,sounds.dat,,1505280
+data/mwsounds/TractorBeam2.ogg,mwsounds,tractorbeam2,1,44100,3.994,63207,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY SpaceShip TractorBeam,,,referenced,live,sounds.dat,,352256
+data/mwsounds/UFO_Engine1.ogg,mwsounds,ufo_engine1,1,44100,6.628,73446,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Harvester Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,584568
+data/mwsounds/UFO_Engine2.ogg,mwsounds,ufo_engine2,1,44100,1.387,12081,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,ENTITY Harvester Create;ENTITY SpaceShip Create,,,referenced,live,sounds.dat,,122368
+data/mwsounds/YesSir1.ogg,mwsounds,yessir1,1,44100,0.300,8685,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,26500
+data/mwsounds/YesSir10.ogg,mwsounds,yessir10,1,44100,0.314,9226,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,27712
+data/mwsounds/YesSir11.ogg,mwsounds,yessir11,1,44100,0.309,9268,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,27256
+data/mwsounds/YesSir12.ogg,mwsounds,yessir12,1,44100,0.295,8441,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,26044
+data/mwsounds/YesSir2.ogg,mwsounds,yessir2,1,44100,0.204,7160,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,17996
+data/mwsounds/YesSir3.ogg,mwsounds,yessir3,1,44100,0.255,7891,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,22464
+data/mwsounds/YesSir4.ogg,mwsounds,yessir4,1,44100,0.293,8863,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,25860
+data/mwsounds/YesSir5.ogg,mwsounds,yessir5,1,44100,0.314,8883,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,27680
+data/mwsounds/YesSir6.ogg,mwsounds,yessir6,1,44100,0.284,8804,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,25036
+data/mwsounds/YesSir7.ogg,mwsounds,yessir7,1,44100,0.270,8413,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,23856
+data/mwsounds/YesSir8.ogg,mwsounds,yessir8,1,44100,0.270,8501,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,23856
+data/mwsounds/YesSir9.ogg,mwsounds,yessir9,1,44100,0.321,9437,128,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,officerselected,unused,,sounds.dat,,28280
+data/mwsounds/YouLost2.ogg,mwsounds,youlost2,1,44100,7.148,88190,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,630454
+data/mwsounds/YouWon.ogg,mwsounds,youwon,1,44100,7.045,83931,96,Xiph.Org libVorbis I 20020717,Sony Ogg Vorbis 1.0 Final,,,,unused,,sounds.dat,,621362

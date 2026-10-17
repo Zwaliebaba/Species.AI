@@ -838,9 +838,646 @@ flowchart TD
     TXT --> PS["Paused banner"] --> MT["Menu transition"] --> FL["Flip / SwapBuffers"]
 ```
 
-<!-- SECTION 4 components -->
+## 4 Renderer components
 
-<!-- SECTION 5 camera lighting -->
+### 4.1 Landscape renderer (`LandscapeRenderer`) [B:FULL] [C] `code/landscape_renderer.h`, `code/landscape_renderer.cpp`
+
+Terrain heights, tiles and the colour-ramp formula are specified in [23](23_terrain_and_landscape.md); this section covers mesh construction, storage and draw.
+
+**Vertex format.** `LandVertex` = `FloatVector3 m_pos` (offset 0), `FloatVector3 m_norm` (12), `RGBAColour m_col` (24, 4×u8 RGBA; packed as `D3DCOLOR` ARGB under [B:D3D]), `TextureUV m_uv` (28, 2×float, `code/lib/texture_uv.h`) → stride **36 bytes** [C] `m_posOffset`…`m_uvOffset`.
+
+**Mesh: one triangle strip for the whole map** with degenerate joins, skipping quads fully under water [C] `BuildVertArrayAndTriStrip` (verified: a single `LandTriangleStrip` is created and pushed into `m_strips`):
+
+```
+highest = (landscape.m_artificalMaxHeight > 0) ? that : heightMap.GetHighestValue()
+degen = 0
+for z in 0 .. cols-1:               # cols = heightMap.GetNumRows(); the last row reads z+1 = outside value
+    for x in 0 .. rows-1:           # rows = heightMap.GetNumColumns()
+        if any of h(x-1,z), h(x-1,z+1), h(x,z), h(x,z+1), h(x+1,z), h(x+1,z+1) > 0:
+            v1 = (x*cs, h(x,z), z*cs);  v2 = (x*cs, h(x,z+1), (z+1)*cs)
+            if v1.y < 0.3: v1.y = -10.0;  if v2.y < 0.3: v2.y = -10.0     # sink near-sea vertices
+            if degen == 1: emit v1, v1                                    # restart after a gap
+            degen = 2; emit v1, v2
+        elif degen == 2:
+            emit v2, v2 (last v2); degen = 1                              # close the run
+m_numTriangles = numVerts - 2
+```
+
+- Vertices below 0.3 are pushed to −10 so the coast is a crisp cliff into the water and never z-fights the sea [I].
+- No join is inserted at row ends: if a row ends and the next starts above water a long wrap-around triangle connects them [I] (shipped maps have water borders).
+- **No LOD and no chunking**: the visible land is one draw per pass. `RenderLandscapeDetail` reads are commented out (literal 1) [C] `LandscapeRenderer::Render`, `code/landscape.cpp`.
+
+**Render normals (per triangle, flat)** [C] `BuildNormArray`: vertices 0 and 1 get (0,1,0); for j = 0, 2, 4, … < numVerts−2 with `a,b,c,d = v_j..v_j+3`: `n(T_j) = normalise((c−b) × (a−b))` stored on v_j+2, `n(T_j+1) = normalise((d−b) × (c−b))` stored on v_j+3. Vertex k ≥ 2 thus carries the normal **and colour** of triangle (k−2, k−1, k); with `GL_FLAT` OpenGL uses the **last** vertex of each strip triangle — exactly that vertex. Degenerate triangles normalise a zero vector → (0,0,1) [C] `code/lib/vector3.h:Vector3::Normalise`.
+
+**Colour** [C] `BuildColourArray`, `GetLandscapeColour`: per strip triangle, ramp lookup `u = (1 − n.y)^0.4` (slope), `v = 1 − centre.y/highest + jitter` (height) into the 64×64 `terrain/<landColourFile>` bitmap, stored on the provoking vertex (formula, RNG chain and burn patches in [23](23_terrain_and_landscape.md)); negative-renderer mode sets alpha 0; Christmas mode substitutes `terrain/landscape_icecaps.bmp` [C] `LandscapeRenderer::LandscapeRenderer`. Colours are presentation-only [C].
+
+**UVs** [C] `BuildUVArray`: `u = x/cellSize`, `v = z/cellSize` → one outline-texture repeat per height-map cell.
+
+**[B:D3D] differences** [C] `BuildOpenGlState`: all normals negated; with `USE_DIRECT3D_TRILIST` (always on under D3D) the strip is expanded to a triangle list (3 verts per strip triangle including degenerates, winding fixed by `i%2`, all three carrying the provoking vertex's normal/colour) because D3D9 flat shading uses the **first** vertex; dedicated vertex declaration (POSITION f3, NORMAL f3, COLOR d3dcolor, TEXCOORD0 f2); `g_fixedPipeline->Bind()` before each draw.
+
+**Storage / draw path** [C] `LandscapeRenderer::LandscapeRenderer`, `BuildOpenGlState`, `DoBindBuffers`:
+
+| Mode (enum value) | When | Draw |
+|---|---|---|
+| `RenderModeVertexArray` (0) | pref `RenderLandscapeMode = 0` | client-side arrays from `m_verts` |
+| `RenderModeDisplayList` (1) | pref 1, or auto-fallback (§1.3.2) | two display lists `"LandscapeMain"`, `"LandscapeOverlay"` compiled via `Resource::CreateDisplayListAsync` from `RenderMainSlow` / `RenderOverlaySlow` (GL state changes are captured in the list) |
+| `RenderModeVertexBufferObject` (2) | default: pref absent/−1 ⇒ VBO if `IsOGLExtensionPerfectlySupported("GL_ARB_vertex_buffer_object")`, else display list; also falls back if `gglBindBufferARB` is NULL; always under [B:D3D] | one static VBO (`GL_STATIC_DRAW_ARB`), uploading `m_verts.Size()` = **capacity**, including the unused tail [C]; built off the main thread → upload queued to the loading screen (`g_loadingScreen->QueueJob`) and waited for |
+| `RenderModeVertexBufferDirect3D` (3) | never assigned | — |
+
+Linux/Mac default preferences write `RenderLandscapeMode = 2` [C] `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues` (platform appendix).
+
+**Passes** (preceded by `Location::SetupFog()` + `glEnable(GL_FOG)`, followed by `glDisable(GL_FOG)`; both passes draw the identical strip) [C] `RenderMainSlow`, `RenderOverlaySlow`, `Render`:
+
+| State | Pass 1 "Main" | Pass 2 "Overlay" |
+|---|---|---|
+| Purpose | solid, flat-shaded, vertex-lit terrain coloured by the ramp | additive glowing wireframe grid: `textures/triangleOutline.bmp` (128×128 8-bit; a 2×2 block of squares, three with a diagonal) |
+| Fog | ON, linear, black, start = end/3, end = max(4000, sizeX+1000, sizeZ+1000) | ON (same) |
+| Lighting | ON, `GL_LIGHT0`, `GL_LIGHT1` (the first two level lights, §5.6) | ON, LIGHT0, LIGHT1 |
+| Material | specular (0,0,0,0), ambient+diffuse (1,1,1,0), shininess 100 | specular (0.5,0.5,0.5,1), ambient+diffuse (1.2,1.2,1.2,0), shininess 40 — the level lights' colour is also their `GL_SPECULAR`, so grid lines catch highlights [I] |
+| Colour material | ON (`GL_FRONT_AND_BACK`, `GL_AMBIENT_AND_DIFFUSE`) | ON |
+| Texture | OFF | ON; `GetTexture("textures/triangleOutline.bmp", mipmaps=true, masked=false)`; MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, wrap REPEAT; env MODULATE |
+| Blend | OFF; negative renderer ON `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` (left enabled, disabled by pass 2) | ON `(SRC_ALPHA, ONE)`; negative `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` |
+| Depth test / func | ON / LEQUAL — lets pass 2 draw at equal depth | ON / LEQUAL |
+| Depth write | ON | **OFF** |
+| Cull | ON, front = CCW; strip faces up | ON |
+| Shade model | FLAT | FLAT |
+| Arrays | vertex, normal, colour | vertex, normal, colour, texcoord |
+| Exit state | colour material, lighting, LIGHT0/1 OFF; VBO unbound | colour material, blend, texture, lighting, LIGHT0/1 OFF; depth write ON; func `(SRC_ALPHA, ONE_MINUS_SRC_ALPHA)`; wrap CLAMP |
+
+Rebuild triggers: graphics/other options "apply" while in a location (full `Landscape::Init`), `Resource::RegenerateOpenGlState` (renderer rebuilt), burn patches [B:LEGACY] — table in [23](23_terrain_and_landscape.md).
+
+### 4.2 Water renderer (`Water`) [B:FULL] [C] `code/water.h`, `code/water.cpp`
+
+The sea is a plane **twice the land size**, from (−sizeX/2, −sizeZ/2) to (1.5·sizeX, 1.5·sizeZ), drawn as two layers: an **under-water flat textured layer** at y = −9 near land, and a **dynamic wave mesh** at y ≈ 0 that exists only near the coast. Deep sea is not drawn at all (black background + fog show through) [C]. The shore mask, depth map and wave formulae are in [23](23_terrain_and_landscape.md).
+
+**Construction (`Water::Water`)**:
+1. `GenerateLightMap()` — shore mask `water_lightmap` (128×128), depth map, 32×32 flat-tile mask.
+2. If `RenderWaterDetail` (UI 1 = high, 2 = medium, 3 = low; default 1) > 0:
+   - `waterCell = detail × max(sizeX, sizeZ) / 100` (detail 1 ⇒ 200 cells across the 2× plane).
+   - Colour table = row **y = 1** of `terrain/<wavesColourFile>` (400×10, 24-bit): `numColours = width = 400`, alpha forced 255 (0 in negative mode); Christmas mode substitutes `terrain/waves_earth.bmp`.
+   - `BuildTriangleStrips()`: same single-strip/degenerate-join scheme over the grid `xb ∈ [0, int(2·sizeX/waterCell))`, `zb` likewise; vertex pair (fx, 0, fz)/(fx, 0, fz+cell), `fx = −sizeX/2 + xb·cell`; a column is emitted if any of the 6 neighbouring points passes `IsVertNeeded` (land height ≤ 4.0 and depth ≤ 0.999). Per vertex: `depth` (bilinear), `shoreNoise = (s + sfrand(s)·0.25)·250`, `s = 1 − depth`; depth map freed afterwards.
+   - Wave tables sized `int(2·size/waterCell + 2)`; `UpdateDynamicWater()` once.
+3. If detail ≤ 0 (not offered by the menu) only the flat layer exists.
+
+**Per-frame update** (`Water::Advance` → `UpdateDynamicWater`): called once per **rendered** frame from `code/main.cpp:LocationGameLoop`, not from the simulation; time = `g_gameTimer.GetAccurateTime()` [C]. For each vertex pair (v1 at j, v2 at j+1):
+```
+ix = int((v1.x + sizeX/2)/cell + 0.1);  iz = int((v1.z + sizeZ/2)/cell + 0.1)
+v1.y = (waveX[ix] + waveZ[iz])   * depth[j]
+b1   = (prevH1 + prevH2 + v1.y) * 4.0 * (1 - depth[j])   + shoreNoise[j];   prevH1 = v1.y
+v2.y = (waveX[ix] + waveZ[iz+1]) * depth[j+1]
+b2   = (prevH2 + prevH1 + v2.y) * 4.0 * (1 - depth[j+1]) + shoreNoise[j+1]; prevH2 = v2.y
+v1.col = table[clamp(Round(0.7*b2 + 0.3*b1), 0, 399)]
+v2.col = table[clamp(Round(0.7*b1 + 0.3*b2), 0, 399)]          # cross-mix softens the flat-shading sawtooth
+v1.n = (-(waveX[ix+1]-waveX[ix-1])*depth[j],   v1.y, -(waveZ[iz+1]-waveZ[iz])*depth[j])     # unnormalised
+v2.n = (-(waveX[ix+1]-waveX[ix-1])*depth[j+1], v2.y, -(waveZ[iz+2]-waveZ[iz+1])*depth[j+1])
+degenerate-join fix-ups keep duplicated join vertices at equal heights (isIdentical on x,z)
+```
+`prevH1/prevH2` reset to 0 per strip (one strip). Brightness = local wave-height sum × "shoreness" + per-vertex shore whitening: deep water dark, coast bright [C]+[I]. Normals are consumed only by the D3D shader; the GL path draws no normal array. `waveX[ix−1]` is read out of bounds when `ix == 0` [I] (not reached in practice). File-scope constants: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, `scaleFactor = 7.0` [C]. Mac builds throttle the update (every other call, ≤ 15 Hz) [B:DEAD].
+
+**Passes** (`Water::Render`, from `Location::RenderWater`) [C]: `m_renderWaterEffect = RenderWaterEffect(1) > 0 && RenderPixelShader(1) > 0` (D3D only). If `m_editing`: editor grid (below). If detail > 0: flat layer + dynamic layer (dynamic skipped under D3D without hardware vertex processing); else flat only. Ends with `Location::SetupFog()` (fog disabled).
+
+| State | Flat layer (`RenderFlatWater` → `RenderFlatWaterTiles`) | Dynamic layer (`RenderDynamicWater`) |
+|---|---|---|
+| Geometry | immediate-mode `GL_QUADS`, 32×32 tiles over the 2× plane at **y = −9.0**, skipping "all very deep" tiles; rows north (z = 1.5·sizeZ) → south (−0.5·sizeZ), columns east (x = −0.5·sizeX) → west (1.5·sizeX) | the construction strip, `glDrawArrays(GL_TRIANGLE_STRIP)` from client memory (pos + colour arrays, stride `sizeof(WaterVertex)` = 28) |
+| Texture unit 0 | `terrain/<waterColourFile>` (128×128 8-bit; `GetTexture(mip=true, masked=true)`; Christmas: `terrain/water_icecaps.bmp`), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, REPEAT, env MODULATE (`GL_COMBINE_RGB_EXT=REPLACE` also set, inert); UVs 30 repeats, scrolling `t/30` on both axes (`timeFactor = GetAccurateTime()/30`) | none |
+| Texture unit 1 | `"water_lightmap"`, MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, env `GL_COMBINE_EXT`, `COMBINE_RGB = MODULATE` (default sources: texture × previous); UV 0→1 over the plane (v = 0 north) | none |
+| Vertex colour | (255,255,255,255); negative (255,255,255,0) | per vertex from the waves table |
+| Blend | OFF; negative ON `(SRC_ALPHA, ONE_MINUS_SRC_COLOR)` | ON `(SRC_ALPHA, ONE)` additive |
+| Depth write | **OFF** | ON |
+| Depth test | ON | ON |
+| Cull | **OFF** | ON |
+| Fog | ON (level) | ON |
+| Lighting | OFF | OFF |
+| Exit | unit 1 texture OFF; unit 0 texture OFF, wrap CLAMP, env MODULATE; cull ON; blend OFF, func default; fog OFF; depth write ON | blend OFF, func default; `SetupFog` |
+
+Visual result: near islands the textured, shore-masked under-layer glows; above it the additive wave mesh brightens toward the coast and with wave height [I].
+
+**Editor water** [B:EDITOR] (`m_editing`): two `GL_QUADS` over the land rectangle at y = −10 — textured `triangleOutline.bmp` (100 repeats, colour (250,250,250,100), blend on), then untextured (alpha 30) [C] `Water::Render`.
+
+**[B:D3D] differences** [C]: per-vertex D3D colours; strip → list conversion detecting join triangles by perimeter > 20 units; 10 rotating dynamic vertex buffers (`NumVertexBuffers = 10`, `D3DUSAGE_DYNAMIC|WRITEONLY`, `D3DPOOL_DEFAULT`) under a mutex, filled by `UpdateDynamicWater`, consumed by `RenderDynamicWater`; an `UpdateWaterThread` (120 Hz loop) exists but is **never started**; `RenderFlatWater` resets the vertex declaration to `s_pCustomVertexDecl` ("somebody changes it and not returns back"); `RenderDynamicWater` saves the declaration, sets its own (POSITION f3 @0, COLOR d3dcolor @12, NORMAL f3 @16), `SetStreamSource(0, buffer, 0, 28)`, `g_fixedPipeline->Bind()`, `DrawPrimitive(D3DPT_TRIANGLELIST, 0, n/3)`, `SetStreamSource(0, NULL, 0, 0)`, restores the declaration; `WaterReflectionEffect::Start/Stop` bracket the draw when `m_renderWaterEffect`. The D3D constructor branch contains build blocker B1 (§1.2).
+
+### 4.3 Water reflection (`WaterReflectionEffect`) [B:D3D] [C] `code/water_reflection.h`, `code/water_reflection.cpp`
+
+Whole file inside `#ifdef USE_DIRECT3D`. Created in `CreateD3DResources` (`WaterReflectionEffect::Create`) only if the device supports hardware vertex processing; needs a render-target texture of **half screen resolution** in back-buffer format and shaders `shaders/water-meshwaves.vs` + `water-meshwaves.ps3` (if the pixel-shader profile is ≥ ps_3) else `water-meshwaves.ps`.
+
+Pre-pass `PreRenderWaterReflection` — called only when `RenderPixelShader > 0 && !Multiplayer()` and `RenderWaterEffect` → **never in Multiwinia**:
+1. Save RT 0, bind the reflection texture, viewport = texture size, clear colour (0.3,0.3,0.3,0) + depth, restore clear colour (0,0,0,0).
+2. Mirror: `Camera::WaterReflect()` (y → −y on position, front and up), `Location::WaterReflect()` (a no-op loop — light mirroring commented out), `SetupLights`, `SetupMatricesFor3D`, `UpdateTotalMatrix`. (A block lowering building/entity/landscape detail during the pre-pass is commented out.)
+3. User clip plane `GL_CLIP_PLANE2 = (0,1,0,0)` on (planes 0/1 are reserved for the radar dish); `Location::Render(false)` (no clouds, no water; spirit receivers skip themselves while `IsPrerendering()`); clip plane off.
+4. Un-mirror, restore matrices and lights, cull on, restore RT and viewport.
+
+Water pass (`Start`/`Stop` around the dynamic-water draw): `g_fixedPipeline->Disable()`, bind shader; uniforms `time = ((GetTickCount() % 10000000)/1000, 0.001·1024/ScreenW)`, `worldViewProjMatrix = Renderer::GetTotalMatrix()`, sampler `water` = reflection texture with MAG/MIN LINEAR, MIP NONE; `Stop` re-enables the fixed pipeline. Shader maths in §6. In a Multiwinia match under D3D the water shader samples a reflection texture that was never rendered (24-U2; moot given build blocker B1).
+
+### 4.4 Clouds and sky (`Clouds`) [B:FULL] [C] `code/clouds.cpp`
+
+Live in two places: in-game (`Location::RenderClouds`, first thing drawn by `Location::Render(true)`) and as the **main-menu backdrop** (`code/game_menu.cpp:GameMenu::Render` owns its own `Clouds`; camera at (0,600,0), FOV 90, front (0,0,1) rotated −1.899 rad about Y then −1.079 rad about Z; rendered with prediction time `−GetHighResTime()`, so the menu clouds drift with wall-clock time).
+
+State: `m_offset` (starts 0); `m_vel` = (0.04,0,0) at construction, set to **(0.03, 0, −0.01)** by every `Advance`, then `m_offset += m_vel × SERVER_ADVANCE_PERIOD` [C] `Clouds::Advance`. In-game `Advance` runs once per server tick (`Location::AdvanceClouds`, slice 3); render offset = `m_offset + m_vel × predictionTime`. Clouds are cosmetic (not in any sync check) [I].
+
+Order inside `Clouds::Render`: `RenderSky` → `RenderBlobby` → `RenderFlat` → `RenderFace` (only if `m_faceTime > 0` and 5 s have passed). `RenderQuad` = textured horizontal quad subdivided 4×4 (Radeon fog artefacts).
+
+| Layer | Geometry | Texture / sampling | Colour (RGBA) | UV (offset o) | Condition |
+|---|---|---|---|---|---|
+| Sky grid (`RenderSky`) | `GL_QUADS` lines at y = 1200, every 80 units over [−4000, 6000]² (`r = 2`), 16 units wide (±8), both directions (125 + 125 quads) | `textures/laser.bmp` (128×32 8-bit), default flags | (0.5,0.5,1.0,0.3) | (0,0)…(1,1) across each line | always; fog black 2000→4000; depth test on |
+| Blobby 1 | quad [−8000, 9000]² (`r = 8`), y = 1200 | `textures/clouds.bmp` (16×16 24-bit), `GetTexture(…, mip=false)`, MAG LINEAR, MIN NEAREST, REPEAT | (0.7,0.7,0.9,0.6) | z: o.z…o.z+9, x: o.x…o.x+9 | `RenderCloudDetail` ∈ {1,2} |
+| Blobby 2 | y = 1000 | same | same | o.x/2 … o.x/2+4.5 on both axes | always |
+| Blobby 3 | y = 800 | same | same | axes swapped: o.x…o.x+1.8, o.z…o.z+1.8 | detail = 1 |
+| Flat 1 | quad [−8000, 9000]², y = 1200 | `textures/clouds.bmp` default flags, MAG/MIN NEAREST, REPEAT | (0.7,0.7,0.9,0.3); detail 3 → alpha 0.5 | o.z…o.z+9, o.x…o.x+9 | always |
+| Flat 2 | y = 1000 | same | same | o.x/2…o.x/2+4.5 | detail = 1 |
+| Sky face (`RenderFace`) [B:DEBUG] | quad 1600×1600 at y = 800 centred on (sizeX/2, sizeX/2) | `sepulveda/sepulveda{1..5}.bmp` (256×256 8-bit), cross-faded | white; alpha = min(t−5, 1) from 5 s after the trigger; from 28 s `min(t−28, 1)` (ramps up again — almost certainly a mis-coded fade-out [I]); removed at 30 s; blend **not** enabled (its `glEnable(GL_BLEND)` is commented out and `RenderFlat` just disabled it), so the face draws opaque; depth write off; fog off | random zoom (p = 1/6 per pick: `frand(0.1)`) and x-offset (p = 1/6: `sfrand(0.1)`), smoothed by `g_advanceTime·4`; a new picture every 0.4 s when alpha > 0.9: index 5 with p = 0.1 ("mouth open"), else 4 with p = 0.1 ("eyes shut"), else `1 + AppRandom()%3`; previous picture cross-faded at 0.75× alpha | only via `Clouds::ShowDrSFace` from `code/interface/cheat_window.cpp` (`CHEATMENU_ENABLED`, debug target) |
+
+Common state for sky/blobby/flat: blend ON `(SRC_ALPHA, ONE)`; depth write OFF; depth test **OFF** for blobby and flat (sky grid keeps it ON); fog ON, colour black (0,0,0,0), per-layer start/end; lighting OFF. Exit: `Location::SetupFog()` if a location exists (re-establishes level fog parameters and disables fog), depth test/write ON, blend OFF with default func, texture OFF, wrap CLAMP. In the main menu (no location) **`GL_FOG` is left enabled** after the clouds and the cloud fog parameters stay active for the menu overlay passes [C]/[I] (harmless for 2D UI at z ≈ 0 because fog start is 2000).
+
+Rendering of the menu clouds while a loading screen is up: `LoadingScreen::RenderFrame` calls `GameMenu::Render` + `UserInput::Render` behind the spinner when not on the initial load and at the main menu with the fade complete [C] `code/loading_screen.cpp`.
+
+### 4.5 Shape rendering (`.shp` meshes) [C] `code/lib/shape.h`, `code/lib/shape.cpp`
+
+Every building, most units and all debris use `.shp` meshes. The per-file catalogue (fragments, depth, markers, triangle count, consuming class) is owned by [25](25_textures_and_assets.md); generated table `_work/drafts/P12_shapes.csv` (script `_work/scripts/P12_shapes.py`; the `code_refs` column is a string grep and is [I]). Aggregate statistics (`_work/scripts/S_24_shape_stats.py`):
+
+| Statistic | Value |
+|---|---|
+| Shape files in `data/shapes/` | 139 `.shp` (plus a `source/` sub-directory) |
+| Formats | strips 39, triangle lists 98, markers only 2 (`battlecannonbase.shp`, `portal.shp`) |
+| Fragments total / max per shape | 440 / 20 |
+| Max hierarchy depth | 6 |
+| Markers total / max per shape | 425 / 38 |
+| Triangles total / max / mean | 150 820 / 24 366 / 1085.0 |
+| Largest by triangles | `carryglobe.shp` (24 366), `globalworld_outer.shp` (10 632), `carrycube.shp` (9 768), `spaceship.shp` (9 028), `globalworld_middle.shp` (6 217) |
+| Most fragments | `cannon_bullets.shp` (20), `cannon_flame.shp` (20), `carryspider.shp` (19), `plant.shp` (14), `powerstation.shp` (11) |
+
+Resolved: the P12 draft gave "140 shapes, 1 markers-only"; the directory holds 139 `.shp` files and the CSV shows two marker-only files.
+
+**File format** (text, tokenised by `TextReader`; keywords case-insensitive; `:` is a separator) [C] `Shape::Load`, `ShapeFragment::ShapeFragment(TextReader*,…)`, `ShapeMarker::ShapeMarker(TextReader*,…)` — formal grammar in [29](29_data_formats_reference.md):
+
+```
+Fragment: <name>                 # repeated, up to 100 (debug assert)
+    ParentName: <name|SceneRoot>
+    up:    ux uy uz              # local orientation (normalised after parse)
+    front: fx fy fz
+    pos:   px py pz              # local translation relative to parent
+    Positions: N   then N lines "i: x y z"       (ids 0..N-1 in order; a bad id aborts the block)
+    Normals:   N   then N lines "i: x y z"       (parsed then DISCARDED – replaced by face normals)
+    Colours:   N   then N lines "i: r g b"       (0..255; stored x0.85, alpha 255)
+    Vertices:  N   then N lines "i: posId colId"
+    either  Strips: S   then S x { "Strip: k" ["Material: name" (ignored)] "Verts: n" then n tokens "v<idx>" }
+    or      Triangles: T   then T lines "a,b,c"
+Marker: <name>                   # up to 100
+    ParentName: <fragment name>
+    Depth: d                     # number of fragments from root (SceneRoot counts) to the parent
+    up/front/pos as above
+    MarkerEnd
+```
+
+- Strip → triangle conversion: sliding window; a triangle for i ≥ 2 when all three indices differ (degenerates dropped); **odd positions emitted reversed** `(v3,v2,v1)` to keep CCW [C] `ShapeFragment::ParseStripBlock`.
+- Hierarchy: a synthetic root fragment `SceneRoot` (identity, no geometry); fragments whose `ParentName` is `SceneRoot` (case-insensitive) attach to it, others to the named fragment (duplicate names asserted). Markers attach to their parent fragment and fill `m_parents[0..Depth-1]` walking up to SceneRoot (`parents[0]` = SceneRoot) [C] `Shape::Load`.
+- Per-fragment derived data [C] `ShapeFragment::RegisterPositions`, `GenerateNormals`: one **face normal per triangle** from `(b−a)×(c−b)`; bounding-sphere centre = AABB centre, radius = max distance from centre; vertical extents; a cylinder alternative is computed but the switch is commented out (`m_useCylinder` always false).
+- Colour attenuation: every `.shp` colour × **0.85** at load ("colours on 3d models appear brighter than 2d equivalents due to lighting") [C] `ShapeFragment::ParseColourBlock`.
+
+**Transforms**: `Matrix34` row-vector convention, `world = local × (frag.m_transform × parentTransform)`; `ShapeMarker::GetWorldMatrix(root) = m_transform × parents[d−1].T × … × parents[0].T × root` [C].
+
+**Rendering** [C] `Shape::Render`, `ShapeFragment::Render`, `ShapeFragment::RenderSlow`:
+- `Shape::Render(predictionTime, transform)`: `glEnable(GL_COLOR_MATERIAL)`, push modelview, `glMultMatrixd(transform)`, then `glCallList(shape display list)` if one exists, else recursive `root->Render(t)`; disable colour material, pop.
+- `ShapeFragment::Render(t)`: predicted local transform = `m_transform` rotated by `m_angVel·t` and translated by `m_vel·t` (owners animate parts by setting fragment velocities); push/mult unless identity; fragment display list if present (**never**: `ShapeFragment::BuildDisplayList` has no callers) else `RenderSlow`; recurse; pop.
+- `RenderSlow`: `glBegin(GL_TRIANGLES)`; per vertex `glNormal(faceNormal)`, `glColor4ub(colour, 255)`, `glVertex(position)`.
+- Display lists (`USE_DISPLAY_LISTS` `#define`d in `shape.cpp`): `Shape::BuildDisplayList` only for non-animating shapes, compiled from `root->Render(0)` via `Resource::CreateDisplayListAsync` under an auto-generated name; deleted on destruction/flush; rebuilt by `Resource::RegenerateOpenGlState`. Emulated by `opengl_directx_dlist*` under D3D.
+- Lighting, fog and blend are the caller's responsibility (pass 6: lit + fogged; explosion: §4.13).
+
+**Shared vs instanced shapes** [C] `code/lib/resource.cpp:Resource::GetShape`, `GetShapeCopy`, `AddShape`: `GetShape(name, makeNew=true)` returns a **shared** non-animating instance cached by name; `GetShapeCopy(name, animating, buildDisplayList=true)` always loads a fresh instance (loose `data/shapes/<lowercased name>` first, then archive) — required when a caller mutates fragment transforms or colours; a missing file → `AppReleaseAssert("Couldn't find shape file …")`; `AddShape(shape, name)` registers a derived instance under a synthetic name (team-coloured variants).
+
+**Per-team colouring** [C] `code/worldobject/entity.cpp`:
+- `Entity::SetupTeamShape(name, convertAll)`: in single-player or team 255 use the plain shared shape; otherwise look up `"<name>_<r>_<g>_<b>_<a>"` (team colour) and, if absent, `GetShapeCopy(name)` + `ConvertShapeColoursToTeam` + `AddShape` — each colour variant is built once per process.
+- `ConvertShapeColoursToTeam(shape, teamId, convertAll)`: skip team 255; team colour `Team::m_colour`, **halved** for colour id 0 on `shapes/darwinian.shp`; recolours **the root and its direct children only** (grandchildren keep their colours); then `BuildDisplayList()`.
+- `ConvertFragmentColours`: a palette entry converts if `r > 2g && r > 2b` ("mostly red", the authoring key colour) or `convertAll`; converted colour = team colour × `(r+g+b)/(teamR+teamG+teamB)` (brightness-preserving) or exactly the team colour when `convertAll`; then ×**0.7**. Non-converted entries copy through.
+- Armour uses its own routine: every colour := team colour × 0.1, keyed `"armour.shp_<colourId>_<coopGroup>"` [C] `code/worldobject/armour.cpp:ConvertShapeColours`, `Armour::Begin`. Gun turrets use team-coloured copies `battlecannonturret.shp_<colour>_<group>`; the radar dish recolours a per-instance copy on team change (see [03](03_buildings_and_world_objects.md)).
+- Callers [C grep]: `code/worldobject/centipede.cpp`, `tentacle.cpp`, `armyant.cpp`, `officer.cpp` (convertAll true), `souldestroyer.cpp`, `entity.cpp` (`SetupTeamShape`).
+- Team palette: colour ids 0–7 = green, red, yellow, blue, orange, purple, cyan, pink (`code/team.cpp:Team::GetTeamName`; RGB values in [01](01_game_modes.md)).
+
+**Hit testing (CPU, used by the simulation)** [C]:
+
+| Function | Algorithm |
+|---|---|
+| `RayHit(RayPackage{start,dir,len}, transform, accurate)` | per fragment: ray vs world-space bounding sphere (`RaySphereIntersection`, radius > 0 only); if hit and `!accurate` → true; if accurate, transform all positions into `m_positionsInWS` and test every triangle (`RayTriIntersection`); otherwise recurse |
+| `SphereHit(SpherePackage{pos,radius}, …)` | same with `SphereSphereIntersection` / `SphereTriangleIntersection` |
+| `ShapeHit(other, otherT, ourT, accurate)` | each of our fragments' bounding spheres tested with `other->SphereHit` |
+| `CalculateCentre(T)` | mean of all fragment centres (SceneRoot included) |
+| `CalculateRadius(T, centre)` | max over fragments of `|fragCentre − centre| + fragRadius` |
+| `ScaleRadius(s)` | multiplies every fragment radius |
+
+[I] `m_positionsInWS` is sized `m_numVertices` but indexed by position id and filled for `m_numPositions` entries — correct only when positions ≤ vertices (true for exporter output); the shared scratch makes hit tests non-reentrant. Hit tests run in the simulation → they must be deterministic across peers ([22](22_determinism_and_networking.md)). Debug visualisers `RenderHitCheck` (spheres) and `RenderMarkers` (arrows 20 front / 10 up, depth test off) exist under `DEBUG_RENDER_ENABLED` but `Building::Render` has the call commented out.
+
+### 4.6 Buildings: solid pass, alpha pass, depth sort, lights and ports [C] `code/location.cpp`, `code/worldobject/building.cpp`
+
+- **Solid pass** (pass 6): `Location::RenderBuildings` sets fog, `SetObjectLighting` (or special lighting, §5.6) and calls `Building::Render` for every in-view building with the slice-aware prediction time. Default `Building::Render` = `m_shape->Render(t, Matrix34(m_front, m_up, m_pos))` plus, when editing, a debug arrow. Subclasses add extras (team-coloured turret barrels, fence posts with `GL_NORMALIZE`, scaled static shapes).
+- **Alpha pass** (pass 8): fog enabled for the whole pass. Buildings whose `PerformDepthSort(centrePos)` returns false are drawn first in container order; the others are collected into `m_sortedBuildingsAlphas` (grown in steps of 128 = `StepDepthSortedBuildings`), sorted ascending by squared camera distance with `qsort` and drawn **from the end (farthest) to the start (nearest)**.
+- **Ownership lights** `Building::RenderLights` (for every `MarkerLight*` marker, buildings with team ≠ 255 only): shown only when `(m_lastValidSequenceIdFromServer % 10) / 2 == teamId` (or editing) — a team-staggered blink: each team's lights are on for 2 of every 10 server sequence ids (0.2 s on, 1.0 s period at 10 Hz); 10 nested camera-facing quads of half-size `6·i/10` (i = 0..9) with `textures/starburst.bmp`, team colour, additive, depth write off, cull off.
+- **Ports** `Building::RenderPorts`: per port, the shared `controlpad.shp` lit with `SetObjectLighting` at terrain height + 0.5 (only when `RenderBuildingDetail < 3`), then a 6-unit starburst billboard at the pad's status marker, green (0.3,1.0,0.3) when occupied, red (1.0,0.3,0.3) when empty, additive, depth write off.
+- **Per-building render features** (content owned by [03](03_buildings_and_world_objects.md)):
+
+| Building | Solid pass | Alpha pass | Textures | Blend / depth notes |
+|---|---|---|---|---|
+| SpawnPoint / SpawnLink / MasterSpawnPoint | shape (`masterspawnpoint.shp` only if `m_isGlobal` or editing) | spirit-link beams (`textures/laser.bmp`, half-width 1 inner / 3 outer) between link markers; in-transit spirits as diamonds (inner 2, outer 6) in the **target** spawn point's team colour (grey 120 neutral); status stars per port (grey 150 empty / occupant colour); 20/10/3 glow blobs (`textures/cloudyglow.bmp`, detail 1/2/3) above the building, alpha = occupied/total, colour lerps grey (100,100,100,200) → team colour as `m_activationTimer` 30 → 0; spirit-link laser glow only at detail 1 | laser, cloudyglow, starburst | additive, depth write off |
+| GunTurret | team-coloured turret copy (`battlecannonturret.shp_<colour>_<group>`) on `battlecannonbase.shp` markers | lights, ports, muzzle flashes (`TypeMuzzleFlash` particles), shells as effects | shapes, starburst | — |
+| RadarDish | dish shape (per-instance colour copy) | 4 nested beam tubes radius 10/9/8/4, alpha 0.4/0.2/0.2/0.5, `textures/laserfence.bmp` × `textures/radarsignal.bmp` (multitexture), clipped by two user clip planes (`GL_CLIP_PLANE0/1`) at the dish planes; preview beams to every valid link while hovered/selected; [B:D3D] resets the vertex declaration | laserfence, radarsignal | additive |
+| JumpPad | shape | animated arrow strip (`icons/thickarrow.bmp`) 80 long, ±20 wide, brightness `0.3 + 0.7·|sin t|` | thickarrow | additive |
+| PowerBuilding / Pylon / SolarPanel | shapes | power-line beam between `MarkerPowerLocation`s; surges as 20-unit stars in the surge team colour with a 3-sprite trail; SolarPanel status lights green/red and, when owned and occupied, 4 glow quads (60×40) pulsing `0.5 + 0.5·|sin t|` in team colour; `PylonEnd` draws nothing | laser, starburst, glow | additive |
+| ControlTower | shape | pulsing "control line to heaven" (10 segments, height 50 + id%50 each), brightness 1.0 within 200 units of the camera else 0.1 (smoothed); signal flash size ownership/5 | laser, starburst | additive |
+| Statue / carryables (CTS) | random one of 8 shapes; `ExplodeShape(0.5)` on materialise | special lights set in `Render` | shapes | — |
+| Portal ("The Beast") [B:DEBUG] | shape; near ×1.5 for its glow | fire particles with unsynced `rand()` | glow, starburst | additive |
+| Tree | nothing | §4.7 | `textures/tree.bmp`, starburst | additive / alpha |
+| LaserFence | `laserfence.shp` with `GL_NORMALIZE` | §4.8 | laserfence, laserfence2 | alpha + additive |
+| Wall | `wall.shp` (pos − (0, fallSpeed·t, 0)), scaled; nothing when destroyed | — | shape | destruction = shape shatter `g_explosionManager.AddExplosion(shape, mat, 3.0)` |
+| StaticShape | named `.shp`, scaled, `GL_NORMALIZE` (no shape: debug sphere r = 40) | — | shape | shared shapes |
+| CloneLab | `clonelab.shp` | port status billboards (6 units), grey empty / occupant colour | starburst | additive, depth write off |
+| RestrictionZone, EruptionMarker | — | editor-only spheres (`LOCATION_EDITOR`) | — | invisible in game; EruptionMarker visuals are `TypeVolcano` particles |
+| SmokeMarker | — | base `RenderAlphas` (no lights/ports → nothing) | — | visuals are `TypeMissileTrail` particles; signature bug makes it an invisible 13-unit obstacle ([03](03_buildings_and_world_objects.md)) |
+| Randomiser | — | `TypeMuzzleFlash` particles spawned from `Render` with random team colours (unsynced `rand()`) | particles | — |
+| DisplayScreen [B:LEGACY] | `displayscreen.shp` | 3 light rays onto a rotating ×3 `armour.shp` hologram 75 above | shapes | additive |
+| FenceSwitch [B:LEGACY] | shape | additive `textures/laser.bmp` ribbon (half-width 2.0) to each linked fence top; yellow (0.9,0.9,0.5) selected link, grey (0.5,0.5,0.5) other; lights green/red | laser, starburst | additive |
+
+`RenderBuildingDetail` (1–3) scales decorative counts (§8.1).
+
+### 4.7 Tree rendering (procedural geometry) [B:FULL] [C] `code/worldobject/tree.cpp`
+
+Trees are generated **once in unit space** (trunk (0,0,0)→(0,1,0)); `height` is a uniform scale at render/hit-test time. The RNG is the non-synced application LCG, **re-seeded with the tree's seed at the start of every pass**, so each pass reproduces identical geometry [C] `Tree::Generate`, `GenerateBranches`, `GenerateLeaves`, `RenderBranch`:
+
+```
+RNG (AppSeedRandom / AppRandom, contrib/systemiv/lib/math/random_number.cpp):
+  state: 32-bit, wraps mod 2^32;  next(): state = state*214013 + 2531011; return (state >> 16) & 0x7FFF
+  frand(r) = r * next() / 32767.0
+
+Branch(from, to, n, pass):
+  if n == 0: return
+  n = n - 1
+  if n == 0 (LEAF segment):
+      if pass == RADIUS: hitR = max(hitR, |to - hitC|)
+      elif pass == LEAF:  hitC += to; numLeafs += 1
+  d = to - from;  A = normalise(d x to);  B = normalise(A x d)      # normalise of ~0 -> (0,0,1)
+  len = |d|;  w = 0.1 * (n == 0 ? budsize : 1.0)
+  if (n == 0 and pass == LEAF) or (n != 0 and pass == BRANCH):
+      emit quad [from - A*len*w uv(0,0)], [from + A*len*w uv(0,1)], [to + A*len*w uv(1,1)], [to - A*len*w uv(1,0)]
+      emit the same quad with B                                       # two crossed planes per segment
+  for i in 0..3:                                                      # always 4 children
+      dir = [A, -A, B, -B][i];  t = 0.3 + frand(0.6)
+      cFrom = from + d*t;  cTo = cFrom + dir*len*0.4*pushOut + d*(1 - t)*pushUp
+      Branch(cFrom, cTo, n, pass)
+
+Generate():
+  hitC = 0; hitR = 0; numLeafs = 0; unpack colours (optional leaf-alpha boost)
+  seed(seed); BRANCH pass -> display list 1 (GL_QUADS)
+  seed(seed); LEAF pass   -> display list 2 (GL_QUADS; accumulates hitC)
+  hitC /= numLeafs
+  seed(seed); RADIUS pass (no geometry);  hitR *= 0.8
+```
+
+Derived counts for depth N: segments at level k = 4^k; leaf segments 4^(N−1) (N = 6 → 1024); branch segments (4^(N−1) − 1)/3 (N = 6 → 341); 2 quads per segment. **The simulation's tree hit volume (crown centre `hitC`, radius `hitR`) is a by-product of compiling the render display lists** — `Resource::CreateDisplayListAsync` runs the callback on the main thread (or queues it to the loading screen and blocks). `Tree::SetDetail` asserts detail 1 because other values change the iteration count and hence the hit volume ("causes a sync error"). A new engine must compute tree hit volumes as data, independent of rendering ([03](03_buildings_and_world_objects.md), [22](22_determinism_and_networking.md)).
+
+Rendering [C] `Tree::RenderAlphas`, `Tree::Render`:
+- `Render` draws nothing; everything is in the alpha pass (`PerformDepthSort` true, sort centre `m_pos + hitC·m_height`).
+- State: texture `textures/tree.bmp` (with alpha), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR; blend `SRC_ALPHA, ONE` (additive); cull off; depth write off. Transform `Matrix34(m_front, up, m_pos)` × uniform scale `actualHeight`. Draw branch list in branch colour, then (unless Christmas mode or evil) the leaf list in leaf colour. Restore defaults.
+- Sway: `actualHeight *= 1 + sin((realTime + uniqueId·2)·2)·0.003` (evil: amplitude 0.01) — breathing scale.
+- Magic tree (spiritDropRate > 0): leaf blue pulses `B = B·f + 255·(1−f)`, `f = |sin(realTime + uniqueId·10)|`.
+- Evil: branch colour (0,0,0,200), leaves hidden, **normal alpha blend** (dark silhouette).
+- Corrupting (timer ≤ 0, not yet evil): rendered twice — pass A darkens branch RGB and alpha by `factor = (10 + timer + prediction)/10`, leaf alpha ×(1−factor); pass B (recursive) black silhouette with branch alpha `200·factor`.
+- Burning: alpha blend; branch RGB scaled toward black by `min(m_onFire·10, 1)`, alpha 255; leaves black with alpha ×(1−m_onFire); plus 4 camera-facing `textures/starburst.bmp` billboards with **depth test off**, colour (0.8,0.2,0.1, 0.5·actualH/height), centre `m_pos + (sin(2g+i)·i·1.7, 0.8·actualH + cos(2g+i), cos(2g+i)·i·1.7)` (g = game time), half-size `max(2·actualH, 5)`; `TypeFire` particles: count per tick `int(actualHeight/12) / RenderBuildingDetail`.
+- Regrowing: leaves invisible while |m_onFire| > 0.5, else alpha ×(1 − 2|m_onFire|).
+- Christmas mode: branches (180,100,50), no leaves.
+- `RenderTreeDetail` pref (default 1, no UI): if > 1, leaf alpha ×1.3^detail (cap 255) at generation.
+- [B:D3D]: colour is baked into the display lists (`glColor4ubv` inside `GenerateBranches/GenerateLeaves`), so runtime colour changes apply only through the global colour.
+- `Location::FlushOpenGlState` deletes all tree display lists; regenerated lazily on the next `RenderAlphas`.
+
+### 4.8 Laser fences [B:FULL] [C] `code/worldobject/laserfence.cpp:LaserFence::Render`, `LaserFence::RenderAlphas`
+
+- Post (solid pass): `laserfence.shp`, transform scaled uniformly by `scale`, `GL_NORMALIZE` on during the draw.
+- Curtain (alpha pass; mode ∉ {Disabled, NeverOn} and link valid): cull off, blend `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, depth write off. Colour: team 255 → (100,100,100,150); solar-powered → lerp((20,20,20), 0.9 × team colour, |sin(4·realTime)|), alpha 150; else team colour, alpha 150. Predicted status = status ± 0.3·predictionTime (editor: 1). Quad: BL = this − (0,h/3,0), TL = this + (0,h,0), TR = next + (0,h′,0), BR = next − (0,h′/3,0), h, h′ = each post's full height × predicted status (the skirt reaches h/3 below ground).
+- If `RenderBuildingDetail < 3`: two-texture pass — unit 0 `textures/laserfence.bmp` (`GL_COMBINE_EXT`, RGB `REPLACE`), unit 1 `textures/laserfence2.bmp` (RGB `MODULATE`), both REPEAT + trilinear; unit-0 UV s ∈ [timeOff, timeOff + dx], t ∈ [0, dz] with `dx = distance/(2·fullHeight)`, `dz = status`, `timeOff = gameTime/15` (scrolling); unit-1 UV s ∈ [0,1], t ∈ [texY, texY + texH]. Solar: `texY = gameTime/1.5`, `texH = 7`, `timeOff = 0`, unit 1 also `laserfence.bmp`.
+- Always: additive overlay (`SRC_ALPHA, ONE`) of `textures/laserfence2.bmp` with UV s ∈ [0,1], t ∈ [texY, texY+texH] ("burn effect").
+- A smoothed `GL_LINES` top edge TL→TR, width 2.0 (0.5 solar).
+- `PerformDepthSort`: sorted at `m_centrePos` when enabled and linked; `IsInView` true during the grace period; `RenderLights` empty.
+- Render-side mutation [C]: `RenderAlphas` resets `m_nextLaserFenceId = −1` if the link no longer resolves to a LaserFence — a simulation-state write from the render path (hazard only for invalid links) [I].
+
+### 4.9 Entities, sprites and billboards
+
+**Darwinians** [C] `code/team.cpp:Team::RenderDarwinians`, `code/worldobject/darwinian.cpp:Darwinian::Render`:
+- Pass state: `sprites/darwinian.bmp`, blend on (default func), **alpha test `GREATER 0.04`**, cull off. Detail factor `highDetail = clamp(1 − d²/D², 0, 1)` with D = 99999.9 / 1000 / 500 for `RenderEntityDetail` ≤ 1 / 2 / ≥ 3.
+- Card geometry: base half-width `size = 3.0`; if `DarwinianScaleFactor` (`m_scaleFactor`, pref default 2.0) > 0: beyond 100 units `size *= 1 + scale·(d − 100)/1000` (units stay readable when zoomed out); per-individual variation `size *= 1 + 0.03·((index·uniqueId) % 10)`; rage task pulse `×(1 + |sin(g_gameTime)|·0.5)`. Orientation: `up` = terrain normal (high detail within 1300 units; tilted ±0.3 rad by `sin(time)` while worshipping/operating/watching/opening), `right = front × up` — a **card facing the Darwinian's own direction**; between 300 and 1300 units `up` and `right` blend linearly toward the camera's up/right (`factor = (d − 300)/1000`), i.e. the card turns into a camera billboard with distance. Quad: width 2·size, height 2·size from the feet. Resolved: earlier drafts called these "camera-facing sprites"; the code shows facing-oriented cards that become billboards with distance.
+- Colour: team colour (lerped from the previous team over `m_colourTimer/4` after conversion — the render path decrements `m_colourTimer` by the prediction time, a render-side state write [C]), × `0.3 + 0.7·health`; dead: RGB ×0.2, alpha `2.5·health`; state textures (`sprites/darwinian_ouch*.bmp`, `sprites/futurewinian.bmp`, `sprites/santahat.bmp` on every 3rd Darwinian in Christmas mode, bubbles additive); drop shadow §5.7.
+
+**Virii** [C] `Team::RenderVirii`: `sprites/viriifull.bmp`, additive (monster team: darkening), depth write off, cull off, projection near × 1.05. LOD `viriiDetail` from `RenderEntityDetail` and camera distance: detail 1: 1, or 2 beyond 1000; detail 2: 1, 2 beyond 500, 3 beyond 1000; detail 3: 1, 2 beyond 300, 3 beyond 600, 4 beyond 1000 (higher = fewer tail segments).
+
+**Spirits** [C] `Spirit::RenderWithoutGlBegin`: two camera-facing quads per spirit (inner size 1.0 alpha 255, outer 3.0 alpha 100; **halved in Multiwinia**), team colour (white for team 255; monster team (100,100,100,0) with alpha 0 drawn in the darkening batch); birth scales sizes by `min(1, 1.2 − timeSync/6)`; death scales alpha and size by `timeSync/totalLife` (180 s, 90 s in Multiwinia); position extrapolated with `predictionTime − SERVER_ADVANCE_PERIOD` plus hover.
+
+**Other entities** (pass 7b) render their own shapes or sprites (specified per entity in [02](02_units_and_entities.md)); team-coloured shapes come from §4.5.
+
+**`Render3DSprite(pos, width, height, texId)`** [C] `code/lib/3d_sprite.cpp`: camera-facing quad anchored at the bottom centre: `right = (camUp × camFront)·(width/2)`, `up = camUp·height`; LINEAR / LINEAR_MIPMAP_LINEAR; cull off during the draw; blend and colour from the caller. UVs: top-left (1,1), top-right (0,1), bottom-right (0,0), bottom-left (1,0) (horizontally mirrored). Users: `code/worldobject/dustball.cpp` (`textures/cloudyglow.bmp`), `code/worldobject/mine.cpp` (`textures/glow.bmp`, 50×50), `code/worldobject/snow.cpp` (`textures/starburst.bmp`). Most other billboards (particles, spirits, building lights) are built inline from `Camera::GetRight/GetUp`.
+
+### 4.10 Lasers, beams, lightning and blasts (pass 10)
+
+**Effects pass** (`Location::RenderWeapons` part 1): additive, cull off, depth write off for the whole batch; every object in `Location::m_effects` whose position passes `PosInViewFrustum` (pulse waves, spam infection and lightning always drawn). Effect types [C] `code/worldobject/worldobject.h`: `EffectThrowableGrenade`, `EffectThrowableAirstrikeMarker`, `EffectThrowableAirstrikeBomb`, `EffectThrowableControllerGrenade`, `EffectGunTurretTarget`, `EffectGunTurretShell`, `EffectSpamInfection`, `EffectBoxKite`, `EffectSnow`, `EffectRocket`, `EffectShockwave`, `EffectMuzzleFlash`, `EffectOfficerOrders`, `EffectOfficerOrderTrail`, `EffectZombie`, `EffectRandomiser`, `EffectDustBall`, `EffectLightning`, `EffectPulseWave`, `EffectFlameGrenade`, `EffectTurretEmptyShell`, `EffectFireball`. Per-effect visuals belong to [04](04_crates_powerups_and_weapons.md) / [26](26_animation_and_vfx.md); representative render recipes [C]:
+
+| Effect | Recipe | Ref |
+|---|---|---|
+| Laser bolt (pass 10b) | ribbon from `pos` to `pos + norm(vel)·10`, half-width 0.8 perpendicular to the camera ray (`(camToMid × (mid − to)).Normalise()·0.8`), drawn **5 times** (additive → 5× brightness), team colour (monster team white), `textures/laser.bmp`; mind-control bolts double the width and use `textures/subversion.bmp`; bolts within √200 ≈ 14 units of the camera trigger `Camera::CreateCameraShake(0.5)` from the render path (local only) | `code/worldobject/weapons.cpp:Laser::Render` |
+| Shockwave | smooth-shaded triangle fan ring at y + 5, radius `35 + 40·(size − life)`, centre (1,1,0,0) → rim (1,0.5,0.5, 0.6·life/size), depth test off; **screen flash**: in the first 0.1 s, if in view, a full-screen 2D white quad with alpha `(1 − age/0.1)·max(0, 1 − dist/500)` (additive in this pass) plus a camera shake of the same strength; "big blast" in the first second: 5 stacked camera billboards `textures/starburst.bmp` of size `size·500/√dist` growing ×1.2 each, colour (1,0.5,0.2, 1 − age), then 5 of `textures/glow.bmp` at `size·1000/√dist` | `code/worldobject/weapons.cpp:Shockwave::Render` |
+| Lightning | idle: 200-unit cloud glow `textures/glow.bmp`, alpha `|sin(2·g_gameTime)|`, oriented `right` = camera right, `up = worldUp × right`; striking: 3 bolt quads `textures/lightning.bmp` from the cloud to the ground (height = pos.y − terrain), width 30 ×1.2 per layer, alpha `|sin(life − t)|` halving per layer | `code/worldobject/lightning.cpp:Lightning::Render` |
+| Spawn-point links, radar beams, power lines, fence-switch links | §4.6 | [03](03_buildings_and_world_objects.md) |
+
+### 4.11 Particles (pass 15) → [26](26_animation_and_vfx.md)
+
+The particle model (19 types `TypeRocketTrail` … `TypePortalFire`, their life/size/gravity/friction/colours, advance rules and spawn sites) is specified in [26](26_animation_and_vfx.md). Render-side contract [C] `code/particle_system.cpp:ParticleSystem::Render`, `Particle::Render`:
+- One global `ParticleSystem` (`g_app->m_particleSystem`), rendered once per frame after explosions; time `gameTime + predictionTime` (slice-aware, §2.4), position extrapolated `pos + t·vel`; particles are presentation-only (unsynced `frand()` colours, creation ignored while paused).
+- Alpha 90/255 until 75 % of life, then linear to 0. Quad = a **diamond** with half-extent `size/16` along camera up and right: `(p−up, uv 0,0)`, `(p+right, 0,1)`, `(p+up, 1,1)`, `(p−right, 1,0)`. Spin is never applied.
+- Single texture `textures/particle.bmp` (16×16, flat grey with a lighter rim), MAG **NEAREST**.
+- Two batches under one bind: **smoke** (`TypeMissileTrail`, `TypeExplosionDebris`; only if the unpredicted position passes `PosInViewFrustum`): blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour `rgb·alpha/100`, **vertex alpha 0** — the destination is multiplied by `(1 − srcColour)` (dark smoke without sorting); **glow** (all other types, no frustum test): `SRC_ALPHA, ONE`, colour `rgb`, computed alpha.
+- State: cull off, blend on, texture on, depth write off (test on). Restores depth write, texture off, MAG LINEAR, blend off, default func, cull on.
+
+### 4.12 Explosions — shape shattering (pass 14) → [26](26_animation_and_vfx.md)
+
+Debris generation and physics (5 s lifetime, 5 tumblers, ≤ 501 source triangles per fragment, perimeter < 6 skipped, gravity −10, no terrain collision, wall-clock time) are in [26](26_animation_and_vfx.md). Render contract [C] `code/explosion.cpp:ExplosionManager::Render`, `Explosion::Render`:
+- `textures/shapewireframe.bmp` (128×128, magenta background + white lines; pink-masked → lines opaque, background alpha 0), MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR, env **`GL_DECAL`**; `SetObjectLighting` + `GL_COLOR_MATERIAL`; cull off; blend on with the default func; depth test/write on.
+- Per triangle: `glColor4ub(r,g,b,(1−age)·255)` with `age = (5 + now − timeToDie)/5`; colour = the **first** vertex's colour; normal = `rotMat·norm`; vertices `rotMat·v + pos`; UVs (0,0),(0,1),(1,1). `GL_DECAL` gives `Cf·(1−At) + Ct·At`: each shard shows its lit facet colour with white edge lines and fades by vertex alpha. A new engine can reproduce this with a barycentric edge mask.
+- Exit: env MODULATE, lighting off, colour material off, cull on, blend off.
+- [B:D3D]: textured draws are unlit and DECAL becomes MODULATE (D1, D5), so debris looks different.
+
+### 4.13 Deform effect (screen-space distortion) [B:D3D] [C] `code/deform.h`, `code/deform.cpp`
+
+Entire file inside `#ifdef USE_DIRECT3D`; **absent from the shipped OpenGL build** and never started in Multiwinia (§3.4).
+- Lifecycle: `g_deformEffect = DeformEffect::Create()` in `CreateD3dPoolDefaultResources`, deleted in `ReleaseD3DPoolDefaultResources`; `Create` returns NULL if any of the 3 shaders or 2 render targets fail. Resources: `m_screenTexture` = render target at screen size, back-buffer format; `m_deformTexture` = render target at **half** screen size, `D3DFMT_A8R8G8B8`; shaders `deform.vs` + `deformFullscreen.ps` / `deformSphere.ps` / `deformDiamond.ps`.
+- Per frame (single-player only): `Start()` before `Location::Render` (a no-op because `STRETCH_RECT` is `#define`d — "should make FSAA possible"); `Stop()` after particles.
+- Triggers [C]:
+
+| Caller | Call | Params | Build |
+|---|---|---|---|
+| `Location::Bang` (right after `CreateShockwave`) | `AddPunch(pos, range)` | `range` argument **ignored** (`m_range = 1`), `extraDepth` 1, type `DT_PUNCH`; only if `isVisible` (always true — the ray test is commented out) | D3D |
+| `SoulDestroyer::Advance` | `AddTearingPath(hist[n−1], hist[n−2], 0.4)` every advance | | D3D |
+| `Spider::AdvancePouncing` | `AddTearingPath(oldPos, newPos, 0.25)` | | D3D |
+| `Centipede` segment advance | `AddTearing(…, 0.3)` | commented out | dead |
+| `EntityLeg` | `AddTearingSpider(…)` | commented out (method does not exist) | dead |
+| Spirits (`Location::m_spirits`, state ≠ `StateAttached`) | drawn every frame as diamond deformers | width 0.32, depth 0.12, redux 1.3 | D3D |
+
+  `AddTearingPath(p1, p2, s)`: `n = (int)|p2 − p1|` points (one per world unit), `strength *= 0.8`, each point `AddTearing(p2 + (p1 − p2)·(i/n), strength)`. `AddTearing`: `range = strength`, `extraDepth = 3`, type `DT_TEAR`. Birth time = `GetTickCount()` (ms, wall clock).
+
+| Type | Table texture | Lifetime | width | depth | colour.r ("time") | redux |
+|---|---|---|---|---|---|---|
+| `DT_PUNCH` (0) | `textures/deform36c.bmp` | 1 s | 10 | `0.03·(1−a)²` (a = age/maxage) | `sqrt(max(a, 0.03))` | 0.8 |
+| `DT_TEAR` (1) | `textures/deform3.bmp` | 1 s | `10·(maxage − (maxage − age)²/maxage)` (ease-out 0→10) | `0.15·(1−a)` | `max(a, 0.03)` | 0.6 |
+| Spirit diamond | `textures/deform1c.bmp` | per frame | 0.32 | 0.12 | `(GetTickCount() % 1000)/1000` | 1.3 |
+
+  Effective sprite depth = `range·extraDepth·depth`.
+- `Stop()` algorithm: (1) depth write/test off, cull off; `StretchRect` back buffer → `m_screenTexture`. (2) render target = `m_deformTexture`, half-res viewport, clear, blend `ONE, ONE` (additive accumulation of displacement vectors). (3) sort non-attached spirits by squared camera distance far-to-near (`CompareSoulDistance`), render each with `deformDiamond.ps` (sampler `deformSampler` = `deform1c.bmp`). (4) for type in {PUNCH, TEAR}: bind `deformSphere.ps` with that type's table; iterate deformations newest-first; drop expired; render sprite. (5) blend back to default, disabled; `g_pd3dDevice->Resolve(D3DRESOLVE_RENDERTARGET0, …)` into `m_deformTexture` (build blocker B3). (6) full-screen viewport, clear colour, one full-screen quad with `deformFullscreen.ps` (`deformSampler` = `m_deformTexture`, `screenSampler` = `m_screenTexture`); re-enable cull/depth. [I] The render target is never reset to `m_oldRenderTarget` after step 2 (and the `GetRenderTarget` reference leaks); on PC the composite would be drawn into the deform texture.
+- `RenderSprite(shader, posWorld, width, depth, redux)` [C]: project `posWorld` with `gluProject` into a unit viewport; if in front (`z < 1`), project a point 1 world unit sideways (perpendicular to the look direction in XZ) to get on-screen size per world unit; `size = min(0.4, 10·|Δ|·(aspect,1))` (0.001 if more than one screen off); vertex attributes `TEXCOORD0 = (sx, 1−sy)` (centre), `TEXCOORD1 = (1/(size·width), size·width·depth·4)` (invSize, height), `COLOR.r = time`; corners at clip-space `centre·2 − 1 ± (size·width, size·width·aspect)·redux`; depth == 0 → full-screen quad (−1..1).
+- Samplers: `deformSampler` LINEAR/LINEAR/no mip, U WRAP (time axis), V CLAMP (distance axis); `screenSampler` LINEAR/LINEAR/no mip, CLAMP/CLAMP; uniform `aspect = ScreenW/ScreenH` [C] `DeformEffect::RenderSpritesBegin`.
+
+### 4.14 Pixel effect (screen-space "pixelation" ghosting) [B:LEGACY] [C] `code/renderer.cpp`
+
+`Renderer::PreRenderPixelEffect`, `PaintPixels`, `ApplyPixelEffect`, `RasteriseSphere`, `MarkUsedCells`; `USE_PIXEL_EFFECT_GRID_OPTIMISATION` = 1. Compiled into both builds, **never runs in Multiwinia** (§3.4); the graphics-menu checkbox is commented out.
+1. `UpdateTotalMatrix` (MV×P cache); reset the 16×16 grid (`PIXEL_EFFECT_GRID_RES`) to 1e9.
+2. A "blend old" block binds the effect texture and enters/leaves 2D but its quad draw is commented out (dead residue).
+3. `glViewport(0,0,256,256)`; for each team, units of type `TypeInsertionSquadie` or `TypeCentipede` in view within 1000 units of the camera: `entity->RenderPixelEffect(t)`; every team's `m_others` in view within 1000; every building within 1000 (`m_centrePos`). Each override draws the object normally into the small viewport and calls `Renderer::MarkUsedCells(shape, transform)`, which recursively rasterises each in-frustum fragment's screen-space bounding square into the grid, storing the nearest depth `centre.z − radius`. Overrides in `code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp`; `code/worldobject/meteor.cpp` calls `MarkUsedCells`; `Squadie::RenderPixelEffect` returns false in multiplayer.
+4. Restore viewport; `glCopyTexImage2D(GL_RGBA, 0,0, 256,256)` into `m_pixelEffectTexId` (NEAREST, CLAMP). Adaptive `m_pixelSize` (128/256/512 by nearest distance) is commented out.
+5. After `Location::Render`, `ApplyPixelEffect`: blend on, cull off, depth write off, depth test **on**, 3D projection with identity modelview; `PaintPixels` draws, per used cell, a quad placed at the cell's stored depth in eye space (`z = −distance`, x/y scaled by distance, `scale = (0.017 + 0.000037·fov)·fov`, `step = scale·aspect/16`, rows beyond `ceil(16/aspect)` skipped), textured with the matching region of the 256² capture, in four passes:
+
+| Pass | MAG filter | Blend | Colour |
+|---|---|---|---|
+| 1 "additive blocky" | NEAREST | `SRC_ALPHA, ONE` | (1,1,1,1) |
+| 2 "subtractive smooth" | LINEAR | `SRC_ALPHA, ONE_MINUS_SRC_COLOR` | (1,1,1,0) |
+| 3 "subtractive smooth" | LINEAR | `SRC_ALPHA, ONE_MINUS_SRC_COLOR` | (1,1,1,0.2) |
+| 4 "additive smooth" (labelled; actually NEAREST) | NEAREST | `SRC_ALPHA, ONE` | (1,1,1,0.9) |
+
+Result: a blocky low-resolution additive ghost of selected units overlaid at their depth — Darwinia's "pixelated soldier" look. Two debug overlays behind `if (0)` are [B:DEAD].
+
+### 4.15 Glow, starburst, god-rays and blur
+
+- **Glow** is entirely additive textured billboards: `textures/starburst.bmp` (ownership lights, ports, shockwave blasts, tree fire, snow, spawn-point stars), `textures/glow.bmp` (blob shadows, lightning cloud, mines, shockwave halo), `textures/cloudyglow.bmp` (spawn-point blobs, dust balls). There is **no bloom or glow post-process** in the shipped build [C] (only the legacy pixel effect, §4.14).
+- **God-rays**: `textures/godray.bmp` is used only by `code/global_world.cpp` (block commented out → [B:DEAD]) and `code/sepulveda.cpp:Sepulveda::RenderHighlights` (`USE_SEPULVEDA_HELP_TUTORIAL` → [B:DEAD]); none in Multiwinia [C grep].
+- **Blur** exists only on the CPU: `BitmapRGBA::ApplyBlurFilter(radius)` (kernel `[2,4,7,4,2]·scale·0.0526`, vertical ×2) bakes soft `shadow_<file>` textures for cursors, crate target icons and the nuke submarine, plus the legacy gesture trail [C] `code/lib/bitmap.cpp`, `code/gamecursor.cpp:MouseCursor`, `code/worldobject/crate.cpp`, `code/worldobject/nuke.cpp`. No GPU blur pass exists.
+
+### 4.16 Sphere renderer and render utilities [C] `code/lib/sphere_renderer.cpp`, `code/lib/render_utils.cpp`
+
+- `Sphere`: icosahedron (12 vertices with `x = 0.5257311121`, `z = 0.85065080835`; 20 faces), subdivided **once** (each face → 4 by normalised edge midpoints) → 80 triangles in one display list (`GenerateDisplayList`, regenerated when `Sphere::s_regenerateDisplayList` is set by `Resource::RegenerateOpenGlState`). `Render(pos, r)`: translate/scale, **polygon mode LINE** (wireframe), line width 1, restore FILL. `RenderFilled` draws filled. Only user: `code/lib/debug_render.cpp`.
+- `RenderSplitUpQuadTextured` / `RenderSplitUpQuadMultiTextured` tessellate a horizontal quad into `steps × steps` sub-quads "to prevent fog artifacts on Radeon cards" — **no callers** (dead in baseline).
+
+### 4.17 Route lines (pass 12) [C] `code/routing_system.cpp:RoutingSystem::Render`, `RenderRouteLine`
+
+Depth test **off** (route previews are always visible over terrain), blend on; for each route whose end point is inside the landscape, `route->m_alpha -= g_advanceTime·0.25` (presentation-only fade computed in the render path) and, while > 0, each segment drawn by `RenderRouteLine` (cull off, `textures/particle.bmp` dotted strip with `icons/widearrow.bmp` arrows, `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`). The pass also computes `m_walkableRoute` (armour/engineer/harvester routes always walkable, otherwise `Location::IsWalkable` per segment), which the cursor reads to show the red "no route" sprite (§4.19). Line width reset to 1, depth test restored.
+
+### 4.18 Markers (pass 16) [C] `code/markersystem.cpp:MarkerSystem::Render`
+
+Client-side presentation list of `LocationMarker`s (types and registration in [06](06_player_control_and_input.md)/[04](04_crates_powerups_and_weapons.md)), drawn as 2D icons over the 3D view, clamped to the screen edge with a compass arrow when off-screen. Render rules:
+- Skipped with no location, in the editor, or with the interface hidden.
+- Screen position (`CalculateScreenPosition`): project; on-screen if in front and inside the viewport; otherwise project a point 100 units from `camPos + front·1000` toward the target and intersect the centre→point ray with the screen rectangle (`FindScreenEdge`). Off-screen markers are offset 50 px inward along the edge normal and the compass is oriented along it.
+- Alpha: on-screen time accumulates; seen after 1 s; seen and > 6 s → fade over 9 s; floor `minAlpha = max((camDist − 350)/500, 1 − distToCentre/(0.5·screenH))`; non-persistent markers additionally fade over 2 s after 6 s; own tasks/orders ≥ 0.75.
+- Size: icon `screenH/20`, shadow icon + 10, compass icon + screenH/30; flashing ×1.3 alternating alpha 0.2/1.0 every 0.2 s for 3 s; ×`(2 − camDist/500)` when camDist < 500; ×1.2 and alpha 1 when hovered/selected; on-screen icons lifted `5·screenH/camDist` px.
+- Layers (2D, blend on): `icons/marker_shadow.bmp` (black, alpha 0.9, alpha-blend), compass `icons/compass_shadow.bmp` + `icons/compass.bmp` (additive) or `icons/compass_empty.bmp` on-screen, `icons/marker_colour.bmp` colour circle (additive, filled bottom-up to `percent`), then the icon (additive; UVs rotated for spin). Officer markers draw the officer's 3D flag instead; order markers add a 3D ground ring (`GameCursor::RenderUnitHighlightEffect`, size 10 + sin(5t)).
+- AI debug overlay (pref `RenderAIInfo` = 1, `AIInfoTeam`): per-team AI target priorities as text and team-coloured arrows ([07](07_ai.md)).
+
+### 4.19 Mouse cursor, highlights and placement previews (pass 20) [C] `code/gamecursor.cpp`
+
+Full behaviour (cursor objects, context rules, crosshair rules) in [06](06_player_control_and_input.md). Render recipes:
+- `MouseCursor` = a textured quad with an optional blurred shadow: the BMP is registered as a texture under its name and a copy blurred with `ApplyBlurFilter(10.0)` as `shadow_<file>`; defaults: size 20 px, hotspot (0,0) (fraction of size), shadowed, additive, white. 2D render: top-left = (x − s·hotX, y − s·hotY), rotate by `angle` about the quad centre; **shadow pass** `shadow_` texture, blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour (1,1,1,0); **main pass** colour, `SRC_ALPHA, ONE` (or `SRC_ALPHA, ONE_MINUS_SRC_ALPHA` when `m_additive = false`, the turret crosshair); depth write off, cull off; V flipped (BMP bottom-up). Animated size `size + |sin(4·g_gameTime)|·size·0.6`. `RENDER_CURSOR_3D` is never defined → all cursors use the projected-2D path. Cursors are sized in **physical pixels** (standard pointer 35 px at any resolution).
+
+| Cursor | Texture | Hotspot | Size | Blend | Used in Multiwinia |
+|---|---|---|---|---|---|
+| `m_cursorStandard` | `icons/mouse_game.bmp` | (0.055, 0.070) | 35 | additive, shadowed | yes — default pointer |
+| `m_cursorPlacement` | `icons/mouse_placement.bmp` | (0.5, 0.5) | 40 | additive | yes — "trying to enter" marker |
+| `m_cursorDisabled` | `icons/mouse_disabled.bmp` | (0.5, 0.5) | 60 | red (255,0,0), additive | yes — invalid enter / no route |
+| `m_cursorMoveHere` | `icons/mouse_movehere.bmp` | (0.5, 0.5) | 30 | (255,255,150) additive | single-player only |
+| `m_cursorHighlight` | `icons/mouse_highlight.bmp` | (0.5, 0.5) | 30 | additive | single-player only (texture reused as task-bar focus) |
+| `m_cursorTurretTarget` | `icons/mouse_turrettarget.bmp` | (0.5, 0.5) | caller | **alpha blend, no shadow** | yes — crosshair |
+| `m_cursorSelection` | `icons/mouse_selection.bmp` | (0.5, 0.5) | caller | team colour | single-player only |
+| `m_cursorEnter` | `icons/mouse_enter.bmp` | (0.5, 1.0) | 50 | additive | single-player only |
+| `m_cursorMissile` | — (never created) | — | — | — | no |
+
+- **Unit highlight** `RenderUnitHighlightEffect(pos, radius, colour)`: `numSteps = max(25, 2·radius)`; projection near × **1.03**; alpha blend; depth write off; ring 1 (team colour) radius−0.2r…r; ring 2 (black) r−0.275r…r−0.2r; ring 3 (black) r…r+0.075r; rings drape onto the terrain by `min(1, 75/camDist)` when > 0.1; glow cylinder radius 1.075r, height `r·max(1, camDist/300)`, colour alpha at the base fading to 0 at the top (**smooth shading**).
+- **Area cylinder** for started area power-ups (`RenderCyliner`, 100 sides): radius/height 70/42 default, 280/70 MeteorShower, 210/70 Nuke; alpha halved in the off phase of a 0.4 s blink.
+- **Ghost models** for turret/ant-nest placement: `battlecannonturret.shp` / `anthill.shp` at the cursor, blend `ONE, SRC_COLOR`, depth write off.
+- **Formation preview**: camera-facing diamonds (±2·camUp, ±2·camRight), `textures/particle.bmp`, team colour, alpha blend, near × 1.03.
+- **Selection circle**: 30 `TypeControlFlash` particles per frame on the circle (radius ≤ 100), rotating 0.5 rad/s, 10 above terrain.
+- Icon near the cursor: `MarkerSystem::RenderShadow/RenderColourCircle/RenderIcon` at cursor + 5 px along normalise(0.85, 1), size `screenH/24`.
+- Docs-vs-code: `docs/HardwareComplianceIssues.txt` "mouse pointer background not transparent" (Linux) — the OS pointer is hidden and the game draws its own additive cursor, so black backgrounds read as transparent; no other fix exists [I] (24-U9).
+
+### 4.20 Task-manager and HUD overlays (passes 23, 28)
+
+[C] `code/taskmanager_interface_multiwinia.cpp:TaskManagerInterfaceMultiwinia::Render` (content in [06](06_player_control_and_input.md)), `code/multiwinia.cpp:Multiwinia::Render` ([01](01_game_modes.md)). Immediate-mode GL in a **600-unit-high orthographic canvas** `gluOrtho2D(0, 600·aspect, 600, 0)` — resolution-independent UI, unlike cursors (pixels) and chat/messages (`ScreenW/1280` scale):
+
+| Element | Space | Blend (src, dst) | Depth | Texture | Ref |
+|---|---|---|---|---|---|
+| Cursor shadow | 2D px | `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour (1,1,1,0) | write off | `shadow_<cursor>` (blur r = 10) | `MouseCursor::Render` |
+| Cursor main | 2D px | additive, or alpha for the crosshair | write off | cursor BMP | same |
+| Highlight rings | 3D, near × 1.03 | `SRC_ALPHA, ONE_MINUS_SRC_ALPHA` | write off | none | `RenderUnitHighlightEffect` |
+| Glow / area cylinder | 3D | alpha, smooth shading, top alpha 0 | write off | none | `RenderCyliner` |
+| Ghost turret/anthill | 3D model at cursor | `ONE, SRC_COLOR` | write off | model | `RenderSelectedTaskIcon` |
+| Formation dots | 3D billboards | alpha | — | `textures/particle.bmp` | `RenderFormation` |
+| Task-bar shadow | 2D ortho 600 | alpha | write off | `icons/marker_shadow.bmp` (alpha) | `RenderRunningTasks` |
+| Task-bar colour disc / icon | same | additive | write off | `icons/marker_colour.bmp` (alpha), `icons/icon_*.bmp` | same |
+| Compass | same | shadow alpha, arrow additive | — | `icons/compass_shadow.bmp`, `icons/compass.bmp` (no mip) | `RenderCompass` |
+| Pop-up box | same | alpha; gradient with smooth shading; crate icon additive, clipped by `Renderer::Clip` (scissor) | — | `icons/icon_crate.bmp` | `RenderRecentRunTask` |
+| Text | same | fonts' own (outline pass colour alpha 0, then fill) | — | `g_titleFont`, `g_gameFont`, `g_editorFont` | `RenderMessages`, `RenderCurrentCrateHelp` |
+| Gesture trail [B:LEGACY] | full-screen quad | additive ×2 (nearest then linear) | — | dynamic 64×64 RGBA, blurred 1.4 | `code/taskmanager_interface_gestures.cpp` |
+
+[I] Icon BMPs carry no alpha (24-bit BMP; only `marker_*` and `compass_shadow` are loaded with `GetTextureWithAlpha`), so black reads as transparent through additive blending and "shadow" passes darken via `ONE_MINUS_SRC_COLOR` [C for the blend modes]. A new renderer must keep additive icon art or author RGBA art.
+
+### 4.21 UI rendering — Eclipse windows (pass 19) → [28](28_ui_framework.md)
+
+[C] `code/user_input.cpp:UserInput::Render`, `contrib/eclipse/eclipse.cpp:EclRender`: inside `g_editorFont.BeginText2D()` (2D ortho = viewport, −0.325 px offset), blend on, cull off, depth test and write off; `EclRender` draws every dirty window **back-most first** (painter's order; the dirty flag is never cleared, so all windows draw every frame). Widgets draw immediate-mode quads/lines with alpha blend, additive text, smooth shading only for gradients; known state leak: `ScrollChangeButton::Render` leaves `SRC_ALPHA, ONE`. Palette, textures (`textures/interface_red.bmp`, `icons/selectionarrow.bmp`, `icons/tick.bmp`, `icons/button_b.bmp`) and widgets are specified in [28](28_ui_framework.md). The main menu's background is the cloud sky (§4.4); menu page changes use the captured-frame transition (§2.6).
+
+### 4.22 Text rendering and font atlases (incl. Unicode/CJK) [C] `code/lib/text_renderer.cpp`, `code/app.cpp:App::SetLanguage`
+
+**Fonts**:
+
+| Global | `Initialise` arg | Role | Horizontal spacing factor |
+|---|---|---|---|
+| `g_gameFont` | `"speccy"` | in-game captions, banners | 1.0 |
+| `g_editorFont` | `"editor"` | UI/body text, chat, FPS | 0.91 |
+| `g_titleFont` | `"square"` | titles; **only font with CJK/Hangul atlases** | 1.03 |
+| `g_oldGameFont`, `g_oldEditorFont` | — | saved copies when CJK swaps fonts | — |
+
+Horizontal scale (glyph width / height): 0.6 for Latin/Cyrillic languages; for `chinese-trad`, `chinese-simp`, `korean`, `japanese` all three are set to 1.0 and `g_gameFont = g_editorFont = g_titleFont` (struct copies). `m_horizScaleFactorDefault` stays 0.6 and is used for every character < U+3000, so Latin glyphs stay narrow inside CJK text.
+
+**Atlas discovery** (Unicode path — the only path used, because no font name ends in `.bmp`): `BuildUnicodeArray` lists `textures/unicode/<font>.*.*.bmp`; each file `<font>.<LOWERHEX>.<UPPERHEX>.bmp` covers code points [lower, upper]; loaded with `GetTexture(path)` (mip-mapped, pink-masked); `lines = height / (width/16)` (16 glyph columns, square cells); `textHeight = (1/lines)·(1 − 26·(0.003·(height/448)))` (integer division: the margin applies only to atlases ≥ 448 px tall). `data/textures/unicode` holds **138** files: `editor` 4, `speccy` 4, `square` 130 [C] (`ls`):
+
+| Range | Fonts | Size / format | Cell |
+|---|---|---|---|
+| U+0020–00FF (Latin-1) | editor, speccy, square | 512×448, 8-bit palettised | 32 px, 14 rows |
+| U+0410–042F, U+0430–044F (Cyrillic, 2 files) | editor, speccy, square | 512×64, 24-bit | 32 px, 2 rows |
+| U+20A0–20AF (currency) | editor, speccy, square | 512×32, 24-bit | 32 px, 1 row |
+| U+3000–30FF (CJK punctuation, kana) | square | 512×512, 8-bit | 32 px, 16 rows |
+| U+4E00–9EFF (CJK ideographs, 81 blocks of 256) | square | 256×256, 24-bit | 16 px, 16 rows |
+| U+AC00–D7FF (Hangul, 44 blocks) | square | 512×512, 4-bit | 32 px, 16 rows |
+
+Anomaly: the Hangul block for U+BB00 is named `square.bb00.bfff.bmp` (claims U+BB00–BFFF). Lookup returns the first atlas in alphabetical order whose range contains the character unless the bound atlas already matches, so U+BC00–BFFF may resolve to the U+BB00 atlas and sample outside it (wrong glyphs) depending on the previous character [I] `TextRenderer::GetTextureID`. The legacy single-bitmap path (load `m_filename`, upscale 2× nearest, upload) remains for names ending `.bmp`; `textures/editor_font*.bmp`, `textures/speccy_font_*.bmp` are unreferenced in baseline [I].
+
+**Glyph UVs** [C] `GetTexCoordX/Y`: `TEX_MARGIN = 0.003`, `TEX_STRETCH = 1 − 26·0.003 = 0.922`, `TEX_WIDTH = (1/16)·0.922·0.9 ≈ 0.05187`, legacy `TEX_HEIGHT = (1/14)·0.922`. Unicode: `u = ((c − lower%16) % 16)/16 + 0.003·(width/512) + 0.002`; `row = (c>>4) − (lower>>4)`; `v = 1 − row/lines − 1/lines + 0.003·(height/448) + 0.001` (BMP rows bottom-up); quad `[u, u+TEX_WIDTH] × [v, v+textHeight]`. Legacy: `u = (c%16)/16 + 0.005`, `row = (c>>4) − 2`, 14 rows.
+
+**Drawing** [C]:
+- `BeginText2D`: saves matrices, ortho over the viewport shifted −0.325 px (texel alignment), lighting off, colour white, blend on, cull off, depth test and write off. `EndText2D`: restore matrices; depth mask/test on, cull on, **blend off**.
+- `DrawText2DSimple(x, y, size, text)`: `x −= 3, y −= 7` ("compatibility"); per character: skip ≤ 32 (space advances only); surrogate pairs combined; switch atlas when needed (`glEnd`/`glBindTexture`/`glBegin`); glyph quad `size` tall, `size·scale` wide; advance `x += width·m_horizSpacingFactor`; LINEAR / LINEAR_MIPMAP_LINEAR.
+- Blend: normal text `SRC_ALPHA, ONE` (**additive** — text brightens what is behind); **shadow/outline** `SRC_ALPHA, ONE_MINUS_SRC_COLOR`. Outline mode draws the glyph 8 times at ±1 px offsets (3D: ±5 % of size). Idiom used everywhere: draw with `SetRenderOutline(true)` and colour (1,1,1,0) (darkens a 1-px border), then the normal pass in the desired colour. Afterwards blend func back to default, texture off, blend left enabled (comment: Eclipse needs it).
+- Variants: `DrawText2D` (printf), `DrawText2DRight` / `DrawText2DCentre` / `DrawText2DJustified` (<0 right, 0 centre, >0 left) using `GetTextWidthReal`; `DrawText2DUp` / `DrawText2DDown` (rotated ±90°; `Up` ignores outline); `DrawText3DSimple/3D/3DCentre/3DRight` (camera-facing, depth test off, state saved/restored by RAII `SaveGLFontDrawAttributes`); `DrawText3D(pos, front, up, …)` oriented in the world (depth test left on).
+- `GetTextWidth(n, size) = n·size·scale` (approximate); `GetTextWidthReal` sums per-character advances including spacing.
+- Unicode: UTF-16 `WCHAR`; characters in (0xD800, 0xE000) are treated as surrogates; `DecodeSurrogatePair` uses `((hi^0xD800)<<10 | (lo^0xDC00)) | 0x10000` (OR instead of ADD — wrong for planes ≥ 2) and stores the result in a 16-bit `WCHAR` → **astral characters cannot render**. `DrawText3DCentre/Right` compute the centring offset as `(scale·nonLatinCount)·(defaultScale·latinCount)·0.5·size` — a product, not a sum, so pure-Latin 3D text is effectively left-aligned.
+- `DEF_FONT_SIZE` = 12.0 (`#define`); `STARTING_FONT_ARRAY_SIZE` = 8 (doubles).
+
+Summary for a new engine: fixed-advance cells (0.6·size below U+3000, 1.0·size otherwise in CJK languages), no kerning, no shaping, no BiDi, BMP only, all atlases loaded at start-up (≈ 130 textures for `square`). Replace with a glyph cache over licensed fonts.
+
+### 4.23 Debug renderers and utilities [C]
+
+- `code/lib/debug_render.cpp` (all under `DEBUG_RENDER_ENABLED`, defined globally → compiled into the shipped exe): `RenderSquare2d` (own ortho, depth off), `RenderCube` (line loops, line smooth, width 2), `RenderSphereRings` (3 orthogonal 20-segment circles), `RenderSphere`/`RenderSphereFilled` (icosphere §4.16), `RenderVerticalCylinder` (16 edges, lighting off/on), `RenderArrow` (line width `width/distToCamera·arrowLength`, two 20 % arrow-head lines), `RenderPointMarker` (arrow from +20,+20,+20 plus 3D text size 3), `PrintMatrix/PrintMatrices` (log ≤ 10 times).
+- `code/lib/persisting_debug_render.cpp`: global `g_debugRenderer`, `FastDArray<PersistRenderItem>` (initial 100); items keyed by formatted label (≤ 63 chars, case-insensitive prefix compare): `Square2d`, `PointMarker`, `Sphere`, `Vector`; `life` in **frames** (0 = forever; decremented each `Render`, removed at 1); rendered at pass 24; `Sphere`/`Vector` never store their label.
+- `SyncDiff::Render` (pass 7e): 500-unit arrow down to each recorded sync difference plus two lines of 3D text ([22](22_determinism_and_networking.md)).
+- Shape `RenderHitCheck`/`RenderMarkers`, tree `RenderHitCheck`: compiled, callers commented out.
+- `code/lib/targetcursor.cpp` (`g_target`): not a renderer — the abstract input cursor (screen X/Y/Z and per-frame deltas) consumed by `MouseCursor`/`GameCursor` ([06](06_player_control_and_input.md)).
+- `code/3d_sierpinski_gasket.cpp`: chaos-game point cloud for a 5-vertex pyramid (apex (0,0,20), base (±20,±20,−20)); `Render(scale)`: additive, point size 3, depth test off, colour `(0.4,0.7,1.0)·128·scale/255`, alpha 128; only user `code/loaders/amiga_loader.cpp` (`USE_LOADERS` off) → unreachable.
+- F9 network-statistics window and cheat window render through Eclipse ([32](32_debug_test_and_performance.md)).
+
+### 4.24 Global internet and sphere world [B:LEGACY] [C] `code/global_internet.cpp`, `code/global_world.cpp`
+
+`GlobalWorld::Render` → `GlobalInternet::Render` + `SphereWorld::Render` is reachable only when `m_locationId == −1` outside the main menu, i.e. in `GlobalWorldGameLoop`, which sets `m_atMainMenu = true` and exits immediately; `GlobalWorldEditorLoop` returns immediately (`if (true)`) [C] `code/main.cpp`. The data is still **built at start-up** because `App` constructs `GlobalWorld` [C] `code/app.cpp`: `GlobalInternet` seeds the global RNG with `AppSeedRandom(1)` and generates its tree; `SphereWorld` loads `globalworld_outer/middle/inner.shp`.
+- GlobalInternet generation: recursive tree from centre (−797, 1949, −1135) with `size = GLOBALINTERNET_ITERATIONS = 7`; a node of size s spawns s children at offset `(sfrand(d), sfrand(d), sfrand(d))` (drawn z, y, x) with `d = 2·s⁴`, child size s−1; link width = parent size. N(s) = 1 + s·N(s−1) ⇒ 13 700, plus one origin node linked to the nearest ⇒ 13 701 nodes (`MAXNODES`), 13 700 links (`MAXLINKS`).
+- Render (×1000 scale, fog linear 0…5 810 000 black; blend `SRC_ALPHA, ONE`; depth write off; cull off; texture on): links as ribbons facing the origin (`textures/laserfence2.bmp`, (0.25,0.25,0.5,0.8), width = link size), nodes as 20×20 quads (`textures/glow.bmp`, (0.8,0.8,1.0,0.6)), compiled once into display lists `"GlobalInternetLinks"`/`"GlobalInternetNodes"` (`USE_DISPLAY_LISTS` in this file). Packets: each frame with p = 11 % a random leaf bursts for 4 s, emitting packets that travel 1 link-length/s and hop at nodes; 60×60 camera billboards (`textures/starburst.bmp`, (0.25,0.25,0.5,0.8)).
+- SphereWorld (×120): `RenderWorldShape` (3 nested shapes, lit by `GlobalWorld::SetupLights`: one directional light (0,1,0), colour (2.0,1.5,0.75), material specular 0.5, shininess 10), `RenderIslands` (starburst stacks, 5 or 10 redraws, names via `g_gameFont`), `RenderTrunkLinks` (ribbons width 400, (0.4,0.3,1.0, 1.0 online / 0.4 offline)), `RenderSpirits`, `RenderHeaven` (50 glow sprites); skips the first 10 frames. `GlobalWorld::SetupFog`: linear 0…19 000, grey 0.1. The god-ray block is commented out.
+
+### 4.25 Loading-screen frame [B:FULL] [C] `code/loading_screen.cpp:LoadingScreen::RenderFrame`
+
+Holds `g_openGLMutex` for the whole frame; once the spinner texture (`sprites/darwinian.bmp`) exists: clear to black; if not the initial load, not loading a location, at the main menu and the fade is complete → `GameMenu::Render` + `UserInput::Render` behind; then `g_editorFont.BeginText2D()`, blend on, cull off; on the initial load the publisher logo fades in over 1 s and out over 1 s once the work queue is empty (`RenderIVLogo`); `RenderSpinningDarwinian()`; `EndText2D`; `Flip`. No progress bar. Between frames the loading screen runs GL jobs queued by worker threads (texture uploads, display-list compiles, landscape VBO upload) and, under D3D, keeps the screen up while mip tasks are pending. Behaviour and threading: [09](09_meta_systems.md), [20](20_architecture.md).
+
+## 5 Camera, projection, frustum, fog, lighting, shadows
+
+### 5.1 Projection and view [C] `code/renderer.cpp:Renderer::SetupProjMatrixFor3D`, `RenderFrame`, `code/camera.cpp:Camera::SetupProjectionMatrix`, `Camera::SetupModelviewMatrix`
+
+| Parameter | Value | Ref |
+|---|---|---|
+| Projection | `gluPerspective(fovY = camera.m_fov degrees, aspect = screenW/screenH, near, far)` — FOV is **vertical**; horizontal FOV follows the aspect | `Renderer::SetupProjMatrixFor3D` |
+| FOV clamp | `clamp(m_fov, 1, 180)` in place before every camera projection set-up | `Camera::SetupProjectionMatrix`; `code/lib/math_utils.h:clamp` |
+| FOV values | 60° free camera; 15° while zooming (60/4); 50° turret aim; 100° sphere world; 70° intro/outro; 90° main menu | [06](06_player_control_and_input.md); `code/game_menu.cpp` |
+| Near / far in a location | **5 / 15 000** world units, re-set every frame | `Renderer::RenderFrame` |
+| Near / far outside a location (menu, global world) | 50 / 10 000 000 | same |
+| Initial near / far | 5 / 150 000 | `Renderer::Renderer` |
+| Poster tiling | when `PosterMakerTiling`: `scale = fov/78`, `left = −scale·near`, `top = −(H/W)·scale·near`, tile size `2|left|/N × 2|top|/N`, tile `(x, y) = (idx % N, idx / N)`, `glFrustum` per tile ([B:D3D]: `glFrustum` is a stub) | `SetupProjMatrixFor3D` |
+| View matrix | `glLoadIdentity`; `gluLookAt(pos, pos + front·|pos|, up·|pos|)` (vectors scaled by distance from the origin, presumably for precision) | `Camera::SetupModelviewMatrix` |
+| 2D overlay | `SetupMatricesFor2D`: identity modelview, `gluOrtho2D(vx, vx+vw, vy+vh, vy)` (y down, pixel units); text uses its own ortho shifted −0.325 px | `Renderer::SetupMatricesFor2D`, `TextRenderer::BeginText2D` |
+| Total matrix | `UpdateTotalMatrix` caches MV × P (double); `Get2DScreenPos` multiplies by it (row-vector convention), divides by w, maps to [0,W]×[0,H], z = w; returns early (output untouched) when w ≤ 0 | `Renderer::UpdateTotalMatrix`, `Get2DScreenPos` |
+| Clip | `Renderer::Clip(x,y,w,h)` projects two points with `Camera::Get2DScreenPos` and enables `GL_SCISSOR_TEST`; `EndClip` disables it | `Renderer::Clip` |
+| Picking | `Camera::GetClickRay` / `Get2DScreenPos` read back the live GL matrices; callers must have the 3D matrices set | `code/camera.cpp` |
+| Water reflection [B:D3D] | `Camera::WaterReflect()` (y → −y on pos/front/up), called again to restore | `code/water_reflection.cpp` |
+
+[B:D3D] the projection's effective near/far are doubled (§1.5.7).
+
+### 5.2 Depth bias by near-plane nudging [C]
+
+Instead of `glPolygonOffset`, several passes temporarily re-set the projection with a larger near plane (`Camera::SetupProjectionMatrix(near·k, far)`) and restore it afterwards. Increasing the near plane compresses window depth for the same eye distance (depth ≈ 1 − near/d for far ≫ near), so these passes win `LEQUAL` ties against coplanar terrain [I]. Complete list [C] grep of `SetupProjectionMatrix`:
+
+| Factor | Pass / object | Ref |
+|---|---|---|
+| ×1.03 | cursor highlight rings, formation preview | `code/gamecursor.cpp:GameCursor::RenderUnitHighlightEffect`, `RenderFormation` |
+| ×1.05 | Virii | `code/team.cpp:Team::RenderVirii`, `code/worldobject/virii.cpp` |
+| ×1.05 | entity blob shadows | `code/worldobject/entity.cpp:Entity::BeginRenderShadow` |
+| ×1.05 | single-player cursor path [B:LEGACY] | `code/gamecursor.cpp:GameCursor::Render` |
+| ×1.1 | spirit receivers [B:LEGACY], mines | `code/worldobject/spiritreceiver.cpp`, `code/worldobject/mine.cpp` |
+| ×1.2 | lasers, rockets | `code/location.cpp:Location::RenderWeapons`, `code/worldobject/rocket.cpp` |
+| ×1.5 | portals, Sepulveda highlights [B:DEAD] | `code/worldobject/portal.cpp`, `code/sepulveda.cpp` |
+
+Resolved: a draft listed "Darwinians ×1.05 in `team.cpp`"; the code applies ×1.05 only to Virii there; Darwinians use no near-plane bias (their shadows sit 0.3 units above the terrain instead).
+
+### 5.3 Frustum tests (CPU culling helpers) [C] `code/camera.cpp`
+
+- `SetupProjectionMatrix` also computes `m_cosFov = cos(fovY)` and the **diagonal half-angle** `m_maxFovRadians`: with half sizes W/2, H/2 in pixels, `dtc = (H/2)/sin(fovY/2)`, `dc = √(dtc² + (W/2)²)`, `ddHalf = √(W²+H²)/2`, `m_maxFovRadians = 2·asin(ddHalf/dc)`.
+- `PosInViewFrustum(p)`: `dot(norm(p − pos), front) ≥ cos(fovY) − 0.2` — a cone test using the full vertical FOV (not the half angle) with tolerance 0.2, i.e. generous.
+- `SphereInViewFrustum(c, r)`: true if the camera is inside the sphere; else `acos(dot(norm(c − pos), front)) − asin(r/|c − pos|) ≤ m_maxFovRadians/2`.
+- No plane-based frustum and no far-plane rejection. Objects decide visibility via `IsInView` (usually `SphereInViewFrustum`); the far plane (15 000) and fog end (≥ 4000) bound what is seen.
+
+### 5.4 Fog [C] `code/location.cpp:Location::SetupFog`, `code/clouds.cpp`
+
+| Item | Rule |
+|---|---|
+| Location fog | `GL_LINEAR`, density 1, colour = `App::m_backgroundColour`/255 with alpha 0 = **black** (white in negative mode), `fogEnd = max(4000, worldSizeX + 1000, worldSizeZ + 1000)`, `fogStart = fogEnd/3`, hint `DONT_CARE`; `SetupFog` leaves fog **disabled** — each pass enables it |
+| Passes using level fog | landscape (both), flat and dynamic water, buildings (solid and alpha) |
+| Sky/clouds fog | black; sky grid 2000→4000; blobby/flat clouds 2000→5000 |
+| Unfogged | teams (units, Darwinians, Virii, others), effects, lasers, spirits, particles, explosions, UI |
+| Global world | linear 0…19 000, grey 0.1; global internet 0…5 810 000 black |
+| `RenderFog` pref | read only under `FOG_PREFERENCE` / `FOG_LOGGING`, defined nowhere → no effect on Win32 [C] `code/main.cpp:SetPreferenceOverrides` |
+| [B:D3D] | fog colour ignored; colour × fog factor (fades to black and transparent) on clip-space z (D4) |
+
+Because the background is black, linear fog fades distant terrain and buildings to black — the "objects emerging from darkness" look.
+
+### 5.5 Lighting model [C] `code/level_file.cpp:ParseLights`, `code/location.cpp:Location::SetupLights`, `SetupSpecialLights`, `code/renderer.cpp:Renderer::SetObjectLighting`
+
+| Item | Rule |
+|---|---|
+| Level lights | `Lights_StartDefinition` lines `fx fy fz r g b` (comment lines start with `#`); front normalised, w = 0 (directional); `colour[3] = 0`; if a mission file defined lights, map lights are ignored (mission files cannot contain lights — assert) — grammar in [29](29_data_formats_reference.md) |
+| Survey | all 57 `data/levels/mp_*.txt` files define **exactly 2** lights [C] (count excluding comments); e.g. `mp_koth_2P_1`: (0.07, 0.35, 0.93) colour (1,1,1) and (−0.04, 0.43, 0.90) colour (2.0, 1.0, 0.4) — colours > 1 are allowed and over-brighten |
+| GL binding | `Location::SetupLights` (each frame from `SetOpenGLState`): `GL_LIGHT1` first set to direction (0,0,−1,0), diffuse/specular/ambient black; then light i → `GL_LIGHT0+i`: `GL_POSITION` = (normalised front, 0), `GL_DIFFUSE` = `GL_SPECULAR` = colour, `GL_AMBIENT` = (0,0,0,1); all lights and lighting left disabled; global light-model ambient (0,0,0,0) |
+| Effective lights | only `GL_LIGHT0` and `GL_LIGHT1` are ever enabled (landscape, `SetObjectLighting`) → **max 2 directional lights**, no ambient term; the D3D FixedFunc shaders also support only 2 |
+| Object lighting | `SetObjectLighting`: material specular (0,0,0,0), diffuse (1,1,1,1), ambient (0,0,0,1), shininess 127; enables lighting + LIGHT0 + LIGHT1; `UnsetObjectLighting` disables them |
+| Landscape materials | §4.1 (main: diffuse 1, shininess 100, no specular; overlay: diffuse 1.2, specular 0.5, shininess 40) |
+| Special lighting | `SetupSpecialLights`: one light `normalise(0, 1, 0.5)`, diffuse = specular (2.0, 1.5, 0.75, 1), ambient black; material specular (1,1,1,1), diffuse 1, shininess 10; LIGHT1 disabled. Used for buildings when pref `RenderSpecialLighting == 1`, **or** the game type is Rocket Riot, **or** the level has the `SpecialLighting` effect, **or** game mode Prologue [B:LEGACY]. Levels with `Effects … SpecialLighting`: `mp_koth_2P_3`, `mp_koth_2P_3b`, `mp_koth_3P_1` [C] (resolves P12-U7). Cheat keys under `CHEATMENU_ENABLED` toggle the pref [B:DEBUG] |
+| Christmas theme | `Location::m_christmasMode` (copied from `ClientToServer::m_christmasMode` at `Location::Init`): light colours forced to (1.3, 1.2, 1.2); terrain ramp `landscape_icecaps.bmp`; water `water_icecaps.bmp`; waves `waves_earth.bmp`; trees leafless brown; Santa hats on every 3rd Darwinian | `code/location.cpp`, `landscape_renderer.cpp`, `water.cpp`, `worldobject/tree.cpp`, `worldobject/darwinian.cpp` |
+| Default `Light` | colour (1.3,1.3,1.3,0), front (0,0,1) | `code/worldobject/worldobject.cpp:Light::Light` |
+| Unlit | water, clouds, sprites, particles, effects, UI | — |
+| Light-direction timing | specified before the camera matrix each frame (§2.3) [I] | `Renderer::SetOpenGLState` |
+
+### 5.6 Shadows [C]
+
+There are **no shadow maps, no stencil shadows and no projected-geometry shadows** (no stencil buffer is requested; `glStencilMask` is commented out). Resolved: a draft stated "no shadows of any kind"; the code has three kinds of fake decal shadows:
+
+| Kind | Recipe | Users |
+|---|---|---|
+| Sprite drop shadow | the entity's own sprite texture drawn as a flat quad lying on the terrain, offset +z by 2·size (a fixed implied light direction), vertex heights = terrain + 0.3 (0.2 for LaserTrooper), colour black, alpha `150·highDetail` (×0.3 for the monster team; LaserTrooper 90), depth write off; skipped beyond 2000 units, when dead, abducted or watching a God Dish | `code/worldobject/darwinian.cpp:Darwinian::Render`, `code/worldobject/lasertrooper.cpp` [B:LEGACY] |
+| Blob shadow | `Entity::BeginRenderShadow`: `textures/glow.bmp`, blend `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, colour (0.6,0.6,0.6,0) (darkening), cull off, depth write off, near × 1.05; `RenderShadow(pos, size)` = quad ±size following the terrain + 0.9 (min y 1.0), skipped when all corners are above the caster | `code/worldobject/egg.cpp`, `sporegenerator.cpp` (20), `engineer.cpp` (10), `souldestroyer.cpp` (50 + per-segment `scale·20`), `harvester.cpp` (10), `triffid.cpp` (`size·10`) |
+| Blurred-icon shadow | a `shadow_<file>` texture made with `ApplyBlurFilter(10)` drawn first with `SRC_ALPHA, ONE_MINUS_SRC_COLOR`, then the icon additively | cursors (§4.19), crate target marker (`code/worldobject/crate.cpp`, `icons/target.bmp`, colour 0.5), nuke submarine (`sprites/subshadow.bmp`) |
+
+### 5.7 Screen-space effects (summary)
+
+| Effect | Mechanism | Build / reachability |
+|---|---|---|
+| Fade to/from black | full-screen quad (§2.6) | [B:FULL] |
+| Menu transition | captured frame slide (§2.6) | [B:FULL] |
+| Shockwave flash | full-screen white quad, additive, first 0.1 s (§4.10) | [B:FULL] |
+| Camera shake | lasers near the camera and shockwaves call `Camera::CreateCameraShake` from render code | [B:FULL] (local only) |
+| Pixel effect | §4.14 | [B:LEGACY] |
+| Deform distortion | §4.13 | [B:D3D], never in Multiwinia |
+| Water reflection | §4.3 | [B:D3D], never refreshed in Multiwinia |
+| Gamma ramp | `Renderer::SetScreenGamma` (`g = 2 − gamma`, ramp `(i/255)^g·65535`) | [B:D3D], no caller |
+| Post-process bloom/blur/AA | none | — |
 
 <!-- SECTION 6 shaders -->
 

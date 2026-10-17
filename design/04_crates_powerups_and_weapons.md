@@ -558,3 +558,402 @@ Shipped zones [C] `data/levels/mp_*.txt`:
 
 Design reading [I]: the Assault zones (all `blockPowerups = 1`) protect the defenders' rear from crates **and** from power-up targeting; the RocketRiot/Blitzkrieg/KOTH/Domination zones protect home bases from crate drops only.
 
+## 5 Effect specification per outcome
+
+### 5.0 Shared mechanics: tasks, targeting, markers, sounds
+
+**Delivery modes** [C] `code/worldobject/crate.cpp:Crate::CaptureCrate`, `code/taskmanager.cpp`:
+
+- **Task (deferred).** `team->m_taskManager->RunTask(GlobalResearch::Type…)` adds a `Task` the owner targets later (human: task bar / keys and a world click, [06](06_player_control_and_input.md); CPU: `AI::AdvanceCurrentTasks`, [07](07_ai.md)). For the turret and napalm variants the crate code then sets `GetTask(m_mostRecentTaskId)->m_option`. The effect runs at the targeted point through `Task::Target*` → `Crate::Run*`.
+- **Immediate.** The effect fires at the crate position (or globally) on the capture tick.
+- **Capture message.** For a task outcome, if the capturer is not the local team every other client shows `crate_enemycapture` "*T Opened a Crate!"; the local capturer sees the task popup instead (the `crate_capture` message was removed) [C].
+
+**Task manager rules** [C] `code/taskmanager.cpp:TaskManager::RunTask`, `TaskManager::Capacity`, `Task::Start`, `Task::Advance`, `Task::Stop`:
+
+| Rule | Value |
+|---|---|
+| Capacity (multiplayer) | **6** tasks; **2** while `Multiwinia::IsEliminated(team)` |
+| Full task manager | the reward is **lost**; local team sees `dialog_powerup_limit` "Powerup Limit Reached!" (no-overwrite message). The same message is also shown when a grant fills the last slot |
+| Insertion order (multiplayer) | the new task goes in front of the first not-yet-targeted (`StateStarted`) task, else at the end |
+| States | `StateIdle` → `Start()` → `StateStarted` (waiting for a target) → `Target()` → `StateRunning` → `StateStopping` (removed) |
+| Lock | `m_startTimer > 0` blocks `Target` (StartingPowerups set 30 s) |
+| Lifetimes set in `Task::Start` | Squad 60 s; Booster, HotFeet, Subversion, Rage 30 s; Tank 30 s outside TankBattle [B:LEGACY] |
+| Player termination (`Task::Stop`) | Squad: every squaddie `ChangeHealth(−1000)`; Armour (except in tutorials), Engineer, Tank: the entity `ChangeHealth(−1000)`; Harvester: made vulnerable then `ChangeHealth(−1000)`; GunTurret: `Damage(−1000)` only if the turret is owned by the task's team (else the stop is refused) |
+
+**Targeting rules** — `TaskManager::IsValidTargetArea` with `m_verifyTargetting` on (always on except while a level's instant units are placed and in the cheat window) [C] `code/taskmanager.cpp:TaskManager::IsValidTargetArea`, `TaskManager::GetTargetArea`:
+
+| Task types | Valid target (multiplayer) |
+|---|---|
+| Squad, Armour | within 75 of any building of a friendly team (`Location::IsFriend`) of type SpawnPoint, GunTurret, MultiwiniaZone or TrunkPort |
+| Engineer, Harvester | within 100 of the centre of one of the team's InsertionSquad (or Engineer) units, or as Squad/Armour |
+| Booster, HotFeet, Subversion, Rage | at least one entity of the owner's team within 70 (`POWERUP_EFFECT_RANGE`) of the point |
+| GunTurret (all three variants) | not inside a `blockPowerups` restriction zone; no building whose `DoesSphereHit(point, 10)`; not within 400 of a non-friendly owned TrunkPort nor within 200 of a non-friendly owned SpawnPoint |
+| AirStrike (incl. Napalm), Nuke, Infection, MagicalForest, DarkForest, AntsNest, Plague, EggSpawn, MeteorShower | anywhere inside the landscape except inside a `blockPowerups` restriction zone |
+| every task | the point must satisfy `Landscape::IsInLandscape` |
+
+`POWERUP_EFFECT_RANGE = 70.0` (`#define`, `code/taskmanager.h`). `TaskManager::TargetTask` registers a task marker (`RegisterMarker_Task`, icon `icons/icon_<TaskName>.bmp`) for every targeted task that still exists and has an object, except gun turrets [C].
+
+**Feedback conventions** [C]: "Marker" = `MarkerSystem::RegisterMarker_Fixed(team, pos, icon)`; "Sound" = `Crate::TriggerSoundEvent(type, pos, team)` → `SoundSystem::TriggerOtherEvent(pos, GetName(type), SoundSourceBlueprint::TypeCratePowerup, team)`; "Message" = `Location::SetCurrentMessage(text, team)`. Global/untargeted effects pass team 255 to the sound and no team to the message.
+
+### 5.1 Squad
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeSquad`; target rule "Squad" (§5.0) | [C] `Crate::CaptureCrate`, `Task::TargetSquad` |
+| Spawn | `numEntities = 2 + CurrentLevel(TypeSquad)` = **3** InsertionSquadies (research level 1 in MP); `Team::NewUnit(TypeInsertionSquadie, 3, …, pos)` + `Location::SpawnEntities(pos, team, unit, TypeInsertionSquadie, 3, zero velocity, spread 10)`; the unit is selected; if the owner is the local player and preference `OTHER_AUTOMATICCAM` = 2 (or a gamepad is in use) the camera tracks it | [C] `Task::TargetSquad`; `code/location.cpp:Location::Init` |
+| Duration | 60 s (`m_lifeTimer`, multiplayer); at expiry `Task::Stop` kills every squaddie (`ChangeHealth(−1000)`); the task also ends when no squaddie is alive | [C] `Task::Start`, `Task::Advance`, `Task::Stop` |
+| Stats | HP 75, speed 30 (`data/stats.txt` row InsertionSquadie); lasers 20–39 damage (§6.7), grenades (§6.3) | [C] `data/stats.txt` |
+| Feedback | sound `Squad` at the target (multiplayer); task marker `icons/icon_Squad.bmp` | [C] |
+| Full behaviour | [02 §7](02_units_and_entities.md#7-insertion-squad) | |
+
+Resolved: P08 stated "research forced to 3 in MP → 5 squaddies"; `Location::Init` sets `TypeSquad` back to **1** after the blanket level-3 assignment, so a squad is **3** squaddies (P04 was right) [C].
+
+### 5.2 Harvester
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeHarvester`; target rule "Engineer, Harvester"; valid only on maps with spawn points | [C] `Task::TargetHarvester`, `Crate::IsValid` |
+| Spawn | 1 Harvester of the owner at target + 50 y, selected; sound `Harvester` | [C] |
+| End | the task ends when the Harvester is gone or dead; player stop makes it vulnerable and kills it | [C] `Task::Advance`, `Task::Stop` |
+| Full behaviour (spirit collection → Darwinians at friendly spawn points, grenade capture) | [02 §9](02_units_and_entities.md#9-harvester) | |
+
+### 5.3 Engineer
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeEngineer`; target rule "Engineer, Harvester"; valid only on maps with spawn points; **Basic** type | [C] `Task::TargetEngineer` |
+| Spawn | 1 Engineer at target + 10 y (`SpawnEntities(…, unit −1, …)`), selected; plays the gesture sound `GestureSuccess` (no crate sound) | [C] |
+| End | entity gone or dead; player stop kills it | [C] |
+| Full behaviour | [02 §10](02_units_and_entities.md#10-engineer) | |
+
+### 5.4 Armour
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeArmour`; target rule "Squad, Armour"; invalid in RocketRiot and on `trunkportarmour > 0` maps | [C] `Task::TargetArmour`, `Crate::IsValid` |
+| Spawn | 1 Armour of the owner at the target, selected; sound `Armour` | [C] |
+| Damage model (for counter-play) | immune to lasers; turret shells deal `amount / 3` (integer: 15 → 5); everything else full; HP 200 | [C] `code/worldobject/armour.cpp:Armour::ChangeHealth`; `data/stats.txt` |
+| End | entity gone or dead; player stop kills it (except in tutorials) | [C] |
+| Full behaviour (100-passenger transport) | [02 §8](02_units_and_entities.md#8-armour) | |
+
+### 5.5 Airstrike
+
+Delivery: Task `TypeAirStrike` (multiplayer `RunTask` creates it directly; target anywhere outside `blockPowerups` zones). `Task::TargetAirStrike` calls `Crate::RunAirStrike(pos, team, m_option == 1)` and **terminates the task at once** [C] `code/taskmanager.cpp:Task::TargetAirStrike`.
+
+`Crate::RunAirStrike(pos, team, special)` [C] `code/worldobject/crate.cpp:Crate::RunAirStrike`:
+1. `numMarkers = 3 + syncrand() % 5` → **3–7** (10 in the tutorial, `g_app->m_multiwiniaTutorial`).
+2. For each marker: `target = pos + (SFRAND(100), 0, SFRAND(100))` (±50 in x and z), `target.y = ground`; `Location::ThrowWeapon(pos, target, EffectThrowableAirstrikeMarker, team)` — thrown **from the target point itself** outward with force `8·√dist ≤ 8·√70.7 ≈ 67`; `marker->m_naplamBombers = special`.
+3. Message (§2.2), fixed marker `icons/icon_airstrike.bmp` at `pos`, sound `Airstrike`.
+4. Returns the id of the last marker.
+
+Per marker (§6.5 `AirStrikeMarker`): once it is ≥ 2.0 s old and at rest it summons `Team::NewUnit(TypeSpaceInvader, CurrentLevel(TypeAirStrike) = 2, …)` — one `AirstrikeUnit` of **2 bombers**; it removes itself when the unit is gone or starts leaving. So one strike = **6–14 bombers dropping 6–14 bombs** [I arithmetic].
+
+Bomber flight (entity specs in [02 §11](02_units_and_entities.md#11-airstrike)) [C] `code/worldobject/airstrike.cpp:AirstrikeUnit::AirstrikeUnit`, `AirstrikeUnit::Begin`, `AirstrikeUnit::AdvanceToTargetPosition`, `SpaceInvader::Advance`:
+
+| Item | Value |
+|---|---|
+| Attack point | marker position, y = ground + 70 (re-read every tick while the marker exists) |
+| Entry / exit | the four corners (100, 500, 100), (100, 500, Z−100), (X−100, 500, Z−100), (X−100, 500, 100); exit = corner nearest the attack point, entry = second nearest |
+| Speed | `m_speed` blends 10 %/tick toward the desired speed: 40 (SpaceInvader SPED), × 10 = 400 while approaching and > 600 from the attack point (or leaving and > 100); initial 400 |
+| Turn | `front = normalise(front·0.9 + toTarget·0.1)` per tick |
+| Formation | rows of 4: x = (i%4 − 2)·24, y = −(⌊i/4⌋ − 2)·12, z = (⌊i/4⌋ − 2)·24, plus synced per-index noise |
+| Bomb release | each bomber, once, when within 90 (3-D) of the attack point: a bomb at `pos − 12·up` with velocity `front·|vel|`, `m_life = 1.5`, `m_power = 50` — `Grenade` typed `EffectThrowableAirstrikeBomb` (standard) or `FlameGrenade` (napalm); sound `DropGrenade` |
+| Bomber damage model | only `DamageTypeTurretShell` hurts; HP 10 → one turret shell kills; no spirit on death |
+| Leaving | `StateLeaving` once the waypoint is within 10 of the attack point; bombers delete themselves on leaving the world rectangle |
+
+Damage maths (standard bomb = `Bang(pos, R 25, D 100, team)`, §6.1): full 100 damage to every entity of every team within 37.5, linear to 0 at 50; buildings within 75 take `100·(1 − d/75)`; plus a 1.25 s shockwave. Lethal radius against a full-health Darwinian (HP 50): 43.75 (Darwinian in formation: explosive damage × 0.6 → 39.6; with Rage × 0.75 → 41.7) [I arithmetic from `Location::Bang`, `Darwinian::ChangeHealth`].
+
+Timing [I] (P04 re-implementation `_work/scripts/P04_airstrike_sim.py`, flat terrain, maps 1 500–3 000 wide): markers come to rest ≈ 1–3 s after targeting; bombers spawn at the entry corner; waypoint reaches the attack point ≈ 5.3–6.9 s after spawning, flying ≈ 44 wu/s; bombs fall ≈ 1.2 s and land ≈ 50 past the release point; bombers leave the world ≈ 13.5–15.4 s after spawning. Total ≈ 8–10 s from targeting to impacts.
+
+Uncaptured (Monster-team) airstrikes exist in the code but are unreachable (§3.1).
+
+### 5.6 Nuke
+
+Delivery: Task `TypeNuke`, target anywhere outside `blockPowerups` zones; `Task::TargetNuke` calls `Crate::RunNuke(pos, team)` and terminates the task [C] `code/taskmanager.cpp:Task::TargetNuke`.
+
+`Crate::RunNuke` [C] `code/worldobject/crate.cpp:Crate::RunNuke`:
+1. Spawns **10** `Nuke` entities of the owner. Each at a random **sea** position `(FRAND(worldX − 100), 0, FRAND(worldZ − 100))`, re-rolled while terrain height > 0 — an **unbounded loop that hangs the game on a map without water** (04-U1).
+2. Target: nuke 0 → exactly `pos`, `m_renderMarker = true` (ground marker `icons/nukesymbol.bmp`); nukes 1–9 → `pos + (syncsfrand(300), 0, syncsfrand(300))` (±150). `target.y = ground − 5`.
+3. Message, marker `icons/icon_nuke.bmp`, sound `Nuke`.
+
+Per warhead (entity spec in [02 §12](02_units_and_entities.md#12-nuke)) [C] `code/worldobject/nuke.cpp`: submarine rises from y −30 to +30 at 10 wu/s (6 s), waits `m_subTimer = 2.5` s, then a launch countdown of `worldSizeX/100 − |sub − target|/100` s (farther subs launch sooner), then a lofted flight at 50 → 100 wu/s; explodes within `5 × gameSpeed` of the target with `Bang(groundPos, R 50, D 100, team −1)`; all deaths (any team) are added to the launching team's `m_teamKills`.
+
+Damage maths: full 100 within 75, linear to 0 at 100 (lethal to a full-health Darwinian within 87.5) for **every** team; buildings within 150 take `100·(1 − d/150)`; shockwave size 2.5 s (ring radius 39 → ≈ 131–135, §6.11) [C formula, I radii]. Ten warheads scattered ±150 around the point.
+
+Timing [I] (`_work/scripts/P04_nuke_sim.py`, flat terrain): ≈ 28 s (sub 500 away) to ≈ 39 s (1 500 away) from targeting to impact on a 2 000-wide map; arrival is not simultaneous — nearer subs still land first.
+
+Co-op achievement hook: a local co-op nuke landing within 120 of a friendly SpawnPoint triggers `App::DarwiniaAchievementWrongGame` and `dialog_wronggame` [C] `Nuke::AdvanceToTarget` (achievements are stubbed in this PC source — [09](09_meta_systems.md)).
+
+### 5.7 Darwinians ("Multiwinians")
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate** at the crate; Basic type | [C] `Crate::RunDarwinians` |
+| Count | `50 + syncrand() % 50` → **50–99** Darwinians of the capturing team | [C] |
+| Launch | each: `vel = normalise(up + (SFRAND(1), 0, SFRAND(1))) × (10 + syncfrand(20))`, `m_front.y = 0`, airborne (`m_onGround = false`) — they pop out of the crate and land around it | [C] |
+| Message | `crate_message_darwinians` "*T receives Reinforcements!"; if the capturer is the Monster team (its Darwinians can capture, §1.7) the hard-coded text "Evil Darwinians!" | [C] |
+| Feedback | marker `icons/icon_darwinian.bmp`, sound `Darwinians` | [C] |
+| Population | spawned directly with `SpawnEntities` — not through spawn points, so not subject to spawn-point population locks [I]; population rules in [05](05_economy_and_population.md) | |
+
+### 5.8 Personal Shield (`CrateRewardBooster`)
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeBooster`; target needs ≥ 1 own entity within 70; `Task::TargetBooster` → `Crate::RunBooster(pos, team, taskId)` then the task stays `StateRunning` and is selected (`SwitchTo`) | [C] `Task::TargetBooster` |
+| Who | every Darwinian **of the owner's team** within 70 (XZ) of the point, except those inside an Armour: `Darwinian::SetBooster(taskId)` (20 team-coloured fire particles, unsynced) | [C] `Crate::RunBooster`, `Darwinian::SetBooster` |
+| Effect | `Darwinian::ChangeHealth` returns false (no damage) for every damage type except `DamageTypeUnresistable`; an **Explosive** hit removes the shield (sets `m_boosterTaskId = −1`) but that hit still deals no damage; `SetFire` is refused (fire-immune); `m_scared = false` in combat (does not flee); normal attack chance per tick 1/7 instead of 1/10 | [C] `Darwinian::ChangeHealth`, `Darwinian::SetFire`, `Darwinian::AdvanceCombat` |
+| Not protected against | unresistable damage: SpamInfection kills (−999), Dark Forest (−999), PulseWave (−1000), drowning, plague deaths | [C] `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingEntity`, `code/worldobject/tree.cpp:Tree::Advance` |
+| Duration | task life 30 s; the task also ends early when no Darwinian still carries its id; Darwinians drop the effect on the tick after the task disappears | [C] `Task::Advance`, `Darwinian::Advance` |
+| Feedback | message `crate_message_run_personalshield`, marker `icons/icon_personalshield.bmp`, sound `PersonalShield`; the task marker follows the centroid of the shielded Darwinians | [C] |
+
+Resolved: the enum comment "immune to laser fire, and attack more often" understates the code — the shield blocks every resistible damage type (lasers, explosives once, turret shells, fire) [C].
+
+### 5.9 Subversion
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeSubversion`; target needs ≥ 1 own entity within 70; task stays running 30 s | [C] `Task::TargetSubversion` |
+| Who | own Darwinians within 70 (not inside Armour): `GiveMindControl(taskId)` | [C] `Crate::RunSubversion` |
+| Effect | in combat the Darwinian fires `Darwinian::FireSubversion`: a mind-control laser at 75 wu/s with lifetime 1.2 s (laser research 2 → 0.6 × 2) ≈ 90 range; the first enemy **Darwinian** it hits is replaced by a new Darwinian of the shooter's team (victim removed without a spirit, `m_previousTeamId` set, 4 s colour fade); non-Darwinian targets take normal laser damage; subverted Darwinians never throw grenades | [C] `Darwinian::FireSubversion`, `Darwinian::AdvanceCombat`, `code/worldobject/weapons.cpp:Laser::Advance` |
+| Turret interaction | a **Standard** gun turret fires a subversion laser (speed 125) from any barrel whose operating Darwinian carries `m_subversionTaskId` | [C] `code/worldobject/gunturret.cpp:GunTurret::PrimaryFire` |
+| Duration | 30 s or until no Darwinian carries the id | [C] |
+| Feedback | `crate_message_run_subversion`, `icons/icon_subversion.bmp`, sound `Subversion` | [C] |
+
+### 5.10 Hot Feet
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeHotFeet`; target needs ≥ 1 own entity within 70; 30 s | [C] `Task::TargetHotFeet` |
+| Who | own Darwinians within 70 (not inside Armour): `GiveHotFeet(taskId)` | [C] `Crate::RunHotFeet` |
+| Effect | speed stat × 2 if the current speed is < 3.5 × the blueprint speed (Darwinian blueprint 20 → 40); every tick a fire trail (`AdvanceHotFeet`: 0–7 unsynced `TypeHotFeet`/`TypeMissileTrail` particles) and `Tree::Damage(−1)` to any tree whose `DoesSphereHit(pos, 2)` — hot-footed Darwinians running through trees can set them alight | [C] `Darwinian::GiveHotFeet`, `Darwinian::AdvanceHotFeet` |
+| End | when the task is gone the speed stat is reset to the **blueprint** value (this also cancels any concurrent Rage bonus or plague slow-down [I]) | [C] `Darwinian::Advance` |
+| Feedback | `crate_message_run_hotfeet`, `icons/icon_hotfeet.bmp`, sound `HotFeet` | [C] |
+
+Carried statues move faster with Hot Feet (changelog) — the carrying speed derives from the Darwinians' speed stats [I] `docs/multiwinia-changes.txt`.
+
+### 5.11 Gun Turret, Rocket Turret, Flame Turret
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeGunTurret` with `m_option` = `GunTurretTypeStandard` (0), `GunTurretTypeRocket` (1) or `GunTurretTypeFlame` (3); target rule "GunTurret" (§5.0) | [C] `Crate::CaptureCrate`, `Task::TargetGunTurret` |
+| Build | `Crate::RunGunTurret(pos, team, type)`: template at `pos` with `m_state = type` → `CreateBuilding(TypeGunTurret)` → `Initialise` (forces up = (0,1,0), front = (0,0,1)) → unit `UNIT_BUILDINGS`, new building id; **team stays 255 — the turret is neutral and must be manned by Darwinians**; obstruction grid recalculated; `ExplodeBody()` build-in shatter effect | [C] `Crate::RunGunTurret`, `code/worldobject/gunturret.cpp:GunTurret::Initialise` |
+| Task after placement | if the mode defines `MaxTurrets` (RocketRiot, Blitzkrieg) the task stays `StateRunning` (counts toward the 6 slots and the mode's turret limit); while it runs, a turret captured by another non-neutral team is destroyed (`Damage(−1000)`) and the task ends; in every other mode the task is terminated immediately and the turret is an ordinary neutral turret | [C] `Task::TargetGunTurret`, `Task::Advance`, `TaskManager::TerminateTask` |
+| Weapons | Standard: turret shells 500 wu/s, 0.6 s, 15 damage, 0.1 s reload per barrel pair (§6.8); Rocket: rockets life 1.0 s, 1.5 s reload, one barrel per trigger (§6.6); Flame: fireballs 100 wu/s, life 1.0 (§6.10) | [C] `GunTurret::PrimaryFire` |
+| Validity | Rocket Turret invalid in Assault | [C] `Crate::IsValid` |
+| Feedback | `crate_message_run_gunturret` "*T places a *G" (*G = `buildingname_gunturret` / `buildingname_rocketturret` / `buildingname_flameturret`), marker `icons/icon_gunturret.bmp`, sound `GunTurret` for all three variants | [C] |
+| Full behaviour (ownership by port occupancy, targeting, ranges, player aiming) | [03](03_buildings_and_world_objects.md) (GunTurret) | |
+
+### 5.12 Infection (`CrateRewardSpam`)
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Bad pool** (immediate at the crate, `RunInfection(pos, monsterTeam)`); good only via a forced reward → Task `TypeInfection` → `RunInfection(pos, owner)` | [C] `Crate::RunUncapturedCrate`, `Task::TargetInfection` |
+| Effect | **100** `SpamInfection` objects at `pos`, **all owned by the Monster team** regardless of the `teamId` argument (`m_id = (monsterTeam, UNIT_EFFECTS, index)`), `m_parentId = −1`, initial velocity `normalise(up + (SFRAND(1), FRAND(2), SFRAND(1))) × 100` | [C] `Crate::RunInfection` |
+| Behaviour | homing swarm: each lives 10 s (+1 s per hit), retargets every 1 s, attacks the nearest non-Monster entity 100–200 away or a floating spirit; an entity hit is replaced by a **Monster-team Darwinian** (50 %) or killed outright (`ChangeHealth(−999)`, unresistable); a spirit hit becomes a Monster Virii (95 %) or Spider (5 %) | §6.16 |
+| Who is safe | nobody except the Monster team — the capturer's units are targets too; Darwinians flee enemy SpamInfections within 60 (unless raging) | [C] `Darwinian::SearchForThreats` |
+| Feedback | message `crate_message_auto_infection` "Infection Outbreak!", marker `icons/icon_infection.bmp`, sound `Infection` | [C] |
+
+### 5.13 Magical Forest (`CrateRewardForest`)
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate** at the crate (`RunMagicalForest(pos, monsterTeam)` — the team id is used only for the marker colour and message); Basic type. As a Retribution grant: Task `TypeMagicalForest` → `RunMagicalForest(pos, owner)` | [C] `Crate::CaptureCrate`, `Task::TargetMagicalForest` |
+| Trees | `GenerateTrees`: `1 + syncrand() % 2` → **1–2** trees, each at `pos ± syncsfrand(100)` (±50) on the ground, team 255 | [C] `Crate::GenerateTrees` |
+| Template | clone of the first non-evil `Tree` on the level; if none, a random template: budsize/pushOut/pushUp = `1.2 − syncfrand(0.4)` each, eight sequenced `syncrand()` colour channels `100 + r % 155` (branch RGBA, leaf RGBA), height 80, 6 iterations | [C] |
+| Per tree | `m_seed = int(syncfrand(99999))`; height capped at 100 then × `(1.2 − syncfrand(0.4))`; `SetFireAmount(−1)` (starts at minimum height, not burning, grows back); `m_spawnsRemaining = int(2 + syncfrand(3))` (2–4 offspring trees, one every 5–10 s); `m_spiritDropRate = int(15 + syncfrand(15))` (15–29); `m_destroyable = true`; obstruction grid recalculated | [C] `Crate::GenerateTrees`; `code/worldobject/tree.cpp:Tree::Advance` |
+| Spirit rain | each tick a non-evil tree with drop rate r drops one spirit with probability `1/(51 − r)` (1/36 … 1/22 per tick ≈ 0.28–0.45 per second) for a random team id in [0, NUM_TEAMS) excluding Monster/Futurewinian (unused team ids included) — free souls for Harvesters/Engineers | [C] `Tree::Advance`; behaviour of trees in [03](03_buildings_and_world_objects.md) |
+| Feedback | `multiwinia_exclamation` → "Magical Forest!", marker `icons/icon_magicalforest.bmp` (Monster colour), sound `MagicalForest` | [C] |
+
+### 5.14 Randomiser
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Bad pool** (immediate at the crate); good only via a forced reward (then it is placed for the capturer's team, though the object ignores teams) | [C] `Crate::RunUncapturedCrate`, `Crate::CaptureCrate` |
+| Object | one `Randomiser` effect at `pos` (`RANDOMISER_RANGE = 100`, `m_life = 15.0` s) | [C] `code/worldobject/randomiser.cpp:Randomiser::Randomiser` |
+| Pulse | first tick immediately, then every `0.5 + syncfrand(2.5)` s: every Darwinian within 100 (XZ), not inside an Armour, is replaced by a new Darwinian of team `syncrand() % levelFile.m_numPlayers` (may be its own team; may be a level slot that is unused in this game, 04-U5) at the same position/velocity; the original is removed without a spirit | [C] `Randomiser::Advance` |
+| Render | two orbiting `TypeMuzzleFlash` particles in random team colours (unsynced `rand()`) | [C] `Randomiser::Render` |
+| Feedback | message "Randomiser" (`cratename_randomiser`), marker `icons/icon_randomizer.bmp`, sound `Randomiser` | [C] |
+| Spec owner | [03](03_buildings_and_world_objects.md) (Randomiser) | |
+
+### 5.15 Ants Nest
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | good: Task `TypeAntsNest` (target anywhere outside `blockPowerups` zones); bad: immediate at the crate | [C] |
+| Effect | 2 `AntHill` buildings of the **Monster team** at `pos + (syncsfrand(200), 0, syncsfrand(200))` (±100), random facing, `m_numAntsInside = 75 − syncrand() % 25` (51–75); shatter build-in effect; plus 1 `ArmyAnt` spawned at `pos` "to wake up the monster team"; obstruction grid recalculated | [C] `Crate::RunAntNest` |
+| Limit | good pool only: invalid while (ant hills on the map + 2 × pending AntNest tasks) ≥ 4; the bad pool ignores it | [C] `Crate::IsValid` |
+| Hostility | ants attack every non-Monster team, including the team that ran the task | [C] (team assignment); ant behaviour [02 §13](02_units_and_entities.md#13-armyant), AntHill [03](03_buildings_and_world_objects.md) |
+| Feedback | `crate_message_run_antnest` "*T creates an Ants Nest!" / Monster: "Ants Nest!"; marker `icons/icon_antnest.bmp`; sound `AntNest` | [C] |
+
+### 5.16 Plague
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Bad pool** only (immediate at the crate). A forced Plague reward hits `AppReleaseAssert` in `CaptureCrate` (its task case is commented out) | [C] |
+| Effect | **every** Darwinian of **every** team (the capturer included) within 70 of the crate: `Darwinian::Infect()` (skipped inside an Armour; only if currently clean) → `InfectionStateInfected`, `m_infectionTimer = syncfrand(10)`, speed × 0.75 | [C] `Crate::RunPlague`, `Darwinian::Infect` |
+| Disease cycle | when the timer expires (then every `5 + syncfrand(5)` s): each Darwinian within `DARWINIAN_INFECTIONRANGE = 30` (any team) is infected with 50 % (`syncrand() % 2`); then one roll `syncrand() % 20`: 0 → `Bang(pos, 5, 25)` + death; 1 → death (`ChangeHealth(−100)`); 2 → speed halved; 3 → paralysed 5–15 s; 4 → insane (enters combat, throws grenades regardless of the usual conditions); 5–6 → cured and immune, speed restored; 7–19 → nothing (65 %). Infected Darwinians also stop dead with probability 1/20 per movement tick; infected Rocketwinians fire "firework" rockets | [C] `Darwinian::AdvanceInfection`, `Darwinian::AdvanceToTargetPosition`, `Darwinian::AdvanceCombat` |
+| Feedback | `crate_message_auto_plague` "Plague Outbreak!", marker `icons/icon_plague.bmp`, sound `Plague`; green plague particles (unsynced `rand()`) | [C] |
+
+### 5.17 Eggs
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeEggSpawn` (anywhere outside `blockPowerups` zones) | [C] `Task::TargetEggs` |
+| Effect | `2 + syncrand() % 3` → **2–4** `TriffidEgg` entities **of the task owner's team**, launched from `pos + 20 y` with velocity `normalise(SFRAND(1), 4, SFRAND(1)) × (50 + syncfrand(50))` | [C] `Crate::RunEggs` |
+| Contents | spawn type uniform over {Virii, Centipede, Spider, TriffidEggs, SporeGenerator} (re-rolled while Spirits, Eggs, SoulDestroyer, Ants or Darwinians); `m_size = 1.0`; hatch timer `4 + syncfrand(4)` s; `m_spawnPoint = pos`; `m_roamRange = 300` | [C] `Crate::RunEggs`; `code/worldobject/triffid.h` (`Triffid::NumSpawnTypes` = 10) |
+| Ownership | hatched creatures belong to the egg's team, i.e. **fight for the player who used the task**, except Soul Destroyers, which are forced to the Monster team in multiplayer (possible only from second-generation `TriffidEggs`) | [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`; hatch rules [02 §14](02_units_and_entities.md#14-triffidegg) |
+| Feedback | `crate_message_run_eggs` "*T creates some Eggs!" (Monster: `crate_message_auto_eggs` "Egg Spawn!"), marker `icons/icon_egg.bmp`, sound `Eggs` | [C] |
+
+### 5.18 Meteor shower
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeMeteorShower` (anywhere outside `blockPowerups` zones) | [C] `Task::TargetMeteorShower` |
+| Count | `5 + syncrand() % 5` → **5–9** `Meteor` entities of the owner | [C] `Crate::RunMeteorShower` |
+| Targets | each `pos + (syncsfrand(420), syncsfrand(420))` → uniform in a **420 × 420** square (±210) centred on the point (`420 = POWERUP_EFFECT_RANGE × 6`); `y = ground − 10` | [C] |
+| Start | `(FRAND(worldX), 1500 + syncfrand(500), FRAND(worldZ))` — anywhere over the map at 1 500–2 000 altitude | [C] |
+| Flight | straight line at the Meteor blueprint speed **350** wu/s (`EntityBlueprint::GetStat`, × (1 + difficulty/10)); impact within 10 of the target or below terrain → sound `Land`, `Bang(pos, R 50, D 100, owner)`, meteor removed; flight time = distance / 350 (≈ 3–6 s) | [C] `code/worldobject/meteor.cpp:Meteor::Advance`, `Meteor::AdvanceToTarget`; `data/stats.txt` |
+| Damage maths | per meteor as a nuke warhead: full 100 within 75, 0 at 100, buildings within 150; shockwave 2.5 s; **not team-filtered** — the owner's own units are hit; kills of other teams credited to the owner | [C] `code/location.cpp:Location::Bang` |
+| Slow motion | the first time each meteor comes within 200 of its target: `g_gameTimer.RequestSpeedChange(0.4, 0.1, 4.0)` → speed eases to 0.4× (10 % of the gap per tick, ≈ 39 ticks), holds 40 ticks, eases back (≈ 39 ticks); later meteors re-issue the request and restart the hold | [C] `Meteor::Advance`; `code/gametimer.cpp:GameTimer::Tick`; [I] tick counts |
+| Feedback | `crate_message_run_meteor` "*T causes a Meteor Shower!", marker `icons/icon_meteorshower.bmp`, sound `Meteor` | [C] |
+| Entity spec | [02 §22](02_units_and_entities.md#22-meteor) | |
+
+### 5.19 Dark Forest
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | good: Task `TypeDarkForest`; bad: immediate at the crate (Monster team) | [C] |
+| Trees | `GenerateEvilTrees`: `2 + syncrand() % 3` → **2–4** trees at `pos ± 50`; initialised from the first `Tree` on the level (evil or not) or, if none, a random template (budsize/pushOut/pushUp `1.2 − syncfrand(0.4)`, height 80); then `m_seed = syncfrand(99999)`, height cap 100 × (1.2 − syncfrand(0.4)), `SetFireAmount(−1)`, `m_spawnsRemaining = 2 + syncfrand(3)`, destroyable, **`m_evil = true`**, branch colour RGBA (0,0,0,255), leaf colour (0,0,0,200), 5 iterations; team 255 | [C] `Crate::GenerateEvilTrees` |
+| Evil behaviour | each tick with probability 2 % (`syncfrand(10) < 0.2`) the tree kills the nearest non-Monster Darwinian within `height/2` (not one operating a port) with `ChangeHealth(−999)` (unresistable — shields do not help), **eats its spirit** and releases a `Zombie` ghost; once fully grown, every 10–15 s it corrupts the nearest normal tree within its height (that tree turns evil 10 s later); evil trees drop no spirits | [C] `code/worldobject/tree.cpp:Tree::Advance`; Zombie [02 §21](02_units_and_entities.md#21-souldestroyer) |
+| Hostility | kills Darwinians of every team except the Monster team, including the task owner's | [C] |
+| Feedback | `crate_message_run_darkforest` "*T plants a Dark Forest!" / Monster: "Dark Forest!", marker `icons/icon_darkforest.bmp`, sound `DarkForest` | [C] |
+
+### 5.20 Crate Mania
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, global | [C] `Crate::RunCrateMania` |
+| Effect | `int(5 + syncfrand(5))` → **5–9** calls of `Location::CreateRandomCrate()` in the same tick — normal placement rules (random drops keep 350 from every existing crate, including those just created), but **no `maxCrates` check** | [C] |
+| Validity | only while `Crate::s_crates < 4` (the captured crate counts) | [C] `Crate::IsValid` |
+| Feedback | "Crate Mania!" (name + "!"), sound `CrateMania` (team 255) | [C] |
+
+### 5.21 Spawn Mania
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, global (all teams benefit) | [C] `Crate::RunSpawnMania` |
+| Effect | `Location::m_spawnManiaTimer = 5.0`, decremented each tick at slice 8. While > 0, every SpawnPoint that is owned, activated and not population-locked requests a spirit from the master spawn point **every tick** instead of on its normal timer — ≈ 50 extra requests per eligible spawn point (delivery through the pylon network, [05](05_economy_and_population.md)) | [C] `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance`; `code/location.cpp:Location::Advance` |
+| Validity | maps with spawn points only | [C] |
+| HUD | `multiwinia_spawnmania_timer` "SPAWN MANIA: *T" (seconds remaining) at top centre, red below 2 s | [C] `code/multiwinia.cpp` (HUD render) |
+| Feedback | `multiwinia_exclamation` → "Spawn Mania!", sound `SpawnMania` | [C] |
+
+Resolved: the enum comment says "15 seconds"; the code sets 5.0 s [C].
+
+### 5.22 Mega Rage (`CrateRewardBitzkreig`)
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, global | [C] `Crate::RunBitzkreig` |
+| Effect | `Location::m_bitzkreigTimer = 15.0`; while > 0 `Darwinian::HasRage()` is true for **every Darwinian of every team**: fire every tick at a target jittered ±30 (reload reset), formation fire 4× as often, no flight from grenades/markers/infections. It does **not** give the Rage damage reduction or speed bonus (those depend on `m_rageTaskId`) | [C] `Darwinian::HasRage`, `Darwinian::AdvanceCombat`, `Darwinian::ChangeHealth` |
+| HUD | `multiwinia_blitzkrieg_timer` "MEGA RAGE: *T", red below 2 s | [C] |
+| Feedback | "Mega Rage!" (name + "!"), sound `Bitzkreig` | [C] |
+
+Resolved: the enum comment ("all Darwinians will always throw grenades for 10 seconds") is stale — the code is a 15 s global rage [C].
+
+### 5.23 Rocketwinians
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, capturing team, **permanent** for the rest of the game | [C] `Crate::RunRocketDarwinians` |
+| Effect | `team->m_evolutions[Team::EvolutionRockets] = 1`. Wherever a Darwinian of that team would throw a grenade (its 12–20 s grenade timer, target > 75 away or insane, slopes OK) it instead calls `Location::FireRocket(pos, target + 10 y, team, life −1 → research default 0.75 s, building −1, firework = infected)` | [C] `Darwinian::AdvanceCombat` |
+| Consequence | a rocket (Bang R 15, D 25) flies 8 ticks ≈ 95 wu before expiring, so targets beyond ≈ 95 are hit short; grenades (Bang R 12.5, D 50) reach ≈ 170 [I] (§6.3, §6.6) | |
+| Feedback | `crate_message_rocketwinians` "*T gets Rocketwinians!", sound `Rocketwinians` | [C] |
+
+### 5.24 Rage
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | Task `TypeRage`; target needs ≥ 1 own entity within 70; 30 s | [C] `Task::TargetRage` |
+| Who | own Darwinians within 70 (not inside Armour): `GiveRage(taskId)` | [C] `Crate::RunRage` |
+| Effect | speed stat × 1.5 if current speed < 3 × blueprint; damage taken × 0.75; `HasRage()` behaviours (fire every tick with ±30 scatter, formation fire ×4, ignore projectile threats); pulsing render size | [C] `Darwinian::GiveRage`, `Darwinian::ChangeHealth`, `Darwinian::AdvanceCombat`, `Darwinian::Render` |
+| End | 30 s or no carrier left; speed reset to blueprint | [C] |
+| Feedback | `crate_message_rage` "*T runs Rage!", marker `icons/icon_rage.bmp`, sound `Rage` (team 255) | [C] |
+
+Resolved: the enum comment says "for 60 seconds"; the task life is 30 s [C] `Task::Start`.
+
+### 5.25 Space Ship
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Bad pool** only (immediate, global), at most **once per game** (`s_spaceShipUsed`), never in Assault | [C] `Crate::RunUncapturedCrate`, `Crate::IsValid` |
+| Spawn | starting from (0,0,0), re-roll `(FRAND(worldX), 5000, FRAND(worldZ))` until the terrain under it is ≥ 10 (if the (0,0) corner were land ≥ 10 the ship would spawn at (0,0,0), 04-U3); 1 `SpaceShip` entity on the **Futurewinian team (5)** | [C] `Crate::RunSpaceShip` |
+| Behaviour | invulnerable UFO; hovers 500 above terrain; abduction beam radius 45; abducts non-Futurewinian Darwinians not inside Armour for `60 + syncfrand(60)` s (removed without spirits), waits 5 s, then drops the same number (cap **100**) of Futurewinian Darwinians one per tick, then leaves | [C] `code/worldobject/spaceship.cpp` (`SPACESHIP_HOVERHEIGHT`, `SPACESHIP_ABDUCTIONBEAM_RADIUS`, `SpaceShip::Begin`, `SpaceShip::AdvanceDropping`); full spec [02 §23](02_units_and_entities.md#23-spaceship) |
+| Feedback | `crate_message_spaceship` "Futurewinians!", sound `SpaceShip` (team 255) | [C] |
+
+### 5.26 Triffids
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Bad pool** only (immediate at the crate, Monster team); good only via a forced reward | [C] |
+| Effect | `1 + syncrand() % 3` → **1–3** `Triffid` buildings of the Monster team at `pos ± syncsfrand(50)` (±25), `m_front` pointing away from `pos`, `m_pitch = 0.6 + syncfrand(0.6)`, `m_force = 60 + syncfrand(60)`, `m_variance = syncfrand(0.5)`, `m_reloadTime = 40 + syncfrand(60)` s, may spawn every type except Spirits and Eggs (i.e. Virii, Centipede, Spider, TriffidEggs, Ants, SporeGenerator, SoulDestroyer, Darwinians); default `m_numEggs = 3` | [C] `Crate::RunTriffids`; `code/worldobject/triffid.cpp:Triffid::Triffid` |
+| Behaviour | egg launcher — [03](03_buildings_and_world_objects.md) (Triffid), eggs [02 §14](02_units_and_entities.md#14-triffidegg) | |
+| Feedback | `multiwinia_exclamation` → "Triffids!", marker `icons/icon_triffid.bmp`, sound `Triffids` (team 255) | [C] |
+
+### 5.27 Napalm Strike
+
+As §5.5 with `special = true` [C] `Crate::CaptureCrate` (`m_option = 1`), `Task::TargetAirStrike`, `Crate::RunAirStrike`:
+- Every marker carries `m_naplamBombers = true`; its `AirstrikeUnit` gets `m_napalm = true`; each bomber drops a `FlameGrenade` (life 1.5, power 50) instead of a bomb.
+- Napalm bomb burst (§6.4): **no explosion damage**; every Darwinian of every team within `power × 1.25 = 62.5` → `Darwinian::SetFire()` (shielded and Monster Darwinians are immune); every `Tree` or `Triffid` building whose centre is within `power × 2 = 100` takes `Damage(−200)` (no falloff) — trees catch fire. A strike = 6–14 napalm bursts.
+- Burning Darwinians die and spread fire ([02 §4](02_units_and_entities.md#4-darwinian)).
+- Feedback: `crate_message_run_napalm` "I love the smell of Napalm in the morning..." (Monster: `crate_message_auto_napalm`), marker `icons/icon_airstrike.bmp`, sound `Airstrike`.
+
+### 5.28 Slow Down
+
+| Item | Value | Ref |
+|---|---|---|
+| Delivery | **Immediate**, global; does nothing once the game is over | [C] `Crate::RunSlowDownTime` |
+| Effect | `g_gameTimer.RequestSpeedChange(0.2 + syncfrand(0.2), 0.05, 15.0)` | [C] |
+| Speed law | every `GameTimer::Tick` (one per server tick): `speed += (target − speed) × 0.05`; snaps when within 0.01; then the hold counter (15.0) decreases by 0.1 per tick (150 ticks); then the target becomes 1.0 at the same 5 % rate with no hold. Requests are refused after `LockSpeedChange` (game won); a new request (another speed crate or a meteor) overwrites the current one | [C] `code/gametimer.cpp:GameTimer::Tick`, `GameTimer::RequestSpeedChange` |
+| Durations | ticks run at 10 Hz real time, so: approach 1.0 → 0.3 ≈ 83 ticks (8.3 s real), hold 15 s real, return ≈ 83 ticks — ≈ 32 s of real time in total, during which every game-time quantity (timers, speeds per tick, crate drops) slows [I] | |
+| Feedback | `crate_message_slowdown` "Sloooow Dooown..."; no sound, no marker | [C] |
+
+### 5.29 Speed Up
+
+As §5.28 with target `1.3 + syncfrand(0.7)` → [1.3, 2.0); message `crate_message_speedup` "Speed up!!" [C] `Crate::RunSpeedUpTime`. Approach 1.0 → 1.65 ≈ 82 ticks [I]. Several game rules are per-tick rather than per-second and therefore do **not** scale with speed (crate capture cap 0.05/tick, the lightning 1 %/tick strike roll, egg/spider gravity) [C] — see [02](02_units_and_entities.md) and §7.
+
+### 5.30 The Beast [B:DEBUG]
+
+`Crate::RunTheBeast(pos)`: a `Portal` building of the Monster team at `pos` (`CreateBuilding(TypePortal)`, `SetDetail(1)`), message `crate_message_thebeast` "The Beast Cometh!"; the portal summons invulnerable Tentacles ([03](03_buildings_and_world_objects.md) Portal, [02 §30](02_units_and_entities.md#30-tentacle)). Only in `TARGET_DEBUG` builds (`INCLUDE_THEBEAST`) [C] `code/worldobject/crate.cpp:Crate::RunTheBeast`.
+
+### 5.31 Counter-play and counters matrix
+
+"Counters" here means both the numeric limits that bound an outcome and the in-game answers to it. Derived from the damage models in §6 and the effect code above [I unless tagged].
+
+| Outcome | Numeric limit / counter | How opponents (or the victim) counter it |
+|---|---|---|
+| Any task outcome | 6-slot task manager (2 when eliminated); 30 s lock for starting power-ups | deny the crate itself: contest it with more Darwinians within 35 — a challenger must hold the strict majority while the owner's bar drains (1.0/s) before its own bar starts [C] |
+| Squad | 60 s, 3 units, no spirits on death | turret shells, grenades, lasers; wait 60 s |
+| Armour | HP 200; laser-immune; shells ÷ 3 | grenades/airstrikes/nukes (full damage), turret shells (5 per hit) [C] |
+| Harvester / Engineer | Harvester only vulnerable to its own captured grenade or task end; Engineer laser-immune | explosives vs Engineer; Harvesters are practically immune [C per P04] |
+| Airstrike / Napalm | 3–7 markers, 2 bombers each, bombers HP 10 | **gun-turret shells** are the only weapon that hurts bombers (one shell kills); spread out (lethal radius 43.75 per bomb); shields block bombs once and are immune to napalm fire [C] |
+| Nuke | 10 warheads, ±150 scatter; needs sea | move away from the marked point (≈ 28–40 s warning); shields absorb one blast but not the shockwave's later ticks [C/I] |
+| Meteor | 5–9 meteors in a 420 square, friendly fire | leave the area during the 0.4× slow-motion; owner should not target near own units |
+| Personal Shield | 30 s; popped by any explosive | grenades, airstrikes, shockwaves pop it; Infection, Dark Forest and Pulse waves ignore it [C] |
+| Subversion | 30 s; 90-range converting lasers | keep Darwinians > 90 away; use non-Darwinian units (converting lasers only convert Darwinians) |
+| Hot Feet | 30 s; speed ≤ 3.5× blueprint | — (mobility buff); careful near trees (it can ignite them) |
+| Rage | 30 s; damage × 0.75 | volume of fire still kills; Rage Darwinians ignore grenade threats → grenades are effective |
+| Mega Rage | 15 s, global | affects everyone equally |
+| Gun / Rocket / Flame turret | neutral until manned; task limit in RocketRiot/Blitzkrieg | capture its ports (in RocketRiot/Blitzkrieg a captured crate turret self-destructs); explosives (turret HP 60) [C per P06] |
+| Infection | 100 swarm objects, 10 s + 1 s/hit | none effective (unresistable kills); stay > 200 away; Harvesters are ignored by it [C] |
+| Plague | radius 70; spreads within 30 | separate infected Darwinians; 10 % of rolls cure (immune) |
+| Randomiser | 15 s, radius 100 | move Darwinians out of the 100 circle; Armour passengers are safe [C] |
+| Ants Nest | ≤ 4 nests (good pool) | destroy the ant hills; ants hostile to all |
+| Dark Forest | 2 % per tick per tree kill chance within height/2 | burn the trees (napalm, lightning, fireballs, Hot Feet); keep Darwinians out |
+| Eggs | 2–4 eggs, hatch in 4–8 s | kill eggs before they hatch (eggs are entities, [02 §14](02_units_and_entities.md#14-triffidegg)) |
+| Triffids | 1–3 launchers, reload 40–100 s | destroy the triffids (fire, shells −2 per hit) [C] |
+| Space Ship | invulnerable; once per game | keep Darwinians out of the 45-radius beam / inside Armour [C] |
+| Crate Mania | `s_crates < 4` at capture | contest the extra crates |
+| Spawn Mania | 5 s, global | own more active spawn points |
+| Slow Down / Speed Up | 15 s hold; locked after game over | — |
+| Rocketwinians | permanent per team | engage at > 95 range where rockets fall short |
+

@@ -718,7 +718,8 @@ for root, dirs, files in os.walk(DATA):
                 tok = m.group(0).lower().lstrip('./')
                 key = (line.strip().split() or [''])[0]
                 cls, why = level_info.get(rel, ('live', ''))
-                live = {'FULL': cls == 'live', 'D3D': cls == 'live', 'DEBUG': cls in ('live', 'debug'), 'EDITOR': cls == 'live'}
+                ok = cls != 'dead' and not rel.startswith('data/purity/')
+                live = {'FULL': ok, 'D3D': ok, 'DEBUG': ok, 'EDITOR': ok}
                 tgts = []
                 if tok in by_resname:
                     tgts = [by_resname[tok]]
@@ -880,7 +881,9 @@ for c in sites('code/lib/shader.cpp', 'shaders/%s'):
 # Compiled-in code paths that cannot run in a Multiwinia match (manual, each verified by grep) ->
 # reference build tag downgraded from FULL.
 REACH = [
-    # (file, symbol regex, line range or None, new tag, reason)
+    # (file, symbol regex, line range or None, new tag, reason); tag None = explicitly live (first match wins)
+    ('code/taskmanager_interface_icons.cpp', r'TaskManagerInterfaceIcons::TaskManagerInterfaceIcons', None, None,
+     'constructor runs at start-up: App::Initialise calls TaskManagerInterface::CreateTaskManager while m_gameMode is GameModeNone, which builds TaskManagerInterfaceIcons (load only, never drawn in a match)'),
     ('code/taskmanager_interface_icons.cpp', r'.*', None, 'LEGACY',
      'TaskManagerInterfaceIcons is created only when !App::Multiplayer() (code/taskmanager_interface.cpp:TaskManagerInterface::CreateTaskManager)'),
     ('code/taskmanager_interface_gestures.cpp', r'.*', None, 'LEGACY',
@@ -920,10 +923,17 @@ def apply_reach(r):
         for pre, tag, why in DATA_REACH:
             if r['file'].startswith(pre):
                 return tag, why
+        cls, why = level_info.get(r['file'], ('live', ''))
+        if cls == 'legacy':
+            return 'LEGACY', why
+        if cls == 'debug':
+            return 'DEBUG', why
+        if cls == 'special':
+            return 'DEBUG', why + ' - loaded only by non-FULL targets/tools (PERMITTED_MAPS of TARGET_PC_HARDWARECOMPAT, TARGET_ASSAULT_STRESSTEST) [I]'
         return None
     for f_, rx, rng, tag, why in REACH:
         if r['file'] == f_ and re.match(rx, r['sym'] or '') and (rng is None or rng[0] <= r['line'] <= rng[1]):
-            return tag, why
+            return (tag, why) if tag else None
     return None
 
 for rel, rs in refs.items():
@@ -936,8 +946,8 @@ ORDER = ['FULL', 'D3D', 'DEBUG', 'EDITOR', 'LEGACY', 'DEAD']
 _ref_build_compiled = ref_build
 def ref_build(r):
     b = _ref_build_compiled(r)
-    if b in ('FULL', 'D3D') and r.get('reach_tag'):
-        return r['reach_tag']
+    if r.get('reach_tag') and (b in ('FULL', 'D3D') or r['built'] == 'data'):
+        return r['reach_tag'] if b != 'DEAD' or r['built'] == 'data' and r['reach_tag'] == 'DEAD' else b
     return b
 
 def summarise(rel):
@@ -1152,6 +1162,9 @@ MANUAL_UNUSED = {  # assets whose only evidence is a coincidental bare word (rev
     'data/shapes/help.shp': '"help" occurs only as a page/button name (code/game_menu.cpp page names)',
     'data/shapes/portal.shp': '"Portal" occurs only as a building type name; the Portal::Portal GetShape call is commented out',
     'data/shapes/spam.shp': '"Spam" occurs only as a building type name (code/worldobject/building.cpp type-name table)',
+    'data/thumbnails/mp_benchmark_1.bmp': 'level data/levels/mp_benchmark_1.txt has "GameTypes none", so it never enters GameMenu::m_maps (code/game_menu.cpp:GameMenu::AddMap) and no thumbnail is requested; excluded from packing ("thumbnails/mp_benchmark_*")',
+    'data/thumbnails/mp_koth_2P_4.bmp': 'its level exists only as data/levels/old/mp_koth_2P_4.txt, which GameMenu::CreateMapList never lists (ListResources is not recursive)',
+    'data/thumbnails/mp_skirmish_2p_3.bmp': 'no level file mp_skirmish_2p_3.txt exists anywhere under data/levels',
 }
 STATUS_ORDER = ['FULL', 'D3D', 'DEBUG', 'EDITOR', 'LEGACY', 'DEAD']
 rows = []
@@ -1172,9 +1185,11 @@ for rel, a in assets.items():
     elif rel in MANUAL_UNUSED:
         status, reach = 'unused', 'none'
         ev = MANUAL_UNUSED[rel]
-    elif tags == ['DEAD'] or (weak and all(r['kind'] in ('commented-out', 'format-pattern') for r in weak)):
+    elif tags == ['DEAD'] or (weak and all(r['kind'] in ('commented-out', 'format-pattern') for r in weak)
+                              and any(r['kind'] == 'commented-out' for r in weak)):
         status, reach = 'unused', 'DEAD'
-        ev = 'only referenced from code that is not compiled / commented out'
+        dsites = sorted({site_str(r) for r in rs if r['kind'] == 'commented-out' or (ref_strong(r) and ref_build(r) == 'DEAD')})
+        ev = 'referenced only from non-compiled or commented-out code, or from data that is never loaded: ' + '; '.join(dsites[:3]) + (' (+%d)' % (len(dsites) - 3) if len(dsites) > 3 else '')
     elif weak:
         status, reach = 'unknown', 'none'
         ev = 'only indirect evidence: ' + '; '.join(sorted({'%s %s:%s' % (r['kind'], r['file'], r['sym']) for r in weak if r['kind'] != 'format-pattern'}))[:300]
@@ -1209,13 +1224,19 @@ for rel, a in assets.items():
     if not ev:
         kinds = sorted({r['kind'] for r in live_sites})
         ev = '[C] ' + ', '.join(kinds)
-        if reach_notes:
-            ev += ' | reach: ' + '; '.join(reach_notes)
+        other = sorted({r['reach'] for r in strong if r.get('reach') and ref_build(r) != reach})
+        mine = sorted({r['reach'] for r in live_sites if r.get('reach')})
+        if mine:
+            ev += ' | why ' + reach + ': ' + '; '.join(mine)
+        if other:
+            ev += ' | other (non-' + reach + ') refs: ' + '; '.join(other)
         dead = sorted({site_str(r) for r in strong if ref_build(r) == 'DEAD'})
         if dead:
             ev += ' | also dead/commented: ' + '; '.join(dead[:3])
     elif reach_notes:
         ev += ' | ' + '; '.join(reach_notes)
+    if rel.startswith('data/icons/gesture_') and status == 'referenced' and reach == 'FULL':
+        ev += ' | NOTE: in a match only pre-loaded by TaskManagerInterfaceMultiwinia::TaskManagerInterfaceMultiwinia (DoesTextureExist + GetTexture); no Multiwinia code draws gesture icons [C grep]'
     a.update(status=status, reach=reach, sites=sites_txt, consumers=cons, passes=passes, flags=flags,
              states=states, evidence=ev, archive=archive_of(rel), nrefs=len(strong))
     if a['ext'] == 'shp':

@@ -210,3 +210,507 @@ Tokens per line: `x y z size [type threshold]`.
 
 Because values are float-rounded on read (`iv_atof`) and decimal-rounded on write, a load/save cycle is not the identity for arbitrary values, but it is for the 2-decimal values the shipped files contain [I].
 
+## 5 Tile generation — exact algorithm (all three generation methods)
+
+[C] `code/landscape.cpp:LandscapeTile::Generate`, `LandscapeTile::GenerateMidpoints`, `LandscapeTile::GenerateSquareMidpoint`, `LandscapeTile::GenerateDiamondMidpoint`, `LandscapeTile::GenerateNoise`, `LandscapeTile::LandscapeAppSeedRandom`, `LandscapeTile::LandscapeAppRandom`, `LandscapeTile::Landscapesfrand`. All arithmetic is IEEE double unless f32() is written.
+
+### 5.1 The private per-tile RNG
+
+Each `LandscapeTile` owns `long m_holdrand`. It uses the same constants as the MSVC C runtime's `rand()` and as the game's global `AppRandom`, but the state is **private to the tile** and is not the synchronised network RNG (`syncrand`) nor the global `AppRandom` [C].
+
+```
+seed(s):    state = (uint32) s
+next():     state = state * 214013 + 2531011   (mod 2^32)
+            return (state >> 16) & 0x7FFF                  // 0 .. 32767
+sfrand(R):  return (0.5 - next() / 32767.0) * R           // uniform over [-R/2, +R/2]; next()=0 gives +R/2
+frand(R):   return R * (next() / 32767.0)                 // defined (Landscapefrand) but never called
+```
+
+Test vector [C] (identical to MSVC `rand()` after `srand(1)`): seed 1 → 41, 18467, 6334, 26500, 19169, 15724, 11478, 29358 (confirmed by the trace in §16.3). Using an unsigned 32-bit state reproduces the signed-`long` original bit for bit [I] (§3).
+
+### 5.2 `LandscapeTile::Generate` — numbered pseudocode
+
+Inputs: the tile fields of §4.3, `cellSize` from the `LandscapeDef`, and `outside` = the landscape's `outsideHeight` (copied into the tile by `Landscape::GenerateHeightMap` immediately before the call).
+
+1. **Size the tile grid.**
+   `reqWorldCells = (int)(size / cellSize)` (int ÷ double, truncated toward zero).
+   `k = GetPowerOfTwo(reqWorldCells − 1)` = ⌈log₂(reqWorldCells − 1)⌉.
+   `n = (int)iv_pow(2, k) + 1` (exact).
+   The tile map is n × n samples, cell size 1.0, origin (0, 0), outside value `outside`; it is reallocated only when n changes. Shipped `mp_*` tiles use n = 9 (4 tiles), 17 (36), 33 (70), 65 (236), 129 (71), 257 (28) [C] (`S_23_terrain_oracle.py`); (n − 1)/reqWorldCells ranges 0.94 – 1.95, so a tile is sampled at roughly one to two tile samples per world cell.
+2. **Initialise.** Every sample = `outside`.
+3. **Pin the guide grid** (only if p = `m_guideGridPower` > 0). `r = 2^p − 1`; `scale = (n − 1) / (r + 1)` (integer division; = 2^(k − p) when k ≥ p). For z = 0 … r − 1 (outer) and x = 0 … r − 1 (inner): `sample((x + 1)·scale, (z + 1)·scale) = (double)guide[x, z]` — the raw byte 0 – 255 used directly as a tile-space height. Guide points never lie on the tile border.
+4. **Compensated gain.**
+   `fracDimModifier = 30.7 · f32(exp(−6.5 · fd))`
+   `smoothingModifier = 15.353 · f32(exp(−3.1 · ls))`
+   `comp = heightScale; comp *= fracDimModifier; comp *= smoothingModifier` (two separate double multiplications, in this order).
+5. **Iteration plan.** `iterations = GetPowerOfTwo(n) − p` (= k + 1 − p because ⌈log₂(2^k + 1)⌉ = k + 1); `step = (n − 1) >> p` (= 2^(k − p)).
+6. **Midpoint displacement.**
+   ```
+   seed(m_randomSeed)
+   repeat iterations times:
+       for x = 0; x < n - 1; x += step:            # x is the OUTER loop
+           for z = 0; z < n - 1; z += step:        # z is the INNER loop
+               h  = step >> 1
+               mx = x + h ; mz = z + h
+               Square(mx, mz, h)                   # centre of the cell
+               if z != 0: Diamond(mx, z, h)        # midpoint of the cell's low-z edge
+               if x != 0: Diamond(x, mz, h)        # midpoint of the cell's low-x edge
+       step >>= 1
+   ```
+   Each `Square`/`Diamond` call computes a base value from its parents (§5.3), adds `Noise(h, base)` (§5.4) and writes the sample.
+7. **Height shift.** For every sample (border included; loops x outer, z inner): `sample += posY`.
+
+Properties that follow from the loop structure [C]:
+
+- **The tile border never moves during step 6.** Edge midpoints on x = 0 and z = 0 are skipped explicitly; midpoints on x = n − 1 and z = n − 1 are never visited (they would belong to cells beyond the tile). After step 7 the whole border equals `outside + posY`.
+- **All parents exist when read.** Because z ascends inside x, the square centre of the cell below (x, z − step) and of the cell to the left (x − step, z) have already been written in the current pass; no parent read falls outside the tile.
+- **The final pass is a no-op that still consumes RNG draws.** When `step = 1`, h = 0: every call reads the sample itself, and `Noise(0, ·)` = sfrand(f32(pow(0, fd)))·… = ±0 for fd > 0. The pass touches samples with x, z < n − 1 (including row/column 0) and leaves them unchanged. Its draws do not matter because nothing uses the tile RNG afterwards.
+- **Determinism.** The output depends only on the tile's own fields, `cellSize` (through n) and `outside`; reseeding at step 6 makes regeneration idempotent.
+
+Iteration plan for every shipped (k, p) combination (n − 1 = 2^k; "h list" = half-steps of the displacement passes, excluding the final no-op h = 0 pass):
+
+| k (n) | p = 0 | p = 1 | p = 2 | p = 3 | p = 4 | p = 5 |
+|---|---|---|---|---|---|---|
+| 3 (9) | 4 passes; first step 8; h 4,2,1 | 3; step 4; h 2,1 | 2; step 2; h 1 | 1; step 1; – | – | – |
+| 4 (17) | 5; 16; h 8,4,2,1 | 4; 8; h 4,2,1 | 3; 4; h 2,1 | 2; 2; h 1 | 1; 1; – | – |
+| 5 (33) | 6; 32; h 16…1 | 5; 16; h 8…1 | 4; 8; h 4,2,1 | 3; 4; h 2,1 | 2; 2; h 1 | 1; 1; – |
+| 6 (65) | 7; 64; h 32…1 | 6; 32; h 16…1 | 5; 16; h 8…1 | 4; 8; h 4,2,1 | 3; 4; h 2,1 | 2; 2; h 1 |
+| 7 (129) | 8; 128; h 64…1 | 7; 64; h 32…1 | 6; 32; h 16…1 | 5; 16; h 8…1 | 4; 8; h 4,2,1 | 3; 4; h 2,1 |
+| 8 (257) | 9; 256; h 128…1 | 8; 128; h 64…1 | 7; 64; h 32…1 | 6; 32; h 16…1 | 5; 16; h 8…1 | 4; 8; h 4,2,1 |
+
+(Cells marked "–" for p > k do not occur in shipped data, §5.6.) With c = (n − 1)/step cells per side in a pass, the pass makes c² square calls and 2c(c − 1) diamond calls.
+
+### 5.3 Parents and the three generation methods
+
+`Square(x, z, h)` parents are the four cell corners **A** = (x − h, z − h), **B** = (x − h, z + h), **C** = (x + h, z − h), **D** = (x + h, z + h).
+`Diamond(x, z, h)` parents are the four edge neighbours **W** = (x − h, z), **E** = (x + h, z), **N** = (x, z + h), **S** = (x, z − h).
+
+| `m_generationMethod` | Square base | Diamond base | RNG draws per call (in order) |
+|---|---|---|---|
+| 0 — average | (A + B + C + D) · 0.25 (summed in that order) | (W + E + S + N) · 0.25 (summed W, E, S, N) | 1: noise |
+| 1 — random diagonal / axis pair | `next() & 1` ? (A + D)·0.5 : (B + C)·0.5 | `next() & 1` ? (W + E)·0.5 : (N + S)·0.5 | 2: choice, then noise |
+| 2 — copy one parent | `r = next() & 0xFFFF`; r < 0x3FFF → A; r < 0x7FFF → B; r < 0xBFFF → C; else D | same thresholds → W, E, N, S | 2: choice, then noise |
+
+Method 2 bias [C]+[I] (arithmetic consequence): because `next()` never exceeds 0x7FFF, r ∈ [0, 16 382] selects A/W (probability 16 383/32 768), r ∈ [16 383, 32 766] selects B/E (16 384/32 768), r = 32 767 selects C/N (1/32 768), and D/S is **never** selected. Square midpoints therefore copy almost exclusively from the two low-x corners and diamond midpoints from the two x-neighbours, giving method-2 tiles a directional, streaky character along z. A new implementation that wants the original look must keep the bias; one that wants an unbiased "copy" method should not use this as a reference.
+
+Method 1 uses bit 0 of the 15-bit output (bit 16 of the LCG state) as the coin.
+
+Any other method value leaves the base uninitialised (no `default:` in the switch) — undefined behaviour; not present in shipped data [C].
+
+### 5.4 Noise maths (roughness and height)
+
+> **Verbatim excerpt** — `code/landscape.cpp:LandscapeTile::GenerateNoise` (Introversion licence, ≤15 lines)
+```cpp
+double length = 256.0 * _halfSize / m_heightMap->GetNumColumns();
+double val = Landscapesfrand(iv_pow(length * 10.0, m_fractalDimension));
+val *= m_compensatedHeightScale;
+val *= 0.1 + (double)iv_pow(fabsf(_height), m_lowlandSmoothingFactor) * 0.15;
+return val;
+```
+
+Written out, for half-step h and parent base value b:
+
+- `L = 256·h / n` (n = 2^k + 1, so L ≈ 256·h/2^k: the half-step measured as if the tile were 256 units wide).
+- Amplitude `R(h) = f32(pow(10·L, fd))`.
+- Envelope `E(b) = 0.1 + 0.15 · f32(pow(|f32(b)|, ls))` (the base is rounded to float by `fabsf`; pow(0, 0) = 1).
+- `Noise(h, b) = ((0.5 − next()/32767) · R(h)) · comp · E(b)`, multiplied in exactly that order.
+- New sample = b + Noise(h, b).
+
+Interpretation [I] (derived from the formula, not from comments):
+
+- **Roughness across scales.** Successive levels differ by a factor 2^(−fd) in amplitude, so `fd` behaves like a spectral (Hurst-style) exponent: larger `fd` ⇒ smoother terrain dominated by the coarsest level; smaller `fd` ⇒ more fine detail. This is the opposite of the usual "fractal dimension" convention. The editor labels the field "noise period" (`editor_noiseperiod`) [C] `code/interface/landscape_window.cpp:LandscapeTileEditWindow::Create`.
+- **Gain compensation.** At the coarsest level 10·L ≈ 1280, and 1280^fd · e^(−6.5·fd) = e^(≈0.655·fd), so `fracDimModifier` keeps the coarse amplitude within the same order of magnitude whatever `fd` is. Likewise `smoothingModifier` = 15.353·e^(−3.1·ls) cancels the growth of |b|^ls for |b| ≈ e^3.1 ≈ 22 world units.
+- **Height-dependent roughness.** E grows with |b|: samples whose tile-space height is near 0 get the 0.1 floor (smooth), high or deeply negative samples get more noise. Because tiles start at `outsideHeight` (negative) and guide values are ≥ 0, "lowland" here means tile-space heights near zero, not sea level after rescaling.
+- **Absolute scale is mostly irrelevant** because §7.2 rescales the tile peak to `desiredHeight`; what matters is the relative size of noise versus guide-grid values and `posY`, and the non-linear envelope.
+
+Representative magnitude: tile 2 of `mp_koth_2P_1` (n = 65, fd = 1.2, hs = 1, ls = 1) has comp = 0.008700047, R(32) = f32(1260.31^1.2) ≈ 5 257, E(−15.39) = 2.4085, so its first displacement (r = 41) is +54.92 world units in tile space (§16.3).
+
+### 5.5 Worked RNG / call order for one pass
+
+For a pass with step s, the sequence of writes is: for x = 0, s, 2s, …: for z = 0, s, 2s, …: square centre (x + s/2, z + s/2); low-z edge (x + s/2, z) if z > 0; low-x edge (x, z + s/2) if x > 0. For methods 1 and 2 every call draws the choice before the noise. The first eight writes of a real tile with all intermediate values are in §16.3 and can be used as a unit-test vector.
+
+### 5.6 Edge cases
+
+| Case | Behaviour | In shipped data? |
+|---|---|---|
+| k = p (guide grid as dense as the tile) | scale = 1, every interior sample is a guide point; iterations = 1 with step 1, i.e. only the no-op pass: the tile is exactly its guide grid inside a border at `outside` | yes, 6 `mp_*` tiles [C] |
+| k < p | scale = 0: every guide value is written to sample (0, 0), the last one (x = z = r − 1) wins; iterations ≤ 0, so no displacement; the tile is flat `outside` except that corner | no (`k_lt_p` = 0 in every file) [C] |
+| p > 0 with an all-zero guide grid (`AAAA…`) | **not** equivalent to p = 0: the guide points are pinned at height 0, above the negative border, producing a raised interior before noise | yes, e.g. both p = 2 tiles of `mp_koth_2P_1` [C] |
+| `heightScale` = 0 | comp = 0, all noise is ±0: the tile is the pure method-0/1/2 interpolation of guide points and border | yes, 4 `mp_*` tiles |
+| `heightScale` = 0, p = 0, posY > 0 | tile is flat at `outside + posY`; after the rescale (§7.2) it becomes a plateau at ≈ `desiredHeight` covering the whole footprint | not checked for every tile; a designer trick [I] |
+| `ls` = 0 | E(b) = 0.25 for every b (pow(x, 0) = 1, including pow(0, 0)); smoothingModifier = 15.353 | yes, 50 `mp_*` tiles |
+| `fd` = 0 | R = 1 at every level including the final h = 0 pass (pow(0, 0) = 1), so the final pass adds noise of amplitude comp·E/2 to every sample with x, z < n − 1, **including border row and column 0** | no (minimum fd 0.57) |
+| reqWorldCells = 2 (size < 3·cellSize) | k = 0, n = 2, one no-op pass: flat tile | no |
+| reqWorldCells ≤ 1 (size < 2·cellSize) | `Log2(0)` = −∞, `(int)ceil(−∞)` is undefined (MSVC yields INT_MIN [I]) | no (minimum size/cell ≈ 10) |
+| method ∉ {0, 1, 2} | uninitialised base (undefined) | no |
+
+## 6 Guide-grid encoding
+
+[C] `code/landscape.cpp:LandscapeTile::GuideGridSetPower`, `LandscapeTile::GuideGridFromString`, `LandscapeTile::GuideGridToString`, `code/level_file.cpp:LevelFile::ParseLandscapeTiles`, `LevelFile::WriteLandscapeTiles`.
+
+**Resolution.** Power p (token 11) gives r = (1 << p) − 1 points per side; p = 0 means no grid (pointer NULL). `GuideGridSetPower` reallocates only when p changes and zero-fills the new grid; it asserts (debug only) that ⌈log₂(r + 1)⌉ ≠ ⌈log₂(r + 2)⌉.
+
+| p | r × r | Characters in the string | Tile sample spacing of guide points (n = 2^k + 1) |
+|---|---|---|---|
+| 1 | 1 × 1 | 2 | 2^(k−1) (the single point is the tile centre) |
+| 2 | 3 × 3 | 18 | 2^(k−2) |
+| 3 | 7 × 7 | 98 | 2^(k−3) |
+| 4 | 15 × 15 | 450 | 2^(k−4) |
+| 5 | 31 × 31 | 1 922 | 2^(k−5) |
+
+(String lengths confirmed in every shipped file [C] `scripts/P11_levelstats.py`; editor range 0 – 5 [C] `code/interface/landscape_window.cpp:LandscapeGuideGridWindow::Create`.)
+
+**Cell order.** Row-major with **z outer, x inner**: cell (x, z) is at character offset 2·(z·r + x).
+
+**Character → value mapping.** Each cell is two letters `hi lo`: value = 16·(hi − 'A') + (lo − 'A'). Legal letters are `A`–`P`, i.e. one hexadecimal nibble each:
+
+| Letter | A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Nibble value | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 |
+
+Examples: `AA` = 0, `AP` = 15, `BA` = 16, `PP` = 255, `CN` = 2·16 + 13 = 45.
+
+Decoder behaviour [C]: no validation. The int value is stored into an `unsigned char` (`PutData`), so out-of-range letters give `value mod 256` [I: C++ conversion]; a string shorter than 2r² is read past its terminating NUL into whatever memory follows (undefined); a longer string is silently truncated. The writer emits `'A' + v/16` and `'A' + v%16` for every cell, after the power and three spaces.
+
+**Semantics.** The decoded byte is an absolute height in **tile space** (before `posY` and before the `desiredHeight` rescale). Guide cell (x, z) pins tile sample ((x + 1)·2^(k−p), (z + 1)·2^(k−p)); the border is never a guide point. Because the first displacement pass uses step 2^(k−p), the coarse lattice formed by the guide points plus the border is exactly the set of corners of that pass, so the fractal refines between the pinned points and never moves them (later passes only write midpoints). A guide value of 0 is a real height (above the negative border), see §5.6.
+
+**Editor tools** [B:EDITOR] [C] `code/interface/landscape_window.cpp:GuideGrid::HandleMouseInput`: Freehand (left button adds, right subtracts `toolSize × effect`), Flatten (values above 20 are lowered, values at or below 20 raised, by `toolSize × effect`), Binary (left = 255, right = 0); results are clamped to 0 – 255 then multiplied by the window's "max height" factor (0 – 1, step 0.01); tool size 1 – 40.
+
+## 7 Height-map composition across tiles (merge and bilinear resampling)
+
+[C] `code/landscape.cpp:Landscape::GenerateHeightMap`, `Landscape::MergeTileIntoLandscape`, `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue`.
+
+### 7.1 Pseudocode
+
+```
+world = SurfaceMap2D(worldSizeX, worldSizeZ, origin (0,0), cell = cellSize, outside = outsideHeight)
+world.SetAll(outsideHeight)
+for tile in tiles (file order):
+    tile.outside = outsideHeight
+    tile.Generate(def)                                             # section 5
+    MergeTile(tile)
+for area in flattenAreas (file order):
+    FlattenArea(area)                                              # section 8
+worldSizeX = cellSize * world.cols ; worldSizeZ = cellSize * world.rows
+
+MergeTile(tile):
+    posXi    = (unsigned short)((double)tile.posX / cellSize + 0.5)   # nearest world sample index (see 7.4 for negatives)
+    posZi    = (unsigned short)((double)tile.posZ / cellSize + 0.5)
+    numCells = (int)((double)tile.size / cellSize)                    # world samples covered per side
+    range    = tile.GetHighestValue() - outsideHeight + 0.001
+    factor   = (tile.desiredHeight - outsideHeight) / range
+    # re-target the tile map from tile-sample space to world space:
+    tile.x0 = tile.posX ; tile.y0 = tile.posZ
+    tile.cellX = tile.size / (double)n ; tile.cellY = tile.size / (double)n    # NB: divided by n, not n - 1
+    tile.invX = 1.0 / tile.cellX ; tile.invY = 1.0 / tile.cellY
+    for z in 0 .. numCells-1:                                         # unsigned short counters, z outer
+        wz = world.GetRealY(z + posZi)                               # = (z + posZi) * cellSize, int argument, not wrapped
+        for x in 0 .. numCells-1:
+            wx = world.GetRealX(x + posXi)
+            h1 = tile.GetValue(wx, wz)                                # bilinear, section 3 / 7.3
+            h1 = h1 - outsideHeight ; h1 = h1 * factor ; h1 = h1 + outsideHeight
+            if h1 > world.GetData(x + posXi, z + posZi):              # indices wrap modulo 2^16
+                world.PutData(x + posXi, z + posZi, h1)               # out-of-grid writes are dropped
+```
+
+The function also computes `int posY = tile.m_posY` and a `factor` of (n − 1)/(numCells − 1) that are never used [C].
+
+### 7.2 Peak rescale
+
+Every tile is linearly remapped about the sea-floor level so that its **highest sample becomes `desiredHeight`** and a sample equal to `outsideHeight` stays at `outsideHeight`: h_world = outside + (h_tile − outside)·(desired − outside)/(highest − outside + 0.001). The +0.001 only prevents division by zero for a flat tile. Consequences [C]+[I]:
+
+- The absolute output of §5 matters only through its shape; `desiredHeight` sets the tile's peak.
+- Because the peak is measured **after** the `posY` shift, `posY` changes the relief, not the peak: the border moves to `outside + posY·factor` (above the sea floor when posY > 0 — the whole footprint becomes a plinth; below it when posY < 0 — the border never wins the max and the tile blends into existing terrain), and the interior is compressed or expanded accordingly.
+- The world peak can be lower than `desiredHeight` because the world grid does not necessarily sample the tile's peak sample (e.g. `mp_koth_2P_1` tile 2: desired 300, world maximum 273.38, §16).
+
+### 7.3 Bilinear resampling and the `unsigned short` conversion edge cases
+
+`tile.GetValue(wx, wz)` uses the rules of §3. With fx = (wx − posX)/tileCell and the analogous fy:
+
+| Case | What the original computes | Shipped occurrence (tile merges, all 57 `mp_*` / all 69 files) | Must a re-implementation emulate it? |
+|---|---|---|---|
+| 0 ≤ fx < n − 1 | normal bilinear between tile columns ⌊fx⌋ and ⌊fx⌋ + 1 | almost all calls | yes |
+| −1 < fx < 0 (first world sample slightly before the tile origin, because posXi rounds to nearest) | `(unsigned short)fx` truncates toward zero → x1 = 0, x2 = 1, weight fx − ⌊fx⌋ = fx + 1 on column 1: the value is mirrored into the tile (at fx = −0.3 the result is 0.3·col0 + 0.7·col1). Well-defined C++ | 22 771 / 29 051 calls | **yes** — a `floor`-based sampler (x1 = −1) that clamps or returns the outside value gives a different height, and the difference survives the max-composite whenever the tile border is above the existing terrain |
+| fx ≤ −1 | double → `unsigned short` of a value whose truncation is negative: undefined in C++; MSVC converts through a 32-bit integer and keeps the low 16 bits (→ ≥ 32 768 ≥ n → column 0) [I] | **0 / 0** calls (fx > −1 always, because cellSize/tileCell = n/reqWorldCells ≤ 1.96 and the offset is at most half a world cell) | no, for the shipped maps |
+| fx ≥ n − 1 (far edge of the footprint: the tile's last sample is at size·(n − 1)/n, short of the footprint edge) | x1 and/or x2 ≥ n → set to 0 → column 0. Columns 0 and n − 1 are both border samples (`outside + posY`), so the result equals clamping to the border | 15 334 / 16 162 calls (includes the parked tiles of §7.4) | only its value: "clamp to border" is equivalent |
+
+(Counts by `S_23_terrain_oracle.py survey`, columns `samp_frac_neg`, `samp_le_minus1`, `samp_far_wrap`.) Resolved: phase-2 notes flagged "negative double → unsigned short conversion in the bilinear sampler" as a bit-exactness risk; the measurement shows the undefined (≤ −1) case never occurs in shipped data, while the well-defined (−1, 0) truncation case occurs about 23 000 times and is the one that must be emulated.
+
+### 7.4 Tiles outside the world grid ("parked" tiles)
+
+World indices that fall outside the grid are dropped by `PutData`, so tiles may hang off the map edge [C]. Two shipped tiles are parked far outside the map (`mp_blitzkrieg_2p_1`: x = −67 487, z = −80 089; `mp_cts_4p_3`: x = −59 979, z = −35 486). For them `posX/cellSize + 0.5` is far below −1, so the `unsigned short` conversion of posXi/posZi is undefined in C++ (MSVC: low 16 bits of the truncated int, e.g. 59 914 and 58 863 for the first tile) [I]. Either way the tile has no effect: with MSVC wrapping every destination index is ≥ cols and every write is dropped; with a saturating conversion (posXi = posZi = 0) the tile would be sampled far outside its own grid, return its border value `outside + posY`, which with their negative posY (−2.57, −1.00) rescales below `outsideHeight` and loses the max [I]. A re-implementation should simply skip tiles whose footprint does not intersect the grid.
+
+### 7.5 Composition rules
+
+- **Per-sample maximum.** A tile can only raise world samples; overlapping tiles combine by max, so tile order does not change the result except through flatten areas (applied afterwards) [C].
+- **No inter-tile smoothing.** Seams between overlapping tiles are max-creases; `GenerateHeightMap` has no smoothing step [C].
+- **Footprint quantisation.** The footprint starts at the nearest world sample to (posX, posZ) and is `(int)(size/cellSize)` samples wide, so tile edges snap to the world grid; the tile itself is sampled at its true (unsnapped) position.
+
+## 8 Smoothing and flatten areas (five types)
+
+[C] `code/landscape.cpp:Landscape::FlattenArea`.
+
+**Region.** `x1 = GetMapIndexX(cx − size) + 1`, `x2 = GetMapIndexX(cx + size) + 1`, `z1 = GetMapIndexY(cz − size) + 1`, `z2 = GetMapIndexY(cz + size) + 1`; the operation visits integer world samples x ∈ [x1, x2), z ∈ [z1, z2). With truncation toward zero this is, for positive coordinates, the samples whose world position lies in (cx − size, cx + size] × (cz − size, cz + size] — an **axis-aligned square** of half-width `size`, hard-edged, with no falloff or blending at its boundary. Indices are not clamped: reads outside the grid return `outsideHeight`, writes are dropped.
+
+**Order.** Areas are applied after all tiles, in file order; within an area, z is the outer loop and x the inner loop; updates are written **in place**, so neighbours at x − 1 and z − 1 have already been updated when the smooth type reads them (Gauss–Seidel).
+
+Per sample, with `cur` = current height, `t` = `m_centre.y`, `T` = `m_heightThreshold`:
+
+| Type | Name | New value | Passes | Shipped `mp_*` uses (examples) |
+|---|---|---|---|---|
+| 0 | Absolute | `t` | 1 | 17 (pads levelled to t = −26.0 … 68.2) |
+| 1 | Add | `t + cur` | 1 | 1 (`mp_cts_4P_1`: +24.1) |
+| 2 | Subtract | `cur > T ? cur − t : cur` | 1 | 5 (e.g. `mp_skirmish_3P_1`: t = 886.2, T = 348.9 — cuts a pit to −537.05, below sea) |
+| 3 | Smooth | if `cur > T`: `v = cur·(t / cur)` (two roundings, ≈ t) `+ h(x−1,z) + h(x+1,z) + h(x,z+1) + h(x,z−1)` (added in that order), then `v = v / 6.0`; else `v = t`. Finally `v = min(v, cur)` | **2** (a loop flag runs the double loop twice) | 27 (T from −3.9 to 127.6; e.g. `mp_koth_3P_4`: t = 62.0, half-width 1000, T = 11.7) |
+| 4 | Subtract2 | `cur < T ? cur − t : cur` | 1 | 3 (e.g. `mp_assault_4P_1`: t = 126.2, T = 118.4 — lowers everything below 118.4 by 126.2) |
+
+Behaviour of the smooth type [C]+[I]: it never raises terrain (`min(v, cur)`); samples at or below T are capped at t (so with t ≥ T they are unchanged); samples above T become (t + sum of four neighbours)/6 — five terms over a divisor of six — so a plateau of height H ≫ t is pulled down to about (t + 4H)/6 per pass (≈ 0.44·H plus t-terms after two passes) as well as smoothed. A commented-out block that would rescale the result by t/cur on the first pass is dead [C]. Designers used it to soften and lower hilltops above a threshold; a new tool should expose a true blur and a separate lower operation.
+
+## 9 World grid: cell size, world size, outside height and world-edge handling
+
+### 9.1 Sizes
+
+| Quantity | Rule | Evidence |
+|---|---|---|
+| Sample spacing | `cellSize` (f32-rounded) on both axes. `Landscape::Init` multiplies it by `1 + (detailScaleFactor − 1)·0.5` with `detailScaleFactor` hard-coded to 1 (the `RenderLandscapeDetail` preference read is commented out) and restores the original afterwards ⇒ no effect | [C] `code/landscape.cpp:Landscape::Init` |
+| Grid size | `cols = ceil(worldSizeX / cellSize)`, `rows = ceil(worldSizeZ / cellSize)` (`unsigned short`) | [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::SurfaceMap2D` |
+| World extent | `worldSizeX' = cellSize × cols`, `worldSizeZ' = cellSize × rows`, origin (0, 0); stored in `Landscape::m_worldSizeX/Z` at the end of `GenerateHeightMap`. Example: `mp_koth_2P_1` 2700 / 15.760000228881836 = 171.32 → 172 samples → 2710.720039 units | [C]; numbers [I] from `S_23_terrain_oracle.py` |
+| Sample positions | sample (i, j) is at world (i·cellSize, j·cellSize); the last sample is at (cols − 1)·cellSize, one cell short of the extent | [C] `SurfaceMap2D::GetRealX` |
+| `GetWorldSizeX/Z()` | the extent above; 1e6 when no height map exists | [C] `code/landscape.cpp:Landscape::GetWorldSizeX` |
+| `IsInLandscape(p)` | `0 ≤ p.x < sizeX' && 0 ≤ p.z < sizeZ'` | [C] `code/landscape.cpp:Landscape::IsInLandscape` |
+| Camera bounds | `[−200, sizeX' + 200]` on **both** axes (Z uses the X size) | [C] `code/main.cpp:DoEnterLocation` (see [06](06_player_control_and_input.md)) |
+| Fog distance | `fogEnd = max(4000, sizeX' + 1000, sizeZ' + 1000)`, `fogStart = fogEnd / 3` | [C] `code/location.cpp:Location::SetupFog` (see [24](24_rendering.md)) |
+| Sea plane | rendered from (−sizeX'/2, −sizeZ'/2) to (1.5·sizeX', 1.5·sizeZ') | [C] `code/water.h` header comment, `code/water.cpp:Water::BuildTriangleStrips` |
+
+### 9.2 Outside height
+
+`outsideHeight` is (a) the initial value of every world sample, (b) the starting value and border level of every tile, (c) the base of every tile's rescale, and (d) the value `GetData` returns for any integer index outside the grid (both maps carry it as their outside value; the normal map's outside value is the up vector) [C] `code/landscape.cpp:Landscape::Init`. `Landscape::m_outsideHeight` is −20 before the first `Init` [C] `code/landscape.cpp:Landscape::Landscape`.
+
+### 9.3 World-edge semantics of `GetValue` (what gameplay reads off the map)
+
+Because of the rules in §3, interpolated reads near and beyond the edges do **not** return `outsideHeight`. For the world map (origin 0), with fx = x / cellSize:
+
+| Region of fx | Result | Tag |
+|---|---|---|
+| 0 ≤ fx < cols − 1 | bilinear inside the grid | [C] |
+| cols − 1 ≤ fx < cols (last cell) | blend of column cols − 1 and **column 0** (x2 wraps to 0) | [C] |
+| cols ≤ fx < 65 536 | column 0 only (x1 and x2 both reset to 0) | [C] |
+| fx ≥ 65 536 | low 16 bits of the truncated index: an arbitrary column (aliasing); needs coordinates > 589 000 units | [I] (MSVC conversion) |
+| −1 < fx < 0 | x1 = 0, x2 = 1 with weight fx + 1 on column 1 — discontinuous at x = 0 (at x → 0⁻ the value approaches column 1) | [C] |
+| fx ≤ −1 | column 0 only (truncated negative index wraps to ≥ 32 768) | [I] (undefined in C++; MSVC behaviour) |
+
+The same table applies independently on the z axis (rows). So off-map reads return the row-0 / column-0 terrain profile. In every shipped map all border samples are at or below sea level (`edge_max` ≤ 0 for all 69 landscape files, `S_23_terrain_oracle.py`), so these artefacts only alter underwater depths (e.g. `mp_tankbattle_4P`: border maximum −9.418 versus `outsideHeight` −27.89) and never create phantom land. A new engine should define off-map heights explicitly (recommended: `outsideHeight`), and if lockstep compatibility with the original is not required, need not emulate the wrap.
+
+### 9.4 Sea level
+
+There is **no water-level parameter**: the sea surface is y = 0 everywhere [C]. Evidence: `Location::IsWalkable` uses a local `waterLevel = 0.0` and rejects paths with ≥ 40 units under water (sampled every 20 units) [C] `code/location.cpp:Location::IsWalkable`; the renderer culls quads whose six neighbouring samples are all ≤ 0 and sinks vertices below 0.3 to −10 [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildVertArrayAndTriStrip`; the shore mask treats height > 0 as land [C] `code/water.cpp:Water::GenerateLightMap`; the dynamic water mesh rests at y = 0 [C] `code/water.cpp:Water::BuildTriangleStrips`. Many entity rules test `y < 0` / `≤ 0` for "in water" (drowning, armour unloading, statue destruction) — see [02](02_units_and_entities.md) and [03](03_buildings_and_world_objects.md).
+
+Every shipped map has sea: land (height > 0) covers 8.0 % – 70.1 % of the world samples of the 57 `mp_*` maps (mean 43.5 %), and the whole map border is under water in all 69 files [C] (`S_23_terrain_oracle.py`, columns `land_frac`, `edge_max`). This resolves the phase-2 open question "does any shipped map lack sea (which would hang the AI's nuke-target search)": none does (see [07](07_ai.md)).
+
+## 10 Normals — simulation versus render
+
+There are two unrelated sets of normals.
+
+### 10.1 Simulation normal map (`Landscape::GenerateNormals`)
+
+[C] `code/landscape.cpp:Landscape::GenerateNormals`. `m_normalMap` is a `SurfaceMap2D<Vector3>` on the same grid as the height map, outside value (0, 1, 0). It is computed once per `Init`, after flatten areas, in double precision:
+
+```
+for z in 0 .. rows-1:                          # z outer
+    for x in 0 .. cols-1:                      # x inner
+        hN = h(x, z-1) ; hW = h(x+1, z) ; hE = h(x-1, z) ; hS = h(x, z+1)     # GetData: off-grid -> outsideHeight
+        if hN == hW and hE == hS and hN == hE:  normal = (0, 1, 0) ; continue  # centre is NOT compared
+        c  = h(x, z)
+        vN = (0,    c - hN,  cy) ; vW = (-cx, c - hW, 0)
+        vS = (0,    c - hS, -cy) ; vE = ( cx, c - hE, 0)
+        nA = Normalise(vW ^ vN)      # = Normalise(((c-hW)*cy,  cx*cy, -cx*(c-hN)))
+        nB = Normalise(vE ^ vS)      # = Normalise((-(c-hE)*cy, cx*cy,  cx*(c-hS)))
+        normal = Normalise(nA + nB)
+```
+
+The neighbour labels do not match compass directions (the code's "W" is +x and "E" is −x), but for a plane h = a·x + b·z both half-normals equal (−a, 1, −b)/|…|, i.e. the result is the true upward normal, leaning downhill [I] (expansion of the cross products). Each half is normalised before summing, so on curved ground the result weights the (+x, −z) and (−x, +z) one-sided gradients equally regardless of their magnitude. An isolated spike or pit whose four neighbours are equal gets the up vector [C].
+
+Consumers read it with `GetValue` (bilinear, §9.3 edge rules) and receive a **non-normalised** blend of the four corner normals [C] `code/lib/2d_surface_map.cpp:SurfaceMap2D::GetValue` (no renormalisation in the template). Callers include ground bounce physics in `code/location.cpp`, `code/worldobject/centipede.cpp`, `code/worldobject/nuke.cpp` and `code/particle_system.cpp` (57 call sites in total) [C] grep.
+
+### 10.2 Render normals (`LandscapeRenderer::BuildNormArray`)
+
+[C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildNormArray`. One normal per **strip triangle** for flat shading. The strip vertices are float positions (x·cell, h, z·cell) with h < 0.3 replaced by −10 (§11.2). Vertices 0 and 1 get (0, 1, 0). For j = 0, 2, 4, … < numVerts − 2, with a, b, c, d = vertices j … j + 3: `n(T_j) = Normalise((c − b) ^ (a − b))` stored on vertex j + 2 and `n(T_j+1) = Normalise((d − b) ^ (c − b))` stored on vertex j + 3. Vertex k ≥ 2 therefore carries the normal of triangle (k − 2, k − 1, k); OpenGL's flat shading uses the last vertex of each strip triangle, which is exactly that vertex. Degenerate (join) triangles normalise a zero vector and get (0, 0, 1). [B:D3D]: all normals are negated and the strip is expanded to a triangle list (§Appendix; [24](24_rendering.md)).
+
+| Aspect | Simulation normal map | Render normals |
+|---|---|---|
+| Location | per height sample | per strip triangle (provoking vertex) |
+| Precision | double | float |
+| Input heights | true heights | heights with < 0.3 sunk to −10 (coast cliffs) |
+| Smoothing | two normalised one-sided cross products | none (facet normal) |
+| Consumers | gameplay physics, particles | GL lighting (LIGHT0, LIGHT1) and the slope axis of the colour ramp (§11) |
+| Lockstep relevance | **yes** | no |
+
+## 11 Colour-ramp application (`data/terrain/landscape_*.bmp`)
+
+### 11.1 Ramp asset format
+
+All 23 ramps are 64 × 64, 24-bit, uncompressed BMP (`BITMAPINFOHEADER`, size 40) [C] `_work/scripts/P11_bmpinfo.py`. `BitmapRGBA::LoadBmp` stores file rows in file order and BMPs with positive height are stored bottom-up, so **bitmap row y = 0 is the bottom row of the picture as viewed**; 24-bit pixels get alpha 255 [C] `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp`, `BitmapRGBA::Read24BitLine`. The ramp is loaded with `Resource::GetBitmap("terrain/<landColourFile>")` (name lower-cased, cached by name) [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/lib/resource.cpp:Resource::GetBitmap`. A missing file returns NULL and the renderer dereferences it (crash) [C].
+
+### 11.2 Mesh the ramp is applied to
+
+[C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildVertArrayAndTriStrip` (full mesh and pass description in [24](24_rendering.md)): the whole landscape is **one triangle strip** built row by row (z outer over rows, x inner over columns); a column x of row z is emitted (as the vertex pair (x, z), (x, z + 1)) if any of the six samples h(x − 1 … x + 1, z … z + 1) is > 0, otherwise the strip is closed with a degenerate join; emitted vertex heights below 0.3 are replaced by −10.0 so the coast is a crisp cliff into the sea; there is no LOD and no chunking.
+
+### 11.3 Formula
+
+[C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildColourArray`, `LandscapeRenderer::GetLandscapeColour`. Executed once per renderer build, after the render normals:
+
+1. `highest` (float) = `maxHeight` if `maxHeight > 0`, else `heightMap.GetHighestValue()`.
+2. Vertices 0 and 1 of the strip get magenta (255, 0, 255); they are never provoking vertices.
+3. For each strip triangle j = 0 … numVerts − 3 with vertices v_j, v_j+1, v_j+2 (render positions):
+   1. `centre = (v_j + v_j+1 + v_j+2) × 0.33333` (double; note 0.33333, not 1/3).
+   2. `g = (float) normal(v_j+2).y` — 1 = flat, 0 = vertical.
+   3. `u = (float) f32(pow(1.0 − g, 0.4))`.
+   4. `hgt = (float) centre.y`; `v = (float)(1.0 − hgt / highest)`.
+   5. `r0 = AppRandom()`; `AppSeedRandom((unsigned)centre.x | ((unsigned)centre.z + r0))` — C precedence: `x | (z + r0)`; global, non-synchronised LCG (same constants as §5.1).
+   6. `hClamp = max(hgt, 0)`; `v += sfrand(0.45 / (hClamp + 2.0))` — one global draw, uniform in ±0.225/(hClamp + 2).
+   7. `px = (int)(u × 64)`, `py = (int)(v × 64)` (truncation toward zero; 64 = bitmap width/height), each clamped to [0, 63].
+   8. `colour = ramp.GetPixel(px, py)`; in negative-renderer mode alpha = 0.
+   9. Burn patches (§11.5) may darken the colour.
+   10. The colour is stored on vertex v_j+2 (the provoking vertex of triangle j).
+
+### 11.4 Reading a ramp, and the shipped ramps
+
+**x axis = slope**, **y axis = height** [C]+[I]:
+
+- Column 0 = flat ground, column 63 = vertical. The 0.4 exponent stretches gentle slopes: a 10° facet uses column 11, 30° column 28, 45° column 39, 60° column 48, vertical column 63 (u = (1 − cos θ)^0.4 [I] arithmetic).
+- Bitmap row 0 (the **bottom** row of the picture as viewed) = the highest terrain; row 63 (the **top** row as viewed) = sea level and below (v ≥ 1 clamps). Height maps linearly onto rows: row = ⌊64·(1 − h/highest + jitter)⌋.
+- The jitter blurs bands vertically by up to ±0.1125 of the ramp (±7.2 rows) near sea level, decaying to ±0.0022 (±0.14 rows) at h = 100.
+- With `maxHeight` smaller than the real peak (only `mp_cts_3p_3`: maxHeight 200 vs peak 238.0), everything above `maxHeight` uses row 0.
+
+| Ramp file | `mp_*` maps | `map_*` maps | Notes |
+|---|---|---|---|
+| `landscape_default.bmp` | 10 | 5 | also the `LevelFile` default |
+| `landscape_icecaps.bmp` | 10 | 1 | also forced by Christmas mode |
+| `landscape_earth.bmp` | 8 | 1 | |
+| `landscape_mine.bmp` | 5 | 3 | |
+| `landscape_launchpad.bmp` | 5 | 1 | |
+| `landscape_dark.bmp` | 5 | 0 | |
+| `landscape_firetop.bmp` | 3 | 0 | |
+| `landscape_desert.bmp` | 3 | 1 | |
+| `landscape_stronghold.bmp` | 2 | 0 | |
+| `landscape_jailbreak.bmp` | 2 | 0 | |
+| `landscape_trippy.bmp` | 1 | 0 | used with `maxHeight 200` (`mp_cts_3p_3`) |
+| `landscape_silver.bmp` | 1 | 0 | |
+| `landscape_shrine.bmp` | 1 | 0 | |
+| `landscape_marble.bmp` | 1 | 0 | |
+| `landscape_beach.bmp` | 0 | 0 | unreferenced by any level or code |
+| `landscape_containment.bmp` | 0 | 0 | unreferenced |
+| `landscape_field.bmp` | 0 | 0 | unreferenced |
+| `landscape_icecaps_peaked.bmp` | 0 | 0 | unreferenced |
+| `landscape_marble2.bmp` | 0 | 0 | unreferenced |
+| `landscape_mine2.bmp` | 0 | 0 | unreferenced |
+| `landscape_ridges.bmp` | 0 | 0 | unreferenced |
+| `landscape_volcanic.bmp` | 0 | 0 | unreferenced |
+| `landscape_volcanicplain.bmp` | 0 | 0 | unreferenced |
+
+(Counts from a grep of `landColourFile` in `data/levels/*.txt` [C]; the nine unreferenced ramps are reachable only through the editor's file picker, which lists `landscape_*` [B:EDITOR] `code/interface/landscape_window.cpp:TerrainSelectorFileDialog`.)
+
+### 11.5 Burn patches [B:LEGACY]
+
+For every `Location::m_burnPatches` entry P with distance d = |centre − P.pos| (3-D) < 1.5·P.r: `ratio = 0` if d ≤ P.r/2, else `min(1, (d − P.r/2)/P.r)`; `colour = colour·ratio + (20, 20, 20)·(1 − ratio)`. `Location::AddBurnPatch` rebuilds the whole renderer; its only caller is `Portal::Advance` when a Portal dies, and `Portal` is a blocked Darwinia building [C] `code/landscape_renderer.cpp:LandscapeRenderer::BuildColourArray`, `code/location.cpp:Location::AddBurnPatch`, `code/worldobject/portal.cpp:Portal::Advance`.
+
+### 11.6 RNG discipline of the colours
+
+The colours are cosmetic — they never feed the simulation (only `m_verts[].m_col`) [C]. Their reproducibility:
+
+- `Location::Init` calls `AppSeedRandom(1)` immediately after parsing, so on a clean first load the chain of step 5–6 starts from a known state [C] `code/location.cpp:Location::Init`.
+- The level load runs on the work-queue thread while the main thread keeps calling `SoundSystem::Advance`, whose sample selection draws `AppRandom()` (`code/sound/sound_instance.cpp`), so concurrent draws can perturb the chain and colours may differ between runs or peers [I] `code/loading_screen.cpp:LoadingScreen::Render`.
+- Regeneration from the options screens re-runs the chain **without** reseeding (`code/interface/prefs_graphics_window.cpp`, `code/interface/prefs_other_window.cpp` call `Landscape::Init` directly), so colours change after "apply" while heights do not [C] (no `AppSeedRandom` on that path).
+
+For the new game: derive colour noise from a stateless hash of the triangle position (e.g. a 32-bit integer hash of the cell indices), not from a shared RNG.
+
+## 12 Landscape lightmap — documentation versus code
+
+`docs/landscape lightmap.txt` contains source code for `Landscape::GenerateLightMap`, `Landscape::ApplyLightmap` and `Landscape::DeleteLightMap`: one shade value per height cell, initialised to 255; for each cell above sea level a ray from a fixed point light at (700, 200, 100) to the cell is tested — cells facing away from the light or whose ray hits terrain more than 5 units before the cell get 50; a 5 × 5 smoothing filter is present but commented out; the result is turned into a texture and multiplied into vertex colours [C] (document read in full).
+
+**None of this exists in the code** [C]: there is no `m_lightMap`, `ApplyLightmap` or `DeleteLightMap` anywhere under `code/` (grep), and `Landscape` has no `GenerateLightMap`. The only remnant is the unused `#define LIGHTMAP_SCALEFACTOR 1` in `code/landscape.h`. Terrain shading in the shipped game is purely fixed-function GL vertex lighting from the first two level lights (`GL_LIGHT0`, `GL_LIGHT1`) on flat-shaded facets, multiplied by the colour ramp ([24](24_rendering.md)). The only "lightmap" in the build is the **water shore mask** `"water_lightmap"` produced by `Water::GenerateLightMap` (§13.2) [C] `code/water.cpp:LIGHTMAP_TEXTURE_NAME`. Resolved: the P12 render-pass draft called the flat-water unit-1 texture a "landscape lightmap"; the code shows it is the water shore mask.
+
+## 13 Water level, shore mask, depth map and coastline waves
+
+All of this is cosmetic and rebuilt from the height map; render state and pass order are in [24](24_rendering.md). Sea level is y = 0 (§9.4).
+
+### 13.1 Construction order
+
+`Water::Water` [C] `code/water.cpp:Water::Water`: (1) `GenerateLightMap()` (shore mask, depth map, flat-tile mask); (2) if the `RenderWaterDetail` preference > 0: water cell size, wave colour table, `BuildTriangleStrips()` (mesh, per-vertex depth and shore noise, then the depth map is freed), wave tables, one `UpdateDynamicWater()`; (3) otherwise only the flat layer exists.
+
+### 13.2 Shore mask (`Water::GenerateLightMap`)
+
+[C] `code/water.cpp:Water::GenerateLightMap`. Variables are float unless noted; sizeX, sizeZ = world extent (§9.1).
+
+1. `MASK_SIZE = 128`. Pixel (x, z) of the mask corresponds to world ((x − 32)·sX, (z − 32)·sZ) with `sX = 2·sizeX/128`, `sZ = 2·sizeZ/128` (exact, because dividing a float by 64 is exact); the mask covers the sea plane [−sizeX/2, 1.5·sizeX) × [−sizeZ/2, 1.5·sizeZ).
+2. `land[x, z] = 1.0` if `heightMap.GetValue(x·sX − 32·sX, z·sZ − 32·sZ) > 0`, for x, z ∈ [32, 96) only (the land rectangle); all other pixels 0.
+3. Kernel `m = {0.2, 0.3, 0.4, 0.5, 0.8, 1.0, 0.8, 0.5, 0.4, 0.3, 0.2}`, each divided by 5.4 (sum 1.0).
+4. Horizontal blur in scatter form: for each pixel with `!NearlyEquals(val, 0)`, add `val·m[i]` to (x + i − 5, z) for i = 0 … 10 (`AddToData`, off-image contributions dropped).
+5. Vertical blur of that result in the same scatter form along z.
+6. `grey = min(255, blurred·855.0)`; stored as `RGBAColour(grey, grey, grey)` (float → `unsigned char` truncation) at bitmap position (x, 127 − z) — i.e. **vertically flipped**.
+7. Any previous `"water_lightmap"` bitmap and texture are deleted, the new bitmap is registered under that name with `Resource::AddBitmap`.
+
+Effect: a soft 0–255 "distance to coast" mask, saturated (255) on and near land and fading to 0 within about 5 mask pixels (≈ 5·2·size/128 ≈ 0.08·size world units) out to sea [I].
+
+### 13.3 Depth map and flat-water tile mask
+
+- **Depth map** [C]: `SurfaceMap2D<float>(2·sizeX, 2·sizeZ, origin (−sizeX/2, −sizeZ/2), cell = 2·sizeX/128 on both axes, outside = 1.0)`; `depth(x, z) = 1 − grey(x, 127 − z)/255` (un-flipped back to mask orientation). 1.0 = open sea, 0.0 = on or next to land.
+- **Flat-water tiles** [C]: `Array2D<bool>(cols/4, rows/4)` = 32 × 32; tile (x, z) is **false** (not drawn) iff all 16 depth samples of its 4 × 4 block are ≥ 1.0; stored at row `rows/4 − 1 − z` to match the north-to-south order of the renderer.
+
+### 13.4 Dynamic wave mesh vertices
+
+[C] `code/water.cpp:Water::BuildTriangleStrips`, `Water::IsVertNeeded`.
+
+- Water cell `wc = RenderWaterDetail × max(sizeX, sizeZ)/100` (detail 1 = high ⇒ 200 cells across the 2× plane; 2 = medium; 3 = low).
+- Grid xb ∈ [0, ⌊2·sizeX/wc⌋), zb likewise; vertex pair at (fx, 0, fz) and (fx, 0, fz + wc) with fx = −sizeX/2 + xb·wc. Same single-strip/degenerate-join scheme as the landscape; a column is emitted if any of the six points (fx − wc … fx + wc, fz / fz + wc) is needed.
+- `IsVertNeeded(x, z)` = false if the bilinear land height > 4.0; false if the bilinear depth > 0.999; else true. (A commented-out shortcut for detail 1 means detail never changes this rule.)
+- Per vertex: `depth` = bilinear depth; `s = 1 − depth`; `shoreNoise = (s + sfrand(s)·0.25)·250` (global `AppRandom`, one draw per vertex at build time).
+
+### 13.5 Coastline waves (`Water::UpdateDynamicWater`)
+
+[C] `code/water.cpp:Water::UpdateDynamicWater`, called once per **rendered** frame from the client loop via `Water::Advance` (`code/main.cpp:LocationGameLoop`), not from the simulation; time t = `g_gameTimer.GetAccurateTime()` seconds.
+
+```
+for i in 0 .. tableSizeX-1:  x = i*wc
+    waveX[i] = 7 * (1.2*sin(0.01*x + 0.65*t) + 0.9*sin(0.03*x + 1.5*t))
+for i in 0 .. tableSizeZ-1:  z = i*wc
+    waveZ[i] = 7 * (0.9*sin(0.02*z + 0.75*t) + 0.65*sin(0.03*z + 1.85*t))
+(tableSize = int(2*size/wc + 2); x, z measured from the sea-plane origin (-sizeX/2, -sizeZ/2); sin = iv_sin)
+
+for each vertex pair (v1 = j, v2 = j+1), prevH1 = prevH2 = 0 at strip start:
+    ix = int((v1.x + sizeX/2)/wc + 0.1) ; iz = int((v1.z + sizeZ/2)/wc + 0.1)
+    v1.y = (waveX[ix] + waveZ[iz])   * depth[j]
+    b1   = (prevH1 + prevH2 + v1.y) * 4.0 * (1 - depth[j])   + shoreNoise[j]   ; prevH1 = v1.y
+    v2.y = (waveX[ix] + waveZ[iz+1]) * depth[j+1]
+    b2   = (prevH2 + prevH1 + v2.y) * 4.0 * (1 - depth[j+1]) + shoreNoise[j+1] ; prevH2 = v2.y
+    v1.colour = waveTable[clamp(Round(0.7*b2 + 0.3*b1), 0, 399)]
+    v2.colour = waveTable[clamp(Round(0.7*b1 + 0.3*b2), 0, 399)]      # cross-mix softens the flat-shading sawtooth
+    v1.normal = (-(waveX[ix+1]-waveX[ix-1])*depth[j],   v1.y, -(waveZ[iz+1]-waveZ[iz])*depth[j])     # unnormalised, D3D shader only
+    v2.normal = (-(waveX[ix+1]-waveX[ix-1])*depth[j+1], v2.y, -(waveZ[iz+2]-waveZ[iz+1])*depth[j+1])
+    duplicated degenerate-join vertices are kept at equal heights (isIdentical on x, z)
+```
+
+So waves are a sum of two travelling sinusoids per axis (amplitude up to 7·(1.2 + 0.9) = 14.7 per axis), scaled by depth so they vanish at the shore; brightness is a wave-height proxy times "shoreness" plus the per-vertex shore whitening, so deep water is dark and coasts are bright [C]+[I]. `waveX[ix − 1]` is read out of bounds when ix = 0 [I] (only if the very first water column is needed; not in practice). Constants are file-scope `float const`: `waveBrightnessScale = 4.0`, `shoreBrighteningFactor = 250.0`, `shoreNoiseFactor = 0.25`, plus the local `scaleFactor = 7.0` [C].
+
+### 13.6 Water assets
+
+[C] `_work/scripts/P11_bmpinfo.py`, grep of `data/levels/*.txt`.
+
+| File | Format | Role | `mp_*` uses | `map_*` uses |
+|---|---|---|---|---|
+| `waves_default.bmp` | 400 × 10, 24-bit | wave colour table: bitmap row y = 1 (second row from the bottom as viewed), 400 entries, alpha forced to 255 (0 in negative mode) | 17 | 2 |
+| `waves_earth.bmp` | 400 × 10, 24-bit | same; also forced by Christmas mode | 11 | 2 |
+| `waves_containmentfield.bmp` | 400 × 10, 24-bit | same | 10 | 4 |
+| `waves_icecaps.bmp` | 400 × 10, 24-bit | same | 8 | 1 |
+| `waves_launchpad.bmp` | 400 × 10, 24-bit | same | 4 | 1 |
+| `waves_yellow.bmp` | 400 × 10, 24-bit | same | 3 | 0 |
+| `waves_generator.bmp` | 400 × 10, 24-bit | same | 3 | 2 |
+| `waves_dull.bmp` | 400 × 10, 24-bit | same | 1 | 0 |
+| `waves_desert.bmp` | 400 × 10, 24-bit | same | 0 | 0 (unreferenced) |
+| `water_default.bmp` | 128 × 128, 8-bit palettised | flat (under-)water texture, tiled 30× and scrolled | 30 | 8 |
+| `water_icecaps.bmp` | 128 × 128, 8-bit | same; also forced by Christmas mode | 20 | 3 |
+| `water_launchpad.bmp` | 128 × 128, 8-bit | same | 5 | 1 |
+| `water_yellow.bmp` | 128 × 128, 8-bit | same | 2 | 0 |
+
+The wave table size is taken from the bitmap width (`m_numColours = width`), so a new table may have any width [C] `code/water.cpp:Water::Water`.
+

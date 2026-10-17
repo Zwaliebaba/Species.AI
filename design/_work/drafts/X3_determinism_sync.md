@@ -4,4 +4,258 @@ Scope: cross-cutting over the whole live codebase (`code/**`, `contrib/systemiv/
 
 Generated tables: `drafts/X3_syncrand_sites.csv` (every synced-RNG call site, produced by `scripts/X3_rng_sites.py`), `drafts/X3_unsynced_rng_sites.csv` (every unsynced RNG call site with context classification, same script).
 
-(sections are appended below as they are written)
+
+## [→ 22_determinism_and_networking] 1. Determinism model at a glance
+
+| Question | Answer | Evidence |
+|---|---|---|
+| Model | **Deterministic lockstep over a server-sequenced command stream.** Every peer (host included) runs the complete simulation; only commands, `TeamControls` (ALIVE) and lobby options travel; the server never simulates. One UPDATE letter = one *frame* = 0.1 s **real** time = `0.1 × gameSpeed` **game** time, executed as 10 *slices*. | [C] `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters`; `code/network/server.cpp:Server::AdvanceIfNecessary`, `Server::SendLetter`; P15 §1–2 |
+| What must be bit-identical on every peer | (1) the ordered command stream, (2) the synced RNG state (MT19937, one seed per server session), (3) every simulated field touched by `Location::Advance`, `ParticleSystem`-independent (§5), (4) static data: level file, `data/stats.txt`, shapes used for hit tests, terrain seeds, (5) per-process statics that sim code reads (§7) | [C]/[I] this draft |
+| Numeric environment it relies on | Win32 **x87** code (no `/arch:SSE2`), x87 precision control forced to **53-bit mantissa** per thread, `/fp:precise` in the shipped config, every transcendental and `sqrt` result rounded to **IEEE single** by `iv_trunc_low_nibble` | §3 |
+| Ordering it relies on | Strictly serial, single-threaded, index-ordered iteration of slot arrays (`FastDArray`/`SliceDArray` with LIFO free lists), fixed slice schedule; no hash-map or pointer ordering anywhere in the sim | §4 |
+| How divergence is detected | Per frame a 1-byte value is sent to the server. **Baseline build: the byte is the next synced-RNG draw** (`255 × syncfrand(1)`), so only divergence of the RNG stream position/state is detected; debug/beta builds hash a world snapshot (SHA-1). | [C] `code/network/iframe.cpp:IFrame::Generate`; §6 |
+| What happens on desync | Server broadcasts NETSYNCERROR (sequenced); every client pauses the simulation permanently (`App::GamePaused`), shows a red banner, writes `syncerror-*.txt`. No resync, no recovery. | [C] §6; P15 §8 |
+| Seed | `SHA1(threadId XOR lowbits(GetHighResTime()), startTime)` word 0, chosen by the server at `Server::Initialise`, delivered in CLIENTID, applied with `syncrandseed` before history replay | [C] `code/network/server.cpp:GenSyncRandSeed`, `clienttoserver.cpp:ProcessServerLetters` |
+
+```mermaid
+sequenceDiagram
+    participant S as Server (host process, 10 Hz real time)
+    participant C as Every client (incl. host client)
+    S->>C: UPDATE seq=N {commands since last tick}
+    Note over C: GetNextLetter (strict seq order)
+    C->>C: ProcessServerUpdates(N) — apply commands (may draw syncrand)
+    C->>C: g_sliceNum=0; GameTimer::Tick() (+0.1×speed, speed blend)
+    C->>C: GenerateSyncValue(): baseline = 255×syncfrand(1)
+    C->>S: SYNCHRONISE {seq=N, byte}
+    loop slices 0..9 (spread over render frames by GetNumSlicesToAdvance)
+        C->>C: if !GamePaused: Location::Advance(slice); ParticleSystem::Advance(slice)
+        C->>C: slice 8: Multiwinia::Advance() (runs even when paused)
+    end
+    S->>S: HandleSyncMessage: all bytes for seq N in? compare → NETSYNCERROR(seq N) if odd one out
+```
+
+## [→ 22_determinism_and_networking] 2. Random number sources
+
+### 2.1 Inventory of every generator in the live code
+
+| # | Generator (call form) | Algorithm and state | Seeding | Output (as implemented) | Synced? | Thread(s) that call it | Ref |
+|---|---|---|---|---|---|---|---|
+| G1 | `syncrand()` → `_syncrand()` | **MT19937** (Matsumoto–Nishimura 2002 `init_genrand`, standard tempering 11/7/15/18, masks `0x9d2c5680`/`0xefc60000`, `MATRIX_A 0x9908b0df`); state = file-static `unsigned long mt[624]`, `int mti` (624+1 = unseeded), `mag01[2]`, `s_randseed`, `s_callCount` | `syncrandseed(s)`: `s == (unsigned long)-1` → 5489; else `s`. If `_syncrand` runs before any seed it calls `syncrandseed()` whose default argument is **0** (not 5489) | 32-bit unsigned `[0, 2^32−1]` | **yes** | main thread (frames) and the loading worker thread (`Location::Init`) — never concurrently [I] | [C] `contrib/systemiv/lib/math/random_number.cpp:syncrandseed`, `_syncrand` |
+| G2 | `syncfrand(r)` → `_syncfrand(r)` | `(_syncrand() * r) / 4294967296.0` in double | G1 | `[0, r)` for r > 0 | yes | as G1 | [C] `_syncfrand` |
+| G3 | `syncsfrand(r)` → `_syncsfrand(r)` | `(_syncfrand(1.0) − 0.5) * r` | G1 | **`[−r/2, r/2)`** (the header comment says `−range < result < range`; wrong) | yes | as G1 | [C] `_syncsfrand`, `random_number.h` |
+| G4 | `FRAND(x)`, `SFRAND(x)` inside `Vector3(…)` / `Vector3::Set(…)` | Marker structs `RandomFloat{v}` / `SymmetricRandomFloat{v}`; the templated `Vector3` constructor/`Set` calls `FromRand` on x, then y, then z, which calls `_syncfrand(v)` / `_syncsfrand(v)`. Purpose (source comment, paraphrased): C++ leaves argument evaluation order unspecified, so draws written directly as constructor arguments would be consumed in compiler-dependent order | G1 | as G2/G3 | yes | as G1 | [C] `code/lib/vector3.h` (`RandomFloat`, template ctor), `code/lib/vector3.cpp:FromRand` |
+| G5 | `RandomNormalNumber(mean, range)`, `RandomApplyVariance(num, var)` | Irwin–Hall: sum of 12 `syncfrand(1.0)`, `(s − 6)·range/3 + mean`, clamped to `mean ± range` | G1 | clamped normal | yes | — | [C] `random_number.cpp`; **no callers** in the live code [C grep] |
+| G6 | `AppRandom()`, `frand(r)`, `sfrand(r)`, `AppSeedRandom(s)` | **MSVC `rand()` clone LCG**: `holdrand = holdrand·214013 + 2531011` (`static long`, initial 1), returns `(holdrand >> 16) & 0x7fff`; `frand(r) = r·AppRandom()/32767`, `sfrand(r) = (0.5 − AppRandom()/32767)·r` | `AppSeedRandom(1)` in `Location::Init` (after `LoadLevel`, before landscape), in `GlobalInternet` ctor (start-up); reseeded with `m_seed` by every tree geometry pass; `landscape_renderer` reseeds per vertex with `x | (y + AppRandom())`; never reseeded otherwise | `AppRandom ∈ [0, 32767]`; `frand ∈ [0, r]` **inclusive**; `sfrand ∈ [−r/2, r/2]` (header comments claim `[0,r)` and `(−r, r)`) | **no** | main thread; loading worker thread (tree hit-sphere pass, landscape colours); **MetaServer WAN-registration thread** (`sfrand(3.0)`); sound code on the main thread | [C] `random_number.cpp:AppRandom/frand/sfrand`; `code/location.cpp:Location::Init`; `code/worldobject/tree.cpp:Tree::Generate*`; `contrib/systemiv/lib/metaserver/metaserver.cpp:ServerRegisterWANThread` |
+| G7 | CRT `rand()` | MSVC CRT LCG, per-thread state under the static multithreaded CRT (`RuntimeLibrary="0"`) [I: CRT behaviour] | `srand` is called only in dead code (`TESTBED_ENABLED` block of `GameMenuWindow.cpp`, `egames_loader.cpp`) → default seed 1 per thread | `[0, 32767]` | no | main thread | [C] `code/worldobject/tree.cpp:Tree::Advance` (leaf particles), `darwinian.cpp:Darwinian::AdvanceInfection` (plague particles), `randomiser.cpp:Randomiser::Render`, `multiwiniahelp.cpp:MultiwiniaHelp::AttachTo3d`, `portal.cpp` [B:LEGACY] |
+| G8 | `LandscapeTile::LandscapeAppRandom/Landscapefrand/Landscapesfrand` | Same LCG constants as G6 but **per-tile private** `m_holdrand` | `LandscapeAppSeedRandom(m_randomSeed)` from the level file before each tile's generation | as G6 | deterministic by construction (sim-relevant: heightmap) | loading worker thread | [C] `code/landscape.cpp`; P11 §23 |
+| G9 | Orphan `::syncrand()` in `code/lib/math_utils.cpp` | A second MT19937 copy (`init_genrand(5489)` on first use, file-static state) | none exported | — | — | **never called**: every `syncrand()` in code is rewritten to `_syncrand` by the `random_number.h` macro, `math_utils.cpp` does not include that header and `math_utils.h` does not declare the function [C grep]; dead duplicate [I] | [C] `code/lib/math_utils.cpp:syncrand` |
+| G10 | Server session seed | `MakeRandom() = GetCurrentThreadId() XOR (low 32 bits of the double GetHighResTime())`; `GenSyncRandSeed = (int) SHA1(LE32(random) ‖ LE64(startTime))[0]` | per `Server::Initialise` | int | it *is* the seed | main thread | [C] `code/network/server.cpp:MakeRandom`, `GenSyncRandSeed`, `Server::Initialise` |
+
+Debug-only forms [B:DEBUG] (`TRACK_SYNC_RAND`, defined only by `TARGET_DEBUG`; commented out for `TARGET_BETATEST_GROUP_ALL`): `syncrand()` → `DebugSyncRand(__FILE__, __LINE__)`, `syncfrand(x)` → `DebugSyncFrand(file, line, 0.0f, x)`, `syncsfrand(x)` → `DebugSyncFrand(file, line, -x/2.0, x/2.0)` computing `min + (r·range)·(1/2^32)`. Two consequences [C code, I consequence]: (a) the tracked `syncsfrand` is **not bit-identical** to the untracked one (`−x/2 + r·x·2^−32` vs `(r·2^−32 − 0.5)·x` round differently), so tracked and untracked builds cannot play together even before `INCLUDE_THEBEAST` changes `Crate::NumCrateRewards`; (b) the macro does not parenthesise `x` — harmless today because no call passes a top-level `+`/`−` expression [C: scripted check over all 148 `syncsfrand` arguments]. `code/worldobject/snow.cpp` and `code/worldobject/spirit.cpp` `#undef TRACK_SYNC_RAND` before including `random_number.h`, so their draws are not logged even in debug builds (and use the untracked formula) [C].
+
+### 2.2 Seeding and lifetime of the synced stream
+
+1. **One stream per server session = one match.** `App::ShutdownCurrentGame` calls `ClientToServer::ClientLeave` and deletes `m_server`; the next game creates a new `Server` with a new seed [C] `code/app.cpp:App::ShutdownCurrentGame`, `Server::Initialise`.
+2. The seed travels in the **unsequenced** CLIENTID reply; on receipt every client calls `syncrandseed(randomSeed)`, resets `g_lastProcessedSequenceId = −1`, `Multiwinia::Reset()`, option versions, and then replays the server history from sequence 0 [C] `ClientToServer::ProcessServerLetters` (CLIENTID branch). This is the only `syncrandseed` call in `code/` [C grep].
+3. In the lobby no synced draw happens: `IFrame::Generate` returns before drawing when there is no `Location`, `Location::Advance`/`Multiwinia::Advance` are not called without a location [C] `iframe.cpp:IFrame::Generate`, `ProcessAllServerLetters` (`if( loc )`). No synced call exists in UI, render, sound or input code [C: scripted census, §2.4 — 0 of 655 baseline sites are in `code/UI`, `code/interface` (except the `CHEATMENU_ENABLED` window), `code/sound`, or in functions whose name contains `Render`/`Draw`].
+4. START_GAME is processed inside an UPDATE letter; `m_loadingLocation` stops further letter processing until `Location::Init` (run on the loading-screen **worker thread** by `DoEnterLocation`) has finished; Init's synced draws (unused-team colours `syncrand() % MULTIWINIA_NUM_TEAMCOLOURS / 2` retry loop, building/AI initialisation, starting power-ups) therefore occur at the same logical point on every peer [C] `code/main.cpp:EnterLocation/DoEnterLocation`, `code/location.cpp:Location::Init`.
+5. Late joiners re-simulate the whole match from sequence 0 (catch-up: 20 slices per call while > 20 frames behind, 0.3 s budget per render frame) [C] `ClientToServer::AdvanceAndCatchUp`, `GetNumSlicesToAdvance`.
+
+### 2.3 RNG discipline rules the code follows (and where it breaks them)
+
+| Rule | Status | Evidence |
+|---|---|---|
+| R1 Every gameplay decision draws from G1–G4 | Followed in all inspected sim code (crate outcomes, AI choices, spawn timers, damage rolls, conversions, scatter) | [C] census §2.4; P04/P05/P07/P08 notes |
+| R2 Fixed draw order inside an expression | Enforced by `FRAND/SFRAND` for `Vector3`; **one violation**: `SpiritStore::AddSpirit` builds `Vector3(syncsfrand(a), syncsfrand(b), syncsfrand(c))` (three raw draws as constructor arguments → x/y/z permutation is compiler-dependent) — [B:LEGACY] (SpiritStore only used by the blocked Factory) | [C] `code/worldobject/spiritstore.cpp:SpiritStore::AddSpirit`; scripted multi-draw-per-statement search found no other case |
+| R3 Draw *count* must not depend on local state | Followed except where local state leaks (§5.4). Cosmetic effects inside `Advance` sometimes draw from the synced stream (e.g. `ArmyAnt::Advance` leg shape `syncrand()%3` every tick, `Snow`/`Zombie` wobble, `Meteor` fire size, `Triffid` fire size, `GunTurret` muzzle sparks, `Squadie::Attack` brass, `Missile` trail size) — harmless but they must be preserved draw-for-draw if bit-compatibility were ever wanted | [C] CSV column `cosmetic_hint`; P04 X3.2, P05 table |
+| R4 Variable-length rejection loops | Deterministic given identical inputs, several unbounded (P08 list: `CaptureCrate`, `RunNuke`, `RunSpaceShip`, AI area loops, `Location::Init` colour loop) | [C] P08 §17; `Location::Init` |
+| R5 Short-circuit evaluation changes stream length | e.g. `syncfrand(1.0) < 0.9` only evaluated when `m_rewardId == −1` in crate capture | [C] P08 §17 |
+| R6 Unsynced generators never feed the sim | Followed, with one sanctioned exception: tree geometry (G6 reseeded from `Tree::m_seed`) produces the **simulation** hit sphere `m_hitcheckCentre/m_hitcheckRadius` used for fire spread (§2.6) | [C] `tree.cpp:Tree::Generate`, `RenderBranch`, `Tree::Advance` |
+
+### 2.4 Census of synced call sites (generated)
+
+Script: `OUT/_work/scripts/X3_rng_sites.py` (comment-stripping, evaluates every `#if/#ifdef/#elif/#else` against the baseline macro set, attributes each call to its enclosing function) → `OUT/_work/drafts/X3_syncrand_sites.csv` (columns `file,line,function,generator,argument,context,decides,cosmetic_hint,liveness,build,compiled,kind,preproc_conditions,statement`). `decides` is a heuristic (assignment target, `condition`, or the callee the value is passed to); `cosmetic_hint` flags draws whose value feeds `CreateParticle` or a sound trigger within the next 8 lines; `liveness` marks files whose classes are Darwinia-only in Multiwinia (from P05–P07 and `BuildingIsBlocked`).
+
+| Measure | Value |
+|---|---|
+| Baseline (`[B:FULL]`) call sites | **655** (`syncfrand` 268, `syncsfrand` 148, `syncrand` 110, `SFRAND` 80, `FRAND` 49) in 56 files |
+| … in files with only live classes / mixed live+legacy files / legacy-only files | 410 / 179 / 66 |
+| … by enclosing-function class | `*Advance*`/tick 248, constructors/`Initialise`/`Read`/`Create*`/`Spawn*` 129, other sim functions (`Damage`, `Explode`, AI `Run*`, crate `Run*`, …) 278, render/UI/sound **0** |
+| Non-baseline sites | 4: `code/interface/cheat_window.cpp` ×2 [B:DEBUG], debug branch of `IFrame::Generate` [B:DEBUG], `code/loaders/gameoflife_loader.cpp` [B:DEAD] |
+| Draws flagged `cosmetic_hint` (live/mixed files) | 35 (e.g. `Armour::Advance` exhaust, `GunTurret::Advance` sparks, `Squadie::Attack` brass, `Spirit::BreakSpirit`, `Missile::Advance`, `Meteor::Advance`, `Triffid::Advance`, `EscapeRocket::AdvanceExploding`) — heuristic, includes a few false positives (e.g. `Triffid::Launch` egg timer is gameplay) |
+
+Heaviest consumers (baseline sites): `darwinian.cpp` 84, `crate.cpp` 76, `location.cpp` 61, `ai.cpp` 56, `triffid.cpp` 36, `weapons.cpp` 23, `armour.cpp` 18, `gunturret.cpp` 18, `souldestroyer.cpp` 16, `spiritreceiver.cpp` 16 [B:LEGACY], `multiwinia.cpp`/`rocket.cpp`/`spam.cpp`/`spirit.cpp`/`tree.cpp` 14 each, `anthill.cpp` 13, `insertion_squad.cpp`/`sporegenerator.cpp` 12 [C] CSV. What each draw decides is listed per site in the CSV; the gameplay meaning of each is specified by the owning partition (P02 modes, P03–P05 entities, P06–P07 buildings, P08 crates/AI).
+
+Per-frame fixed draws: exactly **one** per executed UPDATE frame for the sync value (`IFrame::Generate`), in every build [C].
+
+### 2.5 Non-synced randomness inside simulation code — every live site, with verdict
+
+Generated list: `OUT/_work/drafts/X3_unsynced_rng_sites.csv` (same script; 328 baseline call sites in compiled files: `sfrand` 144, `frand` 128, `AppRandom` 40, `rand` 9, `AppSeedRandom` 7; by context: `*Advance*` 132, other 99, render 53, init 19, loaders 11 [B:DEAD content], particle/explosion system 7, UI 4, sound 3). Every non-render site in simulation files was read; verdicts:
+
+| Site(s) | What the unsynced value drives | Verdict | Ref |
+|---|---|---|---|
+| `Tree::GenerateBranches/GenerateLeaves/Generate` (`AppSeedRandom(m_seed)` then `frand` per branch) | branch geometry **and the simulation hit sphere** (leaf centroid, max leaf distance ×0.8) | deterministic **only** while nothing else touches G6 between the reseed and the end of the pass — see §2.6 race | [C] `code/worldobject/tree.cpp` |
+| `Tree::Advance` fire particles (`frand`, `sfrand`), leaf drop (`rand() % (51 − leafDropRate)`) | particles only | cosmetic | [C] |
+| `Entity::Advance`, `AntHill::Advance`, `Centipede::Advance`, `Triffid::Advance` — `m_renderDamaged = frand(0.75)·(…) > healthFraction` (with wall-clock `g_gameTime`) | render flicker flag stored in the sim object | cosmetic (never read by sim) [I] | [C] `code/worldobject/entity.cpp:Entity::Advance` |
+| `Darwinian::AdvanceOnFire`, `AdvanceSacraficing` [B:LEGACY], `AdvanceHotFeet`, `AdvanceInfection` (`rand()%2`), `AdvanceOpeningCrate`, `SetBooster`, `GiveHotFeet`, `GiveMindControl`, `GiveRage`, `TakeControl`, `LoseControl` | particle counts/velocities; `AppRandom()%30` / `%100` gates the "OnFire" sound | cosmetic | [C] `darwinian.cpp` |
+| `Darwinian::SearchForThreats` `frand(200) < 1.0` | "SeenThreatAttackHorn" sound, rate-limited by a function-static game-time stamp shared by all Darwinians | cosmetic | [C] |
+| `Location::Bang` (core/debris particle counts, sizes), `Location::PromoteDarwinian/DemoteOfficer`, `Task::Promote/Demote` (flash particles) | particles | cosmetic | [C] `code/location.cpp`, `code/taskmanager.cpp` |
+| `Crate::RunExtinguisher` (200 fire particles, rejection loop on `sfrand`) | particles | cosmetic (loop length local) | [C] `code/worldobject/crate.cpp` |
+| `Laser::Advance`, `TurretShell::Advance`, `Fireball::Advance`, `FlameGrenade::Advance`, `ControllerGrenade::Advance`, `Rocket::Explode` (firework colours/cores), `Lightning::Advance`, `Meteor::Advance` (positions), `Harvester::AdvanceEngines`, `SpaceShip::AdvanceEngines`, `EscapeRocket::Advance`, `FuelGenerator::Advance`, `FuelStation::BoardRocket`, `EruptionMarker::Advance`, `SmokeMarker::Advance`, `LaserFence::Spark`, `Incubator::SpawnEntity` [content LEGACY], `ControlTower::Advance` [content LEGACY], `Engineer::AdvanceResearching` [B:LEGACY], `Tentacle::*` [B:LEGACY], `SpamInfection::AdvanceAttacking*`, `Shaman::SacraficeDarwinians` [B:LEGACY] | particles | cosmetic | [C] `code/worldobject/weapons.cpp` et al. |
+| `SoulDestroyer::SoulDestroyer` (`m_spiritPosition[]`), `SoulDestroyer::Attack` (`AppRandom() % SOULDESTROYER_MAXSPIRITS` slot, value = `GetHighResTime()`) | the trail of captured-spirit sprites (render) | cosmetic; the source comment says it does not need to be sync-safe [C] | [C] `code/worldobject/souldestroyer.cpp` |
+| `Explosion`/`Tumbler` (`frand`, `sfrand`, `AppRandom`), `Particle::Initialise/Advance` | shatter debris and particles; advanced with wall-clock `g_advanceTime` (explosions) or inside the sim slice (particles) | cosmetic; nothing in the sim reads particles or explosions (`CreateParticle` returns `void`) | [C] `code/explosion.cpp`, `code/particle_system.cpp` |
+| `Camera::Advance` shake (`sfrand`) | local camera | local | [C] `code/camera.cpp` |
+| `LevelFile::ParseInstantUnits` centipede copies `sfrand(60)` | instant-unit positions — **sim state, and G6 is unseeded at that point** (`LoadLevel` runs before `AppSeedRandom(1)`) | unreachable in Multiwinia: copies are made only for team 1 centipedes when `loadDifficultyFactor > 1`, i.e. `m_difficultyLevel > 0`, which the MW build never sets — but see §7 (difficulty) [C code, I reachability] | [C] `code/level_file.cpp:LevelFile::ParseInstantUnits`, `code/app.cpp:App::UpdateDifficultyFromPreferences` |
+| `ResearchItem::ResearchItem`, `Spam::Spam` (`m_front.RotateAroundY(frand(2π))`) | building orientation (hashed in debug IFrames) | [B:LEGACY] (both blocked) — would desync if reachable | [C] |
+| `GlobalWorld::TransferSpirits`, `SphereWorld::AddLocation`, `GlobalInternet` | Darwinia global world | [B:LEGACY] | [C] |
+| `MultiwiniaHelp::AttachTo3d` (`rand() % numPlayers`) | which help tab to show | local UI | [C] |
+| `Randomiser::Render` (`rand() % NUM_TEAMS`) | particle colour in a render function | cosmetic (render calling `CreateParticle` — particle count depends on frame rate) | [C] `code/worldobject/randomiser.cpp:Randomiser::Render` |
+| `SoundInstance::OpenStream`, `GetAttachedObject`, `SoundParameter::Recalculate` | sample choice, emitter choice, randomised parameters | cosmetic (P16) | [C] `code/sound/*` |
+| `EclRegisterWindow` (`AppRandom` window placement), `NetworkQuality::Write` [B:DEAD], loaders [B:DEAD] | UI / test | local | [C] |
+
+### 2.6 The shared non-synced LCG is a sim input for trees — and it is not thread-safe
+
+[C] code facts: `holdrand` is a single unsynchronised global; `Tree::Generate` (called by `Tree::SetDetail(1)` from `Building::SetDetail` paths during level load on the **worker thread**, by `CreateAnotherTree` at runtime, and by `Tree::RenderAlphas` whenever the display lists were flushed) first compiles the leaf display list (`GenerateLeaves` — accumulates `m_hitcheckCentre`/`m_numLeafs`), then reseeds and runs a radius pass on the calling thread; `Resource::CreateDisplayListAsync` runs the compile synchronously on the main thread or, from another thread, queues it to the loading screen and blocks until done. Concurrent G6 users exist: the loading-screen loop calls `SoundSystem::Advance` (sample choice `AppRandom`) on the main thread while the worker thread runs the radius pass; the MetaServer WAN registration thread calls `sfrand(3.0)` each period on the host. [I] consequence: a G6 draw from another thread between the reseed and the end of a tree's pass changes that tree's crown sphere on that peer only → fire-spread (`Tree::Advance` neighbour test `theirRadius + ourRadius >= distance`) diverges → desync detectable only once it changes synced draws. The beta release notes list "synchronization errors related to trees and height maps" as fixed [C] `docs/multiwiniareleasenotes-beta.txt`, consistent with this area being fragile. **Design rule for the new game**: geometry that feeds the simulation must use its own local generator object, never a process-global one.
+
+## [→ 22_determinism_and_networking] 3. Floating-point model
+
+### 3.1 Numeric types used by the simulation
+
+| Item | Fact | Ref |
+|---|---|---|
+| Geometry | `Vector2`, `Vector3`, `Matrix33`, `Matrix34`, `Plane` store **double** | [C] `code/lib/vector3.h`; P13 |
+| Sim object fields | overwhelmingly double (301 `double m_…` members across `code/worldobject/*.h`) | [C] grep |
+| Sim fields declared **float** | `Task::m_lifeTimer`, `Task::m_startTimer` (task timers), `Tree::m_corruptCheckTimer`, `SpaceShip::m_abductionTimer`, `EscapeRocket::m_fuelBeforeExplosion`, `GunTurret::m_firedLastFrame`, `RRSolarPanelInfo::m_range` (AI Rocket-Riot helper struct, `ai.h`), `Team::m_accurateCPUTakeOverTime`, `EntityGridCacheElement::{m_timeIndex, m_worldX, m_worldZ, m_rangeSqd, m_halfRangeSqd}` (sim-relevant query cache) — each assignment rounds a double to binary32 | [C] `code/taskmanager.h`, `code/worldobject/tree.h`, `spaceship.h`, `rocket.h`, `gunturret.h`, `ai.h`, `code/team.h`, `code/entity_grid_cache.h` |
+| float locals in sim decisions | `Task::FindDarwinian` (nearest distance), `TaskManager::IsValidTargetArea`, `Multiwinia::AdvanceAssault` (`bestTime`), `GunTurret::Advance` (`range`), `SpaceShip::AdvanceAbducting` (`distance`), `Teleport::EnterTeleport` | [C] scripted scan (`OUT/_work/scripts/X3_local_state_sites.py`, pattern `float-decl`) |
+| float literals | e.g. `Location::Bang` `numCores = _range * _damage * 0.01f` (float literal promoted) | [C] `code/location.cpp:Location::Bang` |
+| Accumulated game time | `GameTimer::m_gameTime += 0.1 × m_gameSpeed` in double each frame (0.1 not representable) → P02 D1: "1-second" countdowns of `t -= 0.1; if (t <= 0)` take **11** frames | [C] `code/gametimer.cpp:GameTimer::Tick`; P02 §8 D1 |
+
+### 3.2 The `iv_*` wrappers and `iv_trunc_low_nibble`
+
+All of `iv_sin, iv_cos, iv_tan, iv_sqrt, iv_pow, iv_exp, iv_log, iv_asin, iv_acos, iv_atan` are macros `iv_trunc_low_nibble(<crt>(double(x)))`; `iv_abs` is an exact inline; `iv_atof(s) = iv_trunc_low_nibble(atof(s))`, `iv_wtof` likewise [C] `code/lib/universal_include.h`, `contrib/systemiv/lib/math/math_stubs.cpp`. Call-site lines in `code/` + `contrib/systemiv/lib`: `iv_sin` 296, `iv_cos` 159, `iv_sqrt` 69, `iv_pow` 19, `iv_acos` 7, `iv_asin` 5, `iv_exp` 3, `iv_log` 3, `iv_atan` 2, `iv_tan` 1, `iv_abs` 84, `iv_atof` 122 [C grep].
+
+> **Verbatim excerpt** — `contrib/systemiv/lib/math/math_stubs.cpp:iv_trunc_low_nibble` (Introversion licence, ≤15 lines)
+```cpp
+double iv_trunc_low_nibble(double x)
+{
+	volatile float f = (float)x;
+	return f;
+}
+```
+
+- **What it does** [C]: rounds the double to IEEE binary32 (24-bit significand) under the current rounding mode (never changed → round-to-nearest-even [I]) and widens back exactly; the `volatile` forces a real 32-bit memory store so the x87 cannot keep the 53/64-bit register value. Despite the name it discards **29** low significand bits, not a nibble. Compiled for every non-Xbox target (`#ifndef _XBOX`).
+- **Why** [I]: the file is credited to the Mac porting partner (header: Ambrosia Software, 2007-10-25) and the precision-control helper notes that PowerPC exponent size differs; the wrappers make results of CRT transcendental functions — which differ by an ulp or so between Microsoft's x87 CRT, Apple's libm and SSE implementations — collapse to the same binary32 value, enabling PC↔Mac lockstep. Results differ after rounding only if the two libraries' doubles straddle a binary32 rounding midpoint; for a 1-ulp disagreement that is ≈2^−29 per call [I arithmetic], i.e. rare but not impossible over 10^8–10^9 calls per match.
+- **Side effect on the model** [C]: every `Mag()`, `Normalise()`, `SetLength()`, `RotateAround()`, `FastRotateAround()` and angle uses a single-precision-rounded sqrt/sin/cos, so distances and unit vectors carry ~7 significant digits even though positions are doubles. `sqrt` itself is correctly rounded on IEEE hardware, so the rounding of `iv_sqrt` is a precision loss, not a portability need [I].
+- `iv_strtod` is declared `extern "C"` in `math_stubs.cpp` but defined nowhere in the tree [C grep] (presumably a portable `strtod` planned for the Mac).
+- Parsing is mixed: 122 `iv_atof` vs 44 raw `atof` sites, e.g. `MultiwiniaZone::Read` (`m_size`), `AITarget::Read` (`m_priorityModifier`), `LevelFile` landscape `m_maxHeight` keep full double precision while most building fields are float-rounded [C grep]. Deterministic on one CRT; cross-CRT `strtod` rounding differences are a residual risk [U: whether MSVC 2005 `atof` is correctly rounded for all shipped literals].
+
+### 3.3 Remaining raw CRT math
+
+Raw `sinf` 53, `cosf` 24, `sqrtf` 10, `expf` 4, `atan2` 6, `acosf` 1, `fmodf` 31, `fmod` 13, `pow` 11, `sin` 5, `sqrt` 5 call lines in `code/` [C grep]. In simulation code the only uses are: `Darwinian::AdvanceCombat` — formation volley timing `int(fmodf(gameTime×10 + formationIndex, formationSize/4.0)) == 0` (and `/16.0` with Rage): converts the accumulated **double game time to float** and truncates; exact fmod but extremely sensitive to the accumulated value (a peer whose game time differed in the last bit could fire on a different tick); `formationSize < 4` → modulus < 1 → fires every frame [C] `code/worldobject/darwinian.cpp:Darwinian::AdvanceCombat`. `Darwinian::AdvanceBeingAbducted` `fmodf(uniqueId, 10)` (exact). `TurretEmptyShell::Advance` `fmod` (cosmetic object). `Location::GetEntityId` `pow` (mouse picking, local). `Matrix33/34::DecomposeToYDR` (`atan2`) has no caller outside `code/lib` [C grep]. All other raw calls are in render/UI/camera/water/explosion code.
+
+### 3.4 FPU control word, compiler and instruction set
+
+| Item | Baseline `Release|Win32` (shipped) | `ReleaseDirect3D|Win32` | Ref |
+|---|---|---|---|
+| FP model | no `FloatingPointModel` attribute → VS2005 default `/fp:precise` [I: default] | `FloatingPointModel="2"` = **`/fp:fast`** | [C] `targets/vs2005/Darwinia.vcproj` (only one `FloatingPointModel` attribute in the project; no per-file overrides) |
+| Instruction set | no `EnableEnhancedInstructionSet` → x87 [I: VS2005 x86 default] | same | [C] vcproj |
+| Optimisation | `/O2`, `/Ob2` | `/O2`, `/Ob2`, `/Oy`, `/GS-` | [C] vcproj |
+| OpenMP | attribute absent → off [I default] | `OpenMP="false"` | [C] vcproj |
+| Precision control | `StandardiseCPUPrecision()` = `_control87(_PC_53, _MCW_PC)` (53-bit significand; exponent range stays x87-extended — the source comment acknowledges the PowerPC difference) called first thing in `Initialise` (main thread) and at the start of every `WorkQueue` thread (`WorkQueue::RunThread`, comment: precision flags are per-thread) — covers the loading worker (where `Location::Init` runs), the sounds loader, the client listen thread, the sound preload queue and the D3D work queue | same, but `IDirect3D9::CreateDevice` is called **without `D3DCREATE_FPU_PRESERVE`** → D3D9 switches the calling (main/sim) thread to 24-bit precision [I: documented D3D9 behaviour] | [C] `code/main.cpp:StandardiseCPUPrecision`, `Initialise`; `code/lib/work_queue.cpp:WorkQueue::RunThread`; `code/lib/opengl_directx.cpp:Direct3DInit` |
+| Threads not standardised | `Server` listen thread, MetaServer/matchmaker/authentication threads (`NetStartThread` directly) — they do no simulation math [I] | same | [C] `code/network/server.cpp:Server::Initialise`, `metaserver.cpp` |
+| Rounding mode / exceptions | never changed (no `fesetround`, `_controlfp` rounding, `_RC_*`, `_clearfp`, `fldcw` outside the Mac `#elif`) | same | [C] grep |
+
+Consequences [I]: the shipped GL build and the D3D build run different arithmetic (24-bit vs 53-bit x87 precision, `/fp:precise` vs `/fp:fast`) and must never be mixed in one match; only `multiwinia.exe` (GL) shipped (`build_matrix.md`). On x87 with `_PC_53`, `+ − × ÷` produce the same results as SSE2 doubles except where a value overflows/underflows the double exponent range while held in a register; `/fp:precise` makes assignments and casts round to their declared type, which is what makes the many `float` locals reproducible across optimisation levels.
+
+### 3.5 Deliberate ordering/rounding guards in the code
+
+| Guard | Where | Purpose [I unless C] |
+|---|---|---|
+| `volatile double lenSqrd` | `Vector3::Normalise` (comment: "volatile for sync") [C] | force a 64-bit store so register spills cannot change the comparison `lenSqrd > 1e-10` and the reciprocal |
+| `volatile` temporaries for offspring height (`syncsfrand(0.2)`, `h×0.75`, `1 + r`, product) | `Tree::CreateAnotherTree` (`tree.cpp` ~L525) [C] | fix evaluation order and rounding of a synced value (P07) |
+| `volatile double randomFactor = 1.0; += syncfrand(0.3)` (comment: ordering of operations important for error control) | `Spider::AdvancePouncing` squash [C] | same |
+| `volatile double force` (comment: sync safety) | `TriffidEgg::Advance` tumble force [C] `triffid.cpp` ~L786 | same |
+| `FRAND/SFRAND` marker classes | `Vector3` [C] | fixed draw order |
+| Reciprocal multiply in `Vector3::operator/` and `/=` | [C] `vector3.h` | speed; part of the de-facto numeric spec (P13 R5) |
+| `Vector3::operator==` = `NearlyEquals` per component (`|a−b| < 1e-6` absolute; the header comment says FLT_EPSILON) | [C] `vector3.h`, `vector3.cpp` | tolerance comparisons are deterministic but not transitive |
+| `Round(a)` ≡ `(int)(a)` truncation (comment warns not to use an asm rounding version for repeatable results) | [C] `code/lib/math_utils.h` | MSVC `/fp:precise` `(int)` truncates independent of the rounding mode [I] |
+
+### 3.6 Known NaN/∞ producers in simulation paths
+
+| Site | Condition | Ref |
+|---|---|---|
+| `Team::Advance` slice 0: `m_selectedDarwinianCentre = m_newSelectedDarwinianCentre / (double)m_numDarwiniansSelected` | no selected Darwinians (the common case) → 0/0 = NaN stored every frame | [C] `code/team.cpp:Team::Advance` |
+| `Darwinian::AdvanceOnFire`, `ThrowableWeapon::Advance`, `Darwinian::AdvanceCombat`: `x / g_gameTimer.GetGameSpeed()` | speed 0 → ∞ (not reached: sim is skipped while paused) | [C] |
+| AI priority / weighted crate drops 0/0 | P08 §17 | [C] P08 |
+| `iv_acos(dot)` with `|dot| > 1` from rounding (`GunTurret::Advance` aim angle) | NaN → all comparisons false | [C] `code/worldobject/gunturret.cpp` |
+| Degenerate math (`HorizontalAndNormalise`, `Vector2::SetLength`, matrix inverse) | P13 R7 | [C] P13 |
+
+NaN propagation is deterministic on one platform/compiler; payload and sign handling differ across instruction sets [I].
+
+## [→ 22_determinism_and_networking] 4. Timestep, frame structure and update ordering
+
+### 4.1 Time constants
+
+| Quantity | Value | Kind | Ref |
+|---|---|---|---|
+| Server tick (one UPDATE letter) | **0.1 s real time**; schedule `m_nextServerAdvanceTime += 0.1`, at most one tick per call, no skipping (`SkipToTime` has no caller) | literal | [C] `code/network/server.cpp:Server::Initialise`, `AdvanceIfNecessary`; P15 §2.1 |
+| Game time per frame `SERVER_ADVANCE_PERIOD` | `0.1 × m_gameSpeed` game seconds (macro → `GameTimer::GetServerAdvancePeriod()`) | derived | [C] `code/gametimer.h`, `gametimer.cpp` |
+| Slices per frame | `NUM_SLICES_PER_FRAME = 10` | `#define` | [C] `code/globals.h` |
+| Client input (ALIVE) period | `IAMALIVE_PERIOD = 0.1` s real time | `#define` | [C] `code/globals.h`, `code/main.cpp:LocationGameLoop` |
+| Game speed values | 0 (MP match start; pause; victory, then locked), 1.0 (grace end, immediate), slow-down crate `0.2 + syncfrand(0.2)` for 15 s, speed-up crate `1.3 + syncfrand(0.7)` for 15 s, meteor slow-mo 0.4 for 4 s | data from sim | [C] `code/gametimer.cpp:GameTimer::Reset`; `code/worldobject/crate.cpp:Crate::RunSlowDownTime/RunSpeedUpTime`; `meteor.cpp:Meteor::Advance`; `code/multiwinia.cpp:Multiwinia::DeclareWinner/AdvanceGracePeriod` |
+| Speed blending per frame | `speed += (target − speed) × rate` (rate 0.05 crates, 0.1 meteor, 0.2 pause, 1.0 grace), snap when within 0.01; a duration counts down **0.1 per frame regardless of speed** then the target becomes 1.0; `LockSpeedChange` blocks further requests | sim | [C] `GameTimer::Tick`, `RequestSpeedChange` |
+| Physics step | variable: every object integrates once per frame with `dt = SERVER_ADVANCE_PERIOD` ∈ {0, 0.02 … 0.2} s — the network frame rate stays 10 Hz, game speed scales dt, not tick count | sim | [C] `Location::Advance` callers; e.g. `Spider::AdvancePouncing` `m_pos += m_vel * SERVER_ADVANCE_PERIOD` |
+| Sim pacing on clients | `GetNumSlicesToAdvance`: 20 when catching up, else `int(0.3 × pendingSlices)` clamped to [0, 20] (the intended time-based branch for ≤ 10 pending slices is dead: it assigns a shadowing local) | local only | [C] `code/network/clienttoserver.cpp:GetNumSlicesToAdvance` |
+| Catch-up | loop while > 20 frames behind and < 0.3 s spent this render frame | local only | [C] `ClientToServer::AdvanceAndCatchUp` |
+
+### 4.2 Execution order of one frame (single entry point)
+
+The only caller of `Location::Advance` and `Multiwinia::Advance` is `ClientToServer::ProcessAllServerLetters` on the main thread [C grep]. For frame N:
+
+1. `GetNextLetter` returns letter N (strict sequence order; unsequenced letters run immediately at the inbox head) [C].
+2. `ProcessServerLetters` (CLIENTHELLO/GOODBYE/CLIENTID/TEAMASSIGN/NETSYNCERROR/NETSYNCFIXED/SPECTATORASSIGN/FILESEND …) else `ProcessServerUpdates`: the letter's sub-directories are applied **in the order the server popped them from its FIFO inbox** (ALIVE → `Location::UpdateTeam`, SELECTUNIT, RUNPROGRAM, TARGETPROGRAM, TERMINATE, ORDERGOTO, PROMOTE, TOGGLEENTITY, SELECTDGS, ORDERDGS, PAUSE, game options …) [C] `ClientToServer::ProcessServerUpdates`; message catalogue in P15 §5.
+3. If it was an UPDATE: `g_sliceNum = 0`, `GameTimer::Tick()`, `GenerateSyncValue()`, `SendSyncronisation()` [C].
+4. Slices 0…9 (possibly spread over several render frames):
+
+| Slice | `Location::Advance(slice)` work, in this order | Ref |
+|---|---|---|
+| every | **Teams** 0→5 (skip `TeamTypeUnused`): [slice 1 only: `TaskManager::Advance`, kill-milestone messages for the local team] → for each unit (index order) `Unit::AdvanceEntities(slice)` (unit's slice range) → [slice 0 only: `Unit::Advance` for every unit, remove dead] → [slice 0 only: selected-Darwinian count/centroid roll-over] → `m_others` slice range: `Entity::Advance`, then entity-grid `RemoveObject`/`UpdateObject` | [C] `code/team.cpp:Team::Advance`, `code/unit.cpp:Unit::AdvanceEntities` |
+| every | **Weapons**: `m_lasers` slice range (`Laser::Advance`, remove), then `m_effects` slice range (`WorldObject::Advance`, delete) | [C] `Location::AdvanceWeapons` |
+| every | **Buildings** slice range (`Building::Advance`; on removal: delete, `RecalculateAITargets` if AITarget/Wall, and after the loop `ObstructionGrid::CalculateAll`) | [C] `Location::AdvanceBuildings` |
+| every | **Spirits** slice range | [C] `Location::AdvanceSpirits` |
+| 3 | **Clouds** (`m_offset += (0.03, 0, −0.01) × period` — cosmetic but inside the step) | [C] `Location::AdvanceClouds`, `code/clouds.cpp:Clouds::Advance` |
+| every | `MissionComplete()` evaluation (Darwinia objectives; MW maps use `NeverTrue`) | [C] `Location::Advance`; P11 |
+| 3 | Weather spawners: snow (level effect or Christmas mode — both may run, sharing `m_christmasTimer`), soul rain, dust storm, lightning | [C] `Location::Advance`; P05 |
+| 7 | `EntityGridCache::Advance` — evict cached enemy queries older than 1.0 game s | [C] `code/entity_grid_cache.cpp` |
+| 8 (MP) | `AdvanceCrates`; `m_spawnManiaTimer`, `m_bitzkreigTimer` −= period | [C] `Location::Advance` |
+| after each slice | `ParticleSystem::Advance(slice)` — advances **all** particles at slice 0 only (cosmetic) | [C] `code/particle_system.cpp:ParticleSystem::Advance` |
+| 8 (MP) | `Multiwinia::Advance()` — mode rules; runs **even while `GamePaused()`** (grace countdown, un-pause) | [C] `ProcessAllServerLetters` |
+
+Steps 1–5 of `Location::Advance` are written as `#pragma omp parallel for schedule(dynamic)` over `step = 0..4` (with `#undef for` to defeat the `for`-scoping macro). OpenMP is not enabled in any configuration, so they execute serially in the order above [C config, I default]. They share the synced RNG, the entity grid and building lists — enabling OpenMP would make the simulation nondeterministic.
+
+### 4.3 Container iteration and slot allocation (what makes the order reproducible)
+
+| Mechanism | Rule | Ref |
+|---|---|---|
+| `FastDArray<T>` (base of `SliceDArray`) | slots iterated 0…`Size()−1` skipping empty slots; `PutData` takes the head of a **LIFO free list** (most recently freed slot first); when full it grows by the step size (`m_buildings` 10, `m_spirits`/`m_lasers`/`m_effects` 100; `m_spirits` presized 100) or doubles when step = −1; `RemoveData` pushes the slot on the free list | [C] `contrib/systemiv/lib/tosser/fast_darray.cpp:PutData/RemoveData/Grow`; `code/location.cpp:Location::Location` |
+| `SliceDArray::GetNextSliceBounds(slice)` | slice 0 starts at 0; slice k < 9 covers `[lastUpdated+1, lastUpdated+1+int(Size()/10.0f)]`; slice 9 ends at `Size()−1`; `Size()` is the **capacity**, read at slice time, so growth during earlier slices shifts later bounds. Every slot is advanced exactly once per frame, except: an object created into a slot above the current `lastUpdated` is advanced in the same frame; one created into a reused lower slot waits for the next frame | [C] `code/lib/slice_darray.cpp` |
+| Render-side use | renderers call `GetLastUpdated()`: slots ≤ lastUpdated are extrapolated with `predictionTime`, later slots with `predictionTime + SERVER_ADVANCE_PERIOD` | [C] `code/team.cpp:Team::RenderDarwinians` |
+| Entity-grid queries | results ordered by cell x ascending, then z ascending, then team 0…5, then cell slot order; duplicates (multi-cell objects) removed | [C] `code/entity_grid.cpp:EntityGrid::GetNeighbours` |
+| Entity-grid cache | `GetEnemies` returns a cached result list when a same-team query centre lies within half the cached range (float-stored keys); entries die after 1.0 game s (slice 7). Cached results are therefore stale by up to 1 s — the cache is simulation state and its contents depend on query order | [C] `code/entity_grid_cache.cpp:EntityGridCache::GetEnemies/FindCacheHit/Advance` |
+| Hash maps / sorting / pointer order | none in simulation code: `qsort` only for the alpha-pass building depth sort (render), `std::map<Entity*,…>` only in the `TRACK_SYNC_RAND` watch list | [C grep over `code/worldobject`, `location`, `team`, `unit`, `taskmanager`, `multiwinia`, `entity_grid`, `routing_system`, `obstruction_grid`, `level_file`, `global_world`] |
+| Function-static scratch vectors | `s_neighbours` in several files, `Location::s_neighbours` with an in-use flag (`Location::Bang` falls back to a local vector when re-entered) | [C] |
+
+### 4.4 Object identity and id allocation
+
+| Id | Allocation | Determinism notes | Ref |
+|---|---|---|---|
+| `WorldObjectId` = {`unsigned char teamId`, `int unitId`, `int index`, `int uniqueId`}; special unit ids `UNIT_BUILDINGS −100`, `UNIT_SPIRITS −101`, `UNIT_LASERS −102`, `UNIT_EFFECTS −103` | — | `index` is the slot in `Team::m_others` / `Unit::m_entities`; network commands address entities **by slot index** (TERMINATE, PROMOTE, TOGGLEENTITY, SELECTUNIT entityId), so slot allocation history must be identical on all peers | [C] `code/worldobject/worldobject.h`; `ClientToServer::ProcessServerUpdates` |
+| `uniqueId` for entities and effects | global `WorldObjectId::s_nextUniqueId`, pre-incremented (first id 1) by `GenerateUniqueId` in `Entity::CreateEntity`, `Location::ThrowWeapon/FireRocket/FireTurretShell/LaunchFireball/FireLaser/CreateShockwave`, weather spawners, zombies, spam infections, turret shells/targets, tank missiles/mines | reset only by `ResetUniqueIdSeed` in `DoEnterLocation` (**not** in Assault `Multiwinia::ResetLocation`) — deterministic either way because every peer executes the same allocations | [C] `code/worldobject/worldobject.cpp`, `code/main.cpp:DoEnterLocation` |
+| Building `uniqueId` | level-file ids; runtime buildings (crates, trees, AI targets of turrets/statues/radar dishes) from `GlobalWorld::GenerateBuildingId()` = `s_nextUniqueBuildingId++`, reset to 0 in `Location::Init` and set to (highest level id + 1) after `InitBuildings` | building ids travel in AIMBUILDING, SELECTUNIT, TOGGLELASERFENCE; `Location::GetBuilding(id)` is a linear scan returning the first match. **Local callers exist**: `MultiwiniaHelp::AttachTutorialTo3d/AttachTutorial2To3d` create crates with `GenerateBuildingId` from the render-frame loop (single-player tutorial only, P19) | [C] `code/global_world.cpp:GenerateBuildingId`; `code/location.cpp:InitBuildings`; `code/multiwiniahelp.cpp` |
+| Route ids | slots of `RoutingSystem::m_routes`, shared by simulated routes and **local** mouse-preview routes from `LocationInput` | handles only, never transmitted (P03) — but they perturb the slot order on each peer differently | [C] P03 |
+| Spirit index | slot in `Location::m_spirits` (`FastDArray<Spirit>` by value) | as FastDArray | [C] `Location::SpawnSpirit` |
+| Task ids | per-team counter, 1 byte on the wire (P09) | — | [C] P09 |
+
+### 4.5 Threads and the simulation
+
+The simulation runs on exactly one thread at a time: the main thread for frames, the loading-screen worker thread for `Location::Init` (initial load; the Assault `ResetLocation` re-init runs on the main thread). While the worker loads, the main thread renders the loading screen, advances sound, sends KEEPALIVE syncs and ticks the server, and executes display-list jobs queued by the worker — none of which touch the synced RNG [C] `code/loading_screen.cpp:LoadingScreen::Render`, `code/main.cpp:EnterLocation`. Hand-over between the threads is via the `WorkQueue` mutex/events [I: memory visibility guaranteed by the Win32 synchronisation calls]. The only cross-thread hazard to sim state is the shared non-synced LCG (§2.6).

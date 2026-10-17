@@ -106,3 +106,7 @@
 - 57 mp_* (49 in retail menu: Domination 9, KOTH 9, CTS 9, Assault 8, Rocket Riot 7, Blitzkrieg 7; 8 excluded from retail data); 12 map_*, 17 mission_*, 30 old/. All map ids match mapcrc.h (86/86); building counts match P06 exactly. Tables: drafts/X4_levels.csv (116×125), X4_level_buildings.csv, X4_thumbnails.csv, X4_mode_maplists.csv. [U]=7.
 - Critical: level_enum.txt excluded from every data build yet sole source of achievement level ids → "Master of Multiwinia" never awardable unless patched; benchmark/stress maps declare GameTypes none → menu discards them; OrderedInsert off-by-one → tie order depends on archive index order.
 ## Phase 3 launched: S01
+
+## S27 (27_audio_engine.md) — done, ~154 KB
+- Voice stealing confirmed (lowest-priority channel replaced, no compare; priority = perceived volume × 0.75 per louder copy of same event); volume curves 5 dB (DSound) vs 4.343 dB (software) confirmed. 5 contradictions resolved: master-volume slider (code/UI/soundsliderbutton.h) IS live (P17b/P18 said dead); WAV decoder unreachable; record-to-file hook no caller; smoothed params start values; sound tools reachable only via cheat window. New: nearest-emitter crowd sounds discarded unless emitter within ~316 units of camera; software mixer likely crashes if selected; no audio device → queued sounds never freed. 27-U1..U14.
+## Phase 3 launched: S32

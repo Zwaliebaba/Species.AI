@@ -553,3 +553,525 @@ sequenceDiagram
 | Message durations | Success 2.5 s, Failure 2.5 s, Shutdown 3.0 s | literal | `code/taskmanager.cpp`, interfaces |
 | Recent-task pop-up | show 3.0 s, minimise 1.0 s; SP clear after 1.0 s | literal | `TaskManager::Advance`, `RenderRecentRunTask` |
 
+## 4 Task-manager interfaces
+
+### 4.1 Variant selection — which interface is live
+
+All three interface classes are compiled into FULL. `TaskManagerInterface::CreateTaskManager()` [C] `code/taskmanager_interface.cpp`:
+
+```
+delete old g_app->m_taskManagerInterface
+if input mode != GAMEPAD and IsSinglePlayer() and pref "ControlMethod" == 0  -> TaskManagerInterfaceGestures
+else if Multiplayer()                                                         -> TaskManagerInterfaceMultiwinia
+else                                                                          -> TaskManagerInterfaceIcons
+```
+
+It is called at app start (`App::App`, game mode None → Icons), on every location entry (`code/main.cpp:DoEnterLocation`), by the (unreachable) key-binding window when the control method changes (`code/interface/prefs_keybindings_window.cpp`), and by `SwitchTaskManagerForX360Controller()` each client frame when the input mode switches to or from gamepad while the overlay is hidden (`code/main.cpp`). Because `NET_DARWINIA_START_GAME` sets `m_gameMode = GameModeMultiwinia` before the level loads, **every Multiwinia match, including the tutorials, uses `TaskManagerInterfaceMultiwinia`** [B:FULL]; Gestures and Icons are reachable only in Prologue/Campaign → [B:LEGACY] [C]. Default prefs `ControlMethod = 1`, `MultiwiniaControlMethod = 1` [C] `data/default_preferences.txt`.
+
+| Variant | Build/runtime status | Player-facing model |
+|---|---|---|
+| `TaskManagerInterfaceMultiwinia` | **live** [B:FULL] | always-on bottom task bar (display-only for the mouse), power-up pop-up, centre messages, crate tooltip |
+| `TaskManagerInterfaceIcons` | [B:LEGACY] (Darwinia campaign, `ControlMethod` ≠ 0 or gamepad) | Tab-toggled full-screen overlay with three sliding screens (task manager, objectives, research) |
+| `TaskManagerInterfaceGestures` | [B:LEGACY] (Darwinia campaign, keyboard, `ControlMethod` = 0) | Alt-held overlay; tasks created by drawing gestures (§7) |
+
+Per client frame `TaskManagerInterface::Advance()` runs after `LocationInput::Advance()`; `Render()` is the last overlay in `Renderer` after markers, help, Shaman UI, user input, game cursor and chat [C] `code/main.cpp`, `code/renderer.cpp`. Attract mode would set `m_lockTaskManager = true` (all variants return immediately) [B:DEAD] (`ATTRACTMODE_ENABLED` off) [C] `code/attract.cpp`.
+
+### 4.2 Base class `TaskManagerInterface`
+
+Fields [C] `code/taskmanager_interface.h`: `m_visible` (overlay shown), `m_highlightedTaskId` (task under the cursor/pad focus, read by `GameCursor::GetHighlightedObject`), `m_verifyTargetting` (unused here), `m_currentMessageType`, `m_currentTaskType`, `m_messageTimer` (wall-clock expiry), `m_viewingDefaultObjective`, `m_lockTaskManager`, `m_quickUnitVisible` (no reader), `m_showingRecentTask` (set by the MP pop-up renderer).
+
+Message types: `MessageSuccess` = 0, `MessageFailure` = 1, `MessageShutdown` = 2, `MessageResearch` = 3, `MessageResearchUpgrade` = 4, `MessageObjectivesComplete` = 5, `NumMessages`. String id `taskmanager_msg<N>` (English: RUN PROGRAM, SYNTAX ERROR, PROGRAM TERMINATED, ACQUIRED, UPGRADED, OBJECTIVES COMPLETED) [C] `data/language/english.txt`. Special task-type values 999 → `taskmanager_mapeditor`, 998 → `taskmanager_accessallareas` [C] `RenderMessages`. `SetCurrentMessage(type, taskType, seconds)` sets expiry = now + seconds.
+
+`enum TMControl { TMTerminate, TMDisplay }`; pure virtuals `ControlEvent(TMControl)`, `Advance`, `Render`, and four advisories consumed by `ControlHelpSystem` (§10): `AdviseCreateControlHelpBlue`, `AdviseCreateControlHelpGreen`, `AdviseCloseControlHelp`, `AdviseOverSelectableZone`.
+
+`IsVisible()` = `m_visible || ShamanInterface::IsVisible()` [C] — the Shaman summon UI counts as "task manager visible" for input gating.
+
+`ScreenZone` (clickable rectangle in the 600-high virtual canvas): `m_name` (action string, < 256 chars), `m_toolTip` (string id, < 1024), `m_x, m_y, m_w, m_h`, `m_data` (int argument), `m_scrollZone` (gamepad navigation group; −1 none), `m_subZones` (has child weapon zones) [C] `ScreenZone::ScreenZone`. Zones are regenerated every frame by the renderer into `m_newScreenZones` and swapped into `m_screenZones` at the start of the next `Advance` (one-frame latency).
+
+`KeyboardShortcut` = `ControlEventFunctor(controlType)` + action name + data; `operator()` = `g_inputManager->controlEvent(type)`; `noun()` = the bound key's description, shown in tooltips as `help_keyboardshortcut` + " : " + noun [C] `code/lib/input/transform.cpp:ControlEventFunctor`.
+
+`RunDefaultObjective(cond)` sets `m_viewingDefaultObjective` for BuildingOnline/Offline/ResearchOwned objectives (camera/Sepulveda parts are `USE_SEPULVEDA_HELP_TUTORIAL`) [B:LEGACY].
+
+### 4.3 `TaskManagerInterfaceMultiwinia` — the live interface [B:FULL]
+
+#### 4.3.1 What the player sees
+
+The Multiwinia interface has **no pop-up task-manager screen in practice**: `SetVisible()` is reached only inside `if (g_app->IsSinglePlayer())` [C] `TaskManagerInterfaceMultiwinia::Advance`, so `m_visible` stays false for the whole match. The player-facing elements are always-on overlays:
+
+| # | Element | When drawn | Layout (virtual canvas H = 600, W = 600·aspect) | Rendering | Ref |
+|---|---|---|---|---|---|
+| U1 | **Placement-area sparkles** (world) | current task Started and its target-area list is not the single "anywhere" area | per `TaskTargetArea`: two `Particle::TypeMuzzleFlash` particles (size 60) per frame at centre ± (r·sin a, 0, r·cos a), a = `g_gameTime`·3 rad/s, y = ground + 5 | particle system | `RenderTargetAreas` |
+| U2 | **Power-up received pop-up** | per `TaskSource` whose task still exists; not after game over | stacked at (W/2, 600/4.1 + i·boxH·1.1); `overallScale` 0.4; iconSize = min(3t,1)·(600/5)·0.4; boxH = min(3t,1)·(600/4.2)·0.4; box width = max(text widths) + 1.5·iconSize | §4.3.4 | `RenderRecentRunTask` |
+| U3 | **Centre status message** | `m_currentMessageType != −1` and not expired | centred (W/2, 370); size 40, growing by 15·√(2 − remaining) in the last 2 s | `g_titleFont`, outline pass alpha³ then fill alpha = clamp(remaining·0.5, 0, 1) | `RenderMessages` |
+| U4 | **Crate help tooltip** | current task Started | box width 0.35·600 = 210, top y = 420, centred on W/2; text wrapped at 1.75·210, font 11 (+20 % line gap); black 0.75 fill, white 0.5 outline; text outline + fill (`g_editorFont`) | caption `crate_tooltip_<name>` (lower-cased); napalm → `crate_tooltip_napalmstrike`; turret option 0/1/3 → gun/rocket/flame tooltip, other → gun; missing → "Missing String:\n<id>" | `RenderCurrentCrateHelp` |
+| U5 | **Running-task bar** | ≥ 1 task (drawn every frame in the `!m_visible` branch) | centred horizontally at y ≈ 550; slot pitch = iconSize + 10; iconSize eases 60 → 55; selected slot ×1.1, others ÷1.1 | §4.3.3 | `RenderRunningTasks` |
+| U6 | **Tab / LB hint** | ≥ 1 task | left of the first slot: centre (x₀ − 1.2·size, y + size/2 − 0.2·size), half-size 0.4·size | `icons/button_tab.bmp` (keyboard mode) or `icons/button_lb.bmp`; black 0.75 pass then white 0.75 | `RenderRunningTasks` |
+| U7 | Focus highlight | `m_currentScreenZone` valid — **never in MP**; the same highlight is drawn explicitly around the current, unplaced task icon (§4.3.3) | zone grown by 10 % of its height each side | `icons/mouse_highlight.bmp`, additive, a square of side h | `RenderScreenZones`, `RenderScreenZoneHighlight` |
+| U8 | Standard cursor redraw | only if `m_visible` (never in MP) | – | `GameCursor::RenderStandardCursor` | `Render` |
+
+`Render()` draws nothing when editing, with no location, with any Eclipse window open, with `m_hideInterface` (Alt+X), during the grace period, after game over, or while the local team controls a GunTurret [C] `TaskManagerInterfaceMultiwinia::Render`.
+
+#### 4.3.2 Controls handled
+
+`Advance()` order [C]: return if locked → `AdvanceTab()` (§3.7) → display/hide logic → `AdvanceScreenZones()` → `AdvanceKeyboardShortcuts()` → `AdvanceTerminate()` → default-objective cleanup → recent-task timer cleanup.
+
+| Control | Default binding | Effect in MP | Ref |
+|---|---|---|---|
+| `IconsTaskManagerDisplay` / `IconsTaskManagerDisplayDown` | Tab down / pad Back down | Selected entity is a Shaman → `ShamanInterface::ShowInterface` (cut, §6.7). Otherwise nothing (the SP branch would show the overlay; Back-down records `m_taskManagerDownTime`) | `Advance` |
+| `IconsTaskManagerHide` | Tab up; pad Back down; pad B down | Hides the Shaman interface if visible (overlay-hide path unreachable in MP) | `Advance` |
+| `ControlUnitCycleRight` | `]`, Tab down; pad RB | next task (§3.7) | `TaskManagerInterface::AdvanceTab` |
+| `ControlUnitCycleLeft` | `[` down; pad LB | previous task | same |
+| `ControlGesturesSwitchUnit` (only if pref `ControlMethod == 0`) | Tab down | same as cycle right | same |
+| `ControlTaskManagerSelectTask1…9` | keys 1…9 down | `RunScreenZone("SelectTask", 0…8)`: slot valid and `m_startTimer <= 0` → `RequestSelectProgram(myTeam, task id)` + sound `SelectTask` (Interface); pad mode also `HideTaskManager()` | `AdvanceKeyboardShortcuts`, `RunScreenZone` |
+| `ControlTaskManagerEndTask` | **unbound** in every shipped file | would call `TerminateTask(current)` **locally** (not networked) — dormant desync path (§13 X8) | `RunScreenZone("DeleteTask")` |
+| `ControlUnitCycleLeft/Right`, `ControlCameraForwards/Backwards` registered as shortcuts "ScreenUp"/"ScreenDown" | as above / W, ↑ / S, ↓ | **no handler** in the MP `RunScreenZone` → no-op | constructor, `RunScreenZone` |
+| `ControlIconsTaskManagerEndTask` | **C** down; pad **Y** down | If no Eclipse window: `RequestTerminateProgram(myTeam, m_currentTaskId)` (T3) | `AdvanceTerminate` |
+| `ControlActivateTMButton` | LMB up; pad A up; Enter down | activates `m_currentScreenZone` — **never fires in MP** (focus forced to −1 while hidden) | `AdvanceScreenZones` |
+| `ControlIconsTaskManagerDisplayUp` (after Back held > 0.5 s) | pad Back up | activates the focused zone ("hold Back, release on a button") — never in MP | `ButtonHeld`, `ButtonHeldAndReleased` |
+| `ControlMenuUp` / `ControlMenuDown` | pad d-pad/sticks up/down (repeat) | only while visible (never in MP): move focus within the current scroll zone, wrapping | `AdvanceScreenZones` |
+| `ControlMenuLeft` / `ControlMenuRight` | pad d-pad/sticks left/right (repeat) | only while visible: switch scroll zone 1 ↔ 2, 2 → 3 when the zone has sub-zones, step through zone 3 | `AdvanceScreenZones` |
+| `ControlCloseTaskHelp` | read, body commented out | no effect | `Advance` |
+
+`RunScreenZone(name, data)` actions [C]: `NewTask` (refused with `MessageFailure` 2.5 s while another non-Officer task is Started; else if research owned → `RequestRunProgram` + sound `GestureBegin`; pad → hide), `SelectTask` (above), `DeleteTask` (local `TerminateTask(data or current)` + sound `DeleteTask` — only via zones rendered while visible or the unbound key), `SelectWeapon` (research owned → `RequestRunProgram(weapon)` + `GestureBegin` + `GestureSuccess`), `Research` (`SetCurrentResearch`), `Objective` (data = ±(index+10); runs a cut-scene script or default objective; hides). In MP only `SelectTask` zones are ever generated (by the bar, scroll zone 2) [C] `RenderRunningTasks`.
+
+**The MP task bar is display-only for the mouse** [C] `AdvanceScreenZones`: hover is evaluated only `if (m_visible)`; while hidden `m_currentScreenZone` is reset to −1 every frame (the initial auto-focus only picks zones whose `m_scrollZone` equals `m_currentScrollZone` = 1, while bar zones use 2). Clicking a task icon does nothing.
+
+**World-hover echo**: while hidden, if the object under the cursor (`LocationInput::GetObjectUnderMouse`) is the `m_objId` of one of the player's tasks, the matching `SelectTask` zone is flagged "highlight only"; the line that would focus it is commented out, so in MP it has no visible effect, and `m_highlightedTaskId` (task of the focused zone) is always −1 [C].
+
+Advisories for `ControlHelpSystem` [C]: Blue = focus valid ∧ Back held > 0.5 s ∧ Back pressed ∧ free slot; Green = focus valid ∧ free slot ∧ focused zone is `NewTask`; OverSelectableZone = focused zone exists and is not `NewTask`; CloseControlHelp = visible ∧ ¬(focus valid ∧ held ∧ pressed). All are false in MP.
+
+#### 4.3.3 Running-task bar (U5) — exact rendering
+
+Per frame [C] `TaskManagerInterfaceMultiwinia::RenderRunningTasks`:
+1. `numTasks = m_tasks.Size()` (capacity is computed but **not drawn** — empty slots are invisible). Static eased layout: `factor = min(g_advanceTime, 0.1)·10`; `s_iconSize → 55`, `s_iconX → W/2 − (s_iconSize+10)·numTasks/2 + s_iconSize/2 + 5`, `s_iconY → 550`, each `s = s·(1−factor) + target·factor` (statics start at 60 / initial x / 550).
+2. For each slot i (x advancing by iconSize + 10); selected index = index of `m_currentTaskId`; k = 1.1 if selected else 1/1.1:
+   - **Shadow**: `icons/marker_shadow.bmp`, colour (0,0,0,0.81), quad half-extent (iconSize+10)·k/2.2; blend SRC_ALPHA / ONE_MINUS_SRC_ALPHA.
+   - **Colour disc**: `icons/marker_colour.bmp`, additive (SRC_ALPHA, ONE), half-extent (iconSize+10)·k/2.4; colour = team colour; for a GunTurret task the *current owner's* colour of the turret building, skipped if the turret is neutral (255); skipped if `m_startTimer > 0`; RGB ×0.1 if state ≠ Running; alpha × max(0.5, |sin(4·gameTime)|) while Started.
+   - **Icon**: `icons/icon_<TypeName>.bmp`, additive, size iconSize·k; colour (0.5,0.5,0.5,1) if `m_startTimer > 0`, (1,1,1,0.6) if not Running, else white. Creates `ScreenZone("SelectTask", tooltip "newcontrols_select_<Name>" or "newcontrols_place_<Name>" if Started, icon rect, data = i, scrollZone = 2)` and stores `m_screenX/Y/H` in the task.
+   - **Current-and-unplaced highlight**: task is current and not Running → `RenderScreenZoneHighlight` around the icon (+5 px each side).
+   - **Extra info** `RenderExtraTaskInfo(task, centre, size, alpha = 1, targetOrders = false, taskManager = true)` (also used by `MarkerSystem` for world markers, §8.12):
+
+| Condition | Text / graphic | Position (relative to icon centre) | Font size |
+|---|---|---|---|
+| `m_startTimer > 0` | countdown `%2.0f` s (the outline pass uses the malformed format `"%2.0"`, a code defect) | (+3, +2) | 12 |
+| Engineer | current action (`Engineer::GetCurrentAction()` string id) + spirit count | action (+3, +25) size 7; count (+3, +2) | 7 / 12 |
+| Harvester | spirit count | (+3, +19) | 12 |
+| Squad | "x<alive>"; plus life timer `%1.0f` if > 0, red (1,0,0) when ≤ 10 s | count (+11, +5) size 10; timer (+3, +0.4·size) | 10 / 12 |
+| Booster, HotFeet, Subversion, Rage, Tank (non-TankBattle), Running with life > 0 | life timer `%1.0f`, red when ≤ 10 s | (+3, +0.4·size) | 12 |
+| Armour | passenger count (unless targetOrders); `icons/arrows_load.bmp` when state (or `m_conversionOrder` for targetOrders) = Loading, `icons/arrows_unload.bmp` when Unloading; `icons/arrows_moving.bmp` when in the task bar and > 30 u from its waypoint | count (+3, +0.33·size), font 0.2·size; arrows half-extent size/2.2, shadow pass (SRC_ALPHA, ONE_MINUS_SRC_COLOR) then additive 0.3 alpha | – |
+
+   - **Compass** (`RenderCompass`) if `task->GetPosition() != 0`: a pointer around the icon toward the task's world position. On-screen target: vector from the icon to the projected point. Off-screen: cast the click ray through the icon, take the point 1000 u along it, step 100 u toward the target, project, use that direction. Quad half-size `compassSize` (= 0.77·iconSize, ×k) oriented along the vector; `icons/compass_shadow.bmp` black 0.8 alpha-blend then `icons/compass.bmp` additive, alpha 1.0 if current else 0.5.
+   - **Delete icon** (only if visible → never in MP): `icons/icon_delete.bmp` at (x, y + 0.6·size), size 0.4·size, zone `DeleteTask` with data = task id.
+
+#### 4.3.4 "Power-up received" pop-up (U2) — exact rendering
+
+Data from `TaskManager::m_recentTasks` (§3.5). For entry i, t = now − |m_timer| [C] `RenderRecentRunTask`:
+- Spin: while t < 3, `m_rotation += g_advanceTime · 20 · (3 − t)⁴`.
+- scale = min(3t, 1); alpha = min(2t, 1).
+- Not minimising (m_timer > 0, first 3 s): black 0.9 box, vertical gradient overlay (0.3 black → 0.3 white), white 0.4 outline; caption line 1 = source text (`multiwinia_cratepowerupfound` / `multiwinia_reinforcementsgiven` / `multiwinia_retributiongiven`) at 0.7·fontH in grey 0.7; line 2 = upper-cased power name (napalm → `cratename_napalmstrike`; turrets → `GunTurret::GetTurretTypeName(option)`), size fontH (×0.8 if `TextLanguage` ≠ english); fontH = 0.3·boxH. Crate source (0) also draws a faint (alpha 0.15) additive `icons/icon_crate.bmp` rotated by −0.02·m_rotation, clipped to the box.
+- Minimising (negative timer, 1 s): the icon flies from the pop-up toward its slot (`m_screenX/Y`), lerp factor min(2t, 1); size lerps from 600/6 to `m_screenH`; alpha × (1 − min(t, 1)).
+- Always: shadow `icons/icon_shadow.bmp` (1.25×, SRC_ALPHA/ONE_MINUS_SRC_COLOR, grey 0.9·alpha), team-colour ×0.6 disc `icons/marker_colour.bmp` additive, then the task icon additive.
+
+#### 4.3.5 What the task manager contributes to selection
+
+- Any task in `m_tasks` is selectable (slots 1–9 by key, all by Tab/bumpers). Selecting routes through `Task::SwitchTo` (§3.7): it selects the task's unit/entity, or for booster-family powers makes the affected Darwinians a group, or deselects for one-shot powers so the next left click places them.
+- One current task and one current unit/entity/building per team. Selecting an Officer entity clears the current task (`Team::SelectUnit`).
+- `m_startTimer > 0` blocks key selection and targeting.
+
+### 4.4 `TaskManagerInterfaceIcons` [B:LEGACY]
+
+(Prologue/Campaign with `ControlMethod` ≠ 0 or gamepad.) Three vertically-sliding screens over the 600-high canvas: `ScreenOverlay` = 0, `ScreenTaskManager` = 1, `ScreenObjectives` = 2, `ScreenResearch` = 3; `m_screenY` eases to `m_desiredScreenY` ∈ {−1 (research), 0, +1 (objectives)} with `diff = g_advanceTime·10`, snapping within 0.001 [C] `AdvanceScrolling` (despite the "Y" naming the projection offsets `left` horizontally by `m_screenY·600`, `SetupRenderMatrices`).
+
+Shortcuts [C] constructor: `NewTask` Squad/Engineer/Officer/Armour ← `ControlIconsTaskManagerNewSquad/NewEngineer/NewOfficer/NewArmour` (F1–F4); `SelectWeapon` Grenade/Rocket/AirStrike/Controller ← `ControlIconsTaskManagerSelectGrenade/Rocket/AirStrike/Controller` (F5–F8); `SelectTask` 0–8 ← `ControlTaskManagerSelectTask1–9`; `DeleteTask` ← `ControlTaskManagerEndTask` (unbound); `ScreenUp` ← `ControlTaskManagerScrollUp` (W) and `ControlXBoxMenuCycleUp` (pad LB repeat); `ScreenDown` ← `ControlTaskManagerScrollDown` (S) and `ControlXBoxMenuCycleDown` (pad RB repeat).
+
+Controls [C] `Advance`, `AdvanceScreenEdges`, `AdvanceTerminate`: Display (Tab down / pad Back down) → Shaman UI if a Shaman is selected, else SP shows the overlay (sound `Show`); Hide (Tab up / Back / B) → `HideTaskManager` (mouse warped to screen centre, re-select current task, `Gesture::EndGesture`, an extra `Camera::Advance`, sound `Hide`); screen edges: cursor y < 10 px → research, y > H − 10 → objectives (only when not scrolling; sound `Slide`); `ControlIconsTaskManagerEndTask` (C / pad Y) → `RequestTerminateProgram`; `ControlActivateTMButton` activates the zone; pad navigation as §4.3.2 but `ButtonHeld()` hard-wired false. Extra zone actions `ShowScreen` (data = screen id), `ScreenUp`, `ScreenDown`. `NewTask` for Squad also increments `GlobalWorld::m_spSquaddiesUsed[location index]` (location 12 → index 0, else id − 1; sentinel 3599999 → 1).
+
+Elements [C] `Render*`: centre message (U3 formula, `g_gameFont`; the first `MessageObjectivesComplete` adds the mission time to `m_spLevelTimes`); title bar (`textures/interface_grey.bmp`, tint (0.5,0.5,1,0.7), 80 px, plus a line); bottom divider `textures/interface_divider.bmp` 26 px; tooltip with typewriter reveal (50 chars/s) at (20, H − 12) size 12 plus shortcut noun at (W − 250, H − 12); running-task column x ≈ 40 → 80, from y 130, icon 50 → 70 px, gap 10, slot shadows for **every capacity slot**, Started icons blink (invisible when `fmod(gameTime, 1) < 0.4`), current alpha 0.9 else 0.27, booster life timer, compass (0.75·size, yellow 0.8 when current), squad weapon sub-icons (Grenade/Rocket/AirStrike/Controller if researched; zones `SelectWeapon`, scroll zone 3; parent `m_subZones = true`), delete icons; "Create new task" menu (`newcontrols_createnewtask`) with Squad, Engineer, Officer, Armour, Harvester if researched (rows 46 px, zones `NewTask`, scroll zone 1, tooltips `newcontrols_create_<Name>`); objectives screen (primary/secondary lists, objective counter, statistics: time hh:mm:ss, kills = team 2 kills, survivors = team 0 Darwinians, squaddies used); research screen (one row per item, 3 progress bars of `RequiredProgress(level)·0.85` px, version "v<level>.0", current research pulses |sin(2·gameTime)|); navigation arrows or LB/RB icons (pad + `ControlHelpEnabled`), blinking 155/255 each second; Prologue "launchpad" progress bar with 5 hard-coded objectives (building ids 66, global buildings 1/2/3, research item 130, spawn points 18/51/52/54) and a 256-particle starburst celebration (`textures/starburst.bmp`, alpha decay 0.015–0.03 per frame, non-synced `frand`) [C] `EvaluteTutorialObjectives`, `AdvanceProgressBar`, `RenderProgressBar`. `RenderGestures` and `RenderOverview` exist but are never called in this variant.
+
+### 4.5 `TaskManagerInterfaceGestures` [B:LEGACY]
+
+(Prologue/Campaign, keyboard/mouse, `ControlMethod` = 0.) The overlay is **held**: visible while `ControlGesturesTaskManagerDisplay` (Alt pressed / pad X pressed) is true; release → `HideTaskManager` [C] `Advance`. Screens slide horizontally (`m_screenX` eases at `g_advanceTime·5`, ±1). Screen edge or `ControlGestureLeft` (A, ←, pad LB, pad d-pad left — the binding line has the typo `donw`, §11.3) / `ControlGestureRight` (D, →, pad RB, d-pad right) switch screens, 10 px border, only when not drawing [C] `AdvanceScreenEdges`.
+
+Gesture capture [C] `AdvanceGestures` (while held, central screen shown, no zone focused):
+1. If `ControlGestureActive` (LMB pressed / pad A pressed) or a recording is in progress while the current task is Started (not Officer) → `MessageFailure` 2.5 s, abort (must place first).
+2. Begin: not recording ∧ GestureActive → `Gesture::BeginGesture`, sound `GestureBegin` (TypeGesture).
+3. While held: `AddSample(g_target->X(), g_target->Y())` every client frame (screen pixels).
+4. Release: `EndGesture`, sound `GestureEnd`; if `GestureSuccess()` → `taskType = MapGestureToTask(GetSymbolID())`; researched → `RequestRunProgram(taskType)` + sound `GestureSuccess`, else `MessageFailure`; not success → `MessageFailure` + sound `GestureFail`.
+
+Terminate: `ControlGesturesTaskManagerEndTask` (Ctrl+C chord / pad Y) → **local** `TerminateTask(current)` and `m_currentTaskId = −1` (not networked) [C] `AdvanceTerminate`. Shortcuts `SelectTask` 0–8 (keys 1–9) set `m_currentTaskId` and call `SelectTask` locally.
+
+Elements: title `taskmanager_taskmanager` size 50; grey title bar 100 px spanning 3 screens; silver dividers; central red panel `textures/interface_red.bmp` multiplied by the alpha mask `icons/gesture_alpha.bmp` (red channel → alpha, two texture units, GL_COMBINE); **gesture guide** `icons/gestureguide.bmp` 320×320 at (W/2, H/2 − 10), additive 0.7; running-task row at y = 490 (icon 70, shadow 78, gap 18, all capacity slots; Started blink; current alpha 1.0, visible 0.5, hidden 0.3; engineer/squad info; compass size 53); overview tabs (research / task manager / objectives) at y = 95, 100×16 boxes; objectives and research screens as in Icons (research rows also show `icons/gesture_<Name>.bmp` for every type except Darwinian, Laser, TaskManager); live gesture trail ([26](26_animation_and_vfx.md)) [C] `Render*`.
+
+## 5 Officer orders promotion and formations
+
+Officer behaviour as a unit (stats, state machine, AI, rendering) is specified in [02](02_units_and_entities.md); this section specifies what the **player** can make an officer do and the exact command semantics. All behaviour below is [B:FULL] unless tagged; evidence [C] `code/worldobject/officer.cpp` unless noted.
+
+### 5.1 Promotion and demotion
+
+- **Promote** (O2): `PROMOTE(team, entityIndex)` → `Location::PromoteDarwinian` (refused if the Darwinian is on fire): spawns an Officer at its position and velocity, control-flash particles, marks the Darwinian `m_promoted` (removed next tick, no spirit), registers an officer marker for the local team (`MarkerSystem::RegisterMarker_Officer`, §8.12); the handler then selects the new officer (`SelectUnit(−1, officerIndex, −1)`) [C] `code/location.cpp:Location::PromoteDarwinian`, `code/network/clienttoserver.cpp:ClientToServer::ProcessServerUpdates`.
+- **Demote**: the same command applied to an Officer index calls `Location::DemoteOfficer` (officer `m_demoted = true`, removed on its next `Advance` with no spirit; one Darwinian of the team spawned at its position) and deselects. The live input layer never sends `PROMOTE` for an officer (the "click a selected officer to demote" block is commented out) [C] `LocationInput::AdvanceTeamControl` — so demotion is **unreachable** for players; C / pad Y *kills* a selected officer instead (T5).
+- The CPU AI promotes through the Officer *task* (`Task::TargetOfficer`, §3.6) [C] `code/ai.cpp`.
+- MP officer research level is 3 [C] `code/location.cpp:Location::Init`.
+
+### 5.2 Order model
+
+| Member / value | Meaning |
+|---|---|
+| `m_state` ∈ {StateIdle, StateToWaypoint, StateGivingOrders} | what the officer body is doing |
+| `m_orders` ∈ {OrderNone = 0, OrderPrepareGoto = 1, OrderGoto = 2, OrderFollow = 3} | the order it broadcasts; **MP: OrderNone is replaced by OrderPrepareGoto every tick** (`Officer::Advance`) |
+| `m_formation` (bool) | formation mode; `IsInFormationMode()` = `m_orders == OrderFollow && m_formation` |
+| `m_orderPosition`, `m_orderRouteId`, `m_ordersBuildingId` | GOTO destination, its route, and the radar dish at it (also the dish the officer last used) |
+| `m_wayPoint`, `m_wayPointTeleportId` | where the officer itself walks, and the dish to enter there |
+| `m_formationEntities` (`DArray<OfficerFormation{uid, timer}>`), `m_formationAngleSet` | formation slots and turn-first flag |
+| `m_noFormations` | disables the formation toggle |
+
+The officer never fights. GOTO = **signpost**: the officer stands still and every idle Darwinian of its team passing within 100 u picks up the order and walks the route; FOLLOW (formation) = Darwinians within 150 u join a block in front of the officer and march with it ([02](02_units_and_entities.md), Darwinian `SearchForOfficers`) [C] `code/worldobject/darwinian.cpp:Darwinian::SearchForOfficers`.
+
+### 5.3 Player commands and their effect
+
+| Player input (RTS scheme) | Pad | Command | `Officer` call | Result |
+|---|---|---|---|---|
+| RMB down **on** an own officer (nothing else selected, or this officer selected) | X on it | `TOGGLEENTITY(idx, 0)` | in formation or `OrderGoto` → `CancelOrders()`; else `SetOrders(m_pos + m_front)` | Cancel: orders None (→ PrepareGoto next tick), formation off, waypoint = own position. Otherwise the target is 1 u in front → formation toggle (< 50 u) → **enter formation** facing forward; the handler (on every peer) also sends `SELECTUNIT` for the officer |
+| RMB down elsewhere, officer selected | X (`OrderSpecialMove`, inverted on pad) | `ORDERGOTO(force 0, direct = Ctrl)` | `SetOrders(pos, direct)` | see the `SetOrders` rules below |
+| Shift + RMB down, officer selected | A (`IssueSpecialOrders`, inverted on pad) | `ORDERGOTO(force 1)` | `SetWaypoint(pos)` | officer walks to pos (turn-first if in formation); connected RadarDish/Bridge within 5 u of pos → walk into it |
+| C down, officer selected | Y | `TERMINATE(255, idx)` + `SELECTUNIT(−1)` | `ChangeHealth(−999)` | officer dies |
+| (cursor) officer selected, order PrepareGoto, speed < 5 | (cursor) | ALIVE | `m_front` = toward cursor | the officer faces the cursor — previews the GOTO direction |
+
+`Officer::SetOrders(orders, directRoute)` [C]:
+1. SP and not walkable → ignored [B:LEGACY].
+2. `toggle = IsFormationToggle(orders)` = not Tutorial 1, not `m_noFormations`, no RadarDish entrance within √5 u of the click (`IsThereATeleportClose`: entrance distance² < 5), and click distance from the officer < **50** u.
+3. **Already in formation mode** → target = orders (or a 1-unit step toward the click if it was a toggle click, i.e. *re-face*); `SetWaypoint(target)`, `SetFormation(target)`, deselect the team's selection. The whole formation marches.
+4. **Toggle, not in formation** → MP: `SetWaypoint(pos + dir)`, `SetFormation(pos + dir)` (enter formation facing the click). SP: 0.3 s debounce, research Officer > 2 → OrderFollow [B:LEGACY].
+5. **Otherwise GOTO**: `m_orderPosition = orders`, OrderGoto, absorb and formation off, `m_orderRouteId = GenerateRoute(pos, orders, directRoute)` (highlighted for the local team); a RadarDish whose entrance is within √5 u → `m_ordersBuildingId`, order position = entrance; else order position = `PushFromObstructions(order position)`; SP-only particle preview; sound `SetOrderGoto`; **MP: deselects the officer**. The officer itself does not walk.
+
+`SetFormation(target)` (no-op in Tutorial 1): first time → `m_orderPosition = 0`, `m_front` = toward target; already in formation → `m_orderPosition = target`. Sets OrderFollow, `m_formation = true`, re-arms turning. Local team: preview route + two `TypeMuzzleFlash` particles (size 40, team colour) at each of `EvolutionFormationSize` slot positions; sound `SetOrderFormation`.
+
+`CancelOrders()`: OrderNone, formation off, waypoint = position, stop order sounds. `SetFollowMode()` (reached only by `FOLLOW`, legacy): research Officer > 2 → OrderFollow. `SetNextMode`/`SetPreviousMode` return immediately in MP.
+
+### 5.4 Formation geometry and membership
+
+`FormationFull()`: SP → always true (no formations); Tutorial 1 → true; else (used slots, ignoring gaps) ≥ `team->m_evolutions[EvolutionFormationSize]` = **90** (set in the `Team` constructor; the "formation increase" crate that would set 200 is commented out) [C] `Officer::FormationFull`, `code/team.cpp:Team::Team`, `code/worldobject/crate.cpp:Crate::RunFormtationIncrease`.
+
+`GetFormationPosition(uid)`: existing slot index, or (if not full) a new slot `{uid, timer 5.0}` in the first free array index; full → zero vector. Members refresh their slot by +0.1 s per tick (`RegisterWithFormation`, `SERVER_ADVANCE_PERIOD`); the officer decrements every slot by dt each tick and drops expired ones, and empties the whole array when the run of consecutive gaps exceeds half its size (members re-join next tick with new indices) [C] `Officer::Advance`, `Officer::RegisterWithFormation`.
+
+Slot position `GetFormationPositionFromIndex(officerPos, index, front, arraySize)` [C]:
+
+| Array size (including gaps) | Row size |
+|---|---|
+| ≤ 24 | 6 |
+| 25–47 | 9 |
+| 48–89 | 12 |
+| 90–199 | 15 |
+| ≥ 200 | 25 |
+
+`col = index % rowSize`, `row = index / rowSize`, spacing 6 × 6; `right = normalise(front × worldUp)`; position = `pos + front·(6·row + 12) + right·(6·col − 3·rowSize)`, y = terrain height. **The block forms in front of the officer**, first rank 12 u ahead, centred laterally, deepening forward as it fills.
+
+### 5.5 Feedback
+
+- **Formation preview** while an officer is selected: if the cursor would toggle formation → preview at the officer facing the cursor; else if in formation → preview at the cursor facing away from the officer; diamonds `textures/particle.bmp` in team colour, one per `EvolutionFormationSize` slot (§8.9) [C] `code/gamecursor.cpp:GameCursor::RenderMultiwinia`.
+- **Hovering** an officer in formation that is walking to a waypoint (and not selected) shows its route line and a formation preview at the waypoint (§8.2).
+- **Order trail**: while `OrderGoto`, every 2.0 s of network time a `MultiwiniaOfficerOrders` effect runs along the route dropping `OfficerOrderTrail` arrows (`icons/widearrow.bmp`), rendered for the local team / friends ([02](02_units_and_entities.md)) [C] `Officer::Advance`.
+- **Flag**: the officer's banner shows its order (`icons/banner_none.bmp`, `banner_follow.bmp`, `banner_formation.bmp`); the local team's officer flags are drawn by the marker system (§8.12).
+- **Hint**: hovering an officer with `OrderNone` shows "press c to terminate a unit" (§10.4).
+
+## 6 Direct control of units and buildings
+
+### 6.1 `TeamControls` — the continuous input packet
+
+`TeamControls` captures continuously sampled control state; flags are OR-ed over all frames between sends (every 0.1 s) and cleared after each send (`Clear()` = memset) [C] `code/team.h:TeamControls`, `code/team.cpp:TeamControls::Advance`, `TeamControls::Pack`.
+
+| Field | Bit | Sampled from (`TeamControls::Advance`) |
+|---|---|---|
+| `m_unitMove` | 0x0001 | `ControlUnitSetTarget` (RMB held / X held) ∧ ¬`m_secondaryFireTarget` ∧ canSetMove (false when gamepad mode and a squad is selected) |
+| `m_directUnitMove` | 0x0002 | `ControlUnitMove` (left stick) produced a vector |
+| `m_primaryFireTarget` | 0x0004 | `ControlUnitPrimaryFireTarget` (RMB held / RT held) ∧ ¬`Camera::m_camLookAround` |
+| `m_secondaryFireTarget` | 0x0008 | `ControlUnitSecondaryFireTarget` (LMB down ∧ RMB held / LT down) |
+| `m_targetDirected` | 0x0010 | `ControlTargetMoveSecondary` (right stick) or `ControlUnitTargetDirected` (right stick) |
+| `m_secondaryFireDirected` | 0x0020 | `ControlUnitSecondaryFireDirected` (unbound) |
+| `m_cameraEntityTracking` | 0x0040 | camera in `ModeEntityTrack` |
+| `m_unitSecondaryMode` | 0x0080 | `ControlIssueSpecialOrders` (RMB down / A down) |
+| `m_endSetTarget` | 0x0100 | `ControlUnitEndSetTarget` (RMB up / X up) |
+| `m_consoleController` | 0x0200 | input mode == gamepad |
+| `m_leftButtonPressed` | 0x0400 | `ControlLeftButtonPressed` (LMB held) |
+| `m_mousePos` | – | `UserInput::GetMousePos3d()`, then snapped at send time (§1.5) |
+| `m_directUnitMoveDx/Dy` (int16) | – | stick vector rotated into world space: `right = Camera::GetControlVector()`, `front = worldUp × −right`, `v = right·(−x) + front·(−y)`, stores (v.x, v.z) |
+| `m_directUnitTargetDx/Dy` (int16) | – | right-stick target vector in world space; also steers `camera->m_wantedTargetVector` (acceleration 6, or 256 if ‖delta‖² > 175; clamped to length 125 when ‖v‖² > 15625); with a tracked squad point man the stored value becomes the absolute target `pointMan.pos + camera.m_targetVector` |
+
+Wire format (`Pack`/`Unpack`): `uint16 flags`; if `directUnitMove`: `int16 dx, int16 dy`; if `targetDirected` or `secondaryFireDirected`: `int16 tdx, int16 tdy`; then `Vector3 m_mousePos` (three doubles) [C] `TeamControls::Pack` ([22](22_determinism_and_networking.md)). `SendTeamControlsToNetwork` clears the flags (position still sent) while the task-manager UI is visible, any Eclipse window is open or the chat log is held [C] `code/main.cpp:SendTeamControlsToNetwork`. Converting camera-relative stick directions to world space *before* sending is essential and must be preserved: peers must never read the sender's camera.
+
+### 6.2 `Location::UpdateTeam` — dispatch per selection
+
+Executed on every peer for every `ALIVE` letter [C] `code/location.cpp:Location::UpdateTeam`:
+1. MP: ignored while `GamePaused()` or `GameOver()`.
+2. `team->m_currentMousePos = mousePos` (used by squaddies to face the mouse; *resolves P04-U3: it is networked through ALIVE*).
+3. `unitMove = m_unitMove`; `primaryFire = m_primaryFireTarget`; `secondaryFire = primaryFire ∧ m_secondaryFireTarget`.
+4. Dispatch on the team's current selection:
+
+| Selected | Behaviour |
+|---|---|
+| Unit (squad) | `unitMove = m_leftButtonPressed ∧ ¬primaryFire` (overrides the flag); `unit->DirectControl(controls)` (§6.3); if unitMove: `SetWayPoint(mouse)`, `m_targetDir = normalise(mouse − centre)`, `RecalculateOffsets()`; local team on `m_endSetTarget` after a move → `GameCursor::CreateMarker(mouse)` (function-static `unitMoved` shared by all teams — cosmetic); SP + pad + secondary mode → `CycleSecondary()` [B:LEGACY]; unless (pad ∧ squad): primaryFire → `Attack(mouse, false)`, secondaryFire → `Attack(mouse, true)` |
+| Entity | local `m_endSetTarget` → marker; `entity->DirectControl(controls)`; then by type: Engineer (unitMove → `SetWaypoint`, deselect; secondaryFire → `BeginBridge(mouse)`), Officer (PrepareGoto ∧ speed < 5 → face mouse), Shaman (unitMove → `SetWaypoint`; primary → `ChangeMode`; secondary → `TeleportToPos`; neither → hide teleport targets), Harvester (unitMove → `SetWaypoint`, deselect), Tank (unitMove → `SetWayPoint`; keyboard: primary → `PrimaryFire`; pad: secondary mode → `PrimaryFire`; always `SetAttackTarget(mouse)`). Armour: block commented out — armour is driven by discrete orders (O4, O5, O8, O9) |
+| Building (GunTurret) | `SetTarget(mouse)`; any of unitMove, primaryFire, directUnitMove, leftButtonPressed → `PrimaryFire()` |
+
+### 6.3 Squad (InsertionSquad)
+
+Keyboard/mouse (camera not tracking — the default for keyboard players because pref `AutomaticCamera` defaults to 0 = automatic, which tracks only in gamepad mode) [C] `code/camera.cpp:Camera::UpdateEntityTrackingMode`:
+- **Move**: hold LMB → waypoint = cursor every update; squaddies follow the point man single-file along its breadcrumb trail ([02](02_units_and_entities.md)).
+- **Fire**: hold RMB → `InsertionSquad::Attack(cursor, false)` each tick: ≈ 2 laser shots/s per squaddie (6/s for a full squad), range 120 u.
+- **Grenade**: hold RMB and click LMB → `Attack(cursor, true)`: the alive squaddie nearest the target with its secondary timer ≤ 0 throws (4 s cooldown); in Multiwinia the secondary is always the grenade [I] (no reachable weapon setter, P04).
+- Squaddies of the selected squad face `team->m_currentMousePos`.
+
+Gamepad (camera entity-tracks the squad, §9.6) — `InsertionSquad::DirectControl` [C] `code/worldobject/insertion_squad.cpp`:
+1. `m_focusPos = m_centrePos`. Returns immediately unless `controls.m_cameraEntityTracking` **or the local camera's `m_camLookAround`** (desync, §13 X1).
+2. Needs a point man of type InsertionSquadie.
+3. If `m_leftButtonPressed` or (pad ∧ `m_directUnitMove`): target = point man + (dx, 0, dy); if the target's obstruction cell contains a connected RadarDish/Bridge, target = that building's position; `SetWayPoint(target)`. Else if moving → `SetWayPoint(pointMan.pos)` (stop).
+4. If `m_primaryFireTarget` (RT): target = (`m_directUnitTargetDx`, 0, `m_directUnitTargetDy`) when `m_targetDirected` (absolute world target, remembered in `m_lastTarget`), else `m_lastTarget`; `Attack(target, m_secondaryFireTarget)` (LT = grenade). Else zero the **local** camera's `m_targetVector` and `m_wantedTargetVector` (simulation writing camera state).
+- `UpdateTeam` skips its own attack calls for pad squads, and `TeamControls` sets `canSetMove = false`, so pad squads move only by stick.
+
+### 6.4 Armour
+
+Armour has no continuous control in MP (the `UpdateTeam` branch is commented out: "Armour control is now handled in LocationInput::AdvanceTeamControl") [C]. Player commands: move (O8), move-and-deploy (O9), toggle load/unload (O4), toggle arrival action via its order marker (O5); Darwinians board it when ordered to a point within 30 u of it (O1). `Armour::SetOrders` semantics [C] `code/worldobject/armour.cpp`: target outside landscape → ignored; distance > 50 u (or awaiting deployment) → `SetConversionPoint(pos)` (waypoint = pos, conversion order = Unloading if passengers else Loading); ≤ 50 u → nothing (the old "toggle when ordering near itself" logic is commented out). On arrival (< 15 u of the conversion point): awaiting deployment → `ConvertToGunTurret()` [B:LEGACY in MP: `m_awaitingDeployment` is only set by the SP path]; else state := conversion order; `m_newOrdersTimer = 2.0`. `SetWayPoint` clears the conversion point and order and switches Loading → Idle. `ToggleLoading` (MP): Idle → Unloading (passengers) or Loading; Unloading → Loading; Loading → Unloading; conversion order cleared. `ToggleConversionAction`: Idle → Unloading (if passengers) else Loading; Loading → Idle; Unloading → Loading (if capacity) else Idle; Idle clears the conversion point.
+
+### 6.5 Engineer and Harvester
+
+Both: hold RMB (`UnitSetTarget`; pad X held) → `SetWaypoint(cursor)` and **deselect** (also clears the current task) — effectively a single move order per selection [C] `Location::UpdateTeam`. Engineer secondary (RMB held + LMB) → `Engineer::BeginBridge(cursor)` ([02](02_units_and_entities.md)). Placement areas: engineer/harvester power-ups can be placed within 100 u of an own squad or engineer, or anywhere a squad could be placed (§3.6).
+
+### 6.6 Gun turret and radar dish
+
+- **Gun turret** (crate turret or reinforcement turret, own): LMB on it → `SELECTUNIT(building)` + camera turret-aim (§9.7); `Team::SelectUnit` sets `m_fireTimer = 0.5`. Aim follows the cursor ground point every `ALIVE`; fire while RMB or LMB held (pad: X, RT or left stick). Crosshair §8.8. Release: Space or C (T6); automatic if captured. While controlling a turret, nothing else can be selected and `GetObjectUnderMouse` returns nothing.
+- **Radar dish** (own, unless level option `NoRadarControl`): LMB on it → select + radar-aim camera; LMB on the ground or another dish → `AIMBUILDING` (O10). Darwinians are sent through it by ordering them onto its entrance (O1 target snapping).
+
+### 6.7 Tank and Shaman [B:LEGACY]
+
+- **Tank**: selectable and fully wired in `UpdateTeam`, but no Tank can be created in FULL (crate reward and task spawn commented out; TankBattle compiled out) [C] (P04, `Task::TargetTank`).
+- **Shaman**: `Shaman::Advance` has its body commented out and returns true, so a Shaman deletes itself on its first tick; its controls (move, mode change, teleport, Tab summon ring via `ShamanInterface` → `SHAMANSUMMON`) are unreachable [C] `code/worldobject/shaman.cpp:Shaman::Advance`, `code/shaman_interface.cpp`.
+
+## 7 Gesture recognition
+
+### 7.1 Liveness
+
+`App::App` always constructs `m_gesture = new Gesture("gestures.txt")`, which loads and trains on `data/gestures.txt` at start-up [C] `code/app.cpp:App::App`. The recogniser is **only driven** by `TaskManagerInterfaceGestures` (Darwinia campaign, [B:LEGACY]) and by the gesture editor window (`GESTURE_EDITOR` ∧ `USE_SEPULVEDA_HELP_TUTORIAL` → [B:DEAD]) [C] `code/interface/gesture_window.cpp`. In Multiwinia the only call is `EndGesture()` from `HideTaskManager()`, which recomputes features of a stale/empty buffer and prints "Sorry, not enough mouse samples" when < 3 samples [C] `code/gesture.cpp:Gesture::CalculateFeatureSet`. **Gestures are not a Multiwinia mechanic**; they are documented in full because the recogniser is self-contained and reusable.
+
+### 7.2 Algorithm overview
+
+A **Rubine-style linear statistical classifier**: 13 global stroke features, per-class mean vectors, a pooled ("common") covariance matrix, linear discriminant evaluation, soft-max confidence and Mahalanobis rejection [C] `code/gesture.cpp`; [I] the feature list and training maths match D. Rubine, "Specifying Gestures by Example" (SIGGRAPH 1991), a published algorithm — safe to re-implement.
+
+| Constant | Value | Kind | Meaning |
+|---|---|---|---|
+| `GESTURE_MAX_MOUSE_SAMPLES` | 1024 | `#define` | sample buffer (debug assert on overflow) |
+| `GESTURE_MAX_FEATURES` | 13 | `#define` | features f1..f13 (array index 0 unused, always 0) |
+| `GESTURE_MAX_TRAINERS` | 32 | `#define` | max training examples per symbol (assert `< 32`) |
+| `GESTURE_MIN_SAMPLE_DISTANCE` | 6.0 px | `#define` | a sample closer than this to the previous accepted one is dropped |
+| `GESTURE_CONFIDENCETHRESHOLD` | 0.5 | `#define` | min confidence for success |
+| `GESTURE_MAHALANOBISTHRESHOLD` | 3000.0 | `#define` | max Mahalanobis distance for success |
+| soft-max temperature | 500.0 | literal | divisor in `RunComparison` |
+
+[C] `code/gesture.h`.
+
+### 7.3 Sampling
+
+- `BeginGesture()`: clear samples and results, `recording = true`.
+- `AddSample(x, y)` — once per client frame while the button is held, with **integer screen-pixel** coordinates of the virtual cursor (`g_target->X/Y`, origin top-left, y down). Dropped if its distance to the last accepted sample is < 6.0 px; else stored as `{x, y, time = GetHighResTime()·1000}` (milliseconds, double). No resampling, smoothing or normalisation of position/scale/rotation — the features are scale-dependent (lengths in px, speeds in px²/ms², durations in ms) [C] `Gesture::AddSample`.
+- `EndGesture()`: `recording = false`; `CalculateFeatureSet()`; `RunComparison()`.
+
+### 7.4 Features
+
+Computed in `CalculateFeatureSet` with n = number of samples; requires n ≥ 3, otherwise the previous feature set is kept [C]. sᵢ = (xᵢ, yᵢ, tᵢ).
+
+| f | Definition as implemented [C] | Note |
+|---|---|---|
+| f1 | (x₂ − x₀)/‖s₂ − s₀‖ | initial direction cosine (third point used to reduce noise) |
+| f2 | (y₂ − y₀)/‖s₂ − s₀‖ | initial direction sine |
+| f3 | √((R − L)² + (B − T)²) with L = min x, T = min y, B = max y, and **R updated as "if xᵢ > R then R = yᵢ"** (initial R = 0, L = T = 999999, B = 0) | bounding-box diagonal — **defect**: R takes a y value |
+| f4 | atan((B − T)/(R − L)) (`iv_atan`) | bounding-box angle, same defect |
+| f5 | ‖s_{n−1} − s₀‖ | start–end distance |
+| f6 | (x_{n−1} − x₀)/f5 | start–end cosine (NaN if f5 = 0) |
+| f7 | (y_{n−1} − y₀)/f5 | start–end sine |
+| f8 | Σ_{j=0}^{n−3} ‖s_{j+1} − s_j‖ | total length — **defect**: last segment omitted |
+| f9 | Σ_{k=1}^{n−2} θₖ, θₖ = atan((aₓ·b_y − bₓ·a_y)/(aₓ·bₓ + a_y·b_y)), a = s_{k+1} − s_k, b = s_k − s_{k−1} | total turning; CRT `atan` (not atan2) so each θ ∈ (−π/2, π/2) |
+| f10 | Σ |θₖ| | |
+| f11 | Σ θₖ² | |
+| f12 | max over consecutive pairs of (Δx² + Δy²)/Δt² (pairs with Δt = 0 skipped) | max speed², px²/ms² |
+| f13 | Σ Δt over pairs with Δt ≠ 0 | duration, ms |
+
+### 7.5 Training (`TrainSystem`, run after loading and after every added sample)
+
+For C symbols with nᶜ trainers each (vectors include index 0, always 0) [C] `Gesture::TrainSystem`:
+1. Mean μᶜᵢ = (1/nᶜ) Σₑ fᵢ⁽ᵉ⁾ for i = 0..13.
+2. Per-class scatter Sᶜᵢⱼ = Σₑ (fᵢ⁽ᵉ⁾ − μᶜᵢ)(fⱼ⁽ᵉ⁾ − μᶜⱼ), i, j = 0..13.
+3. Pooled covariance **as implemented**: Σᵢⱼ = [ Σ_c ( Sᶜᵢⱼ / nᶜ − 1.0 ) ] / ( Σ_c nᶜ − C ). (The source writes `S / (double) n - 1.0`; precedence makes it "divide by n, then subtract 1", not "divide by n − 1". Because f0 ≡ 0, row/column 0 is the constant −C/(N − C), which keeps the 14×14 matrix invertible.) **A re-implementation must reproduce this formula to reproduce the shipped classification with `data/gestures.txt`.**
+4. Σ⁻¹ by Gaussian elimination with scaled partial pivoting [C] `code/lib/invert_matrix.cpp:InvertMatrix`.
+5. Weights: wᶜⱼ = Σ_{i=1}^{13} Σ⁻¹ᵢⱼ μᶜᵢ for j = 1..13; wᶜ₀ = −½ Σ_{i=1}^{13} wᶜᵢ μᶜᵢ.
+
+### 7.6 Classification and thresholds
+
+[C] `Gesture::RunComparison`, `GetSymbolID`, `GestureSuccess`:
+- Score rᶜ = wᶜ₀ + Σ_{i=1}^{13} wᶜᵢ fᵢ (0 for classes with no trainers).
+- Symbol = first index with the maximum score.
+- Confidence of class i = 1 / Σⱼ exp((rⱼ − rᵢ)/500).
+- Mahalanobis of class i = Σ_{j=1}^{12} Σ_{k=1}^{12} Σ⁻¹ⱼₖ (fⱼ − μⁱⱼ)(fₖ − μⁱₖ) — **defect**: loops stop at `< GESTURE_MAX_FEATURES`, so f13 (duration) is excluded.
+- Success ⇔ confidence(best) ≥ 0.5 ∧ Mahalanobis(best) ≤ 3000.0.
+- Accessors return −1.0 for out-of-range symbol ids.
+
+Training-file format (`data/gestures.txt`, grammar in [29](29_data_formats_reference.md)) [C] `Gesture::LoadTrainingData`, `SaveTrainingData`: line 1 = number of symbols; then per symbol a line with the trainer count and a line with trainerCount × 14 floats (f0..f13 per trainer, f0 written as 0). Shipped file: **8 symbols × 20 trainers** [C] (parsed by `_work/scripts/P09_gestures.py`).
+
+Validation [I] (simulation, not original code): a faithful Python port including all defects (`_work/scripts/P09_gesture_sim.py`) accepts 160/160 training vectors and classifies all eight `data/gesture_demos/*.txt` strokes (replayed at 40 ms/sample, screen heights 768 and 600) as their intended symbol with confidence 0.57–1.00 and Mahalanobis 72–887 (< 3000). These are usable as regression vectors for a port.
+
+### 7.7 Symbol set (complete)
+
+Symbol id = order in `data/gestures.txt`; mapping `TaskManager::MapGestureToTask` [C]; shapes [I] from the stroke coordinates in `data/gesture_demos/<name>.txt` (screen space, y down) and confirmed by the trained means [C] (`_work/scripts/P09_gestures.py`).
+
+| Id | Task | Stroke (from demo file) | Mean f5 start–end px | Mean f13 duration ms | Mean f9 turning rad | Icon |
+|---|---|---|---|---|---|---|
+| 0 | Squad | closed triangle: from apex down-right, left along the base, back up to apex | 24.2 | 955 | −0.22 | `icons/gesture_squad.bmp` |
+| 1 | Engineer | square arch "⊓": up, right, down | 234.7 | 739 | −1.29 | `icons/gesture_engineer.bmp` |
+| 2 | Grenade | rounded arch "∩": up, curving over to the right, down | 351.8 | 482 | −3.14 | `icons/gesture_grenade.bmp` |
+| 3 | Rocket | right-pointing arrow: shaft left → right, then up-left, down, back up-right to the tip | 449.4 | 902 | −2.84 | `icons/gesture_rocket.bmp` |
+| 4 | AirStrike | three-spoke star drawn as out-and-back strokes from a centre (up, down-right, down-left) | 25.8 | 1845 | 0.15 | `icons/gesture_airstrike.bmp` |
+| 5 | Controller | zig-zag with three peaks "/\/\/\" | 344.1 | 1133 | −0.04 | `icons/gesture_controller.bmp` |
+| 6 | Officer | "V" / tick: down-right then up-right | 364.6 | 407 | −0.82 | `icons/gesture_officer.bmp` |
+| 7 | Armour | closed shield/pentagon: right along top, down, down-left to a point, up-left, up to start | 30.3 | 1358 | −0.57 | `icons/gesture_armour.bmp` |
+
+`icons/gestureguide.bmp` (all symbols) and `icons/gesture_alpha.bmp` (panel mask) are used only by the Gestures interface [C].
+
+### 7.8 Gesture → action
+
+Successful symbol → task type (above) → if `GlobalResearch::HasResearch(type)` → `RequestRunProgram(team, type)`; Squad/Engineer/Officer/Armour create tasks; Grenade/Rocket/AirStrike (SP)/Controller switch the current squad's weapon (§3.3) [C] `TaskManagerInterfaceGestures::AdvanceGestures`, `TaskManager::RunTask(int)`. Gesture-trail rendering: [26](26_animation_and_vfx.md). Gesture demo playback and recording (`GestureDemo`, `code/gesture_demo*.cpp`): Appendix.
+
+## 8 Game cursor highlights and world markers
+
+### 8.1 Cursor objects (9 members)
+
+`MouseCursor` = a textured screen- or world-space quad with optional blurred shadow [C] `code/gamecursor.cpp:MouseCursor::MouseCursor`. Constructed from a BMP: the bitmap is registered as a texture under its file name, then a copy blurred with `ApplyBlurFilter(10.0)` is registered as `shadow_<file>`. Defaults: size 20, hotspot (0,0) (fraction of size; (0,0) = top-left, (1,1) = bottom-right), not animating, shadowed, additive, colour white.
+
+`GameCursor` owns nine cursor members [C] `GameCursor::GameCursor`:
+
+| Member | Texture | Hotspot | Size | Animated | Colour / blend | Used in MP? |
+|---|---|---|---|---|---|---|
+| `m_cursorStandard` | `icons/mouse_game.bmp` | (0.055, 0.070) | 35 px | no | white, additive, shadowed | **yes** — default pointer |
+| `m_cursorPlacement` | `icons/mouse_placement.bmp` | (0.5, 0.5) | 40 (callers vary) | per call | white, additive | **yes** — "trying to enter" marker (§8.7) |
+| `m_cursorDisabled` | `icons/mouse_disabled.bmp` | (0.5, 0.5) | 60 | no | red (255,0,0), additive | **yes** — invalid enter; the texture is also drawn as a red sprite for invalid placement / no route (§8.5) |
+| `m_cursorMoveHere` | `icons/mouse_movehere.bmp` | (0.5, 0.5) | 30 | yes | (255,255,150) additive | SP only |
+| `m_cursorHighlight` | `icons/mouse_highlight.bmp` | (0.5, 0.5) | default 20, set by callers | yes (switched off when used) | white additive | SP only (the same texture is the MP task-bar focus highlight) |
+| `m_cursorTurretTarget` | `icons/mouse_turrettarget.bmp` | (0.5, 0.5) | set by callers | no | white, **alpha-blend**, **no shadow** | **yes** — crosshair (§8.8) |
+| `m_cursorSelection` | `icons/mouse_selection.bmp` | (0.5, 0.5) | default 20, set by callers | no | team colour (set by caller) | SP only |
+| `m_cursorEnter` | `icons/mouse_enter.bmp` | (0.5, 1.0) | 50 | yes | white additive | SP only |
+| `m_cursorMissile` | – (NULL, never created) | – | – | – | – | no |
+
+Animation: `GetSize() = size + |sin(4·g_gameTime)|·size·0.6` (pulses between 1.0× and 1.6× at 4 rad/s) [C] `MouseCursor::GetSize`.
+
+2D render (`MouseCursor::Render(x, y, angle)`): top-left = (x − s·hotX, y − s·hotY); translate to quad centre, rotate by `angle` degrees about Z; shadow pass with the `shadow_` texture, blend (SRC_ALPHA, ONE_MINUS_SRC_COLOR), colour (1,1,1,0) (darkens what is beneath); main pass with colour, additive or alpha blend; depth writes off, culling off; V flipped (BMP bottom-up) [C].
+
+3D render (`Render3D(pos, front, up, cameraScale)`): quad in the plane spanned by `right = front × up` and `front`, size s = `GetSize()` (+ (camDist − 300)/20 when the camera is farther than 300 u and cameraScale), offset by hotspot; same two passes (main pass always additive) [C]. (`Render3D(pos)` derives `up` from `normalMap(pos.x, pos.y)` — **defect**: should be pos.z; unused.) `RENDER_CURSOR_3D` is never defined, so every in-game cursor uses the projected 2D path [C].
+
+### 8.2 Frame flow in Multiwinia
+
+`Renderer` calls `GameCursor::Render()` then `GameCursor::RenderBasicCursorAlwaysOnTop()` [C] `code/renderer.cpp`.
+
+1. `Render()`: return if the interface is hidden (Alt+X) and no window is open; return at a location without a local team (unless `SPECTATOR_ONLY`, defined only for the hardware-compat and assault-stress targets); in MP → `RenderMultiwinia()` and return [C].
+2. `RenderMultiwinia()` (3D matrices; returns if no location or any Eclipse window is open) [C]:
+   a. `RenderSelectionCircle()` (§8.6).
+   b. Effect colour = team colour (or (255,255,100) if none) + (100,100,100) clamped, alpha 150.
+   c. **Highlighted object** (§8.3): if any → `RenderUnitHighlightEffect(pos, radius, colour)`; Armour → route line from it to its waypoint (`RoutingSystem::RenderRouteLine`, intensity 0.5); Officer in formation mode, not my selected entity, in `StateToWaypoint` → route line to its waypoint + formation preview at the waypoint facing the travel direction. Store `m_objUnderMouse`.
+   d. **Selected object**: unless it is a GunTurret building or a squad/squaddie in transit inside a RadarDish (`m_inTransit`), draw `RenderUnitHighlightEffect` with colour + (50,50,50), alpha 255.
+   e. **Promotable Darwinian**: nothing highlighted or selected, no Darwinians selected and no selection circle → `Task::FindDarwinian(mouse3d, myTeam)`; if found and selectable → highlight ring at its predicted position, radius 2× entity radius (this is the only cue that a right-click will promote).
+   f. **Officer formation preview**: my selected entity is an Officer and the cursor is not on it: `Officer::IsFormationToggle(mouse3d)` → preview at the officer facing the cursor; else if in formation → preview at the cursor facing away from the officer.
+3. `RenderBasicCursorAlwaysOnTop()` (MP only; skipped when interface hidden and no window): 2D; if no window open → `RenderSelectedObjectNearCursor()` (§8.5) and `RenderTryingToEnterEffect()` (§8.7); then `RenderCrosshair()`; if it returned false → `RenderStandardCursor(x, y)`.
+
+The standard pointer is drawn whenever no crosshair applies; with Eclipse windows open only the icon/enter effects are suppressed [C] `RenderBasicCursorAlwaysOnTop`.
+
+### 8.3 Highlight and selection resolution
+
+`GetHighlightedObject(id, pos, radius)` [C]:
+- Source: TM overlay hidden → `LocationInput::GetObjectUnderMouse` (§1.5); visible → the task under the TM focus (`m_highlightedTaskId`).
+- Accepted kinds: building = RadarDish, Bridge, own GunTurret, FenceSwitch (radius ×0.8; turret position raised by 0.5·radius); unit (if `IsSelectable`) at centre + vel·`g_predictionTime` + first entity's centre offset; entity (if `IsSelectable`) at predicted position, Darwinian radius ×2.
+- Predicted position = pos + centrePos + vel·(`g_predictionTime` [+ `SERVER_ADVANCE_PERIOD` if the entity index is beyond the team's last-updated index this tick]) [C] `GetPredictedPosition` (client-side extrapolation, [22](22_determinism_and_networking.md)).
+- Side effect: when the highlighted id changes, sound `UnitHighlight` (TypeMultiwiniaInterface) at most every 0.2 s.
+
+`GetSelectedObject`: selected entity (predicted position) → else current building (centrePos) → else selected unit (centre + vel·prediction + first entity's centre) [C].
+
+### 8.4 Unit highlight effect (rings and glow cylinder)
+
+[C] `RenderUnitHighlightEffect(pos, radius, colour)`:
+- `numSteps = max(25, 2·radius)`; main ring width 0.2·radius; outline width 0.075·radius.
+- Projection near plane pushed to 1.03× to reduce z-fighting; alpha blend; depth writes off.
+- Ring 1 (team colour): inner r − 0.2r, outer r. Ring 2 (black): inner r − 0.2r − 0.075r, outer r − 0.2r. Ring 3 (black): r → r + 0.075r.
+- `RenderRing`: quad strip in the plane perpendicular to the ground normal at the centre; vertices blended toward terrain height by `amountToFollowLand = min(1, 75 / distance(camera, centre))` (applied only if > 0.1) — close objects drape on the terrain, far ones stay planar.
+- Glow cylinder: radius r + 0.075r, height r·max(1, camDist/300), `numSteps` sides, colour alpha at the base fading to 0 at the top, up = normalised average of world up and ground normal.
+
+### 8.5 Icon near the cursor — context rules
+
+`RenderSelectedObjectNearCursor` [C]: not drawn after game over. Anchor: cursor + 5 px along n = normalise(0.85, 1) (down-right); icon size = screenH/24; drawn with `MarkerSystem::RenderShadow`, `RenderColourCircle` (team colour) and `RenderIcon` (§8.12). Priority:
+
+| Priority | Context | What is drawn | Ref |
+|---|---|---|---|
+| 1 | A current task exists | task icon `icons/icon_<Name>.bmp`; while Started it blinks (shown when `fmod(now, 0.4) < 0.25`) | `RenderSelectedTaskIcon` |
+| 1a | …Started and `IsValidTargetArea(mouse3d)` is false | red sprite `icons/mouse_disabled.bmp` (×1.2 of half icon) at the icon centre (anchor + 50 px along n) | same |
+| 1b | …Started GunTurret / AntsNest | ghost model at the cursor: `battlecannonturret.shp` / `anthill.shp`, identity orientation (front (0,0,1)), blend (ONE, SRC_COLOR), depth writes off | same |
+| 1c | …Started HotFeet, Booster, Subversion, Plague, Extinguisher, MeteorShower, Rage, Nuke | glowing area cylinder at the cursor (`RenderCyliner`, 100 sides, ground-attached, up = world up), team colour, alpha halved during the "off" phase of the 0.4 s blink. Radius/height: default 70 / 42 u; MeteorShower 280 / 70; Nuke 210 / 70 (= `POWERUP_EFFECT_RANGE` ×1, ×4, ×3; height ×0.6 or ×1) | same |
+| 2 | No task, selected entity is an Officer | `icons/icon_officer.bmp` | `RenderSelectedUnitIcon` |
+| 3 | Darwinians selected | `icons/icon_darwinian.bmp` + count (font 15, outline then 0.9 white) at anchor + 50 px + (2, 0.4·size); if `RoutingSystem::m_walkableRoute` is false, the red disabled sprite replaces the count ("no route") | `RenderSelectedDGsIcon` |
+
+### 8.6 Selection circle visual
+
+[C] `RenderSelectionCircle`: while `Team::m_selectionCircleCentre ≠ 0`, every frame create 30 `Particle::TypeControlFlash` particles, size = current radius, evenly spaced on the circle of `m_selectionCircleRadius` (max 100 u), rotating at 0.5 rad/s (angle offset = wall time · 0.5), 10 u above the terrain.
+
+### 8.7 "Trying to enter" effect
+
+[C] `RenderTryingToEnterEffect` when `m_objUnderMouse` is an Armour while Darwinians are selected (valid if passengers < capacity), or a RadarDish while Darwinians or an Officer are selected (entrance from `RadarDish::GetEntrance`, valid if `Connected()`). Draw `m_cursorPlacement` at the projected entrance, animated only if valid; if invalid also draw `m_cursorDisabled` (red, 60 px) on top.
+
+### 8.8 Crosshair
+
+`RenderCrosshair` returns false (→ standard pointer) if any window is open, no team, or no building/unit selected [C]:
+
+| Selected | Crosshair | Size |
+|---|---|---|
+| Own GunTurret building | `m_cursorTurretTarget` at the projected `GunTurret::m_actualTargetPos`, smoothed (exponential lerp, factor 10·dt) — only when a target position exists; the standard pointer is suppressed either way | 1.5·screenH/10 |
+| Any other selected building (in MP: RadarDish) | turret-target sprite at the projected cursor ground point | screenH/10 |
+| InsertionSquad unit, gamepad mode, tracked entity | nothing drawn (early `return true`, comment "doesn't work") | – |
+| InsertionSquad unit, gamepad mode, no tracking | turret-target at the projected cursor ground point | screenW/25.6 |
+| Any other unit (keyboard) | none (standard pointer) | – |
+
+**Defect** [C]: the RadarDish test is written `building->m_type = Building::TypeRadarDish` (assignment) — any selected non-turret building has its **type overwritten to RadarDish on the local client** while the crosshair renders. In Multiwinia only GunTurret and RadarDish can be selected (ChessPiece is a blocked type), so the write is a no-op in practice, but it is a render → simulation write (§13 X4).
+
+### 8.9 Formation preview
+
+For i in 0..`Team::m_evolutions[EvolutionFormationSize]` − 1: position = `Officer::GetFormationPositionFromIndex(pos, i, front, size)` (§5.4); a camera-facing diamond (vertices ±2·camUp, ±2·camRight) textured `textures/particle.bmp`, team colour, alpha blend; near plane ×1.03 [C] `GameCursor::RenderFormation`.
+
+### 8.10 Selection arrows, off-screen arrow and move markers [B:LEGACY in MP]
+
+- `BoostSelectionArrows(s)`: `m_selectionArrowBoost = max(current, s)`; called with 2.0 by `TaskManager::SelectTask` and `Team::SelectUnit` for the local team [C] — arrows are drawn only by the SP render path, so in MP the call has no visible effect.
+- `RenderSelectionArrows(id, pos)` (SP): on-screen → four `icons/selectionarrow.bmp` triangles (size 40) at distance 1000/√camDist around the object, alpha = max(0.1, min(boost, 0.9), clamp((camDist − 200)/200, ·, 0.9)), boost decays 0.4/s; team colour in MP, (255,255,75) in SP; off-screen → a 60 px arrow at the screen edge (`FindScreenEdge`) pointing toward the object; `RenderOffscreenArrow` (dotted particle path from object to mouse, darkened ×0.2 if not walkable; disabled in MP).
+- `CreateMarker(pos)` (move-order confirmation) is called by `Location` for the local team when orders are given, but `RenderMarkers` (which shrinks a 3D placement marker from 20 to 0 over 0.5 s and deletes it) is only called by the SP path → in MP the marker list **grows without bound** (leak) [C] `code/location.cpp:Location::IssueDarwinianOrders`, `Location::UpdateTeam`, `GameCursor::RenderMarkers`.
+- `RenderWeaponMarker` (animated, shadowed 3D placement marker, size 40): **no callers** (grep) [C] — *resolves P09-U3*.
+
+### 8.11 SP cursor state machine [B:LEGACY]
+
+`Render()` non-MP branch [C]: editing/window → none; chat log → none; non-interactive camera (cut-scene) → none; global world → placement cursor (animated if the highlighted location is available, else + disabled); at a location: TM visible → selection arrows + selection sprite; placing a non-Officer task → placement cursor (animated if valid, else + disabled; sets `m_validPlacementOpportunity`) plus area sparkles (`Particle::TypeSelectionMarker`, 10 or 30 around radius 70/140/420) or ghost turret/anthill; entity-track camera → turret target when firing; otherwise highlight sprite, armour-enter cursor, move-here arrow rotated toward the selected unit, building crosshair (200 px), Darwinian-promote highlight, landscape highlight cursor. Advisories `AdviseHighlightingSomething`, `AdvisePlacementOpportunity`, `AdviseMoveableEntitySelected` are updated only in this branch (in MP they keep their initial false) — consumed by `ControlHelpSystem` (§10).
+
+### 8.12 World markers (`MarkerSystem`) and their input role
+
+`MarkerSystem` (`g_app->m_markerSystem`, created in the `App` constructor, `ClearAllMarkers` on level reset) is a **client-side presentation** list of `LocationMarker`s drawn as 2D icons over the 3D view, clamped to the screen edge with a compass arrow when off-screen. `Advance()` runs once per render frame in the client loop; `Render()` runs from `Renderer` after the 3D scene and before the help/cursor/task-manager overlays [C] `code/markersystem.cpp`, `code/main.cpp`, `code/renderer.cpp`. Registration is called from simulation code, but markers feed back only through `m_markerUnderMouse` / `m_isOrderMarkerUnderMouse`, which the local input layer reads (§1.5, O5) [C].
+
+| Type | Registered by | Tracks | Persistent | Off-screen arrow | Selectable (clickable) | Flash on birth | Icon / colour |
+|---|---|---|---|---|---|---|---|
+| `TypeUnknown` (0) | — | — | — | — | — | — | — |
+| `TypeFixed` | `RegisterMarker_Fixed(team, pos, icon, fromCrate = true)` — every crate/power-up effect (`Crate::Run*`) | fixed pos + 30 up | no: removed when `m_onscreenTimer ≥ 8 s` once seen | only until first seen | no | yes if team ≠ local team (after grace) | given icon; team-colour circle (grey 155 in SP); spins for 2.5 s (`rotation += (2.5 − t)²`) |
+| `TypeAttachedToCrate` | `RegisterMarker_Crate(id)` — `Location::CreateRandomCrate`, tutorials, cheat | crate pos + 20 up; dies with crate | yes | **always** | yes (all teams) | no | `icons/icon_crate.bmp`; circle filled bottom-up by `GetPercentCaptured()` in the capturing team colour (grey 155 when neutral; α 1 when owned); rotation = `smoothedPercent × −10π` (`smoothed = 0.95·s + 0.05·p` per frame) |
+| `TypeAttachedToTask` | `RegisterMarker_Task(objId, fromCrate)` — `TaskManager::TargetTask` (all task types except GunTurret, any team incl. CPU); trunk-port reinforcement armour (`Multiwinia::AdvanceTrunkPorts`, fromCrate = false) | `task->GetPosition()` + 20 up; dies when the task ends | yes | for the local team | local team only | local team (after grace) | `icons/icon_<TaskName>.bmp` on a team-colour circle; extra info (`TaskManagerInterfaceMultiwinia::RenderExtraTaskInfo`, §4.3.3) for friendly tasks; spin `(5 − t)²` for 5 s if from crate. `RegisterMarker_Task` forces `m_fromCrate = true` regardless of the argument [C] |
+| `TypeAttachedToStatue` | `RegisterMarker_Statue` — CTS statue creation (`Multiwinia::EnsureStartingStatue`, `Multiwinia::AdvanceCaptureStatue`) | statue pos + up × radius × 4 | yes | **always** | no | no | `icons/icon_statue.bmp`; circle = `(numLifters − minLifters)/(maxLifters − minLifters)` in carrying-team colour, α × 0.5 |
+| `TypeAttachedToResearch` | `RegisterMarker_Research` — Engineer reprogramming a ResearchItem [B:LEGACY] | item + 20 up | no | until seen | no | no | crate icon, percent `(100 − reprogrammed)/100` |
+| `TypeAttachedToOfficer` | `RegisterMarker_Officer` — officer promotion for the local team (`code/location.cpp`) | officer pos + 20 | yes | until seen | local team | no | draws the officer's 3D **flag** (`Officer::RenderFlag`) with a ray-hit highlight instead of an icon |
+| `TypeAttachedToOrders` | `RegisterMarker_Orders` — armour orders of any team friendly to the local team (`ORDERGOTO` handler, `code/network/clienttoserver.cpp`); the second call site in `code/location.cpp:Location::UpdateTeam` is inside the commented-out armour block (*resolved: P08 listed both as live*) | armour waypoint (sorted +50 behind) | yes | until seen | local team, if nothing else is selected or this unit is selected | local team (after grace) | 0.7× task icon + 3D ground highlight (`GameCursor::RenderUnitHighlightEffect`, size 10 + sin 5t); deactivates when the waypoint changes or the armour is within 15 u of it; ground-sphere (r = 8) mouse pick |
+
+Per-frame update `MarkerSystem::Advance` [C]: (1) `SortMarkers()` — **one bubble-sort pass** per frame by squared camera distance with adjustments: own team −50; age < 3 s → key = age (newest first); hovered (non-officer) → 0; orders +50; nearest drawn last (on top). (2) Remove inactive markers; update position from the tracked object; smooth `pos = pos·(1 − 5·dt) + new·5·dt` (`dt = g_advanceTime`) unless pos is zero (snap).
+
+Rendering `MarkerSystem::Render` [C]:
+- Skipped when no location, in the editor, or `m_hideInterface`.
+- `CalculateScreenPosition`: project; on-screen if in front of the camera and inside the viewport; otherwise project a point 100 u from `camPos + front×1000` toward the target and intersect the centre→point ray with the screen rectangle (`FindScreenEdge`). Off-screen markers get `lineNormal` = direction from edge point to screen centre; icons are offset 50 px inward along it and the compass is oriented along it.
+- Alpha: on-screen accumulates `m_onscreenTimer`; seen after 1 s; seen and > 6 s → fade over 9 s; floor `minAlpha = max((camDist − 350)/500, 1 − distToCentre/(0.5·screenH))`; non-persistent markers additionally fade over 2 s after 6 s; `AlwaysAtFullAlpha` (own tasks/orders) ≥ 0.75 when visible; off-screen markers that may not show off-screen get α 0.
+- Size: `icon = screenH/20`, `shadow = icon + 10`, `compass = icon + screenH/30`; ×1.3 alternating α 0.2/1.0 every 0.2 s for 3 s when flashing; ×(2 − camDist/500) when camDist < 500; ×1.2 and α 1 when hovered/selected. On-screen icons are lifted `5·screenH/camDist` px.
+- Layers: `icons/marker_shadow.bmp` (black, α 0.9), compass `icons/compass_shadow.bmp` + `icons/compass.bmp` (additive) or `icons/compass_empty.bmp` when on-screen, `icons/marker_colour.bmp` colour circle (additive, filled to `percent`), then the icon (additive; texture coordinates rotated for spin).
+- Hover: `IsMOuseInside` uses the icon's screen box → `m_newMarkerUnderMouse` → `m_markerUnderMouse` at end of frame; order markers set `m_isOrderMarkerUnderMouse`.
+- Debug/AI overlays (pref `RenderAIInfo` 1, `AIInfoTeam`): AITargets print per-team priority text and draw team-coloured arrows; AIObjective spheres only under `LOCATION_EDITOR` [C] `code/worldobject/ai.cpp:AITarget::Render` ([07](07_ai.md)).
+

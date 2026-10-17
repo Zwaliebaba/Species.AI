@@ -291,3 +291,322 @@ light_row := frontX frontY frontZ red green blue          ; all F32
 
 `m_front = (x, y, z, 0)` then `Light::Normalise()` (infinitely distant directional light); `m_colour = (r, g, b, 0)` — colour components are unclamped multipliers (shipped values reach 2.00). Precedence: if lights were already loaded when a `Lights` block is met, **that whole block is ignored** [C] `ParseLights` (`ignoreLights`). The in-code comment says this lets a mission file override map lights, but `ParseMissionFile` rejects `Lights` blocks (`AppDebugAssert(0)`), so in practice only a second `Lights` block in the same map file is affected [C]. Every shipped map has exactly one block with 1–2 lights (198 rows / 100 files) [C] survey. The writer dumps `g_app->m_location->m_lights`, i.e. the *current* lights, with `%6.2f` precision [C] `WriteLights`.
 
+### 2.9 `Buildings` block [C] `LevelFile::ParseBuildings`, `code/worldobject/building.cpp:Building::CreateBuilding(char*)`, `Building::Read`, `Building::BuildingIsBlocked`, every subclass `Read`
+
+#### 2.9.1 Grammar and load rules
+
+```
+buildings   := 'Buildings_StartDefinition' EOL { blank | b_row } 'Buildings_EndDefinition' EOL
+b_row       := TYPENAME id x z team frontX frontZ isGlobal { extra }
+```
+
+1. `TYPENAME` is compared case-insensitively with `Building::GetTypeName(i)` for i = 0…74 (§2.9.3). If it matches a type for which `BuildingIsBlocked(i)` is true (`BLOCK_OLD_DARWINIA_OBJECTS`, defined in FULL — 39 types) or no type at all, `CreateBuilding` returns NULL and **the whole line is ignored** (no error). `Invalid` (type 0) also yields NULL.
+2. Base columns (`Building::Read`, all MISSING ⇒ CRASH):
+
+| Col | Field | Type | Units / range | Semantics |
+|---|---|---|---|---|
+| 2 | `id` | INT | 0…; must be unique among all buildings of this `LevelFile` (map + mission), else `AppReleaseAssert("%s UniqueId was not unique in %s")` — **fatal in release** | `WorldObjectId(team, UNIT_BUILDINGS=−100, −1, id)`; referenced by every link column |
+| 3 | `x` | F32 | wu | position x (y is taken from the landscape at init [I]) |
+| 4 | `z` | F32 | wu | position z |
+| 5 | `team` | INT, stored as `unsigned char` | 0…5 (`NUM_TEAMS`=6, `code/globals.h`); shipped values 0, 1, 2, 255 (255 = no team/neutral [I]) | owner |
+| 6 | `frontX` | F32 | – | facing; `m_front = (frontX, 0, frontZ)` normalised (ctor default front (1,0,0) supplies y = 0) |
+| 7 | `frontZ` | F32 | – | |
+| 8 | `isGlobal` | INT → bool | 0/1 | campaign-global building (tracked by `GlobalWorld`). **Must be 1** for `TrunkPort`, `ControlTower`, `RadarDish`, `Incubator`, `FenceSwitch`, else `AppReleaseAssert("Non-global %s found in %s")` — fatal in release. All shipped rows comply (173/150/164/96/0 rows) [C] survey |
+
+3. Extra columns are read by the subclass (§2.9.3). Columns beyond those a class reads are ignored; required columns are MISSING ⇒ CRASH.
+4. Dynamic flag: rows from a mission file get `m_dynamic = true`, rows from a map file `false`.
+5. Difficulty scaling (Darwinia legacy): for team 1 buildings, `SpawnPopulationLock.maxPopulation ×= f`, `AntHill.numAntsInside ×= f`, `AISpawnPoint.period /= f`, `Triffid.reloadTime /= f`, with `f = 1 + difficultyLevel/5` when the mission has no `Difficulty` block. `App::UpdateDifficultyFromPreferences` hard-codes `m_difficultyLevel = 0`, so `f = 1.0` in every build [C] `code/app.cpp:App::UpdateDifficultyFromPreferences`, `LevelFile::ParseBuildings`.
+6. Determinism note: every row constructs a template object; some constructors draw from the synchronised RNG (P06 §Determinism), so the **set and order of rows must be identical on every peer** [→ 22].
+
+#### 2.9.2 Building templates → world objects
+
+The parsed objects are *templates*; `Location` later creates the live building with `CreateBuilding(type)` + `Initialise(template)`. Field semantics and behaviour are specified in [→ 03_buildings_and_world_objects] (P06, P07, P08, P02 sections). This table only fixes the syntax.
+
+#### 2.9.3 Per-type extra columns (all 75 type names: `Invalid` + 74 real types) [C] each class's `Read`; class hierarchy from `code/worldobject/*.h`
+
+Legend: `R` required (MISSING ⇒ CRASH), `O` optional (read only if a token remains; nested — a later O is read only if the earlier one was present), `*` = list until end of line. "Blocked" rows are ignored in every build in scope.
+
+| # | Type name | Class (Read) | Extra columns after `isGlobal` | Optional defaults | Blocked | Shipped rows (files) |
+|---|---|---|---|---|---|---|
+| 0 | `Invalid` | – | – (CreateBuilding returns NULL) | – | n/a | 0 |
+| 1 | `Factory` | Factory | R `initialCapacity` INT | – | yes | 0 |
+| 2 | `Cave` | Cave (base) | – | – | yes | 0 |
+| 3 | `RadarDish` | RadarDish | O `forceConnection` INT, O `autoConnectAtStart` INT, `validLinkId`* INT | 0, 0, empty | no | 164 (22) |
+| 4 | `LaserFence` | LaserFence | R `nextLaserFenceId` INT, O `scale` F32, O `mode` F32→int (`LaserFence::Mode*`: 0 Disabled, 1 Enabling, 2 Enabled, 3 Disabling, 4 NeverOn, 5 AlwaysOn) | 1.0, 0 (Disabled) | no | 764 (17) |
+| 5 | `ControlTower` | ControlTower | R `controlBuildingId` INT | – | no | 150 (20) |
+| 6 | `GunTurret` | GunTurret | O `state` INT (= turret type: 0 Standard, 1 Rocket, 2 Mortar, 3 Flame, 4 Subversion), O group {`targetX` F32, `targetZ` F32, `targetRadius` F32, `targetForce` F32} (all four R once `targetX` is present) | 0, (0,0,0,0) | no | 264 (23) |
+| 7 | `Bridge` | Bridge | R `nextBridgeId` INT, R `bridgeType` INT | – | yes | 0 |
+| 8 | `Powerstation` | Powerstation | R `linkedBuildingId` INT | – | yes | 0 |
+| 9 | `Tree` | Tree | R `height` F32, R `budsize` F32, R `pushOut` F32, R `pushUp` F32, R `iterations` INT, R `seed` INT, R `branchColour` INT (packed RGBA), R `leafColour` INT (packed RGBA), O `leafDropRate` INT, O `spiritDropRate` INT, O `evil` INT (==1 → true) | 0, 0, false | no | 1041 (69) |
+| 10 | `Wall` | Wall | O `objectiveLink` INT | −1 | no | 374 (12) |
+| 11 | `TrunkPort` | TrunkPort | O `targetLocationId` INT | −1 | no | 173 (49) |
+| 12 | `ResearchItem` | ResearchItem | R `researchType` research name (`GlobalResearch::GetType`, case-insensitive; unknown → −1), O `level` INT | 1 | yes | 8 (6) — ignored |
+| 13 | `Library` | Library (base) | – | – | yes | 0 |
+| 14 | `Generator` | PowerBuilding | R `powerLink` INT | – | yes | 1 (1) — ignored |
+| 15 | `Pylon` | PowerBuilding | R `powerLink` INT | – | no | 389 (22) |
+| 16 | `PylonStart` | PylonStart | R `powerLink` INT, R `reqBuildingId` INT | – | yes | 1 (1) — ignored |
+| 17 | `PylonEnd` | PowerBuilding | R `powerLink` INT | – | no | 98 (21) |
+| 18 | `SolarPanel` | PowerBuilding | R `powerLink` INT | – | no | 274 (21) |
+| 19 | `PowerSplitter` | PowerSplitter | R `powerLink` INT, `linkId`* INT | empty | no | 27 (8) |
+| 20 | `TrackLink` | MineBuilding | R `trackLink` INT | – | yes | 111 (2) — ignored |
+| 21 | `TrackJunction` | TrackJunction | R `trackLink` INT, `trackLinks`* INT | – | yes | 3 (1) — ignored |
+| 22 | `TrackStart` | TrackStart | R `trackLink` INT, R `reqBuildingId` INT | – | yes | 1 (1) — ignored |
+| 23 | `TrackEnd` | TrackEnd | R `trackLink` INT, R `reqBuildingId` INT | – | yes | 2 (2) — ignored |
+| 24 | `Refinery` | MineBuilding | R `trackLink` INT | – | yes | 1 (1) — ignored |
+| 25 | `Mine` | MineBuilding | R `trackLink` INT | – | yes | 4 (1) — ignored |
+| 26 | `Yard` | ConstructionYard (base) | – | – | yes | 1 (1) — ignored |
+| 27 | `DisplayScreen` | DisplayScreen (base) | – | – | yes | 0 |
+| 28 | `UpgradePort` | UpgradePort (base) | – | – | yes | 0 |
+| 29 | `PrimaryUpgrade` | PrimaryUpgradePort (base) | – | – | yes | 0 |
+| 30 | `Incubator` | Incubator | O `numStartingSpirits` INT | 0 | no | 96 (30) |
+| 31 | `AntHill` | AntHill | R `numAntsInside` INT (values <0 or >10 000 are logged and replaced by 0) | – | no | 13 (2) |
+| 32 | `SafeArea` | SafeArea | R `size` F32, R `entitiesRequired` INT, R `entityTypeRequired` INT (entity enum) | – | yes | 4 (3) — ignored |
+| 33 | `Triffid` | Triffid | R `size` F32, R `pitch` F32, R `force` F32, R `variance` F32, R `reloadTime` F32, R `useTrigger` INT, R `triggerX` F32, R `triggerZ` F32, R `triggerRadius` F32, then up to 10 O spawn flags INT (==1 → true) in order Virii, Centipede, Spider, Spirits, Eggs, TriffidEggs, Ants, SporeGenerator, SoulDestroyer, Darwinians | missing flags = false | no | 47 (13) |
+| 34 | `SpiritReceiver` | ReceiverBuilding | R `spiritLink` INT | – | yes | 49 (1) — ignored |
+| 35 | `ReceiverLink` | ReceiverBuilding | R `spiritLink` INT | – | yes | 83 (2) — ignored |
+| 36 | `SpiritSpawner` | ReceiverBuilding | R `spiritLink` INT | – | yes | 1 (1) — ignored |
+| 37 | `SpiritProcessor` | ReceiverBuilding | R `spiritLink` INT | – | yes | 1 (1) — ignored |
+| 38 | `SpawnPoint` | SpawnBuilding | `link`* INT (`SetBuildingLink` each) | empty | no | 471 (55) |
+| 39 | `SpawnPopulationLock` | SpawnPopulationLock | R `searchRadius` F32 (wu), R `maxPopulation` INT | – | no | 166 (39) |
+| 40 | `SpawnPointMaster` | MasterSpawnPoint (SpawnBuilding) | `link`* INT | empty | no | 55 (55) |
+| 41 | `SpawnLink` | SpawnBuilding | `link`* INT | empty | no | 464 (37) |
+| 42 | `AITarget` | AITarget | O `linkId` INT, O `priorityModifier` `atof` (full double, not F32), O `checkCliffs` INT | −1, 0.0, 1 | no | 1577 (81) |
+| 43 | `AISpawnPoint` | AISpawnPoint | R `activatorId` INT, R `entityType` INT (entity enum), R `count` INT, R `period` INT, O `spawnLimit` INT, O `routeId` INT | −1, −1 | **yes** (in the block list although Darwinia-only) | 19 (6) — ignored |
+| 44 | `BlueprintStore` | BlueprintBuilding | R `buildingLink` INT | – | yes | 1 (1) — ignored |
+| 45 | `BlueprintConsole` | BlueprintConsole | R `buildingLink` INT, R `segment` INT | – | yes | 4 (1) — ignored |
+| 46 | `BlueprintRelay` | BlueprintRelay | R `buildingLink` INT, R `altitude` F32 | – | yes | 12 (1) — ignored |
+| 47 | `ScriptTrigger` | ScriptTrigger | R `linkId` INT, R `range` F32, R `scriptFilename` WORD (`strcpy`, ≤255), R `entityType` WORD: `always`, `never`, `camenter`, `camview` (case-insensitive) or an entity type name | – | yes | 25 (11) — ignored |
+| 48 | `Spam` | Spam (base) | – | – | yes | 3 (1) — ignored |
+| 49 | `GodDish` | GodDish (base) | – | – | yes | 2 (2) — ignored |
+| 50 | `StaticShape` | StaticShape | R `scale` F32, R `shapeName` WORD (file in `data/shapes/`) | – | no | 257 (30) |
+| 51 | `FuelGenerator` | FuelBuilding | R `fuelLink` INT | – | no | 64 (9) |
+| 52 | `FuelPipe` | FuelBuilding | R `fuelLink` INT | – | no | 217 (9) |
+| 53 | `FuelStation` | FuelBuilding | R `fuelLink` INT | – | no | 64 (9) |
+| 54 | `EscapeRocket` | EscapeRocket | R `fuelLink` INT, R `fuel` F32, R `passengers` INT, R `spawnBuildingId` INT, R `spawnCompleted` INT | – | no | 22 (9) |
+| 55 | `FenceSwitch` | FenceSwitch | R `linkedBuildingId` INT, R `linkedBuildingId2` INT, R `switchValue` INT (−1 → copy of `linkedBuildingId`), R `lockable` INT, R `script` WORD, O `locked` INT (==1) | false | yes | 0 |
+| 56 | `DynamicHub` | DynamicHub | R `buildingLink` INT, R `shapeName` WORD, R `requiredScore` INT, R `currentScore` INT, R `minActiveLinks` INT | – | yes | 0 |
+| 57 | `DynamicNode` | DynamicNode | R `buildingLink` INT, R `shapeName` WORD, R `scoreValue` INT, R `scoreSupplied` INT | – | yes | 0 |
+| 58 | `FeedingTube` | FeedingTube | R `receiverId` INT | – | yes | 0 |
+| 59 | `MultiwiniaZone` | MultiwiniaZone | R `size` `atof` (full double; radius in wu [I]), `blitzkriegLink`* INT | empty | no | 182 (29) |
+| 60 | `ChessPiece` | ChessPiece (base) | – | – | yes | 0 |
+| 61 | `ChessBase` | ChessBase | R `width` INT, R `depth` INT | – | yes | 2 (1) — ignored |
+| 62 | `CloneLab` | CloneLab → Incubator | O `numStartingSpirits` INT | 0 | no | 15 (4, old/ only) |
+| 63 | `ControlStation` | ControlStation | R `controlBuildingId` INT | – | no | 54 (13) |
+| 64 | `Portal` | Portal (base) | – | – | yes | 91 (10, old/) — ignored |
+| 65 | `Crate` | Crate (base) | – | – | yes (crates are spawned at runtime) | 0 |
+| 66 | `Statue` | Statue (base) | – | – | yes | 1 (1) — ignored |
+| 67 | `WallBuster` | WallBuster (base) | – | – | no | 3 (1) |
+| 68 | `PulseBomb` | PulseBomb | R `startTime` F32 (s), `link`* INT (`SetBuildingLink`) | empty | no | 10 (10) |
+| 69 | `RestrictionZone` | RestrictionZone | R `size` F32 (wu), O `blockPowerups` INT | false | no | 35 (14) |
+| 70 | `JumpPad` | JumpPad | R `force` F32, R `angle` F32 (radians per P06) | – | no | 27 (4) |
+| 71 | `AIObjective` | AIObjective | R `nextObjective` INT | – | no | 98 (10) |
+| 72 | `AIObjectiveMarker` | AIObjectiveMarker | R `scanRange` F32 (wu), R `objectiveId` INT, O `armourObjective` INT, O `pickupOnly` INT | 0, 0 | no | 345 (17) |
+| 73 | `EruptionMarker` | EruptionMarker (base) | – | – | no | 1 (1) |
+| 74 | `SmokeMarker` | SmokeMarker (base) | – | – | no | 9 (2) |
+
+(The enum has 75 entries 0…74 including `Invalid`; `NumBuildingTypes` = 75.) Row counts are over all 118 level files; per-file-set counts and token-count ranges are in `_work/drafts/X1a_level_field_usage.csv` [C] `X1a_level_survey.py`. Forced-global types at construction (`RadarDish`, `ControlTower`, `TrunkPort`, `Incubator`, `DynamicHub`, `FenceSwitch`) are overwritten by column 8 anyway [C] `Building::CreateBuilding(int)`.
+
+Integer overflow note: `Tree` colour columns are `atoi`'d packed RGBA values; all shipped values fit in a signed 32-bit int (e.g. `1681873407`) [C] survey. A writer must emit them as signed decimal.
+
+### 2.10 `CameraMounts` block [C] `LevelFile::ParseCameraMounts`, `WriteCameraMounts`
+
+```
+mount_row := NAME posX posY posZ frontX frontY frontZ upX upY upZ          ; 10 tokens, all MISSING ⇒ CRASH
+```
+
+| Col | Field | Type | Notes |
+|---|---|---|---|
+| 1 | `m_name` | WORD, `strncpy` 63 chars into `char[64]` | names of 63+ characters are **not NUL-terminated** (bug) — keep ≤ 62. Looked up case-insensitively (`LevelFile::GetCameraMount`) |
+| 2–4 | `m_pos` | F32 ×3, wu | camera position |
+| 5–7 | `m_front` | F32 ×3 | normalised after reading |
+| 8–10 | `m_up` | F32 ×3 | normalised after reading |
+
+Naming conventions consumed by code: `player<N>` (N = the local team's *position* index) is the start camera of that position in Multiwinia [C] `code/main.cpp` (L458, `sprintf(camname,"player%d", GetTeamPosition(myTeamId))`); `start` is the default start mount [C] `code/main.cpp` (L1344, `SetTarget("start")`). Shipped `mp_*` maps: `player0` 51, `player1` 51, `player2` 31, `player3` 13, `start` 7 rows [C] survey. The name `CamPosBefore` is reserved (`MAGIC_MOUNT_NAME_START_POS`, the pose before an animation started) and need not exist [C] `code/level_file.h`.
+
+### 2.11 `CameraAnimations` block [C] `LevelFile::ParseCameraAnims`, `WriteCameraAnims`
+
+```
+cam_anims  := 'CameraAnimations_StartDefinition' EOL { blank | animation } 'CameraAnimations_EndDefinition' EOL
+animation  := ANIMNAME EOL { blank | node } 'End' EOL                ; ANIMNAME strncpy 63 (same caveat as mounts)
+node       := ('Move' | 'Cut') MOUNTNAME DURATION                   ; case-insensitive; all MISSING ⇒ CRASH
+```
+
+| Field | Type | Range | Failure |
+|---|---|---|---|
+| transition | `Move` = `CamAnimNode::TransitionMove` (0), `Cut` = `TransitionCut` (1) | – | unknown word → `AppReleaseAssert("Bad camera animation camera mode in level file %s")` — fatal in release |
+| `m_mountName` | WORD (`strdup`) | must name a mount defined **earlier** (in this file or the mission file parsed before) unless it is `CamPosBefore` | else release-assert "Bad camera animation mount name" — fatal |
+| `m_duration` | F32, seconds | 0.0 ≤ d < 60.0 | else release-assert "Bad camera animation transition time" — fatal |
+
+Shipped files: 96 blocks, all empty (no animation in any file) [C] survey; consumed only by `Script` `CamAnim` (§10) [B:LEGACY].
+
+### 2.12 `InstantUnits` block [C] `LevelFile::ParseInstantUnits`, `WriteInstantUnits`, `code/level_file.h:InstantUnit`
+
+```
+iu_row := ENTITYTYPE team x z count inAUnit state spread [ waypointX waypointZ ] [ routeId [ routeWaypointId [ runAsTask ] ] ]
+```
+
+| Col | Field | Type | Units | Default if absent | Notes |
+|---|---|---|---|---|---|
+| 1 | `m_type` | entity type name (case-insensitive, `Entity::GetTypeId`) | – | – | unknown name or `Entity::EntityIsBlocked` (FULL blocks `AI`, `ArmyAnt`, `DropShip`, `Egg`, `Lander`, `LaserTroop`, `Meteor`, `Nuke`, `Officer`, `Shaman`, `SpaceInvader`, `Tentacle`, `TriffidEgg`, `Tripod`, `InvalidType`, `SpaceShip`) → line skipped |
+| 2 | `m_teamId` | INT | team id | R | |
+| 3–4 | `m_posX`, `m_posZ` | F32 | wu | R | centre of the group |
+| 5 | `m_number` | INT | entities | R | |
+| 6 | `m_inAUnit` | INT → bool | – | R | `Squadie` with `inAUnit = 0` is skipped (legacy crash guard) |
+| 7 | `m_state` | INT | entity state enum | R (ctor −1) | −1 = default state |
+| 8 | `m_spread` | F32 | wu (radius) | R (ctor 200.0) | |
+| 9–10 | `m_waypointX/Z` | F32 | wu | 0.0, 0.0 | the pair is entered when *one* token remains, so a single extra token ⇒ CRASH |
+| 11 | `m_routeId` | INT | route id | −1 | |
+| 12 | `m_routeWaypointId` | INT | – | −1 | |
+| 13 | `m_runAsTask` | INT → bool | – | false | |
+
+Accepted entity type names (index = `Entity::Type*`): 0 `InvalidType`, 1 `LaserTroop`, 2 `Engineer`, 3 `Virii`, 4 `Squadie` (= `TypeInsertionSquadie`), 5 `Egg`, 6 `SporeGenerator`, 7 `Lander`, 8 `Tripod`, 9 `Centipede`, 10 `SpaceInvader`, 11 `Spider`, 12 `Darwinian`, 13 `Officer`, 14 `ArmyAnt`, 15 `Armour`, 16 `SoulDestroyer`, 17 `TriffidEgg`, 18 `AI`, 19 `Shaman`, 20 `Harvester`, 21 `Nuke`, 22 `Tentacle`, 23 `Meteor`, 24 `Tank`, 25 `SpaceShip`, 26 `DropShip` [C] `code/worldobject/entity.cpp:Entity::GetTypeName`, `code/worldobject/entity.h` enum. The same numeric indices are used by the `entityType` columns of `AISpawnPoint` and `SafeArea`.
+
+Shipped rows: `Darwinian` 390 rows in 64 files (39 mp), `Armour` 7 (4 mp), `Tank` 9 (3 mp, TankBattle maps), `Engineer` 3 (old/); Darwinia missions add `Virii`, `Centipede`, `Spider`, `SporeGenerator`, `SoulDestroyer`; blocked and skipped: `AI` 7, `ArmyAnt` 1, `Shaman` 9 [C] survey. Difficulty scaling for team 1 (`number ×= f`, centipede splitting, `spread ×= 1.2^(difficulty/5)`) is inert because `f = 1` (§2.9.1). Note the centipede-copy path calls `sfrand(60)` (non-synchronised random) — dead with `f = 1` [C].
+
+### 2.13 `Routes` block [C] `LevelFile::ParseRoutes`, `ParseRoute`, `WriteRoutes`, `code/routing_system.h:WayPoint`
+
+```
+routes   := 'Routes_StartDefinition' EOL { blank | route | other_line } 'Routes_EndDefinition' EOL
+route    := 'Route' ID EOL { blank | waypoint } 'End' EOL            ; ID INT, debug-asserted 0 ≤ ID < 10000
+waypoint := '0' x y z      ; WayPoint::Type3DPos   (F32 ×3)
+          | '1' x z        ; WayPoint::TypeGroundPos (F32 ×2)
+          | '2' buildingId ; WayPoint::TypeBuilding (INT)
+other_line := any line whose first token is not 'Route' (ignored)
+```
+
+The waypoint type is `atoi(first token)` (a debug assert checks it starts with a digit); any other number creates a waypoint at (0,0,0) with that type [C]. No shipped file contains a `Routes` block [C] survey.
+
+### 2.14 `PrimaryObjectives` block [C] `LevelFile::ParsePrimaryObjectives`, `WritePrimaryObjectives`, `code/global_world.cpp:GlobalEventCondition`
+
+```
+objectives := 'PrimaryObjectives_StartDefinition' EOL { objective } 'PrimaryObjectives_EndDefinition' EOL   ; NO blank lines (NULL ⇒ CRASH)
+objective  := condition [ STRINGID [ CUTSCENE ] ]
+condition  := ('BuildingOnline' | 'BuildingOffline') LOCATIONNAME BUILDINGID     ; e.g. "BuildingOnline :mine,90"
+            | 'ResearchOwned' RESEARCHNAME
+            | 'DebugKey' INT
+            | 'NeverTrue'
+            | 'AlwaysTrue' | 'NotInLocation'                                   ; debug-asserted as invalid here
+```
+
+| Field | Semantics |
+|---|---|
+| condition word | `GlobalEventCondition::GetType` (case-insensitive) over `AlwaysTrue`(0), `BuildingOnline`(1), `BuildingOffline`(2), `ResearchOwned`(3), `NotInLocation`(4), `DebugKey`(5), `NeverTrue`(6); unknown → −1 (debug assert), the line is still stored |
+| `LOCATIONNAME` | resolved with `GlobalWorld::GetLocationId` — the name derived from `game.txt` (`map_<name>.txt` → `<name>`, §3). In Multiwinia the global world is empty, so the id is −1 [C] `code/app.cpp:App::Initialise` (`new GlobalWorld` without `LoadGame`) |
+| `BUILDINGID` | INT, the building's unique id in that location |
+| `STRINGID` | language phrase id of the objective text (`m_stringId`) |
+| `CUTSCENE` | script file run when the objective completes (`m_cutScene`) |
+
+If the block is empty or absent, `GenerateAutomaticObjectives` adds a single `NeverTrue` objective; it also derives *secondary* objectives from `ResearchItem`/`TrunkPort` buildings (both blocked or campaign-only) [C]. Shipped: 77 files `NeverTrue` (one `NeverTrue -1 -1`), 19 files `BuildingOnline` (16 missions, `mp_sandbox`/`mp_sandbox_all` with `:sandbox,2`, `map_sandbox`), 1 `ResearchOwned` [C] survey. In Multiwinia objectives have no gameplay effect [I: only `Location::MissionComplete` (Darwinia) evaluates them].
+
+### 2.15 Mission-only blocks [B:LEGACY]
+
+| Block | Grammar | Semantics [C] |
+|---|---|---|
+| `Difficulty` | `'CreatedAsDifficulty' INT` (other words ignored) | `m_levelDifficulty = n − 1`, clamped ≥ 0 (1-based in file). Present in 3 shipped missions, value 1 |
+| `RunningPrograms` | `ENTITYTYPE count state data waypointX waypointZ { posX posZ health }×count` — all MISSING ⇒ CRASH; `count` ≤ 10 (fixed arrays `m_positionX[10]`, **no bounds check**) | save-game record of running Engineer/Squad tasks (`data` = engineer spirits or squad weapon type). The writer's squad branch uses `%8.2` without a conversion letter, producing malformed output [C] `LevelFile::WriteRunningPrograms` |
+| `LeaderboardStats` | `'Time' FLOAT`, `'Kills' INT`, `'Survivors' …` | `Time` is parsed with `sscanf("%f")` into a `double` (`m_leaderboardLevelTime`) — type mismatch (garbage); `Kills` written straight into `m_location->m_teams[2]->m_teamKills` (requires a live location) [C] `LevelFile::ParseLeaderboardStats` |
+
+### 2.16 Writer notes (editor / save path) [C] `LevelFile::Save`, `SaveMapFile`, `SaveMissionFile`, `Write*`
+
+* Map save target: `TARGET_DEBUG` → `data/levels/<map>` via `Resource::GetTextFileWriter`; otherwise `<profile>/maps/<map>` (plain, unencrypted). Mission save: `<profile>/users/<profile name>/<mission>` (encrypted unless `TARGET_DEBUG`), else `data/levels/<mission>` [B:EDITOR]/[B:LEGACY].
+* Each building row is `"\t%-20s"` type name then `%-8d %-8.2f %-8.2f %-8d %-8.2f %-8.2f %-8d` for the base columns, then the class's own `Write` [C] `Building::Write`. **Precision loss**: positions and fronts are written with 2 decimals, F32 columns of subclasses mostly `%.2f` — a load/save round-trip is lossy.
+* `WriteLandscapeTiles` writes `desiredHeight` with `%6.0f` (integer rounding) and concatenates `lowlandSmoothing%6.2f` and `guidePower%6d` without a separator — fine only because of the field widths [C].
+
+### 2.17 Minimal valid examples (written for this document)
+
+Multiwinia map (`mp_example_2p.txt`):
+
+```
+MultiwiniaOptions_StartDefinition
+	GameTypes	KingOfTheHill
+	PopulationCap	1000
+	NumPlayers	2
+	Difficulty	basic
+MultiwiniaOptions_EndDefinition
+
+Landscape_StartDefinition
+	worldSizeX 1200
+	worldSizeZ 1200
+	cellSize 12.0
+	outsideHeight -10.0
+	landColourFile landscape_default.bmp
+	wavesColourFile waves_default.bmp
+	waterColourFile water_default.bmp
+Landscape_EndDefinition
+
+LandscapeTiles_StartDefinition
+	100 0.00 100 1000 1.20 1.00 120 1 12345 1.00 0
+LandscapeTiles_EndDefinition
+
+LandFlattenAreas_StartDefinition
+	600.0 20.0 600.0 80.0 0 40.0
+LandFlattenAreas_EndDefinition
+
+Lights_StartDefinition
+	0.10 0.40 0.90   1.00 1.00 1.00
+Lights_EndDefinition
+
+Buildings_StartDefinition
+	SpawnPointMaster    1    600.00  600.00  255  1.00  0.00  0   2  3
+	SpawnPoint          2    300.00  600.00  0    1.00  0.00  0
+	SpawnPoint          3    900.00  600.00  1   -1.00  0.00  0
+	MultiwiniaZone      4    600.00  600.00  255  1.00  0.00  0   150.00
+Buildings_EndDefinition
+
+CameraMounts_StartDefinition
+	player0  200.00 300.00 600.00  0.70 -0.70 0.00  0.70 0.70 0.00
+	player1 1000.00 300.00 600.00 -0.70 -0.70 0.00 -0.70 0.70 0.00
+CameraMounts_EndDefinition
+
+InstantUnits_StartDefinition
+	Darwinian  0  300.0  600.0  20  0  -1  50.0
+	Darwinian  1  900.0  600.0  20  0  -1  50.0
+InstantUnits_EndDefinition
+```
+
+Campaign mission (`mission_example.txt`, [B:LEGACY]):
+
+```
+Difficulty_StartDefinition
+	CreatedAsDifficulty 1
+Difficulty_EndDefinition
+
+Buildings_StartDefinition
+	Incubator  10  500.00 500.00 1  1.00 0.00 1  0
+Buildings_EndDefinition
+
+PrimaryObjectives_StartDefinition
+	BuildingOnline :example,10	example_objective1
+PrimaryObjectives_EndDefinition
+```
+
+### 2.18 Discrepancies between shipped level files and the parsers [C] `X1a_level_survey.py` (CSV `X1a_level_field_usage.csv`)
+
+| # | Finding | Files | Effect |
+|---|---|---|---|
+| 1 | `GameTypes none` (not a game type) | `mp_assault_stress`, `mp_benchmark_1`, `mp_sandbox`, `mp_sandbox_all` + 6 old/ | map dropped from the lobby list ("didn't contain a game type"); these are dev/benchmark/tutorial maps reached by other paths [I] |
+| 2 | `GameTypes Shaman`, `GameTypes Skirmish` | 10 + 6 old/ maps | unknown names → ignored (old naming) |
+| 3 | Top-level `GameTypes` line before any block | `old/mp_chess1.txt` | debug assert; ignored |
+| 4 | `CarryableBuilding` building type | `map_sandbox.txt` | not a type name → line ignored |
+| 5 | `AIObjective` with 2 extra tokens (needs 1) | `mp_assault_stress.txt` (3 rows), `old/mp_assault_3P_1.txt` (3) | surplus ignored |
+| 6 | `Triffid` with 20 extra tokens (max 19) | `old/mp_shaman_2P.txt` (2 rows) | surplus ignored |
+| 7 | 39 blocked Darwinia types still present (`Portal` 91 rows in old/, `ScriptTrigger` 25, `TrackLink` 111, `SpiritReceiver` 49, `ReceiverLink` 83, …) | campaign maps, old/ | silently ignored in Multiwinia |
+| 8 | Blocked entity types in `InstantUnits` (`AI`, `ArmyAnt`, `Shaman`) | missions, old/ | skipped |
+| 9 | `Name NewLevel` placeholder | 10 mp maps | menu shows language-table names instead [I] |
+| 10 | `Author`, `Description`, `Routes`, `RunningPrograms`, `LeaderboardStats`, `maxHeight` in non-mp maps — parsed but never present (except `maxHeight` in 41 mp maps) | – | features exist only for editor/save files |
+| 11 | Duplicate `PopulationCap` | `mp_cts_4p_3.txt` | last (2000) wins |
+| 12 | Second `Buildings` block in 47 mp maps (after `CameraAnimations`) | 47 mp | also static (the dynamic branch is unreachable in `ParseMapFile`) |
+| 13 | No blank line inside `Landscape`/`PrimaryObjectives` blocks, all required columns present, all `isGlobal` constraints met | all 118 files | the strict parts of the grammar are respected by shipped data |
+
+<a id="fmt-level-enum"></a>
+### 2.19 `data/levels/level_enum.txt` — achievement level ids [C] `code/achievement_tracker.cpp:AchievementTracker::AchievementTracker`
+
+```
+level_enum := { blank | MAPFILENAME LEVELID }          ; LEVELID INT; MISSING ⇒ CRASH (atoi(NULL)) for a one-token line
+```
+
+* Maps a map file name (case-insensitive `HashTable` key) to an achievement level id; reverse map id → name. Ids 1…49 are exactly the 49 retail maps (every `mp_*` file not excluded by `tools/multiwinia_exclusions.txt`, one id each, no gaps — verified by script); ids 50…59 are `mp_PDLC1_*`/`mp_PDLC2_*` map names that do not exist in this tree [C] file. Ids > `MAX_LEVEL_ID` (49) are ignored by `AddVictoryOnLevel`/`AddVisitedLevel`; the "Master of Multiwinia"/"Explorer" achievements need `VALID_ACHIEVEMENT_LEVELS` = 49 (41 without `INCLUDEGAMEMODE_ASSAULT`) wins/visits; bitsets `m_won[8]`, `m_visited[8]` (64 bits, bit = id) [C].
+* Both maps copy the token (`HashTable::PutData` stores `newStr(key)`; `LevelListReverseMap` is `std::map<int,std::string>`), so the reader buffer may be freed [C] `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::PutData`, `code/achievement_tracker.h`. **A duplicate map name (case-insensitive) is fatal**: `HashTable::GetInsertPos` calls `AppAbort("Error with HashTable")` when the key already exists [C] `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::GetInsertPos`. The shipped file has no duplicates [C].
+* The file lacks a final newline (last line `mp_PDLC2_rocketriot_3P_1.txt 59`): read from disk it is processed, read from an archive (`TextDataReader`) it would be dropped [C] §1.2 — harmless (id 59 > 49).
+* `tools/multiwinia_exclusions.txt` excludes `levels/level_enum.txt` from the retail `main.dat` → in a packaged retail build the file is not found ("Failed to load level_enum.txt") unless shipped another way [C] exclusion list; [U] whether a patch/DLC archive supplies it (resolve: inspect a retail `patch.dat`/PDLC archive).
+
