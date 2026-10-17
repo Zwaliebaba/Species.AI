@@ -85,6 +85,8 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 |---|---|---|---|---|---|
 | render width, render height | `render.render_width`, `render.render_height` | integer, px | `rnd.option.render_size.default`, the desktop size on first run | renderer | [renderer options](../renderer/options_and_budgets.md) RND-440 |
 | window mode, shown as "play in a window" | `render.window_mode` | enumeration `windowed`, `borderless_full_screen` | `rnd.option.window_mode.default`; the page's reference value is `ref.meta.options.screen.windowed_default` | renderer | RND-440; R-META-414 |
+| monitor | `window.monitor` | text, the monitor's device name | absent: the primary monitor | read when the window opens (PLT-059) | [platform layer](../platform_layer.md) PLT-028 |
+| windowed client rectangle | `window.client_rect` | list of exactly four integers in desktop coordinates, in the order left, top, right, bottom, with right above left and bottom above top | absent: the render size, centred on the monitor (PLT-059) | read when the window opens (PLT-059) | PLT-028 |
 | present mode, frame-rate cap, low latency, anti-aliasing, HDR, HDR highlight limit, brightness | `render.present_mode`, `render.frame_rate_cap`, `render.low_latency`, `render.anti_aliasing`, `render.hdr`, `render.hdr_highlight_limit`, `render.brightness` | the types and ranges of RND-440 | `rnd.option.present_mode.default`, `rnd.option.frame_rate_cap.default`, `rnd.option.low_latency.default`, `rnd.option.anti_aliasing.default`, `rnd.option.hdr.default`, `rnd.option.hdr_highlight_limit.default`, `rnd.option.brightness.default` | renderer | RND-440 |
 | refresh rate | `screen.refresh_rate` | integer, Hz | the renderer reader's value, which the platform layer keys; page copy `ref.meta.options.screen.refresh_default` | renderer | R-META-414 to R-META-420; platform layer |
 | colour bits | `screen.colour_bits` | integer, one of `ref.meta.options.screen.colour_choices` | the renderer reader's value, which the platform layer keys; page copy `ref.meta.options.screen.colour_default` | renderer | R-META-414 to R-META-420; platform layer |
@@ -134,7 +136,7 @@ Table 3.1-A Settings (`settings.defaults`). Scope: "renderer" is a renderer reco
 
 ### 3.2 The settings file
 
-**DAT-196** (MUST) The settings file holds the player's stored settings in the `settings\` folder of the per-user data folder (ADR-0071, R-META-400); the platform layer names the file. Until DEC-250 is decided its text form is that of table 3.2-A: UTF-8 without a byte-order mark, one line per entry, comment or blank line, with line feeds as line endings. The file carries no schema version and is never migrated (R-META-409); its versioning, migration and synchronisation are DEC-250's, and DEC-800 item 5 applies whatever DEC-250 decides.
+**DAT-196** (MUST) The settings file holds the player's stored settings in the `settings\` folder of the per-user data folder (ADR-0071, R-META-400); the platform layer names the file ([platform layer](../platform_layer.md) PLT-031). Until DEC-250 is decided its text form is that of table 3.2-A: UTF-8 without a byte-order mark, one line per entry, comment or blank line, with line feeds as line endings. The file carries no schema version and is never migrated (R-META-409); its versioning, migration and synchronisation are DEC-250's, and DEC-800 item 5 applies whatever DEC-250 decides.
 
 Table 3.2-A Lines of the settings file.
 
@@ -144,7 +146,7 @@ Table 3.2-A Lines of the settings file.
 | comment | `#` followed by any text | kept in its place on save (R-META-404, R-META-407) |
 | blank | empty, or blanks only | kept in its place on save |
 
-**DAT-197** (MUST) A value is written in the form of its schema type: a boolean as `true` or `false`; an integer in decimal digits with an optional minus sign; a decimal in its shortest round-trip form (README DAT-041); a text literally, with no quoting, escape or formatting directive (DEC-800 item 4); an enumerator by its name; a binding node as its canonical JSON form on one line (INP-072). A text value cannot hold a line break; a value that would need one is refused by the store with a diagnostic.
+**DAT-197** (MUST) A value is written in the form of its schema type: a boolean as `true` or `false`; an integer in decimal digits with an optional minus sign; a decimal in its shortest round-trip form (README DAT-041); a text literally, with no quoting, escape or formatting directive (DEC-800 item 4); an enumerator by its name; a list of integers as its integers in order, separated by single commas with no spaces, and a list with another number of integers than its type states is malformed (DAT-198); a binding node as its canonical JSON form on one line (INP-072). A text value cannot hold a line break; a value that would need one is refused by the store with a diagnostic.
 
 **DAT-198** (MUST) The reader types each entry by the schema, never by the shape of its text. An entry whose value does not parse as its type, or lies outside its range or its enumerators, is written to the log with its line and key and takes its default; every other entry keeps its stored value (DEC-800 item 5, R-META-404). A decimal setting written as a whole number reads as that decimal, and an integer setting written with a decimal point is malformed and takes its default.
 
@@ -308,7 +310,7 @@ Caption: Figure 4.3-A, building one language's string table (DAT-217; UI-222 to 
 |---|---|---|---|
 | T40 settings table | unit | every row of the settings register of reference/09 §4.2 has an entry; every default equals its owner key's value | DAT-193, DAT-194 |
 | T41 settings round trip | property | a file of random comments, blanks, known, unknown and repeated keys reads and saves with every comment, blank and unknown line in place, each known key once and the later repeats dropped; a second save gives the same bytes | DAT-196 to DAT-201 |
-| T42 typed reading | unit | a decimal stored as `2` reads as 2.0; an integer stored as `1.0` takes its default with a log line; a first line that starts with a digit discards nothing | DAT-198, DAT-200 |
+| T42 typed reading | unit | a decimal stored as `2` reads as 2.0; an integer stored as `1.0` takes its default with a log line; a `window.client_rect` of three integers takes its default; a first line that starts with a digit discards nothing | DAT-197, DAT-198, DAT-200 |
 | T43 values are data | unit | a player name holding `%s`, `{0}` and `#` is written and read back unchanged | DAT-197 |
 | T44 binding fixtures | unit | one failing fixture per rule of DAT-203 and DAT-204; the default set and both layout layers of INP table 4.13-B validate | DAT-202 to DAT-204 |
 | T45 variants | unit | each row of table 3.5-B gives its text in both modes | DAT-209 |

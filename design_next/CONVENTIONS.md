@@ -78,7 +78,17 @@ Documents may say "the reference game" or "the reference" where the context need
 
 - Reference documents use the reference template: Purpose and player experience · Rules · States and flows · Tuning table · Edge cases and interactions · Acceptance criteria · Dependencies · Open decisions.
 - Engine components use the component template: Responsibilities and boundaries · Interfaces · Data model · Behaviour and algorithms · Concurrency and performance budget · Failure modes, diagnostics and telemetry · Acceptance tests · Open decisions (including "Design-phase inputs").
-- ADRs use MADR 4. Decision-register entries use the format in `decisions/decision_register.md`.
+- ADRs use MADR 4. Decision-register entries (`decisions/`, index in `decisions/README.md`) use this format; an entry decided by the owner adds an `Owner decision:` line after the status:
+
+  ```
+  ### DEC-NNN <title>
+  - Status: Open | Resolved | Dropped
+  - Affects: <requirement ids and documents>
+  - Specified behaviour: <the rule the documents state now; for an Open entry, the reference default>
+  - Options: A — <option>; B — <option>
+  - Recommendation: <option and a one-paragraph rationale>
+  - Decide by: <milestone, "playtest" or "design phase">   (Open entries only)
+  ```
 - Diagrams are Mermaid only, validated, with a caption line, using Species names only. Component diagrams may use `C4Component`.
 - No file is larger than 120 KB. A larger topic becomes a folder with a `README.md` index.
 - The language is British English (en-GB).

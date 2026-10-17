@@ -23,10 +23,11 @@ RANGES = {
     'verdicts_and_fixes.md': (1, 119), 'verdicts_and_fixes_2.md': (120, 199), 'deferred/networking.md': (200, 219),
     'deferred/process_tick_and_roadmap.md': (220, 239),
     'deferred/numerics_lobby_terrain_services.md': (240, 259),
+    'simulation_gap_rules.md': (260, 299),
     'open_questions.md': (300, 449), 'units_buildings_crates_economy.md': (450, 549),
     'controls_bots_maps_meta_audio.md': (550, 649), 'simulation_terrain_render_assets.md': (650, 749),
     'vfx_audio_ui.md': (750, 799), 'data_sequences_platform_debug.md': (800, 849),
-    'review_findings.md': (900, 949),
+    'gameplay_gap_rules.md': (850, 899), 'review_findings.md': (900, 949), 'engine_gap_rules.md': (950, 999),
 }
 TITLES = {
     'verdicts_and_fixes.md': 'Verdicts, keep-list and fix-list', 'verdicts_and_fixes_2.md': 'Verdicts (continued) and owner decisions', 'deferred/networking.md': 'Deferred: networking',
@@ -37,6 +38,8 @@ TITLES = {
     'simulation_terrain_render_assets.md': 'Simulation, terrain, rendering and assets',
     'vfx_audio_ui.md': 'Animation and VFX, audio engine, UI', 'data_sequences_platform_debug.md':
     'Data, sequences, platform and diagnostics', 'review_findings.md': 'Review findings',
+    'simulation_gap_rules.md': 'Gap rules: simulation', 'gameplay_gap_rules.md': 'Gap rules: gameplay',
+    'engine_gap_rules.md': 'Gap rules: engine',
 }
 errors = []
 
