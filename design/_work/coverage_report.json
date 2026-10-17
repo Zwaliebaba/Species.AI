@@ -4,10 +4,8 @@
   "code/entity_grid_cache.h",
   "code/keygen.h",
   "code/lib/auto_vector.h",
-  "code/lib/float_vector3.h",
   "code/lib/matrix33.h",
   "code/lib/matrix34.h",
-  "code/lib/matrix_cache.h",
   "code/lib/plane.cpp",
   "code/lib/plane.h",
   "code/lib/presized_array.h",
@@ -16,11 +14,9 @@
   "code/location_editor.h",
   "code/mapfile.cpp",
   "code/mapfile.h",
-  "code/network/bandwidth.cpp",
   "code/network/bandwidth.h",
   "code/network/bytestream.h",
   "code/network/demo_limitations.h",
-  "code/network/ftp_manager.cpp",
   "code/network/ftp_manager.h",
   "code/network/generic.cpp",
   "code/network/generic.h",
@@ -37,8 +33,6 @@
   "code/routing_system.h",
   "code/testharness.cpp",
   "code/testharness.h",
-  "code/unicode/sound_library_2d_sdl.h",
-  "code/unicode/sound_library_3d.h",
   "code/unicode/unicode_text_file_writer.h",
   "contrib/systemiv/lib/filesys/file_system.h",
   "contrib/systemiv/lib/filesys/filesys_utils.h",
@@ -2993,10 +2987,10 @@
   "data/input/keyboards/<layout>.txt": [
    "09_meta_systems.md"
   ],
-  "data/mwsounds/attack": [
+  "data/mwsounds/retreat": [
    "10_audio_design.md"
   ],
-  "data/mwsounds/retreat": [
+  "data/mwsounds/attack": [
    "10_audio_design.md"
   ],
   "data/mwsounds/gdspeech": [
@@ -3008,38 +3002,26 @@
   "data/terrain/waves_": [
    "23_terrain_and_landscape.md"
   ],
+  "data/terrain/landscape_": [
+   "23_terrain_and_landscape.md",
+   "24_rendering.md"
+  ],
   "data/terrain/water_": [
    "23_terrain_and_landscape.md"
   ],
   "data/levels/map_": [
    "23_terrain_and_landscape.md"
   ],
-  "data/terrain/landscape_": [
-   "23_terrain_and_landscape.md",
+  "data/sepulveda/sepulveda1..5.bmp": [
    "24_rendering.md"
   ],
-  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
-   "24_rendering.md"
-  ],
-  "data/shapes/<lowercased name>": [
-   "24_rendering.md"
-  ],
-  "data/icons/mouse_": [
+  "code/lib/window_manager_sdl.{cpp,h}": [
    "24_rendering.md"
   ],
   "code/lib/opengl_trace.{h,cpp}": [
    "24_rendering.md"
   ],
-  "data/sepulveda/sepulveda1..5.bmp": [
-   "24_rendering.md"
-  ],
-  "code/lib/shader.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
-   "24_rendering.md"
-  ],
-  "code/lib/texture.{h,cpp}": [
+  "data/shaders/fixedfunc": [
    "24_rendering.md"
   ],
   "code/worldobject/{centipede,tank,insertion_squad,tentacle,officer,sporegenerator,entity_leg,engineer,souldestroyer,harvester,triffid,researchitem,spider}.cpp": [
@@ -3048,16 +3030,28 @@
   "code/lib/opengl_directx_dlist.{h,cpp}": [
    "24_rendering.md"
   ],
+  "code/lib/shader.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "data/icons/mouse_": [
+   "24_rendering.md"
+  ],
+  "data/shapes/<lowercased name>": [
+   "24_rendering.md"
+  ],
+  "code/worldobject/{spam,spawnpoint,crate,portal,rocket,pulsebomb,tree,building,laserfence,constructionyard,goddish,researchitem,mine,spiritreceiver}.cpp": [
+   "24_rendering.md"
+  ],
   "code/lib/fixedpipeline.{h,cpp}": [
+   "24_rendering.md"
+  ],
+  "code/lib/texture.{h,cpp}": [
    "24_rendering.md"
   ],
   "code/lib/opengl_directx_dlist_dev.{h,cpp}": [
    "24_rendering.md"
   ],
-  "data/shaders/fixedfunc": [
-   "24_rendering.md"
-  ],
-  "code/lib/window_manager_sdl.{cpp,h}": [
+  "code/lib/opengl_directx_matrix_stack.{h,cpp}": [
    "24_rendering.md"
   ],
   "contrib/systemiv/interface/components/{checkbox, core, drop_down_menu, filedialog, inputfield, message_dialog, scrollbar}": [
@@ -3069,9 +3063,9 @@
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 4400,
-  "[I]": 510,
-  "[U]": 90
+  "[C]": 4418,
+  "[I]": 515,
+  "[U]": 93
  },
  "classes": {
   "AI": [

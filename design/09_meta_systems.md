@@ -2553,3 +2553,83 @@ Non-normative [I] recommendations derived from the findings above; carry-forward
 11. Store the authentication / entitlement token in one place (§6.4 key-file split).
 
 ---
+## Open questions and unknowns
+
+Every [U] and every design-critical [I] in this document. Resolved during synthesis (not counted): server-side enforcement of host-only options (§4.4, resolved — none); `PageDarwinia` reachability (§1.2.1, debug only); in-match exit path (§2.1, Esc menu only); duplicate English help key (§8.1); persisted player-name truncation (§3.8); tutorial map CRCs — the P11/X4 CRC re-computation reproduces every `MAPID_*` value in `code/mapcrc.h`, so the tutorial buttons are active in a full install ([08](08_levels_and_level_design.md)).
+
+| Id | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 09-U1 | Did the retail Steam / Xbox Live build have a real achievement layer replacing the `App::EarnedAchievement` / `GiveAchievement` stubs, and were achievements persisted (`achievements.txt`)? | [U] | the retail branch or a retail binary; not in this tree |
+| 09-U2 | Which authentication key file shipped: start-up reads `<profile>authkey.dev`, typed keys are written to `<profile>authkey` (support INI and installers reference `authkey`). If the retail build matched this tree, hand-typed keys were lost on restart | [U] | retail binary / release branch, or a retail install's profile folder |
+| 09-U3 | Final `TimeLimit` after picking a map with a non-zero `PlayTime`: timing-dependent (map PlayTime if the lobby is built before the echo — the usual case — else the blueprint default) | [I] | instrumented run logging `GAMEOPTION_GAME_PARAM` versions on host and clients |
+| 09-U4 | Whether `default_preferences.txt` is applied on first run in a packaged install (prefs created when only `init.dat` is parsed; the file lives in `main.dat`) — affects first-run `NetworkServerPort`, `WaitVerticalRetrace`, `DarwinianScaleFactor` | [I] | first launch of a packaged build with an empty profile folder; inspect the written `preferences.txt` |
+| 09-U5 | Could the external metaserver inject key `"dy"` into listings (which would make the "show passworded games" filter hide those servers)? | [U] | metaserver source or packet capture |
+| 09-U6 | Exact visual of the 1.0 s menu transition (slide vs fade, curve) used by every page change | [U] | [24](24_rendering.md)/[28](28_ui_framework.md) `Renderer::RenderMenuTransition`, or a run |
+| 09-U7 | Whether the metaserver protocol could carry leaderboard / TrueSkill data; none of the defined fields is used for it (`PLAYERSCORE` unused) | [U] | metaserver source |
+| 09-U8 | Whether `data/mwhelp/background.bmp` is referenced indirectly (e.g. by a data file or skin); no code reference found | [U] | full-text search of `data/` and `contrib/eclipse`, or remove and run |
+| 09-U9 | Whether `GL_BLEND` is enabled when `CreditsLoader::FlipBuffers` draws its fading clear quad (decides whether the first 7 s smear) | [U] | GL state trace at `Script::RunCommand_RunCredits` / outro camera (legacy path) |
+| 09-U10 | Exact visual change of the `RenderBuildingDetail == 1` / `< 3` branches in `Building::RenderPorts`, `LaserFence::RenderAlphas`, `MineBuilding::*`, `SpawnBuilding::RenderAlphas` | [U] | read those functions in full ([03](03_buildings_and_world_objects.md) owners) |
+| 09-U11 | How MetaServer / MatchMaker behave server-side: which fields they add to LISTRESULT (`PROTOCOLMATCH`, `DEMORESTRICTED`, `DEMOSERVER`), how they decide "demo-restricted" (the release-notes LAN rule), how REQUEST_CONNECT is relayed | [U] | metaserver source (not in this tree) or packet captures |
+| 09-U12 | The real key-check algorithm (`Authentication_SimpleKeyCheck`, `Authentication_GenerateKey` are stubbed in this release) | [U] | original `authentication.cpp`; irrelevant for a new game using platform entitlements |
+| 09-U13 | Manual `ServerN` browser entries are effectively unjoinable (no version / protocol / map CRC ⇒ "incompatible") | [I] | run with a `Server1` pref pointing at a LAN host |
+| 09-U14 | With Japanese, Korean or Portuguese selected about 90 % of the UI shows raw phrase ids; whether any SKU shipped those files | [I] | retail SKU manifests (`language.dat` contents of each release) |
+| 09-U15 | Tutorial 2 relies on radar dish 4 becoming player-owned and on CPU team 2 taking spawn 83 before the player; if not, steps are skipped or no tab appears | [I]/[U] | runtime observation ([30 §2.4](30_scripting_tutorial_and_cutscenes.md)) |
+| 09-U16 | `LoadingScreen::m_rendering` is uninitialised until the first `Render()`; whether any early `IsRendering()` call reads it (affects resource locking and sound suppression) | [U] | trace calls before the first `Render()` in `App::App` |
+| 09-U17 | Demo players: the client enforces only mode/map/host/multiplayer predicates; `m_maxGameSize` is never read — whether the external metaserver or a retail server enforced a demo game-size cap | [U] | metaserver source / retail server behaviour |
+
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code does | Ref |
+|---|---|---|---|
+| `docs/multiwinia-changes.txt` (v1.1.0) | "Server filter settings are now saved" | the four visible checkboxes (plus the dead custom-maps flag) are saved; the **game-type filter** drop-down is not | `code/UI/FinishMultiwiniaButton.h:SaveFiltersButton` |
+| `docs/multiwinia-changes.txt` | "Server hosts may now password their servers" | hosting with a password works, but the browser's "show passworded" filter cannot detect passworded servers (`"dy"` vs `"dI"`) | §5.8.6 |
+| `docs/multiwinia-changes.txt` (v1.2.0) | demo users may join any LAN game on any map if hosted by a full-game player | not implemented client-side; the client only reacts to the listing's demo-restricted flag [I] | §6.2 |
+| `docs/multiwinia-changes.txt` | "Port forwarding configuration in Help and Options \| Settings \| Other Options" | matches (no discrepancy) | `code/interface/prefs_other_window.cpp` |
+| `docs/multiwinia-changes.txt` | power-ups in the Advanced Tutorial terminate correctly upon use | consistent only after the T2 end step (`TerminateTask` blocked while `!m_tutorial2AICanSpawn`) [C + I] | [30 §2.2](30_scripting_tutorial_and_cutscenes.md) |
+| `docs/multiwiniachanges-beta.txt` issue 264 | Back on map select goes to the lobby; Back on the lobby goes to game mode | MapSelect Back → GameSelect; lobby Back → GameSelect (host), MapSelect (single player), NewOrJoin (client) | §2.5 |
+| `docs/multiwiniachanges-beta.txt` issue 412 | "Leaderboards and Achievements appear in the in-game menu" (fixed) | the in-game `LocationWindow` has neither; the front-end pages exist but are unreachable/empty; the only buttons are in the unreachable Darwinia `MainMenuWindow` (inactive / handler-less) | §7.2, §7.5 |
+| `docs/todo.txt` | "Leaderboards — DONE (?)" | no leaderboard backend; UI unreachable stub | §7.5 |
+| `docs/todo.txt` | water reflection linked to the pixel-effect option | true only under D3D; the pixel-effect control itself is commented out | §11.6 |
+| `docs/todo.txt` | key-bindings window issues | the Control Options window is unreachable in the shipped build | §11.9 |
+| `docs/help system.txt` | Sepulveda context help with F1, fixed messages, failure help and action items (GestureBasics, ThrowAirstrike, …) | key is `SepulvedaHelp = key h`; the enum has the 20 items of Appendix A.4; no fixed-message or failure-help classes; the whole system is compiled out of Multiwinia | `code/helpsystem.h`, `data/input/input_preferences.txt` L255 |
+| `docs/multiwiniareleasenotes-beta.txt` L35 | beta records benchmarks and uploads them via FTP "when you exit" | feature compiled out in every target (`//#define BENCHMARK_AND_FTP`); when enabled the upload happens at the end of each match | `code/lib/universal_include.h`, `code/benchmark.cpp` |
+| `docs/changes.txt` L82–84 | "Show First Time Intro" option replays the intro next time the game starts | the intro runs only from `RunBootloader` (Campaign launch, `USE_LOADERS`); the option row is not built in the Multiwinia UI | `code/main.cpp:RunBootloader`, `code/interface/prefs_other_window.cpp` |
+| `docs/detailed schedule.txt` L19 | "(OPTIONAL) Intro bootloaders" planned | implemented but compiled out (`USE_LOADERS`) | `code/lib/universal_include.h` |
+| `docs/todo.txt` L19, `docs/betachanges.txt` L46/L57, `docs/buglist.txt` L21 | boot-loader issues (Game-of-Life glow frame rate, Spectrum text distortion, ray-tracer performance, widescreen stretching) | loaders not compiled in Multiwinia; widescreen stretching is consistent with the fixed 320 × 256 / 800 × 600 canvases | Appendix A.1 |
+| `docs/detailed schedule.txt` ("Translation System → Missed out") | the debug / sound / editor windows are untranslated | consistent — literal English captions | §10.2 |
+| `tools/language/README.txt` | translation inputs must be UCS-2 BE | `data/language/japanese.txt` and `russian.txt` are UTF-16 LE; the game accepts both BOMs | §10.2 |
+| `docs/RussianFontRequest.txt` | only the Speccy font has Cyrillic | Cyrillic atlases exist for editor, speccy and square (but the "all" language list ships only the speccy ones) | §10.3–10.4 |
+| `contrib/systemiv/lib/math/random_number.h` comment | `sfrand(range)` returns values in (−range, range) | implementation returns `(0.5 − U)·range`, i.e. ±range/2 (affects the dead Soul / DemoEnd spawn spreads) | Appendix A.1 |
+
+## IP items
+
+All English strings behind the phrase ids are Introversion text (`data/language/*.txt`); the ids may be reused as neutral keys but texts, names and art may not. Complete phrase-id inventories for this area: `_work/drafts/P17b_strings.csv` (194 ids) and `_work/drafts/P02_game_modes_strings.csv` (87 ids).
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "MULTIWINIA" title, subtitle "Survival of the flattest", `textures/mwtitle.bmp`, logo `icons/mwlogo.bmp` | brand / text / art | `multiwinia_mainmenu_title`, `multiwinia_mainmenu_subtitle`, `GameMenuWindow::Render` | "<GAME TITLE>", new tagline, new logotype |
+| Menu mascot backdrop (giant unit sprite `sprites/darwinian.bmp`), gear `mwhelp/gear.bmp`, player icons `textures/darwinian.bmp` | character art | `GameMenuWindow::RenderBigDarwinian`, `code/UI/LevelSelectButton.h` | generic unit silhouette, abstract cog |
+| Unit / world names "Darwinia", "Darwinian", "Multiwinian(s)", "Futurewinian", "Evilinians" in strings and help pages | name | `multiwinia_helppage_general*`, `multiwinia_help_*`, rocket panel captions | "<world>", "<unit>" |
+| Game-mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle; short forms DOM / KOTH / CTS / ASLT / ROCKET / BLITZ | names / text | `multiwinia_gametype_*`, `multiwinia_gametypeshort_*` | descriptive generic names (Control Points, Hill, Relic Carry, Siege, Launch Race, Flag Assault) |
+| Mode blurbs, animated-panel captions `multiwinia_animdesc_*`, help pages `multiwinia_helppage_*`, `multiwinia_help_gametypetitle_*`, tutorial tab texts `multiwinia_help_*`, hint texts (`multiwinia_rmbhelp*`, `multiwinia_deselect*`, `multiwinia_shiftspeedhelp`, `multiwinia_officerterminate*`, `multiwinia_armourtoggle*`), `crate_drop`, "Wrong Game!" | text | §8, §9.3 | rewrite |
+| Tutorial titles "Part 1: The Basics", "Part 2: Advanced Concepts" | text | `multiwinia_menu_tutorial1/2` | own titles |
+| Help illustrations `mwhelp/general1–5.bmp`, `help_*_*.bmp`, mode cards `mode_*.bmp`, `control_camera*.bmp`, tab icons, `360_controller.bmp`, `background.bmp` | art | `data/mwhelp/` | new art |
+| Animated-panel sprites (`data/animations/*.bmp`) and the six `.anim` choreographies | art / animation | `data/animations/` | new sprite set and choreographies |
+| Map names / descriptions `<mapfile>_name`, `_description`, thumbnails `thumbnails/*.bmp` | level names / text / art | `code/UI/LevelSelectButton.h`, `code/UI/MapInfoButton.h`, `code/UI/MapImageButton.h` | new maps |
+| Credits `multiwinia_credits_1..66`, `bootloader_credits_1..44`; beta-tester lists `data/multiwinia_betatesters.txt` (69) and `data/betatesters.txt` (38) — real people's names | text / personal data | `GameMenuWindow::ReadCredits`, `CreditsLoader::GenerateBetaTesterList` | own credits (with consent) |
+| Publisher logo `textures/ivlogo.bmp`, "Introversion Software", `http://www.introversion.co.uk`, `http://store.introversion.co.uk`, `http://www.multiwinia.co.uk/`, `http://www.savedarwinia.com` | brand / URL | `LoadingScreen::RenderIVLogo`, `App::GetBuyNowURL`, `WebsiteButton`, `AboutDarwiniaWindow` | own publisher splash and URLs from config |
+| Metaserver host `metaserver-mwdev.introversion.co.uk`, product id `METASERVER_GAMETYPE_MULTIWINIA = 4` | brand / service | `App::InitMetaServer`, `metaserver_defines.h` | own service endpoint / product id |
+| Fixed demo key and blacklisted key strings, key prefixes `DEMO`, `AMBR` (distributor), hash prefix `hsh`, `authkey` / `authkey.dev` files | key strings / partner brand | `authentication.cpp`, §6 | platform entitlements |
+| Box art `textures/multiwinia.bmp`, price art `textures/prices.bmp` (+ `prices_ambrosia.bmp`, `prices_steam.bmp`), buy-now copy `launchpad_buyme_*`, `multiwinia_buy_prices`, `multiwinia_buynow*` | art / brand / text | `GameMenuWindow::SetupBuyMePage` | own store art and copy |
+| Rating notice `esrb_warning` | rating-board wording | `LoadingScreen::RenderIVLogo` | regenerate from the new game's actual rating |
+| Profile / cheat names `AccessAllAreas`, `AttractMode`, `game_unlockall.txt` | names | `App::LoadProfile` | `__unlockall__`, `__attract__` |
+| Darwinia location names (Garden, Containment, Mine, Generator, Yard, Escort, Pattern Buffer, Biosphere, Receiver, Temple, Prologue, launchpad) | names | leaderboard boards, attract scripts | generic sector names |
+| "TrueSkill" | third-party brand (Microsoft) | `multiwinia_leaderboards_tslb`, `_tsr` | "Skill rating" |
+| Controller glyphs `icons/button_*.bmp` and Xbox terminology (`ControlXBoxMenuCycle*`, XBLA pages) | third-party glyph art / brand | `GameMenuWindow::PreloadTextures`, `code/game_menu.cpp:BackPageButton::Render` | platform-neutral glyphs |
+| Interface sounds `LobbyAmbience`, `MenuSelect`, `MenuCancel`, `MenuRollOver`, `ChatMessage`, `MouseError`, `CountdownTick`, `CountdownZeroTick`, `GameOver`, `YouWon`, `YouLost` (sample assets) | audio | §2.7, §3.23 | new SFX |
+| Loader / intro / credits music (`speccyloader`, `matrix`, `fodder`, `pang`, `twoataris`, `dma_sc-visitors_from_dreams`, `tresk_-weeklies-_schroeders-failure`, `trash80_-_pain-fade-down`) — third-party chiptune artists | audio (third-party licence) | `data/sounds.txt` Music events | licensed / commissioned tracks |
+| Intro captions `intro_1..10` (publisher credit, title, fictional server log, scientist character), loader texts `bootloader_*`, Matrix block-letter product-name mask, Spectrum / demo-group art (`program_darwinia.bmp`, `speccy_screen.bmp`, `dmacrew.bmp`) | text / brand / art | Appendix A.1, [30 §6](30_scripting_tutorial_and_cutscenes.md) | new texts and art |
+| Distributor splash / video (`msn_oberon_combosplash.bmp`, `cinemaware.avi`), distributor origin tag `buka` | third-party brand | `OberonLoader`, `EgamesLoader`, `tools/build_multiwinia_retail_russian.bat` | none (drop) |
+| Front-end UI strings ("Help and Options", "How To Play", "Settings", "Screen / Graphics / Sound / Other Options", "Press Enter To Chat", "Your control pad has been unplugged…", "Quit This Game?", "Location Menu", "Exit Game", "Open/CPU", "(DEMO)", error and auth status phrases) | text | `P17b_strings.csv` | generic equivalents; do not copy the string table verbatim |
+| Defaults "NewPlayer", "NewServer" | text | §11.10 | keep generic or rename |
+

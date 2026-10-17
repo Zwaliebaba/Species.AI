@@ -20,6 +20,7 @@
 5. [Cross-mode comparison](#5-cross-mode-comparison)
 6. [Known bugs that shape the shipped rules](#6-known-bugs-that-shape-the-shipped-rules)
 7. [Re-implementation notes for the new game](#7-re-implementation-notes-for-the-new-game)
+8. [Message and HUD string catalogue](#8-message-and-hud-string-catalogue-introversion-text--rewrite-all-copy)
 - [Open questions and unknowns](#open-questions-and-unknowns)
 - [Docs-vs-code discrepancies](#docs-vs-code-discrepancies)
 - [IP items](#ip-items)
@@ -35,7 +36,7 @@ Related documents: mode objects (zones, statues, flags, rockets and fuel chain, 
 | tick | one server advance: one call of `Multiwinia::Advance` (and of every building's `Advance`), nominally 0.1 s of game time | [C] `code/network/clienttoserver.cpp:ClientToServer::AdvanceAndCatchUp` |
 | dt (`SERVER_ADVANCE_PERIOD`) | `0.1 × g_gameTimer.m_gameSpeed` (double); 0.1 at normal speed, 0 while the game clock is frozen, scaled by speed-up/slow-down crates | [C] `code/gametimer.cpp:GameTimer::GetServerAdvancePeriod`, `code/gametimer.h` |
 | game second | one unit of `GetNetworkTime()` ≡ `g_gameTimer.GetGameTime()`, which advances by dt per tick | [C] `code/gametimer.cpp:GameTimer::Tick` |
-| **mode second** | one period of the rules object's 1.0-second countdowns (`m_timer`, `m_reinforcementTimer`, `m_positionTimer`). Each does `t −= dt; if (t <= 0) t = 1.0`. Because `1.0 − 10 × 0.1 = 1.39·10⁻¹⁶ > 0` in IEEE double, a mode second lasts **11 ticks = 1.1 game seconds** at normal speed | [C] code path; tick counts [C] by exact replay (`_work/scripts/S_07_timer_ticks.py`, re-run for this document) |
+| **mode second** | one period of the rules object's 1.0-second countdowns (`m_timer`, `m_reinforcementTimer`, `m_positionTimer`). Each does `t −= dt; if (t <= 0) t = 1.0`. Because `1.0 − 10 × 0.1 = 1.39·10⁻¹⁶ > 0` in IEEE double, a mode second lasts **11 ticks = 1.1 game seconds** at normal speed | [C] code path; tick counts [C] by exact replay (`_work/scripts/S_07_timer_ticks.py`; re-checked by an independent replay for this document) |
 | "N-second" literal timers | a countdown of N decremented by dt per tick fires after: 3 → 30 ticks, 5 → 51, 10 → 101, 15 → 151, 20 → 200, 45 → 450 | [C] exact replay |
 | recount period ("every 1.0 / 2.0 game s") | `if (GetNetworkTime() > m_recountTimer) { …; m_recountTimer = now + 1.0 }` fires every 10 or 11 ticks (≈ 57 % of periods are 11 ticks); `+ 2.0` fires every 20 or 21 ticks | [I] replay of the accumulating double clock |
 | team ids | `NUM_TEAMS = 6`; slots 0–3 are players; 4 = monster team ("Evilinians", `Location::GetMonsterTeamId`), 5 = Futurewinian team (`GetFuturewinianTeamId`); 255 = neutral. Both special teams are created as `TeamTypeCPU` lobby teams in **every** Multiwinia game and each always owns one `Entity::TypeAI` | [C] `code/globals.h`, `code/location.cpp:Location::Init`, `Location::InitMonsterTeam`, `Location::InitFuturewinianTeam`, `Location::InitialiseTeam` |
@@ -221,7 +222,7 @@ Each server advance (10 per game second at normal speed) a client processes the 
 | 8 | 10,10,10 | — | 10,10,10 | 10,10,10 | — |
 | 9 | 200,200,200 | — | 200,200,200 | 200,200,20 | — |
 
-`MULTIWINIA_NUM_TEAMCOLOURS = 8` selectable ids (0–7) [C] `code/multiwinia.h`. `GetGroupColour(member, −1)` returns `RGBAColour(0.6f, 0.6f, 0.6f, 1.0f)` [C]; whether that is 60 % grey or near-black depends on the float constructor — [U] 01-U5.
+`MULTIWINIA_NUM_TEAMCOLOURS = 8` selectable ids (0–7) [C] `code/multiwinia.h`. `GetGroupColour(member, −1)` returns `RGBAColour(0.6f, 0.6f, 0.6f, 1.0f)`; `RGBAColour` has only `(unsigned char ×4)` and `(int)` constructors, so the floats convert to bytes **0, 0, 0, 1** — black at alpha 1/255, not the evidently intended 60 % grey [C] `code/lib/rgb_colour.h`. Resolved: P02 left this open.
 
 #### 2.5.4 Colour rules [C] `code/multiwinia.cpp`, `code/location.cpp:Location::Init`
 
@@ -1141,3 +1142,181 @@ Compiled only under `INCLUDEGAMEMODE_TANKBATTLE` (`TARGET_DEBUG`); invisible and
 | 2 | `mp_tankbattle_4P.txt` | 4P TankBattle Arena | 4 | basic | - | -1 → none | CoopMode | - | - | 0 (-) | - | instant units Tank@0x1 Tank@1x1 Tank@2x1 Tank@3x1 | 4 | - |
 
 ---
+
+## 5 Cross-mode comparison
+
+| Aspect | Domination | King of the Hill | Capture the Statue | Assault | Rocket Riot | Blitzkrieg | Tank Battle [B:DEBUG] |
+|---|---|---|---|---|---|---|---|
+| Enum / token | 0 `GameTypeSkirmish` / `Domination` | 1 / `KingOfTheHill` | 2 / `CaptureTheStatue` | 3 / `Assault` | 4 / `RocketRiot` | 5 `GameTypeBlitzkreig` / `Blitzkrieg` | 6 / `TankBattle` |
+| Complexity label | Simple | Simple | Medium | Medium | Hard | Hard | Medium |
+| Retail maps | 9 | 9 | 9 | 8 | 7 | 7 | 0 |
+| Territory unit | spawn point | hill zone | statue delivered | control station | solar panel → fuel | flag | tank |
+| Score (per mode second unless stated) | owned spawn points (=, or += per s) | zones owned / zone population / final population / all-zones bonus | +1 per delivery (event) | defence time (s) | ⌊fuel⌋ + passengers + ⌊height⌋ | status code; time-up: flags + 10 × eliminations | tanks left |
+| Ends by | elimination of all others, or time-up | time-up | time-up | bomb destroyed or detonated | rocket above y 600 | elimination of all others, or time-up | elimination |
+| Time limit option (default) | 0–60 min (10), 0 = unlimited | 1–60 (5) | 1–60 (10) | none — bomb timer 900 / 1200 s | none | 0–60 (15), 0 = unlimited | none |
+| Hard elimination | yes: 0 spawn points for 30 mode s (after 30 game s) | no | no | no | no | yes: home flag + connected chain | yes: NumTanks lost |
+| Soft "eliminated" (retribution) | = hard | 0 spawn points and < 50 Darwinians | same as KOTH | never | never | = hard | never |
+| Draw possible | yes (SuddenDeath off) | yes | yes | no | no | yes | no |
+| Sudden death | first single leader | +60 mode s extensions | next delivery | — | — | next tie-breaking capture | — |
+| Retribution (default) | on | on | on | runs, never grants | runs, never grants | on | runs, never grants |
+| Handicap option | yes | yes | no | yes (no effect: no spawn points) | no | no | no |
+| Starting powerups option | yes | yes | no | no | no | no | no |
+| Crate drop mode option | yes | yes | yes | no (random) | no (random) | no (random) | no |
+| Trunk-port waves | no | only `mp_koth_3P_4` (level option) | only unshipped `mp_cts_3p_3` | yes (level options) | yes (mode options) | yes (mode options; double on 3 maps) | no |
+| Mode objects | spawn network | `MultiwiniaZone` hills | `MultiwiniaZone` drop zones / spawns, `Statue` | `PulseBomb`, `ControlStation`, `TrunkPort`, AI objectives, `WallBuster` | `EscapeRocket`, `FuelStation`, `FuelGenerator`, `FuelPipe`, power grid, `TrunkPort` | `MultiwiniaZone` flags (+`Flag` cloth), `TrunkPort` | `Tank` |
+| Population cap | cap / NumPlayers | cap / NumPlayers | cap / NumPlayers | defender cap; attackers share remainder | cap / NumPlayers | cap / NumPlayers | none |
+| Mode crate rules | — | — | — | no RocketTurret, SpaceShip; no Harvester/Engineer/SpawnMania; no Armour with `trunkportarmour` | no Armour | no Armour with `trunkportarmour` | — |
+| Special teams in win check | block "last standing" while holding spawn points; can win on score | can win on score | only in the no-teams fallback | — | excluded | counted at time-up only | excluded |
+| Co-op maps | 2 | 3 | 1 | 4 (ForceCoop) | 0 | 0 | 1 |
+| AI priority model ([07 §12](07_ai.md#12-per-mode-strategies)) | Standard | Standard + hill override | CTS | Assault diffusion + objectives | RocketRiot + markers | Assault diffusion + zone pins | Standard |
+| CPU formation officers | yes (≥ 70) | yes | yes (≥ 150 idle) | no | no | no | yes |
+| Rank announcements | yes | yes | yes | no | yes | no | yes |
+| Game-over list | name score | name score | name score | none (single round) | names | none | none |
+| Achievement hook (stubbed) | Dominator | HailToTheKing | Hoarder | AggravatedAssault | UncladSkies | BlitzMaster | — |
+
+[C] §4 sections and cited code; co-op map counts [C] map tables.
+
+---
+
+## 6 Known bugs that shape the shipped rules
+
+| # | Defect | Effect on shipped play | Evidence | Guidance for the new game |
+|---|---|---|---|---|
+| B1 | Every "1-second" rule countdown runs 11 ticks (`1.0 − 10 × 0.1 > 0`) | clocks, elimination countdowns, statue timers, reinforcement waves and rank checks all run 10 % slow (a 10-minute game = 660 game s; waves every 66 s) | [C] all `Advance*`; replay | use integer tick counters; decide explicitly whether to keep 1.1 s |
+| B2 | Recount timers (`now > last + 1.0`) alternate 10/11 ticks | zone/flag/statue ownership cadence is irregular | [I] replay | integer periods |
+| B3 | `AdvanceTrunkPorts` runs twice per tick on `mp_blitzkrieg_2p_1`, `_2P_3`, `_2p_2` (level options + mode call) | waves and turret cadence twice as frequent (every 330 ticks); level `trunkportreinforcements 100` / `trunkportarmour 3` values are otherwise ignored because the mode options win; Armour crate invalid there | [C] `Multiwinia::Advance`, `AdvanceBlitkrieg`, `AdvanceTrunkPorts`, `Crate::IsValid` | call once; decide whether level or lobby values win |
+| B4 | File-static `s_numMultiwiniaZones` reset only by KOTH's per-second loop; Blitzkrieg initialisation adds to it | a second Blitzkrieg game in one process (without KOTH in between) raises the AirStrike threshold `(zones + 1)/2`; peers with different session histories compute different thresholds → turret vs AirStrike task divergence → **desync** | [C] `code/multiwinia.cpp` (`s_numMultiwiniaZones`, `AdvanceKingOfTheHill`, `AdvanceBlitkrieg`, `AdvanceTrunkPorts`) | per-match state, reset at match start |
+| B5 | Multi-round Assault (rotate positions; best defence time wins; later rounds timed by the best time) fully coded but `m_assaultSingleRound` is true forever (no UI, never set false) | Assault is always one round; attackers win iff the bomb is destroyed | [C] `code/UI/GameMenuWindow.cpp`, `code/network/clienttoserver.cpp`, grep | either expose or delete |
+| B6 | Assault `m_defendedAll` gate compares wall clock `GetHighResTime()` with game-time `m_startTime` | achievement-only; the intended 10 s grace for defenders does not exist; wall-clock read inside sim code | [C] `Multiwinia::AdvanceAssault` | never mix wall clock into simulation |
+| B7 | `App::GiveAchievement` / `EarnedAchievement` are stubs; tracker never persists | no achievement is ever awarded on PC | [C] `code/app.cpp`, `code/achievement_tracker.cpp` | — |
+| B8 | Map PlayTime vs default TimeLimit race (§3.5) | the lobby normally keeps PlayTime but may silently reset to the mode default | [C mechanism; I outcome] `LevelSelectButton::MouseUp`, `SetupMultiplayerPage`, option versions | apply map defaults server-side, once |
+| B9 | BlitzMaster tests `m_startTime <= m_timeRemaining + 300` (game-time stamp vs remaining mode seconds; original "won within 300 s" is commented out) | practically always true | [C] `AdvanceBlitkrieg` | — |
+| B10 | `GetCPUColour` re-draws `syncrand() % 4` until free — unbounded if colours 0–3 are all taken | potential hang and unbounded sync-RNG consumption if colours 0–3 were all held while a CPU slot is being coloured; with at most 4 player slots one of 0–3 is always free, so unreachable on shipped maps [I] | [C] `Multiwinia::GetCPUColour` | bounded search |
+| B11 | Blitzkrieg time-up draw with SuddenDeath off calls `DeclareWinner(255)` and then evaluates `m_teams[winningTeam]` with 255 | out-of-bounds read of the 6-element roster (undefined behaviour; only feeds the stubbed achievement) | [C] `AdvanceBlitkrieg` | validate indices |
+| B12 | Co-op game-over line names the group with the larger **score total**, not `m_winner`; exact ties name group 1 | a co-op draw is never displayed as a draw; a Domination co-op elimination win can display the other alliance if it out-scored | [C] `Multiwinia::Render` | display the declared result |
+| B13 | Domination co-op winner loop iterates `i < totalTeams` instead of all slots | with special teams counted or sparse slots, a surviving enemy in a high slot may be missed → premature win [I] | [C] `AdvanceSkirmish` | iterate all slots |
+| B14 | Blitzkrieg "base under attack" throttle decremented once per recount by dt | message at most every ≈ 210 game s instead of 20 s | [C] `MultiwiniaZone::Advance_Blitzkrieg` | per-tick timers |
+| B15 | `CountdownZeroTick` at time-up inside a `m_timeRemaining > 0` block | the zero tick never plays from the HUD | [C] `Multiwinia::Render` | — |
+| B16 | Server relays option letters from any client; only the UI restricts editing to the host | a modified client could change mode parameters in the lobby | [C] `code/network/server.cpp:Server::Advance` | authorise on the host |
+| B17 | `GetGameOption` returns −1 for absent options; `bool` conversion makes −1 true | retribution "runs" in Assault/Rocket Riot (harmless); any new boolean option would default on in modes lacking it | [C] `GetGameOption`, `Advance` | typed options with explicit per-mode defaults |
+| B18 | Rank messages use the team's own list index while ties are ordered by team id | the second member of a tie for first hears "tied for Second" | [C] `Multiwinia::Advance`; [I] intent | rank = number of strictly better teams + 1 |
+| B19 | `PulseBomb::Advance` keeps checking station capture after detonation | attackers who capture every station while the pulse wave expands would destroy the bomb and flip a defender win into an attacker win [I] | [C] `PulseBomb::Advance` | freeze the round result |
+| B20 | `EscapeRocket::Damage` excludes only Exploding | a rocket in Flight can still be destroyed and would "refuel" mid-air [I] | [C] `EscapeRocket::Damage` ([03 §8.12](03_buildings_and_world_objects.md#8-mode-objective-objects)) | make Flight invulnerable or terminal |
+| B21 | AI-mode range check `value > NumAITypes` | value 3 accepted (Hard everywhere except Blitzkrieg pins) | [C] `code/network/clienttoserver.cpp` | `>=` |
+| B22 | `GetGroupColour(m, −1)` float literals into a byte constructor | black, alpha 1/255 instead of grey | [C] `code/lib/rgb_colour.h` | — |
+| B23 | `BLITZKRIEGSCORE_UNDERATTACK` never assigned; neutral home flag reported as "Under Threat" | status display coarser than designed | [C] `AdvanceBlitkrieg`, `english.txt` | — |
+| B24 | Exit-after-game-over poll compiled only under `TESTBED_ENABLED` | players must use the in-game menu to leave | [C] `code/location_input.cpp` | — |
+| B25 | Presentation side effects (messages, sounds, help notifications, achievements, kill totals) are executed inside the lockstep rules step, keyed on the local team | harmless only while they never feed back into simulation state | [C] throughout `code/multiwinia.cpp` | keep observers out of the deterministic step |
+
+---
+
+## 7 Re-implementation notes for the new game
+
+Non-normative guidance derived from the specification above [I]:
+
+1. **Ruleset as data.** All six shipped modes share one skeleton: per-tick world update → per-second rule evaluation (score, elimination, time-up, sudden death) → declare result. Model each mode as a ruleset object with: score function, elimination predicate (hard / soft), win predicate, time-up decider, sudden-death policy, option schema (typed, with per-mode defaults instead of the "−1 = absent" convention), and HUD formatter.
+2. **One clock.** Run every rule timer as an integer tick counter; derive "seconds" for display. Keep the grace countdown in real ticks but specify it.
+3. **Explicit tie rules.** Every place where the original breaks ties by iteration order (zone owner = lowest team id, simultaneous launch = lowest id, single-round Assault winner = first slot of the side, CTS co-op winner = last slot of the group, statue spawn = first farthest zone, rocket lookup = last matching building) must be specified explicitly.
+4. **Per-match state only.** No static counters (B4); reset everything at match start; seed the synchronised RNG per match.
+5. **Special factions.** Decide whether neutral/monster factions may win or block "last team standing"; the original is inconsistent across modes (§5 row "Special teams in win check").
+6. **Authority.** Lobby options and game type must be validated by the host/server (B16); map defaults (PlayTime) applied once by the host.
+7. **Assault rotation.** If the multi-round design is wanted, expose it in the lobby; otherwise remove `ResetLocation` and the time-record winner path.
+
+---
+
+## 8 Message and HUD string catalogue (Introversion text — rewrite all copy)
+
+Every UI string id used by the mode code, with its first use at commit `f909630` and its English text, generated from `_work/drafts/P02_game_modes_strings.csv` by `S_01_mode_tables.py` [C] `data/language/english.txt`. The ids may be kept as neutral keys; the texts are IP.
+
+| # | String id | First use (file:line at f909630) | English text (IP — rewrite) |
+|---|---|---|---|
+| 1 | `multiwinia_skirmish_elimination_30` | `code/multiwinia.cpp`:L479 | You will be eliminated in 30 seconds! |
+| 2 | `multiwinia_other_elimination` | `code/multiwinia.cpp`:L483 | *T will be eliminated in 30 seconds! |
+| 3 | `multiwinia_suddendeath` | `code/multiwinia.cpp`:L527 | Sudden Death! |
+| 4 | `multiwinia_retribution` | `code/multiwinia.cpp`:L1222 | Retribution! |
+| 5 | `multiwinia_retribution_maxtasks` | `code/multiwinia.cpp`:L1229 | Retribution : Two powerups max |
+| 6 | `multiwinia_cts_newstatue` | `code/multiwinia.cpp`:L1630 | New Statue! |
+| 7 | `multiwinia_tankloss` | `code/multiwinia.cpp`:L1686 | *T loses a Tank! |
+| 8 | `dialog_oneminute` | `code/multiwinia.cpp`:L2482 | One Minute Remaining! |
+| 9 | `multiwinia_player_left` | `code/multiwinia.cpp`:L2704 | *T left the game! |
+| 10 | `multiwinia_player_eliminated` | `code/multiwinia.cpp`:L2737 | You are eliminated! |
+| 11 | `multiwinia_other_eliminated` | `code/multiwinia.cpp`:L2741 | *T is eliminated! |
+| 12 | `multiwinia_ready` | `code/multiwinia.cpp`:L2908 | READY |
+| 13 | `multiwinia_rr_passengers` | `code/multiwinia.cpp`:L2939 | passengers |
+| 14 | `multiwinia_rr_damage` | `code/multiwinia.cpp`:L2940 | DMG |
+| 15 | `multiwinia_rr_fuel` | `code/multiwinia.cpp`:L2945 | fuel |
+| 16 | `multiwinia_rr_liftoff` | `code/multiwinia.cpp`:L2951 | LIFTOFF IN *S |
+| 17 | `multiwinia_assault_holdtheline` | `code/multiwinia.cpp`:L2963 | Defend the WMD! |
+| 18 | `multiwinia_defendedfor_score` | `code/multiwinia.cpp`:L2979 | defended for *S |
+| 19 | `multiwinia_assault_ticktock` | `code/multiwinia.cpp`:L2987 | Attack and destroy the WMD! |
+| 20 | `multiwinia_numtanks` | `code/multiwinia.cpp`:L2994 | *X Tanks |
+| 21 | `multiwinia_dom_eliminatedin` | `code/multiwinia.cpp`:L3018 | Elimination in *S seconds |
+| 22 | `multiwinia_dom_eliminated` | `code/multiwinia.cpp`:L3034 | Eliminated |
+| 23 | `multiwinia_points` | `code/multiwinia.cpp`:L3039 | *X points |
+| 24 | `multiwinia_dom_spawnpoints` | `code/multiwinia.cpp`:L3050 | *X Spawn Points |
+| 25 | `multiwinia_blitzkrieg_eliminated` | `code/multiwinia.cpp`:L3065 | Eliminated |
+| 26 | `multiwinia_blitzkrieg_enemyoccupied` | `code/multiwinia.cpp`:L3071 | ENEMY OCCUPIED |
+| 27 | `multiwinia_blitzkrieg_underattack` | `code/multiwinia.cpp`:L3072 | Under Threat |
+| 28 | `multiwinia_blitzkrieg_unoccupied` | `code/multiwinia.cpp`:L3073 | Under Threat |
+| 29 | `multiwinia_blitzkrieg_underthreat` | `code/multiwinia.cpp`:L3074 | Under Threat |
+| 30 | `multiwinia_blitzkrieg_safe` | `code/multiwinia.cpp`:L3075 | Safe |
+| 31 | `multiwinia_teamscores` | `code/multiwinia.cpp`:L3279 | TEAM SCORES |
+| 32 | `multiwinia_teamscores_assault` | `code/multiwinia.cpp`:L3280 | OBJECTIVES |
+| 33 | `multiwinia_assault_unoccupied` | `code/multiwinia.cpp`:L3302 | . |
+| 34 | `multiwinia_assault_objcntrlstation` | `code/multiwinia.cpp`:L3307 | WMD Control Panel |
+| 35 | `multiwinia_assault_objpulsebomb` | `code/multiwinia.cpp`:L3311 | WEAPON OF MASS DESTRUCTION |
+| 36 | `multiwinia_assault_destroyed` | `code/multiwinia.cpp`:L3325 | DESTROYED |
+| 37 | `multiwinia_assault_defended` | `code/multiwinia.cpp`:L3329 | DEFENDED |
+| 38 | `multiwinia_assault_lost` | `code/multiwinia.cpp`:L3333 | OVERRUN |
+| 39 | `multiwinia_team_green` | `code/multiwinia.cpp`:L3381 | Green |
+| 40 | `multiwinia_team_red` | `code/multiwinia.cpp`:L3382 | Red |
+| 41 | `multiwinia_team_yellow` | `code/multiwinia.cpp`:L3383 | Yellow |
+| 42 | `multiwinia_team_blue` | `code/multiwinia.cpp`:L3384 | Blue |
+| 43 | `multiwinia_team_orange` | `code/multiwinia.cpp`:L3385 | Orange |
+| 44 | `multiwinia_team_purple` | `code/multiwinia.cpp`:L3386 | Purple |
+| 45 | `multiwinia_team_cyan` | `code/multiwinia.cpp`:L3387 | Cyan |
+| 46 | `multiwinia_team_pink` | `code/multiwinia.cpp`:L3388 | Pink |
+| 47 | `multiwinia_team_virus` | `code/multiwinia.cpp`:L3393 | Evilinians |
+| 48 | `multiwinia_team_future` | `code/multiwinia.cpp`:L3394 | Futurewinians |
+| 49 | `multiwinia_cooppoints` | `code/multiwinia.cpp`:L3398 | *T   *S points |
+| 50 | `multiwinia_defendedfor` | `code/multiwinia.cpp`:L3597 | *T defended for *S |
+| 51 | `multiwinia_reinforcements` | `code/multiwinia.cpp`:L3737 | Reinforcements in *S |
+| 52 | `multiwinia_retribution_timer` | `code/multiwinia.cpp`:L3765 | Retribution in *S |
+| 53 | `multiwinia_spawnmania_timer` | `code/multiwinia.cpp`:L3788 | SPAWN MANIA: *T |
+| 54 | `multiwinia_blitzkrieg_timer` | `code/multiwinia.cpp`:L3813 | MEGA RAGE: *T |
+| 55 | `multiwinia_nextroundin` | `code/multiwinia.cpp`:L3882 | NEXT ROUND IN: *S |
+| 56 | `multiwinia_attackers_win` | `code/multiwinia.cpp`:L3907 | Attackers Win! |
+| 57 | `multiwinia_defenders_win` | `code/multiwinia.cpp`:L3911 | Defenders Win! |
+| 58 | `multiwinia_team_win` | `code/multiwinia.cpp`:L3916 | *T Wins! |
+| 59 | `multiwinia_gameover` | `code/multiwinia.cpp`:L3954 | GAME OVER |
+| 60 | `multiwinia_isthewinner` | `code/multiwinia.cpp`:L4009 | *T is the WINNER |
+| 61 | `multiwinia_tiegame` | `code/multiwinia.cpp`:L4032 | It's a DRAW! |
+| 62 | `multiwinia_atoexit` | `code/multiwinia.cpp`:L4060 | Press START to Exit |
+| 63 | `multiwinia_spacetoexit` | `code/multiwinia.cpp`:L4064 | Press ESC to Exit |
+| 64 | `multiwinia_gamestarttimer` | `code/multiwinia.cpp`:L4146 | GAME STARTING IN *T |
+| 65 | `multiwinia_waitingforplayers` | `code/multiwinia.cpp`:L4156 | WAITING FOR PLAYERS |
+| 66 | `multiwinia_spacetostart` | `code/multiwinia.cpp`:L4160 | PRESS SPACE WHEN READY |
+| 67 | `multiwinia_atostart` | `code/multiwinia.cpp`:L4161 | PRESS A WHEN READY |
+| 68 | `multiwinia_rr_status_c` | `code/rocket_status_panel.cpp`:L299 | YOUR ROCKET IS\nUNDER ATTACK!\n\nDAMAGE *T |
+| 69 | `multiwinia_rr_status_d` | `code/rocket_status_panel.cpp`:L314 | LIFTOFF! |
+| 70 | `multiwinia_rr_status_e` | `code/rocket_status_panel.cpp`:L320 | Your Rocket\nis on\nFIRE! |
+| 71 | `multiwinia_rr_status_b` | `code/rocket_status_panel.cpp`:L325 | Load your rocket\nwith 100\nMultiwinians |
+| 72 | `multiwinia_rr_status_a` | `code/rocket_status_panel.cpp`:L330 | Capture solar\npanels to begin\nrefueling rocket |
+| 73 | `multiwinia_rr_status_f` | `code/rocket_status_panel.cpp`:L338 | Fuel *T |
+| 74 | `dialog_baseunderattack` | `code/worldobject/multiwiniazone.cpp`:L287 | Your Base Is Under Attack! |
+| 75 | `multiwinia_cts_statuecapture` | `code/worldobject/multiwiniazone.cpp`:L411 | *T captured a Statue! |
+| 76 | `objective_fuelpressure` | `code/worldobject/rocket.cpp`:L431 | Fuel Pressure |
+| 77 | `objective_fuel` | `code/worldobject/rocket.cpp`:L1013 | Fuel |
+| 78 | `objective_passengers` | `code/worldobject/rocket.cpp`:L1015 | Passengers |
+| 79 | `multiwinia_rr_refueled` | `code/worldobject/rocket.cpp`:L1129 | Your Rocket has been refueled! |
+| 80 | `multiwinia_rr_otherrefueled` | `code/worldobject/rocket.cpp`:L1133 | *T's Rocket has been refueled! |
+| 81 | `multiwinia_rr_launchprep` | `code/worldobject/rocket.cpp`:L1160 | Your Rocket is preparing for launch! |
+| 82 | `multiwinia_rr_launchprepother` | `code/worldobject/rocket.cpp`:L1164 | *T's Rocket is preparing for launch! |
+| 83 | `dialog_rocketunderattack` | `code/worldobject/rocket.cpp`:L1542 | Your Rocket is under attack! |
+| 84 | `dialog_rocketdestroyed` | `code/worldobject/rocket.cpp`:L1560 | Your Rocket is on fire! |
+| 85 | `location_unknown` | `code/worldobject/trunkport.cpp`:L140 | unknown location |
+| 86 | `dialog_oneminutewarning` | `code/worldobject/pulsebomb.cpp`:L129 | One Minute to WMD Detonation! |
+| 87 | `dialog_pulsebombdestroyed` | `code/worldobject/pulsebomb.cpp`:L387 | WMD Destroyed! |
+
+---
+

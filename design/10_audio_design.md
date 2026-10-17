@@ -1218,3 +1218,227 @@ Behavioural voice rules worth keeping [C] `code/worldobject/darwinian.cpp`:
 | `Ambience EnterGlobalWorld` [B:LEGACY] | `GlobalWorldGameLoop` start; stopped on exit / script | 5 blocks: group `worldviewdry` (Loop, vol 6.84, release 8.32 s, loop delay random 0–2.71 s, Echo), group `worldviewwet` (Loop, vol 6.10, loop delay random 0.19–2.52 s), group `worldamb` (LoopADSR, vol 6.0, pitch 0.37, attack 9.68 s, sustain 0.97 s, release 11.03 s, loop delay 0.39 s, Echo), `altitude1` (Loop, vol 5.23, pitch 0.70, attack 6.19 s, release 11.23 s), `rumble1` (Loop, vol 7.74, pitch 0.60, attack 5.42 s, release 6.00 s) | Darwinia world-map beds; never heard in Multiwinia |
 
 There are **no per-level ambiences, no weather sounds, no positional ambient emitters** (the level file has no audio fields) [C] `code/level_file.cpp` (no sound keys; P11/X4 found none). Building hums (`MultiwiniaZone Create`, `ControlStation Create`, `LaserFence Create`, `Tree CreateNormal` / `CreateMagic` / `CreateEvil`, `Powerstation Create` [B:LEGACY]) act as the only local ambient emitters.
+
+## 8 Positional rules
+
+### 8.1 Listener
+
+The listener is the **game camera**, updated every sound tick: position = camera position, orientation = camera front and up (the up vector is negated unless pref `SoundSwapStereo` = 1, which swaps left and right), velocity = camera velocity × 0.2 — irrelevant, because the Doppler factor is set to 0 [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise`. There is no separate "microphone" position (requested in `docs/sound changes.txt`, not implemented), so an RTS camera far above the battlefield hears everything at the camera's distance, and zooming in is the only way to hear detail.
+
+### 8.2 Distance attenuation model (minimum-distance / volume curve)
+
+Both back-ends and the priority calculation use the same law [C] `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume`, `code/sound/sound_library_3d_software.cpp:SoundLibrary3dSoftware::CalcChannelVolumes`; DirectSound with its defaults (rolloff 1.0, maximum distance 1e9) [I from the absence of calls; 27-U1]:
+
+```
+d  = |emitter position − camera position|
+g(d) = 1               if d ≤ MINDISTANCE
+     = MINDISTANCE / d  otherwise           (inverse distance, −6.02 dB per doubling)
+heard level (dB) = 5 × (VOLUME_envelope − 10)  +  20·log10 g(d)  −  0.32 × (255 − SoundMasterVolume)
+```
+
+No maximum distance, no cone, no occlusion / obstruction, no air absorption, no low-pass with distance, no reverb send. This matches `docs/MinDistAndVolume.jpg` (flat to the minimum distance, then a hyperbolic fall-off; the chart's examples: a 100 m aeroplane vs a 2 cm bee, and a quiet waterfall with a large minimum distance) [C].
+
+Attenuation relative to full level for the common authored radii [C arithmetic from the law above]:
+
+| Distance d (wu) | MINDISTANCE 50 | 100 (170 blocks) | 200 (39 blocks) | 500 |
+|---|---|---|---|---|
+| 50 | 0.0 dB | 0.0 dB | 0.0 dB | 0.0 dB |
+| 100 | −6.0 dB | 0.0 dB | 0.0 dB | 0.0 dB |
+| 200 | −12.0 dB | −6.0 dB | 0.0 dB | 0.0 dB |
+| 316 | −16.0 dB | −10.0 dB | −4.0 dB | 0.0 dB |
+| 500 | −20.0 dB | −14.0 dB | −8.0 dB | 0.0 dB |
+| 1000 | −26.0 dB | −20.0 dB | −14.0 dB | −6.0 dB |
+| 2000 | −32.0 dB | −26.0 dB | −20.0 dB | −12.0 dB |
+
+MINDISTANCE is the designer's "how big is this sound" control: 5.98 wu (tree creation) to 10000 wu (one block); ≥ 450 wu only for `Meteor Land`, `Refinery Create`, `EscapeRocket Flight` and `Ambience EnterLocation` [C] §3.4. Its unit is the world unit (the code comment says metres); the linked parameter ranges imply camera altitudes up to ≈ 1000 wu [I].
+
+### 8.3 Panning
+
+DirectSound: hardware/driver 3D panning with `DS3DALG_DEFAULT` on software buffers (exact law driver-defined, 27-U1). Software mixer (non-default): linear pan `right = (direction · listenerRight + 1)/2`, `left = 1 − right`, so a centred 3D source sits 6 dB below a 2D source of equal volume on that back-end [C] [27 §11.3](27_audio_engine.md#113-volume-curves-verified). There is no stereo width control, no surround output (the primary buffer is stereo).
+
+### 8.4 Position types and sound lifetime
+
+| `POSITIONTYPE` | Where it sounds | Lifetime | Pitch | Priority | Use in data |
+|---|---|---|---|---|---|
+| 0 `Type2D` | head-relative at the listener: centred, no attenuation (MINDISTANCE irrelevant) | until it ends or is stopped by name | never bent by game speed | always ranks as 10 (the maximum) → out-ranks every 3D sound below volume 10 at any distance | UI, stings, ambience, owner-only voices (83 blocks) |
+| 1 `Type3DStationary` | fixed at the position at trigger time | survives the emitter; a looping one can never be stopped by emitter (§2.5) | bent by game speed | `v × g(d)` | deaths, explosions, impacts, landings (42 blocks) |
+| 2 `Type3DAttachedToObject` | follows the emitter every tick (buildings: their centre position) | **hard-cut without release** on the first tick after the emitter is gone (or when no emitter is selectable); the graceful "become stationary and release" path exists but is almost never reached (10-U6) | bent by game speed | `v × g(d)` | loops, bodies, voices, most one-shots (169 blocks) |
+| 3 `TypeInEditor` | head-relative at the editor cursor (x, 0, z) | editor preview | bent by game speed (not exempt) | 10 | only the dead `Sepulveda Appear/Disappear` blocks (data error) |
+
+[C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_instance.cpp:SoundInstance::Update3DPosition`, `GetFrequencyModifier`, `CalculatePerceivedVolume`. Position updates to DirectSound are sent only when the emitter moved more than 5 % of its distance to the listener ([27 §11.2](27_audio_engine.md#112-directsound-soundlibrary3ddirectsound--the-live-back-end-bfull)).
+
+### 8.5 Height and altitude
+
+Height is expressed only through linked parameters [C] §3.3: `HeightAboveGround` (flyer pitch, SporeGenerator loop delay), `Ypos` (the altitude-driven location ambience — for 2D sounds the link reads the **camera**, so the ambience is effectively a zoom-dependent mix), `CameraDistance` (`Meteor Land` close/far layering: volume 0 → 9.9 over 100 → 320 wu). There is no automatic altitude filtering.
+
+### 8.6 Game-speed pitch bend
+
+In any Multiwinia match outside the grace period, every non-2D voice's pitch is multiplied by `√s`, where `s` is a global smoother updated **on every call** as `s = 0.99·s + 0.01·gameSpeed` (floor 0.01) [C] `code/sound/sound_instance.cpp:GetFrequencyModifier`. Design consequences [I]: slow-motion and speed-up crates/effects bend world sounds by √speed; the game-over freeze (speed → 0) produces a "tape stop" down to 0.1× pitch; because the smoother advances per call, the bend reacts faster when many 3D voices play (≈ 0.17 s time constant with 30 voices, ≈ 5 s with one); the smoother is never reset between matches. UI, stings, ambience and music (2D) are unaffected.
+
+### 8.7 Crowd sounds and the 316-unit rule
+
+`MonophonicNearest` instances choose, every tick, the emitter nearest to the camera — but the search starts from a squared distance of 99999.9, so only emitters within √99999.9 ≈ **316.2 wu** of the camera can be chosen [C] `code/sound/sound_instance.cpp:SoundInstance::GetAttachedObject`. If none is that close when a new instance is first ticked, it has no emitter, counts as an orphaned attached sound and is destroyed in the same tick [C mechanism, [27 §5.4](27_audio_engine.md#54-one-shot-patience-orphans-and-monophonic-emitters)]. Affected shipped blocks: `Darwinian Create` (spawn chatter), the `laserreload` layer of `Darwinian Attack`, `EscapeRocket Unhappy`. Audible effect [I] (10-U5): Darwinian spawn chatter and the reload click are heard only when the camera is within ≈ 316 wu of a spawning / firing Darwinian; at typical strategic heights they are silent, which conveniently de-clutters the mix but was probably not designed. `MonophonicRandom` (`Squadie Create`, `Squadie WeaponReturns`, `Yard Create`) has no such radius.
+
+### 8.8 Positional rules recommended for the new game
+
+| Rule | Shipped | Recommendation |
+|---|---|---|
+| Listener | camera | camera position for panning, but attenuate from a "focus point" on the ground under the camera (blend by zoom), so a high camera still hears the battle it looks at |
+| Distance law | `min/d`, no max | keep `min/d` (authoring compatibility), add a per-event max distance and a culling radius; virtualise inaudible voices instead of dropping them |
+| Lifetime | attached = hard-cut; stationary loops unstoppable | attached sounds detach and release (or finish one-shots) when the emitter dies; every instance remembers its emitter id from the trigger; all location sounds are released at location exit |
+| Crowd limiting | MonophonicNearest with an accidental 316 wu radius | explicit per-event "crowd" voices with a designed radius and a density-driven layer (e.g. 1–3 voices for any number of emitters, volume by emitter count) |
+| Game-speed bend | √ of a per-call smoother | time-based smoothing, explicit "slow-mo" bus effect, exclude UI and stings |
+| Doppler, occlusion | none | none needed for the top-down view; optional low-pass with distance |
+
+## 9 Priorities and voice limits
+
+### 9.1 Voice counts
+
+| Rule | Value | Ref |
+|---|---|---|
+| Requested channels | pref `SoundChannels`: options 8 / 16 / 32 / 64 (a 48 option is commented out), default 32 | [C] `code/interface/prefs_sound_window.cpp:PrefsSoundWindow::Create`, `code/lib/preferences.cpp` |
+| Effect voices | channels − 1 (DirectSound: `min(SoundChannels, 64) − 1`; with hardware 3D `dwMaxHw3DStreamingBuffers − 2` caps it) → **31 at default**, 7 / 15 / 31 / 63 for the four options | [C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::Initialise` |
+| Music voice | 1, separate | [C] |
+| Queued requests | unlimited; one-shots expire after 3 ticks without a voice (0.15–0.20 s after the trigger); loops wait forever | [C] `code/sound/soundsystem.cpp:SoundSystem::InitialiseSound`, `SoundSystem::Advance` |
+| Voice starts | **at most 1 per 50 ms tick** system-wide (≤ 20 starts/s) | [C] `SoundSystem::Advance` |
+
+### 9.2 Priority formula
+
+There is no authored priority (`PRIORITY` is ignored) [C]. Every tick [C] `code/sound/soundsystem.cpp:SoundSystem::Advance`, `code/sound/sound_instance.cpp:SoundInstance::CalculatePerceivedVolume`:
+
+1. **Perceived volume** = 10 for 2D (and editor) sounds; otherwise `base × g(d)` with `base` = the current envelope level if the sound is playing, else its VOLUME target (so a voice in a long release tail ranks lower as it fades; the code comment explains this was added because ≈ 10 s echo releases were filling channels).
+2. Sort all live instances by perceived volume, loudest first.
+3. Walk the sorted list keeping a multiplier per full event name: the first instance of an event gets × 1, each further one × 0.75 of the previous (1, 0.75, 0.5625, 0.421875, …): `priority = perceived × 0.75^k`, k = number of louder instances of the same event this tick.
+4. The **candidate** is the non-playing instance with the highest priority strictly greater than 0.
+
+### 9.3 Start and stealing rule
+
+| Rule | Behaviour |
+|---|---|
+| Voice choice | the first free voice; otherwise the voice whose occupant has the **lowest** priority (ties → lowest index) [C] `SoundSystem::FindBestAvailableChannel` |
+| Steal test | **none** — the candidate replaces that occupant even when the candidate's priority is lower [C] |
+| Victim | a one-shot victim is destroyed; a looping victim is parked (stays queued) and restarts from its beginning — or a new random group member — when it next wins a voice [C] |
+| Ping-pong | a parked loop can itself be the next candidate and steal back; nothing prevents alternation [I] |
+| Failed start | only a `[???]` name fails; the candidate is then destroyed |
+
+A worked four-tick example is in [27 §5.5](27_audio_engine.md#55-worked-example).
+
+### 9.4 Per-event limiting
+
+The only per-event controls are (a) the 0.75 decay above — many copies of one event self-limit as a group but never hard-cap; (b) `INSTANCETYPE` 1 / 2 — one shared voice for all emitters of an event (§8.7); (c) the layered-block count. There is no per-event or per-category voice cap, no "maximum instances", no cooldown in the data; rate limits that exist live in game code: `SelectUnit` 0.5 s, `UnitHighlight` 0.2 s, war horn 4.0 s, `OnFire` 1-in-30 per tick, `CountdownTick` once per displayed second [C] §7.
+
+### 9.5 Design implications [I]
+
+- In a dense battle the voice set churns: every 50 ms the quietest-ranked voice is replaced by the best queued request regardless of relative loudness; with one start per tick, a burst of 30 explosions takes 1.5 s to start and most one-shots expire unheard.
+- 2D UI and stings always win; a 2D-heavy moment (crate rewards, zone stings, countdown) can evict 3D combat voices.
+- Louder VOLUME, larger MINDISTANCE and being close to the camera are the only ways to protect an important world sound.
+- "Squadie laser fire goes missing too easily" is recorded as a known problem in `docs/ThoughtsOnSoundSystem.txt` [C].
+
+## 10 Filters / DSP
+
+### 10.1 Gating — no DSP runs in the shipped game
+
+[C] `code/sound/sound_instance.cpp:SoundInstance::Copy`, `code/lib/preferences.cpp:GetDefaultSoundDSP`, `code/interface/prefs_sound_window.cpp:RestartSoundButton::MouseUp`, `code/lib/universal_include.h`:
+
+| Switch | State | Effect |
+|---|---|---|
+| `USE_SOUND_DSPEFFECTS` (compile time) | commented out in every target | compiles only the options-screen check box `dialog_realtimeeffects` and its write of pref `SoundDSP` [B:DEAD] |
+| pref `SoundDSP` (run time) | default 0 on PC (1 only on a fast Mac) | read when each instance is copied from its blueprint: only if ≠ 0 are the block's effects attached |
+| Apply button (always compiled) | reads `SoundDSP` | ≠ 0 → re-propagate effect lists to live sounds; 0 → delete live effect handles (leaving device filters attached to their voices — a defect, [27 §12.1](27_audio_engine.md#121-gating--dsp-is-off-in-the-shipped-configuration)) |
+
+Net effect: the 22 effect uses in the data are inert unless `preferences.txt` is edited to `SoundDSP 1`. The audible design is therefore the **dry** sounds; the long releases authored for echo tails ring out as silence.
+
+### 10.2 The 14 filter types
+
+Enum order = `data/effects.txt` order = type id [C] `code/sound/sound_library_3d.h:SoundLibrary3d`, `data/effects.txt` (parameters: name min..max default; L = long (integer), else float):
+
+| Id | Enum | `effects.txt` name | Implementation | Parameters |
+|---|---|---|---|---|
+| 0 | `DSP_DSOUND_CHORUS` | DSound_Chorus | DirectX FX (DirectSound only) | WetDryMix 0..100 50; Depth 0..100 10; Feedback −99..99 25; Frequency 0..10 1.1; Waveform 0..1 1 L; Delay 0..20 16; Phase 0..4 3 L |
+| 1 | `DSP_DSOUND_COMPRESSOR` | DSound_Compressor | DirectX FX | Gain −60..60 0; Attack 0.01..500 10; Release 50..3000 200; Threshold −60..0 −20; Ratio 1..100 3; PreDelay 0..4 4 |
+| 2 | `DSP_DSOUND_DISTORTION` | DSound_Distortion | DirectX FX | Gain −60..0 −18; Edge 0..100 15; PostEQCentreFreq 100..8000 2400; PostEQBandwidth 100..8000 2400; PreLowpassCutoff 100..8000 8000 |
+| 3 | `DSP_DSOUND_ECHO` | DSound_Echo | DirectX FX | WetDryMix 0..100 50; Feedback 0..100 50; LeftDelay 1..2000 500; RightDelay 1..2000 500; PanDelay 0..1 0 L |
+| 4 | `DSP_DSOUND_FLANGER` | DSound_Flanger | DirectX FX | WetDryMix 0..100 50; Depth 0..100 100; Feedback −99..99 −50; Frequency 0..10 0.25; Waveform 0..1 1 L; Delay 0..4 2; Phase 0..4 2 L |
+| 5 | `DSP_DSOUND_GARGLE` | DSound_Gargle | DirectX FX | RateHz 1..100 20 L; WaveShape 0..1 0 L |
+| 6 | `DSP_DSOUND_I3DL2REVERB` | DSound_I3DL2Reverb | DirectX FX (+ quality) | Room −10000..0 −1000 L; RoomHF −10000..0 −100 L; RoomRolloffFactor 0..10 0; DecayTime 0.1..20 1.49; DecayHFRatio 0.1..2 0.83; Reflections −10000..1000 −2602 L; ReflectionsDelay 0..0.3 0.01; Reverb −10000..2000 200 L; ReverbDelay 0..0.1 0.01; Diffusion 0..100 100; Density 0..100 100; HFReference 20..20000 5000; Quality 0..3 2 L |
+| 7 | `DSP_DSOUND_PARAMEQ` | DSound_ParamEQ | DirectX FX | Centre 80..16000 8000; Bandwidth 1..36 12; Gain −15..15 0 |
+| 8 | `DSP_DSOUND_WAVESREVERB` | DSound_WavesReverb | DirectX FX | InGain −96..0 0; ReverbMix −96..0 0; ReverbTime 0.01..3000 1000; HighFreqRTRatio 0.01..0.99 0.01 |
+| 9 | `DSP_RESONANTLOWPASS` | ResonantLowPass | in-house `DspResLowPass` (both back-ends) | CutoffFrequency 100..20000 2500; Resonance 0.1..20 7; Gain 0..10 1 |
+| 10 | `DSP_BITCRUSHER` | BitCrusher | in-house `DspBitCrusher` | BitRate 1..16 16 |
+| 11 | `DSP_GARGLE` | Gargle | in-house `DspGargle` | WetDryMix 0..100 50; RateHz 0.01..100 20; WaveShape 0..1 0 L |
+| 12 | `DSP_ECHO` | Echo | in-house `DspEcho` | WetDryMix 0..100 50; Delay 1..3000 (ms) 200; Attenuation 0..100 50 |
+| 13 | `DSP_SIMPLE_REVERB` | SimpleReverb | in-house `DspReverb` | WetDryMix 0..100 50 (ignored by the code) |
+
+The "Default" column of `effects.txt` is **not** applied to parameters a block omits (they are 0) [C] `code/sound/soundsystem.cpp:SoundSystem::ParseSoundEffect`.
+
+### 10.3 What each in-house filter does (design summary)
+
+Exact arithmetic: [27 §12.5](27_audio_engine.md#125-in-house-algorithms) [C] `code/sound/sound_filter.cpp`.
+
+| Filter | Design behaviour |
+|---|---|
+| ResonantLowPass | resonant biquad low-pass; the 100..20000 control maps exponentially to ≈ 113 Hz..19.9 kHz (`f = e^(p/3850 + 4.7)`), resonance `Q = e^(r/4) − 1`, output gain; coefficients computed for 44.1 kHz regardless of the voice rate |
+| BitCrusher | quantises to 1–16 bits (`step = 65536 / 2^bits`) |
+| Gargle | amplitude modulation at RateHz, triangle (with wet/dry) or square (hard gating, wet/dry ignored) |
+| Echo | single feedback delay line up to 3 s: delay in ms, wet/dry mix, attenuation = feedback % |
+| SimpleReverb | fixed 6-tap feedback reverb (taps 1.1 / 3 / 11 / 19 / 29 / 46 ms); no controls |
+
+Chain rules [C] [27 §12.2](27_audio_engine.md#122-chain-structure): one slot per filter type per voice (two effects of the same type on a sound collide); in-house filters run in type-id order, not data order; DirectX FX (types 0–8) run after them on DirectSound and are ignored by the software mixer; every effect parameter is a `SoundParameter` (fixed / random / linked, re-evaluated each tick). The in-house time constants use `SoundMixFreq` (default 22 050 Hz) while the voice data runs at 44.1 kHz, so echo / reverb times would play at half length and the gargle rate doubled if DSP were enabled (27-U11). Further implementation defects: [27 §12.6](27_audio_engine.md#126-dsp-defects-do-not-copy).
+
+Design intent from `docs/ThoughtsOnSoundSystem.txt` [C]: Distortion and ParamEq were judged too expensive and Compressor pointless in software; the DirectX Gargle lacks wet/dry and fractional rates, and the DirectX Echo is needlessly stereo — hence the in-house Gargle and Echo.
+
+### 10.4 Every effect use in the shipped data
+
+22 uses, one per block; with DSP enabled these would apply [C] `data/sounds.txt` (generated):
+
+<!-- S10:FX:BEGIN -->
+<!-- S10:FX:END -->
+
+## 11 Mix groups, volume categories and sound options
+
+### 11.1 There are no mix groups
+
+There is **one gain stage above the voices: the master volume** (pref `SoundMasterVolume`, 0–255), applied to every voice including music [C] (no other gain stage exists in `code/sound`). There are no music / SFX / voice / UI volumes, no buses or submixes, no ducking or side-chaining, no snapshots or states, no "highlight one event" mode (requested in `docs/sound changes.txt`, not implemented), no loudness normalisation and no limiter on the DirectSound path [C]. The only group-like mechanisms are implicit:
+
+| Mechanism | Acts like | Ref |
+|---|---|---|
+| `POSITIONTYPE 0` (2D) | a "UI / stings / ambience" layer: unattenuated, unbent, top priority | §8.4 |
+| `TEAMMATCHTYPE` | an audience filter (owner-only / enemy-only variants) | §2.3 |
+| Same-event 0.75 priority decay | a soft per-event voice budget | §9.2 |
+| `INSTANCETYPE` 1 / 2 | one voice per event (crowd group) | §8.7 |
+| The music slot | a dedicated "music bus" with no own volume (unused) | §6 |
+| Camera-altitude-linked ambience | a zoom-dependent ambience mix | §7.5 |
+
+### 11.2 Volume law
+
+[C] `code/sound/sound_library_3d_dsound.cpp:SoundLibrary3dDirectSound::SetChannelVolume`, `code/sound/sound_library_3d.cpp:SoundLibrary3d::SetMasterVolume` (full comparison with the software mixer: [27 §11.3](27_audio_engine.md#113-volume-curves-verified)):
+
+| Quantity | DirectSound (shipped) |
+|---|---|
+| Voice volume v (0..10 vol units) | `mB = −(5 − v/2) × 1000` → **5 dB per unit**: v 10 = 0 dB, 9 = −5 dB, 8 = −10 dB, 7 = −15 dB, 5 = −25 dB, 0 = −50 dB (not silence) |
+| Master m (0..255) | adds `(255 − m) × −32` mB → 0.32 dB per step; m 0 = −81.6 dB |
+| Floor | −100 dB (`DSBVOLUME_MIN`) |
+| Envelope ramps | linear in vol units = linear in dB, quantised to the 50 ms tick |
+
+### 11.3 Options that affect the mix (Sound Options screen)
+
+`PrefsSoundWindow` (`dialog_soundoptions`, reached through Help and Options → Sound in the front end and in the in-game Esc menu; flow in [09](09_meta_systems.md)) [C] `code/interface/prefs_sound_window.cpp:PrefsSoundWindow::Create`, `code/UI/soundsliderbutton.h:VolumeControl`, `code/lib/preferences.cpp:PrefsManager::CreateDefaultValues`:
+
+| # | Control (string id) | Pref | Values | Default (generated prefs / code fallback) | Applied | Effect | Build |
+|---|---|---|---|---|---|---|---|
+| 1 | drop-down `dialog_soundlibrary` | `SoundLibrary` | only `dialog_directsound` (1) under `HAVE_DSOUND` (`dialog_softwaresound` (0) otherwise); Apply writes `"dsound"` or `"software"` | `dsound` / `dsound` | Apply → library restart | back-end choice; `"none"` (hand-edited) disables audio | [B:FULL] |
+| 2 | cycle drop-down `dialog_mixfrequency` | `SoundMixFreq` | 11025 / 22050 / 44100 (`dialog_11khz`, `dialog_22khz`, `dialog_44khz`) | 22050 / 22050 (44100 in the waveOut library) | Apply → restart | output mix rate; the in-house DSP time base | [B:FULL] |
+| 3 | slider `volume`, caption hard-coded English "Master Volume" | `SoundMasterVolume` | 0–255 (slider fraction × 255, truncated) | 255 / 255 | **immediately** on mouse-down (every voice re-sends its volume next tick); saved on mouse-up; independent of Apply | global attenuation 0.32 dB per step for all sounds and music | [B:FULL] — **live** (R4) |
+| 4 | cycle drop-down `dialog_numchannels` | `SoundChannels` | 8 / 16 / 32 / 64 | 32 / 32 (the window's own fallback is 16) | Apply → restart | voice count (N − 1 effect voices + music) | [B:FULL] |
+| 5 | check box `dialog_swapstereo` | `SoundSwapStereo` | 0 / 1 | 0 / 0 | Apply (read every tick) | 1 swaps left and right | [B:FULL] |
+| 6 | drop-down `dialog_memoryusage` | `SoundMemoryUsage` | high 1 / medium 2 / low 3 | 1 / 1 | Apply → empty cache, reopen streams | restricts group variety to the first 100 / 50 / 25 % of members (still honoured at run time if hand-edited) | UI [B:DEAD] (`USE_SOUND_MEMORY`) |
+| 7 | check box `dialog_hw3dsound` | `SoundHW3D` | 0 / 1 | 0 / 0 | Apply → restart; on failure a message box "Failed to set requested sound settings", pref reset to 0, retry | hardware 3D buffers | UI [B:DEAD] (`USE_SOUND_HW3D`); pref read |
+| 8 | check box `dialog_realtimeeffects` | `SoundDSP` | 0 / 1 | 0 / 0 | Apply → propagate or strip DSP | enables the per-sound DSP chains (§10) | UI [B:DEAD] (`USE_SOUND_DSPEFFECTS`); pref read |
+| — | button `dialog_apply` (`RestartSoundButton`) | — | — | — | greyed while every control equals the stored prefs | writes prefs, restarts the library, DSP handling, saves | [B:FULL] |
+| — | button `dialog_close` (`multiwinia_menu_back`) | — | — | — | — | back | [B:FULL] |
+
+Hidden prefs: `SoundBufferSize` (software path only; 512 generated / 2000 fallback). A library restart keeps all queued and playing sounds but drops their voices: loops restart from the beginning, one-shots get their remaining patience, music resumes at its position [C/I] [27 §2.5](27_audio_engine.md#25-library-restart). The code after the early `return` in `PrefsSoundWindow::Render` (device name, sound CPU %, cache memory readout) is unreachable [C].
+
+### 11.4 Mix observations
+
+[I] from §4 and §11.2: the authored VOLUME range is narrow (most blocks 8–10, i.e. within 10 dB), so the in-game mix is dominated by distance and by the 2D layer; the lobby and location beds are authored at 8–9.6 vol units (−20 … −2 dB) and are always present; because ambience volume follows the camera altitude, a zoomed-out view gets louder wind / white noise while 3D combat gets quieter — the de-facto "strategic view" mix.

@@ -172,3 +172,7 @@
 ## S20 (20_architecture.md) — done, ~206 KB, checks pass
 - 12 contradictions: 10 game-created threads + OS waveOut callback (not 8/9); server 10 Hz vs docs 25 FPS; boot archives parsed on loading worker thread (P16 wrong); ExitLevelButton sets both flags → finished match returns straight to main menu; OpenMP only in ReleaseDirect3D; g_log/g_fogLogging/g_fogEnabled not compiled in shipped exe; testbed counts 23 members/27 methods; GetNetworkTime == GetGameTime; every object advances exactly once per tick; frame throttling only from driver vsync; m_location assigned before Location::Init.
 - New: game speed can run away to −∞/NaN if a speed-crate hold is active at next match start; team-5 spawn-point counter slot never reset between matches. 20-U1..U14.
+
+## S31 (31_platform_build_and_tools.md) — done, ~251 KB, checks pass
+- 15 contradictions: archive lookups case-insensitive; no-arg data build packs English-only language.dat; authkey.dev read, typed key → authkey, pasted/demo → authkey.dev; MultiwiniaSupport.exe from contrib/XCrashReport uploads over plain TCP :4537 only on Send; ERRORLOG.TXT overwritten per crash; D3D 4 breakages; installers shipping ambx.dat; fullscreen switch order; Mac .cpp count. Scripts: S_31_archive_contents.py (reproduces data build per SKU), S_31_inventory.py, S_31_source_map.py, S_31_citation_fixes.py. 31-U1..U15.
+- Flagged: 3 included_by_live marks were basename collisions → coordinator fixed manifest.py to resolve includes by path (now 15).
