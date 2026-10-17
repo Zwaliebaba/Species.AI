@@ -84,7 +84,7 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 
 **DBG-205** (MUST) The per-tick CPU budget is a design-phase input (DEC-227, DEC-228). The reference guidance is a hard budget at the design population on minimum-specification hardware of `dbg.budget.tick_share_guidance` (25 %) of a frame at `rnd.budget.target_frame_rate` (16.7 ms), about 4.2 ms, split into per-system budgets for the hotspots H1 to H6; the design phase states whether the figure is the cost of a whole tick or a per-frame share of it (DEC-228 item 1), and a server budget per region on a named community-host specification (DEC-228 item 7). Measurement precedes commitment: the first simulation-core milestone measures the tick cost of a synthetic 2,000-unit match (DEC-106, DEC-229), the per-system budgets are then recorded in this section, and the nightly soak reports the tick-cost percentiles and the peak population (DBG-166).
 
-**DBG-206** (MUST) The diagnostics budgets, on the reference test machine: a log call costs at most `dbg.budget.log_call_us` (1 µs) on the calling thread, and eight threads logging 10⁶ debug records raise the frame time by at most `dbg.budget.log_flood_frame_ms` (0.5 ms); all markers of a frame cost at most `dbg.budget.markers_frame_ms` (0.2 ms) in a `Profile` build; the shown overlay page costs at most `dbg.budget.overlay_ms` (0.5 ms) of presentation-thread time.
+**DBG-206** (MUST) The diagnostics budgets, on the reference test machine: a log call costs at most `dbg.budget.log_call_us` (1 µs) on the calling thread, and eight threads logging 10⁶ debug records raise the frame time by at most `dbg.budget.log_flood_frame_ms` (0.5 ms); all markers of a frame cost at most `dbg.budget.markers_frame_ms` (0.2 ms) in a Release build; the shown overlay page costs at most `dbg.budget.overlay_ms` (0.5 ms) of presentation-thread time.
 
 **DBG-207** (MUST) The Species budget baseline per area, each owned where stated:
 
@@ -98,26 +98,26 @@ The cost of one tick must fit, spread over its 10 slices, into the render frames
 | catch-up | bounded in ticks per frame and shown to the player as a catching-up state | DEC-225 |
 | logging | asynchronous and buffered, per-category levels, no file opened per line | ADR-067, §4.1 |
 
-**DBG-208** (MUST) Performance tests run on the reference test machine in the nightly CI job `ci-nightly-performance`, together with the build budgets of [build tooling](../build_tooling_and_distribution.md) table 5-A (BLD-117, ADR-070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). A result above its budget fails the nightly job and never changes run-time behaviour.
+**DBG-208** (MUST) Performance tests run in Release builds on the reference test machine in the performance job, a scheduled CI job that ADR-070 adds by amendment and that is guarded like the committed jobs, together with the build budgets of [build tooling](../build_tooling_and_distribution.md) table 5-A (BLD-117, ADR-070), and report against these budgets: the design-population scene (a 2,000-unit bot-only Spawn Control match, rendered and headless) against DBG-205 and RND-454; the stress scene against DBG-204 and RND-456; the logging and marker tests of DBG-206; and the components' own budgets: the asset budgets of table 5-A (AST-125), the audio update (AEN-303, test T27), the UI budgets (UI-240), the input budgets (INP-200), the camera budgets (CAM-120) and the data budgets (DAT-050). A result above its budget fails the nightly job and never changes run-time behaviour.
 
 ### 5.5 Reference test machine
 
-**DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build at the minimum of ADR-050 and ADR-002. Every performance budget of the component specifications refers to it, and a change of the machine re-baselines every recorded result. Its exact hardware is a design-phase input (DEC-228 items 6 and 7); until it is chosen, CI records the hardware of the agent that ran each performance job with the result. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
+**DBG-209** (MUST) The reference test machine is one pinned and recorded configuration: a processor, memory size, graphics adapter, driver version, display mode and OS build at the minimum of ADR-050 and ADR-002. Every performance budget of the component specifications refers to it, the data budgets `dat.perf.*` of the data schemas among them, and a change of the machine re-baselines every recorded result. Its exact hardware is a design-phase input (DEC-228 items 6 and 7; see DEC-971); until it is chosen, CI records the hardware of the agent that ran each performance job with the result. The reference developer machine, on which the build budgets of build tooling table 5-A are measured, is `dbg.machine.developer_class`: the reference test machine's processor and memory with a local solid-state disk.
 
 ## 6 Failure modes, diagnostics and telemetry
 
-A result above its budget fails the nightly performance job and never changes run-time behaviour (DBG-208).
+A result above its budget fails the performance job and never changes run-time behaviour (DBG-208).
 
 ## 7 Acceptance tests
 
 | # | Kind | Test | Requirements |
 |---|---|---|---|
-| T10 | performance | All markers of the design-population frame cost at most the marker budget in a `Profile` build. | DBG-206 |
-| T29 | performance | The design-population scene and the stress scene report frame and tick percentiles and peak population on the reference test machine; the component budget tests of DBG-208 run nightly. | DBG-204, DBG-205, DBG-208 |
+| T10 | performance | All markers of the design-population frame cost at most the marker budget in a Release build. | DBG-206 |
+| T29 | performance | The design-population scene and the stress scene report frame and tick percentiles and peak population on the reference test machine; the component budget tests of DBG-208 run in the performance job, each result recorded with the build identity and the hardware of the agent that ran it. | DBG-204, DBG-205, DBG-208, DBG-209 |
 
 ## 8 Open decisions
 
-DEC-106, DEC-227, DEC-228 and DEC-229 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
+DEC-106, DEC-227, DEC-228, DEC-229 and DEC-971 (Open) apply to this document; their defaults are listed in the [README](README.md) §8.1, with the design-phase inputs of the whole component.
 
 ## 9 Tuning table
 
@@ -127,7 +127,7 @@ A value whose notes say "Species" is a Species engine-baseline value; every othe
 |---|---|---|---|---|---|
 | `dbg.budget.log_call_us` | 1 | µs per call | Species; calling-thread cost, reference test machine | DBG-061, DBG-206 | — |
 | `dbg.budget.log_flood_frame_ms` | 0.5 | ms | Species; frame-time increase while 8 threads log 10⁶ debug records | DBG-206 | — |
-| `dbg.budget.markers_frame_ms` | 0.2 | ms per frame | Species; every marker of a frame, `Profile` build | DBG-206 | — |
+| `dbg.budget.markers_frame_ms` | 0.2 | ms per frame | Species; every marker of a frame, Release build | DBG-206 | — |
 | `dbg.budget.overlay_ms` | 0.5 | ms per frame | Species; presentation-thread cost of the shown overlay page | DBG-206 | — |
 | `dbg.budget.tick_share_guidance` | 0.25 | share of a frame | reference guidance: 25 % of a 16.7 ms frame, about 4.2 ms per tick; design-phase input | DBG-205 | DEC-228 |
 | `dbg.stress.design_population` | 2000 | units per map | reference peak, plus Essence orbs and projectiles | DBG-204, DBG-205 | DEC-228, DEC-106 |
@@ -135,4 +135,4 @@ A value whose notes say "Species" is a Species engine-baseline value; every othe
 | `dbg.stress.teams` | 4 | teams | stress map | DBG-204 | DEC-228 |
 | `dbg.stress.start_units` | 150 | units per team | stress map starting forces | DBG-204 | DEC-228 |
 | `dbg.stress.spawn_nodes` | 24 | Spawn Nodes | stress map | DBG-204 | DEC-228 |
-| `dbg.machine.developer_class` | the reference test machine with a local solid-state disk | machine class | Species; exact hardware a design-phase input; BLD table 5-A | DBG-209 | DEC-228 |
+| `dbg.machine.developer_class` | the reference test machine with a local solid-state disk | machine class | Species; exact hardware a design-phase input; BLD table 5-A | DBG-209 | DEC-228, DEC-971 |

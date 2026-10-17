@@ -69,7 +69,7 @@ When the Core Device detonates, the Siege result is fixed and Command Console ca
 
 ### 2.4 HUD and end of match
 
-**R-MODE-372** (MUST) The scoreboard is titled `mode.siege.hud.title` and ordered by defence-time record. A defender's line is `mode.siege.hud.defend`; an attacker's is `mode.siege.hud.attack`, or `mode.siege.hud.defended_for` with minutes:seconds once the slot has a defence time record. After a round end the round overlay shows, in multi-round Siege, `mode.siege.hud.round_defended` in the defenders' colour and, while the victory timer has less than `ref.mode.siege.next_round_display` (110 ticks) left, `mode.siege.hud.next_round` with the seconds left; in a single round with a winner, R-MODE-363's side line in co-op or `mode.siege.hud.team_wins` outside it. The Core Device shows rising glow and, in the last 10 mode seconds, a countdown screen ([reference/03](../03_buildings_and_world_objects/mode_objects.md)); its presence loop uses `sfx.building.launch_vessel.flight` and its pulse wave `fx.beam_long`.
+**R-MODE-372** (MUST) The scoreboard is titled `mode.siege.hud.title` and ordered by defence-time record. A defender's line is `mode.siege.hud.defend`; an attacker's is `mode.siege.hud.attack`, or `mode.siege.hud.defended_for` with minutes:seconds once the slot has a defence time record. After a round end the round overlay shows, in multi-round Siege, `mode.siege.hud.round_defended` in the defenders' colour and, while the victory timer has less than `ref.mode.siege.next_round_display` (110 ticks, DEC-859 item 5) left, `mode.siege.hud.next_round` with the seconds left; in a single round with a winner, R-MODE-363's side line in co-op or `mode.siege.hud.team_wins` outside it. The Core Device shows rising glow and, in the last `ref.bldg.core_device.countdown_display_mode_seconds` (10 mode seconds), a countdown screen ([reference/03](../03_buildings_and_world_objects/mode_objects.md) R-BLDG-316); its presence loop uses `sfx.building.launch_vessel.flight` and its pulse wave `fx.beam_long`.
 
 **R-MODE-373** (MUST) At game over a single-round Siege shows only the title, with no winner line and no score list (README R-MODE-068). The hints `help.hint.siege_attack`, `help.hint.siege_defend`, `help.hint.siege_core_device`, `help.hint.siege_breach_charge` and `help.hint.siege_spawn_nodes` explain the mode.
 
@@ -112,8 +112,8 @@ The Core Device, Command Console, pulse wave and explosion values are owned by [
 | `ref.mode.siege.defence_check_delay` | 100 | ticks | 10.0 s after post-grace tick 0, strictly more | R-MODE-358 | DEC-009 |
 | `ref.mode.siege.victory_delay_single_ticks` | 101 | ticks | 10 s | R-MODE-360, R-MODE-367 | DEC-002, DEC-066 |
 | `ref.mode.siege.victory_delay_multi_ticks` | 151 | ticks | 15 s | R-MODE-360 | DEC-002, DEC-066 |
-| `ref.mode.siege.fade_out_ticks` | 10 | ticks | multi-round: the fade-out starts at this much victory delay left | R-MODE-362 | DEC-066 |
-| `ref.mode.siege.next_round_display` | 110 | ticks | multi-round: the next-round countdown shows below this much delay left | R-MODE-372 | DEC-066 |
+| `ref.mode.siege.fade_out_ticks` | 10 | ticks | multi-round: the fade-out starts at this much victory delay left | R-MODE-362 | DEC-066, DEC-859 |
+| `ref.mode.siege.next_round_display` | 110 | ticks | multi-round: the next-round countdown shows below this much delay left | R-MODE-372 | DEC-066, DEC-859 |
 | `ref.mode.siege.round_fade_in` | 1.0 | s of real time | presentation | R-MODE-366 | DEC-066 |
 
 String ids that this file uses, with their new text:
@@ -162,6 +162,7 @@ String ids that this file uses, with their new text:
 - DEC-066 — multi-round Siege (R-MODE-365).
 - DEC-301 — the Solar Array knock-out (R-MODE-355).
 - DEC-459 — a Core Device with no linked Command Console (R-MODE-359).
+- DEC-859 — the tick counts of the multi-round fade-out and next-round display (R-MODE-362, R-MODE-372).
 - DEC-047 — the Iron Defence hook (R-MODE-374).
 
-Resolved decisions applied: DEC-002, DEC-009, DEC-016, DEC-034, DEC-075, DEC-079, DEC-081, DEC-107, DEC-458, DEC-464.
+Resolved decisions applied: DEC-002, DEC-009, DEC-016, DEC-034, DEC-075, DEC-079, DEC-107, DEC-124, DEC-261, DEC-458, DEC-464.
