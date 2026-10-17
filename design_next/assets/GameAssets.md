@@ -1,6 +1,6 @@
 # Species game assets
 
-> Status: Asset list, pass 1 (consumers named by document; pass 2 replaces them with requirement IDs) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
+> Status: Asset list, pass 2a (consumers named by document; pass 2b replaces them with requirement IDs) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
 
 ## Contents
 
@@ -43,25 +43,38 @@ All assets live under the content root `content/`. The content build rejects any
 |---|---|
 | `content/sprites/` | unit, creature and effect cards (camera-facing billboards) |
 | `content/textures/fx/` | VFX textures: glows, beams, flares, sky clouds, wire grid, canopy mask |
-| `content/textures/ui/` | UI panels, title wordmark, logos, front-end decoration, small UI icons |
+| `content/textures/ui/` | UI panels, title wordmark, logos, front-end decoration, small UI icons, the application icon |
 | `content/textures/icons/power/` | power and Supply-crate outcome icons |
 | `content/textures/icons/hud/` | power-slot panel and status read-outs |
 | `content/textures/icons/cursors/` | world and menu cursors |
-| `content/textures/icons/markers/` | off-screen markers, ground markers, banners and flags |
+| `content/textures/icons/markers/` | off-screen markers, ground markers, route arrows, banners and flags with their tint masks |
 | `content/textures/icons/input/` | platform-neutral input glyphs |
 | `content/textures/terrain/` | terrain colour ramps, sea tiles, shore-wave gradients |
 | `content/textures/help/` | hint pictures, help pages, mode cards |
 | `content/textures/help/explainer/` | pictures animated by the explainer scripts |
-| `content/ui/explainers/` | explainer animation scripts, one per mode |
-| `content/meshes/<group>/` | flat-shaded meshes; groups `units`, `creatures`, `structures`, `projectiles`, `relics`, `scenery` |
+| `content/ui/explainers/` | explainer animation scripts, one per mode, each found by its `mode` field, never by its member order (DAT-284) |
+| `content/meshes/<group>/` | flat-shaded meshes; groups `units`, `creatures`, `structures`, `projectiles`, `relics`, `scenery`, and `dev` for the map editor's meshes |
+| `content/meshes/collision/` | collision assets: the hit geometry of every collidable mesh, authored as its own source (AST-044) |
 | `content/audio/sfx/<source>/` | sound effects, one folder per sound source; `crate_outcome/` holds the outcome stings |
 | `content/audio/ui/` | interface sounds |
 | `content/audio/ambience/` | ambience beds |
 | `content/audio/music/` | music (new) |
 | `content/fonts/` | licensed font files |
-| `content/strings/` | string tables, one per language |
+| `content/strings/` | string tables, one per language, and the development string table (development editions only) |
 | `content/maps/` | map definitions, one per map slot |
 | `content/thumbnails/` | map thumbnails, one per map |
+| `content/records/modes/` | the match-option schema of each mode (`mode.options`) |
+| `content/records/input/` | the default binding set and the keyboard-layout layers (`input.binding_set`, `input.keyboard_layouts`) |
+| `content/records/actors/` | the actor stat table (`actor.stats`) |
+| `content/records/crates/` | the Supply-crate outcome catalogue (`crate.outcomes`) |
+| `content/records/audio/` | the sound sources with their events and layers (`sound.sources`), and the member weights of the sample groups (`sound.groups`, DAT-275) |
+| `content/records/vfx/` | the effect definitions (`effects.definition`) |
+| `content/records/timelines/` | the presentation timelines (`camera.timeline`) |
+| `content/records/ui/` | page layouts, palettes, text styles and the font-role map (`interface.page_layout`, `interface.palette`, `interface.text_style`, `interface.font_roles`) |
+| `content/records/editions/` | the edition manifests (`edition.manifest`) |
+| `content/records/test/` | the soak configurations, selected only into the development and soak editions (`test.soak_configuration`) |
+
+The `content/records/<family>/` folders hold the authored JSON data records of the record families of [data schemas](../architecture/components/data_schemas/README.md) table 1-A (DAT-006). They are content but not assets to create, so the manifest has no rows for them. A sample group's members are the members of its asset in the order of its `variants` column; a group whose members are not equally weighted lists its weights in `sound.groups` (DAT-275).
 
 ### 2.2 File names
 
@@ -70,6 +83,8 @@ All assets live under the content root `content/`. The content build rejects any
 - No stem repeats a reference file stem, and no name contains an IP word. Ids and names come from [CONVENTIONS §8](../CONVENTIONS.md#8-naming).
 - String tables are named by their BCP 47 language tag in lower case with `_` for `-` (`en_gb.json`); the tag itself is stored in the file.
 - Maps follow `map_<mode>_<players>p_<nn>`; a thumbnail adds `_thumb`.
+- A **collision asset** (AST-044) is named after its render member with the suffix `_collision`, in `content/meshes/collision/`; a **tint mask** (AST-022) is named after its parent member with the suffix `_tint`.
+- A **derived variant** (AST-028) has no authored file: the cooker produces it offline from its parent's source. Its row names its cooked entry, `<parent file without extension>@<variant id>` (`content/textures/icons/cursors/cursor_world@shadow`).
 
 ### 2.3 Asset ids
 
@@ -79,12 +94,12 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 |---|---|---|
 | `sprite.` | sprite cards | `sprite.worker.front` |
 | `fx.` | VFX textures | `fx.glow_round` |
-| `ui.` | UI panels and title art | `uitex.title_wordmark` |
+| `uitex.` | UI panels, title art and the application icon | `uitex.title_wordmark` |
 | `icon.power.`, `icon.hud.` | power and HUD icons | `icon.power.airstrike` |
 | `cursor.`, `marker.` | cursors and markers | `marker.edge_compass` |
 | `glyph.` | input glyphs | `glyph.pad.face_south` |
 | `terrain.` | ramps, sea tiles, wave gradients | `terrain.ramp` |
-| `mesh.<group>.` | meshes | `mesh.structure.spawn_node` |
+| `mesh.<group>.` | meshes; the group `collision` holds the collision assets, `dev` the editor meshes | `mesh.structure.spawn_node`, `mesh.collision.spawn_node` |
 | `help.`, `anim.explainer` | help pictures and explainer scripts | `help.hint.supply_crates` |
 | `sfx.<kind>.<source>.<event>` | sound-effect sample groups; kind is `unit`, `creature`, `weapon`, `building` or `crate` | `sfx.unit.worker.attack` |
 | `sfx.crate.outcome.` | Supply-crate outcome stings | `sfx.crate.outcome.shield` |
@@ -93,11 +108,13 @@ Asset ids are dotted and lower case. Numbered variants share one id; documents c
 | `music.` | music | `music.front_end.theme` |
 | `font.` | fonts | `font.ui.primary` |
 | `strings.` | string tables | `strings.en_gb` |
-| `map.`, `thumb.` | maps and thumbnails, one id per mode | `mapfile.spawn_control` |
+| `mapfile.`, `thumb.` | maps and thumbnails, one id per mode | `mapfile.spawn_control` |
+| `<parent id>.<variant id>` | derived texture variants (AST-028): `shadow`, `trail` | `cursor.world.shadow` |
+| `<parent id>_tint` | companion tint masks of team-tinted cloth (AST-022) | `marker.leader_banner_tint` |
 
 ### 2.4 Source and runtime formats
 
-The artist delivers the source file under `content/`; the content build generates the runtime file in the pack. Every cooked texture is a DDS with the DX10 header; block-compressed textures are padded to whole 4x4 blocks by the cooker. UI and HUD art is authored at twice its display size and reduced by the cooker; world textures are authored at the stated size. Audio sources are 48 kHz.
+The artist delivers the source file under `content/`; the content build generates the runtime file in the pack. Every cooked texture is a DDS with the DX10 header. A block-compressed texture is a whole number of 4x4 blocks: its authored size (twice the display size for UI art) is a multiple of 4 in both dimensions, and the content build rejects any other size; the cooker never pads or resamples a source (ADR-0017, AST-068). UI and HUD art is authored at twice its display size and reduced by the cooker; world textures are authored at the stated size. Audio sources are 48 kHz. Samplers come from the closed set of ADR-0018: linear clamp-to-edge (the default), linear wrap, point clamp-to-edge, and point-magnify clamp-to-edge (point under magnification, linear under minification and between mips), which the particle dot and the front-end Worker figure use. Icons, markers and cursors are straight-alpha art that their passes may also draw with the additive blend (RND-393, RND-423). Nothing is recoloured at load, and derived variants are produced offline by the cooker (ADR-0018).
 
 | Profile | Source (artist delivers) | Runtime (content build generates) | Colour space | Alpha mode |
 |---|---|---|---|---|
@@ -107,14 +124,18 @@ The artist delivers the source file under `content/`; the content build generate
 | alpha mask | PNG 8-bit greyscale, white = opaque | BC4_UNORM, full mips | linear | mask as alpha over white, tinted at draw |
 | darkening layer | PNG 8-bit greyscale, white = full darkening | BC4_UNORM, full mips | linear | destination multiplied by (1 - texel) |
 | tinted icon | PNG RGBA8, sRGB, white or grey art | BC7_UNORM_SRGB, full mips | sRGB | straight alpha, tinted by vertex colour |
-| team cloth | PNG RGBA8, sRGB, team area painted pure red (255,0,0) | BC7_UNORM_SRGB, full mips, one recolour per team at load | sRGB | straight alpha; pure-red texels take the team colour |
+| team cloth | PNG RGBA8, sRGB, team area painted as grey levels (its intensity), no key colour | BC7_UNORM_SRGB, full mips; no per-team copy | sRGB | straight alpha; the shader tints the team area by the weight of its companion tint mask (AST-022) |
+| tint mask | PNG 8-bit greyscale, white = full team tint, the size of its parent | BC4_UNORM, full mips | linear | team-tint weight read by the shader, never drawn on its own |
+| derived variant | none: the cooker derives it offline from its parent's source (`BlurredShadow`, `StackedCopies`) | its family's runtime format; shadows BC4_UNORM, full mips | as its family | as its family; shadows are darkening layers |
+| application icon | PNG RGBA8, sRGB, one file per icon size | Windows icon resource (.ico) built into the executable; not in the pack | sRGB | straight alpha |
 | UI picture | PNG RGB8 or RGBA8, sRGB | BC7_UNORM_SRGB, no mips (tiled strips keep mips and repeat) | sRGB | opaque or straight alpha |
 | CPU look-up table | PNG RGB8, sRGB | uncompressed R8G8B8A8_UNORM_SRGB, no mips, read on the CPU | sRGB | none |
 | sea tile | PNG RGB8, sRGB, seamless | BC7_UNORM_SRGB, full mips, wrap repeat | sRGB | opaque, multiplied by the sea light map |
 | thumbnail | PNG RGB8, sRGB, rendered by the map tool | BC7_UNORM_SRGB, no mips | sRGB | opaque |
-| mesh | glTF 2.0 binary `.glb`: metres, +Y up, no `NORMAL` (flat faces), `COLOR_0` per-face colour, named socket nodes | cooked Species mesh: face normals generated, colours attenuated at load | sRGB vertex colour | opaque; team parts painted mostly red |
+| mesh | glTF 2.0 binary `.glb`: metres, +Y up, no `NORMAL` (flat faces), `COLOR_0` per-face colour, named socket nodes | cooked Species mesh: face normals generated, colours attenuated once at cook (RND-160) | sRGB vertex colour | opaque; team regions marked by explicit tint weights: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-0020) |
+| collision mesh | glTF 2.0 binary `.glb`: triangle primitives, no materials, metres, +Y up; authored as its own source | cooked `Collision` entry, simulation-relevant (DAT-278) | n/a | n/a |
 | sound effect | WAV, 48 kHz, 24-bit PCM, mono (2-D sounds may be stereo) | 16-bit PCM, 48 kHz, resident | n/a | n/a |
-| long audio and music | WAV, 48 kHz, 24-bit PCM, stereo for music | Opus stream, decoded on a worker thread | n/a | n/a |
+| long audio and music | WAV, 48 kHz, 24-bit PCM, stereo for music | Opus stream, decoded on a worker thread: every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`), and every music group (AEN-072) | n/a | n/a |
 | font | OpenType font licensed for embedding | font file in the pack; glyphs rasterised at run time into R8_UNORM cache pages | n/a | coverage |
 | string table | UTF-8 JSON: string id to ICU MessageFormat text | cooked string table | n/a | n/a |
 | map | map definition from the map tool (text, Species map schema) | cooked map definition | n/a | n/a |
@@ -127,12 +148,12 @@ Each row has one priority: `skirmish-first-playable`, `launch` or `post-launch`.
 **First-playable assumption** (vision O8: one skirmish mode first). The first playable is **Spawn Control** for 2 players on the map slots `map_spawn_control_2p_01` and `map_spawn_control_2p_02`, with bots, and with Supply crates drawing from a core outcome pool: Reinforcements, Strike team (with its grenade and rocket weapons), Transport, airstrike, gun turret, Shield, Speed Boost and Fury. It needs:
 
 - units: Worker (all cards), Leader with its banners, Trooper, Transport, Bomber, Essence orbs;
-- structures: Spawn Node, Relay, Transit Gate, gun turret (mount, head, gun barrel), Barrier Emitter, wall, tree, jump pad, Supply crate;
-- UI: title wordmark, panels, menu highlight, check box, every cursor, the markers, the power-slot HUD for the core pool, the keyboard Tab glyph, the Spawn Control mode card, the primary font (Latin and Cyrillic) and the English string table;
+- structures: Spawn Node, Relay, Transit Gate, gun turret (mount, head, gun barrel), Barrier Emitter, wall, tree, jump pad, Supply crate, the port pad, and the collision assets of the collidable ones;
+- UI: title wordmark, panels, menu highlight, check box, every cursor, the markers, the power-slot HUD for the core pool, the keyboard Tab glyph, the Spawn Control mode card, the route arrow, the primary font (Latin and Cyrillic), the English string table, the development string table and the application icon;
 - world: sky clouds, terrain ramp 01, sea tile 01, shore-wave gradient 01, the VFX of those units;
-- audio: every sample group of those sources and weapons, the match interface sounds and the match ambience bed.
+- audio: every sample group of those sources and weapons, with the laser-bolt fire, structure-hit and kill groups and the grenade throw, the match interface sounds with the game-over announcement, and the match ambience bed.
 
-Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies and the few rows whose role still needs confirmation. The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
+Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies with their collision assets, the objective-card hint pictures (hook art, DEC-050), the map editor's camera-view marker and the few rows whose role still needs confirmation. The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
 
 ### 2.6 Placeholders
 
@@ -156,30 +177,35 @@ The content build generates a stand-in for every manifest row that has no author
 | fallback font | an open-licence font with the same script coverage |
 | pseudo-localised text | text generated from each string id, padded to test layout |
 | generated test map | flat map with the objects the mode needs for its player count |
+| full-weight mask | tint mask of weight 1 over the opaque area of its parent art |
+| derived by the cooker | the variant derived from its parent's stand-in or authored file |
+| primitive collision | collision triangles at the bounding shape of its render member |
+
+An edition that its edition manifest marks for release contains no placeholder: the content build fails such an edition and lists the rows that have no authored file (AST-085). Every other edition may contain placeholders.
 
 ## 3 Summary
 
 | Category | Asset ids | Files | first-playable | launch | post-launch | Reference files replaced |
 |---|---:|---:|---:|---:|---:|---:|
-| [Unit sprites](#4-unit-sprites) | 12 | 15 | 6 | 8 | 1 | 15 |
-| [VFX textures](#5-vfx-textures) | 18 | 18 | 13 | 5 | 0 | 18 |
-| [UI panels and title](#6-ui-panels-and-title) | 13 | 15 | 6 | 9 | 0 | 15 |
+| [Unit sprites](#4-unit-sprites) | 13 | 16 | 6 | 9 | 1 | 15 |
+| [VFX textures](#5-vfx-textures) | 19 | 19 | 13 | 6 | 0 | 18 |
+| [UI panels and title](#6-ui-panels-and-title) | 14 | 21 | 12 | 8 | 1 | 15 |
 | [HUD, supply-crate and power icons](#7-hud-supply-crate-and-power-icons) | 32 | 34 | 17 | 15 | 2 | 34 |
-| [Cursors and markers](#8-cursors-and-markers) | 22 | 28 | 22 | 6 | 0 | 28 |
-| [Input glyphs](#9-input-glyphs) | 13 | 13 | 1 | 12 | 0 | 13 |
+| [Cursors and markers](#8-cursors-and-markers) | 35 | 47 | 36 | 11 | 0 | 28 |
+| [Input glyphs](#9-input-glyphs) | 19 | 19 | 1 | 18 | 0 | 13 |
 | [Terrain ramps, water and waves](#10-terrain-ramps-water-and-waves) | 3 | 26 | 3 | 23 | 0 | 26 |
-| [Meshes](#11-meshes) | 53 | 71 | 16 | 51 | 4 | 71 |
-| [Help images and explainer animations](#12-help-images-and-explainer-animations) | 22 | 75 | 1 | 74 | 0 | 76 |
-| [Audio by source and event](#13-audio-by-source-and-event) | 167 | 863 | 470 | 393 | 0 | 863 |
-| [UI sounds](#14-ui-sounds) | 12 | 14 | 14 | 0 | 0 | 14 |
+| [Meshes](#11-meshes) | 77 | 104 | 27 | 71 | 6 | 71 |
+| [Help images and explainer animations](#12-help-images-and-explainer-animations) | 22 | 75 | 1 | 58 | 16 | 76 |
+| [Audio by source and event](#13-audio-by-source-and-event) | 171 | 895 | 502 | 393 | 0 | 891 |
+| [UI sounds](#14-ui-sounds) | 13 | 16 | 16 | 0 | 0 | 16 |
 | [Ambience](#15-ambience) | 4 | 21 | 11 | 10 | 0 | 21 |
 | [Music](#16-music) | 4 | 6 | 0 | 6 | 0 | 0 |
 | [Fonts](#17-fonts) | 5 | 5 | 1 | 4 | 0 | 138 |
-| [String table](#18-string-table) | 9 | 9 | 1 | 8 | 0 | 0 |
+| [String table](#18-string-table) | 10 | 10 | 2 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 4 | 94 | 0 | 98 |
-| **Total** | **401** | **1311** | **586** | **718** | **7** | **1430** |
+| **Total** | **453** | **1412** | **652** | **734** | **26** | **1460** |
 
-"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables and some help pictures have no one-to-one counterpart.
+"Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row added in pass 2a without a reference take (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants and the Trooper grenade throw) have no one-to-one counterpart. "Files" counts manifest rows: the 10 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
 ## 4 Unit sprites
 
@@ -187,13 +213,14 @@ Camera-facing cards for the crowd and for small creatures and effects. Worker ca
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/sprites/worker_front.png` | `sprite.worker.front` | Worker card, front view: the crowd figure; also drawn large by the loading view, the Launch Race status panel and the front-end backdrop | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; white or light grey body for team tint; alpha-test threshold 0.04; magnified with NEAREST on the front-end backdrop | single | skirmish-first-playable | generated figure |
+| `content/sprites/worker_front.png` | `sprite.worker.front` | Worker card, front view: the crowd figure; also drawn large by the loading view, the Launch Race status panel and the front-end backdrop | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; white or light grey body for team tint; alpha-test threshold 0.04; magnified on the front-end backdrop through the point-magnify clamp-to-edge sampler (ADR-0018) | single | skirmish-first-playable | generated figure |
 | `content/sprites/worker_hurt_{01..04}.png` (4 files) | `sprite.worker.hurt` | Worker hurt pose; variants 01-03 are chosen by unit id while a Worker is airborne or dying, variant 04 is the fixed hurt pose | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; same canvas and pivot as the front card; alpha-test threshold 0.04 | 4 | skirmish-first-playable | generated figure |
 | `content/sprites/worker_side.png` | `sprite.worker.side` | Worker card seen edge-on (side view), used when the card turns away from the camera | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 32x64 px; alpha-test threshold 0.04 | single | skirmish-first-playable | generated figure |
 | `content/sprites/worker_state_overlay.png` | `sprite.worker.state_overlay` | Overlay sprite drawn above a Worker in an altered control state | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 64x64 px; drawn over the Worker card; role to be confirmed against reference/02_units/worker.md | single | launch | generated figure |
-| `content/sprites/visitor_front.png` | `sprite.visitor.front` | Visitor faction figure card | PNG RGBA8 → BC7 sRGB, mips | 128x128 px; alpha-test threshold 0.02 | single | launch | generated figure |
+| `content/sprites/visitor_front.png` | `sprite.visitor.front` | Visitor faction figure card | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; drawn as a Worker card: alpha-test threshold 0.04 (RND-060, RND-316) | single | launch | generated figure |
 | `content/sprites/worker_seasonal_hat.png` | `sprite.worker.seasonal_hat` | Seasonal-theme hat drawn 0.95 wu above every third Worker | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 32x32 px; small accessory card; drawn only while the seasonal theme is on | single | post-launch | generated figure |
 | `content/sprites/crawler_segment.png` | `sprite.crawler.segment` | Crawler body card; the renderer builds each Crawler's trail strip from it | PNG grey (additive) → BC4, mips | 32x32 px; hostile (Rogue faction) Crawlers draw it as a darkening layer | single | launch | generated gradient |
+| `content/sprites/crawler_segment@trail` | `sprite.crawler.segment.trail` | Crawler trail texture sampled by the worm strip, a derived variant of `sprite.crawler.segment` produced offline by the cooker (`StackedCopies`, AST-029) | derived from `sprite.crawler.segment` → BC4, mips | 32x512 px column cleared to black; copies of the segment art stacked from the top, copy i (from 0) (32 - floor(i / 2)) px square: 18 copies, 504 px in all (RND-320) | single | launch | derived by the cooker |
 | `content/sprites/crawler_egg.png` | `sprite.crawler_egg.body` | Crawler egg card | PNG RGBA8 → BC7 sRGB, mips | 32x32 px | single | launch | generated figure |
 | `content/sprites/wisp.png` | `sprite.wisp.body` | Wisp card | PNG grey (additive) → BC4, mips | 32x32 px | single | launch | generated gradient |
 | `content/sprites/barrage_missile.png` | `sprite.missile_barrage.missile` | Missile Barrage missile card (new presentation of the mechanic) | PNG RGBA8 → BC7 sRGB, mips | 128x128 px | single | launch | generated figure |
@@ -207,27 +234,28 @@ Additive textures painted on black: overlapping layers saturate toward white and
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
 | `content/textures/fx/fx_bubble_sphere.png` | `fx.bubble_sphere` | Translucent bubble around a falling Supply crate, a shielded Worker and a Collector | PNG grey (additive) → BC4, mips | 128x128 px | single | skirmish-first-playable | generated gradient |
-| `content/textures/fx/fx_sky_cloud.png` | `fx.sky_cloud` | Sky cloud layer (also the front-end background clouds) | PNG grey (additive) → BC4, mips | 16x16 px; blobby layer MAG LINEAR / MIN NEAREST, flat layer NEAREST; wrap repeat; small tile magnified on purpose | single | skirmish-first-playable | generated gradient |
+| `content/textures/fx/fx_sky_cloud.png` | `fx.sky_cloud` | Sky cloud layer (also the front-end background clouds) | PNG grey (additive) → BC4, mips | 16x16 px; read through its `level0` view (mip level 0 only, RND-153); the blobby layers wrap with the linear-wrap sampler, the flat layers wrap in the shader and sample through the point clamp-to-edge sampler (RND-154); small tile magnified on purpose | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_glow_cloudy.png` | `fx.glow_cloudy` | Soft cloudy glow: front-end fill boxes, Supply crate glow, dust vortex, Spawn Node glow | PNG grey (additive) → BC4, mips | 128x128 px; wrap repeat in front-end fill boxes | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_fuel_flow.png` | `fx.fuel_flow` | Scrolling fuel-flow strip on fuel lines | PNG grey (additive) → BC4, mips | 128x128 px; wrap repeat, scrolled along the line | single | launch | generated gradient |
 | `content/textures/fx/fx_glow_round.png` | `fx.glow_round` | Round soft glow: Worker glow, blob shadows, lights, Essence orb glow, Core Device, Solar Array | PNG grey (additive) → BC4, mips | 128x128 px; also drawn as a darkening blob shadow | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_beam_long.png` | `fx.beam_long` | Long beam strip: Launch Race status panel, Control Zone edge, Core Device pulse wave | PNG grey (additive) → BC4, mips | 128x32 px | single | launch | generated gradient |
-| `content/textures/fx/fx_beam_short.png` | `fx.beam_short` | Beam strip: laser bolts, the sky grid lines and front-end decoration | PNG grey (additive) → BC4, mips | 128x32 px; wrap repeat for the sky grid; drawn without mips by the sky and laser-bolt passes | single | skirmish-first-playable | generated gradient |
+| `content/textures/fx/fx_beam_short.png` | `fx.beam_short` | Beam strip: laser bolts, the sky grid lines and front-end decoration | PNG grey (additive) → BC4, mips | 128x32 px; the sky grid samples it with the linear clamp-to-edge sampler through all mip levels (RND-151); the laser-bolt pass reads its `level0` view (RND-339) | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_barrier_field.png` | `fx.barrier_field` | Barrier Emitter field and the base layer of the Beam Dish signal | PNG grey (additive) → BC4, mips | 128x128 px; wrap repeat | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_barrier_field_wide.png` | `fx.barrier_field_wide` | Wide Barrier Emitter field strip | PNG grey (additive) → BC4, mips | 256x64 px; wrap repeat | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_lightning_strip.png` | `fx.lightning_strip` | Lightning-strike strip (map effect) | PNG grey (additive) → BC4, mips | 64x256 px | single | launch | generated gradient |
 | `content/textures/fx/fx_muzzle_flash.png` | `fx.muzzle_flash` | Muzzle flash for turrets and units; also the Launch Race status panel | PNG grey (additive) → BC4, mips | 64x64 px | single | skirmish-first-playable | generated gradient |
-| `content/textures/fx/fx_particle_dot.png` | `fx.particle_dot` | Particle dot: particle pool, cursor formation preview, off-screen arrows, route lines | PNG grey (additive) → BC4, mips | 16x16 px; MAG NEAREST (crisp pixels) in particle batches | single | skirmish-first-playable | generated gradient |
+| `content/textures/fx/fx_particle_dot.png` | `fx.particle_dot` | Particle dot: particle pool, cursor formation preview, off-screen arrows, route lines | PNG grey (additive) → BC4, mips | 16x16 px; magnified with crisp pixels in the particle batches through the point-magnify clamp-to-edge sampler (ADR-0018) | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_dish_signal.png` | `fx.dish_signal` | Beam Dish signal beam, combined with the barrier field texture | PNG grey (additive) → BC4, mips | 128x128 px; wrap repeat; two-texture beam | single | launch | generated gradient |
-| `content/textures/fx/fx_shard_edges.png` | `fx.shard_edges` | Edge-line pattern decaled on shatter shards | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; decal over the shard colour where alpha is set | single | skirmish-first-playable | generated figure |
+| `content/textures/fx/fx_shard_edges.png` | `fx.shard_edges` | Edge-line art reference for the shatter shards: not sampled at run time, because the shard edge lines come from a barycentric mask (VFX-229, ADR-0010); it fixes the look the mask reproduces | PNG RGBA8 (cut-out) → BC7 sRGB, mips | 128x128 px; decal over the shard colour where alpha is set | single | skirmish-first-playable | generated figure |
 | `content/textures/fx/fx_starburst.png` | `fx.starburst` | Star flare on structure lights and manning ports | PNG grey (additive) → BC4, mips | 128x128 px | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_convert_beam.png` | `fx.convert_beam` | Convert beam strip | PNG grey (additive) → BC4, mips | 128x32 px | single | launch | generated gradient |
 | `content/textures/fx/fx_tree_canopy.png` | `fx.tree_canopy` | Tree canopy mask, tinted per tree | PNG grey (mask) → BC4, mips | 128x32 px | single | skirmish-first-playable | generated gradient |
 | `content/textures/fx/fx_terrain_grid.png` | `fx.terrain_grid` | Triangle wire-grid overlay drawn once per terrain cell over the terrain and the sea | PNG grey (additive) → BC4, mips | 128x128 px; wrap repeat, one repeat per terrain cell | single | skirmish-first-playable | generated gradient |
+| `content/textures/fx/fx_abductor_beam_ring.png` | `fx.abductor_beam_ring` | Beam ring of the Abductor's tractor beam: stacked rings in the Visitor faction colour, scrolling up while Abducting and down while Dropping (R-UNIT-710); drawn with `actor_beam_alpha` | PNG grey (mask) → BC4, mips | 128x32 px; one soft ring band across v; wrap repeat around the ring (u) | single | launch | generated gradient |
 
 ## 6 UI panels and title
 
-Front-end and window art. The palette is new; it keeps the token roles of the reference (an accent panel, a neutral panel, a highlight). UI pictures keep exact pixels: no mip-maps, linear filtering. Brief: [art_and_audio_briefs.md](art_and_audio_briefs.md#5-ui-panels-title-and-logo).
+Front-end and window art. The palette is new; it keeps the token roles of the reference (an accent panel, a neutral panel, a highlight). UI pictures keep exact pixels: no mip-maps, linear filtering. Authored sizes are multiples of 4 (ADR-0017). Brief: [art_and_audio_briefs.md](art_and_audio_briefs.md#5-ui-panels-title-and-logo).
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
@@ -237,15 +265,21 @@ Front-end and window art. The palette is new; it keeps the token roles of the re
 | `content/textures/ui/ui_panel_accent.png` | `uitex.panel_accent` | Accent panel strip for windows and the power-slot panel (new palette, same token role) | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x510 px display size; author at 2x (128x1020) | single | skirmish-first-playable | generated panel |
 | `content/textures/ui/ui_studio_splash.png` | `uitex.studio_splash` | Studio mark on the loading view (placeholder until the studio mark exists) | PNG RGB8 → BC7 sRGB, no mips | 600x600 px display size; author at 2x (1200x1200) | single | launch | generated panel |
 | `content/textures/ui/ui_menu_highlight.png` | `uitex.menu_highlight` | Highlight beam behind the focused menu item | PNG grey (additive) → BC4, mips | 256x64 px display size; author at 2x (512x128); wrap repeat | single | skirmish-first-playable | generated gradient |
-| `content/textures/ui/ui_logo_banner.png` | `uitex.logo_banner` | Large title logo on the main menu | PNG RGB8 → BC7 sRGB, no mips | 394x149 px display size; author at 2x (788x298) | single | launch | generated panel |
-| `content/textures/ui/ui_title_wordmark.png` | `uitex.title_wordmark` | Title wordmark (new logo) | PNG RGBA8 → BC7 sRGB, no mips | 659x122 px display size; author at 2x (1318x244) | single | skirmish-first-playable | generated panel |
-| `content/textures/ui/ui_logo_emblem.png` | `uitex.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 277x194 px display size; author at 2x (554x388); wrap repeat where tiled | single | launch | generated panel |
+| `content/textures/ui/ui_logo_banner.png` | `uitex.logo_banner` | Large title logo on the main menu; no rule of a reference match draws it | PNG RGB8 → BC7 sRGB, no mips | 394x150 px display size; author at 2x (788x300) | single | post-launch | generated panel |
+| `content/textures/ui/ui_title_wordmark.png` | `uitex.title_wordmark` | Title wordmark (new logo) | PNG RGBA8 → BC7 sRGB, no mips | 660x122 px display size; author at 2x (1320x244) | single | skirmish-first-playable | generated panel |
+| `content/textures/ui/ui_logo_emblem.png` | `uitex.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 278x194 px display size; author at 2x (556x388); wrap repeat where tiled | single | launch | generated panel |
 | `content/textures/ui/ui_icon_locked.png` | `uitex.icon_locked` | Lock icon on password-protected match entries | PNG RGBA8 → BC7 sRGB, no mips | 20x20 px display size; author at 2x (40x40) | single | launch | generated panel |
 | `content/textures/ui/ui_icon_check.png` | `uitex.icon_check` | Check-box tick | PNG RGBA8 → BC7 sRGB, no mips | 50x50 px display size; author at 2x (100x100) | single | skirmish-first-playable | generated panel |
 | `content/textures/ui/ui_difficulty_basic.png` | `uitex.difficulty_badge` | Map difficulty badge (basic, intermediate, advanced) on mode and map buttons | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 1 of 3 | launch | generated panel |
 | `content/textures/ui/ui_difficulty_intermediate.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 2 of 3 | launch | generated panel |
 | `content/textures/ui/ui_difficulty_advanced.png` | `uitex.difficulty_badge` | ″ | PNG RGBA8 → BC7 sRGB, no mips | 64x32 px display size; author at 2x (128x64) | 3 of 3 | launch | generated panel |
 | `content/textures/ui/ui_backdrop_wheel.png` | `uitex.backdrop_wheel` | Large decorative wheel behind the front-end backdrop figure (new presentation) | PNG RGB8 → BC7 sRGB, no mips | 426x406 px display size; author at 2x (852x812) | single | launch | generated panel |
+| `content/textures/ui/ui_app_icon_01.png` | `uitex.app_icon` | Application icon: the executable's icon resource, also the window icon (PLT-057); one member per icon size | PNG RGBA8 per size → icon resource in the executable | 16x16 px, icon size 1 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 1 of 6 | skirmish-first-playable | generated glyph |
+| `content/textures/ui/ui_app_icon_02.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 24x24 px, icon size 2 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 2 of 6 | skirmish-first-playable | generated glyph |
+| `content/textures/ui/ui_app_icon_03.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 32x32 px, icon size 3 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 3 of 6 | skirmish-first-playable | generated glyph |
+| `content/textures/ui/ui_app_icon_04.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 48x48 px, icon size 4 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 4 of 6 | skirmish-first-playable | generated glyph |
+| `content/textures/ui/ui_app_icon_05.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 64x64 px, icon size 5 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 5 of 6 | skirmish-first-playable | generated glyph |
+| `content/textures/ui/ui_app_icon_06.png` | `uitex.app_icon` | ″ | PNG RGBA8 per size → icon resource in the executable | 256x256 px, icon size 6 of 6 (member order 16, 24, 32, 48, 64, 256 px); drawn for its own size | 6 of 6 | skirmish-first-playable | generated glyph |
 
 ## 7 HUD, supply-crate and power icons
 
@@ -290,20 +324,21 @@ Power and Supply-crate outcome icons and the power-slot panel read-outs. Icons a
 
 ## 8 Cursors and markers
 
-World and menu cursors, off-screen and ground markers, Leader banners and Flag Chain flags. The runtime blurs cursors and markers into darkening shadows; banners and flags paint the team area pure red. Brief: [art_and_audio_briefs.md](art_and_audio_briefs.md#7-cursors-and-markers).
+World and menu cursors, off-screen and ground markers, Leader banners and Flag Chain flags. The cooker derives the blurred darkening shadows of the shadowed cursors and of the crate landing and barrage markers offline, as derived variants; banners and flags carry the team area as grey levels, with a companion tint mask each. Brief: [art_and_audio_briefs.md](art_and_audio_briefs.md#7-cursors-and-markers).
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/icons/cursors/cursor_world.png` | `cursor.world` | Default world cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256); blurred darkening shadow generated at run time | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/cursors/cursor_world.png` | `cursor.world` | Default world cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256); its blurred darkening shadow is the derived variant `cursor.world.shadow`, produced offline by the cooker | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_highlight.png` | `cursor.highlight` | Cursor over a selectable unit; also the power-slot screen-zone highlight | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_select.png` | `cursor.select` | Selection cursor; also the power-slot screen-zone highlight | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_move_target.png` | `cursor.move_target` | Move-here cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/cursors/cursor_place.png` | `cursor.place` | Placement cursor for powers that place a structure | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/cursors/cursor_place.png` | `cursor.place` | Placement cursor for powers that place a structure; also the entering marker drawn at the entrance of a Transport or a Beam Dish (R-CTRL-371) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_enter.png` | `cursor.enter` | Enter cursor over a Transport or a gate | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_unavailable.png` | `cursor.unavailable` | Unavailable cursor; also the kick-player button and invalid power targets | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/cursors/cursor_turret_aim.png` | `cursor.turret_aim` | Turret aiming cursor | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/cursors/cursor_pointer.png` | `cursor.pointer` | Pointer arrow for menus; also the scroll-bar arrow | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128) | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/cursors/cursor_pointer.png` | `cursor.pointer` | Pointer-arrow image of the scroll-bar arrows and the selection arrows; the world cursor `cursor.world` draws the pointer itself (UI-465) | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/markers/marker_edge_compass.png` | `marker.edge_compass` | Off-screen compass marker and power-slot compass | PNG RGBA8 (white art) → BC7 sRGB, mips | 256x256 px | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/markers/marker_edge_compass_empty.png` | `marker.edge_compass_empty` | Empty compass: the compass ring that the compass layer of an on-screen world marker draws instead of the arrow (RND-357) | PNG RGBA8 (white art) → BC7 sRGB, mips | 256x256 px; the compass ring with no arrow | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/markers/marker_edge_compass_shadow.png` | `marker.edge_compass_shadow` | Shadow for the off-screen compass marker | PNG grey (mask) → BC4, mips | 256x256 px | single | skirmish-first-playable | generated gradient |
 | `content/textures/icons/markers/marker_team_disc.png` | `marker.team_disc` | Team-coloured disc under off-screen markers and power slots | PNG grey (mask) → BC4, mips | 128x128 px | single | skirmish-first-playable | generated gradient |
 | `content/textures/icons/markers/marker_team_disc_shadow.png` | `marker.team_disc_shadow` | Shadow for the team disc | PNG grey (mask) → BC4, mips | 128x128 px | single | skirmish-first-playable | generated gradient |
@@ -314,14 +349,32 @@ World and menu cursors, off-screen and ground markers, Leader banners and Flag C
 | `content/textures/icons/markers/marker_flag_pointer.png` | `marker.flag_pointer` | Pointer drawn on a cloth flag | PNG RGBA8 → BC7 sRGB, mips | 64x64 px | single | skirmish-first-playable | generated figure |
 | `content/textures/icons/markers/marker_jump_pad.png` | `marker.jump_pad` | Direction arrow on a jump pad | PNG RGBA8 → BC7 sRGB, mips | 64x64 px; wrap repeat, scrolled | single | skirmish-first-playable | generated figure |
 | `content/textures/icons/markers/marker_order_trail.png` | `marker.order_trail` | Order trail mark left by a Leader's order | PNG RGBA8 → BC7 sRGB, mips | 64x64 px | single | skirmish-first-playable | generated figure |
-| `content/textures/icons/markers/leader_banner_idle.png` | `marker.leader_banner` | Leader banner per order state: idle, follow, formation, gather | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 1 of 4 | skirmish-first-playable | generated glyph |
-| `content/textures/icons/markers/leader_banner_follow.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 2 of 4 | skirmish-first-playable | generated glyph |
-| `content/textures/icons/markers/leader_banner_formation.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 3 of 4 | skirmish-first-playable | generated glyph |
-| `content/textures/icons/markers/leader_banner_gather.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 4 of 4 | skirmish-first-playable | generated glyph |
-| `content/textures/icons/markers/flag_post_neutral.png` | `marker.flag_post_state` | Flag Chain flag per state: neutral, lowered, locked, raised | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 1 of 4 | launch | generated glyph |
-| `content/textures/icons/markers/flag_post_lowered.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 2 of 4 | launch | generated glyph |
-| `content/textures/icons/markers/flag_post_locked.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 3 of 4 | launch | generated glyph |
-| `content/textures/icons/markers/flag_post_raised.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team red) → BC7 sRGB, mips, per-team | 64x64 px; cloth texture; team area pure red | 4 of 4 | launch | generated glyph |
+| `content/textures/icons/markers/leader_banner_idle.png` | `marker.leader_banner` | Leader banner per order state: idle, follow, formation, gather (no in-scope rule draws gather; it keeps the state order complete) | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.leader_banner_tint` | 1 of 4 | skirmish-first-playable | generated glyph |
+| `content/textures/icons/markers/leader_banner_follow.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.leader_banner_tint` | 2 of 4 | skirmish-first-playable | generated glyph |
+| `content/textures/icons/markers/leader_banner_formation.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.leader_banner_tint` | 3 of 4 | skirmish-first-playable | generated glyph |
+| `content/textures/icons/markers/leader_banner_gather.png` | `marker.leader_banner` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.leader_banner_tint` | 4 of 4 | skirmish-first-playable | generated glyph |
+| `content/textures/icons/markers/leader_banner_idle_tint.png` | `marker.leader_banner_tint` | Companion tint mask of `marker.leader_banner`, one per member in the parent's order: the team-tint weight of the cloth, 1 where the team colour applies fully (AST-022, ADR-0020) | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 1 of 4 | skirmish-first-playable | full-weight mask |
+| `content/textures/icons/markers/leader_banner_follow_tint.png` | `marker.leader_banner_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 2 of 4 | skirmish-first-playable | full-weight mask |
+| `content/textures/icons/markers/leader_banner_formation_tint.png` | `marker.leader_banner_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 3 of 4 | skirmish-first-playable | full-weight mask |
+| `content/textures/icons/markers/leader_banner_gather_tint.png` | `marker.leader_banner_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 4 of 4 | skirmish-first-playable | full-weight mask |
+| `content/textures/icons/markers/flag_post_neutral.png` | `marker.flag_post_state` | Flag Chain flag per state: neutral, lowered, locked, raised | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.flag_post_state_tint` | 1 of 4 | launch | generated glyph |
+| `content/textures/icons/markers/flag_post_lowered.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.flag_post_state_tint` | 2 of 4 | launch | generated glyph |
+| `content/textures/icons/markers/flag_post_locked.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.flag_post_state_tint` | 3 of 4 | launch | generated glyph |
+| `content/textures/icons/markers/flag_post_raised.png` | `marker.flag_post_state` | ″ | PNG RGBA8 (team area grey) → BC7 sRGB, mips; tint mask | 64x64 px; cloth texture; team area as grey levels, with its companion tint mask `marker.flag_post_state_tint` | 4 of 4 | launch | generated glyph |
+| `content/textures/icons/markers/flag_post_neutral_tint.png` | `marker.flag_post_state_tint` | Companion tint mask of `marker.flag_post_state`, one per member in the parent's order: the team-tint weight of the cloth, 1 where the team colour applies fully (AST-022, ADR-0020) | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 1 of 4 | launch | full-weight mask |
+| `content/textures/icons/markers/flag_post_lowered_tint.png` | `marker.flag_post_state_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 2 of 4 | launch | full-weight mask |
+| `content/textures/icons/markers/flag_post_locked_tint.png` | `marker.flag_post_state_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 3 of 4 | launch | full-weight mask |
+| `content/textures/icons/markers/flag_post_raised_tint.png` | `marker.flag_post_state_tint` | ″ | PNG grey (mask) → BC4, mips | 64x64 px, the size of its parent member | 4 of 4 | launch | full-weight mask |
+| `content/textures/icons/markers/marker_route_arrow.png` | `marker.route_arrow` | Arrow head drawn along each leg of a route line, pointing in the route's direction, in the colour of the route's spots (RND-353) | PNG RGBA8 (white art) → BC7 sRGB, mips | 32x32 px; white arrow head pointing along +u | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/cursors/cursor_world@shadow` | `cursor.world.shadow` | Blurred darkening shadow of `cursor.world`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.world` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_place@shadow` | `cursor.place.shadow` | Blurred darkening shadow of `cursor.place`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.place` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_unavailable@shadow` | `cursor.unavailable.shadow` | Blurred darkening shadow of `cursor.unavailable`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.unavailable` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_move_target@shadow` | `cursor.move_target.shadow` | Blurred darkening shadow of `cursor.move_target`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.move_target` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_highlight@shadow` | `cursor.highlight.shadow` | Blurred darkening shadow of `cursor.highlight`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.highlight` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_select@shadow` | `cursor.select.shadow` | Blurred darkening shadow of `cursor.select`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.select` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/cursors/cursor_enter@shadow` | `cursor.enter.shadow` | Blurred darkening shadow of `cursor.enter`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `cursor.enter` → BC4, mips | 128x128 px display size; author at 2x (256x256), the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/markers/marker_crate_landing@shadow` | `marker.crate_landing.shadow` | Blurred darkening shadow of `marker.crate_landing`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `marker.crate_landing` → BC4, mips | 128x128 px, the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | skirmish-first-playable | derived by the cooker |
+| `content/textures/icons/markers/marker_barrage_target@shadow` | `marker.barrage_target.shadow` | Blurred darkening shadow of `marker.barrage_target`, a derived variant produced offline by the cooker (`BlurredShadow`, AST-029, RND-243) | derived from `marker.barrage_target` → BC4, mips | 128x128 px, the size of its parent; separable five-tap blur (2, 4, 7, 4, 2) scaled by `rnd.shadow.icon_blur_radius` (RND-422) | single | launch | derived by the cooker |
 
 ## 9 Input glyphs
 
@@ -342,6 +395,12 @@ Platform-neutral input glyphs: shapes and labels describe the position of a cont
 | `content/textures/icons/input/glyph_pad_trigger_right.png` | `glyph.pad.trigger_right` | Gamepad right trigger | PNG RGBA8 (white art) → BC7 sRGB, mips | 50x50 px display size; author at 2x (100x100) | single | launch | generated glyph |
 | `content/textures/icons/input/glyph_pad_trigger_shadow.png` | `glyph.pad.trigger_shadow` | Darkening shadow under trigger glyphs | PNG grey (darkening) → BC4, mips | 50x50 px display size; author at 2x (100x100) | single | launch | generated gradient |
 | `content/textures/icons/input/glyph_key_tab.png` | `glyph.key.tab` | Keyboard Tab key on the power-slot panel | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
+| `content/textures/icons/input/glyph_pad_stick_left.png` | `glyph.pad.stick_left` | Gamepad left stick glyph (INP-081) | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128); platform-neutral shape and label; no console trade dress | single | launch | generated glyph |
+| `content/textures/icons/input/glyph_pad_stick_left_shadow.png` | `glyph.pad.stick_left_shadow` | Darkening shadow under the left stick glyph | PNG grey (darkening) → BC4, mips | 64x64 px display size; author at 2x (128x128) | single | launch | generated gradient |
+| `content/textures/icons/input/glyph_pad_stick_right.png` | `glyph.pad.stick_right` | Gamepad right stick glyph (INP-081) | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128); platform-neutral shape and label; no console trade dress | single | launch | generated glyph |
+| `content/textures/icons/input/glyph_pad_stick_right_shadow.png` | `glyph.pad.stick_right_shadow` | Darkening shadow under the right stick glyph | PNG grey (darkening) → BC4, mips | 64x64 px display size; author at 2x (128x128) | single | launch | generated gradient |
+| `content/textures/icons/input/glyph_pad_dpad_horizontal.png` | `glyph.pad.dpad_horizontal` | Gamepad d-pad, left and right glyph (INP-081) | PNG RGBA8 (white art) → BC7 sRGB, mips | 64x64 px display size; author at 2x (128x128); platform-neutral shape and label; no console trade dress | single | launch | generated glyph |
+| `content/textures/icons/input/glyph_pad_dpad_horizontal_shadow.png` | `glyph.pad.dpad_horizontal_shadow` | Darkening shadow under the d-pad, left and right glyph | PNG grey (darkening) → BC4, mips | 64x64 px display size; author at 2x (128x128) | single | launch | generated gradient |
 
 ## 10 Terrain ramps, water and waves
 
@@ -349,19 +408,19 @@ Ramps and wave gradients are CPU look-up tables, not GPU textures: the terrain b
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/terrain/terrain_ramp_{01..14}.png` (14 files) | `terrain.ramp` | Terrain colour ramp: colour by slope (x) and height (y), read on the CPU when the terrain mesh is built | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 64x64 px; x = slope, y = height | 14 | skirmish-first-playable: 1<br>launch: 13 | generated ramp |
+| `content/textures/terrain/terrain_ramp_{01..14}.png` (14 files) | `terrain.ramp` | Terrain colour ramp: colour by slope (x) and height (y), read on the CPU when the terrain mesh is built | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 64x64 px; x = slope (column 0 flat ground, column 63 vertical); y = height, the look-up row counted from the bottom row of the image as viewed: the bottom row is the highest terrain, the top row sea level and below (TER-040); the content build rejects another size (TER-250) | 14 | skirmish-first-playable: 1<br>launch: 13 | generated ramp |
 | `content/textures/terrain/sea_tile_{01..04}.png` (4 files) | `terrain.sea_tile` | Sea surface tile (repeated, multiplied by the sea light map) | PNG RGB8 (seamless) → BC7 sRGB, mips, repeat | 128x128 px; wrap repeat | 4 | skirmish-first-playable: 1<br>launch: 3 | generated noise tile |
-| `content/textures/terrain/shore_wave_gradient_{01..08}.png` (8 files) | `terrain.shore_wave_gradient` | Shore-wave colour gradient: one row read on the CPU by the sea renderer | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 400x10 px; the wave colour runs along x | 8 | skirmish-first-playable: 1<br>launch: 7 | generated ramp |
+| `content/textures/terrain/shore_wave_gradient_{01..08}.png` (8 files) | `terrain.shore_wave_gradient` | Shore-wave colour gradient: one row read on the CPU by the sea renderer | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 400x10 px; the wave colours are pixel row 1 counted from the bottom row of the image as viewed, one colour per column (TER-041) | 8 | skirmish-first-playable: 1<br>launch: 7 | generated ramp |
 
 ## 11 Meshes
 
-Flat-shaded low-poly meshes with per-face colours. Parts that take the team colour are painted "mostly red" (red more than twice green and twice blue) on the root node and its direct children; the renderer recolours them. Code fetches sockets by name, so every socket of a row must exist with exactly that name, as an empty node in the `.glb`. Budgets are the triangle counts of the reference meshes and are upper limits. Formats: `.glb` (glTF 2.0 binary) → cooked Species mesh; placeholder: primitive mesh with sockets.
+Flat-shaded low-poly meshes with per-face colours. Parts that take the team colour carry explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-0020). The renderer tints them in the shader and nothing is recoloured at load; an authoring helper may propose weights for art made in the "mostly red" key-colour style (red more than twice green and twice blue), which the artist reviews. Code fetches sockets by name, so every socket of a row must exist with exactly that name, as an empty node in the `.glb`. Budgets are the triangle counts of the reference meshes and are upper limits. Formats: `.glb` (glTF 2.0 binary) → cooked Species mesh, colours attenuated once at cook (RND-160); placeholder: primitive mesh with sockets. Indexed sockets are numbered from 01 without gaps (AST-038).
 
 **Socket vocabulary.** `port_NN` manning slot where a Worker stands to operate a structure; `light_NN` lamp or flare; `status_NN` status light per port; `muzzle_NN` barrel end where shots start; `casing_eject_NN` where spent casings leave; `barrel_mount` where a barrel attaches; `kill_counter` kill read-out; `carry` carry point; `leg_NN` leg root; `segment_end` end of a leg part; `engine_NN` engine glow; `essence_link` end point of an essence link; `tail_NN` tail attachment; `gate_exit_NN` destination point of a gate; `gate_surface` gate surface centre; `gate_entrance` where units enter; `door` exit for spawned units; `fuel_point` fuel connection; `glow_NN` panel glow; `grab_NN` lift points; `egg_spawn` and `egg_lay` egg release points; `entrance` boarding point; `flag` flag pole tip; `grid_link` energy-grid connection; `beam_focus` beam origin; `window_NN` lit window; `thruster` engine exhaust; `field_anchor_NN` field end points; `eye_NN` eye glints; `launch_point` pod launch point; `stem` stem attachment; `arm_tip` pump-arm tip; `dish_direction` dish aiming point. Numbers keep their reference base: leg sockets count from 00, the others from 01.
 
 | Species file | Asset id | Role | Spec (budget, nodes, sockets) | Variants | Priority |
 |---|---|---|---|---|---|
-| `content/meshes/units/worker_figure.glb` | `mesh.unit.worker_figure` | Worker 3-D figure (team-recoloured mesh with a flag socket) | <= 76 triangles budget; 1 node, depth 1; sockets: flag | single | launch |
+| `content/meshes/units/worker_figure.glb` | `mesh.unit.worker_figure` | Worker 3-D figure (team-tinted mesh with a flag socket) | <= 76 triangles budget; 1 node, depth 1; sockets: flag | single | launch |
 | `content/meshes/units/leader_figure.glb` | `mesh.unit.leader_figure` | Leader figure carrying its banner | <= 76 triangles budget; 1 node, depth 1; sockets: flag | single | skirmish-first-playable |
 | `content/meshes/units/trooper_figure.glb` | `mesh.unit.trooper_figure` | Trooper figure | <= 1036 triangles budget; 2 nodes, depth 1; sockets: casing_eject, eye_01, eye_02, muzzle | single | skirmish-first-playable |
 | `content/meshes/units/builder_body.glb` | `mesh.unit.builder_body` | Builder body | <= 72 triangles budget; 1 node, depth 1; sockets: none | single | launch |
@@ -377,7 +436,7 @@ Flat-shaded low-poly meshes with per-face colours. Parts that take the team colo
 | `content/meshes/creatures/ant_body_03.glb` | `mesh.creature.ant_body` | ″ | <= 56 triangles budget; 1 node, depth 1; sockets: carry | 3 of 3 | launch |
 | `content/meshes/creatures/centipede_segment.glb` | `mesh.creature.centipede_segment` | centipede body segment | <= 40 triangles budget; 2 nodes, depth 1; sockets: none | single | launch |
 | `content/meshes/creatures/centipede_head_segment.glb` | `mesh.creature.centipede_head_segment` | centipede head segment | <= 56 triangles budget; 4 nodes, depth 1; sockets: none | single | launch |
-| `content/meshes/creatures/spider_body.glb` | `mesh.creature.spider_body` | spider body with eight leg sockets | <= 132 triangles budget; 1 node, depth 1; sockets: egg_lay, leg_00, leg_01, leg_02, leg_03, leg_04, leg_05, leg_06, leg_07 | single | launch |
+| `content/meshes/creatures/spider_body.glb` | `mesh.creature.spider_body` | spider body with eight leg sockets | <= 132 triangles budget; 1 node, depth 1; sockets: egg_lay, leg_01, leg_02, leg_03, leg_04, leg_05, leg_06, leg_07, leg_08 | single | launch |
 | `content/meshes/creatures/spider_thigh.glb` | `mesh.creature.spider_thigh` | spider upper leg part (procedural leg) | <= 84 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
 | `content/meshes/creatures/spider_shin.glb` | `mesh.creature.spider_shin` | spider lower leg part (procedural leg) | <= 66 triangles budget; 1 node, depth 1; sockets: segment_end | single | launch |
 | `content/meshes/creatures/reaper_serpent_head.glb` | `mesh.creature.reaper_serpent_head` | Reaper Serpent head | <= 38 triangles budget; 1 node, depth 1; sockets: tail | single | launch |
@@ -416,7 +475,7 @@ Flat-shaded low-poly meshes with per-face colours. Parts that take the team colo
 | `content/meshes/structures/wall_section.glb` | `mesh.structure.wall_section` | wall section | <= 332 triangles budget; 3 nodes, depth 1; sockets: none | single | skirmish-first-playable |
 | `content/meshes/structures/supply_crate.glb` | `mesh.structure.supply_crate` | Supply crate body | <= 784 triangles budget; 1 node, depth 1; sockets: grab_01, grab_02 | single | skirmish-first-playable |
 | `content/meshes/structures/bot_nav_node.glb` | `mesh.structure.bot_nav_node` | bot navigation node marker | <= 84 triangles budget; 2 nodes, depth 1; sockets: light_01 | single | post-launch |
-| `content/meshes/structures/structure_default.glb` | `mesh.structure.structure_default` | default structure body assigned before a structure sets its own mesh | <= 264 triangles budget; 3 nodes, depth 1; sockets: status | single | post-launch |
+| `content/meshes/structures/structure_default.glb` | `mesh.structure.structure_default` | Port pad: the pad mesh drawn under every port, whose `status` socket places the port's status star (R-BLDG-017, RND-168); also the fallback body drawn when a structure's mesh is missing (RND-163) | <= 264 triangles budget; 3 nodes, depth 1; sockets: status | single | skirmish-first-playable |
 | `content/meshes/relics/relic_01.glb` | `mesh.relic.variant` | Relic, eight interchangeable variants | <= 4244 triangles budget; 3 nodes, depth 1; sockets: none | 1 of 8 | launch |
 | `content/meshes/relics/relic_02.glb` | `mesh.relic.variant` | ″ | <= 9768 triangles budget; 6 nodes, depth 1; sockets: none | 2 of 8 | launch |
 | `content/meshes/relics/relic_03.glb` | `mesh.relic.variant` | ″ | <= 24366 triangles budget; 5 nodes, depth 1; sockets: none | 3 of 8 | launch |
@@ -432,30 +491,70 @@ Flat-shaded low-poly meshes with per-face colours. Parts that take the team colo
 | `content/meshes/scenery/scenery_prop_05.glb` | `mesh.scenery.prop` | ″ | <= 128 triangles budget; 1 node, depth 1; sockets: none | 5 of 7 | launch |
 | `content/meshes/scenery/scenery_prop_06.glb` | `mesh.scenery.prop` | ″ | <= 236 triangles budget; 2 nodes, depth 1; sockets: none | 6 of 7 | launch |
 | `content/meshes/scenery/scenery_prop_07.glb` | `mesh.scenery.prop` | ″ | <= 128 triangles budget; 1 node, depth 1; sockets: none | 7 of 7 | launch |
+| `content/meshes/dev/camera_view.glb` | `mesh.dev.camera_view` | Camera-view marker that the map editor draws at each camera view and uses for picking (R-MAP-322, R-MAP-380); editor builds only | small camera-frustum marker; 1 node; no sockets; few triangles | single | post-launch |
+
+### 11.1 Collision assets
+
+Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../reference/03_buildings_and_world_objects/README.md) R-BLDG-041 to R-BLDG-043), has a collision asset: a separate glTF 2.0 file of triangle primitives with no materials, authored as its own source and never generated from render geometry, cooked into a simulation-relevant `Collision` entry ([asset pipeline](../architecture/components/asset_pipeline_and_resources.md) AST-044). A collision asset has one member per member of its render mesh, in the same order, and the render mesh's import record names it. The structures that the hit tests never read (Launch Vessel, Control Zone, carryable objects, bot navigation nodes and the other kinds of table 2.12-A that are never hit), the jump pad, trees and the socket-only turret mount have none. Placeholder: primitive collision.
+
+| Species file | Asset id | Role | Spec | Variants | Priority |
+|---|---|---|---|---|---|
+| `content/meshes/collision/spawn_node_collision.glb` | `mesh.collision.spawn_node` | Collision asset of `mesh.structure.spawn_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 196 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/spawn_node_alt_collision.glb` | `mesh.collision.spawn_node_alt` | Collision asset of `mesh.structure.spawn_node_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 152 triangles budget | single | post-launch |
+| `content/meshes/collision/source_node_collision.glb` | `mesh.collision.source_node` | Collision asset of `mesh.structure.source_node`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 180 triangles budget | single | launch |
+| `content/meshes/collision/relay_mast_collision.glb` | `mesh.collision.relay_mast` | Collision asset of `mesh.structure.relay_mast`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 152 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/transit_gate_collision.glb` | `mesh.collision.transit_gate` | Collision asset of `mesh.structure.transit_gate`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 192 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/transit_gate_alt_collision.glb` | `mesh.collision.transit_gate_alt` | Collision asset of `mesh.structure.transit_gate_alt`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 292 triangles budget | single | post-launch |
+| `content/meshes/collision/command_console_collision.glb` | `mesh.collision.command_console` | Collision asset of `mesh.structure.command_console`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 308 triangles budget | single | launch |
+| `content/meshes/collision/command_console_linked_collision.glb` | `mesh.collision.command_console_linked` | Collision asset of `mesh.structure.command_console_linked`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 628 triangles budget | single | launch |
+| `content/meshes/collision/core_device_collision.glb` | `mesh.collision.core_device` | Collision asset of `mesh.structure.core_device`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1340 triangles budget | single | launch |
+| `content/meshes/collision/fuel_pump_housing_collision.glb` | `mesh.collision.fuel_pump_housing` | Collision asset of `mesh.structure.fuel_pump_housing`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 252 triangles budget | single | launch |
+| `content/meshes/collision/fuel_line_foot_collision.glb` | `mesh.collision.fuel_line_foot` | Collision asset of `mesh.structure.fuel_line_foot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 96 triangles budget | single | launch |
+| `content/meshes/collision/fuel_depot_collision.glb` | `mesh.collision.fuel_depot` | Collision asset of `mesh.structure.fuel_depot`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 344 triangles budget | single | launch |
+| `content/meshes/collision/solar_array_collision.glb` | `mesh.collision.solar_array` | Collision asset of `mesh.structure.solar_array`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 648 triangles budget | single | launch |
+| `content/meshes/collision/grid_pylon_collision.glb` | `mesh.collision.grid_pylon` | Collision asset of `mesh.structure.grid_pylon`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 96 triangles budget | single | launch |
+| `content/meshes/collision/beam_dish_collision.glb` | `mesh.collision.beam_dish` | Collision asset of `mesh.structure.beam_dish`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 248 triangles budget | single | launch |
+| `content/meshes/collision/barrier_emitter_collision.glb` | `mesh.collision.barrier_emitter` | Collision asset of `mesh.structure.barrier_emitter`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 54 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/turret_head_collision.glb` | `mesh.collision.turret_head` | Collision asset of `mesh.structure.turret_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 114 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_gun_collision.glb` | `mesh.collision.turret_barrel` | Collision asset of `mesh.structure.turret_barrel`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 752 triangles budget | 1 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_rocket_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1528 triangles budget | 2 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_flame_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1344 triangles budget | 3 of 4 | skirmish-first-playable |
+| `content/meshes/collision/turret_barrel_cannon_collision.glb` | `mesh.collision.turret_barrel` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 80 triangles budget | 4 of 4 | skirmish-first-playable |
+| `content/meshes/collision/wall_section_collision.glb` | `mesh.collision.wall_section` | Collision asset of `mesh.structure.wall_section`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 332 triangles budget | single | skirmish-first-playable |
+| `content/meshes/collision/hive_mound_collision.glb` | `mesh.collision.hive_mound` | Collision asset of `mesh.structure.hive_mound`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 396 triangles budget | single | launch |
+| `content/meshes/collision/spitter_plant_head_collision.glb` | `mesh.collision.spitter_plant_head` | Collision asset of `mesh.structure.spitter_plant_head`: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 336 triangles budget | single | launch |
+| `content/meshes/collision/scenery_prop_01_collision.glb` | `mesh.collision.scenery_prop` | Collision asset of `mesh.scenery.prop`, one per member in its order: the hit geometry that the structure's sphere, mesh and ray tests read (R-BLDG-041 to R-BLDG-043, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 36 triangles budget | 1 of 7 | launch |
+| `content/meshes/collision/scenery_prop_02_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1912 triangles budget | 2 of 7 | launch |
+| `content/meshes/collision/scenery_prop_03_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 540 triangles budget | 3 of 7 | launch |
+| `content/meshes/collision/scenery_prop_04_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 1036 triangles budget | 4 of 7 | launch |
+| `content/meshes/collision/scenery_prop_05_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 128 triangles budget | 5 of 7 | launch |
+| `content/meshes/collision/scenery_prop_06_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 236 triangles budget | 6 of 7 | launch |
+| `content/meshes/collision/scenery_prop_07_collision.glb` | `mesh.collision.scenery_prop` | ″ | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 128 triangles budget | 7 of 7 | launch |
+| `content/meshes/collision/abductor_hull_collision.glb` | `mesh.collision.abductor_hull` | Collision asset of `mesh.creature.abductor_hull` where a map places it as a scenery mesh: the hit geometry that the sphere, mesh and ray tests read (R-BLDG-041, R-BLDG-042, R-BLDG-459, AST-044) | triangle primitives only, no materials, no sockets; the nodes of its render member that the hit tests read, at that member's bounds; <= 9028 triangles budget | single | launch |
 
 ## 12 Help images and explainer animations
 
-Help pictures carry no baked text: labels come from the string table, so one picture serves every language. Explainer animations are one script per mode that moves pictures on a canvas for a fixed loop; the scripts are re-authored in the Species explainer format and reference their pictures by asset id. Choreography (what moves when) is new; canvas size and loop length follow the reference.
+Help pictures carry no baked text: labels come from the string table, so one picture serves every language. Explainer animations are one script per mode that moves pictures on a canvas for a fixed loop; the scripts are re-authored in the Species explainer format and reference their pictures by asset id. Choreography (what moves when) is new; canvas size and loop length follow the reference. The explainer panel samples its pictures linearly with mip-maps (R-META-231), so they carry full mip chains. The objective-card hint pictures are hook art: no rule of a reference match draws them (DEC-050, R-TUT-013).
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/help/hint_start_here.png` | `help.hint.start_here` | Hint: where the player starts (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_spawn_nodes.png` | `help.hint.spawn_nodes` | Hint: capturing Spawn Nodes (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_reinforcements.png` | `help.hint.reinforcements` | Hint: reinforcements (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_supply_crates.png` | `help.hint.supply_crates` | Hint: Supply crates (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_zone_control.png` | `help.hint.zone_control` | Hint: holding Control Zones (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_relic_run_capture.png` | `help.hint.relic_run_capture` | Hint: bringing a Relic home (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_relic_run_lift.png` | `help.hint.relic_run_lift` | Hint: lifting a Relic (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_siege_core_device.png` | `help.hint.siege_core_device` | Hint: the Core Device (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_siege_attack.png` | `help.hint.siege_attack` | Hint: attacking in Siege (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_siege_defend.png` | `help.hint.siege_defend` | Hint: defending in Siege (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_siege_spawn_nodes.png` | `help.hint.siege_spawn_nodes` | Hint: Spawn Nodes in Siege (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_siege_breach_charge.png` | `help.hint.siege_breach_charge` | Hint: the Breach Charge (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_launch_race_01.png` | `help.hint.launch_race_01` | Hint: fuelling a Launch Vessel (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_launch_race_02.png` | `help.hint.launch_race_02` | Hint: launching (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_flag_chain_01.png` | `help.hint.flag_chain_01` | Hint: the flag chain (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_flag_chain_02.png` | `help.hint.flag_chain_02` | Hint: attacking a flag (hint overlay picture) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | launch | diagram card |
-| `content/textures/help/hint_camera_controls.png` | `help.hint.camera_controls` | Hint: camera controls, shown during the grace period; text labels come from the string table | PNG RGBA8 → BC7 sRGB, no mips | 512x128 px display size; author at 2x (1024x256) | single | launch | diagram card |
+| `content/textures/help/hint_start_here.png` | `help.hint.start_here` | Hint: where the player starts (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_spawn_nodes.png` | `help.hint.spawn_nodes` | Hint: capturing Spawn Nodes (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_reinforcements.png` | `help.hint.reinforcements` | Hint: reinforcements (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_supply_crates.png` | `help.hint.supply_crates` | Hint: Supply crates (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_zone_control.png` | `help.hint.zone_control` | Hint: holding Control Zones (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_relic_run_capture.png` | `help.hint.relic_run_capture` | Hint: bringing a Relic home (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_relic_run_lift.png` | `help.hint.relic_run_lift` | Hint: lifting a Relic (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_siege_core_device.png` | `help.hint.siege_core_device` | Hint: the Core Device (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_siege_attack.png` | `help.hint.siege_attack` | Hint: attacking in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_siege_defend.png` | `help.hint.siege_defend` | Hint: defending in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_siege_spawn_nodes.png` | `help.hint.siege_spawn_nodes` | Hint: Spawn Nodes in Siege (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_siege_breach_charge.png` | `help.hint.siege_breach_charge` | Hint: the Breach Charge (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_launch_race_01.png` | `help.hint.launch_race_01` | Hint: fuelling a Launch Vessel (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_launch_race_02.png` | `help.hint.launch_race_02` | Hint: launching (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_flag_chain_01.png` | `help.hint.flag_chain_01` | Hint: the flag chain (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_flag_chain_02.png` | `help.hint.flag_chain_02` | Hint: attacking a flag (hint overlay picture); objective-card hook art: no rule draws it in a reference match (DEC-050, R-TUT-013) | PNG RGB8 → BC7 sRGB, no mips | 200x200 px display size; author at 2x (400x400) | single | post-launch | diagram card |
+| `content/textures/help/hint_camera_controls.png` | `help.hint.camera_controls` | Hint: camera controls, shown during the grace period; text labels come from the string table | PNG RGBA8 → BC7 sRGB, no mips | 304x128 px display size; author at 2x (608x256) | single | launch | diagram card |
 | `content/textures/help/mode_card_spawn_control.png` | `help.mode_card` | Mode card on the mode-select buttons, one per mode | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Spawn Control | 1 of 6 | skirmish-first-playable | diagram card |
 | `content/textures/help/mode_card_zone_control.png` | `help.mode_card` | ″ | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Zone Control | 2 of 6 | launch | diagram card |
 | `content/textures/help/mode_card_relic_run.png` | `help.mode_card` | ″ | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Relic Run | 3 of 6 | launch | diagram card |
@@ -464,7 +563,7 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 | `content/textures/help/mode_card_flag_chain.png` | `help.mode_card` | ″ | PNG RGB8 → BC7 sRGB, no mips | 300x200 px display size; author at 2x (600x400); Flag Chain | 6 of 6 | launch | diagram card |
 | `content/textures/help/help_general_page_01.png` | `help.general_page` | General help page picture, pages 1-5 | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 1 of 5 | launch | diagram card |
 | `content/textures/help/help_general_page_02.png` | `help.general_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 2 of 5 | launch | diagram card |
-| `content/textures/help/help_general_page_03.png` | `help.general_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x149 px display size; author at 2x (300x298) | 3 of 5 | launch | diagram card |
+| `content/textures/help/help_general_page_03.png` | `help.general_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 3 of 5 | launch | diagram card |
 | `content/textures/help/help_general_page_04.png` | `help.general_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 4 of 5 | launch | diagram card |
 | `content/textures/help/help_general_page_05.png` | `help.general_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 5 of 5 | launch | diagram card |
 | `content/textures/help/help_spawn_control_page_01.png` | `help.mode_page` | Per-mode help page picture (pages per mode: Spawn Control 1, Zone Control 2, Relic Run 3, Siege 3, Launch Race 4, Flag Chain 3) | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 1 of 16 | launch | diagram card |
@@ -483,31 +582,31 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 | `content/textures/help/help_flag_chain_page_01.png` | `help.mode_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 14 of 16 | launch | diagram card |
 | `content/textures/help/help_flag_chain_page_02.png` | `help.mode_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 15 of 16 | launch | diagram card |
 | `content/textures/help/help_flag_chain_page_03.png` | `help.mode_page` | ″ | PNG RGB8 → BC7 sRGB, no mips | 150x150 px display size; author at 2x (300x300) | 16 of 16 | launch | diagram card |
-| `content/textures/help/explainer/explainer_transport.png` | `help.explainer_picture` | Picture animated by the explainer scripts | PNG RGBA8 → BC7 sRGB, no mips | Transport; 128x80 px; used by Launch Race | 1 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_glow.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | soft glow; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 2 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_worker.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Worker figure; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 3 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_worker_hurt.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | hurt Worker; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 4 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_flag_neutral.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | neutral flag; 64x64 px; used by Flag Chain | 5 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_flag_lowered.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | lowered flag; 64x64 px; used by Flag Chain | 6 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_flag_locked.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | locked flag; 64x64 px; used by Flag Chain | 7 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_flag_raised.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | raised flag; 64x64 px; used by Flag Chain | 8 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_fuel_pump.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | fuel pump; 181x256 px; used by Launch Race | 9 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_fuel_pump_arm.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | fuel pump arm; 50x256 px; used by Flag Chain, Launch Race | 10 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_island_shape.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | island outline; 256x128 px; used by Launch Race | 11 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_beam.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | laser beam; 128x32 px; used by Flag Chain, Relic Run, Spawn Control, Zone Control | 12 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_muzzle_flash.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | muzzle flash; 64x64 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 13 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_score_plus_one.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | +1 score pop-up; 128x128 px; used by Relic Run, Zone Control | 14 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_launch_vessel.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Launch Vessel; 238x256 px; used by Launch Race | 15 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_solar_array.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Solar Array; 158x256 px; used by Launch Race | 16 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_spawn_node.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Spawn Node; 260x256 px; used by Relic Run, Spawn Control, Zone Control | 17 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_relic.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Relic; 256x256 px; used by Relic Run | 18 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_transit_gate.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Transit Gate; 256x256 px; used by Flag Chain, Launch Race, Siege | 19 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_turret_barrel.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | turret barrel; 140x90 px; used by Siege | 20 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_turret_base.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | turret base; 140x110 px; used by Siege | 21 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_water.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | water band; 256x128 px; used by Launch Race | 22 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_core_device.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Core Device; 207x256 px; used by Siege | 23 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_zone_back.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Control Zone, back layer; 512x310 px; used by Relic Run, Zone Control | 24 of 25 | launch | generated panel |
-| `content/textures/help/explainer/explainer_zone_front.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, no mips | Control Zone, front layer; 512x310 px; used by Relic Run, Zone Control | 25 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_transport.png` | `help.explainer_picture` | Picture animated by the explainer scripts | PNG RGBA8 → BC7 sRGB, mips | Transport; 128x80 px; used by Launch Race | 1 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_glow.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | soft glow; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 2 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_worker.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Worker figure; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 3 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_worker_hurt.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | hurt Worker; 128x128 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 4 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_flag_neutral.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | neutral flag; 64x64 px; used by Flag Chain | 5 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_flag_lowered.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | lowered flag; 64x64 px; used by Flag Chain | 6 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_flag_locked.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | locked flag; 64x64 px; used by Flag Chain | 7 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_flag_raised.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | raised flag; 64x64 px; used by Flag Chain | 8 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_fuel_pump.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | fuel pump; 184x256 px; used by Launch Race | 9 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_fuel_pump_arm.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | fuel pump arm; 52x256 px; used by Flag Chain, Launch Race | 10 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_island_shape.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | island outline; 256x128 px; used by Launch Race | 11 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_beam.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | laser beam; 128x32 px; used by Flag Chain, Relic Run, Spawn Control, Zone Control | 12 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_muzzle_flash.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | muzzle flash; 64x64 px; used by Flag Chain, Relic Run, Siege, Spawn Control | 13 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_score_plus_one.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | +1 score pop-up; 128x128 px; used by Relic Run, Zone Control | 14 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_launch_vessel.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Launch Vessel; 240x256 px; used by Launch Race | 15 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_solar_array.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Solar Array; 160x256 px; used by Launch Race | 16 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_spawn_node.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Spawn Node; 260x256 px; used by Relic Run, Spawn Control, Zone Control | 17 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_relic.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Relic; 256x256 px; used by Relic Run | 18 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_transit_gate.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Transit Gate; 256x256 px; used by Flag Chain, Launch Race, Siege | 19 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_turret_barrel.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | turret barrel; 140x92 px; used by Siege | 20 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_turret_base.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | turret base; 140x112 px; used by Siege | 21 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_water.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | water band; 256x128 px; used by Launch Race | 22 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_core_device.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Core Device; 208x256 px; used by Siege | 23 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_zone_back.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Control Zone, back layer; 512x312 px; used by Relic Run, Zone Control | 24 of 25 | launch | generated panel |
+| `content/textures/help/explainer/explainer_zone_front.png` | `help.explainer_picture` | ″ | PNG RGBA8 → BC7 sRGB, mips | Control Zone, front layer; 512x312 px; used by Relic Run, Zone Control | 25 of 25 | launch | generated panel |
 | `content/ui/explainers/explainer_siege.json` | `anim.explainer` | Explainer animation: a timed key-frame script that animates pictures on a canvas, one per mode | JSON key-frame script in the Species explainer format (pictures referenced by asset id) → cooked explainer script in the pack | canvas 900x250 px, loop 12.02 s; Siege | 1 of 6 | launch | static mode card |
 | `content/ui/explainers/explainer_flag_chain.json` | `anim.explainer` | ″ | JSON key-frame script in the Species explainer format (pictures referenced by asset id) → cooked explainer script in the pack | canvas 900x250 px, loop 24.01 s; Flag Chain | 2 of 6 | launch | static mode card |
 | `content/ui/explainers/explainer_relic_run.json` | `anim.explainer` | ″ | JSON key-frame script in the Species explainer format (pictures referenced by asset id) → cooked explainer script in the pack | canvas 924x250 px, loop 20.01 s; Relic Run | 3 of 6 | launch | static mode card |
@@ -517,9 +616,9 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 
 ## 13 Audio by source and event
 
-Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident (Opus stream for files over 20 s). Placeholder: synthesised tone (voice lines: text-to-speech line).
+Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an Opus stream for every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`, AEN-072); the resident groups hold about 173 MiB (AEN-304). Placeholder: synthesised tone (voice lines: text-to-speech line).
 
-182 (source, event) bindings fire in a match and play these groups. A further 98 events fire with no bound sound; they stay silent in the reference, so the event table lists them and no file is needed.
+182 (source, event) bindings of the reference fire in a match and play these groups. Of the events that fire with no bound sound in the reference, four gain new groups here by Resolved decisions (the laser-bolt fire, structure-hit and kill groups of DEC-564 and the Trooper grenade throw of DEC-097), the game-over announcement is a UI sound (§14), and the victory and defeat events play the music stings of §16; every other one stays silent and needs no file ([event catalogue](../reference/10_audio_design/event_catalogue.md) R-AUD-141 to R-AUD-143).
 
 ### 13.1 Builder (15 files)
 
@@ -538,7 +637,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 | `content/audio/sfx/crawler/crawler_turn_{01..29}.wav` (29 files) | `sfx.creature.crawler.turn` | changes direction | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.06-0.10 s | 29 variants | launch |
 | `content/audio/sfx/crawler/crawler_die_{01..07}.wav` (7 files) | `sfx.creature.crawler.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.24-0.80 s | 7 variants | launch |
 
-### 13.3 Trooper (48 files)
+### 13.3 Trooper (52 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
@@ -549,6 +648,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 | `content/audio/sfx/trooper/trooper_die_{01..05}.wav` (5 files) | `sfx.unit.trooper.die` | dies | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 1.85-2.36 s | 5 variants | skirmish-first-playable |
 | `content/audio/sfx/trooper/trooper_enter_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.enter_gate` | enters a gate | `leader.enter_gate` | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 0.63-0.68 s | 6 variants | skirmish-first-playable |
 | `content/audio/sfx/trooper/trooper_exit_gate_{01..06}.wav` (6 files) | `sfx.unit.trooper.exit_gate` | leaves a gate | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.63-0.68 s | 6 variants | skirmish-first-playable |
+| `content/audio/sfx/trooper/trooper_throw_grenade_{01..04}.wav` (4 files) | `sfx.unit.trooper.throw_grenade` | the Trooper throws the Strike team grenade (DEC-097) | — | mono, 48 kHz; positional, follows the source; one-shot; about 0.5-1.0 s; variant count proposed (the reference set holds no take for this moment) | 4 variants | skirmish-first-playable |
 
 ### 13.4 Brood Drifter (15 files)
 
@@ -832,11 +932,14 @@ Sound effects are sample groups named by **source and event**: a group holds the
 | `content/audio/sfx/relic/relic_drop.wav` | `sfx.building.relic.drop` | is dropped | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 5.91 s | 1 variant | launch |
 | `content/audio/sfx/relic/relic_spawn.wav` | `sfx.building.relic.spawn` | appears | — | mono, 48 kHz; positional, fixed where it started; one-shot; reference duration 1.28 s | 1 variant | launch |
 
-### 13.36 laser bolt (36 files)
+### 13.36 laser bolt (64 files)
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
 | `content/audio/sfx/laser_bolt/laser_bolt_hit_bark_{01..36}.wav` (36 files) | `sfx.weapon.laser_bolt.hit_bark` | a unit is hit by a laser bolt (voice of the hit unit) | — | mono, 48 kHz; positional, follows the source; one-shot; reference duration 0.20-0.80 s | 36 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_spawn_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.spawn` | every laser bolt fired (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.23-0.67 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_hit_structure_{01..10}.wav` (10 files) | `sfx.weapon.laser_bolt.hit_structure` | a bolt hits a structure (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.39-1.10 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 10 variants | skirmish-first-playable |
+| `content/audio/sfx/laser_bolt/laser_bolt_kill_{01..08}.wav` (8 files) | `sfx.weapon.laser_bolt.kill` | a laser bolt or a turret round kills an actor (DEC-564) | — | mono, 48 kHz; positional; one-shot; reference duration 0.22-0.75 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 8 variants | skirmish-first-playable |
 
 ### 13.37 rocket (6 files)
 
@@ -890,7 +993,7 @@ Sound effects are sample groups named by **source and event**: a group holds the
 
 ## 14 UI sounds
 
-Interface sounds: menus, selection, countdown, chat and the power-slot panel. They are 2-D (not positional) except the unit highlight. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident. Placeholder: synthesised tone.
+Interface sounds: menus, selection, countdown, chat, the power-slot panel and the game-over announcement. They are 2-D (not positional) except the unit highlight. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident. Placeholder: synthesised tone.
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
@@ -906,10 +1009,11 @@ Interface sounds: menus, selection, countdown, chat and the power-slot panel. Th
 | `content/audio/ui/ui_unit_select.wav` | `sfx.ui.match_ui.unit_select` | unit selected | `match_ui.toggle_state` | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.11 s | 1 variant | skirmish-first-playable |
 | `content/audio/ui/ui_error.wav` | `sfx.ui.match_ui.error` | invalid action | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.84 s | 1 variant | skirmish-first-playable |
 | `content/audio/ui/ui_chat_message.wav` | `sfx.ui.match_ui.chat_message` | chat message arrives | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; reference duration 0.22 s | 1 variant | skirmish-first-playable |
+| `content/audio/ui/ui_game_over_{01..02}.wav` (2 files) | `sfx.ui.match_ui.game_over` | a result is declared: the game-over announcement (DEC-097, R-AUD-307) | — | mono or stereo, 48 kHz; 2-D (not positional); one-shot; announcer bus; reference duration 4.37-4.39 s; variant count and durations sized from the unbound reference takes for this moment (R-AUD-142) | 2 variants | skirmish-first-playable |
 
 ## 15 Ambience
 
-Ambience beds: 2-D loops under the match and under the lobby. Each bed has layers that play together; long beds stream. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident or Opus stream (over 20 s). Placeholder: silence.
+Ambience beds: 2-D loops under the match and under the lobby. Each bed has layers that play together. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an Opus stream for every member of a group whose longest member is over 20 s (AEN-072). Placeholder: silence.
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
@@ -947,12 +1051,12 @@ Each Latin face needs a regular weight at least; a bold weight is optional. Hint
 
 ## 18 String table
 
-All player-facing text is new, written in plain functional English and keyed by Species string ids (`ui.lobby.ready`, `mode.flag_chain.objective`). No reference text is copied. Pass 2 collects every string id the documents use; the counts below size the work from the reference text categories.
+All player-facing text is new, written in plain functional English and keyed by Species string ids (`ui.lobby.ready`, `mode.flag_chain.objective`). No reference text is copied. The first table sizes the work from the reference text categories; §18.1 lists the string ids that the documents cite.
 
 | Category | String-id prefix | Reference entries |
 |---|---|---:|
 | mode messages, objectives and HUD lines | `mode.*` | 74 |
-| team and faction names | `match.team.*` | 11 |
+| team colour and faction names | `team.colour.*`, `faction.*` | 11 |
 | front-end menus | `ui.menu.*` | 4 |
 | main and pause menus | `ui.menu.*` | 31 |
 | help and options screens | `ui.help.*` | 11 |
@@ -980,8 +1084,95 @@ All player-facing text is new, written in plain functional English and keyed by 
 | `content/strings/ru_ru.json` | `strings.ru_ru` | Russian (`ru-RU`) | launch | pseudo-localised text |
 | `content/strings/ja_jp.json` | `strings.ja_jp` | Japanese (`ja-JP`) | launch | pseudo-localised text |
 | `content/strings/ko_kr.json` | `strings.ko_kr` | Korean (`ko-KR`) | launch | pseudo-localised text |
+| `content/strings/dev_en_gb.json` | `strings.dev_en_gb` | English (United Kingdom), development captions `ui.dev.*` only; in development editions only, never in a player edition | skirmish-first-playable | pseudo-localised text |
 
 The language set is the reference set of nine; the design phase confirms it. Japanese and Korean need the companion fonts of §17.
+
+### 18.1 String ids cited by the documents
+
+The reference documents and engine components cite 579 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
+
+| Family | Ids | Main owner |
+|---|---:|---|
+| `achievement.*` | 25 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `bot.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
+| `building.*` | 15 | [03_buildings_and_world_objects/defences_and_props](../reference/03_buildings_and_world_objects/defences_and_props.md) and 4 more |
+| `crate.*` | 37 | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) and 5 more |
+| `creature.*` | 2 | [02_units/README](../reference/02_units/README.md) |
+| `faction.*` | 2 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
+| `map.*` | 3 | [08_maps_and_level_design/rules_and_conventions](../reference/08_maps_and_level_design/rules_and_conventions.md) |
+| `match.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.comeback_bonus.*` | 1 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
+| `match.eliminated.*` | 2 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
+| `match.game_over.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
+| `match.grace_period.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.hud.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.options.*` | 25 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 5 more |
+| `match.rank.*` | 9 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
+| `match.sudden_death.*` | 1 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 3 more |
+| `mode.*` | 2 | [data_schemas/README](../architecture/components/data_schemas/README.md) and 2 more |
+| `mode.complexity.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
+| `mode.flag_chain.*` | 9 | [01_skirmish_rules_and_modes/flag_chain](../reference/01_skirmish_rules_and_modes/flag_chain.md) and 2 more |
+| `mode.launch_race.*` | 12 | [01_skirmish_rules_and_modes/launch_race](../reference/01_skirmish_rules_and_modes/launch_race.md) and 3 more |
+| `mode.relic_run.*` | 4 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `mode.siege.*` | 13 | [01_skirmish_rules_and_modes/siege](../reference/01_skirmish_rules_and_modes/siege.md) and 2 more |
+| `mode.spawn_control.*` | 10 | [01_skirmish_rules_and_modes/spawn_control](../reference/01_skirmish_rules_and_modes/spawn_control.md) and 1 more |
+| `mode.zone_control.*` | 6 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
+| `team.*` | 8 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `tutorial.tab.*` | 60 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) |
+| `ui.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.achievements.*` | 2 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `ui.advanced_options.*` | 19 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 2 more |
+| `ui.browser.*` | 2 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
+| `ui.chat.*` | 1 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 1 more |
+| `ui.common.*` | 1 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 2 more |
+| `ui.confirm_leave.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.connecting.*` | 11 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.credits.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.dev.*` | 22 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) |
+| `ui.dialog.*` | 6 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 4 more |
+| `ui.error.*` | 18 | [platform_layer](../architecture/components/platform_layer.md) and 6 more |
+| `ui.help.*` | 51 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) and 2 more |
+| `ui.help_and_options.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.help_select.*` | 2 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
+| `ui.host_or_join.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.input.*` | 5 | [input](../architecture/components/input.md) |
+| `ui.language.*` | 9 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `ui.leaderboard.*` | 14 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `ui.loading.*` | 1 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
+| `ui.lobby.*` | 17 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 3 more |
+| `ui.main.*` | 7 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.map_editor.*` | 16 | [08_maps_and_level_design/map_editor_hooks](../reference/08_maps_and_level_design/map_editor_hooks.md) |
+| `ui.map_select.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.match.*` | 4 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) and 4 more |
+| `ui.match_menu.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.mode_select.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.options.*` | 42 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
+| `ui.player.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
+| `ui.player_options.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.power_slots.*` | 12 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 5 more |
+| `ui.repair.*` | 2 | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
+| `ui.settings.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 1 more |
+| `ui.team.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
+| `ui.title.*` | 2 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 3 more |
+| `ui.tutorials.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
+| `unit.*` | 10 | [02_units/builder](../reference/02_units/builder.md) and 3 more |
+
+String ids named in pass 2a, with the documents that cite them:
+
+| String ids | Text | Main owner |
+|---|---|---|
+| `ui.repair.passed`, `ui.repair.failed` | the result of the installation repair check | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
+| `ui.error.os_unsupported`, `ui.error.user_data_unavailable`, `ui.error.user_data_inside_install`, `ui.error.language_missing`, `ui.error.internal` | start-up errors of the platform layer, also compiled into the executable | [platform_layer](../architecture/components/platform_layer.md) and 1 more |
+| `ui.error.content_missing`, `ui.error.content_damaged` | a game file is missing or damaged | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 2 more |
+| `ui.error.gpu_unsupported`, `ui.error.display_mode`, `ui.error.resolution_rejected` | graphics start-up and display-mode errors | [platform_layer](../architecture/components/platform_layer.md) and 2 more |
+| `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance.md) |
+| `ui.match.paused` | the match-paused message | [renderer/frame_graph_and_passes](../architecture/components/renderer/frame_graph_and_passes.md) |
+| `ui.dialog.close`, `ui.dialog.error`, `ui.dialog.success` | message-dialog captions and button | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) |
+| `ui.dialog.sound_settings_failed` | the sound-settings failure that the audio engine shows through the message dialog | not yet cited |
+| `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input](../architecture/components/input.md) |
+| `bot.label`, `match.team_left`, `match.player_left`, `ui.lobby.player_joined`, `ui.team.invalid_name`, `faction.rogue.name`, `faction.visitor.name` | team, player and faction names and messages | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) and 3 more |
+| `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | the eight team colour names | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 
 ## 19 Maps and thumbnails
 
@@ -1016,8 +1207,8 @@ These reference files and text entries need no Species counterpart. Counts only;
 | Class | Textures | Meshes | Audio files | Map files | Text entries | Total |
 |---|---:|---:|---:|---:|---:|---:|
 | bound only to sound events that never fire |  |  | 231 |  |  | 231 |
-| unused (bound to no sound event) |  |  | 192 |  |  | 192 |
 | editor only (map editor windows) |  |  |  |  | 164 | 164 |
+| unused (bound to no sound event) |  |  | 162 |  |  | 162 |
 | authoring source | 1 | 133 |  |  |  | 134 |
 | campaign, single-player or unreachable code path | 19 | 4 |  | 29 | 14 | 66 |
 | unused (never named) | 35 | 19 |  |  |  | 54 |
@@ -1044,7 +1235,7 @@ These reference files and text entries need no Species counterpart. Counts only;
 | dropped feature (dropped mode and unit) | 1 |  |  |  |  | 1 |
 | unreachable fallback | 1 |  |  |  |  | 1 |
 | editor only |  | 1 |  |  |  | 1 |
-| **Total** | **115** | **201** | **434** | **67** | **281** | **1098** |
+| **Total** | **115** | **201** | **404** | **67** | **281** | **1068** |
 
 Bitmap font pages are not in this table: their role passes to the font files of §17.
 

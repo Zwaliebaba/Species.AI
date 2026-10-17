@@ -410,8 +410,8 @@ for mid in COLLIDABLE:
     name = {'mesh.scenery.prop': 'scenery_prop'}.get(mid, mid.split('.')[-1])
     cid = 'mesh.collision.' + name
     n = len(ps)
-    files = ['content/meshes/collision/%s.glb' % name] if n == 1 else \
-        ['content/meshes/collision/%s_%02d.glb' % (name, i) for i in range(1, n + 1)]
+    files = ['content/meshes/collision/%s_collision.glb' % os.path.splitext(os.path.basename(x['species_filename']))[0]
+             for x in ps]  # named after its render member, one per member in member order
     specs = []
     for x in ps:
         b = budget_re.search(x['spec'])

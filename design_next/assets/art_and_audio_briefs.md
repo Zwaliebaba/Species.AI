@@ -1,6 +1,6 @@
 # Species art and audio briefs
 
-> Status: Style guide and category briefs, pass 1 · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
+> Status: Style guide and category briefs, pass 2a · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
 
 ## Contents
 
@@ -36,7 +36,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 - Geometry is faceted on purpose: every triangle is lit as one flat face, with one face normal and one colour. Meshes carry no smoothing and no normal maps; the cooker generates face normals.
 - Terrain follows the same rule: one colour and one normal per terrain triangle, coloured from a ramp by slope and height.
 - Colour comes from per-face colour, not from textures. Meshes are built from a few large shapes: cylinders, boxes, cones and their combinations, read at a distance.
-- The renderer attenuates mesh colours at load (x 0.85), team-recoloured parts further (x 0.7), the Transport hull strongly (x 0.1) and the green team's Worker figure by half (x 0.5). Artists author final colours and preview them through the engine, not in the modelling tool alone.
+- The mesh cooker attenuates every mesh colour once, at cook (x 0.85, RND-160); the renderer scales team-tinted parts further (x 0.7), the Transport hull strongly (x 0.1) and the green team's Worker figure by half (x 0.5). Artists author final colours and preview them through the engine, not in the modelling tool alone.
 
 ### 2.2 Additive glow on black
 
@@ -49,7 +49,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 - A second family of effects darkens instead of brightening: smoke, the hostile Crawlers and their orbs, text outlines and shadows, cursor and icon shadows, logo halos and blob shadows under units.
 - Darkening art is greyscale too: white means full darkening. The result is the destination multiplied by one minus the texel, so darkening needs no sorting either.
-- Shadows of cursors, markers and HUD icons are blurred copies; the content build may generate them from the base art, or an artist may author them as greyscale.
+- Shadows of cursors, of the crate landing marker and of the barrage marker are blurred copies of their art: derived variants that the cooker produces offline, never at load or at run time (RND-422, ADR-0018), or greyscale darkening art that an artist authors instead. The compass and team-disc shadows and the glyph shadows are authored art.
 
 ### 2.4 Crowds of small figures
 
@@ -61,7 +61,8 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 ### 2.5 Team tint and palette
 
 - Team identity is applied by tint, never painted into art. Worker cards, icons and markers are white or light grey and take the team colour from the vertex tint; lasers, glows and lights take it the same way.
-- Meshes mark team parts by painting them mostly red (red more than twice green and twice blue) on the root node and its direct children; the renderer replaces that colour with the team colour while keeping its brightness. Cloth banners and flags paint the team area pure red (255, 0, 0).
+- Meshes mark team parts with explicit tint weights on the root node and its direct children: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-0020). The renderer tints them in the shader while keeping their brightness; the cooker never infers a weight from a colour. An artist who works in the "mostly red" key-colour style (red more than twice green and twice blue) runs the authoring helper, which writes explicit weights for review.
+- Cloth banners and flags carry the team area as grey levels (its intensity) and a companion tint mask whose white marks full team tint (AST-022). Nothing is recoloured at load and no per-team copy exists; the look is unchanged.
 - A match has eight team colours (green, red, yellow, blue, orange, purple, cyan, pink). Art must read correctly under all eight, including next to each other.
 - Colour is never the only team cue (XAG 103): banners, flags and markers also differ in shape or pattern where the design phase asks for it.
 
@@ -73,8 +74,9 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ### 2.7 Deliberate crispness
 
-- Some textures are magnified with nearest-neighbour filtering on purpose: the particle dot, the flat cloud layer, the full-screen pixel passes and the front-end backdrop figure. Their art is designed as clean pixel shapes at the stated size.
-- Front-end pictures keep exact pixels: no mip-maps, linear filtering, authored at twice the display size.
+- Some textures are magnified with point filtering on purpose, for a blocky pixel look (RND-432): the particle dot and the front-end backdrop figure through the point-magnify clamp-to-edge sampler (linear under minification), the flat cloud layers, and the captured frame of the screen transition. Their art is designed as clean pixel shapes at the stated size.
+- Front-end pictures are authored at twice their display size and drawn with linear filtering. Menu art has no mip-maps; the explainer pictures carry full mip chains, because the explainer panel samples them with mip-maps (R-META-231).
+- Block-compressed art is a whole number of 4x4 blocks: its authored size is a multiple of 4 in both dimensions, and the content build rejects any other size (ADR-0017).
 
 ### 2.8 What must be new
 
@@ -93,31 +95,33 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 3 Unit sprites
 
-**15 files, 12 asset ids.** Worker cards (front, four hurt poses, side view, a state overlay, a seasonal hat), the Visitor faction card, Crawler, Crawler egg and Wisp cards, and the three Missile Barrage cards.
+**16 rows, 13 asset ids.** Worker cards (front, four hurt poses, side view, a state overlay, a seasonal hat), the Visitor faction card, Crawler, Crawler egg and Wisp cards, and the three Missile Barrage cards.
 
 - Canvas 128x128 for Worker and Visitor cards, 32x64 for the side view, 32x32 for small creatures and the hat, 64x64 for the overlay; full mip chains.
 - Worker cards: white or light-grey body, hard cut-out alpha (threshold 0.04), the same pivot and baseline on every card so that swapping poses never pops. Hurt poses 01-03 are interchangeable; 04 is the fixed hurt pose that the explainers also use.
-- The Visitor card is a distinct faction figure with soft alpha (threshold 0.02).
+- The Visitor card is a distinct faction figure, drawn as a Worker card with a hard cut-out edge (threshold 0.04).
+- The Crawler trail is a derived variant: the cooker stacks 18 shrinking copies of the Crawler card into a 32x512 column (RND-320); nothing is authored for it.
 - Crawler and Wisp cards are additive glows; hostile Crawlers draw the same card as a darkening layer, so the shape must read both ways.
 - The Missile Barrage launcher, its shadow and the missile are a new presentation of the barrage: a launcher appears, fires a volley, and marks its targets.
 
 ## 4 VFX textures
 
-**18 files, 18 asset ids**, all additive greyscale on black except the tree canopy mask (an alpha mask) and the shatter-shard edge pattern (a cut-out decal).
+**19 files, 19 asset ids**, all additive greyscale on black except the tree canopy mask and the Abductor beam ring (alpha masks) and the shatter-shard edge pattern, an art reference for the edge lines that the shard shader draws from a barycentric mask (VFX-229); it is not sampled at run time.
 
-- Flares and glows 128x128 (round glow, cloudy glow, starburst, bubble sphere, barrier field, dish signal, terrain grid, fuel flow); beam strips 128x32 (short and long beams, Convert beam); lightning strip 64x256; muzzle flash 64x64; particle dot 16x16; sky cloud tile 16x16; wide barrier field 256x64; canopy mask 128x32; shard edge pattern 128x128.
-- Tiled and scrolled textures (beams in the sky grid, barrier fields, fuel flow, terrain grid, cloud tile) tile seamlessly along their repeat axis.
+- Flares and glows 128x128 (round glow, cloudy glow, starburst, bubble sphere, barrier field, dish signal, terrain grid, fuel flow); beam strips 128x32 (short and long beams, Convert beam); lightning strip 64x256; muzzle flash 64x64; particle dot 16x16; sky cloud tile 16x16; wide barrier field 256x64; canopy mask 128x32; shard edge pattern 128x128; Abductor beam ring 128x32.
+- Tiled and scrolled textures (barrier fields, fuel flow, terrain grid, cloud tile, the Abductor beam ring) tile seamlessly along their repeat axis. The sky grid draws the short beam once per line, clamped (RND-151).
 - The terrain grid draws one triangle outline per terrain cell: a clean thin bright line on black, centred on the cell edges.
 - Keep falloffs smooth to black; avoid baked colour. Effects read through intensity and shape.
 
 ## 5 UI panels, title and logo
 
-**15 files, 13 asset ids**: accent and neutral panel strips (about 64x512), a blurred fill strip, the menu highlight beam, the title wordmark, two logo marks, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon and the front-end backdrop wheel.
+**21 files, 14 asset ids**: accent and neutral panel strips (about 64x512), a blurred fill strip, the menu highlight beam, the title wordmark, two logo marks, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon, the front-end backdrop wheel and the application icon.
 
 - Panel strips tile along their long axis and must work at any panel height.
 - The wordmark and logos are new identity design for Species; the wordmark works on black, at 1x and 2x, and as a halo-darkened mark over busy backgrounds.
 - The front-end backdrop (a large figure in front of a decorative wheel, over drifting clouds and glow) is a new composition with the same layering.
 - All UI art is authored at 2x display size, opaque or straight alpha, no mip-maps.
+- The application icon is the executable's and the window's icon: six PNG files, one per size (16, 24, 32, 48, 64 and 256 px), each drawn for its size, which the build combines into one Windows icon resource.
 
 ## 6 HUD, supply-crate and power icons
 
@@ -129,34 +133,37 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 7 Cursors and markers
 
-**28 files, 22 asset ids**: nine cursors, eleven markers (off-screen compass and its shadow, team disc and its shadow, Supply crate and Relic markers, crate landing and barrage target ground markers, flag pointer, jump-pad arrow, order trail), four Leader banners and four Flag Chain flag states.
+**47 rows, 35 asset ids**: nine cursors, thirteen markers (off-screen compass, its empty variant and its shadow, team disc and its shadow, Supply crate and Relic markers, crate landing and barrage target ground markers, flag pointer, jump-pad arrow, order trail, route arrow), four Leader banners and four Flag Chain flag states with a tint mask each, and nine blurred shadows that the cooker derives.
 
-- Cursors are 128x128 (the pointer 64x64), white art; the runtime adds a blurred darkening shadow. Each cursor state must be distinguishable by shape alone.
+- Cursors are 128x128 (the pointer 64x64), white art; the cooker derives the blurred darkening shadow of every cursor of the set except the turret-aim crosshair, offline. Each cursor state must be distinguishable by shape alone.
+- The route arrow marks the direction along route lines (RND-353); the empty compass is the compass ring without its arrow, which on-screen markers draw (RND-357).
 - The team disc and compass shadows are alpha masks tinted at draw.
-- Leader banners show the Leader's order state (idle, follow, formation, gather); Flag Chain flags show neutral, lowered, locked and raised. Both are cloth textures with the team area in pure red, read on a moving cloth at small size.
+- Leader banners show the Leader's order state (idle, follow, formation, gather); Flag Chain flags show neutral, lowered, locked and raised. Both are cloth textures that carry the team area as grey levels with a companion tint mask (white = full team tint), read on a moving cloth at small size.
 
 ## 8 Input glyphs
 
-**13 files, 13 asset ids**: four face buttons by position (south, east, west, north), two shoulder buttons, two triggers, three shadow layers and the keyboard Tab key.
+**19 files, 19 asset ids**: four face buttons by position (south, east, west, north), two shoulder buttons, two triggers, two sticks, the horizontal d-pad, six shadow layers and the keyboard Tab key.
 
 - Platform-neutral: shapes and labels describe a control's position, never a console maker's colours, letters or trade dress.
-- 64x64 for face buttons, 128x128 for the Tab key, 50x50 for shoulders, triggers and shadows; shadows are darkening layers.
+- 64x64 for face buttons, sticks, the d-pad and their shadows, 128x128 for the Tab key, 50x50 for shoulders, triggers and shadows; shadows are darkening layers.
 
 ## 9 Terrain ramps, water and waves
 
 **26 files, 3 asset ids**: 14 terrain colour ramps, 4 sea tiles and 8 shore-wave gradients, numbered by theme.
 
-- A ramp is a 64x64 table: x is slope, y is height. The terrain builder reads one colour per terrain triangle from it, so a ramp is a palette design, not a picture: bands, transitions and the snow line live in it.
-- A shore-wave gradient is a 400x10 table; the sea renderer reads one row along the wave.
+- A ramp is a 64x64 table: x is slope (column 0 flat ground, column 63 vertical), y is height, read with row 0 at the bottom of the image as viewed: the bottom row is the highest terrain and the top row sea level (TER-040). Any other size is rejected. The terrain builder reads one colour per terrain triangle from it, so a ramp is a palette design, not a picture: bands, transitions and the snow line live in it.
+- A shore-wave gradient is a 400x10 table; the sea renderer reads pixel row 1 counted from the bottom row (the second row from the bottom), one colour per column (TER-041).
 - A sea tile is 128x128, seamless, multiplied by the sea light map.
 - Number 01 of each is the map default; ramp 06, sea tile 02 and wave gradient 04 form the frost set that the seasonal theme forces. The environment artist gives each number one biome look; maps pick by number.
 
 ## 10 Meshes
 
-**71 files, 53 asset ids**: unit figures and bodies (7), projectiles (4), creatures (13), structures (32), eight Relics and seven scenery pieces.
+**104 files, 77 asset ids**: 71 render meshes in 53 asset ids (unit figures and bodies 7, projectiles 4, creatures 13, structures 32, eight Relics and seven scenery pieces), 32 collision assets in 23 asset ids, and the map editor's camera-view marker.
 
 - Flat-shaded low-poly, per-face colour in `COLOR_0`, no normals; metres, +Y up; budgets are the reference triangle counts as upper limits (the low-poly look usually needs far fewer).
-- Team parts painted mostly red on the root node and its direct children.
+- Team parts carry explicit tint weights (the `_SPECIES_TINT` attribute or the `species_team_tint` material flag) on the root node and its direct children; see §2.5.
+- Indexed sockets are numbered from 01 without gaps (`port_01`, `leg_01` to `leg_08`).
+- Every collidable mesh has a collision asset: triangle-only geometry with no materials, authored as its own source at the render member's bounds. The hit tests read it, never the render mesh.
 - Sockets are empty named nodes; their names come from the socket vocabulary in [GameAssets.md §11](GameAssets.md#11-meshes) and must match exactly. Manning ports stand where a Worker operates the structure; muzzles sit at barrel ends; status lights pair with ports.
 - The Beam Dish keeps its node hierarchy (column, upper mount, rotating dish, door), because sockets hang on those nodes.
 - The eight Relics are interchangeable carried objects of similar size and weight class, each with a base node; they must look carryable by a crowd.
@@ -167,13 +174,15 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 **75 files, 22 asset ids**: 17 hint pictures, 6 mode cards, 5 general help pages, 16 per-mode help pages, 6 explainer scripts and 25 explainer pictures.
 
 - No baked text in any picture: captions come from the string table, so one picture serves nine languages.
-- Hint pictures 200x200, help pages 150x150, mode cards 300x200, the camera-controls hint 512x128 (display sizes; author at 2x).
-- Explainers are one looping script per mode (canvas 800-1000 x 250; loops of 12.0-30.0 s). The choreography is new: what moves, when and where is designed for Species. The scripts reference their pictures by asset id; the pictures are cut-outs with soft alpha.
+- Hint pictures 200x200, help pages 150x150, mode cards 300x200, the camera-controls hint 304x128 (display sizes; author at 2x).
+- The 16 objective-card hint pictures are hook art: no rule of a reference match draws them (DEC-050), so they are post-launch.
+- Explainers are one looping script per mode (canvas 800-1000 x 250; loops of 12.0-30.0 s). The choreography is new: what moves, when and where is designed for Species. The scripts reference their pictures by asset id; the pictures are cut-outs with soft alpha and full mip chains.
 
 ## 12 Sound effects by source and event
 
-**863 files in 167 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 25 Supply-crate outcome stings.
+**895 files in 171 sample groups** from 39 sound sources (units, creatures, weapons, structures, the Supply crate), including the 25 Supply-crate outcome stings.
 
+- Four groups give sound to moments the reference leaves silent, by Resolved decisions: the laser-bolt fire, structure-hit and kill groups (DEC-564) and the Trooper grenade throw (DEC-097). Their variant counts follow the reference set's unbound takes for those moments where it has them.
 - Each group keeps the reference variant count, so the mix keeps its variety: the Worker attack group has 24 variants, the laser-hit bark 36, the Worker charge bark 37.
 - Mono, 48 kHz, 24-bit sources. Loops are seamless (no click at the wrap); one-shots start on the transient. Reference durations in each row are targets for timing, not limits.
 - The behaviour (volume, pitch spread, distance roll-off, looping, priority, which variant plays) lives in the sound-event data, not in the files. Files are recorded clean and full; the data shapes them.
@@ -183,7 +192,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 13 UI sounds
 
-**14 files in 12 groups**: menu hover, select and back, unit select and highlight, state toggle, invalid action, countdown tick, chat message, selection circle, and the power-slot panel sounds.
+**16 files in 13 groups**: menu hover, select and back, unit select and highlight, state toggle, invalid action, countdown tick, chat message, selection circle, the power-slot panel sounds, and the game-over announcement (two takes, played before the victory or defeat sting).
 
 - 2-D, short, dry; they sit above the world mix without masking it. Mono or stereo, 48 kHz.
 
@@ -191,7 +200,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 **21 files in 4 groups**: the match ambience bed with two extra layers, and the lobby bed.
 
-- 2-D loops, layered: the layers of one bed play together and must stay in phase-free harmony when they start at random offsets. Long beds stream.
+- 2-D loops, layered: the layers of one bed play together and must stay in phase-free harmony when they start at random offsets. A bed group streams when its longest member is over 20 s (AEN-072).
 - The match bed sits under the crowd: low, wide, no rhythm that competes with the action.
 
 ## 15 Music
@@ -211,11 +220,12 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 17 Player-facing text
 
-**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean). About 221 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (45), dialogs, windows and fields (19).
+**9 string tables** (en-GB first, then French, German, Italian, Spanish, Portuguese, Russian, Japanese, Korean), and a development string table (en-GB only, development editions only). About 221 reference text entries in scope size the work: mode messages, objectives and HUD lines (74), team and faction names (11), menus (35), help (11), leaderboard pages (26), options (45), dialogs, windows and fields (19).
 
 - All text is new, in plain functional English, keyed by Species string ids; no reference line is copied or paraphrased closely.
 - Messages are short, read at a glance during a battle, and avoid jokes that need translation notes.
 - ICU MessageFormat for counts, plurals and names.
+- [GameAssets §18.1](GameAssets.md#181-string-ids-cited-by-the-documents) lists the string ids that the documents cite, by family.
 
 ## 18 Maps and thumbnails
 
