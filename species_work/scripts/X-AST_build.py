@@ -389,7 +389,7 @@ armyant|creatures|ant_body_01|mesh.creature.ant_body|ant body, three variants ch
 armyant2|creatures|ant_body_02|mesh.creature.ant_body||creatures|launch
 armyant3|creatures|ant_body_03|mesh.creature.ant_body||creatures|launch
 centipede|creatures|centipede_segment|mesh.creature.centipede_segment|centipede body segment|creatures|launch
-centipedehead|creatures|centipede_head|mesh.creature.centipede_head|centipede head|creatures|launch
+centipedehead|creatures|centipede_head_segment|mesh.creature.centipede_head_segment|centipede head segment|creatures|launch
 spider|creatures|spider_body|mesh.creature.spider_body|spider body with eight leg sockets|creatures|launch
 spider_leg_upper|creatures|spider_thigh|mesh.creature.spider_thigh|spider upper leg part (procedural leg)|creatures|launch
 spider_leg_lower|creatures|spider_shin|mesh.creature.spider_shin|spider lower leg part (procedural leg)|creatures|launch
@@ -1043,41 +1043,54 @@ def build_audio(b, samples, events):
         members[('Sample', s['name'].lower())].append(s)
     assigned = {}
     bank_ids = collections.OrderedDict()
-    pair_ids = collections.defaultdict(list)
+    primaries = collections.OrderedDict()
+    owned = collections.defaultdict(list)    # (otype, event) -> banks it owns, in block order
     for bank, pairs in bank_pairs.items():
         prim = PRIMARY.get(bank)
         pp = [p for p in pairs if (p[0], p[1]) == prim] if prim else []
         primary = pp[0] if pp else pairs[0]
+        primaries[bank] = primary
+        owned[(primary[0], primary[1])].append((primary[2], bank, primary[3]))
+    suffix_of = {}
+    for key, lst in owned.items():
+        lst.sort()
+        used = collections.Counter()
+        for idx, bank, mode in lst:
+            ev = key[1]
+            base = ('presence_loop' if 'Loop' in mode else 'spawn') if ev == 'Create' else EVENTS.get(ev, '')
+            n = used[base]
+            used[base] += 1
+            suffix_of[bank] = (base, '' if n == 0 else '_' + 'abcdefgh'[n])
+    for bank, pairs in bank_pairs.items():
+        primary = primaries[bank]
         otype, ev, idx, mode = primary
         kind, src, cons, prio = SOURCES[otype]
         if otype == 'CratePowerup':
             outcome = CRATE_OUTCOME[ev]
             aid = 'sfx.crate.outcome.%s' % outcome
-            folder, stem = 'content/audio/sfx/crate_outcome', outcome
+            folder, stem = 'content/audio/sfx/crate_outcome', 'outcome_' + outcome
             cat = 'sfx'
             prio = 'fp' if outcome in FP_OUTCOMES else 'launch'
         else:
-            evs = EVENTS.get(ev)
-            if ev == 'Create':
-                evs = 'presence_loop' if 'Loop' in mode else 'spawn'
-            if evs is None:
+            evs, suffix = suffix_of[bank]
+            if not evs:
                 raise SystemExit('no Species event for %s.%s' % (otype, ev))
-            suffix = '' if idx == 0 else '_' + 'abcdefgh'[idx]
             if kind == 'ui' and ev == 'LobbyAmbience' or kind == 'ambience':
                 cat = 'ambience'
                 stem = ('lobby_bed' if ev == 'LobbyAmbience' else 'match_bed') + suffix
                 aid = 'amb.%s' % stem
+                stem = 'amb_' + stem
                 folder = 'content/audio/ambience'
                 prio = 'launch' if ev == 'LobbyAmbience' else 'fp'
             elif kind == 'ui':
                 cat = 'ui_audio'
                 pre = {'match_ui': '', 'power_slots': 'power_slot_', 'power_input': 'power_input_'}[src]
-                stem = pre + evs + suffix
+                stem = 'ui_' + pre + evs + suffix
                 aid = 'sfx.ui.%s.%s' % (src, evs + suffix)
                 folder = 'content/audio/ui'
             else:
                 cat = 'sfx'
-                stem = evs + suffix
+                stem = src + '_' + evs + suffix
                 aid = 'sfx.%s.%s.%s' % (kind, src, evs + suffix)
                 folder = 'content/audio/sfx/%s' % src
         if aid in bank_ids.values():
@@ -1204,7 +1217,7 @@ def build_strings(b, p17b, p02, p17a):
                 target_format='cooked string table in the pack', colour_space='n/a', alpha_mode='n/a',
                 placeholder=PLACEHOLDER['strings'], brief_ref=BRIEF['strings'], kind='strings',
                 spec='every Species string id; about %d entries in the reference categories (ids collected in pass 2)' % total_in)
-        b.add_file(aid, 'content/strings/%s.json' % code, [], [], 'BCP 47 tag %s' % code)
+        b.add_file(aid, 'content/strings/%s.json' % code.lower().replace('-', '_'), [], [], 'BCP 47 tag %s' % code)
     return cats, out
 
 
@@ -1326,7 +1339,7 @@ def main():
         for orig, cls, kind in b.excluded:
             w.writerow(['(not created: %s)' % cls, '', orig, 1, kind])
         for (prefix, label), n in str_cats.items():
-            w.writerow(['content/strings/en-GB.json', 'strings.en_gb', 'reference text entries: %s' % label, n,
+            w.writerow(['content/strings/en_gb.json', 'strings.en_gb', 'reference text entries: %s' % label, n,
                         'player-facing'])
         for cls, n in str_out.items():
             w.writerow(['(not created: %s)' % cls, '', 'reference text entries', n, 'string'])
