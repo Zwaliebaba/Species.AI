@@ -38,7 +38,7 @@ content/textures/ui/ui_panel_neutral.png,uitex.panel_neutral,data/textures/inter
 content/textures/ui/ui_panel_accent.png,uitex.panel_accent,data/textures/interface_red.bmp,1,FULL
 content/textures/ui/ui_studio_splash.png,uitex.studio_splash,data/textures/ivlogo.bmp,1,FULL
 content/textures/ui/ui_menu_highlight.png,uitex.menu_highlight,data/textures/menuhighlight.bmp,1,FULL
-content/textures/ui/ui_logo_banner.png,uitex.logo_banner,data/textures/multiwinia.bmp,1,FULL
+(not created: drawn by no rule),,data/textures/multiwinia.bmp,1,FULL
 content/textures/ui/ui_title_wordmark.png,uitex.title_wordmark,data/textures/mwtitle.bmp,1,FULL
 content/textures/ui/ui_logo_emblem.png,uitex.logo_emblem,data/icons/mwlogo.bmp,1,FULL
 content/textures/ui/ui_icon_locked.png,uitex.icon_locked,data/icons/locked.bmp,1,FULL

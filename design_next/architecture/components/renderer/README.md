@@ -65,7 +65,7 @@ Caption: the renderer reads presentation inputs only, builds every frame through
 
 ## 2 Interfaces
 
-The interface below is a C++23 declaration sketch, not an implementation.
+The interface below is a C++23 declaration sketch, not an implementation. Everything in it is engine code in namespace `Engine`. The renderers of game objects, which read the game's presentation snapshot, are game-layer presentation code in `Species` ([world_renderers.md](world_renderers.md) §2, [entity_and_overlay_renderers.md](entity_and_overlay_renderers.md) §2; `AGENTS.md` R9).
 
 ```cpp
 namespace Engine
@@ -117,16 +117,24 @@ struct ViewParams // supplied by MatchCamera each frame
   float fovYDegrees = 0.0f; // value owned by the camera component
 };
 
+// The snapshot interface: the engine's read-only handle to the presentation snapshot that the game publishes (DEC-222).
+// The game's snapshot type implements it, and only the game's pass recorders read its contents (AGENTS.md R9).
+class SceneSnapshot
+{
+public:
+  virtual ~SceneSnapshot() = default;
+};
+
 struct FrameInputs
 {
   FrameKind kind = FrameKind::Match;
-  const PresentationSnapshot* snapshot = nullptr; // DEC-222; null outside a match
-  double extrapolationTime = 0.0;                 // R-SIM-560, seconds of game time
-  std::int32_t lastProcessedSlice = -1;           // R-SIM-511; -1 = none this tick
-  std::uint32_t lastCommandFrame = 0;             // R-SIM-531
-  double realNow = 0.0;                           // real clock, R-SIM-570
-  double presentationFrameTime = 0.0;             // R-SIM-570
-  double smoothPresentationTime = 0.0;            // R-SIM-570
+  const SceneSnapshot* snapshot = nullptr; // DEC-222; null outside a match
+  double extrapolationTime = 0.0;          // R-SIM-560, seconds of game time
+  std::int32_t lastProcessedSlice = -1;    // R-SIM-511; -1 = none this tick
+  std::uint32_t lastCommandFrame = 0;      // R-SIM-531
+  double realNow = 0.0;                    // real clock, R-SIM-570
+  double presentationFrameTime = 0.0;      // R-SIM-570
+  double smoothPresentationTime = 0.0;     // R-SIM-570
   ViewParams view;
   bool interfaceVisible = true;
   bool anyUiWindowOpen = false;
@@ -162,7 +170,7 @@ public:
 
 **Events.** The renderer consumes the platform layer's resize, DPI, focus and output-change events (ADR-075) and raises one event of its own, `DeviceRebuilt`, after a device-removal rebuild (ADR-008), so that dependants can re-register GPU-side data.
 
-**Data contracts.** The presentation snapshot (`PresentationSnapshot`) is defined with the simulation–presentation boundary of DEC-222. The renderer needs from it, per drawn object: position, velocity, orientation (front and up), the angular velocity and velocity of every animated mesh node, team, kind and the kind-specific state named in the sub-renderer sections; per sliced pool: which slots the current tick has already advanced (R-SIM-562).
+**Data contracts.** The presentation snapshot (`PresentationSnapshot`) is defined with the simulation–presentation boundary of DEC-222. It is game code in `Species` and implements the engine's snapshot interface `SceneSnapshot`: the frame renderer hands it on without reading it, and the renderers of game objects, game code too, read it. The renderer needs from it, per drawn object: position, velocity, orientation (front and up), the angular velocity and velocity of every animated mesh node, team, kind and the kind-specific state named in the sub-renderer sections; per sliced pool: which slots the current tick has already advanced (R-SIM-562).
 
 **Threading contract.** Every public call is made from the frame thread. Within `RenderFrame`, passes or groups of adjacent passes may record their own command lists in parallel (ADR-004); which threads record them follows the threading model of the design phase (see DEC-224). No loader thread ever blocks on the frame thread: uploads go through the copy queue (ADR-008).
 

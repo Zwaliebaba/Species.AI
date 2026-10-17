@@ -1,6 +1,6 @@
 # Species art and audio briefs
 
-> Status: Style guide and category briefs, pass 2a · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
+> Status: Style guide and category briefs, pass 2b · Related: [GameAssets.md](GameAssets.md) · [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [vision brief](../../vision/species-vision-brief.md) (O9)
 
 ## Contents
 
@@ -115,10 +115,10 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 5 UI panels, title and logo
 
-**21 files, 14 asset ids**: accent and neutral panel strips (about 64x512), a blurred fill strip, the menu highlight beam, the title wordmark, two logo marks, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon, the front-end backdrop wheel and the application icon.
+**20 files, 13 asset ids**: accent and neutral panel strips (about 64x512), a blurred fill strip, the menu highlight beam, the title wordmark, the logo emblem, a studio splash placeholder, the Worker badge for map buttons, three difficulty badges, a check-box tick, a lock icon, the front-end backdrop wheel and the application icon.
 
 - Panel strips tile along their long axis and must work at any panel height.
-- The wordmark and logos are new identity design for Species; the wordmark works on black, at 1x and 2x, and as a halo-darkened mark over busy backgrounds.
+- The wordmark and the logo emblem are new identity design for Species; the wordmark works on black, at 1x and 2x, and as a halo-darkened mark over busy backgrounds.
 - The front-end backdrop (a large figure in front of a decorative wheel, over drifting clouds and glow) is a new composition with the same layering.
 - All UI art is authored at 2x display size, opaque or straight alpha, no mip-maps.
 - The application icon is the executable's and the window's icon: six PNG files, one per size (16, 24, 32, 48, 64 and 256 px), each drawn for its size, which the build combines into one Windows icon resource.
@@ -154,7 +154,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 - A ramp is a 64x64 table: x is slope (column 0 flat ground, column 63 vertical), y is height, read with row 0 at the bottom of the image as viewed: the bottom row is the highest terrain and the top row sea level (TER-040). Any other size is rejected. The terrain builder reads one colour per terrain triangle from it, so a ramp is a palette design, not a picture: bands, transitions and the snow line live in it.
 - A shore-wave gradient is a 400x10 table; the sea renderer reads pixel row 1 counted from the bottom row (the second row from the bottom), one colour per column (TER-041).
 - A sea tile is 128x128, seamless, multiplied by the sea light map.
-- Number 01 of each is the map default; ramp 06, sea tile 02 and wave gradient 04 form the frost set that the seasonal theme forces. The environment artist gives each number one biome look; maps pick by number.
+- Number 01 of each is the map default; ramp 06, sea tile 02 and wave gradient 04 form the frost set that the seasonal theme forces. The environment artist gives each number one biome look; maps pick by number. No match map picks ramp 14 or wave gradient 08; the map editor offers them for new maps, so they come last (post-launch).
 
 ## 10 Meshes
 

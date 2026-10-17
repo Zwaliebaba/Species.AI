@@ -1,6 +1,6 @@
 # Species game assets
 
-> Status: Asset list, pass 2a (consumers named by document; pass 2b replaces them with requirement IDs) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
+> Status: Asset list, pass 2b (consumers named by requirement id) · Related: [assets README](README.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md) · [CONVENTIONS](../CONVENTIONS.md)
 
 ## Contents
 
@@ -31,7 +31,7 @@ This document lists every asset Species must create so that the mechanics, look 
 
 **Every asset is newly authored.** Each file is made from scratch to the same technical role as its reference counterpart: size class, alpha mode, channel layout, loop behaviour, socket names and variant count. Nothing is traced, re-coloured, resampled or edited from the reference game's art, audio or text, and no reference file serves as a starting point, a paint-over base or a placeholder. Character silhouettes, textures, UI layout, logo and wordmark are new; the style stays the same (vision O9, [art_and_audio_briefs.md](art_and_audio_briefs.md)).
 
-How to read the tables: one row per asset id. A row names its file, or an explicit numbered pattern with its count, for example `content/audio/sfx/worker/worker_attack_{01..24}.wav` (24 files). [asset_manifest.csv](asset_manifest.csv) expands every row to one line per file, with the full format strings and the consuming documents.
+How to read the tables: one row per asset id. A row names its file, or an explicit numbered pattern with its count, for example `content/audio/sfx/worker/worker_attack_{01..24}.wav` (24 files). [asset_manifest.csv](asset_manifest.csv) expands every row to one line per file, with the full format strings and its consumers: the requirement ids that use the asset, and the path of a document that cites it only outside its requirements.
 
 ## 2 Filename convention and formats
 
@@ -43,7 +43,7 @@ All assets live under the content root `content/`. The content build rejects any
 |---|---|
 | `content/sprites/` | unit, creature and effect cards (camera-facing billboards) |
 | `content/textures/fx/` | VFX textures: glows, beams, flares, sky clouds, wire grid, canopy mask |
-| `content/textures/ui/` | UI panels, title wordmark, logos, front-end decoration, small UI icons, the application icon |
+| `content/textures/ui/` | UI panels, title wordmark, logo emblem, front-end decoration, small UI icons, the application icon |
 | `content/textures/icons/power/` | power and Supply-crate outcome icons |
 | `content/textures/icons/hud/` | power-slot panel and status read-outs |
 | `content/textures/icons/cursors/` | world and menu cursors |
@@ -135,7 +135,7 @@ The artist delivers the source file under `content/`; the content build generate
 | mesh | glTF 2.0 binary `.glb`: metres, +Y up, no `NORMAL` (flat faces), `COLOR_0` per-face colour, named socket nodes | cooked Species mesh: face normals generated, colours attenuated once at cook (RND-160) | sRGB vertex colour | opaque; team regions marked by explicit tint weights: the `_SPECIES_TINT` vertex attribute or the `species_team_tint` material flag (AST-034, ADR-020) |
 | collision mesh | glTF 2.0 binary `.glb`: triangle primitives, no materials, metres, +Y up; authored as its own source | cooked `Collision` entry, simulation-relevant (DAT-278) | n/a | n/a |
 | sound effect | WAV, 48 kHz, 24-bit PCM, mono (2-D sounds may be stereo) | 16-bit PCM, 48 kHz, resident | n/a | n/a |
-| long audio and music | WAV, 48 kHz, 24-bit PCM, stereo for music | Opus stream, decoded on a worker thread: every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`), and every music group (AEN-072) | n/a | n/a |
+| long audio and music | WAV, 48 kHz, 24-bit PCM, stereo for music | MS-ADPCM stream at 48 kHz, decoded by XAudio2, with no codec in the executable (ADR-025, AST-080): every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`), and every music group (AEN-072) | n/a | n/a |
 | font | OpenType font licensed for embedding | font file in the pack; glyphs rasterised at run time into R8_UNORM cache pages | n/a | coverage |
 | string table | UTF-8 JSON: string id to ICU MessageFormat text | cooked string table | n/a | n/a |
 | map | map definition from the map tool (text, Species map schema) | cooked map definition | n/a | n/a |
@@ -153,7 +153,7 @@ Each row has one priority: `skirmish-first-playable`, `launch` or `post-launch`.
 - world: sky clouds, terrain ramp 01, sea tile 01, shore-wave gradient 01, the VFX of those units;
 - audio: every sample group of those sources and weapons, with the laser-bolt fire, structure-hit and kill groups and the grenade throw, the match interface sounds with the game-over announcement, and the match ambience bed.
 
-Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies with their collision assets, the objective-card hint pictures (hook art, DEC-050), the map editor's camera-view marker and the few rows whose role still needs confirmation. The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
+Everything else that a match reaches is `launch`. `post-launch` holds the seasonal theme, alternative mesh bodies with their collision assets, the objective-card hint pictures (hook art, DEC-050), the map editor's camera-view marker and its bot navigation node, the land colour ramp and the shore-wave gradient that no match map names (R-MAP-086), and the two research-level icons that no rule of a match draws (R-CRATE-014). The design phase may move rows between priorities; the placeholder rule keeps the game building and running whatever is missing.
 
 ### 2.6 Placeholders
 
@@ -189,11 +189,11 @@ An edition that its edition manifest marks for release contains no placeholder: 
 |---|---:|---:|---:|---:|---:|---:|
 | [Unit sprites](#4-unit-sprites) | 13 | 16 | 6 | 9 | 1 | 15 |
 | [VFX textures](#5-vfx-textures) | 19 | 19 | 13 | 6 | 0 | 18 |
-| [UI panels and title](#6-ui-panels-and-title) | 14 | 21 | 12 | 8 | 1 | 15 |
+| [UI panels and title](#6-ui-panels-and-title) | 13 | 20 | 12 | 8 | 0 | 14 |
 | [HUD, supply-crate and power icons](#7-hud-supply-crate-and-power-icons) | 32 | 34 | 17 | 15 | 2 | 34 |
 | [Cursors and markers](#8-cursors-and-markers) | 35 | 47 | 36 | 11 | 0 | 28 |
 | [Input glyphs](#9-input-glyphs) | 19 | 19 | 1 | 18 | 0 | 13 |
-| [Terrain ramps, water and waves](#10-terrain-ramps-water-and-waves) | 3 | 26 | 3 | 23 | 0 | 26 |
+| [Terrain ramps, water and waves](#10-terrain-ramps-water-and-waves) | 3 | 26 | 3 | 21 | 2 | 26 |
 | [Meshes](#11-meshes) | 77 | 104 | 27 | 71 | 6 | 71 |
 | [Help images and explainer animations](#12-help-images-and-explainer-animations) | 22 | 75 | 1 | 58 | 16 | 76 |
 | [Audio by source and event](#13-audio-by-source-and-event) | 171 | 895 | 502 | 393 | 0 | 891 |
@@ -203,7 +203,7 @@ An edition that its edition manifest marks for release contains no placeholder: 
 | [Fonts](#17-fonts) | 5 | 5 | 1 | 4 | 0 | 138 |
 | [String table](#18-string-table) | 10 | 10 | 2 | 8 | 0 | 0 |
 | [Maps and thumbnails](#19-maps-and-thumbnails) | 12 | 98 | 4 | 94 | 0 | 98 |
-| **Total** | **453** | **1412** | **652** | **734** | **26** | **1460** |
+| **Total** | **452** | **1411** | **652** | **732** | **27** | **1459** |
 
 "Reference files replaced" counts the in-scope reference files whose role each category takes over; one Species file may replace several (138 bitmap font pages become 5 font files). Music, string tables, some help pictures and every row added in pass 2a without a reference take (the application icon, the new glyphs, markers and the Abductor beam ring, the tint masks, the collision assets, the derived variants and the Trooper grenade throw) have no one-to-one counterpart. "Files" counts manifest rows: the 10 derived-variant rows have no authored file, because the cooker produces them from their parents.
 
@@ -265,7 +265,6 @@ Front-end and window art. The palette is new; it keeps the token roles of the re
 | `content/textures/ui/ui_panel_accent.png` | `uitex.panel_accent` | Accent panel strip for windows and the power-slot panel (new palette, same token role) | PNG RGB8 (tileable) → BC7 sRGB, mips, repeat | 64x510 px display size; author at 2x (128x1020) | single | skirmish-first-playable | generated panel |
 | `content/textures/ui/ui_studio_splash.png` | `uitex.studio_splash` | Studio mark on the loading view (placeholder until the studio mark exists) | PNG RGB8 → BC7 sRGB, no mips | 600x600 px display size; author at 2x (1200x1200) | single | launch | generated panel |
 | `content/textures/ui/ui_menu_highlight.png` | `uitex.menu_highlight` | Highlight beam behind the focused menu item | PNG grey (additive) → BC4, mips | 256x64 px display size; author at 2x (512x128); wrap repeat | single | skirmish-first-playable | generated gradient |
-| `content/textures/ui/ui_logo_banner.png` | `uitex.logo_banner` | Large title logo on the main menu; no rule of a reference match draws it | PNG RGB8 → BC7 sRGB, no mips | 394x150 px display size; author at 2x (788x300) | single | post-launch | generated panel |
 | `content/textures/ui/ui_title_wordmark.png` | `uitex.title_wordmark` | Title wordmark (new logo) | PNG RGBA8 → BC7 sRGB, no mips | 660x122 px display size; author at 2x (1320x244) | single | skirmish-first-playable | generated panel |
 | `content/textures/ui/ui_logo_emblem.png` | `uitex.logo_emblem` | Logo emblem on the main menu, drop-down menus and the options screen | PNG RGBA8 → BC7 sRGB, no mips | 278x194 px display size; author at 2x (556x388); wrap repeat where tiled | single | launch | generated panel |
 | `content/textures/ui/ui_icon_locked.png` | `uitex.icon_locked` | Lock icon on password-protected match entries | PNG RGBA8 → BC7 sRGB, no mips | 20x20 px display size; author at 2x (40x40) | single | launch | generated panel |
@@ -292,7 +291,7 @@ Power and Supply-crate outcome icons and the power-slot panel read-outs. Icons a
 | `content/textures/icons/power/power_strike_team.png` | `icon.power.strike_team` | Strike team power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_grenade.png` | `icon.power.grenade` | Strike team grenade weapon | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_rocket.png` | `icon.power.rocket` | Strike team rocket weapon | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
-| `content/textures/icons/power/power_laser.png` | `icon.power.laser` | Laser upgrade power level | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256); role to be confirmed against reference/04 | single | post-launch | generated glyph |
+| `content/textures/icons/power/power_laser.png` | `icon.power.laser` | Research-level icon of the laser level; drawn by no rule of a match (R-CRATE-014, DEC-115) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | post-launch | generated glyph |
 | `content/textures/icons/power/power_airstrike.png` | `icon.power.airstrike` | airstrike outcome and power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_transport.png` | `icon.power.transport` | Transport outcome and power | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_builder.png` | `icon.power.builder` | Builder outcome and power; also drawn over the Builder | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
@@ -312,7 +311,7 @@ Power and Supply-crate outcome icons and the power-slot panel read-outs. Icons a
 | `content/textures/icons/power/power_fury.png` | `icon.power.fury` | Fury outcome | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/power/power_allegiance_scrambler.png` | `icon.power.allegiance_scrambler` | Allegiance Scrambler outcome (shown on the crate) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
 | `content/textures/icons/power/power_spitter_plants.png` | `icon.power.spitter_plants` | Spitter Plants outcome (shown on the crate) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | launch | generated glyph |
-| `content/textures/icons/power/power_slots_upgrade.png` | `icon.power.slots_upgrade` | Power-slots power level | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256); role to be confirmed against reference/04 | single | post-launch | generated glyph |
+| `content/textures/icons/power/power_slots_upgrade.png` | `icon.power.slots_upgrade` | Research-level icon of the Power-slots level; drawn by no rule of a match (R-CRATE-014, DEC-115) | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | post-launch | generated glyph |
 | `content/textures/icons/hud/hud_slot_empty.png` | `icon.hud.slot_empty` | Empty power slot | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/hud/hud_slot_discard.png` | `icon.hud.slot_discard` | Discard-power button on a power slot | PNG RGBA8 (white art) → BC7 sRGB, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated glyph |
 | `content/textures/icons/hud/hud_icon_halo.png` | `icon.hud.icon_halo` | Darkening halo behind HUD icons | PNG grey (darkening) → BC4, mips | 128x128 px display size; author at 2x (256x256) | single | skirmish-first-playable | generated gradient |
@@ -404,13 +403,13 @@ Platform-neutral input glyphs: shapes and labels describe the position of a cont
 
 ## 10 Terrain ramps, water and waves
 
-Ramps and wave gradients are CPU look-up tables, not GPU textures: the terrain builder reads a ramp by slope and height to colour each terrain triangle, and the sea renderer reads one wave-gradient row. Sea tiles are GPU textures, repeated and multiplied by the sea light map. Each map names one ramp, one sea tile and one wave gradient; number 01 of each is the map default. The seasonal theme forces ramp 06, sea tile 02 and wave gradient 04. Theme numbers carry no fixed biome; the environment brief assigns one look per number.
+Ramps and wave gradients are CPU look-up tables, not GPU textures: the terrain builder reads a ramp by slope and height to colour each terrain triangle, and the sea renderer reads one wave-gradient row. Sea tiles are GPU textures, repeated and multiplied by the sea light map. Each map names one ramp, one sea tile and one wave gradient; number 01 of each is the map default. The seasonal theme forces ramp 06, sea tile 02 and wave gradient 04. No match map names ramp 14 or wave gradient 08; the map editor lists them with the others, so they are post-launch (R-MAP-086, R-MAP-325). Theme numbers carry no fixed biome; the environment brief assigns one look per number.
 
 | Species file | Asset id | Role | Formats (source → runtime) | Spec | Variants | Priority | Placeholder |
 |---|---|---|---|---|---|---|---|
-| `content/textures/terrain/terrain_ramp_{01..14}.png` (14 files) | `terrain.ramp` | Terrain colour ramp: colour by slope (x) and height (y), read on the CPU when the terrain mesh is built | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 64x64 px; x = slope (column 0 flat ground, column 63 vertical); y = height, the look-up row counted from the bottom row of the image as viewed: the bottom row is the highest terrain, the top row sea level and below (TER-040); the content build rejects another size (TER-250) | 14 | skirmish-first-playable: 1<br>launch: 13 | generated ramp |
+| `content/textures/terrain/terrain_ramp_{01..14}.png` (14 files) | `terrain.ramp` | Terrain colour ramp: colour by slope (x) and height (y), read on the CPU when the terrain mesh is built | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 64x64 px; x = slope (column 0 flat ground, column 63 vertical); y = height, the look-up row counted from the bottom row of the image as viewed: the bottom row is the highest terrain, the top row sea level and below (TER-040); the content build rejects another size (TER-250) | 14 | skirmish-first-playable: 1<br>launch: 12<br>post-launch: 1 (file 14) | generated ramp |
 | `content/textures/terrain/sea_tile_{01..04}.png` (4 files) | `terrain.sea_tile` | Sea surface tile (repeated, multiplied by the sea light map) | PNG RGB8 (seamless) → BC7 sRGB, mips, repeat | 128x128 px; wrap repeat | 4 | skirmish-first-playable: 1<br>launch: 3 | generated noise tile |
-| `content/textures/terrain/shore_wave_gradient_{01..08}.png` (8 files) | `terrain.shore_wave_gradient` | Shore-wave colour gradient: one row read on the CPU by the sea renderer | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 400x10 px; the wave colours are pixel row 1 counted from the bottom row of the image as viewed, one colour per column (TER-041) | 8 | skirmish-first-playable: 1<br>launch: 7 | generated ramp |
+| `content/textures/terrain/shore_wave_gradient_{01..08}.png` (8 files) | `terrain.shore_wave_gradient` | Shore-wave colour gradient: one row read on the CPU by the sea renderer | PNG RGB8 (table) → RGBA8 sRGB table, read on the CPU | 400x10 px; the wave colours are pixel row 1 counted from the bottom row of the image as viewed, one colour per column (TER-041) | 8 | skirmish-first-playable: 1<br>launch: 6<br>post-launch: 1 (file 08) | generated ramp |
 
 ## 11 Meshes
 
@@ -495,7 +494,7 @@ Flat-shaded low-poly meshes with per-face colours. Parts that take the team colo
 
 ### 11.1 Collision assets
 
-Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../reference/03_buildings_and_world_objects/README.md) R-BLDG-041 to R-BLDG-043), has a collision asset: a separate glTF 2.0 file of triangle primitives with no materials, authored as its own source and never generated from render geometry, cooked into a simulation-relevant `Collision` entry ([asset pipeline](../architecture/components/asset_pipeline_and_resources.md) AST-044). A collision asset has one member per member of its render mesh, in the same order, and the render mesh's import record names it. The structures that the hit tests never read (Launch Vessel, Control Zone, carryable objects, bot navigation nodes and the other kinds of table 2.12-A that are never hit), the jump pad, trees and the socket-only turret mount have none. Placeholder: primitive collision.
+Every collidable mesh, that is every mesh that a structure's sphere, mesh or ray test reads ([buildings and world objects](../reference/03_buildings_and_world_objects/README.md) R-BLDG-041 to R-BLDG-043), has a collision asset: a separate glTF 2.0 file of triangle primitives with no materials, authored as its own source and never generated from render geometry, cooked into a simulation-relevant `Collision` entry ([asset pipeline](../architecture/components/asset_pipeline_and_resources.md) AST-044). A collision asset has one member per member of its render mesh, in the same order, and the render mesh's import record names it. The structures that the hit tests never read (Launch Vessel, Control Zone, carryable objects, bot navigation nodes and the other kinds of table 2.12-A that are never hit), the jump pad, trees and the turret mount have none: the mount is a socket carrier with no geometry (AST-045), and the turret's sphere, mesh and ray tests read its head and barrel assets (table 2.12-A). Placeholder: primitive collision.
 
 | Species file | Asset id | Role | Spec | Variants | Priority |
 |---|---|---|---|---|---|
@@ -616,7 +615,7 @@ Help pictures carry no baked text: labels come from the string table, so one pic
 
 ## 13 Audio by source and event
 
-Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an Opus stream for every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`, AEN-072); the resident groups hold about 173 MiB (AEN-304). Placeholder: synthesised tone (voice lines: text-to-speech line).
+Sound effects are sample groups named by **source and event**: a group holds the variants one event picks from, and its file count matches the reference group, so the mix keeps the same variety. Behaviour (volume, pitch spread, distance, looping, priority) lives in the sound-event data of [10](../reference/10_audio_design/README.md), not in the files. Where one reference group serves several events, the Species group is named after its main binding and the other bindings are listed; two files are shared by two groups and listed once. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an MS-ADPCM stream, decoded by XAudio2, for every member of a group whose longest member is over 20 s (`aen.residency.stream_threshold`, AEN-072, ADR-025); the resident groups hold about 173 MiB (AEN-304). Placeholder: synthesised tone (voice lines: text-to-speech line).
 
 182 (source, event) bindings of the reference fire in a match and play these groups. Of the events that fire with no bound sound in the reference, four gain new groups here by Resolved decisions (the laser-bolt fire, structure-hit and kill groups of DEC-564 and the Trooper grenade throw of DEC-097), the game-over announcement is a UI sound (§14), and the victory and defeat events play the music stings of §16; every other one stays silent and needs no file ([event catalogue](../reference/10_audio_design/event_catalogue.md) R-AUD-141 to R-AUD-143).
 
@@ -1013,7 +1012,7 @@ Interface sounds: menus, selection, countdown, chat, the power-slot panel and th
 
 ## 15 Ambience
 
-Ambience beds: 2-D loops under the match and under the lobby. Each bed has layers that play together. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an Opus stream for every member of a group whose longest member is over 20 s (AEN-072). Placeholder: silence.
+Ambience beds: 2-D loops under the match and under the lobby. Each bed has layers that play together. Formats: WAV 48 kHz 24-bit → 16-bit PCM resident, or an MS-ADPCM stream, decoded by XAudio2, for every member of a group whose longest member is over 20 s (AEN-072, ADR-025). Placeholder: silence.
 
 | Files | Asset id | Event | Also bound to | Spec | Variants | Priority |
 |---|---|---|---|---|---|---|
@@ -1090,28 +1089,28 @@ The language set is the reference set of nine; the design phase confirms it. Jap
 
 ### 18.1 String ids cited by the documents
 
-The reference documents and engine components cite 579 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
+The reference documents and engine components cite 601 string ids and id patterns (such as `ui.input.key.<name>`). Each needs new en-GB text in `strings.en_gb` and a translation in every other table, except the development captions `ui.dev.*`, which live only in `strings.dev_en_gb`. The owning document defines each id and its meaning; this table sizes the writing by family (counted mechanically from the documents).
 
 | Family | Ids | Main owner |
 |---|---:|---|
 | `achievement.*` | 25 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `bot.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `building.*` | 15 | [03_buildings_and_world_objects/defences_and_props](../reference/03_buildings_and_world_objects/defences_and_props.md) and 4 more |
-| `crate.*` | 37 | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) and 5 more |
+| `crate.*` | 57 | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) and 6 more |
 | `creature.*` | 2 | [02_units/README](../reference/02_units/README.md) |
 | `faction.*` | 2 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `map.*` | 3 | [08_maps_and_level_design/rules_and_conventions](../reference/08_maps_and_level_design/rules_and_conventions.md) |
-| `match.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 3 more |
 | `match.comeback_bonus.*` | 1 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
 | `match.eliminated.*` | 2 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
-| `match.game_over.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
-| `match.grace_period.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.game_over.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
+| `match.grace_period.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 3 more |
 | `match.hud.*` | 5 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `match.options.*` | 25 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 5 more |
-| `match.rank.*` | 9 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) |
+| `match.rank.*` | 9 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
 | `match.sudden_death.*` | 1 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 3 more |
-| `mode.*` | 2 | [data_schemas/README](../architecture/components/data_schemas/README.md) and 2 more |
-| `mode.complexity.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 1 more |
+| `mode.*` | 2 | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 3 more |
+| `mode.complexity.*` | 3 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `mode.flag_chain.*` | 9 | [01_skirmish_rules_and_modes/flag_chain](../reference/01_skirmish_rules_and_modes/flag_chain.md) and 2 more |
 | `mode.launch_race.*` | 12 | [01_skirmish_rules_and_modes/launch_race](../reference/01_skirmish_rules_and_modes/launch_race.md) and 3 more |
 | `mode.relic_run.*` | 4 | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
@@ -1126,39 +1125,39 @@ The reference documents and engine components cite 579 string ids and id pattern
 | `ui.browser.*` | 2 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
 | `ui.chat.*` | 1 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 1 more |
 | `ui.common.*` | 1 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 2 more |
-| `ui.confirm_leave.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.confirm_leave.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
 | `ui.connecting.*` | 11 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.credits.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.dev.*` | 22 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) |
+| `ui.dev.*` | 23 | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 1 more |
 | `ui.dialog.*` | 6 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 4 more |
 | `ui.error.*` | 18 | [platform_layer](../architecture/components/platform_layer.md) and 6 more |
-| `ui.help.*` | 51 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) and 2 more |
+| `ui.help.*` | 52 | [11_tutorial_and_help](../reference/11_tutorial_and_help.md) and 2 more |
 | `ui.help_and_options.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.help_select.*` | 2 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
 | `ui.host_or_join.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.input.*` | 5 | [input](../architecture/components/input/README.md) |
+| `ui.input.*` | 5 | [input/controls_and_default_bindings](../architecture/components/input/controls_and_default_bindings.md) and 1 more |
 | `ui.language.*` | 9 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.leaderboard.*` | 14 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.loading.*` | 1 | [09_front_end_and_match_flow/front_end_presentation](../reference/09_front_end_and_match_flow/front_end_presentation.md) |
-| `ui.lobby.*` | 17 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 3 more |
+| `ui.lobby.*` | 17 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 4 more |
 | `ui.main.*` | 7 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.map_editor.*` | 16 | [08_maps_and_level_design/map_editor_hooks](../reference/08_maps_and_level_design/map_editor_hooks.md) |
 | `ui.map_select.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.match.*` | 4 | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) and 4 more |
-| `ui.match_menu.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
+| `ui.match.*` | 4 | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 6 more |
+| `ui.match_menu.*` | 4 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
 | `ui.mode_select.*` | 1 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
 | `ui.options.*` | 42 | [09_front_end_and_match_flow/options_localisation_and_hooks](../reference/09_front_end_and_match_flow/options_localisation_and_hooks.md) |
 | `ui.player.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.player_options.*` | 5 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) |
-| `ui.power_slots.*` | 12 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 5 more |
+| `ui.power_slots.*` | 12 | [06_controls_camera_and_commands/selection_and_power_slots](../reference/06_controls_camera_and_commands/selection_and_power_slots.md) and 6 more |
 | `ui.repair.*` | 2 | [build_tooling_and_distribution](../architecture/components/build_tooling_and_distribution.md) and 1 more |
-| `ui.settings.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 1 more |
+| `ui.settings.*` | 1 | [data_schemas/config_input_and_strings](../architecture/components/data_schemas/config_input_and_strings.md) and 2 more |
 | `ui.team.*` | 1 | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) |
 | `ui.title.*` | 2 | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) and 3 more |
 | `ui.tutorials.*` | 3 | [09_front_end_and_match_flow/screen_flow_and_match_setup](../reference/09_front_end_and_match_flow/screen_flow_and_match_setup.md) and 1 more |
-| `unit.*` | 10 | [02_units/builder](../reference/02_units/builder.md) and 3 more |
+| `unit.*` | 10 | [02_units/builder](../reference/02_units/builder.md) and 4 more |
 
-String ids named in pass 2a, with the documents that cite them:
+String ids named by the asset passes, with the documents that cite them:
 
 | String ids | Text | Main owner |
 |---|---|---|
@@ -1166,14 +1165,16 @@ String ids named in pass 2a, with the documents that cite them:
 | `ui.error.os_unsupported`, `ui.error.user_data_unavailable`, `ui.error.user_data_inside_install`, `ui.error.language_missing`, `ui.error.internal` | start-up errors of the platform layer, also compiled into the executable | [platform_layer](../architecture/components/platform_layer.md) and 1 more |
 | `ui.error.content_missing`, `ui.error.content_damaged` | a game file is missing or damaged | [asset_pipeline_and_resources](../architecture/components/asset_pipeline_and_resources.md) and 2 more |
 | `ui.error.gpu_unsupported`, `ui.error.display_mode`, `ui.error.resolution_rejected` | graphics start-up and display-mode errors | [platform_layer](../architecture/components/platform_layer.md) and 2 more |
-| `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance](../architecture/components/diagnostics_test_and_performance/README.md) |
+| `ui.match.cheats_used` | the marker shown and recorded when development commands changed a match | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) and 2 more |
 | `ui.match.paused` | the match-paused message | [renderer/frame_graph_and_passes](../architecture/components/renderer/frame_graph_and_passes.md) |
 | `ui.dialog.close`, `ui.dialog.error`, `ui.dialog.success` | message-dialog captions and button | [ui_framework/core_and_widgets](../architecture/components/ui_framework/core_and_widgets.md) |
 | `ui.dialog.sound_settings_failed` | the sound-settings failure that the audio engine shows through the message dialog | not yet cited |
-| `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input](../architecture/components/input/README.md) |
+| `ui.input.key.<name>`, `ui.input.mouse.<name>`, `ui.input.pad.<name>`, `ui.input.condition.<condition>`, `ui.input.not` | display names of the 113 keys, 6 mouse controls, 25 gamepad controls and 9 binding conditions, and the negation word | [input/controls_and_default_bindings](../architecture/components/input/controls_and_default_bindings.md) and 1 more |
 | `bot.label`, `match.team_left`, `match.player_left`, `ui.lobby.player_joined`, `ui.team.invalid_name`, `faction.rogue.name`, `faction.visitor.name` | team, player and faction names and messages | [12_simulation_model/06_teams_and_player_commands](../reference/12_simulation_model/06_teams_and_player_commands.md) and 3 more |
 | `team.colour.green`, `team.colour.red`, `team.colour.yellow`, `team.colour.blue`, `team.colour.orange`, `team.colour.purple`, `team.colour.cyan`, `team.colour.pink` | the eight team colour names | [01_skirmish_rules_and_modes/README](../reference/01_skirmish_rules_and_modes/README.md) and 2 more |
 | `match.kill_milestone` | the kill-milestone message (proposed id; the owning match-rules document assigns it) | not yet cited |
+| `crate.strike_team.tooltip`, `crate.collector.tooltip`, `crate.builder.tooltip`, `crate.transport.tooltip`, `crate.airstrike.tooltip`, `crate.missile_barrage.tooltip`, `crate.shield.tooltip`, `crate.convert.tooltip`, `crate.speed_boost.tooltip`, `crate.turret_gun.tooltip`, `crate.swarm.tooltip`, `crate.essence_grove.tooltip`, `crate.hive.tooltip`, `crate.brood.tooltip`, `crate.meteor_shower.tooltip`, `crate.blight_grove.tooltip`, `crate.fury.tooltip`, `crate.turret_rocket.tooltip`, `crate.turret_flame.tooltip`, `crate.firebomb_run.tooltip` | the Power help text of each of the 20 outcomes that can be delivered as a Power, shown while the Power is Waiting (R-CRATE-011, R-CTRL-236) | [04_supply_crates_powers_and_weapons/README](../reference/04_supply_crates_powers_and_weapons/README.md) |
+| `ui.dev.command.dump_bindings` | the caption of the development command that writes the bindings to the log | [diagnostics_test_and_performance/developer_tools](../architecture/components/diagnostics_test_and_performance/developer_tools.md) |
 
 ## 19 Maps and thumbnails
 
@@ -1231,12 +1232,13 @@ These reference files and text entries need no Species counterpart. Counts only;
 | dropped feature (user profiles, mods) |  |  |  |  | 2 | 2 |
 | dropped feature (dropped crate outcome and its structure) | 1 |  |  |  |  | 1 |
 | store and branding art | 1 |  |  |  |  | 1 |
+| drawn by no rule | 1 |  |  |  |  | 1 |
 | dropped feature (dropped weapon) | 1 |  |  |  |  | 1 |
 | dropped feature (disabled crate outcome) | 1 |  |  |  |  | 1 |
 | dropped feature (dropped mode and unit) | 1 |  |  |  |  | 1 |
 | unreachable fallback | 1 |  |  |  |  | 1 |
 | editor only |  | 1 |  |  |  | 1 |
-| **Total** | **115** | **201** | **404** | **67** | **281** | **1068** |
+| **Total** | **116** | **201** | **404** | **67** | **281** | **1069** |
 
 Bitmap font pages are not in this table: their role passes to the font files of §17.
 

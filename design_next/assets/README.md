@@ -1,13 +1,13 @@
 # Assets
 
-> Status: Asset overview, pass 2a · Related: [GameAssets.md](GameAssets.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md)
+> Status: Asset overview, pass 2b · Related: [GameAssets.md](GameAssets.md) · [asset_manifest.csv](asset_manifest.csv) · [art_and_audio_briefs.md](art_and_audio_briefs.md)
 
 This folder lists what the reference mechanics need as Species content: every sprite, texture, mesh, sound, font, string table and map, newly authored to the technical role its reference counterpart plays. Nothing is traced, re-coloured or edited from the reference game's art, audio or text.
 
 | File | What it is |
 |---|---|
 | [GameAssets.md](GameAssets.md) | The owner's list: every asset to create, by category, with its Species file name or numbered pattern, role, source and runtime format, spec, variants, priority and placeholder |
-| [asset_manifest.csv](asset_manifest.csv) | The same set, one row per file: `asset_id, category, subcategory, consumers, role, target_format, spec, colour_space, alpha_mode, variants, priority, placeholder, brief_ref, species_filename, source_format`. Consumers are documents in passes 1 and 2a; pass 2b replaces them with requirement IDs. The asset pipeline consumes every row and is not listed per row |
+| [asset_manifest.csv](asset_manifest.csv) | The same set, one row per file: `asset_id, category, subcategory, consumers, role, target_format, spec, colour_space, alpha_mode, variants, priority, placeholder, brief_ref, species_filename, source_format`. Consumers are the requirement ids that use each asset, separated by `;`; where a document cites the asset only outside its requirements (a dependency list, a data-model table), its path stands in. The asset pipeline consumes every row and the audio engine loads every sample group (AEN-074); neither is listed per row except where one of its requirements names the asset |
 | [art_and_audio_briefs.md](art_and_audio_briefs.md) | The style guide for the look and feel to keep, and a brief per category |
 
 ## Counts by category and priority
@@ -16,11 +16,11 @@ This folder lists what the reference mechanics need as Species content: every sp
 |---|---:|---:|---:|---:|---:|
 | Unit sprites | 13 | 16 | 6 | 9 | 1 |
 | VFX textures | 19 | 19 | 13 | 6 | 0 |
-| UI panels and title | 14 | 21 | 12 | 8 | 1 |
+| UI panels and title | 13 | 20 | 12 | 8 | 0 |
 | HUD, supply-crate and power icons | 32 | 34 | 17 | 15 | 2 |
 | Cursors and markers | 35 | 47 | 36 | 11 | 0 |
 | Input glyphs | 19 | 19 | 1 | 18 | 0 |
-| Terrain ramps, water and waves | 3 | 26 | 3 | 23 | 0 |
+| Terrain ramps, water and waves | 3 | 26 | 3 | 21 | 2 |
 | Meshes | 77 | 104 | 27 | 71 | 6 |
 | Help images and explainer animations | 22 | 75 | 1 | 58 | 16 |
 | Audio by source and event | 171 | 895 | 502 | 393 | 0 |
@@ -30,9 +30,9 @@ This folder lists what the reference mechanics need as Species content: every sp
 | Fonts | 5 | 5 | 1 | 4 | 0 |
 | String table | 10 | 10 | 2 | 8 | 0 |
 | Maps and thumbnails | 12 | 98 | 4 | 94 | 0 |
-| **Total** | **453** | **1412** | **652** | **734** | **26** |
+| **Total** | **452** | **1411** | **652** | **732** | **27** |
 
-The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 787 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
+The first-playable set is one skirmish mode, Spawn Control for 2 players, with the core Supply-crate pool ([GameAssets.md §2.5](GameAssets.md#25-priorities-and-the-first-playable-assumption)). 788 reference files and 281 reference text entries need no Species counterpart ([GameAssets.md §20](GameAssets.md#20-not-to-be-created)).
 
 ## Technical constraints per category
 
@@ -49,8 +49,8 @@ The first-playable set is one skirmish mode, Spawn Control for 2 players, with t
 | Help images and explainer animations | No baked text; hint pictures 200x200, help pages 150x150, mode cards 300x200 (display sizes); explainer pictures with full mip chains; explainer canvases 800-1000 x 250 with fixed loop lengths |
 | Audio by source and event | Mono, 48 kHz; variant counts kept per group; loops seamless; behaviour in the sound-event data, not in the files; voice barks are new voice sets |
 | UI sounds | 2-D, short one-shots; mono or stereo |
-| Ambience | 2-D layered loops; a group streams when its longest member is over 20 s (AEN-072) |
-| Music | New; stereo 48 kHz; streamed; slots proposed, final list set by the design phase |
+| Ambience | 2-D layered loops; a group streams, as MS-ADPCM decoded by XAudio2, when its longest member is over 20 s (AEN-072, ADR-025) |
+| Music | New; stereo 48 kHz; streamed as MS-ADPCM, decoded by XAudio2; slots proposed, final list set by the design phase |
 | Fonts | Licensed families; glyph cache at run time; coverage Latin-1, Cyrillic, currency, Japanese kana and ideographs, Hangul |
 | String table | New text only; ICU MessageFormat; one table per language; the reference set of nine languages; a development string table in development editions only |
 | Maps and thumbnails | New layouts; one slot per reference map by mode and player count; one auto-rendered 4:3 thumbnail per map |
