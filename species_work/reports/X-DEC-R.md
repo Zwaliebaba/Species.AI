@@ -24,7 +24,7 @@ This is a WORK file: it names original row and question ids (F-, B-, Q-, H-, NN-
 | `species_work/scripts/X-DEC-R_apply.py` | applies the edits (`--section-index`); idempotent: a second run applies nothing |
 | this report | |
 
-Publishing: none. No Artifact, Docs, Drive, Gamma or GitHub tool was used. Git: no write command. During the run one apply pass duplicated some additions (an idempotency bug in my own script); I restored the touched files with read-only `git show HEAD:<file>` output, fixed the script and re-applied once. HEAD was the G2 commit, so nothing of other agents was lost.
+Publishing: none. No Artifact, Docs, Drive, Gamma or GitHub tool was used. Git: no write command. During the run one apply pass duplicated some additions (an idempotency bug in my own script); I restored the touched files with read-only `git show HEAD:<file>` output, fixed the script and re-applied once. HEAD was then the G2 commit `a3cc1c7`, which none of the other agents had changed since, so nothing was lost. The coordinator's later commit `75fd84e` already holds the final state of every design file.
 
 ORIG was read only at `orig_refs` lines of entries I amended: 40 L82, L103, L157–158, L455, L513–515, L540, L565, L573–574, L582, L584, L589–590 and 41 L84, L89, L140, L152, L387, L521, L526, L530 (DEC-011, 021, 087, 088, 097, 101, 102, 112, 321–323), and 06 L2315 (DEC-555).
 
@@ -174,7 +174,7 @@ Packages that X-DEC-3 told to cite DEC-306 (G05, G03a, C-SIM-a) cite DEC-455 ins
 
 | Source | Ids touched | What changed |
 |---|---|---|
-| X-DEC-2a request 4 | DEC-200 (constraint 10 area), DEC-202, DEC-206, DEC-208 text in `networking.md` | four citations of `numerics_lobby_terrain_services.md` by file name replaced by DEC-240, DEC-243, DEC-250/251 and DEC-248/249 |
+| X-DEC-2a request 4 | DEC-200, DEC-202, DEC-204, DEC-207 (`networking.md`) | four citations of `numerics_lobby_terrain_services.md` by file name replaced by DEC-240, DEC-243, DEC-250/251 and DEC-248/249 |
 | X-DEC-2a (DEC-008) | DEC-008 | the placeholder "see DEC-2xx, networking" now cites DEC-202 |
 | X-DEC-1 / X-DEC-2a file-name citations | DEC-025, DEC-026, DEC-028, DEC-035, DEC-047, DEC-106 | deferred files cited by path are now cited by id (DEC-246, DEC-243, DEC-224, DEC-205/244, DEC-248, DEC-227/228) |
 | X-DEC-2c | DEC-241 item 3, DEC-243 item 4 | the mode-second reference now cites DEC-002; the bot-difficulty off-by-one cites its fix DEC-077 |

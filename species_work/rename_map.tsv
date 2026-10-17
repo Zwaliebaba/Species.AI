@@ -115,7 +115,7 @@ Special profiles `AccessAllAreas`, `AttractMode`, `game_unlockall.txt`	identifie
 "Subtitle ""Survival of the flattest"""	text	Species tagline (new text)		ui.title.tagline	rename	90 §3
 Title, logo, box and price art (`textures/mwtitle.bmp`, `icons/mwlogo.bmp`, `textures/ivlogo.bmp`, `textures/multiwinia.bmp`, `prices*.bmp`)	art	title wordmark; studio logo placeholder	game_title_wordmark	ui.title	rename	no store art; final ids from the asset manifest; 90 §3
 """Darwinia"" (prequel, `DARWINIA_*` macros, `darwinia_gl.exe`)"	brand		SPECIES_*		drop	campaign content is out of scope; identifiers use Species; 90 §3
-"""Introversion Software"", company folder `Introversion\Multiwinia\`, registry key, Mac bundle id, version resource"	brand	<STUDIO>	<STUDIO>		rename	profile folder <STUDIO>\Species\ ; 90 §3
+"""Introversion Software"", company folder `Introversion\Multiwinia\`, registry key, Mac bundle id, version resource"	brand	<Studio>	<Studio>		rename	profile folder <Studio>\Species\ ; 90 §3
 Product and partner identifiers (`METASERVER_GAMETYPE_MULTIWINIA` = 4, Steam app id 1520, crash-report id `0B9432AF`, Game Explorer GUID)	identifier				drop	own product ids; 90 §3
 Licensing material (fixed demo key, blacklisted keys, `DEMO` / `AMBR` key prefixes, `hsh` hash prefix, key format, `redshirt2` cipher)	brand				drop	platform entitlements; never copied; 90 §3
 Store, metaserver, crash-report and FTP hosts	brand				drop	online services are decided by the design phase; 90 §3
@@ -266,7 +266,7 @@ Thumbnails / mwhelp / icons naming	art	new art with role names			rename	final as
 Soul	name	Essence orb	EssenceOrb	unit.essence_orb	rename	90 §2
 Multiwinia	brand	Species	Species	game	rename	game name: Species in types and namespaces, species in files and ids; 90 §2
 Darwinia	brand		SPECIES_*		drop	campaign content is out of scope; identifiers use Species; 90 §2
-Introversion Software	brand	<STUDIO>	<STUDIO>		rename	profile folder <STUDIO>\Species\ ; 90 §2
+Introversion Software	brand	<Studio>	<Studio>		rename	profile folder <Studio>\Species\ ; 90 §2
 Evilinians	name	Rogue faction	RogueFaction	faction.rogue	rename	90 §2
 Futurewinians	name	Visitor faction	VisitorFaction	faction.visitor	rename	90 §2
 Dr Sepulveda	name	Advisor			drop	feature dropped; 90 §2
@@ -281,7 +281,7 @@ NET_DARWINIA_*	identifier	player command ids	NET_GAME_*		rename	only where a wir
 Space Invader (name)	name	Bomber	Bomber	unit.bomber	rename	one aircraft of an airstrike or Firebomb Run; 90 §2
 Triffid (name)	name	Spitter Plant	SpitterPlant	building.spitter_plant	rename	crate-spawned world object; 90 §2
 Distributor and partner names	brand				drop	90 §2
-Profile directory (`<P>`)	identifier	<STUDIO>\Species\ profile folder			rename	90 §2
+Profile directory (`<P>`)	identifier	<Studio>\Species\ profile folder			rename	90 §2
 Darwinians	name	Workers	Worker	unit.worker	rename	form
 Multiwinian	name	Worker	Worker	unit.worker	rename	form
 Multiwinians	name	Workers	Worker	unit.worker	rename	form
@@ -684,5 +684,5 @@ AppSeedRandom	identifier	presentation generator seed	FxRng::Seed		rename
 OrderGoto	identifier	waypoint order	LeaderOrder::Waypoint		rename	
 APP_NAME	identifier	product name	kProductName		rename	value Species
 <GAME_TITLE>	identifier	Species	Species		rename	90 placeholder resolved by the game name
-<STUDIO>	brand	<STUDIO>	<STUDIO>		rename	placeholder kept: the studio name is not decided
+<Studio>	brand	<Studio>	<Studio>		rename	placeholder kept: the studio name is not decided
 phrase-id families (multiwinia_*, crate_*, cratename_*, dialog_*, editor_*, taskmanager_*, buildingname_*, entityname_* and the rest of ORIG/41 IP28)	text	Species string ids			rename	dotted ids <area>.<object>.<item>; no reference phrase id is reused

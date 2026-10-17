@@ -299,7 +299,7 @@ Species names come from the rename ledger of the conversion run. A document uses
 | map_zone_control_<players>p_<nn> | naming pattern | `map_zone_control_<players>p_<nn>` | `map` |
 | player command ids | naming pattern | `NET_GAME_*` | — |
 | previous camera view | naming pattern | `previous_view` | — |
-| studio name (placeholder) | naming pattern | `<STUDIO>` | — |
+| studio name (placeholder) | naming pattern | `<Studio>` | — |
 
 ### 8.12 Engine and simulation types
 
