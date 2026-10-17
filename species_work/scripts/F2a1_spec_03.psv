@@ -1,0 +1,42 @@
+FILE|03_buildings_and_world_objects.md
+1|29|DROP-PROVENANCE||||DP-INDEX: H1 title, provenance banner and contents list
+30|43|DROP-PROVENANCE||||DP-INDEX: H2 heading and document-ownership list (what is owned elsewhere)
+44|62|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: time base, teams, ownership and friendship, damage sign convention|G03a|campaign-only team note is DL-CAMPAIGN
+63|72|DROP-PROVENANCE||||DP-METHOD: map-census definitions and status codes used by the recovery tables
+73|74|DROP-PROVENANCE||||DP-INDEX: H2 heading line of §2 only
+75|164|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: building type catalogue (live types, map counts per mode, owning file)|G03a|live types only; unused and blocked rows DL-CAMPAIGN; Tank Battle rows DL-DEBUG; no map names
+165|188|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: helper objects without a type value|G03a|drop legacy rows (DL-CAMPAIGN)
+189|288|MERGE|reference/12_simulation_model.md|Building type hierarchy (Species types)|C-SIM|class diagram rewritten as a Species type diagram; legacy classes omitted
+289|462|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: building base behaviour (data, ports, lifecycle, behaviour hooks, occupancy and reservation, capture model, damage and destruction, ownership change)|G03a|express hooks as behaviour, not virtual functions; editor and debug render helpers dropped (DL-DEBUG)
+463|487|MERGE|architecture/components/data_schemas.md|Building placement record and type-name table|C-DAT|field lists preserved; positional line grammar is DL-LEGACY-TECH
+488|513|DROP-LEGACY||||DL-CAMPAIGN: blocked-type list for old objects and campaign global-world mirroring
+514|556|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: hit-test overrides and shapes; building sound events|G03a|
+557|605|MERGE|architecture/components/data_schemas.md|Per-type placement parameter reference|C-DAT|drop parameters of blocked and debug types; G08 cross-references it
+606|786|KEEP|reference/03_buildings_and_world_objects/economy_and_spawn_objects.md|spawn network: spawn building, links, master spawn point, spawn point, regional population lock|G03a|Darwinia difficulty scaling and world-map behaviour are DL-CAMPAIGN
+787|788|DROP-PROVENANCE||||DP-INDEX: H2 heading line of §5 only
+789|904|KEEP|reference/03_buildings_and_world_objects/defences_and_props.md|GunTurret (all turret types)|G03b|the convert-turret type follows the F1 collision rename
+905|976|KEEP|reference/03_buildings_and_world_objects/economy_and_spawn_objects.md|Teleport and RadarDish|G03a|deformation detail DL-D3D9
+977|1005|KEEP|reference/03_buildings_and_world_objects/mode_objects.md|ControlStation|G03a|
+1006|1025|KEEP|reference/03_buildings_and_world_objects/defences_and_props.md|JumpPad|G03b|
+1026|1104|KEEP|reference/03_buildings_and_world_objects/economy_and_spawn_objects.md|power network: PowerBuilding, SolarPanel, Pylon, PylonEnd, PowerSplitter|G03a|
+1105|1121|DROP-LEGACY||||DL-CAMPAIGN: Generator, PylonStart and Powerstation (campaign power objects)
+1122|1127|KEEP|reference/03_buildings_and_world_objects/economy_and_spawn_objects.md|power network topologies in shipped maps|G03a|no map names
+1128|1469|KEEP|reference/03_buildings_and_world_objects/defences_and_props.md|barriers, scenery and markers: LaserFence, Wall, Tree, StaticShape, RestrictionZone, SmokeMarker, EruptionMarker|G03b|deformation detail DL-D3D9; debug rows DL-DEBUG
+1470|1876|KEEP|reference/03_buildings_and_world_objects/mode_objects.md|mode objective objects: zone, flag, carryable, statue, wall buster, trunk port, pulse bomb, fuel chain, escape rocket, mode usage matrix|G03a|trunk-port world-map behaviour is DL-CAMPAIGN
+1877|1972|KEEP|reference/03_buildings_and_world_objects/defences_and_props.md|crate-spawned objects: AntHill and Triffid|G03b|
+1973|2008|DROP-LEGACY||||DL-DEBUG: Portal (The Beast crate outcome only)
+2009|2029|KEEP|reference/03_buildings_and_world_objects/defences_and_props.md|crate-spawned objects: Randomiser|G03b|
+2030|2094|MERGE|reference/07_bots.md|Bot node graph: AITarget, AIObjective, AIObjectiveMarker|G07|includes the §10 H2 heading line
+2095|2117|DROP-LEGACY||||DL-CAMPAIGN: AISpawnPoint (blocked; campaign and superseded maps only)
+2118|2201|DROP-LEGACY||||DL-CAMPAIGN: ControlTower, Incubator, CloneLab (compiled, loadable, unused by shipped maps)
+2202|2407|DROP-LEGACY||||DL-CAMPAIGN: blocked campaign buildings (construction yard, receivers, spirit processing, factories, blueprints, chess, mines and tracks, research items, script triggers, fence switch, upgrade ports)
+2408|2446|KEEP|reference/03_buildings_and_world_objects/README.md|§2 Rules: live building types by mode|G03a|includes the §13 H2 heading line
+2447|2452|DROP-LEGACY||||DL-CAMPAIGN: not-live building list
+2453|2462|KEEP|reference/03_buildings_and_world_objects/README.md|§1 Purpose: the minimal building layer (capture, spawn tree, proximity capture, power, barriers, mode objects, bot scaffolding)|G03a|state as reference content without adoption advice
+2463|2599|KEEP|reference/03_buildings_and_world_objects/README.md|§4 Tuning table: consolidated building constants|G03a|split per target file by the package agent; debug rows DL-DEBUG
+2600|2642|TO-DEC|decisions/decision_register.md|Building defects and hazards 1-36|X-DEC|integrity items (render path writes state 10 and 33, process-static state 6, 7 and 23, unsynced RNG 2 and 19) Resolved; crash class (cast 14, null and zero division 32); behaviour quirks (smoke obstacle 1, empty solar panel 3, port binding 4, grenade team 17, randomiser slot 22, recount cadence 24, rate quirks 25, solar knock-out 36); 8, 9, 21, 32, 33 concern legacy objects only
+2643|2664|TO-DEC|decisions/decision_register.md|Open questions 03-U1..U17|X-DEC|U1 population membership, U2 advance once per tick, U5 convert task id, U7 missing tokens, U9 smoke obstacles, U10 randomiser slot, U11 cap divisor, U12 crown sphere, U13 rocket damage, U14 audible ownership events, U16 solar knock-out, U17 global master spawn points; U3 test maps (DL-TESTMAPS) and U8 (DL-CAMPAIGN) need no DEC; U4, U6, U15 resolved
+2665|2682|DROP-PROVENANCE||||DP-CLOSING: docs-vs-code discrepancies
+2683|2702|DROP-PROVENANCE||||DP-CLOSING: IP items (feed F1 ledger)
+2703|3076|DROP-PROVENANCE||||DP-CLOSING: source map
+3077|3100|DROP-PROVENANCE||||DP-CLOSING: appendix of dead/legacy code

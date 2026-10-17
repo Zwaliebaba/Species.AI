@@ -16,3 +16,5 @@
 - **Coordinator adjustment:** pushing after Phase 1 as well (the prompt asks only after Phases 3, 6 and 7), because the cloud container is ephemeral.
 
 ## Phase 1 — Foundations
+- F2a1 done: 235 rows (00–05); its own check finds 0 errors. G02a is 185 KB → split G02a1 (units README, worker, leader and formations) / G02a2 (essence orbs, strike team, transport, collector, builder). G04 at 140.5 KB: output likely > 120 KB → make 04 a folder (crates and powers / weapons and projectiles). G03a at 145 KB: optional split. G08 receives 45.5 KB of per-map data from 01, 04 and 05. Mode file names provisional, to align with the F1 ledger.
+- F3 started (slot freed by F2a1).

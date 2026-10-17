@@ -1,0 +1,28 @@
+FILE|04_crates_powerups_and_weapons.md
+1|29|DROP-PROVENANCE||||DP-INDEX: H1 title, provenance banner and contents list
+30|47|KEEP|reference/04_supply_crates_powers_and_weapons.md|§3 States: crate lifecycle state diagram|G04|cheat and tutorial creation paths: tutorial kept (G11 cross-reference), cheat path DL-DEBUG
+48|62|DROP-LEGACY||||DL-DEBUG: build gating macros (The Beast, crate help window, cheat menu, editor exclusion panel); basic and advanced crate classes are kept from §4.5
+63|229|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: crate options, drop timer, placement, falling, landing and bot target, capture rules, lifetime and expiry, resolution, presentation, crate state record|G04|debug placement override DL-DEBUG
+230|319|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: the reward catalogue (identity, class, pool membership, delivery) and behaviour summary per outcome|G04|31 shipped outcomes; The Beast rows DL-DEBUG; display text becomes Species string ids
+320|380|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules and §4 Tuning: selection algorithm and validity, context table, per-type probability, pools of the non-crate grant paths|G04|unbounded re-roll is TO-DEC via §7
+381|444|MERGE|reference/08_maps_and_level_design.md|Per-map crate context (max crates, spawn points, restriction zones, exclusions, pool sizes)|G08|derived from map data; no map names or file names; Tank Battle rows DL-DEBUG
+445|457|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: per-map exclusion list syntax and semantics|G04|includes the §4 H2 heading line
+458|474|MERGE|reference/08_maps_and_level_design.md|Per-map crate exclusions in the reference maps|G08|no map names
+475|562|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: starting power-ups, retribution grants, basic versus advanced crates, restriction zones|G04|retribution must agree with G01
+563|946|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: effect specification per outcome (shared task mechanics and outcomes 1-29)|G04|every duration, radius, count and weight kept
+947|957|DROP-LEGACY||||DL-DEBUG: The Beast outcome (debug build only)
+958|989|KEEP|reference/04_supply_crates_powers_and_weapons.md|§5 Edge cases and interactions: counter-play and counters matrix|G04|
+990|1274|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: weapons, projectiles and effect objects (conventions, explosion model, throwables, grenades, flame grenades, air-strike markers, rockets, lasers, turret shells, fireballs, shockwaves, muzzle flash)|G04|class diagram rewritten as Species types; deformation detail DL-D3D9; legacy rows DL-CAMPAIGN
+1275|1300|DROP-LEGACY||||DL-DEBUG: Missile and LandMine (Tank weapons, no live caller)
+1301|1350|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: pulse wave and infection projectile|G04|legacy row inside infection is DL-CAMPAIGN
+1351|1363|DROP-LEGACY||||DL-CAMPAIGN: controller grenade (single-player squad weapon)
+1364|1421|KEEP|reference/04_supply_crates_powers_and_weapons.md|§2 Rules: lightning, snow, dust ball, turret target marker|G04|
+1422|1435|DROP-LEGACY||||DL-CAMPAIGN: box kite (single-player worship lantern)
+1436|1455|KEEP|reference/04_supply_crates_powers_and_weapons.md|§4 Tuning table: weapon summary|G04|Tank-only rows DL-DEBUG
+1456|1469|MERGE|reference/12_simulation_model.md|Simulation-side versus cosmetic randomness and effects created mid-tick, for crates and weapons|C-SIM|
+1456|1469|TO-DEC|decisions/decision_register.md|Crate and weapon determinism hazards|X-DEC|variable-length RNG consumption, unbounded rejection loops (Q12, crash class), synced RNG spent on cosmetics, render code writing object state (integrity, Resolved), per-tick rules that ignore game speed, NaN in weighted drops, truncated trig tables in simulation paths
+1470|1486|TO-DEC|decisions/decision_register.md|Open questions 04-U1..U12|X-DEC|U3 origin-corner edge cases, U4 bad outcomes ignore exclusions and eggs ownership, U5 randomiser unused slot, U7 strike timing on terrain, U8 speed-crate real-time durations, U10 crates during grace period, U11 derived weapon ranges; U9 is DL-TESTMAPS; U1, U2, U6, U12 resolved (facts in the body)
+1487|1506|DROP-PROVENANCE||||DP-CLOSING: docs-vs-code discrepancies
+1507|1526|DROP-PROVENANCE||||DP-CLOSING: IP items (feed F1 ledger)
+1527|1733|DROP-PROVENANCE||||DP-CLOSING: source map
+1734|1742|DROP-PROVENANCE||||DP-CLOSING: appendix of dead/legacy code

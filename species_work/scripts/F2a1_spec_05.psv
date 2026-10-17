@@ -1,0 +1,33 @@
+FILE|05_economy_and_population.md
+1|30|DROP-PROVENANCE||||DP-INDEX: H1 title, provenance banner and contents list
+31|101|KEEP|reference/05_population_flow.md|§1 Purpose and §3 Flows: economy concept, flow diagram with rates, every population sink|G05|flow diagram as Mermaid with Species names
+102|199|KEEP|reference/05_population_flow.md|§2 Rules: territory capture of spawn points (ports and occupancy, ownership algorithm, activation delay, counters, state machine)|G05|must agree with G03a spawn-point object
+200|220|KEEP|reference/05_population_flow.md|§2 Rules: spawn request cycle|G05|includes the §3 H2 heading line
+221|243|KEEP|reference/05_population_flow.md|§2 Rules: handicap|G05|
+221|243|TO-DEC|decisions/decision_register.md|Handicap effectively binary|X-DEC|Q5 / 05-U5: factor 1 + H/100 only when others average > 1.5 x own points; inert while any point is neutral; diluted by the special teams
+244|292|KEEP|reference/05_population_flow.md|§2 Rules: per-spawn-point rate, essence transit through the spawn network, worked numerical examples, spawn-mania burst|G05|
+293|298|DROP-LEGACY||||DL-CAMPAIGN: single-player spawn formula
+299|323|KEEP|reference/05_population_flow.md|§2 Rules: population cap, what is counted|G05|debug row DL-DEBUG
+324|341|KEEP|reference/05_population_flow.md|§2 Rules: population cap computation|G05|cap formula exactly as specified
+324|341|TO-DEC|decisions/decision_register.md|Per-team cap from the map's player count|X-DEC|Q3 / 05-U6: cap = PopulationCap / NumPlayers of the level; never grows on elimination or leave; alliances not pooled; integer division
+342|378|KEEP|reference/05_population_flow.md|§2 Rules: cap enforcement points, overshoot, per-mode summary|G05|Tank Battle row DL-DEBUG
+379|449|MERGE|reference/08_maps_and_level_design.md|Per-map population caps in the reference maps|G08|no map names or file names; Tank Battle and test maps DL-TESTMAPS
+450|462|KEEP|reference/05_population_flow.md|§5 Edge cases: co-op and other cap anomalies (uncapped co-op maps)|G05|
+450|462|TO-DEC|decisions/decision_register.md|Uncapped co-op maps and cap anomalies|X-DEC|00-U4 / 05-U6
+463|468|KEEP|reference/05_population_flow.md|§2 Rules: regional population lock fallback limiter|G05|inert while the map sets a cap; G03a owns the object
+469|573|KEEP|reference/05_population_flow.md|§2 Rules and §3 States: essence lifecycle (creation, states and timers, who can collect, conversions)|G05|population-flow view; G02a owns the essence-orb object; drop [B:LEGACY] creation paths
+574|583|DROP-LEGACY||||DL-CAMPAIGN: incubator (content only on sandbox maps) and worker soul worship (single-player)
+584|619|KEEP|reference/05_population_flow.md|§2 Rules: trunk-port reinforcement waves and parameters per mode|G05|
+620|651|MERGE|reference/08_maps_and_level_design.md|Per-map trunk-port configuration|G08|no map names
+620|651|TO-DEC|decisions/decision_register.md|Doubled reinforcement waves on three flag-chain maps|X-DEC|Q13 / B3 / 05-U7
+652|713|KEEP|reference/05_population_flow.md|§2 Rules: wave timing, siege and flag-chain specifics, starting units, starting power-ups, retribution, crate- and creature-driven population|G05|retribution and starting power-ups must agree with G01 and G04
+714|771|KEEP|reference/05_population_flow.md|§4 Tuning and §5 Edge cases: throughput analysis (rate per spawn point count, trunk-port throughput, time to fill the cap, value of territory)|G05|
+772|841|KEEP|reference/05_population_flow.md|§2 Rules: tick model, nominal versus actual tick counts of every economy timer, game-speed crates, ordering and determinism hazards|G05|tick counts kept exactly
+772|841|TO-DEC|decisions/decision_register.md|Economy timer granularity and per-match state|X-DEC|11-tick seconds and float countdowns (40 D6); E1-E3 counters never reset between matches (integrity, Resolved); E5 same-tick hand-off order; E6 RNG consumption scaling; E7 integer-division rounding; E8 invalid-id loops (crash class)
+842|901|KEEP|reference/05_population_flow.md|§4 Tuning table and formula reference (compact)|G05|pseudocode block kept as normative formula reference
+902|913|TO-DEC|decisions/decision_register.md|Recommendations for the population flow|X-DEC|integer tick timers, handicap intent, cap from teams in play, per-match state, territory model, harvest-any-team essence
+914|934|TO-DEC|decisions/decision_register.md|Open questions 05-U2..U12|X-DEC|U2 spawn-network latency, U3 harvested essence leak, U4 special-team port operation, U5 handicap intent, U6 cap divisor, U7 doubled waves, U8 builder targets taken essence, U9 un-manning ports, U10 virus counter, U11 spawn-mania count, U12 collector throughput; U1 resolved
+935|953|DROP-PROVENANCE||||DP-CLOSING: docs-vs-code discrepancies
+954|972|DROP-PROVENANCE||||DP-CLOSING: IP items (feed F1 ledger)
+973|1133|DROP-PROVENANCE||||DP-CLOSING: source map
+1134|1157|DROP-PROVENANCE||||DP-CLOSING: appendix of dead/legacy code

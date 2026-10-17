@@ -1,0 +1,74 @@
+FILE 26_animation_and_vfx.md
+TOP | DROP-PROVENANCE |  |  |  | DP-INDEX: H1 title and provenance banner (baseline build, evidence legend, sources merged)
+H2:Contents | DROP-PROVENANCE |  |  |  | DP-INDEX: contents list
+H2:1 Scope | KEEP | architecture/components/animation_and_vfx.md | §1 Responsibilities and boundaries; §3 Data model (clocks, VFX random sources, shared easing curve) | C-VFX | five animation kinds, the clock table and the cosmetic-vs-simulation random-source rule; clock names become Species presentation/simulation clocks
+H2:2 VFX and animation inventory | KEEP | architecture/components/animation_and_vfx.md | §1 Responsibilities and boundaries (effect inventory) | C-VFX | 46-row inventory; package agent drops rows tagged LEGACY/DEAD/D3D (gesture trail 42-44, pixel ghost 41, deform 40, officer shield 17, EffectProcessor 46) and moves row 45 (audio DSP) to C-AEN
+I2:3 `.anim` format | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — 2-D keyframed panel timelines | C-VFX | section intro
+H3:3.1 Purpose | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — 2-D keyframed panel timelines | C-VFX | grace-period mode-explainer panel: selection per mode, placement, lifetime; implemented as a UI timeline (C-UI hosts the panel widget); help-panel content is G11
+H3:3.2 Grammar summary | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: positional line grammar of the panel format; the Species panel schema is specified in C-DAT from 29
+H3:3.3 Data model | KEEP | architecture/components/animation_and_vfx.md | §3 Data model — panel object and keyframe fields with defaults | C-VFX | field list and defaults become the timeline track model
+H3:3.4 Sampling | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — sampling an object at time t | C-VFX | interpolation and easing per property
+H3:3.5 Playback clock | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — playback clock and drawing | C-VFX | playback clock and draw rules; GL draw-call specifics dropped by the package agent
+H3:3.6 The six shipped | TO-ASSETS | assets/art_and_audio_briefs.md | mode-explainer panel animations (one per mode): canvas, loop length, objects, what each panel shows | X-AST | per-file keyframe tracks are original content; X-AST keeps only the per-mode brief (canvas size, loop length, depicted action, sprite roles); no file names or track data enter the new set
+H3:3.7 Defects | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — timeline loop rules; §7 Acceptance tests | C-VFX | loop-start, overshoot and visibility rules; UI-timeline mapping and draw-time team colour roles
+= | TO-DEC | decisions/decision_register.md | panel timeline quirks | X-DEC | quirks 1-4 (first pass starts at t=0, frame-quantised loop, only-right-key objects hidden, keys after STOP unreachable): Open, default reference behaviour; #6 parser crash is fixed by schema validation (Resolved)
+I2:4 Sprite and billboard | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — sprite and billboard animation | C-VFX | section intro
+H3:4.1 General rules | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — sprite and billboard animation | C-VFX | general billboard rules
+H3:4.2 Darwinian sprite card | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — worker sprite card, tumble, sway, state textures, overlays, team-colour cross-fade | C-VFX | worker sprite card; renderer pass placement stays with C-RND
+H3:4.3 Seasonal content | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — seasonal winter theme | C-VFX | [B:FULL] seasonal theme (date window, hat, snow, winter ramps, bare trees, light override); activation via the command stream is netcode and is dropped
+= | TO-DEC | decisions/decision_register.md | seasonal theme activation per client | X-DEC | per-client local-date check can enable the theme on some peers only and the snow consumes the synchronised RNG (26-U2, §12.3 #10): simulation-integrity fix, Resolved (theme must be match state, chosen once and identical for all)
+H3:4.4 Team colour in VFX | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — team colour in effects | C-VFX | 
+= | TO-DEC | decisions/decision_register.md | saturated team colours in booster and future-team bubbles | X-DEC | 26-U8: byte values passed as float colours give binary-saturated colours; confirm intended (Open, default reference look)
+H3:4.5 Other billboards | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — other billboards and sprites | C-VFX | 
+H3:4.6 Damage flicker | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — damage flicker | C-VFX | flag must be presentation-only (see §12.3 #8)
+I2:5 Legged | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — procedural creature animation | C-VFX | section intro
+H3:5.1 `EntityLeg` | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — legged locomotion planner and two-bone IK | C-VFX | evaluated on the client from the authoritative body transform (40 R22)
+= | TO-DEC | decisions/decision_register.md | wall-clock leg swing timing | X-DEC | design-critical inference: leg swing uses wall time; fix (Resolved per 40 R22): presentation clock, client-side evaluation, proper two-bone IK
+H3:5.2 Spider gait | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — spider gait | C-VFX | creature names through the ledger
+H3:5.3 Tripod gait | DROP-LEGACY |  |  |  | DL-CAMPAIGN: [B:LEGACY] campaign creature, unreachable in a match
+H3:5.4 Centipede | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — segment chain creature | C-VFX | 
+H3:5.5 SoulDestroyer | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — serpent tail and eaten essence | C-VFX | 
+H3:5.6 Virii | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — glowing worm trail | C-VFX | 
+H3:5.7 SporeGenerator | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — tentacle tails | C-VFX | 
+H3:5.8 Cloth flags | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — cloth flags | C-VFX | 
+H3:5.9 Other procedural | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — other procedural motions | C-VFX | package agent drops the [B:DEBUG] tank bob and [B:LEGACY] officer shield rows
+I2:6 Particle system | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — particle system | C-VFX | section intro
+H3:6.1 Ownership | KEEP | architecture/components/animation_and_vfx.md | §1 Responsibilities and boundaries; §3 Data model — particle ownership and lifecycle | C-VFX | 
+H3:6.2 Particle record | KEEP | architecture/components/animation_and_vfx.md | §3 Data model — particle record | C-VFX | 
+H3:6.3 `ParticleType` | KEEP | architecture/components/animation_and_vfx.md | §3 Data model — particle type fields and defaults | C-VFX | 
+H3:6.4 Every particle type | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — particle type parameter table (19 types) | C-VFX | full parameter table, preserved exactly; texture ids via the asset manifest
+H3:6.5 Advance | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — particle integration | C-VFX | integration maths preserved; tick-coupled update replaced by a presentation sub-step (40 R22, §13)
+H3:6.6 Render | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — particle drawing | C-VFX | 
+H3:6.7 Emitter idioms | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — emitter idioms | C-VFX | 
+H3:6.8 Emitter catalogue | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — emitter catalogue (every emission site as a Species effect event) | C-VFX | 98 sites become effect events emitted by the simulation; package agent drops sites in campaign or debug classes
+I2:7 Beams | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — beams, shockwaves, lightning, flames, smoke, fire, weather, ghosts, essence glow | C-VFX | section intro
+H3:7.1 Lasers | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — laser bolts and muzzle flashes | C-VFX | 
+H3:7.2 Shockwaves | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — shockwaves, blasts and pulse waves | C-VFX | 
+H3:7.3 Lightning | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — lightning | C-VFX | 
+H3:7.4 Rocket | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — rocket and missile flames | C-VFX | package agent drops the [B:DEBUG] missile
+H3:7.5 Smoke and fire | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — smoke and fire | C-VFX | 
+H3:7.6 Weather | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — snow and dust weather | C-VFX | 
+H3:7.7 Zombies | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — ghost effect | C-VFX | 
+H3:7.8 Spirit | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — essence glow | C-VFX | 
+H2:8 Explosions | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — shape shattering | C-VFX | model, constants, algorithm, drawing and all 45 shatter sites as effect events
+I2:9 `effects.txt` | MERGE | architecture/components/audio_engine.md | §4 Behaviour and algorithms — DSP filter chain | C-AEN | section intro (the file configures audio DSP filters, not visuals)
+H3:9.1 Verdict | MERGE | architecture/components/audio_engine.md | §4 Behaviour and algorithms — DSP filter chain (14 filter blueprints) | C-AEN | joins 27 §12; the statement that visual effect parameters are hard-coded goes to C-VFX §8 with §13 item 8 (data-driven effect definitions)
+H3:9.2 Grammar summary | DROP-LEGACY |  |  |  | DL-LEGACY-TECH: positional DSP blueprint grammar; field semantics come from 29 §7.5 into C-DAT
+H3:9.3 The row-position | TO-DEC | decisions/decision_register.md | DSP blueprint positional binding | X-DEC | quirks a schema must fix: block order binds filter type, line order binds parameter, default column never applied (omitted parameters are 0), editor seeds minimum, uninitialised dataType read; Resolved by named fields with explicit defaults (40 R24)
+H3:9.4 Is any of it live | MERGE | architecture/components/audio_engine.md | §4 Behaviour and algorithms — DSP gating | C-AEN | joins 27 §12.1 (DSP off unless the preference is set)
+H3:9.5 `EffectProcessor` | DROP-LEGACY |  |  |  | DL-DEBUG: sound-chip envelope sequencer compiled only with the sound editor, never advanced, no 40 keep verdict
+H2:10 Gesture rendering | DROP-LEGACY |  |  |  | DL-CUT: gesture trail and symbol display of the gesture recogniser (40 D10, G10)
+H2:11 Camera shake | KEEP | architecture/components/animation_and_vfx.md | §4 Behaviour and algorithms — camera shake and full-screen flashes | C-VFX | 11.3 is a pointer to renderer-owned fades and transitions (C-RND); D3D deform and pixel ghost are dropped there
+I2:12 VFX budgets | KEEP | architecture/components/animation_and_vfx.md | §5 Concurrency and performance budget | C-VFX | section intro
+H3:12.1 Budgets | KEEP | architecture/components/animation_and_vfx.md | §5 Concurrency and performance budget — limits as specified | C-VFX | reference limits (1500 initial, +200, no maximum; 502-triangle fragments; 5 s explosions; trail history) and quality options; Species hard caps per ADR
+H3:12.2 Principle | KEEP | architecture/components/animation_and_vfx.md | §1 Responsibilities and boundaries — effects are cosmetic | C-VFX | integrity rule: presentation never writes simulation state, never draws from the simulation random stream
+H3:12.3 VFX that touch | KEEP | architecture/components/animation_and_vfx.md | §1 Responsibilities and boundaries; §6 Failure modes — effects that must not touch the simulation | C-VFX | 11 cases as must-not rules and acceptance tests; tree hit volume becomes map or asset data
+= | TO-DEC | decisions/decision_register.md | presentation coupling into the simulation | X-DEC | simulation-integrity defects, Resolved: #1 tree hit volume from render geometry, #4-#5 synchronised RNG consumed by cosmetic effects, #6 local RNG in simulation code, #7-#8 render-side writes and local state in simulated objects, #9 presentation side effects via an event queue, #10 seasonal theme, #11 argument evaluation while paused; #2 tripod is dropped
+H2:13 Re-implementation | KEEP | architecture/components/animation_and_vfx.md | §2 Interfaces (effect events); §4 Behaviour and algorithms; §5 Concurrency and performance budget | C-VFX | Species baseline: simulation emits effect events, client VFX with own RNG, GPU particles with caps and LOD, instanced shattering, shader-built trails, client-side legs, panel timelines, screen effects, data-driven effect definitions
+= | TO-ADR | adr/ | GPU particle system and effect events | X-ADR | GPU-simulated particle pool with hard caps and LOD, presentation-clock sub-step, instanced debris draws, effect-definition format
+H2:Open questions | DROP-PROVENANCE |  |  |  | DP-CLOSING: open questions and unknowns
+= | TO-DEC | decisions/decision_register.md | VFX open questions | X-DEC | in-scope items: 26-U2 seasonal theme per peer, 26-U3 real particle and explosion counts (no caps; feeds the cap decision), 26-U5 spider foot positions not read by simulation (confirm), 26-U8 saturated bubble colours, 26-U9 whether DSP was ever player-enabled; U1, U4, U6, U7 concern assets, tools, the D3D build and timing ownership and are dropped
+H2:Docs-vs-code | DROP-PROVENANCE |  |  |  | DP-CLOSING: docs-vs-code discrepancies
+H2:IP items | DROP-PROVENANCE |  |  |  | DP-CLOSING: IP items (F1 owns the rename ledger)
+H2:Source map | DROP-PROVENANCE |  |  |  | DP-CLOSING: source map
+H2:Appendix | DROP-PROVENANCE |  |  |  | DP-CLOSING: appendix of dead and legacy code

@@ -1,0 +1,57 @@
+FILE 30_scripting_tutorial_and_cutscenes.md
+TOP | DROP-PROVENANCE |  |  |  | DP-INDEX: H1 title and provenance banner (baseline build, evidence legend, sources merged)
+H2:Contents | DROP-PROVENANCE |  |  |  | DP-INDEX: contents list
+H2:1 Reachability summary | DROP-PROVENANCE |  |  |  | DP-METHOD: build and reachability evidence table (R1-R18) and diagram; its design consequences are carried by §3 (tutorial director), §4 (mounts) and §8
+I2:2 Script language | DROP-LEGACY |  |  |  | DL-CUT: section intro of the cut-scene script interpreter (40 D10, R25)
+H3:2.1 Ownership | DROP-LEGACY |  |  |  | DL-CUT: script interpreter ownership, lifetime and tick
+H3:2.2 Lexical | DROP-LEGACY |  |  |  | DL-CUT: script grammar (30-U4 missing-argument crash dies with it)
+H3:2.3 Command reference | DROP-LEGACY |  |  |  | DL-CUT: 43 script opcodes
+H3:2.4 Execution model | DROP-LEGACY |  |  |  | DL-CUT: interpreter execution model; the blocking-wait and skip semantics are restated as a presentation-timeline baseline from §8 item 1
+H3:2.5 Start paths | DROP-LEGACY |  |  |  | DL-CUT: script triggers T1-T6 (all campaign or dead paths)
+H3:2.6 Script file register | DROP-LEGACY |  |  |  | DL-CAMPAIGN: register of the 42 campaign and attract-mode script files
+H3:2.7 Script-engine constants | DROP-LEGACY |  |  |  | DL-CUT: interpreter constants
+H3:2.8 Determinism and safety | DROP-LEGACY |  |  |  | DL-CUT: interpreter determinism notes; the general rule (world-changing effects are sequenced simulation events) is carried by §3.10 and §8
+L380-381 | KEEP | reference/11_tutorial_and_help.md | §1 Purpose and player experience | G11 | section heading: the two live tutorials
+H3:3.1 Overview | KEEP | reference/11_tutorial_and_help.md | §1 Purpose and player experience; §2 Rules — tutorial set-up (mode, opponent, map role) | G11 | map names replaced by map roles; no original map list
+H3:3.2 Start and end flow | KEEP | reference/11_tutorial_and_help.md | §3 States and flows — tutorial start and end (Mermaid) | G11 | 
+H3:3.3 Director mechanics | KEEP | reference/11_tutorial_and_help.md | §2 Rules — tutorial director (per-frame re-evaluation, tab selection, timers) | G11 | 
+H3:3.4 Gameplay overrides | KEEP | reference/11_tutorial_and_help.md | §2 Rules — gameplay overrides while a tutorial runs | G11 | 
+H3:3.5 Tutorial 1 | KEEP | reference/11_tutorial_and_help.md | §2 Rules — tutorial 1 steps | G11 | building ids become object roles; new text only
+H3:3.6 Tutorial 2 | KEEP | reference/11_tutorial_and_help.md | §2 Rules — tutorial 2 steps | G11 | building ids become object roles; new text only
+= | TO-DEC | decisions/decision_register.md | tutorial 2 hard-codes the local team | X-DEC | design-critical inference: the local player is team 0 in both tutorials and tutorial 2 hard-codes team 0 (30-U5): Open "confirm"
+H3:3.7 Instruction tabs | KEEP | reference/11_tutorial_and_help.md | §2 Rules — instruction tabs; §7 Dependencies — string ids | G11 | phrase ids become Species string ids with new text
+H3:3.8 Failure, skip | KEEP | reference/11_tutorial_and_help.md | §5 Edge cases and interactions — failure, skip and restart | G11 | 
+H3:3.9 Uncertainties | KEEP | reference/11_tutorial_and_help.md | §5 Edge cases — how tutorial 2 becomes startable; CPU capture order | G11 | resolved mechanisms (a, d, e) as rules; map-CRC gating (c) goes with the map-identity rule
+= | TO-DEC | decisions/decision_register.md | tutorial 2 start depends on emergent play | X-DEC | design-critical: whether uninstructed workers capture the control station that hands over radar dish 4, and whether CPU team 2 takes spawn 83 first (30-U1, 30-U2): Open "confirm", default reference behaviour
+H3:3.10 Determinism caveat | KEEP | reference/11_tutorial_and_help.md | §5 Edge cases — world-changing tutorial effects | G11 | the effects (crate insertion, link rewrites, option changes) are reference behaviour
+= | TO-DEC | decisions/decision_register.md | tutorial director mutates the world from the frame loop | X-DEC | simulation-integrity defect: wall-clock timers and direct world mutation from the client frame loop; Resolved (40 R25, G33): tutorials as declarative step graphs whose world-changing effects are sequenced simulation events
+H3:3.11 Tutorial constants | KEEP | reference/11_tutorial_and_help.md | §4 Tuning table | G11 | every constant preserved
+I2:4 Camera animation | KEEP | architecture/components/camera_and_sequences.md | §1 Responsibilities and boundaries | C-CAM | section intro: the scripted camera is part of the one camera; free camera is reference/06
+H3:4.1 Data model | KEEP | architecture/components/camera_and_sequences.md | §3 Data model — camera mounts, animation nodes and animations (Mermaid class diagram) | C-CAM | 
+H3:4.2 Live use | KEEP | reference/06_controls_camera_and_commands.md | camera — start-of-match camera (cut to mount "start", then "player<N>") and level bounds | G06 | player camera behaviour (40 R8 keeps per-slot mounts); C-CAM implements mounts from §4.1
+H3:4.3 Animation playback | KEEP | architecture/components/camera_and_sequences.md | §4 Behaviour and algorithms — camera animation playback state machine | C-CAM | reference for the presentation timeline (40 R25 builds one only if needed)
+= | TO-DEC | decisions/decision_register.md | camera animations in scope | X-DEC | camera animations are unreachable in a match (no shipped animation is played); 40 R25 builds a presentation timeline only if needed: Open, default kept as an engine capability with no content
+H3:4.4 Interpolation | KEEP | architecture/components/camera_and_sequences.md | §4 Behaviour and algorithms — cut, move-to-target, building focus, set-target and field-of-view easing | C-CAM | package agent drops the world-map orbit, intro and outro modes and the campaign record-restore pair (40 R8 drops unreachable modes)
+= | TO-DEC | decisions/decision_register.md | scripted camera overshoot | X-DEC | move-to-target overshoots the mount by 4-8 % and never snaps; Resolved (40 R25, 30 §8 item 4): exact ease that lands on the mount, slerped orientation, one presentation clock (40 R8)
+H3:4.5 Script | DROP-LEGACY |  |  |  | DL-CUT: script command to camera API mapping
+H3:4.6 Authoring tools | KEEP-HOOKS | architecture/components/camera_and_sequences.md | §8 Open decisions — design-phase inputs: mount and animation authoring | C-CAM | KH-EDITOR: editor-only mount and animation windows (create, delete, select, preview); record the hook only
+L928-929 | DROP-LEGACY |  |  |  | DL-CUT: section intro of start sequence, logo splash and demo end sequence
+H3:5.1 First-time intro | DROP-LEGACY |  |  |  | DL-CUT: first-time intro start sequence (40 D10, G35)
+H3:5.2 Logo splash | DROP-LEGACY |  |  |  | DL-CUT: script-only logo splash
+H3:5.3 Demo end | DROP-LEGACY |  |  |  | DL-DEAD: demo end sequence, not compiled
+H3:5.4 Attract mode | DROP-LEGACY |  |  |  | DL-DEAD: attract mode as a script consumer
+H2:6 Dr Sepulveda | DROP-LEGACY |  |  |  | DL-CUT: narrator dialogue system (40 D10, G69)
+L1083-1096 | KEEP-HOOKS | architecture/components/diagnostics_test_and_performance.md | §8 Open decisions — design-phase inputs: replay | C-DBG | KH-REPLAY: no player-facing replay exists; record mechanisms D1-D2 as hooks; D3 is DD-NET; D4-D7 are dead and dropped
+H3:7.1 `RecordDemo` | KEEP-HOOKS | architecture/components/diagnostics_test_and_performance.md | §8 Open decisions — design-phase inputs: replay | C-DBG | KH-REPLAY: hidden preference records and replays the server command history with fixed-step timing (40 G57: Drop (redesign), formal replay file; 30-U3 whether it reproduces a match)
+H3:7.2 Late-join | DEFER-DESIGN | decisions/decision_register.md | late join and reconnect | X-DEC | DD-NET: late join re-simulates the whole stream from sequence 0 (about 10 min catch-up for a 20-min match, 30-U7); 40 G56 replaces it with snapshot plus tail
+H3:7.3 Fake-time | DROP-LEGACY |  |  |  | DL-DEAD: frame capture and input-event replay, not compiled (the fake-clock capability is kept in platform timing, 31 §4)
+H3:7.4 Benchmark recorder | DROP-LEGACY |  |  |  | DL-DEAD: benchmark telemetry recorder and FTP upload
+H2:8 What the new game needs | KEEP | architecture/components/camera_and_sequences.md | §4 Behaviour and algorithms — presentation timeline baseline (typed statements, blocking waits, skip and abort, camera timeline on mounts, captions, fades, intro and outro timelines in data); §8 design-phase inputs | C-CAM | items 1, 3 (client-side camera triggers), 4, 7; item 6 narrator and item 9 drop list are DL-CUT; item 8 replays is KH-REPLAY
+= | TO-DEC | decisions/decision_register.md | tutorial and presentation effects | X-DEC | items 2 and 5: world-changing tutorial or presentation effects are sequenced simulation events; tutorials are declarative step graphs keyed to object tags (Resolved, 40 R25, G33)
+H2:9 Darwinia demo tutorials | DROP-LEGACY |  |  |  | DL-DEAD: demo tutorials of the campaign game, not compiled
+H2:Open questions | DROP-PROVENANCE |  |  |  | DP-CLOSING: open questions and unknowns
+= | TO-DEC | decisions/decision_register.md | tutorial open questions | X-DEC | in-scope items: 30-U1, 30-U2 tutorial 2 start conditions, 30-U5 hard-coded team 0; 30-U3 and 30-U7 go to KH-REPLAY and DD-NET; U4, U6, U8 concern dropped script, campaign loop and credits paths
+H2:Docs-vs-code | DROP-PROVENANCE |  |  |  | DP-CLOSING: docs-vs-code discrepancies
+H2:IP items | DROP-PROVENANCE |  |  |  | DP-CLOSING: IP items (F1 owns the rename ledger)
+H2:Source map | DROP-PROVENANCE |  |  |  | DP-CLOSING: source map
+H2:Appendix | DROP-PROVENANCE |  |  |  | DP-CLOSING: appendix of dead and legacy code

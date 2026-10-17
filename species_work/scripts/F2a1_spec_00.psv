@@ -1,0 +1,29 @@
+FILE|00_overview.md
+1|28|DROP-PROVENANCE||||DP-INDEX: H1 title, build/evidence preamble and contents list
+29|34|KEEP|reference/00_reference_overview.md|§1 Purpose and player experience (pitch)|G00|pitch in Species terms
+35|36|DROP-PROVENANCE||||DP-INDEX: H2 heading line of §2 only
+37|46|DROP-LEGACY||||DL-LEGACY-TECH: product target, executable, archive packaging and loose-file override; demo/full gate row is DL-DEMO; 'every match runs through one server' is netcode (F2b DD-NET)
+47|61|KEEP|reference/00_reference_overview.md|§2 Scope: the six match modes|G00|mode summary table (objective, end condition, time-limit option, players, complexity); Tank Battle (DL-DEBUG) excluded; mode detail owned by G01
+62|72|KEEP|reference/00_reference_overview.md|§2 Scope: maps and player counts|G00|counts only (maps per mode and per player count, map size range, cap range, co-op counts); no map names; distribution detail owned by G08
+73|74|DROP-LEGACY||||DL-TESTMAPS: not-shipped stress, benchmark, sandbox, Tank Battle, campaign and superseded maps
+75|81|KEEP|reference/00_reference_overview.md|§2 Scope: who is in every match|G00|six team slots, monster and special teams, CPU fill, leaver replacement, team colours
+82|89|DROP-LEGACY||||DL-CAMPAIGN: intro and header of the not-shipped table, campaign row; Tank Battle row is DL-DEBUG
+90|93|KEEP-HOOKS|reference/00_reference_overview.md|§2 Scope: features present only as hooks|G00|KH-EDITOR, KH-ACHIEVE, KH-MUSIC: map editor, achievements (12, evaluated never awarded), music engine never heard, leaderboards stub; one-line hook statement each, detail owned by G08/G09/G10
+94|102|DROP-LEGACY||||DL-CUT: quick match, rebinding window menu entry, legacy control scheme and gesture recogniser (DL-CAMPAIGN), Beast and debug units (DL-DEBUG), spectator UI (DL-DEAD), objective tabs, intro/credits/loaders/attract (DL-DEAD), DSP not applied; multi-round Assault and rebinding facts are routed from 01/06/10
+103|106|KEEP-HOOKS|reference/00_reference_overview.md|§2 Scope: features present only as hooks|G00|KH-RESULTS: no post-match results screen; only the in-match game-over overlay
+107|173|KEEP|reference/00_reference_overview.md|§3 Core loop (diagram and key rates and constants)|G00|loop diagram as Mermaid with Species names; constants table without evidence column; values must match G05/G01
+174|212|KEEP|reference/00_reference_overview.md|§4 What makes it distinctive|G00|six distinctive features; describe the bot entity without lockstep wording
+213|236|KEEP|reference/00_reference_overview.md|§5 The player's verbs|G00|verb table; drop the networked column and wire command ids (command catalogue owned by C-SIM, bindings by G06)
+237|279|KEEP|reference/00_reference_overview.md|§6 Match flow from the player's perspective|G00|flow diagram and phase table; drop authentication-key and demo nodes (DL-DEMO) and server-browser detail (DD-LOBBY)
+280|291|TO-DEC|decisions/decision_register.md|Q1-Q6 design-critical quirks|X-DEC|Q1 11-tick mode second (40 D6 resolves); Q2 retribution default-on via absent option = -1; Q3 cap by map player count; Q4 uncapped population sources (Harvester); Q5 binary handicap; Q6 special teams in win checks
+292|292|DEFER-DESIGN|decisions/decision_register.md|Lobby authority|X-DEC|DD-LOBBY: Q7 lobby authority is client-side; server relays option, start and ready commands unchecked
+293|295|DEFER-DESIGN|decisions/decision_register.md|Networking failure modes|X-DEC|DD-NET: Q8 live desync paths, Q9 weak terminal desync handling, Q10 implicit bit-exactness preconditions (map identity by file name; FP environment is DD-NUMERIC)
+296|303|TO-DEC|decisions/decision_register.md|Q11-Q15 design-critical quirks|X-DEC|Q11 task slots and silently lost grants; Q12 unbounded rejection loops; Q13 doubled reinforcement waves on three flag-chain maps; Q14 presentation inside the simulation step (integrity, Resolved); Q15 hook-only features (KH)
+304|386|KEEP|reference/00_reference_overview.md|§7 Player-facing glossary|G00|Species terms only: drop original-term and evidence columns; omit the debug-only Beast row (DL-DEBUG)
+387|424|DROP-PROVENANCE||||DP-INDEX: reading guide and reading paths of the original document set, one-paragraph technical summaries of 20/22/24 (owned by F2b routing); the new README reading guide is written by the coordinator
+425|462|DROP-PROVENANCE||||DP-METHOD: constants re-read for the synthesis and contradictions resolved between drafts
+463|479|TO-DEC|decisions/decision_register.md|Open questions 00-U2..U6|X-DEC|U2 11-tick second intent; U3 handicap intent; U4 cap divisor and uncapped co-op maps; U5 special teams in win checks; U6 multi-round Siege; U1 (KH-ACHIEVE), U7 (DL-SERVICES), U8-U9 (DL-LEGACY-TECH packaging), U10 (KH-MUSIC) need no DEC
+480|492|DROP-PROVENANCE||||DP-CLOSING: docs-vs-code discrepancies (manual and design-note statements); code behaviour already in the body
+493|513|DROP-PROVENANCE||||DP-CLOSING: IP items (feed F1 ledger)
+514|562|DROP-PROVENANCE||||DP-CLOSING: source map
+563|566|DROP-PROVENANCE||||DP-CLOSING: appendix of dead/legacy code
