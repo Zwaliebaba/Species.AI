@@ -80,3 +80,19 @@
 - X-DEC-4b done: DEC-550…570 (10 Resolved, 10 Open, 1 Dropped); about 135 of about 185 mapped rows already covered (every 09 row covered by DEC-026, 044, 067, 099, 100, 243–250); scans 0; its build script validates ids, field order, statuses, references and Affects. Facts it took from out-of-range lines were removed. **G2 items:** DEC-087 lists only some of the bot fixes, and the B11 fix depends on Siege bot Transport behaviour that never runs in the reference, so DEC-112 bot calibration must cover Siege; **"simulation code never issues player commands" exists only in Open DEC-202 → it is an integrity rule, so record it as Resolved (prompt: integrity defects are always Resolved)**; cross-cite DEC-569↔DEC-751 and DEC-555↔DEC-653.
 - X-DEC-5b done: DEC-750 (Open: explainer-animation loop and visibility), DEC-751 (Resolved: game-speed pitch state starts each match at normal speed), DEC-752 (Resolved: audio query crash and effects left on reused voices); 15 of 19 body rows already covered by DECs and ADRs; scans 0. Told X-DEC-5c that its two shared rows are covered by ADR-0061 and DEC-015. **G2 items:** DEC-101 (seasonal theme, Open) still lists a per-client date check, which is an integrity defect → split out a Resolved part; DEC-102 must also cover the window quirks Q1–Q10; if DEC-567 covers stale effects on toggle, reduce DEC-752 to the crash.
 - X-DEC-3 done: DEC-300…342 (31 Open, 1 Resolved, 11 Dropped) in `decisions/open_questions.md` (about 44 KB); all 208 question rows and 19 merge pointers mapped (94 to new entries, 114 covered by existing DECs or ADRs); scans 0. **G2 items:** 15 extra facts for existing entries (for example the DEC-016 port-occupant tie key, DEC-111 Collector throughput, DEC-002's 10h + 1 being only the upper bound); 10 readings it could not confirm ("booster" taken as the Shield; the meaning of "twin terrains"; the page-transition progress variable; DEC-321–323 possibly overlapping DEC-097). Its report has a table of which rewrite package must cite each Open DEC.
+- X-DEC-5c done: DEC-800…804 (3 Resolved: lossless, typed, atomic writers; duplicate keys, repeated fields and over-long values are build errors, which fills an ADR-0059 gap; soak-test rules; 2 Open: unlisted maps, camera animations without content); 13 rows covered; scans 0.
+
+## Gate G2 (2026-10-17)
+
+- **Phase 2 totals:** 242 DECs in ten files (118 Open, 99 Resolved, 25 Dropped); 63 ADRs (0001–0036, 0050–0076).
+- `scripts/g2_merge.py`:
+  - ids unique and in range;
+  - `decisions/README.md` index generated;
+  - `dec_map.csv` merged (242 rows);
+  - X-ADR-b's 27 rows inserted at the ADR README marker;
+  - every DEC and ADR reference in `design_next/` resolves (range statements excluded).
+  Result: 0 errors.
+- Forbidden scan over all of `design_next/`: **0 hits**.
+- Soft hits: Linux (11), lockstep (17), immediate-mode (1), retail (1), all in their allowed contexts → added to CONVENTIONS §9 "Allowed terms".
+- **No ADR is `owner-decision: blocking`**, so owner batch 2 is not needed.
+- Reconciliation agent X-DEC-R started with `g2_amendments.md`: 13 specific fixes, the extra facts from every report, and the owner-review list.

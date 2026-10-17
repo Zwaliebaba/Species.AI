@@ -474,4 +474,7 @@ Soft-flagged words that are allowed in a specific context, with the justificatio
 
 | Term | Where allowed | Justification |
 |---|---|---|
-| *(none yet)* | | |
+| lockstep | `decisions/deferred/*.md` and decision entries that record what the design phase must decide | names the reference networking model so that the design phase can decide against it; never used as a Species requirement |
+| Linux | ADRs and decision entries about dedicated-server or CI hosting | community hosts mostly run Linux (vision brief §6 item 10); the client is Windows-only |
+| immediate-mode | developer-tool UI only (`adr/`, `architecture/components/diagnostics_test_and_performance.md`) | the standard name of the debug-overlay UI pattern; the game UI is retained |
+| retail | vendor release-channel names in `adr/README.md` §"Technology baseline" (for example a retail SDK or Shader Model release) | quotes the vendor's own channel name, with its source URL |
