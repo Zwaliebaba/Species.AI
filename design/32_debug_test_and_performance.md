@@ -346,3 +346,172 @@ Drawn on two front-end pages only under `TARGET_DEBUG`, `g_gameFont` size 15, li
 
 Command-line switches with a diagnostic role: `--write-version` (write `DARWINIA_VERSION` to a file `version` and exit) and `--NoProfile` (use the working directory instead of the profile directory for every log) [C] `code/main.cpp:AppMain`, `code/main.cpp:Initialise` ([31 §5.4](31_platform_build_and_tools.md#54-command-line-switches-c)).
 
+## 6 Testbed mode
+
+### 6.1 Purpose, build tag and activation [B:DEAD] [C] `code/UI/TestBedButtons.h:StartTestbedButton`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::SetupMainPage`, `code/app.h`
+
+The testbed is an **unattended multi-machine soak test of the lockstep network game**: one machine runs as testbed *server*, any number of others as testbed *clients*; the server walks through every (game mode, map) pair, every machine joins as a spectator so the CPU teams play the whole match, and sync errors are counted and logged per game. It exists only with `TESTBED_ENABLED`, which is commented out inside the `TARGET_DEBUG` block and defined in no target → dead at this commit.
+
+Activation: two extra main-menu buttons after "Help and options" — "start_testbed_server" (`StartTestbedButton(TESTBED_SERVER)`, text `start_testbed_server` = "Testbed Server") and a second button whose caption is `start_testbed_client` ("Testbed Client") but whose **name is also "start_testbed_server"** (name collision). `MouseUp` sets: mode `TESTBED_ON`, state `TESTBED_BUILD_GAME_ENTRIES`, type server/client, game mode −1, map −1, game count 0, sync-error count 0, rendering **off**, `m_iGameIndex = 4`, `m_iLastGameIndex = 0`. The driver `GameMenuWindow::UpdateTestBed()` runs every front-end frame (`GameMenuWindow::Update`).
+
+Enumerations [C] `code/app.h`: `TESTBED_MODE {TESTBED_ON, TESTBED_OFF}`; `TESTBED_TYPE {TESTBED_CLIENT, TESTBED_SERVER}`; `TESTBED_STATE {TESTBED_MAINMENU, TESTBED_HOST_GAME, TESTBED_JOIN_GAME, TESTBED_PICK_SERVER, TESTBED_WAIT_FOR_CLIENT_ID, TESTBED_SELECT_GAME, TESTBED_SELECT_MAP, TESTBED_SETGAMEOPTIONSDELAY, TESTBED_SETGAMEOPTIONS, TESTBED_WAITFORGAMEOPTIONS, TESTBED_WAIT_FOR_MAP, TESTBED_WAIT_FOR_CLIENTS, TESTBED_PLAY, TESTBED_IDLE, TESTBED_GAME_OVER_DELAY, TESTBED_MAKE_CLIENT_SPECTATOR, TESTBED_SEQUENCEID_DELAY, TESTBED_BUILD_GAME_ENTRIES}` (18 values; `TESTBED_WAITFORGAMEOPTIONS` is never entered); `TESTBED_PROGRESSION {TESTBED_LINEAR, TESTBED_RANDOM, TESTBED_SEQUENCE}` (`code/UI/GameMenuWindow.cpp`).
+
+App state (24 fields) [C] `code/app.h`: `m_eTestBedMode`, `m_eTestBedType`, `m_eTestBedState`, `m_fTestBedDelay`, `m_fTestBedLastTime`, `m_fTestBedCurrentTime`, `m_iDesiredSequenceID`, `m_eNextState`, `m_iClientCount`, `m_iGameMode`, `m_iGameMap`, `m_iGameIndex`, `m_iLastGameIndex`, `m_iGameCount`, `m_iNumSyncErrors`, `m_cGameMode[100]`, `m_cGameMap[100]`, `m_iClientRandomSeed`, `m_bRenderOn`, `m_iLastGame`, `m_iLastMap`, `m_testbedServerName` (pref `TestbedServerName`), `m_iTerminationSequenceID`; accessors `Get/SetTestBedMode`, `Get/SetTestBedType`, `Get/SetTestBedState`, `GetTestBedServerName`, `Get/SetTestBedGameIndex`, `Get/SetTestBedGameMode`, `Get/SetTestBedGameMap`, `GetTestBedGameCount`, `IncrementGameCount`, `ResetGameCount`, `GetTestBedNumSyncErrors`, `IncremementNumSyncErrors`, `ResetNumSyncErrors`, `Set/GetTestBedClientRandomSeed`, `SetSequenceIDDelay(seq, next)` (store target id and next state, enter `TESTBED_SEQUENCEID_DELAY`), `ToggleTestBedRendering`, `GetTestBedRendering`, `SetTestBedRenderOn`, `SetTestBedRenderOff`, `TestBedLogWrite`.
+
+### 6.2 The game table and progressions [C] `code/UI/GameMenuWindow.cpp:BuildGameEntries`, `GameMenuWindow::AdvanceTestBedGame`, `FindGameEntry`
+
+- `BuildGameEntries`: one `GAME_ENTRY {gameNumber, mapNumber, mapCRC}` for every valid map of every game-type list `GameMenu::m_maps[i]` **except list index 6** (the code comment: the menu finds 7 game types but buttons exist for only 6). Defect: `m_iMapCRC` is read from `maps.GetData(i)` (the game-type index) instead of `x` — wrong or out-of-range [C].
+- `AdvanceTestBedGame` (server only; clients learn the game from the server they join):
+  - `LINEAR`: index + 1 while index < number of entries (it is called right after the table is built, so **entry 0 is skipped**; once index reaches the table size it stays there and the next `g_vGameEntries[index]` read is out of bounds) [C].
+  - `RANDOM`: `rand() % entries` (CRT `rand`, seeded `srand(time(NULL))` on table build).
+  - `SEQUENCE`: walk the `AddSequenceItem` list cyclically; each item sets the entry index and a forced sync seed `g_iSelectedRandSeed`.
+
+### 6.3 `testbedconfig.txt` [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::ReadTestBedConfig`
+
+Read from the **working directory** (`TextFileReader("testbedconfig.txt")`, not the resource archives) at `TESTBED_BUILD_GAME_ENTRIES`; missing file → defaults (LINEAR, seed 0, no termination). One command per line, tokens separated by whitespace, `#` starts a comment (TextReader rules, [29](29_data_formats_reference.md)). No such file ships in the tree [C].
+
+```
+SetProgression LINEAR | RANDOM | SEQUENCE
+SetRandSeed <int>                 # 0 = use the server's normal seed
+SetTestBedName <word>             # sscanf "%s": a single token, overrides pref TestbedServerName
+AddSequenceItem <gameIndex> <seed> # appended to the SEQUENCE list (list cleared on each read)
+SequenceIDToTerminateOn <int>     # end each game when g_lastProcessedSequenceId reaches it (0 = off)
+```
+
+### 6.4 Server automation [C] `code/UI/GameMenuWindow.cpp:GameMenuWindow::UpdateTestBed`
+
+Every frame, before the switch: if a server exists, `Server::m_iRandSeed = g_iSelectedRandSeed` and `m_bRandSeedOverride = (seed ≠ 0)`; if a client exists, `ReliableSetTeamName(testbed name)`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> BUILD_GAME_ENTRIES
+    BUILD_GAME_ENTRIES --> MAINMENU: build table, read config, advance game
+    MAINMENU --> HOST_GAME: on main page press Multiplayer
+    HOST_GAME --> WAIT_FOR_CLIENT_ID: press Host
+    WAIT_FOR_CLIENT_ID --> SELECT_GAME: own team id assigned
+    SELECT_GAME --> SELECT_MAP: press game type button of entry
+    SELECT_MAP --> WAIT_FOR_MAP: press level button of entry
+    WAIT_FOR_MAP --> SETGAMEOPTIONSDELAY: requested map confirmed
+    SETGAMEOPTIONSDELAY --> SETGAMEOPTIONS: 5 sequence ids later
+    SETGAMEOPTIONS --> SEQUENCEID_DELAY: register as spectator
+    SEQUENCEID_DELAY --> WAIT_FOR_CLIENTS: 10 ids later
+    WAIT_FOR_CLIENTS --> SEQUENCEID_DELAY: more than 1 client connected
+    SEQUENCEID_DELAY --> PLAY: 10 ids later
+    PLAY --> IDLE: lobby page left, game count plus 1
+    IDLE --> GAME_OVER_DELAY: game over or sync error or termination id
+    GAME_OVER_DELAY --> MAINMENU: 10 s, advance game, remove own teams
+```
+
+Details per state:
+- `TESTBED_MAINMENU`: delay and client count reset; on `PageMain` press `NewOrJoinButton` "multiwinia_menu_multiplayergame".
+- `TESTBED_HOST_GAME`: on `PageNewOrJoin` press "multiwinia_menu_hostgame".
+- `TESTBED_WAIT_FOR_CLIENT_ID`: wait until `GlobalWorld::m_myTeamId ≠ 255`.
+- `TESTBED_SELECT_GAME`: on `PageGameSelect` press the game-type button for entry `gameNumber` 0–5 ("multiwinia_gametype_domination", "…_kingofthehill", "…_capturethestatue", "…_assault", "…_rocketriot", "…_blitzkrieg") and copy the English mode name into `m_cGameMode` ("Domination", "King Of The Hill", "Capture the Statue", "Assault", "Rocket Riot", "Blitzkrieg").
+- `TESTBED_SELECT_MAP`: on `PageMapSelect` press the `LevelSelectButton` named by the map's level name (or file name); `m_cGameMap` = translated map name.
+- `TESTBED_WAIT_FOR_MAP`: when `m_localSelectedLevel == m_requestedMapId` and the map index is valid, remember the current sequence id.
+- `TESTBED_SETGAMEOPTIONSDELAY`: wait 5 sequence ids (0.5 s).
+- `TESTBED_SETGAMEOPTIONS`: `RequestToRegisterAsSpectator(myTeamId)` (time-limit option code is commented out), then `SetSequenceIDDelay(+10, WAIT_FOR_CLIENTS)`.
+- `TESTBED_WAIT_FOR_CLIENTS`: on `PageGameSetup`, when `Server::m_clients.NumUsed() > 1` → `SetSequenceIDDelay(+10, PLAY)`.
+- `TESTBED_PLAY`: the lobby's "all ready" test is replaced by `notReady = (state ≠ TESTBED_PLAY)` (`GameMenuWindow::UpdateMultiplayer`), so the game starts; when the page changes away from `PageGameSetup` → game count + 1, `TESTBED_IDLE`.
+- `TESTBED_GAME_OVER_DELAY`: accumulate wall time; after **10 s** advance to the next entry, remove own teams, clear spectator, back to `TESTBED_MAINMENU`.
+
+### 6.5 Client automation [C] same function, client branch
+
+```mermaid
+stateDiagram-v2
+    [*] --> BUILD_GAME_ENTRIES
+    BUILD_GAME_ENTRIES --> MAINMENU: build table, read config
+    MAINMENU --> JOIN_GAME: press Multiplayer
+    JOIN_GAME --> PICK_SERVER: press Join
+    PICK_SERVER --> MAKE_CLIENT_SPECTATOR: every 3 s scan browser for server named like testbed
+    MAKE_CLIENT_SPECTATOR --> IDLE: game type and map known, game index found
+    PICK_SERVER --> PICK_SERVER: connecting page times out after 10 s
+    IDLE --> GAME_OVER_DELAY: game over or sync error or termination id
+    GAME_OVER_DELAY --> MAINMENU: 40 s, remove own teams
+```
+
+- `TESTBED_PICK_SERVER`: on `PageJoinGame`, every **3 s** walk `m_serverButtons`; pick the first `GameServerButton` whose `m_hostName` equals the testbed name and whose map name is not "Unknown Map"; copy game type and map into the log fields, `MouseUp` (the "server full" refusal is bypassed in testbed mode, `code/UI/GameServerButton.h`), game count + 1.
+- On `PageGameConnecting` the testbed accumulates time and after **10 s** without connecting presses "multiwinia_menu_back" and returns to `TESTBED_PICK_SERVER` (`GameMenuWindow` connecting-page update; the timer is reset when `JoinGame` starts the connection).
+- `TESTBED_MAKE_CLIENT_SPECTATOR`: when `m_gameType` and `m_requestedMapId` are known, `m_iGameIndex = FindGameEntry(type, map)` → `TESTBED_IDLE`. The server registers every testbed client as a spectator on join (§6.7).
+- `TESTBED_GAME_OVER_DELAY`: **40 s**, then remove own teams, clear spectator, `TESTBED_MAINMENU`.
+- Disconnection by the server (`ClientToServer` disconnect handling) → `TESTBED_MAINMENU` [C] `code/network/clienttoserver.cpp`.
+
+### 6.6 In-match automation and `TestBedLog.txt` [C] `code/location_input.cpp:LocationInput::Advance`, `code/app.cpp:App::TestBedLogWrite`
+
+In a match with testbed on:
+1. During the grace period the ready toggle is replaced by an automatic `RequestSetTeamReady(myTeamId)` every frame (no window open).
+2. If `ClientToServer::m_outOfSyncClients` is non-empty: leave the location (`m_requestedLocationId = −1`, `m_atMainMenu = true`), and unless already in `GAME_OVER_DELAY` increment `m_iNumSyncErrors` and write a log row; state → `GAME_OVER_DELAY`.
+3. If `m_iTerminationSequenceID ≠ 0` and reached: leave, log a row, `GAME_OVER_DELAY`.
+4. On `Multiwinia::GameOver()` with no window open: leave, log a row (unless already delaying), `GAME_OVER_DELAY`.
+
+`TestBedLogWrite` appends to `TestBedLog.txt` in the **working directory** (Mac: profile directory); header row written when the file does not yet exist; fields in this order, joined with ", ":
+
+| Column | Value |
+|---|---|
+| Date | `asctime(localtime(now))` without the trailing newline |
+| NumSyncErrors | `m_iNumSyncErrors` (cumulative for the session) |
+| GameMode | `m_cGameMode` |
+| GameMap | `m_cGameMap` |
+| GameIndex | `m_iGameIndex` |
+| ClientRandomSeed | `m_iClientRandomSeed` (the sync seed received in CLIENTID, `code/network/clienttoserver.cpp`) |
+| LastGameIndex | `m_iLastGameIndex` |
+| GameTimer | `GameTimer::GetGameTime()` |
+| SyncSeqId | `ClientToServer::m_syncErrorSeqId` |
+
+The seed column plus `SetRandSeed`/`AddSequenceItem` let a failing game be replayed with the same seed (§13).
+
+### 6.7 Engine changes compiled under `TESTBED_ENABLED` [C]
+
+| Change | Ref |
+|---|---|
+| `GRACE_TIME` 20.0 s instead of 3.0 s | `code/lib/universal_include.h` |
+| Game-option blueprints from `data/multiwinia-testbed.txt` instead of `data/multiwinia.txt` — identical except one added `TimeLimit 0 60 10 1` row for `GAMETYPE RocketRiot` ("TimeLimit added to Rocket Riot by John for testbed"), so unattended Rocket Riot games end | `code/multiwinia.cpp:Multiwinia::LoadBlueprints`, `data/multiwinia-testbed.txt` |
+| CLIENTID carries `Server::m_iRandSeed` instead of `m_syncRandSeed` when the override is set and non-zero | `code/network/server.cpp` CLIENTID construction |
+| Server registers every joining client as a spectator (client-type testbed: all; server-type: every client except the host's own, counting `m_iClientCount`) | `code/network/server.cpp` client registration |
+| Duplicate-auth-key rejection skipped (also skipped in `TARGET_DEBUG`) | same |
+| Client connection-attempt limit (`CTOS_MAX_CONNECTION_ATTEMPTS` = 50) not applied while testbed is on | `code/network/clienttoserver.cpp` connect loop, `code/network/clienttoserver.h` |
+| Testbed server: `m_nextServerAdvanceTime += 0.1` in every branch — the "advance 10 times faster" comment is not implemented; the "server more than 30 ids ahead" branch is also +0.1 | `code/network/server.cpp:Server::AdvanceIfNecessary` |
+| `Location::Render`, `ParticleSystem::Render`, `ExplosionManager::Render` return early and sound is muted (`SoundSystem` game-sound gate) while `m_bRenderOn` is false; `ToggleRendering` (R) toggles it | `code/location.cpp`, `code/particle_system.cpp`, `code/explosion.cpp`, `code/sound/soundsystem.cpp` |
+| `Multiwinia` team-slot debug asserts disabled | `code/multiwinia.cpp` |
+| Server-full dialog bypassed when joining | `code/UI/GameServerButton.h` |
+| Client stores the received seed in `m_iClientRandomSeed` | `code/network/clienttoserver.cpp` |
+
+### 6.8 Defects to avoid [C]
+
+Wrong CRC index in `BuildGameEntries`; entry 0 skipped and out-of-range read at the end of LINEAR; duplicate button names; delays measured with `GetHighResTime` deltas stored in `float`; the testbed keeps a global `GAME_SEQUENCE` and statics in a UI translation unit. The design idea (scripted menu driving + spectator-only peers + per-game sync log keyed by seed) is sound and worth keeping as a headless CI job (§14).
+
+## 7 Test harness and script test
+
+### 7.1 Campaign test harness (`TestHarness`) [B:DEAD] [C] `code/testharness.cpp`, `code/main.cpp:RunTheGame`, `code/global_world.cpp:GlobalEventAction::Execute`
+
+Activation: with `TEST_HARNESS_ENABLED`, after `Initialise()`, pref `TestHarness == 1` → `m_testHarness = new TestHarness(); TestHarnessLoop()` (= `RunTest()`); `Finalise(); exit(0)`. Never renders. The whole TU is inside `#ifdef TEST_HARNESS_ENABLED`; `App::m_testHarness` is compiled in FULL and always NULL.
+
+What it automates: an offline, exhaustive **mission-graph explorer** for the Darwinia campaign's global world — it "completes" missions in every possible order (depth first over all available missions), applies each mission's objectives to the global state, re-evaluates global events, and reports every reachable end state and data error. It runs neither the simulation nor the AI. Irrelevant to Multiwinia gameplay ([B:LEGACY] content).
+
+Algorithm:
+- Output `test_log.txt` in the working directory, unbuffered (`setvbuf(_IONBF)`); `m_indent` points into a 255-space buffer, starting at its end (empty string); indenting moves the pointer back 3 characters.
+- `ExploreStates(world)`: (1) `PrintGlobalState`: per location `"%-16s %-37s %-8s"` name, mission file, available/unavailable. (2) `FindAvailableMissions`: locations with `m_available` and mission ≠ "null"; missions whose file name starts with "cutscene" → `PrintError("Cutscene mission file left hanging around in <loc>")` and skipped. (3) none → end state: "Game Over. Missions done: N" plus the list; a `CompletedGame` stores each mission name minus its first 8 characters ("mission_"). (4) otherwise for each available mission: deep-copy the `GlobalWorld`, make it `g_app->m_globalWorld`, `DoMission`, recurse, pop, "End of mission in <loc>", delete the copy, restore.
+- `DoMission`: log "Doing mission in location %s: %s"; push name; indent; load `LevelFile(missionFile, mapFile)`; `AchieveObjective` for every primary then every secondary objective; set the location's mission to "null"; `while (world->EvaluateEvents());` (with the harness on, `GlobalEventAction::Execute` logs `SetMission`, `RunScript`, `MakeAvailable`).
+- `AchieveObjective` per `GlobalEventCondition`: `AlwaysTrue`, `DebugKey`, `NotInLocation` → nothing; `BuildingOffline` → global building offline (error if bad id); `BuildingOnline` → online, and for a `TrunkPort` the destination location becomes available (error if invalid); `ResearchOwned` → `AddResearch(id)`, "Player collects research %d"; `NeverTrue` → not handled.
+- `RunTest`: explore from the live world, then a summary of each completed game's mission count and list, and "Number of errors: N".
+- Defects: the destructor `delete[] m_indent` frees the moved pointer (undefined behaviour); the indent underflows after 85 levels; the search is factorial in the number of simultaneously available missions (no memoisation).
+
+### 7.2 Script test (`SCRIPT_TEST_ENABLED`) [B:DEAD] [C] `code/script.cpp:Script::TestScript`, `Script::ReportError`
+
+When a script is started, `TestScript(file)` first parses it statically and reports through `ReportError` (to `TestHarness::PrintError` if a harness exists, else `AppDebugAssert(false)`), appending " (map mission line: N)" or " (no map, no mission, line: N)". Checks by opcode:
+
+| Opcode | Errors reported |
+|---|---|
+| `CamMove` | "called with no mount specified"; "called when not in a location"; "called with invalid mount name: %s"; "called with no duration parameter"; "called with invalid duration parameter: %f" |
+| `CamCut` | no mount; not in a location; invalid mount name |
+| `CamAnim` | no anim name; bad anim name |
+| `EnterLocation` | no location name; invalid location name |
+| `ExitLocation`, `WaitSay`, `WaitCam`, `ClearHighlights` | none |
+| `Say` | no language symbol; invalid language symbol |
+| `Wait` | invalid duration |
+| `Highlight` | invalid building id |
+| unknown word | "Invalid script command: %s" |
+| (file) | "Script file not found" |
+
+`Script::IsRunningScript()` returns false whenever a harness exists [C]. Scripts cannot run in Multiwinia at all ([30](30_scripting_tutorial_and_cutscenes.md)).
+
