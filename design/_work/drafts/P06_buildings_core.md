@@ -438,18 +438,19 @@ stateDiagram-v2
     [*] --> Neutral : team 255 in level file
     [*] --> Activating : team set in level file (InitialiseTeam then forces Active)
     Neutral --> Activating : evaluation finds owner T (>=3 ports, no enemies); activationTimer = 30
-    Activating --> Active : activationTimer <= 0; (instant if only spawn point of T,; or instantspawnpointcapture)
+    Activating --> Active : activationTimer <= 0 (instant if only spawn point of T or instantspawnpointcapture)
     Activating --> Neutral : evaluation fails (contested / <3); activationTimer = 30
     Active --> Neutral : evaluation fails
     Active --> Activating : evaluation finds different owner U; activationTimer = 30
     state Active {
         [*] --> Burst
-        Burst --> Burst : every 0.2 s request 1 spirit; (counter < N)
+        Burst --> Burst : every 0.2 s request 1 spirit (counter < N)
         Burst --> Pause : counter reaches N = int(20*H); timer = 10 + syncfrand(5)
         Pause --> Burst : timer <= 0
         Burst --> Locked : PopulationLocked()
         Pause --> Locked : PopulationLocked()
-        Locked --> Burst : unlocked (timer resumes where it stopped)
+        Locked --> Burst : unlocked during a burst (timer resumes)
+        Locked --> Pause : unlocked during a pause (timer resumes)
     }
 ```
 [C] `SpawnPoint::Advance`, `RecalculateOwnership`, `PopulationLocked`; `code/location.cpp:Location::InitialiseTeam` (starting spawn points).
@@ -975,7 +976,7 @@ if m_spawnTimer <= 0 or Location.m_spawnManiaTimer > 0:
 4. `average = others / n` — **integer division** (then converted to double);
 5. if `average > 1.5 × mine`: `factor = 1 − ((mine − 1) / total)` with integer division (total = all used teams' owned points incl. mine) — evaluates to **1** whenever mine ≥ 1 (always true when called from an owned SpawnPoint); return `1 + h/100 · factor`; else 1.0.
 
-So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer) average holding of the other teams exceeds 1.5 × yours; otherwise H = 1.** Burst size `N = int(20·H)`: h = 0, 10, …, 90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 (verified floating-point truncation). [C]+[I] arithmetic.
+So effectively: **H = 1 + h/100 when every spawn point is owned and the (integer) average holding of the other teams exceeds 1.5 × yours; otherwise H = 1.** Burst size `N = int(20·H)`: h = 0, 10, 20, 30, 40, 50, 60, 70, 80, 90 → N = 20, 22, 24, 26, 28, 30, 32, 34, 36, 38 respectively (verified floating-point truncation). [C]+[I] arithmetic.
 
 **Timing per cycle** (in ticks of 0.1 s): emissions at ticks 0, 2, 4, …, 2(N−1) (0.2 s timer ⇒ exactly 2 ticks); then a pause of P = ⌈(10 + u)/0.1⌉ (+1 when float accumulation leaves a residue, e.g. 10.0 → 101 ticks), u ~ U[0,5). Cycle C = 2(N−1) + P ticks.
 

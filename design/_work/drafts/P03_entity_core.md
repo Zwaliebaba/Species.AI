@@ -238,7 +238,7 @@ Design note for the new game: use wider stat types; the byte storage silently cl
 | `void SetWaypoint(Vector3)` | nothing | used by `FollowRoute` |
 | `Vector3 PushFromObstructions(pos, killem=true)` | see Collision | |
 | `Vector3 PushFromCliffs(pos, oldPos)` | if slope `(pos.y−old.y)/horizDist > 1.0` spiral-search: `d` from 0 to 50 step 0.2, angle `= d·2π`, offset `(cos·d, 0, sin·d)`, take first point with slope < 1.0 | gradient limit 45° |
-| `Vector3 PushFromEachOther(pos)` | queries entity grid radius 2.0; for every other id: `result += normalise(pos−other) × 0.1/|pos−other|`; result.y = terrain height. Not called by base Advance (commented out) | separation steering |
+| `Vector3 PushFromEachOther(pos)` | queries entity grid radius 2.0; for every other id: `result += normalise(pos−other) × 0.1/\|pos−other\|`; result.y = terrain height. Not called by base Advance (commented out) | separation steering |
 | `int EnterTeleports(int requiredId=-1)` | for each building in obstruction cell under `m_pos` (optionally only id = requiredId): RadarDish — `ReadyToSend()`, distance to entrance < 15, `m_front·entranceFront < 0`; Bridge — `GetEntrance()` ok, distance to *bridge pos* < 25, ReadyToSend, facing test. On success `EnterTeleport(m_id)`, sound `"EnterTeleport"`, returns building id; else -1 | RadarDish/Bridge are P06/P07 |
 | `void DirectControl(TeamControls const&)` | nothing | direct-control hook |
 | `bool IsSelectable()` | false | |
@@ -408,7 +408,7 @@ Memo for `GetEnemies` only. Elements (`EntityGridCacheElement`): `float m_timeIn
 | Speed | 20 units/s (×0.2 = 4 when Idle/WorshipSpirit; ×1.75 = 35 UnderControl; terrain factor 0.3–2.0) | stats.txt + `AdvanceToTargetPosition` |
 | Reload (Rate) | 3 s (between laser shots; initial phase `syncfrand(3)`) | stats.txt + `Entity::SetType` |
 | Laser: speed / life / range | 150 units/s; life by `TypeLaser` research: 0→0.2, 1→0.4, **2→0.6 s (MP)**, 3→0.8, 4→1.0 ⇒ MP range ≈ 90 | `Entity::Attack`, `code/location.cpp:Location::FireLaser` |
-| Laser damage | `20 + syncfrand(20)` → int, `DamageTypeLaser`; hit if 2D point–segment distance < 5 and (MP) `|Δy| < 5`; knock-back `vel += (vel dir × syncfrand(10), y = 7+syncfrand(5))` | `code/worldobject/weapons.cpp:Laser::Advance` (P04) |
+| Laser damage | `20 + syncfrand(20)` → int, `DamageTypeLaser`; hit if 2D point–segment distance < 5 and (MP) `\|Δy\| < 5`; knock-back `vel += (vel dir × syncfrand(10), y = 7+syncfrand(5))` | `code/worldobject/weapons.cpp:Laser::Advance` (P04) |
 | Aim error | target ± `syncsfrand(15)` (±7.5) on x and z, from muzzle +3 y | `Entity::Attack` |
 | Subversion laser | speed 75, life ×2 (same range), from +2 y | `Darwinian::FireSubversion`, `Location::FireLaser` |
 | Threat search range | 90 (`DARWINIAN_SEARCHRANGE_THREATS`), dynamic (see targeting) | `#define` |
@@ -474,7 +474,7 @@ Multiplayer research levels (fixed per match) [C] `code/location.cpp:Location::I
 | `m_insane` | false | plague insanity: attacks anyone, always grenades |
 | `m_previousTeamId` (-1), `m_colourTimer` (-1) | — | colour cross-fade after subversion conversion (render) |
 | `m_fireDamage` | 0 | accumulated fire damage (flame weapons) |
-| `m_futurewinian` | false | "Futurewinian" variant (Assault defenders etc.) |
+| `m_futurewinian` | false | "Futurewinian" variant: member of the Futurewinian team or of the team in level option `FuturewinianTeam` (set in `Begin`) |
 | `m_startedThreatSound` | false | threat-sound latch |
 | `m_wallHits` | 0 | wall collision counter (read by AI, P08) [I] |
 | `m_closestAITarget` | -1 | (AI use) |
@@ -519,7 +519,7 @@ Pre-checks: Idle with `m_controllerId != −1` → UnderControl. If `m_following
 - `Location::SelectDarwinians(team, pos, radius)`: every own-team Darwinian within `radius` (entity grid) not OperatingPort / BeingSacraficed / OnFire / InsideArmour gets `m_underPlayerControl = true` (+ "Selected" sound for the local team) [C] `code/location.cpp`.
 - `Location::IssueDarwinianOrders(team, pos, directRoute)`: target snaps to a connected RadarDish within its radius; centre of selected Darwinians computed; `m_routingSystem.GenerateRoute(centre, pos, directRoute)`; if a friendly Armour with free capacity is within 30 of the target, every selected Darwinian → ApproachingArmour (`m_manuallyApproachingArmour = true`, unloading armour switched to Idle); otherwise each gets `GiveOrders(target, routeId)` + `m_followingPlayerOrders = true`; sound "GivenOrdersFromPlayer" [C] `code/location.cpp:Location::IssueDarwinianOrders`.
 - `Team::Advance` counts `m_underPlayerControl` Darwinians and their centroid each slice-0 (`m_numDarwiniansSelected`, `m_selectedDarwinianCentre`) [C] `code/team.cpp:Team::Advance`.
-- Selection is cleared when an order completes? — `m_underPlayerControl` is cleared only on teleport entry in `AdvanceFollowingOrders` in this file; other clears are in P09 code [U] (resolve in `code/location_input.cpp`/`taskmanager.cpp`).
+- Selection clearing: within P03 files `m_underPlayerControl` is cleared only on teleport entry in `AdvanceFollowingOrders`; other clears live in P09 code — see Unknown U1.
 
 ### State enum (values = declaration order) and behaviour [C]
 | # | State | Entered by | Per-tick behaviour (`Advance*`) | Exits |
@@ -547,7 +547,7 @@ Pre-checks: Idle with `m_controllerId != −1` → UnderControl. If `m_following
 | 20 | BeingSacraficed | `Sacrafice()` by Shaman [B:LEGACY] | rise 1.5/s for 5 s then orbit portal; >10 s → spirit (`Spirit::StateShaman`) + Zombie effect, removed | removed |
 | 21 | OpeningCrate | `SearchForCrates` | crate gone → Idle; walk to scatter point; on arrival face crate; within 1.1×35 emit team-coloured `TypeBlueSpark` particles (cosmetic). Capture progress is computed by the Crate from nearby Darwinians (P08) [I] | Idle |
 | 22 | InVortex | `Location` dust-ball vortex: Darwinians on ground within 50 of `DustBall::s_vortexPos` (`location.cpp` ≈L1559) | spiral up: speed `max(100·y/1000, 30)`, orbit radius `300·y/1000`, angle = network time + uid×20, target height `min(y+50, 500 + 5·(uid%100))`; vortex gone → Idle with `vel.SetLength(50)` (flung, then falls) | Idle |
-| 23 | BeingAbducted | `SpaceShip` (`Abduct`) | airborne; ship alive & `ShipStateAbducting`: steer `vel = lerp(vel, toShip×(2·speed) + (ship moving: horizontal toward ship × |shipVel|) + tangent×50, k)` with `k = dt·0.25 + (uid mod 10)·0.1·dt`; 50 % chance per tick (synced) of a blue spark; within 20 or above the ship → `ship->IncreaseAbductees()`, **removed (no spirit)**; ship gone → Idle | removed / Idle |
+| 23 | BeingAbducted | `SpaceShip` (`Abduct`) | airborne; ship alive & `ShipStateAbducting`: steer `vel = lerp(vel, toShip×(2·speed) + (ship moving: horizontal toward ship × \|shipVel\|) + tangent×50, k)` with `k = dt·0.25 + (uid mod 10)·0.1·dt`; 50 % chance per tick (synced) of a blue spark; within 20 or above the ship → `ship->IncreaseAbductees()`, **removed (no spirit)**; ship gone → Idle | removed / Idle |
 | 24 | RaisingFlag | `SearchForFlags` (Blitzkrieg) | zone must be a MultiwiniaZone not ours and not `m_blitzkriegLocked`, else Idle; walk; on arrival face zone (capture computed by the zone, P02) | Idle |
 
 ```mermaid
@@ -770,7 +770,7 @@ States `StateHeld`/`StateReleased`. Ctor: shape `boxkite.shp`, birth = network t
 | `m_wayPointTeleportId` | -1 | teleport to enter at the waypoint |
 | `m_targetFront`, `m_turnToTarget` (false) | zero | AI facing target (never reset to zero once set) |
 | `m_shield` | 0 | number of absorbed souls orbiting (legacy absorb) |
-| `m_demoted` | false | `Advance` returns `amIDead || m_demoted` |
+| `m_demoted` | false | `Advance` returns `amIDead \|\| m_demoted` |
 | `m_absorb`, `m_absorbTimer` (2.0) | false | legacy absorb mode |
 | `m_noFormations` | false | disables formation toggle |
 | `m_orderPosition` | — | GOTO destination handed to Darwinians; in formation = facing target |
@@ -857,8 +857,8 @@ Every 1 s (`m_aiTimer`):
 ### Order effect objects [C]
 | Class | Type | Behaviour |
 |---|---|---|
-| `OfficerOrders` (SP) | `EffectOfficerOrders` | travels at `clamp(1.1·|v|, 30, 150)` along the ground (+2) to the waypoint; local team: `TypeMuzzleFlash` trail particles (size 30); arrives when the next step overshoots or < 10; fades 1 s; render `textures/starburst.bmp` size 15 (SP colour (1,0.3,1,0.7)) |
-| `MultiwiniaOfficerOrders` (MP) | `EffectOfficerOrders` | follows the officer's route (`FollowRoute`: start at waypoint 1, advance within 10) at `clamp(|v|·(1+dt), 30, 100)`; every 0.2 s game time drops an `OfficerOrderTrail`; arrives when the route ends; fades 1 s; rendered for friends of the local team |
+| `OfficerOrders` (SP) | `EffectOfficerOrders` | travels at `clamp(1.1·\|v\|, 30, 150)` along the ground (+2) to the waypoint; local team: `TypeMuzzleFlash` trail particles (size 30); arrives when the next step overshoots or < 10; fades 1 s; render `textures/starburst.bmp` size 15 (SP colour (1,0.3,1,0.7)) |
+| `MultiwiniaOfficerOrders` (MP) | `EffectOfficerOrders` | follows the officer's route (`FollowRoute`: start at waypoint 1, advance within 10) at `clamp(\|v\|·(1+dt), 30, 100)`; every 0.2 s game time drops an `OfficerOrderTrail`; arrives when the route ends; fades 1 s; rendered for friends of the local team |
 | `OfficerOrderTrail` | `EffectOfficerOrderTrail` | ground-aligned arrow `icons/widearrow.bmp`, size `max(5, 20·camDist/2000)`, alpha `0.6·(1 − age)`, removed after 1 s; rendered for the local team only |
 
 ## [→ 02_units_and_entities] Spirit (soul)
@@ -939,7 +939,7 @@ stateDiagram-v2
 - **Death → soul.** Every entity death through `Entity::ChangeHealth` spawns exactly one Spirit of the dead entity's team at its position (velocity = half the corpse velocity), except for the monster team [C] `entity.cpp:Entity::ChangeHealth`, `location.cpp:Location::SpawnSpirit`. Deaths that *remove* units without `ChangeHealth` (promotion, rocket boarding, abduction, subversion conversion, futurewinian pulse conversion, officer absorb) produce **no** soul [C] (Darwinian "Death, spirit and removal").
 - **Soul → population (MP).** In Multiwinia free-floating souls are not consumed by spawn points directly (the "accelerate spirits to heaven" and spirit-consuming logic in `MasterSpawnPoint::Advance` is single-player only) [C] `code/worldobject/spawnpoint.cpp:MasterSpawnPoint::Advance`. Souls become new Darwinians only when a **Harvester** (crate unit, P04) collects `Floating`, unbroken souls within `ENGINEER_SEARCHRANGE` and delivers them to an owned SpawnPoint, which calls `SpawnPoint::SpawnDarwinian()` once per soul (sound "DropSpirit") [C] `code/worldobject/harvester.cpp:Harvester::SearchForSpirits, AdvanceToSpawnPoint`. Note the spirit's team is ignored — **enemy souls are harvested into the harvester owner's Darwinians** [I] (no team check in `SearchForSpirits`; verify in P04). Souls are also destroyed by the SoulDestroyer (P05). Uncollected souls expire after ~2–2.5 min (MP timings above).
 - **Darwinian worship of souls** (`StateWorshipSpirit`, BoxKites) is disabled in MP (`SearchForSpirits` returns false; `AdvanceWorshipSpirit` resets to Idle) [C].
-- **Population counters in scope**: `Entity::s_entityPopulation` (all live Entity objects, ++ctor/−−dtor); the population-cap check in `SpawnEntities` is commented out (`/*if( Entity::s_entityPopulation >= m_levelFile->m_populationCap …*/`) [C] `location.cpp:Location::SpawnEntities` — caps are enforced by the spawning buildings instead (P06/P02). `Team::Advance` counts selected Darwinians; team kill counters `Team::m_teamKills` are incremented by lasers (Darwinian kills), `Darwinian::FireDamage` (over-counts), and others (P04).
+- **Population counters in scope**: `Entity::s_entityPopulation` (all live Entity objects, ++ctor/−−dtor); the population-cap check in `SpawnEntities` is commented out (`/*if( Entity::s_entityPopulation >= m_levelFile->m_populationCap …*/`) [C] `location.cpp:Location::SpawnEntities` — caps are enforced by the spawning buildings instead (P06/P02). `Team::Advance` counts selected Darwinians; team kill counters `Team::m_teamKills` are incremented by lasers (Darwinian kills), `Darwinian::FireDamage` (over-counts); other increment sites are outside P03 (P04 weapons) [I].
 - **Territory → throughput hooks in scope**: Darwinians operate building ports (`StateApproachingPort/OperatingPort`, `Building::OperatePort`, MP limit 1 operator per team per port) — this is the capture mechanic for spawn points and other port buildings (P06); crates are captured by standing near (`StateOpeningCrate`, P08); Blitzkrieg flags by `StateRaisingFlag` (P02); statues by `StateCarryingBuilding` (P02/P07).
 
 ## [→ 02_units_and_entities] EntityLeg — legged locomotion helper

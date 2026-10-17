@@ -96,7 +96,7 @@ The input layer is a small **query-driven binding graph** [C] `code/lib/input/in
 |---|---|
 | `controlEvent(type, details)` | If `type` not suppressed: iterate its specs **in order**; return true at the **first** spec whose driver's `getInput` returns true (details from that spec). Otherwise `details.type = FAIL`, false. A control therefore behaves as the logical OR of its bindings; the payload comes from the first satisfied binding. |
 | `checkInput(spec, details)` | `drivers[spec.driver]->getInput(spec, details)`; on false sets `details.type = FAIL`. Used by composite drivers. |
-| `parseInputPrefs(reader, replace)` | Line parser (§1.9). |
+| `parseInputPrefs(reader, replace)` | Line parser (§1.11); with `replace` every successful line replaces the control's primary binding (§1.4). |
 | `parseInputSpecString/Tokens` | Whitespace tokenisation (`istringstream >>`); offer tokens to each driver in registration order; first `STATE_DONE` wins and sets `spec.driver`. |
 | `replacePrimaryBinding(type, str)` | parse + `bind(type, spec, replace=true)`; silent on failure. Used by the key-binding window. |
 | `getFirstActiveInput(spec, instant)` | Asks drivers in order; only W32 implements it: first VK `i` in `0..222` (`< KEY_TILDE`, so TILDE itself is excluded) with a "down" edge this frame whose key name contains no space → `key <name> down` if `instant` else `key <name> pressed`. Mouse capture code is commented out → **only keyboard keys can be captured for rebinding** [C] `code/lib/input/inputdriver_win32.cpp:W32InputDriver::getFirstActiveInput`. |
@@ -159,6 +159,7 @@ Windows messages handled (`W32InputDriver::WndProc`): `WM_[LMR]BUTTONDOWN/UP` (a
 
 Evaluation:
 - key: `down` ⇔ `g_keyDeltas==+1`, `up` ⇔ `-1`, `pressed` ⇔ `g_keys==1`. A press+release inside one frame leaves delta -1 → the `down` edge is **lost** (only `up` seen) [C].
+- ALT arrives as `WM_SYSKEYDOWN/UP`, which set/clear `g_keys[ALT]` **without deltas**, so `key alt down` / `key alt up` never fire (only `key alt pressed` works — hence the shipped `GesturesTaskManagerHide = key alt up` is inert); keys released while ALT is held (`WM_SYSKEYUP`) also produce no `up` edge [C] `W32InputDriver::WndProc`.
 - mouse button: `down/up/pressed` from `m_mbDeltas`/`m_mb`; a click shorter than one frame is lost entirely [C].
 - `mouse axes move` → 2D, `x,y = m_mouseVel`, true if non-zero; `read` → always true. `mouse wheel move` → 1D `x = wheel notches this frame`. Other conditions on axes/wheel never fire.
 - `mouse any` and `key any` (VK 255, "TODO: Any key not implemented") parse but **never fire** [C].
