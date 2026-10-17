@@ -300,3 +300,263 @@ Each item states the shipped behaviour (with its tag and evidence), why it matte
 | Q15 | **Features that exist only as hooks.** Achievements are evaluated but never awarded, music never plays, leaderboards have no backend, multi-round Assault is unreachable | [C] see §2.5 | these are design gaps, not features to port | design each from scratch (or drop) | §2.5, [09 §7](09_meta_systems.md#7-achievements-statistics-and-leaderboards), [10 §6](10_audio_design.md#6-music-system) |
 
 ---
+
+## 8 Player-facing glossary
+
+Every concept a player meets in the shipped game, with a **neutral placeholder** for the new game. Placeholders follow the proposals in the owning documents' IP tables where one exists (several documents proposed different names for the same thing; this table picks one and [90](90_glossary.md) is the canonical list). "generic" = an ordinary word that is not Introversion IP and may be kept. Every row is [C] unless tagged.
+
+### 8.1 Factions, people and the economy
+
+| Term (original) | What it is for the player | Neutral placeholder | Evidence | Spec |
+|---|---|---|---|---|
+| Multiwinia (game title, "Survival of the flattest" subtitle) | the product | `<GAME_TITLE>` | `code/lib/universal_include.h` (`APP_NAME`), `data/language/english.txt` | [09 IP items](09_meta_systems.md#ip-items) |
+| Darwinian (also "Multiwinian") | the basic unit: a small flat soldier with lasers and grenades; health 50, 20 u/s; never built or ordered individually | **Worker** | `code/worldobject/darwinian.cpp`, `data/stats.txt` | [02 §4](02_units_and_entities.md#4-darwinian) |
+| Officer | a Darwinian promoted by the player; never fights; acts as a signpost or leads a formation | **Leader** | `code/worldobject/officer.cpp` | [02 §5](02_units_and_entities.md#5-officer), [06 §5](06_player_control_and_input.md#5-officer-orders-promotion-and-formations) |
+| GOTO order / signpost | an officer order that redirects every idle Darwinian passing within 100 u | **Waypoint beacon** | `code/worldobject/darwinian.cpp:Darwinian::SearchForOfficers` | [06 §5.2](06_player_control_and_input.md#52-order-model) |
+| Formation | a block of up to 90 Darwinians marching in front of an officer (rows of 6 to 15) | generic | `code/worldobject/officer.cpp:Officer::GetFormationPositionFromIndex`, `code/team.cpp:Team::Team` | [06 §5.4](06_player_control_and_input.md#54-formation-geometry-and-membership) |
+| Selection circle | the growing circle (≤ 100 u) drawn with the left button to gather Darwinians | generic | `code/location.cpp:Location::SelectDarwinians` | [06 §2](06_player_control_and_input.md#2-selection-model) |
+| Spirit (soul) | the green orb a dead unit leaves; floats 30–50 s, collectable by harvesters, then ascends | **Essence orb** | `code/worldobject/spirit.cpp:Spirit::Advance` | [02 §6](02_units_and_entities.md#6-spirit), [05 §5](05_economy_and_population.md#5-spirit-soul-lifecycle) |
+| Spawn point | the capturable building with 5 ports that produces Darwinians for its owner | **Spawn Node** | `code/worldobject/spawnpoint.cpp:SpawnPoint` | [03 §4.5](03_buildings_and_world_objects.md#45-spawnpoint), [05 §2](05_economy_and_population.md#2-territory-capture-spawn-points) |
+| Master spawn point, spawn links | the invisible source and the beam network along which new Darwinians travel to the spawn points | **Source Node**, **Relays** | `code/worldobject/spawnpoint.cpp:MasterSpawnPoint`, `SpawnBuilding` | [03 §4.2–§4.4](03_buildings_and_world_objects.md#44-masterspawnpoint) |
+| Port / operator | a slot on a building that a Darwinian occupies to operate or capture it | generic | `code/worldobject/building.cpp` (ports) | [03 §3.6](03_buildings_and_world_objects.md#36-ports-occupancy-and-reservation) |
+| Activation delay | the 30 s before a newly captured spawn point produces | generic | `SpawnPoint::Advance` | [05 §2.3](05_economy_and_population.md#23-activation-delay) |
+| Population cap | the per-team limit on bodies that freezes production | generic | `SpawnPoint::PopulationLocked` | [05 §4](05_economy_and_population.md#4-the-population-cap) |
+| Handicap | lobby option that enlarges spawn bursts of a team far behind on spawn points | **Catch-up bonus** | `SpawnPoint::CalculateHandicap` | [05 §3.2](05_economy_and_population.md#32-handicap) |
+| Trunk port | a fixed gate that emits reinforcement waves for its owner | **Warp Gate** | `code/worldobject/trunkport.cpp`, `Multiwinia::AdvanceTrunkPorts` | [03 §8.6](03_buildings_and_world_objects.md#86-trunkport), [05 §6](05_economy_and_population.md#6-reinforcement-systems) |
+| Reinforcements ("Reinforcements in *S") | the timed trunk-port waves of Darwinians, armour, turrets or air strikes | generic | `code/multiwinia.cpp:Multiwinia::AdvanceTrunkPorts`, `Multiwinia::Render` | [05 §6.1](05_economy_and_population.md#61-trunk-port-reinforcement-waves--multiwiniaadvancetrunkports) |
+| Monster team ("Evilinians") | the hostile CPU faction that owns bad crate outcomes, ant hills, triffids and infected Darwinians | **Rogue faction** | `code/location.cpp:Location::GetMonsterTeamId`, `data/language/english.txt` (`multiwinia_team_virus`) | [01 §2.5](01_game_modes.md#25-teams-slots-start-positions-colours-co-op-and-assault-sides), [04 §2.1](04_crates_powerups_and_weapons.md#21-identity-build-gating-and-pool-membership) |
+| Futurewinians | the faction dropped by the Space Ship outcome (team 5) | **Visitor faction** | `code/location.cpp:Location::InitFuturewinianTeam`, `code/worldobject/spaceship.cpp` | [02 §23](02_units_and_entities.md#23-spaceship) |
+| CPU player, AI type (Easy / Normal / Hard) | computer opponents filling empty slots; one difficulty for all | generic ("Bot") | `code/worldobject/ai.cpp`, `code/multiwinia.h` | [07](07_ai.md) |
+| Co-op | two alliances of two players sharing a colour family, on maps that allow it | generic | `code/location.cpp:Location::SetupCoop` | [01 §2.5](01_game_modes.md#25-teams-slots-start-positions-colours-co-op-and-assault-sides) (2.5.5) |
+
+### 8.2 Units and buildings a player controls or fights over
+
+| Term (original) | What it is for the player | Neutral placeholder | Evidence | Spec |
+|---|---|---|---|---|
+| Squad (Insertion squad, "Squadie") | 3 directly controlled laser soldiers with grenades, 60 s life | generic ("Strike team") | `code/worldobject/insertion_squad.cpp`, `code/taskmanager.cpp` (`Task::TargetSquad`) | [02 §7](02_units_and_entities.md#7-insertion-squad) |
+| Armour | a troop transport that loads and unloads Darwinians | **Transport** | `code/worldobject/armour.cpp` | [02 §8](02_units_and_entities.md#8-armour) |
+| Harvester | a flying collector that turns any team's spirits into own Darwinians | **Collector** | `code/worldobject/harvester.cpp` | [02 §9](02_units_and_entities.md#9-harvester) |
+| Engineer | a hovering spirit collector (useful only where an incubator exists — on no shipped official map) | **Builder** | `code/worldobject/engineer.cpp` | [02 §10](02_units_and_entities.md#10-engineer) |
+| Gun turret (standard, rocket, flame variants) | a capturable or crate-placed turret; captured by occupying its 4 ports; aim and fire directly | generic | `code/worldobject/gunturret.cpp` | [03 §5.1](03_buildings_and_world_objects.md#51-gunturret) |
+| Radar dish | a teleport between linked dishes, aimed by its owner | **Relay Dish** | `code/worldobject/radardish.cpp` | [03 §5.3](03_buildings_and_world_objects.md#53-radardish) |
+| Solar panel | a power source captured by occupation; feeds fuel (Rocket Riot) and laser fences | **Energy Collector** | `code/worldobject/generator.cpp:SolarPanel` | [03 §6.2](03_buildings_and_world_objects.md#62-solarpanel) |
+| Laser fence, wall | barriers; fences switched by power, walls breached by the Assault wall buster | **Barrier Emitter**, generic | `code/worldobject/laserfence.cpp`, `code/worldobject/wall.cpp` | [03 §7.1–§7.2](03_buildings_and_world_objects.md#72-wall) |
+| Tree | scenery that burns; crate forests drop or eat spirits | generic | `code/worldobject/tree.cpp` | [03 §7.3](03_buildings_and_world_objects.md#73-tree) |
+
+### 8.3 Mode objectives
+
+| Mode (original → placeholder) | Objective objects the player meets | Placeholders for the objects | Evidence | Spec |
+|---|---|---|---|---|
+| Domination → **Spawn Control** | spawn points; "eliminated after 30 s without a spawn point" | Spawn Node | `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish` | [01 §4.1](01_game_modes.md#41-domination-gametypeskirmish-bfull) |
+| King of the Hill → **Zone Control** | hill zones (`MultiwiniaZone`) owned by the team with most Darwinians inside | Control Zone | `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_KingOfTheHill` | [01 §4.2](01_game_modes.md#42-king-of-the-hill-gametypekingofthehill-bfull) |
+| Capture the Statue → **Relic Run** | statues carried by groups of Darwinians into the team's drop zone | **Relic**, Relic Base | `code/worldobject/statue.cpp`, `code/multiwinia.cpp:Multiwinia::AdvanceCaptureStatue` | [01 §4.3](01_game_modes.md#43-capture-the-statue-gametypecapturethestatue-bfull) |
+| Assault → **Siege** | the defenders' pulse bomb ("WMD") with its countdown, the control stations that disarm it, the wall buster that breaches walls, attacker and defender sides | **Core Device**, **Uplink Console**, **Breach Charge** | `code/worldobject/pulsebomb.cpp`, `code/worldobject/controlstation.cpp`, `code/worldobject/wallbuster.cpp` | [01 §4.4](01_game_modes.md#44-assault-gametypeassault-bfull) |
+| Rocket Riot → **Launch Race** | the team's escape rocket, its fuel station and fuel chain powered by solar panels, the 100 passenger seats, the rocket status panel | **Launch Vessel**, fuel depot, Energy Collector | `code/worldobject/rocket.cpp:EscapeRocket`, `code/multiwinia.cpp:Multiwinia::AdvanceRocketRiot` | [01 §4.5](01_game_modes.md#45-rocket-riot-gametyperocketriot-bfull) |
+| Blitzkrieg → **Flag Chain** | flags raised by Darwinians in a connected chain toward an enemy's home flag; "base under attack" warnings | Flag post, Home post | `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::Advance_Blitzkrieg`, `code/multiwinia.cpp:Multiwinia::AdvanceBlitkrieg` | [01 §4.6](01_game_modes.md#46-blitzkrieg-gametypeblitzkreig-bfull) |
+| Shared: grace period, Ready, sudden death, elimination, rank messages, one-minute warning, draw | the pre-match freeze and ready-up; the tie-break after time-up; hard elimination (Domination, Blitzkrieg) vs the "soft" eliminated state that drives retribution | generic | `code/multiwinia.cpp:Multiwinia::AdvanceGracePeriod`, `Multiwinia::EliminateTeam`, `Multiwinia::IsEliminated` | [01 §2.4–§2.10](01_game_modes.md#27-elimination) |
+
+### 8.4 Crates, tasks and every reward family
+
+| Term (original) | What it is for the player | Neutral placeholder | Evidence | Spec |
+|---|---|---|---|---|
+| Crate ("Crate Drop!") | the falling bubble-wrapped box opened by the local Darwinian majority | **Supply crate** (generic word) | `code/worldobject/crate.cpp` | [04 §1](04_crates_powerups_and_weapons.md#1-crate-lifecycle) |
+| Good / bad outcome | 90 % useful reward for the opener, 10 % hostile event for everyone | generic | `Crate::AdvanceOnGround` | [04 §3](04_crates_powerups_and_weapons.md#3-probability-tables) |
+| Task, power-up ("program", "Task Manager") | a granted unit or power waiting in a slot to be placed | **Power** | `code/taskmanager.cpp` | [06 §3](06_player_control_and_input.md#3-task-manager) |
+| Task slots ("Powerup Limit Reached!") | the 6 slots (2 while eliminated) | **Power slots** | `TaskManager::Capacity` | [06 §3.5](06_player_control_and_input.md#35-slots-and-capacity) |
+| Retribution ("Retribution in *S") | free random powers every 45 s for an eliminated team | **Comeback Bonus** | `Multiwinia::AdvanceRetribution` | [04 §4.4](04_crates_powerups_and_weapons.md#44-retribution-eliminated-team-grants) |
+| Starting power-ups | 0–3 random powers at match start (Domination, KOTH) | generic | `code/location.cpp:Location::InitialiseTeam` | [04 §4.3](04_crates_powerups_and_weapons.md#43-startingpowerups) |
+| Basic crates only | lobby switch limiting crates to the 7 basic types and disabling bad outcomes | generic | `Crate::IsValid`, `Crate::IsBasicCrate` | [04 §4.5](04_crates_powerups_and_weapons.md#45-basic-vs-advanced-crates) |
+
+The 31 shipped outcomes in eight families (enum order in [04 §2.1](04_crates_powerups_and_weapons.md#21-identity-build-gating-and-pool-membership); behaviour in [04 §5](04_crates_powerups_and_weapons.md#5-effect-specification-per-outcome)) [C] `code/worldobject/crate.h`, `code/worldobject/crate.cpp:Crate::CaptureCrate`, `Crate::RunUncapturedCrate`:
+
+| Family | Members (original name → placeholder; "generic" = may keep) | Delivery | Pool |
+|---|---|---|---|
+| Unit grants (4) | Squad → generic; Armour → Transport; Harvester → Collector; Engineer → Builder | task | good |
+| Strikes (4) | Airstrike → generic; Napalm Strike → **Firebomb Run**; Nuke (10 warheads) → generic ("Missile Barrage"); Meteor (shower) → generic | task | good |
+| Turrets (3) | Gun Turret, Rocket Turret, Flame Turret → generic | task | good |
+| Crowd buffs, 30 s within 70 u (4) | Personal Shield → **Shield**; Subversion → **Convert**; Hot Feet → **Speed Boost**; Rage → generic ("Fury") | task | good |
+| Population (3) | Darwinians / "Multiwinians" (50–99 at the crate) → **Reinforcements**; Spawn Mania → **Spawn Surge**; Rocketwinians → **Rocket Troops** | immediate | good |
+| Global modifiers (4) | Crate Mania → **Supply Storm**; Mega Rage → **Frenzy**; Slow Down → **Time Dilation**; Speed Up → **Time Rush** | immediate | good |
+| Groves and broods (4) | Magical Forest → **Spirit Grove**; Dark Forest → **Blight Grove**; Ants Nest → **Hive**; Eggs → **Brood** | immediate / task | good (Dark Forest and Ants Nest also bad) |
+| Bad-only events (5) | Infection → **Swarm**; Randomiser → **Allegiance Scrambler**; Plague → **Sickness**; Space Ship → **Abductor**; Triffids → **Spitter Plants** (third-party literary name) | immediate, monster team (Space Ship: Visitor faction) | bad |
+| Debug only | The Beast → **Rift Horror** | immediate | bad [B:DEBUG] |
+
+---
+
+## 9 Reading guide to the functional set
+
+### 9.1 What each functional document answers
+
+| Doc | Read it for | Start with | Key tables and diagrams |
+|---|---|---|---|
+| [01 Game modes](01_game_modes.md) | the six rulesets: objective, win/lose/draw, scoring, timers, teams and sides, options, caps, end-of-game sequence; the shared match framework; 25 known rule bugs | [§1.4](01_game_modes.md#14-the-modes-at-a-glance), [§5](01_game_modes.md#5-cross-mode-comparison) | match lifecycle state machine (§2.2), per-tick order (§2.3), 39 option definitions (§3.2), per-mode specs (§4), bug table B1–B25 (§6) |
+| [02 Units and entities](02_units_and_entities.md) | every entity type: role, how obtained, stats, state machine, targeting, death and spirit, control model, colours, sounds | [§1.1](02_units_and_entities.md#11-every-entitytype-value), [§4 Darwinian](02_units_and_entities.md#4-darwinian) | Darwinian 25-state machine (§4.4), Officer (§5), Spirit (§6), damage model (§2.6) |
+| [03 Buildings and world objects](03_buildings_and_world_objects.md) | every building type: function, capture rules, inputs/outputs, power links, damage, level-file parameters, mode usage | [§1.5](03_buildings_and_world_objects.md#15-shipped-map-census), [§3.7](03_buildings_and_world_objects.md#37-capture-model-summary-every-capturable-type) | 75-value type enum (§2.1), spawn network (§4), mode objective objects (§8) |
+| [04 Crates, power-ups and weapons](04_crates_powerups_and_weapons.md) | crate lifecycle, the 31 outcomes, probability tables per level, exclusion lists, every outcome's effect, weapons and projectiles | [§2.2](04_crates_powerups_and_weapons.md#22-behaviour-summary-per-outcome), [§3.3](04_crates_powerups_and_weapons.md#33-per-type-probability-in-the-standard-case) | crate state machine (§1), per-level probability table (§3.5), counters matrix (§5.31), weapon summary (§6.23) |
+| [05 Economy and population](05_economy_and_population.md) | spawn-point flow, population cap, spirit lifecycle, reinforcements, throughput maths, timer granularity | [§1](05_economy_and_population.md#1-economy-model-at-a-glance), [§9](05_economy_and_population.md#9-re-implementation-guide-compact-formula-reference) | flow diagram with rates (§1.2), per-map cap table (§4.6), compact formula reference (§9) |
+| [06 Player control and input](06_player_control_and_input.md) | every player action and binding, selection model, task manager, officer orders and formations, direct control, camera, input-driver graph | [At a glance](06_player_control_and_input.md#at-a-glance), [§1.3](06_player_control_and_input.md#13-master-table--multiwinia-live-actions) | master action table (§1.3), 29 task types (§3.3), 164-control binding table (§12), input defects (§13) |
+| [07 AI](07_ai.md) | CPU player architecture, priority formulas, decision loop, officer and task use, per-mode strategies, difficulty, advantages | [§1](07_ai.md#1-overview), [§12](07_ai.md#12-per-mode-strategies) | AITarget node graph (§4), priority model (§5), difficulty table (§13), re-implementation guide (§20) |
+| [08 Levels and level design](08_levels_and_level_design.md) | the 57 Multiwinia maps, per-mode map lists, per-level options, level-design capabilities, the map editor | [§3.3](08_levels_and_level_design.md#33-summary), [§4](08_levels_and_level_design.md#4-per-mode-map-lists-and-level-conventions) | master map catalogue (§3.1), `MultiwiniaOptions` keys (§5.1), editor (§8) |
+| [09 Meta systems](09_meta_systems.md) | front end and full screen flow, lobby and setup options, versus CPU, LAN/WAN browser, demo gating, achievements, help and tutorials, loading screen, credits, localisation, preferences | [§1.1](09_meta_systems.md#11-what-is-live-in-the-shipped-product), [§2.5](09_meta_systems.md#25-full-live-screen-flow-front-end--lobby--game--results--front-end) | reachability table (§1.2), screen-flow diagram (§2.5), parameters by mode (§4.2), every user option (§11) |
+| [10 Audio design](10_audio_design.md) | what is audible, the event-binding model, every sound event, music (absent), positional rules, voice limits, mix | [§1.1–§1.3](10_audio_design.md#12-what-is-actually-audible-in-order-of-a-session-bfull) | event catalogue (§4), silent-event gaps (§5), sound-design brief (§14) |
+
+### 9.2 Suggested reading paths
+
+| Reader | Path |
+|---|---|
+| Game designer (new ruleset) | 00 → [01 §5](01_game_modes.md#5-cross-mode-comparison) → [05 §1](05_economy_and_population.md#1-economy-model-at-a-glance) and [§10](05_economy_and_population.md#10-design-notes-for-the-new-game) → [04 §2–§3](04_crates_powerups_and_weapons.md#2-the-crate-reward-enum-complete) → [06 At a glance](06_player_control_and_input.md#at-a-glance) → [07 §20](07_ai.md#20-re-implementation-guide) → §7 of this document |
+| Gameplay programmer | [05 §9](05_economy_and_population.md#9-re-implementation-guide-compact-formula-reference) → [02](02_units_and_entities.md) (Darwinian, Officer, Spirit) → [03 §3–§4](03_buildings_and_world_objects.md#3-building-base-class) → [01 §2](01_game_modes.md#2-the-shared-match-framework) → [21](21_simulation_and_entity_model.md) → [22](22_determinism_and_networking.md) |
+| AI programmer | [07](07_ai.md) → [03 §10](03_buildings_and_world_objects.md#10-ai-marker-buildings) → [06 §3](06_player_control_and_input.md#3-task-manager) |
+| Level designer | [08](08_levels_and_level_design.md) → [03 §3.16](03_buildings_and_world_objects.md#316-level-file-parameter-quick-reference) → [23](23_terrain_and_landscape.md) → [29](29_data_formats_reference.md) |
+| UI / front-end | [09](09_meta_systems.md) → [06 §8](06_player_control_and_input.md#8-game-cursor-highlights-and-world-markers) → [28](28_ui_framework.md) |
+| Audio | [10](10_audio_design.md) → [27](27_audio_engine.md) |
+
+### 9.3 Technical context in one paragraph each
+
+**Architecture** ([20](20_architecture.md)). One Win32 executable with a global `App` owning the front end, the network peers, the rules object `Multiwinia`, the current `Location` (the match world) and the subsystems; the simulation runs as fixed 10 Hz ticks split into 10 slices each and spread over variable-rate render frames, with render-time extrapolation of positions; level loading runs on a background worker thread while the main thread keeps rendering and ticking the network [C] `code/app.cpp:App::App`, `code/main.cpp:LocationGameLoop`, `code/gametimer.cpp:GameTimer::Tick` ([20 §9–§11](20_architecture.md#9-main-loops)).
+
+**Determinism and networking** ([22](22_determinism_and_networking.md)). A star over UDP with the server embedded in the host's client: every 0.1 s the server packages all received commands into one sequenced UPDATE letter, and every peer — the host included — executes the same letters in order ("relay lockstep"); no world state is ever sent, CPU players are simulated on every peer, the lobby itself runs inside the same sequenced stream, and a late joiner replays the history from sequence id 0; only one sync byte per frame flows back [C] `code/network/server.cpp:Server::Advance`, `code/network/clienttoserver.cpp:ClientToServer::ProcessAllServerLetters` ([22 §1.1](22_determinism_and_networking.md#11-at-a-glance)). This is why every Multiwinia game, including versus-CPU and the tutorials, is technically multiplayer, and why the quirks Q8–Q10 are design-critical.
+
+**Rendering** ([24](24_rendering.md)). The deliberate look — flat-shaded polygons with one normal per face, bright wireframe edge textures over the terrain, nearly everything non-solid drawn additively on a black world with black fog, darkening "negative" blends for smoke and shadows, Darwinians as camera-facing sprite cards that grow with distance, eight team colours applied by vertex colour or shape palette conversion — comes from a small set of OpenGL fixed-function techniques that a new renderer can reproduce exactly [C] `code/renderer.cpp:Renderer::SetOpenGLState` ([24 §7.1](24_rendering.md#71-how-the-look-is-produced-c-unless-marked)).
+
+---
+
+## 10 Verification notes for this overview
+
+### 10.1 Constants re-read in the source for this synthesis
+
+Before copying, the following load-bearing values were checked directly in the tree at commit `f909630` (all [C]):
+
+| Value | Where checked |
+|---|---|
+| spawn burst `int(20 × CalculateHandicap)`, 0.2 s step, `10 + syncfrand(5)` pause; MP branch only | `code/worldobject/spawnpoint.cpp:SpawnPoint::Advance` |
+| capture threshold `teamCount > 2`; activation timer 30.0 | `code/worldobject/spawnpoint.cpp:SpawnPoint::RecalculateOwnership`, `SpawnPoint::Advance` |
+| per-team cap `m_populationCap / m_numPlayers` (level values); Assault defender branch | `code/worldobject/spawnpoint.cpp:SpawnPoint::PopulationLocked` |
+| harvester delivery calls `SpawnDarwinian()` with no cap check; `HARVESTER_COLLECTION_RANGE` 75; capacity 100 at research level 3 | `code/worldobject/harvester.cpp:Harvester::AdvanceToSpawnPoint`, `Harvester::GetMaxSpirits` |
+| spirit Birth 6.0, Floating `(120 + syncsfrand(60)) / 3`, ascent `180 / 2` in multiplayer | `code/worldobject/spirit.cpp:Spirit::Advance` |
+| `CRATE_SCAN_RANGE` 35, `CRATE_CAPTURE_TIME` 2.5, good-outcome test `syncfrand(1.0) < 0.9`; max crates `worldSizeX / 500` | `code/worldobject/crate.h`, `code/worldobject/crate.cpp:Crate::AdvanceOnGround`, `code/location.cpp:Location::AdvanceCrates` |
+| `INCLUDE_THEBEAST` defined only under `TARGET_DEBUG` (so 31 rewards in FULL) | `code/worldobject/crate.h` |
+| `CrateDropRate` 0–300 default 40; `RetributionMode` default 1; `Handicap` default 90; `TimeLimit` defaults 10 / 5 / 10 | `data/multiwinia.txt` |
+| task capacity 6, or 2 when eliminated | `code/taskmanager.cpp:TaskManager::Capacity` |
+| `GRACE_TIME` 3.0 (20.0 under `TESTBED_ENABLED`) | `code/lib/universal_include.h` |
+| retribution call `if( retributionMode ) AdvanceRetribution();` live; timer reset to 45 | `code/multiwinia.cpp:Multiwinia::Advance`, `Multiwinia::AdvanceRetribution` |
+| `EvolutionFormationSize` 90; officer signpost range 100, follow range 150 | `code/team.cpp:Team::Team`, `code/worldobject/darwinian.h` |
+| AI main-cycle initial phases `syncfrand(20 / 10 / 1)` by difficulty | `code/worldobject/ai.cpp:AI::AI` |
+| `App::EarnedAchievement` returns false | `code/app.cpp:App::EarnedAchievement` |
+| sync byte `255 * syncfrand(1)` in the baseline `IFrame::Generate` | `code/network/iframe.cpp:IFrame::Generate` |
+| `MultiwiniaControlMethod = 1` forced | `code/lib/preferences.cpp:PrefsManager::Load` |
+| `INCLUDEGAMEMODE_TANKBATTLE` commented out in the FULLGAME block | `code/lib/universal_include.h` |
+| retail map counts (49; 22 / 15 / 12 by player count; sizes 2000–7000; caps 1400–2000 with two uncapped; 32 with spawn points) | re-counted from `_work/drafts/X4_levels.csv`, which was generated from the level files |
+
+### 10.2 Contradictions resolved
+
+1. **Retribution live vs "never called".** `_work/phase2_log.md` (P08 entry) and the P08 draft said retribution is never called; 01, 04, 05 and 07 say it is live. Code: `Multiwinia::Advance` executes `bool retributionMode = GetGameOption("RetributionMode"); if( retributionMode ) AdvanceRetribution();` with no guard; the other two occurrences of the variable are inside commented-out blocks [C] `code/multiwinia.cpp:Multiwinia::Advance`. This overview follows the code (§3.2, §7 Q2).
+2. **AI entity and the population cap.** 07 §14 calls the AI entity a "free unit" that does not count toward population; 05 §4.1 counts it against the cap. Code: only the global `Entity::s_entityPopulation` is decremented (and its cap is commented out), while the cap that matters counts `Team::m_others`, which contains the AI entity [C] `code/worldobject/ai.cpp:AI::AI`, `code/location.cpp:Location::SpawnEntities`, `code/worldobject/spawnpoint.cpp:SpawnPoint::PopulationLocked`. Written in §4.6; flagged for 07 and 41.
+
+Placeholder names differ between the IP tables of 01–10 (for example spawn point → "Gateway" in 05, "Spawn Node" in 03; monster team → "Rogue faction" in 01/03, "Corrupted" in 04). These are proposals, not facts; §8 picks one per term and leaves the canonical list to [90](90_glossary.md).
+
+---
+
+## Open questions and unknowns
+
+Only the unknowns that change what the game *is* at overview level; each links the document that owns it.
+
+| ID | Question | Tag | What would resolve it | Owner |
+|---|---|---|---|---|
+| 00-U1 | Did the retail (Steam / Xbox Live) build have a real achievement layer replacing the PC stubs, and were achievements persisted? | [U] | the retail branch or binary; not in this tree | [01](01_game_modes.md#open-questions-and-unknowns) 01-U4, [09](09_meta_systems.md#open-questions-and-unknowns) 09-U1 |
+| 00-U2 | Is the 11-tick "second" intended pacing or an accident that the balance was then tuned around? | [I] accident; balance tuned under it | design decision for the new game | [01](01_game_modes.md#open-questions-and-unknowns) 01-U2 |
+| 00-U3 | What was the handicap meant to do (binary, diluted by the two special teams)? | [U] | design notes or patch history | [05](05_economy_and_population.md#open-questions-and-unknowns) 05-U5 |
+| 00-U4 | Intended per-team cap divisor (level `NumPlayers`, alliances not pooled) and why two co-op maps are uncapped | [U] | design notes; play-testing data | [05](05_economy_and_population.md#open-questions-and-unknowns) 05-U6 |
+| 00-U5 | Intended role of the monster and Futurewinian teams in win checks (inconsistent across modes) | [I] | design intent not recorded | [01](01_game_modes.md#open-questions-and-unknowns) 01-U10 |
+| 00-U6 | Was multi-round Assault (the manual's "switches around") ever enabled in a shipped patch? | [U] | later source or patch notes | [01](01_game_modes.md#open-questions-and-unknowns) 01-U11 |
+| 00-U7 | How the external metaserver / matchmaker behaved (listing, demo restrictions, NAT relay) — its server side is not in the tree | [U] | metaserver source or packet capture | [09](09_meta_systems.md#open-questions-and-unknowns) 09-U11, [22 §12](22_determinism_and_networking.md#12-lobby-and-server-discovery-protocol) |
+| 00-U8 | What the retail `patch.dat` and `branding.dat` archives contained (they are loaded but no build list exists; they could override shipped data or supply assets the tree lacks) | [U] | retail install contents | [31](31_platform_build_and_tools.md), [25](25_textures_and_assets.md) |
+| 00-U9 | Whether `default_preferences.txt` is applied on first run of a packaged install (it lives in `main.dat`, read before archives load) | [I] | first launch of a packaged build | [09](09_meta_systems.md#open-questions-and-unknowns) 09-U4 |
+| 00-U10 | Was lobby or match music ever planned beyond the ambience beds? | [U] | designer interview; moot for the new game | [10](10_audio_design.md#open-questions-and-unknowns) 10-U12 |
+
+## Docs-vs-code discrepancies
+
+Headline discrepancies a reader of the original documentation would trip over; full tables are in each owning document.
+
+| Document | Statement | Code behaviour | Ref | Owner |
+|---|---|---|---|---|
+| `docs/multiwinia_manual.pdf` (Assault) | "Play then switches around and the attacker becomes the defender … winner is the player who successfully attacks in the quickest time" | single round only; attackers win iff the bomb is destroyed; rotation code unreachable | `code/multiwinia.cpp:Multiwinia::AdvanceAssault` | [01](01_game_modes.md#docs-vs-code-discrepancies) |
+| `docs/multiwinia_manual.pdf` (KOTH) | one point per second per zone | true for `ScoreMode` 0 only; three more score modes exist; a "second" is 1.1 game s | `code/multiwinia.cpp:Multiwinia::AdvanceKingOfTheHill` | [01](01_game_modes.md#docs-vs-code-discrepancies) |
+| `docs/multiwinia_manual.pdf` | Handicap applies to "Domination, King of the Hill" | also an Assault option, inert there (no spawn points) | `data/multiwinia.txt` | [01](01_game_modes.md#docs-vs-code-discrepancies), [05](05_economy_and_population.md#docs-vs-code-discrepancies) |
+| `docs/spirit resource system.txt` | a spirit "gradually floats away over the course of a minute"; "when your creatures die they die for good" | multiplayer spirits live ≈ 126–146 s; harvesters recycle spirits of every team | `code/worldobject/spirit.cpp:Spirit::Advance`, `code/worldobject/harvester.cpp:Harvester::AdvanceHarvesting` | [05](05_economy_and_population.md#docs-vs-code-discrepancies) |
+| `docs/Network.txt` | "SERVER: Ticks at 25 FPS" | server ticks every 0.1 s (10 Hz) | `code/network/server.cpp:Server::AdvanceIfNecessary` | [20](20_architecture.md#docs-vs-code-discrepancies) |
+| UI "seconds" (time remaining, reinforcement countdown) | one game second per decrement | one decrement per 11 ticks = 1.1 s | `code/multiwinia.cpp:Multiwinia::AdvanceSkirmish`, `Multiwinia::AdvanceTrunkPorts` | [05](05_economy_and_population.md#docs-vs-code-discrepancies) |
+
+## IP items
+
+Overview-level items only; every owning document carries its own complete register, and [90](90_glossary.md) / [40](40_carry_forward_assessment.md) consolidate them.
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia", "Darwinia", subtitle "Survival of the flattest", title art | brand / text / art | `code/lib/universal_include.h` (`APP_NAME`), `data/language/english.txt` (`multiwinia_mainmenu_title`, `multiwinia_mainmenu_subtitle`) | `<GAME_TITLE>`, own tagline and logo |
+| "Darwinian(s)", "Multiwinian(s)" and the Darwinian sprite and shape | name / art | `code/worldobject/darwinian.cpp`, `data/sprites/darwinian.bmp`, `data/shapes/darwinian.shp` | Worker; new character art |
+| "Officer", "Squadie", "Harvester", "Engineer", "Armour" as unit names | name | `code/worldobject/entity.cpp:Entity::GetTypeName`, `data/language/english.txt` | Leader, Strike team, Collector, Builder, Transport |
+| Spirit / soul concept and orb visual | concept / art | `code/worldobject/spirit.cpp` | Essence orb |
+| "Evilinians", "Futurewinians" | name | `data/language/english.txt` (`multiwinia_team_virus`, `multiwinia_team_future`) | Rogue faction, Visitor faction |
+| Mode names Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle | name | `data/multiwinia.txt`, `data/language/english.txt` (`multiwinia_gametype_*`) | Spawn Control, Zone Control, Relic Run, Siege, Launch Race, Flag Chain, Armour Duel |
+| Building names (Spawn Point, Trunk Port, Pulse Bomb / "WMD", Control Station, Escape Rocket, Solar Panel, Radar Dish, Laser Fence, Wall Buster, Statue) | name | `data/language/english.txt` (`buildingname_*`) | Spawn Node, Warp Gate, Core Device, Uplink Console, Launch Vessel, Energy Collector, Relay Dish, Barrier Emitter, Breach Charge, Relic |
+| Crate outcome names and messages (Mega Rage, Spawn Mania, Crate Mania, Rocketwinians, Hot Feet, Magical/Dark Forest, Triffids — a third-party literary name — the Napalm film quote, …) | name / text | `data/language/english.txt` (`cratename_*`, `crate_message_*`) | §8.4 placeholders |
+| "Retribution", "Task Manager", "program" fiction | name / text | `data/language/english.txt` | Comeback Bonus, Power slots, Power |
+| Achievement names (12) | name | `code/app.h` | per [01 IP items](01_game_modes.md#ip-items) |
+| Map names and layouts of the 49 retail maps | name / level design | `data/levels/level_enum.txt` and the `mp_*` level files | new maps and names |
+| Dr Sepulveda (Darwinia character, dead in Multiwinia) | character | `data/sepulveda/sepulveda1.bmp`, `docs/sepulveda_interview.txt` | drop |
+| All audio samples and the licensed music tracks (never shipped in Multiwinia) | audio | `data/sounds.txt`, `tools/multiwinia_exclusions.txt` | new audio; never reuse the licensed tracks |
+| "Introversion Software", store and metaserver URLs | brand / service | `code/app.cpp:App::InitMetaServer`, `code/app.cpp:App::GetBuyNowURL` | own publisher name and endpoints |
+
+## Source map
+
+Key files only — the complete per-file maps are in the owning documents.
+
+| File | Role for the overview |
+|---|---|
+| `code/lib/universal_include.h` | product target and feature macros: which modes, crates, tutorial and editor are compiled; `GRACE_TIME` |
+| `code/app.cpp` | `App::Multiplayer` / `IsSinglePlayer`, mode permission, demo gate, achievement stubs, server start |
+| `code/main.cpp` | location game loop: input → network → simulation → render order |
+| `code/gametimer.cpp` | game clock, tick length, game-speed changes (crates, end of match) |
+| `code/gametimer.h` | `GetNetworkTime` / `SERVER_ADVANCE_PERIOD` macros |
+| `code/multiwinia.h` | game-type enum, AI difficulty enum, colour and side constants |
+| `code/multiwinia.cpp` | the rules object: lifecycle, grace, per-mode `Advance*`, trunk ports, retribution, scoring, HUD, `DeclareWinner` |
+| `data/multiwinia.txt` | per-mode option blueprints (ranges and defaults) |
+| `code/location.cpp` | match world: team initialisation, start units, crate drops, promotion, crowd orders, unit control |
+| `code/team.cpp` | team containers (`m_others` = cap-counted bodies), formation size, elimination |
+| `code/worldobject/spawnpoint.cpp` | spawn network: capture, activation, burst/pause cycle, handicap, population cap |
+| `code/worldobject/darwinian.cpp` | the Darwinian's task search, combat, crate and officer behaviour |
+| `code/worldobject/darwinian.h` | Darwinian search ranges |
+| `code/worldobject/officer.cpp` | officer orders and formation geometry |
+| `code/worldobject/spirit.cpp` | spirit lifecycle |
+| `code/worldobject/harvester.cpp` | soul recycling outside the cap |
+| `code/worldobject/entity.cpp` | entity base: attack, death → spirit, type names |
+| `data/stats.txt` | entity stats table (health, speed, rate) |
+| `code/worldobject/crate.h` | crate reward enum, `CRATE_SCAN_RANGE`, `INCLUDE_THEBEAST` gate |
+| `code/worldobject/crate.cpp` | crate fall, capture, good/bad draw, every outcome |
+| `code/taskmanager.cpp` | task slots and task lifecycle |
+| `code/location_input.cpp` | player actions → network commands |
+| `data/input/input_preferences.txt` | live default bindings |
+| `code/lib/preferences.cpp` | forced control scheme |
+| `code/worldobject/ai.cpp` | CPU player |
+| `code/worldobject/multiwiniazone.cpp` | KOTH hills, CTS zones, Blitzkrieg flags |
+| `code/worldobject/statue.cpp` | Capture the Statue statues |
+| `code/worldobject/pulsebomb.cpp` | Assault bomb |
+| `code/worldobject/rocket.cpp` | Rocket Riot escape rocket |
+| `code/worldobject/trunkport.cpp` | reinforcement gates |
+| `code/worldobject/insertion_squad.cpp` | squad direct control (desync path Q8) |
+| `code/level_file.cpp` | `MultiwiniaOptions` parsing (player count, cap, invalid crates) |
+| `code/game_menu.cpp` | map catalogue and front-end rebuild |
+| `code/UI/GameMenuWindow.cpp` | front-end pages, lobby, CPU fill, start |
+| `code/achievement_tracker.cpp` | session-only achievement progress |
+| `code/network/server.cpp` | command sequencing, option relay without sender check, sync seed |
+| `code/network/clienttoserver.cpp` | command execution, sync seeding, start-game handling |
+| `code/network/iframe.cpp` | per-frame sync byte |
+| `data/levels/level_enum.txt` | the 49 retail map ids (excluded from retail data) |
+| `tools/multiwinia_exclusions.txt` | what the retail data set leaves out (maps, music) |
+| `data/sounds.txt` | sound bindings (music blocks unreachable) |
+| `data/language/english.txt` | all player-facing text (IP) |
+
+## Appendix — dead/legacy code
+
+Not repeated here: §2.5 lists every compiled-but-unreachable or non-baseline feature with its build tag ([B:LEGACY] Darwinia campaign, control schemes, leaderboards; [B:DEBUG] Tank Battle and The Beast; [B:EDITOR] map editor; [B:DEAD] spectator UI, boot-loaders, attract mode; [B:D3D] the Direct3D renderer). Each owning document carries its own appendix: [01](01_game_modes.md#appendix--deadlegacy-code), [02](02_units_and_entities.md), [03 §12](03_buildings_and_world_objects.md#12-darwinia-legacy-buildings-blocked), [04](04_crates_powerups_and_weapons.md#appendix--deadlegacy-code), [05](05_economy_and_population.md#appendix--deadlegacy-code), [06 §1.6](06_player_control_and_input.md#16-legacy-and-dead-actions), [07](07_ai.md), [08 §7](08_levels_and_level_design.md#7-darwinia-map_mission_-files-datalevelsold-and-level_enumtxt), [09](09_meta_systems.md#appendix--deadlegacy-code), [10](10_audio_design.md).

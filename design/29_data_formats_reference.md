@@ -1907,3 +1907,663 @@ Naming and placement [C]: a stem resolves to `sounds/<stem>.ogg` first, then `mw
 **Minimal valid example.** A mono 44 100 Hz Ogg Vorbis I stream saved as `data/mwsounds/sample_ping1.ogg`, referenced from `sounds.txt` as `SOUNDNAME sample_ping1`.
 
 **Discrepancies.** `code/sound/sample_cache.cpp` comment "Largest song takes 13 MB" — the largest shipped track decodes to 29.0 MiB (the whole PCM buffer is allocated on open) [C] ([27](27_audio_engine.md)).
+
+---
+
+## 8 Geometry, images and animation
+
+<a id="fmt-shp"></a>
+### 8.1 `.shp` — hierarchical flat-shaded mesh ("shape")
+
+**Purpose.** Every 3-D model (buildings, units, props) is a rigid hierarchy of *fragments* (sub-meshes with a local transform that code may animate) plus named *markers* (attachment frames). Text format, case-insensitive keywords [C] `code/lib/shape.cpp:Shape::Load`, `ShapeFragment::ShapeFragment(TextReader*, char const*)`, `ParsePositionBlock`, `ParseNormalBlock`, `ParseColourBlock`, `ParseVertexBlock`, `ParseAllStripBlocks`, `ParseStripBlock`, `ParseTriangleBlock`, `GenerateNormals`, `RegisterPositions`, `ShapeMarker::ShapeMarker(TextReader*, char const*)`. There is no binary variant [C]. Rendering, team colouring, hit tests: [24](24_rendering.md); per-shape catalogue: [25](25_textures_and_assets.md).
+
+**Files.** `data/shapes/*.shp` — 139 files, 441 fragments, 425 markers; max 20 fragments and 38 markers per file; max marker depth 7; max 10 632 triangles, 6 245 positions and 121 colours in one fragment; 39 files use the strip encoding, 98 the triangle-list encoding, none mixes both; 2 contain markers only (`battlecannonbase.shp` 8 markers, `portal.shp` 5 markers, hanging off `SceneRoot`). Loaded as `data/shapes/<lower-cased name>` (loose, then archive) [C] `code/lib/resource.cpp:Resource::GetShapeCopy`, `DoesShapeExist`.
+
+**Encoding.** ASCII; 138 files CRLF, `primaryupgradeport.shp` LF only.
+
+```ebnf
+shp_file        = { top_line } ;
+top_line        = fragment_def | marker_def | other_line ;          (* other_line (incl. blank) ignored *)
+fragment_def    = 'Fragment' NAME EOL , { frag_line } , geometry_end ;
+frag_line       = 'ParentName' NAME EOL
+                | 'up' F F F EOL | 'front' F F F EOL | 'pos' F F F EOL
+                | 'Positions' INT EOL , pos_records
+                | 'Normals'   INT EOL , vec_records
+                | 'Colours'   INT EOL , col_records
+                | 'Vertices'  INT EOL , vtx_records
+                | ignored_line ;                                    (* e.g. "right x y z", blank, unknown keyword *)
+geometry_end    = strips_block | triangles_block ;                   (* fragment parsing STOPS here *)
+pos_records     = N * ( INT F F F EOL ) ;      (* id x y z;  lines not starting with a digit are skipped *)
+vec_records     = N * ( INT F F F EOL ) ;      (* id nx ny nz *)
+col_records     = N * ( INT INT INT INT EOL ) ;  (* id r g b *)
+vtx_records     = N * ( INT INT INT EOL ) ;    (* id positionId colourId *)
+strips_block    = 'Strips' INT EOL , strip , { strip } ;              (* INT strips, ids 0..INT-1 in order *)
+strip           = 'Strip' INT EOL , [ 'Material' NAME EOL ] , 'Verts' INT EOL , { vref_line } ;
+vref_line       = 1*( 'v' INT ) EOL ;           (* total token count = Verts *)
+triangles_block = 'Triangles' INT EOL , N * ( INT INT INT EOL ) ;     (* exactly N physical lines, a,b,c *)
+marker_def      = 'Marker' NAME EOL , { marker_line } , ( 'MarkerEnd' EOL | EOF ) ;
+marker_line     = 'ParentName' NAME | 'Depth' INT | 'front' F F F | 'up' F F F | 'pos' F F F | ignored_line ;
+F               = F32 ;
+```
+
+Record-block rules [C]:
+
+* Inside id blocks a line whose first token does not start with a decimal digit is skipped (blank/comment allowed). Ids must be `0, 1, 2, …`; a wrong id in **Positions** silently abandons the block (no positions; the fragment then has no geometry); in Normals/Colours/Vertices it is only a debug assert (release writes at the wrong index). EOF inside a block is a debug assert.
+* **Triangles** are read with exactly N `ReadLine` calls and no skipping: a blank or comment line inside crashes (`atoi(NULL)`).
+* **Strips**: lines not starting with `Strip` are skipped between strips; after `Strip k` the next physical line must be `Material …` (name read and discarded) or `Verts n`; `n > 2` is debug-asserted; vertex tokens must start with `v` (debug assert) and be `< Vertices` (debug assert). `Strips 0` makes the strip loop read to EOF.
+* A fragment line with a keyword but no value (`Normals` alone) passes NULL to `atoi`/`strdup` — crash.
+* A fragment with no `Strips`/`Triangles` line never terminates: the fragment loop does not recognise `Fragment`/`Marker`, so it swallows the rest of the file.
+* `Normals` are parsed and **always discarded** (`GenerateNormals` replaces them with one face normal per triangle); every shipped file has `Normals: 0`.
+
+**Field table**
+
+| Field | Type | Units | Default | Range / validation | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `Fragment` NAME | token | – | – | ≤ 100 fragments per file (debug assert; release stack overflow); unique (debug assert only for non-root parents) | fragment name, looked up case-insensitively | `Shape::Load`, `ShapeFragment::LookupFragment` |
+| `ParentName` (fragment) | token | – | `unknown` | `SceneRoot` (case-insensitive; shipped `sceneroot`) or another fragment's name | parent; an unknown parent leaves the fragment unattached (not rendered, leaked) | `Shape::Load` |
+| `up`, `front` | 3 × F32 | unit vectors | identity (`up` (0,1,0), `front` (0,0,1)) | normalised after parse | local orientation: `Matrix34::Normalise`: `f ← normalise(f); r ← normalise(u × f); u ← f × r` | `ShapeFragment::ShapeFragment`, `code/lib/matrix34.cpp:Matrix34::Normalise` |
+| `pos` | 3 × F32 | world units | (0,0,0) | – | local translation | same |
+| `Positions` N | INT + records | wu, fragment-local | none | N ≤ 65 535 (indices `unsigned short`) | unique vertex positions | `ParsePositionBlock` |
+| `Colours` N | INT + records | 0…255 | none | > 255 wraps (`unsigned char`) | palette; **on load every channel × 0.85, truncated** (255 → 216); alpha forced 255 | `ParseColourBlock`, `code/lib/rgb_colour.cpp:RGBAColour::operator*=` |
+| `Vertices` N | INT + records | indices | none | posId < Positions, colId < Colours (unchecked) | (position, colour) pairs used by faces | `ParseVertexBlock` |
+| `Strips` / `Strip` / `Material` / `Verts` / `v<i>` | INT / INT / NAME / INT / tokens | vertex indices | – | n > 2 | strip i ≥ 2 with window (a,b,c) = (v[i−2], v[i−1], v[i]) emits a triangle only if a, b, c are pairwise distinct; even i → (a,b,c), odd i → (c,b,a) | `ParseStripBlock` |
+| `Triangles` T | INT + records | vertex indices | – | < Vertices (unchecked) | explicit triangle list | `ParseTriangleBlock` |
+| `Marker` NAME | token | – | – | ≤ 100 per file (debug assert) | attachment frame; `LookupMarker` (case-insensitive, depth-first: own markers, then children) or prefix scan (case-sensitive `strstr`) | `Shape::Load`, `ShapeFragment::LookupMarker`, `code/worldobject/building.cpp:Building::SetShapeLights`, `SetShapePorts` |
+| `ParentName` (marker) | token | – | `unknown` | must name a fragment (debug assert) | fragment the marker hangs from | `Shape::Load` |
+| `Depth` | INT | levels | **uninitialised** if absent | = number of ancestors of the parent fragment including `SceneRoot` + 1 (1 on `SceneRoot`, 2 on a root-level fragment) | size of `m_parents[]` (`m_parents[0]` = SceneRoot … `m_parents[Depth−1]` = parent) | `ShapeMarker::ShapeMarker`, `Shape::Load` |
+| `up`/`front`/`pos` (marker) | 3 × F32 | as fragments | identity | normalised | frame relative to the parent fragment | `ShapeMarker::ShapeMarker` |
+| `MarkerEnd` | keyword | – | – | optional for the last marker (omitted in `clonelab.shp`, `controlstation.shp`, `portal.shp`) | ends the marker block | same |
+
+Derived at load [C] `RegisterPositions`, `GenerateNormals`: a synthetic `SceneRoot` (identity, no geometry) holds the root fragments; bounding sphere per fragment = AABB centre, radius = max distance (`iv_sqrt`) (a cylinder alternative is computed but never enabled); face normal `n = normalise((b−a) × (c−b))`, emitted at all three corners (flat shading). `Matrix34` stores rows `r, u, f, pos` (row-vector convention); fragment world matrix = `frag.T × parent.T × … × root.T × object`; marker world matrix = `marker.T × parents[Depth−1].T × … × parents[0].T × object` [C] `ShapeMarker::GetWorldMatrix`, `ShapeFragment::Render`.
+
+**Marker names consumed by code** [C] grep of `LookupMarker` and marker literals:
+
+| Mechanism | Names | Consumer | Purpose |
+|---|---|---|---|
+| prefix scan (`strstr`, case-sensitive) | `MarkerLight*` | `Building::SetShapeLights` | building signal lights |
+| prefix scan | `MarkerPort*` | `Building::SetShapePorts` | Darwinian operator ports (pushed 5 wu out, dropped to terrain) |
+| exact | `MarkerStatus`, `MarkerStatus0%d` | `code/worldobject/building.cpp`, `gunturret.cpp`, `generator.cpp`, `spiritreceiver.cpp` | status lights |
+| exact | `MarkerEnd` | `code/worldobject/entity_leg.cpp:EntityLeg::EntityLeg` | leg-segment tip (also a marker *name* in `spider_leg_*.shp`, `tripod_leg_part.shp`) |
+| exact / numbered | `MarkerBarrel`, `MarkerKills`, `MarkerBarrelEnd0%d`, `MarkerShells0%d` | `code/worldobject/gunturret.cpp` | barrel mount, kill counter, muzzles, shell ejection |
+| exact | `MarkerTurret`, `MarkerEntrance`, `MarkerBarrelEnd` | `code/worldobject/tank.cpp` | turret, entrance, muzzle |
+| exact | `MarkerEntrance`, `MarkerFlag` | `code/worldobject/armour.cpp` | load point, team flag |
+| exact | `MarkerFlag` | `code/worldobject/officer.cpp` | officer flag |
+| exact | `MarkerCarry` | `code/worldobject/armyant.cpp` | carried object |
+| exact | `MarkerLaser`, `MarkerBrass`, `MarkerEye1`, `MarkerEye2` | `code/worldobject/insertion_squad.cpp` | muzzle, casing, eye glints |
+| exact | `MarkerSpiritLink`, `MarkerDoor` | `code/worldobject/spawnpoint.cpp` | link origin, door |
+| exact | `MarkerSpiritLink`, `MarkerHead`, `MarkerStatus0%d` | `code/worldobject/spiritreceiver.cpp` | link origin, head, lights |
+| exact | `MarkerDestination1`, `MarkerDestination2`, `MarkerSurface` | `code/worldobject/trunkport.cpp` | portal destinations, surface |
+| exact | `MarkerFuel`, `MarkerTip`, `MarkerEntrance`, `MarkerBooster`, `MarkerWindow0%d` | `code/worldobject/rocket.cpp` (`MarkerBooster` also `code/worldobject/weapons.cpp`) | rocket fuel inlet, tip, door, exhaust, windows |
+| exact | `MarkerEngine%d` | `code/worldobject/harvester.cpp`, `code/worldobject/spaceship.cpp` | engine exhausts |
+| exact | `MarkerEggLay`, `MarkerLegX` | `code/worldobject/spider.cpp` (`MarkerLegX` also `tripod.cpp`) | egg point, leg roots |
+| exact | `MarkerEggs`, `MarkerTail0%d` | `code/worldobject/sporegenerator.cpp` | egg launch, tail |
+| exact | `MarkerTail` | `code/worldobject/souldestroyer.cpp` | tail |
+| exact | `MarkerPrimitive0%d`, `MarkerSpike0%d`, `MarkerRay0%d` | `code/worldobject/constructionyard.cpp` | build spots, spikes, rays |
+| exact | `MarkerLightPos`, `MarkerDishPos`, `MarkerReprogrammer%d`, `MarkerConsole%d` | `code/worldobject/controltower.cpp` | |
+| exact | `MarkerDishDirection` | `code/worldobject/controlstation.cpp` | |
+| exact | `MarkerFocus` | `code/worldobject/radardish.cpp`, `code/worldobject/feedingtube.cpp` | beam focus |
+| exact | `MarkerPowerLocation`, `MarkerCounter`, `MarkerGlow0%d`, `MarkerStatus0%d` | `code/worldobject/generator.cpp` | |
+| exact | `MarkerSpirits`, `MarkerExit`, `MarkerDock`, `MarkerSpiritIncoming0`/`1`/`2` | `code/worldobject/incubator.cpp` | |
+| exact | `MarkerTrack1`/`2`, `MarkerContents1`/`2`/`3`, `MarkerWheel01`/`02`/`03`, `MarkerCounter` | `code/worldobject/mine.cpp` | |
+| exact | `MarkerBlueprint` (`blueprintstore.cpp`), `MarkerSignal` (`bridge.cpp`), `MarkerSpawnPoint` (`cave.cpp`), `MarkerSpiritStore` (`factory.cpp`), `MarkerFence01`/`02` (`laserfence.cpp`), `MarkerResearch%02d` (`library.cpp`), `MarkerGrab1`/`2` (`researchitem.cpp`), `MarkerConnectionLocation` (`switch.cpp`), `MarkerTeleportEntrance` (`teleport.cpp`), `MarkerLaunchPoint`, `MarkerTriffidStem` (`triffid.cpp`) | `code/worldobject/` files as listed | many [B:LEGACY] (blocked Darwinia buildings) |
+
+Marker names present in data but not referenced by any literal: `MarkerIsland*`, `MarkerTrunk<N>to<M>` (`globalworld_*.shp`), `MarkerFloat*`, `MarkerControl*`, `MarkerGun*`, `MarkerRocket*`, `MarkerParticleA`/`B`, `MarkerPlinth`, `MarkerFlowerCentre`, `MarkerBreach` [C] grep; whether any is built by `sprintf` elsewhere is **29-U4**.
+
+**Verification.** All shape parser functions above re-read for this document. `_work/scripts/X1b_shp_survey.py` (re-run) over 139 files: keywords `fragment` 441, `parentname` 866, `up`/`front`/`pos` 866 each, `positions`/`normals`/`colours`/`vertices` 441 each, `triangles` 290, `strips` 151, `strip` 163, `verts` 163, `material` 140 (35 files), `marker` 425, `depth` 425, `markerend` 422, `right` 15; fragments = geometry blocks = 441; 0 files with non-zero normals; 0 colour values > 255; anomaly: `carrycube.shp` duplicate fragment names. Per-shape table: `_work/drafts/P12_shapes.csv`, `_work/drafts/X2a_shapes.csv`.
+
+**Minimal valid example** (written for this document: a strip-encoded triangle pair under a parent fragment, plus a marker on the child)
+
+```text
+Fragment: Base
+    ParentName: SceneRoot
+    up: 0 1 0
+    front: 0 0 1
+    pos: 0 0 0
+    Positions: 3
+        0: 0 0 0
+        1: 4 0 0
+        2: 0 0 4
+    Normals: 0
+    Colours: 1
+        0: 90 160 220
+    Vertices: 3
+        0: 0 0
+        1: 1 0
+        2: 2 0
+    Triangles: 1
+        0,2,1
+
+Fragment: Flag
+    ParentName: Base
+    up: 0 1 0
+    front: 0 0 1
+    pos: 0 3 0
+    Positions: 4
+        0: 0 0 0
+        1: 0 2 0
+        2: 2 0 0
+        3: 2 2 0
+    Normals: 0
+    Colours: 1
+        0: 240 200 40
+    Vertices: 4
+        0: 0 0
+        1: 1 0
+        2: 2 0
+        3: 3 0
+    Strips: 1
+    Strip: 0
+    Verts: 4
+        v0 v1 v2 v3
+
+Marker: MarkerFlag
+    ParentName: Flag
+    Depth: 3
+    up: 0 1 0
+    front: 1 0 0
+    pos: 1 1 0
+    MarkerEnd
+```
+
+(`Depth 3`: `SceneRoot` → `Base` → `Flag`.)
+
+**Discrepancies** [C]:
+
+| Observation | Effect | Ref |
+|---|---|---|
+| `carrycube.shp` has two fragments named `Box04`, both parented to `sceneroot` | no assert fires (the duplicate check only runs for non-root parents); both render; `LookupFragment("Box04")` returns the first | survey + `Shape::Load` |
+| `carryweights.shp` (two fragments, 100 positions / 50 vertices) and `sporegenerator.shp` (43 / 42) | `m_positionsInWS` is sized by **Vertices** but indexed by position id in accurate hit tests → heap overrun (`ShapeFragment::RayHit`, `SphereHit`) | survey |
+| 3 files lack the final `MarkerEnd` | harmless (EOF ends the marker) | survey |
+| `right:` lines (15 in `fieldgun_shell.shp`, `garbagecollector.shp`, `gunturret.shp`), `Material` lines, `# N triangles…` comments | ignored legacy exporter output | survey + parser |
+| in-engine writer `Shape::WriteToFile` | skips `SceneRoot`, writes colours without undoing × 0.85 (round trip darkens), and uses `"%5.2 "`, `"%7.3 "`, `"%6.3 "` with no conversion letter — cannot have produced the shipped files; callers are tool-only [I] | `ShapeFragment::WriteToFile`, `ShapeMarker::WriteToFile` |
+
+<a id="fmt-max"></a>
+### 8.2 `.max` sources and the shape tool chain [authoring]
+
+**Purpose.** 3ds Max scene sources of the shapes and the exporter that produced `.shp` [C] `tools/ShapeExporter/ShapeExporter.cpp`, `tools/ShapeExporter/ShapeExporter.h`, `tools/ShapeExporter/DllEntry.cpp`; maths test harness `tools/3DGeometry/main.cpp`. Tool details: [31 §11](31_platform_build_and_tools.md).
+
+**Files.** `data/shapes/source/*.max` — 133 files, 12 246 016 bytes; Microsoft OLE2 Compound File Binary containers (magic `D0 CF 11 E0 A1 B1 1A E1`) = Autodesk 3ds Max scenes [C] magic bytes. Never read by the game; excluded by the `shapes/source` line of `tools/multiwinia_exclusions.txt` and by the `main.dat` extension filter [C] `tools/build_multiwinia_data.bat`. 110 have a same-named `.shp` (case-insensitive); 23 `.max` have no `.shp` of that name (e.g. `AnthillNew`, `BattleCannon`, `GlobalWorld`, `LaserTroop`, `SpiderLegLower` — several correspond to renamed shapes such as `spider_leg_lower.shp`, `laser_troop.shp`, `flying_egg.shp`) and 29 `.shp` have no `.max` (e.g. `armyant2`/`3`, `carry*`, `clonelab`, `portal`, `pulsebomb`, `wallbuster`, `trunkport_mp`) [C] name comparison.
+
+**Encoding / layout.** Proprietary Autodesk binary inside CFB; no grammar is given (not needed by the game).
+
+**Exporter output contract** (the only producer of `.shp`) [C] `ShapeExporter::DoExport`, `ShapeExporter::BuildShapeFragment`:
+
+| Aspect | Rule |
+|---|---|
+| Registration | extension `shp`, description "Futurewar Shape Format v1.0", version 100, class id `0x3288038e, 0x40eff553` |
+| Hierarchy | root fragment `"scene root"` (spaces stripped → `sceneroot`); walks the Max node tree from the scene root's children with depth 1; nodes whose name starts with `marker` (case-insensitive) become markers with `Depth` = recursion depth; other geometry nodes become fragments (non-geometry, target and zero-face nodes skipped; children of a marker not visited) |
+| Axes | Max Z-up → game Y-up: every point `(x, y, z)` → `(x, z, −y)`; local transform = `nodeTM × inverse(parentTM)`; **fragment** `front` stored negated `(−f.x, −f.z, f.y)`, **marker** `front` un-negated `(f.x, f.z, −f.y)` [C]; i.e. a marker's front points along the helper's local +Y, a fragment's along −Y [I] |
+| Geometry | positions de-duplicated within 0.001 (squared 1e-6); colours from vertex colours (× 255, truncated, exact de-dup), else material diffuse × 255, else wire colour; vertices = unique (position, colour) pairs; faces as `Triangles`; `Normals: 0`; `nvtristrip.h` included but unused → the 39 strip-format shipped shapes came from an older exporter [I] |
+| Build state | calls a 3-argument `ShapeFragment(name, parent, false)` constructor that no longer exists in `code/lib/shape.h` (2 arguments) and relies on the broken `WriteToFile` formats → does not build against this tree [C] |
+
+`tools/3DGeometry` is an Allegro/AllegroGL viewer for ray–sphere / sphere–triangle tests from `code/lib/math_utils.cpp`; not a format or converter [B:DEAD] [C] `tools/3DGeometry/main.cpp`.
+
+**Verification.** Magic bytes of all 133 files and the exporter source read by X1b [C]; name comparison scripted (X1b).
+
+**Minimal valid example.** Not applicable (proprietary binary); the exporter's output contract is the [fmt-shp](#fmt-shp) grammar.
+
+**Discrepancies.** Exporter description "Futurewar Shape Format v1.0" vs the diverged game parser [C]; recommended replacement: glTF 2.0 with node hierarchy, per-vertex colour, empties for markers [I].
+
+<a id="fmt-bmp"></a>
+### 8.3 BMP bitmaps and textures
+
+**Purpose.** Every image the game loads (textures, sprites, icons, help pictures, thumbnails, font pages, terrain ramps, animation sprites) is a Windows BMP decoded by `BitmapRGBA` [C] `code/lib/bitmap.cpp:BitmapRGBA::LoadBmp`, `ReadBMPFileHeader`, `ReadWinBMPInfoHeader`, `ReadOS2BMPInfoHeader`, `ReadBMPPalette`, `Read4BitLine`, `Read8BitLine`, `Read24BitLine`, `Read32BitLine`; texture pipeline `code/lib/resource.cpp:Resource::GetTextureWithFlags`, `GetTexture`, `GetTextureWithAlpha`, `ProcessBmp`, `GetBitmap`, `DoesTextureExist`, `code/lib/bitmap.cpp:ConvertToTexture`. Upload algorithm and per-asset catalogue: [24](24_rendering.md), [25](25_textures_and_assets.md).
+
+**Files** [C] `_work/scripts/X1b_bmp_survey.py` (re-run) — 506 `.bmp` under `data/`:
+
+| Directory | Count | Bit depth (all 40-byte info header) | Notes |
+|---|---|---|---|
+| `data/animations/` | 25 | 24 ×6, 32 ×19 (all 19 with real alpha) | 11 non-POT; 2 use the pink key |
+| `data/icons/` | 121 | 24 ×64, 32 ×21, 8 ×25, 4 ×11 | 27 non-POT |
+| `data/mwhelp/` | 51 | 24 ×48, 32 ×3 | 49 non-POT |
+| `data/sepulveda/` | 5 | 8 | 256×256 |
+| `data/sprites/` | 17 | 24 ×16 (9 pink-keyed), 32 ×1 | |
+| `data/terrain/` | 36 | 24 ×32, 8 ×4 | 9 non-POT (`waves_*` 400×10) |
+| `data/textures/` | 54 | 24 ×19, 32 ×5, 8 ×26, 4 ×3, **8-bit RLE8 ×1** (`textures/shaman_background.bmp`) | 21 non-POT; 5 pink-keyed |
+| `data/textures/plusmenu/` | 2 | 24 | non-POT |
+| `data/textures/unicode/` | 138 | 24 ×90, 4 ×44, 8 ×4 | font pages; 3 non-POT |
+| `data/thumbnails/` | 57 | 8 ×53, 24 ×4 | 400×300 |
+
+None is OS/2, top-down or `BI_BITFIELDS`; the only compressed file is the RLE8 texture; no row-padding or palette-offset hazard [C] survey.
+
+**Byte layout accepted by the loader** (little-endian):
+
+| Offset | Size | Field | Loader behaviour | Parser ref |
+|---|---|---|---|---|
+| 0 | 2 | `bfType` | should be `0x4D42` "BM" (debug assert only) | `ReadBMPFileHeader` |
+| 2 | 4 | `bfSize` | read, ignored | same |
+| 6 | 2 + 2 | reserved | ignored | same |
+| 10 | 4 | `bfOffBits` | **not used for seeking**; only derives the palette size | `LoadBmp` |
+| 14 | 4 | `biSize` | 40 → Windows header; 12 → OS/2 header; anything else (V4 108, V5 124) → debug assert, release continues with an uninitialised header | `LoadBmp` |
+| 18 (Win) | 4,4,2,2,4,4,4,4,4,4 | width, height, planes, bitCount, compression, sizeImage, xppm, yppm, clrUsed, clrImportant | only width, height (as **unsigned** — negative/top-down unsupported), bitCount, compression used | `ReadWinBMPInfoHeader` |
+| 18 (OS/2) | 2,2,2,2 | width, height, planes, bitCount | compression = 0 | `ReadOS2BMPInfoHeader` |
+| 54 (Win) / 26 (OS/2) | `ncol` × 4 / × 3 | palette B, G, R (, reserved) | `ncol = (bfOffBits − 54)/4` or `(bfOffBits − 26)/3`; no clamp to 256 (overflow if larger); palette alpha 255 | `ReadBMPPalette` |
+| after the palette | – | pixel rows, **bottom-up**: file row 0 → `m_lines[0]` (bottom row; matches the GL texture origin) | read sequentially; a gap between palette and `bfOffBits` would be decoded as pixels | `LoadBmp` |
+
+| `biBitCount` | Per pixel | Row padding consumed? | Notes |
+|---|---|---|---|
+| 4 | nibble index; **high nibble = left pixel** (x), low nibble = x + 1 | **no** | rows must be a multiple of 4 bytes (width multiple of 8) or the image shears; odd widths write one pixel past the row |
+| 8 | byte index | **no** | width must be a multiple of 4 |
+| 24 | B, G, R; alpha := 255 | yes, `(4 − 3w) & 3` bytes | |
+| 32 | B, G, R, A (alpha used as-is) | n/a | the only way to ship a real alpha channel |
+| other (1, 16) | – | – | debug assert; release leaves pixels uninitialised |
+
+`biCompression` must be `BI_RGB` (0) — debug assert only; **RLE4/RLE8 are not decoded** [C]. `BitmapRGBA::Initialise(reader, type)` debug-asserts `type == "bmp"` and always calls `LoadBmp`, so `.jpg`, `.tex`, `.dds` (named in Xbox/legacy archive filters) cannot be decoded on PC [C].
+
+**Texture-name rules** [C] `Resource::GetTextureWithFlags`, `ProcessBmp`, `GetBitmap`:
+
+| Rule | Behaviour |
+|---|---|
+| Name | path relative to `data/` **including the extension** (`sprites/darwinian.bmp`); most code builds names with `.bmp` or `"." TEXTURE_EXTENSION` (`#define TEXTURE_EXTENSION "bmp"`, `code/lib/universal_include.h`; 33 uses) — [I] the macro let an Xbox build switch to `.tex` |
+| Lookup order | (a) texture cache keyed by the **exact name string** (case-sensitive `hash_map<std::string>`); (b) registered bitmap store (run-time images such as `water_lightmap`, case-insensitive); (c) file: name lower-cased → `GetBinaryReader` → loose then archive. Missing → `AppReleaseAssert("Failed to load texture %s")` (fatal); callers that may miss guard with `DoesTextureExist` |
+| Flags vs cache | flags are not part of the cache key: the first request for a name decides mask/alpha/mip-map processing for all later requests |
+| Default flags | `GetTexture(name, mipmapping = true, masked = true, compressed = false)` → `WithMipmaps | WithMask`; **every BMP requested through the default overload is colour-keyed** |
+| `WithMask` | `ConvertPinkToTransparent`: pixels exactly RGBA (255, 0, 255, **255**) become (128, 128, 128, 0); 24-bit and paletted files have alpha 255 so the key works; a 32-bit magenta pixel with alpha ≠ 255 is not keyed |
+| `WithAlpha` | `GetTextureWithAlpha` (9 call sites) → `ConvertColourToAlpha`: alpha := **green** channel, RGB := white |
+| Upload | RGBA8; GL requires power-of-two only without `GL_ARB_texture_non_power_of_two` or with pref `ManuallyScaleTextures` ≠ 0 (square only without `GL_ARB_texture_rectangle`); D3D always power-of-two; resizing rounds **up** (bilinear); wrap CLAMP, MAG LINEAR, MIN LINEAR_MIPMAP_LINEAR (also when not mip-mapped) — [24](24_rendering.md) |
+| `GetBitmap(name)` | CPU copy cached under `name`; a later `GetTexture` on the same name finds it in the bitmap store and modifies it in place (pink → transparent) |
+
+**Verification.** `LoadBmp` and the four line readers re-read for this document (nibble order, padding expression, no `Seek`). Survey: 506 files, results above.
+
+**Minimal valid example** (written for this document): a 2×1 24-bit image (62 bytes): file header `42 4D 3E 00 00 00 00 00 00 00 36 00 00 00`; info header `28 00 00 00 02 00 00 00 01 00 00 00 01 00 18 00 00 00 00 00 08 00 00 00 13 0B 00 00 13 0B 00 00 00 00 00 00 00 00 00 00`; one row `00 00 FF  FF 00 FF  00 00` (red, then the pink key, 2 padding bytes). Requested via `GetTexture`, the right-hand pixel becomes transparent grey (128,128,128,0).
+
+**Discrepancies.** `textures/shaman_background.bmp` (RLE8, 512×512, used by `code/shaman_interface.cpp:ShamanInterface::RenderBackground`) would be read as raw indices running past the data (`ReadU8` returns 0xFF at EOF) → corrupt image [C]; whether the Shaman interface is reachable in Multiwinia is settled in [02](02_units_and_entities.md) (Shaman is cut). The `code/lib/bitmap.h` comment on `ConvertColourToAlpha` says "luminance"; code uses green only [C]. 4-/8-bit row padding not consumed: latent (all shipped widths are multiples of 8) [C].
+
+<a id="fmt-png-output"></a>
+### 8.4 PNG screenshot output [runtime]
+
+**Purpose.** Screenshots ("posters") written when control `ControlCreateScreenShot` fires and no window is open [C] `code/renderer.cpp:Renderer::Render`, `code/lib/poster_maker.cpp:PosterMaker::AddFrame`, `PosterMaker::SavePoster`, `code/lib/bitmap.cpp:BitmapRGBA::SavePng`, `WritePng`. There is no PNG **reader** in the game.
+
+**Files.** `<P>screenshots/screenshot<N>.png` with the first unused N starting at 1 (`App::GetScreenshotDirectory`; Desktop under `TARGET_OS_VISTA`, `~/Pictures/Multiwinia/` on Mac) [C] `code/app.cpp:App::GetScreenshotDirectory`. Under `TARGET_OS_VISTA` [B:DEAD] `App::SaveThumbnailScreenshot` writes a 256×192 PNG into the rich saved-game header.
+
+**Layout** (standard PNG via libpng) [C] `WritePng`:
+
+| Field | Value |
+|---|---|
+| IHDR | width × height of the poster bitmap, bit depth 8, colour type RGB (`PNG_COLOR_TYPE_RGB`; RGBA only if `_saveAlpha`, which `SavePng` never passes — the argument is ignored) |
+| Rows | flipped from the bottom-up `m_lines` to top-down |
+| Compression | `Z_BEST_SPEED`, mem level 8, `Z_DEFAULT_STRATEGY`, window bits 15, method 8, buffer 8192 |
+| Poster size | pref `RenderPosterResolution` (default 1): N × N tiles of the screen size, each rendered with `RenderFrame(false)` and read back by `AddFrame` |
+
+**Verification.** `PosterMaker::SavePoster`, `Renderer::Render` trigger block, `SavePng`/`WritePng` re-read for this document [C].
+
+**Minimal valid example.** Any 8-bit RGB PNG, e.g. a 1×1 image; the game writes but never reads them.
+
+**Discrepancies.** `SavePng(_filename, _saveAlpha)` ignores `_saveAlpha` [C]. `WriteBmp` (24-bit Windows BMP, 2835 px/m) exists for tools [C].
+
+<a id="fmt-colour-ramp"></a>
+### 8.5 Terrain, water and wave colour ramps
+
+**Purpose.** Three per-level BMP look-ups colour the landscape, the flat sea texture and the animated wave mesh. A level names them in its `Landscape` block (`landColourFile`, `wavesColourFile`, `waterColourFile`, resolved as `terrain/<name>`; defaults `landscape_default.bmp`, `waves_default.bmp`, `water_default.bmp`) [C] `code/level_file.cpp:LevelFile::ParseLandscapeData`. With the Christmas mod active the three are forced to `landscape_icecaps.bmp`, `waves_earth.bmp`, `water_icecaps.bmp` [C] `code/landscape_renderer.cpp:LandscapeRenderer::LandscapeRenderer`, `code/water.cpp:Water::Water`, `Water::Render`.
+
+**Files.** `data/terrain/landscape_*.bmp` (23, 64×64, 24-bit), `data/terrain/water_*.bmp` (4, 128×128, 8-bit paletted), `data/terrain/waves_*.bmp` (9, 400×10, 24-bit); no ramp uses the pink key; look-ups scale by the bitmap's actual size, so other sizes are legal [C] survey.
+
+**Encoding.** [fmt-bmp](#fmt-bmp); the semantics below are a convention over the pixel grid.
+
+| Ramp | Field | Mapping | Parser ref |
+|---|---|---|---|
+| landscape (2-D, CPU via `GetBitmap`) | column x | `x = int(u · width)` clamped, `u = (1 − gradient)^0.4`, `gradient = normal.y` (1 flat … 0 vertical) → **left = flat, right = vertical** | `code/landscape_renderer.cpp:LandscapeRenderer::GetLandscapeColour`, `BuildColourArray` |
+| landscape | row y (row 0 = first stored row = **bottom row of the picture as viewed**) | `y = int(v · height)` clamped, `v = 1 − h/highest + jitter`, `highest` = max height of this map, `jitter = sfrand(0.45/(max(h,0)+2))` (±0.1125 at sea level, shrinking with height; RNG reseeded per triangle from x, z) → **top of the picture = sea level, bottom = highest peak** | same |
+| water (tiled texture) | whole image | `GetTexture("terrain/<file>", mipmaps, masked)`, unit 0, `GL_REPEAT`, LINEAR / LINEAR_MIPMAP_LINEAR, `GL_MODULATE`; mapped on the sea plane at y = −9.0 over `[−sizeX/2, 1.5·sizeX] × [−sizeZ/2, 1.5·sizeZ]` with coordinates `t/30 … t/30 + 30` (`t` = `g_gameTimer.GetAccurateTime()` s) → repeats 30× and scrolls 1/30 tile per second; unit 1 multiplies by the generated shore mask `water_lightmap` | `code/water.cpp:Water::Render`, `Water::RenderFlatWaterTiles` |
+| waves (1-D table) | row y = 1 only | `table[x] = pixel(x, 1)`, alpha 255 (0 in negative mode), `numColours = width`; per vertex `brightness = (h1 + h2 + h3) · 4.0 · (1 − depth) + shoreNoise`, `shoreNoise = ((1 − depth) + sfrand(1 − depth) · 0.25) · 250`, strip pairs mixed 0.7/0.3, `index = Round(brightness)` clamped → **x = 0 calm open water, higher x brighter crest/shore foam** [arithmetic C; interpretation I] | `code/water.cpp:Water::Water`, `Water::UpdateDynamicWater`, `code/water.h:Water::GetColour` |
+
+Full algorithms: [23](23_terrain_and_landscape.md).
+
+**Verification.** From X1b/P11 readings of the renderer and water code [C]; survey of all 36 ramp files (sizes, depths) [C] `X1b_bmp_survey.py`.
+
+**Minimal valid examples**
+
+* `landscape_sample.bmp`: 64×64 24-bit; columns 0–40 grass→earth, 41–63 rock; top rows sand, bottom rows snow.
+* `waves_sample.bmp`: 300×2 24-bit; the top row as viewed (row 1) a gradient from deep blue (x = 0) to white (x = 299); bottom row unused.
+* `water_sample.bmp`: any seamlessly tiling 64×64 image.
+
+**Discrepancies.** 9 landscape ramps are referenced by no level (`beach`, `containment`, `field`, `icecaps_peaked`, `marble2`, `mine2`, `ridges`, `volcanic`, `volcanicplain`) [C] P11. The D3D path of `Water::Water` writes `bmp.GetPixel(x,1)` on a `const BitmapRGBA *` → compile error under `USE_DIRECT3D` [C] ([31 §7.9](31_platform_build_and_tools.md)).
+
+<a id="fmt-anim"></a>
+### 8.6 `.anim` — animated help panel
+
+**Purpose.** A short looping 2-D cartoon shown during a Multiwinia game's grace period explaining the mode [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::InitialiseAnimatedPanel`, `RenderAnimatedPanel`; parser `code/animatedpanel.cpp:AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read`; interpolation `AnimatedPanel::CalculateObjectProperties`, `CalculateRampUpAndDown`; renderer `code/animatedpanel_renderer.cpp:AnimatedPanelRenderer::RenderObjects`. Authored with the external `animator.exe` (repository root; its data archive `animator.dat` holds `data/animations/*.bmp`, `data/fonts/verdana-bold.bmp`, `data/dialogs/animator-*.txt`) [C] strings, RAR listing via `_work/scripts/P14_rar_list.py`. `AnimatedPanel::Write` exists with no caller. Playback model: [26](26_animation_and_vfx.md). [B:FULL]
+
+**Files** [C] `InitialiseAnimatedPanel`, `X1b_anim_survey.py` (re-run):
+
+| Game type | File | WIDTH×HEIGHT | START–STOP (s) | Objects | Keyframes |
+|---|---|---|---|---|---|
+| Domination (`GameTypeSkirmish`) | `data/animations/domination.anim` | 800×250 | 0.00–15.01 | 28 | 169 |
+| KingOfTheHill | `data/animations/koth.anim` | 800×250 | 0.00–15.66 | 17 | 108 |
+| CaptureTheStatue | `data/animations/cts.anim` | 924×250 | 0.00–20.01 | 23 | 111 |
+| Assault | `data/animations/assault_defend.anim` | 900×250 | 0.00–12.02 | 14 | 135 |
+| RocketRiot | `data/animations/rocket.anim` | 1000×250 | 0.00–30.01 | 21 | 173 |
+| Blitzkrieg (`GameTypeBlitzkreig`) | `data/animations/blitz.anim` | 900×250 | 0.00–24.01 | 28 | 180 |
+| TankBattle | none → no panel | | | | |
+
+All 25 bitmaps in `data/animations/` are referenced by at least one `.anim`; no `.anim` references a missing image [C].
+
+**Encoding.** ASCII, CRLF.
+
+```ebnf
+anim_file   = { header_line | object | ignored_line } ;            (* blank lines skipped *)
+header_line = ( 'WIDTH' INT | 'HEIGHT' INT | 'START' FLOAT | 'STOP' FLOAT ) EOL ;
+object      = 'BEGIN' 'Object' EOL , { keyframe | ignored_line } , 'END' EOL ;
+keyframe    = 'BEGIN' 'Keyframe' EOL , { kf_field | ignored_line } , 'END' EOL ;
+kf_field    = ( 'TIMEINDEX' FLOAT | 'IMAGENAME' NAME | 'XPOS' FLOAT | 'YPOS' FLOAT | 'COLOUR' INT
+              | 'SCALE' FLOAT | 'ANGLE' FLOAT | 'FLIPHORIZ' INT | 'ALPHA' INT ) EOL ;
+```
+
+Keywords case-insensitive; unknown keywords ignored at every level; header lines may appear anywhere outside objects (last wins); an `END` at top level is ignored. Hazards [C]: at top level the second token is read without a check, so a one-token `WIDTH`/`HEIGHT`/`START`/`STOP`/`BEGIN` line crashes (`atoi`/`atof`/`stricmp(NULL)`); inside objects/keyframes the value is `NULL` when absent and `atof(NULL)`/`strcpy(…, NULL)` crash; `IMAGENAME` is copied into a 256-byte buffer unchecked.
+
+| Field | Type | Units | Default | Range (shipped) | Semantics | Parser ref |
+|---|---|---|---|---|---|---|
+| `WIDTH`, `HEIGHT` | INT | panel units | 600, 300 | 800–1000, 250 | logical canvas; on screen `scale = ScreenH/1300`, `screenW = WIDTH·scale`, `screenH = HEIGHT·scale`, centred horizontally, `screenY = ScreenH − HEIGHT·1.15·scale`; border 5 px, title band 25 px, caption band 15 px | `AnimatedPanel::Read`, `MultiwiniaHelp::InitialiseAnimatedPanel` |
+| `START`, `STOP` | FLOAT | s | 0, 30 | 0 / 12.02–30.01 | loop window: the clock starts at **0** (not START), advances by wall-clock seconds and is reset to START when it exceeds STOP | same; `RenderObjects` |
+| `TIMEINDEX` | FLOAT | s | 0.0 | 0–30.66 | key time; keys after STOP are never reached | `AnimatedPanelKeyframe::Read` |
+| `IMAGENAME` | NAME | file | `darwinian.bmp` | 25 names | sprite `animations/<name>`; `GetBitmap` (size) + `GetTexture` (default flags → mip-mapped, pink-keyed) | same |
+| `XPOS`, `YPOS` | FLOAT | panel units | 100, 100 | x 28–940, y −75–233 | sprite **centre**; screen = `screenX + XPOS·s'`, `screenY + YPOS·s'`, `s' = screenW/WIDTH`; y grows downward | same |
+| `SCALE` | FLOAT | × source pixels | 0.3 | 0.0–2.5 | size = bitmap size × SCALE × s' | same |
+| `ANGLE` | FLOAT | degrees | 0 | −1000…1500 | rotation about the centre (`RotateAroundZ(2π·ANGLE/360)`); values beyond ±360 make spins when interpolated | same |
+| `COLOUR` | INT enum | – | 0 | 0–3 | 0 `ColourNone` white; 1 `ColourFriendly` local team colour; 2 `ColourEnemy` colour of the first team (index order) that is in use and not a friend of the local team (white if none); 3 `ColourInvisible` alpha 0 | same; `RenderObjects` |
+| `FLIPHORIZ` | INT bool | – | 0 | 0/1 | mirror horizontally | same |
+| `ALPHA` | INT | 0–255 | 255 | 0–255 | vertex alpha (ignored when COLOUR = 3) | same |
+
+Playback [C] `CalculateObjectProperties`, `CalculateRampUpAndDown`: per object (file order = draw order) at time t: `left` = key with the greatest time ≤ t (first on ties), `right` = key with the smallest time ≥ t; neither → not drawn; only `right` → **not drawn**; only `left` → hold; same key or `|right.t − left.t| < 0.01` → `left`; else `lin = (t − left.t)/(right.t − left.t)`, `ramp = 2f²` for f < 0.5 else `1 − 2(1 − f)²`; XPOS, YPOS, SCALE use `ramp`; ANGLE and ALPHA use `lin` (ALPHA truncated); IMAGENAME, COLOUR, FLIPHORIZ step from `left`. Quads are drawn with `SRC_ALPHA, ONE_MINUS_SRC_ALPHA`, clipped to the panel.
+
+**Verification.** `AnimatedPanel::Read`, `AnimatedPanelObject::Read`, `AnimatedPanelKeyframe::Read` and the constructors' defaults re-read for this document. Survey of the 6 files: e.g. `assault_defend.anim` 14 objects, 135 keys, COLOUR {0: 94, 1: 17, 2: 18, 3: 6}, FLIPHORIZ {0: 126, 1: 9}; `cts.anim` keys up to 30.00 with STOP 20.01 [C].
+
+**Minimal valid example** (one sprite fading in while sliding)
+
+```text
+WIDTH  700
+HEIGHT 250
+START  0.00
+STOP   3.00
+
+BEGIN Object
+    BEGIN Keyframe
+        TIMEINDEX  0.00
+        IMAGENAME  flag.bmp
+        XPOS       150.00
+        YPOS       120.00
+        COLOUR     2
+        SCALE      0.60
+        ALPHA      0
+    END
+    BEGIN Keyframe
+        TIMEINDEX  3.00
+        IMAGENAME  flag.bmp
+        XPOS       550.00
+        YPOS       120.00
+        COLOUR     2
+        SCALE      0.60
+        ALPHA      255
+    END
+END
+```
+
+**Discrepancies.** Keys beyond STOP are dead data (`cts.anim`, `domination.anim`, `koth.anim` have keys at 30.00) [C]. Several `data/animations/` sprites share names with files elsewhere but are different images (MD5 differs): `flag.bmp`, `flag_down.bmp`, `flag_locked.bmp`, `flag_up.bmp` vs `data/icons/`; `darwinian.bmp` vs `data/sprites/` and `data/textures/`; `cloudyglow.bmp`, `muzzleflash.bmp`, `laser.bmp` vs `data/textures/`; only `darwinian_ouch4.bmp` is byte-identical to `data/sprites/darwinian_ouch4.bmp` [C] md5.
+
+<a id="fmt-icons"></a>
+### 8.7 `data/icons/` naming convention
+
+**Purpose / parser.** Names built by code for icon textures [C] `code/taskmanager_interface_icons.cpp:TaskManagerInterfaceIcons::TaskManagerInterfaceIcons`, `code/multiwiniahelp.cpp:MultiwiniaHelp::MultiwiniaHelp`, `code/interface/helpandoptions_windows.cpp:CrateButton::CrateButton`, `code/UI/mapDetailsButton.h`, grep of `"icons/` literals.
+
+**Files / encoding.** `data/icons/*.bmp` (121; 64×64 or 128×128 mostly; 4/8/24/32-bit — [fmt-bmp](#fmt-bmp)).
+
+```ebnf
+icon_name = 'icons/' ( 'icon_' NAME | 'gesture_' NAME | 'banner_' ORDER | 'button_' PADBUTTON [ '_shadow' ]
+                     | 'mouse_' CURSORSTATE | 'menu_' LEVEL | FREENAME ) '.bmp' ;
+```
+
+| Pattern | Built from | Example | Consumer |
+|---|---|---|---|
+| `icons/icon_<name>.bmp` | `GlobalResearch::GetTypeName(i)`, `Task::GetTaskName(type)` or crate name (`Crate::GetName`) | `icon_squad.bmp`, `icon_nuke.bmp`, `icon_hotfeet.bmp` | task bar, crate help |
+| `icons/gesture_<name>.bmp` | research type name | `gesture_officer.bmp` | gesture pictures |
+| `icons/banner_<order>.bmp` | officer order / task banner | `banner_goto.bmp` | task banners |
+| `icons/button_<pad button>[_shadow].bmp` | controller glyph names `a`, `b`, `x`, `y`, `lb`, `rb`, `lt`, `rt`, `la`, `ra`, `dpad`, `tab` | `button_lb_shadow.bmp` | controller help, input icon lines ([fmt-input-bindings](#fmt-input-bindings)) |
+| `icons/mouse_<cursor state>.bmp` | cursor images | `mouse_movehere.bmp` | `MouseCursor` |
+| `icons/menu_<level>.bmp`, `icons/menu_%dplayer.bmp` | menu badges | `menu_basic.bmp` | map details |
+| `icons/<free name>.bmp` | `MultiwiniaHelp` icon tabs (`"icons/%s.bmp"`), HUD | `compass.bmp`, `nukesymbol.bmp` | help, HUD |
+
+**Verification.** Literal grep + existence check by X1b [C]; catalogue per file: [25](25_textures_and_assets.md).
+
+**Minimal valid example.** `data/icons/icon_shield.bmp` — a 64×64 24-bit image with pink-key background, requested as `icons/icon_shield.bmp`.
+
+**Discrepancies.** Names referenced but absent from `data/icons/`: `menu_campaign.bmp`, `menu_prologue.bmp`, `menu_coop.bmp`, `menu_forcecoop.bmp`, `menu_<n>player.bmp`, `compass_empty.bmp`, `icon_enter.bmp`, `shaman_shadow.bmp` — fatal if requested without a `DoesTextureExist` guard [C]; reachability (e.g. `MarkerSystem::RenderCompass` → `compass_empty.bmp`) and whether `patch.dat` supplies them: [25](25_textures_and_assets.md).
+
+<a id="fmt-mwhelp"></a>
+### 8.8 `data/mwhelp/` naming convention
+
+**Purpose / parser.** Help pictures [C] `code/multiwiniahelp.cpp:MultiwiniaHelp::MultiwiniaHelp` (tab icons) and help-render functions, `code/interface/helpandoptions_windows.cpp` (help-page windows), `code/UI/GameTypeImageButton.h`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`, `code/UI/HelpImageButton.h`.
+
+**Files / encoding.** `data/mwhelp/*.bmp` (51; sizes 150×150, 200×200, 300×200, 400×300, 512×128, 600×389, 426×406, 150×149); all names built with `"." TEXTURE_EXTENSION`.
+
+| Pattern | Meaning |
+|---|---|
+| `mwhelp/general<page>.bmp` | general help pages (shipped 1–5) |
+| `mwhelp/help_<gameType>_<page>.bmp` | per-mode help picture; `gameType` = Multiwinia game-type index 0 Domination … 5 Blitzkrieg; pages 1-based (shipped `help_0_1`, `help_1_1`–`2`, `help_2_1`–`3`, `help_3_1`–`3`, `help_4_1`–`4`, `help_5_1`–`3`); text id `multiwinia_helppage_<gameType+1>_<page>` |
+| `mwhelp/mode_<blueprint name>.bmp` | game-mode tile; name from [fmt-multiwinia-txt](#fmt-multiwinia-txt) matched case-insensitively against the lower-case files (`mode_domination.bmp` …), plus fixed `mode_prologue.bmp`, `mode_campaign.bmp` |
+| `mwhelp/<topic>.bmp` | in-game help tab icons: `starthere`, `koth`, `spawnpoint`, `spawnpoint_assault`, `crates`, `liftstatues`, `capturestatues`, `wallbuster`, `pulsebomb`, `pulsebomb_attack`, `pulsebomb_defend`, `rocketriot1`, `rocketriot2`, `reinforcements`, `blitzkrieg1`, `blitzkrieg2`, `gear`, `control_camera`, `control_camera_french` (the last chosen when `InputPrefs::IsKeyboardFrenchLocale()`) |
+
+**Verification.** Literal grep + existence check by X1b [C].
+
+**Minimal valid example.** `data/mwhelp/help_0_2.bmp` (400×300 24-bit) would be shown as Domination help page 2 with text id `multiwinia_helppage_1_2`.
+
+**Discrepancies.** Referenced but absent: `mwhelp/helppage_<page>_<image>.bmp`, `basic_select[_xbox]`, `basic_promote[_xbox]`, `darwinian`, `officercontrol`, `darwiniancontrol` (Xbox/legacy help flows) [C]; `data/mwhelp/` contains no `.txt` files although earlier notes expected them [C].
+
+<a id="fmt-thumbnail"></a>
+### 8.9 `data/thumbnails/` naming convention
+
+**Purpose / parser.** Lobby map thumbnails [C] `code/UI/MapImageButton.h:MapImageButton::Render`, `code/UI/GameMenuWindow.cpp:GameMenuWindow::PreloadThumbnails`.
+
+```ebnf
+thumbnail_name = 'thumbnails/' lower( MAPFILE without '.txt' ) '.bmp' ;     (* fallback 'thumbnails/default.bmp' *)
+```
+
+| Field | Rule |
+|---|---|
+| name | level file name without `.txt`, **lower-cased** (`strlwr`) before look-up; if `DoesTextureExist` fails → `thumbnails/default.bmp` |
+| loading | `GetTexture(name, mipmaps = false, masked = false)`, drawn with LINEAR min/mag |
+| shipped | 57 files, 400×300 (53 8-bit paletted, 4 24-bit); disk names keep mixed case (`mp_koth_2P_1.bmp`), which works only because file and archive look-ups are case-insensitive |
+
+**Verification.** X1b survey + `X4_thumbnails.csv` (X4 level catalogue) [C].
+
+**Minimal valid example.** `data/thumbnails/mp_example_2p.bmp`, 400×300 8-bit, for the map of §4.1.19.
+
+**Discrepancies.** 5 thumbnails are excluded with their maps from retail (`mp_benchmark_*`, `mp_tankbattle_*`, `mp_cts_3p_3`) [C] `tools/multiwinia_exclusions.txt`.
+
+<a id="fmt-sepulveda"></a>
+### 8.10 `data/sepulveda/` — mentor portraits [B:DEAD]
+
+**Purpose / parser.** Five 256×256 8-bit portraits of the Darwinia mentor (index 1–3 neutral, 4 "eyes shut", 5 "mouth open" per code comments), cycled every 0.4 s with random zoom/offset [C] `code/sepulveda.cpp:Sepulveda::Sepulveda`, `Sepulveda::RenderFace`, `code/clouds.cpp:Clouds::RenderFace`.
+
+```ebnf
+portrait_name = 'sepulveda/sepulveda' DIGIT '.bmp' ;     (* DIGIT 1..5 *)
+```
+
+**Verification.** `sepulveda.cpp` is entirely inside `USE_SEPULVEDA_HELP_TUTORIAL`; `Clouds::RenderFace` is compiled but runs only while `Clouds::m_faceTime > 0`, which nothing sets (initialised −1) → unreachable [C] grep. Files: `data/sepulveda/sepulveda1.bmp` … `sepulveda5.bmp` (8-bit) [C] survey.
+
+**Minimal valid example.** Not applicable (dead convention).
+
+**Discrepancies.** Still packed into `main.dat` (not excluded) although unreachable [C]. IP: character art.
+
+<a id="fmt-psp"></a>
+### 8.11 `.psp` — Paint Shop Pro image [authoring]
+
+**Files.** `data/icons/banner_template.psp` (32 020 bytes). **Layout** [C] byte dump: ASCII `"Paint Shop Pro Image File\n\x1a"` + 5 NUL bytes (32-byte signature), major version 3, minor 0, then a `~BK\0` general-image-attributes block (length 38) giving width 64, height 64.
+
+| Field | Offset | Type | Value |
+|---|---|---|---|
+| signature | 0 | 32 bytes | as above |
+| version | 32 | u16 major, u16 minor | 3, 0 |
+| attribute block | 36 | `~BK\0` + u32 length | 38 |
+| width, height | in the block | i32 | 64, 64 |
+
+**Purpose.** Layered authoring template for the seven 64×64 24-bit `icons/banner_*.bmp` task banners (`banner_absorb`, `banner_deploy`, `banner_follow`, `banner_formation`, `banner_goto`, `banner_none`, `banner_unload`) [I name + matching size].
+
+**Verification.** Not referenced by any code or build script; `*.psp` is not in the `main.dat` filter [C].
+
+**Minimal valid example.** Not applicable (third-party authoring format).
+
+**Discrepancies.** None; authoring-only, IP (art).
+
+<a id="fmt-grd"></a>
+### 8.12 `.grd` — Photoshop gradient [authoring]
+
+**Files.** `data/Untitled Gradients.grd` (244 bytes). **Layout** [C] byte dump: `"8BGR"` signature, version 3, gradient count 1, Pascal-string name (length 25) "Foreground to Transparent", then colour/transparency stop records (Adobe Photoshop 3–5 gradient preset).
+
+| Field | Type | Value |
+|---|---|---|
+| signature | 4 bytes | `8BGR` |
+| version | u16 | 3 |
+| count | u16 | 1 |
+| name | Pascal string | "Foreground to Transparent" |
+
+**Verification.** Not referenced by code or build scripts, not packaged [C] grep + `tools/build_multiwinia_data.bat`. Confirmed unused authoring residue.
+
+**Minimal valid example.** Not applicable.
+
+**Discrepancies.** The blank in the file name would only cosmetically affect the `dir`/`sed` list pipeline [C].
+
+---
+
+## 9 Shaders
+
+<a id="fmt-shader"></a>
+### 9.1 HLSL shaders (`data/shaders/*`) [B:D3D]
+
+**Purpose.** Vertex/pixel shaders of the Direct3D 9 path (fixed-function emulation, deform effect, water reflection) [C] `code/lib/shader.cpp:Shader::Shader`, `Shader::Create`, `MemFile`, `MyD3DXInclude::Open`; users `code/lib/FixedPipeline.cpp:FixedPipeline::FixedPipeline`, `code/deform.cpp:DeformEffect::DeformEffect`, `code/water_reflection.cpp:WaterReflectionEffect::WaterReflectionEffect`. The whole of `shader.cpp` is inside `#ifdef USE_DIRECT3D`, so the files are **unused in the baseline OpenGL build**, although packed into `init.dat` (all 14 via `tools/init.list`) and `main.dat` (all except the six `FixedFunc*`) [C]. Per-shader inputs/outputs/uniforms: [24](24_rendering.md).
+
+**Files** (line counts) [C]: `data/shaders/FixedFunc0.vs` 88, `FixedFunc0Maps.ps` 6, `FixedFunc1.vs` 28, `FixedFunc1Maps.ps` 9, `FixedFunc2.vs` 33, `FixedFunc2Maps.ps` 11, `deform.vs` 17, `deformDiamond.ps` 27, `deformFullscreen.ps` 21, `deformSphere.ps` 25, `globals.h` 4, `water-meshwaves.ps` 16, `water-meshwaves.ps3` 21, `water-meshwaves.vs` 23.
+
+**Encoding.** Plain-text HLSL (ASCII); not tokenised by `TextReader` — the whole file is handed to `D3DXCompileShader`.
+
+**File-level grammar**
+
+```ebnf
+shader_file  = hlsl_source ;                         (* HLSL; must define the entry point below *)
+vertex_file  = hlsl_source containing 'vs_main' ;    (* extension .vs *)
+pixel_file   = hlsl_source containing 'ps_main' ;    (* extension .ps or .ps3 *)
+include_line = '#include "' NAME '"' ;              (* resolved as resource shaders/NAME *)
+```
+
+| Convention | Rule | Parser ref |
+|---|---|---|
+| compilation | at run time with `D3DXCompileShader` (flags 0, no macros, no precompiled blobs) | `Shader::Create` |
+| entry points | `vs_main` in every vertex shader, `ps_main` in every pixel shader | same |
+| profiles | the device's best: `D3DXGetVertexShaderProfile` / `D3DXGetPixelShaderProfile` | same |
+| extensions | `.vs` vertex, `.ps` pixel, `.ps3` pixel variant requiring a `ps_3_x` profile (chosen when the profile string's 4th character > `'2'`; falls back to `.ps` if creation fails) | `code/water_reflection.cpp:WaterReflectionEffect::WaterReflectionEffect` |
+| includes | `#include "x"` resolved by `MyD3DXInclude` as resource `shaders/x` (loose or archive); only `globals.h` is included (by the three `deform*.ps`) and defines `DEFORM_PRECISION 10` | `MyD3DXInclude::Open` |
+| pairing | a `Shader` = one `.vs` + one `.ps` path; a compile failure is debug-asserted; `AppReleaseAssert("Shader create error…")` if either object cannot be created | `Shader::Shader`, `Shader::Create` |
+| constants | set by name through the D3DX constant tables of both stages (`SetFloat`, `SetUniform`, `SetMatrix`, `SetBool`, `SetInt`) | `Shader` setters |
+
+Pairs created [C]: `FixedFunc0.vs` + `FixedFunc0Maps.ps`, `FixedFunc1.vs` + `FixedFunc1Maps.ps`, `FixedFunc2.vs` + `FixedFunc2Maps.ps`; `deform.vs` + `deformFullscreen.ps` / `deformSphere.ps` / `deformDiamond.ps`; `water-meshwaves.vs` + `water-meshwaves.ps3` or `.ps`.
+
+**Verification.** From X1b/P13 readings of `shader.cpp` and the three users [C]; files counted by `S_31_archive_contents.py` (both archives) [C].
+
+**Minimal valid example** (written for this document; any `vs_2_0`/`ps_2_0` profile)
+
+```hlsl
+// tint.vs
+float4x4 worldViewProj;
+void vs_main(in float4 p : POSITION, in float4 c : COLOR, out float4 oP : POSITION, out float4 oC : COLOR)
+{ oP = mul(p, worldViewProj); oC = c; }
+// tint.ps
+float4 tint;
+void ps_main(in float4 c : COLOR, out float4 o : COLOR) { o = c * tint; }
+```
+
+**Discrepancies.** The D3D configuration probably does not compile at this commit ([31 §7.9](31_platform_build_and_tools.md)), so these files are effectively dead in every buildable PC configuration [I].
+
+---
+
+## 10 Packaging: archives and pack lists
+
+<a id="fmt-dat-archive"></a>
+### 10.1 `.dat` archives (RAR)
+
+**Purpose.** Shipped data is packed into RAR archives that the game decompresses entirely into memory at start-up [C] `code/lib/resource.cpp:Resource::ParseArchive`, `GetUncompressedFile`, `GetTextReader`, `GetBinaryReader`, `ListResources`; `contrib/unrar/unrar.cpp:UncompressedArchive::UncompressedArchive`, `MemMappedFile::MemMappedFile`; `contrib/unrar/extract.cpp:CmdExtract::ExtractArchive` (modified to unpack into memory); `contrib/systemiv/lib/tosser/hash_table.cpp:HashTable::HashFunc`, `GetIndex`. Build pipeline and per-SKU contents: [31 §8](31_platform_build_and_tools.md).
+
+**Files.** Runtime archives (none committed): `init.dat`, `language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`, `sounds.dat`, `sounds2.dat`; `ambx.dat` is installed by the euro installer but never opened. The repository's `animator.dat` (tool data) is an example: archive flags 0x0008 (solid), file headers with unpack version 29, method 0x35 (best), names `data\animations\…` [C] RAR header walk.
+
+**Encoding / container.** Standard **RAR 4.x** (signature `52 61 72 21 1A 07 00` "Rar!"), produced by `tools/Rar.exe`, read by the bundled UnRAR 3.30 beta 1 source (`contrib/unrar/version.h`: 3.30 β1, 14 Nov 2003; unpack methods 1.5, 2.0/2.6, 2.9) [C]. **No encryption**: every `ParseArchive` call passes `password = NULL` and the build never uses `-p`/`-hp` [C] `code/app.cpp:App::App`, `App::Initialise`, `App::LoadSounds`, `tools/build_multiwinia_data.bat`. Entries may be any format of this document; text entries could in principle be "redshirt2"-obfuscated — none are.
+
+**Layout of what the game relies on** (RAR internals are delegated to UnRAR):
+
+| Element | Rule | Ref |
+|---|---|---|
+| entry name | stored as `data\…` (rar `a -idp` from the repository root) or `data/…`; the loader converts `\` → `/` and lower-cases (`strlwr`) | `MemMappedFile::MemMappedFile`, `Resource::ParseArchive` |
+| entry count | ≤ `MAX_FILES` = 16 384 per archive (excess makes `AllocNewFile` return NULL → crash in the modified extractor) | `contrib/unrar/unrar.h`, `contrib/unrar/unrar.cpp` |
+| zero-size entries and directories | dropped (and leaked) | `Resource::ParseArchive` (`m_size > 0`) |
+| duplicate names across archives | the later archive's entry replaces the earlier one | same |
+| lookup key | `data/` + resource name; hash masks the ASCII case bit (`& 0xDF`), compare `stricmp` → **case-insensitive** | `HashTable::HashFunc`, `HashTable::GetIndex` |
+| precedence | loose `data/<name>` always beats any archive; among archives `sounds2 > sounds > branding > menusounds > patch > main > language > init` | `Resource::GetTextReader`, `GetBinaryReader` |
+
+Resolved: P14 stated callers must pass lower-case names (case-sensitive lookup); X1a and X1b stated case-insensitive; the hash function and `stricmp` comparison above settle it — **case-insensitive** [C].
+
+**How archives are built** [C] `tools/build_multiwinia_data.bat`, `tools/build_language_dat.bat`:
+
+| Archive | RAR command | Entry names | Content rule |
+|---|---|---|---|
+| `init.dat` | `rar a -m5 -s -idp init.dat @list` | `data\…` | `tools/init.list`: 14 shaders, `sprites/darwinian.bmp`, `textures/ivlogo.bmp` |
+| `language.dat` | `rar a -m5 -s -idp` | `data\…` | `*.bmp *.dds *.tex *.txt` from the selected `tools/*language.list` |
+| `main.dat` | `rar a -m5 -s -idp` | `data\…` | all `data/` minus `completeExclusions`, minus any path containing `sounds/`, filtered to `*.tex *.bmp *.jpg *.shp *.txt *.vs *.ps *.ps3 *.h *.anim` (Xbox adds `*.wmv`) — `.max`, `.psp`, `.grd`, `.ogg` never enter it |
+| `menusounds.dat` | `rar a -m2 -s -idp` | `data/…` | `tools/menu_sounds.txt` |
+| `sounds.dat` | `rar a -m2 -s -idp` | `data/…` | `tools/sounds.txt` |
+| `sounds2.dat` | `rar a -m2 -s -idp` | `data/…` | every `.ogg` not in `completeExclusions` and not in the two sound lists |
+| `patch.dat`, `branding.dat` | not built in tree | – | loaded if present |
+
+Switches [I, RAR CLI]: `a` add, `-m5` best / `-m2` fast (Ogg already compressed), `-s` solid, `-idp` no percentage display, `@file` list file.
+
+**Load order** [C] `code/app.cpp:App::App` (`init.dat`, before preferences), `App::Initialise` (`language.dat`, `main.dat`, `patch.dat`, `menusounds.dat`, `branding.dat`), `App::LoadSounds` (`sounds.dat`, `sounds2.dat`); a missing archive is skipped silently; an exception during extraction drops that archive. Archives are never decompressed concurrently ([31 §8.7](31_platform_build_and_tools.md)).
+
+`ListResources(dir, filter)` merges the loose directory listing with archive entries whose directory part equals `data/<dir>` (case-insensitive) and whose file part matches the wildcard filter (`*`, `?`; `Resource::WildCmp` is **case-sensitive**, archive names are lower case); entries are inserted with `OrderedInsert` (`contrib/systemiv/lib/filesys/file_system.cpp`), which keeps `strcmp` order and skips exact duplicates only against the last element → a loose file and its archive twin can both appear (always when their case differs, e.g. loose `mp_koth_2P_1.txt` vs archived `mp_koth_2p_1.txt`) [C].
+
+**Verification.** `Resource::ParseArchive`, `GetTextReader`, `GetBinaryReader`, `HashTable::HashFunc`, `GetIndex`, `GetInsertPos` re-read for this document. Archive contents computed by `_work/scripts/S_31_archive_contents.py` (re-implements the batch/Perl logic; retail `main.dat` 565 files, `init.dat` 16, `menusounds.dat` 18, `sounds.dat` 1 297, `sounds2.dat` 6) [C scripted, 31]; `animator.dat` header walked with `_work/scripts/P14_rar_list.py` [C].
+
+**Minimal valid example.** `rar a -m5 -s -idp sample.dat data\stats.txt` from the repository root; mounted with `ParseArchive("sample.dat", NULL)` it serves resource `stats.txt` (key `data/stats.txt`) unless a loose `data/stats.txt` exists.
+
+**Discrepancies.** RAR is a proprietary format (creating archives needs the licensed `rar` tool; the UnRAR licence forbids writing RAR-compatible archivers) — replace with a zip/PAK-style container keeping: ordered mount list, last mount wins, loose-file override, case-insensitive keys, `/`-separated names relative to `data/` [I]. Exact `tools/Rar.exe` version is **29-U5**.
+
+<a id="fmt-pack-list"></a>
+### 10.2 Build-time pack lists (exclusion, inclusion and sound lists)
+
+**Purpose.** Text lists that decide which `data/` files go into which archive; read only by the build scripts, never by the game [C] `tools/build_multiwinia_data.bat` (`:makeMenuSounds`, `:makeSounds`, `:makeSounds2`, `:makeMain`), `tools/listfiles.pl`, `tools/copyfiles.pl`, `tools/build_language_dat.bat`. Per-SKU contents of every list: [31 §8.5–§8.6](31_platform_build_and_tools.md).
+
+**Files.** Exclusion lists `tools/multiwinia_exclusions.txt` (retail, 49 lines), `tools/multiwinia_exclusions_beta_test.txt`, `tools/multiwinia_exclusions_hwcompat.txt`, `tools/full_exclusions.txt`, `tools/demo_exclusions.txt`, `tools/demo2_exclusions.txt`, `tools/vista_exclusions.txt`, `tools/pdlc_exclusions.txt`; inclusion lists `tools/multiwinia_inclusions_*.txt` (6); sound lists `tools/sounds.txt`, `tools/menu_sounds.txt`; archive lists `tools/init.list`, `tools/*language.list`, `tools/patch.full.list` (Darwinia-era).
+
+**Encoding.** ASCII; CRLF and LF accepted (`\r\n` → `\n`, `chomp`).
+
+```ebnf
+exclusion_file = { excl_line EOL } ;
+excl_line      = '**/' NAME          (* prune any file or directory whose basename == NAME (exact, case-sensitive File::Find $_ compare) *)
+               | GLOB ;              (* '\' normalised to '/'; expanded with File::Glob::bsd_glob after chdir(data/);
+                                        a pattern without wildcards is kept verbatim (GLOB_NOMAGIC); a visited path equal,
+                                        ignoring case, to any expanded entry is pruned (a directory prunes its subtree) *)
+inclusion_file = { RELPATH EOL } ;   (* exact file paths relative to data/, no globs; copyfiles.pl dies "<path> <errno>" if missing *)
+sound_list     = { RELPATH EOL } ;   (* relative to data/, forward slashes, e.g. "mwsounds/attack1.ogg" *)
+archive_list   = { RELPATH EOL } ;   (* init.list / *language.list: rar @listfile entries *)
+```
+
+| Field | Type | Default | Range | Semantics | Parser ref |
+|---|---|---|---|---|---|
+| exclusion `**/NAME` | basename | – | exact, case-sensitive | prune by basename anywhere | `tools/listfiles.pl` (`wanted`) |
+| exclusion `GLOB` | bsd_glob pattern | – | relative to `data/` | prune matching paths (case-insensitive comparison of expanded entries) | same |
+| inclusion path | relative path | – | must exist | copied back in after exclusion | `tools/copyfiles.pl` |
+| sound list path | relative path | – | `sounds/…` or `mwsounds/…` | (1) `sed` prefixes `data/` (all lines of `sounds.txt`; lines starting `sounds`/`mwsounds` of `menu_sounds.txt`) → RAR `@listfile` for `sounds.dat` / `menusounds.dat`; (2) both lists are concatenated with the platform exclusion list into `completeExclusions`, so listed sounds are excluded from the catch-all `sounds2.dat` | `tools/build_multiwinia_data.bat` |
+
+`listfiles.pl` prints every surviving **file** as a `/`-separated path relative to `data/`, in `File::Find` traversal order [C].
+
+**Verification.** `X1b_sounds_grammar.py` (re-run): `tools/sounds.txt` 1 297 entries (935 `sounds/`, 362 `mwsounds/`), `tools/menu_sounds.txt` 18 entries (10 `mwsounds/multilobbyamb1`–`10.ogg`; `sounds/shipheartbeat1`, `mouse2`, `mouse3`, `menuscroll2`, `menuscroll1`, `alien_lands3`, `evil`, `rumble1`), 0 missing on disk, no overlap, no duplicates; of 1 332 Oggs 1 315 are listed and 17 remain, of which 11 are excluded and 6 go to `sounds2.dat` (`mwsounds/rollover1a`, `rollover1b`, `rollover1c`, `mouseclick1`, `chat`, `beep_harsh_malfunction`). Exclusion semantics re-implemented by `_work/scripts/S_31_archive_contents.py` [C scripted].
+
+**Minimal valid example** (an exclusion list and a sound list)
+
+```text
+**/.svn
+levels/old/*
+textures/unused_*
+```
+
+```text
+mwsounds/lobby_loop1.ogg
+sounds/click.ogg
+```
+
+**Discrepancies.** All list entries resolve to existing files only when compared case-insensitively (e.g. `mp_koth_2p_1.txt` vs on-disk `mp_koth_2P_1.txt`); on a case-sensitive file system 30 entries would fail [C scripted, 31]. `Marketing/LogitechG15/landrotate.bmp` in the exclusion lists matches nothing [C].

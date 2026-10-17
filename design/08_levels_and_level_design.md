@@ -28,7 +28,7 @@ This document is the functional description of Multiwinia's **maps** as a level 
 Build reality in one paragraph [C]:
 
 - **[B:FULL]** — the baseline executable lists and loads every `data/levels/mp_*.txt` whose `GameTypes` names one of the six compiled modes (Domination, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg). With the retail data set (`tools/multiwinia_exclusions.txt`) that is **49 maps**. TankBattle (`INCLUDEGAMEMODE_TANKBATTLE`) is compiled only in `TARGET_DEBUG` [C] `code/lib/universal_include.h`.
-- **[B:EDITOR]** — the map editor (`code/location_editor.*` and 13 window files) is compiled only under `LOCATION_EDITOR`, which is commented out in every target; even the menu entry is compiled out. Custom `.mwm` maps can be loaded by FULL code but are listed and created only in an editor build (§8.1).
+- **[B:EDITOR]** — the map editor (`code/location_editor.*` and the nine editor-window source pairs listed in §8.1) is compiled only under `LOCATION_EDITOR`, which is commented out in every target; even the menu entry is compiled out. Custom `.mwm` maps can be loaded by FULL code but are listed and created only in an editor build (§8.1).
 - **[B:LEGACY]** — the Darwinia campaign levels (`data/levels/map_*.txt`, `data/levels/mission_*.txt`) are parseable by the same `LevelFile` code but are excluded from every Multiwinia data build and reachable only through the dead Darwinia global world (§7.1). `data/levels/old/` is never listed by any build (§7.2).
 
 Related documents (linked, not duplicated):
@@ -55,6 +55,14 @@ Related documents (linked, not duplicated):
 Directory listing [C] (`_work/scripts/S_08_tables.py` table `inventory`):
 
 <!-- S08:inventory -->
+| Location | Files | Kind | Build tag |
+|---|---|---|---|
+| `data/levels/mp_*.txt` | 57 | Multiwinia map (single file) | [B:FULL] |
+| `data/levels/map_*.txt` | 12 | Darwinia location map | [B:LEGACY] |
+| `data/levels/mission_*.txt` | 17 | Darwinia mission overlay | [B:LEGACY] |
+| `data/levels/level_enum.txt` | 1 | achievement level index | [B:FULL] code; excluded from retail data |
+| `data/levels/old/mp_*.txt` | 30 | superseded Multiwinia maps | never loaded |
+| `data/thumbnails/*.bmp` | 57 | map-select thumbnails (56 `mp_*` + `default.bmp`) | [B:FULL] |
 <!-- /S08:inventory -->
 
 | Kind | Naming | Content | Who loads it | Build tag |
@@ -72,7 +80,7 @@ Block counts across all of `data/levels/**` [C] (`_work/scripts/P11_levelstats.p
 
 [C] `code/game_menu.cpp:GameMenu::CreateMapList`, `GameMenu::AddMap`, `code/lib/resource.cpp:Resource::ListResources`, `contrib/systemiv/lib/filesys/file_system.cpp:OrderedInsert`, `code/UI/MapData.cpp:MapData::CalculeMapId`. The page that displays the result is specified in [09 §2.4 and §3.5](09_meta_systems.md#24-map-catalogue-built-at-start-up-gamemenucreatemaplist-gamemenuaddmap).
 
-1. `ListResources("levels/", "mp_*", false)` lists loose files in `data/levels/` and every pre-loaded archive entry whose directory part equals `data/levels/` (`stricmp`). The scan is **non-recursive**, so `data/levels/old/` is never seen. Results are merged with `OrderedInsert`, which compares with `strcmp` (case-sensitive), drops exact duplicates and inserts before the first larger entry — but its loop runs only to `Size()−1`, so a name that sorts after every entry except the last is appended **after** the last one. The base order is therefore "nearly alphabetical"; archive entry names are lower-cased when an archive is indexed [I] (X4 reading of `code/lib/resource.cpp`).
+1. `ListResources("levels/", "mp_*", false)` lists loose files in `data/levels/` and every pre-loaded archive entry whose directory part equals `data/levels/` (`stricmp`). The scan is **non-recursive**, so `data/levels/old/` is never seen. Results are merged with `OrderedInsert`, which compares with `strcmp` (case-sensitive), drops exact duplicates and inserts before the first larger entry — but its loop runs only to `Size()−1`, so a name that sorts after every entry except the last is appended **after** the last one. The base order is therefore "nearly alphabetical"; archive entry names are lower-cased when an archive is indexed (`strlwr(file->m_filename)` in `code/lib/resource.cpp:Resource::ParseArchive`) [C], so in a packaged build the menu sees lower-case file names.
 2. Only names whose extension is exactly `txt` are opened; `AddMap` then scans lines until the first `MultiwiniaOptions_EndDefinition` with **case-sensitive** `strcmp` keyword tests for `Name`, `GameTypes`, `NumPlayers`, `Author`, `Description`, `PlayTime`, `Difficulty`, `CoopMode`, `ForceCoop`, `OfficialLevel` (it does not check that it is inside the block).
 3. `GameTypes`: **every** following token that equals a blueprint name of `data/multiwinia.txt` (`Domination`, `KingOfTheHill`, `CaptureTheStatue`, `Assault`, `RocketRiot`, `Blitzkrieg`, `TankBattle`) adds the map to that mode's list. A map with no matching token is discarded with the log line "Discarded map … because it didn't contain a game type".
 4. `MapData::CalculeMapId()` = `LevelFile::CalculeCRC(fileName)` (§2.3); −1 (not readable as a resource) marks the map as custom.
@@ -206,6 +214,65 @@ Layout B is exactly what `LevelFile::SaveMapFile` writes today (camera-animation
 One row per `data/levels/mp_*.txt` (generated by `S_08_tables.py` table `master` from `_work/drafts/X4_levels.csv` and `X4_level_buildings.csv`; every value [C] from the files). Columns: **Modes** = `GameTypes` tokens (DOM Domination, KOTH King of the Hill, CTS Capture the Statue, ASLT Assault, RR Rocket Riot, BLITZ Blitzkrieg, TANK TankBattle); **Players** = `NumPlayers`; **World** = `worldSizeX×worldSizeZ` in world units (wu); **Grid** = height-map cells per axis = `ceil(worldSize / cellSize)` ([23 §9](23_terrain_and_landscape.md#9-world-grid-cell-size-world-size-outside-height-and-world-edge-handling)); **Tiles** / **Flatten** = `LandscapeTiles` / `LandFlattenAreas` rows; **SpawnPoints by pos** = `SpawnPoint` rows per start position (`255` = neutral); **Notable objects** = row counts of the other gameplay/placement types (full matrix in §6.3); **PopCap** = `PopulationCap` (−1 = none) and, when set, `DefenderPopulationCap`; **InvalidCrates** = crate outcomes removed from this map; **Starting units** = `InstantUnits` as `type@position×count`; **Retail** = shipped in the retail `main.dat`; **Class** = hidden/test status.
 
 <!-- S08:master -->
+| File | English name (IP) | Modes | Players | World (wu) | cellSize | Grid | Tiles | Flatten | SpawnPoints by pos | Notable objects (counts) | PopCap / DefenderPopCap | InvalidCrates | Starting units type@pos×n | Thumbnail | Retail | Class |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | Beneath the Baleful Eye | ASLT | 2 | 3000×3000 | 22.00 | 137x137 | 5 | 0 | 0 | TrunkPort 5, PulseBomb 1, CtrlStn 3, Turret 20, Wall 78, PopLock 1, WallBuster 3, Tree 13, Shape 5 | 2000 / def 350 | Squad Airstrike Nuke Meteor | Armour@0x2 Darwinian@0x325 | `data/thumbnails/mp_assault_2P_1.bmp` | Y | official retail |
+| `data/levels/mp_assault_2P_2.txt` | The Woeful Plateau | ASLT | 2 | 2991×2991 | 20.00 | 150x150 | 7 | 0 | 0 | TrunkPort 6, PulseBomb 1, CtrlStn 3, Turret 12, Wall 14, Fence 58, JumpPad 3, RestrZone 1, Tree 36 | 2000 / def 275 | — | Darwinian@0x209 | `data/thumbnails/mp_assault_2P_2.bmp` | Y | official retail |
+| `data/levels/mp_assault_2p_3.txt` | Dog Green Sector | ASLT | 2 | 5143×5143 | 17.03 | 302x302 | 10 | 3 | 0 | TrunkPort 3, PulseBomb 1, CtrlStn 5, Turret 19, Radar 4, Wall 20, Fence 23, RestrZone 1, Tree 5, Shape 21 | 2000 | Squad Airstrike Nuke Meteor | Darwinian@0x8 Darwinian@1x300 | `data/thumbnails/mp_assault_2p_3.bmp` | Y | official retail |
+| `data/levels/mp_assault_3p_1.txt` | The Third Kind | ASLT | 2 | 5000×5000 | 22.32 | 225x225 | 11 | 2 | 0 | TrunkPort 7, PulseBomb 1, CtrlStn 3, Turret 18, Radar 2, Wall 94, Fence 48, RestrZone 2, Smoke 6, Shape 11 | 1600 / def 250 | Armour | Armour@0x1 Darwinian@0x103 Darwinian@5x35 | `data/thumbnails/mp_assault_3P_1.bmp` | Y | official retail |
+| `data/levels/mp_assault_3P_2.txt` | The Hard Way | ASLT | 3 | 5000×5000 | 26.00 | 193x193 | 1 | 0 | 0 | TrunkPort 9, PulseBomb 1, CtrlStn 3, Turret 13, Wall 29, Fence 66, RestrZone 2, PopLock 1, Tree 6 | 1500 / def 250 | Armour | Armour@0x2 Darwinian@0x180 | `data/thumbnails/mp_assault_3P_2.bmp` | Y | official retail |
+| `data/levels/mp_assault_3p_3.txt` | Fort Zulu | ASLT | 3 | 2549×2549 | 9.95 | 257x257 | 7 | 1 | 0 | TrunkPort 8, PulseBomb 1, CtrlStn 3, Turret 40, Wall 25, Shape 10 | 1800 | — | Darwinian@0x260 | `data/thumbnails/mp_assault_3P_3.bmp` | Y | official retail |
+| `data/levels/mp_assault_4P_1.txt` | Beyond the Pale | ASLT | 4 | 4070×4070 | 20.00 | 204x204 | 15 | 5 | 0 | TrunkPort 8, PulseBomb 1, CtrlStn 4, Turret 18, Radar 6, Fence 81, RestrZone 1, Tree 26, Shape 5 | 1600 / def 200 | Armour | Armour@2x1 Armour@3x1 Darwinian@2x100 Darwinian@3x68 | `data/thumbnails/mp_assault_4P_1.bmp` | Y | official retail |
+| `data/levels/mp_assault_4P_2.txt` | The Last Stand | ASLT | 4 | 7000×7000 | 26.00 | 270x270 | 19 | 5 | 0 | TrunkPort 10, PulseBomb 1, CtrlStn 3, Turret 20, Wall 34, Fence 124, RestrZone 2, Shape 27 | 1500 / def 200 | Armour | Darwinian@0x63 Darwinian@1x95 | `data/thumbnails/mp_assault_4P_2.bmp` | Y | official retail |
+| `data/levels/mp_assault_stress.txt` | Assault Stress Test | none | 2 | 4000×4000 | 20.00 | 200x200 | 5 | 0 | 0 | TrunkPort 7, PulseBomb 1, CtrlStn 3, Turret 7, Wall 30, Fence 26 | 2000 | — | Darwinian@1x90 | `data/thumbnails/default.bmp` (fallback) | N | stress test; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_benchmark_1.txt` | Stress Test | none | 4 | 3000×3000 | 18.00 | 167x167 | 10 | 0 | 0:5;1:5;2:5;3:5;255:4 | Zone 15, TrunkPort 4, PopLock 1, Tree 18 | -1 | — | Darwinian@0x150 Darwinian@1x150 Darwinian@2x150 Darwinian@3x150 | `data/thumbnails/mp_benchmark_1.bmp` | N | benchmark; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | Confrontation Point | BLITZ | 2 | 3500×3500 | 12.00 | 292x292 | 6 | 2 | 255:1 | Zone 3, TrunkPort 2, Fence 23, Tree 7 | 1500 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_blitzkrieg_2p_1.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | The Bleak Mountains | BLITZ | 2 | 4000×4000 | 18.00 | 223x223 | 8 | 4 | 0:2;1:2;255:2 | Zone 5, TrunkPort 2, Turret 4, Wall 17, PopLock 6 | 2000 | — | Darwinian@0x8 Darwinian@1x8 | `data/thumbnails/mp_blitzkrieg_2p_2.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | The Eye of the World | BLITZ | 2 | 3000×3000 | 16.00 | 188x188 | 12 | 0 | 255:4 | Zone 3, TrunkPort 3, Fence 21, JumpPad 2 | 2000 | — | — | `data/thumbnails/mp_blitzkrieg_2p_3.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | The Apex of Infinity | BLITZ | 2 | 3000×3000 | 20.00 | 150x150 | 7 | 1 | 255:3 | Zone 6, TrunkPort 3, Turret 18, PopLock 2, Tree 9, Shape 19 | 1800 | — | Darwinian@0x36 Darwinian@1x36 | `data/thumbnails/mp_blitzkrieg_2p_4.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | Upon the Blazing Sea | BLITZ | 3 | 4000×4000 | 12.00 | 334x334 | 7 | 1 | 0 | Zone 7, TrunkPort 3, Fence 34, PopLock 4, Tree 16 | 1500 | — | Darwinian@0x15 Darwinian@1x15 Darwinian@2x15 | `data/thumbnails/mp_blitzkrieg_3P_1.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | The Wheel | BLITZ | 3 | 2938×2938 | 16.00 | 184x184 | 9 | 0 | 0 | Zone 7, TrunkPort 3, Fence 20, RestrZone 3, PopLock 7, Eruption 1, Tree 16 | 2000 | — | — | `data/thumbnails/mp_blitzkrieg_3P_2.bmp` | Y | official retail |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | Gridlock | BLITZ | 4 | 4000×4000 | 20.00 | 200x200 | 25 | 0 | 0 | Zone 9, TrunkPort 4, Fence 39, RestrZone 4 | 1400 | — | — | `data/thumbnails/mp_blitzkrieg_4P_2.bmp` | Y | official retail |
+| `data/levels/mp_cts_2p_1.txt` | Mountain of Lost Souls | CTS | 2 | 2332×2332 | 15.76 | 148x148 | 4 | 0 | 0:2;1:2;255:2 | Zone 4, PopLock 4, Tree 4 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_cts_2p_1.bmp` | Y | official retail |
+| `data/levels/mp_cts_2p_2.txt` | The Bloody Shrine | CTS | 2 | 2332×2332 | 15.76 | 148x148 | 1 | 0 | 0:2;1:2 | Zone 4, PopLock 2, Tree 10 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_cts_2p_2.bmp` | Y | official retail |
+| `data/levels/mp_cts_2p_3.txt` | Price of War | CTS | 2 | 2000×2000 | 12.00 | 167x167 | 5 | 0 | 0:1;1:1;255:2 | Zone 4, Tree 17 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_cts_2p_3.bmp` | Y | official retail |
+| `data/levels/mp_cts_2p_4.txt` | The Unending Peaks | CTS | 2 | 2000×2000 | 9.00 | 223x223 | 3 | 0 | 0:2;1:2 | Zone 3, PopLock 5, Tree 11 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_cts_2p_4.bmp` | Y | official retail |
+| `data/levels/mp_cts_3p_1.txt` | Melting Pot | CTS | 3 | 3000×3000 | 15.80 | 190x190 | 5 | 0 | 0:2;1:2;2:2 | Zone 6, PopLock 6, Tree 24, Shape 8 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_cts_3p_1.bmp` | Y | official retail |
+| `data/levels/mp_cts_3P_2.txt` | The Tortured Expanse | CTS | 3 | 2999×2999 | 16.00 | 188x188 | 17 | 6 | 0:3;1:3;2:3 | Zone 8, Tree 45 | 1500 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_cts_3P_2.bmp` | Y | official retail |
+| `data/levels/mp_cts_3p_3.txt` | The Outreach Peaks | CTS | 3 | 2570×2570 | 12.00 | 215x215 | 5 | 0 | 0 | Zone 9, TrunkPort 3, Tree 15 | 2000 | — | — | `data/thumbnails/mp_cts_3p_3.bmp` | N | cut map; not in retail data |
+| `data/levels/mp_cts_4P_1.txt` | Field of Unlife | CTS | 4 | 3000×3000 | 16.00 | 188x188 | 14 | 6 | 0:1;1:1;2:1;3:1;255:8 | Zone 7, PopLock 1, Tree 7 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_cts_4P_1.bmp` | Y | official retail |
+| `data/levels/mp_cts_4P_2.txt` | Scorched Earth | CTS | 4 | 3428×3428 | 16.00 | 215x215 | 18 | 0 | 0:2;1:2;2:2;3:2 | Zone 10, PopLock 9, Tree 59 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_cts_4P_2.bmp` | Y | official retail |
+| `data/levels/mp_cts_4p_3.txt` | Maze of Despair | CTS | 4 | 2720×2720 | 15.00 | 182x182 | 7 | 0 | 0:2;1:2;2:2;3:2 | Zone 7 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_cts_4p_3.bmp` | Y | official retail |
+| `data/levels/mp_domination_2P_1.txt` | Barriers to Progress | DOM | 2 | 2000×2000 | 12.00 | 167x167 | 8 | 0 | 0:1;1:1;255:6 | Fence 14, PopLock 1, Tree 6, Shape 1 | 2000 | — | Darwinian@0x45 Darwinian@1x45 | `data/thumbnails/mp_domination_2P_1.bmp` | Y | official retail |
+| `data/levels/mp_domination_2P_2.txt` | The Eternal Guardians | DOM | 2 | 2700×2700 | 15.76 | 172x172 | 3 | 0 | 0:1;1:1;255:6 | Tree 21, Shape 5 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_domination_2P_2.bmp` | Y | official retail |
+| `data/levels/mp_domination_3P_1.txt` | Field of Unending Dawn | DOM | 3 | 2345×2345 | 16.00 | 147x147 | 1 | 0 | 0:2;1:2;2:2;255:4 | Tree 12, Shape 11 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_domination_3P_1.bmp` | Y | official retail |
+| `data/levels/mp_domination_4P_1.txt` | The Holy Tree | DOM | 4 | 3000×3000 | 16.00 | 188x188 | 15 | 1 | 0:1;1:1;2:1;3:1;255:6 | Tree 8 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_domination_4P_1.bmp` | Y | official retail |
+| `data/levels/mp_domination_4P_2.txt` | A Monument to the Heavens | DOM | 4 | 3000×3000 | 14.00 | 215x215 | 5 | 0 | 0:2;1:2;2:2;3:2;255:4 | Radar 8, Tree 20, Shape 18 | -1 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_domination_4P_2.bmp` | Y | official retail |
+| `data/levels/mp_koth_2P_1.txt` | The Eternal Guardians | KOTH | 2 | 2700×2700 | 15.76 | 172x172 | 3 | 0 | 0:1;1:1;255:4 | Zone 3, PopLock 4, Tree 7, Shape 5 | 2000 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_koth_2P_1.bmp` | Y | official retail |
+| `data/levels/mp_koth_2P_2.txt` | Shrine of Memory | DOM | 2 | 2677×2677 | 14.00 | 192x192 | 3 | 0 | 0:3;1:3;255:3 | TrunkPort 1, Radar 6, Tree 37, Shape 12 | 2000 | — | — | `data/thumbnails/mp_koth_2P_2.bmp` | Y | official retail |
+| `data/levels/mp_koth_2P_3.txt` | The Bitter Front | DOM | 2 | 2754×2754 | 16.00 | 173x173 | 10 | 0 | 0:2;1:2;255:6 | PopLock 4, Tree 11, Shape 3 | 1500 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_koth_2P_3.bmp` | Y | official retail |
+| `data/levels/mp_koth_2P_3b.txt` | The Bitter Front | KOTH | 2 | 2754×2754 | 16.00 | 173x173 | 11 | 4 | 0:2;1:2;255:6 | Zone 4, PopLock 4, Tree 13, Shape 7 | 1500 | — | Darwinian@0x40 Darwinian@1x40 | `data/thumbnails/mp_koth_2P_3b.bmp` | Y | official retail |
+| `data/levels/mp_koth_3P_1.txt` | Pursuit of Victory | KOTH | 3 | 3000×3000 | 12.00 | 250x250 | 8 | 1 | 0:1;1:1;2:1;255:6 | Zone 4, TrunkPort 1, CtrlStn 6, Radar 12, RestrZone 3, PopLock 7, Tree 5, Shape 4 | 1800 | — | Darwinian@0x45 Darwinian@1x45 Darwinian@2x45 | `data/thumbnails/mp_koth_3P_1.bmp` | Y | official retail |
+| `data/levels/mp_koth_3P_2.txt` | Field of Unending Dawn | KOTH | 3 | 2345×2345 | 16.00 | 147x147 | 1 | 0 | 0:2;1:2;2:2;255:3 | Zone 4, PopLock 1, Tree 9, Shape 3 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_koth_3P_2.bmp` | Y | official retail |
+| `data/levels/mp_koth_3P_3.txt` | The Deceitful Vale | KOTH | 3 | 2800×2800 | 16.00 | 175x175 | 8 | 3 | 0:2;1:2;2:2;255:3 | Zone 5, TrunkPort 1, PopLock 7, Tree 15 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_koth_3P_3.bmp` | Y | official retail |
+| `data/levels/mp_koth_3P_4.txt` | The Walled Garden | KOTH | 3 | 2750×2750 | 12.00 | 230x230 | 3 | 1 | 0 | Zone 1, TrunkPort 6, Turret 6, Wall 12, Tree 22 | 1800 | — | — | `data/thumbnails/mp_koth_3P_4.bmp` | Y | official retail |
+| `data/levels/mp_koth_4P_1.txt` | The Holy Tree | KOTH | 4 | 3000×3000 | 16.00 | 188x188 | 15 | 3 | 0:1;1:1;2:1;3:1;255:6 | Zone 11, PopLock 9, Tree 8 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_koth_4P_1.bmp` | Y | official retail |
+| `data/levels/mp_koth_4P_3.txt` | A Monument to the Heavens | KOTH | 4 | 3000×3000 | 14.00 | 215x215 | 5 | 0 | 0:2;1:2;2:2;3:2;255:4 | Zone 12, Radar 8, Tree 20, Shape 18 | -1 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_koth_4P_3.bmp` | Y | official retail |
+| `data/levels/mp_koth_4P_4.txt` | Barbs of Madness | KOTH | 4 | 3000×3000 | 18.00 | 167x167 | 10 | 0 | 0:3;1:3;2:3;3:3 | Zone 15, TrunkPort 4, PopLock 1, Tree 18 | 2000 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | `data/thumbnails/mp_koth_4P_4.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_2P_2.txt` | Echoes of the Future | RR | 2 | 5000×5000 | 18.00 | 278x278 | 6 | 0 | 255:2 | TrunkPort 2, Rocket 2, FuelStn 6, RestrZone 2, Tree 44 | 1500 | — | — | `data/thumbnails/mp_rocketriot_2P_2.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_2p_3.txt` | Stairway to Heaven | RR | 2 | 3756×3756 | 27.08 | 139x139 | 15 | 0 | 0 | TrunkPort 2, Rocket 2, FuelStn 6, Fence 31, Tree 24 | 1800 | — | — | `data/thumbnails/mp_rocketriot_2p_3.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_2P_4.txt` | Bridge of Light | RR | 2 | 2000×2000 | 9.87 | 203x203 | 1 | 0 | 0 | TrunkPort 2, Rocket 2, FuelStn 6, Tree 14 | 1500 | Armour | — | `data/thumbnails/mp_rocketriot_2P_4.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_3p_1.txt` | The Second Beginning | RR | 3 | 5000×5000 | 18.00 | 278x278 | 7 | 0 | 0 | TrunkPort 3, Rocket 3, FuelStn 9, RestrZone 3 | 1800 | — | — | `data/thumbnails/mp_rocketriot_3p_1.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_3P_2.txt` | Wake of Eternity | RR | 3 | 4285×4285 | 18.00 | 239x239 | 22 | 0 | 0 | TrunkPort 3, Rocket 3, FuelStn 9, RestrZone 4, Tree 18 | 1800 | — | — | `data/thumbnails/mp_rocketriot_3P_2.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_3P_3.txt` | Heart of Chaos | RR | 3 | 4500×4500 | 16.00 | 282x282 | 7 | 3 | 0 | TrunkPort 3, Rocket 3, FuelStn 9, Turret 6 | 1800 | — | Darwinian@0x8 Darwinian@1x8 Darwinian@2x8 | `data/thumbnails/mp_rocketriot_3P_3.bmp` | Y | official retail |
+| `data/levels/mp_rocketriot_4P_1.txt` | Threads of Fate | RR | 4 | 4186×4186 | 18.00 | 233x233 | 17 | 0 | 255:12 | TrunkPort 4, Rocket 4, FuelStn 12, RestrZone 4 | 1800 | — | — | `data/thumbnails/mp_rocketriot_4P_1.bmp` | Y | official retail |
+| `data/levels/mp_sandbox.txt` | — | none | 2 | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 0 | Wall 3, CtrlTower 1, Incubator 1, Statue(blocked) 1 | 2500 | — | — | `data/thumbnails/default.bmp` (fallback) | N | sandbox; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_sandbox_all.txt` | — | none | — | 3290×3290 | 20.35 | 162x162 | 1 | 0 | 1:4 | CtrlTower 2, Incubator 2, Tree 2 | -1 | — | — | `data/thumbnails/default.bmp` (fallback) | N | sandbox; hidden (GameTypes none); not in retail data |
+| `data/levels/mp_skirmish_2p_4.txt` | Hamburger Hill | DOM | 2 | 2000×2000 | 12.00 | 167x167 | 2 | 0 | 0:1;1:1;255:8 | TrunkPort 1, Tree 9 | 1800 | — | — | `data/thumbnails/mp_skirmish_2p_4.bmp` | Y | official retail |
+| `data/levels/mp_skirmish_3P_1.txt` | Leap of Faith | DOM | 3 | 6000×6000 | 20.00 | 300x300 | 10 | 1 | 0:2;1:2;2:2;255:9 | Turret 6, Fence 95, JumpPad 18, RestrZone 3, Tree 9 | 1800 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | `data/thumbnails/mp_skirmish_3P_1.bmp` | Y | official retail |
+| `data/levels/mp_tankbattle_2P.txt` | 2P TankBattle Arena | TANK | 2 | 2000×2000 | 12.00 | 167x167 | 1 | 0 | 0 | Tree 18 | -1 | — | Tank@0x1 Tank@1x1 | `data/thumbnails/mp_tankbattle_2P.bmp` | N | TankBattle [B:DEBUG]; not in retail data |
+| `data/levels/mp_tankbattle_3P.txt` | 3P TankBattle Arena | TANK | 3 | 2000×2000 | 12.00 | 167x167 | 2 | 0 | 0 | Tree 18 | -1 | — | Tank@0x1 Tank@1x1 Tank@2x1 | `data/thumbnails/mp_tankbattle_3P.bmp` | N | TankBattle [B:DEBUG]; not in retail data |
+| `data/levels/mp_tankbattle_4P.txt` | 4P TankBattle Arena | TANK | 4 | 2000×2000 | 12.00 | 167x167 | 1 | 0 | 0 | Tree 23 | -1 | — | Tank@0x1 Tank@1x1 Tank@2x1 Tank@3x1 | `data/thumbnails/mp_tankbattle_4P.bmp` | N | TankBattle [B:DEBUG]; not in retail data |
 <!-- /S08:master -->
 
 ### 3.2 Identity and availability
@@ -213,6 +280,65 @@ One row per `data/levels/mp_*.txt` (generated by `S_08_tables.py` table `master`
 Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); "CRC check" = recomputed value equals the `MAPID_*` constant; "level_enum id" = achievement index (§7.3); "Data shipped in" = which data builds package the file (retail, `prev` PC preview, `hw` hardware-compat, `stress` Assault stress test, `βA`/`βB`/`βC` beta groups; §2.4); "FULL menu" = what the baseline binary does with the file (`listed`; `permitted, data absent` = would be listed but retail data omits it; `mode not compiled` = TankBattle; `never listed` = no valid `GameTypes`); "Demo default" = in `DemoLimitations`' fallback list; "Tutorial" = map hard-wired by `GameMenuWindow::SetupTutorial`/`SetupTutorial2`.
 
 <!-- S08:identity -->
+| File | Bytes | MAPID macro (`code/mapcrc.h`) | CRC = map id | CRC check | level_enum id | Data shipped in | FULL menu (retail data) | PERMITTED_MAPS of other targets | Demo default | Tutorial |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | 27478 | MAPID_MP_ASSAULT_2P_1 | 0xd4cd2a76 | OK | 1 | retail | listed | — | — | — |
+| `data/levels/mp_assault_2P_2.txt` | 31538 | MAPID_MP_ASSAULT_2P_2 | 0xabbfd0b7 | OK | 2 | retail | listed | — | — | — |
+| `data/levels/mp_assault_2p_3.txt` | 24237 | MAPID_MP_ASSAULT_2P_3 | 0x56caa33d | OK | 3 | retail βA | listed | — | — | — |
+| `data/levels/mp_assault_3p_1.txt` | 39102 | MAPID_MP_ASSAULT_3P_1 | 0xb55bfb4f | OK | 4 | retail | listed | — | — | — |
+| `data/levels/mp_assault_3P_2.txt` | 27299 | MAPID_MP_ASSAULT_3P_2 | 0x86e07c2c | OK | 5 | retail βA | listed | — | — | — |
+| `data/levels/mp_assault_3p_3.txt` | 21878 | MAPID_MP_ASSAULT_3P_3 | 0x0617fad4 | OK | 6 | retail βA | listed | — | — | — |
+| `data/levels/mp_assault_4P_1.txt` | 35113 | MAPID_MP_ASSAULT_4P_1 | 0xf9a4dc74 | OK | 7 | retail | listed | — | — | — |
+| `data/levels/mp_assault_4P_2.txt` | 46085 | MAPID_MP_ASSAULT_4P_2 | 0x9a54fad8 | OK | 8 | retail βA | listed | — | — | — |
+| `data/levels/mp_assault_stress.txt` | 16725 | MAPID_MP_ASSAULT_STRESS | 0x6d970875 | OK | — | stress | never listed | STRESS | — | — |
+| `data/levels/mp_benchmark_1.txt` | 12157 | MAPID_MP_BENCHMARK_1 | 0x49bda3c0 | OK | — | hw | never listed | HW | — | — |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | 9212 | MAPID_MP_BLITZKRIEG_2P_1 | 0x5f6db8c1 | OK | 9 | retail | listed | — | — | — |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | 11372 | MAPID_MP_BLITZKRIEG_2P_2 | 0xb96c43ef | OK | 10 | retail βB | listed | βB | — | — |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | 9278 | MAPID_MP_BLITZKRIEG_2P_3 | 0xddeed663 | OK | 11 | retail | listed | — | — | — |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | 15740 | MAPID_MP_BLITZKRIEG_2P_4 | 0xfd2d4309 | OK | 12 | retail | listed | — | — | — |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | 13870 | MAPID_MP_BLITZKRIEG_3P_1 | 0x26843f9a | OK | 13 | retail | listed | — | — | — |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | 17158 | MAPID_MP_BLITZKRIEG_3P_2 | 0x5493f725 | OK | 14 | retail βB | listed | βB | — | — |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | 24174 | MAPID_MP_BLITZKRIEG_4P_2 | 0x8a7a997b | OK | 15 | retail βB | listed | βB | — | — |
+| `data/levels/mp_cts_2p_1.txt` | 5972 | MAPID_MP_CTS_2P_1 | 0x00486fb0 | OK | 16 | retail prev | listed | PREV βA | Y | — |
+| `data/levels/mp_cts_2p_2.txt` | 8520 | MAPID_MP_CTS_2P_2 | 0xa6483bea | OK | 17 | retail βA | listed | — | — | — |
+| `data/levels/mp_cts_2p_3.txt` | 12081 | MAPID_MP_CTS_2P_3 | 0xe933d619 | OK | 18 | retail | listed | — | — | — |
+| `data/levels/mp_cts_2p_4.txt` | 6234 | MAPID_MP_CTS_2P_4 | 0x1b0eb72d | OK | 19 | retail βA | listed | — | — | — |
+| `data/levels/mp_cts_3p_1.txt` | 11514 | MAPID_MP_CTS_3P_1 | 0x8a093da3 | OK | 20 | retail βA | listed | βA | — | — |
+| `data/levels/mp_cts_3P_2.txt` | 15731 | MAPID_MP_CTS_3P_2 | 0xbd40d916 | OK | 21 | retail | listed | — | — | — |
+| `data/levels/mp_cts_3p_3.txt` | 17985 | MAPID_MP_CTS_3P_3 | 0x8d1184ad | OK | — | — | permitted, data absent | — | — | — |
+| `data/levels/mp_cts_4P_1.txt` | 9691 | MAPID_MP_CTS_4P_1 | 0x532eacda | OK | 22 | retail βA | listed | — | — | — |
+| `data/levels/mp_cts_4P_2.txt` | 19417 | MAPID_MP_CTS_4P_2 | 0x79f72913 | OK | 23 | retail | listed | — | — | — |
+| `data/levels/mp_cts_4p_3.txt` | 10740 | MAPID_MP_CTS_4P_3 | 0x926e6071 | OK | 24 | retail | listed | βA | — | — |
+| `data/levels/mp_domination_2P_1.txt` | 10186 | MAPID_MP_DOMINATION_2P_1 | 0x1959ed1e | OK | 25 | retail | listed | — | — | — |
+| `data/levels/mp_domination_2P_2.txt` | 9608 | MAPID_MP_DOMINATION_2P_2 | 0x15e6fc2c | OK | 26 | retail | listed | — | — | — |
+| `data/levels/mp_domination_3P_1.txt` | 9048 | MAPID_MP_DOMINATION_3P_1 | 0x297bcdfb | OK | 27 | retail | listed | — | — | — |
+| `data/levels/mp_domination_4P_1.txt` | 10478 | MAPID_MP_DOMINATION_4P_1 | 0xe5667f49 | OK | 28 | retail | listed | — | — | — |
+| `data/levels/mp_domination_4P_2.txt` | 13775 | MAPID_MP_DOMINATION_4P_2 | 0x6cbcaf9f | OK | 29 | retail | listed | — | — | — |
+| `data/levels/mp_koth_2P_1.txt` | 7770 | MAPID_MP_KOTH_2P_1 | 0xfa61f648 | OK | 30 | retail prev hw βA | listed | PREV HW | Y | Tutorial 1 |
+| `data/levels/mp_koth_2P_2.txt` | 14153 | MAPID_MP_KOTH_2P_2 | 0xd009251b | OK | 31 | retail | listed | — | — | — |
+| `data/levels/mp_koth_2P_3.txt` | 9653 | MAPID_MP_KOTH_2P_3 | 0xa29190a0 | OK | 32 | retail | listed | — | — | — |
+| `data/levels/mp_koth_2P_3b.txt` | 11139 | MAPID_MP_KOTH_2P_3B | 0xf63c8b47 | OK | 33 | retail | listed | — | — | — |
+| `data/levels/mp_koth_3P_1.txt` | 12920 | MAPID_MP_KOTH_3P_1 | 0xc5dbe61e | OK | 34 | retail βA | listed | — | Y | Tutorial 2 |
+| `data/levels/mp_koth_3P_2.txt` | 8030 | MAPID_MP_KOTH_3P_2 | 0xa7581956 | OK | 35 | retail | listed | — | — | — |
+| `data/levels/mp_koth_3P_3.txt` | 11048 | MAPID_MP_KOTH_3P_3 | 0xdb2380e7 | OK | 36 | retail | listed | — | — | — |
+| `data/levels/mp_koth_3P_4.txt` | 10376 | MAPID_MP_KOTH_3P_4 | 0xc59930ef | OK | 37 | retail | listed | — | — | — |
+| `data/levels/mp_koth_4P_1.txt` | 12694 | MAPID_MP_KOTH_4P_1 | 0x88897d17 | OK | 38 | retail prev hw | listed | PREV HW | Y | — |
+| `data/levels/mp_koth_4P_3.txt` | 14797 | MAPID_MP_KOTH_4P_3 | 0x2ba30b8b | OK | 39 | retail | listed | — | — | — |
+| `data/levels/mp_koth_4P_4.txt` | 11142 | MAPID_MP_KOTH_4P_4 | 0x1d6b4438 | OK | 40 | retail | listed | — | — | — |
+| `data/levels/mp_rocketriot_2P_2.txt` | 21014 | MAPID_MP_ROCKETRIOT_2P_2 | 0x0101a2ca | OK | 41 | retail | listed | — | — | — |
+| `data/levels/mp_rocketriot_2p_3.txt` | 22521 | MAPID_MP_ROCKETRIOT_2P_3 | 0x9df8d46e | OK | 42 | retail βA βC | listed | βC | — | — |
+| `data/levels/mp_rocketriot_2P_4.txt` | 12792 | MAPID_MP_ROCKETRIOT_2P_4 | 0x2ca54a88 | OK | 43 | retail βC | listed | βC | — | — |
+| `data/levels/mp_rocketriot_3p_1.txt` | 15677 | MAPID_MP_ROCKETRIOT_3P_1 | 0x847aae73 | OK | 44 | retail βC | listed | βC | Y | — |
+| `data/levels/mp_rocketriot_3P_2.txt` | 25082 | MAPID_MP_ROCKETRIOT_3P_2 | 0xacef90f0 | OK | 45 | retail βA | listed | — | — | — |
+| `data/levels/mp_rocketriot_3P_3.txt` | 16716 | MAPID_MP_ROCKETRIOT_3P_3 | 0x133f8ea6 | OK | 46 | retail | listed | — | — | — |
+| `data/levels/mp_rocketriot_4P_1.txt` | 30571 | MAPID_MP_ROCKETRIOT_4P_1 | 0xc3c28aa1 | OK | 47 | retail βA | listed | — | — | — |
+| `data/levels/mp_sandbox.txt` | 3314 | MAPID_MP_SANDBOX | 0xb2db706d | OK | — | — | never listed | — | — | — |
+| `data/levels/mp_sandbox_all.txt` | 4329 | MAPID_MP_SANDBOX_ALL | 0xa3f63f95 | OK | — | — | never listed | — | — | — |
+| `data/levels/mp_skirmish_2p_4.txt` | 7279 | MAPID_MP_SKIRMISH_2P_4 | 0xa3a30f75 | OK | 48 | retail | listed | — | — | — |
+| `data/levels/mp_skirmish_3P_1.txt` | 21730 | MAPID_MP_SKIRMISH_3P_1 | 0x177cc7b3 | OK | 49 | retail | listed | — | — | — |
+| `data/levels/mp_tankbattle_2P.txt` | 5660 | MAPID_MP_TANKBATTLE_2P | 0x840ab50d | OK | — | — | mode not compiled | — | — | — |
+| `data/levels/mp_tankbattle_3P.txt` | 5683 | MAPID_MP_TANKBATTLE_3P | 0x2b3a6c4c | OK | — | — | mode not compiled | — | — | — |
+| `data/levels/mp_tankbattle_4P.txt` | 6585 | MAPID_MP_TANKBATTLE_4P | 0x43fa87ed | OK | — | — | mode not compiled | — | — | — |
 <!-- /S08:identity -->
 
 ### 3.3 Summary
@@ -242,6 +368,65 @@ Generated table `identity`. CRC = `LevelFile::CalculeCRC` = the map id (§2.3); 
 Format from each BMP header [C]: 53 files are 400×300 8-bit palettised (52 × 121 078 bytes, `default.bmp` 120 778 bytes) and 4 are 400×300 24-bit (360 056 bytes: `mp_cts_3p_3`, `mp_cts_4p_3`, `mp_koth_2P_2`, `mp_koth_3P_4`). No in-engine writer produces map thumbnails — the only screenshot-to-thumbnail routine, `App::SaveThumbnailScreenshot` (256×192), is compiled only under `TARGET_OS_VISTA` for saved-game headers [B:DEAD] [C] `code/app.cpp` — so the 400×300 files were made outside the engine [I] (08-U7). The `LevelFile::m_thumbnailFilename` field (default `default.bmp`) is used only by the `.mwm` writer (§8.8). Generated table `thumbs`:
 
 <!-- S08:thumbs -->
+| Thumbnail | Bytes | Format | Level (case-insensitive stem) | Note | Data shipped in |
+|---|---|---|---|---|---|
+| `data/thumbnails/default.bmp` | 120778 | 400×300×8bpp | — | fallback (MapImageButton) when thumbnails/<stem>.bmp missing | retail prev hw stress βA βB βC |
+| `data/thumbnails/mp_assault_2P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2P_1.txt` | — | retail |
+| `data/thumbnails/mp_assault_2P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2P_2.txt` | — | retail |
+| `data/thumbnails/mp_assault_2p_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_2p_3.txt` | — | retail βA |
+| `data/thumbnails/mp_assault_3P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_3p_1.txt` | — | retail |
+| `data/thumbnails/mp_assault_3P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_3P_2.txt` | — | retail βA |
+| `data/thumbnails/mp_assault_3P_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_3p_3.txt` | — | retail βA |
+| `data/thumbnails/mp_assault_4P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_4P_1.txt` | — | retail |
+| `data/thumbnails/mp_assault_4P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_assault_4P_2.txt` | — | retail βA |
+| `data/thumbnails/mp_benchmark_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_benchmark_1.txt` | — | hw |
+| `data/thumbnails/mp_blitzkrieg_2p_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_2p_1.txt` | — | retail |
+| `data/thumbnails/mp_blitzkrieg_2p_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_2p_2.txt` | — | retail βB |
+| `data/thumbnails/mp_blitzkrieg_2p_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_2P_3.txt` | — | retail |
+| `data/thumbnails/mp_blitzkrieg_2p_4.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_2P_4.txt` | — | retail |
+| `data/thumbnails/mp_blitzkrieg_3P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_3P_1.txt` | — | retail |
+| `data/thumbnails/mp_blitzkrieg_3P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_3P_2.txt` | — | retail βB |
+| `data/thumbnails/mp_blitzkrieg_4P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_blitzkrieg_4P_2.txt` | — | retail βB |
+| `data/thumbnails/mp_cts_2p_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_2p_1.txt` | — | retail prev |
+| `data/thumbnails/mp_cts_2p_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_2p_2.txt` | — | retail βA |
+| `data/thumbnails/mp_cts_2p_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_2p_3.txt` | — | retail |
+| `data/thumbnails/mp_cts_2p_4.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_2p_4.txt` | — | retail βA |
+| `data/thumbnails/mp_cts_3p_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_3p_1.txt` | — | retail βA |
+| `data/thumbnails/mp_cts_3P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_3P_2.txt` | — | retail |
+| `data/thumbnails/mp_cts_3p_3.bmp` | 360056 | 400×300×24bpp | `data/levels/mp_cts_3p_3.txt` | — | — |
+| `data/thumbnails/mp_cts_4P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_4P_1.txt` | — | retail βA |
+| `data/thumbnails/mp_cts_4P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_cts_4P_2.txt` | — | retail |
+| `data/thumbnails/mp_cts_4p_3.bmp` | 360056 | 400×300×24bpp | `data/levels/mp_cts_4p_3.txt` | — | retail |
+| `data/thumbnails/mp_domination_2P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_domination_2P_1.txt` | — | retail |
+| `data/thumbnails/mp_domination_2P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_domination_2P_2.txt` | — | retail |
+| `data/thumbnails/mp_domination_3P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_domination_3P_1.txt` | — | retail |
+| `data/thumbnails/mp_domination_4P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_domination_4P_1.txt` | — | retail |
+| `data/thumbnails/mp_domination_4P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_domination_4P_2.txt` | — | retail |
+| `data/thumbnails/mp_koth_2P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_2P_1.txt` | — | retail prev hw βA |
+| `data/thumbnails/mp_koth_2P_2.bmp` | 360056 | 400×300×24bpp | `data/levels/mp_koth_2P_2.txt` | — | retail |
+| `data/thumbnails/mp_koth_2P_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_2P_3.txt` | — | retail |
+| `data/thumbnails/mp_koth_2P_3b.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_2P_3b.txt` | — | retail |
+| `data/thumbnails/mp_koth_2P_4.bmp` | 121078 | 400×300×8bpp | — | level only in data/levels/old: data/levels/old/mp_koth_2P_4.txt | retail |
+| `data/thumbnails/mp_koth_3P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_3P_1.txt` | — | retail βA |
+| `data/thumbnails/mp_koth_3P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_3P_2.txt` | — | retail |
+| `data/thumbnails/mp_koth_3P_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_3P_3.txt` | — | retail |
+| `data/thumbnails/mp_koth_3P_4.bmp` | 360056 | 400×300×24bpp | `data/levels/mp_koth_3P_4.txt` | — | retail |
+| `data/thumbnails/mp_koth_4P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_4P_1.txt` | — | retail prev hw |
+| `data/thumbnails/mp_koth_4P_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_4P_3.txt` | — | retail |
+| `data/thumbnails/mp_koth_4P_4.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_koth_4P_4.txt` | — | retail |
+| `data/thumbnails/mp_rocketriot_2P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_2P_2.txt` | — | retail |
+| `data/thumbnails/mp_rocketriot_2p_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_2p_3.txt` | — | retail βA βC |
+| `data/thumbnails/mp_rocketriot_2P_4.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_2P_4.txt` | — | retail βC |
+| `data/thumbnails/mp_rocketriot_3p_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_3p_1.txt` | — | retail βC |
+| `data/thumbnails/mp_rocketriot_3P_2.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_3P_2.txt` | — | retail βA |
+| `data/thumbnails/mp_rocketriot_3P_3.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_3P_3.txt` | — | retail |
+| `data/thumbnails/mp_rocketriot_4P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_rocketriot_4P_1.txt` | — | retail βA |
+| `data/thumbnails/mp_skirmish_2p_3.bmp` | 121078 | 400×300×8bpp | — | no level file in tree | retail |
+| `data/thumbnails/mp_skirmish_2p_4.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_skirmish_2p_4.txt` | — | retail |
+| `data/thumbnails/mp_skirmish_3P_1.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_skirmish_3P_1.txt` | — | retail |
+| `data/thumbnails/mp_tankbattle_2P.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_tankbattle_2P.txt` | — | — |
+| `data/thumbnails/mp_tankbattle_3P.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_tankbattle_3P.txt` | — | — |
+| `data/thumbnails/mp_tankbattle_4P.bmp` | 121078 | 400×300×8bpp | `data/levels/mp_tankbattle_4P.txt` | — | — |
 <!-- /S08:thumbs -->
 
 Mismatches [C]: every top-level `mp_*` file except `mp_assault_stress`, `mp_sandbox` and `mp_sandbox_all` has a thumbnail (those three would show `default.bmp`); two thumbnails have no top-level level: `mp_koth_2P_4.bmp` (level only in `data/levels/old/mp_koth_2P_4.txt`, "Pillar of Light") and `mp_skirmish_2p_3.bmp` (no level anywhere; the language file has `mp_skirmish_2P_3_name` "Stairway to Heaven" with description "INSERT DESCRIPTION HERE" — probably the precursor of `mp_rocketriot_2p_3` [I]). Both ship in retail data although nothing can display them.
@@ -255,6 +440,92 @@ Mode rules themselves (scoring, timers, win conditions) are in [01 §4](01_game_
 Order as produced by `GameMenu::CreateMapList` (§2.2): nearly-alphabetical base order, then stable sort by `NumPlayers`, then difficulty rank. The sort keys are [C]; the order of ties depends on the archive index order through `OrderedInsert` and is [I] (08-U4). Mode index = blueprint index (`data/multiwinia.txt` order = `Multiwinia::GameType*` enum). TankBattle is shown from the source tree (no retail data; mode not compiled in FULL). Generated table `modes` from `_work/drafts/X4_mode_maplists.csv`:
 
 <!-- S08:modes -->
+**0 Domination** (retail data, 9 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_domination_2P_2.txt` | The Eternal Guardians | 2 | basic | — |
+| 1 | `data/levels/mp_skirmish_2p_4.txt` | Hamburger Hill | 2 | basic | — |
+| 2 | `data/levels/mp_domination_2P_1.txt` | Barriers to Progress | 2 | intermediate | — |
+| 3 | `data/levels/mp_koth_2P_2.txt` | Shrine of Memory | 2 | intermediate | 10 |
+| 4 | `data/levels/mp_koth_2P_3.txt` | The Bitter Front | 2 | intermediate | 10 |
+| 5 | `data/levels/mp_domination_3P_1.txt` | Field of Unending Dawn | 3 | basic | 10 |
+| 6 | `data/levels/mp_skirmish_3P_1.txt` | Leap of Faith | 3 | advanced | — |
+| 7 | `data/levels/mp_domination_4P_1.txt` | The Holy Tree | 4 | intermediate | 15 |
+| 8 | `data/levels/mp_domination_4P_2.txt` | A Monument to the Heavens | 4 | advanced | 10 |
+
+**1 KingOfTheHill** (retail data, 9 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_koth_2P_1.txt` | The Eternal Guardians | 2 | basic | — |
+| 1 | `data/levels/mp_koth_2P_3b.txt` | The Bitter Front | 2 | intermediate | 10 |
+| 2 | `data/levels/mp_koth_3P_2.txt` | Field of Unending Dawn | 3 | basic | 5 |
+| 3 | `data/levels/mp_koth_3P_1.txt` | Pursuit of Victory | 3 | intermediate | 10 |
+| 4 | `data/levels/mp_koth_3P_3.txt` | The Deceitful Vale | 3 | intermediate | 10 |
+| 5 | `data/levels/mp_koth_3P_4.txt` | The Walled Garden | 3 | intermediate | 10 |
+| 6 | `data/levels/mp_koth_4P_4.txt` | Barbs of Madness | 4 | basic | — |
+| 7 | `data/levels/mp_koth_4P_1.txt` | The Holy Tree | 4 | intermediate | 10 |
+| 8 | `data/levels/mp_koth_4P_3.txt` | A Monument to the Heavens | 4 | advanced | 10 |
+
+**2 CaptureTheStatue** (retail data, 9 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_cts_2p_1.txt` | Mountain of Lost Souls | 2 | basic | — |
+| 1 | `data/levels/mp_cts_2p_4.txt` | The Unending Peaks | 2 | basic | — |
+| 2 | `data/levels/mp_cts_2p_2.txt` | The Bloody Shrine | 2 | intermediate | — |
+| 3 | `data/levels/mp_cts_2p_3.txt` | Price of War | 2 | intermediate | — |
+| 4 | `data/levels/mp_cts_3p_1.txt` | Melting Pot | 3 | intermediate | — |
+| 5 | `data/levels/mp_cts_3P_2.txt` | The Tortured Expanse | 3 | intermediate | — |
+| 6 | `data/levels/mp_cts_4P_1.txt` | Field of Unlife | 4 | advanced | — |
+| 7 | `data/levels/mp_cts_4P_2.txt` | Scorched Earth | 4 | advanced | — |
+| 8 | `data/levels/mp_cts_4p_3.txt` | Maze of Despair | 4 | advanced | — |
+
+**3 Assault** (retail data, 8 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_assault_2P_1.txt` | Beneath the Baleful Eye | 2 | basic | 15 |
+| 1 | `data/levels/mp_assault_2p_3.txt` | Dog Green Sector | 2 | intermediate | 15 |
+| 2 | `data/levels/mp_assault_2P_2.txt` | The Woeful Plateau | 2 | advanced | 15 |
+| 3 | `data/levels/mp_assault_3p_1.txt` | The Third Kind | 2 | advanced | 15 |
+| 4 | `data/levels/mp_assault_3p_3.txt` | Fort Zulu | 3 | intermediate | 15 |
+| 5 | `data/levels/mp_assault_3P_2.txt` | The Hard Way | 3 | advanced | 15 |
+| 6 | `data/levels/mp_assault_4P_1.txt` | Beyond the Pale | 4 | advanced | 15 |
+| 7 | `data/levels/mp_assault_4P_2.txt` | The Last Stand | 4 | advanced | 20 |
+
+**4 RocketRiot** (retail data, 7 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_rocketriot_2P_4.txt` | Bridge of Light | 2 | basic | — |
+| 1 | `data/levels/mp_rocketriot_2P_2.txt` | Echoes of the Future | 2 | intermediate | — |
+| 2 | `data/levels/mp_rocketriot_2p_3.txt` | Stairway to Heaven | 2 | intermediate | — |
+| 3 | `data/levels/mp_rocketriot_3p_1.txt` | The Second Beginning | 3 | basic | — |
+| 4 | `data/levels/mp_rocketriot_3P_2.txt` | Wake of Eternity | 3 | intermediate | — |
+| 5 | `data/levels/mp_rocketriot_3P_3.txt` | Heart of Chaos | 3 | advanced | — |
+| 6 | `data/levels/mp_rocketriot_4P_1.txt` | Threads of Fate | 4 | advanced | — |
+
+**5 Blitzkrieg** (retail data, 7 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_blitzkrieg_2p_1.txt` | Confrontation Point | 2 | basic | — |
+| 1 | `data/levels/mp_blitzkrieg_2P_3.txt` | The Eye of the World | 2 | intermediate | — |
+| 2 | `data/levels/mp_blitzkrieg_2p_2.txt` | The Bleak Mountains | 2 | advanced | — |
+| 3 | `data/levels/mp_blitzkrieg_2P_4.txt` | The Apex of Infinity | 2 | advanced | — |
+| 4 | `data/levels/mp_blitzkrieg_3P_2.txt` | The Wheel | 3 | basic | — |
+| 5 | `data/levels/mp_blitzkrieg_3P_1.txt` | Upon the Blazing Sea | 3 | intermediate | — |
+| 6 | `data/levels/mp_blitzkrieg_4P_2.txt` | Gridlock | 4 | advanced | — |
+
+**6 TankBattle** (source tree only, 3 maps)
+
+| Menu index | File | English name (IP) | Players | Difficulty | PlayTime (min) |
+|---|---|---|---|---|---|
+| 0 | `data/levels/mp_tankbattle_2P.txt` | 2P TankBattle Arena | 2 | basic | — |
+| 1 | `data/levels/mp_tankbattle_3P.txt` | 3P TankBattle Arena | 3 | basic | — |
+| 2 | `data/levels/mp_tankbattle_4P.txt` | 4P TankBattle Arena | 4 | basic | — |
 <!-- /S08:modes -->
 
 Start positions and colours: Location-side start positions are assigned at load (§2.5); the lobby's colour/side choice and Assault side assignment are in [01 §2.5](01_game_modes.md#25-teams-slots-start-positions-colours-co-op-and-assault-sides).
@@ -284,6 +555,27 @@ Start positions and colours: Location-side start positions are assigned at load 
 Zone table for KOTH and CTS (generated table `zones`; owner `pN` = start position, `n` = neutral; position rounded to wu):
 
 <!-- S08:zones -->
+| File | Mode | Players | Zones | Zone id:owner radius @(x,z) |
+|---|---|---|---|---|
+| `data/levels/mp_cts_2p_1.txt` | CTS | 2 | 4 | 9:p0 r80 @(1610,1442); 10:p1 r80 @(801,866); 13:n r40 @(722,1648); 1:n r40 @(1686,550) |
+| `data/levels/mp_cts_2p_2.txt` | CTS | 2 | 4 | 5:n r69.8 @(1133,1178); 6:p0 r80 @(1107,1810); 7:p1 r80 @(1087,546); 29:n r69.8 @(1133,1178) |
+| `data/levels/mp_cts_2p_3.txt` | CTS | 2 | 4 | 0:p0 r109.27 @(1003,1358); 1:p1 r109.27 @(1356,1344); 2:n r50 @(1072,620); 4:n r50 @(1204,617) |
+| `data/levels/mp_cts_2p_4.txt` | CTS | 2 | 3 | 0:p1 r100 @(737,1293); 1:p0 r100 @(1471,773); 2:n r50 @(1107,1033) |
+| `data/levels/mp_cts_3p_1.txt` | CTS | 3 | 6 | 0:p2 r100 @(1435,1328); 1:p0 r100 @(1631,1400); 2:p1 r100 @(1462,1541); 3:n r50 @(1908,1992); 4:n r50 @(821,1482); 5:n r50 @(1763,793) |
+| `data/levels/mp_cts_3P_2.txt` | CTS | 3 | 8 | 0:n r60.54 @(1062,1347); 1:n r50 @(352,285); 2:n r50 @(944,2561); 3:n r50 @(2465,801); 4:p0 r100 @(608,1413); 5:p1 r100 @(1118,780); 6:p2 r100 @(1524,1577); 81:n r60 @(1154,1259) |
+| `data/levels/mp_cts_3p_3.txt` | CTS | 3 | 9 | 0:n r50 @(735,824); 10:n r50 @(1014,1719); 29:n r50 @(1717,758); 30:p1 r75 @(1224,1108); 31:p2 r75 @(1337,1272); 32:p0 r75 @(1114,1275); 64:n r50 @(735,824); 65:n r50 @(1014,1719); 66:n r50 @(1717,758) |
+| `data/levels/mp_cts_4P_1.txt` | CTS | 4 | 7 | 1:n r60 @(1390,1500); 2:n r60 @(1221,1541); 3:p1 r100 @(1283,485); 4:p0 r100 @(437,1409); 5:p3 r100 @(1275,2363); 6:p2 r100 @(2182,1513); 0:n r60 @(1269,1377) |
+| `data/levels/mp_cts_4P_2.txt` | CTS | 4 | 10 | 0:p0 r100 @(1513,1074); 1:p1 r100 @(2287,1478); 2:p2 r100 @(1805,2270); 3:p3 r100 @(1084,1806); 4:n r50 @(2167,604); 7:n r50 @(682,980); 8:n r50 @(1003,2694); 9:n r50 @(2560,2407); 6:n r63.38 @(1606,1676); 107:n r50 @(1606,1677) |
+| `data/levels/mp_cts_4p_3.txt` | CTS | 4 | 7 | 0:p1 r100 @(2230,1760); 1:p0 r100 @(1024,2168); 2:p2 r100 @(2237,471); 5:p3 r100 @(583,615); 6:n r75 @(1578,984); 7:n r75 @(1545,1337); 8:n r75 @(1163,1494) |
+| `data/levels/mp_koth_2P_1.txt` | KOTH | 2 | 3 | 21:n r150 @(1879,1923); 23:n r150 @(1844,750); 9:n r150 @(1209,1400) |
+| `data/levels/mp_koth_2P_3b.txt` | KOTH | 2 | 4 | 0:n r100 @(1927,1379); 1:n r100 @(1089,1189); 2:n r100 @(986,2124); 3:n r100 @(505,787) |
+| `data/levels/mp_koth_3P_1.txt` | KOTH | 3 | 4 | 0:n r160 @(1595,1595); 16:n r80 @(437,1157); 17:n r80 @(2563,566); 18:n r80 @(1766,2714) |
+| `data/levels/mp_koth_3P_2.txt` | KOTH | 3 | 4 | 0:n r80 @(791,1187); 1:n r80 @(929,1445); 2:n r80 @(939,917); 3:n r80 @(500,1173) |
+| `data/levels/mp_koth_3P_3.txt` | KOTH | 3 | 5 | 0:p0 r150 @(1389,1943); 1:p1 r150 @(1899,1135); 2:p2 r150 @(900,949); 20:n r101.17 @(1389,1394); 6:n r140 @(1388,1393) |
+| `data/levels/mp_koth_3P_4.txt` | KOTH | 3 | 1 | 0:n r86.2 @(1558,1411) |
+| `data/levels/mp_koth_4P_1.txt` | KOTH | 4 | 11 | 0:n r200 @(1329,1461); 1:n r125 @(1329,1461); 2:n r50 @(1329,1461); 3:n r100 @(623,642); 4:n r100 @(550,2134); 5:n r100 @(2211,2275); 6:n r100 @(2078,595); 84:n r50 @(2212,2274); 85:n r50 @(549,2134); 86:n r50 @(624,642); 87:n r50 @(2078,595) |
+| `data/levels/mp_koth_4P_3.txt` | KOTH | 4 | 12 | 0:n r233.01 @(2142,2092); 1:n r90 @(2195,1988); 2:n r90 @(2198,2184); 4:n r90 @(2022,2091); 5:n r220 @(841,830); 6:n r90 @(953,836); 7:n r90 @(778,737); 8:n r90 @(777,933); 26:n r100 @(2137,896); 27:n r50 @(2137,896); 28:n r100 @(807,2103); 29:n r50 @(807,2103) |
+| `data/levels/mp_koth_4P_4.txt` | KOTH | 4 | 15 | 0:n r555.24 @(1344,1481); 1:n r50 @(1344,1481); 2:n r193.87 @(1343,1482); 3:n r122.63 @(1629,1708); 4:n r122 @(1052,1723); 5:n r122 @(1084,1210); 6:n r122 @(1609,1217); 7:n r50 @(1630,1709); 8:n r50 @(1608,1219); 9:n r50 @(1085,1211); 10:n r50 @(1052,1724); 11:n r50 @(1341,1856); 12:n r50 @(1335,1120); 13:n r50 @(986,1462); 14:n r50 @(1726,1464) |
 <!-- /S08:zones -->
 
 ### 4.5 Assault (`Assault`, blueprint 3) — 8 maps (+ `mp_assault_stress`)
@@ -292,6 +584,17 @@ Zone table for KOTH and CTS (generated table `zones`; owner `pN` = start positio
 - Generated table `assault` (recomputed from the raw `Buildings` blocks):
 
 <!-- S08:assault -->
+| File | Players | Attacker pos | Defender pos | PulseBomb (id, owner, startTime, links) | ControlStations id(owner→controlBuildingId) | TrunkPorts pos:n | DefenderPopCap | PlayTime | LevelOptions | InvalidCrates | Co-op groups | Starting units |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | 2 | 1 | 0 | id 103 p0 t=900s links 15 12 11 | 11(n→-1) 12(n→-1) 15(n→-1) | 0:1;1:4 | 350 | 15 | trunkportreinforcements=100 | Squad Airstrike Nuke Meteor | — | Armour@0x2 Darwinian@0x325 |
+| `data/levels/mp_assault_2P_2.txt` | 2 | 1 | 0 | id 0 p0 t=900s links 52 51 50 | 50(n→-1) 51(n→-1) 52(n→-1) | 0:1;1:5 | 275 | 15 | trunkportreinforcements=100 trunkportarmour=1 | — | — | Darwinian@0x209 |
+| `data/levels/mp_assault_2p_3.txt` | 2 | 0 | 1 | id 82 p1 t=900s links 86 88 87 | 55(n→42) 43(n→45) 86(n→-1) 87(n→-1) 88(n→-1) | 0:3 | -1 | 15 | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | Squad Airstrike Nuke Meteor | — | Darwinian@0x8 Darwinian@1x300 |
+| `data/levels/mp_assault_3p_1.txt` | 2 | 1 | 0 | id 7 p0 t=900s links 65 64 63 | 63(n→-1) 64(n→-1) 65(n→-1) | 0:1;1:6 | 250 | 15 | trunkportreinforcements=75 | Armour | — | Armour@0x1 Darwinian@0x103 Darwinian@5x35 |
+| `data/levels/mp_assault_3P_2.txt` | 3 | 1 2 | 0 | id 0 p0 t=900s links 157 159 158 | 157(n→-1) 158(n→-1) 159(n→-1) | 0:1;1:4;2:4 | 250 | 15 | trunkportreinforcements=75 | Armour | 0 / 1 2 | Armour@0x2 Darwinian@0x180 |
+| `data/levels/mp_assault_3p_3.txt` | 3 | 1 2 | 0 | id 60 p0 t=900s links 62 61 63 | 61(p0→-1) 62(p0→-1) 63(p0→-1) | 1:4;2:4 | -1 | 15 | trunkportreinforcements=100 | — | 0 / 1 2 | Darwinian@0x260 |
+| `data/levels/mp_assault_4P_1.txt` | 4 | 0 1 | 2 3 | id 0 p2 t=900s links 44 43 41 42 | 41(n→-1) 42(n→-1) 43(n→-1) 44(n→-1) | 0:3;1:3;2:1;3:1 | 200 | 15 | trunkportreinforcements=75 | Armour | 0 1 / 2 3 | Armour@2x1 Armour@3x1 Darwinian@2x100 Darwinian@3x68 |
+| `data/levels/mp_assault_4P_2.txt` | 4 | 2 3 | 0 1 | id 0 p1 t=1200s links 134 135 133 | 133(n→-1) 134(n→-1) 135(n→-1) | 0:1;1:1;2:4;3:4 | 200 | 20 | trunkportreinforcements=60 trunkportarmour=3 | Armour | 0 1 / 2 3 | Darwinian@0x63 Darwinian@1x95 |
+| `data/levels/mp_assault_stress.txt` | 2 | 0 | 1 | id 34 p1 t=600s links 35 37 36 | 35(n→-1) 36(n→-1) 37(n→-1) | 0:5;1:2 | — | — | trunkportreinforcements=250 defenderreinforcementtype=Armour | — | — | Darwinian@1x90 |
 <!-- /S08:assault -->
 
 Conventions [C data]:
@@ -307,6 +610,15 @@ Conventions [C data]:
 Generated table `rr` (owner field per position; `255` = neutral):
 
 <!-- S08:rr -->
+| File | Players | EscapeRocket | FuelStation | FuelGenerator | FuelPipe | TrunkPort | Pylon | SolarPanel | PowerSplitter | PylonEnd | SpawnPoints | Starting units | LevelOptions | InvalidCrates |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_rocketriot_2P_2.txt` | 2 | 0:1;1:1 | 0:3;1:3 | 0:3;1:3 | 22 | 0:1;1:1 | 0:3;1:3;255:13 | 21 | 3 | 255:6 | 255:2 | — | — | — |
+| `data/levels/mp_rocketriot_2p_3.txt` | 2 | 0:1;1:1 | 0:3;1:3 | 0:3;1:3 | 56 | 0:1;1:1 | 0:3;1:3;255:6 | 15 | 3 | 255:6 | — | — | — | — |
+| `data/levels/mp_rocketriot_2P_4.txt` | 2 | 0:1;1:1 | 0:3;1:3 | 255:6 | 10 | 0:1;1:1 | 0:3;1:3;255:12 | 16 | 3 | 255:6 | — | — | — | Armour |
+| `data/levels/mp_rocketriot_3p_1.txt` | 3 | 0:1;1:1;2:1 | 0:3;1:3;2:3 | 0:3;1:3;2:3 | 21 | 0:1;1:1;2:1 | 0:3;1:3;2:3;255:17 | 21 | 4 | 255:9 | — | — | — | — |
+| `data/levels/mp_rocketriot_3P_2.txt` | 3 | 0:1;1:1;2:1 | 0:3;1:3;2:3 | 255:9 | 21 | 0:1;1:1;2:1 | 0:3;1:3;2:3;255:31 | 24 | 4 | 255:9 | — | — | — | — |
+| `data/levels/mp_rocketriot_3P_3.txt` | 3 | 0:1;1:1;2:1 | 0:3;1:3;2:3 | 255:9 | 24 | 0:1;1:1;2:1 | 0:3;1:3;2:3;255:16 | 18 | 4 | 255:9 | — | Darwinian@0x8 Darwinian@1x8 Darwinian@2x8 | nogunturrets | — |
+| `data/levels/mp_rocketriot_4P_1.txt` | 4 | 0:1;1:1;2:1;3:1 | 0:3;1:3;2:3;3:3 | 255:12 | 24 | 0:1;1:1;2:1;3:1 | 0:3;1:3;2:3;3:3;255:51 | 22 | 5 | 255:12 | 255:12 | — | — | — |
 <!-- /S08:rr -->
 
 Conventions [C data]: per start position **1 `EscapeRocket`** (extra tokens `fuelLink −1, fuel 0.00, passengers 0, spawnBuildingId −1, spawnCompleted 0`), **3 `FuelStation`**, **1 `TrunkPort`**, **3 team-owned `Pylon`**; **3 `FuelGenerator` per position** (team-owned on `mp_rocketriot_2P_2`, `mp_rocketriot_2p_3`, `mp_rocketriot_3p_1`; neutral on the other four), `FuelPipe` chains, a shared neutral power grid (`SolarPanel` 15–24, `PowerSplitter` 3–5, `PylonEnd` 3 per position, neutral `Pylon`s). The trunk port is the main Darwinian source; starting Darwinians only on `mp_rocketriot_3P_3` (8 per position). Resolved: X4 stated that Rocket Riot maps have "no spawn points"; the data show neutral spawn networks on `mp_rocketriot_2P_2` (2 `SpawnPoint` + `SpawnPointMaster`) and `mp_rocketriot_4P_1` (12 + master) [C]. No `LevelOptions` are needed (trunk-port reinforcements are intrinsic to the mode, [01](01_game_modes.md)); `mp_rocketriot_3P_3` sets `nogunturrets` and has 6 neutral turrets; `mp_rocketriot_2P_4` bans `Armour` crates. **Special lighting is forced for every Rocket Riot match** regardless of the level's `Effects` (§5.3) [C] `code/location.cpp:Location::RenderBuildings`.
@@ -316,6 +628,15 @@ Conventions [C data]: per start position **1 `EscapeRocket`** (extra tokens `fue
 Flags are `MultiwiniaZone` rows (r 100; 75 on `mp_blitzkrieg_3P_2`) whose extra tokens after `size` are an **adjacency list** of other flag ids. **One team-owned zone per position = that player's base flag** (recorded per team and reset to neutral at initialisation, [03 §8.1](03_buildings_and_world_objects.md#81-multiwiniazone)), plus 1–5 neutral flags. Links are written one-way in the files and made bidirectional at run time ([01 §4](01_game_modes.md#4-per-mode-specifications)). Generated table `blitz` (flags in file order; `pN` = position, `n` = neutral):
 
 <!-- S08:blitz -->
+| File | Players | Flags | Flag id:owner radius→links (file order) | TrunkPorts | SpawnPoints | LevelOptions |
+|---|---|---|---|---|---|---|
+| `data/levels/mp_blitzkrieg_2p_1.txt` | 2 | 3 | 4:n r100→6; 5:p0 r100→4; 6:p1 r100→— | 0:1;1:1 | 255:1 | trunkportreinforcements=100 trunkportarmour=3 |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | 2 | 5 | 0:p0 r100→—; 1:n r100→0; 2:n r100→1; 3:p1 r100→4; 4:n r100→2 | 0:1;1:1 | 0:2;1:2;255:2 | trunkportreinforcements=100 trunkportarmour=3 |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | 2 | 3 | 0:n r100→1; 1:p0 r100→—; 2:p1 r100→0 | 0:1;1:1;255:1 | 255:4 | trunkportreinforcements=100 trunkportarmour=3 |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | 2 | 6 | 0:p0 r100→2,4; 1:p1 r100→—; 2:n r100→3; 3:n r100→1; 4:n r100→5; 5:n r100→1 | 0:1;1:1;255:1 | 255:3 | nogunturrets |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | 3 | 7 | 0:p0 r100→4; 1:p1 r100→5; 2:p2 r100→5,3; 3:n r100→0; 4:n r100→1; 5:n r100→6; 6:n r100→4,3 | 0:1;1:1;2:1 | — | airstrikecapturezones=3 |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | 3 | 7 | 0:p0 r75→2,3,1; 1:n r75→6; 2:n r75→6; 3:n r75→4; 4:p1 r75→2,5; 5:n r75→6; 6:p2 r75→— | 0:1;1:1;2:1 | — | airstrikecapturezones=3 |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | 4 | 9 | 1:p1 r100→8,11; 2:p0 r100→10; 4:p2 r100→—; 6:p3 r100→9; 8:n r100→4; 9:n r100→4; 10:n r100→6; 11:n r100→2; 12:n r100→10,9,8,11 | 0:1;1:1;2:1;3:1 | — | airstrikecapturezones=3 |
 <!-- /S08:blitz -->
 
 Economy [C data]: 1 `TrunkPort` per position on all 7 (+1 neutral on `mp_blitzkrieg_2P_3`, `mp_blitzkrieg_2P_4`); the 2-player maps also have spawn points (`mp_blitzkrieg_2p_2`: 2 per position + 2 neutral; the others 1–4 neutral); the 2-player maps use `trunkportreinforcements 100` + `trunkportarmour 3` (`mp_blitzkrieg_2P_4` instead `nogunturrets`); the 3- and 4-player maps use `airstrikecapturezones 3`.
@@ -399,6 +720,65 @@ The lobby's seasonal snow ("Christmas mode", `ChristmasModEnabled`) also calls `
 Values exactly as interpreted by `ParseMultiwiniaOptions` (blank = key absent → default). `AttackingTeams` and `CoopGroup*` values are **start positions**. Generated table `options`:
 
 <!-- S08:options -->
+| File | GameTypes | NumPlayers | PopulationCap | DefenderPopulationCap | PlayTime | Difficulty | Effects | LevelOptions | InvalidCrates | AttackingTeams | Coop | CoopGroup1 / 2 | OfficialLevel | Name |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | Assault | 2 | 2000 | 350 | 15 | basic | — | trunkportreinforcements=100 | Squad Airstrike Nuke Meteor | 1 | — | — | Y | — |
+| `data/levels/mp_assault_2P_2.txt` | Assault | 2 | 2000 | 275 | 15 | advanced | — | trunkportreinforcements=100 trunkportarmour=1 | — | 1 | — | — | Y | — |
+| `data/levels/mp_assault_2p_3.txt` | Assault | 2 | 2000 | -1 | 15 | intermediate | — | trunkportreinforcements=100 trunkportarmour=3 defenderreinforcementtype=AirStrike forceradarteammatch noradarcontrol | Squad Airstrike Nuke Meteor | 0 | — | — | Y | NewLevel |
+| `data/levels/mp_assault_3p_1.txt` | Assault | 2 | 1600 | 250 | 15 | advanced | — | trunkportreinforcements=75 | Armour | 1 | — | — | Y | NewLevel |
+| `data/levels/mp_assault_3P_2.txt` | Assault | 3 | 1500 | 250 | 15 | advanced | — | trunkportreinforcements=75 | Armour | 1 2 |  ForceCoop | 0 / 1 2 | Y | — |
+| `data/levels/mp_assault_3p_3.txt` | Assault | 3 | 1800 | -1 | 15 | intermediate | snow | trunkportreinforcements=100 | — | 1 2 |  ForceCoop | 0 / 1 2 | Y | NewLevel |
+| `data/levels/mp_assault_4P_1.txt` | Assault | 4 | 1600 | 200 | 15 | advanced | — | trunkportreinforcements=75 | Armour | 0 1 |  ForceCoop | 0 1 / 2 3 | Y | — |
+| `data/levels/mp_assault_4P_2.txt` | Assault | 4 | 1500 | 200 | 20 | advanced | — | trunkportreinforcements=60 trunkportarmour=3 | Armour | 2 3 |  ForceCoop | 0 1 / 2 3 | Y | NewLevel |
+| `data/levels/mp_assault_stress.txt` | none | 2 | 2000 | — | — | advanced | — | trunkportreinforcements=250 defenderreinforcementtype=Armour | — | 0 | — | — | Y | — |
+| `data/levels/mp_benchmark_1.txt` | none | 4 | -1 | — | — | intermediate | — | — | — | — | CoopMode | — | Y | — |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | Blitzkrieg | 2 | 1500 | -1 | — | basic | — | trunkportreinforcements=100 trunkportarmour=3 | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | Blitzkrieg | 2 | 2000 | -1 | — | advanced | — | trunkportreinforcements=100 trunkportarmour=3 | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | Blitzkrieg | 2 | 2000 | -1 | — | intermediate | — | trunkportreinforcements=100 trunkportarmour=3 | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | Blitzkrieg | 2 | 1800 | — | — | advanced | snow | nogunturrets | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | Blitzkrieg | 3 | 1500 | -1 | — | intermediate | — | airstrikecapturezones=3 | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | Blitzkrieg | 3 | 2000 | — | — | basic | lightning | airstrikecapturezones=3 | — | — | — | — | Y | — |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | Blitzkrieg | 4 | 1400 | -1 | — | advanced | snow | airstrikecapturezones=3 | — | — | — | — | Y | NewLevel |
+| `data/levels/mp_cts_2p_1.txt` | CaptureTheStatue | 2 | 2000 | -1 | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_cts_2p_2.txt` | CaptureTheStatue | 2 | 2000 | — | — | intermediate | snow | instantspawnpointcapture | — | — | — | — | Y | — |
+| `data/levels/mp_cts_2p_3.txt` | CaptureTheStatue | 2 | 2000 | -1 | — | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_cts_2p_4.txt` | CaptureTheStatue | 2 | 2000 | — | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_cts_3p_1.txt` | CaptureTheStatue | 3 | 1800 | -1 | — | intermediate | dustwind | instantspawnpointcapture | — | — | — | — | Y | — |
+| `data/levels/mp_cts_3P_2.txt` | CaptureTheStatue | 3 | 1500 | -1 | — | intermediate | — | instantspawnpointcapture | — | — | — | — | Y | — |
+| `data/levels/mp_cts_3p_3.txt` | CaptureTheStatue | 3 | 2000 | -1 | 10 | — | — | trunkportreinforcements=100 attackerreinforcementtype=HotFeet | — | — | — | — | Y | — |
+| `data/levels/mp_cts_4P_1.txt` | CaptureTheStatue | 4 | 2000 | -1 | — | advanced | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_cts_4P_2.txt` | CaptureTheStatue | 4 | 2000 | — | — | advanced | lightning | instantspawnpointcapture | — | — | CoopMode | — | Y | — |
+| `data/levels/mp_cts_4p_3.txt` | CaptureTheStatue | 4 | 2000 (lines -1/2000) | — | — | advanced | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_domination_2P_1.txt` | Domination | 2 | 2000 | -1 | — | intermediate | — | — | — | — | — | — | Y | NewLevel |
+| `data/levels/mp_domination_2P_2.txt` | Domination | 2 | 2000 | -1 | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_domination_3P_1.txt` | Domination | 3 | 1800 | -1 | 10 | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_domination_4P_1.txt` | Domination | 4 | 2000 | -1 | 15 | intermediate | — | — | — | — | CoopMode | — | Y | NewLevel |
+| `data/levels/mp_domination_4P_2.txt` | Domination | 4 | -1 | -1 | 10 | advanced | — | — | — | — | CoopMode | 0 2 / 1 3 | Y | — |
+| `data/levels/mp_koth_2P_1.txt` | KingOfTheHill | 2 | 2000 | — | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_koth_2P_2.txt` | Domination | 2 | 2000 | -1 | 10 | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_koth_2P_3.txt` | Domination | 2 | 1500 | -1 | 10 | intermediate | snow SpecialLighting | — | — | — | — | — | Y | NewLevel |
+| `data/levels/mp_koth_2P_3b.txt` | KingOfTheHill | 2 | 1500 | -1 | 10 | intermediate | snow SpecialLighting | — | — | — | — | — | Y | NewLevel |
+| `data/levels/mp_koth_3P_1.txt` | KingOfTheHill | 3 | 1800 | -1 | 10 | intermediate | SpecialLighting | — | — | — | — | — | Y | — |
+| `data/levels/mp_koth_3P_2.txt` | KingOfTheHill | 3 | 1800 | — | 5 | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_koth_3P_3.txt` | KingOfTheHill | 3 | 1800 | -1 | 10 | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_koth_3P_4.txt` | KingOfTheHill | 3 | 1800 | -1 | 10 | intermediate | — | trunkportreinforcements=100 | — | — | — | — | Y | — |
+| `data/levels/mp_koth_4P_1.txt` | KingOfTheHill | 4 | 2000 | -1 | 10 | intermediate | — | — | — | — | CoopMode | — | Y | — |
+| `data/levels/mp_koth_4P_3.txt` | KingOfTheHill | 4 | -1 | -1 | 10 | advanced | — | — | — | — | CoopMode | 0 2 / 1 3 | Y | — |
+| `data/levels/mp_koth_4P_4.txt` | KingOfTheHill | 4 | 2000 | — | — | basic | — | — | — | — | CoopMode | — | Y | — |
+| `data/levels/mp_rocketriot_2P_2.txt` | RocketRiot | 2 | 1500 | -1 | — | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_2p_3.txt` | RocketRiot | 2 | 1800 | -1 | — | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_2P_4.txt` | RocketRiot | 2 | 1500 | -1 | — | basic | — | — | Armour | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_3p_1.txt` | RocketRiot | 3 | 1800 | -1 | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_3P_2.txt` | RocketRiot | 3 | 1800 | -1 | — | intermediate | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_3P_3.txt` | RocketRiot | 3 | 1800 | -1 | — | advanced | — | nogunturrets | — | — | — | — | Y | — |
+| `data/levels/mp_rocketriot_4P_1.txt` | RocketRiot | 4 | 1800 | -1 | — | advanced | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_sandbox.txt` | none | 2 | 2500 | — | — | basic | — | — | — | 1 | — | — | — | — |
+| `data/levels/mp_sandbox_all.txt` | none | — | -1 | — | — | — | — | — | — | — | — | — | — | — |
+| `data/levels/mp_skirmish_2p_4.txt` | Domination | 2 | 1800 | -1 | — | basic | — | — | — | — | — | — | Y | — |
+| `data/levels/mp_skirmish_3P_1.txt` | Domination | 3 | 1800 | -1 | — | advanced | — | — | — | — | — | — | Y | NewLevel |
+| `data/levels/mp_tankbattle_2P.txt` | TankBattle | 2 | -1 | — | — | basic | — | — | — | — | — | — | — | — |
+| `data/levels/mp_tankbattle_3P.txt` | TankBattle | 3 | -1 | — | — | basic | — | — | — | — | — | — | — | — |
+| `data/levels/mp_tankbattle_4P.txt` | TankBattle | 4 | -1 | — | — | basic | — | — | — | — | CoopMode | — | — | — |
 <!-- /S08:options -->
 
 ### 5.6 Observations
@@ -449,6 +829,107 @@ Envelope used by the 57 top-level maps [C] (`X4_levels.csv`):
 Per-level landscape parameters for **every map-bearing file** (57 `mp_*`, 12 `map_*`, 30 `old/`): ranges are min..max over the file's tiles; "flatten type:n" uses the enum numbers above; "light colours" lists each light's RGB multiplier (§6.2). Generated table `landscape`:
 
 <!-- S08:landscape -->
+| File | worldSize | cellSize | grid | outsideHeight | maxHeight | land ramp | waves | water | tiles | tile size | tile posY | fracDim | heightScale | desiredHeight | genMethods | guidePower | lowland | flatten | flatten type:n | lights | light colours (r,g,b) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/map_biosphere.txt` | 4580 | 20.00 | 229x229 | -26.13 | — | earth | earth | icecaps | 8 | 1124..1714 | -4.54..8.91 | 1.15 | 1.82 | 150..250 | 1 | 0 | 1..1.01 | 0 | — | 2 | (0.66,0.66,0.66) / (0.59,0.59,0.59) |
+| `data/levels/map_containment.txt` | 4442 | 17.20 | 259x259 | -2.25 | — | default | containmentfield | default | 12 | 124..1944 | -1.97..0 | 0.63..2.07 | 0.01..2.94 | 50..309 | 0 1 | 0 | 0.93..1.19 | 0 | — | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/map_escort.txt` | 3972 | 12.87 | 309x309 | -26.13 | — | default | generator | default | 4 | 804..1884 | -13.27..0 | 1.14..4 | 0.22..2.07 | 84..290 | 1 | 0 4 | 1 | 0 | — | 2 | (1.39,1.09,1) / (3,1.68,1.04) |
+| `data/levels/map_garden.txt` | 2002 | 10.66 | 188x188 | -26.13 | — | default | default | default | 7 | 564..884 | -14.77..19.2 | 1.87..3.23 | 2..4.66 | 43..107 | 1 | 0 | 0.7..0.87 | 0 | — | 2 | (1.06,0.96,0.72) / (3.58,0.79,0.14) |
+| `data/levels/map_generator.txt` | 5372 | 15.61 | 345x345 | -26.13 | — | mine | generator | default | 11 | 284..1884 | -27.41..1.29 | 0.8..1.55 | 0..2.59 | 50..406 | 0 1 2 | 0 4 | 0..1 | 1 | 0:1 | 2 | (0.71,0.71,0.71) / (5,2.35,0.77) |
+| `data/levels/map_launchpad.txt` | 3677 | 15.76 | 234x234 | -15.39 | — | launchpad | launchpad | launchpad | 13 | 104..1450 | -4.86..0 | 0.71..5 | 1..3.12 | 42..300 | 0 1 | 0 1 2 | 1 | 0 | — | 2 | (1,1,1) / (2,1,0.4) |
+| `data/levels/map_mine.txt` | 3782 | 20.00 | 190x190 | -26.13 | — | mine | containmentfield | default | 13 | 234..1334 | -17.56..67.81 | 0.8..1.5 | 0.2..1.2 | 23..300 | 0 1 2 | 0 2 3 4 | 0..1 | 4 | 0:4 | 2 | (1.6,0.8,0.36) / (5,2.42,1.15) |
+| `data/levels/map_pattern_buffer.txt` | 3900 | 16.00 | 244x244 | -26.13 | — | icecaps | icecaps | icecaps | 6 | 384..1534 | -12.32..0 | 1.2..3 | 0..1 | 21..424 | 1 2 | 3 4 5 | 0..1 | 0 | — | 2 | (1.25,1.25,1.25) / (1.03,1.03,1.03) |
+| `data/levels/map_receiver.txt` | 4800 | 20.00 | 240x240 | -26.13 | — | mine | containmentfield | default | 18 | 424..1500 | 0..0.85 | 1..1.5 | 0.4..1 | 50..400 | 1 | 0 | 1 | 0 | — | 2 | (2.52,1.41,0.31) / (3.28,2.21,1.38) |
+| `data/levels/map_sandbox.txt` | 5000 | 20.35 | 246x246 | -15.39 | — | default | default | default | 2 | 1834..2224 | -4.96..-3.08 | 0.57..1.2 | 1..1.12 | 398..400 | 0 1 | 3 5 | 1 | 0 | — | 2 | (1.24,1.16,1.04) / (1.04,1.16,1.24) |
+| `data/levels/map_temple.txt` | 4360 | 14.29 | 306x306 | -26.13 | — | desert | earth | icecaps | 9 | 934..1394 | -11.13..11.5 | 1.2 | 1 | 50..275 | 1 | 0 | 1..1.77 | 0 | — | 2 | (1.05,0.81,0.81) / (1.05,1.02,0.72) |
+| `data/levels/map_yard.txt` | 4990 | 21.17 | 236x236 | -26.13 | — | default | containmentfield | default | 12 | 677..1958 | -21.23..15.39 | 1.2..1.23 | 1.92..2 | 50..393 | 1 | 0 5 | 1 | 3 | 0:3 | 2 | (1.05,1.03,0.93) / (5,2.16,0.62) |
+| `data/levels/mp_assault_2P_1.txt` | 3000 | 22.00 | 137x137 | -10.00 | — | desert | default | default | 5 | 284..2884 | 0 | 1.2..5.72 | 1..2.5 | 106..200 | 1 | 3 4 | 0.05..1 | 0 | — | 2 | (0.76,0.76,0.76) / (3.28,1.61,0.85) |
+| `data/levels/mp_assault_2P_2.txt` | 2991 | 20.00 | 150x150 | -10.00 | 0.00 | firetop | icecaps | icecaps | 7 | 754..2734 | -5..0 | 1.2..1.8 | 1..2.5 | 200 | 1 | 2 4 | 0..1 | 0 | — | 2 | (0.72,0.55,0.5) / (1.93,1.61,1.05) |
+| `data/levels/mp_assault_2p_3.txt` | 5143 | 17.03 | 302x302 | -10.00 | 0.00 | dark | default | default | 10 | 124..1887 | -6.79..0 | 1.2..7.88 | 0..2 | 35..262 | 0 1 2 | 2 3 4 5 | 0..2 | 3 | 0:3 | 2 | (1.17,1.17,1.17) / (1.58,1.05,0.82) |
+| `data/levels/mp_assault_3p_1.txt` | 5000 | 22.32 | 225x225 | -10.00 | 0.00 | earth | earth | icecaps | 11 | 224..3134 | -5.55..0 | 1.2..3 | 1..4.25 | 58..200 | 1 | 0 2 4 5 | 1 | 2 | 2:2 | 2 | (1.15,0.86,0.58) / (1.3,1.3,1.3) |
+| `data/levels/mp_assault_3P_2.txt` | 5000 | 26.00 | 193x193 | -10.00 | 0.00 | launchpad | earth | icecaps | 1 | 4484 | -6.57 | 1.1 | 3.52 | 305 | 1 | 2 | 1 | 0 | — | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_assault_3p_3.txt` | 2549 | 9.95 | 257x257 | -10.00 | 0.00 | icecaps | icecaps | icecaps | 7 | 245..2376 | 0 | 1.2..3.02 | 0.98..1.49 | 62..176 | 0 1 2 | 0 3 4 5 | 1..1.06 | 1 | 3:1 | 2 | (2,1.3,1) / (0.89,0.89,0.99) |
+| `data/levels/mp_assault_4P_1.txt` | 4070 | 20.00 | 204x204 | -10.00 | 0.00 | desert | default | default | 15 | 384..1984 | -1.85..0 | 1.2..3.23 | 1 | 128..261 | 0 1 | 0 1 3 4 5 | 1 | 5 | 3:4;4:1 | 2 | (0.48,0.45,0.38) / (2.04,1.85,1.64) |
+| `data/levels/mp_assault_4P_2.txt` | 7000 | 26.00 | 270x270 | -10.00 | 0.00 | icecaps | earth | icecaps | 19 | 164..1534 | -25.93..0 | 0.87..2.11 | 1..6.07 | 89..303 | 1 | 0 2 3 4 | 1..1.15 | 5 | 2:2;3:3 | 2 | (0.5,0.5,0.5) / (2.22,1.73,1.3) |
+| `data/levels/mp_assault_stress.txt` | 4000 | 20.00 | 200x200 | -10.00 | — | default | default | default | 5 | 1074..1754 | 0 | 1.2 | 1 | 200 | 1 | 3 4 | 1 | 0 | — | 2 | (0.77,0.77,0.77) / (3.55,1.74,1.3) |
+| `data/levels/mp_benchmark_1.txt` | 3000 | 18.00 | 167x167 | -10.00 | — | stronghold | default | default | 10 | 234..2954 | -5..0 | 1.2 | 1..4 | 200 | 0 1 | 0 2 | 1 | 0 | — | 2 | (0.33,0.33,0.33) / (5,3.15,1.23) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | 3500 | 12.00 | 292x292 | -10.00 | 0.00 | earth | earth | icecaps | 6 | 284..1354 | -5.4..1.29 | 4.86 | 10 | 36..282 | 1 | 0 1 2 3 | 0.03..1 | 2 | 3:2 | 2 | (0.81,0.81,0.81) / (3.19,2.07,1.22) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | 4000 | 18.00 | 223x223 | -10.00 | 0.00 | earth | earth | icecaps | 8 | 514..3354 | -0.77..0 | 1.2..3.69 | 1 | 77..426 | 1 2 | 0 3 | 1 | 4 | 3:4 | 2 | (0.81,0.81,0.81) / (3.19,2.07,1.22) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | 3000 | 16.00 | 188x188 | -10.00 | 0.00 | default | default | default | 12 | 474..1544 | -7.94..0 | 4 | 4..5.37 | 49..237 | 1 | 1 4 | 0.13..1.87 | 0 | — | 2 | (2.06,1.52,0.67) / (0.42,0.36,0.19) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | 3000 | 20.00 | 150x150 | -10.00 | — | icecaps | earth | icecaps | 7 | 314..2884 | -3.38..0 | 1.2..5 | 1 | 117..381 | 1 | 0 2 4 | 1 | 1 | 3:1 | 2 | (0.62,0.62,0.62) / (1.5,1.07,0.85) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | 4000 | 12.00 | 334x334 | -10.00 | 0.00 | marble | containmentfield | yellow | 7 | 634..2234 | -5.11..0 | 1.2..4 | 1..4 | 200..296 | 1 | 0 1 | 1 | 1 | 3:1 | 2 | (0.85,0.85,0.85) / (2.39,1.63,1.3) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | 2938 | 16.00 | 184x184 | -10.00 | — | dark | default | default | 9 | 279..2279 | -5.84..0 | 1.2 | 1 | 200 | 1 | 0 4 5 | 1 | 0 | — | 2 | (1.3,1.3,1.3) / (2.64,1.21,0.85) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | 4000 | 20.00 | 200x200 | -10.00 | 0.00 | icecaps | earth | icecaps | 25 | 384..1464 | 0 | 1.2 | 1 | 91..200 | 1 | 0 1 4 | 1 | 0 | — | 2 | (0.77,0.64,0.7) / (0.9,0.7,0.39) |
+| `data/levels/mp_cts_2p_1.txt` | 2332 | 15.76 | 148x148 | -15.39 | 0.00 | launchpad | launchpad | launchpad | 4 | 242..1903 | -7..1.57 | 1.2..2.07 | 2.04..4 | 220..334 | 0 1 | 0 2 | 1 | 0 | — | 2 | (1,1,1) / (4.31,1,0.4) |
+| `data/levels/mp_cts_2p_2.txt` | 2332 | 15.76 | 148x148 | -15.39 | — | icecaps | icecaps | icecaps | 1 | 1784 | 0 | 3.25 | 1 | 201 | 2 | 5 | 1 | 0 | — | 2 | (1.25,1.25,1.25) / (1.03,1.03,1.03) |
+| `data/levels/mp_cts_2p_3.txt` | 2000 | 12.00 | 167x167 | -10.00 | 0.00 | jailbreak | containmentfield | default | 5 | 352..1655 | -5..0 | 0.84..1.2 | 1..2.5 | 38..294 | 1 | 0 2 5 | 1..1.13 | 0 | — | 2 | (0.67,0.67,0.67) / (0.93,0.49,0.55) |
+| `data/levels/mp_cts_2p_4.txt` | 2000 | 9.00 | 223x223 | -10.00 | — | earth | default | default | 3 | 284..1534 | -5..0 | 1.2..2.3 | 2.2..4 | 200..322 | 1 | 0 2 | 1..3 | 0 | — | 2 | (2.64,2.27,2.07) / (0.26,0.26,0.26) |
+| `data/levels/mp_cts_3p_1.txt` | 3000 | 15.80 | 190x190 | -10.00 | 0.00 | desert | yellow | default | 5 | 254..2924 | -5..0 | 1.2..2 | 1..4.82 | 200..320 | 1 | 0 2 | 1 | 0 | — | 2 | (0.95,0.95,0.95) / (1.99,1.27,0.55) |
+| `data/levels/mp_cts_3P_2.txt` | 2999 | 16.00 | 188x188 | -18.32 | 0.00 | icecaps | containmentfield | default | 17 | 439..1125 | -5 | 1.2..3.07 | 2 | 41..489 | 1 | 0 2 3 | 1 | 6 | 3:4;4:2 | 2 | (0.62,0.62,0.62) / (2.89,1.3,0.21) |
+| `data/levels/mp_cts_3p_3.txt` | 2570 | 12.00 | 215x215 | -10.00 | 200.00 | trippy | dull | icecaps | 5 | 542..2042 | 0 | 1.2..2.17 | 0..2.8 | 200..238 | 1 | 4 5 | 1..1.91 | 0 | — | 2 | (0.67,0.56,0.4) / (4.62,2.99,1.58) |
+| `data/levels/mp_cts_4P_1.txt` | 3000 | 16.00 | 188x188 | -10.00 | 0.00 | default | containmentfield | default | 14 | 167..1367 | -5 | 1.2 | 4.5 | 68..239 | 1 | 2 | 1.2..1.57 | 6 | 0:4;1:1;3:1 | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_cts_4P_2.txt` | 3428 | 16.00 | 215x215 | -21.05 | — | dark | default | default | 18 | 310..1013 | -5 | 2 | 6 | 120..283 | 1 | 2 | 1 | 0 | — | 2 | (0.45,0.45,0.45) / (1.08,0.72,0.56) |
+| `data/levels/mp_cts_4p_3.txt` | 2720 | 15.00 | 182x182 | -26.13 | 0.00 | icecaps | icecaps | icecaps | 7 | 480..2577 | -1 | 3..5 | 1 | 35..318 | 2 | 0 2 3 5 | 0 | 0 | — | 2 | (1.25,1.25,1.25) / (1.03,1.03,1.03) |
+| `data/levels/mp_domination_2P_1.txt` | 2000 | 12.00 | 167x167 | -10.00 | 0.00 | silver | yellow | yellow | 8 | 184..1934 | -4.81..0 | 0.96..4.03 | 1..2.87 | 49..305 | 0 1 | 0 2 3 | 1 | 0 | — | 2 | (0.85,0.85,0.85) / (1.19,0.72,0.5) |
+| `data/levels/mp_domination_2P_2.txt` | 2700 | 15.76 | 172x172 | -15.39 | 0.00 | launchpad | launchpad | launchpad | 3 | 834..2264 | -3.98..1.57 | 1.2 | 1..4 | 220..300 | 0 1 | 0 2 | 1 | 0 | — | 2 | (1,1,1) / (2,1,0.4) |
+| `data/levels/mp_domination_3P_1.txt` | 2345 | 16.00 | 147x147 | -10.00 | 0.00 | default | containmentfield | default | 1 | 2286 | -5 | 1.2 | 2.29 | 200 | 1 | 2 | 0.88 | 0 | — | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_domination_4P_1.txt` | 3000 | 16.00 | 188x188 | -10.00 | 0.00 | default | containmentfield | default | 15 | 167..1367 | -5 | 1.2 | 4.5 | 88..239 | 1 | 2 | 1.2..1.57 | 1 | 0:1 | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_domination_4P_2.txt` | 3000 | 14.00 | 215x215 | -30.00 | 0.00 | mine | generator | default | 5 | 344..1434 | -5 | 1.2 | 4 | 200 | 1 | 2 | 1.1 | 0 | — | 2 | (0.72,0.72,0.62) / (3,2.4,1) |
+| `data/levels/mp_koth_2P_1.txt` | 2700 | 15.76 | 172x172 | -15.39 | — | launchpad | launchpad | launchpad | 3 | 834..2264 | -3.98..1.57 | 1.2 | 1..4 | 220..300 | 0 1 | 0 2 | 1 | 0 | — | 2 | (1,1,1) / (2,1,0.4) |
+| `data/levels/mp_koth_2P_2.txt` | 2677 | 14.00 | 192x192 | -10.00 | 0.00 | shrine | default | default | 3 | 1335 | -5 | 1.2 | 4 | 200 | 1 | 2 | 1.1 | 0 | — | 2 | (0.75,0.75,0.75) / (3,1.5,1) |
+| `data/levels/mp_koth_2P_3.txt` | 2754 | 16.00 | 173x173 | -10.00 | 0.00 | icecaps | icecaps | icecaps | 10 | 384..946 | -5..0 | 1.2 | 3 | 61..200 | 1 | 2 | 0.9..1.4 | 0 | — | 2 | (2,1.3,1) / (0.89,0.89,0.99) |
+| `data/levels/mp_koth_2P_3b.txt` | 2754 | 16.00 | 173x173 | -10.00 | 0.00 | icecaps | icecaps | icecaps | 11 | 384..1150 | -5..0 | 1.2 | 3 | 34..200 | 1 | 2 | 0.9..1.4 | 4 | 0:4 | 2 | (2,1.3,1) / (0.89,0.89,0.99) |
+| `data/levels/mp_koth_3P_1.txt` | 3000 | 12.00 | 250x250 | -10.00 | 0.00 | earth | earth | icecaps | 8 | 584..1294 | -5 | 1.2 | 2.7 | 200..242 | 1 | 2 | 1.2 | 1 | 3:1 | 2 | (0.66,0.66,0.66) / (0.59,0.59,0.59) |
+| `data/levels/mp_koth_3P_2.txt` | 2345 | 16.00 | 147x147 | -10.00 | — | default | containmentfield | default | 1 | 2286 | -5 | 1.2 | 2.29 | 200 | 1 | 2 | 0.88 | 0 | — | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_koth_3P_3.txt` | 2800 | 16.00 | 175x175 | -18.32 | 0.00 | mine | containmentfield | default | 8 | 567..949 | -5 | 1.2 | 2..3 | 63..200 | 1 | 2 | 0.9..1.22 | 3 | 0:3 | 2 | (0.62,0.62,0.61) / (1.71,1.49,0.93) |
+| `data/levels/mp_koth_3P_4.txt` | 2750 | 12.00 | 230x230 | -10.00 | 0.00 | earth | icecaps | icecaps | 3 | 294..2244 | -5.11..0 | 1.2..2.14 | 1..6.4 | 605..846 | 1 2 | 0 4 | 1 | 1 | 3:1 | 2 | (0.99,0.89,0.76) / (1.61,0.85,0.44) |
+| `data/levels/mp_koth_4P_1.txt` | 3000 | 16.00 | 188x188 | -10.00 | 0.00 | default | containmentfield | default | 15 | 167..1367 | -5 | 1.2 | 4.5 | 88..239 | 1 | 2 | 1.2..1.57 | 3 | 0:2;3:1 | 2 | (1,1,1) / (2.77,1.07,0) |
+| `data/levels/mp_koth_4P_3.txt` | 3000 | 14.00 | 215x215 | -30.00 | 0.00 | mine | generator | default | 5 | 344..1434 | -5 | 1.2 | 4 | 200 | 1 | 2 | 1.1 | 0 | — | 2 | (0.72,0.72,0.62) / (3,2.4,1) |
+| `data/levels/mp_koth_4P_4.txt` | 3000 | 18.00 | 167x167 | -10.00 | — | stronghold | default | default | 10 | 234..2954 | -5..0 | 1.2 | 1..4 | 200 | 0 1 | 0 2 | 1 | 0 | — | 2 | (0.33,0.33,0.33) / (5,3.15,1.23) |
+| `data/levels/mp_rocketriot_2P_2.txt` | 5000 | 18.00 | 278x278 | -6.93 | 0.00 | dark | icecaps | icecaps | 6 | 384..1734 | -5..0 | 1.2..2 | 2.07..3 | 200..270 | 1 | 0 2 | 1 | 0 | — | 2 | (0.68,0.68,0.68) / (3.09,2.57,1.73) |
+| `data/levels/mp_rocketriot_2p_3.txt` | 3756 | 27.08 | 139x139 | -26.13 | 0.00 | mine | generator | default | 15 | 284..2602 | 0 | 2.52..5 | 0.95..1.15 | 66..543 | 2 | 0 1 2 | 0.39..1.17 | 0 | — | 2 | (0.71,0.71,0.71) / (1.38,1.13,0.77) |
+| `data/levels/mp_rocketriot_2P_4.txt` | 2000 | 9.87 | 203x203 | -10.00 | 0.00 | earth | default | default | 1 | 1964 | 0 | 1.2 | 1 | 200 | 1 | 4 | 1 | 0 | — | 2 | (0.69,0.69,0.69) / (3.28,1.39,0.85) |
+| `data/levels/mp_rocketriot_3p_1.txt` | 5000 | 18.00 | 278x278 | -15.39 | 0.00 | launchpad | launchpad | launchpad | 7 | 1320..1360 | -2.37 | 1.2 | 3 | 127..282 | 1 | 1 2 | 1 | 0 | — | 2 | (1,1,1) / (2,1,0.4) |
+| `data/levels/mp_rocketriot_3P_2.txt` | 4285 | 18.00 | 239x239 | -26.13 | 0.00 | firetop | containmentfield | default | 22 | 327..1054 | -15.27..23.69 | 1..1.2 | 0.4..1 | 30..290 | 2 | 0 2 3 4 | 0..1 | 0 | — | 2 | (0.59,0.35,0.37) / (2.11,1.49,1.02) |
+| `data/levels/mp_rocketriot_3P_3.txt` | 4500 | 16.00 | 282x282 | -10.00 | 0.00 | mine | earth | launchpad | 7 | 1254..1574 | -7.1 | 1.12 | 4 | 484 | 1 | 2 | 1.3 | 3 | 3:3 | 2 | (0.82,0.52,0.28) / (5.23,1.8,1.05) |
+| `data/levels/mp_rocketriot_4P_1.txt` | 4186 | 18.00 | 233x233 | -10.00 | 0.00 | icecaps | yellow | icecaps | 17 | 265..1068 | -8.94..0 | 1.7 | 1..4.74 | 200..260 | 0 1 | 0 4 | 0..1 | 0 | — | 2 | (0.62,0.62,0.62) / (2.39,1.55,0.77) |
+| `data/levels/mp_sandbox.txt` | 3290 | 20.35 | 162x162 | -15.39 | — | default | default | default | 1 | 2224 | -3.08 | 0.57 | 1.12 | 398 | 0 | 3 | 1 | 0 | — | 2 | (1.24,1.16,1.04) / (1.04,1.16,1.24) |
+| `data/levels/mp_sandbox_all.txt` | 3290 | 20.35 | 162x162 | -15.39 | — | default | default | default | 1 | 2224 | -3.08 | 0.57 | 1.12 | 398 | 0 | 3 | 1 | 0 | — | 2 | (1.24,1.16,1.04) / (1.04,1.16,1.24) |
+| `data/levels/mp_skirmish_2p_4.txt` | 2000 | 12.00 | 167x167 | -10.00 | 0.00 | earth | earth | icecaps | 2 | 384..1834 | 0..83.9 | 4.86..4.9 | 10 | 125..200 | 1 | 0 | 1 | 0 | — | 2 | (0.81,0.81,0.81) / (3.19,2.07,1.22) |
+| `data/levels/mp_skirmish_3P_1.txt` | 6000 | 20.00 | 300x300 | -10.00 | 0.00 | firetop | default | default | 10 | 744..2854 | -5..0 | 1.4 | 1.07..4 | 303..961 | 1 | 0 2 | 1..1.74 | 1 | 2:1 | 2 | (0.77,0.77,0.77) / (1.1,0.85,0.19) |
+| `data/levels/mp_tankbattle_2P.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | default | default | default | 1 | 1934 | -4.54 | 1.82 | 3.96 | 200 | 1 | 2 | 0.72 | 0 | — | 2 | (0.5,0.5,0.5) / (4.52,2.51,1.3) |
+| `data/levels/mp_tankbattle_3P.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | jailbreak | earth | icecaps | 2 | 384..1924 | -5..0 | 1.2..1.51 | 1..4.06 | 200..396 | 1 | 0 2 | 1..1.08 | 0 | — | 2 | (0.95,0.95,0.95) / (1.58,0.81,0.58) |
+| `data/levels/mp_tankbattle_4P.txt` | 2000 | 12.00 | 167x167 | -27.89 | — | dark | default | default | 1 | 1934 | -5 | 0.74 | 2.9 | 368 | 1 | 2 | 1.25 | 0 | — | 2 | (0.85,0.85,0.85) / (1.59,1.2,0.86) |
+| `data/levels/old/mp_assault1.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | default | default | default | 7 | 514..614 | 0..36.36 | 1.2..3.08 | 1..5 | 66..250 | 1 | 0 3 4 | 1 | 0 | — | 2 | (2.62,1.73,1.3) / (1.3,1.3,1.3) |
+| `data/levels/old/mp_assault_3P_1.txt` | 4000 | 20.00 | 200x200 | -10.00 | — | icecaps | default | default | 7 | 1034..2024 | -10.41..0 | 1..2.58 | 0.4..1 | 29..393 | 1 2 | 2 3 4 5 | 0..1 | 1 | 0:1 | 2 | (0.44,0.45,0.45) / (1.67,1.43,1.33) |
+| `data/levels/old/mp_cauldron.txt` | 2220×2200 | 12.00 | 185x184 | -10.00 | — | mine2 | icecaps | icecaps | 3 | 384..1924 | 0 | 0.8 | 2 | 40..240 | 0 | 0 | 1 | 0 | — | 2 | (1.6,0.8,0.7) / (3,2,1.05) |
+| `data/levels/old/mp_chess1.txt` | 2676 | 12.00 | 223x223 | -10.00 | — | default | default | default | 1 | 1985 | 0 | 1.2 | 1 | 200 | 2 | 4 | 1 | 0 | — | 2 | (1.59,1.45,1.3) / (2.44,2.07,1.3) |
+| `data/levels/old/mp_crossroads.txt` | 3000 | 14.00 | 215x215 | -10.00 | — | desert | desert | icecaps | 1 | 2900 | -10 | 1.2 | 1 | 200 | 1 | 5 | 1 | 0 | — | 2 | (0.51,0.51,0.22) / (2,2,2) |
+| `data/levels/old/mp_crucible.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | desert | default | default | 2 | 450..1604 | 0 | 1.8 | 1.2 | 75..200 | 1 | 0 | 0.5 | 1 | 0:1 | 2 | (1.05,0.6,0.49) / (1.35,1.07,0.48) |
+| `data/levels/old/mp_firetop.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | firetop | default | default | 1 | 1900 | 0 | 1.2 | 1 | 200 | 1 | 5 | 1 | 0 | — | 2 | (1.43,1.43,1.43) / (3,2,1) |
+| `data/levels/old/mp_gateway.txt` | 2950 | 16.00 | 185x185 | -10.00 | — | mine | containmentfield | default | 3 | 1624 | -5 | 1.7 | 1.4 | 170..200 | 1 | 2 | 0.5 | 0 | — | 2 | (1.76,1.46,1.76) / (3.22,1.61,0.81) |
+| `data/levels/old/mp_ghosttown.txt` | 3000 | 16.00 | 188x188 | -10.00 | — | icecaps | default | default | 1 | 2750 | 0 | 1.8 | 1.8 | 230 | 1 | 0 | 1 | 0 | — | 2 | (0.7,0.7,0.7) / (2.8,2,0.8) |
+| `data/levels/old/mp_hamburgerhill.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | earth | earth | icecaps | 1 | 1834 | 83.9 | 4.86 | 10 | 200 | 1 | 0 | 1 | 0 | — | 2 | (0.81,0.81,0.81) / (3.19,2.07,1.22) |
+| `data/levels/old/mp_kingspass.txt` | 2533 | 18.00 | 141x141 | -10.00 | — | containment | desert | default | 1 | 2447 | -5 | 1.2 | 1 | 200 | 1 | 5 | 1 | 0 | — | 2 | (0.5,0.5,0.5) / (5,2,3) |
+| `data/levels/old/mp_knightspatch.txt` | 2000 | 12.00 | 167x167 | -10.00 | — | earth | default | default | 3 | 574..1950 | 0 | 2 | 7 | 50..200 | 1 | 0 | 1 | 0 | — | 1 | (1.3,1.3,1.3) |
+| `data/levels/old/mp_koth_2P_4.txt` | 3000 | 16.00 | 188x188 | -10.00 | — | icecaps | launchpad | icecaps | 16 | 750..1154 | -5 | 1 | 3.5 | 200 | 1 | 5 | 1 | 0 | — | 2 | (0.82,0.82,0.82) / (1.51,1.31,1.32) |
+| `data/levels/old/mp_marblecanyon.txt` | 3000 | 12.00 | 250x250 | -10.00 | — | marble2 | default | default | 2 | 1664..2510 | -10..0 | 0.8..3 | 1..1.5 | 200..260 | 1 2 | 5 | 0..1 | 0 | — | 2 | (2.5,2,1) / (1.09,0.78,0.78) |
+| `data/levels/old/mp_rocketriot_2p_1.txt` | 5372 | 20.00 | 269x269 | -26.13 | — | mine | generator | default | 5 | 1294..2094 | 0 | 1.2..1.5 | 1 | 97..200 | 0 1 | 1 | 1 | 0 | — | 2 | (0.71,0.71,0.71) / (5,2.35,0.77) |
+| `data/levels/old/mp_sabrepoint.txt` | 2500 | 12.00 | 209x209 | -10.00 | — | mine | generator | default | 4 | 544..1900 | 0 | 1.2 | 1.5 | 200 | 1 | 0 | 0.8 | 0 | — | 2 | (0.72,0.72,0.62) / (3,2.4,1) |
+| `data/levels/old/mp_shaman.txt` | 2393 | 16.00 | 150x150 | -10.00 | — | desert | default | default | 10 | 622..814 | 0 | 2 | 3 | 200..270 | 1 | 0 | 0.5 | 0 | — | 2 | (1.05,0.81,0.81) / (1.05,1.02,0.72) |
+| `data/levels/old/mp_shaman2.txt` | 1500 | 12.00 | 125x125 | -10.00 | — | containment | icecaps | icecaps | 1 | 1457 | 0 | 2 | 3 | 200 | 1 | 0 | 0.5 | 0 | — | 2 | (0.62,0.62,0.62) / (2,1.3,1.3) |
+| `data/levels/old/mp_shaman_2P.txt` | 2300 | 14.00 | 165x165 | -12.37 | — | default | default | default | 2 | 508..1939 | -2.25..0 | 1.2 | 1..4 | 250..259 | 0 1 | 0 2 | 1 | 0 | — | 2 | (0.64,0.64,0.64) / (2.71,1.33,0.53) |
+| `data/levels/old/mp_shaman_2P_1.txt` | 2500 | 16.00 | 157x157 | -10.00 | — | earth | containmentfield | default | 11 | 547..1329 | -5 | 1.9 | 6.87 | 107..200 | 1 | 2 | 1 | 0 | — | 1 | (1.3,1.3,1.3) |
+| `data/levels/old/mp_shaman_2P_2.txt` | 4000 | 20.00 | 200x200 | -10.00 | — | default | generator | default | 13 | 364..1854 | -5 | 1 | 1..2.7 | 54..214 | 1 | 2 5 | 1..1.2 | 0 | — | 2 | (1.39,1.09,1) / (3,1.68,1.04) |
+| `data/levels/old/mp_shaman_2P_3.txt` | 2754 | 16.00 | 173x173 | -10.00 | — | icecaps | icecaps | icecaps | 11 | 384..1150 | -5..0 | 1.2 | 3 | 34..200 | 1 | 2 | 0.9..1.4 | 4 | 0:4 | 2 | (2,1.3,1) / (0.89,0.89,0.99) |
+| `data/levels/old/mp_shaman_3P_1.txt` | 3000 | 16.00 | 188x188 | -10.00 | — | mine | containmentfield | default | 23 | 361..979 | -5 | 1.2 | 3 | 200 | 1 | 2 | 0.9 | 0 | — | 2 | (1.6,0.8,0.36) / (5,2.42,1.15) |
+| `data/levels/old/mp_shaman_3P_2.txt` | 2300 | 12.00 | 192x192 | -10.00 | — | marble | default | default | 2 | 494..1982 | -5..0 | 1.2 | 4 | 50..200 | 1 | 2 | 0.8 | 0 | — | 2 | (0.6,0.55,0.51) / (2.18,1.9,1.3) |
+| `data/levels/old/mp_shaman_3P_3.txt` | 3000 | 12.00 | 250x250 | -12.98 | — | shrine | default | default | 12 | 494..854 | -5 | 1.2 | 4 | 200 | 1 | 2 | 1.3 | 0 | — | 2 | (0.69,0.69,0.69) / (1.57,1.42,0.8) |
+| `data/levels/old/mp_silverisle.txt` | 3391 | 20.00 | 170x170 | -10.00 | — | silver | default | default | 13 | 333..1161 | 0 | 3 | 0.5..1 | 50..200 | 1 | 0 | 1 | 1 | 0:1 | 2 | (1.3,1.3,1.8) / (2.3,2,1.3) |
+| `data/levels/old/mp_taintedflats.txt` | 3000 | 12.00 | 250x250 | -10.00 | — | default | default | default | 1 | 2634 | 0 | 2 | 2 | 249 | 1 | 1 | 1 | 0 | — | 2 | (5,2.3,1.57) / (1.47,1.41,1.3) |
+| `data/levels/old/mp_temple.txt` | 4360 | 14.29 | 306x306 | -26.13 | — | desert | earth | icecaps | 9 | 934..1394 | -11.13..11.5 | 1.2 | 1 | 50..275 | 1 | 0 | 1..1.77 | 0 | — | 2 | (1.05,0.81,0.81) / (1.05,1.02,0.72) |
+| `data/levels/old/mp_thestretch.txt` | 3252 | 16.00 | 204x204 | -10.00 | — | earth | earth | icecaps | 1 | 3089 | 0 | 1.2 | 1 | 100 | 1 | 5 | 1 | 0 | — | 2 | (1,0.71,0.71) / (1.8,1.8,1) |
+| `data/levels/old/mp_twistedhighlands.txt` | 2570 | 12.00 | 215x215 | -10.00 | — | default | default | default | 1 | 2234 | 0 | 1.2 | 1.99 | 330 | 1 | 1 | 1 | 0 | — | 2 | (1.3,1.3,1.3) / (2.85,2.03,1.05) |
 <!-- /S08:landscape -->
 
 ### 6.2 Lights
@@ -478,14 +959,145 @@ Resolved (phase-2 log): P01 flagged `FenceSwitch::Switch()` as a desync risk "if
 Type totals over the 57 top-level files (owner field summed per start position; generated table `typetotals`). The only blocked type that occurs is `Statue` (1 row, `mp_sandbox`), dropped at parse:
 
 <!-- S08:typetotals -->
+| Building type | Rows in the 57 mp_* files | Files | Owner field (start position / neutral) |
+|---|---|---|---|
+| AIObjective | 95 | 9 | neutral 62, pos0 18, pos1 8, pos2 4, pos3 3 |
+| AIObjectiveMarker | 340 | 16 | neutral 155, pos0 42, pos1 87, pos2 44, pos3 12 |
+| AITarget | 1112 | 53 | neutral 1101, pos1 11 |
+| ControlStation | 36 | 10 | neutral 33, pos0 3 |
+| ControlTower | 3 | 2 | pos0 2, pos1 1 |
+| EruptionMarker | 1 | 1 | neutral 1 |
+| EscapeRocket | 19 | 7 | pos0 7, pos1 7, pos2 4, pos3 1 |
+| FuelGenerator | 57 | 7 | neutral 36, pos0 9, pos1 9, pos2 3 |
+| FuelPipe | 178 | 7 | neutral 114, pos0 25, pos1 25, pos2 14 |
+| FuelStation | 57 | 7 | pos0 21, pos1 21, pos2 12, pos3 3 |
+| GunTurret | 207 | 14 | neutral 207 |
+| Incubator | 3 | 2 | pos0 2, pos1 1 |
+| JumpPad | 23 | 3 | neutral 23 |
+| LaserFence | 703 | 15 | neutral 141, pos0 288, pos1 154, pos2 77, pos3 43 |
+| MultiwiniaZone | 176 | 27 | neutral 126, pos0 18, pos1 18, pos2 10, pos3 4 |
+| PowerSplitter | 26 | 7 | neutral 25, pos0 1 |
+| PulseBomb | 9 | 9 | pos0 5, pos1 3, pos2 1 |
+| Pylon | 301 | 17 | neutral 244, pos0 21, pos1 21, pos2 12, pos3 3 |
+| PylonEnd | 88 | 17 | neutral 88 |
+| RadarDish | 46 | 7 | neutral 44, pos0 2 |
+| RestrictionZone | 35 | 14 | neutral 35 |
+| SmokeMarker | 6 | 1 | neutral 6 |
+| SolarPanel | 231 | 17 | neutral 146, pos0 52, pos1 21, pos2 3, pos3 9 |
+| SpawnLink | 276 | 23 | neutral 265, pos1 11 |
+| SpawnPoint | 286 | 34 | neutral 124, pos0 53, pos1 57, pos2 33, pos3 19 |
+| SpawnPointMaster | 34 | 34 | neutral 33, pos1 1 |
+| SpawnPopulationLock | 87 | 22 | neutral 87 |
+| StaticShape | 193 | 19 | neutral 193 |
+| Statue | 1 | 1 | pos0 1 |
+| Tree | 755 | 45 | neutral 704, pos1 51 |
+| TrunkPort | 123 | 31 | neutral 14, pos0 33, pos1 46, pos2 23, pos3 7 |
+| Wall | 356 | 11 | neutral 356 |
+| WallBuster | 3 | 1 | neutral 3 |
 <!-- /S08:typetotals -->
 
 Counts matrix — rows of each building type per map (generated table `objects` from `_work/drafts/X4_level_buildings.csv`, abbreviations below; blank = 0):
 
 <!-- S08:legend -->
+| Abbrev. | Building type |
+|---|---|
+| AIO | AIObjective |
+| AIOM | AIObjectiveMarker |
+| AIT | AITarget |
+| CS | ControlStation |
+| CT | ControlTower |
+| ER | EruptionMarker |
+| Rkt | EscapeRocket |
+| FG | FuelGenerator |
+| FP | FuelPipe |
+| FS | FuelStation |
+| GT | GunTurret |
+| Inc | Incubator |
+| JP | JumpPad |
+| LF | LaserFence |
+| Zone | MultiwiniaZone |
+| PSp | PowerSplitter |
+| PB | PulseBomb |
+| Py | Pylon |
+| PyE | PylonEnd |
+| RD | RadarDish |
+| RZ | RestrictionZone |
+| SM | SmokeMarker |
+| Sol | SolarPanel |
+| SL | SpawnLink |
+| SP | SpawnPoint |
+| SPM | SpawnPointMaster |
+| SPL | SpawnPopulationLock |
+| Shp | StaticShape |
+| Stat | Statue |
+| Tree | Tree |
+| TP | TrunkPort |
+| Wall | Wall |
+| WB | WallBuster |
 <!-- /S08:legend -->
 
 <!-- S08:objects -->
+| File | AIO | AIOM | AIT | CS | CT | ER | Rkt | FG | FP | FS | GT | Inc | JP | LF | Zone | PSp | PB | Py | PyE | RD | RZ | SM | Sol | SL | SP | SPM | SPL | Shp | Stat | Tree | TP | Wall | WB | Total rows |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | 12 | 36 | 41 | 3 | — | — | — | — | — | — | 20 | — | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | 1 | 5 | — | 13 | 5 | 78 | 3 | 218 |
+| `data/levels/mp_assault_2P_2.txt` | 9 | 28 | 29 | 3 | — | — | — | — | — | — | 12 | — | 3 | 58 | — | — | 1 | 17 | 3 | — | 1 | — | 10 | — | — | — | — | — | — | 36 | 6 | 14 | — | 230 |
+| `data/levels/mp_assault_2p_3.txt` | 11 | 25 | 22 | 5 | — | — | — | — | — | — | 19 | — | — | 23 | — | — | 1 | — | — | 4 | 1 | — | — | — | — | — | — | 21 | — | 5 | 3 | 20 | — | 160 |
+| `data/levels/mp_assault_3p_1.txt` | 10 | 27 | 31 | 3 | — | — | — | — | — | — | 18 | — | — | 48 | — | — | 1 | 9 | 3 | 2 | 2 | 6 | 9 | — | — | — | — | 11 | — | — | 7 | 94 | — | 281 |
+| `data/levels/mp_assault_3P_2.txt` | 12 | 27 | 37 | 3 | — | — | — | — | — | — | 13 | — | — | 66 | — | — | 1 | 25 | 4 | — | 2 | — | 12 | — | — | — | 1 | — | — | 6 | 9 | 29 | — | 247 |
+| `data/levels/mp_assault_3p_3.txt` | 6 | 29 | 39 | 3 | — | — | — | — | — | — | 40 | — | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | 10 | — | — | 8 | 25 | — | 161 |
+| `data/levels/mp_assault_4P_1.txt` | 14 | 24 | 31 | 4 | — | — | — | — | — | — | 18 | — | — | 81 | — | — | 1 | 3 | 2 | 6 | 1 | — | 6 | — | — | — | — | 5 | — | 26 | 8 | — | — | 230 |
+| `data/levels/mp_assault_4P_2.txt` | 18 | 44 | 51 | 3 | — | — | — | — | — | — | 20 | — | — | 124 | — | — | 1 | 22 | 6 | — | 2 | — | 18 | — | — | — | — | 27 | — | — | 10 | 34 | — | 380 |
+| `data/levels/mp_assault_stress.txt` | 3 | 10 | 30 | 3 | — | — | — | — | — | — | 7 | — | — | 26 | — | — | 1 | 5 | 2 | — | — | — | 6 | — | — | — | — | — | — | — | 7 | 30 | — | 130 |
+| `data/levels/mp_benchmark_1.txt` | — | — | 13 | — | — | — | — | — | — | — | — | — | — | — | 15 | — | — | — | — | — | — | — | — | 4 | 24 | 1 | 1 | — | — | 18 | 4 | — | — | 80 |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | — | — | 12 | — | — | — | — | — | — | — | — | — | — | 23 | 3 | — | — | 1 | 2 | — | — | — | 6 | — | 1 | 1 | — | — | — | 7 | 2 | — | — | 58 |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | — | — | 31 | — | — | — | — | — | — | — | 4 | — | — | — | 5 | — | — | — | — | — | — | — | — | 8 | 6 | 1 | 6 | — | — | — | 2 | 17 | — | 80 |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | — | — | 17 | — | — | — | — | — | — | — | — | — | 2 | 21 | 3 | — | — | — | — | — | — | — | — | 9 | 4 | 1 | — | — | — | — | 3 | — | — | 60 |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | — | — | 19 | — | — | — | — | — | — | — | 18 | — | — | — | 6 | — | — | — | — | — | — | — | — | 7 | 3 | 1 | 2 | 19 | — | 9 | 3 | — | — | 87 |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | — | — | 19 | — | — | — | — | — | — | — | — | — | — | 34 | 7 | — | — | 5 | 3 | — | — | — | 9 | — | — | — | 4 | — | — | 16 | 3 | — | — | 100 |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | — | — | 24 | — | — | 1 | — | — | — | — | — | — | — | 20 | 7 | — | — | — | — | — | 3 | — | — | — | — | — | 7 | — | — | 16 | 3 | — | — | 81 |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | — | — | 37 | — | — | — | — | — | — | — | — | — | — | 39 | 9 | — | — | 5 | 4 | — | 4 | — | 12 | — | — | — | — | — | — | — | 4 | — | — | 114 |
+| `data/levels/mp_cts_2p_1.txt` | — | — | 9 | — | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | — | — | — | — | — | 6 | 1 | 4 | — | — | 4 | — | — | — | 28 |
+| `data/levels/mp_cts_2p_2.txt` | — | — | 13 | — | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | — | — | — | — | — | 4 | 1 | 2 | — | — | 10 | — | — | — | 34 |
+| `data/levels/mp_cts_2p_3.txt` | — | — | 11 | — | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | — | — | — | — | 6 | 4 | 1 | — | — | — | 17 | — | — | — | 43 |
+| `data/levels/mp_cts_2p_4.txt` | — | — | 5 | — | — | — | — | — | — | — | — | — | — | — | 3 | — | — | — | — | — | — | — | — | — | 4 | 1 | 5 | — | — | 11 | — | — | — | 29 |
+| `data/levels/mp_cts_3p_1.txt` | — | — | 18 | — | — | — | — | — | — | — | — | — | — | — | 6 | — | — | — | — | — | — | — | — | — | 6 | 1 | 6 | 8 | — | 24 | — | — | — | 69 |
+| `data/levels/mp_cts_3P_2.txt` | — | — | 16 | — | — | — | — | — | — | — | — | — | — | — | 8 | — | — | — | — | — | — | — | — | — | 9 | 1 | — | — | — | 45 | — | — | — | 79 |
+| `data/levels/mp_cts_3p_3.txt` | — | — | 35 | — | — | — | — | — | — | — | — | — | — | — | 9 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 15 | 3 | — | — | 62 |
+| `data/levels/mp_cts_4P_1.txt` | — | — | 23 | — | — | — | — | — | — | — | — | — | — | — | 7 | — | — | — | — | — | — | — | — | — | 12 | 1 | 1 | — | — | 7 | — | — | — | 51 |
+| `data/levels/mp_cts_4P_2.txt` | — | — | 21 | — | — | — | — | — | — | — | — | — | — | — | 10 | — | — | — | — | — | — | — | — | — | 8 | 1 | 9 | — | — | 59 | — | — | — | 108 |
+| `data/levels/mp_cts_4p_3.txt` | — | — | 26 | — | — | — | — | — | — | — | — | — | — | — | 7 | — | — | — | — | — | — | — | — | 17 | 8 | 1 | — | — | — | — | — | — | — | 59 |
+| `data/levels/mp_domination_2P_1.txt` | — | — | 12 | — | — | — | — | — | — | — | — | — | — | 14 | — | — | — | 6 | 2 | — | — | — | 6 | 13 | 8 | 1 | 1 | 1 | — | 6 | — | — | — | 70 |
+| `data/levels/mp_domination_2P_2.txt` | — | — | 13 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 7 | 8 | 1 | — | 5 | — | 21 | — | — | — | 55 |
+| `data/levels/mp_domination_3P_1.txt` | — | — | 10 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 14 | 10 | 1 | — | 11 | — | 12 | — | — | — | 58 |
+| `data/levels/mp_domination_4P_1.txt` | — | — | 27 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 18 | 10 | 1 | — | — | — | 8 | — | — | — | 64 |
+| `data/levels/mp_domination_4P_2.txt` | — | — | 16 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 8 | — | — | — | 20 | 12 | 1 | — | 18 | — | 20 | — | — | — | 95 |
+| `data/levels/mp_koth_2P_1.txt` | — | — | 15 | — | — | — | — | — | — | — | — | — | — | — | 3 | — | — | — | — | — | — | — | — | 7 | 6 | 1 | 4 | 5 | — | 7 | — | — | — | 48 |
+| `data/levels/mp_koth_2P_2.txt` | — | — | 16 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 6 | — | — | — | 10 | 9 | 1 | — | 12 | — | 37 | 1 | — | — | 92 |
+| `data/levels/mp_koth_2P_3.txt` | — | — | 21 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 11 | 10 | 1 | 4 | 3 | — | 11 | — | — | — | 61 |
+| `data/levels/mp_koth_2P_3b.txt` | — | — | 24 | — | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | — | — | — | — | 9 | 10 | 1 | 4 | 7 | — | 13 | — | — | — | 72 |
+| `data/levels/mp_koth_3P_1.txt` | — | — | 21 | 6 | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | 12 | 3 | — | — | 23 | 9 | 1 | 7 | 4 | — | 5 | 1 | — | — | 96 |
+| `data/levels/mp_koth_3P_2.txt` | — | — | 10 | — | — | — | — | — | — | — | — | — | — | — | 4 | — | — | — | — | — | — | — | — | 14 | 9 | 1 | 1 | 3 | — | 9 | — | — | — | 51 |
+| `data/levels/mp_koth_3P_3.txt` | — | — | 16 | — | — | — | — | — | — | — | — | — | — | — | 5 | — | — | — | — | — | — | — | — | 15 | 9 | 1 | 7 | — | — | 15 | 1 | — | — | 69 |
+| `data/levels/mp_koth_3P_4.txt` | — | — | 12 | — | — | — | — | — | — | — | 6 | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 22 | 6 | 12 | — | 59 |
+| `data/levels/mp_koth_4P_1.txt` | — | — | 27 | — | — | — | — | — | — | — | — | — | — | — | 11 | — | — | — | — | — | — | — | — | 18 | 10 | 1 | 9 | — | — | 8 | — | — | — | 84 |
+| `data/levels/mp_koth_4P_3.txt` | — | — | 16 | — | — | — | — | — | — | — | — | — | — | — | 12 | — | — | — | — | 8 | — | — | — | 20 | 12 | 1 | — | 18 | — | 20 | — | — | — | 107 |
+| `data/levels/mp_koth_4P_4.txt` | — | — | 13 | — | — | — | — | — | — | — | — | — | — | — | 15 | — | — | — | — | — | — | — | — | 4 | 12 | 1 | 1 | — | — | 18 | 4 | — | — | 68 |
+| `data/levels/mp_rocketriot_2P_2.txt` | — | 10 | 15 | — | — | — | 2 | 6 | 22 | 6 | — | — | — | — | — | 3 | — | 19 | 6 | — | 2 | — | 21 | — | 2 | 1 | — | — | — | 44 | 2 | — | — | 161 |
+| `data/levels/mp_rocketriot_2p_3.txt` | — | 6 | 17 | — | — | — | 2 | 6 | 56 | 6 | — | — | — | 31 | — | 3 | — | 12 | 6 | — | — | — | 15 | — | — | — | — | — | — | 24 | 2 | — | — | 186 |
+| `data/levels/mp_rocketriot_2P_4.txt` | — | 6 | 9 | — | — | — | 2 | 6 | 10 | 6 | — | — | — | — | — | 3 | — | 18 | 6 | — | — | — | 16 | — | — | — | — | — | — | 14 | 2 | — | — | 98 |
+| `data/levels/mp_rocketriot_3p_1.txt` | — | 15 | 18 | — | — | — | 3 | 9 | 21 | 9 | — | — | — | — | — | 4 | — | 26 | 9 | — | 3 | — | 21 | — | — | — | — | — | — | — | 3 | — | — | 141 |
+| `data/levels/mp_rocketriot_3P_2.txt` | — | 21 | 19 | — | — | — | 3 | 9 | 21 | 9 | — | — | — | — | — | 4 | — | 40 | 9 | — | 4 | — | 24 | — | — | — | — | — | — | 18 | 3 | — | — | 184 |
+| `data/levels/mp_rocketriot_3P_3.txt` | — | 15 | 18 | — | — | — | 3 | 9 | 24 | 9 | 6 | — | — | — | — | 4 | — | 25 | 9 | — | — | — | 18 | — | — | — | — | — | — | — | 3 | — | — | 143 |
+| `data/levels/mp_rocketriot_4P_1.txt` | — | 17 | 27 | — | — | — | 4 | 12 | 24 | 12 | — | — | — | — | — | 5 | — | 63 | 12 | — | 4 | — | 22 | — | 12 | 1 | — | — | — | — | 4 | — | — | 219 |
+| `data/levels/mp_sandbox.txt` | — | — | 5 | — | 1 | — | — | — | — | — | — | 1 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 1 | — | — | 3 | — | 11 |
+| `data/levels/mp_sandbox_all.txt` | — | — | — | — | 2 | — | — | — | — | — | — | 2 | — | — | — | — | — | — | — | — | — | — | — | 11 | 4 | 1 | — | — | — | 2 | — | — | — | 22 |
+| `data/levels/mp_skirmish_2p_4.txt` | — | — | 13 | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 11 | 10 | 1 | — | — | — | 9 | 1 | — | — | 45 |
+| `data/levels/mp_skirmish_3P_1.txt` | — | — | 42 | — | — | — | — | — | — | — | 6 | — | 18 | 95 | — | — | — | — | — | — | 3 | — | — | — | 15 | 1 | — | — | — | 9 | — | — | — | 189 |
+| `data/levels/mp_tankbattle_2P.txt` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 18 | — | — | — | 18 |
+| `data/levels/mp_tankbattle_3P.txt` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 18 | — | — | — | 18 |
+| `data/levels/mp_tankbattle_4P.txt` | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | — | 23 | — | — | — | 23 |
+
+cross-check against `_work/drafts/P06_level_building_usage.csv`: 0 mismatching (type, map) pairs [C].
 <!-- /S08:objects -->
 
 Placement patterns [C data; I where marked]:
@@ -520,6 +1132,65 @@ Shipped data [C]: `player0` 51 files, `player1` 51, `player2` 31, `player3` 13, 
 Per-map camera mounts, starting units and objectives (generated table `camunits`; "Layout" = A/B of §2.6):
 
 <!-- S08:camunits -->
+| File | Camera mounts | Camera anims | InstantUnits type@pos×n | Units total | Units on routes | Routes | PrimaryObjectives | Layout |
+|---|---|---|---|---|---|---|---|---|
+| `data/levels/mp_assault_2P_1.txt` | player0 player1 | 0 | Armour@0x2 Darwinian@0x325 | 327 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_assault_2P_2.txt` | player1 player0 | 0 | Darwinian@0x209 | 209 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_assault_2p_3.txt` | player0 player1 | — | Darwinian@0x8 Darwinian@1x300 | 308 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_assault_3p_1.txt` | player1 player2 player0 | — | Armour@0x1 Darwinian@0x103 Darwinian@5x35 | 139 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_assault_3P_2.txt` | player1 player2 player0 | 0 | Armour@0x2 Darwinian@0x180 | 182 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_assault_3p_3.txt` | — | — | Darwinian@0x260 | 260 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_assault_4P_1.txt` | player1 player0 player2 player3 | 0 | Armour@2x1 Armour@3x1 Darwinian@2x100 Darwinian@3x68 | 170 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_assault_4P_2.txt` | player0 player1 player2 player3 | — | Darwinian@0x63 Darwinian@1x95 | 158 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_assault_stress.txt` | — | 0 | Darwinian@1x90 | 90 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_benchmark_1.txt` | player0 player2 player1 player3 | 0 | Darwinian@0x150 Darwinian@1x150 Darwinian@2x150 Darwinian@3x150 | 600 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | player0 player2 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | player0 player1 | 0 | Darwinian@0x8 Darwinian@1x8 | 16 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | player0 player1 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | player0 player1 | 0 | Darwinian@0x36 Darwinian@1x36 | 72 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | player0 player1 player2 | 0 | Darwinian@0x15 Darwinian@1x15 Darwinian@2x15 | 45 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | player0 player1 player2 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | player3 player2 player1 player0 | — | — | 0 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_cts_2p_1.txt` | start player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_2p_2.txt` | start player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_2p_3.txt` | player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_2p_4.txt` | player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_3p_1.txt` | player0 player1 player2 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_3P_2.txt` | player0 player1 player2 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_3p_3.txt` | player2 player1 player0 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_4P_1.txt` | player0 player1 player2 player3 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_4P_2.txt` | player2 player0 player1 player3 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_cts_4p_3.txt` | player0 player1 player2 player3 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_domination_2P_1.txt` | player0 player1 | — | Darwinian@0x45 Darwinian@1x45 | 90 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_domination_2P_2.txt` | start player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_domination_3P_1.txt` | player0 player1 player2 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_domination_4P_1.txt` | player0 player1 player2 player3 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_domination_4P_2.txt` | player3 player2 player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_2P_1.txt` | start player1 player0 | 0 | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_2P_2.txt` | player0 player1 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_2P_3.txt` | player0 player1 | — | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_koth_2P_3b.txt` | player0 player1 | — | Darwinian@0x40 Darwinian@1x40 | 80 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_koth_3P_1.txt` | player0 player1 player2 | 0 | Darwinian@0x45 Darwinian@1x45 Darwinian@2x45 | 135 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_3P_2.txt` | player0 player1 player2 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_3P_3.txt` | player2 player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_3P_4.txt` | player0 player1 player2 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_4P_1.txt` | player0 player1 player2 player3 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_4P_3.txt` | player3 player2 player0 player1 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_koth_4P_4.txt` | player0 player2 player1 player3 | 0 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 Darwinian@3x40 | 160 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_2P_2.txt` | player1 player0 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_2p_3.txt` | start player1 player0 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_2P_4.txt` | player0 player1 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_3p_1.txt` | player0 player1 player2 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_3P_2.txt` | player0 player1 player2 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_3P_3.txt` | player0 player1 player2 | 0 | Darwinian@0x8 Darwinian@1x8 Darwinian@2x8 | 24 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_rocketriot_4P_1.txt` | player0 player1 player2 player3 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_sandbox.txt` | start | 0 | — | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | A |
+| `data/levels/mp_sandbox_all.txt` | start | 0 | — | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | A |
+| `data/levels/mp_skirmish_2p_4.txt` | player0 player2 player1 | 0 | — | 0 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_skirmish_3P_1.txt` | player0 player1 player2 | — | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | 120 | 0 | 0 | (none → NeverTrue added) | B |
+| `data/levels/mp_tankbattle_2P.txt` | player0 player1 | 0 | Tank@0x1 Tank@1x1 | 2 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_tankbattle_3P.txt` | — | 0 | Tank@0x1 Tank@1x1 Tank@2x1 | 3 | 0 | 0 | NeverTrue | A |
+| `data/levels/mp_tankbattle_4P.txt` | — | 0 | Tank@0x1 Tank@1x1 Tank@2x1 Tank@3x1 | 4 | 0 | 0 | NeverTrue | A |
 <!-- /S08:camunits -->
 
 ### 6.6 Instant units (starting forces)
@@ -598,6 +1269,37 @@ References to these files (exact file-name matches) [C]: `data/game.txt` (`Locat
 Generated table `darwinia`:
 
 <!-- S08:darwinia -->
+| File | Kind | Paired with | Sections | Bldgs | Blocked in FULL | Unknown types | Cam mounts | Cam anims | Instant units | Routes | Primary objectives (truncated at 70 chars) | CreatedAsDifficulty | Referenced by |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/map_biosphere.txt` | map | `data/levels/mission_biosphere_attract.txt` `data/levels/mission_biosphere_recapture.txt` | landscape landscapetiles landflattenareas lights buildings | 144 | 13 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_containment.txt` | map | `data/levels/mission_containment_enable.txt` | landscape landscapetiles landflattenareas lights buildings | 87 | 2 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_escort.txt` | map | `data/levels/mission_escort_escort.txt` | landscape landscapetiles landflattenareas lights buildings | 16 | 1 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_garden.txt` | map | `data/levels/mission_garden_liberate.txt` | landscape landscapetiles landflattenareas lights buildings | 11 | 1 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_generator.txt` | map | `data/levels/mission_generator_enable.txt` | landscape landscapetiles landflattenareas lights buildings | 70 | 1 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_launchpad.txt` | map | `data/levels/mission_launchpad.txt` | landscape landscapetiles landflattenareas lights buildings | 91 | 3 | — | — | — | 0 | 0 | — | — | `data/game_demo2.txt` |
+| `data/levels/map_mine.txt` | map | `data/levels/mission_mine_attract.txt` `data/levels/mission_mine_demo.txt` `data/levels/mission_mine_enable.txt` | landscape landscapetiles landflattenareas lights buildings | 93 | 71 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_pattern_buffer.txt` | map | `data/levels/mission_pattern_buffer_attract.txt` `data/levels/mission_pattern_buffer_recapture.txt` | landscape landscapetiles landflattenareas lights buildings | 60 | 20 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_receiver.txt` | map | `data/levels/mission_receiver_recapture.txt` | landscape landscapetiles landflattenareas lights buildings | 143 | 122 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_sandbox.txt` | map | `data/levels/mission_sandbox_tutorial.txt` | landscape landscapetiles landflattenareas lights buildings cameramounts cameraanimations buildings instantunits primaryobjectives | 11 | 0 | CarryableBuilding | 10 | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_temple.txt` | map | `data/levels/mission_temple_cutscene.txt` `data/levels/mission_temple_recapture.txt` | landscape landscapetiles landflattenareas lights buildings | 78 | 1 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_demo2.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/map_yard.txt` | map | `data/levels/mission_yard_enable.txt` | landscape landscapetiles landflattenareas lights buildings | 99 | 56 | — | — | — | 0 | 0 | — | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/mission_biosphere_attract.txt` | mission | `data/levels/map_biosphere.txt` | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 0 | 0 | — | 7 | 0 | 1158 | 0 | BuildingOnline :biosphere,90 biosphere_objective1 biosphere_intro.txt  | 1 | `data/scripts/attractmode.txt` |
+| `data/levels/mission_biosphere_recapture.txt` | mission | `data/levels/map_biosphere.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 1 | 1 | — | 6 | 0 | 678 | 0 | BuildingOnline :biosphere,90 biosphere_objective1 biosphere_intro.txt  | — | `data/game.txt` `data/game_unlockall.txt` `data/scripts/gameover.txt` |
+| `data/levels/mission_containment_enable.txt` | mission | `data/levels/map_containment.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 4 | — | 5 | 0 | 589 | 0 | BuildingOnline :containment,85 containment_objective_2 containment_pri | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` `data/scripts/gameover.txt` |
+| `data/levels/mission_escort_escort.txt` | mission | `data/levels/map_escort.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 8 | 1 | — | 3 | 0 | 636 | 0 | BuildingOnline :escort,1 biospherealpha_objective biospherealpha_prima | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/mission_garden_liberate.txt` | mission | `data/levels/map_garden.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 3 | 3 | — | 1 | 0 | 229 | 0 | BuildingOnline :garden,8 objective_capture_trunk // ResearchOwned :Gre | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/mission_generator_enable.txt` | mission | `data/levels/map_generator.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 4 | 0 | — | 3 | 0 | 436 | 0 | BuildingOnline :generator,0 generator_objective1 generator_primary1.tx | — | `data/game.txt` `data/game_unlockall.txt` |
+| `data/levels/mission_launchpad.txt` | mission | `data/levels/map_launchpad.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 9 | 6 | — | 41 | 0 | 407 | 0 | BuildingOnline :launchpad,1 launchpad_objective1 launchpad_primary1.tx | — | `data/game_demo2.txt` |
+| `data/levels/mission_mine_attract.txt` | mission | `data/levels/map_mine.txt` | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 0 | — | 6 | 0 | 504 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // Bui | 1 | `data/scripts/attractmode.txt` |
+| `data/levels/mission_mine_demo.txt` | mission | `data/levels/map_mine.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 7 | 4 | — | 13 | 0 | 434 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // Bui | — | `data/game_demo.txt` |
+| `data/levels/mission_mine_enable.txt` | mission | `data/levels/map_mine.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 11 | 4 | — | 4 | 0 | 434 | 0 | BuildingOnline :mine,90 pixelmines_objective1 mine_primary1.txt // Bui | — | `data/game.txt` `data/game_unlockall.txt` `data/purity/game.txt` |
+| `data/levels/mission_pattern_buffer_attract.txt` | mission | `data/levels/map_pattern_buffer.txt` | difficulty cameramounts cameraanimations buildings instantunits primaryobjectives | 9 | 0 | — | 7 | 0 | 940 | 0 | BuildingOnline :pattern_buffer,1 patternbuffer_objective1 patternbuffe | 1 | `data/scripts/attractmode.txt` |
+| `data/levels/mission_pattern_buffer_recapture.txt` | mission | `data/levels/map_pattern_buffer.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 8 | 1 | — | 3 | 0 | 598 | 0 | BuildingOnline :pattern_buffer,1 patternbuffer_objective1 patternbuffe | — | `data/game.txt` `data/game_unlockall.txt` |
+| `data/levels/mission_receiver_recapture.txt` | mission | `data/levels/map_receiver.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 13 | 0 | — | 4 | 0 | 646 | 0 | BuildingOnline :receiver,1 receiver_objective1 receiver_primary1.txt / | — | `data/game.txt` `data/game_unlockall.txt` `data/scripts/gameover.txt` |
+| `data/levels/mission_sandbox_tutorial.txt` | mission | `data/levels/map_sandbox.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 0 | 0 | — | 10 | 0 | 0 | 0 | BuildingOnline :sandbox,2 // BuildingOnline :sandbox,2 | — | `data/game_unlockall.txt` |
+| `data/levels/mission_temple_cutscene.txt` | mission | `data/levels/map_temple.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 4 | 1 | — | 9 | 0 | 378 | 0 | NeverTrue -1 -1 | — | `data/game.txt` `data/game_unlockall.txt` |
+| `data/levels/mission_temple_recapture.txt` | mission | `data/levels/map_temple.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 6 | 3 | — | 2 | 0 | 434 | 0 | BuildingOnline :temple,81 temple_objective temple_primary.txt // Build | — | `data/scripts/temple_intro.txt` |
+| `data/levels/mission_yard_enable.txt` | mission | `data/levels/map_yard.txt` | cameramounts cameraanimations buildings instantunits primaryobjectives | 14 | 1 | — | 2 | 0 | 781 | 0 | BuildingOnline :yard,5 yard_objective_1 yard_primary1.txt // BuildingO | — | `data/game.txt` `data/game_unlockall.txt` |
 <!-- /S08:darwinia -->
 
 ### 7.2 `data/levels/old/` — 30 superseded maps, never loaded
@@ -605,6 +1307,38 @@ Generated table `darwinia`:
 Status [C]: not listed by `CreateMapList` (non-recursive scan, §2.2); excluded by `levels/old/*` in every exclusion list; no code or data file references any of them by name (the only textual hits are language strings `mp_koth_2P_4_name/_description` and `mp_assault_3P_1_*`, which case-insensitively belong to the top-level `mp_assault_3p_1`); none of their CRCs is in `code/mapcrc.h`. Even if listed, most would be discarded or truncated by the current parsers: `GameTypes` tokens `Skirmish` (former name of Domination), `Shaman` (a removed mode) and `Chess` match no blueprint (a `KingOfTheHill Skirmish` file would appear under KOTH only); `none` or an empty line discards the map; `Portal`, `ChessBase`, `GodDish`, `AISpawnPoint` rows are blocked types; `Shaman` and `AI` instant units are blocked entities [C]. Generated table `old`:
 
 <!-- S08:old -->
+| File | English name | GameTypes | Players | PopCap | worldSize | cell | tiles | Bldgs | Blocked in FULL | SpawnPoint by pos | InstantUnits | LevelOptions | Effects | InvalidCrates |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `data/levels/old/mp_assault1.txt` | — | (no options block) | — | — | 2000 | 12.00 | 7 | 25 | 2 | — | Darwinian@1x150 | — | — | — |
+| `data/levels/old/mp_assault_3P_1.txt` | The Third Kind | Assault | 3 | 1000 | 4000 | 20.00 | 7 | 126 | 0 | — | Darwinian@2x135 | trunkportreinforcements=100 defenderreinforcementtype=DropShip attackerreinforcementtype=AirStrike futurewinianteam=2 attackreinforcementoption=2 attackreinforcementoption=1 | — | SpaceShip |
+| `data/levels/old/mp_cauldron.txt` | — | none | — | 800 | 2220 | 12.00 | 3 | 29 | 0 | 1:8 | — | — | — | — |
+| `data/levels/old/mp_chess1.txt` | — | (no options block) | — | — | 2676 | 12.00 | 1 | 8 | 2 | — | — | — | — | — |
+| `data/levels/old/mp_crossroads.txt` | — | Assault | — | -1 | 3000 | 14.00 | 1 | 33 | 4 | — | Darwinian@1x200 | — | — | — |
+| `data/levels/old/mp_crucible.txt` | — | none | — | 1000 | 2000 | 12.00 | 2 | 49 | 0 | 1:3;255:10 | — | — | — | — |
+| `data/levels/old/mp_firetop.txt` | — | none | — | -1 | 2000 | 12.00 | 1 | 25 | 0 | — | — | — | — | — |
+| `data/levels/old/mp_gateway.txt` | — | Shaman | — | -1 | 2950 | 16.00 | 3 | 42 | 1 | 1:6 | Darwinian@0x40 Darwinian@1x40 Shaman@0x1[blocked] Shaman@1x1[blocked] | — | — | — |
+| `data/levels/old/mp_ghosttown.txt` | — | none | — | 1500 | 3000 | 16.00 | 1 | 65 | 0 | 1:11 | — | — | — | — |
+| `data/levels/old/mp_hamburgerhill.txt` | — | KingOfTheHill Skirmish | — | 1000 | 2000 | 12.00 | 1 | 35 | 0 | 255:8 | — | — | — | — |
+| `data/levels/old/mp_kingspass.txt` | — | Assault | — | -1 | 2533 | 18.00 | 1 | 31 | 3 | — | Darwinian@1x120 | — | — | — |
+| `data/levels/old/mp_knightspatch.txt` | — | KingOfTheHill Skirmish | — | 1000 | 2000 | 12.00 | 3 | 19 | 0 | 1:9 | Darwinian@0x10 Darwinian@1x10 | — | — | — |
+| `data/levels/old/mp_koth_2P_4.txt` | Pillar of Light | (empty GameTypes line) | 2 | -1 | 3000 | 16.00 | 16 | 43 | 0 | 255:8 | Darwinian@0x100 Darwinian@1x80 | nohandicap instantspawnpointcapture | snow | — |
+| `data/levels/old/mp_marblecanyon.txt` | — | Skirmish | — | 1500 | 3000 | 12.00 | 2 | 43 | 0 | 1:13 | — | — | — | — |
+| `data/levels/old/mp_rocketriot_2p_1.txt` | — | RocketRiot | 2 | -1 | 5372 | 20.00 | 5 | 87 | 4 | — | — | — | — | — |
+| `data/levels/old/mp_sabrepoint.txt` | — | KingOfTheHill Skirmish | — | 1500 | 2500 | 12.00 | 4 | 48 | 0 | — | Engineer@1x2 Engineer@2x2 Engineer@3x2 | — | — | — |
+| `data/levels/old/mp_shaman.txt` | — | Shaman | — | -1 | 2393 | 16.00 | 10 | 5 | 1 | — | Shaman@0x1[blocked] Shaman@1x1[blocked] Shaman@2x1[blocked] Shaman@3x1[blocked] | — | — | — |
+| `data/levels/old/mp_shaman2.txt` | — | Shaman | — | -1 | 1500 | 12.00 | 1 | 24 | 1 | 1:6 | Shaman@0x1[blocked] Shaman@1x1[blocked] | — | — | — |
+| `data/levels/old/mp_shaman_2P.txt` | — | Shaman | 2 | -1 | 2300 | 14.00 | 2 | 54 | 7 | 255:3 | Darwinian@0x10 Darwinian@1x10 | — | — | — |
+| `data/levels/old/mp_shaman_2P_1.txt` | — | Shaman | 2 | -1 | 2500 | 16.00 | 11 | 78 | 11 | 255:8 | Darwinian@0x40 Darwinian@1x40 | — | — | — |
+| `data/levels/old/mp_shaman_2P_2.txt` | — | Shaman | 2 | -1 | 4000 | 20.00 | 13 | 119 | 15 | 255:10 | Darwinian@0x45 Darwinian@1x45 | — | — | — |
+| `data/levels/old/mp_shaman_2P_3.txt` | — | Shaman | 2 | -1 | 2754 | 16.00 | 11 | 65 | 11 | 255:10 | Darwinian@0x40 Darwinian@1x40 | — | snow | — |
+| `data/levels/old/mp_shaman_3P_1.txt` | — | Shaman | 3 | -1 | 3000 | 16.00 | 23 | 101 | 16 | 255:10 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — | — |
+| `data/levels/old/mp_shaman_3P_2.txt` | — | Shaman | 3 | -1 | 2300 | 12.00 | 2 | 77 | 16 | 255:6 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — | — |
+| `data/levels/old/mp_shaman_3P_3.txt` | — | Shaman | 3 | -1 | 3000 | 12.00 | 12 | 101 | 12 | 255:9 | Darwinian@0x40 Darwinian@1x40 Darwinian@2x40 | — | — | — |
+| `data/levels/old/mp_silverisle.txt` | — | KingOfTheHill Skirmish | — | -1 | 3391 | 20.00 | 13 | 68 | 0 | 1:4 | — | — | — | — |
+| `data/levels/old/mp_taintedflats.txt` | — | none | — | -1 | 3000 | 12.00 | 1 | 16 | 0 | — | — | — | — | — |
+| `data/levels/old/mp_temple.txt` | — | KingOfTheHill Skirmish | — | -1 | 4360 | 14.29 | 9 | 78 | 1 | 1:8 | Shaman@0x1[blocked] | — | — | — |
+| `data/levels/old/mp_thestretch.txt` | — | Assault | — | 2000 | 3252 | 16.00 | 1 | 56 | 3 | — | AI@0x1[blocked] Darwinian@1x260 | — | — | — |
+| `data/levels/old/mp_twistedhighlands.txt` | — | none | — | -1 | 2570 | 12.00 | 1 | 12 | 0 | — | — | — | — | — |
 <!-- /S08:old -->
 
 Families and lineage [C data, I lineage]:
@@ -618,6 +1352,67 @@ Families and lineage [C data, I lineage]:
 - 59 lines `<file name> <id>` [C]; ids **1–49** = exactly the 49 retail menu maps (same set as §3.3; `mp_cts_3p_3` has none); ids **50–59** name PDLC maps that do not exist in the tree (and `levels/pdlc/*` is excluded from builds). Generated table `levelenum`:
 
 <!-- S08:levelenum -->
+| Id | Map file | Status |
+|---|---|---|
+| 1 | `data/levels/mp_assault_2P_1.txt` | in tree |
+| 2 | `data/levels/mp_assault_2P_2.txt` | in tree |
+| 3 | `data/levels/mp_assault_2p_3.txt` | in tree |
+| 4 | `data/levels/mp_assault_3p_1.txt` | in tree |
+| 5 | `data/levels/mp_assault_3P_2.txt` | in tree |
+| 6 | `data/levels/mp_assault_3p_3.txt` | in tree |
+| 7 | `data/levels/mp_assault_4P_1.txt` | in tree |
+| 8 | `data/levels/mp_assault_4P_2.txt` | in tree |
+| 9 | `data/levels/mp_blitzkrieg_2p_1.txt` | in tree |
+| 10 | `data/levels/mp_blitzkrieg_2p_2.txt` | in tree |
+| 11 | `data/levels/mp_blitzkrieg_2P_3.txt` | in tree |
+| 12 | `data/levels/mp_blitzkrieg_2P_4.txt` | in tree |
+| 13 | `data/levels/mp_blitzkrieg_3P_1.txt` | in tree |
+| 14 | `data/levels/mp_blitzkrieg_3P_2.txt` | in tree |
+| 15 | `data/levels/mp_blitzkrieg_4P_2.txt` | in tree |
+| 16 | `data/levels/mp_cts_2p_1.txt` | in tree |
+| 17 | `data/levels/mp_cts_2p_2.txt` | in tree |
+| 18 | `data/levels/mp_cts_2p_3.txt` | in tree |
+| 19 | `data/levels/mp_cts_2p_4.txt` | in tree |
+| 20 | `data/levels/mp_cts_3p_1.txt` | in tree |
+| 21 | `data/levels/mp_cts_3P_2.txt` | in tree |
+| 22 | `data/levels/mp_cts_4P_1.txt` | in tree |
+| 23 | `data/levels/mp_cts_4P_2.txt` | in tree |
+| 24 | `data/levels/mp_cts_4p_3.txt` | in tree |
+| 25 | `data/levels/mp_domination_2P_1.txt` | in tree |
+| 26 | `data/levels/mp_domination_2P_2.txt` | in tree |
+| 27 | `data/levels/mp_domination_3P_1.txt` | in tree |
+| 28 | `data/levels/mp_domination_4P_1.txt` | in tree |
+| 29 | `data/levels/mp_domination_4P_2.txt` | in tree |
+| 30 | `data/levels/mp_koth_2P_1.txt` | in tree |
+| 31 | `data/levels/mp_koth_2P_2.txt` | in tree |
+| 32 | `data/levels/mp_koth_2P_3.txt` | in tree |
+| 33 | `data/levels/mp_koth_2P_3b.txt` | in tree |
+| 34 | `data/levels/mp_koth_3P_1.txt` | in tree |
+| 35 | `data/levels/mp_koth_3P_2.txt` | in tree |
+| 36 | `data/levels/mp_koth_3P_3.txt` | in tree |
+| 37 | `data/levels/mp_koth_3P_4.txt` | in tree |
+| 38 | `data/levels/mp_koth_4P_1.txt` | in tree |
+| 39 | `data/levels/mp_koth_4P_3.txt` | in tree |
+| 40 | `data/levels/mp_koth_4P_4.txt` | in tree |
+| 41 | `data/levels/mp_rocketriot_2P_2.txt` | in tree |
+| 42 | `data/levels/mp_rocketriot_2p_3.txt` | in tree |
+| 43 | `data/levels/mp_rocketriot_2P_4.txt` | in tree |
+| 44 | `data/levels/mp_rocketriot_3p_1.txt` | in tree |
+| 45 | `data/levels/mp_rocketriot_3P_2.txt` | in tree |
+| 46 | `data/levels/mp_rocketriot_3P_3.txt` | in tree |
+| 47 | `data/levels/mp_rocketriot_4P_1.txt` | in tree |
+| 48 | `data/levels/mp_skirmish_2p_4.txt` | in tree |
+| 49 | `data/levels/mp_skirmish_3P_1.txt` | in tree |
+| 50 | mp_PDLC1_skirmish_2p_1.txt | absent (PDLC) |
+| 51 | mp_PDLC1_koth_4p_2.txt | absent (PDLC) |
+| 52 | mp_PDLC1_cts_4p_3.txt | absent (PDLC) |
+| 53 | mp_PDLC1_rocketriot_4p_2.txt | absent (PDLC) |
+| 54 | mp_PDLC1_blitzkrieg_4p_1.txt | absent (PDLC) |
+| 55 | mp_PDLC2_blitzkrieg_3P_1.txt | absent (PDLC) |
+| 56 | mp_PDLC2_cts_3P_1.txt | absent (PDLC) |
+| 57 | mp_PDLC2_domination_3P_1.txt | absent (PDLC) |
+| 58 | mp_PDLC2_koth_3P_1.txt | absent (PDLC) |
+| 59 | mp_PDLC2_rocketriot_3P_1.txt | absent (PDLC) |
 <!-- /S08:levelenum -->
 
 - Consumer [C] `code/achievement_tracker.cpp:AchievementTracker::AchievementTracker`: loads `ACHIEVEMENT_LEVEL_ENUM` = `levels/level_enum.txt` into a case-insensitive `HashTable<int>`; `AddVictoryOnLevel(map)` / `AddVisitedLevel(map)` set bit `id` of `m_won[]` / `m_visited[]` for `id ≤ MAX_LEVEL_ID = 49`; when the number of won levels reaches `VALID_ACHIEVEMENT_LEVELS` (49 with `INCLUDEGAMEMODE_ASSAULT`, else 41) the "Master of Multiwinia" achievement fires ([09 §7](09_meta_systems.md#7-achievements-statistics-and-leaderboards)). A duplicate map name in the file is fatal (`HashTable::GetInsertPos` → `AppAbort`); the shipped file has none. The file lacks a final newline (harmless: id 59 > 49).
@@ -1202,3 +1997,408 @@ The `Directory` (tosser key/value tree, [29](29_data_formats_reference.md)) is n
 | D-E17 | No editing UI for routes or waypoints (`m_subSelectionId` unused); mode semantics only through generic building parameters — zone ownership via the team buttons, and Blitzkrieg flag links (`MultiwiniaZone::SetBuildingLink`) and PulseBomb links (`PulseBomb::SetBuildingLink`) can only be **appended**, one per Link-tool click, with no clear-links control for these types | `code/location_editor.h`, `code/worldobject/multiwiniazone.cpp:MultiwiniaZone::SetBuildingLink`, `code/worldobject/pulsebomb.cpp:PulseBomb::SetBuildingLink` |
 | D-E18 | `LevelFile::Save` quantises values (§8.7) and the options writer drops 0-valued options and duplicates `futurewinianteam` (§5.4) | `code/level_file.cpp` |
 
+## 9 Level-design guide for the new game
+
+Brief recommendations distilled from the data envelope (§6), the conventions (§4) and the defects (§5.4, §8.9). Carry-forward decisions belong to [40](40_carry_forward_assessment.md).
+
+1. **One file per map, header first.** Keep Multiwinia's single-file map (options + terrain + objects + start cameras) but use a structured, versioned format (e.g. JSON or a binary chunk format) with an explicit schema; put the menu header (name id, modes, player count, difficulty, suggested time, thumbnail) in a separately readable section so the front end never parses terrain. One parser for menu and game (no case-sensitivity split, §2.2).
+2. **Identity = content hash, exchanged.** Keep a content-derived map id (§2.3) but compute it over a canonical serialisation, exchange it in the lobby and refuse to start on a mismatch (the original starts by file name only).
+3. **Explicit start positions.** Keep "owner = start position, remapped at load" (§2.5) — it is what lets one map serve 2–4 players — but give positions their own records (camera pose, Assault side, co-op group) instead of `player<N>` naming conventions and parallel lists.
+4. **Mode objects as typed records.** Express hills, drop zones, statue spawns, flags and flag adjacency, pulse bomb + linked control stations, rockets and fuel chains as typed objects with validated links (bidirectional adjacency stored as such), and validate per mode at save time: CTS = exactly one drop zone per position + ≥ 1 statue zone; Blitzkrieg = one base flag per position + connected graph; Assault = one bomb owned by a defender + ≥ 3 linked stations, `bomb time = time limit`; Rocket Riot = per position 1 rocket, 3 fuel stations, 1 reinforcement port.
+5. **Terrain stays procedural but deterministic.** Store the tile parameters and guide grids (compact and editable) and additionally ship a baked height field plus its hash, so that clients never depend on CRT `pow`/`exp` rounding ([23 §17](23_terrain_and_landscape.md#17-determinism-and-conformance)).
+6. **Lighting and weather as named presets** (two directional lights + optional key-light override, snow/lightning/dust/soul-rain) rather than per-map raw multipliers; the shipped maps use exactly two lights everywhere (§6.2).
+7. **Per-map rule overrides as a typed table**, not a flat array of ints with sentinel −1 and silently dropped zeros (§5.2, §5.4); keep the shipped option set (reinforcement waves, armour, turret suppression, instant capture, radar rules, alien faction, Blitzkrieg air-strike threshold, crate exclusions, population caps).
+8. **Lossless editor round trip**: full-precision floats, no quantisation, an undo stack, a dirty flag and an in-editor play-test that runs the real simulation (§8.9 D-E14, D-E18).
+9. **Editor picking and selection by stable object id**, nearest-hit ray picking, and dedicated tools for links, zones, routes and camera paths (§8.9 D-E2, D-E5, D-E15, D-E17).
+10. **Thumbnails generated by the engine** from a top-down render of the map, 4:3 (§3.5), and no orphan assets in the shipping data (§3.5, §7.3).
+11. **Ship the achievement/level index with the data** it describes, generated by the build (the original excluded `level_enum.txt` from retail data, §7.3).
+
+## Open questions and unknowns
+
+| Id | Question | Status | What would resolve it |
+|---|---|---|---|
+| 08-U1 | Did the retail product ship `levels/level_enum.txt` (e.g. in a patch archive)? Without it no level is recorded for the "Master of Multiwinia" achievement | [U] | list a retail `main.dat` / `patch.dat` |
+| 08-U2 | How `mp_benchmark_1` and `mp_assault_stress` were started in the hardware-compat / stress builds despite `GameTypes none` | [U] | data of those builds, or a launcher/test-bed path not in this tree |
+| 08-U3 | Contents of the inclusion list `multiwinia_inclusions_ambx.txt` (referenced by `tools/build_multiwinia_data.bat` for platform `platambx`; the file is absent from `tools/`) | [U] | the missing file |
+| 08-U4 | Exact tie order inside each menu list (depends on archive index order through `OrderedInsert`'s off-by-one) | [I] | run `CreateMapList` against a real `main.dat` |
+| 08-U5 | Content of the 10 PDLC maps named in `level_enum.txt` (ids 50–59) | [U] | PDLC data (not in the tree) |
+| 08-U6 | Whether the released metaserver sent a demo map list different from the 5-map default | [U] | metaserver data / retail logs |
+| 08-U7 | Tool used to make the 400×300 thumbnails (no in-engine writer) | [U] | art-pipeline notes |
+| 08-U8 | Effect of a load → save → load round trip on terrain and CRC (writer quantisation, §8.7) | [I] | run `scripts/S_23_terrain_oracle.py` on a re-saved map |
+| 08-U9 | Outcome of opening a plain-text map named `.mwm` (certain failure in `MapFile::MapFile`; crash vs. garbage level) | [I] mechanism [C] | run an editor build |
+| 08-U10 | Whether a `.mwm` read with 4 trailing bytes past the zlib stream and an unchecked `uncompress` ever mis-loads | [I] | fuzz `MapFile::MapFile` with editor-written files |
+| 08-U11 | Group-A beta build: 13 included maps vs 3 whitelisted, with only CTS compiled → would list 1 map | [I] | the group-A build or its release notes |
+| 08-U12 | Design intent of concentric KOTH zones, duplicate CTS statue zones, KOTH team-owned zones starting owned, fill/key light pairs, twin terrains | [I] | designer notes; play-test in the original |
+| 08-U13 | `CalculeCRC` buffer is 100 000 bytes: a > 100 000-byte level overflows by one byte (largest shipped 46 085) | [I] | n/a for shipped data; avoid in the new design |
+
+## Docs-vs-code discrepancies
+
+| Doc (or code comment) | Says | Code / data | Ref |
+|---|---|---|---|
+| `docs/changes.txt` ("Editor changes") | moving a land tile moves its buildings; option "in the land tiles menu" | behaviour confirmed; the toggle `editor_movebuildings` is in the main Landscape window shown in land-tile mode, not in the per-tile window | `LocationEditor::AdvanceModeLandTile`, `LandscapeEditWindow::Create` |
+| `docs/top level map.txt` | "Each level file specifies a map file at the start"; static vs dynamic buildings per map/level | Darwinia pairing is given by `data/game.txt` `Locations` rows; Multiwinia maps are single files with mission `"null"`; the `m_dynamic` flag exists (`editor_dynamic`) | §2.1, §7.1 |
+| `docs/new building docs.txt` (FenceSwitch editor linking order) | fence switches are placed and linked in the editor | `FenceSwitch` is a blocked type in FULL/editor builds and occurs in no level file | §6.3 |
+| `docs/multiwinia_manual.pdf` (per P02's reading) | Assault: "sabotage the three control stations" | 3 linked stations, 4 on `mp_assault_4P_1` | §4.5 |
+| `docs/multiwinia_manual.pdf` (per P02's reading) | co-op "(4 players required) – Domination and King of the Hill" | `CoopMode`/`ForceCoop` also on CTS `mp_cts_4P_2`, the 3-player Assault maps and `mp_tankbattle_4P` | §5.6 |
+| `code/level_file.cpp:ParseLights` comment | mission-file lights take precedence over map lights | mission files cannot contain a `Lights` block | §2.5 |
+| `code/level_file.h` comment on `LevelOptionNoHandicap` | "Handicap is overridden to 0" | the handicap function returns a multiplier of 1.0 (no handicap) | §5.2 |
+| `code/level_file.h` comment on `LevelOptionFuturewinianTeam` | "the team id specified here" | compared with the team's **start position** | §5.2 |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| Map file names `mp_<mode>_<N>P_<k>`, `MAPID_*` macro names, PDLC map names | name | `data/levels/`, `code/mapcrc.h`, `data/levels/level_enum.txt` | `map_<mode>_<players>p_<nn>` |
+| 49 English map names and descriptions ("Beneath the Baleful Eye" … "Threads of Fate"), `mp_*_name`/`_description` phrases | text | `data/language/english.txt` | new names written for the new maps |
+| Map layouts, terrain parameters, building placements of all shipped maps | level design content | `data/levels/mp_*.txt` | new maps |
+| Thumbnails (56 `mp_*` + `default.bmp`) | art | `data/thumbnails/` | engine-generated thumbnails |
+| Terrain/wave/water colour-ramp names used by maps (landscape_icecaps, launchpad, mine, containmentfield, stronghold, jailbreak, firetop, shrine, trippy, marble, silver, dark, desert, earth, dull, generator, yellow, default) | art + names | `data/terrain/*.bmp` via `landColourFile` etc. | procedurally generated `ramp_<theme>` |
+| Static shapes referenced by maps (`beachheadobstruction.shp`, `temple2.shp`, `temple3.shp`, `temple4.shp`, `rockhead.shp`, `spaceship.shp`) and the editor gizmo `camera.shp` | art | `data/shapes/` | new meshes |
+| "Multiwinia" in `MultiwiniaOptions_StartDefinition`, `MultiwiniaZone`, `MultiwiniaWindow` | brand | `code/level_file.cpp`, `code/worldobject/multiwiniazone.cpp` | `MatchOptions`, `Zone` |
+| "Darwinian", "Futurewinian" (`futurewinianteam`), "Multiwinians" in map descriptions | names | `code/level_file.h`, `data/language/english.txt` | "unit", "alien faction" |
+| Darwinia location names (garden, containment, generator, mine, yard, escort, pattern_buffer, biosphere, receiver, temple, launchpad, sandbox) | names | `data/levels/map_*`, `data/game.txt` | drop |
+| Camera-mount conventions `player0`–`player3`, `start`, `CamPosBefore`; editor defaults `NewLevel`, `mp_blank.txt`, `mp_newmap.txt`, `blah<n>`, `CamAnim<n>` | names/text | `code/level_file.h`, `code/main.cpp`, `code/interface/*` | `spawn_view_<n>`, `default_view`, `__start_pose`, neutral defaults |
+| Editor UI strings (`editor_*`, `dialog_otheroptions`, `dialog_invalidcrates`, `taskmanager_mapeditor` "Map Editor", `multiwinia_editor_*`) | text | `data/language/english.txt`, `code/interface/*` | new string table |
+| Achievement "Master of Multiwinia" tied to the level index | name | `code/achievement_tracker.cpp` | new achievement names |
+
+## Source map
+
+Code, tools and non-level data (one row per file):
+
+| File | Role |
+|---|---|
+| `code/level_file.h` | `LevelFile`, `LandscapeDef`, `LandscapeFlattenArea`, `InstantUnit`, `CameraMount`, `CameraAnimation`, `CamAnimNode`, `LevelOption*`/`LevelEffect*` enums (§5, §6) |
+| `code/level_file.cpp` | every block parser and writer, defaults, `CalculeCRC`, `GenerateAutomaticObjectives`, `Save` (§2.3, §2.5, §5, §6, §8.7) |
+| `code/mapfile.h` | `MapFile` keys (§8.8) |
+| `code/mapfile.cpp` | `.mwm` save/load, embedded textures (§8.2, §8.8) |
+| `code/mapcrc.h` | generated `MAPID_*` constants (§2.3) |
+| `code/location.h` | `Location` level-facing members |
+| `code/location.cpp` | `Init`, `LoadLevel`, `InitBuildings`, `InitialiseTeam`, `GetTeamPosition`, `GetTeamFromPosition`, weather advances, special lighting gate, `GetBuilding` in editor mode (§2.5, §5.3, §6.6) |
+| `code/location_editor.h` | editor state, modes, tools (§8.3) |
+| `code/location_editor.cpp` | editor input, picking, per-mode behaviour, rendering (§8.3) |
+| `code/game_menu.h` | `GameMenu::m_maps` per mode (§2.2) |
+| `code/game_menu.cpp` | `CreateMapList`, `AddMap`, `.mwm` listing, PDLC page names (§2.2, §7.3) |
+| `code/UI/MapData.h` | menu map record (§2.2) |
+| `code/UI/MapData.cpp` | `CalculeMapId` (§2.2) |
+| `code/UI/LevelSelectButton.h` | map-name/PlayTime display, demo gating click (§2.2) |
+| `code/UI/MapImageButton.h` | thumbnail lookup and fallback (§2.2, §3.5) |
+| `code/UI/GameMenuWindow.h` | map-select page declarations |
+| `code/UI/GameMenuWindow.cpp` | `SetupMapSelectPage`, tutorials' map ids, "Map Editor" button (§2.2, §2.4, §8.1) |
+| `code/UI/MultiwiniaEditorButton.h` | main-menu editor entry [B:EDITOR] (§8.1) |
+| `code/UI/PrologueButton.h` | Darwinia Prologue start (`game_demo2.txt`) [B:LEGACY] (§7.1) |
+| `code/UI/CampaignButton.h` | Darwinia Campaign start (`game.txt`) [B:LEGACY] (§7.1) |
+| `code/UI/GameServerButton.h` | custom-map request flag [B:EDITOR] (§8.1) |
+| `code/app.h` | `App` map/editing members |
+| `code/app.cpp` | `IsMapPermitted`, `IsGameModePermitted`, `GetMapID`, `Multiplayer`, `UpdateDifficultyFromPreferences`, `LoadProfile`, `GetMapDirectory` (§2.3, §2.4, §6.3) |
+| `code/main.cpp` | `EnterLocation`, `DoEnterLocation` (whitelist, camera start), `LocationEditorLoop`, `GlobalWorldEditorLoop` (§2.5, §8.2) |
+| `code/achievement_tracker.h` | level-id constants |
+| `code/achievement_tracker.cpp` | `level_enum.txt` loader and level achievements (§7.3) |
+| `code/network/demo_limitations.cpp` | demo map whitelist (§2.3, §2.4) |
+| `code/network/clienttoserver.cpp` | `NET_DARWINIA_START_GAME`, `GAMEOPTION_MAPNAME`, custom-map request (§2.5) |
+| `code/network/server.cpp` | map CRC advertising (§2.3) |
+| `code/lib/universal_include.h` | `PERMITTED_MAPS`, `LOCATION_EDITOR`, mode macros (§1, §2.4) |
+| `code/lib/resource.cpp` | `ListResources` (non-recursive scan) (§2.2) |
+| `contrib/systemiv/lib/filesys/file_system.cpp` | `OrderedInsert` (§2.2) |
+| `contrib/systemiv/lib/math/filecrc.cpp` | `FileCRC` (§2.3) |
+| `contrib/unrar/crc.cpp` | CRC-32 table (§2.3) |
+| `code/global_world.h` | `GlobalResearch`, `GlobalEventCondition` (§6.7, §6.8) |
+| `code/global_world.cpp` | research names, `GetLocationIdFromMapFilename` bug, Darwinia `LoadGame` (§2.5, §6.8, §7.1) |
+| `code/multiwinia.cpp` | consumers of level options (§5.2) |
+| `code/team.cpp` | Futurewinian position test (§5.2) |
+| `code/location_input.cpp` | `noradarcontrol` consumer (§5.2) |
+| `code/gamecursor.cpp` | `noradarcontrol` consumer (§5.2) |
+| `code/worldobject/building.cpp` | `CreateBuilding`, `BuildingIsBlocked`, `Write` (§6.3) |
+| `code/worldobject/entity.cpp` | `EntityIsBlocked`, `FollowRoute` (§6.4, §6.6) |
+| `code/worldobject/darwinian.cpp` | `BeginVictoryDance`, Futurewinian check (§2.5, §5.2) |
+| `code/worldobject/spawnpoint.cpp` | `nohandicap`, `instantspawnpointcapture` consumers; editor gizmo (§5.2, §8.3) |
+| `code/worldobject/radardish.cpp` | `forceradarteammatch` consumer (§5.2) |
+| `code/worldobject/multiwiniazone.cpp` | zone link list (§4.7, §8.9) |
+| `code/worldobject/pulsebomb.cpp` | bomb link list (§4.5, §8.9) |
+| `code/worldobject/worldobject.h` | `Light` (§6.2) |
+| `code/worldobject/worldobject.cpp` | `Light` defaults (§6.2, §8.5.5) |
+| `code/worldobject/crate.cpp` | `trunkportarmour` → Armour crate invalid (§5.2) |
+| `code/worldobject/ai.cpp` | `noradarcontrol` consumer; AITarget editor gizmo (§5.2, §8.3) |
+| `code/worldobject/aiobjective.cpp` | AIObjective editor gizmo (§8.3) |
+| `code/worldobject/eruptionmarker.cpp` | editor gizmo (§8.3) |
+| `code/worldobject/gunturret.cpp` | mortar editor gizmo (§8.3) |
+| `code/worldobject/jumppad.cpp` | editor gizmo (§8.3) |
+| `code/worldobject/restrictionzone.cpp` | editor gizmo (§8.3) |
+| `code/worldobject/smokemarker.cpp` | editor gizmo (§8.3) |
+| `code/worldobject/triffid.cpp` | editor trajectory gizmo (§8.3) |
+| `code/worldobject/tree.cpp` | tree row columns, `Generate` (§6.3, §8.5.8) |
+| `code/landscape.h` | `LandscapeTile` (§6.1) |
+| `code/landscape.cpp` | tile constructor defaults, `DeleteTile`, guide grid (§8.5) |
+| `code/renderer.cpp` | editor render call (§8.3) |
+| `code/routing_system.h` | `WayPoint` types (§6.4) |
+| `code/script.cpp` | camera-animation consumer [B:LEGACY] (§6.5) |
+| `code/user_input.cpp` | commented-out editor toggle (§8.1) |
+| `code/interface/editor_window.h` | `MainEditWindow` (§8.4) |
+| `code/interface/editor_window.cpp` | main editor window, Save/Publish (§8.4) |
+| `code/interface/landscape_window.h` | landscape windows |
+| `code/interface/landscape_window.cpp` | landscape, tile, flatten-area, guide-grid windows, terrain file dialogs (§8.5.1–8.5.4, §8.5.13) |
+| `code/interface/lights_window.h` | `LightsEditWindow` |
+| `code/interface/lights_window.cpp` | lights window (§8.5.5) |
+| `code/interface/buildings_window.h` | building windows |
+| `code/interface/buildings_window.cpp` | building create/edit windows (§8.5.6, §8.5.7) |
+| `code/interface/tree_window.h` | `TreeWindow` |
+| `code/interface/tree_window.cpp` | tree editor (§8.5.8) |
+| `code/interface/instant_unit_window.h` | instant-unit windows |
+| `code/interface/instant_unit_window.cpp` | instant-unit create/edit (§8.5.9) |
+| `code/interface/camera_mount_window.h` | `CameraMountEditWindow` |
+| `code/interface/camera_mount_window.cpp` | camera mounts (§8.5.10) |
+| `code/interface/camera_anim_window.h` | camera-animation windows |
+| `code/interface/camera_anim_window.cpp` | camera animations, never opened (§8.5.10) |
+| `code/interface/multiwiniaoptions_window.h` | `MultiwiniaOptionsWindow` |
+| `code/interface/multiwiniaoptions_window.cpp` | map options editor (§8.5.11) |
+| `code/interface/invalidcrates_window.h` | `InvalidCratesWindow` |
+| `code/interface/invalidcrates_window.cpp` | crate exclusions editor (§8.5.12) |
+| `code/interface/multiwinia_window.h` | `MultiwiniaWindow`, `NewMapWindow` |
+| `code/interface/multiwinia_window.cpp` | editor front page and new-map flow (§8.2) |
+| `code/interface/multiwinia_filedialog.h` | `MultiwiniaFileDialog` |
+| `code/interface/multiwinia_filedialog.cpp` | map picker (§8.5.13) |
+| `code/interface/filedialog.h` | `FileDialog` base |
+| `code/interface/filedialog.cpp` | generic file dialog (§8.5.13) |
+| `code/interface/input_field.cpp` | `ColourWidget`/`ColourWindow` (§8.5.13) |
+| `code/interface/globalworldeditor_window.h` | `GlobalWorldEditorWindow` |
+| `code/interface/globalworldeditor_window.cpp` | Darwinia world editor [B:LEGACY] (§8.5.14) |
+| `code/interface/mainmenus.cpp` | unreachable `MultiwiniaButton` (§8.1) |
+| `code/interface/debugmenu.cpp` | `EditorButton` [B:EDITOR] (§8.1) |
+| `code/interface/mods_window.cpp` | mod-system editor toggle [B:DEAD] (§8.1) |
+| `tools/MapCRC/main.cpp` | `mapcrc.h` generator (§2.3) |
+| `tools/build_multiwinia_data.bat` | data packaging per platform (§2.4) |
+| `tools/build_multiwinia_retail.bat` | retail packaging (§2.4) |
+| `tools/build_multiwinia.bat` | packaging (§2.4) |
+| `tools/build_multiwinia_gold.bat` | packaging (§2.4) |
+| `tools/build_multiwinia_crashreporter.bat` | packaging (§2.4) |
+| `tools/build_multiwinia_pc_preview.bat` | preview packaging (§2.4) |
+| `tools/build_multiwinia_hwcompat.bat` | hardware-compat packaging (§2.4) |
+| `tools/build_multiwinia_hwcompat_crashreporter.bat` | hardware-compat packaging (§2.4) |
+| `tools/listfiles.pl` | exclusion matching (§2.4) |
+| `tools/copyfiles.pl` | inclusion copy-back (§2.4) |
+| `tools/init.list` | pre-load list (does not contain `level_enum.txt`, §7.3) |
+| `tools/multiwinia_exclusions.txt` | retail exclusions (§2.4, §7.3) |
+| `tools/multiwinia_exclusions_beta_test.txt` | beta/preview exclusions (§2.4) |
+| `tools/multiwinia_exclusions_hwcompat.txt` | hardware-compat exclusions (§2.4) |
+| `tools/multiwinia_inclusions_previewcopy.txt` | preview map set (§2.4) |
+| `tools/multiwinia_inclusions_hwcompat.txt` | hardware-compat map set (§2.4) |
+| `tools/multiwinia_inclusions_assaultstresstest.txt` | stress map set (§2.4) |
+| `tools/multiwinia_inclusions_beta_test_group_a.txt` | beta group A map set (§2.4) |
+| `tools/multiwinia_inclusions_beta_test_group_b.txt` | beta group B map set (§2.4) |
+| `tools/multiwinia_inclusions_beta_test_group_c.txt` | beta group C map set (§2.4) |
+| `data/multiwinia.txt` | blueprint names = valid `GameTypes` tokens (§2.2) |
+| `data/game.txt` | Darwinia locations/missions [B:LEGACY] (§7.1) |
+| `data/game_demo.txt` | Darwinia demo world [B:LEGACY] (§7.1) |
+| `data/game_demo2.txt` | Darwinia Prologue world [B:LEGACY] (§7.1) |
+| `data/game_unlockall.txt` | Darwinia unlock-all world [B:LEGACY] (§7.1) |
+| `data/locations.txt` | Darwinia island positions [B:LEGACY] (§7.1) |
+| `data/purity/game.txt` | old copy of `game.txt`, never opened (§7.1) |
+| `data/purity/map_mine.txt` | old Darwinia map copy, never opened (§7.1) |
+| `data/purity/mission_mine_enable.txt` | old Darwinia mission copy, never opened (§7.1) |
+| `data/scripts/attractmode.txt` | references `_attract` missions [B:DEAD] (§7.1) |
+| `data/scripts/temple_intro.txt` | references `mission_temple_recapture` [B:LEGACY] (§7.1) |
+| `data/scripts/gameover.txt` | commented-out mission references (§7.1) |
+| `data/input/input_preferences.txt` | editor bindings `SelectLocation`, `TileSelect`, `TileDrag`, `TileDrop` (§8.3) |
+| `data/shapes/camera.shp` | editor camera-mount gizmo (§8.3) |
+| `data/language/english.txt` | map names/descriptions, editor strings (§2.2, IP) |
+| `docs/changes.txt` | editor change notes (discrepancies) |
+| `docs/top level map.txt` | Darwinia map/mission design note (discrepancies) |
+| `docs/new building docs.txt` | FenceSwitch editor note (discrepancies) |
+| `docs/multiwinia-changes.txt` | map fixes, co-op removal on "Field of Unlife" (§5.6) |
+| `docs/multiwinia_manual.pdf` | player manual (discrepancies) |
+
+Level and thumbnail files (one row per file; generated table `sourcemap`):
+
+<!-- S08:sourcemap -->
+| File | Role |
+|---|---|
+| `data/levels/map_biosphere.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_containment.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_escort.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_garden.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_generator.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_launchpad.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_mine.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_pattern_buffer.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_receiver.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_sandbox.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_temple.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/map_yard.txt` | Darwinia location map [B:LEGACY] (§7.1) |
+| `data/levels/mission_biosphere_attract.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_biosphere_recapture.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_containment_enable.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_escort_escort.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_garden_liberate.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_generator_enable.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_launchpad.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_mine_attract.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_mine_demo.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_mine_enable.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_pattern_buffer_attract.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_pattern_buffer_recapture.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_receiver_recapture.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_sandbox_tutorial.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_temple_cutscene.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_temple_recapture.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mission_yard_enable.txt` | Darwinia mission [B:LEGACY] (§7.1) |
+| `data/levels/mp_assault_2P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_2P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_2p_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_3p_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_3P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_3p_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_4P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_4P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_assault_stress.txt` | Multiwinia map, stress test; hidden (GameTypes none); not in retail data (§3) |
+| `data/levels/mp_benchmark_1.txt` | Multiwinia map, benchmark; hidden (GameTypes none); not in retail data (§3) |
+| `data/levels/mp_blitzkrieg_2p_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_2p_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_2P_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_2P_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_3P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_3P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_blitzkrieg_4P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_2p_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_2p_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_2p_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_2p_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_3p_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_3P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_3p_3.txt` | Multiwinia map, cut map; not in retail data (§3) |
+| `data/levels/mp_cts_4P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_4P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_cts_4p_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_domination_2P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_domination_2P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_domination_3P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_domination_4P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_domination_4P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_2P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_2P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_2P_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_2P_3b.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_3P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_3P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_3P_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_3P_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_4P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_4P_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_koth_4P_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_2P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_2p_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_2P_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_3p_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_3P_2.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_3P_3.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_rocketriot_4P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_sandbox.txt` | Multiwinia map, sandbox; hidden (GameTypes none); not in retail data (§3) |
+| `data/levels/mp_sandbox_all.txt` | Multiwinia map, sandbox; hidden (GameTypes none); not in retail data (§3) |
+| `data/levels/mp_skirmish_2p_4.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_skirmish_3P_1.txt` | Multiwinia map, official retail (§3) |
+| `data/levels/mp_tankbattle_2P.txt` | Multiwinia map, TankBattle [B:DEBUG]; not in retail data (§3) |
+| `data/levels/mp_tankbattle_3P.txt` | Multiwinia map, TankBattle [B:DEBUG]; not in retail data (§3) |
+| `data/levels/mp_tankbattle_4P.txt` | Multiwinia map, TankBattle [B:DEBUG]; not in retail data (§3) |
+| `data/levels/old/mp_assault1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_assault_3P_1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_cauldron.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_chess1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_crossroads.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_crucible.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_firetop.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_gateway.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_ghosttown.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_hamburgerhill.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_kingspass.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_knightspatch.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_koth_2P_4.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_marblecanyon.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_rocketriot_2p_1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_sabrepoint.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman2.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_2P.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_2P_1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_2P_2.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_2P_3.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_3P_1.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_3P_2.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_shaman_3P_3.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_silverisle.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_taintedflats.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_temple.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_thestretch.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/old/mp_twistedhighlands.txt` | superseded Multiwinia map, never loaded (§7.2) |
+| `data/levels/level_enum.txt` | achievement level ids 1–59; excluded from retail data (§7.3) |
+| `data/thumbnails/default.bmp` | map-select thumbnail fallback (§3.5) |
+| `data/thumbnails/mp_assault_2P_1.bmp` | map-select thumbnail of mp_assault_2P_1.txt (§3.5) |
+| `data/thumbnails/mp_assault_2P_2.bmp` | map-select thumbnail of mp_assault_2P_2.txt (§3.5) |
+| `data/thumbnails/mp_assault_2p_3.bmp` | map-select thumbnail of mp_assault_2p_3.txt (§3.5) |
+| `data/thumbnails/mp_assault_3P_1.bmp` | map-select thumbnail of mp_assault_3p_1.txt (§3.5) |
+| `data/thumbnails/mp_assault_3P_2.bmp` | map-select thumbnail of mp_assault_3P_2.txt (§3.5) |
+| `data/thumbnails/mp_assault_3P_3.bmp` | map-select thumbnail of mp_assault_3p_3.txt (§3.5) |
+| `data/thumbnails/mp_assault_4P_1.bmp` | map-select thumbnail of mp_assault_4P_1.txt (§3.5) |
+| `data/thumbnails/mp_assault_4P_2.bmp` | map-select thumbnail of mp_assault_4P_2.txt (§3.5) |
+| `data/thumbnails/mp_benchmark_1.bmp` | map-select thumbnail of mp_benchmark_1.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_1.bmp` | map-select thumbnail of mp_blitzkrieg_2p_1.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_2.bmp` | map-select thumbnail of mp_blitzkrieg_2p_2.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_3.bmp` | map-select thumbnail of mp_blitzkrieg_2P_3.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_2p_4.bmp` | map-select thumbnail of mp_blitzkrieg_2P_4.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_3P_1.bmp` | map-select thumbnail of mp_blitzkrieg_3P_1.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_3P_2.bmp` | map-select thumbnail of mp_blitzkrieg_3P_2.txt (§3.5) |
+| `data/thumbnails/mp_blitzkrieg_4P_2.bmp` | map-select thumbnail of mp_blitzkrieg_4P_2.txt (§3.5) |
+| `data/thumbnails/mp_cts_2p_1.bmp` | map-select thumbnail of mp_cts_2p_1.txt (§3.5) |
+| `data/thumbnails/mp_cts_2p_2.bmp` | map-select thumbnail of mp_cts_2p_2.txt (§3.5) |
+| `data/thumbnails/mp_cts_2p_3.bmp` | map-select thumbnail of mp_cts_2p_3.txt (§3.5) |
+| `data/thumbnails/mp_cts_2p_4.bmp` | map-select thumbnail of mp_cts_2p_4.txt (§3.5) |
+| `data/thumbnails/mp_cts_3p_1.bmp` | map-select thumbnail of mp_cts_3p_1.txt (§3.5) |
+| `data/thumbnails/mp_cts_3P_2.bmp` | map-select thumbnail of mp_cts_3P_2.txt (§3.5) |
+| `data/thumbnails/mp_cts_3p_3.bmp` | map-select thumbnail of mp_cts_3p_3.txt (§3.5) |
+| `data/thumbnails/mp_cts_4P_1.bmp` | map-select thumbnail of mp_cts_4P_1.txt (§3.5) |
+| `data/thumbnails/mp_cts_4P_2.bmp` | map-select thumbnail of mp_cts_4P_2.txt (§3.5) |
+| `data/thumbnails/mp_cts_4p_3.bmp` | map-select thumbnail of mp_cts_4p_3.txt (§3.5) |
+| `data/thumbnails/mp_domination_2P_1.bmp` | map-select thumbnail of mp_domination_2P_1.txt (§3.5) |
+| `data/thumbnails/mp_domination_2P_2.bmp` | map-select thumbnail of mp_domination_2P_2.txt (§3.5) |
+| `data/thumbnails/mp_domination_3P_1.bmp` | map-select thumbnail of mp_domination_3P_1.txt (§3.5) |
+| `data/thumbnails/mp_domination_4P_1.bmp` | map-select thumbnail of mp_domination_4P_1.txt (§3.5) |
+| `data/thumbnails/mp_domination_4P_2.bmp` | map-select thumbnail of mp_domination_4P_2.txt (§3.5) |
+| `data/thumbnails/mp_koth_2P_1.bmp` | map-select thumbnail of mp_koth_2P_1.txt (§3.5) |
+| `data/thumbnails/mp_koth_2P_2.bmp` | map-select thumbnail of mp_koth_2P_2.txt (§3.5) |
+| `data/thumbnails/mp_koth_2P_3.bmp` | map-select thumbnail of mp_koth_2P_3.txt (§3.5) |
+| `data/thumbnails/mp_koth_2P_3b.bmp` | map-select thumbnail of mp_koth_2P_3b.txt (§3.5) |
+| `data/thumbnails/mp_koth_2P_4.bmp` | map-select thumbnail without a top-level level (§3.5) |
+| `data/thumbnails/mp_koth_3P_1.bmp` | map-select thumbnail of mp_koth_3P_1.txt (§3.5) |
+| `data/thumbnails/mp_koth_3P_2.bmp` | map-select thumbnail of mp_koth_3P_2.txt (§3.5) |
+| `data/thumbnails/mp_koth_3P_3.bmp` | map-select thumbnail of mp_koth_3P_3.txt (§3.5) |
+| `data/thumbnails/mp_koth_3P_4.bmp` | map-select thumbnail of mp_koth_3P_4.txt (§3.5) |
+| `data/thumbnails/mp_koth_4P_1.bmp` | map-select thumbnail of mp_koth_4P_1.txt (§3.5) |
+| `data/thumbnails/mp_koth_4P_3.bmp` | map-select thumbnail of mp_koth_4P_3.txt (§3.5) |
+| `data/thumbnails/mp_koth_4P_4.bmp` | map-select thumbnail of mp_koth_4P_4.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_2P_2.bmp` | map-select thumbnail of mp_rocketriot_2P_2.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_2p_3.bmp` | map-select thumbnail of mp_rocketriot_2p_3.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_2P_4.bmp` | map-select thumbnail of mp_rocketriot_2P_4.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_3p_1.bmp` | map-select thumbnail of mp_rocketriot_3p_1.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_3P_2.bmp` | map-select thumbnail of mp_rocketriot_3P_2.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_3P_3.bmp` | map-select thumbnail of mp_rocketriot_3P_3.txt (§3.5) |
+| `data/thumbnails/mp_rocketriot_4P_1.bmp` | map-select thumbnail of mp_rocketriot_4P_1.txt (§3.5) |
+| `data/thumbnails/mp_skirmish_2p_3.bmp` | map-select thumbnail without a top-level level (§3.5) |
+| `data/thumbnails/mp_skirmish_2p_4.bmp` | map-select thumbnail of mp_skirmish_2p_4.txt (§3.5) |
+| `data/thumbnails/mp_skirmish_3P_1.bmp` | map-select thumbnail of mp_skirmish_3P_1.txt (§3.5) |
+| `data/thumbnails/mp_tankbattle_2P.bmp` | map-select thumbnail of mp_tankbattle_2P.txt (§3.5) |
+| `data/thumbnails/mp_tankbattle_3P.bmp` | map-select thumbnail of mp_tankbattle_3P.txt (§3.5) |
+| `data/thumbnails/mp_tankbattle_4P.bmp` | map-select thumbnail of mp_tankbattle_4P.txt (§3.5) |
+<!-- /S08:sourcemap -->
+
+## Appendix — dead/legacy code
+
+| Item | Tag | Ref |
+|---|---|---|
+| Darwinia campaign load path for `map_*`/`mission_*` (`GlobalWorld::LoadGame`, `ParseMissionFile`, mission-only blocks `RunningPrograms`, `Difficulty`, `LeaderboardStats`, `SaveMissionFile`, `GenerateInstantUnits`, `GenerateDynamicBuildings`) | [B:LEGACY] | `code/global_world.cpp`, `code/level_file.cpp` |
+| Team-1 difficulty scaling of buildings and instant units (factor forced to 1) | [B:LEGACY] (inert) | `LevelFile::ParseBuildings`, `ParseInstantUnits`, `App::UpdateDifficultyFromPreferences` |
+| Level-file `Routes` (overridden by the run-time routing system in Multiwinia) and `CameraAnimations` (script-only) | [B:LEGACY] | `Entity::FollowRoute`, `code/script.cpp` |
+| Secondary objectives for trunk ports / research items (`GetLocationIdFromMapFilename` always −1) | [B:LEGACY] | `LevelFile::GenerateAutomaticObjectives` |
+| `LevelFile::HasEffect` (always false) | dead function | `code/level_file.cpp` |
+| Map editor, `.mwm` creation/listing/network request, camera-animation windows, editor gizmos | [B:EDITOR] | §8 |
+| Global-world editor (`GlobalWorldEditorWindow`, `GlobalWorldEditorLoop` returns immediately) | [B:LEGACY] / dead even in editor builds | `code/main.cpp:GlobalWorldEditorLoop` |
+| `App::SaveThumbnailScreenshot` (Vista saved-game thumbnail) | [B:DEAD] (`TARGET_OS_VISTA`) | `code/app.cpp` |
+| PDLC remnants (page names, `Disconnect_ClientNeedsPDLC`, `NET_DARWINIA_GAMEOPTION_PDLC_BITMASK`, undefined `App::DoCheckForPDLC`) | Xbox Live Arcade remnant [I] | §7.3 |
+| `data/levels/old/` (30 maps), `data/purity/` level copies | data never loaded | §7.2, §7.1 |
+| TankBattle maps and mode | [B:DEBUG] | §4.8 |

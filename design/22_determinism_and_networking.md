@@ -879,7 +879,7 @@ All five keys must be present with the right types or the defaults are used. Dem
 
 Preference `RecordDemo`: 1 ⇒ `Server::SaveHistory("serverHistory.dat")` on game shutdown (`code/app.cpp:App::ShutdownCurrentGame`); 2 ⇒ `Server::LoadHistory("ServerHistory.dat")` after a location loads (`code/main.cpp:DoEnterLocation`); both values also switch `UpdateAdvanceTime` to a fixed fake clock (`DemoFrameRate`, default 25) for AVI capture. File = raw host-endian `int` count + `Directory::Write` of every history letter. `LoadHistory` sets `m_sequenceId = seqId + 1` only when `seqId > m_sequenceId` (it skips the update when equal — a quirk).
 
-Resolved: P15 presented the history as a full replay "subject to identical code/data and sync seed", X3 as reproducing a match "only by accident". Code shows both caveats are real: the sync seed travels in the unsequenced CLIENTID and is **not** in the file, and the history is loaded **after** the replaying session's own START_GAME has already been processed, replacing the history the client is consuming mid-stream [C `Server::LoadHistory`, `DoEnterLocation`; I consequence]. It is therefore a developer tool that reproduces a match only if seed and alignment happen to match; not a player-facing replay feature.
+Resolved: P15 presented the history as a full replay "subject to identical code, data and sync seed", X3 as reproducing a match "only by accident". Code shows both caveats are real: the sync seed travels in the unsequenced CLIENTID and is **not** in the file, and the history is loaded **after** the replaying session's own START_GAME has already been processed, replacing the history the client is consuming mid-stream [C `Server::LoadHistory`, `DoEnterLocation`; I consequence]. It is therefore a developer tool that reproduces a match only if seed and alignment happen to match; not a player-facing replay feature.
 
 ---
 
@@ -1762,7 +1762,7 @@ Camera state is read by 73 `.cpp` files (calls to `m_camera->GetPos/GetFront/Get
 | N2 | `Multiwinia::Advance()` runs at slice 8 even when paused (outside the `!GamePaused()` check) — it drives the grace-period countdown and the un-pause | `ProcessAllServerLetters` | [C] |
 | N3 | `SliceDArray` partitioning uses array **capacity** and `int(Size()/10.0f)` (float division); slot reuse is LIFO — creation/deletion order fully determines which slot (and thus which slice and tick) a new object is advanced in | `code/lib/slice_darray.cpp`, `contrib/systemiv/lib/tosser/fast_darray.cpp` | [C] |
 | N4 | `Location::Bang` damage falloff `(_range*2.0 - d) / _range*2.0` (operator precedence makes it `((2r − d)/r)·2`) — a gameplay constant to reproduce exactly | `code/location.cpp:Location::Bang` | [C] |
-| N5 | Real time used only to decide *how many* slices run per frame (`GetNumSlicesToAdvance`, `AdvanceAndCatchUp`), UI throttles (`SetCurrentMessage`, `Team::m_lastOrdersSet`) — none affect simulation results | various | [C] |
+| N5 | Real time used only to decide *how many* slices run per frame (`GetNumSlicesToAdvance`, `AdvanceAndCatchUp`), UI throttles (`SetCurrentMessage`, `Team::m_lastOrdersSet`) — none affect simulation results | `code/network/clienttoserver.cpp:GetNumSlicesToAdvance`, `code/location.cpp:Location::SetCurrentMessage`, `code/location_input.cpp` | [C] |
 | N6 | Render extrapolation reads simulation state but never writes it (`g_predictionTime`) | `code/team.cpp`, `code/unit.cpp`, `code/location.cpp` render functions | [C] |
 | N7 | Formation volley uses `fmodf(float(gameTime × 10 + idx), size/4)` — single precision, compiler/FPU-mode sensitive (§14.8.3) | `Darwinian::AdvanceCombat` | [C] |
 | N8 | `m_threatRange` exponential relaxation, spirit hover random walk, slope factors — double accumulations that depend on the `iv_*` wrappers | P03 | [C] |
@@ -1795,7 +1795,7 @@ Target: Windows, C++23, DirectX 12, multiplayer. Each row: what the original doe
 | D7 | Local client state read by simulation code | L1 squad direct control reads the local camera (reachable desync), L2 crosshair typo writes a building type, L3/L4 UI writes task state, L5 tutorial inserts buildings, L13 difficulty pref (§14.11) | **High** | Hard module boundary: the sim library cannot include camera/input/UI/sound/renderer headers (C++20 modules or a separate static library with an include allow-list); all player intent enters as commands; the sim emits presentation events into a queue consumed by the client |
 | D8 | Render code mutating sim objects | crate orientation, tree regeneration, laser-fence link reset, throwable tumble (§14.10) | Medium | The renderer receives `const` snapshots / read-only views; interpolation and per-object visual state live in client-side view components keyed by entity id |
 | D9 | Statics surviving between matches | `Armour::SetDirectOrders` debounce, `s_numMultiwiniaZones`, `SpawnPoint::s_numSpawnPoints[6]` (§14.12) | Medium | All mutable sim state inside a `Match` object constructed per match; forbid mutable `static` variables in sim code (static analysis) |
-| D10 | Unverified data/version/settings | no data hash, the server accepts any version, a local `Difficulty` pref reaches the sim (§14.13) | High | The lobby exchanges build id + hash of every sim-relevant asset (maps, unit stats, shapes/collision, rules); gameplay settings exist only as lobby options inside the command stream; refuse mismatches |
+| D10 | Unverified data, version and settings | no data hash, the server accepts any version, a local `Difficulty` pref reaches the sim (§14.13) | High | The lobby exchanges build id + hash of every sim-relevant asset (maps, unit stats, shapes/collision, rules); gameplay settings exist only as lobby options inside the command stream; refuse mismatches |
 | D11 | Variable timestep through game speed; double time accumulation | dt = 0.1 × speed; `m_gameTime += 0.1·speed`; "1-second" timers take 11 ticks; formation volleys from `fmodf(time × 10)` (§14.8.1, §14.8.3) | Medium | Fixed simulation dt; game speed changes the number of ticks per real second (or is a cosmetic slow-motion only); timers as integer tick counts; every "per second" rule expressed in ticks |
 | D12 | Iteration order coupled to slot reuse; commands addressing slots | LIFO free lists, slice bounds from capacity; TERMINATE/PROMOTE/TOGGLEENTITY by slot index (§14.9.3–§14.9.4) | Medium | Stable monotonically increasing entity ids (never reused within a match); iterate in id order or a documented stable order; commands carry ids; no `unordered_map` iteration and no pointer comparisons in the sim |
 | D13 | Parallelising the sim | single-threaded original; an OpenMP pragma over shared-state steps would break determinism (§14.9.2) | Medium | Deterministic job design: phases that read the previous state and write per-entity outputs, fixed-order reductions, per-entity RNG sub-streams; no shared mutable caches (or caches whose content is a pure function of the tick) |
@@ -1883,3 +1883,293 @@ Target: Windows, C++23, DirectX 12, multiplayer. Each row: what the original doe
 | App LCG | multiplier 214013, increment 2531011, output `(h >> 16) & 0x7FFF`, max 32767 | algorithm | [C] `random_number.cpp:AppRandom` |
 | `NearlyEquals` tolerance / `Normalise` threshold | 1e-6 absolute / `lenSqrd > 1e-10` | literal | [C] `code/lib/math_utils.h`, `code/lib/vector3.cpp` |
 
+---
+
+## Open questions and unknowns
+
+| # | Question | Tag | What would resolve it |
+|---|---|---|---|
+| 22-U1 | MetaServer/MatchMaker server-side behaviour: which fields it adds to LISTRESULT (PROTOCOLMATCH, DEMORESTRICTED, DEMOSERVER), how it relays REQUEST_CONNECT, how it validates keys, the hash-token policy | [U] | the metaserver source (not in this tree) or packet captures of the live service |
+| 22-U2 | The real key algorithm (`Authentication_SimpleKeyCheck`, `Authentication_GenerateKey` are stubbed in this release) | [U] | the original `authentication.cpp`; irrelevant for a new game (use platform entitlements) |
+| 22-U3 | Whether a single UPDATE letter > 1500 bytes ever occurred in shipped play (stall, §3) and whether Windows `recvfrom` drops it (`WSAEMSGSIZE`) as inferred | [I] design-critical | measure letter sizes with 6 players + option bursts; test `recvfrom` with an oversize datagram |
+| 22-U4 | Intent of the dead time-based branch in `GetNumSlicesToAdvance` (time-based vs backlog-based pacing) | [U] intent | developer history; irrelevant for a new design |
+| 22-U5 | Measured steady-state backlog/latency (§2.4 is analytic) | [I] | instrumented two-machine run |
+| 22-U6 | Whether joining a match in progress was intended for release (it works but replays from frame 0) | [U] | release notes or a UI that greys in-progress games (`GameServerButton` does not) |
+| 22-U7 | Whether the VS2005 x87 CRT `sin/cos/pow/acos` produce identical doubles on all x86 CPUs of the era (how much work `iv_trunc_low_nibble` did on PC-only games) | [U] | disassemble the CRT of the shipped binary or run a cross-CPU comparison |
+| 22-U8 | Real-world frequency of L1 (holding `CameraFreeMovement` while another team's selected squad moves) | [U] | two-client play-test or a replay harness logging per-tick state |
+| 22-U9 | Whether the tree / global-LCG race (§14.7) ever fires (sound triggers during level load, WAN-thread wake-ups) | [U] | instrument `AppRandom` with a thread-id check during `Tree::Generate` |
+| 22-U10 | VS2005 defaults assumed for absent project attributes (`/fp:precise`, x87 code generation, OpenMP off) | [I] | the shipped binary's `cl` command line / build log |
+| 22-U11 | Whether VS2005 `atof` is correctly rounded for every literal in the shipped data (matters only for non-MSVC peers) | [U] | compare `atof` with a correctly rounded parser over all numeric tokens in `data/` |
+| 22-U12 | Cross-CRT equality of `pow/exp/log` results after binary32 rounding for terrain generation | [U] | run the terrain oracle (`_work/scripts/S_23_terrain_oracle.py`) against another libm |
+| 22-U13 | Whether PC and Mac clients actually played together (the precision helper and `iv_*` wrappers imply the intent) | [U] | Mac target files / release notes for a cross-platform lobby |
+| 22-U14 | Whether `EntityGridCache` staleness (≤ 1 s, half-range reuse) was a deliberate gameplay property | [U] | designer intent; compare behaviour with the cache disabled |
+| 22-U15 | Whether the D3D configuration was ever used for multiplayer (it would not interoperate with the GL build) | [U] | release history; the D3D build probably does not compile at this commit ([24](24_rendering.md)) |
+| 22-U16 | Which key file name shipped (`authkey.dev` read vs `authkey` written) | [U] | a retail install or the release branch ([09](09_meta_systems.md), [31](31_platform_build_and_tools.md)) |
+| 22-U17 | Whether team slot 5 ever owns spawn points in a shipped mode (stale `s_numSpawnPoints[6]`, §14.12) | [I] | census of team assignments per mode/map ([01](01_game_modes.md), [05](05_economy_and_population.md)) |
+| 22-U18 | Whether a rejoin into a full match is refused (the departed client's reserved `ServerTeam` counts toward the limit) | [I] | two-client test |
+| 22-U19 | What all clients experience when the host quits mid-match (server deleted by `ShutdownCurrentGame`; inferred: lost-connection banner, then nothing) | [I] design-critical | two-client test |
+| 22-U20 | Whether `RecordDemo` replays ever reproduced a match (seed not stored; loaded after the replaying session's START_GAME) | [I] | run with `RecordDemo` 1 then 2 |
+| 22-U21 | Release-time size of the frame-level command stream for 6-player games and its effect on late join | [I] | measurement |
+
+## Docs-vs-code discrepancies
+
+| Doc | Doc says | Code does |
+|---|---|---|
+| `docs/Network.txt` | the server ticks at **25 FPS**; the client "runs heavy weight physics at 25 fps"; the server sleeps until the next 1/25 s | server tick every 0.1 s (10 Hz) of real time, no sleep; each tick is executed as 10 slices on the main thread, consumed at ~30 % of the backlog per render frame [C] `Server::AdvanceIfNecessary`, `GetNumSlicesToAdvance` |
+| `docs/Network.txt` | each chunk also sends copies of the previous two frames | at most one piggy-backed copy (oldest unacknowledged) + up to 3 letters per tick [C] `UpdateClients` |
+| `docs/Network.txt` | watchdog: a client is dead after 1.0 s of silence | 20.0 s [C] |
+| `docs/Network.txt` | the client sends a "ResyncMe" message on gaps; I'm-alive only when idle | no resync message — cumulative ack `LASTSEQID` on every letter; gaps are filled by the resend window; a desync is never repaired; ALIVE always every 0.1 s in game [C] `ClientToServer::ReceiveLetter`, `Server::UpdateClients` |
+| `docs/NetworkThreads.txt` | separate client/server send threads that suspend when idle | sends happen synchronously on the main thread (`AdvanceSender` at the end of `ClientToServer::Advance` and inside `Server::Advance`); only receive/listen paths are threads [C] |
+| `docs/NetworkThreads.txt` | the main thread runs the "client heavy weight advance" only when `time >= nextClientTimeSlice`, and a "light weight advance" extrapolates positions from the last received velocity | heavy-weight work is sliced (10 slices/tick) and interleaved with every rendered frame; there is no state reception — rendering extrapolates locally via `g_predictionTime` [C for no state; I for rendering] |
+| `docs/network overview.txt` | lobby over **TCP**, broadcast "Are you a server?" query, LOAD MAP + confirm handshake, then UDP 4000/4001 | everything is UDP in one channel; servers broadcast REGISTER every 5 s (clients never query); START_GAME is just a sequenced command — no confirm; clients catch up after loading [C] |
+| `docs/network overview.txt` | ports 4000 server / 4001 client | matches the defaults [C] |
+| `docs/integrating virtual players into network system.txt` | `ServerToClient` index = team id; proposes separate team and client arrays; a client may host "an AI running locally" | implemented as proposed (`m_teams` + `m_clients`); the AI is a simulation entity executed identically on all peers, with no input messages [C] |
+| `docs/multiwinia_todo.txt` | "(DONE) … fix determinism; ensure floating point accuracy over multiple platforms" | implemented as `_PC_53` precision control plus binary32 rounding of transcendental results [C] |
+| `docs/multiwiniareleasenotes-beta.txt` (1.9.20) | beta builds enable debugging code to track rand sync errors | in this tree `TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`; beta targets instead hash the full IFrame snapshot [C] `code/lib/universal_include.h`, `code/network/iframe.cpp` |
+| `docs/multiwinia-changes.txt` | "Fixed: Sync error involving Officers sending Darwinians into a radar dish" | current path `SearchForOfficers` copies `m_ordersBuildingId`; no residual issue identified [I] |
+| `contrib/systemiv/lib/math/random_number.h` comments | `AppRandom < APP_RAND_MAX`; `frand`: `0 ≤ r < range`; `sfrand`, `_syncsfrand`: `−range < r < range` | `AppRandom ≤ 32767` inclusive; `frand ∈ [0, range]`; `sfrand ∈ [−range/2, range/2]`; `syncsfrand ∈ [−range/2, range/2)` [C] `random_number.cpp` |
+| `code/lib/vector3.h` comment | `operator==` uses FLT_EPSILON | absolute tolerance 1e-6 (`NearlyEquals`) [C] |
+| `code/lib/matrix33.h` inline comment | `DecomposeToYDR()` returns "x = dive, y = yaw" | returns (yaw, dive, roll) in (x, y, z) [C] |
+| `code/network/clienttoserver.cpp` comment | team requests are sent "once a second" | the gate fires every 0.1 s [C] |
+
+## IP items
+
+| Item | Kind | Ref | Neutral placeholder |
+|---|---|---|---|
+| `metaserver-mwdev.introversion.co.uk` | brand / service hostname | `code/app.cpp:App::InitMetaServer` | `directory.example.net` |
+| `80.175.29.66` (route-probe address) | Introversion-owned IP [I] | `contrib/systemiv/lib/netlib/net_lib.cpp:GetLocalHostIP` | use OS interface enumeration |
+| `ftp.introversion.co.uk`, benchmark upload account | brand / credentials | `code/benchmark.cpp` (credentials deliberately not reproduced) | none — do not reuse |
+| `http://store.introversion.co.uk` | brand URL | `code/app.cpp:App::GetBuyNowURL` | the new title's store URL |
+| `"Multiwinia"` (`APP_NAME`, GAMENAME on the wire, fallback server name) | name | `code/lib/universal_include.h`, `Server::Advertise` | `<NewTitle>` |
+| `METASERVER_GAMETYPE_MULTIWINIA` = 4, `_DEFCON` = 2, "defcon-steam3" | product ids / names | `contrib/systemiv/lib/metaserver/metaserver_defines.h`, `steamauth_server.cpp` | new product id |
+| Fixed demo key and two blacklisted keys | key strings | `contrib/systemiv/lib/metaserver/authentication.cpp` | none (do not copy) |
+| Key prefixes `"DEMO"`, `"AMBR"` (Ambrosia distributor), hash prefix `"hsh"` | text / partner brand | `authentication.cpp` | platform entitlements |
+| `authkey.dev` / `authkey` file names | text | `code/app.cpp` | — |
+| Steam app id 1520 | partner id | `contrib/systemiv/lib/metaserver/steamauth_client.cpp` (dead) | — |
+| Ambrosia Software credit | third-party name | `contrib/systemiv/lib/math/math_stubs.cpp` | — (do not copy) |
+| UI phrases `multiwinia_error_serverfull`, `_kickedbyserver`, `_badpass`, `_connection`, `_syncerror`, `_lostconnection`, `_incompatible`, `_missingmap`, `_unknownmap`, `multiwinia_player_left`, `multiwinia_menu_connected`, `multiwinia_menu_attempts`, `multiwinia_update_available`, `dialog_duplicate_key`, `dialog_auth_*`, `dialog_steam_progress_*`, `authentication_demorestricted`, chat tokens `PLAYERJOIN`/`PLAYERLEAVE` | UI string ids (text in data/language) | `code/network/clienttoserver.cpp`, `code/renderer.cpp`, `code/UI/GameServerButton.h`, `code/multiwinia.cpp`, `authentication.cpp` | `net_error_server_full`, `net_error_kicked`, `net_error_bad_password`, `net_error_connection`, `net_error_desync`, `net_error_connection_lost`, `net_error_incompatible`, `net_error_missing_map`, `net_error_unknown_map`, `net_player_left`, … |
+| Default server name `"NewServer"` | text | `Server::Advertise` | `"New Server"` |
+| Map ids `MAPID_MP_KOTH_2P_1`, `_KOTH_3P_1`, `_KOTH_4P_1`, `_CTS_2P_1`, `_ROCKETRIOT_3P_1` (demo map list) | level names | `code/network/demo_limitations.cpp`, `code/mapcrc.h` | new map ids |
+| Game-mode names (Domination/Skirmish, King of the Hill, Capture the Statue, Assault, Rocket Riot, Blitzkrieg, Tank Battle) carried in `GAMEMODE` | names | `code/multiwinia.h` | generic mode names |
+| Identifier prefix `NET_DARWINIA_*` and readable codes "DARWINIA"/"CMD" | brand in identifiers | `code/network/network_defines.h`, `network_defines_debug.h` | `NET_GAME_*` |
+| "Darwinian" in debug state lines (`DARWINIAN Id[…]`) and entity type names | name | `code/worldobject/darwinian.cpp:Darwinian::LogState` | "Worker" |
+| Sync error report file names `syncerror-…`, `syncdiff-…` | generic text (not IP) | `ClientToServer::GetSyncFileName` | may be reused |
+| MT19937 reference implementation (BSD-style licence, Matsumoto & Nishimura) | third-party code | `contrib/systemiv/lib/math/random_number.cpp`, `code/lib/math_utils.cpp` | `std::mt19937` or own PCG/xoshiro; attribution if reference code is copied |
+| SHA-1 from the bundled unrar sources (seed, IFrame hash) | third-party code (unrar licence) | `contrib/unrar/sha1.cpp`, `code/network/server.cpp:GenSyncRandSeed`, `code/network/iframe.cpp` | any public-domain hash (xxHash, BLAKE3) |
+
+## Source map
+
+Generated by `_work/scripts/S_22_source_map.py` (every path checked against `_work/manifest.csv`).
+
+| File | Role in this document |
+|---|---|
+| `code/network/bandwidth.cpp` | `BandwidthCounter` 5-s average rate (measurement only) |
+| `code/network/bandwidth.h` | `BandwidthCounter` declaration |
+| `code/network/bytestream.h` | raw-pointer READ_/WRITE_ macros — unused |
+| `code/network/clienttoserver.cpp` | client: connection states, pacing, receive/order, command senders, `ProcessServerLetters`/`ProcessServerUpdates`, sync value, IFrame exchange |
+| `code/network/clienttoserver.h` | `ClientToServer` class, connection-state enum, `CTOS_MAX_CONNECTION_ATTEMPTS` |
+| `code/network/demo_limitations.cpp` | Demo2Limits parsing and defaults |
+| `code/network/demo_limitations.h` | `DemoLimitations` declaration |
+| `code/network/ftp_manager.cpp` | reliable blob transfer (IFrame files) over letters |
+| `code/network/ftp_manager.h` | `FTPManager`, `FTP` declarations, block constants |
+| `code/network/generic.cpp` | `IpToString` helper used by both listen callbacks |
+| `code/network/generic.h` | `IpToString` declaration |
+| `code/network/iframe.cpp` | per-frame sync value (baseline: synced-RNG byte; debug/beta: SHA-1 of snapshot), snapshot serialisation, diff |
+| `code/network/iframe.h` | `IFrame` class |
+| `code/network/listener.cpp` | observer classes — unused |
+| `code/network/listener.h` | observer class declarations — unused |
+| `code/network/network_defines.h` | every message/field code, `GAMEOPTION_*` ids, network preference names |
+| `code/network/network_defines_debug.h` | readable alternative codes — not included [B:DEAD] |
+| `code/network/network_quality.cpp` | packet loss/latency/bandwidth simulator — compiled, unused (`NETWORKQUALITY_TESTING` off) |
+| `code/network/network_quality.h` | `NetworkQuality` declaration |
+| `code/network/networkupdate.inc` | accessors of a removed Darwinia `NetworkUpdate` class [B:DEAD] |
+| `code/network/networkvalue.cpp` | UI ↔ network option bindings; float parse truncation |
+| `code/network/networkvalue.h` | `NetworkValue` family declarations |
+| `code/network/server.cpp` | server: tick, sequencing, history, resend window, admission/auth, sync comparison, team assignment, advertising, seed generation, history save/load |
+| `code/network/server.h` | `Server`, `ServerTeam`, disconnect-reason enum, `UDP_HEADER_SIZE` |
+| `code/network/servertoclient.cpp` | per-client server record |
+| `code/network/servertoclient.h` | `ServerToClient` fields |
+| `code/network/servertoclientletter.h` | `ServerToClientLetter`, `AddUpdate` (strips FROMIP/FROMPORT/LASTSEQID) |
+| `code/network/syncdiff.cpp` | `SyncDiff` printing |
+| `code/network/syncdiff.h` | `SyncDiff` record |
+| `contrib/systemiv/lib/netlib/bytestream.h` | raw byte-stream macros — unused |
+| `contrib/systemiv/lib/netlib/net_lib.cpp` | WinSock start-up, `GetLocalHostIP` |
+| `contrib/systemiv/lib/netlib/net_lib.h` | `MAX_PACKET_SIZE` 1500, NetLib API |
+| `contrib/systemiv/lib/netlib/net_lib_apple.h` | Mac socket port [B:DEAD on PC] |
+| `contrib/systemiv/lib/netlib/net_lib_linux.h` | Linux socket port [B:DEAD on PC] |
+| `contrib/systemiv/lib/netlib/net_lib_win32.h` | Win32 socket definitions |
+| `contrib/systemiv/lib/netlib/net_mutex.h` | `NetMutex`, `NetLockMutex`, `NetEvent`, `NetSemaphore` |
+| `contrib/systemiv/lib/netlib/net_mutex_linux.cpp` | pthread mutex [B:DEAD on PC] |
+| `contrib/systemiv/lib/netlib/net_mutex_win32.cpp` | CRITICAL_SECTION mutex, events |
+| `contrib/systemiv/lib/netlib/net_socket.cpp` | connected UDP socket used for local-IP discovery |
+| `contrib/systemiv/lib/netlib/net_socket.h` | `NetSocket` declaration |
+| `contrib/systemiv/lib/netlib/net_socket_listener.cpp` | bind with retries, blocking receive loop (1500-byte buffer) |
+| `contrib/systemiv/lib/netlib/net_socket_listener.h` | `NetSocketListener` declaration |
+| `contrib/systemiv/lib/netlib/net_socket_session.cpp` | send endpoint sharing the listener socket |
+| `contrib/systemiv/lib/netlib/net_socket_session.h` | `NetSocketSession` declaration |
+| `contrib/systemiv/lib/netlib/net_thread.h` | `NetStartThread` declaration |
+| `contrib/systemiv/lib/netlib/net_thread_linux.cpp` | pthread threads [B:DEAD on PC] |
+| `contrib/systemiv/lib/netlib/net_thread_win32.cpp` | `CreateThread` wrapper |
+| `contrib/systemiv/lib/netlib/net_udp_packet.cpp` | `NetUdpPacket` constructor |
+| `contrib/systemiv/lib/netlib/net_udp_packet.h` | `NetUdpPacket` layout |
+| `contrib/systemiv/lib/metaserver/authentication.cpp` | key status, hashing, simple check (stripped), authentication thread |
+| `contrib/systemiv/lib/metaserver/authentication.h` | status codes, key length |
+| `contrib/systemiv/lib/metaserver/matchmaker.cpp` | identity (STUN-like) and hole-punch messages; `AppAbort` on unknown command |
+| `contrib/systemiv/lib/metaserver/matchmaker.h` | matchmaker API |
+| `contrib/systemiv/lib/metaserver/metaserver.cpp` | registration threads, server list, data cache, listener |
+| `contrib/systemiv/lib/metaserver/metaserver.h` | metaserver API |
+| `contrib/systemiv/lib/metaserver/metaserver_defines.h` | ports, periods, message codes, property keys |
+| `contrib/systemiv/lib/metaserver/metaserver_defines_old.h` | older readable protocol [B:DEAD] |
+| `contrib/systemiv/lib/metaserver/steamauth_client.cpp` | Steam authentication client [B:DEAD] |
+| `contrib/systemiv/lib/metaserver/steamauth_client.h` | Steam authentication client [B:DEAD] |
+| `contrib/systemiv/lib/metaserver/steamauth_server.cpp` | Steam authentication server [B:DEAD] |
+| `contrib/systemiv/lib/metaserver/steamauth_server.h` | Steam authentication server [B:DEAD] |
+| `contrib/systemiv/lib/network_stream.cpp` | packed ints, strings, Vector3, blobs |
+| `contrib/systemiv/lib/network_stream.h` | stream API; includes the inlines |
+| `contrib/systemiv/lib/network_stream_inlines.cpp` | little-endian primitive read/write (included, live) |
+| `contrib/systemiv/lib/tosser/directory.cpp` | `Directory` wire format, read limits |
+| `contrib/systemiv/lib/tosser/directory.h` | field types, safe defaults |
+| `contrib/systemiv/lib/tosser/fast_darray.cpp` | LIFO free-list slot allocation (iteration order) |
+| `contrib/systemiv/lib/tosser/fast_darray.h` | `FastDArray` declaration |
+| `contrib/systemiv/lib/math/random_number.cpp` | MT19937 synced RNG, App LCG, `TRACK_SYNC_RAND` log |
+| `contrib/systemiv/lib/math/random_number.h` | RNG macros and API |
+| `contrib/systemiv/lib/math/math_stubs.cpp` | `iv_trunc_low_nibble`, `iv_atof`, `iv_wtof`, `iv_wtoi` |
+| `contrib/systemiv/lib/math/math_stubs.h` | declarations (`iv_strtod` declared, undefined) |
+| `contrib/systemiv/lib/math/hash.cpp` | `HashData` (key hash for transmission) |
+| `contrib/systemiv/lib/math/hash.h` | hash declarations |
+| `contrib/systemiv/lib/math/fixed.h` | unused fixed-point selector [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_64.cpp` | unused 64-bit fixed point [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_64.h` | unused 64-bit fixed point [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_float.cpp` | unused double wrapper [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_float.h` | unused double wrapper [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed64_sin_table.inc` | fixed-point sine table [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed64_asin_table.inc` | fixed-point arcsine table [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_generate_sin.cpp` | table generator [B:DEAD] |
+| `contrib/systemiv/lib/math/fixed_generate_asin.cpp` | table generator [B:DEAD] |
+| `contrib/systemiv/lib/hash.h` | `Hash(context, value)` helpers used by the seed and IFrame hash |
+| `contrib/systemiv/lib/debug_utils.cpp` | `HashDouble` for sync logs |
+| `contrib/systemiv/lib/debug_utils.h` | debug helper declarations |
+| `contrib/unrar/sha1.cpp` | SHA-1 used for the seed and debug IFrame hashes |
+| `contrib/unrar/sha1.h` | SHA-1 declarations |
+| `code/lib/universal_include.h` | build targets, `TRACK_SYNC_RAND`, `TARGET_BETATEST_GROUP`, `iv_*` macros, `GRACE_TIME`, `APP_VERSION` |
+| `code/lib/vector3.h` | double vector; `FRAND/SFRAND` ordered draws |
+| `code/lib/vector3.cpp` | `FromRand`, `Normalise`, rotations |
+| `code/lib/vector2.h` | double 2-D vector |
+| `code/lib/vector2.cpp` | 2-D vector implementation |
+| `code/lib/matrix33.h` | 3×3 orientation |
+| `code/lib/matrix33.cpp` | orientation maths, `DecomposeToYDR` |
+| `code/lib/matrix34.h` | transform |
+| `code/lib/matrix34.cpp` | transform maths |
+| `code/lib/plane.h` | plane |
+| `code/lib/plane.cpp` | plane implementation |
+| `code/lib/math_utils.h` | `Round`, `NearlyEquals`, `ASSERT_FLOAT_IS_SANE` |
+| `code/lib/math_utils.cpp` | geometry helpers; orphan MT19937 |
+| `code/lib/invert_matrix.cpp` | Gaussian elimination (gesture only) |
+| `code/lib/rgb_colour.cpp` | colour arithmetic (render; `SyncDiff` colour) |
+| `code/lib/slice_darray.cpp` | slice bounds from capacity |
+| `code/lib/slice_darray.h` | `SliceDArray` declaration |
+| `code/lib/work_queue.cpp` | worker threads; per-thread `StandardiseCPUPrecision` |
+| `code/lib/opengl_directx.cpp` | D3D9 device creation without `D3DCREATE_FPU_PRESERVE` [B:D3D] |
+| `code/main.cpp` | `StandardiseCPUPrecision`, main loops (server tick, ALIVE send), `DoEnterLocation` (id reset, history load) |
+| `code/app.cpp` | `StartNetwork`, single/multi-player servers, `GamePaused`, `ToggleGamePaused`, `ShutdownCurrentGame`, metaserver start-up, demo permission checks |
+| `code/app.h` | `App` network members |
+| `code/gametimer.cpp` | game time, speed blending, prediction |
+| `code/gametimer.h` | `SERVER_ADVANCE_PERIOD`, `GetNetworkTime` macros |
+| `code/globals.h` | `NUM_TEAMS`, `NUM_SLICES_PER_FRAME`, `IAMALIVE_PERIOD` |
+| `code/location.cpp` | `Location::Init` (synced draws, statics reset), `Advance` slice order, `UpdateTeam`, `InitialiseTeam` (AI entity), `DumpWorldToSyncLog` |
+| `code/team.cpp` | `TeamControls::Pack/Unpack`, `Team::Advance`, `RenderSyncErrors` |
+| `code/team.h` | `TeamControls`, team types |
+| `code/unit.cpp` | `Unit::AdvanceEntities`, `GetFormationOffset` (lazy synced draws) |
+| `code/location_input.cpp` | local input → network requests; preview routes; FenceSwitch local call |
+| `code/loading_screen.cpp` | loading-screen pump: KEEPALIVE and server tick |
+| `code/multiwinia.cpp` | `Multiwinia::Advance` (slice 8), `RemoveTeams` (CPU takeover), `SaveIFrame`, `s_numMultiwiniaZones`, Assault reset |
+| `code/renderer.cpp` | desync and lost-connection banners |
+| `code/entity_grid_cache.cpp` | query cache (simulation state) |
+| `code/entity_grid_cache.h` | float-keyed cache elements |
+| `code/entity_grid.cpp` | neighbour query order |
+| `code/particle_system.cpp` | cosmetic particles advanced in slices |
+| `code/taskmanager.cpp` | tasks (simulated) with wall-clock pop-up state |
+| `code/taskmanager_interface_multiwinia.cpp` | UI writes to task state (L3, L4) |
+| `code/gamecursor.cpp` | crosshair type-assignment typo (L2) |
+| `code/multiwiniahelp.cpp` | tutorial director inserting crates from the render loop (L5) |
+| `code/level_file.cpp` | level parsing (template construction, instant units, CRC) |
+| `code/landscape.cpp` | per-tile private LCG |
+| `code/camera.cpp` | local camera (`m_camLookAround`, shake) |
+| `code/user_input.cpp` | network statistics window toggle |
+| `code/benchmark.cpp` | benchmark/FTP upload [B:DEAD] |
+| `code/routing_system.cpp` | route slots shared with previews |
+| `code/global_world.cpp` | `GenerateBuildingId` |
+| `code/shaman_interface.cpp` | SHAMANSUMMON sender |
+| `code/interface/network_window.cpp` | network statistics window [B:FULL] |
+| `code/interface/chatinput_window.cpp` | chat sender |
+| `code/interface/prefs_other_window.cpp` | Apply writes `m_difficultyLevel` (L13) |
+| `code/interface/cheat_window.cpp` | debug synced draws [B:DEBUG] |
+| `code/UI/GameMenuWindow.cpp` | lobby option bindings, CPU fill + START_GAME, browser filters, join |
+| `code/UI/GameMenuWindow.h` | `NetworkValue` members, password |
+| `code/UI/WaitingButton.h` | connect/resync progress |
+| `code/UI/KickPlayerButton.h` | host kick |
+| `code/UI/CSpectatorButton.h` | REQUEST_SPECTATOR sender |
+| `code/UI/FinishMultiwiniaButton.h` | ready toggle; 5-s lag test |
+| `code/UI/PlayGameButton.h` | ready / start |
+| `code/UI/GameTypeButton.h` | bulk parameter defaults on game-type change |
+| `code/UI/GameServerButton.h` | browser row |
+| `code/worldobject/insertion_squad.cpp` | `DirectControl` local-camera leak (L1) |
+| `code/worldobject/armour.cpp` | `SetDirectOrders` function-static debounce |
+| `code/worldobject/darwinian.cpp` | heaviest synced-RNG consumer; spectacle watching |
+| `code/worldobject/rocket.cpp` | `EscapeRocket::IsSpectacle` false in MP |
+| `code/worldobject/tree.cpp` | hit sphere from the global LCG; `LogState` |
+| `code/worldobject/spawnpoint.cpp` | `s_numSpawnPoints` (team-5 slot not reset) |
+| `code/worldobject/entity.cpp` | `EntityBlueprint::GetStat` difficulty factor; `SetType` draws |
+| `code/worldobject/sporegenerator.cpp` | difficulty-dependent egg chance |
+| `code/worldobject/laserfence.cpp` | render-path link reset |
+| `code/worldobject/crate.cpp` | synced crate logic; render-rotated orientation |
+| `code/worldobject/gunturret.cpp` | cosmetic synced draws; `iv_acos` NaN |
+| `code/worldobject/snow.cpp` | decorative synced draws, untracked |
+| `code/worldobject/spirit.cpp` | per-tick synced draws, untracked |
+| `code/worldobject/spiritstore.cpp` | unordered triple draw [B:LEGACY] |
+| `code/worldobject/building.cpp` | `BuildingIsBlocked` list; `LogState` |
+| `code/worldobject/worldobject.cpp` | unique-id allocation; `LogState` |
+| `code/worldobject/worldobject.h` | `WorldObjectId` |
+| `code/worldobject/souldestroyer.cpp` | cosmetic unsynced trail; Zombie synced wobble |
+| `code/worldobject/generator.cpp` | SolarPanel per-tick synced draw |
+| `code/worldobject/scripttrigger.cpp` | camera-driven triggers [B:LEGACY] |
+| `targets/vs2005/Darwinia.vcproj` | FP model, instruction set, OpenMP per configuration |
+| `targets/vs2005/Common.vsprops` | common defines and libraries |
+| `targets/vs2005/Direct3D.vsprops` | `USE_DIRECT3D` secondary configuration |
+| `targets/vs2005/OpenGL.vsprops` | baseline OpenGL configuration |
+| `data/input/input_preferences.txt` | `CameraFreeMovement` binding (L1 trigger) |
+| `docs/Network.txt` | design note (stale: 25 FPS, ResyncMe) |
+| `docs/NetworkThreads.txt` | design note (stale: send threads) |
+| `docs/network overview.txt` | design note (stale: TCP lobby) |
+| `docs/integrating virtual players into network system.txt` | client/team split proposal (implemented) |
+| `docs/multiwiniareleasenotes-beta.txt` | historical desync fixes |
+| `docs/multiwiniachanges-beta.txt` | historical desync fixes |
+| `docs/multiwinia-changes.txt` | historical desync fixes |
+| `docs/multiwinia_todo.txt` | determinism to-do item |
+
+## Appendix — dead/legacy code
+
+| Item | Status | Ref |
+|---|---|---|
+| `code/network/network_defines_debug.h` — readable alternative codes ("DARWINIA", "CMD", "ClientJoin", …, incl. obsolete fields X/Y/Z/Flags/DUMoveDX) | [B:DEAD] (not included anywhere) | `code/network/network_defines_debug.h` |
+| `code/network/networkupdate.inc` — inline accessors of a removed Darwinia `NetworkUpdate` class | [B:DEAD] | `code/network/networkupdate.inc` |
+| `contrib/systemiv/lib/metaserver/metaserver_defines_old.h` — older readable protocol (metaserver port 5008, LAN period 2 s, WAN 10 s, discard 20 s, names "METASERVER"/"Register") | [B:DEAD] | — |
+| Steam authentication (`steamauth_client.*`, `steamauth_server.*`): state machine NotStarted → Started → StartingSteam → StartingSteamAPI → LoggingOnToSteam → GettingSteamId → GettingSteam3Auth → RequestAuthentication → Success/SuccessDemo/Failed, ≤ 10 retries with n × 100 ms back-off; STEAM_AUTHENTICATE "sa" carries the Steam3 ticket; server side wraps Steam GameServer auth (approve ⇒ Accepted, `k_EDenyNoLicense` ⇒ Demo, else Failed) | [B:DEAD] (not in the vcproj; requires Steam SDK headers) | `contrib/systemiv/lib/metaserver/steamauth_client.cpp`, `steamauth_server.cpp` |
+| NetLib Linux/Mac ports (`net_lib_linux.h`, `net_lib_apple.h`, `net_mutex_linux.cpp`, `net_thread_linux.cpp`): recursive pthread mutex, condition-variable events, POSIX semaphores, detached threads | [B:DEAD on PC] | `contrib/systemiv/lib/netlib/` |
+| `NetworkQuality` packet-loss simulator (`AppRandom`) | compiled, unused (`NETWORKQUALITY_TESTING` commented out) | `code/network/network_quality.cpp` |
+| `Listener`/`EventListener`/`ListenerList`; both `bytestream.h` | compiled, unused | `code/network/listener.cpp`, `code/network/bytestream.h`, `contrib/systemiv/lib/netlib/bytestream.h` |
+| Darwinia-era commands `ct` MAPNAME, `cu` GAMETYPE, `cv` GAMEPARAMS, `cw` RESEARCHLEVEL; `SendPing`; `SETGAMEOPTIONARRAYINT` sender; `Server::SkipToTime`; `Server::CheckPlayerCanJoin`; `MetaServer_RequestServerDetails`; `MetaServer_GraduallySortList`; `MetaServer_SetServerTTL`; `NotifyNetSyncFixed` call | defined, never invoked | §5, §12 |
+| [B:DEBUG]/`TARGET_BETATEST_GROUP`: full IFrame snapshots and diffs (§7.2–§7.3); `TRACK_SYNC_RAND` per-call and per-letter logging (`DecodeCmd`, `WriteSummary`, `SyncRandLog`, `DumpSyncRandLog`); entity watch list; `ControlDebugDropPacket`; `CHECK_IFRAME_SERIALISATION` (commented) | [B:DEBUG] | `code/network/iframe.cpp`, `code/network/clienttoserver.cpp`, `contrib/systemiv/lib/math/random_number.cpp` |
+| `TESTBED_ENABLED`: seed override, spectator auto-registration (`RegisterSpectator` → SPECTATORASSIGN), SET_TEAM_READY, 50-attempt connect limit, testbed server names, `srand(time)`/`rand()` fake server lists | [B:DEBUG] (never defined) | `code/network/server.cpp`, `code/network/clienttoserver.cpp`, `code/UI/GameMenuWindow.cpp` |
+| `LOCATION_EDITOR`: REQUESTMAP join flag, CUSTOMMAPNAME advertising/browser display, `RecordDemo` save from the editor loop | [B:EDITOR] | `code/network/clienttoserver.cpp`, `code/main.cpp` |
+| Console remnants: XUID, PDLC bit mask, JOIN_VIA_INVITE, ENCRYPTION_PADDING_*, `Disconnect_ClientNeedsPDLC`, `IQNetPlayer` forward declarations (Xbox 360 QNet) | [B:DEAD] | `code/network/network_defines.h`, `code/network/server.h` |
+| Benchmark report and FTP upload (`BENCHMARK_AND_FTP`) | [B:DEAD] | `code/benchmark.cpp` |
+| Orphan MT19937 `::syncrand()` | [B:DEAD in effect] | `code/lib/math_utils.cpp` |
+| Mac `StandardiseCPUPrecision` (`fnstenv`/`fldenv`, clear bit 8) | [B:DEAD] (`TARGET_OS_MACOSX && __i386__`) | `code/main.cpp` |
+| `iv_strtod` declaration (no definition) | dead | `contrib/systemiv/lib/math/math_stubs.cpp` |
+| `RandomNormalNumber`, `RandomApplyVariance` | no callers | `contrib/systemiv/lib/math/random_number.cpp` |
+| SystemIV `Fixed` (`fixed.h`, `fixed_64.*`, `fixed_float.*`, generated sin/asin tables) and `USE_FIXED` hooks | not compiled | `contrib/systemiv/lib/math/`, `contrib/systemiv/lib/tosser/directory.h`, `contrib/systemiv/lib/hash.h` |
+| `INCLUDE_THEBEAST` crate outcome (changes `Crate::NumCrateRewards`) | [B:DEBUG] | `code/worldobject/crate.h` |
+| Loader RNG (`AppSeedRandom(time(NULL))`, credits, egames `srand(0)`, Game-of-Life loader seeding from `syncrand`) | [B:DEAD] (`USE_LOADERS` off) | `code/loaders/loader.cpp`, `code/loaders/gameoflife_loader.cpp` |
+| `SpiritStore::AddSpirit` unordered triple draw; spectacle watching (wall-clock facing); Tripod wall-clock timers; `ResearchItem`/`Spam` random orientation; Armour direct local `SetOrders`; `FenceSwitch::Switch` local call; `GlobalWorld::TransferSpirits`; `ScriptTrigger` camera triggers | [B:LEGACY] | §14.4, §14.11 |
+| `#pragma omp parallel for` in `Location::Advance` | inert (OpenMP off) | `code/location.cpp` |

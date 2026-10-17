@@ -376,6 +376,28 @@ def T_inventory():
     return md(['Location', 'Files', 'Kind', 'Build tag'], rows)
 
 
+def T_sourcemap():
+    """One Source-map row per data/levels/** and data/thumbnails/** file."""
+    rows = []
+    for r in L:
+        f = r['file']
+        if r['dir'] == 'levels/old':
+            role = 'superseded Multiwinia map, never loaded (§7.2)'
+        elif r['kind'] == 'mp':
+            role = ('Multiwinia map, ' + klass(r) + ' (§3)')
+        elif r['kind'] == 'map':
+            role = 'Darwinia location map [B:LEGACY] (§7.1)'
+        else:
+            role = 'Darwinia mission [B:LEGACY] (§7.1)'
+        rows.append([code(f), role])
+    rows.append([code('data/levels/level_enum.txt'), 'achievement level ids 1–59; excluded from retail data (§7.3)'])
+    for r in T:
+        lv = os.path.basename(r['level_file']) if r['level_file'] else ''
+        role = 'map-select thumbnail' + (f' of {lv}' if lv else (' fallback' if 'default' in r['file'] else ' without a top-level level'))
+        rows.append([code(r['file']), role + ' (§3.5)'])
+    return md(['File', 'Role'], rows)
+
+
 TABLES = {k[2:]: v for k, v in globals().items() if k.startswith('T_') and callable(v)}
 
 if CMD == 'show':

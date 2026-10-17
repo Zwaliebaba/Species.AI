@@ -1,27 +1,10 @@
 {
  "a": [
   "code/keygen.h",
-  "code/mapfile.h",
-  "code/network/generic.h",
-  "code/network/servertoclient.cpp",
   "code/unicode/unicode_text_file_writer.h"
  ],
  "b": [],
  "c": [
-  "format without grammar: shp",
-  "format without grammar: max",
-  "format without grammar: bmp",
-  "format without grammar: colour-ramp",
-  "format without grammar: anim",
-  "format without grammar: shader",
-  "format without grammar: dat-archive",
-  "format without grammar: psp",
-  "format without grammar: grd",
-  "format without grammar: pack-list",
-  "format without grammar: icons",
-  "format without grammar: mwhelp",
-  "format without grammar: thumbnail",
-  "format without grammar: sepulveda",
   "format without grammar: authkey",
   "format without grammar: mwm",
   "format without grammar: profile-save",
@@ -33,24 +16,42 @@
  "d": [],
  "e": [],
  "bad_citations": {
-  "code/data": [
-   "22_determinism_and_networking.md"
+  "data/mwsounds/sample_ping1.ogg": [
+   "29_data_formats_reference.md"
+  ],
+  "data/\u2026": [
+   "29_data_formats_reference.md"
+  ],
+  "data/icons/icon_shield.bmp": [
+   "29_data_formats_reference.md"
+  ],
+  "data/dialogs/animator-*.txt": [
+   "29_data_formats_reference.md"
   ],
   "data/scripts/name": [
    "29_data_formats_reference.md"
   ],
-  "data/mwsounds/sample_ping1.ogg": [
+  "data/thumbnails/mp_example_2p.bmp": [
+   "29_data_formats_reference.md"
+  ],
+  "data/fonts/verdana-bold.bmp": [
    "29_data_formats_reference.md"
   ],
   "data/n": [
+   "29_data_formats_reference.md"
+  ],
+  "data/animations/\u2026": [
+   "29_data_formats_reference.md"
+  ],
+  "data/mwhelp/help_0_2.bmp": [
    "29_data_formats_reference.md"
   ]
  },
  "oversize_excerpts": [],
  "tags": {
-  "[C]": 6024,
-  "[I]": 731,
-  "[U]": 152
+  "[C]": 6245,
+  "[I]": 763,
+  "[U]": 172
  },
  "classes": {
   "AI": [
