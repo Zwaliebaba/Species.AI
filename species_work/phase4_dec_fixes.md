@@ -26,3 +26,6 @@
 | 22 | G01 | DEC-017 | it says 39 options; 38 remain once the debug-only mode's option is dropped | correct DEC-017; six G01 DEC requests in reports/G01.md |
 | 23 | G01 | — | no game-over, victory or defeat sound assets in the manifest | X-AST pass 2 |
 | 24 | G01 | — | O20 (first playable) has no DEC entry, so G01 cites DEC-229 | acceptable (DEC-229 is build order) or add an O20 note to DEC-229 |
+| 25 | G02a2 | DEC-085 | **contradiction:** G02a2's input says that in a match the Builder delivers its orbs to the nearest friendly Spawn Node; DEC-085, R-ECON-082 and the G00 overview say the orbs reach no destination | verify in ORIG; correct DEC-085, R-ECON-082 and G00 if G02a2 is right |
+| 26 | G02a2 | — | five guessed G02a1 keys (`ref.unit.base.corpse_fade_start`, `ref.unit.base.corpse_fade_ground_ticks`, three `ref.unit.worker.transport_*` keys); seven reference/05 mirror keys now point to G02a2 keys | reconcile with G02a1 and G05 |
+| 27 | G02a2 | — | 10 DEC requests or clarifications; missing assets: a Builder placement sound and a UI unit-toggle sound; `icon.power.rocket` unused here | DEC triage; X-AST pass 2 |

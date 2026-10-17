@@ -209,13 +209,13 @@ flowchart TD
 
 Keys cited from other documents (their values are defined there):
 
-| Key | Owning document | Used by |
+| Owning document | Keys | Used by |
 |---|---|---|
-| `ref.econ.collector.idle_speed_factor`, `ref.econ.collector.capacity`, `ref.econ.collector.search_range_wu`, `ref.econ.collector.collection_range_wu`, `ref.econ.collector.cluster_threshold`, `ref.econ.collector.hover_wu`, `ref.econ.collector.collector_height_wu`, `ref.econ.collector.delivery_per_tick`, `ref.econ.collector.grenade_capture_wu`, `ref.econ.collector.self_destruct_damage`, `ref.econ.collector.release_speed_max_wu_s` | [population flow](../05_population_flow.md) | R-UNIT-417, R-UNIT-421 to R-UNIT-437 |
-| `ref.econ.orb.harvest_arrival_wu`, `ref.econ.orb.harvest_alt_range_wu`, `ref.econ.orb.harvest_alt_dy_wu` | [population flow](../05_population_flow.md) | R-UNIT-431 |
-| `ref.sim.init.power_level_default` | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | R-UNIT-417 |
-| `ref.sim.tick_period` | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | R-UNIT-429 |
-| `ref.sim.physics.sea_level` | [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | R-UNIT-429 |
+| [population flow](../05_population_flow.md) | `ref.econ.collector.idle_speed_factor`, `ref.econ.collector.capacity`, `ref.econ.collector.search_range_wu`, `ref.econ.collector.collection_range_wu`, `ref.econ.collector.cluster_threshold`, `ref.econ.collector.hover_wu`, `ref.econ.collector.collector_height_wu`, `ref.econ.collector.delivery_per_tick`, `ref.econ.collector.grenade_capture_wu`, `ref.econ.collector.self_destruct_damage`, `ref.econ.collector.release_speed_max_wu_s` | R-UNIT-417, R-UNIT-421 to R-UNIT-437 |
+| [population flow](../05_population_flow.md) | `ref.econ.orb.harvest_arrival_wu`, `ref.econ.orb.harvest_alt_range_wu`, `ref.econ.orb.harvest_alt_dy_wu` | R-UNIT-431 |
+| [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.init.power_level_default` | R-UNIT-417 |
+| [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-429 |
+| [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.sea_level` | R-UNIT-429 |
 
 ## 5 Edge cases and interactions
 

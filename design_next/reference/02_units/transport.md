@@ -323,13 +323,13 @@ flowchart TD
 
 Keys cited from other documents (their values are defined there):
 
-| Key | Owning document | Used by |
+| Owning document | Keys | Used by |
 |---|---|---|
-| `ref.econ.gate.transport_cap`, `ref.econ.gate.transport_target_wu`, `ref.econ.gate.transport_target_height_wu` | [population flow](../05_population_flow.md) | R-UNIT-369 |
-| `ref.sim.tick_period` | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | R-UNIT-379, R-UNIT-380 |
-| `ref.sim.physics.sea_level` | [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | R-UNIT-380, R-UNIT-398, R-UNIT-399 |
-| `ref.sim.state.transport_cycle_debounce` | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | R-UNIT-394 |
-| `ref.unit.worker.transport_search_range`, `ref.unit.worker.transport_order_range`, `ref.unit.worker.transport_board_distance` | [worker.md](worker.md) | R-UNIT-397 |
+| [population flow](../05_population_flow.md) | `ref.econ.gate.transport_cap`, `ref.econ.gate.transport_target_wu`, `ref.econ.gate.transport_target_height_wu` | R-UNIT-369 |
+| [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-379, R-UNIT-380 |
+| [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.sea_level` | R-UNIT-380, R-UNIT-398, R-UNIT-399 |
+| [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.state.transport_cycle_debounce` | R-UNIT-394 |
+| [worker.md](worker.md) | `ref.unit.worker.transport_search_range`, `ref.unit.worker.transport_order_range`, `ref.unit.worker.transport_board_distance` | R-UNIT-397 |
 
 ## 5 Edge cases and interactions
 

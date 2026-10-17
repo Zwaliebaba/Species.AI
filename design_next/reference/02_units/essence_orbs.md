@@ -76,7 +76,7 @@ An orb therefore leaves Birth only on a tick on which it is no more than 10 wu a
 
 **R-UNIT-312** (MUST) **Floating.** The orb wobbles (R-UNIT-320) and can be taken by every taker of R-UNIT-326. When its timer is at or below 0, it becomes Ascent and its timer is set to `ref.econ.orb.ascent_ticks` (901 ticks, nominal 90.1 s).
 
-**R-UNIT-313** (MUST) **Attached.** A taker that carries the orb itself (a Builder, an ant or a Crawler) attaches it with the attach operation (R-UNIT-324): the orb becomes Attached and the collected sound plays (R-UNIT-333). An Attached orb has no timer, no wobble, no floor clamp and no structure push; its carrier sets its position. The drop operation returns it to Floating: the structure push is turned on again, its ground height becomes the terrain height under its current position, and its velocity and hover become zero. The timer keeps the value it had when the orb was attached, so an orb attached in Birth floats only for the rest of its birth time after it is dropped.
+**R-UNIT-313** (MUST) **Attached.** A taker that carries the orb itself (a Builder, an ant or a Crawler) attaches it with the attach operation (R-UNIT-324): the orb becomes Attached and the collected sound plays (R-UNIT-333). An Attached orb has no timer, no wobble and no floor clamp; its carrier sets its position, and the structure push of R-UNIT-321 still applies while the orb's push is on. The drop operation returns it to Floating: the structure push is turned on again, its ground height becomes the terrain height under its current position, and its velocity and hover become zero. The timer keeps the value it had when the orb was attached, so an orb attached in Birth floats only for the rest of its birth time after it is dropped.
 
 **R-UNIT-314** (MUST) **InEgg.** An orb that fertilises a Crawler egg is InEgg: no timer, no wobble, no floor clamp. When the egg is destroyed, the orb returns to Floating with its timer unchanged; when the egg hatches, the egg removes the orb ([creatures_and_hazards.md](creatures_and_hazards.md)).
 
@@ -114,7 +114,7 @@ if the state step requested removal: request removal
 
 **R-UNIT-320** (MUST) The wobble of step 2 is the same at every game speed: each axis rate takes one step of U[−0.5, 0.5) per tick and stays within `ref.unit.essence_orb.wobble_rate_clamp` ([0, 2]), and the phase advances by `ref.unit.essence_orb.phase_step` (0.1) per tick. Game speed changes how many ticks run per second, never the step (DEC-039, DEC-092). The three axes share the phase, so the hover is the vector of axis rates scaled by one sine.
 
-**R-UNIT-321** (MUST) The structure push keeps a new orb from staying inside a structure. While the orb's push is on and it is not Ascent, for every structure of the obstacle cell under the orb whose hit volume a sphere of radius `ref.unit.essence_orb.push_radius` (5 wu) at the orb hits, the orb's velocity gains (orb position − structure position) × `ref.unit.essence_orb.push_gain` (0.1), its vertical velocity becomes 0 and its speed is limited to `ref.unit.essence_orb.push_speed_max` (10 wu/s). When no structure is hit and the orb's speed is below `ref.unit.essence_orb.push_stop_speed` (1 wu/s), the push turns off for good; only the drop operation turns it on again (R-UNIT-313). The push looks structures up in the obstacle grid ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-326).
+**R-UNIT-321** (MUST) The structure push keeps a new orb from staying inside a structure. While the orb's push is on and it is not Ascent, in every other state, for every structure of the obstacle cell under the orb whose hit volume a sphere of radius `ref.unit.essence_orb.push_radius` (5 wu) at the orb hits, the orb's velocity gains (orb position − structure position) × `ref.unit.essence_orb.push_gain` (0.1), its vertical velocity becomes 0 and its speed is limited to `ref.unit.essence_orb.push_speed_max` (10 wu/s). When no structure is hit and the orb's speed is below `ref.unit.essence_orb.push_stop_speed` (1 wu/s), the push turns off for good; only the drop operation turns it on again (R-UNIT-313). The push looks structures up in the obstacle grid ([space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) R-SIM-326).
 
 **R-UNIT-322** (MUST) An orb moves by its velocity plus its hover. Its x and z stay inside the map. In every state except InEgg, Ascent and Attached its height stays at least `ref.unit.essence_orb.floor_height` (2 wu) above the ground height recorded at its creation or at its last drop, whatever the terrain under its present position. An orb never drowns and is never pushed by terrain.
 
@@ -248,13 +248,13 @@ flowchart TD
 
 Keys cited from other documents (their values are defined there):
 
-| Key | Owning document | Used by |
+| Owning document | Keys | Used by |
 |---|---|---|
-| `ref.sim.container.orb_presize`, `ref.sim.container.orb_step` | [containers and update order](../12_simulation_model/04_containers_and_update_order.md) | R-UNIT-301 |
-| `ref.sim.spawn.orb_lift` | [containers and update order](../12_simulation_model/04_containers_and_update_order.md) | R-UNIT-303 |
-| `ref.sim.tick_period` | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | R-UNIT-319, R-UNIT-332 |
-| `ref.econ.orb.death_velocity_factor`, `ref.econ.orb.birth_ticks`, `ref.econ.orb.birth_max_height_wu`, `ref.econ.orb.floating_ticks`, `ref.econ.orb.ascent_ticks`, `ref.econ.orb.wobble_rate_range`, `ref.econ.orb.wobble_offset_range` | [population flow](../05_population_flow.md) | R-UNIT-304, R-UNIT-306, R-UNIT-307, R-UNIT-311, R-UNIT-312, R-UNIT-318, R-UNIT-319 |
-| `ref.econ.crawler.egg_cache_max`, `ref.econ.crawler.egg_cache_range_wu` | [population flow](../05_population_flow.md) | R-UNIT-306, R-UNIT-309 |
+| [containers and update order](../12_simulation_model/04_containers_and_update_order.md) | `ref.sim.container.orb_presize`, `ref.sim.container.orb_step` | R-UNIT-301 |
+| [containers and update order](../12_simulation_model/04_containers_and_update_order.md) | `ref.sim.spawn.orb_lift` | R-UNIT-303 |
+| [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-319, R-UNIT-332 |
+| [population flow](../05_population_flow.md) | `ref.econ.orb.death_velocity_factor`, `ref.econ.orb.birth_ticks`, `ref.econ.orb.birth_max_height_wu`, `ref.econ.orb.floating_ticks`, `ref.econ.orb.ascent_ticks`, `ref.econ.orb.wobble_rate_range`, `ref.econ.orb.wobble_offset_range` | R-UNIT-304, R-UNIT-306, R-UNIT-307, R-UNIT-311, R-UNIT-312, R-UNIT-318, R-UNIT-319 |
+| [population flow](../05_population_flow.md) | `ref.econ.crawler.egg_cache_max`, `ref.econ.crawler.egg_cache_range_wu` | R-UNIT-306, R-UNIT-309 |
 
 ## 5 Edge cases and interactions
 

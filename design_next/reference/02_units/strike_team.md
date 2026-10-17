@@ -222,12 +222,12 @@ flowchart LR
 
 Keys cited from other documents (their values are defined there):
 
-| Key | Owning document | Used by |
+| Owning document | Keys | Used by |
 |---|---|---|
-| `ref.sim.init.power_level.strike_team`, `ref.sim.init.power_level.grenade` | [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | R-UNIT-336, R-UNIT-356 |
-| `ref.sim.tick_period` | [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | R-UNIT-352 |
-| `ref.sim.physics.sea_level`, `ref.sim.water.drown_after`, `ref.sim.physics.dead_fade_per_tick` | [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | R-UNIT-349, R-UNIT-362 |
-| `ref.unit.base.corpse_fade_start`, `ref.unit.base.corpse_fade_ground_ticks` | [Units](README.md) | R-UNIT-362 |
+| [match lifecycle and state reset](../12_simulation_model/02_match_lifecycle_and_state_reset.md) | `ref.sim.init.power_level.strike_team`, `ref.sim.init.power_level.grenade` | R-UNIT-336, R-UNIT-356 |
+| [tick timing](../12_simulation_model/01_tick_timing_and_main_loop.md) | `ref.sim.tick_period` | R-UNIT-352 |
+| [space, routing and physics](../12_simulation_model/05_space_routing_and_physics.md) | `ref.sim.physics.sea_level`, `ref.sim.water.drown_after`, `ref.sim.physics.dead_fade_per_tick` | R-UNIT-349, R-UNIT-362 |
+| [Units](README.md) | `ref.unit.base.corpse_fade_start`, `ref.unit.base.corpse_fade_ground_ticks` | R-UNIT-362 |
 
 ## 5 Edge cases and interactions
 
