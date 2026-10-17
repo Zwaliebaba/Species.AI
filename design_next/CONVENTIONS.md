@@ -48,7 +48,7 @@ Every normative statement is a requirement with a stable ID, written as `**<PREF
 | `BLD` | Build tooling and distribution | `architecture/components/build_tooling_and_distribution.md` |
 | `DBG` | Diagnostics, test and performance | `architecture/components/diagnostics_test_and_performance.md` |
 
-Decisions use `DEC-NNN` (`decisions/decision_register.md`), and architecture decisions use `ADR-NNNN` (`adr/`).
+Decisions use `DEC-NNN` (index: `decisions/README.md`), and architecture decisions use `ADR-NNNN` (`adr/`).
 
 ## 4 Tuning tables
 
@@ -470,11 +470,11 @@ These name content that the reference library does not specify: Advisor, Hatcher
 
 ## 9 Allowed terms
 
-Soft-flagged words that are allowed in a specific context, with the justification.
+Soft-flagged words that are allowed in a specific context, with the justification. The **Paths** column lists the file globs (relative to the design root) where the gate accepts the term; this file is always among them. Any other soft-flag hit fails the gate.
 
-| Term | Where allowed | Justification |
-|---|---|---|
-| lockstep | `decisions/deferred/*.md` and decision entries that record what the design phase must decide | names the reference networking model so that the design phase can decide against it; never used as a Species requirement |
-| Linux | ADRs and decision entries about dedicated-server or CI hosting | community hosts mostly run Linux (vision brief §6 item 10); the client is Windows-only |
-| immediate-mode | developer-tool UI only (`adr/`, `architecture/components/diagnostics_test_and_performance.md`) | the standard name of the debug-overlay UI pattern; the game UI is retained |
-| retail | vendor release-channel names in `adr/README.md` §"Technology baseline" (for example a retail SDK or Shader Model release) | quotes the vendor's own channel name, with its source URL |
+| Term | Where allowed | Justification | Paths |
+|---|---|---|---|
+| lockstep | `decisions/deferred/*.md` and decision entries that record what the design phase must decide | names the reference networking model so that the design phase can decide against it; never used as a Species requirement | `decisions/deferred/*.md` `CONVENTIONS.md` |
+| Linux | ADRs and decision entries about dedicated-server or CI hosting | community hosts mostly run Linux (vision brief §6 item 10); the client is Windows-only | `adr/*.md` `decisions/deferred/*.md` `CONVENTIONS.md` |
+| immediate-mode | developer-tool UI only (`adr/`, `architecture/components/diagnostics_test_and_performance.md`) | the standard name of the debug-overlay UI pattern; the game UI is retained | `adr/*.md` `architecture/components/diagnostics_test_and_performance.md` `CONVENTIONS.md` |
+| retail | vendor release-channel names in `adr/README.md` §"Technology baseline" (for example a retail SDK or Shader Model release) | quotes the vendor's own channel name, with its source URL | `adr/README.md` `CONVENTIONS.md` |
