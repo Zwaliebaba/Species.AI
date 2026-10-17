@@ -100,7 +100,7 @@ Table 2.4-A Match-world initialisation steps.
 | 8 | For each team slot 0 to 5 in order: a slot whose lobby colour is "none" takes the next available colour; create the team from its lobby slot; if the slot is in use, initialise the team (its bot controller, its starting powers, one Worker per port of each Spawn Node and Solar Array it owns, its instant units, and the terrain snap of its objects; [buildings](../03_buildings_and_world_objects/README.md) and [population flow](../05_population_flow.md)). Then mark the teams as initialised. |
 | 9 | When the map's player count is below `ref.sim.init.colour_fill_players`, every slot at or above the player count, except the Rogue faction slot (4) and the Visitor faction slot (5), takes a random colour index, one simulation draw reduced modulo `ref.sim.init.colour_draw_modulus` and divided by `ref.sim.init.colour_draw_divisor` by integer division, which gives 0 to 3. Only the colour changes ([06](06_teams_and_player_commands.md)). |
 | 10 | Allow the Rogue faction; set up the Rogue faction team in slot 4 and the Visitor faction team in slot 5 ([06](06_teams_and_player_commands.md)); set the fixed power levels of table 2.4-B. |
-| 11 | Generate the actor-group offset table: `ref.sim.init.group_offset_table_size` unit-fraction draws from the simulation generator, in index order (DEC-652). |
+| 11 | Generate the actor-group offset table: `ref.sim.group.offset_table_size` unit-fraction draws from the simulation generator, in index order (DEC-652). |
 
 Table 2.4-B Fixed power levels at match-world initialisation (`PowerLevels`).
 
@@ -302,7 +302,6 @@ Caption: Diagram 3-C, match entry (table 2.3-A) with match-world initialisation 
 | `ref.sim.init.colour_fill_players` | 4 | players | the colour fill of step 9 runs when the player count is below this value | R-SIM-016 | — |
 | `ref.sim.init.colour_draw_modulus` | 8 | — | the draw is reduced modulo this value | R-SIM-016 | — |
 | `ref.sim.init.colour_draw_divisor` | 2 | — | then divided by this value (integer division), giving 0 to 3 | R-SIM-016 | — |
-| `ref.sim.init.group_offset_table_size` | 100 | unit-fraction draws | size of the actor-group offset table | R-SIM-016, R-SIM-023 | DEC-652 |
 | `ref.sim.init.power_level_default` | 3 | level | every power and research item not listed below | R-SIM-016 | — |
 | `ref.sim.init.power_level.strike_team` | 1 | level | | R-SIM-016 | — |
 | `ref.sim.init.power_level.laser` | 2 | level | | R-SIM-016 | — |
@@ -312,7 +311,7 @@ Caption: Diagram 3-C, match entry (table 2.3-A) with match-world initialisation 
 | `ref.sim.init.power_level.worker` | 4 | level | | R-SIM-016 | — |
 | `ref.sim.state.transport_cycle_debounce` | 3 | ticks | 0.3 s of game time; a toggle needs strictly more than this since the same Transport's previous toggle | R-SIM-021 | DEC-011 |
 
-The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.sim.slice.match_rules` and the game speeds `ref.sim.speed.stopped` and `ref.sim.speed.normal` are defined in [01](01_tick_timing_and_main_loop.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
+The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.sim.slice.match_rules` and the game speeds `ref.sim.speed.stopped` and `ref.sim.speed.normal` are defined in [01](01_tick_timing_and_main_loop.md); the offset-table size `ref.sim.group.offset_table_size` is defined in [06](06_teams_and_player_commands.md); the grace period `ref.match.grace_period` is defined in [skirmish rules](../01_skirmish_rules_and_modes/README.md). Every value in this table is a reference value adopted as the Species starting value (DEC-004).
 
 ## 5 Edge cases and interactions
 
@@ -338,7 +337,7 @@ The tick period `ref.sim.tick_period`, the slice of the match-rules update `ref.
 | AC-7 | a recorded match setup and seed | match-world initialisation runs twice from the same setup | both runs make the same simulation draws in the same order, and no draw happens before match start | R-SIM-009, R-SIM-016, R-SIM-017 |
 | AC-8 | a map whose bot navigation nodes are separated by a wall or a Barrier Emitter | initialisation completes | no bot navigation link crosses the wall or the emitter | R-SIM-016 |
 | AC-9 | a match world after initialisation | the first runtime structure is created | its serial is one above the highest structure id of the map | R-SIM-018 |
-| AC-10 | the actor-group offset table | the match world is initialised and the first formation offset is read | the table already holds `ref.sim.init.group_offset_table_size` values, generated at step 11 | R-SIM-016, R-SIM-023 |
+| AC-10 | the actor-group offset table | the match world is initialised and the first formation offset is read | the table already holds `ref.sim.group.offset_table_size` values, generated at step 11 | R-SIM-016, R-SIM-023 |
 | AC-11 | a two-player match on a four-player map | initialisation completes | slots 2 and 3 are bot teams created by the match setup, and each has a colour | R-SIM-006, R-SIM-016 |
 | AC-12 | a match that has ended | teardown runs | the steps of table 2.6-A run in order, the particle pool and world markers are empty, and the session is gone on every participant | R-SIM-003, R-SIM-005, R-SIM-028 |
 | AC-13 | a session that has started its match | a second match-start command arrives | nothing happens | R-SIM-007 |
