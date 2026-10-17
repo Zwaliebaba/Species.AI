@@ -5,7 +5,7 @@ write species_work/dec_map_X-DEC-3.csv and render the report from a template.
 Usage (run from the repository root, with python3 -I):
   python3 -I species_work/scripts/X-DEC-3_build.py <repo_root> [<report_template> <report_out>]
 
-The template may contain the placeholders {{COUNTS}}, {{MAPPING}}, {{OUTSIDE}} and {{ENTRIES}}.
+The template may contain the placeholders {{COUNTS}}, {{MAPPING}}, {{OUTSIDE}}, {{ENTRIES}} and {{CITES}}.
 This is a WORK file: it names original question ids on purpose (they never reach NEXT).
 """
 import csv
@@ -320,6 +320,17 @@ def index_targets(root):
     return targets
 
 
+def target_packages(root):
+    pk = {}
+    with open(os.path.join(root, 'species_work/packages/INDEX.md'), encoding='utf-8') as f:
+        for line in f:
+            cells = [c.strip() for c in line.split('|')]
+            if len(cells) > 6 and ('/' in cells[6]):
+                for t in cells[6].split('<br>'):
+                    pk.setdefault(t.strip(), []).append(cells[1])
+    return pk
+
+
 def known_decs(root):
     ids = set()
     for name in ['dec_map_X-DEC-1.csv', 'dec_map_X-DEC-2a.csv', 'dec_map_X-DEC-2b.csv', 'dec_map_X-DEC-2c.csv']:
@@ -503,6 +514,16 @@ def main():
         for e in entries:
             erows.append('| %s | %s | %s | %s |' % (e['id'], e['title'], e['status'],
                                                    '; '.join(dict.fromkeys(by_dec[e['id']]['ids']))))
+        pk = target_packages(root)
+        crows = ['| DEC | Status | Packages that cite it (target files) |', '|---|---|---|']
+        for e in entries:
+            if e['status'] == 'Dropped':
+                continue
+            parts = []
+            for fpath in e['files']:
+                parts.append('%s (`%s`)' % ('/'.join(pk.get(fpath, ['?'])), fpath))
+            crows.append('| %s | %s | %s |' % (e['id'], e['status'], '; '.join(parts)))
+        tpl = tpl.replace('{{CITES}}', '\n'.join(crows))
         out = (tpl.replace('{{COUNTS}}', '\n'.join(crow)).replace('{{MAPPING}}', '\n'.join(mrows))
                .replace('{{OUTSIDE}}', '\n'.join(orows)).replace('{{ENTRIES}}', '\n'.join(erows)))
         with open(sys.argv[3], 'w', encoding='utf-8') as f:
