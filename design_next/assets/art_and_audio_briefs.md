@@ -212,7 +212,7 @@ Every category below names its counts and constraints; [GameAssets.md](GameAsset
 
 ## 16 Fonts
 
-**5 font files**: a primary UI face (Latin, Cyrillic, currency), its Japanese and Korean companions, a stylised display face and a compact face for dense panels.
+**5 font files**: the title face (Latin, Cyrillic, currency) with its Japanese and Korean companions, the caption face and the body face, one per font role of the UI framework (UI-195).
 
 - Licensed families (open licence or commercial) whose licence allows embedding in a game; rasterised at run time into a glyph cache.
 - Legible at 9 px at 1080p, and with the darkening outline pass behind the glyphs; numerals clear and fixed-width where the HUD counts.
