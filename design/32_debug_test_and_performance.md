@@ -239,7 +239,7 @@ Consequence in FULL [C]: opening the F9 window during a match (Auto + one window
 | 20 | Sound Editor | `SoundEditorCreateButton` | `SoundEditorButton()` ([27 §13.3](27_audio_engine.md#133-tool-windows)) | `SOUND_EDITOR` |
 | 21 | Sound Stats | `SoundStatsCreateButton` | `SoundStatsButton()` | `SOUND_EDITOR` |
 | 22 | Network Stats | `NetworkStatsCreateButton` | `NetworkButton()` (§5.1) | always |
-| 23 | Show Dr S Face | `ShowDrSepulvedaFaceButton` | `Clouds::ShowDrSFace()` → `m_faceTime = now`; from 5 s to 30 s later the sky draws a face texture, fading in over 1 s from 5 s and out over 1 s from 28 s (`Clouds::Render`, `Clouds::RenderFace`). Registered under the button **name "Network Stats"** (caption "Show Dr S Face") → name lookups collide with button 22 | always |
+| 23 | Show Dr S Face | `ShowDrSepulvedaFaceButton` | `Clouds::ShowDrSFace()` → `m_faceTime = now`; from 5 s to 30 s later the sky draws an 800-unit face texture 800 units up at the map centre, alpha `min(t − 5, 1)`; from 28 s the alpha is recomputed as `min(t − 28, 1)`, i.e. it drops to 0 and ramps up again (an inverted fade-out), and every frame writes "alpha = %f" / "alpha2 = %f" to the debug log (`Clouds::Render`, `Clouds::RenderFace`). Registered under the button **name "Network Stats"** (caption "Show Dr S Face") → name lookups collide with button 22 | always |
 
 ### 4.3 Network safety — which cheats desynchronise [C] mechanism, [I] consequence
 
