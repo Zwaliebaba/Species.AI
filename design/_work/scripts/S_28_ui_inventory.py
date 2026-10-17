@@ -85,13 +85,18 @@ CLASS_STATUS = {
     "ColourWidget": "EDUSE", "ColourWindow": "EDUSE",
     # debugmenu
     "DebugKeyBindings": "LIVE",           # NetworkButton (F9) is live
+    "EditorButton": "EDITOR",             # debugmenu.cpp, #ifdef LOCATION_EDITOR
+    "PokeyEditorButton": "DEBUG", "SoundStatsButton": "DEBUG", "SoundProfileButton": "DEBUG",
+    "SoundEditorButton": "DEBUG",         # debugmenu.cpp, #ifdef SOUND_EDITOR
+    "CheatButton": "DEBUG",               # debugmenu.cpp, #ifdef CHEATMENU_ENABLED
+    "GestureEditorButton": "DEAD",        # GESTURE_EDITOR && USE_SEPULVEDA_HELP_TUTORIAL
     # helpandoptions
     "CrateHelpWindowButton": "DEBUG", "CrateButton": "DEBUG", "CrateHelpWindow": "DEBUG",
     # mainmenus.h / .cpp
-    "MainMenuWindow": "UNREACH", "ResetLocationWindow": "UNREACH", "AboutDarwiniaWindow": "DEAD",
+    "MainMenuWindow": "UNREACH", "ResetLocationWindow": "UNREACH", "AboutDarwiniaWindow": "UNREACH",
     "ConfirmResetWindow": "UNREACH", "MenuGameExitButton": "UNREACH", "AchievementsButton": "UNREACH",
-    "LeaderBoardButton": "UNREACH", "ConfirmResetButton": "UNREACH", "AboutDarwiniaButton": "DEAD",
-    "MainMenuUserProfileButton": "UNREACH", "ModsButton": "DEAD", "MultiwiniaButton": "UNREACH",
+    "LeaderBoardButton": "UNREACH", "ConfirmResetButton": "UNREACH", "AboutDarwiniaButton": "UNREACH",
+    "MainMenuUserProfileButton": "UNREACH", "ModsButton": "UNREACH", "MultiwiniaButton": "UNREACH",
     "KeybindingsOptionsButton": "UNREACH", "ResetLevelButton": "UNREACH", "WebsiteButton": "UNREACH",
     "ResetLocationButton": "UNREACH",
     # prefs_sound_window.cpp: class body inside #ifdef USE_SOUND_HW3D (commented out in universal_include.h)

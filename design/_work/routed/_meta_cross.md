@@ -344,6 +344,25 @@
 - **29/31 (packaging / build)**: archive membership rules (§10.B); `tools/patch.full.list` is Darwinia-only; `sounds2.dat` exists only because six late UI samples were never added to `tools/sounds.txt`.
 - **X2a (texture catalogue)**: `data/sprites/sound.bmp` is the only image used by the audio tooling.
 
+<!-- from X3_determinism_sync -->
+## Cross-partition notes
+
+- **P15 (network)**: this draft relies on P15 for message layouts, server sequencing, reliability and session lifecycle; it adds (a) baseline sync byte = draw-count detector (§6.1), (b) NETSYNCERROR being sequenced resolves P01 D4 — every peer pauses at the same sequence id [C] `Server::SendLetter`, (c) the seed is per server session = per match (§2.2), (d) `RecordDemo` replay lacks the seed (§6.3).
+- **P01 (app core)**: frame/slice order and `StandardiseCPUPrecision` confirmed; `Release|Win32` has no `OpenMP` attribute at all (P01 quotes the D3D config's `OpenMP="false"`; both mean off).
+- **P02 (modes)**: D1 (11-tick seconds) and D4 (`s_numMultiwiniaZones`) are integrated as D11/D9; the Assault reset-timing hazard (§7.3) belongs to the multi-round path P02 found unreachable.
+- **P03 (entities/routing)**: route-id sharing with local previews (L6) confirmed; Spider legs use wall clock but do not feed Spider movement (§5.1) — Spider is live in MW (P05), so the "irrelevant, Tripod blocked" note should mention Spider is safe for a different reason.
+- **P04 (military)**: L1 (`InsertionSquad::DirectControl` camera leak) — P04 listed it; this draft establishes the trigger (local `CameraFreeMovement` control held, default F2 / right-stick click) and the effect (waypoint reset and extra `Attack` on that peer only) → reachable desync. P04's claim that `Unit::s_offsets` is never reset is superseded (reset in `Location::Init`/`Empty`). P04's RNG table calls `_syncfrand` an "LCG" — it is MT19937.
+- **P07 (misc buildings)**: Portal is not reachable through The Beast in the baseline (`INCLUDE_THEBEAST` is defined only under `TARGET_DEBUG`); laser-fence render reset verified harmless for shipped data (0 dangling links).
+- **P08 (crates/AI)**: variable-length draw loops and short-circuit draw counts are carried into R4/R5 (§2.3).
+- **P09 (task manager)**: D2/D3/D4 verified [C] (L3, L4, L2).
+- **P11 (terrain)**: terrain uses a private per-tile LCG (G8); landscape colours reseed the global LCG (G6).
+- **P13 (math)**: numeric environment table consistent; `DecomposeToYDR` (raw `atan2`) has no simulation caller.
+- **P16 (sound)**: audio uses G6 on the main thread — it is one of the concurrent users in the tree race (§2.6).
+- **P17b (options)**: `PrefsOtherWindow` Apply writes `g_app->m_difficultyLevel` from the `Difficulty` pref (§7.1) — a live desync vector despite the Difficulty control being hidden.
+- **P19 (tutorial)**: tutorial director mutates sim state from the render-frame loop (L5).
+- **For 21**: §4.3–4.4 (containers, ids, slices), §5 (state classification, render writes), §9 (rules).
+- **For 40/41**: risk register §8.
+
 <!-- from X4_level_catalogue -->
 ## Cross-partition notes
 - **X1a (grammar)** — quirks observed in shipped files that a grammar must tolerate: CRLF line endings; `#` header-comment lines inside blocks (written by every `Write*`); trailing tabs/spaces after values; empty blocks; a second, empty `Buildings` block after `CameraAnimations` (layout A, §1.3); `GameTypes` with zero tokens (`old/mp_koth_2P_4`) or as a bare line outside any block (`old/mp_chess1`); duplicate scalar keys (`PopulationCap` twice in `mp_cts_4p_3`, last wins); objective lines containing `:` and `,` (`BuildingOnline :sandbox,2`); unknown building type names (`CarryableBuilding`) silently skipped.

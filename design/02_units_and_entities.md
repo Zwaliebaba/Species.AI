@@ -1797,7 +1797,7 @@ stateDiagram-v2
 |---|---|---|
 | Health | 50 | [C] `data/stats.txt` |
 | Speed / Rate | 100 / 1 — unused | [C] |
-| Default burst timer | `m_life = 20 + syncfrand(10)` s set in `Begin` (the draw happens even when the timer is overridden), overridden to `4 + syncfrand(4)` by MP launches and `RunEggs` | [C] `TriffidEgg::Begin`, `Triffid::Launch`, `Crate::RunEggs` |
+| Default burst timer | `m_life = 20 + syncfrand(10)` s set in the constructor (the draw happens even when the timer is later overridden), overridden to `4 + syncfrand(4)` by MP launches and `RunEggs` | [C] `TriffidEgg::TriffidEgg`, `Triffid::Launch`, `Crate::RunEggs` |
 | Gravity | `vel.y −= 9.8 × m_force` **per tick** (≈98 u/s² at force 1; per-tick constant, §2.1) | [C] `TriffidEgg::Advance` |
 | Bounce | below ground + 3: `BounceOffLandscape`, `m_force *= TRIFFIDEGG_BOUNCEFRICTION` (0.65), `vel *= m_force`, y ≥ ground + 3; sound "Bounce" while force > 0.1 | [C] `TriffidEgg::Advance`, `triffid.h` |
 | Tumble | `m_up` rotated about `(up × vel)` by `m_force² × 30 × dt`; self-rights when `up.y < 0.3` and force < 0.4 | [C] |
@@ -1892,15 +1892,198 @@ stateDiagram-v2
 
 ## 16 Virii
 
-_Pending — being written._
+Classes: `Virii : Entity` (type `TypeVirii` = 3), `ViriiUnit : Unit`, `ViriiHistory` (trail sample) [C] `code/worldobject/virii.h`, `code/worldobject/virii.cpp`. [B:FULL]. `TypeVirii` is not blocked.
+
+### 16.1 Virii — role and acquisition
+
+- **Role**: fast red worm creatures leaving a glowing trail; they bite enemies (20 HP per tick on contact) and ferry floating spirits into Eggs to breed more Virii. Swarm pressure unit of the creature crates.
+- **Obtained by** [C]: `TriffidEgg::Spawn` `SpawnVirii` (20–39 in MP, none if the team already has 250; also the fallback when a Soul Destroyer is refused) [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`; `Egg::Advance` hatching (4, roam 200) [C] `code/worldobject/egg.cpp:Egg::Advance`; `SpamInfection` converting a spirit (95 % Virii, 5 % Spider, Monster team, roam 200; Infection crate) [C] `code/worldobject/spam.cpp:SpamInfection::AdvanceAttackingSpirit`; cheat window (20 Monster Virii, roam 1000) [B:DEBUG] `code/interface/cheat_window.cpp`; `Cave` [B:LEGACY] `code/worldobject/cave.cpp`.
+- All MP creation sites pass `unitId = −1`, so Virii live in `Team::m_others` and are batch-rendered by `Team::RenderVirii` [C] `code/team.cpp:Team::RenderVirii`.
+
+### 16.2 Virii — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 10 | [C] `data/stats.txt` |
+| Speed | 32 u/s × slope factor `1 + (h_now − h_next)/5` clamped [0.1, 2.0] | [C] `Virii::AdvanceToTargetPos` |
+| Rate | 0 | [C] |
+| Hover height | 0.1 | [C] `Virii::Virii` |
+| `VIRII_MINSEARCHRANGE` / `VIRII_MAXSEARCHRANGE` | 30 / 60 (`#define`) | [C] `virii.h` |
+| `VIRII_TAILLENGTH` | 175 (code uses a literal 175.0) | [C] `Virii::RecordHistoryPosition` |
+| `VIRII_POPULATIONLIMIT` | 250 per team (`#define`) | [C] `virii.h` |
+| Bite | `ChangeHealth(−20)` (Unresistable) on arrival at the enemy | [C] `Virii::AdvanceAttacking` |
+| Retarget period (idle) | 1.0 s (first after `syncfrand(2)`) | [C] `Virii::AdvanceIdle`, `Virii::Virii` |
+| History sample period (non-idle) | 0.5 s, plus extra non-required samples when height differs > 3 | [C] `Virii::Advance` |
+| Fall gravity | −10 u/s²; lands at ground + 2 | [C] `Virii::Advance` |
+| Population counter | `Virii::s_viriiPopulation[team]` ++ in `Begin`, −− in the destructor; Virii are excluded from population-cap counting ([03](03_buildings_and_world_objects.md), [05](05_economy_and_population.md)) | [C] `Virii::Begin`, `Virii::~Virii` |
+| Lifetime | until killed | — |
+
+### 16.3 Virii — state machine
+
+States `StateIdle`, `StateAttacking`, `StateToSpirit`, `StateToEgg` [C] `virii.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> ToEgg: retarget, carrying a spirit, dormant grounded friendly egg within 60, random pick
+    Idle --> Attacking: retarget, enemies near, nearest live grounded enemy at 30-60
+    Idle --> ToSpirit: retarget, Birth or Floating spirit within 60 that has nearby eggs
+    Idle --> Idle: retarget, SearchForIdleDirection
+    Attacking --> Idle: enemy gone or dead
+    Attacking --> Attacking: arrived, enemy -20 HP, 3 muzzle flashes, sound Attack, search next enemy at 30-60
+    ToSpirit --> Idle: spirit gone, dead, attached or in an egg
+    ToSpirit --> ToEgg: arrived, CollectorArrives, spirit attached
+    ToEgg --> Idle: no egg found, spirit dropped, or spirit invalid
+    ToEgg --> Idle: arrived, Egg.Fertilise
+```
+
+[C] `Virii::AdvanceIdle` (order: eggs if carrying → enemies → spirits → idle direction), `AdvanceAttacking`, `AdvanceToSpirit`, `AdvanceToEgg`, `SearchForEnemies`, `SearchForSpirits`, `SearchForEggs`, `FindNearbyEgg`.
+- **Bite cadence**: after a bite the Virii looks for the nearest enemy at ≥ 30; if none it keeps the current target and, being on top of it, bites again next tick — **20 HP per tick (200 HP/s)** while in contact [I] from `Virii::AdvanceAttacking` and the `GetBestEnemy` min-range rule [C] `code/entity_grid.cpp:EntityGrid::GetBestEnemy`.
+- **Idle wandering** (`SearchForIdleDirection`): return-to-spawn chance `d/roamRange` (forced 0 below 0.75); returning picks one of 8 compass directions toward the spawn point; otherwise up to 3 tries of a random compass direction `(int(syncfrand(3)) − 1, 0, int(syncfrand(3)) − 1)` whose endpoint (`speed × retargetTimer` ahead) is above sea level. Each new direction records a required history point and plays "ChangeDirection" [C].
+- **Spirits targeted**: only Birth/Floating spirits with `NumNearbyEggs() > 0`; carried spirits follow at pos + (0,2,0); dropped (`CollectorDrops`) when the Virii dies [C] `Virii::SearchForSpirits`, `Virii::Advance`.
+
+### 16.4 Virii — targeting, terrain and obstacles
+
+- Targets: `GetBestEnemy(pos, 30, 60, team)` (nearest enemy between 30 and 60, alive, grounded), gated by the unit's `m_enemiesFound` pre-check when the Virii belongs to a `ViriiUnit` [C] `Virii::SearchForEnemies`.
+- Movement: compass-direction steering with the slope factor; **no obstruction push** and the water-damage line is commented out ⇒ Virii cross water and pass through buildings; map clamp repeated in `Virii::Advance` [C].
+- A laser hit damages but never pushes or turns a Virii (`Laser::Advance` skips `TypeVirii`) [C] `code/worldobject/weapons.cpp:Laser::Advance`.
+
+### 16.5 Virii — death, colour, control, sounds, VFX
+
+- Death: base `ChangeHealth` (spirit unless Monster team, "Die"), velocity zeroed, then 2.5 s fade. `Virii::AdvanceDead()` (trail scatter in 8 compass directions at 10 u/s) is **never called** — it does not override `Entity::AdvanceDead(Unit*)` [C].
+- Trail: `m_positionHistory` (newest first) trimmed once its summed length exceeds 175; rendered as a 3-half-width textured worm strip (alpha `wormColour.a − cumulative distance`) plus a 12-half-width glow strip (skipped at detail 4); lower detail levels drop non-required samples and render only `1 − 0.25·min(detail − 1, 2)` of the history [C] `Virii::RecordHistoryPosition`, `Virii::Render`.
+- Team colouring: worm colour = team colour × health fraction (alpha 200); glow = RGB(200,100,100) single-player / team colour multiplayer (alpha 150); **Monster-team Virii are drawn white/transparent** (worm (255,255,255,0), glow (200,200,200,50)); dead Virii fade near-white [C] `Virii::Render`. Texture `sprites/viriifull.bmp` [C] `Team::RenderVirii`.
+- Control: none. Sounds: "ChangeDirection", "Attack" + base "LoseHealth", "Die", "Create". VFX: 3 `TypeMuzzleFlash` per bite (synced RNG velocities) [C].
+
+### 16.6 ViriiUnit — Virii group container
+
+`class ViriiUnit : Unit { bool m_enemiesFound; bool m_cameraClose; }` [C] `code/worldobject/virii.h`, `virii.cpp`. Created by `Team::NewUnit` whenever the troop type is `TypeVirii` [C] `code/team.cpp:Team::NewUnit`. `Advance(slice)`: `m_enemiesFound = EntityGrid::AreEnemiesPresent(centre, radius + 60, team)` (cheap pre-check before each member's enemy search), then `Unit::Advance`. `Render`: all members in one additive `GL_QUADS` batch with `sprites/viriifull.bmp`, detail 1–4 from the `RenderEntityDetail` preference and camera distance (pref 1: detail 2 beyond 1000; pref 2: 3 beyond 1000 / 2 beyond 500; pref 3: 4 always); `m_cameraClose` unused [C]. **Build tag: [B:LEGACY] in practice** — the only Multiwinia callers of `NewUnit` for Virii would be level instant units with `inUnit = 1` (no shipped MP map has Virii instant units) and teleports re-creating a unit; every live MP spawn site passes `unitId = −1` [C] grep of `NewUnit(` across `code/`. Resolved: P05 tagged ViriiUnit live; the creation sites show it is not created in shipped Multiwinia play.
+
+### 16.7 ViriiHistory — trail sample
+
+`class ViriiHistory { Vector3 m_pos; Vector3 m_right; Vector3 m_glowDiff; double m_distance; bool m_required; }` [C] `code/worldobject/virii.h`. [B:FULL]. One point of a Virii trail: `m_pos` world position; `m_right` perpendicular to the segment on the land normal (strip width direction); `m_glowDiff` the 10-unit step vector toward the previous sample (glow strip); `m_distance` distance to the previous sample (trail length accounting and alpha falloff); `m_required` = true for direction-change/state samples, false for height-smoothing samples (droppable at lower detail). Created by `Virii::RecordHistoryPosition`, stored newest first, trimmed beyond 175 total length [C].
 
 ## 17 SporeGenerator
 
-_Pending — being written._
+`class SporeGenerator : Entity`, type `TypeSporeGenerator` (6) [C] `code/worldobject/sporegenerator.h`, `code/worldobject/sporegenerator.cpp`. [B:FULL]. Not blocked.
+
+### 17.1 SporeGenerator — role and acquisition
+
+- **Role**: a hovering creature with four tails that drifts around its spawn point and lays Virii Eggs near floating spirits (and at random) — a slow breeding engine that turns spirits into Virii.
+- **Obtained by** `TriffidEgg::Spawn` `SpawnSporeGenerator` (Eggs and Triffids crates; roam range 200) [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`. Shaman summoning and campaign placements [B:LEGACY].
+
+### 17.2 SporeGenerator — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Health | 200 | [C] `data/stats.txt` |
+| Speed | 20 u/s (scaled by `distance/50` within 50 of the target) | [C] `SporeGenerator::AdvanceToTargetPosition` |
+| Rate | 10 (unused) | [C] |
+| `SPOREGENERATOR_HOVERHEIGHT` | 100 (`#define`) — not applied at spawn in multiplayer (spawns at ground level, rises toward targets) | [C] `sporegenerator.cpp`, `SporeGenerator::Begin` |
+| `SPOREGENERATOR_EGGLAYHEIGHT` | 20 | [C] |
+| `SPOREGENERATOR_SPIRITSEARCHRANGE` | 200 | [C] |
+| `SPOREGENERATOR_NUMTAILS` | 4 (`#define`, header) | [C] `sporegenerator.h` |
+| Retarget period (idle) | 6.0 s | [C] `SporeGenerator::AdvanceIdle` |
+| Egg interval | `2 + syncfrand(2) − difficulty/10` s while within 50 of the lay target (difficulty 0 in MP) | [C] `SporeGenerator::AdvanceEggLaying` |
+| Pre-fertilised eggs | 25 % (`syncrand() % 4 == 0`) — a new spirit of the generator's team is spawned in the egg | [C] |
+| Random lay chance | `syncfrand(100) < 10 + 20·difficulty/10` ⇒ 10 % per random retarget in MP | [C] `SporeGenerator::SearchForRandomPos` |
+| Panic | 10 s after a qualifying hit; velocity set to `up × speed × 3` | [C] `SporeGenerator::ChangeHealth` |
+| Lifetime | until killed | — |
+
+### 17.3 SporeGenerator — state machine
+
+States `StateIdle`, `StateEggLaying`, `StatePanic` [C] `sporegenerator.h`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> EggLaying: retarget every 6 s, floating spirit within 200 with fewer than 3 nearby eggs and y above 0
+    Idle --> EggLaying: random retarget and lay-chance roll
+    Idle --> Idle: random retarget, 200 box or 200 back toward spawn, height 100 plus or minus 15 percent
+    EggLaying --> EggLaying: within 50, lay an egg every 2 to 4 s
+    EggLaying --> EggLaying: arrived within 10, search spirits or a random position
+    EggLaying --> Idle: arrived, random position without lay roll
+    Idle --> Panic: hit with damage of 2 or more
+    EggLaying --> Panic: hit
+    Panic --> Panic: jitter target by plus or minus 50 each tick
+    Panic --> Idle: 10 s elapsed
+```
+
+- Lay target: spirit + random offset (±30 on x/z) at 20 up; eggs appear at shape marker `MarkerEggs` with the generator's velocity and team; sound "LayEgg" [C] `SporeGenerator::AdvanceEggLaying`.
+- Return-to-spawn rule: chance `d/roamRange` [C] `SporeGenerator::SearchForRandomPos`.
+
+### 17.4 SporeGenerator — targeting, terrain, damage, colour, control, sounds
+
+- Targeting: spirits only (it never attacks). Darwinians treat it as a scary, grenade-worthy target (§4.6, §4.7).
+- Movement: `vel = vel·(1 − dt/2) + targetVel·dt/2`, rotated about the right axis by `sin(3·now)·dt·1.5` (deterministic wobble, network time); arrival < 10. Flies — no terrain or building collision [C] `SporeGenerator::AdvanceToTargetPosition`.
+- Damage: **immune to lasers**; amounts ≥ −1 ignored; larger hits apply base damage, a partial shape explosion (fraction dead) and Panic; death → base spirit + "Die" [C] `SporeGenerator::ChangeHealth`.
+- Team colouring: `sporegenerator.shp` red regions only (`SetShape(…, false)`); four 3-segment quad-strip tails in team colour from markers `MarkerTail01`–`MarkerTail04`, animated with sine offsets and a function-static smoothed velocity shared by all generators (render-only quirk); damaged flicker; 20-unit shadow [C] `SporeGenerator::Render`, `RenderTail`.
+- Control: none. Sounds: "LayEgg" + base "Create", "LoseHealth", "Die".
 
 ## 18 Centipede
 
-_Pending — being written._
+`class Centipede : Entity`, type `TypeCentipede` (9) [C] `code/worldobject/centipede.h`, `code/worldobject/centipede.cpp`. [B:FULL]. Not blocked. Must be created inside a `Unit` (`AppReleaseAssert`) [C] `Centipede::Advance`.
+
+### 18.1 Centipede — role and acquisition
+
+- **Role**: a chain of linked segments (one Entity per segment, all in one generic `Unit`) led by a head that hunts enemies, eats floating spirits and grows; every segment crushes nearby enemies; killing a middle segment splits it in two.
+- **Obtained by** `TriffidEgg::Spawn` `SpawnCentipede`: `Team::NewUnit(TypeCentipede, size)` + `SpawnEntities(…, size, spread 0, roam 200)` with `size = 5 + syncrand() % 10` (5–14) in MP, `5 + syncrand() % 5` in SP [C] `code/worldobject/triffid.cpp:TriffidEgg::Spawn`; growth by `Centipede::EatSpirits`. Campaign instant units (with a difficulty-based splitting rule in `LevelFile::ParseInstantUnits`) and Shaman [B:LEGACY].
+
+### 18.2 Centipede — stats and constants
+
+| Item | Value | Ref |
+|---|---|---|
+| Segment health | 255 × `2 × m_size`, clamped [0, 255] (≥ 255 when size ≥ 0.5; tail size 0.2 → 102) | [C] `Centipede::Begin`, `Centipede::ChangeHealth` |
+| Speed | 80 u/s × slope factor `1 + (h_now − h_next)/10` clamped [0.6, 1.0] (only uphill slows) | [C] `Centipede::AdvanceToTargetPosition` |
+| Rate | 1 (unused) | [C] |
+| Turn blend | `dt × 3` per tick for the head (× 1.5 when trailing) | [C] |
+| `CENTIPEDE_MINSEARCHRANGE` / `MAXSEARCHRANGE` | 75 / 150 (enemy search scaled by head `m_size`; spirit search unscaled) | [C] `centipede.h` |
+| `CENTIPEDE_SPIRITEATRANGE` | 10 (horizontal) | [C] |
+| `CENTIPEDE_NUMSPIRITSTOREGROW` / `_MP` | 4 / 4 | [C] |
+| `CENTIPEDE_MAXSIZE` | 20 segments (no eating or spirit seeking above this) | [C] |
+| Eat chance | `m_size/2` per candidate spirit per tick, at most one spirit per tick | [C] `Centipede::EatSpirits` |
+| Contact damage | every segment, every tick: enemies within `m_radius` (= `10 × m_size` fixed at `Begin`) are pushed out to the radius and take `int((radius − distance)·10)` | [C] `Centipede::Attack` |
+| Panic | `2 + syncfrand(2)` s when a hit drops a segment into a lower third of its max health; propagated to every segment toward the head | [C] `Centipede::ChangeHealth`, `Centipede::Panic` |
+| Water/building avoidance | a target with y < 0, or a building within 150 ahead (`Location::GetBuildingId(pos, front, 255, 150)`), counts as "arrived" (forces a retarget) | [C] `Centipede::AdvanceToTargetPosition` |
+| Arrival | < 20 | [C] |
+| Lifetime | until every segment is dead | — |
+
+### 18.3 Centipede — segment logic
+
+- **Linking** (`Centipede::Begin`): when a segment begins without a leader, all segments of its Unit are relinked in unit-array order: entity 0 is the **head** (no `m_next`), each next entity follows the previous (`m_next` = the one in front, `m_prev` = the one behind). Sizes: head `min(0.2 × 1.1^N, 10)`, each following segment ÷ 1.1. Per-team recoloured `centipedehead.shp` / `centipede.shp` (cached `<name>_<colourId>_<groupId>`, statics `s_shapeHead[team]`, `s_shapeBody[team]`) [C] `Centipede::Begin`.
+- **Size convergence** every tick: tail target 0.2; others `min(1.1 × size of the segment behind, 1.0)`; the size moves 10 % toward the target when off by > 0.01 and health is rescaled to keep the same fraction ⇒ steady state tail 0.2, ×1.1 per segment toward the head, capped 1.0 [C] `Centipede::Advance`.
+- **Following**: a trailing segment copies its leader's interpolated trail point: with the leader's last 3 recorded positions (newest first), `pos = h[k+1] + (h[k] − h[k+1])·(1 − m_size)`, `vel = (h[k] − h[k+1])/dt`, where `k = 0` if the leader's entity index is greater than the follower's (leader not yet advanced this tick) else 1. It inherits the leader's `m_panic`. `m_linked` (render gate) requires a linked leader and ≥ 2 own samples. If the leader dies the segment becomes a new head [C] `Centipede::GetTrailPosition`, `RecordHistoryPosition`.
+- **Death of a segment**: base death (spirit), scaled shape explosion, unlinks from both neighbours — a centipede **splits** into two independent centipedes when a middle segment dies. Single-player also explodes on every health-band drop. Dead segments run `Entity::AdvanceDead` only (`Centipede::Advance` never calls `Entity::Advance`) [C].
+- **Growth** (`EatSpirits`, head only): after ≥ 4 eaten spirits, `floor(eaten/4)` new segments are appended behind the current tail (new Unit entity, size = tail size ≥ 0.2, placed at `m_spawnPoint`), sound "Grow" [C].
+- `GetSize` counts segments from this one backwards through `m_prev` [C].
+
+### 18.4 Centipede — head state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> Roam
+    Roam --> Hunt: no target or arrived, GetBestEnemy at 75 to 150 times size, sound EnemySighted
+    Roam --> SeekSpirit: no enemy, floating spirit at 75-150, size at most 20
+    Roam --> Roam: else SearchForRandomPosition, 100 step, return to spawn with chance d over roamRange
+    Hunt --> Hunt: target position refreshed each tick at ground height
+    Hunt --> Roam: target gone or arrived, re-search
+    SeekSpirit --> Roam: arrived
+    Roam --> Panic: panic timer above 0
+    Hunt --> Panic: panic timer above 0
+    SeekSpirit --> Panic: panic timer above 0
+    Panic --> Panic: 50 percent per tick pick a retreat point 50 away from the nearest enemy within 150 times size, plus or minus 90 degrees
+    Panic --> Roam: panic timer at or below 0
+```
+
+[C] `Centipede::Advance`, `SearchForTargetEnemy`, `SearchForSpirits`, `SearchForRandomPosition`, `SearchForRetreatPosition`. Every tick, head and body, `EatSpirits` (head only) and `Attack(pos)` run regardless of state.
+
+### 18.5 Centipede — targeting, terrain, damage, colour, control, sounds
+
+- Targeting: nearest enemy at `[75·size, 150·size]` (`GetBestEnemy`); contact damage hits every enemy within each segment's radius. Darwinians fight centipedes normally (not on the scary list).
+- Terrain: ground walker; refuses targets in water and steers away from buildings 150 ahead (§18.2); no building push otherwise.
+- Damage: every type including lasers; Panic on dropping a health third.
+- Team colouring: red regions of `centipedehead.shp` / `centipede.shp` recoloured; rendered aligned to the terrain normal [C] `Centipede::Begin`, `Centipede::Render`.
+- Control: none. Sounds: "Panic" (entering panic), "EnemySighted", "Grow", "Attack" (each contact) + base "LoseHealth", "Die", "Create". VFX: shape explosions; a D3D tearing effect is commented out.
 
 ## 19 Spider
 

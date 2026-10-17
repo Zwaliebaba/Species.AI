@@ -1572,7 +1572,7 @@ classDiagram
   class ResetLocationWindow
   <<legacy>> ResetLocationWindow
   class AboutDarwiniaWindow
-  <<dead>> AboutDarwiniaWindow
+  <<legacy>> AboutDarwiniaWindow
   class ConfirmExitWindow
   class ConfirmResetWindow
   <<legacy>> ConfirmResetWindow
@@ -2041,18 +2041,18 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 62 | `LabelButton` | `DarwiniaButton` | `code/interface/darwinia_window.h:LabelButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
 | 63 | `ProfileButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:ProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 64 | `NetworkButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:NetworkButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 65 | `EditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:EditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 65 | `EditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:EditorButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
 | 66 | `DebugCameraButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:DebugCameraButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 67 | `FPSButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:FPSButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 68 | `PrefsScreenButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsScreenButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 69 | `PrefsGfxDetailButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsGfxDetailButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 70 | `PrefsSoundButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PrefsSoundButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 71 | `PokeyEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PokeyEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 72 | `GestureEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:GestureEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 73 | `CheatButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:CheatButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 74 | `SoundStatsButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundStatsButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 75 | `SoundProfileButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 76 | `SoundEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundEditorButton` | compiled into FULL, never reached | [B:LEGACY] |
+| 71 | `PokeyEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:PokeyEditorButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 72 | `GestureEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:GestureEditorButton` | not compiled in any PC configuration | [B:DEAD] |
+| 73 | `CheatButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:CheatButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 74 | `SoundStatsButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundStatsButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 75 | `SoundProfileButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundProfileButton` | TARGET_DEBUG builds only | [B:DEBUG] |
+| 76 | `SoundEditorButton` | `DarwiniaButton` | `code/interface/debugmenu.cpp:SoundEditorButton` | TARGET_DEBUG builds only | [B:DEBUG] |
 | 77 | `DebugMenu` | `DarwiniaWindow` | `code/interface/debugmenu.h:DebugMenu` | compiled into FULL, never reached | [B:LEGACY] |
 | 78 | `DebugKeyBindings` | — | `code/interface/debugmenu.h:DebugKeyBindings` | live in the shipped build | [B:FULL] |
 | 79 | `BuyOnlineButton` | `DarwiniaButton` | `code/interface/demoend_window.cpp:BuyOnlineButton` | compiled into FULL, never reached | [B:LEGACY] |
@@ -2139,9 +2139,9 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 160 | `LightGammaButton` | `DarwiniaButton` | `code/interface/lights_window.cpp:LightGammaButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
 | 161 | `NewLightButton` | `DarwiniaButton` | `code/interface/lights_window.cpp:NewLightButton` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
 | 162 | `LightsEditWindow` | `DarwiniaWindow` | `code/interface/lights_window.h:LightsEditWindow` | LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) | [B:EDITOR] |
-| 163 | `AboutDarwiniaButton` | `DarwiniaButton` | `code/interface/mainmenus.cpp:AboutDarwiniaButton` | not compiled in any PC configuration | [B:DEAD] |
+| 163 | `AboutDarwiniaButton` | `DarwiniaButton` | `code/interface/mainmenus.cpp:AboutDarwiniaButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 164 | `MainMenuUserProfileButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:MainMenuUserProfileButton` | compiled into FULL, never reached | [B:LEGACY] |
-| 165 | `ModsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ModsButton` | not compiled in any PC configuration | [B:DEAD] |
+| 165 | `ModsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ModsButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 166 | `MultiwiniaButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:MultiwiniaButton` | compiled into FULL, never reached | [B:LEGACY] |
 | 167 | `ScreenOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:ScreenOptionsButton` | live in the shipped build | [B:FULL] |
 | 168 | `GraphicsOptionsButton` | `GameMenuButton` | `code/interface/mainmenus.cpp:GraphicsOptionsButton` | live in the shipped build | [B:FULL] |
@@ -2159,7 +2159,7 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 180 | `OptionsMenuWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:OptionsMenuWindow` | live in the shipped build | [B:FULL] |
 | 181 | `LocationWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:LocationWindow` | live in the shipped build | [B:FULL] |
 | 182 | `ResetLocationWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ResetLocationWindow` | compiled into FULL, never reached | [B:LEGACY] |
-| 183 | `AboutDarwiniaWindow` | `DarwiniaWindow` | `code/interface/mainmenus.h:AboutDarwiniaWindow` | not compiled in any PC configuration | [B:DEAD] |
+| 183 | `AboutDarwiniaWindow` | `DarwiniaWindow` | `code/interface/mainmenus.h:AboutDarwiniaWindow` | compiled into FULL, never reached | [B:LEGACY] |
 | 184 | `ConfirmExitWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ConfirmExitWindow` | live in the shipped build | [B:FULL] |
 | 185 | `ConfirmResetWindow` | `GameOptionsWindow` | `code/interface/mainmenus.h:ConfirmResetWindow` | compiled into FULL, never reached | [B:LEGACY] |
 | 186 | `MenuCloseButton` | `GameMenuButton` | `code/interface/mainmenus.h:MenuCloseButton` | live in the shipped build | [B:FULL] |
@@ -2362,7 +2362,7 @@ Every `class X [: public Y]` declaration in `contrib/eclipse/*`, `code/interface
 | 383 | `BackPageButton` | `GameMenuButton` | `code/game_menu.h:BackPageButton` | live in the shipped build | [B:FULL] |
 | 384 | `GameMenuCheckBox` | `CheckBox` | `code/game_menu.h:GameMenuCheckBox` | live in the shipped build | [B:FULL] |
 
-Totals: not compiled in any PC configuration = 33; TARGET_DEBUG builds only = 73; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 76; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 119; other product target / platform only = 2; compiled into FULL, never reached = 74; all declarations = 384.
+Totals: not compiled in any PC configuration = 31; TARGET_DEBUG builds only = 78; LOCATION_EDITOR builds only (or compiled-in but only reachable from editor code) = 77; compiled into FULL, only used by editor/debug tools = 7; live in the shipped build = 119; other product target / platform only = 2; compiled into FULL, never reached = 70; all declarations = 384.
 
 ---
 
@@ -2955,7 +2955,8 @@ Glyph atlases (`data/textures/unicode/*`, 138 files) feed all UI text; they are 
 | `CheatWindow`, `ProfileWindow`, sound editor/stats/profile/parameter windows, `CrateHelpWindow` | `CHEATMENU_ENABLED` / `SOUND_EDITOR` / `INCLUDE_CRATE_HELP_WINDOW` (TARGET_DEBUG) | [B:DEBUG] |
 | Map-editor windows, `MultiwiniaWindow`, `NewMapWindow`, `MultiwiniaFileDialog`, `InvalidCratesWindow`, `MultiwiniaOptionsWindow`, `MultiwiniaEditorButton` | `LOCATION_EDITOR` or only reachable from editor code | [B:EDITOR] |
 | `MainMenuWindow` and its buttons, profiles, leaderboards, `ResetLocationWindow`, `PrefsKeybindingsWindow`, `ReallyQuitWindow` (with `GameExitButton`), `SaveOnQuitWindow`, `DemoEndWindow`, `GlobalWorldEditorWindow` | compiled; no reachable opener (P17a/P17b reachability tables) | [B:LEGACY] |
-| `ModsWindow`, `NewModWindow`, `AboutDarwiniaWindow` | `USE_DARWINIA_MOD_SYSTEM` / `OBERONBUILD` | [B:DEAD] |
+| `ModsWindow`, `NewModWindow` (method bodies inside `#ifdef USE_DARWINIA_MOD_SYSTEM`) | macro never defined | [B:DEAD] |
+| `AboutDarwiniaWindow`, `AboutDarwiniaButton`, `ModsButton` | classes compiled; their only instantiations are inside `#ifdef OBERONBUILD` / `#ifdef USE_DARWINIA_MOD_SYSTEM` (Resolved: P17b tagged `AboutDarwiniaWindow` [B:DEAD]; the class itself is compiled, only its opener is not) | [B:LEGACY] |
 | `BuyNowWindow`, `UpdateAvailableWindow`, `code/UI/ErrorDialog.*`, `code/UI/soundsliderbutton.h` (`VolumeControl`) | not in `Darwinia.vcproj` | [B:DEAD] |
 | `code/UI` uncompiled headers: `GameMenuOptionsButton`, `HelpModeButton`, `MultiwiniaModeButton`, `QuickStartButton`, `RequestAIButton`, `ResearchModeButton`, `RollingDemoButton`, `MapDetailsButton` | header included nowhere | [B:DEAD] |
 | `code/UI` compiled but never instantiated: `AchievementButton`, `BuyNowInfoButton`, `CSpectatorButton` (`#ifdef TESTBED`), `DarwiniaPlusMPButton`, `DarwiniaPlusSPButton`, `GameTypeAnyButton`, `HelpSelectButton`, `QuickMatchButton` | creation commented out or behind undefined macros | [B:LEGACY] |

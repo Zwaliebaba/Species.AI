@@ -867,3 +867,396 @@ Assigning to these members sends a request to the (local or remote) server; read
 When the server echoes co-op on, each client clears all team colours and the window's requested colour (remembering the previous one); co-op off restores it [C] `code/network/clienttoserver.cpp` (GAMEOPTION_COOPMODE handler). On `GAMEOPTION_GAME_TYPE` receipt the client zeroes params and research before the parameters are re-sent [C]. AI-mode range check is `value < 0 || value > NumAITypes` (off by one: 3 would be accepted) [C] (L~2492).
 
 ---
+## 5 Multiplayer front end: versus CPU, quick match, LAN/WAN browser, host/join, lobby
+
+Every game — including single player against the CPU and the tutorials — runs through the same client/server lobby: the front end starts a local server (or joins a remote one) and every setting is a sequenced network command (protocol in [22](22_determinism_and_networking.md)).
+
+### 5.1 Start sequences driven from the front end
+
+#### 5.1.1 Versus CPU ("Single Player")
+
+There is no separate "versus CPU" button in [B:FULL]: Main → "Single Player" is the versus-CPU path (the `MultiwiniaVersusCpuButton` exists only on the debug `PageDemoSinglePlayer`). CPU players fill every empty slot when Play is pressed, and their difficulty is the lobby's AI drop-down [C].
+
+```mermaid
+sequenceDiagram
+    participant U as Player
+    participant M as GameMenuWindow
+    participant C as ClientToServer
+    participant S as "local Server 127.0.0.1"
+    U->>M: Main "Single Player"
+    M->>M: m_singlePlayer=true, page GameSelect
+    M->>S: StartSinglePlayerServer (StartNetwork true, NULL, -1), client joins loopback
+    S-->>C: team id assigned (myTeamId != 255), mode buttons become visible
+    U->>M: mode button
+    M->>C: set GAMEOPTION_GAME_TYPE, reset params to defaults
+    C-->>M: echo, MapSelect page builds
+    U->>M: map row
+    M->>C: set map, TimeLimit from map PlayTime
+    M->>M: page GameSetup (host branch resets params to defaults)
+    U->>M: PlayerOptions (optional) name / colour
+    U->>M: "Play"
+    M->>C: RequestTeam(CPU) for each empty slot below numPlayers
+    M->>C: RequestStartGame
+    S-->>C: START_GAME, m_atMainMenu=false, menu destroyed, loading screen
+```
+
+[C] `code/UI/DarwiniaModeButton.h`, `GameMenuWindow::SetupGameSelectPage`, `code/UI/GameTypeButton.h`, `code/UI/LevelSelectButton.h`, `code/UI/PlayGameButton.h`, `code/network/clienttoserver.cpp` START_GAME handler.
+
+#### 5.1.2 Hosting a multiplayer game
+
+Main → Multiplayer → Host → GameSelect (`StartMultiPlayerServer`: listens on the local host IP and the listener port; created with `m_noAdvertise = true`, advertising begins once a map is chosen) → mode → map → lobby. The host waits for clients, may change AI / advanced options, presses **Ready**; when every human team is ready the host auto-fills empty slots with CPU teams and requests the start (§5.12) [C] `code/app.cpp:App::StartNetwork`, `GameMenuWindow::UpdateMultiplayerPage`.
+
+#### 5.1.3 Tutorial launch ("quick start" path)
+
+1. Tutorials page → `TutorialButton`: `m_singlePlayer = true`, `m_quickStart = true`, `g_app->m_multiwiniaTutorial = true`, tutorial type stored, menu input locked [C] `code/UI/TutorialButton.h`.
+2. Next frames (page Tutorials runs `UpdateGameOptions(false)` then `UpdateMainPage()`): `UpdateMainPage` starts a server via `StartMultiPlayerServer()` (because `m_singlePlayer` and no server) [C].
+3. `UpdateGameOptions`: with a server, the tutorial flag and not yet started → `SetupTutorial()` (type 1) or `SetupTutorial2()` (type 2): mode King of the Hill (also set directly on `g_app->m_multiwinia`), AI Easy, map = index of CRC `MAPID_MP_KOTH_2P_1` (tutorial 1) or `MAPID_MP_KOTH_3P_1` (tutorial 2), requested colour 0, all KOTH parameters at defaults; tutorial 2 also pre-assigns lobby colours 0, 1, 2 to teams 0, 1, 2; `m_startingTutorial = true`; renderer fade-out [C] `GameMenuWindow::SetupTutorial`, `GameMenuWindow::SetupTutorial2`.
+4. When the local team id arrives: wait for sound init, send name/colour (`SetTeamNameAndColour`; the "starting tutorial" flag makes it send the colour), request `numPlayers − 1` CPU teams, `RequestStartGame()`, `m_quickStart = false` [C] `GameMenuWindow::UpdateGameOptions` (L1639–1665).
+5. After the tutorial game `GameMenu::CreateMenu` re-opens the front end on `PageTutorials` [C].
+
+#### 5.1.4 Joining a multiplayer game
+
+```mermaid
+sequenceDiagram
+    participant U as Player
+    participant M as GameMenuWindow
+    participant MS as MetaServer
+    participant C as ClientToServer
+    U->>M: Multiplayer, Join
+    M->>C: StartIdentifying
+    M->>MS: RequestServerListWAN (repeated every 10 s)
+    loop every 2 s
+        M->>MS: GetServerList LAN + WAN, dedupe, filter, sort, show 13 rows
+    end
+    U->>M: click row (checks protocol, demo, full, map, password)
+    M->>C: StartNetwork(false, ip, port), LAN ip if same public ip
+    M->>M: page GameConnecting (attempts / resync percent)
+    C-->>M: StateConnected and game type known
+    M->>M: page GameSetup (waits for team id)
+    U->>M: Ready (toggle)
+    C-->>M: START_GAME from host, game
+```
+
+[C] `GameMenuWindow::SetupJoinGamePage`, `GameMenuWindow::UpdateJoinGamePage`, `GameServerButton::MouseUp`, `GameMenuWindow::JoinServer`, `GameMenuWindow::UpdateGameConnectingPage`, `GameMenuWindow::SetupMultiplayerPage`.
+
+Dead quick-start variants [C]: `QuickStartButton` (KOTH, map index 0, colour 0, defaults, `m_quickStart = true`, fade-out, then step 4 above) and `RollingDemoButton` (KOTH, map index 0, colour 0, defaults, fade-out, two CPU teams, immediate start; ignored if `m_quickStart`) are never instantiated — their headers are not even included (`code/UI/QuickStartButton.h`, `code/UI/RollingDemoButton.h`). `MultiwiniaModeButton` (→ GameSelect, starts an MP server) and `RequestAIButton` ("Add AI Player" → `RequestTeam(TeamTypeCPU, -1)`) are likewise unused [B:LEGACY].
+
+### 5.2 Server discovery: components and endpoints
+
+[C] `code/app.cpp:App::InitMetaServer`, `contrib/systemiv/lib/metaserver/metaserver_defines.h`.
+
+| Component | Role | Endpoint |
+|---|---|---|
+| MetaServer (WAN directory; external service, not in this tree) | server registration / listing, key authentication, small data items (MOTD, latest version, demo limits) | host `metaserver-mwdev.introversion.co.uk` (note: the *dev* metaserver host is compiled in), UDP port `PORT_METASERVER_LISTEN` = **5113** |
+| MatchMaker (same host and port) | tells a socket its public IP:port (STUN-like) and relays hole-punch requests | same |
+| MetaServer client listener (in game) | receives list results, auth results, data, LAN broadcasts | local UDP **5009** (`PORT_METASERVER_CLIENT_LISTEN`), falling back to an OS-chosen port (then LAN discovery cannot work) |
+| LAN discovery | game servers broadcast REGISTER every 5 s | `255.255.255.255:5009`, from the listener socket with `SO_BROADCAST` |
+| Game server / client | lockstep traffic | UDP 4000 / 4001 (prefs `NetworkServerPort` / `NetworkClientPort`) |
+
+Startup [C] `App::InitMetaServer`: `Authentication_LoadKey("<profile>authkey.dev")`, `Authentication_SetKey`, `Authentication_RequestStatus(key, METASERVER_GAMETYPE_MULTIWINIA = 4)`, `MetaServer_Initialise` (WinSock), `MetaServer_Connect(host, 5009)`, `MatchMaker_LocateService(host, 5113)`. Game type ids: Defcon 2, Multiwinia 4 (a Defcon port constant 5008 also exists). All metaserver traffic is Directory-encoded with node name `NET_METASERVER_MESSAGE` = `"m"` and command field `"c"`; matchmaker node name `"match"` [C].
+
+#### 5.2.1 Metaserver / matchmaker message catalogue
+
+[C] `contrib/systemiv/lib/metaserver/metaserver.cpp`, `matchmaker.cpp`, `authentication.cpp`.
+
+| Code | Symbol | Direction | Fields | Notes |
+|---|---|---|---|---|
+| ma | REGISTER | game server → metaserver (WAN, every TTL/3 ± 1.5 s or on change) and → LAN broadcast (every 5 s or on change) | server properties (§5.3) + COMMAND | demo-key servers skip WAN registration when Demo2Limits.AllowDemoServers is false |
+| mb | REQUEST_LIST | client → metaserver | AUTHKEY, GAMENAME, GAMEVERSION, [ORIGINVERSION "dH"] | refused locally if the own key fails the simple check |
+| mc | LISTRESULT | metaserver → client | one server's properties incl. IP "da", PORT "db" [+ metaserver-added fields, I: PROTOCOLMATCH "dp", DEMORESTRICTED "demo", DEMOSERVER "dz"] | `MetaServer_UpdateServerList(ip, port, WAN, dir)` |
+| mg | LISTRESULT_ENVELOPE | metaserver → client | any number of VOID fields, each a serialised LISTRESULT | unpacked recursively |
+| md | REQUEST_AUTH | client/server → metaserver | AUTHKEY, AUTHKEYID, GAMENAME, GAMEVERSION, [IP of the joining client] | from the authentication thread |
+| me | AUTHRESULT | metaserver → requester | AUTHRESULT "me" int status, AUTHKEY, AUTHKEYID, [HASHTOKEN "ds" int] | sets key status and hash token |
+| mf | REQUEST_DATA | both directions | request: DataType, [LANGUAGE "ec"], GAMENAME, GAMEVERSION, AUTHKEY, ORIGINVERSION; reply: DataType + payload + optional DataTTL (s; < 0 never expires) | cached per type |
+| mh | REQUESTSERVERDETAILS | client → metaserver | client properties + IP, PORT | no caller in `code/` |
+| mi | UNREGISTER | game server → metaserver (×3) and LAN (×3) | PORT | receiver expects LOCALPORT and AUTHKEY, neither sent → LAN delisting never matches; entries simply expire [C] |
+| aa | REQUEST_IDENTITY ("match") | listener → matchmaker, every 10 s | UNIQUEID "ae", GAMENAME, GAMEVERSION, AUTHKEY | keeps the NAT mapping alive |
+| ab | IDENTIFY ("match") | matchmaker → listener | UNIQUEID, YOURIP "af", YOURPORT "ag" | first answer per request id wins |
+| ac | REQUEST_CONNECT ("match") | joining client → matchmaker (every 1 s while connecting), relayed to the target server [I] | GAMENAME, GAMEVERSION, AUTHKEY, IP, PORT, TARGETIP "ah", TARGETPORT "ai" | server side requires IP and PORT |
+| ad | RECEIVED_CONNECT ("match") | game server → client's public ip:port | — | punches the server's NAT; client only logs it. Any other "match" command ⇒ `AppAbort` (remote crash vector) |
+| sa…sh | STEAM_* | — | Steam auth | dead (files not compiled) |
+
+Field keys for server/client properties [C] `metaserver_defines.h` ("unused" = no reader/writer in compiled code): IP da, PORT db, FROMIP dc, FROMPORT dd, LOCALIP de, LOCALPORT df, SERVERNAME dg, GAMENAME dh, GAMEVERSION di, NUMTEAMS dj, NUMDEMOTEAMS dk (unused), MAXTEAMS dl, NUMSPECTATORS dm, MAXSPECTATORS dn, PROTOCOL do (unused), PROTOCOLMATCH dp, AUTHKEY dq, AUTHKEYID dr, HASHTOKEN ds, PASSWORD dt (unused), RECEIVETIME du (unused), GAMEINPROGRESS dv, GAMEMODE dw, SCOREMODE dx (unused), GAMETIME **dy** (unused), DEMOSERVER dz, DELISTED dA, RANDOM dB, STARTTIME dC, SEARCHRESULT dD (unused), MAPCRC dE, MAPINDEX dF (unused), MASTERPLAYER dG (unused), ORIGINVERSION dH, HASPASSWORD **dI**, CUSTOMMAPNAME dJ ([B:EDITOR]), DEMORESTRICTED "demo", LANGAME "lan", PLAYERNAME pn / PLAYERSCORE ps / PLAYERALLIANCE pa (unused), NUMHUMANTEAMS ea, MODPATH eb (unused), LANGUAGE ec.
+
+Metaserver data items (`DataType` values) [C]: Time, MOTD (requested with the language, §5.15), DemoLimits (unused), Demo2Limits (§6.1), KeyLimits (unused), LatestVersion (§5.15), UpdateURL (§3.17), StressServers / StressClients (unused), ServerTTL (string seconds; default 60, minimum 10). Reply fields DataTTL, DataExpired, TimeHours, TimeMinutes, MaxDemoGameSize, MaxDemoPlayers, AllowDemoServers, AllowDemoLanPlay (unused), DMo, DMa. `MetaServer_RequestData` caching [C]: the first call creates an empty entry expiring in 1 s and returns NULL; a request is sent only when an existing entry has expired (so the first network request goes out on a call ≥ 1 s after the first); retry interval 1 s, 60 s after more than 10 failed retries; expired-but-present data is still returned with a `DataExpired` counter.
+
+### 5.3 What a hosting server advertises (`Server::Advertise`, every server tick)
+
+[C] `code/network/server.cpp:Server::Advertise`. Not advertised when: no map chosen (`m_requestedMap` "null" or empty), `m_noAdvertise`, game type −1, own key fails the simple check, or single player. Otherwise both LAN and WAN registration run.
+
+| Field | Value |
+|---|---|
+| SERVERNAME | pref `ServerName`, default pref `PlayerName`, default `"NewServer"` |
+| GAMENAME / GAMEVERSION | `"Multiwinia"` / `APP_VERSION` (`DARWINIA_VERSION` = `"dev"` in this tree) |
+| STARTTIME / RANDOM | server wall-clock start (u64) / `m_random` — the browser's de-duplication key |
+| LOCALIP / LOCALPORT | `GetLocalHostIP()` / server listener port |
+| NUMTEAMS | `m_teams.NumUsed()` (humans + CPU), uchar |
+| MAXTEAMS | requested map's `m_numPlayers` (1 if map not found), uchar |
+| NUMHUMANTEAMS | `m_clients.NumUsed()` (connected clients incl. host), uchar |
+| NUMSPECTATORS / MAXSPECTATORS | 0 / 0 |
+| GAMEINPROGRESS | `Multiwinia::GameRunning()` (0/1) |
+| GAMEMODE | `Multiwinia::m_gameType` (0 Domination, 1 KotH, 2 CtS, 3 Assault, 4 Rocket Riot, 5 Blitzkrieg, 6 Tank Battle) |
+| HASPASSWORD | 1 if a password is set (field absent otherwise) |
+| MAPCRC | CRC of the requested map |
+| AUTHKEY | the host's **full plaintext key** |
+| PORT | local port if `NetworkUsePortForwarding`, else the matchmaker-identified public port if known, else absent |
+
+`MetaServer_SetServerProperties` stores a copy and signals both registration threads only when the properties changed (`Directory::operator!=`), so changes propagate immediately while unchanged properties are re-sent at the normal period [C].
+
+### 5.4 NAT traversal
+
+[C] `contrib/systemiv/lib/metaserver/matchmaker.cpp`, `Server::Advertise`, `ClientToServer::Advance`, `GameMenuWindow::JoinServer`.
+
+1. When a host starts WAN advertising it starts identity requests for its game listener; when a player opens the Join Game (or Quick Match) page the client starts identity requests for its client listener (stopped when leaving those pages unless moving to the connecting page, and on `ClientLeave`).
+2. The public IP:port learned through IDENTIFY becomes the server's advertised PORT and the client's "our details".
+3. While connecting, the client sends REQUEST_CONNECT via the matchmaker and CLIENT_JOIN directly every second; the server's RECEIVED_CONNECT reply to the client's public address opens the server-side NAT so the next JOIN gets through [I: standard UDP hole punch; matchmaker behaviour is server-side and not in the tree].
+4. LAN shortcut: if the client's own public IP equals the server's listed IP, it connects to the server's LOCALIP:LOCALPORT instead.
+5. `NetworkUsePortForwarding = 1` bypasses identification for the advertised/declared port.
+
+### 5.5 Client-side server list
+
+[C] `contrib/systemiv/lib/metaserver/metaserver.cpp`.
+
+- Entries `GameServer {identity "ip:port", updateTime, authResult, receivedWan, receivedLan, Directory *data}` under `s_serverListMutex`.
+- Update: matched by identity, or by equal AUTHKEY (unless the entry is demo-restricted — "one key can only run one server at once"); LAN receipt adds `"lan" = true`. LAN identity = broadcast source IP + LOCALPORT.
+- Purge on every `GetServerList`: drop entries not refreshed within `s_serverTTL` = **30 s** (`MetaServer_SetServerTTL` has no caller).
+- `GetServerList(authRequired, wan, lan, max)`: copies, adds AUTHRESULT, skips WAN entries without PORT.
+- `MetaServer_GraduallySortList` (one bubble pass; no caller in `code/`): score 0 open lobby with room, 10/20 otherwise; running 30 − players or 40; game over 50 (its spectator terms read the team fields — bug).
+
+### 5.6 Lobby and option synchronisation
+
+[C] `code/network/clienttoserver.cpp`, `code/network/server.cpp`.
+
+- Everything is a sequenced command: game type, map name, parameters, research levels, AI mode, co-op, single-round Assault, basic crates (host UI controls bound through `NetworkValue`), team names and colours (each player's own), ready toggles, chat, spectator conversion, achievement masks, START_GAME.
+- Late joiners obtain the lobby by history replay; per-option version numbers make every option converge.
+- The server enforces only slot counts, the password and key checks at join; option ownership is **not** enforced (§4.4).
+- Game-mode/map availability for demo keys is limited by Demo2Limits (§6.1); in-progress games remain listed (GAMEINPROGRESS) and joinable.
+
+### 5.7 Lobby state model (local, non-networked front-end state)
+
+[C] `code/UI/GameMenuWindow.h`, `GameMenuWindow::GameMenuWindow`.
+
+| Member | Meaning | Initial |
+|---|---|---|
+| `m_currentPage` / `m_newPage` | current / requested page | −1 / `PageMain` (or AuthKeyEntry) |
+| `m_singlePlayer` | single-player flow (local server, Play instead of Ready, no chat, no kick) | false |
+| `m_quickStart`, `m_startingTutorial` | quick start in progress / tutorial configured | false |
+| `m_lockMenu` | navigation frozen during a tutorial launch | false |
+| `m_localSelectedLevel` | map chosen locally, used to avoid starting before the network echo | −1 |
+| `m_uiGameType`, `m_clickGameType` | game type the current page was built for / clicked type awaiting echo | −1 / uninitialised (initialiser commented out; always written before use) [C] |
+| `m_highlightedLevel`, `m_highlightedGameType` | focused map / mode for preview panels (`GAMETYPE_PROLOGUE` = 254, `GAMETYPE_CAMPAIGN` = 255 for the Darwinia buttons) | −1 / 0 |
+| `m_currentRequestedColour`, `m_previousRequestedColour` | colour / side request | −1 |
+| `m_teamName` | `PlayerNameString`, ≤ 16 chars | pref |
+| `m_serverPassword` | `ServerPasswordString`, ≤ 16 chars | empty |
+| `m_waitingForTeamID`, `m_waitingGameType` | lobby build deferred until a team id arrives | false, −1 |
+| `m_disconnectFromGame` | leaving while ready — waiting for un-ready | false |
+| `m_joinServer`, `m_serverIndex`, `m_serverList`, `m_serverButtons` | browser state | NULL / −1 |
+| filter booleans, `m_gameTypeFilter` | §5.8.6 | prefs / −1 |
+| `m_authKey[256]` | key edit buffer | loaded key |
+| `m_chatMessages`, `m_currentChatMessage`, `m_chatToggledThisUpdate` | §5.13 | empty |
+| `m_errorMessage`, `m_errorBackPage` | §3.14 | —, −1 |
+| `m_motdFound` | MOTD arrived (draws MOTD box) | false |
+| `m_demoUpgradeCheck` | last seen `IS_DEMO` value | false |
+
+Vestigial members with no effect in [B:FULL] [C] grep of `code/`: `m_xblaSessionType`, `m_xblaSelectSessionTypeNextPage`, `m_xblaSignInNextPage`, `m_xblaOfferSplitscreen`, `m_clickedCampaign`, `m_clickedPrologue`, `m_showingDeviceSelector`, all `m_darwiniaPlus*` and `m_initedDarwiniaSelection`, `m_screenTexture`, `m_teamNameChanged`, `m_helpPage` / `m_currentHelpImage` (unreachable Help page only), `m_settingUpCustomGame` / `m_customGameType` / `m_customMapId` (never set true), `m_bSpectator` (written, never read), `m_reloadPage` (never set true), `m_setupNewPage` (written only), `m_showingErrorDialogue` (never set true), `m_setupAchievementsPage`.
+
+### 5.8 LAN/WAN server browser (PageJoinGame 4)
+
+[C] `GameMenuWindow::SetupJoinGamePage`, `GameMenuWindow::UpdateJoinGamePage`, `GameMenuWindow::UpdateServerList`, `GameMenuWindow::ApplyServerFilters`, `GameMenuWindow::ApplyBasicServerListSort`, `GameMenuWindow::JoinServer`, `code/UI/GameServerButton.h`, `code/UI/ServerTitleInfoButton.h`, `code/game_menu.cpp:RemoveDelistedServers`.
+
+#### 5.8.1 Layout
+
+- Setup calls `ClientToServer::StartIdentifying()` and requests the WAN list `MetaServer_RequestServerListWAN(METASERVER_GAMETYPE_MULTIWINIA)`; clears `m_highlightedGameType` / `m_highlightedLevel`.
+- The page uses the **title-bar width** for its box. Rows: x = bx, width `m_serverW = 0.9·titleW`, row height = row step = `0.6·bh`, small font; first row at y = lY + 0.5bh + 1.3bh + 0.8bh. At most **13** rows (`SERVERS_ON_SCREEN`, `code/game_menu.h`).
+- Column header `ServerTitleInfoButton` "Titles" at (bx, lY + 10 + 1.6bh, 0.9titleW, 0.6bh), black 50 % strip: `multiwinia_join_host` at x + 0.05w; `multiwinia_join_type` at x + 0.30w; `multiwinia_join_map` at x + 0.40w; `multiwinia_join_players` right-aligned at 0.98w.
+- `ScrollBar` "scrollBar" at x = lX + titleW − (bh/2 + 10), y = first row, w = bh/2, h = 13 rows; created with numRows 0 and window size **10** (rows are 13 — mismatch [C]); `SetNumRows(list size)` on every refresh.
+- Bottom row: `BackPageButton(PageNewOrJoin)` "multiwinia_menu_back" (width 0.45·titleW) and `FiltersPageButton` "filters_page" captioned `multiwinia_menu_filters` at x + 1.1·(0.45·titleW) → `PageSearchFilters`.
+- A right-hand map preview is commented out; rows still set `m_highlightedGameType` / `Level` on hover [C].
+- Empty-list overlay: blinking `multiwinia_error_requestinglist`, replaced by `multiwinia_error_noserversfound` once a WAN list has been received and processed (`MetaServer_HasReceivedListWAN() && s_gotListFromMetaserver`) [C] `RenderRequestingEffect`.
+
+#### 5.8.2 Refresh timing
+
+| Event | Interval | Ref |
+|---|---|---|
+| Rebuild list and rows | every **2.0 s**, or after **1.0 s** if the list is empty and a WAN list has arrived | [C] `UpdateJoinGamePage` (function-static timer starts at 0) |
+| Re-request the WAN list | every **10.0 s** (also clears `s_gotListFromMetaserver`) | [C] same |
+
+#### 5.8.3 List pipeline
+
+1. LAN list `MetaServer_GetServerList(false, false, true)`, WAN list `MetaServer_GetServerList(false, true, false)`.
+2. **De-duplicate**: drop WAN entries whose key (`NET_METASERVER_STARTTIME` u64, `NET_METASERVER_RANDOM` int; ordered lexicographically) matches a LAN entry; append WAN to LAN [C] `RemoveDuplicateWANServers`.
+3. Drop entries carrying `NET_METASERVER_DELISTED` [C] `RemoveDelistedServers`.
+4. Filters (§5.8.6) then sort (§5.8.4).
+5. **Manual servers**: for i = 0..29, pref `Server<i+1>` = `"<host> <port> <name>"` (sscanf; defaults host `0.0.0.0`, port = pref `NetworkServerPort` default 4000, name = whole line) → synthetic entry: name, `NUMTEAMS 0`, `MAXTEAMS 4`, `GAMEINPROGRESS 0`, `GAMEMODE = i mod (NumGameTypes − 1)` = i mod 6, IP/LOCALIP = host, PORT/LOCALPORT = port, inserted at the **top** [C] (L2216–2252). They carry no version/protocol/map CRC, so a click reports "incompatible" [I] (`IsProtocolMatch` requires `PROTOCOLMATCH` or `GAMEVERSION`) — manual entries are effectively unjoinable.
+6. Row buttons created/removed so that count = min(list, 13); each `GameServerButton(rowIndex)` is named `server<row><global counter>`, positioned at its row and inserted into `m_buttonOrder` before the last entry (rows sit between Back and Filters). Removal uses `m_serverButtonOrderStartIndex + row`, which does not match the insertion index, so shrinking the list removes the wrong order entries (possibly the Back button) [C mechanics; I consequence].
+
+#### 5.8.4 Sorting
+
+[C] `ApplyBasicServerListSort`. Single pass building a new list: protocol-incompatible → appended at the end; full (`NUMTEAMS == MAXTEAMS`) or demo-restricted (`NET_METASERVER_DEMORESTRICTED`) → inserted at index `numGood`; otherwise → inserted at the front and `numGood++`. Resulting order: good servers (reverse arrival order), then full / demo-restricted (reverse arrival), then incompatible (arrival order). A scored alternative `ApplyBetterSlowerServerListSort` (full = 1, incompatible = 10, stable insertion) exists but is never called [B:LEGACY]. There is **no user-selectable sort column**.
+
+#### 5.8.5 Row rendering
+
+[C] `GameServerButton::Render`. Row r shows entry `r + scrollBar.m_currentValue`; rows without an entry are blank and inactive.
+
+- Columns: host name (`NET_METASERVER_SERVERNAME`) at 0.05w; short mode name `multiwinia_gametypeshort_<name>` (DOM / KOTH / CTS / ASLT / ROCKET / BLITZ) at 0.30w; map at 0.40w; `"(%d/%d)"` players at 0.90w; player boxes — `MAXTEAMS` outlined boxes starting 80 px left of the count, each (0.66·(h − 8)) × (h − 8) px, 2 px apart, filled for occupied slots: full colour for humans, ×0.6 for AI. Human count = `NET_METASERVER_NUMHUMANTEAMS`, except when it is `'?'` or the game is not in progress → `NUMTEAMS`.
+- Map column: localised `<file>_name` for a known map (mode + `MAPCRC` found in the local list), else `multiwinia_error_unknownmap` (custom-map name only under `LOCATION_EDITOR`); replaced by `authentication_demorestricted` when demo-restricted; replaced by the literal `"INCOMPATIBLE : <version>"` when protocol-incompatible.
+- Padlock `icons/locked.bmp` (0.8h square at 0.01w) when `NET_METASERVER_HASPASSWORD`.
+- Colours (RGB 0–255; first match wins):
+
+| State | Text, unfocused | Text, focused | Focus background (α 0.5) |
+|---|---|---|---|
+| protocol mismatch | (128, 0, 0) | (77, 0, 0) | (77, 0, 0) |
+| LAN game (`"lan"` key) | (150, 150, 255) | (by the rows below) | (by the rows below) |
+| demo-restricted | (255, 255, 102) | (by the rows below) | (by the rows below) |
+| not full | (153, 255, 102) | (255, 77, 77) | (191, 191, 255) |
+| full, map unknown | (100, 100, 100) | (100, 100, 100) | (77, 77, 77) |
+| full | (128, 128, 128) | (77, 77, 77) | (77, 77, 77) |
+
+(The LAN and demo-restricted colours apply only when unfocused; the focused branch tests mismatch → not-full → unknown-map → else.)
+- Controller scrolling: `SpecialScroll(+1)` on row 0 with ≥ 13 more entries below advances the scroll bar instead of moving focus; `SpecialScroll(−1)` on the last row (12) scrolls up if possible. The window looks the target up via `m_buttons[m_currentButton]` (an index into the registration list, not the focus list — [28](28_ui_framework.md)) [C].
+
+#### 5.8.6 Filters (PageSearchFilters 25)
+
+[C] `GameMenuWindow::SetupFiltersPage`, `ApplyServerFilters` and `ApplyFilter*` (L1672–1930), `code/UI/FinishMultiwiniaButton.h:SaveFiltersButton`. Controls 0.65·bh high, small font.
+
+| # | Widget | Name | Caption | Variable | Persisted pref | Effect when **unchecked** / value |
+|---|---|---|---|---|---|---|
+| — | title | `title` | `multiwinia_menu_filters` | | | |
+| 1 | `GameMenuDropDown` (unsorted) | `multiwinia_gametype` | `multiwinia_gametype` | `m_gameTypeFilter` | **not persisted** (−1 in every new window) | ≠ −1: keep only entries with `NET_METASERVER_GAMEMODE == value`. Options: `multiwinia_gametype_any` −1, `_domination` 0, `_kingofthehill` 1, `_capturethestatue` 2, `_assault` 3, `_rocketriot` 4, `_blitzkrieg` 5 |
+| 2 | `GameMenuCheckBox` | `check_box` | `multiwinia_menu_showdemogames` | `m_showDemosFilter` | `FilterShowDemos` | remove entries with bool `NET_METASERVER_DEMOSERVER` |
+| 3 | `GameMenuCheckBox` | `check_box2` | `multiwinia_menu_showincompatible` | `m_showIncompatibleGamesFilter` | `FilterShowIncompatible` | remove protocol mismatches **and** entries whose map is not installed |
+| 4 | `GameMenuCheckBox` | `check_box3` | `multiwinia_menu_showfull` | `m_showFullGamesFilter` | `FilterShowFullGames` | remove `NUMTEAMS ≥ MAXTEAMS` |
+| 5 | `GameMenuCheckBox` | `check_box5` | `multiwinia_menu_showpasswords` | `m_showPasswordedFilter` | `FilterShowPassworded` | remove entries containing key `NET_DARWINIA_SERVER_PASSWORD` — see the **"dy" collision bug** below |
+| — | (none) | | | `m_showCustomMapsFilter` | `FilterShowCustomMaps` | no checkbox and no filter function — dead setting [C] |
+| 6 | `SaveFiltersButton(prev)` | `multiwinia_menu_back` | | | writes the 5 prefs + save | back to JoinGame |
+
+Filter order [C] `ApplyServerFilters`: invalid game types (only `HIDE_INVALID_GAMETYPES`, off) → game type → full → protocol → demos → missing maps → passwords.
+
+**The "dy" collision bug** [C keys; I effect]: `ApplyFilterPasswords` removes entries that have data `NET_DARWINIA_SERVER_PASSWORD`, defined as `"dy"` in `code/network/network_defines.h` (a game-letter key). Servers advertise a password with `NET_METASERVER_HASPASSWORD` = `"dI"`; and `"dy"` is also `NET_METASERVER_GAMETIME` in `contrib/systemiv/lib/metaserver/metaserver_defines.h`, which nothing in the tree sets. Unchecking "show passworded games" therefore hides nothing (unless the external metaserver injects `"dy"` — 09-U5). Fix in the new game: one namespaced key registry; filter on the advertised "has password" flag.
+
+#### 5.8.7 Clicking a row
+
+[C] `GameServerButton::MouseUp`, `GameMenuWindow::JoinServer`. Base MouseUp, then the first matching rule:
+
+1. protocol mismatch → `PageError` "multiwinia_error_incompatible", back → JoinGame;
+2. `NET_METASERVER_DEMORESTRICTED` → `PageBuyMeNow`;
+3. full → `PageError` "multiwinia_error_serverfull", back → JoinGame;
+4. map (mode, CRC) not installed → `PageError` "multiwinia_error_missingmap", back → JoinGame;
+5. `NET_METASERVER_HASPASSWORD` → remember the list index in `m_serverIndex`, → `PageEnterPassword`;
+6. else `JoinServer(index)`.
+
+`JoinServer(n)`: `m_bSpectator = false`; copy the entry into `m_joinServer` (used by the Connecting page); target = `NET_METASERVER_IP` / `PORT` (port −1 if absent); if our own public identity is known and equals the server's public IP, use `LOCALIP` / `LOCALPORT` instead; port −1 → silently do nothing; if a password has been typed, copy it to `ClientToServer::m_password`; `App::StartNetwork(false, ip, port)`; → `PageGameConnecting`. `JoinServerAsSpectator` (same but `m_bSpectator = true`, no port check) is never called [B:LEGACY]. Leaving the page (`ShutdownJoinGamePage`): `StopIdentifying()` unless the next page is GameConnecting; forget row buttons [C].
+
+### 5.9 Quick match (PageQuickMatchGame 5) — unreachable
+
+[C] `GameMenuWindow::SetupQuickMatchGamePage`, `GameMenuWindow::UpdateQuickMatchGamePage` (L2088–2131). Its only entry button is commented out ("Removed by Chris. It doesn't work.", `SetupNewOrJoinPage` L3671). If revived: title `multiwinia_setup_quick_match`; `WaitingButton("multiwinia_menu_searching")`; Back → NewOrJoin; identity discovery started; every **1.0 s** the filtered list is rebuilt (`UpdateServerList`); each frame it joins the **first** entry that is protocol-compatible and not full (no regard to ping, mode, password or map availability beyond the active filters); a fresh WAN list is requested every **10 s**. There is no skill or region matchmaking anywhere in the tree.
+
+### 5.10 Host vs client lobby — summary of differences
+
+| Aspect | Single player | Host (MP) | Client (MP) |
+|---|---|---|---|
+| Server | local, loopback only | local, advertised on LAN + WAN | remote |
+| Primary button | Play (starts immediately) | Ready (toggle); auto-start when all humans ready | Ready (toggle) |
+| AI drop-down / Advanced Options | yes (full key) | yes (full key) | no |
+| Kick buttons | no | slots 1..n−1 holding remote humans | no |
+| Chat | no (map description instead) | yes | yes |
+| Back goes to | MapSelect (server stays up) | GameSelect (server destroyed, all clients dropped) | NewOrJoin (or Main if leaving while ready) |
+
+[C] §3.6, `code/UI/FinishMultiwiniaButton.h`, `code/app.cpp:App::ShutdownCurrentGame`. There is no way for a host to change map or mode without dropping its clients.
+
+### 5.11 Team / colour selection and gamer tags
+
+#### 5.11.1 Gamer tag (player slot) rendering
+
+[C] `code/UI/GamerTagButton.h:GamertagButton::Render`. Caption, by priority:
+
+1. If the lobby team has a non-empty name: the name; demo players (`m_demoPlayer`, from `NET_DARWINIA_CLIENTISDEMO`) get the trimmed `teamtype_demo` ("(DEMO)") prefix; if `m_ready` the caption becomes `name + " (" + multiwinia_ready + ")"` (the demo prefix is dropped in this case).
+2. Else by team type: `TeamTypeLocalPlayer` → `teamtype_0` "Local Player"; `TeamTypeRemotePlayer` → `teamtype_1` "Remote Player"; `TeamTypeCPU` → `teamtype_2` "(CPU)"; `TeamTypeSpectator` → phrase `Spectator` (absent from every language file, so the literal key is shown); unused → `teamtype_2` in single player, `multiwinia_open_or_cpu` "Open/CPU" in multiplayer.
+3. If the focused button is this slot's kick button and the mouse is over it → `multiwinia_clicktokick`.
+
+Visuals: CPU / unused slots are inactive (not navigable) with colour ×0.25 and border alpha 0.3; colour-less teams (`m_colourId == -1`, e.g. Assault / co-op before choosing) are grey 0.7. Background: horizontal gradient from the team colour (left) to black (right), or to 50 % team colour / 50 % white when focused. When a slot's team type changes its colour flashes from white back to the team colour over 1.0 s (linear), except for the unused → CPU change. Text: white if inactive, red (1, 0.3, 0.3) if focused, else green (0.6, 1, 0.4).
+
+#### 5.11.2 Colours
+
+Colour ids and RGB [C] `code/multiwinia.cpp:teamColours` (full tables incl. co-op shades in [01 §3.8](01_game_modes.md)): 0 (100, 255, 100) green, 1 (255, 50, 50) red, 2 (255, 255, 50) yellow, 3 (120, 180, 255) blue, 4 (255, 150, 0) orange, 5 (150, 0, 255) purple, 6 (70, 200, 200) cyan, 7 (255, 150, 255) pink. The colour-button **names** for ids 5 and 6 are swapped relative to their colours (`GetColourNameChar` lists cyan before purple) while the captions are correct (`GetColourName`) [C] `code/UI/GameMenuWindow.cpp:GetColourNameChar`, `GetColourName`.
+
+"Taken" rule (`FancyColourButton::MouseUp` / `Render`) [C]:
+- Assault: count teams already on that side (in `MouseUp` including the local team; in `Render` excluding it). 3-player map: Defenders (0) taken if ≥ 1 team on it; Attackers (1) taken if 2 on it. Other maps: taken if `count ≥ numPlayers/2` (integer division). Random (−1) is never taken.
+- Co-op on: taken if `!Multiwinia::IsValidCoopColour(id)` — invalid when ≥ 2 colours are in use and nobody is on this one, or ≥ 2 teams are already on it [C] `code/multiwinia.cpp:Multiwinia::IsValidCoopColour`.
+- Otherwise: taken if any team (other than self, in `Render`) already has that colour id.
+- Taken buttons are inactive (grey swatch 0.5, caption in inactive grey); the local team's current colour is drawn "clicked" (red caption).
+
+Click on a free colour: `m_currentRequestedColour = id`; outside Assault / co-op the pref `PlayerPreferedColour` is stored; reverse transition; → `PageGameSetup`. The request itself is sent by `SetTeamNameAndColour()` (called each frame by `UpdateGameOptions(true)` on GameSetup / MapSelect / GameSelect / PlayerOptions): if (team assigned, a colour is requested, it differs from the team's colour, it is taken by someone, not co-op, not Assault) the request falls back to the preferred colour (if free) or the next available; then on GameSetup / PlayerOptions (or while starting a tutorial) `ReliableSetTeamColour(request)` is sent when request ≠ −1 or co-op or Assault; the team name is sent once if not yet requested [C]. Server-side the colour is validated by `Multiwinia::SetTeamColour` (Assault side counts, co-op validity, colour already taken) in every peer's lockstep handler ([01 §3.8](01_game_modes.md)). Row visuals: background white 0.1 (or (0.75, 0.75, 1, 0.5) when focused/clicked); caption at 0.05w; colour swatch in the right quarter (x = 3w/4, width 0.95·w/4, height 0.8h) with a left-to-right gradient to black; rollover sound `MenuRollOver`. CPU colours are assigned at match start by `Multiwinia::GetCPUColour` (random synced pick among ids 0–3 not taken) [C] `code/location.cpp` L~249.
+
+### 5.12 Ready, start, kick, request-AI, spectator
+
+#### 5.12.1 Ready / Play
+
+- **Single player** (`m_singlePlayer`): `PlayGameButton::MouseUp` — ignore if demo-restricted map, if `m_localSelectedLevel != m_requestedMapId` (the server has not echoed the map yet), or the map is not permitted; wait for sound-system init; for every slot `i < numPlayers` that is unused request a CPU team (`RequestTeam(TeamTypeCPU, -1)`); `UpdateGameOptions(true)`; `RequestStartGame()` [C] `code/UI/PlayGameButton.h`.
+- **Multiplayer** (host and clients): `PlayGameButton::MouseUp` → `RequestToggleReady(myTeamId)` [C]. The host must also ready up.
+
+#### 5.12.2 Host auto-start
+
+`UpdateMultiplayerPage`, every frame on the host (MP and SP alike): `notReady` = any slot whose team type is neither unused nor CPU and is not ready; also `notReady` if demo key and map demo-restricted. When everyone is ready and mode / map are valid and permitted: wait for sound init, fill empty slots `< numPlayers` with CPU teams, `UpdateGameOptions(true)`, `RequestStartGame()`, go to `PageWaitForGameToStart` (an empty page, so the request is sent once) [C]. In single player the local team is never "ready", so only the Play button starts the game [I] (follows from the ready test). The game starts when the server relays `NET_DARWINIA_START_GAME` (§2.1).
+
+#### 5.12.3 Kick
+
+Host-only kick buttons appear beside slots 1..n−1 while the slot holds a remote human; clicking calls `Server::KickClient`. The kicked client receives a disconnect with reason `Disconnect_KickedByServer` and goes to `PageError` with `multiwinia_error_kickedbyserver`, back → Main [C] `code/UI/KickPlayerButton.h`, `code/network/server.cpp:Server::KickClient`, `code/network/clienttoserver.cpp`. A remote player in slot 0 cannot be kicked (no button) [C/I]. Kick icon `icons/mouse_disabled.bmp` (+ `shadow_icons/mouse_disabled.bmp`).
+
+#### 5.12.4 Request-AI and CPU slots
+
+There is no live "add AI player" control: `RequestAIButton` is never instantiated [C]. CPU teams are requested automatically for every empty slot when the game starts (§5.12.1–5.12.2); in multiplayer an empty slot is labelled "Open/CPU". The number of slots is the map's `NumPlayers`.
+
+#### 5.12.5 Leaving the lobby
+
+- `FinishMultiwiniaButton(page)` [C] `code/UI/FinishMultiwiniaButton.h`: on a client (no local server) whose team is **ready** and whose server is not lagging (last server letter < 5.0 s ago) it does not leave immediately: it sets `m_disconnectFromGame = true` and toggles ready off; `UpdateMultiplayerPage` waits until some used team and the local team are not ready, then calls `App::ShutdownCurrentGame()`, clears `m_atLobby`, sets `m_requestedMapId = -1`, goes to **`PageMain`** (not the button's page), clears chat and the password. Otherwise it immediately `ShutdownCurrentGame()` (client leaves; on the host the server object is deleted), `m_atLobby = false`, `m_requestedMapId = -1`, goes to its page (Back sound + reverse transition), clears chat and password.
+- `FinishSinglePlayerButton(PageMapSelect)` [C]: locally clears `m_multiwinia->m_coopMode` and `m_basicCratesOnly`, requests team colour −1, sets every lobby team's `m_colourId = -1`, goes back to MapSelect (the local server stays up), clears chat and password.
+
+#### 5.12.6 Spectators
+
+No live UI path creates a spectator in [B:FULL] [C]: `g_app->m_spectator = true` is set only under `SPECTATOR_ONLY` builds (`code/app.cpp` L234) or when the client's own team is converted by `NET_DARWINIA_ASSIGN_SPECTATOR` (`code/network/clienttoserver.cpp` L3005–3018); the only senders of the conversion request (`ClientToServer::RequestToRegisterAsSpectator`) are `CSpectatorButton` (`TESTBED` only) and testbed code in `GameMenuWindow::Update`; the server's "join as spectator when the teams are full" path is commented out — a full server rejects the join (`m_basicAuthCheck = -5`) [C] `code/network/server.cpp:Server::AuthenticateClient` (L1336–1356). `MAXSPECTATORS` is advertised as 0. The single-player server rejects spectator requests with `Disconnect_ServerFull`. Spectator support is therefore [B:LEGACY] (testbed only).
+
+### 5.13 Chat
+
+#### 5.13.1 Lobby chat
+
+[C] `GameMenuWindow::NewChatMessage`, `GameMenuWindow::UpdateMultiplayerPage`, `GameMenuChatButton::Render` (in `code/UI/GameMenuWindow.cpp`), `code/interface/chatinput_window.cpp:ChatInputField::Keypress`, `code/multiwinia.cpp:Multiwinia::RemoveTeams`.
+
+- Present only in multiplayer lobbies (right box, under the map name). `ControlLobbyChat` (`key enter down`) while not already editing starts editing `chat_input` and clears its buffer. While the chat field is visible window navigation is suspended.
+- Receiving: `NET_DARWINIA_SEND_CHATMESSAGE` while `m_atMainMenu` → `NewChatMessage(text, clientId)`: inserted at the **front** of `m_chatMessages` with receive time, sender name and colour from the lobby team whose `m_clientId` matches; sound `ChatMessage` (not for joins). Join notices: when a team-name update arrives with the "show message" flag, `"PLAYERJOIN"` is posted; `Multiwinia::RemoveTeams` in the lobby posts `"PLAYERLEAVE"`.
+- Rendering (`GameMenuChatButton`): black box α 200/255 with white α 0.5 outline (height = button h − 1.5·font); messages from newest (bottom) upwards; per message the sender's current team (name / colour) is re-resolved, fallback name `"Player"` in grey (150, 150, 150); `PLAYERJOIN` → `multiwinia_player_join`, `PLAYERLEAVE` → `multiwinia_player_leave` (flag `P` = name), else `"<name>: <text>"`; word-wrapped at 1.75·w; drawn in the sender's colour with outline; stops at 5 % from the top. Messages never expire (expiry code commented out); the log is cleared on lobby exit, errors and Finish buttons. The "press Enter to talk" hint (`multiwinia_lobbypresstotalk`) is commented out.
+
+#### 5.13.2 In-game chat input (`ChatInputWindow`, `ChatInputField`)
+
+| Aspect | Behaviour | Evidence |
+|---|---|---|
+| Open | `LocationInput::Advance`: `ControlLobbyChat` (`key enter down`) while chat not visible, not toggled this update, input mode ≠ gamepad, and **no Eclipse windows open** → register `ChatInputWindow`, set `m_chatToggledThisUpdate`. If input mode becomes gamepad while open → `CloseChat()` | [C] `code/location_input.cpp:LocationInput::Advance`; `data/input/input_preferences.txt` L312 |
+| Geometry | font = 0.015·screenH; scale = W/1280 (W ≤ 800 → W/1024; W ≤ 640 → 0.75); position x = 10·scale, y = H − 10·scale − 1.5·font; size (0.25·W, 1.5·font) | [C] `ChatInputWindow::ChatInputWindow` |
+| Field | single `ChatInputField` filling the window, `RegisterString(m_currentChatMessage, 255)` (initial "none", cleared on click); `BeginTextEdit` immediately unless in the lobby | [C] `ChatInputWindow::Create` |
+| Render | black 50 % box, 2 px white outline; text height 0.75·h in `g_editorFont`; when not editing shows `multiwinia_presstotalk` "Press Enter To Chat" in grey (0.4); right-aligns (scrolls) when the text is wider than the box; caret blinks 0.5 s on / 0.5 s off | [C] `ChatInputField::Render` |
+| Auto-close | in game, `Update()` removes the window as soon as it loses Eclipse focus | [C] `ChatInputWindow::Update` |
+| Submit (Enter, not in the same update as the toggle) | if text non-empty: unless it contains `//`, a message containing `/rename ` takes characters from index 8, or `/name ` from index 6, as the new name (buffer 16, max 15 chars) — in the lobby → `gmw->m_teamName.Set(name)` + `SetTeamNameAndColour()`, in game → `ClientToServer::ReliableSetTeamName(name)`; otherwise `ClientToServer::SendChatMessage(msg, myClientId)` (letter `NET_DARWINIA_SEND_CHATMESSAGE` with `NET_DARWINIA_UNICODEMESSAGE`, `NET_DARWINIA_CLIENTID`). Then clear; in the lobby re-begin edit; in game close the window | [C] `ChatInputField::Keypress`, `code/network/clienttoserver.cpp:ClientToServer::SendChatMessage` |
+| Quirk | the command test uses `StrStr` (substring) but extraction assumes the command is at index 0, so `"hi /name x"` renames to garbage from index 6 | [C] |
+
+In-game chat *display* (chat log): [06](06_player_control_and_input.md) / [24](24_rendering.md) (`Camera::ChatLogVisible`, `Location` render).
+
+### 5.14 Error and connecting pages
+
+§3.12 (connecting) and §3.14 (errors, including every disconnect reason the front end reports).
+
+### 5.15 Metaserver-driven front-end content
+
+- **Message of the day** [C] `code/UI/motdButton.h:MOTDButton::Render`: on the Main page's right box. Each render, until found, requests datum `MOTD` for language = pref `TextLanguage` (default `App::GetDefaultLanguage()`); when a non-empty value (not `DIRECTORY_SAFESTRING`) arrives it becomes the scrolling text, scrolling starts 5.0 s later, and `m_motdFound = true` makes the window draw the MOTD panel box; polling stops after the first answer (even an empty one). `m_ignoreButtons = true` (scroll timer not reset by focus changes).
+- **Update check** [C] `GameMenuWindow::SetupMainPage`, `UpdateMainPage`, `code/UI/update_page_buttons.h`: datum `LatestVersion` compared with `APP_VERSION` (= `DARWINIA_VERSION`, `code/lib/universal_include.h`) by string equality; mismatch ⇒ "Update available" button on Main → `PageUpdateAvailable` (§3.17).
+- **Authentication status box**: §6.5.
+
+### 5.16 Seasonal "Christmas mode" (lobby-negotiated snow) [B:FULL]
+
+[C] `code/app.cpp:App::UseChristmasMode`, `code/network/clienttoserver.cpp:ClientToServer::RequestChristmasMode` (L1628) and its caller (L567–570), handler (L3020–3025), `code/location.cpp:Location::Location` (L212–215), `Location::AdvanceChristmas`.
+
+- `App::UseChristmasMode()` is true on **24, 25 and 26 December** (local clock `localtime`, month 11) unless editing or `DEMOBUILD`; a `CHRISTMAS_DEMO` variant (not defined) would widen it to 27 November–31 December.
+- While in the lobby (`m_atMainMenu`), each client whose clock says Christmas and who has not yet seen the flag sends `NET_DARWINIA_CHRISTMASMODE` (`"dz"`) through its retry loop; every client that receives it in the lobby sets `ClientToServer::m_christmasMode = true`, which the next `Location` copies (and clears) at construction.
+- In the match, `Location::AdvanceChristmas()` runs on slice 3 when `ChristmasModEnabled()`: on first use 150 `Snow` effects at random positions (height `syncfrand(1000)`), then one more every 0.1 s at height `700 + syncfrand(300)`.
+- The preference `ChristmasEnabled` (read by `PrefsOtherWindow`, default 1) is never used, so the player cannot opt out [C].
+
+---

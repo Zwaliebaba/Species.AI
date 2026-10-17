@@ -474,6 +474,18 @@ All shipped art, meshes, animation scripts, fonts, shaders and file names in sco
 
 Placeholder plan [I]: (1) keep the binding model (source × event → blueprint → sample/group), (2) generate silent or synthesised placeholder `.ogg`/`.wav` files named by function for the 182 live events (one file per event, more variants later), (3) bind the currently silent but gameplay-relevant events listed in §10.D (match end, crate expiry, squad grenade throw, laser create/hit, turret target/rocket fire), (4) add a real music system (none exists in live content), (5) give every looping event an explicit stop rule and release all location sounds on exit.
 
+<!-- from X3_determinism_sync -->
+## IP register
+
+| Item | Kind | Where (ref) | Neutral placeholder |
+|---|---|---|---|
+| "Multiwinia" in string ids `multiwinia_error_syncerror`, `multiwinia_error_lostconnection` | name/text | `code/renderer.cpp` | `net_error_desync`, `net_error_connection_lost` |
+| "Darwinian" in debug state lines (`DARWINIAN Id[…]`) and entity type names | name | `code/worldobject/darwinian.cpp:Darwinian::LogState` | `UNIT` / "Worker" |
+| Sync error report filenames `syncerror-…`, `syncdiff-…` | text (generic, not IP) | `ClientToServer::GetSyncFileName` | may be reused |
+| MT19937 reference implementation (BSD-style licence, Matsumoto & Nishimura) | third-party code | `random_number.cpp`, `code/lib/math_utils.cpp` | use the C++ standard `std::mt19937` or PCG/xoshiro (own implementation) — attribution if the reference code is copied |
+| SHA-1 from the bundled unrar sources used for seeds and IFrame hashes | third-party code (unrar licence) | `code/network/iframe.cpp`, `code/network/server.cpp:GenSyncRandSeed` (`contrib/unrar/sha1`) | any public-domain hash (xxHash, BLAKE3) |
+| Ambrosia Software credit in `math_stubs` | third-party name | `contrib/systemiv/lib/math/math_stubs.cpp` | — (do not copy) |
+
 <!-- from X4_level_catalogue -->
 ## IP register
 

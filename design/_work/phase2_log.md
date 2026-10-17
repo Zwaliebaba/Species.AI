@@ -130,3 +130,8 @@
 - 8 contradictions resolved: Retribution runs (absent option reads −1 → counts as on); destroyed ant hills release no spirits (monster-team spirits never created); spore generators spirit only when player-owned; handicap divides by count incl. monster+Futurewinian teams (only helps single-spawn team); spawn link 11 ticks first hop, 10 thereafter; doubled Blitzkrieg waves every 330 ticks; Engineer spirit collection + egg fertilisation LIVE in FULL; Harvester any-team souls confirmed.
 - New: Harvester deliveries ignore pop cap and 30 s activation delay; AntHill ants not counted against monster cap. 05-U1..U12. Script scripts/S_05_economy_tables.py.
 - Relayed to S01, S04, S02.
+
+## X2a_asset_catalogue_visual — done
+- 799 in-scope files catalogued (each under data/... path in markdown, script-checked). 666 non-source: 544 referenced in FULL, 71 unused, 23 legacy-only, 17 D3D-only, 10 debug-only, 1 editor-only; 133 .max authoring sources never read. Shapes: 139 files, 441 fragments, 150,820 triangles, 425 markers. Outputs: drafts/X2a_textures.csv, X2a_shapes.csv, X2a_refs.csv, X2a_missing.csv; scripts/X2a_catalogue.py, X2a_assemble.py (hand-written inputs copied to _work/script_inputs/X2a_part{A,C}.md). [U]=5.
+- Critical: contents of patch.dat / branding.dat unknown — live MarkerSystem::RenderCompass can request missing icons/compass_empty.bmp → fatal assert unless an archive supplies it; which font atlases each retail SKU shipped (currency atlases in no language list); 52 FULL-referenced assets used only by buildings absent from MP maps.
+## Phase 3 launched: S25

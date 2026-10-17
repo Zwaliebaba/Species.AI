@@ -281,6 +281,17 @@
 | `tools/unused_samples.sh`, `tools/unused_sample_groups.sh` | "run this script from the Darwinia data directory" | they ignore `data/mwsounds/` and orphan-group membership; CRLF breaks the comparison on POSIX shells | §10.J |
 | P16 §10.2 | "130 SAMPLEGROUPs referencing 1120 sample entries" | 131 definitions / 1126 lines; 130 distinct names / 1120 distinct entries (duplicate `officercreate`) | §10.A |
 
+<!-- from X3_determinism_sync -->
+## Docs-vs-code discrepancies
+
+| Doc | Says | Code | Ref |
+|---|---|---|---|
+| `docs/Network.txt` | client sends a "ResyncMe" message when it detects a gap | no resync message; gaps are filled by the server's resend window, and a desync is never repaired | [C] `ClientToServer::ReceiveLetter`, `Server::UpdateClients`, §6.2 |
+| `docs/multiwinia_todo.txt` | "(DONE) … fix determinism; ensure floating point accuracy over multiple platforms" | implemented as `_PC_53` precision control plus binary32 rounding of transcendental results | §3 |
+| `docs/multiwiniareleasenotes-beta.txt` (1.9.20) | beta builds enable debugging code to track rand sync errors | in this tree `TRACK_SYNC_RAND` is commented out for `TARGET_BETATEST_GROUP_ALL`; beta targets instead hash the full IFrame snapshot | [C] `code/lib/universal_include.h`, `iframe.cpp` |
+| `contrib/systemiv/lib/math/random_number.h` comments | `frand`: `0 ≤ r < range`; `sfrand`, `_syncsfrand`: `−range < r < range` | `frand` ∈ [0, range]; `sfrand` ∈ [−range/2, range/2]; `syncsfrand` ∈ [−range/2, range/2) | [C] `random_number.cpp` |
+| `code/lib/vector3.h` comment | `operator==` uses FLT_EPSILON | absolute tolerance 1e-6 (`NearlyEquals`) | [C] |
+
 <!-- from X4_level_catalogue -->
 ## Docs-vs-code discrepancies
 - `docs/multiwiniareleasenotes-beta.txt` (e.g. "VERSION 1.9.24": Assault "The Woeful Plateau, The Third Kind, Beyond the Pale", Rocket Riot "Echoes of the Future, Heart of Chaos, Threads of Fate"; later CTS "Price of War, The Tortured Expanse, Scorched Earth", Blitzkrieg "The Apex of Infinity, Upon the Blazing Sea, Gridlock", KOTH "The Bitter Front, The Walled Garden, Barbs of Madness", Domination "Barriers to Progress, Leap of Faith, A Monument to the Heavens") describes beta map rotations that match neither the beta-group `PERMITTED_MAPS` in `code/lib/universal_include.h` nor the `tools/multiwinia_inclusions_beta_test_group_*.txt` lists; the code/data reflect a different (probably final) rotation. Documented: the code.

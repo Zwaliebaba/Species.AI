@@ -391,6 +391,27 @@ No level lines anywhere. `UpgradePort`: shape `upgrade_port.shp`, no behaviour. 
 - [B:LEGACY] `TaskManagerInterfaceIcons`/`TaskManagerInterfaceGestures` UI sounds, `ShamanInterface` mouse-over, script music/`ShowLogo`, `Ambience EnterGlobalWorld`, `CreditsLoader`, ControlTower/ResearchItem engineer reprogramming, `Building::ReprogramComplete`/`Building::Destroy` paths, all Darwinia-only building blueprints (`Powerstation`, `ResearchItem`, `Library`, `Generator`, `TrackLink`, `Refinery`, `Mine`, `Yard`, `Incubator`, `SpiritReceiver`, `SpiritProcessor`, `BlueprintStore/Console/Relay`, `Spam`, `GodDish`) and entity blueprints `LaserTroop`, `Tripod`; squad `ThrowAirStrike/ThrowController/FireRocket`; controller grenade `ExplodeController`.
 - [B:DEBUG] `Tank` blueprints (Tank Battle mode); sound editor tooling (P16 §27.13).
 
+<!-- from X3_determinism_sync -->
+## Appendix — dead/legacy code
+
+| Item | Status | Ref |
+|---|---|---|
+| Orphan MT19937 `::syncrand()` (no seed function, never called) | [B:DEAD in effect] | `code/lib/math_utils.cpp` |
+| Mac `StandardiseCPUPrecision` (`fnstenv`/`fldenv`, clear bit 8) | [B:DEAD] (`TARGET_OS_MACOSX && __i386__`) | `code/main.cpp` |
+| `iv_strtod` declaration | no definition | `math_stubs.cpp` |
+| `RandomNormalNumber`, `RandomApplyVariance` | no callers | `random_number.cpp` |
+| SystemIV `Fixed` (`fixed.h`, `fixed_64.*`, `fixed_float.*`, generated sin/asin tables) and `USE_FIXED` hooks | not compiled | `contrib/systemiv/lib/math/`, `contrib/systemiv/lib/tosser/directory.h`, `contrib/systemiv/lib/hash.h` |
+| `TRACK_SYNC_RAND` logging, entity watch list, debug IFrame snapshot/diff, `CHECK_IFRAME_SERIALISATION` (commented) | [B:DEBUG] | §6.3 |
+| `INCLUDE_THEBEAST` crate outcome (`Portal`/`Tentacle` chain) | [B:DEBUG] | `crate.h` |
+| `NetworkQuality` packet-loss simulator (`AppRandom`) | [B:DEAD] (`NETWORKQUALITY_TESTING` commented out) | `code/network/network_quality.cpp` |
+| Testbed `srand(time)`/`rand()` fake server lists | [B:DEAD] (`TESTBED_ENABLED`) | `code/UI/GameMenuWindow.cpp` |
+| Loader RNG (`AppSeedRandom(time(NULL))`, credits, egames `srand(0)`) | [B:DEAD] (`USE_LOADERS` off) | `code/loaders/*` |
+| `SpiritStore::AddSpirit` unordered triple draw | [B:LEGACY] | `spiritstore.cpp` |
+| Spectacle watching (wall-clock facing), Tripod wall-clock timers, `ResearchItem`/`Spam` random orientation, Armour direct local `SetOrders`, `GlobalWorld::TransferSpirits` | [B:LEGACY] | §2.5, §5.4 |
+| `#pragma omp parallel for` in `Location::Advance` | inert (OpenMP off) | `code/location.cpp` |
+| Time-based branch of `GetNumSlicesToAdvance` (shadowed local) | dead statement | `clienttoserver.cpp` |
+| `Server::SkipToTime` | no caller | `server.cpp` |
+
 <!-- from X4_level_catalogue -->
 ## Appendix — dead/legacy code and data
 - **Darwinia levels** (29 `map_*`/`mission_*`) and their loaders (`GlobalWorld::LoadGame`, `ParseMissionFile`, `RunningPrograms`, `LeaderboardStats`, `Difficulty`, mission save-games under `<profile>/users/`) [B:LEGACY]; data excluded from Multiwinia builds (§11).

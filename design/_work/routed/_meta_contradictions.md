@@ -283,6 +283,15 @@
 7. **Officer/Squad acknowledgement voices recorded but unbound** (§10.H) — design intent (docs) vs shipped data; the new game should decide explicitly.
 8. **P16 §27.10 music release**: P16 states all music blocks have RELEASE 0; the data has 3.29–20.71 s releases on 14 of 17 blocks (§10.F) [C]. Moot for Multiwinia (music unreachable) but relevant to anyone reusing the music design.
 
+<!-- from X3_determinism_sync -->
+## Contradictions / open questions
+
+1. `build_matrix.md` §4 lists `INCLUDE_THEBEAST` as "on" (defined in `crate.h`); the definition is inside `#ifdef TARGET_DEBUG`, so it is **off** in the baseline and `Crate::CrateRewardTheBeast` does not exist there [C] `code/worldobject/crate.h`. P07's "Portal [B:FULL] via The Beast" inherits the error; P05 has it right.
+2. P04 §0.2 describes `syncfrand` as an LCG; it is MT19937 [C] `random_number.cpp`.
+3. P04 X3.6 says `Unit::s_offsets` is never reset between games; `Location::Init` and `Location::Empty` delete it [C].
+4. Header comments vs implementation for every float generator range (`frand` inclusive upper bound, `sfrand`/`syncsfrand` are ±r/2) — documented as code (§2.1).
+5. Whether the D3D configuration was ever used for multiplayer is open; it would not interoperate with the GL build (§3.4).
+
 <!-- from X4_level_catalogue -->
 ## Contradictions / open questions
 1. `level_enum.txt` is excluded from every Multiwinia data build but is the only source of achievement level ids (§13) → Master of Multiwinia unreachable with script-built data [C]/[I].
