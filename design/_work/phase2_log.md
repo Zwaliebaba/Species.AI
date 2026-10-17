@@ -258,3 +258,7 @@
 ## Fix F1 (00, 01, 05) — done: 46 findings (36 accepted, 1 partly, 9 already correct, 0 rejected); checks clean
 - V7 (1/port = 5/building) in 00 §3.2, 05 §1.1, §9; 00 §7 Q8 live desync paths now L1 (squad camera), zone counter, tree race (V1–V5 listed as not live); Assault bomb 900/1200 mode s ≈ 990/1320 game s; 01 Q4 all uncapped sources, handicap neutral-spawn condition, tutorial overrides, CTS −1 fallback, Team::Eliminate damage, AI entity (20,0,20); added spirit RNG draw table, SetupCoop pseudocode, per-mode constants table; 05-U1 closed; V10 tags. S_01/S_05 generators updated.
 - Requests: 22/40/41 L13 + armour toggle (22 done by F6 — verify); 03 transit 1.0 s (F3 owns, V8).
+
+## Fix F5 (10, 27, 30) — done: 36 findings (30 accepted, 2 partly, 0 rejected); checks clean
+- 30: waits add sequentially; CamCut/CamFov same frame, CamMove call order; tutorial CPU officers + radar-dish filters; T1 movement latch scope; Phase F diagram; PurityControl used in data/purity/buyme.txt; pulse-bomb capture threshold >1; Grabber DEAD; 30-U6 closed. 10/27: StartSequence + Credits LEGACY (S_10 regenerated); music fade-in consumed by previous track's release; voice count tied to setting; smoothing count 10 (+1 DSP); normative distance/pan laws; 27-U2 resolved; restart patience 0–2; g_profiler inert in FULL; SinglePlay edge case; _work evidence citations replaced; wrong silent-building list in 10 §4.2 fixed.
+- Requests: 41 (close open questions), 07 (officer label).

@@ -1552,6 +1552,12 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 | `code/worldobject/meteor.cpp` | meteor flight, impact, slow motion |
 | `code/worldobject/randomiser.h` | Randomiser class |
 | `code/worldobject/randomiser.cpp` | Randomiser pulses (`RANDOMISER_RANGE`) |
+| `code/worldobject/virii.cpp` | Virii bite (Unresistable — not blocked by the Personal Shield, §5.8) |
+| `code/worldobject/armyant.cpp` | ArmyAnt bite and carried-Darwinian kill (Unresistable, §5.8) |
+| `code/worldobject/centipede.cpp` | Centipede contact damage (Unresistable, §5.8) |
+| `code/worldobject/souldestroyer.cpp` | SoulDestroyer contact damage (Unresistable, §5.8) |
+| `code/worldobject/spider.cpp` | Spider squash (Unresistable, §5.8) |
+| `code/worldobject/tentacle.cpp` | Tentacle contact damage (Unresistable, §5.8; The Beast) |
 | `code/worldobject/airstrike.h` | AirstrikeUnit, SpaceInvader declarations |
 | `code/worldobject/airstrike.cpp` | bomber flight and bomb release |
 | `code/worldobject/nuke.h` | Nuke class |
@@ -1617,6 +1623,9 @@ Full treatment in [22](22_determinism_and_networking.md); the points specific to
 | `code/lib/universal_include.h` | `INCLUDE_CRATES_BASIC/ADVANCED`, debug-only crate macros |
 | `code/lib/vector3.cpp` | `FRAND`/`SFRAND` ordering |
 | `contrib/systemiv/lib/math/random_number.cpp` | synced and unsynced RNG |
+| `code/lib/slice_darray.cpp` | per-slice slot ranges of `m_effects`/`m_lasers` — decides whether a new effect moves in its creation tick (§6.6, §7) |
+| `contrib/systemiv/lib/tosser/fast_darray.cpp` | slot reuse (LIFO free list, growth by 100) for new effects (§6.6) |
+| `code/landscape.cpp` | height grid initialised to `OutsideHeight`, tiles merged by maximum — the edge rows read by weighted drops (§1.4, 04-U2) and the sea test of `RunNuke` |
 | `data/multiwinia.txt` | crate options per mode |
 | `data/stats.txt` | Meteor, Darwinian, squad, armour, bomber stats |
 | `data/sounds.txt` | Crate and CratePowerup sound blocks |

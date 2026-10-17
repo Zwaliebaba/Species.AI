@@ -1,6 +1,6 @@
 # 25 — Textures and assets
 
-> Part C · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
+> Part C · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md (build facts are specified in [31 §7](31_platform_build_and_tools.md#7-build-configurations-and-flags)).
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
 > Sources merged: P12_render_core (decoder, upload, resource manager), X1b_asset_formats (asset-format surveys), X2a_asset_catalogue_visual (visual catalogue), X2b_asset_catalogue_audio (audio catalogue). The labels P12, X1b, X2a and X2b in "Resolved:" notes name these analysis drafts (P14 is the platform/build draft P14_platform_lib); they only record which earlier statement was corrected and are never the evidence for a claim — every claim cites code or data.
 > Generated: the per-file tables of §1.2, §2.6, §2.8, §2.15, §3–§6 and the Source map were computed from the source tree by the method of §1.5 (provenance: `_work/scripts/S_25_catalogue.py` and its hand-written template `_work/script_inputs/S_25_template.md`). Every file under `data/textures`, `data/sprites`, `data/shapes`, `data/animations`, `data/terrain`, `data/shaders`, `data/icons`, `data/thumbnails`, `data/mwhelp`, `data/sepulveda`, `data/sounds` and `data/mwsounds` (2131 files) appears in this document with its `data/...` path (0 missing at generation time).

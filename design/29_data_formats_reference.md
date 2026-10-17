@@ -1,6 +1,6 @@
 # 29 — Data formats reference
 
-> Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
+> Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md (build facts are specified in [31 §7](31_platform_build_and_tools.md#7-build-configurations-and-flags)).
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
 > Sources merged: X1a_text_formats, X1b_asset_formats, P14_platform_lib (29.T, 29.P, 29.L, 29.D, 29.B), P15_network (§4 encoding, §5.2 team controls), P11_terrain_world (level-file and `.mwm` notes), P16_sound (sound grammar cross-checks), P10_input_camera (binding grammar cross-checks), P19 (script opcodes), _meta_* notes, phase2_log.md. Spot-verified against the code for this document (every parser named in §2 was re-read; surveys re-run, §1.4). The labels X1a, X1b, P10–P19 (sometimes with a draft section number) in "Resolved:" and "Verification" notes name these analysis drafts; they record provenance only and are never the evidence for a claim — the evidence is the cited code or data.
 

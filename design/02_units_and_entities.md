@@ -2409,6 +2409,7 @@ stateDiagram-v2
 | On the main timer (MP) | `AdvanceMultiwiniaAI`: `AdvanceOfficerAI`, `AdvanceCurrentTasks`, `AdvanceCaptureTheStatueAI`, `AdvanceRocketRiotAI`, Assault `AdvanceAssaultAI`, then the AITarget redistribution scan ([07](07_ai.md)) | [C] `AI::AdvanceMultiwiniaAI` |
 | Position | requested (−100, 0, −100); 10 failed `FindValidSpawnPosition` tries (20 synced draws) → fallback (20, ·, 20) | [C] `Location::InitialiseTeam`, `Location::FindValidSpawnPosition` |
 | Population | excluded from the global `s_entityPopulation` (constructor decrement), but it sits in `Team::m_others`, so it **counts against its team's population cap** (`SpawnPoint::PopulationLocked` compares `m_others.NumUsed()` minus Virii with the cap) | [C] `AI::AI`, `code/worldobject/spawnpoint.cpp:SpawnPoint::PopulationLocked` |
+
 - **Invulnerable and untargetable**: `ChangeHealth` returns false; `EntityGrid::GetBestEnemy` skips `TypeAI` ("An AI entity is *never* a target"); it does not count toward the global `s_entityPopulation` (the constructor decrements it) — it does count toward its team's population cap (table above) — and never calls `Entity::Advance` [C] `AI::ChangeHealth`, `code/entity_grid.cpp:EntityGrid::GetBestEnemy`, `AI::AI`. It is still inserted into the entity grid at (20, 20); `Darwinian::SearchForThreats` does not exclude `TypeAI`, so enemy Darwinians standing near that map corner could pick it as a (harmless, unkillable) threat [I] (02-U13).
 - **Team colouring, sounds, control**: none (render is a debug aid) [C] `AI::Render`.
 
@@ -3001,7 +3002,9 @@ Introversion IP that a new game must not reuse, with neutral placeholders.
 | `code/worldobject/crate.cpp` | crate outcomes creating units (Airstrike, Nuke, Meteor, Eggs, Triffids, Ant Nest, SpaceShip, speed crates) |
 | `code/worldobject/spawnpoint.cpp` | `SpawnPoint::SpawnDarwinian` (harvester/engineer delivery) |
 | `code/worldobject/anthill.cpp` | ant release (`AntHill::SpawnAnt`) |
-| `code/worldobject/spam.cpp` | SpamInfection spirit conversion into Virii/Spider |
+| `code/worldobject/spam.cpp` | SpamInfection spirit conversion into Virii/Spider; entity conversion into Monster Darwinians that bypasses `ChangeHealth` immunity (§2.6) |
+| `code/worldobject/randomiser.cpp` | Randomiser re-spawn of Darwinians on random teams (skips InsideArmour, ignores the booster; §2.6) |
+| `code/interface/prefs_other_window.cpp` | Options › Other › Apply: the only writer of `m_difficultyLevel` besides level loading, gated on `m_locationId == −1` (§2.4) |
 | `code/worldobject/portal.h` | `NUM_TENTACLES` |
 | `code/worldobject/portal.cpp` | Tentacle creation |
 | `code/worldobject/gunturret.cpp` | only source of turret shells |

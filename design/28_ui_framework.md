@@ -1,6 +1,6 @@
 # 28 — UI framework
 
-> Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md.
+> Part B · Baseline build: Release|Win32 (OpenGL) + TARGET_PC_FULLGAME ([B:FULL]); see _work/build_matrix.md (build facts are specified in [31 §7](31_platform_build_and_tools.md#7-build-configurations-and-flags)).
 > Evidence: [C] confirmed · [I] inferred · [U] unknown. Citations are `path:Symbol` relative to the multiwinia/ source root.
 > Sources merged: P17a_ui_framework_editor (§1–§10), P17b_menus_options (§11), P18_ui_gamemenu (§12–§13, plus page table §2 and layout §1.3–§1.4 for context), P12_render_core (24.7 text rendering), P14_platform_lib (29.L language table, 31.11 localisation build), P10_input_camera (input modes), `_meta_*` cross-partition notes. Every numeric constant and state transition below was re-read in the code for this document; corrections are flagged "Resolved:". The labels P10, P12, P14, P17a, P17b and P18 (sometimes with a draft section number) name the analysis drafts listed here; they are provenance only and never the evidence for a claim — the evidence is the cited code or data.
 
