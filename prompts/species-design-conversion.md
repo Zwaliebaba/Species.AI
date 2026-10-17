@@ -111,7 +111,8 @@ Paste this section into every subagent brief.
 8. **Normative, present tense.** Write what the mechanic or component *does* and *must do*. Never write what something "was", what "the original" or "the shipped game" did, or why an earlier version behaved differently (§6.2).
 9. **Size limits.** No output file over 120 KB. Split by natural sub-topic into a folder with a `README.md` index.
 10. **Security hygiene.** Write any helper script under `WORK/scripts/<ID>_*.py`, run it with `python3 -I` and pass paths as arguments. Never run a script that lives in `ORIG/_work/` from inside that directory.
-11. **Report.** When you finish, write `WORK/reports/<ID>.md` with: the files written; counts (requirements, tuning keys, diagrams, enumerations); DEC requests; ADR requests; cross-document requests; names you needed but could not find in the ledger; and anything you dropped as legacy, with a one-line reason for each group. Your final reply to the coordinator is at most 200 words and points to that file.
+11. **No publishing.** Never use the Artifact tool or any other publishing, sharing or upload tool (documents, slides, drives, GitHub writes). Work only on local files. If something was published by mistake, report its URL; never delete it yourself.
+12. **Report.** When you finish, write `WORK/reports/<ID>.md` with: the files written; counts (requirements, tuning keys, diagrams, enumerations); DEC requests; ADR requests; cross-document requests; names you needed but could not find in the ledger; and anything you dropped as legacy, with a one-line reason for each group. Your final reply to the coordinator is at most 200 words and points to that file.
 
 ---
 

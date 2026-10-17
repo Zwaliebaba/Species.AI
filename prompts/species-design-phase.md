@@ -99,7 +99,8 @@ Paste this section into every subagent brief.
 7. **Be concrete.** Give numbers with units, formulas, states, limits and failure behaviour. When a number is a first guess, put it in the tuning table with `status: provisional` and a playtest note. Never leave a number out.
 8. **Size limits.** No output file over 120 KB. Split by sub-topic into a folder with a `README.md` index.
 9. **Security hygiene.** Write scripts under `WORK/scripts/` or `tools/design-models/`, run them with `python3 -I`, and pass paths as arguments.
-10. **Report.** Write `WORK/reports/<ID>.md` with: the files written; counts of requirements, tuning keys and diagrams; adoption verdicts; DEC and ADR changes; cross-area requests; and the names you proposed. Your final reply to the coordinator is at most 200 words.
+10. **No publishing.** Never use the Artifact tool or any other publishing, sharing or upload tool (documents, slides, drives, GitHub writes). Work only on local files. If something was published by mistake, report its URL; never delete it yourself.
+11. **Report.** Write `WORK/reports/<ID>.md` with: the files written; counts of requirements, tuning keys and diagrams; adoption verdicts; DEC and ADR changes; cross-area requests; and the names you proposed. Your final reply to the coordinator is at most 200 words.
 
 ---
 
