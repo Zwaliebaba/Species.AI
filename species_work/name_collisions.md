@@ -66,3 +66,7 @@ The ledger adds these, with the same selection rules (role-based, generic where 
 - Relic Spawn Zone; Home post (split out of the "Flag post / Home post" row);
 - Species identifiers for every in-scope class of the reference entity model (for example `SimObject`, `Actor`, `Structure`, `ActorGroup`, `MatchWorld`, `MatchTeam`, `TickClock`), because no Species identifier may equal an original identifier;
 - kind-suffixed identifiers for kept generic words (`TreeObject`, `WallObject`, `JumpPadObject`, `SpiderCreature`, `CentipedeCreature`, `AntCreature`).
+
+## Owner decision (G1, 2026-10-17)
+
+All proposals accepted: H1 Command Console; H2 Convert Turret; M1 Transit Gate; M2 Beam Dish; M3 Solar Array; M4 energy grid; M5 Essence Grove; M6 Relic Spawn Zone. The ledger rows are marked "confirmed by owner at G1".

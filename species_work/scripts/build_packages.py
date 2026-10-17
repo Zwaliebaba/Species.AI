@@ -25,7 +25,7 @@ COMMON = ['species_work/rename_map.tsv', 'design_next/CONVENTIONS.md',
           'design_next/decisions/README.md', 'species_work/dec_map.csv',
           'design_next/adr/README.md', 'design_next/assets/asset_manifest.csv']
 STD = 'species_work/standards_baseline.md'
-PHASE2_READS = ['species_work/rename_map.tsv', 'design_next/CONVENTIONS.md',
+PHASE2_READS = ['species_work/rename_map.tsv', 'design_next/CONVENTIONS.md', 'species_work/owner_answers.md',
                 'species_work/drop_topics.md', 'vision/species-vision-brief.md']
 NO_PATH_DIRS = ('Never name Species directories `data/`, `code/`, `docs/`, `contrib/` or `targets/`: '
                 'the provenance gate rejects them. Use `content/`, `src/`, `documentation/`, `tools/` instead.')

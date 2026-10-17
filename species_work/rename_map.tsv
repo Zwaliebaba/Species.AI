@@ -33,13 +33,13 @@ Spawn point (`SpawnPoint`)	name	Spawn Node	SpawnNode	building.spawn_node	rename	
 Master spawn point (`SpawnPointMaster`)	name	Source Node	SourceNode	building.source_node	rename	90 §3
 Spawn link	name	Relay	Relay	building.relay	rename	plural Relays; 90 §3
 Spawn population lock	name	Population Limiter	PopulationLimiter	building.population_limiter	rename	90 §3
-Trunk port	name	Transit Gate	TransitGate	building.transit_gate	rename	replaces 90 name Warp Gate; pending owner batch 1, see name_collisions.md; 90 §3
+Trunk port	name	Transit Gate	TransitGate	building.transit_gate	rename	replaces 90 name Warp Gate; confirmed by owner at G1 (2026-10-17); 90 §3
 "Pulse bomb, ""WMD"""	name	Core Device	CoreDevice	building.core_device	rename	90 §3
-"Control station, ""WMD Control Panel"""	name	Command Console	CommandConsole	building.command_console	rename	replaces 90 name Uplink Console; pending owner batch 1, see name_collisions.md; 90 §3
+"Control station, ""WMD Control Panel"""	name	Command Console	CommandConsole	building.command_console	rename	replaces 90 name Uplink Console; confirmed by owner at G1 (2026-10-17); 90 §3
 Escape rocket	name	Launch Vessel	LaunchVessel	building.launch_vessel	rename	90 §3
 Fuel station	name	fuel depot	FuelDepot	building.fuel_depot	rename	generic term; 90 §3
-Solar panel	name	Solar Array	SolarArray	building.solar_array	rename	replaces 90 name Energy Collector; pending owner batch 1, see name_collisions.md; 90 §3
-Radar dish	name	Beam Dish	BeamDish	building.beam_dish	rename	replaces 90 name Relay Dish; pending owner batch 1, see name_collisions.md; 90 §3
+Solar panel	name	Solar Array	SolarArray	building.solar_array	rename	replaces 90 name Energy Collector; confirmed by owner at G1 (2026-10-17); 90 §3
+Radar dish	name	Beam Dish	BeamDish	building.beam_dish	rename	replaces 90 name Relay Dish; confirmed by owner at G1 (2026-10-17); 90 §3
 Laser fence	name	Barrier Emitter	BarrierEmitter	building.barrier_emitter	rename	90 §3
 Wall buster	name	Breach Charge	BreachCharge	building.breach_charge	rename	90 §3
 Statue (CTS)	name	Relic	Relic	building.relic	rename	90 §3
@@ -82,7 +82,7 @@ Crate Mania	name	Supply Storm	CrateOutcome::SupplyStorm	crate.supply_storm	renam
 Mega Rage (code `Bitzkreig`)	name	Frenzy	CrateOutcome::Frenzy	crate.frenzy	rename	90 §3
 Slow Down	name	Time Dilation	CrateOutcome::TimeDilation	crate.time_dilation	rename	90 §3
 Speed Up	name	Time Rush	CrateOutcome::TimeRush	crate.time_rush	rename	90 §3
-Magical Forest	name	Essence Grove	CrateOutcome::EssenceGrove	crate.essence_grove	rename	replaces 90 name Spirit Grove; pending owner batch 1, see name_collisions.md; 90 §3
+Magical Forest	name	Essence Grove	CrateOutcome::EssenceGrove	crate.essence_grove	rename	replaces 90 name Spirit Grove; confirmed by owner at G1 (2026-10-17); 90 §3
 Dark Forest	name	Blight Grove	CrateOutcome::BlightGrove	crate.blight_grove	rename	90 §3
 Ants Nest	name	Hive (outcome)	CrateOutcome::Hive	crate.hive	rename	90 §3
 Eggs	name	Brood	CrateOutcome::Brood	crate.brood	rename	90 §3
@@ -181,7 +181,7 @@ Promotion / demotion	name	promotion to Leader / demotion	PromoteToLeader	unit.le
 Task (power, power-up)	name	Power	Power	power	rename	a granted ability held in a power slot; 90 §2
 Power-up slot (task slot)	name	Power slot	PowerSlot	ui.power_slots	rename	90 §2
 Hill (zone)	name	Control Zone	ControlZone	building.control_zone	rename	90 §2
-Drop zone / statue spawn zone	name	Relic Base / Relic Spawn Zone	RelicBase	building.relic_base	rename	statue spawn zone: Relic Spawn Zone; pending owner batch 1, see name_collisions.md; 90 §2
+Drop zone / statue spawn zone	name	Relic Base / Relic Spawn Zone	RelicBase	building.relic_base	rename	statue spawn zone: Relic Spawn Zone; confirmed by owner at G1 (2026-10-17); 90 §2
 Flag (Blitzkrieg)	name	Flag post	FlagPost	building.flag_post	rename	90 §2
 Statue	name	Relic	Relic	building.relic	rename	90 §2
 Monster team	name	Rogue faction	RogueFaction	faction.rogue	rename	90 §2
@@ -210,13 +210,13 @@ SpawnLink (spawn link)	identifier	Relay	Relay	building.relay	rename	plural Relay
 MasterSpawnPoint (master spawn point)	identifier	Source Node	SourceNode	building.source_node	rename	90 §2
 SpawnPoint (spawn point)	identifier	Spawn Node	SpawnNode	building.spawn_node	rename	90 §2
 SpawnPopulationLock (population lock)	identifier	Population Limiter	PopulationLimiter	building.population_limiter	rename	90 §2
-RadarDish (radar dish)	identifier	Beam Dish	BeamDish	building.beam_dish	rename	replaces 90 name Relay Dish; pending owner batch 1, see name_collisions.md; 90 §2
-ControlStation (control station)	identifier	Command Console	CommandConsole	building.command_console	rename	replaces 90 name Uplink Console; pending owner batch 1, see name_collisions.md; 90 §2
-SolarPanel (solar panel)	identifier	Solar Array	SolarArray	building.solar_array	rename	replaces 90 name Energy Collector; pending owner batch 1, see name_collisions.md; 90 §2
+RadarDish (radar dish)	identifier	Beam Dish	BeamDish	building.beam_dish	rename	replaces 90 name Relay Dish; confirmed by owner at G1 (2026-10-17); 90 §2
+ControlStation (control station)	identifier	Command Console	CommandConsole	building.command_console	rename	replaces 90 name Uplink Console; confirmed by owner at G1 (2026-10-17); 90 §2
+SolarPanel (solar panel)	identifier	Solar Array	SolarArray	building.solar_array	rename	replaces 90 name Energy Collector; confirmed by owner at G1 (2026-10-17); 90 §2
 LaserFence (laser fence)	identifier	Barrier Emitter	BarrierEmitter	building.barrier_emitter	rename	90 §2
 MultiwiniaZone (mode zone)	identifier	Control Zone	ControlZone	building.control_zone	rename	90 §2
 WallBuster (wall buster)	identifier	Breach Charge	BreachCharge	building.breach_charge	rename	90 §2
-TrunkPort (trunk port)	identifier	Transit Gate	TransitGate	building.transit_gate	rename	replaces 90 name Warp Gate; pending owner batch 1, see name_collisions.md; 90 §2
+TrunkPort (trunk port)	identifier	Transit Gate	TransitGate	building.transit_gate	rename	replaces 90 name Warp Gate; confirmed by owner at G1 (2026-10-17); 90 §2
 PulseBomb (pulse bomb)	identifier	Core Device	CoreDevice	building.core_device	rename	90 §2
 EscapeRocket (escape rocket)	identifier	Launch Vessel	LaunchVessel	building.launch_vessel	rename	90 §2
 AntHill (ant hill)	identifier	Hive	Hive	building.hive	rename	90 §2
@@ -311,7 +311,7 @@ wall busters	name	Breach Charges	BreachCharge	building.breach_charge	rename	form
 statues	name	Relics	Relic	building.relic	rename	form
 WMD Control Panel	name	Command Console	CommandConsole	building.command_console	rename	form
 ant hill	name	Hive	Hive	building.hive	rename	form
-Subversion turret	name	Convert Turret	TurretType::Convert	building.turret.convert	rename	follows the Convert rename; pending owner batch 1, see name_collisions.md
+Subversion turret	name	Convert Turret	TurretType::Convert	building.turret.convert	rename	follows the Convert rename; confirmed by owner at G1 (2026-10-17)
 Standard turret (gun turret)	name	gun turret	TurretType::Gun	building.turret.gun	generic-keep	
 Rocket turret	name	rocket turret	TurretType::Rocket	building.turret.rocket	generic-keep	
 "Mortar turret (""grenade turret"")"	name	mortar turret	TurretType::Mortar	building.turret.mortar	generic-keep	
@@ -321,23 +321,23 @@ wall	name	wall	WallObject	building.wall	generic-keep
 tree	name	tree	TreeObject	building.tree	generic-keep	
 jump pad	name	jump pad	JumpPadObject	building.jump_pad	generic-keep	
 home flag	name	Home post	HomePost	building.home_post	rename	
-statue spawn zone	name	Relic Spawn Zone	RelicSpawnZone	building.relic_spawn_zone	rename	where a Relic appears; pending owner batch 1, see name_collisions.md
+statue spawn zone	name	Relic Spawn Zone	RelicSpawnZone	building.relic_spawn_zone	rename	where a Relic appears; confirmed by owner at G1 (2026-10-17)
 Restriction Zone	name	exclusion zone	ExclusionZone	building.exclusion_zone	rename	generic term
-power network	name	energy grid	EnergyGrid	building.energy_grid	rename	keeps Power for the supply-crate power; pending owner batch 1, see name_collisions.md
-power surge	name	energy surge	EnergySurge	building.energy_grid.surge	rename	with the energy grid; pending owner batch 1, see name_collisions.md
+power network	name	energy grid	EnergyGrid	building.energy_grid	rename	keeps Power for the supply-crate power; confirmed by owner at G1 (2026-10-17)
+power surge	name	energy surge	EnergySurge	building.energy_grid.surge	rename	with the energy grid; confirmed by owner at G1 (2026-10-17)
 Pylon	name	grid pylon	GridPylon	building.grid_pylon	rename	with the energy grid
 PylonEnd	identifier	grid terminal	GridTerminal	building.grid_terminal	rename	with the energy grid
 PowerSplitter	identifier	grid splitter	GridSplitter	building.grid_splitter	rename	with the energy grid
 PowerBuilding	identifier	energy-grid structure	GridStructure		rename	base type
 Fuel generator	name	fuel pump	FuelPump	building.fuel_pump	rename	turns energy surges into fuel pressure
 Fuel pipe	name	fuel line	FuelLine	building.fuel_line	rename	
-Uplink Console (rejected 90 placeholder)	name	Command Console	CommandConsole	building.command_console	rename	collision with a studio title; pending owner batch 1, see name_collisions.md
-Warp Gate (rejected 90 placeholder)	name	Transit Gate	TransitGate	building.transit_gate	rename	collision with a franchise term; pending owner batch 1, see name_collisions.md
-Relay Dish (rejected 90 placeholder)	name	Beam Dish	BeamDish	building.beam_dish	rename	internal collision with Relay; pending owner batch 1, see name_collisions.md
-Energy Collector (rejected 90 placeholder)	name	Solar Array	SolarArray	building.solar_array	rename	internal collision with Collector; pending owner batch 1, see name_collisions.md
-Spirit Grove (rejected 90 placeholder)	name	Essence Grove	CrateOutcome::EssenceGrove	crate.essence_grove	rename	reuses the original concept word; pending owner batch 1, see name_collisions.md
+Uplink Console (rejected 90 placeholder)	name	Command Console	CommandConsole	building.command_console	rename	collision with a studio title; confirmed by owner at G1 (2026-10-17)
+Warp Gate (rejected 90 placeholder)	name	Transit Gate	TransitGate	building.transit_gate	rename	collision with a franchise term; confirmed by owner at G1 (2026-10-17)
+Relay Dish (rejected 90 placeholder)	name	Beam Dish	BeamDish	building.beam_dish	rename	internal collision with Relay; confirmed by owner at G1 (2026-10-17)
+Energy Collector (rejected 90 placeholder)	name	Solar Array	SolarArray	building.solar_array	rename	internal collision with Collector; confirmed by owner at G1 (2026-10-17)
+Spirit Grove (rejected 90 placeholder)	name	Essence Grove	CrateOutcome::EssenceGrove	crate.essence_grove	rename	reuses the original concept word; confirmed by owner at G1 (2026-10-17)
 Armour Duel (rejected 90 placeholder)	name	Vehicle Duel	VehicleDuel	mode.vehicle_duel	drop	reuses the original unit name
-Lightning War (rejected 90 placeholder)	name	Flag Sweep	Achievement::FlagSweep	achievement.flag_sweep	rename	literal rendering of the original mode name; pending owner batch 1, see name_collisions.md
+Lightning War (rejected 90 placeholder)	name	Flag Sweep	Achievement::FlagSweep	achievement.flag_sweep	rename	literal rendering of the original mode name; confirmed by owner at G1 (2026-10-17)
 Dominator	name	Total Control	Achievement::TotalControl	achievement.total_control	rename	
 Hoarder	name	Stockpiler	Achievement::Stockpiler	achievement.stockpiler	rename	
 Hail To The King	name	Crowned	Achievement::Crowned	achievement.crowned	rename	
@@ -347,7 +347,7 @@ Master Player	name	Giant Slayer	Achievement::GiantSlayer	achievement.giant_slaye
 Master Of Multiwinia	name	Completionist	Achievement::Completionist	achievement.completionist	rename	
 Explorer	name	Tourist	Achievement::Tourist	achievement.tourist	rename	
 Carnage	name	Massacre	Achievement::Massacre	achievement.massacre	rename	
-Blitz Master	name	Flag Sweep	Achievement::FlagSweep	achievement.flag_sweep	rename	replaces 90 name Lightning War; pending owner batch 1, see name_collisions.md
+Blitz Master	name	Flag Sweep	Achievement::FlagSweep	achievement.flag_sweep	rename	replaces 90 name Lightning War; confirmed by owner at G1 (2026-10-17)
 Wrong Game	name	Friendly Fire	Achievement::FriendlyFire	achievement.friendly_fire	rename	
 Genocide	name	Annihilator	Achievement::Annihilator	achievement.annihilator	rename	
 HailToTheKing	identifier	achievement	Achievement::Crowned		rename	code form
@@ -546,7 +546,7 @@ AntHill	identifier	Hive	Hive		rename
 Armour	identifier	Transport	Transport		rename	
 ArmyAnt	identifier	ant	AntCreature		rename	
 Centipede	identifier	centipede	CentipedeCreature		rename	
-ControlStation	identifier	Command Console	CommandConsole		rename	pending owner batch 1, see name_collisions.md
+ControlStation	identifier	Command Console	CommandConsole		rename	confirmed by owner at G1 (2026-10-17)
 Crate	identifier	Supply crate	SupplyCrate		rename	
 Darwinian	identifier	Worker	Worker		rename	
 DustBall	identifier	dust vortex	DustVortex		rename	ambient map effect
@@ -583,14 +583,14 @@ OfficerFormation	identifier	formation slot	FormationSlot		rename
 OfficerOrderTrail	identifier	order trail mark	OrderTrailMark		rename	
 PulseBomb	identifier	Core Device	CoreDevice		rename	
 PulseWave	identifier	Core Device pulse wave	CorePulseWave		rename	
-RadarDish	identifier	Beam Dish	BeamDish		rename	pending owner batch 1, see name_collisions.md
+RadarDish	identifier	Beam Dish	BeamDish		rename	confirmed by owner at G1 (2026-10-17)
 EffectRandomiser	identifier	Allegiance Scrambler effect	AllegianceScramblerEffect		rename	
 RestrictionZone	identifier	exclusion zone	ExclusionZone		rename	
 Rocket	identifier	rocket	RocketProjectile		rename	
 Shockwave	identifier	shockwave ring	ShockwaveRing		rename	
 SmokeMarker	identifier	smoke column	SmokeColumn		rename	ambient emitter
 Snow	identifier	snowflake	SnowFlake		rename	ambient map effect
-SolarPanel	identifier	Solar Array	SolarArray		rename	pending owner batch 1, see name_collisions.md
+SolarPanel	identifier	Solar Array	SolarArray		rename	confirmed by owner at G1 (2026-10-17)
 SoulDestroyer	identifier	Reaper Serpent	ReaperSerpent		rename	
 SpawnBuilding	identifier	spawn-network structure	SpawnStructure		rename	
 SpawnBuildingLink	identifier	spawn-network edge	SpawnEdge		rename	
@@ -607,7 +607,7 @@ Statue	identifier	Relic	Relic		rename
 Teleport	identifier	teleport	TeleportStructure		rename	base of the Beam Dish
 ThrowableWeapon	identifier	thrown weapon	ThrownWeapon		rename	
 Tree	identifier	tree	TreeObject		rename	
-TrunkPort	identifier	Transit Gate	TransitGate		rename	pending owner batch 1, see name_collisions.md
+TrunkPort	identifier	Transit Gate	TransitGate		rename	confirmed by owner at G1 (2026-10-17)
 TurretEmptyShell	identifier	shell casing	ShellCasing		rename	
 TurretShell	identifier	turret round	TurretRound		rename	
 ViriiHistory	identifier	Crawler trail sample	CrawlerTrailSample		rename	

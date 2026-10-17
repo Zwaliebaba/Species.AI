@@ -23,7 +23,7 @@ Read this whole file, `vision/species-vision-brief.md`, `design/README.md`, `des
 | `TOOLS` | `$REPO/tools/design-check/` (gates); `$REPO/tools/design-models/` (quantitative design models, created by this run and kept) |
 | `OUTBOX` | a directory outside the repository that the owner can open (your session's scratchpad or outputs directory) |
 | `BRANCH` | the branch this session was given. Commit and push only there. |
-| Owner decisions | O1–O11 in `VISION` §3, plus every answer the owner gives during this run (recorded as O12, O13, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
+| Owner decisions | O1–O13 in `VISION` §3, plus every answer the owner gives during this run (recorded as O14, O15, … in `DESIGN/decisions/owner_decisions.md`). Agents may recommend changing an owner decision, but **only the owner changes one**, at an owner gate. |
 | Language | British English (en-GB) |
 | Max parallel agents | 6 per wave, unless the owner raises it |
 | Challenge rounds | at most 2 per area. Round 2 runs only if a Critical or High finding is still open after revision. |
@@ -274,7 +274,7 @@ Run the full check after every wave; the area's proposer fixes failures in its o
 
 ### 8.1 Phases
 
-**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`) and `tools/design-models/` (`README.md`). Extend `check_design.py` (§7). Register the prefixes (§6). Create `owner_decisions.md` with O1–O11 copied from `VISION` §3. Commit.
+**Phase 0 — Setup.** Check the precondition. Create `WORK/` (`RUN_LOG.md`, `areas/`, `reports/`, `scripts/`) and `tools/design-models/` (`README.md`). Extend `check_design.py` (§7). Register the prefixes (§6). Create `owner_decisions.md` with O1–O13 copied from `VISION` §3. Commit.
 
 **Phase 1 — Wave A.**
 1. Run A0 through the loop.

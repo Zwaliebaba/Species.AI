@@ -58,3 +58,7 @@
 - DEC and ADR ids: unique within the assigned ranges; gaps allowed; never renumbered (prompt G2 updated).
 - Surviving files (`vision/`, `prompts/species-design-phase.md`, `design_next/CONVENTIONS.md`): 0 hard-fail hits with the full F1 pattern set.
 - Owner questions batch 1: pending.
+- **Owner batch 1 answered (2026-10-17):** all eight renames accepted (Command Console, Convert Turret, Transit Gate, Essence Grove, energy grid, Beam Dish, Solar Array, Relic Spawn Zone); 40-U14 reference tuning values may be adopted as a baseline, with a legal check before commercial release. Recorded in `owner_answers.md`, in the ledger (25 rows marked confirmed), in `name_collisions.md`, and as **O12 and O13** in the vision brief. The design-phase prompt now starts from O1–O13; new owner answers there start at O14. Phase 2 packages now read `owner_answers.md`.
+- **Gate G1 passed.** Phase 2 ready: wave 2a = X-DEC-1, X-DEC-2a, X-DEC-2b, X-DEC-2c, X-ADR-a, X-ADR-b; wave 2b = X-DEC-3, X-DEC-4a, X-DEC-4b, X-DEC-5a, X-DEC-5b, X-DEC-5c.
+
+## Phase 2 — Decisions

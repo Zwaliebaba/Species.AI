@@ -17,7 +17,7 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 4. **Delegation you can trust.** The deputy follows standing orders that the player understands and can predict.
 5. **The reference look and feel.** The visual and audio language of the reference library stays as it is.
 
-## 3 Decisions taken (owner, 2026-10-17)
+## 3 Decisions taken (owner, 2026-10-17; O12–O13 added at the conversion gate G1)
 
 | # | Topic | Decision | Consequence the design must carry |
 |---|---|---|---|
@@ -32,6 +32,8 @@ Battles are real-time crowd battles: hundreds of small autonomous figures, leade
 | O9 | Look and feel | The look and feel of the reference library **does not change**. | Keep the style: flat-shaded low-poly, additive glow on black, the darkening layer, crowds of small figures. All art is newly authored, with new character silhouettes, textures, UI layout and logo, so Species is not a copy. A strategic zoom level for the big world is designed in the same style. |
 | O10 | Server path | The server starts **integrated in the client** and moves to **dedicated servers** over time. | One server codebase. The integrated server runs in-process behind the same transport interface as a dedicated one, and the client never touches server state directly. |
 | O11 | Research and training | Designed **later**. | The stat and modifier system, and the unit-specialisation hooks, are designed now, so research and training plug in without rework. |
+| O12 | Vocabulary | Name collisions resolved at the reference-library gate G1 (2026-10-17): **Command Console, Convert Turret, Transit Gate, Essence Grove, energy grid, Beam Dish, Solar Array, Relic Spawn Zone**. | The Species vocabulary in `design/CONVENTIONS.md` §8 is authoritative. |
+| O13 | Reference tuning values | The reference tuning values **may be adopted as Species starting values** (G1, 2026-10-17). | A legal check is required before commercial release. The design phase retunes freely; adopted values need no "provisional" flag for reasons of origin. |
 
 ## 4 What carries over from the reference library
 
