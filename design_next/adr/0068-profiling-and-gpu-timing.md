@@ -31,7 +31,7 @@ Chosen option: "PIX markers and GPU timestamp queries behind a Species macro lay
 
 * **Tool:** PIX on Windows **2603.25** or later for GPU captures and timing captures; it supports every Agility SDK 1.619 feature.
 * **Markers:** one Species macro layer (`SPECIES_PROFILE_SCOPE(name)` and its GPU counterpart on a command list) emits PIX events through **WinPixEventRuntime 1.0.240308001** (MIT licence), linked as a DLL in `Debug`, `Development` and `Profile` builds. In `Shipping` builds the macros expand to nothing and `WinPixEventRuntime.dll` is not distributed ([ADR-0056](0056-editions-build-flavours-and-feature-flags.md)).
-* **Coverage:** every frame-graph pass, every engine subsystem update and every content-loading stage carries a marker; the task groups of the threading model carry markers once the design phase defines that model.
+* **Coverage:** every frame-graph pass ([ADR-0004](0004-frame-graph-from-the-ordered-pass-table.md)), every engine subsystem update and every content-loading stage carries a marker; the task groups of the threading model carry markers once the design phase defines that model.
 * **GPU timing:** timestamp queries around every frame-graph pass, resolved into a readback buffer and read one or more frames later, so the CPU never waits for the GPU to measure it.
 * **Overlay:** in `Development` and `Profile` builds, an in-game overlay shows the frame-time graph, per-pass GPU times, per-subsystem CPU times against their budgets, and entity counts per type.
 * **System-wide traces:** ETW traces (with the TraceLogging provider of [ADR-0067](0067-logging.md)) are captured with Windows Performance Analyzer when a problem is outside the game process.
@@ -67,6 +67,6 @@ Chosen option: "PIX markers and GPU timestamp queries behind a Species macro lay
 
 ## More Information
 
-* Facts and sources: §4.7 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the PIX download page, the WinPixEventRuntime NuGet package and its GitHub repository.
+* Facts and sources: technology baseline item 4.7 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the PIX download page, the WinPixEventRuntime NuGet package and its GitHub repository.
 * Whether PIX markers stay in shipping builds for field captures is a design-phase choice; the default is compiled out.
 * Component: diagnostics, test and performance (`DBG`).

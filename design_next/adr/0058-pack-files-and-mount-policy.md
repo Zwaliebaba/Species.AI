@@ -80,6 +80,6 @@ Chosen option: "An own indexed pack format with independently compressed chunks"
 
 ## More Information
 
-* Facts and sources: §5.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the DirectStorage NuGet package and the DirectStorage 1.4 announcement.
+* Facts and sources: technology baseline item 5.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the DirectStorage NuGet package and the DirectStorage 1.4 announcement.
 * Related: [ADR-0059](0059-content-build-and-validators.md) (writes the packs), [ADR-0071](0071-install-layout-runtime-files-and-user-data.md) (where packs are installed).
 * Component: asset pipeline and resources (`AST`).

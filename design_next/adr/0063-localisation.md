@@ -72,5 +72,5 @@ Chosen option: "UTF-8 string tables, BCP 47 tags, ICU MessageFormat via the in-b
 
 ## More Information
 
-* Facts and sources: §10.2 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): ICU and CLDR releases on GitHub, the Windows locale-names and ICU pages on learn.microsoft.com. The Unicode version was taken from the ICU 78 release notes and the BCP 47 text from Microsoft's documentation, because unicode.org and rfc-editor.org were not reachable (baseline §12.1).
+* Facts and sources: technology baseline item 10.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): ICU and CLDR releases on GitHub, the Windows locale-names and ICU pages on learn.microsoft.com. The Unicode version was taken from the ICU 78 release notes and the BCP 47 text from Microsoft's documentation, because unicode.org and rfc-editor.org were not reachable (see [Items not verified](README.md#items-not-verified)).
 * Components: UI framework (`UI`), data schemas (`DAT`).

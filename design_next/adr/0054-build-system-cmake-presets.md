@@ -75,6 +75,6 @@ Chosen option: "CMake with presets and the Ninja Multi-Config generator". This i
 
 ## More Information
 
-* Facts and sources: §3.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): CMake releases on the Kitware GitHub repository and the CMake 4.4.4 `cmake-presets` and `cmake-cxxmodules` manuals (cmake.org itself was not reachable; the same documents were read from the repository).
+* Facts and sources: technology baseline item 3.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): CMake releases on the Kitware GitHub repository and the CMake 4.4.4 `cmake-presets` and `cmake-cxxmodules` manuals (cmake.org itself was not reachable; the same documents were read from the repository).
 * Which CMake version Visual Studio bundles was not checked.
 * Component: build tooling and distribution (`BLD`).

@@ -33,7 +33,7 @@ Chosen option: "One process-relative monotonic clock behind an injectable time-s
 * **Injectable sources:** a fixed-step source (advances by a set duration per frame, for capture and replays) and a manual source (advanced explicitly by tests). The platform layer selects the source at start-up; components receive it through the platform interface and never call the OS clock themselves.
 * **Simulation boundary:** simulation code reads tick counts from the tick clock (`TickClock`), never the time source. The time source drives only the scheduling of ticks and presentation.
 * **Calendar time:** UTC from the OS, used only for log and report timestamps and for display, never for timing logic.
-* **Frame pacing** is explicit and independent of the simulation tick; the presentation ADRs specify it.
+* **Frame pacing** is explicit and independent of the simulation tick; [ADR-0012](0012-swap-chain-presentation-and-frame-pacing.md) specifies it.
 
 ### Consequences
 

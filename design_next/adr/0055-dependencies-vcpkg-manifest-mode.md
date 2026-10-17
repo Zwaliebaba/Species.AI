@@ -75,5 +75,5 @@ Chosen option: "vcpkg in manifest mode", because it is the vendor-recommended mo
 
 ## More Information
 
-* Facts and sources: §3.2 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the vcpkg manifest-mode, versioning, CMake-integration and lock-package-versions pages on learn.microsoft.com, and the vcpkg tags on GitHub. The `directx-headers` vcpkg port is named on https://learn.microsoft.com/windows/win32/direct3d12/helper-structures-and-functions-for-d3d12 (checked 2026-10-17).
+* Facts and sources: technology baseline item 3.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the vcpkg manifest-mode, versioning, CMake-integration and lock-package-versions pages on learn.microsoft.com, and the vcpkg tags on GitHub. The `directx-headers` vcpkg port is named on https://learn.microsoft.com/windows/win32/direct3d12/helper-structures-and-functions-for-d3d12 (checked 2026-10-17).
 * Component: build tooling and distribution (`BLD`).

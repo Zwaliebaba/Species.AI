@@ -33,7 +33,7 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 * **No crash swallowing:** the client installs no top-level unhandled-exception filter that handles fatal exceptions; unhandled exceptions on any thread reach WER. The `std::set_terminate` handler, the CRT invalid-parameter handler and the pure-call handler record a reason in the black box and then end the process with a fail-fast exception, so WER captures it.
 * **Registered context:** `WerRegisterFile` for the current log ([ADR-0067](0067-logging.md)) and the last settings file; `WerRegisterMemoryBlock` for a small black-box ring buffer (the last frame and update markers, the current map or world region, the build identity); `WerRegisterExcludedMemoryBlock` for memory that may hold personal data (chat text, account tokens).
 * **Threads:** every thread is created through the platform layer, which names it, so dumps show thread names.
-* **GPU faults:** the device-removed path adds the renderer's diagnostic data to the same report.
+* **GPU faults:** the device-removal path of [ADR-0008](0008-gpu-memory-uploads-and-device-removal.md) adds its DRED data to the same report.
 * **Collection:** reports reach the publisher through the Windows Desktop Application Program in Partner Center (free; requires the code signing of [ADR-0073](0073-code-signing.md)), or through the Partner Center health report for a Store package. Collection follows the player's Windows diagnostic-data settings; the client uploads nothing itself.
 * **Symbols:** every CI build publishes its PDBs and binaries to a private symbol store keyed by the build identity; release builds also upload symbols to Partner Center. Executables carry accurate `VERSIONINFO`.
 * **Development and QA:** a CI-provided registry file enables WER `LocalDumps` for the Species executables on test machines (custom dumps with data segments and thread data).
@@ -71,5 +71,5 @@ Chosen option: "Windows Error Reporting (WER) with registered context and the Wi
 
 ## More Information
 
-* Facts and sources: §11.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the WER guide and API pages, the `LocalDumps` settings, the Windows Desktop Application Program, the Partner Center health report and the Sentry Native releases.
+* Facts and sources: technology baseline item 11.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the WER guide and API pages, the `LocalDumps` settings, the Windows Desktop Application Program, the Partner Center health report and the Sentry Native releases.
 * Component: build tooling and distribution (`BLD`); the black box belongs to diagnostics, test and performance (`DBG`).

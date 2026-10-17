@@ -73,6 +73,6 @@ Chosen option: "MSVC Build Tools, one pinned version, with clang-cl as a second 
 
 ## More Information
 
-* Facts and sources: §2.1, §2.2, §2.3 and §4.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the Visual Studio 2026 release notes, the MSVC compiler-versions page and the Agility SDK getting-started page.
+* Facts and sources: technology baseline items 2.1, 2.2, 2.3 and 4.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Visual Studio 2026 release notes, the MSVC compiler-versions page and the Agility SDK getting-started page.
 * The standards baseline lists no Windows SDK release number; the exact pin is set by the build tooling component and recorded in the toolchain preset.
 * Component: build tooling and distribution (`BLD`).

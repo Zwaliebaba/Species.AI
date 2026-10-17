@@ -72,5 +72,5 @@ Chosen option: "`import std` behind a build option; first-party code header-base
 
 ## More Information
 
-* Facts and sources: §2.2 and §3.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the MSVC modules overview and `import std` tutorial, and the CMake 4.4 and development (4.5) `cmake-cxxmodules` manuals.
+* Facts and sources: technology baseline items 2.2 and 3.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the MSVC modules overview and `import std` tutorial, and the CMake 4.4 and development (4.5) `cmake-cxxmodules` manuals.
 * A non-Windows server build that turns the option on needs a standard library with working module metadata; the baseline notes that Ubuntu releases before 26.04 ship broken `libstdc++.modules.json` files.

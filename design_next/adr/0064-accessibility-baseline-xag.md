@@ -71,6 +71,6 @@ Engine features provided from the start:
 
 ## More Information
 
-* Facts and sources: §10.1 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the XAG overview, the XAG version history and the accessibility feature-tag pages on learn.microsoft.com.
+* Facts and sources: technology baseline item 10.1 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the XAG overview, the XAG version history and the accessibility feature-tag pages on learn.microsoft.com.
 * Related: [ADR-0063](0063-localisation.md) (text and fonts).
 * Components: UI framework (`UI`), input (`INP`), renderer (`RND`), audio engine (`AEN`).

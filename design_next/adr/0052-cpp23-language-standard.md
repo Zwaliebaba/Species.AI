@@ -68,6 +68,6 @@ Chosen option: "C++23", because the MSVC standard library is C++23 feature-compl
 
 ## More Information
 
-* Facts and sources: §2.2 and §2.3 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the MSVC `/std` reference page, the C++ team blog on C++23 in MSVC Build Tools 14.51, the MSVC STL changelog, the Clang C++ status page and the libc++ and libstdc++ C++23 status files.
-* The ISO publication status of C++26 was not verified (baseline §12.1); it does not affect this decision.
+* Facts and sources: technology baseline items 2.2 and 2.3 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the MSVC `/std` reference page, the C++ team blog on C++23 in MSVC Build Tools 14.51, the MSVC STL changelog, the Clang C++ status page and the libc++ and libstdc++ C++23 status files.
+* The ISO publication status of C++26 was not verified (see [Items not verified](README.md#items-not-verified)); it does not affect this decision.
 * Related: [ADR-0053](0053-modules-and-import-std.md) (modules).

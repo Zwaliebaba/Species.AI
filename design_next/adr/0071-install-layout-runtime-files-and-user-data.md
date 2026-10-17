@@ -31,7 +31,7 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
 
 * **Install directory:**
   * `species.exe` (the client) and first-party DLLs;
-  * `D3D12\` with `D3D12Core.dll` from **Agility SDK 1.619.6**; `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`. `D3D12SDKLayers.dll` and preview SDKs are never distributed;
+  * `D3D12\` with `D3D12Core.dll` from **Agility SDK 1.619.6** (chosen in [ADR-0001](0001-direct3d-12-renderer-on-the-agility-sdk.md)); `species.exe` exports `D3D12SDKVersion = 619` and `D3D12SDKPath = ".\\D3D12\\"`. `D3D12SDKLayers.dll` and preview SDKs are never distributed;
   * `packs\` with the pack files and the content manifest ([ADR-0058](0058-pack-files-and-mount-policy.md), [ADR-0060](0060-content-identity-by-hash.md));
   * the third-party licence notices.
 * **Prerequisites** run by the installer or channel wrapper: `GameInputRedist.msi` from the pinned GameInput package (it never downgrades a newer installed runtime), and the Visual C++ redistributable for the pinned toolset. A channel that cannot run prerequisites receives the Visual C++ runtime DLLs beside the executable instead. No graphics or audio runtime installer is bundled: Direct3D 12 and XAudio 2.9 are in-box.
@@ -70,6 +70,6 @@ Chosen option: "A relocatable, read-only install directory with user data in kno
 
 ## More Information
 
-* Facts and sources: §4.1, §6, §7 and §11.2 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): the Agility SDK getting-started page, the GameInput NuGet and redistribution pages, and the XAudio2 versions page.
+* Facts and sources: technology baseline items 4.1, 6, 7 and 11.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): the Agility SDK getting-started page, the GameInput NuGet and redistribution pages, and the XAudio2 versions page.
 * `<STUDIO>` is the studio-name placeholder of CONVENTIONS §8.11.
 * Component: build tooling and distribution (`BLD`); runtime paths belong to the platform layer (`PLT`).

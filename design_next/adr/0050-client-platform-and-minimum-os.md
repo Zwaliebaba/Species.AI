@@ -32,7 +32,7 @@ Chosen option: "Windows 11 x64, minimum version 24H2 (OS build 10.0.26100)", bec
 
 * **Test matrix:** 25H2 (26200) and 26H2 (26300) are the primary targets; 24H2 LTSC (26100) is the floor; 26H1 (28000), which is built on a different Windows core, is smoke-tested when hardware is available.
 * **Application manifest:** the executable declares Windows 10 and 11 in `<supportedOS>` so that version queries report the real version.
-* **Start-up check:** the launcher reads the OS build number and shows a clear message below 26100. Hard failures come only from capability checks (for example the Direct3D 12 checks of the renderer ADRs), following Microsoft's advice to test for features rather than versions.
+* **Start-up check:** the launcher reads the OS build number and shows a clear message below 26100. Hard failures come only from capability checks (for example the Direct3D 12 checks of [ADR-0002](0002-minimum-gpu-capability.md)), following Microsoft's advice to test for features rather than versions.
 * **Architecture:** x64 only. Arm64 is not a target of this baseline.
 
 ### Consequences
@@ -74,7 +74,7 @@ Chosen option: "Windows 11 x64, minimum version 24H2 (OS build 10.0.26100)", bec
 
 ## More Information
 
-* Facts and sources: §1.1 and §1.2 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): Windows 11 release information, the 24H2 status page and the Windows 10 life-cycle pages on learn.microsoft.com.
+* Facts and sources: technology baseline items 1.1 and 1.2 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): Windows 11 release information, the 24H2 status page and the Windows 10 life-cycle pages on learn.microsoft.com.
 * Related: [ADR-0051](0051-windows-toolchain-and-compiler-policy.md) (toolchain and Windows SDK), [ADR-0075](0075-application-window-and-dpi-awareness.md) (application manifest settings).
 * Component: platform layer (`PLT`).
 * Re-check trigger: any Windows 11 version leaving consumer service.

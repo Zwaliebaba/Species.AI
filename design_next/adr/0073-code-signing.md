@@ -72,6 +72,6 @@ Chosen option: "Azure Artifact Signing from CI, with an OV certificate in a hard
 
 ## More Information
 
-* Facts and sources: §11.2 and §11.3 of the technology baseline in the [ADR index](README.md) (checked 2026-10-17): Microsoft's code-signing options page, the first-app publishing guide and the MSIX signing guides on learn.microsoft.com.
+* Facts and sources: technology baseline items 11.2 and 11.3 in the [ADR index](README.md#technology-baseline) (checked 2026-10-17): Microsoft's code-signing options page, the first-app publishing guide and the MSIX signing guides on learn.microsoft.com.
 * Related: [ADR-0072](0072-distribution-channels-and-package-formats.md).
 * Component: build tooling and distribution (`BLD`).
