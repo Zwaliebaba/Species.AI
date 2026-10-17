@@ -180,6 +180,7 @@ gs = dq.groups(closing)
 def src_kind(s):
     if s.startswith('docs/'): return 1
     if s.startswith('code/') or s.startswith('contrib/'): return 2
+    if re.search(r'comment|declaration|signature|::|^method name|^code\b', s, re.I): return 2
     return 3
 sections = {1: [], 2: [], 3: []}
 for g in gs:
@@ -205,10 +206,11 @@ for k in (1, 2, 3):
         notes = [r['note'] for r in g if r.get('note')]
         if notes:
             code += ' ' + ' '.join(notes)
-        refs = []
+        refs, norms = [], []
         for r in g:
-            if r['ref'] and r['ref'] not in refs:
-                refs.append(r['ref'])
+            nr = re.sub(r'\[C\]|\(see [^)]*\)|[`;,·\s]', '', r['ref'])
+            if r['ref'] and nr and not any(nr in o or o in nr for o in norms):
+                refs.append(r['ref']); norms.append(nr)
         docs_ = sorted({r['doc'] for r in g})
         dis_out.append('| ' + ' | '.join(cell(x) for x in [
             f'D{n:03d}', f'`{src}`' if '/' in src or '.' in src else src, claim, code, ' · '.join(refs) or '—',
@@ -291,7 +293,7 @@ ip_summary = (f'{len(ip_rows)} IP rows from {len({r["doc"] for r in ip_rows})} d
 # map-name register
 maps = []
 for r in csv.DictReader(open(os.path.join(work, 'drafts', 'X4_levels.csv'), encoding='utf-8')):
-    if os.path.basename(r['file']).startswith('mp_'):
+    if os.path.basename(r['file']).startswith('mp_') and r['file'].count('/') == 2:
         maps.append(r)
 mp = ['| Level file | English display name (IP) | Menu | Placeholder pattern |', '|---|---|---|---|']
 for r in sorted(maps, key=lambda r: r['file'].lower()):
